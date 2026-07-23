@@ -2,6 +2,7 @@
   "schemaVersion": 1,
   "ticket": "A23",
   "recordedAt": "2026-07-23",
+  "lastRebasedAt": "2026-07-24",
   "decision": "STOP",
   "decisionReason": "Mandatory Wave 0 feasibility properties remain absent, incomplete, or externally blocked.",
   "releaseReady": false,
@@ -84,7 +85,11 @@
   "wave0": [
     { "ticket": "A1", "status": "complete" },
     { "ticket": "A2", "status": "complete" },
-    { "ticket": "A3", "status": "complete" },
+    {
+      "ticket": "A3",
+      "status": "reopened-partial-transport-interface-freeze-read-event-schemas-blocked",
+      "mandatoryBlocker": true
+    },
     { "ticket": "A4", "status": "complete" },
     { "ticket": "A5", "status": "reference-seam-complete-production-proof-blocked", "mandatoryBlocker": true },
     { "ticket": "A6", "status": "complete" },
@@ -96,10 +101,14 @@
     { "ticket": "A12", "status": "complete" },
     {
       "ticket": "A13",
-      "status": "reference-guest-and-verifier-complete-production-receipt-blocked",
+      "status": "reference-core-complete-fixture-rebaseline-and-production-receipt-blocked",
       "mandatoryBlocker": true
     },
-    { "ticket": "A14", "status": "complete" },
+    {
+      "ticket": "A14",
+      "status": "reopened-partial-interface-freeze-read-event-schemas-blocked",
+      "mandatoryBlocker": true
+    },
     {
       "ticket": "A15",
       "status": "reference-guest-and-verifier-complete-production-receipt-blocked",
@@ -135,22 +144,22 @@
   ],
   "frozenAndCandidateInputs": {
     "protocolSchema": {
-      "status": "frozen-wave0-v1",
-      "registryHash": "0x3c0d5bcc57346e38b6ddf4dc41f9c6f2c65e2094b42985a10c959402e7d9a1c",
-      "fileSha256": "b6463b5feca0a46121faf9273427419d847ee7d54a6425463b8429827be556c5"
+      "status": "partial-a3-a14-rebaseline-read-event-schemas-blocked",
+      "registryHash": "0x4f8e517f6ca245d50cc64158167b3b23bc817036bfb5a3e55044a44f8840428",
+      "fileSha256": "4cb0f35f23da8bd8fee0692bdeeb10c9f6dd09dbbc71c0d715ca2ec4cbec68b4"
     },
     "frozenPositionProof": {
       "status": "reference-seam-complete-production-proof-blocked",
-      "fileSha256": "d9338fe3b1862bfa1d3081b5e8d95b7b59f9b0eade0abcacda99bc30e4cfd4da",
+      "fileSha256": "dfb74fdd11aa2876c7efded3d30bb43e6043db1252c6677eed1eec4be32da156",
       "journalHash": "0x7d37e77b8cc5f0db16705e88b91ac862f125d684b8fa5644992eee730db58bc",
       "releaseReady": false
     },
     "mmrPlanProof": {
-      "status": "reference-guest-and-verifier-complete-production-receipt-blocked",
-      "fileSha256": "01edc6fe7e0b43f24254316d253fdc4566352ed64726755caa6fe40e7fac5ee6",
+      "status": "reference-core-complete-fixture-rebaseline-and-production-receipt-blocked",
+      "fileSha256": "2e0b2d336e1d2503dfffb43b8910ba4028f6f7dfbb24eebd11cab080487e9925",
       "journalHash": "0x2e8193d2764077811fe44d826af2d7a6c0c8afdc31ced2d5f106530fb639f6a",
-      "sp1FixtureStatus": "fixture-execution-passed-production-proof-blocked",
-      "sp1FixtureEvidenceSha256": "9835809ca08ad572548e12ece6133ce48de55ce68d49a7c1d00bff0e49d6ff96",
+      "sp1FixtureStatus": "historical-fixture-invalidated-by-a3-a14-rebaseline",
+      "sp1FixtureEvidenceSha256": "10a995b54b156485e6ac93870bd437bcd2138d0019d22a4b97e91854b7a354b8",
       "sp1FixtureCiEvidenceCheckerSha256": "12e3aaea3477b6e14fc11636c83a0f2dae7c6c98b50ed4c61820f066d772e28a",
       "sp1FixtureCiElfIdentityCheckerSha256": "37562f61ccdf2f8cb513b43b0f306ced569c970c0725116710504a419abfbc01",
       "sp1FixtureElfSha256": "5ce2dd952e72b3afd81559b26f74a6bcbaf9f3378e25b866bbbf1b7888d1b59a",
@@ -167,14 +176,14 @@
     },
     "emergencySealedProof": {
       "status": "reference-guest-and-verifier-complete-production-receipt-blocked",
-      "fileSha256": "1a11cedf4c03f41f06530015f37e4e283a5138796eb509958a91f84a6201a592",
+      "fileSha256": "d274c96f9f0d4e1380ecb52d2e4853603f35c04d1841e3b32c267c6320094028",
       "journalHash": "0x37890799d1a1ec66e4425bfffa52747bcfb6fdb984b80d39420f451b01b343f",
       "releaseReady": false
     },
     "hardenedInboxProof": {
       "status": "reference-runtime-and-public-patricia-proof-complete-production-finality-blocked",
-      "fileSha256": "7015005275731d7ba050e2328ab3433916ff5b939e77ffae996c4432afeaabe6",
-      "evidenceValidatorSha256": "8297369c65934cf3526cd8be3a38d8e8127af988b5d95cfa45a615aea0bfed76",
+      "fileSha256": "8294cd4ec9f61f3c1b02baa265969df61f5f5e79c8bb59d267f4bf638b72e234",
+      "evidenceValidatorSha256": "bcc0c5f5c4dfd83930411a50e0006d833878e4952bb484e0623efbd93367d42f",
       "evidenceValidatorTestSha256": "4636a728f40a96e99dba464c9f6582bf54d79ef44fa08ae60152bd8c41a74673",
       "structuredEvidenceCheckerSha256": "845eb695a18153832a666c61d0ed3fe44e56fdfe8cb87e60adb850200c057205",
       "publicEvidenceStatus": "contract-proof-only-block-now-rpc-accepted-on-l1",
@@ -223,7 +232,7 @@
     },
     "legacyMmrDerivationProof": {
       "status": "pending-typed-derivation-reference-seam-complete-source-inventory-and-production-proofs-blocked",
-      "fileSha256": "6bdf5fe49a0746b5e17e5e5304e0bed394f400b3656c9dd1772cbd56f6184f32",
+      "fileSha256": "daa0f295a9b5a16b8a47c7f0be567702595ee513a2eb756504cb537923286566",
       "provedSourceInventoryHash": "0x39a701299f9159612332c964f47cb533d6bcaa3299743861bd3a92a262eaa7",
       "syntheticDeploymentId": "0x33c8f1316768de91f0318a1fad4ec368dd4657f0bea5ac6ad41b11eb959aa61",
       "dispositionsRoot": "0x93064b94ad676e46210b7b30de51783bc9baf825af6ec55749cf010f89be05",
@@ -235,7 +244,7 @@
     },
     "frozenRecoveryMaterializationProofs": {
       "status": "reference-guests-and-verifiers-complete-production-receipts-blocked",
-      "fileSha256": "b5af25fb3e63b6f3bf79987670dae6d97b252052274b933bc456b7d2b0fe839f",
+      "fileSha256": "e20fb517c906e6e50f59724469f8dbbb712a3d57bde72d765ab2877cac2a6dbe",
       "frozenRecoveryJournalHash": "0x40aea6316d38fddec50d6a2ba770a77babc95603c124e2ba6356644004b5afa",
       "deploymentRefundMaterializationJournalHash": "0x4aaed4fdfc7127f25f78d7b21d6875604cb2173fdbaf4f89656644f5ab7e43d",
       "positionMaterializationJournalHash": "0x1f0cfc118469d26eac0b3d226cf0af1edf09eb6051e1d39ef0e15d6d1f9d9e2",
@@ -336,11 +345,11 @@
       "sp1VerifyDurationMs": null
     },
     "a13": {
-      "status": "reference-guest-and-verifier-complete-production-receipt-blocked",
+      "status": "reference-core-complete-fixture-rebaseline-and-production-receipt-blocked",
       "artifact": "packages/settlement-codec/schema/mmr-plan-a13-v1.json",
       "cairoVectorTestL2Gas": 81644,
       "cairoNegativeTestL2Gas": 150538,
-      "sp1FixtureExecutionStatus": "passed",
+      "sp1FixtureExecutionStatus": "historical-pass-invalidated-by-a3-a14-rebaseline",
       "sp1FixtureExecutionKind": "sp1-sdk-v6.2.2-cpu-execute-valid-only-with-native-negatives-no-proof",
       "sp1FixtureProverInitializationMs": 575562,
       "sp1FixtureValidInstructions": 51707742,
@@ -404,7 +413,7 @@
     "status": "frozen-hub-owned-v1",
     "a17SealBoundary": "SeasonSettlementHub-owned game and global active/cumulative aggregates with one central sealed-batch bit",
     "removedFromAtomicBoundary": "Fallible cross-contract EconomicStateSystem promotion callbacks",
-    "protocolRegistryHash": "0x3c0d5bcc57346e38b6ddf4dc41f9c6f2c65e2094b42985a10c959402e7d9a1c",
+    "protocolRegistryHash": "0x4f8e517f6ca245d50cc64158167b3b23bc817036bfb5a3e55044a44f8840428",
     "aggregateViewTrait": "ISeasonSettlementHubAggregateView",
     "productionRequirement": "D4 must implement the frozen Hub-owned aggregate view and cannot reintroduce a seal-time promotion callback."
   },
@@ -483,9 +492,9 @@
       "config/deployer/clean/runtime/aws/katana-tee-release.ts": "ac72c2bd5aebb9f5bd96b58acf3965c9f73710f6d3250bda7fd3ddaf335f2d36",
       "config/deployer/clean/runtime/aws/reconcile.ts": "7af4d9df22b120940f2e7715f80b379c584a5f3708472d1e4c39329220bfe785",
       "config/deployer/clean/runtime/aws/wave0-release.ts": "a30bcfd338322774d4292c517cb3b65403db17158a8bec34eb93877e12693615",
-      "package.json": "aa6bc4cc2b99ae7def424005dc7c911189618e401ba314c1763d2ee2bbc3728f",
+      "package.json": "af1bc492471437245c0a4954fb1ce3375aad9c3a52e157a2a57edfd724241496",
       "packages/settlement-codec/package.json": "bde3e1e0f4dc5fb6a8b32fd26d01f1b9c0d0cce77ceccd0981f3a486c96169e9",
-      "packages/settlement-codec/src/index.ts": "c3ffb99c15829e5daafa4e34914a5db92cce2057a3e890198d958c63b62daf4b",
+      "packages/settlement-codec/src/index.ts": "7a614c8d011e0b3d95ba9beed6df00ac6d3eecfa70b5578ccd7ccc8b19c3f0ab",
       "packages/settlement-codec/src/katana-launch-attestation.ts": "497e4d7c9db8ec8c51c5f50bba1c81fcf7a47456b3c5d7ddcbff4910906ace4b",
       "pnpm-lock.yaml": "a969c773aa3dbce2e1df51373e1354aa16e18b6ac62d097a68731e7259229141",
       "proofs/katana-launch-attestation/Cargo.lock": "f0fcd4fe2c294b13b466abc5046088dc89749bd729ceb453c9e9ea53aea5d514",
@@ -508,6 +517,10 @@
     "settlementCiWorkflowSha256": "d034823279da2dfc8004021892f59965ac73143304fa826ecf775557d8916c44"
   },
   "stopOutcomes": [
+    {
+      "id": "A3-A14-NORMATIVE-SCHEMA-FREEZE",
+      "action": "Freeze canonical field or variant order and encoding for RegisteredRoot, IngressRecord, ResourceAssetLedger, AppchainIngressState, FinalizationBarrierState, and OpenBatch; then freeze keyed/data layouts for every required event. Regenerate Cairo, TypeScript, and Rust schemas and dispatcher conformance without placeholder felts or fixture-local ABIs, rerun dependent evidence, and only then return A3/A14 to complete."
+    },
     {
       "id": "A22-BOUNDS-FREEZE",
       "action": "A22 now discovers erase_model lifecycle mutations, preserves three exact reviewed classification overrides, publishes executable reference u64 index, generation, tombstone, and chunk semantics, and binds per-family cardinality formulas, required inputs, and atomic exhaustion rules. Family 10 has a 4,096-position normative candidate, but its fixed lot coordinate still requires integration review. Independently review exact per-family maxima from rulesets and simulations; redesign D5-D9 from the five enumerated issue groups; implement typed source projections and production indexes; add the four absent production families; enforce the reviewed caps; and rerun A8 before estimating or authorizing production."

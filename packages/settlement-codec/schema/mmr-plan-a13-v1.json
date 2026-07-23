@@ -1,9 +1,9 @@
 {
   "schemaVersion": 1,
   "ticket": "A13",
-  "status": "reference-guest-and-verifier-complete-production-receipt-blocked",
+  "status": "reference-core-complete-fixture-rebaseline-and-production-receipt-blocked",
   "releaseReady": false,
-  "protocolRegistryHash": "0x3c0d5bcc57346e38b6ddf4dc41f9c6f2c65e2094b42985a10c959402e7d9a1c",
+  "protocolRegistryHash": "0x4f8e517f6ca245d50cc64158167b3b23bc817036bfb5a3e55044a44f8840428",
   "formulaIdentity": {
     "implementation": "Cubit-compatible integer 64.64 Rust port",
     "sourceRevision": "3b210f1eb323b9367197715fa6f91791689c1f31",
@@ -16,9 +16,9 @@
     "cairoVerifierSha256": "c3783a582c8e7a5fe70bea5a83756dd3c11baf4853c6a800bc9cf10b4ef5f773"
   },
   "sp1FixtureEvidence": {
-    "status": "fixture-execution-passed-production-proof-blocked",
+    "status": "historical-fixture-invalidated-by-a3-a14-rebaseline",
     "artifact": "proofs/eternum-settlement/sp1/mmr-plan-a13-fixture-evidence-v0.json",
-    "fileSha256": "9835809ca08ad572548e12ece6133ce48de55ce68d49a7c1d00bff0e49d6ff96",
+    "fileSha256": "10a995b54b156485e6ac93870bd437bcd2138d0019d22a4b97e91854b7a354b8",
     "ciEvidenceCheckerSha256": "12e3aaea3477b6e14fc11636c83a0f2dae7c6c98b50ed4c61820f066d772e28a",
     "ciElfIdentityCheckerSha256": "37562f61ccdf2f8cb513b43b0f306ced569c970c0725116710504a419abfbc01",
     "sp1Tag": "v6.2.2",

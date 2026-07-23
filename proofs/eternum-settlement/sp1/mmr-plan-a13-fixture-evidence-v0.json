@@ -1,11 +1,11 @@
 {
   "schema": "eternum.a13.sp1-fixture-evidence.v0",
   "scope": "wave0-fixture-only",
-  "status": "fixture-execution-passed-production-proof-blocked",
+  "status": "historical-fixture-invalidated-by-a3-a14-rebaseline",
   "releaseReady": false,
   "capturedAt": "2026-07-23T02:53:50Z",
   "implementationBaseRevision": "d2781fe44d50f517ed749db84db23af5bcfe5d84",
-  "sourceState": "committed-complete-input-projection-bound-by-sha256",
+  "sourceState": "historical-input-projection-invalidated-by-approved-a3-a14-rebaseline",
   "inputSha256": {
     "proofs/eternum-settlement/Cargo.lock": "e30197fc9eafbf6b898208ac9388637772ef3e2dde09899890b26b98247b6ee8",
     "proofs/eternum-settlement/Cargo.toml": "64bdabda8b631197f45bb1b7168c734df15b5f9ef5f7f64c4da0b18807237eaf",
@@ -32,6 +32,19 @@
     "proofs/eternum-settlement/src/tree.rs": "ca2439a7fad37b7256c323f8682c9a4058ad5ece1f542dd742dfb4f13553f0ca",
     "proofs/eternum-settlement/src/tree_vectors.rs": "d19af1e2a184cbe3c5a94d4f36c96c66ed5a9d6202a1606dacd5f5ecadcf9c75",
     "proofs/eternum-settlement/src/types.rs": "ce85c58753f6f9c1c4b15a5cea19ff643120bcc111aff01ab1db9fa68795ab4f"
+  },
+  "currentRebaseline": {
+    "evidenceCurrent": false,
+    "invalidatedAt": "2026-07-24",
+    "protocolRegistryHash": "0x4f8e517f6ca245d50cc64158167b3b23bc817036bfb5a3e55044a44f8840428",
+    "requiredAction": "rerun-and-reproduce-the-a13-sp1-fixture-against-the-current-complete-input-projection",
+    "changedInputSha256": {
+      "proofs/eternum-settlement/src/golden_vectors.rs": "68ce5a4264851cea6c30a28bc9484ae7c09c397c633810c2657cc5db337b6f3c",
+      "proofs/eternum-settlement/src/lib.rs": "216a121711755dd830b12cbb4839f2a475a6947eb976ac4d2956c5fe1c82ac18",
+      "proofs/eternum-settlement/src/schema_vector.rs": "7d3918f68cb7fd6d37c475b51216e17bf07bf0b132639a1639100a57e13746aa",
+      "proofs/eternum-settlement/src/transport.rs": "fc21e6ceec12ed2457a04a8bd98ead7acae5c340f0dea608579fbb823b371e81",
+      "proofs/eternum-settlement/src/types.rs": "eecde7c34c64cb13aca86400e97176ed2bfd425ddd476426ac30dd82459558e5"
+    }
   },
   "sp1": {
     "tag": "v6.2.2",

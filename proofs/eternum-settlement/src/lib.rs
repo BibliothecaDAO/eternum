@@ -10,6 +10,7 @@ pub mod mmr_plan_sp1_fixture;
 pub mod position_materialization;
 mod protocol_hash;
 pub mod schema_vector;
+pub mod transport;
 pub mod tree;
 pub mod tree_vectors;
 pub mod types;

@@ -498,3 +498,388 @@ pub trait IGameForcedExitAdapter<TContractState> {
     fn game_id(self: @TContractState) -> GameId;
     fn world(self: @TContractState) -> ContractAddress;
 }
+
+#[starknet::interface]
+pub trait IArchiveQuorumRegistry<TContractState> {
+    fn register_archive_set(
+        ref self: TContractState,
+        deployment_id: DeploymentId,
+        signers: Span<ArchiveSigner>,
+        descriptors: Span<ArchiveRetrievalDescriptor>,
+    );
+    fn verify_checkpoint_receipts(
+        ref self: TContractState, deployment_id: DeploymentId, checkpoint_hash: felt252, receipts: Span<ArchiveReceipt>,
+    );
+    fn verify_dormant_receipts(ref self: TContractState, chunk: MaterializationChunk, receipts: Span<ArchiveReceipt>);
+    fn register_legacy_mmr_archive_set(
+        ref self: TContractState,
+        static_config: LegacyMmrCutoverStaticConfig,
+        signers: Span<ArchiveSigner>,
+        descriptors: Span<ArchiveRetrievalDescriptor>,
+    );
+    fn verify_legacy_mmr_pre_freeze_receipts(
+        ref self: TContractState,
+        static_config: LegacyMmrCutoverStaticConfig,
+        manifest: LegacyMmrPreFreezeWitnessManifest,
+        source_inventory: LegacyMmrProvedSourceInventory,
+        receipts: Span<ArchiveReceipt>,
+    );
+    fn verify_legacy_mmr_import_receipts(
+        ref self: TContractState,
+        commitment: LegacyMmrCutoverCommitment,
+        manifest: LegacyMmrImportDataManifest,
+        receipts: Span<ArchiveReceipt>,
+    );
+    fn register_successor_set(
+        ref self: TContractState,
+        deployment_id: DeploymentId,
+        handover: ArchiveHandover,
+        new_signers: Span<ArchiveSigner>,
+        new_descriptors: Span<ArchiveRetrievalDescriptor>,
+        old_receipts: Span<ArchiveReceipt>,
+        new_receipts: Span<ArchiveReceipt>,
+    );
+    fn has_checkpoint_quorum(self: @TContractState, deployment_id: DeploymentId, checkpoint_hash: felt252) -> bool;
+    fn has_legacy_mmr_archive_set(self: @TContractState, cutover_id: felt252) -> bool;
+    fn legacy_mmr_archive_namespace_id(self: @TContractState, cutover_id: felt252) -> DeploymentId;
+    fn legacy_mmr_archive_policy_hash(self: @TContractState, cutover_id: felt252) -> felt252;
+    fn legacy_mmr_archive_signer_set_epoch(self: @TContractState, cutover_id: felt252) -> u32;
+    fn legacy_mmr_archive_signer_set_hash(self: @TContractState, cutover_id: felt252) -> felt252;
+    fn legacy_mmr_archive_route_identity_set_hash(self: @TContractState, cutover_id: felt252) -> felt252;
+    fn legacy_mmr_pre_freeze_witness_manifest_hash(
+        self: @TContractState, cutover_id: felt252, quiescence_generation: u32,
+    ) -> felt252;
+    fn legacy_mmr_pre_freeze_verified_bundle_hash(
+        self: @TContractState, cutover_id: felt252, quiescence_generation: u32,
+    ) -> felt252;
+    fn current_signer_set_epoch(self: @TContractState, deployment_id: DeploymentId) -> u32;
+    fn get_archive_signer(
+        self: @TContractState, deployment_id: DeploymentId, epoch: u32, signer_id: u8,
+    ) -> ArchiveSigner;
+    fn retrieval_descriptor_count(self: @TContractState, deployment_id: DeploymentId, epoch: u32) -> u8;
+    fn get_retrieval_descriptor(
+        self: @TContractState, deployment_id: DeploymentId, epoch: u32, index: u8,
+    ) -> ArchiveRetrievalDescriptor;
+    fn route_identity_set_hash(self: @TContractState, deployment_id: DeploymentId, epoch: u32) -> felt252;
+    fn endpoint_metadata_hash(self: @TContractState, deployment_id: DeploymentId, epoch: u32) -> felt252;
+    fn update_retrieval_endpoint(
+        ref self: TContractState,
+        update: ArchiveEndpointUpdate,
+        endpoint_words: Span<felt252>,
+        signer_approvals: Span<ArchiveEndpointApproval>,
+    );
+}
+
+#[starknet::interface]
+pub trait IHardenedPiltover<TContractState> {
+    fn enqueue_player_binding(ref self: TContractState, body: PlayerBindingRequest) -> EnqueuedMessage;
+    fn enqueue_resource_deposit(
+        ref self: TContractState, game_id: GameId, body: ResourceDepositMessage,
+    ) -> EnqueuedMessage;
+    fn enqueue_scarce_deposit(ref self: TContractState, game_id: GameId, body: ScarceDepositMessage) -> EnqueuedMessage;
+    fn enqueue_entitlement_deposit(
+        ref self: TContractState, game_id: GameId, body: EntitlementDepositMessage,
+    ) -> EnqueuedMessage;
+    fn enqueue_temp_credential(
+        ref self: TContractState, game_id: GameId, body: TempCredentialMessage,
+    ) -> EnqueuedMessage;
+    fn enqueue_funding_grant(ref self: TContractState, game_id: GameId, body: FundingGrantMessage) -> EnqueuedMessage;
+    fn enqueue_blitz_entry(ref self: TContractState, game_id: GameId, body: BlitzEntryMessage) -> EnqueuedMessage;
+    fn enqueue_forced_exit(ref self: TContractState, body: ForcedExitMessage) -> EnqueuedMessage;
+    fn enqueue_ingress_close(
+        ref self: TContractState, evidence_kind: u16, evidence_hash: felt252,
+    ) -> EnqueuedControlMessage;
+    fn enqueue_game_freeze_scope_one(
+        ref self: TContractState,
+        freeze_id: felt252,
+        target_game_id: GameId,
+        target_economic_timestamp: u64,
+        evidence_kind: u16,
+        evidence_hash: felt252,
+    ) -> EnqueuedControlMessage;
+    fn enqueue_game_freeze_scope_two(
+        ref self: TContractState,
+        freeze_id: felt252,
+        ingress_close_message_id: MessageId,
+        target_economic_timestamp: u64,
+        evidence_kind: u16,
+        evidence_hash: felt252,
+    ) -> EnqueuedControlMessage;
+    fn enqueue_finalization_barrier(
+        ref self: TContractState, barrier_id: felt252, expected_registered_game_count: u8,
+    ) -> EnqueuedControlMessage;
+    fn enqueue_series_advance_ack(ref self: TContractState, body: SeriesAdvanceAck) -> EnqueuedMessage;
+    fn enqueue_game_activation_ack(ref self: TContractState, body: GameActivationAck) -> EnqueuedMessage;
+    fn start_message_cancellation(ref self: TContractState, message_id: MessageId);
+    fn finalize_message_cancellation(ref self: TContractState, message_id: MessageId);
+    fn orphan_emergency_control(ref self: TContractState, message_id: MessageId);
+    fn refresh_checkpoint_challenge(ref self: TContractState) -> felt252;
+    fn submit_genesis_checkpoint(
+        ref self: TContractState,
+        journal: CheckpointJournal,
+        vectors: CheckpointVectors,
+        inbox_slots: Span<InboxSlotCommitment>,
+        outbox_slots: Span<OutboxSlotCommitment>,
+        proof: Span<felt252>,
+        attestation: Span<felt252>,
+        receipts: Span<ArchiveReceipt>,
+        final_summary: Option<FinalSettlementSummary>,
+    );
+    fn submit_checkpoint(
+        ref self: TContractState,
+        journal: CheckpointJournal,
+        vectors: CheckpointVectors,
+        inbox_slots: Span<InboxSlotCommitment>,
+        outbox_slots: Span<OutboxSlotCommitment>,
+        proof: Span<felt252>,
+        attestation: Span<felt252>,
+        receipts: Span<ArchiveReceipt>,
+        final_summary: Option<FinalSettlementSummary>,
+    );
+    fn inspect_typed_appchain_message(
+        self: @TContractState, envelope: ProtocolEnvelope, typed_body_hash: felt252,
+    ) -> AppchainMessageView;
+    fn consume_typed_appchain_message(ref self: TContractState, envelope: ProtocolEnvelope, typed_body_hash: felt252);
+    fn verify_inbox_execution_receipt(self: @TContractState, receipt: InboxExecutionReceipt) -> bool;
+    fn inbox_slot(self: @TContractState, transport_nonce: u64) -> InboxSlotCommitment;
+    fn latest_checkpoint(self: @TContractState) -> CheckpointJournal;
+    fn latest_checkpoint_vectors(self: @TContractState) -> CheckpointVectors;
+    fn active_checkpoint_challenge(self: @TContractState) -> CheckpointChallenge;
+    fn message_state(self: @TContractState, message_id: MessageId) -> TransportMessageState;
+    fn cancelled_marker(self: @TContractState, transport_nonce: u64) -> CancelledInboxMarker;
+    fn lowest_unconsumed_mandatory_inbox_nonce(self: @TContractState) -> Option<u64>;
+    fn lowest_pending_barrier_inbox_nonce(self: @TContractState) -> Option<u64>;
+    fn shell_identity(self: @TContractState) -> (ContractAddress, u16, DeploymentId, felt252, u8);
+    fn sealed_deployment_identity(self: @TContractState) -> (felt252, felt252, felt252);
+}
+
+#[starknet::interface]
+pub trait IRootInbox<TContractState> {
+    fn register_settlement_root(
+        ref self: TContractState,
+        envelope: ProtocolEnvelope,
+        summary: RootSummary,
+        totals: Span<LiabilityTotal>,
+        activations: Span<IngressActivation>,
+        nft_reservations: Span<NftReservation>,
+        deployment_refunds: Span<DeploymentRefundDisposition>,
+    ) -> RootRegistrationResult;
+    fn retry_blocked_root(
+        ref self: TContractState,
+        envelope: ProtocolEnvelope,
+        summary: RootSummary,
+        totals: Span<LiabilityTotal>,
+        activations: Span<IngressActivation>,
+        nft_reservations: Span<NftReservation>,
+        deployment_refunds: Span<DeploymentRefundDisposition>,
+    ) -> RootRegistrationResult;
+    fn finalize_frozen_underfunded_root(ref self: TContractState, deployment_id: DeploymentId, batch_id: BatchId);
+    fn register_game(
+        ref self: TContractState,
+        envelope: ProtocolEnvelope,
+        registration: GameRegistration,
+        capacity_allocations: Span<CapacityAllocation>,
+    ) -> GameRegistrationResult;
+    fn register_ranking_commitment(ref self: TContractState, envelope: ProtocolEnvelope, ranking: RankingCommitment);
+    fn register_series_result(
+        ref self: TContractState, envelope: ProtocolEnvelope, result: SeriesResult,
+    ) -> SeriesApplicationResult;
+    fn register_game_result(ref self: TContractState, envelope: ProtocolEnvelope, result: GameResult);
+    fn register_final_summary(ref self: TContractState, envelope: ProtocolEnvelope, summary: FinalSettlementSummary);
+    fn next_batch_id(self: @TContractState, deployment_id: DeploymentId) -> BatchId;
+    fn last_batch_hash(self: @TContractState, deployment_id: DeploymentId) -> felt252;
+    fn blocked_outbox_head(self: @TContractState, deployment_id: DeploymentId) -> Option<BlockedOutboxHead>;
+    fn next_outbox_nonce(self: @TContractState, deployment_id: DeploymentId) -> u64;
+    fn allocated_capacity(self: @TContractState, deployment_id: DeploymentId, key: BackingKey) -> u256;
+    fn get_frozen_disposition(
+        self: @TContractState, deployment_id: DeploymentId, transport_nonce: u64,
+    ) -> Option<FrozenOutboxDisposition>;
+}
+
+#[starknet::interface]
+pub trait IClaimRouter<TContractState> {
+    fn settle_registered_leaf(
+        ref self: TContractState, leaf: ClaimLeaf, legs: Span<ClaimLeg>, aux: Span<felt252>, proof: Span<felt252>,
+    );
+    fn settle_verified_exit(ref self: TContractState, claim: ExitClaim, legs: Span<ClaimLeg>);
+    fn settle_verified_deployment_refund(
+        ref self: TContractState,
+        claim: FrozenDeploymentRefundClaim,
+        source: DeploymentRefundSource,
+        aux: AbortRefundAux,
+        legs: Span<ClaimLeg>,
+    );
+    fn settle_emergency_sealed(
+        ref self: TContractState,
+        claim: EmergencySealedClaim,
+        original_leaf: ClaimLeaf,
+        original_legs: Span<ClaimLeg>,
+        settlement_legs: Span<ClaimLeg>,
+    );
+    fn begin_frozen_control_reconciliation(
+        ref self: TContractState, deployment_id: DeploymentId, checkpoint_hash: felt252,
+    );
+    fn process_frozen_control_reconciliation(ref self: TContractState, deployment_id: DeploymentId, max_items: u8);
+    fn finalize_frozen_control_reconciliation(ref self: TContractState, deployment_id: DeploymentId);
+    fn register_materialized_liability(
+        ref self: TContractState, deployment_id: DeploymentId, liability_id: LiabilityId, legs_hash: felt252,
+    );
+    fn is_consumed(self: @TContractState, deployment_id: DeploymentId, liability_id: LiabilityId) -> bool;
+    fn hash_leaf(self: @TContractState, leaf: ClaimLeaf) -> felt252;
+    fn hash_legs(self: @TContractState, legs: Span<ClaimLeg>) -> felt252;
+}
+
+#[starknet::interface]
+pub trait IResourceMintGateway<TContractState> {
+    fn deposit(
+        ref self: TContractState,
+        deployment_id: DeploymentId,
+        game_id: GameId,
+        asset_id: u32,
+        backing_pool_id: felt252,
+        amount: u256,
+        player_l2: ContractAddress,
+        target_structure_id: u64,
+        client_fee_recipient: ContractAddress,
+        user_nonce: u64,
+    ) -> IngressId;
+    fn start_cancellation(ref self: TContractState, ingress_id: IngressId);
+    fn finalize_cancellation(ref self: TContractState, ingress_id: IngressId);
+    fn synchronize_consumed_ingress(ref self: TContractState, ingress_id: IngressId) -> SyncResult;
+    fn settle_rejected_ingress(
+        ref self: TContractState,
+        ingress_id: IngressId,
+        execution_receipt: InboxExecutionReceipt,
+        rejection_receipt: IngressRejectionReceipt,
+    ) -> SyncResult;
+    fn reconcile_ingress_activation(ref self: TContractState, activation: IngressActivation);
+    fn begin_frozen_ingress_reconciliation(
+        ref self: TContractState, deployment_id: DeploymentId, checkpoint_hash: felt252,
+    );
+    fn process_frozen_ingress_reconciliation(ref self: TContractState, deployment_id: DeploymentId, max_items: u8);
+    fn finalize_frozen_ingress_reconciliation(ref self: TContractState, deployment_id: DeploymentId);
+    fn ingress_count(self: @TContractState, deployment_id: DeploymentId) -> u64;
+    fn ingress_id_at(self: @TContractState, deployment_id: DeploymentId, index: u64) -> IngressId;
+    fn top_up_existing_backing(ref self: TContractState, source: DeficiencySourceKey, amount: u256) -> u256;
+    fn preview_root_parent_reservation(
+        self: @TContractState, key: SettlementBudgetKey, parent: BackingTotal,
+    ) -> ReservationCheck;
+    fn reserve_root_parent_liabilities(
+        ref self: TContractState, key: SettlementBudgetKey, parent: BackingTotal, children: Span<LiabilityTotal>,
+    );
+    fn reserve_frozen_budget(ref self: TContractState, key: SettlementBudgetKey, total: BackingTotal);
+    fn pay_claim_leg(ref self: TContractState, key: SettlementBudgetKey, liability_id: LiabilityId, leg: ClaimLeg);
+    fn pay_frozen_leg(ref self: TContractState, key: SettlementBudgetKey, liability_id: LiabilityId, leg: ClaimLeg);
+    fn budget_inventory_count(self: @TContractState, deployment_id: DeploymentId) -> u64;
+    fn budget_key_at(self: @TContractState, deployment_id: DeploymentId, index: u64) -> SettlementBudgetKey;
+    fn export_budget_entry(ref self: TContractState, key: SettlementBudgetKey) -> BudgetExport;
+    fn pay_migrated_resource_leg(
+        ref self: TContractState, key: SettlementBudgetKey, liability_id: LiabilityId, leg: ClaimLeg,
+    );
+    fn begin_terminal_surplus_release(ref self: TContractState, deployment_id: DeploymentId, checkpoint_hash: felt252);
+    fn process_terminal_surplus_release(ref self: TContractState, deployment_id: DeploymentId, max_keys: u8);
+    fn finalize_terminal_surplus_release(ref self: TContractState, deployment_id: DeploymentId);
+}
+
+#[starknet::interface]
+pub trait ISeasonIngress<TContractState> {
+    fn consume_cancelled_transport_slot(ref self: TContractState, marker: CancelledInboxMarker);
+    fn handle_player_binding_request(
+        ref self: TContractState, from_address: felt252, envelope: ProtocolEnvelope, request: PlayerBindingRequest,
+    );
+    fn accept_player_binding(ref self: TContractState, source_message_id: MessageId);
+    fn handle_resource_deposit(
+        ref self: TContractState, from_address: felt252, envelope: ProtocolEnvelope, deposit: ResourceDepositMessage,
+    );
+    fn handle_scarce_deposit(
+        ref self: TContractState, from_address: felt252, envelope: ProtocolEnvelope, deposit: ScarceDepositMessage,
+    );
+    fn handle_entitlement_deposit(
+        ref self: TContractState, from_address: felt252, envelope: ProtocolEnvelope, deposit: EntitlementDepositMessage,
+    );
+    fn handle_temp_credential_lock(
+        ref self: TContractState, from_address: felt252, envelope: ProtocolEnvelope, lock: TempCredentialMessage,
+    );
+    fn handle_blitz_entry_purchase(
+        ref self: TContractState, from_address: felt252, envelope: ProtocolEnvelope, purchase: BlitzEntryMessage,
+    );
+    fn handle_funding_grant(
+        ref self: TContractState, from_address: felt252, envelope: ProtocolEnvelope, grant: FundingGrantMessage,
+    );
+    fn handle_forced_exit_request(
+        ref self: TContractState, from_address: felt252, envelope: ProtocolEnvelope, request: ForcedExitMessage,
+    );
+    fn handle_ingress_close(
+        ref self: TContractState, from_address: felt252, envelope: ProtocolEnvelope, close: IngressCloseMessage,
+    );
+    fn process_ingress_close_chunk(ref self: TContractState, max_games: u8);
+    fn finalize_ingress_close(ref self: TContractState);
+    fn handle_game_freeze(
+        ref self: TContractState, from_address: felt252, envelope: ProtocolEnvelope, freeze: GameFreezeMessage,
+    );
+    fn process_game_freeze_chunk(ref self: TContractState, max_games: u8);
+    fn finalize_game_freeze(ref self: TContractState);
+    fn handle_finalization_barrier(
+        ref self: TContractState,
+        from_address: felt252,
+        envelope: ProtocolEnvelope,
+        barrier: FinalizationBarrierMessage,
+    );
+    fn handle_series_advance_ack(
+        ref self: TContractState, from_address: felt252, envelope: ProtocolEnvelope, ack: SeriesAdvanceAck,
+    );
+    fn handle_game_activation_ack(
+        ref self: TContractState, from_address: felt252, envelope: ProtocolEnvelope, ack: GameActivationAck,
+    );
+}
+
+#[starknet::interface]
+pub trait ISeasonSettlementHub<TContractState> {
+    fn register_game(
+        ref self: TContractState,
+        game_id: GameId,
+        world: ContractAddress,
+        game_config_hash: felt252,
+        allowed_emitters: Span<EmitterCapability>,
+        capacity_allocations: Span<CapacityAllocation>,
+    );
+    fn append_claim(
+        ref self: TContractState,
+        claim_kind: u16,
+        liability_id: LiabilityId,
+        claimant_l2: ContractAddress,
+        recipient_l1: ContractAddress,
+        legs: Span<ClaimLeg>,
+        aux: Span<felt252>,
+    ) -> (BatchId, u8);
+    fn append_control_ack(
+        ref self: TContractState,
+        claim_kind: u16,
+        source_message_id: MessageId,
+        player_l2: ContractAddress,
+        recipient_l1: ContractAddress,
+        aux: Span<felt252>,
+    ) -> (BatchId, u8);
+    fn append_ingress_effect(
+        ref self: TContractState, activation: IngressActivation, claims: Span<IngressClaimAppend>,
+    ) -> BatchId;
+    fn append_deployment_refund(
+        ref self: TContractState,
+        liability_id: LiabilityId,
+        recipient_l1: ContractAddress,
+        legs: Span<ClaimLeg>,
+        aux: AbortRefundAux,
+    ) -> (BatchId, u8);
+    fn return_unused_game_capacity(
+        ref self: TContractState, source_index: u16, amount: u256, game_terminal_state_hash: felt252,
+    );
+    fn seal_partial(ref self: TContractState);
+    fn flush_final(ref self: TContractState);
+    fn publish_ranking(ref self: TContractState, commitment: RankingCommitment);
+    fn publish_game_result(ref self: TContractState, result: GameResult);
+    fn publish_series_result(ref self: TContractState, result: SeriesResult);
+    fn publish_final_summary(ref self: TContractState, summary: FinalSettlementSummary);
+    fn get_sealed_batch(self: @TContractState, batch_id: BatchId) -> RootSummary;
+    fn get_batch_state(self: @TContractState, batch_id: BatchId) -> u8;
+    fn game_for_emitter(self: @TContractState, emitter: ContractAddress) -> GameId;
+}

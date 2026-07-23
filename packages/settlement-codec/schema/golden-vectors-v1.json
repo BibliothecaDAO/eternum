@@ -1,6 +1,6 @@
 {
   "protocolVersion": 1,
-  "schemaRegistryHash": "0x3c0d5bcc57346e38b6ddf4dc41f9c6f2c65e2094b42985a10c959402e7d9a1c",
+  "schemaRegistryHash": "0x4f8e517f6ca245d50cc64158167b3b23bc817036bfb5a3e55044a44f8840428",
   "schemas": [
     {
       "schema": "ProtocolEnvelope",
@@ -6014,6 +6014,49 @@
       "5",
       "1"
     ]
+  },
+  "transport": {
+    "directions": {
+      "mainnetToAppchain": 1,
+      "appchainToMainnet": 2
+    },
+    "resourceDeposit": {
+      "protocolVersion": 1,
+      "action": 272,
+      "bodySchema": "ResourceDepositMessage",
+      "bodyFelts": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "9",
+        "10",
+        "11"
+      ],
+      "typedBodyHash": "0x4d96c5827fc55f8dd19039ff2b6aff021f7ebc221d670d0a716decb13e8ab90",
+      "direction": 1,
+      "deploymentId": "42",
+      "transportNonce": "7",
+      "messageId": "0x67dbf5c4297a8f442604530490811a10c2fd188e69d92a7e37ad99a6c292d2d",
+      "envelopeSchema": "ProtocolEnvelope",
+      "envelopeFelts": [
+        "11",
+        "1",
+        "100",
+        "200",
+        "42",
+        "9",
+        "2",
+        "272",
+        "7",
+        "2936053695477227292975563242272918552256113216459980602976815755638740692269"
+      ],
+      "envelopeHash": "0x7312b6f461e8170cbd93ec5dcc404eff01b232da098aad03442065f2231397e"
+    }
   },
   "trees": [
     {

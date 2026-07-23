@@ -3,7 +3,7 @@
   "ticket": "A16",
   "status": "reference-runtime-and-public-patricia-proof-complete-production-finality-blocked",
   "releaseReady": false,
-  "protocolRegistryHash": "0x3c0d5bcc57346e38b6ddf4dc41f9c6f2c65e2094b42985a10c959402e7d9a1c",
+  "protocolRegistryHash": "0x4f8e517f6ca245d50cc64158167b3b23bc817036bfb5a3e55044a44f8840428",
   "runtime": {
     "package": "settlement_appchain",
     "contract": "HardenedInboxRuntimeSpike",
@@ -98,7 +98,7 @@
     "runtimeSha256": "74d394e1ba922e93f460518bf0ed2e957ea444905e3d0bed4bff24186c0c38c1",
     "testsAndCapturedProofSha256": "bcfe643eccc7259bfafec1e56661f250397db04de170d490b6c09eff720d5ef1",
     "testMocksSha256": "8397e27f9ae8afe53d7ff497809a851bcf6ed190fa6851b411104f5cf7379518",
-    "protocolInterfacesSha256": "2231a513200f661ad666adc24225c4c486899a597a66db7365f19abaf936ed62",
+    "protocolInterfacesSha256": "810949f5287e6a525ef935df53b0e2f213934b7fc33ea423c939dca0f9713f40",
     "protocolTypesSha256": "64ee1230b9d5bdc1b2854952b14b3fc1874cc1788f347f6dddf589a524e2a955"
   },
   "mandatoryBlockers": [

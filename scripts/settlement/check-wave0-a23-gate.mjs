@@ -33,6 +33,7 @@ assertRuntimeEnforcement();
 function assertStopDecision() {
   assertEqual(decision.schemaVersion, 1, "A23 schema version");
   assertEqual(decision.ticket, "A23", "decision ticket");
+  assertEqual(decision.lastRebasedAt, "2026-07-24", "A23 last rebaseline date");
   assertEqual(decision.decision, "STOP", "Wave 0 decision");
   assertEqual(decision.releaseReady, false, "release readiness");
   assertEqual(decision.productionStartAuthorized, false, "production authorization");
@@ -49,9 +50,10 @@ function assertStopDecision() {
   );
   assertDeepEqual(
     decision.stopOutcomes.map(({ id }) => id),
-    ["A22-BOUNDS-FREEZE", "TEE-REPRODUCTION-AND-RUNTIME-GATE", "MISSING-PROOF-GATES"],
+    ["A3-A14-NORMATIVE-SCHEMA-FREEZE", "A22-BOUNDS-FREEZE", "TEE-REPRODUCTION-AND-RUNTIME-GATE", "MISSING-PROOF-GATES"],
     "A23 stop outcomes",
   );
+  assertNormativeSchemaFreezeStop();
   assertDeepEqual(
     decision.performanceEvidence.unavailableMandatoryCampaigns,
     [
@@ -85,7 +87,7 @@ function expectedWave0Projection() {
   const statuses = [
     "complete",
     "complete",
-    "complete",
+    "reopened-partial-transport-interface-freeze-read-event-schemas-blocked",
     "complete",
     "reference-seam-complete-production-proof-blocked",
     "complete",
@@ -95,8 +97,8 @@ function expectedWave0Projection() {
     "complete",
     "complete",
     "complete",
-    "reference-guest-and-verifier-complete-production-receipt-blocked",
-    "complete",
+    "reference-core-complete-fixture-rebaseline-and-production-receipt-blocked",
+    "reopened-partial-interface-freeze-read-event-schemas-blocked",
     "reference-guest-and-verifier-complete-production-receipt-blocked",
     "reference-runtime-and-public-patricia-proof-complete-production-finality-blocked",
     "complete",
@@ -107,11 +109,27 @@ function expectedWave0Projection() {
     "stop-redesign-required",
     "stop-record-awaiting-authorized-signatures",
   ];
-  const blockerTickets = new Set(["A5", "A8", "A13", "A15", "A16", "A18", "A19", "A21", "A22", "A23"]);
+  const blockerTickets = new Set(["A3", "A5", "A8", "A13", "A14", "A15", "A16", "A18", "A19", "A21", "A22", "A23"]);
   return statuses.map((status, index) => {
     const ticket = A23_WAVE0_TICKET_IDS[index];
     return { ticket, status, mandatoryBlocker: blockerTickets.has(ticket) };
   });
+}
+
+function assertNormativeSchemaFreezeStop() {
+  const outcome = decision.stopOutcomes.find(({ id }) => id === "A3-A14-NORMATIVE-SCHEMA-FREEZE");
+  assert(outcome, "A23 must declare the reopened A3/A14 schema-freeze outcome");
+  for (const requiredDefinition of [
+    "RegisteredRoot",
+    "IngressRecord",
+    "ResourceAssetLedger",
+    "AppchainIngressState",
+    "FinalizationBarrierState",
+    "OpenBatch",
+    "keyed/data layouts",
+  ]) {
+    assert(outcome.action.includes(requiredDefinition), `A3/A14 stop outcome must name ${requiredDefinition}`);
+  }
 }
 
 function assertEvidenceChronology() {
@@ -130,6 +148,11 @@ function assertEvidenceChronology() {
 
 function assertFrozenAndCandidateInputs() {
   const inputs = decision.frozenAndCandidateInputs;
+  assertEqual(
+    inputs.protocolSchema.status,
+    "partial-a3-a14-rebaseline-read-event-schemas-blocked",
+    "protocol schema freeze status",
+  );
   assertEqual(inputs.protocolSchema.registryHash, schemaRegistry.schemaRegistryHash, "protocol registry hash");
   assertFileHash("packages/settlement-codec/schema/schema-registry-v1.json", inputs.protocolSchema.fileSha256);
 
@@ -153,7 +176,7 @@ function assertFrozenAndCandidateInputs() {
 
   assertEqual(
     mmrPlan.status,
-    "reference-guest-and-verifier-complete-production-receipt-blocked",
+    "reference-core-complete-fixture-rebaseline-and-production-receipt-blocked",
     "A13 MMR-plan status",
   );
   assertEqual(mmrPlan.releaseReady, false, "A13 release readiness");
@@ -488,8 +511,20 @@ function assertA13Sp1Identity(input) {
   assertEqual(mmrPlanSp1Fixture.releaseReady, false, "A13 evidence release readiness");
   assertEqual(
     mmrPlanSp1Fixture.sourceState,
-    "committed-complete-input-projection-bound-by-sha256",
+    "historical-input-projection-invalidated-by-approved-a3-a14-rebaseline",
     "A13 evidence source state",
+  );
+  assertEqual(mmrPlanSp1Fixture.currentRebaseline.evidenceCurrent, false, "A13 current fixture evidence");
+  assertEqual(mmrPlanSp1Fixture.currentRebaseline.invalidatedAt, decision.lastRebasedAt, "A13 invalidation date");
+  assertEqual(
+    mmrPlanSp1Fixture.currentRebaseline.protocolRegistryHash,
+    schemaRegistry.schemaRegistryHash,
+    "A13 invalidating protocol registry hash",
+  );
+  assertEqual(
+    mmrPlanSp1Fixture.currentRebaseline.requiredAction,
+    "rerun-and-reproduce-the-a13-sp1-fixture-against-the-current-complete-input-projection",
+    "A13 rebaseline action",
   );
   assertEqual(mmrPlanSp1Fixture.sp1.tag, pointer.sp1Tag, "A13 SP1 tag");
   assertEqual(mmrPlanSp1Fixture.sp1.commit, pointer.sp1Commit, "A13 SP1 commit");
@@ -546,7 +581,10 @@ function assertA13Sp1ReproductionRuns(pointer) {
 }
 
 function assertA13Sp1InputProjection() {
-  assertA13CompleteInputProjection(mmrPlanSp1Fixture.inputSha256);
+  assertA13InvalidatedInputProjection(
+    mmrPlanSp1Fixture.inputSha256,
+    mmrPlanSp1Fixture.currentRebaseline.changedInputSha256,
+  );
 }
 
 function assertA13Sp1Execution(input) {
@@ -598,7 +636,11 @@ function assertA13Sp1Performance() {
   const execution = mmrPlanSp1Fixture.execution;
   const validGuest = execution.guestExecution;
 
-  assertEqual(decision.performanceEvidence.a13.sp1FixtureExecutionStatus, "passed", "A13 fixture performance status");
+  assertEqual(
+    decision.performanceEvidence.a13.sp1FixtureExecutionStatus,
+    "historical-pass-invalidated-by-a3-a14-rebaseline",
+    "A13 fixture performance status",
+  );
   assertEqual(decision.performanceEvidence.a13.sp1FixtureExecutionKind, execution.kind, "A13 fixture performance kind");
   assertEqual(
     decision.performanceEvidence.a13.sp1FixtureProverInitializationMs,
@@ -651,8 +693,8 @@ function findUniqueByName(entries, name, label) {
   return matches[0];
 }
 
-function assertA13CompleteInputProjection(inputHashes) {
-  const expectedPaths = [
+function assertA13InvalidatedInputProjection(historicalInputHashes, changedInputHashes) {
+  const currentPaths = [
     "proofs/eternum-settlement/Cargo.lock",
     "proofs/eternum-settlement/Cargo.toml",
     "proofs/eternum-settlement/sp1/mmr-plan-host/Cargo.lock",
@@ -664,9 +706,16 @@ function assertA13CompleteInputProjection(inputHashes) {
     "proofs/eternum-settlement/sp1/mmr-plan-program/src/main.rs",
     ...listRustSources("proofs/eternum-settlement/src"),
   ].sort();
+  const historicalPaths = currentPaths.filter((path) => path !== "proofs/eternum-settlement/src/transport.rs");
 
-  assertDeepEqual(Object.keys(inputHashes).sort(), expectedPaths, "A13 complete input projection");
-  for (const path of expectedPaths) assertFileHash(path, inputHashes[path]);
+  assertDeepEqual(Object.keys(historicalInputHashes).sort(), historicalPaths, "A13 historical input projection");
+
+  const actualChangedInputHashes = {};
+  for (const path of currentPaths) {
+    const actualHash = fileHash(path);
+    if (historicalInputHashes[path] !== actualHash) actualChangedInputHashes[path] = actualHash;
+  }
+  assertDeepEqual(actualChangedInputHashes, changedInputHashes, "A13 invalidated current input projection");
 }
 
 function listRustSources(relativeDirectory) {
@@ -1287,9 +1336,12 @@ function readText(relativePath) {
 }
 
 function assertFileHash(relativePath, expectedHash) {
+  assertEqual(fileHash(relativePath), expectedHash, `${relativePath} SHA-256`);
+}
+
+function fileHash(relativePath) {
   const content = readFileSync(resolve(repositoryRoot, relativePath));
-  const actualHash = createHash("sha256").update(content).digest("hex");
-  assertEqual(actualHash, expectedHash, `${relativePath} SHA-256`);
+  return createHash("sha256").update(content).digest("hex");
 }
 
 function assertEqual(actual, expected, label) {

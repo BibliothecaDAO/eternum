@@ -2,6 +2,10 @@
 use starknet_crypto::Felt;
 
 use crate::codec::CanonicalEncode;
+use crate::transport::{
+    APPCHAIN_TO_MAINNET, MAINNET_TO_APPCHAIN, derive_message_id, protocol_envelope_hash,
+    typed_body_hash,
+};
 use crate::types::*;
 
 pub fn assert_all_golden_vectors() {
@@ -4062,6 +4066,7 @@ pub fn assert_all_golden_vectors() {
         expected(&["1", "2", "3"]),
         "FeeDistributionPayoutAux",
     );
+    assert_transport_identities();
     assert_claim_empty_nodes();
     assert_dormant_empty_nodes();
     assert_deployment_refund_source_empty_nodes();
@@ -4070,6 +4075,44 @@ pub fn assert_all_golden_vectors() {
     assert_mmr_plan_empty_nodes();
     assert_legacy_mmr_disposition_empty_nodes();
     assert_legacy_mmr_imported_job_empty_nodes();
+}
+
+fn assert_transport_identities() {
+    assert_eq!(MAINNET_TO_APPCHAIN, 1);
+    assert_eq!(APPCHAIN_TO_MAINNET, 2);
+
+    let body_felts = expected(&["1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11"]);
+    let body_hash = typed_body_hash(1, 272, &body_felts);
+    assert_eq!(
+        body_hash,
+        Felt::from_hex("0x4d96c5827fc55f8dd19039ff2b6aff021f7ebc221d670d0a716decb13e8ab90")
+            .unwrap()
+    );
+
+    let message_id = derive_message_id(1, felt("42"), 7, body_hash).unwrap();
+    assert_eq!(
+        message_id,
+        Felt::from_hex("0x67dbf5c4297a8f442604530490811a10c2fd188e69d92a7e37ad99a6c292d2d")
+            .unwrap()
+    );
+
+    let envelope = ProtocolEnvelope {
+        magic: felt("11"),
+        version: 1_u16,
+        source_chain_id: felt("100"),
+        destination_chain_id: felt("200"),
+        deployment_id: felt("42"),
+        season_id: felt("9"),
+        game_id: felt("2"),
+        action: 272_u16,
+        transport_nonce: 7_u64,
+        message_id,
+    };
+    assert_eq!(
+        protocol_envelope_hash(&envelope),
+        Felt::from_hex("0x7312b6f461e8170cbd93ec5dcc404eff01b232da098aad03442065f2231397e")
+            .unwrap(),
+    );
 }
 
 fn expected(values: &[&str]) -> Vec<Felt> {
