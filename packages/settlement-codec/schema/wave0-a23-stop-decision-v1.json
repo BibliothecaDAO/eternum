@@ -504,7 +504,7 @@
       "packages/settlement-codec/src/katana-launch-attestation.test.ts": "b3af697c56515a44ccc5a1ec7f550d6b5a165dba732d5634a996389ff9f643f1"
     },
     "ciWorkflowSha256": "328e957e547aaa365612fa4827b823f3f5ed038ee0a99f67d2959edb48ee6294",
-    "settlementCiWorkflowSha256": "aaf643e33b52c8e797b9cb4bbd10c31b7db143cb8e915982946d30f860906137"
+    "settlementCiWorkflowSha256": "d034823279da2dfc8004021892f59965ac73143304fa826ecf775557d8916c44"
   },
   "stopOutcomes": [
     {
