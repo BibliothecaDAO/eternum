@@ -489,7 +489,7 @@
       "pnpm-lock.yaml": "a969c773aa3dbce2e1df51373e1354aa16e18b6ac62d097a68731e7259229141",
       "proofs/katana-launch-attestation/Cargo.lock": "f0fcd4fe2c294b13b466abc5046088dc89749bd729ceb453c9e9ea53aea5d514",
       "proofs/katana-launch-attestation/Cargo.toml": "5a7bb2c7b7bb53689d167f7a75b881dc00d7e1dd711a95d6fb3c4ed14ba18e25",
-      "proofs/katana-launch-attestation/src/lib.rs": "0538869ea4b7a277db1e38becf5d7f7d3d23a813e515c6350ca4532b803114ec"
+      "proofs/katana-launch-attestation/src/lib.rs": "46a33a68be35227ce2e896f92490c2730cf63b3e11c4bf86f28b5084ede212fe"
     },
     "testSha256": {
     "config/deployer/clean/tests/aws-game-stack-provisioning.test.ts": "914fa412df8f00ba9d787e0f5786940533e6069ce883c871b9e33776f629d2c4",

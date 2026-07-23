@@ -104,7 +104,7 @@ fn uuid_is_canonical(value: &str) -> bool {
     bytes.len() == 36
         && [8, 13, 18, 23].iter().all(|index| bytes[*index] == b'-')
         && (b'1'..=b'8').contains(&bytes[14])
-        && [b'8', b'9', b'a', b'b'].contains(&bytes[19])
+        && b"89ab".contains(&bytes[19])
         && bytes.iter().enumerate().all(|(index, byte)| {
             [8, 13, 18, 23].contains(&index)
                 || byte.is_ascii_digit()
