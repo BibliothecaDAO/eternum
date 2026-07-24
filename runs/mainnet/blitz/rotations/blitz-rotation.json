@@ -14,7 +14,7 @@
   "latestLaunchRequestId": "30121103212-1",
   "currentStepId": "configure-worlds",
   "createdAt": "2026-04-28T04:59:08.099Z",
-  "updatedAt": "2026-07-24T19:37:53.108Z",
+  "updatedAt": "2026-07-24T19:40:51.587Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -17735,7 +17735,7 @@
         },
         "seriesGameNumber": 150,
         "currentStepId": null,
-        "latestEvent": "Queued indexer tier update to legendary",
+        "latestEvent": "Queued indexer tier update to pro",
         "status": "pending",
         "configSteps": [],
         "steps": [
@@ -17781,8 +17781,8 @@
           }
         ],
         "artifacts": {
-          "pendingIndexerTierTarget": "legendary",
-          "pendingIndexerTierRequestedAt": "2026-07-24T19:30:48.104Z",
+          "pendingIndexerTierTarget": "pro",
+          "pendingIndexerTierRequestedAt": "2026-07-24T19:40:48.840Z",
           "indexerCreated": false
         }
       },
