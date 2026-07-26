@@ -3,17 +3,16 @@
   "chain": "slot",
   "accountAddress": "0x127fd5f1fe78a71f8bcd1fec63e3fe2f0486b6ecd5c86a0466c3a21fa5cfcec",
   "owner": {
-    "environment": "slot.eternum",
-    "gameName": "etrn-moss-700",
-    "launchRequestId": "29461890461-1",
+    "environment": "slot.blitz",
+    "gameName": "bltz-quick-520",
+    "launchRequestId": "30189332086-1",
     "workflowName": "Game Launch",
-    "workflowRunId": 29461890461,
+    "workflowRunId": 30189332086,
     "workflowRunAttempt": 1,
     "stepId": "create-world",
-    "leaseId": "0bbca9b4-307c-46b3-9dca-fd0cea1263c0"
+    "leaseId": "0b2252b6-0112-4dcd-b5c1-7d918623d58f"
   },
-  "acquiredAt": "2026-07-16T00:37:22.821Z",
-  "heartbeatAt": "2026-07-16T00:37:26.849Z",
-  "expiresAt": "2026-07-16T00:37:26.849Z",
-  "releasedAt": "2026-07-16T00:37:26.849Z"
+  "acquiredAt": "2026-07-26T05:25:41.008Z",
+  "heartbeatAt": "2026-07-26T05:25:41.008Z",
+  "expiresAt": "2026-07-26T05:35:41.008Z"
 }
