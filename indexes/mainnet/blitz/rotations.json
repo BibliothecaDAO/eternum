@@ -2,7 +2,7 @@
   "version": 1,
   "environment": "mainnet.blitz",
   "kind": "rotation",
-  "updatedAt": "2026-07-26T06:15:11.835Z",
+  "updatedAt": "2026-07-26T06:16:13.225Z",
   "entries": {
     "bltz-warzone": {
       "kind": "rotation",
@@ -84,9 +84,9 @@
       "environment": "mainnet.blitz",
       "rotationName": "blitz-rotation",
       "path": "runs/mainnet/blitz/rotations/blitz-rotation.json",
-      "inputPath": "inputs/mainnet/blitz/rotations/blitz-rotation/30155463443-1.json",
+      "inputPath": "inputs/mainnet/blitz/rotations/blitz-rotation/30190730943-1.json",
       "status": "attention",
-      "updatedAt": "2026-07-26T06:15:11.835Z",
+      "updatedAt": "2026-07-26T06:16:13.225Z",
       "workflowRef": "next",
       "currentStepId": "configure-worlds",
       "hasRunningStep": false,
@@ -95,13 +95,13 @@
       "autoRetry": {
         "enabled": true,
         "intervalMinutes": 15,
-        "nextRetryAt": "2026-07-26T06:30:03.328Z",
+        "nextRetryAt": "2026-07-26T06:31:13.225Z",
         "lastRetryAt": "2026-07-26T06:15:03.328Z"
       },
       "evaluation": {
         "intervalMinutes": 15,
-        "nextEvaluationAt": "2026-07-25T11:16:27.446Z",
-        "lastEvaluatedAt": "2026-07-25T11:01:27.446Z"
+        "nextEvaluationAt": "2026-07-26T06:31:13.225Z",
+        "lastEvaluatedAt": "2026-07-26T06:16:13.225Z"
       },
       "games": [
         {
@@ -1640,6 +1640,24 @@
         {
           "gameName": "eu-gladiator-26-07-26-1900",
           "startTime": 1785092400,
+          "durationSeconds": 3600,
+          "artifacts": {}
+        },
+        {
+          "gameName": "na-gladiator-27-07-26-0100",
+          "startTime": 1785114000,
+          "durationSeconds": 3600,
+          "artifacts": {}
+        },
+        {
+          "gameName": "apac-gladiator-28-07-26-1100",
+          "startTime": 1785236400,
+          "durationSeconds": 3600,
+          "artifacts": {}
+        },
+        {
+          "gameName": "na-gladiator-29-07-26-0200",
+          "startTime": 1785290400,
           "durationSeconds": 3600,
           "artifacts": {}
         }
