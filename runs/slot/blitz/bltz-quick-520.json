@@ -6,14 +6,14 @@
   "chain": "slot",
   "gameType": "blitz",
   "gameName": "bltz-quick-520",
-  "status": "running",
+  "status": "attention",
   "executionMode": "fast_trial",
   "requestedLaunchStep": "full",
   "inputPath": "inputs/slot/blitz/bltz-quick-520/30189332086-1.json",
   "latestLaunchRequestId": "30189332086-1",
   "currentStepId": "create-world",
   "createdAt": "2026-07-26T05:25:31.247Z",
-  "updatedAt": "2026-07-26T05:25:37.157Z",
+  "updatedAt": "2026-07-26T05:25:48.896Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -27,10 +27,12 @@
     {
       "id": "create-world",
       "title": "Creating world",
-      "status": "running",
+      "status": "failed",
       "workflowStepName": "Creating world",
-      "latestEvent": "Creating world started",
-      "startedAt": "2026-07-26T05:25:37.157Z"
+      "latestEvent": "Creating world failed: \u001b[2m[+1ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Preparing launch for \"bltz-quick-520\" on slot.blitz\n\u001b[2m[+16ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Effective config flags: dev_mode_on=false, duration_seconds=5400, single_realm_mode=false, two_player_mode=false\n\u001b[2m[+16ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Resolved 30 config steps for slot.blitz\nError: Failed to fetch world deployment: 404 Not Found\n    at fetchFactorySqlRows (/home/runner/work/eternum/eternum/config/deployer/clean/factory/discovery.ts:51:15)\n    at processTicksAndRejections (native:7:39)",
+      "startedAt": "2026-07-26T05:25:37.157Z",
+      "finishedAt": "2026-07-26T05:25:48.896Z",
+      "errorMessage": "\u001b[2m[+1ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Preparing launch for \"bltz-quick-520\" on slot.blitz\n\u001b[2m[+16ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Effective config flags: dev_mode_on=false, duration_seconds=5400, single_realm_mode=false, two_player_mode=false\n\u001b[2m[+16ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Resolved 30 config steps for slot.blitz\nError: Failed to fetch world deployment: 404 Not Found\n    at fetchFactorySqlRows (/home/runner/work/eternum/eternum/config/deployer/clean/factory/discovery.ts:51:15)\n    at processTicksAndRejections (native:7:39)"
     },
     {
       "id": "wait-for-factory-index",
@@ -71,13 +73,5 @@
   "artifacts": {
     "scheduledStartTime": "2026-07-26T06:00:00.000Z",
     "durationSeconds": 5400
-  },
-  "activeLease": {
-    "launchRequestId": "30189332086-1",
-    "workflowRunId": 30189332086,
-    "workflowRunAttempt": 1,
-    "stepId": "create-world",
-    "acquiredAt": "2026-07-26T05:25:37.157Z",
-    "expiresAt": "2026-07-26T06:10:37.157Z"
   }
 }
