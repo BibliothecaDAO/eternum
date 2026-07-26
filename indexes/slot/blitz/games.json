@@ -2,7 +2,7 @@
   "version": 1,
   "environment": "slot.blitz",
   "kind": "game",
-  "updatedAt": "2026-07-26T05:35:23.670Z",
+  "updatedAt": "2026-07-26T05:36:16.080Z",
   "entries": {
     "bltz-riff-363": {
       "kind": "game",
@@ -225,9 +225,9 @@
       "environment": "slot.blitz",
       "gameName": "bltz-quick-520",
       "path": "runs/slot/blitz/bltz-quick-520.json",
-      "inputPath": "inputs/slot/blitz/bltz-quick-520/30189593217-1.json",
+      "inputPath": "inputs/slot/blitz/bltz-quick-520/30189620229-1.json",
       "status": "attention",
-      "updatedAt": "2026-07-26T05:35:23.670Z",
+      "updatedAt": "2026-07-26T05:36:16.080Z",
       "workflowRef": "next",
       "currentStepId": "create-world",
       "hasRunningStep": false,
