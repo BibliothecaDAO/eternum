@@ -5,15 +5,14 @@
   "owner": {
     "environment": "slot.blitz",
     "gameName": "bltz-quick-520",
-    "launchRequestId": "30189593217-1",
+    "launchRequestId": "30189620229-1",
     "workflowName": "Game Launch",
-    "workflowRunId": 30189593217,
+    "workflowRunId": 30189620229,
     "workflowRunAttempt": 1,
     "stepId": "create-world",
-    "leaseId": "7f2d6b6d-614b-4266-a865-01b3ff43015b"
+    "leaseId": "0ef45a08-1797-4420-922a-a308cbc54c49"
   },
-  "acquiredAt": "2026-07-26T05:35:14.583Z",
-  "heartbeatAt": "2026-07-26T05:35:19.466Z",
-  "expiresAt": "2026-07-26T05:35:19.466Z",
-  "releasedAt": "2026-07-26T05:35:19.466Z"
+  "acquiredAt": "2026-07-26T05:36:25.095Z",
+  "heartbeatAt": "2026-07-26T05:36:25.095Z",
+  "expiresAt": "2026-07-26T05:46:25.095Z"
 }
