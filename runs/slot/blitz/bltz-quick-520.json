@@ -6,20 +6,20 @@
   "chain": "slot",
   "gameType": "blitz",
   "gameName": "bltz-quick-520",
-  "status": "attention",
+  "status": "running",
   "executionMode": "fast_trial",
   "requestedLaunchStep": "full",
-  "inputPath": "inputs/slot/blitz/bltz-quick-520/30189667050-1.json",
-  "latestLaunchRequestId": "30189667050-1",
+  "inputPath": "inputs/slot/blitz/bltz-quick-520/30189666311-1.json",
+  "latestLaunchRequestId": "30189666311-1",
   "currentStepId": "create-world",
   "createdAt": "2026-07-26T05:25:31.247Z",
-  "updatedAt": "2026-07-26T05:37:59.960Z",
+  "updatedAt": "2026-07-26T05:38:02.088Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
-    "workflowRunId": 30189667050,
+    "workflowRunId": 30189666311,
     "workflowRunAttempt": 1,
-    "workflowUrl": "https://github.com/BibliothecaDAO/eternum/actions/runs/30189667050",
+    "workflowUrl": "https://github.com/BibliothecaDAO/eternum/actions/runs/30189666311",
     "ref": "next",
     "sha": "4105dd899de6f0bea7a348fd10a1c848663394ff"
   },
@@ -27,12 +27,11 @@
     {
       "id": "create-world",
       "title": "Creating world",
-      "status": "failed",
+      "status": "running",
       "workflowStepName": "Creating world",
-      "latestEvent": "Creating world failed: \u001b[2m[+0ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Preparing launch for \"bltz-quick-520\" on slot.blitz\n\u001b[2m[+21ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Effective config flags: dev_mode_on=false, duration_seconds=5400, single_realm_mode=false, two_player_mode=false\n\u001b[2m[+21ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Resolved 30 config steps for slot.blitz\nError: Failed to fetch world deployment: 404 Not Found\n    at fetchFactorySqlRows (/home/runner/work/eternum/eternum/config/deployer/clean/factory/discovery.ts:51:15)\n    at processTicksAndRejections (native:7:39)",
-      "startedAt": "2026-07-26T05:36:21.356Z",
-      "finishedAt": "2026-07-26T05:36:32.807Z",
-      "errorMessage": "\u001b[2m[+0ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Preparing launch for \"bltz-quick-520\" on slot.blitz\n\u001b[2m[+21ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Effective config flags: dev_mode_on=false, duration_seconds=5400, single_realm_mode=false, two_player_mode=false\n\u001b[2m[+21ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Resolved 30 config steps for slot.blitz\nError: Failed to fetch world deployment: 404 Not Found\n    at fetchFactorySqlRows (/home/runner/work/eternum/eternum/config/deployer/clean/factory/discovery.ts:51:15)\n    at processTicksAndRejections (native:7:39)"
+      "latestEvent": "Creating world started",
+      "startedAt": "2026-07-26T05:38:02.088Z",
+      "finishedAt": "2026-07-26T05:36:32.807Z"
     },
     {
       "id": "wait-for-factory-index",
@@ -73,5 +72,13 @@
   "artifacts": {
     "scheduledStartTime": "2026-07-26T06:00:00.000Z",
     "durationSeconds": 5400
+  },
+  "activeLease": {
+    "launchRequestId": "30189666311-1",
+    "workflowRunId": 30189666311,
+    "workflowRunAttempt": 1,
+    "stepId": "create-world",
+    "acquiredAt": "2026-07-26T05:38:02.088Z",
+    "expiresAt": "2026-07-26T06:23:02.088Z"
   }
 }
