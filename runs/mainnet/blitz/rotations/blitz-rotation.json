@@ -14,7 +14,7 @@
   "latestLaunchRequestId": "30413537144-1",
   "currentStepId": "configure-worlds",
   "createdAt": "2026-04-28T04:59:08.099Z",
-  "updatedAt": "2026-07-29T01:17:33.058Z",
+  "updatedAt": "2026-07-29T01:30:20.305Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -18247,7 +18247,7 @@
         },
         "seriesGameNumber": 158,
         "currentStepId": null,
-        "latestEvent": "Waiting to run",
+        "latestEvent": "Queued indexer tier update to legendary",
         "status": "pending",
         "configSteps": [],
         "steps": [
@@ -18292,7 +18292,10 @@
             "latestEvent": "Waiting to run"
           }
         ],
-        "artifacts": {}
+        "artifacts": {
+          "pendingIndexerTierTarget": "legendary",
+          "pendingIndexerTierRequestedAt": "2026-07-29T01:30:16.809Z"
+        }
       },
       {
         "gameName": "eu-gladiator-29-07-26-1900",
