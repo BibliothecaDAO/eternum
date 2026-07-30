@@ -10,30 +10,30 @@
   "status": "attention",
   "executionMode": "guided_recovery",
   "requestedLaunchStep": "configure-worlds",
-  "inputPath": "inputs/mainnet/blitz/rotations/blitz-rotation/30582639299-1.json",
-  "latestLaunchRequestId": "30582639299-1",
+  "inputPath": "inputs/mainnet/blitz/rotations/blitz-rotation/30583977658-1.json",
+  "latestLaunchRequestId": "30583977658-1",
   "currentStepId": "configure-worlds",
   "createdAt": "2026-04-28T04:59:08.099Z",
-  "updatedAt": "2026-07-30T21:35:20.641Z",
+  "updatedAt": "2026-07-30T21:36:17.635Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
-    "workflowRunId": 30582639299,
+    "workflowRunId": 30583977658,
     "workflowRunAttempt": 1,
-    "workflowUrl": "https://github.com/BibliothecaDAO/eternum/actions/runs/30582639299",
+    "workflowUrl": "https://github.com/BibliothecaDAO/eternum/actions/runs/30583977658",
     "ref": "next",
     "sha": "4105dd899de6f0bea7a348fd10a1c848663394ff"
   },
   "autoRetry": {
     "enabled": true,
     "intervalMinutes": 15,
-    "nextRetryAt": "2026-07-30T21:50:09.823Z",
+    "nextRetryAt": "2026-07-30T21:51:17.635Z",
     "lastRetryAt": "2026-07-30T21:35:09.823Z"
   },
   "evaluation": {
     "intervalMinutes": 15,
-    "nextEvaluationAt": "2026-07-30T21:31:12.205Z",
-    "lastEvaluatedAt": "2026-07-30T21:16:12.205Z"
+    "nextEvaluationAt": "2026-07-30T21:51:17.635Z",
+    "lastEvaluatedAt": "2026-07-30T21:36:17.635Z"
   },
   "steps": [
     {
