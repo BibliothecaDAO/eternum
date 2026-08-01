@@ -2,7 +2,7 @@
   "version": 1,
   "environment": "mainnet.blitz",
   "kind": "rotation",
-  "updatedAt": "2026-08-01T21:30:25.319Z",
+  "updatedAt": "2026-08-01T21:31:24.502Z",
   "entries": {
     "bltz-warzone": {
       "kind": "rotation",
@@ -84,9 +84,9 @@
       "environment": "mainnet.blitz",
       "rotationName": "blitz-rotation",
       "path": "runs/mainnet/blitz/rotations/blitz-rotation.json",
-      "inputPath": "inputs/mainnet/blitz/rotations/blitz-rotation/30701006707-1.json",
+      "inputPath": "inputs/mainnet/blitz/rotations/blitz-rotation/30719270567-1.json",
       "status": "attention",
-      "updatedAt": "2026-08-01T21:30:25.319Z",
+      "updatedAt": "2026-08-01T21:31:24.502Z",
       "workflowRef": "next",
       "currentStepId": "configure-worlds",
       "hasRunningStep": false,
@@ -95,13 +95,13 @@
       "autoRetry": {
         "enabled": true,
         "intervalMinutes": 15,
-        "nextRetryAt": "2026-08-01T21:45:16.674Z",
+        "nextRetryAt": "2026-08-01T21:46:24.502Z",
         "lastRetryAt": "2026-08-01T21:30:16.674Z"
       },
       "evaluation": {
         "intervalMinutes": 15,
-        "nextEvaluationAt": "2026-08-01T13:21:40.312Z",
-        "lastEvaluatedAt": "2026-08-01T13:06:40.312Z"
+        "nextEvaluationAt": "2026-08-01T21:46:24.502Z",
+        "lastEvaluatedAt": "2026-08-01T21:31:24.502Z"
       },
       "games": [
         {
@@ -1764,6 +1764,12 @@
         {
           "gameName": "na-gladiator-03-08-26-0100",
           "startTime": 1785718800,
+          "durationSeconds": 3600,
+          "artifacts": {}
+        },
+        {
+          "gameName": "apac-gladiator-04-08-26-1100",
+          "startTime": 1785841200,
           "durationSeconds": 3600,
           "artifacts": {}
         }
