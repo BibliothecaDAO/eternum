@@ -13,6 +13,7 @@
     "leaseId": "1cab1455-64e4-4cca-bec3-8ebf7c9febf4"
   },
   "acquiredAt": "2026-08-03T17:46:32.948Z",
-  "heartbeatAt": "2026-08-03T17:46:32.948Z",
-  "expiresAt": "2026-08-03T17:56:32.948Z"
+  "heartbeatAt": "2026-08-03T17:46:38.146Z",
+  "expiresAt": "2026-08-03T17:46:38.146Z",
+  "releasedAt": "2026-08-03T17:46:38.146Z"
 }
