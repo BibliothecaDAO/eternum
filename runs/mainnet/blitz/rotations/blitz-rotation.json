@@ -14,7 +14,7 @@
   "latestLaunchRequestId": "30943984560-1",
   "currentStepId": "configure-worlds",
   "createdAt": "2026-04-28T04:59:08.099Z",
-  "updatedAt": "2026-08-04T19:36:53.732Z",
+  "updatedAt": "2026-08-04T19:49:14.968Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -5490,9 +5490,9 @@
           },
           "paymasterSynced": true,
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-08-04T19:25:58.040Z",
+          "pendingIndexerTierRequestedAt": "2026-08-04T19:49:05.819Z",
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:25:58.040Z",
+          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:49:05.819Z",
           "lastIndexerTierDispatchError": "Invalid OAuth token, please authenticate with `slot auth login`\nInvalid OAuth token, please authenticate with `slot auth login`"
         }
       },
@@ -5687,9 +5687,9 @@
           },
           "paymasterSynced": true,
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-08-04T19:25:58.181Z",
+          "pendingIndexerTierRequestedAt": "2026-08-04T19:49:05.880Z",
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:25:58.181Z",
+          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:49:05.880Z",
           "lastIndexerTierDispatchError": "Invalid OAuth token, please authenticate with `slot auth login`\nInvalid OAuth token, please authenticate with `slot auth login`"
         }
       },
@@ -5884,9 +5884,9 @@
           },
           "paymasterSynced": true,
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-08-04T19:25:58.348Z",
+          "pendingIndexerTierRequestedAt": "2026-08-04T19:49:05.944Z",
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:25:58.348Z",
+          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:49:05.944Z",
           "lastIndexerTierDispatchError": "Invalid OAuth token, please authenticate with `slot auth login`\nInvalid OAuth token, please authenticate with `slot auth login`"
         }
       },
@@ -6081,9 +6081,9 @@
           },
           "paymasterSynced": true,
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-08-04T19:25:58.505Z",
+          "pendingIndexerTierRequestedAt": "2026-08-04T19:49:06.004Z",
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:25:58.505Z",
+          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:49:06.004Z",
           "lastIndexerTierDispatchError": "Invalid OAuth token, please authenticate with `slot auth login`\nInvalid OAuth token, please authenticate with `slot auth login`"
         }
       },
@@ -6161,9 +6161,9 @@
           },
           "paymasterSynced": true,
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-08-04T19:25:58.670Z",
+          "pendingIndexerTierRequestedAt": "2026-08-04T19:49:06.067Z",
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:25:58.670Z",
+          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:49:06.067Z",
           "lastIndexerTierDispatchError": "Invalid OAuth token, please authenticate with `slot auth login`\nInvalid OAuth token, please authenticate with `slot auth login`"
         }
       },
@@ -6352,9 +6352,9 @@
           "worldConfigTxHash": "0x16f50c20e343ddb006f98b0fcaf84ab12f1bbd39556a1caecdee497d59a32f3",
           "indexerCreated": false,
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-08-04T19:25:58.827Z",
+          "pendingIndexerTierRequestedAt": "2026-08-04T19:49:06.137Z",
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:25:58.827Z",
+          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:49:06.137Z",
           "lastIndexerTierDispatchError": "Invalid OAuth token, please authenticate with `slot auth login`\nInvalid OAuth token, please authenticate with `slot auth login`"
         }
       },
@@ -6542,10 +6542,10 @@
           "configureTxHash": "0x33384b460626da8c1680ce983df0f549598a8806aedf00ab2191db9d808614e",
           "worldConfigTxHash": "0x33384b460626da8c1680ce983df0f549598a8806aedf00ab2191db9d808614e",
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-08-04T19:25:58.982Z",
+          "pendingIndexerTierRequestedAt": "2026-08-04T19:49:06.203Z",
           "indexerCreated": false,
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:25:58.982Z",
+          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:49:06.203Z",
           "lastIndexerTierDispatchError": "Invalid OAuth token, please authenticate with `slot auth login`\nInvalid OAuth token, please authenticate with `slot auth login`"
         }
       },
@@ -6733,10 +6733,10 @@
           "configureTxHash": "0xd2d91f0d24f0209c61030a7800543ac8424e9a0f348b5630592ca4ea4e963f",
           "worldConfigTxHash": "0xd2d91f0d24f0209c61030a7800543ac8424e9a0f348b5630592ca4ea4e963f",
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-08-04T19:25:59.142Z",
+          "pendingIndexerTierRequestedAt": "2026-08-04T19:49:06.265Z",
           "indexerCreated": false,
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:25:59.142Z",
+          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:49:06.265Z",
           "lastIndexerTierDispatchError": "Invalid OAuth token, please authenticate with `slot auth login`\nInvalid OAuth token, please authenticate with `slot auth login`"
         }
       },
@@ -6924,10 +6924,10 @@
           "configureTxHash": "0x10235c113397affc11efbfb713d26109a4886da7f43570deb3c5471eb1e5669",
           "worldConfigTxHash": "0x10235c113397affc11efbfb713d26109a4886da7f43570deb3c5471eb1e5669",
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-08-04T19:25:59.292Z",
+          "pendingIndexerTierRequestedAt": "2026-08-04T19:49:06.332Z",
           "indexerCreated": false,
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:25:59.292Z",
+          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:49:06.332Z",
           "lastIndexerTierDispatchError": "Invalid OAuth token, please authenticate with `slot auth login`\nInvalid OAuth token, please authenticate with `slot auth login`"
         }
       },
@@ -7115,10 +7115,10 @@
           "configureTxHash": "0x2ee00a9eb4aa4431b1e94142191a2d75ae2be16adb97808f03de7b5cd904e8f",
           "worldConfigTxHash": "0x2ee00a9eb4aa4431b1e94142191a2d75ae2be16adb97808f03de7b5cd904e8f",
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-08-04T19:25:59.453Z",
+          "pendingIndexerTierRequestedAt": "2026-08-04T19:49:06.393Z",
           "indexerCreated": false,
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:25:59.453Z",
+          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:49:06.393Z",
           "lastIndexerTierDispatchError": "Invalid OAuth token, please authenticate with `slot auth login`\nInvalid OAuth token, please authenticate with `slot auth login`"
         }
       },
@@ -7306,10 +7306,10 @@
           "configureTxHash": "0x3b50a9719eddbc36d28d0f31d3de55c31dda98c27e9797e4bd70e3dc1c8b656",
           "worldConfigTxHash": "0x3b50a9719eddbc36d28d0f31d3de55c31dda98c27e9797e4bd70e3dc1c8b656",
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-08-04T19:25:59.605Z",
+          "pendingIndexerTierRequestedAt": "2026-08-04T19:49:06.459Z",
           "indexerCreated": false,
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:25:59.605Z",
+          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:49:06.459Z",
           "lastIndexerTierDispatchError": "Invalid OAuth token, please authenticate with `slot auth login`\nInvalid OAuth token, please authenticate with `slot auth login`"
         }
       },
@@ -7497,10 +7497,10 @@
           "configureTxHash": "0x1d6d7e305ca6de342dc18ed10dab391e000663b88f0c5c807796033ff1a0bc8",
           "worldConfigTxHash": "0x1d6d7e305ca6de342dc18ed10dab391e000663b88f0c5c807796033ff1a0bc8",
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-08-04T19:25:59.760Z",
+          "pendingIndexerTierRequestedAt": "2026-08-04T19:49:06.532Z",
           "indexerCreated": false,
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:25:59.760Z",
+          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:49:06.532Z",
           "lastIndexerTierDispatchError": "Invalid OAuth token, please authenticate with `slot auth login`\nInvalid OAuth token, please authenticate with `slot auth login`"
         }
       },
@@ -7688,10 +7688,10 @@
           "configureTxHash": "0xce838d82976035d5c5aff9c8e44553c7edb12a382e89059808de48e19718fc",
           "worldConfigTxHash": "0xce838d82976035d5c5aff9c8e44553c7edb12a382e89059808de48e19718fc",
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-08-04T19:25:59.954Z",
+          "pendingIndexerTierRequestedAt": "2026-08-04T19:49:06.597Z",
           "indexerCreated": false,
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:25:59.954Z",
+          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:49:06.597Z",
           "lastIndexerTierDispatchError": "Invalid OAuth token, please authenticate with `slot auth login`\nInvalid OAuth token, please authenticate with `slot auth login`"
         }
       },
@@ -7879,10 +7879,10 @@
           "configureTxHash": "0x750323c1e53f0d812dab72dcb0a19dec9cc93bc33f0645b80b4d95c92d979b2",
           "worldConfigTxHash": "0x750323c1e53f0d812dab72dcb0a19dec9cc93bc33f0645b80b4d95c92d979b2",
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-08-04T19:26:00.112Z",
+          "pendingIndexerTierRequestedAt": "2026-08-04T19:49:06.659Z",
           "indexerCreated": false,
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:26:00.112Z",
+          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:49:06.659Z",
           "lastIndexerTierDispatchError": "Invalid OAuth token, please authenticate with `slot auth login`\nInvalid OAuth token, please authenticate with `slot auth login`"
         }
       },
@@ -8070,10 +8070,10 @@
           "configureTxHash": "0x33b727e3c29d6a3b55c983719866a1a906e84db86d2f4dcbf5fba83862120eb",
           "worldConfigTxHash": "0x33b727e3c29d6a3b55c983719866a1a906e84db86d2f4dcbf5fba83862120eb",
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-08-04T19:26:00.255Z",
+          "pendingIndexerTierRequestedAt": "2026-08-04T19:49:06.727Z",
           "indexerCreated": false,
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:26:00.255Z",
+          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:49:06.727Z",
           "lastIndexerTierDispatchError": "Invalid OAuth token, please authenticate with `slot auth login`\nInvalid OAuth token, please authenticate with `slot auth login`"
         }
       },
@@ -8261,10 +8261,10 @@
           "configureTxHash": "0x74b5054539ee5911fecf098346b32e2ef5bc326ce4794b2dcc79df2e82cf0cf",
           "worldConfigTxHash": "0x74b5054539ee5911fecf098346b32e2ef5bc326ce4794b2dcc79df2e82cf0cf",
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-08-04T19:26:00.419Z",
+          "pendingIndexerTierRequestedAt": "2026-08-04T19:49:06.795Z",
           "indexerCreated": false,
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:26:00.419Z",
+          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:49:06.795Z",
           "lastIndexerTierDispatchError": "Invalid OAuth token, please authenticate with `slot auth login`\nInvalid OAuth token, please authenticate with `slot auth login`"
         }
       },
@@ -8452,10 +8452,10 @@
           "configureTxHash": "0x2a13d20e7a50fa1ed325f5824d901551cccdbf013d680cd9ca3eb07c428febc",
           "worldConfigTxHash": "0x2a13d20e7a50fa1ed325f5824d901551cccdbf013d680cd9ca3eb07c428febc",
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-08-04T19:26:00.577Z",
+          "pendingIndexerTierRequestedAt": "2026-08-04T19:49:06.861Z",
           "indexerCreated": false,
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:26:00.577Z",
+          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:49:06.861Z",
           "lastIndexerTierDispatchError": "Invalid OAuth token, please authenticate with `slot auth login`\nInvalid OAuth token, please authenticate with `slot auth login`"
         }
       },
@@ -8643,10 +8643,10 @@
           "configureTxHash": "0x13df87059375aa76118da58f9e776e2ba0e18d9f51107961c015fcfec8c5e45",
           "worldConfigTxHash": "0x13df87059375aa76118da58f9e776e2ba0e18d9f51107961c015fcfec8c5e45",
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-08-04T19:26:00.733Z",
+          "pendingIndexerTierRequestedAt": "2026-08-04T19:49:06.924Z",
           "indexerCreated": false,
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:26:00.733Z",
+          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:49:06.924Z",
           "lastIndexerTierDispatchError": "Invalid OAuth token, please authenticate with `slot auth login`\nInvalid OAuth token, please authenticate with `slot auth login`"
         }
       },
@@ -8834,10 +8834,10 @@
           "configureTxHash": "0xdc074f96db070daf886a185131c5219a85778e29458a9ed9ca4214f240850e",
           "worldConfigTxHash": "0xdc074f96db070daf886a185131c5219a85778e29458a9ed9ca4214f240850e",
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-08-04T19:26:00.887Z",
+          "pendingIndexerTierRequestedAt": "2026-08-04T19:49:06.984Z",
           "indexerCreated": false,
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:26:00.887Z",
+          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:49:06.984Z",
           "lastIndexerTierDispatchError": "Invalid OAuth token, please authenticate with `slot auth login`\nInvalid OAuth token, please authenticate with `slot auth login`"
         }
       },
@@ -9025,10 +9025,10 @@
           "configureTxHash": "0xe05350aeb27abebd2922997c4b9fc23c4d41b32804cd201343b8a444bee81f",
           "worldConfigTxHash": "0xe05350aeb27abebd2922997c4b9fc23c4d41b32804cd201343b8a444bee81f",
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-08-04T19:26:01.027Z",
+          "pendingIndexerTierRequestedAt": "2026-08-04T19:49:07.046Z",
           "indexerCreated": false,
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:26:01.027Z",
+          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:49:07.046Z",
           "lastIndexerTierDispatchError": "Invalid OAuth token, please authenticate with `slot auth login`\nInvalid OAuth token, please authenticate with `slot auth login`"
         }
       },
@@ -9216,10 +9216,10 @@
           "configureTxHash": "0x57cbedb1a644869a76711eb1b3119c907dbe58ea56b152e5c865c7c4497fa3a",
           "worldConfigTxHash": "0x57cbedb1a644869a76711eb1b3119c907dbe58ea56b152e5c865c7c4497fa3a",
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-08-04T19:26:01.191Z",
+          "pendingIndexerTierRequestedAt": "2026-08-04T19:49:07.114Z",
           "indexerCreated": false,
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:26:01.191Z",
+          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:49:07.114Z",
           "lastIndexerTierDispatchError": "Invalid OAuth token, please authenticate with `slot auth login`\nInvalid OAuth token, please authenticate with `slot auth login`"
         }
       },
@@ -9407,10 +9407,10 @@
           "configureTxHash": "0x3c517161212315767155a4965bb546e7f64e280b37230b8f7556de8569df2b1",
           "worldConfigTxHash": "0x3c517161212315767155a4965bb546e7f64e280b37230b8f7556de8569df2b1",
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-08-04T19:26:01.338Z",
+          "pendingIndexerTierRequestedAt": "2026-08-04T19:49:07.175Z",
           "indexerCreated": false,
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:26:01.338Z",
+          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:49:07.175Z",
           "lastIndexerTierDispatchError": "Invalid OAuth token, please authenticate with `slot auth login`\nInvalid OAuth token, please authenticate with `slot auth login`"
         }
       },
@@ -9598,10 +9598,10 @@
           "configureTxHash": "0x5866b45de59ae82af9dca91cf21ed770585d087970a16938f8e74e37e01c6df",
           "worldConfigTxHash": "0x5866b45de59ae82af9dca91cf21ed770585d087970a16938f8e74e37e01c6df",
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-08-04T19:26:01.486Z",
+          "pendingIndexerTierRequestedAt": "2026-08-04T19:49:07.235Z",
           "indexerCreated": false,
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:26:01.486Z",
+          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:49:07.235Z",
           "lastIndexerTierDispatchError": "Invalid OAuth token, please authenticate with `slot auth login`\nInvalid OAuth token, please authenticate with `slot auth login`"
         }
       },
@@ -9789,10 +9789,10 @@
           "configureTxHash": "0x7f24cba967adc6e7e550feb2c5a5d01ddd2129780d3745f6a755df738bb63d6",
           "worldConfigTxHash": "0x7f24cba967adc6e7e550feb2c5a5d01ddd2129780d3745f6a755df738bb63d6",
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-08-04T19:26:01.643Z",
+          "pendingIndexerTierRequestedAt": "2026-08-04T19:49:07.315Z",
           "indexerCreated": false,
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:26:01.643Z",
+          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:49:07.315Z",
           "lastIndexerTierDispatchError": "Invalid OAuth token, please authenticate with `slot auth login`\nInvalid OAuth token, please authenticate with `slot auth login`"
         }
       },
@@ -9980,10 +9980,10 @@
           "configureTxHash": "0x6b2b0bfca3d329d3ac28e80d43b9f1972864c65f86531c5b4952b87454ba05e",
           "worldConfigTxHash": "0x6b2b0bfca3d329d3ac28e80d43b9f1972864c65f86531c5b4952b87454ba05e",
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-08-04T19:26:01.789Z",
+          "pendingIndexerTierRequestedAt": "2026-08-04T19:49:07.378Z",
           "indexerCreated": false,
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:26:01.789Z",
+          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:49:07.378Z",
           "lastIndexerTierDispatchError": "Invalid OAuth token, please authenticate with `slot auth login`\nInvalid OAuth token, please authenticate with `slot auth login`"
         }
       },
@@ -10171,10 +10171,10 @@
           "configureTxHash": "0x43c2ec3dd67951448f9374f8f281623710bac0aa3d00af1c0c1c9d74c156893",
           "worldConfigTxHash": "0x43c2ec3dd67951448f9374f8f281623710bac0aa3d00af1c0c1c9d74c156893",
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-08-04T19:26:02.435Z",
+          "pendingIndexerTierRequestedAt": "2026-08-04T19:49:07.440Z",
           "indexerCreated": false,
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:26:02.435Z",
+          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:49:07.440Z",
           "lastIndexerTierDispatchError": "Invalid OAuth token, please authenticate with `slot auth login`\nInvalid OAuth token, please authenticate with `slot auth login`"
         }
       },
@@ -10362,10 +10362,10 @@
           "configureTxHash": "0x694f19561dffd9116b7fd7ca20dd76ba3d7679f9d8b73f21965df8678d54e76",
           "worldConfigTxHash": "0x694f19561dffd9116b7fd7ca20dd76ba3d7679f9d8b73f21965df8678d54e76",
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-08-04T19:26:02.609Z",
+          "pendingIndexerTierRequestedAt": "2026-08-04T19:49:07.501Z",
           "indexerCreated": false,
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:26:02.609Z",
+          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:49:07.501Z",
           "lastIndexerTierDispatchError": "Invalid OAuth token, please authenticate with `slot auth login`\nInvalid OAuth token, please authenticate with `slot auth login`"
         }
       },
@@ -10553,10 +10553,10 @@
           "configureTxHash": "0x4439a8cb7a07ed14fab7f1331872e1a297c77dc25e63566512ee3801ba6dc69",
           "worldConfigTxHash": "0x4439a8cb7a07ed14fab7f1331872e1a297c77dc25e63566512ee3801ba6dc69",
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-08-04T19:26:02.753Z",
+          "pendingIndexerTierRequestedAt": "2026-08-04T19:49:07.563Z",
           "indexerCreated": false,
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:26:02.753Z",
+          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:49:07.563Z",
           "lastIndexerTierDispatchError": "Invalid OAuth token, please authenticate with `slot auth login`\nInvalid OAuth token, please authenticate with `slot auth login`"
         }
       },
@@ -10744,10 +10744,10 @@
           "configureTxHash": "0x3389fb656be422302999bf3143a14872de0e37a1ade737d7bc973735d11b6a",
           "worldConfigTxHash": "0x3389fb656be422302999bf3143a14872de0e37a1ade737d7bc973735d11b6a",
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-08-04T19:26:02.912Z",
+          "pendingIndexerTierRequestedAt": "2026-08-04T19:49:07.627Z",
           "indexerCreated": false,
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:26:02.912Z",
+          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:49:07.627Z",
           "lastIndexerTierDispatchError": "Invalid OAuth token, please authenticate with `slot auth login`\nInvalid OAuth token, please authenticate with `slot auth login`"
         }
       },
@@ -10935,10 +10935,10 @@
           "configureTxHash": "0x2b8891b00e9c3430832248eca7fbe6973342b18afada287135f55c3f709ae84",
           "worldConfigTxHash": "0x2b8891b00e9c3430832248eca7fbe6973342b18afada287135f55c3f709ae84",
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-08-04T19:26:03.069Z",
+          "pendingIndexerTierRequestedAt": "2026-08-04T19:49:07.693Z",
           "indexerCreated": false,
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:26:03.069Z",
+          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:49:07.693Z",
           "lastIndexerTierDispatchError": "Invalid OAuth token, please authenticate with `slot auth login`\nInvalid OAuth token, please authenticate with `slot auth login`"
         }
       },
@@ -11126,10 +11126,10 @@
           "configureTxHash": "0x601b10e38266e2a3149e2287089bac235344c2dedcde1b8893683b7bd54861",
           "worldConfigTxHash": "0x601b10e38266e2a3149e2287089bac235344c2dedcde1b8893683b7bd54861",
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-08-04T19:26:03.243Z",
+          "pendingIndexerTierRequestedAt": "2026-08-04T19:49:07.759Z",
           "indexerCreated": false,
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:26:03.243Z",
+          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:49:07.759Z",
           "lastIndexerTierDispatchError": "Invalid OAuth token, please authenticate with `slot auth login`\nInvalid OAuth token, please authenticate with `slot auth login`"
         }
       },
@@ -11317,10 +11317,10 @@
           "configureTxHash": "0x1fe95840a9daf6be823d9217da55049f81e10fd01cc8c5e19b9316e52153eaf",
           "worldConfigTxHash": "0x1fe95840a9daf6be823d9217da55049f81e10fd01cc8c5e19b9316e52153eaf",
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-08-04T19:26:03.386Z",
+          "pendingIndexerTierRequestedAt": "2026-08-04T19:49:07.823Z",
           "indexerCreated": false,
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:26:03.386Z",
+          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:49:07.823Z",
           "lastIndexerTierDispatchError": "Invalid OAuth token, please authenticate with `slot auth login`\nInvalid OAuth token, please authenticate with `slot auth login`"
         }
       },
@@ -11508,10 +11508,10 @@
           "configureTxHash": "0x1e2b9ef79d85d10fac3fb174f1a4b414d1dfd5dcf9632dbac4315fb6ac81c86",
           "worldConfigTxHash": "0x1e2b9ef79d85d10fac3fb174f1a4b414d1dfd5dcf9632dbac4315fb6ac81c86",
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-08-04T19:26:03.555Z",
+          "pendingIndexerTierRequestedAt": "2026-08-04T19:49:07.887Z",
           "indexerCreated": false,
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:26:03.555Z",
+          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:49:07.887Z",
           "lastIndexerTierDispatchError": "Invalid OAuth token, please authenticate with `slot auth login`\nInvalid OAuth token, please authenticate with `slot auth login`"
         }
       },
@@ -11700,9 +11700,9 @@
           "worldConfigTxHash": "0x51274f3fe780616cfe2b03a75589910615e36489385caa969a604ca387d7fe4",
           "indexerCreated": false,
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-08-04T19:26:03.698Z",
+          "pendingIndexerTierRequestedAt": "2026-08-04T19:49:07.952Z",
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:26:03.698Z",
+          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:49:07.952Z",
           "lastIndexerTierDispatchError": "Invalid OAuth token, please authenticate with `slot auth login`\nInvalid OAuth token, please authenticate with `slot auth login`"
         }
       },
@@ -11890,10 +11890,10 @@
           "configureTxHash": "0x677cf4edf08933ce97c27f0df4fddde239b03c54ec611bff6161bf21e997b7d",
           "worldConfigTxHash": "0x677cf4edf08933ce97c27f0df4fddde239b03c54ec611bff6161bf21e997b7d",
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-08-04T19:26:03.865Z",
+          "pendingIndexerTierRequestedAt": "2026-08-04T19:49:08.015Z",
           "indexerCreated": false,
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:26:03.865Z",
+          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:49:08.015Z",
           "lastIndexerTierDispatchError": "Invalid OAuth token, please authenticate with `slot auth login`\nInvalid OAuth token, please authenticate with `slot auth login`"
         }
       },
@@ -12081,10 +12081,10 @@
           "configureTxHash": "0x797d37b5a273794987d310fb3355187f6658c0189a5ed156fd830bc4faa5ccc",
           "worldConfigTxHash": "0x797d37b5a273794987d310fb3355187f6658c0189a5ed156fd830bc4faa5ccc",
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-08-04T19:26:04.015Z",
+          "pendingIndexerTierRequestedAt": "2026-08-04T19:49:08.080Z",
           "indexerCreated": false,
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:26:04.015Z",
+          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:49:08.080Z",
           "lastIndexerTierDispatchError": "Invalid OAuth token, please authenticate with `slot auth login`\nInvalid OAuth token, please authenticate with `slot auth login`"
         }
       },
@@ -12272,10 +12272,10 @@
           "configureTxHash": "0x718fc054ce8e4312304ab73911d27167b969b9241b5eaef938fb0716160aa27",
           "worldConfigTxHash": "0x718fc054ce8e4312304ab73911d27167b969b9241b5eaef938fb0716160aa27",
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-08-04T19:26:04.174Z",
+          "pendingIndexerTierRequestedAt": "2026-08-04T19:49:08.144Z",
           "indexerCreated": false,
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:26:04.174Z",
+          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:49:08.144Z",
           "lastIndexerTierDispatchError": "Invalid OAuth token, please authenticate with `slot auth login`\nInvalid OAuth token, please authenticate with `slot auth login`"
         }
       },
@@ -12289,7 +12289,7 @@
         },
         "seriesGameNumber": 65,
         "currentStepId": "configure-worlds",
-        "latestEvent": "Failed to fetch world contracts: 404 Not Found",
+        "latestEvent": "Indexer maintenance failed for na-gladiator-05-06-26-0100: Invalid OAuth token, please authenticate with `slot auth login`\nInvalid OAuth token, please authenticate with `slot auth login`",
         "status": "failed",
         "configSteps": [],
         "steps": [
@@ -12342,10 +12342,10 @@
           "worldAddress": "0x05ca919adf15d01d7e4fad108d96412889446b9dd4125e4bc90a63c50cffc0ac",
           "createGameTxHash": "0x2b632217a544926c30f2c038c8287bbd23def04e837a29fbe13dac473e7fed0",
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-08-04T19:26:04.328Z",
+          "pendingIndexerTierRequestedAt": "2026-08-04T19:49:08.207Z",
           "indexerCreated": false,
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:26:04.328Z",
+          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:49:08.207Z",
           "lastIndexerTierDispatchError": "Invalid OAuth token, please authenticate with `slot auth login`\nInvalid OAuth token, please authenticate with `slot auth login`"
         }
       },
@@ -12406,10 +12406,10 @@
         ],
         "artifacts": {
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-08-04T19:26:04.487Z",
+          "pendingIndexerTierRequestedAt": "2026-08-04T19:49:08.273Z",
           "indexerCreated": false,
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:26:04.487Z",
+          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:49:08.273Z",
           "lastIndexerTierDispatchError": "Invalid OAuth token, please authenticate with `slot auth login`\nInvalid OAuth token, please authenticate with `slot auth login`"
         }
       },
@@ -12470,10 +12470,10 @@
         ],
         "artifacts": {
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-08-04T19:26:04.653Z",
+          "pendingIndexerTierRequestedAt": "2026-08-04T19:49:08.337Z",
           "indexerCreated": false,
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:26:04.653Z",
+          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:49:08.337Z",
           "lastIndexerTierDispatchError": "Invalid OAuth token, please authenticate with `slot auth login`\nInvalid OAuth token, please authenticate with `slot auth login`"
         }
       },
@@ -12534,10 +12534,10 @@
         ],
         "artifacts": {
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-08-04T19:26:04.814Z",
+          "pendingIndexerTierRequestedAt": "2026-08-04T19:49:08.402Z",
           "indexerCreated": false,
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:26:04.814Z",
+          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:49:08.402Z",
           "lastIndexerTierDispatchError": "Invalid OAuth token, please authenticate with `slot auth login`\nInvalid OAuth token, please authenticate with `slot auth login`"
         }
       },
@@ -12598,10 +12598,10 @@
         ],
         "artifacts": {
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-08-04T19:26:04.963Z",
+          "pendingIndexerTierRequestedAt": "2026-08-04T19:49:08.470Z",
           "indexerCreated": false,
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:26:04.963Z",
+          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:49:08.470Z",
           "lastIndexerTierDispatchError": "Invalid OAuth token, please authenticate with `slot auth login`\nInvalid OAuth token, please authenticate with `slot auth login`"
         }
       },
@@ -12662,10 +12662,10 @@
         ],
         "artifacts": {
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-08-04T19:26:05.105Z",
+          "pendingIndexerTierRequestedAt": "2026-08-04T19:49:08.539Z",
           "indexerCreated": false,
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:26:05.105Z",
+          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:49:08.539Z",
           "lastIndexerTierDispatchError": "Invalid OAuth token, please authenticate with `slot auth login`\nInvalid OAuth token, please authenticate with `slot auth login`"
         }
       },
@@ -12726,10 +12726,10 @@
         ],
         "artifacts": {
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-08-04T19:26:05.262Z",
+          "pendingIndexerTierRequestedAt": "2026-08-04T19:49:08.602Z",
           "indexerCreated": false,
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:26:05.262Z",
+          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:49:08.602Z",
           "lastIndexerTierDispatchError": "Invalid OAuth token, please authenticate with `slot auth login`\nInvalid OAuth token, please authenticate with `slot auth login`"
         }
       },
@@ -12790,10 +12790,10 @@
         ],
         "artifacts": {
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-08-04T19:26:05.432Z",
+          "pendingIndexerTierRequestedAt": "2026-08-04T19:49:08.666Z",
           "indexerCreated": false,
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:26:05.432Z",
+          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:49:08.666Z",
           "lastIndexerTierDispatchError": "Invalid OAuth token, please authenticate with `slot auth login`\nInvalid OAuth token, please authenticate with `slot auth login`"
         }
       },
@@ -12854,10 +12854,10 @@
         ],
         "artifacts": {
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-08-04T19:26:05.596Z",
+          "pendingIndexerTierRequestedAt": "2026-08-04T19:49:08.729Z",
           "indexerCreated": false,
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:26:05.596Z",
+          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:49:08.729Z",
           "lastIndexerTierDispatchError": "Invalid OAuth token, please authenticate with `slot auth login`\nInvalid OAuth token, please authenticate with `slot auth login`"
         }
       },
@@ -12918,10 +12918,10 @@
         ],
         "artifacts": {
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-08-04T19:26:05.788Z",
+          "pendingIndexerTierRequestedAt": "2026-08-04T19:49:08.795Z",
           "indexerCreated": false,
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:26:05.788Z",
+          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:49:08.795Z",
           "lastIndexerTierDispatchError": "Invalid OAuth token, please authenticate with `slot auth login`\nInvalid OAuth token, please authenticate with `slot auth login`"
         }
       },
@@ -12982,10 +12982,10 @@
         ],
         "artifacts": {
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-08-04T19:26:05.940Z",
+          "pendingIndexerTierRequestedAt": "2026-08-04T19:49:08.859Z",
           "indexerCreated": false,
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:26:05.940Z",
+          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:49:08.859Z",
           "lastIndexerTierDispatchError": "Invalid OAuth token, please authenticate with `slot auth login`\nInvalid OAuth token, please authenticate with `slot auth login`"
         }
       },
@@ -13046,10 +13046,10 @@
         ],
         "artifacts": {
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-08-04T19:26:06.087Z",
+          "pendingIndexerTierRequestedAt": "2026-08-04T19:49:08.921Z",
           "indexerCreated": false,
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:26:06.087Z",
+          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:49:08.921Z",
           "lastIndexerTierDispatchError": "Invalid OAuth token, please authenticate with `slot auth login`\nInvalid OAuth token, please authenticate with `slot auth login`"
         }
       },
@@ -13110,10 +13110,10 @@
         ],
         "artifacts": {
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-08-04T19:26:06.243Z",
+          "pendingIndexerTierRequestedAt": "2026-08-04T19:49:08.997Z",
           "indexerCreated": false,
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:26:06.243Z",
+          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:49:08.997Z",
           "lastIndexerTierDispatchError": "Invalid OAuth token, please authenticate with `slot auth login`\nInvalid OAuth token, please authenticate with `slot auth login`"
         }
       },
@@ -13175,9 +13175,9 @@
         "artifacts": {
           "indexerCreated": false,
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-08-04T19:26:06.408Z",
+          "pendingIndexerTierRequestedAt": "2026-08-04T19:49:09.060Z",
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:26:06.408Z",
+          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:49:09.060Z",
           "lastIndexerTierDispatchError": "Invalid OAuth token, please authenticate with `slot auth login`\nInvalid OAuth token, please authenticate with `slot auth login`"
         }
       },
@@ -13238,10 +13238,10 @@
         ],
         "artifacts": {
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-08-04T19:26:06.572Z",
+          "pendingIndexerTierRequestedAt": "2026-08-04T19:49:09.123Z",
           "indexerCreated": false,
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:26:06.572Z",
+          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:49:09.123Z",
           "lastIndexerTierDispatchError": "Invalid OAuth token, please authenticate with `slot auth login`\nInvalid OAuth token, please authenticate with `slot auth login`"
         }
       },
@@ -13302,10 +13302,10 @@
         ],
         "artifacts": {
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-08-04T19:26:06.727Z",
+          "pendingIndexerTierRequestedAt": "2026-08-04T19:49:09.188Z",
           "indexerCreated": false,
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:26:06.727Z",
+          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:49:09.188Z",
           "lastIndexerTierDispatchError": "Invalid OAuth token, please authenticate with `slot auth login`\nInvalid OAuth token, please authenticate with `slot auth login`"
         }
       },
@@ -13366,10 +13366,10 @@
         ],
         "artifacts": {
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-08-04T19:26:06.883Z",
+          "pendingIndexerTierRequestedAt": "2026-08-04T19:49:09.256Z",
           "indexerCreated": false,
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:26:06.883Z",
+          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:49:09.256Z",
           "lastIndexerTierDispatchError": "Invalid OAuth token, please authenticate with `slot auth login`\nInvalid OAuth token, please authenticate with `slot auth login`"
         }
       },
@@ -13430,10 +13430,10 @@
         ],
         "artifacts": {
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-08-04T19:26:07.037Z",
+          "pendingIndexerTierRequestedAt": "2026-08-04T19:49:09.323Z",
           "indexerCreated": false,
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:26:07.037Z",
+          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:49:09.323Z",
           "lastIndexerTierDispatchError": "Invalid OAuth token, please authenticate with `slot auth login`\nInvalid OAuth token, please authenticate with `slot auth login`"
         }
       },
@@ -13494,10 +13494,10 @@
         ],
         "artifacts": {
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-08-04T19:26:07.188Z",
+          "pendingIndexerTierRequestedAt": "2026-08-04T19:49:09.387Z",
           "indexerCreated": false,
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:26:07.188Z",
+          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:49:09.387Z",
           "lastIndexerTierDispatchError": "Invalid OAuth token, please authenticate with `slot auth login`\nInvalid OAuth token, please authenticate with `slot auth login`"
         }
       },
@@ -13558,10 +13558,10 @@
         ],
         "artifacts": {
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-08-04T19:26:07.350Z",
+          "pendingIndexerTierRequestedAt": "2026-08-04T19:49:09.456Z",
           "indexerCreated": false,
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:26:07.350Z",
+          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:49:09.456Z",
           "lastIndexerTierDispatchError": "Invalid OAuth token, please authenticate with `slot auth login`\nInvalid OAuth token, please authenticate with `slot auth login`"
         }
       },
@@ -13622,10 +13622,10 @@
         ],
         "artifacts": {
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-08-04T19:26:07.519Z",
+          "pendingIndexerTierRequestedAt": "2026-08-04T19:49:09.516Z",
           "indexerCreated": false,
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:26:07.519Z",
+          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:49:09.516Z",
           "lastIndexerTierDispatchError": "Invalid OAuth token, please authenticate with `slot auth login`\nInvalid OAuth token, please authenticate with `slot auth login`"
         }
       },
@@ -13687,9 +13687,9 @@
         "artifacts": {
           "indexerCreated": false,
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-08-04T19:26:07.677Z",
+          "pendingIndexerTierRequestedAt": "2026-08-04T19:49:09.579Z",
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:26:07.677Z",
+          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:49:09.579Z",
           "lastIndexerTierDispatchError": "Invalid OAuth token, please authenticate with `slot auth login`\nInvalid OAuth token, please authenticate with `slot auth login`"
         }
       },
@@ -13750,10 +13750,10 @@
         ],
         "artifacts": {
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-08-04T19:26:07.849Z",
+          "pendingIndexerTierRequestedAt": "2026-08-04T19:49:09.646Z",
           "indexerCreated": false,
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:26:07.849Z",
+          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:49:09.646Z",
           "lastIndexerTierDispatchError": "Invalid OAuth token, please authenticate with `slot auth login`\nInvalid OAuth token, please authenticate with `slot auth login`"
         }
       },
@@ -13814,10 +13814,10 @@
         ],
         "artifacts": {
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-08-04T19:26:07.999Z",
+          "pendingIndexerTierRequestedAt": "2026-08-04T19:49:09.710Z",
           "indexerCreated": false,
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:26:07.999Z",
+          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:49:09.710Z",
           "lastIndexerTierDispatchError": "Invalid OAuth token, please authenticate with `slot auth login`\nInvalid OAuth token, please authenticate with `slot auth login`"
         }
       },
@@ -13878,10 +13878,10 @@
         ],
         "artifacts": {
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-08-04T19:26:08.147Z",
+          "pendingIndexerTierRequestedAt": "2026-08-04T19:49:09.773Z",
           "indexerCreated": false,
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:26:08.147Z",
+          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:49:09.773Z",
           "lastIndexerTierDispatchError": "Invalid OAuth token, please authenticate with `slot auth login`\nInvalid OAuth token, please authenticate with `slot auth login`"
         }
       },
@@ -13942,10 +13942,10 @@
         ],
         "artifacts": {
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-08-04T19:26:08.298Z",
+          "pendingIndexerTierRequestedAt": "2026-08-04T19:49:09.835Z",
           "indexerCreated": false,
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:26:08.298Z",
+          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:49:09.835Z",
           "lastIndexerTierDispatchError": "Invalid OAuth token, please authenticate with `slot auth login`\nInvalid OAuth token, please authenticate with `slot auth login`"
         }
       },
@@ -14007,9 +14007,9 @@
         "artifacts": {
           "indexerCreated": false,
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-08-04T19:26:08.466Z",
+          "pendingIndexerTierRequestedAt": "2026-08-04T19:49:09.904Z",
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:26:08.466Z",
+          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:49:09.904Z",
           "lastIndexerTierDispatchError": "Invalid OAuth token, please authenticate with `slot auth login`\nInvalid OAuth token, please authenticate with `slot auth login`"
         }
       },
@@ -14070,10 +14070,10 @@
         ],
         "artifacts": {
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-08-04T19:26:08.629Z",
+          "pendingIndexerTierRequestedAt": "2026-08-04T19:49:09.968Z",
           "indexerCreated": false,
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:26:08.629Z",
+          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:49:09.968Z",
           "lastIndexerTierDispatchError": "Invalid OAuth token, please authenticate with `slot auth login`\nInvalid OAuth token, please authenticate with `slot auth login`"
         }
       },
@@ -14134,10 +14134,10 @@
         ],
         "artifacts": {
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-08-04T19:26:08.794Z",
+          "pendingIndexerTierRequestedAt": "2026-08-04T19:49:10.033Z",
           "indexerCreated": false,
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:26:08.794Z",
+          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:49:10.033Z",
           "lastIndexerTierDispatchError": "Invalid OAuth token, please authenticate with `slot auth login`\nInvalid OAuth token, please authenticate with `slot auth login`"
         }
       },
@@ -14198,10 +14198,10 @@
         ],
         "artifacts": {
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-08-04T19:26:08.953Z",
+          "pendingIndexerTierRequestedAt": "2026-08-04T19:49:10.098Z",
           "indexerCreated": false,
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:26:08.953Z",
+          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:49:10.098Z",
           "lastIndexerTierDispatchError": "Invalid OAuth token, please authenticate with `slot auth login`\nInvalid OAuth token, please authenticate with `slot auth login`"
         }
       },
@@ -14262,10 +14262,10 @@
         ],
         "artifacts": {
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-08-04T19:26:09.104Z",
+          "pendingIndexerTierRequestedAt": "2026-08-04T19:49:10.160Z",
           "indexerCreated": false,
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:26:09.104Z",
+          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:49:10.160Z",
           "lastIndexerTierDispatchError": "Invalid OAuth token, please authenticate with `slot auth login`\nInvalid OAuth token, please authenticate with `slot auth login`"
         }
       },
@@ -14326,10 +14326,10 @@
         ],
         "artifacts": {
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-08-04T19:26:09.279Z",
+          "pendingIndexerTierRequestedAt": "2026-08-04T19:49:10.226Z",
           "indexerCreated": false,
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:26:09.279Z",
+          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:49:10.226Z",
           "lastIndexerTierDispatchError": "Invalid OAuth token, please authenticate with `slot auth login`\nInvalid OAuth token, please authenticate with `slot auth login`"
         }
       },
@@ -14390,10 +14390,10 @@
         ],
         "artifacts": {
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-08-04T19:26:09.433Z",
+          "pendingIndexerTierRequestedAt": "2026-08-04T19:49:10.298Z",
           "indexerCreated": false,
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:26:09.433Z",
+          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:49:10.298Z",
           "lastIndexerTierDispatchError": "Invalid OAuth token, please authenticate with `slot auth login`\nInvalid OAuth token, please authenticate with `slot auth login`"
         }
       },
@@ -14454,10 +14454,10 @@
         ],
         "artifacts": {
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-08-04T19:26:09.588Z",
+          "pendingIndexerTierRequestedAt": "2026-08-04T19:49:10.365Z",
           "indexerCreated": false,
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:26:09.588Z",
+          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:49:10.365Z",
           "lastIndexerTierDispatchError": "Invalid OAuth token, please authenticate with `slot auth login`\nInvalid OAuth token, please authenticate with `slot auth login`"
         }
       },
@@ -14518,10 +14518,10 @@
         ],
         "artifacts": {
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-08-04T19:26:09.746Z",
+          "pendingIndexerTierRequestedAt": "2026-08-04T19:49:10.429Z",
           "indexerCreated": false,
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:26:09.746Z",
+          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:49:10.429Z",
           "lastIndexerTierDispatchError": "Invalid OAuth token, please authenticate with `slot auth login`\nInvalid OAuth token, please authenticate with `slot auth login`"
         }
       },
@@ -14582,10 +14582,10 @@
         ],
         "artifacts": {
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-08-04T19:26:09.902Z",
+          "pendingIndexerTierRequestedAt": "2026-08-04T19:49:10.493Z",
           "indexerCreated": false,
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:26:09.902Z",
+          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:49:10.493Z",
           "lastIndexerTierDispatchError": "Invalid OAuth token, please authenticate with `slot auth login`\nInvalid OAuth token, please authenticate with `slot auth login`"
         }
       },
@@ -14646,10 +14646,10 @@
         ],
         "artifacts": {
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-08-04T19:26:10.054Z",
+          "pendingIndexerTierRequestedAt": "2026-08-04T19:49:10.553Z",
           "indexerCreated": false,
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:26:10.054Z",
+          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:49:10.553Z",
           "lastIndexerTierDispatchError": "Invalid OAuth token, please authenticate with `slot auth login`\nInvalid OAuth token, please authenticate with `slot auth login`"
         }
       },
@@ -14710,10 +14710,10 @@
         ],
         "artifacts": {
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-08-04T19:26:10.208Z",
+          "pendingIndexerTierRequestedAt": "2026-08-04T19:49:10.620Z",
           "indexerCreated": false,
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:26:10.208Z",
+          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:49:10.620Z",
           "lastIndexerTierDispatchError": "Invalid OAuth token, please authenticate with `slot auth login`\nInvalid OAuth token, please authenticate with `slot auth login`"
         }
       },
@@ -14774,10 +14774,10 @@
         ],
         "artifacts": {
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-08-04T19:26:10.361Z",
+          "pendingIndexerTierRequestedAt": "2026-08-04T19:49:10.682Z",
           "indexerCreated": false,
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:26:10.361Z",
+          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:49:10.682Z",
           "lastIndexerTierDispatchError": "Invalid OAuth token, please authenticate with `slot auth login`\nInvalid OAuth token, please authenticate with `slot auth login`"
         }
       },
@@ -14838,10 +14838,10 @@
         ],
         "artifacts": {
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-08-04T19:26:10.504Z",
+          "pendingIndexerTierRequestedAt": "2026-08-04T19:49:10.744Z",
           "indexerCreated": false,
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:26:10.504Z",
+          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:49:10.744Z",
           "lastIndexerTierDispatchError": "Invalid OAuth token, please authenticate with `slot auth login`\nInvalid OAuth token, please authenticate with `slot auth login`"
         }
       },
@@ -14902,10 +14902,10 @@
         ],
         "artifacts": {
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-08-04T19:26:10.653Z",
+          "pendingIndexerTierRequestedAt": "2026-08-04T19:49:10.809Z",
           "indexerCreated": false,
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:26:10.653Z",
+          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:49:10.809Z",
           "lastIndexerTierDispatchError": "Invalid OAuth token, please authenticate with `slot auth login`\nInvalid OAuth token, please authenticate with `slot auth login`"
         }
       },
@@ -14966,10 +14966,10 @@
         ],
         "artifacts": {
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-08-04T19:26:10.806Z",
+          "pendingIndexerTierRequestedAt": "2026-08-04T19:49:10.875Z",
           "indexerCreated": false,
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:26:10.806Z",
+          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:49:10.875Z",
           "lastIndexerTierDispatchError": "Invalid OAuth token, please authenticate with `slot auth login`\nInvalid OAuth token, please authenticate with `slot auth login`"
         }
       },
@@ -15030,10 +15030,10 @@
         ],
         "artifacts": {
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-08-04T19:26:10.975Z",
+          "pendingIndexerTierRequestedAt": "2026-08-04T19:49:10.941Z",
           "indexerCreated": false,
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:26:10.975Z",
+          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:49:10.941Z",
           "lastIndexerTierDispatchError": "Invalid OAuth token, please authenticate with `slot auth login`\nInvalid OAuth token, please authenticate with `slot auth login`"
         }
       },
@@ -15094,10 +15094,10 @@
         ],
         "artifacts": {
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-08-04T19:26:11.141Z",
+          "pendingIndexerTierRequestedAt": "2026-08-04T19:49:11.005Z",
           "indexerCreated": false,
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:26:11.141Z",
+          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:49:11.005Z",
           "lastIndexerTierDispatchError": "Invalid OAuth token, please authenticate with `slot auth login`\nInvalid OAuth token, please authenticate with `slot auth login`"
         }
       },
@@ -15158,10 +15158,10 @@
         ],
         "artifacts": {
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-08-04T19:26:11.307Z",
+          "pendingIndexerTierRequestedAt": "2026-08-04T19:49:11.069Z",
           "indexerCreated": false,
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:26:11.307Z",
+          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:49:11.069Z",
           "lastIndexerTierDispatchError": "Invalid OAuth token, please authenticate with `slot auth login`\nInvalid OAuth token, please authenticate with `slot auth login`"
         }
       },
@@ -15222,10 +15222,10 @@
         ],
         "artifacts": {
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-08-04T19:26:11.488Z",
+          "pendingIndexerTierRequestedAt": "2026-08-04T19:49:11.142Z",
           "indexerCreated": false,
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:26:11.488Z",
+          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:49:11.142Z",
           "lastIndexerTierDispatchError": "Invalid OAuth token, please authenticate with `slot auth login`\nInvalid OAuth token, please authenticate with `slot auth login`"
         }
       },
@@ -15286,10 +15286,10 @@
         ],
         "artifacts": {
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-08-04T19:26:11.653Z",
+          "pendingIndexerTierRequestedAt": "2026-08-04T19:49:11.207Z",
           "indexerCreated": false,
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:26:11.653Z",
+          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:49:11.207Z",
           "lastIndexerTierDispatchError": "Invalid OAuth token, please authenticate with `slot auth login`\nInvalid OAuth token, please authenticate with `slot auth login`"
         }
       },
@@ -15350,10 +15350,10 @@
         ],
         "artifacts": {
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-08-04T19:26:11.801Z",
+          "pendingIndexerTierRequestedAt": "2026-08-04T19:49:11.275Z",
           "indexerCreated": false,
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:26:11.801Z",
+          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:49:11.275Z",
           "lastIndexerTierDispatchError": "Invalid OAuth token, please authenticate with `slot auth login`\nInvalid OAuth token, please authenticate with `slot auth login`"
         }
       },
@@ -15414,10 +15414,10 @@
         ],
         "artifacts": {
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-08-04T19:26:11.993Z",
+          "pendingIndexerTierRequestedAt": "2026-08-04T19:49:11.335Z",
           "indexerCreated": false,
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:26:11.993Z",
+          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:49:11.335Z",
           "lastIndexerTierDispatchError": "Invalid OAuth token, please authenticate with `slot auth login`\nInvalid OAuth token, please authenticate with `slot auth login`"
         }
       },
@@ -15478,10 +15478,10 @@
         ],
         "artifacts": {
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-08-04T19:26:12.137Z",
+          "pendingIndexerTierRequestedAt": "2026-08-04T19:49:11.401Z",
           "indexerCreated": false,
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:26:12.137Z",
+          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:49:11.401Z",
           "lastIndexerTierDispatchError": "Invalid OAuth token, please authenticate with `slot auth login`\nInvalid OAuth token, please authenticate with `slot auth login`"
         }
       },
@@ -15542,10 +15542,10 @@
         ],
         "artifacts": {
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-08-04T19:26:12.295Z",
+          "pendingIndexerTierRequestedAt": "2026-08-04T19:49:11.464Z",
           "indexerCreated": false,
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:26:12.295Z",
+          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:49:11.464Z",
           "lastIndexerTierDispatchError": "Invalid OAuth token, please authenticate with `slot auth login`\nInvalid OAuth token, please authenticate with `slot auth login`"
         }
       },
@@ -15606,10 +15606,10 @@
         ],
         "artifacts": {
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-08-04T19:26:12.443Z",
+          "pendingIndexerTierRequestedAt": "2026-08-04T19:49:11.527Z",
           "indexerCreated": false,
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:26:12.443Z",
+          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:49:11.527Z",
           "lastIndexerTierDispatchError": "Invalid OAuth token, please authenticate with `slot auth login`\nInvalid OAuth token, please authenticate with `slot auth login`"
         }
       },
@@ -15670,10 +15670,10 @@
         ],
         "artifacts": {
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-08-04T19:26:12.618Z",
+          "pendingIndexerTierRequestedAt": "2026-08-04T19:49:11.589Z",
           "indexerCreated": false,
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:26:12.618Z",
+          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:49:11.589Z",
           "lastIndexerTierDispatchError": "Invalid OAuth token, please authenticate with `slot auth login`\nInvalid OAuth token, please authenticate with `slot auth login`"
         }
       },
@@ -15734,10 +15734,10 @@
         ],
         "artifacts": {
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-08-04T19:26:12.780Z",
+          "pendingIndexerTierRequestedAt": "2026-08-04T19:49:11.654Z",
           "indexerCreated": false,
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:26:12.780Z",
+          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:49:11.654Z",
           "lastIndexerTierDispatchError": "Invalid OAuth token, please authenticate with `slot auth login`\nInvalid OAuth token, please authenticate with `slot auth login`"
         }
       },
@@ -15798,10 +15798,10 @@
         ],
         "artifacts": {
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-08-04T19:26:12.941Z",
+          "pendingIndexerTierRequestedAt": "2026-08-04T19:49:11.719Z",
           "indexerCreated": false,
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:26:12.941Z",
+          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:49:11.719Z",
           "lastIndexerTierDispatchError": "Invalid OAuth token, please authenticate with `slot auth login`\nInvalid OAuth token, please authenticate with `slot auth login`"
         }
       },
@@ -15862,10 +15862,10 @@
         ],
         "artifacts": {
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-08-04T19:26:13.089Z",
+          "pendingIndexerTierRequestedAt": "2026-08-04T19:49:11.784Z",
           "indexerCreated": false,
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:26:13.089Z",
+          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:49:11.784Z",
           "lastIndexerTierDispatchError": "Invalid OAuth token, please authenticate with `slot auth login`\nInvalid OAuth token, please authenticate with `slot auth login`"
         }
       },
@@ -15926,10 +15926,10 @@
         ],
         "artifacts": {
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-08-04T19:26:13.232Z",
+          "pendingIndexerTierRequestedAt": "2026-08-04T19:49:11.846Z",
           "indexerCreated": false,
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:26:13.232Z",
+          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:49:11.846Z",
           "lastIndexerTierDispatchError": "Invalid OAuth token, please authenticate with `slot auth login`\nInvalid OAuth token, please authenticate with `slot auth login`"
         }
       },
@@ -15990,10 +15990,10 @@
         ],
         "artifacts": {
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-08-04T19:26:13.399Z",
+          "pendingIndexerTierRequestedAt": "2026-08-04T19:49:11.912Z",
           "indexerCreated": false,
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:26:13.399Z",
+          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:49:11.912Z",
           "lastIndexerTierDispatchError": "Invalid OAuth token, please authenticate with `slot auth login`\nInvalid OAuth token, please authenticate with `slot auth login`"
         }
       },
@@ -16054,10 +16054,10 @@
         ],
         "artifacts": {
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-08-04T19:26:13.553Z",
+          "pendingIndexerTierRequestedAt": "2026-08-04T19:49:11.972Z",
           "indexerCreated": false,
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:26:13.553Z",
+          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:49:11.972Z",
           "lastIndexerTierDispatchError": "Invalid OAuth token, please authenticate with `slot auth login`\nInvalid OAuth token, please authenticate with `slot auth login`"
         }
       },
@@ -16118,10 +16118,10 @@
         ],
         "artifacts": {
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-08-04T19:26:13.693Z",
+          "pendingIndexerTierRequestedAt": "2026-08-04T19:49:12.037Z",
           "indexerCreated": false,
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:26:13.693Z",
+          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:49:12.037Z",
           "lastIndexerTierDispatchError": "Invalid OAuth token, please authenticate with `slot auth login`\nInvalid OAuth token, please authenticate with `slot auth login`"
         }
       },
@@ -16182,10 +16182,10 @@
         ],
         "artifacts": {
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-08-04T19:26:13.833Z",
+          "pendingIndexerTierRequestedAt": "2026-08-04T19:49:12.099Z",
           "indexerCreated": false,
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:26:13.833Z",
+          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:49:12.099Z",
           "lastIndexerTierDispatchError": "Invalid OAuth token, please authenticate with `slot auth login`\nInvalid OAuth token, please authenticate with `slot auth login`"
         }
       },
@@ -16246,10 +16246,10 @@
         ],
         "artifacts": {
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-08-04T19:26:13.985Z",
+          "pendingIndexerTierRequestedAt": "2026-08-04T19:49:12.160Z",
           "indexerCreated": false,
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:26:13.985Z",
+          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:49:12.160Z",
           "lastIndexerTierDispatchError": "Invalid OAuth token, please authenticate with `slot auth login`\nInvalid OAuth token, please authenticate with `slot auth login`"
         }
       },
@@ -16310,10 +16310,10 @@
         ],
         "artifacts": {
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-08-04T19:26:14.142Z",
+          "pendingIndexerTierRequestedAt": "2026-08-04T19:49:12.220Z",
           "indexerCreated": false,
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:26:14.142Z",
+          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:49:12.220Z",
           "lastIndexerTierDispatchError": "Invalid OAuth token, please authenticate with `slot auth login`\nInvalid OAuth token, please authenticate with `slot auth login`"
         }
       },
@@ -16374,10 +16374,10 @@
         ],
         "artifacts": {
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-08-04T19:26:14.307Z",
+          "pendingIndexerTierRequestedAt": "2026-08-04T19:49:12.285Z",
           "indexerCreated": false,
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:26:14.307Z",
+          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:49:12.285Z",
           "lastIndexerTierDispatchError": "Invalid OAuth token, please authenticate with `slot auth login`\nInvalid OAuth token, please authenticate with `slot auth login`"
         }
       },
@@ -16438,10 +16438,10 @@
         ],
         "artifacts": {
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-08-04T19:26:14.461Z",
+          "pendingIndexerTierRequestedAt": "2026-08-04T19:49:12.349Z",
           "indexerCreated": false,
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:26:14.461Z",
+          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:49:12.349Z",
           "lastIndexerTierDispatchError": "Invalid OAuth token, please authenticate with `slot auth login`\nInvalid OAuth token, please authenticate with `slot auth login`"
         }
       },
@@ -16502,10 +16502,10 @@
         ],
         "artifacts": {
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-08-04T19:26:14.620Z",
+          "pendingIndexerTierRequestedAt": "2026-08-04T19:49:12.414Z",
           "indexerCreated": false,
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:26:14.620Z",
+          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:49:12.414Z",
           "lastIndexerTierDispatchError": "Invalid OAuth token, please authenticate with `slot auth login`\nInvalid OAuth token, please authenticate with `slot auth login`"
         }
       },
@@ -16566,10 +16566,10 @@
         ],
         "artifacts": {
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-08-04T19:26:14.781Z",
+          "pendingIndexerTierRequestedAt": "2026-08-04T19:49:12.478Z",
           "indexerCreated": false,
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:26:14.781Z",
+          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:49:12.478Z",
           "lastIndexerTierDispatchError": "Invalid OAuth token, please authenticate with `slot auth login`\nInvalid OAuth token, please authenticate with `slot auth login`"
         }
       },
@@ -16630,10 +16630,10 @@
         ],
         "artifacts": {
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-08-04T19:26:14.929Z",
+          "pendingIndexerTierRequestedAt": "2026-08-04T19:49:12.543Z",
           "indexerCreated": false,
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:26:14.929Z",
+          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:49:12.543Z",
           "lastIndexerTierDispatchError": "Invalid OAuth token, please authenticate with `slot auth login`\nInvalid OAuth token, please authenticate with `slot auth login`"
         }
       },
@@ -16694,10 +16694,10 @@
         ],
         "artifacts": {
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-08-04T19:26:15.099Z",
+          "pendingIndexerTierRequestedAt": "2026-08-04T19:49:12.613Z",
           "indexerCreated": false,
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:26:15.099Z",
+          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:49:12.613Z",
           "lastIndexerTierDispatchError": "Invalid OAuth token, please authenticate with `slot auth login`\nInvalid OAuth token, please authenticate with `slot auth login`"
         }
       },
@@ -16758,10 +16758,10 @@
         ],
         "artifacts": {
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-08-04T19:26:15.255Z",
+          "pendingIndexerTierRequestedAt": "2026-08-04T19:49:12.678Z",
           "indexerCreated": false,
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:26:15.255Z",
+          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:49:12.678Z",
           "lastIndexerTierDispatchError": "Invalid OAuth token, please authenticate with `slot auth login`\nInvalid OAuth token, please authenticate with `slot auth login`"
         }
       },
@@ -16822,10 +16822,10 @@
         ],
         "artifacts": {
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-08-04T19:26:15.422Z",
+          "pendingIndexerTierRequestedAt": "2026-08-04T19:49:12.742Z",
           "indexerCreated": false,
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:26:15.422Z",
+          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:49:12.742Z",
           "lastIndexerTierDispatchError": "Invalid OAuth token, please authenticate with `slot auth login`\nInvalid OAuth token, please authenticate with `slot auth login`"
         }
       },
@@ -16886,10 +16886,10 @@
         ],
         "artifacts": {
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-08-04T19:26:15.579Z",
+          "pendingIndexerTierRequestedAt": "2026-08-04T19:49:12.803Z",
           "indexerCreated": false,
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:26:15.579Z",
+          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:49:12.803Z",
           "lastIndexerTierDispatchError": "Invalid OAuth token, please authenticate with `slot auth login`\nInvalid OAuth token, please authenticate with `slot auth login`"
         }
       },
@@ -16950,10 +16950,10 @@
         ],
         "artifacts": {
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-08-04T19:26:15.732Z",
+          "pendingIndexerTierRequestedAt": "2026-08-04T19:49:12.865Z",
           "indexerCreated": false,
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:26:15.732Z",
+          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:49:12.865Z",
           "lastIndexerTierDispatchError": "Invalid OAuth token, please authenticate with `slot auth login`\nInvalid OAuth token, please authenticate with `slot auth login`"
         }
       },
@@ -17014,10 +17014,10 @@
         ],
         "artifacts": {
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-08-04T19:26:15.905Z",
+          "pendingIndexerTierRequestedAt": "2026-08-04T19:49:12.926Z",
           "indexerCreated": false,
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:26:15.905Z",
+          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:49:12.926Z",
           "lastIndexerTierDispatchError": "Invalid OAuth token, please authenticate with `slot auth login`\nInvalid OAuth token, please authenticate with `slot auth login`"
         }
       },
@@ -17078,10 +17078,10 @@
         ],
         "artifacts": {
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-08-04T19:26:16.069Z",
+          "pendingIndexerTierRequestedAt": "2026-08-04T19:49:13.004Z",
           "indexerCreated": false,
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:26:16.069Z",
+          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:49:13.004Z",
           "lastIndexerTierDispatchError": "Invalid OAuth token, please authenticate with `slot auth login`\nInvalid OAuth token, please authenticate with `slot auth login`"
         }
       },
@@ -17142,10 +17142,10 @@
         ],
         "artifacts": {
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-08-04T19:26:16.209Z",
+          "pendingIndexerTierRequestedAt": "2026-08-04T19:49:13.069Z",
           "indexerCreated": false,
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:26:16.209Z",
+          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:49:13.069Z",
           "lastIndexerTierDispatchError": "Invalid OAuth token, please authenticate with `slot auth login`\nInvalid OAuth token, please authenticate with `slot auth login`"
         }
       },
@@ -17206,10 +17206,10 @@
         ],
         "artifacts": {
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-08-04T19:26:16.373Z",
+          "pendingIndexerTierRequestedAt": "2026-08-04T19:49:13.137Z",
           "indexerCreated": false,
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:26:16.373Z",
+          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:49:13.137Z",
           "lastIndexerTierDispatchError": "Invalid OAuth token, please authenticate with `slot auth login`\nInvalid OAuth token, please authenticate with `slot auth login`"
         }
       },
@@ -17270,10 +17270,10 @@
         ],
         "artifacts": {
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-08-04T19:26:16.521Z",
+          "pendingIndexerTierRequestedAt": "2026-08-04T19:49:13.207Z",
           "indexerCreated": false,
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:26:16.521Z",
+          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:49:13.207Z",
           "lastIndexerTierDispatchError": "Invalid OAuth token, please authenticate with `slot auth login`\nInvalid OAuth token, please authenticate with `slot auth login`"
         }
       },
@@ -17334,10 +17334,10 @@
         ],
         "artifacts": {
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-08-04T19:26:16.688Z",
+          "pendingIndexerTierRequestedAt": "2026-08-04T19:49:13.271Z",
           "indexerCreated": false,
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:26:16.688Z",
+          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:49:13.271Z",
           "lastIndexerTierDispatchError": "Invalid OAuth token, please authenticate with `slot auth login`\nInvalid OAuth token, please authenticate with `slot auth login`"
         }
       },
@@ -17398,10 +17398,10 @@
         ],
         "artifacts": {
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-08-04T19:26:16.846Z",
+          "pendingIndexerTierRequestedAt": "2026-08-04T19:49:13.332Z",
           "indexerCreated": false,
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:26:16.846Z",
+          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:49:13.332Z",
           "lastIndexerTierDispatchError": "Invalid OAuth token, please authenticate with `slot auth login`\nInvalid OAuth token, please authenticate with `slot auth login`"
         }
       },
@@ -17462,10 +17462,10 @@
         ],
         "artifacts": {
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-08-04T19:26:16.998Z",
+          "pendingIndexerTierRequestedAt": "2026-08-04T19:49:13.397Z",
           "indexerCreated": false,
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:26:16.998Z",
+          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:49:13.397Z",
           "lastIndexerTierDispatchError": "Invalid OAuth token, please authenticate with `slot auth login`\nInvalid OAuth token, please authenticate with `slot auth login`"
         }
       },
@@ -17526,10 +17526,10 @@
         ],
         "artifacts": {
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-08-04T19:26:17.153Z",
+          "pendingIndexerTierRequestedAt": "2026-08-04T19:49:13.457Z",
           "indexerCreated": false,
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:26:17.153Z",
+          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:49:13.457Z",
           "lastIndexerTierDispatchError": "Invalid OAuth token, please authenticate with `slot auth login`\nInvalid OAuth token, please authenticate with `slot auth login`"
         }
       },
@@ -17590,10 +17590,10 @@
         ],
         "artifacts": {
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-08-04T19:26:17.328Z",
+          "pendingIndexerTierRequestedAt": "2026-08-04T19:49:13.520Z",
           "indexerCreated": false,
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:26:17.328Z",
+          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:49:13.520Z",
           "lastIndexerTierDispatchError": "Invalid OAuth token, please authenticate with `slot auth login`\nInvalid OAuth token, please authenticate with `slot auth login`"
         }
       },
@@ -17654,10 +17654,10 @@
         ],
         "artifacts": {
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-08-04T19:26:17.471Z",
+          "pendingIndexerTierRequestedAt": "2026-08-04T19:49:13.590Z",
           "indexerCreated": false,
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:26:17.471Z",
+          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:49:13.590Z",
           "lastIndexerTierDispatchError": "Invalid OAuth token, please authenticate with `slot auth login`\nInvalid OAuth token, please authenticate with `slot auth login`"
         }
       },
@@ -17718,10 +17718,10 @@
         ],
         "artifacts": {
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-08-04T19:26:17.637Z",
+          "pendingIndexerTierRequestedAt": "2026-08-04T19:49:13.660Z",
           "indexerCreated": false,
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:26:17.637Z",
+          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:49:13.660Z",
           "lastIndexerTierDispatchError": "Invalid OAuth token, please authenticate with `slot auth login`\nInvalid OAuth token, please authenticate with `slot auth login`"
         }
       },
@@ -17782,10 +17782,10 @@
         ],
         "artifacts": {
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-08-04T19:26:17.822Z",
+          "pendingIndexerTierRequestedAt": "2026-08-04T19:49:13.723Z",
           "indexerCreated": false,
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:26:17.822Z",
+          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:49:13.723Z",
           "lastIndexerTierDispatchError": "Invalid OAuth token, please authenticate with `slot auth login`\nInvalid OAuth token, please authenticate with `slot auth login`"
         }
       },
@@ -17846,10 +17846,10 @@
         ],
         "artifacts": {
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-08-04T19:26:17.981Z",
+          "pendingIndexerTierRequestedAt": "2026-08-04T19:49:13.786Z",
           "indexerCreated": false,
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:26:17.981Z",
+          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:49:13.786Z",
           "lastIndexerTierDispatchError": "Invalid OAuth token, please authenticate with `slot auth login`\nInvalid OAuth token, please authenticate with `slot auth login`"
         }
       },
@@ -17910,10 +17910,10 @@
         ],
         "artifacts": {
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-08-04T19:26:18.146Z",
+          "pendingIndexerTierRequestedAt": "2026-08-04T19:49:13.851Z",
           "indexerCreated": false,
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:26:18.146Z",
+          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:49:13.851Z",
           "lastIndexerTierDispatchError": "Invalid OAuth token, please authenticate with `slot auth login`\nInvalid OAuth token, please authenticate with `slot auth login`"
         }
       },
@@ -17974,10 +17974,10 @@
         ],
         "artifacts": {
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-08-04T19:26:18.308Z",
+          "pendingIndexerTierRequestedAt": "2026-08-04T19:49:13.920Z",
           "indexerCreated": false,
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:26:18.308Z",
+          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:49:13.920Z",
           "lastIndexerTierDispatchError": "Invalid OAuth token, please authenticate with `slot auth login`\nInvalid OAuth token, please authenticate with `slot auth login`"
         }
       },
@@ -18038,10 +18038,10 @@
         ],
         "artifacts": {
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-08-04T19:26:18.480Z",
+          "pendingIndexerTierRequestedAt": "2026-08-04T19:49:13.987Z",
           "indexerCreated": false,
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:26:18.480Z",
+          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:49:13.987Z",
           "lastIndexerTierDispatchError": "Invalid OAuth token, please authenticate with `slot auth login`\nInvalid OAuth token, please authenticate with `slot auth login`"
         }
       },
@@ -18102,10 +18102,10 @@
         ],
         "artifacts": {
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-08-04T19:26:18.632Z",
+          "pendingIndexerTierRequestedAt": "2026-08-04T19:49:14.050Z",
           "indexerCreated": false,
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:26:18.632Z",
+          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:49:14.050Z",
           "lastIndexerTierDispatchError": "Invalid OAuth token, please authenticate with `slot auth login`\nInvalid OAuth token, please authenticate with `slot auth login`"
         }
       },
@@ -18166,10 +18166,10 @@
         ],
         "artifacts": {
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-08-04T19:26:18.788Z",
+          "pendingIndexerTierRequestedAt": "2026-08-04T19:49:14.113Z",
           "indexerCreated": false,
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:26:18.788Z",
+          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:49:14.113Z",
           "lastIndexerTierDispatchError": "Invalid OAuth token, please authenticate with `slot auth login`\nInvalid OAuth token, please authenticate with `slot auth login`"
         }
       },
@@ -18230,10 +18230,10 @@
         ],
         "artifacts": {
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-08-04T19:26:18.949Z",
+          "pendingIndexerTierRequestedAt": "2026-08-04T19:49:14.173Z",
           "indexerCreated": false,
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:26:18.949Z",
+          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:49:14.173Z",
           "lastIndexerTierDispatchError": "Invalid OAuth token, please authenticate with `slot auth login`\nInvalid OAuth token, please authenticate with `slot auth login`"
         }
       },
@@ -18294,10 +18294,10 @@
         ],
         "artifacts": {
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-08-04T19:26:19.109Z",
+          "pendingIndexerTierRequestedAt": "2026-08-04T19:49:14.245Z",
           "indexerCreated": false,
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:26:19.109Z",
+          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:49:14.245Z",
           "lastIndexerTierDispatchError": "Invalid OAuth token, please authenticate with `slot auth login`\nInvalid OAuth token, please authenticate with `slot auth login`"
         }
       },
@@ -18358,10 +18358,10 @@
         ],
         "artifacts": {
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-08-04T19:26:19.274Z",
+          "pendingIndexerTierRequestedAt": "2026-08-04T19:49:14.304Z",
           "indexerCreated": false,
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:26:19.274Z",
+          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:49:14.304Z",
           "lastIndexerTierDispatchError": "Invalid OAuth token, please authenticate with `slot auth login`\nInvalid OAuth token, please authenticate with `slot auth login`"
         }
       },
@@ -18422,10 +18422,10 @@
         ],
         "artifacts": {
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-08-04T19:26:19.420Z",
+          "pendingIndexerTierRequestedAt": "2026-08-04T19:49:14.366Z",
           "indexerCreated": false,
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:26:19.420Z",
+          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:49:14.366Z",
           "lastIndexerTierDispatchError": "Invalid OAuth token, please authenticate with `slot auth login`\nInvalid OAuth token, please authenticate with `slot auth login`"
         }
       },
@@ -18486,10 +18486,10 @@
         ],
         "artifacts": {
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-08-04T19:26:19.574Z",
+          "pendingIndexerTierRequestedAt": "2026-08-04T19:49:14.430Z",
           "indexerCreated": false,
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:26:19.574Z",
+          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:49:14.430Z",
           "lastIndexerTierDispatchError": "Invalid OAuth token, please authenticate with `slot auth login`\nInvalid OAuth token, please authenticate with `slot auth login`"
         }
       },
@@ -18550,10 +18550,10 @@
         ],
         "artifacts": {
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-08-04T19:26:19.730Z",
+          "pendingIndexerTierRequestedAt": "2026-08-04T19:49:14.493Z",
           "indexerCreated": false,
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:26:19.730Z",
+          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:49:14.493Z",
           "lastIndexerTierDispatchError": "Invalid OAuth token, please authenticate with `slot auth login`\nInvalid OAuth token, please authenticate with `slot auth login`"
         }
       },
@@ -18614,10 +18614,10 @@
         ],
         "artifacts": {
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-08-04T19:26:19.879Z",
+          "pendingIndexerTierRequestedAt": "2026-08-04T19:49:14.560Z",
           "indexerCreated": false,
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:26:19.879Z",
+          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:49:14.560Z",
           "lastIndexerTierDispatchError": "Invalid OAuth token, please authenticate with `slot auth login`\nInvalid OAuth token, please authenticate with `slot auth login`"
         }
       },
@@ -18678,10 +18678,10 @@
         ],
         "artifacts": {
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-08-04T19:26:20.033Z",
+          "pendingIndexerTierRequestedAt": "2026-08-04T19:49:14.633Z",
           "indexerCreated": false,
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:26:20.033Z",
+          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:49:14.633Z",
           "lastIndexerTierDispatchError": "Invalid OAuth token, please authenticate with `slot auth login`\nInvalid OAuth token, please authenticate with `slot auth login`"
         }
       },
@@ -18742,10 +18742,10 @@
         ],
         "artifacts": {
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-08-04T19:26:20.191Z",
+          "pendingIndexerTierRequestedAt": "2026-08-04T19:49:14.700Z",
           "indexerCreated": false,
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:26:20.191Z",
+          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:49:14.700Z",
           "lastIndexerTierDispatchError": "Invalid OAuth token, please authenticate with `slot auth login`\nInvalid OAuth token, please authenticate with `slot auth login`"
         }
       },
@@ -18806,10 +18806,10 @@
         ],
         "artifacts": {
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-08-04T19:26:20.360Z",
+          "pendingIndexerTierRequestedAt": "2026-08-04T19:49:14.767Z",
           "indexerCreated": false,
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:26:20.360Z",
+          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:49:14.767Z",
           "lastIndexerTierDispatchError": "Invalid OAuth token, please authenticate with `slot auth login`\nInvalid OAuth token, please authenticate with `slot auth login`"
         }
       },
@@ -18870,10 +18870,10 @@
         ],
         "artifacts": {
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-08-04T19:26:20.519Z",
+          "pendingIndexerTierRequestedAt": "2026-08-04T19:49:14.836Z",
           "indexerCreated": false,
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:26:20.519Z",
+          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:49:14.836Z",
           "lastIndexerTierDispatchError": "Invalid OAuth token, please authenticate with `slot auth login`\nInvalid OAuth token, please authenticate with `slot auth login`"
         }
       },
@@ -18934,10 +18934,10 @@
         ],
         "artifacts": {
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-08-04T19:26:20.676Z",
+          "pendingIndexerTierRequestedAt": "2026-08-04T19:49:14.902Z",
           "indexerCreated": false,
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:26:20.676Z",
+          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:49:14.902Z",
           "lastIndexerTierDispatchError": "Invalid OAuth token, please authenticate with `slot auth login`\nInvalid OAuth token, please authenticate with `slot auth login`"
         }
       },
@@ -18998,10 +18998,10 @@
         ],
         "artifacts": {
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-08-04T19:26:20.831Z",
+          "pendingIndexerTierRequestedAt": "2026-08-04T19:49:14.968Z",
           "indexerCreated": false,
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:26:20.831Z",
+          "lastIndexerTierDispatchFailedAt": "2026-08-04T19:49:14.968Z",
           "lastIndexerTierDispatchError": "Invalid OAuth token, please authenticate with `slot auth login`\nInvalid OAuth token, please authenticate with `slot auth login`"
         }
       },
