@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-08-05T03:23:55.861Z",
+  "updatedAt": "2026-08-05T03:27:34.953Z",
   "entries": {
     "eternum-game-mainnet-38-pro": {
       "gameName": "eternum-game-mainnet-38-pro",
@@ -4821,7 +4821,7 @@
         "stateSource": "describe-and-list-failed",
         "describeError": "Invalid OAuth token, please authenticate with `slot auth login`\nInvalid OAuth token, please authenticate with `slot auth login`"
       },
-      "updatedAt": "2026-08-05T03:07:54.953Z"
+      "updatedAt": "2026-08-05T03:27:34.953Z"
     }
   }
 }
