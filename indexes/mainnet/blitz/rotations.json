@@ -2,7 +2,7 @@
   "version": 1,
   "environment": "mainnet.blitz",
   "kind": "rotation",
-  "updatedAt": "2026-08-05T18:41:49.022Z",
+  "updatedAt": "2026-08-05T18:45:03.085Z",
   "entries": {
     "bltz-warzone": {
       "kind": "rotation",
@@ -86,7 +86,7 @@
       "path": "runs/mainnet/blitz/rotations/blitz-rotation.json",
       "inputPath": "inputs/mainnet/blitz/rotations/blitz-rotation/31035849223-1.json",
       "status": "attention",
-      "updatedAt": "2026-08-05T18:41:49.022Z",
+      "updatedAt": "2026-08-05T18:45:03.085Z",
       "workflowRef": "next",
       "currentStepId": "configure-worlds",
       "hasRunningStep": false,
@@ -381,7 +381,7 @@
           "artifacts": {
             "indexerCreated": false,
             "pendingIndexerTierTarget": "pro",
-            "pendingIndexerTierRequestedAt": "2026-08-05T18:40:44.107Z"
+            "pendingIndexerTierRequestedAt": "2026-08-05T18:44:42.060Z"
           }
         },
         {
@@ -391,7 +391,7 @@
           "artifacts": {
             "indexerCreated": false,
             "pendingIndexerTierTarget": "pro",
-            "pendingIndexerTierRequestedAt": "2026-08-05T18:40:44.107Z"
+            "pendingIndexerTierRequestedAt": "2026-08-05T18:44:42.206Z"
           }
         },
         {
@@ -401,7 +401,7 @@
           "artifacts": {
             "indexerCreated": false,
             "pendingIndexerTierTarget": "pro",
-            "pendingIndexerTierRequestedAt": "2026-08-05T18:40:44.107Z"
+            "pendingIndexerTierRequestedAt": "2026-08-05T18:44:42.352Z"
           }
         },
         {
@@ -411,7 +411,7 @@
           "artifacts": {
             "indexerCreated": false,
             "pendingIndexerTierTarget": "pro",
-            "pendingIndexerTierRequestedAt": "2026-08-05T18:40:44.107Z"
+            "pendingIndexerTierRequestedAt": "2026-08-05T18:44:42.499Z"
           }
         },
         {
@@ -421,7 +421,7 @@
           "artifacts": {
             "indexerCreated": false,
             "pendingIndexerTierTarget": "pro",
-            "pendingIndexerTierRequestedAt": "2026-08-05T18:40:44.107Z"
+            "pendingIndexerTierRequestedAt": "2026-08-05T18:44:42.644Z"
           }
         },
         {
@@ -431,7 +431,7 @@
           "artifacts": {
             "indexerCreated": false,
             "pendingIndexerTierTarget": "pro",
-            "pendingIndexerTierRequestedAt": "2026-08-05T18:40:44.107Z"
+            "pendingIndexerTierRequestedAt": "2026-08-05T18:44:42.789Z"
           }
         },
         {
@@ -441,7 +441,7 @@
           "artifacts": {
             "indexerCreated": false,
             "pendingIndexerTierTarget": "pro",
-            "pendingIndexerTierRequestedAt": "2026-08-05T18:40:44.107Z"
+            "pendingIndexerTierRequestedAt": "2026-08-05T18:44:42.937Z"
           }
         },
         {
@@ -451,7 +451,7 @@
           "artifacts": {
             "indexerCreated": false,
             "pendingIndexerTierTarget": "pro",
-            "pendingIndexerTierRequestedAt": "2026-08-05T18:40:44.107Z"
+            "pendingIndexerTierRequestedAt": "2026-08-05T18:44:43.083Z"
           }
         },
         {
@@ -461,7 +461,7 @@
           "artifacts": {
             "indexerCreated": false,
             "pendingIndexerTierTarget": "pro",
-            "pendingIndexerTierRequestedAt": "2026-08-05T18:40:44.107Z"
+            "pendingIndexerTierRequestedAt": "2026-08-05T18:44:43.232Z"
           }
         },
         {
@@ -471,7 +471,7 @@
           "artifacts": {
             "indexerCreated": false,
             "pendingIndexerTierTarget": "pro",
-            "pendingIndexerTierRequestedAt": "2026-08-05T18:40:44.107Z"
+            "pendingIndexerTierRequestedAt": "2026-08-05T18:44:43.376Z"
           }
         },
         {
@@ -481,7 +481,7 @@
           "artifacts": {
             "indexerCreated": false,
             "pendingIndexerTierTarget": "pro",
-            "pendingIndexerTierRequestedAt": "2026-08-05T18:40:44.107Z"
+            "pendingIndexerTierRequestedAt": "2026-08-05T18:44:43.521Z"
           }
         },
         {
@@ -491,7 +491,7 @@
           "artifacts": {
             "indexerCreated": false,
             "pendingIndexerTierTarget": "pro",
-            "pendingIndexerTierRequestedAt": "2026-08-05T18:40:44.107Z"
+            "pendingIndexerTierRequestedAt": "2026-08-05T18:44:43.669Z"
           }
         },
         {
@@ -501,7 +501,7 @@
           "artifacts": {
             "indexerCreated": false,
             "pendingIndexerTierTarget": "pro",
-            "pendingIndexerTierRequestedAt": "2026-08-05T18:40:44.107Z"
+            "pendingIndexerTierRequestedAt": "2026-08-05T18:44:43.817Z"
           }
         },
         {
@@ -511,7 +511,7 @@
           "artifacts": {
             "indexerCreated": false,
             "pendingIndexerTierTarget": "pro",
-            "pendingIndexerTierRequestedAt": "2026-08-05T18:40:44.107Z"
+            "pendingIndexerTierRequestedAt": "2026-08-05T18:44:43.965Z"
           }
         },
         {
@@ -521,7 +521,7 @@
           "artifacts": {
             "indexerCreated": false,
             "pendingIndexerTierTarget": "pro",
-            "pendingIndexerTierRequestedAt": "2026-08-05T18:40:44.107Z"
+            "pendingIndexerTierRequestedAt": "2026-08-05T18:44:44.108Z"
           }
         },
         {
@@ -531,7 +531,7 @@
           "artifacts": {
             "indexerCreated": false,
             "pendingIndexerTierTarget": "pro",
-            "pendingIndexerTierRequestedAt": "2026-08-05T18:40:44.107Z"
+            "pendingIndexerTierRequestedAt": "2026-08-05T18:44:44.260Z"
           }
         },
         {
@@ -541,7 +541,7 @@
           "artifacts": {
             "indexerCreated": false,
             "pendingIndexerTierTarget": "pro",
-            "pendingIndexerTierRequestedAt": "2026-08-05T18:40:44.107Z"
+            "pendingIndexerTierRequestedAt": "2026-08-05T18:44:44.409Z"
           }
         },
         {
@@ -551,7 +551,7 @@
           "artifacts": {
             "indexerCreated": false,
             "pendingIndexerTierTarget": "pro",
-            "pendingIndexerTierRequestedAt": "2026-08-05T18:40:44.107Z"
+            "pendingIndexerTierRequestedAt": "2026-08-05T18:44:44.554Z"
           }
         },
         {
@@ -561,7 +561,7 @@
           "artifacts": {
             "indexerCreated": false,
             "pendingIndexerTierTarget": "pro",
-            "pendingIndexerTierRequestedAt": "2026-08-05T18:40:44.107Z"
+            "pendingIndexerTierRequestedAt": "2026-08-05T18:44:44.699Z"
           }
         },
         {
@@ -571,7 +571,7 @@
           "artifacts": {
             "indexerCreated": false,
             "pendingIndexerTierTarget": "pro",
-            "pendingIndexerTierRequestedAt": "2026-08-05T18:40:44.107Z"
+            "pendingIndexerTierRequestedAt": "2026-08-05T18:44:44.846Z"
           }
         },
         {
@@ -581,7 +581,7 @@
           "artifacts": {
             "indexerCreated": false,
             "pendingIndexerTierTarget": "pro",
-            "pendingIndexerTierRequestedAt": "2026-08-05T18:40:44.107Z"
+            "pendingIndexerTierRequestedAt": "2026-08-05T18:44:44.991Z"
           }
         },
         {
@@ -591,7 +591,7 @@
           "artifacts": {
             "indexerCreated": false,
             "pendingIndexerTierTarget": "pro",
-            "pendingIndexerTierRequestedAt": "2026-08-05T18:40:44.107Z"
+            "pendingIndexerTierRequestedAt": "2026-08-05T18:44:45.135Z"
           }
         },
         {
@@ -601,7 +601,7 @@
           "artifacts": {
             "indexerCreated": false,
             "pendingIndexerTierTarget": "pro",
-            "pendingIndexerTierRequestedAt": "2026-08-05T18:40:44.107Z"
+            "pendingIndexerTierRequestedAt": "2026-08-05T18:44:45.282Z"
           }
         },
         {
@@ -611,7 +611,7 @@
           "artifacts": {
             "indexerCreated": false,
             "pendingIndexerTierTarget": "pro",
-            "pendingIndexerTierRequestedAt": "2026-08-05T18:40:44.107Z"
+            "pendingIndexerTierRequestedAt": "2026-08-05T18:44:45.433Z"
           }
         },
         {
@@ -621,7 +621,7 @@
           "artifacts": {
             "indexerCreated": false,
             "pendingIndexerTierTarget": "pro",
-            "pendingIndexerTierRequestedAt": "2026-08-05T18:40:44.107Z"
+            "pendingIndexerTierRequestedAt": "2026-08-05T18:44:45.580Z"
           }
         },
         {
@@ -631,7 +631,7 @@
           "artifacts": {
             "indexerCreated": false,
             "pendingIndexerTierTarget": "pro",
-            "pendingIndexerTierRequestedAt": "2026-08-05T18:40:44.107Z"
+            "pendingIndexerTierRequestedAt": "2026-08-05T18:44:45.725Z"
           }
         },
         {
@@ -641,7 +641,7 @@
           "artifacts": {
             "indexerCreated": false,
             "pendingIndexerTierTarget": "pro",
-            "pendingIndexerTierRequestedAt": "2026-08-05T18:40:44.107Z"
+            "pendingIndexerTierRequestedAt": "2026-08-05T18:44:45.871Z"
           }
         },
         {
@@ -651,7 +651,7 @@
           "artifacts": {
             "indexerCreated": false,
             "pendingIndexerTierTarget": "pro",
-            "pendingIndexerTierRequestedAt": "2026-08-05T18:40:44.107Z"
+            "pendingIndexerTierRequestedAt": "2026-08-05T18:44:46.022Z"
           }
         },
         {
@@ -661,7 +661,7 @@
           "artifacts": {
             "indexerCreated": false,
             "pendingIndexerTierTarget": "pro",
-            "pendingIndexerTierRequestedAt": "2026-08-05T18:40:44.107Z"
+            "pendingIndexerTierRequestedAt": "2026-08-05T18:44:46.170Z"
           }
         },
         {
@@ -671,7 +671,7 @@
           "artifacts": {
             "indexerCreated": false,
             "pendingIndexerTierTarget": "pro",
-            "pendingIndexerTierRequestedAt": "2026-08-05T18:40:44.107Z"
+            "pendingIndexerTierRequestedAt": "2026-08-05T18:44:46.316Z"
           }
         },
         {
@@ -681,7 +681,7 @@
           "artifacts": {
             "indexerCreated": false,
             "pendingIndexerTierTarget": "pro",
-            "pendingIndexerTierRequestedAt": "2026-08-05T18:40:44.107Z"
+            "pendingIndexerTierRequestedAt": "2026-08-05T18:44:46.464Z"
           }
         },
         {
@@ -691,7 +691,7 @@
           "artifacts": {
             "indexerCreated": false,
             "pendingIndexerTierTarget": "pro",
-            "pendingIndexerTierRequestedAt": "2026-08-05T18:40:44.107Z"
+            "pendingIndexerTierRequestedAt": "2026-08-05T18:44:46.611Z"
           }
         },
         {
@@ -701,7 +701,7 @@
           "artifacts": {
             "indexerCreated": false,
             "pendingIndexerTierTarget": "pro",
-            "pendingIndexerTierRequestedAt": "2026-08-05T18:40:44.107Z"
+            "pendingIndexerTierRequestedAt": "2026-08-05T18:44:46.755Z"
           }
         },
         {
@@ -711,7 +711,7 @@
           "artifacts": {
             "indexerCreated": false,
             "pendingIndexerTierTarget": "pro",
-            "pendingIndexerTierRequestedAt": "2026-08-05T18:40:44.107Z"
+            "pendingIndexerTierRequestedAt": "2026-08-05T18:44:46.901Z"
           }
         },
         {
@@ -721,7 +721,7 @@
           "artifacts": {
             "indexerCreated": false,
             "pendingIndexerTierTarget": "pro",
-            "pendingIndexerTierRequestedAt": "2026-08-05T18:40:44.107Z"
+            "pendingIndexerTierRequestedAt": "2026-08-05T18:44:47.049Z"
           }
         },
         {
@@ -731,7 +731,7 @@
           "artifacts": {
             "indexerCreated": false,
             "pendingIndexerTierTarget": "pro",
-            "pendingIndexerTierRequestedAt": "2026-08-05T18:40:44.107Z"
+            "pendingIndexerTierRequestedAt": "2026-08-05T18:44:47.196Z"
           }
         },
         {
@@ -741,7 +741,7 @@
           "artifacts": {
             "indexerCreated": false,
             "pendingIndexerTierTarget": "pro",
-            "pendingIndexerTierRequestedAt": "2026-08-05T18:40:44.107Z"
+            "pendingIndexerTierRequestedAt": "2026-08-05T18:44:47.343Z"
           }
         },
         {
@@ -751,7 +751,7 @@
           "artifacts": {
             "indexerCreated": false,
             "pendingIndexerTierTarget": "pro",
-            "pendingIndexerTierRequestedAt": "2026-08-05T18:40:44.107Z"
+            "pendingIndexerTierRequestedAt": "2026-08-05T18:44:47.490Z"
           }
         },
         {
@@ -761,7 +761,7 @@
           "artifacts": {
             "indexerCreated": false,
             "pendingIndexerTierTarget": "pro",
-            "pendingIndexerTierRequestedAt": "2026-08-05T18:40:44.107Z"
+            "pendingIndexerTierRequestedAt": "2026-08-05T18:44:47.636Z"
           }
         },
         {
@@ -771,7 +771,7 @@
           "artifacts": {
             "indexerCreated": false,
             "pendingIndexerTierTarget": "pro",
-            "pendingIndexerTierRequestedAt": "2026-08-05T18:40:44.107Z"
+            "pendingIndexerTierRequestedAt": "2026-08-05T18:44:47.784Z"
           }
         },
         {
@@ -781,7 +781,7 @@
           "artifacts": {
             "indexerCreated": false,
             "pendingIndexerTierTarget": "pro",
-            "pendingIndexerTierRequestedAt": "2026-08-05T18:40:44.107Z"
+            "pendingIndexerTierRequestedAt": "2026-08-05T18:44:47.933Z"
           }
         },
         {
@@ -791,7 +791,7 @@
           "artifacts": {
             "indexerCreated": false,
             "pendingIndexerTierTarget": "pro",
-            "pendingIndexerTierRequestedAt": "2026-08-05T18:40:44.107Z"
+            "pendingIndexerTierRequestedAt": "2026-08-05T18:44:48.079Z"
           }
         },
         {
@@ -801,7 +801,7 @@
           "artifacts": {
             "indexerCreated": false,
             "pendingIndexerTierTarget": "pro",
-            "pendingIndexerTierRequestedAt": "2026-08-05T18:40:44.107Z"
+            "pendingIndexerTierRequestedAt": "2026-08-05T18:44:48.226Z"
           }
         },
         {
@@ -811,7 +811,7 @@
           "artifacts": {
             "indexerCreated": false,
             "pendingIndexerTierTarget": "pro",
-            "pendingIndexerTierRequestedAt": "2026-08-05T18:40:44.107Z"
+            "pendingIndexerTierRequestedAt": "2026-08-05T18:44:48.369Z"
           }
         },
         {
@@ -821,7 +821,7 @@
           "artifacts": {
             "indexerCreated": false,
             "pendingIndexerTierTarget": "pro",
-            "pendingIndexerTierRequestedAt": "2026-08-05T18:40:44.107Z"
+            "pendingIndexerTierRequestedAt": "2026-08-05T18:44:48.514Z"
           }
         },
         {
@@ -831,7 +831,7 @@
           "artifacts": {
             "indexerCreated": false,
             "pendingIndexerTierTarget": "pro",
-            "pendingIndexerTierRequestedAt": "2026-08-05T18:40:44.107Z"
+            "pendingIndexerTierRequestedAt": "2026-08-05T18:44:48.660Z"
           }
         },
         {
@@ -841,7 +841,7 @@
           "artifacts": {
             "indexerCreated": false,
             "pendingIndexerTierTarget": "pro",
-            "pendingIndexerTierRequestedAt": "2026-08-05T18:40:44.107Z"
+            "pendingIndexerTierRequestedAt": "2026-08-05T18:44:48.810Z"
           }
         },
         {
@@ -851,7 +851,7 @@
           "artifacts": {
             "indexerCreated": false,
             "pendingIndexerTierTarget": "pro",
-            "pendingIndexerTierRequestedAt": "2026-08-05T18:40:44.107Z"
+            "pendingIndexerTierRequestedAt": "2026-08-05T18:44:48.959Z"
           }
         },
         {
@@ -861,7 +861,7 @@
           "artifacts": {
             "indexerCreated": false,
             "pendingIndexerTierTarget": "pro",
-            "pendingIndexerTierRequestedAt": "2026-08-05T18:40:44.107Z"
+            "pendingIndexerTierRequestedAt": "2026-08-05T18:44:49.104Z"
           }
         },
         {
@@ -871,7 +871,7 @@
           "artifacts": {
             "indexerCreated": false,
             "pendingIndexerTierTarget": "pro",
-            "pendingIndexerTierRequestedAt": "2026-08-05T18:40:44.107Z"
+            "pendingIndexerTierRequestedAt": "2026-08-05T18:44:49.251Z"
           }
         },
         {
@@ -881,7 +881,7 @@
           "artifacts": {
             "indexerCreated": false,
             "pendingIndexerTierTarget": "pro",
-            "pendingIndexerTierRequestedAt": "2026-08-05T18:40:44.107Z"
+            "pendingIndexerTierRequestedAt": "2026-08-05T18:44:49.398Z"
           }
         },
         {
@@ -891,7 +891,7 @@
           "artifacts": {
             "indexerCreated": false,
             "pendingIndexerTierTarget": "pro",
-            "pendingIndexerTierRequestedAt": "2026-08-05T18:40:44.107Z"
+            "pendingIndexerTierRequestedAt": "2026-08-05T18:44:49.545Z"
           }
         },
         {
@@ -901,7 +901,7 @@
           "artifacts": {
             "indexerCreated": false,
             "pendingIndexerTierTarget": "pro",
-            "pendingIndexerTierRequestedAt": "2026-08-05T18:40:44.107Z"
+            "pendingIndexerTierRequestedAt": "2026-08-05T18:44:49.692Z"
           }
         },
         {
@@ -911,7 +911,7 @@
           "artifacts": {
             "indexerCreated": false,
             "pendingIndexerTierTarget": "pro",
-            "pendingIndexerTierRequestedAt": "2026-08-05T18:40:44.107Z"
+            "pendingIndexerTierRequestedAt": "2026-08-05T18:44:49.841Z"
           }
         },
         {
@@ -921,7 +921,7 @@
           "artifacts": {
             "indexerCreated": false,
             "pendingIndexerTierTarget": "pro",
-            "pendingIndexerTierRequestedAt": "2026-08-05T18:40:44.107Z"
+            "pendingIndexerTierRequestedAt": "2026-08-05T18:44:49.990Z"
           }
         },
         {
@@ -931,7 +931,7 @@
           "artifacts": {
             "indexerCreated": false,
             "pendingIndexerTierTarget": "pro",
-            "pendingIndexerTierRequestedAt": "2026-08-05T18:40:44.107Z"
+            "pendingIndexerTierRequestedAt": "2026-08-05T18:44:50.135Z"
           }
         },
         {
@@ -941,7 +941,7 @@
           "artifacts": {
             "indexerCreated": false,
             "pendingIndexerTierTarget": "pro",
-            "pendingIndexerTierRequestedAt": "2026-08-05T18:40:44.107Z"
+            "pendingIndexerTierRequestedAt": "2026-08-05T18:44:50.286Z"
           }
         },
         {
@@ -951,7 +951,7 @@
           "artifacts": {
             "indexerCreated": false,
             "pendingIndexerTierTarget": "pro",
-            "pendingIndexerTierRequestedAt": "2026-08-05T18:40:44.107Z"
+            "pendingIndexerTierRequestedAt": "2026-08-05T18:44:50.435Z"
           }
         },
         {
@@ -961,7 +961,7 @@
           "artifacts": {
             "indexerCreated": false,
             "pendingIndexerTierTarget": "pro",
-            "pendingIndexerTierRequestedAt": "2026-08-05T18:40:44.107Z"
+            "pendingIndexerTierRequestedAt": "2026-08-05T18:44:50.585Z"
           }
         },
         {
@@ -971,7 +971,7 @@
           "artifacts": {
             "indexerCreated": false,
             "pendingIndexerTierTarget": "pro",
-            "pendingIndexerTierRequestedAt": "2026-08-05T18:40:44.107Z"
+            "pendingIndexerTierRequestedAt": "2026-08-05T18:44:50.736Z"
           }
         },
         {
@@ -981,7 +981,7 @@
           "artifacts": {
             "indexerCreated": false,
             "pendingIndexerTierTarget": "pro",
-            "pendingIndexerTierRequestedAt": "2026-08-05T18:40:44.107Z"
+            "pendingIndexerTierRequestedAt": "2026-08-05T18:44:50.888Z"
           }
         },
         {
@@ -991,7 +991,7 @@
           "artifacts": {
             "indexerCreated": false,
             "pendingIndexerTierTarget": "pro",
-            "pendingIndexerTierRequestedAt": "2026-08-05T18:40:44.107Z"
+            "pendingIndexerTierRequestedAt": "2026-08-05T18:44:51.039Z"
           }
         },
         {
@@ -1001,7 +1001,7 @@
           "artifacts": {
             "indexerCreated": false,
             "pendingIndexerTierTarget": "pro",
-            "pendingIndexerTierRequestedAt": "2026-08-05T18:40:44.107Z"
+            "pendingIndexerTierRequestedAt": "2026-08-05T18:44:51.186Z"
           }
         },
         {
@@ -1011,7 +1011,7 @@
           "artifacts": {
             "indexerCreated": false,
             "pendingIndexerTierTarget": "pro",
-            "pendingIndexerTierRequestedAt": "2026-08-05T18:40:44.107Z"
+            "pendingIndexerTierRequestedAt": "2026-08-05T18:44:51.332Z"
           }
         },
         {
@@ -1021,7 +1021,7 @@
           "artifacts": {
             "indexerCreated": false,
             "pendingIndexerTierTarget": "pro",
-            "pendingIndexerTierRequestedAt": "2026-08-05T18:40:44.107Z"
+            "pendingIndexerTierRequestedAt": "2026-08-05T18:44:51.478Z"
           }
         },
         {
@@ -1031,7 +1031,7 @@
           "artifacts": {
             "indexerCreated": false,
             "pendingIndexerTierTarget": "pro",
-            "pendingIndexerTierRequestedAt": "2026-08-05T18:40:44.107Z"
+            "pendingIndexerTierRequestedAt": "2026-08-05T18:44:51.625Z"
           }
         },
         {
@@ -1041,7 +1041,7 @@
           "artifacts": {
             "indexerCreated": false,
             "pendingIndexerTierTarget": "pro",
-            "pendingIndexerTierRequestedAt": "2026-08-05T18:40:44.107Z"
+            "pendingIndexerTierRequestedAt": "2026-08-05T18:44:51.769Z"
           }
         },
         {
@@ -1051,7 +1051,7 @@
           "artifacts": {
             "indexerCreated": false,
             "pendingIndexerTierTarget": "pro",
-            "pendingIndexerTierRequestedAt": "2026-08-05T18:40:44.107Z"
+            "pendingIndexerTierRequestedAt": "2026-08-05T18:44:51.922Z"
           }
         },
         {
@@ -1061,7 +1061,7 @@
           "artifacts": {
             "indexerCreated": false,
             "pendingIndexerTierTarget": "pro",
-            "pendingIndexerTierRequestedAt": "2026-08-05T18:40:44.107Z"
+            "pendingIndexerTierRequestedAt": "2026-08-05T18:44:52.069Z"
           }
         },
         {
@@ -1071,7 +1071,7 @@
           "artifacts": {
             "indexerCreated": false,
             "pendingIndexerTierTarget": "pro",
-            "pendingIndexerTierRequestedAt": "2026-08-05T18:40:44.107Z"
+            "pendingIndexerTierRequestedAt": "2026-08-05T18:44:52.218Z"
           }
         },
         {
@@ -1081,7 +1081,7 @@
           "artifacts": {
             "indexerCreated": false,
             "pendingIndexerTierTarget": "pro",
-            "pendingIndexerTierRequestedAt": "2026-08-05T18:40:44.107Z"
+            "pendingIndexerTierRequestedAt": "2026-08-05T18:44:52.366Z"
           }
         },
         {
@@ -1091,7 +1091,7 @@
           "artifacts": {
             "indexerCreated": false,
             "pendingIndexerTierTarget": "pro",
-            "pendingIndexerTierRequestedAt": "2026-08-05T18:40:44.107Z"
+            "pendingIndexerTierRequestedAt": "2026-08-05T18:44:52.512Z"
           }
         },
         {
@@ -1101,7 +1101,7 @@
           "artifacts": {
             "indexerCreated": false,
             "pendingIndexerTierTarget": "pro",
-            "pendingIndexerTierRequestedAt": "2026-08-05T18:40:44.107Z"
+            "pendingIndexerTierRequestedAt": "2026-08-05T18:44:52.660Z"
           }
         },
         {
@@ -1111,7 +1111,7 @@
           "artifacts": {
             "indexerCreated": false,
             "pendingIndexerTierTarget": "pro",
-            "pendingIndexerTierRequestedAt": "2026-08-05T18:40:44.107Z"
+            "pendingIndexerTierRequestedAt": "2026-08-05T18:44:52.806Z"
           }
         },
         {
@@ -1121,7 +1121,7 @@
           "artifacts": {
             "indexerCreated": false,
             "pendingIndexerTierTarget": "pro",
-            "pendingIndexerTierRequestedAt": "2026-08-05T18:40:44.107Z"
+            "pendingIndexerTierRequestedAt": "2026-08-05T18:44:52.950Z"
           }
         },
         {
@@ -1131,7 +1131,7 @@
           "artifacts": {
             "indexerCreated": false,
             "pendingIndexerTierTarget": "pro",
-            "pendingIndexerTierRequestedAt": "2026-08-05T18:40:44.107Z"
+            "pendingIndexerTierRequestedAt": "2026-08-05T18:44:53.094Z"
           }
         },
         {
@@ -1141,7 +1141,7 @@
           "artifacts": {
             "indexerCreated": false,
             "pendingIndexerTierTarget": "pro",
-            "pendingIndexerTierRequestedAt": "2026-08-05T18:40:44.107Z"
+            "pendingIndexerTierRequestedAt": "2026-08-05T18:44:53.241Z"
           }
         },
         {
@@ -1151,7 +1151,7 @@
           "artifacts": {
             "indexerCreated": false,
             "pendingIndexerTierTarget": "pro",
-            "pendingIndexerTierRequestedAt": "2026-08-05T18:40:44.107Z"
+            "pendingIndexerTierRequestedAt": "2026-08-05T18:44:53.389Z"
           }
         },
         {
@@ -1161,7 +1161,7 @@
           "artifacts": {
             "indexerCreated": false,
             "pendingIndexerTierTarget": "pro",
-            "pendingIndexerTierRequestedAt": "2026-08-05T18:40:44.107Z"
+            "pendingIndexerTierRequestedAt": "2026-08-05T18:44:53.534Z"
           }
         },
         {
@@ -1171,7 +1171,7 @@
           "artifacts": {
             "indexerCreated": false,
             "pendingIndexerTierTarget": "pro",
-            "pendingIndexerTierRequestedAt": "2026-08-05T18:40:44.107Z"
+            "pendingIndexerTierRequestedAt": "2026-08-05T18:44:53.676Z"
           }
         },
         {
@@ -1181,7 +1181,7 @@
           "artifacts": {
             "indexerCreated": false,
             "pendingIndexerTierTarget": "pro",
-            "pendingIndexerTierRequestedAt": "2026-08-05T18:40:44.107Z"
+            "pendingIndexerTierRequestedAt": "2026-08-05T18:44:53.823Z"
           }
         },
         {
@@ -1191,7 +1191,7 @@
           "artifacts": {
             "indexerCreated": false,
             "pendingIndexerTierTarget": "pro",
-            "pendingIndexerTierRequestedAt": "2026-08-05T18:40:44.107Z"
+            "pendingIndexerTierRequestedAt": "2026-08-05T18:44:53.968Z"
           }
         },
         {
@@ -1201,7 +1201,7 @@
           "artifacts": {
             "indexerCreated": false,
             "pendingIndexerTierTarget": "pro",
-            "pendingIndexerTierRequestedAt": "2026-08-05T18:40:44.107Z"
+            "pendingIndexerTierRequestedAt": "2026-08-05T18:44:54.114Z"
           }
         },
         {
@@ -1211,7 +1211,7 @@
           "artifacts": {
             "indexerCreated": false,
             "pendingIndexerTierTarget": "pro",
-            "pendingIndexerTierRequestedAt": "2026-08-05T18:40:44.107Z"
+            "pendingIndexerTierRequestedAt": "2026-08-05T18:44:54.263Z"
           }
         },
         {
@@ -1221,7 +1221,7 @@
           "artifacts": {
             "indexerCreated": false,
             "pendingIndexerTierTarget": "pro",
-            "pendingIndexerTierRequestedAt": "2026-08-05T18:40:44.107Z"
+            "pendingIndexerTierRequestedAt": "2026-08-05T18:44:54.406Z"
           }
         },
         {
@@ -1231,7 +1231,7 @@
           "artifacts": {
             "indexerCreated": false,
             "pendingIndexerTierTarget": "pro",
-            "pendingIndexerTierRequestedAt": "2026-08-05T18:40:44.107Z"
+            "pendingIndexerTierRequestedAt": "2026-08-05T18:44:54.552Z"
           }
         },
         {
@@ -1241,7 +1241,7 @@
           "artifacts": {
             "indexerCreated": false,
             "pendingIndexerTierTarget": "pro",
-            "pendingIndexerTierRequestedAt": "2026-08-05T18:40:44.107Z"
+            "pendingIndexerTierRequestedAt": "2026-08-05T18:44:54.698Z"
           }
         },
         {
@@ -1251,7 +1251,7 @@
           "artifacts": {
             "indexerCreated": false,
             "pendingIndexerTierTarget": "pro",
-            "pendingIndexerTierRequestedAt": "2026-08-05T18:40:44.107Z"
+            "pendingIndexerTierRequestedAt": "2026-08-05T18:44:54.848Z"
           }
         },
         {
@@ -1261,7 +1261,7 @@
           "artifacts": {
             "indexerCreated": false,
             "pendingIndexerTierTarget": "pro",
-            "pendingIndexerTierRequestedAt": "2026-08-05T18:40:44.107Z"
+            "pendingIndexerTierRequestedAt": "2026-08-05T18:44:54.995Z"
           }
         },
         {
@@ -1271,7 +1271,7 @@
           "artifacts": {
             "indexerCreated": false,
             "pendingIndexerTierTarget": "pro",
-            "pendingIndexerTierRequestedAt": "2026-08-05T18:40:44.107Z"
+            "pendingIndexerTierRequestedAt": "2026-08-05T18:44:55.142Z"
           }
         },
         {
@@ -1281,7 +1281,7 @@
           "artifacts": {
             "indexerCreated": false,
             "pendingIndexerTierTarget": "pro",
-            "pendingIndexerTierRequestedAt": "2026-08-05T18:40:44.107Z"
+            "pendingIndexerTierRequestedAt": "2026-08-05T18:44:55.285Z"
           }
         },
         {
@@ -1291,7 +1291,7 @@
           "artifacts": {
             "indexerCreated": false,
             "pendingIndexerTierTarget": "pro",
-            "pendingIndexerTierRequestedAt": "2026-08-05T18:40:44.107Z"
+            "pendingIndexerTierRequestedAt": "2026-08-05T18:44:55.434Z"
           }
         },
         {
@@ -1301,7 +1301,7 @@
           "artifacts": {
             "indexerCreated": false,
             "pendingIndexerTierTarget": "pro",
-            "pendingIndexerTierRequestedAt": "2026-08-05T18:40:44.107Z"
+            "pendingIndexerTierRequestedAt": "2026-08-05T18:44:55.579Z"
           }
         },
         {
@@ -1311,7 +1311,7 @@
           "artifacts": {
             "indexerCreated": false,
             "pendingIndexerTierTarget": "pro",
-            "pendingIndexerTierRequestedAt": "2026-08-05T18:40:44.107Z"
+            "pendingIndexerTierRequestedAt": "2026-08-05T18:44:55.724Z"
           }
         },
         {
@@ -1321,7 +1321,7 @@
           "artifacts": {
             "indexerCreated": false,
             "pendingIndexerTierTarget": "pro",
-            "pendingIndexerTierRequestedAt": "2026-08-05T18:40:44.107Z"
+            "pendingIndexerTierRequestedAt": "2026-08-05T18:44:55.870Z"
           }
         },
         {
@@ -1331,7 +1331,7 @@
           "artifacts": {
             "indexerCreated": false,
             "pendingIndexerTierTarget": "pro",
-            "pendingIndexerTierRequestedAt": "2026-08-05T18:40:44.107Z"
+            "pendingIndexerTierRequestedAt": "2026-08-05T18:44:56.016Z"
           }
         },
         {
@@ -1341,7 +1341,7 @@
           "artifacts": {
             "indexerCreated": false,
             "pendingIndexerTierTarget": "pro",
-            "pendingIndexerTierRequestedAt": "2026-08-05T18:40:44.107Z"
+            "pendingIndexerTierRequestedAt": "2026-08-05T18:44:56.162Z"
           }
         },
         {
@@ -1351,7 +1351,7 @@
           "artifacts": {
             "indexerCreated": false,
             "pendingIndexerTierTarget": "pro",
-            "pendingIndexerTierRequestedAt": "2026-08-05T18:40:44.107Z"
+            "pendingIndexerTierRequestedAt": "2026-08-05T18:44:56.311Z"
           }
         },
         {
@@ -1361,7 +1361,7 @@
           "artifacts": {
             "indexerCreated": false,
             "pendingIndexerTierTarget": "pro",
-            "pendingIndexerTierRequestedAt": "2026-08-05T18:40:44.107Z"
+            "pendingIndexerTierRequestedAt": "2026-08-05T18:44:56.458Z"
           }
         },
         {
@@ -1371,7 +1371,7 @@
           "artifacts": {
             "indexerCreated": false,
             "pendingIndexerTierTarget": "pro",
-            "pendingIndexerTierRequestedAt": "2026-08-05T18:40:44.107Z"
+            "pendingIndexerTierRequestedAt": "2026-08-05T18:44:56.610Z"
           }
         },
         {
@@ -1381,7 +1381,7 @@
           "artifacts": {
             "indexerCreated": false,
             "pendingIndexerTierTarget": "pro",
-            "pendingIndexerTierRequestedAt": "2026-08-05T18:40:44.107Z"
+            "pendingIndexerTierRequestedAt": "2026-08-05T18:44:56.755Z"
           }
         },
         {
@@ -1391,7 +1391,7 @@
           "artifacts": {
             "indexerCreated": false,
             "pendingIndexerTierTarget": "pro",
-            "pendingIndexerTierRequestedAt": "2026-08-05T18:40:44.107Z"
+            "pendingIndexerTierRequestedAt": "2026-08-05T18:44:56.903Z"
           }
         },
         {
@@ -1401,7 +1401,7 @@
           "artifacts": {
             "indexerCreated": false,
             "pendingIndexerTierTarget": "pro",
-            "pendingIndexerTierRequestedAt": "2026-08-05T18:40:44.107Z"
+            "pendingIndexerTierRequestedAt": "2026-08-05T18:44:57.051Z"
           }
         },
         {
@@ -1411,7 +1411,7 @@
           "artifacts": {
             "indexerCreated": false,
             "pendingIndexerTierTarget": "pro",
-            "pendingIndexerTierRequestedAt": "2026-08-05T18:40:44.107Z"
+            "pendingIndexerTierRequestedAt": "2026-08-05T18:44:57.202Z"
           }
         },
         {
@@ -1421,7 +1421,7 @@
           "artifacts": {
             "indexerCreated": false,
             "pendingIndexerTierTarget": "pro",
-            "pendingIndexerTierRequestedAt": "2026-08-05T18:40:44.107Z"
+            "pendingIndexerTierRequestedAt": "2026-08-05T18:44:57.346Z"
           }
         },
         {
@@ -1431,7 +1431,7 @@
           "artifacts": {
             "indexerCreated": false,
             "pendingIndexerTierTarget": "pro",
-            "pendingIndexerTierRequestedAt": "2026-08-05T18:40:44.107Z"
+            "pendingIndexerTierRequestedAt": "2026-08-05T18:44:57.491Z"
           }
         },
         {
@@ -1441,7 +1441,7 @@
           "artifacts": {
             "indexerCreated": false,
             "pendingIndexerTierTarget": "pro",
-            "pendingIndexerTierRequestedAt": "2026-08-05T18:40:44.107Z"
+            "pendingIndexerTierRequestedAt": "2026-08-05T18:44:57.641Z"
           }
         },
         {
@@ -1451,7 +1451,7 @@
           "artifacts": {
             "indexerCreated": false,
             "pendingIndexerTierTarget": "pro",
-            "pendingIndexerTierRequestedAt": "2026-08-05T18:40:44.107Z"
+            "pendingIndexerTierRequestedAt": "2026-08-05T18:44:57.786Z"
           }
         },
         {
@@ -1461,7 +1461,7 @@
           "artifacts": {
             "indexerCreated": false,
             "pendingIndexerTierTarget": "pro",
-            "pendingIndexerTierRequestedAt": "2026-08-05T18:40:44.107Z"
+            "pendingIndexerTierRequestedAt": "2026-08-05T18:44:57.932Z"
           }
         },
         {
@@ -1471,7 +1471,7 @@
           "artifacts": {
             "indexerCreated": false,
             "pendingIndexerTierTarget": "pro",
-            "pendingIndexerTierRequestedAt": "2026-08-05T18:40:44.107Z"
+            "pendingIndexerTierRequestedAt": "2026-08-05T18:44:58.080Z"
           }
         },
         {
@@ -1481,7 +1481,7 @@
           "artifacts": {
             "indexerCreated": false,
             "pendingIndexerTierTarget": "pro",
-            "pendingIndexerTierRequestedAt": "2026-08-05T18:40:44.107Z"
+            "pendingIndexerTierRequestedAt": "2026-08-05T18:44:58.224Z"
           }
         },
         {
@@ -1491,7 +1491,7 @@
           "artifacts": {
             "indexerCreated": false,
             "pendingIndexerTierTarget": "pro",
-            "pendingIndexerTierRequestedAt": "2026-08-05T18:40:44.107Z"
+            "pendingIndexerTierRequestedAt": "2026-08-05T18:44:58.370Z"
           }
         },
         {
@@ -1501,7 +1501,7 @@
           "artifacts": {
             "indexerCreated": false,
             "pendingIndexerTierTarget": "pro",
-            "pendingIndexerTierRequestedAt": "2026-08-05T18:40:44.107Z"
+            "pendingIndexerTierRequestedAt": "2026-08-05T18:44:58.518Z"
           }
         },
         {
@@ -1511,7 +1511,7 @@
           "artifacts": {
             "indexerCreated": false,
             "pendingIndexerTierTarget": "pro",
-            "pendingIndexerTierRequestedAt": "2026-08-05T18:40:44.107Z"
+            "pendingIndexerTierRequestedAt": "2026-08-05T18:44:58.663Z"
           }
         },
         {
@@ -1521,7 +1521,7 @@
           "artifacts": {
             "indexerCreated": false,
             "pendingIndexerTierTarget": "pro",
-            "pendingIndexerTierRequestedAt": "2026-08-05T18:40:44.107Z"
+            "pendingIndexerTierRequestedAt": "2026-08-05T18:44:58.812Z"
           }
         },
         {
@@ -1531,7 +1531,7 @@
           "artifacts": {
             "indexerCreated": false,
             "pendingIndexerTierTarget": "pro",
-            "pendingIndexerTierRequestedAt": "2026-08-05T18:40:44.107Z"
+            "pendingIndexerTierRequestedAt": "2026-08-05T18:44:58.964Z"
           }
         },
         {
@@ -1541,7 +1541,7 @@
           "artifacts": {
             "indexerCreated": false,
             "pendingIndexerTierTarget": "pro",
-            "pendingIndexerTierRequestedAt": "2026-08-05T18:40:44.107Z"
+            "pendingIndexerTierRequestedAt": "2026-08-05T18:44:59.111Z"
           }
         },
         {
@@ -1551,7 +1551,7 @@
           "artifacts": {
             "indexerCreated": false,
             "pendingIndexerTierTarget": "pro",
-            "pendingIndexerTierRequestedAt": "2026-08-05T18:40:44.107Z"
+            "pendingIndexerTierRequestedAt": "2026-08-05T18:44:59.258Z"
           }
         },
         {
@@ -1561,7 +1561,7 @@
           "artifacts": {
             "indexerCreated": false,
             "pendingIndexerTierTarget": "pro",
-            "pendingIndexerTierRequestedAt": "2026-08-05T18:40:44.107Z"
+            "pendingIndexerTierRequestedAt": "2026-08-05T18:44:59.406Z"
           }
         },
         {
@@ -1571,7 +1571,7 @@
           "artifacts": {
             "indexerCreated": false,
             "pendingIndexerTierTarget": "pro",
-            "pendingIndexerTierRequestedAt": "2026-08-05T18:40:44.107Z"
+            "pendingIndexerTierRequestedAt": "2026-08-05T18:44:59.553Z"
           }
         },
         {
@@ -1581,7 +1581,7 @@
           "artifacts": {
             "indexerCreated": false,
             "pendingIndexerTierTarget": "pro",
-            "pendingIndexerTierRequestedAt": "2026-08-05T18:40:44.107Z"
+            "pendingIndexerTierRequestedAt": "2026-08-05T18:44:59.701Z"
           }
         },
         {
@@ -1591,7 +1591,7 @@
           "artifacts": {
             "indexerCreated": false,
             "pendingIndexerTierTarget": "pro",
-            "pendingIndexerTierRequestedAt": "2026-08-05T18:40:44.107Z"
+            "pendingIndexerTierRequestedAt": "2026-08-05T18:44:59.845Z"
           }
         },
         {
@@ -1601,7 +1601,7 @@
           "artifacts": {
             "indexerCreated": false,
             "pendingIndexerTierTarget": "pro",
-            "pendingIndexerTierRequestedAt": "2026-08-05T18:40:44.107Z"
+            "pendingIndexerTierRequestedAt": "2026-08-05T18:44:59.995Z"
           }
         },
         {
@@ -1611,7 +1611,7 @@
           "artifacts": {
             "indexerCreated": false,
             "pendingIndexerTierTarget": "pro",
-            "pendingIndexerTierRequestedAt": "2026-08-05T18:40:44.107Z"
+            "pendingIndexerTierRequestedAt": "2026-08-05T18:45:00.144Z"
           }
         },
         {
@@ -1621,7 +1621,7 @@
           "artifacts": {
             "indexerCreated": false,
             "pendingIndexerTierTarget": "pro",
-            "pendingIndexerTierRequestedAt": "2026-08-05T18:40:44.107Z"
+            "pendingIndexerTierRequestedAt": "2026-08-05T18:45:00.292Z"
           }
         },
         {
@@ -1631,7 +1631,7 @@
           "artifacts": {
             "indexerCreated": false,
             "pendingIndexerTierTarget": "pro",
-            "pendingIndexerTierRequestedAt": "2026-08-05T18:40:44.107Z"
+            "pendingIndexerTierRequestedAt": "2026-08-05T18:45:00.442Z"
           }
         },
         {
@@ -1641,7 +1641,7 @@
           "artifacts": {
             "indexerCreated": false,
             "pendingIndexerTierTarget": "pro",
-            "pendingIndexerTierRequestedAt": "2026-08-05T18:40:44.107Z"
+            "pendingIndexerTierRequestedAt": "2026-08-05T18:45:00.588Z"
           }
         },
         {
@@ -1651,7 +1651,7 @@
           "artifacts": {
             "indexerCreated": false,
             "pendingIndexerTierTarget": "pro",
-            "pendingIndexerTierRequestedAt": "2026-08-05T18:40:44.107Z"
+            "pendingIndexerTierRequestedAt": "2026-08-05T18:45:00.733Z"
           }
         },
         {
@@ -1661,7 +1661,7 @@
           "artifacts": {
             "indexerCreated": false,
             "pendingIndexerTierTarget": "pro",
-            "pendingIndexerTierRequestedAt": "2026-08-05T18:40:44.107Z"
+            "pendingIndexerTierRequestedAt": "2026-08-05T18:45:00.878Z"
           }
         },
         {
@@ -1671,7 +1671,7 @@
           "artifacts": {
             "indexerCreated": false,
             "pendingIndexerTierTarget": "pro",
-            "pendingIndexerTierRequestedAt": "2026-08-05T18:40:44.107Z"
+            "pendingIndexerTierRequestedAt": "2026-08-05T18:45:01.028Z"
           }
         },
         {
@@ -1681,7 +1681,7 @@
           "artifacts": {
             "indexerCreated": false,
             "pendingIndexerTierTarget": "pro",
-            "pendingIndexerTierRequestedAt": "2026-08-05T18:40:44.107Z"
+            "pendingIndexerTierRequestedAt": "2026-08-05T18:45:01.179Z"
           }
         },
         {
@@ -1691,7 +1691,7 @@
           "artifacts": {
             "indexerCreated": false,
             "pendingIndexerTierTarget": "pro",
-            "pendingIndexerTierRequestedAt": "2026-08-05T18:40:44.107Z"
+            "pendingIndexerTierRequestedAt": "2026-08-05T18:45:01.324Z"
           }
         },
         {
@@ -1701,7 +1701,7 @@
           "artifacts": {
             "indexerCreated": false,
             "pendingIndexerTierTarget": "pro",
-            "pendingIndexerTierRequestedAt": "2026-08-05T18:40:44.107Z"
+            "pendingIndexerTierRequestedAt": "2026-08-05T18:45:01.471Z"
           }
         },
         {
@@ -1711,7 +1711,7 @@
           "artifacts": {
             "indexerCreated": false,
             "pendingIndexerTierTarget": "pro",
-            "pendingIndexerTierRequestedAt": "2026-08-05T18:40:44.107Z"
+            "pendingIndexerTierRequestedAt": "2026-08-05T18:45:01.617Z"
           }
         },
         {
@@ -1721,7 +1721,7 @@
           "artifacts": {
             "indexerCreated": false,
             "pendingIndexerTierTarget": "pro",
-            "pendingIndexerTierRequestedAt": "2026-08-05T18:40:44.107Z"
+            "pendingIndexerTierRequestedAt": "2026-08-05T18:45:01.762Z"
           }
         },
         {
@@ -1731,7 +1731,7 @@
           "artifacts": {
             "indexerCreated": false,
             "pendingIndexerTierTarget": "pro",
-            "pendingIndexerTierRequestedAt": "2026-08-05T18:40:44.107Z"
+            "pendingIndexerTierRequestedAt": "2026-08-05T18:45:01.910Z"
           }
         },
         {
@@ -1741,7 +1741,7 @@
           "artifacts": {
             "indexerCreated": false,
             "pendingIndexerTierTarget": "pro",
-            "pendingIndexerTierRequestedAt": "2026-08-05T18:40:44.107Z"
+            "pendingIndexerTierRequestedAt": "2026-08-05T18:45:02.057Z"
           }
         },
         {
@@ -1751,7 +1751,7 @@
           "artifacts": {
             "indexerCreated": false,
             "pendingIndexerTierTarget": "pro",
-            "pendingIndexerTierRequestedAt": "2026-08-05T18:40:44.107Z"
+            "pendingIndexerTierRequestedAt": "2026-08-05T18:45:02.205Z"
           }
         },
         {
@@ -1761,7 +1761,7 @@
           "artifacts": {
             "indexerCreated": false,
             "pendingIndexerTierTarget": "pro",
-            "pendingIndexerTierRequestedAt": "2026-08-05T18:40:44.107Z"
+            "pendingIndexerTierRequestedAt": "2026-08-05T18:45:02.353Z"
           }
         },
         {
@@ -1771,7 +1771,7 @@
           "artifacts": {
             "indexerCreated": false,
             "pendingIndexerTierTarget": "pro",
-            "pendingIndexerTierRequestedAt": "2026-08-05T18:40:44.107Z"
+            "pendingIndexerTierRequestedAt": "2026-08-05T18:45:02.499Z"
           }
         },
         {
@@ -1781,7 +1781,7 @@
           "artifacts": {
             "indexerCreated": false,
             "pendingIndexerTierTarget": "pro",
-            "pendingIndexerTierRequestedAt": "2026-08-05T18:40:44.107Z"
+            "pendingIndexerTierRequestedAt": "2026-08-05T18:45:02.645Z"
           }
         },
         {
@@ -1791,7 +1791,7 @@
           "artifacts": {
             "indexerCreated": false,
             "pendingIndexerTierTarget": "pro",
-            "pendingIndexerTierRequestedAt": "2026-08-05T18:40:44.107Z"
+            "pendingIndexerTierRequestedAt": "2026-08-05T18:45:02.792Z"
           }
         },
         {
@@ -1801,7 +1801,7 @@
           "artifacts": {
             "indexerCreated": false,
             "pendingIndexerTierTarget": "pro",
-            "pendingIndexerTierRequestedAt": "2026-08-05T18:40:44.107Z"
+            "pendingIndexerTierRequestedAt": "2026-08-05T18:45:02.939Z"
           }
         },
         {
@@ -1809,8 +1809,9 @@
           "startTime": 1785956400,
           "durationSeconds": 3600,
           "artifacts": {
+            "indexerCreated": false,
             "pendingIndexerTierTarget": "legendary",
-            "pendingIndexerTierRequestedAt": "2026-08-05T18:40:44.107Z"
+            "pendingIndexerTierRequestedAt": "2026-08-05T18:45:03.085Z"
           }
         },
         {
