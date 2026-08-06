@@ -14,7 +14,7 @@ describe("JsonEmitter", () => {
   });
 
   it("emits startup event as NDJSON", () => {
-    emitter.emit({ type: "startup", world: "test-world", chain: "slot", address: "0x1" });
+    emitter.emit({ type: "startup", world: "test-world", chain: "appchain", address: "0x1" });
     expect(writtenLines).toHaveLength(1);
     const parsed = JSON.parse(writtenLines[0]);
     expect(parsed.type).toBe("startup");
@@ -73,7 +73,7 @@ describe("JsonEmitter", () => {
   it("allows subscribing to events", () => {
     const received: any[] = [];
     emitter.subscribe((event) => received.push(event));
-    emitter.emit({ type: "startup", world: "w", chain: "slot", address: "0x1" });
+    emitter.emit({ type: "startup", world: "w", chain: "appchain", address: "0x1" });
     expect(received).toHaveLength(1);
     expect(received[0].type).toBe("startup");
   });
@@ -92,7 +92,7 @@ describe("JsonEmitter", () => {
   it("unsubscribe stops delivery", () => {
     const received: any[] = [];
     const unsub = emitter.subscribe((event) => received.push(event));
-    emitter.emit({ type: "startup", world: "w", chain: "slot", address: "0x1" });
+    emitter.emit({ type: "startup", world: "w", chain: "appchain", address: "0x1" });
     unsub();
     emitter.emit({ type: "shutdown", reason: "test" });
     expect(received).toHaveLength(1);

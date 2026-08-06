@@ -9,7 +9,7 @@ import {
   simplifyType,
 } from "../../src/session/abi-policy-gen";
 
-const manifestPath = resolve(__dirname, "../../../../../contracts/game/manifest_slot.json");
+const manifestPath = resolve(__dirname, "../../../../../contracts/game/manifest_mainnet.json");
 const manifest = JSON.parse(readFileSync(manifestPath, "utf-8"));
 
 describe("simplifyType", () => {

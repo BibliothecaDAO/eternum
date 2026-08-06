@@ -47,7 +47,7 @@ const buildProps = (
 ): ComponentProps<typeof FactoryV2StartWorkspace> => ({
   mode: "blitz",
   modeLabel: "Blitz",
-  environmentLabel: "Slot",
+  environmentLabel: "Mainnet",
   isMainnet: false,
   launchTargetKind: "game",
   presets: [createPreset()],
@@ -84,7 +84,7 @@ const buildProps = (
   launchDisabledReason: null,
   moreOptionsOpen: false,
   moreOptionSections: [],
-  moreOptionDraft: createFactoryMoreOptionsDraft("blitz", "slot"),
+  moreOptionDraft: createFactoryMoreOptionsDraft("blitz", "mainnet"),
   moreOptionErrors: {
     shards: null,
     camp: null,
@@ -103,7 +103,7 @@ const buildProps = (
     prizePrecision: null,
   },
   moreOptionsDisabledReason: null,
-  biomeClimateDraft: createFactoryBiomeClimateDraft("slot", "blitz"),
+  biomeClimateDraft: createFactoryBiomeClimateDraft("mainnet", "blitz"),
   biomeClimateErrors: {
     elevationScaleBps: null,
     moistureScaleBps: null,
@@ -141,8 +141,8 @@ const buildProps = (
   onToggleTwoPlayerMode: vi.fn(),
   onToggleSingleRealmMode: vi.fn(),
   onFandomizeGameName: vi.fn(),
-  deployerChain: "slot",
-  deployerEnvironmentLabel: "Slot",
+  deployerChain: "mainnet",
+  deployerEnvironmentLabel: "Mainnet",
   onLaunch: vi.fn(),
   isWatcherBusy: false,
   ...overrides,
@@ -414,7 +414,7 @@ describe("FactoryV2StartWorkspace play style", () => {
     });
 
     const launchButton = Array.from(container.querySelectorAll("button")).find((button) =>
-      button.textContent?.trim().includes("Launch 3-game series on Slot"),
+      button.textContent?.trim().includes("Launch 3-game series on Mainnet"),
     );
 
     expect(launchButton).toBeDefined();

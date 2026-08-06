@@ -37,7 +37,7 @@ import {
   resolveFactoryWorldProfile,
   waitForFactoryWorldProfile,
 } from "../factory/discovery";
-import { ensureSlotIndexerDeployment, resolveIndexerArtifactState } from "../indexing/slot-torii";
+import { createLaunchIndexer } from "../indexing/launch-indexer";
 import { syncPaymasterPolicy, type PaymasterAction } from "../paymaster";
 import { buildLootChestMinterRoleGrantCall, grantRoles, resolveLootChestMinterRoleGrantTarget } from "../role-grants";
 import { resolveAccountCredentials } from "../shared/credentials";
@@ -1056,31 +1056,24 @@ async function createIndexerIfNeeded(
   });
   const result = await runtime.progress.run(
     "create indexer",
-    async () => ensureSlotIndexerDeployment(indexerRequest, { onProgress: (message) => runtime.progress.log(message) }),
+    async () => createLaunchIndexer(indexerRequest, { onProgress: (message) => runtime.progress.log(message) }),
     {
       start: `Creating indexer for ${shortenHash(worldAddress)}`,
       success: (indexerResult, elapsedMs) => {
-        const liveTier = indexerResult.liveState.currentTier || indexerResult.requestedTier;
-        const liveUrl = indexerResult.liveState.url;
-        const outcome = indexerResult.action === "already-live" ? "Indexer already live" : "Indexer deployed via Slot";
-        return `${outcome} in ${formatDuration(elapsedMs)} (${liveTier}${liveUrl ? `, ${liveUrl}` : ""})`;
+        const runUrl = indexerResult.workflowRun?.htmlUrl;
+        return `Indexer deployed in ${formatDuration(elapsedMs)} (${indexerRequest.tier || "basic"}${
+          runUrl ? `, ${runUrl}` : ""
+        })`;
       },
     },
   );
-  const liveArtifacts = resolveIndexerArtifactState(result.liveState, {
-    fallbackTier: indexerRequest.tier,
-  });
 
   return {
-    indexerCreated: liveArtifacts.indexerCreated,
+    indexerCreated: true,
     indexerMode: result.mode,
-    indexerTier: liveArtifacts.indexerTier,
-    indexerUrl: liveArtifacts.indexerUrl,
-    indexerVersion: liveArtifacts.indexerVersion,
-    indexerBranch: liveArtifacts.indexerBranch,
-    lastIndexerDescribeAt: liveArtifacts.lastIndexerDescribeAt,
+    indexerTier: indexerRequest.tier,
     indexerRequest,
-    indexerWorkflowRun: undefined,
+    indexerWorkflowRun: result.workflowRun,
   };
 }
 

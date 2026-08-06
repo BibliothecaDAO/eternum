@@ -74,7 +74,7 @@ function buildProps(
     watcher: null,
     adminSecret: "factory-secret",
     hasSavedAdminSecret: false,
-    environmentLabel: "Slot",
+    environmentLabel: "Mainnet",
     liveIndexers: [],
     liveIndexersUpdatedAt: null,
     hasLoadedLiveIndexersSnapshot: false,
@@ -489,7 +489,7 @@ describe("FactoryV2ManageIndexersWorkspace", () => {
             liveIndexers: [buildLiveIndexerEntry("etrn-season-01", { tier: "basic" })],
             watcher: {
               kind: "create_indexers",
-              runName: "Slot",
+              runName: "Mainnet",
               title: "Creating indexers",
               detail: "Creating or recreating 1 listed indexer.",
               workflowName: "factory-indexer-maintenance.yml",

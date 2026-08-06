@@ -3,17 +3,16 @@ import { useRuntimeChain } from "@/runtime/world/use-selected-chain";
 import type { Chain as RuntimeChain } from "@contracts";
 import { ControllerConnector } from "@cartridge/connector";
 import { usePredeployedAccounts } from "@dojoengine/predeployed-connector/react";
-import { Chain, getSlotChain, mainnet, sepolia } from "@starknet-react/chains";
+import { Chain, mainnet, sepolia } from "@starknet-react/chains";
 import { Connector, StarknetConfig, jsonRpcProvider, paymasterRpcProvider, voyager } from "@starknet-react/core";
 import { QueryClient } from "@tanstack/react-query";
 import type React from "react";
 import { useCallback, useMemo } from "react";
 import { shortString } from "starknet";
 import { env } from "../../../env";
-import { resolveStarknetRuntimeConfig } from "./starknet-chain-config";
+import { APPCHAIN_CHAIN_ID, resolveStarknetRuntimeConfig } from "./starknet-chain-config";
 import { useControllerAccount } from "./use-controller-account";
 
-const slot: string = env.VITE_PUBLIC_SLOT;
 const namespace: string = "s1_eternum";
 
 // ==============================================
@@ -41,6 +40,35 @@ const katanaLocalChain = {
     },
     public: {
       http: [KATANA_RPC_URL],
+    },
+  },
+  paymasterRpcUrls: {
+    default: {
+      http: [],
+    },
+    public: {
+      http: [],
+    },
+  },
+} as const satisfies Chain;
+
+// Self-hosted appchain (WP_REALMS_DEV) — RPC from env, Controller connector.
+const appchainChain = {
+  id: BigInt(APPCHAIN_CHAIN_ID),
+  network: "Realms Appchain",
+  name: "appchain",
+  nativeCurrency: {
+    address: "0x049d36570d4e46f48e99674bd3fcc84644ddd6b96f7c741b1562b82f9e004dc7",
+    name: "Ether",
+    symbol: "ETH",
+    decimals: 18,
+  },
+  rpcUrls: {
+    default: {
+      http: [env.VITE_PUBLIC_NODE_URL],
+    },
+    public: {
+      http: [env.VITE_PUBLIC_NODE_URL],
     },
   },
   paymasterRpcUrls: {
@@ -103,7 +131,8 @@ export function StarknetProvider({ children }: { children: React.ReactNode }) {
         // create a session upfront. Session policies are set later by
         // refreshSessionPolicies() after the player selects a game and
         // bootstrapGame() patches the manifest with the correct contract addresses.
-        slot,
+        // No Slot project is ever passed: Slot is EoL and the self-hosted
+        // appchain has none, so the keychain would resolve a foreign project.
         namespace,
       }),
     [runtimeConfig.controllerSupportedRpcUrls, runtimeConfig.defaultChainId],
@@ -128,8 +157,8 @@ export function StarknetProvider({ children }: { children: React.ReactNode }) {
       return [katanaLocalChain];
     }
 
-    if (runtimeConfig.chainKind === "slot") {
-      return [getSlotChain(runtimeConfig.defaultChainId)];
+    if (runtimeConfig.chainKind === "appchain") {
+      return [appchainChain];
     }
 
     if (runtimeConfig.chainKind === "mainnet") {
@@ -137,14 +166,21 @@ export function StarknetProvider({ children }: { children: React.ReactNode }) {
     }
 
     return [sepolia];
-  }, [runtimeConfig.chainKind, runtimeConfig.defaultChainId]);
+  }, [runtimeConfig.chainKind]);
 
   return (
     <StarknetConfig
       key={`${runtimeConfig.chainKind}:${runtimeConfig.defaultChainId}:${runtimeConfig.rpcUrl}`}
       chains={resolvedChains}
       provider={jsonRpcProvider({ rpc })}
-      paymasterProvider={runtimeConfig.chainKind === "local" ? paymasterRpcProvider({ rpc: paymasterRpc }) : undefined}
+      paymasterProvider={
+        // local + appchain: katana serves paymaster_* on the node RPC itself.
+        // Without an explicit provider, starknet-react probes
+        // chain.paymasterRpcUrls.avnu, which custom katana chains don't define.
+        runtimeConfig.chainKind === "local" || runtimeConfig.chainKind === "appchain"
+          ? paymasterRpcProvider({ rpc: paymasterRpc })
+          : undefined
+      }
       connectors={runtimeConfig.chainKind === "local" ? predeployedConnectors : [controller as unknown as Connector]}
       explorer={voyager}
       autoConnect

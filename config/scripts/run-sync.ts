@@ -4,7 +4,7 @@ import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import type { GameType, NetworkType } from "../utils/environment";
 
-const VALID_NETWORKS: NetworkType[] = ["local", "mainnet", "sepolia", "slot", "slottest"];
+const VALID_NETWORKS: NetworkType[] = ["local", "mainnet", "sepolia", "appchain"];
 const DEFAULT_GAME_TYPES: GameType[] = ["eternum", "blitz"];
 const VALID_GAME_TYPES: GameType[] = [...DEFAULT_GAME_TYPES];
 

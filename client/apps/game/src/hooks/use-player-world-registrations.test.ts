@@ -204,7 +204,7 @@ describe("usePlayerWorldRegistrations", () => {
     const result = usePlayerWorldRegistrations({
       worlds: [
         makeSummary({ name: "alpha", chain: "mainnet", mode: "blitz" }),
-        makeSummary({ name: "beta", chain: "slot", mode: "eternum" }),
+        makeSummary({ name: "beta", chain: "appchain", mode: "eternum" }),
       ],
       playerAddress: "0xplayer",
     });
@@ -213,7 +213,7 @@ describe("usePlayerWorldRegistrations", () => {
       isPlayerRegistered: true,
       hasPlayerSettledRealm: null,
     });
-    expect(result.registrationsByWorldKey.get("slot:beta")).toEqual({
+    expect(result.registrationsByWorldKey.get("appchain:beta")).toEqual({
       isPlayerRegistered: null,
       hasPlayerSettledRealm: true,
     });

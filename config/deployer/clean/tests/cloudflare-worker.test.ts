@@ -18,7 +18,7 @@ describe("factory worker map config overrides", () => {
     globalThis.fetch = async (url, init) => {
       fetchCalls.push({ url: String(url), init });
 
-      if (String(url).includes("/contents/runs/slot/eternum/etrn-test-9.json")) {
+      if (String(url).includes("/contents/runs/appchain/eternum/etrn-test-9.json")) {
         return new Response("{}", { status: 404 });
       }
 
@@ -34,7 +34,7 @@ describe("factory worker map config overrides", () => {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          environment: "slot.eternum",
+          environment: "appchain.eternum",
           gameName: "etrn-test-9",
           gameStartTime: "2026-03-18T10:00:00Z",
           mapConfigOverrides: {
@@ -63,7 +63,7 @@ describe("factory worker map config overrides", () => {
     globalThis.fetch = async (url, init) => {
       fetchCalls.push({ url: String(url), init });
 
-      if (String(url).includes("/contents/runs/slot/blitz/bltz-test-9.json")) {
+      if (String(url).includes("/contents/runs/appchain/blitz/bltz-test-9.json")) {
         return new Response("{}", { status: 404 });
       }
 
@@ -79,7 +79,7 @@ describe("factory worker map config overrides", () => {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          environment: "slot.blitz",
+          environment: "appchain.blitz",
           gameName: "bltz-test-9",
           gameStartTime: "2026-03-18T10:00:00Z",
           blitzRegistrationOverrides: {
@@ -110,7 +110,7 @@ describe("factory worker map config overrides", () => {
     globalThis.fetch = async (url, init) => {
       fetchCalls.push({ url: String(url), init });
 
-      if (String(url).includes("/contents/runs/slot/blitz/bltz-biome-9.json")) {
+      if (String(url).includes("/contents/runs/appchain/blitz/bltz-biome-9.json")) {
         return new Response("{}", { status: 404 });
       }
 
@@ -126,7 +126,7 @@ describe("factory worker map config overrides", () => {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          environment: "slot.blitz",
+          environment: "appchain.blitz",
           gameName: "bltz-biome-9",
           gameStartTime: "2026-03-18T10:00:00Z",
           biomeClimateOverrides: {
@@ -161,7 +161,7 @@ describe("factory worker map config overrides", () => {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          environment: "slot.blitz",
+          environment: "appchain.blitz",
           gameName: "bltz-biome-9",
           gameStartTime: "2026-03-18T10:00:00Z",
           biomeClimateOverrides: {
@@ -221,7 +221,7 @@ describe("factory worker map config overrides", () => {
     globalThis.fetch = async (url, init) => {
       fetchCalls.push({ url: String(url), init });
 
-      if (String(url).includes("/contents/runs/slot/blitz/rotations/bltz-ladder-loop.json")) {
+      if (String(url).includes("/contents/runs/appchain/blitz/rotations/bltz-ladder-loop.json")) {
         return new Response("{}", { status: 404 });
       }
 
@@ -237,7 +237,7 @@ describe("factory worker map config overrides", () => {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          environment: "slot.blitz",
+          environment: "appchain.blitz",
           rotationName: "bltz-ladder-loop",
           firstGameStartTime: "2026-03-18T10:00:00Z",
           gameIntervalMinutes: 60,
@@ -269,7 +269,7 @@ describe("factory worker map config overrides", () => {
     globalThis.fetch = async (url, init) => {
       fetchCalls.push({ url: String(url), init });
 
-      if (String(url).includes("/contents/runs/slot/blitz/rotations/blitz-rotation.json")) {
+      if (String(url).includes("/contents/runs/appchain/blitz/rotations/blitz-rotation.json")) {
         return new Response("{}", { status: 404 });
       }
 
@@ -285,7 +285,7 @@ describe("factory worker map config overrides", () => {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          environment: "slot.blitz",
+          environment: "appchain.blitz",
           rotationName: "blitz-rotation",
           firstGameStartTime: "2026-04-20T01:00:00Z",
           maxGames: 5200,
@@ -337,7 +337,7 @@ describe("factory worker map config overrides", () => {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          environment: "slot.blitz",
+          environment: "appchain.blitz",
           rotationName: "blitz-rotation",
           firstGameStartTime: "2026-04-20T01:00:00Z",
           maxGames: 5200,
@@ -364,11 +364,11 @@ describe("factory worker map config overrides", () => {
     globalThis.fetch = async (url, init) => {
       fetchCalls.push({ url: String(url), init });
 
-      if (String(url).includes("/contents/runs/slot/eternum/etrn-test-9.json")) {
+      if (String(url).includes("/contents/runs/appchain/eternum/etrn-test-9.json")) {
         return buildGitHubContentsResponse({
-          environment: "slot.eternum",
+          environment: "appchain.eternum",
           gameName: "etrn-test-9",
-          inputPath: "inputs/slot/eternum/etrn-test-9/101-1.json",
+          inputPath: "inputs/appchain/eternum/etrn-test-9/101-1.json",
           steps: [
             { id: "create-world", status: "succeeded" },
             { id: "wait-for-factory-index", status: "succeeded" },
@@ -377,13 +377,13 @@ describe("factory worker map config overrides", () => {
         });
       }
 
-      if (String(url).includes("/contents/inputs/slot/eternum/etrn-test-9/101-1.json")) {
+      if (String(url).includes("/contents/inputs/appchain/eternum/etrn-test-9/101-1.json")) {
         return buildGitHubContentsResponse({
-          environment: "slot.eternum",
+          environment: "appchain.eternum",
           gameName: "etrn-test-9",
           startTime: "2026-03-18T10:00:00Z",
           request: {
-            environmentId: "slot.eternum",
+            environmentId: "appchain.eternum",
             gameName: "etrn-test-9",
             startTime: "2026-03-18T10:00:00Z",
             mapConfigOverrides: {
@@ -402,7 +402,7 @@ describe("factory worker map config overrides", () => {
     };
 
     const response = await worker.fetch(
-      new Request("https://worker.example/api/factory/runs/slot.eternum/etrn-test-9/actions/continue", {
+      new Request("https://worker.example/api/factory/runs/appchain.eternum/etrn-test-9/actions/continue", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({}),
@@ -426,11 +426,11 @@ describe("factory worker map config overrides", () => {
     globalThis.fetch = async (url, init) => {
       fetchCalls.push({ url: String(url), init });
 
-      if (String(url).includes("/contents/runs/slot/blitz/bltz-test-9.json")) {
+      if (String(url).includes("/contents/runs/appchain/blitz/bltz-test-9.json")) {
         return buildGitHubContentsResponse({
-          environment: "slot.blitz",
+          environment: "appchain.blitz",
           gameName: "bltz-test-9",
-          inputPath: "inputs/slot/blitz/bltz-test-9/101-1.json",
+          inputPath: "inputs/appchain/blitz/bltz-test-9/101-1.json",
           steps: [
             { id: "create-world", status: "succeeded" },
             { id: "wait-for-factory-index", status: "succeeded" },
@@ -439,13 +439,13 @@ describe("factory worker map config overrides", () => {
         });
       }
 
-      if (String(url).includes("/contents/inputs/slot/blitz/bltz-test-9/101-1.json")) {
+      if (String(url).includes("/contents/inputs/appchain/blitz/bltz-test-9/101-1.json")) {
         return buildGitHubContentsResponse({
-          environment: "slot.blitz",
+          environment: "appchain.blitz",
           gameName: "bltz-test-9",
           startTime: "2026-03-18T10:00:00Z",
           request: {
-            environmentId: "slot.blitz",
+            environmentId: "appchain.blitz",
             gameName: "bltz-test-9",
             startTime: "2026-03-18T10:00:00Z",
             blitzRegistrationOverrides: {
@@ -465,7 +465,7 @@ describe("factory worker map config overrides", () => {
     };
 
     const response = await worker.fetch(
-      new Request("https://worker.example/api/factory/runs/slot.blitz/bltz-test-9/actions/continue", {
+      new Request("https://worker.example/api/factory/runs/appchain.blitz/bltz-test-9/actions/continue", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({}),
@@ -578,13 +578,13 @@ describe("factory worker map config overrides", () => {
     expect(launchOptions.skipBanks).toBe(true);
   });
 
-  test("rejects continue when a slot run has no recoverable resume step", async () => {
+  test("rejects continue when an appchain run has no recoverable resume step", async () => {
     globalThis.fetch = async (url) => {
-      if (String(url).includes("/contents/runs/slot/blitz/bltz-test-10.json")) {
+      if (String(url).includes("/contents/runs/appchain/blitz/bltz-test-10.json")) {
         return buildGitHubContentsResponse({
-          environment: "slot.blitz",
+          environment: "appchain.blitz",
           gameName: "bltz-test-10",
-          inputPath: "inputs/slot/blitz/bltz-test-10/101-1.json",
+          inputPath: "inputs/appchain/blitz/bltz-test-10/101-1.json",
           steps: [
             { id: "create-world", status: "succeeded" },
             { id: "wait-for-factory-index", status: "succeeded" },
@@ -595,13 +595,13 @@ describe("factory worker map config overrides", () => {
         });
       }
 
-      if (String(url).includes("/contents/inputs/slot/blitz/bltz-test-10/101-1.json")) {
+      if (String(url).includes("/contents/inputs/appchain/blitz/bltz-test-10/101-1.json")) {
         return buildGitHubContentsResponse({
-          environment: "slot.blitz",
+          environment: "appchain.blitz",
           gameName: "bltz-test-10",
           startTime: "2026-03-18T10:00:00Z",
           request: {
-            environmentId: "slot.blitz",
+            environmentId: "appchain.blitz",
             gameName: "bltz-test-10",
             startTime: "2026-03-18T10:00:00Z",
           },
@@ -612,7 +612,7 @@ describe("factory worker map config overrides", () => {
     };
 
     const response = await worker.fetch(
-      new Request("https://worker.example/api/factory/runs/slot.blitz/bltz-test-10/actions/continue", {
+      new Request("https://worker.example/api/factory/runs/appchain.blitz/bltz-test-10/actions/continue", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({}),
@@ -632,18 +632,18 @@ describe("factory worker map config overrides", () => {
 describe("factory worker recovery signals", () => {
   test("keeps step handoffs transitioning until the run has gone stale", async () => {
     globalThis.fetch = async (url) => {
-      if (String(url).includes("/contents/runs/slot/blitz/bltz-test-11.json")) {
+      if (String(url).includes("/contents/runs/appchain/blitz/bltz-test-11.json")) {
         return buildGitHubContentsResponse({
           version: 1,
-          runId: "slot.blitz:bltz-test-11",
-          environment: "slot.blitz",
-          chain: "slot",
+          runId: "appchain.blitz:bltz-test-11",
+          environment: "appchain.blitz",
+          chain: "appchain",
           gameType: "blitz",
           gameName: "bltz-test-11",
           status: "running",
           executionMode: "fast_trial",
           requestedLaunchStep: "full",
-          inputPath: "inputs/slot/blitz/bltz-test-11/101-1.json",
+          inputPath: "inputs/appchain/blitz/bltz-test-11/101-1.json",
           latestLaunchRequestId: "101-1",
           currentStepId: "configure-world",
           createdAt: offsetTimestamp(-60_000),
@@ -678,18 +678,18 @@ describe("factory worker recovery signals", () => {
         });
       }
 
-      if (String(url).includes("/contents/runs/slot/blitz/bltz-test-12.json")) {
+      if (String(url).includes("/contents/runs/appchain/blitz/bltz-test-12.json")) {
         return buildGitHubContentsResponse({
           version: 1,
-          runId: "slot.blitz:bltz-test-12",
-          environment: "slot.blitz",
-          chain: "slot",
+          runId: "appchain.blitz:bltz-test-12",
+          environment: "appchain.blitz",
+          chain: "appchain",
           gameType: "blitz",
           gameName: "bltz-test-12",
           status: "running",
           executionMode: "fast_trial",
           requestedLaunchStep: "full",
-          inputPath: "inputs/slot/blitz/bltz-test-12/101-1.json",
+          inputPath: "inputs/appchain/blitz/bltz-test-12/101-1.json",
           latestLaunchRequestId: "101-1",
           currentStepId: "configure-world",
           createdAt: offsetTimestamp(-60_000),
@@ -729,11 +729,11 @@ describe("factory worker recovery signals", () => {
     };
 
     const transitioningResponse = await worker.fetch(
-      new Request("https://worker.example/api/factory/runs/slot.blitz/bltz-test-11"),
+      new Request("https://worker.example/api/factory/runs/appchain.blitz/bltz-test-11"),
       buildWorkerEnv(),
     );
     const stalledResponse = await worker.fetch(
-      new Request("https://worker.example/api/factory/runs/slot.blitz/bltz-test-12"),
+      new Request("https://worker.example/api/factory/runs/appchain.blitz/bltz-test-12"),
       buildWorkerEnv(),
     );
 
@@ -754,18 +754,18 @@ describe("factory worker recovery signals", () => {
 
   test("marks failed game runs as continue-able when a resume step exists", async () => {
     globalThis.fetch = async (url) => {
-      if (String(url).includes("/contents/runs/slot/blitz/bltz-test-13.json")) {
+      if (String(url).includes("/contents/runs/appchain/blitz/bltz-test-13.json")) {
         return buildGitHubContentsResponse({
           version: 1,
-          runId: "slot.blitz:bltz-test-13",
-          environment: "slot.blitz",
-          chain: "slot",
+          runId: "appchain.blitz:bltz-test-13",
+          environment: "appchain.blitz",
+          chain: "appchain",
           gameType: "blitz",
           gameName: "bltz-test-13",
           status: "attention",
           executionMode: "guided_recovery",
           requestedLaunchStep: "full",
-          inputPath: "inputs/slot/blitz/bltz-test-13/101-1.json",
+          inputPath: "inputs/appchain/blitz/bltz-test-13/101-1.json",
           latestLaunchRequestId: "101-1",
           currentStepId: "configure-world",
           createdAt: offsetTimestamp(-60_000),
@@ -805,7 +805,7 @@ describe("factory worker recovery signals", () => {
     };
 
     const response = await worker.fetch(
-      new Request("https://worker.example/api/factory/runs/slot.blitz/bltz-test-13"),
+      new Request("https://worker.example/api/factory/runs/appchain.blitz/bltz-test-13"),
       buildWorkerEnv(),
     );
 
@@ -825,18 +825,18 @@ describe("factory worker recovery signals", () => {
       const requestUrl = String(url);
       fetchCalls.push(requestUrl);
 
-      if (requestUrl.includes("/contents/indexes/slot/blitz/games.json")) {
+      if (requestUrl.includes("/contents/indexes/appchain/blitz/games.json")) {
         return buildGitHubContentsResponse({
           version: 1,
-          environment: "slot.blitz",
+          environment: "appchain.blitz",
           kind: "game",
           updatedAt: offsetTimestamp(-5_000),
           entries: {
             "bltz-recent-02": {
               kind: "game",
-              environment: "slot.blitz",
+              environment: "appchain.blitz",
               gameName: "bltz-recent-02",
-              path: "runs/slot/blitz/bltz-recent-02.json",
+              path: "runs/appchain/blitz/bltz-recent-02.json",
               status: "running",
               updatedAt: offsetTimestamp(-5_000),
               currentStepId: "configure-world",
@@ -847,18 +847,18 @@ describe("factory worker recovery signals", () => {
         });
       }
 
-      if (requestUrl.includes("/contents/indexes/slot/blitz/series.json")) {
+      if (requestUrl.includes("/contents/indexes/appchain/blitz/series.json")) {
         return buildGitHubContentsResponse({
           version: 1,
-          environment: "slot.blitz",
+          environment: "appchain.blitz",
           kind: "series",
           updatedAt: offsetTimestamp(-15_000),
           entries: {
             "bltz-weekend-cup": {
               kind: "series",
-              environment: "slot.blitz",
+              environment: "appchain.blitz",
               seriesName: "bltz-weekend-cup",
-              path: "runs/slot/blitz/series/bltz-weekend-cup.json",
+              path: "runs/appchain/blitz/series/bltz-weekend-cup.json",
               status: "attention",
               updatedAt: offsetTimestamp(-15_000),
               currentStepId: "create-worlds",
@@ -870,22 +870,22 @@ describe("factory worker recovery signals", () => {
         });
       }
 
-      if (requestUrl.includes("/contents/indexes/slot/blitz/rotations.json")) {
+      if (requestUrl.includes("/contents/indexes/appchain/blitz/rotations.json")) {
         return new Response("{}", { status: 404 });
       }
 
-      if (requestUrl.includes("/contents/runs/slot/blitz/bltz-recent-02.json")) {
+      if (requestUrl.includes("/contents/runs/appchain/blitz/bltz-recent-02.json")) {
         return buildGitHubContentsResponse({
           version: 1,
-          runId: "slot.blitz:bltz-recent-02",
-          environment: "slot.blitz",
-          chain: "slot",
+          runId: "appchain.blitz:bltz-recent-02",
+          environment: "appchain.blitz",
+          chain: "appchain",
           gameType: "blitz",
           gameName: "bltz-recent-02",
           status: "running",
           executionMode: "guided_recovery",
           requestedLaunchStep: "full",
-          inputPath: "inputs/slot/blitz/bltz-recent-02/23450000000-1.json",
+          inputPath: "inputs/appchain/blitz/bltz-recent-02/23450000000-1.json",
           latestLaunchRequestId: "23450000000-1",
           currentStepId: "configure-world",
           createdAt: offsetTimestamp(-45_000),
@@ -911,19 +911,19 @@ describe("factory worker recovery signals", () => {
         });
       }
 
-      if (requestUrl.includes("/contents/runs/slot/blitz/series/bltz-weekend-cup.json")) {
+      if (requestUrl.includes("/contents/runs/appchain/blitz/series/bltz-weekend-cup.json")) {
         return buildGitHubContentsResponse({
           version: 1,
           kind: "series",
-          runId: "slot.blitz:bltz-weekend-cup",
-          environment: "slot.blitz",
-          chain: "slot",
+          runId: "appchain.blitz:bltz-weekend-cup",
+          environment: "appchain.blitz",
+          chain: "appchain",
           gameType: "blitz",
           seriesName: "bltz-weekend-cup",
           status: "attention",
           executionMode: "guided_recovery",
           requestedLaunchStep: "full",
-          inputPath: "inputs/slot/blitz/series/bltz-weekend-cup/23440000000-1.json",
+          inputPath: "inputs/appchain/blitz/series/bltz-weekend-cup/23440000000-1.json",
           latestLaunchRequestId: "23440000000-1",
           currentStepId: "create-worlds",
           createdAt: offsetTimestamp(-120_000),
@@ -950,8 +950,8 @@ describe("factory worker recovery signals", () => {
             },
           ],
           summary: {
-            environment: "slot.blitz",
-            chain: "slot",
+            environment: "appchain.blitz",
+            chain: "appchain",
             gameType: "blitz",
             seriesName: "bltz-weekend-cup",
             rpcUrl: "http://localhost:5050",
@@ -971,7 +971,7 @@ describe("factory worker recovery signals", () => {
     };
 
     const response = await worker.fetch(
-      new Request("https://worker.example/api/factory/runs?environment=slot.blitz"),
+      new Request("https://worker.example/api/factory/runs?environment=appchain.blitz"),
       buildWorkerEnv(),
     );
 
@@ -979,12 +979,12 @@ describe("factory worker recovery signals", () => {
 
     expect(response.status).toBe(200);
     expect(payload.runs.map((run: { runId: string }) => run.runId)).toEqual([
-      "slot.blitz:bltz-recent-02",
-      "slot.blitz:bltz-weekend-cup",
+      "appchain.blitz:bltz-recent-02",
+      "appchain.blitz:bltz-weekend-cup",
     ]);
-    expect(fetchCalls.some((url) => url.includes("/contents/runs/slot/blitz?ref="))).toBe(false);
-    expect(fetchCalls.some((url) => url.includes("/contents/runs/slot/blitz/series?ref="))).toBe(false);
-    expect(fetchCalls.some((url) => url.includes("/contents/runs/slot/blitz/rotations?ref="))).toBe(false);
+    expect(fetchCalls.some((url) => url.includes("/contents/runs/appchain/blitz?ref="))).toBe(false);
+    expect(fetchCalls.some((url) => url.includes("/contents/runs/appchain/blitz/series?ref="))).toBe(false);
+    expect(fetchCalls.some((url) => url.includes("/contents/runs/appchain/blitz/rotations?ref="))).toBe(false);
   });
 
   test("rejects duplicate series game names before dispatching a workflow", async () => {
@@ -997,7 +997,7 @@ describe("factory worker recovery signals", () => {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          environment: "slot.blitz",
+          environment: "appchain.blitz",
           seriesName: "bltz-weekend-cup",
           games: [
             { gameName: "bltz-weekend-cup-01", startTime: "2026-03-18T10:00:00Z", seriesGameNumber: 1 },
@@ -1019,20 +1019,20 @@ describe("factory worker recovery signals", () => {
     globalThis.fetch = async (url, init) => {
       fetchCalls.push({ url: String(url), init });
 
-      if (String(url).includes("/contents/runs/slot/blitz/rotations/bltz-knicker.json")) {
+      if (String(url).includes("/contents/runs/appchain/blitz/rotations/bltz-knicker.json")) {
         return buildGitHubContentsResponse({
           version: 1,
           kind: "rotation",
-          runId: "slot.blitz:rotation:bltz-knicker",
-          environment: "slot.blitz",
-          chain: "slot",
+          runId: "appchain.blitz:rotation:bltz-knicker",
+          environment: "appchain.blitz",
+          chain: "appchain",
           gameType: "blitz",
           rotationName: "bltz-knicker",
           seriesName: "bltz-knicker",
           status: "attention",
           executionMode: "guided_recovery",
           requestedLaunchStep: "create-indexers",
-          inputPath: "inputs/slot/blitz/rotations/bltz-knicker/101-1.json",
+          inputPath: "inputs/appchain/blitz/rotations/bltz-knicker/101-1.json",
           latestLaunchRequestId: "101-1",
           currentStepId: "create-indexers",
           createdAt: offsetTimestamp(-60_000),
@@ -1059,8 +1059,8 @@ describe("factory worker recovery signals", () => {
           autoRetry: { enabled: true, intervalMinutes: 15 },
           evaluation: { intervalMinutes: 15, nextEvaluationAt: offsetTimestamp(15 * 60_000) },
           summary: {
-            environment: "slot.blitz",
-            chain: "slot",
+            environment: "appchain.blitz",
+            chain: "appchain",
             gameType: "blitz",
             rotationName: "bltz-knicker",
             seriesName: "bltz-knicker",
@@ -1080,18 +1080,18 @@ describe("factory worker recovery signals", () => {
             games: [{ gameName: "bltz-knicker-01" }, { gameName: "bltz-knicker-02" }, { gameName: "bltz-knicker-03" }],
           },
           artifacts: {
-            summaryPath: ".context/game-launch/rotation-slot-blitz-bltz-knicker.json",
+            summaryPath: ".context/game-launch/rotation-appchain-blitz-bltz-knicker.json",
             seriesCreated: true,
           },
         });
       }
 
-      if (String(url).includes("/contents/inputs/slot/blitz/rotations/bltz-knicker/101-1.json")) {
+      if (String(url).includes("/contents/inputs/appchain/blitz/rotations/bltz-knicker/101-1.json")) {
         return buildGitHubContentsResponse({
-          environment: "slot.blitz",
+          environment: "appchain.blitz",
           rotationName: "bltz-knicker",
           request: {
-            environmentId: "slot.blitz",
+            environmentId: "appchain.blitz",
             rotationName: "bltz-knicker",
             firstGameStartTime: "2026-03-22T16:00:00Z",
             gameIntervalMinutes: 60,
@@ -1110,7 +1110,7 @@ describe("factory worker recovery signals", () => {
     };
 
     const response = await worker.fetch(
-      new Request("https://worker.example/api/factory/rotation-runs/slot.blitz/bltz-knicker/actions/continue", {
+      new Request("https://worker.example/api/factory/rotation-runs/appchain.blitz/bltz-knicker/actions/continue", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -1141,7 +1141,7 @@ describe("factory worker recovery signals", () => {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          environment: "slot.blitz",
+          environment: "appchain.blitz",
           gameName: "bltz-test-13",
           tier: "legendary",
         }),
@@ -1216,7 +1216,7 @@ describe("factory worker recovery signals", () => {
     });
   });
 
-  test("dispatches live Slot inspection for listed games", async () => {
+  test("dispatches live indexer inspection for listed games", async () => {
     const fetchCalls: Array<{ url: string; init?: RequestInit }> = [];
     globalThis.fetch = async (url, init) => {
       fetchCalls.push({ url: String(url), init });
@@ -1236,7 +1236,7 @@ describe("factory worker recovery signals", () => {
           "x-factory-admin-secret": "factory-secret",
         },
         body: JSON.stringify({
-          environment: "slot.blitz",
+          environment: "appchain.blitz",
           gameNames: ["bltz-franky-01", "bltz-franky-02"],
         }),
       }),
@@ -1249,17 +1249,17 @@ describe("factory worker recovery signals", () => {
     const dispatchBody = JSON.parse(String(dispatchCall?.init?.body));
 
     expect(response.status).toBe(202);
-    expect(dispatchBody.inputs.environment).toBe("slot.blitz");
+    expect(dispatchBody.inputs.environment).toBe("appchain.blitz");
     expect(dispatchBody.inputs.operation_count).toBe("2");
     expect(JSON.parse(dispatchBody.inputs.operations_json)).toEqual([
       {
         action: "inspect",
-        environmentId: "slot.blitz",
+        environmentId: "appchain.blitz",
         gameName: "bltz-franky-01",
       },
       {
         action: "inspect",
-        environmentId: "slot.blitz",
+        environmentId: "appchain.blitz",
         gameName: "bltz-franky-02",
       },
     ]);
@@ -1285,7 +1285,7 @@ describe("factory worker recovery signals", () => {
           "x-factory-admin-secret": "factory-secret",
         },
         body: JSON.stringify({
-          environment: "slot.blitz",
+          environment: "appchain.blitz",
           gameNames: ["bltz-franky-01", "bltz-franky-02"],
         }),
       }),
@@ -1301,12 +1301,12 @@ describe("factory worker recovery signals", () => {
     expect(JSON.parse(dispatchBody.inputs.operations_json)).toEqual([
       {
         action: "create",
-        environmentId: "slot.blitz",
+        environmentId: "appchain.blitz",
         gameName: "bltz-franky-01",
       },
       {
         action: "create",
-        environmentId: "slot.blitz",
+        environmentId: "appchain.blitz",
         gameName: "bltz-franky-02",
       },
     ]);
@@ -1318,22 +1318,22 @@ describe("factory worker recovery signals", () => {
       fetchCalls.push({ url: String(url), init });
 
       if (
-        String(url).includes("/contents/runs/slot/blitz/rotations/bltz-rotationx.json") &&
+        String(url).includes("/contents/runs/appchain/blitz/rotations/bltz-rotationx.json") &&
         (!init?.method || init.method === "GET")
       ) {
         return buildGitHubContentsResponse({
           version: 1,
           kind: "rotation",
-          runId: "slot.blitz:rotation:bltz-rotationx",
-          environment: "slot.blitz",
-          chain: "slot",
+          runId: "appchain.blitz:rotation:bltz-rotationx",
+          environment: "appchain.blitz",
+          chain: "appchain",
           gameType: "blitz",
           rotationName: "bltz-rotationx",
           seriesName: "bltz-rotationx",
           status: "attention",
           executionMode: "guided_recovery",
           requestedLaunchStep: "full",
-          inputPath: "inputs/slot/blitz/rotations/bltz-rotationx/101-1.json",
+          inputPath: "inputs/appchain/blitz/rotations/bltz-rotationx/101-1.json",
           latestLaunchRequestId: "101-1",
           currentStepId: "create-worlds",
           createdAt: offsetTimestamp(-60_000),
@@ -1352,8 +1352,8 @@ describe("factory worker recovery signals", () => {
           },
           steps: [],
           summary: {
-            environment: "slot.blitz",
-            chain: "slot",
+            environment: "appchain.blitz",
+            chain: "appchain",
             gameType: "blitz",
             rotationName: "bltz-rotationx",
             seriesName: "bltz-rotationx",
@@ -1373,27 +1373,27 @@ describe("factory worker recovery signals", () => {
             games: [],
           },
           artifacts: {
-            summaryPath: ".context/game-launch/rotation-slot-blitz-bltz-rotationx.json",
+            summaryPath: ".context/game-launch/rotation-appchain-blitz-bltz-rotationx.json",
             seriesCreated: true,
           },
         });
       }
 
       if (
-        String(url).includes("/contents/indexes/slot/blitz/rotations.json") &&
+        String(url).includes("/contents/indexes/appchain/blitz/rotations.json") &&
         (!init?.method || init.method === "GET")
       ) {
         return new Response("{}", { status: 404 });
       }
 
-      if (String(url).includes("/contents/runs/slot/blitz/rotations/bltz-rotationx.json") && init?.method === "PUT") {
+      if (String(url).includes("/contents/runs/appchain/blitz/rotations/bltz-rotationx.json") && init?.method === "PUT") {
         return new Response(JSON.stringify({ content: {} }), {
           status: 200,
           headers: { "Content-Type": "application/json" },
         });
       }
 
-      if (String(url).includes("/contents/indexes/slot/blitz/rotations.json") && init?.method === "PUT") {
+      if (String(url).includes("/contents/indexes/appchain/blitz/rotations.json") && init?.method === "PUT") {
         return new Response(JSON.stringify({ content: {} }), {
           status: 200,
           headers: { "Content-Type": "application/json" },
@@ -1405,7 +1405,7 @@ describe("factory worker recovery signals", () => {
 
     const response = await worker.fetch(
       new Request(
-        "https://worker.example/api/factory/rotation-runs/slot.blitz/bltz-rotationx/actions/cancel-auto-retry",
+        "https://worker.example/api/factory/rotation-runs/appchain.blitz/bltz-rotationx/actions/cancel-auto-retry",
         {
           method: "POST",
           headers: {
@@ -1422,7 +1422,7 @@ describe("factory worker recovery signals", () => {
 
     const updateCall = fetchCalls.find(
       (call) =>
-        call.url.includes("/contents/runs/slot/blitz/rotations/bltz-rotationx.json") && call.init?.method === "PUT",
+        call.url.includes("/contents/runs/appchain/blitz/rotations/bltz-rotationx.json") && call.init?.method === "PUT",
     );
     const updateBody = JSON.parse(String(updateCall?.init?.body));
     const nextRunRecord = JSON.parse(Buffer.from(updateBody.content, "base64").toString("utf8"));
@@ -1439,19 +1439,19 @@ describe("factory worker recovery signals", () => {
     globalThis.fetch = async (url, init) => {
       fetchCalls.push({ url: String(url), init });
 
-      if (String(url).includes("/contents/indexes/slot/blitz/games.json") && (!init?.method || init.method === "GET")) {
+      if (String(url).includes("/contents/indexes/appchain/blitz/games.json") && (!init?.method || init.method === "GET")) {
         return buildGitHubContentsResponse({
           version: 1,
-          environment: "slot.blitz",
+          environment: "appchain.blitz",
           kind: "game",
           updatedAt: offsetTimestamp(-30_000),
           entries: {
             "bltz-test-14": {
               kind: "game",
-              environment: "slot.blitz",
+              environment: "appchain.blitz",
               gameName: "bltz-test-14",
-              path: "runs/slot/blitz/bltz-test-14.json",
-              inputPath: "inputs/slot/blitz/bltz-test-14/101-1.json",
+              path: "runs/appchain/blitz/bltz-test-14.json",
+              inputPath: "inputs/appchain/blitz/bltz-test-14/101-1.json",
               status: "complete",
               updatedAt: offsetTimestamp(-30_000),
               workflowRef: "codex/factory-v2-rotation-review",
@@ -1471,21 +1471,21 @@ describe("factory worker recovery signals", () => {
       }
 
       if (
-        String(url).includes("/contents/runs/slot/blitz/bltz-test-14.json") &&
+        String(url).includes("/contents/runs/appchain/blitz/bltz-test-14.json") &&
         (!init?.method || init.method === "GET")
       ) {
         return buildGitHubContentsResponse({
           version: 1,
           kind: "game",
-          runId: "slot.blitz:bltz-test-14",
-          environment: "slot.blitz",
-          chain: "slot",
+          runId: "appchain.blitz:bltz-test-14",
+          environment: "appchain.blitz",
+          chain: "appchain",
           gameType: "blitz",
           gameName: "bltz-test-14",
           status: "complete",
           executionMode: "fast_trial",
           requestedLaunchStep: "full",
-          inputPath: "inputs/slot/blitz/bltz-test-14/101-1.json",
+          inputPath: "inputs/appchain/blitz/bltz-test-14/101-1.json",
           latestLaunchRequestId: "101-1",
           currentStepId: null,
           createdAt: offsetTimestamp(-60_000),
@@ -1505,14 +1505,14 @@ describe("factory worker recovery signals", () => {
         return new Response(null, { status: 204 });
       }
 
-      if (String(url).includes("/contents/runs/slot/blitz/bltz-test-14.json") && init?.method === "PUT") {
+      if (String(url).includes("/contents/runs/appchain/blitz/bltz-test-14.json") && init?.method === "PUT") {
         return new Response(JSON.stringify({ content: {} }), {
           status: 200,
           headers: { "Content-Type": "application/json" },
         });
       }
 
-      if (String(url).includes("/contents/indexes/slot/blitz/games.json") && init?.method === "PUT") {
+      if (String(url).includes("/contents/indexes/appchain/blitz/games.json") && init?.method === "PUT") {
         return new Response(JSON.stringify({ content: {} }), {
           status: 200,
           headers: { "Content-Type": "application/json" },
@@ -1530,7 +1530,7 @@ describe("factory worker recovery signals", () => {
           "x-factory-admin-secret": "factory-secret",
         },
         body: JSON.stringify({
-          environment: "slot.blitz",
+          environment: "appchain.blitz",
           gameName: "bltz-test-14",
           tier: "legendary",
         }),
@@ -1539,7 +1539,7 @@ describe("factory worker recovery signals", () => {
     );
 
     const updateCall = fetchCalls.find(
-      (call) => call.url.includes("/contents/runs/slot/blitz/bltz-test-14.json") && call.init?.method === "PUT",
+      (call) => call.url.includes("/contents/runs/appchain/blitz/bltz-test-14.json") && call.init?.method === "PUT",
     );
     const updateBody = JSON.parse(String(updateCall?.init?.body));
     const nextRunRecord = JSON.parse(Buffer.from(updateBody.content, "base64").toString("utf8"));
@@ -1556,8 +1556,8 @@ describe("factory worker recovery signals", () => {
       {
         action: "set-tier",
         kind: "game",
-        environmentId: "slot.blitz",
-        recordPath: "runs/slot/blitz/bltz-test-14.json",
+        environmentId: "appchain.blitz",
+        recordPath: "runs/appchain/blitz/bltz-test-14.json",
         runName: "bltz-test-14",
         gameName: "bltz-test-14",
         tier: "legendary",
@@ -1586,19 +1586,19 @@ describe("factory worker recovery signals", () => {
       const value = String(url);
       fetchCalls.push({ url: value, init });
 
-      if (value.includes("/contents/indexes/slot/blitz/rotations.json?ref=factory-runs")) {
+      if (value.includes("/contents/indexes/appchain/blitz/rotations.json?ref=factory-runs")) {
         return buildGitHubContentsResponse({
           version: 1,
-          environment: "slot.blitz",
+          environment: "appchain.blitz",
           kind: "rotation",
           updatedAt: startedAt,
           entries: {
             "blitz-rotation": {
               kind: "rotation",
-              environment: "slot.blitz",
+              environment: "appchain.blitz",
               rotationName: "blitz-rotation",
-              path: "runs/slot/blitz/rotations/blitz-rotation.json",
-              inputPath: "inputs/slot/blitz/rotations/blitz-rotation/101-1.json",
+              path: "runs/appchain/blitz/rotations/blitz-rotation.json",
+              inputPath: "inputs/appchain/blitz/rotations/blitz-rotation/101-1.json",
               status: "running",
               updatedAt: startedAt,
               workflowRef: "next",
@@ -1616,22 +1616,22 @@ describe("factory worker recovery signals", () => {
       }
 
       if (
-        value.includes("/contents/runs/slot/blitz/rotations/blitz-rotation.json") &&
+        value.includes("/contents/runs/appchain/blitz/rotations/blitz-rotation.json") &&
         (!init?.method || init.method === "GET")
       ) {
         return buildGitHubContentsResponse({
           version: 1,
           kind: "rotation",
-          runId: "slot.blitz:rotation:blitz-rotation",
-          environment: "slot.blitz",
-          chain: "slot",
+          runId: "appchain.blitz:rotation:blitz-rotation",
+          environment: "appchain.blitz",
+          chain: "appchain",
           gameType: "blitz",
           rotationName: "blitz-rotation",
           seriesName: "blitz-rotation",
           status: "running",
           executionMode: "fast_trial",
           requestedLaunchStep: "full",
-          inputPath: "inputs/slot/blitz/rotations/blitz-rotation/101-1.json",
+          inputPath: "inputs/appchain/blitz/rotations/blitz-rotation/101-1.json",
           latestLaunchRequestId: "101-1",
           currentStepId: null,
           createdAt: offsetTimestamp(-120_000),
@@ -1646,8 +1646,8 @@ describe("factory worker recovery signals", () => {
             nextEvaluationAt: offsetTimestamp(-1_000),
           },
           summary: {
-            environment: "slot.blitz",
-            chain: "slot",
+            environment: "appchain.blitz",
+            chain: "appchain",
             gameType: "blitz",
             rotationName: "blitz-rotation",
             seriesName: "blitz-rotation",
@@ -1666,12 +1666,12 @@ describe("factory worker recovery signals", () => {
         });
       }
 
-      if (value.includes("/contents/inputs/slot/blitz/rotations/blitz-rotation/101-1.json")) {
+      if (value.includes("/contents/inputs/appchain/blitz/rotations/blitz-rotation/101-1.json")) {
         return buildGitHubContentsResponse({
-          environment: "slot.blitz",
+          environment: "appchain.blitz",
           rotationName: "blitz-rotation",
           request: {
-            environmentId: "slot.blitz",
+            environmentId: "appchain.blitz",
             rotationName: "blitz-rotation",
             firstGameStartTime: 1776646800,
             gameIntervalMinutes: 0,
@@ -1686,24 +1686,24 @@ describe("factory worker recovery signals", () => {
         return new Response(null, { status: 204 });
       }
 
-      if (value.includes("/contents/runs/slot/blitz/rotations/blitz-rotation.json") && init?.method === "PUT") {
+      if (value.includes("/contents/runs/appchain/blitz/rotations/blitz-rotation.json") && init?.method === "PUT") {
         return new Response(JSON.stringify({ content: {} }), {
           status: 200,
           headers: { "Content-Type": "application/json" },
         });
       }
 
-      if (value.includes("/contents/indexes/slot/blitz/rotations.json") && (!init?.method || init.method === "GET")) {
+      if (value.includes("/contents/indexes/appchain/blitz/rotations.json") && (!init?.method || init.method === "GET")) {
         return buildGitHubContentsResponse({
           version: 1,
-          environment: "slot.blitz",
+          environment: "appchain.blitz",
           kind: "rotation",
           updatedAt: startedAt,
           entries: {},
         });
       }
 
-      if (value.includes("/contents/indexes/slot/blitz/rotations.json") && init?.method === "PUT") {
+      if (value.includes("/contents/indexes/appchain/blitz/rotations.json") && init?.method === "PUT") {
         return new Response(JSON.stringify({ content: {} }), {
           status: 200,
           headers: { "Content-Type": "application/json" },
@@ -1743,19 +1743,19 @@ describe("factory worker recovery signals", () => {
       const value = String(url);
       fetchCalls.push({ url: value, init });
 
-      if (value.includes("/contents/indexes/slot/blitz/series.json?ref=factory-runs")) {
+      if (value.includes("/contents/indexes/appchain/blitz/series.json?ref=factory-runs")) {
         return buildGitHubContentsResponse({
           version: 1,
-          environment: "slot.blitz",
+          environment: "appchain.blitz",
           kind: "series",
           updatedAt: startedAt,
           entries: {
             "bltz-knicker": {
               kind: "series",
-              environment: "slot.blitz",
+              environment: "appchain.blitz",
               seriesName: "bltz-knicker",
-              path: "runs/slot/blitz/series/bltz-knicker.json",
-              inputPath: "inputs/slot/blitz/series/bltz-knicker/101-1.json",
+              path: "runs/appchain/blitz/series/bltz-knicker.json",
+              inputPath: "inputs/appchain/blitz/series/bltz-knicker/101-1.json",
               status: "running",
               updatedAt: startedAt,
               workflowRef: "codex/factory-v2-rotation-review",
@@ -1797,21 +1797,21 @@ describe("factory worker recovery signals", () => {
       }
 
       if (
-        value.includes("/contents/runs/slot/blitz/series/bltz-knicker.json") &&
+        value.includes("/contents/runs/appchain/blitz/series/bltz-knicker.json") &&
         (!init?.method || init.method === "GET")
       ) {
         return buildGitHubContentsResponse({
           version: 1,
           kind: "series",
-          runId: "slot.blitz:series:bltz-knicker",
-          environment: "slot.blitz",
-          chain: "slot",
+          runId: "appchain.blitz:series:bltz-knicker",
+          environment: "appchain.blitz",
+          chain: "appchain",
           gameType: "blitz",
           seriesName: "bltz-knicker",
           status: "running",
           executionMode: "fast_trial",
           requestedLaunchStep: "full",
-          inputPath: "inputs/slot/blitz/series/bltz-knicker/101-1.json",
+          inputPath: "inputs/appchain/blitz/series/bltz-knicker/101-1.json",
           latestLaunchRequestId: "101-1",
           currentStepId: null,
           createdAt: offsetTimestamp(-120_000),
@@ -1853,14 +1853,14 @@ describe("factory worker recovery signals", () => {
         });
       }
 
-      if (value.includes("/contents/runs/slot/blitz/series/bltz-knicker.json") && init?.method === "PUT") {
+      if (value.includes("/contents/runs/appchain/blitz/series/bltz-knicker.json") && init?.method === "PUT") {
         return new Response(JSON.stringify({ content: {} }), {
           status: 200,
           headers: { "Content-Type": "application/json" },
         });
       }
 
-      if (value.includes("/contents/indexes/slot/blitz/series.json") && init?.method === "PUT") {
+      if (value.includes("/contents/indexes/appchain/blitz/series.json") && init?.method === "PUT") {
         return new Response(JSON.stringify({ content: {} }), {
           status: 200,
           headers: { "Content-Type": "application/json" },
@@ -1882,7 +1882,7 @@ describe("factory worker recovery signals", () => {
       call.url.includes("/actions/workflows/factory-indexer-maintenance.yml/dispatches"),
     );
     const updateCall = fetchCalls.find(
-      (call) => call.url.includes("/contents/runs/slot/blitz/series/bltz-knicker.json") && call.init?.method === "PUT",
+      (call) => call.url.includes("/contents/runs/appchain/blitz/series/bltz-knicker.json") && call.init?.method === "PUT",
     );
     const updateBody = JSON.parse(String(updateCall?.init?.body));
     const nextRunRecord = JSON.parse(Buffer.from(updateBody.content, "base64").toString("utf8"));
@@ -1902,8 +1902,8 @@ describe("factory worker recovery signals", () => {
       {
         action: "set-tier",
         kind: "series",
-        environmentId: "slot.blitz",
-        recordPath: "runs/slot/blitz/series/bltz-knicker.json",
+        environmentId: "appchain.blitz",
+        recordPath: "runs/appchain/blitz/series/bltz-knicker.json",
         runName: "bltz-knicker",
         gameName: "bltz-knicker-01",
         tier: "legendary",
@@ -1911,14 +1911,14 @@ describe("factory worker recovery signals", () => {
       {
         action: "set-tier",
         kind: "series",
-        environmentId: "slot.blitz",
-        recordPath: "runs/slot/blitz/series/bltz-knicker.json",
+        environmentId: "appchain.blitz",
+        recordPath: "runs/appchain/blitz/series/bltz-knicker.json",
         runName: "bltz-knicker",
         gameName: "bltz-knicker-02",
         tier: "legendary",
       },
     ]);
-    expect(fetchCalls.some((call) => call.url.includes("/contents/runs/slot/blitz/series?ref=factory-runs"))).toBe(
+    expect(fetchCalls.some((call) => call.url.includes("/contents/runs/appchain/blitz/series?ref=factory-runs"))).toBe(
       false,
     );
     expect(firstGame.artifacts.lastIndexerTierDispatchTarget).toBe("legendary");
@@ -1945,19 +1945,19 @@ describe("factory worker recovery signals", () => {
       const value = String(url);
       fetchCalls.push({ url: value, init });
 
-      if (value.includes("/contents/indexes/slot/blitz/series.json?ref=factory-runs")) {
+      if (value.includes("/contents/indexes/appchain/blitz/series.json?ref=factory-runs")) {
         return buildGitHubContentsResponse({
           version: 1,
-          environment: "slot.blitz",
+          environment: "appchain.blitz",
           kind: "series",
           updatedAt: startedAt,
           entries: {
             "bltz-paused": {
               kind: "series",
-              environment: "slot.blitz",
+              environment: "appchain.blitz",
               seriesName: "bltz-paused",
-              path: "runs/slot/blitz/series/bltz-paused.json",
-              inputPath: "inputs/slot/blitz/series/bltz-paused/101-1.json",
+              path: "runs/appchain/blitz/series/bltz-paused.json",
+              inputPath: "inputs/appchain/blitz/series/bltz-paused/101-1.json",
               status: "attention",
               updatedAt: startedAt,
               workflowRef: "codex/factory-v2-rotation-review",
@@ -2004,7 +2004,7 @@ describe("factory worker recovery signals", () => {
     expect(
       fetchCalls.some((call) => call.url.includes("/actions/workflows/factory-indexer-maintenance.yml/dispatches")),
     ).toBe(false);
-    expect(fetchCalls.some((call) => call.url.includes("/contents/runs/slot/blitz/series/bltz-paused.json"))).toBe(
+    expect(fetchCalls.some((call) => call.url.includes("/contents/runs/appchain/blitz/series/bltz-paused.json"))).toBe(
       false,
     );
   });
@@ -2016,20 +2016,20 @@ describe("factory worker recovery signals", () => {
       const value = String(url);
       fetchCalls.push({ url: value, init });
 
-      if (value.includes("/contents/runs/slot/blitz/rotations/bltz-franky.json")) {
+      if (value.includes("/contents/runs/appchain/blitz/rotations/bltz-franky.json")) {
         return buildGitHubContentsResponse({
           version: 1,
           kind: "rotation",
-          runId: "slot.blitz:rotation:bltz-franky",
-          environment: "slot.blitz",
-          chain: "slot",
+          runId: "appchain.blitz:rotation:bltz-franky",
+          environment: "appchain.blitz",
+          chain: "appchain",
           gameType: "blitz",
           rotationName: "bltz-franky",
           seriesName: "bltz-franky",
           status: "complete",
           executionMode: "fast_trial",
           requestedLaunchStep: "full",
-          inputPath: "inputs/slot/blitz/rotations/bltz-franky/101-1.json",
+          inputPath: "inputs/appchain/blitz/rotations/bltz-franky/101-1.json",
           latestLaunchRequestId: "101-1",
           currentStepId: null,
           createdAt: offsetTimestamp(-120_000),
@@ -2060,7 +2060,7 @@ describe("factory worker recovery signals", () => {
           "x-factory-admin-secret": "factory-secret",
         },
         body: JSON.stringify({
-          environment: "slot.blitz",
+          environment: "appchain.blitz",
           runKind: "rotation",
           runName: "bltz-franky",
           gameNames: ["bltz-franky-01", "bltz-franky-02"],
@@ -2081,16 +2081,16 @@ describe("factory worker recovery signals", () => {
       {
         action: "delete",
         kind: "rotation",
-        environmentId: "slot.blitz",
-        recordPath: "runs/slot/blitz/rotations/bltz-franky.json",
+        environmentId: "appchain.blitz",
+        recordPath: "runs/appchain/blitz/rotations/bltz-franky.json",
         runName: "bltz-franky",
         gameName: "bltz-franky-01",
       },
       {
         action: "delete",
         kind: "rotation",
-        environmentId: "slot.blitz",
-        recordPath: "runs/slot/blitz/rotations/bltz-franky.json",
+        environmentId: "appchain.blitz",
+        recordPath: "runs/appchain/blitz/rotations/bltz-franky.json",
         runName: "bltz-franky",
         gameName: "bltz-franky-02",
       },
@@ -2103,19 +2103,19 @@ describe("factory worker recovery signals", () => {
     globalThis.fetch = async (url) => {
       const value = String(url);
 
-      if (value.includes("/contents/runs/slot/blitz/series/bltz-franky.json")) {
+      if (value.includes("/contents/runs/appchain/blitz/series/bltz-franky.json")) {
         return buildGitHubContentsResponse({
           version: 1,
           kind: "series",
-          runId: "slot.blitz:series:bltz-franky",
-          environment: "slot.blitz",
-          chain: "slot",
+          runId: "appchain.blitz:series:bltz-franky",
+          environment: "appchain.blitz",
+          chain: "appchain",
           gameType: "blitz",
           seriesName: "bltz-franky",
           status: "complete",
           executionMode: "fast_trial",
           requestedLaunchStep: "full",
-          inputPath: "inputs/slot/blitz/series/bltz-franky/101-1.json",
+          inputPath: "inputs/appchain/blitz/series/bltz-franky/101-1.json",
           latestLaunchRequestId: "101-1",
           currentStepId: null,
           createdAt: offsetTimestamp(-120_000),
@@ -2147,7 +2147,7 @@ describe("factory worker recovery signals", () => {
           "x-factory-admin-secret": "factory-secret",
         },
         body: JSON.stringify({
-          environment: "slot.blitz",
+          environment: "appchain.blitz",
           runKind: "series",
           runName: "bltz-franky",
           gameNames: ["bltz-franky-02"],
@@ -2170,17 +2170,17 @@ describe("factory worker recovery signals", () => {
       const value = String(url);
       fetchCalls.push({ url: value, init });
 
-      if (value.includes("/contents/runs/slot/blitz/bltz-scrubbed-01.json")) {
+      if (value.includes("/contents/runs/appchain/blitz/bltz-scrubbed-01.json")) {
         return buildGitHubContentsResponse({
           version: 1,
-          runId: "slot.blitz:bltz-scrubbed-01",
-          environment: "slot.blitz",
-          chain: "slot",
+          runId: "appchain.blitz:bltz-scrubbed-01",
+          environment: "appchain.blitz",
+          chain: "appchain",
           gameType: "blitz",
           gameName: "bltz-scrubbed-01",
           status: "attention",
           executionMode: "guided_recovery",
-          inputPath: "inputs/slot/blitz/bltz-scrubbed-01/101-1.json",
+          inputPath: "inputs/appchain/blitz/bltz-scrubbed-01/101-1.json",
           latestLaunchRequestId: "101-1",
           currentStepId: null,
           createdAt: offsetTimestamp(-120_000),
@@ -2191,31 +2191,31 @@ describe("factory worker recovery signals", () => {
         });
       }
 
-      if (value.includes("/contents/inputs/slot/blitz/bltz-scrubbed-01?ref=factory-runs")) {
+      if (value.includes("/contents/inputs/appchain/blitz/bltz-scrubbed-01?ref=factory-runs")) {
         return buildGitHubDirectoryResponse([
-          { type: "file", path: "inputs/slot/blitz/bltz-scrubbed-01/101-1.json", sha: "sha-101-1" },
-          { type: "file", path: "inputs/slot/blitz/bltz-scrubbed-01/101-2.json", sha: "sha-101-2" },
+          { type: "file", path: "inputs/appchain/blitz/bltz-scrubbed-01/101-1.json", sha: "sha-101-1" },
+          { type: "file", path: "inputs/appchain/blitz/bltz-scrubbed-01/101-2.json", sha: "sha-101-2" },
         ]);
       }
 
-      if (value.includes("/contents/inputs/slot/blitz/bltz-scrubbed-01/101-1.json")) {
+      if (value.includes("/contents/inputs/appchain/blitz/bltz-scrubbed-01/101-1.json")) {
         return buildGitHubContentsResponse({ request: { gameName: "bltz-scrubbed-01" } });
       }
 
-      if (value.includes("/contents/inputs/slot/blitz/bltz-scrubbed-01/101-2.json")) {
+      if (value.includes("/contents/inputs/appchain/blitz/bltz-scrubbed-01/101-2.json")) {
         return buildGitHubContentsResponse({ request: { gameName: "bltz-scrubbed-01" } });
       }
 
-      if (value.includes("/contents/indexes/slot/blitz/games.json")) {
+      if (value.includes("/contents/indexes/appchain/blitz/games.json")) {
         return buildGitHubContentsResponse({
           version: 1,
-          environment: "slot.blitz",
+          environment: "appchain.blitz",
           kind: "game",
           updatedAt: offsetTimestamp(-5_000),
           entries: {
             "bltz-scrubbed-01": {
               kind: "game",
-              environment: "slot.blitz",
+              environment: "appchain.blitz",
               gameName: "bltz-scrubbed-01",
             },
           },
@@ -2253,7 +2253,7 @@ describe("factory worker recovery signals", () => {
     };
 
     const response = await worker.fetch(
-      new Request("https://worker.example/api/factory/runs/slot.blitz/bltz-scrubbed-01/actions/delete", {
+      new Request("https://worker.example/api/factory/runs/appchain.blitz/bltz-scrubbed-01/actions/delete", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -2265,7 +2265,7 @@ describe("factory worker recovery signals", () => {
     );
 
     const gamesIndexUpdate = fetchCalls.find(
-      (call) => call.init?.method === "PUT" && call.url.includes("/contents/indexes/slot/blitz/games.json"),
+      (call) => call.init?.method === "PUT" && call.url.includes("/contents/indexes/appchain/blitz/games.json"),
     );
     const liveSnapshotUpdate = fetchCalls.find(
       (call) => call.init?.method === "PUT" && call.url.includes("/contents/indexes/indexers/live.json"),
@@ -2280,8 +2280,8 @@ describe("factory worker recovery signals", () => {
     ).toString("utf8");
 
     expect(response.status).toBe(200);
-    expect(deletedPaths.some((path) => path.includes("/contents/runs/slot/blitz/bltz-scrubbed-01.json"))).toBe(true);
-    expect(deletedPaths.filter((path) => path.includes("/contents/inputs/slot/blitz/bltz-scrubbed-01/")).length).toBe(
+    expect(deletedPaths.some((path) => path.includes("/contents/runs/appchain/blitz/bltz-scrubbed-01.json"))).toBe(true);
+    expect(deletedPaths.filter((path) => path.includes("/contents/inputs/appchain/blitz/bltz-scrubbed-01/")).length).toBe(
       2,
     );
     expect(gamesIndexContent).not.toContain("bltz-scrubbed-01");
@@ -2296,18 +2296,18 @@ describe("factory worker recovery signals", () => {
       const value = String(url);
       fetchCalls.push({ url: value, init });
 
-      if (value.includes("/contents/runs/slot/blitz/series/bltz-scrubbed-series.json")) {
+      if (value.includes("/contents/runs/appchain/blitz/series/bltz-scrubbed-series.json")) {
         return buildGitHubContentsResponse({
           version: 1,
           kind: "series",
-          runId: "slot.blitz:series:bltz-scrubbed-series",
-          environment: "slot.blitz",
-          chain: "slot",
+          runId: "appchain.blitz:series:bltz-scrubbed-series",
+          environment: "appchain.blitz",
+          chain: "appchain",
           gameType: "blitz",
           seriesName: "bltz-scrubbed-series",
           status: "attention",
           executionMode: "guided_recovery",
-          inputPath: "inputs/slot/blitz/series/bltz-scrubbed-series/101-1.json",
+          inputPath: "inputs/appchain/blitz/series/bltz-scrubbed-series/101-1.json",
           latestLaunchRequestId: "101-1",
           currentStepId: null,
           createdAt: offsetTimestamp(-120_000),
@@ -2321,31 +2321,31 @@ describe("factory worker recovery signals", () => {
         });
       }
 
-      if (value.includes("/contents/inputs/slot/blitz/series/bltz-scrubbed-series?ref=factory-runs")) {
+      if (value.includes("/contents/inputs/appchain/blitz/series/bltz-scrubbed-series?ref=factory-runs")) {
         return buildGitHubDirectoryResponse([
-          { type: "file", path: "inputs/slot/blitz/series/bltz-scrubbed-series/101-1.json", sha: "sha-201-1" },
-          { type: "file", path: "inputs/slot/blitz/series/bltz-scrubbed-series/102-1.json", sha: "sha-202-1" },
+          { type: "file", path: "inputs/appchain/blitz/series/bltz-scrubbed-series/101-1.json", sha: "sha-201-1" },
+          { type: "file", path: "inputs/appchain/blitz/series/bltz-scrubbed-series/102-1.json", sha: "sha-202-1" },
         ]);
       }
 
-      if (value.includes("/contents/inputs/slot/blitz/series/bltz-scrubbed-series/101-1.json")) {
+      if (value.includes("/contents/inputs/appchain/blitz/series/bltz-scrubbed-series/101-1.json")) {
         return buildGitHubContentsResponse({ request: { seriesName: "bltz-scrubbed-series" } });
       }
 
-      if (value.includes("/contents/inputs/slot/blitz/series/bltz-scrubbed-series/102-1.json")) {
+      if (value.includes("/contents/inputs/appchain/blitz/series/bltz-scrubbed-series/102-1.json")) {
         return buildGitHubContentsResponse({ request: { seriesName: "bltz-scrubbed-series" } });
       }
 
-      if (value.includes("/contents/indexes/slot/blitz/series.json")) {
+      if (value.includes("/contents/indexes/appchain/blitz/series.json")) {
         return buildGitHubContentsResponse({
           version: 1,
-          environment: "slot.blitz",
+          environment: "appchain.blitz",
           kind: "series",
           updatedAt: offsetTimestamp(-5_000),
           entries: {
             "bltz-scrubbed-series": {
               kind: "series",
-              environment: "slot.blitz",
+              environment: "appchain.blitz",
               seriesName: "bltz-scrubbed-series",
             },
           },
@@ -2388,7 +2388,7 @@ describe("factory worker recovery signals", () => {
     };
 
     const response = await worker.fetch(
-      new Request("https://worker.example/api/factory/series-runs/slot.blitz/bltz-scrubbed-series/actions/delete", {
+      new Request("https://worker.example/api/factory/series-runs/appchain.blitz/bltz-scrubbed-series/actions/delete", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -2400,7 +2400,7 @@ describe("factory worker recovery signals", () => {
     );
 
     const seriesIndexUpdate = fetchCalls.find(
-      (call) => call.init?.method === "PUT" && call.url.includes("/contents/indexes/slot/blitz/series.json"),
+      (call) => call.init?.method === "PUT" && call.url.includes("/contents/indexes/appchain/blitz/series.json"),
     );
     const liveSnapshotUpdate = fetchCalls.find(
       (call) => call.init?.method === "PUT" && call.url.includes("/contents/indexes/indexers/live.json"),
@@ -2419,7 +2419,7 @@ describe("factory worker recovery signals", () => {
       fetchCalls.some(
         (call) =>
           call.init?.method === "DELETE" &&
-          call.url.includes("/contents/runs/slot/blitz/series/bltz-scrubbed-series.json"),
+          call.url.includes("/contents/runs/appchain/blitz/series/bltz-scrubbed-series.json"),
       ),
     ).toBe(true);
     expect(seriesIndexContent).not.toContain("bltz-scrubbed-series");
@@ -2435,19 +2435,19 @@ describe("factory worker recovery signals", () => {
       const value = String(url);
       fetchCalls.push({ url: value, init });
 
-      if (value.includes("/contents/runs/slot/blitz/rotations/bltz-scrubbed-rotation.json")) {
+      if (value.includes("/contents/runs/appchain/blitz/rotations/bltz-scrubbed-rotation.json")) {
         return buildGitHubContentsResponse({
           version: 1,
           kind: "rotation",
-          runId: "slot.blitz:rotation:bltz-scrubbed-rotation",
-          environment: "slot.blitz",
-          chain: "slot",
+          runId: "appchain.blitz:rotation:bltz-scrubbed-rotation",
+          environment: "appchain.blitz",
+          chain: "appchain",
           gameType: "blitz",
           rotationName: "bltz-scrubbed-rotation",
           seriesName: "bltz-scrubbed-rotation",
           status: "attention",
           executionMode: "guided_recovery",
-          inputPath: "inputs/slot/blitz/rotations/bltz-scrubbed-rotation/101-1.json",
+          inputPath: "inputs/appchain/blitz/rotations/bltz-scrubbed-rotation/101-1.json",
           latestLaunchRequestId: "101-1",
           currentStepId: null,
           createdAt: offsetTimestamp(-120_000),
@@ -2462,31 +2462,31 @@ describe("factory worker recovery signals", () => {
         });
       }
 
-      if (value.includes("/contents/inputs/slot/blitz/rotations/bltz-scrubbed-rotation?ref=factory-runs")) {
+      if (value.includes("/contents/inputs/appchain/blitz/rotations/bltz-scrubbed-rotation?ref=factory-runs")) {
         return buildGitHubDirectoryResponse([
-          { type: "file", path: "inputs/slot/blitz/rotations/bltz-scrubbed-rotation/101-1.json", sha: "sha-301-1" },
-          { type: "file", path: "inputs/slot/blitz/rotations/bltz-scrubbed-rotation/102-1.json", sha: "sha-302-1" },
+          { type: "file", path: "inputs/appchain/blitz/rotations/bltz-scrubbed-rotation/101-1.json", sha: "sha-301-1" },
+          { type: "file", path: "inputs/appchain/blitz/rotations/bltz-scrubbed-rotation/102-1.json", sha: "sha-302-1" },
         ]);
       }
 
-      if (value.includes("/contents/inputs/slot/blitz/rotations/bltz-scrubbed-rotation/101-1.json")) {
+      if (value.includes("/contents/inputs/appchain/blitz/rotations/bltz-scrubbed-rotation/101-1.json")) {
         return buildGitHubContentsResponse({ request: { rotationName: "bltz-scrubbed-rotation" } });
       }
 
-      if (value.includes("/contents/inputs/slot/blitz/rotations/bltz-scrubbed-rotation/102-1.json")) {
+      if (value.includes("/contents/inputs/appchain/blitz/rotations/bltz-scrubbed-rotation/102-1.json")) {
         return buildGitHubContentsResponse({ request: { rotationName: "bltz-scrubbed-rotation" } });
       }
 
-      if (value.includes("/contents/indexes/slot/blitz/rotations.json")) {
+      if (value.includes("/contents/indexes/appchain/blitz/rotations.json")) {
         return buildGitHubContentsResponse({
           version: 1,
-          environment: "slot.blitz",
+          environment: "appchain.blitz",
           kind: "rotation",
           updatedAt: offsetTimestamp(-5_000),
           entries: {
             "bltz-scrubbed-rotation": {
               kind: "rotation",
-              environment: "slot.blitz",
+              environment: "appchain.blitz",
               rotationName: "bltz-scrubbed-rotation",
             },
           },
@@ -2529,7 +2529,7 @@ describe("factory worker recovery signals", () => {
     };
 
     const response = await worker.fetch(
-      new Request("https://worker.example/api/factory/rotation-runs/slot.blitz/bltz-scrubbed-rotation/actions/delete", {
+      new Request("https://worker.example/api/factory/rotation-runs/appchain.blitz/bltz-scrubbed-rotation/actions/delete", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -2541,7 +2541,7 @@ describe("factory worker recovery signals", () => {
     );
 
     const rotationIndexUpdate = fetchCalls.find(
-      (call) => call.init?.method === "PUT" && call.url.includes("/contents/indexes/slot/blitz/rotations.json"),
+      (call) => call.init?.method === "PUT" && call.url.includes("/contents/indexes/appchain/blitz/rotations.json"),
     );
     const liveSnapshotUpdate = fetchCalls.find(
       (call) => call.init?.method === "PUT" && call.url.includes("/contents/indexes/indexers/live.json"),
@@ -2560,7 +2560,7 @@ describe("factory worker recovery signals", () => {
       fetchCalls.some(
         (call) =>
           call.init?.method === "DELETE" &&
-          call.url.includes("/contents/runs/slot/blitz/rotations/bltz-scrubbed-rotation.json"),
+          call.url.includes("/contents/runs/appchain/blitz/rotations/bltz-scrubbed-rotation.json"),
       ),
     ).toBe(true);
     expect(rotationIndexContent).not.toContain("bltz-scrubbed-rotation");
@@ -2579,7 +2579,7 @@ describe("factory worker prize funding", () => {
     };
 
     const response = await worker.fetch(
-      new Request("https://worker.example/api/factory/runs/slot.blitz/bltz-prize-run/actions/fund-prize", {
+      new Request("https://worker.example/api/factory/runs/appchain.blitz/bltz-prize-run/actions/fund-prize", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -2599,21 +2599,21 @@ describe("factory worker prize funding", () => {
       fetchCalls.push({ url: String(url), init });
 
       if (
-        String(url).includes("/contents/runs/slot/blitz/series/bltz-weekend-cup.json") &&
+        String(url).includes("/contents/runs/appchain/blitz/series/bltz-weekend-cup.json") &&
         (!init?.method || init.method === "GET")
       ) {
         return buildGitHubContentsResponse({
           version: 1,
           kind: "series",
-          runId: "slot.blitz:series:bltz-weekend-cup",
-          environment: "slot.blitz",
-          chain: "slot",
+          runId: "appchain.blitz:series:bltz-weekend-cup",
+          environment: "appchain.blitz",
+          chain: "appchain",
           gameType: "blitz",
           seriesName: "bltz-weekend-cup",
           status: "attention",
           executionMode: "guided_recovery",
           requestedLaunchStep: "full",
-          inputPath: "inputs/slot/blitz/series/bltz-weekend-cup/101-1.json",
+          inputPath: "inputs/appchain/blitz/series/bltz-weekend-cup/101-1.json",
           latestLaunchRequestId: "101-1",
           currentStepId: "create-indexers",
           createdAt: offsetTimestamp(-60_000),
@@ -2627,8 +2627,8 @@ describe("factory worker prize funding", () => {
           },
           steps: [],
           summary: {
-            environment: "slot.blitz",
-            chain: "slot",
+            environment: "appchain.blitz",
+            chain: "appchain",
             gameType: "blitz",
             seriesName: "bltz-weekend-cup",
             rpcUrl: "https://rpc.example",
@@ -2697,19 +2697,19 @@ describe("factory worker prize funding", () => {
             ],
           },
           artifacts: {
-            summaryPath: ".context/game-launch/series-slot-blitz-bltz-weekend-cup.json",
+            summaryPath: ".context/game-launch/series-appchain-blitz-bltz-weekend-cup.json",
             seriesCreated: true,
             seriesCreatedAt: "2026-03-18T10:00:00.000Z",
           },
         });
       }
 
-      if (String(url).includes("/contents/inputs/slot/blitz/series/bltz-weekend-cup/101-1.json")) {
+      if (String(url).includes("/contents/inputs/appchain/blitz/series/bltz-weekend-cup/101-1.json")) {
         return buildGitHubContentsResponse({
-          environment: "slot.blitz",
+          environment: "appchain.blitz",
           seriesName: "bltz-weekend-cup",
           request: {
-            environmentId: "slot.blitz",
+            environmentId: "appchain.blitz",
             seriesName: "bltz-weekend-cup",
             games: [
               { gameName: "bltz-weekend-cup-01", startTime: "2026-03-22T16:00:00.000Z" },
@@ -2728,7 +2728,7 @@ describe("factory worker prize funding", () => {
     };
 
     const response = await worker.fetch(
-      new Request("https://worker.example/api/factory/series-runs/slot.blitz/bltz-weekend-cup/actions/fund-prize", {
+      new Request("https://worker.example/api/factory/series-runs/appchain.blitz/bltz-weekend-cup/actions/fund-prize", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -2759,21 +2759,21 @@ describe("factory worker prize funding", () => {
       fetchCalls.push({ url: String(url), init });
 
       if (
-        String(url).includes("/contents/runs/slot/eternum/etrn-prize-run.json") &&
+        String(url).includes("/contents/runs/appchain/eternum/etrn-prize-run.json") &&
         (!init?.method || init.method === "GET")
       ) {
         return buildGitHubContentsResponse({
           version: 1,
           kind: "game",
-          runId: "slot.eternum:etrn-prize-run",
-          environment: "slot.eternum",
-          chain: "slot",
+          runId: "appchain.eternum:etrn-prize-run",
+          environment: "appchain.eternum",
+          chain: "appchain",
           gameType: "eternum",
           gameName: "etrn-prize-run",
           status: "attention",
           executionMode: "guided_recovery",
           requestedLaunchStep: "full",
-          inputPath: "inputs/slot/eternum/etrn-prize-run/101-1.json",
+          inputPath: "inputs/appchain/eternum/etrn-prize-run/101-1.json",
           latestLaunchRequestId: "101-1",
           currentStepId: "create-indexer",
           createdAt: offsetTimestamp(-60_000),
@@ -2810,12 +2810,12 @@ describe("factory worker prize funding", () => {
         });
       }
 
-      if (String(url).includes("/contents/inputs/slot/eternum/etrn-prize-run/101-1.json")) {
+      if (String(url).includes("/contents/inputs/appchain/eternum/etrn-prize-run/101-1.json")) {
         return buildGitHubContentsResponse({
-          environment: "slot.eternum",
+          environment: "appchain.eternum",
           gameName: "etrn-prize-run",
           request: {
-            environmentId: "slot.eternum",
+            environmentId: "appchain.eternum",
             gameName: "etrn-prize-run",
             startTime: "2026-03-22T16:00:00.000Z",
           },
@@ -2830,7 +2830,7 @@ describe("factory worker prize funding", () => {
     };
 
     const response = await worker.fetch(
-      new Request("https://worker.example/api/factory/runs/slot.eternum/etrn-prize-run/actions/fund-prize", {
+      new Request("https://worker.example/api/factory/runs/appchain.eternum/etrn-prize-run/actions/fund-prize", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -2849,7 +2849,7 @@ describe("factory worker prize funding", () => {
     const dispatchBody = JSON.parse(String(dispatchCall?.init?.body));
 
     expect(response.status).toBe(202);
-    expect(dispatchBody.inputs.environment).toBe("slot.eternum");
+    expect(dispatchBody.inputs.environment).toBe("appchain.eternum");
     expect(dispatchBody.inputs.run_kind).toBe("game");
     expect(dispatchBody.inputs.run_name).toBe("etrn-prize-run");
     expect(dispatchBody.inputs.selected_games_json).toBe("");
@@ -2859,21 +2859,21 @@ describe("factory worker prize funding", () => {
     let didDispatchFundingWorkflow = false;
     globalThis.fetch = async (url, init) => {
       if (
-        String(url).includes("/contents/runs/slot/eternum/etrn-prize-pending.json") &&
+        String(url).includes("/contents/runs/appchain/eternum/etrn-prize-pending.json") &&
         (!init?.method || init.method === "GET")
       ) {
         return buildGitHubContentsResponse({
           version: 1,
           kind: "game",
-          runId: "slot.eternum:etrn-prize-pending",
-          environment: "slot.eternum",
-          chain: "slot",
+          runId: "appchain.eternum:etrn-prize-pending",
+          environment: "appchain.eternum",
+          chain: "appchain",
           gameType: "eternum",
           gameName: "etrn-prize-pending",
           status: "attention",
           executionMode: "guided_recovery",
           requestedLaunchStep: "full",
-          inputPath: "inputs/slot/eternum/etrn-prize-pending/101-1.json",
+          inputPath: "inputs/appchain/eternum/etrn-prize-pending/101-1.json",
           latestLaunchRequestId: "101-1",
           currentStepId: "configure-world",
           createdAt: offsetTimestamp(-60_000),
@@ -2912,7 +2912,7 @@ describe("factory worker prize funding", () => {
     };
 
     const response = await worker.fetch(
-      new Request("https://worker.example/api/factory/runs/slot.eternum/etrn-prize-pending/actions/fund-prize", {
+      new Request("https://worker.example/api/factory/runs/appchain.eternum/etrn-prize-pending/actions/fund-prize", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -2938,22 +2938,22 @@ describe("factory worker prize funding", () => {
       fetchCalls.push({ url: String(url), init });
 
       if (
-        String(url).includes("/contents/runs/slot/eternum/rotations/etrn-season-loop.json") &&
+        String(url).includes("/contents/runs/appchain/eternum/rotations/etrn-season-loop.json") &&
         (!init?.method || init.method === "GET")
       ) {
         return buildGitHubContentsResponse({
           version: 1,
           kind: "rotation",
-          runId: "slot.eternum:rotation:etrn-season-loop",
-          environment: "slot.eternum",
-          chain: "slot",
+          runId: "appchain.eternum:rotation:etrn-season-loop",
+          environment: "appchain.eternum",
+          chain: "appchain",
           gameType: "eternum",
           rotationName: "etrn-season-loop",
           seriesName: "etrn-season-loop",
           status: "attention",
           executionMode: "guided_recovery",
           requestedLaunchStep: "create-indexers",
-          inputPath: "inputs/slot/eternum/rotations/etrn-season-loop/101-1.json",
+          inputPath: "inputs/appchain/eternum/rotations/etrn-season-loop/101-1.json",
           latestLaunchRequestId: "101-1",
           currentStepId: "create-indexers",
           createdAt: offsetTimestamp(-60_000),
@@ -2971,8 +2971,8 @@ describe("factory worker prize funding", () => {
           },
           steps: [],
           summary: {
-            environment: "slot.eternum",
-            chain: "slot",
+            environment: "appchain.eternum",
+            chain: "appchain",
             gameType: "eternum",
             rotationName: "etrn-season-loop",
             seriesName: "etrn-season-loop",
@@ -3048,18 +3048,18 @@ describe("factory worker prize funding", () => {
             ],
           },
           artifacts: {
-            summaryPath: ".context/game-launch/rotation-slot-eternum-etrn-season-loop.json",
+            summaryPath: ".context/game-launch/rotation-appchain-eternum-etrn-season-loop.json",
             seriesCreated: true,
           },
         });
       }
 
-      if (String(url).includes("/contents/inputs/slot/eternum/rotations/etrn-season-loop/101-1.json")) {
+      if (String(url).includes("/contents/inputs/appchain/eternum/rotations/etrn-season-loop/101-1.json")) {
         return buildGitHubContentsResponse({
-          environment: "slot.eternum",
+          environment: "appchain.eternum",
           rotationName: "etrn-season-loop",
           request: {
-            environmentId: "slot.eternum",
+            environmentId: "appchain.eternum",
             rotationName: "etrn-season-loop",
             firstGameStartTime: "2026-03-22T16:00:00.000Z",
             gameIntervalMinutes: 60,
@@ -3078,7 +3078,7 @@ describe("factory worker prize funding", () => {
     };
 
     const response = await worker.fetch(
-      new Request("https://worker.example/api/factory/rotation-runs/slot.eternum/etrn-season-loop/actions/fund-prize", {
+      new Request("https://worker.example/api/factory/rotation-runs/appchain.eternum/etrn-season-loop/actions/fund-prize", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -3097,7 +3097,7 @@ describe("factory worker prize funding", () => {
     const dispatchBody = JSON.parse(String(dispatchCall?.init?.body));
 
     expect(response.status).toBe(202);
-    expect(dispatchBody.inputs.environment).toBe("slot.eternum");
+    expect(dispatchBody.inputs.environment).toBe("appchain.eternum");
     expect(dispatchBody.inputs.run_kind).toBe("rotation");
     expect(dispatchBody.inputs.run_name).toBe("etrn-season-loop");
     expect(dispatchBody.inputs.selected_games_json).toBe(JSON.stringify(["etrn-season-loop-01"]));

@@ -24,7 +24,8 @@ default = []
 [profile.swdebugsepolia]
 [profile.sepolia]
 [profile.mainnet]
-[profile.slot]
 
+# Realms dev appchain (WP_REALMS_DEV)
+[profile.appchain]
 [tool.scarb]
 allow-prebuilt-plugins = ["dojo_cairo_macros", "snforge_std"]

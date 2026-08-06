@@ -8,16 +8,16 @@ import type {
 } from "./types";
 
 const FACTORY_ENVIRONMENT_LABELS: Record<string, string> = {
-  "slot.eternum": "Slot",
   "mainnet.eternum": "Mainnet",
-  "slot.blitz": "Slot",
   "mainnet.blitz": "Mainnet",
 };
 
 const FACTORY_ENVIRONMENTS_BY_MODE: Record<FactoryGameMode, string[]> = {
-  eternum: ["slot.eternum", "mainnet.eternum"],
-  blitz: ["slot.blitz", "mainnet.blitz"],
+  eternum: ["mainnet.eternum"],
+  blitz: ["mainnet.blitz"],
 };
+
+const FACTORY_LAUNCH_CHAIN: FactoryLaunchChain = "mainnet";
 
 const MINUTES_PER_HOUR = 60;
 const MINUTES_PER_DAY = 24 * MINUTES_PER_HOUR;
@@ -126,11 +126,6 @@ const formatDateTimeLocalValue = (date: Date) => {
   );
 };
 
-const resolveFactoryEnvironmentChain = (environment: string): FactoryLaunchChain => {
-  const [chain] = environment.split(".");
-  return chain === "mainnet" ? "mainnet" : "slot";
-};
-
 const resolveFactoryEnvironmentLabel = (environment: string) =>
   FACTORY_ENVIRONMENT_LABELS[environment] ??
   environment.replace(/\..+$/, "").replace(/(^\w|-\w)/g, (value) => value.replace("-", " ").toUpperCase());
@@ -148,7 +143,8 @@ export const getFactoryEnvironmentOptions = (mode: FactoryGameMode): FactoryEnvi
     id: environment,
     label: resolveFactoryEnvironmentLabel(environment),
     mode,
-    chain: resolveFactoryEnvironmentChain(environment),
+    // Mainnet is the only factory launch target now that Slot is EoL.
+    chain: FACTORY_LAUNCH_CHAIN,
   }));
 
 export const getDefaultEnvironmentIdForMode = (mode: FactoryGameMode) =>

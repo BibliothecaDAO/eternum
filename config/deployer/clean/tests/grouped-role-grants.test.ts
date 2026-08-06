@@ -113,7 +113,7 @@ describe("grouped role grants", () => {
   test("submits one grouped loot chest multicall for every eligible game", async () => {
     const transactionHash = await grantLootChestRolesForSeriesLikeGames({
       request: buildSeriesRequest(),
-      summary: buildSeriesSummary("slot.blitz"),
+      summary: buildSeriesSummary("appchain.blitz"),
       games: buildSeriesGames(),
     });
 
@@ -137,9 +137,9 @@ describe("grouped role grants", () => {
   test("submits one grouped village pass multicall for every eligible game", async () => {
     const transactionHash = await grantVillagePassRolesForSeriesLikeGames({
       request: buildSeriesRequest({
-        environmentId: "slot.eternum",
+        environmentId: "appchain.eternum",
       }),
-      summary: buildSeriesSummary("slot.eternum"),
+      summary: buildSeriesSummary("appchain.eternum"),
       games: buildSeriesGames(),
     });
 
@@ -174,7 +174,7 @@ describe("grouped role grants", () => {
 function buildSeriesRequest(overrides: Record<string, unknown> = {}) {
   return {
     launchKind: "series",
-    environmentId: "slot.blitz",
+    environmentId: "appchain.blitz",
     seriesName: "bltz-knicker",
     rpcUrl: "https://rpc.example",
     accountAddress: "0xadmin",
@@ -187,10 +187,10 @@ function buildSeriesRequest(overrides: Record<string, unknown> = {}) {
   };
 }
 
-function buildSeriesSummary(environment: "slot.blitz" | "slot.eternum") {
+function buildSeriesSummary(environment: "appchain.blitz" | "appchain.eternum") {
   return {
     environment,
-    chain: environment.startsWith("slot") ? "slot" : "mainnet",
+    chain: environment.startsWith("appchain") ? "appchain" : "mainnet",
     gameType: environment.endsWith(".blitz") ? "blitz" : "eternum",
     seriesName: "bltz-knicker",
     rpcUrl: "https://rpc.example",

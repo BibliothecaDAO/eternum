@@ -1,4 +1,4 @@
-export type Chain = "local" | "mainnet" | "sepolia" | "slot" | "slottest";
+export type Chain = "local" | "mainnet" | "sepolia" | "appchain";
 export type GameType = "blitz" | "eternum";
 
 export interface BuildConfigOptions {

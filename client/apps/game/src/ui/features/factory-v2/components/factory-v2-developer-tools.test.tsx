@@ -70,8 +70,8 @@ describe("FactoryV2DeveloperTools", () => {
       root.render(
         <FactoryV2DeveloperTools
           mode="blitz"
-          chain="slot"
-          environmentLabel="Slot"
+          chain="mainnet"
+          environmentLabel="Mainnet"
           draftGameName="etrn-sunrise-01"
           selectedRunName={null}
         />,
@@ -222,7 +222,7 @@ describe("FactoryV2DeveloperTools", () => {
     });
 
     expect(vi.mocked(resolveFactoryManifestContractAddress)).toHaveBeenNthCalledWith(2, {
-      chain: "slot",
+      chain: "mainnet",
       worldName: "etrn-sunrise-01",
       manifestContractName: "s1_eternum-prize_distribution_systems",
     });

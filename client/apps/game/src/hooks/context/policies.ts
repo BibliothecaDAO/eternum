@@ -1,6 +1,6 @@
 import { getActiveWorld, resolveRuntimeChain } from "@/runtime/world";
 import { getSeasonPassAddress, getVillagePassAddress } from "@/utils/addresses";
-import { Chain, getSeasonAddresses } from "@contracts";
+import { Chain } from "@contracts";
 import { toSessionPolicies } from "@cartridge/controller";
 import { getContractByName } from "@dojoengine/core";
 import { dojoConfig } from "../../../dojo-config";
@@ -49,8 +49,8 @@ const buildEntryTokenPolicies = (entryTokenAddress: string | null | undefined) =
 const resolvePolicyChain = (): Chain => resolveRuntimeChain(env.VITE_PUBLIC_CHAIN as Chain);
 
 const resolveSeasonPassAddresses = (chain: Chain): string[] =>
-  Array.from(new Set([getSeasonPassAddress(chain), getSeasonAddresses("slot").seasonPass])).filter(
-    (address): address is string => Boolean(address && address !== "0x0"),
+  Array.from(new Set([getSeasonPassAddress(chain)])).filter((address): address is string =>
+    Boolean(address && address !== "0x0"),
   );
 
 const buildSeasonPassPolicies = (chain: Chain) =>

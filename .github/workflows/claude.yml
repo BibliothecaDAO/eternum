@@ -75,7 +75,7 @@ jobs:
             - Players manage realms, resources, armies, and trade using $LORDS tokens on a hex map
             - Tech: Cairo + Dojo (contracts), React + TypeScript + Vite + Three.js (frontend), Torii (indexing), pnpm monorepo
             - Packages: @bibliothecadao/core, provider, react, torii, types, dojo
-            - Environments: Local (Katana), Sepolia, Mainnet, Slot (staging)
+            - Environments: Local (Katana), Sepolia, Mainnet, Appchain (self-hosted katana)
 
             ## Git Workflow (MANDATORY)
             - Always branch from `next` (never work directly on `next`)

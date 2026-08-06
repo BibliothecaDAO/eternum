@@ -18,7 +18,7 @@ import { runLaunchStep } from "./runner";
 import { SERIES_GAME_STEP_BY_GROUPED_STEP } from "./series-plan";
 
 const DEFAULT_MAINNET_STEP_DELAY_MS = 1_500;
-const DEFAULT_SLOT_STEP_DELAY_MS = 250;
+const DEFAULT_APPCHAIN_STEP_DELAY_MS = 250;
 
 type SeriesLikeRequest = LaunchSeriesRequest | LaunchRotationRequest;
 type SeriesLikeSummary = LaunchSeriesSummary | LaunchRotationSummary;
@@ -30,7 +30,7 @@ function resolveSeriesLikeEnvironmentId(request: SeriesLikeRequest): DeploymentE
 
 export function resolveSeriesLikeStepDelayMs(request: SeriesLikeRequest): number {
   const environment = resolveDeploymentEnvironment(resolveSeriesLikeEnvironmentId(request));
-  return isMainnetDeploymentEnvironment(environment) ? DEFAULT_MAINNET_STEP_DELAY_MS : DEFAULT_SLOT_STEP_DELAY_MS;
+  return isMainnetDeploymentEnvironment(environment) ? DEFAULT_MAINNET_STEP_DELAY_MS : DEFAULT_APPCHAIN_STEP_DELAY_MS;
 }
 
 function updateSeriesLikeGameStepState(

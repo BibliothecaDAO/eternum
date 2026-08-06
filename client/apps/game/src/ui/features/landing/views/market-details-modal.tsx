@@ -39,7 +39,7 @@ interface MarketDetailsModalProps {
   onClose: () => void;
 }
 
-type MarketDataChain = "slot" | "mainnet";
+type MarketDataChain = "mainnet";
 
 type MarketDetailsTabKey = "terms" | "activity" | "positions" | "vault-fees" | "resolution";
 
@@ -331,7 +331,7 @@ const MarketDetailsModalContent = ({
     staleTime: 30 * 1000,
   });
 
-  const chainLabel = chain === "mainnet" ? "Mainnet" : "Slot";
+  const chainLabel = "Mainnet";
   const volumeDisplay = useMemo(
     () => formatCompactAmount(allTimeVolumeRaw, Number(market.collateralToken?.decimals ?? 18)),
     [allTimeVolumeRaw, market.collateralToken?.decimals],

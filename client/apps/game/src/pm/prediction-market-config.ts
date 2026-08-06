@@ -1,6 +1,4 @@
 import { env } from "../../env";
-import { resolveRuntimeChain } from "@/runtime/world";
-import type { Chain } from "@contracts";
 import type { PredictionMarketChain } from "./manifest-loader";
 
 type PredictionMarketConfig = {
@@ -12,14 +10,6 @@ type PredictionMarketConfig = {
 };
 
 // Keep these addresses in sync with ./manifests/*.json. We avoid eager JSON imports here to keep PM manifests lazy.
-const SLOT_CONFIG: PredictionMarketConfig = {
-  toriiUrl: env.VITE_PUBLIC_GLOBAL_TORII,
-  worldAddress: "0x172e470e28b6ad5f4c397019a3aca0c9b451a5e06f5255fbb8c4eefcd6f2b58",
-  collateralToken: "0x062cbbb9e30d90264ac63586d4f000be3cf5c178f11ae48f11f8b659eb060ac5",
-  oracleAddress: "0x693278fb06d7041f884c50cb9d0e2d4620ed16f282cf8c76fddb712ef1060d2",
-  marketsAddress: "0x1d2b6e5a030a8af64587c80ebdcb7a8a6be71902d4f4c32617674c7221f70aa",
-};
-
 const MAINNET_CONFIG: PredictionMarketConfig = {
   toriiUrl: env.VITE_PUBLIC_GLOBAL_TORII,
   worldAddress: "0x50ed913cc4b5fb11f50b5e1118d2999ee3e7917a7349bc34900fd76b307b5d",
@@ -29,7 +19,6 @@ const MAINNET_CONFIG: PredictionMarketConfig = {
 };
 
 const CONFIG_BY_CHAIN: Record<PredictionMarketChain, PredictionMarketConfig> = {
-  slot: SLOT_CONFIG,
   mainnet: MAINNET_CONFIG,
 };
 
@@ -37,22 +26,18 @@ export function getPredictionMarketConfigForChain(chain: PredictionMarketChain):
   return CONFIG_BY_CHAIN[chain];
 }
 
-const resolvePredictionMarketChain = (chain: Chain | null | undefined): PredictionMarketChain => {
-  return chain === "mainnet" ? "mainnet" : "slot";
-};
-
 /**
  * Returns the prediction market chain for the active runtime world.
- * Maps "mainnet" to "mainnet", everything else to "slot".
+ * Prediction markets are only deployed on mainnet, so every runtime chain
+ * resolves there.
  */
-export function getPredictionMarketChain(chain?: Chain | null): PredictionMarketChain {
-  const runtimeChain = chain ?? resolveRuntimeChain(env.VITE_PUBLIC_CHAIN as Chain);
-  return resolvePredictionMarketChain(runtimeChain);
+export function getPredictionMarketChain(): PredictionMarketChain {
+  return "mainnet";
 }
 
 /**
- * Returns the prediction market configuration based on the current chain.
+ * Returns the prediction market configuration for the deployment chain.
  */
-export function getPredictionMarketConfig(chain?: Chain | null): PredictionMarketConfig {
-  return getPredictionMarketConfigForChain(getPredictionMarketChain(chain));
+export function getPredictionMarketConfig(): PredictionMarketConfig {
+  return getPredictionMarketConfigForChain(getPredictionMarketChain());
 }

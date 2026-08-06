@@ -6,7 +6,7 @@ import { MMR_TOKEN_BY_CHAIN } from "@/config/global-chain";
 import { MMRLeaderboard } from "./mmr-leaderboard";
 
 const landingNetworkStateMock = vi.hoisted(() => ({
-  preferredChain: "mainnet" as "mainnet" | "slot",
+  preferredChain: "mainnet" as "mainnet" | "appchain",
 }));
 
 vi.mock("@starknet-react/core", () => ({
@@ -20,7 +20,7 @@ vi.mock("@/ui/features/landing/hooks/use-landing-network-state", () => ({
 }));
 
 vi.mock("@/ui/utils/network-switch", () => ({
-  getChainLabel: (chain: string) => (chain === "mainnet" ? "Mainnet" : "Slot"),
+  getChainLabel: (chain: string) => (chain === "mainnet" ? "Mainnet" : "Appchain"),
 }));
 
 vi.mock("@/ui/utils/utils", () => ({
@@ -103,10 +103,6 @@ describe("MMRLeaderboard", () => {
         return createJsonResponse([buildRow()]);
       }
 
-      if (url.includes("blitz-slot-global-1")) {
-        return createJsonResponse([buildRow({ player_address: "0x456" })]);
-      }
-
       throw new Error(`Unexpected global torii URL: ${url}`);
     });
 
@@ -165,7 +161,6 @@ describe("MMRLeaderboard", () => {
     const fetchedUrls = fetchMock.mock.calls.map(([input]) => (typeof input === "string" ? input : input.toString()));
 
     expect(fetchedUrls.some((url) => url.includes("blitz-mainnet-global-1"))).toBe(true);
-    expect(fetchedUrls.some((url) => url.includes("blitz-slot-global-1"))).toBe(false);
 
     const mainnetUrl = getLeaderboardSqlUrl("blitz-mainnet-global-1");
     expect(mainnetUrl).toBeDefined();
@@ -178,31 +173,22 @@ describe("MMRLeaderboard", () => {
       "ltrim(substr(lower(keys), 1, instr(lower(keys), '/') - 1), '0x') = ltrim('0xselector', '0x')",
     );
     expect(mainnetQuery.toLowerCase()).toContain(`${EVENT_CONTRACT_EXPR} = '${mainnetToken}'`);
+  });
+
+  it("reports chains without a global torii deployment instead of fetching", async () => {
+    landingNetworkStateMock.preferredChain = "appchain";
 
     await act(async () => {
-      landingNetworkStateMock.preferredChain = "slot";
       root.render(<MMRLeaderboard />);
       await waitForAsyncWork();
     });
 
-    expect(container.textContent).toContain("Slot");
-
+    expect(container.textContent).toContain("Appchain");
     await vi.waitFor(() => {
-      const urls = vi.mocked(fetch).mock.calls.map(([input]) => (typeof input === "string" ? input : input.toString()));
-      expect(urls.some((url) => url.includes("blitz-slot-global-1"))).toBe(true);
+      expect(container.textContent).toContain("No global Torii endpoint configured for appchain");
     });
 
-    const fetchedUrlsAfterSwitch = vi
-      .mocked(fetch)
-      .mock.calls.map(([input]) => (typeof input === "string" ? input : input.toString()));
-    const slotUrl = getLeaderboardSqlUrl("blitz-slot-global-1");
-    expect(slotUrl).toBeDefined();
-
-    const slotQuery = new URL(slotUrl ?? "").searchParams.get("query") ?? "";
-    const slotToken = (MMR_TOKEN_BY_CHAIN.slot ?? "").toLowerCase();
-
-    expect(slotToken.length).toBeGreaterThan(0);
-    expect(slotQuery.toLowerCase()).toContain(`${EVENT_CONTRACT_EXPR} = '${slotToken}'`);
+    landingNetworkStateMock.preferredChain = "mainnet";
   });
 
   it("shows the MMR tier column on landing entries", async () => {

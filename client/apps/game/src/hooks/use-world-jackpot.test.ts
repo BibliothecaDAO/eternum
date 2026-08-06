@@ -121,12 +121,12 @@ describe("useWorldJackpot", () => {
     reactQueryMocks.useQuery.mockReturnValue({ data: 0n, isPending: false });
 
     useWorldJackpot({
-      chain: "slot",
+      chain: "appchain",
       feeTokenAddress: "0xfee",
       prizeDistributionAddress: "0xprize",
     });
 
     const [opts] = reactQueryMocks.useQuery.mock.calls[0] as [Record<string, unknown>];
-    expect(opts.queryKey).toEqual(["worldJackpot", "slot", "0xprize", "0xfee"]);
+    expect(opts.queryKey).toEqual(["worldJackpot", "appchain", "0xprize", "0xfee"]);
   });
 });

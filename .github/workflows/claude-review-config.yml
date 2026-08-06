@@ -72,7 +72,7 @@ jobs:
             - Dependency vulnerability concerns
 
             **Multi-Environment Consistency:**
-            - Local (Katana), Sepolia, Mainnet, Slot configs stay in sync
+            - Local (Katana), Sepolia, Mainnet, Appchain configs stay in sync
             - Environment-specific addresses in contracts/common/addresses/
             - Dojo config validation (Scarb.toml, dojo_*.toml)
             - Network endpoint configuration and fallbacks

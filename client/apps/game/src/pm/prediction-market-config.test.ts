@@ -39,7 +39,7 @@ describe("prediction-market-config", () => {
     vi.unstubAllGlobals();
   });
 
-  it.each<PredictionMarketChain>(["slot", "mainnet"])(
+  it.each<PredictionMarketChain>(["mainnet"])(
     "keeps static config addresses in sync with %s manifest",
     async (chain) => {
       const manifest = await loadPredictionMarketManifest(chain);
@@ -51,17 +51,17 @@ describe("prediction-market-config", () => {
     },
   );
 
-  it("uses the active world chain before a saved selected-chain preference", () => {
+  it("resolves to the prediction market deployment chain regardless of the active world", () => {
     window.localStorage.setItem(ACTIVE_KEY, "bltz-riff-363");
-    window.localStorage.setItem(CHAIN_KEY, "mainnet");
+    window.localStorage.setItem(CHAIN_KEY, "appchain");
     window.localStorage.setItem(
       PROFILES_KEY,
       JSON.stringify({
         "bltz-riff-363": {
           name: "bltz-riff-363",
-          chain: "slot",
-          toriiBaseUrl: "https://api.cartridge.gg/x/bltz-riff-363/torii",
-          rpcUrl: "https://api.cartridge.gg/x/eternum-blitz-slot-4/katana/rpc/v0_9",
+          chain: "appchain",
+          toriiBaseUrl: "http://realms-appchain.invalid:8080",
+          rpcUrl: "http://realms-appchain.invalid",
           worldAddress: "0x123",
           contractsBySelector: {},
           fetchedAt: 1,
@@ -69,11 +69,10 @@ describe("prediction-market-config", () => {
       }),
     );
 
-    expect(getPredictionMarketChain()).toBe("slot");
+    expect(getPredictionMarketChain()).toBe("mainnet");
   });
 
-  it("resolves explicit mainnet and slot chains without reading fallback env", () => {
-    expect(getPredictionMarketChain("mainnet")).toBe("mainnet");
-    expect(getPredictionMarketChain("slot")).toBe("slot");
+  it("always resolves to the prediction market deployment chain", () => {
+    expect(getPredictionMarketChain()).toBe("mainnet");
   });
 });

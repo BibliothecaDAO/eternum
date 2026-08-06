@@ -12,3 +12,7 @@ dojo_prod.local.toml
 .env
 
 dojo_mainnet.toml
+
+# appchain M0 spike artifacts (deploy/appchain/spike/scripts/deploy-worlds.sh)
+dojo_spike.toml
+manifest_spike.json

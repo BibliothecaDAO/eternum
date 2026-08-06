@@ -78,8 +78,8 @@ const buildFactoryState = (overrides: Record<string, unknown> = {}) => ({
   selectedMode: "eternum",
   modeDefinition: { label: "Eternum" },
   environmentOptions: [],
-  selectedEnvironmentId: "slot.eternum",
-  selectedEnvironment: { id: "slot.eternum", label: "Slot", chain: "slot" },
+  selectedEnvironmentId: "mainnet.eternum",
+  selectedEnvironment: { id: "mainnet.eternum", label: "Mainnet", chain: "mainnet" },
   presets: [],
   selectedPresetId: "preset-1",
   selectedPreset: { id: "preset-1", defaults: {} },
@@ -198,7 +198,7 @@ describe("FactoryV2Content workflow selection", () => {
         selectedRun: {
           id: "run-1-updated",
           name: "etrn-sunrise-01",
-          environment: "slot.eternum",
+          environment: "mainnet.eternum",
           status: "running",
         },
       }) as unknown as ReturnType<typeof useFactoryV2>,
@@ -222,7 +222,7 @@ describe("FactoryV2Content workflow selection", () => {
         selectedRun: {
           id: "pending:slot.eternum:etrn-sunrise-01",
           name: "etrn-sunrise-01",
-          environment: "slot.eternum",
+          environment: "mainnet.eternum",
           status: "running",
         },
       }) as unknown as ReturnType<typeof useFactoryV2>,
@@ -257,11 +257,11 @@ describe("FactoryV2Content workflow selection", () => {
       buildFactoryState({
         selectedMode: "blitz",
         modeDefinition: { label: "Blitz" },
-        selectedEnvironmentId: "slot.blitz",
-        selectedEnvironment: { id: "slot.blitz", label: "Slot", chain: "slot" },
+        selectedEnvironmentId: "mainnet.blitz",
+        selectedEnvironment: { id: "mainnet.blitz", label: "Mainnet", chain: "mainnet" },
         activeRunName: "bltz-rush-01",
         matchingRun: { id: "run-2", name: "bltz-rush-01" },
-        selectedRun: { id: "run-2", name: "bltz-rush-01", environment: "slot.blitz", status: "running" },
+        selectedRun: { id: "run-2", name: "bltz-rush-01", environment: "mainnet.blitz", status: "running" },
       }) as unknown as ReturnType<typeof useFactoryV2>,
     );
 

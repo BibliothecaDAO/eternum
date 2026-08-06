@@ -20,7 +20,7 @@ describe("artifacts", () => {
     writeArtifacts(worldDir, {
       profile: {
         name: "test-world",
-        chain: "slot",
+        chain: "appchain",
         toriiBaseUrl: "http://example.com",
         rpcUrl: "http://rpc",
         worldAddress: "0x1",
@@ -33,7 +33,7 @@ describe("artifacts", () => {
         url: "https://auth.example.com",
         status: "pending",
         worldName: "test-world",
-        chain: "slot",
+        chain: "appchain",
         createdAt: "2026-01-01T00:00:00.000Z",
       },
     });
@@ -56,7 +56,7 @@ describe("artifacts", () => {
     writeArtifacts(worldDir, {
       profile: {
         name: "test-world",
-        chain: "slot",
+        chain: "appchain",
         toriiBaseUrl: "http://example.com",
         rpcUrl: "http://rpc",
         worldAddress: "0x1",
@@ -69,7 +69,7 @@ describe("artifacts", () => {
         url: "https://auth.example.com",
         status: "pending",
         worldName: "test-world",
-        chain: "slot",
+        chain: "appchain",
         createdAt: "2026-01-01T00:00:00.000Z",
       },
     });
@@ -85,7 +85,7 @@ describe("artifacts", () => {
     writeArtifacts(worldDir, {
       profile: {
         name: "w",
-        chain: "slot",
+        chain: "appchain",
         toriiBaseUrl: "",
         worldAddress: "0x1",
         contractsBySelector: {},
@@ -97,7 +97,7 @@ describe("artifacts", () => {
         url: "https://auth.example.com",
         status: "active",
         worldName: "w",
-        chain: "slot",
+        chain: "appchain",
         createdAt: "2026-01-01T00:00:00.000Z",
         address: "0xabc",
       },
@@ -118,7 +118,7 @@ describe("artifacts", () => {
     writeArtifacts(worldDir, {
       profile: {
         name: "w",
-        chain: "slot",
+        chain: "appchain",
         toriiBaseUrl: "",
         worldAddress: "0x1",
         contractsBySelector: {},
@@ -130,7 +130,7 @@ describe("artifacts", () => {
         url: "https://auth.example.com",
         status: "pending",
         worldName: "w",
-        chain: "slot",
+        chain: "appchain",
         createdAt: "2026-01-01T00:00:00.000Z",
       },
     });

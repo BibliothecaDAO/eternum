@@ -57,7 +57,7 @@ describe("createActiveWorldBlitzHyperstructure", () => {
     mocks.getActiveWorld.mockReset();
     mocks.getActiveWorld.mockReturnValue({
       name: "credence-new-flow-4",
-      chain: "slot",
+      chain: "appchain",
       worldAddress: "0xworld",
     });
     mocks.getFactorySqlBaseUrl.mockReset();
@@ -81,8 +81,8 @@ describe("createActiveWorldBlitzHyperstructure", () => {
 
     await createActiveWorldBlitzHyperstructure({ account, hexCoords });
 
-    expect(mocks.getFactorySqlBaseUrl).toHaveBeenCalledWith("slot");
-    expect(mocks.getGameManifest).toHaveBeenCalledWith("slot");
+    expect(mocks.getFactorySqlBaseUrl).toHaveBeenCalledWith("appchain");
+    expect(mocks.getGameManifest).toHaveBeenCalledWith("appchain");
     expect(mocks.getContractByName).toHaveBeenCalledWith({}, "s1_eternum", "hyperstructure_create_systems");
     expect(mocks.normalizeSelector).toHaveBeenCalledWith("0xselector");
     expect(mocks.resolveWorldContracts).toHaveBeenCalledWith("https://factory.sql", "credence-new-flow-4");
@@ -91,7 +91,7 @@ describe("createActiveWorldBlitzHyperstructure", () => {
         account,
         surface: "settlement",
         operation: "hyperstructure_create_systems.create_hyperstructure",
-        chain: "slot",
+        chain: "appchain",
         worldName: "credence-new-flow-4",
         worldAddress: "0xworld",
         waitForConfirmation: false,

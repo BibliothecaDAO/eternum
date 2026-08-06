@@ -1,13 +1,10 @@
 name: Paymaster Policy Sync
 
-env:
-  SLOT_AUTH: ${{ secrets.SLOT_AUTH }}
-
 on:
   workflow_dispatch:
     inputs:
       network:
-        description: "Network (mainnet|sepolia|slot|slottest|local)"
+        description: "Network (mainnet|sepolia|appchain|local)"
         required: true
         default: "mainnet"
       game_name:
@@ -42,14 +39,6 @@ jobs:
         run: |
           set -euo pipefail
           pnpm --dir packages/types build
-
-      - name: Install Slot CLI
-        run: |
-          set -euo pipefail
-          curl -L https://slot.cartridge.sh | bash
-          /home/runner/.config/.slot/bin/slotup
-          echo "/home/runner/.config/.slot/bin" >> $GITHUB_PATH
-          slot --version || true
 
       - name: Build actions and apply paymaster policy
         run: |

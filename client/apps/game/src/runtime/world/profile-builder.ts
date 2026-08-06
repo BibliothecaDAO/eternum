@@ -1,32 +1,17 @@
 import { SqlApi } from "@bibliothecadao/torii";
-import type { Chain } from "@contracts";
+import { getGameManifest, type Chain } from "@contracts";
 import { recordGameEntryDuration } from "@/ui/layouts/game-entry-timeline";
 
 import { env, hasPublicNodeUrl } from "../../../env";
 import { getFactorySqlBaseUrl } from "./factory-endpoints";
 import { resolveWorldContracts, resolveWorldDeploymentFromFactory } from "./factory-resolver";
-import { buildSharedSlotRpcUrl, isRpcUrlCompatibleForChain, isSlotWorldChain, normalizeRpcUrl } from "./normalize";
+import { isRpcUrlCompatibleForChain, normalizeRpcUrl } from "./normalize";
 import { saveWorldProfile } from "./store";
 import type { WorldProfile } from "./types";
 
 const cartridgeApiBase = env.VITE_PUBLIC_CARTRIDGE_API_BASE || "https://api.cartridge.gg";
 
 const toriiBaseUrlFromName = (name: string) => `${cartridgeApiBase}/x/${name}/torii`;
-
-const assertSlotWorldAddressIsAvailable = ({
-  chain,
-  name,
-  worldAddress,
-}: {
-  chain: Chain;
-  name: string;
-  worldAddress: string | null;
-}) => {
-  if (!isSlotWorldChain(chain)) return;
-  if (worldAddress) return;
-
-  throw new Error(`Slot world deployment is not available: ${name}`);
-};
 
 const measureAsyncDuration = async <T>(name: string, run: () => Promise<T>): Promise<T> => {
   const startedAt = performance.now();
@@ -35,22 +20,6 @@ const measureAsyncDuration = async <T>(name: string, run: () => Promise<T>): Pro
   } finally {
     recordGameEntryDuration(name, performance.now() - startedAt);
   }
-};
-
-const resolveWorldProfileRpcUrl = ({
-  chain,
-  deploymentRpcUrl,
-  fallbackRpcUrl,
-}: {
-  chain: Chain;
-  deploymentRpcUrl: string | null | undefined;
-  fallbackRpcUrl: string;
-}) => {
-  if (isSlotWorldChain(chain)) {
-    return fallbackRpcUrl;
-  }
-
-  return deploymentRpcUrl ?? fallbackRpcUrl;
 };
 
 const normalizeAddress = (addr: unknown): string | null => {
@@ -123,6 +92,25 @@ const resolveWorldConfigAddresses = async (
  * Build a WorldProfile by querying the factory and the target world's Torii.
  */
 export const buildWorldProfile = async (chain: Chain, name: string): Promise<WorldProfile> => {
+  // Self-hosted appchain: no cartridge factory, no per-world torii hosts —
+  // endpoints are static env URLs and the world address comes from the
+  // committed manifest. (Until the world factory runs on the appchain, at
+  // which point this branch resolves against the appchain factory instead.)
+  if (chain === "appchain") {
+    const manifest = getGameManifest(chain) as { world?: { address?: string } };
+    const profile: WorldProfile = {
+      name,
+      chain,
+      toriiBaseUrl: env.VITE_PUBLIC_TORII,
+      rpcUrl: normalizeRpcUrl(env.VITE_PUBLIC_NODE_URL),
+      worldAddress: manifest.world?.address ?? "0x0",
+      contractsBySelector: {},
+      fetchedAt: Date.now(),
+    };
+    saveWorldProfile(profile);
+    return profile;
+  }
+
   const factorySqlBaseUrl = getFactorySqlBaseUrl(chain);
   const toriiBaseUrl = toriiBaseUrlFromName(name);
 
@@ -141,28 +129,16 @@ export const buildWorldProfile = async (chain: Chain, name: string): Promise<Wor
     worldAddress = normalizeAddress(deployment?.worldAddress) ?? deployment?.worldAddress ?? null;
   }
 
-  assertSlotWorldAddressIsAvailable({ chain, name, worldAddress });
-
   // As a last resort, default to 0x0 so configuration can still proceed with patched contracts
   if (!worldAddress) worldAddress = "0x0";
 
-  const slotDefaultRpcUrl = buildSharedSlotRpcUrl(cartridgeApiBase);
   const chainDefaultRpcUrl =
-    chain === "slot" || chain === "slottest"
-      ? slotDefaultRpcUrl
-      : chain === "mainnet" || chain === "sepolia"
-        ? `${cartridgeApiBase}/x/starknet/${chain}`
-        : env.VITE_PUBLIC_NODE_URL;
-  const canUseEnvRpc =
-    !isSlotWorldChain(chain) && hasPublicNodeUrl && isRpcUrlCompatibleForChain(chain, env.VITE_PUBLIC_NODE_URL);
+    chain === "mainnet" || chain === "sepolia"
+      ? `${cartridgeApiBase}/x/starknet/${chain}`
+      : env.VITE_PUBLIC_NODE_URL;
+  const canUseEnvRpc = hasPublicNodeUrl && isRpcUrlCompatibleForChain(chain, env.VITE_PUBLIC_NODE_URL);
   const fallbackRpcUrl = canUseEnvRpc ? env.VITE_PUBLIC_NODE_URL : chainDefaultRpcUrl;
-  const rpcUrl = normalizeRpcUrl(
-    resolveWorldProfileRpcUrl({
-      chain,
-      deploymentRpcUrl: deployment?.rpcUrl,
-      fallbackRpcUrl,
-    }),
-  );
+  const rpcUrl = normalizeRpcUrl(deployment?.rpcUrl ?? fallbackRpcUrl);
 
   const profile: WorldProfile = {
     name,

@@ -95,7 +95,7 @@ describe("launch request helpers", () => {
 
     expect(
       buildLaunchGameRequest({
-        environment: "slot.blitz",
+        environment: "appchain.blitz",
         game: "bltz-test-2",
         "start-time": "2026-03-18T10:00:00Z",
       }).maxActions,
@@ -114,7 +114,7 @@ describe("launch request helpers", () => {
     expect(
       buildFactoryRunRequestContext(
         {
-          environment: "slot.blitz",
+          environment: "appchain.blitz",
           game: "bltz-test-1",
           "start-time": "2026-03-18T10:00:00Z",
           "two-player-mode": "true",
@@ -122,11 +122,11 @@ describe("launch request helpers", () => {
         "full",
       ),
     ).toMatchObject({
-      environmentId: "slot.blitz",
+      environmentId: "appchain.blitz",
       gameName: "bltz-test-1",
       requestedLaunchStep: "full",
       request: {
-        environmentId: "slot.blitz",
+        environmentId: "appchain.blitz",
         gameName: "bltz-test-1",
         startTime: "2026-03-18T10:00:00Z",
         twoPlayerMode: true,
@@ -137,7 +137,7 @@ describe("launch request helpers", () => {
   test("parses targeted child game names for grouped recovery", () => {
     expect(
       buildLaunchRotationRequest({
-        environment: "slot.blitz",
+        environment: "appchain.blitz",
         "rotation-name": "bltz-knicker",
         "first-game-start-time": "2026-03-18T10:00:00Z",
         "game-interval-minutes": "60",
@@ -161,7 +161,7 @@ describe("launch request helpers", () => {
 
     expect(
       buildLaunchRotationRequest({
-        environment: "slot.blitz",
+        environment: "appchain.blitz",
         "rotation-name": "bltz-biome-loop",
         "first-game-start-time": "2026-03-18T10:00:00Z",
         "game-interval-minutes": "60",
@@ -182,7 +182,7 @@ describe("launch request helpers", () => {
   test("loads weekly series schedules from a YAML config file", () => {
     const configPath = writeLaunchConfig(`
 launchKind: series
-environmentId: slot.blitz
+environmentId: appchain.blitz
 seriesName: blitz-weekly-may-2026
 autoRetryEnabled: true
 autoRetryIntervalMinutes: 15
@@ -200,7 +200,7 @@ games:
       }),
     ).toMatchObject({
       launchKind: "series",
-      environmentId: "slot.blitz",
+      environmentId: "appchain.blitz",
       seriesName: "blitz-weekly-may-2026",
       autoRetryEnabled: true,
       autoRetryIntervalMinutes: 15,
@@ -336,7 +336,7 @@ games:
   test("lets explicit CLI overrides win over YAML shared launch options", () => {
     const configPath = writeLaunchConfig(`
 launchKind: series
-environmentId: slot.blitz
+environmentId: appchain.blitz
 seriesName: blitz-weekly-may-2026
 durationSeconds: 86400
 skipIndexer: false

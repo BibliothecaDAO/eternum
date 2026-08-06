@@ -55,19 +55,16 @@ const executeConfigStepsMock = mock(async ({ mode }: { mode?: string }) => ({
 }));
 const deriveMapCenterOffsetFromWorldConfigTxMock = mock(() => 50);
 const buildBanksForMapCenterOffsetMock = mock(() => []);
-const ensureSlotIndexerDeploymentMock = mock(async () => ({
-  mode: "slot-direct",
-  action: "created",
-  requestedTier: "basic",
-  previousTier: undefined,
-  liveState: {
-    state: "existing",
-    stateSource: "describe",
-    currentTier: "basic",
-    url: "https://torii.example",
-    version: "v1.8.15",
-    branch: "main",
-    describedAt: "2026-03-23T10:00:00.000Z",
+const createLaunchIndexerMock = mock(async () => ({
+  mode: "github-actions",
+  workflowRun: {
+    workflowFile: "factory-torii-deployer.yml",
+    ref: "main",
+    runId: 42,
+    runNumber: 7,
+    htmlUrl: "https://github.com/example/actions/runs/42",
+    status: "completed",
+    conclusion: "success",
   },
 }));
 
@@ -172,23 +169,8 @@ mock.module("../factory/discovery", () => ({
   waitForFactoryWorldProfile: waitForFactoryWorldProfileMock,
 }));
 
-mock.module("../indexing/slot-torii", () => ({
-  ensureSlotIndexerDeployment: ensureSlotIndexerDeploymentMock,
-  resolveIndexerArtifactState: (liveState: {
-    state: string;
-    currentTier?: string;
-    url?: string;
-    version?: string;
-    branch?: string;
-    describedAt?: string;
-  }) => ({
-    indexerCreated: liveState.state === "existing",
-    indexerTier: liveState.currentTier,
-    indexerUrl: liveState.url,
-    indexerVersion: liveState.version,
-    indexerBranch: liveState.branch,
-    lastIndexerDescribeAt: liveState.describedAt,
-  }),
+mock.module("../indexing/launch-indexer", () => ({
+  createLaunchIndexer: createLaunchIndexerMock,
 }));
 
 mock.module("../launch/io", () => ({
@@ -252,20 +234,17 @@ describe("runLaunchStep mainnet launch steps", () => {
     deriveMapCenterOffsetFromWorldConfigTxMock.mockImplementation(() => 50);
     buildBanksForMapCenterOffsetMock.mockClear();
     buildBanksForMapCenterOffsetMock.mockImplementation(() => []);
-    ensureSlotIndexerDeploymentMock.mockClear();
-    ensureSlotIndexerDeploymentMock.mockImplementation(async () => ({
-      mode: "slot-direct",
-      action: "created",
-      requestedTier: "basic",
-      previousTier: undefined,
-      liveState: {
-        state: "existing",
-        stateSource: "describe",
-        currentTier: "basic",
-        url: "https://torii.example",
-        version: "v1.8.15",
-        branch: "main",
-        describedAt: "2026-03-23T10:00:00.000Z",
+    createLaunchIndexerMock.mockClear();
+    createLaunchIndexerMock.mockImplementation(async () => ({
+      mode: "github-actions",
+      workflowRun: {
+        workflowFile: "factory-torii-deployer.yml",
+        ref: "main",
+        runId: 42,
+        runNumber: 7,
+        htmlUrl: "https://github.com/example/actions/runs/42",
+        status: "completed",
+        conclusion: "success",
       },
     }));
   });
@@ -324,9 +303,9 @@ describe("runLaunchStep mainnet launch steps", () => {
     expect(capturedLogs.join("")).toContain('Raw create_game calldata: ["felt:alpha",50,"180","0x0",0]');
   });
 
-  test("submits create_game five times on slot across five retries", async () => {
+  test("submits create_game five times on appchain across five retries", async () => {
     const summary = await runLaunchStep({
-      environmentId: "slot.blitz",
+      environmentId: "appchain.blitz",
       stepId: "create-world",
       gameName: "alpha",
       startTime,
@@ -354,7 +333,7 @@ describe("runLaunchStep mainnet launch steps", () => {
     }));
 
     const summary = await runLaunchStep({
-      environmentId: "slot.blitz",
+      environmentId: "appchain.blitz",
       stepId: "create-world",
       gameName: "alpha",
       startTime,
@@ -378,7 +357,7 @@ describe("runLaunchStep mainnet launch steps", () => {
       }));
 
     const summary = await runLaunchStep({
-      environmentId: "slot.blitz",
+      environmentId: "appchain.blitz",
       stepId: "create-world",
       gameName: "alpha",
       startTime,
@@ -406,7 +385,7 @@ describe("runLaunchStep mainnet launch steps", () => {
       }));
 
     const summary = await runLaunchStep({
-      environmentId: "slot.blitz",
+      environmentId: "appchain.blitz",
       stepId: "create-world",
       gameName: "alpha",
       startTime,
@@ -416,7 +395,7 @@ describe("runLaunchStep mainnet launch steps", () => {
       privateKey,
     });
 
-    expect(resolveFactoryWorldProfileMock).toHaveBeenCalledWith("slot", "alpha", "https://api.cartridge.gg");
+    expect(resolveFactoryWorldProfileMock).toHaveBeenCalledWith("appchain", "alpha", "https://api.cartridge.gg");
     expect(summary.worldAddress).toBe("0xexistingworld");
     expect(summary.createGameTxHash).toBeUndefined();
   });
@@ -429,7 +408,7 @@ describe("runLaunchStep mainnet launch steps", () => {
 
     await expect(
       runLaunchStep({
-        environmentId: "slot.blitz",
+        environmentId: "appchain.blitz",
         stepId: "create-world",
         gameName: "alpha",
         startTime,
@@ -440,7 +419,7 @@ describe("runLaunchStep mainnet launch steps", () => {
       }),
     ).rejects.toThrow("deployment already completed");
 
-    expect(resolveFactoryWorldProfileMock).toHaveBeenCalledWith("slot", "alpha", "https://api.cartridge.gg");
+    expect(resolveFactoryWorldProfileMock).toHaveBeenCalledWith("appchain", "alpha", "https://api.cartridge.gg");
   });
 
   test("runs the village pass role bundle for mainnet eternum and stores one tx hash", async () => {
@@ -680,9 +659,9 @@ describe("runLaunchStep mainnet launch steps", () => {
     ]);
   });
 
-  test("creates the indexer directly via Slot and stores live torii state", async () => {
+  test("creates the indexer via the torii deployer workflow and stores the workflow run", async () => {
     const summary = await runLaunchStep({
-      environmentId: "slot.blitz",
+      environmentId: "appchain.blitz",
       stepId: "create-indexer",
       gameName: "alpha",
       startTime,
@@ -692,9 +671,9 @@ describe("runLaunchStep mainnet launch steps", () => {
       privateKey,
     });
 
-    expect(ensureSlotIndexerDeploymentMock).toHaveBeenCalledTimes(1);
-    expect(ensureSlotIndexerDeploymentMock.mock.calls[0]?.[0]).toMatchObject({
-      env: "slot",
+    expect(createLaunchIndexerMock).toHaveBeenCalledTimes(1);
+    expect(createLaunchIndexerMock.mock.calls[0]?.[0]).toMatchObject({
+      env: "appchain",
       rpcUrl: "https://rpc.example",
       namespaces: "s1_eternum",
       worldName: "alpha",
@@ -702,13 +681,10 @@ describe("runLaunchStep mainnet launch steps", () => {
       tier: "basic",
     });
     expect(summary.indexerCreated).toBe(true);
-    expect(summary.indexerMode).toBe("slot-direct");
+    expect(summary.indexerMode).toBe("github-actions");
     expect(summary.indexerTier).toBe("basic");
-    expect(summary.indexerUrl).toBe("https://torii.example");
-    expect(summary.indexerVersion).toBe("v1.8.15");
-    expect(summary.indexerBranch).toBe("main");
-    expect(summary.lastIndexerDescribeAt).toBe("2026-03-23T10:00:00.000Z");
-    expect(summary.indexerWorkflowRun).toBeUndefined();
+    expect(summary.indexerWorkflowRun?.runId).toBe(42);
+    expect(summary.indexerWorkflowRun?.htmlUrl).toBe("https://github.com/example/actions/runs/42");
     expect(summary.worldAddress).toBe("0xworld");
   });
 
@@ -808,9 +784,9 @@ describe("runLaunchStep mainnet launch steps", () => {
     expect(summary.paymasterSynced).toBe(true);
   });
 
-  test("skips paymaster sync for slot environments", async () => {
+  test("skips paymaster sync for appchain environments", async () => {
     const summary = await runLaunchStep({
-      environmentId: "slot.blitz",
+      environmentId: "appchain.blitz",
       stepId: "sync-paymaster",
       gameName: "alpha",
       startTime,
@@ -824,8 +800,8 @@ describe("runLaunchStep mainnet launch steps", () => {
 
 function buildStoredLaunchSummary(overrides: Record<string, unknown> = {}) {
   return {
-    environment: "slot.blitz",
-    chain: "slot",
+    environment: "appchain.blitz",
+    chain: "appchain",
     gameType: "blitz",
     gameName: "alpha",
     startTime: 1_700_000_000,

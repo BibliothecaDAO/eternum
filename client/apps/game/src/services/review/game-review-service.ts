@@ -212,7 +212,7 @@ const parseU256 = (low: unknown, high: unknown): bigint => {
 };
 
 const getGlobalToriiSqlUrl = (chain: Chain): string | null => {
-  if (chain !== "mainnet" && chain !== "slot") {
+  if (chain !== "mainnet") {
     return null;
   }
 

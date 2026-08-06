@@ -7,7 +7,7 @@ import { type Chain } from "../utils/utils";
 import { GameConfigDeployer, nodeReadConfig } from "./config";
 import { withBatching } from "./tx-batcher";
 
-const VALID_NETWORKS: NetworkType[] = ["local", "mainnet", "sepolia", "slot", "slottest"];
+const VALID_NETWORKS: NetworkType[] = ["local", "mainnet", "sepolia", "appchain"];
 const VALID_GAME_TYPES: GameType[] = ["blitz", "eternum"];
 
 function printDeployerUsage(): void {

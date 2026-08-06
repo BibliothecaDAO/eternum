@@ -19,7 +19,7 @@ import { GLOBAL_TORII_BY_CHAIN } from "@/config/global-chain";
 import { TokenIcon } from "../token-icon";
 import { MaybeController } from "../maybe-controller";
 
-type MarketDataChain = "slot" | "mainnet";
+type MarketDataChain = "mainnet";
 
 type HolderPosition = {
   account: string;

@@ -17,7 +17,6 @@ import { fetchLandingLeaderboardEntryByAddress } from "@/services/leaderboard/la
 import TextInput from "@/ui/design-system/atoms/text-input";
 
 import { MMR_TOKEN_BY_CHAIN } from "@/config/global-chain";
-import { buildSharedSlotRpcUrl } from "@/runtime/world/normalize";
 import { Button } from "@/ui/design-system/atoms";
 import { Tabs } from "@/ui/design-system/atoms/tab";
 import { AvatarImageGrid } from "@/ui/features/avatars/avatar-image-grid";
@@ -47,7 +46,6 @@ import Trash2 from "lucide-react/dist/esm/icons/trash-2";
 import { toast } from "sonner";
 
 import { hash } from "starknet";
-import { env } from "../../../../../env";
 
 // MMR fetching utilities
 const GET_PLAYER_MMR_SELECTOR = hash.getSelectorFromName("get_player_mmr");
@@ -56,15 +54,7 @@ const RPC_FALLBACK_BY_CHAIN: Partial<Record<Chain, string>> = {
   mainnet: "https://api.cartridge.gg/x/starknet/mainnet",
 };
 
-const cartridgeApiBase = env.VITE_PUBLIC_CARTRIDGE_API_BASE || "https://api.cartridge.gg";
-
-const resolveProfileMmrRpcUrl = (chain: Chain): string | undefined => {
-  if (chain === "slot") {
-    return buildSharedSlotRpcUrl(cartridgeApiBase);
-  }
-
-  return RPC_FALLBACK_BY_CHAIN[chain];
-};
+const resolveProfileMmrRpcUrl = (chain: Chain): string | undefined => RPC_FALLBACK_BY_CHAIN[chain];
 
 // Map tier color classes to actual hex values for gradients/glows
 const TIER_COLOR_HEX: Record<string, string> = {

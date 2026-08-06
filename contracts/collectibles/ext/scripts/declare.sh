@@ -15,7 +15,6 @@
 #   Examples:
 #   ./declare.sh           - Declares to local
 #   ./declare.sh local     - Declares to local
-#   ./declare.sh slot      - Declares to slot
 #   ./declare.sh sepolia   - Declares to sepolia
 #   ./declare.sh mainnet   - Declares to mainnet
 #

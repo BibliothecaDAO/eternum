@@ -93,49 +93,6 @@ const SEPOLIA_ETERNUM_CHAIN_CONFIG: ConfigPatch = {
   ],
 };
 
-const SLOT_ETERNUM_CHAIN_CONFIG: ConfigPatch = {
-  exploration: {
-    bitcoinMineWinProbability: 30,
-    bitcoinMineFailProbability: 70,
-    shardsMinesWinProbability: 40,
-    shardsMinesFailProbability: 60,
-    campFindProbability: 50,
-    campFindFailProbability: 50,
-    holysiteFindProbability: 60,
-    holysiteFindFailProbability: 40,
-  },
-  season: {
-    startSettlingAfterSeconds: 59,
-    startMainAfterSeconds: 60,
-    durationSeconds: 0,
-    pointRegistrationCloseAfterEndSeconds: 60 * 60 * 24,
-  },
-  battle: {
-    regularImmunityTicks: 1,
-    villageImmunityTicks: 3,
-    villageRaidImmunityTicks: 1,
-  },
-};
-
-const SLOTTEST_ETERNUM_CHAIN_CONFIG: ConfigPatch = {
-  season: {
-    startSettlingAfterSeconds: 59,
-    startMainAfterSeconds: 60,
-    durationSeconds: 60 * 60 * 24 * 90,
-    pointRegistrationCloseAfterEndSeconds: 60 * 10,
-  },
-  battle: {
-    regularImmunityTicks: 0,
-    villageImmunityTicks: 0,
-    delaySeconds: 0,
-  },
-  dev: {
-    mode: {
-      on: true,
-    },
-  },
-};
-
 const LOCAL_ETERNUM_REALM_UPGRADE_CONFIG: ConfigPatch = {
   realmUpgradeCosts: {
     [RealmLevels.Settlement]: [],
@@ -177,14 +134,17 @@ export function resolveEternumChainConfig(chain: Chain, context: EnvironmentCont
         resolveEternumContractAddressConfig(context),
         LOCAL_ETERNUM_REALM_UPGRADE_CONFIG,
       );
+    case "appchain":
+      // dev appchain (WP_REALMS_DEV): local-style balance
+      return mergeConfigPatches(
+        LOCAL_ETERNUM_CHAIN_CONFIG,
+        resolveEternumContractAddressConfig(context),
+        LOCAL_ETERNUM_REALM_UPGRADE_CONFIG,
+      );
     case "mainnet":
       return mergeConfigPatches(MAINNET_ETERNUM_CHAIN_CONFIG, resolveEternumContractAddressConfig(context));
     case "sepolia":
       return mergeConfigPatches(SEPOLIA_ETERNUM_CHAIN_CONFIG, resolveEternumContractAddressConfig(context));
-    case "slot":
-      return mergeConfigPatches(SLOT_ETERNUM_CHAIN_CONFIG, resolveEternumContractAddressConfig(context));
-    case "slottest":
-      return mergeConfigPatches(SLOTTEST_ETERNUM_CHAIN_CONFIG, resolveEternumContractAddressConfig(context));
     default:
       throw new Error(`Unsupported chain: ${chain}`);
   }

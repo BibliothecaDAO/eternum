@@ -39,7 +39,7 @@ describe("grantRoles", () => {
     ];
 
     const result = await grantRoles({
-      chain: "slot",
+      chain: "appchain",
       calls,
       rpcUrl: "https://rpc.example",
       accountAddress: "0xadmin",
@@ -60,7 +60,7 @@ describe("grantRoles", () => {
     ];
 
     const result = await grantRoles({
-      chain: "slot",
+      chain: "appchain",
       calls,
       rpcUrl: "https://rpc.example",
       dryRun: true,

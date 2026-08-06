@@ -8,10 +8,8 @@ export function getFactorySqlBaseUrl(chain: string): string {
       return `${CARTRIDGE_API_BASE}/x/eternum-factory-mainnet/torii/sql`;
     case "sepolia":
       return `${CARTRIDGE_API_BASE}/x/eternum-factory-sepolia/torii/sql`;
-    case "slot":
-    case "slottest":
-    case "local":
-      return `${CARTRIDGE_API_BASE}/x/eternum-factory-slot-d/torii/sql`;
+    // "appchain" / "local" have no hosted factory torii yet; callers treat "" as
+    // "no factory available".
     default:
       return "";
   }

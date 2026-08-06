@@ -14,7 +14,6 @@
 #                           where [network] is optional and defaults to 'local'
 #   Examples:
 #   ./deploy.sh local     - Deploys to local
-#   ./deploy.sh slot      - Deploys to slot
 #   ./deploy.sh sepolia   - Deploys to sepolia
 #   ./deploy.sh mainnet   - Deploys to mainnet
 #

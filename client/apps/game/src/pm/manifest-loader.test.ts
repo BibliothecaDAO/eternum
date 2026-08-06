@@ -2,13 +2,6 @@ import { describe, expect, it } from "vitest";
 import { loadPredictionMarketManifest, type PredictionMarketChain } from "./manifest-loader";
 
 describe("prediction market manifest-loader", () => {
-  it("loads slot manifest on demand", async () => {
-    const manifest = await loadPredictionMarketManifest("slot");
-
-    expect(manifest.world.address).toBe("0x172e470e28b6ad5f4c397019a3aca0c9b451a5e06f5255fbb8c4eefcd6f2b58");
-    expect(Array.isArray(manifest.contracts)).toBe(true);
-  });
-
   it("loads mainnet manifest on demand", async () => {
     const manifest = await loadPredictionMarketManifest("mainnet");
 

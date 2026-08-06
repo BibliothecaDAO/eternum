@@ -9,7 +9,8 @@ describe("buildSigningMessages", () => {
     expect(buildSigningMessages("mainnet")[0]?.domain.chainId).toBe("SN_MAIN");
   });
 
-  it("keeps slot games on the existing non-mainnet typed-data chain id", () => {
-    expect(buildSigningMessages("slot")[0]?.domain.chainId).toBe("SN_SEPOLIA");
+  it("keeps non-mainnet games on the existing non-mainnet typed-data chain id", () => {
+    expect(buildSigningMessages("appchain")[0]?.domain.chainId).toBe("SN_SEPOLIA");
+    expect(buildSigningMessages("local")[0]?.domain.chainId).toBe("SN_SEPOLIA");
   });
 });

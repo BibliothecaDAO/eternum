@@ -1,6 +1,6 @@
 import type { Chain } from "@contracts";
 
-type LandingPrimaryChain = "mainnet" | "slot";
+type LandingPrimaryChain = "mainnet" | "appchain";
 export type LandingNetworkChain = LandingPrimaryChain;
 export type LandingNetworkStatus = "disconnected" | "detecting" | "matched" | "mismatched" | "unsupported";
 
@@ -13,12 +13,12 @@ interface LandingNetworkState {
 }
 
 export const resolvePreferredLandingChain = (chain: Chain | null | undefined): LandingNetworkChain => {
-  return chain === "mainnet" ? "mainnet" : "slot";
+  return chain === "appchain" ? "appchain" : "mainnet";
 };
 
 const resolveConnectedLandingChain = (chain: Chain | null | undefined): LandingNetworkChain | null => {
   if (chain === "mainnet") return "mainnet";
-  if (chain === "slot") return "slot";
+  if (chain === "appchain") return "appchain";
   return null;
 };
 

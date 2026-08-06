@@ -2,7 +2,7 @@
 import { describe, expect, it, vi } from "vitest";
 
 const envState = {
-  VITE_PUBLIC_CHAIN: "slot",
+  VITE_PUBLIC_CHAIN: "appchain",
   VITE_PUBLIC_MARKETPLACE_URL: "https://example.com/torii",
 };
 

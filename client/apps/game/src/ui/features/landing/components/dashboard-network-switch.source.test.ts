@@ -12,6 +12,6 @@ describe("DashboardNetworkSwitch source", () => {
       "utf8",
     );
 
-    expect(source).toContain('const DASHBOARD_CHAIN_OPTIONS: LandingNetworkChain[] = ["mainnet", "slot"];');
+    expect(source).toContain('const DASHBOARD_CHAIN_OPTIONS: LandingNetworkChain[] = ["mainnet", "appchain"];');
   });
 });

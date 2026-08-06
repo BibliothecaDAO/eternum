@@ -49,9 +49,9 @@ const normalizeUint256 = (value: unknown): bigint => {
   }
 };
 
-export function UserProvider({ children, chain, ...props }: UserProviderProps) {
+export function UserProvider({ children, ...props }: UserProviderProps) {
   const { account } = useAccount();
-  const collateralToken = getPredictionMarketConfig(chain).collateralToken;
+  const collateralToken = getPredictionMarketConfig().collateralToken;
 
   // LORDS balance from RPC. Fetched once per account; consumers refetch on demand
   // (trade panel open, post-trade) instead of interval polling to avoid RPC rate limits.

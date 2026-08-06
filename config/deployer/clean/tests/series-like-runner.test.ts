@@ -80,6 +80,8 @@ describe("grouped series-like runner", () => {
     };
 
     const request = buildSeriesRequest({
+      // appchain has no hosted factory torii, so exercise the SQL wait on mainnet
+      environmentId: "mainnet.blitz",
       waitForFactoryIndexTimeoutMs: 25,
       waitForFactoryIndexPollMs: 1,
     });
@@ -118,7 +120,8 @@ describe("grouped series-like runner", () => {
 function buildSeriesRequest(overrides: Partial<LaunchSeriesRequest> = {}): LaunchSeriesRequest {
   return {
     launchKind: "series",
-    environmentId: "slot.blitz",
+    environmentId: "appchain.blitz",
+    factoryAddress: "0xfactory",
     seriesName: "bltz-knicker",
     games: [
       { gameName: "bltz-knicker-06", startTime: "2099-01-01T06:00:00Z" },

@@ -8,8 +8,6 @@ import { ReactNode } from "react";
 import { resolveEntryContextCacheKey, type ResolvedEntryContext } from "@/game-entry/context";
 import {
   applyWorldSelection,
-  buildSharedSlotRpcUrl,
-  isSlotWorldChain,
   patchManifestWithFactory,
   probeWorldToriiAlive,
   type WorldProfile,
@@ -42,7 +40,6 @@ export interface BootstrappedEntrySession {
 
 type BootstrapResult = BootstrappedEntrySession;
 const bootstrapSession = createBootstrapSession<BootstrapResult>();
-const cartridgeApiBase = env.VITE_PUBLIC_CARTRIDGE_API_BASE || "https://api.cartridge.gg";
 
 type BootstrapLifecycle = {
   onBootstrapCompleted?: () => void;
@@ -246,10 +243,6 @@ const resolveBootstrapToriiUrl = (chain: Chain, profile: WorldProfile): string =
 const resolveBootstrapRpcUrl = (chain: Chain, profile: WorldProfile): string => {
   if (chain === "local") {
     return env.VITE_PUBLIC_NODE_URL;
-  }
-
-  if (isSlotWorldChain(chain)) {
-    return buildSharedSlotRpcUrl(cartridgeApiBase);
   }
 
   return profile.rpcUrl ?? env.VITE_PUBLIC_NODE_URL;

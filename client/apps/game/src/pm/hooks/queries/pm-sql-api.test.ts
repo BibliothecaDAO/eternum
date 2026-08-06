@@ -122,7 +122,7 @@ describe("pm-sql-api status filter query generation", () => {
       statusText: "Bad Gateway",
       clone() {
         return {
-          text: async () => JSON.stringify({ error: { message: "can't reach deployment: blitz-slot-global-1" } }),
+          text: async () => JSON.stringify({ error: { message: "can't reach deployment: blitz-mainnet-global-1" } }),
         };
       },
       headers: {
@@ -134,7 +134,7 @@ describe("pm-sql-api status filter query generation", () => {
     const api = getPmSqlApiForUrl(TEST_TORII_URL);
 
     await expect(api.fetchMarketBuyUniqueAccountsCountByMarket("0xabc")).rejects.toThrowError(
-      "Failed to fetch market buy unique account count: HTTP 502 Bad Gateway. can't reach deployment: blitz-slot-global-1",
+      "Failed to fetch market buy unique account count: HTTP 502 Bad Gateway. can't reach deployment: blitz-mainnet-global-1",
     );
   });
 });

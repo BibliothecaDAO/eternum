@@ -73,7 +73,7 @@ export const FactoryV2Content = () => {
             <FactoryV2StartWorkspace
               mode={factory.selectedMode}
               modeLabel={factory.modeDefinition.label}
-              environmentLabel={factory.selectedEnvironment?.label ?? "Slot"}
+              environmentLabel={factory.selectedEnvironment?.label ?? "Mainnet"}
               isMainnet={factory.selectedEnvironment?.chain === "mainnet"}
               launchTargetKind={factory.selectedLaunchKind}
               presets={factory.presets}
@@ -137,8 +137,8 @@ export const FactoryV2Content = () => {
               onToggleTwoPlayerMode={factory.toggleTwoPlayerMode}
               onToggleSingleRealmMode={factory.toggleSingleRealmMode}
               onFandomizeGameName={factory.fandomizeGameName}
-              deployerChain={factory.selectedEnvironment?.chain ?? "slot"}
-              deployerEnvironmentLabel={factory.selectedEnvironment?.label ?? "Slot"}
+              deployerChain={factory.selectedEnvironment?.chain ?? "mainnet"}
+              deployerEnvironmentLabel={factory.selectedEnvironment?.label ?? "Mainnet"}
               onLaunch={() => {
                 void launchSelectedPreset();
               }}
@@ -147,8 +147,8 @@ export const FactoryV2Content = () => {
 
             <FactoryV2DeveloperTools
               mode={factory.selectedMode}
-              chain={factory.selectedEnvironment?.chain ?? "slot"}
-              environmentLabel={factory.selectedEnvironment?.label ?? "Slot"}
+              chain={factory.selectedEnvironment?.chain ?? "mainnet"}
+              environmentLabel={factory.selectedEnvironment?.label ?? "Mainnet"}
               draftGameName={factory.draftGameName}
               selectedRunName={factory.selectedRun?.name ?? null}
             />
@@ -188,8 +188,8 @@ export const FactoryV2Content = () => {
               }}
               adminSecret={factory.factoryAdminSecret}
               hasAdminSecret={factory.factoryAdminSecret.trim().length > 0}
-              deployerChain={factory.selectedEnvironment?.chain ?? "slot"}
-              deployerEnvironmentLabel={factory.selectedEnvironment?.label ?? "Slot"}
+              deployerChain={factory.selectedEnvironment?.chain ?? "mainnet"}
+              deployerEnvironmentLabel={factory.selectedEnvironment?.label ?? "Mainnet"}
               onFundPrize={(request) => factory.fundSelectedRunPrize(request)}
             />
           </div>
@@ -202,7 +202,7 @@ export const FactoryV2Content = () => {
               watcher={factory.watcher}
               adminSecret={factory.factoryAdminSecret}
               hasSavedAdminSecret={factory.hasSavedFactoryAdminSecret}
-              environmentLabel={factory.selectedEnvironment?.label ?? "Slot"}
+              environmentLabel={factory.selectedEnvironment?.label ?? "Mainnet"}
               liveIndexers={factory.liveIndexers}
               liveIndexersUpdatedAt={factory.liveIndexersUpdatedAt}
               hasLoadedLiveIndexersSnapshot={factory.hasLoadedLiveIndexersSnapshot}

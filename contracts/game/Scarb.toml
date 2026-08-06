@@ -52,10 +52,12 @@ max-line-length = 120
 
 [profile.local]
 
-[profile.slot]
-
 [profile.sepolia]
 
 [profile.mainnet]
 
-[profile.slottest]
+# appchain M0 spike (deploy/appchain/spike); dojo_spike.toml is generated + gitignored
+[profile.spike]
+
+# Realms dev appchain on AWS (WP_REALMS_DEV) — deploy/appchain
+[profile.appchain]

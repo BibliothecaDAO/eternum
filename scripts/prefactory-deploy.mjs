@@ -1,6 +1,6 @@
 import { spawnSync } from "node:child_process";
 
-const VALID_NETWORKS = ["local", "mainnet", "sepolia", "slot", "slottest"];
+const VALID_NETWORKS = ["local", "mainnet", "sepolia", "appchain"];
 const SUPPORTED_FLAGS = new Set(["--skip-migrate"]);
 
 function printUsage() {

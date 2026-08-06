@@ -1,4 +1,4 @@
-export type WorldSummaryChain = "mainnet" | "slot";
+export type WorldSummaryChain = "mainnet" | "appchain";
 
 export type WorldSummaryMode = "blitz" | "eternum" | "unknown";
 

@@ -1,7 +1,7 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useMemo, useState, type ReactNode } from "react";
 
-import type { PredictionMarketChain } from "@/pm/manifest-loader";
+import type { Chain } from "@contracts";
 import { ControllersProvider } from "@/pm/hooks/controllers/use-controllers";
 import { UserProvider } from "@/pm/hooks/dojo/user";
 import { getPredictionMarketChain, getPredictionMarketConfigForChain } from "@/pm/prediction-market-config";
@@ -43,14 +43,14 @@ const MARKET_FILTERS_ALL: MarketFiltersParams = {
 
 export const MarketsProviders = ({
   children,
-  chain,
   loadingFallback,
 }: {
   children: ReactNode;
-  chain?: PredictionMarketChain;
+  /** Runtime chain hint; prediction markets always resolve to their own deployment chain. */
+  chain?: Chain | null;
   loadingFallback?: ReactNode;
 }) => {
-  const resolvedChain = chain ?? getPredictionMarketChain();
+  const resolvedChain = getPredictionMarketChain();
   const config = getPredictionMarketConfigForChain(resolvedChain);
   return (
     <QueryClientProvider client={pmQueryClient}>

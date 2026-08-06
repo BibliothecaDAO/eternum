@@ -43,49 +43,49 @@ const REALM_RESOURCE_IDS_WITH_ERECTION_COSTS: ResourcesIds[] = [
 
 describe("buildConfig", () => {
   test("resolves the expected chain overlays for Blitz and Eternum", async () => {
-    const slotBlitz = await buildConfig({ chain: "slot", gameType: "blitz" });
-    const slotEternum = await buildConfig({ chain: "slot", gameType: "eternum" });
+    const appchainBlitz = await buildConfig({ chain: "appchain", gameType: "blitz" });
+    const appchainEternum = await buildConfig({ chain: "appchain", gameType: "eternum" });
     const localBlitz = await buildConfig({ chain: "local", gameType: "blitz" });
 
-    expect(slotBlitz.setup?.chain).toBe("slot");
-    expect(slotBlitz.battle.regularImmunityTicks).toBe(0);
-    expect(slotBlitz.season.durationSeconds).toBe(5_400);
-    expect(slotBlitz.blitz.mode.on).toBe(true);
-    expect(slotBlitz.blitz.exploration.rewardProfileId).toBe("official-90");
-    expect(slotBlitz.blitz.exploration.rewards).toHaveLength(9);
-    expect(slotBlitz.hyperstructures.hyperstructureConstructionCost).toEqual([]);
+    expect(appchainBlitz.setup?.chain).toBe("appchain");
+    expect(appchainBlitz.battle.regularImmunityTicks).toBe(0);
+    expect(appchainBlitz.season.durationSeconds).toBe(7_200);
+    expect(appchainBlitz.blitz.mode.on).toBe(true);
+    expect(appchainBlitz.blitz.exploration.rewardProfileId).toBe("official-90");
+    expect(appchainBlitz.blitz.exploration.rewards).toHaveLength(9);
+    expect(appchainBlitz.hyperstructures.hyperstructureConstructionCost).toEqual([]);
 
-    expect(slotEternum.blitz.mode.on).toBe(false);
-    expect(slotEternum.season.durationSeconds).toBe(0);
-    expect(slotEternum.exploration.bitcoinMineWinProbability).toBe(30);
-    expect(slotEternum.exploration.campFindProbability).toBe(50);
-    expect(slotEternum.resources.productionByComplexRecipeOutputs[ResourcesIds.Wheat]).toBe(6);
-    expect(slotEternum.resources.productionByComplexRecipeOutputs[ResourcesIds.Fish]).toBe(6);
-    expect(findStartingResourceAmount(slotEternum.startingResources, ResourcesIds.Wheat)).toBe(1_000);
-    expect(findStartingResourceAmount(slotEternum.startingResources, ResourcesIds.Fish)).toBe(1_000);
+    expect(appchainEternum.blitz.mode.on).toBe(false);
+    expect(appchainEternum.season.durationSeconds).toBe(60 * 60 * 24 * 30);
+    expect(appchainEternum.exploration.bitcoinMineWinProbability).toBe(200);
+    expect(appchainEternum.exploration.campFindProbability).toBe(1_500);
+    expect(appchainEternum.resources.productionByComplexRecipeOutputs[ResourcesIds.Wheat]).toBe(6);
+    expect(appchainEternum.resources.productionByComplexRecipeOutputs[ResourcesIds.Fish]).toBe(6);
+    expect(findStartingResourceAmount(appchainEternum.startingResources, ResourcesIds.Wheat)).toBe(1_000);
+    expect(findStartingResourceAmount(appchainEternum.startingResources, ResourcesIds.Fish)).toBe(1_000);
     expect(
-      findRecipeAmount(slotEternum.resources.productionByComplexRecipe[ResourcesIds.Wood], ResourcesIds.Wheat),
+      findRecipeAmount(appchainEternum.resources.productionByComplexRecipe[ResourcesIds.Wood], ResourcesIds.Wheat),
     ).toBe(1);
     expect(
-      findRecipeAmount(slotEternum.resources.productionByComplexRecipe[ResourcesIds.Wood], ResourcesIds.Fish),
+      findRecipeAmount(appchainEternum.resources.productionByComplexRecipe[ResourcesIds.Wood], ResourcesIds.Fish),
     ).toBe(1);
     for (const resourceId of REALM_RESOURCE_IDS_WITH_ERECTION_COSTS) {
       const buildingType = getBuildingFromResource(resourceId);
 
       expect(buildingType).toBeDefined();
-      expect(slotEternum.buildings.complexBuildingCosts[buildingType as BuildingType]?.length ?? 0).toBeGreaterThan(0);
-      expect(slotEternum.buildings.simpleBuildingCost[buildingType as BuildingType]?.length ?? 0).toBeGreaterThan(0);
+      expect(appchainEternum.buildings.complexBuildingCosts[buildingType as BuildingType]?.length ?? 0).toBeGreaterThan(0);
+      expect(appchainEternum.buildings.simpleBuildingCost[buildingType as BuildingType]?.length ?? 0).toBeGreaterThan(0);
     }
-    expect(slotEternum.buildings.complexBuildingCosts[BuildingType.ResourceSilver]).toEqual(
-      slotEternum.buildings.complexBuildingCosts[BuildingType.ResourceGold],
+    expect(appchainEternum.buildings.complexBuildingCosts[BuildingType.ResourceSilver]).toEqual(
+      appchainEternum.buildings.complexBuildingCosts[BuildingType.ResourceGold],
     );
-    expect(slotEternum.buildings.simpleBuildingCost[BuildingType.ResourceSilver]).toEqual(
-      slotEternum.buildings.simpleBuildingCost[BuildingType.ResourceGold],
+    expect(appchainEternum.buildings.simpleBuildingCost[BuildingType.ResourceSilver]).toEqual(
+      appchainEternum.buildings.simpleBuildingCost[BuildingType.ResourceGold],
     );
-    expect(slotEternum.troop.stamina.staminaExploreWheatCost).toBe(0.03);
-    expect(slotEternum.troop.stamina.staminaExploreFishCost).toBe(0.03);
-    expect(slotEternum.hyperstructures.hyperstructureConstructionCost.length).toBeGreaterThan(0);
-    expect(slotEternum.mmr).toBeUndefined();
+    expect(appchainEternum.troop.stamina.staminaExploreWheatCost).toBe(0.03);
+    expect(appchainEternum.troop.stamina.staminaExploreFishCost).toBe(0.03);
+    expect(appchainEternum.hyperstructures.hyperstructureConstructionCost.length).toBeGreaterThan(0);
+    expect(appchainEternum.mmr).toBeUndefined();
 
     expect(localBlitz.dev.mode.on).toBe(true);
     expect(localBlitz.speed.donkey_for_resources).toBe(0);
@@ -94,9 +94,9 @@ describe("buildConfig", () => {
   });
 
   test("applies the official Blitz profiles only for exact official durations", async () => {
-    const baseConfig = await buildConfig({ chain: "slot", gameType: "blitz" });
-    const sixtyMinuteConfig = await buildConfig({ chain: "slot", gameType: "blitz", durationMinutes: 60 });
-    const customDurationConfig = await buildConfig({ chain: "slot", gameType: "blitz", durationMinutes: 45 });
+    const baseConfig = await buildConfig({ chain: "appchain", gameType: "blitz" });
+    const sixtyMinuteConfig = await buildConfig({ chain: "appchain", gameType: "blitz", durationMinutes: 60 });
+    const customDurationConfig = await buildConfig({ chain: "appchain", gameType: "blitz", durationMinutes: 45 });
 
     expect(sixtyMinuteConfig.season.durationSeconds).toBe(3_600);
     expect(sixtyMinuteConfig.resources.productionByComplexRecipeOutputs[ResourcesIds.Donkey]).toBe(3);

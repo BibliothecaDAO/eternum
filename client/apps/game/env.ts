@@ -29,17 +29,12 @@ const envSchema = z.object({
   VITE_PUBLIC_CLIENT_FEE_RECIPIENT: z.string().startsWith("0x"),
 
   // API endpoints
-  VITE_PUBLIC_TORII: z.string().url().optional().default("https://api.cartridge.gg/x/eternum-blitz-slot-4/torii"),
-  VITE_PUBLIC_GLOBAL_TORII: z.string().url().optional().default("https://api.cartridge.gg/x/blitz-slot-global-1/torii"),
-  VITE_PUBLIC_NODE_URL: z
-    .string()
-    .url()
-    .optional()
-    .default("https://api.cartridge.gg/x/eternum-blitz-slot-4/katana/rpc/v0_9"),
-  VITE_PUBLIC_TORII_RELAY: z
-    .string()
-    .optional()
-    .default("/dns4/api.cartridge.gg/tcp/443/x-parity-wss/%2Fx%2Feternum-blitz-slot-test%2Ftorii%2Fwss"),
+  // No implicit defaults: endpoints are chain-specific and must come from the
+  // active `.env.<chain>.<game>` file.
+  VITE_PUBLIC_TORII: optionalUrlOrEmpty.default(""),
+  VITE_PUBLIC_GLOBAL_TORII: optionalUrlOrEmpty.default(""),
+  VITE_PUBLIC_NODE_URL: optionalUrlOrEmpty.default(""),
+  VITE_PUBLIC_TORII_RELAY: z.string().optional().default(""),
   VITE_PUBLIC_SCORE_TO_BEAT_TORII_ENDPOINTS: z.string().optional().default(""),
   // Optional external endpoints
   VITE_PUBLIC_CARTRIDGE_API_BASE: z.string().url().optional().default("https://api.cartridge.gg"),
@@ -99,7 +94,7 @@ const envSchema = z.object({
     .default("experimental-webgpu-auto"),
   // Version and chain info
   VITE_PUBLIC_GAME_VERSION: z.string().optional().default(""),
-  VITE_PUBLIC_CHAIN: z.enum(["sepolia", "mainnet", "slot", "slottest", "local"]).optional().default("local"), // Add other chains as needed
+  VITE_PUBLIC_CHAIN: z.enum(["sepolia", "mainnet", "local", "appchain"]).optional().default("local"), // Add other chains as needed
   VITE_PUBLIC_GAME_TYPE: z.enum(["blitz", "eternum"]).optional().default("blitz"),
   // Deprecated for runtime mode selection. Kept for deploy tooling defaults.
   VITE_PUBLIC_FORCE_GAME_MODE_ID: z.enum(["eternum", "blitz"]).optional(),
@@ -112,8 +107,6 @@ const envSchema = z.object({
 
   // VRF
   VITE_PUBLIC_VRF_PROVIDER_ADDRESS: z.string().startsWith("0x").optional().default("0x0"),
-
-  VITE_PUBLIC_SLOT: z.string(),
 
   // Social
   VITE_SOCIAL_LINK: optionalUrlOrEmpty.default(""),

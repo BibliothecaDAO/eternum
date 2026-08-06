@@ -31,7 +31,7 @@ function usage(): void {
     [
       "",
       "Usage:",
-      "  bun scripts/ci/paymaster/sync-policy.ts --chain <mainnet|sepolia|slot|slottest|local> --game <world-name> [--yes]",
+      "  bun scripts/ci/paymaster/sync-policy.ts --chain <mainnet|sepolia|appchain|local> --game <world-name> [--yes]",
       "",
       "Optional flags:",
       "  --paymaster <name>           default: empire",

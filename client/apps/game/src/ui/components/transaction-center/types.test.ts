@@ -19,7 +19,7 @@ const createLocalStorage = () => {
   };
 };
 
-const saveActiveWorld = (chain: "mainnet" | "slot", name = "active-world") => {
+const saveActiveWorld = (chain: "mainnet" | "sepolia", name = "active-world") => {
   window.localStorage.setItem(ACTIVE_KEY, name);
   window.localStorage.setItem(
     PROFILES_KEY,
@@ -28,10 +28,7 @@ const saveActiveWorld = (chain: "mainnet" | "slot", name = "active-world") => {
         name,
         chain,
         toriiBaseUrl: `https://api.cartridge.gg/x/${name}/torii`,
-        rpcUrl:
-          chain === "mainnet"
-            ? "https://api.cartridge.gg/x/starknet/mainnet/rpc/v0_9"
-            : "https://api.cartridge.gg/x/eternum-blitz-slot-4/katana/rpc/v0_9",
+        rpcUrl: `https://api.cartridge.gg/x/starknet/${chain}/rpc/v0_9`,
         worldAddress: "0x123",
         contractsBySelector: {},
         fetchedAt: 1,
@@ -52,24 +49,24 @@ describe("transaction explorer links", () => {
     vi.unstubAllGlobals();
   });
 
-  it("uses the active slot world before a saved mainnet preference", () => {
-    saveActiveWorld("slot", "dynamic-slot-world");
+  it("uses the active sepolia world before a saved mainnet preference", () => {
+    saveActiveWorld("sepolia", "dynamic-sepolia-world");
     window.localStorage.setItem(CHAIN_KEY, "mainnet");
 
-    expect(getExplorerName()).toBe("Katana Explorer");
-    expect(getExplorerTxUrl("0xabc")).toBe("https://api.cartridge.gg/x/dynamic-slot-world/katana/explorer/tx/0xabc");
+    expect(getExplorerName()).toBe("Voyager");
+    expect(getExplorerTxUrl("0xabc")).toBe("https://sepolia.voyager.online/tx/0xabc");
   });
 
-  it("falls back to the build slot name when no active world exists", () => {
-    window.localStorage.setItem(CHAIN_KEY, "slot");
+  it("falls back to the saved chain preference when no active world exists", () => {
+    window.localStorage.setItem(CHAIN_KEY, "sepolia");
 
-    expect(getExplorerName()).toBe("Katana Explorer");
-    expect(getExplorerTxUrl("0xabc")).toBe("https://api.cartridge.gg/x/test-slot/katana/explorer/tx/0xabc");
+    expect(getExplorerName()).toBe("Voyager");
+    expect(getExplorerTxUrl("0xabc")).toBe("https://sepolia.voyager.online/tx/0xabc");
   });
 
   it("uses mainnet voyager for an active mainnet world", () => {
     saveActiveWorld("mainnet");
-    window.localStorage.setItem(CHAIN_KEY, "slot");
+    window.localStorage.setItem(CHAIN_KEY, "sepolia");
 
     expect(getExplorerName()).toBe("Voyager");
     expect(getExplorerTxUrl("0xabc")).toBe("https://voyager.online/tx/0xabc");

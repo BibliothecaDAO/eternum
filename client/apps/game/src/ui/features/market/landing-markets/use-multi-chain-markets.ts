@@ -9,7 +9,7 @@ import { useConfig } from "@/pm/providers";
 import { formatUnits, replaceAndFormat } from "@/pm/utils";
 import { GLOBAL_TORII_BY_CHAIN } from "@/config/global-chain";
 
-type MarketDataChain = "slot" | "mainnet";
+type MarketDataChain = "mainnet";
 export type MarketChainFilter = "all" | MarketDataChain;
 export type MarketStatusKey = "all" | "live" | "awaiting" | "resolved";
 export type MarketSortKey = "creation-date" | "end-time" | "volume" | "pool-size";
@@ -36,10 +36,9 @@ const STATUS_TO_FILTER: Record<MarketStatusKey, MarketStatusFilter> = {
   resolved: MarketStatusFilter.Resolved,
 };
 
-const CHAIN_ORDER: MarketDataChain[] = ["slot", "mainnet"];
+const CHAIN_ORDER: MarketDataChain[] = ["mainnet"];
 
 const CHAIN_LABELS: Record<MarketDataChain, string> = {
-  slot: "Slot",
   mainnet: "Mainnet",
 };
 
@@ -367,7 +366,6 @@ const mergeAndSortMarkets = (markets: EnrichedMarket[], status: MarketStatusKey,
 
 const createEmptySourceStatus = (chains: MarketDataChain[]): Record<MarketDataChain, SourceStatus> => {
   const status: Record<MarketDataChain, SourceStatus> = {
-    slot: { ok: true },
     mainnet: { ok: true },
   };
   CHAIN_ORDER.forEach((chain) => {

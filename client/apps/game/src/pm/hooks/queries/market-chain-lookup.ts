@@ -15,26 +15,22 @@ type MarketLookupResult = {
   marketRow: MarketWithDetailsRow | null;
 };
 
-const alternateChainOf = (chain: MarketDataChain): MarketDataChain => (chain === "mainnet" ? "slot" : "mainnet");
-
 /**
- * Look up a prediction market by its prize-distribution address, starting from the preferred chain.
+ * Look up a prediction market by its prize-distribution address.
  *
- * A `null` result on the preferred chain means the market genuinely doesn't exist there
- * and we do NOT probe the alternate chain. The alternate is only tried when the preferred
- * chain throws (network/gateway error) — and only when `fallbackOnError` is true (default).
- *
- * This avoids the redundant cross-chain fan-out that was overwhelming PM Torii (504s).
+ * Prediction markets now live on a single chain (mainnet), so there is no
+ * cross-chain fan-out: a `null` result means the market genuinely doesn't
+ * exist, and a throw is surfaced as a failure entry.
  */
 export const findMarketByPrizeAddressAcrossChains = async ({
   onChainError,
   preferredChain,
   prizeAddress,
-  fallbackOnError = true,
 }: {
   onChainError?: (failure: MarketLookupFailure) => void;
   preferredChain: MarketDataChain;
   prizeAddress: string;
+  /** @deprecated retained for call-site compatibility; there is no alternate chain to fall back to. */
   fallbackOnError?: boolean;
 }): Promise<MarketLookupResult> => {
   const failures: MarketLookupFailure[] = [];
@@ -45,26 +41,8 @@ export const findMarketByPrizeAddressAcrossChains = async ({
     if (marketRow) {
       return { chain: preferredChain, failures, marketRow };
     }
-    return { chain: null, failures, marketRow: null };
   } catch (error) {
     const failure = { chain: preferredChain, error };
-    failures.push(failure);
-    onChainError?.(failure);
-  }
-
-  if (!fallbackOnError) {
-    return { chain: null, failures, marketRow: null };
-  }
-
-  const alternate = alternateChainOf(preferredChain);
-  try {
-    const api = getPmSqlApiForUrl(GLOBAL_TORII_BY_CHAIN[alternate]);
-    const marketRow = await api.fetchMarketByPrizeAddress(prizeAddress);
-    if (marketRow) {
-      return { chain: alternate, failures, marketRow };
-    }
-  } catch (error) {
-    const failure = { chain: alternate, error };
     failures.push(failure);
     onChainError?.(failure);
   }

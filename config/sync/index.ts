@@ -1,6 +1,6 @@
 import { saveResolvedConfigJson, type GameType, type NetworkType } from "../utils/environment";
 
-const VALID_NETWORKS: NetworkType[] = ["local", "mainnet", "sepolia", "slot", "slottest"];
+const VALID_NETWORKS: NetworkType[] = ["local", "mainnet", "sepolia", "appchain"];
 const VALID_GAME_TYPES: GameType[] = ["blitz", "eternum"];
 
 function printSyncUsage(): void {

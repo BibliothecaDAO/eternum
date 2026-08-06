@@ -19,8 +19,6 @@ on:
         options:
           - mainnet.blitz
           - mainnet.eternum
-          - slot.blitz
-          - slot.eternum
       game_name:
         description: "Game/world name"
         required: false
@@ -140,7 +138,6 @@ jobs:
       FACTORY_ADDRESS: ${{ vars.FACTORY_ADDRESS }}
       DOJO_ACCOUNT_ADDRESS: ${{ vars.GAME_LAUNCH_DOJO_ACCOUNT_ADDRESS }}
       DOJO_PRIVATE_KEY: ${{ secrets.GAME_LAUNCH_DOJO_PRIVATE_KEY }}
-      SLOT_AUTH: ${{ secrets.SLOT_AUTH }}
       GITHUB_TOKEN: ${{ github.token }}
     steps:
       - name: Checkout
@@ -167,14 +164,6 @@ jobs:
           set -euo pipefail
           pnpm --dir packages/types build
           pnpm --dir packages/provider build
-
-      - name: Install Slot CLI
-        run: |
-          set -euo pipefail
-          curl -L https://slot.cartridge.sh | bash
-          /home/runner/.config/.slot/bin/slotup
-          echo "/home/runner/.config/.slot/bin" >> $GITHUB_PATH
-          slot --version || true
 
       - name: Prepare launch arguments
         run: |

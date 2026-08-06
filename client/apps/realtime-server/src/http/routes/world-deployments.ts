@@ -3,7 +3,7 @@ import { Hono } from "hono";
 import { worldDeploymentService } from "../../services/world-deployments";
 import type { AppEnv } from "../middleware/auth";
 
-const SUPPORTED_CHAINS = new Set(["mainnet", "sepolia", "slot", "slottest", "local"]);
+const SUPPORTED_CHAINS = new Set(["mainnet", "sepolia", "local", "appchain"]);
 
 const worldDeploymentRoutes = new Hono<AppEnv>();
 

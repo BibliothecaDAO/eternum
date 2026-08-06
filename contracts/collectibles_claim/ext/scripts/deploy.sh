@@ -15,7 +15,6 @@
 #   Examples:
 #   ./deploy.sh      - Deploys to local
 #   ./deploy.sh local     - Deploys to local
-#   ./deploy.sh slot      - Deploys to slot
 #   ./deploy.sh sepolia   - Deploys to sepolia
 #   ./deploy.sh mainnet   - Deploys to mainnet
 #

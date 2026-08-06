@@ -67,7 +67,7 @@ describe("worlds routes", () => {
   it("GET /summary returns the full summary array", async () => {
     const summaries: WorldSummary[] = [
       stubSummary({ name: "alpha", chain: "mainnet", alive: true, mode: "blitz" }),
-      stubSummary({ name: "beta", chain: "slot", alive: false, mode: null }),
+      stubSummary({ name: "beta", chain: "appchain", alive: false, mode: null }),
     ];
     (availabilityService.getSummaries as ReturnType<typeof vi.fn>).mockReturnValue(summaries);
 
@@ -77,7 +77,7 @@ describe("worlds routes", () => {
     const body = (await res.json()) as WorldSummary[];
     expect(body).toHaveLength(2);
     expect(body[0]).toMatchObject({ name: "alpha", chain: "mainnet", alive: true, mode: "blitz" });
-    expect(body[1]).toMatchObject({ name: "beta", chain: "slot", alive: false });
+    expect(body[1]).toMatchObject({ name: "beta", chain: "appchain", alive: false });
   });
 
   it("GET /summary returns an empty array with no-store when nothing is cached", async () => {

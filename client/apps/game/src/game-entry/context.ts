@@ -9,7 +9,7 @@ import {
   type PlayScene,
 } from "@/play/navigation/play-route";
 
-type LandingPrimaryChain = "mainnet" | "slot";
+type LandingPrimaryChain = "mainnet" | "appchain";
 export type EntryIntent = "play" | "settle" | "spectate";
 
 type LocationLike = Pick<Location, "pathname" | "search">;
@@ -38,7 +38,9 @@ interface BuildPlayRouteFromEntryContextInput {
 }
 
 export const isLandingPrimaryChain = (chain: Chain | null | undefined): chain is LandingPrimaryChain => {
-  return chain === "mainnet" || chain === "slot";
+  // appchain participates in the landing flow: it is where blitz registration
+  // and settlement are triggered from (the game-selector settle button)
+  return chain === "mainnet" || chain === "appchain";
 };
 
 export const resolveEntryContextCacheKey = (context: Pick<ResolvedEntryContext, "chain" | "worldName">): string => {

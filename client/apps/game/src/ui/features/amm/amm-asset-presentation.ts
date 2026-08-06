@@ -1,9 +1,8 @@
 import { findResourceById } from "@bibliothecadao/types";
+import appchainSeasonAddresses from "../../../../../../../contracts/common/addresses/appchain.json";
 import localSeasonAddresses from "../../../../../../../contracts/common/addresses/local.json";
 import mainnetSeasonAddresses from "../../../../../../../contracts/common/addresses/mainnet.json";
 import sepoliaSeasonAddresses from "../../../../../../../contracts/common/addresses/sepolia.json";
-import slotSeasonAddresses from "../../../../../../../contracts/common/addresses/slot.json";
-import slottestSeasonAddresses from "../../../../../../../contracts/common/addresses/slottest.json";
 
 interface AmmAssetPresentation {
   tokenAddress: string;
@@ -24,11 +23,10 @@ interface SeasonAddressCatalog {
 }
 
 const KNOWN_AMM_SEASON_ADDRESSES: SeasonAddressCatalog[] = [
+  appchainSeasonAddresses,
   localSeasonAddresses,
   mainnetSeasonAddresses,
   sepoliaSeasonAddresses,
-  slotSeasonAddresses,
-  slottestSeasonAddresses,
 ];
 const KNOWN_AMM_RESOURCES = buildKnownAmmResources();
 

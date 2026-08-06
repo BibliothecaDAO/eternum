@@ -1,13 +1,11 @@
+import appchainSeasonAddresses from "../../contracts/common/addresses/appchain.json";
 import localSeasonAddresses from "../../contracts/common/addresses/local.json";
 import mainnetSeasonAddresses from "../../contracts/common/addresses/mainnet.json";
 import sepoliaSeasonAddresses from "../../contracts/common/addresses/sepolia.json";
-import slotSeasonAddresses from "../../contracts/common/addresses/slot.json";
-import slottestSeasonAddresses from "../../contracts/common/addresses/slottest.json";
+import appchainGameManifest from "../../contracts/game/manifest_appchain.json";
 import localGameManifest from "../../contracts/game/manifest_local.json";
 import mainnetGameManifest from "../../contracts/game/manifest_mainnet.json";
 import sepoliaGameManifest from "../../contracts/game/manifest_sepolia.json";
-import slotGameManifest from "../../contracts/game/manifest_slot.json";
-import slottestGameManifest from "../../contracts/game/manifest_slottest.json";
 
 /**
  * Interface representing season contract addresses and resources
@@ -47,7 +45,7 @@ export interface SeasonAddresses {
 }
 
 /** Valid chain identifiers */
-export type Chain = "sepolia" | "mainnet" | "slot" | "slottest" | "local";
+export type Chain = "sepolia" | "mainnet" | "local" | "appchain";
 
 /**
  * Retrieves the season addresses for a specific chain
@@ -62,12 +60,10 @@ export function getSeasonAddresses(chain: Chain): SeasonAddresses {
         return sepoliaSeasonAddresses;
       case "mainnet":
         return mainnetSeasonAddresses;
-      case "slot":
-        return slotSeasonAddresses;
-      case "slottest":
-        return slottestSeasonAddresses;
       case "local":
         return localSeasonAddresses as any;
+      case "appchain":
+        return appchainSeasonAddresses as any;
       default:
         throw new Error(`Invalid chain: ${chain}`);
     }
@@ -97,12 +93,10 @@ export function getGameManifest(chain: Chain): GameManifest {
         return sepoliaGameManifest;
       case "mainnet":
         return mainnetGameManifest;
-      case "slot":
-        return slotGameManifest;
-      case "slottest":
-        return slottestGameManifest;
       case "local":
         return localGameManifest;
+      case "appchain":
+        return appchainGameManifest;
       default:
         throw new Error(`Invalid chain: ${chain}`);
     }

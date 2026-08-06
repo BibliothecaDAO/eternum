@@ -39,15 +39,15 @@ describe("native config steps", () => {
   });
 
   test("resolves different step subsets for different environments", () => {
-    const blitzConfig = loadEnvironmentConfiguration("slot.blitz");
+    const blitzConfig = loadEnvironmentConfiguration("appchain.blitz");
     const mainnetBlitzConfig = loadEnvironmentConfiguration("mainnet.blitz");
-    const eternumConfig = loadEnvironmentConfiguration("slot.eternum");
+    const eternumConfig = loadEnvironmentConfiguration("appchain.eternum");
     (blitzConfig as typeof blitzConfig & { factory_address?: string }).factory_address = "0xabc";
     (mainnetBlitzConfig as typeof mainnetBlitzConfig & { factory_address?: string }).factory_address = "0xabc";
     (eternumConfig as typeof eternumConfig & { factory_address?: string }).factory_address = "0xabc";
 
     const blitzStepIds = resolveFactoryWorldConfigSteps({
-      environmentId: "slot.blitz",
+      environmentId: "appchain.blitz",
       config: blitzConfig,
     }).map((step) => step.id);
     const mainnetBlitzStepIds = resolveFactoryWorldConfigSteps({
@@ -55,7 +55,7 @@ describe("native config steps", () => {
       config: mainnetBlitzConfig,
     }).map((step) => step.id);
     const eternumStepIds = resolveFactoryWorldConfigSteps({
-      environmentId: "slot.eternum",
+      environmentId: "appchain.eternum",
       config: eternumConfig,
     }).map((step) => step.id);
 
@@ -91,10 +91,10 @@ describe("native config steps", () => {
   });
 
   test("writes the inferred blitz exploration reward profile id", async () => {
-    const config = loadEnvironmentConfiguration("slot.blitz");
+    const config = loadEnvironmentConfiguration("appchain.blitz");
     const capturedCalls: Array<Record<string, unknown>> = [];
     const provider = {
-      manifest: getGameManifest("slot") as any,
+      manifest: getGameManifest("appchain") as any,
       set_blitz_exploration_config: async (payload: Record<string, unknown>) => {
         capturedCalls.push(payload);
         return { statusReceipt: "ok" };
@@ -111,10 +111,10 @@ describe("native config steps", () => {
   });
 
   test("writes camp starting resources through the renamed provider method", async () => {
-    const config = loadEnvironmentConfiguration("slot.blitz");
+    const config = loadEnvironmentConfiguration("appchain.blitz");
     const capturedCalls: Array<Record<string, unknown>> = [];
     const provider = {
-      manifest: getGameManifest("slot") as any,
+      manifest: getGameManifest("appchain") as any,
       set_camp_starting_resources_config: async (payload: Record<string, unknown>) => {
         capturedCalls.push(payload);
         return { statusReceipt: "ok" };
@@ -139,10 +139,10 @@ describe("native config steps", () => {
   });
 
   test("applies faith config with the expected payload scaling", async () => {
-    const config = loadEnvironmentConfiguration("slot.eternum");
+    const config = loadEnvironmentConfiguration("appchain.eternum");
     const capturedCalls: Array<Record<string, unknown>> = [];
     const provider = {
-      manifest: getGameManifest("slot") as any,
+      manifest: getGameManifest("appchain") as any,
       set_faith_config: async (payload: Record<string, unknown>) => {
         capturedCalls.push(payload);
         return { statusReceipt: "ok" };
@@ -168,14 +168,14 @@ describe("native config steps", () => {
   });
 
   test("reuses the same blitz timing across split registration steps", async () => {
-    const config = loadEnvironmentConfiguration("slot.blitz");
+    const config = loadEnvironmentConfiguration("appchain.blitz");
     config.season.startMainAt = 0;
     config.blitz.registration.registration_delay_seconds = 10;
     config.blitz.registration.registration_period_seconds = 100;
 
     const capturedCalls: Array<{ type: string; payload: Record<string, unknown> }> = [];
     const provider = {
-      manifest: getGameManifest("slot") as any,
+      manifest: getGameManifest("appchain") as any,
       set_blitz_registration_config: async (payload: Record<string, unknown>) => {
         capturedCalls.push({ type: "registration", payload });
         return { statusReceipt: "ok" };
@@ -224,7 +224,7 @@ describe("native config steps", () => {
   });
 
   test("carries inferred blitz profile duration through the season payload", async () => {
-    const baseConfig = loadEnvironmentConfiguration("slot.blitz");
+    const baseConfig = loadEnvironmentConfiguration("appchain.blitz");
     const config = applyDeploymentConfigOverrides(baseConfig, {
       startMainAt: 0,
       factoryAddress: "0xabc",
@@ -236,7 +236,7 @@ describe("native config steps", () => {
 
     const capturedCalls: Array<Record<string, unknown>> = [];
     const provider = {
-      manifest: getGameManifest("slot") as any,
+      manifest: getGameManifest("appchain") as any,
       set_season_config: async (payload: Record<string, unknown>) => {
         capturedCalls.push(payload);
         return { statusReceipt: "ok" };

@@ -70,7 +70,7 @@ const buildRunBase = (): FactoryRun => ({
   kind: "game",
   mode: "blitz" as const,
   name: "bltz-sprint-01",
-  environment: "slot.blitz",
+  environment: "mainnet.blitz",
   owner: "0x1",
   presetId: "preset-1",
   status: "running" as const,
@@ -177,8 +177,8 @@ describe("FactoryV2WatchWorkspace mobile layout", () => {
     expect(article?.className).toContain("md:max-w-md");
     expect(searchPanel?.textContent).toContain("Find a run");
     expect(searchPanel?.textContent).toContain("recent runs");
-    expect(container.textContent).toContain("Slot deployer wallet slot");
-    expect(selectedPanel?.textContent).toContain("Slot deployer wallet slot");
+    expect(container.textContent).toContain("Mainnet deployer wallet mainnet");
+    expect(selectedPanel?.textContent).toContain("Mainnet deployer wallet mainnet");
     expect(selectedPanel?.textContent).toContain("Setup progress");
     expect(selectedPanel?.textContent).toContain("In progress");
     expect(selectedPanel?.textContent).toContain("3 of 4 parts");
@@ -262,7 +262,7 @@ describe("FactoryV2WatchWorkspace mobile layout", () => {
     expect(prizeFundingToggle).not.toBeNull();
     expect(walletCard).not.toBeNull();
     expect(prizeFundingToggle?.textContent).toContain("Open prize funding");
-    expect(walletCard?.textContent).toContain("Slot deployer wallet slot");
+    expect(walletCard?.textContent).toContain("Mainnet deployer wallet mainnet");
     expect(prizeFundingToggle!.compareDocumentPosition(walletCard!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 
@@ -376,7 +376,7 @@ describe("FactoryV2WatchWorkspace mobile layout", () => {
 
   it("shows the pending launch request as the first setup step", async () => {
     const pendingRun = buildRun({
-      id: "pending:slot.blitz:bltz-sprint-01",
+      id: "pending:mainnet.blitz:bltz-sprint-01",
       steps: [
         {
           id: "launch-request" as const,

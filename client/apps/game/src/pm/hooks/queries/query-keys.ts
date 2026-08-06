@@ -15,7 +15,7 @@ export const pmQueryKeys = {
     [...pmQueryKeys.markets(), "list", filters, { page, limit }] as const,
   marketsCount: (filters: MarketFiltersParams) => [...pmQueryKeys.markets(), "count", filters] as const,
   marketByPrizeAddress: (prizeAddress: string, chain?: PredictionMarketChain) =>
-    [...pmQueryKeys.markets(), "byPrize", chain ?? "slot", prizeAddress] as const,
+    [...pmQueryKeys.markets(), "byPrize", chain ?? "mainnet", prizeAddress] as const,
   marketNumerators: (marketIds: string[], chain?: PredictionMarketChain) =>
-    [...pmQueryKeys.markets(), "numerators", chain ?? "slot", marketIds] as const,
+    [...pmQueryKeys.markets(), "numerators", chain ?? "mainnet", marketIds] as const,
 };

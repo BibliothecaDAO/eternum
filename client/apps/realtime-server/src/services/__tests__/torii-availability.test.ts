@@ -172,7 +172,7 @@ describe("ToriiAvailabilityService", () => {
         return new Response(null, { status: 500 });
       });
 
-      const service = new ToriiAvailabilityService({ factoryChains: ["mainnet", "slot"] });
+      const service = new ToriiAvailabilityService({ factoryChains: ["mainnet", "appchain"] });
       await service.pollOnce();
 
       // "alpha" appears in both chains but should only be probed once
@@ -297,7 +297,7 @@ describe("ToriiAvailabilityService", () => {
         .mockResolvedValueOnce(new Response(JSON.stringify([blitzSummaryRow]), { status: 200 })); // summary
 
       const service = new ToriiAvailabilityService({ factoryChains: [] });
-      await service.probeWorld("alpha", "slot", "0xprize", "0xabc");
+      await service.probeWorld("alpha", "appchain", "0xprize", "0xabc");
 
       expect(mockFetch).toHaveBeenCalledTimes(2);
       const [summary] = service.getSummaries();
@@ -413,11 +413,11 @@ describe("ToriiAvailabilityService", () => {
         return new Response(null, { status: 500 });
       });
 
-      const service = new ToriiAvailabilityService({ factoryChains: ["slot", "mainnet"] });
+      const service = new ToriiAvailabilityService({ factoryChains: ["sepolia", "mainnet"] });
       await service.pollOnce();
 
       const summaries = service.getSummaries();
-      expect(summaries[0]!.chain).toBe("slot");
+      expect(summaries[0]!.chain).toBe("appchain");
     });
   });
 

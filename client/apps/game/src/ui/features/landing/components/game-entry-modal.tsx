@@ -4000,7 +4000,9 @@ export const GameEntryModal = ({
     refetchVillagePassInventory,
   ]);
 
-  const canUseSandboxMintFlow = isEternumMode && (chain === "slot" || chain === "slottest");
+  // Sandbox mint shortcut is dev-chain only (was slot; now the self-hosted
+  // appchain and a local katana).
+  const canUseSandboxMintFlow = isEternumMode && (chain === "appchain" || chain === "local");
 
   const handleAutoSelectNextRealmTokenId = useCallback(async () => {
     if (!realmsAddress) {

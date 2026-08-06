@@ -98,7 +98,7 @@ import {
 type TxState = { status: "idle" | "running" | "success" | "error"; hash?: string; error?: string };
 type AutoDeployState = { current: number; total: number; status: "running" | "stopping" };
 type FactoryConfigCall = { entrypoint: string; calldata: any[] };
-type ConfigPreset = "sandbox" | "blitz-slot";
+type ConfigPreset = "sandbox" | "blitz-standard";
 type GameMode = "blitz" | "eternum";
 
 // Maximum hours in the future that a game start time can be set
@@ -496,7 +496,7 @@ export const FactoryPage = ({ embedded = false }: FactoryPageProps = {}) => {
         setDurationMinutesOverrides((prev) => ({ ...prev, ...(worldMap(0) as Record<string, number>) }));
       }
 
-      if (preset === "blitz-slot") {
+      if (preset === "blitz-standard") {
         setDevModeOn(false);
         setMmrEnabledOn(true);
         setDurationHours(1);
@@ -823,11 +823,7 @@ export const FactoryPage = ({ embedded = false }: FactoryPageProps = {}) => {
 
     try {
       await updateIndexerTierService({
-        environment: `${currentChain}.${activeGameMode}` as
-          | "slot.eternum"
-          | "mainnet.eternum"
-          | "slot.blitz"
-          | "mainnet.blitz",
+        environment: `${currentChain}.${activeGameMode}` as "mainnet.eternum" | "mainnet.blitz",
         gameName: worldName,
         tier,
         adminSecret: adminSecret.trim(),
@@ -1180,14 +1176,14 @@ export const FactoryPage = ({ embedded = false }: FactoryPageProps = {}) => {
                           </button>
                           <button
                             type="button"
-                            onClick={() => applyConfigPreset("blitz-slot")}
+                            onClick={() => applyConfigPreset("blitz-standard")}
                             className={`text-left rounded-xl border p-4 transition-all ${
-                              activeConfigPreset === "blitz-slot"
+                              activeConfigPreset === "blitz-standard"
                                 ? "border-gold/60 bg-gold/15 shadow-[0_0_18px_rgba(223,170,84,0.2)]"
                                 : "border-gold/20 bg-black/40 hover:border-gold/40 hover:bg-gold/10"
                             }`}
                           >
-                            <p className="text-sm font-semibold text-gold">BLITZ SLOT (1h 30m game onslot)</p>
+                            <p className="text-sm font-semibold text-gold">BLITZ (1h 30m game)</p>
                             <p className="mt-1 text-xs text-gold/60">
                               Sets Dev Mode OFF, MMR ON, and game duration to 1 hour 30 minutes.
                             </p>

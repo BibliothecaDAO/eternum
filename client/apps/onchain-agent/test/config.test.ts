@@ -100,7 +100,7 @@ describe("loadConfig", () => {
 
   it("derives chain ID from RPC_URL when CHAIN_ID is not set", () => {
     delete process.env.CHAIN_ID;
-    process.env.CHAIN = "slot";
+    process.env.CHAIN = "local";
     process.env.RPC_URL = "https://api.cartridge.gg/x/my-test-world/katana/rpc/v0_9";
 
     const cfg = loadConfig();
@@ -111,7 +111,7 @@ describe("loadConfig", () => {
 
   it("falls back to static chain ID when RPC_URL has no recognizable pattern", () => {
     delete process.env.CHAIN_ID;
-    process.env.CHAIN = "slot";
+    process.env.CHAIN = "local";
     process.env.RPC_URL = "http://localhost:5050";
 
     const cfg = loadConfig();

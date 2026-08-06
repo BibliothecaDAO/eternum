@@ -153,7 +153,7 @@ const formatRelativeTime = (seconds: number | null): string => {
 };
 
 const getGlobalToriiBaseUrl = (chain: Chain): string => {
-  if (chain === "mainnet" || chain === "slot") {
+  if (chain === "mainnet") {
     return GLOBAL_TORII_BY_CHAIN[chain];
   }
 

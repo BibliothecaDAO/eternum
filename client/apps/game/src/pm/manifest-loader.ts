@@ -1,4 +1,4 @@
-export type PredictionMarketChain = "slot" | "mainnet";
+export type PredictionMarketChain = "mainnet";
 
 export interface PredictionMarketManifestContract {
   tag: string;
@@ -13,7 +13,6 @@ export interface PredictionMarketManifest {
 }
 
 const MANIFEST_LOADERS: Record<PredictionMarketChain, () => Promise<PredictionMarketManifest>> = {
-  slot: async () => (await import("./manifests/manifest_slot.json")).default as PredictionMarketManifest,
   mainnet: async () => (await import("./manifests/manifest_mainnet_1-7.json")).default as PredictionMarketManifest,
 };
 

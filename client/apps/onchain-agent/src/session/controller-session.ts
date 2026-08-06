@@ -181,7 +181,7 @@ export function buildSessionPoliciesFromManifest(
 
   addCollectionApprovalPolicy(contracts, profile?.entryTokenAddress);
 
-  const chain = profile?.chain ?? "slot";
+  const chain = profile?.chain ?? "appchain";
   return { contracts, messages: buildMessageSigningPolicy(chain) } as SessionPolicies;
 }
 
@@ -223,7 +223,7 @@ export function buildSessionPoliciesFromRoutes(
 
   addCollectionApprovalPolicy(contracts, profile?.entryTokenAddress);
 
-  const chain = profile?.chain ?? options.chain ?? "slot";
+  const chain = profile?.chain ?? options.chain ?? "appchain";
   return { contracts, messages: buildMessageSigningPolicy(chain) } as SessionPolicies;
 }
 

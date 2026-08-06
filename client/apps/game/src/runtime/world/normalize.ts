@@ -27,14 +27,6 @@ export const nameToPaddedFelt = (name: string) => {
 };
 
 const RPC_VERSION_PATH = "/rpc/v0_9";
-const SHARED_SLOT_RPC_PATH = "/x/eternum-blitz-slot-4/katana/rpc/v0_9";
-
-export const isSlotWorldChain = (chain: Chain): boolean => chain === "slot" || chain === "slottest";
-
-export const buildSharedSlotRpcUrl = (cartridgeApiBase: string) => {
-  const baseUrl = cartridgeApiBase.replace(/\/+$/, "");
-  return normalizeRpcUrl(`${baseUrl}${SHARED_SLOT_RPC_PATH}`);
-};
 
 export const normalizeRpcUrl = (value: string) => {
   if (!value || value.includes("/rpc/")) return value;
@@ -74,10 +66,6 @@ export const isRpcUrlCompatibleForChain = (chain: Chain, url: string) => {
   const lower = url.toLowerCase();
   if (chain === "mainnet" || chain === "sepolia") {
     return lower.includes(`/x/starknet/${chain}`);
-  }
-
-  if (chain === "slot" || chain === "slottest") {
-    return lower.includes("/katana");
   }
 
   return true;

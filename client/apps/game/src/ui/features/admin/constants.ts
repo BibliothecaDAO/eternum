@@ -38,9 +38,8 @@ export const FACTORY_ADDRESSES: Record<ChainType, string> = SHARED_FACTORY_ADDRE
 const DEFAULT_MAX_ACTIONS_BY_CHAIN: Record<ChainType, number> = {
   mainnet: 70,
   sepolia: 20,
-  slot: 300,
-  slottest: 300,
   local: 300,
+  appchain: 300,
 };
 
 export const getDefaultMaxActionsForChain = (chain: ChainType): number => DEFAULT_MAX_ACTIONS_BY_CHAIN[chain];
@@ -55,9 +54,8 @@ const parsePositiveInt = (value?: string): number | null => {
 const DEFAULT_FACTORY_DEPLOY_REPEATS_BY_CHAIN: Record<ChainType, number> = {
   mainnet: 3,
   sepolia: 1,
-  slot: 1,
-  slottest: 1,
   local: 1,
+  appchain: 1,
 };
 
 export const getFactoryDeployRepeatsForChain = (chain: ChainType): number => {
@@ -95,10 +93,6 @@ export const getRpcUrlForChain = (chain: Chain | ChainType): string => {
       return `${CARTRIDGE_API_BASE}/x/starknet/mainnet`;
     case "sepolia":
       return `${CARTRIDGE_API_BASE}/x/starknet/sepolia`;
-    case "slot":
-      return `${CARTRIDGE_API_BASE}/x/eternum-blitz-slot-4/katana`;
-    case "slottest":
-      return `${CARTRIDGE_API_BASE}/x/eternum-blitz-slot-test/katana`;
     default:
       return env.VITE_PUBLIC_NODE_URL as string;
   }

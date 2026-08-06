@@ -18,7 +18,7 @@ import { toast } from "sonner";
 import { addAddressPadding, Call, uint256 } from "starknet";
 import { TokenIcon } from "../token-icon";
 
-type MarketDataChain = "slot" | "mainnet";
+type MarketDataChain = "mainnet";
 
 export function MarketVaultFees({
   market,

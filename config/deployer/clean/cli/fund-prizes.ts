@@ -30,7 +30,13 @@ import type {
 import { resolveCommonAddressesPath } from "../shared/addresses";
 import { ensureRepoDirectory, loadRepoJsonFile, writeRepoJsonFile } from "../shared/repo";
 import { toSafeSlug } from "../shared/slug";
-import type { LaunchGameRequest, LaunchRotationRequest, LaunchSeriesRequest, PrizeFundingTransfer } from "../types";
+import type {
+  DeploymentEnvironmentId,
+  LaunchGameRequest,
+  LaunchRotationRequest,
+  LaunchSeriesRequest,
+  PrizeFundingTransfer,
+} from "../types";
 import { parseArgs } from "./args";
 
 type PrizeFundingRunKind = "game" | "series" | "rotation";
@@ -46,10 +52,10 @@ interface PrizeFundingTarget {
 }
 
 interface ResolvedPrizeFundingPlan {
-  environmentId: string;
+  environmentId: DeploymentEnvironmentId;
   runKind: PrizeFundingRunKind;
   runName: string;
-  chain: "slot" | "mainnet";
+  chain: "appchain" | "mainnet";
   rpcUrl: string;
   cartridgeApiBase: string;
   accountAddress: string;
@@ -68,7 +74,7 @@ interface PrizeFundingTransactionResult {
 }
 
 interface PrizeFundingCliArgs {
-  environmentId: string;
+  environmentId: DeploymentEnvironmentId;
   runKind: PrizeFundingRunKind;
   runName: string;
   amountDisplay: string;
@@ -80,7 +86,7 @@ function usage() {
     [
       "",
       "Usage:",
-      "  bun config/deployer/clean/cli/fund-prizes.ts --environment <slot.blitz|mainnet.blitz|slot.eternum|mainnet.eternum> --run-kind <game|series|rotation> --run-name <name> --amount <tokens>",
+      "  bun config/deployer/clean/cli/fund-prizes.ts --environment <appchain.blitz|mainnet.blitz|appchain.eternum|mainnet.eternum> --run-kind <game|series|rotation> --run-name <name> --amount <tokens>",
       "",
       "Optional:",
       "  --selected-games-json <json-array-of-game-names>",
@@ -111,7 +117,7 @@ function resolveCliArgs() {
   }
 
   return {
-    environmentId,
+    environmentId: resolveDeploymentEnvironment(environmentId).id,
     runKind,
     runName,
     amountDisplay,
@@ -147,7 +153,7 @@ function parseSelectedGameNames(value: string | undefined) {
   return parsedValue.map((gameName) => gameName.trim());
 }
 
-function buildRpcProvider(rpcUrl: string, chain: "slot" | "mainnet") {
+function buildRpcProvider(rpcUrl: string, chain: "appchain" | "mainnet") {
   const chainId = chain === "mainnet" ? "0x534e5f4d41494e" : undefined;
   return chainId ? new RpcProvider({ nodeUrl: rpcUrl, chainId }) : new RpcProvider({ nodeUrl: rpcUrl });
 }
@@ -236,7 +242,11 @@ async function resolveTokenDecimals(provider: RpcProvider, tokenAddress: string)
   return decimals;
 }
 
-async function readRunRecordWithInput(runKind: PrizeFundingRunKind, environmentId: string, runName: string) {
+async function readRunRecordWithInput(
+  runKind: PrizeFundingRunKind,
+  environmentId: DeploymentEnvironmentId,
+  runName: string,
+) {
   const config = requireGitHubBranchStoreConfig();
   const runRecordPath = resolveRunRecordPath(runKind, environmentId, runName);
   const { value: runRecord } = await readGitHubBranchJsonFile<PrizeFundingRunRecord>(config, runRecordPath);
@@ -257,7 +267,11 @@ async function readRunRecordWithInput(runKind: PrizeFundingRunKind, environmentI
   };
 }
 
-function resolveRunRecordPath(runKind: PrizeFundingRunKind, environmentId: string, runName: string) {
+function resolveRunRecordPath(
+  runKind: PrizeFundingRunKind,
+  environmentId: DeploymentEnvironmentId,
+  runName: string,
+) {
   if (runKind === "series") {
     return resolveFactorySeriesRunRecordPath({ environmentId, seriesName: runName });
   }
@@ -332,7 +346,7 @@ function resolveSeriesLikeSelectedGames(
 }
 
 async function resolvePrizeFundingTargets(
-  chain: "slot" | "mainnet",
+  chain: "appchain" | "mainnet",
   cartridgeApiBase: string,
   selectedGameNames: string[],
 ) {

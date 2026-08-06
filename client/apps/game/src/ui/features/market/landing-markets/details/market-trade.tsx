@@ -26,7 +26,7 @@ import { useMarketRedeem } from "../use-market-redeem";
 
 const cx = (...classes: Array<string | null | undefined | false>) => classes.filter(Boolean).join(" ");
 const RISK_ACK_SESSION_KEY = "pm_trade_risk_ack_v1";
-type MarketDataChain = "slot" | "mainnet";
+type MarketDataChain = "mainnet";
 
 const getStoredRiskAck = () => {
   if (typeof window === "undefined") return false;

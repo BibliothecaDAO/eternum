@@ -1,15 +1,16 @@
 import { describe, expect, test } from "bun:test";
+import { DEFAULT_APPCHAIN_RPC_URL } from "../constants";
 import { isEternumDeploymentEnvironment, resolveDeploymentEnvironment } from "../environment";
 
 describe("resolveDeploymentEnvironment", () => {
-  test("accepts slot.blitz", () => {
-    const environment = resolveDeploymentEnvironment("slot.blitz");
-    expect(environment.chain).toBe("slot");
+  test("accepts appchain.blitz", () => {
+    const environment = resolveDeploymentEnvironment("appchain.blitz");
+    expect(environment.chain).toBe("appchain");
     expect(environment.gameType).toBe("blitz");
-    expect(environment.factoryAddress).toBe("0x242226ce5f17914fc148cb111980b24e2bda624379877cda66f7e76884d2deb");
-    expect(environment.rpcUrl).toBe("https://api.cartridge.gg/x/eternum-blitz-slot-4/katana/rpc/v0_9");
-    expect(environment.accountAddress).toBe("0x6677fe62ee39c7b07401f754138502bab7fac99d2d3c5d37df7d1c6fab10819");
-    expect(environment.privateKey).toBe("0x3e3979c1ed728490308054fe357a9f49cf67f80f9721f44cc57235129e090f4");
+    expect(environment.factoryAddress).toBeUndefined();
+    expect(environment.rpcUrl).toBe(DEFAULT_APPCHAIN_RPC_URL);
+    expect(environment.accountAddress).toBe("0x127fd5f1fe78a71f8bcd1fec63e3fe2f0486b6ecd5c86a0466c3a21fa5cfcec");
+    expect(environment.privateKey).toBe("0xc5b2fcab997346f3ea1c00b002ecf6f382c5f9c9659a3894eb783c5320f912");
     expect(environment.createGame).toEqual({
       maxActions: 300,
       submissionCount: 1,
@@ -37,13 +38,13 @@ describe("resolveDeploymentEnvironment", () => {
 
   test("rejects unsupported environments", () => {
     expect(() => resolveDeploymentEnvironment("invalid.blitz")).toThrow(
-      'Unsupported environment "invalid.blitz". Expected one of: mainnet.blitz, mainnet.eternum, slot.blitz, slot.eternum',
+      'Unsupported environment "invalid.blitz". Expected one of: mainnet.blitz, mainnet.eternum, appchain.blitz, appchain.eternum',
     );
   });
 
   test("keeps eternum-only launch gates separate from blitz", () => {
-    expect(isEternumDeploymentEnvironment(resolveDeploymentEnvironment("slot.eternum"))).toBe(true);
-    expect(isEternumDeploymentEnvironment(resolveDeploymentEnvironment("slot.blitz"))).toBe(false);
+    expect(isEternumDeploymentEnvironment(resolveDeploymentEnvironment("appchain.eternum"))).toBe(true);
+    expect(isEternumDeploymentEnvironment(resolveDeploymentEnvironment("appchain.blitz"))).toBe(false);
     expect(isEternumDeploymentEnvironment(resolveDeploymentEnvironment("mainnet.eternum"))).toBe(true);
     expect(isEternumDeploymentEnvironment(resolveDeploymentEnvironment("mainnet.blitz"))).toBe(false);
   });

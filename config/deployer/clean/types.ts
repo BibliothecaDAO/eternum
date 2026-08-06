@@ -6,9 +6,9 @@ import type {
 } from "@bibliothecadao/types";
 import type { Account } from "starknet";
 
-export type DeploymentChain = "slot" | "mainnet";
+export type DeploymentChain = "appchain" | "mainnet";
 export type DeploymentGameType = "blitz" | "eternum";
-export type DeploymentEnvironmentId = "slot.blitz" | "slot.eternum" | "mainnet.blitz" | "mainnet.eternum";
+export type DeploymentEnvironmentId = "appchain.blitz" | "appchain.eternum" | "mainnet.blitz" | "mainnet.eternum";
 export type ExecutionMode = "batched" | "sequential";
 export type LaunchTargetKind = "game" | "series" | "rotation";
 export type LaunchStepStatus = "pending" | "running" | "succeeded" | "failed";
@@ -111,7 +111,7 @@ export interface FactoryWorldProfile {
 export type IndexerTier = "basic" | "pro" | "legendary" | "epic";
 export type IndexerResolutionState = "existing" | "missing" | "indeterminate";
 export type IndexerResolutionSource = "describe" | "describe-not-found" | "list" | "describe-and-list-failed";
-export type IndexerCreationMode = "github-actions" | "slot-direct";
+export type IndexerCreationMode = "github-actions";
 
 export interface IndexerRequest {
   env: string;

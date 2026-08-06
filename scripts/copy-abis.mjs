@@ -8,17 +8,17 @@
  *   pnpm run manifest:copy-abis <network>
  *
  * Examples:
- *   node scripts/copy-abis.mjs slot
+ *   node scripts/copy-abis.mjs appchain
  *   pnpm run manifest:copy-abis mainnet
  *
- * Valid networks: local, slot, slottest, sepolia, mainnet
+ * Valid networks: local, appchain, sepolia, mainnet
  */
 
 // ====== Parse CLI arguments ======
 const args = process.argv.slice(2);
 const network = args[0];
 
-const VALID_NETWORKS = ["local", "slot", "slottest", "sepolia", "mainnet"];
+const VALID_NETWORKS = ["local", "appchain", "sepolia", "mainnet"];
 
 if (!network) {
   console.error("Error: Network parameter is required");

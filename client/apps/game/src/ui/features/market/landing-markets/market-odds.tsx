@@ -18,13 +18,12 @@ import { formatUnits } from "@/pm/utils";
 import { MaybeController } from "./maybe-controller";
 import { TokenIcon } from "./token-icon";
 
-type MarketDataChain = "slot" | "mainnet";
+type MarketDataChain = "mainnet";
 type PlayerMmrSnapshot = { mmrRaw: bigint; mmr: number; tier: MMRTier; chain: MarketDataChain };
 
 const GET_PLAYER_MMR_SELECTOR = hash.getSelectorFromName("get_player_mmr");
 const MMR_RPC_BY_CHAIN: Record<MarketDataChain, string> = {
   mainnet: "https://api.cartridge.gg/x/starknet/mainnet",
-  slot: "https://api.cartridge.gg/x/eternum-blitz-slot-4/katana/rpc/v0_9",
 };
 
 const normalizeHexAddress = (value: string): string | null => {
@@ -64,7 +63,7 @@ const usePlayersMmrSnapshots = (addresses: string[]) => {
       }
 
       const records: Record<string, PlayerMmrSnapshot> = {};
-      const mmrChains: MarketDataChain[] = ["mainnet", "slot"];
+      const mmrChains: MarketDataChain[] = ["mainnet"];
 
       await Promise.all(
         mmrChains.map(async (chain) => {

@@ -2,7 +2,7 @@ import type { Chain } from "@contracts";
 import type { FactoryBiomeClimateOverrides } from "@bibliothecadao/types";
 
 export type FactoryGameMode = "eternum" | "blitz";
-export type FactoryLaunchChain = Extract<Chain, "mainnet" | "slot">;
+export type FactoryLaunchChain = Extract<Chain, "mainnet">;
 export type FactoryLaunchTargetKind = "game" | "series" | "rotation";
 export type FactoryRunKind = "game" | "series" | "rotation";
 export type FactoryRunStepId =

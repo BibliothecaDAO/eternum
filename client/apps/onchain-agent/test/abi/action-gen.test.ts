@@ -5,7 +5,7 @@ import { generateActions, getAllActionTypes, mergeCompositeActions } from "../..
 import { extractAllFromManifest, getGameEntrypoints } from "../../src/abi/parser";
 import type { DomainOverlayMap } from "../../src/abi/types";
 
-const manifestPath = resolve(__dirname, "../../../../../contracts/game/manifest_slot.json");
+const manifestPath = resolve(__dirname, "../../../../../contracts/game/manifest_mainnet.json");
 const manifest = JSON.parse(readFileSync(manifestPath, "utf-8"));
 
 describe("generateActions", () => {

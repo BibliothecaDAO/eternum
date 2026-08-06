@@ -18,7 +18,7 @@ import { useScoreToBeat } from "@/services/leaderboard/use-score-to-beat";
 const MAX_GAMES = 10;
 const DEFAULT_RUNS_TO_AGGREGATE = 3;
 const RUNS_TO_AGGREGATE_OPTIONS = [1, 2, 3, 4] as const;
-const CHAIN_OPTIONS: Chain[] = ["mainnet", "slot"];
+const CHAIN_OPTIONS: Chain[] = ["mainnet", "appchain"];
 
 type SelectorMode = "games" | "series";
 

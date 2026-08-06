@@ -93,38 +93,6 @@ const SEPOLIA_BLITZ_CHAIN_CONFIG: ConfigPatch = {
   ],
 };
 
-const SLOT_BLITZ_CHAIN_CONFIG: ConfigPatch = {
-  season: {
-    startSettlingAfterSeconds: 59,
-    startMainAfterSeconds: 60,
-    durationSeconds: 60 * 60 * 1.5,
-    pointRegistrationCloseAfterEndSeconds: 60 * 10,
-  },
-  battle: {
-    regularImmunityTicks: 0,
-    villageImmunityTicks: 0,
-  },
-};
-
-const SLOTTEST_BLITZ_CHAIN_CONFIG: ConfigPatch = {
-  season: {
-    startSettlingAfterSeconds: 59,
-    startMainAfterSeconds: 60,
-    durationSeconds: 60 * 60 * 24 * 90,
-    pointRegistrationCloseAfterEndSeconds: 60 * 10,
-  },
-  battle: {
-    regularImmunityTicks: 0,
-    villageImmunityTicks: 0,
-    delaySeconds: 0,
-  },
-  dev: {
-    mode: {
-      on: true,
-    },
-  },
-};
-
 const LOCAL_BLITZ_REALM_UPGRADE_CONFIG: ConfigPatch = {
   realmUpgradeCosts: {
     [RealmLevels.Settlement]: [],
@@ -176,11 +144,35 @@ function resolveLocalBlitzRegistrationConfig(context: EnvironmentContext): Confi
   };
 }
 
-function resolveSlotBlitzRegistrationConfig(context: EnvironmentContext): ConfigPatch {
+function resolveAppchainBlitzRegistrationConfig(context: EnvironmentContext): ConfigPatch {
+  // Dev chain: a short window means the game is unjoinable minutes after a
+  // config deploy, so default to an hour and let a redeploy reopen it.
+  // Override with APPCHAIN_REGISTRATION_DELAY_SECONDS / _PERIOD_SECONDS.
+  const delaySeconds = Number(process.env.APPCHAIN_REGISTRATION_DELAY_SECONDS) || 20;
+  const periodSeconds = Number(process.env.APPCHAIN_REGISTRATION_PERIOD_SECONDS) || 60 * 60;
+
+  // A 30-day default game can never be observed ending on a dev chain.
+  const durationSeconds = Number(process.env.APPCHAIN_GAME_DURATION_SECONDS) || 60 * 60 * 2;
+
   return {
+    // Real games, not a sandbox: dev mode bypasses the registration window and
+    // makes has_ended() permanently false, so the game could never finish.
+    // (LOCAL_BLITZ_CHAIN_CONFIG, which we borrow for balance, turns it on.)
+    dev: {
+      mode: {
+        on: false,
+      },
+    },
+    season: {
+      durationSeconds,
+    },
     blitz: {
       registration: {
-        registration_delay_seconds: 1,
+        registration_delay_seconds: delaySeconds,
+        registration_period_seconds: periodSeconds,
+        // free entry on the dev appchain — also short-circuits the entry
+        // token / cosmetics / timelock paths, so no peripherals are required
+        fee_amount: 0n,
         fee_token: resolveConfiguredAddress(context.addresses.strk),
       },
     },
@@ -199,18 +191,6 @@ function resolveMainnetBlitzRegistrationConfig(context: EnvironmentContext): Con
   };
 }
 
-function resolveSlottestBlitzRegistrationConfig(context: EnvironmentContext): ConfigPatch {
-  return {
-    blitz: {
-      registration: {
-        registration_delay_seconds: 20,
-        registration_period_seconds: 1,
-        fee_token: resolveConfiguredAddress(context.addresses.strk),
-      },
-    },
-  };
-}
-
 export function resolveBlitzChainConfig(chain: Chain, context: EnvironmentContext): ConfigPatch {
   switch (chain) {
     case "local":
@@ -220,6 +200,14 @@ export function resolveBlitzChainConfig(chain: Chain, context: EnvironmentContex
         LOCAL_BLITZ_REALM_UPGRADE_CONFIG,
         resolveLocalBlitzRegistrationConfig(context),
       );
+    case "appchain":
+      // dev appchain (WP_REALMS_DEV): local-style balance, free entry
+      return mergeConfigPatches(
+        LOCAL_BLITZ_CHAIN_CONFIG,
+        resolveBlitzContractAddressConfig(context),
+        LOCAL_BLITZ_REALM_UPGRADE_CONFIG,
+        resolveAppchainBlitzRegistrationConfig(context),
+      );
     case "mainnet":
       return mergeConfigPatches(
         MAINNET_BLITZ_CHAIN_CONFIG,
@@ -228,18 +216,6 @@ export function resolveBlitzChainConfig(chain: Chain, context: EnvironmentContex
       );
     case "sepolia":
       return mergeConfigPatches(SEPOLIA_BLITZ_CHAIN_CONFIG, resolveBlitzContractAddressConfig(context));
-    case "slot":
-      return mergeConfigPatches(
-        SLOT_BLITZ_CHAIN_CONFIG,
-        resolveBlitzContractAddressConfig(context),
-        resolveSlotBlitzRegistrationConfig(context),
-      );
-    case "slottest":
-      return mergeConfigPatches(
-        SLOTTEST_BLITZ_CHAIN_CONFIG,
-        resolveBlitzContractAddressConfig(context),
-        resolveSlottestBlitzRegistrationConfig(context),
-      );
     default:
       throw new Error(`Unsupported chain: ${chain}`);
   }

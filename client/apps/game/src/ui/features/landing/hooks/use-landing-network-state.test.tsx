@@ -25,8 +25,8 @@ const LandingNetworkStateProbe = () => {
 
   return (
     <div data-preferred-chain={state.preferredChain} data-status={state.status}>
-      <button type="button" onClick={() => state.selectPreferredChain("slot")}>
-        Select slot
+      <button type="button" onClick={() => state.selectPreferredChain("appchain")}>
+        Select appchain
       </button>
     </div>
   );
@@ -86,14 +86,14 @@ describe("useLandingNetworkState", () => {
     expect(selectedChainWrites).toEqual([]);
   });
 
-  it("keeps a saved slot preference after refresh", async () => {
-    window.localStorage.setItem(CHAIN_KEY, "slot");
+  it("keeps a saved appchain preference after refresh", async () => {
+    window.localStorage.setItem(CHAIN_KEY, "appchain");
     const setItemSpy = vi.spyOn(Storage.prototype, "setItem");
 
     await renderProbe(root);
 
-    expect(getPreferredChain(container)).toBe("slot");
-    expect(window.localStorage.getItem(CHAIN_KEY)).toBe("slot");
+    expect(getPreferredChain(container)).toBe("appchain");
+    expect(window.localStorage.getItem(CHAIN_KEY)).toBe("appchain");
     expect(setItemSpy.mock.calls.filter(([key]) => key === CHAIN_KEY)).toEqual([]);
   });
 
@@ -116,7 +116,7 @@ describe("useLandingNetworkState", () => {
       await waitForAsyncWork();
     });
 
-    expect(getPreferredChain(container)).toBe("slot");
-    expect(window.localStorage.getItem(CHAIN_KEY)).toBe("slot");
+    expect(getPreferredChain(container)).toBe("appchain");
+    expect(window.localStorage.getItem(CHAIN_KEY)).toBe("appchain");
   });
 });

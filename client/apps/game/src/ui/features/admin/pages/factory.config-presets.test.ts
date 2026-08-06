@@ -8,9 +8,9 @@ describe("Factory config presets", () => {
     const source = readFileSync(resolve(process.cwd(), "src/ui/features/admin/pages/factory.tsx"), "utf8");
 
     expect(source).toContain("SANDBOX (dev mode 72hrs)");
-    expect(source).toContain("BLITZ SLOT (1h 30m game onslot)");
+    expect(source).toContain("BLITZ (1h 30m game)");
     expect(source).toContain('onClick={() => applyConfigPreset("sandbox")}');
-    expect(source).toContain('onClick={() => applyConfigPreset("blitz-slot")}');
+    expect(source).toContain('onClick={() => applyConfigPreset("blitz-standard")}');
   });
 
   it("applies expected core values for each preset", () => {
@@ -20,7 +20,7 @@ describe("Factory config presets", () => {
     expect(source).toContain("setDevModeOn(true)");
     expect(source).toContain("setDurationHours(72)");
 
-    expect(source).toContain('if (preset === "blitz-slot")');
+    expect(source).toContain('if (preset === "blitz-standard")');
     expect(source).toContain("setDevModeOn(false)");
     expect(source).toContain("setDurationHours(1)");
     expect(source).toContain(

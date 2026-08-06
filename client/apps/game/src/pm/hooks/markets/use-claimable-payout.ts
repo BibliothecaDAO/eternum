@@ -13,7 +13,7 @@ import { getPmSqlApiForUrl } from "@/pm/hooks/queries";
 import { getPredictionMarketChain } from "@/pm/prediction-market-config";
 import { formatUnits } from "@/pm/utils";
 
-type MarketDataChain = "slot" | "mainnet";
+type MarketDataChain = "mainnet";
 
 type UseClaimablePayoutOptions = {
   enabled?: boolean;

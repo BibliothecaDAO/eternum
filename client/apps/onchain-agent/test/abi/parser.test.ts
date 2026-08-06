@@ -11,7 +11,7 @@ import {
   abiTypeToParamSchemaType,
 } from "../../src/abi/parser";
 
-const manifestPath = resolve(__dirname, "../../../../../contracts/game/manifest_slot.json");
+const manifestPath = resolve(__dirname, "../../../../../contracts/game/manifest_mainnet.json");
 const manifest = JSON.parse(readFileSync(manifestPath, "utf-8"));
 
 describe("simplifyType", () => {

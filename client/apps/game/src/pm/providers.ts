@@ -1,9 +1,6 @@
 import { useMemo } from "react";
 
 import type { RegisteredToken } from "./bindings";
-import { useRuntimeChain } from "@/runtime/world";
-import type { Chain } from "@contracts";
-import { env } from "../../env";
 import type { PredictionMarketChain } from "./manifest-loader";
 import { getPredictionMarketChain, getPredictionMarketConfigForChain } from "./prediction-market-config";
 
@@ -15,13 +12,12 @@ const buildLordsToken = (chain: PredictionMarketChain): RegisteredToken => ({
 });
 
 const buildRegisteredLordsTokens = (): RegisteredToken[] => {
-  const tokens = [buildLordsToken("slot"), buildLordsToken("mainnet")];
+  const tokens = [buildLordsToken("mainnet")];
   return Array.from(new Map(tokens.map((token) => [token.contract_address.toLowerCase(), token])).values());
 };
 
 export const useConfig = () => {
-  const runtimeChain = useRuntimeChain(env.VITE_PUBLIC_CHAIN as Chain);
-  const fallbackToken = useMemo(() => buildLordsToken(getPredictionMarketChain(runtimeChain)), [runtimeChain]);
+  const fallbackToken = useMemo(() => buildLordsToken(getPredictionMarketChain()), []);
   const tokens = useMemo(() => buildRegisteredLordsTokens(), []);
 
   return useMemo(

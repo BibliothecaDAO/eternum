@@ -17,7 +17,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { addAddressPadding, Call, uint256 } from "starknet";
 
-type MarketDataChain = "slot" | "mainnet";
+type MarketDataChain = "mainnet";
 const CLAIM_TX_TIMEOUT_MS = 120_000;
 const CLAIM_CONFIRM_TIMEOUT_MS = 45_000;
 

@@ -2,7 +2,7 @@ import { readFileSync, writeFileSync } from "fs";
 
 const MANIFEST_PATHS = {
   local: "../contracts/game/manifest_local.json",
-  slot: "../contracts/game/manifest_slot.json",
+  appchain: "../contracts/game/manifest_appchain.json",
   sepolia: "../contracts/game/manifest_sepolia.json",
   mainnet: "../contracts/game/manifest_mainnet.json",
 };

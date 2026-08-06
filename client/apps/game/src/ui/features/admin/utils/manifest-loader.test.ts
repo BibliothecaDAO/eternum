@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { getManifestJsonString, type ChainType, type ManifestSourceLoader } from "./manifest-loader";
 
-const CHAINS: ChainType[] = ["local", "sepolia", "mainnet", "slot", "slottest"];
+const CHAINS: ChainType[] = ["local", "sepolia", "mainnet", "appchain"];
 
 describe("admin manifest-loader", () => {
   it.each(CHAINS)("returns parseable manifest JSON for %s via async loader", async (chain) => {
@@ -25,9 +25,9 @@ describe("admin manifest-loader", () => {
     const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
     const failingLoader = vi.fn<ManifestSourceLoader>().mockRejectedValue(new Error("manifest exploded"));
 
-    const manifestJson = await getManifestJsonString("slot", failingLoader);
+    const manifestJson = await getManifestJsonString("appchain", failingLoader);
 
-    expect(failingLoader).toHaveBeenCalledWith("slot");
+    expect(failingLoader).toHaveBeenCalledWith("appchain");
     expect(manifestJson).toBe("");
     expect(errorSpy).toHaveBeenCalled();
     errorSpy.mockRestore();

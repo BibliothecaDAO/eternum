@@ -25,7 +25,7 @@ describe("resolveSentryRuntimeOptions", () => {
 
   it("uses explicit Sentry environment values when they are present", () => {
     const options = resolveSentryRuntimeOptions({
-      VITE_PUBLIC_CHAIN: "slot",
+      VITE_PUBLIC_CHAIN: "appchain",
       VITE_PUBLIC_GAME_VERSION: "2026.04.16",
       VITE_PUBLIC_SENTRY_ENVIRONMENT: "preview",
       VITE_PUBLIC_SENTRY_REPLAYS_ON_ERROR_SAMPLE_RATE: "0.75",

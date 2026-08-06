@@ -5,7 +5,7 @@ import type { LaunchRotationRequest, LaunchSeriesRequest } from "../types";
 function buildSeriesRequest(overrides: Partial<LaunchSeriesRequest> = {}): LaunchSeriesRequest {
   return {
     launchKind: "series",
-    environmentId: "slot.blitz",
+    environmentId: "appchain.blitz",
     seriesName: "blitz-weekly",
     games: [{ gameName: "bltz-weekly-01", startTime: "2026-05-02T18:00:00Z" }],
     durationSeconds: 86400,
@@ -20,7 +20,7 @@ function buildSeriesRequest(overrides: Partial<LaunchSeriesRequest> = {}): Launc
 function buildRotationRequest(overrides: Partial<LaunchRotationRequest> = {}): LaunchRotationRequest {
   return {
     launchKind: "rotation",
-    environmentId: "slot.blitz",
+    environmentId: "appchain.blitz",
     rotationName: "blitz-rotation",
     firstGameStartTime: "2026-04-20T01:00:00Z",
     gameIntervalMinutes: 0,

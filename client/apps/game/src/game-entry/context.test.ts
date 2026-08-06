@@ -38,15 +38,17 @@ describe("game-entry context", () => {
       }),
     ).toBeNull();
     expect(isLandingPrimaryChain("mainnet")).toBe(true);
-    expect(isLandingPrimaryChain("slot")).toBe(true);
+    expect(isLandingPrimaryChain("appchain")).toBe(true);
     expect(isLandingPrimaryChain("local")).toBe(false);
   });
 
   it("parses canonical entry routes into landing entry context", () => {
     expect(
-      resolveEntryContextFromEntryRoute(createLocation("/enter/slot/aurora-blitz", "?intent=settle&autoSettle=true")),
+      resolveEntryContextFromEntryRoute(
+        createLocation("/enter/appchain/aurora-blitz", "?intent=settle&autoSettle=true"),
+      ),
     ).toEqual({
-      chain: "slot",
+      chain: "appchain",
       worldName: "aurora-blitz",
       intent: "settle",
       autoSettle: true,

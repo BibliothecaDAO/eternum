@@ -144,9 +144,8 @@ const ChainBadge = ({ chain }: { chain: Chain }) => {
   const chainStyles: Record<Chain, string> = {
     mainnet: "text-brilliance/70 bg-brilliance/10 border border-brilliance/20",
     sepolia: "text-orange/70 bg-orange/10 border border-orange/20",
-    slot: "text-gold/70 bg-gold/10 border border-gold/20",
-    slottest: "text-gold/70 bg-gold/10 border border-gold/20",
     local: "text-white/70 bg-white/10 border border-white/20",
+    appchain: "text-orange/70 bg-orange/10 border border-orange/20",
   };
 
   return (
@@ -157,7 +156,7 @@ const ChainBadge = ({ chain }: { chain: Chain }) => {
 export type WorldSelection = WorldSelectionInput;
 
 type GameStatus = "ongoing" | "upcoming" | "ended" | "unknown";
-type MarketDataChain = "slot" | "mainnet";
+type MarketDataChain = "mainnet";
 
 const isUpcomingOnlyStatusFilter = (statusFilter: GameStatus | GameStatus[] | undefined): boolean => {
   if (Array.isArray(statusFilter)) return statusFilter.length === 1 && statusFilter[0] === "upcoming";
@@ -212,7 +211,8 @@ const getTopOutcomes = (market: MarketClass): { topOutcomes: MarketOutcome[]; hi
   return { topOutcomes, hiddenOutcomeCount: Math.max(0, sorted.length - topOutcomes.length) };
 };
 
-const toMarketChain = (chain: Chain): MarketDataChain => (chain === "mainnet" ? "mainnet" : "slot");
+// Prediction markets only live on mainnet.
+const PREDICTION_MARKET_CHAIN: MarketDataChain = "mainnet";
 
 export interface GameData {
   name: string;
@@ -912,7 +912,7 @@ interface UnifiedGameGridProps {
 }
 
 /**
- * Unified game grid - combines games from mainnet and slot into a single view
+ * Unified game grid - combines games from every supported chain into a single view
  */
 export const UnifiedGameGrid = ({
   onPlayGame,
@@ -1165,7 +1165,7 @@ export const UnifiedGameGrid = ({
 
   const gameMarketQueries = useQueries({
     queries: resolvedGames.map((game) => {
-      const preferredChain = toMarketChain(game.chain);
+      const preferredChain = PREDICTION_MARKET_CHAIN;
       const paddedPrizeAddress = normalizeHexAddress(game.config?.prizeDistributionAddress);
       const showPredictionMarket = Boolean(paddedPrizeAddress) && !(game.config?.devModeOn ?? false);
 

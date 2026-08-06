@@ -67,7 +67,7 @@ vi.mock("@/observability/transaction-failure-reporting", () => ({
 }));
 
 vi.mock("@/ui/utils/network-switch", () => ({
-  getChainLabel: (chain: string) => (chain === "mainnet" ? "Mainnet" : "Slot"),
+  getChainLabel: (chain: string) => (chain === "mainnet" ? "Mainnet" : "Appchain"),
   resolveConnectedTxChainFromRuntime: mocks.resolveConnectedTxChainFromRuntime,
   switchWalletToChain: mocks.switchWalletToChain,
 }));
@@ -144,7 +144,7 @@ describe("FactoryV2DeveloperConfig", () => {
     mocks.resolveClientTransactionFailureStageFromError.mockImplementation((_error, fallback) => fallback);
 
     mocks.useAccount.mockReturnValue({
-      chainId: "0xslot",
+      chainId: "0xmainnet",
       connector: mocks.connector,
     });
     mocks.useAccountStore.mockImplementation((selector: (state: { account: typeof mocks.account }) => unknown) =>
@@ -156,7 +156,7 @@ describe("FactoryV2DeveloperConfig", () => {
     mocks.getFactoryExplorerTxUrl.mockImplementation(
       (chain: string, txHash: string) => `https://explorer/${chain}/${txHash}`,
     );
-    mocks.resolveConnectedTxChainFromRuntime.mockReturnValue("slot");
+    mocks.resolveConnectedTxChainFromRuntime.mockReturnValue("mainnet");
     mocks.switchWalletToChain.mockResolvedValue(true);
     mocks.extractTransactionHash.mockImplementation(
       (result: { transaction_hash?: string }) => result.transaction_hash ?? null,
@@ -179,13 +179,13 @@ describe("FactoryV2DeveloperConfig", () => {
     (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = false;
   });
 
-  async function renderDeveloperConfig(props?: { mode?: "blitz" | "eternum"; chain?: "slot" | "mainnet" }) {
+  async function renderDeveloperConfig(props?: { mode?: "blitz" | "eternum"; chain?: "mainnet" }) {
     await act(async () => {
       root.render(
         <FactoryV2DeveloperConfig
           mode={props?.mode ?? "blitz"}
-          chain={props?.chain ?? "slot"}
-          environmentLabel={props?.chain === "mainnet" ? "Mainnet" : "Slot"}
+          chain={props?.chain ?? "mainnet"}
+          environmentLabel={"Mainnet"}
         />,
       );
       await waitForAsyncWork();
@@ -262,7 +262,7 @@ describe("FactoryV2DeveloperConfig", () => {
       "set_factory_config_libraries",
     ]);
     expect(container.textContent).toContain("Multicall confirmed");
-    expect(container.querySelector('a[href="https://explorer/slot/0xtx"]')).not.toBeNull();
+    expect(container.querySelector('a[href="https://explorer/mainnet/0xtx"]')).not.toBeNull();
   });
 
   it("shows the transaction hash immediately after submission while confirmation is still pending", async () => {
@@ -336,9 +336,9 @@ describe("FactoryV2DeveloperConfig", () => {
   });
 
   it("shows the switch network prompt instead of sending when the wallet is on the wrong chain", async () => {
-    mocks.resolveConnectedTxChainFromRuntime.mockReturnValue("mainnet");
+    mocks.resolveConnectedTxChainFromRuntime.mockReturnValue("appchain");
 
-    await renderDeveloperConfig({ chain: "slot" });
+    await renderDeveloperConfig({ chain: "mainnet" });
 
     const sendButton = findButton("Send multicall") as HTMLButtonElement;
     await act(async () => {
@@ -350,7 +350,7 @@ describe("FactoryV2DeveloperConfig", () => {
     expect(container.textContent).toContain("Switch Network Required");
     expect(container.textContent).toContain("Your wallet is connected to another chain for this factory action.");
 
-    const switchButton = findButton("Switch To Slot") as HTMLButtonElement;
+    const switchButton = findButton("Switch To Mainnet") as HTMLButtonElement;
     await act(async () => {
       switchButton.click();
       await waitForAsyncWork();
@@ -358,7 +358,7 @@ describe("FactoryV2DeveloperConfig", () => {
 
     expect(mocks.switchWalletToChain).toHaveBeenCalledWith({
       controller: mocks.connector.controller,
-      targetChain: "slot",
+      targetChain: "mainnet",
     });
   });
 

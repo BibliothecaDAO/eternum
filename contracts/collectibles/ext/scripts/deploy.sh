@@ -16,8 +16,6 @@
 #   Examples:
 #   ./deploy.sh cosmetics           - Deploys cosmetics to local
 #   ./deploy.sh cosmetics local     - Deploys cosmetics to local
-#   ./deploy.sh loot-chests slot    - Deploys loot-chests to slot
-#   ./deploy.sh elite-invite slot   - Deploys elite-invite to slot
 #   ./deploy.sh cosmetics sepolia   - Deploys cosmetics to sepolia
 #   ./deploy.sh loot-chests mainnet - Deploys loot-chests to mainnet
 #

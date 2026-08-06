@@ -39,7 +39,7 @@ function buildNullSummary(name: string, chain: WorldSummaryChain, alive: boolean
 }
 
 function resolveChain(chain: string): WorldSummaryChain {
-  return chain === "mainnet" ? "mainnet" : "slot";
+  return chain === "mainnet" ? "mainnet" : "appchain";
 }
 
 function getWorldCacheKey(chain: WorldSummaryChain, name: string): string {
@@ -93,7 +93,7 @@ export class ToriiAvailabilityService {
     probeTimeoutMs?: number;
     factoryTimeoutMs?: number;
   }) {
-    this.factoryChains = opts?.factoryChains ?? ["mainnet", "slot"];
+    this.factoryChains = opts?.factoryChains ?? ["mainnet", "appchain"];
     this.pollIntervalMs = opts?.pollIntervalMs ?? 30_000;
     this.probeTimeoutMs = opts?.probeTimeoutMs ?? 5_000;
     this.factoryTimeoutMs = opts?.factoryTimeoutMs ?? 10_000;

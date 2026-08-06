@@ -73,7 +73,7 @@ describe("Blitz balance profiles", () => {
   });
 
   test("applies the official 60-minute profile across the owned config domains", () => {
-    const baseConfig = getConfigFromNetwork("slot", "blitz");
+    const baseConfig = getConfigFromNetwork("appchain", "blitz");
     const profiledConfig = applyBlitzBalanceProfile(baseConfig, "official-60");
 
     expect(profiledConfig.season.durationSeconds).toBe(3_600);
@@ -106,15 +106,17 @@ describe("Blitz balance profiles", () => {
   });
 
   test("keeps the base blitz config for non-official durations", () => {
-    const baseConfig = getConfigFromNetwork("slot", "blitz");
-    const resolvedConfig = resolveBlitzConfigForDuration("slot", 45);
+    const baseConfig = getConfigFromNetwork("appchain", "blitz");
+    const resolvedConfig = resolveBlitzConfigForDuration("appchain", 45);
 
-    expect(baseConfig.troop.limit.mercenariesTroopUpperBound).toBe(1_600);
+    expect(baseConfig.troop.limit.mercenariesTroopUpperBound).toBe(200);
     expect(resolvedConfig.season.durationSeconds).toBe(baseConfig.season.durationSeconds);
     expect(resolvedConfig.resources.productionByComplexRecipeOutputs[ResourcesIds.Wood]).toBe(
       baseConfig.resources.productionByComplexRecipeOutputs[ResourcesIds.Wood],
     );
-    expect(resolvedConfig.troop.limit.mercenariesTroopUpperBound).toBe(1_600);
+    expect(resolvedConfig.troop.limit.mercenariesTroopUpperBound).toBe(
+      baseConfig.troop.limit.mercenariesTroopUpperBound,
+    );
     expect(resolvedConfig.buildings.simpleBuildingCost[BuildingType.ResourceCopper]?.[0]?.amount).toBe(
       baseConfig.buildings.simpleBuildingCost[BuildingType.ResourceCopper]?.[0]?.amount,
     );
@@ -123,7 +125,7 @@ describe("Blitz balance profiles", () => {
   });
 
   test("resolves the official 90-minute blitz config from duration", () => {
-    const resolvedConfig = resolveBlitzConfigForDuration("slot", 90);
+    const resolvedConfig = resolveBlitzConfigForDuration("appchain", 90);
 
     expect(resolvedConfig.season.durationSeconds).toBe(5_400);
     expect(resolvedConfig.resources.productionByComplexRecipeOutputs[ResourcesIds.Wood]).toBe(1);
@@ -142,8 +144,8 @@ describe("Blitz balance profiles", () => {
   });
 
   test("keeps the TypeScript official reward tables aligned with the baked Cairo tables", () => {
-    const official60Config = applyBlitzBalanceProfile(getConfigFromNetwork("slot", "blitz"), "official-60");
-    const official90Config = applyBlitzBalanceProfile(getConfigFromNetwork("slot", "blitz"), "official-90");
+    const official60Config = applyBlitzBalanceProfile(getConfigFromNetwork("appchain", "blitz"), "official-60");
+    const official90Config = applyBlitzBalanceProfile(getConfigFromNetwork("appchain", "blitz"), "official-90");
 
     expect(official60Config.blitz.exploration.rewards).toEqual(
       extractContractRewardRows("get_official_60_blitz_exploration_rewards"),

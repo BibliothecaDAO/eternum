@@ -591,7 +591,7 @@ export const setSeasonConfig: NativeStep = async ({ account, provider, config })
 
 function shouldConfigureVRF(config: NativeConfig): boolean {
   return (
-    (config.setup?.chain === "mainnet" || config.setup?.chain === "sepolia" || config.setup?.chain === "slot") &&
+    (config.setup?.chain === "mainnet" || config.setup?.chain === "sepolia") &&
     BigInt(config.vrf.vrfProviderAddress) !== 0n
   );
 }

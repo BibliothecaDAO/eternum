@@ -19,9 +19,9 @@ function buildGameEntry(
 ): FactoryGameRunMaintenanceIndexEntry {
   return {
     kind: "game",
-    environment: "slot.blitz",
+    environment: "appchain.blitz",
     gameName,
-    path: `runs/slot/blitz/${gameName}.json`,
+    path: `runs/appchain/blitz/${gameName}.json`,
     status: "complete",
     updatedAt: TEN_DAYS_AGO,
     currentStepId: null,
@@ -34,7 +34,7 @@ function buildGameEntry(
 function buildIndex(entries: Record<string, FactoryGameRunMaintenanceIndexEntry>): FactoryRunMaintenanceIndexRecord {
   return {
     version: 1,
-    environment: "slot.blitz",
+    environment: "appchain.blitz",
     kind: "game",
     updatedAt: TEN_DAYS_AGO,
     entries,
@@ -100,9 +100,9 @@ describe("pruneFactoryRunStoreDirectory", () => {
 
   function writeStore(index: FactoryRunMaintenanceIndexRecord): string {
     storeRoot = fs.mkdtempSync(path.join(os.tmpdir(), "factory-runs-prune-"));
-    fs.mkdirSync(path.join(storeRoot, "indexes/slot/blitz"), { recursive: true });
-    fs.mkdirSync(path.join(storeRoot, "runs/slot/blitz"), { recursive: true });
-    fs.writeFileSync(path.join(storeRoot, "indexes/slot/blitz/games.json"), `${JSON.stringify(index, null, 2)}\n`);
+    fs.mkdirSync(path.join(storeRoot, "indexes/appchain/blitz"), { recursive: true });
+    fs.mkdirSync(path.join(storeRoot, "runs/appchain/blitz"), { recursive: true });
+    fs.writeFileSync(path.join(storeRoot, "indexes/appchain/blitz/games.json"), `${JSON.stringify(index, null, 2)}\n`);
     for (const entry of Object.values(index.entries)) {
       if (entry.path.startsWith("runs/")) {
         fs.writeFileSync(path.join(storeRoot, entry.path), `${JSON.stringify({ gameName: entry }, null, 2)}\n`);
@@ -124,10 +124,10 @@ describe("pruneFactoryRunStoreDirectory", () => {
     expect(results).toHaveLength(1);
     expect(results[0].prunedGameNames).toEqual(["old-complete"]);
     expect(results[0].remainingEntryCount).toBe(1);
-    expect(fs.existsSync(path.join(root, "runs/slot/blitz/old-complete.json"))).toBe(false);
-    expect(fs.existsSync(path.join(root, "runs/slot/blitz/recent.json"))).toBe(true);
+    expect(fs.existsSync(path.join(root, "runs/appchain/blitz/old-complete.json"))).toBe(false);
+    expect(fs.existsSync(path.join(root, "runs/appchain/blitz/recent.json"))).toBe(true);
 
-    const rewritten = JSON.parse(fs.readFileSync(path.join(root, "indexes/slot/blitz/games.json"), "utf8"));
+    const rewritten = JSON.parse(fs.readFileSync(path.join(root, "indexes/appchain/blitz/games.json"), "utf8"));
     expect(Object.keys(rewritten.entries)).toEqual(["recent"]);
     expect(rewritten.updatedAt).toBe(NOW.toISOString());
   });
@@ -139,8 +139,8 @@ describe("pruneFactoryRunStoreDirectory", () => {
 
     expect(results[0].prunedGameNames).toEqual(["old-complete"]);
     expect(results[0].remainingEntryCount).toBe(0);
-    expect(fs.existsSync(path.join(root, "runs/slot/blitz/old-complete.json"))).toBe(true);
-    const untouched = JSON.parse(fs.readFileSync(path.join(root, "indexes/slot/blitz/games.json"), "utf8"));
+    expect(fs.existsSync(path.join(root, "runs/appchain/blitz/old-complete.json"))).toBe(true);
+    const untouched = JSON.parse(fs.readFileSync(path.join(root, "indexes/appchain/blitz/games.json"), "utf8"));
     expect(Object.keys(untouched.entries)).toEqual(["old-complete"]);
   });
 
@@ -154,7 +154,7 @@ describe("pruneFactoryRunStoreDirectory", () => {
     expect(results[0].prunedGameNames).toEqual(["escape"]);
     // The entry is dropped from the index, but the non-runs path is not deleted.
     expect(fs.existsSync(path.join(root, "sentinel.txt"))).toBe(true);
-    const rewritten = JSON.parse(fs.readFileSync(path.join(root, "indexes/slot/blitz/games.json"), "utf8"));
+    const rewritten = JSON.parse(fs.readFileSync(path.join(root, "indexes/appchain/blitz/games.json"), "utf8"));
     expect(Object.keys(rewritten.entries)).toEqual([]);
   });
 });
