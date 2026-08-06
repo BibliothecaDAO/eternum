@@ -1,6 +1,7 @@
 import type { WorldSummary } from "@bibliothecadao/types";
 import { useQuery } from "@tanstack/react-query";
 import { env } from "../../env";
+import { fetchAppchainWorldsSummary, isAppchainWorldsSummaryEnabled } from "./appchain-worlds-summary";
 import { WORLD_SUMMARY_QUERY_KEY } from "./world-list-queries";
 
 export async function fetchWorldsSummary(realtimeBaseUrl: string): Promise<WorldSummary[]> {
@@ -23,7 +24,12 @@ export async function fetchWorldsSummary(realtimeBaseUrl: string): Promise<World
 export const useWorldsSummary = () =>
   useQuery({
     queryKey: WORLD_SUMMARY_QUERY_KEY,
-    queryFn: () => fetchWorldsSummary(env.VITE_PUBLIC_REALTIME_URL),
+    // The appchain has one torii for every world, so the list comes straight
+    // from it — no realtime-server needed (see appchain-worlds-summary.ts).
+    queryFn: () =>
+      isAppchainWorldsSummaryEnabled()
+        ? fetchAppchainWorldsSummary(env.VITE_PUBLIC_TORII)
+        : fetchWorldsSummary(env.VITE_PUBLIC_REALTIME_URL),
     staleTime: 25_000,
     refetchInterval: 30_000,
     refetchIntervalInBackground: false,

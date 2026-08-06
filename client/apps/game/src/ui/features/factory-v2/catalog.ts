@@ -10,14 +10,18 @@ import type {
 const FACTORY_ENVIRONMENT_LABELS: Record<string, string> = {
   "mainnet.eternum": "Mainnet",
   "mainnet.blitz": "Mainnet",
+  "appchain.eternum": "Appchain",
+  "appchain.blitz": "Appchain",
 };
 
 const FACTORY_ENVIRONMENTS_BY_MODE: Record<FactoryGameMode, string[]> = {
-  eternum: ["mainnet.eternum"],
-  blitz: ["mainnet.blitz"],
+  eternum: ["appchain.eternum", "mainnet.eternum"],
+  blitz: ["appchain.blitz", "mainnet.blitz"],
 };
 
-const FACTORY_LAUNCH_CHAIN: FactoryLaunchChain = "mainnet";
+/** `<chain>.<mode>` -> chain, so a new environment only needs a list entry. */
+const resolveFactoryLaunchChain = (environmentId: string): FactoryLaunchChain =>
+  environmentId.startsWith("appchain.") ? "appchain" : "mainnet";
 
 const MINUTES_PER_HOUR = 60;
 const MINUTES_PER_DAY = 24 * MINUTES_PER_HOUR;
@@ -143,8 +147,7 @@ export const getFactoryEnvironmentOptions = (mode: FactoryGameMode): FactoryEnvi
     id: environment,
     label: resolveFactoryEnvironmentLabel(environment),
     mode,
-    // Mainnet is the only factory launch target now that Slot is EoL.
-    chain: FACTORY_LAUNCH_CHAIN,
+    chain: resolveFactoryLaunchChain(environment),
   }));
 
 export const getDefaultEnvironmentIdForMode = (mode: FactoryGameMode) =>

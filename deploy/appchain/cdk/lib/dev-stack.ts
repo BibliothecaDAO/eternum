@@ -10,6 +10,7 @@ import * as elbv2_targets from "aws-cdk-lib/aws-elasticloadbalancingv2-targets";
 import * as iam from "aws-cdk-lib/aws-iam";
 import * as logs from "aws-cdk-lib/aws-logs";
 import * as route53 from "aws-cdk-lib/aws-route53";
+import * as s3 from "aws-cdk-lib/aws-s3";
 import * as r53_targets from "aws-cdk-lib/aws-route53-targets";
 import * as sns from "aws-cdk-lib/aws-sns";
 import * as subs from "aws-cdk-lib/aws-sns-subscriptions";
@@ -278,7 +279,13 @@ export class DevStack extends cdk.Stack {
         action: elbv2.ListenerAction.forward([katanaTg]),
       });
     } else {
-      // http mode: katana IS the :80 default
+      // Cloudflare proxies both hostnames to :80, so route by Host header.
+      routeListener.addAction("KatanaPublicHost", {
+        priority: 5,
+        conditions: [elbv2.ListenerCondition.hostHeaders([cfg.publicKatanaHost])],
+        action: elbv2.ListenerAction.forward([katanaTg]),
+      });
+      // Anything else on :80 is katana too (direct ALB access for CLI tools).
       routeListener.addAction("KatanaDefault", {
         priority: 10,
         conditions: [elbv2.ListenerCondition.pathPatterns(["*"])],
@@ -398,6 +405,15 @@ export class DevStack extends cdk.Stack {
         target: route53.RecordTarget.fromAlias(new r53_targets.LoadBalancerTarget(alb)),
       });
     } else {
+      // Cloudflare only proxies a fixed set of origin ports, and :8080 is one
+      // of them — but routing torii by Host on :80 keeps both hostnames on the
+      // same standard port, which is simpler and avoids per-record port rules.
+      routeListener.addAction("ToriiPublicHost", {
+        priority: 4,
+        conditions: [elbv2.ListenerCondition.hostHeaders([cfg.publicToriiHost])],
+        action: elbv2.ListenerAction.forward([toriiTg]),
+      });
+      // Keep :8080 for direct ALB access (CLI/scripts bypass Cloudflare).
       alb.addListener("ToriiHttp", {
         port: 8080,
         protocol: elbv2.ApplicationProtocol.HTTP,
@@ -470,6 +486,26 @@ export class DevStack extends cdk.Stack {
         alarmDescription: "ALB returning 5xx",
       }),
     );
+
+    // --- Game client hosting ---------------------------------------------
+    // Static SPA in S3 website mode, fronted by Cloudflare for TLS. Not
+    // CloudFront: it needs account verification AWS has not granted yet.
+    const clientBucket = new s3.Bucket(this, "ClientBucket", {
+      bucketName: cfg.publicClientHost,
+      websiteIndexDocument: "index.html",
+      // SPA: unknown routes must fall through to the app, not a 404 page.
+      websiteErrorDocument: "index.html",
+      publicReadAccess: true,
+      blockPublicAccess: s3.BlockPublicAccess.BLOCK_ACLS_ONLY,
+      removalPolicy: cdk.RemovalPolicy.DESTROY,
+      autoDeleteObjects: true,
+    });
+
+    new cdk.CfnOutput(this, "ClientBucketWebsiteUrl", {
+      value: clientBucket.bucketWebsiteDomainName,
+      description: "CNAME target for the client host (proxied via Cloudflare)",
+    });
+    new cdk.CfnOutput(this, "ClientUrl", { value: `https://${cfg.publicClientHost}` });
 
     // --- Outputs ---------------------------------------------------------
     new cdk.CfnOutput(this, "KatanaUrl", {

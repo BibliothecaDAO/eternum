@@ -17,6 +17,24 @@ export const CONFIG = {
      * this mode goes through a cloudflared tunnel, like M0.
      */
     tls: false,
+    /**
+     * Public hostnames fronted by Cloudflare (proxied CNAMEs -> the ALB).
+     * Cloudflare terminates TLS with its own certificate, so we need no ACM
+     * cert and no Route53 delegation. They must be SINGLE-level subdomains:
+     * Cloudflare's Universal SSL covers `*.jcndata.com` but not
+     * `*.appchain.jcndata.com`, which would fail TLS.
+     * The ALB routes these by Host header on :80.
+     */
+    publicKatanaHost: "katana.jcndata.com",
+    publicToriiHost: "torii.jcndata.com",
+    /**
+     * Game client bucket. The name MUST equal the hostname: S3 website
+     * endpoints route by Host header, so a CNAME only resolves to the right
+     * bucket when they match. Cloudflare proxies it and terminates TLS
+     * (the S3 website endpoint is HTTP-only, which is why the zone runs in
+     * Flexible mode).
+     */
+    publicClientHost: "play.jcndata.com",
     /** Host names under the delegated zone (used when tls: true). */
     katanaHost: "katana.dev.appchain.realms.world",
     toriiHost: "torii.dev.appchain.realms.world",

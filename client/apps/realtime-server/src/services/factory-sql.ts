@@ -8,8 +8,14 @@ export function getFactorySqlBaseUrl(chain: string): string {
       return `${CARTRIDGE_API_BASE}/x/eternum-factory-mainnet/torii/sql`;
     case "sepolia":
       return `${CARTRIDGE_API_BASE}/x/eternum-factory-sepolia/torii/sql`;
-    // "appchain" / "local" have no hosted factory torii yet; callers treat "" as
-    // "no factory available".
+    case "appchain": {
+      // One torii indexes every appchain world, factory included, so the
+      // factory SQL endpoint is just that torii. Without this the worlds
+      // summary silently returns nothing for appchain games.
+      const toriiUrl = (process.env.APPCHAIN_TORII_URL ?? process.env.TORII_SQL_BASE_URL ?? "").replace(/\/+$/, "");
+      return toriiUrl ? `${toriiUrl}/sql` : "";
+    }
+    // "local" has no factory torii; callers treat "" as "no factory available".
     default:
       return "";
   }

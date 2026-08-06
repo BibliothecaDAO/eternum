@@ -92,36 +92,23 @@ const resolveWorldConfigAddresses = async (
  * Build a WorldProfile by querying the factory and the target world's Torii.
  */
 export const buildWorldProfile = async (chain: Chain, name: string): Promise<WorldProfile> => {
-  // Self-hosted appchain: no cartridge factory, no per-world torii hosts —
-  // endpoints are static env URLs and the world address comes from the
-  // committed manifest. (Until the world factory runs on the appchain, at
-  // which point this branch resolves against the appchain factory instead.)
-  if (chain === "appchain") {
-    const manifest = getGameManifest(chain) as { world?: { address?: string } };
-    const profile: WorldProfile = {
-      name,
-      chain,
-      toriiBaseUrl: env.VITE_PUBLIC_TORII,
-      rpcUrl: normalizeRpcUrl(env.VITE_PUBLIC_NODE_URL),
-      worldAddress: manifest.world?.address ?? "0x0",
-      contractsBySelector: {},
-      fetchedAt: Date.now(),
-    };
-    saveWorldProfile(profile);
-    return profile;
-  }
-
   const factorySqlBaseUrl = getFactorySqlBaseUrl(chain);
-  const toriiBaseUrl = toriiBaseUrlFromName(name);
+  // The appchain runs ONE torii for every world, so there is no per-world
+  // host to derive from the name.
+  const isSharedTorii = chain === "appchain";
+  const toriiBaseUrl = isSharedTorii ? env.VITE_PUBLIC_TORII : toriiBaseUrlFromName(name);
 
   // 1) Resolve selectors -> addresses and deployment metadata from the factory.
   const { contractsBySelector, deployment } = await resolveFactoryWorldData(factorySqlBaseUrl, chain, name);
 
-  // 2) Resolve world address from the selected world's Torii
-  const [{ entryTokenAddress, feeTokenAddress }, worldAddressFromTorii] = await Promise.all([
-    resolveWorldConfigAddresses(toriiBaseUrl),
-    resolveWorldAddressFromTorii(toriiBaseUrl),
-  ]);
+  // 2) Resolve world address from the selected world's Torii.
+  //    Both lookups below assume the torii serves a single world (they read
+  //    WorldConfig unscoped), which is true per-game on mainnet but not on the
+  //    appchain's shared indexer — there they would return an arbitrary
+  //    world's data. The factory row is keyed by game name, so use it instead.
+  const [{ entryTokenAddress, feeTokenAddress }, worldAddressFromTorii] = isSharedTorii
+    ? [{ entryTokenAddress: undefined, feeTokenAddress: undefined }, null]
+    : await Promise.all([resolveWorldConfigAddresses(toriiBaseUrl), resolveWorldAddressFromTorii(toriiBaseUrl)]);
 
   let worldAddress: string | null = worldAddressFromTorii;
   if (!worldAddress) {
