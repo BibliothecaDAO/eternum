@@ -567,11 +567,26 @@ async function resolveExistingWorldProfileForCompletedCreateWorld(params: {
     `create_game reported an existing deployment for "${params.request.gameName}". Verifying via factory SQL before continuing`,
   );
 
-  return resolveFactoryWorldProfile(
-    params.runtime.environment.chain,
-    params.request.gameName,
-    params.runtime.cartridgeApiBase,
-  );
+  // Poll rather than read once: the factory emits WorldDeployed in the same
+  // transaction that completes the cursor, so the indexer is usually a beat
+  // behind this check. A single miss here used to abort the whole launch even
+  // though the world was already on chain.
+  try {
+    return await waitForFactoryWorldProfile({
+      chain: params.runtime.environment.chain,
+      worldName: params.request.gameName,
+      cartridgeApiBase: params.runtime.cartridgeApiBase,
+      timeoutMs: params.request.waitForFactoryIndexTimeoutMs ?? DEFAULT_FACTORY_INDEX_TIMEOUT_MS,
+      pollIntervalMs: params.request.waitForFactoryIndexPollMs ?? DEFAULT_FACTORY_INDEX_POLL_MS,
+      onRetry: (attempt, elapsedMs) => {
+        params.runtime.progress.log(
+          `Factory SQL still pending for "${params.request.gameName}" after ${formatDuration(elapsedMs)} (${attempt} polls)`,
+        );
+      },
+    });
+  } catch {
+    return null;
+  }
 }
 
 async function waitForIndexedWorld(runtime: LaunchRuntime, request: LaunchGameRequest): Promise<FactoryWorldProfile> {
