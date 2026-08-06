@@ -1,20 +1,22 @@
+import { withWorldScope } from "@/runtime/world/world-torii";
+
 const BLITZ_SETTLEMENT_TABLE = "s1_eternum-BlitzSettlement";
 const ADDRESS_NAME_TABLE = "s1_eternum-AddressName";
 
 const buildAddressMatchCondition = (columnName: string, playerAddress: string) =>
   `ltrim(lower(CAST(${columnName} AS TEXT)), '0x') = ltrim(lower('${playerAddress}'), '0x')`;
 
-export const buildPlayerBlitzSettlementStatusQuery = (playerAddress: string) => `
+export const buildPlayerBlitzSettlementStatusQuery = (playerAddress: string, worldAddress?: string | null) => `
   SELECT player
   FROM "${BLITZ_SETTLEMENT_TABLE}"
-  WHERE ${buildAddressMatchCondition("player", playerAddress)}
+  WHERE ${withWorldScope(buildAddressMatchCondition("player", playerAddress), worldAddress)}
   LIMIT 1;
 `;
 
-export const buildPlayerBlitzSettlementSnapshotQuery = (playerAddress: string) => `
+export const buildPlayerBlitzSettlementSnapshotQuery = (playerAddress: string, worldAddress?: string | null) => `
   SELECT player, structure_ids
   FROM "${BLITZ_SETTLEMENT_TABLE}"
-  WHERE ${buildAddressMatchCondition("player", playerAddress)}
+  WHERE ${withWorldScope(buildAddressMatchCondition("player", playerAddress), worldAddress)}
   LIMIT 1;
 `;
 

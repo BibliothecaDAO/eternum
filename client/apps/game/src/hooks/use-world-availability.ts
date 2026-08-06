@@ -11,6 +11,21 @@ import {
   type ResolvedGameMode,
 } from "@/config/game-modes/resolved-mode";
 import { buildPlayerBlitzSettlementStatusQuery } from "@/services/blitz/blitz-settlement-sql";
+import {
+  resolveAppchainWorldAddress,
+  resolveWorldToriiBaseUrl,
+  worldScopeCondition,
+} from "@/runtime/world/world-torii";
+
+/**
+ * These config queries assume one world per torii (`LIMIT 1`). On the shared
+ * appchain torii that returns an arbitrary world, so restrict them to the one
+ * being inspected.
+ */
+const scopedConfigQuery = (query: string, worldAddress?: string | null): string => {
+  const scope = worldScopeCondition(worldAddress);
+  return scope ? query.replace(/LIMIT 1;?\s*$/i, `WHERE ${scope} LIMIT 1;`) : query;
+};
 import type { Chain } from "@contracts";
 import { useQueries, useQuery } from "@tanstack/react-query";
 import { env } from "../../env";
@@ -59,7 +74,7 @@ const WORLD_CONFIG_ETERNUM_QUERY = `
   LIMIT 1;
 `;
 
-const buildToriiBaseUrl = (worldName: string) => `https://api.cartridge.gg/x/${worldName}/torii`;
+const buildToriiBaseUrl = (worldName: string) => resolveWorldToriiBaseUrl(worldName);
 
 const parseMaybeHexToNumber = (v: unknown): number | null => {
   if (v == null) return null;
@@ -163,9 +178,13 @@ interface WorldAvailability {
  * Fetch whether a player has already entered a blitz world.
  * Blitz now settles in one step, so the settlement row itself is the source of truth.
  */
-const fetchPlayerRegistration = async (toriiBaseUrl: string, playerAddress: string): Promise<boolean | null> => {
+const fetchPlayerRegistration = async (
+  toriiBaseUrl: string,
+  playerAddress: string,
+  worldAddress?: string | null,
+): Promise<boolean | null> => {
   try {
-    const query = buildPlayerBlitzSettlementStatusQuery(playerAddress);
+    const query = buildPlayerBlitzSettlementStatusQuery(playerAddress, worldAddress);
     const url = `${toriiBaseUrl}/sql?query=${encodeURIComponent(query)}`;
     const response = await fetch(url);
     if (!response.ok) return null;
@@ -199,7 +218,11 @@ const fetchPlayerHasSettledRealm = async (toriiBaseUrl: string, playerAddress: s
  * Optionally fetches player registration status if playerAddress is provided.
  * Cached by React Query.
  */
-const fetchWorldConfigMeta = async (toriiBaseUrl: string, playerAddress?: string | null): Promise<WorldConfigMeta> => {
+const fetchWorldConfigMeta = async (
+  toriiBaseUrl: string,
+  playerAddress?: string | null,
+  worldAddress?: string | null,
+): Promise<WorldConfigMeta> => {
   const meta: WorldConfigMeta = {
     mode: "unknown",
     startSettlingAt: null,
@@ -237,7 +260,7 @@ const fetchWorldConfigMeta = async (toriiBaseUrl: string, playerAddress?: string
 
   try {
     // Detect game mode first so we can run a mode-specific world-config query.
-    const modeUrl = `${toriiBaseUrl}/sql?query=${encodeURIComponent(WORLD_MODE_QUERY)}`;
+    const modeUrl = `${toriiBaseUrl}/sql?query=${encodeURIComponent(scopedConfigQuery(WORLD_MODE_QUERY, worldAddress))}`;
     const modeResponse = await fetch(modeUrl);
     if (!modeResponse.ok) return meta;
     const [modeRow] = (await modeResponse.json()) as Record<string, unknown>[];
@@ -370,7 +393,9 @@ const checkWorldAvailability = async (
     return { isAvailable: false, meta: null };
   }
 
-  const meta = await fetchWorldConfigMeta(toriiBaseUrl, playerAddress);
+  // On the shared appchain torii the config query must name its world.
+  const worldAddress = await resolveAppchainWorldAddress(worldName);
+  const meta = await fetchWorldConfigMeta(toriiBaseUrl, playerAddress, worldAddress);
   return { isAvailable: true, meta };
 };
 

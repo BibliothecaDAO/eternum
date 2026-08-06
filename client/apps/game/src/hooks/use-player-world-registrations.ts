@@ -12,6 +12,7 @@
  */
 import type { WorldSummary } from "@bibliothecadao/types";
 import { buildPlayerBlitzSettlementStatusQuery } from "@/services/blitz/blitz-settlement-sql";
+import { resolveWorldToriiBaseUrl, withWorldScope } from "@/runtime/world/world-torii";
 import { PLAYER_WORLD_REGISTRATION_QUERY_KEY } from "@/hooks/world-list-queries";
 import { useQueries } from "@tanstack/react-query";
 
@@ -25,7 +26,7 @@ interface PlayerWorldRegistrationResult {
   isAnyLoading: boolean;
 }
 
-const buildToriiBaseUrl = (worldName: string) => `https://api.cartridge.gg/x/${worldName}/torii`;
+
 
 const parseMaybeHexToNumber = (v: unknown): number | null => {
   if (v == null) return null;
@@ -45,9 +46,13 @@ const parseMaybeHexToNumber = (v: unknown): number | null => {
 /**
  * Blitz-only: check whether the player already has a settlement entry for this world.
  */
-export const fetchPlayerRegistration = async (toriiBaseUrl: string, playerAddress: string): Promise<boolean | null> => {
+export const fetchPlayerRegistration = async (
+  toriiBaseUrl: string,
+  playerAddress: string,
+  worldAddress?: string | null,
+): Promise<boolean | null> => {
   try {
-    const query = buildPlayerBlitzSettlementStatusQuery(playerAddress);
+    const query = buildPlayerBlitzSettlementStatusQuery(playerAddress, worldAddress);
     const url = `${toriiBaseUrl}/sql?query=${encodeURIComponent(query)}`;
     const response = await fetch(url);
     if (!response.ok) return null;
@@ -65,9 +70,13 @@ export const fetchPlayerRegistration = async (toriiBaseUrl: string, playerAddres
 export const fetchPlayerHasSettledRealm = async (
   toriiBaseUrl: string,
   playerAddress: string,
+  worldAddress?: string | null,
 ): Promise<boolean | null> => {
   try {
-    const query = `SELECT COUNT(*) AS realm_count FROM "s1_eternum-Structure" WHERE owner = "${playerAddress}" AND category = 1 LIMIT 1;`;
+    const query = `SELECT COUNT(*) AS realm_count FROM "s1_eternum-Structure" WHERE ${withWorldScope(
+      `owner = "${playerAddress}" AND category = 1`,
+      worldAddress,
+    )} LIMIT 1;`;
     const url = `${toriiBaseUrl}/sql?query=${encodeURIComponent(query)}`;
     const response = await fetch(url);
     if (!response.ok) return null;
@@ -110,13 +119,13 @@ export const usePlayerWorldRegistrations = ({
           if (!playerAddress) {
             return { isPlayerRegistered: null, hasPlayerSettledRealm: null };
           }
-          const toriiBaseUrl = buildToriiBaseUrl(world.name);
+          const toriiBaseUrl = resolveWorldToriiBaseUrl(world.name);
           if (isBlitz) {
-            const isRegistered = await fetchPlayerRegistration(toriiBaseUrl, playerAddress);
+            const isRegistered = await fetchPlayerRegistration(toriiBaseUrl, playerAddress, world.worldAddress);
             return { isPlayerRegistered: isRegistered, hasPlayerSettledRealm: null };
           }
           if (isEternum) {
-            const hasSettled = await fetchPlayerHasSettledRealm(toriiBaseUrl, playerAddress);
+            const hasSettled = await fetchPlayerHasSettledRealm(toriiBaseUrl, playerAddress, world.worldAddress);
             return { isPlayerRegistered: null, hasPlayerSettledRealm: hasSettled };
           }
           return { isPlayerRegistered: null, hasPlayerSettledRealm: null };
