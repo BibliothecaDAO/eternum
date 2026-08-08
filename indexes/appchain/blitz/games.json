@@ -2,7 +2,7 @@
   "version": 1,
   "environment": "appchain.blitz",
   "kind": "game",
-  "updatedAt": "2026-08-08T14:46:25.756Z",
+  "updatedAt": "2026-08-08T14:46:34.458Z",
   "entries": {
     "blitzlive1": {
       "kind": "game",
@@ -11,12 +11,13 @@
       "path": "runs/appchain/blitz/blitzlive1.json",
       "inputPath": "inputs/appchain/blitz/blitzlive1/31262530412-1.json",
       "status": "running",
-      "updatedAt": "2026-08-08T14:46:25.756Z",
+      "updatedAt": "2026-08-08T14:46:34.458Z",
       "workflowRef": "feat/appchain-phase-1",
       "currentStepId": "reserve-blitz-hyperstructures",
-      "hasRunningStep": false,
+      "activeLeaseExpiresAt": "2026-08-08T15:31:34.458Z",
+      "hasRunningStep": true,
       "recoverableFailedStepId": null,
-      "recoverablePendingStepId": "reserve-blitz-hyperstructures",
+      "recoverablePendingStepId": "grant-lootchest-role",
       "startTime": 1786205400,
       "durationSeconds": 7200,
       "artifacts": {}
