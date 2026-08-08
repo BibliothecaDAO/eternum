@@ -1,5 +1,6 @@
 import { SqlApi } from "@bibliothecadao/torii";
 import { getActiveWorld } from "@/runtime/world";
+import { resolveWorldToriiBaseUrl as resolveSharedWorldToriiBaseUrl } from "@/runtime/world/world-torii";
 import type { Chain } from "@contracts";
 import { env } from "../../env";
 
@@ -20,7 +21,13 @@ const resolveWorldToriiBaseUrl = ({ chain, worldName }: { chain: Chain; worldNam
     return active.toriiBaseUrl;
   }
 
-  return chain === "local" ? env.VITE_PUBLIC_TORII : `https://api.cartridge.gg/x/${worldName}/torii`;
+  if (chain === "local") {
+    return env.VITE_PUBLIC_TORII;
+  }
+
+  // Shared-torii aware: on the appchain there is no per-world Cartridge host,
+  // and entry flows hit this before any world profile exists to consult.
+  return resolveSharedWorldToriiBaseUrl(worldName);
 };
 
 export const resolveWorldSqlBaseUrl = ({ chain, worldName }: { chain: Chain; worldName: string }): string =>

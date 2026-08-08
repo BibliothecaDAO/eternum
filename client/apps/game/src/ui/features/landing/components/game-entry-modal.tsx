@@ -32,6 +32,7 @@ import { resolveWorldContracts } from "@/runtime/world/factory-resolver";
 import { normalizeSelector } from "@/runtime/world/normalize";
 import { createSqlApi, resolveWorldSqlBaseUrl } from "@/services/api";
 import { buildPlayerBlitzSettlementSnapshotQuery } from "@/services/blitz/blitz-settlement-sql";
+import { resolveAppchainWorldAddress } from "@/runtime/world/world-torii";
 import Button from "@/ui/design-system/atoms/button";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
@@ -3510,9 +3511,15 @@ export const GameEntryModal = ({
     if (!account?.address) return null;
 
     const playerAddress = formatAddressForQuery(account.address);
+    // Shared torii serves several worlds; without the scope a settlement in
+    // any other game would count as settled here.
+    const settlementWorldAddress = await resolveAppchainWorldAddress(worldName);
     const [settlementRows, playerStructures] = await Promise.all([
       fetchWithErrorHandling<DirectSettlementSnapshotRow>(
-        buildApiUrl(selectedWorldSqlBaseUrl, buildPlayerBlitzSettlementSnapshotQuery(playerAddress)),
+        buildApiUrl(
+          selectedWorldSqlBaseUrl,
+          buildPlayerBlitzSettlementSnapshotQuery(playerAddress, settlementWorldAddress),
+        ),
         "Failed to fetch blitz settlement state",
       ),
       // Owned-structure indexing can lag behind settle-finish rows right after submission.
@@ -3527,7 +3534,7 @@ export const GameEntryModal = ({
       hasSettledStructure: ownedStructureCount > 0,
       settledCount: Math.max(indexedSettledCount, ownedStructureCount),
     };
-  }, [account, selectedWorldSqlApi, selectedWorldSqlBaseUrl]);
+  }, [account, selectedWorldSqlApi, selectedWorldSqlBaseUrl, worldName]);
 
   const syncSettlementStateFromSnapshot = useCallback(
     (snapshot: SettlementSnapshot) => {
