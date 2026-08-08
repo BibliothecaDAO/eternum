@@ -11,11 +11,13 @@ pub mod config {
     mod tests;
 }
 
-pub mod village {
-    pub mod contracts;
-    #[cfg(test)]
-    mod tests;
-}
+// Excluded from the Blitz-core world (single-world migration, D15 in
+// docs/plans/appchain-single-world-a0-audit.md) — restore for the Eternum port (Phase 3).
+// pub mod village {
+//     pub mod contracts;
+//     #[cfg(test)]
+//     mod tests;
+// }
 
 pub mod structure {
     pub mod contracts;
@@ -29,18 +31,20 @@ pub mod realm {
             pub mod contracts;
         }
     }
-    pub mod season {
-        pub mod contracts;
-    }
+    // Excluded from the Blitz-core world (D15) — season-pass settling path.
+    // pub mod season {
+    //     pub mod contracts;
+    // }
     pub mod utils {
         pub mod contracts;
     }
 }
-pub mod trade {
-    pub mod contracts;
-    #[cfg(test)]
-    mod tests;
-}
+// Excluded from the Blitz-core world (D15) — trade is disabled in Blitz presets.
+// pub mod trade {
+//     pub mod contracts;
+//     #[cfg(test)]
+//     mod tests;
+// }
 pub mod resources {
     pub mod contracts;
     #[cfg(test)]
@@ -78,11 +82,12 @@ pub mod combat {
         pub mod troop_raid;
     }
 }
-pub mod bank {
-    pub mod contracts;
-    #[cfg(test)]
-    mod tests;
-}
+// Excluded from the Blitz-core world (D15) — Blitz never creates banks.
+// pub mod bank {
+//     pub mod contracts;
+//     #[cfg(test)]
+//     mod tests;
+// }
 pub mod guild {
     pub mod contracts;
     #[cfg(test)]
@@ -94,11 +99,13 @@ pub mod ownership {
     #[cfg(test)]
     mod tests;
 }
-pub mod season {
-    pub mod contracts;
-    #[cfg(test)]
-    mod tests;
-}
+// Excluded from the Blitz-core world (D15) — Blitz games end by timestamp; season_close
+// writes the singleton clock and is Eternum-season-only.
+// pub mod season {
+//     pub mod contracts;
+//     #[cfg(test)]
+//     mod tests;
+// }
 
 pub mod utils {
     pub mod bitcoin_mine;
@@ -149,23 +156,26 @@ pub mod mmr {
     }
 }
 
-pub mod faith {
-    pub mod contracts;
-    pub mod prize_contracts;
-    #[cfg(test)]
-    mod tests;
-}
+// Excluded from the Blitz-core world (D15) — faith/holy sites are season-only.
+// pub mod faith {
+//     pub mod contracts;
+//     pub mod prize_contracts;
+//     #[cfg(test)]
+//     mod tests;
+// }
 
-pub mod bitcoin_mine {
-    pub mod contracts;
-    pub mod discovery_systems;
-    #[cfg(test)]
-    mod tests;
-}
+// Excluded from the Blitz-core world (D15) — bitcoin mines are season-only discoveries.
+// pub mod bitcoin_mine {
+//     pub mod contracts;
+//     pub mod discovery_systems;
+//     #[cfg(test)]
+//     mod tests;
+// }
 
-pub mod spire {
-    pub mod contracts;
-}
+// Excluded from the Blitz-core world (D15) — spires belong to the season settling path.
+// pub mod spire {
+//     pub mod contracts;
+// }
 
 pub mod alt_movement {
     pub mod contracts;
