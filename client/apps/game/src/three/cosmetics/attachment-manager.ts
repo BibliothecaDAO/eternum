@@ -26,10 +26,10 @@ const DEFAULT_SCALE = 1;
 
 const normalizeAssetPath = (path?: string): string | undefined => {
   if (!path) return undefined;
-  if (path.startsWith("/") || path.startsWith("models/")) {
-    return path;
-  }
-  return `models/${path}`;
+  if (path.startsWith("/")) return path;
+  // Absolute so deep routes resolve from the site root, not the current URL.
+  if (path.startsWith("models/")) return `/${path}`;
+  return `/models/${path}`;
 };
 
 /**
