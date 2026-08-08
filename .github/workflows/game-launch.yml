@@ -17,6 +17,8 @@ on:
         required: true
         type: choice
         options:
+          - appchain.blitz
+          - appchain.eternum
           - mainnet.blitz
           - mainnet.eternum
       game_name:
