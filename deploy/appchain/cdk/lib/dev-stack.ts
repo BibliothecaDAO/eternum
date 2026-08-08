@@ -124,7 +124,15 @@ export class DevStack extends cdk.Stack {
           statement: {
             rateBasedStatement: {
               limit: cfg.wafRateLimit,
-              aggregateKeyType: "IP",
+              // Cloudflare supplies the original client address. Requests
+              // without this header are direct ALB traffic (including
+              // Torii's Katana RPC polling) and must not be grouped under a
+              // single task or proxy address.
+              aggregateKeyType: "FORWARDED_IP",
+              forwardedIpConfig: {
+                headerName: "X-Forwarded-For",
+                fallbackBehavior: "NO_MATCH",
+              },
             },
           },
           visibilityConfig: {
