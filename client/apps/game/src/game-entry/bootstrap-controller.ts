@@ -314,6 +314,9 @@ export const useGameEntryBootstrapController = ({
             return;
           }
 
+          // Surface the failure: this rejection otherwise only lives in React
+          // state and the recovery screen gives the player no diagnostic.
+          console.error("[bootstrap] game entry bootstrap failed", incomingError);
           const normalizedError = incomingError instanceof Error ? incomingError : new Error("Unknown bootstrap error");
           if (forceFresh) {
             recordRouteRebootstrapFailed(normalizedError);
