@@ -1,0 +1,18 @@
+{
+  "version": 1,
+  "chain": "appchain",
+  "accountAddress": "0x127fd5f1fe78a71f8bcd1fec63e3fe2f0486b6ecd5c86a0466c3a21fa5cfcec",
+  "owner": {
+    "environment": "appchain.blitz",
+    "gameName": "blitzlive1",
+    "launchRequestId": "31262409045-1",
+    "workflowName": "Game Launch",
+    "workflowRunId": 31262409045,
+    "workflowRunAttempt": 1,
+    "stepId": "create-world",
+    "leaseId": "f6179f04-5abc-4ac0-8d81-1dc06ec03f76"
+  },
+  "acquiredAt": "2026-08-08T14:38:38.379Z",
+  "heartbeatAt": "2026-08-08T14:38:38.379Z",
+  "expiresAt": "2026-08-08T14:48:38.379Z"
+}
