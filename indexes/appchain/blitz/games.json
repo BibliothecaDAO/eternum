@@ -2,7 +2,7 @@
   "version": 1,
   "environment": "appchain.blitz",
   "kind": "game",
-  "updatedAt": "2026-08-08T15:33:35.768Z",
+  "updatedAt": "2026-08-08T15:33:40.632Z",
   "entries": {
     "blitzlive1": {
       "kind": "game",
@@ -30,17 +30,19 @@
       "gameName": "blitzlive2",
       "path": "runs/appchain/blitz/blitzlive2.json",
       "inputPath": "inputs/appchain/blitz/blitzlive2/31264470827-1.json",
-      "status": "running",
-      "updatedAt": "2026-08-08T15:33:35.768Z",
+      "status": "complete",
+      "updatedAt": "2026-08-08T15:33:40.632Z",
       "workflowRef": "feat/appchain-phase-1",
-      "currentStepId": "create-indexer",
-      "activeLeaseExpiresAt": "2026-08-08T16:18:35.768Z",
-      "hasRunningStep": true,
+      "currentStepId": null,
+      "hasRunningStep": false,
       "recoverableFailedStepId": null,
       "recoverablePendingStepId": null,
       "startTime": 1786207002,
       "durationSeconds": 7200,
-      "artifacts": {}
+      "artifacts": {
+        "indexerCreated": true,
+        "indexerTier": "basic"
+      }
     }
   }
 }
