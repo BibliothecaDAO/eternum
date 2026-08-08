@@ -16,10 +16,14 @@ export function getFactorySqlBaseUrl(chain: Chain, cartridgeApiBase?: string): s
       return `${base}/x/eternum-factory-mainnet/torii/sql`;
     case "sepolia":
       return `${base}/x/eternum-factory-sepolia/torii/sql`;
-    case "appchain":
+    case "appchain": {
       // The appchain runs ONE torii indexing every world, factory included, so
-      // the factory SQL endpoint is just that torii.
-      return `${resolveAppchainToriiBaseUrl()}/sql`;
+      // the factory SQL endpoint is just that torii. Without a configured
+      // torii return "" (≠ "/sql") so callers get their own "no factory
+      // configured" diagnostics instead of fetch() choking on a relative URL.
+      const appchainToriiBaseUrl = resolveAppchainToriiBaseUrl();
+      return appchainToriiBaseUrl ? `${appchainToriiBaseUrl}/sql` : "";
+    }
     // "local" has no factory torii; callers treat "" as "no factory available"
     // and skip factory-backed discovery.
     default:
