@@ -1,4 +1,4 @@
-# torii v1.8.16 + multi-world GraphQL patch.
+# torii v1.8.16 + multi-world GraphQL and dynamic indexing patches.
 #
 # Stock v1.8.16 panics at GraphQL schema build when two worlds register the
 # same (namespace, name) model — "Field `s1EternumAgentConfigModels` already
@@ -7,6 +7,10 @@
 # (namespace, name) when building the GraphQL schema (crates/graphql/src/
 # schema.rs); SQL and gRPC remain fully world-scoped, and our client does not
 # use GraphQL at all.
+#
+# The same fork exposes authenticated append-only contract registration. The
+# engine commits additions between indexing batches, so a new WORLD can begin
+# indexing without replacing this process.
 #
 # The `torii` binary in this build context is produced by scripts/build-torii.sh
 # (cargo release build of the patched checkout) and is gitignored.

@@ -82,6 +82,6 @@ export const CONFIG = {
     toriiRepo: "realms-appchain/torii",
     /** Tags pushed by scripts/push-images.sh (digest-pinned at deploy time). */
     katanaTag: "rc9-vrf-paymaster-v1",
-    toriiTag: "1.8.16-mw-patch-v1",
+    toriiTag: "1.8.16-mw-dynamic-v1",
   },
 } as const;

@@ -21,4 +21,5 @@ new DevStack(app, "RealmsAppchainDev", {
   zone: dns.zone,
   katanaRepo: foundation.katanaRepo,
   toriiRepo: foundation.toriiRepo,
+  toriiAdminToken: foundation.toriiAdminToken,
 });

@@ -1,6 +1,7 @@
 import * as cdk from "aws-cdk-lib";
 import * as ecr from "aws-cdk-lib/aws-ecr";
 import * as iam from "aws-cdk-lib/aws-iam";
+import * as secretsmanager from "aws-cdk-lib/aws-secretsmanager";
 import { Construct } from "constructs";
 import { CONFIG } from "./config";
 
@@ -12,6 +13,7 @@ import { CONFIG } from "./config";
 export class FoundationStack extends cdk.Stack {
   readonly katanaRepo: ecr.Repository;
   readonly toriiRepo: ecr.Repository;
+  readonly toriiAdminToken: secretsmanager.Secret;
 
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
     super(scope, id, props);
@@ -27,6 +29,14 @@ export class FoundationStack extends cdk.Stack {
     this.toriiRepo = new ecr.Repository(this, "ToriiRepo", {
       repositoryName: CONFIG.ecr.toriiRepo,
       lifecycleRules: [lifecycle],
+    });
+    this.toriiAdminToken = new secretsmanager.Secret(this, "ToriiAdminToken", {
+      secretName: "/realms-appchain/dev/torii-admin-token",
+      description: "Bearer token for Torii's dynamic contract management API",
+      generateSecretString: {
+        excludePunctuation: true,
+        passwordLength: 48,
+      },
     });
 
     // --- GitHub OIDC -----------------------------------------------------
@@ -76,12 +86,12 @@ export class FoundationStack extends cdk.Stack {
     this.katanaRepo.grantPullPush(imageRole);
     this.toriiRepo.grantPullPush(imageRole);
 
-    // Game launches: update the torii world list + bounce the service.
+    // Game launches: persist the desired world list and hot-add the world to
+    // the running indexer. No ECS mutation is needed for a normal launch.
     const launchRole = new iam.Role(this, "GhaLaunchRole", {
       roleName: "gha-appchain-launch",
       assumedBy: githubPrincipal,
-      description:
-        "GitHub Actions: append worlds to torii config + redeploy torii",
+      description: "GitHub Actions: persist and hot-add appchain Torii worlds",
     });
     launchRole.addToPolicy(
       new iam.PolicyStatement({
@@ -91,18 +101,14 @@ export class FoundationStack extends cdk.Stack {
         ],
       }),
     );
-    launchRole.addToPolicy(
-      new iam.PolicyStatement({
-        actions: ["ecs:UpdateService", "ecs:DescribeServices"],
-        resources: [
-          `arn:aws:ecs:${this.region}:${this.account}:service/realms-appchain-*/*`,
-        ],
-      }),
-    );
+    this.toriiAdminToken.grantRead(launchRole);
 
     new cdk.CfnOutput(this, "DeployRoleArn", { value: deployRole.roleArn });
     new cdk.CfnOutput(this, "ImageRoleArn", { value: imageRole.roleArn });
     new cdk.CfnOutput(this, "LaunchRoleArn", { value: launchRole.roleArn });
+    new cdk.CfnOutput(this, "ToriiAdminTokenArn", {
+      value: this.toriiAdminToken.secretArn,
+    });
     new cdk.CfnOutput(this, "KatanaRepoUri", { value: this.katanaRepo.repositoryUri });
     new cdk.CfnOutput(this, "ToriiRepoUri", { value: this.toriiRepo.repositoryUri });
   }

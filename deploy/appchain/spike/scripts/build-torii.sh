@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
-# Builds the multi-world-patched torii binary and stages it into the docker
-# build context. The patched checkout lives outside the repo (torii fork,
-# v1.8.16 + graphql dedupe patch — see docker/torii/Dockerfile for the story).
+# Builds the appchain Torii binary and stages it into the Docker build context.
+# The checkout lives outside this repo (djizus/torii, branch
+# feat/dynamic-contract-indexing) and contains both the multi-world GraphQL
+# fix and append-only dynamic contract registration.
 #
 # Usage: TORII_SRC=/path/to/patched/torii scripts/build-torii.sh
 set -euo pipefail

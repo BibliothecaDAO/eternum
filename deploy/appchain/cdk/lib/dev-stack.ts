@@ -11,6 +11,7 @@ import * as iam from "aws-cdk-lib/aws-iam";
 import * as logs from "aws-cdk-lib/aws-logs";
 import * as route53 from "aws-cdk-lib/aws-route53";
 import * as s3 from "aws-cdk-lib/aws-s3";
+import * as secretsmanager from "aws-cdk-lib/aws-secretsmanager";
 import * as r53_targets from "aws-cdk-lib/aws-route53-targets";
 import * as sns from "aws-cdk-lib/aws-sns";
 import * as subs from "aws-cdk-lib/aws-sns-subscriptions";
@@ -23,6 +24,7 @@ export interface DevStackProps extends cdk.StackProps {
   zone: route53.IPublicHostedZone;
   katanaRepo: ecr.IRepository;
   toriiRepo: ecr.IRepository;
+  toriiAdminToken: secretsmanager.ISecret;
 }
 
 /**
@@ -294,9 +296,9 @@ export class DevStack extends cdk.Stack {
     }
 
     // --- Torii: ONE multi-world indexer (Fargate) -----------------------
-    // Config (the WORLD list) lives in SSM and is injected as an env var at
-    // task start — the launch flow appends a world and forces a new
-    // deployment; no task-definition churn, no CLI needed in the container.
+    // Config (the durable WORLD list) lives in SSM and is injected at task
+    // start. Normal launches also hot-add the world through Torii's protected
+    // API, so the task only reads this list again after an unrelated restart.
     const toriiConfigParam = new ssm.StringParameter(this, "ToriiConfig", {
       parameterName: "/realms-appchain/dev/torii-config",
       description: "torii.toml for the shared multi-world torii (M2 bootstrap fills contracts)",
@@ -348,6 +350,7 @@ export class DevStack extends cdk.Stack {
       ],
       secrets: {
         TORII_CONFIG: ecs.Secret.fromSsmParameter(toriiConfigParam),
+        TORII_ADMIN_TOKEN: ecs.Secret.fromSecretsManager(props.toriiAdminToken),
       },
       portMappings: [{ containerPort: 8080 }],
     });
@@ -362,16 +365,19 @@ export class DevStack extends cdk.Stack {
       cluster,
       serviceName: "torii",
       taskDefinition: toriiTask,
-      // 0 until the M2 bootstrap writes a real config (an empty world list is
-      // useless); flipped to 1 by the runbook.
-      desiredCount: 0,
+      desiredCount: 1,
       assignPublicIp: true,
       vpcSubnets: { subnetType: ec2.SubnetType.PUBLIC },
       securityGroups: [toriiSg],
-      minHealthyPercent: 0,
-      maxHealthyPercent: 100,
+      minHealthyPercent: 100,
+      maxHealthyPercent: 200,
       circuitBreaker: { rollback: true },
       enableExecuteCommand: true,
+      // Torii's /data directory is task-local, so each replacement reindexes
+      // from block 0 and is unhealthy until it catches up. Without a grace
+      // period ECS kills it mid-index and it never finishes — a restart loop
+      // that grows worse with each new world.
+      healthCheckGracePeriod: cdk.Duration.minutes(15),
     });
 
     const toriiTg = new elbv2.ApplicationTargetGroup(this, "ToriiTg", {
@@ -380,8 +386,8 @@ export class DevStack extends cdk.Stack {
       protocol: elbv2.ApplicationProtocol.HTTP,
       targetType: elbv2.TargetType.IP,
       healthCheck: {
-        path: "/",
-        healthyHttpCodes: "200-499",
+        path: "/ready",
+        healthyHttpCodes: "200",
         interval: cdk.Duration.seconds(15),
       },
       deregistrationDelay: cdk.Duration.seconds(10),

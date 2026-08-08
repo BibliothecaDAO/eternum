@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # Builds/tags the two custom images and pushes them to ECR.
 # - katana: spike Dockerfile (rc.9 + vrf-server source build + paymaster v0.2.4)
-# - torii:  spike docker/torii (v1.8.16 + multi-world graphql patch; stage the
-#           binary with spike/scripts/build-torii.sh first)
+# - torii:  spike docker/torii (v1.8.16 + multi-world GraphQL and dynamic
+#           contract patches; stage it with spike/scripts/build-torii.sh first)
 # Usage: AWS_PROFILE=realms-appchain scripts/push-images.sh
 set -euo pipefail
 
@@ -13,7 +13,7 @@ ACCOUNT=$(aws sts get-caller-identity --query Account --output text)
 REGISTRY="$ACCOUNT.dkr.ecr.$REGION.amazonaws.com"
 
 KATANA_TAG="rc9-vrf-paymaster-v1"   # keep in sync with lib/config.ts
-TORII_TAG="1.8.16-mw-patch-v1"
+TORII_TAG="1.8.16-mw-dynamic-v1"
 
 aws ecr get-login-password --region "$REGION" |
   docker login --username AWS --password-stdin "$REGISTRY"
