@@ -6,14 +6,14 @@
   "chain": "appchain",
   "gameType": "blitz",
   "gameName": "blitzlive1",
-  "status": "running",
+  "status": "complete",
   "executionMode": "fast_trial",
   "requestedLaunchStep": "full",
   "inputPath": "inputs/appchain/blitz/blitzlive1/31262530412-1.json",
   "latestLaunchRequestId": "31262530412-1",
-  "currentStepId": "create-indexer",
+  "currentStepId": null,
   "createdAt": "2026-08-08T14:38:30.385Z",
-  "updatedAt": "2026-08-08T14:47:21.857Z",
+  "updatedAt": "2026-08-08T14:47:26.693Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -72,10 +72,11 @@
     {
       "id": "create-indexer",
       "title": "Finishing setup",
-      "status": "running",
+      "status": "succeeded",
       "workflowStepName": "Finishing setup",
-      "latestEvent": "Finishing setup started",
-      "startedAt": "2026-08-08T14:47:21.857Z"
+      "latestEvent": "Finishing setup succeeded",
+      "startedAt": "2026-08-08T14:47:21.857Z",
+      "finishedAt": "2026-08-08T14:47:26.693Z"
     }
   ],
   "artifacts": {
@@ -88,14 +89,9 @@
     "worldConfigTxHash": "0x7c7faa03ca34470a397e7a6be588554e5fe97cf7fd36950aab24b3581ca7565",
     "reserveHyperstructuresTxHashes": [
       "0x2c1ac1eb625c894f6b2d95a15361abb9e637e1251e9ff5c6c62ceef3e65fd8b"
-    ]
+    ],
+    "indexerCreated": true,
+    "indexerTier": "basic"
   },
-  "activeLease": {
-    "launchRequestId": "31262530412-1",
-    "workflowRunId": 31262530412,
-    "workflowRunAttempt": 1,
-    "stepId": "create-indexer",
-    "acquiredAt": "2026-08-08T14:47:21.857Z",
-    "expiresAt": "2026-08-08T15:32:21.857Z"
-  }
+  "completedAt": "2026-08-08T14:47:26.693Z"
 }
