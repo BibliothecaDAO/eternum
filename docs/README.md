@@ -25,6 +25,9 @@ This page is a **map of the documentation inside this repository**.
   - Runtime world profiles: [`docs/architecture/runtime-world-profiles.md`](./architecture/runtime-world-profiles.md)
   - Torii selective subscriptions:
     [`docs/architecture/torii-selective-subscriptions.md`](./architecture/torii-selective-subscriptions.md)
+- Plans
+  - [Appchain Phase 1](./plans/appchain-phase-1.md): sovereign AWS dev chain
+  - [Appchain Phase 2](./plans/appchain-phase-2.md): TEE settlement, provider research, recovery gates, and cost model
 - SQL notes
   - Global SQL queries: [`docs/global-sql-queries.md`](./global-sql-queries.md)
 

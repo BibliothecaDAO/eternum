@@ -9,18 +9,16 @@ self-hosted Katana appchain on AWS, in two phases:
 
 - **Phase 1 (this doc)** — a sovereign dev appchain: no mainnet link, free entry, a test
   environment where we can play, test, and break things. Fastest path to a deploy.
-- **Phase 2 (separate stack, later)** — a settling chain booted via `katana init rollup`:
-  katana's embedded settlement service proves blocks and posts `update_state` to a piltover
-  core on Starknet mainnet (saya is dead — settlement is in katana now). Real economy:
-  entry in LORDS on mainnet, prizes claimable on mainnet after proven settlement via
-  L1↔L2 messaging (the cartridge-gg/dungeon-demo entry/bank pattern). TEE attestation:
-  mock first; real SEV-SNP deferred (sealed tee-vm images are bare-metal oriented, not
-  EC2-viable — this is the swamp the drafted PRs #4873/#4864 drowned in; do not resurrect
-  their architecture).
+- **Phase 2 ([separate research and plan](./appchain-phase-2.md))** — a settling chain booted via `katana init rollup`:
+  katana's embedded settlement service proves blocks and posts `update_state` to a piltover core on Starknet mainnet
+  (saya is dead — settlement is in katana now). Real economy: entry in LORDS on mainnet, prizes claimable on mainnet
+  after proven settlement via L1↔L2 messaging (the cartridge-gg/dungeon-demo entry/bank pattern). TEE attestation: mock
+  first; real SEV-SNP deferred (sealed tee-vm images are bare-metal oriented, not EC2-viable — this is the swamp the
+  drafted PRs #4873/#4864 drowned in; do not resurrect their architecture).
 
-Everything moves to AWS: chain, indexer, game client (currently Vercel), realtime-server,
-DNS (Route53 replaces Cloudflare), and the two Cloudflare workers (torii-creator is
-deleted outright; realms-game-launch becomes a Lambda).
+In Phase 1, everything moves to AWS: chain, indexer, game client (currently Vercel), realtime-server, DNS (Route53
+replaces Cloudflare), and the two Cloudflare workers (torii-creator is deleted outright; realms-game-launch becomes a
+Lambda).
 
 ## Key decisions
 
@@ -209,9 +207,9 @@ Phase 2.
 | Player egress | dev scale | 5–20 |
 | **Total** | | **≈ $230–275** |
 
-~25% off compute with a 1-year Compute Savings Plan once stable. Phase 2 adds a similar
-compute footprint plus **mainnet settlement gas** — the make-or-break variable; block
-cadence swings it from ~$60/mo to thousands, measured at the sepolia dry run.
+~25% off compute with a 1-year Compute Savings Plan once stable. Phase 2 adds a separate, qualified bare-metal footprint
+plus **mainnet settlement gas and SP1 proving** — the make-or-break variables. See the
+[Phase 2 research and cost model](./appchain-phase-2.md).
 
 ## Risks
 
