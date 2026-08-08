@@ -103,6 +103,10 @@ export const probeWorldToriiAlive = async (
  * Returns a map of world names to alive/dead status.
  */
 export const fetchBulkAvailability = async (realtimeServerUrl: string): Promise<Record<string, boolean>> => {
+  if (!realtimeServerUrl) {
+    return {};
+  }
+
   try {
     const response = await fetch(`${realtimeServerUrl}/api/availability/worlds`, {
       signal: AbortSignal.timeout(5000),

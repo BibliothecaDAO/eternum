@@ -50,7 +50,9 @@ const envSchema = z.object({
     .default("https://realms-game-launch.zerocredence.workers.dev"),
   VITE_PUBLIC_EXPLORER_MAINNET: z.string().url().optional().default("https://voyager.online"),
   VITE_PUBLIC_EXPLORER_SEPOLIA: z.string().url().optional().default("https://sepolia.voyager.online"),
-  VITE_PUBLIC_REALTIME_URL: z.string().url().optional().default("http://localhost:8080"),
+  // Empty = no realtime-server for this deployment; consumers skip their
+  // calls instead of hammering a dead endpoint.
+  VITE_PUBLIC_REALTIME_URL: optionalUrlOrEmpty.default(""),
   VITE_PUBLIC_ENABLE_SQL_CACHE: z
     .string()
     .transform((v) => v === "true")
