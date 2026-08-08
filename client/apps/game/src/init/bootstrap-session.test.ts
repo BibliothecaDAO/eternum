@@ -12,8 +12,14 @@ describe("bootstrap session", () => {
     const pending = session.run({ cacheKey: "appchain:alpha", chain: "appchain", worldName: "alpha" }, execute);
 
     expect(session.getCachedResult()).toBeNull();
-    expect(session.getTrackedSelection()).toEqual({ cacheKey: "appchain:alpha", chain: "appchain", worldName: "alpha" });
-    expect(session.getResetReason({ cacheKey: "appchain:beta", chain: "appchain", worldName: "beta" })).toBe("world-changed");
+    expect(session.getTrackedSelection()).toEqual({
+      cacheKey: "appchain:alpha",
+      chain: "appchain",
+      worldName: "alpha",
+    });
+    expect(session.getResetReason({ cacheKey: "appchain:beta", chain: "appchain", worldName: "beta" })).toBe(
+      "world-changed",
+    );
     expect(session.getResetReason({ cacheKey: "mainnet:alpha", chain: "mainnet", worldName: "alpha" })).toBe(
       "chain-changed",
     );

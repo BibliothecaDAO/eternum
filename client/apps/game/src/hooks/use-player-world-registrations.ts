@@ -26,8 +26,6 @@ interface PlayerWorldRegistrationResult {
   isAnyLoading: boolean;
 }
 
-
-
 const parseMaybeHexToNumber = (v: unknown): number | null => {
   if (v == null) return null;
   if (typeof v === "number") return v;

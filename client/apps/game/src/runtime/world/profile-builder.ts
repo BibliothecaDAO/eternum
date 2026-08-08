@@ -120,9 +120,7 @@ export const buildWorldProfile = async (chain: Chain, name: string): Promise<Wor
   if (!worldAddress) worldAddress = "0x0";
 
   const chainDefaultRpcUrl =
-    chain === "mainnet" || chain === "sepolia"
-      ? `${cartridgeApiBase}/x/starknet/${chain}`
-      : env.VITE_PUBLIC_NODE_URL;
+    chain === "mainnet" || chain === "sepolia" ? `${cartridgeApiBase}/x/starknet/${chain}` : env.VITE_PUBLIC_NODE_URL;
   const canUseEnvRpc = hasPublicNodeUrl && isRpcUrlCompatibleForChain(chain, env.VITE_PUBLIC_NODE_URL);
   const fallbackRpcUrl = canUseEnvRpc ? env.VITE_PUBLIC_NODE_URL : chainDefaultRpcUrl;
   const rpcUrl = normalizeRpcUrl(deployment?.rpcUrl ?? fallbackRpcUrl);

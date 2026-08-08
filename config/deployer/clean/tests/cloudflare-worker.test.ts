@@ -1386,7 +1386,10 @@ describe("factory worker recovery signals", () => {
         return new Response("{}", { status: 404 });
       }
 
-      if (String(url).includes("/contents/runs/appchain/blitz/rotations/bltz-rotationx.json") && init?.method === "PUT") {
+      if (
+        String(url).includes("/contents/runs/appchain/blitz/rotations/bltz-rotationx.json") &&
+        init?.method === "PUT"
+      ) {
         return new Response(JSON.stringify({ content: {} }), {
           status: 200,
           headers: { "Content-Type": "application/json" },
@@ -1439,7 +1442,10 @@ describe("factory worker recovery signals", () => {
     globalThis.fetch = async (url, init) => {
       fetchCalls.push({ url: String(url), init });
 
-      if (String(url).includes("/contents/indexes/appchain/blitz/games.json") && (!init?.method || init.method === "GET")) {
+      if (
+        String(url).includes("/contents/indexes/appchain/blitz/games.json") &&
+        (!init?.method || init.method === "GET")
+      ) {
         return buildGitHubContentsResponse({
           version: 1,
           environment: "appchain.blitz",
@@ -1693,7 +1699,10 @@ describe("factory worker recovery signals", () => {
         });
       }
 
-      if (value.includes("/contents/indexes/appchain/blitz/rotations.json") && (!init?.method || init.method === "GET")) {
+      if (
+        value.includes("/contents/indexes/appchain/blitz/rotations.json") &&
+        (!init?.method || init.method === "GET")
+      ) {
         return buildGitHubContentsResponse({
           version: 1,
           environment: "appchain.blitz",
@@ -1882,7 +1891,8 @@ describe("factory worker recovery signals", () => {
       call.url.includes("/actions/workflows/factory-indexer-maintenance.yml/dispatches"),
     );
     const updateCall = fetchCalls.find(
-      (call) => call.url.includes("/contents/runs/appchain/blitz/series/bltz-knicker.json") && call.init?.method === "PUT",
+      (call) =>
+        call.url.includes("/contents/runs/appchain/blitz/series/bltz-knicker.json") && call.init?.method === "PUT",
     );
     const updateBody = JSON.parse(String(updateCall?.init?.body));
     const nextRunRecord = JSON.parse(Buffer.from(updateBody.content, "base64").toString("utf8"));
@@ -2280,10 +2290,12 @@ describe("factory worker recovery signals", () => {
     ).toString("utf8");
 
     expect(response.status).toBe(200);
-    expect(deletedPaths.some((path) => path.includes("/contents/runs/appchain/blitz/bltz-scrubbed-01.json"))).toBe(true);
-    expect(deletedPaths.filter((path) => path.includes("/contents/inputs/appchain/blitz/bltz-scrubbed-01/")).length).toBe(
-      2,
+    expect(deletedPaths.some((path) => path.includes("/contents/runs/appchain/blitz/bltz-scrubbed-01.json"))).toBe(
+      true,
     );
+    expect(
+      deletedPaths.filter((path) => path.includes("/contents/inputs/appchain/blitz/bltz-scrubbed-01/")).length,
+    ).toBe(2);
     expect(gamesIndexContent).not.toContain("bltz-scrubbed-01");
     expect(liveSnapshotContent).not.toContain("bltz-scrubbed-01");
     expect(liveSnapshotContent).toContain("bltz-keep-01");
@@ -2529,14 +2541,17 @@ describe("factory worker recovery signals", () => {
     };
 
     const response = await worker.fetch(
-      new Request("https://worker.example/api/factory/rotation-runs/appchain.blitz/bltz-scrubbed-rotation/actions/delete", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "x-factory-admin-secret": "factory-secret",
+      new Request(
+        "https://worker.example/api/factory/rotation-runs/appchain.blitz/bltz-scrubbed-rotation/actions/delete",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "x-factory-admin-secret": "factory-secret",
+          },
+          body: JSON.stringify({}),
         },
-        body: JSON.stringify({}),
-      }),
+      ),
       buildWorkerEnv({ FACTORY_WORKER_ADMIN_SECRET: "factory-secret" }),
     );
 
@@ -3078,16 +3093,19 @@ describe("factory worker prize funding", () => {
     };
 
     const response = await worker.fetch(
-      new Request("https://worker.example/api/factory/rotation-runs/appchain.eternum/etrn-season-loop/actions/fund-prize", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "x-factory-admin-secret": "factory-secret",
+      new Request(
+        "https://worker.example/api/factory/rotation-runs/appchain.eternum/etrn-season-loop/actions/fund-prize",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "x-factory-admin-secret": "factory-secret",
+          },
+          body: JSON.stringify({
+            amount: "250",
+          }),
         },
-        body: JSON.stringify({
-          amount: "250",
-        }),
-      }),
+      ),
       buildWorkerEnv({ FACTORY_WORKER_ADMIN_SECRET: "factory-secret" }),
     );
 

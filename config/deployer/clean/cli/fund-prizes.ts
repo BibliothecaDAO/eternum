@@ -267,11 +267,7 @@ async function readRunRecordWithInput(
   };
 }
 
-function resolveRunRecordPath(
-  runKind: PrizeFundingRunKind,
-  environmentId: DeploymentEnvironmentId,
-  runName: string,
-) {
+function resolveRunRecordPath(runKind: PrizeFundingRunKind, environmentId: DeploymentEnvironmentId, runName: string) {
   if (runKind === "series") {
     return resolveFactorySeriesRunRecordPath({ environmentId, seriesName: runName });
   }

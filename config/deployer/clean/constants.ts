@@ -40,8 +40,7 @@ export const DEFAULT_APPCHAIN_RPC_URL =
 export const DEFAULT_LOCAL_RPC_URL = "http://127.0.0.1:5050/rpc/v0_9";
 // katana dev seed-0 account 0 — dev chain, no real value.
 // wf-factory from contracts/factory/manifest_appchain.json
-export const DEFAULT_APPCHAIN_FACTORY_ADDRESS =
-  "0x4c50ced3c1fd6f2f4cef779e28adafb234ed9773dda3e0e39918f24f2936350";
+export const DEFAULT_APPCHAIN_FACTORY_ADDRESS = "0x4c50ced3c1fd6f2f4cef779e28adafb234ed9773dda3e0e39918f24f2936350";
 export const DEFAULT_APPCHAIN_ACCOUNT_ADDRESS = "0x127fd5f1fe78a71f8bcd1fec63e3fe2f0486b6ecd5c86a0466c3a21fa5cfcec";
 export const DEFAULT_APPCHAIN_PRIVATE_KEY = "0xc5b2fcab997346f3ea1c00b002ecf6f382c5f9c9659a3894eb783c5320f912";
 

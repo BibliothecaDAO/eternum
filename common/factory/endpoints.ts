@@ -29,8 +29,7 @@ export function getFactorySqlBaseUrl(chain: Chain, cartridgeApiBase?: string): s
 
 /** Shared torii for the appchain — env-driven so it follows the deployment. */
 function resolveAppchainToriiBaseUrl(): string {
-  const fromVite =
-    typeof import.meta !== "undefined" ? (import.meta as any).env?.VITE_PUBLIC_TORII : undefined;
+  const fromVite = typeof import.meta !== "undefined" ? (import.meta as any).env?.VITE_PUBLIC_TORII : undefined;
   const fromNode = typeof process !== "undefined" ? (process as any).env?.TORII_URL : undefined;
   return String(fromVite || fromNode || "").replace(/\/+$/, "");
 }

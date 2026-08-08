@@ -73,8 +73,12 @@ describe("buildConfig", () => {
       const buildingType = getBuildingFromResource(resourceId);
 
       expect(buildingType).toBeDefined();
-      expect(appchainEternum.buildings.complexBuildingCosts[buildingType as BuildingType]?.length ?? 0).toBeGreaterThan(0);
-      expect(appchainEternum.buildings.simpleBuildingCost[buildingType as BuildingType]?.length ?? 0).toBeGreaterThan(0);
+      expect(appchainEternum.buildings.complexBuildingCosts[buildingType as BuildingType]?.length ?? 0).toBeGreaterThan(
+        0,
+      );
+      expect(appchainEternum.buildings.simpleBuildingCost[buildingType as BuildingType]?.length ?? 0).toBeGreaterThan(
+        0,
+      );
     }
     expect(appchainEternum.buildings.complexBuildingCosts[BuildingType.ResourceSilver]).toEqual(
       appchainEternum.buildings.complexBuildingCosts[BuildingType.ResourceGold],

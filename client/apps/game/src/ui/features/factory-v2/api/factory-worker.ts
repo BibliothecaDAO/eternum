@@ -468,10 +468,7 @@ interface FundFactoryRotationPrizesRequest {
 
 const FACTORY_WORKER_BASE_URL = env.VITE_PUBLIC_FACTORY_WORKER_URL.replace(/\/$/, "");
 
-const SUPPORTED_FACTORY_WORKER_ENVIRONMENTS = new Set<FactoryWorkerEnvironmentId>([
-  "mainnet.eternum",
-  "mainnet.blitz",
-]);
+const SUPPORTED_FACTORY_WORKER_ENVIRONMENTS = new Set<FactoryWorkerEnvironmentId>(["mainnet.eternum", "mainnet.blitz"]);
 
 export class FactoryWorkerApiError extends Error {
   constructor(

@@ -242,7 +242,10 @@ export const useFactoryV2 = () => {
   const selectedEnvironment =
     environmentOptions.find((environment) => environment.id === selectedEnvironmentId) ?? environmentOptions[0] ?? null;
   const presets = getFactoryLaunchPresetsForMode(selectedMode);
-  const ownedSeriesQuery = useFactorySeries((selectedEnvironment?.chain ?? "mainnet") as Chain, account?.address ?? null);
+  const ownedSeriesQuery = useFactorySeries(
+    (selectedEnvironment?.chain ?? "mainnet") as Chain,
+    account?.address ?? null,
+  );
   const ownedSeries = ownedSeriesQuery.data ?? [];
   const seriesSuggestions = useMemo(
     () =>

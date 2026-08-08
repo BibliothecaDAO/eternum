@@ -2,11 +2,7 @@
 
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import {
-  getActiveWorld,
-  getActiveWorldName,
-  resolveRuntimeChain,
-} from "./store";
+import { getActiveWorld, getActiveWorldName, resolveRuntimeChain } from "./store";
 import type { WorldProfilesMap } from "./types";
 
 const ACTIVE_KEY = "ACTIVE_WORLD_NAME";

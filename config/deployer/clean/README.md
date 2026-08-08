@@ -95,8 +95,8 @@ GitHub Actions credentials are selected through GitHub Environments:
   - secret: `SLOT_AUTH`
 
 The workflow does not need CI-provided defaults for Torii namespaces, Cartridge API base, or VRF provider address. Those
-are defaulted inside the clean deployer module, and the VRF provider default matches the shared value from the game
-env files.
+are defaulted inside the clean deployer module, and the VRF provider default matches the shared value from the game env
+files.
 
 The clean deployer creates indexers only by dispatching `.github/workflows/factory-torii-deployer.yml` directly with
 GitHub's workflow API. It waits for that workflow run to finish, and only marks the indexer as created when the workflow
@@ -212,8 +212,7 @@ launch.
 
 For mainnet environments, the launch flow also runs `sync-paymaster` after indexer creation. That step rebuilds the
 world policy from the factory-indexed manifest and applies it through the Cartridge `slot paymaster` CLI so gas coverage
-is ready without a
-separate manual workflow.
+is ready without a separate manual workflow.
 
 ## Village Pass Role Grant
 
