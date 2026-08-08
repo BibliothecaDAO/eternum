@@ -96,6 +96,7 @@
     "config:sync:mainnet": "pnpm --dir ./config run sync:mainnet",
     "config:sync:mainnet:blitz": "pnpm --dir ./config run sync:mainnet:blitz",
     "config:sync:mainnet:eternum": "pnpm --dir ./config run sync:mainnet:eternum",
+    "config:sync:appchain": "pnpm --dir ./config run sync:appchain",
     "prefactory:deploy:mainnet": "node scripts/prefactory-deploy.mjs mainnet",
     "prefactory:deploy:mainnet:blitz": "pnpm run game:migrate:mainnet && pnpm run manifest:copy-abis mainnet && pnpm run config:sync:mainnet:blitz",
     "prefactory:deploy:mainnet:eternum": "pnpm run game:migrate:mainnet && pnpm run manifest:copy-abis mainnet && pnpm run config:sync:mainnet:eternum",

@@ -11,6 +11,7 @@
     "sync:local": "bun run ./scripts/run-sync.ts local",
     "sync:local:blitz": "bun run ./scripts/run-sync.ts local blitz",
     "sync:local:eternum": "bun run ./scripts/run-sync.ts local eternum",
+    "sync:appchain": "bun run ./scripts/run-sync.ts appchain",
     "sync:appchain:blitz": "bun run ./scripts/run-sync.ts appchain blitz",
     "sync:appchain:eternum": "bun run ./scripts/run-sync.ts appchain eternum",
     "sync:sepolia": "bun run ./scripts/run-sync.ts sepolia",
