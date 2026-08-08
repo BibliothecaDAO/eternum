@@ -92,7 +92,7 @@ pub mod quest_systems {
             assert(
                 world
                     .dispatcher
-                    .is_owner(selector_from_tag!("s1_eternum-quest_systems"), starknet::get_caller_address()) == true,
+                    .is_owner(selector_from_tag!("s2_blitz-quest_systems"), starknet::get_caller_address()) == true,
                 ErrorMessages::NOT_OWNER,
             );
 
@@ -128,7 +128,7 @@ pub mod quest_systems {
             assert(
                 world
                     .dispatcher
-                    .is_owner(selector_from_tag!("s1_eternum-quest_systems"), starknet::get_caller_address()) == true,
+                    .is_owner(selector_from_tag!("s2_blitz-quest_systems"), starknet::get_caller_address()) == true,
                 ErrorMessages::NOT_OWNER,
             );
 
@@ -325,7 +325,7 @@ pub mod quest_systems {
             assert(
                 world
                     .dispatcher
-                    .is_owner(selector_from_tag!("s1_eternum-quest_systems"), starknet::get_caller_address()) == true,
+                    .is_owner(selector_from_tag!("s2_blitz-quest_systems"), starknet::get_caller_address()) == true,
                 ErrorMessages::NOT_OWNER,
             );
 
@@ -341,7 +341,7 @@ pub mod quest_systems {
             assert(
                 world
                     .dispatcher
-                    .is_owner(selector_from_tag!("s1_eternum-quest_systems"), starknet::get_caller_address()) == true,
+                    .is_owner(selector_from_tag!("s2_blitz-quest_systems"), starknet::get_caller_address()) == true,
                 ErrorMessages::NOT_OWNER,
             );
 
