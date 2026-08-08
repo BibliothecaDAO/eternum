@@ -209,6 +209,15 @@ plus **mainnet settlement gas and SP1 proving** — the make-or-break variables.
 
 Settlement/piltover, mainnet custody/messaging, TEE, entry fees/prizes, eternum mode, HA sequencer, PR previews.
 
+## Addendum (2026-08-08): single-world architecture supersedes world-per-game
+
+The 2026-08-08 playtest surfaced the structural flaw in world-per-game on a shared torii (cross-world entity bleed,
+singleton config collisions, unscoped-query whack-a-mole, heavyweight game creation). Decision: **one persistent Blitz
+world with `game_id` as a first-class model key** — see [appchain-single-world.md](./appchain-single-world.md) for the
+migration plan (Phase 1 scope). Eternum moves to its **own appchain** with the same pattern in Phase 3 — decision record
+and topology in [appchain-phase-3.md](./appchain-phase-3.md). Until the migration ships, operations run **one live game
+per torii** via the `world_registry_exclusions` list.
+
 ## References
 
 - `~/cagecalls/devops` — the proven CDK katana/torii pattern (+ ISSUES.md/OPERATIONS.md for the failure catalog).
