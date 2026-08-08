@@ -14,9 +14,11 @@ const FACTORY_ENVIRONMENT_LABELS: Record<string, string> = {
   "appchain.blitz": "Appchain",
 };
 
+// First entry is the default selection — keep that mainnet, so a launch
+// without an explicit choice targets production rather than the appchain.
 const FACTORY_ENVIRONMENTS_BY_MODE: Record<FactoryGameMode, string[]> = {
-  eternum: ["appchain.eternum", "mainnet.eternum"],
-  blitz: ["appchain.blitz", "mainnet.blitz"],
+  eternum: ["mainnet.eternum", "appchain.eternum"],
+  blitz: ["mainnet.blitz", "appchain.blitz"],
 };
 
 /** `<chain>.<mode>` -> chain, so a new environment only needs a list entry. */

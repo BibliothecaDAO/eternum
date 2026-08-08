@@ -18,7 +18,7 @@ export const resolveWorldToriiBaseUrl = (worldName: string): string => {
 };
 
 /** True when one torii serves several worlds, so queries must be scoped. */
-export const isSharedWorldTorii = (): boolean => env.VITE_PUBLIC_CHAIN === "appchain";
+const isSharedWorldTorii = (): boolean => env.VITE_PUBLIC_CHAIN === "appchain";
 
 /**
  * SQL predicate restricting a model table to one world.

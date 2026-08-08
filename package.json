@@ -167,7 +167,10 @@
     "ignoreFiles": [
       "client/apps/amm-indexerv2/apibara.config.ts",
       "client/apps/amm-indexerv2/indexers/ammv2.indexer.ts",
-      "client/apps/amm-indexerv2/indexers/factory-client.ts"
+      "client/apps/amm-indexerv2/indexers/factory-client.ts",
+      "deploy/appchain/cdk/bin/appchain.ts",
+      "deploy/appchain/cdk/lib/**",
+      "deploy/appchain/scripts/**"
     ]
   },
   "dependencies": {

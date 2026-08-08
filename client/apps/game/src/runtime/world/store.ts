@@ -131,8 +131,6 @@ export const listWorldNames = (): string[] => {
   return Object.keys(profiles);
 };
 
-export const listSavedWorldProfiles = (): WorldProfile[] => Object.values(getWorldProfiles());
-
 const getWorldProfiles = (): WorldProfilesMap => {
   return safeParse<WorldProfilesMap>(localStorage.getItem(PROFILES_KEY), {});
 };
