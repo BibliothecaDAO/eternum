@@ -1,0 +1,10 @@
+<svg viewBox="0 0 161 12" style="opacity: 0.7" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path
+        d="M0.11276 6L2.99951 8.88675L5.88626 6L2.99951 3.11325L0.11276 6ZM2.99951 6.5L159.761 6.50001L159.761 5.50001L2.99951 5.5L2.99951 6.5Z"
+        fill="#CAB1A6" />
+    <path
+        d="M143.401 1L138.721 4L132.445 6.00003L138.721 8L143.401 11L150 6.5C150 6.5 153.581 8 155.04 8C156.5 8 160 6.00003 160 6.00003C160 6.00003 156.5 4 155.04 4C153.581 4 150 5.5 150 5.5L143.401 1Z"
+        fill="#CAB1A6" stroke="#CAB1A6" stroke-linejoin="round" />
+    <circle cx="1.5" cy="1.5" r="1.5" transform="matrix(-1 0 0 1 145 4.5)" fill="#1B1B1B" />
+    <circle cx="1" cy="1" r="1" transform="matrix(-1 0 0 1 156 5)" fill="#1B1B1B" />
+</svg>
