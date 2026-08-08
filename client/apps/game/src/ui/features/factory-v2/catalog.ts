@@ -14,11 +14,13 @@ const FACTORY_ENVIRONMENT_LABELS: Record<string, string> = {
   "appchain.blitz": "Appchain",
 };
 
-// First entry is the default selection — keep that mainnet, so a launch
-// without an explicit choice targets production rather than the appchain.
+// Mainnet launching is switched off in this deployment (the Cartridge-hosted
+// factory infrastructure it relied on is gone); the appchain launch service
+// handles launches instead. Uncomment the mainnet entries to restore them —
+// the first entry is the default selection.
 const FACTORY_ENVIRONMENTS_BY_MODE: Record<FactoryGameMode, string[]> = {
-  eternum: ["mainnet.eternum", "appchain.eternum"],
-  blitz: ["mainnet.blitz", "appchain.blitz"],
+  eternum: [/* "mainnet.eternum", */ "appchain.eternum"],
+  blitz: [/* "mainnet.blitz", */ "appchain.blitz"],
 };
 
 /** `<chain>.<mode>` -> chain, so a new environment only needs a list entry. */

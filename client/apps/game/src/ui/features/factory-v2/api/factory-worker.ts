@@ -5,7 +5,7 @@ import type {
   FactoryMapConfigOverrides,
 } from "@bibliothecadao/types";
 
-export type FactoryWorkerEnvironmentId = "mainnet.eternum" | "mainnet.blitz";
+export type FactoryWorkerEnvironmentId = "mainnet.eternum" | "mainnet.blitz" | "appchain.eternum" | "appchain.blitz";
 type FactoryWorkerRunKind = "game" | "series" | "rotation";
 export type FactoryWorkerGameLaunchStepId =
   | "create-world"
@@ -112,7 +112,7 @@ interface FactoryWorkerRotationEvaluation {
 interface FactoryWorkerBaseRunRecord {
   version: 1;
   environment: FactoryWorkerEnvironmentId;
-  chain: "mainnet";
+  chain: "mainnet" | "appchain";
   gameType: "eternum" | "blitz";
   status: FactoryWorkerRunStatus;
   executionMode: "fast_trial" | "guided_recovery";
@@ -212,7 +212,7 @@ export interface FactoryWorkerSeriesRunRecord extends FactoryWorkerBaseRunRecord
   }>;
   summary: {
     environment: FactoryWorkerEnvironmentId;
-    chain: "mainnet";
+    chain: "mainnet" | "appchain";
     gameType: "eternum" | "blitz";
     seriesName: string;
     rpcUrl: string;
@@ -262,7 +262,7 @@ export interface FactoryWorkerRotationRunRecord extends FactoryWorkerBaseRunReco
   }>;
   summary: {
     environment: FactoryWorkerEnvironmentId;
-    chain: "mainnet";
+    chain: "mainnet" | "appchain";
     gameType: "eternum" | "blitz";
     rotationName: string;
     seriesName: string;
@@ -468,7 +468,14 @@ interface FundFactoryRotationPrizesRequest {
 
 const FACTORY_WORKER_BASE_URL = env.VITE_PUBLIC_FACTORY_WORKER_URL.replace(/\/$/, "");
 
-const SUPPORTED_FACTORY_WORKER_ENVIRONMENTS = new Set<FactoryWorkerEnvironmentId>(["mainnet.eternum", "mainnet.blitz"]);
+const SUPPORTED_FACTORY_WORKER_ENVIRONMENTS = new Set<FactoryWorkerEnvironmentId>([
+  // Mainnet launches went through the hosted realms-game-launch worker; they
+  // are switched off in the appchain deployment. Uncomment to restore.
+  // "mainnet.eternum",
+  // "mainnet.blitz",
+  "appchain.eternum",
+  "appchain.blitz",
+]);
 
 export class FactoryWorkerApiError extends Error {
   constructor(
