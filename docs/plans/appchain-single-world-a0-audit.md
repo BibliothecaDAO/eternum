@@ -1,8 +1,8 @@
 # A0 — Single-world schema audit (Blitz, `s2_blitz`)
 
-**Status: audit complete 2026-08-08. Sign-off 2026-08-08: D1, D2, D5, D6, D11 approved as recommended; D13 amended
-(entry NFT stays — single shared collection, see D13); D15 pending (namespace question). Unmarked decisions ratified by
-default.**
+**Status: A0 COMPLETE — all decisions signed off 2026-08-08.** D1, D2, D5, D6, D11, D15 approved as recommended; D13
+amended (entry NFT stays — single shared collection, see D13); unmarked decisions ratified by default. This schema is
+the A1 contract.
 
 Scope: every `#[dojo::model]` and `#[dojo::event]` in `contracts/game` (79 models incl. the inline `AntiBot`, 21 event
 models), all 43 `#[dojo::contract]`s (36 files), the `wf` factory world (13 models), the TS config pipeline (29 steps /
@@ -313,8 +313,10 @@ Recommendations included; items marked ⚠ need explicit sign-off, the rest are 
   one per game.
 - **D14 Quests: retire from `s2_blitz`** (`start_quest` is already commented out; the feature flag is a world-global
   toggle).
-- **D15 ⏳ The new world deploys the Blitz-core contract set only.** Namespace note: `s2_blitz` does **not** exist yet —
-  it is the working name for the new world's namespace. This is still "improving s1": the same Cairo source in
+- **D15 ✅ The new world deploys the Blitz-core contract set only** (confirmed with the constraint: valid as long as
+  Blitz needs no Eternum models — the audit verified Blitz presets never enable the excluded systems, and A1 re-checks
+  at manifest time that no core system reads an excluded model). Namespace note: `s2_blitz` does **not** exist yet — it
+  is the working name for the new world's namespace. This is still "improving s1": the same Cairo source in
   `contracts/game` evolves in place; only the deployed namespace string (`DEFAULT_NS()`) changes. A new namespace/world
   is forced, not stylistic: adding `#[key] game_id` changes every model's storage layout and entity identity (poseidon
   of keys), which Dojo cannot upgrade in place — a fresh world deploy is required regardless; during A5 the new world
