@@ -14,7 +14,7 @@
   "latestLaunchRequestId": "31257004226-1",
   "currentStepId": "configure-worlds",
   "createdAt": "2026-04-28T04:59:08.099Z",
-  "updatedAt": "2026-08-08T12:22:54.369Z",
+  "updatedAt": "2026-08-08T12:30:19.533Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -19335,7 +19335,7 @@
         },
         "seriesGameNumber": 175,
         "currentStepId": null,
-        "latestEvent": "Indexer maintenance failed for apac-gladiator-08-08-26-1200: Invalid OAuth token, please authenticate with `slot auth login`\nInvalid OAuth token, please authenticate with `slot auth login`",
+        "latestEvent": "Queued indexer tier update to legendary",
         "status": "pending",
         "configSteps": [],
         "steps": [
@@ -19382,11 +19382,8 @@
         ],
         "artifacts": {
           "pendingIndexerTierTarget": "legendary",
-          "pendingIndexerTierRequestedAt": "2026-08-08T12:12:07.903Z",
-          "indexerCreated": false,
-          "lastIndexerTierDispatchTarget": "legendary",
-          "lastIndexerTierDispatchFailedAt": "2026-08-08T12:12:07.903Z",
-          "lastIndexerTierDispatchError": "Invalid OAuth token, please authenticate with `slot auth login`\nInvalid OAuth token, please authenticate with `slot auth login`"
+          "pendingIndexerTierRequestedAt": "2026-08-08T12:30:18.346Z",
+          "indexerCreated": false
         }
       },
       {
