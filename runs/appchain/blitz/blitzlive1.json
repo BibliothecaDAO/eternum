@@ -6,14 +6,14 @@
   "chain": "appchain",
   "gameType": "blitz",
   "gameName": "blitzlive1",
-  "status": "attention",
+  "status": "running",
   "executionMode": "fast_trial",
   "requestedLaunchStep": "full",
   "inputPath": "inputs/appchain/blitz/blitzlive1/31262530412-1.json",
   "latestLaunchRequestId": "31262530412-1",
   "currentStepId": "create-world",
   "createdAt": "2026-08-08T14:38:30.385Z",
-  "updatedAt": "2026-08-08T14:41:32.030Z",
+  "updatedAt": "2026-08-08T14:41:36.621Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -27,12 +27,11 @@
     {
       "id": "create-world",
       "title": "Creating world",
-      "status": "failed",
+      "status": "running",
       "workflowStepName": "Creating world",
-      "latestEvent": "Creating world failed: \u001b[2m[+0ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Preparing launch for \"blitzlive1\" on appchain.blitz\n\u001b[2m[+13ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Effective config flags: dev_mode_on=false, duration_seconds=7200, single_realm_mode=false, two_player_mode=false\n\u001b[2m[+13ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Resolved 29 config steps for appchain.blitz\nTypeError: fetch() URL is invalid\n    at fetch (unknown)\n    at fetchFactorySqlRows (/home/runner/work/eternum/eternum/config/deployer/clean/factory/discovery.ts:49:26)\n    at fetchFactoryWorldRows (/home/runner/work/eternum/eternum/config/deployer/clean/factory/discovery.ts:176:5)\n    at resolveFactoryWorldProfile (/home/runner/work/eternum/eternum/config/deployer/clean/factory/discovery.ts:249:46)\n    at resolveExistingWorldProfileBeforeCreateGameAttempt (/home/runner/work/eternum/eternum/config/deployer/clean/launch/runner.ts:497:38)\n    at submitCreateGameAttempts (/home/runner/work/eternum/eternum/config/deployer/clean/launch/runner.ts:526:40)\n    at runCreateWorldStep (/home/runner/work/eternum/eternum/config/deployer/clean/launch/runner.ts:1106:46)\n    at executeLaunchStep (/home/runner/work/eternum/eternum/config/deployer/clean/launch/runner.ts:1277:13)\n    at runLaunchStep (/home/runner/work/eternum/eternum/config/deployer/clean/launch/runner.ts:1313:9)\n    at main (/home/runner/work/eternum/eternum/config/deployer/clean/cli/launch-step.ts:150:25)",
-      "startedAt": "2026-08-08T14:38:35.079Z",
-      "finishedAt": "2026-08-08T14:38:44.946Z",
-      "errorMessage": "\u001b[2m[+0ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Preparing launch for \"blitzlive1\" on appchain.blitz\n\u001b[2m[+13ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Effective config flags: dev_mode_on=false, duration_seconds=7200, single_realm_mode=false, two_player_mode=false\n\u001b[2m[+13ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Resolved 29 config steps for appchain.blitz\nTypeError: fetch() URL is invalid\n    at fetch (unknown)\n    at fetchFactorySqlRows (/home/runner/work/eternum/eternum/config/deployer/clean/factory/discovery.ts:49:26)\n    at fetchFactoryWorldRows (/home/runner/work/eternum/eternum/config/deployer/clean/factory/discovery.ts:176:5)\n    at resolveFactoryWorldProfile (/home/runner/work/eternum/eternum/config/deployer/clean/factory/discovery.ts:249:46)\n    at resolveExistingWorldProfileBeforeCreateGameAttempt (/home/runner/work/eternum/eternum/config/deployer/clean/launch/runner.ts:497:38)\n    at submitCreateGameAttempts (/home/runner/work/eternum/eternum/config/deployer/clean/launch/runner.ts:526:40)\n    at runCreateWorldStep (/home/runner/work/eternum/eternum/config/deployer/clean/launch/runner.ts:1106:46)\n    at executeLaunchStep (/home/runner/work/eternum/eternum/config/deployer/clean/launch/runner.ts:1277:13)\n    at runLaunchStep (/home/runner/work/eternum/eternum/config/deployer/clean/launch/runner.ts:1313:9)\n    at main (/home/runner/work/eternum/eternum/config/deployer/clean/cli/launch-step.ts:150:25)"
+      "latestEvent": "Creating world started",
+      "startedAt": "2026-08-08T14:41:36.621Z",
+      "finishedAt": "2026-08-08T14:38:44.946Z"
     },
     {
       "id": "wait-for-factory-index",
@@ -72,5 +71,13 @@
   ],
   "artifacts": {
     "scheduledStartTime": "1786205400"
+  },
+  "activeLease": {
+    "launchRequestId": "31262530412-1",
+    "workflowRunId": 31262530412,
+    "workflowRunAttempt": 1,
+    "stepId": "create-world",
+    "acquiredAt": "2026-08-08T14:41:36.621Z",
+    "expiresAt": "2026-08-08T15:26:36.621Z"
   }
 }
