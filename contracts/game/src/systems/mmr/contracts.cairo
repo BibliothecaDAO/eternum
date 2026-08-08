@@ -25,9 +25,9 @@ pub trait IMMRToken<T> {
 pub trait IMMRSystems<T> {
     /// Commit MMR metadata for a completed game with on-chain verification
     /// Caller provides player list; contract verifies each player and calculates median
-    fn commit_game_mmr_meta(ref self: T, players: Array<ContractAddress>);
+    fn commit_game_mmr_meta(ref self: T, game_id: u32, players: Array<ContractAddress>);
     /// Permissionless per-player MMR claim for a completed game
-    fn claim_game_mmr(ref self: T, players: Array<ContractAddress>);
+    fn claim_game_mmr(ref self: T, game_id: u32, players: Array<ContractAddress>);
 }
 
 
@@ -39,10 +39,11 @@ pub mod mmr_systems {
     use dojo::model::ModelStorage;
     use dojo::world::{WorldStorage, WorldStorageTrait};
     use starknet::ContractAddress;
-    use crate::constants::{DEFAULT_NS, WORLD_CONFIG_ID};
+    use crate::constants::DEFAULT_NS;
     use crate::models::config::WorldConfigUtilImpl;
+    use crate::models::game::GameRegistry;
     use crate::models::mmr::{MMRClaimed, MMRConfig, MMRGameMeta};
-    use crate::models::rank::{PlayerRank, PlayersRankFinal, PlayersRankTrial};
+    use crate::models::rank::{PlayerRank, PlayersRankTrial};
     use crate::systems::utils::mmr::MMRCalculatorImpl;
     use super::{IMMRSystems, IMMRTokenDispatcher, IMMRTokenDispatcherTrait};
 
@@ -57,6 +58,8 @@ pub mod mmr_systems {
     #[dojo::event]
     pub struct MMRGameCommitted {
         #[key]
+        pub game_id: u32,
+        #[key]
         pub trial_id: u128,
         pub player_count: u16,
         pub game_median: u128,
@@ -68,6 +71,8 @@ pub mod mmr_systems {
     #[derive(Copy, Drop, Serde)]
     #[dojo::event]
     pub struct PlayerMMRChanged {
+        #[key]
+        pub game_id: u32,
         #[key]
         pub player: ContractAddress,
         #[key]
@@ -84,25 +89,24 @@ pub mod mmr_systems {
 
     #[abi(embed_v0)]
     pub impl MMRSystemsImpl of IMMRSystems<ContractState> {
-        fn commit_game_mmr_meta(ref self: ContractState, players: Array<ContractAddress>) {
+        fn commit_game_mmr_meta(ref self: ContractState, game_id: u32, players: Array<ContractAddress>) {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
 
             let player_count: u16 = players.len().try_into().unwrap();
             assert!(player_count.is_non_zero(), "Eternum: no players");
 
-            let players_rank_final: PlayersRankFinal = world.read_model(WORLD_CONFIG_ID);
-            assert!(players_rank_final.trial_id.is_non_zero(), "Eternum: rankings not finalized");
-
-            let final_trial_id = players_rank_final.trial_id;
+            let game: GameRegistry = world.read_model(game_id);
+            assert!(game.final_trial_id.is_non_zero(), "Eternum: rankings not finalized");
+            let final_trial_id = game.final_trial_id;
 
             // Get MMR config
-            let mmr_config: MMRConfig = WorldConfigUtilImpl::get_member(world, selector!("mmr_config"));
+            let mmr_config: MMRConfig = WorldConfigUtilImpl::get_member(world, game_id, selector!("mmr_config"));
 
             // Check if MMR is enabled
             assert!(mmr_config.enabled, "Eternum: MMR not enabled");
 
             // Read the trial data
-            let trial: PlayersRankTrial = world.read_model(final_trial_id);
+            let trial: PlayersRankTrial = world.read_model(game_id);
             assert!(!trial.total_player_count_revealed.is_zero(), "Eternum: no players");
 
             // Check minimum players (convert u8 to u16 for comparison)
@@ -110,7 +114,7 @@ pub mod mmr_systems {
             assert!(trial.total_player_count_revealed >= min_players, "Eternum: not enough players");
 
             // Avoid overwriting an existing commit
-            let mut meta: MMRGameMeta = world.read_model(final_trial_id);
+            let mut meta: MMRGameMeta = world.read_model(game_id);
             assert!(meta.game_median.is_zero(), "Eternum: mmr meta already committed");
 
             // Verify player count matches trial
@@ -136,7 +140,7 @@ pub mod mmr_systems {
                 player_address_used.insert(player.into(), true);
 
                 // Verify player has a valid rank in this trial
-                let player_rank: PlayerRank = world.read_model((final_trial_id, player));
+                let player_rank: PlayerRank = world.read_model((game_id, player));
                 assert!(player_rank.rank > 0, "MMR: player {:?} has no rank in trial", player);
 
                 // Get player's current MMR (get_player_mmr returns INITIAL_MMR if uninitialized)
@@ -174,6 +178,7 @@ pub mod mmr_systems {
             world
                 .emit_event(
                     @MMRGameCommitted {
+                        game_id,
                         trial_id: final_trial_id,
                         player_count,
                         game_median,
@@ -184,15 +189,14 @@ pub mod mmr_systems {
                 );
         }
 
-        fn claim_game_mmr(ref self: ContractState, players: Array<ContractAddress>) {
+        fn claim_game_mmr(ref self: ContractState, game_id: u32, players: Array<ContractAddress>) {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
 
-            let players_rank_final: PlayersRankFinal = world.read_model(WORLD_CONFIG_ID);
-            assert!(players_rank_final.trial_id.is_non_zero(), "Eternum: rankings not finalized");
+            let game: GameRegistry = world.read_model(game_id);
+            assert!(game.final_trial_id.is_non_zero(), "Eternum: rankings not finalized");
+            let final_trial_id = game.final_trial_id;
 
-            let final_trial_id = players_rank_final.trial_id;
-
-            let player_rank_trial_final: PlayersRankTrial = world.read_model(final_trial_id);
+            let player_rank_trial_final: PlayersRankTrial = world.read_model(game_id);
             let player_count: u16 = players.len().try_into().unwrap();
 
             // Verify player count matches trial. all claims must be made at once
@@ -204,17 +208,17 @@ pub mod mmr_systems {
             );
 
             // Get MMR config
-            let mmr_config: MMRConfig = WorldConfigUtilImpl::get_member(world, selector!("mmr_config"));
+            let mmr_config: MMRConfig = WorldConfigUtilImpl::get_member(world, game_id, selector!("mmr_config"));
 
             // Check if MMR is enabled
             assert!(mmr_config.enabled, "Eternum: MMR not enabled");
 
             // Ensure meta has been committed
-            let meta: MMRGameMeta = world.read_model(final_trial_id);
+            let meta: MMRGameMeta = world.read_model(game_id);
             assert!(meta.game_median.is_non_zero(), "Eternum: mmr meta not committed");
 
             // Ensure claim hasnt been called previously
-            let mut claimed: MMRClaimed = world.read_model(final_trial_id);
+            let mut claimed: MMRClaimed = world.read_model(game_id);
             assert!(claimed.claimed_at.is_zero(), "Eternum: mmr already claimed");
 
             // ensure mmr token address is set
@@ -234,7 +238,7 @@ pub mod mmr_systems {
                 player_address_used.insert(player.into(), true);
 
                 // Read player rank
-                let player_rank: PlayerRank = world.read_model((final_trial_id, player));
+                let player_rank: PlayerRank = world.read_model((game_id, player));
                 assert!(player_rank.rank.is_non_zero(), "Eternum: player zero rank");
 
                 // Load current MMR (get_player_mmr returns INITIAL_MMR if uninitialized)
@@ -254,6 +258,7 @@ pub mod mmr_systems {
                 world
                     .emit_event(
                         @PlayerMMRChanged {
+                            game_id,
                             player,
                             trial_id: final_trial_id,
                             old_mmr: current_mmr,

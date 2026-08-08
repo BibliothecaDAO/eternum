@@ -8,12 +8,14 @@ use crate::constants::{
     RELICS_RESOURCE_END_ID, RELICS_RESOURCE_START_ID, RESOURCE_PRECISION, ResourceTypes, resource_type_name,
 };
 use crate::models::config::{TickImpl, WeightConfig};
+use crate::models::game::GameRegistry;
 use crate::models::resource::production::production::{Production, ProductionImpl};
 use crate::models::weight::{Weight, WeightImpl};
 
 
 #[derive(Copy, Drop, Serde)]
 pub struct SingleResource {
+    pub game_id: u32,
     pub entity_id: ID,
     pub resource_type: u8,
     pub balance: u128,
@@ -34,20 +36,21 @@ impl SingleResourceDisplay of Display<SingleResource> {
 
 #[generate_trait]
 pub impl WeightStoreImpl of WeightStoreTrait {
-    fn retrieve(ref world: WorldStorage, entity_id: ID) -> Weight {
+    fn retrieve(ref world: WorldStorage, game_id: u32, entity_id: ID) -> Weight {
         assert!(entity_id.is_non_zero(), "entity id not found");
-        ResourceImpl::read_weight(ref world, entity_id)
+        ResourceImpl::read_weight(ref world, game_id, entity_id)
     }
 
-    fn store(ref self: Weight, ref world: WorldStorage, entity_id: ID) {
-        ResourceImpl::write_weight(ref world, entity_id, self);
+    fn store(ref self: Weight, ref world: WorldStorage, game_id: u32, entity_id: ID) {
+        ResourceImpl::write_weight(ref world, game_id, entity_id, self);
     }
 }
 
 #[generate_trait]
 pub impl ResourceWeightImpl of ResourceWeightTrait {
-    fn grams(ref world: WorldStorage, resource_type: u8) -> u128 {
-        let unit_weight_config: WeightConfig = world.read_model(resource_type);
+    fn grams(ref world: WorldStorage, game_id: u32, resource_type: u8) -> u128 {
+        let game: GameRegistry = world.read_model(game_id);
+        let unit_weight_config: WeightConfig = world.read_model((game.preset_id, resource_type));
         unit_weight_config.weight_gram
     }
 }
@@ -57,6 +60,7 @@ pub impl ResourceWeightImpl of ResourceWeightTrait {
 pub impl SingleResourceStoreImpl of SingleResourceStoreTrait {
     fn retrieve(
         ref world: WorldStorage,
+        game_id: u32,
         entity_id: ID,
         resource_type: u8,
         ref entity_weight: Weight,
@@ -66,27 +70,27 @@ pub impl SingleResourceStoreImpl of SingleResourceStoreTrait {
         assert!(entity_id.is_non_zero(), "entity id not found");
         assert!(resource_type.is_non_zero(), "invalid resource specified");
 
-        let balance: u128 = ResourceImpl::read_balance(ref world, entity_id, resource_type);
+        let balance: u128 = ResourceImpl::read_balance(ref world, game_id, entity_id, resource_type);
         // ensure the balance is updated when entity is a structure
         let mut resource = SingleResource {
-            entity_id, resource_type, balance, production: Zero::zero(), produces: structure,
+            game_id, entity_id, resource_type, balance, production: Zero::zero(), produces: structure,
         };
         if resource.produces {
             let now: u32 = starknet::get_block_timestamp().try_into().unwrap();
-            resource.production = ResourceImpl::read_production(ref world, entity_id, resource_type);
+            resource.production = ResourceImpl::read_production(ref world, game_id, entity_id, resource_type);
             if resource.production.last_updated_at != now {
                 // harvest the resource and get the amount of resources produced
                 let harvest_amount: u128 = ProductionImpl::harvest(ref resource);
 
                 // add the produced amount to the resource balance
                 if harvest_amount.is_non_zero() {
-                    let unit_weight_grams: u128 = ResourceWeightImpl::grams(ref world, resource_type);
+                    let unit_weight_grams: u128 = ResourceWeightImpl::grams(ref world, game_id, resource_type);
                     resource.add(harvest_amount, ref entity_weight, unit_weight_grams);
                 }
 
                 // commit entity resource and weight
                 resource.store(ref world);
-                entity_weight.store(ref world, entity_id);
+                entity_weight.store(ref world, game_id, entity_id);
             }
         }
 
@@ -94,9 +98,11 @@ pub impl SingleResourceStoreImpl of SingleResourceStoreTrait {
     }
 
     fn store(ref self: SingleResource, ref world: WorldStorage) {
-        ResourceImpl::write_balance(ref world, self.entity_id, self.resource_type, self.balance);
+        ResourceImpl::write_balance(ref world, self.game_id, self.entity_id, self.resource_type, self.balance);
         if self.produces {
-            ResourceImpl::write_production(ref world, self.entity_id, self.resource_type, self.production);
+            ResourceImpl::write_production(
+                ref world, self.game_id, self.entity_id, self.resource_type, self.production,
+            );
         }
     }
 }
@@ -206,6 +212,8 @@ pub impl StructureSingleResourceFoodImpl of StructureSingleResourceFoodTrait {
 #[dojo::model]
 pub struct Resource {
     #[key]
+    game_id: u32,
+    #[key]
     entity_id: ID,
     // Resource Types
     STONE_BALANCE: u128,
@@ -313,53 +321,62 @@ pub struct Resource {
 
 #[generate_trait]
 pub impl ResourceImpl of ResourceTrait {
-    fn initialize(ref world: WorldStorage, entity_id: ID) {
+    fn initialize(ref world: WorldStorage, game_id: u32, entity_id: ID) {
         let mut resource: Resource = Default::default();
+        resource.game_id = game_id;
         resource.entity_id = entity_id;
         world.write_model(@resource);
     }
 
-    fn read_balance(ref world: WorldStorage, entity_id: ID, resource_type: u8) -> u128 {
+    fn read_balance(ref world: WorldStorage, game_id: u32, entity_id: ID, resource_type: u8) -> u128 {
         return world
-            .read_member(Model::<Resource>::ptr_from_keys(entity_id), Self::balance_selector(resource_type.into()));
+            .read_member(
+                Model::<Resource>::ptr_from_keys((game_id, entity_id)), Self::balance_selector(resource_type.into()),
+            );
     }
 
-    fn read_production(ref world: WorldStorage, entity_id: ID, resource_type: u8) -> Production {
+    fn read_production(ref world: WorldStorage, game_id: u32, entity_id: ID, resource_type: u8) -> Production {
         // Skip production for resources that don't have production mechanics
         if RelicResourceImpl::is_relic(resource_type) || resource_type == ResourceTypes::LORDS {
             return Zero::zero();
         }
         return world
-            .read_member(Model::<Resource>::ptr_from_keys(entity_id), Self::production_selector(resource_type.into()));
-    }
-
-
-    fn write_balance(ref world: WorldStorage, entity_id: ID, resource_type: u8, balance: u128) {
-        world
-            .write_member(
-                Model::<Resource>::ptr_from_keys(entity_id), Self::balance_selector(resource_type.into()), balance,
+            .read_member(
+                Model::<Resource>::ptr_from_keys((game_id, entity_id)), Self::production_selector(resource_type.into()),
             );
     }
 
-    fn write_production(ref world: WorldStorage, entity_id: ID, resource_type: u8, production: Production) {
+
+    fn write_balance(ref world: WorldStorage, game_id: u32, entity_id: ID, resource_type: u8, balance: u128) {
+        world
+            .write_member(
+                Model::<Resource>::ptr_from_keys((game_id, entity_id)),
+                Self::balance_selector(resource_type.into()),
+                balance,
+            );
+    }
+
+    fn write_production(
+        ref world: WorldStorage, game_id: u32, entity_id: ID, resource_type: u8, production: Production,
+    ) {
         // Skip production for resources that don't have production mechanics
         if RelicResourceImpl::is_relic(resource_type) || resource_type == ResourceTypes::LORDS {
             return;
         }
         world
             .write_member(
-                Model::<Resource>::ptr_from_keys(entity_id),
+                Model::<Resource>::ptr_from_keys((game_id, entity_id)),
                 Self::production_selector(resource_type.into()),
                 production,
             );
     }
 
-    fn read_weight(ref world: WorldStorage, entity_id: ID) -> Weight {
-        return world.read_member(Model::<Resource>::ptr_from_keys(entity_id), selector!("weight"));
+    fn read_weight(ref world: WorldStorage, game_id: u32, entity_id: ID) -> Weight {
+        return world.read_member(Model::<Resource>::ptr_from_keys((game_id, entity_id)), selector!("weight"));
     }
 
-    fn write_weight(ref world: WorldStorage, entity_id: ID, weight: Weight) {
-        world.write_member(Model::<Resource>::ptr_from_keys(entity_id), selector!("weight"), weight);
+    fn write_weight(ref world: WorldStorage, game_id: u32, entity_id: ID, weight: Weight) {
+        world.write_member(Model::<Resource>::ptr_from_keys((game_id, entity_id)), selector!("weight"), weight);
     }
 
     fn balance_selector(resource_type: felt252) -> felt252 {
@@ -476,8 +493,9 @@ pub impl ResourceImpl of ResourceTrait {
         }
     }
 
-    fn key_only(entity_id: ID) -> Resource {
+    fn key_only(game_id: u32, entity_id: ID) -> Resource {
         let mut model: Resource = Default::default();
+        model.game_id = game_id;
         model.entity_id = entity_id;
         return model;
     }
@@ -487,6 +505,8 @@ pub impl ResourceImpl of ResourceTrait {
 #[derive(IntrospectPacked, Copy, Drop, Serde)]
 #[dojo::model]
 pub struct ResourceAllowance {
+    #[key]
+    pub game_id: u32,
     #[key]
     pub owner_entity_id: ID,
     #[key]
@@ -500,6 +520,8 @@ pub struct ResourceAllowance {
 #[dojo::model]
 pub struct ResourceList {
     #[key]
+    pub preset_id: u32,
+    #[key]
     pub entity_id: ID,
     #[key]
     pub index: u32,
@@ -511,6 +533,8 @@ pub struct ResourceList {
 #[derive(Introspect, Copy, Drop, Serde)]
 #[dojo::model]
 pub struct ResourceMinMaxList {
+    #[key]
+    pub preset_id: u32,
     #[key]
     pub entity_id: ID,
     #[key]

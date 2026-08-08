@@ -16,6 +16,7 @@ pub trait IERC20<TState> {
 pub trait IRealmInternalSystems<T> {
     fn create_internal(
         ref self: T,
+        game_id: u32,
         owner: starknet::ContractAddress,
         realm_id: ID,
         resources: Array<u8>,
@@ -25,7 +26,7 @@ pub trait IRealmInternalSystems<T> {
         explore_village_coord: bool,
         grant_starting_troops: bool,
     ) -> ID;
-    fn provision_internal(ref self: T, structure_id: ID);
+    fn provision_internal(ref self: T, game_id: u32, structure_id: ID);
 }
 
 #[dojo::contract]
@@ -41,6 +42,7 @@ pub mod realm_internal_systems {
     impl RealmInternalSystemsImpl of super::IRealmInternalSystems<ContractState> {
         fn create_internal(
             ref self: ContractState,
+            game_id: u32,
             owner: ContractAddress,
             realm_id: ID,
             resources: Array<u8>,
@@ -62,15 +64,15 @@ pub mod realm_internal_systems {
 
             // create the realm structure first, then optionally attach troop startup
             let structure_id = iRealmImpl::create_realm_structure(
-                ref world, owner, realm_id, resources, order, wonder, coord, explore_village_coord,
+                ref world, game_id, owner, realm_id, resources, order, wonder, coord, explore_village_coord,
             );
             if grant_starting_troops {
-                iRealmImpl::grant_realm_starting_troops(ref world, structure_id);
+                iRealmImpl::grant_realm_starting_troops(ref world, game_id, structure_id);
             }
             structure_id.into()
         }
 
-        fn provision_internal(ref self: ContractState, structure_id: ID) {
+        fn provision_internal(ref self: ContractState, game_id: u32, structure_id: ID) {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
             let (realm_systems, _) = world.dns(@"realm_systems").unwrap();
             let (blitz_realm_systems, _) = world.dns(@"blitz_realm_systems").unwrap();
@@ -80,7 +82,7 @@ pub mod realm_internal_systems {
                 "caller must be the realm_systems or blitz_realm_systems",
             );
 
-            iRealmImpl::provision_realm(ref world, structure_id);
+            iRealmImpl::provision_realm(ref world, game_id, structure_id);
         }
     }
 }

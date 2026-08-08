@@ -23,24 +23,30 @@ use crate::systems::utils::troop::iMercenariesImpl;
 
 #[generate_trait]
 pub impl iCampDiscoveryImpl of iCampDiscoveryTrait {
-    fn grant_starting_resources(ref world: WorldStorage, structure_id: ID) {
+    fn grant_starting_resources(ref world: WorldStorage, game_id: u32, structure_id: ID) {
         let village_found_resources_config: VillageFoundResourcesConfig = WorldConfigUtilImpl::get_member(
-            world, selector!("village_find_resources_config"),
+            world, game_id, selector!("village_find_resources_config"),
         );
-        let mut structure_weight = WeightStoreImpl::retrieve(ref world, structure_id);
+        let mut structure_weight = WeightStoreImpl::retrieve(ref world, game_id, structure_id);
 
         for index in 0..village_found_resources_config.resources_mm_list_count {
             let resource: ResourceMinMaxList = world
                 .read_model((village_found_resources_config.resources_mm_list_id, index));
-            let resource_weight_grams = ResourceWeightImpl::grams(ref world, resource.resource_type);
+            let resource_weight_grams = ResourceWeightImpl::grams(ref world, game_id, resource.resource_type);
             let mut structure_resource = SingleResourceStoreImpl::retrieve(
-                ref world, structure_id, resource.resource_type, ref structure_weight, resource_weight_grams, true,
+                ref world,
+                game_id,
+                structure_id,
+                resource.resource_type,
+                ref structure_weight,
+                resource_weight_grams,
+                true,
             );
             structure_resource.add(resource.min_amount, ref structure_weight, resource_weight_grams);
             structure_resource.store(ref world);
         }
 
-        structure_weight.store(ref world, structure_id);
+        structure_weight.store(ref world, game_id, structure_id);
     }
 
     fn lottery(map_config: MapConfig, vrf_seed: u256, world: WorldStorage) -> bool {
@@ -63,6 +69,7 @@ pub impl iCampDiscoveryImpl of iCampDiscoveryTrait {
 
     fn create(
         ref world: WorldStorage,
+        game_id: u32,
         coord: Coord,
         troop_limit_config: TroopLimitConfig,
         troop_stamina_config: TroopStaminaConfig,
@@ -75,6 +82,7 @@ pub impl iCampDiscoveryImpl of iCampDiscoveryTrait {
         structure_creation_library
             .make_structure(
                 world,
+                game_id,
                 coord,
                 camp_owner_address,
                 structure_id,
@@ -85,10 +93,11 @@ pub impl iCampDiscoveryImpl of iCampDiscoveryTrait {
                 false,
             );
 
-        Self::grant_starting_resources(ref world, structure_id);
+        Self::grant_starting_resources(ref world, game_id, structure_id);
 
         BuildingImpl::create(
             ref world,
+            game_id,
             camp_owner_address,
             structure_id,
             StructureCategory::Camp.into(),
@@ -97,13 +106,20 @@ pub impl iCampDiscoveryImpl of iCampDiscoveryTrait {
             BuildingImpl::center(),
         );
 
-        ProductionStrategyImpl::seed_unbounded_structure_labor_output(ref world, structure_id);
+        ProductionStrategyImpl::seed_unbounded_structure_labor_output(ref world, game_id, structure_id);
 
         // slot must start from delta, to charlie, to beta, to alpha
         let slot_tiers = array![(GuardSlot::Delta, TroopTier::T1, TroopType::Crossbowman)].span();
-        let tick_config: TickInterval = TickImpl::get_tick_interval(ref world);
+        let tick_config: TickInterval = TickImpl::get_tick_interval(ref world, game_id);
         iMercenariesImpl::add(
-            ref world, structure_id, vrf_seed, slot_tiers, troop_limit_config, troop_stamina_config, tick_config,
+            ref world,
+            game_id,
+            structure_id,
+            vrf_seed,
+            slot_tiers,
+            troop_limit_config,
+            troop_stamina_config,
+            tick_config,
         );
 
         return true;

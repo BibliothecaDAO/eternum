@@ -3,8 +3,9 @@ use dojo::model::{Model, ModelStorage};
 use dojo::world::WorldStorage;
 use starknet::ContractAddress;
 use crate::alias::ID;
-use crate::constants::{RESOURCE_PRECISION, WORLD_CONFIG_ID};
+use crate::constants::RESOURCE_PRECISION;
 use crate::models::config::HyperstrtConstructConfig;
+use crate::models::game::GameRegistry;
 use crate::models::guild::GuildMember;
 use crate::models::season::SeasonPrize;
 
@@ -12,7 +13,7 @@ use crate::models::season::SeasonPrize;
 #[dojo::model]
 pub struct HyperstructureGlobals {
     #[key]
-    pub world_id: ID,
+    pub game_id: u32,
     pub created_count: u32,
     pub completed_count: u32,
 }
@@ -20,6 +21,8 @@ pub struct HyperstructureGlobals {
 #[derive(IntrospectPacked, Copy, Drop, Serde)]
 #[dojo::model]
 pub struct Hyperstructure {
+    #[key]
+    pub game_id: u32,
     #[key]
     pub hyperstructure_id: ID,
     pub initialized: bool,
@@ -32,6 +35,8 @@ pub struct Hyperstructure {
 #[derive(Introspect, Copy, Drop, Serde, Default)]
 #[dojo::model]
 pub struct HyperstructureRequirements {
+    #[key]
+    pub game_id: u32,
     #[key]
     pub hyperstructure_id: ID,
     pub stone_amount_current: u128,
@@ -65,20 +70,23 @@ pub struct HyperstructureRequirements {
 
 #[generate_trait]
 pub impl HyperstructureRequirementsImpl of HyperstructureRequirementsTrait {
-    fn initialize(ref world: WorldStorage, hyperstructure_id: ID) {
+    fn initialize(ref world: WorldStorage, game_id: u32, hyperstructure_id: ID) {
         let mut hyperstructure_requirements: HyperstructureRequirements = Default::default();
+        hyperstructure_requirements.game_id = game_id;
         hyperstructure_requirements.hyperstructure_id = hyperstructure_id;
         world.write_model(@hyperstructure_requirements);
     }
 
-    fn get_resource_points(ref world: WorldStorage, resource_type: u8) -> u128 {
-        let construction_cost_config: HyperstrtConstructConfig = world.read_model(resource_type);
+    fn get_resource_points(ref world: WorldStorage, game_id: u32, resource_type: u8) -> u128 {
+        let game: GameRegistry = world.read_model(game_id);
+        let construction_cost_config: HyperstrtConstructConfig = world.read_model((game.preset_id, resource_type));
         construction_cost_config.resource_contribution_points.into()
     }
 
     // Formula for each resource is = randomness / resource_type % (max - min)
     fn get_amount_needed(ref world: WorldStorage, hyperstructure: Hyperstructure, resource_type: u8) -> u128 {
-        let construction_cost_config: HyperstrtConstructConfig = world.read_model(resource_type);
+        let game: GameRegistry = world.read_model(hyperstructure.game_id);
+        let construction_cost_config: HyperstrtConstructConfig = world.read_model((game.preset_id, resource_type));
         let min_amount = construction_cost_config.min_amount;
         let max_amount = construction_cost_config.max_amount;
         let needed_amount = if min_amount == max_amount {
@@ -93,56 +101,58 @@ pub impl HyperstructureRequirementsImpl of HyperstructureRequirementsTrait {
     }
 
 
-    fn write_current_amount(ref world: WorldStorage, hyperstructure_id: ID, resource_type: u8, amount: u128) {
+    fn write_current_amount(
+        ref world: WorldStorage, game_id: u32, hyperstructure_id: ID, resource_type: u8, amount: u128,
+    ) {
         return world
             .write_member(
-                Model::<HyperstructureRequirements>::ptr_from_keys(hyperstructure_id),
+                Model::<HyperstructureRequirements>::ptr_from_keys((game_id, hyperstructure_id)),
                 Self::current_amount_selector(resource_type.into()),
                 amount,
             );
     }
 
-    fn write_needed_resource_total(ref world: WorldStorage, hyperstructure_id: ID, total: u128) {
+    fn write_needed_resource_total(ref world: WorldStorage, game_id: u32, hyperstructure_id: ID, total: u128) {
         return world
             .write_member(
-                Model::<HyperstructureRequirements>::ptr_from_keys(hyperstructure_id),
+                Model::<HyperstructureRequirements>::ptr_from_keys((game_id, hyperstructure_id)),
                 selector!("needed_resource_total"),
                 total,
             );
     }
 
-    fn write_current_resource_total(ref world: WorldStorage, hyperstructure_id: ID, total: u128) {
+    fn write_current_resource_total(ref world: WorldStorage, game_id: u32, hyperstructure_id: ID, total: u128) {
         return world
             .write_member(
-                Model::<HyperstructureRequirements>::ptr_from_keys(hyperstructure_id),
+                Model::<HyperstructureRequirements>::ptr_from_keys((game_id, hyperstructure_id)),
                 selector!("current_resource_total"),
                 total,
             );
     }
 
 
-    fn read_current_amount(ref world: WorldStorage, hyperstructure_id: ID, resource_type: u8) -> u128 {
+    fn read_current_amount(ref world: WorldStorage, game_id: u32, hyperstructure_id: ID, resource_type: u8) -> u128 {
         return world
             .read_member(
-                Model::<HyperstructureRequirements>::ptr_from_keys(hyperstructure_id),
+                Model::<HyperstructureRequirements>::ptr_from_keys((game_id, hyperstructure_id)),
                 Self::current_amount_selector(resource_type.into()),
             );
     }
 
 
-    fn read_current_resource_total(ref world: WorldStorage, hyperstructure_id: ID) -> u128 {
+    fn read_current_resource_total(ref world: WorldStorage, game_id: u32, hyperstructure_id: ID) -> u128 {
         return world
             .read_member(
-                Model::<HyperstructureRequirements>::ptr_from_keys(hyperstructure_id),
+                Model::<HyperstructureRequirements>::ptr_from_keys((game_id, hyperstructure_id)),
                 selector!("current_resource_total"),
             );
     }
 
 
-    fn read_needed_resource_total(ref world: WorldStorage, hyperstructure_id: ID) -> u128 {
+    fn read_needed_resource_total(ref world: WorldStorage, game_id: u32, hyperstructure_id: ID) -> u128 {
         return world
             .read_member(
-                Model::<HyperstructureRequirements>::ptr_from_keys(hyperstructure_id),
+                Model::<HyperstructureRequirements>::ptr_from_keys((game_id, hyperstructure_id)),
                 selector!("needed_resource_total"),
             );
     }
@@ -183,6 +193,8 @@ pub impl HyperstructureRequirementsImpl of HyperstructureRequirementsTrait {
 #[dojo::model]
 pub struct HyperstructureShareholders {
     #[key]
+    pub game_id: u32,
+    #[key]
     pub hyperstructure_id: ID,
     pub start_at: u64,
     pub shareholders: Span<(ContractAddress, u16)>,
@@ -191,6 +203,8 @@ pub struct HyperstructureShareholders {
 #[derive(Copy, Drop, Serde)]
 #[dojo::model]
 pub struct PlayerConstructionPoints {
+    #[key]
+    pub game_id: u32,
     #[key]
     pub address: ContractAddress,
     #[key]
@@ -203,6 +217,8 @@ pub struct PlayerConstructionPoints {
 #[dojo::model]
 pub struct PlayerRegisteredPoints {
     #[key]
+    pub game_id: u32,
+    #[key]
     pub address: ContractAddress,
     pub registered_points: u128,
     pub prize_claimed: bool,
@@ -210,14 +226,14 @@ pub struct PlayerRegisteredPoints {
 
 #[generate_trait]
 pub impl PlayerRegisteredPointsImpl of PlayerRegisteredPointsTrait {
-    fn register_points(ref world: WorldStorage, address: ContractAddress, points: u128) {
+    fn register_points(ref world: WorldStorage, game_id: u32, address: ContractAddress, points: u128) {
         if points.is_non_zero() {
-            let mut player_registered_points: PlayerRegisteredPoints = world.read_model(address);
+            let mut player_registered_points: PlayerRegisteredPoints = world.read_model((game_id, address));
             player_registered_points.registered_points += points;
             world.write_model(@player_registered_points);
 
             // increase global total registered points
-            let mut season_prize: SeasonPrize = world.read_model(WORLD_CONFIG_ID);
+            let mut season_prize: SeasonPrize = world.read_model(game_id);
             season_prize.total_registered_points += points;
             world.write_model(@season_prize);
         }
@@ -245,8 +261,8 @@ pub impl HyperstructureConstructionAccessImpl of HyperstructureConstructionAcces
                 assert!(contributor_address == owner_address, "Hyperstructure is private");
             },
             ConstructionAccess::GuildOnly => {
-                let guild_member: GuildMember = world.read_model(contributor_address);
-                let owner_guild_member: GuildMember = world.read_model(owner_address);
+                let guild_member: GuildMember = world.read_model((self.game_id, contributor_address));
+                let owner_guild_member: GuildMember = world.read_model((self.game_id, owner_address));
                 assert!(
                     owner_guild_member.guild_id.is_non_zero(),
                     "hyperstructure owner needs to join a guild or change hyperstructure construction permissions",

@@ -16,6 +16,8 @@ use crate::models::troop::{GuardTroops, TroopBoosts, TroopTier, TroopType, Troop
 #[dojo::model]
 pub struct Wonder {
     #[key]
+    pub game_id: u32,
+    #[key]
     pub structure_id: ID,
     pub coord: Coord,
     pub realm_id: u16,
@@ -25,40 +27,46 @@ pub struct Wonder {
 #[dojo::model]
 pub struct StructureReservation {
     #[key]
+    pub game_id: u32,
+    #[key]
     pub coord: Coord,
     pub reserved: bool,
 }
 
 
-#[derive(Introspect, Copy, Drop, Serde)]
-#[dojo::model]
-pub struct StructureVillageSlots {
-    #[key]
-    pub connected_realm_entity_id: ID,
-    pub connected_realm_id: u16,
-    pub connected_realm_coord: Coord,
-    pub directions_left: Span<Direction>,
-}
+// Village slot state is excluded from the Blitz-core world (D15).
+// #[derive(Introspect, Copy, Drop, Serde)]
+// #[dojo::model]
+// pub struct StructureVillageSlots {
+//     #[key]
+//     pub connected_realm_entity_id: ID,
+//     pub connected_realm_id: u16,
+//     pub connected_realm_coord: Coord,
+//     pub directions_left: Span<Direction>,
+// }
 
 #[derive(Introspect, Copy, Drop, Serde)]
 #[dojo::model]
 pub struct StructureOwnerStats {
     #[key]
+    pub game_id: u32,
+    #[key]
     pub owner: ContractAddress,
     pub structures_num: u32,
-    pub name: felt252,
+    // Display names remain in the global AddressName model (D7).
+// pub name: felt252,
 }
 
 #[generate_trait]
 pub impl StructureOwnerStatsImpl of StructureOwnerStatsTrait {
-    fn increase(ref world: WorldStorage, owner: ContractAddress) {
-        let mut so_stats: StructureOwnerStats = world.read_model(owner);
+    fn increase(ref world: WorldStorage, game_id: u32, owner: ContractAddress) {
+        let mut so_stats: StructureOwnerStats = world.read_model((game_id, owner));
         so_stats.structures_num += 1;
         world.write_model(@so_stats);
     }
 
-    fn decrease(ref world: WorldStorage, owner: ContractAddress) {
-        let mut so_stats: StructureOwnerStats = world.read_model(owner);
+    fn decrease(ref world: WorldStorage, game_id: u32, owner: ContractAddress) {
+        let mut so_stats: StructureOwnerStats = world.read_model((game_id, owner));
         if so_stats.structures_num > 0 {
             so_stats.structures_num -= 1;
             world.write_model(@so_stats);
@@ -76,6 +84,8 @@ pub impl StructureOwnerStatsImpl of StructureOwnerStatsTrait {
 #[dojo::model]
 pub struct Structure {
     #[key]
+    pub game_id: u32,
+    #[key]
     pub entity_id: ID,
     pub owner: ContractAddress,
     pub base: StructureBase,
@@ -88,17 +98,17 @@ pub struct Structure {
 
 #[generate_trait]
 pub impl StructureOwnerStoreImpl of StructureOwnerStoreTrait {
-    fn retrieve(ref world: WorldStorage, structure_id: ID) -> ContractAddress {
-        let owner = world.read_member(Model::<Structure>::ptr_from_keys(structure_id), selector!("owner"));
+    fn retrieve(ref world: WorldStorage, game_id: u32, structure_id: ID) -> ContractAddress {
+        let owner = world.read_member(Model::<Structure>::ptr_from_keys((game_id, structure_id)), selector!("owner"));
         return owner;
     }
 
-    fn store(owner: ContractAddress, ref world: WorldStorage, structure_id: ID) {
-        let previous_owner: ContractAddress = Self::retrieve(ref world, structure_id);
-        StructureOwnerStatsImpl::decrease(ref world, previous_owner);
+    fn store(owner: ContractAddress, ref world: WorldStorage, game_id: u32, structure_id: ID) {
+        let previous_owner: ContractAddress = Self::retrieve(ref world, game_id, structure_id);
+        StructureOwnerStatsImpl::decrease(ref world, game_id, previous_owner);
 
-        world.write_member(Model::<Structure>::ptr_from_keys(structure_id), selector!("owner"), owner);
-        StructureOwnerStatsImpl::increase(ref world, owner);
+        world.write_member(Model::<Structure>::ptr_from_keys((game_id, structure_id)), selector!("owner"), owner);
+        StructureOwnerStatsImpl::increase(ref world, game_id, owner);
     }
 }
 
@@ -129,21 +139,21 @@ pub struct StructureMetadata {
     pub village_realm: ID,
 }
 
-#[derive(Copy, Drop, Serde, Introspect)]
-#[dojo::model]
-pub struct VillageTroop {
-    #[key]
-    pub village_id: ID,
-    pub claimed: bool,
-}
-
-#[derive(Copy, Drop, Serde, Introspect)]
-#[dojo::model]
-pub struct VillageRaidImmunity {
-    #[key]
-    pub village_id: ID,
-    pub last_raided_at: u64,
-}
+// Village troop state is excluded from the Blitz-core world (D15).
+// #[derive(Copy, Drop, Serde, Introspect)]
+// #[dojo::model]
+// pub struct VillageTroop {
+//     #[key]
+//     pub village_id: ID,
+//     pub claimed: bool,
+// }
+// #[derive(Copy, Drop, Serde, Introspect)]
+// #[dojo::model]
+// pub struct VillageRaidImmunity {
+//     #[key]
+//     pub village_id: ID,
+//     pub last_raided_at: u64,
+// }
 
 #[generate_trait]
 pub impl StructureBaseImpl of StructureBaseTrait {
@@ -197,9 +207,9 @@ pub impl StructureBaseImpl of StructureBaseTrait {
         return (false, "");
     }
 
-    fn max_level(self: StructureBase, world: WorldStorage) -> u8 {
+    fn max_level(self: StructureBase, world: WorldStorage, game_id: u32) -> u8 {
         let structure_max_level_config: StructureMaxLevelConfig = WorldConfigUtilImpl::get_member(
-            world, selector!("structure_max_level_config"),
+            world, game_id, selector!("structure_max_level_config"),
         );
         if self.category == StructureCategory::Realm.into() {
             return structure_max_level_config.realm_max;
@@ -213,63 +223,71 @@ pub impl StructureBaseImpl of StructureBaseTrait {
 
 #[generate_trait]
 pub impl StructureBaseStoreImpl of StructureBaseStoreTrait {
-    fn retrieve(ref world: WorldStorage, structure_id: ID) -> StructureBase {
-        let base = world.read_member(Model::<Structure>::ptr_from_keys(structure_id), selector!("base"));
+    fn retrieve(ref world: WorldStorage, game_id: u32, structure_id: ID) -> StructureBase {
+        let base = world.read_member(Model::<Structure>::ptr_from_keys((game_id, structure_id)), selector!("base"));
         return base;
     }
 
-    fn store(ref self: StructureBase, ref world: WorldStorage, structure_id: ID) {
-        world.write_member(Model::<Structure>::ptr_from_keys(structure_id), selector!("base"), self);
+    fn store(ref self: StructureBase, ref world: WorldStorage, game_id: u32, structure_id: ID) {
+        world.write_member(Model::<Structure>::ptr_from_keys((game_id, structure_id)), selector!("base"), self);
     }
 }
 
 #[generate_trait]
 pub impl StructureTroopGuardStoreImpl of StructureTroopGuardStoreTrait {
-    fn retrieve(ref world: WorldStorage, structure_id: ID) -> GuardTroops {
-        let troops = world.read_member(Model::<Structure>::ptr_from_keys(structure_id), selector!("troop_guards"));
+    fn retrieve(ref world: WorldStorage, game_id: u32, structure_id: ID) -> GuardTroops {
+        let troops = world
+            .read_member(Model::<Structure>::ptr_from_keys((game_id, structure_id)), selector!("troop_guards"));
         return troops;
     }
 
-    fn store(ref self: GuardTroops, ref world: WorldStorage, structure_id: ID) {
-        world.write_member(Model::<Structure>::ptr_from_keys(structure_id), selector!("troop_guards"), self);
+    fn store(ref self: GuardTroops, ref world: WorldStorage, game_id: u32, structure_id: ID) {
+        world.write_member(Model::<Structure>::ptr_from_keys((game_id, structure_id)), selector!("troop_guards"), self);
     }
 }
 
 #[generate_trait]
 pub impl StructureTroopExplorerStoreImpl of StructureTroopExplorerStoreTrait {
-    fn retrieve(ref world: WorldStorage, structure_id: ID) -> Span<ID> {
+    fn retrieve(ref world: WorldStorage, game_id: u32, structure_id: ID) -> Span<ID> {
         let explorers = world
-            .read_member(Model::<Structure>::ptr_from_keys(structure_id), selector!("troop_explorers"));
+            .read_member(Model::<Structure>::ptr_from_keys((game_id, structure_id)), selector!("troop_explorers"));
         return explorers;
     }
 
-    fn store(self: Span<ID>, ref world: WorldStorage, structure_id: ID) {
-        world.write_member(Model::<Structure>::ptr_from_keys(structure_id), selector!("troop_explorers"), self);
+    fn store(self: Span<ID>, ref world: WorldStorage, game_id: u32, structure_id: ID) {
+        world
+            .write_member(
+                Model::<Structure>::ptr_from_keys((game_id, structure_id)), selector!("troop_explorers"), self,
+            );
     }
 }
 
 #[generate_trait]
 pub impl StructureResourcesPackedStoreImpl of StructureResourcesPackedStoreTrait {
-    fn retrieve(ref world: WorldStorage, structure_id: ID) -> u128 {
+    fn retrieve(ref world: WorldStorage, game_id: u32, structure_id: ID) -> u128 {
         let resources_packed = world
-            .read_member(Model::<Structure>::ptr_from_keys(structure_id), selector!("resources_packed"));
+            .read_member(Model::<Structure>::ptr_from_keys((game_id, structure_id)), selector!("resources_packed"));
         return resources_packed;
     }
 
-    fn store(self: u128, ref world: WorldStorage, structure_id: ID) {
-        world.write_member(Model::<Structure>::ptr_from_keys(structure_id), selector!("resources_packed"), self);
+    fn store(self: u128, ref world: WorldStorage, game_id: u32, structure_id: ID) {
+        world
+            .write_member(
+                Model::<Structure>::ptr_from_keys((game_id, structure_id)), selector!("resources_packed"), self,
+            );
     }
 }
 
 #[generate_trait]
 pub impl StructureMetadataStoreImpl of StructureMetadataStoreTrait {
-    fn retrieve(ref world: WorldStorage, structure_id: ID) -> StructureMetadata {
-        let metadata = world.read_member(Model::<Structure>::ptr_from_keys(structure_id), selector!("metadata"));
+    fn retrieve(ref world: WorldStorage, game_id: u32, structure_id: ID) -> StructureMetadata {
+        let metadata = world
+            .read_member(Model::<Structure>::ptr_from_keys((game_id, structure_id)), selector!("metadata"));
         return metadata;
     }
 
-    fn store(self: StructureMetadata, ref world: WorldStorage, structure_id: ID) {
-        world.write_member(Model::<Structure>::ptr_from_keys(structure_id), selector!("metadata"), self);
+    fn store(self: StructureMetadata, ref world: WorldStorage, game_id: u32, structure_id: ID) {
+        world.write_member(Model::<Structure>::ptr_from_keys((game_id, structure_id)), selector!("metadata"), self);
     }
 }
 
@@ -294,6 +312,7 @@ pub impl StructureDefaultImpl of Default<Structure> {
             },
         };
         Structure {
+            game_id: 0,
             entity_id: 0,
             owner: Zero::zero(),
             base: StructureBase {
@@ -330,10 +349,16 @@ pub impl StructureDefaultImpl of Default<Structure> {
 #[generate_trait]
 pub impl StructureImpl of StructureTrait {
     fn new(
-        entity_id: ID, category: StructureCategory, coord: Coord, resources_packed: u128, metadata: StructureMetadata,
+        game_id: u32,
+        entity_id: ID,
+        category: StructureCategory,
+        coord: Coord,
+        resources_packed: u128,
+        metadata: StructureMetadata,
     ) -> Structure {
         assert!(category != StructureCategory::None, "category cannot be none");
         let mut structure: Structure = Default::default();
+        structure.game_id = game_id;
         structure.entity_id = entity_id;
         structure.category = category.into();
         structure.base.category = category.into();

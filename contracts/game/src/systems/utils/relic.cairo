@@ -24,13 +24,13 @@ use crate::utils::math::{PercentageImpl, PercentageValueImpl};
 
 #[generate_trait]
 pub impl iRelicChestDiscoveryImpl of iRelicChestDiscoveryTrait {
-    fn should_discover(world: WorldStorage, relic_record: RelicRecord, map_config: MapConfig) -> bool {
+    fn should_discover(world: WorldStorage, game_id: u32, relic_record: RelicRecord, map_config: MapConfig) -> bool {
         let last_discovered_at = relic_record.last_discovered_at;
         let next_discovery_at = last_discovered_at + map_config.relic_discovery_interval_sec.into();
         next_discovery_at <= starknet::get_block_timestamp()
     }
 
-    fn discover(ref world: WorldStorage, start_coord: Coord, map_config: MapConfig, vrf_seed: u256) {
+    fn discover(ref world: WorldStorage, game_id: u32, start_coord: Coord, map_config: MapConfig, vrf_seed: u256) {
         // make sure seed is different for each discovery system to prevent same outcome for same
         // probability
         let VRF_OFFSET: u256 = 12;
@@ -62,9 +62,10 @@ pub impl iRelicChestDiscoveryImpl of iRelicChestDiscoveryTrait {
         }
 
         loop {
-            let tile_opt: TileOpt = world.read_model((destination_coord.alt, destination_coord.x, destination_coord.y));
+            let tile_opt: TileOpt = world
+                .read_model((game_id, destination_coord.alt, destination_coord.x, destination_coord.y));
             let mut tile: Tile = tile_opt.into();
-            let mut structure_reservation: StructureReservation = world.read_model(destination_coord);
+            let structure_reservation: StructureReservation = world.read_model((game_id, destination_coord));
             if tile.occupied() || structure_reservation.reserved {
                 destination_coord = destination_coord.neighbor(Direction::East);
             } else {
@@ -72,7 +73,11 @@ pub impl iRelicChestDiscoveryImpl of iRelicChestDiscoveryTrait {
                     let biome_library = biome_library::get_dispatcher(@world);
                     let biome: Biome = biome_library
                         .get_biome(
-                            world, destination_coord.alt, destination_coord.x.into(), destination_coord.y.into(),
+                            world,
+                            game_id,
+                            destination_coord.alt,
+                            destination_coord.x.into(),
+                            destination_coord.y.into(),
                         );
                     IMapImpl::explore(ref world, ref tile, biome);
                 }
@@ -113,6 +118,7 @@ pub impl iRelicChestResourceFactoryImpl of iRelicChestResourceFactoryTrait {
     // todo: note: same relic may appear multiple times in the array
     fn grant_relics(
         ref world: WorldStorage,
+        game_id: u32,
         to_explorer_id: ID,
         ref to_explorer_weight: Weight,
         map_config: MapConfig,
@@ -127,15 +133,21 @@ pub impl iRelicChestResourceFactoryImpl of iRelicChestResourceFactoryTrait {
 
         for i in 0..chosen_relic_ids.len() {
             let relic_resource_id: u8 = *chosen_relic_ids.at(i);
-            let relic_resource_weight_grams: u128 = ResourceWeightImpl::grams(ref world, relic_resource_id);
+            let relic_resource_weight_grams: u128 = ResourceWeightImpl::grams(ref world, game_id, relic_resource_id);
             let mut relic_resource = SingleResourceStoreImpl::retrieve(
-                ref world, to_explorer_id, relic_resource_id, ref to_explorer_weight, relic_resource_weight_grams, true,
+                ref world,
+                game_id,
+                to_explorer_id,
+                relic_resource_id,
+                ref to_explorer_weight,
+                relic_resource_weight_grams,
+                true,
             );
             relic_resource.add(1 * RESOURCE_PRECISION, ref to_explorer_weight, relic_resource_weight_grams);
             relic_resource.store(ref world);
         }
 
-        to_explorer_weight.store(ref world, to_explorer_id);
+        to_explorer_weight.store(ref world, game_id, to_explorer_id);
 
         return chosen_relic_ids;
     }

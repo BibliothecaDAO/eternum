@@ -4,7 +4,8 @@ use dojo::storage::dojo_store::DojoStore;
 use dojo::world::WorldStorage;
 use starknet::ContractAddress;
 use crate::alias::ID;
-use crate::constants::{UNIVERSAL_DEPLOYER_ADDRESS, WORLD_CONFIG_ID};
+use crate::constants::WORLD_CONFIG_ID;
+use crate::models::game::GameRegistry;
 use crate::models::mmr::MMRConfig;
 use crate::models::position::{Coord, CoordImpl, Direction};
 use crate::models::resource::resource::TroopResourceImpl;
@@ -14,60 +15,66 @@ use crate::systems::utils::blitz_profile::{
 use crate::utils::interfaces::collectibles::{ICollectibleDispatcher, ICollectibleDispatcherTrait};
 use crate::utils::math::PercentageImpl;
 use crate::utils::random::VRFImpl;
-//
-// GLOBAL CONFIGS
-//
-
 #[derive(Introspect, Copy, Drop, Serde, DojoStore)]
 #[dojo::model]
 pub struct WorldConfig {
     #[key]
-    pub config_id: ID,
-    pub admin_address: ContractAddress,
-    pub vrf_provider_address: ContractAddress,
+    pub game_id: u32,
     pub map_center_offset: u32,
     pub biome_climate_config: BiomeClimateConfig,
-    pub season_addresses_config: SeasonAddressesConfig,
-    pub hyperstructure_config: HyperstructureConfig,
-    pub hyperstructure_cost_config: HyperstructureCostConfig,
-    pub speed_config: SpeedConfig,
-    pub map_config: MapConfig,
     pub settlement_config: SettlementConfig,
     pub blitz_mode_on: bool,
     pub blitz_settlement_config: BlitzSettlementConfig,
     pub blitz_hypers_settlement_config: BlitzHypersSettlementConfig,
-    pub blitz_registration_config: BlitzRegistrationConfig,
-    pub blitz_exploration_config: BlitzExplorationConfig,
+    pub blitz_registration_config: BlitzRegistrationGameConfig,
+    pub realm_count_config: RealmCountConfig,
+}
+
+#[derive(Introspect, Copy, Drop, Serde, DojoStore)]
+#[dojo::model]
+pub struct PresetConfig {
+    #[key]
+    pub preset_id: u32,
+    pub hyperstructure_config: HyperstructureConfig,
+    pub hyperstructure_cost_config: HyperstructureCostConfig,
+    pub speed_config: SpeedConfig,
+    pub map_config: MapConfig,
     pub tick_config: TickConfig,
-    pub bank_config: BankConfig,
-    pub resource_bridge_config: ResourceBridgeConfig,
-    pub res_bridge_fee_split_config: ResourceBridgeFeeSplitConfig,
     pub structure_max_level_config: StructureMaxLevelConfig,
     pub building_config: BuildingConfig,
     pub troop_damage_config: TroopDamageConfig,
     pub troop_stamina_config: TroopStaminaConfig,
     pub troop_limit_config: TroopLimitConfig,
     pub capacity_config: CapacityConfig,
-    pub trade_config: TradeConfig,
     pub battle_config: BattleConfig,
-    pub realm_count_config: RealmCountConfig,
-    pub season_config: SeasonConfig,
-    pub agent_controller_config: AgentControllerConfig,
     pub realm_start_resources_config: StartingResourcesConfig,
     pub village_start_resources_config: StartingResourcesConfig,
     pub village_find_resources_config: VillageFoundResourcesConfig,
-    pub village_controller_config: VillageControllerConfig,
-    pub village_pass_config: VillageTokenConfig,
-    pub village_troop_config: VillageTroopConfig,
-    pub quest_config: QuestConfig,
     pub structure_capacity_config: StructureCapacityConfig,
     pub victory_points_grant_config: VictoryPointsGrantConfig,
     pub victory_points_win_config: VictoryPointsWinConfig,
-    pub factory_address: ContractAddress,
-    pub mmr_config: MMRConfig,
-    pub faith_config: FaithConfig,
+    pub blitz_exploration_config: BlitzExplorationConfig,
     pub artificer_config: ArtificerConfig,
-    pub bitcoin_mine_config: BitcoinMineConfig,
+    pub blitz_registration_rules_config: BlitzRegistrationRulesConfig,
+    pub mercenaries_name: felt252,
+}
+
+#[derive(Introspect, Copy, Drop, Serde, DojoStore)]
+#[dojo::model]
+pub struct ChainConfig {
+    #[key]
+    pub config_id: ID,
+    pub admin_address: ContractAddress,
+    pub vrf_provider_address: ContractAddress,
+    pub agent_controller_config: AgentControllerConfig,
+    pub mmr_config: MMRConfig,
+    pub fee_token: ContractAddress,
+    pub fee_recipient: ContractAddress,
+    pub entry_token_address: ContractAddress,
+    pub collectibles_cosmetics_address: ContractAddress,
+    pub collectibles_timelock_address: ContractAddress,
+    pub collectibles_lootchest_address: ContractAddress,
+    pub collectibles_elitenft_address: ContractAddress,
 }
 
 #[derive(Introspect, Copy, Drop, Serde, DojoStore)]
@@ -80,11 +87,12 @@ pub struct BiomeClimateConfig {
     pub moisture_seed: u32,
 }
 
-#[derive(Introspect, Copy, Drop, Serde, DojoStore)]
-pub struct WonderProductionBonusConfig {
-    pub within_tile_distance: u8,
-    pub bonus_percent_num: u128,
-}
+// WonderProductionBonusConfig retired as dead schema (D15).
+// #[derive(Introspect, Copy, Drop, Serde, DojoStore)]
+// pub struct WonderProductionBonusConfig {
+//     pub within_tile_distance: u8,
+//     pub bonus_percent_num: u128,
+// }
 
 #[derive(Introspect, Copy, Drop, Serde, DojoStore)]
 pub struct AgentControllerConfig {
@@ -118,8 +126,16 @@ pub struct SeasonConfig {
 
 #[generate_trait]
 pub impl SeasonConfigImpl of SeasonConfigTrait {
-    fn get(world: WorldStorage) -> SeasonConfig {
-        WorldConfigUtilImpl::get_member(world, selector!("season_config"))
+    fn get(world: WorldStorage, game_id: u32) -> SeasonConfig {
+        let game: GameRegistry = world.read_model(game_id);
+        SeasonConfig {
+            dev_mode_on: game.dev_mode_on,
+            start_settling_at: game.start_settling_at,
+            start_main_at: game.start_main_at,
+            end_at: game.end_at,
+            end_grace_seconds: game.end_grace_seconds,
+            registration_grace_seconds: game.registration_grace_seconds,
+        }
     }
 
     fn has_ended(self: SeasonConfig) -> bool {
@@ -216,28 +232,67 @@ pub impl SeasonConfigImpl of SeasonConfigTrait {
         );
     }
 
-    fn end_season(ref world: WorldStorage) {
-        let season_config_selector = selector!("season_config");
-        let mut season_config: SeasonConfig = WorldConfigUtilImpl::get_member(world, season_config_selector);
+    fn end_season(ref world: WorldStorage, game_id: u32) {
+        let mut game: GameRegistry = world.read_model(game_id);
+        let season_config = Self::get(world, game_id);
         // ensure season is not over
         assert!(season_config.has_ended() == false, "Season is over");
-        // set season as over
-        season_config.end_at = starknet::get_block_timestamp();
-        WorldConfigUtilImpl::set_member(ref world, season_config_selector, season_config);
+        game.end_at = starknet::get_block_timestamp();
+        world.write_model(@game);
     }
 }
 
 #[generate_trait]
 pub impl WorldConfigUtilImpl of WorldConfigTrait {
     fn get_member<T, impl TSerde: Serde<T>, impl TDojoStore: DojoStore<T>>(
-        world: WorldStorage, selector: felt252,
+        world: WorldStorage, game_id: u32, selector: felt252,
     ) -> T {
-        world.read_member(Model::<WorldConfig>::ptr_from_keys(WORLD_CONFIG_ID), selector)
+        if Self::is_game_member(selector) {
+            return world.read_member(Model::<WorldConfig>::ptr_from_keys(game_id), selector);
+        }
+        if Self::is_chain_member(selector) {
+            return world.read_member(Model::<ChainConfig>::ptr_from_keys(WORLD_CONFIG_ID), selector);
+        }
+        let game: GameRegistry = world.read_model(game_id);
+        world.read_member(Model::<PresetConfig>::ptr_from_keys(game.preset_id), selector)
     }
     fn set_member<T, impl TSerde: Serde<T>, impl TDrop: Drop<T>, impl TDojoStore: DojoStore<T>>(
-        ref world: WorldStorage, selector: felt252, value: T,
+        ref world: WorldStorage, scope_id: u32, selector: felt252, value: T,
     ) {
-        world.write_member(Model::<WorldConfig>::ptr_from_keys(WORLD_CONFIG_ID), selector, value)
+        if Self::is_game_member(selector) {
+            world.write_member(Model::<WorldConfig>::ptr_from_keys(scope_id), selector, value);
+            return;
+        }
+        if Self::is_chain_member(selector) {
+            world.write_member(Model::<ChainConfig>::ptr_from_keys(WORLD_CONFIG_ID), selector, value);
+            return;
+        }
+        world.write_member(Model::<PresetConfig>::ptr_from_keys(scope_id), selector, value);
+    }
+
+    fn is_game_member(selector: felt252) -> bool {
+        selector == selector!("map_center_offset")
+            || selector == selector!("biome_climate_config")
+            || selector == selector!("settlement_config")
+            || selector == selector!("blitz_mode_on")
+            || selector == selector!("blitz_settlement_config")
+            || selector == selector!("blitz_hypers_settlement_config")
+            || selector == selector!("blitz_registration_config")
+            || selector == selector!("realm_count_config")
+    }
+
+    fn is_chain_member(selector: felt252) -> bool {
+        selector == selector!("admin_address")
+            || selector == selector!("vrf_provider_address")
+            || selector == selector!("agent_controller_config")
+            || selector == selector!("mmr_config")
+            || selector == selector!("fee_token")
+            || selector == selector!("fee_recipient")
+            || selector == selector!("entry_token_address")
+            || selector == selector!("collectibles_cosmetics_address")
+            || selector == selector!("collectibles_timelock_address")
+            || selector == selector!("collectibles_lootchest_address")
+            || selector == selector!("collectibles_elitenft_address")
     }
 }
 
@@ -268,6 +323,8 @@ pub struct SeasonAddressesConfig {
 #[derive(IntrospectPacked, Copy, Drop, Serde)]
 #[dojo::model]
 pub struct HyperstrtConstructConfig {
+    #[key]
+    pub preset_id: u32,
     #[key]
     pub resource_type: u8,
     pub resource_contribution_points: u64,
@@ -314,8 +371,8 @@ pub struct SpeedConfig {
 
 #[generate_trait]
 pub impl SpeedImpl of SpeedTrait {
-    fn for_donkey(ref world: WorldStorage, resources: Span<(u8, u128)>) -> u16 {
-        let speed_config: SpeedConfig = WorldConfigUtilImpl::get_member(world, selector!("speed_config"));
+    fn for_donkey(ref world: WorldStorage, game_id: u32, resources: Span<(u8, u128)>) -> u16 {
+        let speed_config: SpeedConfig = WorldConfigUtilImpl::get_member(world, game_id, selector!("speed_config"));
         if TroopResourceImpl::contains_troops(resources) {
             speed_config.donkey_sec_per_km_troops
         } else {
@@ -780,11 +837,11 @@ pub impl BlitzHypersSettlementConfigImpl of BlitzHypersSettlementConfigTrait {
         }
     }
 
-    fn check_increase_max(ref world: WorldStorage, registration_count: u128, two_player_mode: bool) {
+    fn check_increase_max(ref world: WorldStorage, game_id: u32, registration_count: u128, two_player_mode: bool) {
         if two_player_mode {
-            Blitz2PlayerHypersSettlementConfigImpl::check_increase_max(ref world, registration_count);
+            Blitz2PlayerHypersSettlementConfigImpl::check_increase_max(ref world, game_id, registration_count);
         } else {
-            BlitzMultiplePlayerHypersSettlementConfigImpl::check_increase_max(ref world, registration_count);
+            BlitzMultiplePlayerHypersSettlementConfigImpl::check_increase_max(ref world, game_id, registration_count);
         }
     }
 }
@@ -846,7 +903,7 @@ pub impl BlitzMultiplePlayerHypersSettlementConfigImpl of BlitzMultiplePlayerHyp
     }
 
 
-    fn check_increase_max(ref world: WorldStorage, registration_count: u128) {
+    fn check_increase_max(ref world: WorldStorage, game_id: u32, registration_count: u128) {
         // increase hyperstructure ring count
         // [when (r_squared <= Math.floor(P/6) && P % 6 != 0) OR (r_squared == 0)]
         // Where P is num registered players
@@ -854,7 +911,7 @@ pub impl BlitzMultiplePlayerHypersSettlementConfigImpl of BlitzMultiplePlayerHyp
 
         let blitz_hyperstructure_settlement_config_selector: felt252 = selector!("blitz_hypers_settlement_config");
         let mut blitz_hyperstructure_settlement_config: BlitzHypersSettlementConfig = WorldConfigUtilImpl::get_member(
-            world, blitz_hyperstructure_settlement_config_selector,
+            world, game_id, blitz_hyperstructure_settlement_config_selector,
         );
         let max_ring_count = blitz_hyperstructure_settlement_config.max_ring_count;
         let max_ring_count_squared: u128 = max_ring_count.into() * max_ring_count.into();
@@ -862,7 +919,10 @@ pub impl BlitzMultiplePlayerHypersSettlementConfigImpl of BlitzMultiplePlayerHyp
             || (max_ring_count_squared <= registration_count / 6 && registration_count % 6 != 0) {
             blitz_hyperstructure_settlement_config.max_ring_count += 1;
             WorldConfigUtilImpl::set_member(
-                ref world, blitz_hyperstructure_settlement_config_selector, blitz_hyperstructure_settlement_config,
+                ref world,
+                game_id,
+                blitz_hyperstructure_settlement_config_selector,
+                blitz_hyperstructure_settlement_config,
             );
         }
     }
@@ -904,14 +964,14 @@ pub impl Blitz2PlayerHypersSettlementConfigImpl of Blitz2PlayerHypersSettlementC
             .neighbor_after_distance(triangle_direction, Self::line_tile_distance() / 2);
     }
 
-    fn check_increase_max(ref world: WorldStorage, registration_count: u128) {
+    fn check_increase_max(ref world: WorldStorage, game_id: u32, registration_count: u128) {
         let blitz_hyperstructure_settlement_config_selector: felt252 = selector!("blitz_hypers_settlement_config");
         let mut blitz_hyperstructure_settlement_config: BlitzHypersSettlementConfig = WorldConfigUtilImpl::get_member(
-            world, blitz_hyperstructure_settlement_config_selector,
+            world, game_id, blitz_hyperstructure_settlement_config_selector,
         );
         blitz_hyperstructure_settlement_config.max_ring_count = 2; // max 3 hypers for 2 player mode [0,1,2]
         WorldConfigUtilImpl::set_member(
-            ref world, blitz_hyperstructure_settlement_config_selector, blitz_hyperstructure_settlement_config,
+            ref world, game_id, blitz_hyperstructure_settlement_config_selector, blitz_hyperstructure_settlement_config,
         );
     }
 }
@@ -933,8 +993,52 @@ pub struct BlitzRegistrationConfig {
     pub registration_start_at: u32,
 }
 
+#[derive(IntrospectPacked, Copy, Drop, Serde, DojoStore)]
+pub struct BlitzRegistrationGameConfig {
+    pub fee_amount: u256,
+    pub registration_count: u16,
+    pub registration_count_max: u16,
+    pub registration_start_at: u32,
+}
+
+#[derive(IntrospectPacked, Copy, Drop, Serde, DojoStore)]
+pub struct BlitzRegistrationRulesConfig {
+    pub collectibles_cosmetics_max: u8,
+}
+
 #[generate_trait]
 pub impl BlitzRegistrationConfigImpl of BlitzRegistrationConfigTrait {
+    fn get(world: WorldStorage, game_id: u32) -> BlitzRegistrationConfig {
+        let game_config: BlitzRegistrationGameConfig = WorldConfigUtilImpl::get_member(
+            world, game_id, selector!("blitz_registration_config"),
+        );
+        let rules: BlitzRegistrationRulesConfig = WorldConfigUtilImpl::get_member(
+            world, game_id, selector!("blitz_registration_rules_config"),
+        );
+        BlitzRegistrationConfig {
+            fee_amount: game_config.fee_amount,
+            fee_token: WorldConfigUtilImpl::get_member(world, game_id, selector!("fee_token")),
+            fee_recipient: WorldConfigUtilImpl::get_member(world, game_id, selector!("fee_recipient")),
+            entry_token_address: WorldConfigUtilImpl::get_member(world, game_id, selector!("entry_token_address")),
+            collectibles_cosmetics_max: rules.collectibles_cosmetics_max,
+            collectibles_cosmetics_address: WorldConfigUtilImpl::get_member(
+                world, game_id, selector!("collectibles_cosmetics_address"),
+            ),
+            collectibles_timelock_address: WorldConfigUtilImpl::get_member(
+                world, game_id, selector!("collectibles_timelock_address"),
+            ),
+            collectibles_lootchest_address: WorldConfigUtilImpl::get_member(
+                world, game_id, selector!("collectibles_lootchest_address"),
+            ),
+            collectibles_elitenft_address: WorldConfigUtilImpl::get_member(
+                world, game_id, selector!("collectibles_elitenft_address"),
+            ),
+            registration_count: game_config.registration_count,
+            registration_count_max: game_config.registration_count_max,
+            registration_start_at: game_config.registration_start_at,
+        }
+    }
+
     fn is_registration_full(self: BlitzRegistrationConfig) -> bool {
         self.registration_count >= self.registration_count_max
     }
@@ -947,28 +1051,7 @@ pub impl BlitzRegistrationConfigImpl of BlitzRegistrationConfigTrait {
         now >= self.registration_start_at
     }
 
-    fn deploy_entry_token(
-        self: BlitzRegistrationConfig, entry_token_class_hash: felt252, calldata: Span<felt252>,
-    ) -> ContractAddress {
-        let deployment_salt: felt252 = starknet::get_tx_info().unbox().transaction_hash;
-        let deployment_unique: felt252 = 1; // true
-        let mut deployment_calldata: Array<felt252> = array![
-            entry_token_class_hash, deployment_salt, deployment_unique, calldata.len().into(),
-        ];
-        for i in 0..calldata.len() {
-            deployment_calldata.append(*calldata.at(i));
-        }
-        let deploy_result_span = starknet::syscalls::call_contract_syscall(
-            UNIVERSAL_DEPLOYER_ADDRESS.try_into().unwrap(),
-            0x1987cbd17808b9a23693d4de7e246a443cfe37e6e7fbaeabd7d7e6532b07c3d, // selector!("deployContract")
-            deployment_calldata.span(),
-        )
-            .unwrap();
-
-        // @audit could this fail and not panic?
-        (*deploy_result_span.at(0)).try_into().unwrap()
-    }
-
+    // Per-game UDC deployment retired: D13 uses one chain-wide entry-token collection.
 
     fn setup_entry_token(self: BlitzRegistrationConfig, ipfs_cid: ByteArray) {
         let dispatcher = ICollectibleDispatcher { contract_address: self.entry_token_address };
@@ -1094,16 +1177,16 @@ pub struct TroopLimitConfig {
 
 #[generate_trait]
 pub impl CombatConfigImpl of CombatConfigTrait {
-    fn troop_damage_config(ref world: WorldStorage) -> TroopDamageConfig {
-        return WorldConfigUtilImpl::get_member(world, selector!("troop_damage_config"));
+    fn troop_damage_config(ref world: WorldStorage, game_id: u32) -> TroopDamageConfig {
+        return WorldConfigUtilImpl::get_member(world, game_id, selector!("troop_damage_config"));
     }
 
-    fn troop_stamina_config(ref world: WorldStorage) -> TroopStaminaConfig {
-        return WorldConfigUtilImpl::get_member(world, selector!("troop_stamina_config"));
+    fn troop_stamina_config(ref world: WorldStorage, game_id: u32) -> TroopStaminaConfig {
+        return WorldConfigUtilImpl::get_member(world, game_id, selector!("troop_stamina_config"));
     }
 
-    fn troop_limit_config(ref world: WorldStorage) -> TroopLimitConfig {
-        return WorldConfigUtilImpl::get_member(world, selector!("troop_limit_config"));
+    fn troop_limit_config(ref world: WorldStorage, game_id: u32) -> TroopLimitConfig {
+        return WorldConfigUtilImpl::get_member(world, game_id, selector!("troop_limit_config"));
     }
 }
 
@@ -1115,23 +1198,23 @@ pub struct TickInterval {
 
 #[generate_trait]
 pub impl TickImpl of TickTrait {
-    fn _tick_config(ref world: WorldStorage) -> TickConfig {
-        WorldConfigUtilImpl::get_member(world, selector!("tick_config"))
+    fn _tick_config(ref world: WorldStorage, game_id: u32) -> TickConfig {
+        WorldConfigUtilImpl::get_member(world, game_id, selector!("tick_config"))
     }
 
     // get world tick config
-    fn get_tick_interval(ref world: WorldStorage) -> TickInterval {
-        let tick_config: TickConfig = Self::_tick_config(ref world);
+    fn get_tick_interval(ref world: WorldStorage, game_id: u32) -> TickInterval {
+        let tick_config: TickConfig = Self::_tick_config(ref world, game_id);
         return TickInterval { tick_interval: tick_config.armies_tick_in_seconds };
     }
 
-    fn get_delivery_tick_interval(ref world: WorldStorage) -> TickInterval {
-        let tick_config: TickConfig = Self::_tick_config(ref world);
+    fn get_delivery_tick_interval(ref world: WorldStorage, game_id: u32) -> TickInterval {
+        let tick_config: TickConfig = Self::_tick_config(ref world, game_id);
         return TickInterval { tick_interval: tick_config.delivery_tick_in_seconds };
     }
 
-    fn get_bitcoin_phase_interval(ref world: WorldStorage) -> TickInterval {
-        let tick_config: TickConfig = Self::_tick_config(ref world);
+    fn get_bitcoin_phase_interval(ref world: WorldStorage, game_id: u32) -> TickInterval {
+        let tick_config: TickConfig = Self::_tick_config(ref world, game_id);
         return TickInterval { tick_interval: tick_config.bitcoin_phase_in_seconds };
     }
 
@@ -1175,6 +1258,8 @@ pub impl TickImpl of TickTrait {
 #[dojo::model]
 pub struct WeightConfig {
     #[key]
+    pub preset_id: u32,
+    #[key]
     pub resource_type: u8,
     pub weight_gram: u128,
 }
@@ -1183,6 +1268,8 @@ pub struct WeightConfig {
 #[derive(IntrospectPacked, Copy, Drop, Serde, Default)]
 #[dojo::model]
 pub struct ResourceFactoryConfig {
+    #[key]
+    pub preset_id: u32,
     #[key]
     pub resource_type: u8,
     // production machine output per second
@@ -1201,6 +1288,8 @@ pub struct ResourceFactoryConfig {
 #[derive(Copy, Drop, Serde)]
 #[dojo::model]
 pub struct BuildingCategoryConfig {
+    #[key]
+    pub preset_id: u32,
     #[key]
     pub category: u8,
     pub complex_erection_cost_id: ID,
@@ -1236,8 +1325,8 @@ pub struct BattleConfig {
 
 #[generate_trait]
 pub impl BattleConfigImpl of BattleConfigTrait {
-    fn get(ref world: WorldStorage) -> BattleConfig {
-        WorldConfigUtilImpl::get_member(world, selector!("battle_config"))
+    fn get(ref world: WorldStorage, game_id: u32) -> BattleConfig {
+        WorldConfigUtilImpl::get_member(world, game_id, selector!("battle_config"))
     }
 }
 
@@ -1308,6 +1397,8 @@ pub struct StructureMaxLevelConfig {
 #[dojo::model]
 pub struct StructureLevelConfig {
     #[key]
+    pub preset_id: u32,
+    #[key]
     pub level: u8,
     pub required_resources_id: ID,
     pub required_resource_count: u8,
@@ -1318,6 +1409,8 @@ pub struct StructureLevelConfig {
 #[dojo::model]
 pub struct BlitzSettlementPosition {
     #[key]
+    pub game_id: u32,
+    #[key]
     pub settlement_number: u16,
     pub coords: Span<Coord>,
 }
@@ -1325,6 +1418,8 @@ pub struct BlitzSettlementPosition {
 #[derive(Copy, Drop, Serde, Introspect)]
 #[dojo::model]
 pub struct BlitzSettlement {
+    #[key]
+    pub game_id: u32,
     #[key]
     pub player: ContractAddress,
     pub structure_ids: Span<ID>,
@@ -1334,6 +1429,8 @@ pub struct BlitzSettlement {
 #[dojo::model]
 pub struct BlitzEntryTokenRegister {
     #[key]
+    pub game_id: u32,
+    #[key]
     pub token_id: u128,
     pub registered: bool,
 }
@@ -1341,6 +1438,8 @@ pub struct BlitzEntryTokenRegister {
 #[derive(Copy, Drop, Serde, Introspect)]
 #[dojo::model]
 pub struct BlitzCosmeticAttrsRegister {
+    #[key]
+    pub game_id: u32,
     #[key]
     pub player: ContractAddress,
     pub attrs: Span<u128>,

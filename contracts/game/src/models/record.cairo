@@ -2,7 +2,6 @@ use dojo::model::{Model, ModelStorage};
 use dojo::storage::dojo_store::DojoStore;
 use dojo::world::WorldStorage;
 use crate::alias::ID;
-use crate::constants::WORLD_CONFIG_ID;
 use crate::utils::math::{PercentageImpl, PercentageValueImpl};
 
 //
@@ -13,7 +12,7 @@ use crate::utils::math::{PercentageImpl, PercentageValueImpl};
 #[dojo::model]
 pub struct WorldRecord {
     #[key]
-    pub world_id: ID,
+    pub game_id: u32,
     pub relic_record: RelicRecord,
     pub blitz_fee_split_record: BlitzFeeSplitRecord,
 }
@@ -75,13 +74,13 @@ pub impl BlitzFeeSplitRecordImpl of BlitzFeeSplitRecordTrait {
 #[generate_trait]
 pub impl WorldRecordImpl of WorldRecordTrait {
     fn get_member<T, impl TSerde: Serde<T>, impl TDojoStore: DojoStore<T>>(
-        world: WorldStorage, selector: felt252,
+        world: WorldStorage, game_id: u32, selector: felt252,
     ) -> T {
-        world.read_member(Model::<WorldRecord>::ptr_from_keys(WORLD_CONFIG_ID), selector)
+        world.read_member(Model::<WorldRecord>::ptr_from_keys(game_id), selector)
     }
     fn set_member<T, impl TSerde: Serde<T>, impl TDrop: Drop<T>, impl TDojoStore: DojoStore<T>>(
-        ref world: WorldStorage, selector: felt252, value: T,
+        ref world: WorldStorage, game_id: u32, selector: felt252, value: T,
     ) {
-        world.write_member(Model::<WorldRecord>::ptr_from_keys(WORLD_CONFIG_ID), selector, value)
+        world.write_member(Model::<WorldRecord>::ptr_from_keys(game_id), selector, value)
     }
 }

@@ -139,15 +139,16 @@ pub impl IMapImpl of IMapTrait {
         // todo add event {if not already extracted}
     }
 
-    fn explore_ring(ref world: WorldStorage, start_coord: Coord, mut radius: u32) {
+    fn explore_ring(ref world: WorldStorage, game_id: u32, start_coord: Coord, mut radius: u32) {
         let biome_library = biome_library::get_dispatcher(@world);
         while radius > 0 {
             let coord_ring: Array<Coord> = start_coord.ring(radius);
             for coord in coord_ring {
                 // Coord { alt: false
-                let tile_opt: TileOpt = world.read_model((start_coord.alt, coord.x, coord.y));
+                let tile_opt: TileOpt = world.read_model((game_id, start_coord.alt, coord.x, coord.y));
                 let mut tile: Tile = tile_opt.into();
-                let biome: Biome = biome_library.get_biome(world, start_coord.alt, coord.x.into(), coord.y.into());
+                let biome: Biome = biome_library
+                    .get_biome(world, game_id, start_coord.alt, coord.x.into(), coord.y.into());
                 Self::explore(ref world, ref tile, biome);
             }
             radius -= 1;
@@ -192,11 +193,11 @@ pub impl IMapImpl of IMapTrait {
     /// Check if a coordinate is adjacent to a spire on the same map layer.
     /// Used for cross-layer battle validation - battles between different map layers
     /// are only allowed when at least one combatant is adjacent to a spire.
-    fn is_adjacent_to_spire(ref world: WorldStorage, coord: Coord) -> bool {
+    fn is_adjacent_to_spire(ref world: WorldStorage, game_id: u32, coord: Coord) -> bool {
         let directions = DirectionTrait::all();
         for direction in directions {
             let neighbor_coord = coord.neighbor(direction);
-            let tile_opt: TileOpt = world.read_model((coord.alt, neighbor_coord.x, neighbor_coord.y));
+            let tile_opt: TileOpt = world.read_model((game_id, coord.alt, neighbor_coord.x, neighbor_coord.y));
             let tile: Tile = tile_opt.into();
             if tile.occupier_type == TileOccupier::Spire.into() {
                 return true;
@@ -205,4 +206,3 @@ pub impl IMapImpl of IMapTrait {
         false
     }
 }
-

@@ -8,29 +8,34 @@ pub trait ITroopManagementSystems<TContractState> {
     // guard
     fn guard_add(
         ref self: TContractState,
+        game_id: u32,
         for_structure_id: ID,
         slot: GuardSlot,
         category: TroopType,
         tier: TroopTier,
         amount: u128,
     );
-    fn guard_delete(ref self: TContractState, for_structure_id: ID, slot: GuardSlot);
+    fn guard_delete(ref self: TContractState, game_id: u32, for_structure_id: ID, slot: GuardSlot);
 
     // explorer
     fn explorer_create(
         ref self: TContractState,
+        game_id: u32,
         for_structure_id: ID,
         category: TroopType,
         tier: TroopTier,
         amount: u128,
         spawn_direction: Direction,
     ) -> ID;
-    fn explorer_add(ref self: TContractState, to_explorer_id: ID, amount: u128, home_direction: Direction);
-    fn explorer_delete(ref self: TContractState, explorer_id: ID);
+    fn explorer_add(
+        ref self: TContractState, game_id: u32, to_explorer_id: ID, amount: u128, home_direction: Direction,
+    );
+    fn explorer_delete(ref self: TContractState, game_id: u32, explorer_id: ID);
 
     // troop swap
     fn explorer_explorer_swap(
         ref self: TContractState,
+        game_id: u32,
         from_explorer_id: ID,
         to_explorer_id: ID,
         to_explorer_direction: Direction,
@@ -38,6 +43,7 @@ pub trait ITroopManagementSystems<TContractState> {
     );
     fn explorer_guard_swap(
         ref self: TContractState,
+        game_id: u32,
         from_explorer_id: ID,
         to_structure_id: ID,
         to_structure_direction: Direction,
@@ -47,6 +53,7 @@ pub trait ITroopManagementSystems<TContractState> {
 
     fn guard_explorer_swap(
         ref self: TContractState,
+        game_id: u32,
         from_structure_id: ID,
         from_guard_slot: GuardSlot,
         to_explorer_id: ID,
@@ -90,15 +97,16 @@ pub mod troop_management_systems {
         ExplorerTroops, GuardImpl, GuardSlot, GuardTrait, GuardTroops, TroopLimitTrait, TroopTier, TroopType, Troops,
     };
     use crate::systems::utils::map::IMapImpl;
-    use crate::systems::utils::mine::iMineDiscoveryImpl;
+    // Mine discovery is excluded from the Blitz-core world (D15).
     use crate::systems::utils::troop::{iExplorerImpl, iGuardImpl, iTroopImpl};
-    use crate::systems::utils::village::iVillageImpl;
+    // Village helpers are excluded from the Blitz-core world (D15).
     use super::ITroopManagementSystems;
 
     #[abi(embed_v0)]
     impl TroopManagementSystemsImpl of ITroopManagementSystems<ContractState> {
         fn guard_add(
             ref self: ContractState,
+            game_id: u32,
             for_structure_id: ID,
             slot: GuardSlot,
             category: TroopType,
@@ -110,28 +118,30 @@ pub mod troop_management_systems {
             let mut world = self.world(DEFAULT_NS());
             // ensure caller owns structure or is realms_systems
             let (realms_systems_address, _) = world.dns(@"realm_internal_systems").unwrap();
-            let (village_systems_address, _) = world.dns(@"village_systems").unwrap();
+            // Village authorization is excluded from the Blitz-core world (D15).
             let caller_address: starknet::ContractAddress = starknet::get_caller_address();
-            if caller_address != realms_systems_address && caller_address != village_systems_address {
+            if caller_address != realms_systems_address {
                 // ensure season is open
-                SeasonConfigImpl::get(world).assert_started_and_not_over();
-                StructureOwnerStoreImpl::retrieve(ref world, for_structure_id).assert_caller_owner();
+                SeasonConfigImpl::get(world, game_id).assert_started_and_not_over();
+                StructureOwnerStoreImpl::retrieve(ref world, game_id, for_structure_id).assert_caller_owner();
             }
 
             // deduct resources used to create guard
-            iTroopImpl::make_payment(ref world, for_structure_id, amount, category, tier);
+            iTroopImpl::make_payment(ref world, game_id, for_structure_id, amount, category, tier);
 
             // ensure provided category and tier are correct
-            let mut guards: GuardTroops = StructureTroopGuardStoreImpl::retrieve(ref world, for_structure_id);
+            let mut guards: GuardTroops = StructureTroopGuardStoreImpl::retrieve(ref world, game_id, for_structure_id);
             let (mut troops, troops_destroyed_tick): (Troops, u32) = guards.from_slot(slot);
             if troops.count.is_non_zero() {
                 assert!(troops.category == category && troops.tier == tier, "incorrect category or tier");
             }
 
-            let mut structure_base: StructureBase = StructureBaseStoreImpl::retrieve(ref world, for_structure_id);
-            let tick = TickImpl::get_tick_interval(ref world);
-            let troop_limit_config: TroopLimitConfig = CombatConfigImpl::troop_limit_config(ref world);
-            let troop_stamina_config: TroopStaminaConfig = CombatConfigImpl::troop_stamina_config(ref world);
+            let mut structure_base: StructureBase = StructureBaseStoreImpl::retrieve(
+                ref world, game_id, for_structure_id,
+            );
+            let tick = TickImpl::get_tick_interval(ref world, game_id);
+            let troop_limit_config: TroopLimitConfig = CombatConfigImpl::troop_limit_config(ref world, game_id);
+            let troop_stamina_config: TroopStaminaConfig = CombatConfigImpl::troop_stamina_config(ref world, game_id);
             iGuardImpl::add(
                 ref world,
                 for_structure_id,
@@ -150,14 +160,17 @@ pub mod troop_management_systems {
                 true,
             );
 
-            StructureTroopGuardStoreImpl::store(ref guards, ref world, for_structure_id);
-            StructureBaseStoreImpl::store(ref structure_base, ref world, for_structure_id);
+            StructureTroopGuardStoreImpl::store(ref guards, ref world, game_id, for_structure_id);
+            StructureBaseStoreImpl::store(ref structure_base, ref world, game_id, for_structure_id);
 
             // emit event
-            let structure_owner: ContractAddress = StructureOwnerStoreImpl::retrieve(ref world, for_structure_id);
+            let structure_owner: ContractAddress = StructureOwnerStoreImpl::retrieve(
+                ref world, game_id, for_structure_id,
+            );
             world
                 .emit_event(
                     @StoryEvent {
+                        game_id,
                         id: world.dispatcher.uuid(),
                         owner: Option::Some(structure_owner),
                         entity_id: Option::Some(for_structure_id),
@@ -177,26 +190,29 @@ pub mod troop_management_systems {
         }
 
 
-        fn guard_delete(ref self: ContractState, for_structure_id: ID, slot: GuardSlot) {
+        fn guard_delete(ref self: ContractState, game_id: u32, for_structure_id: ID, slot: GuardSlot) {
             let mut world = self.world(DEFAULT_NS());
             // ensure season is open
-            SeasonConfigImpl::get(world).assert_started_and_not_over();
+            SeasonConfigImpl::get(world, game_id).assert_started_and_not_over();
 
             // ensure caller owns structure
-            StructureOwnerStoreImpl::retrieve(ref world, for_structure_id).assert_caller_owner();
+            StructureOwnerStoreImpl::retrieve(ref world, game_id, for_structure_id).assert_caller_owner();
 
-            let tick = TickImpl::get_tick_interval(ref world);
+            let tick = TickImpl::get_tick_interval(ref world, game_id);
             let current_tick: u64 = tick.current().try_into().unwrap();
 
             // delete guard
-            let mut guards: GuardTroops = StructureTroopGuardStoreImpl::retrieve(ref world, for_structure_id);
+            let mut guards: GuardTroops = StructureTroopGuardStoreImpl::retrieve(ref world, game_id, for_structure_id);
             let (mut troops, troops_destroyed_tick): (Troops, u32) = guards.from_slot(slot);
 
             // Only proceed if the slot actually has troops to delete
             if troops.count.is_non_zero() {
-                let mut structure_base: StructureBase = StructureBaseStoreImpl::retrieve(ref world, for_structure_id);
+                let mut structure_base: StructureBase = StructureBaseStoreImpl::retrieve(
+                    ref world, game_id, for_structure_id,
+                );
                 iGuardImpl::delete(
                     ref world,
+                    game_id,
                     for_structure_id,
                     ref structure_base,
                     ref guards,
@@ -207,10 +223,13 @@ pub mod troop_management_systems {
                 );
 
                 // emit event
-                let structure_owner: ContractAddress = StructureOwnerStoreImpl::retrieve(ref world, for_structure_id);
+                let structure_owner: ContractAddress = StructureOwnerStoreImpl::retrieve(
+                    ref world, game_id, for_structure_id,
+                );
                 world
                     .emit_event(
                         @StoryEvent {
+                            game_id,
                             id: world.dispatcher.uuid(),
                             owner: Option::Some(structure_owner),
                             entity_id: Option::Some(for_structure_id),
@@ -228,6 +247,7 @@ pub mod troop_management_systems {
 
         fn explorer_create(
             ref self: ContractState,
+            game_id: u32,
             for_structure_id: ID,
             category: TroopType,
             tier: TroopTier,
@@ -236,16 +256,16 @@ pub mod troop_management_systems {
         ) -> ID {
             let mut world = self.world(DEFAULT_NS());
             // ensure season is open
-            SeasonConfigImpl::get(world).assert_started_and_not_over();
+            SeasonConfigImpl::get(world, game_id).assert_started_and_not_over();
 
             // ensure caller owns structure
-            StructureOwnerStoreImpl::retrieve(ref world, for_structure_id).assert_caller_owner();
+            StructureOwnerStoreImpl::retrieve(ref world, game_id, for_structure_id).assert_caller_owner();
 
             // deduct resources used to create explorer
-            iTroopImpl::make_payment(ref world, for_structure_id, amount, category, tier);
+            iTroopImpl::make_payment(ref world, game_id, for_structure_id, amount, category, tier);
 
             // ensure structure has not reached itslimit of troops
-            let mut structure: StructureBase = StructureBaseStoreImpl::retrieve(ref world, for_structure_id);
+            let mut structure: StructureBase = StructureBaseStoreImpl::retrieve(ref world, game_id, for_structure_id);
             assert!(
                 structure.troop_explorer_count < structure.troop_max_explorer_count.into(),
                 "reached limit of troops for your structure",
@@ -255,26 +275,29 @@ pub mod troop_management_systems {
             let mut explorer_id: ID = world.dispatcher.uuid();
 
             // add explorer count to structure
-            let mut explorers: Array<ID> = StructureTroopExplorerStoreImpl::retrieve(ref world, for_structure_id)
+            let mut explorers: Array<ID> = StructureTroopExplorerStoreImpl::retrieve(
+                ref world, game_id, for_structure_id,
+            )
                 .into();
             explorers.append(explorer_id);
-            StructureTroopExplorerStoreImpl::store(explorers.span(), ref world, for_structure_id);
+            StructureTroopExplorerStoreImpl::store(explorers.span(), ref world, game_id, for_structure_id);
 
             structure.troop_explorer_count += 1;
-            StructureBaseStoreImpl::store(ref structure, ref world, for_structure_id);
+            StructureBaseStoreImpl::store(ref structure, ref world, game_id, for_structure_id);
 
             // ensure spawn location is not occupied
             let spawn_coord: Coord = structure.coord().neighbor(spawn_direction);
-            let tile_opt: TileOpt = world.read_model((spawn_coord.alt, spawn_coord.x, spawn_coord.y));
+            let tile_opt: TileOpt = world.read_model((game_id, spawn_coord.alt, spawn_coord.x, spawn_coord.y));
             let mut tile: Tile = tile_opt.into();
             assert!(tile.not_occupied(), "explorer spawn location is occupied");
 
-            let troop_stamina_config: TroopStaminaConfig = CombatConfigImpl::troop_stamina_config(ref world);
-            let troop_limit_config: TroopLimitConfig = CombatConfigImpl::troop_limit_config(ref world);
-            let tick = TickImpl::get_tick_interval(ref world);
+            let troop_stamina_config: TroopStaminaConfig = CombatConfigImpl::troop_stamina_config(ref world, game_id);
+            let troop_limit_config: TroopLimitConfig = CombatConfigImpl::troop_limit_config(ref world, game_id);
+            let tick = TickImpl::get_tick_interval(ref world, game_id);
             let current_tick: u64 = tick.current().try_into().unwrap();
             iExplorerImpl::create(
                 ref world,
+                game_id,
                 ref tile,
                 explorer_id,
                 for_structure_id,
@@ -288,10 +311,13 @@ pub mod troop_management_systems {
             );
 
             // emit event
-            let structure_owner: ContractAddress = StructureOwnerStoreImpl::retrieve(ref world, for_structure_id);
+            let structure_owner: ContractAddress = StructureOwnerStoreImpl::retrieve(
+                ref world, game_id, for_structure_id,
+            );
             world
                 .emit_event(
                     @StoryEvent {
+                        game_id,
                         id: world.dispatcher.uuid(),
                         owner: Option::Some(structure_owner),
                         entity_id: Option::Some(explorer_id),
@@ -313,34 +339,40 @@ pub mod troop_management_systems {
             explorer_id
         }
 
-        fn explorer_add(ref self: ContractState, to_explorer_id: ID, amount: u128, home_direction: Direction) {
+        fn explorer_add(
+            ref self: ContractState, game_id: u32, to_explorer_id: ID, amount: u128, home_direction: Direction,
+        ) {
             assert!(amount.is_non_zero(), "amount must be greater than 0");
             assert!(amount % RESOURCE_PRECISION == 0, "amount must be divisible by resource precision");
 
             let mut world = self.world(DEFAULT_NS());
             // ensure season is open
-            SeasonConfigImpl::get(world).assert_started_and_not_over();
+            SeasonConfigImpl::get(world, game_id).assert_started_and_not_over();
 
             // ensure caller owns explorer
-            let mut explorer: ExplorerTroops = world.read_model(to_explorer_id);
-            StructureOwnerStoreImpl::retrieve(ref world, explorer.owner).assert_caller_owner();
+            let mut explorer: ExplorerTroops = world.read_model((game_id, to_explorer_id));
+            StructureOwnerStoreImpl::retrieve(ref world, game_id, explorer.owner).assert_caller_owner();
 
             // ensure explorer is adjacent to home structure
-            let explorer_owner_structure: StructureBase = StructureBaseStoreImpl::retrieve(ref world, explorer.owner);
+            let explorer_owner_structure: StructureBase = StructureBaseStoreImpl::retrieve(
+                ref world, game_id, explorer.owner,
+            );
             assert!(
                 explorer.coord.is_adjacent(explorer_owner_structure.coord()), "explorer not adjacent to home structure",
             );
 
             // deduct resources used to create explorer
-            iTroopImpl::make_payment(ref world, explorer.owner, amount, explorer.troops.category, explorer.troops.tier);
+            iTroopImpl::make_payment(
+                ref world, game_id, explorer.owner, amount, explorer.troops.category, explorer.troops.tier,
+            );
 
             // add troops to explorer
             explorer.troops.count += amount;
 
             // reintialize troop stamina
-            let tick = TickImpl::get_tick_interval(ref world);
+            let tick = TickImpl::get_tick_interval(ref world, game_id);
             let current_tick: u64 = tick.current();
-            let troop_stamina_config: TroopStaminaConfig = CombatConfigImpl::troop_stamina_config(ref world);
+            let troop_stamina_config: TroopStaminaConfig = CombatConfigImpl::troop_stamina_config(ref world, game_id);
             explorer
                 .troops
                 .stamina
@@ -358,10 +390,10 @@ pub mod troop_management_systems {
             world.write_model(@explorer);
 
             // update troop capacity
-            iExplorerImpl::update_capacity(ref world, to_explorer_id, amount, true);
+            iExplorerImpl::update_capacity(ref world, game_id, to_explorer_id, amount, true);
 
             // ensure explorer count does not exceed max army size
-            let troop_limit_config: TroopLimitConfig = CombatConfigImpl::troop_limit_config(ref world);
+            let troop_limit_config: TroopLimitConfig = CombatConfigImpl::troop_limit_config(ref world, game_id);
             let max_army_size: u128 = troop_limit_config
                 .max_army_size(explorer_owner_structure.level, explorer.troops.tier)
                 .into();
@@ -372,10 +404,13 @@ pub mod troop_management_systems {
             );
 
             // emit event
-            let structure_owner: ContractAddress = StructureOwnerStoreImpl::retrieve(ref world, explorer.owner);
+            let structure_owner: ContractAddress = StructureOwnerStoreImpl::retrieve(
+                ref world, game_id, explorer.owner,
+            );
             world
                 .emit_event(
                     @StoryEvent {
+                        game_id,
                         id: world.dispatcher.uuid(),
                         owner: Option::Some(structure_owner),
                         entity_id: Option::Some(to_explorer_id),
@@ -391,22 +426,22 @@ pub mod troop_management_systems {
         }
 
 
-        fn explorer_delete(ref self: ContractState, explorer_id: ID) {
+        fn explorer_delete(ref self: ContractState, game_id: u32, explorer_id: ID) {
             let mut world = self.world(DEFAULT_NS());
             // ensure season is open
-            SeasonConfigImpl::get(world).assert_started_and_not_over();
+            SeasonConfigImpl::get(world, game_id).assert_started_and_not_over();
 
             // ensure caller owns explorer
-            let mut explorer: ExplorerTroops = world.read_model(explorer_id);
-            StructureOwnerStoreImpl::retrieve(ref world, explorer.owner).assert_caller_owner();
+            let mut explorer: ExplorerTroops = world.read_model((game_id, explorer_id));
+            StructureOwnerStoreImpl::retrieve(ref world, game_id, explorer.owner).assert_caller_owner();
 
             let mut explorer_owner_structure: StructureBase = StructureBaseStoreImpl::retrieve(
-                ref world, explorer.owner,
+                ref world, game_id, explorer.owner,
             );
 
             // delete explorer
             let mut explorer_owner_structure_explorers_list: Array<ID> = StructureTroopExplorerStoreImpl::retrieve(
-                ref world, explorer.owner,
+                ref world, game_id, explorer.owner,
             )
                 .into();
 
@@ -424,10 +459,13 @@ pub mod troop_management_systems {
             );
 
             // emit event
-            let structure_owner: ContractAddress = StructureOwnerStoreImpl::retrieve(ref world, explorer.owner);
+            let structure_owner: ContractAddress = StructureOwnerStoreImpl::retrieve(
+                ref world, game_id, explorer.owner,
+            );
             world
                 .emit_event(
                     @StoryEvent {
+                        game_id,
                         id: world.dispatcher.uuid(),
                         owner: Option::Some(structure_owner),
                         entity_id: Option::Some(explorer_id),
@@ -441,6 +479,7 @@ pub mod troop_management_systems {
 
         fn explorer_explorer_swap(
             ref self: ContractState,
+            game_id: u32,
             from_explorer_id: ID,
             to_explorer_id: ID,
             to_explorer_direction: Direction,
@@ -451,16 +490,16 @@ pub mod troop_management_systems {
 
             let mut world = self.world(DEFAULT_NS());
             // ensure season is open
-            SeasonConfigImpl::get(world).assert_started_and_not_over();
+            SeasonConfigImpl::get(world, game_id).assert_started_and_not_over();
 
             // ensure caller address owns both explorers
             // (not necessarily the same structure)
-            let mut from_explorer: ExplorerTroops = world.read_model(from_explorer_id);
-            let mut to_explorer: ExplorerTroops = world.read_model(to_explorer_id);
+            let mut from_explorer: ExplorerTroops = world.read_model((game_id, from_explorer_id));
+            let mut to_explorer: ExplorerTroops = world.read_model((game_id, to_explorer_id));
 
             // ensure troops belong to same structure
             assert!(from_explorer.owner == to_explorer.owner, "both explorers must belong to the same structure");
-            StructureOwnerStoreImpl::retrieve(ref world, from_explorer.owner).assert_caller_owner();
+            StructureOwnerStoreImpl::retrieve(ref world, game_id, from_explorer.owner).assert_caller_owner();
 
             // ensure explorers are adjacent to one another
             assert!(
@@ -489,15 +528,17 @@ pub mod troop_management_systems {
             to_explorer.troops.count += count;
 
             // update troop capacity
-            iExplorerImpl::update_capacity(ref world, from_explorer_id, count, false);
-            iExplorerImpl::update_capacity(ref world, to_explorer_id, count, true);
+            iExplorerImpl::update_capacity(ref world, game_id, from_explorer_id, count, false);
+            iExplorerImpl::update_capacity(ref world, game_id, to_explorer_id, count, true);
 
             // ensure from_explorer is not overweight
-            iExplorerImpl::ensure_not_overweight(ref world, from_explorer_id);
+            iExplorerImpl::ensure_not_overweight(ref world, game_id, from_explorer_id);
 
             // ensure to_explorer count does not exceed max army size
-            let troop_limit_config: TroopLimitConfig = CombatConfigImpl::troop_limit_config(ref world);
-            let to_owner_structure: StructureBase = StructureBaseStoreImpl::retrieve(ref world, to_explorer.owner);
+            let troop_limit_config: TroopLimitConfig = CombatConfigImpl::troop_limit_config(ref world, game_id);
+            let to_owner_structure: StructureBase = StructureBaseStoreImpl::retrieve(
+                ref world, game_id, to_explorer.owner,
+            );
             let max_army_size: u128 = troop_limit_config
                 .max_army_size(to_owner_structure.level, to_explorer.troops.tier)
                 .into();
@@ -508,11 +549,11 @@ pub mod troop_management_systems {
             );
 
             // get current tick
-            let tick = TickImpl::get_tick_interval(ref world);
+            let tick = TickImpl::get_tick_interval(ref world, game_id);
             let current_tick: u64 = tick.current().try_into().unwrap();
 
             // ensure there is no stamina advantage gained by swapping
-            let troop_stamina_config: TroopStaminaConfig = CombatConfigImpl::troop_stamina_config(ref world);
+            let troop_stamina_config: TroopStaminaConfig = CombatConfigImpl::troop_stamina_config(ref world, game_id);
             from_explorer
                 .troops
                 .stamina
@@ -547,11 +588,11 @@ pub mod troop_management_systems {
             if from_explorer.troops.count.is_zero() {
                 // delete from_explorer if count is 0
                 let mut explorer_owner_structure: StructureBase = StructureBaseStoreImpl::retrieve(
-                    ref world, from_explorer.owner,
+                    ref world, game_id, from_explorer.owner,
                 );
 
                 let mut explorer_owner_structure_explorers_list: Array<ID> = StructureTroopExplorerStoreImpl::retrieve(
-                    ref world, from_explorer.owner,
+                    ref world, game_id, from_explorer.owner,
                 )
                     .into();
                 iExplorerImpl::explorer_from_structure_delete(
@@ -569,10 +610,13 @@ pub mod troop_management_systems {
             world.write_model(@to_explorer);
 
             // emit event
-            let from_owner: ContractAddress = StructureOwnerStoreImpl::retrieve(ref world, from_explorer.owner);
+            let from_owner: ContractAddress = StructureOwnerStoreImpl::retrieve(
+                ref world, game_id, from_explorer.owner,
+            );
             world
                 .emit_event(
                     @StoryEvent {
+                        game_id,
                         id: world.dispatcher.uuid(),
                         owner: Option::Some(from_owner),
                         entity_id: Option::Some(from_explorer_id),
@@ -593,6 +637,7 @@ pub mod troop_management_systems {
 
         fn explorer_guard_swap(
             ref self: ContractState,
+            game_id: u32,
             from_explorer_id: ID,
             to_structure_id: ID,
             to_structure_direction: Direction,
@@ -604,17 +649,19 @@ pub mod troop_management_systems {
 
             let mut world = self.world(DEFAULT_NS());
             // ensure season is open
-            SeasonConfigImpl::get(world).assert_started_and_not_over();
+            SeasonConfigImpl::get(world, game_id).assert_started_and_not_over();
 
             // ensure caller owns explorer
-            let mut from_explorer: ExplorerTroops = world.read_model(from_explorer_id);
-            StructureOwnerStoreImpl::retrieve(ref world, from_explorer.owner).assert_caller_owner();
+            let mut from_explorer: ExplorerTroops = world.read_model((game_id, from_explorer_id));
+            StructureOwnerStoreImpl::retrieve(ref world, game_id, from_explorer.owner).assert_caller_owner();
 
             // ensure caller address structure
-            StructureOwnerStoreImpl::retrieve(ref world, to_structure_id).assert_caller_owner();
+            StructureOwnerStoreImpl::retrieve(ref world, game_id, to_structure_id).assert_caller_owner();
 
             // ensure explorer is adjacent to structure
-            let mut to_structure_base: StructureBase = StructureBaseStoreImpl::retrieve(ref world, to_structure_id);
+            let mut to_structure_base: StructureBase = StructureBaseStoreImpl::retrieve(
+                ref world, game_id, to_structure_id,
+            );
             assert!(
                 from_explorer.coord.is_adjacent(to_structure_base.coord()), "explorer is not adjacent to structure",
             );
@@ -638,7 +685,7 @@ pub mod troop_management_systems {
 
             // ensure they have the same category and tier
             let mut to_structure_guards: GuardTroops = StructureTroopGuardStoreImpl::retrieve(
-                ref world, to_structure_id,
+                ref world, game_id, to_structure_id,
             );
             let (mut to_structure_troops, to_structure_troops_destroyed_tick): (Troops, u32) = to_structure_guards
                 .from_slot(to_guard_slot);
@@ -660,12 +707,12 @@ pub mod troop_management_systems {
             from_explorer.troops.count -= count;
 
             // update explorer troop capacity
-            iExplorerImpl::update_capacity(ref world, from_explorer_id, count, false);
+            iExplorerImpl::update_capacity(ref world, game_id, from_explorer_id, count, false);
 
             // update explorer stamina
-            let tick = TickImpl::get_tick_interval(ref world);
+            let tick = TickImpl::get_tick_interval(ref world, game_id);
             let current_tick: u64 = tick.current().try_into().unwrap();
-            let troop_stamina_config: TroopStaminaConfig = CombatConfigImpl::troop_stamina_config(ref world);
+            let troop_stamina_config: TroopStaminaConfig = CombatConfigImpl::troop_stamina_config(ref world, game_id);
             from_explorer
                 .troops
                 .stamina
@@ -681,11 +728,11 @@ pub mod troop_management_systems {
             if from_explorer.troops.count.is_zero() {
                 // delete from_explorer if count is 0
                 let mut explorer_owner_structure: StructureBase = StructureBaseStoreImpl::retrieve(
-                    ref world, from_explorer.owner,
+                    ref world, game_id, from_explorer.owner,
                 );
 
                 let mut explorer_owner_structure_explorers_list: Array<ID> = StructureTroopExplorerStoreImpl::retrieve(
-                    ref world, from_explorer.owner,
+                    ref world, game_id, from_explorer.owner,
                 )
                     .into();
                 iExplorerImpl::explorer_from_structure_delete(
@@ -701,7 +748,7 @@ pub mod troop_management_systems {
 
             // refresh to_structure_base in case explorer_from_structure_delete
             // modified and stored the same entity (when from_explorer.owner == to_structure_id)
-            to_structure_base = StructureBaseStoreImpl::retrieve(ref world, to_structure_id);
+            to_structure_base = StructureBaseStoreImpl::retrieve(ref world, game_id, to_structure_id);
 
             /////////// Update Structure Guard ///////////
             /////////////////////////////////////////////
@@ -727,7 +774,7 @@ pub mod troop_management_systems {
             }
 
             // add troops to structure guard
-            let troop_limit_config: TroopLimitConfig = CombatConfigImpl::troop_limit_config(ref world);
+            let troop_limit_config: TroopLimitConfig = CombatConfigImpl::troop_limit_config(ref world, game_id);
             iGuardImpl::add(
                 ref world,
                 to_structure_id,
@@ -745,14 +792,17 @@ pub mod troop_management_systems {
                 false,
                 true,
             );
-            StructureTroopGuardStoreImpl::store(ref to_structure_guards, ref world, to_structure_id);
-            StructureBaseStoreImpl::store(ref to_structure_base, ref world, to_structure_id);
+            StructureTroopGuardStoreImpl::store(ref to_structure_guards, ref world, game_id, to_structure_id);
+            StructureBaseStoreImpl::store(ref to_structure_base, ref world, game_id, to_structure_id);
 
             // emit event
-            let from_owner: ContractAddress = StructureOwnerStoreImpl::retrieve(ref world, from_explorer.owner);
+            let from_owner: ContractAddress = StructureOwnerStoreImpl::retrieve(
+                ref world, game_id, from_explorer.owner,
+            );
             world
                 .emit_event(
                     @StoryEvent {
+                        game_id,
                         id: world.dispatcher.uuid(),
                         owner: Option::Some(from_owner),
                         entity_id: Option::Some(from_explorer_id),
@@ -774,6 +824,7 @@ pub mod troop_management_systems {
 
         fn guard_explorer_swap(
             ref self: ContractState,
+            game_id: u32,
             from_structure_id: ID,
             from_guard_slot: GuardSlot,
             to_explorer_id: ID,
@@ -784,17 +835,19 @@ pub mod troop_management_systems {
             assert!(count % RESOURCE_PRECISION == 0, "count must be divisible by resource precision");
 
             let mut world = self.world(DEFAULT_NS());
-            SeasonConfigImpl::get(world).assert_started_and_not_over();
+            SeasonConfigImpl::get(world, game_id).assert_started_and_not_over();
 
             // ensure caller owns explorer
-            let mut to_explorer: ExplorerTroops = world.read_model(to_explorer_id);
-            StructureOwnerStoreImpl::retrieve(ref world, to_explorer.owner).assert_caller_owner();
+            let mut to_explorer: ExplorerTroops = world.read_model((game_id, to_explorer_id));
+            StructureOwnerStoreImpl::retrieve(ref world, game_id, to_explorer.owner).assert_caller_owner();
 
             // ensure caller address owns structure
-            StructureOwnerStoreImpl::retrieve(ref world, from_structure_id).assert_caller_owner();
+            StructureOwnerStoreImpl::retrieve(ref world, game_id, from_structure_id).assert_caller_owner();
 
             // ensure structure is adjacent to explorer
-            let mut from_structure_base: StructureBase = StructureBaseStoreImpl::retrieve(ref world, from_structure_id);
+            let mut from_structure_base: StructureBase = StructureBaseStoreImpl::retrieve(
+                ref world, game_id, from_structure_id,
+            );
             assert!(
                 from_structure_base.coord().is_adjacent(to_explorer.coord), "structure is not adjacent to explorer",
             );
@@ -804,7 +857,7 @@ pub mod troop_management_systems {
 
             // ensure count is less than or equal to structure guard count
             let mut from_structure_guards: GuardTroops = StructureTroopGuardStoreImpl::retrieve(
-                ref world, from_structure_id,
+                ref world, game_id, from_structure_id,
             );
             let (mut from_structure_troops, from_structure_troops_destroyed_tick): (Troops, u32) = from_structure_guards
                 .from_slot(from_guard_slot);
@@ -831,11 +884,13 @@ pub mod troop_management_systems {
             from_structure_troops.count -= count;
 
             // update explorer troop capacity
-            iExplorerImpl::update_capacity(ref world, to_explorer_id, count, true);
+            iExplorerImpl::update_capacity(ref world, game_id, to_explorer_id, count, true);
 
             // ensure to_explorer count does not exceed max army size
-            let troop_limit_config: TroopLimitConfig = CombatConfigImpl::troop_limit_config(ref world);
-            let to_owner_structure: StructureBase = StructureBaseStoreImpl::retrieve(ref world, to_explorer.owner);
+            let troop_limit_config: TroopLimitConfig = CombatConfigImpl::troop_limit_config(ref world, game_id);
+            let to_owner_structure: StructureBase = StructureBaseStoreImpl::retrieve(
+                ref world, game_id, to_explorer.owner,
+            );
             let max_army_size: u128 = troop_limit_config
                 .max_army_size(to_owner_structure.level, to_explorer.troops.tier)
                 .into();
@@ -846,11 +901,11 @@ pub mod troop_management_systems {
             );
 
             // get current tick
-            let tick = TickImpl::get_tick_interval(ref world);
+            let tick = TickImpl::get_tick_interval(ref world, game_id);
             let current_tick: u64 = tick.current().try_into().unwrap();
 
             // ensure there is no stamina advantage gained by swapping
-            let troop_stamina_config: TroopStaminaConfig = CombatConfigImpl::troop_stamina_config(ref world);
+            let troop_stamina_config: TroopStaminaConfig = CombatConfigImpl::troop_stamina_config(ref world, game_id);
             to_explorer
                 .troops
                 .stamina
@@ -888,6 +943,7 @@ pub mod troop_management_systems {
                 // delete guard if count is 0
                 iGuardImpl::delete(
                     ref world,
+                    game_id,
                     from_structure_id,
                     ref from_structure_base,
                     ref from_structure_guards,
@@ -903,14 +959,17 @@ pub mod troop_management_systems {
                         from_structure_troops,
                         from_structure_troops_destroyed_tick.try_into().unwrap(),
                     );
-                StructureTroopGuardStoreImpl::store(ref from_structure_guards, ref world, from_structure_id);
+                StructureTroopGuardStoreImpl::store(ref from_structure_guards, ref world, game_id, from_structure_id);
             }
 
             // emit event
-            let structure_owner: ContractAddress = StructureOwnerStoreImpl::retrieve(ref world, from_structure_id);
+            let structure_owner: ContractAddress = StructureOwnerStoreImpl::retrieve(
+                ref world, game_id, from_structure_id,
+            );
             world
                 .emit_event(
                     @StoryEvent {
+                        game_id,
                         id: world.dispatcher.uuid(),
                         owner: Option::Some(structure_owner),
                         entity_id: Option::Some(from_structure_id),
@@ -1071,8 +1130,8 @@ pub mod troop_management_systems {
 //         let tier = TroopTier::T1;
 //         let knights_added_to_guard = 1 * RESOURCE_PRECISION;
 
-//         let initial_structure_base = StructureBaseStoreImpl::retrieve(ref world, realm_id);
-//         let initial_guards = StructureTroopGuardStoreImpl::retrieve(ref world, realm_id);
+//         let initial_structure_base = StructureBaseStoreImpl::retrieve(ref world, game_id, realm_id);
+//         let initial_guards = StructureTroopGuardStoreImpl::retrieve(ref world, game_id, realm_id);
 //         let (initial_troops, _) = initial_guards.from_slot(slot);
 //         assert(initial_troops.count == 0, 'Slot empty');
 
@@ -1080,14 +1139,14 @@ pub mod troop_management_systems {
 //         troop_management_systems.guard_add(realm_id, slot, category, tier, knights_added_to_guard);
 
 //         // Assert
-//         let final_guards = StructureTroopGuardStoreImpl::retrieve(ref world, realm_id);
+//         let final_guards = StructureTroopGuardStoreImpl::retrieve(ref world, game_id, realm_id);
 //         let (final_troops, _) = final_guards.from_slot(slot);
 
 //         assert(final_troops.count == knights_added_to_guard, 'Guard count');
 //         assert(final_troops.category == category, 'Guard category');
 //         assert(final_troops.tier == tier, 'Guard tier');
 
-//         let final_structure_base = StructureBaseStoreImpl::retrieve(ref world, realm_id);
+//         let final_structure_base = StructureBaseStoreImpl::retrieve(ref world, game_id, realm_id);
 //         assert(
 //             final_structure_base.troop_guard_count == initial_structure_base.troop_guard_count + 1, 'Base guard
 //             count',
@@ -1138,13 +1197,13 @@ pub mod troop_management_systems {
 //         troop_management_systems.guard_add(realm_id, slot, category, tier, first_add_amount);
 
 //         // Assert 1: Check state after first add
-//         let guards_after_first_add = StructureTroopGuardStoreImpl::retrieve(ref world, realm_id);
+//         let guards_after_first_add = StructureTroopGuardStoreImpl::retrieve(ref world, game_id, realm_id);
 //         let (troops_after_first_add, _) = guards_after_first_add.from_slot(slot);
 //         assert(troops_after_first_add.count == first_add_amount, 'Guard count after first add');
 //         assert(troops_after_first_add.category == category, 'Guard category after first add');
 //         assert(troops_after_first_add.tier == tier, 'Guard tier after first add');
 
-//         let structure_base_after_first_add = StructureBaseStoreImpl::retrieve(ref world, realm_id);
+//         let structure_base_after_first_add = StructureBaseStoreImpl::retrieve(ref world, game_id, realm_id);
 //         let initial_base_guard_count = structure_base_after_first_add.troop_guard_count;
 //         assert(initial_base_guard_count == 1, 'Base guard count after first');
 
@@ -1160,7 +1219,7 @@ pub mod troop_management_systems {
 //         troop_management_systems.guard_add(realm_id, slot, category, tier, second_add_amount);
 
 //         // Assert 2: Check final state
-//         let final_guards = StructureTroopGuardStoreImpl::retrieve(ref world, realm_id);
+//         let final_guards = StructureTroopGuardStoreImpl::retrieve(ref world, game_id, realm_id);
 //         let (final_troops, _) = final_guards.from_slot(slot);
 
 //         assert(final_troops.count == total_added_amount, 'Final guard count');
@@ -1168,7 +1227,7 @@ pub mod troop_management_systems {
 //         assert(final_troops.tier == tier, 'Final guard tier');
 
 //         // StructureBase troop_guard_count should NOT increase the second time
-//         let final_structure_base = StructureBaseStoreImpl::retrieve(ref world, realm_id);
+//         let final_structure_base = StructureBaseStoreImpl::retrieve(ref world, game_id, realm_id);
 //         assert(final_structure_base.troop_guard_count == initial_base_guard_count, 'Base guard count unchanged');
 
 //         let final_knight_balance = ResourceImpl::read_balance(ref world, realm_id, ResourceTypes::KNIGHT_T1);
@@ -1177,7 +1236,7 @@ pub mod troop_management_systems {
 //     }
 
 //     /// @notice Tests that `guard_add` reverts if the season is not active.
-//     /// @dev Required by the `SeasonConfigImpl::get(world).assert_started_and_not_over()` check.
+//     /// @dev Required by the `SeasonConfigImpl::get(world, game_id).assert_started_and_not_over()` check.
 //     #[test]
 //     #[should_panic(expected: ("The game starts in 0 hours 33 minutes, 20 seconds", 'ENTRYPOINT_FAILED'))]
 //     fn guard_add_revert_season_inactive() {
@@ -1329,7 +1388,7 @@ pub mod troop_management_systems {
 //         troop_management_systems.guard_add(realm_id, slot, TroopType::Knight, tier, amount);
 
 //         // Assert 1: Check knights are added
-//         let guards_after_first = StructureTroopGuardStoreImpl::retrieve(ref world, realm_id);
+//         let guards_after_first = StructureTroopGuardStoreImpl::retrieve(ref world, game_id, realm_id);
 //         let (troops_after_first, _) = guards_after_first.from_slot(slot);
 //         assert(troops_after_first.category == TroopType::Knight, 'Category should be Knight');
 
@@ -1379,7 +1438,7 @@ pub mod troop_management_systems {
 //         troop_management_systems.guard_add(realm_id, slot, category, TroopTier::T1, amount);
 
 //         // Assert 1: Check T1 knights are added
-//         let guards_after_first = StructureTroopGuardStoreImpl::retrieve(ref world, realm_id);
+//         let guards_after_first = StructureTroopGuardStoreImpl::retrieve(ref world, game_id, realm_id);
 //         let (troops_after_first, _) = guards_after_first.from_slot(slot);
 //         assert(troops_after_first.tier == TroopTier::T1, 'Tier should be T1');
 
@@ -1403,7 +1462,7 @@ pub mod troop_management_systems {
 //         let realm_id = tspawn_realm_with_resources(ref world, 1, realm_owner, realm_coord);
 
 //         // Get the limit from config (realm starts at level 0 = Settlement)
-//         let troop_limit_config: TroopLimitConfig = CombatConfigImpl::troop_limit_config(ref world);
+//         let troop_limit_config: TroopLimitConfig = CombatConfigImpl::troop_limit_config(ref world, game_id);
 //         let max_troops_per_guard: u128 = troop_limit_config.max_army_size(0, TroopTier::T1).into() *
 //         RESOURCE_PRECISION;
 //         let amount_to_exceed = max_troops_per_guard + 1 * RESOURCE_PRECISION;
@@ -1457,9 +1516,9 @@ pub mod troop_management_systems {
 //         troop_management_systems.guard_add(realm_id, slot, category, tier, amount_to_add);
 
 //         // Assert 1: Verify troops were added
-//         let initial_structure_base = StructureBaseStoreImpl::retrieve(ref world, realm_id);
+//         let initial_structure_base = StructureBaseStoreImpl::retrieve(ref world, game_id, realm_id);
 //         assert(initial_structure_base.troop_guard_count == 1, 'Guard count post-add');
-//         let initial_guards = StructureTroopGuardStoreImpl::retrieve(ref world, realm_id);
+//         let initial_guards = StructureTroopGuardStoreImpl::retrieve(ref world, game_id, realm_id);
 //         let (initial_troops, _) = initial_guards.from_slot(slot);
 //         assert(initial_troops.count == amount_to_add, 'Troop count post-add');
 
@@ -1467,9 +1526,9 @@ pub mod troop_management_systems {
 //         troop_management_systems.guard_delete(realm_id, slot);
 
 //         // Assert 2: Verify troops were deleted
-//         let final_structure_base = StructureBaseStoreImpl::retrieve(ref world, realm_id);
+//         let final_structure_base = StructureBaseStoreImpl::retrieve(ref world, game_id, realm_id);
 //         assert(final_structure_base.troop_guard_count == 0, 'Guard count post-delete');
-//         let final_guards = StructureTroopGuardStoreImpl::retrieve(ref world, realm_id);
+//         let final_guards = StructureTroopGuardStoreImpl::retrieve(ref world, game_id, realm_id);
 //         let (final_troops, _) = final_guards.from_slot(slot);
 //         assert(final_troops.count == 0, 'Troop count post-delete');
 //         assert(final_troops.category == category, 'Category post-delete');
@@ -1498,9 +1557,9 @@ pub mod troop_management_systems {
 //         let slot = GuardSlot::Charlie; // Use a different slot for clarity
 
 //         // Assert 1: Verify slot is initially empty
-//         let initial_structure_base = StructureBaseStoreImpl::retrieve(ref world, realm_id);
+//         let initial_structure_base = StructureBaseStoreImpl::retrieve(ref world, game_id, realm_id);
 //         assert(initial_structure_base.troop_guard_count == 0, 'Initial guard count should be 0');
-//         let initial_guards = StructureTroopGuardStoreImpl::retrieve(ref world, realm_id);
+//         let initial_guards = StructureTroopGuardStoreImpl::retrieve(ref world, game_id, realm_id);
 //         let (initial_troops, _) = initial_guards.from_slot(slot);
 //         assert(initial_troops.count == 0, 'Initial troop count should be 0');
 
@@ -1508,15 +1567,15 @@ pub mod troop_management_systems {
 //         troop_management_systems.guard_delete(realm_id, slot);
 
 //         // Assert 2: Verify state remains unchanged
-//         let final_structure_base = StructureBaseStoreImpl::retrieve(ref world, realm_id);
+//         let final_structure_base = StructureBaseStoreImpl::retrieve(ref world, game_id, realm_id);
 //         assert(final_structure_base.troop_guard_count == 0, 'Final guard count should be 0');
-//         let final_guards = StructureTroopGuardStoreImpl::retrieve(ref world, realm_id);
+//         let final_guards = StructureTroopGuardStoreImpl::retrieve(ref world, game_id, realm_id);
 //         let (final_troops, _) = final_guards.from_slot(slot);
 //         assert(final_troops.count == 0, 'Final troop count should be 0');
 //     }
 
 //     /// @notice Tests that `guard_delete` reverts if the season is not active.
-//     /// @dev Required by the `SeasonConfigImpl::get(world).assert_started_and_not_over()` check.
+//     /// @dev Required by the `SeasonConfigImpl::get(world, game_id).assert_started_and_not_over()` check.
 //     #[test]
 //     #[should_panic(expected: ("The game starts in 0 hours 33 minutes, 20 seconds", 'ENTRYPOINT_FAILED'))]
 //     fn guard_delete_revert_season_inactive() {
@@ -1618,15 +1677,15 @@ pub mod troop_management_systems {
 //         let amount = 1 * RESOURCE_PRECISION;
 //         let spawn_direction = Direction::NorthEast;
 
-//         let initial_structure_base = StructureBaseStoreImpl::retrieve(ref world, realm_id);
-//         let initial_explorers = StructureTroopExplorerStoreImpl::retrieve(ref world, realm_id);
+//         let initial_structure_base = StructureBaseStoreImpl::retrieve(ref world, game_id, realm_id);
+//         let initial_explorers = StructureTroopExplorerStoreImpl::retrieve(ref world, game_id, realm_id);
 //         assert(SpanTrait::len(initial_explorers) == 0, 'Initial explorer count');
 
 //         let structure_coord = Coord {
 //             alt: false, x: initial_structure_base.coord_x, y: initial_structure_base.coord_y,
 //         };
 //         let spawn_coord = structure_coord.neighbor(spawn_direction);
-//         let initial_tile_opt: TileOpt = world.read_model((spawn_coord.alt, spawn_coord.x, spawn_coord.y));
+//         let initial_tile_opt: TileOpt = world.read_model((game_id, spawn_coord.alt, spawn_coord.x, spawn_coord.y));
 //         let initial_spawn_tile: Tile = initial_tile_opt.into();
 //         assert(initial_spawn_tile.not_occupied(), 'Spawn tile initially free');
 
@@ -1638,7 +1697,7 @@ pub mod troop_management_systems {
 //         assert(explorer_id != 0, 'Explorer ID should be non-zero');
 
 //         // Check ExplorerTroops model
-//         let explorer: ExplorerTroops = world.read_model(explorer_id);
+//         let explorer: ExplorerTroops = world.read_model((game_id, explorer_id));
 //         assert(explorer.explorer_id == explorer_id, 'Explorer ID mismatch');
 //         assert(explorer.owner == realm_id, 'Explorer owner mismatch');
 //         assert(explorer.coord == spawn_coord, 'Explorer coord mismatch');
@@ -1647,19 +1706,19 @@ pub mod troop_management_systems {
 //         assert(explorer.troops.count == amount, 'Explorer count mismatch');
 
 //         // Check StructureBase updates
-//         let final_structure_base = StructureBaseStoreImpl::retrieve(ref world, realm_id);
+//         let final_structure_base = StructureBaseStoreImpl::retrieve(ref world, game_id, realm_id);
 //         assert(
 //             final_structure_base.troop_explorer_count == initial_structure_base.troop_explorer_count + 1,
 //             'Structure explorer count',
 //         );
 
 //         // Check StructureTroopExplorerStoreImpl updates
-//         let final_explorers = StructureTroopExplorerStoreImpl::retrieve(ref world, realm_id);
+//         let final_explorers = StructureTroopExplorerStoreImpl::retrieve(ref world, game_id, realm_id);
 //         assert(final_explorers.len() == 1, 'Final explorer list length');
 //         assert(*final_explorers.at(0) == explorer_id, 'Explorer ID not in list');
 
 //         // Check Tile occupation
-//         let final_tile_opt: TileOpt = world.read_model((spawn_coord.alt, spawn_coord.x, spawn_coord.y));
+//         let final_tile_opt: TileOpt = world.read_model((game_id, spawn_coord.alt, spawn_coord.x, spawn_coord.y));
 //         let final_spawn_tile: Tile = final_tile_opt.into();
 //         assert(!final_spawn_tile.not_occupied(), 'Spawn tile should be occupied');
 //         assert(final_spawn_tile.occupier_id == explorer_id, 'Spawn tile occupant ID');
@@ -1707,7 +1766,7 @@ pub mod troop_management_systems {
 //     }
 
 //     /// @notice Tests that `explorer_create` reverts if the season is not active.
-//     /// @dev Required by the `SeasonConfigImpl::get(world).assert_started_and_not_over()` check.
+//     /// @dev Required by the `SeasonConfigImpl::get(world, game_id).assert_started_and_not_over()` check.
 //     #[test]
 //     #[should_panic(expected: ("The game starts in 0 hours 33 minutes, 20 seconds", 'ENTRYPOINT_FAILED'))]
 //     fn explorer_create_revert_season_inactive() {
@@ -1836,9 +1895,9 @@ pub mod troop_management_systems {
 //         let realm_id = tspawn_realm_with_resources(ref world, 1, realm_owner, realm_coord);
 
 //         // Set the structure's specific explorer limit to 1
-//         let mut structure_base = StructureBaseStoreImpl::retrieve(ref world, realm_id);
+//         let mut structure_base = StructureBaseStoreImpl::retrieve(ref world, game_id, realm_id);
 //         structure_base.troop_max_explorer_count = 1;
-//         StructureBaseStoreImpl::store(ref structure_base, ref world, realm_id);
+//         StructureBaseStoreImpl::store(ref structure_base, ref world, game_id, realm_id);
 
 //         // Grant enough resources to create *two* explorers
 //         let starting_knight_t1_amount = 10 * RESOURCE_PRECISION;
@@ -1861,7 +1920,7 @@ pub mod troop_management_systems {
 //             .explorer_create(realm_id, category, tier, amount, spawn_direction_1);
 
 //         // Assert 1: Check structure count is 1 (optional)
-//         let structure_base_after_1 = StructureBaseStoreImpl::retrieve(ref world, realm_id);
+//         let structure_base_after_1 = StructureBaseStoreImpl::retrieve(ref world, game_id, realm_id);
 //         assert(structure_base_after_1.troop_explorer_count == 1, 'Count should be 1');
 
 //         // Act 2: Attempt to create the second explorer (should panic)
@@ -1884,9 +1943,9 @@ pub mod troop_management_systems {
 //         let realm_id = tspawn_realm_with_resources(ref world, 1, realm_owner, realm_coord);
 
 //         // Set structure's max explorer count to 0 to trigger the limit
-//         let mut structure_base = StructureBaseStoreImpl::retrieve(ref world, realm_id);
+//         let mut structure_base = StructureBaseStoreImpl::retrieve(ref world, game_id, realm_id);
 //         structure_base.troop_max_explorer_count = 0;
-//         StructureBaseStoreImpl::store(ref structure_base, ref world, realm_id);
+//         StructureBaseStoreImpl::store(ref structure_base, ref world, game_id, realm_id);
 
 //         // Grant resources needed for the call (even though it should fail)
 //         let starting_knight_t1_amount = 10 * RESOURCE_PRECISION;
@@ -1923,9 +1982,9 @@ pub mod troop_management_systems {
 //         let realm_id = tspawn_realm_with_resources(ref world, 1, realm_owner, realm_coord);
 
 //         // Increase structure explorer limit to avoid hitting it first
-//         let mut structure_base = StructureBaseStoreImpl::retrieve(ref world, realm_id);
+//         let mut structure_base = StructureBaseStoreImpl::retrieve(ref world, game_id, realm_id);
 //         structure_base.troop_max_explorer_count = 5; // Set to a value > 1
-//         StructureBaseStoreImpl::store(ref structure_base, ref world, realm_id);
+//         StructureBaseStoreImpl::store(ref structure_base, ref world, game_id, realm_id);
 
 //         // Grant resources needed for the call
 //         let starting_knight_t1_amount = 10 * RESOURCE_PRECISION;
@@ -1988,7 +2047,7 @@ pub mod troop_management_systems {
 //             .explorer_create(realm_id, category, tier, create_amount, spawn_direction);
 
 //         // Assert 1: Check initial state
-//         let initial_explorer: ExplorerTroops = world.read_model(explorer_id);
+//         let initial_explorer: ExplorerTroops = world.read_model((game_id, explorer_id));
 //         assert(initial_explorer.troops.count == create_amount, 'Initial count');
 
 //         let balance_after_create = ResourceImpl::read_balance(ref world, realm_id, ResourceTypes::KNIGHT_T1);
@@ -2001,7 +2060,7 @@ pub mod troop_management_systems {
 //         troop_management_systems.explorer_add(explorer_id, add_amount, home_direction);
 
 //         // Assert 2: Check final state
-//         let final_explorer: ExplorerTroops = world.read_model(explorer_id);
+//         let final_explorer: ExplorerTroops = world.read_model((game_id, explorer_id));
 //         assert(final_explorer.troops.count == total_amount, 'Final count');
 
 //         // Check final resource deduction
@@ -2090,7 +2149,7 @@ pub mod troop_management_systems {
 //     }
 
 //     /// @notice Tests that `explorer_add` reverts if the season is not active.
-//     /// @dev Required by the `SeasonConfigImpl::get(world).assert_started_and_not_over()` check.
+//     /// @dev Required by the `SeasonConfigImpl::get(world, game_id).assert_started_and_not_over()` check.
 //     #[test]
 //     #[should_panic(expected: ("The game starts in 0 hours 33 minutes, 20 seconds", 'ENTRYPOINT_FAILED'))]
 //     fn explorer_add_revert_season_inactive() {
@@ -2241,7 +2300,7 @@ pub mod troop_management_systems {
 //         troop_movement_systems.explorer_move(explorer_id, move_direction, false);
 
 //         // Assert
-//         let explorer_after_move: ExplorerTroops = world.read_model(explorer_id);
+//         let explorer_after_move: ExplorerTroops = world.read_model((game_id, explorer_id));
 //         let expected_coord = realm_coord.neighbor(spawn_direction).neighbor(spawn_direction);
 //         assert!(explorer_after_move.coord == expected_coord, "Explorer didn't move correctly");
 
@@ -2312,7 +2371,7 @@ pub mod troop_management_systems {
 //         let realm_id = tspawn_realm_with_resources(ref world, 1, realm_owner, realm_coord);
 
 //         // Get the limit from config (realm starts at level 0 = Settlement)
-//         let troop_limit_config: TroopLimitConfig = CombatConfigImpl::troop_limit_config(ref world);
+//         let troop_limit_config: TroopLimitConfig = CombatConfigImpl::troop_limit_config(ref world, game_id);
 //         let max_troops_per_explorer: u128 = troop_limit_config.max_army_size(0, TroopTier::T1).into()
 //             * RESOURCE_PRECISION;
 //         let create_amount = max_troops_per_explorer - 1 * RESOURCE_PRECISION; // Create just under the limit
@@ -2336,7 +2395,7 @@ pub mod troop_management_systems {
 //             .explorer_create(realm_id, category, tier, create_amount, spawn_direction);
 
 //         // Assert 1: Check initial state (optional, but good practice)
-//         let initial_explorer: ExplorerTroops = world.read_model(explorer_id);
+//         let initial_explorer: ExplorerTroops = world.read_model((game_id, explorer_id));
 //         assert(initial_explorer.troops.count == create_amount, 'Initial count wrong');
 
 //         // Act 2: Attempt to add troops that exceed the limit, expecting panic
@@ -2379,22 +2438,22 @@ pub mod troop_management_systems {
 //             .explorer_create(realm_id, category, tier, create_amount, spawn_direction);
 
 //         // Assert 1: Verify initial state
-//         let mut initial_explorer: ExplorerTroops = world.read_model(explorer_id);
+//         let mut initial_explorer: ExplorerTroops = world.read_model((game_id, explorer_id));
 //         assert(initial_explorer.explorer_id == explorer_id, 'Explorer ID wrong');
 //         assert(initial_explorer.troops.count == create_amount, 'Initial count wrong');
 
-//         let initial_structure_base = StructureBaseStoreImpl::retrieve(ref world, realm_id);
+//         let initial_structure_base = StructureBaseStoreImpl::retrieve(ref world, game_id, realm_id);
 //         assert(initial_structure_base.troop_explorer_count == 1, 'Initial structure count wrong');
 //         let structure_coord = Coord {
 //             alt: false, x: initial_structure_base.coord_x, y: initial_structure_base.coord_y,
 //         };
 //         let spawn_coord = structure_coord.neighbor(spawn_direction);
 
-//         let initial_explorers = StructureTroopExplorerStoreImpl::retrieve(ref world, realm_id);
+//         let initial_explorers = StructureTroopExplorerStoreImpl::retrieve(ref world, game_id, realm_id);
 //         assert(initial_explorers.len() == 1, 'Initial explorer list len wrong');
 //         assert(*initial_explorers.at(0) == explorer_id, 'Initial explorer ID not in list');
 
-//         let initial_tile_opt2: TileOpt = world.read_model((spawn_coord.alt, spawn_coord.x, spawn_coord.y));
+//         let initial_tile_opt2: TileOpt = world.read_model((game_id, spawn_coord.alt, spawn_coord.x, spawn_coord.y));
 //         let initial_spawn_tile: Tile = initial_tile_opt2.into();
 //         assert(!initial_spawn_tile.not_occupied(), 'Spawn tile should be occupied');
 //         assert(initial_spawn_tile.occupier_id == explorer_id, 'Spawn tile occupier wrong');
@@ -2404,7 +2463,7 @@ pub mod troop_management_systems {
 //         troop_management_systems.explorer_delete(explorer_id);
 
 //         // Assert 2: Verify final state
-//         let final_explorer: ExplorerTroops = world.read_model(explorer_id);
+//         let final_explorer: ExplorerTroops = world.read_model((game_id, explorer_id));
 
 //         // Dojo models aren't truly deleted, but zeroed out.
 //         assert(final_explorer.owner == 0, 'Final owner should be 0');
@@ -2414,20 +2473,20 @@ pub mod troop_management_systems {
 //         assert(final_explorer.coord.x == 0, 'Final coord x should be 0');
 //         assert(final_explorer.coord.y == 0, 'Final coord y should be 0');
 
-//         let final_structure_base = StructureBaseStoreImpl::retrieve(ref world, realm_id);
+//         let final_structure_base = StructureBaseStoreImpl::retrieve(ref world, game_id, realm_id);
 //         assert(final_structure_base.troop_explorer_count == 0, 'Final structure count wrong');
 
-//         let final_explorers = StructureTroopExplorerStoreImpl::retrieve(ref world, realm_id);
+//         let final_explorers = StructureTroopExplorerStoreImpl::retrieve(ref world, game_id, realm_id);
 //         assert(final_explorers.len() == 0, 'Final explorer list len wrong');
 
-//         let final_tile_opt2: TileOpt = world.read_model((spawn_coord.alt, spawn_coord.x, spawn_coord.y));
+//         let final_tile_opt2: TileOpt = world.read_model((game_id, spawn_coord.alt, spawn_coord.x, spawn_coord.y));
 //         let final_spawn_tile: Tile = final_tile_opt2.into();
 //         assert(final_spawn_tile.not_occupied(), 'Spawn tile should be free');
 //         assert(final_spawn_tile.occupier_id == 0, 'Spawn tile occupier should be 0');
 //     }
 
 //     /// @notice Tests that `explorer_delete` reverts if the season is not active.
-//     /// @dev Required by the `SeasonConfigImpl::get(world).assert_started_and_not_over()` check.
+//     /// @dev Required by the `SeasonConfigImpl::get(world, game_id).assert_started_and_not_over()` check.
 //     #[test]
 //     #[should_panic(expected: ("The game starts in 0 hours 33 minutes, 20 seconds", 'ENTRYPOINT_FAILED'))]
 //     fn explorer_delete_revert_season_inactive() {
@@ -2537,9 +2596,9 @@ pub mod troop_management_systems {
 //         let realm2_id = tspawn_realm_with_resources(ref world, 2, realm_owner, realm2_coord);
 
 //         // Verify structure max count after creation
-//         let structure_base_after_spawn = StructureBaseStoreImpl::retrieve(ref world, realm_id);
+//         let structure_base_after_spawn = StructureBaseStoreImpl::retrieve(ref world, game_id, realm_id);
 //         assert(structure_base_after_spawn.troop_max_explorer_count == 1, 'Structure Max Count Check');
-//         let structure_base_after_spawn2 = StructureBaseStoreImpl::retrieve(ref world, realm2_id);
+//         let structure_base_after_spawn2 = StructureBaseStoreImpl::retrieve(ref world, game_id, realm2_id);
 //         assert(structure_base_after_spawn2.troop_max_explorer_count == 1, 'Structure Max Count Check');
 
 //         // Grant enough resources for two explorers and the swap
@@ -2572,13 +2631,13 @@ pub mod troop_management_systems {
 //             .explorer_create(realm2_id, category, tier, create_amount_to, spawn_direction_to);
 
 //         // Verify structure state after first create
-//         let structure_base_after_first_create = StructureBaseStoreImpl::retrieve(ref world, realm_id);
+//         let structure_base_after_first_create = StructureBaseStoreImpl::retrieve(ref world, game_id, realm_id);
 //         assert(structure_base_after_first_create.troop_explorer_count == 1, 'Count after first create');
 //         assert(structure_base_after_first_create.troop_max_explorer_count == 1, 'Max count after first create');
 
 //         // Assert 1: Verify initial states
-//         let initial_from_explorer: ExplorerTroops = world.read_model(from_explorer_id);
-//         let initial_to_explorer: ExplorerTroops = world.read_model(to_explorer_id);
+//         let initial_from_explorer: ExplorerTroops = world.read_model((game_id, from_explorer_id));
+//         let initial_to_explorer: ExplorerTroops = world.read_model((game_id, to_explorer_id));
 //         assert(initial_from_explorer.troops.count == create_amount_from, 'Initial From Count');
 //         assert(initial_to_explorer.troops.count == create_amount_to, 'Initial To Count');
 
@@ -2588,8 +2647,8 @@ pub mod troop_management_systems {
 //         swap_amount);
 
 //         // Assert 2: Verify final states
-//         let final_from_explorer: ExplorerTroops = world.read_model(from_explorer_id);
-//         let final_to_explorer: ExplorerTroops = world.read_model(to_explorer_id);
+//         let final_from_explorer: ExplorerTroops = world.read_model((game_id, from_explorer_id));
+//         let final_to_explorer: ExplorerTroops = world.read_model((game_id, to_explorer_id));
 
 //         let expected_from_count = create_amount_from - swap_amount;
 //         let expected_to_count = create_amount_to + swap_amount;
@@ -2627,9 +2686,9 @@ pub mod troop_management_systems {
 //         let realm2_id = tspawn_realm_with_resources(ref world, 2, realm_owner, realm2_coord);
 
 //         // Verify structure max count after creation
-//         let structure_base_after_spawn = StructureBaseStoreImpl::retrieve(ref world, realm_id);
+//         let structure_base_after_spawn = StructureBaseStoreImpl::retrieve(ref world, game_id, realm_id);
 //         assert(structure_base_after_spawn.troop_max_explorer_count == 1, 'Structure Max Count Check');
-//         let structure_base_after_spawn2 = StructureBaseStoreImpl::retrieve(ref world, realm2_id);
+//         let structure_base_after_spawn2 = StructureBaseStoreImpl::retrieve(ref world, game_id, realm2_id);
 //         assert(structure_base_after_spawn2.troop_max_explorer_count == 1, 'Structure Max Count Check');
 
 //         // Grant enough resources for two explorers and the swap
@@ -2656,7 +2715,7 @@ pub mod troop_management_systems {
 //             .explorer_create(realm_id, category, tier, create_amount_from, spawn_direction_from);
 
 //         // Verify structure state after first create
-//         let structure_base_after_first_create = StructureBaseStoreImpl::retrieve(ref world, realm_id);
+//         let structure_base_after_first_create = StructureBaseStoreImpl::retrieve(ref world, game_id, realm_id);
 //         assert(structure_base_after_first_create.troop_explorer_count == 1, 'Count after first create');
 //         assert(structure_base_after_first_create.troop_max_explorer_count == 1, 'Max count after first create');
 
@@ -2665,8 +2724,8 @@ pub mod troop_management_systems {
 //             .explorer_create(realm2_id, category, tier, create_amount_to, spawn_direction_to);
 
 //         // Assert 1: Verify initial states
-//         let initial_from_explorer: ExplorerTroops = world.read_model(from_explorer_id);
-//         let initial_to_explorer: ExplorerTroops = world.read_model(to_explorer_id);
+//         let initial_from_explorer: ExplorerTroops = world.read_model((game_id, from_explorer_id));
+//         let initial_to_explorer: ExplorerTroops = world.read_model((game_id, to_explorer_id));
 //         assert(initial_from_explorer.troops.count == create_amount_from, 'Initial From Count');
 //         assert(initial_to_explorer.troops.count == create_amount_to, 'Initial To Count');
 
@@ -2677,8 +2736,8 @@ pub mod troop_management_systems {
 //         swap_amount);
 
 //         // Assert 2: Verify final states
-//         let final_from_explorer: ExplorerTroops = world.read_model(from_explorer_id);
-//         let final_to_explorer: ExplorerTroops = world.read_model(to_explorer_id);
+//         let final_from_explorer: ExplorerTroops = world.read_model((game_id, from_explorer_id));
+//         let final_to_explorer: ExplorerTroops = world.read_model((game_id, to_explorer_id));
 
 //         let expected_from_count = 0; // 'from' explorer should be deleted
 //         let expected_to_count = create_amount_to + swap_amount;
@@ -2741,7 +2800,7 @@ pub mod troop_management_systems {
 //     }
 
 //     /// @notice Tests that `explorer_explorer_swap` reverts if the season is not active.
-//     /// @dev Required by the `SeasonConfigImpl::get(world).assert_started_and_not_over()` check.
+//     /// @dev Required by the `SeasonConfigImpl::get(world, game_id).assert_started_and_not_over()` check.
 //     #[test]
 //     #[should_panic(expected: ("The game starts in 0 hours 33 minutes, 20 seconds", 'ENTRYPOINT_FAILED'))]
 //     fn explorer_swap_revert_season_inactive() {

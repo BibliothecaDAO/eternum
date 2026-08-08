@@ -2,7 +2,7 @@ use crate::alias::ID;
 
 #[starknet::interface]
 pub trait IStructureSystems<T> {
-    fn level_up(ref self: T, structure_id: ID);
+    fn level_up(ref self: T, game_id: u32, structure_id: ID);
 }
 
 #[dojo::contract]
@@ -15,6 +15,7 @@ pub mod structure_systems {
     use crate::constants::DEFAULT_NS;
     use crate::models::config::{SeasonConfigImpl, SettlementConfigImpl, StructureLevelConfig, WorldConfigUtilImpl};
     use crate::models::events::{Story, StoryEvent, StructureLevelUpStory};
+    use crate::models::game::GameRegistry;
     use crate::models::map::Tile;
     use crate::models::map2::TileOpt;
     use crate::models::owner::OwnerAddressTrait;
@@ -35,16 +36,18 @@ pub mod structure_systems {
 
     #[abi(embed_v0)]
     impl StructureSystemsImpl of super::IStructureSystems<ContractState> {
-        fn level_up(ref self: ContractState, structure_id: ID) {
+        fn level_up(ref self: ContractState, game_id: u32, structure_id: ID) {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
-            SeasonConfigImpl::get(world).assert_started_and_not_over();
+            SeasonConfigImpl::get(world, game_id).assert_started_and_not_over();
 
             // ensure caller owns the structure
-            let mut structure_owner: ContractAddress = StructureOwnerStoreImpl::retrieve(ref world, structure_id);
+            let mut structure_owner: ContractAddress = StructureOwnerStoreImpl::retrieve(
+                ref world, game_id, structure_id,
+            );
             structure_owner.assert_caller_owner();
 
             // ensure entity is a realm or village
-            let mut structure_base: StructureBase = StructureBaseStoreImpl::retrieve(ref world, structure_id);
+            let mut structure_base: StructureBase = StructureBaseStoreImpl::retrieve(ref world, game_id, structure_id);
             assert!(
                 structure_base.category == StructureCategory::Realm.into()
                     || structure_base.category == StructureCategory::Village.into(),
@@ -52,27 +55,32 @@ pub mod structure_systems {
             );
 
             // ensure structure is not already at max level
-            let max_level = structure_base.max_level(world);
+            let max_level = structure_base.max_level(world, game_id);
             assert!(structure_base.level < max_level, "structure is already at max level");
 
             // make payment to upgrade to next level
             let next_level = structure_base.level + 1;
-            let structure_level_config: StructureLevelConfig = world.read_model(next_level);
+            let game: GameRegistry = world.read_model(game_id);
+            let structure_level_config: StructureLevelConfig = world.read_model((game.preset_id, next_level));
             let required_resources_id = structure_level_config.required_resources_id;
             let required_resource_count = structure_level_config.required_resource_count;
 
-            let mut structure_weight: Weight = WeightStoreImpl::retrieve(ref world, structure_id);
+            let mut structure_weight: Weight = WeightStoreImpl::retrieve(ref world, game_id, structure_id);
             let mut index = 0;
             loop {
                 if index == required_resource_count {
                     break;
                 }
 
-                let mut required_resource: ResourceList = world.read_model((required_resources_id, index));
+                let mut required_resource: ResourceList = world
+                    .read_model((game.preset_id, required_resources_id, index));
                 // burn resource from realm
-                let resource_weight_grams: u128 = ResourceWeightImpl::grams(ref world, required_resource.resource_type);
+                let resource_weight_grams: u128 = ResourceWeightImpl::grams(
+                    ref world, game_id, required_resource.resource_type,
+                );
                 let mut structure_resource = SingleResourceStoreImpl::retrieve(
                     ref world,
+                    game_id,
                     structure_id,
                     required_resource.resource_type,
                     ref structure_weight,
@@ -86,25 +94,25 @@ pub mod structure_systems {
             }
 
             // update structure weight
-            structure_weight.store(ref world, structure_id);
+            structure_weight.store(ref world, game_id, structure_id);
 
             // update structure level and troop max guard count
             let (explorer_limit, guard_limit) = TroopLimitImpl::max_slot_size(next_level);
             structure_base.level = next_level;
             structure_base.troop_max_guard_count = guard_limit;
             structure_base.troop_max_explorer_count = explorer_limit.into();
-            StructureBaseStoreImpl::store(ref structure_base, ref world, structure_id);
+            StructureBaseStoreImpl::store(ref structure_base, ref world, game_id, structure_id);
 
             // update structure tile
             if structure_base.category == StructureCategory::Realm.into() {
                 let structure_coord = Coord { alt: false, x: structure_base.coord_x, y: structure_base.coord_y };
                 let structure_tile_opt: TileOpt = world
-                    .read_model((structure_coord.alt, structure_coord.x, structure_coord.y));
+                    .read_model((game_id, structure_coord.alt, structure_coord.x, structure_coord.y));
                 let mut structure_tile: Tile = structure_tile_opt.into();
                 let structure_metadata: StructureMetadata = StructureMetadataStoreImpl::retrieve(
-                    ref world, structure_id,
+                    ref world, game_id, structure_id,
                 );
-                let structure_production_boost_bonus: ProductionBoostBonus = world.read_model(structure_id);
+                let structure_production_boost_bonus: ProductionBoostBonus = world.read_model((game_id, structure_id));
                 let structure_has_wonder_bonus = structure_production_boost_bonus.wonder_incr_percent_num > 0;
                 let tile_occupier = IMapImpl::get_realm_occupier(
                     structure_metadata.has_wonder, structure_has_wonder_bonus, structure_base.level,
@@ -128,6 +136,7 @@ pub mod structure_systems {
             world
                 .emit_event(
                     @StoryEvent {
+                        game_id,
                         id: world.dispatcher.uuid(),
                         owner: Option::Some(structure_owner),
                         entity_id: Option::Some(structure_id),

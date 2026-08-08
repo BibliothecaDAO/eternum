@@ -1,6 +1,6 @@
 #[starknet::interface]
 pub trait INameSystems<T> {
-    fn set_address_name(ref self: T, name: felt252);
+    fn set_address_name(ref self: T, game_id: u32, name: felt252);
 }
 
 #[dojo::contract]
@@ -14,7 +14,7 @@ pub mod name_systems {
 
     #[abi(embed_v0)]
     pub impl NameSystemsImpl of super::INameSystems<ContractState> {
-        fn set_address_name(ref self: ContractState, name: felt252) {
+        fn set_address_name(ref self: ContractState, game_id: u32, name: felt252) {
             // todo: limit this to only realm/village owners else it can be spammed
             let mut world: WorldStorage = self.world(DEFAULT_NS());
 
@@ -23,7 +23,7 @@ pub mod name_systems {
             // SeasonConfigImpl::get(world).assert_started_and_not_over();
 
             let caller = starknet::get_caller_address();
-            let mut structure_owner_stats: StructureOwnerStats = world.read_model(caller);
+            let structure_owner_stats: StructureOwnerStats = world.read_model((game_id, caller));
             assert!(structure_owner_stats.structures_num > 0, "Caller does not own any structure");
 
             // assert that name not set
@@ -33,9 +33,7 @@ pub mod name_systems {
             // set name
             address_name.name = name;
             world.write_model(@address_name);
-
-            structure_owner_stats.name = name;
-            world.write_model(@structure_owner_stats);
+            // Owner names stay account-global; per-game entity names use EntityName (D7).
         }
     }
 }

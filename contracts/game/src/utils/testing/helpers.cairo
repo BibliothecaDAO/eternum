@@ -30,7 +30,8 @@ use crate::models::config::{
 use crate::models::map::{Tile, TileImpl, TileOccupier};
 use crate::models::map2::TileOpt;
 use crate::models::position::{Coord, CoordTrait, Direction};
-use crate::models::quest::QuestTile;
+// Quest models are excluded from the Blitz-core world (D14).
+// use crate::models::quest::QuestTile;
 use crate::models::resource::resource::{
     ResourceImpl, ResourceList, ResourceWeightImpl, SingleResourceImpl, SingleResourceStoreImpl, WeightStoreImpl,
 };

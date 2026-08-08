@@ -3,7 +3,7 @@ use crate::utils::cartridge::vrf::Source;
 
 #[starknet::interface]
 pub trait IRNGlibrary<T> {
-    fn get_random_number(self: @T, source: Source, world: WorldStorage) -> u256;
+    fn get_random_number(self: @T, game_id: u32, source: Source, world: WorldStorage) -> u256;
     fn get_random_in_range(self: @T, random_number_seed: u256, salt: u128, upper_bound: u128) -> u128;
     fn get_weighted_choice_bool(
         self: @T, population: Span<bool>, weights: Span<u128>, k: u128, r: bool, random_number_seed: u256,
@@ -42,10 +42,12 @@ pub trait IRNGlibrary<T> {
 #[dojo::library]
 mod rng_library {
     use core::num::traits::Zero;
+    use core::poseidon::poseidon_hash_span;
     use dojo::model::ModelStorage;
     use dojo::world::{WorldStorage, WorldStorageTrait};
     use starknet::ContractAddress;
     use crate::models::config::WorldConfigUtilImpl;
+    use crate::models::game::GameRegistry;
     use crate::models::rng::{RNG, RNGImpl};
     use crate::utils::cartridge::vrf::Source;
     use crate::utils::random;
@@ -58,10 +60,11 @@ mod rng_library {
     #[abi(embed_v0)]
     pub impl RngLibraryImpl of super::IRNGlibrary<ContractState> {
         /// Derive a VRF-based seed for a given owner using the configured provider.
-        fn get_random_number(self: @ContractState, source: Source, mut world: WorldStorage) -> u256 {
+        fn get_random_number(self: @ContractState, game_id: u32, source: Source, mut world: WorldStorage) -> u256 {
             let vrf_provider: ContractAddress = WorldConfigUtilImpl::get_member(
-                world, selector!("vrf_provider_address"),
+                world, game_id, selector!("vrf_provider_address"),
             );
+            let source = scope_source_to_game(world, game_id, source);
             let tx_hash = starknet::get_tx_info().unbox().transaction_hash;
             let mut rng: RNG = world.read_model(tx_hash);
             if rng.seed.is_zero() {
@@ -155,5 +158,14 @@ mod rng_library {
     pub fn get_dispatcher(world: @WorldStorage) -> super::IRNGlibraryLibraryDispatcher {
         let (_, class_hash) = world.dns(@"rng_library_v0_1_16").expect('rng_library not found.');
         super::IRNGlibraryLibraryDispatcher { class_hash }
+    }
+
+    fn scope_source_to_game(world: WorldStorage, game_id: u32, source: Source) -> Source {
+        let game: GameRegistry = world.read_model(game_id);
+        let source_value = match source {
+            Source::Nonce(address) => address.into(),
+            Source::Salt(salt) => salt,
+        };
+        Source::Salt(poseidon_hash_span(array![game_id.into(), game.seed, source_value].span()))
     }
 }

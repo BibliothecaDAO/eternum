@@ -259,6 +259,8 @@ pub impl GuardImpl of GuardTrait {
 #[dojo::model]
 pub struct ExplorerTroops {
     #[key]
+    pub game_id: u32,
+    #[key]
     pub explorer_id: ID,
     pub owner: ID,
     pub troops: Troops,

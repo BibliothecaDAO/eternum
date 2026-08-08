@@ -39,9 +39,9 @@ pub mod series_chest_reward_calculator {
 
     #[generate_trait]
     pub impl SeriesChestRewardStateImpl of SeriesChestRewardStateTrait {
-        fn new() -> SeriesChestRewardState {
+        fn new(series_id: felt252) -> SeriesChestRewardState {
             SeriesChestRewardState {
-                world_id: WORLD_CONFIG_ID,
+                series_id,
                 game_index: 0_u32,
                 ema_players_scaled: EXPECTED_PLAYERS_START * BPS,
                 recent: RecentRingImpl::new(),

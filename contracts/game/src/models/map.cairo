@@ -1,10 +1,13 @@
 use core::num::traits::zero::Zero;
+use core::poseidon::poseidon_hash_span;
 use crate::alias::ID;
 use crate::models::position::Coord;
 
 #[derive(Copy, Drop, Serde, Introspect)]
 #[dojo::model]
 pub struct BiomeDiscovered {
+    #[key]
+    pub game_id: u32,
     #[key]
     pub by_address: starknet::ContractAddress,
     #[key]
@@ -15,6 +18,7 @@ pub struct BiomeDiscovered {
 
 #[derive(Copy, Drop, Serde)]
 pub struct Tile {
+    pub game_id: u32,
     pub alt: bool,
     pub col: u32,
     pub row: u32,
@@ -33,8 +37,9 @@ pub impl TileIntoCoord of Into<Tile, Coord> {
 
 #[generate_trait]
 pub impl TileImpl of TileTrait {
-    fn keys_only(coord: Coord) -> Tile {
+    fn keys_only(game_id: u32, coord: Coord) -> Tile {
         Tile {
+            game_id,
             alt: coord.alt,
             col: coord.x,
             row: coord.y,
@@ -62,7 +67,7 @@ pub impl TileImpl of TileTrait {
         !self.occupied()
     }
 
-    fn to_seed(self: Tile) -> felt252 {
+    fn to_seed(self: Tile, game_seed: felt252) -> felt252 {
         // Pack [alt:1 bit | col:32 bits | row:32 bits] into a single felt.
         // This is collision-free for Tile coordinates because col/row are u32.
         let alt: felt252 = if self.alt {
@@ -72,7 +77,8 @@ pub impl TileImpl of TileTrait {
         };
         let col: felt252 = self.col.into();
         let row: felt252 = self.row.into();
-        return ((alt * 0x10000000000000000) + (col * 0x100000000) + row);
+        let coord_seed = (alt * 0x10000000000000000) + (col * 0x100000000) + row;
+        poseidon_hash_span(array![self.game_id.into(), game_seed, coord_seed].span())
     }
 }
 

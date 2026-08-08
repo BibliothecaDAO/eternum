@@ -2,8 +2,8 @@ use crate::models::position::Coord;
 
 #[starknet::interface]
 pub trait IBlitzHyperstructureCreateSystems<T> {
-    fn reserve_hyperstructures(ref self: T, count: u8);
-    fn create_hyperstructure(ref self: T, coord: Coord);
+    fn reserve_hyperstructures(ref self: T, game_id: u32, count: u8);
+    fn create_hyperstructure(ref self: T, game_id: u32, coord: Coord);
 }
 
 #[dojo::contract]
@@ -29,20 +29,20 @@ pub mod hyperstructure_create_systems {
 
     #[abi(embed_v0)]
     impl BlitzHyperstructureCreateSystemsImpl of super::IBlitzHyperstructureCreateSystems<ContractState> {
-        fn reserve_hyperstructures(ref self: ContractState, count: u8) {
+        fn reserve_hyperstructures(ref self: ContractState, game_id: u32, count: u8) {
             ////////////////////////////////////////////////
             // Validate Blitz Reservation Window
             ////////////////////////////////////////////////
 
             let mut world: WorldStorage = self.world(DEFAULT_NS());
-            let blitz_mode_on: bool = WorldConfigUtilImpl::get_member(world, selector!("blitz_mode_on"));
+            let blitz_mode_on: bool = WorldConfigUtilImpl::get_member(world, game_id, selector!("blitz_mode_on"));
             assert!(blitz_mode_on == true, "Eternum: Not a blitz game");
 
-            let season_config = SeasonConfigImpl::get(world);
+            let season_config = SeasonConfigImpl::get(world, game_id);
             assert!(!season_config.has_ended(), "Season is over");
 
             let blitz_registration_config: BlitzRegistrationConfig = WorldConfigUtilImpl::get_member(
-                world, selector!("blitz_registration_config"),
+                world, game_id, selector!("blitz_registration_config"),
             );
 
             ////////////////////////////////////////////////
@@ -50,16 +50,16 @@ pub mod hyperstructure_create_systems {
             ////////////////////////////////////////////////
 
             let blitz_settlement_config: BlitzSettlementConfig = WorldConfigUtilImpl::get_member(
-                world, selector!("blitz_settlement_config"),
+                world, game_id, selector!("blitz_settlement_config"),
             );
             let blitz_exploration_config: BlitzExplorationConfig = WorldConfigUtilImpl::get_member(
-                world, selector!("blitz_exploration_config"),
+                world, game_id, selector!("blitz_exploration_config"),
             );
             let mut blitz_hyperstructure_settlement_config: BlitzHypersSettlementConfig =
                 WorldConfigUtilImpl::get_member(
-                world, selector!("blitz_hypers_settlement_config"),
+                world, game_id, selector!("blitz_hypers_settlement_config"),
             );
-            let map_center: Coord = CoordImpl::center(ref world);
+            let map_center: Coord = CoordImpl::center(ref world, game_id);
 
             blitz_hyperstructure_settlement_config
                 .max_ring_count =
@@ -79,6 +79,7 @@ pub mod hyperstructure_create_systems {
 
                 BlitzHyperstructureReservationInternalImpl::reserve_next_coord(
                     ref world,
+                    game_id,
                     ref blitz_hyperstructure_settlement_config,
                     map_center,
                     blitz_settlement_config.two_player_mode,
@@ -91,27 +92,27 @@ pub mod hyperstructure_create_systems {
             ////////////////////////////////////////////////
 
             WorldConfigUtilImpl::set_member(
-                ref world, selector!("blitz_hypers_settlement_config"), blitz_hyperstructure_settlement_config,
+                ref world, game_id, selector!("blitz_hypers_settlement_config"), blitz_hyperstructure_settlement_config,
             );
         }
 
-        fn create_hyperstructure(ref self: ContractState, coord: Coord) {
+        fn create_hyperstructure(ref self: ContractState, game_id: u32, coord: Coord) {
             ////////////////////////////////////////////////
             // Validate Blitz Main-Game Window
             ////////////////////////////////////////////////
 
             let mut world: WorldStorage = self.world(DEFAULT_NS());
-            let blitz_mode_on: bool = WorldConfigUtilImpl::get_member(world, selector!("blitz_mode_on"));
+            let blitz_mode_on: bool = WorldConfigUtilImpl::get_member(world, game_id, selector!("blitz_mode_on"));
             assert!(blitz_mode_on == true, "Eternum: Not a blitz game");
 
-            let season_config = SeasonConfigImpl::get(world);
+            let season_config = SeasonConfigImpl::get(world, game_id);
             assert!(!season_config.has_ended(), "Game over");
 
             ////////////////////////////////////////////////
             // Materialize Reserved Hyperstructure
             ////////////////////////////////////////////////
 
-            BlitzHyperstructureMaterializationInternalImpl::create_reserved(ref world, coord);
+            BlitzHyperstructureMaterializationInternalImpl::create_reserved(ref world, game_id, coord);
         }
     }
 
@@ -123,6 +124,7 @@ pub mod hyperstructure_create_systems {
     impl BlitzHyperstructureReservationInternalImpl of BlitzHyperstructureReservationInternalTrait {
         fn reserve_next_coord(
             ref world: WorldStorage,
+            game_id: u32,
             ref blitz_hyperstructure_settlement_config: BlitzHypersSettlementConfig,
             map_center: Coord,
             two_player_mode: bool,
@@ -130,7 +132,7 @@ pub mod hyperstructure_create_systems {
         ) {
             let coord = blitz_hyperstructure_settlement_config
                 .next_coord(map_center, two_player_mode, reward_profile_id);
-            let tile_opt: TileOpt = world.read_model((coord.alt, coord.x, coord.y));
+            let tile_opt: TileOpt = world.read_model((game_id, coord.alt, coord.x, coord.y));
             let mut tile: Tile = tile_opt.into();
 
             assert!(tile.not_occupied(), "Eternum: Hyperstructure tile is occupied");
@@ -138,7 +140,7 @@ pub mod hyperstructure_create_systems {
             // Reserved hyperstructures are visible and collision-proof before they become real
             // bandit-owned structures later in the season.
             IMapImpl::explore(
-                ref world, ref tile, get_biome_from_world(world, coord.alt, coord.x.into(), coord.y.into()),
+                ref world, ref tile, get_biome_from_world(world, game_id, coord.alt, coord.x.into(), coord.y.into()),
             );
             IMapImpl::occupy(ref world, ref tile, TileOccupier::ReservedHyperstructure, 0);
 
@@ -156,33 +158,34 @@ pub mod hyperstructure_create_systems {
             starknet::get_block_timestamp().into()
         }
 
-        fn derive_seed(coord: Coord) -> u256 {
+        fn derive_seed(game_id: u32, coord: Coord) -> u256 {
             let alt: felt252 = if coord.alt {
                 1
             } else {
                 0
             };
             let coord_seed = ((alt * 0x10000000000000000) + (coord.x.into() * 0x100000000) + coord.y.into());
-            poseidon_hash_span(array![coord_seed, Self::seed_salt()].span()).into()
+            poseidon_hash_span(array![game_id.into(), coord_seed, Self::seed_salt()].span()).into()
         }
 
-        fn create_reserved(ref world: WorldStorage, coord: Coord) {
-            let tile_opt: TileOpt = world.read_model((coord.alt, coord.x, coord.y));
+        fn create_reserved(ref world: WorldStorage, game_id: u32, coord: Coord) {
+            let tile_opt: TileOpt = world.read_model((game_id, coord.alt, coord.x, coord.y));
             let mut tile: Tile = tile_opt.into();
             assert!(
                 tile.occupier_type == TileOccupier::ReservedHyperstructure.into(),
                 "Eternum: Hyperstructure has already been created",
             );
 
-            let map_config: MapConfig = WorldConfigUtilImpl::get_member(world, selector!("map_config"));
-            let troop_limit_config = CombatConfigImpl::troop_limit_config(ref world);
-            let troop_stamina_config = CombatConfigImpl::troop_stamina_config(ref world);
-            let hyperstructure_seed = Self::derive_seed(coord);
+            let map_config: MapConfig = WorldConfigUtilImpl::get_member(world, game_id, selector!("map_config"));
+            let troop_limit_config = CombatConfigImpl::troop_limit_config(ref world, game_id);
+            let troop_stamina_config = CombatConfigImpl::troop_stamina_config(ref world, game_id);
+            let hyperstructure_seed = Self::derive_seed(game_id, coord);
 
             // Remove the placeholder marker before materializing the real hyperstructure on the tile.
             IMapImpl::unoccupy(ref world, ref tile);
             iHyperstructureDiscoveryImpl::create(
                 ref world,
+                game_id,
                 coord,
                 starknet::get_caller_address(),
                 map_config,

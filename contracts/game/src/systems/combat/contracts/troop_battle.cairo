@@ -4,9 +4,13 @@ use crate::models::troop::GuardSlot;
 
 #[starknet::interface]
 pub trait ITroopBattleSystems<T> {
-    fn attack_explorer_vs_explorer(ref self: T, aggressor_id: ID, defender_id: ID, steal_resources: Span<(u8, u128)>);
-    fn attack_explorer_vs_guard(ref self: T, explorer_id: ID, structure_id: ID);
-    fn attack_guard_vs_explorer(ref self: T, structure_id: ID, structure_guard_slot: GuardSlot, explorer_id: ID);
+    fn attack_explorer_vs_explorer(
+        ref self: T, game_id: u32, aggressor_id: ID, defender_id: ID, steal_resources: Span<(u8, u128)>,
+    );
+    fn attack_explorer_vs_guard(ref self: T, game_id: u32, explorer_id: ID, structure_id: ID);
+    fn attack_guard_vs_explorer(
+        ref self: T, game_id: u32, structure_id: ID, structure_guard_slot: GuardSlot, explorer_id: ID,
+    );
 }
 
 
@@ -47,6 +51,8 @@ pub mod troop_battle_systems {
     #[dojo::event(historical: false)]
     struct BattleEvent {
         #[key]
+        game_id: u32,
+        #[key]
         attacker_id: ID,
         #[key]
         defender_id: ID,
@@ -74,7 +80,7 @@ pub mod troop_battle_systems {
     /// - Same layer: must be adjacent (normal hex adjacency)
     /// - Different layers: must be at same (x,y) coordinate AND aggressor must be adjacent to a spire
     fn is_explorer_battle_in_range(
-        ref world: WorldStorage, aggressor: Coord, defender: Coord, attack_range: u32,
+        ref world: WorldStorage, game_id: u32, aggressor: Coord, defender: Coord, attack_range: u32,
     ) -> bool {
         if aggressor.alt == defender.alt {
             is_target_within_attack_range(aggressor, defender, attack_range)
@@ -82,7 +88,7 @@ pub mod troop_battle_systems {
             // Different layers - must be at same coordinates and aggressor must be adjacent to a spire
             aggressor.x == defender.x
                 && aggressor.y == defender.y
-                && IMapImpl::is_adjacent_to_spire(ref world, aggressor)
+                && IMapImpl::is_adjacent_to_spire(ref world, game_id, aggressor)
         }
     }
 
@@ -90,36 +96,38 @@ pub mod troop_battle_systems {
     #[abi(embed_v0)]
     pub impl TroopBattleSystemsImpl of super::ITroopBattleSystems<ContractState> {
         fn attack_explorer_vs_explorer(
-            ref self: ContractState, aggressor_id: ID, defender_id: ID, steal_resources: Span<(u8, u128)>,
+            ref self: ContractState, game_id: u32, aggressor_id: ID, defender_id: ID, steal_resources: Span<(u8, u128)>,
         ) {
             let mut world = self.world(DEFAULT_NS());
 
             // ensure season is open
-            let season_config: SeasonConfig = SeasonConfigImpl::get(world);
+            let season_config: SeasonConfig = SeasonConfigImpl::get(world, game_id);
             season_config.assert_started_and_not_over();
 
             // ensure caller owns aggressor
-            let mut explorer_aggressor: ExplorerTroops = world.read_model(aggressor_id);
+            let mut explorer_aggressor: ExplorerTroops = world.read_model((game_id, aggressor_id));
             explorer_aggressor.assert_caller_structure_or_agent_owner(ref world);
 
             // ensure caller does not own defender
-            let mut explorer_defender: ExplorerTroops = world.read_model(defender_id);
+            let mut explorer_defender: ExplorerTroops = world.read_model((game_id, defender_id));
             explorer_defender.assert_caller_not_structure_or_agent_owner(ref world);
 
             // capture owner addresses before battle
             let explorer_aggressor_owner_address: starknet::ContractAddress = StructureOwnerStoreImpl::retrieve(
-                ref world, explorer_aggressor.owner,
+                ref world, game_id, explorer_aggressor.owner,
             );
             let explorer_defender_owner_address: starknet::ContractAddress = StructureOwnerStoreImpl::retrieve(
-                ref world, explorer_defender.owner,
+                ref world, game_id, explorer_defender.owner,
             );
 
             // ensure attacker is not cloaked
-            let battle_config: BattleConfig = WorldConfigUtilImpl::get_member(world, selector!("battle_config"));
-            let tick = TickImpl::get_tick_interval(ref world);
+            let battle_config: BattleConfig = WorldConfigUtilImpl::get_member(
+                world, game_id, selector!("battle_config"),
+            );
+            let tick = TickImpl::get_tick_interval(ref world, game_id);
             if !explorer_aggressor.is_daydreams_agent() {
                 let mut explorer_aggressor_structure: StructureBase = StructureBaseStoreImpl::retrieve(
-                    ref world, explorer_aggressor.owner,
+                    ref world, game_id, explorer_aggressor.owner,
                 );
                 explorer_aggressor_structure.assert_not_cloaked(battle_config, tick, season_config);
             }
@@ -127,7 +135,7 @@ pub mod troop_battle_systems {
             // ensure defender is not cloaked
             if !explorer_defender.is_daydreams_agent() {
                 let mut explorer_defender_structure: StructureBase = StructureBaseStoreImpl::retrieve(
-                    ref world, explorer_defender.owner,
+                    ref world, game_id, explorer_defender.owner,
                 );
                 explorer_defender_structure.assert_not_cloaked(battle_config, tick, season_config);
             }
@@ -136,13 +144,14 @@ pub mod troop_battle_systems {
             assert!(explorer_aggressor.troops.count.is_non_zero(), "aggressor has no troops");
 
             // ensure defender has troops
-            let mut explorer_defender: ExplorerTroops = world.read_model(defender_id);
+            let mut explorer_defender: ExplorerTroops = world.read_model((game_id, defender_id));
             assert!(explorer_defender.troops.count.is_non_zero(), "defender has no troops");
 
             // ensure both explorers are in attack range
             assert!(
                 is_explorer_battle_in_range(
                     ref world,
+                    game_id,
                     explorer_aggressor.coord,
                     explorer_defender.coord,
                     explorer_aggressor.troops.attack_range(),
@@ -151,8 +160,8 @@ pub mod troop_battle_systems {
             );
 
             // aggressor attacks defender
-            let troop_damage_config: TroopDamageConfig = CombatConfigImpl::troop_damage_config(ref world);
-            let troop_stamina_config: TroopStaminaConfig = CombatConfigImpl::troop_stamina_config(ref world);
+            let troop_damage_config: TroopDamageConfig = CombatConfigImpl::troop_damage_config(ref world, game_id);
+            let troop_stamina_config: TroopStaminaConfig = CombatConfigImpl::troop_stamina_config(ref world, game_id);
             let mut explorer_aggressor_troops: Troops = explorer_aggressor.troops;
             let mut explorer_defender_troops: Troops = explorer_defender.troops;
             let explorer_aggressor_troop_count_before_attack = explorer_aggressor_troops.count;
@@ -162,6 +171,7 @@ pub mod troop_battle_systems {
             let (updated_aggressor, updated_defender) = combat_library
                 .troops_attack(
                     world,
+                    game_id,
                     explorer_aggressor_troops,
                     explorer_defender_troops,
                     explorer_aggressor.coord,
@@ -183,6 +193,7 @@ pub mod troop_battle_systems {
             // update aggressor troop capacity
             iExplorerImpl::update_capacity(
                 ref world,
+                game_id,
                 aggressor_id,
                 explorer_aggressor_troop_count_before_attack - explorer_aggressor.troops.count,
                 false,
@@ -191,6 +202,7 @@ pub mod troop_battle_systems {
             // update defender troop capacity
             iExplorerImpl::update_capacity(
                 ref world,
+                game_id,
                 defender_id,
                 explorer_defender_troop_count_before_attack - explorer_defender.troops.count,
                 false,
@@ -214,11 +226,11 @@ pub mod troop_battle_systems {
                     }
                 } else {
                     let mut explorer_aggressor_owner_structure: StructureBase = StructureBaseStoreImpl::retrieve(
-                        ref world, explorer_aggressor.owner,
+                        ref world, game_id, explorer_aggressor.owner,
                     );
                     let mut explorer_aggressor_structure_explorers_list: Array<ID> =
                         StructureTroopExplorerStoreImpl::retrieve(
-                        ref world, explorer_aggressor.owner,
+                        ref world, game_id, explorer_aggressor.owner,
                     )
                         .into();
                     iExplorerImpl::explorer_from_structure_delete(
@@ -235,18 +247,19 @@ pub mod troop_battle_systems {
 
             if explorer_defender_troops.count.is_zero() {
                 // steal resources from defender if dead
-                let mut explorer_aggressor_weight: Weight = WeightStoreImpl::retrieve(ref world, aggressor_id);
-                let mut explorer_defender_weight: Weight = WeightStoreImpl::retrieve(ref world, defender_id);
+                let mut explorer_aggressor_weight: Weight = WeightStoreImpl::retrieve(ref world, game_id, aggressor_id);
+                let mut explorer_defender_weight: Weight = WeightStoreImpl::retrieve(ref world, game_id, defender_id);
                 iResourceTransferImpl::troop_to_troop_instant(
                     ref world,
+                    game_id,
                     explorer_defender,
                     ref explorer_defender_weight,
                     explorer_aggressor,
                     ref explorer_aggressor_weight,
                     steal_resources,
                 );
-                explorer_aggressor_weight.store(ref world, aggressor_id);
-                explorer_defender_weight.store(ref world, defender_id);
+                explorer_aggressor_weight.store(ref world, game_id, aggressor_id);
+                explorer_defender_weight.store(ref world, game_id, defender_id);
 
                 // delete defender
                 if explorer_defender.owner == DAYDREAMS_AGENT_ID {
@@ -265,11 +278,11 @@ pub mod troop_battle_systems {
                     }
                 } else {
                     let mut explorer_defender_owner_structure: StructureBase = StructureBaseStoreImpl::retrieve(
-                        ref world, explorer_defender.owner,
+                        ref world, game_id, explorer_defender.owner,
                     );
                     let mut explorer_defender_structure_explorers_list: Array<ID> =
                         StructureTroopExplorerStoreImpl::retrieve(
-                        ref world, explorer_defender.owner,
+                        ref world, game_id, explorer_defender.owner,
                     )
                         .into();
                     iExplorerImpl::explorer_from_structure_delete(
@@ -307,6 +320,7 @@ pub mod troop_battle_systems {
             world
                 .emit_event(
                     @BattleEvent {
+                        game_id,
                         attacker_id: explorer_aggressor.explorer_id,
                         defender_id: explorer_defender.explorer_id,
                         attacker_owner: explorer_aggressor.owner,
@@ -349,6 +363,7 @@ pub mod troop_battle_systems {
             world
                 .emit_event(
                     @StoryEvent {
+                        game_id,
                         id: world.dispatcher.uuid(),
                         owner: Option::Some(explorer_aggressor_owner_address),
                         entity_id: Option::Some(explorer_aggressor.explorer_id),
@@ -362,6 +377,7 @@ pub mod troop_battle_systems {
             world
                 .emit_event(
                     @StoryEvent {
+                        game_id,
                         id: world.dispatcher.uuid(),
                         owner: Option::Some(explorer_defender_owner_address),
                         entity_id: Option::Some(explorer_defender.explorer_id),
@@ -373,26 +389,26 @@ pub mod troop_battle_systems {
         }
 
 
-        fn attack_explorer_vs_guard(ref self: ContractState, explorer_id: ID, structure_id: ID) {
+        fn attack_explorer_vs_guard(ref self: ContractState, game_id: u32, explorer_id: ID, structure_id: ID) {
             let mut world = self.world(DEFAULT_NS());
 
             // ensure season is open
-            let season_config: SeasonConfig = SeasonConfigImpl::get(world);
+            let season_config: SeasonConfig = SeasonConfigImpl::get(world, game_id);
             season_config.assert_started_and_not_over();
 
             // ensure caller owns aggressor
-            let mut explorer_aggressor: ExplorerTroops = world.read_model(explorer_id);
+            let mut explorer_aggressor: ExplorerTroops = world.read_model((game_id, explorer_id));
             explorer_aggressor.assert_caller_structure_or_agent_owner(ref world);
 
             // ensure caller does not own defender
             let mut guarded_structure_owner: starknet::ContractAddress = StructureOwnerStoreImpl::retrieve(
-                ref world, structure_id,
+                ref world, game_id, structure_id,
             );
             guarded_structure_owner.assert_caller_not_owner();
 
             // capture owner address before battle
             let explorer_aggressor_owner_address: starknet::ContractAddress = StructureOwnerStoreImpl::retrieve(
-                ref world, explorer_aggressor.owner,
+                ref world, game_id, explorer_aggressor.owner,
             );
 
             // ensure aggressor has troops
@@ -401,15 +417,19 @@ pub mod troop_battle_systems {
             let mut structure_claimed_after_battle: bool = false;
 
             // ensure structure id is for a structure
-            let mut guarded_structure: StructureBase = StructureBaseStoreImpl::retrieve(ref world, structure_id);
+            let mut guarded_structure: StructureBase = StructureBaseStoreImpl::retrieve(
+                ref world, game_id, structure_id,
+            );
             assert!(guarded_structure.category != StructureCategory::None.into(), "defender is not a structure");
 
             // ensure attacker is not cloaked
-            let battle_config: BattleConfig = WorldConfigUtilImpl::get_member(world, selector!("battle_config"));
-            let tick = TickImpl::get_tick_interval(ref world);
+            let battle_config: BattleConfig = WorldConfigUtilImpl::get_member(
+                world, game_id, selector!("battle_config"),
+            );
+            let tick = TickImpl::get_tick_interval(ref world, game_id);
             if !explorer_aggressor.is_daydreams_agent() {
                 let mut explorer_aggressor_structure: StructureBase = StructureBaseStoreImpl::retrieve(
-                    ref world, explorer_aggressor.owner,
+                    ref world, game_id, explorer_aggressor.owner,
                 );
                 explorer_aggressor_structure.assert_not_cloaked(battle_config, tick, season_config);
             }
@@ -426,10 +446,12 @@ pub mod troop_battle_systems {
                 "structure is out of range",
             );
 
-            let troop_stamina_config: TroopStaminaConfig = CombatConfigImpl::troop_stamina_config(ref world);
+            let troop_stamina_config: TroopStaminaConfig = CombatConfigImpl::troop_stamina_config(ref world, game_id);
 
             // get guard troops
-            let mut guard_defender: GuardTroops = StructureTroopGuardStoreImpl::retrieve(ref world, structure_id);
+            let mut guard_defender: GuardTroops = StructureTroopGuardStoreImpl::retrieve(
+                ref world, game_id, structure_id,
+            );
             let guard_slot: Option<GuardSlot> = guard_defender
                 .next_attack_slot(guarded_structure.troop_max_guard_count.into());
 
@@ -456,7 +478,7 @@ pub mod troop_battle_systems {
                 // claim structure
                 structure_claimed_after_battle = true;
                 iStructureImpl::battle_claim(
-                    ref world, ref guard_defender, ref guarded_structure, ref explorer_aggressor, structure_id,
+                    ref world, game_id, ref guard_defender, ref guarded_structure, ref explorer_aggressor, structure_id,
                 );
                 return;
             }
@@ -468,7 +490,7 @@ pub mod troop_battle_systems {
 
             // aggressor attacks defender
             let mut explorer_aggressor_troops: Troops = explorer_aggressor.troops;
-            let troop_damage_config: TroopDamageConfig = CombatConfigImpl::troop_damage_config(ref world);
+            let troop_damage_config: TroopDamageConfig = CombatConfigImpl::troop_damage_config(ref world, game_id);
             let explorer_aggressor_troop_count_before_attack = explorer_aggressor_troops.count;
             let guard_troop_count_before_attack = guard_troops.count;
 
@@ -476,6 +498,7 @@ pub mod troop_battle_systems {
             let (updated_aggressor, updated_guard) = combat_library
                 .troops_attack(
                     world,
+                    game_id,
                     explorer_aggressor_troops,
                     guard_troops,
                     explorer_aggressor.coord,
@@ -495,6 +518,7 @@ pub mod troop_battle_systems {
             // update explorer troop capacity
             iExplorerImpl::update_capacity(
                 ref world,
+                game_id,
                 explorer_id,
                 explorer_aggressor_troop_count_before_attack - explorer_aggressor.troops.count,
                 false,
@@ -510,11 +534,11 @@ pub mod troop_battle_systems {
                     );
                 } else {
                     let mut explorer_aggressor_owner_structure: StructureBase = StructureBaseStoreImpl::retrieve(
-                        ref world, explorer_aggressor.owner,
+                        ref world, game_id, explorer_aggressor.owner,
                     );
                     let mut explorer_aggressor_structure_explorers_list: Array<ID> =
                         StructureTroopExplorerStoreImpl::retrieve(
-                        ref world, explorer_aggressor.owner,
+                        ref world, game_id, explorer_aggressor.owner,
                     )
                         .into();
                     iExplorerImpl::explorer_from_structure_delete(
@@ -534,6 +558,7 @@ pub mod troop_battle_systems {
                 // delete guard
                 iGuardImpl::delete(
                     ref world,
+                    game_id,
                     structure_id,
                     ref guarded_structure,
                     ref guard_defender,
@@ -552,14 +577,19 @@ pub mod troop_battle_systems {
                         // claim structure
                         structure_claimed_after_battle = true;
                         iStructureImpl::battle_claim(
-                            ref world, ref guard_defender, ref guarded_structure, ref explorer_aggressor, structure_id,
+                            ref world,
+                            game_id,
+                            ref guard_defender,
+                            ref guarded_structure,
+                            ref explorer_aggressor,
+                            structure_id,
                         );
                     }
                 }
             } else {
                 // update structure guard
                 guard_defender.to_slot(guard_slot, guard_troops, guard_destroyed_tick.into());
-                StructureTroopGuardStoreImpl::store(ref guard_defender, ref world, structure_id);
+                StructureTroopGuardStoreImpl::store(ref guard_defender, ref world, game_id, structure_id);
             }
 
             // you only win if you kill the other AND survive
@@ -591,6 +621,7 @@ pub mod troop_battle_systems {
             world
                 .emit_event(
                     @BattleEvent {
+                        game_id,
                         attacker_id: explorer_id,
                         defender_id: structure_id,
                         attacker_owner: explorer_aggressor.owner,
@@ -634,6 +665,7 @@ pub mod troop_battle_systems {
             world
                 .emit_event(
                     @StoryEvent {
+                        game_id,
                         id: world.dispatcher.uuid(),
                         owner: Option::Some(explorer_aggressor_owner_address),
                         entity_id: Option::Some(explorer_id),
@@ -647,6 +679,7 @@ pub mod troop_battle_systems {
             world
                 .emit_event(
                     @StoryEvent {
+                        game_id,
                         id: world.dispatcher.uuid(),
                         owner: Option::Some(guarded_structure_owner),
                         entity_id: Option::Some(structure_id),
@@ -659,29 +692,29 @@ pub mod troop_battle_systems {
 
 
         fn attack_guard_vs_explorer(
-            ref self: ContractState, structure_id: ID, structure_guard_slot: GuardSlot, explorer_id: ID,
+            ref self: ContractState, game_id: u32, structure_id: ID, structure_guard_slot: GuardSlot, explorer_id: ID,
         ) {
             let mut world = self.world(DEFAULT_NS());
             // ensure season is open
-            let season_config: SeasonConfig = SeasonConfigImpl::get(world);
+            let season_config: SeasonConfig = SeasonConfigImpl::get(world, game_id);
             season_config.assert_started_and_not_over();
 
             // ensure caller structure owns aggressor
             let structure_aggressor_owner: starknet::ContractAddress = StructureOwnerStoreImpl::retrieve(
-                ref world, structure_id,
+                ref world, game_id, structure_id,
             );
             structure_aggressor_owner.assert_caller_owner();
 
             // ensure caller does not own defender
-            let mut explorer_defender: ExplorerTroops = world.read_model(explorer_id);
+            let mut explorer_defender: ExplorerTroops = world.read_model((game_id, explorer_id));
             // let explorer_defender_owner: starknet::ContractAddress = StructureOwnerStoreImpl::retrieve(
-            //     ref world, explorer_defender.owner,
+            //     ref world, game_id, explorer_defender.owner,
             // );
             // explorer_defender_owner.assert_caller_not_owner();
 
             // capture owner address before battle
             let explorer_defender_owner_address: starknet::ContractAddress = StructureOwnerStoreImpl::retrieve(
-                ref world, explorer_defender.owner,
+                ref world, game_id, explorer_defender.owner,
             );
 
             // ensure explorer has troops
@@ -691,9 +724,11 @@ pub mod troop_battle_systems {
 
             // ensure structure is allowed to use guard slot
             let mut structure_guards_aggressor: GuardTroops = StructureTroopGuardStoreImpl::retrieve(
-                ref world, structure_id,
+                ref world, game_id, structure_id,
             );
-            let mut structure_aggressor_base: StructureBase = StructureBaseStoreImpl::retrieve(ref world, structure_id);
+            let mut structure_aggressor_base: StructureBase = StructureBaseStoreImpl::retrieve(
+                ref world, game_id, structure_id,
+            );
             structure_guards_aggressor
                 .assert_functional_slot(structure_guard_slot, structure_aggressor_base.troop_max_guard_count.into());
 
@@ -704,14 +739,16 @@ pub mod troop_battle_systems {
             assert!(structure_guard_aggressor_troops.count.is_non_zero(), "guard slot is dead");
 
             // ensure attacker is not cloaked
-            let battle_config: BattleConfig = WorldConfigUtilImpl::get_member(world, selector!("battle_config"));
-            let tick = TickImpl::get_tick_interval(ref world);
+            let battle_config: BattleConfig = WorldConfigUtilImpl::get_member(
+                world, game_id, selector!("battle_config"),
+            );
+            let tick = TickImpl::get_tick_interval(ref world, game_id);
             structure_aggressor_base.assert_not_cloaked(battle_config, tick, season_config);
 
             // ensure defender is not cloaked
             if !explorer_defender.is_daydreams_agent() {
                 let mut explorer_defender_structure: StructureBase = StructureBaseStoreImpl::retrieve(
-                    ref world, explorer_defender.owner,
+                    ref world, game_id, explorer_defender.owner,
                 );
                 explorer_defender_structure.assert_not_cloaked(battle_config, tick, season_config);
             }
@@ -726,8 +763,8 @@ pub mod troop_battle_systems {
             );
 
             // aggressor attacks defender
-            let troop_damage_config: TroopDamageConfig = CombatConfigImpl::troop_damage_config(ref world);
-            let troop_stamina_config: TroopStaminaConfig = CombatConfigImpl::troop_stamina_config(ref world);
+            let troop_damage_config: TroopDamageConfig = CombatConfigImpl::troop_damage_config(ref world, game_id);
+            let troop_stamina_config: TroopStaminaConfig = CombatConfigImpl::troop_stamina_config(ref world, game_id);
             let mut explorer_defender_troops = explorer_defender.troops;
             let explorer_defender_troop_count_before_attack = explorer_defender_troops.count;
             let structure_guard_aggressor_troop_count_before_attack = structure_guard_aggressor_troops.count;
@@ -736,6 +773,7 @@ pub mod troop_battle_systems {
             let (updated_guard, updated_explorer) = combat_library
                 .troops_attack(
                     world,
+                    game_id,
                     structure_guard_aggressor_troops,
                     explorer_defender_troops,
                     structure_aggressor_base.coord(),
@@ -756,6 +794,7 @@ pub mod troop_battle_systems {
             // update explorer troop capacity
             iExplorerImpl::update_capacity(
                 ref world,
+                game_id,
                 explorer_id,
                 explorer_defender_troop_count_before_attack - explorer_defender.troops.count,
                 false,
@@ -771,11 +810,11 @@ pub mod troop_battle_systems {
                     );
                 } else {
                     let mut explorer_defender_owner_structure: StructureBase = StructureBaseStoreImpl::retrieve(
-                        ref world, explorer_defender.owner,
+                        ref world, game_id, explorer_defender.owner,
                     );
                     let mut explorer_defender_structure_explorers_list: Array<ID> =
                         StructureTroopExplorerStoreImpl::retrieve(
-                        ref world, explorer_defender.owner,
+                        ref world, game_id, explorer_defender.owner,
                     )
                         .into();
                     iExplorerImpl::explorer_from_structure_delete(
@@ -795,6 +834,7 @@ pub mod troop_battle_systems {
                 // delete guard
                 iGuardImpl::delete(
                     ref world,
+                    game_id,
                     structure_id,
                     ref structure_aggressor_base,
                     ref structure_guards_aggressor,
@@ -814,6 +854,7 @@ pub mod troop_battle_systems {
                         structure_claimed_after_battle = true;
                         iStructureImpl::battle_claim(
                             ref world,
+                            game_id,
                             ref structure_guards_aggressor,
                             ref structure_aggressor_base,
                             ref explorer_defender,
@@ -827,7 +868,7 @@ pub mod troop_battle_systems {
                     .to_slot(
                         structure_guard_slot, structure_guard_aggressor_troops, structure_guard_destroyed_tick.into(),
                     );
-                StructureTroopGuardStoreImpl::store(ref structure_guards_aggressor, ref world, structure_id);
+                StructureTroopGuardStoreImpl::store(ref structure_guards_aggressor, ref world, game_id, structure_id);
             }
 
             // grant achievement
@@ -851,6 +892,7 @@ pub mod troop_battle_systems {
             world
                 .emit_event(
                     @BattleEvent {
+                        game_id,
                         attacker_id: structure_id,
                         defender_id: explorer_id,
                         attacker_owner: 0,
@@ -895,6 +937,7 @@ pub mod troop_battle_systems {
             world
                 .emit_event(
                     @StoryEvent {
+                        game_id,
                         id: world.dispatcher.uuid(),
                         owner: Option::Some(structure_aggressor_owner),
                         entity_id: Option::Some(structure_id),
@@ -908,6 +951,7 @@ pub mod troop_battle_systems {
             world
                 .emit_event(
                     @StoryEvent {
+                        game_id,
                         id: world.dispatcher.uuid(),
                         owner: Option::Some(explorer_defender_owner_address),
                         entity_id: Option::Some(explorer_id),

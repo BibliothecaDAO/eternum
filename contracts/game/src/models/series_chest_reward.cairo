@@ -1,4 +1,3 @@
-use crate::alias::ID;
 use crate::utils::math::div_round;
 
 
@@ -96,7 +95,7 @@ pub impl AnchorRingImpl of AnchorRingTrait {
 #[dojo::model]
 pub struct SeriesChestRewardState {
     #[key]
-    pub world_id: ID,
+    pub series_id: felt252,
     // Runtime state
     pub game_index: u32,
     pub ema_players_scaled: u128, // players * BPS
@@ -116,7 +115,7 @@ pub struct SeriesChestRewardState {
 #[dojo::model]
 pub struct GameChestReward {
     #[key]
-    pub world_id: ID,
+    pub game_id: u32,
     // max possible
     pub allocated_chests: u16,
     // amount distributed

@@ -245,8 +245,10 @@ pub fn get_biome(alt: bool, col: u128, row: u128) -> Biome {
     get_biome_with_climate(alt, col, row, neutral_biome_climate())
 }
 
-pub fn get_biome_from_world(world: WorldStorage, alt: bool, col: u128, row: u128) -> Biome {
-    let climate: BiomeClimateConfig = WorldConfigUtilImpl::get_member(world, selector!("biome_climate_config"));
+pub fn get_biome_from_world(world: WorldStorage, game_id: u32, alt: bool, col: u128, row: u128) -> Biome {
+    let climate: BiomeClimateConfig = WorldConfigUtilImpl::get_member(
+        world, game_id, selector!("biome_climate_config"),
+    );
     get_biome_with_climate(alt, col, row, climate)
 }
 

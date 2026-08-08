@@ -5,11 +5,12 @@ pub mod artificer {
     mod tests;
 }
 
-pub mod config {
-    pub mod contracts;
-    #[cfg(test)]
-    mod tests;
-}
+// Legacy per-world config replay retired in favor of registrar-owned presets (D2/D12).
+// pub mod config {
+//     pub mod contracts;
+//     #[cfg(test)]
+//     mod tests;
+// }
 
 // Excluded from the Blitz-core world (single-world migration, D15 in
 // docs/plans/appchain-single-world-a0-audit.md) — restore for the Eternum port (Phase 3).
@@ -65,9 +66,11 @@ pub mod production {
     mod tests;
 }
 
-pub mod dev {
-    pub mod contracts;
-}
+// Excluded from the production Blitz-core world (D15) — unrestricted developer
+// minting remains available only in the legacy Eternum deployment.
+// pub mod dev {
+//     pub mod contracts;
+// }
 pub mod combat {
     #[cfg(test)]
     mod tests {
@@ -79,7 +82,8 @@ pub mod combat {
         pub mod troop_battle;
         pub mod troop_management;
         pub mod troop_movement;
-        pub mod troop_raid;
+        // Raids are rejected by Blitz mode and excluded from the Blitz-core world (D15).
+    // pub mod troop_raid;
     }
 }
 // Excluded from the Blitz-core world (D15) — Blitz never creates banks.
@@ -108,18 +112,14 @@ pub mod ownership {
 // }
 
 pub mod utils {
-    pub mod bitcoin_mine;
     pub mod blitz_exploration;
     pub mod blitz_profile;
-    pub mod bridge;
     pub mod camp;
     pub mod distance;
     pub mod donkey;
     pub mod erc20;
-    pub mod holysite;
     pub mod hyperstructure;
     pub mod map;
-    pub mod mine;
     pub mod mmr;
     pub mod prize;
     pub mod realm;
@@ -128,7 +128,12 @@ pub mod utils {
     pub mod series_chest_reward;
     pub mod structure;
     pub mod troop;
-    pub mod village;
+    // Season-only helpers excluded from the Blitz-core build (D15).
+// pub mod bitcoin_mine;
+// pub mod bridge;
+// pub mod holysite;
+// pub mod mine;
+// pub mod village;
 }
 
 // pub mod quest {

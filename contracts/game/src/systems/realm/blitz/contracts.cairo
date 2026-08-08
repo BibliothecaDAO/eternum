@@ -2,15 +2,16 @@ use crate::alias::ID;
 
 #[starknet::interface]
 pub trait IBlitzRealmSystems<T> {
-    fn obtain_entry_token(ref self: T);
+    fn obtain_entry_token(ref self: T, game_id: u32);
     fn settle(
         ref self: T,
+        game_id: u32,
         name: felt252,
         entry_token_id: Option<u128>,
         cosmetic_token_ids: Span<u128>,
         grant_starting_troops: bool,
     );
-    fn provision_realm(ref self: T, structure_id: ID);
+    fn provision_realm(ref self: T, game_id: u32, structure_id: ID);
 }
 
 #[dojo::contract]
@@ -59,16 +60,16 @@ pub mod blitz_realm_systems {
 
     #[abi(embed_v0)]
     impl BlitzRealmSystemsImpl of super::IBlitzRealmSystems<ContractState> {
-        fn obtain_entry_token(ref self: ContractState) {
+        fn obtain_entry_token(ref self: ContractState, game_id: u32) {
             let world: WorldStorage = self.world(DEFAULT_NS());
             let blitz_registration_config: BlitzRegistrationConfig = WorldConfigUtilImpl::get_member(
-                world, selector!("blitz_registration_config"),
+                world, game_id, selector!("blitz_registration_config"),
             );
             if blitz_registration_config.fee_amount.is_zero() {
                 return;
             }
 
-            let season_config = SeasonConfigImpl::get(world);
+            let season_config = SeasonConfigImpl::get(world, game_id);
             let now = starknet::get_block_timestamp();
             assert!(
                 season_config.dev_mode_on || now >= blitz_registration_config.registration_start_at.into(),
@@ -82,7 +83,7 @@ pub mod blitz_realm_systems {
             );
 
             let caller: ContractAddress = starknet::get_caller_address();
-            let existing_settlement: BlitzSettlement = world.read_model(caller);
+            let existing_settlement: BlitzSettlement = world.read_model((game_id, caller));
             assert!(existing_settlement.structure_ids.len() == 0, "Eternum: Player is already settled");
 
             ////////////////////////////////////////////////
@@ -94,6 +95,7 @@ pub mod blitz_realm_systems {
 
         fn settle(
             ref self: ContractState,
+            game_id: u32,
             name: felt252,
             entry_token_id: Option<u128>,
             cosmetic_token_ids: Span<u128>,
@@ -101,15 +103,15 @@ pub mod blitz_realm_systems {
         ) {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
             let caller = starknet::get_caller_address();
-            let season_config = SeasonConfigImpl::get(world);
+            let season_config = SeasonConfigImpl::get(world, game_id);
             let mut blitz_registration_config: BlitzRegistrationConfig = WorldConfigUtilImpl::get_member(
-                world, selector!("blitz_registration_config"),
+                world, game_id, selector!("blitz_registration_config"),
             );
             let mut blitz_settlement_config: BlitzSettlementConfig = WorldConfigUtilImpl::get_member(
-                world, selector!("blitz_settlement_config"),
+                world, game_id, selector!("blitz_settlement_config"),
             );
             let blitz_exploration_config: BlitzExplorationConfig = WorldConfigUtilImpl::get_member(
-                world, selector!("blitz_exploration_config"),
+                world, game_id, selector!("blitz_exploration_config"),
             );
 
             ////////////////////////////////////////////////
@@ -130,7 +132,7 @@ pub mod blitz_realm_systems {
                 !blitz_registration_config.is_registration_full(), "Eternum: All registration slots have been filled",
             );
 
-            let existing_settlement: BlitzSettlement = world.read_model(caller);
+            let existing_settlement: BlitzSettlement = world.read_model((game_id, caller));
             assert!(existing_settlement.structure_ids.len() == 0, "Eternum: Player is already settled");
 
             ////////////////////////////////////////////////
@@ -138,7 +140,7 @@ pub mod blitz_realm_systems {
             ////////////////////////////////////////////////
 
             BlitzHyperstructureReservationGuardInternalImpl::assert_reservations_complete(
-                world, blitz_registration_config, blitz_settlement_config,
+                world, game_id, blitz_registration_config, blitz_settlement_config,
             );
 
             ////////////////////////////////////////////////
@@ -146,7 +148,7 @@ pub mod blitz_realm_systems {
             ////////////////////////////////////////////////
 
             BlitzEntryTokenInternalImpl::resolve_and_consume_entry_token(
-                ref world, caller, blitz_registration_config, entry_token_id,
+                ref world, game_id, caller, blitz_registration_config, entry_token_id,
             );
 
             ////////////////////////////////////////////////
@@ -157,6 +159,7 @@ pub mod blitz_realm_systems {
 
             BlitzCosmeticsInternalImpl::store_player_cosmetics(
                 ref world,
+                game_id,
                 caller,
                 blitz_registration_config.registration_count,
                 blitz_registration_config,
@@ -175,6 +178,7 @@ pub mod blitz_realm_systems {
             );
             BlitzSettlementPoolInternalImpl::fill_open_settlement_pool(
                 ref world,
+                game_id,
                 ref blitz_settlement_config,
                 blitz_exploration_config.reward_profile_id,
                 target_open_settlement_count,
@@ -186,23 +190,28 @@ pub mod blitz_realm_systems {
 
             let rng_library_dispatcher = rng_library::get_dispatcher(@world);
             let vrf_seed: u256 = rng_library_dispatcher
-                .get_random_number(Source::Nonce(starknet::get_caller_address()), world);
+                .get_random_number(game_id, Source::Nonce(starknet::get_caller_address()), world);
             let settlement_coords = BlitzSettlementPoolInternalImpl::claim_open_settlement(
-                ref world, ref blitz_settlement_config, vrf_seed,
+                ref world, game_id, ref blitz_settlement_config, vrf_seed,
             );
             let settlement_structure_ids = BlitzRealmSettlementInternalImpl::create_player_realms(
-                ref world, caller, settlement_coords, grant_starting_troops,
+                ref world, game_id, caller, settlement_coords, grant_starting_troops,
             );
-            world.write_model(@BlitzSettlement { player: caller, structure_ids: settlement_structure_ids.span() });
+            world
+                .write_model(
+                    @BlitzSettlement { game_id, player: caller, structure_ids: settlement_structure_ids.span() },
+                );
 
             ////////////////////////////////////////////////
             // Persist Config & Finalize Player State
             ////////////////////////////////////////////////
 
             WorldConfigUtilImpl::set_member(
-                ref world, selector!("blitz_registration_config"), blitz_registration_config,
+                ref world, game_id, selector!("blitz_registration_config"), blitz_registration_config,
             );
-            WorldConfigUtilImpl::set_member(ref world, selector!("blitz_settlement_config"), blitz_settlement_config);
+            WorldConfigUtilImpl::set_member(
+                ref world, game_id, selector!("blitz_settlement_config"), blitz_settlement_config,
+            );
 
             BlitzRealmSettlementInternalImpl::store_player_name(ref world, caller, name);
 
@@ -210,9 +219,9 @@ pub mod blitz_realm_systems {
             world.emit_event(@BlitzSettlementEvent { player: caller, timestamp: now.into() });
         }
 
-        fn provision_realm(ref self: ContractState, structure_id: ID) {
+        fn provision_realm(ref self: ContractState, game_id: u32, structure_id: ID) {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
-            let season_config = SeasonConfigImpl::get(world);
+            let season_config = SeasonConfigImpl::get(world, game_id);
 
             ////////////////////////////////////////////////
             // Provisioning Window
@@ -224,10 +233,10 @@ pub mod blitz_realm_systems {
             // Validate Realm Ownership
             ////////////////////////////////////////////////
 
-            let structure_owner = StructureOwnerStoreImpl::retrieve(ref world, structure_id);
+            let structure_owner = StructureOwnerStoreImpl::retrieve(ref world, game_id, structure_id);
             structure_owner.assert_caller_owner();
 
-            let structure_base: StructureBase = StructureBaseStoreImpl::retrieve(ref world, structure_id);
+            let structure_base: StructureBase = StructureBaseStoreImpl::retrieve(ref world, game_id, structure_id);
             assert!(structure_base.category == StructureCategory::Realm.into(), "structure is not a realm");
 
             ////////////////////////////////////////////////
@@ -236,7 +245,7 @@ pub mod blitz_realm_systems {
 
             let (realm_internal_systems_address, _) = world.dns(@"realm_internal_systems").unwrap();
             IRealmInternalSystemsDispatcher { contract_address: realm_internal_systems_address }
-                .provision_internal(structure_id);
+                .provision_internal(game_id, structure_id);
         }
     }
 
@@ -248,11 +257,12 @@ pub mod blitz_realm_systems {
     impl BlitzHyperstructureReservationGuardInternalImpl of BlitzHyperstructureReservationGuardInternalTrait {
         fn assert_reservations_complete(
             world: WorldStorage,
+            game_id: u32,
             blitz_registration_config: BlitzRegistrationConfig,
             blitz_settlement_config: BlitzSettlementConfig,
         ) {
             let mut reservation_cursor: BlitzHypersSettlementConfig = WorldConfigUtilImpl::get_member(
-                world, selector!("blitz_hypers_settlement_config"),
+                world, game_id, selector!("blitz_hypers_settlement_config"),
             );
 
             reservation_cursor
@@ -306,6 +316,7 @@ pub mod blitz_realm_systems {
 
         fn resolve_and_consume_entry_token(
             ref world: WorldStorage,
+            game_id: u32,
             owner: ContractAddress,
             blitz_registration_config: BlitzRegistrationConfig,
             entry_token_id: Option<u128>,
@@ -326,7 +337,7 @@ pub mod blitz_realm_systems {
                 entry_token_contract.owner_of(token_id.into()) == owner, "Eternum: Entry token is not owned by caller",
             );
 
-            let entry_token_settlement: BlitzEntryTokenRegister = world.read_model(token_id);
+            let entry_token_settlement: BlitzEntryTokenRegister = world.read_model((game_id, token_id));
             assert!(!entry_token_settlement.registered, "Eternum: Entry token has already been used");
 
             let expected_lock_id = blitz_registration_config.entry_token_lock_id();
@@ -337,7 +348,7 @@ pub mod blitz_realm_systems {
                 assert!(lock_id == expected_lock_id, "Eternum: Entry token locked with wrong lock");
             }
 
-            world.write_model(@BlitzEntryTokenRegister { token_id, registered: true });
+            world.write_model(@BlitzEntryTokenRegister { game_id, token_id, registered: true });
         }
     }
 
@@ -349,6 +360,7 @@ pub mod blitz_realm_systems {
     impl BlitzCosmeticsInternalImpl of BlitzCosmeticsInternalTrait {
         fn store_player_cosmetics(
             ref world: WorldStorage,
+            game_id: u32,
             owner: ContractAddress,
             registration_count: u16,
             blitz_registration_config: BlitzRegistrationConfig,
@@ -379,7 +391,7 @@ pub mod blitz_realm_systems {
                 blitz_registration_config.collectibles_cosmetics_max,
             );
 
-            world.write_model(@BlitzCosmeticAttrsRegister { player: owner, attrs: player_cosmetic_attrs });
+            world.write_model(@BlitzCosmeticAttrsRegister { game_id, player: owner, attrs: player_cosmetic_attrs });
         }
     }
 
@@ -414,6 +426,7 @@ pub mod blitz_realm_systems {
 
         fn open_next_settlement(
             ref world: WorldStorage,
+            game_id: u32,
             ref blitz_settlement_config: BlitzSettlementConfig,
             map_center: Coord,
             reward_profile_id: u8,
@@ -421,7 +434,8 @@ pub mod blitz_realm_systems {
             let settlement_coords = blitz_settlement_config.generate_coords(map_center, reward_profile_id);
             let settlement_number = blitz_settlement_config.open_settlement_count + 1;
 
-            world.write_model(@BlitzSettlementPosition { settlement_number, coords: settlement_coords.span() });
+            world
+                .write_model(@BlitzSettlementPosition { game_id, settlement_number, coords: settlement_coords.span() });
 
             blitz_settlement_config.next();
             blitz_settlement_config.open_settlement_count += 1;
@@ -429,18 +443,21 @@ pub mod blitz_realm_systems {
 
         fn fill_open_settlement_pool(
             ref world: WorldStorage,
+            game_id: u32,
             ref blitz_settlement_config: BlitzSettlementConfig,
             reward_profile_id: u8,
             target_open_settlement_count: u16,
         ) {
-            let map_center = CoordImpl::center(ref world);
+            let map_center = CoordImpl::center(ref world, game_id);
             while blitz_settlement_config.open_settlement_count < target_open_settlement_count {
-                Self::open_next_settlement(ref world, ref blitz_settlement_config, map_center, reward_profile_id);
+                Self::open_next_settlement(
+                    ref world, game_id, ref blitz_settlement_config, map_center, reward_profile_id,
+                );
             }
         }
 
         fn claim_open_settlement(
-            ref world: WorldStorage, ref blitz_settlement_config: BlitzSettlementConfig, vrf_seed: u256,
+            ref world: WorldStorage, game_id: u32, ref blitz_settlement_config: BlitzSettlementConfig, vrf_seed: u256,
         ) -> Span<Coord> {
             let open_settlement_count = blitz_settlement_config.open_settlement_count;
             assert!(open_settlement_count.is_non_zero(), "Eternum: No open settlements available");
@@ -452,10 +469,13 @@ pub mod blitz_realm_systems {
                     .try_into()
                     .unwrap();
 
-            let open_settlement: BlitzSettlementPosition = world.read_model(settlement_number);
+            let open_settlement: BlitzSettlementPosition = world.read_model((game_id, settlement_number));
             if settlement_number != open_settlement_count {
-                let last_open_settlement: BlitzSettlementPosition = world.read_model(open_settlement_count);
-                world.write_model(@BlitzSettlementPosition { settlement_number, coords: last_open_settlement.coords });
+                let last_open_settlement: BlitzSettlementPosition = world.read_model((game_id, open_settlement_count));
+                world
+                    .write_model(
+                        @BlitzSettlementPosition { game_id, settlement_number, coords: last_open_settlement.coords },
+                    );
             }
 
             blitz_settlement_config.open_settlement_count -= 1;
@@ -471,12 +491,15 @@ pub mod blitz_realm_systems {
     impl BlitzRealmSettlementInternalImpl of BlitzRealmSettlementInternalTrait {
         fn create_player_realms(
             ref world: WorldStorage,
+            game_id: u32,
             owner: ContractAddress,
             settlement_coords: Span<Coord>,
             grant_starting_troops: bool,
         ) -> Array<ID> {
             let realm_count_selector = selector!("realm_count_config");
-            let mut realm_count: RealmCountConfig = WorldConfigUtilImpl::get_member(world, realm_count_selector);
+            let mut realm_count: RealmCountConfig = WorldConfigUtilImpl::get_member(
+                world, game_id, realm_count_selector,
+            );
             let resources = blitz_produceable_resources();
             let (realm_internal_systems_address, _) = world.dns(@"realm_internal_systems").unwrap();
             let mut remaining_coords = settlement_coords;
@@ -488,13 +511,22 @@ pub mod blitz_realm_systems {
                 let settlement_coord = *remaining_coords.pop_front().unwrap();
                 let structure_id = IRealmInternalSystemsDispatcher { contract_address: realm_internal_systems_address }
                     .create_internal(
-                        owner, realm_id, resources.clone(), 0, 1, settlement_coord, false, grant_starting_troops,
+                        game_id,
+                        owner,
+                        realm_id,
+                        resources.clone(),
+                        0,
+                        1,
+                        settlement_coord,
+                        false,
+                        grant_starting_troops,
                     );
 
                 let now = starknet::get_block_timestamp();
                 world
                     .emit_event(
                         @StoryEvent {
+                            game_id,
                             id: world.dispatcher.uuid(),
                             owner: Option::Some(owner),
                             entity_id: Option::Some(structure_id),
@@ -509,16 +541,13 @@ pub mod blitz_realm_systems {
                 settlement_structure_ids.append(structure_id);
             }
 
-            WorldConfigUtilImpl::set_member(ref world, realm_count_selector, realm_count);
+            WorldConfigUtilImpl::set_member(ref world, game_id, realm_count_selector, realm_count);
             settlement_structure_ids
         }
 
         fn store_player_name(ref world: WorldStorage, owner: ContractAddress, name: felt252) {
             world.write_model(@AddressName { address: owner.into(), name });
-
-            let mut structure_owner_stats: StructureOwnerStats = world.read_model(owner);
-            structure_owner_stats.name = name;
-            world.write_model(@structure_owner_stats);
+            // Owner display names stay account-global; per-game structure naming was retired (D7).
         }
     }
 }
