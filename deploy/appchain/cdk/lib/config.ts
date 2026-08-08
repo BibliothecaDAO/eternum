@@ -63,9 +63,9 @@ export const CONFIG = {
     katanaInstanceType: "m7a.medium",
     katanaDataGib: 50,
 
-    /** Torii task sizing (cagecalls load test: 2vCPU/4GB ≈ 400 sessions). */
+    /** Multi-world indexing needs headroom above the 4 GiB single-world load-test size. */
     toriiCpu: 2048,
-    toriiMemoryMib: 4096,
+    toriiMemoryMib: 8192,
 
     /** Empty-block heartbeat interval (rc.9's --block-time is broken). */
     heartbeatSeconds: 30,
@@ -82,6 +82,6 @@ export const CONFIG = {
     toriiRepo: "realms-appchain/torii",
     /** Tags pushed by scripts/push-images.sh (digest-pinned at deploy time). */
     katanaTag: "rc9-vrf-paymaster-v1",
-    toriiTag: "1.8.16-mw-dynamic-v1",
+    toriiTag: "1.8.16-mw-dynamic-v2",
   },
 } as const;

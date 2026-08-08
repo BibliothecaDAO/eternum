@@ -13,7 +13,7 @@ ACCOUNT=$(aws sts get-caller-identity --query Account --output text)
 REGISTRY="$ACCOUNT.dkr.ecr.$REGION.amazonaws.com"
 
 KATANA_TAG="rc9-vrf-paymaster-v1"   # keep in sync with lib/config.ts
-TORII_TAG="1.8.16-mw-dynamic-v1"
+TORII_TAG="1.8.16-mw-dynamic-v2"
 
 aws ecr get-login-password --region "$REGION" |
   docker login --username AWS --password-stdin "$REGISTRY"
