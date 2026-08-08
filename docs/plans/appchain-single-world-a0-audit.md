@@ -1,6 +1,8 @@
 # A0 — Single-world schema audit (Blitz, `s2_blitz`)
 
-**Status: audit complete 2026-08-08 — awaiting schema sign-off (the A0 exit criterion) before any Cairo lands (A1).**
+**Status: audit complete 2026-08-08. Sign-off 2026-08-08: D1, D2, D5, D6, D11 approved as recommended; D13 amended
+(entry NFT stays — single shared collection, see D13); D15 pending (namespace question). Unmarked decisions ratified by
+default.**
 
 Scope: every `#[dojo::model]` and `#[dojo::event]` in `contracts/game` (79 models incl. the inline `AntiBot`, 21 event
 models), all 43 `#[dojo::contract]`s (36 files), the `wf` factory world (13 models), the TS config pipeline (29 steps /
@@ -274,20 +276,20 @@ Two concurrent games A/B, same preset, overlapping wall-clock. Assert zero cross
 
 Recommendations included; items marked ⚠ need explicit sign-off, the rest are ratifications.
 
-- **D1 ⚠ Coordinate isolation = keys, not offsets.** Put `game_id` in tile/building/reservation keys and keep one
+- **D1 ✅ Coordinate isolation = keys, not offsets.** Put `game_id` in tile/building/reservation keys and keep one
   logical coordinate plane per game (identical centers are then harmless). Keep `map_center_offset` (now per-game,
   seeded from `create_game` randomness) for variety only. Fold `game_id`/per-game seed into `TileImpl::to_seed` and
   every coord-derived VRF salt (§1 mechanism 6).
-- **D2 ⚠ Preset rows, not per-game copies**, for the rulebook (§4).
+- **D2 ✅ Preset rows, not per-game copies**, for the rulebook (§4).
 - **D3 Building key**: fix the pre-existing dropped-`alt` bug while re-keying (alt+regular structures at the same (x,y)
   already alias today). Recommended: yes, add `alt`.
 - **D4 Same-game guard rule**: every entrypoint touching ≥2 entities asserts equal `game_id`; the three
   deliberately-disabled ownership asserts (battle :677, swap :622, transfer :361) are re-examined in A1 — they are
   exactly where cross-game attacks land.
-- **D5 ⚠ `trial_id` → `game_id`.** One final ranking per game; absorb `PlayersRankFinal` into
+- **D5 ✅ `trial_id` → `game_id`.** One final ranking per game; absorb `PlayersRankFinal` into
   `GameRegistry.final_trial_id`/`status`; keep a caller nonce as a plain field for idempotency. Kills the permissionless
   id-squatting surface.
-- **D6 ⚠ Guilds become per-game** with a synthetic uuid `guild_id` (wallet-keyed today = one guild identity across all
+- **D6 ✅ Guilds become per-game** with a synthetic uuid `guild_id` (wallet-keyed today = one guild identity across all
   games, and `GuildOnly` hyperstructure access in game A honoring a guild formed in game B). UX/client change.
 - **D7 `StructureOwnerStats` splits**: `(game_id, owner) → structures_num`; display name lives only in global
   `AddressName`. Guild/name gates then read the caller's-game count.
@@ -298,22 +300,31 @@ Recommendations included; items marked ⚠ need explicit sign-off, the rest are 
 - **D10 Series become first-class**: `series_id`-keyed rows (state + the currently-hardcoded constants
   `NUM_GAMES_IN_SERIES`, chest supply, cap ratios as per-series config); previous-game chest chaining becomes a
   same-world registry read; concurrency guard on `game_index` advancement.
-- **D11 ⚠ Per-game escrow accounting** for every payout path (entry fees, prize pools, faith pools if ever enabled):
+- **D11 ✅ Per-game escrow accounting** for every payout path (entry fees, prize pools, faith pools if ever enabled):
   fees credit `GameRegistry.fees_collected`; payouts assert against and debit it. No `balance_of(this)` arithmetic
   anywhere.
 - **D12 Admin model**: one chain admin (registrar owner) for presets and ops; `GameRegistry.creator` recorded but
   carries no special authority in A1 (creator-rights are a later product decision).
-- **D13 ⚠ Entry token**: recommend replacing the per-game ERC721 deploy with registration rows + direct fee transfer
-  (keeps `create_game` at 1–2 tx and drops a UDC deploy + per-game paymaster policy entry). If the tradeable-entry NFT
-  is a product requirement, fallback: one shared ERC721 with `game_id` in the token metadata, minted from the registrar.
+- **D13 ✅ (amended 2026-08-08) Entry token NFT stays — as one shared collection.** The NFT is a product requirement and
+  load-bearing for Phase 2 (settlement/prizes). Implementation: a **single entry-token ERC721 deployed once**, minted by
+  the registrar at registration with the `game_id` bound on-chain (`BlitzEntryTokenRegister` re-keyed
+  `(game_id, token_id)` remains the source of truth; `game_id` also exposed in token metadata). No per-game UDC deploys
+  — `create_game` stays 1–2 tx, and the Controller/paymaster policy references one contract address forever instead of
+  one per game.
 - **D14 Quests: retire from `s2_blitz`** (`start_quest` is already commented out; the feature flag is a world-global
   toggle).
-- **D15 ⚠ `s2_blitz` deploys the Blitz-core contract set only.** Excluded: `resource_bridge_systems` (unsafe pooled
-  balance + `velords_claim`), `village_systems`, season `realm_systems` + `season_systems.season_close` (Blitz ends by
-  timestamp), `spire_systems`, `bitcoin_mine` (both), `faith_systems` + `faith_prize_systems`, `quest_systems`,
-  `bank/swap/liquidity` + `trade_systems` (disabled in Blitz presets today — banks are never created). This roughly
-  halves A1: ~45 core models instead of 79. The excluded set migrates with the Eternum port (Phase 3) using the same
-  rules.
+- **D15 ⏳ The new world deploys the Blitz-core contract set only.** Namespace note: `s2_blitz` does **not** exist yet —
+  it is the working name for the new world's namespace. This is still "improving s1": the same Cairo source in
+  `contracts/game` evolves in place; only the deployed namespace string (`DEFAULT_NS()`) changes. A new namespace/world
+  is forced, not stylistic: adding `#[key] game_id` changes every model's storage layout and entity identity (poseidon
+  of keys), which Dojo cannot upgrade in place — a fresh world deploy is required regardless; during A5 the new world
+  and the legacy `s1_eternum` worlds coexist on the same chain and torii, so reusing the `s1_eternum` name would make
+  every table/selector ambiguous; and upstream mainnet keeps deploying `s1_eternum` untouched until they adopt the
+  single-world schema. Excluded contracts: `resource_bridge_systems` (unsafe pooled balance + `velords_claim`),
+  `village_systems`, season `realm_systems` + `season_systems.season_close` (Blitz ends by timestamp), `spire_systems`,
+  `bitcoin_mine` (both), `faith_systems` + `faith_prize_systems`, `quest_systems`, `bank/swap/liquidity` +
+  `trade_systems` (disabled in Blitz presets today — banks are never created). This roughly halves A1: ~45 core models
+  instead of 79. The excluded set migrates with the Eternum port (Phase 3) using the same rules.
 - **D16 Torii `MemberClause` on key members** (`game_id`) must be verified on the target torii version before A4's
   bounded-spatial-sync design (client constraint C3) — schedule the check in A3, it can invalidate the spatial scoping
   approach.
