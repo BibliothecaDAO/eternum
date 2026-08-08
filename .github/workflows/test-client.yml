@@ -96,8 +96,11 @@ jobs:
       VITE_PUBLIC_ACCOUNT_CLASS_HASH: "0x0"
       VITE_PUBLIC_FEE_TOKEN_ADDRESS: "0x49d36570d4e46f48e99674bd3fcc84644ddd6b96f7c741b1562b82f9e004dc7"
       VITE_PUBLIC_CLIENT_FEE_RECIPIENT: "0x009d838f2dB23aFD64e4A2A116EdA44a00Cda1b1C8Cb2CE9C11eB534E8Bc50E0"
-      VITE_PUBLIC_SLOT: "realms-appchain-dev"
       VITE_PUBLIC_CHAIN: "appchain"
+      # Shared appchain endpoints: the build bakes them in, and the renderer
+      # scene smoke discovers a live world through the same torii.
+      VITE_PUBLIC_TORII: "https://torii.jcndata.com"
+      VITE_PUBLIC_NODE_URL: "https://katana.jcndata.com"
       GAME_CLIENT_PREVIEW_URL: "http://127.0.0.1:4173"
       ETERNUM_DISABLE_MKCERT: "true"
 
@@ -154,6 +157,7 @@ jobs:
         run: |
           node ./client/apps/game/scripts/run-renderer-scene-smoke.mjs \
             --base-url "$GAME_CLIENT_PREVIEW_URL" \
+            --chain appchain \
             --scenes map,hex \
             --artifact-dir /tmp/renderer-scene-smoke-artifacts
 

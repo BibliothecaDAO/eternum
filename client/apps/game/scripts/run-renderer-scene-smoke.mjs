@@ -5,9 +5,8 @@ import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const DEFAULT_BASE_URL = "https://127.0.0.1:4173";
-const DEFAULT_CHAIN = "slot";
+const DEFAULT_CHAIN = "appchain";
 const DEFAULT_SCENES = ["map", "hex"];
-const DEFAULT_WORLD_NAME = "eternum-blitz-slot-4";
 const REQUIRED_RENDERER_PARITY_FEATURES = new Set(["environmentIbl", "toneMappingControl", "bloom"]);
 const VALID_SCENES = new Set(["map", "hex", "travel"]);
 const DEFAULT_WAIT_MS = 20000;
@@ -19,12 +18,9 @@ const RETRYABLE_AGENT_BROWSER_FAILURE_PATTERNS = [
   "Failed to read: Resource temporarily unavailable",
   "daemon may be busy or unresponsive",
 ];
-const FACTORY_SQL_BASE_URLS = {
-  local: [],
+const CARTRIDGE_FACTORY_SQL_BASE_URLS = {
   mainnet: [`${DEFAULT_CARTRIDGE_API_BASE}/x/eternum-factory-mainnet/torii/sql`],
   sepolia: [`${DEFAULT_CARTRIDGE_API_BASE}/x/eternum-factory-sepolia/torii/sql`],
-  slot: [`${DEFAULT_CARTRIDGE_API_BASE}/x/eternum-factory-slot-d/torii/sql`],
-  slottest: [`${DEFAULT_CARTRIDGE_API_BASE}/x/eternum-factory-slot-d/torii/sql`],
 };
 const WORLD_DISCOVERY_LIMIT = 200;
 const WORLD_DISCOVERY_TIMEOUT_MS = 2500;
@@ -55,13 +51,11 @@ export function normalizeSceneList(value) {
   return scenes;
 }
 
-export function buildSceneSmokeUrl({
-  baseUrl,
-  chain = DEFAULT_CHAIN,
-  rendererMode,
-  scene,
-  worldName = DEFAULT_WORLD_NAME,
-}) {
+export function buildSceneSmokeUrl({ baseUrl, chain = DEFAULT_CHAIN, rendererMode, scene, worldName }) {
+  if (!worldName) {
+    throw new Error("buildSceneSmokeUrl requires a worldName");
+  }
+
   const url = new URL(baseUrl);
   url.pathname = `/play/${chain}/${encodeURIComponent(worldName)}/${scene}`;
   url.searchParams.set("col", "0");
@@ -95,16 +89,31 @@ export function decodePaddedWorldName(hex) {
   return output;
 }
 
+// The appchain runs ONE torii for every world, factory included; its location
+// comes from the environment so the script follows the deployment.
+function resolveAppchainToriiBaseUrl(env = process.env) {
+  return String(env.TORII_URL || env.VITE_PUBLIC_TORII || "").replace(/\/+$/, "");
+}
+
+function resolveFactorySqlBaseUrls(chain, env = process.env) {
+  if (chain === "appchain") {
+    const toriiBaseUrl = resolveAppchainToriiBaseUrl(env);
+    return toriiBaseUrl ? [`${toriiBaseUrl}/sql`] : [];
+  }
+
+  return CARTRIDGE_FACTORY_SQL_BASE_URLS[chain] ?? [];
+}
+
 function buildFactoryWorldQueryUrl(factorySqlBaseUrl) {
   const url = new URL(factorySqlBaseUrl);
   url.searchParams.set(
     "query",
-    `SELECT name FROM [wf-WorldDeployed] ORDER BY internal_created_at DESC LIMIT ${WORLD_DISCOVERY_LIMIT};`,
+    `SELECT name, address FROM [wf-WorldDeployed] ORDER BY internal_created_at DESC LIMIT ${WORLD_DISCOVERY_LIMIT};`,
   );
   return url;
 }
 
-async function fetchCandidateWorldNames(factorySqlBaseUrl) {
+async function fetchCandidateWorlds(factorySqlBaseUrl) {
   const response = await fetch(buildFactoryWorldQueryUrl(factorySqlBaseUrl), {
     signal: AbortSignal.timeout(WORLD_DISCOVERY_TIMEOUT_MS),
   });
@@ -119,7 +128,7 @@ async function fetchCandidateWorldNames(factorySqlBaseUrl) {
   }
 
   const seenNames = new Set();
-  const worldNames = [];
+  const worlds = [];
   for (const row of rows) {
     const decodedName = decodePaddedWorldName(row?.name);
     if (!decodedName || seenNames.has(decodedName)) {
@@ -127,13 +136,14 @@ async function fetchCandidateWorldNames(factorySqlBaseUrl) {
     }
 
     seenNames.add(decodedName);
-    worldNames.push(decodedName);
+    worlds.push({ address: typeof row?.address === "string" ? row.address : "", name: decodedName });
   }
 
-  return worldNames;
+  return worlds;
 }
 
-async function isWorldSceneSmokeCandidateAlive(worldName) {
+// Cartridge chains give every world its own torii, so alive = it responds.
+async function isCartridgeWorldAlive(worldName) {
   const probeUrl = new URL(`${DEFAULT_CARTRIDGE_API_BASE}/x/${encodeURIComponent(worldName)}/torii/sql`);
   probeUrl.searchParams.set("query", "SELECT 1 AS ok LIMIT 1;");
 
@@ -148,23 +158,68 @@ async function isWorldSceneSmokeCandidateAlive(worldName) {
   }
 }
 
+// On the shared appchain torii a deployed world may still lack a game config
+// (the factory deploys first, configures second), and an unconfigured world
+// cannot start. Model rows are keyed `internal_id = "<world_address>:<id>"`,
+// so a config row scoped to the address is the aliveness signal.
+async function isAppchainWorldConfigured(factorySqlBaseUrl, worldAddress) {
+  let paddedAddress;
+  try {
+    paddedAddress = `0x${BigInt(worldAddress).toString(16).padStart(64, "0")}`;
+  } catch {
+    return false;
+  }
+
+  const probeUrl = new URL(factorySqlBaseUrl);
+  probeUrl.searchParams.set(
+    "query",
+    `SELECT 1 AS ok FROM [s1_eternum-WorldConfig] WHERE internal_id LIKE '${paddedAddress}:%' LIMIT 1;`,
+  );
+
+  try {
+    const response = await fetch(probeUrl, {
+      signal: AbortSignal.timeout(WORLD_DISCOVERY_TIMEOUT_MS),
+    });
+    if (!response.ok) {
+      return false;
+    }
+
+    const rows = await response.json();
+    return Array.isArray(rows) && rows.length > 0;
+  } catch {
+    return false;
+  }
+}
+
 export async function resolveSceneSmokeWorldName({ chain, requestedWorldName }) {
   if (requestedWorldName) {
     return requestedWorldName;
   }
 
-  const factorySqlBaseUrls = FACTORY_SQL_BASE_URLS[chain] ?? [];
-  for (const factorySqlBaseUrl of factorySqlBaseUrls) {
-    const candidateWorldNames = await fetchCandidateWorldNames(factorySqlBaseUrl);
+  const factorySqlBaseUrls = resolveFactorySqlBaseUrls(chain);
+  if (factorySqlBaseUrls.length === 0) {
+    throw new Error(
+      chain === "appchain"
+        ? "No appchain torii configured for world discovery: set TORII_URL or VITE_PUBLIC_TORII, or pass --world."
+        : `No factory configured for chain "${chain}": pass --world to target one explicitly.`,
+    );
+  }
 
-    for (const worldName of candidateWorldNames) {
-      if (await isWorldSceneSmokeCandidateAlive(worldName)) {
-        return worldName;
+  for (const factorySqlBaseUrl of factorySqlBaseUrls) {
+    const candidates = await fetchCandidateWorlds(factorySqlBaseUrl);
+
+    for (const world of candidates) {
+      const alive =
+        chain === "appchain"
+          ? await isAppchainWorldConfigured(factorySqlBaseUrl, world.address)
+          : await isCartridgeWorldAlive(world.name);
+      if (alive) {
+        return world.name;
       }
     }
   }
 
-  return DEFAULT_WORLD_NAME;
+  throw new Error(`No live world found for chain "${chain}": pass --world to target one explicitly.`);
 }
 
 export function evaluateSceneSmokeResult({ canvasExists, errors, expectedPathname, openedUrl, unableToStartCount }) {
