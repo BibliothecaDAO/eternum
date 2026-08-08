@@ -7,8 +7,6 @@ use crate::models::position::Coord;
 #[dojo::model]
 pub struct BiomeDiscovered {
     #[key]
-    pub game_id: u32,
-    #[key]
     pub by_address: starknet::ContractAddress,
     #[key]
     pub biome: u8,

@@ -1,3 +1,6 @@
+use core::num::traits::zero::Zero;
+use dojo::model::ModelStorage;
+use dojo::world::WorldStorage;
 use starknet::ContractAddress;
 
 
@@ -67,4 +70,37 @@ pub struct Series {
     pub num_games: u32,
     pub total_chests: u128,
     pub cap_ratio_bps: u128,
+}
+
+
+#[generate_trait]
+pub impl GameRegistryImpl of GameRegistryTrait {
+    fn get(world: WorldStorage, game_id: u32) -> GameRegistry {
+        assert!(game_id.is_non_zero(), "Eternum: game id 0 is reserved");
+        let game: GameRegistry = world.read_model(game_id);
+        assert!(game.creator.is_non_zero(), "Eternum: game does not exist");
+        game
+    }
+
+    fn credit_fees(ref world: WorldStorage, game_id: u32, amount: u256) {
+        let mut game = Self::get(world, game_id);
+        game.fees_collected += amount;
+        world.write_model(@game);
+    }
+
+    fn debit_fees(ref world: WorldStorage, game_id: u32, amount: u256) {
+        let mut game = Self::get(world, game_id);
+        assert!(game.fees_paid_out + amount <= game.fees_collected, "Eternum: game escrow exhausted");
+        game.fees_paid_out += amount;
+        world.write_model(@game);
+    }
+
+    fn available_fees(world: WorldStorage, game_id: u32) -> u256 {
+        let game = Self::get(world, game_id);
+        game.fees_collected - game.fees_paid_out
+    }
+
+    fn assert_same_game(expected_game_id: u32, actual_game_id: u32) {
+        assert!(expected_game_id == actual_game_id, "Eternum: entities belong to different games");
+    }
 }

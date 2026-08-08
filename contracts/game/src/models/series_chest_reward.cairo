@@ -98,6 +98,9 @@ pub struct SeriesChestRewardState {
     pub series_id: felt252,
     // Runtime state
     pub game_index: u32,
+    pub num_games: u32,
+    pub total_chests: u128,
+    pub cap_ratio_bps: u128,
     pub ema_players_scaled: u128, // players * BPS
     // Rolling windows
     pub recent: RecentRing,

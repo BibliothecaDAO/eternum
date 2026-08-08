@@ -5,6 +5,13 @@ pub mod artificer {
     mod tests;
 }
 
+pub mod registrar {
+    pub mod contracts;
+
+    #[cfg(test)]
+    mod tests;
+}
+
 // Legacy per-world config replay retired in favor of registrar-owned presets (D2/D12).
 // pub mod config {
 //     pub mod contracts;

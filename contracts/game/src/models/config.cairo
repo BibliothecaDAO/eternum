@@ -5,7 +5,7 @@ use dojo::world::WorldStorage;
 use starknet::ContractAddress;
 use crate::alias::ID;
 use crate::constants::WORLD_CONFIG_ID;
-use crate::models::game::GameRegistry;
+use crate::models::game::{GameRegistry, GameRegistryImpl};
 use crate::models::mmr::MMRConfig;
 use crate::models::position::{Coord, CoordImpl, Direction};
 use crate::models::resource::resource::TroopResourceImpl;
@@ -28,6 +28,14 @@ pub struct WorldConfig {
     pub blitz_hypers_settlement_config: BlitzHypersSettlementConfig,
     pub blitz_registration_config: BlitzRegistrationGameConfig,
     pub realm_count_config: RealmCountConfig,
+}
+
+#[derive(Introspect, Copy, Drop, Serde, DojoStore)]
+#[dojo::model]
+pub struct GameMapConfig {
+    #[key]
+    pub game_id: u32,
+    pub map_config: MapConfig,
 }
 
 #[derive(Introspect, Copy, Drop, Serde, DojoStore)]
@@ -57,6 +65,21 @@ pub struct PresetConfig {
     pub artificer_config: ArtificerConfig,
     pub blitz_registration_rules_config: BlitzRegistrationRulesConfig,
     pub mercenaries_name: felt252,
+}
+
+#[derive(Introspect, Copy, Drop, Serde, DojoStore)]
+#[dojo::model]
+pub struct PresetGameConfig {
+    #[key]
+    pub preset_id: u32,
+    pub biome_climate_config: BiomeClimateConfig,
+    pub settlement_config: SettlementConfig,
+    pub blitz_settlement_config: BlitzSettlementConfig,
+    pub blitz_registration_config: BlitzRegistrationGameConfig,
+    pub agent_max_lifetime_count: u16,
+    pub agent_max_current_count: u16,
+    pub agent_min_spawn_lords_amount: u8,
+    pub agent_max_spawn_lords_amount: u8,
 }
 
 #[derive(Introspect, Copy, Drop, Serde, DojoStore)]
@@ -127,7 +150,7 @@ pub struct SeasonConfig {
 #[generate_trait]
 pub impl SeasonConfigImpl of SeasonConfigTrait {
     fn get(world: WorldStorage, game_id: u32) -> SeasonConfig {
-        let game: GameRegistry = world.read_model(game_id);
+        let game = GameRegistryImpl::get(world, game_id);
         SeasonConfig {
             dev_mode_on: game.dev_mode_on,
             start_settling_at: game.start_settling_at,
@@ -247,18 +270,25 @@ pub impl WorldConfigUtilImpl of WorldConfigTrait {
     fn get_member<T, impl TSerde: Serde<T>, impl TDojoStore: DojoStore<T>>(
         world: WorldStorage, game_id: u32, selector: felt252,
     ) -> T {
+        let game = GameRegistryImpl::get(world, game_id);
+        if selector == selector!("map_config") {
+            return world.read_member(Model::<GameMapConfig>::ptr_from_keys(game_id), selector);
+        }
         if Self::is_game_member(selector) {
             return world.read_member(Model::<WorldConfig>::ptr_from_keys(game_id), selector);
         }
         if Self::is_chain_member(selector) {
             return world.read_member(Model::<ChainConfig>::ptr_from_keys(WORLD_CONFIG_ID), selector);
         }
-        let game: GameRegistry = world.read_model(game_id);
         world.read_member(Model::<PresetConfig>::ptr_from_keys(game.preset_id), selector)
     }
     fn set_member<T, impl TSerde: Serde<T>, impl TDrop: Drop<T>, impl TDojoStore: DojoStore<T>>(
         ref world: WorldStorage, scope_id: u32, selector: felt252, value: T,
     ) {
+        if selector == selector!("map_config") {
+            world.write_member(Model::<GameMapConfig>::ptr_from_keys(scope_id), selector, value);
+            return;
+        }
         if Self::is_game_member(selector) {
             world.write_member(Model::<WorldConfig>::ptr_from_keys(scope_id), selector, value);
             return;
@@ -1055,15 +1085,15 @@ pub impl BlitzRegistrationConfigImpl of BlitzRegistrationConfigTrait {
 
     fn setup_entry_token(self: BlitzRegistrationConfig, ipfs_cid: ByteArray) {
         let dispatcher = ICollectibleDispatcher { contract_address: self.entry_token_address };
-        dispatcher.set_attrs_raw_to_ipfs_cid(self.entry_token_attrs_raw(), ipfs_cid, false);
+        dispatcher.set_attrs_raw_to_ipfs_cid(self.entry_token_attrs_raw(0), ipfs_cid, false);
     }
 
     fn entry_token_lock_id(self: BlitzRegistrationConfig) -> felt252 {
         69
     }
 
-    fn entry_token_attrs_raw(self: BlitzRegistrationConfig) -> u128 {
-        1
+    fn entry_token_attrs_raw(self: BlitzRegistrationConfig, game_id: u32) -> u128 {
+        (game_id.into() * 0x100000000) + 1
     }
 
     fn collectibles_lootchest_attrs_raw(self: BlitzRegistrationConfig) -> u128 {
@@ -1432,6 +1462,7 @@ pub struct BlitzEntryTokenRegister {
     pub game_id: u32,
     #[key]
     pub token_id: u128,
+    pub issued: bool,
     pub registered: bool,
 }
 

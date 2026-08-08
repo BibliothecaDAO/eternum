@@ -13,8 +13,7 @@ use crate::models::resource::resource::{
     ResourceWeightImpl, SingleResourceImpl, SingleResourceStoreImpl, TroopResourceImpl, WeightStoreImpl,
 };
 use crate::models::structure::{
-    StructureBase, StructureBaseImpl, StructureBaseStoreImpl, StructureCategory, StructureMetadata,
-    StructureMetadataStoreImpl, StructureOwnerStoreImpl,
+    StructureBase, StructureBaseImpl, StructureBaseStoreImpl, StructureMetadataStoreImpl, StructureOwnerStoreImpl,
 };
 use crate::models::troop::ExplorerTroops;
 use crate::models::weight::{Weight, WeightImpl};

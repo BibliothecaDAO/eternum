@@ -58,10 +58,7 @@ pub impl TroopLimitImpl of TroopLimitTrait {
             1 => self.city_deployment_cap,
             2 => self.kingdom_deployment_cap,
             3 => self.empire_deployment_cap,
-            _ => {
-                panic!("unknown structure level");
-                0
-            },
+            _ => panic!("unknown structure level"),
         };
 
         let (tier_strength, tier_modifier) = match tier {

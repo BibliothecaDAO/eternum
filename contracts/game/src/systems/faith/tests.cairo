@@ -9,7 +9,7 @@ mod tests {
     use snforge_std::{start_cheat_block_timestamp_global, start_cheat_caller_address, stop_cheat_caller_address};
     use starknet::ContractAddress;
     use crate::alias::ID;
-    use crate::constants::{DEFAULT_NS, DEFAULT_NS_STR, WORLD_CONFIG_ID};
+    use crate::constants::{DEFAULT_NS, DEFAULT_NS_STR, LEGACY_CONFIG_ID};
     use crate::models::config::{FaithConfig, SeasonConfig, WorldConfigUtilImpl};
     use crate::models::faith::{
         FaithfulStructure, PlayerFaithPoints, WonderFaith, WonderFaithBlacklist, WonderFaithWinners,
@@ -750,7 +750,7 @@ mod tests {
         dispatcher.claim_wonder_points(wonder1_id);
         stop_cheat_caller_address(system_addr);
 
-        let winners: WonderFaithWinners = world.read_model(WORLD_CONFIG_ID);
+        let winners: WonderFaithWinners = world.read_model(LEGACY_CONFIG_ID);
         assert!(winners.high_score == 500000, "High score should be 500000");
         assert!(winners.wonder_ids.len() == 1, "Should have 1 winner");
         assert!(*winners.wonder_ids.at(0) == wonder1_id, "Wonder1 should be leader");
@@ -762,7 +762,7 @@ mod tests {
         dispatcher.claim_wonder_points(wonder2_id);
         stop_cheat_caller_address(system_addr);
 
-        let winners_after: WonderFaithWinners = world.read_model(WORLD_CONFIG_ID);
+        let winners_after: WonderFaithWinners = world.read_model(LEGACY_CONFIG_ID);
         // Wonder2: 500 * 3000 = 1500000 > Wonder1's 500000
         assert!(winners_after.high_score == 1500000, "High score should be 1500000");
         assert!(winners_after.wonder_ids.len() == 1, "Should have 1 winner");
@@ -804,7 +804,7 @@ mod tests {
         dispatcher.claim_wonder_points(wonder2_id);
         stop_cheat_caller_address(system_addr);
 
-        let winners: WonderFaithWinners = world.read_model(WORLD_CONFIG_ID);
+        let winners: WonderFaithWinners = world.read_model(LEGACY_CONFIG_ID);
         assert!(winners.high_score == 500000, "High score should be 500000");
         assert!(winners.wonder_ids.len() == 2, "Should have 2 winners (tie)");
     }

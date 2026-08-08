@@ -3,7 +3,7 @@
 // use dojo::world::{WorldStorage, WorldStorageTrait};
 // use dojo_cairo_test::{ContractDefTrait, NamespaceDef, TestResource, spawn_test_world};
 // use crate::alias::ID;
-// use crate::constants::{WORLD_CONFIG_ID};
+// use crate::constants::{LEGACY_CONFIG_ID};
 // use crate::models::owner::Owner;
 // use crate::models::position::{Coord};
 // use crate::models::season::Season;
@@ -28,7 +28,7 @@
 //     world.write_model_test(@owner);
 
 //     // set initial season
-//     let season = Season { config_id: WORLD_CONFIG_ID, is_over: false, start_at: 0, ended_at: 0 };
+//     let season = Season { config_id: LEGACY_CONFIG_ID, is_over: false, start_at: 0, ended_at: 0 };
 //     world.write_model_test(@season);
 
 //     (world, ownership_systems_address, owner)

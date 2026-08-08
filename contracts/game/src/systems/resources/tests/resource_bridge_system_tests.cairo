@@ -7,7 +7,7 @@
 //     use dojo::world::{WorldStorage, WorldStorageTrait};
 //     use dojo_cairo_test::{ContractDefTrait, NamespaceDef, TestResource};
 //     use crate::alias::ID;
-//     use crate::constants::{ResourceTypes, WORLD_CONFIG_ID};
+//     use crate::constants::{ResourceTypes, LEGACY_CONFIG_ID};
 //     use crate::models::bank::{bank::Bank};
 //     use crate::models::config::{CapacityCategory, WeightConfig};
 //     use crate::models::config::{ResourceBridgeConfig, ResourceBridgeFeeSplitConfig,
@@ -147,7 +147,7 @@
 //             world
 //                 .write_model_test(
 //                     @WeightConfig {
-//                         config_id: WORLD_CONFIG_ID,
+//                         config_id: LEGACY_CONFIG_ID,
 //                         weight_config_id: ResourceTypes::DONKEY.into(),
 //                         entity_type: ResourceTypes::DONKEY.into(),
 //                         weight_gram: 10,
@@ -156,7 +156,7 @@
 //             world
 //                 .write_model_test(
 //                     @WeightConfig {
-//                         config_id: WORLD_CONFIG_ID,
+//                         config_id: LEGACY_CONFIG_ID,
 //                         weight_config_id: ResourceTypes::LORDS.into(),
 //                         entity_type: ResourceTypes::LORDS.into(),
 //                         weight_gram: 1,
@@ -580,7 +580,7 @@
 //         let (mut world, resource_bridge_systems, token) = SetupImpl::setup();
 //         world
 //             .write_model_test(
-//                 @ResourceBridgeConfig { config_id: WORLD_CONFIG_ID, deposit_paused: true, withdraw_paused: false },
+//                 @ResourceBridgeConfig { config_id: LEGACY_CONFIG_ID, deposit_paused: true, withdraw_paused: false },
 //             );
 
 //         let bank_id: ID = BANK_ID();
@@ -760,7 +760,7 @@
 //         // Pause withdrawals
 //         world
 //             .write_model_test(
-//                 @ResourceBridgeConfig { config_id: WORLD_CONFIG_ID, deposit_paused: false, withdraw_paused: true },
+//                 @ResourceBridgeConfig { config_id: LEGACY_CONFIG_ID, deposit_paused: false, withdraw_paused: true },
 //             );
 
 //         // Make realm owner the caller
@@ -1031,7 +1031,7 @@
 //         // Pause withdrawals
 //         world
 //             .write_model_test(
-//                 @ResourceBridgeConfig { config_id: WORLD_CONFIG_ID, deposit_paused: false, withdraw_paused: true },
+//                 @ResourceBridgeConfig { config_id: LEGACY_CONFIG_ID, deposit_paused: false, withdraw_paused: true },
 //             );
 
 //         // Make realm owner the caller

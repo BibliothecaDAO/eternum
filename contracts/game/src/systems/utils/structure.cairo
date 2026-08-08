@@ -1,37 +1,25 @@
 use core::num::traits::Zero;
 use dojo::event::EventStorage;
-use dojo::model::ModelStorage;
-use dojo::world::{IWorldDispatcherTrait, WorldStorage, WorldStorageTrait};
+use dojo::world::{IWorldDispatcherTrait, WorldStorage};
 use crate::alias::ID;
-use crate::constants::{DAYDREAMS_AGENT_ID, RESOURCE_PRECISION, ResourceTypes};
-use crate::models::config::{
-    StartingResourcesConfig, StructureCapacityConfig, VictoryPointsGrantConfig, VillageTokenConfig, WorldConfigUtilImpl,
-};
+use crate::constants::DAYDREAMS_AGENT_ID;
+use crate::models::config::{VictoryPointsGrantConfig, WorldConfigUtilImpl};
 use crate::models::events::{PointsActivity, PointsRegisteredStory, Story, StoryEvent};
 use crate::models::hyperstructure::PlayerRegisteredPointsImpl;
-use crate::models::map::{Tile, TileImpl, TileOccupier};
-use crate::models::map2::TileOpt;
-use crate::models::position::{Coord, CoordImpl, Direction};
+use crate::models::map::TileImpl;
+use crate::models::position::CoordImpl;
 use crate::models::resource::resource::{
-    ResourceImpl, ResourceList, ResourceWeightImpl, SingleResourceImpl, SingleResourceStoreImpl, TroopResourceImpl,
-    WeightStoreImpl,
+    ResourceImpl, ResourceWeightImpl, SingleResourceImpl, SingleResourceStoreImpl, TroopResourceImpl, WeightStoreImpl,
 };
 use crate::models::structure::{
-    Structure, StructureBase, StructureBaseStoreImpl, StructureCategory, StructureImpl, StructureMetadata,
-    StructureMetadataStoreImpl, StructureOwnerStoreImpl, StructureResourcesImpl, StructureTroopExplorerStoreImpl,
-    StructureTroopGuardStoreImpl,
+    StructureBase, StructureBaseStoreImpl, StructureCategory, StructureImpl, StructureMetadataStoreImpl,
+    StructureOwnerStoreImpl, StructureResourcesImpl, StructureTroopExplorerStoreImpl, StructureTroopGuardStoreImpl,
 };
-use crate::models::troop::{ExplorerTroops, GuardSlot, GuardTrait, GuardTroops, TroopsImpl};
-use crate::models::weight::Weight;
-use crate::system_libraries::biome_library::{IBiomeLibraryDispatcherTrait, biome_library};
-use crate::systems::combat::contracts::troop_management::{
-    ITroopManagementSystemsDispatcher, ITroopManagementSystemsDispatcherTrait,
-};
+use crate::models::troop::{ExplorerTroops, GuardTrait, GuardTroops, TroopsImpl};
 use crate::systems::utils::map::IMapImpl;
 use crate::systems::utils::troop::iExplorerImpl;
-// Village creation helpers are excluded from the Blitz-core world (D15).
-use crate::utils::map::biomes::Biome;
-use crate::utils::village::{IVillagePassDispatcher, IVillagePassDispatcherTrait};
+
+// D15: imports used only by the commented season structure-creation path are intentionally omitted.
 
 #[generate_trait]
 pub impl iStructureImpl of IStructureTrait {

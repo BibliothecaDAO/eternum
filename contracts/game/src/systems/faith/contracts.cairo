@@ -453,7 +453,7 @@ pub mod faith_systems {
     use dojo::world::{IWorldDispatcherTrait, WorldStorage};
     use starknet::ContractAddress;
     use crate::alias::ID;
-    use crate::constants::{DEFAULT_NS, WORLD_CONFIG_ID};
+    use crate::constants::{DEFAULT_NS, LEGACY_CONFIG_ID};
     use crate::models::config::{FaithConfig, SeasonConfigImpl, WorldConfigUtilImpl};
     use crate::models::events::{FaithPledgedStory, FaithPointsClaimedStory, FaithRemovedStory, Story, StoryEvent};
     use crate::models::faith::{
@@ -906,7 +906,7 @@ pub mod faith_systems {
 
             // Check and update winners
             let wonder_id = wonder_faith.wonder_id;
-            let mut winners: WonderFaithWinners = world.read_model(WORLD_CONFIG_ID);
+            let mut winners: WonderFaithWinners = world.read_model(LEGACY_CONFIG_ID);
 
             if wonder_faith.claimed_points > winners.high_score {
                 // New high score - replace all previous winners with this one

@@ -254,8 +254,8 @@ pub mod troop_movement_systems {
 
                     // check if biome type has been discovered by player previously
                     let biome_u8: u8 = biome.into();
-                    let mut biome_discovered: BiomeDiscovered = world.read_model((game_id, caller, biome_u8));
-                    biome_discovered.game_id = game_id;
+                    // Biome achievements intentionally remain wallet-global (D1/D8 exception).
+                    let mut biome_discovered: BiomeDiscovered = world.read_model((caller, biome_u8));
                     if !biome_discovered.discovered {
                         biome_discovered.discovered = true;
                         world.write_model(@biome_discovered);

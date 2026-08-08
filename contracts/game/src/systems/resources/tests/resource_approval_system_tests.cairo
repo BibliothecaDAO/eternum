@@ -9,7 +9,7 @@
 //     use crate::alias::ID;
 
 //     use crate::constants::ResourceTypes;
-//     use crate::constants::WORLD_CONFIG_ID;
+//     use crate::constants::LEGACY_CONFIG_ID;
 //     use crate::models::config::WeightConfig;
 //     use crate::models::owner::{EntityOwner, Owner};
 //     use crate::models::position::Position;

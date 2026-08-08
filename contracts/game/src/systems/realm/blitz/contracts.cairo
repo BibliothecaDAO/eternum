@@ -30,12 +30,11 @@ pub mod blitz_realm_systems {
         WorldConfigUtilImpl,
     };
     use crate::models::events::{RealmCreatedStory, Story, StoryEvent};
+    use crate::models::game::GameRegistryImpl;
     use crate::models::name::AddressName;
     use crate::models::owner::OwnerAddressImpl;
     use crate::models::position::{Coord, CoordImpl};
-    use crate::models::structure::{
-        StructureBase, StructureBaseStoreImpl, StructureCategory, StructureOwnerStats, StructureOwnerStoreImpl,
-    };
+    use crate::models::structure::{StructureBase, StructureBaseStoreImpl, StructureCategory, StructureOwnerStoreImpl};
     use crate::system_libraries::rng_library::{IRNGlibraryDispatcherTrait, rng_library};
     use crate::systems::prize_distribution::contracts::prize_distribution_systems;
     use crate::systems::realm::utils::contracts::{
@@ -61,7 +60,7 @@ pub mod blitz_realm_systems {
     #[abi(embed_v0)]
     impl BlitzRealmSystemsImpl of super::IBlitzRealmSystems<ContractState> {
         fn obtain_entry_token(ref self: ContractState, game_id: u32) {
-            let world: WorldStorage = self.world(DEFAULT_NS());
+            let mut world: WorldStorage = self.world(DEFAULT_NS());
             let blitz_registration_config: BlitzRegistrationConfig = WorldConfigUtilImpl::get_member(
                 world, game_id, selector!("blitz_registration_config"),
             );
@@ -90,7 +89,7 @@ pub mod blitz_realm_systems {
             // Mint Entry Token
             ////////////////////////////////////////////////
 
-            BlitzEntryTokenInternalImpl::mint_entry_token(world, caller, blitz_registration_config);
+            BlitzEntryTokenInternalImpl::mint_entry_token(ref world, game_id, caller, blitz_registration_config);
         }
 
         fn settle(
@@ -286,7 +285,10 @@ pub mod blitz_realm_systems {
     #[generate_trait]
     impl BlitzEntryTokenInternalImpl of BlitzEntryTokenInternalTrait {
         fn mint_entry_token(
-            world: WorldStorage, owner: ContractAddress, blitz_registration_config: BlitzRegistrationConfig,
+            ref world: WorldStorage,
+            game_id: u32,
+            owner: ContractAddress,
+            blitz_registration_config: BlitzRegistrationConfig,
         ) -> u128 {
             let fee_token_contract: IERC20Dispatcher = IERC20Dispatcher {
                 contract_address: blitz_registration_config.fee_token,
@@ -299,19 +301,22 @@ pub mod blitz_realm_systems {
                     ),
                 "Eternum: Fee transfer failed",
             );
+            GameRegistryImpl::credit_fees(ref world, game_id, blitz_registration_config.fee_amount);
 
             let entry_token_contract = ICollectibleDispatcher {
                 contract_address: blitz_registration_config.entry_token_address,
             };
-            entry_token_contract.mint(owner, blitz_registration_config.entry_token_attrs_raw());
+            entry_token_contract.mint(owner, blitz_registration_config.entry_token_attrs_raw(game_id));
 
             let owner_entry_token_balance: u128 = entry_token_contract.balance_of(owner).try_into().unwrap();
             assert!(owner_entry_token_balance.is_non_zero(), "Eternum: Failed to mint entry token");
 
-            entry_token_contract
+            let token_id = entry_token_contract
                 .token_of_owner_by_index(owner, (owner_entry_token_balance - 1).into())
                 .try_into()
-                .unwrap()
+                .unwrap();
+            world.write_model(@BlitzEntryTokenRegister { game_id, token_id, issued: true, registered: false });
+            token_id
         }
 
         fn resolve_and_consume_entry_token(
@@ -327,7 +332,7 @@ pub mod blitz_realm_systems {
 
             let token_id = match entry_token_id {
                 Option::Some(token_id) => token_id,
-                Option::None => Self::mint_entry_token(world, owner, blitz_registration_config),
+                Option::None => Self::mint_entry_token(ref world, game_id, owner, blitz_registration_config),
             };
 
             let entry_token_contract = ICollectibleDispatcher {
@@ -338,6 +343,7 @@ pub mod blitz_realm_systems {
             );
 
             let entry_token_settlement: BlitzEntryTokenRegister = world.read_model((game_id, token_id));
+            assert!(entry_token_settlement.issued, "Eternum: Entry token belongs to another game");
             assert!(!entry_token_settlement.registered, "Eternum: Entry token has already been used");
 
             let expected_lock_id = blitz_registration_config.entry_token_lock_id();
@@ -348,7 +354,7 @@ pub mod blitz_realm_systems {
                 assert!(lock_id == expected_lock_id, "Eternum: Entry token locked with wrong lock");
             }
 
-            world.write_model(@BlitzEntryTokenRegister { game_id, token_id, registered: true });
+            world.write_model(@BlitzEntryTokenRegister { game_id, token_id, issued: true, registered: true });
         }
     }
 

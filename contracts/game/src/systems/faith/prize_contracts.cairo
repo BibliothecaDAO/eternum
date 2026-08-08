@@ -63,7 +63,7 @@ use crate::alias::ID;
 /// |-------|-----|-------------|
 /// | `WonderFaithPrize` | `wonder_id` | Tracks prize amount won by each wonder |
 /// | `PlayerFaithPrizeClaimed` | `(player, wonder_id)` | Tracks if player claimed their share |
-/// | `WonderFaithWinners` | `WORLD_CONFIG_ID` | List of winning wonder IDs and high score |
+/// | `WonderFaithWinners` | `LEGACY_CONFIG_ID` | List of winning wonder IDs and high score |
 ///
 /// ## Security Notes
 ///
@@ -221,7 +221,7 @@ pub mod faith_prize_systems {
     use dojo::world::{WorldStorage, WorldStorageTrait};
     use starknet::ContractAddress;
     use crate::alias::ID;
-    use crate::constants::{DEFAULT_NS, WORLD_CONFIG_ID};
+    use crate::constants::{DEFAULT_NS, LEGACY_CONFIG_ID};
     use crate::models::config::{FaithConfig, SeasonConfigImpl, WorldConfigUtilImpl};
     use crate::models::faith::{
         PlayerFaithPoints, PlayerFaithPrizeClaimed, WonderFaith, WonderFaithPrize, WonderFaithWinners,
@@ -237,7 +237,7 @@ pub mod faith_prize_systems {
             season_config.assert_game_ended_and_points_registration_closed();
 
             // Get winners
-            let winners: WonderFaithWinners = world.read_model(WORLD_CONFIG_ID);
+            let winners: WonderFaithWinners = world.read_model(LEGACY_CONFIG_ID);
             assert!(winners.wonder_ids.len() > 0, "No winners to distribute prizes to");
 
             // Check if prizes already distributed (first winner has amount_won > 0)

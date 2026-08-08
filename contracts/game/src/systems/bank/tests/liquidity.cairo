@@ -6,7 +6,7 @@
 // use dojo::world::{WorldStorage, WorldStorageTrait};
 // use dojo_cairo_test::{ContractDefTrait, NamespaceDef, TestResource};
 // use crate::alias::ID;
-// use crate::constants::{DONKEY_ENTITY_TYPE, ResourceTypes, WORLD_CONFIG_ID};
+// use crate::constants::{DONKEY_ENTITY_TYPE, ResourceTypes, LEGACY_CONFIG_ID};
 // use crate::models::bank::liquidity::{Liquidity};
 // use crate::models::bank::market::{Market, MarketImpl};
 

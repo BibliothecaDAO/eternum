@@ -19,10 +19,11 @@ mod tests {
         stop_cheat_caller_address,
     };
     use starknet::ContractAddress;
-    use crate::constants::{DEFAULT_NS, DEFAULT_NS_STR, WORLD_CONFIG_ID};
+    use crate::constants::{DEFAULT_NS, DEFAULT_NS_STR};
     use crate::models::config::WorldConfigUtilImpl;
+    use crate::models::game::{GameRegistry, GameStatus};
     use crate::models::mmr::{MMRClaimed, MMRConfigDefaultImpl, MMRGameMeta};
-    use crate::models::rank::{PlayerRank, PlayersRankFinal, PlayersRankTrial};
+    use crate::models::rank::{PlayerRank, PlayersRankTrial};
     use crate::systems::mmr::contracts::{IMMRSystemsDispatcher, IMMRSystemsDispatcherTrait};
     use crate::utils::testing::contracts::mmr_token_mock::{IMockMMRTokenDispatcher, IMockMMRTokenDispatcherTrait};
 
@@ -32,6 +33,7 @@ mod tests {
 
     // Token uses 18 decimals
     const PRECISION: u256 = 1_000000000000000000; // 1e18
+    const TEST_GAME_ID: u32 = 1;
 
     fn e18(val: u256) -> u256 {
         val * PRECISION
@@ -46,12 +48,12 @@ mod tests {
             namespace: DEFAULT_NS_STR(),
             resources: [
                 // Core config
-                TestResource::Model("WorldConfig"), // MMR models
+                TestResource::Model("WorldConfig"), TestResource::Model("ChainConfig"),
+                TestResource::Model("GameRegistry"), // MMR models
                 TestResource::Model("MMRGameMeta"),
                 TestResource::Model("MMRClaimed"), // Rank models
-                TestResource::Model("PlayersRankFinal"),
-                TestResource::Model("PlayersRankTrial"), TestResource::Model("PlayerRank"),
-                // MMR system contract
+                TestResource::Model("PlayersRankTrial"),
+                TestResource::Model("PlayerRank"), // MMR system contract
                 TestResource::Contract("mmr_systems"), // MMR events
                 TestResource::Event("MMRGameCommitted"),
                 TestResource::Event("PlayerMMRChanged"),
@@ -74,6 +76,7 @@ mod tests {
         world.dispatcher.uuid();
         // Set a non-zero timestamp for tests (contract uses get_block_timestamp)
         start_cheat_block_timestamp_global(1000);
+        write_game_registry(ref world, 0);
         world
     }
 
@@ -93,14 +96,13 @@ mod tests {
     fn setup_finalized_trial(
         ref world: WorldStorage, trial_id: u128, players: Span<ContractAddress>, ranks: Span<u16>,
     ) {
-        // Set finalized trial
-        let players_rank_final = PlayersRankFinal { world_id: WORLD_CONFIG_ID.into(), trial_id };
-        world.write_model_test(@players_rank_final);
+        write_game_registry(ref world, trial_id);
 
         // Set trial data
         let player_count: u16 = players.len().try_into().unwrap();
         let trial = PlayersRankTrial {
-            trial_id,
+            game_id: TEST_GAME_ID,
+            nonce: trial_id,
             owner: addr('trial_owner'),
             last_rank: player_count,
             last_player_points: 0,
@@ -115,7 +117,9 @@ mod tests {
         // Set player ranks
         let mut i: u32 = 0;
         while i < players.len() {
-            let player_rank = PlayerRank { trial_id, player: *players.at(i), rank: *ranks.at(i), paid: false };
+            let player_rank = PlayerRank {
+                game_id: TEST_GAME_ID, player: *players.at(i), rank: *ranks.at(i), paid: false,
+            };
             world.write_model_test(@player_rank);
             i += 1;
         }
@@ -126,7 +130,32 @@ mod tests {
         let mut config = MMRConfigDefaultImpl::default();
         config.enabled = true;
         config.mmr_token_address = token_address;
-        WorldConfigUtilImpl::set_member(ref world, selector!("mmr_config"), config);
+        WorldConfigUtilImpl::set_member(ref world, TEST_GAME_ID, selector!("mmr_config"), config);
+    }
+
+    fn write_game_registry(ref world: WorldStorage, final_trial_id: u128) {
+        world
+            .write_model_test(
+                @GameRegistry {
+                    game_id: TEST_GAME_ID,
+                    name: 'mmr_test',
+                    series_id: 0,
+                    game_number_in_series: 0,
+                    preset_id: 1,
+                    creator: addr('creator'),
+                    status: GameStatus::Ended,
+                    dev_mode_on: false,
+                    start_settling_at: 0,
+                    start_main_at: 1,
+                    end_at: 2,
+                    end_grace_seconds: 0,
+                    registration_grace_seconds: 0,
+                    final_trial_id,
+                    seed: 1,
+                    fees_collected: 0,
+                    fees_paid_out: 0,
+                },
+            );
     }
 
     // ================================
@@ -165,11 +194,11 @@ mod tests {
 
         // Commit
         start_cheat_caller_address(system_addr, addr('caller'));
-        dispatcher.commit_game_mmr_meta(players);
+        dispatcher.commit_game_mmr_meta(TEST_GAME_ID, players);
         stop_cheat_caller_address(system_addr);
 
         // Verify MMRGameMeta was written with correct median
-        let meta: MMRGameMeta = world.read_model(1_u128);
+        let meta: MMRGameMeta = world.read_model(TEST_GAME_ID);
         assert!(meta.game_median == 1050, "Median should be 1050 for even count");
     }
 
@@ -205,15 +234,15 @@ mod tests {
         config.enabled = true;
         config.mmr_token_address = token_addr;
         config.min_players = 6; // Keep at 6, we have 7
-        WorldConfigUtilImpl::set_member(ref world, selector!("mmr_config"), config);
+        WorldConfigUtilImpl::set_member(ref world, TEST_GAME_ID, selector!("mmr_config"), config);
 
         setup_finalized_trial(ref world, 1, players.span(), ranks.span());
 
         start_cheat_caller_address(system_addr, addr('caller'));
-        dispatcher.commit_game_mmr_meta(players);
+        dispatcher.commit_game_mmr_meta(TEST_GAME_ID, players);
         stop_cheat_caller_address(system_addr);
 
-        let meta: MMRGameMeta = world.read_model(1_u128);
+        let meta: MMRGameMeta = world.read_model(TEST_GAME_ID);
         assert!(meta.game_median == 1000, "Median should be 1000 for odd count");
     }
 
@@ -239,10 +268,10 @@ mod tests {
         setup_mmr_config(ref world, token_addr);
 
         start_cheat_caller_address(system_addr, addr('caller'));
-        dispatcher.commit_game_mmr_meta(players);
+        dispatcher.commit_game_mmr_meta(TEST_GAME_ID, players);
         stop_cheat_caller_address(system_addr);
 
-        let meta: MMRGameMeta = world.read_model(1_u128);
+        let meta: MMRGameMeta = world.read_model(TEST_GAME_ID);
         assert!(meta.game_median == 1000, "Median should be 1000 (initial MMR for new players)");
     }
 
@@ -259,7 +288,7 @@ mod tests {
         let players = array![addr('p1'), addr('p2'), addr('p3'), addr('p4'), addr('p5'), addr('p6')];
 
         start_cheat_caller_address(system_addr, addr('caller'));
-        dispatcher.commit_game_mmr_meta(players);
+        dispatcher.commit_game_mmr_meta(TEST_GAME_ID, players);
         stop_cheat_caller_address(system_addr);
     }
 
@@ -276,7 +305,7 @@ mod tests {
         // MMR config not enabled (default)
 
         start_cheat_caller_address(system_addr, addr('caller'));
-        dispatcher.commit_game_mmr_meta(players);
+        dispatcher.commit_game_mmr_meta(TEST_GAME_ID, players);
         stop_cheat_caller_address(system_addr);
     }
 
@@ -293,7 +322,7 @@ mod tests {
 
         let empty_players: Array<ContractAddress> = array![];
         start_cheat_caller_address(system_addr, addr('caller'));
-        dispatcher.commit_game_mmr_meta(empty_players);
+        dispatcher.commit_game_mmr_meta(TEST_GAME_ID, empty_players);
         stop_cheat_caller_address(system_addr);
     }
 
@@ -314,7 +343,7 @@ mod tests {
         let fewer_players = array![addr('p1'), addr('p2'), addr('p3'), addr('p4')];
 
         start_cheat_caller_address(system_addr, addr('caller'));
-        dispatcher.commit_game_mmr_meta(fewer_players);
+        dispatcher.commit_game_mmr_meta(TEST_GAME_ID, fewer_players);
         stop_cheat_caller_address(system_addr);
     }
 
@@ -348,7 +377,7 @@ mod tests {
         setup_mmr_config(ref world, token_addr);
 
         start_cheat_caller_address(system_addr, addr('caller'));
-        dispatcher.commit_game_mmr_meta(players);
+        dispatcher.commit_game_mmr_meta(TEST_GAME_ID, players);
         stop_cheat_caller_address(system_addr);
     }
 
@@ -375,7 +404,7 @@ mod tests {
         setup_mmr_config(ref world, token_addr);
 
         start_cheat_caller_address(system_addr, addr('caller'));
-        dispatcher.commit_game_mmr_meta(players_with_dup);
+        dispatcher.commit_game_mmr_meta(TEST_GAME_ID, players_with_dup);
         stop_cheat_caller_address(system_addr);
     }
 
@@ -396,7 +425,7 @@ mod tests {
         let wrong_players = array![addr('p1'), addr('p2'), addr('p3'), addr('p4'), addr('p5'), addr('intruder')];
 
         start_cheat_caller_address(system_addr, addr('caller'));
-        dispatcher.commit_game_mmr_meta(wrong_players);
+        dispatcher.commit_game_mmr_meta(TEST_GAME_ID, wrong_players);
         stop_cheat_caller_address(system_addr);
     }
 
@@ -415,12 +444,12 @@ mod tests {
 
         // First commit succeeds
         start_cheat_caller_address(system_addr, addr('caller'));
-        dispatcher.commit_game_mmr_meta(players.clone());
+        dispatcher.commit_game_mmr_meta(TEST_GAME_ID, players.clone());
         stop_cheat_caller_address(system_addr);
 
         // Second commit should fail
         start_cheat_caller_address(system_addr, addr('caller'));
-        dispatcher.commit_game_mmr_meta(players);
+        dispatcher.commit_game_mmr_meta(TEST_GAME_ID, players);
         stop_cheat_caller_address(system_addr);
     }
 
@@ -439,7 +468,7 @@ mod tests {
         setup_mmr_config(ref world, token_addr);
 
         start_cheat_caller_address(system_addr, addr('caller'));
-        dispatcher.commit_game_mmr_meta(players);
+        dispatcher.commit_game_mmr_meta(TEST_GAME_ID, players);
         stop_cheat_caller_address(system_addr);
     }
 
@@ -478,12 +507,12 @@ mod tests {
 
         // Commit first
         start_cheat_caller_address(system_addr, addr('caller'));
-        dispatcher.commit_game_mmr_meta(players.clone());
+        dispatcher.commit_game_mmr_meta(TEST_GAME_ID, players.clone());
         stop_cheat_caller_address(system_addr);
 
         // Claim
         start_cheat_caller_address(system_addr, addr('caller'));
-        dispatcher.claim_game_mmr(players);
+        dispatcher.claim_game_mmr(TEST_GAME_ID, players);
         stop_cheat_caller_address(system_addr);
 
         // Verify winner gained and loser lost (values are in 18 decimals)
@@ -520,20 +549,20 @@ mod tests {
 
         // Commit
         start_cheat_caller_address(system_addr, addr('caller'));
-        dispatcher.commit_game_mmr_meta(players.clone());
+        dispatcher.commit_game_mmr_meta(TEST_GAME_ID, players.clone());
         stop_cheat_caller_address(system_addr);
 
         // Verify not claimed yet
-        let claimed_before: MMRClaimed = world.read_model(1_u128);
+        let claimed_before: MMRClaimed = world.read_model(TEST_GAME_ID);
         assert!(claimed_before.claimed_at == 0, "Should not be claimed yet");
 
         // Claim
         start_cheat_caller_address(system_addr, addr('caller'));
-        dispatcher.claim_game_mmr(players);
+        dispatcher.claim_game_mmr(TEST_GAME_ID, players);
         stop_cheat_caller_address(system_addr);
 
         // Verify claimed
-        let claimed_after: MMRClaimed = world.read_model(1_u128);
+        let claimed_after: MMRClaimed = world.read_model(TEST_GAME_ID);
         assert!(claimed_after.claimed_at > 0, "Should be marked as claimed");
     }
 
@@ -550,7 +579,7 @@ mod tests {
         let players = array![addr('p1'), addr('p2'), addr('p3'), addr('p4'), addr('p5'), addr('p6')];
 
         start_cheat_caller_address(system_addr, addr('caller'));
-        dispatcher.claim_game_mmr(players);
+        dispatcher.claim_game_mmr(TEST_GAME_ID, players);
         stop_cheat_caller_address(system_addr);
     }
 
@@ -566,7 +595,7 @@ mod tests {
         setup_finalized_trial(ref world, 1, players.span(), ranks.span());
 
         start_cheat_caller_address(system_addr, addr('caller'));
-        dispatcher.claim_game_mmr(players);
+        dispatcher.claim_game_mmr(TEST_GAME_ID, players);
         stop_cheat_caller_address(system_addr);
     }
 
@@ -583,7 +612,7 @@ mod tests {
         setup_mmr_config(ref world, addr('mock_token'));
 
         start_cheat_caller_address(system_addr, addr('caller'));
-        dispatcher.claim_game_mmr(players);
+        dispatcher.claim_game_mmr(TEST_GAME_ID, players);
         stop_cheat_caller_address(system_addr);
     }
 
@@ -602,17 +631,17 @@ mod tests {
 
         // Commit
         start_cheat_caller_address(system_addr, addr('caller'));
-        dispatcher.commit_game_mmr_meta(players.clone());
+        dispatcher.commit_game_mmr_meta(TEST_GAME_ID, players.clone());
         stop_cheat_caller_address(system_addr);
 
         // First claim succeeds
         start_cheat_caller_address(system_addr, addr('caller'));
-        dispatcher.claim_game_mmr(players.clone());
+        dispatcher.claim_game_mmr(TEST_GAME_ID, players.clone());
         stop_cheat_caller_address(system_addr);
 
         // Second claim should fail
         start_cheat_caller_address(system_addr, addr('caller'));
-        dispatcher.claim_game_mmr(players);
+        dispatcher.claim_game_mmr(TEST_GAME_ID, players);
         stop_cheat_caller_address(system_addr);
     }
 
@@ -631,13 +660,13 @@ mod tests {
 
         // Commit with all players
         start_cheat_caller_address(system_addr, addr('caller'));
-        dispatcher.commit_game_mmr_meta(players);
+        dispatcher.commit_game_mmr_meta(TEST_GAME_ID, players);
         stop_cheat_caller_address(system_addr);
 
         // Try to claim with fewer players
         let fewer_players = array![addr('p1'), addr('p2'), addr('p3')];
         start_cheat_caller_address(system_addr, addr('caller'));
-        dispatcher.claim_game_mmr(fewer_players);
+        dispatcher.claim_game_mmr(TEST_GAME_ID, fewer_players);
         stop_cheat_caller_address(system_addr);
     }
 
@@ -656,13 +685,13 @@ mod tests {
 
         // Commit
         start_cheat_caller_address(system_addr, addr('caller'));
-        dispatcher.commit_game_mmr_meta(players);
+        dispatcher.commit_game_mmr_meta(TEST_GAME_ID, players);
         stop_cheat_caller_address(system_addr);
 
         // Try to claim with duplicates
         let dup_players = array![addr('p1'), addr('p2'), addr('p3'), addr('p4'), addr('p1'), addr('p6')];
         start_cheat_caller_address(system_addr, addr('caller'));
-        dispatcher.claim_game_mmr(dup_players);
+        dispatcher.claim_game_mmr(TEST_GAME_ID, dup_players);
         stop_cheat_caller_address(system_addr);
     }
 
@@ -681,13 +710,13 @@ mod tests {
 
         // Commit
         start_cheat_caller_address(system_addr, addr('caller'));
-        dispatcher.commit_game_mmr_meta(players);
+        dispatcher.commit_game_mmr_meta(TEST_GAME_ID, players);
         stop_cheat_caller_address(system_addr);
 
         // Try to claim with a player not in trial
         let wrong_players = array![addr('p1'), addr('p2'), addr('p3'), addr('p4'), addr('p5'), addr('intruder')];
         start_cheat_caller_address(system_addr, addr('caller'));
-        dispatcher.claim_game_mmr(wrong_players);
+        dispatcher.claim_game_mmr(TEST_GAME_ID, wrong_players);
         stop_cheat_caller_address(system_addr);
     }
 
@@ -728,16 +757,16 @@ mod tests {
 
         // Commit phase
         start_cheat_caller_address(system_addr, addr('committer'));
-        dispatcher.commit_game_mmr_meta(players_by_mmr.clone());
+        dispatcher.commit_game_mmr_meta(TEST_GAME_ID, players_by_mmr.clone());
         stop_cheat_caller_address(system_addr);
 
         // Verify median computed correctly: (1000 + 1100) / 2 = 1050
-        let meta: MMRGameMeta = world.read_model(1_u128);
+        let meta: MMRGameMeta = world.read_model(TEST_GAME_ID);
         assert!(meta.game_median == 1050, "Median should be 1050");
 
         // Claim phase
         start_cheat_caller_address(system_addr, addr('claimer'));
-        dispatcher.claim_game_mmr(players_by_mmr);
+        dispatcher.claim_game_mmr(TEST_GAME_ID, players_by_mmr);
         stop_cheat_caller_address(system_addr);
 
         // Verify results (values are in 18 decimals)
@@ -752,7 +781,7 @@ mod tests {
         assert!(loser_new_mmr < e18(1400), "Favorite loser should lose MMR");
 
         // Verify claimed flag is set
-        let claimed: MMRClaimed = world.read_model(1_u128);
+        let claimed: MMRClaimed = world.read_model(TEST_GAME_ID);
         assert!(claimed.claimed_at > 0, "Should be marked claimed");
     }
 }

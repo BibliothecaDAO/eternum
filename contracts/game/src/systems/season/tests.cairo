@@ -3,7 +3,7 @@
 // use dojo::world::{WorldStorage, WorldStorageTrait};
 // use dojo_cairo_test::{ContractDefTrait, NamespaceDef, TestResource};
 // use crate::alias::ID;
-// use crate::constants::{ResourceTypes, WORLD_CONFIG_ID, get_hyperstructure_construction_resources};
+// use crate::constants::{ResourceTypes, LEGACY_CONFIG_ID, get_hyperstructure_construction_resources};
 // use crate::models::hyperstructure::{Contribution, Hyperstructure, Progress};
 // use crate::models::owner::Owner;
 // use crate::models::position::{Coord, Position};
@@ -122,7 +122,7 @@
 //     season_systems_dispatcher
 //         .register_to_leaderboard(hyperstructures_contributed_to, hyperstructure_shareholder_epochs);
 
-//     let mut leaderboard: Leaderboard = world.read_model(WORLD_CONFIG_ID);
+//     let mut leaderboard: Leaderboard = world.read_model(LEGACY_CONFIG_ID);
 //     assert!(leaderboard.total_points > 0, "Leaderboard total points should be greater than 0");
 
 //     let leaderboard_entry: LeaderboardEntry = LeaderboardEntryImpl::get(
@@ -166,7 +166,7 @@
 //     season_systems_dispatcher
 //         .register_to_leaderboard(hyperstructures_contributed_to, hyperstructure_shareholder_epochs);
 
-//     let mut leaderboard: Leaderboard = world.read_model(WORLD_CONFIG_ID);
+//     let mut leaderboard: Leaderboard = world.read_model(LEGACY_CONFIG_ID);
 //     assert!(leaderboard.total_points > 0, "Leaderboard total points should be greater than 0");
 
 //     let leaderboard_entry: LeaderboardEntry = LeaderboardEntryImpl::get(
@@ -195,7 +195,7 @@
 //     season_systems_dispatcher
 //         .register_to_leaderboard(hyperstructures_contributed_to, hyperstructure_shareholder_epochs);
 
-//     let mut leaderboard: Leaderboard = world.read_model(WORLD_CONFIG_ID);
+//     let mut leaderboard: Leaderboard = world.read_model(LEGACY_CONFIG_ID);
 //     assert!(leaderboard.total_points > 0, "Leaderboard total points should be greater than 0");
 
 //     let leaderboard_entry: LeaderboardEntry = LeaderboardEntryImpl::get(
@@ -233,7 +233,7 @@
 //     season_systems_dispatcher
 //         .register_to_leaderboard(hyperstructures_contributed_to, hyperstructure_shareholder_epochs);
 
-//     let mut leaderboard: Leaderboard = world.read_model(WORLD_CONFIG_ID);
+//     let mut leaderboard: Leaderboard = world.read_model(LEGACY_CONFIG_ID);
 //     assert!(leaderboard.total_points > 0, "Leaderboard total points should be greater than 0");
 
 //     let leaderboard_entry: LeaderboardEntry = LeaderboardEntryImpl::get(
@@ -300,7 +300,7 @@
 
 //     season_systems_dispatcher.register_to_leaderboard(array![].span(), array![].span());
 
-//     let mut leaderboard: Leaderboard = world.read_model(WORLD_CONFIG_ID);
+//     let mut leaderboard: Leaderboard = world.read_model(LEGACY_CONFIG_ID);
 //     assert!(leaderboard.total_points == 0, "Leaderboard total points should be 0");
 
 //     let leaderboard_entry: LeaderboardEntry = LeaderboardEntryImpl::get(
@@ -325,7 +325,7 @@
 
 //     season_systems_dispatcher.register_to_leaderboard(array![].span(), array![].span());
 
-//     let mut leaderboard: Leaderboard = world.read_model(WORLD_CONFIG_ID);
+//     let mut leaderboard: Leaderboard = world.read_model(LEGACY_CONFIG_ID);
 //     assert!(leaderboard.total_points == 0, "Leaderboard total points should be 0");
 
 //     let leaderboard_entry: LeaderboardEntry = LeaderboardEntryImpl::get(

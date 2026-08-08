@@ -90,8 +90,8 @@ pub mod troop_management_systems {
     };
     use crate::models::stamina::{StaminaImpl, StaminaTrait};
     use crate::models::structure::{
-        StructureBase, StructureBaseImpl, StructureBaseStoreImpl, StructureCategory, StructureMetadataStoreImpl,
-        StructureOwnerStoreImpl, StructureTroopExplorerStoreImpl, StructureTroopGuardStoreImpl,
+        StructureBase, StructureBaseImpl, StructureBaseStoreImpl, StructureMetadataStoreImpl, StructureOwnerStoreImpl,
+        StructureTroopExplorerStoreImpl, StructureTroopGuardStoreImpl,
     };
     use crate::models::troop::{
         ExplorerTroops, GuardImpl, GuardSlot, GuardTrait, GuardTroops, TroopLimitTrait, TroopTier, TroopType, Troops,

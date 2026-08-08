@@ -8,7 +8,7 @@ use crate::alias::ID;
 use crate::models::config::{
     BattleConfig, SeasonConfig, StructureMaxLevelConfig, TickInterval, TickTrait, WorldConfigUtilImpl,
 };
-use crate::models::position::{Coord, Direction};
+use crate::models::position::Coord;
 use crate::models::stamina::Stamina;
 use crate::models::troop::{GuardTroops, TroopBoosts, TroopTier, TroopType, Troops};
 

@@ -10,7 +10,7 @@
 //     use crate::constants::DONKEY_ENTITY_TYPE;
 
 //     use crate::constants::ResourceTypes;
-//     use crate::constants::WORLD_CONFIG_ID;
+//     use crate::constants::LEGACY_CONFIG_ID;
 //     use crate::models::config::WeightConfig;
 //     use crate::models::config::{CapacityCategory, CapacityConfig};
 //     use crate::models::owner::{EntityOwner, Owner};
@@ -159,7 +159,7 @@
 //         world
 //             .write_model_test(
 //                 @WeightConfig {
-//                     config_id: WORLD_CONFIG_ID,
+//                     config_id: LEGACY_CONFIG_ID,
 //                     weight_config_id: ResourceTypes::STONE.into(),
 //                     entity_type: ResourceTypes::STONE.into(),
 //                     weight_gram: 10,
@@ -168,7 +168,7 @@
 //         world
 //             .write_model_test(
 //                 @WeightConfig {
-//                     config_id: WORLD_CONFIG_ID,
+//                     config_id: LEGACY_CONFIG_ID,
 //                     weight_config_id: ResourceTypes::WOOD.into(),
 //                     entity_type: ResourceTypes::WOOD.into(),
 //                     weight_gram: 10,

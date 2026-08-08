@@ -45,8 +45,8 @@ pub mod resource_systems {
         WeightStoreImpl,
     };
     use crate::models::structure::{
-        StructureBase, StructureBaseImpl, StructureBaseStoreImpl, StructureCategory, StructureImpl,
-        StructureMetadataStoreImpl, StructureOwnerStoreImpl,
+        StructureBase, StructureBaseImpl, StructureBaseStoreImpl, StructureImpl, StructureMetadataStoreImpl,
+        StructureOwnerStoreImpl,
     };
     use crate::models::troop::ExplorerTroops;
     use crate::models::weight::Weight;

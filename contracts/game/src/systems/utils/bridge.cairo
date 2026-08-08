@@ -3,7 +3,7 @@ use dojo::model::ModelStorage;
 use dojo::world::{WorldStorage, WorldStorageTrait};
 use starknet::ContractAddress;
 use crate::alias::ID;
-use crate::constants::{RESOURCE_PRECISION, ResourceTypes, WORLD_CONFIG_ID};
+use crate::constants::{LEGACY_CONFIG_ID, RESOURCE_PRECISION, ResourceTypes};
 use crate::models::config::{
     ResourceBridgeConfig, ResourceBridgeFeeSplitConfig, ResourceBridgeWtlConfig, WorldConfigUtilImpl,
 };
@@ -248,7 +248,7 @@ pub impl iBridgeImpl of iBridgeTrait {
             return (100 - 100, 100);
         }
 
-        let hyperstructures_globals: HyperstructureGlobals = world.read_model(WORLD_CONFIG_ID);
+        let hyperstructures_globals: HyperstructureGlobals = world.read_model(LEGACY_CONFIG_ID);
         let hyperstructures_completed: u32 = hyperstructures_globals.completed_count;
         let troop_inefficiencies: Array<(u32, u32)> = array![
             (100 - 0, 100), (100 - 25, 100), (100 - 50, 100), (100 - 70, 100), (100 - 85, 100), (100 - 95, 100),
