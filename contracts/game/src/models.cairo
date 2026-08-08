@@ -2,6 +2,7 @@ pub mod agent;
 pub mod config;
 pub mod events;
 pub mod faith;
+pub mod game;
 pub mod guild;
 pub mod hyperstructure;
 pub mod map;
