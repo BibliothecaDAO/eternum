@@ -32,8 +32,7 @@ interface AppchainIndexerRuntime {
 const defaultSleep: Sleep = (durationMs) => new Promise((resolve) => setTimeout(resolve, durationMs));
 
 /** Torii stores world addresses zero-padded to 64 hex chars. */
-export const paddedWorldAddress = (address: string): string =>
-  `0x${BigInt(address).toString(16).padStart(64, "0")}`;
+export const paddedWorldAddress = (address: string): string => `0x${BigInt(address).toString(16).padStart(64, "0")}`;
 
 /**
  * The shared appchain torii discovers factory-deployed worlds on its own
@@ -86,7 +85,10 @@ async function waitForWorldToBeServed(runtime: AppchainIndexerRuntime, worldAddr
     }
 
     if (registered) {
-      const served = await queryHasRows(runtime, `SELECT 1 AS ok FROM entities WHERE world_address = '${padded}' LIMIT 1;`);
+      const served = await queryHasRows(
+        runtime,
+        `SELECT 1 AS ok FROM entities WHERE world_address = '${padded}' LIMIT 1;`,
+      );
       if (served) {
         runtime.onProgress(`torii serves world ${padded}`);
         return;

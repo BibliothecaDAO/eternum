@@ -171,6 +171,8 @@
       "client/apps/amm-indexerv2/indexers/factory-client.ts",
       "deploy/appchain/cdk/bin/appchain.ts",
       "deploy/appchain/cdk/lib/**",
+      "deploy/appchain/cdk/lambda/**",
+      "deploy/appchain/cdk/cdk.out/**",
       "deploy/appchain/scripts/**"
     ]
   },

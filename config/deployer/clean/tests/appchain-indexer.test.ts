@@ -1,10 +1,6 @@
 import { describe, expect, test } from "bun:test";
 
-import {
-  createAppchainIndexer,
-  paddedWorldAddress,
-  type AppchainIndexerOptions,
-} from "../indexing/appchain-indexer";
+import { createAppchainIndexer, paddedWorldAddress, type AppchainIndexerOptions } from "../indexing/appchain-indexer";
 import type { IndexerRequest } from "../types";
 
 const REQUEST: IndexerRequest = {
