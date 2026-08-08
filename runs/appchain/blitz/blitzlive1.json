@@ -1,0 +1,73 @@
+{
+  "version": 1,
+  "kind": "game",
+  "runId": "appchain.blitz:blitzlive1",
+  "environment": "appchain.blitz",
+  "chain": "appchain",
+  "gameType": "blitz",
+  "gameName": "blitzlive1",
+  "status": "running",
+  "executionMode": "fast_trial",
+  "requestedLaunchStep": "full",
+  "inputPath": "inputs/appchain/blitz/blitzlive1/31262409045-1.json",
+  "latestLaunchRequestId": "31262409045-1",
+  "currentStepId": "create-world",
+  "createdAt": "2026-08-08T14:38:30.385Z",
+  "updatedAt": "2026-08-08T14:38:30.385Z",
+  "workflow": {
+    "workflowName": "Game Launch",
+    "workflowJob": "launch",
+    "workflowRunId": 31262409045,
+    "workflowRunAttempt": 1,
+    "workflowUrl": "https://github.com/BibliothecaDAO/eternum/actions/runs/31262409045",
+    "ref": "feat/appchain-phase-1",
+    "sha": "717e15ace18ea8659c8eb2dc321a192ebab3cc0a"
+  },
+  "steps": [
+    {
+      "id": "create-world",
+      "title": "Creating world",
+      "status": "pending",
+      "workflowStepName": "Creating world",
+      "latestEvent": "Waiting to run"
+    },
+    {
+      "id": "wait-for-factory-index",
+      "title": "Waiting for game",
+      "status": "pending",
+      "workflowStepName": "Waiting for game",
+      "latestEvent": "Waiting to run"
+    },
+    {
+      "id": "configure-world",
+      "title": "Applying settings",
+      "status": "pending",
+      "workflowStepName": "Applying settings",
+      "latestEvent": "Waiting to run"
+    },
+    {
+      "id": "reserve-blitz-hyperstructures",
+      "title": "Reserving hyperstructures",
+      "status": "pending",
+      "workflowStepName": "Reserving hyperstructures",
+      "latestEvent": "Waiting to run"
+    },
+    {
+      "id": "grant-lootchest-role",
+      "title": "Setting up loot chests",
+      "status": "pending",
+      "workflowStepName": "Setting up loot chests",
+      "latestEvent": "Waiting to run"
+    },
+    {
+      "id": "create-indexer",
+      "title": "Finishing setup",
+      "status": "pending",
+      "workflowStepName": "Finishing setup",
+      "latestEvent": "Waiting to run"
+    }
+  ],
+  "artifacts": {
+    "scheduledStartTime": "1786205400"
+  }
+}
