@@ -9,19 +9,19 @@
   "status": "attention",
   "executionMode": "fast_trial",
   "requestedLaunchStep": "full",
-  "inputPath": "inputs/appchain/blitz/blitzlive1/31262409045-1.json",
-  "latestLaunchRequestId": "31262409045-1",
+  "inputPath": "inputs/appchain/blitz/blitzlive1/31262530412-1.json",
+  "latestLaunchRequestId": "31262530412-1",
   "currentStepId": "create-world",
   "createdAt": "2026-08-08T14:38:30.385Z",
-  "updatedAt": "2026-08-08T14:38:44.946Z",
+  "updatedAt": "2026-08-08T14:41:32.030Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
-    "workflowRunId": 31262409045,
+    "workflowRunId": 31262530412,
     "workflowRunAttempt": 1,
-    "workflowUrl": "https://github.com/BibliothecaDAO/eternum/actions/runs/31262409045",
+    "workflowUrl": "https://github.com/BibliothecaDAO/eternum/actions/runs/31262530412",
     "ref": "feat/appchain-phase-1",
-    "sha": "717e15ace18ea8659c8eb2dc321a192ebab3cc0a"
+    "sha": "9fe70ef51d42e13fca5e3bedb8562d8cf81fe6c5"
   },
   "steps": [
     {
