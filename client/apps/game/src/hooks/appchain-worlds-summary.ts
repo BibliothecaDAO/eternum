@@ -74,7 +74,9 @@ const toAddress = (value: unknown): string | null => {
 
 /** Torii stores felt short strings zero-padded; decode back to the game name. */
 const decodeName = (value: unknown): string => {
-  const text = String(value ?? "").replace(/^0x/, "").replace(/^0+/, "");
+  const text = String(value ?? "")
+    .replace(/^0x/, "")
+    .replace(/^0+/, "");
   if (!text) return "";
   const hex = text.length % 2 === 0 ? text : `0${text}`;
   let out = "";
@@ -100,46 +102,48 @@ export async function fetchAppchainWorldsSummary(toriiBaseUrl: string): Promise<
   }
 
   const now = Date.now();
-  return rows
-    .map((row): WorldSummary => {
-      const blitz = toBoolean(row.blitz_mode_on);
-      return {
-        name: decodeName(row.world_name),
-        chain: "appchain",
-        // The world is indexed by our torii, so it is by definition reachable.
-        alive: true,
-        lastCheckedAt: now,
-        mode: blitz === null ? null : blitz ? "blitz" : "eternum",
-        startSettlingAt: toNumber(row.start_settling_at),
-        startMainAt: toNumber(row.start_main_at),
-        endAt: toNumber(row.end_at),
-        devModeOn: toBoolean(row.dev_mode_on),
-        // MMR and prize distribution are not wired on the appchain yet.
-        mmrEnabled: false,
-        singleRealmMode: toBoolean(row.single_realm_mode),
-        twoPlayerMode: toBoolean(row.two_player_mode),
-        seasonPassAddress: null,
-        villagePassAddress: null,
-        worldAddress: toAddress(row.world_address),
-        prizeDistributionAddress: null,
-        entryTokenAddress: toAddress(row.entry_token_address),
-        feeTokenAddress: toAddress(row.fee_token),
-        feeAmount: row.fee_amount ? String(row.fee_amount) : null,
-        registrationCount: toNumber(row.registration_count),
-        registrationCountMax: toNumber(row.registration_count_max),
-        registrationStartAt: toNumber(row.registration_start_at),
-        // Registration closes when the main phase opens — same as the
-        // realtime-server's mapping.
-        registrationEndAt: toNumber(row.start_main_at),
-        settledPlayersCount: toNumber(row.settled_players_count),
-        settledRealmsCount: toNumber(row.settled_realms_count),
-        settledVillagesCount: toNumber(row.settled_villages_count),
-        winnerJackpotAmount: null,
-      };
-    })
-    // A world exists in the factory before its config is deployed; those rows
-    // are not joinable games yet.
-    .filter((world) => world.name !== "" && world.mode !== null);
+  return (
+    rows
+      .map((row): WorldSummary => {
+        const blitz = toBoolean(row.blitz_mode_on);
+        return {
+          name: decodeName(row.world_name),
+          chain: "appchain",
+          // The world is indexed by our torii, so it is by definition reachable.
+          alive: true,
+          lastCheckedAt: now,
+          mode: blitz === null ? null : blitz ? "blitz" : "eternum",
+          startSettlingAt: toNumber(row.start_settling_at),
+          startMainAt: toNumber(row.start_main_at),
+          endAt: toNumber(row.end_at),
+          devModeOn: toBoolean(row.dev_mode_on),
+          // MMR and prize distribution are not wired on the appchain yet.
+          mmrEnabled: false,
+          singleRealmMode: toBoolean(row.single_realm_mode),
+          twoPlayerMode: toBoolean(row.two_player_mode),
+          seasonPassAddress: null,
+          villagePassAddress: null,
+          worldAddress: toAddress(row.world_address),
+          prizeDistributionAddress: null,
+          entryTokenAddress: toAddress(row.entry_token_address),
+          feeTokenAddress: toAddress(row.fee_token),
+          feeAmount: row.fee_amount ? String(row.fee_amount) : null,
+          registrationCount: toNumber(row.registration_count),
+          registrationCountMax: toNumber(row.registration_count_max),
+          registrationStartAt: toNumber(row.registration_start_at),
+          // Registration closes when the main phase opens — same as the
+          // realtime-server's mapping.
+          registrationEndAt: toNumber(row.start_main_at),
+          settledPlayersCount: toNumber(row.settled_players_count),
+          settledRealmsCount: toNumber(row.settled_realms_count),
+          settledVillagesCount: toNumber(row.settled_villages_count),
+          winnerJackpotAmount: null,
+        };
+      })
+      // A world exists in the factory before its config is deployed; those rows
+      // are not joinable games yet.
+      .filter((world) => world.name !== "" && world.mode !== null)
+  );
 }
 
 export const isAppchainWorldsSummaryEnabled = (): boolean =>
