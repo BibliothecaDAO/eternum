@@ -315,18 +315,21 @@ Recommendations included; items marked ⚠ need explicit sign-off, the rest are 
   toggle).
 - **D15 ✅ The new world deploys the Blitz-core contract set only** (confirmed with the constraint: valid as long as
   Blitz needs no Eternum models — the audit verified Blitz presets never enable the excluded systems, and A1 re-checks
-  at manifest time that no core system reads an excluded model). Namespace note: `s2_blitz` does **not** exist yet — it
-  is the working name for the new world's namespace. This is still "improving s1": the same Cairo source in
-  `contracts/game` evolves in place; only the deployed namespace string (`DEFAULT_NS()`) changes. A new namespace/world
-  is forced, not stylistic: adding `#[key] game_id` changes every model's storage layout and entity identity (poseidon
-  of keys), which Dojo cannot upgrade in place — a fresh world deploy is required regardless; during A5 the new world
-  and the legacy `s1_eternum` worlds coexist on the same chain and torii, so reusing the `s1_eternum` name would make
-  every table/selector ambiguous; and upstream mainnet keeps deploying `s1_eternum` untouched until they adopt the
-  single-world schema. Excluded contracts: `resource_bridge_systems` (unsafe pooled balance + `velords_claim`),
-  `village_systems`, season `realm_systems` + `season_systems.season_close` (Blitz ends by timestamp), `spire_systems`,
-  `bitcoin_mine` (both), `faith_systems` + `faith_prize_systems`, `quest_systems`, `bank/swap/liquidity` +
-  `trade_systems` (disabled in Blitz presets today — banks are never created). This roughly halves A1: ~45 core models
-  instead of 79. The excluded set migrates with the Eternum port (Phase 3) using the same rules.
+  at manifest time that no core system reads an excluded model). **Amended 2026-08-08:** the compile-time cut is
+  best-effort — if excluding the season systems from the build costs more than migrating them, A1 may migrate the full
+  set (season models re-key per §2's `season` rows) and defer contract exclusion to the deploy manifest at A5. The
+  deployed world stays Blitz-core either way. Namespace note: `s2_blitz` does **not** exist yet — it is the working name
+  for the new world's namespace. This is still "improving s1": the same Cairo source in `contracts/game` evolves in
+  place; only the deployed namespace string (`DEFAULT_NS()`) changes. A new namespace/world is forced, not stylistic:
+  adding `#[key] game_id` changes every model's storage layout and entity identity (poseidon of keys), which Dojo cannot
+  upgrade in place — a fresh world deploy is required regardless; during A5 the new world and the legacy `s1_eternum`
+  worlds coexist on the same chain and torii, so reusing the `s1_eternum` name would make every table/selector
+  ambiguous; and upstream mainnet keeps deploying `s1_eternum` untouched until they adopt the single-world schema.
+  Excluded contracts: `resource_bridge_systems` (unsafe pooled balance + `velords_claim`), `village_systems`, season
+  `realm_systems` + `season_systems.season_close` (Blitz ends by timestamp), `spire_systems`, `bitcoin_mine` (both),
+  `faith_systems` + `faith_prize_systems`, `quest_systems`, `bank/swap/liquidity` + `trade_systems` (disabled in Blitz
+  presets today — banks are never created). This roughly halves A1: ~45 core models instead of 79. The excluded set
+  migrates with the Eternum port (Phase 3) using the same rules.
 - **D16 Torii `MemberClause` on key members** (`game_id`) must be verified on the target torii version before A4's
   bounded-spatial-sync design (client constraint C3) — schedule the check in A3, it can invalidate the spatial scoping
   approach.

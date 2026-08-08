@@ -56,9 +56,18 @@ Committed on this branch:
 
 ## Execution order
 
-### 1. Finish the cut (A1.2)
+### 1. Finish the cut (A1.2) — WITH AN ESCAPE HATCH (owner-approved 2026-08-08)
 
 Get `sozo build --profile local` green with the Blitz-core-only module tree. Commit.
+
+**Escape hatch:** the cut is a means (smaller migration surface), not an end. **If getting the cut to build costs more
+than simply migrating the excluded systems, revert the cut commits and migrate everything instead.** Decision rule:
+timebox the cut fallout to roughly half a day of effort; if it is still red or keeps cascading (test helpers,
+`troop_movement.cairo`'s embedded discovery modules, shared utils), take the inclusive path. On the inclusive path the
+season-only models re-key exactly per the audit §2 tables (the rows marked `season` — they are already classified),
+season-only systems get the same `game_id` threading and guard rule, and **contract exclusion moves to the deploy
+manifest at A5** (which contracts the world registers is a deployment decision, not a compile-time one). Either way,
+record which path you took and why in `A1-NOTES.md`.
 
 ### 2. Registry + config split (A1.3)
 
