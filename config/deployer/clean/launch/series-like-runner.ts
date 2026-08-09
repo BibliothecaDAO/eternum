@@ -1,6 +1,7 @@
 import { setTimeout as sleep } from "node:timers/promises";
 import { Account, RpcProvider, shortString } from "starknet";
 import { isMainnetDeploymentEnvironment, resolveDeploymentEnvironment } from "../environment";
+import { isRegistrarAlreadyRegisteredError, registerSeries } from "../registrar/calls";
 import { resolveAccountCredentials } from "../shared/credentials";
 import { grantLootChestRolesForSeriesLikeGames, grantVillagePassRolesForSeriesLikeGames } from "./grouped-role-grants";
 import type {
@@ -70,6 +71,7 @@ function updateSeriesLikeGameSuccess(
     configSteps: gameSummary.configSteps,
     artifacts: {
       ...game.artifacts,
+      gameId: gameSummary.gameId ?? game.artifacts.gameId,
       worldAddress: gameSummary.worldAddress || game.artifacts.worldAddress,
       entryTokenAddress: gameSummary.entryTokenAddress || game.artifacts.entryTokenAddress,
       reserveHyperstructuresTxHashes:
@@ -394,8 +396,8 @@ export async function createSeriesIfNeededForSeriesLikeSummary<TSummary extends 
   const { accountAddress, privateKey } = resolveAccountCredentials({
     accountAddress: request.accountAddress,
     privateKey: request.privateKey,
-    fallbackAccountAddress: environment.accountAddress,
-    fallbackPrivateKey: environment.privateKey,
+    fallbackAccountAddress: isMainnetDeploymentEnvironment(environment) ? environment.accountAddress : undefined,
+    fallbackPrivateKey: isMainnetDeploymentEnvironment(environment) ? environment.privateKey : undefined,
     context: `environment "${environment.id}"`,
   });
   const account = new Account({
@@ -405,6 +407,27 @@ export async function createSeriesIfNeededForSeriesLikeSummary<TSummary extends 
   });
 
   const encodedSeriesName = shortString.encodeShortString(summary.seriesName);
+  if (!isMainnetDeploymentEnvironment(environment)) {
+    const numGames = "maxGames" in summary ? summary.maxGames : summary.games.length;
+    try {
+      await registerSeries(account, {
+        seriesId: encodedSeriesName,
+        owner: accountAddress,
+        numGames,
+      });
+    } catch (error) {
+      if (!isRegistrarAlreadyRegisteredError(error)) {
+        throw error;
+      }
+    }
+
+    return persistSummary({
+      ...summary,
+      seriesCreated: true,
+      seriesCreatedAt: new Date().toISOString(),
+    });
+  }
+
   const receipt = await account.execute({
     contractAddress: summary.factoryAddress,
     entrypoint: "set_series_config",

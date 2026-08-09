@@ -1,7 +1,27 @@
-import { afterEach, describe, expect, test } from "bun:test";
-import { runGroupedSeriesLikeGameStep } from "../launch/series-like-runner";
-import { buildInitialSeriesLaunchSummary } from "../launch/series-summary";
+import { afterEach, describe, expect, mock, test } from "bun:test";
 import type { LaunchSeriesRequest, LaunchSeriesStepId, SeriesLaunchGameSummary } from "../types";
+
+mock.module("../../../../contracts/game/manifest_appchain.json", () => ({
+  default: {
+    world: { address: "0xsharedworld" },
+    contracts: [
+      {
+        tag: "s2_blitz-registrar_systems",
+        address: "0xregistrar",
+        abi: [
+          { type: "function", name: "bootstrap_chain_config" },
+          { type: "function", name: "register_preset" },
+          { type: "function", name: "register_series" },
+          { type: "function", name: "create_game" },
+        ],
+      },
+    ],
+    events: [{ tag: "s2_blitz-GameCreated", selector: "0xabc" }],
+  },
+}));
+
+const { runGroupedSeriesLikeGameStep } = await import("../launch/series-like-runner");
+const { buildInitialSeriesLaunchSummary } = await import("../launch/series-summary");
 
 const originalFetch = globalThis.fetch;
 

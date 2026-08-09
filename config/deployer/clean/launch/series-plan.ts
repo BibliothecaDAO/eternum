@@ -22,6 +22,10 @@ export const SERIES_GAME_STEP_BY_GROUPED_STEP: Record<
 
 export function resolveSeriesLaunchStepIds(environmentId: DeploymentEnvironmentId): LaunchSeriesStepId[] {
   const environment = resolveDeploymentEnvironment(environmentId);
+  if (!isMainnetDeploymentEnvironment(environment)) {
+    return ["create-series", "create-worlds", "wait-for-factory-indexes"];
+  }
+
   const stepIds: LaunchSeriesStepId[] = [
     "create-series",
     "create-worlds",

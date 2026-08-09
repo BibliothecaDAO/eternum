@@ -1,71 +1,50 @@
 # Realms dev appchain (AWS, chain id WP_REALMS_DEV) — see docs/plans/appchain-phase-1.md
-# Account = katana dev seed-0 account 0 (dev chain, no real value).
 [namespace]
-default = "s1_eternum"
+default = "s2_blitz"
 
 [lib_versions]
-"s1_eternum-combat_library" = "0_1_14"
-"s1_eternum-raid_library" = "0_1_0"
-"s1_eternum-rng_library" = "0_1_16"
-"s1_eternum-biome_library" = "0_1_13"
-"s1_eternum-structure_creation_library" = "0_1_18"
+"s2_blitz-combat_library" = "0_1_14"
+"s2_blitz-raid_library" = "0_1_0"
+"s2_blitz-rng_library" = "0_1_16"
+"s2_blitz-biome_library" = "0_1_13"
+"s2_blitz-structure_creation_library" = "0_1_18"
 
 
 [env]
 rpc_url = "http://Realms-Alb16-vyiZTcVBQthr-325094656.us-east-1.elb.amazonaws.com"
-## local
-account_address = "0x127fd5f1fe78a71f8bcd1fec63e3fe2f0486b6ecd5c86a0466c3a21fa5cfcec"
-private_key = "0xc5b2fcab997346f3ea1c00b002ecf6f382c5f9c9659a3894eb783c5320f912"
 
 [world]
-seed = "s1_eternum_aws_1"
+seed = "s2_blitz_aws_1"
 name = "Realms: Eternum"
 description = "Rule the Hex"
 cover_uri = "file://assets/bg.webp"
 website = "https://alpha-eternum.realms.world/"
 
 [writers]
-"s1_eternum" = [
-    "s1_eternum-agent_discovery_systems",
-    "s1_eternum-alt_movement_systems",
-    "s1_eternum-artificer_systems",
-    "s1_eternum-bank_systems",
-    "s1_eternum-bitcoin_mine_discovery_systems",
-    "s1_eternum-bitcoin_mine_systems",
-    "s1_eternum-blitz_realm_systems",
-    "s1_eternum-camp_discovery_systems",
-    "s1_eternum-config_systems",
-    "s1_eternum-dev_resource_systems",
-    "s1_eternum-faith_prize_systems",
-    "s1_eternum-faith_systems",
-    "s1_eternum-guild_systems",
-    "s1_eternum-holysite_discovery_systems",
-    "s1_eternum-hyperstructure_create_systems",
-    "s1_eternum-hyperstructure_discovery_systems",
-    "s1_eternum-hyperstructure_systems",
-    "s1_eternum-liquidity_systems",
-    "s1_eternum-mine_discovery_systems",
-    "s1_eternum-mmr_systems",
-    "s1_eternum-name_systems",
-    "s1_eternum-ownership_systems",
-    "s1_eternum-point_systems",
-    "s1_eternum-prize_distribution_systems",
-    "s1_eternum-production_systems",
-    "s1_eternum-realm_internal_systems",
-    "s1_eternum-realm_systems",
-    "s1_eternum-relic_chest_discovery_systems",
-    "s1_eternum-relic_systems",
-    "s1_eternum-resource_bridge_systems",
-    "s1_eternum-resource_systems",
-    "s1_eternum-season_systems",
-    "s1_eternum-spire_systems",
-    "s1_eternum-structure_systems",
-    "s1_eternum-swap_systems",
-    "s1_eternum-trade_systems",
-    "s1_eternum-troop_battle_systems",
-    "s1_eternum-troop_management_systems",
-    "s1_eternum-troop_movement_systems",
-    "s1_eternum-troop_movement_util_systems",
-    "s1_eternum-troop_raid_systems",
-    "s1_eternum-village_systems",
+"s2_blitz" = [
+    "s2_blitz-agent_discovery_systems",
+    "s2_blitz-alt_movement_systems",
+    "s2_blitz-artificer_systems",
+    "s2_blitz-blitz_realm_systems",
+    "s2_blitz-camp_discovery_systems",
+    "s2_blitz-guild_systems",
+    "s2_blitz-hyperstructure_create_systems",
+    "s2_blitz-hyperstructure_discovery_systems",
+    "s2_blitz-hyperstructure_systems",
+    "s2_blitz-mmr_systems",
+    "s2_blitz-name_systems",
+    "s2_blitz-ownership_systems",
+    "s2_blitz-point_systems",
+    "s2_blitz-prize_distribution_systems",
+    "s2_blitz-production_systems",
+    "s2_blitz-realm_internal_systems",
+    "s2_blitz-registrar_systems",
+    "s2_blitz-relic_chest_discovery_systems",
+    "s2_blitz-relic_systems",
+    "s2_blitz-resource_systems",
+    "s2_blitz-structure_systems",
+    "s2_blitz-troop_battle_systems",
+    "s2_blitz-troop_management_systems",
+    "s2_blitz-troop_movement_systems",
+    "s2_blitz-troop_movement_util_systems",
 ]

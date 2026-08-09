@@ -35,6 +35,9 @@ export type SeriesLaunchStepId =
   | "create-indexers"
   | "sync-paymaster";
 export type RotationLaunchStepId = SeriesLaunchStepId;
+// Backward-compatible names used by the workflow and run-store modules.
+export type LaunchSeriesStepId = SeriesLaunchStepId;
+export type LaunchRotationStepId = RotationLaunchStepId;
 export type SeriesLaunchChildStepStatus = "pending" | "running" | "succeeded" | "failed";
 
 export interface CreateGameDefaults {
@@ -312,6 +315,7 @@ export interface LaunchGameSummary {
   durationSeconds?: number;
   rpcUrl: string;
   factoryAddress: string;
+  gameId?: number;
   worldAddress?: string;
   entryTokenAddress?: string;
   reserveHyperstructuresTxHashes?: string[];
@@ -353,6 +357,7 @@ export interface PrizeFundingState {
 }
 
 export interface SeriesLaunchGameArtifacts {
+  gameId?: number;
   worldAddress?: string;
   entryTokenAddress?: string;
   reserveHyperstructuresTxHashes?: string[];

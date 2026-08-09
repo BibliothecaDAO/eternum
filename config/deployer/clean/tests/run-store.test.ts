@@ -174,14 +174,7 @@ describe("factory run store", () => {
       status: "running",
       startTime: "2026-03-18T10:00:00Z",
     });
-    expect(runRecord.steps.map((step: { id: string }) => step.id)).toEqual([
-      "create-world",
-      "wait-for-factory-index",
-      "configure-world",
-      "reserve-blitz-hyperstructures",
-      "grant-lootchest-role",
-      "create-indexer",
-    ]);
+    expect(runRecord.steps.map((step: { id: string }) => step.id)).toEqual(["create-world", "wait-for-factory-index"]);
   });
 
   test("adds the paymaster step for mainnet blitz launches", async () => {
@@ -363,6 +356,7 @@ describe("factory run store", () => {
       startTimeIso: "2026-03-18T10:00:00.000Z",
       rpcUrl: "https://rpc.example",
       factoryAddress: "0x123",
+      gameId: 7,
       createGameTxHash: "0xabc",
       indexerCreated: false,
       configMode: "batched",
@@ -385,6 +379,7 @@ describe("factory run store", () => {
     const runRecord = branchStore.readJson("runs/appchain/blitz/bltz-flux-730.json");
 
     expect(runRecord.artifacts.createGameTxHash).toBe("0xabc");
+    expect(runRecord.artifacts.gameId).toBe(7);
     expect(runRecord.artifacts.summaryPath).toBe(".context/game-launch/appchain-blitz-bltz-flux-730.json");
     expect(runRecord.status).toBe("running");
     expect(runRecord.currentStepId).toBe("wait-for-factory-index");
@@ -608,19 +603,19 @@ describe("factory run store", () => {
     const branchStore = createBranchStoreFetch();
     globalThis.fetch = branchStore.fetch;
 
-    branchStore.writeJson("runs/appchain/blitz/rotations/bltz-recovery-case.json", {
+    branchStore.writeJson("runs/mainnet/blitz/rotations/bltz-recovery-case.json", {
       version: 1,
       kind: "rotation",
-      runId: "appchain.blitz:rotation:bltz-recovery-case",
-      environment: "appchain.blitz",
-      chain: "appchain",
+      runId: "mainnet.blitz:rotation:bltz-recovery-case",
+      environment: "mainnet.blitz",
+      chain: "mainnet",
       gameType: "blitz",
       rotationName: "bltz-recovery-case",
       seriesName: "bltz-recovery-case",
       status: "attention",
       executionMode: "guided_recovery",
       requestedLaunchStep: "create-indexers",
-      inputPath: "inputs/appchain/blitz/rotations/bltz-recovery-case/101-1.json",
+      inputPath: "inputs/mainnet/blitz/rotations/bltz-recovery-case/101-1.json",
       latestLaunchRequestId: "101-1",
       currentStepId: "create-indexers",
       createdAt: "2098-12-31T23:50:00.000Z",
@@ -640,8 +635,8 @@ describe("factory run store", () => {
         buildRotationTestRunStep("sync-paymaster", "pending"),
       ],
       summary: {
-        environment: "appchain.blitz",
-        chain: "appchain",
+        environment: "mainnet.blitz",
+        chain: "mainnet",
         gameType: "blitz",
         rotationName: "bltz-recovery-case",
         seriesName: "bltz-recovery-case",
@@ -672,18 +667,18 @@ describe("factory run store", () => {
             steps: [{ id: "create-indexers", status: "failed" }],
           },
         ],
-        outputPath: ".context/game-launch/rotation-appchain-blitz-bltz-recovery-case.json",
+        outputPath: ".context/game-launch/rotation-mainnet-blitz-bltz-recovery-case.json",
       },
       artifacts: {
-        summaryPath: ".context/game-launch/rotation-appchain-blitz-bltz-recovery-case.json",
+        summaryPath: ".context/game-launch/rotation-mainnet-blitz-bltz-recovery-case.json",
         seriesCreated: true,
         seriesCreatedAt: "2098-12-31T23:50:00.000Z",
       },
     });
 
     writeRotationSummaryFile({
-      environment: "appchain.blitz",
-      chain: "appchain",
+      environment: "mainnet.blitz",
+      chain: "mainnet",
       gameType: "blitz",
       rotationName: "bltz-recovery-case",
       seriesName: "bltz-recovery-case",
@@ -712,16 +707,16 @@ describe("factory run store", () => {
           steps: [{ id: "create-indexers", status: "succeeded" }],
         },
       ],
-      outputPath: ".context/game-launch/rotation-appchain-blitz-bltz-recovery-case.json",
+      outputPath: ".context/game-launch/rotation-mainnet-blitz-bltz-recovery-case.json",
     });
 
     await recordFactoryRotationLaunchStepSucceeded({
-      environmentId: "appchain.blitz",
+      environmentId: "mainnet.blitz",
       rotationName: "bltz-recovery-case",
       requestedLaunchStep: "create-indexers",
       stepId: "create-indexers",
       request: {
-        environmentId: "appchain.blitz",
+        environmentId: "mainnet.blitz",
         rotationName: "bltz-recovery-case",
         firstGameStartTime: "2099-01-01T00:00:00Z",
         gameIntervalMinutes: 60,
@@ -731,7 +726,7 @@ describe("factory run store", () => {
       },
     });
 
-    const runRecord = branchStore.readJson("runs/appchain/blitz/rotations/bltz-recovery-case.json");
+    const runRecord = branchStore.readJson("runs/mainnet/blitz/rotations/bltz-recovery-case.json");
     const createIndexersStep = runRecord.steps.find((step: { id: string }) => step.id === "create-indexers");
 
     expect(runRecord.status).toBe("running");
@@ -744,11 +739,11 @@ describe("factory run store", () => {
     globalThis.fetch = branchStore.fetch;
 
     await recordFactorySeriesLaunchStarted({
-      environmentId: "appchain.blitz",
+      environmentId: "mainnet.blitz",
       seriesName: "bltz-series-recovery",
       requestedLaunchStep: "full",
       request: {
-        environmentId: "appchain.blitz",
+        environmentId: "mainnet.blitz",
         seriesName: "bltz-series-recovery",
         games: [
           { gameName: "bltz-series-recovery-01", startTime: "2099-01-01T00:00:00Z" },
@@ -757,7 +752,7 @@ describe("factory run store", () => {
       },
     });
 
-    const runPath = "runs/appchain/blitz/series/bltz-series-recovery.json";
+    const runPath = "runs/mainnet/blitz/series/bltz-series-recovery.json";
     const staleRun = branchStore.readJson(runPath);
     branchStore.writeJson(runPath, {
       ...staleRun,
@@ -789,12 +784,12 @@ describe("factory run store", () => {
     });
 
     await recordFactorySeriesLaunchStepSucceeded({
-      environmentId: "appchain.blitz",
+      environmentId: "mainnet.blitz",
       seriesName: "bltz-series-recovery",
       requestedLaunchStep: "create-indexers",
       stepId: "create-indexers",
       request: {
-        environmentId: "appchain.blitz",
+        environmentId: "mainnet.blitz",
         seriesName: "bltz-series-recovery",
         targetGameNames: ["bltz-series-recovery-02"],
         games: [
@@ -826,11 +821,11 @@ describe("factory run store", () => {
     globalThis.fetch = branchStore.fetch;
 
     await recordFactoryRotationLaunchStarted({
-      environmentId: "appchain.blitz",
+      environmentId: "mainnet.blitz",
       rotationName: "bltz-rotation-recovery",
       requestedLaunchStep: "full",
       request: {
-        environmentId: "appchain.blitz",
+        environmentId: "mainnet.blitz",
         rotationName: "bltz-rotation-recovery",
         firstGameStartTime: "2099-01-01T00:00:00Z",
         gameIntervalMinutes: 60,
@@ -840,7 +835,7 @@ describe("factory run store", () => {
       },
     });
 
-    const runPath = "runs/appchain/blitz/rotations/bltz-rotation-recovery.json";
+    const runPath = "runs/mainnet/blitz/rotations/bltz-rotation-recovery.json";
     const staleRun = branchStore.readJson(runPath);
     branchStore.writeJson(runPath, {
       ...staleRun,
@@ -872,12 +867,12 @@ describe("factory run store", () => {
     });
 
     await recordFactoryRotationLaunchStepSucceeded({
-      environmentId: "appchain.blitz",
+      environmentId: "mainnet.blitz",
       rotationName: "bltz-rotation-recovery",
       requestedLaunchStep: "create-indexers",
       stepId: "create-indexers",
       request: {
-        environmentId: "appchain.blitz",
+        environmentId: "mainnet.blitz",
         rotationName: "bltz-rotation-recovery",
         firstGameStartTime: "2099-01-01T00:00:00Z",
         gameIntervalMinutes: 60,

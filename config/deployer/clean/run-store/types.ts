@@ -86,6 +86,7 @@ export interface FactoryRunArtifacts {
   summaryPath?: string;
   scheduledStartTime?: string | number;
   durationSeconds?: number;
+  gameId?: number;
   worldAddress?: string;
   entryTokenAddress?: string;
   reserveHyperstructuresTxHashes?: string[];

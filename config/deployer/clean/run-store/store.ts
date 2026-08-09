@@ -97,6 +97,10 @@ function buildFactoryPaymasterSteps(run: Pick<FactoryRunRecord, "chain">): Facto
 }
 
 function buildFactoryRunSteps(run: Pick<FactoryRunRecord, "chain" | "gameType">): FactoryRunStepRecord[] {
+  if (run.chain === "appchain") {
+    return [buildFactoryRunStep("create-world"), buildFactoryRunStep("wait-for-factory-index")];
+  }
+
   return [
     buildFactoryRunStep("create-world"),
     buildFactoryRunStep("wait-for-factory-index"),
@@ -308,6 +312,7 @@ function mergeLaunchArtifacts(
     summaryPath,
     scheduledStartTime: summary.startTime ?? currentArtifacts.scheduledStartTime,
     durationSeconds: summary.durationSeconds ?? currentArtifacts.durationSeconds,
+    gameId: summary.gameId ?? currentArtifacts.gameId,
     worldAddress: summary.worldAddress || currentArtifacts.worldAddress,
     entryTokenAddress: summary.entryTokenAddress || currentArtifacts.entryTokenAddress,
     reserveHyperstructuresTxHashes:
@@ -434,6 +439,7 @@ export async function recordFactoryLaunchStepStarted(
   if (!request.stepId) {
     throw new Error("stepId is required to record a started step");
   }
+  const stepId = request.stepId;
 
   const context = createFactoryRunStoreEventContext(request);
 
@@ -444,18 +450,12 @@ export async function recordFactoryLaunchStepStarted(
       finalizeRunRecord(
         {
           ...updateFactoryRunContext(ensureFactoryRunLeaseAvailable(current, context), context),
-          activeLease: buildFactoryRunLease(context, request.stepId),
-          steps: markStepStatus(
-            current.steps,
-            request.stepId,
-            "running",
-            buildStepStartedEvent(request.stepId),
-            context.timestamp,
-          ),
+          activeLease: buildFactoryRunLease(context, stepId),
+          steps: markStepStatus(current.steps, stepId, "running", buildStepStartedEvent(stepId), context.timestamp),
         },
         context.timestamp,
       ),
-    `start ${request.stepId}`,
+    `start ${stepId}`,
   );
 }
 
@@ -466,6 +466,7 @@ export async function recordFactoryLaunchStepSucceeded(
   if (!request.stepId) {
     throw new Error("stepId is required to record a successful step");
   }
+  const stepId = request.stepId;
 
   const context = createFactoryRunStoreEventContext(request);
 
@@ -476,13 +477,7 @@ export async function recordFactoryLaunchStepSucceeded(
       finalizeRunRecord(
         {
           ...updateFactoryRunContext(releaseFactoryRunLease(current, context), context),
-          steps: markStepStatus(
-            current.steps,
-            request.stepId,
-            "succeeded",
-            buildStepSucceededEvent(request.stepId),
-            context.timestamp,
-          ),
+          steps: markStepStatus(current.steps, stepId, "succeeded", buildStepSucceededEvent(stepId), context.timestamp),
           artifacts: mergeLaunchArtifacts(
             current.artifacts,
             loadLaunchSummaryIfPresent(request.environmentId, request.gameName),
@@ -491,7 +486,7 @@ export async function recordFactoryLaunchStepSucceeded(
         },
         context.timestamp,
       ),
-    `complete ${request.stepId}`,
+    `complete ${stepId}`,
   );
 }
 
@@ -502,6 +497,7 @@ export async function recordFactoryLaunchStepFailed(
   if (!request.stepId) {
     throw new Error("stepId is required to record a failed step");
   }
+  const stepId = request.stepId;
 
   const context = createFactoryRunStoreEventContext(request);
 
@@ -514,9 +510,9 @@ export async function recordFactoryLaunchStepFailed(
           ...updateFactoryRunContext(releaseFactoryRunLease(current, context), context),
           steps: markStepStatus(
             current.steps,
-            request.stepId,
+            stepId,
             "failed",
-            buildStepFailedEvent(request.stepId, request.errorMessage),
+            buildStepFailedEvent(stepId, request.errorMessage),
             context.timestamp,
             request.errorMessage,
           ),
@@ -528,6 +524,6 @@ export async function recordFactoryLaunchStepFailed(
         },
         context.timestamp,
       ),
-    `fail ${request.stepId}`,
+    `fail ${stepId}`,
   );
 }
