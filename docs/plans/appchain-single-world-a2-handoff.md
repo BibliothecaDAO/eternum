@@ -1,7 +1,8 @@
 # A2 — Launch Pipeline Collapse — Codex Handoff
 
-Status: **OPEN (2026-08-09).** Milestone: A2 of `docs/plans/appchain-single-world.md`. Prereq: A1 ACCEPTED (registrar
-world on `feat/single-world-blitz`, 181/181 tests).
+Status: **CODE ACCEPTED 2026-08-09 (rounds 1-2 complete, commit 16504c985b; deployment leg in progress).** Milestone: A2
+of `docs/plans/appchain-single-world.md`. Prereq: A1 ACCEPTED (registrar world on `feat/single-world-blitz`, 181/181
+tests).
 
 **Motto: KISS.** Every deliverable below is the smallest workable version. Do not add abstraction layers, config
 frameworks, optional features, or refactors beyond what is listed. When two designs are close, pick the simpler one.
