@@ -1,0 +1,59 @@
+# A4 — Client Migration — Work Plan (Claude-executed)
+
+Status: **IN PROGRESS (started 2026-08-09).** Milestone A4 of `docs/plans/appchain-single-world.md`. Owner-decided: all
+client work is Claude's own implementation (Codex handled contracts/pipeline/tooling). Base audit:
+`docs/plans/appchain-single-world-a0/client-core.md` (file:line inventory). Motto: KISS.
+
+## Inputs now frozen
+
+- World: `s2_blitz` at `0x15ab45…b661a` on the dev appchain; torii target `http://<dev ALB>:8081` (stock torii-s2; fork
+  torii keeps serving the s1 client until A5).
+- D16 (A3-NOTES): key-prefix, member-on-key, and composite clauses ALL work in queries + subscriptions on SDK
+  `1.7.0-preview.3`. gRPC queries MUST project models (78 models > SQLite 64-join limit).
+- Keys: `game_id` is key[0] on every per-game model, entity id key[1] (C1); `ResourceList`/ `ResourceMinMaxList` are
+  `(preset_id, …)`; rulebook models preset-keyed — resolve `preset_id` from the game's `GameRegistry` row. Global
+  models: `AddressName` (account-level names), `BiomeDiscovered`, RNG.
+- Presets: 1 = legacy 2h (HIDE), 2 = official-60 "Regular Fast" (DEFAULT), 3 = Duel balance (launch with twoPlayerMode).
+  Catalog: `blitz-fast` → version 2, `blitz-duel` → version 3; hide `blitz-open`; UI `version` field = preset id.
+
+## Phases (recommended ~60–80-file path from the audit)
+
+**P1 — Game profile + dead machinery.** `WorldProfile` → `GameProfile` (constant chain endpoints + `gameId`); active
+game from dashboard selection/URL; env: `VITE_PUBLIC_TORII` → torii-s2 for the s2 arm. DELETE the shared-torii scoping
+machinery (audit §6: world-torii.ts, use-world-availability scope injector, appchain-worlds-summary internal_id JOIN,
+factory-worlds.ts wf- reads, manifest-patcher). Regenerate `contract-components.ts` bindings from the s2 manifest
+(namespace + game_id fields); sweep the 521 `s1_eternum-` literals.
+
+**P2 — Sync boundary (the isolation mechanism).** Generate the per-model key-arity table from the s2 manifest (do not
+hand-maintain); sync.ts model lists → clause FACTORIES taking gameId (key[0] prefix, keyCount+1); delete the
+subscribe-to-everything fallback branch (audit §5 — the ghost-settlement mechanism); torii-stream-manager
+`buildModelKeysClause` chokepoint prepends gameId; bounded spatial sync gains
+`AndCompose(MemberClause(model, "game_id", Eq, gameId))` (D16-proven); queries.ts: all arities +1,
+`getEntitiesFromTorii` → `keys:[gameId, entityId]`, per-query model projection everywhere, sessionStorage config cache
+key includes gameId.
+
+**P3 — Core managers.** `configManager`: keep the module export, scope internally — `WorldConfig[gameId]` for the 39
+singleton reads; rulebook reads via `preset_id`; `getTick`/`getSeasonConfig` from the game's registry row (kills the
+wrong-clock bug); dev-mode assert on default-miss. `gameEntityKey(...)` wrapper prepending the active gameId + codemod
+over the 266 `getEntityIdFromKeys` sites (raw calls become the lint signal for global models). Scope
+LeaderboardManager/MapDataStore/unscoped runQuery scans; SeasonEnded → per-game (a finished game must not end every
+game).
+
+**P4 — SQL layer + lint.** packages/torii `~71 FROM clauses / 13 files`: every `s2_blitz-` table gets
+`WHERE game_id = ?` (JOINs on BOTH sides); the LIMIT-1 WorldConfig pattern → keyed reads. Add the /sql scoping lint/test
+(A3-deferred): any s2_blitz table reference without game_id fails CI.
+
+**P5 — Dashboard + factory-v2 UX pass.** Games list from `GameRegistry` (replaces wf-WorldDeployed discovery);
+availability/registration/settlement hooks on game_id predicates; catalog per the frozen mapping; surface
+`artifacts.gameId`; the shared world address is no longer a per-game identity — the UX treats games as rows of one
+world; run-record UI renders the 2-step appchain plan.
+
+**P6 — Acceptance (plan exit).** Two concurrent games open in two tabs against torii-s2, fully isolated: clocks, maps,
+settlements, leaderboards. One-time session approval verified. Playtest launch through the UI button after the Lambda
+`DEFAULT_WORKFLOW_REF` flip (the flip itself is the A5 gate — until then, manual dispatch).
+
+## Order and discipline
+
+P1 → P2 → P3 are strictly sequential (each is the foundation of the next). P4 can interleave after P2. P5 last (needs
+the data layer stable). Commit per phase; `pnpm run format` + `knip` + the client test suite per commit; no drive-by
+refactors outside the audit's file lists.
