@@ -199,7 +199,7 @@ mod two_games {
         assert!(mmr_a.game_median == 900 && mmr_b.game_median == 1200, "MMR metadata crossed games");
         assert!(claim_b.claimed_at.is_zero(), "game A MMR claim marked game B");
         assert!(stats_a.structures_num == 2 && stats_b.structures_num == 6, "owner stats crossed games");
-        assert!(tile_a.to_seed(111) != tile_b.to_seed(222), "game-scoped VRF salts collided");
+        assert!(tile_a.to_seed(111) != tile_b.to_seed(111), "game-scoped VRF salts collided");
         assert!(
             GameRegistryImpl::get(world, GAME_A).end_at != GameRegistryImpl::get(world, GAME_B).end_at,
             "clocks collided",
@@ -220,5 +220,548 @@ mod two_games {
     #[should_panic(expected: "Eternum: entities belong to different games")]
     fn mixed_game_entities_are_rejected() {
         GameRegistryImpl::assert_same_game(GAME_A, GAME_B);
+    }
+}
+
+
+#[cfg(test)]
+mod dispatcher_lifecycle {
+    use core::num::traits::zero::Zero;
+    use dojo::model::{ModelStorage, ModelStorageTest};
+    use dojo::world::{WorldStorage, WorldStorageTrait};
+    use dojo_snf_test::{
+        ContractDef, ContractDefTrait, NamespaceDef, TestResource, WorldStorageTestTrait, get_default_caller_address,
+        spawn_test_world,
+    };
+    use snforge_std::{
+        ContractClassTrait, DeclareResultTrait, declare, start_cheat_block_timestamp_global, start_cheat_caller_address,
+        start_cheat_chain_id_global, stop_cheat_caller_address,
+    };
+    use starknet::ContractAddress;
+    use crate::constants::{DEFAULT_NS, DEFAULT_NS_STR, ResourceTypes};
+    use crate::models::config::{
+        AgentControllerConfig, ArtificerConfig, BattleConfig, BiomeClimateConfig, BlitzExplorationConfig,
+        BlitzRegistrationConfigImpl, BlitzRegistrationGameConfig, BlitzRegistrationRulesConfig, BlitzSettlementConfig,
+        BuildingConfig, ChainConfig, HyperstructureConfig, HyperstructureCostConfig, PresetConfig, PresetGameConfig,
+        SettlementConfig, SpeedConfig, StartingResourcesConfig, StructureMaxLevelConfig, TickConfig, TroopDamageConfig,
+        TroopLimitConfig, TroopStaminaConfig, VictoryPointsGrantConfig, VictoryPointsWinConfig,
+        VillageFoundResourcesConfig, WeightConfig,
+    };
+    use crate::models::game::{GameRegistryImpl, GameStatus};
+    use crate::models::mmr::MMRConfigDefaultImpl;
+    use crate::models::rank::{PlayerRank, PlayersRankTrial, RankList, RankPrize};
+    use crate::models::resource::resource::{ResourceAllowance, ResourceImpl, ResourceMinMaxList};
+    use crate::systems::prize_distribution::contracts::{
+        IPrizeDistributionSystemsDispatcher, IPrizeDistributionSystemsDispatcherTrait,
+    };
+    use crate::systems::realm::blitz::contracts::{IBlitzRealmSystemsDispatcher, IBlitzRealmSystemsDispatcherTrait};
+    use crate::systems::realm::utils::contracts::{IERC20Dispatcher, IERC20DispatcherTrait};
+    use crate::systems::registrar::contracts::{
+        CreateGameParams, IRegistrarSystemsDispatcher, IRegistrarSystemsDispatcherTrait, PresetSideTables,
+    };
+    use crate::systems::resources::contracts::resource_systems::{
+        IResourceSystemsDispatcher, IResourceSystemsDispatcherTrait,
+    };
+    use crate::systems::utils::camp::iCampDiscoveryImpl;
+    use crate::utils::testing::helpers::{
+        MOCK_CAPACITY_CONFIG, MOCK_MAP_CONFIG, MOCK_STRUCTURE_CAPACITY_CONFIG, TEST_PRESET_ID,
+    };
+
+    const GAME_A: u32 = 1;
+    const GAME_B: u32 = 2;
+    const SERIES_ID: felt252 = 'series';
+    const FEE_AMOUNT: u256 = 100;
+    const RESOURCE_LIST_ID: u32 = 77;
+    const RESOURCE_AMOUNT: u128 = 25;
+
+    #[derive(Drop)]
+    struct LifecycleContext {
+        world: WorldStorage,
+        registrar: IRegistrarSystemsDispatcher,
+        blitz: IBlitzRealmSystemsDispatcher,
+        prize: IPrizeDistributionSystemsDispatcher,
+        resources: IResourceSystemsDispatcher,
+        fee_token: IERC20Dispatcher,
+        player: ContractAddress,
+    }
+
+    fn lifecycle_namespace() -> NamespaceDef {
+        NamespaceDef {
+            namespace: DEFAULT_NS_STR(),
+            resources: [
+                TestResource::Model("ChainConfig"), TestResource::Model("GameCounter"), TestResource::Model("Preset"),
+                TestResource::Model("Series"), TestResource::Model("PresetConfig"),
+                TestResource::Model("PresetGameConfig"), TestResource::Model("WorldConfig"),
+                TestResource::Model("GameMapConfig"), TestResource::Model("GameRegistry"),
+                TestResource::Model("AgentConfig"), TestResource::Model("TileOpt"),
+                TestResource::Model("BlitzSettlementPosition"), TestResource::Model("BlitzSettlement"),
+                TestResource::Model("BlitzEntryTokenRegister"), TestResource::Model("BlitzCosmeticAttrsRegister"),
+                TestResource::Model("Structure"), TestResource::Model("StructureOwnerStats"),
+                TestResource::Model("Resource"), TestResource::Model("WeightConfig"),
+                TestResource::Model("ResourceMinMaxList"), TestResource::Model("ResourceAllowance"),
+                TestResource::Model("ResourceArrival"), TestResource::Model("Wonder"),
+                TestResource::Model("AddressName"), TestResource::Model("RNG"), TestResource::Model("PlayersRankTrial"),
+                TestResource::Model("PlayerRank"), TestResource::Model("RankPrize"), TestResource::Model("RankList"),
+                TestResource::Contract("registrar_systems"), TestResource::Contract("hyperstructure_create_systems"),
+                TestResource::Contract("blitz_realm_systems"), TestResource::Contract("realm_internal_systems"),
+                TestResource::Contract("prize_distribution_systems"), TestResource::Contract("resource_systems"),
+                TestResource::Library(("structure_creation_library", "0_1_18")),
+                TestResource::Library(("rng_library", "0_1_16")), TestResource::Event("GameCreated"),
+                TestResource::Event("BlitzSettlementEvent"), TestResource::Event("StoryEvent"),
+                TestResource::Event("BurnDonkey"), TestResource::Event("Transfer"),
+                TestResource::Event("TrophyProgression"),
+            ]
+                .span(),
+        }
+    }
+
+    fn lifecycle_contracts() -> Span<ContractDef> {
+        let namespace = dojo::utils::bytearray_hash(DEFAULT_NS());
+        [
+            ContractDefTrait::new(DEFAULT_NS(), @"registrar_systems").with_writer_of([namespace].span()),
+            ContractDefTrait::new(DEFAULT_NS(), @"hyperstructure_create_systems").with_writer_of([namespace].span()),
+            ContractDefTrait::new(DEFAULT_NS(), @"blitz_realm_systems").with_writer_of([namespace].span()),
+            ContractDefTrait::new(DEFAULT_NS(), @"realm_internal_systems").with_writer_of([namespace].span()),
+            ContractDefTrait::new(DEFAULT_NS(), @"prize_distribution_systems").with_writer_of([namespace].span()),
+            ContractDefTrait::new(DEFAULT_NS(), @"resource_systems").with_writer_of([namespace].span()),
+        ]
+            .span()
+    }
+
+    fn setup_lifecycle() -> LifecycleContext {
+        let player = get_default_caller_address();
+        let world = spawn_lifecycle_world();
+        let (fee_token_address, entry_token) = deploy_lifecycle_tokens();
+        let registrar = registrar_dispatcher(world);
+        let blitz = blitz_dispatcher(world);
+        let prize = prize_dispatcher(world);
+        let resources = resource_dispatcher(world);
+
+        let fee_token = IERC20Dispatcher { contract_address: fee_token_address };
+        register_lifecycle(registrar, player, fee_token_address, entry_token);
+        enter_lifecycle_games(blitz, fee_token, player);
+
+        LifecycleContext { world, registrar, blitz, prize, resources, fee_token, player }
+    }
+
+    fn spawn_lifecycle_world() -> WorldStorage {
+        start_cheat_chain_id_global('TEST');
+        let mut world = spawn_test_world([lifecycle_namespace()].span());
+        world.sync_perms_and_inits(lifecycle_contracts());
+        world
+    }
+
+    fn deploy_lifecycle_tokens() -> (ContractAddress, ContractAddress) {
+        let fee_token_class = declare("MockERC20").unwrap().contract_class();
+        let (fee_token, _) = fee_token_class.deploy(@array![1_000_000, 0, 18]).unwrap();
+        let entry_token_class = declare("CollectibleMock").unwrap().contract_class();
+        let (entry_token, _) = entry_token_class.deploy(@array![]).unwrap();
+        (fee_token, entry_token)
+    }
+
+    fn register_lifecycle(
+        registrar: IRegistrarSystemsDispatcher,
+        player: ContractAddress,
+        fee_token: ContractAddress,
+        entry_token: ContractAddress,
+    ) {
+        registrar.bootstrap_chain_config(chain_config(player, fee_token, entry_token));
+        registrar.register_preset(preset_config(), preset_game_config(), preset_side_tables());
+        registrar.register_series(SERIES_ID, player, 2, 0, 10_000);
+        registrar.create_game(create_game_params(1, 111));
+        registrar.create_game(create_game_params(2, 222));
+    }
+
+    fn enter_lifecycle_games(
+        blitz: IBlitzRealmSystemsDispatcher, fee_token: IERC20Dispatcher, player: ContractAddress,
+    ) {
+        start_cheat_caller_address(fee_token.contract_address, player);
+        assert!(fee_token.approve(blitz.contract_address, FEE_AMOUNT * 2), "entry fee approval failed");
+        stop_cheat_caller_address(fee_token.contract_address);
+
+        start_cheat_caller_address(blitz.contract_address, player);
+        blitz.obtain_entry_token(GAME_A);
+        blitz.obtain_entry_token(GAME_B);
+        blitz.settle(GAME_A, 'player-a', Option::Some(1), [].span(), false);
+        blitz.settle(GAME_B, 'player-b', Option::Some(2), [].span(), false);
+        stop_cheat_caller_address(blitz.contract_address);
+    }
+
+    #[test]
+    fn two_game_dispatchers_keep_registration_escrow_and_actions_isolated() {
+        let mut context = setup_lifecycle();
+        let settlement_a: crate::models::config::BlitzSettlement = context.world.read_model((GAME_A, context.player));
+        let settlement_b: crate::models::config::BlitzSettlement = context.world.read_model((GAME_B, context.player));
+        let owner_a = *settlement_a.structure_ids.at(0);
+        let recipient_a = *settlement_a.structure_ids.at(1);
+        let owner_b = *settlement_b.structure_ids.at(0);
+        let recipient_b = *settlement_b.structure_ids.at(1);
+
+        iCampDiscoveryImpl::grant_starting_resources(ref context.world, GAME_A, owner_a);
+        iCampDiscoveryImpl::grant_starting_resources(ref context.world, GAME_A, recipient_a);
+        iCampDiscoveryImpl::grant_starting_resources(ref context.world, GAME_B, owner_b);
+        iCampDiscoveryImpl::grant_starting_resources(ref context.world, GAME_B, recipient_b);
+
+        start_cheat_caller_address(context.resources.contract_address, context.player);
+        context.resources.approve(GAME_A, owner_a, recipient_a, [(ResourceTypes::WOOD, 10)].span());
+        context.resources.approve(GAME_B, owner_b, recipient_b, [(ResourceTypes::WOOD, 10)].span());
+        context.resources.pickup(GAME_A, recipient_a, owner_a, [(ResourceTypes::WOOD, 10)].span());
+        stop_cheat_caller_address(context.resources.contract_address);
+
+        let registration_a = BlitzRegistrationConfigImpl::get(context.world, GAME_A);
+        let registration_b = BlitzRegistrationConfigImpl::get(context.world, GAME_B);
+        assert!(registration_a.registration_count == 1 && registration_a.issued_count == 1, "game A entry failed");
+        assert!(registration_b.registration_count == 1 && registration_b.issued_count == 1, "game B entry failed");
+        assert!(owner_a != owner_b, "structure ids crossed games");
+        assert!(ResourceImpl::read_balance(ref context.world, GAME_A, owner_a, ResourceTypes::WOOD) == 15);
+
+        let allowance_a: ResourceAllowance = context
+            .world
+            .read_model((GAME_A, owner_a, recipient_a, ResourceTypes::WOOD));
+        let allowance_b: ResourceAllowance = context
+            .world
+            .read_model((GAME_B, owner_b, recipient_b, ResourceTypes::WOOD));
+        assert!(allowance_a.amount == 0, "game A pickup did not spend allowance");
+        assert!(allowance_b.amount == 10, "game A pickup changed game B allowance");
+
+        start_cheat_caller_address(context.prize.contract_address, context.player);
+        context.prize.blitz_prize_claim_no_game(GAME_A, context.player);
+        stop_cheat_caller_address(context.prize.contract_address);
+
+        let game_a = GameRegistryImpl::get(context.world, GAME_A);
+        let game_b = GameRegistryImpl::get(context.world, GAME_B);
+        assert!(game_a.fees_collected == FEE_AMOUNT && game_a.fees_paid_out == FEE_AMOUNT, "game A escrow mismatch");
+        assert!(game_b.fees_collected == FEE_AMOUNT && game_b.fees_paid_out == 0, "game A debited game B");
+
+        let token_a: crate::models::config::BlitzEntryTokenRegister = context.world.read_model((GAME_A, 1));
+        let token_b: crate::models::config::BlitzEntryTokenRegister = context.world.read_model((GAME_B, 2));
+        assert!(token_a.registered && token_b.registered, "game-scoped entry rows missing");
+    }
+
+    #[test]
+    #[should_panic]
+    fn spoofed_game_id_cannot_pick_up_another_games_allowance() {
+        let mut context = setup_lifecycle();
+        let settlement_a: crate::models::config::BlitzSettlement = context.world.read_model((GAME_A, context.player));
+        let owner_a = *settlement_a.structure_ids.at(0);
+        let recipient_a = *settlement_a.structure_ids.at(1);
+
+        iCampDiscoveryImpl::grant_starting_resources(ref context.world, GAME_A, owner_a);
+        iCampDiscoveryImpl::grant_starting_resources(ref context.world, GAME_A, recipient_a);
+        start_cheat_caller_address(context.resources.contract_address, context.player);
+        context.resources.approve(GAME_A, owner_a, recipient_a, [(ResourceTypes::WOOD, 1)].span());
+        context.resources.pickup(GAME_B, recipient_a, owner_a, [(ResourceTypes::WOOD, 1)].span());
+    }
+
+    #[test]
+    #[should_panic]
+    fn spoofed_game_id_cannot_send_from_another_games_structure() {
+        let mut context = setup_lifecycle();
+        let settlement_a: crate::models::config::BlitzSettlement = context.world.read_model((GAME_A, context.player));
+        let owner_a = *settlement_a.structure_ids.at(0);
+        let recipient_a = *settlement_a.structure_ids.at(1);
+
+        start_cheat_caller_address(context.resources.contract_address, context.player);
+        context.resources.send(GAME_B, owner_a, recipient_a, [(ResourceTypes::WOOD, 1)].span());
+    }
+
+    #[test]
+    #[should_panic(expected: "Eternum: game escrow exhausted")]
+    fn escrow_over_debit_is_rejected() {
+        let mut context = setup_lifecycle();
+        GameRegistryImpl::debit_fees(ref context.world, GAME_A, FEE_AMOUNT + 1);
+    }
+
+    #[test]
+    #[should_panic(expected: "Eternum: All entry tokens have been issued")]
+    fn entry_token_issuance_cannot_exceed_game_capacity() {
+        let context = setup_lifecycle();
+        start_cheat_caller_address(context.blitz.contract_address, context.player);
+        context.blitz.obtain_entry_token(GAME_A);
+    }
+
+    #[test]
+    fn chain_admin_can_reset_an_abandoned_unfinalized_trial() {
+        let mut context = setup_lifecycle();
+        seed_unfinalized_trial(ref context);
+
+        context.registrar.reset_trial(GAME_A);
+
+        let trial: PlayersRankTrial = context.world.read_model(GAME_A);
+        let player_rank: PlayerRank = context.world.read_model((GAME_A, context.player));
+        let rank_prize: RankPrize = context.world.read_model((GAME_A, 1_u16));
+        let rank_list: RankList = context.world.read_model((GAME_A, 1_u16, 0_u16));
+        assert!(trial.owner.is_zero(), "trial was not cleared");
+        assert!(player_rank.rank == 0, "player rank was not cleared");
+        assert!(rank_prize.total_players_same_rank_count == 0, "rank prize was not cleared");
+        assert!(rank_list.player.is_zero(), "rank list was not cleared");
+    }
+
+    #[test]
+    fn admin_settlement_ends_dev_game_and_sweeps_remaining_escrow() {
+        let context = setup_lifecycle();
+        start_cheat_block_timestamp_global(311);
+
+        context.registrar.mark_game_settled(GAME_B);
+
+        let game = GameRegistryImpl::get(context.world, GAME_B);
+        assert!(game.status == GameStatus::Settled, "dev game was not settled");
+        assert!(game.fees_paid_out == game.fees_collected, "remaining escrow was not debited");
+        assert!(context.fee_token.balance_of(context.player) == 999_900, "remaining escrow was not transferred");
+    }
+
+    #[test]
+    #[should_panic(expected: "Eternum: registration must open before settling")]
+    fn game_registration_must_open_before_settling() {
+        let context = setup_lifecycle();
+        let mut params = create_game_params(3, 333);
+        params.registration_start_at = params.start_settling_at.try_into().unwrap();
+        context.registrar.create_game(params);
+    }
+
+    #[test]
+    #[should_panic(expected: "Eternum: series chest allocation exceeds u16")]
+    fn series_registration_rejects_chest_allocations_that_exceed_storage() {
+        let context = setup_lifecycle();
+        context.registrar.register_series('overflow', context.player, 1, 65_536, 10_000);
+    }
+
+    #[test]
+    #[should_panic]
+    fn preset_registration_rejects_unknown_blitz_reward_profile() {
+        let context = setup_lifecycle();
+        let mut preset = preset_config();
+        let mut game_config = preset_game_config();
+        preset.preset_id = 3;
+        preset.blitz_exploration_config.reward_profile_id = 99;
+        game_config.preset_id = 3;
+        context.registrar.register_preset(preset, game_config, preset_side_tables());
+    }
+
+    #[test]
+    #[should_panic(expected: "Eternum: caller is not the world owner")]
+    fn non_owner_cannot_front_run_chain_bootstrap() {
+        let attacker: ContractAddress = 'attacker'.try_into().unwrap();
+        let mut world = spawn_test_world([lifecycle_namespace()].span());
+        world.sync_perms_and_inits(lifecycle_contracts());
+        let registrar = registrar_dispatcher(world);
+        start_cheat_caller_address(registrar.contract_address, attacker);
+
+        registrar.bootstrap_chain_config(chain_config(attacker, Zero::zero(), Zero::zero()));
+    }
+
+    fn seed_unfinalized_trial(ref context: LifecycleContext) {
+        context
+            .world
+            .write_model_test(
+                @PlayersRankTrial {
+                    game_id: GAME_A,
+                    nonce: 77,
+                    owner: context.player,
+                    last_rank: 1,
+                    last_player_points: 10,
+                    total_player_points: 10,
+                    total_player_count_committed: 2,
+                    total_player_count_revealed: 1,
+                    total_prize_amount: 100,
+                    total_prize_amount_calculated: 50,
+                },
+            );
+        context.world.write_model_test(@PlayerRank { game_id: GAME_A, player: context.player, rank: 1, paid: false });
+        context
+            .world
+            .write_model_test(
+                @RankPrize {
+                    game_id: GAME_A,
+                    rank: 1,
+                    total_players_same_rank_count: 1,
+                    total_prize_amount: 50,
+                    grant_elite_nft: false,
+                },
+            );
+        context.world.write_model_test(@RankList { game_id: GAME_A, rank: 1, index: 0, player: context.player });
+    }
+
+    fn registrar_dispatcher(world: WorldStorage) -> IRegistrarSystemsDispatcher {
+        let (address, _) = world.dns(@"registrar_systems").unwrap();
+        IRegistrarSystemsDispatcher { contract_address: address }
+    }
+
+    fn blitz_dispatcher(world: WorldStorage) -> IBlitzRealmSystemsDispatcher {
+        let (address, _) = world.dns(@"blitz_realm_systems").unwrap();
+        IBlitzRealmSystemsDispatcher { contract_address: address }
+    }
+
+    fn prize_dispatcher(world: WorldStorage) -> IPrizeDistributionSystemsDispatcher {
+        let (address, _) = world.dns(@"prize_distribution_systems").unwrap();
+        IPrizeDistributionSystemsDispatcher { contract_address: address }
+    }
+
+    fn resource_dispatcher(world: WorldStorage) -> IResourceSystemsDispatcher {
+        let (address, _) = world.dns(@"resource_systems").unwrap();
+        IResourceSystemsDispatcher { contract_address: address }
+    }
+
+    fn chain_config(admin: ContractAddress, fee_token: ContractAddress, entry_token: ContractAddress) -> ChainConfig {
+        ChainConfig {
+            config_id: 0,
+            admin_address: admin,
+            vrf_provider_address: Zero::zero(),
+            agent_controller_config: AgentControllerConfig { address: Zero::zero() },
+            mmr_config: MMRConfigDefaultImpl::default(),
+            fee_token,
+            fee_recipient: admin,
+            entry_token_address: entry_token,
+            collectibles_cosmetics_address: Zero::zero(),
+            collectibles_timelock_address: Zero::zero(),
+            collectibles_lootchest_address: Zero::zero(),
+            collectibles_elitenft_address: Zero::zero(),
+        }
+    }
+
+    fn preset_config() -> PresetConfig {
+        PresetConfig {
+            preset_id: TEST_PRESET_ID,
+            hyperstructure_config: HyperstructureConfig { initialize_shards_amount: 0 },
+            hyperstructure_cost_config: HyperstructureCostConfig { construction_resources_ids: [].span() },
+            speed_config: SpeedConfig { donkey_sec_per_km: 1, donkey_sec_per_km_troops: 1 },
+            map_config: MOCK_MAP_CONFIG(),
+            tick_config: TickConfig {
+                armies_tick_in_seconds: 1, delivery_tick_in_seconds: 1, bitcoin_phase_in_seconds: 600,
+            },
+            structure_max_level_config: StructureMaxLevelConfig { realm_max: 1, village_max: 1 },
+            building_config: BuildingConfig { base_population: 0, base_cost_percent_increase: 0 },
+            troop_damage_config: Default::default(),
+            troop_stamina_config: Default::default(),
+            troop_limit_config: Default::default(),
+            capacity_config: MOCK_CAPACITY_CONFIG(),
+            battle_config: BattleConfig {
+                regular_immunity_ticks: 0, village_immunity_ticks: 0, village_raid_immunity_ticks: 0,
+            },
+            realm_start_resources_config: StartingResourcesConfig { resources_list_id: 0, resources_list_count: 0 },
+            village_start_resources_config: StartingResourcesConfig { resources_list_id: 0, resources_list_count: 0 },
+            village_find_resources_config: VillageFoundResourcesConfig {
+                resources_mm_list_id: RESOURCE_LIST_ID, resources_mm_list_count: 2,
+            },
+            structure_capacity_config: MOCK_STRUCTURE_CAPACITY_CONFIG(),
+            victory_points_grant_config: VictoryPointsGrantConfig {
+                hyp_points_per_second: 0,
+                claim_hyperstructure_points: 0,
+                claim_otherstructure_points: 0,
+                explore_tiles_points: 0,
+                relic_open_points: 0,
+            },
+            victory_points_win_config: VictoryPointsWinConfig { points_for_win: 0 },
+            blitz_exploration_config: BlitzExplorationConfig { reward_profile_id: 2 },
+            artificer_config: ArtificerConfig { research_cost_for_relic: 0 },
+            blitz_registration_rules_config: BlitzRegistrationRulesConfig { collectibles_cosmetics_max: 0 },
+            mercenaries_name: 0,
+        }
+    }
+
+    fn preset_game_config() -> PresetGameConfig {
+        PresetGameConfig {
+            preset_id: TEST_PRESET_ID,
+            settlement_config: SettlementConfig {
+                center: 0,
+                base_distance: 0,
+                layers_skipped: 0,
+                layer_max: 0,
+                layer_capacity_increment: 0,
+                layer_capacity_bps: 0,
+                spires_layer_distance: 0,
+                spires_max_count: 0,
+                spires_settled_count: 0,
+            },
+            blitz_settlement_config: BlitzSettlementConfig {
+                base_distance: 8,
+                side: 0,
+                step: 1,
+                point: 1,
+                open_settlement_count: 0,
+                single_realm_mode: false,
+                two_player_mode: false,
+            },
+            blitz_registration_config: BlitzRegistrationGameConfig {
+                fee_amount: 0,
+                registration_count: 0,
+                issued_count: 0,
+                registration_count_max: 1,
+                registration_start_at: 10,
+            },
+            agent_max_lifetime_count: 0,
+            agent_max_current_count: 0,
+            agent_min_spawn_lords_amount: 0,
+            agent_max_spawn_lords_amount: 0,
+        }
+    }
+
+    fn preset_side_tables() -> PresetSideTables {
+        PresetSideTables {
+            weights: [
+                WeightConfig { preset_id: 0, resource_type: ResourceTypes::WOOD, weight_gram: 1 },
+                WeightConfig { preset_id: 0, resource_type: ResourceTypes::DONKEY, weight_gram: 1 },
+            ]
+                .span(),
+            resource_factories: [].span(),
+            building_categories: [].span(),
+            structure_levels: [].span(),
+            hyperstructure_construction: [].span(),
+            resource_lists: [].span(),
+            resource_min_max_lists: [
+                ResourceMinMaxList {
+                    preset_id: 0,
+                    entity_id: RESOURCE_LIST_ID,
+                    index: 0,
+                    resource_type: ResourceTypes::WOOD,
+                    min_amount: RESOURCE_AMOUNT,
+                    max_amount: RESOURCE_AMOUNT,
+                },
+                ResourceMinMaxList {
+                    preset_id: 0,
+                    entity_id: RESOURCE_LIST_ID,
+                    index: 1,
+                    resource_type: ResourceTypes::DONKEY,
+                    min_amount: 10_000_000_000,
+                    max_amount: 10_000_000_000,
+                },
+            ]
+                .span(),
+        }
+    }
+
+    fn create_game_params(game_number_in_series: u16, seed: felt252) -> CreateGameParams {
+        CreateGameParams {
+            name: if game_number_in_series == 1 {
+                'game-a'
+            } else {
+                'game-b'
+            },
+            preset_id: TEST_PRESET_ID,
+            series_id: SERIES_ID,
+            game_number_in_series,
+            start_settling_at: 100,
+            start_main_at: 200,
+            duration_seconds: 100,
+            end_grace_seconds: 10,
+            registration_grace_seconds: 10,
+            dev_mode_on: true,
+            single_realm_mode: false,
+            two_player_mode: false,
+            registration_count_max: 1,
+            registration_start_at: 10,
+            fee_amount: FEE_AMOUNT,
+            biome_climate_config: BiomeClimateConfig {
+                elevation_scale_bps: 10_000,
+                moisture_scale_bps: 10_000,
+                elevation_bias_bps: 0,
+                moisture_bias_bps: 0,
+                elevation_seed: seed.try_into().unwrap(),
+                moisture_seed: (seed + 1).try_into().unwrap(),
+            },
+            use_map_override: false,
+            map_override: MOCK_MAP_CONFIG(),
+            seed,
+        }
     }
 }

@@ -56,7 +56,7 @@ use crate::systems::utils::realm::iRealmImpl;
 use crate::utils::testing::contracts::villagepassmock::EternumVillagePassMock;
 
 pub const TEST_GAME_ID: u32 = 1;
-pub const TEST_PRESET_ID: u32 = 1;
+pub const TEST_PRESET_ID: u32 = 2;
 
 
 // ============================================================================
@@ -201,21 +201,22 @@ pub fn MOCK_QUEST_CONFIG() -> QuestConfig {
 // Config Store Functions (tstore_*)
 // ============================================================================
 
-pub fn tstore_village_token_config(ref world: WorldStorage, config: VillageTokenConfig) {
-    WorldConfigUtilImpl::set_member(ref world, TEST_GAME_ID, selector!("village_pass_config"), config);
-}
+// D15: village token configuration is outside the compiled Blitz-core preset surface.
+// pub fn tstore_village_token_config(ref world: WorldStorage, config: VillageTokenConfig) {
+//     WorldConfigUtilImpl::set_member(ref world, TEST_PRESET_ID, selector!("village_pass_config"), config);
+// }
 
 pub fn tstore_map_config(ref world: WorldStorage, config: MapConfig) {
     WorldConfigUtilImpl::set_member(ref world, TEST_GAME_ID, selector!("map_config"), config);
 }
 
 pub fn tstore_capacity_config(ref world: WorldStorage, capacity_config: CapacityConfig) {
-    WorldConfigUtilImpl::set_member(ref world, TEST_GAME_ID, selector!("capacity_config"), capacity_config);
+    WorldConfigUtilImpl::set_member(ref world, TEST_PRESET_ID, selector!("capacity_config"), capacity_config);
 }
 
 pub fn tstore_structure_capacity_config(ref world: WorldStorage, structure_capacity_config: StructureCapacityConfig) {
     WorldConfigUtilImpl::set_member(
-        ref world, TEST_GAME_ID, selector!("structure_capacity_config"), structure_capacity_config,
+        ref world, TEST_PRESET_ID, selector!("structure_capacity_config"), structure_capacity_config,
     );
 }
 
@@ -226,24 +227,25 @@ pub fn tstore_weight_config(ref world: WorldStorage, weight_configs: Span<Weight
 }
 
 pub fn tstore_tick_config(ref world: WorldStorage, tick_config: TickConfig) {
-    WorldConfigUtilImpl::set_member(ref world, TEST_GAME_ID, selector!("tick_config"), tick_config);
+    WorldConfigUtilImpl::set_member(ref world, TEST_PRESET_ID, selector!("tick_config"), tick_config);
 }
 
 pub fn tstore_troop_limit_config(ref world: WorldStorage, troop_limit_config: TroopLimitConfig) {
-    WorldConfigUtilImpl::set_member(ref world, TEST_GAME_ID, selector!("troop_limit_config"), troop_limit_config);
+    WorldConfigUtilImpl::set_member(ref world, TEST_PRESET_ID, selector!("troop_limit_config"), troop_limit_config);
 }
 
 pub fn tstore_troop_stamina_config(ref world: WorldStorage, troop_stamina_config: TroopStaminaConfig) {
-    WorldConfigUtilImpl::set_member(ref world, TEST_GAME_ID, selector!("troop_stamina_config"), troop_stamina_config);
+    WorldConfigUtilImpl::set_member(ref world, TEST_PRESET_ID, selector!("troop_stamina_config"), troop_stamina_config);
 }
 
 pub fn tstore_troop_damage_config(ref world: WorldStorage, troop_damage_config: TroopDamageConfig) {
-    WorldConfigUtilImpl::set_member(ref world, TEST_GAME_ID, selector!("troop_damage_config"), troop_damage_config);
+    WorldConfigUtilImpl::set_member(ref world, TEST_PRESET_ID, selector!("troop_damage_config"), troop_damage_config);
 }
 
-pub fn tstore_quest_config(ref world: WorldStorage, config: QuestConfig) {
-    WorldConfigUtilImpl::set_member(ref world, TEST_GAME_ID, selector!("quest_config"), config);
-}
+// D15: quest configuration is outside the compiled Blitz-core preset surface.
+// pub fn tstore_quest_config(ref world: WorldStorage, config: QuestConfig) {
+//     WorldConfigUtilImpl::set_member(ref world, TEST_PRESET_ID, selector!("quest_config"), config);
+// }
 
 pub fn tstore_production_config(ref world: WorldStorage, resource_type: u8) {
     let simple_input_list: Array<(u8, u128)> = array![(ResourceTypes::LABOR, 1)];
@@ -336,10 +338,11 @@ pub fn init_config(ref world: WorldStorage) {
             .span(),
     );
     tstore_map_config(ref world, MOCK_MAP_CONFIG());
-    tstore_quest_config(ref world, MOCK_QUEST_CONFIG());
-    tstore_village_token_config(
-        ref world, MOCK_VILLAGE_TOKEN_CONFIG(ref world, starknet::contract_address_const::<'realm_owner'>()),
-    );
+    // D15: quest and village-token configuration are outside the compiled Blitz-core preset surface.
+// tstore_quest_config(ref world, MOCK_QUEST_CONFIG());
+// tstore_village_token_config(
+//     ref world, MOCK_VILLAGE_TOKEN_CONFIG(ref world, starknet::contract_address_const::<'realm_owner'>()),
+// );
 }
 
 /// Initialize only troop-related configs (for guard/explorer tests)
