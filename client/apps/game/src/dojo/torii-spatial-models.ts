@@ -1,38 +1,40 @@
+import { gameModel } from "./game-scope";
 import type { BoundsModelConfig, GlobalModelStreamConfig } from "./torii-stream-manager";
 
 interface ToriiSpatialMapModelConfig {
-  model: string;
+  name: string;
   colField?: string;
   rowField?: string;
 }
 
-export const GLOBAL_SPATIAL_MAP_MODELS = [
-  { model: "s1_eternum-TileOpt", colField: "col", rowField: "row" },
-  { model: "s1_eternum-Structure", colField: "base.coord_x", rowField: "base.coord_y" },
-  { model: "s1_eternum-StructureBuildings", colField: "coord.x", rowField: "coord.y" },
-  { model: "s1_eternum-Building", colField: "outer_col", rowField: "outer_row" },
-  { model: "s1_eternum-ExplorerTroops", colField: "coord.x", rowField: "coord.y" },
-  { model: "s1_eternum-ExplorerRewardEvent", colField: "coord.x", rowField: "coord.y" },
-  { model: "s1_eternum-BattleEvent", colField: "coord.x", rowField: "coord.y" },
+// Bare model names: the namespace (s1_eternum / s2_blitz) is resolved at call
+// time from the active game scope, so every list here is a factory — module
+// constants would bake in the default namespace before bootstrap sets it.
+const SPATIAL_MAP_MODEL_CONFIGS = [
+  { name: "TileOpt", colField: "col", rowField: "row" },
+  { name: "Structure", colField: "base.coord_x", rowField: "base.coord_y" },
+  { name: "StructureBuildings", colField: "coord.x", rowField: "coord.y" },
+  { name: "Building", colField: "outer_col", rowField: "outer_row" },
+  { name: "ExplorerTroops", colField: "coord.x", rowField: "coord.y" },
+  { name: "ExplorerRewardEvent", colField: "coord.x", rowField: "coord.y" },
+  { name: "BattleEvent", colField: "coord.x", rowField: "coord.y" },
 ] as const satisfies readonly ToriiSpatialMapModelConfig[];
 
-export const BOUNDED_SPATIAL_MAP_MODELS: BoundsModelConfig[] = GLOBAL_SPATIAL_MAP_MODELS.map(
-  ({ model, colField, rowField }) => ({
-    model,
+export const getGlobalSpatialMapModels = (): BoundsModelConfig[] =>
+  SPATIAL_MAP_MODEL_CONFIGS.map(({ name, colField, rowField }) => ({
+    model: gameModel(name),
     colField: colField ?? "col",
     rowField: rowField ?? "row",
-  }),
-);
+  }));
 
-const GLOBAL_SPATIAL_OWNER_MODEL_NAME = "s1_eternum-Structure";
+export const getBoundedSpatialMapModels = (): BoundsModelConfig[] => getGlobalSpatialMapModels();
+
+const SPATIAL_OWNER_MODEL_NAME = "Structure";
 
 // Structure carries ownership, so the live all-entity stream owns that model.
 // A late bootstrap snapshot must not replay stale owners after a capture.
-const GLOBAL_SPATIAL_MAP_BOOTSTRAP_MODELS = GLOBAL_SPATIAL_MAP_MODELS.filter(
-  ({ model }) => model !== GLOBAL_SPATIAL_OWNER_MODEL_NAME,
-);
+export const getGlobalSpatialMapBootstrapModelNames = (): string[] =>
+  SPATIAL_MAP_MODEL_CONFIGS.filter(({ name }) => name !== SPATIAL_OWNER_MODEL_NAME).map(({ name }) => gameModel(name));
 
-export const GLOBAL_SPATIAL_MAP_BOOTSTRAP_MODEL_NAMES = GLOBAL_SPATIAL_MAP_BOOTSTRAP_MODELS.map(({ model }) => model);
-
-export const GLOBAL_SPATIAL_MAP_BOOTSTRAP_SNAPSHOT_MODELS: GlobalModelStreamConfig[] =
-  GLOBAL_SPATIAL_MAP_BOOTSTRAP_MODEL_NAMES.map((model) => ({ model }));
+export const getGlobalSpatialMapBootstrapSnapshotModels = (): GlobalModelStreamConfig[] =>
+  getGlobalSpatialMapBootstrapModelNames().map((model) => ({ model }));

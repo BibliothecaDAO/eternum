@@ -26,8 +26,8 @@ describe("network boot-regression guards", () => {
     const source = readSource("src/dojo/sync.ts");
     const spatialModelsSource = readSource("src/dojo/torii-spatial-models.ts");
 
-    expect(spatialModelsSource).toContain('GLOBAL_SPATIAL_OWNER_MODEL_NAME = "s1_eternum-Structure"');
-    expect(spatialModelsSource).toContain("model !== GLOBAL_SPATIAL_OWNER_MODEL_NAME");
+    expect(spatialModelsSource).toContain('SPATIAL_OWNER_MODEL_NAME = "Structure"');
+    expect(spatialModelsSource).toContain("name !== SPATIAL_OWNER_MODEL_NAME");
     expect(source).toContain("syncGlobalSpatialBootstrapSnapshot");
     expect(source).not.toContain("spatialMapStreamSubscription");
     expect(source).toContain("recordSpatialHandshake()");

@@ -442,7 +442,9 @@ describe("initialSync global streams", () => {
     mapDataRefreshMock.mockReset();
   });
 
-  it("opens one all-entity global stream with explicitly scoped events before reporting sync complete", async () => {
+  it("keeps the global stream model-bounded even without bounded spatial sync", async () => {
+    // The subscribe-to-everything fallback is deliberately gone: on the shared
+    // s2 world an unclaused stream replays every game's entities.
     vi.useFakeTimers();
     getEntitiesMock.mockResolvedValue(undefined);
     const harness = createSyncHarness();
@@ -463,7 +465,12 @@ describe("initialSync global streams", () => {
     await syncPromise;
 
     expect(harness.client.onEntityUpdated).toHaveBeenCalledTimes(1);
-    expect(harness.client.onEntityUpdated).toHaveBeenCalledWith(undefined, expect.any(Function));
+    expect(harness.client.onEntityUpdated).toHaveBeenCalledWith(
+      expect.objectContaining({
+        models: expect.arrayContaining(["s1_eternum-AddressName", "s1_eternum-Guild"]),
+      }),
+      expect.any(Function),
+    );
     expect(harness.client.onEventMessageUpdated).toHaveBeenCalledTimes(1);
     expect(harness.client.onEventMessageUpdated).toHaveBeenCalledWith(
       expect.objectContaining({

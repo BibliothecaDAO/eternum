@@ -8,7 +8,7 @@ import {
 } from "@/dojo/army-authoritative-reconciler";
 import { ensureStructureSynced } from "@/dojo/queries";
 import { initializeSyncSimulator } from "@/dojo/sync-simulator";
-import { BOUNDED_SPATIAL_MAP_MODELS, GLOBAL_SPATIAL_MAP_MODELS } from "@/dojo/torii-spatial-models";
+import { getBoundedSpatialMapModels, getGlobalSpatialMapModels } from "@/dojo/torii-spatial-models";
 import { buildBoundsDescriptorSignature, ToriiStreamManager, type BoundsDescriptor } from "@/dojo/torii-stream-manager";
 import { useConnectionStore } from "@/hooks/store/use-connection-store";
 import { useAccountStore } from "@/hooks/store/use-account-store";
@@ -1188,7 +1188,7 @@ export default class WorldmapScene extends WarpTravel {
 
   private initializeBoundedSpatialSync(): void {
     this.logToriiBoundsDebug("Bounded spatial sync config", {
-      boundedSpatialModels: BOUNDED_SPATIAL_MAP_MODELS.map(({ model }) => model),
+      boundedSpatialModels: getBoundedSpatialMapModels().map(({ model }) => model),
       boundedSpatialPadding: env.VITE_PUBLIC_WORLDMAP_BOUNDED_SPATIAL_PADDING,
       boundedSpatialSync: WORLDMAP_BOUNDED_SPATIAL_SYNC,
       mode: WORLDMAP_BOUNDED_SPATIAL_SYNC ? "bounded_spatial_stream" : "legacy_global_spatial_stream",
@@ -8547,7 +8547,7 @@ export default class WorldmapScene extends WarpTravel {
       minRow: subscriptionBounds.minRow,
       maxRow: subscriptionBounds.maxRow,
       padding: env.VITE_PUBLIC_WORLDMAP_BOUNDED_SPATIAL_PADDING,
-      models: BOUNDED_SPATIAL_MAP_MODELS,
+      models: getBoundedSpatialMapModels(),
     };
   }
 
@@ -8996,8 +8996,8 @@ export default class WorldmapScene extends WarpTravel {
       ? this.buildBoundedSpatialSubscriptionBounds(chunkKey)
       : subscriptionBounds;
     const modelCount = WORLDMAP_BOUNDED_SPATIAL_SYNC
-      ? BOUNDED_SPATIAL_MAP_MODELS.length
-      : GLOBAL_SPATIAL_MAP_MODELS.length;
+      ? getBoundedSpatialMapModels().length
+      : getGlobalSpatialMapModels().length;
     const debugBounds = {
       requestedAreaKey,
       localBounds,

@@ -23,12 +23,13 @@ import {
   getStructuresDataFromTorii,
 } from "./queries";
 import { env } from "../../env";
+import { gameModel, isGameScoped } from "./game-scope";
 import { resolveInitialStructureSelection } from "./sync-initial-selection";
 import { isDeletionPayload } from "./sync-utils";
 import { ToriiSyncWorkerManager } from "./sync-worker-manager";
 import {
-  GLOBAL_SPATIAL_MAP_BOOTSTRAP_MODEL_NAMES,
-  GLOBAL_SPATIAL_MAP_BOOTSTRAP_SNAPSHOT_MODELS,
+  getGlobalSpatialMapBootstrapModelNames,
+  getGlobalSpatialMapBootstrapSnapshotModels,
 } from "./torii-spatial-models";
 import { observeToriiStreamLifecycle } from "./torii-stream-lifecycle-observer";
 import { buildModelKeysClause, type GlobalModelStreamConfig } from "./torii-stream-manager";
@@ -95,7 +96,7 @@ function toTraceBigInt(value: unknown): bigint | null {
 }
 
 function recordTileOptStreamTrace(data: ToriiEntity): void {
-  const tileOptModel = (data.models as Record<string, unknown>)["s1_eternum-TileOpt"];
+  const tileOptModel = (data.models as Record<string, unknown>)[gameModel("TileOpt")];
   if (!tileOptModel || typeof tileOptModel !== "object") {
     return;
   }
@@ -134,45 +135,66 @@ function recordTileOptStreamTrace(data: ToriiEntity): void {
   }
 }
 
-const GLOBAL_EVENT_MODELS: string[] = [
-  "s1_eternum-OpenRelicChestEvent",
-  "s1_eternum-ExplorerRewardEvent",
-  "s1_eternum-BattleEvent",
+// Bare names — the namespace resolves from the active game scope at call time.
+const GLOBAL_EVENT_MODEL_NAMES = ["OpenRelicChestEvent", "ExplorerRewardEvent", "BattleEvent"];
+
+const getGlobalEventModels = (): string[] => GLOBAL_EVENT_MODEL_NAMES.map(gameModel);
+
+// keyCount is the legacy (s1) arity; on s2 the game-id chokepoint in
+// buildModelKeysClause overrides it for every per-game model.
+const GLOBAL_ENTITY_STREAM_MODEL_NAMES: Array<{ name: string; keyCount: number }> = [
+  { name: "WorldConfig", keyCount: 1 },
+  { name: "HyperstrtConstructConfig", keyCount: 1 },
+  { name: "HyperstructureGlobals", keyCount: 1 },
+  { name: "WeightConfig", keyCount: 1 },
+  { name: "ResourceFactoryConfig", keyCount: 1 },
+  { name: "BuildingCategoryConfig", keyCount: 1 },
+  { name: "ResourceBridgeWtlConfig", keyCount: 1 },
+  { name: "StructureLevelConfig", keyCount: 1 },
+  { name: "SeasonPrize", keyCount: 1 },
+  { name: "SeasonEnded", keyCount: 1 },
+  { name: "QuestLevels", keyCount: 1 },
+  { name: "AddressName", keyCount: 1 },
+  { name: "PlayerRegisteredPoints", keyCount: 1 },
+  { name: "BlitzSettlement", keyCount: 1 },
+  { name: "BlitzEntryTokenRegister", keyCount: 1 },
+  { name: "PlayersRankTrial", keyCount: 1 },
+  { name: "PlayersRankFinal", keyCount: 1 },
+  { name: "MMRGameMeta", keyCount: 1 },
+  { name: "Guild", keyCount: 1 },
+  { name: "GuildMember", keyCount: 1 },
+  { name: "ResourceList", keyCount: 2 },
+  { name: "PlayerRank", keyCount: 2 },
+  { name: "RankPrize", keyCount: 2 },
+  { name: "GuildWhitelist", keyCount: 2 },
 ];
 
-const GLOBAL_EVENT_STREAM_MODELS: GlobalModelStreamConfig[] = GLOBAL_EVENT_MODELS.map((model) => ({ model }));
-const BOUNDED_SYNC_GLOBAL_ENTITY_STREAM_MODELS: GlobalModelStreamConfig[] = [
-  { model: "s1_eternum-WorldConfig", keyCount: 1 },
-  { model: "s1_eternum-HyperstrtConstructConfig", keyCount: 1 },
-  { model: "s1_eternum-HyperstructureGlobals", keyCount: 1 },
-  { model: "s1_eternum-WeightConfig", keyCount: 1 },
-  { model: "s1_eternum-ResourceFactoryConfig", keyCount: 1 },
-  { model: "s1_eternum-BuildingCategoryConfig", keyCount: 1 },
-  { model: "s1_eternum-ResourceBridgeWtlConfig", keyCount: 1 },
-  { model: "s1_eternum-StructureLevelConfig", keyCount: 1 },
-  { model: "s1_eternum-SeasonPrize", keyCount: 1 },
-  { model: "s1_eternum-SeasonEnded", keyCount: 1 },
-  { model: "s1_eternum-QuestLevels", keyCount: 1 },
-  { model: "s1_eternum-AddressName", keyCount: 1 },
-  { model: "s1_eternum-PlayerRegisteredPoints", keyCount: 1 },
-  { model: "s1_eternum-BlitzSettlement", keyCount: 1 },
-  { model: "s1_eternum-BlitzEntryTokenRegister", keyCount: 1 },
-  { model: "s1_eternum-PlayersRankTrial", keyCount: 1 },
-  { model: "s1_eternum-PlayersRankFinal", keyCount: 1 },
-  { model: "s1_eternum-MMRGameMeta", keyCount: 1 },
-  { model: "s1_eternum-Guild", keyCount: 1 },
-  { model: "s1_eternum-GuildMember", keyCount: 1 },
-  { model: "s1_eternum-ResourceList", keyCount: 2 },
-  { model: "s1_eternum-PlayerRank", keyCount: 2 },
-  { model: "s1_eternum-RankPrize", keyCount: 2 },
-  { model: "s1_eternum-GuildWhitelist", keyCount: 2 },
-];
-const GLOBAL_EVENT_STREAM_CLAUSE = buildModelKeysClause(GLOBAL_EVENT_STREAM_MODELS);
-const BOUNDED_SYNC_GLOBAL_ENTITY_STREAM_CLAUSE = buildModelKeysClause(BOUNDED_SYNC_GLOBAL_ENTITY_STREAM_MODELS);
-const GLOBAL_SPATIAL_MAP_BOOTSTRAP_SNAPSHOT_CLAUSE = buildModelKeysClause(GLOBAL_SPATIAL_MAP_BOOTSTRAP_SNAPSHOT_MODELS);
+// s1-only models with no s2 counterpart (SeasonEnded/finals live on
+// GameRegistry; quests are off) — never reference them against torii-s2.
+const S1_ONLY_GLOBAL_ENTITY_STREAM_MODELS = new Set(["SeasonEnded", "QuestLevels", "PlayersRankFinal"]);
+// s2-only additions: the game's registry row is the live clock/status source.
+const S2_ONLY_GLOBAL_ENTITY_STREAM_MODELS = ["GameRegistry"];
 
-const getInitialGlobalEntityStreamClause = (): Clause | undefined =>
-  env.VITE_PUBLIC_WORLDMAP_BOUNDED_SPATIAL_SYNC ? BOUNDED_SYNC_GLOBAL_ENTITY_STREAM_CLAUSE : undefined;
+const getGlobalEntityStreamModels = (): GlobalModelStreamConfig[] => {
+  if (!isGameScoped()) {
+    return GLOBAL_ENTITY_STREAM_MODEL_NAMES.map(({ name, keyCount }) => ({ model: gameModel(name), keyCount }));
+  }
+
+  return [
+    ...GLOBAL_ENTITY_STREAM_MODEL_NAMES.filter(({ name }) => !S1_ONLY_GLOBAL_ENTITY_STREAM_MODELS.has(name)).map(
+      ({ name, keyCount }) => ({ model: gameModel(name), keyCount }),
+    ),
+    ...S2_ONLY_GLOBAL_ENTITY_STREAM_MODELS.map((name) => ({ model: gameModel(name), keyCount: 1 })),
+  ];
+};
+
+const getGlobalEventStreamClause = (): Clause =>
+  buildModelKeysClause(getGlobalEventModels().map((model) => ({ model })));
+
+// Always model-bounded: an unclaused subscription streams every entity in the
+// world — on the shared s2 world that meant other games' settlements ghosting
+// into RECS. The subscribe-to-everything fallback is deliberately gone.
+const getInitialGlobalEntityStreamClause = (): Clause => buildModelKeysClause(getGlobalEntityStreamModels());
 
 const stringifyWorldmapSyncABPayload = (payload: Record<string, unknown>): string => {
   try {
@@ -728,10 +750,10 @@ async function hydrateGlobalSpatialBootstrapSnapshot(input: {
       operation: () =>
         getEntitiesSnapshot(
           input.setup.network.toriiClient,
-          GLOBAL_SPATIAL_MAP_BOOTSTRAP_SNAPSHOT_CLAUSE,
+          buildModelKeysClause(getGlobalSpatialMapBootstrapSnapshotModels()),
           input.setup.network.contractComponents as unknown as Component<Schema, Metadata, undefined>[],
           [],
-          [...GLOBAL_SPATIAL_MAP_BOOTSTRAP_MODEL_NAMES],
+          getGlobalSpatialMapBootstrapModelNames(),
           EVENT_QUERY_LIMIT,
           input.logging,
         ),
@@ -794,12 +816,10 @@ export const initialSync = async (
     logWorldmapSyncAB("Initial sync config", {
       boundedSpatialSync: env.VITE_PUBLIC_WORLDMAP_BOUNDED_SPATIAL_SYNC,
       boundedSpatialPadding: env.VITE_PUBLIC_WORLDMAP_BOUNDED_SPATIAL_PADDING,
-      eventModels: GLOBAL_EVENT_MODELS,
-      globalEntityMode: initialGlobalEntityClause ? "bounded_global_models" : "legacy_all_entities",
-      globalEntityModels: initialGlobalEntityClause
-        ? BOUNDED_SYNC_GLOBAL_ENTITY_STREAM_MODELS.map(({ model }) => model)
-        : "all",
-      spatialBootstrapModels: GLOBAL_SPATIAL_MAP_BOOTSTRAP_MODEL_NAMES,
+      eventModels: getGlobalEventModels(),
+      globalEntityMode: "bounded_global_models",
+      globalEntityModels: getGlobalEntityStreamModels().map(({ model }) => model),
+      spatialBootstrapModels: getGlobalSpatialMapBootstrapModelNames(),
       timestamp: new Date().toISOString(),
     });
     entityStreamSubscription = await syncEntitiesDebounced(
@@ -807,7 +827,7 @@ export const initialSync = async (
       setup,
       {
         entityClause: initialGlobalEntityClause,
-        eventClause: GLOBAL_EVENT_STREAM_CLAUSE,
+        eventClause: getGlobalEventStreamClause(),
       },
       logging,
       () => useConnectionStore.getState().recordGlobalUpdate(),
@@ -996,7 +1016,7 @@ export const resubscribeGlobalEntityStream = async (
       setup,
       {
         entityClause: initialGlobalEntityClause,
-        eventClause: GLOBAL_EVENT_STREAM_CLAUSE,
+        eventClause: getGlobalEventStreamClause(),
       },
       logging,
       () => useConnectionStore.getState().recordGlobalUpdate(),

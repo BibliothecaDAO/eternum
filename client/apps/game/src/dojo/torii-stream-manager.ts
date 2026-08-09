@@ -9,6 +9,7 @@ import {
   reportToriiSubscriptionLifecycle,
 } from "@/observability/network-health-reporting";
 import { env } from "../../env";
+import { gameIdKey, gameModel, getScopedGameId, isGameScopedModel } from "./game-scope";
 import { syncEntitiesDebounced } from "./sync";
 import type { ToriiSubscriptionSetupTimeoutInfo } from "./torii-subscription-setup";
 
@@ -79,7 +80,6 @@ const DEFAULT_SUBSCRIPTION_SETUP_TIMEOUT_MS = 8_000;
 const SPATIAL_SUBSCRIPTION_CREATE_MAX_ATTEMPTS = 2;
 const SPATIAL_SUBSCRIPTION_CREATE_RETRY_BACKOFF_MS = 750;
 const SPATIAL_READINESS_RECOVERY_BACKOFF_MS = [1_000, 2_500, 5_000] as const;
-const TILE_OPT_MODEL = "s1_eternum-TileOpt";
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -163,7 +163,7 @@ function isTileOptEntityInsideBounds(
   data: { models?: Record<string, unknown> },
   descriptor: BoundsDescriptor,
 ): boolean {
-  const tileOptModel = data.models?.[TILE_OPT_MODEL];
+  const tileOptModel = data.models?.[gameModel("TileOpt")];
   if (!isRecord(tileOptModel)) {
     return false;
   }
@@ -253,14 +253,20 @@ const defaultClauseBuilder = (descriptor: BoundsDescriptor): Clause | null => {
   const paddedMinRow = Math.floor(descriptor.minRow - padding);
   const paddedMaxRow = Math.ceil(descriptor.maxRow + padding);
 
-  const clauses: Clause[] = models.map(({ model, colField, rowField }) =>
-    AndComposeClause([
+  const clauses: Clause[] = models.map(({ model, colField, rowField }) => {
+    const memberClauses = [
       MemberClause(model as `${string}-${string}`, colField, "Gte", paddedMinCol),
       MemberClause(model as `${string}-${string}`, colField, "Lte", paddedMaxCol),
       MemberClause(model as `${string}-${string}`, rowField, "Gte", paddedMinRow),
       MemberClause(model as `${string}-${string}`, rowField, "Lte", paddedMaxRow),
-    ]).build(),
-  );
+    ];
+    // s2 single world: spatial models are per-game — without this, the bounds
+    // stream pulls every game's tiles/structures inside the window.
+    if (isGameScopedModel(model)) {
+      memberClauses.push(MemberClause(model as `${string}-${string}`, "game_id", "Eq", getScopedGameId()));
+    }
+    return AndComposeClause(memberClauses).build();
+  });
 
   if (additionalClauses?.length) {
     clauses.push(...additionalClauses);
@@ -737,7 +743,26 @@ export class ToriiStreamManager {
 }
 
 export const buildModelKeysClause = (models: GlobalModelStreamConfig[]): Clause => {
-  const grouped = models.reduce<
+  // s2 single world: per-game models take the active game id as key[0]. One
+  // VariableLen clause covers every arity, so legacy keyCounts only apply to
+  // the unscoped remainder (legacy arm + s2 chain-global models).
+  const scopedModels = models.filter(({ model }) => isGameScopedModel(model));
+  const unscopedModels = models.filter(({ model }) => !isGameScopedModel(model));
+
+  const scopedClauses: Clause[] =
+    scopedModels.length > 0
+      ? [
+          {
+            Keys: {
+              keys: [gameIdKey()],
+              pattern_matching: "VariableLen" as PatternMatching,
+              models: scopedModels.map(({ model }) => model),
+            },
+          },
+        ]
+      : [];
+
+  const grouped = unscopedModels.reduce<
     Map<
       string,
       {
@@ -765,13 +790,16 @@ export const buildModelKeysClause = (models: GlobalModelStreamConfig[]): Clause 
     return acc;
   }, new Map());
 
-  const clauses: Clause[] = Array.from(grouped.values()).map(({ keys, pattern_matching, models }) => ({
-    Keys: {
-      keys,
-      pattern_matching,
-      models,
-    },
-  }));
+  const clauses: Clause[] = [
+    ...scopedClauses,
+    ...Array.from(grouped.values()).map(({ keys, pattern_matching, models }) => ({
+      Keys: {
+        keys,
+        pattern_matching,
+        models,
+      },
+    })),
+  ];
 
   return buildCompositeClause(clauses);
 };

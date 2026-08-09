@@ -1,6 +1,6 @@
 // @vitest-environment node
 
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("@dojoengine/sdk", () => ({
   AndComposeClause: vi.fn(() => ({
@@ -38,8 +38,9 @@ vi.mock("@/observability/network-health-reporting", () => ({
   reportToriiSubscriptionLifecycle: reportToriiSubscriptionLifecycleMock,
 }));
 
+import { setGameScope } from "./game-scope";
 import { syncEntitiesDebounced } from "./sync";
-import { ToriiStreamManager, type BoundsDescriptor } from "./torii-stream-manager";
+import { buildModelKeysClause, ToriiStreamManager, type BoundsDescriptor } from "./torii-stream-manager";
 import { useConnectionStore } from "@/hooks/store/use-connection-store";
 
 function deferred<T>() {
@@ -692,5 +693,86 @@ describe("ToriiStreamManager", () => {
 
     expect(result).toBeNull();
     expect(syncMock).not.toHaveBeenCalled();
+  });
+});
+
+describe("buildModelKeysClause", () => {
+  beforeEach(() => {
+    setGameScope("s1_eternum", 0);
+  });
+
+  afterEach(() => {
+    setGameScope("s1_eternum", 0);
+  });
+
+  it("groups unscoped models by arity on the legacy arm", () => {
+    const clause = buildModelKeysClause([
+      { model: "s1_eternum-WorldConfig", keyCount: 1 },
+      { model: "s1_eternum-Guild", keyCount: 1 },
+      { model: "s1_eternum-ResourceList", keyCount: 2 },
+    ]) as any;
+
+    expect(clause.Composite.operator).toBe("Or");
+    expect(clause.Composite.clauses).toEqual([
+      {
+        Keys: {
+          keys: [undefined],
+          pattern_matching: "VariableLen",
+          models: ["s1_eternum-WorldConfig", "s1_eternum-Guild"],
+        },
+      },
+      {
+        Keys: {
+          keys: [undefined, undefined],
+          pattern_matching: "VariableLen",
+          models: ["s1_eternum-ResourceList"],
+        },
+      },
+    ]);
+  });
+
+  it("prefixes per-game models with the active game id on s2 and leaves chain-global models unscoped", () => {
+    setGameScope("s2_blitz", 7);
+
+    const clause = buildModelKeysClause([
+      { model: "s2_blitz-WorldConfig", keyCount: 1 },
+      { model: "s2_blitz-Guild", keyCount: 1 },
+      { model: "s2_blitz-GuildWhitelist", keyCount: 2 },
+      { model: "s2_blitz-AddressName", keyCount: 1 },
+      { model: "s2_blitz-ResourceList", keyCount: 2 },
+    ]) as any;
+
+    expect(clause.Composite.operator).toBe("Or");
+    // One VariableLen clause covers every per-game arity (D16-pinned key encoding).
+    expect(clause.Composite.clauses[0]).toEqual({
+      Keys: {
+        keys: ["0x7"],
+        pattern_matching: "VariableLen",
+        models: ["s2_blitz-WorldConfig", "s2_blitz-Guild", "s2_blitz-GuildWhitelist"],
+      },
+    });
+    const unscopedModels = clause.Composite.clauses.slice(1).flatMap((entry: any) => entry.Keys.models);
+    expect(unscopedModels.sort()).toEqual(["s2_blitz-AddressName", "s2_blitz-ResourceList"]);
+    for (const entry of clause.Composite.clauses.slice(1)) {
+      expect(entry.Keys.keys).not.toContain("0x7");
+    }
+  });
+
+  it("collapses to a single scoped clause when every model is per-game", () => {
+    setGameScope("s2_blitz", 3);
+
+    const clause = buildModelKeysClause([
+      { model: "s2_blitz-OpenRelicChestEvent" },
+      { model: "s2_blitz-ExplorerRewardEvent" },
+      { model: "s2_blitz-BattleEvent" },
+    ]) as any;
+
+    expect(clause).toEqual({
+      Keys: {
+        keys: ["0x3"],
+        pattern_matching: "VariableLen",
+        models: ["s2_blitz-OpenRelicChestEvent", "s2_blitz-ExplorerRewardEvent", "s2_blitz-BattleEvent"],
+      },
+    });
   });
 });

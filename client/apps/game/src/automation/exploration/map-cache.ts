@@ -1,3 +1,4 @@
+import { gameModel } from "@/dojo/game-scope";
 import { getEntitiesFromTorii, getMapFromToriiExact } from "@/dojo/queries";
 import {
   DEFAULT_COORD_ALT,
@@ -194,7 +195,7 @@ const hydrateOccupierEntities = async ({
       toriiClient,
       contractComponents,
       [...occupierIds],
-      ["s1_eternum-Structure", "s1_eternum-ExplorerTroops"],
+      [gameModel("Structure"), gameModel("ExplorerTroops")],
     );
   }
 
@@ -217,7 +218,7 @@ const hydrateOccupierEntities = async ({
   );
 
   if (unresolvedOwnerStructures.length > 0) {
-    await getEntitiesFromTorii(toriiClient, contractComponents, unresolvedOwnerStructures, ["s1_eternum-Structure"]);
+    await getEntitiesFromTorii(toriiClient, contractComponents, unresolvedOwnerStructures, [gameModel("Structure")]);
   }
 };
 

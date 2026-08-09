@@ -17,6 +17,7 @@ import { Chain, getGameManifest } from "@contracts";
 import { dojoConfig } from "../../dojo-config";
 import { env } from "../../env";
 import { clearSubscriptionQueue } from "../dojo/debounced-queries";
+import { namespaceForChain, setGameScope } from "../dojo/game-scope";
 import { cancelEntityStreamSubscription, initialSync } from "../dojo/sync";
 import { usePlayerStore } from "../hooks/store/use-player-store";
 import useSettlementStore from "../hooks/store/use-settlement-store";
@@ -125,6 +126,11 @@ const runBootstrap = async ({
     profile,
     toriiUrl: resolveBootstrapToriiUrl(context.chain, profile),
   };
+  // s2 single world: scope config reads and sync clauses to the active game
+  // before any setup/sync touches component data. Legacy profiles carry no
+  // gameId/presetId -> 0/0 keeps the WORLD_CONFIG_ID + inline-rulebook paths.
+  configManager.setActiveGame(profile.gameId ?? 0, profile.presetId ?? 0);
+  setGameScope(namespaceForChain(context.chain), profile.gameId ?? 0);
   await assertBootstrapToriiIsAvailable(worldContext);
   console.log("[STARTING DOJO SETUP]");
   configureDojoRuntime(worldContext);
@@ -265,7 +271,7 @@ const runDojoSetup = async (chain: Chain): Promise<SetupResult> => {
       vrfProviderAddress: env.VITE_PUBLIC_VRF_PROVIDER_ADDRESS,
       useBurner: false,
       // s2 single world uses the s2_blitz namespace; legacy worlds stay s1_eternum.
-      namespace: chain === "appchain" ? "s2_blitz" : "s1_eternum",
+      namespace: namespaceForChain(chain),
     },
     {
       onNoAccount: () => {

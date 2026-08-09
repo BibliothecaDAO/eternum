@@ -13,11 +13,13 @@ import {
   debouncedGetEntitiesFromTorii,
   debouncedGetOwnedArmiesFromTorii,
 } from "./debounced-queries";
+import { gameIdKey, gameModel, getScopedGameId, isGameScoped } from "./game-scope";
 import { EVENT_QUERY_LIMIT } from "./sync";
 
 const CONFIG_FETCH_CACHE_PREFIX = "eternum:config-fetched";
 
-const getConfigCacheKey = () => `${CONFIG_FETCH_CACHE_PREFIX}:${env.VITE_PUBLIC_CHAIN}:${env.VITE_PUBLIC_TORII}`;
+const getConfigCacheKey = () =>
+  `${CONFIG_FETCH_CACHE_PREFIX}:${env.VITE_PUBLIC_CHAIN}:${env.VITE_PUBLIC_TORII}:${getScopedGameId()}`;
 
 const hasSessionStorage = () => {
   try {
@@ -67,10 +69,12 @@ export const getTilesForPositionsFromTorii = async <S extends Schema>(
     return Promise.resolve([]);
   }
 
+  const tileModel = gameModel("TileOpt") as `${string}-${string}`;
   const tileClauses = positions.map((pos) =>
     AndComposeClause([
-      MemberClause("s1_eternum-TileOpt", "col", "Eq", pos.col),
-      MemberClause("s1_eternum-TileOpt", "row", "Eq", pos.row),
+      MemberClause(tileModel, "col", "Eq", pos.col),
+      MemberClause(tileModel, "row", "Eq", pos.row),
+      ...(isGameScoped() ? [MemberClause(tileModel, "game_id", "Eq", getScopedGameId())] : []),
     ]).build(),
   );
 
@@ -84,7 +88,7 @@ export const getTilesForPositionsFromTorii = async <S extends Schema>(
     },
     components as any,
     [],
-    ["s1_eternum-TileOpt"],
+    [tileModel],
     EVENT_QUERY_LIMIT,
     false,
   );
@@ -115,15 +119,16 @@ export const getStructuresDataFromTorii = async (
   }
 
   const playerStructuresModels = [
-    "s1_eternum-Structure",
-    "s1_eternum-Resource",
-    "s1_eternum-VillageTroop",
-    "s1_eternum-StructureBuildings",
-    "s1_eternum-ResourceArrival",
-    "s1_eternum-ProductionBoostBonus",
+    gameModel("Structure"),
+    gameModel("Resource"),
+    // no villages on the s2 blitz world — never reference the model there
+    ...(isGameScoped() ? [] : [gameModel("VillageTroop")]),
+    gameModel("StructureBuildings"),
+    gameModel("ResourceArrival"),
+    gameModel("ProductionBoostBonus"),
     // needed to check for hyperstructure shareholders 100% in blitz mode
-    "s1_eternum-HyperstructureShareholders",
-    "s1_eternum-Hyperstructure",
+    gameModel("HyperstructureShareholders"),
+    gameModel("Hyperstructure"),
   ];
 
   const runOnComplete = onComplete
@@ -201,53 +206,103 @@ export const getConfigFromTorii = async <S extends Schema>(
   components: Component<S, Metadata, undefined>[],
   onBackgroundRefresh?: () => void,
 ) => {
-  const oneKeyConfigModels = [
-    "s1_eternum-WorldConfig",
-    "s1_eternum-HyperstrtConstructConfig",
-    "s1_eternum-HyperstructureGlobals",
-    "s1_eternum-WeightConfig",
-    "s1_eternum-ResourceFactoryConfig",
-    "s1_eternum-BuildingCategoryConfig",
-    "s1_eternum-ResourceBridgeWtlConfig",
-    "s1_eternum-StructureLevelConfig",
-    "s1_eternum-SeasonPrize",
-    "s1_eternum-SeasonEnded",
-    "s1_eternum-QuestLevels",
-    "s1_eternum-AddressName",
-    "s1_eternum-PlayerRegisteredPoints",
-    "s1_eternum-BlitzSettlement",
-    "s1_eternum-BlitzEntryTokenRegister",
-    // Blitz prize models (single key)
-    "s1_eternum-PlayersRankTrial",
-    "s1_eternum-PlayersRankFinal",
-    "s1_eternum-MMRGameMeta",
-  ];
+  let configModels: string[];
+  let configClauses: Clause[];
 
-  const twoKeyConfigModels = [
-    "s1_eternum-ResourceList",
-    // Blitz prize models (two keys)
-    "s1_eternum-PlayerRank",
-    "s1_eternum-RankPrize",
-  ];
+  if (isGameScoped()) {
+    // s2 single world: per-game rows take the active game id as key[0]; the
+    // rulebook (preset tables) and chain singletons are keyed without it.
+    const gameScopedModels = [
+      "WorldConfig",
+      "HyperstructureGlobals",
+      "SeasonPrize",
+      "PlayerRegisteredPoints",
+      "BlitzSettlement",
+      "BlitzEntryTokenRegister",
+      "PlayersRankTrial",
+      "MMRGameMeta",
+      "PlayerRank",
+      "RankPrize",
+      "GameRegistry",
+    ].map(gameModel);
+    const chainGlobalModels = [
+      "HyperstrtConstructConfig",
+      "WeightConfig",
+      "ResourceFactoryConfig",
+      "BuildingCategoryConfig",
+      "ResourceBridgeWtlConfig",
+      "StructureLevelConfig",
+      "AddressName",
+      "ResourceList",
+      "ChainConfig",
+      "PresetConfig",
+    ].map(gameModel);
 
-  const configModels = [...oneKeyConfigModels, ...twoKeyConfigModels];
-  // todo: only 1 undefined clause variable len
-  const configClauses: Clause[] = [
-    {
-      Keys: {
-        keys: [undefined],
-        pattern_matching: "FixedLen",
-        models: oneKeyConfigModels,
+    configModels = [...gameScopedModels, ...chainGlobalModels];
+    configClauses = [
+      {
+        Keys: {
+          keys: [gameIdKey()],
+          pattern_matching: "VariableLen",
+          models: gameScopedModels,
+        },
       },
-    },
-    {
-      Keys: {
-        keys: [undefined, undefined],
-        pattern_matching: "FixedLen",
-        models: twoKeyConfigModels,
+      {
+        Keys: {
+          keys: [undefined],
+          pattern_matching: "VariableLen",
+          models: chainGlobalModels,
+        },
       },
-    },
-  ];
+    ];
+  } else {
+    const oneKeyConfigModels = [
+      "WorldConfig",
+      "HyperstrtConstructConfig",
+      "HyperstructureGlobals",
+      "WeightConfig",
+      "ResourceFactoryConfig",
+      "BuildingCategoryConfig",
+      "ResourceBridgeWtlConfig",
+      "StructureLevelConfig",
+      "SeasonPrize",
+      "SeasonEnded",
+      "QuestLevels",
+      "AddressName",
+      "PlayerRegisteredPoints",
+      "BlitzSettlement",
+      "BlitzEntryTokenRegister",
+      // Blitz prize models (single key)
+      "PlayersRankTrial",
+      "PlayersRankFinal",
+      "MMRGameMeta",
+    ].map(gameModel);
+
+    const twoKeyConfigModels = [
+      "ResourceList",
+      // Blitz prize models (two keys)
+      "PlayerRank",
+      "RankPrize",
+    ].map(gameModel);
+
+    configModels = [...oneKeyConfigModels, ...twoKeyConfigModels];
+    configClauses = [
+      {
+        Keys: {
+          keys: [undefined],
+          pattern_matching: "FixedLen",
+          models: oneKeyConfigModels,
+        },
+      },
+      {
+        Keys: {
+          keys: [undefined, undefined],
+          pattern_matching: "FixedLen",
+          models: twoKeyConfigModels,
+        },
+      },
+    ];
+  }
 
   // NOT @dojoengine/state's getEntities: that helper fires its RECS writes
   // without awaiting them, so its promise resolves before any entity lands
@@ -303,7 +358,8 @@ export const getAddressNamesFromTorii = async <S extends Schema>(
   client: ToriiClient,
   components: Component<S, Metadata, undefined>[],
 ) => {
-  const models = ["s1_eternum-AddressName"];
+  // AddressName is player identity — chain-global on both arms (1 key).
+  const models = [gameModel("AddressName")];
   const query = {
     Keys: {
       keys: [undefined],
@@ -319,31 +375,40 @@ export const getGuildsFromTorii = async <S extends Schema>(
   client: ToriiClient,
   components: Component<S, Metadata, undefined>[],
 ) => {
-  const singleKeyModels = ["s1_eternum-Guild", "s1_eternum-GuildMember"];
-  const twoKeyModels = ["s1_eternum-GuildWhitelist"];
+  const singleKeyModels = [gameModel("Guild"), gameModel("GuildMember")];
+  const twoKeyModels = [gameModel("GuildWhitelist")];
   const models = [...singleKeyModels, ...twoKeyModels];
 
-  const query = {
-    Composite: {
-      operator: "Or" as LogicalOperator,
-      clauses: [
-        {
-          Keys: {
-            keys: [undefined],
-            pattern_matching: "FixedLen" as PatternMatching,
-            models: singleKeyModels,
-          },
+  // Guild identity is per-game on s2: one game-prefixed clause covers every arity.
+  const query = isGameScoped()
+    ? {
+        Keys: {
+          keys: [gameIdKey()],
+          pattern_matching: "VariableLen" as PatternMatching,
+          models,
         },
-        {
-          Keys: {
-            keys: [undefined, undefined],
-            pattern_matching: "FixedLen" as PatternMatching,
-            models: twoKeyModels,
-          },
+      }
+    : {
+        Composite: {
+          operator: "Or" as LogicalOperator,
+          clauses: [
+            {
+              Keys: {
+                keys: [undefined],
+                pattern_matching: "FixedLen" as PatternMatching,
+                models: singleKeyModels,
+              },
+            },
+            {
+              Keys: {
+                keys: [undefined, undefined],
+                pattern_matching: "FixedLen" as PatternMatching,
+                models: twoKeyModels,
+              },
+            },
+          ],
         },
-      ],
-    },
-  };
+      };
 
   return getEntities(client, query, components as any, [], models, EVENT_QUERY_LIMIT, false);
 };
@@ -370,14 +435,16 @@ export const getHyperstructureFromTorii = async <S extends Schema>(
     return;
   }
 
+  const structureModel = gameModel("Structure");
   const structureQuery = {
     Composite: {
       operator: "Or" as LogicalOperator,
       clauses: validIds.map((id) => ({
         Keys: {
-          keys: [id.toString()],
+          // s2 Structure is keyed (game_id, entity_id)
+          keys: isGameScoped() ? [gameIdKey(), id.toString()] : [id.toString()],
           pattern_matching: "FixedLen" as PatternMatching,
-          models: ["s1_eternum-Structure"],
+          models: [structureModel],
         },
       })),
     },
@@ -388,47 +455,57 @@ export const getHyperstructureFromTorii = async <S extends Schema>(
     structureQuery,
     components as any,
     [],
-    ["s1_eternum-Structure"],
+    [structureModel],
     EVENT_QUERY_LIMIT,
     false,
   );
 
-  const hyperstructureQuery = {
-    Composite: {
-      operator: "Or" as LogicalOperator,
-      clauses: [
-        {
-          Keys: {
-            keys: [undefined],
-            pattern_matching: "FixedLen" as PatternMatching,
-            models: [],
-          },
-        },
-        {
-          Keys: {
-            keys: [undefined, undefined],
-            pattern_matching: "FixedLen" as PatternMatching,
-            models: [],
-          },
-        },
-        {
-          Keys: {
-            keys: [undefined, undefined, undefined],
-            pattern_matching: "FixedLen" as PatternMatching,
-            models: [],
-          },
-        },
-      ],
-    },
-  };
-
   const hyperstructureModels = [
-    "s1_eternum-HyperstructureGlobals",
-    "s1_eternum-Hyperstructure",
-    "s1_eternum-HyperstructureShareholders",
-    "s1_eternum-HyperstructureRequirements",
-    "s1_eternum-PlayerRegisteredPoints",
-  ];
+    "HyperstructureGlobals",
+    "Hyperstructure",
+    "HyperstructureShareholders",
+    "HyperstructureRequirements",
+    "PlayerRegisteredPoints",
+  ].map(gameModel);
+
+  // On s2 every hyperstructure model is game-prefixed, so one VariableLen
+  // clause replaces the legacy per-arity fanout.
+  const hyperstructureQuery = isGameScoped()
+    ? {
+        Keys: {
+          keys: [gameIdKey()],
+          pattern_matching: "VariableLen" as PatternMatching,
+          models: hyperstructureModels,
+        },
+      }
+    : {
+        Composite: {
+          operator: "Or" as LogicalOperator,
+          clauses: [
+            {
+              Keys: {
+                keys: [undefined],
+                pattern_matching: "FixedLen" as PatternMatching,
+                models: [],
+              },
+            },
+            {
+              Keys: {
+                keys: [undefined, undefined],
+                pattern_matching: "FixedLen" as PatternMatching,
+                models: [],
+              },
+            },
+            {
+              Keys: {
+                keys: [undefined, undefined, undefined],
+                pattern_matching: "FixedLen" as PatternMatching,
+                models: [],
+              },
+            },
+          ],
+        },
+      };
 
   const hyperstructurePromise = getEntities(
     client,
@@ -466,11 +543,14 @@ export const getEntitiesFromTorii = async <S extends Schema>(
     return;
   }
 
+  // s2 per-game models key entities as (game_id, entity_id, ...).
+  const entityKeys = (id: ID): string[] => (isGameScoped() ? [gameIdKey(), id.toString()] : [id.toString()]);
+
   const query =
     validEntityIDs.length === 1
       ? {
           Keys: {
-            keys: [validEntityIDs[0].toString()],
+            keys: entityKeys(validEntityIDs[0]),
             pattern_matching: "VariableLen" as PatternMatching,
             models: [],
           },
@@ -481,7 +561,7 @@ export const getEntitiesFromTorii = async <S extends Schema>(
             clauses: [
               ...validEntityIDs.map((id) => ({
                 Keys: {
-                  keys: [id.toString()],
+                  keys: entityKeys(id),
                   pattern_matching: "VariableLen" as PatternMatching,
                   models: [],
                 },
@@ -493,6 +573,8 @@ export const getEntitiesFromTorii = async <S extends Schema>(
   return getEntities(client, query, components as any, [], entityModels, 40_000, false);
 };
 
+// Market/Liquidity/Trade are s1-only models (no AMM on the s2 blitz world) —
+// this is a legacy-arm query and keeps its literal names.
 export const getMarketFromTorii = async <S extends Schema>(
   client: ToriiClient,
   components: Component<S, Metadata, undefined>[],
@@ -520,15 +602,15 @@ export const getBankStructuresFromTorii = async <S extends Schema>(
   client: ToriiClient,
   components: Component<S, Metadata, undefined>[],
 ) => {
-  return getEntities(
-    client,
-    MemberClause("s1_eternum-Structure", "category", "Eq", StructureType.Bank).build(),
-    components,
-    [],
-    ["s1_eternum-Structure"],
-    EVENT_QUERY_LIMIT,
-    false,
-  );
+  const structureModel = gameModel("Structure") as `${string}-${string}`;
+  const clause = isGameScoped()
+    ? AndComposeClause([
+        MemberClause(structureModel, "category", "Eq", StructureType.Bank),
+        MemberClause(structureModel, "game_id", "Eq", getScopedGameId()),
+      ]).build()
+    : MemberClause(structureModel, "category", "Eq", StructureType.Bank).build();
+
+  return getEntities(client, clause, components, [], [structureModel], EVENT_QUERY_LIMIT, false);
 };
 
 export const getOwnedArmiesFromTorii = async <S extends Schema>(
@@ -536,27 +618,40 @@ export const getOwnedArmiesFromTorii = async <S extends Schema>(
   components: Component<S, Metadata, undefined>[],
   owners: number[],
 ) => {
-  return getEntities(
-    client,
-    {
-      Composite: {
-        operator: "Or",
-        clauses: owners.map((owner) => ({
-          Member: {
-            model: "s1_eternum-ExplorerTroops",
-            member: "owner",
-            operator: "Eq",
-            value: { Primitive: { U32: owner } },
-          },
-        })),
-      },
+  const explorerModel = gameModel("ExplorerTroops");
+  const ownersClause: Clause = {
+    Composite: {
+      operator: "Or",
+      clauses: owners.map((owner) => ({
+        Member: {
+          model: explorerModel,
+          member: "owner",
+          operator: "Eq",
+          value: { Primitive: { U32: owner } },
+        },
+      })),
     },
-    components,
-    [],
-    ["s1_eternum-ExplorerTroops", "s1_eternum-Resource"],
-    EVENT_QUERY_LIMIT,
-    false,
-  );
+  };
+  const clause: Clause = isGameScoped()
+    ? {
+        Composite: {
+          operator: "And",
+          clauses: [
+            {
+              Member: {
+                model: explorerModel,
+                member: "game_id",
+                operator: "Eq",
+                value: { Primitive: { U32: getScopedGameId() } },
+              },
+            },
+            ownersClause,
+          ],
+        },
+      }
+    : ownersClause;
+
+  return getEntities(client, clause, components, [], [explorerModel, gameModel("Resource")], EVENT_QUERY_LIMIT, false);
 };
 
 export const getBuildingsFromTorii = async <S extends Schema>(
@@ -564,20 +659,25 @@ export const getBuildingsFromTorii = async <S extends Schema>(
   components: Component<S, Metadata, undefined>[],
   structurePositions: HexPosition[],
 ) => {
+  const buildingModel = gameModel("Building");
   const query = {
     Composite: {
       operator: "Or" as LogicalOperator,
       clauses: structurePositions.map((position) => ({
         Keys: {
-          keys: [position.col.toString(), position.row.toString()],
+          // s2 Building is keyed (game_id, alt, outer_col, outer_row, ...) —
+          // the alt slot stays a wildcard.
+          keys: isGameScoped()
+            ? [gameIdKey(), undefined, position.col.toString(), position.row.toString()]
+            : [position.col.toString(), position.row.toString()],
           pattern_matching: "VariableLen" as PatternMatching,
-          models: ["s1_eternum-Building"],
+          models: [buildingModel],
         },
       })),
     },
   };
 
-  return getEntities(client, query, components as any, [], ["s1_eternum-Building"], EVENT_QUERY_LIMIT, false);
+  return getEntities(client, query, components as any, [], [buildingModel], EVENT_QUERY_LIMIT, false);
 };
 
 const getMapFromTorii = async <S extends Schema>(
@@ -587,17 +687,19 @@ const getMapFromTorii = async <S extends Schema>(
   startRow: number,
   range: number,
 ) => {
+  const tileModel = gameModel("TileOpt") as `${string}-${string}`;
   return getEntities(
     client,
     AndComposeClause([
-      MemberClause("s1_eternum-TileOpt", "col", "Gte", startCol - range),
-      MemberClause("s1_eternum-TileOpt", "col", "Lte", startCol + range),
-      MemberClause("s1_eternum-TileOpt", "row", "Gte", startRow - range),
-      MemberClause("s1_eternum-TileOpt", "row", "Lte", startRow + range),
+      MemberClause(tileModel, "col", "Gte", startCol - range),
+      MemberClause(tileModel, "col", "Lte", startCol + range),
+      MemberClause(tileModel, "row", "Gte", startRow - range),
+      MemberClause(tileModel, "row", "Lte", startRow + range),
+      ...(isGameScoped() ? [MemberClause(tileModel, "game_id", "Eq", getScopedGameId())] : []),
     ]).build(),
     components as any,
     [],
-    ["s1_eternum-TileOpt"],
+    [tileModel],
     EVENT_QUERY_LIMIT,
     false,
   );
@@ -611,17 +713,19 @@ export const getMapFromToriiExact = async <S extends Schema>(
   minRow: number,
   maxRow: number,
 ) => {
+  const tileModel = gameModel("TileOpt") as `${string}-${string}`;
   return getEntities(
     client,
     AndComposeClause([
-      MemberClause("s1_eternum-TileOpt", "col", "Gte", minCol),
-      MemberClause("s1_eternum-TileOpt", "col", "Lte", maxCol),
-      MemberClause("s1_eternum-TileOpt", "row", "Gte", minRow),
-      MemberClause("s1_eternum-TileOpt", "row", "Lte", maxRow),
+      MemberClause(tileModel, "col", "Gte", minCol),
+      MemberClause(tileModel, "col", "Lte", maxCol),
+      MemberClause(tileModel, "row", "Gte", minRow),
+      MemberClause(tileModel, "row", "Lte", maxRow),
+      ...(isGameScoped() ? [MemberClause(tileModel, "game_id", "Eq", getScopedGameId())] : []),
     ]).build(),
     components as any,
     [],
-    ["s1_eternum-TileOpt"],
+    [tileModel],
     EVENT_QUERY_LIMIT,
     false,
   );
@@ -635,18 +739,23 @@ export const getStructuresFromToriiExact = async <S extends Schema>(
   minRow: number,
   maxRow: number,
 ) => {
+  const structureModel = gameModel("Structure") as `${string}-${string}`;
+  const structureBuildingsModel = gameModel("StructureBuildings") as `${string}-${string}`;
+
   const structureBoundsClause = AndComposeClause([
-    MemberClause("s1_eternum-Structure", "base.coord_x", "Gte", minCol),
-    MemberClause("s1_eternum-Structure", "base.coord_x", "Lte", maxCol),
-    MemberClause("s1_eternum-Structure", "base.coord_y", "Gte", minRow),
-    MemberClause("s1_eternum-Structure", "base.coord_y", "Lte", maxRow),
+    MemberClause(structureModel, "base.coord_x", "Gte", minCol),
+    MemberClause(structureModel, "base.coord_x", "Lte", maxCol),
+    MemberClause(structureModel, "base.coord_y", "Gte", minRow),
+    MemberClause(structureModel, "base.coord_y", "Lte", maxRow),
+    ...(isGameScoped() ? [MemberClause(structureModel, "game_id", "Eq", getScopedGameId())] : []),
   ]).build();
 
   const structureBuildingsBoundsClause = AndComposeClause([
-    MemberClause("s1_eternum-StructureBuildings", "coord.x", "Gte", minCol),
-    MemberClause("s1_eternum-StructureBuildings", "coord.x", "Lte", maxCol),
-    MemberClause("s1_eternum-StructureBuildings", "coord.y", "Gte", minRow),
-    MemberClause("s1_eternum-StructureBuildings", "coord.y", "Lte", maxRow),
+    MemberClause(structureBuildingsModel, "coord.x", "Gte", minCol),
+    MemberClause(structureBuildingsModel, "coord.x", "Lte", maxCol),
+    MemberClause(structureBuildingsModel, "coord.y", "Gte", minRow),
+    MemberClause(structureBuildingsModel, "coord.y", "Lte", maxRow),
+    ...(isGameScoped() ? [MemberClause(structureBuildingsModel, "game_id", "Eq", getScopedGameId())] : []),
   ]).build();
 
   return getEntities(
@@ -659,12 +768,14 @@ export const getStructuresFromToriiExact = async <S extends Schema>(
     },
     components as any,
     [],
-    ["s1_eternum-Structure", "s1_eternum-StructureBuildings"],
+    [structureModel, structureBuildingsModel],
     EVENT_QUERY_LIMIT,
     false,
   );
 };
 
+// Quest is an s1-only model (quests are off on the s2 blitz world) — this is a
+// legacy-arm query and keeps its literal names.
 export const getQuestsFromTorii = async (client: ToriiClient, components: Component<Schema, Metadata, undefined>[]) => {
   const query = {
     Keys: {

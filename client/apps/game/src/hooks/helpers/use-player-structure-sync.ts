@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useRef } from "react";
 
+import { gameIdKey, gameModel, getScopedGameId, isGameScoped } from "@/dojo/game-scope";
 import { getStructuresDataFromTorii } from "@/dojo/queries";
 import { syncEntitiesDebounced } from "@/dojo/sync";
 import { sqlApi } from "@/services/api";
 import { padHexAddressTo66 } from "@/ui/utils/utils";
 import { useDojo, usePlayerStructures } from "@bibliothecadao/react";
-import { MemberClause } from "@dojoengine/sdk";
+import { AndComposeClause, MemberClause } from "@dojoengine/sdk";
 import type { PatternMatching } from "@dojoengine/torii-client";
 import type { Clause } from "@dojoengine/torii-wasm/types";
 import { env } from "../../../env";
@@ -14,11 +15,21 @@ import { useConnectionStore } from "../store/use-connection-store";
 import { selectUnsyncedOwnedStructureTargets } from "./player-structure-sync-utils";
 
 // Models synced per-player via a scoped subscription (see usePlayerStructureSync)
-const PLAYER_STRUCTURE_MODELS: string[] = [
-  "s1_eternum-ProductionBoostBonus",
-  "s1_eternum-Resource",
-  "s1_eternum-ResourceArrival",
-];
+const getPlayerStructureModels = (): string[] => ["ProductionBoostBonus", "Resource", "ResourceArrival"].map(gameModel);
+
+// Structures owned by an address, optionally pinned to the active s2 game.
+const buildOwnerStructureClause = (accountAddress: string): Clause => {
+  const structureModel = gameModel("Structure") as `${string}-${string}`;
+  const ownerClause = MemberClause(structureModel, "owner", "Eq", {
+    type: "ContractAddress",
+    value: padHexAddressTo66(accountAddress),
+  });
+
+  return isGameScoped()
+    ? AndComposeClause([ownerClause, MemberClause(structureModel, "game_id", "Eq", getScopedGameId())]).build()
+    : ownerClause.build();
+};
+
 const OWNED_STRUCTURE_BACKFILL_DEBOUNCE_MS = 250;
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
@@ -37,7 +48,7 @@ const unwrapToriiFieldValue = (value: unknown): unknown => {
 const readOwnerFromStructureModelUpdate = (update: unknown): string | null => {
   if (!isRecord(update) || !isRecord(update.models)) return null;
 
-  const structureModel = update.models["s1_eternum-Structure"];
+  const structureModel = update.models[gameModel("Structure")];
   if (!isRecord(structureModel)) return null;
 
   const directOwner = unwrapToriiFieldValue(structureModel.owner);
@@ -187,10 +198,7 @@ export const usePlayerStructureSync = () => {
     if (!accountAddress || !toriiClient) return;
     let cancelled = false;
 
-    const ownerStructureClause = MemberClause("s1_eternum-Structure", "owner", "Eq", {
-      type: "ContractAddress",
-      value: padHexAddressTo66(accountAddress),
-    }).build();
+    const ownerStructureClause = buildOwnerStructureClause(accountAddress);
     const normalizedAccountAddress = padHexAddressTo66(accountAddress).toLowerCase();
 
     const subscribeToOwnedStructureUpdates = async () => {
@@ -276,26 +284,28 @@ export const usePlayerStructureSync = () => {
 
       if (!accountAddress || !toriiClient) return;
 
+      const playerStructureModels = getPlayerStructureModels();
       const structureClauses = structureEntityIds.map((id) => ({
         Keys: {
-          keys: [id.toString()],
+          keys: isGameScoped() ? [gameIdKey(), id.toString()] : [id.toString()],
           pattern_matching: "VariableLen" as PatternMatching,
-          models: PLAYER_STRUCTURE_MODELS,
+          models: playerStructureModels,
         },
       }));
 
       const buildingClauses = structurePositions.map((pos) => ({
         Keys: {
-          keys: [pos.col.toString(), pos.row.toString()],
+          // s2 Building is keyed (game_id, alt, outer_col, outer_row, ...) —
+          // the alt slot stays a wildcard.
+          keys: isGameScoped()
+            ? [gameIdKey(), undefined, pos.col.toString(), pos.row.toString()]
+            : [pos.col.toString(), pos.row.toString()],
           pattern_matching: "VariableLen" as PatternMatching,
-          models: ["s1_eternum-Building"],
+          models: [gameModel("Building")],
         },
       }));
 
-      const ownerStructureClause = MemberClause("s1_eternum-Structure", "owner", "Eq", {
-        type: "ContractAddress",
-        value: padHexAddressTo66(accountAddress),
-      }).build();
+      const ownerStructureClause = buildOwnerStructureClause(accountAddress);
 
       const clause: Clause = {
         Composite: {

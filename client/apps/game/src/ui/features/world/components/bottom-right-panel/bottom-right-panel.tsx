@@ -1,6 +1,7 @@
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { debouncedGetEntitiesFromTorii } from "@/dojo/debounced-queries";
+import { gameModel } from "@/dojo/game-scope";
 import { getStructuresDataFromTorii } from "@/dojo/queries";
 import { useEntityResync } from "@/hooks/helpers/use-entity-resync";
 import { isVillageLikeStructureCategory, normalizeStructureCategory } from "@/lib/structure-type-utils";
@@ -79,12 +80,12 @@ const formatResourceAmount = (value: number): string => {
   return flooredValue.toLocaleString();
 };
 
-const ENTITY_SYNC_MODELS = {
-  explorer: ["s1_eternum-ExplorerTroops"],
-  structure: ["s1_eternum-Structure"],
+const ENTITY_SYNC_MODEL_NAMES = {
+  explorer: ["ExplorerTroops"],
+  structure: ["Structure"],
 } as const;
 
-type SyncableEntityType = keyof typeof ENTITY_SYNC_MODELS;
+type SyncableEntityType = keyof typeof ENTITY_SYNC_MODEL_NAMES;
 
 const ENTITY_TYPE_LABELS: Record<SyncableEntityType, string> = {
   explorer: "Explorer",
@@ -263,7 +264,7 @@ const MapTilePanel = () => {
             toriiClient,
             contractComponents as unknown as Component<Schema, Metadata, undefined>[],
             [syncableEntityId],
-            [...ENTITY_SYNC_MODELS[syncableEntityType]],
+            ENTITY_SYNC_MODEL_NAMES[syncableEntityType].map(gameModel),
             complete,
           ).catch((error) => {
             if (settled) return;

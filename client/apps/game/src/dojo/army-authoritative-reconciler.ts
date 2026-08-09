@@ -4,6 +4,7 @@ import { setEntities } from "@dojoengine/state";
 import { PatternMatching, ToriiClient } from "@dojoengine/torii-client";
 import { LogicalOperator } from "@dojoengine/torii-wasm";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
+import { gameIdKey, gameModel, isGameScoped } from "./game-scope";
 
 /**
  * Loop A of the ghost-army fix: the level-triggered "local RECS == Torii"
@@ -36,7 +37,7 @@ export const ARMY_AUTHORITATIVE_MIN_TRACKED_AGE_MS = 30_000;
 // the LOCAL-freeze failure mode Phase 3 instruments.
 const ARMY_SWEEP_QUERY_TIMEOUT_MS = 15_000;
 
-const EXPLORER_TROOPS_MODEL = "s1_eternum-ExplorerTroops";
+const explorerTroopsModel = () => gameModel("ExplorerTroops");
 const SWEEP_QUERY_BATCH_SIZE = 100;
 // Tripwire against a degraded Torii answering with bogus empty pages: if a
 // single sweep would confirm-kill this many armies AND more than half the
@@ -151,7 +152,8 @@ const isValidId = (id: unknown): id is ID => typeof id === "number" && Number.is
 const buildByIdClause = (ids: readonly ID[]) => {
   const keysFor = (id: ID) => ({
     Keys: {
-      keys: [id.toString()],
+      // s2 ExplorerTroops is keyed (game_id, explorer_id)
+      keys: isGameScoped() ? [gameIdKey(), id.toString()] : [id.toString()],
       pattern_matching: "VariableLen" as PatternMatching,
       models: [],
     },
@@ -168,7 +170,7 @@ const buildByIdClause = (ids: readonly ID[]) => {
 };
 
 const hasExplorerTroopsModelData = (models: Record<string, object | undefined> | undefined): boolean => {
-  const model = models?.[EXPLORER_TROOPS_MODEL];
+  const model = models?.[explorerTroopsModel()];
   return model !== undefined && model !== null && Object.keys(model).length > 0;
 };
 
@@ -233,7 +235,7 @@ export async function sweepArmiesAgainstTorii<S extends Schema>(
             pagination: { limit: SWEEP_QUERY_BATCH_SIZE, cursor, direction: "Forward", order_by: [] },
             clause,
             no_hashed_keys: false,
-            models: [EXPLORER_TROOPS_MODEL],
+            models: [explorerTroopsModel()],
             historical: false,
           }),
           queryTimeoutMs,
