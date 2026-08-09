@@ -157,3 +157,66 @@ your local spike migration.
 5. `docs/plans/A2-NOTES.md`: decisions, timings, dry-run summary, anything escalated.
 6. Reviewer (Claude) then: reviews the diff, deploys the s2 world to the dev appchain with D3, registers the preset,
    flips the torii registry + Lambda `DEFAULT_WORKFLOW_REF`, and runs a real UI-button launch.
+
+---
+
+## Round 2 addendum (review of 11100ae4c8, 2026-08-09)
+
+Round-1 verdict: the collapse is architecturally right and remarkably clean — full TS→Cairo serde audit found ZERO
+field-order/encoding defects across all struct families; the legacy-step mapping table is complete
+(hyperstructure_construction=0 confirmed byte-identical to legacy); mainnet classified hunk-by-hunk with ZERO behavior
+changes; all touched tests pass (56/56 per-file; whole-dir failures are pre-existing `mock.module("starknet")`
+cross-file leakage, not yours); D6 writers byte-identical to the validated spike profile; spike evidence reproduced. TWO
+blockers and a short fix list before acceptance:
+
+**R2-1 (BLOCKER) — every real UI/Lambda launch sends preset_id 140 and reverts.** `cli/launch-request.ts:549` fills
+`version: args.version || DEFAULT_VERSION` ("140") BEFORE the runner runs, so the appchain default at `runner.ts:180` is
+dead code on the production path (the Lambda never sends `version`; the workflow only passes `--version` when
+`GAME_LAUNCH_VERSION` is set). `create_game` with preset 140 reverts on "Eternum: preset is not registered". Fix in ONE
+place: make the CLI resolver's default chain-aware (`args.version || (chain === "appchain" ? "1" : DEFAULT_VERSION)`)
+and DELETE the runner-side fallback. Add a test at the CLI-resolution boundary: appchain environment + no version → "1"
+(the existing tests call the runner directly, which is why they couldn't catch this).
+
+**R2-2 (BLOCKER) — deploy-s2-world grants roles before the registrar guard, against a possibly-stale manifest.**
+`deploy-s2-world.ts:126-141` runs `wireSharedCollectibles` FIRST; with the tracked (still pre-A1 s1)
+`manifest_appchain.json` it resolves s1 contract addresses via the namespace-blind suffix match at `calls.ts:50` and
+submits two real grant txs to dead contracts before `requireRegistrarContract` finally throws. Fix: (a) run the
+registrar guard/bootstrap resolution BEFORE any tx; (b) match manifest tags with the `s2_blitz-` prefix (as
+`game-registry.ts:13-15` already does), so a stale manifest fails fast everywhere, including `--dry-run` and
+`resolveAppchainWorldAddress`.
+
+**R2-3 — duplicate-game protection.** `create_game` has no on-chain name-uniqueness; the skip check
+(`game-registry.ts:84`) scans only the newest 50 rows and `.catch(() => null)` turns a torii outage into a blind resend
+(workflow retries create-world with max_attempts=2 → duplicate game). Fix: query by name with a WHERE clause (drop the
+LIMIT-50 client scan), and FAIL CLOSED — if the existence check errors, abort the step with a clear message instead of
+resending.
+
+**R2-4 — poll defaults.** Same shadowing pattern as R2-1: the CLI always fills `waitForFactoryIndexPollMs/TimeoutMs`
+with the factory defaults (5 s / 5 min), so the runner's 2 s / 2 min never apply. Make the CLI defaults chain-aware
+(appchain 2 s / 2 min); mainnet unchanged.
+
+**R2-5 — end_grace_seconds: explicit, not borrowed.** The preset builder derives the default from
+`bridgeCloseAfterEndSeconds` (604 800 s = 7 days), which keeps every season-gated entrypoint open and blocks the escrow
+sweep for a week after each 2-hour game. Owner-signed ruling: add an explicit `endGraceSeconds` to the blitz source
+config with default **86 400** (24 h claim window), per-launch override unchanged.
+
+**R2-6 — golden calldata snapshot.** `registrar-preset.test.ts` pins only counts + total length (2 037), so a same-width
+field swap passes every test. Add ONE snapshot of the full felt array for preset 1 (and one for a `CreateGameParams`
+build) — the cheap durable guard for the whole serde class.
+
+**R2-7 (mechanical)** — finish the `stepId` narrowing fix in `run-store/series-store.ts` and
+`run-store/rotation-store.ts` (same one-liner already applied in `run-store/store.ts`).
+
+**R2-8 (markers)** — the handoff asked for A2 retirement markers on dead appchain factory paths: add a one-line header
+comment to `deploy/appchain/scripts/{factory-config,factory-create-game,blitz-flow}.ts` ("retired by A2 — appchain
+launches go through the registrar; kept for mainnet-era reference").
+
+**Record in A2-NOTES (no code):** series `num_games` is frozen at first creation and `create_game` for a series must
+come from the series owner account — deployer key rotation mid-series bricks appends (accepted limitation); the
+deterministic seed (poseidon of public inputs) is acceptable because combat randomness stays VRF-backed;
+`appchain.eternum` launches intentionally reject; all appchain games share one `worldAddress` (A4 UI note, plus
+surfacing `artifacts.gameId`); whole-dir `bun test` has pre-existing cross-file mock leakage — run per-file.
+
+Definition of done for this round: R2-1..R2-8 landed; touched tests green per-file; a fresh local spike create-world run
+driven through the REAL CLI path (`launch-step.ts` with no --version) proving preset 1 resolves; A2-NOTES updated.
+Reviewer then re-audits and proceeds to the dev-appchain deployment.
