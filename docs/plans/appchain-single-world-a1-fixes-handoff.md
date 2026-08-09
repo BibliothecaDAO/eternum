@@ -189,3 +189,35 @@ settling starts.
 4. Update `docs/plans/A1-NOTES.md` with: the fix-round summary, the accepted-deviation records above, and which F/M
    items changed behavior.
 5. Reviewer (Claude) re-audits the diff, re-runs the arity sweep, and only then pushes/accepts.
+
+---
+
+## Round 2 addendum (re-audit of 7cb8028848..74c023ff74, 2026-08-09)
+
+Round-1 verdict: B1–B6, F1–F9, M1–M8 all verified landed; arity sweep over ~106 storage-op sites found zero mismatches;
+180/180 tests independently confirmed; no pre-existing test weakened. ONE blocking regression was introduced and must be
+fixed before acceptance:
+
+**R2-B1 (BLOCKER) — `blitz_prize_claim_no_game` never persists `final_trial_id`, enabling repeat-drain.**
+`src/systems/prize_distribution/contracts.cairo:151-153`: line 151 sets `game.final_trial_id = SYSTEM_TRIAL_ID` on a
+local copy; line 152 `debit_fees` does its own storage read-modify-write; line 153 re-reads storage into `game`,
+discarding the mutation; line 168 persists `final_trial_id = 0`. Consequences: the finalized-guard at `:126` never
+trips, so with over-minted escrow (N wallets mint entry tokens, 1 settles — escrow holds N×fee while the prize is 1×fee)
+the lone settled player can claim repeatedly and drain the other minters' fees; winner/ranked views report unfinalized
+forever; MMR commit/claim stays blocked; admin `reset_trial` passes its immutability guard and can erase the
+already-PAID system trial. Fix: mirror `mark_game_settled`'s correct ordering (`registrar/contracts.cairo:222-225`) —
+call `debit_fees` first, re-read the registry row, THEN set `final_trial_id` on the fresh copy before `write_model`.
+Extend the dispatcher suite: after a no-game claim, assert `GameRegistry.final_trial_id == SYSTEM_TRIAL_ID` and assert a
+second claim reverts on "rankings already finalized".
+
+**R2-M1 (record only)** — add to A1-NOTES' A4 notes: `AddressName` remains globally keyed by wallet
+(`models/name.cairo:3-7`; written at `realm/blitz/contracts.cairo:557`), so registering in any game overwrites the
+player's display name across all games. Accepted (D7 kept names global by design); clients must treat display names as
+account-level, not per-game.
+
+Everything else from the round-1 re-audit is accepted as-is, including (recorded for the owner): the end-grace window is
+a hard prize-claim deadline (post-sweep unclaimed prizes are confiscated to `fee_recipient` — configure
+`end_grace_seconds` generously); standalone and single-registrant games mint no threshold loot chest (zero allocation
+per D10 — coherent with "standalone games get zero chest allocation"); `create_game` now rejects games whose season
+window is already past (improvement via the reservation-system reuse); dev-mode games can reach Ended/Settled while
+season gates stay open (admin-only blast radius).
