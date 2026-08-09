@@ -50,7 +50,9 @@
 - The D15 village claim-immunity and village-association guards, the retired factory address, and the excluded test
   configuration helpers remain as commented restoration markers. `TEST_PRESET_ID` and `TEST_GAME_ID` are deliberately
   different so preset/game scope aliasing fails visibly.
-- The completed fix-round suite passes all 180 tests, including 11 deployed-world dispatcher tests.
+- The round-two fix persists the lone-player system trial after escrow debit, so repeat claims, winner-view ambiguity,
+  MMR blocking, and admin erasure of an already-paid trial are prevented.
+- The completed fix-round suite passes all 181 tests, including 12 deployed-world dispatcher tests.
 
 ## Accepted deviations and A4 notes
 
@@ -64,7 +66,18 @@
 - `ResourceList` and `ResourceMinMaxList` are preset-scoped: their key order is `(preset_id, entity_id, index)`, not
   game-scoped. This exception belongs in the A4 client key-arity table.
 - `ResourceBridgeWtlConfig` and `ResourceRevBridgeWtlConfig` remain compiled singleton bridge configuration rows.
+- `AddressName` remains globally keyed by wallet. A name registered in any game replaces that account's display name
+  across every game; A4 clients must treat display names as account-level rather than per-game state.
 - `AntiBot` remains excluded because its only storage reader is the D15-cut `realm/season` host; no compiled system
   reads it. It must be restored with that host during the full Eternum port.
 - Excluded-module files still contain pre-migration signatures. A Phase-3 restore requires a full model, key, config,
   event, and interface migration; uncommenting the modules alone is not sufficient.
+
+## Accepted lifecycle behavior
+
+- The end-grace window is the hard prize-claim deadline. Once the admin sweep runs, unclaimed prizes are transferred to
+  `fee_recipient`, so deployments must configure `end_grace_seconds` generously.
+- Standalone and single-registrant games receive zero series allocation and therefore mint no threshold loot chest.
+- `create_game` rejects a game whose season window is already past because reservation runs during creation.
+- Dev-mode games can reach `Ended` and `Settled` while dev-mode season gates remain open; settlement remains an
+  admin-only action.

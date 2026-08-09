@@ -58,7 +58,7 @@ pub mod prize_distribution_systems {
     use crate::utils::interfaces::collectibles::{ICollectibleDispatcher, ICollectibleDispatcherTrait};
     use super::IPrizeDistributionSystems;
 
-    const SYSTEM_TRIAL_ID: u128 = 1000;
+    pub const SYSTEM_TRIAL_ID: u128 = 1000;
     const VICTORY_POINTS_MULTIPLIER: u128 = 1_000_000;
     const GAME_REWARD_CHEST_POINTS_THRESHOLD: u128 = 500 * VICTORY_POINTS_MULTIPLIER;
 
@@ -148,9 +148,9 @@ pub mod prize_distribution_systems {
                 total_prize_amount_calculated: prize_amount,
             };
 
-            game.final_trial_id = SYSTEM_TRIAL_ID;
             GameRegistryImpl::debit_fees(ref world, game_id, prize_amount.into());
             game = GameRegistryImpl::get(world, game_id);
+            game.final_trial_id = SYSTEM_TRIAL_ID;
 
             let player_rank = PlayerRank { game_id, player: registered_player, rank: 1, paid: true };
 

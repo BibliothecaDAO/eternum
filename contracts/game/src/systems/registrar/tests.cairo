@@ -251,6 +251,7 @@ mod dispatcher_lifecycle {
     use crate::models::mmr::MMRConfigDefaultImpl;
     use crate::models::rank::{PlayerRank, PlayersRankTrial, RankList, RankPrize};
     use crate::models::resource::resource::{ResourceAllowance, ResourceImpl, ResourceMinMaxList};
+    use crate::systems::prize_distribution::contracts::prize_distribution_systems::SYSTEM_TRIAL_ID;
     use crate::systems::prize_distribution::contracts::{
         IPrizeDistributionSystemsDispatcher, IPrizeDistributionSystemsDispatcherTrait,
     };
@@ -431,11 +432,22 @@ mod dispatcher_lifecycle {
         let game_a = GameRegistryImpl::get(context.world, GAME_A);
         let game_b = GameRegistryImpl::get(context.world, GAME_B);
         assert!(game_a.fees_collected == FEE_AMOUNT && game_a.fees_paid_out == FEE_AMOUNT, "game A escrow mismatch");
+        assert!(game_a.final_trial_id == SYSTEM_TRIAL_ID, "game A lone-player trial was not finalized");
         assert!(game_b.fees_collected == FEE_AMOUNT && game_b.fees_paid_out == 0, "game A debited game B");
 
         let token_a: crate::models::config::BlitzEntryTokenRegister = context.world.read_model((GAME_A, 1));
         let token_b: crate::models::config::BlitzEntryTokenRegister = context.world.read_model((GAME_B, 2));
         assert!(token_a.registered && token_b.registered, "game-scoped entry rows missing");
+    }
+
+    #[test]
+    #[should_panic(expected: "Eternum: rankings already finalized")]
+    fn lone_player_prize_cannot_be_claimed_twice() {
+        let context = setup_lifecycle();
+        start_cheat_caller_address(context.prize.contract_address, context.player);
+
+        context.prize.blitz_prize_claim_no_game(GAME_A, context.player);
+        context.prize.blitz_prize_claim_no_game(GAME_A, context.player);
     }
 
     #[test]
