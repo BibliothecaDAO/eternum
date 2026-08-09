@@ -2,6 +2,7 @@ import { loadEnvironmentConfiguration } from "../../../config/deployer/clean/con
 import { resolveDeploymentEnvironment } from "../../../config/deployer/clean/environment";
 import { MINTER_ROLE } from "../../../config/deployer/clean/eternum/roles";
 import {
+  assertAppchainRegistrarAvailable,
   bootstrapChainConfig,
   isRegistrarAlreadyInitializedError,
   resolveAppchainContractAddress,
@@ -107,6 +108,9 @@ async function bootstrapRegistrar(params: {
 
 async function deployS2World(): Promise<void> {
   const dryRun = process.argv.includes("--dry-run");
+  console.log("World migration is reviewer-owned. Run: sozo build && sozo migrate --profile appchain");
+  assertAppchainRegistrarAvailable();
+
   const environment = resolveDeploymentEnvironment("appchain.blitz");
   const rpcUrl = process.env.RPC_URL || environment.rpcUrl;
   const credentials = resolveAccountCredentials({
@@ -122,7 +126,6 @@ async function deployS2World(): Promise<void> {
     signer: credentials.privateKey,
   });
 
-  console.log("World migration is reviewer-owned. Run: sozo build && sozo migrate --profile appchain");
   await wireSharedCollectibles({
     rpcUrl,
     accountAddress: credentials.accountAddress,

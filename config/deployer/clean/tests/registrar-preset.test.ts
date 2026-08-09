@@ -20,7 +20,7 @@ mock.module("../../../../contracts/game/manifest_appchain.json", () => ({
   },
 }));
 
-const { buildRegisterPresetCalldata } = await import("../registrar/calls");
+const { buildCreateGameCalldata, buildRegisterPresetCalldata } = await import("../registrar/calls");
 const { buildCreateGameParams, buildPresetRegistration, summarizePresetSideTables } =
   await import("../registrar/preset");
 
@@ -42,6 +42,7 @@ describe("appchain registrar preset", () => {
     expect(buildRegisterPresetCalldata(payload)).toHaveLength(2_037);
     expect(payload.presetConfig.preset_id).toBe(1);
     expect(payload.gameConfig.preset_id).toBe(1);
+    expect(buildRegisterPresetCalldata(payload)).toMatchSnapshot();
   });
 
   test("keeps launch clocks and mode overrides in CreateGameParams", () => {
@@ -69,7 +70,9 @@ describe("appchain registrar preset", () => {
       dev_mode_on: true,
       two_player_mode: true,
       use_map_override: true,
+      end_grace_seconds: 86_400,
     });
     expect(BigInt(params.seed as string)).not.toBe(0n);
+    expect(buildCreateGameCalldata(params)).toMatchSnapshot();
   });
 });

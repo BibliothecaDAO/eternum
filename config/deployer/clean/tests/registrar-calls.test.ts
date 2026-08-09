@@ -15,7 +15,8 @@ mock.module("../../../../contracts/game/manifest_appchain.json", () => ({
   },
 }));
 
-const { resolveCreatedGameId } = await import("../registrar/calls");
+const { resolveAppchainContractAddress, resolveAppchainWorldAddress, resolveCreatedGameId } =
+  await import("../registrar/calls");
 
 const manifest: RegistrarManifest = {
   events: [{ tag: "s2_blitz-GameCreated", selector: "0xabc" }],
@@ -49,5 +50,24 @@ describe("registrar receipt parsing", () => {
     };
 
     expect(resolveCreatedGameId(receipt, manifest)).toBeUndefined();
+  });
+
+  test("rejects a stale pre-A2 appchain manifest", () => {
+    const staleManifest: RegistrarManifest = {
+      world: { address: "0xstaleworld" },
+      contracts: [
+        {
+          tag: "s1_eternum-registrar_systems",
+          address: "0xstaleregistrar",
+          systems: ["create_game"],
+        },
+        { tag: "s1_eternum-blitz_realm_systems", address: "0xstaleblitz" },
+      ],
+    };
+
+    expect(() => resolveAppchainWorldAddress(staleManifest)).toThrow("s2_blitz-registrar_systems is missing");
+    expect(() => resolveAppchainContractAddress("blitz_realm_systems", staleManifest)).toThrow(
+      "blitz_realm_systems is missing",
+    );
   });
 });

@@ -3,6 +3,9 @@ import type { DeploymentEnvironment, DeploymentEnvironmentId } from "./types";
 
 export const DEFAULT_NAMESPACE = "s1_eternum";
 export const DEFAULT_VERSION = DEFAULT_FACTORY_CONFIG_VERSION;
+export const DEFAULT_APPCHAIN_PRESET_ID = "1";
+export const DEFAULT_APPCHAIN_GAME_INDEX_TIMEOUT_MS = 2 * 60 * 1_000;
+export const DEFAULT_APPCHAIN_GAME_INDEX_POLL_MS = 2_000;
 // MEASURED, do not raise without re-testing: 20 lands reliably (~15s/batch,
 // full world in ~10 batches / ~2.5 min). 50 and 300 do NOT — katana returns a
 // transaction hash but the transaction is never mined, so the client waits

@@ -78,6 +78,7 @@ function buildLaunchConfig() {
   return {
     season: {
       durationSeconds: 7_200,
+      endGraceSeconds: 86_400,
       bridgeCloseAfterEndSeconds: 600,
       pointRegistrationCloseAfterEndSeconds: 300,
     },
@@ -392,6 +393,9 @@ describe("runLaunchStep mainnet launch steps", () => {
   });
 
   test("submits one registrar create_game call on appchain and records its game id", async () => {
+    process.env.TORII_URL = "https://torii.example";
+    globalThis.fetch = mock(async (_input: string | URL | Request) => Response.json([])) as unknown as typeof fetch;
+
     const summary = await runLaunchStep({
       environmentId: "appchain.blitz",
       stepId: "create-world",
@@ -401,6 +405,7 @@ describe("runLaunchStep mainnet launch steps", () => {
       factoryAddress,
       accountAddress,
       privateKey,
+      version: "1",
     });
 
     expect(createGameExecuteMock).toHaveBeenCalledTimes(1);
@@ -416,9 +421,9 @@ describe("runLaunchStep mainnet launch steps", () => {
 
   test("skips registrar create_game when GameRegistry already contains the game", async () => {
     process.env.TORII_URL = "https://torii.example";
-    globalThis.fetch = mock(async () =>
+    globalThis.fetch = mock(async (_input: string | URL | Request) =>
       Response.json([{ game_id: 9, name: actualStarknet.shortString.encodeShortString("alpha") }]),
-    ) as typeof fetch;
+    ) as unknown as typeof fetch;
 
     const summary = await runLaunchStep({
       environmentId: "appchain.blitz",
@@ -429,6 +434,7 @@ describe("runLaunchStep mainnet launch steps", () => {
       factoryAddress,
       accountAddress,
       privateKey,
+      version: "1",
     });
 
     expect(createGameExecuteMock).not.toHaveBeenCalled();
@@ -437,10 +443,31 @@ describe("runLaunchStep mainnet launch steps", () => {
     expect(summary.createGameTxHash).toBeUndefined();
   });
 
+  test("refuses to submit create_game when the duplicate check is unavailable", async () => {
+    process.env.TORII_URL = "https://torii.example";
+    globalThis.fetch = mock(async (_input: string | URL | Request) => {
+      throw new Error("torii unavailable");
+    }) as unknown as typeof fetch;
+
+    await expect(
+      runLaunchStep({
+        environmentId: "appchain.blitz",
+        stepId: "create-world",
+        gameName: "alpha",
+        startTime,
+        rpcUrl: "https://rpc.example",
+        accountAddress,
+        privateKey,
+        version: "1",
+      }),
+    ).rejects.toThrow('Cannot verify whether game "alpha" already exists; refusing to submit create_game');
+    expect(createGameExecuteMock).not.toHaveBeenCalled();
+  });
+
   test("waits for the created GameRegistry row by game id", async () => {
     process.env.TORII_URL = "https://torii.example";
-    const toriiFetchMock = mock(async () => Response.json([{ game_id: 11 }]));
-    globalThis.fetch = toriiFetchMock as typeof fetch;
+    const toriiFetchMock = mock(async (_input: string | URL | Request) => Response.json([{ game_id: 11 }]));
+    globalThis.fetch = toriiFetchMock as unknown as typeof fetch;
     loadLaunchSummaryIfPresentMock.mockImplementationOnce(() =>
       buildStoredLaunchSummary({ gameId: 11, worldAddress: "0xsharedworld" }),
     );

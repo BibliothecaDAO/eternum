@@ -1,10 +1,6 @@
-import {
-  decodePaddedFeltAscii,
-  extractNameFelt,
-  fetchFactoryRows,
-  getFactorySqlBaseUrl,
-} from "../../../../common/factory/endpoints";
+import { fetchFactoryRows, getFactorySqlBaseUrl } from "../../../../common/factory/endpoints";
 import { setTimeout as sleep } from "node:timers/promises";
+import { shortString } from "starknet";
 
 export interface AppchainGameRegistryRow extends Record<string, unknown> {
   gameId: number;
@@ -57,11 +53,6 @@ function toGameRegistryRow(row: Record<string, unknown>): AppchainGameRegistryRo
   return gameId ? { ...row, gameId } : null;
 }
 
-function rowMatchesGameName(row: Record<string, unknown>, gameName: string): boolean {
-  const encodedName = extractNameFelt(row);
-  return encodedName === gameName || (encodedName !== null && decodePaddedFeltAscii(encodedName) === gameName);
-}
-
 async function fetchRows(query: string, cartridgeApiBase?: string): Promise<Record<string, unknown>[]> {
   return fetchFactoryRows(resolveToriiSqlUrl(cartridgeApiBase), query, { timeoutMs: 10_000 });
 }
@@ -81,9 +72,12 @@ export async function findGameRegistryByName(
   gameName: string,
   cartridgeApiBase?: string,
 ): Promise<AppchainGameRegistryRow | null> {
-  const rows = await fetchRows(`SELECT * FROM ${GAME_REGISTRY_TABLE} ORDER BY game_id DESC LIMIT 50`, cartridgeApiBase);
-  const row = rows.find((candidate) => rowMatchesGameName(candidate, gameName));
-  return row ? toGameRegistryRow(row) : null;
+  const encodedName = shortString.encodeShortString(gameName);
+  const rows = await fetchRows(
+    `SELECT * FROM ${GAME_REGISTRY_TABLE} WHERE name = "${encodedName}" LIMIT 1`,
+    cartridgeApiBase,
+  );
+  return rows[0] ? toGameRegistryRow(rows[0]) : null;
 }
 
 export async function waitForGameRegistryById(params: {

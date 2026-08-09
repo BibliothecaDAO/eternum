@@ -48,3 +48,27 @@ The same payload registered successfully in one local transaction, so no registr
 
 The spike used Sozo 1.8.7 because the existing local Katana exposes Starknet RPC 0.10. The appchain build and migration
 completed with the existing oversized-CASM warnings for `troop_battle_systems` and `troop_management_systems`.
+
+## Round 2 verification
+
+- The real `launch-step.ts` CLI path, with no `--version`, resolved preset 1 and created `a2-r2-1786283496` as game id 2
+  in 14.488 seconds. Transaction: `0x23b93dfbf90c8cec5f8be54c1a255749310660f2e4661a9be39a30f94be96ba`.
+- The matching CLI wait step resolved preset 1, found the `GameRegistry` row in 3 ms, and completed in 0.914 seconds.
+  Total per-game wall clock was **15.402 seconds**. Torii reported preset 1, status `Registration`, and the explicit
+  86,400-second end grace.
+- Appchain CLI defaults are preset 1, a 2-second GameRegistry poll, and a 2-minute timeout. Mainnet retains factory
+  version 140 and its 5-second/5-minute poll budget.
+- Duplicate protection queries the encoded name directly and fails closed when Torii is unavailable. The deployment
+  script validates the full `s2_blitz` registrar API before any transaction; the tracked stale manifest fails even in
+  dry-run mode.
+- Full preset and `CreateGameParams` felt arrays are pinned as golden snapshots. Touched tests are run per-file because
+  whole-directory Bun runs have pre-existing `mock.module("starknet")` leakage between files.
+
+## Accepted limitations and follow-ups
+
+- A series freezes `num_games` when it is first registered. Its games must continue to be created by the registered
+  series owner, so rotating the deployer key mid-series prevents later appends.
+- Game seeds are deterministic Poseidon hashes of public launch inputs. This is acceptable because combat randomness
+  remains VRF-backed.
+- `appchain.eternum` launches intentionally reject; A2 supports the persistent `appchain.blitz` world only.
+- Every appchain game shares one `worldAddress`. A4 must use `artifacts.gameId` to identify the game within that world.

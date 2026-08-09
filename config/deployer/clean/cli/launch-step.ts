@@ -1,5 +1,10 @@
 #!/usr/bin/env bun
-import { DEFAULT_APPCHAIN_MAX_ACTIONS, DEFAULT_MAINNET_MAX_ACTIONS, DEFAULT_VERSION } from "../constants";
+import {
+  DEFAULT_APPCHAIN_MAX_ACTIONS,
+  DEFAULT_APPCHAIN_PRESET_ID,
+  DEFAULT_MAINNET_MAX_ACTIONS,
+  DEFAULT_VERSION,
+} from "../constants";
 import { runLaunchStep } from "../launch/runner";
 import { runLaunchRotationStep } from "../launch/rotation-runner";
 import { runLaunchSeriesStep } from "../launch/series-runner";
@@ -63,7 +68,7 @@ function usage(): void {
       "  --auto-retry-enabled <true|false>",
       "  --auto-retry-interval-minutes <number>",
       "  --mode <batched|sequential>",
-      `  --version <felt>              default: ${DEFAULT_VERSION}`,
+      `  --version <felt>              default: appchain ${DEFAULT_APPCHAIN_PRESET_ID}, mainnet ${DEFAULT_VERSION}`,
       `  --max-actions <number>        default: appchain ${DEFAULT_APPCHAIN_MAX_ACTIONS}, mainnet ${DEFAULT_MAINNET_MAX_ACTIONS}`,
       "  --skip-indexer",
       "  --skip-lootchest-role-grant",

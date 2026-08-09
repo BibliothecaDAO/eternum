@@ -1,3 +1,4 @@
+// Retired by A2 — appchain launches go through the registrar; kept for mainnet-era reference.
 /**
  * Creates a game world through the appchain world factory.
  *

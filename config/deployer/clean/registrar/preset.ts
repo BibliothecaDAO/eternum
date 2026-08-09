@@ -10,6 +10,7 @@ import { hash, shortString, uint256 } from "starknet";
 
 type ConfigRecord<Value> = Record<number, Value> | Record<string, Value>;
 type ResourceAmount = { resource: number; amount: number };
+type RegistrarConfig = Config & { season: Config["season"] & { endGraceSeconds?: number } };
 
 interface ResourceListReference {
   id: number;
@@ -518,6 +519,19 @@ function resolveRegistrationSchedule(config: Config, startMainAt: number) {
   return { registrationStartAt, startSettlingAt };
 }
 
+function resolveEndGraceSeconds(config: Config): number {
+  const endGraceSeconds = (config as RegistrarConfig).season.endGraceSeconds;
+  if (
+    typeof endGraceSeconds !== "number" ||
+    !Number.isInteger(endGraceSeconds) ||
+    endGraceSeconds < 0 ||
+    endGraceSeconds > 0xffff_ffff
+  ) {
+    throw new Error("Blitz season endGraceSeconds must be an integer between 0 and 4294967295");
+  }
+  return endGraceSeconds;
+}
+
 function deriveGameSeed(input: CreateGamePayloadInput): string {
   const seriesId = input.seriesName ? shortString.encodeShortString(input.seriesName) : "0x0";
   const seed = hash.computePoseidonHashOnElements([
@@ -544,7 +558,7 @@ export function buildCreateGameParams(config: Config, input: CreateGamePayloadIn
     start_settling_at: startSettlingAt,
     start_main_at: input.startMainAt,
     duration_seconds: input.durationSeconds,
-    end_grace_seconds: config.season.bridgeCloseAfterEndSeconds,
+    end_grace_seconds: resolveEndGraceSeconds(config),
     registration_grace_seconds: config.season.pointRegistrationCloseAfterEndSeconds,
     dev_mode_on: input.devModeOn,
     single_realm_mode: input.singleRealmMode,

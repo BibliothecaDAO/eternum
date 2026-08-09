@@ -1,3 +1,4 @@
+// Retired by A2 — appchain launches go through the registrar; kept for mainnet-era reference.
 /**
  * Drives a blitz game on the dev appchain end to end, headlessly.
  *

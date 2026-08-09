@@ -486,6 +486,7 @@ export async function recordFactorySeriesLaunchStepStarted(
   if (!request.stepId) {
     throw new Error("stepId is required to record a started series step");
   }
+  const stepId = request.stepId;
 
   const context = createFactorySeriesRunStoreEventContext(request);
   const summary = request.request.resumeSummary || buildInitialSeriesLaunchSummary(request.request);
@@ -496,10 +497,10 @@ export async function recordFactorySeriesLaunchStepStarted(
     options,
     (current) => {
       const nextSummary = mergeSeriesSummary(current.summary, null, {
-        stepId: request.stepId,
+        stepId,
         targetGameNames: request.request.targetGameNames,
         status: "running",
-        latestEvent: buildSeriesStepStartedEvent(request.stepId),
+        latestEvent: buildSeriesStepStartedEvent(stepId),
         timestamp: context.timestamp,
       });
 
@@ -510,12 +511,12 @@ export async function recordFactorySeriesLaunchStepStarted(
             context,
             nextSummary,
           ),
-          activeLease: buildFactorySeriesRunLease(context, request.stepId),
+          activeLease: buildFactorySeriesRunLease(context, stepId),
           steps: markSeriesStepStatus(
             current.steps,
-            request.stepId,
+            stepId,
             "running",
-            buildSeriesStepStartedEvent(request.stepId),
+            buildSeriesStepStartedEvent(stepId),
             context.timestamp,
           ),
           summary: nextSummary,
@@ -527,7 +528,7 @@ export async function recordFactorySeriesLaunchStepStarted(
         context.timestamp,
       );
     },
-    `start ${request.stepId}`,
+    `start ${stepId}`,
   );
 }
 
@@ -538,6 +539,7 @@ export async function recordFactorySeriesLaunchStepSucceeded(
   if (!request.stepId) {
     throw new Error("stepId is required to record a successful series step");
   }
+  const stepId = request.stepId;
 
   const context = createFactorySeriesRunStoreEventContext(request);
 
@@ -548,19 +550,19 @@ export async function recordFactorySeriesLaunchStepSucceeded(
     (current) => {
       const nextSummary = persistSeriesLaunchSummary(
         mergeSeriesSummary(current.summary, resolveSeriesSummaryFromWorkspace(request), {
-          stepId: request.stepId,
+          stepId,
           targetGameNames: request.request.targetGameNames,
           status: "succeeded",
-          latestEvent: buildSeriesStepSucceededEvent(request.stepId),
+          latestEvent: buildSeriesStepSucceededEvent(stepId),
           timestamp: context.timestamp,
         }),
       );
-      const nextStepStatus = resolveSeriesSummaryStepStatus(nextSummary, request.stepId);
-      const nextStepEvent = resolveSeriesSummaryStepEvent(nextSummary, request.stepId);
+      const nextStepStatus = resolveSeriesSummaryStepStatus(nextSummary, stepId);
+      const nextStepEvent = resolveSeriesSummaryStepEvent(nextSummary, stepId);
       const nextRun = finalizeSeriesRunRecord(
         {
           ...updateFactorySeriesRunContext(releaseFactorySeriesRunLease(current, context), context, nextSummary),
-          steps: markSeriesStepStatus(current.steps, request.stepId, nextStepStatus, nextStepEvent, context.timestamp),
+          steps: markSeriesStepStatus(current.steps, stepId, nextStepStatus, nextStepEvent, context.timestamp),
           summary: nextSummary,
           artifacts: {
             summaryPath:
@@ -578,7 +580,7 @@ export async function recordFactorySeriesLaunchStepSucceeded(
         autoRetry: buildAutoRetrySchedule(nextRun, nextRun.status, context.timestamp),
       };
     },
-    `complete ${request.stepId}`,
+    `complete ${stepId}`,
   );
 }
 
@@ -589,6 +591,7 @@ export async function recordFactorySeriesLaunchStepFailed(
   if (!request.stepId) {
     throw new Error("stepId is required to record a failed series step");
   }
+  const stepId = request.stepId;
 
   const context = createFactorySeriesRunStoreEventContext(request);
 
@@ -598,10 +601,10 @@ export async function recordFactorySeriesLaunchStepFailed(
     options,
     (current) => {
       const nextSummary = mergeSeriesSummary(current.summary, resolveSeriesSummaryFromWorkspace(request), {
-        stepId: request.stepId,
+        stepId,
         targetGameNames: request.request.targetGameNames,
         status: "failed",
-        latestEvent: buildSeriesStepFailedEvent(request.stepId, request.errorMessage),
+        latestEvent: buildSeriesStepFailedEvent(stepId, request.errorMessage),
         timestamp: context.timestamp,
         errorMessage: request.errorMessage,
       });
@@ -610,9 +613,9 @@ export async function recordFactorySeriesLaunchStepFailed(
           ...updateFactorySeriesRunContext(releaseFactorySeriesRunLease(current, context), context, nextSummary),
           steps: markSeriesStepStatus(
             current.steps,
-            request.stepId,
+            stepId,
             "failed",
-            buildSeriesStepFailedEvent(request.stepId, request.errorMessage),
+            buildSeriesStepFailedEvent(stepId, request.errorMessage),
             context.timestamp,
             request.errorMessage,
           ),
@@ -633,6 +636,6 @@ export async function recordFactorySeriesLaunchStepFailed(
         autoRetry: buildAutoRetrySchedule(nextRun, nextRun.status, context.timestamp),
       };
     },
-    `fail ${request.stepId}`,
+    `fail ${stepId}`,
   );
 }

@@ -1,3 +1,4 @@
+// Retired by A2 — appchain launches go through the registrar; kept for mainnet-era reference.
 /**
  * Registers a FactoryConfig version on the appchain world factory so
  * `create_game` can deploy game worlds.

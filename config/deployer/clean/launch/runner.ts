@@ -13,6 +13,8 @@ import {
 } from "../blitz/hyperstructure-reservation";
 import { resolveBlitzEntryTokenAddress, shouldDeployBlitzEntryToken } from "../blitz/entry-token";
 import {
+  DEFAULT_APPCHAIN_GAME_INDEX_POLL_MS,
+  DEFAULT_APPCHAIN_GAME_INDEX_TIMEOUT_MS,
   DEFAULT_CARTRIDGE_API_BASE,
   DEFAULT_FACTORY_INDEX_POLL_MS,
   DEFAULT_FACTORY_INDEX_TIMEOUT_MS,
@@ -177,7 +179,7 @@ function createLaunchRuntime(request: LaunchGameRequest, progress: LaunchProgres
     toriiNamespaces: request.toriiNamespaces || DEFAULT_NAMESPACE,
     vrfProviderAddress: request.vrfProviderAddress || DEFAULT_VRF_PROVIDER_ADDRESS,
     executionMode: request.executionMode || "batched",
-    version: request.version || (environment.chain === "appchain" ? "1" : DEFAULT_VERSION),
+    version: request.version || DEFAULT_VERSION,
     createGame: resolveCreateGameSettings(request, environment),
   };
 }
@@ -1170,7 +1172,15 @@ function applyAppchainGameIdentity(summary: LaunchGameSummary, game: { gameId: n
 }
 
 async function findExistingAppchainGame(execution: PreparedLaunchExecution) {
-  return findGameRegistryByName(execution.request.gameName).catch(() => null);
+  try {
+    return await findGameRegistryByName(execution.request.gameName);
+  } catch (error) {
+    const reason = error instanceof Error ? error.message : String(error);
+    throw new Error(
+      `Cannot verify whether game "${execution.request.gameName}" already exists; refusing to submit create_game: ${reason}`,
+      { cause: error },
+    );
+  }
 }
 
 async function resolveCreatedAppchainGameId(
@@ -1247,8 +1257,8 @@ async function runAppchainWaitForGameStep(execution: PreparedLaunchExecution): P
     () =>
       waitForGameRegistryById({
         gameId,
-        timeoutMs: execution.request.waitForFactoryIndexTimeoutMs ?? 120_000,
-        pollIntervalMs: execution.request.waitForFactoryIndexPollMs ?? 2_000,
+        timeoutMs: execution.request.waitForFactoryIndexTimeoutMs ?? DEFAULT_APPCHAIN_GAME_INDEX_TIMEOUT_MS,
+        pollIntervalMs: execution.request.waitForFactoryIndexPollMs ?? DEFAULT_APPCHAIN_GAME_INDEX_POLL_MS,
         onRetry: (attempt, elapsedMs) => {
           execution.runtime.progress.log(
             `GameRegistry row ${gameId} still pending after ${formatDuration(elapsedMs)} (${attempt} polls)`,

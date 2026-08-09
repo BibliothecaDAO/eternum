@@ -99,7 +99,31 @@ describe("launch request helpers", () => {
         game: "bltz-test-2",
         "start-time": "2026-03-18T10:00:00Z",
       }).maxActions,
-    ).toBe(300);
+    ).toBe(20);
+  });
+
+  test("defaults appchain launches to preset 1 and the GameRegistry poll budget", () => {
+    const appchainRequest = buildLaunchGameRequest({
+      environment: "appchain.blitz",
+      game: "bltz-test-1",
+      "start-time": "2026-03-18T10:00:00Z",
+    });
+    const mainnetRequest = buildLaunchGameRequest({
+      environment: "mainnet.blitz",
+      game: "bltz-test-2",
+      "start-time": "2026-03-18T10:00:00Z",
+    });
+
+    expect(appchainRequest).toMatchObject({
+      version: "1",
+      waitForFactoryIndexTimeoutMs: 120_000,
+      waitForFactoryIndexPollMs: 2_000,
+    });
+    expect(mainnetRequest).toMatchObject({
+      version: "140",
+      waitForFactoryIndexTimeoutMs: 300_000,
+      waitForFactoryIndexPollMs: 5_000,
+    });
   });
 
   test("resolves supported launch step ids", () => {
