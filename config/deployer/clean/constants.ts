@@ -3,7 +3,8 @@ import type { DeploymentEnvironment, DeploymentEnvironmentId } from "./types";
 
 export const DEFAULT_NAMESPACE = "s1_eternum";
 export const DEFAULT_VERSION = DEFAULT_FACTORY_CONFIG_VERSION;
-export const DEFAULT_APPCHAIN_PRESET_ID = "1";
+// Preset 2 = official-60 balance ("Regular Fast") — the owner-designated default game shape.
+export const DEFAULT_APPCHAIN_PRESET_ID = "2";
 export const DEFAULT_APPCHAIN_GAME_INDEX_TIMEOUT_MS = 2 * 60 * 1_000;
 export const DEFAULT_APPCHAIN_GAME_INDEX_POLL_MS = 2_000;
 // MEASURED, do not raise without re-testing: 20 lands reliably (~15s/batch,

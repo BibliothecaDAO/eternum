@@ -102,7 +102,7 @@ describe("launch request helpers", () => {
     ).toBe(20);
   });
 
-  test("defaults appchain launches to preset 1 and the GameRegistry poll budget", () => {
+  test("defaults appchain launches to preset 2 (Regular Fast) and the GameRegistry poll budget", () => {
     const appchainRequest = buildLaunchGameRequest({
       environment: "appchain.blitz",
       game: "bltz-test-1",
@@ -115,7 +115,7 @@ describe("launch request helpers", () => {
     });
 
     expect(appchainRequest).toMatchObject({
-      version: "1",
+      version: "2",
       waitForFactoryIndexTimeoutMs: 120_000,
       waitForFactoryIndexPollMs: 2_000,
     });

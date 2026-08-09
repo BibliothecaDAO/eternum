@@ -152,7 +152,8 @@ function resolveAppchainBlitzRegistrationConfig(context: EnvironmentContext): Co
   const periodSeconds = Number(process.env.APPCHAIN_REGISTRATION_PERIOD_SECONDS) || 60 * 60;
 
   // A 30-day default game can never be observed ending on a dev chain.
-  const durationSeconds = Number(process.env.APPCHAIN_GAME_DURATION_SECONDS) || 60 * 60 * 2;
+  // 1h default matches the on-chain default preset 2 (official-60 / "Regular Fast").
+  const durationSeconds = Number(process.env.APPCHAIN_GAME_DURATION_SECONDS) || 60 * 60;
 
   return {
     // Real games, not a sandbox: dev mode bypasses the registration window and
