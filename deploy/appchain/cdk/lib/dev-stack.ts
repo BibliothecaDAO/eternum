@@ -436,6 +436,77 @@ export class DevStack extends cdk.Stack {
       });
     }
 
+    // --- torii-s2: stock upstream torii pinned to the persistent s2_blitz ---
+    // world (A3). Parallel to the multi-world fork above, which keeps serving
+    // s1 playtests until the A5 cutover. Reached on ALB :8081 (no DNS dep).
+    const toriiS2ConfigParam = new ssm.StringParameter(this, "ToriiS2Config", {
+      parameterName: "/realms-appchain/dev/torii-s2-config",
+      description: "torii.toml for the vanilla single-world s2 torii (A3 runbook fills values)",
+      stringValue: "# placeholder — replaced by the A3 runbook (deploy/appchain/torii-s2/render-config.ts)",
+    });
+    const toriiS2Logs = new logs.LogGroup(this, "ToriiS2Logs", {
+      logGroupName: "/realms-appchain/dev/torii-s2",
+      retention: logs.RetentionDays.ONE_WEEK,
+      removalPolicy: cdk.RemovalPolicy.DESTROY,
+    });
+    const toriiS2Task = new ecs.FargateTaskDefinition(this, "ToriiS2Task", {
+      cpu: cfg.toriiCpu,
+      memoryLimitMiB: cfg.toriiMemoryMib,
+      runtimePlatform: {
+        cpuArchitecture: ecs.CpuArchitecture.X86_64,
+        operatingSystemFamily: ecs.OperatingSystemFamily.LINUX,
+      },
+    });
+    toriiS2Task.addContainer("torii", {
+      // Stock upstream torii, digest-pinned (v1.8.16) — no fork patches.
+      image: ecs.ContainerImage.fromRegistry(
+        "ghcr.io/dojoengine/torii@sha256:4f6633c1f8fddbc68d647e14f424c91f083c20d14a5dd4661eb0ab77841899ac",
+      ),
+      logging: ecs.LogDrivers.awsLogs({ logGroup: toriiS2Logs, streamPrefix: "torii-s2" }),
+      entryPoint: ["/bin/sh", "-c"],
+      command: [
+        'mkdir -p /data && printf \'%s\' "$TORII_CONFIG" > /tmp/torii.toml && exec torii --config /tmp/torii.toml --http.addr 0.0.0.0 --http.port 8080 --http.cors_origins "*"',
+      ],
+      secrets: {
+        TORII_CONFIG: ecs.Secret.fromSsmParameter(toriiS2ConfigParam),
+      },
+      portMappings: [{ containerPort: 8080 }],
+    });
+    const toriiS2 = new ecs.FargateService(this, "ToriiS2", {
+      cluster,
+      serviceName: "torii-s2",
+      taskDefinition: toriiS2Task,
+      desiredCount: 1,
+      assignPublicIp: true,
+      vpcSubnets: { subnetType: ec2.SubnetType.PUBLIC },
+      securityGroups: [toriiSg],
+      minHealthyPercent: 100,
+      maxHealthyPercent: 200,
+      circuitBreaker: { rollback: true },
+      enableExecuteCommand: true,
+      healthCheckGracePeriod: cdk.Duration.minutes(15),
+    });
+    const toriiS2Tg = new elbv2.ApplicationTargetGroup(this, "ToriiS2Tg", {
+      vpc,
+      port: 8080,
+      protocol: elbv2.ApplicationProtocol.HTTP,
+      targetType: elbv2.TargetType.IP,
+      healthCheck: {
+        path: "/ready",
+        healthyHttpCodes: "200",
+        interval: cdk.Duration.seconds(15),
+      },
+      deregistrationDelay: cdk.Duration.seconds(10),
+    });
+    toriiS2Tg.addTarget(toriiS2);
+    albSg.addIngressRule(ec2.Peer.anyIpv4(), ec2.Port.tcp(8081), "torii-s2 (vanilla single-world)");
+    alb.addListener("ToriiS2Http", {
+      port: 8081,
+      protocol: elbv2.ApplicationProtocol.HTTP,
+      defaultAction: elbv2.ListenerAction.forward([toriiS2Tg]),
+    });
+    new cdk.CfnOutput(this, "ToriiS2ServiceName", { value: toriiS2.serviceName });
+
     // --- Alarms ----------------------------------------------------------
     const alerts = new sns.Topic(this, "Alerts", {
       topicName: "realms-appchain-dev-alerts",
