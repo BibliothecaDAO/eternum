@@ -72,3 +72,19 @@ completed with the existing oversized-CASM warnings for `troop_battle_systems` a
   remains VRF-backed.
 - `appchain.eternum` launches intentionally reject; A2 supports the persistent `appchain.blitz` world only.
 - Every appchain game shares one `worldAddress`. A4 must use `artifacts.gameId` to identify the game within that world.
+
+## Dev appchain deployment (reviewer, 2026-08-09)
+
+- `s2_blitz` world migrated to the AWS dev appchain at
+  `0x15ab45aea9188b0c4a8de1dc00fd23e71082aef2cb6384451d37ce0771b661a` (sozo 1.8.7 — the chain serves Starknet RPC 0.10;
+  the tracked `manifest_appchain.json` is now the migrated s2 manifest).
+- The dev chain has NO deployed collectibles, entry token, or VRF provider (all zero in the legacy s1 configs —
+  playtests run fee-free). `ChainConfig` was therefore bootstrapped with zero entry-token/collectible/VRF addresses via
+  a one-off runner that skips `wireSharedCollectibles` (nothing to wire). `deploy-s2-world.ts` remains the path for
+  production chains with real peripherals. Bootstrap tx
+  `0x7bf6746da3263b86ca4cb7d2838980f971e42e57c54b3b636c6638011964185`; preset 1 tx
+  `0x74b895527662620798ed25d54baaf2c001a42f3d6a6952597781060ca9103eb`.
+- Torii (`/realms-appchain/dev/torii-config` v10): s2 world pinned in `contracts`, `s2_blitz` added to `namespaces`; ECS
+  service `torii` rolled. The s1 client is unaffected (different namespace tables).
+- Lambda `DEFAULT_WORKFLOW_REF` intentionally NOT flipped: the client cannot display s2 games until A4. End-to-end
+  pipeline validation runs via manual `workflow_dispatch` on `feat/single-world-blitz`.
