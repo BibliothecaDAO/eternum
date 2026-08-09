@@ -11,9 +11,9 @@
   "requestedLaunchStep": "full",
   "inputPath": "inputs/appchain/blitz/s2smoke1/31317884959-1.json",
   "latestLaunchRequestId": "31317884959-1",
-  "currentStepId": "create-world",
+  "currentStepId": "wait-for-factory-index",
   "createdAt": "2026-08-09T14:14:53.365Z",
-  "updatedAt": "2026-08-09T14:14:58.391Z",
+  "updatedAt": "2026-08-09T14:15:22.184Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -27,10 +27,11 @@
     {
       "id": "create-world",
       "title": "Creating world",
-      "status": "running",
+      "status": "succeeded",
       "workflowStepName": "Creating world",
-      "latestEvent": "Creating world started",
-      "startedAt": "2026-08-09T14:14:58.391Z"
+      "latestEvent": "Creating world succeeded",
+      "startedAt": "2026-08-09T14:14:58.391Z",
+      "finishedAt": "2026-08-09T14:15:22.184Z"
     },
     {
       "id": "wait-for-factory-index",
@@ -41,14 +42,11 @@
     }
   ],
   "artifacts": {
-    "scheduledStartTime": "1786288514"
-  },
-  "activeLease": {
-    "launchRequestId": "31317884959-1",
-    "workflowRunId": 31317884959,
-    "workflowRunAttempt": 1,
-    "stepId": "create-world",
-    "acquiredAt": "2026-08-09T14:14:58.391Z",
-    "expiresAt": "2026-08-09T14:59:58.391Z"
+    "scheduledStartTime": 1786288514,
+    "summaryPath": ".context/game-launch/appchain-blitz-s2smoke1.json",
+    "durationSeconds": 7200,
+    "gameId": 1,
+    "worldAddress": "0x15ab45aea9188b0c4a8de1dc00fd23e71082aef2cb6384451d37ce0771b661a",
+    "createGameTxHash": "0x692ac20f53806465c50cd87f5b678ca427ce4cd4766653549f2e51543712e19"
   }
 }
