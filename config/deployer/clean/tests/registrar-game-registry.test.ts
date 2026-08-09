@@ -23,7 +23,7 @@ describe("appchain GameRegistry queries", () => {
     expect(row?.gameId).toBe(7);
   });
 
-  test("queries the encoded felt name for idempotent create checks", async () => {
+  test("queries the 64-padded felt name torii actually stores for idempotent create checks", async () => {
     process.env.TORII_URL = "https://torii.example";
     const fetchMock = mock(async (_input: string | URL | Request) =>
       Response.json([{ game_id: 7, name: shortString.encodeShortString("alpha") }]),
@@ -32,9 +32,10 @@ describe("appchain GameRegistry queries", () => {
 
     const row = await findGameRegistryByName("alpha");
 
+    // Torii felt columns are 64-hex-char left-padded; the unpadded encodeShortString
+    // form never matches (verified against live torii — an unpadded WHERE returns []).
+    const padded = `0x${shortString.encodeShortString("alpha").slice(2).padStart(64, "0")}`;
     expect(row?.gameId).toBe(7);
-    expect(decodeURIComponent(String(fetchMock.mock.calls[0]?.[0]))).toContain(
-      `WHERE name = "${shortString.encodeShortString("alpha")}" LIMIT 1`,
-    );
+    expect(decodeURIComponent(String(fetchMock.mock.calls[0]?.[0]))).toContain(`WHERE name = "${padded}" LIMIT 1`);
   });
 });

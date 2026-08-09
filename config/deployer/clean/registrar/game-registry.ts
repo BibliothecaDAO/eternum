@@ -72,9 +72,12 @@ export async function findGameRegistryByName(
   gameName: string,
   cartridgeApiBase?: string,
 ): Promise<AppchainGameRegistryRow | null> {
+  // Torii stores felt columns 64-hex-char left-padded; an unpadded encodeShortString
+  // value never matches, which would silently disable duplicate-game protection.
   const encodedName = shortString.encodeShortString(gameName);
+  const paddedName = `0x${encodedName.slice(2).padStart(64, "0")}`;
   const rows = await fetchRows(
-    `SELECT * FROM ${GAME_REGISTRY_TABLE} WHERE name = "${encodedName}" LIMIT 1`,
+    `SELECT * FROM ${GAME_REGISTRY_TABLE} WHERE name = "${paddedName}" LIMIT 1`,
     cartridgeApiBase,
   );
   return rows[0] ? toGameRegistryRow(rows[0]) : null;

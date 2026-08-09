@@ -98,3 +98,7 @@ completed with the existing oversized-CASM warnings for `troop_battle_systems` a
   is a LAUNCH flag (`twoPlayerMode` → registration cap 2), not preset data — preset 3 carries the 90-minute balance the
   duel is defined on. The 24-player "Regular Normal (1h:30m)" catalog entry is deliberately NOT deployed as a preset per
   owner decision; the A4 catalog maps blitz-fast → version 2 and blitz-duel → version 3.
+- Post-A3 fix (reviewer, 2026-08-09): `findGameRegistryByName` queried torii with the UNPADDED `encodeShortString` name
+  while torii stores felt columns 64-hex-char left-padded — the WHERE never matched (verified live: unpadded → `[]`,
+  padded → game 1), silently disabling the R2-3 duplicate-game protection. Fixed by padding the encoded name; test
+  updated to pin the padded form and the helper verified against the live dev torii.
