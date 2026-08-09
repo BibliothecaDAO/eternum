@@ -14,6 +14,7 @@ import { useDojo, useResourceManager } from "@bibliothecadao/react";
 import { Building, BuildingType, RealmInfo, ResourcesIds } from "@bibliothecadao/types";
 import { useComponentValue } from "@dojoengine/react";
 import { useMemo } from "react";
+import { gameEntityKey } from "@/dojo/game-scope";
 
 export const BuildingsList = ({
   realm,
@@ -42,20 +43,20 @@ export const BuildingsList = ({
   const { setup } = useDojo();
 
   const resourceManager = useResourceManager(realm.entityId);
-  const resources = useComponentValue(setup.components.Resource, getEntityIdFromKeys([BigInt(realm.entityId)]));
+  const resources = useComponentValue(setup.components.Resource, gameEntityKey([BigInt(realm.entityId)]));
 
   const structureBuildings = useComponentValue(
     setup.components.StructureBuildings,
-    getEntityIdFromKeys([BigInt(realm.entityId)]),
+    gameEntityKey([BigInt(realm.entityId)]),
   );
 
   const productionBoostBonus = useComponentValue(
     setup.components.ProductionBoostBonus,
-    getEntityIdFromKeys([BigInt(realm.entityId)]),
+    gameEntityKey([BigInt(realm.entityId)]),
   );
 
   const realmInfo = useMemo(
-    () => getRealmInfo(getEntityIdFromKeys([BigInt(realm.entityId)]), setup.components),
+    () => getRealmInfo(gameEntityKey([BigInt(realm.entityId)]), setup.components),
     [realm.entityId, structureBuildings, resources],
   );
 

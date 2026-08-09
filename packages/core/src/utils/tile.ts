@@ -1,6 +1,6 @@
 import type { ClientComponents, ID, Tile, TileOpt } from "@bibliothecadao/types";
 import { getComponentValue, type Entity } from "@dojoengine/recs";
-import { getEntityIdFromKeys } from "@dojoengine/utils";
+import { gameEntityKey } from "../managers/config-manager";
 
 /**
  * Default alt value for standard hex coordinates (non-alt map)
@@ -102,6 +102,6 @@ export function getTileComponentValue(components: ClientComponents, entity: Enti
  * @returns The unpacked Tile or undefined if not found
  */
 export function getTileAt(components: ClientComponents, alt: boolean, col: number, row: number): Tile | undefined {
-  const entity = getEntityIdFromKeys([BigInt(alt ? 1 : 0), BigInt(col), BigInt(row)]);
+  const entity = gameEntityKey([BigInt(alt ? 1 : 0), BigInt(col), BigInt(row)]);
   return getTileComponentValue(components, entity);
 }

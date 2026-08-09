@@ -17,6 +17,7 @@ import ArrowDown from "lucide-react/dist/esm/icons/arrow-down";
 import ArrowUp from "lucide-react/dist/esm/icons/arrow-up";
 import React, { useCallback, useMemo, useState } from "react";
 import { ALWAYS_SHOW_RESOURCES, TIER_DISPLAY_NAMES } from "./utils";
+import { gameEntityKey } from "@/dojo/game-scope";
 
 interface EntityResourceTableOldProps {
   entityId: ID | undefined;
@@ -48,19 +49,19 @@ export const EntityResourceTableOld = React.memo(
       return <div>No Entity Selected</div>;
     }
 
-    const resources = useComponentValue(setup.components.Resource, getEntityIdFromKeys([BigInt(entityId)]));
+    const resources = useComponentValue(setup.components.Resource, gameEntityKey([BigInt(entityId)]));
 
     const structureBuildings = useComponentValue(
       setup.components.StructureBuildings,
-      getEntityIdFromKeys([BigInt(entityId)]),
+      gameEntityKey([BigInt(entityId)]),
     );
 
     const productionBoostBonus = useComponentValue(
       setup.components.ProductionBoostBonus,
-      getEntityIdFromKeys([BigInt(entityId)]),
+      gameEntityKey([BigInt(entityId)]),
     );
 
-    const structure = useComponentValue(setup.components.Structure, getEntityIdFromKeys([BigInt(entityId)]));
+    const structure = useComponentValue(setup.components.Structure, gameEntityKey([BigInt(entityId)]));
 
     const { currentDefaultTick, currentArmiesTick, armiesTickTimeRemaining } = useBlockTimestamp();
     const currentTick = currentDefaultTick || 0;

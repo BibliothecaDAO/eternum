@@ -1,9 +1,10 @@
 import { resolveGameModeFromBlitzFlag } from "@/config/game-modes/resolved-mode";
-import { ContractComponents, WORLD_CONFIG_ID } from "@bibliothecadao/types";
+
+import { ContractComponents } from "@bibliothecadao/types";
 import { getComponentValue } from "@dojoengine/recs";
-import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { Chain, GameType, getConfigFromNetwork } from "@config";
 import { env } from "./../../env";
+import { worldConfigKey } from "@/dojo/game-scope";
 import {
   DEFAULT_TORII_SETTING,
   isToriiSetting,
@@ -18,7 +19,7 @@ type ConfigResolutionOptions = {
 };
 
 const resolveGameTypeFromComponents = (components: ContractComponents): GameType => {
-  const worldConfig = getComponentValue(components.WorldConfig, getEntityIdFromKeys([WORLD_CONFIG_ID]));
+  const worldConfig = getComponentValue(components.WorldConfig, worldConfigKey());
   return resolveGameModeFromBlitzFlag(worldConfig?.blitz_mode_on) === "blitz" ? "blitz" : "eternum";
 };
 

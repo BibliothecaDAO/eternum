@@ -1,7 +1,8 @@
 import { ClientComponents, ResourcesIds } from "@bibliothecadao/types";
 import { ComponentValue, getComponentValue } from "@dojoengine/recs";
 import { configManager } from "../managers";
-import { divideByPrecision, getEntityIdFromKeys } from "./utils";
+import { divideByPrecision } from "./utils";
+import { gameEntityKey } from "../managers/config-manager";
 
 type BlitzMapDistanceProfile = {
   baseDistance: number;
@@ -52,11 +53,11 @@ export const getEffectiveHyperstructureRealmCount = (realmCountWithinRadius: num
 };
 
 export const getHyperstructureProgress = (hyperstructureId: number, components: ClientComponents) => {
-  const hyperstructure = getComponentValue(components.Hyperstructure, getEntityIdFromKeys([BigInt(hyperstructureId)]));
+  const hyperstructure = getComponentValue(components.Hyperstructure, gameEntityKey([BigInt(hyperstructureId)]));
 
   const hyperstructureRequiredAmounts = getComponentValue(
     components.HyperstructureRequirements,
-    getEntityIdFromKeys([BigInt(hyperstructureId)]),
+    gameEntityKey([BigInt(hyperstructureId)]),
   );
 
   const percentage = hyperstructureRequiredAmounts?.current_resource_total
@@ -76,7 +77,7 @@ export const getHyperstructureTotalContributableAmounts = (
   hyperstructureId: number,
   components: ClientComponents,
 ): { resource: ResourcesIds; amount: number }[] => {
-  const hyperstructure = getComponentValue(components.Hyperstructure, getEntityIdFromKeys([BigInt(hyperstructureId)]));
+  const hyperstructure = getComponentValue(components.Hyperstructure, gameEntityKey([BigInt(hyperstructureId)]));
 
   if (!hyperstructure?.randomness) {
     return [];
@@ -109,7 +110,7 @@ export const getHyperstructureTotalContributableAmounts = (
 export const getHyperstructureCurrentAmounts = (hyperstructureId: number, components: ClientComponents) => {
   const hyperstructureRequirements = getComponentValue(
     components.HyperstructureRequirements,
-    getEntityIdFromKeys([BigInt(hyperstructureId)]),
+    gameEntityKey([BigInt(hyperstructureId)]),
   );
 
   if (!hyperstructureRequirements) {

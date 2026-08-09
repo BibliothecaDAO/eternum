@@ -68,6 +68,15 @@ export class ClientConfigManager {
     return this.gameId;
   }
 
+  /** s2 only: whether the active game's registry row says the game is over.
+   *  Legacy worlds signal this via the SeasonEnded event instead. */
+  public isGameOver(): boolean {
+    const game = this.getGameRegistry();
+    if (!game) return false;
+    const status = String(game.status);
+    return status === "Ended" || status === "Settled";
+  }
+
   /** Per-game state row: WorldConfig[gameId] on s2, WorldConfig[WORLD_CONFIG_ID] legacy. */
   private getWorldConfig() {
     const key = this.gameId > 0 ? BigInt(this.gameId) : WORLD_CONFIG_ID;
@@ -1267,3 +1276,33 @@ export class ClientConfigManager {
 }
 
 export const configManager = ClientConfigManager.instance();
+
+/**
+ * RECS entity key for a per-game model. On the s2 single world every per-game
+ * model leads with `game_id` as key[0], so lookups must hash it in or they
+ * miss every entity; legacy worlds hash the bare keys. Never use this for
+ * chain-global models (AddressName, preset tables, ChainConfig, ...).
+ */
+export const gameEntityKey = (keys: (bigint | string)[]) => {
+  const gameId = ClientConfigManager.instance().getActiveGameId();
+  return getEntityIdFromKeys(
+    gameId > 0 ? [BigInt(gameId), ...keys.map((key) => BigInt(key))] : keys.map((key) => BigInt(key)),
+  );
+};
+
+/**
+ * Building is keyed (game_id, alt, outer, outer, inner, inner) on s2 and
+ * (outer, outer, inner, inner) on legacy worlds. Structures never sit on the
+ * alt plane (Cairo `StructureBase.coord()` pins alt to false), so alt is 0.
+ */
+export const buildingEntityKey = (outerCol: number, outerRow: number, innerCol: number, innerRow: number) => {
+  const gameId = ClientConfigManager.instance().getActiveGameId();
+  const coords = [BigInt(outerCol), BigInt(outerRow), BigInt(innerCol), BigInt(innerRow)];
+  return getEntityIdFromKeys(gameId > 0 ? [BigInt(gameId), 0n, ...coords] : coords);
+};
+
+/** WorldConfig row key: [gameId] on s2, [WORLD_CONFIG_ID] on legacy worlds. */
+export const worldConfigKey = () => {
+  const gameId = ClientConfigManager.instance().getActiveGameId();
+  return getEntityIdFromKeys([gameId > 0 ? BigInt(gameId) : WORLD_CONFIG_ID]);
+};

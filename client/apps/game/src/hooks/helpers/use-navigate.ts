@@ -12,6 +12,7 @@ import { getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { useAccountStore } from "../store/use-account-store";
 import { useUIStore } from "../store/use-ui-store";
+import { gameEntityKey } from "@/dojo/game-scope";
 
 type PositionLike = Position | { x?: number; y?: number; col?: number; row?: number };
 
@@ -145,7 +146,7 @@ export const useSpectatorModeClick = (setupResult: SetupResult | null) => {
     try {
       structure =
         setupResult.components.Structure &&
-        getComponentValue(setupResult.components.Structure, getEntityIdFromKeys([BigInt(structureEntityId)]));
+        getComponentValue(setupResult.components.Structure, gameEntityKey([BigInt(structureEntityId)]));
     } catch (error) {
       console.warn("[useSpectatorModeClick] Unable to resolve structure", structureEntityId, error);
     }

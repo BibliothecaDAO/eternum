@@ -14,7 +14,6 @@ import {
   getProducedResource,
 } from "@bibliothecadao/types";
 import { Has, HasValue, NotValue, getComponentValue, runQuery } from "@dojoengine/recs";
-import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { uuid } from "@latticexyz/utils";
 import {
   DEFAULT_COORD_ALT,
@@ -33,7 +32,7 @@ import {
   markOccupiedUnconfirmed,
   resolveOccupiedState,
 } from "./build-slot-state";
-import { configManager } from "./config-manager";
+import { configManager, buildingEntityKey, gameEntityKey } from "./config-manager";
 
 // Global const to flick optimistic building on or off
 export const OPTIMISTIC_BUILDING_ENABLED = true;
@@ -84,12 +83,12 @@ export class TileManager {
   }
 
   getRealmLevel = (realmEntityId: number): RealmLevels => {
-    const structure = getComponentValue(this.components.Structure, getEntityIdFromKeys([BigInt(realmEntityId)]));
+    const structure = getComponentValue(this.components.Structure, gameEntityKey([BigInt(realmEntityId)]));
     return (structure?.base.level || RealmLevels.Settlement) as RealmLevels;
   };
 
   getWonder = (realmEntityId: number) => {
-    const structure = getComponentValue(this.components.Structure, getEntityIdFromKeys([BigInt(realmEntityId)]));
+    const structure = getComponentValue(this.components.Structure, gameEntityKey([BigInt(realmEntityId)]));
     return structure?.metadata.has_wonder || false;
   };
 
@@ -122,7 +121,7 @@ export class TileManager {
   getBuilding = (hexCoords: HexPosition) => {
     const building = getComponentValue(
       this.components.Building,
-      getEntityIdFromKeys([BigInt(this.col), BigInt(this.row), BigInt(hexCoords.col), BigInt(hexCoords.row)]),
+      buildingEntityKey(this.col, this.row, hexCoords.col, hexCoords.row),
     );
     return building;
   };
@@ -131,10 +130,7 @@ export class TileManager {
     const { col, row } = hexCoords;
     const buildKey = toBuildSlotKey(this.col, this.row, col, row);
 
-    const building = getComponentValue(
-      this.components.Building,
-      getEntityIdFromKeys([BigInt(this.col), BigInt(this.row), BigInt(col), BigInt(row)]),
-    );
+    const building = getComponentValue(this.components.Building, buildingEntityKey(this.col, this.row, col, row));
     const confirmedOccupied = building !== undefined && building.category !== BuildingType.None;
     return resolveOccupiedState(buildSlotTransitions, buildKey, confirmedOccupied);
   };
@@ -143,7 +139,7 @@ export class TileManager {
     const tile = getTileAt(this.components, DEFAULT_COORD_ALT, this.col, this.row);
 
     if (tile?.occupier_is_structure) {
-      const structure = getComponentValue(this.components.Structure, getEntityIdFromKeys([BigInt(tile?.occupier_id)]));
+      const structure = getComponentValue(this.components.Structure, gameEntityKey([BigInt(tile?.occupier_id)]));
       if (structure) {
         let category = structure.base.category;
         return category as StructureType;
@@ -158,7 +154,7 @@ export class TileManager {
     neighborBuildingCoords.map((coord) => {
       const building = getComponentValue(
         this.components.Building,
-        getEntityIdFromKeys([BigInt(this.col), BigInt(this.row), BigInt(coord.col), BigInt(coord.row)]),
+        buildingEntityKey(this.col, this.row, coord.col, coord.row),
       );
 
       if (building?.category === BuildingType.ResourceWheat) bonusPercent += building.bonus_percent;
@@ -175,7 +171,7 @@ export class TileManager {
     useSimpleCost: boolean,
   ) => {
     let buildingOverrideId = uuid();
-    const entity = getEntityIdFromKeys([this.col, this.row, col, row].map((v) => BigInt(v)));
+    const entity = buildingEntityKey(this.col, this.row, col, row);
 
     // override building
     this.components.Building.addOverride(buildingOverrideId, {
@@ -204,7 +200,7 @@ export class TileManager {
       removeResourceOverrides.push(removeOverride);
     });
 
-    const realmEntity = getEntityIdFromKeys([BigInt(entityId)]);
+    const realmEntity = gameEntityKey([BigInt(entityId)]);
     const structureBuildings = getComponentValue(this.components.StructureBuildings, realmEntity);
 
     const quantityOverrideId = uuid();
@@ -354,9 +350,9 @@ export class TileManager {
 
   private _optimisticDestroy = (entityId: ID, col: number, row: number) => {
     const overrideId = uuid();
-    const realmBase = getComponentValue(this.components.Structure, getEntityIdFromKeys([BigInt(entityId)]))?.base;
+    const realmBase = getComponentValue(this.components.Structure, gameEntityKey([BigInt(entityId)]))?.base;
     const { coord_x: outercol, coord_y: outerrow } = realmBase || { coord_x: 0, coord_y: 0 };
-    const entity = getEntityIdFromKeys([outercol, outerrow, col, row].map((v) => BigInt(v)));
+    const entity = gameEntityKey([outercol, outerrow, col, row].map((v) => BigInt(v)));
 
     const currentBuilding = getComponentValue(this.components.Building, entity);
     const type = currentBuilding?.category as BuildingType;
@@ -378,7 +374,7 @@ export class TileManager {
 
     const populationOverrideId = uuid();
 
-    const realmEntityId = getEntityIdFromKeys([BigInt(entityId)]);
+    const realmEntityId = gameEntityKey([BigInt(entityId)]);
     const currentStructureBuildings = getComponentValue(this.components.StructureBuildings, realmEntityId);
 
     // Get the current building count
@@ -436,7 +432,7 @@ export class TileManager {
 
   private _optimisticPause = (col: number, row: number) => {
     let overrideId = uuid();
-    const entity = getEntityIdFromKeys([this.col, this.row, col, row].map((v) => BigInt(v)));
+    const entity = buildingEntityKey(this.col, this.row, col, row);
     const building = getComponentValue(this.components.Building, entity);
     this.components.Building.addOverride(overrideId, {
       entity,
@@ -458,7 +454,7 @@ export class TileManager {
 
   private _optimisticResume = (col: number, row: number) => {
     let overrideId = uuid();
-    const entity = getEntityIdFromKeys([this.col, this.row, col, row].map((v) => BigInt(v)));
+    const entity = buildingEntityKey(this.col, this.row, col, row);
     const building = getComponentValue(this.components.Building, entity);
     this.components.Building.addOverride(overrideId, {
       entity,

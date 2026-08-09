@@ -23,6 +23,7 @@ import ChevronDown from "lucide-react/dist/esm/icons/chevron-down";
 import ChevronUp from "lucide-react/dist/esm/icons/chevron-up";
 import Search from "lucide-react/dist/esm/icons/search";
 import { KeyboardEvent, useCallback, useEffect, useMemo, useState } from "react";
+import { gameEntityKey } from "@/dojo/game-scope";
 
 // TODO: big limit for now, we need to paginate this
 const SOCIAL_LEADERBOARD_LIMIT = 1000;
@@ -139,7 +140,8 @@ export const PlayersPanel = ({
         let isInvited = false;
         if (userGuild) {
           isInvited =
-            getComponentValue(GuildWhitelist, getEntityIdFromKeys([player.address, BigInt(userGuild?.entityId)]))
+            // GuildWhitelist is keyed (guild_id, address) — guild first.
+            getComponentValue(GuildWhitelist, gameEntityKey([BigInt(userGuild?.entityId), player.address]))
               ?.whitelisted ?? false;
         }
         return {

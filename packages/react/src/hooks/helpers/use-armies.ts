@@ -1,6 +1,6 @@
 import {
   formatArmies,
-  getEntityIdFromKeys,
+  gameEntityKey,
   getGuardsByStructure,
   getTileAt,
   DEFAULT_COORD_ALT,
@@ -31,7 +31,7 @@ export const useGuardsByStructure = ({ structureEntityId }: { structureEntityId:
     setup: { components },
   } = useDojo();
 
-  const structure = useComponentValue(components.Structure, getEntityIdFromKeys([BigInt(structureEntityId)]));
+  const structure = useComponentValue(components.Structure, gameEntityKey([BigInt(structureEntityId)]));
 
   const guards = useMemo(() => {
     if (!structure) return [];
@@ -52,7 +52,7 @@ export const usePlayerArmyAtPosition = ({ position }: { position: Position }) =>
   const ownArmy = useMemo(() => {
     if (!entityAtPosition || entityAtPosition.occupier_is_structure) return null;
     const armies = formatArmies(
-      [getEntityIdFromKeys([BigInt(entityAtPosition.occupier_id)])],
+      [gameEntityKey([BigInt(entityAtPosition.occupier_id)])],
       ContractAddress(account.address),
       components,
     );

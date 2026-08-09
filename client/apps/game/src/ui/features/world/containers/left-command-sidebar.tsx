@@ -26,6 +26,7 @@ import MessageCircle from "lucide-react/dist/esm/icons/message-circle";
 import PackageIcon from "lucide-react/dist/esm/icons/package";
 import Sparkles from "lucide-react/dist/esm/icons/sparkles";
 import { lazy, memo, Suspense, useCallback, useEffect, useMemo, useRef } from "react";
+import { gameEntityKey } from "@/dojo/game-scope";
 
 // ----------------------------------------------------------------------------
 // Realtime chat config hook
@@ -188,7 +189,7 @@ export const LeftCommandSidebar = memo(() => {
 
   const pendingRenameStructure = useComponentValue(
     components.Structure,
-    pendingRenameStructureEntityId ? getEntityIdFromKeys([BigInt(pendingRenameStructureEntityId)]) : undefined,
+    pendingRenameStructureEntityId ? gameEntityKey([BigInt(pendingRenameStructureEntityId)]) : undefined,
   );
   const pendingRenameMetadata = pendingRenameStructure ? mode.structure.getName(pendingRenameStructure) : null;
   const editingStructureId = pendingRenameStructureEntityId !== null ? Number(pendingRenameStructureEntityId) : null;

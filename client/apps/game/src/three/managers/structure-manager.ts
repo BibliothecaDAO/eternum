@@ -88,12 +88,14 @@ import {
   queuePendingStructureLabelUpdate,
 } from "./structure-pending-label-updates";
 import { StructureRecordStore } from "./structure-record-store";
+import { gameEntityKey } from "@/dojo/game-scope";
 import {
   resolveStructureTileUpdateRecord,
   takeFreshPendingLabelUpdate,
   type PendingLabelUpdate,
   type ResolvedStructureTileUpdateRecord,
 } from "./structure-update-reconciliation";
+
 import {
   resolveVisibleStructureUpdateMode,
   shouldRebuildVisibleStructuresForStructureUpdate,
@@ -885,7 +887,7 @@ export class StructureManager {
       return undefined;
     }
 
-    const liveStructure = getComponentValue(this.components.Structure, getEntityIdFromKeys([BigInt(entityId)]));
+    const liveStructure = getComponentValue(this.components.Structure, gameEntityKey([BigInt(entityId)]));
     const liveOwnerAddress = liveStructure?.owner;
     if (liveOwnerAddress === undefined) {
       return undefined;

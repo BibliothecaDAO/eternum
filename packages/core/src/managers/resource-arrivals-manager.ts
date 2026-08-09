@@ -1,8 +1,8 @@
 import { ClientComponents, ResourceArrivalInfo, SystemCalls } from "@bibliothecadao/types";
 import { getComponentValue } from "@dojoengine/recs";
-import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { uuid } from "@latticexyz/utils";
 import { Account, AccountInterface } from "starknet";
+import { gameEntityKey } from "./config-manager";
 
 export class ResourceArrivalManager {
   arrival: ResourceArrivalInfo;
@@ -18,7 +18,7 @@ export class ResourceArrivalManager {
   public optimisticOffload() {
     const overrideId = uuid();
 
-    const entity = getEntityIdFromKeys([BigInt(this.arrival.structureEntityId), BigInt(this.arrival.day)]);
+    const entity = gameEntityKey([BigInt(this.arrival.structureEntityId), BigInt(this.arrival.day)]);
 
     const currentArrival = getComponentValue(this.components.ResourceArrival, entity);
 

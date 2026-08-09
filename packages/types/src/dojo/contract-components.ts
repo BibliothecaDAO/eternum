@@ -184,7 +184,7 @@ export function defineContractComponents(world: World, namespace: string) {
           metadata: {
             namespace,
             name: "BlitzCosmeticAttrsRegister",
-            types: ["ContractAddress", "Span<u128>"],
+            types: ["u32", "ContractAddress", "Span<u128>"],
             customTypes: [],
           },
         },
@@ -226,7 +226,7 @@ export function defineContractComponents(world: World, namespace: string) {
           metadata: {
             namespace,
             name: "BlitzSettlement",
-            types: ["ContractAddress", "Span<u32>"],
+            types: ["u32", "ContractAddress", "Span<u32>"],
             customTypes: [],
           },
         },
@@ -630,7 +630,7 @@ export function defineContractComponents(world: World, namespace: string) {
           metadata: {
             namespace,
             name: "Guild",
-            types: ["ContractAddress", "bool", "felt252", "u16"],
+            types: ["u32", "ContractAddress", "bool", "felt252", "u16"],
             customTypes: [],
           },
         },
@@ -724,7 +724,7 @@ export function defineContractComponents(world: World, namespace: string) {
           metadata: {
             namespace,
             name: "Hyperstructure",
-            types: ["u32", "bool", "bool", "enum", "felt252", "u8"],
+            types: ["u32", "u32", "bool", "bool", "enum", "felt252", "u8"],
             customTypes: ["ConstructionAccess"],
           },
         },
@@ -835,7 +835,7 @@ export function defineContractComponents(world: World, namespace: string) {
           metadata: {
             namespace,
             name: "HyperstructureShareholders",
-            types: ["u32", "u64", "Span<(u32, u16)>"],
+            types: ["u32", "u32", "u64", "Span<(u32, u16)>"],
             customTypes: [],
           },
         },
@@ -942,7 +942,7 @@ export function defineContractComponents(world: World, namespace: string) {
           metadata: {
             namespace,
             name: "PlayerRegisteredPoints",
-            types: ["ContractAddress", "u128", "bool"],
+            types: ["u32", "ContractAddress", "u128", "bool"],
             customTypes: [],
           },
         },
@@ -1353,7 +1353,7 @@ export function defineContractComponents(world: World, namespace: string) {
           metadata: {
             namespace,
             name: "ProductionBoostBonus",
-            types: ["u32", "u16", "u16", "u16", "u16", "u32", "u32", "u32", "bool", "u32", "u32"],
+            types: ["u32", "u32", "u16", "u16", "u16", "u16", "u32", "u32", "u32", "bool", "u32", "u32"],
             customTypes: ["Coord"],
           },
         },
@@ -1962,7 +1962,7 @@ export function defineContractComponents(world: World, namespace: string) {
           metadata: {
             namespace,
             name: "ResourceAllowance",
-            types: ["u32", "u32", "u8", "u128"],
+            types: ["u32", "u32", "u32", "u8", "u128"],
             customTypes: [],
           },
         },
@@ -2554,7 +2554,7 @@ export function defineContractComponents(world: World, namespace: string) {
           metadata: {
             namespace,
             name: "StructureBuildings",
-            types: ["u32", "u128", "u128", "u128", "u32", "u32", "bool", "u32", "u32"],
+            types: ["u32", "u32", "u128", "u128", "u128", "u32", "u32", "bool", "u32", "u32"],
             customTypes: ["Population", "Coord"],
           },
         },
@@ -2644,7 +2644,7 @@ export function defineContractComponents(world: World, namespace: string) {
           metadata: {
             namespace,
             name: "TileOpt",
-            types: ["bool", "u32", "u32", "bool", "u128"],
+            types: ["u32", "bool", "u32", "u32", "bool", "u128"],
             customTypes: [],
           },
         },
@@ -3166,7 +3166,7 @@ export function defineContractComponents(world: World, namespace: string) {
             metadata: {
               namespace,
               name: "BattleEvent",
-              types: ["u32", "u32", "u32", "u32", "u32", "bool", "u32", "u32", "Span<(u8, u128)>", "u64"],
+              types: ["u32", "u32", "u32", "u32", "u32", "u32", "bool", "u32", "u32", "Span<(u8, u128)>", "u64"],
               customTypes: [],
             },
           },
@@ -3208,7 +3208,7 @@ export function defineContractComponents(world: World, namespace: string) {
             metadata: {
               namespace,
               name: "BurnDonkey",
-              types: ["ContractAddress", "u32", "u128", "u64"],
+              types: ["u32", "ContractAddress", "u32", "u128", "u64"],
               customTypes: [],
             },
           },
@@ -3279,7 +3279,7 @@ export function defineContractComponents(world: World, namespace: string) {
             metadata: {
               namespace,
               name: "ExplorerMoveEvent",
-              types: ["u32", "u32", "ContractAddress", "ExploreFind", "u64"],
+              types: ["u32", "u32", "u32", "ContractAddress", "ExploreFind", "u64"],
               customTypes: [],
             },
           },
@@ -3306,7 +3306,7 @@ export function defineContractComponents(world: World, namespace: string) {
             metadata: {
               namespace,
               name: "ExplorerRewardEvent",
-              types: ["u32", "u32", "ContractAddress", "u8", "u128", "bool", "u32", "u32", "u64"],
+              types: ["u32", "u32", "u32", "ContractAddress", "u8", "u128", "bool", "u32", "u32", "u64"],
               customTypes: [],
             },
           },
@@ -3388,7 +3388,7 @@ export function defineContractComponents(world: World, namespace: string) {
             metadata: {
               namespace,
               name: "OpenRelicChestEvent",
-              types: ["u32", "u32", "u32", "Span<u8>", "u64"],
+              types: ["u32", "u32", "u32", "u32", "Span<u8>", "u64"],
               customTypes: ["Coord"],
             },
           },
@@ -3440,7 +3440,7 @@ export function defineContractComponents(world: World, namespace: string) {
             metadata: {
               namespace,
               name: "StoryEvent",
-              types: ["u32", "Option<ContractAddress>", "Option<u32>", "felt252", "Story", "u64"],
+              types: ["u32", "u32", "Option<ContractAddress>", "Option<u32>", "felt252", "Story", "u64"],
               customTypes: ["Story"],
             },
           },

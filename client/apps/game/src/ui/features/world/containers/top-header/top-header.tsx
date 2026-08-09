@@ -27,6 +27,7 @@ import { getEntityIdFromKeys } from "@dojoengine/utils";
 import EyeIcon from "lucide-react/dist/esm/icons/eye";
 import Swords from "lucide-react/dist/esm/icons/swords";
 import { memo, useCallback, useEffect, useMemo, useState } from "react";
+import { gameEntityKey } from "@/dojo/game-scope";
 export const TopHeader = memo(() => {
   const {
     setup,
@@ -54,7 +55,7 @@ export const TopHeader = memo(() => {
   const currentDefaultTick = getBlockTimestamp().currentDefaultTick;
 
   // force a refresh of getEntityInfo when the structure data arrives
-  const structure = useComponentValue(setup.components.Structure, getEntityIdFromKeys([BigInt(structureEntityId)]));
+  const structure = useComponentValue(setup.components.Structure, gameEntityKey([BigInt(structureEntityId)]));
   const entityInfo = useMemo(
     () => mode.structure.getEntityInfo(structureEntityId, ContractAddress(account.address), setup.components),
     [structureEntityId, currentDefaultTick, account.address, structure, mode],

@@ -19,6 +19,7 @@ import { findResourceById, ResourcesIds, StructureType, type ID, type MarketInte
 import { getComponentValue } from "@dojoengine/recs";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { gameEntityKey } from "@/dojo/game-scope";
 
 const ONE_MONTH = 2628000;
 
@@ -460,7 +461,7 @@ const OrderRow = memo(
             donkeysNeeded={donkeysNeeded}
             donkeyBalance={donkeyBalance}
             isVillageAndMilitaryResource={
-              getComponentValue(dojo.setup.components.Structure, getEntityIdFromKeys([BigInt(entityId)]))?.category ===
+              getComponentValue(dojo.setup.components.Structure, gameEntityKey([BigInt(entityId)]))?.category ===
                 StructureType.Village &&
               (isMilitaryResource(offer.makerGets[0].resourceId) || isMilitaryResource(offer.takerGets[0].resourceId))
             }
@@ -689,7 +690,7 @@ const OrderCreation = memo(
 
     const renderConfirmationPopupCreateOrder = useCallback(() => {
       const isVillageAndMilitaryResource =
-        getComponentValue(components.Structure, getEntityIdFromKeys([BigInt(entityId)]))?.category ===
+        getComponentValue(components.Structure, gameEntityKey([BigInt(entityId)]))?.category ===
           StructureType.Village && isMilitaryResource(resourceId);
 
       return (

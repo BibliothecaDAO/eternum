@@ -434,6 +434,7 @@ import { computeMatrixCacheEvictions } from "./worldmap-matrix-cache-eviction";
 import { snapshotExploredTilesRegion, lookupSnapshotBiome } from "./explored-tiles-snapshot";
 import { createTerrainCacheGeneration, isTerrainCacheStale } from "./terrain-cache-generation";
 import { createProvisionalBiomeTracker, resolveArmySpawnBiome } from "./provisional-biome";
+import { gameEntityKey } from "@/dojo/game-scope";
 import {
   resolveWorldmapCameraFieldOfViewDegrees,
   resolveWorldmapCameraViewProfile,
@@ -3516,10 +3517,7 @@ export default class WorldmapScene extends WarpTravel {
     if (!hexCoords) return;
 
     const structure = new StructureActionManager();
-    const structureData = getComponentValue(
-      this.dojo.components.Structure,
-      getEntityIdFromKeys([BigInt(selectedEntityId)]),
-    );
+    const structureData = getComponentValue(this.dojo.components.Structure, gameEntityKey([BigInt(selectedEntityId)]));
     const attackRange = structureData
       ? Math.max(
           0,
@@ -3995,9 +3993,7 @@ export default class WorldmapScene extends WarpTravel {
   }
 
   private resolveLiveExplorerTroopsForMovementStamina(entityId: ID) {
-    return (
-      getComponentValue(this.dojo.components.ExplorerTroops, getEntityIdFromKeys([BigInt(entityId)]))?.troops ?? null
-    );
+    return getComponentValue(this.dojo.components.ExplorerTroops, gameEntityKey([BigInt(entityId)]))?.troops ?? null;
   }
 
   private buildMovementStaminaFallbackArmy(army: ArmyData | undefined): MovementStaminaFallbackArmy | null {
@@ -4263,7 +4259,7 @@ export default class WorldmapScene extends WarpTravel {
     const armyPosition = this.armiesPositions.get(selectedEntityId);
     const explorerTroopsCoord = getComponentValue(
       this.dojo.components.ExplorerTroops,
-      getEntityIdFromKeys([BigInt(selectedEntityId)]),
+      gameEntityKey([BigInt(selectedEntityId)]),
     )?.coord;
     const { startPositionOverride, hasDivergentOrigin } = resolveArmyActionPathOrigin({
       feltCenter: FELT_CENTER(),
@@ -5221,7 +5217,7 @@ export default class WorldmapScene extends WarpTravel {
         continue;
       }
 
-      const explorer = getComponentValue(this.dojo.components.ExplorerTroops, getEntityIdFromKeys([BigInt(entityId)]));
+      const explorer = getComponentValue(this.dojo.components.ExplorerTroops, gameEntityKey([BigInt(entityId)]));
       // explorer.coord is contract (felt-offset); the policy compares against
       // armiesPositions, which stores normalized col/row.
       const normalizedCoord = explorer
@@ -5320,7 +5316,7 @@ export default class WorldmapScene extends WarpTravel {
   // from the tracked army because the RECS component only carries the owning
   // structure id.
   private snapArmyToRecsPosition(entityId: ID): void {
-    const explorer = getComponentValue(this.dojo.components.ExplorerTroops, getEntityIdFromKeys([BigInt(entityId)]));
+    const explorer = getComponentValue(this.dojo.components.ExplorerTroops, gameEntityKey([BigInt(entityId)]));
     if (!explorer) {
       return;
     }
@@ -5495,7 +5491,7 @@ export default class WorldmapScene extends WarpTravel {
     if (!import.meta.env.DEV) {
       return false;
     }
-    const entity = getEntityIdFromKeys([BigInt(entityId)]);
+    const entity = gameEntityKey([BigInt(entityId)]);
     if (getComponentValue(this.dojo.components.ExplorerTroops, entity) === undefined) {
       console.warn(`[desync-harness] army ${entityId} has no ExplorerTroops component in RECS`);
       return false;
@@ -5686,7 +5682,7 @@ export default class WorldmapScene extends WarpTravel {
     }
     try {
       const components = this.dojo.components as Parameters<typeof ensureStructureSynced>[0];
-      const structureEntity = getEntityIdFromKeys([BigInt(resolvedStructureId)]);
+      const structureEntity = gameEntityKey([BigInt(resolvedStructureId)]);
       const structureComponent = components.Structure;
       if (structureComponent) {
         const structure = getComponentValue(structureComponent, structureEntity);

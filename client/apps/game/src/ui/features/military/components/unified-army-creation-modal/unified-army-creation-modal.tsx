@@ -49,6 +49,7 @@ import { RealmHexDeployMap } from "./realm-hex-deploy-map";
 import { TroopCountSelector } from "./troop-count-selector";
 import { TroopSelectionGrid } from "./troop-selection-grid";
 import type { GuardSummary, SelectedTroopCombo, TroopSelectionOption } from "./types";
+import { gameEntityKey } from "@/dojo/game-scope";
 
 interface UnifiedArmyCreationProps {
   structureId?: number;
@@ -190,7 +191,7 @@ export const UnifiedArmyCreationBody = ({
 
   const structureComponent = useMemo(() => {
     if (!activeStructureId) return null;
-    return getComponentValue(components.Structure, getEntityIdFromKeys([BigInt(activeStructureId)]));
+    return getComponentValue(components.Structure, gameEntityKey([BigInt(activeStructureId)]));
   }, [components, activeStructureId]);
 
   const activeStructureInfo = useMemo(

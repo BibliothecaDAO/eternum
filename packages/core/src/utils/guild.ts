@@ -1,16 +1,16 @@
 import type { ClientComponents, ContractAddress, GuildInfo, GuildMemberInfo } from "@bibliothecadao/types";
 
 import { type Entity, getComponentValue } from "@dojoengine/recs";
-import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { shortString } from "starknet";
 import { getAddressName } from "./entities";
+import { gameEntityKey } from "../managers/config-manager";
 
 export const formatGuilds = (
   guilds: Entity[],
   playerAddress: ContractAddress,
   components: ClientComponents,
 ): GuildInfo[] => {
-  const guildMember = getComponentValue(components.GuildMember, getEntityIdFromKeys([playerAddress]));
+  const guildMember = getComponentValue(components.GuildMember, gameEntityKey([playerAddress]));
 
   return guilds
     .map((guild_entity_id) => {
@@ -37,7 +37,7 @@ export const getGuild = (
   playerAddress: ContractAddress,
   components: ClientComponents,
 ): GuildInfo | undefined => {
-  return formatGuilds([getEntityIdFromKeys([BigInt(guildEntityId)])], playerAddress, components)[0];
+  return formatGuilds([gameEntityKey([BigInt(guildEntityId)])], playerAddress, components)[0];
 };
 
 export const formatGuildMembers = (
@@ -67,22 +67,22 @@ export const getGuildMember = (
   playerAddress: ContractAddress,
   components: ClientComponents,
 ): GuildMemberInfo | undefined => {
-  return formatGuildMembers([getEntityIdFromKeys([playerAddress])], playerAddress, components)[0];
+  return formatGuildMembers([gameEntityKey([playerAddress])], playerAddress, components)[0];
 };
 
 export const getGuildFromPlayerAddress = (
   playerAddress: ContractAddress,
   components: ClientComponents,
 ): GuildInfo | undefined => {
-  const guildMember = getComponentValue(components.GuildMember, getEntityIdFromKeys([playerAddress]));
+  const guildMember = getComponentValue(components.GuildMember, gameEntityKey([playerAddress]));
   if (!guildMember) return;
 
   return getGuild(guildMember.guild_id, playerAddress, components);
 };
 
 export const getGuildMembersFromPlayerAddress = (playerAddress: ContractAddress, components: ClientComponents) => {
-  const guildMember = getComponentValue(components.GuildMember, getEntityIdFromKeys([playerAddress]));
+  const guildMember = getComponentValue(components.GuildMember, gameEntityKey([playerAddress]));
   if (!guildMember) return;
 
-  return formatGuildMembers([getEntityIdFromKeys([BigInt(guildMember.guild_id)])], playerAddress, components);
+  return formatGuildMembers([gameEntityKey([BigInt(guildMember.guild_id)])], playerAddress, components);
 };

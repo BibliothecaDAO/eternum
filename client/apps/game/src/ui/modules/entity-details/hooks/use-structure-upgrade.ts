@@ -6,19 +6,13 @@ import {
   useRealmUpgradeStore,
 } from "@/hooks/store/use-realm-upgrade-store";
 import { extractTransactionHash, waitForTransactionConfirmation } from "@/ui/utils/transactions";
-import {
-  configManager,
-  divideByPrecision,
-  getBalance,
-  getEntityIdFromKeys,
-  getRealmInfo,
-  ResourceManager,
-} from "@bibliothecadao/eternum";
+import { configManager, divideByPrecision, getBalance, getRealmInfo, ResourceManager } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
 import { ContractAddress, getLevelName, ResourcesIds } from "@bibliothecadao/types";
 import { useComponentValue } from "@dojoengine/react";
 import { useCallback, useEffect, useMemo } from "react";
 import { toast } from "sonner";
+import { gameEntityKey } from "@/dojo/game-scope";
 
 const REALM_UPGRADE_SYNC_TIMEOUT_MS = 30_000;
 const REALM_UPGRADE_SYNC_POLL_INTERVAL_MS = 1_000;
@@ -176,7 +170,7 @@ export const useStructureUpgrade = (structureEntityId: number | null): Structure
   const clearUpgrade = useRealmUpgradeStore((state) => state.clearUpgrade);
 
   const realmEntity = useMemo(
-    () => (structureEntityId ? getEntityIdFromKeys([BigInt(structureEntityId)]) : null),
+    () => (structureEntityId ? gameEntityKey([BigInt(structureEntityId)]) : null),
     [structureEntityId],
   );
 

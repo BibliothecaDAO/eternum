@@ -28,6 +28,7 @@ import { getGuardStaminaSnapshot } from "../utils/guard-stamina";
 import { GuardStaminaBar } from "./guard-stamina-bar";
 import { SLOT_ICON_MAP } from "./slot-icon-map";
 import { DefenseTroop } from "./structure-defence";
+import { gameEntityKey } from "@/dojo/game-scope";
 
 interface CompactDefenseDisplayProps {
   troops: DefenseTroop[];
@@ -73,7 +74,7 @@ export const CompactDefenseDisplay = ({
       return null;
     }
 
-    return getComponentValue(components.Structure, getEntityIdFromKeys([BigInt(structureId)]));
+    return getComponentValue(components.Structure, gameEntityKey([BigInt(structureId)]));
   }, [components, structureId]);
 
   const structureCategory = structureComponent?.base?.category as StructureType | undefined;

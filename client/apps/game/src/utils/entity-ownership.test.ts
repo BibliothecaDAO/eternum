@@ -8,8 +8,8 @@ vi.mock("@dojoengine/recs", () => ({
   },
 }));
 
-vi.mock("@bibliothecadao/eternum", () => ({
-  getEntityIdFromKeys: (keys: bigint[]) => keys.map((k) => k.toString()).join(":"),
+vi.mock("@/dojo/game-scope", () => ({
+  gameEntityKey: (keys: bigint[]) => keys.map((k) => k.toString()).join(":"),
 }));
 
 // Imported after mocks to ensure they take effect.

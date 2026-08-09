@@ -10,11 +10,13 @@ import { triggerConnectionForceReconnect } from "@/ui/features/world/components/
 import { latestFeatures, leaderboard, rewards, settings, transactions } from "@/ui/features/world";
 import { Controller } from "@/ui/modules/controller/controller";
 import { TOP_PILL, TOP_PILL_TEXT } from "@/ui/features/world/containers/top-header/top-pill";
+
 import { useDojo } from "@bibliothecadao/react";
-import { useEntityQuery } from "@dojoengine/react";
+import { useComponentValue, useEntityQuery } from "@dojoengine/react";
 import { Has } from "@dojoengine/recs";
 
 import { useCallback, useMemo } from "react";
+import { gameEntityKey } from "@/dojo/game-scope";
 
 const formatPoints = (points: number | null | undefined): string => {
   if (points === null || points === undefined) return "0";
@@ -39,13 +41,22 @@ export const SecondaryMenuItems = ({ variant }: SecondaryMenuItemsProps = {}) =>
   const {
     setup: {
       components: {
+        GameRegistry,
         events: { SeasonEnded },
       },
     },
     account: { account },
   } = useDojo();
 
-  const hasSeasonEnded = useEntityQuery([Has(SeasonEnded)]).length > 0;
+  // Legacy worlds emit a SeasonEnded event; the s2 single world flips the
+  // active game's registry status instead.
+  const hasSeasonEndedEvent = useEntityQuery([Has(SeasonEnded)]).length > 0;
+  const gameRegistry = useComponentValue(
+    GameRegistry,
+    useMemo(() => gameEntityKey([]), []),
+  );
+  const registryStatus = gameRegistry ? String(gameRegistry.status) : "";
+  const hasSeasonEnded = hasSeasonEndedEvent || registryStatus === "Ended" || registryStatus === "Settled";
 
   const { unseenCount: unseenFeaturesCount } = useLatestFeaturesSeen();
 

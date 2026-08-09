@@ -30,6 +30,7 @@ import { getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import type { MouseEvent } from "react";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { gameEntityKey } from "@/dojo/game-scope";
 
 export const ResourceChip = ({
   resourceId,
@@ -246,7 +247,7 @@ export const ResourceChip = ({
       return false;
     }
 
-    const structure = getComponentValue(components.Structure, getEntityIdFromKeys([BigInt(resourceManager.entityId)]));
+    const structure = getComponentValue(components.Structure, gameEntityKey([BigInt(resourceManager.entityId)]));
     const structureCategory = Number(structure?.base?.category ?? structure?.category ?? 0);
 
     return structureCategory === StructureType.Realm || structureCategory === StructureType.Village;

@@ -36,6 +36,7 @@ import type { ClientComponents } from "@bibliothecadao/types";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import type { ComponentValue } from "@dojoengine/recs";
 import Plus from "lucide-react/dist/esm/icons/plus";
+import { gameEntityKey } from "@/dojo/game-scope";
 
 type ProductionItem = StructureProductionSummary["items"][number];
 
@@ -81,7 +82,7 @@ export const MergedResourcePanel = memo(
     const realm = useMemo(
       () =>
         Number.isFinite(entityId) && entityId > 0
-          ? getRealmInfo(getEntityIdFromKeys([BigInt(entityId)]), components)
+          ? getRealmInfo(gameEntityKey([BigInt(entityId)]), components)
           : undefined,
       [entityId, components],
     );

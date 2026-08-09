@@ -14,6 +14,7 @@ import {
   getBuildingFromResource,
 } from "@bibliothecadao/types";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
+import { gameEntityKey } from "@/dojo/game-scope";
 
 type Components = SetupResult["components"];
 
@@ -124,7 +125,7 @@ export const createConstructionMenu = ({
 
   const realmInfo = (() => {
     try {
-      return getRealmInfo(getEntityIdFromKeys([structureId]), components);
+      return getRealmInfo(gameEntityKey([structureId]), components);
     } catch {
       return undefined;
     }

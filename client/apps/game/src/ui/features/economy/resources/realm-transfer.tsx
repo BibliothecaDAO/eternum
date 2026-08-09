@@ -26,6 +26,7 @@ import ShieldCheck from "lucide-react/dist/esm/icons/shield-check";
 import X from "lucide-react/dist/esm/icons/x";
 import { Dispatch, memo, ReactNode, SetStateAction, useCallback, useEffect, useMemo, useState } from "react";
 import { BigNumberish } from "starknet";
+import { gameEntityKey } from "@/dojo/game-scope";
 
 type transferCall = {
   structureId: ID;
@@ -58,7 +59,7 @@ export const RealmTransfer = memo(({ resource }: { resource: ResourcesIds }) => 
   const playerStructures = useUIStore((state) => state.playerStructures);
 
   const selectedStructure = useMemo(() => {
-    return getComponentValue(components.Structure, getEntityIdFromKeys([BigInt(selectedStructureEntityId)]));
+    return getComponentValue(components.Structure, gameEntityKey([BigInt(selectedStructureEntityId)]));
   }, [components.Structure, selectedStructureEntityId]);
 
   const playerStructuresFiltered = useMemo(() => {

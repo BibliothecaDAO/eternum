@@ -15,6 +15,7 @@ import { type BuildingType, type ID, type ResourcesIds } from "@bibliothecadao/t
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { useCallback, useRef, useState } from "react";
 import type { EmpireSuggestion } from "./use-empire-suggestions";
+import { gameEntityKey } from "@/dojo/game-scope";
 
 /**
  * Resolves a suggestion click into the right side-effect: focus the target
@@ -73,7 +74,7 @@ export const useSuggestionActions = () => {
       if (!placement.started) return;
 
       try {
-        const realm = getRealmInfo(getEntityIdFromKeys([BigInt(entityId)]), setup.components);
+        const realm = getRealmInfo(gameEntityKey([BigInt(entityId)]), setup.components);
         await buildRealmBuilding({
           entityId,
           realmPosition: realm?.position,

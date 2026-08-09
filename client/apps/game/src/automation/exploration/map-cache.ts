@@ -1,4 +1,4 @@
-import { gameModel } from "@/dojo/game-scope";
+import { gameEntityKey, gameModel } from "@/dojo/game-scope";
 import { getEntitiesFromTorii, getMapFromToriiExact } from "@/dojo/queries";
 import {
   DEFAULT_COORD_ALT,
@@ -158,13 +158,13 @@ const normalizeOwnerAddress = (value: unknown): bigint => {
 };
 
 const getStructureOwnerAddress = (components: ClientComponents, structureId: number): bigint => {
-  const structureEntity = getEntityIdFromKeys([BigInt(structureId)]);
+  const structureEntity = gameEntityKey([BigInt(structureId)]);
   const structure = getComponentValue(components.Structure, structureEntity);
   return normalizeOwnerAddress(structure?.owner);
 };
 
 const getArmyOwnerAddress = (components: ClientComponents, armyId: number): bigint => {
-  const armyEntity = getEntityIdFromKeys([BigInt(armyId)]);
+  const armyEntity = gameEntityKey([BigInt(armyId)]);
   const explorer = getComponentValue(components.ExplorerTroops, armyEntity);
   const ownerStructureId = normalizeEntityId(explorer?.owner);
   if (!ownerStructureId) {
@@ -201,7 +201,7 @@ const hydrateOccupierEntities = async ({
 
   const ownerStructureIds = new Set<number>();
   armyIds.forEach((armyId) => {
-    const explorerEntity = getEntityIdFromKeys([BigInt(armyId)]);
+    const explorerEntity = gameEntityKey([BigInt(armyId)]);
     const explorer = getComponentValue(components.ExplorerTroops, explorerEntity);
     const ownerStructureId = normalizeEntityId(explorer?.owner);
     if (ownerStructureId) {
@@ -237,7 +237,7 @@ export const buildExplorationSnapshot = async ({
   explorerId,
   scopeRadius,
 }: SnapshotParams): Promise<ExplorationMapSnapshot | null> => {
-  const explorerEntity = getEntityIdFromKeys([BigInt(explorerId)]);
+  const explorerEntity = gameEntityKey([BigInt(explorerId)]);
   const explorer = getComponentValue(components.ExplorerTroops, explorerEntity);
   if (!explorer?.coord) {
     return null;

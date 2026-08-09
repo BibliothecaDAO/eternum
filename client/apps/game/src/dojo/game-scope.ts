@@ -1,4 +1,6 @@
 import type { Chain } from "@contracts";
+import { WORLD_CONFIG_ID } from "@bibliothecadao/types";
+import { getEntityIdFromKeys } from "@dojoengine/utils";
 
 /**
  * Active game scope for the s2 single-world arm.
@@ -36,6 +38,31 @@ export const gameModel = (name: string): string => `${activeNamespace}-${name}`;
 
 /** The active game id as a KeysClause key slot (unpadded hex — D16-pinned encoding). */
 export const gameIdKey = (): string => `0x${activeGameId.toString(16)}`;
+
+/**
+ * RECS entity key for a per-game model. On s2 every per-game model leads with
+ * `game_id` as key[0], so lookups must hash it in or they miss every entity;
+ * legacy worlds hash the bare keys. Never use for chain-global models
+ * (AddressName, preset tables, ChainConfig, ...). Client-side twin of
+ * packages/core's gameEntityKey — same formula, fed by the same bootstrap line.
+ */
+export const gameEntityKey = (keys: (bigint | string)[]) => {
+  const bigints = keys.map((key) => BigInt(key));
+  return getEntityIdFromKeys(activeGameId > 0 ? [BigInt(activeGameId), ...bigints] : bigints);
+};
+
+/**
+ * Building is keyed (game_id, alt, outer, outer, inner, inner) on s2 and
+ * (outer, outer, inner, inner) on legacy worlds. Structures never sit on the
+ * alt plane (Cairo `StructureBase.coord()` pins alt to false), so alt is 0.
+ */
+export const buildingEntityKey = (outerCol: number, outerRow: number, innerCol: number, innerRow: number) => {
+  const coords = [BigInt(outerCol), BigInt(outerRow), BigInt(innerCol), BigInt(innerRow)];
+  return getEntityIdFromKeys(activeGameId > 0 ? [BigInt(activeGameId), 0n, ...coords] : coords);
+};
+
+/** WorldConfig row key: [gameId] on s2, [WORLD_CONFIG_ID] on legacy worlds. */
+export const worldConfigKey = () => getEntityIdFromKeys([activeGameId > 0 ? BigInt(activeGameId) : WORLD_CONFIG_ID]);
 
 // s2 models and events WITHOUT a game_id key[0] (chain singletons, preset
 // rulebook side tables, player identity, series rows). Everything else in the

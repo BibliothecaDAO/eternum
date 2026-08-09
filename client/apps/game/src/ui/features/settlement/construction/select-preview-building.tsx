@@ -69,6 +69,7 @@ import Play from "lucide-react/dist/esm/icons/play";
 import Trash from "lucide-react/dist/esm/icons/trash";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
+import { gameEntityKey } from "@/dojo/game-scope";
 
 type ArmyTypeLabel = (typeof MILITARY_BUILDING_GROUP_ORDER)[number];
 type ArmyGroup = {
@@ -162,13 +163,13 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
   const setSelectedBuildingHex = useUIStore((state) => state.setSelectedBuildingHex);
   const mode = useGameModeConfig();
 
-  const realm = getRealmInfo(getEntityIdFromKeys([BigInt(entityId)]), dojo.setup.components);
-  const structure = useComponentValue(dojo.setup.components.Structure, getEntityIdFromKeys([BigInt(entityId)]));
+  const realm = getRealmInfo(gameEntityKey([BigInt(entityId)]), dojo.setup.components);
+  const structure = useComponentValue(dojo.setup.components.Structure, gameEntityKey([BigInt(entityId)]));
   const structureBuildings = useComponentValue(
     dojo.setup.components.StructureBuildings,
-    getEntityIdFromKeys([BigInt(entityId)]),
+    gameEntityKey([BigInt(entityId)]),
   );
-  const resourceData = useComponentValue(dojo.setup.components.Resource, getEntityIdFromKeys([BigInt(entityId)]));
+  const resourceData = useComponentValue(dojo.setup.components.Resource, gameEntityKey([BigInt(entityId)]));
   const currentTime = useMemo(() => Date.now(), [timerTick]);
   const currentTimeRef = useRef(currentTime);
   currentTimeRef.current = currentTime;
@@ -1507,14 +1508,14 @@ const ResourceInfo = ({
     ? configManager.simpleSystemResourceInputs[resourceId]
     : configManager.complexSystemResourceInputs[resourceId];
 
-  const structure = getComponentValue(dojo.setup.components.Structure, getEntityIdFromKeys([BigInt(entityId || 0)]));
+  const structure = getComponentValue(dojo.setup.components.Structure, gameEntityKey([BigInt(entityId || 0)]));
   if (resourceId == ResourcesIds.Donkey && structure?.metadata.has_wonder) {
     cost = adjustWonderLordsCost(cost);
   }
 
   const structureBuildings = useComponentValue(
     dojo.setup.components.StructureBuildings,
-    getEntityIdFromKeys([BigInt(entityId || 0)]),
+    gameEntityKey([BigInt(entityId || 0)]),
   );
 
   const buildingCost = useMemo(() => {
@@ -1688,7 +1689,7 @@ const BuildingInfo = ({
     }
   }
 
-  const structure = getComponentValue(dojo.setup.components.Structure, getEntityIdFromKeys([BigInt(entityId || 0)]));
+  const structure = getComponentValue(dojo.setup.components.Structure, gameEntityKey([BigInt(entityId || 0)]));
 
   // Ensure ongoingCost is an array before attempting to use adjustWonderLordsCost
   if (

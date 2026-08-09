@@ -13,7 +13,7 @@ import {
   debouncedGetEntitiesFromTorii,
   debouncedGetOwnedArmiesFromTorii,
 } from "./debounced-queries";
-import { gameIdKey, gameModel, getScopedGameId, isGameScoped } from "./game-scope";
+import { gameEntityKey, gameIdKey, gameModel, getScopedGameId, isGameScoped } from "./game-scope";
 import { EVENT_QUERY_LIMIT } from "./sync";
 
 const CONFIG_FETCH_CACHE_PREFIX = "eternum:config-fetched";
@@ -184,7 +184,7 @@ export const ensureStructureSynced = async (
     return;
   }
 
-  const entityKey = getEntityIdFromKeys([BigInt(structureEntityId)]);
+  const entityKey = gameEntityKey([BigInt(structureEntityId)]);
 
   const existing = getComponentValue(components.Structure, entityKey);
   if (existing && accountAddress) {

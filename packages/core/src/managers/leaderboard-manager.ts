@@ -1,8 +1,7 @@
 import { type ClientComponents, ContractAddress, type ID } from "@bibliothecadao/types";
 import { Has, getComponentValue, runQuery } from "@dojoengine/recs";
-import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { getGuildFromPlayerAddress } from "../utils";
-import { ClientConfigManager } from "./config-manager";
+import { ClientConfigManager, gameEntityKey } from "./config-manager";
 
 interface ContractAddressAndAmount {
   key: false;
@@ -293,7 +292,7 @@ export class LeaderboardManager {
     | undefined {
     const hyperstructureShareholders = getComponentValue(
       this.components.HyperstructureShareholders,
-      getEntityIdFromKeys([BigInt(hyperstructureEntityId)]),
+      gameEntityKey([BigInt(hyperstructureEntityId)]),
     );
     if (!hyperstructureShareholders) return;
 
@@ -442,7 +441,7 @@ export class LeaderboardManager {
   public getPlayerShares(playerAddress: ContractAddress, hyperstructureEntityId: ID) {
     const hyperstructureShareholders = getComponentValue(
       this.components.HyperstructureShareholders,
-      getEntityIdFromKeys([BigInt(hyperstructureEntityId)]),
+      gameEntityKey([BigInt(hyperstructureEntityId)]),
     );
 
     if (!hyperstructureShareholders) return 0;
@@ -470,6 +469,13 @@ export class LeaderboardManager {
   };
 
   public isSeasonOver = () => {
+    // s2 single world: game end state lives on the registry row; the
+    // SeasonEnded event only exists on legacy worlds.
+    const config = ClientConfigManager.instance();
+    if (config.getActiveGameId() > 0) {
+      return config.isGameOver();
+    }
+
     const seasonEnded = runQuery([Has(this.components.events.SeasonEnded)]);
 
     if (seasonEnded.size > 0) {

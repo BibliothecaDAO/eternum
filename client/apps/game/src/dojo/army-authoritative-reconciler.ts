@@ -4,7 +4,7 @@ import { setEntities } from "@dojoengine/state";
 import { PatternMatching, ToriiClient } from "@dojoengine/torii-client";
 import { LogicalOperator } from "@dojoengine/torii-wasm";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
-import { gameIdKey, gameModel, isGameScoped } from "./game-scope";
+import { gameEntityKey, gameIdKey, gameModel, isGameScoped } from "./game-scope";
 
 /**
  * Loop A of the ghost-army fix: the level-triggered "local RECS == Torii"
@@ -218,7 +218,7 @@ export async function sweepArmiesAgainstTorii<S extends Schema>(
   const queryTimeoutMs = input.queryTimeoutMs ?? ARMY_SWEEP_QUERY_TIMEOUT_MS;
   const presentIds = new Set<ID>();
   const entityKeyToId = new Map<string, ID>();
-  candidateIds.forEach((id) => entityKeyToId.set(getEntityIdFromKeys([BigInt(id)]), id));
+  candidateIds.forEach((id) => entityKeyToId.set(gameEntityKey([BigInt(id)]), id));
 
   let reappliedCount = 0;
 
@@ -298,7 +298,7 @@ export async function sweepArmiesAgainstTorii<S extends Schema>(
   }
 
   for (const id of confirmedDead) {
-    const entity = getEntityIdFromKeys([BigInt(id)]);
+    const entity = gameEntityKey([BigInt(id)]);
     // Only fire the removal edge if RECS still holds the stale component:
     // onDeadArmy needs a prevState, and an already-clean RECS means the scene
     // side (Loop B) owns whatever visual remains.

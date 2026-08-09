@@ -72,6 +72,10 @@ vi.mock("@dojoengine/react", () => ({
   },
 }));
 
+vi.mock("@/dojo/game-scope", () => ({
+  gameEntityKey: ([entityId]: [bigint]) => entityId,
+}));
+
 vi.mock("@bibliothecadao/eternum", () => ({
   configManager: {
     getMaxLevel: () => 4,

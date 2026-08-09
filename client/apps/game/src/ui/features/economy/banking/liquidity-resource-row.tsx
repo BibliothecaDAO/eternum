@@ -17,6 +17,7 @@ import { ContractAddress, ID, ResourcesIds, StructureType, resources } from "@bi
 import { useComponentValue } from "@dojoengine/react";
 import { getComponentValue } from "@dojoengine/recs";
 import React, { useCallback, useMemo, useState } from "react";
+import { gameEntityKey } from "@/dojo/game-scope";
 
 type LiquidityResourceRowProps = {
   playerStructureIds: ID[];
@@ -38,9 +39,9 @@ export const LiquidityResourceRow = ({
   const [showInputResourcesPrice, setShowInputResourcesPrice] = useState(false);
   const [withdrawalPercentage, setWithdrawalPercentage] = useState(100);
 
-  const marketEntityId = useMemo(() => getEntityIdFromKeys([BigInt(resourceId)]), [resourceId]);
+  const marketEntityId = useMemo(() => gameEntityKey([BigInt(resourceId)]), [resourceId]);
   const liquidityEntityId = useMemo(
-    () => getEntityIdFromKeys([BigInt(dojoContext.account.account.address), BigInt(resourceId)]),
+    () => gameEntityKey([BigInt(dojoContext.account.account.address), BigInt(resourceId)]),
     [resourceId],
   );
 
@@ -123,7 +124,7 @@ export const LiquidityResourceRow = ({
     const { lords, resource } = calculateWithdrawAmounts(withdrawalPercentage);
 
     const isVillageAndMilitaryResource =
-      getComponentValue(dojoContext.setup.components.Structure, getEntityIdFromKeys([BigInt(entityId)]))?.category ===
+      getComponentValue(dojoContext.setup.components.Structure, gameEntityKey([BigInt(entityId)]))?.category ===
         StructureType.Village && isMilitaryResource(resourceId);
 
     const travelResources = [

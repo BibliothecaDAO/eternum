@@ -26,6 +26,7 @@ import { useDojo } from "@bibliothecadao/react";
 import { ContractAddress, ID, Resources, resources, ResourcesIds, StructureType } from "@bibliothecadao/types";
 import { getComponentValue } from "@dojoengine/recs";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { gameEntityKey } from "@/dojo/game-scope";
 
 export const ResourceSwap = ({ entityId, listResourceId }: { entityId: ID; listResourceId: number }) => {
   const mode = useGameModeConfig();
@@ -235,8 +236,8 @@ export const ResourceSwap = ({ entityId, listResourceId }: { entityId: ID; listR
     if (!closestBank) return;
 
     const isVillageAndMilitaryResource =
-      getComponentValue(components.Structure, getEntityIdFromKeys([BigInt(entityId)]))?.category ===
-        StructureType.Village && isMilitaryResource(resourceId);
+      getComponentValue(components.Structure, gameEntityKey([BigInt(entityId)]))?.category === StructureType.Village &&
+      isMilitaryResource(resourceId);
 
     return (
       <ConfirmationPopup

@@ -17,11 +17,10 @@ import {
   type TroopType,
 } from "@bibliothecadao/types";
 import { type Entity, getComponentValue } from "@dojoengine/recs";
-import { getEntityIdFromKeys } from "@dojoengine/utils";
 import type { Account, AccountInterface } from "starknet";
 import { divideByPrecision, FELT_CENTER, getTileAt } from "..";
 import { type ActionPath, ActionPaths, ActionType } from "../utils/action-paths";
-import { configManager } from "./config-manager";
+import { configManager, gameEntityKey } from "./config-manager";
 import { ResourceManager } from "./resource-manager";
 import { StaminaManager } from "./stamina-manager";
 import { scheduleTransactionCleanup } from "./transaction-cleanup";
@@ -39,7 +38,7 @@ export class ArmyActionManager {
     private readonly systemCalls: SystemCalls,
     entityId: ID,
   ) {
-    this.entity = getEntityIdFromKeys([BigInt(entityId)]);
+    this.entity = gameEntityKey([BigInt(entityId)]);
     this.entityId = entityId;
     this.staminaManager = new StaminaManager(this.components, entityId);
     this.FELT_CENTER = FELT_CENTER();

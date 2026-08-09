@@ -64,3 +64,30 @@ settlements, leaderboards. One-time session approval verified. Playtest launch t
 P1 → P2 → P3 are strictly sequential (each is the foundation of the next). P4 can interleave after P2. P5 last (needs
 the data layer stable). Commit per phase; `pnpm run format` + `knip` + the client test suite per commit; no drive-by
 refactors outside the audit's file lists.
+
+## P2/P3 execution notes (2026-08-10)
+
+- **P2 shipped** (`adcc66999b`): `src/dojo/game-scope.ts` is the single scope module (namespace + gameId, set in
+  `runBootstrap` next to `configManager.setActiveGame`). The `buildModelKeysClause` chokepoint collapses every per-game
+  model into one `keys: [gameIdHex]` VariableLen clause (D16 encoding); the per-model key-arity table turned out to be
+  unnecessary — VariableLen with the game-id prefix covers all arities, so only the per-game/chain-global classification
+  matters, and that set is pinned against `manifest_appchain.json` by `game-scope.test.ts` instead of generated.
+  Subscribe-to-everything fallback deleted; appchain env now runs bounded spatial sync (matches mainnet blitz prod).
+  s2 stream list drops SeasonEnded/QuestLevels/PlayersRankFinal, adds GameRegistry.
+- **P3 codemod shipped**: `gameEntityKey` (plus `buildingEntityKey` — s2 Building inserted an `alt` key, always 0 since
+  structures never sit on the alt plane — and `worldConfigKey` for s1-const→s2-gameId rows: WorldConfig,
+  HyperstructureGlobals, SeasonPrize, MMRGameMeta). Core/react import from `managers/config-manager`; **client files
+  import the twin helpers from `@/dojo/game-scope`**, deliberately: 51 client test files hand-mock
+  `@bibliothecadao/eternum`, and a package-root import would force every one of those mocks to stub the helper.
+  Trial-keyed prize rows (PlayerRank/RankPrize) branch on active game (s2 keys by game_id, s1 by trial_id).
+  AddressName/preset-table/s1-only (Market/Liquidity/Trade/Quest) lookups intentionally keep raw `getEntityIdFromKeys` —
+  raw calls on per-game models are now the code-review signal.
+- **SeasonEnded → per-game**: `configManager.isGameOver()` reads GameRegistry.status (Ended/Settled);
+  `LeaderboardManager.isSeasonOver` and the rewards-menu gate branch on it; the SeasonEnded event stays legacy-only.
+  SeasonWinnerStoreManager's `sqlApi.fetchSeasonEnded()` is P4 (SQL arm).
+- **Scan scoping resolved by construction**: with every ingress path (streams, snapshots, targeted queries) game-scoped
+  and RECS wiped on world/game switch (`clearBootstrapWorldData`), unscoped `runQuery` scans can only ever see the
+  active game's rows — no per-row game_id filters added.
+- Found and fixed along the way: bindings generator missed `metadata.types` u32 prepend for single-line arrays (16
+  models; BlitzSettlement test caught it); `normalizeProduction` crashed on partial Resource fixtures; players-panel
+  GuildWhitelist lookup had (address, guild) reversed — a pre-existing always-miss.

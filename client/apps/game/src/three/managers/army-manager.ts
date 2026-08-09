@@ -122,6 +122,7 @@ import {
   waitForVisualSettle,
 } from "./manager-update-convergence";
 import { snapshotRendererDiagnostics } from "../renderer-diagnostics";
+import { gameEntityKey } from "@/dojo/game-scope";
 
 const MEMORY_MONITORING_ENABLED = env.VITE_PUBLIC_ENABLE_MEMORY_MONITORING;
 
@@ -845,7 +846,7 @@ export class ArmyManager {
     }
 
     try {
-      const structureEntityId = getEntityIdFromKeys([BigInt(params.ownerStructureId)]);
+      const structureEntityId = gameEntityKey([BigInt(params.ownerStructureId)]);
       const liveStructure = getComponentValue(this.components.Structure, structureEntityId);
       const liveOwnerRaw = liveStructure?.owner;
       if (liveOwnerRaw === undefined || liveOwnerRaw === null) {
@@ -3358,7 +3359,7 @@ ${
       return null;
     }
 
-    return getComponentValue(this.components.ExplorerTroops, getEntityIdFromKeys([BigInt(entityId)]))?.troops ?? null;
+    return getComponentValue(this.components.ExplorerTroops, gameEntityKey([BigInt(entityId)]))?.troops ?? null;
   }
 
   private resolveArmyStaminaSnapshot(input: {

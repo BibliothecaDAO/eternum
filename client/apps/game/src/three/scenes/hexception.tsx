@@ -105,6 +105,7 @@ import { MapControls } from "three/examples/jsm/controls/MapControls.js";
 import { SceneName } from "../types";
 import { getHexForWorldPosition, getWorldPositionForHex } from "../utils";
 import { HexHoverLabel } from "../utils/labels/hex-hover-label";
+import { gameEntityKey, buildingEntityKey } from "@/dojo/game-scope";
 
 const loader = gltfLoader;
 
@@ -643,7 +644,7 @@ export default class HexceptionScene extends HexagonScene {
     if (buildingType) {
       const useSimpleCost = this.state.useSimpleCost;
       const structureEntityId = useUIStore.getState().structureEntityId;
-      const realm = getRealmInfo(getEntityIdFromKeys([BigInt(structureEntityId)]), this.dojo.components);
+      const realm = getRealmInfo(gameEntityKey([BigInt(structureEntityId)]), this.dojo.components);
       const buildability = resolveConstructionBuildability({
         entityId: structureEntityId,
         buildingType: buildingType.type,
@@ -704,7 +705,7 @@ export default class HexceptionScene extends HexagonScene {
       if (BUILDINGS_CENTER[0] === hexCoords.col && BUILDINGS_CENTER[1] === hexCoords.row) {
         const building = getComponentValue(
           this.dojo.components.Building,
-          getEntityIdFromKeys([BigInt(outerCol), BigInt(outerRow), BigInt(hexCoords.col), BigInt(hexCoords.row)]),
+          buildingEntityKey(outerCol, outerRow, hexCoords.col, hexCoords.row),
         );
 
         // AudioManager handles muted state internally
@@ -720,7 +721,7 @@ export default class HexceptionScene extends HexagonScene {
       } else if (this.tileManager.isHexOccupied(normalizedCoords)) {
         const building = getComponentValue(
           this.dojo.components.Building,
-          getEntityIdFromKeys([BigInt(outerCol), BigInt(outerRow), BigInt(hexCoords.col), BigInt(hexCoords.row)]),
+          buildingEntityKey(outerCol, outerRow, hexCoords.col, hexCoords.row),
         );
 
         // AudioManager handles muted state internally
@@ -905,12 +906,7 @@ export default class HexceptionScene extends HexagonScene {
 
     const building = getComponentValue(
       this.dojo.components.Building,
-      getEntityIdFromKeys([
-        BigInt(outerCol),
-        BigInt(outerRow),
-        BigInt(normalizedCoords.col),
-        BigInt(normalizedCoords.row),
-      ]),
+      buildingEntityKey(outerCol, outerRow, normalizedCoords.col, normalizedCoords.row),
     );
     if (!building || building.category === BuildingType.None) {
       return;

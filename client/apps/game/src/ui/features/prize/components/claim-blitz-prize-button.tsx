@@ -6,6 +6,8 @@ import { useEntityQuery } from "@dojoengine/react";
 import { Has, getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { useEffect, useMemo, useState } from "react";
+import { configManager } from "@bibliothecadao/eternum";
+import { gameEntityKey } from "@/dojo/game-scope";
 
 export const ClaimBlitzPrizeButton = ({ className }: { className?: string }) => {
   const {
@@ -30,10 +32,14 @@ export const ClaimBlitzPrizeButton = ({ className }: { className?: string }) => 
 
   const finalTrialId = final?.trial_id as bigint | undefined;
 
-  // Player rank for the connected account
+  // Player rank for the connected account. s2 keys prize rows by
+  // (game_id, ...) — the trial id only keys legacy (s1) worlds.
   const playerRank = useMemo(() => {
     if (!finalTrialId || !account?.address) return undefined;
-    const eid = getEntityIdFromKeys([finalTrialId as unknown as bigint, BigInt(account.address)]);
+    const eid =
+      configManager.getActiveGameId() > 0
+        ? gameEntityKey([BigInt(account.address)])
+        : getEntityIdFromKeys([finalTrialId as unknown as bigint, BigInt(account.address)]);
     return getComponentValue(components.PlayerRank, eid as any);
   }, [components.PlayerRank, finalTrialId, account?.address]);
 
@@ -42,7 +48,10 @@ export const ClaimBlitzPrizeButton = ({ className }: { className?: string }) => 
   const prizeShare = useMemo(() => {
     if (!finalTrialId || !playerRank) return undefined as undefined | bigint;
     try {
-      const prizeId = getEntityIdFromKeys([finalTrialId as unknown as bigint, BigInt(playerRank.rank)]);
+      const prizeId =
+        configManager.getActiveGameId() > 0
+          ? gameEntityKey([BigInt(playerRank.rank)])
+          : getEntityIdFromKeys([finalTrialId as unknown as bigint, BigInt(playerRank.rank)]);
       const prize = getComponentValue(components.RankPrize, prizeId as any);
       if (!prize || Number(prize.total_players_same_rank_count) === 0) return undefined;
       const total: bigint = prize.total_prize_amount as bigint;

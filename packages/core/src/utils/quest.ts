@@ -1,9 +1,9 @@
 import { ClientComponents, ContractAddress, ID, QuestTile } from "@bibliothecadao/types";
 import { Entity, getComponentValue } from "@dojoengine/recs";
-import { getEntityIdFromKeys } from "@dojoengine/utils";
+import { gameEntityKey } from "../managers/config-manager";
 
 export const getQuest = (questEntityId: ID | Entity, components: ClientComponents) => {
-  const entityId = typeof questEntityId === "string" ? questEntityId : getEntityIdFromKeys([BigInt(questEntityId)]);
+  const entityId = typeof questEntityId === "string" ? questEntityId : gameEntityKey([BigInt(questEntityId)]);
   return formatQuests([entityId], components)[0];
 };
 

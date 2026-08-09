@@ -37,6 +37,7 @@ import { getStructureDefenseSlotLimit, getUnlockedGuardSlots } from "../utils/de
 import { CombatModal } from "./combat-modal";
 import { useAttackTargetData } from "./hooks/use-attack-target";
 import { AttackTarget, TargetType } from "./types";
+import { gameEntityKey } from "@/dojo/game-scope";
 
 import {
   getDirectionBetweenAdjacentHexes,
@@ -153,13 +154,13 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
   const targetRelicResourceIds = useMemo(() => toRelicResourceIds(targetRelicEffects), [targetRelicEffects]);
 
   const attackerType = useMemo(() => {
-    const structure = getComponentValue(Structure, getEntityIdFromKeys([BigInt(attacker.id)]));
+    const structure = getComponentValue(Structure, gameEntityKey([BigInt(attacker.id)]));
     return structure ? AttackerType.Structure : AttackerType.Army;
   }, [attacker.id, Structure]);
 
   const structureGuards = useMemo(() => {
     if (attackerType !== AttackerType.Structure) return [];
-    const structure = getComponentValue(Structure, getEntityIdFromKeys([BigInt(attacker.id)]));
+    const structure = getComponentValue(Structure, gameEntityKey([BigInt(attacker.id)]));
     return structure
       ? getGuardsByStructure(structure)
           .filter((guard) => guard.troops.count > 0n)
@@ -227,7 +228,7 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
       };
     }
 
-    const army = getComponentValue(ExplorerTroops, getEntityIdFromKeys([BigInt(attacker.id)]));
+    const army = getComponentValue(ExplorerTroops, gameEntityKey([BigInt(attacker.id)]));
     return army
       ? {
           troops: buildProjectedTroopSnapshot(army.troops, {

@@ -24,6 +24,7 @@ import {
   useExplorationAutomationStore,
 } from "@/hooks/store/use-exploration-automation-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
+import { gameEntityKey } from "@/dojo/game-scope";
 import {
   computeEffectiveStaminaCost,
   filterFreshExplorationPaths,
@@ -40,7 +41,7 @@ const isExplorerOwnedByAccount = (
 
   // explorer.owner is a realm/structure entity ID, not an address
   // Look up the Structure to get the actual player address
-  const structureEntity = getEntityIdFromKeys([BigInt(explorerOwnerEntityId)]);
+  const structureEntity = gameEntityKey([BigInt(explorerOwnerEntityId)]);
   const structure = getComponentValue(components.Structure, structureEntity);
   if (!structure?.owner) return false;
 
@@ -90,7 +91,7 @@ export const useExplorationAutomationRunner = () => {
         return { explorer: undefined };
       }
 
-      const primaryEntity = getEntityIdFromKeys([BigInt(explorerId)]);
+      const primaryEntity = gameEntityKey([BigInt(explorerId)]);
       let explorer = getComponentValue(components.ExplorerTroops, primaryEntity);
       if (explorer) {
         return { explorer };

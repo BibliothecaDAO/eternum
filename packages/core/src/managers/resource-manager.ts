@@ -1,10 +1,9 @@
 // import { getEntityIdFromKeys, gramToKg, multiplyByPrecision } from "@/ui/utils/utils";
 import { BuildingType, ClientComponents, ID, Resource, ResourcesIds, RESOURCE_PRECISION } from "@bibliothecadao/types";
 import { ComponentValue, getComponentValue } from "@dojoengine/recs";
-import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { uuid } from "@latticexyz/utils";
 import { divideByPrecision, getBuildingCount, gramToKg, kgToGram, multiplyByPrecision } from "../utils";
-import { configManager } from "./config-manager";
+import { configManager, gameEntityKey } from "./config-manager";
 
 export interface ResourceProductionData {
   productionPerSecond: number;
@@ -19,12 +18,20 @@ export interface OptimisticResourceChange {
 }
 
 // s2 changed production_rate to u64 (schema: number); internal math stays bigint.
-const normalizeProduction = (production: {
-  building_count: number;
-  production_rate: number | bigint;
-  output_amount_left: bigint;
-  last_updated_at: number;
-}) => ({ ...production, production_rate: BigInt(production.production_rate) });
+// Absent members (partial RECS rows, test fixtures) normalize to zero production.
+const normalizeProduction = (
+  production:
+    | {
+        building_count: number;
+        production_rate: number | bigint;
+        output_amount_left: bigint;
+        last_updated_at: number;
+      }
+    | undefined,
+) =>
+  production
+    ? { ...production, production_rate: BigInt(production.production_rate ?? 0) }
+    : { building_count: 0, production_rate: 0n, output_amount_left: 0n, last_updated_at: 0 };
 
 export class ResourceManager {
   entityId: ID;
@@ -41,7 +48,7 @@ export class ResourceManager {
   }
 
   private _getResource() {
-    return getComponentValue(this.components.Resource, getEntityIdFromKeys([BigInt(this.entityId)]));
+    return getComponentValue(this.components.Resource, gameEntityKey([BigInt(this.entityId)]));
   }
 
   private static isContinuousProductionResource(resourceId: ResourcesIds): boolean {
@@ -101,7 +108,7 @@ export class ResourceManager {
   public optimisticResourceUpdate = (resourceId: ResourcesIds, actualResourceChange: number) => {
     const overrideId = uuid();
 
-    const entity = getEntityIdFromKeys([BigInt(this.entityId)]);
+    const entity = gameEntityKey([BigInt(this.entityId)]);
     const currentResource = getComponentValue(this.components.Resource, entity);
     const currentBalance = this.balance(resourceId);
     const weight = configManager.getResourceWeightKg(resourceId) || 0;
@@ -680,7 +687,7 @@ export class ResourceManager {
     const resource = this._getResource()!;
     const structureBuildings = getComponentValue(
       this.components.StructureBuildings,
-      getEntityIdFromKeys([BigInt(this.entityId || 0)]),
+      gameEntityKey([BigInt(this.entityId || 0)]),
     );
     const packBuildingCounts = [
       structureBuildings?.packed_counts_1 || 0n,

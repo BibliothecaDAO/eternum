@@ -11,6 +11,7 @@ import { useComponentValue } from "@dojoengine/react";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { useQuery } from "@tanstack/react-query";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { gameEntityKey } from "@/dojo/game-scope";
 
 interface UseArmyEntityDetailOptions {
   armyEntityId: ID;
@@ -57,7 +58,7 @@ export const useArmyEntityDetail = ({ armyEntityId }: UseArmyEntityDetailOptions
   const pendingStamina = useArmyStaminaSourceStore((state) => state.pendingSources[String(armyEntityId)]);
   const liveExplorerTroops = useComponentValue(
     components.ExplorerTroops,
-    getEntityIdFromKeys([BigInt(armyEntityId)]),
+    gameEntityKey([BigInt(armyEntityId)]),
   )?.troops;
 
   const {

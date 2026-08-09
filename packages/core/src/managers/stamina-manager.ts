@@ -1,7 +1,6 @@
 import { ClientComponents, ID, Troops, TroopTier, TroopType } from "@bibliothecadao/types";
 import { getComponentValue } from "@dojoengine/recs";
-import { getEntityIdFromKeys } from "@dojoengine/utils";
-import { configManager } from "./config-manager";
+import { configManager, gameEntityKey } from "./config-manager";
 
 export class StaminaManager {
   constructor(
@@ -12,7 +11,7 @@ export class StaminaManager {
   public getStamina(currentArmiesTick: number) {
     let armyOnchainStamina = getComponentValue(
       this.components.ExplorerTroops,
-      getEntityIdFromKeys([BigInt(this.armyEntityId)]),
+      gameEntityKey([BigInt(this.armyEntityId)]),
     )?.troops.stamina;
 
     if (!armyOnchainStamina) {
@@ -21,7 +20,7 @@ export class StaminaManager {
 
     const troops = getComponentValue(
       this.components.ExplorerTroops,
-      getEntityIdFromKeys([BigInt(this.armyEntityId)]),
+      gameEntityKey([BigInt(this.armyEntityId)]),
     )?.troops;
 
     if (!troops) return { ...DEFAULT_STAMINA, entity_id: this.armyEntityId };

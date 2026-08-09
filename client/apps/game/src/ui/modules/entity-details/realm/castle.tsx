@@ -20,6 +20,7 @@ import CrownIcon from "lucide-react/dist/esm/icons/crown";
 import PlusIcon from "lucide-react/dist/esm/icons/plus";
 import SparklesIcon from "lucide-react/dist/esm/icons/sparkles";
 import Pickaxe from "lucide-react/dist/esm/icons/pickaxe";
+import { gameEntityKey } from "@/dojo/game-scope";
 
 const WONDER_BONUS_DISTANCE = 12;
 
@@ -35,7 +36,7 @@ export const Castle = () => {
 
   const productionBoostBonus = useComponentValue(
     dojo.setup.components.ProductionBoostBonus,
-    getEntityIdFromKeys([BigInt(structureEntityId)]),
+    gameEntityKey([BigInt(structureEntityId)]),
   );
   const hasActivatedWonderBonus = productionBoostBonus && productionBoostBonus.wonder_incr_percent_num > 0;
 
@@ -59,10 +60,7 @@ export const Castle = () => {
     setIsWonderBonusLoading(false);
   };
 
-  const structure = useComponentValue(
-    dojo.setup.components.Structure,
-    getEntityIdFromKeys([BigInt(structureEntityId)]),
-  );
+  const structure = useComponentValue(dojo.setup.components.Structure, gameEntityKey([BigInt(structureEntityId)]));
 
   useEffect(() => {
     const checkNearWonder = async () => {

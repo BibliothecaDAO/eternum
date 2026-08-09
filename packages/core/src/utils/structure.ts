@@ -16,6 +16,7 @@ import { shortString } from "starknet";
 import { getTileAt, DEFAULT_COORD_ALT } from "./tile";
 import { configManager } from "../managers";
 import { currentTickCount } from "./utils";
+import { gameEntityKey } from "../managers/config-manager";
 
 export const getStructureAtPosition = (
   { x, y }: Position,
@@ -23,7 +24,7 @@ export const getStructureAtPosition = (
   components: ClientComponents,
 ): Structure | undefined => {
   const tile = getTileAt(components, DEFAULT_COORD_ALT, x, y);
-  const structureEntity = getEntityIdFromKeys([BigInt(tile?.occupier_id || 0n)]);
+  const structureEntity = gameEntityKey([BigInt(tile?.occupier_id || 0n)]);
 
   if (!structureEntity) return;
 
@@ -35,7 +36,7 @@ export const getStructure = (
   playerAddress: ContractAddress,
   components: ClientComponents,
 ): Structure | undefined => {
-  const structureEntity = typeof entityId === "string" ? entityId : getEntityIdFromKeys([BigInt(entityId)]);
+  const structureEntity = typeof entityId === "string" ? entityId : gameEntityKey([BigInt(entityId)]);
   return getStructureInfo(structureEntity, playerAddress, components);
 };
 

@@ -21,6 +21,7 @@ import { AttackTarget, TargetType } from "../types";
 
 import type { ID, RelicEffectWithEndTick, StructureType } from "@bibliothecadao/types";
 import { STEALABLE_RESOURCES } from "@bibliothecadao/types";
+import { gameEntityKey } from "@/dojo/game-scope";
 
 const orderResourcesByPriority = (resourceBalances: Array<{ resourceId: number; amount: number }>) => {
   return STEALABLE_RESOURCES.reduce<Array<{ resourceId: number; amount: number }>>((acc, resourceId) => {
@@ -104,12 +105,12 @@ export const useAttackTargetData = (
   const { currentArmiesTick, currentBlockTimestamp } = useBlockTimestamp();
 
   const attackerRelicEffects = useMemo(() => {
-    const structure = getComponentValue(Structure, getEntityIdFromKeys([BigInt(attackerEntityId)]));
+    const structure = getComponentValue(Structure, gameEntityKey([BigInt(attackerEntityId)]));
 
     if (structure) {
       const productionBoostBonus = getComponentValue(
         ProductionBoostBonus,
-        getEntityIdFromKeys([BigInt(structure.entity_id)]),
+        gameEntityKey([BigInt(structure.entity_id)]),
       );
 
       const structureRelicEffects = productionBoostBonus
@@ -120,7 +121,7 @@ export const useAttackTargetData = (
       return [...structureRelicEffects, ...structureArmyRelicEffects];
     }
 
-    const explorer = getComponentValue(ExplorerTroops, getEntityIdFromKeys([BigInt(attackerEntityId)]));
+    const explorer = getComponentValue(ExplorerTroops, gameEntityKey([BigInt(attackerEntityId)]));
     if (explorer) {
       return getArmyRelicEffects(explorer.troops, currentArmiesTick);
     }

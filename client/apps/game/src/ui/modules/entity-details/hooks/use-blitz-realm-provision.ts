@@ -15,6 +15,7 @@ import { BuildingType, ContractAddress, StructureType } from "@bibliothecadao/ty
 import { dojoConfig } from "../../../../../dojo-config";
 import { extractReadableErrorMessage } from "@/utils/error-message";
 import { withRealmActionSubmitTimeout } from "./realm-action-submit-timeout";
+import { gameEntityKey } from "@/dojo/game-scope";
 
 const REALM_PROVISION_SYNC_TIMEOUT_MS = 30_000;
 const REALM_PROVISION_SYNC_POLL_INTERVAL_MS = 1_000;
@@ -155,7 +156,7 @@ export const useBlitzRealmProvision = (structureEntityId: number | null): Struct
   const [provisionActionState, setProvisionActionState] = useState<RealmProvisionActionStatus>("idle");
 
   const realmEntity = useMemo(
-    () => (structureEntityId ? getEntityIdFromKeys([BigInt(structureEntityId)]) : null),
+    () => (structureEntityId ? gameEntityKey([BigInt(structureEntityId)]) : null),
     [structureEntityId],
   );
 

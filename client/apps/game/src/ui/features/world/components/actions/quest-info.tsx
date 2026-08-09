@@ -10,6 +10,7 @@ import { memo, useEffect, useMemo, useState } from "react";
 
 import { formatAmount } from "./format-amount";
 import { InfoLabel } from "./info-label";
+import { gameEntityKey } from "@/dojo/game-scope";
 
 interface QuestInfoProps {
   selectedEntityId: ID;
@@ -39,7 +40,7 @@ export const QuestInfo = memo(({ selectedEntityId, path }: QuestInfoProps) => {
 
   const rewardAmount = questTileEntity?.amount ?? 0;
 
-  const resources = useComponentValue(Resource, getEntityIdFromKeys([BigInt(selectedEntityId)]));
+  const resources = useComponentValue(Resource, gameEntityKey([BigInt(selectedEntityId)]));
 
   const remainingCapacity = useMemo(() => {
     if (!resources) return 0;

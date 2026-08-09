@@ -24,6 +24,7 @@ import { getComponentValue, Has } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { useMemo } from "react";
 import type { StructureWithMetadata } from "./chip";
+import { gameEntityKey } from "@/dojo/game-scope";
 
 const readPackedCount = (value: bigint | number | string | undefined): bigint => {
   if (value === undefined || value === null) return 0n;
@@ -115,7 +116,7 @@ export const useStructuresWithMetadata = ({
       const realmLevelLabel = structureCapabilities.hasPopulationDetails
         ? getLevelName(Math.min(Math.max(normalizedLevel, RealmLevels.Settlement), RealmLevels.Empire) as RealmLevels)
         : null;
-      const structureEntity = getEntityIdFromKeys([BigInt(structure.entityId)]);
+      const structureEntity = gameEntityKey([BigInt(structure.entityId)]);
       const structureBuildings = components.StructureBuildings
         ? getComponentValue(components.StructureBuildings, structureEntity)
         : null;

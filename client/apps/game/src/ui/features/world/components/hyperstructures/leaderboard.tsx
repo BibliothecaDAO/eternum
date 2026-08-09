@@ -13,6 +13,7 @@ import { ContractAddress, ID } from "@bibliothecadao/types";
 import { getComponentValue } from "@dojoengine/recs";
 import { useEffect, useMemo, useState } from "react";
 import { getAvatarUrl, normalizeAvatarAddress, useAvatarProfiles } from "@/hooks/use-player-avatar";
+import { gameEntityKey } from "@/dojo/game-scope";
 
 const LEADERBOARD_AUTO_REFRESH_INTERVAL_MS = 30_000;
 
@@ -92,7 +93,7 @@ export const Leaderboard = ({
   }, []);
 
   const isOwner = useMemo(() => {
-    const owner = getComponentValue(components.Structure, getEntityIdFromKeys([BigInt(hyperstructureEntityId)]))?.owner;
+    const owner = getComponentValue(components.Structure, gameEntityKey([BigInt(hyperstructureEntityId)]))?.owner;
     if (!owner) return false;
     return ContractAddress(owner) === ContractAddress(account.address);
   }, [hyperstructureEntityId, components.Structure, account.address]);

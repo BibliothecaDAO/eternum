@@ -209,9 +209,14 @@ const spliceGameId = (block: string): string => {
   const open = schemaOpenIndent(block);
   const field = " ".repeat(open + 2);
   const withKey = block.replace(/^(\s*\{\n)/m, `$1${field}game_id: RecsType.Number,\n`);
-  return withKey.replace(
+  const multiline = withKey.replace(
     /(^\s*types: \[\n)(\s*)/m,
     (all, head: string, lead: string) => `${head}${lead}"u32", // game_id\n${lead}`,
+  );
+  if (multiline !== withKey) return multiline;
+  // Single-line arrays: types: ["ContractAddress", ...] and types: [].
+  return withKey.replace(/(^\s*types: \[)(?!\n)(\]?)/m, (all, head: string, close: string) =>
+    close ? `${head}"u32"${close}` : `${head}"u32", `,
   );
 };
 

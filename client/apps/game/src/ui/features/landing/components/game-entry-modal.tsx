@@ -74,6 +74,7 @@ import {
 import { useSettlementPlannerData } from "./use-settlement-planner-data";
 import { waitForTransactionConfirmation } from "@/ui/utils/transactions";
 import { env } from "../../../../../env";
+import { gameEntityKey } from "@/dojo/game-scope";
 
 const DEBUG_MODAL = false;
 const ETERNUM_NAMESPACE = "s1_eternum";
@@ -2107,7 +2108,7 @@ const SettlementPlannerPhase = ({
 
     const realmEntityId = selectedPlannerRealm?.entityId ?? selectedRealmInfo?.entityId ?? null;
     if (realmEntityId == null) return null;
-    return getRealmInfo(getEntityIdFromKeys([BigInt(realmEntityId)]), plannerComponents) ?? null;
+    return getRealmInfo(gameEntityKey([BigInt(realmEntityId)]), plannerComponents) ?? null;
   }, [plannerComponents, selectedPlannerRealm?.entityId, selectedRealmInfo?.entityId]);
   const selectedPlannerRealmDetails = useMemo<PlannerRealmSelectionDetails | null>(() => {
     return buildPlannerRealmSelectionDetails({

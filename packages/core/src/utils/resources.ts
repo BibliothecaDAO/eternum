@@ -12,10 +12,10 @@ import {
   resources,
 } from "@bibliothecadao/types";
 import { getComponentValue } from "@dojoengine/recs";
-import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { ResourceManager } from "../managers";
 import { unpackValue } from "./packed-data";
 import { getIsBlitz } from "./utils";
+import { gameEntityKey } from "../managers/config-manager";
 
 // used for entities that don't have any production
 export const getInventoryResources = (entityId: ID, components: ClientComponents): Resource[] => {
@@ -46,7 +46,7 @@ export const getBalance = (
 };
 
 export const getQuestResources = (realmEntityId: ID, components: ClientComponents) => {
-  const structure = getComponentValue(components.Structure, getEntityIdFromKeys([BigInt(realmEntityId)]));
+  const structure = getComponentValue(components.Structure, gameEntityKey([BigInt(realmEntityId)]));
   const resourcesProduced = structure ? unpackValue(structure.resources_packed) : [];
 
   // todo: fix
@@ -168,9 +168,9 @@ export const isMilitaryResource = (resourceId: ResourcesIds) => {
 };
 
 export const canTransferMilitaryResources = (fromEntityId: ID, toEntityId: ID, components: ClientComponents) => {
-  const fromStructure = getComponentValue(components.Structure, getEntityIdFromKeys([BigInt(fromEntityId)]));
+  const fromStructure = getComponentValue(components.Structure, gameEntityKey([BigInt(fromEntityId)]));
 
-  const toStructure = getComponentValue(components.Structure, getEntityIdFromKeys([BigInt(toEntityId)]));
+  const toStructure = getComponentValue(components.Structure, gameEntityKey([BigInt(toEntityId)]));
 
   if (getIsBlitz()) {
     return Boolean(fromStructure && toStructure && fromStructure.owner === toStructure.owner);

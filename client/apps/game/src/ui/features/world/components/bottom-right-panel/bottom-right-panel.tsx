@@ -1,7 +1,7 @@
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { debouncedGetEntitiesFromTorii } from "@/dojo/debounced-queries";
-import { gameModel } from "@/dojo/game-scope";
+import { gameEntityKey, gameModel } from "@/dojo/game-scope";
 import { getStructuresDataFromTorii } from "@/dojo/queries";
 import { useEntityResync } from "@/hooks/helpers/use-entity-resync";
 import { isVillageLikeStructureCategory, normalizeStructureCategory } from "@/lib/structure-type-utils";
@@ -336,7 +336,7 @@ const LocalTilePanel = () => {
 
     let structureEntityKey: ReturnType<typeof getEntityIdFromKeys> | undefined;
     try {
-      structureEntityKey = getEntityIdFromKeys([BigInt(structureEntityId)]);
+      structureEntityKey = gameEntityKey([BigInt(structureEntityId)]);
     } catch {
       structureEntityKey = undefined;
     }
@@ -397,7 +397,7 @@ const LocalTilePanel = () => {
       BigInt(selectedBuildingHex.innerRow),
     ];
 
-    return getComponentValue(buildingComponent, getEntityIdFromKeys(entityKeys));
+    return getComponentValue(buildingComponent, gameEntityKey(entityKeys));
   }, [buildingComponent, selectedBuildingHex]);
 
   const buildingCategory = useMemo(() => {

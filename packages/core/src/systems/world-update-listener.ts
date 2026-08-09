@@ -48,6 +48,7 @@ import {
   type TileSystemUpdate,
 } from "./types";
 import { getExplorerInfoFromTileOccupier, getStructureInfoFromTileOccupier } from "./utils";
+import { gameEntityKey } from "../managers/config-manager";
 
 // The WorldUpdateListener class is responsible for updating the Three.js models when there are changes in the game state.
 // It listens for updates from torii and translates them into a format that can be consumed by the Three.js model managers.
@@ -127,10 +128,7 @@ export class WorldUpdateListener {
       }
     | undefined {
     try {
-      const explorerTroops = getComponentValue(
-        this.setup.components.ExplorerTroops,
-        getEntityIdFromKeys([BigInt(entityId)]),
-      );
+      const explorerTroops = getComponentValue(this.setup.components.ExplorerTroops, gameEntityKey([BigInt(entityId)]));
       if (!explorerTroops?.troops) {
         return undefined;
       }
@@ -285,7 +283,7 @@ export class WorldUpdateListener {
                   try {
                     const explorerTroops = getComponentValue(
                       this.setup.components.ExplorerTroops,
-                      getEntityIdFromKeys([BigInt(_prevState.occupier_id)]),
+                      gameEntityKey([BigInt(_prevState.occupier_id)]),
                     );
 
                     // If ExplorerTroops still exists and has non-zero troops, the army is alive (just moving)
@@ -356,7 +354,7 @@ export class WorldUpdateListener {
               try {
                 const explorerTroops = getComponentValue(
                   this.setup.components.ExplorerTroops,
-                  getEntityIdFromKeys([BigInt(rawOccupierId)]),
+                  gameEntityKey([BigInt(rawOccupierId)]),
                 );
                 if (explorerTroops?.coord) {
                   const explorerCol = Number((explorerTroops.coord as { x?: unknown }).x ?? NaN);
@@ -392,7 +390,7 @@ export class WorldUpdateListener {
                 try {
                   const explorerTroops = getComponentValue(
                     this.setup.components.ExplorerTroops,
-                    getEntityIdFromKeys([BigInt(rawOccupierId)]),
+                    gameEntityKey([BigInt(rawOccupierId)]),
                   );
                   structureOwnerId = explorerTroops?.owner;
                 } catch (error) {
@@ -720,7 +718,7 @@ export class WorldUpdateListener {
 
     const hyperstructure = getComponentValue(
       this.setup.components.Hyperstructure,
-      getEntityIdFromKeys([BigInt(currentState.occupier_id)]),
+      gameEntityKey([BigInt(currentState.occupier_id)]),
     );
 
     const initialized = hyperstructure?.initialized || false;
@@ -746,7 +744,7 @@ export class WorldUpdateListener {
 
       const structureComponent = getComponentValue(
         this.setup.components.Structure,
-        getEntityIdFromKeys([BigInt(rawOccupierId)]),
+        gameEntityKey([BigInt(rawOccupierId)]),
       );
       const troopGuards = structureComponent?.troop_guards ?? null;
       const guardArmies = troopGuards ? this.buildGuardArmies(troopGuards) : enhancedData.guardArmies;

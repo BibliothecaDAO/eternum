@@ -3,7 +3,7 @@ import { estimateClaimableChests } from "@/services/review/chest-reward-estimate
 import { normalizeNonZeroAddress } from "@/services/review/sql-parse-utils";
 import { displayAddress } from "@/ui/utils/utils";
 import { buildApiUrl, fetchWithErrorHandling } from "@bibliothecadao/torii";
-import { getAddressName, toHexString } from "@bibliothecadao/eternum";
+import { getAddressName, toHexString, configManager } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
 import { ContractAddress } from "@bibliothecadao/types";
 import { useEntityQuery } from "@dojoengine/react";
@@ -11,6 +11,7 @@ import { getComponentValue, Has } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { useEffect, useMemo, useState } from "react";
 import { env } from "../../../../../env";
+import { gameEntityKey } from "@/dojo/game-scope";
 
 const POINTS_PRECISION = 1_000_000n;
 const GAME_CHEST_REWARD_QUERY = `
@@ -240,9 +241,13 @@ export const WinnersTable = ({ trialId }: { trialId?: bigint }) => {
         };
       });
 
-    // Attach prize per rank
+    // Attach prize per rank. s2 keys RankPrize by (game_id, rank) — the trial
+    // id only keys legacy (s1) worlds.
     const withPrize = list.map((r) => {
-      const prizeId = getEntityIdFromKeys([useTrialId as unknown as bigint, BigInt(r.rank)]);
+      const prizeId =
+        configManager.getActiveGameId() > 0
+          ? gameEntityKey([BigInt(r.rank)])
+          : getEntityIdFromKeys([useTrialId as unknown as bigint, BigInt(r.rank)]);
       const prize = getComponentValue(components.RankPrize, prizeId as never);
       let share: bigint | undefined = undefined;
       if (prize && prize.total_players_same_rank_count > 0) {

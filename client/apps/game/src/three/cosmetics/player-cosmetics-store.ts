@@ -3,6 +3,7 @@ import { getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { buildSelectionFromCosmeticIds, resolveEligibleCosmeticIds } from "./ownership";
 import { BlitzGameLoadoutDraft, PlayerCosmeticsSnapshot, PlayerCosmeticSelection } from "./types";
+import { gameEntityKey } from "@/dojo/game-scope";
 
 const DEFAULT_VERSION = 1;
 
@@ -178,7 +179,7 @@ class PlayerCosmeticsStore {
   ): PlayerCosmeticsSnapshot | undefined {
     const ownerBigInt = toBigInt(owner);
     const ownerKey = toHexString(ownerBigInt);
-    const entityId = getEntityIdFromKeys([ownerBigInt]);
+    const entityId = gameEntityKey([ownerBigInt]);
 
     const value = getComponentValue(components.BlitzCosmeticAttrsRegister, entityId);
     if (!value) {

@@ -42,6 +42,7 @@ import clsx from "clsx";
 import LockIcon from "lucide-react/dist/esm/icons/lock";
 import Pen from "lucide-react/dist/esm/icons/pen";
 import { useEffect, useMemo, useState } from "react";
+import { gameEntityKey } from "@/dojo/game-scope";
 
 type ArmyManagementCardProps = {
   owner_entity: ID;
@@ -128,7 +129,7 @@ export const ArmyCreate = ({
   const [isLoadingTiles, setIsLoadingTiles] = useState(true);
   const [activeTab, setActiveTab] = useState<"troops" | "direction">("troops");
 
-  const structure = getComponentValue(components.Structure, getEntityIdFromKeys([BigInt(owner_entity)]));
+  const structure = getComponentValue(components.Structure, gameEntityKey([BigInt(owner_entity)]));
   const structureLevel = structure?.base?.level ?? 0;
   const troopCapacityLimit = configManager.getMaxArmySize(structureLevel, selectedTier) || null;
   const currentTroopCountValue = Number(army?.troops?.count ?? 0);
@@ -145,7 +146,7 @@ export const ArmyCreate = ({
   useEffect(() => {
     const fetchTiles = async () => {
       setIsLoadingTiles(true);
-      const structure = getComponentValue(components.Structure, getEntityIdFromKeys([BigInt(owner_entity)]));
+      const structure = getComponentValue(components.Structure, gameEntityKey([BigInt(owner_entity)]));
       if (structure) {
         const coords = getNeighborHexes(structure.base.coord_x, structure.base.coord_y);
         const tiles = await sqlApi.fetchTilesByCoords(coords.map((coord) => ({ col: coord.col, row: coord.row })));

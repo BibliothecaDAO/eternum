@@ -30,6 +30,7 @@ import {
 import { type ComponentValue } from "@dojoengine/recs";
 import { useQuery } from "@tanstack/react-query";
 import { useCallback, useMemo, useState } from "react";
+import { gameEntityKey } from "@/dojo/game-scope";
 
 interface UseStructureEntityDetailOptions {
   structureEntityId: ID;
@@ -241,7 +242,7 @@ export const useStructureEntityDetail = ({ structureEntityId }: UseStructureEnti
   // it over the one-shot torii snapshot above so balances agree with the
   // build menu and resource table. Remote structures aren't in the RECS sync
   // and keep the torii-fetched snapshot.
-  const recsEntity = getEntityIdFromKeys([BigInt(structureEntityIdNumber || 0)]);
+  const recsEntity = gameEntityKey([BigInt(structureEntityIdNumber || 0)]);
   const liveStructure = useComponentValue(components.Structure, recsEntity);
   const liveResources = useComponentValue(components.Resource, recsEntity);
   const isOwnSyncedStructure =
