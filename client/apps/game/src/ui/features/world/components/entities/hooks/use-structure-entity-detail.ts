@@ -84,7 +84,7 @@ const shouldHydrateResearchFromSql = (resources: ResourceComponent, category: nu
   return (
     researchBalance === 0n &&
     researchProduction.building_count === 0 &&
-    researchProduction.production_rate === 0n &&
+    Number(researchProduction.production_rate) === 0 &&
     researchProduction.output_amount_left === 0n
   );
 };
@@ -93,7 +93,7 @@ const mergeResearchFromSqlRow = (resources: ResourceComponent, row: ResourceBala
   const researchBalance = parseSqlBigInt(row.RESEARCH_BALANCE);
   const researchProduction = {
     building_count: parseSqlNumber(row["RESEARCH_PRODUCTION.building_count"]),
-    production_rate: parseSqlBigInt(row["RESEARCH_PRODUCTION.production_rate"]),
+    production_rate: parseSqlNumber(row["RESEARCH_PRODUCTION.production_rate"]),
     output_amount_left: parseSqlBigInt(row["RESEARCH_PRODUCTION.output_amount_left"]),
     last_updated_at: parseSqlNumber(row["RESEARCH_PRODUCTION.last_updated_at"]),
   };
@@ -101,7 +101,7 @@ const mergeResearchFromSqlRow = (resources: ResourceComponent, row: ResourceBala
   const hasResearchData =
     researchBalance > 0n ||
     researchProduction.building_count > 0 ||
-    researchProduction.production_rate > 0n ||
+    researchProduction.production_rate > 0 ||
     researchProduction.output_amount_left > 0n;
 
   if (!hasResearchData) return resources;

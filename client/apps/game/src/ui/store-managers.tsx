@@ -15,6 +15,7 @@ import {
 } from "@/ui/utils/uncertain-transaction-registry";
 import { getRealmCountPerHyperstructure } from "@/ui/utils/utils";
 import {
+  ClientConfigManager,
   formatArmies,
   formatArrivals,
   getAddressName,
@@ -611,17 +612,16 @@ const SeasonTimerStoreManager = () => {
   const setDevModeOn = useUIStore((state) => state.setDevModeOn);
 
   useEffect(() => {
-    // Try to get season_config.end_at from WorldConfig
-    const worldConfig = getComponentValue(components.WorldConfig, getEntityIdFromKeys([WORLD_CONFIG_ID]));
-    const seasonEndAt = resolveFiniteSeasonEndAt(worldConfig?.season_config?.end_at);
-    setGameEndAt(seasonEndAt);
+    // Per-game clock: on s2 this reads the active game's GameRegistry row via
+    // the scoped config manager — the shared-torii wrong-clock bug dies here.
+    const cfg = ClientConfigManager.instance();
+    const season = cfg.getSeasonConfig();
+    setGameEndAt(resolveFiniteSeasonEndAt(season.endAt || undefined));
+    setSeasonStartMainAt(resolveSeasonStartTimestamp(season.startMainAt || undefined));
 
-    const seasonStartMainAt = resolveSeasonStartTimestamp(worldConfig?.season_config?.start_main_at);
-    setSeasonStartMainAt(seasonStartMainAt);
-
-    // Sandbox / dev worlds bypass the chain's settling/main-phase/season-end
+    // Sandbox / dev games bypass the chain's settling/main-phase/season-end
     // time gates, so mirror dev_mode_on to keep the client gates in sync.
-    setDevModeOn(Boolean(worldConfig?.season_config?.dev_mode_on));
+    setDevModeOn(Boolean(cfg.getDevModeConfig().dev_mode_on));
   }, [components, setGameEndAt, setSeasonStartMainAt, setDevModeOn]);
   return null;
 };

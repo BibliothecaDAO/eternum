@@ -2350,7 +2350,7 @@ export function defineContractComponents(world: World, namespace: string) {
               category: RecsType.String,
               tier: RecsType.String,
               count: RecsType.BigInt,
-              stamina: { amount: RecsType.Number, updated_tick: RecsType.Number },
+              stamina: { amount: RecsType.BigInt, updated_tick: RecsType.BigInt },
               boosts: {
                 incr_damage_dealt_percent_num: RecsType.Number,
                 incr_damage_dealt_end_tick: RecsType.Number,
@@ -2367,7 +2367,7 @@ export function defineContractComponents(world: World, namespace: string) {
               category: RecsType.String,
               tier: RecsType.String,
               count: RecsType.BigInt,
-              stamina: { amount: RecsType.Number, updated_tick: RecsType.Number },
+              stamina: { amount: RecsType.BigInt, updated_tick: RecsType.BigInt },
               boosts: {
                 incr_damage_dealt_percent_num: RecsType.Number,
                 incr_damage_dealt_end_tick: RecsType.Number,
@@ -2384,7 +2384,7 @@ export function defineContractComponents(world: World, namespace: string) {
               category: RecsType.String,
               tier: RecsType.String,
               count: RecsType.BigInt,
-              stamina: { amount: RecsType.Number, updated_tick: RecsType.Number },
+              stamina: { amount: RecsType.BigInt, updated_tick: RecsType.BigInt },
               boosts: {
                 incr_damage_dealt_percent_num: RecsType.Number,
                 incr_damage_dealt_end_tick: RecsType.Number,
@@ -2401,7 +2401,7 @@ export function defineContractComponents(world: World, namespace: string) {
               category: RecsType.String,
               tier: RecsType.String,
               count: RecsType.BigInt,
-              stamina: { amount: RecsType.Number, updated_tick: RecsType.Number },
+              stamina: { amount: RecsType.BigInt, updated_tick: RecsType.BigInt },
               boosts: {
                 incr_damage_dealt_percent_num: RecsType.Number,
                 incr_damage_dealt_end_tick: RecsType.Number,

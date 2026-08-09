@@ -89,7 +89,7 @@ export const PlayersPanel = ({
       .map((row) => ({
         playerAddress: row.player as unknown as bigint,
         rank: row.rank as bigint | number,
-        trialId: row.trial_id as bigint,
+        trialId: ((row as { trial_id?: bigint }).trial_id ?? 0n) as bigint,
       }));
 
     return buildFinalizedBlitzStandingLookup(playerRankRows, finalTrialId, registeredPointsLookup);

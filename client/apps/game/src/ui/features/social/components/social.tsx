@@ -72,11 +72,12 @@ export const Social = () => {
   const players = usePlayers();
 
   // Check if MMR is enabled
-  const worldCfgEntities = useEntityQuery([Has(components.WorldConfig)]);
+  // s2: mmr config lives on the ChainConfig singleton.
+  const chainCfgEntities = useEntityQuery([Has(components.ChainConfig)]);
   const mmrEnabled = useMemo(() => {
-    const worldCfg = worldCfgEntities[0] ? getComponentValue(components.WorldConfig, worldCfgEntities[0]) : undefined;
-    return Boolean(worldCfg?.mmr_config?.enabled);
-  }, [worldCfgEntities, components.WorldConfig]);
+    const chainCfg = chainCfgEntities[0] ? getComponentValue(components.ChainConfig, chainCfgEntities[0]) : undefined;
+    return Boolean(chainCfg?.mmr_config?.enabled);
+  }, [chainCfgEntities, components.ChainConfig]);
 
   const refreshPlayerData = usePlayerStore((state) => state.refreshPlayerData);
   const lastPlayerDataRefreshTime = usePlayerStore((state) => state.lastRefreshTime);

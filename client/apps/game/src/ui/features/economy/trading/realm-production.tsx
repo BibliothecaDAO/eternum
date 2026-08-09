@@ -80,7 +80,7 @@ export const RealmProduction = () => {
             className="mb-5 rounded border border-gold/15 bg-black/30 p-3 hover:opacity-70"
             onClick={() => handleRealmClick(realm)}
           >
-            <h5>{mode.structure.getName(realm).name}</h5>
+            <h5>{mode.structure.getName(realm as unknown as Parameters<typeof mode.structure.getName>[0]).name}</h5>
 
             <div className="flex flex-row flex-wrap">
               {realm.resourcesProduced.map((resourceId) => (

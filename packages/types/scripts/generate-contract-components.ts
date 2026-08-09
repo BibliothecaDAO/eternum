@@ -103,6 +103,11 @@ const emitMember = (name: string, type: string, structContext: string | null): E
           : "RecsType.StringArray";
     return { schema: `${name}: ${recsArray}`, types: [{ short: `Span<${innerLeaf}>`, comment }], customTypes: [] };
   }
+  // The hand-written Troops consumer type (and the spliced ExplorerTroops encoding)
+  // treats Stamina fields as bigint despite their u64 Cairo width — stay consistent.
+  if (structContext === "Stamina") {
+    return { schema: `${name}: RecsType.BigInt`, types: [{ short: leaf, comment }], customTypes: [] };
+  }
   if (leaf === "u256") {
     // core::integer::u256 appears in the ABI struct registry — primitives win.
     return { schema: `${name}: RecsType.BigInt`, types: [{ short: "u256", comment }], customTypes: [] };

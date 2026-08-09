@@ -1,8 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { fetchServerWorldAvailability } from "./fetch-server-world-availability";
 
-const jsonResponse = (body: unknown, ok = true): Response =>
-  ({ ok, json: async () => body }) as unknown as Response;
+const jsonResponse = (body: unknown, ok = true): Response => ({ ok, json: async () => body }) as unknown as Response;
 
 describe("fetchServerWorldAvailability", () => {
   it("returns 'unknown' without a base url or world name", async () => {

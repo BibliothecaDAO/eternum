@@ -214,7 +214,11 @@ export const WinnersTable = ({ trialId }: { trialId?: bigint }) => {
     if (!useTrialId) return [] as Row[];
     const list: Row[] = playerRankEntities
       .map((eid) => getComponentValue(components.PlayerRank, eid))
-      .filter((r) => r && (r.trial_id as bigint) === useTrialId)
+      .filter(
+        (r) =>
+          r &&
+          ((r as { trial_id?: bigint }).trial_id === undefined || (r as { trial_id?: bigint }).trial_id === useTrialId),
+      )
       .map((r) => {
         const player = r!.player as unknown as bigint;
         const points = playerPointsByPlayer.get(player);

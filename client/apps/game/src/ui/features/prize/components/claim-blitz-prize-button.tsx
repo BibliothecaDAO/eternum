@@ -52,17 +52,17 @@ export const ClaimBlitzPrizeButton = ({ className }: { className?: string }) => 
     }
   }, [components.RankPrize, finalTrialId, playerRank?.rank]);
 
-  // Fetch decimals from WorldConfig->blitz_registration_config.fee_token
-  const worldCfgEntities = useEntityQuery([Has(components.WorldConfig)]);
-  const worldCfg = useMemo(
-    () => (worldCfgEntities[0] ? getComponentValue(components.WorldConfig, worldCfgEntities[0]) : undefined),
-    [worldCfgEntities],
+  // s2: the fee token lives on the ChainConfig singleton.
+  const chainCfgEntities = useEntityQuery([Has(components.ChainConfig)]);
+  const chainCfg = useMemo(
+    () => (chainCfgEntities[0] ? getComponentValue(components.ChainConfig, chainCfgEntities[0]) : undefined),
+    [chainCfgEntities],
   );
   const [decimals, setDecimals] = useState<number | null>(null);
   useEffect(() => {
     (async () => {
       try {
-        const feeToken = worldCfg?.blitz_registration_config?.fee_token as unknown as string | undefined;
+        const feeToken = chainCfg?.fee_token as unknown as string | undefined;
         const connectedAccount = account;
         if (!feeToken || !connectedAccount) return;
         const result: any = await network.provider.callAndReturnResult(connectedAccount, {
@@ -77,7 +77,7 @@ export const ClaimBlitzPrizeButton = ({ className }: { className?: string }) => 
       }
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [account, network.provider, worldCfg?.blitz_registration_config?.fee_token]);
+  }, [account, network.provider, chainCfg?.fee_token]);
 
   const formatTokenAmount = (amount?: bigint) => {
     if (typeof amount !== "bigint") return "-";

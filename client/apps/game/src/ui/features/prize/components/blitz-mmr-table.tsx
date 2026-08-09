@@ -41,17 +41,18 @@ export const BlitzMMRTable = () => {
   }, []);
 
   // Get WorldConfig to access MMR token address
-  const worldCfgEntities = useEntityQuery([Has(components.WorldConfig)]);
-  const worldCfg = useMemo(
-    () => (worldCfgEntities[0] ? getComponentValue(components.WorldConfig, worldCfgEntities[0]) : undefined),
-    [worldCfgEntities, components.WorldConfig],
+  // s2: mmr config lives on the ChainConfig singleton.
+  const chainCfgEntities = useEntityQuery([Has(components.ChainConfig)]);
+  const chainCfg = useMemo(
+    () => (chainCfgEntities[0] ? getComponentValue(components.ChainConfig, chainCfgEntities[0]) : undefined),
+    [chainCfgEntities, components.ChainConfig],
   );
 
   const mmrTokenAddress = useMemo(() => {
-    const addr = worldCfg?.mmr_config?.mmr_token_address as unknown as bigint | undefined;
+    const addr = chainCfg?.mmr_config?.mmr_token_address as unknown as bigint | undefined;
     if (!addr || addr === 0n) return undefined;
     return toHexString(addr);
-  }, [worldCfg?.mmr_config?.mmr_token_address]);
+  }, [chainCfg?.mmr_config?.mmr_token_address]);
 
   // Blitz settlement rows are the source of truth for players who actually entered the world.
   const registeredPlayerAddresses = useBlitzSettlementPlayerAddresses(components);

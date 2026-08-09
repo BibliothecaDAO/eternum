@@ -4,7 +4,7 @@ import { useAccountStore } from "@/hooks/store/use-account-store";
 import { NumberInput } from "@/ui/design-system/atoms";
 import Button from "@/ui/design-system/atoms/button";
 import { displayAddress, getRealmCountPerHyperstructure } from "@/ui/utils/utils";
-import { LeaderboardManager, toHexString } from "@bibliothecadao/eternum";
+import { ClientConfigManager, LeaderboardManager, toHexString } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
 import { useEntityQuery } from "@dojoengine/react";
 import { getComponentValue, Has } from "@dojoengine/recs";
@@ -59,12 +59,30 @@ export const PrizePanel = () => {
   }, []);
 
   // Global final trial (if any)
+  // s2: chain-wide addresses/mmr live on the ChainConfig singleton; the game's
+  // clock and final trial live on its GameRegistry row.
+  const chainCfgEntities = useEntityQuery([Has(components.ChainConfig)]);
+  const chainCfg = useMemo(
+    () => (chainCfgEntities[0] ? getComponentValue(components.ChainConfig, chainCfgEntities[0]) : undefined),
+    [chainCfgEntities, components.ChainConfig],
+  );
+  const gameRegistryEntities = useEntityQuery([Has(components.GameRegistry)]);
+  const gameRegistry = useMemo(() => {
+    const gameId = ClientConfigManager.instance().getActiveGameId();
+    const rows = gameRegistryEntities
+      .map((eid) => getComponentValue(components.GameRegistry, eid))
+      .filter((row): row is NonNullable<typeof row> => Boolean(row));
+    return gameId > 0 ? rows.find((row) => Number(row.game_id) === gameId) : rows[0];
+  }, [gameRegistryEntities, components.GameRegistry]);
   const finalEntities = useEntityQuery([Has(components.PlayersRankFinal)]);
   const final = useMemo(
     () => (finalEntities[0] ? getComponentValue(components.PlayersRankFinal, finalEntities[0]) : undefined),
     [finalEntities, components.PlayersRankFinal],
   );
-  const finalTrialId = final?.trial_id as bigint | undefined;
+  const finalTrialId = ((final?.trial_id as bigint | undefined) ??
+    (gameRegistry && BigInt(gameRegistry.final_trial_id ?? 0) > 0n
+      ? BigInt(gameRegistry.final_trial_id)
+      : undefined)) as bigint | undefined;
 
   // All trials to find the one owned by the connected user
   const trialEntities = useEntityQuery([Has(components.PlayersRankTrial)]);
@@ -81,11 +99,11 @@ export const PrizePanel = () => {
     const mine = trials.filter((t) => String(t.owner).toLowerCase() === connectedAddress);
     if (mine.length === 0) return undefined;
     // pick the latest by trial_id
-    return mine.toSorted((a, b) => ((b.trial_id as bigint) > (a.trial_id as bigint) ? 1 : -1))[0];
+    return mine.toSorted((a, b) => ((b.nonce as bigint) > (a.nonce as bigint) ? 1 : -1))[0];
   }, [trials, account?.address]);
   const finalTrial = useMemo(() => {
     if (!finalTrialId) return undefined;
-    return trials.find((t) => (t.trial_id as bigint) === finalTrialId);
+    return trials.find((t) => (t.nonce as bigint) === finalTrialId);
   }, [trials, finalTrialId]);
 
   // Build list of registered players ordered by registered_points desc
@@ -106,13 +124,13 @@ export const PrizePanel = () => {
   );
 
   // MMR config
-  const mmrEnabled = Boolean(worldCfg?.mmr_config?.enabled);
-  const mmrMinPlayers = Number(worldCfg?.mmr_config?.min_players ?? 6);
+  const mmrEnabled = Boolean(chainCfg?.mmr_config?.enabled);
+  const mmrMinPlayers = Number(chainCfg?.mmr_config?.min_players ?? 6);
   const mmrTokenAddress = useMemo(() => {
-    const addr = worldCfg?.mmr_config?.mmr_token_address as unknown as bigint | undefined;
+    const addr = chainCfg?.mmr_config?.mmr_token_address as unknown as bigint | undefined;
     if (!addr || addr === 0n) return undefined;
     return toHexString(addr);
-  }, [worldCfg?.mmr_config?.mmr_token_address]);
+  }, [chainCfg?.mmr_config?.mmr_token_address]);
 
   // Check if MMR has already been committed (game_median is non-zero)
   const mmrGameMetaEntities = useEntityQuery([Has(components.MMRGameMeta)]);
@@ -165,7 +183,12 @@ export const PrizePanel = () => {
     return frac.length > 0 ? `${wholeFmt}.${frac}` : wholeFmt;
   };
 
-  const seasonConfig = worldCfg?.season_config;
+  const seasonConfig = gameRegistry
+    ? {
+        end_at: gameRegistry.end_at,
+        registration_grace_seconds: gameRegistry.registration_grace_seconds,
+      }
+    : undefined;
   const seasonTiming = useMemo(() => {
     if (!seasonConfig) return { status: "unknown" as const, endAt: 0, graceEnds: 0 };
     const endAt = toNumber(seasonConfig.end_at);
@@ -202,7 +225,7 @@ export const PrizePanel = () => {
   const myRemaining = Math.max(0, myCommitted - myRevealed);
   const myBatchEstimate = playersPerTx > 0 ? Math.ceil(myRemaining / playersPerTx) : 0;
   const rankingCompleted = myCommitted > 0 && myRemaining === 0;
-  const myTrialId = myTrial?.trial_id as bigint | undefined;
+  const myTrialId = myTrial?.nonce as bigint | undefined;
   const hasMyTrial = Boolean(myTrialId);
 
   const rankingWindowOpen = hasFinal || seasonTiming.status === "ranking-open";
@@ -353,7 +376,7 @@ export const PrizePanel = () => {
       const addresses = registeredPlayers.map((p) => p.address.toString());
 
       // Determine trial id and committed count
-      const trialId: bigint = myTrial ? (myTrial.trial_id as bigint) : ((await uuid()) as unknown as bigint);
+      const trialId: bigint = myTrial ? (myTrial.nonce as bigint) : ((await uuid()) as unknown as bigint);
       const committed: number = myTrial ? Number(myTrial.total_player_count_committed) : addresses.length;
       const revealed: number = myTrial ? Number(myTrial.total_player_count_revealed) : 0;
 
