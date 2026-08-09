@@ -103,6 +103,10 @@ const emitMember = (name: string, type: string, structContext: string | null): E
           : "RecsType.StringArray";
     return { schema: `${name}: ${recsArray}`, types: [{ short: `Span<${innerLeaf}>`, comment }], customTypes: [] };
   }
+  if (leaf === "u256") {
+    // core::integer::u256 appears in the ABI struct registry — primitives win.
+    return { schema: `${name}: RecsType.BigInt`, types: [{ short: "u256", comment }], customTypes: [] };
+  }
   if (type === "core::byte_array::ByteArray") {
     // Existing convention: ByteArray is atomic — String schema, "BytesArray" type label.
     return { schema: `${name}: RecsType.String`, types: [{ short: "BytesArray", comment }], customTypes: [] };
@@ -156,7 +160,10 @@ ${indent}})(),`;
 };
 
 // ---- Baseline (git HEAD) parsing ---------------------------------------------
-const baseline = await $`git -C ${ROOT} show HEAD:${TARGET_REL}`.text();
+// The splice baseline is the last PRE-MIGRATION file (s1 encodings). After the first
+// regeneration lands, HEAD contains generated output — pin the true baseline instead.
+const BASELINE_REF = process.env.BASELINE_REF ?? "a38f092db0";
+const baseline = await $`git -C ${ROOT} show ${BASELINE_REF}:${TARGET_REL}`.text();
 const mainBlocks = new Map<string, string>();
 const eventBlocks = new Map<string, string>();
 {

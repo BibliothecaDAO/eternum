@@ -7,6 +7,8 @@ export const getExplorerFromToriiEntity = (
   console.log({ entity });
   const coordValue = entity.coord?.value;
   return {
+    // s2 single world: every per-game model leads with game_id (absent on legacy worlds -> 0).
+    game_id: entity.game_id?.value ?? 0,
     explorer_id: entity.explorer_id.value,
     owner: entity.owner.value,
     troops: {

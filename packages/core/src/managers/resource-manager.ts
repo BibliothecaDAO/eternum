@@ -18,6 +18,14 @@ export interface OptimisticResourceChange {
   amount: number;
 }
 
+// s2 changed production_rate to u64 (schema: number); internal math stays bigint.
+const normalizeProduction = (production: {
+  building_count: number;
+  production_rate: number | bigint;
+  output_amount_left: bigint;
+  last_updated_at: number;
+}) => ({ ...production, production_rate: BigInt(production.production_rate) });
+
 export class ResourceManager {
   entityId: ID;
 
@@ -757,93 +765,133 @@ export class ResourceManager {
     };
     switch (resourceId) {
       case ResourcesIds.Stone:
-        return { balance: resource.STONE_BALANCE, production: resource.STONE_PRODUCTION };
+        return { balance: resource.STONE_BALANCE, production: normalizeProduction(resource.STONE_PRODUCTION) };
       case ResourcesIds.Coal:
-        return { balance: resource.COAL_BALANCE, production: resource.COAL_PRODUCTION };
+        return { balance: resource.COAL_BALANCE, production: normalizeProduction(resource.COAL_PRODUCTION) };
       case ResourcesIds.Wood:
-        return { balance: resource.WOOD_BALANCE, production: resource.WOOD_PRODUCTION };
+        return { balance: resource.WOOD_BALANCE, production: normalizeProduction(resource.WOOD_PRODUCTION) };
       case ResourcesIds.Copper:
-        return { balance: resource.COPPER_BALANCE, production: resource.COPPER_PRODUCTION };
+        return { balance: resource.COPPER_BALANCE, production: normalizeProduction(resource.COPPER_PRODUCTION) };
       case ResourcesIds.Ironwood:
-        return { balance: resource.IRONWOOD_BALANCE, production: resource.IRONWOOD_PRODUCTION };
+        return { balance: resource.IRONWOOD_BALANCE, production: normalizeProduction(resource.IRONWOOD_PRODUCTION) };
       case ResourcesIds.Obsidian:
-        return { balance: resource.OBSIDIAN_BALANCE, production: resource.OBSIDIAN_PRODUCTION };
+        return { balance: resource.OBSIDIAN_BALANCE, production: normalizeProduction(resource.OBSIDIAN_PRODUCTION) };
       case ResourcesIds.Gold:
-        return { balance: resource.GOLD_BALANCE, production: resource.GOLD_PRODUCTION };
+        return { balance: resource.GOLD_BALANCE, production: normalizeProduction(resource.GOLD_PRODUCTION) };
       case ResourcesIds.Silver:
-        return { balance: resource.SILVER_BALANCE, production: resource.SILVER_PRODUCTION };
+        return { balance: resource.SILVER_BALANCE, production: normalizeProduction(resource.SILVER_PRODUCTION) };
       case ResourcesIds.Mithral:
-        return { balance: resource.MITHRAL_BALANCE, production: resource.MITHRAL_PRODUCTION };
+        return { balance: resource.MITHRAL_BALANCE, production: normalizeProduction(resource.MITHRAL_PRODUCTION) };
       case ResourcesIds.AlchemicalSilver:
-        return { balance: resource.ALCHEMICAL_SILVER_BALANCE, production: resource.ALCHEMICAL_SILVER_PRODUCTION };
+        return {
+          balance: resource.ALCHEMICAL_SILVER_BALANCE,
+          production: normalizeProduction(resource.ALCHEMICAL_SILVER_PRODUCTION),
+        };
       case ResourcesIds.ColdIron:
-        return { balance: resource.COLD_IRON_BALANCE, production: resource.COLD_IRON_PRODUCTION };
+        return { balance: resource.COLD_IRON_BALANCE, production: normalizeProduction(resource.COLD_IRON_PRODUCTION) };
       case ResourcesIds.DeepCrystal:
-        return { balance: resource.DEEP_CRYSTAL_BALANCE, production: resource.DEEP_CRYSTAL_PRODUCTION };
+        return {
+          balance: resource.DEEP_CRYSTAL_BALANCE,
+          production: normalizeProduction(resource.DEEP_CRYSTAL_PRODUCTION),
+        };
       case ResourcesIds.Ruby:
-        return { balance: resource.RUBY_BALANCE, production: resource.RUBY_PRODUCTION };
+        return { balance: resource.RUBY_BALANCE, production: normalizeProduction(resource.RUBY_PRODUCTION) };
       case ResourcesIds.Diamonds:
-        return { balance: resource.DIAMONDS_BALANCE, production: resource.DIAMONDS_PRODUCTION };
+        return { balance: resource.DIAMONDS_BALANCE, production: normalizeProduction(resource.DIAMONDS_PRODUCTION) };
       case ResourcesIds.Hartwood:
-        return { balance: resource.HARTWOOD_BALANCE, production: resource.HARTWOOD_PRODUCTION };
+        return { balance: resource.HARTWOOD_BALANCE, production: normalizeProduction(resource.HARTWOOD_PRODUCTION) };
       case ResourcesIds.Ignium:
-        return { balance: resource.IGNIUM_BALANCE, production: resource.IGNIUM_PRODUCTION };
+        return { balance: resource.IGNIUM_BALANCE, production: normalizeProduction(resource.IGNIUM_PRODUCTION) };
       case ResourcesIds.TwilightQuartz:
-        return { balance: resource.TWILIGHT_QUARTZ_BALANCE, production: resource.TWILIGHT_QUARTZ_PRODUCTION };
+        return {
+          balance: resource.TWILIGHT_QUARTZ_BALANCE,
+          production: normalizeProduction(resource.TWILIGHT_QUARTZ_PRODUCTION),
+        };
       case ResourcesIds.TrueIce:
-        return { balance: resource.TRUE_ICE_BALANCE, production: resource.TRUE_ICE_PRODUCTION };
+        return { balance: resource.TRUE_ICE_BALANCE, production: normalizeProduction(resource.TRUE_ICE_PRODUCTION) };
       case ResourcesIds.Adamantine:
-        return { balance: resource.ADAMANTINE_BALANCE, production: resource.ADAMANTINE_PRODUCTION };
+        return {
+          balance: resource.ADAMANTINE_BALANCE,
+          production: normalizeProduction(resource.ADAMANTINE_PRODUCTION),
+        };
       case ResourcesIds.Sapphire:
-        return { balance: resource.SAPPHIRE_BALANCE, production: resource.SAPPHIRE_PRODUCTION };
+        return { balance: resource.SAPPHIRE_BALANCE, production: normalizeProduction(resource.SAPPHIRE_PRODUCTION) };
       case ResourcesIds.EtherealSilica:
-        return { balance: resource.ETHEREAL_SILICA_BALANCE, production: resource.ETHEREAL_SILICA_PRODUCTION };
+        return {
+          balance: resource.ETHEREAL_SILICA_BALANCE,
+          production: normalizeProduction(resource.ETHEREAL_SILICA_PRODUCTION),
+        };
       case ResourcesIds.Dragonhide:
-        return { balance: resource.DRAGONHIDE_BALANCE, production: resource.DRAGONHIDE_PRODUCTION };
+        return {
+          balance: resource.DRAGONHIDE_BALANCE,
+          production: normalizeProduction(resource.DRAGONHIDE_PRODUCTION),
+        };
       case ResourcesIds.Labor:
-        return { balance: resource.LABOR_BALANCE, production: resource.LABOR_PRODUCTION };
+        return { balance: resource.LABOR_BALANCE, production: normalizeProduction(resource.LABOR_PRODUCTION) };
       case ResourcesIds.AncientFragment:
-        return { balance: resource.EARTHEN_SHARD_BALANCE, production: resource.EARTHEN_SHARD_PRODUCTION };
+        return {
+          balance: resource.EARTHEN_SHARD_BALANCE,
+          production: normalizeProduction(resource.EARTHEN_SHARD_PRODUCTION),
+        };
       case ResourcesIds.Donkey:
-        return { balance: resource.DONKEY_BALANCE, production: resource.DONKEY_PRODUCTION };
+        return { balance: resource.DONKEY_BALANCE, production: normalizeProduction(resource.DONKEY_PRODUCTION) };
       case ResourcesIds.Knight:
-        return { balance: resource.KNIGHT_T1_BALANCE, production: resource.KNIGHT_T1_PRODUCTION };
+        return { balance: resource.KNIGHT_T1_BALANCE, production: normalizeProduction(resource.KNIGHT_T1_PRODUCTION) };
       case ResourcesIds.KnightT2:
-        return { balance: resource.KNIGHT_T2_BALANCE, production: resource.KNIGHT_T2_PRODUCTION };
+        return { balance: resource.KNIGHT_T2_BALANCE, production: normalizeProduction(resource.KNIGHT_T2_PRODUCTION) };
       case ResourcesIds.KnightT3:
-        return { balance: resource.KNIGHT_T3_BALANCE, production: resource.KNIGHT_T3_PRODUCTION };
+        return { balance: resource.KNIGHT_T3_BALANCE, production: normalizeProduction(resource.KNIGHT_T3_PRODUCTION) };
       case ResourcesIds.Crossbowman:
-        return { balance: resource.CROSSBOWMAN_T1_BALANCE, production: resource.CROSSBOWMAN_T1_PRODUCTION };
+        return {
+          balance: resource.CROSSBOWMAN_T1_BALANCE,
+          production: normalizeProduction(resource.CROSSBOWMAN_T1_PRODUCTION),
+        };
       case ResourcesIds.CrossbowmanT2:
-        return { balance: resource.CROSSBOWMAN_T2_BALANCE, production: resource.CROSSBOWMAN_T2_PRODUCTION };
+        return {
+          balance: resource.CROSSBOWMAN_T2_BALANCE,
+          production: normalizeProduction(resource.CROSSBOWMAN_T2_PRODUCTION),
+        };
       case ResourcesIds.CrossbowmanT3:
-        return { balance: resource.CROSSBOWMAN_T3_BALANCE, production: resource.CROSSBOWMAN_T3_PRODUCTION };
+        return {
+          balance: resource.CROSSBOWMAN_T3_BALANCE,
+          production: normalizeProduction(resource.CROSSBOWMAN_T3_PRODUCTION),
+        };
       case ResourcesIds.Paladin:
-        return { balance: resource.PALADIN_T1_BALANCE, production: resource.PALADIN_T1_PRODUCTION };
+        return {
+          balance: resource.PALADIN_T1_BALANCE,
+          production: normalizeProduction(resource.PALADIN_T1_PRODUCTION),
+        };
       case ResourcesIds.PaladinT2:
-        return { balance: resource.PALADIN_T2_BALANCE, production: resource.PALADIN_T2_PRODUCTION };
+        return {
+          balance: resource.PALADIN_T2_BALANCE,
+          production: normalizeProduction(resource.PALADIN_T2_PRODUCTION),
+        };
       case ResourcesIds.PaladinT3:
-        return { balance: resource.PALADIN_T3_BALANCE, production: resource.PALADIN_T3_PRODUCTION };
+        return {
+          balance: resource.PALADIN_T3_BALANCE,
+          production: normalizeProduction(resource.PALADIN_T3_PRODUCTION),
+        };
       case ResourcesIds.Wheat:
-        return { balance: resource.WHEAT_BALANCE, production: resource.WHEAT_PRODUCTION };
+        return { balance: resource.WHEAT_BALANCE, production: normalizeProduction(resource.WHEAT_PRODUCTION) };
       case ResourcesIds.Fish:
-        return { balance: resource.FISH_BALANCE, production: resource.FISH_PRODUCTION };
+        return { balance: resource.FISH_BALANCE, production: normalizeProduction(resource.FISH_PRODUCTION) };
       case ResourcesIds.Lords:
-        return { balance: resource.LORDS_BALANCE, production: resource.LORDS_PRODUCTION };
+        return { balance: resource.LORDS_BALANCE, production: normalizeProduction(resource.LORDS_PRODUCTION) };
       case ResourcesIds.Essence:
-        return { balance: resource.ESSENCE_BALANCE, production: resource.ESSENCE_PRODUCTION };
+        return { balance: resource.ESSENCE_BALANCE, production: normalizeProduction(resource.ESSENCE_PRODUCTION) };
       case ResourcesIds.Research:
         return {
           balance: ((resource as Record<string, unknown>).RESEARCH_BALANCE as bigint | undefined) ?? 0n,
-          production:
+          production: normalizeProduction(
             ((resource as Record<string, unknown>).RESEARCH_PRODUCTION as
               | {
                   building_count: number;
-                  production_rate: bigint;
+                  production_rate: number | bigint;
                   output_amount_left: bigint;
                   last_updated_at: number;
                 }
               | undefined) ?? noProduction,
+          ),
         };
       case ResourcesIds.StaminaRelic1:
         return {
@@ -1176,9 +1224,9 @@ export class ResourceManager {
 
     // Check each production field directly
     for (const [fieldName, resourceId] of productionFields) {
-      const production = resource[fieldName] as {
+      const production = resource[fieldName] as unknown as {
         building_count: number;
-        production_rate: bigint;
+        production_rate: number | bigint;
         output_amount_left: bigint;
         last_updated_at: number;
       };
@@ -1187,7 +1235,7 @@ export class ResourceManager {
       if (ResourceManager.isActiveStatic(resource, resourceId)) {
         activeProductions.push({
           resourceId,
-          productionRate: production.production_rate,
+          productionRate: BigInt(production.production_rate),
           buildingCount: production.building_count,
           outputAmountLeft: production.output_amount_left,
           lastUpdatedAt: production.last_updated_at,

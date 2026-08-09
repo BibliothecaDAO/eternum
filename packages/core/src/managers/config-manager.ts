@@ -53,6 +53,77 @@ export class ClientConfigManager {
   resourceWeightsKg: Record<number, number> = {};
   mapCenter: number = MAP_CENTER;
 
+  // s2 single-world game scope. 0 = legacy single-game world (s1) where the
+  // per-game row is keyed by WORLD_CONFIG_ID and rulebook members lived inline.
+  private gameId = 0;
+  private presetId = 0;
+
+  /** Must be called before setDojo on the s2 arm so cost snapshots read the right preset. */
+  public setActiveGame(gameId: number, presetId: number) {
+    this.gameId = gameId;
+    this.presetId = presetId;
+  }
+
+  public getActiveGameId(): number {
+    return this.gameId;
+  }
+
+  /** Per-game state row: WorldConfig[gameId] on s2, WorldConfig[WORLD_CONFIG_ID] legacy. */
+  private getWorldConfig() {
+    const key = this.gameId > 0 ? BigInt(this.gameId) : WORLD_CONFIG_ID;
+    return getComponentValue(this.components.WorldConfig, getEntityIdFromKeys([key]));
+  }
+
+  /** Immutable rulebook row for the active preset (s2 only; undefined on legacy). */
+  private getPresetConfig() {
+    if (this.presetId <= 0) return undefined;
+    return getComponentValue(this.components.PresetConfig, getEntityIdFromKeys([BigInt(this.presetId)]));
+  }
+
+  /** The active game's registry row (clock/status/escrow). s2 only. */
+  private getGameRegistry() {
+    if (this.gameId <= 0) return undefined;
+    return getComponentValue(this.components.GameRegistry, getEntityIdFromKeys([BigInt(this.gameId)]));
+  }
+
+  /** Rulebook members: PresetConfig[presetId] on s2. On legacy worlds the same
+   *  members lived inline on WorldConfig — read them there via a structural cast. */
+  private getRulebook() {
+    if (this.presetId > 0) return this.getPresetConfig();
+    return this.getWorldConfig() as unknown as ReturnType<ClientConfigManager["getPresetConfig"]>;
+  }
+
+  /** Season clock: GameRegistry row on s2; inline season_config on legacy worlds. */
+  private getSeasonClock() {
+    if (this.gameId > 0) {
+      const game = this.getGameRegistry();
+      if (!game) return undefined;
+      return {
+        start_settling_at: game.start_settling_at,
+        start_main_at: game.start_main_at,
+        end_at: game.end_at,
+        end_grace_seconds: game.end_grace_seconds,
+        registration_grace_seconds: game.registration_grace_seconds,
+      };
+    }
+    return (this.getWorldConfig() as unknown as { season_config?: any })?.season_config;
+  }
+
+  /** Members that only exist on legacy (s1) worlds: bank, bridge, quests. */
+  private getLegacyExtras() {
+    return this.getWorldConfig() as unknown as Record<string, any> | undefined;
+  }
+
+  /** Chain-wide singleton (addresses, mmr, agent controller). */
+  private getChainConfig() {
+    return getComponentValue(this.components.ChainConfig, getEntityIdFromKeys([WORLD_CONFIG_ID]));
+  }
+
+  /** Rulebook side-table key prefix: preset-scoped on s2, bare on legacy. */
+  private presetKey(...keys: bigint[]): bigint[] {
+    return this.presetId > 0 ? [BigInt(this.presetId), ...keys] : keys;
+  }
+
   public setDojo(components: ContractComponents, config: Config) {
     this.components = components;
     this.config = config;
@@ -89,7 +160,7 @@ export class ClientConfigManager {
   }
 
   private initializeMapCenter() {
-    const worldConfig = getComponentValue(this.components.WorldConfig, getEntityIdFromKeys([WORLD_CONFIG_ID]));
+    const worldConfig = this.getWorldConfig();
     if (worldConfig) {
       this.mapCenter = MAP_CENTER - Number(worldConfig.map_center_offset ?? 0);
     }
@@ -99,7 +170,10 @@ export class ClientConfigManager {
     if (!this.components) return;
 
     for (const resourceType of Object.values(ResourcesIds).filter(Number.isInteger)) {
-      const weightConfig = getComponentValue(this.components.WeightConfig, getEntityIdFromKeys([BigInt(resourceType)]));
+      const weightConfig = getComponentValue(
+        this.components.WeightConfig,
+        getEntityIdFromKeys(this.presetKey(BigInt(resourceType))),
+      );
       this.resourceWeightsKg[Number(resourceType)] = gramToKg(Number(weightConfig?.weight_gram ?? 0));
     }
   }
@@ -110,7 +184,7 @@ export class ClientConfigManager {
     for (const resourceType of Object.values(ResourcesIds).filter(Number.isInteger)) {
       const productionConfig = getComponentValue(
         this.components.ResourceFactoryConfig,
-        getEntityIdFromKeys([BigInt(resourceType)]),
+        getEntityIdFromKeys(this.presetKey(BigInt(resourceType))),
       );
 
       const complexSystemResourceInputCount = productionConfig?.complex_input_list_count ?? 0;
@@ -120,7 +194,7 @@ export class ClientConfigManager {
       for (let index = 0; index < complexSystemResourceInputCount; index++) {
         const resource = getComponentValue(
           this.components.ResourceList,
-          getEntityIdFromKeys([BigInt(complexSystemResourceInputEntityId), BigInt(index)]),
+          getEntityIdFromKeys(this.presetKey(BigInt(complexSystemResourceInputEntityId), BigInt(index))),
         );
 
         if (resource) {
@@ -136,7 +210,7 @@ export class ClientConfigManager {
       for (let index = 0; index < simpleSystemResourceInputCount; index++) {
         const resource = getComponentValue(
           this.components.ResourceList,
-          getEntityIdFromKeys([BigInt(simpleSystemResourceInputEntityId), BigInt(index)]),
+          getEntityIdFromKeys(this.presetKey(BigInt(simpleSystemResourceInputEntityId), BigInt(index))),
         );
 
         if (resource) {
@@ -177,7 +251,7 @@ export class ClientConfigManager {
     for (const resourceType of Object.values(ResourcesIds).filter(Number.isInteger)) {
       const hyperstructureResourceConfig = getComponentValue(
         this.components.HyperstrtConstructConfig,
-        getEntityIdFromKeys([BigInt(resourceType)]),
+        getEntityIdFromKeys(this.presetKey(BigInt(resourceType))),
       );
       if (!hyperstructureResourceConfig) continue;
 
@@ -192,11 +266,13 @@ export class ClientConfigManager {
   }
 
   private initializeRealmUpgradeCosts() {
-    const worldConfig = getComponentValue(this.components.WorldConfig, getEntityIdFromKeys([WORLD_CONFIG_ID]));
-    const maxLevel = Number(worldConfig?.structure_max_level_config?.realm_max) || 0;
+    const maxLevel = Number(this.getRulebook()?.structure_max_level_config?.realm_max) || 0;
 
     for (let level = 1; level <= maxLevel; level++) {
-      const levelConfig = getComponentValue(this.components.StructureLevelConfig, getEntityIdFromKeys([BigInt(level)]));
+      const levelConfig = getComponentValue(
+        this.components.StructureLevelConfig,
+        getEntityIdFromKeys(this.presetKey(BigInt(level))),
+      );
       if (levelConfig) {
         const inputs: { resource: ResourcesIds; amount: number }[] = [];
         for (let index = 0; index < levelConfig.required_resource_count; index++) {
@@ -221,6 +297,13 @@ export class ClientConfigManager {
 
     for (const buildingConfigEntity of buildingConfigsEntities) {
       const buildingConfig = getComponentValue(this.components.BuildingCategoryConfig, buildingConfigEntity);
+      if (
+        buildingConfig &&
+        this.presetId > 0 &&
+        Number((buildingConfig as { preset_id?: number }).preset_id ?? 0) !== this.presetId
+      ) {
+        continue;
+      }
       if (buildingConfig) {
         // Process complex building costs
         const complexEntityId = buildingConfig.complex_erection_cost_id;
@@ -230,7 +313,7 @@ export class ClientConfigManager {
         for (let index = 0; index < complexResourceCount; index++) {
           const resource = getComponentValue(
             this.components.ResourceList,
-            getEntityIdFromKeys([BigInt(complexEntityId), BigInt(index)]),
+            getEntityIdFromKeys(this.presetKey(BigInt(complexEntityId), BigInt(index))),
           );
 
           if (resource) {
@@ -251,7 +334,7 @@ export class ClientConfigManager {
         for (let index = 0; index < simpleResourceCount; index++) {
           const resource = getComponentValue(
             this.components.ResourceList,
-            getEntityIdFromKeys([BigInt(simpleEntityId), BigInt(index)]),
+            getEntityIdFromKeys(this.presetKey(BigInt(simpleEntityId), BigInt(index))),
           );
 
           if (resource) {
@@ -283,19 +366,15 @@ export class ClientConfigManager {
   }
 
   public getRefillPerTick() {
-    const staminaRefillConfig = getComponentValue(
-      this.components.WorldConfig,
-      getEntityIdFromKeys([WORLD_CONFIG_ID]),
-    )?.troop_stamina_config;
+    const staminaRefillConfig = this.getRulebook()?.troop_stamina_config;
     return staminaRefillConfig?.stamina_gain_per_tick || 0;
   }
 
   public getMaxLevel(category: StructureType) {
-    const worldConfig = getComponentValue(this.components.WorldConfig, getEntityIdFromKeys([WORLD_CONFIG_ID]));
     if (category === StructureType.Realm) {
-      return Number(worldConfig?.structure_max_level_config?.realm_max ?? 0);
+      return Number(this.getRulebook()?.structure_max_level_config?.realm_max ?? 0);
     } else if (category === StructureType.Village) {
-      return Number(worldConfig?.structure_max_level_config?.village_max ?? 0);
+      return Number(this.getRulebook()?.structure_max_level_config?.village_max ?? 0);
     }
     return 0;
   }
@@ -305,10 +384,8 @@ export class ClientConfigManager {
   }
 
   public getHyperstructureConstructionCosts() {
-    const worldConfig = getComponentValue(this.components.WorldConfig, getEntityIdFromKeys([WORLD_CONFIG_ID]));
-
     return {
-      amount: this.divideByPrecision(Number(worldConfig?.hyperstructure_config?.initialize_shards_amount) ?? 0),
+      amount: this.divideByPrecision(Number(this.getRulebook()?.hyperstructure_config?.initialize_shards_amount) ?? 0),
       resource: ResourcesIds.AncientFragment,
     };
   }
@@ -319,9 +396,8 @@ export class ClientConfigManager {
   }
   getTravelStaminaCost(biome: BiomeType, troopType: TroopType) {
     return this.getValueOrDefault(() => {
-      const worldConfig = getComponentValue(this.components.WorldConfig, getEntityIdFromKeys([WORLD_CONFIG_ID]));
-      const baseStaminaCost = worldConfig?.troop_stamina_config?.stamina_travel_stamina_cost || 0;
-      const biomeBonus = worldConfig?.troop_stamina_config?.stamina_bonus_value || 0;
+      const baseStaminaCost = this.getRulebook()?.troop_stamina_config?.stamina_travel_stamina_cost || 0;
+      const biomeBonus = this.getRulebook()?.troop_stamina_config?.stamina_bonus_value || 0;
 
       // Biome-specific modifiers per troop type
       switch (biome) {
@@ -364,8 +440,7 @@ export class ClientConfigManager {
   }
 
   public getBiomeCombatBonus(troopType: TroopType, biome: BiomeType): number {
-    const worldConfig = getComponentValue(this.components.WorldConfig, getEntityIdFromKeys([WORLD_CONFIG_ID]));
-    const biomeBonusNum = worldConfig?.troop_damage_config?.damage_biome_bonus_num || 0;
+    const biomeBonusNum = this.getRulebook()?.troop_damage_config?.damage_biome_bonus_num || 0;
     const biomeBonus = biomeBonusNum / 10_000;
 
     const biomeModifiers: Record<BiomeType, Record<TroopType, number>> = {
@@ -458,18 +533,14 @@ export class ClientConfigManager {
 
   getExploreStaminaCost() {
     return this.getValueOrDefault(() => {
-      const staminaConfig = getComponentValue(
-        this.components.WorldConfig,
-        getEntityIdFromKeys([WORLD_CONFIG_ID]),
-      )?.troop_stamina_config;
+      const staminaConfig = this.getRulebook()?.troop_stamina_config;
       return staminaConfig?.stamina_explore_stamina_cost ?? 0;
     }, 1);
   }
 
   getSeasonMainGameStartAt() {
     return this.getValueOrDefault(() => {
-      const startMainAt = getComponentValue(this.components.WorldConfig, getEntityIdFromKeys([WORLD_CONFIG_ID]))
-        ?.season_config.start_main_at;
+      const startMainAt = this.getSeasonClock()?.start_main_at;
 
       return startMainAt;
     }, 0);
@@ -478,15 +549,9 @@ export class ClientConfigManager {
   getExploreReward() {
     return this.getValueOrDefault(
       () => {
-        const exploreConfig = getComponentValue(
-          this.components.WorldConfig,
-          getEntityIdFromKeys([WORLD_CONFIG_ID]),
-        )?.map_config;
+        const exploreConfig = this.getRulebook()?.map_config;
 
-        const blitzModeOn = getComponentValue(
-          this.components.WorldConfig,
-          getEntityIdFromKeys([WORLD_CONFIG_ID]),
-        )?.blitz_mode_on;
+        const blitzModeOn = this.getWorldConfig()?.blitz_mode_on;
 
         let reward_resource = ResourcesIds.AncientFragment;
         if (blitzModeOn) {
@@ -554,11 +619,11 @@ export class ClientConfigManager {
 
     return this.getValueOrDefault(() => {
       // todo: need to fix this
-      const worldConfig = getComponentValue(this.components.WorldConfig, getEntityIdFromKeys([WORLD_CONFIG_ID]));
+      const rulebook = this.getRulebook();
 
-      if (!worldConfig) return defaultTroopConfig;
+      if (!rulebook) return defaultTroopConfig;
 
-      const { troop_damage_config, troop_limit_config, troop_stamina_config } = worldConfig;
+      const { troop_damage_config, troop_limit_config, troop_stamina_config } = rulebook;
 
       return {
         troop_damage_config,
@@ -598,15 +663,9 @@ export class ClientConfigManager {
   getCombatConfig() {
     return this.getValueOrDefault(
       () => {
-        const combatConfig = getComponentValue(
-          this.components.WorldConfig,
-          getEntityIdFromKeys([WORLD_CONFIG_ID]),
-        )?.troop_damage_config;
+        const combatConfig = this.getRulebook()?.troop_damage_config;
 
-        const troopStaminaConfig = getComponentValue(
-          this.components.WorldConfig,
-          getEntityIdFromKeys([WORLD_CONFIG_ID]),
-        )?.troop_stamina_config;
+        const troopStaminaConfig = this.getRulebook()?.troop_stamina_config;
 
         return {
           stamina_bonus_value: troopStaminaConfig?.stamina_bonus_value ?? 0,
@@ -646,40 +705,28 @@ export class ClientConfigManager {
 
   getBattleGraceTickCount() {
     return this.getValueOrDefault(() => {
-      const battleConfig = getComponentValue(
-        this.components.WorldConfig,
-        getEntityIdFromKeys([WORLD_CONFIG_ID]),
-      )?.battle_config;
+      const battleConfig = this.getRulebook()?.battle_config;
       return Number(battleConfig?.regular_immunity_ticks ?? 0);
     }, 0);
   }
 
   getVillageSettlementImmunityTickCount() {
     return this.getValueOrDefault(() => {
-      const battleConfig = getComponentValue(
-        this.components.WorldConfig,
-        getEntityIdFromKeys([WORLD_CONFIG_ID]),
-      )?.battle_config;
+      const battleConfig = this.getRulebook()?.battle_config;
       return Number(battleConfig?.village_immunity_ticks ?? 0);
     }, 0);
   }
 
   getVillagePostRaidImmunityTickCount() {
     return this.getValueOrDefault(() => {
-      const battleConfig = getComponentValue(
-        this.components.WorldConfig,
-        getEntityIdFromKeys([WORLD_CONFIG_ID]),
-      )?.battle_config;
+      const battleConfig = this.getRulebook()?.battle_config;
       return Number(battleConfig?.village_raid_immunity_ticks ?? 0);
     }, 0);
   }
 
   getMinTravelStaminaCost() {
     return this.getValueOrDefault(() => {
-      const staminaConfig = getComponentValue(
-        this.components.WorldConfig,
-        getEntityIdFromKeys([WORLD_CONFIG_ID]),
-      )?.troop_stamina_config;
+      const staminaConfig = this.getRulebook()?.troop_stamina_config;
       const baseTravelCost = staminaConfig?.stamina_travel_stamina_cost ?? 0;
       const biomeBonus = staminaConfig?.stamina_bonus_value ?? 0;
       return Math.max(baseTravelCost - biomeBonus, 10);
@@ -700,10 +747,7 @@ export class ClientConfigManager {
   getResourceBridgeFeeSplitConfig() {
     return this.getValueOrDefault(
       () => {
-        const resourceBridgeFeeSplitConfig = getComponentValue(
-          this.components.WorldConfig,
-          getEntityIdFromKeys([WORLD_CONFIG_ID]),
-        )?.res_bridge_fee_split_config;
+        const resourceBridgeFeeSplitConfig = this.getLegacyExtras()?.res_bridge_fee_split_config;
         return {
           velords_fee_on_dpt_percent: Number(resourceBridgeFeeSplitConfig?.velords_fee_on_dpt_percent ?? 0),
           velords_fee_on_wtdr_percent: Number(resourceBridgeFeeSplitConfig?.velords_fee_on_wtdr_percent ?? 0),
@@ -734,10 +778,7 @@ export class ClientConfigManager {
 
   getTick(tickId: TickIds) {
     return this.getValueOrDefault(() => {
-      const tickConfig = getComponentValue(
-        this.components.WorldConfig,
-        getEntityIdFromKeys([WORLD_CONFIG_ID]),
-      )?.tick_config;
+      const tickConfig = this.getRulebook()?.tick_config;
 
       if (tickId === TickIds.Armies) {
         return Number(tickConfig?.armies_tick_in_seconds ?? 0);
@@ -754,10 +795,7 @@ export class ClientConfigManager {
   getBankConfig() {
     return this.getValueOrDefault(
       () => {
-        const bankConfig = getComponentValue(
-          this.components.WorldConfig,
-          getEntityIdFromKeys([WORLD_CONFIG_ID]),
-        )?.bank_config;
+        const bankConfig = this.getLegacyExtras()?.bank_config;
 
         return {
           lpFeesNumerator: Number(bankConfig?.lp_fee_num ?? 0),
@@ -772,10 +810,7 @@ export class ClientConfigManager {
   }
 
   getAdminBankOwnerFee() {
-    const bankConfig = getComponentValue(
-      this.components.WorldConfig,
-      getEntityIdFromKeys([WORLD_CONFIG_ID]),
-    )?.bank_config;
+    const bankConfig = this.getLegacyExtras()?.bank_config;
     const numerator = Number(bankConfig?.owner_fee_num) ?? 0;
     const denominator = Number(bankConfig?.owner_fee_denom) ?? 0;
     return numerator / denominator;
@@ -789,15 +824,9 @@ export class ClientConfigManager {
 
   getCapacityConfigKg(category: CapacityConfig) {
     return this.getValueOrDefault(() => {
-      const nonStructureCapacityConfig = getComponentValue(
-        this.components.WorldConfig,
-        getEntityIdFromKeys([WORLD_CONFIG_ID]),
-      )?.capacity_config;
+      const nonStructureCapacityConfig = this.getRulebook()?.capacity_config;
 
-      const structureCapacityConfig = getComponentValue(
-        this.components.WorldConfig,
-        getEntityIdFromKeys([WORLD_CONFIG_ID]),
-      )?.structure_capacity_config;
+      const structureCapacityConfig = this.getRulebook()?.structure_capacity_config;
 
       let capacityInGrams = 0;
       switch (category) {
@@ -838,10 +867,7 @@ export class ClientConfigManager {
 
   getSpeedConfig(entityType: EntityType): number {
     return this.getValueOrDefault(() => {
-      const speedConfig = getComponentValue(
-        this.components.WorldConfig,
-        getEntityIdFromKeys([WORLD_CONFIG_ID]),
-      )?.speed_config;
+      const speedConfig = this.getRulebook()?.speed_config;
 
       if (entityType === EntityType.DONKEY) {
         return Number(speedConfig?.donkey_sec_per_km ?? 0);
@@ -852,20 +878,20 @@ export class ClientConfigManager {
   }
 
   getBuildingConfig() {
-    return this.getValueOrDefault(
-      () => getComponentValue(this.components.WorldConfig, getEntityIdFromKeys([WORLD_CONFIG_ID]))?.building_config,
-      {
-        base_population: 0,
-        base_cost_percent_increase: 0,
-      },
-    );
+    return this.getValueOrDefault(() => this.getRulebook()?.building_config, {
+      base_population: 0,
+      base_cost_percent_increase: 0,
+    });
   }
 
   getBlitzConfig() {
     return this.getValueOrDefault(
       () => {
-        const config = getComponentValue(this.components.WorldConfig, getEntityIdFromKeys([WORLD_CONFIG_ID]));
+        const config = this.getWorldConfig();
         if (!config) return;
+        const chain = this.getChainConfig();
+        const rules = this.getRulebook()?.blitz_registration_rules_config;
+        const clock = this.getSeasonClock();
 
         const blitzSettlementConfig = config.blitz_settlement_config;
         const blitzRegistrationConfig = config.blitz_registration_config;
@@ -873,8 +899,10 @@ export class ClientConfigManager {
         const settlementConfig = config.settlement_config;
         const twoPlayerMode = Boolean(blitzSettlementConfig.two_player_mode);
         const blitzHyperStructureCount =
-          getComponentValue(this.components.HyperstructureGlobals, getEntityIdFromKeys([BigInt(WORLD_CONFIG_ID)]))
-            ?.created_count || 0;
+          getComponentValue(
+            this.components.HyperstructureGlobals,
+            getEntityIdFromKeys([this.gameId > 0 ? BigInt(this.gameId) : BigInt(WORLD_CONFIG_ID)]),
+          )?.created_count || 0;
 
         // get number of hyperstructures left to create
         let numHyperStructuresLeft = twoPlayerMode ? Number(blitzHypersSettlementConfig.max_ring_count) + 1 : 1;
@@ -901,25 +929,26 @@ export class ClientConfigManager {
             two_player_mode: twoPlayerMode,
           },
           blitz_exploration_config: {
-            reward_profile_id: Number(config.blitz_exploration_config?.reward_profile_id ?? 0),
+            reward_profile_id: Number(this.getRulebook()?.blitz_exploration_config?.reward_profile_id ?? 0),
           },
           blitz_registration_config: {
             fee_amount: BigInt(blitzRegistrationConfig.fee_amount),
-            fee_token: BigInt(blitzRegistrationConfig.fee_token),
-            fee_recipient: BigInt(blitzRegistrationConfig.fee_recipient),
-            entry_token_address: BigInt(blitzRegistrationConfig.entry_token_address || 0),
-            collectibles_cosmetics_max: BigInt(blitzRegistrationConfig.collectibles_cosmetics_max || 0),
-            collectibles_cosmetics_address: BigInt(blitzRegistrationConfig.collectibles_cosmetics_address || 0),
-            collectibles_timelock_address: BigInt(blitzRegistrationConfig.collectibles_timelock_address || 0),
-            collectibles_lootchest_address: BigInt(blitzRegistrationConfig.collectibles_lootchest_address || 0),
-            collectibles_elitenft_address: BigInt(blitzRegistrationConfig.collectibles_elitenft_address || 0),
+            fee_token: BigInt(chain?.fee_token ?? 0),
+            fee_recipient: BigInt(chain?.fee_recipient ?? 0),
+            entry_token_address: BigInt(chain?.entry_token_address ?? 0),
+            collectibles_cosmetics_max: BigInt(rules?.collectibles_cosmetics_max ?? 0),
+            collectibles_cosmetics_address: BigInt(chain?.collectibles_cosmetics_address ?? 0),
+            collectibles_timelock_address: BigInt(chain?.collectibles_timelock_address ?? 0),
+            collectibles_lootchest_address: BigInt(chain?.collectibles_lootchest_address ?? 0),
+            collectibles_elitenft_address: BigInt(chain?.collectibles_elitenft_address ?? 0),
             registration_count: Number(blitzRegistrationConfig.registration_count),
             registration_count_max: Number(blitzRegistrationConfig.registration_count_max),
             registration_start_at: Number(blitzRegistrationConfig.registration_start_at),
-            registration_end_at: Number(config.season_config.start_main_at),
-            creation_start_at: Number(config.season_config.start_main_at + 1),
-            creation_end_at: Number(config.season_config.end_at),
-            assigned_positions_count: Number(blitzRegistrationConfig.assigned_positions_count),
+            registration_end_at: Number(clock?.start_main_at ?? 0),
+            creation_start_at: Number(clock?.start_main_at ?? 0) + 1,
+            creation_end_at: Number(clock?.end_at ?? 0),
+            // s2: settlement positions are assigned at settle; registration_count tracks them.
+            assigned_positions_count: Number(blitzRegistrationConfig.registration_count),
           },
           blitz_num_hyperstructures_left: Math.max(numHyperStructuresLeft, 0),
           num_spires_left: numSpiresLeft,
@@ -967,11 +996,13 @@ export class ClientConfigManager {
   getDevModeConfig() {
     return this.getValueOrDefault(
       () => {
-        const config = getComponentValue(this.components.WorldConfig, getEntityIdFromKeys([WORLD_CONFIG_ID]));
-        if (!config) return;
-
+        if (this.gameId > 0) {
+          return { dev_mode_on: this.getGameRegistry()?.dev_mode_on ?? false };
+        }
         return {
-          dev_mode_on: config?.season_config.dev_mode_on ?? false,
+          dev_mode_on:
+            (this.getWorldConfig() as unknown as { season_config?: { dev_mode_on?: boolean } })?.season_config
+              ?.dev_mode_on ?? false,
         };
       },
       {
@@ -983,15 +1014,9 @@ export class ClientConfigManager {
   getHyperstructureConfig() {
     return this.getValueOrDefault(
       () => {
-        const victoryPointsGrantConfig = getComponentValue(
-          this.components.WorldConfig,
-          getEntityIdFromKeys([WORLD_CONFIG_ID]),
-        )?.victory_points_grant_config;
+        const victoryPointsGrantConfig = this.getRulebook()?.victory_points_grant_config;
 
-        const victoryPointsWinConfig = getComponentValue(
-          this.components.WorldConfig,
-          getEntityIdFromKeys([WORLD_CONFIG_ID]),
-        )?.victory_points_win_config;
+        const victoryPointsWinConfig = this.getRulebook()?.victory_points_win_config;
 
         return {
           // todo: need to fix this
@@ -1010,10 +1035,7 @@ export class ClientConfigManager {
 
   getBasePopulationCapacity(): number {
     return this.getValueOrDefault(() => {
-      return (
-        getComponentValue(this.components.WorldConfig, getEntityIdFromKeys([WORLD_CONFIG_ID]))?.building_config
-          ?.base_population ?? 0
-      );
+      return this.getRulebook()?.building_config?.base_population ?? 0;
     }, 0);
   }
 
@@ -1040,7 +1062,7 @@ export class ClientConfigManager {
     return this.getValueOrDefault(() => {
       const productionConfig = getComponentValue(
         this.components.ResourceFactoryConfig,
-        getEntityIdFromKeys([BigInt(resourceType)]),
+        getEntityIdFromKeys(this.presetKey(BigInt(resourceType))),
       );
 
       return Number(productionConfig?.realm_output_per_second ?? 0);
@@ -1050,10 +1072,7 @@ export class ClientConfigManager {
   getTravelFoodCostConfig(troopType: number) {
     return this.getValueOrDefault(
       () => {
-        const travelFoodCostConfig = getComponentValue(
-          this.components.WorldConfig,
-          getEntityIdFromKeys([WORLD_CONFIG_ID]),
-        )?.troop_stamina_config;
+        const travelFoodCostConfig = this.getRulebook()?.troop_stamina_config;
 
         return {
           exploreWheatBurnAmount:
@@ -1093,10 +1112,7 @@ export class ClientConfigManager {
   getTroopStaminaConfig(troopType: TroopType, troopTier: TroopTier) {
     return this.getValueOrDefault(
       () => {
-        const staminaConfig = getComponentValue(
-          this.components.WorldConfig,
-          getEntityIdFromKeys([WORLD_CONFIG_ID]),
-        )?.troop_stamina_config;
+        const staminaConfig = this.getRulebook()?.troop_stamina_config;
 
         let tierBonus = 0;
         if (troopTier === TroopTier.T2) {
@@ -1155,10 +1171,7 @@ export class ClientConfigManager {
 
   getBuildingBaseCostPercentIncrease() {
     return this.getValueOrDefault(() => {
-      const buildingGeneralConfig = getComponentValue(
-        this.components.WorldConfig,
-        getEntityIdFromKeys([WORLD_CONFIG_ID]),
-      )?.building_config;
+      const buildingGeneralConfig = this.getRulebook()?.building_config;
       return buildingGeneralConfig?.base_cost_percent_increase ?? 0;
     }, 0);
   }
@@ -1166,10 +1179,7 @@ export class ClientConfigManager {
   getSeasonConfig() {
     return this.getValueOrDefault(
       () => {
-        const seasonConfig = getComponentValue(
-          this.components.WorldConfig,
-          getEntityIdFromKeys([WORLD_CONFIG_ID]),
-        )?.season_config;
+        const seasonConfig = this.getSeasonClock();
         return {
           startSettlingAt: seasonConfig?.start_settling_at ?? 0,
           startMainAt: seasonConfig?.start_main_at ?? 0,
@@ -1189,16 +1199,8 @@ export class ClientConfigManager {
   getArtificerConfig() {
     return this.getValueOrDefault(
       () => {
-        const worldConfig = getComponentValue(this.components.WorldConfig, getEntityIdFromKeys([WORLD_CONFIG_ID])) as
-          | {
-              artificer_config?: {
-                research_cost_for_relic?: number | string | bigint;
-              };
-            }
-          | undefined;
-
         return {
-          research_cost_for_relic: Number(worldConfig?.artificer_config?.research_cost_for_relic ?? 0),
+          research_cost_for_relic: Number(this.getRulebook()?.artificer_config?.research_cost_for_relic ?? 0),
         };
       },
       {
@@ -1254,7 +1256,7 @@ export class ClientConfigManager {
 
   getBiomeClimateConfig(): BiomeClimateConfig | undefined {
     return this.getValueOrDefault(() => {
-      const worldConfig = getComponentValue(this.components.WorldConfig, getEntityIdFromKeys([WORLD_CONFIG_ID]));
+      const worldConfig = this.getWorldConfig();
       return worldConfig?.biome_climate_config as BiomeClimateConfig | undefined;
     }, undefined);
   }

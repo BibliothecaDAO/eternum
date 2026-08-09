@@ -585,8 +585,8 @@ export function defineContractComponents(world: World, namespace: string) {
           registration_grace_seconds: RecsType.Number,
           final_trial_id: RecsType.BigInt,
           seed: RecsType.BigInt,
-          fees_collected: { low: RecsType.BigInt, high: RecsType.BigInt },
-          fees_paid_out: { low: RecsType.BigInt, high: RecsType.BigInt },
+          fees_collected: RecsType.BigInt,
+          fees_paid_out: RecsType.BigInt,
         },
         {
           metadata: {
@@ -608,12 +608,10 @@ export function defineContractComponents(world: World, namespace: string) {
               "u32", // registration_grace_seconds
               "u128", // final_trial_id
               "felt252", // seed
-              "u128", // u256 low
-              "u128", // u256 high
-              "u128", // u256 low
-              "u128", // u256 high
+              "u256", // fees_collected
+              "u256", // fees_paid_out
             ],
-            customTypes: ["GameStatus", "u256"],
+            customTypes: ["GameStatus"],
           } satisfies ContractComponentMetadata,
         },
       );
@@ -1284,7 +1282,7 @@ export function defineContractComponents(world: World, namespace: string) {
             two_player_mode: RecsType.Boolean,
           },
           blitz_registration_config: {
-            fee_amount: { low: RecsType.BigInt, high: RecsType.BigInt },
+            fee_amount: RecsType.BigInt,
             registration_count: RecsType.Number,
             issued_count: RecsType.Number,
             registration_count_max: RecsType.Number,
@@ -1317,8 +1315,7 @@ export function defineContractComponents(world: World, namespace: string) {
               "u16", // BlitzSettlementConfig open_settlement_count
               "bool", // BlitzSettlementConfig single_realm_mode
               "bool", // BlitzSettlementConfig two_player_mode
-              "u128", // u256 low
-              "u128", // u256 high
+              "u256", // BlitzRegistrationGameConfig fee_amount
               "u16", // BlitzRegistrationGameConfig registration_count
               "u16", // BlitzRegistrationGameConfig issued_count
               "u16", // BlitzRegistrationGameConfig registration_count_max
@@ -1328,7 +1325,7 @@ export function defineContractComponents(world: World, namespace: string) {
               "u8", // agent_min_spawn_lords_amount
               "u8", // agent_max_spawn_lords_amount
             ],
-            customTypes: ["SettlementConfig", "BlitzSettlementConfig", "BlitzRegistrationGameConfig", "u256"],
+            customTypes: ["SettlementConfig", "BlitzSettlementConfig", "BlitzRegistrationGameConfig"],
           } satisfies ContractComponentMetadata,
         },
       );
@@ -2228,7 +2225,7 @@ export function defineContractComponents(world: World, namespace: string) {
         world,
         {
           tx_hash: RecsType.BigInt,
-          seed: { low: RecsType.BigInt, high: RecsType.BigInt },
+          seed: RecsType.BigInt,
         },
         {
           metadata: {
@@ -2236,10 +2233,9 @@ export function defineContractComponents(world: World, namespace: string) {
             name: "RNG",
             types: [
               "felt252", // tx_hash
-              "u128", // u256 low
-              "u128", // u256 high
+              "u256", // seed
             ],
-            customTypes: ["u256"],
+            customTypes: [],
           } satisfies ContractComponentMetadata,
         },
       );
@@ -2250,7 +2246,7 @@ export function defineContractComponents(world: World, namespace: string) {
         {
           game_id: RecsType.Number,
           total_registered_points: RecsType.BigInt,
-          total_lords_pool: { low: RecsType.BigInt, high: RecsType.BigInt },
+          total_lords_pool: RecsType.BigInt,
         },
         {
           metadata: {
@@ -2259,10 +2255,9 @@ export function defineContractComponents(world: World, namespace: string) {
             types: [
               "u32", // game_id
               "u128", // total_registered_points
-              "u128", // u256 low
-              "u128", // u256 high
+              "u256", // total_lords_pool
             ],
-            customTypes: ["u256"],
+            customTypes: [],
           } satisfies ContractComponentMetadata,
         },
       );
@@ -2745,7 +2740,7 @@ export function defineContractComponents(world: World, namespace: string) {
             side: RecsType.Number,
           },
           blitz_registration_config: {
-            fee_amount: { low: RecsType.BigInt, high: RecsType.BigInt },
+            fee_amount: RecsType.BigInt,
             registration_count: RecsType.Number,
             issued_count: RecsType.Number,
             registration_count_max: RecsType.Number,
@@ -2787,8 +2782,7 @@ export function defineContractComponents(world: World, namespace: string) {
               "u8", // BlitzHypersSettlementConfig current_ring_count
               "u8", // BlitzHypersSettlementConfig point
               "u32", // BlitzHypersSettlementConfig side
-              "u128", // u256 low
-              "u128", // u256 high
+              "u256", // BlitzRegistrationGameConfig fee_amount
               "u16", // BlitzRegistrationGameConfig registration_count
               "u16", // BlitzRegistrationGameConfig issued_count
               "u16", // BlitzRegistrationGameConfig registration_count_max
@@ -2801,7 +2795,6 @@ export function defineContractComponents(world: World, namespace: string) {
               "BlitzSettlementConfig",
               "BlitzHypersSettlementConfig",
               "BlitzRegistrationGameConfig",
-              "u256",
               "RealmCountConfig",
             ],
           } satisfies ContractComponentMetadata,

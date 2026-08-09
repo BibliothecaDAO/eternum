@@ -17,7 +17,10 @@ export const useBank = (bankEntityId: ID) => {
   const structure = getComponentValueStrict(Structure, entity);
 
   const addressName = getComponentValue(AddressName, getEntityIdFromKeys([BigInt(structure.owner)]));
-  const bankConfig = getComponentValue(WorldConfig, getEntityIdFromKeys([WORLD_CONFIG_ID]))?.bank_config;
+  // Banks exist only on legacy (s1) worlds; the member is gone from the s2 schema.
+  const bankConfig = (
+    getComponentValue(WorldConfig, getEntityIdFromKeys([WORLD_CONFIG_ID])) as unknown as { bank_config?: any }
+  )?.bank_config;
   return {
     entityId: structure.entity_id,
     position: { alt: DEFAULT_COORD_ALT, x: structure.base.coord_x, y: structure.base.coord_y },
