@@ -92,3 +92,9 @@ completed with the existing oversized-CASM warnings for `troop_battle_systems` a
   game): `s2smoke1` created as game_id 1, tx `0x692ac20f53806465c50cd8…`, torii row `Registration`/preset 1/end_grace
   86400; run record on `factory-runs` shows exactly `create-world` (23.8 s) + `wait-for-factory-index` (5.2 s),
   artifacts carry `gameId`. **Per-game launch: 29.0 s — A2 exit criterion met** (was ~10 min on the factory flow).
+- Preset registry on the dev chain (2026-08-09, owner-requested): **preset 1** = base config, 2 h legacy dev shape
+  (registered at bootstrap); **preset 2** = official-60 balance — "Regular Fast (1h)" (tx `0x282c813e9e1b…`, 2,048
+  felts); **preset 3** = official-90 balance for **Duel** (tx `0x229d34c92b46…`, 2,067 felts). Duel's two-player nature
+  is a LAUNCH flag (`twoPlayerMode` → registration cap 2), not preset data — preset 3 carries the 90-minute balance the
+  duel is defined on. The 24-player "Regular Normal (1h:30m)" catalog entry is deliberately NOT deployed as a preset per
+  owner decision; the A4 catalog maps blitz-fast → version 2 and blitz-duel → version 3.
