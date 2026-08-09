@@ -2,7 +2,7 @@
   "version": 1,
   "environment": "appchain.blitz",
   "kind": "game",
-  "updatedAt": "2026-08-09T14:14:58.391Z",
+  "updatedAt": "2026-08-09T14:15:22.184Z",
   "entries": {
     "blitzlive1": {
       "kind": "game",
@@ -51,14 +51,14 @@
       "path": "runs/appchain/blitz/s2smoke1.json",
       "inputPath": "inputs/appchain/blitz/s2smoke1/31317884959-1.json",
       "status": "running",
-      "updatedAt": "2026-08-09T14:14:58.391Z",
+      "updatedAt": "2026-08-09T14:15:22.184Z",
       "workflowRef": "feat/single-world-blitz",
-      "currentStepId": "create-world",
-      "activeLeaseExpiresAt": "2026-08-09T14:59:58.391Z",
-      "hasRunningStep": true,
+      "currentStepId": "wait-for-factory-index",
+      "hasRunningStep": false,
       "recoverableFailedStepId": null,
       "recoverablePendingStepId": "wait-for-factory-index",
-      "startTime": "1786288514",
+      "startTime": 1786288514,
+      "durationSeconds": 7200,
       "artifacts": {}
     }
   }
