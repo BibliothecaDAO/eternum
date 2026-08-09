@@ -4,16 +4,15 @@
   "accountAddress": "0x54b9b1b06e7110f1ef0b0c3467610438311da4680d3c75d557b52788591741",
   "owner": {
     "environment": "appchain.blitz",
-    "gameName": "blitzlive2",
-    "launchRequestId": "31264470827-1",
+    "gameName": "s2smoke1",
+    "launchRequestId": "31317884959-1",
     "workflowName": "Game Launch",
-    "workflowRunId": 31264470827,
+    "workflowRunId": 31317884959,
     "workflowRunAttempt": 1,
-    "stepId": "grant-lootchest-role",
-    "leaseId": "c0d8c3b2-3bc9-44b1-be2d-a183e1fd3639"
+    "stepId": "create-world",
+    "leaseId": "4a58d093-446d-459c-9d66-1e08b3e2ec86"
   },
-  "acquiredAt": "2026-08-08T15:33:21.060Z",
-  "heartbeatAt": "2026-08-08T15:33:24.905Z",
-  "expiresAt": "2026-08-08T15:33:24.905Z",
-  "releasedAt": "2026-08-08T15:33:24.905Z"
+  "acquiredAt": "2026-08-09T14:15:01.801Z",
+  "heartbeatAt": "2026-08-09T14:15:01.801Z",
+  "expiresAt": "2026-08-09T14:25:01.801Z"
 }
