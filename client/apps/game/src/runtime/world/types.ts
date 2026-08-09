@@ -6,17 +6,22 @@ export interface FactoryContractRow {
   name?: string; // factory table may include the world name felt
 }
 
-export interface WorldProfile {
-  name: string; // human-readable world name (e.g., credenceox-82389)
+export interface GameProfile {
+  name: string; // human-readable game name (e.g., s2smoke1) — profile identity key
   chain: Chain;
-  toriiBaseUrl: string; // e.g., https://api.cartridge.gg/x/<name>/torii
-  rpcUrl?: string; // rpc url resolved from factory (if available)
-  worldAddress: string; // resolved from torii /sql
-  contractsBySelector: Record<string, string>; // normalized selector -> address
-  entryTokenAddress?: string; // entry token contract address from WorldConfig
-  feeTokenAddress?: string; // fee token contract address from WorldConfig
+  toriiBaseUrl: string; // appchain: constant torii-s2 endpoint; mainnet: per-world torii
+  rpcUrl?: string; // appchain: constant chain rpc; mainnet: resolved from factory
+  worldAddress: string; // appchain: constant s2 world from the manifest
+  contractsBySelector: Record<string, string>; // normalized selector -> address (constant on appchain)
+  entryTokenAddress?: string; // appchain: ChainConfig.entry_token_address (chain-wide shared collection)
+  feeTokenAddress?: string; // appchain: ChainConfig.fee_token
+  gameId?: number; // s2 single-world: the game's id — key[0] of every per-game model
+  presetId?: number; // s2 single-world: rulebook preset the game runs on
   fetchedAt: number; // epoch ms
 }
+
+// Transitional alias — legacy call sites migrate to GameProfile over A4.
+export type WorldProfile = GameProfile;
 
 export interface FactoryIndexedWorld {
   name: string;
