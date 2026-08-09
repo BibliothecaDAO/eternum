@@ -1,0 +1,45 @@
+{
+  "version": 1,
+  "kind": "game",
+  "runId": "appchain.blitz:s2smoke2",
+  "environment": "appchain.blitz",
+  "chain": "appchain",
+  "gameType": "blitz",
+  "gameName": "s2smoke2",
+  "status": "running",
+  "executionMode": "fast_trial",
+  "requestedLaunchStep": "full",
+  "inputPath": "inputs/appchain/blitz/s2smoke2/31326528319-1.json",
+  "latestLaunchRequestId": "31326528319-1",
+  "currentStepId": "create-world",
+  "createdAt": "2026-08-09T17:30:19.716Z",
+  "updatedAt": "2026-08-09T17:30:19.716Z",
+  "workflow": {
+    "workflowName": "Game Launch",
+    "workflowJob": "launch",
+    "workflowRunId": 31326528319,
+    "workflowRunAttempt": 1,
+    "workflowUrl": "https://github.com/BibliothecaDAO/eternum/actions/runs/31326528319",
+    "ref": "feat/single-world-blitz",
+    "sha": "9e8b7aeee348c8bab5466d140901ef3cf5938c7a"
+  },
+  "steps": [
+    {
+      "id": "create-world",
+      "title": "Creating world",
+      "status": "pending",
+      "workflowStepName": "Creating world",
+      "latestEvent": "Waiting to run"
+    },
+    {
+      "id": "wait-for-factory-index",
+      "title": "Waiting for game",
+      "status": "pending",
+      "workflowStepName": "Waiting for game",
+      "latestEvent": "Waiting to run"
+    }
+  ],
+  "artifacts": {
+    "scheduledStartTime": "1786300265"
+  }
+}
