@@ -24,6 +24,7 @@
     "client/apps/gg-xyz/**",
     "scripts/codemod-lucide-imports.mjs",
     "scripts/ci/roles/grant-prize-distributor-minter-role.ts",
+    "deploy/appchain/torii-s2/**",
     "config/**",
     "contracts/**",
 
