@@ -88,3 +88,7 @@ completed with the existing oversized-CASM warnings for `troop_battle_systems` a
   service `torii` rolled. The s1 client is unaffected (different namespace tables).
 - Lambda `DEFAULT_WORKFLOW_REF` intentionally NOT flipped: the client cannot display s2 games until A4. End-to-end
   pipeline validation runs via manual `workflow_dispatch` on `feat/single-world-blitz`.
+- End-to-end validation on real infrastructure (workflow_dispatch run 31317884959, environment `appchain.blitz`, non-dev
+  game): `s2smoke1` created as game_id 1, tx `0x692ac20f53806465c50cd8…`, torii row `Registration`/preset 1/end_grace
+  86400; run record on `factory-runs` shows exactly `create-world` (23.8 s) + `wait-for-factory-index` (5.2 s),
+  artifacts carry `gameId`. **Per-game launch: 29.0 s — A2 exit criterion met** (was ~10 min on the factory flow).
