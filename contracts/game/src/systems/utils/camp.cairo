@@ -6,6 +6,7 @@ use crate::models::config::{
     MapConfig, TickImpl, TickInterval, TroopLimitConfig, TroopStaminaConfig, VillageFoundResourcesConfig,
     WorldConfigUtilImpl,
 };
+use crate::models::game::GameRegistryImpl;
 use crate::models::map::TileOccupier;
 use crate::models::position::Coord;
 use crate::models::resource::production::building::{BuildingCategory, BuildingImpl};
@@ -28,10 +29,11 @@ pub impl iCampDiscoveryImpl of iCampDiscoveryTrait {
             world, game_id, selector!("village_find_resources_config"),
         );
         let mut structure_weight = WeightStoreImpl::retrieve(ref world, game_id, structure_id);
+        let preset_id = GameRegistryImpl::get(world, game_id).preset_id;
 
         for index in 0..village_found_resources_config.resources_mm_list_count {
             let resource: ResourceMinMaxList = world
-                .read_model((village_found_resources_config.resources_mm_list_id, index));
+                .read_model((preset_id, village_found_resources_config.resources_mm_list_id, index));
             let resource_weight_grams = ResourceWeightImpl::grams(ref world, game_id, resource.resource_type);
             let mut structure_resource = SingleResourceStoreImpl::retrieve(
                 ref world,

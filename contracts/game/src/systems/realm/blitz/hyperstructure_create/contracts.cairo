@@ -13,8 +13,9 @@ pub mod hyperstructure_create_systems {
     use dojo::world::WorldStorage;
     use crate::constants::DEFAULT_NS;
     use crate::models::config::{
-        BlitzExplorationConfig, BlitzHypersSettlementConfig, BlitzHypersSettlementConfigImpl, BlitzRegistrationConfig,
-        BlitzSettlementConfig, CombatConfigImpl, MapConfig, SeasonConfigImpl, WorldConfigUtilImpl,
+        BlitzExplorationConfig, BlitzHypersSettlementConfig, BlitzHypersSettlementConfigImpl,
+        BlitzRegistrationConfigImpl, BlitzSettlementConfig, CombatConfigImpl, MapConfig, SeasonConfigImpl,
+        WorldConfigUtilImpl,
     };
     use crate::models::map::{Tile, TileImpl, TileOccupier};
     use crate::models::map2::TileOpt;
@@ -41,9 +42,7 @@ pub mod hyperstructure_create_systems {
             let season_config = SeasonConfigImpl::get(world, game_id);
             assert!(!season_config.has_ended(), "Season is over");
 
-            let blitz_registration_config: BlitzRegistrationConfig = WorldConfigUtilImpl::get_member(
-                world, game_id, selector!("blitz_registration_config"),
-            );
+            let blitz_registration_config = BlitzRegistrationConfigImpl::get(world, game_id);
 
             ////////////////////////////////////////////////
             // Load Reservation Cursor

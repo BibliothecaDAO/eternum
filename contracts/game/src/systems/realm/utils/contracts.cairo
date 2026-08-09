@@ -52,15 +52,11 @@ pub mod realm_internal_systems {
             explore_village_coord: bool,
             grant_starting_troops: bool,
         ) -> ID {
-            // ensure caller is the realm systems
+            // D15: the legacy realm system is retired; only the Blitz host may call this internal entrypoint.
             let mut world: WorldStorage = self.world(DEFAULT_NS());
-            let (realm_systems, _) = world.dns(@"realm_systems").unwrap();
+            // let (realm_systems, _) = world.dns(@"realm_systems").unwrap();
             let (blitz_realm_systems, _) = world.dns(@"blitz_realm_systems").unwrap();
-            assert!(
-                starknet::get_caller_address() == realm_systems
-                    || starknet::get_caller_address() == blitz_realm_systems,
-                "caller must be the realm_systems or blitz_realm_systems",
-            );
+            assert!(starknet::get_caller_address() == blitz_realm_systems, "caller must be the blitz_realm_systems");
 
             // create the realm structure first, then optionally attach troop startup
             let structure_id = iRealmImpl::create_realm_structure(
@@ -74,13 +70,10 @@ pub mod realm_internal_systems {
 
         fn provision_internal(ref self: ContractState, game_id: u32, structure_id: ID) {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
-            let (realm_systems, _) = world.dns(@"realm_systems").unwrap();
+            // D15: the legacy realm system is retired; only the Blitz host may call this internal entrypoint.
+            // let (realm_systems, _) = world.dns(@"realm_systems").unwrap();
             let (blitz_realm_systems, _) = world.dns(@"blitz_realm_systems").unwrap();
-            assert!(
-                starknet::get_caller_address() == realm_systems
-                    || starknet::get_caller_address() == blitz_realm_systems,
-                "caller must be the realm_systems or blitz_realm_systems",
-            );
+            assert!(starknet::get_caller_address() == blitz_realm_systems, "caller must be the blitz_realm_systems");
 
             iRealmImpl::provision_realm(ref world, game_id, structure_id);
         }

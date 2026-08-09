@@ -24,6 +24,8 @@ pub trait IPrizeDistributionSystems<T> {
     );
     fn blitz_get_ranked(ref self: T, game_id: u32, rank: u16) -> Span<ContractAddress>;
     fn blitz_get_winner(ref self: T, game_id: u32) -> Option<u256>;
+    fn reset_trial(ref self: T, game_id: u32);
+    fn blitz_sweep_remaining_escrow(ref self: T, game_id: u32);
 }
 
 
@@ -39,9 +41,7 @@ pub mod prize_distribution_systems {
     use series_chest_reward_calculator::SeriesChestRewardStateTrait;
     use starknet::ContractAddress;
     use crate::constants::{DEFAULT_NS, VELORDS_BURNER_ADDRESS};
-    use crate::models::config::{
-        BlitzRegistrationConfig, BlitzRegistrationConfigImpl, BlitzSettlement, SeasonConfigImpl, WorldConfigUtilImpl,
-    };
+    use crate::models::config::{BlitzRegistrationConfigImpl, BlitzSettlement, SeasonConfigImpl, WorldConfigUtilImpl};
     use crate::models::events::{PrizeDistributedStory, PrizeDistributionFinalStory, Story, StoryEvent};
     use crate::models::game::{GameRegistryImpl, Series};
     use crate::models::hyperstructure::PlayerRegisteredPoints;
@@ -82,10 +82,7 @@ pub mod prize_distribution_systems {
             let series: Series = world.read_model(game.series_id);
             let mut state: SeriesChestRewardState = world.read_model(game.series_id);
             if state.series_id.is_zero() {
-                state =
-                    SeriesChestRewardStateImpl::new(
-                        game.series_id, series.num_games, series.total_chests, series.cap_ratio_bps,
-                    );
+                state = SeriesChestRewardStateImpl::new(game.series_id, series.total_chests, series.cap_ratio_bps);
             }
             if state.game_index >= game.game_number_in_series.into() {
                 return state;
@@ -94,14 +91,12 @@ pub mod prize_distribution_systems {
                 state.game_index + 1 == game.game_number_in_series.into(), "Eternum: Series games must settle in order",
             );
 
-            let registration: BlitzRegistrationConfig = WorldConfigUtilImpl::get_member(
-                world, game_id, selector!("blitz_registration_config"),
-            );
+            let registration = BlitzRegistrationConfigImpl::get(world, game_id);
             let allocated_chests = if registration.registration_count < 2 {
                 state.game_index += 1;
                 0
             } else {
-                state.allocate_chests(registration.registration_count.into())
+                state.allocate_chests(series, registration.registration_count.into())
             };
 
             world.write_model(@state);
@@ -128,12 +123,10 @@ pub mod prize_distribution_systems {
 
             // ensure there is no finalized player rank
             let mut game = GameRegistryImpl::get(world, game_id);
-            assert!(game.final_trial_id.is_zero(), "Eternum: rankings not finalized");
+            assert!(game.final_trial_id.is_zero(), "Eternum: rankings already finalized");
 
             // ensure there is only 1 registered player
-            let mut blitz_registration_config: BlitzRegistrationConfig = WorldConfigUtilImpl::get_member(
-                world, game_id, selector!("blitz_registration_config"),
-            );
+            let blitz_registration_config = BlitzRegistrationConfigImpl::get(world, game_id);
             assert!(blitz_registration_config.registration_count == 1, "Eternum: More than 1 registered player");
 
             // ensure the registered_player parameter is the registered player
@@ -141,7 +134,7 @@ pub mod prize_distribution_systems {
             assert!(settled_player.structure_ids.len() > 0, "Eternum: Player not settled");
 
             // create a trial with the registered player and finalize the rankings
-            let prize_amount: u128 = GameRegistryImpl::available_fees(world, game_id).try_into().unwrap();
+            let prize_amount: u128 = blitz_registration_config.fee_amount.try_into().unwrap();
             let player_rank_trial: PlayersRankTrial = PlayersRankTrial {
                 game_id,
                 nonce: SYSTEM_TRIAL_ID,
@@ -156,8 +149,8 @@ pub mod prize_distribution_systems {
             };
 
             game.final_trial_id = SYSTEM_TRIAL_ID;
-            game.fees_paid_out += prize_amount.into();
-            assert!(game.fees_paid_out <= game.fees_collected, "Eternum: game escrow exhausted");
+            GameRegistryImpl::debit_fees(ref world, game_id, prize_amount.into());
+            game = GameRegistryImpl::get(world, game_id);
 
             let player_rank = PlayerRank { game_id, player: registered_player, rank: 1, paid: true };
 
@@ -221,9 +214,7 @@ pub mod prize_distribution_systems {
 
             let now = starknet::get_block_timestamp();
             let tx_hash = starknet::get_tx_info().unbox().transaction_hash;
-            let mut blitz_registration_config: BlitzRegistrationConfig = WorldConfigUtilImpl::get_member(
-                world, game_id, selector!("blitz_registration_config"),
-            );
+            let blitz_registration_config = BlitzRegistrationConfigImpl::get(world, game_id);
             let reward_token = IERC20Dispatcher { contract_address: blitz_registration_config.fee_token };
             let reward_token_decimals = reward_token.decimals();
 
@@ -262,8 +253,9 @@ pub mod prize_distribution_systems {
                 // transfer 1 Game Chest to players above 500 points
                 let mut player_points: PlayerRegisteredPoints = world.read_model((game_id, player));
                 if lootchest_erc721_dispatcher.contract_address.is_non_zero()
-                    && player_points.registered_points >= GAME_REWARD_CHEST_POINTS_THRESHOLD {
-                    // game_chest_reward.distributed_chests += 1;
+                    && player_points.registered_points >= GAME_REWARD_CHEST_POINTS_THRESHOLD
+                    && game_chest_reward.distributed_chests < game_chest_reward.allocated_chests {
+                    game_chest_reward.distributed_chests += 1;
                     lootchest_erc721_dispatcher
                         .mint(player, blitz_registration_config.collectibles_lootchest_attrs_raw());
                 }
@@ -359,9 +351,7 @@ pub mod prize_distribution_systems {
                 world, game_id, selector!("blitz_fee_split_record"),
             );
             let mut trial: PlayersRankTrial = world.read_model(game_id);
-            let mut blitz_registration_config: BlitzRegistrationConfig = WorldConfigUtilImpl::get_member(
-                world, game_id, selector!("blitz_registration_config"),
-            );
+            let blitz_registration_config = BlitzRegistrationConfigImpl::get(world, game_id);
             assert!(
                 blitz_registration_config.registration_count != 1,
                 "Eternum: use the blitz_prize_claim_no_game function",
@@ -589,11 +579,64 @@ pub mod prize_distribution_systems {
 
             return Option::None;
         }
+
+        fn reset_trial(ref self: ContractState, game_id: u32) {
+            let mut world: WorldStorage = self.world(DEFAULT_NS());
+            assert_caller_is_registrar(world);
+            let game = GameRegistryImpl::get(world, game_id);
+            assert!(game.final_trial_id.is_zero(), "Eternum: finalized rankings are immutable");
+
+            clear_unfinalized_trial(ref world, game_id);
+        }
+
+        fn blitz_sweep_remaining_escrow(ref self: ContractState, game_id: u32) {
+            let mut world: WorldStorage = self.world(DEFAULT_NS());
+            assert_caller_is_registrar(world);
+
+            let remainder = GameRegistryImpl::available_fees(world, game_id);
+            if remainder.is_zero() {
+                return;
+            }
+            let registration = BlitzRegistrationConfigImpl::get(world, game_id);
+            let reward_token = IERC20Dispatcher { contract_address: registration.fee_token };
+            GameRegistryImpl::debit_fees(ref world, game_id, remainder);
+            assert!(
+                reward_token.transfer(registration.fee_recipient, remainder), "Eternum: failed to sweep game escrow",
+            );
+        }
+    }
+
+    fn assert_caller_is_registrar(world: WorldStorage) {
+        let (registrar, _) = world.dns(@"registrar_systems").expect('registrar not found');
+        assert!(starknet::get_caller_address() == registrar, "Eternum: caller is not the registrar");
+    }
+
+    fn clear_unfinalized_trial(ref world: WorldStorage, game_id: u32) {
+        let trial: PlayersRankTrial = world.read_model(game_id);
+        let mut rank: u16 = 1;
+        while rank <= trial.last_rank {
+            clear_rank(ref world, game_id, rank);
+            rank += 1;
+        }
+        world.erase_model(@trial);
+    }
+
+    fn clear_rank(ref world: WorldStorage, game_id: u32, rank: u16) {
+        let rank_prize: RankPrize = world.read_model((game_id, rank));
+        let mut index: u16 = 0;
+        while index < rank_prize.total_players_same_rank_count {
+            let rank_list: RankList = world.read_model((game_id, rank, index));
+            let player_rank: PlayerRank = world.read_model((game_id, rank_list.player));
+            world.erase_model(@player_rank);
+            world.erase_model(@rank_list);
+            index += 1;
+        }
+        world.erase_model(@rank_prize);
     }
 
     fn initialize_standalone_chest_reward(ref world: WorldStorage, game_id: u32) -> SeriesChestRewardState {
         world.write_model(@GameChestReward { game_id, allocated_chests: 0, distributed_chests: 0 });
-        SeriesChestRewardStateImpl::new(0, 1, 0, 10_000)
+        SeriesChestRewardStateImpl::new(0, 0, 10_000)
     }
 
     pub fn get_dispatcher(world: @WorldStorage) -> super::IPrizeDistributionSystemsDispatcher {

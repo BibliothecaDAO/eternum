@@ -28,6 +28,8 @@ pub struct WorldConfig {
     pub blitz_hypers_settlement_config: BlitzHypersSettlementConfig,
     pub blitz_registration_config: BlitzRegistrationGameConfig,
     pub realm_count_config: RealmCountConfig,
+    // D11: factory authority is retired; the persistent registrar owns game creation.
+// pub factory_address: ContractAddress,
 }
 
 #[derive(Introspect, Copy, Drop, Serde, DojoStore)]
@@ -72,7 +74,8 @@ pub struct PresetConfig {
 pub struct PresetGameConfig {
     #[key]
     pub preset_id: u32,
-    pub biome_climate_config: BiomeClimateConfig,
+    // M6: biome climate is supplied per game and was never read from the preset.
+    // pub biome_climate_config: BiomeClimateConfig,
     pub settlement_config: SettlementConfig,
     pub blitz_settlement_config: BlitzSettlementConfig,
     pub blitz_registration_config: BlitzRegistrationGameConfig,
@@ -1019,6 +1022,7 @@ pub struct BlitzRegistrationConfig {
     pub collectibles_lootchest_address: ContractAddress,
     pub collectibles_elitenft_address: ContractAddress,
     pub registration_count: u16,
+    pub issued_count: u16,
     pub registration_count_max: u16,
     pub registration_start_at: u32,
 }
@@ -1027,6 +1031,7 @@ pub struct BlitzRegistrationConfig {
 pub struct BlitzRegistrationGameConfig {
     pub fee_amount: u256,
     pub registration_count: u16,
+    pub issued_count: u16,
     pub registration_count_max: u16,
     pub registration_start_at: u32,
 }
@@ -1064,6 +1069,7 @@ pub impl BlitzRegistrationConfigImpl of BlitzRegistrationConfigTrait {
                 world, game_id, selector!("collectibles_elitenft_address"),
             ),
             registration_count: game_config.registration_count,
+            issued_count: game_config.issued_count,
             registration_count_max: game_config.registration_count_max,
             registration_start_at: game_config.registration_start_at,
         }
@@ -1071,6 +1077,20 @@ pub impl BlitzRegistrationConfigImpl of BlitzRegistrationConfigTrait {
 
     fn is_registration_full(self: BlitzRegistrationConfig) -> bool {
         self.registration_count >= self.registration_count_max
+    }
+
+    fn is_issuance_full(self: BlitzRegistrationConfig) -> bool {
+        self.issued_count >= self.registration_count_max
+    }
+
+    fn game_config(self: BlitzRegistrationConfig) -> BlitzRegistrationGameConfig {
+        BlitzRegistrationGameConfig {
+            fee_amount: self.fee_amount,
+            registration_count: self.registration_count,
+            issued_count: self.issued_count,
+            registration_count_max: self.registration_count_max,
+            registration_start_at: self.registration_start_at,
+        }
     }
 
     fn increase_registration_count(ref self: BlitzRegistrationConfig) {

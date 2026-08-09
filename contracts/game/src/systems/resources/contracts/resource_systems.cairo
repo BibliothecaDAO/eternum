@@ -257,7 +257,7 @@ pub mod resource_systems {
                     )) => {
                         let (resource_type, resource_amount) = (*resource_type, *resource_amount);
                         let mut approved_allowance: ResourceAllowance = world
-                            .read_model((owner_structure_id, recipient_structure_id, resource_type));
+                            .read_model((game_id, owner_structure_id, recipient_structure_id, resource_type));
 
                         assert(approved_allowance.amount >= resource_amount, 'insufficient approval');
 
@@ -495,6 +495,18 @@ pub mod resource_systems {
             from_structure_owner.assert_caller_owner();
 
             // Village arrival immunity is excluded from the Blitz-core world (D15).
+            // let from_structure_base: StructureBase = StructureBaseStoreImpl::retrieve(
+            //     ref world, game_id, from_structure_id,
+            // );
+            // if from_structure_base.category == StructureCategory::Village.into() {
+            //     let battle_config = BattleConfigImpl::get(ref world, game_id);
+            //     let tick = TickImpl::get_tick_interval(ref world, game_id);
+            //     let season_config = SeasonConfigImpl::get(world, game_id);
+            //     assert!(
+            //         from_structure_base.is_not_cloaked(battle_config, tick, season_config),
+            //         "village cannot claim deposits during spawn immunity",
+            //     );
+            // }
 
             // move balance from resource arrivals to structure balance
             let mut from_structure_weight: Weight = WeightStoreImpl::retrieve(ref world, game_id, from_structure_id);

@@ -57,7 +57,21 @@ pub trait IRegistrarSystems<T> {
     );
     fn create_game(ref self: T, params: CreateGameParams) -> u32;
     fn sync_game_status(ref self: T, game_id: u32);
+    fn reset_trial(ref self: T, game_id: u32);
     fn mark_game_settled(ref self: T, game_id: u32);
+}
+
+
+#[starknet::interface]
+trait IPrizeLifecycle<T> {
+    fn reset_trial(ref self: T, game_id: u32);
+    fn blitz_sweep_remaining_escrow(ref self: T, game_id: u32);
+}
+
+
+#[starknet::interface]
+trait IHyperstructureReservation<T> {
+    fn reserve_hyperstructures(ref self: T, game_id: u32, count: u8);
 }
 
 
@@ -66,21 +80,21 @@ pub mod registrar_systems {
     use core::num::traits::zero::Zero;
     use dojo::event::EventStorage;
     use dojo::model::ModelStorage;
-    use dojo::world::{WorldStorage, WorldStorageTrait};
+    use dojo::world::{IWorldDispatcherTrait, WorldStorage, WorldStorageTrait};
     use starknet::ContractAddress;
     use crate::constants::{DAYDREAMS_AGENT_ID, DEFAULT_NS, WORLD_CONFIG_ID};
     use crate::models::agent::AgentConfig;
     use crate::models::config::{
-        BlitzHypersSettlementConfig, BlitzHypersSettlementConfigImpl, ChainConfig, GameMapConfig, MapConfig,
-        PresetConfig, PresetGameConfig, RealmCountConfig, WorldConfig,
+        BlitzHypersSettlementConfigImpl, ChainConfig, GameMapConfig, MapConfig, PresetConfig, PresetGameConfig,
+        RealmCountConfig, WorldConfig,
     };
     use crate::models::game::{GAME_COUNTER_ID, GameCounter, GameRegistry, GameRegistryImpl, GameStatus, Preset, Series};
-    use crate::models::map::{Tile, TileImpl, TileOccupier};
-    use crate::models::map2::TileOpt;
-    use crate::models::position::{CENTER_COL, CENTER_ROW, Coord};
-    use crate::systems::utils::map::IMapImpl;
-    use crate::utils::map::biomes::get_biome_from_world;
-    use super::{CreateGameParams, IRegistrarSystems, PresetSideTables};
+    use crate::models::position::CENTER_COL;
+    use crate::systems::utils::blitz_profile::iBlitzProfileImpl;
+    use super::{
+        CreateGameParams, IHyperstructureReservationDispatcher, IHyperstructureReservationDispatcherTrait,
+        IPrizeLifecycleDispatcher, IPrizeLifecycleDispatcherTrait, IRegistrarSystems, PresetSideTables,
+    };
 
 
     #[derive(Copy, Drop, Serde)]
@@ -101,13 +115,15 @@ pub mod registrar_systems {
     pub impl RegistrarSystemsImpl of IRegistrarSystems<ContractState> {
         fn bootstrap_chain_config(ref self: ContractState, chain_config: ChainConfig) {
             let mut world = self.world(DEFAULT_NS());
+            let caller = starknet::get_caller_address();
+            assert!(
+                world.dispatcher.is_owner(selector_from_tag!("s2_blitz-registrar_systems"), caller),
+                "Eternum: caller is not the world owner",
+            );
             let existing: ChainConfig = world.read_model(WORLD_CONFIG_ID);
             assert!(existing.admin_address.is_zero(), "Eternum: chain config already initialized");
             assert!(chain_config.admin_address.is_non_zero(), "Eternum: admin address is zero");
-            assert!(
-                starknet::get_caller_address() == chain_config.admin_address,
-                "Eternum: caller must be configured admin",
-            );
+            assert!(caller == chain_config.admin_address, "Eternum: caller must be configured admin");
 
             let initialized = ChainConfig { config_id: WORLD_CONFIG_ID, ..chain_config };
             world.write_model(@initialized);
@@ -127,6 +143,7 @@ pub mod registrar_systems {
 
             let preset: Preset = world.read_model(preset_config.preset_id);
             assert!(!preset.registered, "Eternum: preset already registered");
+            iBlitzProfileImpl::assert_known_blitz_profile_id(preset_config.blitz_exploration_config.reward_profile_id);
 
             world.write_model(@preset_config);
             world.write_model(@game_config);
@@ -149,6 +166,7 @@ pub mod registrar_systems {
             assert!(num_games.is_non_zero(), "Eternum: series must contain games");
             assert!(num_games <= 0xffff, "Eternum: too many games in series");
             assert!(cap_ratio_bps >= 10_000, "Eternum: invalid series chest cap");
+            assert_series_chest_allocation_fits_u16(total_chests, cap_ratio_bps);
 
             let existing: Series = world.read_model(series_id);
             assert!(existing.owner.is_zero(), "Eternum: series already registered");
@@ -159,6 +177,7 @@ pub mod registrar_systems {
             let mut world = self.world(DEFAULT_NS());
             let creator = starknet::get_caller_address();
             assert!(creator.is_non_zero(), "Eternum: creator address is zero");
+            assert_uuid_headroom(ref world);
 
             let (preset_rules, preset_game_config) = validate_game_params(world, params);
             let game_id = assign_game_id(ref world);
@@ -172,7 +191,7 @@ pub mod registrar_systems {
             world.write_model(@world_config);
             world.write_model(@map_config);
             world.write_model(@agent_config);
-            reserve_hyperstructure_ring(ref world, game_id);
+            reserve_hyperstructures_for_game(ref world, game_id);
             emit_game_created(ref world, registry);
 
             game_id
@@ -185,12 +204,23 @@ pub mod registrar_systems {
             world.write_model(@game);
         }
 
+        fn reset_trial(ref self: ContractState, game_id: u32) {
+            let world = self.world(DEFAULT_NS());
+            assert_caller_is_admin(world);
+            prize_lifecycle_dispatcher(world).reset_trial(game_id);
+        }
+
         fn mark_game_settled(ref self: ContractState, game_id: u32) {
             let mut world = self.world(DEFAULT_NS());
             assert_caller_is_admin(world);
             let mut game = GameRegistryImpl::get(world, game_id);
             assert!(resolve_game_status(game) == GameStatus::Ended, "Eternum: game has not ended");
-            assert!(game.fees_paid_out == game.fees_collected, "Eternum: game escrow is not settled");
+            assert!(
+                starknet::get_block_timestamp() > game.end_at + game.end_grace_seconds.into(),
+                "Eternum: game settlement grace period is active",
+            );
+            sweep_remaining_escrow(ref world, game_id);
+            game = GameRegistryImpl::get(world, game_id);
             game.status = GameStatus::Settled;
             world.write_model(@game);
         }
@@ -201,6 +231,32 @@ pub mod registrar_systems {
         let chain_config: ChainConfig = world.read_model(WORLD_CONFIG_ID);
         assert!(chain_config.admin_address.is_non_zero(), "Eternum: registrar is not initialized");
         assert!(starknet::get_caller_address() == chain_config.admin_address, "Eternum: caller is not admin");
+    }
+
+    fn assert_uuid_headroom(ref world: WorldStorage) {
+        let current_uuid = world.dispatcher.uuid();
+        assert!(current_uuid < DAYDREAMS_AGENT_ID - 1, "Eternum: reserved id headroom exhausted");
+    }
+
+    fn assert_series_chest_allocation_fits_u16(total_chests: u128, cap_ratio_bps: u128) {
+        if total_chests.is_zero() {
+            return;
+        }
+        let max_cap_ratio_bps = (0xffff_u128 * 10_000) / total_chests;
+        assert!(cap_ratio_bps <= max_cap_ratio_bps, "Eternum: series chest allocation exceeds u16");
+    }
+
+    fn sweep_remaining_escrow(ref world: WorldStorage, game_id: u32) {
+        let remainder = GameRegistryImpl::available_fees(world, game_id);
+        if remainder.is_zero() {
+            return;
+        }
+        prize_lifecycle_dispatcher(world).blitz_sweep_remaining_escrow(game_id);
+    }
+
+    fn prize_lifecycle_dispatcher(world: WorldStorage) -> IPrizeLifecycleDispatcher {
+        let (prize_distribution, _) = world.dns(@"prize_distribution_systems").expect('prize system not found');
+        IPrizeLifecycleDispatcher { contract_address: prize_distribution }
     }
 
     fn write_preset_side_tables(ref world: WorldStorage, preset_id: u32, side_tables: PresetSideTables) {
@@ -242,10 +298,12 @@ pub mod registrar_systems {
     }
 
     fn validate_game_params(world: WorldStorage, params: CreateGameParams) -> (PresetConfig, PresetGameConfig) {
+        let registration_start_at: u64 = params.registration_start_at.into();
         assert!(params.name.is_non_zero(), "Eternum: game name is empty");
         assert!(params.seed.is_non_zero(), "Eternum: game seed is zero");
         assert!(params.duration_seconds.is_non_zero(), "Eternum: game duration is zero");
         assert!(params.start_settling_at <= params.start_main_at, "Eternum: invalid game schedule");
+        assert!(registration_start_at < params.start_settling_at, "Eternum: registration must open before settling");
         assert!(!(params.single_realm_mode && params.two_player_mode), "Eternum: incompatible game modes");
         assert!(params.registration_count_max.is_non_zero(), "Eternum: registration capacity is zero");
         assert!(params.registration_count_max <= 24, "Eternum: registration capacity exceeds A1 limit");
@@ -323,12 +381,13 @@ pub mod registrar_systems {
         let mut registration = preset.blitz_registration_config;
         registration.fee_amount = params.fee_amount;
         registration.registration_count = 0;
+        registration.issued_count = 0;
         registration.registration_count_max = params.registration_count_max;
         registration.registration_start_at = params.registration_start_at;
 
         WorldConfig {
             game_id,
-            map_center_offset: derive_map_center_offset(params.seed),
+            map_center_offset: derive_map_center_offset(game_id, params.seed),
             biome_climate_config: params.biome_climate_config,
             settlement_config: settlement,
             blitz_mode_on: true,
@@ -367,59 +426,20 @@ pub mod registrar_systems {
         world.write_model(@series);
     }
 
-    fn reserve_hyperstructure_ring(ref world: WorldStorage, game_id: u32) {
-        let world_config: WorldConfig = world.read_model(game_id);
-        let preset_config: PresetConfig = world.read_model(GameRegistryImpl::get(world, game_id).preset_id);
-        let mut cursor = world_config.blitz_hypers_settlement_config;
-        cursor
-            .max_ring_count =
-                BlitzHypersSettlementConfigImpl::max_ring_count_for_registration_count(
-                    world_config.blitz_registration_config.registration_count_max.into(),
-                    world_config.blitz_settlement_config.two_player_mode,
-                );
-        let map_center = Coord {
-            alt: false, x: CENTER_COL - world_config.map_center_offset, y: CENTER_ROW - world_config.map_center_offset,
-        };
-
-        while cursor.is_valid_ring(world_config.blitz_settlement_config.two_player_mode) {
-            reserve_next_hyperstructure(
-                ref world,
-                game_id,
-                ref cursor,
-                map_center,
-                world_config.blitz_settlement_config.two_player_mode,
-                preset_config.blitz_exploration_config.reward_profile_id,
-            );
-        }
-
-        let mut updated_config: WorldConfig = world.read_model(game_id);
-        updated_config.blitz_hypers_settlement_config = cursor;
-        world.write_model(@updated_config);
+    fn reserve_hyperstructures_for_game(ref world: WorldStorage, game_id: u32) {
+        let (reservation_system, _) = world
+            .dns(@"hyperstructure_create_systems")
+            .expect('reservation system not found');
+        IHyperstructureReservationDispatcher { contract_address: reservation_system }
+            .reserve_hyperstructures(game_id, 0xff);
     }
 
-    fn reserve_next_hyperstructure(
-        ref world: WorldStorage,
-        game_id: u32,
-        ref cursor: BlitzHypersSettlementConfig,
-        map_center: Coord,
-        two_player_mode: bool,
-        reward_profile_id: u8,
-    ) {
-        let coord = cursor.next_coord(map_center, two_player_mode, reward_profile_id);
-        let tile_opt: TileOpt = world.read_model((game_id, coord.alt, coord.x, coord.y));
-        let mut tile: Tile = tile_opt.into();
-        assert!(tile.not_occupied(), "Eternum: hyperstructure tile is occupied");
-        let biome = get_biome_from_world(world, game_id, coord.alt, coord.x.into(), coord.y.into());
-        IMapImpl::explore(ref world, ref tile, biome);
-        IMapImpl::occupy(ref world, ref tile, TileOccupier::ReservedHyperstructure, 0);
-        cursor.next(two_player_mode);
-    }
-
-    fn derive_map_center_offset(seed: felt252) -> u32 {
+    fn derive_map_center_offset(game_id: u32, seed: felt252) -> u32 {
         let seed_value: u256 = seed.into();
-        let half_map: u256 = (CENTER_COL / 2).into();
-        let base_offset: u32 = (seed_value % half_map).try_into().unwrap();
-        (base_offset / 10) * 10
+        let offset_step_count = (CENTER_COL / 2) / 10;
+        let seed_step: u32 = (seed_value % offset_step_count.into()).try_into().unwrap();
+        let game_step = game_id % offset_step_count;
+        ((seed_step + game_step) % offset_step_count) * 10
     }
 
     fn initial_game_status(params: CreateGameParams) -> GameStatus {
@@ -435,7 +455,7 @@ pub mod registrar_systems {
             return GameStatus::Settled;
         }
         let now = starknet::get_block_timestamp();
-        if !game.dev_mode_on && now >= game.end_at {
+        if now >= game.end_at {
             return GameStatus::Ended;
         }
         if game.dev_mode_on || now >= game.start_main_at {

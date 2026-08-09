@@ -49,6 +49,8 @@ pub mod blitz_realm_systems {
     #[dojo::event(historical: false)]
     struct BlitzSettlementEvent {
         #[key]
+        game_id: u32,
+        #[key]
         player: ContractAddress,
         timestamp: u64,
     }
@@ -61,9 +63,7 @@ pub mod blitz_realm_systems {
     impl BlitzRealmSystemsImpl of super::IBlitzRealmSystems<ContractState> {
         fn obtain_entry_token(ref self: ContractState, game_id: u32) {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
-            let blitz_registration_config: BlitzRegistrationConfig = WorldConfigUtilImpl::get_member(
-                world, game_id, selector!("blitz_registration_config"),
-            );
+            let blitz_registration_config = BlitzRegistrationConfigImpl::get(world, game_id);
             if blitz_registration_config.fee_amount.is_zero() {
                 return;
             }
@@ -77,9 +77,7 @@ pub mod blitz_realm_systems {
             assert!(
                 season_config.dev_mode_on || now < season_config.start_main_at, "Eternum: Registration time is over",
             );
-            assert!(
-                !blitz_registration_config.is_registration_full(), "Eternum: All registration slots have been filled",
-            );
+            assert!(!blitz_registration_config.is_issuance_full(), "Eternum: All entry tokens have been issued");
 
             let caller: ContractAddress = starknet::get_caller_address();
             let existing_settlement: BlitzSettlement = world.read_model((game_id, caller));
@@ -103,9 +101,7 @@ pub mod blitz_realm_systems {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
             let caller = starknet::get_caller_address();
             let season_config = SeasonConfigImpl::get(world, game_id);
-            let mut blitz_registration_config: BlitzRegistrationConfig = WorldConfigUtilImpl::get_member(
-                world, game_id, selector!("blitz_registration_config"),
-            );
+            let mut blitz_registration_config = BlitzRegistrationConfigImpl::get(world, game_id);
             let mut blitz_settlement_config: BlitzSettlementConfig = WorldConfigUtilImpl::get_member(
                 world, game_id, selector!("blitz_settlement_config"),
             );
@@ -154,6 +150,7 @@ pub mod blitz_realm_systems {
             // Record Registration & Cosmetics
             ////////////////////////////////////////////////
 
+            blitz_registration_config = BlitzRegistrationConfigImpl::get(world, game_id);
             blitz_registration_config.increase_registration_count();
 
             BlitzCosmeticsInternalImpl::store_player_cosmetics(
@@ -206,7 +203,7 @@ pub mod blitz_realm_systems {
             ////////////////////////////////////////////////
 
             WorldConfigUtilImpl::set_member(
-                ref world, game_id, selector!("blitz_registration_config"), blitz_registration_config,
+                ref world, game_id, selector!("blitz_registration_config"), blitz_registration_config.game_config(),
             );
             WorldConfigUtilImpl::set_member(
                 ref world, game_id, selector!("blitz_settlement_config"), blitz_settlement_config,
@@ -215,7 +212,7 @@ pub mod blitz_realm_systems {
             BlitzRealmSettlementInternalImpl::store_player_name(ref world, caller, name);
 
             let now = starknet::get_block_timestamp();
-            world.emit_event(@BlitzSettlementEvent { player: caller, timestamp: now.into() });
+            world.emit_event(@BlitzSettlementEvent { game_id, player: caller, timestamp: now.into() });
         }
 
         fn provision_realm(ref self: ContractState, game_id: u32, structure_id: ID) {
@@ -288,8 +285,9 @@ pub mod blitz_realm_systems {
             ref world: WorldStorage,
             game_id: u32,
             owner: ContractAddress,
-            blitz_registration_config: BlitzRegistrationConfig,
+            mut blitz_registration_config: BlitzRegistrationConfig,
         ) -> u128 {
+            assert!(!blitz_registration_config.is_issuance_full(), "Eternum: All entry tokens have been issued");
             let fee_token_contract: IERC20Dispatcher = IERC20Dispatcher {
                 contract_address: blitz_registration_config.fee_token,
             };
@@ -316,6 +314,10 @@ pub mod blitz_realm_systems {
                 .try_into()
                 .unwrap();
             world.write_model(@BlitzEntryTokenRegister { game_id, token_id, issued: true, registered: false });
+            blitz_registration_config.issued_count += 1;
+            WorldConfigUtilImpl::set_member(
+                ref world, game_id, selector!("blitz_registration_config"), blitz_registration_config.game_config(),
+            );
             token_id
         }
 
