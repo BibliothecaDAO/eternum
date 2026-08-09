@@ -1,9 +1,10 @@
+// {GF:alias} markers resolve to the active game filter (see applySqlGameScope).
 export const BATTLE_QUERIES = {
   EXPLORER_ADDRESS_OWNER: `
     SELECT s.owner as address_owner
     FROM \`s1_eternum-ExplorerTroops\` e
     JOIN \`s1_eternum-Structure\` s ON e.owner = s.entity_id
-    WHERE e.explorer_id = {entityId};
+    WHERE {GF:e} AND {GF:s} AND e.explorer_id = {entityId};
   `,
 
   BATTLE_LOGS: `
@@ -18,7 +19,7 @@ export const BATTLE_QUERIES = {
         success,
         timestamp
     FROM [s1_eternum-ExplorerNewRaidEvent]
-    {whereClause}
+    WHERE {GF} {timeFilter}
     UNION ALL
     SELECT 
         'BattleEvent' as event_type,
@@ -31,7 +32,25 @@ export const BATTLE_QUERIES = {
         NULL as success,
         timestamp
     FROM [s1_eternum-BattleEvent]
-    {whereClause}
+    WHERE {GF} {timeFilter}
+    ORDER BY timestamp DESC
+  `,
+
+  // s2 arm: ExplorerNewRaidEvent has no s2 counterpart, so only the
+  // BattleEvent branch survives.
+  BATTLE_LOGS_S2: `
+    SELECT
+        'BattleEvent' as event_type,
+        attacker_id,
+        defender_id,
+        attacker_owner as attacker_owner_id,
+        defender_owner as defender_owner_id,
+        winner_id,
+        max_reward,
+        NULL as success,
+        timestamp
+    FROM [s1_eternum-BattleEvent]
+    WHERE {GF} {timeFilter}
     ORDER BY timestamp DESC
   `,
 } as const;

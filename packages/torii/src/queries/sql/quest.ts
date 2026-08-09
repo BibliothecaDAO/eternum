@@ -1,3 +1,4 @@
+// QuestTile is s1-only (quests are off on the s2 blitz world) — legacy-arm query.
 export const QUEST_QUERIES = {
   QUEST_BY_ENTITY_ID: `
     SELECT 

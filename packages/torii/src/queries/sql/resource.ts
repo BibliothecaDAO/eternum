@@ -88,7 +88,7 @@ export const RESOURCE_QUERIES = {
   RESOURCE_BALANCES: `
     SELECT entity_id, ${BALANCE_COLS}, ${TROOP_COLS}
     FROM \`s1_eternum-Resource\`
-    WHERE entity_id IN ({entityIds});
+    WHERE {GF} AND entity_id IN ({entityIds});
   `,
 
   /**
@@ -99,7 +99,7 @@ export const RESOURCE_QUERIES = {
   RESOURCE_BALANCES_AND_PRODUCTION: `
     SELECT entity_id, ${BALANCE_COLS}, ${TROOP_COLS}, ${PRODUCTION_COLS}
     FROM \`s1_eternum-Resource\`
-    WHERE entity_id IN ({entityIds});
+    WHERE {GF} AND entity_id IN ({entityIds});
   `,
 
   /**
@@ -109,6 +109,6 @@ export const RESOURCE_QUERIES = {
   RESOURCE_BALANCES_WITH_DYNAMIC_PRODUCTION: `
     SELECT entity_id, ${BALANCE_COLS}, ${TROOP_COLS}, ${PRODUCTION_FULL_COLS}
     FROM \`s1_eternum-Resource\`
-    WHERE entity_id IN ({entityIds});
+    WHERE {GF} AND entity_id IN ({entityIds});
   `,
 } as const;

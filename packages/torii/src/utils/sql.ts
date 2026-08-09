@@ -29,10 +29,52 @@ export function encodeQuery(query: string): string {
   return encodeURIComponent(query);
 }
 
+// s2 single-world SQL scope. Queries are authored against the legacy
+// `s1_eternum-` names with `{GF}` / `{GF:alias}` game-filter markers on every
+// per-game table; this chokepoint rewrites both per the active arm. On legacy
+// worlds markers resolve to `1=1` (s1 tables have no game_id column). Set at
+// bootstrap, before any query runs.
+let sqlNamespace = "s1_eternum";
+let sqlGameId = 0;
+
+export const setSqlGameScope = (namespace: string, gameId: number): void => {
+  sqlNamespace = namespace;
+  sqlGameId = gameId;
+};
+
+/** Active scope for this package's gRPC query builders (same source as SQL). */
+export const getSqlGameScope = (): { namespace: string; gameId: number } => ({
+  namespace: sqlNamespace,
+  gameId: sqlGameId,
+});
+
+const GAME_FILTER_MARKER = /\{GF(?::([A-Za-z_][\w]*))?\}/g;
+
+export const applySqlGameScope = (query: string): string => {
+  let scoped = query;
+  if (sqlNamespace !== "s1_eternum") {
+    scoped = scoped.split("s1_eternum-").join(`${sqlNamespace}-`);
+  }
+  return scoped.replace(GAME_FILTER_MARKER, (_match, alias?: string) => {
+    if (sqlGameId <= 0) return "1=1";
+    return alias ? `${alias}.game_id = ${sqlGameId}` : `game_id = ${sqlGameId}`;
+  });
+};
+
 /**
- * Constructs the full API URL with the encoded query
+ * Constructs the full API URL with the encoded query, scoped to the active
+ * arm/game (see applySqlGameScope).
  */
 export function buildApiUrl(baseUrl: string, query: string): string {
+  return `${baseUrl}?query=${encodeQuery(applySqlGameScope(query))}`;
+}
+
+/**
+ * Unscoped variant for queries that target OTHER worlds' torii (cross-world
+ * market/leaderboard reads against legacy s1 hosts) — the active game's
+ * namespace/filter rewrite must not apply to those.
+ */
+export function buildUnscopedApiUrl(baseUrl: string, query: string): string {
   return `${baseUrl}?query=${encodeQuery(query)}`;
 }
 

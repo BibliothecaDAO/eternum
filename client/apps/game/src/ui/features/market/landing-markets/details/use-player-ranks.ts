@@ -1,4 +1,4 @@
-import { SqlApi, buildApiUrl, fetchWithErrorHandling, formatAddressForQuery } from "@bibliothecadao/torii";
+import { SqlApi, buildUnscopedApiUrl, fetchWithErrorHandling, formatAddressForQuery } from "@bibliothecadao/torii";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { addAddressPadding } from "starknet";
 
@@ -49,7 +49,7 @@ export const usePlayerRanks = ({
         const sqlBaseUrl = (client as any)?.baseUrl ?? `${toriiBaseUrl}/sql`;
 
         const finalQuery = `SELECT trial_id, world_id FROM "s1_eternum-PlayersRankFinal" WHERE world_id = '${FORMATTED_WORLD_ID}' LIMIT 1;`;
-        const finalUrl = buildApiUrl(sqlBaseUrl, finalQuery);
+        const finalUrl = buildUnscopedApiUrl(sqlBaseUrl, finalQuery);
         const finalRows = await fetchWithErrorHandling<{ trial_id: string; world_id: string }>(
           finalUrl,
           "Failed to fetch PlayersRankFinal",
@@ -67,7 +67,7 @@ export const usePlayerRanks = ({
 
         const formattedPlayers = normalizedPlayers.map((addr) => `'${formatAddressForQuery(addr)}'`).join(", ");
         const ranksQuery = `SELECT player, rank FROM "s1_eternum-PlayerRank" WHERE trial_id = '${finalTrialId.toString()}' AND player IN (${formattedPlayers});`;
-        const ranksUrl = buildApiUrl(sqlBaseUrl, ranksQuery);
+        const ranksUrl = buildUnscopedApiUrl(sqlBaseUrl, ranksQuery);
         const rankRows = await fetchWithErrorHandling<{ player: string; rank: string }>(
           ranksUrl,
           "Failed to fetch PlayerRank",

@@ -21,6 +21,7 @@ import {
   fetchJsonWithErrorHandling,
   fetchWithErrorHandling,
   formatAddressForQuery,
+  getSqlGameScope,
 } from "../../utils/sql";
 import { LEADERBOARD_QUERIES } from "./leaderboard";
 
@@ -187,7 +188,13 @@ export const fetchLeaderboardSourceData = async ({
         "Failed to fetch hyperstructure multipliers",
       ),
       fetchWithErrorHandling<HyperstructureLeaderboardConfigRow>(
-        buildApiUrl(baseUrl, LEADERBOARD_QUERIES.HYPERSTRUCTURE_LEADERBOARD_CONFIG),
+        buildApiUrl(
+          baseUrl,
+          // s2 splits the row across GameRegistry/PresetConfig/WorldConfig.
+          getSqlGameScope().gameId > 0
+            ? LEADERBOARD_QUERIES.HYPERSTRUCTURE_LEADERBOARD_CONFIG_S2
+            : LEADERBOARD_QUERIES.HYPERSTRUCTURE_LEADERBOARD_CONFIG,
+        ),
         "Failed to fetch hyperstructure leaderboard config",
       ),
     ]);

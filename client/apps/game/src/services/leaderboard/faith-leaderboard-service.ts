@@ -1,5 +1,5 @@
 import { getRealmNameById } from "@bibliothecadao/eternum";
-import { buildApiUrl, fetchWithErrorHandling } from "@bibliothecadao/torii";
+import { buildUnscopedApiUrl, fetchWithErrorHandling } from "@bibliothecadao/torii";
 
 import { getSqlApiBaseUrl } from "@/services/api";
 
@@ -459,7 +459,7 @@ export const fetchFaithLeaderboard = async (toriiBaseUrl?: string): Promise<Fait
   }
 
   const sqlBaseUrl = ensureSqlSuffix(baseUrl.trim());
-  const url = buildApiUrl(sqlBaseUrl, WONDER_FAITH_LEADERBOARD_QUERY);
+  const url = buildUnscopedApiUrl(sqlBaseUrl, WONDER_FAITH_LEADERBOARD_QUERY);
   const rows = await fetchWithErrorHandling<FaithLeaderboardRow>(url, "Failed to fetch faith leaderboard");
   return transformFaithLeaderboardRows(rows);
 };
@@ -481,7 +481,7 @@ export const fetchFaithfulStructureStatus = async (
   }
 
   const sqlBaseUrl = ensureSqlSuffix(baseUrl.trim());
-  const url = buildApiUrl(sqlBaseUrl, buildFaithfulStructureStatusQuery(structureId));
+  const url = buildUnscopedApiUrl(sqlBaseUrl, buildFaithfulStructureStatusQuery(structureId));
 
   try {
     const rows = await fetchWithErrorHandling<FaithfulStructureRow>(url, "Failed to fetch faith devotion status");
@@ -512,7 +512,7 @@ export const fetchWonderFaithDetail = async (
   }
 
   const sqlBaseUrl = ensureSqlSuffix(baseUrl.trim());
-  const detailUrl = buildApiUrl(sqlBaseUrl, buildWonderFaithDetailQuery(wonderId));
+  const detailUrl = buildUnscopedApiUrl(sqlBaseUrl, buildWonderFaithDetailQuery(wonderId));
   const detailRows = await fetchWithErrorHandling<WonderFaithDetailRow>(
     detailUrl,
     "Failed to fetch wonder faith detail",
@@ -522,7 +522,7 @@ export const fetchWonderFaithDetail = async (
     return null;
   }
 
-  const followersUrl = buildApiUrl(sqlBaseUrl, buildWonderFaithFollowersQuery(wonderId));
+  const followersUrl = buildUnscopedApiUrl(sqlBaseUrl, buildWonderFaithFollowersQuery(wonderId));
   let followerRows: WonderFaithFollowerRow[] = [];
   try {
     followerRows = await fetchWithErrorHandling<WonderFaithFollowerRow>(

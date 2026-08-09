@@ -1,8 +1,10 @@
+// {GF} markers resolve to the active game filter (see applySqlGameScope).
 export const TILES_QUERIES = {
   ALL_TILES: `
     SELECT DISTINCT
         data
     FROM \`s1_eternum-TileOpt\`
+    WHERE {GF}
     ORDER BY alt, col, row;
   `,
 
@@ -10,14 +12,15 @@ export const TILES_QUERIES = {
     SELECT
         data
     FROM \`s1_eternum-TileOpt\`
-    WHERE (col, row) IN ({coords});
+    WHERE {GF} AND (col, row) IN ({coords});
   `,
 
   TILES_IN_BOUNDS: `
     SELECT
         data
     FROM \`s1_eternum-TileOpt\`
-    WHERE col >= {minX}
+    WHERE {GF}
+      AND col >= {minX}
       AND col <= {maxX}
       AND row >= {minY}
       AND row <= {maxY}

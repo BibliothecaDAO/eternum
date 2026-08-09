@@ -7,7 +7,8 @@ export const RELICS_QUERIES = {
     SELECT
       data
     FROM \`s1_eternum-TileOpt\`
-    WHERE col >= {minX}
+    WHERE {GF}
+      AND col >= {minX}
       AND col <= {maxX}
       AND row >= {minY}
       AND row <= {maxY};
@@ -27,7 +28,8 @@ export const RELICS_QUERIES = {
       r.*
     FROM \`s1_eternum-Structure\` s
     INNER JOIN \`s1_eternum-Resource\` r ON s.entity_id = r.entity_id
-    WHERE s.owner = '{owner}'
+    WHERE {GF:s} AND {GF:r}
+      AND s.owner = '{owner}'
       AND (
         (r.RELIC_E1_BALANCE > 0) OR (r.RELIC_E2_BALANCE > 0) OR (r.RELIC_E3_BALANCE > 0) OR
         (r.RELIC_E4_BALANCE > 0) OR (r.RELIC_E5_BALANCE > 0) OR (r.RELIC_E6_BALANCE > 0) OR
@@ -56,7 +58,8 @@ export const RELICS_QUERIES = {
     FROM \`s1_eternum-ExplorerTroops\` e
     INNER JOIN \`s1_eternum-Resource\` r ON e.explorer_id = r.entity_id
     INNER JOIN \`s1_eternum-Structure\` s ON s.entity_id = e.owner
-    WHERE s.owner = '{owner}'
+    WHERE {GF:e} AND {GF:r} AND {GF:s}
+      AND s.owner = '{owner}'
       AND (
         (r.RELIC_E1_BALANCE > 0) OR (r.RELIC_E2_BALANCE > 0) OR (r.RELIC_E3_BALANCE > 0) OR
         (r.RELIC_E4_BALANCE > 0) OR (r.RELIC_E5_BALANCE > 0) OR (r.RELIC_E6_BALANCE > 0) OR
@@ -68,6 +71,8 @@ export const RELICS_QUERIES = {
     ORDER BY e.explorer_id;
   `,
 
+  // RelicEffect is s1-only (s2 folds relic effects into Troops.boosts) —
+  // legacy-arm query; the fetch short-circuits on the s2 arm.
   ENTITY_RELIC_EFFECTS: `
     SELECT 
       entity_id,

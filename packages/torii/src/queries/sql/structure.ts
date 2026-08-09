@@ -2,19 +2,19 @@ export const STRUCTURE_QUERIES = {
   STRUCTURES_BY_OWNER: `
     SELECT \`base.coord_x\` AS coord_x, \`base.coord_y\` AS coord_y, entity_id, owner 
     FROM [s1_eternum-Structure] 
-    WHERE owner = '{owner}';
+    WHERE {GF} AND owner = '{owner}';
   `,
 
   OTHER_STRUCTURES: `
     SELECT entity_id AS entityId, \`metadata.realm_id\` AS realmId, owner, category 
     FROM [s1_eternum-Structure] 
-    WHERE owner != '{owner}';
+    WHERE {GF} AND owner != '{owner}';
   `,
 
   REALM_SETTLEMENTS: `
     SELECT \`base.coord_x\` AS coord_x, \`base.coord_y\` AS coord_y, entity_id, owner 
     FROM [s1_eternum-Structure] 
-    WHERE category == 1;
+    WHERE {GF} AND category == 1;
   `,
 
   STRUCTURE_BY_COORD: `
@@ -33,7 +33,7 @@ export const STRUCTURE_QUERIES = {
         internal_updated_at,
         resources_packed
     FROM \`s1_eternum-Structure\`
-    WHERE \`base.coord_x\` = {coord_x} AND \`base.coord_y\` = {coord_y};
+    WHERE {GF} AND \`base.coord_x\` = {coord_x} AND \`base.coord_y\` = {coord_y};
     LIMIT 1;
   `,
 
@@ -48,7 +48,7 @@ export const STRUCTURE_QUERIES = {
         \`metadata.has_wonder\` as has_wonder,
         \`base.level\` as level
     FROM \`s1_eternum-Structure\`
-    WHERE owner = '{owner}'
+    WHERE {GF} AND owner = '{owner}'
     ORDER BY category, entity_id;
   `,
 
@@ -59,13 +59,15 @@ export const STRUCTURE_QUERIES = {
         \`base.coord_x\` as coord_x,
         \`base.coord_y\` as coord_y
     FROM \`s1_eternum-Structure\`
+    WHERE {GF}
     LIMIT 1;
   `,
 
   SURROUNDING_WONDER_BONUS: `
     SELECT entity_id
     FROM \`s1_eternum-Structure\`
-    WHERE \`base.coord_x\` >= {minX} 
+    WHERE {GF}
+      AND \`base.coord_x\` >= {minX} 
       AND \`base.coord_x\` <= {maxX}
       AND \`base.coord_y\` >= {minY} 
       AND \`base.coord_y\` <= {maxY}
@@ -75,9 +77,11 @@ export const STRUCTURE_QUERIES = {
 
   HYPERSTRUCTURES: `
     SELECT hyperstructure_id
-    FROM \`s1_eternum-Hyperstructure\`;
+    FROM \`s1_eternum-Hyperstructure\`
+    WHERE {GF};
   `,
 
+  // StructureVillageSlots is s1-only (no villages on the s2 blitz world).
   REALM_VILLAGE_SLOTS: `
     SELECT 
         \`connected_realm_coord.x\`, 
@@ -88,6 +92,7 @@ export const STRUCTURE_QUERIES = {
     FROM \`s1_eternum-StructureVillageSlots\`
   `,
 
+  // Settlement planner is the eternum (s1) settling flow — legacy-arm queries.
   SETTLEMENT_PLANNER_REALMS: `
     SELECT
         s.entity_id,
@@ -137,10 +142,11 @@ export const STRUCTURE_QUERIES = {
         g.name AS guild_name,
         sos.name AS player_name
     FROM [s1_eternum-Structure] s
-    LEFT JOIN [s1_eternum-ExplorerTroops] et ON et.owner = s.entity_id
-    LEFT JOIN [s1_eternum-GuildMember] gm ON gm.member = s.owner
-    LEFT JOIN [s1_eternum-Guild] g ON g.guild_id = gm.guild_id
-    LEFT JOIN [s1_eternum-StructureOwnerStats] sos ON sos.owner = s.owner
+    LEFT JOIN [s1_eternum-ExplorerTroops] et ON {GF:et} AND et.owner = s.entity_id
+    LEFT JOIN [s1_eternum-GuildMember] gm ON {GF:gm} AND gm.member = s.owner
+    LEFT JOIN [s1_eternum-Guild] g ON {GF:g} AND g.guild_id = gm.guild_id
+    LEFT JOIN [s1_eternum-StructureOwnerStats] sos ON {GF:sos} AND sos.owner = s.owner
+    WHERE {GF:s}
     GROUP BY s.owner
   `,
 
@@ -172,7 +178,7 @@ export const STRUCTURE_QUERIES = {
         \`troop_guards.bravo_destroyed_tick\` as bravo_destroyed_tick,
         \`troop_guards.alpha_destroyed_tick\` as alpha_destroyed_tick
     FROM \`s1_eternum-Structure\`
-    WHERE entity_id = {entityId};
+    WHERE {GF} AND entity_id = {entityId};
   `,
 
   ALL_STRUCTURES_MAP_DATA: `
@@ -189,6 +195,7 @@ export const STRUCTURE_QUERIES = {
                 ORDER BY timestamp DESC
             ) as latest_attack_timestamp
         FROM [s1_eternum-BattleEvent]
+        WHERE {GF}
     ),
     latest_defenses AS (
         -- Get latest battles where this structure was the attacker
@@ -203,6 +210,7 @@ export const STRUCTURE_QUERIES = {
                 ORDER BY timestamp DESC
             ) as latest_defense_timestamp
         FROM [s1_eternum-BattleEvent]
+        WHERE {GF}
     )
     SELECT 
         s.entity_id,
@@ -255,19 +263,20 @@ export const STRUCTURE_QUERIES = {
         COALESCE(defender_struct.\`base.coord_y\`, defender_explorer.\`coord.y\`) as latest_defender_coord_y
 
     FROM [s1_eternum-Structure] s
-    LEFT JOIN [s1_eternum-StructureOwnerStats] sos ON sos.owner = s.owner
-    LEFT JOIN [s1_eternum-StructureBuildings] sb ON sb.entity_id = s.entity_id
+    LEFT JOIN [s1_eternum-StructureOwnerStats] sos ON {GF:sos} AND sos.owner = s.owner
+    LEFT JOIN [s1_eternum-StructureBuildings] sb ON {GF:sb} AND sb.entity_id = s.entity_id
     LEFT JOIN latest_battles lb ON lb.defender_id = s.entity_id
     LEFT JOIN latest_defenses ld ON ld.attacker_id = s.entity_id
 
     -- Get coordinates for latest attacker (could be structure or explorer troops)
-    LEFT JOIN [s1_eternum-Structure] attacker_struct ON attacker_struct.entity_id = lb.latest_attacker_id
-    LEFT JOIN [s1_eternum-ExplorerTroops] attacker_explorer ON attacker_explorer.explorer_id = lb.latest_attacker_id
+    LEFT JOIN [s1_eternum-Structure] attacker_struct ON {GF:attacker_struct} AND attacker_struct.entity_id = lb.latest_attacker_id
+    LEFT JOIN [s1_eternum-ExplorerTroops] attacker_explorer ON {GF:attacker_explorer} AND attacker_explorer.explorer_id = lb.latest_attacker_id
 
     -- Get coordinates for latest defender (could be structure or explorer troops)
-    LEFT JOIN [s1_eternum-Structure] defender_struct ON defender_struct.entity_id = ld.latest_defender_id
-    LEFT JOIN [s1_eternum-ExplorerTroops] defender_explorer ON defender_explorer.explorer_id = ld.latest_defender_id
+    LEFT JOIN [s1_eternum-Structure] defender_struct ON {GF:defender_struct} AND defender_struct.entity_id = ld.latest_defender_id
+    LEFT JOIN [s1_eternum-ExplorerTroops] defender_explorer ON {GF:defender_explorer} AND defender_explorer.explorer_id = ld.latest_defender_id
 
+    WHERE {GF:s}
     ORDER BY s.entity_id;
   `,
 
@@ -285,6 +294,7 @@ export const STRUCTURE_QUERIES = {
               ORDER BY timestamp DESC
           ) as latest_attack_timestamp
       FROM [s1_eternum-BattleEvent]
+      WHERE {GF}
   ),
   latest_defenses AS (
       -- Get latest battles where this army was the attacker
@@ -299,6 +309,7 @@ export const STRUCTURE_QUERIES = {
               ORDER BY timestamp DESC
           ) as latest_defense_timestamp
       FROM [s1_eternum-BattleEvent]
+      WHERE {GF}
   )
   SELECT 
       et.explorer_id as entity_id,
@@ -327,19 +338,20 @@ export const STRUCTURE_QUERIES = {
       COALESCE(defender_struct.\`base.coord_y\`, defender_explorer.\`coord.y\`) as latest_defender_coord_y
     
   FROM [s1_eternum-ExplorerTroops] et
-  LEFT JOIN [s1_eternum-Structure] s ON s.entity_id = et.owner
-  LEFT JOIN [s1_eternum-StructureOwnerStats] sos ON sos.owner = s.owner
+  LEFT JOIN [s1_eternum-Structure] s ON {GF:s} AND s.entity_id = et.owner
+  LEFT JOIN [s1_eternum-StructureOwnerStats] sos ON {GF:sos} AND sos.owner = s.owner
   LEFT JOIN latest_battles lb ON lb.defender_id = et.explorer_id
   LEFT JOIN latest_defenses ld ON ld.attacker_id = et.explorer_id
   
   -- Get coordinates for latest attacker (could be structure or explorer troops)
-  LEFT JOIN [s1_eternum-Structure] attacker_struct ON attacker_struct.entity_id = lb.latest_attacker_id
-  LEFT JOIN [s1_eternum-ExplorerTroops] attacker_explorer ON attacker_explorer.explorer_id = lb.latest_attacker_id
+  LEFT JOIN [s1_eternum-Structure] attacker_struct ON {GF:attacker_struct} AND attacker_struct.entity_id = lb.latest_attacker_id
+  LEFT JOIN [s1_eternum-ExplorerTroops] attacker_explorer ON {GF:attacker_explorer} AND attacker_explorer.explorer_id = lb.latest_attacker_id
   
   -- Get coordinates for latest defender (could be structure or explorer troops)
-  LEFT JOIN [s1_eternum-Structure] defender_struct ON defender_struct.entity_id = ld.latest_defender_id
-  LEFT JOIN [s1_eternum-ExplorerTroops] defender_explorer ON defender_explorer.explorer_id = ld.latest_defender_id
+  LEFT JOIN [s1_eternum-Structure] defender_struct ON {GF:defender_struct} AND defender_struct.entity_id = ld.latest_defender_id
+  LEFT JOIN [s1_eternum-ExplorerTroops] defender_explorer ON {GF:defender_explorer} AND defender_explorer.explorer_id = ld.latest_defender_id
   
+  WHERE {GF:et}
   ORDER BY et.explorer_id;
   `,
 } as const;

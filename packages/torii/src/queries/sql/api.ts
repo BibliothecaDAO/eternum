@@ -54,6 +54,7 @@ import {
   fetchJsonWithErrorHandling,
   fetchWithErrorHandling,
   formatAddressForQuery,
+  getSqlGameScope,
   hexToBigInt,
 } from "../../utils/sql";
 import { BATTLE_QUERIES } from "./battle";
@@ -459,8 +460,12 @@ export class SqlApi {
    * SQL queries always return arrays.
    */
   async fetchBattleLogs(afterTimestamp?: string): Promise<BattleLogEvent[]> {
-    const whereClause = afterTimestamp ? `WHERE timestamp > '${afterTimestamp}'` : "";
-    const query = BATTLE_QUERIES.BATTLE_LOGS.replaceAll("{whereClause}", whereClause);
+    // Every arm is game-filtered; ExplorerNewRaidEvent is s1-only, so the s2
+    // arm drops that UNION branch entirely.
+    const scoped = getSqlGameScope().gameId > 0;
+    const timeFilter = afterTimestamp ? `AND timestamp > '${afterTimestamp}'` : "";
+    const baseQuery = scoped ? BATTLE_QUERIES.BATTLE_LOGS_S2 : BATTLE_QUERIES.BATTLE_LOGS;
+    const query = baseQuery.replaceAll("{timeFilter}", timeFilter);
     const url = buildApiUrl(this.baseUrl, query);
     return await fetchWithErrorHandling<BattleLogEvent>(url, "Failed to fetch battle logs");
   }
@@ -518,6 +523,8 @@ export class SqlApi {
    * SQL queries always return arrays, so we extract the first result.
    */
   async fetchSeasonEnded(): Promise<SeasonEnded | null> {
+    // s1-only table: the s2 single world tracks game end on GameRegistry.status.
+    if (getSqlGameScope().gameId > 0) return null;
     const url = buildApiUrl(this.baseUrl, SEASON_QUERIES.SEASON_ENDED);
     const results = await fetchWithErrorHandling<SeasonEnded>(url, "Failed to fetch season ended");
     return extractFirstOrNull(results);
@@ -737,7 +744,7 @@ export class SqlApi {
     entityIds: number[],
   ): Promise<{ outer_entity_id: number; inner_col: number; inner_row: number; category: number }[]> {
     if (entityIds.length === 0) return [];
-    const query = `SELECT outer_entity_id, inner_col, inner_row, category FROM \`s1_eternum-Building\` WHERE outer_entity_id IN (${entityIds.join(",")})`;
+    const query = `SELECT outer_entity_id, inner_col, inner_row, category FROM \`s1_eternum-Building\` WHERE {GF} AND outer_entity_id IN (${entityIds.join(",")})`;
     const url = buildApiUrl(this.baseUrl, query);
     return await fetchWithErrorHandling<{
       outer_entity_id: number;

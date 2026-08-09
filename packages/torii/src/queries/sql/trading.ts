@@ -1,4 +1,5 @@
 export const TRADING_QUERIES = {
+  // SwapEvent is s1-only (no AMM on the s2 blitz world) — legacy-arm query.
   SWAP_EVENTS: `
     SELECT 
       se.entity_id,

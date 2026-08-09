@@ -1,6 +1,7 @@
 import { captureSystemError } from "@/posthog";
 import { setup } from "@bibliothecadao/dojo";
 import { configManager, MapDataStore } from "@bibliothecadao/eternum";
+import { setSqlGameScope } from "@bibliothecadao/torii";
 import { world } from "@bibliothecadao/types";
 import { inject } from "@vercel/analytics";
 import { ReactNode } from "react";
@@ -131,6 +132,7 @@ const runBootstrap = async ({
   // gameId/presetId -> 0/0 keeps the WORLD_CONFIG_ID + inline-rulebook paths.
   configManager.setActiveGame(profile.gameId ?? 0, profile.presetId ?? 0);
   setGameScope(namespaceForChain(context.chain), profile.gameId ?? 0);
+  setSqlGameScope(namespaceForChain(context.chain), profile.gameId ?? 0);
   await assertBootstrapToriiIsAvailable(worldContext);
   console.log("[STARTING DOJO SETUP]");
   configureDojoRuntime(worldContext);

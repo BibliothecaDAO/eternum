@@ -14,7 +14,7 @@ export const HYPERSTRUCTURE_QUERIES = {
                 ORDER BY timestamp DESC
             ) as latest_attack_timestamp
         FROM \`s1_eternum-BattleEvent\`
-        WHERE timestamp > 1757487964
+        WHERE {GF} AND timestamp > 1757487964
     ),
     latest_defenses AS (
         -- Get latest battles where this hyperstructure was the attacker
@@ -29,7 +29,7 @@ export const HYPERSTRUCTURE_QUERIES = {
                 ORDER BY timestamp DESC
             ) as latest_defense_timestamp
         FROM \`s1_eternum-BattleEvent\`
-        WHERE timestamp > 1757487964
+        WHERE {GF} AND timestamp > 1757487964
     )
     SELECT 
         h.entity_id as hyperstructure_entity_id,
@@ -54,10 +54,10 @@ export const HYPERSTRUCTURE_QUERIES = {
         ld.latest_defense_timestamp
         
     FROM \`s1_eternum-Structure\` h
-    LEFT JOIN \`s1_eternum-Structure\` r ON r.category = 1
+    LEFT JOIN \`s1_eternum-Structure\` r ON {GF:r} AND r.category = 1
     LEFT JOIN latest_battles lb ON lb.defender_id = h.entity_id
     LEFT JOIN latest_defenses ld ON ld.attacker_id = h.entity_id
-    WHERE h.category = 2
+    WHERE {GF:h} AND h.category = 2
     GROUP BY h.entity_id, h.\`base.coord_x\`, h.\`base.coord_y\`, 
              lb.latest_attacker_id, lb.latest_attack_timestamp,
              ld.latest_defender_id, ld.latest_defense_timestamp
