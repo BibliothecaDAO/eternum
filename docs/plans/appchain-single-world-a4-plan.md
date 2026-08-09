@@ -18,11 +18,18 @@ client work is Claude's own implementation (Codex handled contracts/pipeline/too
 
 ## Phases (recommended ~60–80-file path from the audit)
 
-**P1 — Game profile + dead machinery.** `WorldProfile` → `GameProfile` (constant chain endpoints + `gameId`); active
-game from dashboard selection/URL; env: `VITE_PUBLIC_TORII` → torii-s2 for the s2 arm. DELETE the shared-torii scoping
-machinery (audit §6: world-torii.ts, use-world-availability scope injector, appchain-worlds-summary internal_id JOIN,
-factory-worlds.ts wf- reads, manifest-patcher). Regenerate `contract-components.ts` bindings from the s2 manifest
-(namespace + game_id fields); sweep the 521 `s1_eternum-` literals.
+**P1 — Game profile + dead machinery.** _Adjustments (2026-08-09): dual-arm reality — mainnet keeps the legacy flow from
+this same client, so `manifest-patcher` (load-bearing for both arms; identity on s2) and `factory-worlds` (landing list
+until P5) are KEPT; `world-torii` scope-injection becomes a natural no-op on single-world torii-s2 and is deleted with
+the P4 SQL rewrite. Bindings decision: ONE generated `contract-components.ts` with the namespace as a bootstrap
+parameter (appchain → `s2_blitz`, mainnet → `s1_eternum`) and a superset schema (s2 models incl. `game_id` + retained
+s1-only models — models absent on a chain simply never receive data). `.env.local` → torii-s2 :8081;
+`.env.appchain.blitz` unchanged (torii.jcndata.com becomes the s2 torii at A5 cutover)._ `WorldProfile` → `GameProfile`
+(constant chain endpoints + `gameId`); active game from dashboard selection/URL; env: `VITE_PUBLIC_TORII` → torii-s2 for
+the s2 arm. DELETE the shared-torii scoping machinery (audit §6: world-torii.ts, use-world-availability scope injector,
+appchain-worlds-summary internal_id JOIN, factory-worlds.ts wf- reads, manifest-patcher). Regenerate
+`contract-components.ts` bindings from the s2 manifest (namespace + game_id fields); sweep the 521 `s1_eternum-`
+literals.
 
 **P2 — Sync boundary (the isolation mechanism).** Generate the per-model key-arity table from the s2 manifest (do not
 hand-maintain); sync.ts model lists → clause FACTORIES taking gameId (key[0] prefix, keyCount+1); delete the
