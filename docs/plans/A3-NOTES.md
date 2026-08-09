@@ -139,3 +139,22 @@ offline snapshot.
 
 Stand up the parallel vanilla `torii-s2` service with the pinned config, re-run the D16 harness against that endpoint,
 and point A4 work at it. The existing production Torii fork must continue serving s1 until the A5 cutover.
+
+## Reviewer verification (2026-08-09)
+
+- Code review: no vacuous-PASS path in the harness (all waits throw on timeout, empty callback sets fail); pruning
+  verified safe for documented offline use (game-1/preset-1 key-collision handling correct, allowlisted SQL quoting,
+  fail-closed paths genuine). One proof gap identified (P1: no liveness control on the isolation negative) — closed by
+  the reviewer's bidirectional re-run below.
+- `torii-s2` deployed on the dev stack: stock `ghcr.io/dojoengine/torii@sha256:4f6633c1…` (v1.8.16, zero fork patches),
+  Fargate service `torii-s2` in `realms-appchain-dev`, config from SSM `/realms-appchain/dev/torii-s2-config`, exposed
+  on ALB **:8081**. Indexed the dev chain (~9,300 blocks) from zero in under 20 s and tracks head alongside the
+  untouched fork service.
+- Bidirectional D16 against the LIVE service with four throwaway 60 s games (ids 3–6, preset 2): run A (subscribe 3 /
+  control 4) **PASS** on all four clause shapes × query+subscription; run B (subscribe 5 / control 6) **PASS**, with an
+  independent listener on game 6's key clause receiving its update (17:46:08Z) inside the window where the game-5
+  subscription stayed silent — delivery pipeline proven alive during the negative, closing P1.
+- Operational note: the harness's mutation (`sync_game_status` → Ended) requires target games past `end_at`; fresh
+  short-duration fixtures are the reliable pattern (a run against a mid-flight game times out waiting for Ended).
+- A4 client target: `http://<dev ALB>:8081` (torii-s2). Legacy fork torii unchanged at torii.jcndata.com until A5
+  cutover.

@@ -1,8 +1,9 @@
 # A3 — Torii Simplification — Codex Handoff
 
-Status: **OPEN (2026-08-09).** Milestone: A3 of `docs/plans/appchain-single-world.md`. Prereq: A2 COMPLETE — the
-`s2_blitz` world is live on the dev appchain at `0x15ab45aea9188b0c4a8de1dc00fd23e71082aef2cb6384451d37ce0771b661a` with
-preset 1 registered and a real 29-second pipeline launch validated.
+Status: **CLOSED — A3 ACCEPTED 2026-08-09** (review + live bidirectional D16 verification on the dev-stack torii-s2
+service). Milestone: A3 of `docs/plans/appchain-single-world.md`. Prereq: A2 COMPLETE — the `s2_blitz` world is live on
+the dev appchain at `0x15ab45aea9188b0c4a8de1dc00fd23e71082aef2cb6384451d37ce0771b661a` with preset 1 registered and a
+real 29-second pipeline launch validated.
 
 **Motto: KISS.** Smallest workable version of everything; no new abstractions; overcomplication is a review finding.
 
