@@ -21,6 +21,8 @@ export async function setupNetwork(
   env: {
     vrfProviderAddress: string;
     useBurner: boolean;
+    /** Model namespace: "s2_blitz" on the appchain single world, "s1_eternum" on legacy worlds. */
+    namespace?: string;
   },
 ): Promise<SetupNetworkExplicitReturn> {
   const provider = new EternumProvider(config.manifest, config.rpcUrl, env.vrfProviderAddress);
@@ -33,7 +35,7 @@ export async function setupNetwork(
 
   return {
     toriiClient,
-    contractComponents: defineContractComponents(world),
+    contractComponents: defineContractComponents(world, env.namespace ?? "s1_eternum"),
     provider,
     world,
   };

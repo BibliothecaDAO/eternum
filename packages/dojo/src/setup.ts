@@ -18,7 +18,7 @@ export interface SetupReturnValue {
 
 export async function setup(
   config: DojoConfig,
-  env: { vrfProviderAddress: string; useBurner: boolean },
+  env: { vrfProviderAddress: string; useBurner: boolean; namespace?: string },
   authHandler?: SystemCallAuthHandler,
 ): Promise<SetupReturnValue> {
   const network = await setupNetwork(config, env);

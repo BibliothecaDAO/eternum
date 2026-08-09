@@ -128,7 +128,7 @@ const runBootstrap = async ({
   await assertBootstrapToriiIsAvailable(worldContext);
   console.log("[STARTING DOJO SETUP]");
   configureDojoRuntime(worldContext);
-  const setupResult = await runDojoSetup();
+  const setupResult = await runDojoSetup(worldContext.chain);
   // When the config fast path resolves in the background after boot, re-run
   // the config snapshot so cost tables don't stay empty for the session.
   const refreshGameSystems = () => configureGameSystems(setupResult, worldContext.chain);
@@ -257,13 +257,15 @@ const assertBootstrapToriiIsAvailable = async ({ profile, toriiUrl }: BootstrapW
   throw new Error(`World indexer is not available: ${profile.name}`);
 };
 
-const runDojoSetup = async (): Promise<SetupResult> => {
+const runDojoSetup = async (chain: Chain): Promise<SetupResult> => {
   markGameEntryMilestone("setup-started");
   const setupResult = await setup(
     { ...dojoConfig },
     {
       vrfProviderAddress: env.VITE_PUBLIC_VRF_PROVIDER_ADDRESS,
       useBurner: false,
+      // s2 single world uses the s2_blitz namespace; legacy worlds stay s1_eternum.
+      namespace: chain === "appchain" ? "s2_blitz" : "s1_eternum",
     },
     {
       onNoAccount: () => {
