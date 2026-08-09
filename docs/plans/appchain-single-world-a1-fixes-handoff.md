@@ -1,9 +1,10 @@
 # A1 Fix Round — Codex Handoff
 
-Status: **OPEN — fix round after A1 review (2026-08-09).** Reviewed range: `bbcc20b3ac..e8533b28ff` on
-`feat/single-world-blitz`. Contract: `docs/plans/appchain-single-world-a0-audit.md` (unchanged). This doc is the
-complete, self-contained work order for the fix round; the review found the architecture faithful — do not re-architect
-anything.
+Status: **CLOSED — A1 ACCEPTED 2026-08-09.** All rounds complete: B1–B6, F1–F9, M1–M8 landed and verified (round 2,
+commits `7cb8028848..74c023ff74`); the R2-B1 blocker fixed and regression-tested (round 3, commit `da970ba467`). Final
+state independently verified by the reviewer: build clean, 181/181 tests, arity sweep clean. Reviewed range:
+`bbcc20b3ac..e8533b28ff` on `feat/single-world-blitz`. Contract: `docs/plans/appchain-single-world-a0-audit.md`
+(unchanged). Kept for the record; superseded by `docs/plans/A1-NOTES.md` as the implementation record.
 
 ## Mission
 
