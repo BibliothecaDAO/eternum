@@ -91,3 +91,16 @@ refactors outside the audit's file lists.
 - Found and fixed along the way: bindings generator missed `metadata.types` u32 prepend for single-line arrays (16
   models; BlitzSettlement test caught it); `normalizeProduction` crashed on partial Resource fixtures; players-panel
   GuildWhitelist lookup had (address, guild) reversed — a pre-existing always-miss.
+
+## P4 execution notes (2026-08-10, `f8cfade684`)
+
+- `buildApiUrl` is the SQL chokepoint: `{GF}`/`{GF:alias}` markers on every per-game table, resolved to
+  `game_id = N` (s2) or `1=1` (legacy); namespace swap rides the same transform. `setSqlGameScope` set at bootstrap.
+- The scoping lint is live: `packages/torii/src/queries/sql/game-scope-lint.test.ts` derives the per-game table set
+  from the manifest and fails any unmarked reference. `-- legacy-only` comments opt out queries that never run on s2.
+- Arm splits: battle logs (raid arm s1-only), hyperstructure leaderboard config (S2 variant joins
+  GameRegistry+PresetConfig+WorldConfig), fetchSeasonEnded → null on s2. `buildUnscopedApiUrl` protects cross-world
+  reads (market ranks, faith leaderboard) from the active-game rewrite.
+- Deferred to P5 (by design): blitz-settlement/entry-flow SQL still runs the world-address `withWorldScope` fork
+  machinery — P5 replaces it with explicit game-id predicates from GameRegistry (registration targets a chosen game,
+  not the ambient scope); game-review-service needs per-game parameterization for reviewing non-active games.
