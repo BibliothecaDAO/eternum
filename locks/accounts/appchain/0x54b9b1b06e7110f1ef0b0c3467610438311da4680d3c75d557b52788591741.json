@@ -4,16 +4,15 @@
   "accountAddress": "0x54b9b1b06e7110f1ef0b0c3467610438311da4680d3c75d557b52788591741",
   "owner": {
     "environment": "appchain.blitz",
-    "gameName": "s2smoke1",
-    "launchRequestId": "31317884959-1",
+    "gameName": "s2smoke2",
+    "launchRequestId": "31326528319-1",
     "workflowName": "Game Launch",
-    "workflowRunId": 31317884959,
+    "workflowRunId": 31326528319,
     "workflowRunAttempt": 1,
     "stepId": "create-world",
-    "leaseId": "4a58d093-446d-459c-9d66-1e08b3e2ec86"
+    "leaseId": "fca95e2b-c2ac-4c51-853c-eca3e1588c5a"
   },
-  "acquiredAt": "2026-08-09T14:15:01.801Z",
-  "heartbeatAt": "2026-08-09T14:15:19.487Z",
-  "expiresAt": "2026-08-09T14:15:19.487Z",
-  "releasedAt": "2026-08-09T14:15:19.487Z"
+  "acquiredAt": "2026-08-09T17:30:27.230Z",
+  "heartbeatAt": "2026-08-09T17:30:27.230Z",
+  "expiresAt": "2026-08-09T17:40:27.230Z"
 }
