@@ -424,15 +424,9 @@ export class DevStack extends cdk.Stack {
         target: route53.RecordTarget.fromAlias(new r53_targets.LoadBalancerTarget(alb)),
       });
     } else {
-      // Cloudflare only proxies a fixed set of origin ports, and :8080 is one
-      // of them — but routing torii by Host on :80 keeps both hostnames on the
-      // same standard port, which is simpler and avoids per-record port rules.
-      routeListener.addAction("ToriiPublicHost", {
-        priority: 4,
-        conditions: [elbv2.ListenerCondition.hostHeaders([cfg.publicToriiHost])],
-        action: elbv2.ListenerAction.forward([toriiTg]),
-      });
       // Keep :8080 for direct ALB access (CLI/scripts bypass Cloudflare).
+      // The torii.jcndata.com Host rule moved to torii-s2 below (W5) — this
+      // legacy multi-world fork stays reachable on :8080 until the W7 excision.
       alb.addListener("ToriiHttp", {
         port: 8080,
         protocol: elbv2.ApplicationProtocol.HTTP,
@@ -509,6 +503,14 @@ export class DevStack extends cdk.Stack {
       protocol: elbv2.ApplicationProtocol.HTTP,
       defaultAction: elbv2.ListenerAction.forward([toriiS2Tg]),
     });
+    // Cloudflare terminates TLS for torii.jcndata.com and proxies to :80 —
+    // route the public hostname to the blitz-world torii (the Controller
+    // keychain iframe requires https endpoints, so :8081 alone is not enough).
+    routeListener.addAction("ToriiPublicHost", {
+      priority: 4,
+      conditions: [elbv2.ListenerCondition.hostHeaders([cfg.publicToriiHost])],
+      action: elbv2.ListenerAction.forward([toriiS2Tg]),
+    });
     new cdk.CfnOutput(this, "ToriiS2ServiceName", { value: toriiS2.serviceName });
 
     // --- torii-eternum: same shape as torii-s2, pinned to the eternum world ---
@@ -578,6 +580,12 @@ export class DevStack extends cdk.Stack {
       port: 8082,
       protocol: elbv2.ApplicationProtocol.HTTP,
       defaultAction: elbv2.ListenerAction.forward([toriiEternumTg]),
+    });
+    // Public https hostname (Cloudflare-proxied CNAME -> the ALB, like torii.jcndata.com).
+    routeListener.addAction("ToriiEternumPublicHost", {
+      priority: 3,
+      conditions: [elbv2.ListenerCondition.hostHeaders([cfg.publicToriiEternumHost])],
+      action: elbv2.ListenerAction.forward([toriiEternumTg]),
     });
     new cdk.CfnOutput(this, "ToriiEternumServiceName", { value: toriiEternum.serviceName });
 

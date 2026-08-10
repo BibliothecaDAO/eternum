@@ -27,6 +27,7 @@ export const CONFIG = {
      */
     publicKatanaHost: "katana.jcndata.com",
     publicToriiHost: "torii.jcndata.com",
+    publicToriiEternumHost: "torii-eternum.jcndata.com",
     /**
      * Game client bucket. The name MUST equal the hostname: S3 website
      * endpoints route by Host header, so a CNAME only resolves to the right
