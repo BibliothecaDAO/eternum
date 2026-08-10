@@ -255,6 +255,31 @@ client, infra, deploys, reviews. **MVP = W1–W5** (S3).
 Sequencing: W1 ‖ W2 in parallel (W1 touches the namespace constant's plumbing, not its value). W3 needs
 W2. W4 needs W3's manifest. W5 needs W4. W6/W7 whenever after MVP.
 
+## 9.1 W1/W2 execution notes (2026-08-10)
+
+- **W1 shipped** (`481d103f97` + reconciliation `50a4e937b8`): world directory, GameRegistry landing
+  union, game-targeted entry flows, factory-v2 catalog on registrar presets, 2-step run plan,
+  `artifacts.gameId`. Client tsc + 80 test files green on namespace `s2`.
+- **W2 contracts shipped by Codex** (`89c06b471d`), reviewed clean. Note: Scarb rejects underscores
+  in profile ids — `sozo migrate --profile appchain-blitz` writes `manifest_appchain-blitz.json`,
+  rename to the underscore name after migrating.
+- **W2 infra executed — the chain was remade** (S4): katana data dir bumped to `katana-db-v2`;
+  `userDataCausesReplacement: true` added after discovering user-data edits are silent stop/starts
+  that never re-run (`f43d391be6`); the vCPU quota fits exactly one instance, so remakes must
+  terminate the old instance before deploying. **sozo/katana pairing:** the deployed katana
+  (1.8.0-rc.9 image) serves RPC 0.10.0 — migrate with sozo **1.8.7** (`ASDF_SOZO_VERSION=1.8.7`);
+  sozo 1.8.0 refuses.
+- **Fresh-chain state:** blitz world at the committed manifest address
+  (`0x78ff85ac450bb559c97966b64666fd5292f4a98756a607349d9f93f4563bdd2`), ChainConfig bootstrapped
+  (free-entry dev flow, zeros for entry token/loot chest), presets 2 (Regular Fast) + 3 (Duel)
+  registered, torii-s2 reindexed under `s2`. Two dev games launched via
+  `launch-step.ts --step create-world` / `wait-for-factory-index` (needs `TORII_URL`,
+  `GITHUB_SHA`, `--dev-mode-on true`): `mvptab1` = game 1, `mvptab2` = game 2, both Live.
+- **Acceptance:** the client landing (real app run) listed both games from the GameRegistry union
+  with independent clocks/status/counts — the W1 data path proven end to end. The in-game 3D
+  two-tab session could not run under headless chromium (hard renderer crashes, environmental);
+  it hands to a real-browser playtest.
+
 ## 10. Open questions (not blocking W1–W3)
 
 1. Eternum entry UX under grants: season pass **burn** vs **lock** on mainnet.
