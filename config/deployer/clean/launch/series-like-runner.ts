@@ -1,7 +1,12 @@
 import { setTimeout as sleep } from "node:timers/promises";
 import { Account, RpcProvider, shortString } from "starknet";
 import { isMainnetDeploymentEnvironment, resolveDeploymentEnvironment } from "../environment";
-import { isRegistrarAlreadyRegisteredError, registerSeries } from "../registrar/calls";
+import {
+  assertAppchainRegistrarAvailable,
+  isRegistrarAlreadyRegisteredError,
+  registerSeries,
+  resolveAppchainRegistrarEnvironmentId,
+} from "../registrar/calls";
 import { resolveAccountCredentials } from "../shared/credentials";
 import { grantLootChestRolesForSeriesLikeGames, grantVillagePassRolesForSeriesLikeGames } from "./grouped-role-grants";
 import type {
@@ -393,6 +398,12 @@ export async function createSeriesIfNeededForSeriesLikeSummary<TSummary extends 
   }
 
   const environment = resolveDeploymentEnvironment(request.environmentId);
+  const appchainEnvironmentId = isMainnetDeploymentEnvironment(environment)
+    ? undefined
+    : resolveAppchainRegistrarEnvironmentId(environment.id);
+  if (appchainEnvironmentId) {
+    assertAppchainRegistrarAvailable(appchainEnvironmentId);
+  }
   const { accountAddress, privateKey } = resolveAccountCredentials({
     accountAddress: request.accountAddress,
     privateKey: request.privateKey,
@@ -407,14 +418,18 @@ export async function createSeriesIfNeededForSeriesLikeSummary<TSummary extends 
   });
 
   const encodedSeriesName = shortString.encodeShortString(summary.seriesName);
-  if (!isMainnetDeploymentEnvironment(environment)) {
+  if (appchainEnvironmentId) {
     const numGames = "maxGames" in summary ? summary.maxGames : summary.games.length;
     try {
-      await registerSeries(account, {
-        seriesId: encodedSeriesName,
-        owner: accountAddress,
-        numGames,
-      });
+      await registerSeries(
+        account,
+        {
+          seriesId: encodedSeriesName,
+          owner: accountAddress,
+          numGames,
+        },
+        appchainEnvironmentId,
+      );
     } catch (error) {
       if (!isRegistrarAlreadyRegisteredError(error)) {
         throw error;

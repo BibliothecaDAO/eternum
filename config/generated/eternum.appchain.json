@@ -2326,8 +2326,8 @@
     "manifest": {
       "world": {
         "class_hash": "0x613551abceb2b37073b1149bb862ea70cf029981ce1ca47e9dd7c7ab97cb65d",
-        "address": "0x15ab45aea9188b0c4a8de1dc00fd23e71082aef2cb6384451d37ce0771b661a",
-        "seed": "s2_blitz_aws_1",
+        "address": "0x2c3d2792f28e27eea7bf500ed8bb6c0b78b4a6cb83d46df79f4e10faf84453f",
+        "seed": "s2_eternum_1",
         "name": "Realms: Eternum",
         "entrypoints": [
           "uuid",
@@ -2358,43 +2358,43 @@
       },
       "contracts": [
         {
-          "address": "0x5ee9a418d8fd90d8ca98226cf464e8e984bc9cb136f35c1f4d24d5e3efc80f9",
-          "class_hash": "0x6b431d3b4871d3ebff61deda53f7128bb90fc7b11a3056409244d1359e8b648",
+          "address": "0x3b194a8f820b462210e8d277b3982c4f93ac4bb4d0e801d25f8baee43a845a5",
+          "class_hash": "0x6a48db23cd42b3b7d491319475212c13949e5177df628e519732965295de4d9",
           "init_calldata": [],
-          "tag": "s2_blitz-agent_discovery_systems",
-          "selector": "0x2fd11f29f67b1dfa6db855a099642e94d8f66886645612e8cb62d9c884f7d9c",
+          "tag": "s2-agent_discovery_systems",
+          "selector": "0x7c2671ec6cf1263363a6c9bacd12a59bc15615a469f7d58d8a9096dea069a2d",
           "systems": [
             "upgrade"
           ]
         },
         {
-          "address": "0x1f5f02e7a3da04486fecb0a11c048232b8080f87268a44ba2d23fa8f5e32341",
-          "class_hash": "0x3bd549bf2cec9a826939721281305feb278d5a71425a3434c517cf05cdc29b4",
+          "address": "0x5afd3bcad00f8da148410bcaab7c0e7d72d8563944fa7a963f5ec189dbe8585",
+          "class_hash": "0x3d4124566b72aa1e0564e5ff082198a0f96622251ab017cd380a8881dc76f97",
           "init_calldata": [],
-          "tag": "s2_blitz-alt_movement_systems",
-          "selector": "0x43457119c1e1689eb9d0c94e017c79ab659e07fda1984ec52816bdc2d25cfb7",
+          "tag": "s2-alt_movement_systems",
+          "selector": "0x7a0748f310a218b245cf8225f1c22391cff786962c85b0c0f959d4cf5042837",
           "systems": [
             "toggle_alternate",
             "upgrade"
           ]
         },
         {
-          "address": "0x7316fcc2d5e91edd274c92dbcf14772d96f0ff702c78da6f2cf708e470fcb8a",
-          "class_hash": "0x43852ca9fca956048e3593edaf494d2e44e39337128e7c3c266dd2373245ef0",
+          "address": "0x2c3d8b3a9524b42e694d113576de4cd954a016fc587f0cb2cdbdf118b3415f3",
+          "class_hash": "0x12f138090d68198977cc56efea67b637ad9b6b37ff9986055ce37cbe5c189d",
           "init_calldata": [],
-          "tag": "s2_blitz-artificer_systems",
-          "selector": "0x446dcedb71d364a8551f98d2e8c1ce5d05b098eb3acc2d1df2922c37d422855",
+          "tag": "s2-artificer_systems",
+          "selector": "0x1c84002a713c32809fb1ed3b3646b263f8e643208fb1fe7645ed316e810536d",
           "systems": [
             "burn_research_for_relic",
             "upgrade"
           ]
         },
         {
-          "address": "0x26391d9df03a13335a7d0a8bd9f93b60053befef6979293fcd5b57264aecf66",
-          "class_hash": "0x161d38cbe4982f75ed1a7351a9dc38e7fe9f08ec144deb049f5b7500ead8d5d",
+          "address": "0x4987cb6a3bb688557644ead86b40c6826f31a9d0ec882d4b9782147a52c72e8",
+          "class_hash": "0x7f70f4c934fd56df62a8ad44e8e71f23cbc3d793a8102bc4b1524059177e252",
           "init_calldata": [],
-          "tag": "s2_blitz-blitz_realm_systems",
-          "selector": "0x61971cbffb90350fb6e12f2464350ab06c7d36537c7164b776bfef8306347f9",
+          "tag": "s2-blitz_realm_systems",
+          "selector": "0x2f457be35501fb088476ae8ad493f012f5b4bb4060d8a639a9b8fb45e6b8c3",
           "systems": [
             "obtain_entry_token",
             "settle",
@@ -2403,21 +2403,21 @@
           ]
         },
         {
-          "address": "0x6d4019fe8fbc5c09aa43045365184b52233e51af1332f3d6058d520006b4c78",
-          "class_hash": "0x7545ab102f26d21ddb2f1dc54ff9841255f4c83bd93831eebc6b235d946ba46",
+          "address": "0x10dc82eaefaa67fbd0b34c2926b04fd49b769e38c56ebb48d0210856f611a1b",
+          "class_hash": "0x73978a14e7e6170f9910f0b089fc08da22a27c39d5bdcd8be171e0b79d68d9f",
           "init_calldata": [],
-          "tag": "s2_blitz-camp_discovery_systems",
-          "selector": "0x56ae1ba807896485bd6013fa6f8221dafdf6670646653561c62e5dcce6392d",
+          "tag": "s2-camp_discovery_systems",
+          "selector": "0x4989e0a399f095799c92aea5fdf2cd57a9b13dbf358db7697a6485b1c039b6f",
           "systems": [
             "upgrade"
           ]
         },
         {
-          "address": "0x2001ddcde7ec041b4c2d20f770d86f31166fa301b31c6809b2f047c02a8081c",
-          "class_hash": "0x3d5cef5f81aee3fafb316e390d7067c49861b5632f94e40d2b4a4a55102eb26",
+          "address": "0x5e596593344ae66fc55c1961104f25a9d4e83074e06d32f368531c169509cf3",
+          "class_hash": "0x7ea406349f7e8a6a6d6a445eb971497650bc06498394301468f7480a36f79c3",
           "init_calldata": [],
-          "tag": "s2_blitz-guild_systems",
-          "selector": "0x42de5302ad1ab65bb6303a85cc63ec1765db7a4f93e399d1d908a13ccc91c81",
+          "tag": "s2-guild_systems",
+          "selector": "0x5ece639575c025f471d361a3088773e18bcd3cb514b4f68f2d055ec58cd4277",
           "systems": [
             "create_guild",
             "join_guild",
@@ -2428,11 +2428,11 @@
           ]
         },
         {
-          "address": "0x6b3870a2f4110a7f9e23c298109c84d2cfea6765eb60e086fa937e14184702d",
-          "class_hash": "0x6348a937a5ab13ed8b7e7271af76f6447927be83a9ee57c66e57e1e63950b8a",
+          "address": "0x4361536dafaeab1d4698502b44c884e03a1200dc163a57a6547ebabf4577981",
+          "class_hash": "0x187b9d7797944a1b501d3f0636539b5a6aa3577570aef60390ae7410f577fc3",
           "init_calldata": [],
-          "tag": "s2_blitz-hyperstructure_create_systems",
-          "selector": "0x1b1722bdcc7402d4f5e7dd170f7a80cfc1c6168bfa2e3115a559ae5baef5cba",
+          "tag": "s2-hyperstructure_create_systems",
+          "selector": "0x1696302d09890ddce3c1ea176cdd45c8d53934cbbfc493fd3c8a42496c34b82",
           "systems": [
             "reserve_hyperstructures",
             "create_hyperstructure",
@@ -2440,21 +2440,21 @@
           ]
         },
         {
-          "address": "0x6a38399058af97a4845af935ce6896a9cfbbebf063859a4396d7f7d7fe0bd12",
-          "class_hash": "0x4fe43d160352982abd01087721f3afe2ac85b4b49c80c2d7fa00089d118b816",
+          "address": "0x6ebf2cbd42f233f62ec7ee92a9840b9088420a3e32d4c6b10f4851d3aeb191",
+          "class_hash": "0x6edf1d8dbdd7ed1e893fe064fd84c99541e42edbad8c875f440eebdbd75b197",
           "init_calldata": [],
-          "tag": "s2_blitz-hyperstructure_discovery_systems",
-          "selector": "0x5a24d9aa81179ab51ffb336468981f88a6a0b4668e05b8f999dd9e53e6eb9f3",
+          "tag": "s2-hyperstructure_discovery_systems",
+          "selector": "0x1e7eb38cc340c53be39c039e55684b33e2a70ac89e8e4e46dc9cc9956be62b5",
           "systems": [
             "upgrade"
           ]
         },
         {
-          "address": "0x3d876d0064a466ec51b31209bc1137b4080117444326ea51f6f1b625b706c5e",
-          "class_hash": "0x78906fe2f7370d5ddcc45551fb723cbd8dd2b167f28f370092945e3f105b020",
+          "address": "0x56efcf0427adfa316a5bebdc35cdd8c662dc0f5d59989ca241e18aa8f8e1c3e",
+          "class_hash": "0x5defc8c5404dafe725f22ff3024c6d49d2079ea347d3e639031fb6877d5a97c",
           "init_calldata": [],
-          "tag": "s2_blitz-hyperstructure_systems",
-          "selector": "0x7be118f1608fb55d5b978d139cb6b529e76a7906134a7ddb17957e8ea94408",
+          "tag": "s2-hyperstructure_systems",
+          "selector": "0x6712ea3e6f0bb1ab77a969cc5c99866e1697139eb93b61fd182bceeb7413c6a",
           "systems": [
             "initialize",
             "contribute",
@@ -2465,11 +2465,11 @@
           ]
         },
         {
-          "address": "0x60f65be2a96b4c3c920e2dbb0da3a944d7bb3f7ffe1fe2578d479b0101151ee",
-          "class_hash": "0x7a2c43e1d16871dc5731b150e8a1151c8d9871fa5862c95eb9bca9f62fea707",
+          "address": "0x32e07b36101772427680df3354bb73dfcd8f78044c3ead92940b4af7c43c45",
+          "class_hash": "0x2f63793cbab267fa112083b09825439030ecc965e03b6b90ef3a010285f4e9c",
           "init_calldata": [],
-          "tag": "s2_blitz-mmr_systems",
-          "selector": "0x441261eba396436edca90a08057fea4a45934d7b6742befffe06fce6c60d0b4",
+          "tag": "s2-mmr_systems",
+          "selector": "0x59b4d6b0684c40ace9ec3a54980145da5606b7dbf5327b9eedf755521ebbeda",
           "systems": [
             "commit_game_mmr_meta",
             "claim_game_mmr",
@@ -2477,22 +2477,22 @@
           ]
         },
         {
-          "address": "0x51f8f91d7de8a43780b94d09add74ba0c268adc1382bd2aa528fc01d5f459c4",
-          "class_hash": "0x30264abdb88b21555205da1ecf84a6d30d2c9fefab2e950e56bcc81c7bb60ce",
+          "address": "0x25aeaee245f8f9d13d7cdaa455d4bd36681cdc737b3ebe3cbfcabaec5464c7c",
+          "class_hash": "0x66ba608aac980fd44d0c48fe52775e258abd3b7ffc9d49a7c63ca6660664133",
           "init_calldata": [],
-          "tag": "s2_blitz-name_systems",
-          "selector": "0x1b38410861ec8b5c3b71ceb87a6b831aeabbd743f7b3937bcf63872b4b23b1d",
+          "tag": "s2-name_systems",
+          "selector": "0x49e6037e830e4f298ebb9680e1f9495fc0c66326c983d0b407b33c60375c29e",
           "systems": [
             "set_address_name",
             "upgrade"
           ]
         },
         {
-          "address": "0x63f521ef5c47526560f21f79befab97bb706f38054e7f0c82864ba2ae2255dc",
-          "class_hash": "0x2c2e367219311a137515260e90cd0977f6c00a8ed6ce59536ff075a446c01c",
+          "address": "0x14978dd3bd9557af19e7fb670cae8b399cb2759b2076c82b1a2b49cc8f6826f",
+          "class_hash": "0x60af0f131aa1c51bc8cab452f3b60618a773fdcecbb0935039db5139cef6340",
           "init_calldata": [],
-          "tag": "s2_blitz-ownership_systems",
-          "selector": "0x4378569a29da89f5a0c6295647d78739e4726eea59d2cea4387e3ba314f812f",
+          "tag": "s2-ownership_systems",
+          "selector": "0x5b91b9dd3e18200a0d83b0052450799431a3c996a8db43ab750852f98fc9b4f",
           "systems": [
             "transfer_structure_ownership",
             "transfer_agent_ownership",
@@ -2500,21 +2500,21 @@
           ]
         },
         {
-          "address": "0x6943a1edd4d9e0c3cf80cc6bde0bbe63d3ce469b537128ed3a80e32f72402ef",
-          "class_hash": "0x6431cf099e38727ef4e55f017ee4af7483057b4d19c44415362b706688319ee",
+          "address": "0x1ca30f8414441ecd1121ac51a333691de707582131df66b74281ae9712b7d48",
+          "class_hash": "0x508b3ba469b17ca890082cfe559c92e4dd09514362d9f68a7e20499c25f65ce",
           "init_calldata": [],
-          "tag": "s2_blitz-point_systems",
-          "selector": "0x18c7936e5576b7241e6eb91a8e302facd902f1d60414345e5e52530cc732423",
+          "tag": "s2-point_systems",
+          "selector": "0x1fa907303c222be3ec373269a668bdcb6b9900202b852cfe7e22fd7882cd0ad",
           "systems": [
             "upgrade"
           ]
         },
         {
-          "address": "0x29762911adb11ffce1920845ab61a01c7afb1fdfdc5891d12b07e2faa70f539",
-          "class_hash": "0x421a305863d221c5f9216db56dbe55d62a3d98632ac3ef9a62eb59cfb08077c",
+          "address": "0xf7c9a1ac58d7cdc7d691e2971c455e36c63a83a5d983fb8dfa31a6f7394f44",
+          "class_hash": "0x4f8d9b057bc82349336fdaeaa3e0ed2fbd6d0a7ac4ebee9aba1964e3888f8e7",
           "init_calldata": [],
-          "tag": "s2_blitz-prize_distribution_systems",
-          "selector": "0x4bd80ab2c055557528b9c5ac880d7f5ab249124929922816983e6e838189698",
+          "tag": "s2-prize_distribution_systems",
+          "selector": "0x12aecde0aeb831c6bd68cd5136815edd4f4db05e9a55c4b734534601718437d",
           "systems": [
             "blitz_get_or_compute_series_chest_reward_state",
             "blitz_prize_claim_no_game",
@@ -2528,11 +2528,11 @@
           ]
         },
         {
-          "address": "0x771e0d8ad392f34cfb96d52b3f42d0285898745c68bd42e2cb5d14c5fba4f8f",
-          "class_hash": "0x70531a212982531ccb1da90b90badac36c4873c033f8c29895a552d351f06ab",
+          "address": "0x37b014245444d7063c19f2409f0a62df661f15350054d2c941f985d4da2d23b",
+          "class_hash": "0x7c3d224ccb820c554f80f1479342fdd5d86f21af0474609e7a7dbc19b763363",
           "init_calldata": [],
-          "tag": "s2_blitz-production_systems",
-          "selector": "0x34b58b827e580efc16c367834c9008554ff634582cd60492f5fabfe156de16f",
+          "tag": "s2-production_systems",
+          "selector": "0x4e7d3887a854bdfe780deea047c072c709e83e70d9c6611df26e69ce21af3aa",
           "systems": [
             "create_building",
             "destroy_building",
@@ -2545,11 +2545,11 @@
           ]
         },
         {
-          "address": "0x748e14b35b754d8f4a37caf2112fa58184871f338fa218b02eddfa6fe2b76bf",
-          "class_hash": "0x2a2604b098e8bfeb1eeba865846631e2afd332a8d236d406b9ca5f33451c77d",
+          "address": "0x501a6800a0b4934a7f46afb47f394dc38f30e4b47979b4203d046061cbae74e",
+          "class_hash": "0x793a1c21c7cde8ed204bdac3897b25630c1565a7ab6ad0bc3586b3395d6203d",
           "init_calldata": [],
-          "tag": "s2_blitz-realm_internal_systems",
-          "selector": "0x63f498e56d36676cee737591af22e922f57327885fc62c77944ab2b597cda7e",
+          "tag": "s2-realm_internal_systems",
+          "selector": "0x60a3de2b7fe2038c858e8171e21c4b75f1db9087e1e86cebd228e710d3e6afc",
           "systems": [
             "create_internal",
             "provision_internal",
@@ -2557,11 +2557,11 @@
           ]
         },
         {
-          "address": "0x36cbfb9cd2513699e09a8cdbccc37e1f6d514d4991c61b351a0431eadc2b71a",
-          "class_hash": "0x1ea1379428d5266db735285b97bc8199eee4f97c67418e10f7eb105a3fca821",
+          "address": "0x4b21475048663c1b1579a7bbb6a7fad38bd1c91332d6c447f45865a8178c40e",
+          "class_hash": "0x2199fe3076d9a2943b56942d86af65cc8cdd2504d99d710da9c6442370e1fbc",
           "init_calldata": [],
-          "tag": "s2_blitz-registrar_systems",
-          "selector": "0x1d1237f1d21af13790dfef4d80e8e84e18a451396ce565130b582a524267dce",
+          "tag": "s2-registrar_systems",
+          "selector": "0x4804d037c91147634be0c5239a0c366e59e0365a3dbb5da3c4c4c5e9cfd6014",
           "systems": [
             "bootstrap_chain_config",
             "register_preset",
@@ -2574,21 +2574,21 @@
           ]
         },
         {
-          "address": "0x70c0e8deea0f78590cb20e4016906d60ba7c4a9e0c2c5c35b295a5a9980fd4c",
-          "class_hash": "0x4a826ada12145966d4fa7de7da06019495e58bb623481f0a00598e3ba8ad88a",
+          "address": "0x75f41066e5eafe10da70c1bd14d56168c7955cd1e425936ee9b456a149670bc",
+          "class_hash": "0x97357a09aa043a5c60254c3f3dae6c236a34cbfe90e3297f445ad3ba73e29",
           "init_calldata": [],
-          "tag": "s2_blitz-relic_chest_discovery_systems",
-          "selector": "0x70a8abdcc88abc290363d8482919e267802ec33f54dff489c8598ca3f6294ac",
+          "tag": "s2-relic_chest_discovery_systems",
+          "selector": "0x482f02f80b37fe032bf7a2525683c83b8c3c9519d4c34c4285f26d96240fdd",
           "systems": [
             "upgrade"
           ]
         },
         {
-          "address": "0x684a02d4f7957b9a59f02e54b5fde8673c7972017864c825457b09b40f6c95c",
-          "class_hash": "0x479e3e9fe4dd7327b4dd80d9fd4db1ce07251f20a8b13b121f2fd6e427e11fe",
+          "address": "0x27c9fbf57528c5938eacbe08a1221a8f4eedb1d3ace0bc806e85f3c2a48c561",
+          "class_hash": "0x53e149a6cb46286d118cd760e0a948685a49d9272af4b09659e96de217432d5",
           "init_calldata": [],
-          "tag": "s2_blitz-relic_systems",
-          "selector": "0x5f66251bbf9cdd42704b25b8de540b13f6eece02d62f924d229d8a1d53c7469",
+          "tag": "s2-relic_systems",
+          "selector": "0x59ae849f6b5f2fb35aac5a3c8b8daee0c0083bef0717a05ab47d361b30bafc5",
           "systems": [
             "open_chest",
             "apply_relic",
@@ -2596,11 +2596,11 @@
           ]
         },
         {
-          "address": "0x3e7cb8579a087f8b3260f0bff69606bab0127fa96ffb7a10935759ddbc8a6e1",
-          "class_hash": "0x4d80c76470400268538e41c4c09ff73ce21454ff09da2a32cff89d5f709b1c6",
+          "address": "0x5dcd802be31c433015fefd4b29a19e964053902e86dd829e8c06ecb2d82ffa5",
+          "class_hash": "0x209f07c717dccc253e2ae081828b5e06962dba67bdc5cb03b967e9d5bbc92a",
           "init_calldata": [],
-          "tag": "s2_blitz-resource_systems",
-          "selector": "0x2b0f8f21e61a6b526b1c347ecd41e63cce2003b2ef222eb5ac392112e462a6b",
+          "tag": "s2-resource_systems",
+          "selector": "0x7b684d925313a76f3f6b00e657b8d10247a72fce77dafb1b1e31cd7501fb52a",
           "systems": [
             "approve",
             "send",
@@ -2616,22 +2616,22 @@
           ]
         },
         {
-          "address": "0x12f091b480d1763760969ae4062dee00b46a393085693aa71e628ef619f0901",
-          "class_hash": "0x1190c3ab04856c32f79d9dc9cc52835de4f13537802db937733b6c1db56c428",
+          "address": "0x56ea0bb669478d19e57085d12551140d16eb90a1094cc1911a7568c279f61eb",
+          "class_hash": "0x610a0ee52fee426802d119e062a19fbb2024e8ceb5269e931712b0d6fa39bf7",
           "init_calldata": [],
-          "tag": "s2_blitz-structure_systems",
-          "selector": "0x6d345a8e119c0f2e9ed979edd347cde98219443ae2205582f755b163a443883",
+          "tag": "s2-structure_systems",
+          "selector": "0x2ad85fc53b7641bd7384db9df083b2933792ca78cecd410cae0b29190ab889c",
           "systems": [
             "level_up",
             "upgrade"
           ]
         },
         {
-          "address": "0x6cfa8b7ca9a1d6065e995a61aebc65ed25fc77f97a6d6c60620a2755176dfb0",
-          "class_hash": "0xcd0a2ecb12702d7b32d44f3670a0c2c792e285e28c904089a9bb9eb711636e",
+          "address": "0x4fe50d6e35e75a70c656148e59b334815ab8fb002de97a615ddda3d5df91142",
+          "class_hash": "0x7ea7448b15f8b7d5ccbcbbc4f7052ceda9fe117db97a00ccaed9c440e6ec1c9",
           "init_calldata": [],
-          "tag": "s2_blitz-troop_battle_systems",
-          "selector": "0x6beadd1c98f5b422fb23dfaa5df4f9ee1a3a02e3701764fc4ef2bc92a45afa8",
+          "tag": "s2-troop_battle_systems",
+          "selector": "0x25b78a11c862d0bda3ff8aaec76e9f1dca6de6c6fe97aed5434a606695dbff",
           "systems": [
             "attack_explorer_vs_explorer",
             "attack_explorer_vs_guard",
@@ -2640,11 +2640,11 @@
           ]
         },
         {
-          "address": "0x91184d6b405e5e9b79ae9b1a8c51f0426d69c43810fc1eb14f1d4fc6b4d5e7",
-          "class_hash": "0x7f83da7dd5938a7996047d90f0379d9f06afdd18c907274ffd2ed6c83efdb80",
+          "address": "0x6c7e22242c5072da68f9126305a79d9b38d09ddef14ad0a96ebf0f4e533e605",
+          "class_hash": "0x21b4275ee1e3287a81a6ddaefb6c73d11661952a4a25d0036a8a07efbd2b500",
           "init_calldata": [],
-          "tag": "s2_blitz-troop_management_systems",
-          "selector": "0xcbfcddef4cad56eee78809adbca52b9b2aed20679d3f67f572488f08506958",
+          "tag": "s2-troop_management_systems",
+          "selector": "0x6a6e0b89963cd143f8ac59715bb8703b82846a949938ed025fca425ad293739",
           "systems": [
             "guard_add",
             "guard_delete",
@@ -2658,11 +2658,11 @@
           ]
         },
         {
-          "address": "0x7a60c1dc111e1632c6d99b396fb38d3ec8f48250df4914e63a124924c44d112",
-          "class_hash": "0x3115ce877f026577e77bac6d82f8da317fc12668c77ec5a1bfb813c75af1d37",
+          "address": "0x2b3d952afebab98f886c08ccfe448bd9ee8ce0886dd40a63b8f4f56bd6d371e",
+          "class_hash": "0x2408a37150bfdf87c336c2da14d1dddda5645f57cf6fcb66a3a254adbb6faef",
           "init_calldata": [],
-          "tag": "s2_blitz-troop_movement_systems",
-          "selector": "0x38f1ff6c8d8531e6f5c0e8391325aa7c0143adf1a3f47f7321e1029c49171aa",
+          "tag": "s2-troop_movement_systems",
+          "selector": "0x3660164eb20db73a2286ce100d274c9631ca84fae00bd5c45d0b763017b56b2",
           "systems": [
             "explorer_move",
             "explorer_extract_reward",
@@ -2670,11 +2670,11 @@
           ]
         },
         {
-          "address": "0x468d2f729535d4c9705c68800c2685e20b4d87d52df92b966a4025756c70050",
-          "class_hash": "0x2a7de64050af2b5282b8837d55e41f99ac7760e25c34f212754abab0f2971ab",
+          "address": "0x299671f164db577a93ada1993eaad464ee478d87a350e0ba1718cce52aa1e42",
+          "class_hash": "0x48cea1c394a994a08e76d32016b658f5b87f4c3bd042ba94ce84e21adb24701",
           "init_calldata": [],
-          "tag": "s2_blitz-troop_movement_util_systems",
-          "selector": "0xeae892f348205baeec85728402cb0be8de84bda9c855d31b5b0349c47cb6b6",
+          "tag": "s2-troop_movement_util_systems",
+          "selector": "0x55fd2d07088f7b57faa8c3c0890d78a105701bfc80784c216b249d948941f1d",
           "systems": [
             "upgrade"
           ]
@@ -2683,36 +2683,36 @@
       "libraries": [
         {
           "class_hash": "0x6b77857c1c646cb1856a6e5ac4c0b34aaaca683ecd4ba9aeb4158ddfe8038cd",
-          "tag": "s2_blitz-biome_library_v0_1_13",
-          "selector": "0x26e768d8c63fe47c1da5508b6dc64ba2d657f533e4eb62ad10627fa91dd597c",
+          "tag": "s2-biome_library_v0_1_13",
+          "selector": "0x3f57dacceb06626edd63d8604a5b78595644d82f8fec30b9c8b685384923ad2",
           "systems": [],
           "version": "0_1_13"
         },
         {
           "class_hash": "0x28c7a600ace4071a9354719ce8b42a9b541419c4daf8a44ea68c598d790f7eb",
-          "tag": "s2_blitz-combat_library_v0_1_14",
-          "selector": "0x2eddedf3390d41e762187cc39e5400a7a09237f0fd45b670c103d5f0c31eeb3",
+          "tag": "s2-combat_library_v0_1_14",
+          "selector": "0x6f626ba1ab6f77a7d708c231e18cf896cf2594248aa750184719e2af895fec7",
           "systems": [],
           "version": "0_1_14"
         },
         {
           "class_hash": "0x3d7eedf57cdb2d979c55bd2ebde875fc88973785546d08ec926e5c4597e830f",
-          "tag": "s2_blitz-raid_library_v0_1_0",
-          "selector": "0x51a0b580254a435defb13ad27557cfc3c6c60cc19e7649016b4737fa3b15356",
+          "tag": "s2-raid_library_v0_1_0",
+          "selector": "0x76bde0be15faec04422cd972a10c57179534f8d7d942e320169f553e1abf529",
           "systems": [],
           "version": "0_1_0"
         },
         {
           "class_hash": "0x1e12ae0857298ee2fefe54642d3aa9981dd66bbb117aa8ff7b1d2f0907cba8a",
-          "tag": "s2_blitz-rng_library_v0_1_16",
-          "selector": "0x7ac39d762cfbf520c8a4d5eb77001c544d8e865a0eb699c89dcc31cc773dd73",
+          "tag": "s2-rng_library_v0_1_16",
+          "selector": "0x65b098fdddc3a9d5164d51571d9f0fd05cafeb62506532d54a23f543c90da13",
           "systems": [],
           "version": "0_1_16"
         },
         {
           "class_hash": "0x677dfefe6f1ab8c56cb7cd198cbdc95f52d34e68f6662197a9c0d35e0811143",
-          "tag": "s2_blitz-structure_creation_library_v0_1_18",
-          "selector": "0x4a932c32b19b07b8763a8cd80c3215ff31a830bb0ce3aa9edbc820ee5d34662",
+          "tag": "s2-structure_creation_library_v0_1_18",
+          "selector": "0x16f1565db366652914b03f1d4a3f923e8a68907f7de2b08d94515bbdec88b00",
           "systems": [],
           "version": "0_1_18"
         }
@@ -2732,8 +2732,8 @@
             }
           ],
           "class_hash": "0x6adda5cc81ce4591c13964264edb38f8dbb92f80816a632cb7bc64ee0b046e",
-          "tag": "s2_blitz-AddressName",
-          "selector": "0x179203223283ae9352600814f794f357891a307b68fa238e86bd828a7e7983a"
+          "tag": "s2-AddressName",
+          "selector": "0x2b8ca5d6f8452312ee31da463004ededfa6725208943d28a875ffd824d13f54"
         },
         {
           "members": [
@@ -2764,8 +2764,8 @@
             }
           ],
           "class_hash": "0x6c6f790f7a436658862d8c200446ad96bf1a284932b2c56fc4af51d0e0e844a",
-          "tag": "s2_blitz-AgentConfig",
-          "selector": "0x778cf5cf0a9cc19f560553e353886bbec38240725f1f53dbf206478c58f9488"
+          "tag": "s2-AgentConfig",
+          "selector": "0x34080e1fd152b300addc7ec9758c3ac1709600c2489cad907cc8e4ae35e3f9c"
         },
         {
           "members": [
@@ -2781,8 +2781,8 @@
             }
           ],
           "class_hash": "0x68a1ae12894b85ba724bf425915e96228bdc3205f0ccb4fe80c95e6959d9f76",
-          "tag": "s2_blitz-AgentCount",
-          "selector": "0x65b4be8c0f4477b3aeb1e9d4b692c5acf117fd2b1e1c31d4dfeea36b7fe2e5f"
+          "tag": "s2-AgentCount",
+          "selector": "0x75da2616650b00245916370c9d04c741b77131dc1a87e410b26b87d70b2ad95"
         },
         {
           "members": [
@@ -2798,8 +2798,8 @@
             }
           ],
           "class_hash": "0x253763030f183b9f7e096c483f90c0ec9c28880a7d4792d8668ab4e6a20f21",
-          "tag": "s2_blitz-AgentLifetimeCount",
-          "selector": "0x46d44fb34455c7c088942bae10351cf564d3c95bb9fc4f365058203597e48f1"
+          "tag": "s2-AgentLifetimeCount",
+          "selector": "0x5461034a928fd1bb49ef2edf4db7fbeae594df217be3246f4df09bb54f1cf76"
         },
         {
           "members": [
@@ -2815,8 +2815,8 @@
             }
           ],
           "class_hash": "0x27547d59e7e86a163bd5897ed5c1dce70f7cb6291cd1c223a5d85b8f55b254d",
-          "tag": "s2_blitz-AgentLordsMinted",
-          "selector": "0x65bb7510299c7a6605fac484e6e3ac9c7ff73e4abbac8c80b27f322e36b5b5a"
+          "tag": "s2-AgentLordsMinted",
+          "selector": "0x5e14ab3abd995d3956543ffc7746f13e08151874dd1568919bf7b4766bc2504"
         },
         {
           "members": [
@@ -2837,8 +2837,8 @@
             }
           ],
           "class_hash": "0x5d7e473b029efa453c0258becd510ae81e3e1679ad78d118675fa6fadb8f1fc",
-          "tag": "s2_blitz-AgentOwner",
-          "selector": "0x287fd58842d5a8ab965572dc322c7d9a8dfdcd5a36144e3534ca67a8b9d694c"
+          "tag": "s2-AgentOwner",
+          "selector": "0x13298d7dfea1ab8cf6652cdb9e2098152fe67e6e225442bc665f27af2cbcfe6"
         },
         {
           "members": [
@@ -2859,8 +2859,8 @@
             }
           ],
           "class_hash": "0x2c7f9e364f5986124fbb5b72dd97dd29654a20933d9c1b6ca995031238bec02",
-          "tag": "s2_blitz-BiomeDiscovered",
-          "selector": "0x2e216654a31d79d9226b70eba5f704625e145c1712e5f0cd0dda3cedf19b51d"
+          "tag": "s2-BiomeDiscovered",
+          "selector": "0x5aeb70e2f055c33dd533890cb2ab1602fcf3dde43c3bc1a5680cb4868f60bc"
         },
         {
           "members": [
@@ -2881,8 +2881,8 @@
             }
           ],
           "class_hash": "0x4a2c24811ab4ce661aa90c27f1c279232a11e8a6b8f8ae5b15431d2b8d67562",
-          "tag": "s2_blitz-BlitzCosmeticAttrsRegister",
-          "selector": "0x508d22f9c60fbdccba4da76adbbf17a0515fe352399723412f62215d085f09b"
+          "tag": "s2-BlitzCosmeticAttrsRegister",
+          "selector": "0x29880f346028e2f904bcbe095957daec66c52204f64bb85cff9214e0b1016ca"
         },
         {
           "members": [
@@ -2908,8 +2908,8 @@
             }
           ],
           "class_hash": "0x6ed3fdf11c65f47aad2daf0b77cb34d6a231e2dec1348c0d63cc0318c8aa158",
-          "tag": "s2_blitz-BlitzEntryTokenRegister",
-          "selector": "0x3856a5614bd9979fc8a55654706a70bf5d26762b61eb2128e1eac4300a2051c"
+          "tag": "s2-BlitzEntryTokenRegister",
+          "selector": "0x7b4c6050229505373f382ded20dd25955dac9c0cf29f5a7240d737c6be56c19"
         },
         {
           "members": [
@@ -2930,8 +2930,8 @@
             }
           ],
           "class_hash": "0x2515e76ce1b450b60a918f2a841283d897982a29751b73e8c94d1c6cf872f0e",
-          "tag": "s2_blitz-BlitzSettlement",
-          "selector": "0x505175640ecb59d9793d4dc0d6bc40d1d11a6b38f965929f35c3faee62436b1"
+          "tag": "s2-BlitzSettlement",
+          "selector": "0x9928513c94768fd8112b8a0535d614fa42f55fe744a1e8ea349484d547610b"
         },
         {
           "members": [
@@ -2952,8 +2952,8 @@
             }
           ],
           "class_hash": "0x7825820b1f06f78015d64b022309832a94cce7975a551b0806da8f0c78f2b03",
-          "tag": "s2_blitz-BlitzSettlementPosition",
-          "selector": "0x61438a129952a6d1f9896720cbc8909245df39d5095eb063b43b1d4c2a1d9a3"
+          "tag": "s2-BlitzSettlementPosition",
+          "selector": "0x29f2e14f3fc6a94769232cfec77d87b9c1a4d91a4825f4b5494207896ecf26f"
         },
         {
           "members": [
@@ -3014,8 +3014,8 @@
             }
           ],
           "class_hash": "0x42902af5c8bf895b5fbfa3c4a6b96c5500e3ac6f14928b08a9add9ce3cce73",
-          "tag": "s2_blitz-Building",
-          "selector": "0x2022a85f0832cb57b0e3ca54b327e00a9354b18d271ac79383bac430718c999"
+          "tag": "s2-Building",
+          "selector": "0x765484ee46c523b2a584a88943210abaa4a76e1e25f34305001eabddb3b757d"
         },
         {
           "members": [
@@ -3061,8 +3061,8 @@
             }
           ],
           "class_hash": "0x7c2a64d7b656b1d379cbda37bf3ffed0ca0c236b7e47b9688d07c222ade4589",
-          "tag": "s2_blitz-BuildingCategoryConfig",
-          "selector": "0x35b46d50afba44e96448481d3d783c777ce5bd12671d18249a235af1e55df1"
+          "tag": "s2-BuildingCategoryConfig",
+          "selector": "0x7d944c480b136a52539e323edd08b8fb2137c7ace3b71665893aeb94306d95d"
         },
         {
           "members": [
@@ -3128,8 +3128,8 @@
             }
           ],
           "class_hash": "0x5731178f4273c9d1453e2dad4b158d206de94721fd3de6746fc757b7d09cdc6",
-          "tag": "s2_blitz-ChainConfig",
-          "selector": "0x471025a78c69d24e26d868ff5dd54e5da15122d51c820eb23d62fda27665190"
+          "tag": "s2-ChainConfig",
+          "selector": "0x61823304792b97c11797dcd646d3f856bd9571bc8952480d6c9ec68ab35e417"
         },
         {
           "members": [
@@ -3150,8 +3150,8 @@
             }
           ],
           "class_hash": "0x2556656798db2f56743f0405a8bfd0dcedc6b18667e89ed84b4def5bec350b8",
-          "tag": "s2_blitz-EntityName",
-          "selector": "0x5170906eba0b12b0690d28421400ab3d0f96b233d0c910adf51f7625a8cbc60"
+          "tag": "s2-EntityName",
+          "selector": "0x3ffca4beca8c61e8bd16d380c43fa4df691b63f3c21750e86288b9b62389d57"
         },
         {
           "members": [
@@ -3182,8 +3182,8 @@
             }
           ],
           "class_hash": "0x53e28f819f1bc1b8fcf5b3d8aa571de472be7881310c61cb57f997a0cf3e77c",
-          "tag": "s2_blitz-ExplorerTroops",
-          "selector": "0x4252721ff50de69f03ed05c0b24be1e45879b82ccd6f8ee054fada5fe2eeace"
+          "tag": "s2-ExplorerTroops",
+          "selector": "0xbe0b28837eb913e8ed5809a4c914d3ab6ca5f409a3b048ee4334b0bdd2ca38"
         },
         {
           "members": [
@@ -3204,8 +3204,8 @@
             }
           ],
           "class_hash": "0x396c9989e5d49a91c150d5fdaed67eca857c28b0595b73b33b07f73c794ce0f",
-          "tag": "s2_blitz-GameChestReward",
-          "selector": "0x4162b470dd42ff7a5a3ca05ab7df8d15f8b35eced972960b67fadb7683a303f"
+          "tag": "s2-GameChestReward",
+          "selector": "0x5c3d7784444733b41f8d1536395ee83d457351f25f7fb8e03afe545ca894e62"
         },
         {
           "members": [
@@ -3221,8 +3221,8 @@
             }
           ],
           "class_hash": "0x6a0d68e230040bcf295707632c5ec0cfa1fc54e0c0958317b0f4291721c3e75",
-          "tag": "s2_blitz-GameCounter",
-          "selector": "0x1b7256bc953966fb640a02e8a972a8405374907d0dc494c43227cd87e3e80c5"
+          "tag": "s2-GameCounter",
+          "selector": "0x32bf68cb725e03306146b8efdae813fa8c372592bd900c2be783cda1e90fcbf"
         },
         {
           "members": [
@@ -3238,8 +3238,8 @@
             }
           ],
           "class_hash": "0x5d752c97133be05b3c1eb702badd7056573fdf3d210920771fa1f3cefde35ab",
-          "tag": "s2_blitz-GameMapConfig",
-          "selector": "0x9be5cbdac1381693763f57491e85cca9ff79e15663922008f18838bafc4fbb"
+          "tag": "s2-GameMapConfig",
+          "selector": "0x6e72a5750b7d7c7cf49e56b77e2fab8d5bb7b8e82f364b8e51a9f058b66a210"
         },
         {
           "members": [
@@ -3330,8 +3330,8 @@
             }
           ],
           "class_hash": "0x67c6bfa1f4c9bde9b70488798696155db7b46873ee1ecbbe5325e545dff7bb",
-          "tag": "s2_blitz-GameRegistry",
-          "selector": "0x66e6a4fcff5c78a8bb3b9a9a71ca783518d770c6db5d1d6b0aea5dec69e0da1"
+          "tag": "s2-GameRegistry",
+          "selector": "0x42fb799cf6ef454237db3b350d6517f5d7e1d8505cf88955b2b4af830c34a34"
         },
         {
           "members": [
@@ -3362,8 +3362,8 @@
             }
           ],
           "class_hash": "0x43d192556fbc5f7fa34711962cae7b94dfcf70c48e9490008dace1493f13ea1",
-          "tag": "s2_blitz-Guild",
-          "selector": "0x7d235c5288b209111b70fda0bdce5d7c2d5a7d71c7c168d8c6f591836d5e039"
+          "tag": "s2-Guild",
+          "selector": "0x272e9734c4c18684064c6693467a9d9dab5ded5dfab771919e9d417f6e0cdba"
         },
         {
           "members": [
@@ -3384,8 +3384,8 @@
             }
           ],
           "class_hash": "0x41de906be9d5232fd47bdeb61ad9625ce72bd9010ed6ee83a8d927455f0763d",
-          "tag": "s2_blitz-GuildMember",
-          "selector": "0x1c1742dc51033c903fdb0fea607cf7b2effc4df3d26b974b22334640b725725"
+          "tag": "s2-GuildMember",
+          "selector": "0x6aaa78a96566f91c8de68caf40ab994f96dab8cb7f8aa11d1f510a5d62d737c"
         },
         {
           "members": [
@@ -3411,8 +3411,8 @@
             }
           ],
           "class_hash": "0x35bcba9d06bf87f751444aa9849aba553c683e3480c54d0f0f97fb5da2dd430",
-          "tag": "s2_blitz-GuildWhitelist",
-          "selector": "0x6c9575629865e4b130169bea2bb48fc08e6e95b185498b641e9b3b8c0c7a9ba"
+          "tag": "s2-GuildWhitelist",
+          "selector": "0x54225109ea5547a706d02e5e2d0197050ae44c4d783f9287b2e45dfaf8aa9e0"
         },
         {
           "members": [
@@ -3443,8 +3443,8 @@
             }
           ],
           "class_hash": "0x6184627d5ac5dd3a7e9c3e5d305530e5562d889d1377fdba191ff170730a5b9",
-          "tag": "s2_blitz-HyperstrtConstructConfig",
-          "selector": "0x68c33a407ef1215869095930c20c771be337225c652982798358e437395999d"
+          "tag": "s2-HyperstrtConstructConfig",
+          "selector": "0x13268b3c71b49e4d98d182f301b77b1d39fb50d1528913c17ff3acc052dda6"
         },
         {
           "members": [
@@ -3485,8 +3485,8 @@
             }
           ],
           "class_hash": "0x3ed1195b99b987f6a3d4a7b7aec7251d51d04ae5dbba283d67fe145fcba2627",
-          "tag": "s2_blitz-Hyperstructure",
-          "selector": "0xd0d8e2a0ad8096286bfb2f4b1cd1496467729653f1b6aa18bf58d8be1a0d1"
+          "tag": "s2-Hyperstructure",
+          "selector": "0x25a89c98d4cb8f08b090dda201fb3aaa62dc1372d9562c573f6e447d6d8511f"
         },
         {
           "members": [
@@ -3507,8 +3507,8 @@
             }
           ],
           "class_hash": "0x2a4d6147989b2052e4560f49d46a7c93f7417560adfae092851d523aa275d7e",
-          "tag": "s2_blitz-HyperstructureGlobals",
-          "selector": "0x16c066acef83c340432bf5b353aee19c2eaefcce7443aa655bdd677cd25cb50"
+          "tag": "s2-HyperstructureGlobals",
+          "selector": "0x36ebd328a34e1f92e88cd430f8331f1dcbeffb8b53a85756b7d899dbd3bf77b"
         },
         {
           "members": [
@@ -3649,8 +3649,8 @@
             }
           ],
           "class_hash": "0x531008f597d58023107734f14fa4c6fa69ce7a048d26de776a97b12de53871a",
-          "tag": "s2_blitz-HyperstructureRequirements",
-          "selector": "0x354405055633e4a86619a26de40f0b22bf53234ed6cae4281df8ea08afd87f6"
+          "tag": "s2-HyperstructureRequirements",
+          "selector": "0x2d8d13a807738399782d11f7056462a8a55ea4ad30d41757e5c73f7e271c743"
         },
         {
           "members": [
@@ -3676,8 +3676,8 @@
             }
           ],
           "class_hash": "0x715edee5b5f51eedfd05ef8fd773a01a29925f7ed5cc55fcb1768bcfb1a89bc",
-          "tag": "s2_blitz-HyperstructureShareholders",
-          "selector": "0x3c5ed5e016a78b81b5753e61a1a58877b23000503d3a4d529b270969d44d3c0"
+          "tag": "s2-HyperstructureShareholders",
+          "selector": "0x45af61db8a61bec81c40d22ff597980ea2b08862531389341f06ea9f30461c8"
         },
         {
           "members": [
@@ -3693,8 +3693,8 @@
             }
           ],
           "class_hash": "0x5dfcfe8fe8906cc71ce83bcde22f317b789c4a608f537103fed6cff515b65b3",
-          "tag": "s2_blitz-MMRClaimed",
-          "selector": "0xe4a833c66a7527805a43e3c878660a3f95480d65050cb070dbc8e9127684af"
+          "tag": "s2-MMRClaimed",
+          "selector": "0x35c60cca354f3a8178038e5badbf586c9b774e9a09a17c4f69223f1a550507d"
         },
         {
           "members": [
@@ -3710,8 +3710,8 @@
             }
           ],
           "class_hash": "0x7a950b746522c5e18122ec4b486737d9e24cefa30a3d0ca6dd16b467bed428a",
-          "tag": "s2_blitz-MMRGameMeta",
-          "selector": "0x5cae0f2b1d6c4e967a42a9c52e301e60d42d5cb99686f6d4492529561b35574"
+          "tag": "s2-MMRGameMeta",
+          "selector": "0x4aeb298a6cabcc0c2a6f1b2d8f2f9750ebef7cd70de891d3aa69d6b816a3dea"
         },
         {
           "members": [
@@ -3737,8 +3737,8 @@
             }
           ],
           "class_hash": "0x35868dfbc8eab2b0f035c320322091036f089ac1d331eab9dc97efbd0cdb6d1",
-          "tag": "s2_blitz-PlayerConstructionPoints",
-          "selector": "0x608ec40cb5913392b67c64dbc9791e5950ec4ccda87b23d686a7618e8d34aca"
+          "tag": "s2-PlayerConstructionPoints",
+          "selector": "0x5eb07e6635b394e03ceb3bbae60cab9b94e726082b63d9125e008a3e84a5fdf"
         },
         {
           "members": [
@@ -3764,8 +3764,8 @@
             }
           ],
           "class_hash": "0x2ddc1fd2b35ef5ff0a04d41a43062134831b7bf9b0413fd8c0dbd6697a64c41",
-          "tag": "s2_blitz-PlayerRank",
-          "selector": "0x4bc349750e8f25707f04c1202a729325868494523ee123387eeec7f60a5bd72"
+          "tag": "s2-PlayerRank",
+          "selector": "0x305bba153d96fbda9d844d2d0d7a40234d0898db8efd47929da4803a8612edf"
         },
         {
           "members": [
@@ -3791,8 +3791,8 @@
             }
           ],
           "class_hash": "0x67d11aaaca9c56f237d938696fbdd19d08da043c58d21824ea5fc209ef79b60",
-          "tag": "s2_blitz-PlayerRegisteredPoints",
-          "selector": "0x10d2c7b6930e5beeb77fa5e12a5f65ebe302ee84e51041353a981fdd3e99f9b"
+          "tag": "s2-PlayerRegisteredPoints",
+          "selector": "0x1ae53ffaeedb26b02aa79fa8bdc3f82c57039f564e7d0ac62591dd3a90807db"
         },
         {
           "members": [
@@ -3848,8 +3848,8 @@
             }
           ],
           "class_hash": "0x35bc65cf3b9a874322e94260ece52a91aaeccd05f7ec6beaf8f8219c2bc6b3e",
-          "tag": "s2_blitz-PlayersRankTrial",
-          "selector": "0x5d8a480c68e45aee95e832dd4135fe8fb17a93d6eaf7f7e55715160e04cd57c"
+          "tag": "s2-PlayersRankTrial",
+          "selector": "0x6a748d9b4406e8c330f08c4b47047cb80c087408c4fd0c5058506eb3b4979b3"
         },
         {
           "members": [
@@ -3865,8 +3865,8 @@
             }
           ],
           "class_hash": "0x23677c7b9437c349ee530aacca071f6f66a0cf9484950ad22b97c42ad88393",
-          "tag": "s2_blitz-Preset",
-          "selector": "0x5737aa4afc84258902039c029c6b81defc06163af61c4a181b6a35017bd10b6"
+          "tag": "s2-Preset",
+          "selector": "0x115df193febff852d83ad0ffc11bca8b10ca2f597cd67e213c8de88e20bfad"
         },
         {
           "members": [
@@ -3987,8 +3987,8 @@
             }
           ],
           "class_hash": "0x3ac17a6f58feedcb4ac1e5bd70b6d755b14fd0cf5a24d751e0b4ec3c0e9aea1",
-          "tag": "s2_blitz-PresetConfig",
-          "selector": "0x32713016d9e39acb639510b45dc10838e24a510c1daa3c919f182129d17648d"
+          "tag": "s2-PresetConfig",
+          "selector": "0x61a2c7e6edb2c94333efe3a076a799645b6fba58a8fe3efccc70c30ea987a6f"
         },
         {
           "members": [
@@ -4034,8 +4034,8 @@
             }
           ],
           "class_hash": "0x2687809a9e9c82fd8e9e24cb2a4a7adbd7a1e7ba2fb85d4086a3d2f0efdfea6",
-          "tag": "s2_blitz-PresetGameConfig",
-          "selector": "0x6064aecef1f5d47f6e2c0c61f9e11e9c19eb9fe1090ab77e62115a9ca8ac3f8"
+          "tag": "s2-PresetGameConfig",
+          "selector": "0x7b0ded3a7f87aab513f6e0cd057778391f2bfdae79b995441af37dd6c1dfcd2"
         },
         {
           "members": [
@@ -4091,8 +4091,8 @@
             }
           ],
           "class_hash": "0x7574cb3717eb4fea57c457b974ed0734395e98fc4c4463074c714d1250efdc8",
-          "tag": "s2_blitz-ProductionBoostBonus",
-          "selector": "0x21f5acd523be5a4edf4cc15bc3285061ceba1b5977cbaee28ac3cbeb84976a6"
+          "tag": "s2-ProductionBoostBonus",
+          "selector": "0x600905dc1ab9e99a4d4357c73addbc3a2014bf7262e7f71b8d32054e89e6c21"
         },
         {
           "members": [
@@ -4108,8 +4108,8 @@
             }
           ],
           "class_hash": "0xc4bdb0e293902f922be3e800834f52001e15d27c9ecd0058fe17ab241db517",
-          "tag": "s2_blitz-RNG",
-          "selector": "0xbb06df6103884600f1bdbbc6a0fb53e3ef105510d538f3f26ef4c19728921c"
+          "tag": "s2-RNG",
+          "selector": "0x3fc3821ad6b58d27e0c002bd5a5ea43395dc0746c66e375931a2226083c85a6"
         },
         {
           "members": [
@@ -4135,8 +4135,8 @@
             }
           ],
           "class_hash": "0x50ae648c3fc636a28a73adc3bc4a82fec4b90a8c0ac7443db929a03e0f0b461",
-          "tag": "s2_blitz-RankList",
-          "selector": "0x3925645e72eaa00d6aba50ac5cef8bbfd912269309c343d7206db1174b8aeb9"
+          "tag": "s2-RankList",
+          "selector": "0x6100d2b30dfa748cc89d09c5634e5cbb2ee563acbffece9738cad6a5e9dd85c"
         },
         {
           "members": [
@@ -4167,8 +4167,8 @@
             }
           ],
           "class_hash": "0x21a09cb851613352fd511460767cfbbc0ffa9356cea8f135e853171f41c3016",
-          "tag": "s2_blitz-RankPrize",
-          "selector": "0x3ca9ecdcab7494707d52416d2ef7d200d5480ed34dabfbb8b4fb70689226f7c"
+          "tag": "s2-RankPrize",
+          "selector": "0x4ccd81de11cfa27a544ef2fdb0c91ce9801817c4b658d9decd9e12fdfd08841"
         },
         {
           "members": [
@@ -4679,8 +4679,8 @@
             }
           ],
           "class_hash": "0xea8e45d66b2d914ae87cdc3ea3fc1384870d1f937aada92e93462299aa6eec",
-          "tag": "s2_blitz-Resource",
-          "selector": "0x417c8dd8463c1abbdc969f8e6940d24c8943853b5adc1c6165c9e47f7a084c9"
+          "tag": "s2-Resource",
+          "selector": "0x12ea8448e31b01b0d7f7d8aa1a197580a15a760e9f8321de1b5a62804621d69"
         },
         {
           "members": [
@@ -4711,8 +4711,8 @@
             }
           ],
           "class_hash": "0x15353441b26dfa7aac05d2b577b8bd1dee48ff91e8b22367e30f1e9542e8420",
-          "tag": "s2_blitz-ResourceAllowance",
-          "selector": "0x7d2ad6fd823806fbf1538fa5b97297e0cd7af637045a46cb98f51133bd2b5ac"
+          "tag": "s2-ResourceAllowance",
+          "selector": "0x7aed1e68a6184c3225125832fe8a67702157f84e8fd08e2eded345157f313d9"
         },
         {
           "members": [
@@ -4983,8 +4983,8 @@
             }
           ],
           "class_hash": "0x763e488bdae93688097a4363addff036b3d137e6a892272d255680eb8ec720d",
-          "tag": "s2_blitz-ResourceArrival",
-          "selector": "0x621198d2fbf7fbb4ea6ab1cd058821ff518ddcb0ef85ab3fc9f71cffbcc969a"
+          "tag": "s2-ResourceArrival",
+          "selector": "0x1ab3ac43e04ce5ebf2fcea0f618c920f1670d75eafeab8a4111062dfc993e39"
         },
         {
           "members": [
@@ -5000,8 +5000,8 @@
             }
           ],
           "class_hash": "0x6a9dfdc1071007ff21b037dd9ead5bd90154b063e6bd9685fcbef1c71621394",
-          "tag": "s2_blitz-ResourceBridgeWtlConfig",
-          "selector": "0x5a506c7821b5c51372003cf112e5e3b173b22a53fada86db588ae0edff0e565"
+          "tag": "s2-ResourceBridgeWtlConfig",
+          "selector": "0x464b1b851f51da3adf67ef3cf8c656e2a64f58d41f97c573fa9ba930e0970a4"
         },
         {
           "members": [
@@ -5062,8 +5062,8 @@
             }
           ],
           "class_hash": "0x69a98efb0da1006f496368e4db09e0856832bd2281cce8bc0fb2845ef9f5864",
-          "tag": "s2_blitz-ResourceFactoryConfig",
-          "selector": "0x7abdbe8f38be203bddf08e7489b61ca454da39e737259309255cb48df40c69e"
+          "tag": "s2-ResourceFactoryConfig",
+          "selector": "0x68b2d9cf1eeb0106715c3974941fe39fd10d6e32da87ebbe7a474fac1c656e2"
         },
         {
           "members": [
@@ -5094,8 +5094,8 @@
             }
           ],
           "class_hash": "0x51c7f07f51ea6e73f51ea8f6235005ef75ae41b8f231e9a027998d771619e53",
-          "tag": "s2_blitz-ResourceList",
-          "selector": "0x3c1594e12cc18b687d85ea8ccbacd22206985f7340a0f0db239d8c1a23eb848"
+          "tag": "s2-ResourceList",
+          "selector": "0x3d02b0c78209352ea7031d506c3e3e110fbcb81578cfa2e1349b888971ea0db"
         },
         {
           "members": [
@@ -5131,8 +5131,8 @@
             }
           ],
           "class_hash": "0x980c993fe7e644609e649396dc6764fcfb907a93a4e8038710e667fe644dee",
-          "tag": "s2_blitz-ResourceMinMaxList",
-          "selector": "0x69a333612ca43bfd07b322821c0314d9d43e6a983d520f5754dc2291882d21f"
+          "tag": "s2-ResourceMinMaxList",
+          "selector": "0x1e85bb9a6c5d99ac2747e16b7ab86ba24916758edb20419a10345396bc58a8"
         },
         {
           "members": [
@@ -5148,8 +5148,8 @@
             }
           ],
           "class_hash": "0x3b8e118e93c29f8bb6221f2b37f0cbae790b5d2faf7ea98c464943426ad718a",
-          "tag": "s2_blitz-ResourceRevBridgeWtlConfig",
-          "selector": "0xef0301547d7ccda5a9d43f518e3c6ebb4d9d23740dc124ef576eb772354f12"
+          "tag": "s2-ResourceRevBridgeWtlConfig",
+          "selector": "0x3344bccb4359b63390cf9e1b5c30fe6d9d104c75e6fb58456553f18178f5ce7"
         },
         {
           "members": [
@@ -5170,8 +5170,8 @@
             }
           ],
           "class_hash": "0x470614af0bf3f4b4e2f78439fcc6b5d97491abd1e64836c7665714329ec3bfa",
-          "tag": "s2_blitz-SeasonPrize",
-          "selector": "0x3276ebf3c723c6861847dd360b2c9f06bf31f9691a368cb1d4ec9d46bce9b7b"
+          "tag": "s2-SeasonPrize",
+          "selector": "0x2aae041775ef8f42ae07aef48aa15862c8c7ce7f9f925742c30968eb727104"
         },
         {
           "members": [
@@ -5207,8 +5207,8 @@
             }
           ],
           "class_hash": "0x35242f9379ccb25e71b5b20a71b255303ef75f010f5cba14e7ae7d8da172258",
-          "tag": "s2_blitz-Series",
-          "selector": "0x4df833546f477d69829511e34758e067b0645206c3089d193b7277b107a5b61"
+          "tag": "s2-Series",
+          "selector": "0x3de220b777ba6d938e5ccf03e433d8c9a5b1d77f7725f1a590623d7deeb446b"
         },
         {
           "members": [
@@ -5259,8 +5259,8 @@
             }
           ],
           "class_hash": "0x2f663468bf0268e584f0dafb3ca4e92c1acbba22131712f4e1f2c8bef3c94d9",
-          "tag": "s2_blitz-SeriesChestRewardState",
-          "selector": "0x2f975aaab1f3b70a1066f50c6c876f2225530ee70a2ef96c940b0bd81738bfe"
+          "tag": "s2-SeriesChestRewardState",
+          "selector": "0x12e16001281c64150163f32e16556d9b45004ff08ad0c393a5f3bf8245cdf63"
         },
         {
           "members": [
@@ -5311,8 +5311,8 @@
             }
           ],
           "class_hash": "0x3bb206e39cb1e060863680dbe70f8abbaff5990362e61b0267919e7125c0ca5",
-          "tag": "s2_blitz-Structure",
-          "selector": "0x77e12818e11c3ec834ad95a7552ceee59f03829a4d2cc447e3861e9ed64b992"
+          "tag": "s2-Structure",
+          "selector": "0x77d1f903ad7da638ae1d7a9b19db95cd329d823d130a7f42e81a743f5d458e4"
         },
         {
           "members": [
@@ -5353,8 +5353,8 @@
             }
           ],
           "class_hash": "0x641d6da9fd82e203c190dc382a925f6c96a8d18983136993e7786caf8c79a3a",
-          "tag": "s2_blitz-StructureBuildings",
-          "selector": "0x5350f8600f7583f7851bb2258a4fccfa859b233a60c052f8e25e5dd5cbeb58c"
+          "tag": "s2-StructureBuildings",
+          "selector": "0x12745e1e8f5e204d09963059bf8d2f063bfe198d248c57b970356924a88e877"
         },
         {
           "members": [
@@ -5380,8 +5380,8 @@
             }
           ],
           "class_hash": "0x7429662ac49e70b6941640d9f76bf2cecee9a80d8d4e579e11cbeeaffac4856",
-          "tag": "s2_blitz-StructureLevelConfig",
-          "selector": "0x5c9af190f3aaf66a98d97760a03b6ee8c2cc3012c838337a86e58559b328cca"
+          "tag": "s2-StructureLevelConfig",
+          "selector": "0x59c8429eba07ceeb4773b0964f0cd8c56f0f251e2c8ac158d76f81c52990161"
         },
         {
           "members": [
@@ -5402,8 +5402,8 @@
             }
           ],
           "class_hash": "0x21dad9ac74ea02f16453ec9502b48a3813d3a75eb4e30669eaae356321b8414",
-          "tag": "s2_blitz-StructureOwnerStats",
-          "selector": "0x35a7a8d480e93f198530bf93aba52237b06c1117407abd4ea9a9f95f048d0cb"
+          "tag": "s2-StructureOwnerStats",
+          "selector": "0x7421f225b353a58f1b4829abd3b8456b8c428b0c456b751c447ff886afd56ab"
         },
         {
           "members": [
@@ -5424,8 +5424,8 @@
             }
           ],
           "class_hash": "0x701bb33899363d215242a58472ecd78626b7941c73689bb428747463d09216a",
-          "tag": "s2_blitz-StructureReservation",
-          "selector": "0x2b117b24d963ba7890d75d4234060c301da9b8f85e038326068c47b1c7f35c5"
+          "tag": "s2-StructureReservation",
+          "selector": "0x4b965ede053858469f5a2a7948f0890592048a00c52264f877070502724ae6c"
         },
         {
           "members": [
@@ -5456,8 +5456,8 @@
             }
           ],
           "class_hash": "0x2ea8448adfa92e00db801deb31fc747cffe5cf1344e8c36f456f89dc33705e9",
-          "tag": "s2_blitz-TileOpt",
-          "selector": "0x48e23e137e7b2be94dfc7ed5b3ec2135422992c7aa518b855acc7ada2c5298e"
+          "tag": "s2-TileOpt",
+          "selector": "0x3342774dad77cb20dc549a5ff8254e3be590935110822f72176dd60fe6611bc"
         },
         {
           "members": [
@@ -5478,8 +5478,8 @@
             }
           ],
           "class_hash": "0xfdbb307cca55fb645ea464127092b318ecfd060d1b33a9341afe88c9e9e00b",
-          "tag": "s2_blitz-WeightConfig",
-          "selector": "0x77340d816d57f56492375e8dcaf88e7d17ac7b9b3beb6fc33f9848358d6e046"
+          "tag": "s2-WeightConfig",
+          "selector": "0x164b82462c1c11842174496bb8e315d9d14141779448185e88e002cfce74b"
         },
         {
           "members": [
@@ -5505,8 +5505,8 @@
             }
           ],
           "class_hash": "0x71a2b7d7b730eb837f45a2c5df37fde4316451addadc9b5e3a8953592c0ca00",
-          "tag": "s2_blitz-Wonder",
-          "selector": "0xcb1e57637290e839bde2da9d1498d51ac8351a2f57b75d29db8800a971dada"
+          "tag": "s2-Wonder",
+          "selector": "0xbbc249063e7a895df2fedbc321f513de8277c35501835a493f2843dd8b97da"
         },
         {
           "members": [
@@ -5557,8 +5557,8 @@
             }
           ],
           "class_hash": "0x39029d998352c42bc8cf11d9acff6f354e67ad4d6740fae01066f46ad0e14d0",
-          "tag": "s2_blitz-WorldConfig",
-          "selector": "0x1556e21b738b0bdd1901e184c4e6559c0046efdaeb23b1b568ff638c171013"
+          "tag": "s2-WorldConfig",
+          "selector": "0x27f890205071c9920bc03c5768b0ef83e679583f2f43422f7c07909814edf5c"
         },
         {
           "members": [
@@ -5579,8 +5579,8 @@
             }
           ],
           "class_hash": "0x363fc703471944b06bf830bbec2b35f0d84f2f18b06c6985f46f7f587c44a98",
-          "tag": "s2_blitz-WorldRecord",
-          "selector": "0x4aa1c4f7cc3055b5c1030727b8410fa34229fd57e3f7ab9dec25a60abe119a2"
+          "tag": "s2-WorldRecord",
+          "selector": "0xcd816166debe6e11c84fdfd61d1419a58a6a1b8bb11991d3b3a203ba547e55"
         }
       ],
       "events": [
@@ -5618,8 +5618,8 @@
             }
           ],
           "class_hash": "0x7b5d4a4fe31ca57dc45208dd3b002f23962d70be21ed7f67c3206e3244b908d",
-          "tag": "s2_blitz-AgentCreatedEvent",
-          "selector": "0x3b20f0187257df28e976bd2cfeeb4cd3c3920cdc5f2f78bc4a972de416d24eb"
+          "tag": "s2-AgentCreatedEvent",
+          "selector": "0x61013ab1ab4ae74a9109370655d205a95c5cd0468a9d6c9370802e528e7f0f0"
         },
         {
           "members": [
@@ -5670,8 +5670,8 @@
             }
           ],
           "class_hash": "0x22991374926122fe6aaa968dce7fcb17e2f3a7140fd76fd77f4822588f93fb2",
-          "tag": "s2_blitz-BattleEvent",
-          "selector": "0x33b88b6120e168ed732173504cec1ac11d3039a9decc2c260a24a5cdf6c22bb"
+          "tag": "s2-BattleEvent",
+          "selector": "0x179e875aff2614970c530c44b471c44ed0e584e1e4b9ed671ddff8f5f23dbac"
         },
         {
           "members": [
@@ -5692,8 +5692,8 @@
             }
           ],
           "class_hash": "0x6b2019c03df74c1db40ac7daa7e9d4b4de3785806dca473bb577f20f7bca708",
-          "tag": "s2_blitz-BlitzSettlementEvent",
-          "selector": "0x6a45e4e3c33cf2ae94291790bc52e25fd749e9b927269fecb657b9fb54f1723"
+          "tag": "s2-BlitzSettlementEvent",
+          "selector": "0x191038093121876444ae38ae42c7bb5921a168700efc279c8722313ba49789"
         },
         {
           "members": [
@@ -5724,8 +5724,8 @@
             }
           ],
           "class_hash": "0x11a098867c3c92ae9a5dc8e0e64805170e5cf34b72383efed2e9a404129d3da",
-          "tag": "s2_blitz-BurnDonkey",
-          "selector": "0x31f32a0166df06dbcbf31c29e2ec77082152a6346f4b7733825fd661d077798"
+          "tag": "s2-BurnDonkey",
+          "selector": "0x3e93e12e914aadd09618c482c883b583feac873fc14478adc6b81cfdc889ef8"
         },
         {
           "members": [
@@ -5751,8 +5751,8 @@
             }
           ],
           "class_hash": "0xeac0e079f24ea1acc3b9b4f921f601acc39db4b96b460574d5ffb4f3ec7c4f",
-          "tag": "s2_blitz-BurnResearchForRelicEvent",
-          "selector": "0xfa6d11be9606d1470974b10cf3591a0de8d38f70d1da2621d0f05b02ceee25"
+          "tag": "s2-BurnResearchForRelicEvent",
+          "selector": "0x3b6b38b7a6e5db9ebc10d7257f640af7be0ec2272cdd9d8a9a3e134932ba514"
         },
         {
           "members": [
@@ -5783,8 +5783,8 @@
             }
           ],
           "class_hash": "0x4892e2b9ab523494f1dc25fc9536e904a2bb58ceb717b83f3c51d42321740db",
-          "tag": "s2_blitz-ExplicitResourceBurn",
-          "selector": "0x11797315eaa0a14f2068b94fffc4c0fcf1e42247623c2c0348413cbc3fed042"
+          "tag": "s2-ExplicitResourceBurn",
+          "selector": "0x30e26edc724e4cc2b3aa972d5e52f5caadbf33ad3bed9d106e95c6fffbdff0f"
         },
         {
           "members": [
@@ -5820,8 +5820,8 @@
             }
           ],
           "class_hash": "0x2b0961b718c7d8636f8a046d12c6d89fcba8cce54cabee43437838c0a506bd1",
-          "tag": "s2_blitz-ExplorerMoveEvent",
-          "selector": "0x1507f2c6a8b65f34f1093d2f46b51d97f5d6741007f4503fce163ef5664850f"
+          "tag": "s2-ExplorerMoveEvent",
+          "selector": "0x35e6deee5116730049fff1398003eb92d0c8aeca26952d54048cb6a55dc086f"
         },
         {
           "members": [
@@ -5867,8 +5867,8 @@
             }
           ],
           "class_hash": "0x6501f5b039b1ca46d9751b9a0202c9bc56a9b874e7ddccdfae139fc9acd9f61",
-          "tag": "s2_blitz-ExplorerRewardEvent",
-          "selector": "0x42297dfa9dd06f10b9aa076b1422c1508405ae9d9966c0a6be3c5f0f6813fa1"
+          "tag": "s2-ExplorerRewardEvent",
+          "selector": "0x2ae3a169da0ca9050e123156b18f00babde2bd0e4521cb2643720c1ff7b27c5"
         },
         {
           "members": [
@@ -5904,8 +5904,8 @@
             }
           ],
           "class_hash": "0x22c5e2a8ac74275686c95eeb1132c416d6eb9a80289a699cafa1afae3484b32",
-          "tag": "s2_blitz-GameCreated",
-          "selector": "0x43f8633285977de2611b3f55ef1940664d343bb6ebcfebb7238df919a77a00a"
+          "tag": "s2-GameCreated",
+          "selector": "0x7d9fb7e65b2f01a3dceecc1d862ca76e0a439addb444828b1f11edfcf19a85"
         },
         {
           "members": [
@@ -5946,8 +5946,8 @@
             }
           ],
           "class_hash": "0x68d1c9e139e1e865b8ceb03850bcb4e9bd86d1d5882efd5b683f55a675ef417",
-          "tag": "s2_blitz-MMRGameCommitted",
-          "selector": "0x59c6ea01c8dba3830becfb7370183f3c001315cdbc797404cf3543a57f919f2"
+          "tag": "s2-MMRGameCommitted",
+          "selector": "0x2a83551af10f9dcddbac61040b256e1846a7c9ee6909446557a90a3516440fe"
         },
         {
           "members": [
@@ -5978,8 +5978,8 @@
             }
           ],
           "class_hash": "0x658a05b4812842ae342b1fc5324177fdab6fc84478d934489f70312372f7e8",
-          "tag": "s2_blitz-OpenRelicChestEvent",
-          "selector": "0x6bf1b07bda5e94fb561e176ce481600a9efa8b72a891e3fd2170277ce0217e0"
+          "tag": "s2-OpenRelicChestEvent",
+          "selector": "0x1190607c24f72065536de4b8a1d2fc3d8b0931a3b73cbc25f644ed70b3f8463"
         },
         {
           "members": [
@@ -6020,8 +6020,8 @@
             }
           ],
           "class_hash": "0x234e19262447b9cf2eb5fa44d1540fa78f280e41e6ac4bde4bfa65007486f5c",
-          "tag": "s2_blitz-PlayerMMRChanged",
-          "selector": "0x57756fecb09ac6457142c10945e785d279d0e69d053c2b847a53e70cd90cf41"
+          "tag": "s2-PlayerMMRChanged",
+          "selector": "0x3ee77a8352a01a1c4a28618d2c390790c45f829dc11c96cbd163d5dbac4bb5e"
         },
         {
           "members": [
@@ -6062,8 +6062,8 @@
             }
           ],
           "class_hash": "0x6e8516e8ac9b86553f1731ac0ad4e718dd9acb8b2781307575016e766ebfe0b",
-          "tag": "s2_blitz-StoryEvent",
-          "selector": "0x29dc820fd6dddb6b461bc54f2b19668ccc0f53221706664626b2ca7e28b852d"
+          "tag": "s2-StoryEvent",
+          "selector": "0x4ebc65e029374e9dd66fca7a81d5294065a636dac3651f7ac3bc67470b5e7ec"
         },
         {
           "members": [
@@ -6099,8 +6099,8 @@
             }
           ],
           "class_hash": "0x126225f89bd952d3e61a2970d0ced1b269d5b968490f0646e3dc93a15efa3e1",
-          "tag": "s2_blitz-Transfer",
-          "selector": "0xf2300fae662d9ce40fd8248baddb153e19894588ef47902f4153ee32b7715e"
+          "tag": "s2-Transfer",
+          "selector": "0x41026f9d31f66889b44286d556c2b9e912aa3a4b5aba8e0e89fb65cc5599f0e"
         },
         {
           "members": [
@@ -6166,8 +6166,8 @@
             }
           ],
           "class_hash": "0x3c3d75546664437c554e7aff87944454f57b43d3baef047c645e6a771bf6261",
-          "tag": "s2_blitz-TrophyCreation",
-          "selector": "0x749ec0d8a18b51ea934b8384c3cbff99045d451c93d3d338368e2c88975718"
+          "tag": "s2-TrophyCreation",
+          "selector": "0x3624fb08061280216b031d3014da29513904c33aa986bceb2e5d6ba343a595e"
         },
         {
           "members": [
@@ -6193,8 +6193,8 @@
             }
           ],
           "class_hash": "0x313c566ceee5bdcaed4accfedc707b6b5a02feb96f9448a18bfa97bf43811e4",
-          "tag": "s2_blitz-TrophyProgression",
-          "selector": "0x506c0bef04e1a7304b98bb3e1b7ff4ecb72dfb068494efc035b5f1eb805f1f9"
+          "tag": "s2-TrophyProgression",
+          "selector": "0x5cdaea92a22d0616d22b3ca72947cb743cf9aaade53d7f2f91ee3707396aafb"
         }
       ],
       "external_contracts": [],

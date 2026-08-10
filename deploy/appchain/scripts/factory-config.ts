@@ -12,15 +12,18 @@
  * developer UI submits, via the shared builder so the two cannot drift.
  */
 import { buildFactoryConfigCalldataParts } from "../../../client/apps/game/src/ui/features/factory/shared/factory-config-calldata";
-import gameManifest from "../../../contracts/game/manifest_appchain.json";
+import { resolveAccountCredentials } from "../../../config/deployer/clean/shared/credentials";
+import gameManifest from "../../../contracts/game/manifest_appchain_blitz.json";
 import factoryManifest from "../../../contracts/factory/manifest_appchain.json";
 import { Account, CallData, RpcProvider } from "starknet";
 
 const RPC_URL = process.env.RPC_URL ?? "http://Realms-Alb16-vyiZTcVBQthr-325094656.us-east-1.elb.amazonaws.com";
 const TORII_URL = process.env.TORII_URL ?? "http://Realms-Alb16-vyiZTcVBQthr-325094656.us-east-1.elb.amazonaws.com:8080";
-const ACCOUNT_ADDRESS =
-  process.env.ACCOUNT_ADDRESS ?? "0x127fd5f1fe78a71f8bcd1fec63e3fe2f0486b6ecd5c86a0466c3a21fa5cfcec";
-const PRIVATE_KEY = process.env.PRIVATE_KEY ?? "0xc5b2fcab997346f3ea1c00b002ecf6f382c5f9c9659a3894eb783c5320f912";
+const { accountAddress: ACCOUNT_ADDRESS, privateKey: PRIVATE_KEY } = resolveAccountCredentials({
+  accountAddress: process.env.ACCOUNT_ADDRESS,
+  privateKey: process.env.PRIVATE_KEY,
+  context: "retired appchain factory config",
+});
 const NAMESPACE = "s1_eternum";
 
 const FACTORY = (factoryManifest as { contracts: { tag: string; address: string }[] }).contracts.find(

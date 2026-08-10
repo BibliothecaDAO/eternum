@@ -2,7 +2,8 @@ import appchainSeasonAddresses from "../../contracts/common/addresses/appchain.j
 import localSeasonAddresses from "../../contracts/common/addresses/local.json";
 import mainnetSeasonAddresses from "../../contracts/common/addresses/mainnet.json";
 import sepoliaSeasonAddresses from "../../contracts/common/addresses/sepolia.json";
-import appchainGameManifest from "../../contracts/game/manifest_appchain.json";
+import appchainBlitzGameManifest from "../../contracts/game/manifest_appchain_blitz.json";
+import appchainEternumGameManifest from "../../contracts/game/manifest_appchain_eternum.json";
 import localGameManifest from "../../contracts/game/manifest_local.json";
 import mainnetGameManifest from "../../contracts/game/manifest_mainnet.json";
 import sepoliaGameManifest from "../../contracts/game/manifest_sepolia.json";
@@ -46,6 +47,7 @@ export interface SeasonAddresses {
 
 /** Valid chain identifiers */
 export type Chain = "sepolia" | "mainnet" | "local" | "appchain";
+export type AppchainGameType = "blitz" | "eternum";
 
 /**
  * Retrieves the season addresses for a specific chain
@@ -86,7 +88,7 @@ interface GameManifest {
  * @returns The game manifest configuration
  * @throws Error if manifest cannot be loaded
  */
-export function getGameManifest(chain: Chain): GameManifest {
+export function getGameManifest(chain: Chain, appchainGameType: AppchainGameType = "blitz"): GameManifest {
   try {
     switch (chain) {
       case "sepolia":
@@ -96,7 +98,7 @@ export function getGameManifest(chain: Chain): GameManifest {
       case "local":
         return localGameManifest;
       case "appchain":
-        return appchainGameManifest;
+        return appchainGameType === "blitz" ? appchainBlitzGameManifest : appchainEternumGameManifest;
       default:
         throw new Error(`Invalid chain: ${chain}`);
     }

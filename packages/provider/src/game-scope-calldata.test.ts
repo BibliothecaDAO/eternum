@@ -19,7 +19,7 @@ const manifest = {
 } as any;
 
 const makeScopedProvider = (gameId: number) =>
-  new EternumProvider(manifest, "http://127.0.0.1:1", undefined, undefined, { namespace: "s2_blitz", gameId });
+  new EternumProvider(manifest, "http://127.0.0.1:1", undefined, undefined, { namespace: "s2", gameId });
 
 const withGameId = (provider: EternumProvider, details: Call | Call[]) => (provider as any).withGameIdCalldata(details);
 
@@ -50,7 +50,7 @@ describe("EternumProvider s2 game-id calldata seam", () => {
   });
 
   it("exposes the scope namespace with an s1 default", () => {
-    expect(makeScopedProvider(7).namespace).toBe("s2_blitz");
+    expect(makeScopedProvider(7).namespace).toBe("s2");
     expect(new EternumProvider(manifest, "http://127.0.0.1:1").namespace).toBe("s1_eternum");
   });
 });

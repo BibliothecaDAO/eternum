@@ -1,6 +1,6 @@
 # Single-world s2 Torii
 
-This directory contains the local proof for serving the persistent `s2_blitz` world with an unmodified upstream
+This directory contains the local proof for serving the persistent `s2` world with an unmodified upstream
 Torii. The template pins one world from block 0. It has no world-registry discovery, secondary world, or exclusion
 rules.
 
@@ -90,7 +90,7 @@ bun deploy/appchain/torii-s2/prune-games.ts \
 `--settled-older-than-days N` is an alternative selector. Torii has no settlement timestamp in `GameRegistry`, so
 the age selector uses `end_at` as a conservative proxy and still requires stored status `Settled`.
 
-The plan discovers every `s2_blitz-*` model or event table with a `game_id` column. It deletes exact
+The plan discovers every `s2-*` model or event table with a `game_id` column. It deletes exact
 `(entity_id, model_id)` relations and only deletes an `entities` or `event_messages` row when no model relation remains
 and its key starts with the padded game felt. This matters because game 1 and preset 1 can share an entity key;
 preset-scoped `ResourceList` and `ResourceMinMaxList` data must survive.

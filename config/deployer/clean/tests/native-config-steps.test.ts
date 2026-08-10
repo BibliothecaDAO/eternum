@@ -175,7 +175,7 @@ describe("native config steps", () => {
 
     const capturedCalls: Array<{ type: string; payload: Record<string, unknown> }> = [];
     const provider = {
-      manifest: getGameManifest("appchain") as any,
+      manifest: getGameManifest("mainnet") as any,
       set_blitz_registration_config: async (payload: Record<string, unknown>) => {
         capturedCalls.push({ type: "registration", payload });
         return { statusReceipt: "ok" };

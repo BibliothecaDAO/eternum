@@ -16,7 +16,7 @@ const here = dirname(fileURLToPath(import.meta.url));
 const repoRoot = join(here, "../../../../..");
 
 type ManifestEntry = { tag: string; members?: Array<{ name: string; key?: boolean }> };
-const manifest = JSON.parse(readFileSync(join(repoRoot, "contracts/game/manifest_appchain.json"), "utf8")) as {
+const manifest = JSON.parse(readFileSync(join(repoRoot, "contracts/game/manifest_appchain_blitz.json"), "utf8")) as {
   models?: ManifestEntry[];
   events?: ManifestEntry[];
 };

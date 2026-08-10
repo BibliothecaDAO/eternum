@@ -49,13 +49,15 @@ describe("buildConfig", () => {
 
     expect(appchainBlitz.setup?.chain).toBe("appchain");
     expect(appchainBlitz.battle.regularImmunityTicks).toBe(0);
-    expect(appchainBlitz.season.durationSeconds).toBe(7_200);
+    expect(appchainBlitz.season.durationSeconds).toBe(3_600);
     expect(appchainBlitz.blitz.mode.on).toBe(true);
     expect(appchainBlitz.blitz.exploration.rewardProfileId).toBe("official-90");
     expect(appchainBlitz.blitz.exploration.rewards).toHaveLength(9);
     expect(appchainBlitz.hyperstructures.hyperstructureConstructionCost).toEqual([]);
+    expect((appchainBlitz.setup?.manifest as { world: { seed: string } }).world.seed).toBe("s2_blitz_1");
 
     expect(appchainEternum.blitz.mode.on).toBe(false);
+    expect((appchainEternum.setup?.manifest as { world: { seed: string } }).world.seed).toBe("s2_eternum_1");
     expect(appchainEternum.season.durationSeconds).toBe(60 * 60 * 24 * 30);
     expect(appchainEternum.exploration.bitcoinMineWinProbability).toBe(200);
     expect(appchainEternum.exploration.campFindProbability).toBe(1_500);

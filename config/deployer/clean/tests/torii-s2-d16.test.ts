@@ -10,12 +10,12 @@ describe("single-world s2 Torii clauses", () => {
         Keys: {
           keys: ["0x7"],
           pattern_matching: "VariableLen",
-          models: ["s2_blitz-GameRegistry"],
+          models: ["s2-GameRegistry"],
         },
       },
       member: {
         Member: {
-          model: "s2_blitz-GameRegistry",
+          model: "s2-GameRegistry",
           member: "game_id",
           operator: "Eq",
           value: { Primitive: { U32: 7 } },
@@ -29,12 +29,12 @@ describe("single-world s2 Torii clauses", () => {
               Keys: {
                 keys: ["0x7"],
                 pattern_matching: "VariableLen",
-                models: ["s2_blitz-GameRegistry"],
+                models: ["s2-GameRegistry"],
               },
             },
             {
               Member: {
-                model: "s2_blitz-GameRegistry",
+                model: "s2-GameRegistry",
                 member: "creator",
                 operator: "Eq",
                 value: {

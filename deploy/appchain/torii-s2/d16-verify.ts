@@ -22,11 +22,11 @@ import {
   waitFor,
 } from "./shared/torii";
 
-const GAME_MODEL = "s2_blitz-GameRegistry";
+const GAME_MODEL = "s2-GameRegistry";
 const CLIENT_PACKAGE = "@dojoengine/torii-client";
 
 type D16Schema = {
-  s2_blitz: {
+  s2: {
     GameRegistry: {
       game_id: number;
       creator: string;
@@ -59,13 +59,13 @@ interface FixtureTransaction {
 
 export function buildD16Clauses(gameId: number, playerIdentity: string): Record<"keys" | "member" | "composite", Clause> {
   const normalizedPlayerIdentity = normalizeAddress(playerIdentity);
-  const memberBuilder = MemberClause<D16Schema, "s2_blitz-GameRegistry", "game_id">(
+  const memberBuilder = MemberClause<D16Schema, "s2-GameRegistry", "game_id">(
     GAME_MODEL,
     "game_id",
     "Eq",
     { type: "U32", value: gameId },
   );
-  const playerBuilder = MemberClause<D16Schema, "s2_blitz-GameRegistry", "creator">(
+  const playerBuilder = MemberClause<D16Schema, "s2-GameRegistry", "creator">(
     GAME_MODEL,
     "creator",
     "Eq",

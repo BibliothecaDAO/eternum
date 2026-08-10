@@ -23,31 +23,31 @@ function createFixture(): string {
     CREATE TABLE event_model (entity_id TEXT, model_id TEXT, UNIQUE(entity_id, model_id));
     CREATE TABLE entities_historical (id TEXT, keys TEXT, model_id TEXT);
     CREATE TABLE event_messages_historical (id TEXT, keys TEXT, model_id TEXT);
-    CREATE TABLE "s2_blitz-GameRegistry" (
+    CREATE TABLE "s2-GameRegistry" (
       internal_entity_id TEXT,
       internal_event_message_id TEXT,
       game_id INTEGER,
       status TEXT,
       end_at TEXT
     );
-    CREATE TABLE "s2_blitz-Preset" (internal_entity_id TEXT, preset_id INTEGER);
-    CREATE TABLE "s2_blitz-TileOpt" (
+    CREATE TABLE "s2-Preset" (internal_entity_id TEXT, preset_id INTEGER);
+    CREATE TABLE "s2-TileOpt" (
       internal_entity_id TEXT,
       internal_event_message_id TEXT,
       game_id INTEGER,
       col INTEGER
     );
-    CREATE TABLE "s2_blitz-GameCreated" (
+    CREATE TABLE "s2-GameCreated" (
       internal_entity_id TEXT,
       internal_event_message_id TEXT,
       game_id INTEGER
     );
 
     INSERT INTO models VALUES
-      ('m-game', 's2_blitz', 'GameRegistry'),
-      ('m-preset', 's2_blitz', 'Preset'),
-      ('m-tile', 's2_blitz', 'TileOpt'),
-      ('m-event', 's2_blitz', 'GameCreated');
+      ('m-game', 's2', 'GameRegistry'),
+      ('m-preset', 's2', 'Preset'),
+      ('m-tile', 's2', 'TileOpt'),
+      ('m-event', 's2', 'GameCreated');
     INSERT INTO entities VALUES
       ('shared-one', '${GAME_ONE_KEY}'),
       ('tile-one', '${GAME_ONE_KEY}0x0/'),
@@ -61,12 +61,12 @@ function createFixture(): string {
     INSERT INTO event_model VALUES ('event-one', 'm-event');
     INSERT INTO entities_historical VALUES ('tile-one', '${GAME_ONE_KEY}0x0/', 'm-tile');
     INSERT INTO event_messages_historical VALUES ('event-one', '${GAME_ONE_KEY}0x1/', 'm-event');
-    INSERT INTO "s2_blitz-GameRegistry" VALUES
+    INSERT INTO "s2-GameRegistry" VALUES
       ('shared-one', NULL, 1, 'Settled', '0x64'),
       ('game-two', NULL, 2, 'Live', '0xc8');
-    INSERT INTO "s2_blitz-Preset" VALUES ('shared-one', 1);
-    INSERT INTO "s2_blitz-TileOpt" VALUES ('tile-one', NULL, 1, 5);
-    INSERT INTO "s2_blitz-GameCreated" VALUES (NULL, 'event-one', 1);
+    INSERT INTO "s2-Preset" VALUES ('shared-one', 1);
+    INSERT INTO "s2-TileOpt" VALUES ('tile-one', NULL, 1, 5);
+    INSERT INTO "s2-GameCreated" VALUES (NULL, 'event-one', 1);
   `);
   db.close();
   return dbPath;
@@ -88,9 +88,9 @@ describe("settled game pruning", () => {
 
     expect(plan.targets).toEqual([{ gameId: 1, status: "Settled", endAt: 100 }]);
     expect(plan.modelTables.filter((table) => table.rows > 0).map((table) => table.table)).toEqual([
-      "s2_blitz-GameCreated",
-      "s2_blitz-GameRegistry",
-      "s2_blitz-TileOpt",
+      "s2-GameCreated",
+      "s2-GameRegistry",
+      "s2-TileOpt",
     ]);
     expect(plan.orphanEntityIds).toEqual(["tile-one"]);
     expect(plan.orphanEventMessageIds).toEqual(["event-one"]);
@@ -106,7 +106,7 @@ describe("settled game pruning", () => {
     );
 
     const db = new Database(dbPath);
-    expect(count(db, '"s2_blitz-GameRegistry"')).toBe(2);
+    expect(count(db, '"s2-GameRegistry"')).toBe(2);
     db.close();
   });
 
@@ -131,10 +131,10 @@ describe("settled game pruning", () => {
 
     expect(report.status).toBe("PRUNED");
     const db = new Database(dbPath);
-    expect(count(db, '"s2_blitz-GameRegistry"')).toBe(1);
-    expect(count(db, '"s2_blitz-TileOpt"')).toBe(0);
-    expect(count(db, '"s2_blitz-GameCreated"')).toBe(0);
-    expect(count(db, '"s2_blitz-Preset"')).toBe(1);
+    expect(count(db, '"s2-GameRegistry"')).toBe(1);
+    expect(count(db, '"s2-TileOpt"')).toBe(0);
+    expect(count(db, '"s2-GameCreated"')).toBe(0);
+    expect(count(db, '"s2-Preset"')).toBe(1);
     expect(count(db, "entities")).toBe(2);
     expect(count(db, "event_messages")).toBe(0);
     expect(count(db, "entities_historical")).toBe(0);

@@ -429,9 +429,9 @@ pub mod TravelTypes {
 
 
 pub fn DEFAULT_NS() -> @ByteArray {
-    @"s2_blitz"
+    @"s2"
 }
 
 pub fn DEFAULT_NS_STR() -> ByteArray {
-    "s2_blitz"
+    "s2"
 }

@@ -16,7 +16,7 @@ describe("single-world s2 Torii config", () => {
 
     expect(rendered.match(/WORLD:/g)).toHaveLength(1);
     expect(rendered).toContain('"WORLD:0x123"');
-    expect(rendered).toContain('namespaces = ["s2_blitz"]');
+    expect(rendered).toContain('namespaces = ["s2"]');
     expect(rendered).toContain("world_block = 0");
     expect(rendered).toContain("pending = true");
     expect(rendered).toContain("pre_confirmed = true");

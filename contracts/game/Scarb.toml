@@ -59,5 +59,7 @@ max-line-length = 120
 # appchain M0 spike (deploy/appchain/spike); dojo_spike.toml is generated + gitignored
 [profile.spike]
 
-# Realms dev appchain on AWS (WP_REALMS_DEV) — deploy/appchain
-[profile.appchain]
+# Shared Realms appchain builds; each profile deploys the same classes as a distinct world.
+[profile.appchain-blitz]
+
+[profile.appchain-eternum]

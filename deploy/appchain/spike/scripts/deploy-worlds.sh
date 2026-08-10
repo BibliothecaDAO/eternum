@@ -42,7 +42,7 @@ done
 # - [env] has no rpc_url; 1.8.7's blake2s autodetect unwrap-panics on that
 #   (artifact_to_local.rs — 1.8.0 silently defaulted to localhost:5050).
 # - [lib_versions] is stale: missing raid_library and behind on every version;
-#   values below come from dojo_appchain.toml, the maintained profile.
+#   values below come from dojo_appchain_blitz.toml, the maintained profile.
 render_profile() {
   local seed="$1"
   cp "$GAME_DIR/dojo_local.toml" "$GAME_DIR/dojo_$PROFILE.toml"

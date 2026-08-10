@@ -1,6 +1,9 @@
-import appchainManifest from "../../../../contracts/game/manifest_appchain.json";
+import blitzManifest from "../../../../contracts/game/manifest_appchain_blitz.json";
+import eternumManifest from "../../../../contracts/game/manifest_appchain_eternum.json";
 import { Account, CallData, type Call } from "starknet";
+import { resolveDeploymentEnvironment } from "../environment";
 import { loadRepoJsonFile } from "../shared/repo";
+import type { AppchainWorldDeployment, DeploymentEnvironmentId } from "../types";
 
 type RegistrarEntrypoint = "bootstrap_chain_config" | "register_preset" | "register_series" | "create_game";
 
@@ -25,6 +28,7 @@ interface ManifestEvent {
 export interface RegistrarManifest {
   world?: {
     address?: string;
+    seed?: string;
   };
   contracts?: ManifestContract[];
   events?: ManifestEvent[];
@@ -39,16 +43,49 @@ export interface CreateRegistrarGameResult extends RegistrarTransactionResult {
   gameId?: number;
 }
 
-const DEFAULT_MANIFEST = appchainManifest as RegistrarManifest;
-const APPCHAIN_NAMESPACE = "s2_blitz";
+export type AppchainRegistrarEnvironmentId = "appchain.blitz" | "appchain.eternum";
+type RegistrarTarget = AppchainRegistrarEnvironmentId | RegistrarManifest;
 
-function resolveRegistrarManifest(): RegistrarManifest {
-  const manifestPath = process.env.APPCHAIN_MANIFEST_PATH;
-  return manifestPath ? loadRepoJsonFile<RegistrarManifest>(manifestPath) : DEFAULT_MANIFEST;
+interface RegistrarContext {
+  environmentId?: AppchainRegistrarEnvironmentId;
+  manifest: RegistrarManifest;
+  registrarAddress?: string;
 }
 
-function findContract(manifest: RegistrarManifest, contractName: string): ManifestContract | undefined {
-  return manifest.contracts?.find((contract) => contract.tag === `${APPCHAIN_NAMESPACE}-${contractName}`);
+const DEFAULT_ENVIRONMENT_ID: AppchainRegistrarEnvironmentId = "appchain.blitz";
+const APPCHAIN_NAMESPACE = "s2";
+const TRACKED_MANIFESTS: Record<string, RegistrarManifest> = {
+  "contracts/game/manifest_appchain_blitz.json": blitzManifest as RegistrarManifest,
+  "contracts/game/manifest_appchain_eternum.json": eternumManifest as RegistrarManifest,
+};
+
+function resolveEnvironmentManifest(deployment: AppchainWorldDeployment): RegistrarManifest {
+  const manifestPath = process.env.APPCHAIN_MANIFEST_PATH || deployment.manifestPath;
+  return TRACKED_MANIFESTS[manifestPath] ?? loadRepoJsonFile<RegistrarManifest>(manifestPath);
+}
+
+function resolveRegistrarContext(target: RegistrarTarget = DEFAULT_ENVIRONMENT_ID): RegistrarContext {
+  if (typeof target !== "string") {
+    return { manifest: target };
+  }
+
+  const environment = resolveDeploymentEnvironment(target);
+  if (!environment.appchainWorld) {
+    throw new Error(`${target} does not define an appchain world deployment`);
+  }
+  return {
+    environmentId: target,
+    manifest: resolveEnvironmentManifest(environment.appchainWorld),
+    registrarAddress: process.env.APPCHAIN_MANIFEST_PATH ? undefined : environment.appchainWorld.registrarAddress,
+  };
+}
+
+function findContract(context: RegistrarContext, contractName: string): ManifestContract | undefined {
+  return context.manifest.contracts?.find((contract) => contract.tag === `${APPCHAIN_NAMESPACE}-${contractName}`);
+}
+
+function hasDeployedAddress(address: string | undefined): address is string {
+  return typeof address === "string" && address.length > 0 && !/^0x0*$/i.test(address);
 }
 
 function abiIncludesEntrypoint(entries: ManifestAbiEntry[] | undefined, entrypoint: string): boolean {
@@ -60,9 +97,15 @@ function abiIncludesEntrypoint(entries: ManifestAbiEntry[] | undefined, entrypoi
   );
 }
 
-function requireRegistrarContract(manifest: RegistrarManifest, entrypoint: RegistrarEntrypoint): ManifestContract {
-  const registrar = findContract(manifest, "registrar_systems");
-  if (!registrar?.address) {
+function requireRegistrarContract(context: RegistrarContext, entrypoint: RegistrarEntrypoint): ManifestContract {
+  const registrar = findContract(context, "registrar_systems");
+  const registrarAddress = context.registrarAddress ?? registrar?.address;
+  if (!registrar || !hasDeployedAddress(registrarAddress)) {
+    if (context.environmentId) {
+      throw new Error(
+        `${context.environmentId} world not deployed yet; set its registrar address after migrating ${context.manifest.world?.seed ?? "the configured profile"}`,
+      );
+    }
     throw new Error(
       `${APPCHAIN_NAMESPACE}-registrar_systems is missing from the appchain manifest; migrate the s2 world first`,
     );
@@ -70,15 +113,15 @@ function requireRegistrarContract(manifest: RegistrarManifest, entrypoint: Regis
   if (!registrar.systems?.includes(entrypoint) && !abiIncludesEntrypoint(registrar.abi, entrypoint)) {
     throw new Error(`registrar_systems manifest is missing ${entrypoint}`);
   }
-  return registrar;
+  return { ...registrar, address: registrarAddress };
 }
 
 function buildRegistrarCall(
   entrypoint: RegistrarEntrypoint,
   calldata: string[],
-  manifest: RegistrarManifest = resolveRegistrarManifest(),
+  target: RegistrarTarget = DEFAULT_ENVIRONMENT_ID,
 ): Call {
-  const registrar = requireRegistrarContract(manifest, entrypoint);
+  const registrar = requireRegistrarContract(resolveRegistrarContext(target), entrypoint);
   return {
     contractAddress: registrar.address!,
     entrypoint,
@@ -107,8 +150,10 @@ function normalizeFelt(value: string): string {
   return `0x${BigInt(value).toString(16)}`;
 }
 
-function resolveGameCreatedSelector(manifest: RegistrarManifest): string | undefined {
-  const selector = manifest.events?.find((event) => event.tag === `${APPCHAIN_NAMESPACE}-GameCreated`)?.selector;
+function resolveGameCreatedSelector(context: RegistrarContext): string | undefined {
+  const selector = context.manifest.events?.find(
+    (event) => event.tag === `${APPCHAIN_NAMESPACE}-GameCreated`,
+  )?.selector;
   return selector ? normalizeFelt(selector) : undefined;
 }
 
@@ -127,9 +172,9 @@ function parseGameId(value: string | undefined): number | undefined {
 
 export function resolveCreatedGameId(
   receipt: unknown,
-  manifest: RegistrarManifest = resolveRegistrarManifest(),
+  target: RegistrarTarget = DEFAULT_ENVIRONMENT_ID,
 ): number | undefined {
-  const gameCreatedSelector = resolveGameCreatedSelector(manifest);
+  const gameCreatedSelector = resolveGameCreatedSelector(resolveRegistrarContext(target));
   if (!gameCreatedSelector) {
     return undefined;
   }
@@ -148,23 +193,35 @@ export function resolveCreatedGameId(
   return undefined;
 }
 
-export function resolveAppchainWorldAddress(manifest: RegistrarManifest = resolveRegistrarManifest()): string {
-  requireRegistrarContract(manifest, "create_game");
-  if (!manifest.world?.address) {
-    throw new Error("World address is missing from contracts/game/manifest_appchain.json");
+export function resolveAppchainWorldAddress(target: RegistrarTarget = DEFAULT_ENVIRONMENT_ID): string {
+  const context = resolveRegistrarContext(target);
+  requireRegistrarContract(context, "create_game");
+  const worldAddress = context.manifest.world?.address;
+  if (!hasDeployedAddress(worldAddress)) {
+    throw new Error("World address is missing from the selected appchain manifest");
   }
-  return manifest.world.address;
+  return worldAddress;
 }
 
 export function resolveAppchainContractAddress(
   contractName: string,
-  manifest: RegistrarManifest = resolveRegistrarManifest(),
+  target: RegistrarTarget = DEFAULT_ENVIRONMENT_ID,
 ): string {
-  const contract = findContract(manifest, contractName);
-  if (!contract?.address) {
+  const contract = findContract(resolveRegistrarContext(target), contractName);
+  const contractAddress = contract?.address;
+  if (!hasDeployedAddress(contractAddress)) {
     throw new Error(`${APPCHAIN_NAMESPACE}-${contractName} is missing from the appchain manifest`);
   }
-  return contract.address;
+  return contractAddress;
+}
+
+export function resolveAppchainRegistrarEnvironmentId(
+  environmentId: DeploymentEnvironmentId,
+): AppchainRegistrarEnvironmentId {
+  if (environmentId !== "appchain.blitz" && environmentId !== "appchain.eternum") {
+    throw new Error(`${environmentId} is not an appchain registrar environment`);
+  }
+  return environmentId;
 }
 
 export function buildRegisterPresetCalldata(payload: {
@@ -179,31 +236,37 @@ export function buildCreateGameCalldata(params: unknown): string[] {
   return CallData.compile([params] as never);
 }
 
-export function assertAppchainRegistrarAvailable(manifest: RegistrarManifest = resolveRegistrarManifest()): void {
+export function assertAppchainRegistrarAvailable(target: RegistrarTarget = DEFAULT_ENVIRONMENT_ID): void {
+  const context = resolveRegistrarContext(target);
   const requiredEntrypoints: RegistrarEntrypoint[] = [
     "bootstrap_chain_config",
     "register_preset",
     "register_series",
     "create_game",
   ];
-  requiredEntrypoints.forEach((entrypoint) => requireRegistrarContract(manifest, entrypoint));
+  requiredEntrypoints.forEach((entrypoint) => requireRegistrarContract(context, entrypoint));
 }
 
 export async function bootstrapChainConfig(
   account: Account,
   chainConfig: unknown,
+  target: RegistrarTarget = DEFAULT_ENVIRONMENT_ID,
 ): Promise<RegistrarTransactionResult> {
   return executeRegistrarCall(
     account,
-    buildRegistrarCall("bootstrap_chain_config", CallData.compile([chainConfig] as never)),
+    buildRegistrarCall("bootstrap_chain_config", CallData.compile([chainConfig] as never), target),
   );
 }
 
 export async function registerPreset(
   account: Account,
   payload: { presetConfig: unknown; gameConfig: unknown; sideTables: unknown },
+  target: RegistrarTarget = DEFAULT_ENVIRONMENT_ID,
 ): Promise<RegistrarTransactionResult> {
-  return executeRegistrarCall(account, buildRegistrarCall("register_preset", buildRegisterPresetCalldata(payload)));
+  return executeRegistrarCall(
+    account,
+    buildRegistrarCall("register_preset", buildRegisterPresetCalldata(payload), target),
+  );
 }
 
 export async function registerSeries(
@@ -215,6 +278,7 @@ export async function registerSeries(
     totalChests?: bigint | number;
     capRatioBps?: bigint | number;
   },
+  target: RegistrarTarget = DEFAULT_ENVIRONMENT_ID,
 ): Promise<RegistrarTransactionResult> {
   return executeRegistrarCall(
     account,
@@ -227,18 +291,23 @@ export async function registerSeries(
         params.totalChests ?? 0,
         params.capRatioBps ?? 10_000,
       ] as never),
+      target,
     ),
   );
 }
 
-export async function createRegistrarGame(account: Account, params: unknown): Promise<CreateRegistrarGameResult> {
+export async function createRegistrarGame(
+  account: Account,
+  params: unknown,
+  target: RegistrarTarget = DEFAULT_ENVIRONMENT_ID,
+): Promise<CreateRegistrarGameResult> {
   const result = await executeRegistrarCall(
     account,
-    buildRegistrarCall("create_game", buildCreateGameCalldata(params)),
+    buildRegistrarCall("create_game", buildCreateGameCalldata(params), target),
   );
   return {
     ...result,
-    gameId: resolveCreatedGameId(result.receipt),
+    gameId: resolveCreatedGameId(result.receipt, target),
   };
 }
 

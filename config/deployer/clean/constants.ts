@@ -42,11 +42,6 @@ export const DEFAULT_SEPOLIA_RPC_URL = "https://api.cartridge.gg/x/starknet/sepo
 export const DEFAULT_APPCHAIN_RPC_URL =
   process.env.APPCHAIN_RPC_URL || "http://Realms-Alb16-vyiZTcVBQthr-325094656.us-east-1.elb.amazonaws.com";
 export const DEFAULT_LOCAL_RPC_URL = "http://127.0.0.1:5050/rpc/v0_9";
-// katana dev seed-0 account 0 — dev chain, no real value.
-// wf-factory from contracts/factory/manifest_appchain.json
-export const DEFAULT_APPCHAIN_FACTORY_ADDRESS = "0x4c50ced3c1fd6f2f4cef779e28adafb234ed9773dda3e0e39918f24f2936350";
-export const DEFAULT_APPCHAIN_ACCOUNT_ADDRESS = "0x127fd5f1fe78a71f8bcd1fec63e3fe2f0486b6ecd5c86a0466c3a21fa5cfcec";
-export const DEFAULT_APPCHAIN_PRIVATE_KEY = "0xc5b2fcab997346f3ea1c00b002ecf6f382c5f9c9659a3894eb783c5320f912";
 
 export const DEFAULT_CHAIN_RPC_URLS: Record<string, string> = {
   mainnet: DEFAULT_MAINNET_RPC_URL,
@@ -64,10 +59,7 @@ export function resolveDefaultRpcUrl(chain: string): string {
 }
 
 const APPCHAIN_DEFAULTS = {
-  factoryAddress: DEFAULT_APPCHAIN_FACTORY_ADDRESS,
   rpcUrl: DEFAULT_APPCHAIN_RPC_URL,
-  accountAddress: DEFAULT_APPCHAIN_ACCOUNT_ADDRESS,
-  privateKey: DEFAULT_APPCHAIN_PRIVATE_KEY,
   createGame: {
     maxActions: DEFAULT_APPCHAIN_MAX_ACTIONS,
     submissionCount: DEFAULT_APPCHAIN_CREATE_GAME_SUBMISSION_COUNT,
@@ -110,6 +102,13 @@ export const DEPLOYMENT_ENVIRONMENTS: Record<DeploymentEnvironmentId, Deployment
     gameType: "blitz",
     toriiEnv: "appchain",
     configPath: "config/generated/blitz.appchain.json",
+    appchainWorld: {
+      namespace: "s2",
+      manifestPath: "contracts/game/manifest_appchain_blitz.json",
+      registrarAddress:
+        process.env.APPCHAIN_BLITZ_REGISTRAR_ADDRESS ||
+        "0x51b8a03d3d65bb44f41d0415a99987c128252a78e25f9c136a9dcbd79650068",
+    },
     ...APPCHAIN_DEFAULTS,
   },
   "appchain.eternum": {
@@ -118,6 +117,12 @@ export const DEPLOYMENT_ENVIRONMENTS: Record<DeploymentEnvironmentId, Deployment
     gameType: "eternum",
     toriiEnv: "appchain",
     configPath: "config/generated/eternum.appchain.json",
+    appchainWorld: {
+      namespace: "s2",
+      manifestPath: "contracts/game/manifest_appchain_eternum.json",
+      // W4 replaces this one value after the Eternum world is deployed.
+      registrarAddress: process.env.APPCHAIN_ETERNUM_REGISTRAR_ADDRESS || "0x0",
+    },
     ...APPCHAIN_DEFAULTS,
   },
 };

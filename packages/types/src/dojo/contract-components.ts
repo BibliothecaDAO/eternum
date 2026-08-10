@@ -17,7 +17,7 @@ type QuestLevelsSchema = {
 };
 
 /**
- * namespace: "s2_blitz" on the appchain single world, "s1_eternum" on legacy mainnet worlds.
+ * namespace: "s2" on appchain worlds, "s1_eternum" on legacy mainnet worlds.
  * Models absent from the active chain simply never receive data.
  */
 export function defineContractComponents(world: World, namespace: string) {

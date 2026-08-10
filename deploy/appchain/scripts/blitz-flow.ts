@@ -13,17 +13,20 @@
  * asserts the reservation cursor is exhausted first. Without `reserve` every
  * settle reverts with "Reserve all hyperstructure tiles before settling realms".
  *
- * Env (defaults target the AWS dev appchain + katana dev account 0):
+ * Env (RPC/Torii defaults target the AWS dev appchain; account credentials are required):
  *   RPC_URL, TORII_URL, ACCOUNT_ADDRESS, PRIVATE_KEY, PLAYER_NAME
  */
-import manifest from "../../../contracts/game/manifest_appchain.json";
+import manifest from "../../../contracts/game/manifest_appchain_blitz.json";
+import { resolveAccountCredentials } from "../../../config/deployer/clean/shared/credentials";
 import { Account, CallData, RpcProvider, shortString } from "starknet";
 
 const RPC_URL = process.env.RPC_URL ?? "http://Realms-Alb16-vyiZTcVBQthr-325094656.us-east-1.elb.amazonaws.com";
 const TORII_URL = process.env.TORII_URL ?? "http://Realms-Alb16-vyiZTcVBQthr-325094656.us-east-1.elb.amazonaws.com:8080";
-const ACCOUNT_ADDRESS =
-  process.env.ACCOUNT_ADDRESS ?? "0x127fd5f1fe78a71f8bcd1fec63e3fe2f0486b6ecd5c86a0466c3a21fa5cfcec";
-const PRIVATE_KEY = process.env.PRIVATE_KEY ?? "0xc5b2fcab997346f3ea1c00b002ecf6f382c5f9c9659a3894eb783c5320f912";
+const { accountAddress: ACCOUNT_ADDRESS, privateKey: PRIVATE_KEY } = resolveAccountCredentials({
+  accountAddress: process.env.ACCOUNT_ADDRESS,
+  privateKey: process.env.PRIVATE_KEY,
+  context: "retired appchain Blitz flow",
+});
 const PLAYER_NAME = process.env.PLAYER_NAME ?? "djizus";
 
 const RESERVE_BATCH = 19; // matches config/deployer/clean/blitz/hyperstructure-reservation.ts

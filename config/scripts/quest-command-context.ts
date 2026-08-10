@@ -37,7 +37,7 @@ export async function createQuestCommandContext(gameType: GameType): Promise<Que
   await saveResolvedConfigJson(network, gameType);
   logNetwork(network);
 
-  const manifest = await getGameManifest(network as Chain);
+  const manifest = await getGameManifest(network as Chain, gameType);
   const provider = new EternumProvider(manifest, nodeUrl, vrfProviderAddress);
   const account = new Account({
     provider: provider.provider,

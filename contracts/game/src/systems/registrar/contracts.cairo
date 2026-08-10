@@ -117,7 +117,7 @@ pub mod registrar_systems {
             let mut world = self.world(DEFAULT_NS());
             let caller = starknet::get_caller_address();
             assert!(
-                world.dispatcher.is_owner(selector_from_tag!("s2_blitz-registrar_systems"), caller),
+                world.dispatcher.is_owner(selector_from_tag!("s2-registrar_systems"), caller),
                 "Eternum: caller is not the world owner",
             );
             let existing: ChainConfig = world.read_model(WORLD_CONFIG_ID);

@@ -4,38 +4,38 @@
  * Copy ABI sections from one Dojo manifest JSON to another.
  *
  * Usage:
- *   node scripts/copy-abis.mjs <network>
- *   pnpm run manifest:copy-abis <network>
+ *   node scripts/copy-abis.mjs <target>
+ *   pnpm run manifest:copy-abis <target>
  *
  * Examples:
- *   node scripts/copy-abis.mjs appchain
+ *   node scripts/copy-abis.mjs appchain-blitz
  *   pnpm run manifest:copy-abis mainnet
  *
- * Valid networks: local, appchain, sepolia, mainnet
+ * Valid targets: local, appchain-blitz, appchain-eternum, sepolia, mainnet
  */
 
 // ====== Parse CLI arguments ======
 const args = process.argv.slice(2);
-const network = args[0];
+const target = args[0];
 
-const VALID_NETWORKS = ["local", "appchain", "sepolia", "mainnet"];
+const VALID_TARGETS = ["local", "appchain-blitz", "appchain-eternum", "sepolia", "mainnet"];
 
-if (!network) {
-  console.error("Error: Network parameter is required");
-  console.error("Usage: node scripts/copy-abis.mjs <network>");
-  console.error(`Valid networks: ${VALID_NETWORKS.join(", ")}`);
+if (!target) {
+  console.error("Error: Target parameter is required");
+  console.error("Usage: node scripts/copy-abis.mjs <target>");
+  console.error(`Valid targets: ${VALID_TARGETS.join(", ")}`);
   process.exit(1);
 }
 
-if (!VALID_NETWORKS.includes(network)) {
-  console.error(`Error: Invalid network "${network}"`);
-  console.error(`Valid networks: ${VALID_NETWORKS.join(", ")}`);
+if (!VALID_TARGETS.includes(target)) {
+  console.error(`Error: Invalid target "${target}"`);
+  console.error(`Valid targets: ${VALID_TARGETS.join(", ")}`);
   process.exit(1);
 }
 
 // ====== Parameters ======
 const FROM_JSON = "contracts/game/manifest_local.json";
-const TO_JSON = `contracts/game/manifest_${network}.json`;
+const TO_JSON = `contracts/game/manifest_${target.replace("-", "_")}.json`;
 const WORLD_ONLY = false; // if true, copy only world.abi
 const CONTRACTS_ONLY = false; // if true, copy only contract ABIs by tag
 const DRY_RUN = false; // if true, do not write file

@@ -16,7 +16,7 @@ contracts = [
   "WORLD:{WORLD_ADDRESS}",
 ]
 
-namespaces = ["s2_blitz"]
+namespaces = ["s2"]
 world_block = 0
 
 [erc]

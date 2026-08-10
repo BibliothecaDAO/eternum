@@ -108,7 +108,9 @@ async function bootstrapRegistrar(params: {
 
 async function deployS2World(): Promise<void> {
   const dryRun = process.argv.includes("--dry-run");
-  console.log("World migration is reviewer-owned. Run: sozo build && sozo migrate --profile appchain");
+  console.log(
+    "World migration is reviewer-owned. Run: sozo build --profile appchain-blitz && sozo migrate --profile appchain-blitz",
+  );
   assertAppchainRegistrarAvailable();
 
   const environment = resolveDeploymentEnvironment("appchain.blitz");

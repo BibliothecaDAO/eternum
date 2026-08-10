@@ -10,14 +10,14 @@
  *   (unknown types fail loudly rather than emit a wrong encoding).
  * - Baseline-only models/events (s1/mainnet-only, e.g. Market/Trade/SwapEvent) are carried
  *   verbatim so the mainnet arm keeps compiling.
- * - The namespace becomes a parameter of defineContractComponents (appchain -> "s2_blitz",
+ * - The namespace becomes a parameter of defineContractComponents (appchain -> "s2",
  *   mainnet -> "s1_eternum"), chosen at bootstrap.
  */
 import { $ } from "bun";
 import path from "node:path";
 
 const ROOT = path.resolve(import.meta.dir, "../../..");
-const MANIFEST_PATH = path.join(ROOT, "contracts/game/manifest_appchain.json");
+const MANIFEST_PATH = path.join(ROOT, "contracts/game/manifest_appchain_blitz.json");
 const TARGET_REL = "packages/types/src/dojo/contract-components.ts";
 const TARGET_PATH = path.join(ROOT, TARGET_REL);
 
@@ -228,7 +228,7 @@ const assembleGroup = (
   indent: string,
 ): string[] => {
   const entries = manifestEntries
-    .map((entry) => ({ name: entry.tag.replace(/^s2_blitz-/, ""), members: entry.members }))
+    .map((entry) => ({ name: entry.tag.replace(/^s2-/, ""), members: entry.members }))
     .sort((a, b) => a.name.localeCompare(b.name));
   const s2Names = new Set(entries.map((entry) => entry.name));
   const blocks: string[] = [];
@@ -287,7 +287,7 @@ type QuestLevelsSchema = {
 };
 
 /**
- * namespace: "s2_blitz" on the appchain single world, "s1_eternum" on legacy mainnet worlds.
+ * namespace: "s2" on appchain worlds, "s1_eternum" on legacy mainnet worlds.
  * Models absent from the active chain simply never receive data.
  */
 export function defineContractComponents(world: World, namespace: string) {

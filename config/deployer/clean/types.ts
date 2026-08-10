@@ -47,6 +47,12 @@ export interface CreateGameDefaults {
   retryDelayMs: number;
 }
 
+export interface AppchainWorldDeployment {
+  namespace: string;
+  manifestPath: string;
+  registrarAddress: string;
+}
+
 export interface DeploymentEnvironment {
   id: DeploymentEnvironmentId;
   chain: DeploymentChain;
@@ -57,6 +63,7 @@ export interface DeploymentEnvironment {
   rpcUrl: string;
   accountAddress?: string;
   privateKey?: string;
+  appchainWorld?: AppchainWorldDeployment;
   createGame: CreateGameDefaults;
 }
 

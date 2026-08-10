@@ -201,12 +201,12 @@ mock.module("starknet", () => ({
   },
 }));
 
-mock.module("../../../../contracts/game/manifest_appchain.json", () => ({
+mock.module("../../../../contracts/game/manifest_appchain_blitz.json", () => ({
   default: {
     world: { address: "0xsharedworld" },
     contracts: [
       {
-        tag: "s2_blitz-registrar_systems",
+        tag: "s2-registrar_systems",
         address: "0xregistrar",
         abi: [
           { type: "function", name: "bootstrap_chain_config" },
@@ -216,7 +216,7 @@ mock.module("../../../../contracts/game/manifest_appchain.json", () => ({
         ],
       },
     ],
-    events: [{ tag: "s2_blitz-GameCreated", selector: "0xabc" }],
+    events: [{ tag: "s2-GameCreated", selector: "0xabc" }],
   },
 }));
 
@@ -410,13 +410,30 @@ describe("runLaunchStep mainnet launch steps", () => {
 
     expect(createGameExecuteMock).toHaveBeenCalledTimes(1);
     expect(createGameExecuteMock.mock.calls[0]?.[0]).toMatchObject({
-      contractAddress: "0xregistrar",
+      contractAddress: "0x51b8a03d3d65bb44f41d0415a99987c128252a78e25f9c136a9dcbd79650068",
       entrypoint: "create_game",
     });
     expect((createGameExecuteMock.mock.calls[0]?.[0] as { calldata: string[] }).calldata).toHaveLength(42);
     expect(summary.createGameTxHash).toBe("0xcreate1");
     expect(summary.gameId).toBe(7);
     expect(summary.worldAddress).toBe("0xsharedworld");
+  });
+
+  test("fails clearly before launching into the undeployed eternum world", async () => {
+    await expect(
+      runLaunchStep({
+        environmentId: "appchain.eternum",
+        stepId: "create-world",
+        gameName: "eternum-alpha",
+        startTime,
+        rpcUrl: "https://rpc.example",
+        accountAddress,
+        privateKey,
+        version: "1",
+      }),
+    ).rejects.toThrow("appchain.eternum world not deployed yet");
+
+    expect(createGameExecuteMock).not.toHaveBeenCalled();
   });
 
   test("skips registrar create_game when GameRegistry already contains the game", async () => {
@@ -530,7 +547,7 @@ describe("runLaunchStep mainnet launch steps", () => {
 
     expect(createGameExecuteMock).toHaveBeenCalledTimes(1);
     expect(createGameExecuteMock.mock.calls[0]?.[0]).toMatchObject({
-      contractAddress: "0xregistrar",
+      contractAddress: "0x51b8a03d3d65bb44f41d0415a99987c128252a78e25f9c136a9dcbd79650068",
       entrypoint: "register_series",
     });
     expect(nextSummary.seriesCreated).toBe(true);

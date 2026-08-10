@@ -6,9 +6,9 @@ export interface AppchainGameRegistryRow extends Record<string, unknown> {
   gameId: number;
 }
 
-const GAME_REGISTRY_TABLE = '"s2_blitz-GameRegistry"';
-const CHAIN_CONFIG_TABLE = '"s2_blitz-ChainConfig"';
-const PRESET_TABLE = '"s2_blitz-Preset"';
+const GAME_REGISTRY_TABLE = '"s2-GameRegistry"';
+const CHAIN_CONFIG_TABLE = '"s2-ChainConfig"';
+const PRESET_TABLE = '"s2-Preset"';
 
 function resolveToriiSqlUrl(cartridgeApiBase?: string): string {
   const sqlUrl = getFactorySqlBaseUrl("appchain", cartridgeApiBase);
@@ -105,7 +105,7 @@ export async function waitForGameRegistryById(params: {
     await sleep(pollIntervalMs);
   }
 
-  throw new Error(`Timed out waiting for s2_blitz-GameRegistry row ${params.gameId}`);
+  throw new Error(`Timed out waiting for s2-GameRegistry row ${params.gameId}`);
 }
 
 export async function isChainConfigInitialized(cartridgeApiBase?: string): Promise<boolean> {

@@ -13,7 +13,7 @@ import {
   writeJsonReport,
 } from "./shared/cli";
 
-const NAMESPACE = "s2_blitz";
+const NAMESPACE = "s2";
 const GAME_REGISTRY_TABLE = `${NAMESPACE}-GameRegistry`;
 
 interface GameRecord {
@@ -72,7 +72,7 @@ export interface GamePrunePlan {
 }
 
 function quoteIdentifier(identifier: string): string {
-  if (!/^s2_blitz-[A-Za-z0-9_]+$/.test(identifier)) {
+  if (!/^s2-[A-Za-z0-9_]+$/.test(identifier)) {
     throw new Error(`Unsafe SQLite identifier "${identifier}"`);
   }
   return `"${identifier}"`;
@@ -176,7 +176,7 @@ function gameKeyPrefix(gameId: number): string {
 
 function discoverGameModelTables(db: Database): Array<{ table: string; modelId: string }> {
   const tables = db
-    .query("SELECT name FROM sqlite_schema WHERE type = 'table' AND name LIKE 's2_blitz-%' ORDER BY name")
+    .query("SELECT name FROM sqlite_schema WHERE type = 'table' AND name LIKE 's2-%' ORDER BY name")
     .all() as Array<{ name: string }>;
 
   return tables.flatMap(({ name: table }) => {

@@ -1,25 +1,29 @@
 import { describe, expect, mock, test } from "bun:test";
 import type { RegistrarManifest } from "../registrar/calls";
 
-mock.module("../../../../contracts/game/manifest_appchain.json", () => ({
+mock.module("../../../../contracts/game/manifest_appchain_blitz.json", () => ({
   default: {
     world: { address: "0xsharedworld" },
     contracts: [
       {
-        tag: "s2_blitz-registrar_systems",
+        tag: "s2-registrar_systems",
         address: "0xregistrar",
         systems: ["bootstrap_chain_config", "register_preset", "register_series", "create_game"],
       },
     ],
-    events: [{ tag: "s2_blitz-GameCreated", selector: "0xabc" }],
+    events: [{ tag: "s2-GameCreated", selector: "0xabc" }],
   },
 }));
 
-const { resolveAppchainContractAddress, resolveAppchainWorldAddress, resolveCreatedGameId } =
-  await import("../registrar/calls");
+const {
+  assertAppchainRegistrarAvailable,
+  resolveAppchainContractAddress,
+  resolveAppchainWorldAddress,
+  resolveCreatedGameId,
+} = await import("../registrar/calls");
 
 const manifest: RegistrarManifest = {
-  events: [{ tag: "s2_blitz-GameCreated", selector: "0xabc" }],
+  events: [{ tag: "s2-GameCreated", selector: "0xabc" }],
 };
 
 describe("registrar receipt parsing", () => {
@@ -65,9 +69,15 @@ describe("registrar receipt parsing", () => {
       ],
     };
 
-    expect(() => resolveAppchainWorldAddress(staleManifest)).toThrow("s2_blitz-registrar_systems is missing");
+    expect(() => resolveAppchainWorldAddress(staleManifest)).toThrow("s2-registrar_systems is missing");
     expect(() => resolveAppchainContractAddress("blitz_realm_systems", staleManifest)).toThrow(
       "blitz_realm_systems is missing",
+    );
+  });
+
+  test("fails clearly until the eternum world registrar is configured", () => {
+    expect(() => assertAppchainRegistrarAvailable("appchain.eternum")).toThrow(
+      "appchain.eternum world not deployed yet",
     );
   });
 });

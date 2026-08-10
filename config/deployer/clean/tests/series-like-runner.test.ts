@@ -1,12 +1,12 @@
 import { afterEach, describe, expect, mock, test } from "bun:test";
 import type { LaunchSeriesRequest, LaunchSeriesStepId, SeriesLaunchGameSummary } from "../types";
 
-mock.module("../../../../contracts/game/manifest_appchain.json", () => ({
+mock.module("../../../../contracts/game/manifest_appchain_blitz.json", () => ({
   default: {
     world: { address: "0xsharedworld" },
     contracts: [
       {
-        tag: "s2_blitz-registrar_systems",
+        tag: "s2-registrar_systems",
         address: "0xregistrar",
         abi: [
           { type: "function", name: "bootstrap_chain_config" },
@@ -16,7 +16,7 @@ mock.module("../../../../contracts/game/manifest_appchain.json", () => ({
         ],
       },
     ],
-    events: [{ tag: "s2_blitz-GameCreated", selector: "0xabc" }],
+    events: [{ tag: "s2-GameCreated", selector: "0xabc" }],
   },
 }));
 

@@ -21,9 +21,9 @@ export async function setupNetwork(
   env: {
     vrfProviderAddress: string;
     useBurner: boolean;
-    /** Model namespace: "s2_blitz" on the appchain single world, "s1_eternum" on legacy worlds. */
+    /** Model namespace: "s2" on appchain worlds, "s1_eternum" on legacy worlds. */
     namespace?: string;
-    /** Active game on the s2 single world; 0/omitted on legacy worlds. */
+    /** Active game on an s2 appchain world; 0/omitted on legacy worlds. */
     gameId?: number;
   },
 ): Promise<SetupNetworkExplicitReturn> {

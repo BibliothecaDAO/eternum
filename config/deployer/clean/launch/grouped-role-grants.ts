@@ -69,7 +69,7 @@ async function resolveSeriesLikeWorldManifestTargets(
   const environment = resolveDeploymentEnvironment(request.environmentId);
   const chain = environment.chain as Chain;
   const cartridgeApiBase = resolveSeriesLikeCartridgeApiBase(request);
-  const baseManifest = getGameManifest(chain) as GameManifestLike;
+  const baseManifest = getGameManifest(chain, environment.gameType) as GameManifestLike;
 
   return Promise.all(
     games.map(async (game) => {

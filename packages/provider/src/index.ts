@@ -590,9 +590,9 @@ export class EternumProvider extends EnhancedDojoProvider {
   private cachedExploreExecutionDetails = new Map<string, CachedExploreExecutionDetails>();
   private readonly retryConfig?: RetryConfig;
   private transactionSubmitGuard?: TransactionSubmitGuard;
-  /** Model/contract-tag namespace: "s2_blitz" on the appchain single world, "s1_eternum" on legacy worlds. */
+  /** Model/contract-tag namespace: "s2" on appchain worlds, "s1_eternum" on legacy worlds. */
   readonly namespace: string;
-  /** Active game on the s2 single world; 0 on legacy worlds (no calldata rewrite). */
+  /** Active game on an s2 appchain world; 0 on legacy worlds (no calldata rewrite). */
   private readonly gameId: number;
   /** Normalized addresses of this world's game-system contracts (game_id-prefixed entrypoints on s2). */
   private readonly gameContractAddresses: Set<string>;
@@ -602,7 +602,7 @@ export class EternumProvider extends EnhancedDojoProvider {
    *
    * @param katana - The katana manifest containing contract info
    * @param url - Optional RPC URL
-   * @param scope - s2 single-world scope; omit on legacy worlds
+   * @param scope - s2 appchain-world scope; omit on legacy worlds
    */
   constructor(
     katana: Manifest,

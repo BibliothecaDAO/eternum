@@ -20,10 +20,10 @@ import {
 } from "./shared/torii";
 
 const MODEL_PROFILES = [
-  { tag: "s2_blitz-GameRegistry", graphqlField: "s2BlitzGameRegistryModels" },
-  { tag: "s2_blitz-Structure", graphqlField: "s2BlitzStructureModels" },
-  { tag: "s2_blitz-TileOpt", graphqlField: "s2BlitzTileOptModels" },
-  { tag: "s2_blitz-Resource", graphqlField: "s2BlitzResourceModels" },
+  { tag: "s2-GameRegistry", graphqlField: "s2GameRegistryModels" },
+  { tag: "s2-Structure", graphqlField: "s2StructureModels" },
+  { tag: "s2-TileOpt", graphqlField: "s2TileOptModels" },
+  { tag: "s2-Resource", graphqlField: "s2ResourceModels" },
 ] as const;
 
 interface CheckResult {

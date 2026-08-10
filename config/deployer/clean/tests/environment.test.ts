@@ -9,13 +9,28 @@ describe("resolveDeploymentEnvironment", () => {
     expect(environment.gameType).toBe("blitz");
     expect(environment.factoryAddress).toBeUndefined();
     expect(environment.rpcUrl).toBe(DEFAULT_APPCHAIN_RPC_URL);
-    expect(environment.accountAddress).toBe("0x127fd5f1fe78a71f8bcd1fec63e3fe2f0486b6ecd5c86a0466c3a21fa5cfcec");
-    expect(environment.privateKey).toBe("0xc5b2fcab997346f3ea1c00b002ecf6f382c5f9c9659a3894eb783c5320f912");
+    expect(environment.accountAddress).toBeUndefined();
+    expect(environment.privateKey).toBeUndefined();
+    expect(environment.appchainWorld).toEqual({
+      namespace: "s2",
+      manifestPath: "contracts/game/manifest_appchain_blitz.json",
+      registrarAddress: "0x51b8a03d3d65bb44f41d0415a99987c128252a78e25f9c136a9dcbd79650068",
+    });
     expect(environment.createGame).toEqual({
-      maxActions: 300,
-      submissionCount: 1,
+      maxActions: 20,
+      submissionCount: 15,
       retryCount: 5,
-      retryDelayMs: 0,
+      retryDelayMs: 10000,
+    });
+  });
+
+  test("resolves the eternum appchain manifest independently", () => {
+    const environment = resolveDeploymentEnvironment("appchain.eternum");
+
+    expect(environment.appchainWorld).toEqual({
+      namespace: "s2",
+      manifestPath: "contracts/game/manifest_appchain_eternum.json",
+      registrarAddress: "0x0",
     });
   });
 

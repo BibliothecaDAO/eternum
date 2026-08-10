@@ -161,6 +161,8 @@
     "images:compress:dry-run": "node scripts/compress-images-with-sharp.js --dry-run",
     "images:compress:webp": "node scripts/compress-images-with-sharp.js --webp",
     "manifest:copy-abis": "node scripts/copy-abis.mjs",
+    "manifest:copy-abis:appchain:blitz": "node scripts/copy-abis.mjs appchain-blitz",
+    "manifest:copy-abis:appchain:eternum": "node scripts/copy-abis.mjs appchain-eternum",
     "manifest:copy-abis:sepolia": "node scripts/copy-abis.mjs sepolia",
     "manifest:copy-abis:mainnet": "node scripts/copy-abis.mjs mainnet"
   },
