@@ -33,7 +33,7 @@ interface CommittedManifest {
 }
 
 const buildBlitzWorld = (): WorldDeployment => {
-  const manifest = getGameManifest("appchain") as unknown as CommittedManifest;
+  const manifest = getGameManifest("appchain", "blitz") as unknown as CommittedManifest;
   return {
     id: "blitz",
     chain: "appchain",

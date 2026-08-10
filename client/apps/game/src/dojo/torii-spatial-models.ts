@@ -7,7 +7,7 @@ interface ToriiSpatialMapModelConfig {
   rowField?: string;
 }
 
-// Bare model names: the namespace (s1_eternum / s2_blitz) is resolved at call
+// Bare model names: the namespace (s1_eternum / s2) is resolved at call
 // time from the active game scope, so every list here is a factory — module
 // constants would bake in the default namespace before bootstrap sets it.
 const SPATIAL_MAP_MODEL_CONFIGS = [

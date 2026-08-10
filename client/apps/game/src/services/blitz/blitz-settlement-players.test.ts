@@ -7,7 +7,7 @@ import { readBlitzSettlementPlayerAddresses } from "./blitz-settlement-players";
 
 describe("readBlitzSettlementPlayerAddresses", () => {
   it("reads players from the typed BlitzSettlement component", () => {
-    const components = defineContractComponents(createWorld(), "s2_blitz");
+    const components = defineContractComponents(createWorld(), "s2");
     const playerAddress = 0x123n;
     const settlementEntity = getEntityIdFromKeys([playerAddress]);
     const missingEntity = getEntityIdFromKeys([0x456n]);

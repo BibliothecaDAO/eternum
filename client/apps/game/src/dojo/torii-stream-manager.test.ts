@@ -732,14 +732,14 @@ describe("buildModelKeysClause", () => {
   });
 
   it("prefixes per-game models with the active game id on s2 and leaves chain-global models unscoped", () => {
-    setGameScope("s2_blitz", 7);
+    setGameScope("s2", 7);
 
     const clause = buildModelKeysClause([
-      { model: "s2_blitz-WorldConfig", keyCount: 1 },
-      { model: "s2_blitz-Guild", keyCount: 1 },
-      { model: "s2_blitz-GuildWhitelist", keyCount: 2 },
-      { model: "s2_blitz-AddressName", keyCount: 1 },
-      { model: "s2_blitz-ResourceList", keyCount: 2 },
+      { model: "s2-WorldConfig", keyCount: 1 },
+      { model: "s2-Guild", keyCount: 1 },
+      { model: "s2-GuildWhitelist", keyCount: 2 },
+      { model: "s2-AddressName", keyCount: 1 },
+      { model: "s2-ResourceList", keyCount: 2 },
     ]) as any;
 
     expect(clause.Composite.operator).toBe("Or");
@@ -748,30 +748,30 @@ describe("buildModelKeysClause", () => {
       Keys: {
         keys: ["0x7"],
         pattern_matching: "VariableLen",
-        models: ["s2_blitz-WorldConfig", "s2_blitz-Guild", "s2_blitz-GuildWhitelist"],
+        models: ["s2-WorldConfig", "s2-Guild", "s2-GuildWhitelist"],
       },
     });
     const unscopedModels = clause.Composite.clauses.slice(1).flatMap((entry: any) => entry.Keys.models);
-    expect(unscopedModels.sort()).toEqual(["s2_blitz-AddressName", "s2_blitz-ResourceList"]);
+    expect(unscopedModels.sort()).toEqual(["s2-AddressName", "s2-ResourceList"]);
     for (const entry of clause.Composite.clauses.slice(1)) {
       expect(entry.Keys.keys).not.toContain("0x7");
     }
   });
 
   it("collapses to a single scoped clause when every model is per-game", () => {
-    setGameScope("s2_blitz", 3);
+    setGameScope("s2", 3);
 
     const clause = buildModelKeysClause([
-      { model: "s2_blitz-OpenRelicChestEvent" },
-      { model: "s2_blitz-ExplorerRewardEvent" },
-      { model: "s2_blitz-BattleEvent" },
+      { model: "s2-OpenRelicChestEvent" },
+      { model: "s2-ExplorerRewardEvent" },
+      { model: "s2-BattleEvent" },
     ]) as any;
 
     expect(clause).toEqual({
       Keys: {
         keys: ["0x3"],
         pattern_matching: "VariableLen",
-        models: ["s2_blitz-OpenRelicChestEvent", "s2_blitz-ExplorerRewardEvent", "s2_blitz-BattleEvent"],
+        models: ["s2-OpenRelicChestEvent", "s2-ExplorerRewardEvent", "s2-BattleEvent"],
       },
     });
   });

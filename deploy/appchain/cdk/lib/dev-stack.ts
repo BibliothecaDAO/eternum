@@ -436,7 +436,7 @@ export class DevStack extends cdk.Stack {
       });
     }
 
-    // --- torii-s2: stock upstream torii pinned to the persistent s2_blitz ---
+    // --- torii-s2: stock upstream torii pinned to the persistent s2 ---
     // world (A3). Parallel to the multi-world fork above, which keeps serving
     // s1 playtests until the A5 cutover. Reached on ALB :8081 (no DNS dep).
     const toriiS2ConfigParam = new ssm.StringParameter(this, "ToriiS2Config", {

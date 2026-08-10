@@ -1,7 +1,4 @@
-import { getGameManifest } from "@contracts";
-import { getContractByName } from "@dojoengine/core";
-
-import { appchainModel, namespaceForChain } from "@/dojo/game-scope";
+import { appchainModel } from "@/dojo/game-scope";
 import { env } from "../../../env";
 import { nameToPaddedFelt } from "./normalize";
 import { getDefaultWorld, getWorldById } from "./world-directory";
@@ -14,7 +11,7 @@ import { getDefaultWorld, getWorldById } from "./world-directory";
  * identity resolves a `(world, game_id)` pair here instead.
  */
 
-export interface S2GameRow {
+interface S2GameRow {
   gameId: number;
   presetId: number;
 }
@@ -60,19 +57,4 @@ export const resolveAppchainGameId = async (worldName: string, worldId?: string)
   const row = await fetchS2GameRow(world.toriiBaseUrl, worldName);
   if (row) appchainGameIds.set(cacheKey, row.gameId);
   return row?.gameId ?? null;
-};
-
-/**
- * The appchain worlds' system contracts ship in the committed manifests —
- * there is no per-game deployment to resolve. Returns the address for a
- * system name (e.g. "blitz_realm_systems"), or null when absent.
- */
-export const getAppchainSystemAddress = (systemName: string): string | null => {
-  try {
-    const manifest = getGameManifest("appchain");
-    const contract = getContractByName(manifest, namespaceForChain("appchain"), systemName) as { address?: string };
-    return contract?.address ?? null;
-  } catch {
-    return null;
-  }
 };

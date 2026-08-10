@@ -17,7 +17,7 @@ import {
 type ManifestEntry = { tag: string; members?: Array<{ name: string; key?: boolean }> };
 
 const manifest = JSON.parse(
-  readFileSync(resolve(process.cwd(), "../../../contracts/game/manifest_appchain.json"), "utf8"),
+  readFileSync(resolve(process.cwd(), "../../../contracts/game/manifest_appchain_blitz.json"), "utf8"),
 ) as { models?: ManifestEntry[]; events?: ManifestEntry[] };
 
 const deriveGlobalNames = (entries: ManifestEntry[] = []): string[] =>
@@ -39,7 +39,7 @@ describe("game-scope", () => {
   });
 
   it("maps chains to namespaces", () => {
-    expect(namespaceForChain("appchain")).toBe("s2_blitz");
+    expect(namespaceForChain("appchain")).toBe("s2");
     expect(namespaceForChain("mainnet")).toBe("s1_eternum");
     expect(namespaceForChain("local")).toBe("s1_eternum");
   });
@@ -51,13 +51,13 @@ describe("game-scope", () => {
   });
 
   it("scopes per-game models but not chain-global models on s2", () => {
-    setGameScope("s2_blitz", 7);
-    expect(gameModel("TileOpt")).toBe("s2_blitz-TileOpt");
+    setGameScope("s2", 7);
+    expect(gameModel("TileOpt")).toBe("s2-TileOpt");
     // D16-pinned key encoding: unpadded hex.
     expect(gameIdKey()).toBe("0x7");
-    expect(isGameScopedModel("s2_blitz-TileOpt")).toBe(true);
-    expect(isGameScopedModel("s2_blitz-GameRegistry")).toBe(true);
-    expect(isGameScopedModel("s2_blitz-AddressName")).toBe(false);
-    expect(isGameScopedModel("s2_blitz-PresetConfig")).toBe(false);
+    expect(isGameScopedModel("s2-TileOpt")).toBe(true);
+    expect(isGameScopedModel("s2-GameRegistry")).toBe(true);
+    expect(isGameScopedModel("s2-AddressName")).toBe(false);
+    expect(isGameScopedModel("s2-PresetConfig")).toBe(false);
   });
 });

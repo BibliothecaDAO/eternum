@@ -5,7 +5,7 @@ import { getEntityIdFromKeys } from "@dojoengine/utils";
 /**
  * Active game scope for the s2 single-world arm.
  *
- * On the appchain, one persistent `s2_blitz` world hosts every game and each
+ * On the appchain, the persistent `s2` worlds host every game/season and each
  * per-game model leads with `game_id` as key[0]. Every Torii clause the client
  * builds (streams, snapshots, targeted queries) must carry that prefix or it
  * reads other games' state — the ghost-settlement / wrong-clock class of bug.
@@ -15,9 +15,9 @@ import { getEntityIdFromKeys } from "@dojoengine/utils";
  * Set once during bootstrap, before any subscription or query is created.
  */
 
-export type GameNamespace = "s1_eternum" | "s2_blitz";
+export type GameNamespace = "s1_eternum" | "s2";
 
-export const namespaceForChain = (chain: Chain): GameNamespace => (chain === "appchain" ? "s2_blitz" : "s1_eternum");
+export const namespaceForChain = (chain: Chain): GameNamespace => (chain === "appchain" ? "s2" : "s1_eternum");
 
 let activeNamespace: GameNamespace = "s1_eternum";
 let activeGameId = 0;
@@ -40,7 +40,7 @@ export const isGameScoped = (): boolean => activeGameId > 0;
  */
 export const gameCallArgs = (): number[] => (activeGameId > 0 ? [activeGameId] : []);
 
-/** Fully-qualified Torii model name for the active arm, e.g. `s2_blitz-TileOpt`. */
+/** Fully-qualified Torii model name for the active arm, e.g. `s2-TileOpt`. */
 export const gameModel = (name: string): string => `${activeNamespace}-${name}`;
 
 /**
