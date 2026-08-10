@@ -114,7 +114,7 @@ describe("usePlayerWorldRegistrations", () => {
     expect(queryOpts.enabled).toBe(false);
   });
 
-  it("enables blitz games with a game id; eternum stays off until W5; unknown modes stay off", () => {
+  it("enables blitz games and eternum seasons with a game id; unknown modes stay off", () => {
     reactQueryMocks.useQueries.mockReturnValue([]);
 
     usePlayerWorldRegistrations({
@@ -131,7 +131,7 @@ describe("usePlayerWorldRegistrations", () => {
     const [blitz, eternum, unknown, registryOnly] = call[0].queries;
 
     expect(blitz.enabled).toBe(true);
-    expect(eternum.enabled).toBe(false);
+    expect(eternum.enabled).toBe(true);
     expect(unknown.enabled).toBe(false);
     expect(registryOnly.enabled).toBe(false);
   });

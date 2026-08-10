@@ -6,7 +6,7 @@ import { recordGameEntryDuration } from "@/ui/layouts/game-entry-timeline";
 import { env, hasPublicNodeUrl } from "../../../env";
 import { getFactorySqlBaseUrl } from "./factory-endpoints";
 import { resolveWorldContracts, resolveWorldDeploymentFromFactory } from "./factory-resolver";
-import { fetchS2GameRow } from "./game-registry";
+import { fetchS2GameRow, resolveAppchainWorldIdForGame } from "./game-registry";
 import { isRpcUrlCompatibleForChain, normalizeRpcUrl } from "./normalize";
 import { saveWorldProfile } from "./store";
 import type { GameProfile, WorldProfile } from "./types";
@@ -125,7 +125,9 @@ const resolveS2ChainConfig = async (
  * GameRegistry lookup resolves the game inside that world.
  */
 const buildS2GameProfile = async (name: string, worldId?: string): Promise<GameProfile> => {
-  const world = getWorldById(worldId) ?? getDefaultWorld();
+  // Routes carry only (chain, name); recover which world owns the game.
+  const resolvedWorldId = worldId ?? (await resolveAppchainWorldIdForGame(name));
+  const world = getWorldById(resolvedWorldId) ?? getDefaultWorld();
 
   const [game, chainConfig] = await Promise.all([
     resolveS2GameRow(world.toriiBaseUrl, name),

@@ -1,7 +1,7 @@
 import { appchainModel } from "@/dojo/game-scope";
 import { env } from "../../../env";
 import { nameToPaddedFelt } from "./normalize";
-import { getDefaultWorld, getWorldById } from "./world-directory";
+import { getDefaultWorld, getWorldById, getWorldDirectory } from "./world-directory";
 
 /**
  * Game identity on the appchain worlds. A world's `GameRegistry` rows — not
@@ -38,6 +38,31 @@ export const fetchS2GameRow = async (toriiBaseUrl: string, name: string): Promis
 };
 
 const appchainGameIds = new Map<string, number>();
+const appchainGameWorlds = new Map<string, string>();
+
+/**
+ * Resolve WHICH directory world holds a game name. Routes and entry contexts
+ * carry only `(chain, worldName)`, so world identity is recovered by asking
+ * each world's GameRegistry (first hit wins — launch names are unique per
+ * world, and the directory is checked in order: blitz, then eternum). Hits
+ * are cached for the session; misses are not.
+ */
+export const resolveAppchainWorldIdForGame = async (worldName: string): Promise<string | null> => {
+  if (env.VITE_PUBLIC_CHAIN !== "appchain" || !worldName) return null;
+
+  const cached = appchainGameWorlds.get(worldName);
+  if (cached !== undefined) return cached;
+
+  for (const world of getWorldDirectory()) {
+    const row = await fetchS2GameRow(world.toriiBaseUrl, worldName);
+    if (row) {
+      appchainGameWorlds.set(worldName, world.id);
+      appchainGameIds.set(`${world.id}:${worldName}`, row.gameId);
+      return world.id;
+    }
+  }
+  return null;
+};
 
 /**
  * Cached name -> game id lookup against a directory world, for landing-side
@@ -49,7 +74,8 @@ const appchainGameIds = new Map<string, number>();
 export const resolveAppchainGameId = async (worldName: string, worldId?: string): Promise<number | null> => {
   if (env.VITE_PUBLIC_CHAIN !== "appchain" || !worldName) return null;
 
-  const world = getWorldById(worldId) ?? getDefaultWorld();
+  const resolvedWorldId = worldId ?? (await resolveAppchainWorldIdForGame(worldName));
+  const world = getWorldById(resolvedWorldId) ?? getDefaultWorld();
   const cacheKey = `${world.id}:${worldName}`;
   const cached = appchainGameIds.get(cacheKey);
   if (cached !== undefined) return cached;

@@ -8,6 +8,7 @@ const reactQueryMocks = vi.hoisted(() => ({
 const directoryMocks = vi.hoisted(() => ({
   getWorldById: vi.fn(),
   getDefaultWorld: vi.fn(),
+  getWorldDirectory: vi.fn(() => []),
 }));
 
 const resolverMocks = vi.hoisted(() => ({

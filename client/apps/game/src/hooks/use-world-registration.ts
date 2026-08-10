@@ -9,6 +9,7 @@ import { executeObservedClientTransaction } from "@/observability/observed-clien
 import { getFactorySqlBaseUrl } from "@/runtime/world";
 import { resolveWorldContracts } from "@/runtime/world/factory-resolver";
 import { normalizeSelector } from "@/runtime/world/normalize";
+import { resolveAppchainWorldIdForGame } from "@/runtime/world/game-registry";
 import { getDefaultWorld, getWorldById } from "@/runtime/world/world-directory";
 import { buildBlitzSettleCalls } from "@/services/blitz/blitz-settlement-calls";
 import { getRpcUrlForChain } from "@/ui/features/admin/constants";
@@ -238,7 +239,8 @@ export const useWorldRegistration = ({
     if (contractsCacheRef.current) return contractsCacheRef.current;
 
     if (chain === "appchain") {
-      const contracts = (getWorldById(undefined) ?? getDefaultWorld()).contractsBySelector;
+      const worldId = await resolveAppchainWorldIdForGame(worldName);
+      const contracts = (getWorldById(worldId) ?? getDefaultWorld()).contractsBySelector;
       contractsCacheRef.current = contracts;
       return contracts;
     }

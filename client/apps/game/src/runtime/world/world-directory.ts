@@ -32,13 +32,13 @@ interface CommittedManifest {
   contracts: { selector: string; address: string }[];
 }
 
-const buildBlitzWorld = (): WorldDeployment => {
-  const manifest = getGameManifest("appchain", "blitz") as unknown as CommittedManifest;
+const buildAppchainWorld = (id: "blitz" | "eternum", toriiBaseUrl: string): WorldDeployment => {
+  const manifest = getGameManifest("appchain", id) as unknown as CommittedManifest;
   return {
-    id: "blitz",
+    id,
     chain: "appchain",
     rpcUrl: env.VITE_PUBLIC_NODE_URL,
-    toriiBaseUrl: env.VITE_PUBLIC_TORII.replace(/\/+$/, ""),
+    toriiBaseUrl: toriiBaseUrl.replace(/\/+$/, ""),
     namespace: namespaceForChain("appchain"),
     worldAddress: manifest.world.address,
     contractsBySelector: Object.fromEntries(
@@ -50,7 +50,13 @@ const buildBlitzWorld = (): WorldDeployment => {
 let directory: WorldDeployment[] | null = null;
 
 export const getWorldDirectory = (): WorldDeployment[] => {
-  directory ??= [buildBlitzWorld()];
+  if (!directory) {
+    directory = [buildAppchainWorld("blitz", env.VITE_PUBLIC_TORII)];
+    // The eternum world joins the directory only when its torii is configured.
+    if (env.VITE_PUBLIC_TORII_ETERNUM) {
+      directory.push(buildAppchainWorld("eternum", env.VITE_PUBLIC_TORII_ETERNUM));
+    }
+  }
   return directory;
 };
 

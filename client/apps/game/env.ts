@@ -32,6 +32,8 @@ const envSchema = z.object({
   // No implicit defaults: endpoints are chain-specific and must come from the
   // active `.env.<chain>.<game>` file.
   VITE_PUBLIC_TORII: optionalUrlOrEmpty.default(""),
+  // Eternum-world torii; empty = the eternum world is absent from the directory.
+  VITE_PUBLIC_TORII_ETERNUM: optionalUrlOrEmpty.default(""),
   VITE_PUBLIC_GLOBAL_TORII: optionalUrlOrEmpty.default(""),
   VITE_PUBLIC_NODE_URL: optionalUrlOrEmpty.default(""),
   VITE_PUBLIC_TORII_RELAY: z.string().optional().default(""),

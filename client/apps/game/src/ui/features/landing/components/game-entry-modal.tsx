@@ -35,8 +35,8 @@ import {
   buildPlayerBlitzSettlementSnapshotQuery,
   buildPlayerOwnedStructureCountQuery,
 } from "@/services/blitz/blitz-settlement-sql";
-import { resolveAppchainGameId } from "@/runtime/world/game-registry";
-import { getDefaultWorld } from "@/runtime/world/world-directory";
+import { resolveAppchainGameId, resolveAppchainWorldIdForGame } from "@/runtime/world/game-registry";
+import { getDefaultWorld, getWorldById } from "@/runtime/world/world-directory";
 import Button from "@/ui/design-system/atoms/button";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
@@ -2826,10 +2826,11 @@ export const GameEntryModal = ({
     enabled: isOpen && Boolean(worldName),
     queryFn: async () => {
       // The persistent appchain worlds ship their contract map in the
-      // committed manifest — no per-game deployment to resolve.
+      // committed manifest — no per-game deployment to resolve. Which world
+      // owns this game comes from its GameRegistry (blitz vs eternum).
       const contracts =
         chain === "appchain"
-          ? getDefaultWorld().contractsBySelector
+          ? (getWorldById(await resolveAppchainWorldIdForGame(worldName)) ?? getDefaultWorld()).contractsBySelector
           : await resolveWorldContracts(getFactorySqlBaseUrl(chain), worldName);
       return {
         blitzRealmSystemsAddress: resolvedSystemSelectors.blitzRealmSystemsSelector

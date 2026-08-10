@@ -18,6 +18,7 @@ import {
 import { appchainModel } from "@/dojo/game-scope";
 import { buildPlayerBlitzSettlementStatusQuery } from "@/services/blitz/blitz-settlement-sql";
 import { nameToPaddedFelt } from "@/runtime/world/normalize";
+import { resolveAppchainWorldIdForGame } from "@/runtime/world/game-registry";
 import { getDefaultWorld, getWorldById } from "@/runtime/world/world-directory";
 import type { Chain } from "@contracts";
 import { useQueries } from "@tanstack/react-query";
@@ -59,6 +60,9 @@ const parseMaybeHexToAddress = (v: unknown): string | null => {
 
 export interface WorldConfigMeta {
   mode: ResolvedGameMode;
+  // The directory world this meta belongs to — downstream flows pick their
+  // deployment (torii, contract map) with it.
+  worldId: string | null;
   // The GameRegistry id this meta describes — the settle flow requires it
   // (registration targets a chosen game, never ambient scope).
   gameId: number | null;
@@ -124,6 +128,7 @@ interface WorldAvailability {
 
 const emptyWorldConfigMeta = (): WorldConfigMeta => ({
   mode: "unknown",
+  worldId: null,
   gameId: null,
   startSettlingAt: null,
   startMainAt: null,
@@ -252,7 +257,8 @@ const checkWorldAvailability = async (
   world: WorldRef,
   playerAddress?: string | null,
 ): Promise<{ isAvailable: boolean; meta: WorldConfigMeta | null }> => {
-  const deployment = getWorldById(world.worldId) ?? getDefaultWorld();
+  const worldId = world.worldId ?? (await resolveAppchainWorldIdForGame(world.name)) ?? undefined;
+  const deployment = getWorldById(worldId) ?? getDefaultWorld();
 
   const isAvailable = await isToriiAvailable(deployment.toriiBaseUrl);
   if (!isAvailable) {
@@ -260,6 +266,7 @@ const checkWorldAvailability = async (
   }
 
   const meta = await fetchGameMeta(deployment.toriiBaseUrl, world.name, playerAddress);
+  if (meta) meta.worldId = deployment.id;
   return { isAvailable: true, meta };
 };
 

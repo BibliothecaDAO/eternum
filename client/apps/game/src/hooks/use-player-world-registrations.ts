@@ -9,7 +9,10 @@
  * `(worldId, gameId)` pair explicitly.
  */
 import type { WorldSummary } from "@bibliothecadao/types";
-import { buildPlayerBlitzSettlementStatusQuery } from "@/services/blitz/blitz-settlement-sql";
+import {
+  buildPlayerBlitzSettlementStatusQuery,
+  buildPlayerOwnedStructureCountQuery,
+} from "@/services/blitz/blitz-settlement-sql";
 import { getDefaultWorld, getWorldById } from "@/runtime/world/world-directory";
 import { PLAYER_WORLD_REGISTRATION_QUERY_KEY } from "@/hooks/world-list-queries";
 import { useQueries } from "@tanstack/react-query";
@@ -44,6 +47,28 @@ export const fetchPlayerRegistration = async (
   }
 };
 
+/**
+ * Eternum: whether the player owns at least one structure in this season —
+ * the settled-realm signal for entry surfaces (dev/free settling per S3).
+ */
+const fetchPlayerSettledRealm = async (
+  toriiBaseUrl: string,
+  playerAddress: string,
+  gameId: number,
+): Promise<boolean | null> => {
+  try {
+    const query = buildPlayerOwnedStructureCountQuery(playerAddress, gameId);
+    const url = `${toriiBaseUrl}/sql?query=${encodeURIComponent(query)}`;
+    const response = await fetch(url);
+    if (!response.ok) return null;
+    const [row] = (await response.json()) as Record<string, unknown>[];
+    const count = Number(row?.owned_count ?? 0);
+    return Number.isFinite(count) ? count > 0 : null;
+  } catch {
+    return null;
+  }
+};
+
 export const getWorldSummaryKey = (world: Pick<WorldSummary, "name" | "chain">): string =>
   `${world.chain}:${world.name}`;
 
@@ -55,8 +80,8 @@ interface UsePlayerWorldRegistrationsInput {
 /**
  * For a connected player, fetch per-game registration status for every live
  * game in parallel. Skipped entirely when there is no connected player.
- * Eternum seasons get their settled-realm check when the eternum world lands
- * (W5) — until then that field stays null.
+ * Blitz games check the settlement row; eternum seasons check owned
+ * structures in the season (W5).
  */
 export const usePlayerWorldRegistrations = ({
   worlds,
@@ -66,18 +91,23 @@ export const usePlayerWorldRegistrations = ({
     queries: worlds.map((world) => {
       const worldKey = getWorldSummaryKey(world);
       const isBlitz = world.mode === "blitz";
+      const isEternum = world.mode === "eternum";
       const gameId = world.gameId ?? 0;
       return {
         queryKey: [...PLAYER_WORLD_REGISTRATION_QUERY_KEY, worldKey, playerAddress ?? "anonymous"],
         queryFn: async (): Promise<PlayerWorldRegistration> => {
-          if (!playerAddress || !isBlitz || gameId <= 0) {
+          if (!playerAddress || gameId <= 0) {
             return { isPlayerRegistered: null, hasPlayerSettledRealm: null };
           }
           const deployment = getWorldById(world.worldId) ?? getDefaultWorld();
-          const isRegistered = await fetchPlayerRegistration(deployment.toriiBaseUrl, playerAddress, gameId);
-          return { isPlayerRegistered: isRegistered, hasPlayerSettledRealm: null };
+          if (isBlitz) {
+            const isRegistered = await fetchPlayerRegistration(deployment.toriiBaseUrl, playerAddress, gameId);
+            return { isPlayerRegistered: isRegistered, hasPlayerSettledRealm: null };
+          }
+          const hasSettled = await fetchPlayerSettledRealm(deployment.toriiBaseUrl, playerAddress, gameId);
+          return { isPlayerRegistered: null, hasPlayerSettledRealm: hasSettled };
         },
-        enabled: Boolean(playerAddress) && world.alive && isBlitz && gameId > 0,
+        enabled: Boolean(playerAddress) && world.alive && (isBlitz || isEternum) && gameId > 0,
         staleTime: 30_000,
         gcTime: 10 * 60_000,
         refetchInterval: 30_000,
