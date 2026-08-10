@@ -33,6 +33,13 @@ export const getScopedGameId = (): number => activeGameId;
 
 export const isGameScoped = (): boolean => activeGameId > 0;
 
+/**
+ * Leading calldata for direct (non-provider) game-system calls: every deployed
+ * s2 entrypoint takes `game_id` first; legacy worlds take nothing. Spread this
+ * ahead of the call's own arguments.
+ */
+export const gameCallArgs = (): number[] => (activeGameId > 0 ? [activeGameId] : []);
+
 /** Fully-qualified Torii model name for the active arm, e.g. `s2_blitz-TileOpt`. */
 export const gameModel = (name: string): string => `${activeNamespace}-${name}`;
 

@@ -23,9 +23,14 @@ export async function setupNetwork(
     useBurner: boolean;
     /** Model namespace: "s2_blitz" on the appchain single world, "s1_eternum" on legacy worlds. */
     namespace?: string;
+    /** Active game on the s2 single world; 0/omitted on legacy worlds. */
+    gameId?: number;
   },
 ): Promise<SetupNetworkExplicitReturn> {
-  const provider = new EternumProvider(config.manifest, config.rpcUrl, env.vrfProviderAddress);
+  const provider = new EternumProvider(config.manifest, config.rpcUrl, env.vrfProviderAddress, undefined, {
+    namespace: env.namespace,
+    gameId: env.gameId,
+  });
 
   const toriiClient = await createClient({
     worldAddress: config.manifest.world.address || "",

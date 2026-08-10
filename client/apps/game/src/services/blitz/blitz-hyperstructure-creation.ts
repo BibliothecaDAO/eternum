@@ -1,4 +1,5 @@
 import { executeObservedClientTransaction } from "@/observability/observed-client-transaction";
+import { gameCallArgs, getGameNamespace } from "@/dojo/game-scope";
 import { getFactorySqlBaseUrl, getActiveWorld } from "@/runtime/world";
 import { resolveWorldContracts } from "@/runtime/world/factory-resolver";
 import { normalizeSelector } from "@/runtime/world/normalize";
@@ -8,7 +9,6 @@ import type { HexPosition } from "@bibliothecadao/types";
 import { getContractByName } from "@dojoengine/core";
 import { CallData } from "starknet";
 
-const ETERNUM_NAMESPACE = "s1_eternum";
 const RESERVED_HYPERSTRUCTURE_CREATE_TIMEOUT_MS = 30_000;
 
 type HyperstructureCreationAccount = Parameters<typeof executeObservedClientTransaction>[0]["account"];
@@ -42,7 +42,7 @@ const resolveHyperstructureCreateSystemsSelector = (chain: Chain) => {
   const manifest = getGameManifest(chain);
   const hyperstructureCreateSystems = getContractByName(
     manifest,
-    ETERNUM_NAMESPACE,
+    getGameNamespace(),
     "hyperstructure_create_systems",
   ) as { selector?: string };
   const selector = hyperstructureCreateSystems.selector
@@ -63,6 +63,20 @@ const resolveHyperstructureCreateSystemsAddress = async ({
   chain: Chain;
   worldName: string;
 }): Promise<string> => {
+  // The persistent s2 world's contracts ship in the committed manifest; only
+  // legacy per-game worlds need the factory lookup.
+  if (chain === "appchain") {
+    const manifest = getGameManifest(chain) as { contracts?: { selector?: string; address?: string }[] };
+    const selector = resolveHyperstructureCreateSystemsSelector(chain);
+    const contractAddress = manifest.contracts?.find(
+      (contract) => contract.selector && normalizeSelector(contract.selector) === selector,
+    )?.address;
+    if (!contractAddress) {
+      throw new Error("hyperstructure_create_systems contract not found in the appchain manifest");
+    }
+    return contractAddress;
+  }
+
   const factorySqlBaseUrl = getFactorySqlBaseUrl(chain);
   if (!factorySqlBaseUrl) {
     throw new Error(`Factory SQL base URL not configured for chain: ${chain}`);
@@ -124,6 +138,7 @@ const resolveHyperstructureCreateCalldata = (hexCoords: HexPosition) => {
   const contractCoords = new Position({ x: hexCoords.col, y: hexCoords.row }).getContract();
 
   return CallData.compile([
+    ...gameCallArgs(),
     {
       alt: DEFAULT_COORD_ALT,
       x: contractCoords.x,

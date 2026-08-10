@@ -15,11 +15,10 @@ import { BuildingType, ContractAddress, StructureType } from "@bibliothecadao/ty
 import { dojoConfig } from "../../../../../dojo-config";
 import { extractReadableErrorMessage } from "@/utils/error-message";
 import { withRealmActionSubmitTimeout } from "./realm-action-submit-timeout";
-import { gameEntityKey } from "@/dojo/game-scope";
+import { gameCallArgs, gameEntityKey, getGameNamespace } from "@/dojo/game-scope";
 
 const REALM_PROVISION_SYNC_TIMEOUT_MS = 30_000;
 const REALM_PROVISION_SYNC_POLL_INTERVAL_MS = 1_000;
-const ETERNUM_NAMESPACE = "s1_eternum";
 
 type LiveRealmInfo = NonNullable<ReturnType<typeof getRealmInfo>>;
 type RealmProvisionSyncTarget = Parameters<typeof getStructuresDataFromTorii>[2][number];
@@ -129,7 +128,7 @@ const syncRealmStructureIfPossible = async ({
 };
 
 const resolveBlitzRealmSystemsAddress = (): string => {
-  const contract = getContractByName(dojoConfig.manifest, ETERNUM_NAMESPACE, "blitz_realm_systems");
+  const contract = getContractByName(dojoConfig.manifest, getGameNamespace(), "blitz_realm_systems");
   if (!contract?.address) {
     throw new Error("Blitz realm system address is missing from the active manifest.");
   }
@@ -267,7 +266,7 @@ export const useBlitzRealmProvision = (structureEntityId: number | null): Struct
           calls: {
             contractAddress: blitzRealmSystemsAddress,
             entrypoint: "provision_realm",
-            calldata: CallData.compile([structureInfo.entityId]),
+            calldata: CallData.compile([...gameCallArgs(), structureInfo.entityId]),
           },
           surface: "settlement",
           operation: "blitz_realm_systems.provision_realm",
