@@ -194,7 +194,11 @@ pub mod registrar_systems {
             world.write_model(@map_config);
             world.write_model(@agent_config);
             initialize_quest_config(ref world, game_id, preset_rules);
-            reserve_hyperstructures_for_game(ref world, game_id);
+            // Blitz pre-reserves its fixed hyperstructure sites at creation; eternum
+            // hyperstructures are player-built and the reservation system is blitz-gated.
+            if preset_game_config.blitz_mode_on {
+                reserve_hyperstructures_for_game(ref world, game_id);
+            }
             emit_game_created(ref world, registry);
 
             game_id

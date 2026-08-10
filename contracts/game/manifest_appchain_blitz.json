@@ -1813,7 +1813,7 @@
     },
     {
       "address": "0x27853c5cafdfb2561e47fc0c250b51bc651cb441a3e3a846c99f29ad752b6f0",
-      "class_hash": "0x4a95476ed02bcd228a539233baff01e860261d1635576f5d2da689dc1074264",
+      "class_hash": "0x4640e0b47bdb2a2bda438405093c878bcaabd5bae7e515ddb4ee7ef541cca6",
       "init_calldata": [],
       "tag": "s2-registrar_systems",
       "selector": "0x4804d037c91147634be0c5239a0c366e59e0365a3dbb5da3c4c4c5e9cfd6014",
