@@ -15,14 +15,14 @@ pub struct PlayersRankTrial {
     pub total_prize_amount_calculated: u128,
 }
 
-// PlayersRankFinal is absorbed by GameRegistry.final_trial_id (D5).
-// #[derive(IntrospectPacked, Copy, Drop, Serde)]
-// #[dojo::model]
-// pub struct PlayersRankFinal {
-//     #[key]
-//     pub world_id: u128,
-//     pub trial_id: u128,
-// }
+// Kept for manifest parity with Eternum indexers; GameRegistry.final_trial_id is authoritative (D5).
+#[derive(IntrospectPacked, Copy, Drop, Serde)]
+#[dojo::model]
+pub struct PlayersRankFinal {
+    #[key]
+    pub game_id: u32,
+    pub trial_id: u128,
+}
 
 #[derive(IntrospectPacked, Copy, Drop, Serde)]
 #[dojo::model]

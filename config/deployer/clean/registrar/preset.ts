@@ -10,7 +10,6 @@ import { hash, shortString, uint256 } from "starknet";
 
 type ConfigRecord<Value> = Record<number, Value> | Record<string, Value>;
 type ResourceAmount = { resource: number; amount: number };
-type RegistrarConfig = Config & { season: Config["season"] & { endGraceSeconds?: number } };
 
 interface ResourceListReference {
   id: number;
@@ -396,6 +395,40 @@ function buildPresetSideTables(config: Config): {
   };
 }
 
+function buildSeasonAddressesConfig(config: Config) {
+  const addresses = config.setup?.addresses;
+  return {
+    season_pass_address: addresses?.seasonPass ?? "0x0",
+    realms_address: addresses?.realms ?? "0x0",
+    lords_address: addresses?.lords ?? "0x0",
+  };
+}
+
+function buildFaithConfig(config: Config) {
+  return {
+    enabled: config.faith?.enabled ?? false,
+    wonder_base_fp_per_sec: config.faith?.wonder_base_fp_per_sec ?? 0,
+    holy_site_fp_per_sec: config.faith?.holy_site_fp_per_sec ?? 0,
+    realm_fp_per_sec: config.faith?.realm_fp_per_sec ?? 0,
+    village_fp_per_sec: config.faith?.village_fp_per_sec ?? 0,
+    owner_share_percent: (config.faith?.owner_share_percent ?? 0) * 100,
+    reward_token: config.faith?.reward_token ?? "0x0",
+  };
+}
+
+function buildBitcoinMineConfig(config: Config) {
+  const enabled = !config.blitz.mode.on && config.exploration.bitcoinMineWinProbability > 0;
+  return {
+    enabled,
+    prize_per_phase: enabled ? RESOURCE_PRECISION : 0,
+    min_labor_per_contribution: enabled ? 100 * RESOURCE_PRECISION : 1,
+  };
+}
+
+function buildQuestGames(config: Config) {
+  return config.questGames.map((game) => ({ address: game.address, levels: game.levels }));
+}
+
 export function buildPresetRegistration(config: Config, presetId: number): PresetRegistrationPayload {
   if (!Number.isInteger(presetId) || presetId <= 0 || presetId > 0xffff_ffff) {
     throw new Error("presetId must be an integer between 1 and 4294967295");
@@ -443,6 +476,39 @@ export function buildPresetRegistration(config: Config, presetId: number): Prese
         village_immunity_ticks: config.battle.villageImmunityTicks,
         village_raid_immunity_ticks: config.battle.villageRaidImmunityTicks,
       },
+      bank_config: {
+        lp_fee_num: config.banks.lpFeesNumerator,
+        lp_fee_denom: config.banks.lpFeesDenominator,
+        owner_fee_num: config.banks.ownerFeesNumerator,
+        owner_fee_denom: config.banks.ownerFeesDenominator,
+      },
+      trade_config: { max_count: config.trade.maxCount },
+      quest_config: {
+        quest_discovery_prob: config.exploration.questFindProbability,
+        quest_discovery_fail_prob: config.exploration.questFindFailProbability,
+      },
+      faith_config: buildFaithConfig(config),
+      bitcoin_mine_config: buildBitcoinMineConfig(config),
+      resource_bridge_config: { deposit_paused: false, withdraw_paused: false },
+      res_bridge_fee_split_config: {
+        velords_fee_on_dpt_percent: config.bridge.velords_fee_on_dpt_percent,
+        velords_fee_on_wtdr_percent: config.bridge.velords_fee_on_wtdr_percent,
+        season_pool_fee_on_dpt_percent: config.bridge.season_pool_fee_on_dpt_percent,
+        season_pool_fee_on_wtdr_percent: config.bridge.season_pool_fee_on_wtdr_percent,
+        client_fee_on_dpt_percent: config.bridge.client_fee_on_dpt_percent,
+        client_fee_on_wtdr_percent: config.bridge.client_fee_on_wtdr_percent,
+        realm_fee_dpt_percent: config.bridge.realm_fee_dpt_percent,
+        realm_fee_wtdr_percent: config.bridge.realm_fee_wtdr_percent,
+        velords_fee_recipient: config.bridge.velords_fee_recipient,
+        season_pool_fee_recipient: config.bridge.season_pool_fee_recipient,
+      },
+      village_token_config: {
+        token_address: config.village.village_pass_nft_address,
+        mint_recipient_address: config.village.village_mint_initial_recipient,
+      },
+      village_troop_config: { troop_delay_ticks: config.battle.delaySeconds },
+      season_addresses_config: buildSeasonAddressesConfig(config),
+      quest_games: buildQuestGames(config),
       realm_start_resources_config: {
         resources_list_id: realmStart.id,
         resources_list_count: realmStart.count,
@@ -473,6 +539,7 @@ export function buildPresetRegistration(config: Config, presetId: number): Prese
     },
     gameConfig: {
       preset_id: presetId,
+      blitz_mode_on: config.blitz.mode.on,
       settlement_config: buildSettlementConfig(config),
       blitz_settlement_config: buildBlitzSettlementConfig(config),
       blitz_registration_config: {
@@ -519,15 +586,30 @@ function resolveRegistrationSchedule(config: Config, startMainAt: number) {
   return { registrationStartAt, startSettlingAt };
 }
 
+function resolveRegistrationCountMax(config: Config, twoPlayerMode: boolean): number {
+  if (!config.blitz.mode.on) {
+    if (twoPlayerMode) {
+      throw new Error("Eternum seasons do not support two-player mode");
+    }
+    return 0;
+  }
+
+  const registrationCountMax = twoPlayerMode ? 2 : config.blitz.registration.registration_count_max;
+  if (registrationCountMax < 1 || registrationCountMax > 24) {
+    throw new Error("Blitz registration_count_max must be between 1 and 24");
+  }
+  return registrationCountMax;
+}
+
 function resolveEndGraceSeconds(config: Config): number {
-  const endGraceSeconds = (config as RegistrarConfig).season.endGraceSeconds;
+  const endGraceSeconds = config.season.endGraceSeconds;
   if (
     typeof endGraceSeconds !== "number" ||
     !Number.isInteger(endGraceSeconds) ||
     endGraceSeconds < 0 ||
     endGraceSeconds > 0xffff_ffff
   ) {
-    throw new Error("Blitz season endGraceSeconds must be an integer between 0 and 4294967295");
+    throw new Error("Season endGraceSeconds must be an integer between 0 and 4294967295");
   }
   return endGraceSeconds;
 }
@@ -545,10 +627,7 @@ function deriveGameSeed(input: CreateGamePayloadInput): string {
 
 export function buildCreateGameParams(config: Config, input: CreateGamePayloadInput): Record<string, unknown> {
   const { registrationStartAt, startSettlingAt } = resolveRegistrationSchedule(config, input.startMainAt);
-  const registrationCountMax = input.twoPlayerMode ? 2 : config.blitz.registration.registration_count_max;
-  if (registrationCountMax < 1 || registrationCountMax > 24) {
-    throw new Error("Appchain registration_count_max must be between 1 and 24");
-  }
+  const registrationCountMax = resolveRegistrationCountMax(config, input.twoPlayerMode);
 
   return {
     name: shortString.encodeShortString(input.gameName),

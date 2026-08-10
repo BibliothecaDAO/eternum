@@ -1,6 +1,7 @@
 import {
   DEFAULT_APPCHAIN_GAME_INDEX_POLL_MS,
   DEFAULT_APPCHAIN_GAME_INDEX_TIMEOUT_MS,
+  DEFAULT_APPCHAIN_ETERNUM_PRESET_ID,
   DEFAULT_APPCHAIN_PRESET_ID,
   DEFAULT_CARTRIDGE_API_BASE,
   DEFAULT_FACTORY_INDEX_POLL_MS,
@@ -15,7 +16,7 @@ import type {
   FactoryMapConfigOverrides,
 } from "@bibliothecadao/types";
 import type {
-  DeploymentChain,
+  DeploymentEnvironment,
   ExecutionMode,
   LaunchGameRequest,
   LaunchGameStepId,
@@ -510,10 +511,10 @@ function requireRotationLaunchArgs(args: Args): {
   };
 }
 
-function resolveSharedLaunchDefaults(chain: DeploymentChain) {
-  return chain === "appchain"
+function resolveSharedLaunchDefaults(environment: DeploymentEnvironment) {
+  return environment.chain === "appchain"
     ? {
-        version: DEFAULT_APPCHAIN_PRESET_ID,
+        version: environment.gameType === "eternum" ? DEFAULT_APPCHAIN_ETERNUM_PRESET_ID : DEFAULT_APPCHAIN_PRESET_ID,
         waitForFactoryIndexTimeoutMs: DEFAULT_APPCHAIN_GAME_INDEX_TIMEOUT_MS,
         waitForFactoryIndexPollMs: DEFAULT_APPCHAIN_GAME_INDEX_POLL_MS,
       }
@@ -524,8 +525,8 @@ function resolveSharedLaunchDefaults(chain: DeploymentChain) {
       };
 }
 
-function resolveSharedLaunchRequestOptions(args: Args, chain: DeploymentChain) {
-  const defaults = resolveSharedLaunchDefaults(chain);
+function resolveSharedLaunchRequestOptions(args: Args, environment: DeploymentEnvironment) {
+  const defaults = resolveSharedLaunchDefaults(environment);
 
   return {
     rpcUrl: args["rpc-url"] || process.env.RPC_URL || process.env.VITE_PUBLIC_NODE_URL,
@@ -590,7 +591,7 @@ export function buildLaunchGameRequest(args: Args): LaunchGameRequest {
     environmentId: requiredArgs.environmentId,
     gameName: requiredArgs.gameName,
     startTime: requiredArgs.startTime,
-    ...resolveSharedLaunchRequestOptions(resolvedArgs, environment.chain),
+    ...resolveSharedLaunchRequestOptions(resolvedArgs, environment),
     maxActions: resolveOptionalNumber(resolvedArgs["max-actions"], "max actions") ?? environment.createGame.maxActions,
     seriesName: resolvedArgs["series-name"],
     seriesGameNumber: resolveOptionalNumber(resolvedArgs["series-game-number"], "series game number"),
@@ -608,7 +609,7 @@ export function buildLaunchSeriesRequest(args: Args): LaunchSeriesRequest {
     seriesName: requiredArgs.seriesName,
     games: requiredArgs.games,
     targetGameNames: resolveTargetGameNamesJson(resolvedArgs),
-    ...resolveSharedLaunchRequestOptions(resolvedArgs, environment.chain),
+    ...resolveSharedLaunchRequestOptions(resolvedArgs, environment),
     maxActions: resolveOptionalNumber(resolvedArgs["max-actions"], "max actions") ?? environment.createGame.maxActions,
     autoRetryEnabled:
       resolveOptionalBooleanArg(resolvedArgs, "auto-retry-enabled", ["GAME_LAUNCH_AUTO_RETRY_ENABLED"]) ?? true,
@@ -636,7 +637,7 @@ export function buildLaunchRotationRequest(args: Args): LaunchRotationRequest {
     weeklyCadence: requiredArgs.weeklyCadence,
     targetGameNames: resolveTargetGameNamesJson(resolvedArgs),
     evaluationIntervalMinutes: requiredArgs.evaluationIntervalMinutes,
-    ...resolveSharedLaunchRequestOptions(resolvedArgs, environment.chain),
+    ...resolveSharedLaunchRequestOptions(resolvedArgs, environment),
     biomeClimateOverridesByGameNumber: resolveBiomeClimateOverridesByGameNumber(
       resolveOptionalArg(resolvedArgs, "biome-climate-overrides-by-game-number-json", [
         "BIOME_CLIMATE_OVERRIDES_BY_GAME_NUMBER_JSON",

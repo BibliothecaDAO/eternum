@@ -8,7 +8,7 @@ use crate::alias::ID;
 use crate::models::config::{
     BattleConfig, SeasonConfig, StructureMaxLevelConfig, TickInterval, TickTrait, WorldConfigUtilImpl,
 };
-use crate::models::position::Coord;
+use crate::models::position::{Coord, Direction};
 use crate::models::stamina::Stamina;
 use crate::models::troop::{GuardTroops, TroopBoosts, TroopTier, TroopType, Troops};
 
@@ -34,16 +34,17 @@ pub struct StructureReservation {
 }
 
 
-// Village slot state is excluded from the Blitz-core world (D15).
-// #[derive(Introspect, Copy, Drop, Serde)]
-// #[dojo::model]
-// pub struct StructureVillageSlots {
-//     #[key]
-//     pub connected_realm_entity_id: ID,
-//     pub connected_realm_id: u16,
-//     pub connected_realm_coord: Coord,
-//     pub directions_left: Span<Direction>,
-// }
+#[derive(Introspect, Copy, Drop, Serde)]
+#[dojo::model]
+pub struct StructureVillageSlots {
+    #[key]
+    pub game_id: u32,
+    #[key]
+    pub connected_realm_entity_id: ID,
+    pub connected_realm_id: u16,
+    pub connected_realm_coord: Coord,
+    pub directions_left: Span<Direction>,
+}
 
 #[derive(Introspect, Copy, Drop, Serde)]
 #[dojo::model]
@@ -139,21 +140,25 @@ pub struct StructureMetadata {
     pub village_realm: ID,
 }
 
-// Village troop state is excluded from the Blitz-core world (D15).
-// #[derive(Copy, Drop, Serde, Introspect)]
-// #[dojo::model]
-// pub struct VillageTroop {
-//     #[key]
-//     pub village_id: ID,
-//     pub claimed: bool,
-// }
-// #[derive(Copy, Drop, Serde, Introspect)]
-// #[dojo::model]
-// pub struct VillageRaidImmunity {
-//     #[key]
-//     pub village_id: ID,
-//     pub last_raided_at: u64,
-// }
+#[derive(Copy, Drop, Serde, Introspect)]
+#[dojo::model]
+pub struct VillageTroop {
+    #[key]
+    pub game_id: u32,
+    #[key]
+    pub village_id: ID,
+    pub claimed: bool,
+}
+
+#[derive(Copy, Drop, Serde, Introspect)]
+#[dojo::model]
+pub struct VillageRaidImmunity {
+    #[key]
+    pub game_id: u32,
+    #[key]
+    pub village_id: ID,
+    pub last_raided_at: u64,
+}
 
 #[generate_trait]
 pub impl StructureBaseImpl of StructureBaseTrait {

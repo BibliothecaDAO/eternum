@@ -240,12 +240,13 @@ mod dispatcher_lifecycle {
     use starknet::ContractAddress;
     use crate::constants::{DEFAULT_NS, DEFAULT_NS_STR, ResourceTypes};
     use crate::models::config::{
-        AgentControllerConfig, ArtificerConfig, BattleConfig, BiomeClimateConfig, BlitzExplorationConfig,
-        BlitzRegistrationConfigImpl, BlitzRegistrationGameConfig, BlitzRegistrationRulesConfig, BlitzSettlementConfig,
-        BuildingConfig, ChainConfig, HyperstructureConfig, HyperstructureCostConfig, PresetConfig, PresetGameConfig,
-        SettlementConfig, SpeedConfig, StartingResourcesConfig, StructureMaxLevelConfig, TickConfig, TroopDamageConfig,
-        TroopLimitConfig, TroopStaminaConfig, VictoryPointsGrantConfig, VictoryPointsWinConfig,
-        VillageFoundResourcesConfig, WeightConfig,
+        AgentControllerConfig, ArtificerConfig, BankConfig, BattleConfig, BiomeClimateConfig, BitcoinMineConfig,
+        BlitzExplorationConfig, BlitzRegistrationConfigImpl, BlitzRegistrationGameConfig, BlitzRegistrationRulesConfig,
+        BlitzSettlementConfig, BuildingConfig, ChainConfig, FaithConfig, HyperstructureConfig, HyperstructureCostConfig,
+        PresetConfig, PresetGameConfig, QuestConfig, ResourceBridgeConfig, ResourceBridgeFeeSplitConfig,
+        SeasonAddressesConfig, SettlementConfig, SpeedConfig, StartingResourcesConfig, StructureMaxLevelConfig,
+        TickConfig, TradeConfig, VictoryPointsGrantConfig, VictoryPointsWinConfig, VillageFoundResourcesConfig,
+        VillageTokenConfig, VillageTroopConfig, WeightConfig,
     };
     use crate::models::game::{GameRegistryImpl, GameStatus};
     use crate::models::mmr::MMRConfigDefaultImpl;
@@ -303,8 +304,10 @@ mod dispatcher_lifecycle {
                 TestResource::Model("ResourceArrival"), TestResource::Model("Wonder"),
                 TestResource::Model("AddressName"), TestResource::Model("RNG"), TestResource::Model("PlayersRankTrial"),
                 TestResource::Model("PlayerRank"), TestResource::Model("RankPrize"), TestResource::Model("RankList"),
-                TestResource::Contract("registrar_systems"), TestResource::Contract("hyperstructure_create_systems"),
-                TestResource::Contract("blitz_realm_systems"), TestResource::Contract("realm_internal_systems"),
+                TestResource::Model("QuestLevels"), TestResource::Model("QuestGameRegistry"),
+                TestResource::Model("QuestFeatureFlag"), TestResource::Contract("registrar_systems"),
+                TestResource::Contract("hyperstructure_create_systems"), TestResource::Contract("blitz_realm_systems"),
+                TestResource::Contract("realm_systems"), TestResource::Contract("realm_internal_systems"),
                 TestResource::Contract("prize_distribution_systems"), TestResource::Contract("resource_systems"),
                 TestResource::Library(("structure_creation_library", "0_1_18")),
                 TestResource::Library(("rng_library", "0_1_16")), TestResource::Event("GameCreated"),
@@ -322,6 +325,7 @@ mod dispatcher_lifecycle {
             ContractDefTrait::new(DEFAULT_NS(), @"registrar_systems").with_writer_of([namespace].span()),
             ContractDefTrait::new(DEFAULT_NS(), @"hyperstructure_create_systems").with_writer_of([namespace].span()),
             ContractDefTrait::new(DEFAULT_NS(), @"blitz_realm_systems").with_writer_of([namespace].span()),
+            ContractDefTrait::new(DEFAULT_NS(), @"realm_systems").with_writer_of([namespace].span()),
             ContractDefTrait::new(DEFAULT_NS(), @"realm_internal_systems").with_writer_of([namespace].span()),
             ContractDefTrait::new(DEFAULT_NS(), @"prize_distribution_systems").with_writer_of([namespace].span()),
             ContractDefTrait::new(DEFAULT_NS(), @"resource_systems").with_writer_of([namespace].span()),
@@ -650,6 +654,42 @@ mod dispatcher_lifecycle {
             battle_config: BattleConfig {
                 regular_immunity_ticks: 0, village_immunity_ticks: 0, village_raid_immunity_ticks: 0,
             },
+            bank_config: BankConfig { lp_fee_num: 0, lp_fee_denom: 1, owner_fee_num: 0, owner_fee_denom: 1 },
+            trade_config: TradeConfig { max_count: 0 },
+            quest_config: QuestConfig { quest_discovery_prob: 0, quest_discovery_fail_prob: 0 },
+            faith_config: FaithConfig {
+                enabled: false,
+                wonder_base_fp_per_sec: 0,
+                holy_site_fp_per_sec: 0,
+                realm_fp_per_sec: 0,
+                village_fp_per_sec: 0,
+                owner_share_percent: 0,
+                reward_token: Zero::zero(),
+            },
+            bitcoin_mine_config: BitcoinMineConfig {
+                enabled: false, prize_per_phase: 0, min_labor_per_contribution: 1,
+            },
+            resource_bridge_config: ResourceBridgeConfig { deposit_paused: false, withdraw_paused: false },
+            res_bridge_fee_split_config: ResourceBridgeFeeSplitConfig {
+                velords_fee_on_dpt_percent: 0,
+                velords_fee_on_wtdr_percent: 0,
+                season_pool_fee_on_dpt_percent: 0,
+                season_pool_fee_on_wtdr_percent: 0,
+                client_fee_on_dpt_percent: 0,
+                client_fee_on_wtdr_percent: 0,
+                realm_fee_dpt_percent: 0,
+                realm_fee_wtdr_percent: 0,
+                velords_fee_recipient: Zero::zero(),
+                season_pool_fee_recipient: Zero::zero(),
+            },
+            village_token_config: VillageTokenConfig {
+                token_address: Zero::zero(), mint_recipient_address: Zero::zero(),
+            },
+            village_troop_config: VillageTroopConfig { troop_delay_ticks: 0 },
+            season_addresses_config: SeasonAddressesConfig {
+                season_pass_address: Zero::zero(), realms_address: Zero::zero(), lords_address: Zero::zero(),
+            },
+            quest_games: [].span(),
             realm_start_resources_config: StartingResourcesConfig { resources_list_id: 0, resources_list_count: 0 },
             village_start_resources_config: StartingResourcesConfig { resources_list_id: 0, resources_list_count: 0 },
             village_find_resources_config: VillageFoundResourcesConfig {
@@ -674,6 +714,7 @@ mod dispatcher_lifecycle {
     fn preset_game_config() -> PresetGameConfig {
         PresetGameConfig {
             preset_id: TEST_PRESET_ID,
+            blitz_mode_on: true,
             settlement_config: SettlementConfig {
                 center: 0,
                 base_distance: 0,

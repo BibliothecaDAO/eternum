@@ -8,6 +8,7 @@ import { buildPresetRegistration, summarizePresetSideTables } from "./preset";
 
 interface RegisterPresetOptions {
   presetId: number;
+  environmentId: "appchain.blitz" | "appchain.eternum";
   dryRun: boolean;
 }
 
@@ -18,18 +19,27 @@ function readArgument(name: string): string | undefined {
 
 function parseOptions(): RegisterPresetOptions {
   const presetId = Number(readArgument("--preset-id"));
+  const environmentId = readArgument("--environment") ?? "appchain.blitz";
   if (!Number.isInteger(presetId) || presetId <= 0) {
-    throw new Error("Usage: bun config/deployer/clean/registrar/register-preset.ts --preset-id <n> [--dry-run]");
+    throw new Error(
+      "Usage: bun config/deployer/clean/registrar/register-preset.ts --preset-id <n> [--environment appchain.blitz|appchain.eternum] [--dry-run]",
+    );
   }
-  return { presetId, dryRun: process.argv.includes("--dry-run") };
+  if (environmentId !== "appchain.blitz" && environmentId !== "appchain.eternum") {
+    throw new Error("--environment must be appchain.blitz or appchain.eternum");
+  }
+  return { presetId, environmentId, dryRun: process.argv.includes("--dry-run") };
 }
 
 function stringify(value: unknown): string {
   return JSON.stringify(value, (_key, entry) => (typeof entry === "bigint" ? entry.toString() : entry), 2);
 }
 
-export function buildPresetDryRun(presetId: number) {
-  const config = loadEnvironmentConfiguration("appchain.blitz");
+export function buildPresetDryRun(
+  presetId: number,
+  environmentId: "appchain.blitz" | "appchain.eternum" = "appchain.blitz",
+) {
+  const config = loadEnvironmentConfiguration(environmentId);
   const payload = buildPresetRegistration(config, presetId);
   const calldata = buildRegisterPresetCalldata(payload);
   return {
@@ -41,7 +51,7 @@ export function buildPresetDryRun(presetId: number) {
 }
 
 export async function registerAppchainPreset(options: RegisterPresetOptions): Promise<void> {
-  const config = loadEnvironmentConfiguration("appchain.blitz");
+  const config = loadEnvironmentConfiguration(options.environmentId);
   const payload = buildPresetRegistration(config, options.presetId);
   const calldata = buildRegisterPresetCalldata(payload);
   const summary = {
@@ -61,7 +71,7 @@ export async function registerAppchainPreset(options: RegisterPresetOptions): Pr
     return;
   }
 
-  const environment = resolveDeploymentEnvironment("appchain.blitz");
+  const environment = resolveDeploymentEnvironment(options.environmentId);
   const credentials = resolveAccountCredentials({
     accountAddress: process.env.DOJO_ACCOUNT_ADDRESS,
     privateKey: process.env.DOJO_PRIVATE_KEY,
@@ -74,7 +84,7 @@ export async function registerAppchainPreset(options: RegisterPresetOptions): Pr
   });
 
   try {
-    const result = await registerPreset(account, payload);
+    const result = await registerPreset(account, payload, options.environmentId);
     console.log(`Registered preset ${options.presetId}: ${result.transactionHash}`);
   } catch (error) {
     if (!isRegistrarAlreadyRegisteredError(error)) {

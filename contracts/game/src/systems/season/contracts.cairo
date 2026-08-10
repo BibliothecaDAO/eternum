@@ -18,7 +18,7 @@ pub trait ISeasonSystems<T> {
     /// # Errors:
     /// - Fails if the season has not started or is already over
     /// - Fails if the player does not have enough points to end the game
-    fn season_close(ref self: T);
+    fn season_close(ref self: T, game_id: u32);
 }
 
 #[dojo::contract]
@@ -28,6 +28,7 @@ pub mod season_systems {
     use dojo::world::WorldStorage;
     use crate::constants::DEFAULT_NS;
     use crate::models::config::{SeasonConfigImpl, VictoryPointsWinConfig, WorldConfigUtilImpl};
+    use crate::models::game::{GameRegistryImpl, GameStatus};
     use crate::models::hyperstructure::PlayerRegisteredPoints;
     use crate::utils::achievements::index::{AchievementTrait, Tasks};
 
@@ -36,6 +37,8 @@ pub mod season_systems {
     #[dojo::event(historical: false)]
     struct SeasonEnded {
         #[key]
+        game_id: u32,
+        #[key]
         winner_address: starknet::ContractAddress,
         timestamp: u64,
     }
@@ -43,19 +46,19 @@ pub mod season_systems {
 
     #[abi(embed_v0)]
     pub impl SeasonSystemsImpl of super::ISeasonSystems<ContractState> {
-        fn season_close(ref self: ContractState) {
+        fn season_close(ref self: ContractState, game_id: u32) {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
-            SeasonConfigImpl::get(world).assert_started_and_not_over();
+            SeasonConfigImpl::get(world, game_id).assert_started_and_not_over();
 
             // ensure season game mode is on
-            let blitz_mode_on: bool = WorldConfigUtilImpl::get_member(world, selector!("blitz_mode_on"));
+            let blitz_mode_on: bool = WorldConfigUtilImpl::get_member(world, game_id, selector!("blitz_mode_on"));
             assert!(blitz_mode_on == false, "Eternum: Not Season Game Mode");
 
             // ensure the the caller's points are enough to end the game
             let player_address = starknet::get_caller_address();
-            let player_points: PlayerRegisteredPoints = world.read_model(player_address);
+            let player_points: PlayerRegisteredPoints = world.read_model((game_id, player_address));
             let victory_points_win_config: VictoryPointsWinConfig = WorldConfigUtilImpl::get_member(
-                world, selector!("victory_points_win_config"),
+                world, game_id, selector!("victory_points_win_config"),
             );
             assert!(victory_points_win_config.points_for_win > 0, "Eternum: Points for win must be greater than 0");
             assert!(
@@ -64,11 +67,14 @@ pub mod season_systems {
             );
 
             // end the season
-            SeasonConfigImpl::end_season(ref world);
+            SeasonConfigImpl::end_season(ref world, game_id);
+            let mut game = GameRegistryImpl::get(world, game_id);
+            game.status = GameStatus::Ended;
+            world.write_model(@game);
 
             // emit season end event
             let now = starknet::get_block_timestamp();
-            world.emit_event(@SeasonEnded { winner_address: player_address, timestamp: now });
+            world.emit_event(@SeasonEnded { game_id, winner_address: player_address, timestamp: now });
 
             // grant win season achievement
             AchievementTrait::progress(

@@ -35,6 +35,7 @@ pub impl iHolySiteDiscoveryImpl of iHolySiteDiscoveryTrait {
 
     fn create(
         ref world: WorldStorage,
+        game_id: u32,
         coord: Coord,
         troop_limit_config: TroopLimitConfig,
         troop_stamina_config: TroopStaminaConfig,
@@ -46,6 +47,7 @@ pub impl iHolySiteDiscoveryImpl of iHolySiteDiscoveryTrait {
         structure_creation_library
             .make_structure(
                 world,
+                game_id,
                 coord,
                 Zero::zero(), // owner_id: No direct player ownership (bandits)
                 structure_id,
@@ -59,9 +61,16 @@ pub impl iHolySiteDiscoveryImpl of iHolySiteDiscoveryTrait {
         // add guards to structure (same pattern as FragmentMine)
         // slot must start from delta, to charlie, to beta, to alpha
         let slot_tiers = array![(GuardSlot::Delta, TroopTier::T3, TroopType::Paladin)].span();
-        let tick_config: TickInterval = TickImpl::get_tick_interval(ref world);
+        let tick_config: TickInterval = TickImpl::get_tick_interval(ref world, game_id);
         iMercenariesImpl::add(
-            ref world, structure_id, vrf_seed, slot_tiers, troop_limit_config, troop_stamina_config, tick_config,
+            ref world,
+            game_id,
+            structure_id,
+            vrf_seed,
+            slot_tiers,
+            troop_limit_config,
+            troop_stamina_config,
+            tick_config,
         );
 
         return true;

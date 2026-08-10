@@ -42,7 +42,6 @@ pub mod troop_movement_systems {
     use crate::systems::utils::blitz_profile::iBlitzProfileImpl;
     use crate::systems::utils::hyperstructure::iHyperstructureDiscoveryImpl;
     use crate::systems::utils::map::IMapImpl;
-    // Mine discovery is excluded from the Blitz-core world (D15).
     use crate::systems::utils::troop::{iAgentDiscoveryImpl, iExplorerImpl, iTroopImpl};
     use crate::utils::achievements::index::{AchievementTrait, Tasks};
     use crate::utils::cartridge::vrf::Source;
@@ -523,15 +522,7 @@ pub mod troop_movement_util_systems {
     use crate::models::events::ExploreFind;
     use crate::models::map::Tile;
     use crate::models::position::Coord;
-    // use crate::models::config::{QuestConfig};
-    // use crate::models::quest::{QuestFeatureFlag, QuestGameRegistry};
     use crate::models::structure::StructureReservation;
-    // use crate::systems::quest::constants::VERSION;
-    // use crate::systems::quest::contracts::{IQuestSystemsDispatcher, IQuestSystemsDispatcherTrait,
-    // iQuestDiscoveryImpl};
-    use crate::systems::utils::hyperstructure::iHyperstructureDiscoveryImpl;
-    // Mine discovery is excluded from the Blitz-core world (D15).
-    use crate::systems::utils::troop::{iAgentDiscoveryImpl, iExplorerImpl, iTroopImpl};
     use super::{
         ITroopMovementUtilSystems, ITroopMovementUtilSystemsDispatcher, ITroopMovementUtilSystemsDispatcherTrait,
     };
@@ -591,6 +582,57 @@ pub mod troop_movement_util_systems {
             );
             if hyperstructure_found {
                 return (true, ExploreFind::Hyperstructure);
+            }
+
+            let (mine_found, mine_find) = run_discovery(
+                @world,
+                @"mine_discovery_systems",
+                game_id,
+                vrf_seed,
+                tile,
+                caller,
+                map_config,
+                troop_limit_config,
+                troop_stamina_config,
+                current_tick,
+                season_mode_on,
+            );
+            if mine_found {
+                return (true, mine_find);
+            }
+
+            let (holy_site_found, holy_site_find) = run_discovery(
+                @world,
+                @"holysite_discovery_systems",
+                game_id,
+                vrf_seed,
+                tile,
+                caller,
+                map_config,
+                troop_limit_config,
+                troop_stamina_config,
+                current_tick,
+                season_mode_on,
+            );
+            if holy_site_found {
+                return (true, holy_site_find);
+            }
+
+            let (bitcoin_mine_found, bitcoin_mine_find) = run_discovery(
+                @world,
+                @"bitcoin_mine_discovery_systems",
+                game_id,
+                vrf_seed,
+                tile,
+                caller,
+                map_config,
+                troop_limit_config,
+                troop_stamina_config,
+                current_tick,
+                season_mode_on,
+            );
+            if bitcoin_mine_found {
+                return (true, bitcoin_mine_find);
             }
 
             let (camp_found, _) = run_discovery(
@@ -663,7 +705,7 @@ pub mod troop_movement_util_systems {
                 season_mode_on,
             )
     }
-    // Legacy season discovery fan-out excluded from the Blitz-core world (D15).
+    // Superseded by the ordered run_discovery fan-out above; retained as migration history.
 //     #[abi(embed_v0)]
 //     impl TroopMovementUtilImpl of ITroopMovementUtilSystems<ContractState> {
 //         fn find_treasure(
@@ -889,7 +931,6 @@ pub mod hyperstructure_discovery_systems {
     use crate::models::events::ExploreFind;
     use crate::models::map::Tile;
     use crate::systems::utils::hyperstructure::iHyperstructureDiscoveryImpl;
-    // Mine discovery is excluded from the Blitz-core world (D15).
     use crate::systems::utils::troop::{iAgentDiscoveryImpl, iExplorerImpl, iTroopImpl};
     use super::ITroopMovementUtilSystems;
 
@@ -946,115 +987,100 @@ pub mod hyperstructure_discovery_systems {
 }
 
 
-// Mine and holy-site discovery contracts are excluded from the Blitz-core world (D15).
-// #[dojo::contract]
-// pub mod mine_discovery_systems {
-//     use dojo::world::WorldStorageTrait;
-//     use crate::constants::DEFAULT_NS;
-//     use crate::models::config::{
-//         CombatConfigImpl, MapConfig, SeasonConfigImpl, TickImpl, TroopLimitConfig, TroopStaminaConfig,
-//         WorldConfigUtilImpl,
-//     };
-//     use crate::models::events::ExploreFind;
-//     use crate::models::map::Tile;
-//     use crate::systems::utils::hyperstructure::iHyperstructureDiscoveryImpl;
-//     use crate::systems::utils::mine::iMineDiscoveryImpl;
-//     use crate::systems::utils::troop::{iAgentDiscoveryImpl, iExplorerImpl, iTroopImpl};
-//     use super::ITroopMovementUtilSystems;
-//
-//     #[abi(embed_v0)]
-//     impl MineDiscoveryImpl of ITroopMovementUtilSystems<ContractState> {
-//         fn find_treasure(
-//             self: @ContractState,
-//             game_id: u32,
-//             vrf_seed: u256,
-//             mut tile: Tile,
-//             caller: starknet::ContractAddress,
-//             map_config: MapConfig,
-//             troop_limit_config: TroopLimitConfig,
-//             troop_stamina_config: TroopStaminaConfig,
-//             current_tick: u64,
-//             season_mode_on: bool,
-//         ) -> (bool, ExploreFind) {
-//             // ensure caller is the troop utils systems because this changes state
-//             let mut world = self.world(DEFAULT_NS());
-//
-//             // ensure caller is the troop utils movement systems
-//             let (troop_movement_util_systems, _) = world.dns(@"troop_movement_util_systems").unwrap();
-//             assert!(
-//                 starknet::get_caller_address() == troop_movement_util_systems,
-//                 "caller must be the troop_movement_util_systems",
-//             );
-//
-//             let mine_lottery_won: bool = iMineDiscoveryImpl::lottery(map_config, vrf_seed, world);
-//             if mine_lottery_won {
-//                 iMineDiscoveryImpl::create(
-//                     ref world,
-//                     tile.into(),
-//                     season_mode_on,
-//                     map_config,
-//                     troop_limit_config,
-//                     troop_stamina_config,
-//                     vrf_seed,
-//                 );
-//                 return (true, ExploreFind::Mine);
-//             }
-//             return (false, ExploreFind::None);
-//         }
-//     }
-// }
-//
-//
-// #[dojo::contract]
-// pub mod holysite_discovery_systems {
-//     use dojo::world::WorldStorageTrait;
-//     use crate::constants::DEFAULT_NS;
-//     use crate::models::config::{MapConfig, TroopLimitConfig, TroopStaminaConfig, WorldConfigUtilImpl};
-//     use crate::models::events::ExploreFind;
-//     use crate::models::map::Tile;
-//     use crate::systems::utils::holysite::iHolySiteDiscoveryImpl;
-//     use super::ITroopMovementUtilSystems;
-//
-//     #[abi(embed_v0)]
-//     impl HolySiteDiscoveryImpl of ITroopMovementUtilSystems<ContractState> {
-//         fn find_treasure(
-//             self: @ContractState,
-//             game_id: u32,
-//             vrf_seed: u256,
-//             mut tile: Tile,
-//             caller: starknet::ContractAddress,
-//             map_config: MapConfig,
-//             troop_limit_config: TroopLimitConfig,
-//             troop_stamina_config: TroopStaminaConfig,
-//             current_tick: u64,
-//             season_mode_on: bool,
-//         ) -> (bool, ExploreFind) {
-//             // ensure caller is the troop utils systems because this changes state
-//             let mut world = self.world(DEFAULT_NS());
-//
-//             // ensure caller is the troop utils movement systems
-//             let (troop_movement_util_systems, _) = world.dns(@"troop_movement_util_systems").unwrap();
-//             assert!(
-//                 starknet::get_caller_address() == troop_movement_util_systems,
-//                 "caller must be the troop_movement_util_systems",
-//             );
-//
-//             // Holy sites only discoverable in season mode (non-blitz)
-//             if !season_mode_on {
-//                 return (false, ExploreFind::None);
-//             }
-//
-//             let holysite_lottery_won: bool = iHolySiteDiscoveryImpl::lottery(map_config, vrf_seed, world);
-//             if holysite_lottery_won {
-//                 iHolySiteDiscoveryImpl::create(
-//                     ref world, tile.into(), troop_limit_config, troop_stamina_config, vrf_seed,
-//                 );
-//                 return (true, ExploreFind::HolySite);
-//             }
-//             return (false, ExploreFind::None);
-//         }
-//     }
-// }
+#[dojo::contract]
+pub mod mine_discovery_systems {
+    use dojo::world::WorldStorageTrait;
+    use crate::constants::DEFAULT_NS;
+    use crate::models::config::{MapConfig, TroopLimitConfig, TroopStaminaConfig};
+    use crate::models::events::ExploreFind;
+    use crate::models::map::Tile;
+    use crate::systems::utils::mine::iMineDiscoveryImpl;
+    use super::ITroopMovementUtilSystems;
+
+    #[abi(embed_v0)]
+    impl MineDiscoveryImpl of ITroopMovementUtilSystems<ContractState> {
+        fn find_treasure(
+            self: @ContractState,
+            game_id: u32,
+            vrf_seed: u256,
+            mut tile: Tile,
+            caller: starknet::ContractAddress,
+            map_config: MapConfig,
+            troop_limit_config: TroopLimitConfig,
+            troop_stamina_config: TroopStaminaConfig,
+            current_tick: u64,
+            season_mode_on: bool,
+        ) -> (bool, ExploreFind) {
+            let mut world = self.world(DEFAULT_NS());
+            let (troop_movement_util_systems, _) = world.dns(@"troop_movement_util_systems").unwrap();
+            assert!(
+                starknet::get_caller_address() == troop_movement_util_systems,
+                "caller must be the troop_movement_util_systems",
+            );
+
+            if iMineDiscoveryImpl::lottery(map_config, vrf_seed, world) {
+                iMineDiscoveryImpl::create(
+                    ref world,
+                    game_id,
+                    tile.into(),
+                    season_mode_on,
+                    map_config,
+                    troop_limit_config,
+                    troop_stamina_config,
+                    vrf_seed,
+                );
+                return (true, ExploreFind::Mine);
+            }
+            (false, ExploreFind::None)
+        }
+    }
+}
+
+#[dojo::contract]
+pub mod holysite_discovery_systems {
+    use dojo::world::WorldStorageTrait;
+    use crate::constants::DEFAULT_NS;
+    use crate::models::config::{MapConfig, TroopLimitConfig, TroopStaminaConfig};
+    use crate::models::events::ExploreFind;
+    use crate::models::map::Tile;
+    use crate::systems::utils::holysite::iHolySiteDiscoveryImpl;
+    use super::ITroopMovementUtilSystems;
+
+    #[abi(embed_v0)]
+    impl HolySiteDiscoveryImpl of ITroopMovementUtilSystems<ContractState> {
+        fn find_treasure(
+            self: @ContractState,
+            game_id: u32,
+            vrf_seed: u256,
+            mut tile: Tile,
+            caller: starknet::ContractAddress,
+            map_config: MapConfig,
+            troop_limit_config: TroopLimitConfig,
+            troop_stamina_config: TroopStaminaConfig,
+            current_tick: u64,
+            season_mode_on: bool,
+        ) -> (bool, ExploreFind) {
+            let mut world = self.world(DEFAULT_NS());
+            let (troop_movement_util_systems, _) = world.dns(@"troop_movement_util_systems").unwrap();
+            assert!(
+                starknet::get_caller_address() == troop_movement_util_systems,
+                "caller must be the troop_movement_util_systems",
+            );
+
+            if !season_mode_on {
+                return (false, ExploreFind::None);
+            }
+
+            if iHolySiteDiscoveryImpl::lottery(map_config, vrf_seed, world) {
+                iHolySiteDiscoveryImpl::create(
+                    ref world, game_id, tile.into(), troop_limit_config, troop_stamina_config, vrf_seed,
+                );
+                return (true, ExploreFind::HolySite);
+            }
+            (false, ExploreFind::None)
+        }
+    }
+}
 //
 
 #[dojo::contract]
@@ -1123,7 +1149,6 @@ pub mod agent_discovery_systems {
     use crate::models::events::ExploreFind;
     use crate::models::map::Tile;
     use crate::systems::utils::hyperstructure::iHyperstructureDiscoveryImpl;
-    // Mine discovery is excluded from the Blitz-core world (D15).
     use crate::systems::utils::troop::{iAgentDiscoveryImpl, iExplorerImpl, iTroopImpl};
     use super::ITroopMovementUtilSystems;
 

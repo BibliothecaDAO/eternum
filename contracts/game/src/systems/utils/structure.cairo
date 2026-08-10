@@ -19,7 +19,7 @@ use crate::models::troop::{ExplorerTroops, GuardTrait, GuardTroops, TroopsImpl};
 use crate::systems::utils::map::IMapImpl;
 use crate::systems::utils::troop::iExplorerImpl;
 
-// D15: imports used only by the commented season structure-creation path are intentionally omitted.
+// The duplicate structure-creation path below remains retired in favor of structure_creation_library.
 
 #[generate_trait]
 pub impl iStructureImpl of IStructureTrait {

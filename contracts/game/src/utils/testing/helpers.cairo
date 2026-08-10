@@ -31,13 +31,13 @@ use crate::models::game::{GameRegistry, GameStatus};
 use crate::models::map::{Tile, TileImpl, TileOccupier};
 use crate::models::map2::TileOpt;
 use crate::models::position::{Coord, CoordTrait, Direction};
-// Quest models are excluded from the Blitz-core world (D14).
-// use crate::models::quest::QuestTile;
 use crate::models::resource::resource::{
     ResourceImpl, ResourceList, ResourceWeightImpl, SingleResourceImpl, SingleResourceStoreImpl, WeightStoreImpl,
 };
 use crate::models::stamina::{Stamina, StaminaImpl, StaminaTrait};
-use crate::models::structure::{Structure, StructureBase, StructureCategory, StructureMetadata};
+use crate::models::structure::{
+    Structure, StructureBase, StructureBaseImpl, StructureCategory, StructureMetadata, StructureVillageSlots,
+};
 use crate::models::troop::{
     ExplorerTroops, GuardSlot, GuardTroops, TroopBoosts, TroopLimitTrait, TroopTier, TroopType, Troops,
 };
@@ -201,10 +201,9 @@ pub fn MOCK_QUEST_CONFIG() -> QuestConfig {
 // Config Store Functions (tstore_*)
 // ============================================================================
 
-// D15: village token configuration is outside the compiled Blitz-core preset surface.
-// pub fn tstore_village_token_config(ref world: WorldStorage, config: VillageTokenConfig) {
-//     WorldConfigUtilImpl::set_member(ref world, TEST_PRESET_ID, selector!("village_pass_config"), config);
-// }
+pub fn tstore_village_token_config(ref world: WorldStorage, config: VillageTokenConfig) {
+    WorldConfigUtilImpl::set_member(ref world, TEST_PRESET_ID, selector!("village_token_config"), config);
+}
 
 pub fn tstore_map_config(ref world: WorldStorage, config: MapConfig) {
     WorldConfigUtilImpl::set_member(ref world, TEST_GAME_ID, selector!("map_config"), config);
@@ -242,10 +241,9 @@ pub fn tstore_troop_damage_config(ref world: WorldStorage, troop_damage_config: 
     WorldConfigUtilImpl::set_member(ref world, TEST_PRESET_ID, selector!("troop_damage_config"), troop_damage_config);
 }
 
-// D15: quest configuration is outside the compiled Blitz-core preset surface.
-// pub fn tstore_quest_config(ref world: WorldStorage, config: QuestConfig) {
-//     WorldConfigUtilImpl::set_member(ref world, TEST_PRESET_ID, selector!("quest_config"), config);
-// }
+pub fn tstore_quest_config(ref world: WorldStorage, config: QuestConfig) {
+    WorldConfigUtilImpl::set_member(ref world, TEST_PRESET_ID, selector!("quest_config"), config);
+}
 
 pub fn tstore_production_config(ref world: WorldStorage, resource_type: u8) {
     let simple_input_list: Array<(u8, u128)> = array![(ResourceTypes::LABOR, 1)];
@@ -338,11 +336,10 @@ pub fn init_config(ref world: WorldStorage) {
             .span(),
     );
     tstore_map_config(ref world, MOCK_MAP_CONFIG());
-    // D15: quest and village-token configuration are outside the compiled Blitz-core preset surface.
-// tstore_quest_config(ref world, MOCK_QUEST_CONFIG());
-// tstore_village_token_config(
-//     ref world, MOCK_VILLAGE_TOKEN_CONFIG(ref world, starknet::contract_address_const::<'realm_owner'>()),
-// );
+    tstore_quest_config(ref world, MOCK_QUEST_CONFIG());
+    tstore_village_token_config(
+        ref world, MOCK_VILLAGE_TOKEN_CONFIG(ref world, starknet::contract_address_const::<'realm_owner'>()),
+    );
 }
 
 /// Initialize only troop-related configs (for guard/explorer tests)
@@ -591,7 +588,17 @@ pub fn tspawn_village(ref world: WorldStorage, realm_id: ID, owner: ContractAddr
     };
     world.write_model_test(@structure);
 
-    // Village slot state is excluded from the Blitz-core test world (D15).
+    let realm: Structure = world.read_model((TEST_GAME_ID, realm_id));
+    world
+        .write_model_test(
+            @StructureVillageSlots {
+                game_id: TEST_GAME_ID,
+                connected_realm_entity_id: realm_id,
+                connected_realm_id: realm.metadata.realm_id,
+                connected_realm_coord: realm.base.coord(),
+                directions_left: array![].span(),
+            },
+        );
 
     // Ensure the tile is marked as occupied by the village
     let tile_opt: TileOpt = world.read_model((TEST_GAME_ID, coord.alt, coord.x, coord.y));
@@ -633,23 +640,21 @@ pub fn namespace_def_combat() -> NamespaceDef {
             TestResource::Model("GameMapConfig"), TestResource::Model("GameRegistry"),
             TestResource::Model("WeightConfig"), // Structure models
             TestResource::Model("Structure"),
-            TestResource::Model("StructureOwnerStats"), TestResource::Model("StructureBuildings"),
-            TestResource::Model("Building"), // Troop models
+            TestResource::Model("StructureOwnerStats"), TestResource::Model("StructureVillageSlots"),
+            TestResource::Model("StructureBuildings"), TestResource::Model("Building"), // Troop models
             TestResource::Model("ExplorerTroops"), // Map models
-            TestResource::Model("TileOpt"), TestResource::Model("BiomeDiscovered"),
-            TestResource::Model("Wonder"), // Resource models
-            TestResource::Model("Resource"),
-            TestResource::Model("ResourceList"), TestResource::Model("ResourceFactoryConfig"),
-            // Contracts
+            TestResource::Model("TileOpt"),
+            TestResource::Model("BiomeDiscovered"), TestResource::Model("Wonder"), // Resource models
+            TestResource::Model("Resource"), TestResource::Model("ResourceList"),
+            TestResource::Model("ResourceFactoryConfig"), // Contracts
             TestResource::Contract("troop_management_systems"), TestResource::Contract("troop_movement_systems"),
-            TestResource::Contract("troop_battle_systems"), TestResource::Contract("realm_internal_systems"),
-            TestResource::Contract("resource_systems"), // Libraries
+            TestResource::Contract("troop_battle_systems"), TestResource::Contract("village_systems"),
+            TestResource::Contract("realm_internal_systems"), TestResource::Contract("resource_systems"), // Libraries
             TestResource::Library(("structure_creation_library", "0_1_18")),
             TestResource::Library(("biome_library", "0_1_13")), TestResource::Library(("rng_library", "0_1_16")),
             TestResource::Library(
                 ("combat_library", "0_1_14"),
-            ), // Raid and village resources are excluded from the Blitz-core test world (D15).
-            // Events - TrophyProgression is from achievement crate, declared via build-external-contracts
+            ), // Events - TrophyProgression is from achievement crate, declared via build-external-contracts
             TestResource::Event("StoryEvent"), TestResource::Event("ExplorerMoveEvent"),
             TestResource::Event("BattleEvent"), TestResource::Event("TrophyProgression"),
         ]
@@ -665,6 +670,8 @@ pub fn contract_defs_combat() -> Span<ContractDef> {
         ContractDefTrait::new(DEFAULT_NS(), @"troop_movement_systems")
             .with_writer_of([dojo::utils::bytearray_hash(DEFAULT_NS())].span()),
         ContractDefTrait::new(DEFAULT_NS(), @"troop_battle_systems")
+            .with_writer_of([dojo::utils::bytearray_hash(DEFAULT_NS())].span()),
+        ContractDefTrait::new(DEFAULT_NS(), @"village_systems")
             .with_writer_of([dojo::utils::bytearray_hash(DEFAULT_NS())].span()),
         ContractDefTrait::new(DEFAULT_NS(), @"realm_internal_systems")
             .with_writer_of([dojo::utils::bytearray_hash(DEFAULT_NS())].span()),

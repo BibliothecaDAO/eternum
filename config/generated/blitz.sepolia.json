@@ -59,10 +59,19 @@
     "spires_max_count": 0,
     "spires_settled_count": 0
   },
+  "biomeClimate": {
+    "elevationScaleBps": 10000,
+    "moistureScaleBps": 10000,
+    "elevationBiasBps": 10000,
+    "moistureBiasBps": 10000,
+    "elevationSeed": 0,
+    "moistureSeed": 0
+  },
   "season": {
     "startSettlingAfterSeconds": 1800,
     "startMainAfterSeconds": 3600,
     "durationSeconds": 5400,
+    "endGraceSeconds": 86400,
     "bridgeCloseAfterEndSeconds": 3600,
     "pointRegistrationCloseAfterEndSeconds": 3600,
     "startSettlingAt": 0,

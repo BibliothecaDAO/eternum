@@ -1,6 +1,5 @@
 #[cfg(test)]
 mod tests {
-    use core::num::traits::zero::Zero;
     use dojo::model::{ModelStorage, ModelStorageTest};
     use dojo::world::{IWorldDispatcherTrait, WorldStorage, WorldStorageTrait};
     use dojo_snf_test::{
@@ -9,16 +8,18 @@ mod tests {
     use snforge_std::{start_cheat_block_timestamp_global, start_cheat_caller_address, stop_cheat_caller_address};
     use starknet::ContractAddress;
     use crate::alias::ID;
-    use crate::constants::{DEFAULT_NS, DEFAULT_NS_STR, LEGACY_CONFIG_ID};
+    use crate::constants::{DEFAULT_NS, DEFAULT_NS_STR};
     use crate::models::config::{FaithConfig, SeasonConfig, WorldConfigUtilImpl};
     use crate::models::faith::{
         FaithfulStructure, PlayerFaithPoints, WonderFaith, WonderFaithBlacklist, WonderFaithWinners,
     };
+    use crate::models::game::{GameRegistry, GameStatus};
     use crate::models::position::Coord;
     use crate::models::stamina::Stamina;
     use crate::models::structure::{Structure, StructureBase, StructureCategory, StructureMetadata, Wonder};
     use crate::models::troop::{GuardTroops, TroopBoosts, TroopTier, TroopType, Troops};
     use crate::systems::faith::contracts::{IFaithSystemsDispatcher, IFaithSystemsDispatcherTrait};
+    use crate::utils::testing::helpers::{TEST_GAME_ID, TEST_PRESET_ID};
 
     // ============================================================================
     // Test Setup
@@ -54,7 +55,8 @@ mod tests {
             namespace: DEFAULT_NS_STR(),
             resources: [
                 // Core config
-                TestResource::Model("WorldConfig"), // Structure models
+                TestResource::Model("WorldConfig"), TestResource::Model("PresetConfig"),
+                TestResource::Model("GameRegistry"), // Structure models
                 TestResource::Model("Structure"),
                 TestResource::Model("StructureOwnerStats"), TestResource::Model("Wonder"),
                 // Faith models
@@ -84,13 +86,38 @@ mod tests {
 
         // Set up configs
         let faith_config = get_default_faith_config();
-        WorldConfigUtilImpl::set_member(ref world, selector!("faith_config"), faith_config);
+        WorldConfigUtilImpl::set_member(ref world, TEST_PRESET_ID, selector!("faith_config"), faith_config);
 
         // Active season (started, not ended)
         let season_config = get_active_season_config();
-        WorldConfigUtilImpl::set_member(ref world, selector!("season_config"), season_config);
+        set_test_season(ref world, season_config);
 
         world
+    }
+
+    fn set_test_season(ref world: WorldStorage, season: SeasonConfig) {
+        world
+            .write_model_test(
+                @GameRegistry {
+                    game_id: TEST_GAME_ID,
+                    name: 'faith-test',
+                    series_id: 0,
+                    game_number_in_series: 0,
+                    preset_id: TEST_PRESET_ID,
+                    creator: starknet::contract_address_const::<'game_creator'>(),
+                    status: GameStatus::Live,
+                    dev_mode_on: season.dev_mode_on,
+                    start_settling_at: season.start_settling_at,
+                    start_main_at: season.start_main_at,
+                    end_at: season.end_at,
+                    end_grace_seconds: season.end_grace_seconds,
+                    registration_grace_seconds: season.registration_grace_seconds,
+                    final_trial_id: 0,
+                    seed: 1,
+                    fees_collected: 0,
+                    fees_paid_out: 0,
+                },
+            );
     }
 
     fn get_faith_dispatcher(ref world: WorldStorage) -> (ContractAddress, IFaithSystemsDispatcher) {
@@ -111,6 +138,7 @@ mod tests {
         };
 
         let structure = Structure {
+            game_id: TEST_GAME_ID,
             entity_id: structure_id,
             owner: owner,
             base: StructureBase {
@@ -145,7 +173,7 @@ mod tests {
         world.write_model_test(@structure);
 
         // Create Wonder model
-        let wonder = Wonder { structure_id: structure_id, coord: coord, realm_id: 1 };
+        let wonder = Wonder { game_id: TEST_GAME_ID, structure_id: structure_id, coord: coord, realm_id: 1 };
         world.write_model_test(@wonder);
 
         structure_id
@@ -164,6 +192,7 @@ mod tests {
         };
 
         let structure = Structure {
+            game_id: TEST_GAME_ID,
             entity_id: structure_id,
             owner: owner,
             base: StructureBase {
@@ -213,6 +242,7 @@ mod tests {
         };
 
         let structure = Structure {
+            game_id: TEST_GAME_ID,
             entity_id: structure_id,
             owner: owner,
             base: StructureBase {
@@ -265,25 +295,25 @@ mod tests {
         start_cheat_block_timestamp_global(1000);
 
         start_cheat_caller_address(system_addr, wonder_owner);
-        dispatcher.pledge_faith(wonder_id, wonder_id);
+        dispatcher.pledge_faith(TEST_GAME_ID, wonder_id, wonder_id);
         stop_cheat_caller_address(system_addr);
 
         // Verify WonderFaith state
-        let wonder_faith: WonderFaith = world.read_model(wonder_id);
+        let wonder_faith: WonderFaith = world.read_model((TEST_GAME_ID, wonder_id));
         assert!(wonder_faith.num_structures_pledged == 1, "Should have 1 structure pledged");
         assert!(wonder_faith.claim_per_sec == 500, "Should have 500 FP/sec");
         assert!(wonder_faith.last_recorded_owner == wonder_owner, "Should record owner");
         assert!(wonder_faith.owner_claim_per_sec == 150, "Owner claim should be 150");
 
         // Verify FaithfulStructure state
-        let faithful: FaithfulStructure = world.read_model(wonder_id);
+        let faithful: FaithfulStructure = world.read_model((TEST_GAME_ID, wonder_id));
         assert!(faithful.wonder_id == wonder_id, "Should be faithful to itself");
         assert!(faithful.fp_to_wonder_owner_per_sec == 150, "Owner share should be 150");
         assert!(faithful.fp_to_struct_owner_per_sec == 350, "Pledger share should be 350");
         assert!(faithful.last_recorded_owner == wonder_owner, "Should record structure owner");
 
         // Verify PlayerFaithPoints
-        let player_fp: PlayerFaithPoints = world.read_model((wonder_owner, wonder_id));
+        let player_fp: PlayerFaithPoints = world.read_model((TEST_GAME_ID, wonder_owner, wonder_id));
         assert!(player_fp.points_per_sec_as_owner == 150, "Should have 150 as owner");
         assert!(player_fp.points_per_sec_as_pledger == 350, "Should have 350 as pledger");
     }
@@ -306,32 +336,32 @@ mod tests {
 
         // Wonder self-pledges first
         start_cheat_caller_address(system_addr, wonder_owner);
-        dispatcher.pledge_faith(wonder_id, wonder_id);
+        dispatcher.pledge_faith(TEST_GAME_ID, wonder_id, wonder_id);
         stop_cheat_caller_address(system_addr);
 
         // Realm pledges to wonder
         start_cheat_caller_address(system_addr, realm_owner);
-        dispatcher.pledge_faith(realm_id, wonder_id);
+        dispatcher.pledge_faith(TEST_GAME_ID, realm_id, wonder_id);
         stop_cheat_caller_address(system_addr);
 
         // Verify WonderFaith
-        let wonder_faith: WonderFaith = world.read_model(wonder_id);
+        let wonder_faith: WonderFaith = world.read_model((TEST_GAME_ID, wonder_id));
         assert!(wonder_faith.num_structures_pledged == 2, "Should have 2 pledges");
         assert!(wonder_faith.claim_per_sec == 600, "Should have 600 FP/sec (500+100)");
         assert!(wonder_faith.owner_claim_per_sec == 180, "Owner claim should be 180 (150+30)");
 
         // Verify realm's FaithfulStructure
-        let faithful: FaithfulStructure = world.read_model(realm_id);
+        let faithful: FaithfulStructure = world.read_model((TEST_GAME_ID, realm_id));
         assert!(faithful.wonder_id == wonder_id, "Realm should be faithful to wonder");
         assert!(faithful.fp_to_wonder_owner_per_sec == 30, "Owner share should be 30");
         assert!(faithful.fp_to_struct_owner_per_sec == 70, "Pledger share should be 70");
 
         // Verify PlayerFaithPoints for both owners
-        let wonder_owner_fp: PlayerFaithPoints = world.read_model((wonder_owner, wonder_id));
+        let wonder_owner_fp: PlayerFaithPoints = world.read_model((TEST_GAME_ID, wonder_owner, wonder_id));
         assert!(wonder_owner_fp.points_per_sec_as_owner == 180, "Wonder owner: 150+30 = 180 as owner");
         assert!(wonder_owner_fp.points_per_sec_as_pledger == 350, "Wonder owner: 350 as pledger");
 
-        let realm_owner_fp: PlayerFaithPoints = world.read_model((realm_owner, wonder_id));
+        let realm_owner_fp: PlayerFaithPoints = world.read_model((TEST_GAME_ID, realm_owner, wonder_id));
         assert!(realm_owner_fp.points_per_sec_as_owner == 0, "Realm owner: 0 as owner");
         assert!(realm_owner_fp.points_per_sec_as_pledger == 70, "Realm owner: 70 as pledger");
     }
@@ -358,7 +388,7 @@ mod tests {
         start_cheat_block_timestamp_global(1000);
 
         start_cheat_caller_address(system_addr, realm_owner);
-        dispatcher.pledge_faith(realm_id, 999);
+        dispatcher.pledge_faith(TEST_GAME_ID, realm_id, 999);
         stop_cheat_caller_address(system_addr);
     }
 
@@ -383,18 +413,18 @@ mod tests {
         start_cheat_block_timestamp_global(1000);
 
         start_cheat_caller_address(system_addr, wonder_owner);
-        dispatcher.pledge_faith(wonder_id, wonder_id);
+        dispatcher.pledge_faith(TEST_GAME_ID, wonder_id, wonder_id);
         stop_cheat_caller_address(system_addr);
 
         start_cheat_caller_address(system_addr, realm_owner);
-        dispatcher.pledge_faith(realm_id, wonder_id);
-        dispatcher.remove_faith(realm_id);
+        dispatcher.pledge_faith(TEST_GAME_ID, realm_id, wonder_id);
+        dispatcher.remove_faith(TEST_GAME_ID, realm_id);
         stop_cheat_caller_address(system_addr);
 
-        let faithful: FaithfulStructure = world.read_model(realm_id);
+        let faithful: FaithfulStructure = world.read_model((TEST_GAME_ID, realm_id));
         assert!(faithful.wonder_id == 0, "Realm should no longer be faithful");
 
-        let wonder_faith: WonderFaith = world.read_model(wonder_id);
+        let wonder_faith: WonderFaith = world.read_model((TEST_GAME_ID, wonder_id));
         assert!(wonder_faith.num_structures_pledged == 1, "Only wonder self-pledge should remain");
         assert!(wonder_faith.claim_per_sec == 500, "Only wonder FP rate should remain");
     }
@@ -416,18 +446,18 @@ mod tests {
         start_cheat_block_timestamp_global(1000);
 
         start_cheat_caller_address(system_addr, wonder_owner);
-        dispatcher.pledge_faith(wonder_id, wonder_id);
+        dispatcher.pledge_faith(TEST_GAME_ID, wonder_id, wonder_id);
         stop_cheat_caller_address(system_addr);
 
         start_cheat_caller_address(system_addr, realm_owner);
-        dispatcher.pledge_faith(realm_id, wonder_id);
+        dispatcher.pledge_faith(TEST_GAME_ID, realm_id, wonder_id);
         stop_cheat_caller_address(system_addr);
 
         start_cheat_caller_address(system_addr, wonder_owner);
-        dispatcher.remove_faith(realm_id);
+        dispatcher.remove_faith(TEST_GAME_ID, realm_id);
         stop_cheat_caller_address(system_addr);
 
-        let faithful: FaithfulStructure = world.read_model(realm_id);
+        let faithful: FaithfulStructure = world.read_model((TEST_GAME_ID, realm_id));
         assert!(faithful.wonder_id == 0, "Realm should no longer be faithful");
     }
 
@@ -450,15 +480,15 @@ mod tests {
         start_cheat_block_timestamp_global(1000);
 
         start_cheat_caller_address(system_addr, wonder_owner);
-        dispatcher.pledge_faith(wonder_id, wonder_id);
+        dispatcher.pledge_faith(TEST_GAME_ID, wonder_id, wonder_id);
         stop_cheat_caller_address(system_addr);
 
         start_cheat_caller_address(system_addr, realm_owner);
-        dispatcher.pledge_faith(realm_id, wonder_id);
+        dispatcher.pledge_faith(TEST_GAME_ID, realm_id, wonder_id);
         stop_cheat_caller_address(system_addr);
 
         start_cheat_caller_address(system_addr, attacker);
-        dispatcher.remove_faith(realm_id);
+        dispatcher.remove_faith(TEST_GAME_ID, realm_id);
         stop_cheat_caller_address(system_addr);
     }
 
@@ -480,15 +510,15 @@ mod tests {
         start_cheat_block_timestamp_global(1000);
 
         start_cheat_caller_address(system_addr, wonder_owner);
-        dispatcher.pledge_faith(wonder_id, wonder_id);
+        dispatcher.pledge_faith(TEST_GAME_ID, wonder_id, wonder_id);
         stop_cheat_caller_address(system_addr);
 
         start_cheat_caller_address(system_addr, realm_owner);
-        dispatcher.pledge_faith(realm_id, wonder_id);
+        dispatcher.pledge_faith(TEST_GAME_ID, realm_id, wonder_id);
         stop_cheat_caller_address(system_addr);
 
         start_cheat_caller_address(system_addr, wonder_owner);
-        dispatcher.remove_faith(wonder_id);
+        dispatcher.remove_faith(TEST_GAME_ID, wonder_id);
         stop_cheat_caller_address(system_addr);
     }
 
@@ -514,13 +544,13 @@ mod tests {
         start_cheat_block_timestamp_global(1000);
 
         start_cheat_caller_address(system_addr, wonder_owner);
-        dispatcher.pledge_faith(wonder_id, wonder_id);
+        dispatcher.pledge_faith(TEST_GAME_ID, wonder_id, wonder_id);
         let realm_id_felt: felt252 = realm_id.into();
-        dispatcher.blacklist(wonder_id, realm_id_felt);
+        dispatcher.blacklist(TEST_GAME_ID, wonder_id, realm_id_felt);
         stop_cheat_caller_address(system_addr);
 
         start_cheat_caller_address(system_addr, realm_owner);
-        dispatcher.pledge_faith(realm_id, wonder_id);
+        dispatcher.pledge_faith(TEST_GAME_ID, realm_id, wonder_id);
         stop_cheat_caller_address(system_addr);
     }
 
@@ -542,16 +572,16 @@ mod tests {
         start_cheat_block_timestamp_global(1000);
 
         start_cheat_caller_address(system_addr, wonder_owner);
-        dispatcher.pledge_faith(wonder_id, wonder_id);
+        dispatcher.pledge_faith(TEST_GAME_ID, wonder_id, wonder_id);
         stop_cheat_caller_address(system_addr);
 
         start_cheat_caller_address(system_addr, realm_owner);
-        dispatcher.pledge_faith(realm_id, wonder_id);
+        dispatcher.pledge_faith(TEST_GAME_ID, realm_id, wonder_id);
         stop_cheat_caller_address(system_addr);
 
         start_cheat_caller_address(system_addr, wonder_owner);
         let realm_id_felt: felt252 = realm_id.into();
-        dispatcher.blacklist(wonder_id, realm_id_felt);
+        dispatcher.blacklist(TEST_GAME_ID, wonder_id, realm_id_felt);
         stop_cheat_caller_address(system_addr);
     }
 
@@ -574,15 +604,15 @@ mod tests {
 
         // Original owner self-pledges
         start_cheat_caller_address(system_addr, original_owner);
-        dispatcher.pledge_faith(wonder_id, wonder_id);
+        dispatcher.pledge_faith(TEST_GAME_ID, wonder_id, wonder_id);
         stop_cheat_caller_address(system_addr);
 
         // Verify original owner has rates
-        let orig_fp: PlayerFaithPoints = world.read_model((original_owner, wonder_id));
+        let orig_fp: PlayerFaithPoints = world.read_model((TEST_GAME_ID, original_owner, wonder_id));
         assert!(orig_fp.points_per_sec_as_owner == 150, "Original owner should have 150 as owner");
 
         // Simulate ownership transfer
-        let mut structure: Structure = world.read_model(wonder_id);
+        let mut structure: Structure = world.read_model((TEST_GAME_ID, wonder_id));
         structure.owner = new_owner;
         world.write_model_test(@structure);
 
@@ -591,19 +621,19 @@ mod tests {
 
         // Anyone calls update_wonder_ownership (permissionless)
         start_cheat_caller_address(system_addr, new_owner);
-        dispatcher.update_wonder_ownership(wonder_id);
+        dispatcher.update_wonder_ownership(TEST_GAME_ID, wonder_id);
         stop_cheat_caller_address(system_addr);
 
         // Verify rates transferred
-        let orig_fp_after: PlayerFaithPoints = world.read_model((original_owner, wonder_id));
+        let orig_fp_after: PlayerFaithPoints = world.read_model((TEST_GAME_ID, original_owner, wonder_id));
         assert!(orig_fp_after.points_per_sec_as_owner == 0, "Original owner should have 0 as owner now");
         assert!(orig_fp_after.points_claimed > 0, "Original owner should have claimed points");
 
-        let new_fp: PlayerFaithPoints = world.read_model((new_owner, wonder_id));
+        let new_fp: PlayerFaithPoints = world.read_model((TEST_GAME_ID, new_owner, wonder_id));
         assert!(new_fp.points_per_sec_as_owner == 150, "New owner should have 150 as owner");
 
         // Verify WonderFaith updated
-        let wonder_faith: WonderFaith = world.read_model(wonder_id);
+        let wonder_faith: WonderFaith = world.read_model((TEST_GAME_ID, wonder_id));
         assert!(wonder_faith.last_recorded_owner == new_owner, "Wonder should record new owner");
     }
 
@@ -625,19 +655,19 @@ mod tests {
         start_cheat_block_timestamp_global(1000);
 
         start_cheat_caller_address(system_addr, wonder_owner);
-        dispatcher.pledge_faith(wonder_id, wonder_id);
+        dispatcher.pledge_faith(TEST_GAME_ID, wonder_id, wonder_id);
         stop_cheat_caller_address(system_addr);
 
         start_cheat_caller_address(system_addr, original_realm_owner);
-        dispatcher.pledge_faith(realm_id, wonder_id);
+        dispatcher.pledge_faith(TEST_GAME_ID, realm_id, wonder_id);
         stop_cheat_caller_address(system_addr);
 
         // Verify original realm owner has pledger rates
-        let orig_fp: PlayerFaithPoints = world.read_model((original_realm_owner, wonder_id));
+        let orig_fp: PlayerFaithPoints = world.read_model((TEST_GAME_ID, original_realm_owner, wonder_id));
         assert!(orig_fp.points_per_sec_as_pledger == 70, "Original realm owner should have 70 as pledger");
 
         // Simulate structure ownership transfer
-        let mut structure: Structure = world.read_model(realm_id);
+        let mut structure: Structure = world.read_model((TEST_GAME_ID, realm_id));
         structure.owner = new_realm_owner;
         world.write_model_test(@structure);
 
@@ -645,15 +675,15 @@ mod tests {
 
         // Call update_structure_ownership
         start_cheat_caller_address(system_addr, new_realm_owner);
-        dispatcher.update_structure_ownership(realm_id);
+        dispatcher.update_structure_ownership(TEST_GAME_ID, realm_id);
         stop_cheat_caller_address(system_addr);
 
         // Verify rates transferred
-        let orig_fp_after: PlayerFaithPoints = world.read_model((original_realm_owner, wonder_id));
+        let orig_fp_after: PlayerFaithPoints = world.read_model((TEST_GAME_ID, original_realm_owner, wonder_id));
         assert!(orig_fp_after.points_per_sec_as_pledger == 0, "Original realm owner should have 0 as pledger");
         assert!(orig_fp_after.points_claimed > 0, "Original realm owner should have claimed points");
 
-        let new_fp: PlayerFaithPoints = world.read_model((new_realm_owner, wonder_id));
+        let new_fp: PlayerFaithPoints = world.read_model((TEST_GAME_ID, new_realm_owner, wonder_id));
         assert!(new_fp.points_per_sec_as_pledger == 70, "New realm owner should have 70 as pledger");
     }
 
@@ -673,16 +703,16 @@ mod tests {
         start_cheat_block_timestamp_global(1000);
 
         start_cheat_caller_address(system_addr, wonder_owner);
-        dispatcher.pledge_faith(wonder_id, wonder_id);
+        dispatcher.pledge_faith(TEST_GAME_ID, wonder_id, wonder_id);
         stop_cheat_caller_address(system_addr);
 
         start_cheat_block_timestamp_global(1100); // 100 seconds later
 
         start_cheat_caller_address(system_addr, wonder_owner);
-        dispatcher.claim_wonder_points(wonder_id);
+        dispatcher.claim_wonder_points(TEST_GAME_ID, wonder_id);
         stop_cheat_caller_address(system_addr);
 
-        let wonder_faith: WonderFaith = world.read_model(wonder_id);
+        let wonder_faith: WonderFaith = world.read_model((TEST_GAME_ID, wonder_id));
         // 500 FP/sec * 100 seconds = 50000 FP
         assert!(wonder_faith.claimed_points == 50000, "Should have 50000 claimed points");
     }
@@ -699,7 +729,7 @@ mod tests {
         start_cheat_block_timestamp_global(1000);
 
         start_cheat_caller_address(system_addr, wonder_owner);
-        dispatcher.pledge_faith(wonder_id, wonder_id);
+        dispatcher.pledge_faith(TEST_GAME_ID, wonder_id, wonder_id);
         stop_cheat_caller_address(system_addr);
 
         start_cheat_block_timestamp_global(1100); // 100 seconds later
@@ -707,10 +737,10 @@ mod tests {
         // Anyone can claim on behalf of player
         let random_caller = starknet::contract_address_const::<'random'>();
         start_cheat_caller_address(system_addr, random_caller);
-        dispatcher.claim_player_points(wonder_owner, wonder_id);
+        dispatcher.claim_player_points(TEST_GAME_ID, wonder_owner, wonder_id);
         stop_cheat_caller_address(system_addr);
 
-        let player_fp: PlayerFaithPoints = world.read_model((wonder_owner, wonder_id));
+        let player_fp: PlayerFaithPoints = world.read_model((TEST_GAME_ID, wonder_owner, wonder_id));
         // (150 + 350) * 100 = 50000 points
         assert!(player_fp.points_claimed == 50000, "Should have 50000 claimed points");
     }
@@ -736,21 +766,21 @@ mod tests {
         start_cheat_block_timestamp_global(1000);
 
         start_cheat_caller_address(system_addr, wonder1_owner);
-        dispatcher.pledge_faith(wonder1_id, wonder1_id);
+        dispatcher.pledge_faith(TEST_GAME_ID, wonder1_id, wonder1_id);
         stop_cheat_caller_address(system_addr);
 
         start_cheat_caller_address(system_addr, wonder2_owner);
-        dispatcher.pledge_faith(wonder2_id, wonder2_id);
+        dispatcher.pledge_faith(TEST_GAME_ID, wonder2_id, wonder2_id);
         stop_cheat_caller_address(system_addr);
 
         // Wonder1 claims first
         start_cheat_block_timestamp_global(2000);
 
         start_cheat_caller_address(system_addr, wonder1_owner);
-        dispatcher.claim_wonder_points(wonder1_id);
+        dispatcher.claim_wonder_points(TEST_GAME_ID, wonder1_id);
         stop_cheat_caller_address(system_addr);
 
-        let winners: WonderFaithWinners = world.read_model(LEGACY_CONFIG_ID);
+        let winners: WonderFaithWinners = world.read_model(TEST_GAME_ID);
         assert!(winners.high_score == 500000, "High score should be 500000");
         assert!(winners.wonder_ids.len() == 1, "Should have 1 winner");
         assert!(*winners.wonder_ids.at(0) == wonder1_id, "Wonder1 should be leader");
@@ -759,10 +789,10 @@ mod tests {
         start_cheat_block_timestamp_global(4000);
 
         start_cheat_caller_address(system_addr, wonder2_owner);
-        dispatcher.claim_wonder_points(wonder2_id);
+        dispatcher.claim_wonder_points(TEST_GAME_ID, wonder2_id);
         stop_cheat_caller_address(system_addr);
 
-        let winners_after: WonderFaithWinners = world.read_model(LEGACY_CONFIG_ID);
+        let winners_after: WonderFaithWinners = world.read_model(TEST_GAME_ID);
         // Wonder2: 500 * 3000 = 1500000 > Wonder1's 500000
         assert!(winners_after.high_score == 1500000, "High score should be 1500000");
         assert!(winners_after.wonder_ids.len() == 1, "Should have 1 winner");
@@ -786,25 +816,25 @@ mod tests {
         start_cheat_block_timestamp_global(1000);
 
         start_cheat_caller_address(system_addr, wonder1_owner);
-        dispatcher.pledge_faith(wonder1_id, wonder1_id);
+        dispatcher.pledge_faith(TEST_GAME_ID, wonder1_id, wonder1_id);
         stop_cheat_caller_address(system_addr);
 
         start_cheat_caller_address(system_addr, wonder2_owner);
-        dispatcher.pledge_faith(wonder2_id, wonder2_id);
+        dispatcher.pledge_faith(TEST_GAME_ID, wonder2_id, wonder2_id);
         stop_cheat_caller_address(system_addr);
 
         // Both claim at the same time - same points
         start_cheat_block_timestamp_global(2000);
 
         start_cheat_caller_address(system_addr, wonder1_owner);
-        dispatcher.claim_wonder_points(wonder1_id);
+        dispatcher.claim_wonder_points(TEST_GAME_ID, wonder1_id);
         stop_cheat_caller_address(system_addr);
 
         start_cheat_caller_address(system_addr, wonder2_owner);
-        dispatcher.claim_wonder_points(wonder2_id);
+        dispatcher.claim_wonder_points(TEST_GAME_ID, wonder2_id);
         stop_cheat_caller_address(system_addr);
 
-        let winners: WonderFaithWinners = world.read_model(LEGACY_CONFIG_ID);
+        let winners: WonderFaithWinners = world.read_model(TEST_GAME_ID);
         assert!(winners.high_score == 500000, "High score should be 500000");
         assert!(winners.wonder_ids.len() == 2, "Should have 2 winners (tie)");
     }
@@ -831,18 +861,18 @@ mod tests {
 
         // Wonder2 self-pledges (target)
         start_cheat_caller_address(system_addr, wonder2_owner);
-        dispatcher.pledge_faith(wonder2_id, wonder2_id);
+        dispatcher.pledge_faith(TEST_GAME_ID, wonder2_id, wonder2_id);
         stop_cheat_caller_address(system_addr);
 
         // Wonder1 submits to Wonder2 (wonder1 never self-pledged)
         start_cheat_caller_address(system_addr, wonder1_owner);
-        dispatcher.pledge_faith(wonder1_id, wonder2_id);
+        dispatcher.pledge_faith(TEST_GAME_ID, wonder1_id, wonder2_id);
         stop_cheat_caller_address(system_addr);
 
-        let faithful: FaithfulStructure = world.read_model(wonder1_id);
+        let faithful: FaithfulStructure = world.read_model((TEST_GAME_ID, wonder1_id));
         assert!(faithful.wonder_id == wonder2_id, "Wonder1 should be faithful to Wonder2");
 
-        let wonder2_faith: WonderFaith = world.read_model(wonder2_id);
+        let wonder2_faith: WonderFaith = world.read_model((TEST_GAME_ID, wonder2_id));
         // Wonder2 self-pledge (500) + Wonder1 submission (500) = 1000
         assert!(wonder2_faith.claim_per_sec == 1000, "Wonder2 should have 1000 FP/sec");
     }
@@ -871,21 +901,21 @@ mod tests {
 
         // Wonder2 self-pledges (target wonder)
         start_cheat_caller_address(system_addr, wonder2_owner);
-        dispatcher.pledge_faith(wonder2_id, wonder2_id);
+        dispatcher.pledge_faith(TEST_GAME_ID, wonder2_id, wonder2_id);
         stop_cheat_caller_address(system_addr);
 
         // Wonder1 submits to Wonder2 (becomes subservient)
         start_cheat_caller_address(system_addr, wonder1_owner);
-        dispatcher.pledge_faith(wonder1_id, wonder2_id);
+        dispatcher.pledge_faith(TEST_GAME_ID, wonder1_id, wonder2_id);
         stop_cheat_caller_address(system_addr);
 
         // Verify Wonder1 is subservient (pledged to Wonder2)
-        let wonder1_faithful: FaithfulStructure = world.read_model(wonder1_id);
+        let wonder1_faithful: FaithfulStructure = world.read_model((TEST_GAME_ID, wonder1_id));
         assert!(wonder1_faithful.wonder_id == wonder2_id, "Wonder1 should be faithful to Wonder2");
 
         // Now realm tries to pledge to Wonder1 - this should FAIL
         start_cheat_caller_address(system_addr, realm_owner);
-        dispatcher.pledge_faith(realm_id, wonder1_id); // Should panic
+        dispatcher.pledge_faith(TEST_GAME_ID, realm_id, wonder1_id); // Should panic
         stop_cheat_caller_address(system_addr);
     }
 
@@ -912,25 +942,25 @@ mod tests {
 
         // Wonder2 self-pledges (target wonder)
         start_cheat_caller_address(system_addr, wonder2_owner);
-        dispatcher.pledge_faith(wonder2_id, wonder2_id);
+        dispatcher.pledge_faith(TEST_GAME_ID, wonder2_id, wonder2_id);
         stop_cheat_caller_address(system_addr);
 
         // Wonder1 submits to Wonder2
         start_cheat_caller_address(system_addr, wonder1_owner);
-        dispatcher.pledge_faith(wonder1_id, wonder2_id);
+        dispatcher.pledge_faith(TEST_GAME_ID, wonder1_id, wonder2_id);
         stop_cheat_caller_address(system_addr);
 
         // Realm pledges to Wonder2 - this should succeed
         start_cheat_caller_address(system_addr, realm_owner);
-        dispatcher.pledge_faith(realm_id, wonder2_id);
+        dispatcher.pledge_faith(TEST_GAME_ID, realm_id, wonder2_id);
         stop_cheat_caller_address(system_addr);
 
         // Verify realm is pledged to Wonder2
-        let realm_faithful: FaithfulStructure = world.read_model(realm_id);
+        let realm_faithful: FaithfulStructure = world.read_model((TEST_GAME_ID, realm_id));
         assert!(realm_faithful.wonder_id == wonder2_id, "Realm should be faithful to Wonder2");
 
         // Verify Wonder2 has all three pledges
-        let wonder2_faith: WonderFaith = world.read_model(wonder2_id);
+        let wonder2_faith: WonderFaith = world.read_model((TEST_GAME_ID, wonder2_id));
         assert!(wonder2_faith.num_structures_pledged == 3, "Wonder2 should have 3 pledges");
         // 500 (self) + 500 (wonder1) + 100 (realm) = 1100
         assert!(wonder2_faith.claim_per_sec == 1100, "Wonder2 should have 1100 FP/sec");
@@ -957,7 +987,7 @@ mod tests {
 
         // Wonder2 self-pledges (target)
         start_cheat_caller_address(system_addr, wonder2_owner);
-        dispatcher.pledge_faith(wonder2_id, wonder2_id);
+        dispatcher.pledge_faith(TEST_GAME_ID, wonder2_id, wonder2_id);
         stop_cheat_caller_address(system_addr);
 
         // Wonder1 receives a pledge (from realm) - note: wonder1 does NOT self-pledge
@@ -978,11 +1008,11 @@ mod tests {
 
         // Let's just verify that a self-pledged wonder can't submit (different error)
         start_cheat_caller_address(system_addr, wonder1_owner);
-        dispatcher.pledge_faith(wonder1_id, wonder1_id);
+        dispatcher.pledge_faith(TEST_GAME_ID, wonder1_id, wonder1_id);
         stop_cheat_caller_address(system_addr);
 
         // Verify wonder1 is faithful to itself
-        let faithful: FaithfulStructure = world.read_model(wonder1_id);
+        let faithful: FaithfulStructure = world.read_model((TEST_GAME_ID, wonder1_id));
         assert!(faithful.wonder_id == wonder1_id, "Wonder1 should be faithful to itself");
         // The test verifies the state - trying to submit would fail with "already faithful"
     }
@@ -1015,32 +1045,32 @@ mod tests {
 
         // Wonder2 self-pledges (target wonder)
         start_cheat_caller_address(system_addr, wonder2_owner);
-        dispatcher.pledge_faith(wonder2_id, wonder2_id);
+        dispatcher.pledge_faith(TEST_GAME_ID, wonder2_id, wonder2_id);
         stop_cheat_caller_address(system_addr);
 
         // Wonder1 submits to Wonder2 (doesn't self-pledge)
         start_cheat_caller_address(system_addr, wonder1_original_owner);
-        dispatcher.pledge_faith(wonder1_id, wonder2_id);
+        dispatcher.pledge_faith(TEST_GAME_ID, wonder1_id, wonder2_id);
         stop_cheat_caller_address(system_addr);
 
         // Verify Wonder1 is pledged to Wonder2
-        let faithful: FaithfulStructure = world.read_model(wonder1_id);
+        let faithful: FaithfulStructure = world.read_model((TEST_GAME_ID, wonder1_id));
         assert!(faithful.wonder_id == wonder2_id, "Wonder1 should be faithful to Wonder2");
         assert!(faithful.last_recorded_owner == wonder1_original_owner, "Should record original owner");
 
         // Verify Wonder1 original owner has pledger rates
-        let w1_orig_fp: PlayerFaithPoints = world.read_model((wonder1_original_owner, wonder2_id));
+        let w1_orig_fp: PlayerFaithPoints = world.read_model((TEST_GAME_ID, wonder1_original_owner, wonder2_id));
         assert!(w1_orig_fp.points_per_sec_as_pledger == 350, "W1 orig owner should have 350 as pledger");
 
         // Verify Wonder2 owner has owner rates from both pledges
-        let w2_owner_fp: PlayerFaithPoints = world.read_model((wonder2_owner, wonder2_id));
+        let w2_owner_fp: PlayerFaithPoints = world.read_model((TEST_GAME_ID, wonder2_owner, wonder2_id));
         // Wonder2 self-pledge: 150 owner + 350 pledger
         // Wonder1 submission: 150 owner (30% of 500)
         assert!(w2_owner_fp.points_per_sec_as_owner == 300, "W2 owner should have 300 as owner (150+150)");
         assert!(w2_owner_fp.points_per_sec_as_pledger == 350, "W2 owner should have 350 as pledger");
 
         // NOW: Wonder1 ownership changes
-        let mut structure: Structure = world.read_model(wonder1_id);
+        let mut structure: Structure = world.read_model((TEST_GAME_ID, wonder1_id));
         structure.owner = wonder1_new_owner;
         world.write_model_test(@structure);
 
@@ -1053,21 +1083,21 @@ mod tests {
         // 2. update_wonder_ownership(wonder1_id) - because structure is a wonder
         // 3. update_structure_ownership(wonder1_id)
         start_cheat_caller_address(system_addr, wonder1_new_owner);
-        dispatcher.remove_faith(wonder1_id);
+        dispatcher.remove_faith(TEST_GAME_ID, wonder1_id);
         stop_cheat_caller_address(system_addr);
 
         // Verify Wonder1 is no longer faithful
-        let faithful_after: FaithfulStructure = world.read_model(wonder1_id);
+        let faithful_after: FaithfulStructure = world.read_model((TEST_GAME_ID, wonder1_id));
         assert!(faithful_after.wonder_id == 0, "Wonder1 should no longer be faithful");
 
         // Verify original owner's points were settled and rates cleared
-        let w1_orig_fp_after: PlayerFaithPoints = world.read_model((wonder1_original_owner, wonder2_id));
+        let w1_orig_fp_after: PlayerFaithPoints = world.read_model((TEST_GAME_ID, wonder1_original_owner, wonder2_id));
         assert!(w1_orig_fp_after.points_per_sec_as_pledger == 0, "W1 orig owner pledger rate should be 0");
         // Points from t=1000 to t=2000: 350 * 1000 = 350000
         assert!(w1_orig_fp_after.points_claimed == 350000, "W1 orig owner should have claimed 350000 points");
 
         // Verify new owner has no rates (faith was removed before they could benefit)
-        let w1_new_fp: PlayerFaithPoints = world.read_model((wonder1_new_owner, wonder2_id));
+        let w1_new_fp: PlayerFaithPoints = world.read_model((TEST_GAME_ID, wonder1_new_owner, wonder2_id));
         assert!(w1_new_fp.points_per_sec_as_pledger == 0, "W1 new owner should have 0 pledger rate");
         assert!(w1_new_fp.points_claimed == 0, "W1 new owner should have 0 claimed points");
     }
@@ -1093,22 +1123,22 @@ mod tests {
 
         // Wonder self-pledges
         start_cheat_caller_address(system_addr, wonder_original_owner);
-        dispatcher.pledge_faith(wonder_id, wonder_id);
+        dispatcher.pledge_faith(TEST_GAME_ID, wonder_id, wonder_id);
         stop_cheat_caller_address(system_addr);
 
         // Realm pledges to wonder
         start_cheat_caller_address(system_addr, realm_owner);
-        dispatcher.pledge_faith(realm_id, wonder_id);
+        dispatcher.pledge_faith(TEST_GAME_ID, realm_id, wonder_id);
         stop_cheat_caller_address(system_addr);
 
         // Verify original owner's rates
-        let orig_fp: PlayerFaithPoints = world.read_model((wonder_original_owner, wonder_id));
+        let orig_fp: PlayerFaithPoints = world.read_model((TEST_GAME_ID, wonder_original_owner, wonder_id));
         // Self-pledge: 150 owner + 350 pledger, Realm: 30 owner
         assert!(orig_fp.points_per_sec_as_owner == 180, "Orig owner should have 180 as owner");
         assert!(orig_fp.points_per_sec_as_pledger == 350, "Orig owner should have 350 as pledger");
 
         // Wonder ownership changes
-        let mut structure: Structure = world.read_model(wonder_id);
+        let mut structure: Structure = world.read_model((TEST_GAME_ID, wonder_id));
         structure.owner = wonder_new_owner;
         world.write_model_test(@structure);
 
@@ -1117,18 +1147,18 @@ mod tests {
 
         // Anyone triggers ownership update
         start_cheat_caller_address(system_addr, realm_owner);
-        dispatcher.update_wonder_ownership(wonder_id);
+        dispatcher.update_wonder_ownership(TEST_GAME_ID, wonder_id);
         stop_cheat_caller_address(system_addr);
 
         // Verify rates transferred
-        let orig_fp_after: PlayerFaithPoints = world.read_model((wonder_original_owner, wonder_id));
+        let orig_fp_after: PlayerFaithPoints = world.read_model((TEST_GAME_ID, wonder_original_owner, wonder_id));
         assert!(orig_fp_after.points_per_sec_as_owner == 0, "Orig owner should have 0 as owner");
         // Pledger rate stays because it comes from self-pledge structure ownership (separate)
         assert!(orig_fp_after.points_per_sec_as_pledger == 0, "Orig owner pledger should be 0 after update");
         // Points claimed: 180 * 1000 + 350 * 1000 = 530000
         assert!(orig_fp_after.points_claimed == 530000, "Orig owner should have 530000 claimed");
 
-        let new_fp: PlayerFaithPoints = world.read_model((wonder_new_owner, wonder_id));
+        let new_fp: PlayerFaithPoints = world.read_model((TEST_GAME_ID, wonder_new_owner, wonder_id));
         assert!(new_fp.points_per_sec_as_owner == 180, "New owner should have 180 as owner");
         // New owner also gets the pledger rate from the self-pledge structure
         assert!(new_fp.points_per_sec_as_pledger == 350, "New owner should have 350 as pledger");
@@ -1154,53 +1184,53 @@ mod tests {
         start_cheat_block_timestamp_global(1000);
 
         start_cheat_caller_address(system_addr, wonder_owner);
-        dispatcher.pledge_faith(wonder_id, wonder_id);
+        dispatcher.pledge_faith(TEST_GAME_ID, wonder_id, wonder_id);
         stop_cheat_caller_address(system_addr);
 
         start_cheat_caller_address(system_addr, realm_owner_1);
-        dispatcher.pledge_faith(realm_id, wonder_id);
+        dispatcher.pledge_faith(TEST_GAME_ID, realm_id, wonder_id);
         stop_cheat_caller_address(system_addr);
 
         // Owner 1 has pledger rate
-        let owner1_fp: PlayerFaithPoints = world.read_model((realm_owner_1, wonder_id));
+        let owner1_fp: PlayerFaithPoints = world.read_model((TEST_GAME_ID, realm_owner_1, wonder_id));
         assert!(owner1_fp.points_per_sec_as_pledger == 70, "Owner1 should have 70 as pledger");
 
         // First ownership change (t=2000)
-        let mut structure: Structure = world.read_model(realm_id);
+        let mut structure: Structure = world.read_model((TEST_GAME_ID, realm_id));
         structure.owner = realm_owner_2;
         world.write_model_test(@structure);
 
         start_cheat_block_timestamp_global(2000);
 
         start_cheat_caller_address(system_addr, realm_owner_2);
-        dispatcher.update_structure_ownership(realm_id);
+        dispatcher.update_structure_ownership(TEST_GAME_ID, realm_id);
         stop_cheat_caller_address(system_addr);
 
         // Verify owner1 settled, owner2 has rate
-        let owner1_fp_after: PlayerFaithPoints = world.read_model((realm_owner_1, wonder_id));
+        let owner1_fp_after: PlayerFaithPoints = world.read_model((TEST_GAME_ID, realm_owner_1, wonder_id));
         assert!(owner1_fp_after.points_per_sec_as_pledger == 0, "Owner1 should have 0 rate");
         assert!(owner1_fp_after.points_claimed == 70000, "Owner1 should have 70000 points");
 
-        let owner2_fp: PlayerFaithPoints = world.read_model((realm_owner_2, wonder_id));
+        let owner2_fp: PlayerFaithPoints = world.read_model((TEST_GAME_ID, realm_owner_2, wonder_id));
         assert!(owner2_fp.points_per_sec_as_pledger == 70, "Owner2 should have 70 as pledger");
 
         // Second ownership change (t=3000)
-        let mut structure: Structure = world.read_model(realm_id);
+        let mut structure: Structure = world.read_model((TEST_GAME_ID, realm_id));
         structure.owner = realm_owner_3;
         world.write_model_test(@structure);
 
         start_cheat_block_timestamp_global(3000);
 
         start_cheat_caller_address(system_addr, realm_owner_3);
-        dispatcher.update_structure_ownership(realm_id);
+        dispatcher.update_structure_ownership(TEST_GAME_ID, realm_id);
         stop_cheat_caller_address(system_addr);
 
         // Verify owner2 settled, owner3 has rate
-        let owner2_fp_after: PlayerFaithPoints = world.read_model((realm_owner_2, wonder_id));
+        let owner2_fp_after: PlayerFaithPoints = world.read_model((TEST_GAME_ID, realm_owner_2, wonder_id));
         assert!(owner2_fp_after.points_per_sec_as_pledger == 0, "Owner2 should have 0 rate");
         assert!(owner2_fp_after.points_claimed == 70000, "Owner2 should have 70000 points");
 
-        let owner3_fp: PlayerFaithPoints = world.read_model((realm_owner_3, wonder_id));
+        let owner3_fp: PlayerFaithPoints = world.read_model((TEST_GAME_ID, realm_owner_3, wonder_id));
         assert!(owner3_fp.points_per_sec_as_pledger == 70, "Owner3 should have 70 as pledger");
     }
 
@@ -1227,47 +1257,47 @@ mod tests {
 
         // Wonder2 self-pledges
         start_cheat_caller_address(system_addr, wonder2_owner);
-        dispatcher.pledge_faith(wonder2_id, wonder2_id);
+        dispatcher.pledge_faith(TEST_GAME_ID, wonder2_id, wonder2_id);
         stop_cheat_caller_address(system_addr);
 
         // Wonder1 submits to Wonder2
         start_cheat_caller_address(system_addr, wonder1_owner);
-        dispatcher.pledge_faith(wonder1_id, wonder2_id);
+        dispatcher.pledge_faith(TEST_GAME_ID, wonder1_id, wonder2_id);
         stop_cheat_caller_address(system_addr);
 
         // Verify Wonder1 is faithful to Wonder2
-        let faithful: FaithfulStructure = world.read_model(wonder1_id);
+        let faithful: FaithfulStructure = world.read_model((TEST_GAME_ID, wonder1_id));
         assert!(faithful.wonder_id == wonder2_id, "W1 should be faithful to W2");
 
         // Wonder1 removes faith from Wonder2
         start_cheat_block_timestamp_global(2000);
 
         start_cheat_caller_address(system_addr, wonder1_owner);
-        dispatcher.remove_faith(wonder1_id);
+        dispatcher.remove_faith(TEST_GAME_ID, wonder1_id);
         stop_cheat_caller_address(system_addr);
 
         // Verify Wonder1 is no longer faithful
-        let faithful_after: FaithfulStructure = world.read_model(wonder1_id);
+        let faithful_after: FaithfulStructure = world.read_model((TEST_GAME_ID, wonder1_id));
         assert!(faithful_after.wonder_id == 0, "W1 should not be faithful");
 
         // Now Wonder1 can self-pledge and receive pledges
         start_cheat_caller_address(system_addr, wonder1_owner);
-        dispatcher.pledge_faith(wonder1_id, wonder1_id);
+        dispatcher.pledge_faith(TEST_GAME_ID, wonder1_id, wonder1_id);
         stop_cheat_caller_address(system_addr);
 
         // Verify Wonder1 is faithful to itself
-        let faithful_self: FaithfulStructure = world.read_model(wonder1_id);
+        let faithful_self: FaithfulStructure = world.read_model((TEST_GAME_ID, wonder1_id));
         assert!(faithful_self.wonder_id == wonder1_id, "W1 should be faithful to itself");
 
         // Realm can now pledge to Wonder1
         start_cheat_caller_address(system_addr, realm_owner);
-        dispatcher.pledge_faith(realm_id, wonder1_id);
+        dispatcher.pledge_faith(TEST_GAME_ID, realm_id, wonder1_id);
         stop_cheat_caller_address(system_addr);
 
-        let realm_faithful: FaithfulStructure = world.read_model(realm_id);
+        let realm_faithful: FaithfulStructure = world.read_model((TEST_GAME_ID, realm_id));
         assert!(realm_faithful.wonder_id == wonder1_id, "Realm should be faithful to W1");
 
-        let wonder1_faith: WonderFaith = world.read_model(wonder1_id);
+        let wonder1_faith: WonderFaith = world.read_model((TEST_GAME_ID, wonder1_id));
         assert!(wonder1_faith.num_structures_pledged == 2, "W1 should have 2 pledges");
     }
 
@@ -1293,19 +1323,19 @@ mod tests {
 
         // Setup pledges
         start_cheat_caller_address(system_addr, wonder_orig);
-        dispatcher.pledge_faith(wonder_id, wonder_id);
+        dispatcher.pledge_faith(TEST_GAME_ID, wonder_id, wonder_id);
         stop_cheat_caller_address(system_addr);
 
         start_cheat_caller_address(system_addr, realm_orig);
-        dispatcher.pledge_faith(realm_id, wonder_id);
+        dispatcher.pledge_faith(TEST_GAME_ID, realm_id, wonder_id);
         stop_cheat_caller_address(system_addr);
 
         // Both ownerships change
-        let mut wonder_struct: Structure = world.read_model(wonder_id);
+        let mut wonder_struct: Structure = world.read_model((TEST_GAME_ID, wonder_id));
         wonder_struct.owner = wonder_new;
         world.write_model_test(@wonder_struct);
 
-        let mut realm_struct: Structure = world.read_model(realm_id);
+        let mut realm_struct: Structure = world.read_model((TEST_GAME_ID, realm_id));
         realm_struct.owner = realm_new;
         world.write_model_test(@realm_struct);
 
@@ -1314,24 +1344,24 @@ mod tests {
 
         // Remove faith - this should handle both ownership changes
         start_cheat_caller_address(system_addr, realm_new);
-        dispatcher.remove_faith(realm_id);
+        dispatcher.remove_faith(TEST_GAME_ID, realm_id);
         stop_cheat_caller_address(system_addr);
 
         // Verify original owners have settled points
-        let wonder_orig_fp: PlayerFaithPoints = world.read_model((wonder_orig, wonder_id));
+        let wonder_orig_fp: PlayerFaithPoints = world.read_model((TEST_GAME_ID, wonder_orig, wonder_id));
         // Wonder orig had: 180 owner + 350 pledger = 530 per sec * 1000 = 530000
         assert!(wonder_orig_fp.points_claimed == 530000, "W orig should have 530000");
         assert!(wonder_orig_fp.points_per_sec_as_owner == 0, "W orig owner rate should be 0");
         assert!(wonder_orig_fp.points_per_sec_as_pledger == 0, "W orig pledger rate should be 0");
 
-        let realm_orig_fp: PlayerFaithPoints = world.read_model((realm_orig, wonder_id));
+        let realm_orig_fp: PlayerFaithPoints = world.read_model((TEST_GAME_ID, realm_orig, wonder_id));
         // Realm orig had: 70 pledger per sec * 1000 = 70000
         assert!(realm_orig_fp.points_claimed == 70000, "R orig should have 70000");
         assert!(realm_orig_fp.points_per_sec_as_pledger == 0, "R orig pledger rate should be 0");
 
         // Verify new owners
         // Wonder new owner should have the owner rates (minus realm's contribution now removed)
-        let wonder_new_fp: PlayerFaithPoints = world.read_model((wonder_new, wonder_id));
+        let wonder_new_fp: PlayerFaithPoints = world.read_model((TEST_GAME_ID, wonder_new, wonder_id));
         // After ownership transfer and faith removal, wonder_new has:
         // - 150 owner (from self-pledge) + 350 pledger (from self-pledge)
         // The realm's 30 owner contribution was removed
@@ -1339,7 +1369,7 @@ mod tests {
         assert!(wonder_new_fp.points_per_sec_as_pledger == 350, "W new pledger rate should be 350");
 
         // Realm new owner has nothing (faith was removed)
-        let realm_new_fp: PlayerFaithPoints = world.read_model((realm_new, wonder_id));
+        let realm_new_fp: PlayerFaithPoints = world.read_model((TEST_GAME_ID, realm_new, wonder_id));
         assert!(realm_new_fp.points_per_sec_as_pledger == 0, "R new pledger rate should be 0");
         assert!(realm_new_fp.points_claimed == 0, "R new should have 0 claimed");
     }
@@ -1359,11 +1389,11 @@ mod tests {
         start_cheat_block_timestamp_global(1000);
 
         start_cheat_caller_address(system_addr, wonder_orig);
-        dispatcher.pledge_faith(wonder_id, wonder_id);
+        dispatcher.pledge_faith(TEST_GAME_ID, wonder_id, wonder_id);
         stop_cheat_caller_address(system_addr);
 
         // Change ownership
-        let mut structure: Structure = world.read_model(wonder_id);
+        let mut structure: Structure = world.read_model((TEST_GAME_ID, wonder_id));
         structure.owner = wonder_new;
         world.write_model_test(@structure);
 
@@ -1371,18 +1401,18 @@ mod tests {
 
         // Claim wonder points (should trigger ownership update internally)
         start_cheat_caller_address(system_addr, wonder_new);
-        dispatcher.claim_wonder_points(wonder_id);
+        dispatcher.claim_wonder_points(TEST_GAME_ID, wonder_id);
         stop_cheat_caller_address(system_addr);
 
         // Verify ownership was updated
-        let wonder_faith: WonderFaith = world.read_model(wonder_id);
+        let wonder_faith: WonderFaith = world.read_model((TEST_GAME_ID, wonder_id));
         assert!(wonder_faith.last_recorded_owner == wonder_new, "Owner should be updated");
 
         // Verify rates were transferred
-        let orig_fp: PlayerFaithPoints = world.read_model((wonder_orig, wonder_id));
+        let orig_fp: PlayerFaithPoints = world.read_model((TEST_GAME_ID, wonder_orig, wonder_id));
         assert!(orig_fp.points_per_sec_as_owner == 0, "Orig should have 0 owner rate");
 
-        let new_fp: PlayerFaithPoints = world.read_model((wonder_new, wonder_id));
+        let new_fp: PlayerFaithPoints = world.read_model((TEST_GAME_ID, wonder_new, wonder_id));
         assert!(new_fp.points_per_sec_as_owner == 150, "New should have 150 owner rate");
     }
 
@@ -1406,12 +1436,12 @@ mod tests {
         start_cheat_block_timestamp_global(1000);
 
         start_cheat_caller_address(system_addr, owner);
-        dispatcher.pledge_faith(wonder_id, wonder_id);
-        dispatcher.pledge_faith(realm_id, wonder_id);
+        dispatcher.pledge_faith(TEST_GAME_ID, wonder_id, wonder_id);
+        dispatcher.pledge_faith(TEST_GAME_ID, realm_id, wonder_id);
         stop_cheat_caller_address(system_addr);
 
         // Owner gets BOTH sides for both pledges
-        let player_fp: PlayerFaithPoints = world.read_model((owner, wonder_id));
+        let player_fp: PlayerFaithPoints = world.read_model((TEST_GAME_ID, owner, wonder_id));
         // Wonder self-pledge: 150 owner + 350 pledger
         // Realm pledge: 30 owner + 70 pledger
         // Total owner: 150 + 30 = 180, Total pledger: 350 + 70 = 420
@@ -1436,20 +1466,20 @@ mod tests {
         start_cheat_block_timestamp_global(1000);
 
         start_cheat_caller_address(system_addr, wonder_owner);
-        dispatcher.pledge_faith(wonder_id, wonder_id);
+        dispatcher.pledge_faith(TEST_GAME_ID, wonder_id, wonder_id);
         stop_cheat_caller_address(system_addr);
 
         start_cheat_caller_address(system_addr, village_owner);
-        dispatcher.pledge_faith(village_id, wonder_id);
+        dispatcher.pledge_faith(TEST_GAME_ID, village_id, wonder_id);
         stop_cheat_caller_address(system_addr);
 
         // Village: 30% of 10 = 3 owner, 7 pledger
-        let faithful: FaithfulStructure = world.read_model(village_id);
+        let faithful: FaithfulStructure = world.read_model((TEST_GAME_ID, village_id));
         assert!(faithful.fp_to_wonder_owner_per_sec == 3, "Village owner share should be 3");
         assert!(faithful.fp_to_struct_owner_per_sec == 7, "Village pledger share should be 7");
 
         // Wonder owner's rate increases by village's owner share
-        let wonder_owner_fp: PlayerFaithPoints = world.read_model((wonder_owner, wonder_id));
+        let wonder_owner_fp: PlayerFaithPoints = world.read_model((TEST_GAME_ID, wonder_owner, wonder_id));
         assert!(wonder_owner_fp.points_per_sec_as_owner == 153, "Wonder owner should have 153 (150+3)");
     }
 
@@ -1466,7 +1496,7 @@ mod tests {
         start_cheat_block_timestamp_global(1000);
 
         start_cheat_caller_address(system_addr, realm_owner);
-        dispatcher.remove_faith(realm_id);
+        dispatcher.remove_faith(TEST_GAME_ID, realm_id);
         stop_cheat_caller_address(system_addr);
     }
 
@@ -1485,7 +1515,7 @@ mod tests {
             owner_share_percent: 3000,
             reward_token: starknet::contract_address_const::<'reward_token'>(),
         };
-        WorldConfigUtilImpl::set_member(ref world, selector!("faith_config"), disabled_config);
+        WorldConfigUtilImpl::set_member(ref world, TEST_PRESET_ID, selector!("faith_config"), disabled_config);
 
         let wonder_owner = starknet::contract_address_const::<'wonder_owner'>();
         let wonder_coord = Coord { alt: false, x: 10, y: 10 };
@@ -1494,7 +1524,7 @@ mod tests {
         start_cheat_block_timestamp_global(1000);
 
         start_cheat_caller_address(system_addr, wonder_owner);
-        dispatcher.pledge_faith(wonder_id, wonder_id);
+        dispatcher.pledge_faith(TEST_GAME_ID, wonder_id, wonder_id);
         stop_cheat_caller_address(system_addr);
     }
 }

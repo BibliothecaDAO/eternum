@@ -53,8 +53,10 @@ pub mod structure_creation_library {
     use dojo::world::{WorldStorage, WorldStorageTrait};
     use crate::alias::ID;
     use crate::constants::{DAYDREAMS_AGENT_ID, RESOURCE_PRECISION, ResourceTypes};
-    use crate::models::config::{StartingResourcesConfig, StructureCapacityConfig, WorldConfigUtilImpl};
-    use crate::models::game::GameRegistry;
+    use crate::models::config::{
+        StartingResourcesConfig, StructureCapacityConfig, VillageTokenConfig, WorldConfigUtilImpl,
+    };
+    use crate::models::game::{GameRegistry, GameRegistryImpl};
     use crate::models::map::{Tile, TileImpl, TileOccupier};
     use crate::models::map2::TileOpt;
     use crate::models::position::{Coord, CoordTrait, Direction};
@@ -65,6 +67,7 @@ pub mod structure_creation_library {
     use crate::models::structure::{
         Structure, StructureBase, StructureBaseStoreImpl, StructureCategory, StructureImpl, StructureMetadata,
         StructureMetadataStoreImpl, StructureOwnerStoreImpl, StructureResourcesImpl, StructureTroopExplorerStoreImpl,
+        StructureVillageSlots,
     };
     use crate::models::troop::{ExplorerTroops, GuardSlot, TroopsImpl};
     use crate::models::weight::Weight;
@@ -73,7 +76,9 @@ pub mod structure_creation_library {
     };
     use crate::systems::utils::map::IMapImpl;
     use crate::systems::utils::troop::iExplorerImpl;
+    use crate::systems::utils::village::iVillageImpl;
     use crate::utils::map::biomes::{Biome, get_biome_from_world};
+    use crate::utils::village::{IVillagePassDispatcher, IVillagePassDispatcherTrait};
 
 
     #[abi(embed_v0)]
@@ -150,7 +155,7 @@ pub mod structure_creation_library {
                 _reveal_structure_surroundings(ref world, game_id, coord);
             }
 
-            // Village-pass slots are excluded from the Blitz-core world (D15).
+            prepare_village_slots(ref world, game_id, structure_id, coord, metadata, explore_village_coord);
 
             // save structure model
             let structure_resources_packed: u128 = StructureResourcesImpl::pack_resource_types(resources);
@@ -248,16 +253,98 @@ pub mod structure_creation_library {
 
     fn _fetch_resource_list(ref world: WorldStorage, game_id: u32, structure_id: ID) -> Array<ResourceList> {
         let game: GameRegistry = world.read_model(game_id);
-        // Village starting resources are excluded from the Blitz-core world (D15).
-        let starting_resources: StartingResourcesConfig = WorldConfigUtilImpl::get_member(
-            world, game_id, selector!("realm_start_resources_config"),
+        let structure_metadata: StructureMetadata = StructureMetadataStoreImpl::retrieve(
+            ref world, game_id, structure_id,
         );
+        let starting_resources: StartingResourcesConfig = if structure_metadata.village_realm.is_non_zero() {
+            WorldConfigUtilImpl::get_member(world, game_id, selector!("village_start_resources_config"))
+        } else {
+            WorldConfigUtilImpl::get_member(world, game_id, selector!("realm_start_resources_config"))
+        };
         let mut resources: Array<ResourceList> = array![];
         for i in 0..starting_resources.resources_list_count {
             let resource: ResourceList = world.read_model((game.preset_id, starting_resources.resources_list_id, i));
             resources.append(resource);
         }
         resources
+    }
+
+    fn prepare_village_slots(
+        ref world: WorldStorage,
+        game_id: u32,
+        structure_id: ID,
+        structure_coord: Coord,
+        structure_metadata: StructureMetadata,
+        enabled: bool,
+    ) {
+        if !enabled {
+            return;
+        }
+
+        let available_directions = find_available_village_directions(ref world, game_id, structure_coord);
+        if available_directions.len().is_zero() {
+            return;
+        }
+
+        world
+            .write_model(
+                @StructureVillageSlots {
+                    game_id,
+                    connected_realm_entity_id: structure_id,
+                    connected_realm_id: structure_metadata.realm_id,
+                    connected_realm_coord: structure_coord,
+                    directions_left: available_directions.span(),
+                },
+            );
+    }
+
+    fn find_available_village_directions(
+        ref world: WorldStorage, game_id: u32, realm_coord: Coord,
+    ) -> Array<Direction> {
+        let mut available_directions = array![];
+        for direction in village_directions() {
+            let village_coord = realm_coord.neighbor_after_distance(direction, iVillageImpl::village_realm_distance());
+            let village_tile_opt: TileOpt = world
+                .read_model((game_id, village_coord.alt, village_coord.x, village_coord.y));
+            let mut village_tile: Tile = village_tile_opt.into();
+            reveal_village_tile(ref world, game_id, ref village_tile);
+
+            if village_tile.occupier_is_structure || village_tile.occupier_type == TileOccupier::Quest.into() {
+                continue;
+            }
+
+            mint_village_pass_when_required(world, game_id);
+            available_directions.append(direction);
+        }
+        available_directions
+    }
+
+    fn reveal_village_tile(ref world: WorldStorage, game_id: u32, ref village_tile: Tile) {
+        if village_tile.discovered() {
+            return;
+        }
+        let village_biome: Biome = get_biome_from_world(
+            world, game_id, village_tile.alt, village_tile.col.into(), village_tile.row.into(),
+        );
+        IMapImpl::explore(ref world, ref village_tile, village_biome);
+    }
+
+    fn mint_village_pass_when_required(world: WorldStorage, game_id: u32) {
+        if GameRegistryImpl::get(world, game_id).dev_mode_on {
+            return;
+        }
+        let village_token_config: VillageTokenConfig = WorldConfigUtilImpl::get_member(
+            world, game_id, selector!("village_token_config"),
+        );
+        IVillagePassDispatcher { contract_address: village_token_config.token_address }
+            .mint(village_token_config.mint_recipient_address);
+    }
+
+    fn village_directions() -> Array<Direction> {
+        array![
+            Direction::East, Direction::NorthEast, Direction::NorthWest, Direction::West, Direction::SouthWest,
+            Direction::SouthEast,
+        ]
     }
 
     fn _should_explore_surroundings(category: StructureCategory, explore_village_coord: bool) -> bool {

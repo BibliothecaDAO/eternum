@@ -102,10 +102,15 @@ describe("launch request helpers", () => {
     ).toBe(20);
   });
 
-  test("defaults appchain launches to preset 2 (Regular Fast) and the GameRegistry poll budget", () => {
-    const appchainRequest = buildLaunchGameRequest({
+  test("defaults appchain launches to their mode-specific preset and the GameRegistry poll budget", () => {
+    const blitzRequest = buildLaunchGameRequest({
       environment: "appchain.blitz",
       game: "bltz-test-1",
+      "start-time": "2026-03-18T10:00:00Z",
+    });
+    const eternumRequest = buildLaunchGameRequest({
+      environment: "appchain.eternum",
+      game: "etrn-test-1",
       "start-time": "2026-03-18T10:00:00Z",
     });
     const mainnetRequest = buildLaunchGameRequest({
@@ -114,8 +119,13 @@ describe("launch request helpers", () => {
       "start-time": "2026-03-18T10:00:00Z",
     });
 
-    expect(appchainRequest).toMatchObject({
+    expect(blitzRequest).toMatchObject({
       version: "2",
+      waitForFactoryIndexTimeoutMs: 120_000,
+      waitForFactoryIndexPollMs: 2_000,
+    });
+    expect(eternumRequest).toMatchObject({
+      version: "10",
       waitForFactoryIndexTimeoutMs: 120_000,
       waitForFactoryIndexPollMs: 2_000,
     });

@@ -19,20 +19,25 @@ use crate::utils::map::biomes::Biome;
 
 #[starknet::interface]
 pub trait IQuestSystems<T> {
-    fn add_game(ref self: T, address: ContractAddress, levels: Span<Level>, overwrite: bool);
-    fn remove_game(ref self: T, address: ContractAddress);
-    fn create_quest(ref self: T, tile: Tile, vrf_seed: u256);
+    fn add_game(ref self: T, game_id: u32, address: ContractAddress, levels: Span<Level>, overwrite: bool);
+    fn remove_game(ref self: T, game_id: u32, address: ContractAddress);
+    fn create_quest(ref self: T, game_id: u32, tile: Tile, vrf_seed: u256);
     fn start_quest(
-        ref self: T, quest_tile_id: u32, explorer_id: ID, player_name: felt252, to_address: ContractAddress,
+        ref self: T,
+        game_id: u32,
+        quest_tile_id: u32,
+        explorer_id: ID,
+        player_name: felt252,
+        to_address: ContractAddress,
     ) -> u64;
-    fn claim_reward(ref self: T, game_token_id: u64, game_address: ContractAddress);
-    fn enable_quests(ref self: T);
-    fn disable_quests(ref self: T);
-    fn get_quest(self: @T, game_token_id: u64, game_address: ContractAddress) -> Quest;
-    fn get_quest_details(self: @T, game_token_id: u64, game_address: ContractAddress) -> QuestDetails;
-    fn get_quest_tile(self: @T, quest_tile_id: u32) -> QuestTile;
-    fn get_target_score(self: @T, game_token_id: u64, game_address: ContractAddress) -> u32;
-    fn is_quest_feature_enabled(self: @T) -> bool;
+    fn claim_reward(ref self: T, game_id: u32, game_token_id: u64, game_address: ContractAddress);
+    fn enable_quests(ref self: T, game_id: u32);
+    fn disable_quests(ref self: T, game_id: u32);
+    fn get_quest(self: @T, game_id: u32, game_token_id: u64, game_address: ContractAddress) -> Quest;
+    fn get_quest_details(self: @T, game_id: u32, game_token_id: u64, game_address: ContractAddress) -> QuestDetails;
+    fn get_quest_tile(self: @T, game_id: u32, quest_tile_id: u32) -> QuestTile;
+    fn get_target_score(self: @T, game_id: u32, game_token_id: u64, game_address: ContractAddress) -> u32;
+    fn is_quest_feature_enabled(self: @T, game_id: u32) -> bool;
 }
 
 #[starknet::interface]
@@ -57,7 +62,7 @@ pub trait IBudokanGame<T> {
 pub mod quest_systems {
     use core::array::ArrayTrait;
     use dojo::model::ModelStorage;
-    use dojo::world::{IWorldDispatcherTrait, WorldStorage, WorldStorageTrait};
+    use dojo::world::{IWorldDispatcherTrait, WorldStorageTrait};
     use starknet::ContractAddress;
     use crate::alias::ID;
     use crate::constants::{DEFAULT_NS, ErrorMessages, resource_type_name};
@@ -73,16 +78,14 @@ pub mod quest_systems {
     use crate::systems::quest::constants::VERSION;
     use super::{IBudokanGameDispatcher, IBudokanGameDispatcherTrait, iQuestDiscoveryImpl};
 
-    fn dojo_init(self: @ContractState) {
-        // initialize quest feature flag to enabled
-        let mut world: WorldStorage = self.world(DEFAULT_NS());
-        let mut quest_feature_flag: QuestFeatureFlag = QuestFeatureFlag { key: VERSION, enabled: true };
-        world.write_model(@quest_feature_flag);
-    }
+    // Per-game feature flags are initialized from registrar presets during create_game.
+    fn dojo_init(self: @ContractState) {}
 
     #[abi(embed_v0)]
     pub impl QuestSystemsImpl of super::IQuestSystems<ContractState> {
-        fn add_game(ref self: ContractState, address: ContractAddress, levels: Span<Level>, overwrite: bool) {
+        fn add_game(
+            ref self: ContractState, game_id: u32, address: ContractAddress, levels: Span<Level>, overwrite: bool,
+        ) {
             let mut world = self.world(DEFAULT_NS());
 
             // Check that at least one level is provided
@@ -99,16 +102,16 @@ pub mod quest_systems {
             // if overwrite is not true
             if !overwrite {
                 // ensure game is not already in registry
-                let quest_levels: QuestLevels = world.read_model(address);
+                let quest_levels: QuestLevels = world.read_model((game_id, address));
                 assert!(quest_levels.levels.len() == 0, "Game already exists and overwrite is not true");
             }
 
             // Store the game configuration
-            let game_config = QuestLevels { game_address: address, levels };
+            let game_config = QuestLevels { game_id, game_address: address, levels };
             world.write_model(@game_config);
 
             // Add the game to the registry
-            let registry: QuestGameRegistry = world.read_model(VERSION);
+            let registry: QuestGameRegistry = world.read_model((game_id, VERSION));
 
             // Create a mutable array from the current games span
             let mut games_array: Array<ContractAddress> = registry.games.into();
@@ -117,11 +120,11 @@ pub mod quest_systems {
             games_array.append(address);
 
             // Update the registry with the new array span
-            let updated_registry = QuestGameRegistry { key: VERSION, games: games_array.span() };
+            let updated_registry = QuestGameRegistry { game_id, key: VERSION, games: games_array.span() };
             world.write_model(@updated_registry);
         }
 
-        fn remove_game(ref self: ContractState, address: ContractAddress) {
+        fn remove_game(ref self: ContractState, game_id: u32, address: ContractAddress) {
             let mut world = self.world(DEFAULT_NS());
 
             // only owner can remove quest games
@@ -133,11 +136,11 @@ pub mod quest_systems {
             );
 
             // Verify the game exists in config
-            let quest_levels: QuestLevels = world.read_model(address);
+            let quest_levels: QuestLevels = world.read_model((game_id, address));
             assert!(quest_levels.levels.len() == 0, "Game is not in registry");
 
             // Get current registry
-            let registry: QuestGameRegistry = world.read_model(VERSION);
+            let registry: QuestGameRegistry = world.read_model((game_id, VERSION));
             let current_games = registry.games;
             let original_length = current_games.len();
 
@@ -161,11 +164,11 @@ pub mod quest_systems {
             assert!(new_games.len() < original_length, "Game is not in registry");
 
             // Update the registry
-            let updated_registry = QuestGameRegistry { key: VERSION, games: new_games.span() };
+            let updated_registry = QuestGameRegistry { game_id, key: VERSION, games: new_games.span() };
             world.write_model(@updated_registry);
         }
 
-        fn create_quest(ref self: ContractState, tile: Tile, vrf_seed: u256) {
+        fn create_quest(ref self: ContractState, game_id: u32, tile: Tile, vrf_seed: u256) {
             let mut world = self.world(DEFAULT_NS());
             let mut tile = tile;
 
@@ -176,14 +179,15 @@ pub mod quest_systems {
                 "caller must be the troop movement util systems",
             );
 
-            let feature_toggle: QuestFeatureFlag = world.read_model(VERSION);
+            let feature_toggle: QuestFeatureFlag = world.read_model((game_id, VERSION));
             assert!(feature_toggle.enabled, "Quest feature is disabled");
 
-            iQuestDiscoveryImpl::create(ref world, ref tile, vrf_seed);
+            iQuestDiscoveryImpl::create(ref world, game_id, ref tile, vrf_seed);
         }
 
         fn start_quest(
             ref self: ContractState,
+            game_id: u32,
             quest_tile_id: u32,
             explorer_id: ID,
             player_name: felt252,
@@ -269,23 +273,23 @@ pub mod quest_systems {
             1
         }
 
-        fn claim_reward(ref self: ContractState, game_token_id: u64, game_address: ContractAddress) {
+        fn claim_reward(ref self: ContractState, game_id: u32, game_token_id: u64, game_address: ContractAddress) {
             let mut world = self.world(DEFAULT_NS());
 
-            let feature_toggle: QuestFeatureFlag = world.read_model(VERSION);
+            let feature_toggle: QuestFeatureFlag = world.read_model((game_id, VERSION));
             assert!(feature_toggle.enabled, "Quest feature is disabled");
 
-            let mut quest: Quest = world.read_model((game_token_id, game_address));
-            let quest_tile: QuestTile = world.read_model(quest.quest_tile_id);
+            let mut quest: Quest = world.read_model((game_id, game_token_id, game_address));
+            let quest_tile: QuestTile = world.read_model((game_id, quest.quest_tile_id));
 
             // Explorer must be adjacent to quest tile to claim reward
-            let explorer: ExplorerTroops = world.read_model(quest.explorer_id);
+            let explorer: ExplorerTroops = world.read_model((game_id, quest.explorer_id));
             assert!(explorer.coord.is_adjacent(quest_tile.coord), "Explorer is not adjacent to quest tile");
 
             // TODO: Capacity Check (if we're using a resource that has a weight)
 
             // get score for the token id
-            let quest_levels: QuestLevels = world.read_model(quest_tile.game_address);
+            let quest_levels: QuestLevels = world.read_model((game_id, quest_tile.game_address));
             let level: Level = *quest_levels.levels.at(quest_tile.level.into());
 
             let game_dispatcher = IBudokanGameDispatcher { contract_address: quest_tile.game_address };
@@ -305,10 +309,11 @@ pub mod quest_systems {
             world.write_model(@quest);
 
             // grant resource reward for completing quest
-            let mut explorer_weight: Weight = WeightStoreImpl::retrieve(ref world, quest.explorer_id);
-            let resource_weight_grams: u128 = ResourceWeightImpl::grams(ref world, quest_tile.resource_type);
+            let mut explorer_weight: Weight = WeightStoreImpl::retrieve(ref world, game_id, quest.explorer_id);
+            let resource_weight_grams: u128 = ResourceWeightImpl::grams(ref world, game_id, quest_tile.resource_type);
             let mut resource = SingleResourceStoreImpl::retrieve(
                 ref world,
+                game_id,
                 quest.explorer_id,
                 quest_tile.resource_type,
                 ref explorer_weight,
@@ -317,10 +322,10 @@ pub mod quest_systems {
             );
             resource.add(quest_tile.amount, ref explorer_weight, resource_weight_grams);
             resource.store(ref world);
-            explorer_weight.store(ref world, quest.explorer_id);
+            explorer_weight.store(ref world, game_id, quest.explorer_id);
         }
 
-        fn enable_quests(ref self: ContractState) {
+        fn enable_quests(ref self: ContractState, game_id: u32) {
             let mut world = self.world(DEFAULT_NS());
             assert(
                 world
@@ -329,14 +334,14 @@ pub mod quest_systems {
                 ErrorMessages::NOT_OWNER,
             );
 
-            let mut feature_toggle: QuestFeatureFlag = world.read_model(VERSION);
+            let mut feature_toggle: QuestFeatureFlag = world.read_model((game_id, VERSION));
             assert!(!feature_toggle.enabled, "Quest feature is already enabled");
 
             feature_toggle.enabled = true;
             world.write_model(@feature_toggle);
         }
 
-        fn disable_quests(ref self: ContractState) {
+        fn disable_quests(ref self: ContractState, game_id: u32) {
             let mut world = self.world(DEFAULT_NS());
             assert(
                 world
@@ -345,23 +350,25 @@ pub mod quest_systems {
                 ErrorMessages::NOT_OWNER,
             );
 
-            let mut feature_toggle: QuestFeatureFlag = world.read_model(VERSION);
+            let mut feature_toggle: QuestFeatureFlag = world.read_model((game_id, VERSION));
             assert!(feature_toggle.enabled, "Quest feature is already disabled");
 
             feature_toggle.enabled = false;
             world.write_model(@feature_toggle);
         }
 
-        fn get_quest(self: @ContractState, game_token_id: u64, game_address: ContractAddress) -> Quest {
+        fn get_quest(self: @ContractState, game_id: u32, game_token_id: u64, game_address: ContractAddress) -> Quest {
             let mut world = self.world(DEFAULT_NS());
-            world.read_model((game_token_id, game_address))
+            world.read_model((game_id, game_token_id, game_address))
         }
 
-        fn get_quest_details(self: @ContractState, game_token_id: u64, game_address: ContractAddress) -> QuestDetails {
+        fn get_quest_details(
+            self: @ContractState, game_id: u32, game_token_id: u64, game_address: ContractAddress,
+        ) -> QuestDetails {
             let mut world = self.world(DEFAULT_NS());
-            let quest: Quest = world.read_model((game_token_id, game_address));
-            let quest_tile: QuestTile = world.read_model(quest.quest_tile_id);
-            let quest_levels: QuestLevels = world.read_model(quest_tile.game_address);
+            let quest: Quest = world.read_model((game_id, game_token_id, game_address));
+            let quest_tile: QuestTile = world.read_model((game_id, quest.quest_tile_id));
+            let quest_levels: QuestLevels = world.read_model((game_id, quest_tile.game_address));
             let target_score: u32 = *quest_levels.levels.at(quest_tile.level.into()).target_score;
             let resource_name: ByteArray = resource_type_name(quest_tile.resource_type);
             QuestDetails {
@@ -374,22 +381,24 @@ pub mod quest_systems {
             }
         }
 
-        fn get_target_score(self: @ContractState, game_token_id: u64, game_address: ContractAddress) -> u32 {
+        fn get_target_score(
+            self: @ContractState, game_id: u32, game_token_id: u64, game_address: ContractAddress,
+        ) -> u32 {
             let mut world = self.world(DEFAULT_NS());
-            let quest: Quest = world.read_model((game_token_id, game_address));
-            let quest_tile: QuestTile = world.read_model(quest.quest_tile_id);
-            let quest_levels: QuestLevels = world.read_model(quest_tile.game_address);
+            let quest: Quest = world.read_model((game_id, game_token_id, game_address));
+            let quest_tile: QuestTile = world.read_model((game_id, quest.quest_tile_id));
+            let quest_levels: QuestLevels = world.read_model((game_id, quest_tile.game_address));
             *quest_levels.levels.at(quest_tile.level.into()).target_score
         }
 
-        fn get_quest_tile(self: @ContractState, quest_tile_id: u32) -> QuestTile {
+        fn get_quest_tile(self: @ContractState, game_id: u32, quest_tile_id: u32) -> QuestTile {
             let mut world = self.world(DEFAULT_NS());
-            world.read_model(quest_tile_id)
+            world.read_model((game_id, quest_tile_id))
         }
 
-        fn is_quest_feature_enabled(self: @ContractState) -> bool {
+        fn is_quest_feature_enabled(self: @ContractState, game_id: u32) -> bool {
             let mut world = self.world(DEFAULT_NS());
-            let feature_toggle: QuestFeatureFlag = world.read_model(VERSION);
+            let feature_toggle: QuestFeatureFlag = world.read_model((game_id, VERSION));
             feature_toggle.enabled
         }
     }
@@ -397,18 +406,18 @@ pub mod quest_systems {
 
 #[generate_trait]
 pub impl iQuestDiscoveryImpl of iQuestDiscoveryTrait {
-    fn create(ref world: WorldStorage, ref tile: Tile, seed: u256) -> @QuestTile {
+    fn create(ref world: WorldStorage, game_id: u32, ref tile: Tile, seed: u256) -> @QuestTile {
         assert!(tile.not_occupied(), "Can't create quest on occupied tile");
 
         // explore the tile if biome is not set
         if tile.biome == Biome::None.into() {
             let biome_library = biome_library::get_dispatcher(@world);
-            let biome: Biome = biome_library.get_biome(world, tile.alt, tile.col.into(), tile.row.into());
+            let biome: Biome = biome_library.get_biome(world, game_id, tile.alt, tile.col.into(), tile.row.into());
             IMapImpl::explore(ref world, ref tile, biome);
         }
 
         // get game registry
-        let quest_game_registry: QuestGameRegistry = world.read_model(VERSION);
+        let quest_game_registry: QuestGameRegistry = world.read_model((game_id, VERSION));
         let game_count: u128 = quest_game_registry.games.len().into();
 
         // select random game from game registry
@@ -418,7 +427,7 @@ pub impl iQuestDiscoveryImpl of iQuestDiscoveryTrait {
             .try_into()
             .unwrap();
         let game_address: ContractAddress = *quest_game_registry.games.at(game_selector);
-        let quest_levels: QuestLevels = world.read_model(game_address);
+        let quest_levels: QuestLevels = world.read_model((game_id, game_address));
 
         // select random level for the selected game
         let level: u8 = rng_library_dispatcher
@@ -434,15 +443,15 @@ pub impl iQuestDiscoveryImpl of iQuestDiscoveryTrait {
             .unwrap();
 
         // use exploration reward system to get a random resource type and amount
-        let map_config: MapConfig = WorldConfigUtilImpl::get_member(world, selector!("map_config"));
-        let blitz_mode_on: bool = WorldConfigUtilImpl::get_member(world, selector!("blitz_mode_on"));
+        let map_config: MapConfig = WorldConfigUtilImpl::get_member(world, game_id, selector!("map_config"));
+        let blitz_mode_on: bool = WorldConfigUtilImpl::get_member(world, game_id, selector!("blitz_mode_on"));
         let blitz_exploration_config: BlitzExplorationConfig = WorldConfigUtilImpl::get_member(
-            world, selector!("blitz_exploration_config"),
+            world, game_id, selector!("blitz_exploration_config"),
         );
         let blitz_exploration_reward_profile_id = iBlitzProfileImpl::resolve_blitz_profile_id(
             blitz_exploration_config.reward_profile_id,
         );
-        let current_tick: u64 = TickImpl::get_tick_interval(ref world).current();
+        let current_tick: u64 = TickImpl::get_tick_interval(ref world, game_id).current();
         let (resource_type, base_reward_amount) = iExplorerImpl::exploration_reward(
             ref world, Option::None, current_tick, map_config, seed, blitz_mode_on, blitz_exploration_reward_profile_id,
         );
@@ -454,7 +463,7 @@ pub impl iQuestDiscoveryImpl of iQuestDiscoveryTrait {
         let coord = Coord { alt: tile.alt, x: tile.col, y: tile.row };
 
         let quest_tile = @QuestTile {
-            id, game_address, coord, level, resource_type, amount, capacity, participant_count: 0,
+            game_id, id, game_address, coord, level, resource_type, amount, capacity, participant_count: 0,
         };
 
         // set tile occupier

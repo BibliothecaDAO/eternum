@@ -9,7 +9,7 @@ pub const VELORDS_BURNER_ADDRESS: felt252 = 0x045c587318c9ebcf2fbe21febf288ee2e3
 // Config ID to fetch global configs
 
 pub const WORLD_CONFIG_ID: ID = Bounded::MAX;
-// D15: retained only so excluded Eternum modules remain mechanically restorable in Phase 3.
+// Compatibility alias for retired config code and historical tests.
 pub const LEGACY_CONFIG_ID: ID = WORLD_CONFIG_ID;
 pub const REGIONAL_BANK_ONE_ID: ID = Bounded::MAX - 1;
 pub const REGIONAL_BANK_TWO_ID: ID = Bounded::MAX - 2;

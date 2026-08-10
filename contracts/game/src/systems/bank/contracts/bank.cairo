@@ -9,7 +9,7 @@ struct BankCreateParams {
 
 #[starknet::interface]
 pub trait IBankSystems<T> {
-    fn create_banks(ref self: T, banks: Span<BankCreateParams>) -> Span<ID>;
+    fn create_banks(ref self: T, game_id: u32, banks: Span<BankCreateParams>) -> Span<ID>;
 }
 
 #[dojo::contract]
@@ -32,7 +32,7 @@ pub mod bank_systems {
     use crate::system_libraries::structure_libraries::structure_creation_library::{
         IStructureCreationlibraryDispatcherTrait, structure_creation_library,
     };
-    use crate::systems::config::contracts::config_systems::assert_caller_is_admin;
+    use crate::systems::utils::auth::iGameAdminImpl;
     use crate::systems::utils::structure::iStructureImpl;
     use crate::systems::utils::troop::iMercenariesImpl;
 
@@ -40,11 +40,11 @@ pub mod bank_systems {
 
     #[abi(embed_v0)]
     impl BankSystemsImpl of super::IBankSystems<ContractState> {
-        fn create_banks(ref self: ContractState, banks: Span<super::BankCreateParams>) -> Span<ID> {
+        fn create_banks(ref self: ContractState, game_id: u32, banks: Span<super::BankCreateParams>) -> Span<ID> {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
 
             // ensure caller is game admin
-            assert_caller_is_admin(world);
+            iGameAdminImpl::assert_chain_admin(world);
 
             // ensure only `max bank count` banks can be created and they are created at once;
             assert!(banks.len() == MAX_BANK_COUNT.into(), "cannot create more than {} banks", MAX_BANK_COUNT);
@@ -61,6 +61,7 @@ pub mod bank_systems {
                 structure_creation_library
                     .make_structure(
                         world,
+                        game_id,
                         *bank.coord,
                         caller,
                         bank_entity_id,
@@ -75,9 +76,9 @@ pub mod bank_systems {
                 world.write_model(@AddressName { address: bank_entity_id.into(), name: *bank.name });
 
                 // add guards to all 4 slots of the structure
-                let troop_limit_config = CombatConfigImpl::troop_limit_config(ref world);
-                let troop_stamina_config = CombatConfigImpl::troop_stamina_config(ref world);
-                let tick = TickImpl::get_tick_interval(ref world);
+                let troop_limit_config = CombatConfigImpl::troop_limit_config(ref world, game_id);
+                let troop_stamina_config = CombatConfigImpl::troop_stamina_config(ref world, game_id);
+                let tick = TickImpl::get_tick_interval(ref world, game_id);
                 let seed = 'what could possibly go wrong'.into() - bank_entity_id.into();
 
                 let guard_slots = array![GuardSlot::Delta, GuardSlot::Charlie, GuardSlot::Bravo];
@@ -86,6 +87,7 @@ pub mod bank_systems {
                 for guard_slot in guard_slots {
                     iMercenariesImpl::add(
                         ref world,
+                        game_id,
                         bank_entity_id,
                         seed + count.into(),
                         array![(guard_slot, TroopTier::T2, *guard_troop_types_order.at(count))].span(),

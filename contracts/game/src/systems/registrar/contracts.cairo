@@ -90,6 +90,8 @@ pub mod registrar_systems {
     };
     use crate::models::game::{GAME_COUNTER_ID, GameCounter, GameRegistry, GameRegistryImpl, GameStatus, Preset, Series};
     use crate::models::position::CENTER_COL;
+    use crate::models::quest::{QuestFeatureFlag, QuestGameRegistry, QuestLevels};
+    use crate::systems::quest::constants::VERSION;
     use crate::systems::utils::blitz_profile::iBlitzProfileImpl;
     use super::{
         CreateGameParams, IHyperstructureReservationDispatcher, IHyperstructureReservationDispatcherTrait,
@@ -191,6 +193,7 @@ pub mod registrar_systems {
             world.write_model(@world_config);
             world.write_model(@map_config);
             world.write_model(@agent_config);
+            initialize_quest_config(ref world, game_id, preset_rules);
             reserve_hyperstructures_for_game(ref world, game_id);
             emit_game_created(ref world, registry);
 
@@ -305,18 +308,25 @@ pub mod registrar_systems {
         assert!(params.start_settling_at <= params.start_main_at, "Eternum: invalid game schedule");
         assert!(registration_start_at < params.start_settling_at, "Eternum: registration must open before settling");
         assert!(!(params.single_realm_mode && params.two_player_mode), "Eternum: incompatible game modes");
+        let preset: Preset = world.read_model(params.preset_id);
+        assert!(preset.registered, "Eternum: preset is not registered");
+        let preset_rules: PresetConfig = world.read_model(params.preset_id);
+        let preset_game_config: PresetGameConfig = world.read_model(params.preset_id);
+        validate_registration_capacity(params, preset_game_config.blitz_mode_on);
+        validate_series_game(world, params);
+        (preset_rules, preset_game_config)
+    }
+
+    fn validate_registration_capacity(params: CreateGameParams, blitz_mode_on: bool) {
+        if !blitz_mode_on {
+            assert!(params.registration_count_max == 0, "Eternum: season presets do not use blitz registration");
+            return;
+        }
         assert!(params.registration_count_max.is_non_zero(), "Eternum: registration capacity is zero");
         assert!(params.registration_count_max <= 24, "Eternum: registration capacity exceeds A1 limit");
         if params.two_player_mode {
             assert!(params.registration_count_max == 2, "Eternum: two-player games require two registrations");
         }
-
-        let preset: Preset = world.read_model(params.preset_id);
-        assert!(preset.registered, "Eternum: preset is not registered");
-        let preset_rules: PresetConfig = world.read_model(params.preset_id);
-        let preset_game_config: PresetGameConfig = world.read_model(params.preset_id);
-        validate_series_game(world, params);
-        (preset_rules, preset_game_config)
     }
 
     fn validate_series_game(world: WorldStorage, params: CreateGameParams) {
@@ -390,7 +400,7 @@ pub mod registrar_systems {
             map_center_offset: derive_map_center_offset(game_id, params.seed),
             biome_climate_config: params.biome_climate_config,
             settlement_config: settlement,
-            blitz_mode_on: true,
+            blitz_mode_on: preset.blitz_mode_on,
             blitz_settlement_config: blitz_settlement,
             blitz_hypers_settlement_config: BlitzHypersSettlementConfigImpl::new(),
             blitz_registration_config: registration,
@@ -415,6 +425,17 @@ pub mod registrar_systems {
             min_spawn_lords_amount: preset.agent_min_spawn_lords_amount,
             max_spawn_lords_amount: preset.agent_max_spawn_lords_amount,
         }
+    }
+
+    fn initialize_quest_config(ref world: WorldStorage, game_id: u32, preset: PresetConfig) {
+        let mut game_addresses = array![];
+        for quest_game in preset.quest_games {
+            let quest_game = *quest_game;
+            game_addresses.append(quest_game.address);
+            world.write_model(@QuestLevels { game_id, game_address: quest_game.address, levels: quest_game.levels });
+        }
+        world.write_model(@QuestGameRegistry { game_id, key: VERSION, games: game_addresses.span() });
+        world.write_model(@QuestFeatureFlag { game_id, key: VERSION, enabled: true });
     }
 
     fn update_series_for_new_game(ref world: WorldStorage, params: CreateGameParams) {

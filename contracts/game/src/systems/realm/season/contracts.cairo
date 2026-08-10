@@ -12,6 +12,7 @@ pub struct RealmSettlement {
 pub trait IRealmSystems<T> {
     fn create(
         ref self: T,
+        game_id: u32,
         owner: starknet::ContractAddress,
         realm_id: ID,
         frontend: ContractAddress,
@@ -55,6 +56,8 @@ pub mod realm_systems {
     #[dojo::model]
     pub struct AntiBot {
         #[key]
+        pub game_id: u32,
+        #[key]
         pub caller: ContractAddress,
         #[key]
         pub tx_hash: felt252,
@@ -76,6 +79,7 @@ pub mod realm_systems {
         ///
         fn create(
             ref self: ContractState,
+            game_id: u32,
             owner: ContractAddress,
             realm_id: ID,
             frontend: ContractAddress,
@@ -83,7 +87,7 @@ pub mod realm_systems {
         ) -> ID {
             // check that season is still active
             let mut world: WorldStorage = self.world(DEFAULT_NS());
-            SeasonConfigImpl::get(world).assert_settling_started_and_not_over();
+            SeasonConfigImpl::get(world, game_id).assert_settling_started_and_not_over();
 
             // anti bot protection
             let tx_info: TxInfo = starknet::get_tx_info().unbox();
@@ -92,14 +96,14 @@ pub mod realm_systems {
             let caller: ContractAddress = starknet::get_caller_address();
 
             // todo: use tx origin instead
-            let mut anti_bot: AntiBot = world.read_model((caller, tx_hash));
+            let mut anti_bot: AntiBot = world.read_model((game_id, caller, tx_hash));
             assert!(!anti_bot.used, "multicalls not allowed");
             anti_bot.used = true;
             world.write_model(@anti_bot);
 
             // ensure all spires have been settled before allowing new realms
             let mut settlement_config: SettlementConfig = WorldConfigUtilImpl::get_member(
-                world, selector!("settlement_config"),
+                world, game_id, selector!("settlement_config"),
             );
             assert!(
                 settlement_config.spires_max_count == settlement_config.spires_settled_count,
@@ -108,29 +112,35 @@ pub mod realm_systems {
 
             // collect season pass
             let season_addresses_config: SeasonAddressesConfig = WorldConfigUtilImpl::get_member(
-                world, selector!("season_addresses_config"),
+                world, game_id, selector!("season_addresses_config"),
             );
 
-            iRealmImpl::collect_season_pass(ref world, season_addresses_config.season_pass_address, realm_id);
-
-            // retrieve realm metadata
-            let (_realm_name, _regions, _cities, _harbors, _rivers, wonder, order, resources) =
-                iRealmImpl::collect_season_pass_metadata(
-                season_addresses_config.season_pass_address, realm_id,
-            );
+            let game = crate::models::game::GameRegistryImpl::get(world, game_id);
+            let (wonder, order, resources) = if game.dev_mode_on {
+                (0, 0, array![])
+            } else {
+                iRealmImpl::collect_season_pass(ref world, season_addresses_config.season_pass_address, realm_id);
+                let (_realm_name, _regions, _cities, _harbors, _rivers, wonder, order, resources) =
+                    iRealmImpl::collect_season_pass_metadata(
+                    season_addresses_config.season_pass_address, realm_id,
+                );
+                (wonder, order, resources)
+            };
 
             // update realm count
             let realm_count_selector: felt252 = selector!("realm_count_config");
-            let mut realm_count: RealmCountConfig = WorldConfigUtilImpl::get_member(world, realm_count_selector);
+            let mut realm_count: RealmCountConfig = WorldConfigUtilImpl::get_member(
+                world, game_id, realm_count_selector,
+            );
             realm_count.count += 1;
-            WorldConfigUtilImpl::set_member(ref world, realm_count_selector, realm_count);
+            WorldConfigUtilImpl::set_member(ref world, game_id, realm_count_selector, realm_count);
 
             // get realm coordinates
-            let map_center: Coord = CoordImpl::center(ref world);
+            let map_center: Coord = CoordImpl::center(ref world, game_id);
             let coord: Coord = settlement_config
                 .generate_coord(false, settlement.side, settlement.layer, settlement.point, map_center);
             settlement_config.update_max_layer_and_spires(realm_count.count.into());
-            WorldConfigUtilImpl::set_member(ref world, selector!("settlement_config"), settlement_config);
+            WorldConfigUtilImpl::set_member(ref world, game_id, selector!("settlement_config"), settlement_config);
 
             // create the realm structure first, then provision its economy in the same tx
             let (realm_internal_systems_address, _) = world.dns(@"realm_internal_systems").unwrap();
@@ -138,8 +148,8 @@ pub mod realm_systems {
                 contract_address: realm_internal_systems_address,
             };
             let structure_id = realm_internal_systems
-                .create_internal(owner, realm_id, resources, order, wonder, coord, true, true);
-            realm_internal_systems.provision_internal(structure_id);
+                .create_internal(game_id, owner, realm_id, resources, order, wonder, coord, true, true);
+            realm_internal_systems.provision_internal(game_id, structure_id);
 
             // collect lords attached to season pass and bridge into the realm
             // let lords_amount_attached: u256 =
@@ -160,6 +170,7 @@ pub mod realm_systems {
             world
                 .emit_event(
                     @StoryEvent {
+                        game_id,
                         id: world.dispatcher.uuid(),
                         owner: Option::Some(owner),
                         entity_id: Option::Some(structure_id),

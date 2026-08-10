@@ -282,6 +282,7 @@ type ContractComponentMetadata = {
 };
 
 type QuestLevelsSchema = {
+  game_id: typeof RecsType.Number;
   game_address: typeof RecsType.String;
   levels: typeof RecsType.T;
 };

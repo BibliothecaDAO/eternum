@@ -7,6 +7,8 @@ use crate::alias::ID;
 #[dojo::model]
 pub struct Quantity {
     #[key]
+    pub game_id: u32,
+    #[key]
     pub entity_id: ID,
     pub value: u128,
 }
@@ -19,6 +21,8 @@ pub struct Quantity {
 #[derive(IntrospectPacked, Copy, Drop, Serde)]
 #[dojo::model]
 pub struct QuantityTracker {
+    #[key]
+    pub game_id: u32,
     #[key]
     pub entity_id: felt252,
     pub count: u128,

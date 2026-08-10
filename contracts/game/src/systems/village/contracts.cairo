@@ -3,8 +3,10 @@ use crate::models::position::Direction;
 
 #[starknet::interface]
 pub trait IVillageSystems<T> {
-    fn create(ref self: T, village_pass_token_id: u16, connected_realm_entity_id: ID, direction: Direction) -> ID;
-    fn receive_army_grant(ref self: T, village_id: ID);
+    fn create(
+        ref self: T, game_id: u32, village_pass_token_id: u16, connected_realm_entity_id: ID, direction: Direction,
+    ) -> ID;
+    fn receive_army_grant(ref self: T, game_id: u32, village_id: ID);
 }
 
 #[dojo::contract]
@@ -17,6 +19,7 @@ pub mod village_systems {
     use crate::models::config::{
         SeasonConfigImpl, TickImpl, VillageTokenConfig, VillageTroopConfig, WorldConfigUtilImpl,
     };
+    use crate::models::game::GameRegistryImpl;
     use crate::models::map::TileOccupier;
     use crate::models::owner::OwnerAddressTrait;
     use crate::models::position::{Coord, Direction, NUM_DIRECTIONS};
@@ -39,33 +42,42 @@ pub mod village_systems {
     #[abi(embed_v0)]
     impl VillageSystemsImpl of super::IVillageSystems<ContractState> {
         fn create(
-            ref self: ContractState, village_pass_token_id: u16, connected_realm_entity_id: ID, direction: Direction,
+            ref self: ContractState,
+            game_id: u32,
+            village_pass_token_id: u16,
+            connected_realm_entity_id: ID,
+            direction: Direction,
         ) -> ID {
             // check that season is still active
             let mut world: WorldStorage = self.world(DEFAULT_NS());
-            SeasonConfigImpl::get(world).assert_settling_started_and_not_over();
+            SeasonConfigImpl::get(world, game_id).assert_settling_started_and_not_over();
 
             // recieve the nft from the caller
             let caller = starknet::get_caller_address();
             let this = starknet::get_contract_address();
             let village_token_config: VillageTokenConfig = WorldConfigUtilImpl::get_member(
-                world, selector!("village_pass_config"),
+                world, game_id, selector!("village_token_config"),
             );
-            IVillagePassDispatcher { contract_address: village_token_config.token_address }
-                .transfer_from(caller, this, village_pass_token_id.into());
+            let game = GameRegistryImpl::get(world, game_id);
+            if !game.dev_mode_on {
+                IVillagePassDispatcher { contract_address: village_token_config.token_address }
+                    .transfer_from(caller, this, village_pass_token_id.into());
+            }
 
             // ensure connected entity is a realm
             let connected_structure: StructureBase = StructureBaseStoreImpl::retrieve(
-                ref world, connected_realm_entity_id,
+                ref world, game_id, connected_realm_entity_id,
             );
             assert!(connected_structure.category == StructureCategory::Realm.into(), "connected entity is not a realm");
 
             // update village count for the realm
             let mut connected_structure_metadata: StructureMetadata = StructureMetadataStoreImpl::retrieve(
-                ref world, connected_realm_entity_id,
+                ref world, game_id, connected_realm_entity_id,
             );
             connected_structure_metadata.villages_count += 1;
-            StructureMetadataStoreImpl::store(connected_structure_metadata, ref world, connected_realm_entity_id);
+            StructureMetadataStoreImpl::store(
+                connected_structure_metadata, ref world, game_id, connected_realm_entity_id,
+            );
 
             // ensure there can't be more than 6 villages per realm
             assert!(
@@ -77,7 +89,8 @@ pub mod village_systems {
             // ensure the slot is available
             let mut slot_available = false;
             let mut new_directions_left: Array<Direction> = array![];
-            let mut structure_village_slots: StructureVillageSlots = world.read_model(connected_realm_entity_id);
+            let mut structure_village_slots: StructureVillageSlots = world
+                .read_model((game_id, connected_realm_entity_id));
             for slot_direction in structure_village_slots.directions_left {
                 if *slot_direction == direction {
                     slot_available = true;
@@ -102,7 +115,7 @@ pub mod village_systems {
                 village_coord = village_coord.neighbor(direction);
             }
 
-            let village_resources: Span<u8> = array![iVillageResourceImpl::random(caller, world)].span();
+            let village_resources: Span<u8> = array![iVillageResourceImpl::random(caller, game_id, world)].span();
 
             // set village metadata
             let mut villiage_metadata: StructureMetadata = Default::default();
@@ -113,6 +126,7 @@ pub mod village_systems {
             structure_creation_library
                 .make_structure(
                     world,
+                    game_id,
                     village_coord,
                     caller,
                     village_id,
@@ -125,11 +139,14 @@ pub mod village_systems {
 
             // grant starting resources (no troops — troops come from receive_army_grant)
             structure_creation_library
-                .grant_starting_non_troop_resources(world, village_id, StructureCategory::Village, village_coord);
+                .grant_starting_non_troop_resources(
+                    world, game_id, village_id, StructureCategory::Village, village_coord,
+                );
 
             // place castle building
             BuildingImpl::create(
                 ref world,
+                game_id,
                 caller,
                 village_id,
                 StructureCategory::Village.into(),
@@ -145,27 +162,27 @@ pub mod village_systems {
             village_id
         }
 
-        fn receive_army_grant(ref self: ContractState, village_id: ID) {
+        fn receive_army_grant(ref self: ContractState, game_id: u32, village_id: ID) {
             let mut world = self.world(DEFAULT_NS());
-            SeasonConfigImpl::get(world).assert_started_and_not_over();
+            SeasonConfigImpl::get(world, game_id).assert_started_and_not_over();
 
             // ensure caller owns the village
-            let village_owner = StructureOwnerStoreImpl::retrieve(ref world, village_id);
+            let village_owner = StructureOwnerStoreImpl::retrieve(ref world, game_id, village_id);
             village_owner.assert_caller_owner();
 
             // ensure structure is a village
-            let village_base: StructureBase = StructureBaseStoreImpl::retrieve(ref world, village_id);
+            let village_base: StructureBase = StructureBaseStoreImpl::retrieve(ref world, game_id, village_id);
             assert!(village_base.category == StructureCategory::Village.into(), "structure is not a village");
 
             // ensure army grant hasn't been claimed yet
-            let village_troop: VillageTroop = world.read_model(village_id);
+            let village_troop: VillageTroop = world.read_model((game_id, village_id));
             assert!(!village_troop.claimed, "army grant already claimed");
 
             // ensure troop claim delay has passed (uses created_at from structure_base)
             let village_troop_config: VillageTroopConfig = WorldConfigUtilImpl::get_member(
-                world, selector!("village_troop_config"),
+                world, game_id, selector!("village_troop_config"),
             );
-            let tick = TickImpl::get_tick_interval(ref world);
+            let tick = TickImpl::get_tick_interval(ref world, game_id);
             let current_tick = tick.current();
             let claimable_at = tick.at(village_base.created_at.into()) + village_troop_config.troop_delay_ticks.into();
             assert!(current_tick >= claimable_at, "army grant cannot be claimed yet");
@@ -174,10 +191,10 @@ pub mod village_systems {
             let village_coord = village_base.coord();
             let structure_creation_library = structure_creation_library::get_dispatcher(@world);
             structure_creation_library
-                .grant_starting_troop_resources(world, village_id, StructureCategory::Village, village_coord);
+                .grant_starting_troop_resources(world, game_id, village_id, StructureCategory::Village, village_coord);
 
             // mark as claimed
-            world.write_model(@VillageTroop { village_id, claimed: true });
+            world.write_model(@VillageTroop { game_id, village_id, claimed: true });
         }
     }
 }

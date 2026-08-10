@@ -15,9 +15,9 @@ pub impl iVillageImpl of iVillageTrait {
     }
 
     fn ensure_associated_with_village(
-        ref world: WorldStorage, village_structure_metadata: StructureMetadata, check_realm_entity_id: ID,
+        ref world: WorldStorage, game_id: u32, village_structure_metadata: StructureMetadata, check_realm_entity_id: ID,
     ) {
-        let blitz_mode_on: bool = WorldConfigUtilImpl::get_member(world, selector!("blitz_mode_on"));
+        let blitz_mode_on: bool = WorldConfigUtilImpl::get_member(world, game_id, selector!("blitz_mode_on"));
         if blitz_mode_on {
             return;
         }
@@ -30,10 +30,10 @@ pub impl iVillageImpl of iVillageTrait {
         }
 
         let actual_realm_structure_owner: ContractAddress = StructureOwnerStoreImpl::retrieve(
-            ref world, village_structure_metadata.village_realm,
+            ref world, game_id, village_structure_metadata.village_realm,
         );
         let check_realm_structure_owner: ContractAddress = StructureOwnerStoreImpl::retrieve(
-            ref world, check_realm_entity_id,
+            ref world, game_id, check_realm_entity_id,
         );
         assert!(
             actual_realm_structure_owner == check_realm_structure_owner,
@@ -45,10 +45,10 @@ pub impl iVillageImpl of iVillageTrait {
 
 #[generate_trait]
 pub impl iVillageResourceImpl of iVillageResourceTrait {
-    fn random(owner: starknet::ContractAddress, world: WorldStorage) -> u8 {
+    fn random(owner: starknet::ContractAddress, game_id: u32, world: WorldStorage) -> u8 {
         let rng_library_dispatcher = rng_library::get_dispatcher(@world);
         let vrf_seed: u256 = rng_library_dispatcher
-            .get_random_number(Source::Nonce(starknet::get_caller_address()), world);
+            .get_random_number(game_id, Source::Nonce(starknet::get_caller_address()), world);
         let resource: u8 = *rng_library_dispatcher
             .get_weighted_choice_u8(Self::resources().span(), Self::resource_probabilities().span(), 1, true, vrf_seed)
             .at(0);

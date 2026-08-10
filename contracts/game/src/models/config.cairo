@@ -8,6 +8,7 @@ use crate::constants::WORLD_CONFIG_ID;
 use crate::models::game::{GameRegistry, GameRegistryImpl};
 use crate::models::mmr::MMRConfig;
 use crate::models::position::{Coord, CoordImpl, Direction};
+use crate::models::quest::Level;
 use crate::models::resource::resource::TroopResourceImpl;
 use crate::systems::utils::blitz_profile::{
     OFFICIAL_60_BLITZ_PROFILE_ID, OFFICIAL_90_BLITZ_PROFILE_ID, iBlitzProfileImpl,
@@ -57,6 +58,17 @@ pub struct PresetConfig {
     pub troop_limit_config: TroopLimitConfig,
     pub capacity_config: CapacityConfig,
     pub battle_config: BattleConfig,
+    pub bank_config: BankConfig,
+    pub trade_config: TradeConfig,
+    pub quest_config: QuestConfig,
+    pub faith_config: FaithConfig,
+    pub bitcoin_mine_config: BitcoinMineConfig,
+    pub resource_bridge_config: ResourceBridgeConfig,
+    pub res_bridge_fee_split_config: ResourceBridgeFeeSplitConfig,
+    pub village_token_config: VillageTokenConfig,
+    pub village_troop_config: VillageTroopConfig,
+    pub season_addresses_config: SeasonAddressesConfig,
+    pub quest_games: Span<PresetQuestGame>,
     pub realm_start_resources_config: StartingResourcesConfig,
     pub village_start_resources_config: StartingResourcesConfig,
     pub village_find_resources_config: VillageFoundResourcesConfig,
@@ -74,6 +86,7 @@ pub struct PresetConfig {
 pub struct PresetGameConfig {
     #[key]
     pub preset_id: u32,
+    pub blitz_mode_on: bool,
     // M6: biome climate is supplied per game and was never read from the preset.
     // pub biome_climate_config: BiomeClimateConfig,
     pub settlement_config: SettlementConfig,
@@ -83,6 +96,12 @@ pub struct PresetGameConfig {
     pub agent_max_current_count: u16,
     pub agent_min_spawn_lords_amount: u8,
     pub agent_max_spawn_lords_amount: u8,
+}
+
+#[derive(Introspect, Copy, Drop, Serde, DojoStore)]
+pub struct PresetQuestGame {
+    pub address: ContractAddress,
+    pub levels: Span<Level>,
 }
 
 #[derive(Introspect, Copy, Drop, Serde, DojoStore)]

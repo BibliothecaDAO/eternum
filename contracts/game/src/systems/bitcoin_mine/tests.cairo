@@ -17,6 +17,7 @@ mod tests {
         BitcoinMineConfig, CapacityConfig, SeasonConfig, StructureCapacityConfig, TickConfig, WeightConfig,
         WorldConfigUtilImpl,
     };
+    use crate::models::game::{GameRegistry, GameStatus};
     use crate::models::resource::resource::{
         ResourceImpl, ResourceWeightImpl, SingleResourceImpl, SingleResourceStoreImpl, WeightStoreImpl,
     };
@@ -25,6 +26,7 @@ mod tests {
     use crate::models::troop::{GuardTroops, TroopTier, TroopType, Troops};
     use crate::models::weight::Weight;
     use crate::systems::bitcoin_mine::contracts::{IBitcoinMineSystemsDispatcher, IBitcoinMineSystemsDispatcherTrait};
+    use crate::utils::testing::helpers::{TEST_GAME_ID, TEST_PRESET_ID};
 
     // ============================================================================
     // Constants
@@ -91,7 +93,8 @@ mod tests {
             namespace: DEFAULT_NS_STR(),
             resources: [
                 // Core config
-                TestResource::Model("WorldConfig"), TestResource::Model("WeightConfig"),
+                TestResource::Model("WorldConfig"), TestResource::Model("PresetConfig"),
+                TestResource::Model("GameRegistry"), TestResource::Model("WeightConfig"),
                 // Structure models
                 TestResource::Model("Structure"), TestResource::Model("StructureOwnerStats"),
                 // Resource models
@@ -127,27 +130,58 @@ mod tests {
 
         // Set up bitcoin mine config
         let bitcoin_config = get_default_bitcoin_mine_config();
-        WorldConfigUtilImpl::set_member(ref world, selector!("bitcoin_mine_config"), bitcoin_config);
+        WorldConfigUtilImpl::set_member(ref world, TEST_PRESET_ID, selector!("bitcoin_mine_config"), bitcoin_config);
 
         // Active season (started, not ended)
         let season_config = get_active_season_config();
-        WorldConfigUtilImpl::set_member(ref world, selector!("season_config"), season_config);
+        set_test_season(ref world, season_config);
 
         // Tick config for phase timing
         let tick_config = get_tick_config();
-        WorldConfigUtilImpl::set_member(ref world, selector!("tick_config"), tick_config);
+        WorldConfigUtilImpl::set_member(ref world, TEST_PRESET_ID, selector!("tick_config"), tick_config);
 
         // Capacity configs
-        WorldConfigUtilImpl::set_member(ref world, selector!("capacity_config"), get_capacity_config());
+        WorldConfigUtilImpl::set_member(ref world, TEST_PRESET_ID, selector!("capacity_config"), get_capacity_config());
         WorldConfigUtilImpl::set_member(
-            ref world, selector!("structure_capacity_config"), get_structure_capacity_config(),
+            ref world, TEST_PRESET_ID, selector!("structure_capacity_config"), get_structure_capacity_config(),
         );
 
         // Set weight config for labor and satoshi (both weightless for simplicity)
-        world.write_model_test(@WeightConfig { resource_type: ResourceTypes::LABOR, weight_gram: 0 });
-        world.write_model_test(@WeightConfig { resource_type: ResourceTypes::SATOSHI, weight_gram: 0 });
+        world
+            .write_model_test(
+                @WeightConfig { preset_id: TEST_PRESET_ID, resource_type: ResourceTypes::LABOR, weight_gram: 0 },
+            );
+        world
+            .write_model_test(
+                @WeightConfig { preset_id: TEST_PRESET_ID, resource_type: ResourceTypes::SATOSHI, weight_gram: 0 },
+            );
 
         world
+    }
+
+    fn set_test_season(ref world: WorldStorage, season: SeasonConfig) {
+        world
+            .write_model_test(
+                @GameRegistry {
+                    game_id: TEST_GAME_ID,
+                    name: 'bitcoin-test',
+                    series_id: 0,
+                    game_number_in_series: 0,
+                    preset_id: TEST_PRESET_ID,
+                    creator: starknet::contract_address_const::<'creator'>(),
+                    status: GameStatus::Live,
+                    dev_mode_on: season.dev_mode_on,
+                    start_settling_at: season.start_settling_at,
+                    start_main_at: season.start_main_at,
+                    end_at: season.end_at,
+                    end_grace_seconds: season.end_grace_seconds,
+                    registration_grace_seconds: season.registration_grace_seconds,
+                    final_trial_id: 0,
+                    seed: 1,
+                    fees_collected: 0,
+                    fees_paid_out: 0,
+                },
+            );
     }
 
     fn get_dispatcher(ref world: WorldStorage) -> (ContractAddress, IBitcoinMineSystemsDispatcher) {
@@ -172,6 +206,7 @@ mod tests {
         };
 
         let structure = Structure {
+            game_id: TEST_GAME_ID,
             entity_id: structure_id,
             owner: owner,
             base: StructureBase {
@@ -206,9 +241,9 @@ mod tests {
         world.write_model_test(@structure);
 
         // Initialize resources and weight for the structure
-        ResourceImpl::initialize(ref world, structure_id);
+        ResourceImpl::initialize(ref world, TEST_GAME_ID, structure_id);
         let structure_weight = Weight { capacity: 1000000000000000 * RESOURCE_PRECISION, weight: 0 };
-        ResourceImpl::write_weight(ref world, structure_id, structure_weight);
+        ResourceImpl::write_weight(ref world, TEST_GAME_ID, structure_id, structure_weight);
 
         structure_id
     }
@@ -226,6 +261,7 @@ mod tests {
         };
 
         let structure = Structure {
+            game_id: TEST_GAME_ID,
             entity_id: structure_id,
             owner: owner,
             base: StructureBase {
@@ -259,30 +295,30 @@ mod tests {
         };
         world.write_model_test(@structure);
 
-        ResourceImpl::initialize(ref world, structure_id);
+        ResourceImpl::initialize(ref world, TEST_GAME_ID, structure_id);
         let structure_weight = Weight { capacity: 1000000000000000 * RESOURCE_PRECISION, weight: 0 };
-        ResourceImpl::write_weight(ref world, structure_id, structure_weight);
+        ResourceImpl::write_weight(ref world, TEST_GAME_ID, structure_id, structure_weight);
 
         structure_id
     }
 
     fn grant_labor(ref world: WorldStorage, structure_id: ID, amount: u128) {
-        let mut structure_weight = WeightStoreImpl::retrieve(ref world, structure_id);
-        let labor_weight_grams = ResourceWeightImpl::grams(ref world, ResourceTypes::LABOR);
+        let mut structure_weight = WeightStoreImpl::retrieve(ref world, TEST_GAME_ID, structure_id);
+        let labor_weight_grams = ResourceWeightImpl::grams(ref world, TEST_GAME_ID, ResourceTypes::LABOR);
         let mut labor = SingleResourceStoreImpl::retrieve(
-            ref world, structure_id, ResourceTypes::LABOR, ref structure_weight, labor_weight_grams, true,
+            ref world, TEST_GAME_ID, structure_id, ResourceTypes::LABOR, ref structure_weight, labor_weight_grams, true,
         );
         labor.add(amount, ref structure_weight, labor_weight_grams);
         labor.store(ref world);
-        structure_weight.store(ref world, structure_id);
+        structure_weight.store(ref world, TEST_GAME_ID, structure_id);
     }
 
     fn get_labor_balance(ref world: WorldStorage, structure_id: ID) -> u128 {
-        ResourceImpl::read_balance(ref world, structure_id, ResourceTypes::LABOR)
+        ResourceImpl::read_balance(ref world, TEST_GAME_ID, structure_id, ResourceTypes::LABOR)
     }
 
     fn get_satoshi_balance(ref world: WorldStorage, structure_id: ID) -> u128 {
-        ResourceImpl::read_balance(ref world, structure_id, ResourceTypes::SATOSHI)
+        ResourceImpl::read_balance(ref world, TEST_GAME_ID, structure_id, ResourceTypes::SATOSHI)
     }
 
     // ============================================================================
@@ -305,17 +341,17 @@ mod tests {
 
         // Contribute labor to phase 2
         start_cheat_caller_address(system_addr, owner);
-        dispatcher.contribute_labor(mine_id, 2, MIN_LABOR);
+        dispatcher.contribute_labor(TEST_GAME_ID, mine_id, 2, MIN_LABOR);
         stop_cheat_caller_address(system_addr);
 
         // Verify phase labor state
-        let phase_labor: BitcoinPhaseLabor = world.read_model(2);
+        let phase_labor: BitcoinPhaseLabor = world.read_model((TEST_GAME_ID, 2));
         assert!(phase_labor.total_labor == MIN_LABOR, "Total labor should match");
         assert!(phase_labor.participant_count == 1, "Should have 1 participant");
         assert!(phase_labor.prize_pool == PRIZE_PER_PHASE, "Prize pool should be initialized");
 
         // Verify mine phase labor state
-        let mine_phase_labor: BitcoinMinePhaseLabor = world.read_model((2, mine_id));
+        let mine_phase_labor: BitcoinMinePhaseLabor = world.read_model((TEST_GAME_ID, 2, mine_id));
         assert!(mine_phase_labor.labor_contributed == MIN_LABOR, "Mine labor should match");
         assert!(!mine_phase_labor.claimed, "Should not be claimed yet");
 
@@ -338,18 +374,18 @@ mod tests {
 
         // First contribution
         start_cheat_caller_address(system_addr, owner);
-        dispatcher.contribute_labor(mine_id, 2, MIN_LABOR);
+        dispatcher.contribute_labor(TEST_GAME_ID, mine_id, 2, MIN_LABOR);
 
         // Second contribution from same mine
-        dispatcher.contribute_labor(mine_id, 2, MIN_LABOR * 2);
+        dispatcher.contribute_labor(TEST_GAME_ID, mine_id, 2, MIN_LABOR * 2);
         stop_cheat_caller_address(system_addr);
 
         // Verify total labor accumulated
-        let phase_labor: BitcoinPhaseLabor = world.read_model(2);
+        let phase_labor: BitcoinPhaseLabor = world.read_model((TEST_GAME_ID, 2));
         assert!(phase_labor.total_labor == MIN_LABOR * 3, "Total labor should accumulate");
         assert!(phase_labor.participant_count == 1, "Still only 1 participant");
 
-        let mine_phase_labor: BitcoinMinePhaseLabor = world.read_model((2, mine_id));
+        let mine_phase_labor: BitcoinMinePhaseLabor = world.read_model((TEST_GAME_ID, 2, mine_id));
         assert!(mine_phase_labor.labor_contributed == MIN_LABOR * 3, "Mine labor should accumulate");
     }
 
@@ -371,15 +407,15 @@ mod tests {
 
         // Both mines contribute
         start_cheat_caller_address(system_addr, owner1);
-        dispatcher.contribute_labor(mine1, 2, MIN_LABOR);
+        dispatcher.contribute_labor(TEST_GAME_ID, mine1, 2, MIN_LABOR);
         stop_cheat_caller_address(system_addr);
 
         start_cheat_caller_address(system_addr, owner2);
-        dispatcher.contribute_labor(mine2, 2, MIN_LABOR * 2);
+        dispatcher.contribute_labor(TEST_GAME_ID, mine2, 2, MIN_LABOR * 2);
         stop_cheat_caller_address(system_addr);
 
         // Verify phase labor
-        let phase_labor: BitcoinPhaseLabor = world.read_model(2);
+        let phase_labor: BitcoinPhaseLabor = world.read_model((TEST_GAME_ID, 2));
         assert!(phase_labor.total_labor == MIN_LABOR * 3, "Total labor from both");
         assert!(phase_labor.participant_count == 2, "Should have 2 participants");
     }
@@ -398,11 +434,11 @@ mod tests {
         start_cheat_block_timestamp_global(1200);
 
         start_cheat_caller_address(system_addr, owner);
-        dispatcher.contribute_labor(mine_id, 10, MIN_LABOR);
+        dispatcher.contribute_labor(TEST_GAME_ID, mine_id, 10, MIN_LABOR);
         stop_cheat_caller_address(system_addr);
 
         // Verify contribution to future phase
-        let phase_labor: BitcoinPhaseLabor = world.read_model(10);
+        let phase_labor: BitcoinPhaseLabor = world.read_model((TEST_GAME_ID, 10));
         assert!(phase_labor.total_labor == MIN_LABOR, "Future phase should have labor");
         assert!(phase_labor.participant_count == 1, "Should have 1 participant");
     }
@@ -422,7 +458,7 @@ mod tests {
 
         // Attacker tries to contribute from someone else's mine
         start_cheat_caller_address(system_addr, attacker);
-        dispatcher.contribute_labor(mine_id, 2, MIN_LABOR);
+        dispatcher.contribute_labor(TEST_GAME_ID, mine_id, 2, MIN_LABOR);
         stop_cheat_caller_address(system_addr);
     }
 
@@ -440,7 +476,7 @@ mod tests {
 
         // Try to contribute from a realm (not a bitcoin mine)
         start_cheat_caller_address(system_addr, owner);
-        dispatcher.contribute_labor(realm_id, 2, MIN_LABOR);
+        dispatcher.contribute_labor(TEST_GAME_ID, realm_id, 2, MIN_LABOR);
         stop_cheat_caller_address(system_addr);
     }
 
@@ -459,7 +495,7 @@ mod tests {
         start_cheat_block_timestamp_global(3000); // Phase 5
 
         start_cheat_caller_address(system_addr, owner);
-        dispatcher.contribute_labor(mine_id, 2, MIN_LABOR);
+        dispatcher.contribute_labor(TEST_GAME_ID, mine_id, 2, MIN_LABOR);
         stop_cheat_caller_address(system_addr);
     }
 
@@ -477,7 +513,7 @@ mod tests {
 
         // Try to contribute to phase 33 (31 phases ahead, exceeds MAX_FUTURE_PHASES=30)
         start_cheat_caller_address(system_addr, owner);
-        dispatcher.contribute_labor(mine_id, 33, MIN_LABOR);
+        dispatcher.contribute_labor(TEST_GAME_ID, mine_id, 33, MIN_LABOR);
         stop_cheat_caller_address(system_addr);
     }
 
@@ -498,7 +534,7 @@ mod tests {
 
         // Try to contribute to phase 2 when window just closed
         start_cheat_caller_address(system_addr, owner);
-        dispatcher.contribute_labor(mine_id, 2, MIN_LABOR);
+        dispatcher.contribute_labor(TEST_GAME_ID, mine_id, 2, MIN_LABOR);
         stop_cheat_caller_address(system_addr);
     }
 
@@ -516,7 +552,7 @@ mod tests {
         start_cheat_block_timestamp_global(1200);
 
         start_cheat_caller_address(system_addr, owner);
-        dispatcher.contribute_labor(mine_id, 2, MIN_LABOR);
+        dispatcher.contribute_labor(TEST_GAME_ID, mine_id, 2, MIN_LABOR);
         stop_cheat_caller_address(system_addr);
     }
 
@@ -534,7 +570,7 @@ mod tests {
 
         // Try to contribute less than minimum
         start_cheat_caller_address(system_addr, owner);
-        dispatcher.contribute_labor(mine_id, 2, MIN_LABOR - 1);
+        dispatcher.contribute_labor(TEST_GAME_ID, mine_id, 2, MIN_LABOR - 1);
         stop_cheat_caller_address(system_addr);
     }
 
@@ -552,7 +588,7 @@ mod tests {
 
         // Try to contribute to phase 0
         start_cheat_caller_address(system_addr, owner);
-        dispatcher.contribute_labor(mine_id, 0, MIN_LABOR);
+        dispatcher.contribute_labor(TEST_GAME_ID, mine_id, 0, MIN_LABOR);
         stop_cheat_caller_address(system_addr);
     }
 
@@ -566,7 +602,7 @@ mod tests {
         let disabled_config = BitcoinMineConfig {
             enabled: false, prize_per_phase: PRIZE_PER_PHASE, min_labor_per_contribution: MIN_LABOR,
         };
-        WorldConfigUtilImpl::set_member(ref world, selector!("bitcoin_mine_config"), disabled_config);
+        WorldConfigUtilImpl::set_member(ref world, TEST_PRESET_ID, selector!("bitcoin_mine_config"), disabled_config);
 
         let owner = starknet::contract_address_const::<'mine_owner'>();
         let mine_id = spawn_bitcoin_mine(ref world, owner, 100, 100);
@@ -575,7 +611,7 @@ mod tests {
         start_cheat_block_timestamp_global(1200);
 
         start_cheat_caller_address(system_addr, owner);
-        dispatcher.contribute_labor(mine_id, 2, MIN_LABOR);
+        dispatcher.contribute_labor(TEST_GAME_ID, mine_id, 2, MIN_LABOR);
         stop_cheat_caller_address(system_addr);
     }
 
@@ -597,7 +633,7 @@ mod tests {
         start_cheat_block_timestamp_global(1200);
 
         start_cheat_caller_address(system_addr, owner);
-        dispatcher.contribute_labor(mine_id, 2, MIN_LABOR);
+        dispatcher.contribute_labor(TEST_GAME_ID, mine_id, 2, MIN_LABOR);
         stop_cheat_caller_address(system_addr);
 
         // Move time to after phase 2 ends (phase 3 or later)
@@ -606,15 +642,15 @@ mod tests {
         // Claim rewards (permissionless)
         let claimer = starknet::contract_address_const::<'claimer'>();
         start_cheat_caller_address(system_addr, claimer);
-        dispatcher.claim_phase_reward(2, array![mine_id]);
+        dispatcher.claim_phase_reward(TEST_GAME_ID, 2, array![mine_id]);
         stop_cheat_caller_address(system_addr);
 
         // Check phase state - with 100% contribution, should win
-        let phase_labor: BitcoinPhaseLabor = world.read_model(2);
+        let phase_labor: BitcoinPhaseLabor = world.read_model((TEST_GAME_ID, 2));
         assert!(phase_labor.claim_count == 1, "Should have 1 claim");
 
         // Check mine phase labor - should be claimed
-        let mine_phase_labor: BitcoinMinePhaseLabor = world.read_model((2, mine_id));
+        let mine_phase_labor: BitcoinMinePhaseLabor = world.read_model((TEST_GAME_ID, 2, mine_id));
         assert!(mine_phase_labor.claimed, "Mine should be marked as claimed");
 
         // If winner, reward_receiver_phase should be set to self
@@ -646,15 +682,15 @@ mod tests {
 
         // All contribute to phase 2
         start_cheat_caller_address(system_addr, owner1);
-        dispatcher.contribute_labor(mine1, 2, MIN_LABOR);
+        dispatcher.contribute_labor(TEST_GAME_ID, mine1, 2, MIN_LABOR);
         stop_cheat_caller_address(system_addr);
 
         start_cheat_caller_address(system_addr, owner2);
-        dispatcher.contribute_labor(mine2, 2, MIN_LABOR * 2);
+        dispatcher.contribute_labor(TEST_GAME_ID, mine2, 2, MIN_LABOR * 2);
         stop_cheat_caller_address(system_addr);
 
         start_cheat_caller_address(system_addr, owner3);
-        dispatcher.contribute_labor(mine3, 2, MIN_LABOR * 3);
+        dispatcher.contribute_labor(TEST_GAME_ID, mine3, 2, MIN_LABOR * 3);
         stop_cheat_caller_address(system_addr);
 
         // Move to after phase 2
@@ -663,14 +699,14 @@ mod tests {
         // Claim for all mines
         let claimer = starknet::contract_address_const::<'claimer'>();
         start_cheat_caller_address(system_addr, claimer);
-        dispatcher.claim_phase_reward(2, array![mine1, mine2, mine3]);
+        dispatcher.claim_phase_reward(TEST_GAME_ID, 2, array![mine1, mine2, mine3]);
         stop_cheat_caller_address(system_addr);
 
         // Check phase state
-        let phase_labor: BitcoinPhaseLabor = world.read_model(2);
+        let phase_labor: BitcoinPhaseLabor = world.read_model((TEST_GAME_ID, 2));
 
         // First mine is always processed
-        let mine1_phase: BitcoinMinePhaseLabor = world.read_model((2, mine1));
+        let mine1_phase: BitcoinMinePhaseLabor = world.read_model((TEST_GAME_ID, 2, mine1));
         assert!(mine1_phase.claimed, "Mine 1 should be claimed");
 
         // The claim_count should be at least 1 (and at most 3)
@@ -707,7 +743,7 @@ mod tests {
         start_cheat_block_timestamp_global(1800);
 
         start_cheat_caller_address(system_addr, owner);
-        dispatcher.claim_phase_reward(2, array![mine_id]);
+        dispatcher.claim_phase_reward(TEST_GAME_ID, 2, array![mine_id]);
         stop_cheat_caller_address(system_addr);
     }
 
@@ -725,10 +761,10 @@ mod tests {
         start_cheat_block_timestamp_global(1200);
 
         start_cheat_caller_address(system_addr, owner);
-        dispatcher.contribute_labor(mine_id, 2, MIN_LABOR);
+        dispatcher.contribute_labor(TEST_GAME_ID, mine_id, 2, MIN_LABOR);
 
         // Try to claim while phase 2 is still open (window closes at 1799)
-        dispatcher.claim_phase_reward(2, array![mine_id]);
+        dispatcher.claim_phase_reward(TEST_GAME_ID, 2, array![mine_id]);
         stop_cheat_caller_address(system_addr);
     }
 
@@ -745,21 +781,21 @@ mod tests {
         start_cheat_block_timestamp_global(1200);
 
         start_cheat_caller_address(system_addr, owner);
-        dispatcher.contribute_labor(mine_id, 2, MIN_LABOR);
+        dispatcher.contribute_labor(TEST_GAME_ID, mine_id, 2, MIN_LABOR);
         stop_cheat_caller_address(system_addr);
 
         start_cheat_block_timestamp_global(1800);
 
         // First claim
         start_cheat_caller_address(system_addr, owner);
-        dispatcher.claim_phase_reward(2, array![mine_id]);
+        dispatcher.claim_phase_reward(TEST_GAME_ID, 2, array![mine_id]);
 
         // Second claim should not panic - just skip already claimed mines
-        dispatcher.claim_phase_reward(2, array![mine_id]);
+        dispatcher.claim_phase_reward(TEST_GAME_ID, 2, array![mine_id]);
         stop_cheat_caller_address(system_addr);
 
         // Claim count should still be 1
-        let phase_labor: BitcoinPhaseLabor = world.read_model(2);
+        let phase_labor: BitcoinPhaseLabor = world.read_model((TEST_GAME_ID, 2));
         assert!(phase_labor.claim_count == 1, "Claim count should be 1");
     }
 
@@ -781,19 +817,19 @@ mod tests {
 
         // Only mine1 contributes
         start_cheat_caller_address(system_addr, owner1);
-        dispatcher.contribute_labor(mine1, 2, MIN_LABOR);
+        dispatcher.contribute_labor(TEST_GAME_ID, mine1, 2, MIN_LABOR);
         stop_cheat_caller_address(system_addr);
 
         start_cheat_block_timestamp_global(1800);
 
         // Claim with both mines - mine2 should be skipped
         start_cheat_caller_address(system_addr, owner1);
-        dispatcher.claim_phase_reward(2, array![mine1, mine2]);
+        dispatcher.claim_phase_reward(TEST_GAME_ID, 2, array![mine1, mine2]);
         stop_cheat_caller_address(system_addr);
 
         // Only mine1 should be marked as claimed
-        let mine1_phase: BitcoinMinePhaseLabor = world.read_model((2, mine1));
-        let mine2_phase: BitcoinMinePhaseLabor = world.read_model((2, mine2));
+        let mine1_phase: BitcoinMinePhaseLabor = world.read_model((TEST_GAME_ID, 2, mine1));
+        let mine2_phase: BitcoinMinePhaseLabor = world.read_model((TEST_GAME_ID, 2, mine2));
         assert!(mine1_phase.claimed, "Mine 1 should be claimed");
         assert!(!mine2_phase.claimed, "Mine 2 should not be claimed");
     }
@@ -809,19 +845,19 @@ mod tests {
 
         // Phase = timestamp / bitcoin_phase_in_seconds
         start_cheat_block_timestamp_global(0);
-        assert!(dispatcher.get_current_phase() == 0, "Phase 0 at t=0");
+        assert!(dispatcher.get_current_phase(TEST_GAME_ID) == 0, "Phase 0 at t=0");
 
         start_cheat_block_timestamp_global(599);
-        assert!(dispatcher.get_current_phase() == 0, "Phase 0 at t=599");
+        assert!(dispatcher.get_current_phase(TEST_GAME_ID) == 0, "Phase 0 at t=599");
 
         start_cheat_block_timestamp_global(600);
-        assert!(dispatcher.get_current_phase() == 1, "Phase 1 at t=600");
+        assert!(dispatcher.get_current_phase(TEST_GAME_ID) == 1, "Phase 1 at t=600");
 
         start_cheat_block_timestamp_global(1200);
-        assert!(dispatcher.get_current_phase() == 2, "Phase 2 at t=1200");
+        assert!(dispatcher.get_current_phase(TEST_GAME_ID) == 2, "Phase 2 at t=1200");
 
         start_cheat_block_timestamp_global(6000);
-        assert!(dispatcher.get_current_phase() == 10, "Phase 10 at t=6000");
+        assert!(dispatcher.get_current_phase(TEST_GAME_ID) == 10, "Phase 10 at t=6000");
     }
 
     // ============================================================================
@@ -847,16 +883,16 @@ mod tests {
         // Mine1 contributes 300, Mine2 contributes 700 = total 1000
         // Mine1 should have 30% (3000 bps), Mine2 should have 70% (7000 bps)
         start_cheat_caller_address(system_addr, owner1);
-        dispatcher.contribute_labor(mine1, 2, MIN_LABOR * 3); // 300
+        dispatcher.contribute_labor(TEST_GAME_ID, mine1, 2, MIN_LABOR * 3); // 300
         stop_cheat_caller_address(system_addr);
 
         start_cheat_caller_address(system_addr, owner2);
-        dispatcher.contribute_labor(mine2, 2, MIN_LABOR * 7); // 700
+        dispatcher.contribute_labor(TEST_GAME_ID, mine2, 2, MIN_LABOR * 7); // 700
         stop_cheat_caller_address(system_addr);
 
         // Check contribution percentages
-        let mine1_pct = dispatcher.get_mine_contribution(mine1, 2);
-        let mine2_pct = dispatcher.get_mine_contribution(mine2, 2);
+        let mine1_pct = dispatcher.get_mine_contribution(TEST_GAME_ID, mine1, 2);
+        let mine2_pct = dispatcher.get_mine_contribution(TEST_GAME_ID, mine2, 2);
 
         assert!(mine1_pct == 3000, "Mine1 should have 30% (3000 bps)");
         assert!(mine2_pct == 7000, "Mine2 should have 70% (7000 bps)");
@@ -871,7 +907,7 @@ mod tests {
         let mine_id = spawn_bitcoin_mine(ref world, owner, 100, 100);
 
         // No contributions made
-        let contribution = dispatcher.get_mine_contribution(mine_id, 2);
+        let contribution = dispatcher.get_mine_contribution(TEST_GAME_ID, mine_id, 2);
         assert!(contribution == 0, "Should be 0 with no contributions");
     }
 
@@ -888,10 +924,10 @@ mod tests {
         start_cheat_block_timestamp_global(1200);
 
         start_cheat_caller_address(system_addr, owner);
-        dispatcher.contribute_labor(mine_id, 2, MIN_LABOR);
+        dispatcher.contribute_labor(TEST_GAME_ID, mine_id, 2, MIN_LABOR);
         stop_cheat_caller_address(system_addr);
 
-        let contribution = dispatcher.get_mine_contribution(mine_id, 2);
+        let contribution = dispatcher.get_mine_contribution(TEST_GAME_ID, mine_id, 2);
         assert!(contribution == 10000, "Single contributor should have 100% (10000 bps)");
     }
 }

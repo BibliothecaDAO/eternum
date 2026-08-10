@@ -12,6 +12,7 @@ type ContractComponentMetadata = {
 };
 
 type QuestLevelsSchema = {
+  game_id: typeof RecsType.Number;
   game_address: typeof RecsType.String;
   levels: typeof RecsType.T;
 };
@@ -150,6 +151,30 @@ export function defineContractComponents(world: World, namespace: string) {
         },
       );
     })(),
+    AntiBot: (() => {
+      return defineComponent(
+        world,
+        {
+          game_id: RecsType.Number,
+          caller: RecsType.BigInt,
+          tx_hash: RecsType.BigInt,
+          used: RecsType.Boolean,
+        },
+        {
+          metadata: {
+            namespace,
+            name: "AntiBot",
+            types: [
+              "u32", // game_id
+              "ContractAddress", // caller
+              "felt252", // tx_hash
+              "bool", // used
+            ],
+            customTypes: [],
+          } satisfies ContractComponentMetadata,
+        },
+      );
+    })(),
     BiomeDiscovered: (() => {
       return defineComponent(
         world,
@@ -166,6 +191,62 @@ export function defineContractComponents(world: World, namespace: string) {
               "ContractAddress", // by_address
               "u8", // biome
               "bool", // discovered
+            ],
+            customTypes: [],
+          } satisfies ContractComponentMetadata,
+        },
+      );
+    })(),
+    BitcoinMinePhaseLabor: (() => {
+      return defineComponent(
+        world,
+        {
+          game_id: RecsType.Number,
+          phase_id: RecsType.Number,
+          mine_id: RecsType.Number,
+          labor_contributed: RecsType.BigInt,
+          claimed: RecsType.Boolean,
+        },
+        {
+          metadata: {
+            namespace,
+            name: "BitcoinMinePhaseLabor",
+            types: [
+              "u32", // game_id
+              "u64", // phase_id
+              "u32", // mine_id
+              "u128", // labor_contributed
+              "bool", // claimed
+            ],
+            customTypes: [],
+          } satisfies ContractComponentMetadata,
+        },
+      );
+    })(),
+    BitcoinPhaseLabor: (() => {
+      return defineComponent(
+        world,
+        {
+          game_id: RecsType.Number,
+          phase_id: RecsType.Number,
+          prize_pool: RecsType.BigInt,
+          total_labor: RecsType.BigInt,
+          participant_count: RecsType.Number,
+          claim_count: RecsType.Number,
+          reward_receiver_phase: RecsType.Number,
+        },
+        {
+          metadata: {
+            namespace,
+            name: "BitcoinPhaseLabor",
+            types: [
+              "u32", // game_id
+              "u64", // phase_id
+              "u128", // prize_pool
+              "u128", // total_labor
+              "u32", // participant_count
+              "u32", // claim_count
+              "u64", // reward_receiver_phase
             ],
             customTypes: [],
           } satisfies ContractComponentMetadata,
@@ -331,18 +412,8 @@ export function defineContractComponents(world: World, namespace: string) {
           config_id: RecsType.Number,
           admin_address: RecsType.BigInt,
           vrf_provider_address: RecsType.BigInt,
-          agent_controller_config: { address: RecsType.BigInt },
-          mmr_config: {
-            enabled: RecsType.Boolean,
-            mmr_token_address: RecsType.BigInt,
-            distribution_mean: RecsType.Number,
-            spread_factor: RecsType.Number,
-            max_delta: RecsType.Number,
-            k_factor: RecsType.Number,
-            lobby_split_weight_scaled: RecsType.Number,
-            mean_regression_scaled: RecsType.Number,
-            min_players: RecsType.Number,
-          },
+          agent_controller_config: { address: RecsType.BigInt, },
+          mmr_config: { enabled: RecsType.Boolean, mmr_token_address: RecsType.BigInt, distribution_mean: RecsType.Number, spread_factor: RecsType.Number, max_delta: RecsType.Number, k_factor: RecsType.Number, lobby_split_weight_scaled: RecsType.Number, mean_regression_scaled: RecsType.Number, min_players: RecsType.Number, },
           fee_token: RecsType.BigInt,
           fee_recipient: RecsType.BigInt,
           entry_token_address: RecsType.BigInt,
@@ -468,6 +539,36 @@ export function defineContractComponents(world: World, namespace: string) {
         },
       );
     })(),
+    FaithfulStructure: (() => {
+      return defineComponent(
+        world,
+        {
+          game_id: RecsType.Number,
+          structure_id: RecsType.Number,
+          wonder_id: RecsType.Number,
+          faithful_since: RecsType.Number,
+          fp_to_wonder_owner_per_sec: RecsType.Number,
+          fp_to_struct_owner_per_sec: RecsType.Number,
+          last_recorded_owner: RecsType.BigInt,
+        },
+        {
+          metadata: {
+            namespace,
+            name: "FaithfulStructure",
+            types: [
+              "u32", // game_id
+              "u32", // structure_id
+              "u32", // wonder_id
+              "u64", // faithful_since
+              "u16", // fp_to_wonder_owner_per_sec
+              "u16", // fp_to_struct_owner_per_sec
+              "ContractAddress", // last_recorded_owner
+            ],
+            customTypes: [],
+          } satisfies ContractComponentMetadata,
+        },
+      );
+    })(),
     GameChestReward: (() => {
       return defineComponent(
         world,
@@ -515,26 +616,7 @@ export function defineContractComponents(world: World, namespace: string) {
         world,
         {
           game_id: RecsType.Number,
-          map_config: {
-            reward_resource_amount: RecsType.Number,
-            shards_mines_win_probability: RecsType.Number,
-            shards_mines_fail_probability: RecsType.Number,
-            agent_discovery_prob: RecsType.Number,
-            agent_discovery_fail_prob: RecsType.Number,
-            camp_win_probability: RecsType.Number,
-            camp_fail_probability: RecsType.Number,
-            holysite_win_probability: RecsType.Number,
-            holysite_fail_probability: RecsType.Number,
-            bitcoin_mine_win_probability: RecsType.Number,
-            bitcoin_mine_fail_probability: RecsType.Number,
-            hyps_win_prob: RecsType.Number,
-            hyps_fail_prob: RecsType.Number,
-            hyps_fail_prob_increase_p_hex: RecsType.Number,
-            hyps_fail_prob_increase_p_fnd: RecsType.Number,
-            relic_discovery_interval_sec: RecsType.Number,
-            relic_hex_dist_from_center: RecsType.Number,
-            relic_chest_relics_per_chest: RecsType.Number,
-          },
+          map_config: { reward_resource_amount: RecsType.Number, shards_mines_win_probability: RecsType.Number, shards_mines_fail_probability: RecsType.Number, agent_discovery_prob: RecsType.Number, agent_discovery_fail_prob: RecsType.Number, camp_win_probability: RecsType.Number, camp_fail_probability: RecsType.Number, holysite_win_probability: RecsType.Number, holysite_fail_probability: RecsType.Number, bitcoin_mine_win_probability: RecsType.Number, bitcoin_mine_fail_probability: RecsType.Number, hyps_win_prob: RecsType.Number, hyps_fail_prob: RecsType.Number, hyps_fail_prob_increase_p_hex: RecsType.Number, hyps_fail_prob_increase_p_fnd: RecsType.Number, relic_discovery_interval_sec: RecsType.Number, relic_hex_dist_from_center: RecsType.Number, relic_chest_relics_per_chest: RecsType.Number, },
         },
         {
           metadata: {
@@ -841,6 +923,45 @@ export function defineContractComponents(world: World, namespace: string) {
         },
       );
     })(),
+    Liquidity: (() => {
+      return defineComponent(
+        world,
+        {
+          game_id: RecsType.Number,
+          player: RecsType.BigInt,
+          resource_type: RecsType.Number,
+          shares: RecsType.BigInt,
+        },
+        {
+          metadata: {
+            namespace,
+            name: "Liquidity",
+            types: ["u32", "ContractAddress", "u8", "u128"],
+            customTypes: [],
+          },
+        },
+      );
+    })(),
+    Market: (() => {
+      return defineComponent(
+        world,
+        {
+          game_id: RecsType.Number,
+          resource_type: RecsType.Number,
+          lords_amount: RecsType.BigInt,
+          resource_amount: RecsType.BigInt,
+          total_shares: RecsType.BigInt,
+        },
+        {
+          metadata: {
+            namespace,
+            name: "Market",
+            types: ["u32", "u8", "u128", "u128", "u128"],
+            customTypes: [],
+          },
+        },
+      );
+    })(),
     MMRClaimed: (() => {
       return defineComponent(
         world,
@@ -905,6 +1026,60 @@ export function defineContractComponents(world: World, namespace: string) {
         },
       );
     })(),
+    PlayerFaithPoints: (() => {
+      return defineComponent(
+        world,
+        {
+          game_id: RecsType.Number,
+          player: RecsType.BigInt,
+          wonder_id: RecsType.Number,
+          points_claimed: RecsType.BigInt,
+          points_per_sec_as_owner: RecsType.Number,
+          points_per_sec_as_pledger: RecsType.Number,
+          last_updated_at: RecsType.Number,
+        },
+        {
+          metadata: {
+            namespace,
+            name: "PlayerFaithPoints",
+            types: [
+              "u32", // game_id
+              "ContractAddress", // player
+              "u32", // wonder_id
+              "u128", // points_claimed
+              "u32", // points_per_sec_as_owner
+              "u32", // points_per_sec_as_pledger
+              "u64", // last_updated_at
+            ],
+            customTypes: [],
+          } satisfies ContractComponentMetadata,
+        },
+      );
+    })(),
+    PlayerFaithPrizeClaimed: (() => {
+      return defineComponent(
+        world,
+        {
+          game_id: RecsType.Number,
+          player: RecsType.BigInt,
+          wonder_id: RecsType.Number,
+          claimed: RecsType.Boolean,
+        },
+        {
+          metadata: {
+            namespace,
+            name: "PlayerFaithPrizeClaimed",
+            types: [
+              "u32", // game_id
+              "ContractAddress", // player
+              "u32", // wonder_id
+              "bool", // claimed
+            ],
+            customTypes: [],
+          } satisfies ContractComponentMetadata,
+        },
+      );
+    })(),
     PlayerRank: (() => {
       return defineComponent(
         world,
@@ -945,6 +1120,26 @@ export function defineContractComponents(world: World, namespace: string) {
             types: ["u32", "ContractAddress", "u128", "bool"],
             customTypes: [],
           },
+        },
+      );
+    })(),
+    PlayersRankFinal: (() => {
+      return defineComponent(
+        world,
+        {
+          game_id: RecsType.Number,
+          trial_id: RecsType.BigInt,
+        },
+        {
+          metadata: {
+            namespace,
+            name: "PlayersRankFinal",
+            types: [
+              "u32", // game_id
+              "u128", // trial_id
+            ],
+            customTypes: [],
+          } satisfies ContractComponentMetadata,
         },
       );
     })(),
@@ -1009,119 +1204,38 @@ export function defineContractComponents(world: World, namespace: string) {
         world,
         {
           preset_id: RecsType.Number,
-          hyperstructure_config: { initialize_shards_amount: RecsType.BigInt },
-          hyperstructure_cost_config: { construction_resources_ids: RecsType.NumberArray },
-          speed_config: { donkey_sec_per_km: RecsType.Number, donkey_sec_per_km_troops: RecsType.Number },
-          map_config: {
-            reward_resource_amount: RecsType.Number,
-            shards_mines_win_probability: RecsType.Number,
-            shards_mines_fail_probability: RecsType.Number,
-            agent_discovery_prob: RecsType.Number,
-            agent_discovery_fail_prob: RecsType.Number,
-            camp_win_probability: RecsType.Number,
-            camp_fail_probability: RecsType.Number,
-            holysite_win_probability: RecsType.Number,
-            holysite_fail_probability: RecsType.Number,
-            bitcoin_mine_win_probability: RecsType.Number,
-            bitcoin_mine_fail_probability: RecsType.Number,
-            hyps_win_prob: RecsType.Number,
-            hyps_fail_prob: RecsType.Number,
-            hyps_fail_prob_increase_p_hex: RecsType.Number,
-            hyps_fail_prob_increase_p_fnd: RecsType.Number,
-            relic_discovery_interval_sec: RecsType.Number,
-            relic_hex_dist_from_center: RecsType.Number,
-            relic_chest_relics_per_chest: RecsType.Number,
-          },
-          tick_config: {
-            armies_tick_in_seconds: RecsType.Number,
-            delivery_tick_in_seconds: RecsType.Number,
-            bitcoin_phase_in_seconds: RecsType.Number,
-          },
-          structure_max_level_config: { realm_max: RecsType.Number, village_max: RecsType.Number },
-          building_config: { base_population: RecsType.Number, base_cost_percent_increase: RecsType.Number },
-          troop_damage_config: {
-            damage_raid_percent_num: RecsType.Number,
-            damage_biome_bonus_num: RecsType.Number,
-            damage_beta_small: RecsType.Number,
-            damage_beta_large: RecsType.Number,
-            damage_scaling_factor: RecsType.BigInt,
-            damage_c0: RecsType.BigInt,
-            damage_delta: RecsType.BigInt,
-            t1_damage_value: RecsType.BigInt,
-            t2_damage_multiplier: RecsType.BigInt,
-            t3_damage_multiplier: RecsType.BigInt,
-          },
-          troop_stamina_config: {
-            stamina_gain_per_tick: RecsType.Number,
-            stamina_initial: RecsType.Number,
-            stamina_bonus_value: RecsType.Number,
-            stamina_knight_max: RecsType.Number,
-            stamina_paladin_max: RecsType.Number,
-            stamina_crossbowman_max: RecsType.Number,
-            stamina_attack_req: RecsType.Number,
-            stamina_defense_req: RecsType.Number,
-            stamina_explore_stamina_cost: RecsType.Number,
-            stamina_travel_stamina_cost: RecsType.Number,
-            stamina_explore_wheat_cost: RecsType.Number,
-            stamina_explore_fish_cost: RecsType.Number,
-            stamina_travel_wheat_cost: RecsType.Number,
-            stamina_travel_fish_cost: RecsType.Number,
-          },
-          troop_limit_config: {
-            guard_resurrection_delay: RecsType.Number,
-            mercenaries_troop_lower_bound: RecsType.Number,
-            mercenaries_troop_upper_bound: RecsType.Number,
-            agents_troop_lower_bound: RecsType.Number,
-            agents_troop_upper_bound: RecsType.Number,
-            settlement_deployment_cap: RecsType.Number,
-            city_deployment_cap: RecsType.Number,
-            kingdom_deployment_cap: RecsType.Number,
-            empire_deployment_cap: RecsType.Number,
-            t1_tier_strength: RecsType.Number,
-            t2_tier_strength: RecsType.Number,
-            t3_tier_strength: RecsType.Number,
-            t1_tier_modifier: RecsType.Number,
-            t2_tier_modifier: RecsType.Number,
-            t3_tier_modifier: RecsType.Number,
-          },
-          capacity_config: {
-            structure_capacity: RecsType.BigInt,
-            troop_capacity: RecsType.Number,
-            donkey_capacity: RecsType.Number,
-            storehouse_boost_capacity: RecsType.Number,
-          },
-          battle_config: {
-            regular_immunity_ticks: RecsType.Number,
-            village_immunity_ticks: RecsType.Number,
-            village_raid_immunity_ticks: RecsType.Number,
-          },
-          realm_start_resources_config: { resources_list_id: RecsType.Number, resources_list_count: RecsType.Number },
-          village_start_resources_config: { resources_list_id: RecsType.Number, resources_list_count: RecsType.Number },
-          village_find_resources_config: {
-            resources_mm_list_id: RecsType.Number,
-            resources_mm_list_count: RecsType.Number,
-          },
-          structure_capacity_config: {
-            realm_capacity: RecsType.Number,
-            village_capacity: RecsType.Number,
-            hyperstructure_capacity: RecsType.Number,
-            fragment_mine_capacity: RecsType.Number,
-            bank_structure_capacity: RecsType.Number,
-            holysite_capacity: RecsType.Number,
-            camp_capacity: RecsType.Number,
-            bitcoin_mine_capacity: RecsType.Number,
-          },
-          victory_points_grant_config: {
-            hyp_points_per_second: RecsType.Number,
-            claim_hyperstructure_points: RecsType.Number,
-            claim_otherstructure_points: RecsType.Number,
-            explore_tiles_points: RecsType.Number,
-            relic_open_points: RecsType.Number,
-          },
-          victory_points_win_config: { points_for_win: RecsType.BigInt },
-          blitz_exploration_config: { reward_profile_id: RecsType.Number },
-          artificer_config: { research_cost_for_relic: RecsType.BigInt },
-          blitz_registration_rules_config: { collectibles_cosmetics_max: RecsType.Number },
+          hyperstructure_config: { initialize_shards_amount: RecsType.BigInt, },
+          hyperstructure_cost_config: { construction_resources_ids: RecsType.NumberArray, },
+          speed_config: { donkey_sec_per_km: RecsType.Number, donkey_sec_per_km_troops: RecsType.Number, },
+          map_config: { reward_resource_amount: RecsType.Number, shards_mines_win_probability: RecsType.Number, shards_mines_fail_probability: RecsType.Number, agent_discovery_prob: RecsType.Number, agent_discovery_fail_prob: RecsType.Number, camp_win_probability: RecsType.Number, camp_fail_probability: RecsType.Number, holysite_win_probability: RecsType.Number, holysite_fail_probability: RecsType.Number, bitcoin_mine_win_probability: RecsType.Number, bitcoin_mine_fail_probability: RecsType.Number, hyps_win_prob: RecsType.Number, hyps_fail_prob: RecsType.Number, hyps_fail_prob_increase_p_hex: RecsType.Number, hyps_fail_prob_increase_p_fnd: RecsType.Number, relic_discovery_interval_sec: RecsType.Number, relic_hex_dist_from_center: RecsType.Number, relic_chest_relics_per_chest: RecsType.Number, },
+          tick_config: { armies_tick_in_seconds: RecsType.Number, delivery_tick_in_seconds: RecsType.Number, bitcoin_phase_in_seconds: RecsType.Number, },
+          structure_max_level_config: { realm_max: RecsType.Number, village_max: RecsType.Number, },
+          building_config: { base_population: RecsType.Number, base_cost_percent_increase: RecsType.Number, },
+          troop_damage_config: { damage_raid_percent_num: RecsType.Number, damage_biome_bonus_num: RecsType.Number, damage_beta_small: RecsType.Number, damage_beta_large: RecsType.Number, damage_scaling_factor: RecsType.BigInt, damage_c0: RecsType.BigInt, damage_delta: RecsType.BigInt, t1_damage_value: RecsType.BigInt, t2_damage_multiplier: RecsType.BigInt, t3_damage_multiplier: RecsType.BigInt, },
+          troop_stamina_config: { stamina_gain_per_tick: RecsType.Number, stamina_initial: RecsType.Number, stamina_bonus_value: RecsType.Number, stamina_knight_max: RecsType.Number, stamina_paladin_max: RecsType.Number, stamina_crossbowman_max: RecsType.Number, stamina_attack_req: RecsType.Number, stamina_defense_req: RecsType.Number, stamina_explore_stamina_cost: RecsType.Number, stamina_travel_stamina_cost: RecsType.Number, stamina_explore_wheat_cost: RecsType.Number, stamina_explore_fish_cost: RecsType.Number, stamina_travel_wheat_cost: RecsType.Number, stamina_travel_fish_cost: RecsType.Number, },
+          troop_limit_config: { guard_resurrection_delay: RecsType.Number, mercenaries_troop_lower_bound: RecsType.Number, mercenaries_troop_upper_bound: RecsType.Number, agents_troop_lower_bound: RecsType.Number, agents_troop_upper_bound: RecsType.Number, settlement_deployment_cap: RecsType.Number, city_deployment_cap: RecsType.Number, kingdom_deployment_cap: RecsType.Number, empire_deployment_cap: RecsType.Number, t1_tier_strength: RecsType.Number, t2_tier_strength: RecsType.Number, t3_tier_strength: RecsType.Number, t1_tier_modifier: RecsType.Number, t2_tier_modifier: RecsType.Number, t3_tier_modifier: RecsType.Number, },
+          capacity_config: { structure_capacity: RecsType.BigInt, troop_capacity: RecsType.Number, donkey_capacity: RecsType.Number, storehouse_boost_capacity: RecsType.Number, },
+          battle_config: { regular_immunity_ticks: RecsType.Number, village_immunity_ticks: RecsType.Number, village_raid_immunity_ticks: RecsType.Number, },
+          bank_config: { lp_fee_num: RecsType.Number, lp_fee_denom: RecsType.Number, owner_fee_num: RecsType.Number, owner_fee_denom: RecsType.Number, },
+          trade_config: { max_count: RecsType.Number, },
+          quest_config: { quest_discovery_prob: RecsType.Number, quest_discovery_fail_prob: RecsType.Number, },
+          faith_config: { enabled: RecsType.Boolean, wonder_base_fp_per_sec: RecsType.Number, holy_site_fp_per_sec: RecsType.Number, realm_fp_per_sec: RecsType.Number, village_fp_per_sec: RecsType.Number, owner_share_percent: RecsType.Number, reward_token: RecsType.BigInt, },
+          bitcoin_mine_config: { enabled: RecsType.Boolean, prize_per_phase: RecsType.BigInt, min_labor_per_contribution: RecsType.BigInt, },
+          resource_bridge_config: { deposit_paused: RecsType.Boolean, withdraw_paused: RecsType.Boolean, },
+          res_bridge_fee_split_config: { velords_fee_on_dpt_percent: RecsType.Number, velords_fee_on_wtdr_percent: RecsType.Number, season_pool_fee_on_dpt_percent: RecsType.Number, season_pool_fee_on_wtdr_percent: RecsType.Number, client_fee_on_dpt_percent: RecsType.Number, client_fee_on_wtdr_percent: RecsType.Number, realm_fee_dpt_percent: RecsType.Number, realm_fee_wtdr_percent: RecsType.Number, velords_fee_recipient: RecsType.BigInt, season_pool_fee_recipient: RecsType.BigInt, },
+          village_token_config: { token_address: RecsType.BigInt, mint_recipient_address: RecsType.BigInt, },
+          village_troop_config: { troop_delay_ticks: RecsType.Number, },
+          season_addresses_config: { season_pass_address: RecsType.BigInt, realms_address: RecsType.BigInt, lords_address: RecsType.BigInt, },
+          quest_games: RecsType.StringArray,
+          realm_start_resources_config: { resources_list_id: RecsType.Number, resources_list_count: RecsType.Number, },
+          village_start_resources_config: { resources_list_id: RecsType.Number, resources_list_count: RecsType.Number, },
+          village_find_resources_config: { resources_mm_list_id: RecsType.Number, resources_mm_list_count: RecsType.Number, },
+          structure_capacity_config: { realm_capacity: RecsType.Number, village_capacity: RecsType.Number, hyperstructure_capacity: RecsType.Number, fragment_mine_capacity: RecsType.Number, bank_structure_capacity: RecsType.Number, holysite_capacity: RecsType.Number, camp_capacity: RecsType.Number, bitcoin_mine_capacity: RecsType.Number, },
+          victory_points_grant_config: { hyp_points_per_second: RecsType.Number, claim_hyperstructure_points: RecsType.Number, claim_otherstructure_points: RecsType.Number, explore_tiles_points: RecsType.Number, relic_open_points: RecsType.Number, },
+          victory_points_win_config: { points_for_win: RecsType.BigInt, },
+          blitz_exploration_config: { reward_profile_id: RecsType.Number, },
+          artificer_config: { research_cost_for_relic: RecsType.BigInt, },
+          blitz_registration_rules_config: { collectibles_cosmetics_max: RecsType.Number, },
           mercenaries_name: RecsType.BigInt,
         },
         {
@@ -1205,6 +1319,42 @@ export function defineContractComponents(world: World, namespace: string) {
               "u8", // BattleConfig regular_immunity_ticks
               "u8", // BattleConfig village_immunity_ticks
               "u8", // BattleConfig village_raid_immunity_ticks
+              "u32", // BankConfig lp_fee_num
+              "u32", // BankConfig lp_fee_denom
+              "u32", // BankConfig owner_fee_num
+              "u32", // BankConfig owner_fee_denom
+              "u8", // TradeConfig max_count
+              "u16", // QuestConfig quest_discovery_prob
+              "u16", // QuestConfig quest_discovery_fail_prob
+              "bool", // FaithConfig enabled
+              "u16", // FaithConfig wonder_base_fp_per_sec
+              "u16", // FaithConfig holy_site_fp_per_sec
+              "u16", // FaithConfig realm_fp_per_sec
+              "u16", // FaithConfig village_fp_per_sec
+              "u16", // FaithConfig owner_share_percent
+              "ContractAddress", // FaithConfig reward_token
+              "bool", // BitcoinMineConfig enabled
+              "u128", // BitcoinMineConfig prize_per_phase
+              "u128", // BitcoinMineConfig min_labor_per_contribution
+              "bool", // ResourceBridgeConfig deposit_paused
+              "bool", // ResourceBridgeConfig withdraw_paused
+              "u16", // ResourceBridgeFeeSplitConfig velords_fee_on_dpt_percent
+              "u16", // ResourceBridgeFeeSplitConfig velords_fee_on_wtdr_percent
+              "u16", // ResourceBridgeFeeSplitConfig season_pool_fee_on_dpt_percent
+              "u16", // ResourceBridgeFeeSplitConfig season_pool_fee_on_wtdr_percent
+              "u16", // ResourceBridgeFeeSplitConfig client_fee_on_dpt_percent
+              "u16", // ResourceBridgeFeeSplitConfig client_fee_on_wtdr_percent
+              "u16", // ResourceBridgeFeeSplitConfig realm_fee_dpt_percent
+              "u16", // ResourceBridgeFeeSplitConfig realm_fee_wtdr_percent
+              "ContractAddress", // ResourceBridgeFeeSplitConfig velords_fee_recipient
+              "ContractAddress", // ResourceBridgeFeeSplitConfig season_pool_fee_recipient
+              "ContractAddress", // VillageTokenConfig token_address
+              "ContractAddress", // VillageTokenConfig mint_recipient_address
+              "u8", // VillageTroopConfig troop_delay_ticks
+              "ContractAddress", // SeasonAddressesConfig season_pass_address
+              "ContractAddress", // SeasonAddressesConfig realms_address
+              "ContractAddress", // SeasonAddressesConfig lords_address
+              "Span<PresetQuestGame>", // quest_games
               "u32", // StartingResourcesConfig resources_list_id
               "u8", // StartingResourcesConfig resources_list_count
               "u32", // StartingResourcesConfig resources_list_id
@@ -1230,28 +1380,7 @@ export function defineContractComponents(world: World, namespace: string) {
               "u8", // BlitzRegistrationRulesConfig collectibles_cosmetics_max
               "felt252", // mercenaries_name
             ],
-            customTypes: [
-              "HyperstructureConfig",
-              "HyperstructureCostConfig",
-              "SpeedConfig",
-              "MapConfig",
-              "TickConfig",
-              "StructureMaxLevelConfig",
-              "BuildingConfig",
-              "TroopDamageConfig",
-              "TroopStaminaConfig",
-              "TroopLimitConfig",
-              "CapacityConfig",
-              "BattleConfig",
-              "StartingResourcesConfig",
-              "VillageFoundResourcesConfig",
-              "StructureCapacityConfig",
-              "VictoryPointsGrantConfig",
-              "VictoryPointsWinConfig",
-              "BlitzExplorationConfig",
-              "ArtificerConfig",
-              "BlitzRegistrationRulesConfig",
-            ],
+            customTypes: ["HyperstructureConfig", "HyperstructureCostConfig", "SpeedConfig", "MapConfig", "TickConfig", "StructureMaxLevelConfig", "BuildingConfig", "TroopDamageConfig", "TroopStaminaConfig", "TroopLimitConfig", "CapacityConfig", "BattleConfig", "BankConfig", "TradeConfig", "QuestConfig", "FaithConfig", "BitcoinMineConfig", "ResourceBridgeConfig", "ResourceBridgeFeeSplitConfig", "VillageTokenConfig", "VillageTroopConfig", "SeasonAddressesConfig", "StartingResourcesConfig", "VillageFoundResourcesConfig", "StructureCapacityConfig", "VictoryPointsGrantConfig", "VictoryPointsWinConfig", "BlitzExplorationConfig", "ArtificerConfig", "BlitzRegistrationRulesConfig"],
           } satisfies ContractComponentMetadata,
         },
       );
@@ -1261,33 +1390,10 @@ export function defineContractComponents(world: World, namespace: string) {
         world,
         {
           preset_id: RecsType.Number,
-          settlement_config: {
-            center: RecsType.Number,
-            base_distance: RecsType.Number,
-            layers_skipped: RecsType.Number,
-            layer_max: RecsType.Number,
-            layer_capacity_increment: RecsType.Number,
-            layer_capacity_bps: RecsType.Number,
-            spires_layer_distance: RecsType.Number,
-            spires_max_count: RecsType.Number,
-            spires_settled_count: RecsType.Number,
-          },
-          blitz_settlement_config: {
-            base_distance: RecsType.Number,
-            side: RecsType.Number,
-            step: RecsType.Number,
-            point: RecsType.Number,
-            open_settlement_count: RecsType.Number,
-            single_realm_mode: RecsType.Boolean,
-            two_player_mode: RecsType.Boolean,
-          },
-          blitz_registration_config: {
-            fee_amount: RecsType.BigInt,
-            registration_count: RecsType.Number,
-            issued_count: RecsType.Number,
-            registration_count_max: RecsType.Number,
-            registration_start_at: RecsType.Number,
-          },
+          blitz_mode_on: RecsType.Boolean,
+          settlement_config: { center: RecsType.Number, base_distance: RecsType.Number, layers_skipped: RecsType.Number, layer_max: RecsType.Number, layer_capacity_increment: RecsType.Number, layer_capacity_bps: RecsType.Number, spires_layer_distance: RecsType.Number, spires_max_count: RecsType.Number, spires_settled_count: RecsType.Number, },
+          blitz_settlement_config: { base_distance: RecsType.Number, side: RecsType.Number, step: RecsType.Number, point: RecsType.Number, open_settlement_count: RecsType.Number, single_realm_mode: RecsType.Boolean, two_player_mode: RecsType.Boolean, },
+          blitz_registration_config: { fee_amount: RecsType.BigInt, registration_count: RecsType.Number, issued_count: RecsType.Number, registration_count_max: RecsType.Number, registration_start_at: RecsType.Number, },
           agent_max_lifetime_count: RecsType.Number,
           agent_max_current_count: RecsType.Number,
           agent_min_spawn_lords_amount: RecsType.Number,
@@ -1299,6 +1405,7 @@ export function defineContractComponents(world: World, namespace: string) {
             name: "PresetGameConfig",
             types: [
               "u32", // preset_id
+              "bool", // blitz_mode_on
               "u32", // SettlementConfig center
               "u8", // SettlementConfig base_distance
               "u8", // SettlementConfig layers_skipped
@@ -1354,6 +1461,185 @@ export function defineContractComponents(world: World, namespace: string) {
             namespace,
             name: "ProductionBoostBonus",
             types: ["u32", "u32", "u16", "u16", "u16", "u16", "u32", "u32", "u32", "bool", "u32", "u32"],
+            customTypes: ["Coord"],
+          },
+        },
+      );
+    })(),
+    Quantity: (() => {
+      return defineComponent(
+        world,
+        {
+          game_id: RecsType.Number,
+          entity_id: RecsType.Number,
+          value: RecsType.BigInt,
+        },
+        {
+          metadata: {
+            namespace,
+            name: "Quantity",
+            types: [
+              "u32", // game_id
+              "u32", // entity_id
+              "u128", // value
+            ],
+            customTypes: [],
+          } satisfies ContractComponentMetadata,
+        },
+      );
+    })(),
+    QuantityTracker: (() => {
+      return defineComponent(
+        world,
+        {
+          game_id: RecsType.Number,
+          entity_id: RecsType.BigInt,
+          count: RecsType.BigInt,
+        },
+        {
+          metadata: {
+            namespace,
+            name: "QuantityTracker",
+            types: [
+              "u32", // game_id
+              "felt252", // entity_id
+              "u128", // count
+            ],
+            customTypes: [],
+          } satisfies ContractComponentMetadata,
+        },
+      );
+    })(),
+    Quest: (() => {
+      return defineComponent(
+        world,
+        {
+          game_id: RecsType.Number,
+          game_token_id: RecsType.BigInt,
+          game_address: RecsType.String,
+          quest_tile_id: RecsType.Number,
+          explorer_id: RecsType.Number,
+          completed: RecsType.Boolean,
+        },
+        {
+          metadata: {
+            namespace,
+            name: "Quest",
+            types: ["u32", "u64", "ContractAddress", "u32", "u32", "bool"],
+            customTypes: [],
+          },
+        },
+      );
+    })(),
+    QuestFeatureFlag: (() => {
+      return defineComponent(
+        world,
+        {
+          game_id: RecsType.Number,
+          key: RecsType.BigInt,
+          enabled: RecsType.Boolean,
+        },
+        {
+          metadata: {
+            namespace,
+            name: "QuestFeatureFlag",
+            types: [
+              "u32", // game_id
+              "felt252", // key
+              "bool", // enabled
+            ],
+            customTypes: [],
+          } satisfies ContractComponentMetadata,
+        },
+      );
+    })(),
+    QuestGameRegistry: (() => {
+      return defineComponent(
+        world,
+        {
+          game_id: RecsType.Number,
+          key: RecsType.BigInt,
+          games: RecsType.BigIntArray,
+        },
+        {
+          metadata: {
+            namespace,
+            name: "QuestGameRegistry",
+            types: [
+              "u32", // game_id
+              "felt252", // key
+              "Span<ContractAddress>", // games
+            ],
+            customTypes: [],
+          } satisfies ContractComponentMetadata,
+        },
+      );
+    })(),
+    QuestLevels: (() => {
+      return defineComponent<QuestLevelsSchema, ContractComponentMetadata, unknown[]>(
+        world,
+        {
+          game_id: RecsType.Number,
+          game_address: RecsType.String,
+          levels: RecsType.T,
+        },
+        {
+          metadata: {
+            namespace,
+            name: "QuestLevels",
+            types: ["u32", "ContractAddress", "Span<Level>"],
+            customTypes: ["Level"],
+          },
+        },
+      );
+    })(),
+    QuestRegistrations: (() => {
+      return defineComponent(
+        world,
+        {
+          game_id: RecsType.Number,
+          quest_tile_id: RecsType.Number,
+          realm_or_village_id: RecsType.Number,
+          game_token_id: RecsType.Number,
+        },
+        {
+          metadata: {
+            namespace,
+            name: "QuestRegistrations",
+            types: [
+              "u32", // game_id
+              "u32", // quest_tile_id
+              "u32", // realm_or_village_id
+              "u64", // game_token_id
+            ],
+            customTypes: [],
+          } satisfies ContractComponentMetadata,
+        },
+      );
+    })(),
+    QuestTile: (() => {
+      return defineComponent(
+        world,
+        {
+          game_id: RecsType.Number,
+          id: RecsType.Number,
+          game_address: RecsType.String,
+          coord: {
+            alt: RecsType.Boolean,
+            x: RecsType.Number,
+            y: RecsType.Number,
+          },
+          level: RecsType.Number,
+          resource_type: RecsType.Number,
+          amount: RecsType.BigInt,
+          capacity: RecsType.Number,
+          participant_count: RecsType.Number,
+        },
+        {
+          metadata: {
+            namespace,
+            name: "QuestTile",
+            types: ["u32", "u32", "ContractAddress", "u32", "u32", "u8", "u8", "u128", "u16", "u16"],
             customTypes: ["Coord"],
           },
         },
@@ -1473,247 +1759,47 @@ export function defineContractComponents(world: World, namespace: string) {
           RELIC_E18_BALANCE: RecsType.BigInt,
           RESEARCH_BALANCE: RecsType.BigInt,
           SATOSHI_BALANCE: RecsType.BigInt,
-          weight: { capacity: RecsType.BigInt, weight: RecsType.BigInt },
-          STONE_PRODUCTION: {
-            building_count: RecsType.Number,
-            production_rate: RecsType.Number,
-            output_amount_left: RecsType.BigInt,
-            last_updated_at: RecsType.Number,
-          },
-          COAL_PRODUCTION: {
-            building_count: RecsType.Number,
-            production_rate: RecsType.Number,
-            output_amount_left: RecsType.BigInt,
-            last_updated_at: RecsType.Number,
-          },
-          WOOD_PRODUCTION: {
-            building_count: RecsType.Number,
-            production_rate: RecsType.Number,
-            output_amount_left: RecsType.BigInt,
-            last_updated_at: RecsType.Number,
-          },
-          COPPER_PRODUCTION: {
-            building_count: RecsType.Number,
-            production_rate: RecsType.Number,
-            output_amount_left: RecsType.BigInt,
-            last_updated_at: RecsType.Number,
-          },
-          IRONWOOD_PRODUCTION: {
-            building_count: RecsType.Number,
-            production_rate: RecsType.Number,
-            output_amount_left: RecsType.BigInt,
-            last_updated_at: RecsType.Number,
-          },
-          OBSIDIAN_PRODUCTION: {
-            building_count: RecsType.Number,
-            production_rate: RecsType.Number,
-            output_amount_left: RecsType.BigInt,
-            last_updated_at: RecsType.Number,
-          },
-          GOLD_PRODUCTION: {
-            building_count: RecsType.Number,
-            production_rate: RecsType.Number,
-            output_amount_left: RecsType.BigInt,
-            last_updated_at: RecsType.Number,
-          },
-          SILVER_PRODUCTION: {
-            building_count: RecsType.Number,
-            production_rate: RecsType.Number,
-            output_amount_left: RecsType.BigInt,
-            last_updated_at: RecsType.Number,
-          },
-          MITHRAL_PRODUCTION: {
-            building_count: RecsType.Number,
-            production_rate: RecsType.Number,
-            output_amount_left: RecsType.BigInt,
-            last_updated_at: RecsType.Number,
-          },
-          ALCHEMICAL_SILVER_PRODUCTION: {
-            building_count: RecsType.Number,
-            production_rate: RecsType.Number,
-            output_amount_left: RecsType.BigInt,
-            last_updated_at: RecsType.Number,
-          },
-          COLD_IRON_PRODUCTION: {
-            building_count: RecsType.Number,
-            production_rate: RecsType.Number,
-            output_amount_left: RecsType.BigInt,
-            last_updated_at: RecsType.Number,
-          },
-          DEEP_CRYSTAL_PRODUCTION: {
-            building_count: RecsType.Number,
-            production_rate: RecsType.Number,
-            output_amount_left: RecsType.BigInt,
-            last_updated_at: RecsType.Number,
-          },
-          RUBY_PRODUCTION: {
-            building_count: RecsType.Number,
-            production_rate: RecsType.Number,
-            output_amount_left: RecsType.BigInt,
-            last_updated_at: RecsType.Number,
-          },
-          DIAMONDS_PRODUCTION: {
-            building_count: RecsType.Number,
-            production_rate: RecsType.Number,
-            output_amount_left: RecsType.BigInt,
-            last_updated_at: RecsType.Number,
-          },
-          HARTWOOD_PRODUCTION: {
-            building_count: RecsType.Number,
-            production_rate: RecsType.Number,
-            output_amount_left: RecsType.BigInt,
-            last_updated_at: RecsType.Number,
-          },
-          IGNIUM_PRODUCTION: {
-            building_count: RecsType.Number,
-            production_rate: RecsType.Number,
-            output_amount_left: RecsType.BigInt,
-            last_updated_at: RecsType.Number,
-          },
-          TWILIGHT_QUARTZ_PRODUCTION: {
-            building_count: RecsType.Number,
-            production_rate: RecsType.Number,
-            output_amount_left: RecsType.BigInt,
-            last_updated_at: RecsType.Number,
-          },
-          TRUE_ICE_PRODUCTION: {
-            building_count: RecsType.Number,
-            production_rate: RecsType.Number,
-            output_amount_left: RecsType.BigInt,
-            last_updated_at: RecsType.Number,
-          },
-          ADAMANTINE_PRODUCTION: {
-            building_count: RecsType.Number,
-            production_rate: RecsType.Number,
-            output_amount_left: RecsType.BigInt,
-            last_updated_at: RecsType.Number,
-          },
-          SAPPHIRE_PRODUCTION: {
-            building_count: RecsType.Number,
-            production_rate: RecsType.Number,
-            output_amount_left: RecsType.BigInt,
-            last_updated_at: RecsType.Number,
-          },
-          ETHEREAL_SILICA_PRODUCTION: {
-            building_count: RecsType.Number,
-            production_rate: RecsType.Number,
-            output_amount_left: RecsType.BigInt,
-            last_updated_at: RecsType.Number,
-          },
-          DRAGONHIDE_PRODUCTION: {
-            building_count: RecsType.Number,
-            production_rate: RecsType.Number,
-            output_amount_left: RecsType.BigInt,
-            last_updated_at: RecsType.Number,
-          },
-          LABOR_PRODUCTION: {
-            building_count: RecsType.Number,
-            production_rate: RecsType.Number,
-            output_amount_left: RecsType.BigInt,
-            last_updated_at: RecsType.Number,
-          },
-          EARTHEN_SHARD_PRODUCTION: {
-            building_count: RecsType.Number,
-            production_rate: RecsType.Number,
-            output_amount_left: RecsType.BigInt,
-            last_updated_at: RecsType.Number,
-          },
-          DONKEY_PRODUCTION: {
-            building_count: RecsType.Number,
-            production_rate: RecsType.Number,
-            output_amount_left: RecsType.BigInt,
-            last_updated_at: RecsType.Number,
-          },
-          KNIGHT_T1_PRODUCTION: {
-            building_count: RecsType.Number,
-            production_rate: RecsType.Number,
-            output_amount_left: RecsType.BigInt,
-            last_updated_at: RecsType.Number,
-          },
-          KNIGHT_T2_PRODUCTION: {
-            building_count: RecsType.Number,
-            production_rate: RecsType.Number,
-            output_amount_left: RecsType.BigInt,
-            last_updated_at: RecsType.Number,
-          },
-          KNIGHT_T3_PRODUCTION: {
-            building_count: RecsType.Number,
-            production_rate: RecsType.Number,
-            output_amount_left: RecsType.BigInt,
-            last_updated_at: RecsType.Number,
-          },
-          CROSSBOWMAN_T1_PRODUCTION: {
-            building_count: RecsType.Number,
-            production_rate: RecsType.Number,
-            output_amount_left: RecsType.BigInt,
-            last_updated_at: RecsType.Number,
-          },
-          CROSSBOWMAN_T2_PRODUCTION: {
-            building_count: RecsType.Number,
-            production_rate: RecsType.Number,
-            output_amount_left: RecsType.BigInt,
-            last_updated_at: RecsType.Number,
-          },
-          CROSSBOWMAN_T3_PRODUCTION: {
-            building_count: RecsType.Number,
-            production_rate: RecsType.Number,
-            output_amount_left: RecsType.BigInt,
-            last_updated_at: RecsType.Number,
-          },
-          PALADIN_T1_PRODUCTION: {
-            building_count: RecsType.Number,
-            production_rate: RecsType.Number,
-            output_amount_left: RecsType.BigInt,
-            last_updated_at: RecsType.Number,
-          },
-          PALADIN_T2_PRODUCTION: {
-            building_count: RecsType.Number,
-            production_rate: RecsType.Number,
-            output_amount_left: RecsType.BigInt,
-            last_updated_at: RecsType.Number,
-          },
-          PALADIN_T3_PRODUCTION: {
-            building_count: RecsType.Number,
-            production_rate: RecsType.Number,
-            output_amount_left: RecsType.BigInt,
-            last_updated_at: RecsType.Number,
-          },
-          WHEAT_PRODUCTION: {
-            building_count: RecsType.Number,
-            production_rate: RecsType.Number,
-            output_amount_left: RecsType.BigInt,
-            last_updated_at: RecsType.Number,
-          },
-          FISH_PRODUCTION: {
-            building_count: RecsType.Number,
-            production_rate: RecsType.Number,
-            output_amount_left: RecsType.BigInt,
-            last_updated_at: RecsType.Number,
-          },
-          LORDS_PRODUCTION: {
-            building_count: RecsType.Number,
-            production_rate: RecsType.Number,
-            output_amount_left: RecsType.BigInt,
-            last_updated_at: RecsType.Number,
-          },
-          ESSENCE_PRODUCTION: {
-            building_count: RecsType.Number,
-            production_rate: RecsType.Number,
-            output_amount_left: RecsType.BigInt,
-            last_updated_at: RecsType.Number,
-          },
-          RESEARCH_PRODUCTION: {
-            building_count: RecsType.Number,
-            production_rate: RecsType.Number,
-            output_amount_left: RecsType.BigInt,
-            last_updated_at: RecsType.Number,
-          },
-          SATOSHI_PRODUCTION: {
-            building_count: RecsType.Number,
-            production_rate: RecsType.Number,
-            output_amount_left: RecsType.BigInt,
-            last_updated_at: RecsType.Number,
-          },
+          weight: { capacity: RecsType.BigInt, weight: RecsType.BigInt, },
+          STONE_PRODUCTION: { building_count: RecsType.Number, production_rate: RecsType.Number, output_amount_left: RecsType.BigInt, last_updated_at: RecsType.Number, },
+          COAL_PRODUCTION: { building_count: RecsType.Number, production_rate: RecsType.Number, output_amount_left: RecsType.BigInt, last_updated_at: RecsType.Number, },
+          WOOD_PRODUCTION: { building_count: RecsType.Number, production_rate: RecsType.Number, output_amount_left: RecsType.BigInt, last_updated_at: RecsType.Number, },
+          COPPER_PRODUCTION: { building_count: RecsType.Number, production_rate: RecsType.Number, output_amount_left: RecsType.BigInt, last_updated_at: RecsType.Number, },
+          IRONWOOD_PRODUCTION: { building_count: RecsType.Number, production_rate: RecsType.Number, output_amount_left: RecsType.BigInt, last_updated_at: RecsType.Number, },
+          OBSIDIAN_PRODUCTION: { building_count: RecsType.Number, production_rate: RecsType.Number, output_amount_left: RecsType.BigInt, last_updated_at: RecsType.Number, },
+          GOLD_PRODUCTION: { building_count: RecsType.Number, production_rate: RecsType.Number, output_amount_left: RecsType.BigInt, last_updated_at: RecsType.Number, },
+          SILVER_PRODUCTION: { building_count: RecsType.Number, production_rate: RecsType.Number, output_amount_left: RecsType.BigInt, last_updated_at: RecsType.Number, },
+          MITHRAL_PRODUCTION: { building_count: RecsType.Number, production_rate: RecsType.Number, output_amount_left: RecsType.BigInt, last_updated_at: RecsType.Number, },
+          ALCHEMICAL_SILVER_PRODUCTION: { building_count: RecsType.Number, production_rate: RecsType.Number, output_amount_left: RecsType.BigInt, last_updated_at: RecsType.Number, },
+          COLD_IRON_PRODUCTION: { building_count: RecsType.Number, production_rate: RecsType.Number, output_amount_left: RecsType.BigInt, last_updated_at: RecsType.Number, },
+          DEEP_CRYSTAL_PRODUCTION: { building_count: RecsType.Number, production_rate: RecsType.Number, output_amount_left: RecsType.BigInt, last_updated_at: RecsType.Number, },
+          RUBY_PRODUCTION: { building_count: RecsType.Number, production_rate: RecsType.Number, output_amount_left: RecsType.BigInt, last_updated_at: RecsType.Number, },
+          DIAMONDS_PRODUCTION: { building_count: RecsType.Number, production_rate: RecsType.Number, output_amount_left: RecsType.BigInt, last_updated_at: RecsType.Number, },
+          HARTWOOD_PRODUCTION: { building_count: RecsType.Number, production_rate: RecsType.Number, output_amount_left: RecsType.BigInt, last_updated_at: RecsType.Number, },
+          IGNIUM_PRODUCTION: { building_count: RecsType.Number, production_rate: RecsType.Number, output_amount_left: RecsType.BigInt, last_updated_at: RecsType.Number, },
+          TWILIGHT_QUARTZ_PRODUCTION: { building_count: RecsType.Number, production_rate: RecsType.Number, output_amount_left: RecsType.BigInt, last_updated_at: RecsType.Number, },
+          TRUE_ICE_PRODUCTION: { building_count: RecsType.Number, production_rate: RecsType.Number, output_amount_left: RecsType.BigInt, last_updated_at: RecsType.Number, },
+          ADAMANTINE_PRODUCTION: { building_count: RecsType.Number, production_rate: RecsType.Number, output_amount_left: RecsType.BigInt, last_updated_at: RecsType.Number, },
+          SAPPHIRE_PRODUCTION: { building_count: RecsType.Number, production_rate: RecsType.Number, output_amount_left: RecsType.BigInt, last_updated_at: RecsType.Number, },
+          ETHEREAL_SILICA_PRODUCTION: { building_count: RecsType.Number, production_rate: RecsType.Number, output_amount_left: RecsType.BigInt, last_updated_at: RecsType.Number, },
+          DRAGONHIDE_PRODUCTION: { building_count: RecsType.Number, production_rate: RecsType.Number, output_amount_left: RecsType.BigInt, last_updated_at: RecsType.Number, },
+          LABOR_PRODUCTION: { building_count: RecsType.Number, production_rate: RecsType.Number, output_amount_left: RecsType.BigInt, last_updated_at: RecsType.Number, },
+          EARTHEN_SHARD_PRODUCTION: { building_count: RecsType.Number, production_rate: RecsType.Number, output_amount_left: RecsType.BigInt, last_updated_at: RecsType.Number, },
+          DONKEY_PRODUCTION: { building_count: RecsType.Number, production_rate: RecsType.Number, output_amount_left: RecsType.BigInt, last_updated_at: RecsType.Number, },
+          KNIGHT_T1_PRODUCTION: { building_count: RecsType.Number, production_rate: RecsType.Number, output_amount_left: RecsType.BigInt, last_updated_at: RecsType.Number, },
+          KNIGHT_T2_PRODUCTION: { building_count: RecsType.Number, production_rate: RecsType.Number, output_amount_left: RecsType.BigInt, last_updated_at: RecsType.Number, },
+          KNIGHT_T3_PRODUCTION: { building_count: RecsType.Number, production_rate: RecsType.Number, output_amount_left: RecsType.BigInt, last_updated_at: RecsType.Number, },
+          CROSSBOWMAN_T1_PRODUCTION: { building_count: RecsType.Number, production_rate: RecsType.Number, output_amount_left: RecsType.BigInt, last_updated_at: RecsType.Number, },
+          CROSSBOWMAN_T2_PRODUCTION: { building_count: RecsType.Number, production_rate: RecsType.Number, output_amount_left: RecsType.BigInt, last_updated_at: RecsType.Number, },
+          CROSSBOWMAN_T3_PRODUCTION: { building_count: RecsType.Number, production_rate: RecsType.Number, output_amount_left: RecsType.BigInt, last_updated_at: RecsType.Number, },
+          PALADIN_T1_PRODUCTION: { building_count: RecsType.Number, production_rate: RecsType.Number, output_amount_left: RecsType.BigInt, last_updated_at: RecsType.Number, },
+          PALADIN_T2_PRODUCTION: { building_count: RecsType.Number, production_rate: RecsType.Number, output_amount_left: RecsType.BigInt, last_updated_at: RecsType.Number, },
+          PALADIN_T3_PRODUCTION: { building_count: RecsType.Number, production_rate: RecsType.Number, output_amount_left: RecsType.BigInt, last_updated_at: RecsType.Number, },
+          WHEAT_PRODUCTION: { building_count: RecsType.Number, production_rate: RecsType.Number, output_amount_left: RecsType.BigInt, last_updated_at: RecsType.Number, },
+          FISH_PRODUCTION: { building_count: RecsType.Number, production_rate: RecsType.Number, output_amount_left: RecsType.BigInt, last_updated_at: RecsType.Number, },
+          LORDS_PRODUCTION: { building_count: RecsType.Number, production_rate: RecsType.Number, output_amount_left: RecsType.BigInt, last_updated_at: RecsType.Number, },
+          ESSENCE_PRODUCTION: { building_count: RecsType.Number, production_rate: RecsType.Number, output_amount_left: RecsType.BigInt, last_updated_at: RecsType.Number, },
+          RESEARCH_PRODUCTION: { building_count: RecsType.Number, production_rate: RecsType.Number, output_amount_left: RecsType.BigInt, last_updated_at: RecsType.Number, },
+          SATOSHI_PRODUCTION: { building_count: RecsType.Number, production_rate: RecsType.Number, output_amount_left: RecsType.BigInt, last_updated_at: RecsType.Number, },
         },
         {
           metadata: {
@@ -2297,8 +2383,8 @@ export function defineContractComponents(world: World, namespace: string) {
           series_id: RecsType.BigInt,
           game_index: RecsType.Number,
           ema_players_scaled: RecsType.BigInt,
-          recent: { data: RecsType.BigIntArray, sum: RecsType.BigInt },
-          anchor: { data: RecsType.BigIntArray, sum: RecsType.BigInt },
+          recent: { data: RecsType.BigIntArray, sum: RecsType.BigInt, },
+          anchor: { data: RecsType.BigIntArray, sum: RecsType.BigInt, },
           has_last_rate: RecsType.Boolean,
           last_rate_bps: RecsType.BigInt,
           soft_supply: RecsType.BigInt,
@@ -2333,101 +2419,11 @@ export function defineContractComponents(world: World, namespace: string) {
           game_id: RecsType.Number,
           entity_id: RecsType.Number,
           owner: RecsType.BigInt,
-          base: {
-            troop_guard_count: RecsType.Number,
-            troop_explorer_count: RecsType.Number,
-            troop_max_guard_count: RecsType.Number,
-            troop_max_explorer_count: RecsType.Number,
-            created_at: RecsType.Number,
-            category: RecsType.Number,
-            coord_x: RecsType.Number,
-            coord_y: RecsType.Number,
-            level: RecsType.Number,
-            starting_troops_granted: RecsType.Boolean,
-          },
-          troop_guards: {
-            delta: {
-              category: RecsType.String,
-              tier: RecsType.String,
-              count: RecsType.BigInt,
-              stamina: { amount: RecsType.BigInt, updated_tick: RecsType.BigInt },
-              boosts: {
-                incr_damage_dealt_percent_num: RecsType.Number,
-                incr_damage_dealt_end_tick: RecsType.Number,
-                decr_damage_gotten_percent_num: RecsType.Number,
-                decr_damage_gotten_end_tick: RecsType.Number,
-                incr_stamina_regen_percent_num: RecsType.Number,
-                incr_stamina_regen_tick_count: RecsType.Number,
-                incr_explore_reward_percent_num: RecsType.Number,
-                incr_explore_reward_end_tick: RecsType.Number,
-              },
-              battle_cooldown_end: RecsType.Number,
-            },
-            charlie: {
-              category: RecsType.String,
-              tier: RecsType.String,
-              count: RecsType.BigInt,
-              stamina: { amount: RecsType.BigInt, updated_tick: RecsType.BigInt },
-              boosts: {
-                incr_damage_dealt_percent_num: RecsType.Number,
-                incr_damage_dealt_end_tick: RecsType.Number,
-                decr_damage_gotten_percent_num: RecsType.Number,
-                decr_damage_gotten_end_tick: RecsType.Number,
-                incr_stamina_regen_percent_num: RecsType.Number,
-                incr_stamina_regen_tick_count: RecsType.Number,
-                incr_explore_reward_percent_num: RecsType.Number,
-                incr_explore_reward_end_tick: RecsType.Number,
-              },
-              battle_cooldown_end: RecsType.Number,
-            },
-            bravo: {
-              category: RecsType.String,
-              tier: RecsType.String,
-              count: RecsType.BigInt,
-              stamina: { amount: RecsType.BigInt, updated_tick: RecsType.BigInt },
-              boosts: {
-                incr_damage_dealt_percent_num: RecsType.Number,
-                incr_damage_dealt_end_tick: RecsType.Number,
-                decr_damage_gotten_percent_num: RecsType.Number,
-                decr_damage_gotten_end_tick: RecsType.Number,
-                incr_stamina_regen_percent_num: RecsType.Number,
-                incr_stamina_regen_tick_count: RecsType.Number,
-                incr_explore_reward_percent_num: RecsType.Number,
-                incr_explore_reward_end_tick: RecsType.Number,
-              },
-              battle_cooldown_end: RecsType.Number,
-            },
-            alpha: {
-              category: RecsType.String,
-              tier: RecsType.String,
-              count: RecsType.BigInt,
-              stamina: { amount: RecsType.BigInt, updated_tick: RecsType.BigInt },
-              boosts: {
-                incr_damage_dealt_percent_num: RecsType.Number,
-                incr_damage_dealt_end_tick: RecsType.Number,
-                decr_damage_gotten_percent_num: RecsType.Number,
-                decr_damage_gotten_end_tick: RecsType.Number,
-                incr_stamina_regen_percent_num: RecsType.Number,
-                incr_stamina_regen_tick_count: RecsType.Number,
-                incr_explore_reward_percent_num: RecsType.Number,
-                incr_explore_reward_end_tick: RecsType.Number,
-              },
-              battle_cooldown_end: RecsType.Number,
-            },
-            delta_destroyed_tick: RecsType.Number,
-            charlie_destroyed_tick: RecsType.Number,
-            bravo_destroyed_tick: RecsType.Number,
-            alpha_destroyed_tick: RecsType.Number,
-          },
+          base: { troop_guard_count: RecsType.Number, troop_explorer_count: RecsType.Number, troop_max_guard_count: RecsType.Number, troop_max_explorer_count: RecsType.Number, created_at: RecsType.Number, category: RecsType.Number, coord_x: RecsType.Number, coord_y: RecsType.Number, level: RecsType.Number, starting_troops_granted: RecsType.Boolean, },
+          troop_guards: { delta: { category: RecsType.String, tier: RecsType.String, count: RecsType.BigInt, stamina: { amount: RecsType.BigInt, updated_tick: RecsType.BigInt, }, boosts: { incr_damage_dealt_percent_num: RecsType.Number, incr_damage_dealt_end_tick: RecsType.Number, decr_damage_gotten_percent_num: RecsType.Number, decr_damage_gotten_end_tick: RecsType.Number, incr_stamina_regen_percent_num: RecsType.Number, incr_stamina_regen_tick_count: RecsType.Number, incr_explore_reward_percent_num: RecsType.Number, incr_explore_reward_end_tick: RecsType.Number, }, battle_cooldown_end: RecsType.Number, }, charlie: { category: RecsType.String, tier: RecsType.String, count: RecsType.BigInt, stamina: { amount: RecsType.BigInt, updated_tick: RecsType.BigInt, }, boosts: { incr_damage_dealt_percent_num: RecsType.Number, incr_damage_dealt_end_tick: RecsType.Number, decr_damage_gotten_percent_num: RecsType.Number, decr_damage_gotten_end_tick: RecsType.Number, incr_stamina_regen_percent_num: RecsType.Number, incr_stamina_regen_tick_count: RecsType.Number, incr_explore_reward_percent_num: RecsType.Number, incr_explore_reward_end_tick: RecsType.Number, }, battle_cooldown_end: RecsType.Number, }, bravo: { category: RecsType.String, tier: RecsType.String, count: RecsType.BigInt, stamina: { amount: RecsType.BigInt, updated_tick: RecsType.BigInt, }, boosts: { incr_damage_dealt_percent_num: RecsType.Number, incr_damage_dealt_end_tick: RecsType.Number, decr_damage_gotten_percent_num: RecsType.Number, decr_damage_gotten_end_tick: RecsType.Number, incr_stamina_regen_percent_num: RecsType.Number, incr_stamina_regen_tick_count: RecsType.Number, incr_explore_reward_percent_num: RecsType.Number, incr_explore_reward_end_tick: RecsType.Number, }, battle_cooldown_end: RecsType.Number, }, alpha: { category: RecsType.String, tier: RecsType.String, count: RecsType.BigInt, stamina: { amount: RecsType.BigInt, updated_tick: RecsType.BigInt, }, boosts: { incr_damage_dealt_percent_num: RecsType.Number, incr_damage_dealt_end_tick: RecsType.Number, decr_damage_gotten_percent_num: RecsType.Number, decr_damage_gotten_end_tick: RecsType.Number, incr_stamina_regen_percent_num: RecsType.Number, incr_stamina_regen_tick_count: RecsType.Number, incr_explore_reward_percent_num: RecsType.Number, incr_explore_reward_end_tick: RecsType.Number, }, battle_cooldown_end: RecsType.Number, }, delta_destroyed_tick: RecsType.Number, charlie_destroyed_tick: RecsType.Number, bravo_destroyed_tick: RecsType.Number, alpha_destroyed_tick: RecsType.Number, },
           troop_explorers: RecsType.NumberArray,
           resources_packed: RecsType.BigInt,
-          metadata: {
-            realm_id: RecsType.Number,
-            order: RecsType.Number,
-            has_wonder: RecsType.Boolean,
-            villages_count: RecsType.Number,
-            village_realm: RecsType.Number,
-          },
+          metadata: { realm_id: RecsType.Number, order: RecsType.Number, has_wonder: RecsType.Boolean, villages_count: RecsType.Number, village_realm: RecsType.Number, },
           category: RecsType.Number,
         },
         {
@@ -2517,16 +2513,7 @@ export function defineContractComponents(world: World, namespace: string) {
               "u32", // StructureMetadata village_realm
               "u8", // category
             ],
-            customTypes: [
-              "StructureBase",
-              "GuardTroops",
-              "Troops",
-              "TroopType",
-              "TroopTier",
-              "Stamina",
-              "TroopBoosts",
-              "StructureMetadata",
-            ],
+            customTypes: ["StructureBase", "GuardTroops", "Troops", "TroopType", "TroopTier", "Stamina", "TroopBoosts", "StructureMetadata"],
           } satisfies ContractComponentMetadata,
         },
       );
@@ -2611,7 +2598,7 @@ export function defineContractComponents(world: World, namespace: string) {
         world,
         {
           game_id: RecsType.Number,
-          coord: { alt: RecsType.Boolean, x: RecsType.Number, y: RecsType.Number },
+          coord: { alt: RecsType.Boolean, x: RecsType.Number, y: RecsType.Number, },
           reserved: RecsType.Boolean,
         },
         {
@@ -2630,6 +2617,30 @@ export function defineContractComponents(world: World, namespace: string) {
         },
       );
     })(),
+    StructureVillageSlots: (() => {
+      return defineComponent(
+        world,
+        {
+          game_id: RecsType.Number,
+          connected_realm_entity_id: RecsType.Number,
+          connected_realm_id: RecsType.Number,
+          connected_realm_coord: {
+            alt: RecsType.Boolean,
+            x: RecsType.Number,
+            y: RecsType.Number,
+          },
+          directions_left: RecsType.NumberArray,
+        },
+        {
+          metadata: {
+            namespace,
+            name: "StructureVillageSlots",
+            types: ["u32", "u32", "u16", "Span<u8>", "u32", "u32"],
+            customTypes: [],
+          },
+        },
+      );
+    })(),
     TileOpt: (() => {
       return defineComponent(
         world,
@@ -2645,6 +2656,93 @@ export function defineContractComponents(world: World, namespace: string) {
             namespace,
             name: "TileOpt",
             types: ["u32", "bool", "u32", "u32", "bool", "u128"],
+            customTypes: [],
+          },
+        },
+      );
+    })(),
+    Trade: (() => {
+      return defineComponent(
+        world,
+        {
+          game_id: RecsType.Number,
+          trade_id: RecsType.Number,
+          maker_id: RecsType.Number,
+          taker_id: RecsType.Number,
+          expires_at: RecsType.Number,
+          maker_gives_resource_type: RecsType.Number,
+          taker_pays_resource_type: RecsType.Number,
+          maker_gives_min_resource_amount: RecsType.BigInt,
+          taker_pays_min_resource_amount: RecsType.BigInt,
+          maker_gives_max_count: RecsType.BigInt,
+        },
+        {
+          metadata: {
+            namespace,
+            name: "Trade",
+            types: ["u32", "u32", "u32", "u32", "u32", "u8", "u8", "u64", "u64", "u64"],
+            customTypes: [],
+          },
+        },
+      );
+    })(),
+    TradeCount: (() => {
+      return defineComponent(
+        world,
+        {
+          game_id: RecsType.Number,
+          structure_id: RecsType.Number,
+          count: RecsType.Number,
+        },
+        {
+          metadata: {
+            namespace,
+            name: "TradeCount",
+            types: [
+              "u32", // game_id
+              "u32", // structure_id
+              "u8", // count
+            ],
+            customTypes: [],
+          } satisfies ContractComponentMetadata,
+        },
+      );
+    })(),
+    VillageRaidImmunity: (() => {
+      return defineComponent(
+        world,
+        {
+          game_id: RecsType.Number,
+          village_id: RecsType.Number,
+          last_raided_at: RecsType.Number,
+        },
+        {
+          metadata: {
+            namespace,
+            name: "VillageRaidImmunity",
+            types: [
+              "u32", // game_id
+              "u32", // village_id
+              "u64", // last_raided_at
+            ],
+            customTypes: [],
+          } satisfies ContractComponentMetadata,
+        },
+      );
+    })(),
+    VillageTroop: (() => {
+      return defineComponent(
+        world,
+        {
+          game_id: RecsType.Number,
+          village_id: RecsType.Number,
+          claimed: RecsType.Boolean,
+        },
+        {
+          metadata: {
+            namespace,
+            name: "VillageTroop",
+            types: ["u32", "bool"],
             customTypes: [],
           },
         },
@@ -2678,7 +2776,7 @@ export function defineContractComponents(world: World, namespace: string) {
         {
           game_id: RecsType.Number,
           structure_id: RecsType.Number,
-          coord: { alt: RecsType.Boolean, x: RecsType.Number, y: RecsType.Number },
+          coord: { alt: RecsType.Boolean, x: RecsType.Number, y: RecsType.Number, },
           realm_id: RecsType.Number,
         },
         {
@@ -2698,55 +2796,119 @@ export function defineContractComponents(world: World, namespace: string) {
         },
       );
     })(),
+    WonderFaith: (() => {
+      return defineComponent(
+        world,
+        {
+          game_id: RecsType.Number,
+          wonder_id: RecsType.Number,
+          last_recorded_owner: RecsType.BigInt,
+          claimed_points: RecsType.BigInt,
+          claim_per_sec: RecsType.Number,
+          claim_last_at: RecsType.Number,
+          owner_claim_per_sec: RecsType.Number,
+          num_structures_pledged: RecsType.Number,
+        },
+        {
+          metadata: {
+            namespace,
+            name: "WonderFaith",
+            types: [
+              "u32", // game_id
+              "u32", // wonder_id
+              "ContractAddress", // last_recorded_owner
+              "u128", // claimed_points
+              "u32", // claim_per_sec
+              "u64", // claim_last_at
+              "u32", // owner_claim_per_sec
+              "u32", // num_structures_pledged
+            ],
+            customTypes: [],
+          } satisfies ContractComponentMetadata,
+        },
+      );
+    })(),
+    WonderFaithBlacklist: (() => {
+      return defineComponent(
+        world,
+        {
+          game_id: RecsType.Number,
+          wonder_id: RecsType.Number,
+          blocked_id: RecsType.BigInt,
+          is_blocked: RecsType.Boolean,
+        },
+        {
+          metadata: {
+            namespace,
+            name: "WonderFaithBlacklist",
+            types: [
+              "u32", // game_id
+              "u32", // wonder_id
+              "felt252", // blocked_id
+              "bool", // is_blocked
+            ],
+            customTypes: [],
+          } satisfies ContractComponentMetadata,
+        },
+      );
+    })(),
+    WonderFaithPrize: (() => {
+      return defineComponent(
+        world,
+        {
+          game_id: RecsType.Number,
+          wonder_id: RecsType.Number,
+          amount_won: RecsType.BigInt,
+        },
+        {
+          metadata: {
+            namespace,
+            name: "WonderFaithPrize",
+            types: [
+              "u32", // game_id
+              "u32", // wonder_id
+              "u128", // amount_won
+            ],
+            customTypes: [],
+          } satisfies ContractComponentMetadata,
+        },
+      );
+    })(),
+    WonderFaithWinners: (() => {
+      return defineComponent(
+        world,
+        {
+          game_id: RecsType.Number,
+          high_score: RecsType.BigInt,
+          wonder_ids: RecsType.NumberArray,
+        },
+        {
+          metadata: {
+            namespace,
+            name: "WonderFaithWinners",
+            types: [
+              "u32", // game_id
+              "u128", // high_score
+              "Span<u32>", // wonder_ids
+            ],
+            customTypes: [],
+          } satisfies ContractComponentMetadata,
+        },
+      );
+    })(),
     WorldConfig: (() => {
       return defineComponent(
         world,
         {
           game_id: RecsType.Number,
           map_center_offset: RecsType.Number,
-          biome_climate_config: {
-            elevation_scale_bps: RecsType.Number,
-            moisture_scale_bps: RecsType.Number,
-            elevation_bias_bps: RecsType.Number,
-            moisture_bias_bps: RecsType.Number,
-            elevation_seed: RecsType.Number,
-            moisture_seed: RecsType.Number,
-          },
-          settlement_config: {
-            center: RecsType.Number,
-            base_distance: RecsType.Number,
-            layers_skipped: RecsType.Number,
-            layer_max: RecsType.Number,
-            layer_capacity_increment: RecsType.Number,
-            layer_capacity_bps: RecsType.Number,
-            spires_layer_distance: RecsType.Number,
-            spires_max_count: RecsType.Number,
-            spires_settled_count: RecsType.Number,
-          },
+          biome_climate_config: { elevation_scale_bps: RecsType.Number, moisture_scale_bps: RecsType.Number, elevation_bias_bps: RecsType.Number, moisture_bias_bps: RecsType.Number, elevation_seed: RecsType.Number, moisture_seed: RecsType.Number, },
+          settlement_config: { center: RecsType.Number, base_distance: RecsType.Number, layers_skipped: RecsType.Number, layer_max: RecsType.Number, layer_capacity_increment: RecsType.Number, layer_capacity_bps: RecsType.Number, spires_layer_distance: RecsType.Number, spires_max_count: RecsType.Number, spires_settled_count: RecsType.Number, },
           blitz_mode_on: RecsType.Boolean,
-          blitz_settlement_config: {
-            base_distance: RecsType.Number,
-            side: RecsType.Number,
-            step: RecsType.Number,
-            point: RecsType.Number,
-            open_settlement_count: RecsType.Number,
-            single_realm_mode: RecsType.Boolean,
-            two_player_mode: RecsType.Boolean,
-          },
-          blitz_hypers_settlement_config: {
-            max_ring_count: RecsType.Number,
-            current_ring_count: RecsType.Number,
-            point: RecsType.Number,
-            side: RecsType.Number,
-          },
-          blitz_registration_config: {
-            fee_amount: RecsType.BigInt,
-            registration_count: RecsType.Number,
-            issued_count: RecsType.Number,
-            registration_count_max: RecsType.Number,
-            registration_start_at: RecsType.Number,
-          },
-          realm_count_config: { count: RecsType.Number },
+          blitz_settlement_config: { base_distance: RecsType.Number, side: RecsType.Number, step: RecsType.Number, point: RecsType.Number, open_settlement_count: RecsType.Number, single_realm_mode: RecsType.Boolean, two_player_mode: RecsType.Boolean, },
+          blitz_hypers_settlement_config: { max_ring_count: RecsType.Number, current_ring_count: RecsType.Number, point: RecsType.Number, side: RecsType.Number, },
+          blitz_registration_config: { fee_amount: RecsType.BigInt, registration_count: RecsType.Number, issued_count: RecsType.Number, registration_count_max: RecsType.Number, registration_start_at: RecsType.Number, },
+          realm_count_config: { count: RecsType.Number, },
         },
         {
           metadata: {
@@ -2789,14 +2951,7 @@ export function defineContractComponents(world: World, namespace: string) {
               "u32", // BlitzRegistrationGameConfig registration_start_at
               "u16", // RealmCountConfig count
             ],
-            customTypes: [
-              "BiomeClimateConfig",
-              "SettlementConfig",
-              "BlitzSettlementConfig",
-              "BlitzHypersSettlementConfig",
-              "BlitzRegistrationGameConfig",
-              "RealmCountConfig",
-            ],
+            customTypes: ["BiomeClimateConfig", "SettlementConfig", "BlitzSettlementConfig", "BlitzHypersSettlementConfig", "BlitzRegistrationGameConfig", "RealmCountConfig"],
           } satisfies ContractComponentMetadata,
         },
       );
@@ -2806,13 +2961,8 @@ export function defineContractComponents(world: World, namespace: string) {
         world,
         {
           game_id: RecsType.Number,
-          relic_record: { last_discovered_at: RecsType.Number },
-          blitz_fee_split_record: {
-            total_sponsorship: RecsType.BigInt,
-            creator_receives_amount: RecsType.BigInt,
-            velords_receives_amount: RecsType.BigInt,
-            players_receive_amount: RecsType.BigInt,
-          },
+          relic_record: { last_discovered_at: RecsType.Number, },
+          blitz_fee_split_record: { total_sponsorship: RecsType.BigInt, creator_receives_amount: RecsType.BigInt, velords_receives_amount: RecsType.BigInt, players_receive_amount: RecsType.BigInt, },
         },
         {
           metadata: {
@@ -2831,60 +2981,6 @@ export function defineContractComponents(world: World, namespace: string) {
         },
       );
     })(),
-    PlayersRankFinal: (() => {
-      return defineComponent(
-        world,
-        {
-          world_id: RecsType.BigInt,
-          trial_id: RecsType.BigInt,
-        },
-        {
-          metadata: {
-            namespace,
-            name: "PlayersRankFinal",
-            types: ["u128", "u128"],
-            customTypes: [],
-          },
-        },
-      );
-    })(),
-    Liquidity: (() => {
-      return defineComponent(
-        world,
-        {
-          player: RecsType.BigInt,
-          resource_type: RecsType.Number,
-          shares: RecsType.BigInt,
-        },
-        {
-          metadata: {
-            namespace,
-            name: "Liquidity",
-            types: ["ContractAddress", "u8", "u128"],
-            customTypes: [],
-          },
-        },
-      );
-    })(),
-    Market: (() => {
-      return defineComponent(
-        world,
-        {
-          resource_type: RecsType.Number,
-          lords_amount: RecsType.BigInt,
-          resource_amount: RecsType.BigInt,
-          total_shares: RecsType.BigInt,
-        },
-        {
-          metadata: {
-            namespace,
-            name: "Market",
-            types: ["u8", "u128", "u128", "u128"],
-            customTypes: [],
-          },
-        },
-      );
-    })(),
     Message: (() => {
       return defineComponent(
         world,
@@ -2900,162 +2996,6 @@ export function defineContractComponents(world: World, namespace: string) {
             namespace,
             name: "Message",
             types: ["felt252", "felt252", "felt252", "BytesArray", "u64"],
-            customTypes: [],
-          },
-        },
-      );
-    })(),
-    StructureVillageSlots: (() => {
-      return defineComponent(
-        world,
-        {
-          connected_realm_entity_id: RecsType.Number,
-          connected_realm_id: RecsType.Number,
-          connected_realm_coord: {
-            alt: RecsType.Boolean,
-            x: RecsType.Number,
-            y: RecsType.Number,
-          },
-          directions_left: RecsType.NumberArray,
-        },
-        {
-          metadata: {
-            namespace,
-            name: "StructureVillageSlots",
-            types: ["u32", "u16", "Span<u8>", "u32", "u32"],
-            customTypes: [],
-          },
-        },
-      );
-    })(),
-    VillageTroop: (() => {
-      return defineComponent(
-        world,
-        {
-          village_id: RecsType.Number,
-          claimed: RecsType.Boolean,
-        },
-        {
-          metadata: {
-            namespace,
-            name: "VillageTroop",
-            types: ["bool"],
-            customTypes: [],
-          },
-        },
-      );
-    })(),
-    Quantity: (() => {
-      return defineComponent(
-        world,
-        { entity_id: RecsType.Number, value: RecsType.BigInt },
-        {
-          metadata: {
-            namespace,
-            name: "Quantity",
-            types: ["u32", "u128"],
-            customTypes: [],
-          },
-        },
-      );
-    })(),
-    QuantityTracker: (() => {
-      return defineComponent(
-        world,
-        { entity_id: RecsType.BigInt, count: RecsType.BigInt },
-        {
-          metadata: {
-            namespace,
-            name: "QuantityTracker",
-            types: ["felt252", "u128"],
-            customTypes: [],
-          },
-        },
-      );
-    })(),
-    Quest: (() => {
-      return defineComponent(
-        world,
-        {
-          game_token_id: RecsType.BigInt,
-          game_address: RecsType.String,
-          quest_tile_id: RecsType.Number,
-          explorer_id: RecsType.Number,
-          completed: RecsType.Boolean,
-        },
-        {
-          metadata: {
-            namespace,
-            name: "Quest",
-            types: ["u64", "ContractAddress", "u32", "u32", "bool"],
-            customTypes: [],
-          },
-        },
-      );
-    })(),
-    QuestLevels: (() => {
-      return defineComponent<QuestLevelsSchema, ContractComponentMetadata, unknown[]>(
-        world,
-        {
-          game_address: RecsType.String,
-          levels: RecsType.T,
-        },
-        {
-          metadata: {
-            namespace,
-            name: "QuestLevels",
-            types: ["ContractAddress", "Span<Level>"],
-            customTypes: ["Level"],
-          },
-        },
-      );
-    })(),
-    QuestTile: (() => {
-      return defineComponent(
-        world,
-        {
-          id: RecsType.Number,
-          game_address: RecsType.String,
-          coord: {
-            alt: RecsType.Boolean,
-            x: RecsType.Number,
-            y: RecsType.Number,
-          },
-          level: RecsType.Number,
-          resource_type: RecsType.Number,
-          amount: RecsType.BigInt,
-          capacity: RecsType.Number,
-          participant_count: RecsType.Number,
-        },
-        {
-          metadata: {
-            namespace,
-            name: "QuestTile",
-            types: ["u32", "ContractAddress", "u32", "u32", "u8", "u8", "u128", "u16", "u16"],
-            customTypes: ["Coord"],
-          },
-        },
-      );
-    })(),
-    Trade: (() => {
-      return defineComponent(
-        world,
-        {
-          trade_id: RecsType.Number,
-          maker_id: RecsType.Number,
-          taker_id: RecsType.Number,
-          expires_at: RecsType.Number,
-          maker_gives_resource_type: RecsType.Number,
-          taker_pays_resource_type: RecsType.Number,
-          maker_gives_min_resource_amount: RecsType.BigInt,
-          taker_pays_min_resource_amount: RecsType.BigInt,
-          maker_gives_max_count: RecsType.BigInt,
-        },
-        {
-          metadata: {
-            namespace,
-            name: "Trade",
-            types: ["u32", "u32", "u32", "u32", "u8", "u8", "u64", "u64", "u64"],
             customTypes: [],
           },
         },
@@ -3116,6 +3056,27 @@ export function defineContractComponents(world: World, namespace: string) {
       );
     })(),
     events: {
+      AcceptOrder: (() => {
+        return defineComponent(
+          world,
+          {
+            game_id: RecsType.Number,
+            taker_id: RecsType.Number,
+            maker_id: RecsType.Number,
+            id: RecsType.Number,
+            trade_id: RecsType.Number,
+            timestamp: RecsType.Number,
+          },
+          {
+            metadata: {
+              namespace,
+              name: "AcceptOrder",
+              types: ["u32", "u32", "u32", "u32", "u32", "u64"],
+              customTypes: [],
+            },
+          },
+        );
+      })(),
       AgentCreatedEvent: (() => {
         return defineComponent(
           world,
@@ -3238,6 +3199,58 @@ export function defineContractComponents(world: World, namespace: string) {
           },
         );
       })(),
+      CancelOrder: (() => {
+        return defineComponent(
+          world,
+          {
+            game_id: RecsType.Number,
+            taker_id: RecsType.Number,
+            maker_id: RecsType.Number,
+            trade_id: RecsType.Number,
+            timestamp: RecsType.Number,
+          },
+          {
+            metadata: {
+              namespace,
+              name: "CancelOrder",
+              types: [
+                "u32", // game_id
+                "u32", // taker_id
+                "u32", // maker_id
+                "u32", // trade_id
+                "u64", // timestamp
+              ],
+              customTypes: [],
+            } satisfies ContractComponentMetadata,
+          },
+        );
+      })(),
+      CreateOrder: (() => {
+        return defineComponent(
+          world,
+          {
+            game_id: RecsType.Number,
+            taker_id: RecsType.Number,
+            maker_id: RecsType.Number,
+            trade_id: RecsType.Number,
+            timestamp: RecsType.Number,
+          },
+          {
+            metadata: {
+              namespace,
+              name: "CreateOrder",
+              types: [
+                "u32", // game_id
+                "u32", // taker_id
+                "u32", // maker_id
+                "u32", // trade_id
+                "u64", // timestamp
+              ],
+              customTypes: [],
+            } satisfies ContractComponentMetadata,
+          },
+        );
+      })(),
       ExplicitResourceBurn: (() => {
         return defineComponent(
           world,
@@ -3280,6 +3293,54 @@ export function defineContractComponents(world: World, namespace: string) {
               namespace,
               name: "ExplorerMoveEvent",
               types: ["u32", "u32", "u32", "ContractAddress", "ExploreFind", "u64"],
+              customTypes: [],
+            },
+          },
+        );
+      })(),
+      ExplorerNewRaidEvent: (() => {
+        return defineComponent(
+          world,
+          {
+            game_id: RecsType.Number,
+            explorer_id: RecsType.Number,
+            structure_id: RecsType.Number,
+            explorer_owner_id: RecsType.Number,
+            success: RecsType.Boolean,
+            timestamp: RecsType.Number,
+          },
+          {
+            metadata: {
+              namespace,
+              name: "ExplorerNewRaidEvent",
+              types: [
+                "u32", // game_id
+                "u32", // explorer_id
+                "u32", // structure_id
+                "u32", // explorer_owner_id
+                "bool", // success
+                "u64", // timestamp
+              ],
+              customTypes: [],
+            } satisfies ContractComponentMetadata,
+          },
+        );
+      })(),
+      ExplorerRaidEvent: (() => {
+        return defineComponent(
+          world,
+          {
+            game_id: RecsType.Number,
+            explorer_id: RecsType.Number,
+            structure_id: RecsType.Number,
+            success: RecsType.Boolean,
+            timestamp: RecsType.Number,
+          },
+          {
+            metadata: {
+              namespace,
+              name: "ExplorerRaidEvent",
+              types: ["u32", "u32", "u32", "bool", "u64"],
               customTypes: [],
             },
           },
@@ -3337,6 +3398,30 @@ export function defineContractComponents(world: World, namespace: string) {
               ],
               customTypes: [],
             } satisfies ContractComponentMetadata,
+          },
+        );
+      })(),
+      LiquidityEvent: (() => {
+        return defineComponent(
+          world,
+          {
+            game_id: RecsType.Number,
+            bank_entity_id: RecsType.Number,
+            entity_id: RecsType.Number,
+            resource_type: RecsType.Number,
+            lords_amount: RecsType.BigInt,
+            resource_amount: RecsType.BigInt,
+            resource_price: RecsType.BigInt,
+            add: RecsType.Boolean,
+            timestamp: RecsType.BigInt,
+          },
+          {
+            metadata: {
+              namespace,
+              name: "LiquidityEvent",
+              types: ["u32", "u32", "u32", "u8", "u128", "u128", "u128", "bool", "u64"],
+              customTypes: [],
+            },
           },
         );
       })(),
@@ -3424,6 +3509,24 @@ export function defineContractComponents(world: World, namespace: string) {
           },
         );
       })(),
+      SeasonEnded: (() => {
+        return defineComponent(
+          world,
+          {
+            game_id: RecsType.Number,
+            winner_address: RecsType.BigInt,
+            timestamp: RecsType.Number,
+          },
+          {
+            metadata: {
+              namespace,
+              name: "SeasonEnded",
+              types: ["u32", "ContractAddress", "u64"],
+              customTypes: [],
+            },
+          },
+        );
+      })(),
       StoryEvent: (() => {
         return defineComponent(
           world,
@@ -3442,6 +3545,33 @@ export function defineContractComponents(world: World, namespace: string) {
               name: "StoryEvent",
               types: ["u32", "u32", "Option<ContractAddress>", "Option<u32>", "felt252", "Story", "u64"],
               customTypes: ["Story"],
+            },
+          },
+        );
+      })(),
+      SwapEvent: (() => {
+        return defineComponent(
+          world,
+          {
+            game_id: RecsType.Number,
+            bank_entity_id: RecsType.Number,
+            entity_id: RecsType.Number,
+            id: RecsType.Number,
+            resource_type: RecsType.Number,
+            lords_amount: RecsType.BigInt,
+            resource_amount: RecsType.BigInt,
+            bank_owner_fees: RecsType.BigInt,
+            lp_fees: RecsType.BigInt,
+            resource_price: RecsType.BigInt,
+            buy: RecsType.Boolean,
+            timestamp: RecsType.Number,
+          },
+          {
+            metadata: {
+              namespace,
+              name: "SwapEvent",
+              types: ["u32", "u32", "u32", "u32", "u8", "u128", "u128", "u128", "u128", "u128", "bool", "u64"],
+              customTypes: [],
             },
           },
         );
@@ -3557,92 +3687,6 @@ export function defineContractComponents(world: World, namespace: string) {
           },
         );
       })(),
-      SeasonEnded: (() => {
-        return defineComponent(
-          world,
-          {
-            winner_address: RecsType.BigInt,
-            timestamp: RecsType.Number,
-          },
-          {
-            metadata: {
-              namespace,
-              name: "SeasonEnded",
-              types: ["ContractAddress", "u64"],
-              customTypes: [],
-            },
-          },
-        );
-      })(),
-      AcceptOrder: (() => {
-        return defineComponent(
-          world,
-          {
-            taker_id: RecsType.Number,
-            maker_id: RecsType.Number,
-            id: RecsType.Number,
-            trade_id: RecsType.Number,
-            timestamp: RecsType.Number,
-          },
-          {
-            metadata: {
-              namespace,
-              name: "AcceptOrder",
-              types: ["u32", "u32", "u32", "u32", "u64"],
-              customTypes: [],
-            },
-          },
-        );
-      })(),
-      LiquidityEvent: (() => {
-        return defineComponent(
-          world,
-          {
-            bank_entity_id: RecsType.Number,
-            entity_id: RecsType.Number,
-            resource_type: RecsType.Number,
-            lords_amount: RecsType.BigInt,
-            resource_amount: RecsType.BigInt,
-            resource_price: RecsType.BigInt,
-            add: RecsType.Boolean,
-            timestamp: RecsType.BigInt,
-          },
-          {
-            metadata: {
-              namespace,
-              name: "LiquidityEvent",
-              types: ["u32", "u32", "u8", "u128", "u128", "u128", "bool", "u64"],
-              customTypes: [],
-            },
-          },
-        );
-      })(),
-      SwapEvent: (() => {
-        return defineComponent(
-          world,
-          {
-            bank_entity_id: RecsType.Number,
-            entity_id: RecsType.Number,
-            id: RecsType.Number,
-            resource_type: RecsType.Number,
-            lords_amount: RecsType.BigInt,
-            resource_amount: RecsType.BigInt,
-            bank_owner_fees: RecsType.BigInt,
-            lp_fees: RecsType.BigInt,
-            resource_price: RecsType.BigInt,
-            buy: RecsType.Boolean,
-            timestamp: RecsType.Number,
-          },
-          {
-            metadata: {
-              namespace,
-              name: "SwapEvent",
-              types: ["u32", "u32", "u32", "u8", "u128", "u128", "u128", "u128", "u128", "bool", "u64"],
-              customTypes: [],
-            },
-          },
-        );
-      })(),
       SettleRealmData: (() => {
         return defineComponent(
           world,
@@ -3686,25 +3730,6 @@ export function defineContractComponents(world: World, namespace: string) {
                 "u32",
                 "u64",
               ],
-              customTypes: [],
-            },
-          },
-        );
-      })(),
-      ExplorerRaidEvent: (() => {
-        return defineComponent(
-          world,
-          {
-            explorer_id: RecsType.Number,
-            structure_id: RecsType.Number,
-            success: RecsType.Boolean,
-            timestamp: RecsType.Number,
-          },
-          {
-            metadata: {
-              namespace,
-              name: "ExplorerRaidEvent",
-              types: ["u32", "u32", "bool", "u64"],
               customTypes: [],
             },
           },

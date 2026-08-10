@@ -68,7 +68,7 @@ pub mod troop_management_systems {
     use core::num::traits::zero::Zero;
     use dojo::event::EventStorage;
     use dojo::model::ModelStorage;
-    use dojo::world::{IWorldDispatcherTrait, WorldStorageTrait};
+    use dojo::world::{IWorldDispatcherTrait, WorldStorage, WorldStorageTrait};
     use starknet::ContractAddress;
     use crate::alias::ID;
     use crate::constants::{DEFAULT_NS, RESOURCE_PRECISION};
@@ -97,9 +97,7 @@ pub mod troop_management_systems {
         ExplorerTroops, GuardImpl, GuardSlot, GuardTrait, GuardTroops, TroopLimitTrait, TroopTier, TroopType, Troops,
     };
     use crate::systems::utils::map::IMapImpl;
-    // Mine discovery is excluded from the Blitz-core world (D15).
     use crate::systems::utils::troop::{iExplorerImpl, iGuardImpl, iTroopImpl};
-    // Village helpers are excluded from the Blitz-core world (D15).
     use super::ITroopManagementSystems;
 
     #[abi(embed_v0)]
@@ -116,11 +114,8 @@ pub mod troop_management_systems {
             assert!(amount.is_non_zero(), "amount must be greater than 0");
 
             let mut world = self.world(DEFAULT_NS());
-            // ensure caller owns structure or is realms_systems
-            let (realms_systems_address, _) = world.dns(@"realm_internal_systems").unwrap();
-            // Village authorization is excluded from the Blitz-core world (D15).
             let caller_address: starknet::ContractAddress = starknet::get_caller_address();
-            if caller_address != realms_systems_address {
+            if !is_internal_guard_manager(world, caller_address) {
                 // ensure season is open
                 SeasonConfigImpl::get(world, game_id).assert_started_and_not_over();
                 StructureOwnerStoreImpl::retrieve(ref world, game_id, for_structure_id).assert_caller_owner();
@@ -986,6 +981,17 @@ pub mod troop_management_systems {
                         timestamp: starknet::get_block_timestamp(),
                     },
                 );
+        }
+    }
+
+    fn is_internal_guard_manager(world: WorldStorage, caller: ContractAddress) -> bool {
+        let (realm_internal_systems, _) = world.dns(@"realm_internal_systems").unwrap();
+        if caller == realm_internal_systems {
+            return true;
+        }
+        match world.dns(@"village_systems") {
+            Option::Some((village_systems, _)) => caller == village_systems,
+            Option::None => false,
         }
     }
 }

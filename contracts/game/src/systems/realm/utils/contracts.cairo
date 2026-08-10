@@ -52,11 +52,8 @@ pub mod realm_internal_systems {
             explore_village_coord: bool,
             grant_starting_troops: bool,
         ) -> ID {
-            // D15: the legacy realm system is retired; only the Blitz host may call this internal entrypoint.
             let mut world: WorldStorage = self.world(DEFAULT_NS());
-            // let (realm_systems, _) = world.dns(@"realm_systems").unwrap();
-            let (blitz_realm_systems, _) = world.dns(@"blitz_realm_systems").unwrap();
-            assert!(starknet::get_caller_address() == blitz_realm_systems, "caller must be the blitz_realm_systems");
+            InternalImpl::assert_realm_host(world);
 
             // create the realm structure first, then optionally attach troop startup
             let structure_id = iRealmImpl::create_realm_structure(
@@ -70,12 +67,19 @@ pub mod realm_internal_systems {
 
         fn provision_internal(ref self: ContractState, game_id: u32, structure_id: ID) {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
-            // D15: the legacy realm system is retired; only the Blitz host may call this internal entrypoint.
-            // let (realm_systems, _) = world.dns(@"realm_systems").unwrap();
-            let (blitz_realm_systems, _) = world.dns(@"blitz_realm_systems").unwrap();
-            assert!(starknet::get_caller_address() == blitz_realm_systems, "caller must be the blitz_realm_systems");
+            InternalImpl::assert_realm_host(world);
 
             iRealmImpl::provision_realm(ref world, game_id, structure_id);
+        }
+    }
+
+    #[generate_trait]
+    impl InternalImpl of InternalTrait {
+        fn assert_realm_host(world: WorldStorage) {
+            let (realm_systems, _) = world.dns(@"realm_systems").unwrap();
+            let (blitz_realm_systems, _) = world.dns(@"blitz_realm_systems").unwrap();
+            let caller = starknet::get_caller_address();
+            assert!(caller == realm_systems || caller == blitz_realm_systems, "caller must be a realm system");
         }
     }
 }

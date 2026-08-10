@@ -39,10 +39,41 @@ describe("appchain registrar preset", () => {
       resourceLists: 203,
       resourceMinMaxLists: 3,
     });
-    expect(buildRegisterPresetCalldata(payload)).toHaveLength(2_037);
+    expect(buildRegisterPresetCalldata(payload)).toHaveLength(2_091);
     expect(payload.presetConfig.preset_id).toBe(1);
     expect(payload.gameConfig.preset_id).toBe(1);
     expect(buildRegisterPresetCalldata(payload)).toMatchSnapshot();
+  });
+
+  test("builds an Eternum preset and create-game payload without Blitz registration", () => {
+    const eternumConfig = loadEnvironmentConfiguration("appchain.eternum");
+    const payload = buildPresetRegistration(eternumConfig, 10);
+    const createGameInput = {
+      gameName: "etrn-w3",
+      presetId: 10,
+      startMainAt: 2_000_000_000,
+      durationSeconds: eternumConfig.season.durationSeconds,
+      devModeOn: true,
+      singleRealmMode: false,
+      twoPlayerMode: false,
+      useMapOverride: false,
+    };
+    const params = buildCreateGameParams(eternumConfig, createGameInput);
+
+    expect(payload.gameConfig).toMatchObject({ preset_id: 10, blitz_mode_on: false });
+    expect(payload.presetConfig).toMatchObject({
+      preset_id: 10,
+      season_addresses_config: expect.any(Object),
+      bank_config: expect.any(Object),
+      trade_config: expect.any(Object),
+      quest_config: expect.any(Object),
+      faith_config: expect.objectContaining({ owner_share_percent: 3000 }),
+      bitcoin_mine_config: expect.any(Object),
+    });
+    expect(params).toMatchObject({ preset_id: 10, registration_count_max: 0, two_player_mode: false });
+    expect(() => buildCreateGameParams(eternumConfig, { ...createGameInput, twoPlayerMode: true })).toThrow(
+      "Eternum seasons do not support two-player mode",
+    );
   });
 
   test("keeps launch clocks and mode overrides in CreateGameParams", () => {

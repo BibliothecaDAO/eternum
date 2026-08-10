@@ -13,12 +13,14 @@ use crate::models::resource::resource::{
     ResourceWeightImpl, SingleResourceImpl, SingleResourceStoreImpl, TroopResourceImpl, WeightStoreImpl,
 };
 use crate::models::structure::{
-    StructureBase, StructureBaseImpl, StructureBaseStoreImpl, StructureMetadataStoreImpl, StructureOwnerStoreImpl,
+    StructureBase, StructureBaseImpl, StructureBaseStoreImpl, StructureCategory, StructureMetadataStoreImpl,
+    StructureOwnerStoreImpl,
 };
 use crate::models::troop::ExplorerTroops;
 use crate::models::weight::{Weight, WeightImpl};
 use crate::systems::utils::distance::iDistanceKmImpl;
 use crate::systems::utils::donkey::iDonkeyImpl;
+use crate::systems::utils::village::iVillageImpl;
 
 
 #[generate_trait]
@@ -519,16 +521,11 @@ pub impl iResourceTransferImpl of iResourceTransferTrait {
             // ensure donkey can transport resource from A to B
             iDonkeyImpl::assert_can_transport(ref world, game_id, from_coord, to_coord);
 
-            // Village association validation is excluded from the Blitz-core world (D15).
-            // if to_structure_base.category == StructureCategory::Village.into()
-            //     && TroopResourceImpl::is_troop(resource_type) {
-            //     let village_structure_metadata: StructureMetadata = StructureMetadataStoreImpl::retrieve(
-            //         ref world, game_id, to_id,
-            //     );
-            //     iVillageImpl::ensure_associated_with_village(
-            //         ref world, game_id, village_structure_metadata, from_id,
-            //     );
-            // }
+            if to_structure_base.category == StructureCategory::Village.into()
+                && TroopResourceImpl::is_troop(resource_type) {
+                let village_structure_metadata = StructureMetadataStoreImpl::retrieve(ref world, game_id, to_id);
+                iVillageImpl::ensure_associated_with_village(ref world, game_id, village_structure_metadata, from_id);
+            }
 
             // spend from from_structure balance
             let resource_weight_grams: u128 = ResourceWeightImpl::grams(ref world, game_id, resource_type);
