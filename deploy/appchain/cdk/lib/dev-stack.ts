@@ -260,6 +260,10 @@ export class DevStack extends cdk.Stack {
       securityGroup: katanaSg,
       role: katanaRole,
       userData,
+      // User-data only runs on FIRST boot; without this a user-data edit is a
+      // silent stop/start that never re-executes it. Replacement is exactly
+      // what a chain remake wants (data-dir bumps birth the fresh chain).
+      userDataCausesReplacement: true,
       requireImdsv2: true,
       associatePublicIpAddress: true,
     });
