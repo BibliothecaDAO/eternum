@@ -31,8 +31,12 @@ import { getFactorySqlBaseUrl } from "@/runtime/world/factory-endpoints";
 import { resolveWorldContracts } from "@/runtime/world/factory-resolver";
 import { normalizeSelector } from "@/runtime/world/normalize";
 import { createSqlApi, resolveWorldSqlBaseUrl } from "@/services/api";
-import { buildPlayerBlitzSettlementSnapshotQuery } from "@/services/blitz/blitz-settlement-sql";
-import { resolveAppchainWorldAddress } from "@/runtime/world/world-torii";
+import {
+  buildPlayerBlitzSettlementSnapshotQuery,
+  buildPlayerOwnedStructureCountQuery,
+} from "@/services/blitz/blitz-settlement-sql";
+import { resolveAppchainGameId } from "@/runtime/world/game-registry";
+import { getDefaultWorld } from "@/runtime/world/world-directory";
 import Button from "@/ui/design-system/atoms/button";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
@@ -40,7 +44,7 @@ import { getRpcUrlForChain } from "@/ui/features/admin/constants";
 import { BootstrapLoadingPanel } from "@/ui/layouts/bootstrap-loading/bootstrap-loading-panel";
 import { markGameEntryMilestone } from "@/ui/layouts/game-entry-timeline";
 import type { PlayerStructure, RealmVillageSlot } from "@bibliothecadao/torii";
-import { buildApiUrl, fetchWithErrorHandling, formatAddressForQuery } from "@bibliothecadao/torii";
+import { buildUnscopedApiUrl, fetchWithErrorHandling, formatAddressForQuery } from "@bibliothecadao/torii";
 import { getContractByName } from "@dojoengine/core";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { Coord, Direction, DirectionName, ResourcesIds, StructureType } from "@bibliothecadao/types";
@@ -74,10 +78,9 @@ import {
 import { useSettlementPlannerData } from "./use-settlement-planner-data";
 import { waitForTransactionConfirmation } from "@/ui/utils/transactions";
 import { env } from "../../../../../env";
-import { gameEntityKey } from "@/dojo/game-scope";
+import { appchainModel, gameEntityKey, namespaceForChain } from "@/dojo/game-scope";
 
 const DEBUG_MODAL = false;
-const ETERNUM_NAMESPACE = "s1_eternum";
 const SETTLEMENT_PROGRESS_POLL_MS = 1000;
 const SETTLEMENT_PROGRESS_TIMEOUT_MS = 30000;
 const SETTLEMENT_SYNC_TIMEOUT_MS = 90000;
@@ -2796,7 +2799,9 @@ export const GameEntryModal = ({
   const resolvedSystemSelectors = useMemo(() => {
     const resolveSelector = (systemName: string): string | null => {
       try {
-        const contract = getContractByName(systemManifest, ETERNUM_NAMESPACE, systemName) as { selector?: string };
+        const contract = getContractByName(systemManifest, namespaceForChain(chain), systemName) as {
+          selector?: string;
+        };
         return contract.selector ? normalizeSelector(contract.selector) : null;
       } catch {
         return null;
@@ -2820,12 +2825,12 @@ export const GameEntryModal = ({
     queryKey: ["worldSystemAddresses", chain, worldName],
     enabled: isOpen && Boolean(worldName),
     queryFn: async () => {
-      const factorySqlBaseUrl = getFactorySqlBaseUrl(chain);
-      if (!factorySqlBaseUrl) {
-        throw new Error(`Factory SQL base URL not configured for chain: ${chain}`);
-      }
-
-      const contracts = await resolveWorldContracts(factorySqlBaseUrl, worldName);
+      // The persistent appchain worlds ship their contract map in the
+      // committed manifest — no per-game deployment to resolve.
+      const contracts =
+        chain === "appchain"
+          ? getDefaultWorld().contractsBySelector
+          : await resolveWorldContracts(getFactorySqlBaseUrl(chain), worldName);
       return {
         blitzRealmSystemsAddress: resolvedSystemSelectors.blitzRealmSystemsSelector
           ? (contracts[resolvedSystemSelectors.blitzRealmSystemsSelector] ?? null)
@@ -3512,30 +3517,37 @@ export const GameEntryModal = ({
     if (!account?.address) return null;
 
     const playerAddress = formatAddressForQuery(account.address);
-    // Shared torii serves several worlds; without the scope a settlement in
-    // any other game would count as settled here.
-    const settlementWorldAddress = await resolveAppchainWorldAddress(worldName);
-    const [settlementRows, playerStructures] = await Promise.all([
+    // The shared world holds every game's rows; these queries target the
+    // CHOSEN game explicitly and bypass the ambient SQL scope (which isn't
+    // set until bootstrap).
+    const settlementGameId = await resolveAppchainGameId(worldName);
+    const [settlementRows, ownedRows] = await Promise.all([
       fetchWithErrorHandling<DirectSettlementSnapshotRow>(
-        buildApiUrl(
+        buildUnscopedApiUrl(
           selectedWorldSqlBaseUrl,
-          buildPlayerBlitzSettlementSnapshotQuery(playerAddress, settlementWorldAddress),
+          buildPlayerBlitzSettlementSnapshotQuery(playerAddress, settlementGameId),
         ),
         "Failed to fetch blitz settlement state",
       ),
       // Owned-structure indexing can lag behind settle-finish rows right after submission.
-      selectedWorldSqlApi.fetchPlayerStructures(account.address).catch(() => []),
+      fetchWithErrorHandling<{ owned_count?: unknown }>(
+        buildUnscopedApiUrl(
+          selectedWorldSqlBaseUrl,
+          buildPlayerOwnedStructureCountQuery(playerAddress, settlementGameId),
+        ),
+        "Failed to fetch owned structures",
+      ).catch(() => [] as { owned_count?: unknown }[]),
     ]);
     const settlement = settlementRows[0] ?? null;
     const indexedSettledCount = parseSpanLength(settlement?.structure_ids);
-    const ownedStructureCount = playerStructures.length;
+    const ownedStructureCount = Number(ownedRows[0]?.owned_count ?? 0) || 0;
 
     return {
       hasSettlementRecord: settlement != null,
       hasSettledStructure: ownedStructureCount > 0,
       settledCount: Math.max(indexedSettledCount, ownedStructureCount),
     };
-  }, [account, selectedWorldSqlApi, selectedWorldSqlBaseUrl, worldName]);
+  }, [account, selectedWorldSqlBaseUrl, worldName]);
 
   const syncSettlementStateFromSnapshot = useCallback(
     (snapshot: SettlementSnapshot) => {
@@ -3678,12 +3690,14 @@ export const GameEntryModal = ({
     if (!account?.address) return null;
 
     const playerAddress = formatAddressForQuery(account.address);
+    // AddressName is chain-global on the appchain worlds; explicit table +
+    // unscoped URL because this runs before any bootstrap scope exists.
     const rows = await fetchWithErrorHandling<{ name?: unknown }>(
-      buildApiUrl(
+      buildUnscopedApiUrl(
         selectedWorldSqlBaseUrl,
         `
           SELECT name
-          FROM "s1_eternum-AddressName"
+          FROM "${appchainModel("AddressName")}"
           WHERE address = '${playerAddress}'
           LIMIT 1;
         `,
@@ -4604,6 +4618,12 @@ export const GameEntryModal = ({
         }
       }
 
+      // Settle targets the CHOSEN game explicitly — its id is the call's
+      // first argument on the appchain worlds.
+      if (!worldMeta.gameId) {
+        throw new Error(`Game id for "${worldName}" is not resolved yet. Please retry in a moment.`);
+      }
+
       setSettleStage("settling");
       await executeEntryObservedTransaction({
         signer,
@@ -4611,6 +4631,7 @@ export const GameEntryModal = ({
           blitzSystemsAddress: blitzRealmSystemsAddress,
           signerAddress: signer.address,
           usernameFelt,
+          gameId: worldMeta.gameId,
           vrfProviderAddress: env.VITE_PUBLIC_VRF_PROVIDER_ADDRESS,
           entryTokenAddress: worldMeta.entryTokenAddress,
           feeTokenAddress: worldMeta.feeTokenAddress,

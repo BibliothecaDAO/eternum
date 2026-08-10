@@ -9,6 +9,8 @@ export interface FactoryContractRow {
 export interface GameProfile {
   name: string; // human-readable game name (e.g., s2smoke1) — profile identity key
   chain: Chain;
+  worldId?: string; // world-directory key ("blitz" | "eternum") the game lives in
+  namespace?: string; // the world's model namespace; absent on stale stored profiles -> derived from chain
   toriiBaseUrl: string; // appchain: constant torii-s2 endpoint; mainnet: per-world torii
   rpcUrl?: string; // appchain: constant chain rpc; mainnet: resolved from factory
   worldAddress: string; // appchain: constant s2 world from the manifest

@@ -6,10 +6,15 @@ const reactQueryMocks = vi.hoisted(() => ({
   useQueries: vi.fn(),
 }));
 
+const directoryMocks = vi.hoisted(() => ({
+  getWorldById: vi.fn(),
+  getDefaultWorld: vi.fn(),
+}));
+
 vi.mock("@tanstack/react-query", () => reactQueryMocks);
+vi.mock("@/runtime/world/world-directory", () => directoryMocks);
 
 import {
-  fetchPlayerHasSettledRealm,
   fetchPlayerRegistration,
   getWorldSummaryKey,
   usePlayerWorldRegistrations,
@@ -19,7 +24,9 @@ const mockFetch = vi.fn<typeof globalThis.fetch>();
 
 const makeSummary = (overrides: Partial<WorldSummary>): WorldSummary => ({
   name: "alpha",
-  chain: "mainnet",
+  chain: "appchain",
+  worldId: "blitz",
+  gameId: 7,
   alive: true,
   lastCheckedAt: 0,
   mode: "blitz",
@@ -51,6 +58,8 @@ const makeSummary = (overrides: Partial<WorldSummary>): WorldSummary => ({
 beforeEach(() => {
   vi.stubGlobal("fetch", mockFetch);
   reactQueryMocks.useQueries.mockReset();
+  directoryMocks.getWorldById.mockReset();
+  directoryMocks.getDefaultWorld.mockReset();
 });
 
 afterEach(() => {
@@ -59,62 +68,35 @@ afterEach(() => {
 });
 
 describe("fetchPlayerRegistration", () => {
-  it("returns true when once_registered is truthy", async () => {
-    mockFetch.mockResolvedValueOnce(new Response(JSON.stringify([{ once_registered: 1 }]), { status: 200 }));
+  it("returns true when a settlement row exists for the game", async () => {
+    mockFetch.mockResolvedValueOnce(new Response(JSON.stringify([{ player: "0xplayer" }]), { status: 200 }));
 
-    const result = await fetchPlayerRegistration("https://torii.example", "0xplayer");
+    const result = await fetchPlayerRegistration("https://torii.example", "0xplayer", 7);
     expect(result).toBe(true);
+    // The query is game-scoped — the shared world holds every game's rows.
+    const [url] = mockFetch.mock.calls[0]! as [string];
+    expect(decodeURIComponent(url)).toContain("game_id = 7");
   });
 
   it("returns false when query succeeds but no row is found", async () => {
     mockFetch.mockResolvedValueOnce(new Response(JSON.stringify([]), { status: 200 }));
 
-    const result = await fetchPlayerRegistration("https://torii.example", "0xplayer");
+    const result = await fetchPlayerRegistration("https://torii.example", "0xplayer", 7);
     expect(result).toBe(false);
   });
 
   it("returns null when the query fails", async () => {
     mockFetch.mockResolvedValueOnce(new Response(null, { status: 500 }));
 
-    const result = await fetchPlayerRegistration("https://torii.example", "0xplayer");
+    const result = await fetchPlayerRegistration("https://torii.example", "0xplayer", 7);
     expect(result).toBeNull();
   });
 
   it("returns null on fetch error", async () => {
     mockFetch.mockRejectedValueOnce(new Error("boom"));
 
-    const result = await fetchPlayerRegistration("https://torii.example", "0xplayer");
+    const result = await fetchPlayerRegistration("https://torii.example", "0xplayer", 7);
     expect(result).toBeNull();
-  });
-});
-
-describe("fetchPlayerHasSettledRealm", () => {
-  it("returns true when realm_count > 0", async () => {
-    mockFetch.mockResolvedValueOnce(new Response(JSON.stringify([{ realm_count: 3 }]), { status: 200 }));
-
-    const result = await fetchPlayerHasSettledRealm("https://torii.example", "0xplayer");
-    expect(result).toBe(true);
-  });
-
-  it("returns false when realm_count is 0", async () => {
-    mockFetch.mockResolvedValueOnce(new Response(JSON.stringify([{ realm_count: 0 }]), { status: 200 }));
-
-    const result = await fetchPlayerHasSettledRealm("https://torii.example", "0xplayer");
-    expect(result).toBe(false);
-  });
-
-  it("returns null when the query fails", async () => {
-    mockFetch.mockResolvedValueOnce(new Response(null, { status: 500 }));
-
-    const result = await fetchPlayerHasSettledRealm("https://torii.example", "0xplayer");
-    expect(result).toBeNull();
-  });
-
-  it("parses hex-encoded counts from Torii", async () => {
-    mockFetch.mockResolvedValueOnce(new Response(JSON.stringify([{ realm_count: "0x2" }]), { status: 200 }));
-
-    const result = await fetchPlayerHasSettledRealm("https://torii.example", "0xplayer");
-    expect(result).toBe(true);
   });
 });
 
@@ -132,31 +114,33 @@ describe("usePlayerWorldRegistrations", () => {
     expect(queryOpts.enabled).toBe(false);
   });
 
-  it("enables blitz and eternum worlds but skips unknown-mode worlds", () => {
+  it("enables blitz games with a game id; eternum stays off until W5; unknown modes stay off", () => {
     reactQueryMocks.useQueries.mockReturnValue([]);
 
     usePlayerWorldRegistrations({
       worlds: [
-        makeSummary({ name: "blitz-world", mode: "blitz" }),
-        makeSummary({ name: "eternum-world", mode: "eternum" }),
-        makeSummary({ name: "unknown-world", mode: null }),
+        makeSummary({ name: "blitz-game", mode: "blitz", gameId: 7 }),
+        makeSummary({ name: "eternum-season", mode: "eternum", gameId: 1 }),
+        makeSummary({ name: "unknown-game", mode: null }),
+        makeSummary({ name: "registry-only", mode: "blitz", gameId: null }),
       ],
       playerAddress: "0xplayer",
     });
 
     const [call] = reactQueryMocks.useQueries.mock.calls as [[{ queries: Array<{ enabled: boolean }> }]];
-    const [blitz, eternum, unknown] = call[0].queries;
+    const [blitz, eternum, unknown, registryOnly] = call[0].queries;
 
     expect(blitz.enabled).toBe(true);
-    expect(eternum.enabled).toBe(true);
+    expect(eternum.enabled).toBe(false);
     expect(unknown.enabled).toBe(false);
+    expect(registryOnly.enabled).toBe(false);
   });
 
-  it("disables offline (dead) worlds even when the player is connected", () => {
+  it("disables offline (dead) games even when the player is connected", () => {
     reactQueryMocks.useQueries.mockReturnValue([]);
 
     usePlayerWorldRegistrations({
-      worlds: [makeSummary({ name: "dead-world", mode: "blitz", alive: false })],
+      worlds: [makeSummary({ name: "dead-game", mode: "blitz", alive: false })],
       playerAddress: "0xplayer",
     });
 
@@ -169,7 +153,7 @@ describe("usePlayerWorldRegistrations", () => {
     reactQueryMocks.useQueries.mockReturnValue([]);
 
     usePlayerWorldRegistrations({
-      worlds: [makeSummary({ name: "alpha", chain: "mainnet", mode: "blitz" })],
+      worlds: [makeSummary({ name: "alpha", chain: "appchain", mode: "blitz" })],
       playerAddress: "0xplayer",
     });
 
@@ -177,7 +161,7 @@ describe("usePlayerWorldRegistrations", () => {
     const [opts] = call[0].queries;
     expect(opts.queryKey).toEqual([
       "playerWorldRegistration",
-      getWorldSummaryKey({ name: "alpha", chain: "mainnet" }),
+      getWorldSummaryKey({ name: "alpha", chain: "appchain" }),
       "0xplayer",
     ]);
   });
@@ -186,7 +170,7 @@ describe("usePlayerWorldRegistrations", () => {
     reactQueryMocks.useQueries.mockReturnValue([]);
 
     usePlayerWorldRegistrations({
-      worlds: [makeSummary({ name: "alpha", chain: "mainnet", mode: "blitz" })],
+      worlds: [makeSummary({ name: "alpha", chain: "appchain", mode: "blitz" })],
       playerAddress: null,
     });
 
@@ -198,24 +182,24 @@ describe("usePlayerWorldRegistrations", () => {
   it("returns a map keyed by chain:name from queries", () => {
     reactQueryMocks.useQueries.mockReturnValue([
       { data: { isPlayerRegistered: true, hasPlayerSettledRealm: null }, isLoading: false },
-      { data: { isPlayerRegistered: null, hasPlayerSettledRealm: true }, isLoading: false },
+      { data: { isPlayerRegistered: null, hasPlayerSettledRealm: null }, isLoading: false },
     ]);
 
     const result = usePlayerWorldRegistrations({
       worlds: [
-        makeSummary({ name: "alpha", chain: "mainnet", mode: "blitz" }),
+        makeSummary({ name: "alpha", chain: "appchain", mode: "blitz" }),
         makeSummary({ name: "beta", chain: "appchain", mode: "eternum" }),
       ],
       playerAddress: "0xplayer",
     });
 
-    expect(result.registrationsByWorldKey.get("mainnet:alpha")).toEqual({
+    expect(result.registrationsByWorldKey.get("appchain:alpha")).toEqual({
       isPlayerRegistered: true,
       hasPlayerSettledRealm: null,
     });
     expect(result.registrationsByWorldKey.get("appchain:beta")).toEqual({
       isPlayerRegistered: null,
-      hasPlayerSettledRealm: true,
+      hasPlayerSettledRealm: null,
     });
   });
 
@@ -234,11 +218,11 @@ describe("usePlayerWorldRegistrations", () => {
     reactQueryMocks.useQueries.mockReturnValue([{ data: undefined, isLoading: false }]);
 
     const result = usePlayerWorldRegistrations({
-      worlds: [makeSummary({ name: "alpha", chain: "mainnet", mode: "blitz" })],
+      worlds: [makeSummary({ name: "alpha", chain: "appchain", mode: "blitz" })],
       playerAddress: "0xplayer",
     });
 
-    expect(result.registrationsByWorldKey.get("mainnet:alpha")).toEqual({
+    expect(result.registrationsByWorldKey.get("appchain:alpha")).toEqual({
       isPlayerRegistered: null,
       hasPlayerSettledRealm: null,
     });

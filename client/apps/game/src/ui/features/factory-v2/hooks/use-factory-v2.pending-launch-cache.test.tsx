@@ -349,13 +349,12 @@ describe("useFactoryV2 pending launch cache", () => {
     expect(getFactory().selectedMode).toBe("blitz");
     expect(getFactory().modeRuns[0]?.id).toBe("pending:game:appchain.blitz:blitz-launch-1");
     expect(getFactory().pendingRunName).toBe("blitz-launch-1");
+    // Appchain launches are the 2-step registrar plan (plus the local
+    // launch-request marker): create the game row, wait for it to index.
     expect(getFactory().modeRuns[0]?.steps.map((step) => step.id)).toEqual([
       "launch-request",
       "create-world",
       "wait-for-factory-index",
-      "configure-world",
-      "grant-lootchest-role",
-      "create-indexer",
     ]);
   });
 
@@ -385,7 +384,7 @@ describe("useFactoryV2 pending launch cache", () => {
     expect(getFactory().pendingRunName).toBe("cached-launch");
   });
 
-  it("omits the paymaster step for cached appchain launches", async () => {
+  it("shows the 2-step registrar plan for cached appchain launches", async () => {
     writeFactoryPendingLaunches([
       {
         environmentId: "appchain.eternum",
@@ -411,11 +410,6 @@ describe("useFactoryV2 pending launch cache", () => {
       "launch-request",
       "create-world",
       "wait-for-factory-index",
-      "configure-world",
-      "grant-lootchest-role",
-      "grant-village-pass-role",
-      "create-banks",
-      "create-indexer",
     ]);
   });
 

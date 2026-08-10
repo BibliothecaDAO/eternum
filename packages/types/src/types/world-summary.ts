@@ -5,6 +5,10 @@ export type WorldSummaryMode = "blitz" | "eternum" | "unknown";
 export interface WorldSummary {
   name: string;
   chain: WorldSummaryChain;
+  /** World-directory key the game lives in ("blitz" | "eternum"). */
+  worldId?: string;
+  /** GameRegistry id inside its world — key[0] of every per-game model. */
+  gameId?: number | null;
   alive: boolean;
   lastCheckedAt: number;
 

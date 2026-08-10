@@ -1,18 +1,16 @@
 /**
- * Player-scoped world entry lookups, layered on top of the bulk
+ * Player-scoped game entry lookups, layered on top of the bulk
  * `WorldSummary` payload.
  *
- * The summary endpoint intentionally does not include player-specific data
- * (blitz settlement, eternum realm ownership). This hook fires one SQL query per world — but
- * only when a wallet is connected — so the anonymous boot path produces
- * zero of these requests.
- *
- * Query logic mirrors `fetchPlayerRegistration` / `fetchPlayerHasSettledRealm`
- * in `use-world-availability.ts`.
+ * The summary intentionally does not include player-specific data (blitz
+ * settlement, eternum realm ownership). This hook fires one SQL query per
+ * game — but only when a wallet is connected — so the anonymous boot path
+ * produces zero of these requests. Queries target the summary row's
+ * `(worldId, gameId)` pair explicitly.
  */
 import type { WorldSummary } from "@bibliothecadao/types";
 import { buildPlayerBlitzSettlementStatusQuery } from "@/services/blitz/blitz-settlement-sql";
-import { resolveWorldToriiBaseUrl, withWorldScope } from "@/runtime/world/world-torii";
+import { getDefaultWorld, getWorldById } from "@/runtime/world/world-directory";
 import { PLAYER_WORLD_REGISTRATION_QUERY_KEY } from "@/hooks/world-list-queries";
 import { useQueries } from "@tanstack/react-query";
 
@@ -26,63 +24,21 @@ interface PlayerWorldRegistrationResult {
   isAnyLoading: boolean;
 }
 
-const parseMaybeHexToNumber = (v: unknown): number | null => {
-  if (v == null) return null;
-  if (typeof v === "number") return v;
-  if (typeof v === "string") {
-    try {
-      if (v.startsWith("0x") || v.startsWith("0X")) return Number(BigInt(v));
-      const n = Number(v);
-      return Number.isFinite(n) ? n : null;
-    } catch {
-      return null;
-    }
-  }
-  return null;
-};
-
 /**
- * Blitz-only: check whether the player already has a settlement entry for this world.
+ * Blitz-only: check whether the player already has a settlement row for this game.
  */
 export const fetchPlayerRegistration = async (
   toriiBaseUrl: string,
   playerAddress: string,
-  worldAddress?: string | null,
+  gameId: number,
 ): Promise<boolean | null> => {
   try {
-    const query = buildPlayerBlitzSettlementStatusQuery(playerAddress, worldAddress);
+    const query = buildPlayerBlitzSettlementStatusQuery(playerAddress, gameId);
     const url = `${toriiBaseUrl}/sql?query=${encodeURIComponent(query)}`;
     const response = await fetch(url);
     if (!response.ok) return null;
     const data = (await response.json()) as Record<string, unknown>[];
     return data.length > 0;
-  } catch {
-    return null;
-  }
-};
-
-/**
- * Eternum-only: has the player settled at least one realm on this world?
- * Ported from `use-world-availability.ts`.
- */
-export const fetchPlayerHasSettledRealm = async (
-  toriiBaseUrl: string,
-  playerAddress: string,
-  worldAddress?: string | null,
-): Promise<boolean | null> => {
-  try {
-    const query = `SELECT COUNT(*) AS realm_count FROM "s1_eternum-Structure" WHERE ${withWorldScope(
-      `owner = "${playerAddress}" AND category = 1`,
-      worldAddress,
-    )} LIMIT 1;`;
-    const url = `${toriiBaseUrl}/sql?query=${encodeURIComponent(query)}`;
-    const response = await fetch(url);
-    if (!response.ok) return null;
-    const data = (await response.json()) as Record<string, unknown>[];
-    const [row] = data;
-    const realmCount = parseMaybeHexToNumber(row?.realm_count);
-    if (realmCount == null) return null;
-    return realmCount > 0;
   } catch {
     return null;
   }
@@ -97,9 +53,10 @@ interface UsePlayerWorldRegistrationsInput {
 }
 
 /**
- * For a connected player, fetch per-world registration/settlement status for
- * every live world in parallel. Each query is mode-aware and skipped entirely
- * when there is no connected player (so the anonymous boot does zero fetches).
+ * For a connected player, fetch per-game registration status for every live
+ * game in parallel. Skipped entirely when there is no connected player.
+ * Eternum seasons get their settled-realm check when the eternum world lands
+ * (W5) — until then that field stays null.
  */
 export const usePlayerWorldRegistrations = ({
   worlds,
@@ -108,27 +65,19 @@ export const usePlayerWorldRegistrations = ({
   const queries = useQueries({
     queries: worlds.map((world) => {
       const worldKey = getWorldSummaryKey(world);
-      const mode = world.mode;
-      const isBlitz = mode === "blitz";
-      const isEternum = mode === "eternum";
+      const isBlitz = world.mode === "blitz";
+      const gameId = world.gameId ?? 0;
       return {
         queryKey: [...PLAYER_WORLD_REGISTRATION_QUERY_KEY, worldKey, playerAddress ?? "anonymous"],
         queryFn: async (): Promise<PlayerWorldRegistration> => {
-          if (!playerAddress) {
+          if (!playerAddress || !isBlitz || gameId <= 0) {
             return { isPlayerRegistered: null, hasPlayerSettledRealm: null };
           }
-          const toriiBaseUrl = resolveWorldToriiBaseUrl(world.name);
-          if (isBlitz) {
-            const isRegistered = await fetchPlayerRegistration(toriiBaseUrl, playerAddress, world.worldAddress);
-            return { isPlayerRegistered: isRegistered, hasPlayerSettledRealm: null };
-          }
-          if (isEternum) {
-            const hasSettled = await fetchPlayerHasSettledRealm(toriiBaseUrl, playerAddress, world.worldAddress);
-            return { isPlayerRegistered: null, hasPlayerSettledRealm: hasSettled };
-          }
-          return { isPlayerRegistered: null, hasPlayerSettledRealm: null };
+          const deployment = getWorldById(world.worldId) ?? getDefaultWorld();
+          const isRegistered = await fetchPlayerRegistration(deployment.toriiBaseUrl, playerAddress, gameId);
+          return { isPlayerRegistered: isRegistered, hasPlayerSettledRealm: null };
         },
-        enabled: Boolean(playerAddress) && world.alive && (isBlitz || isEternum),
+        enabled: Boolean(playerAddress) && world.alive && isBlitz && gameId > 0,
         staleTime: 30_000,
         gcTime: 10 * 60_000,
         refetchInterval: 30_000,

@@ -65,7 +65,8 @@ describe("createActiveWorldBlitzHyperstructure", () => {
     mocks.resolveWorldContracts.mockReset();
     mocks.resolveWorldContracts.mockResolvedValue({ "0xselector": "0xhyper" });
     mocks.getGameManifest.mockReset();
-    mocks.getGameManifest.mockReturnValue({});
+    // The appchain arm resolves the address straight from the committed manifest.
+    mocks.getGameManifest.mockReturnValue({ contracts: [{ selector: "0xselector", address: "0xhyper" }] });
     mocks.getContractByName.mockReset();
     mocks.getContractByName.mockReturnValue({ selector: "0xselector" });
     mocks.normalizeSelector.mockReset();
@@ -81,11 +82,17 @@ describe("createActiveWorldBlitzHyperstructure", () => {
 
     await createActiveWorldBlitzHyperstructure({ account, hexCoords });
 
-    expect(mocks.getFactorySqlBaseUrl).toHaveBeenCalledWith("appchain");
+    // Appchain worlds resolve straight from the committed manifest — no factory round-trip.
     expect(mocks.getGameManifest).toHaveBeenCalledWith("appchain");
-    expect(mocks.getContractByName).toHaveBeenCalledWith({}, "s1_eternum", "hyperstructure_create_systems");
+    // The namespace is the ambient game scope (set at bootstrap; module default here).
+    expect(mocks.getContractByName).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.any(String),
+      "hyperstructure_create_systems",
+    );
     expect(mocks.normalizeSelector).toHaveBeenCalledWith("0xselector");
-    expect(mocks.resolveWorldContracts).toHaveBeenCalledWith("https://factory.sql", "credence-new-flow-4");
+    expect(mocks.getFactorySqlBaseUrl).not.toHaveBeenCalled();
+    expect(mocks.resolveWorldContracts).not.toHaveBeenCalled();
     expect(mocks.executeObservedClientTransaction).toHaveBeenCalledWith(
       expect.objectContaining({
         account,

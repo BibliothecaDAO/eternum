@@ -64,56 +64,49 @@ const factoryLaunchPresets: FactoryLaunchPreset[] = [
       singleRealmMode: false,
     },
   },
-  {
-    id: "blitz-open",
-    mode: "blitz",
-    name: "Regular Normal (1h:30m)",
-    description: "A standard 90-minute game.",
-    defaults: {
-      startRule: "next_hour",
-      durationMinutes: 90,
-      devMode: false,
-      twoPlayerMode: false,
-      singleRealmMode: false,
-    },
-  },
+  // Blitz launches run on registered registrar presets: 2 = Regular Fast
+  // (the default), 3 = Duel. The plain 90-minute and legacy 2h rulebooks are
+  // deliberately not offered.
   {
     id: "blitz-fast",
     mode: "blitz",
     name: "Regular Fast (1h)",
-    description: "A shorter one-hour game.",
+    description: "The standard one-hour game.",
     defaults: {
       startRule: "next_hour",
       durationMinutes: MINUTES_PER_HOUR,
       devMode: false,
       twoPlayerMode: false,
       singleRealmMode: false,
+      version: "2",
     },
   },
   {
     id: "blitz-duel",
     mode: "blitz",
     name: "Duel (2 player)",
-    description: "A standard 90-minute head-to-head game.",
+    description: "A 90-minute head-to-head game on the duel balance.",
     defaults: {
       startRule: "next_hour",
       durationMinutes: 90,
       devMode: false,
       twoPlayerMode: true,
       singleRealmMode: false,
+      version: "3",
     },
   },
   {
     id: "blitz-sandbox",
     mode: "blitz",
     name: "Sandbox",
-    description: "A long test game with dev mode on.",
+    description: "A long test game with dev mode on (Regular Fast rules).",
     defaults: {
       startRule: "next_hour",
       durationMinutes: 5 * MINUTES_PER_DAY,
       devMode: true,
       twoPlayerMode: false,
       singleRealmMode: false,
+      version: "2",
     },
   },
 ];

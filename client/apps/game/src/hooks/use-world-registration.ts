@@ -4,10 +4,12 @@
  * On non-mainnet environments, auto-tops up fee tokens from master account if needed.
  */
 import { getCachedRpcProvider } from "@/utils/cached-rpc-provider";
+import { namespaceForChain } from "@/dojo/game-scope";
 import { executeObservedClientTransaction } from "@/observability/observed-client-transaction";
 import { getFactorySqlBaseUrl } from "@/runtime/world";
 import { resolveWorldContracts } from "@/runtime/world/factory-resolver";
 import { normalizeSelector } from "@/runtime/world/normalize";
+import { getDefaultWorld, getWorldById } from "@/runtime/world/world-directory";
 import { buildBlitzSettleCalls } from "@/services/blitz/blitz-settlement-calls";
 import { getRpcUrlForChain } from "@/ui/features/admin/constants";
 import { waitForTransactionConfirmation } from "@/ui/utils/transactions";
@@ -20,8 +22,6 @@ import { env } from "../../env";
 import { isRegistrationCapacityReached, resolveEffectiveRegistrationCountMax } from "./registration-capacity";
 import { useUsername } from "./use-username";
 import type { WorldConfigMeta } from "./use-world-availability";
-
-const ETERNUM_NAMESPACE = "s1_eternum";
 
 interface SeasonRegistrationParams {
   realmId?: number;
@@ -179,6 +179,8 @@ export const useWorldRegistration = ({
     !isCheckingFeeBalance &&
     hasSufficientFeeBalance &&
     !isRegistrationFull &&
+    // Appchain settle needs the chosen game's id as its first argument.
+    (chain !== "appchain" || Boolean(config?.gameId)) &&
     canAttemptSettle;
 
   const isSettling = entryStage !== "idle" && entryStage !== "done" && entryStage !== "error";
@@ -228,10 +230,18 @@ export const useWorldRegistration = ({
   }, [enabled, address, chain, config?.feeTokenAddress, feeAmount, needsSettlementFeeBalanceCheck]);
 
   /**
-   * Resolve contract addresses from factory (cached)
+   * Resolve contract addresses: the appchain worlds ship their contract map
+   * in the committed manifest (world directory); legacy chains resolve from
+   * the factory (dormant path, kept until the W7 excision).
    */
   const resolveContracts = useCallback(async (): Promise<Record<string, string>> => {
     if (contractsCacheRef.current) return contractsCacheRef.current;
+
+    if (chain === "appchain") {
+      const contracts = (getWorldById(undefined) ?? getDefaultWorld()).contractsBySelector;
+      contractsCacheRef.current = contracts;
+      return contracts;
+    }
 
     const factorySqlBaseUrl = getFactorySqlBaseUrl(chain);
     if (!factorySqlBaseUrl) throw new Error("Factory SQL not available for this chain");
@@ -243,7 +253,9 @@ export const useWorldRegistration = ({
 
   const getWorldSystemAddress = useCallback(
     (contracts: Record<string, string>, systemName: string): string => {
-      const contract = getContractByName(systemManifest, ETERNUM_NAMESPACE, systemName) as { selector?: string };
+      const contract = getContractByName(systemManifest, namespaceForChain(chain), systemName) as {
+        selector?: string;
+      };
       const selector = contract.selector ? normalizeSelector(contract.selector) : null;
       if (!selector) {
         throw new Error(`${systemName} selector not found in manifest`);
@@ -268,6 +280,8 @@ export const useWorldRegistration = ({
         blitzSystemsAddress,
         signerAddress: address!,
         usernameFelt,
+        // Settle targets the chosen game explicitly (meta carries its id).
+        gameId: config?.gameId,
         vrfProviderAddress: env.VITE_PUBLIC_VRF_PROVIDER_ADDRESS,
         entryTokenAddress: config?.entryTokenAddress,
         feeTokenAddress: config?.feeTokenAddress,

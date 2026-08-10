@@ -1,53 +1,59 @@
 import type { WorldSummary } from "@bibliothecadao/types";
 
-import { env } from "../../env";
+import { appchainModel } from "@/dojo/game-scope";
+import type { WorldDeployment } from "@/runtime/world/world-directory";
 
 /**
- * Worlds summary for the appchain, read straight from torii.
+ * Games summary for one appchain world, read straight from its torii.
  *
- * On mainnet each game has its own torii, so the browser cannot fan out to N
- * endpoints and the realtime-server aggregates them. The appchain runs ONE
- * torii indexing every world plus the factory, so the whole list is a single
- * query and no server is needed.
- *
- * Every row is scoped by world: torii keys model rows as
- * `internal_id = "<world_address>:<entity_id>"` (there is no world_address
- * column on model tables). The realtime-server's equivalent query assumes one
- * world per torii (`WorldConfig LIMIT 1`, unscoped structure counts), which
- * would silently mix worlds together here.
+ * A world's `GameRegistry` holds one row per game (blitz) or season
+ * (eternum); joining its per-game `WorldConfig` row and the chain-global
+ * `ChainConfig` yields everything a landing card needs in a single query.
+ * The landing merges these lists across the world directory — the summary
+ * row's `(worldId, gameId)` pair is the identity every downstream flow keys
+ * on.
  */
 
 const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000000000000000000000000000";
 
-const WORLDS_QUERY = `
+// Newest games matter most on the landing; bound the shared world's history.
+const GAMES_LIMIT = 200;
+
+const buildGamesQuery = () => {
+  const structure = appchainModel("Structure");
+  return `
   SELECT
-    w.address AS world_address,
-    w.name AS world_name,
+    g.game_id AS game_id,
+    g.name AS game_name,
+    g.dev_mode_on AS dev_mode_on,
+    g.start_settling_at AS start_settling_at,
+    g.start_main_at AS start_main_at,
+    g.end_at AS end_at,
     c.blitz_mode_on AS blitz_mode_on,
-    c."season_config.start_settling_at" AS start_settling_at,
-    c."season_config.start_main_at" AS start_main_at,
-    c."season_config.end_at" AS end_at,
-    c."season_config.dev_mode_on" AS dev_mode_on,
     c."blitz_registration_config.registration_count" AS registration_count,
     c."blitz_registration_config.registration_count_max" AS registration_count_max,
     c."blitz_registration_config.registration_start_at" AS registration_start_at,
-    c."blitz_registration_config.entry_token_address" AS entry_token_address,
-    c."blitz_registration_config.fee_token" AS fee_token,
     c."blitz_registration_config.fee_amount" AS fee_amount,
     c."blitz_settlement_config.single_realm_mode" AS single_realm_mode,
     c."blitz_settlement_config.two_player_mode" AS two_player_mode,
-    (SELECT COUNT(DISTINCT owner) FROM "s1_eternum-Structure" s
-       WHERE s.internal_id LIKE w.address || ':%' AND s.category IN (1, 5) AND s.owner != '${ZERO_ADDRESS}')
+    cc.entry_token_address AS entry_token_address,
+    cc.fee_token AS fee_token,
+    (SELECT COUNT(DISTINCT owner) FROM "${structure}" s
+       WHERE s.game_id = g.game_id AND s.category IN (1, 5) AND s.owner != '${ZERO_ADDRESS}')
       AS settled_players_count,
-    (SELECT COUNT(*) FROM "s1_eternum-Structure" s
-       WHERE s.internal_id LIKE w.address || ':%' AND s.category = 1 AND s.owner != '${ZERO_ADDRESS}')
+    (SELECT COUNT(*) FROM "${structure}" s
+       WHERE s.game_id = g.game_id AND s.category = 1 AND s.owner != '${ZERO_ADDRESS}')
       AS settled_realms_count,
-    (SELECT COUNT(*) FROM "s1_eternum-Structure" s
-       WHERE s.internal_id LIKE w.address || ':%' AND s.category = 5 AND s.owner != '${ZERO_ADDRESS}')
+    (SELECT COUNT(*) FROM "${structure}" s
+       WHERE s.game_id = g.game_id AND s.category = 5 AND s.owner != '${ZERO_ADDRESS}')
       AS settled_villages_count
-  FROM "wf-WorldDeployed" w
-  LEFT JOIN "s1_eternum-WorldConfig" c ON c.internal_id LIKE w.address || ':%'
+  FROM "${appchainModel("GameRegistry")}" g
+  JOIN "${appchainModel("WorldConfig")}" c ON c.game_id = g.game_id
+  CROSS JOIN "${appchainModel("ChainConfig")}" cc
+  ORDER BY g.game_id DESC
+  LIMIT ${GAMES_LIMIT}
 `;
+};
 
 const toNumber = (value: unknown): number | null => {
   if (value === null || value === undefined || value === "") return null;
@@ -87,18 +93,17 @@ const decodeName = (value: unknown): string => {
   return out;
 };
 
-export async function fetchAppchainWorldsSummary(toriiBaseUrl: string): Promise<WorldSummary[]> {
-  const base = toriiBaseUrl.replace(/\/+$/, "");
-  const response = await fetch(`${base}/sql?query=${encodeURIComponent(WORLDS_QUERY)}`, {
+export async function fetchAppchainWorldsSummary(world: WorldDeployment): Promise<WorldSummary[]> {
+  const response = await fetch(`${world.toriiBaseUrl}/sql?query=${encodeURIComponent(buildGamesQuery())}`, {
     signal: AbortSignal.timeout(10_000),
   });
   if (!response.ok) {
-    throw new Error(`Appchain worlds query failed: ${response.status} ${response.statusText}`);
+    throw new Error(`Games summary query failed for world "${world.id}": ${response.status} ${response.statusText}`);
   }
 
   const rows = (await response.json()) as Record<string, unknown>[];
   if (!Array.isArray(rows)) {
-    throw new Error("Appchain worlds query returned non-array payload");
+    throw new Error(`Games summary query returned non-array payload for world "${world.id}"`);
   }
 
   const now = Date.now();
@@ -107,9 +112,11 @@ export async function fetchAppchainWorldsSummary(toriiBaseUrl: string): Promise<
       .map((row): WorldSummary => {
         const blitz = toBoolean(row.blitz_mode_on);
         return {
-          name: decodeName(row.world_name),
+          name: decodeName(row.game_name),
           chain: "appchain",
-          // The world is indexed by our torii, so it is by definition reachable.
+          worldId: world.id,
+          gameId: toNumber(row.game_id),
+          // The game is indexed by this world's torii, so it is by definition reachable.
           alive: true,
           lastCheckedAt: now,
           mode: blitz === null ? null : blitz ? "blitz" : "eternum",
@@ -123,7 +130,7 @@ export async function fetchAppchainWorldsSummary(toriiBaseUrl: string): Promise<
           twoPlayerMode: toBoolean(row.two_player_mode),
           seasonPassAddress: null,
           villagePassAddress: null,
-          worldAddress: toAddress(row.world_address),
+          worldAddress: world.worldAddress,
           prizeDistributionAddress: null,
           entryTokenAddress: toAddress(row.entry_token_address),
           feeTokenAddress: toAddress(row.fee_token),
@@ -131,8 +138,7 @@ export async function fetchAppchainWorldsSummary(toriiBaseUrl: string): Promise<
           registrationCount: toNumber(row.registration_count),
           registrationCountMax: toNumber(row.registration_count_max),
           registrationStartAt: toNumber(row.registration_start_at),
-          // Registration closes when the main phase opens — same as the
-          // realtime-server's mapping.
+          // Registration closes when the main phase opens.
           registrationEndAt: toNumber(row.start_main_at),
           settledPlayersCount: toNumber(row.settled_players_count),
           settledRealmsCount: toNumber(row.settled_realms_count),
@@ -140,11 +146,8 @@ export async function fetchAppchainWorldsSummary(toriiBaseUrl: string): Promise<
           winnerJackpotAmount: null,
         };
       })
-      // A world exists in the factory before its config is deployed; those rows
-      // are not joinable games yet.
-      .filter((world) => world.name !== "" && world.mode !== null)
+      // A registry row exists before its config transaction lands; those are
+      // not joinable games yet.
+      .filter((game) => game.name !== "" && game.mode !== null && (game.gameId ?? 0) > 0)
   );
 }
-
-export const isAppchainWorldsSummaryEnabled = (): boolean =>
-  env.VITE_PUBLIC_CHAIN === "appchain" && Boolean(env.VITE_PUBLIC_TORII);

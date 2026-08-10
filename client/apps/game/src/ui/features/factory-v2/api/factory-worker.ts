@@ -91,6 +91,8 @@ interface FactoryWorkerGameArtifacts {
   summaryPath?: string;
   durationSeconds?: number;
   worldAddress?: string;
+  /** Registrar-assigned game id inside the persistent appchain world. */
+  gameId?: number;
   createGameTxHash?: string;
   configureTxHash?: string;
   lootChestRoleTxHash?: string;
@@ -309,6 +311,8 @@ export interface CreateFactoryRunRequest {
   gameName: string;
   gameStartTime: string;
   workflowRef?: string;
+  /** Registered registrar preset id ("2" Regular Fast, "3" Duel) on the appchain. */
+  version?: string;
   devModeOn?: boolean;
   twoPlayerMode?: boolean;
   singleRealmMode?: boolean;

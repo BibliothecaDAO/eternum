@@ -1,13 +1,16 @@
 import { SqlApi } from "@bibliothecadao/torii";
-import { getGameManifest, type Chain } from "@contracts";
+import { type Chain } from "@contracts";
+import { appchainModel } from "@/dojo/game-scope";
 import { recordGameEntryDuration } from "@/ui/layouts/game-entry-timeline";
 
 import { env, hasPublicNodeUrl } from "../../../env";
 import { getFactorySqlBaseUrl } from "./factory-endpoints";
 import { resolveWorldContracts, resolveWorldDeploymentFromFactory } from "./factory-resolver";
-import { isRpcUrlCompatibleForChain, nameToPaddedFelt, normalizeRpcUrl, normalizeSelector } from "./normalize";
+import { fetchS2GameRow } from "./game-registry";
+import { isRpcUrlCompatibleForChain, normalizeRpcUrl } from "./normalize";
 import { saveWorldProfile } from "./store";
 import type { GameProfile, WorldProfile } from "./types";
+import { getDefaultWorld, getWorldById } from "./world-directory";
 
 const cartridgeApiBase = env.VITE_PUBLIC_CARTRIDGE_API_BASE || "https://api.cartridge.gg";
 
@@ -92,21 +95,7 @@ const resolveS2GameRow = async (
   toriiBaseUrl: string,
   name: string,
 ): Promise<{ gameId: number; presetId: number } | null> => {
-  return measureAsyncDuration("game-profile-registry-fetch", async () => {
-    try {
-      // Torii stores felt columns 64-hex-char left-padded — unpadded names never match.
-      const query = `SELECT game_id, preset_id FROM "s2_blitz-GameRegistry" WHERE name = "${nameToPaddedFelt(name)}" LIMIT 1;`;
-      const response = await fetch(`${toriiBaseUrl}/sql?query=${encodeURIComponent(query)}`);
-      if (!response.ok) return null;
-      const [row] = (await response.json()) as Record<string, unknown>[];
-      if (!row) return null;
-      const gameId = Number(row.game_id);
-      const presetId = Number(row.preset_id);
-      return Number.isInteger(gameId) && gameId > 0 ? { gameId, presetId } : null;
-    } catch {
-      return null;
-    }
-  });
+  return measureAsyncDuration("game-profile-registry-fetch", async () => fetchS2GameRow(toriiBaseUrl, name));
 };
 
 const resolveS2ChainConfig = async (
@@ -115,7 +104,7 @@ const resolveS2ChainConfig = async (
   return measureAsyncDuration("game-profile-chain-config-fetch", async () => {
     try {
       // ChainConfig is a genuine chain-wide singleton — the one LIMIT 1 that stays correct.
-      const query = `SELECT entry_token_address, fee_token FROM "s2_blitz-ChainConfig" LIMIT 1;`;
+      const query = `SELECT entry_token_address, fee_token FROM "${appchainModel("ChainConfig")}" LIMIT 1;`;
       const response = await fetch(`${toriiBaseUrl}/sql?query=${encodeURIComponent(query)}`);
       if (!response.ok) return {};
       const [row] = (await response.json()) as Record<string, unknown>[];
@@ -131,35 +120,30 @@ const resolveS2ChainConfig = async (
 };
 
 /**
- * Appchain (s2 single world): everything except the game row is a build-time
- * constant — world address and contract map from the committed manifest,
- * endpoints from env. One GameRegistry lookup resolves the game.
+ * Appchain: everything except the game row is a directory/build-time constant
+ * — endpoints, world address and contract map come from the world entry. One
+ * GameRegistry lookup resolves the game inside that world.
  */
-const buildS2GameProfile = async (name: string): Promise<GameProfile> => {
-  const manifest = getGameManifest("appchain") as {
-    world: { address: string };
-    contracts: { selector: string; address: string }[];
-  };
-  const toriiBaseUrl = env.VITE_PUBLIC_TORII;
-  const contractsBySelector = Object.fromEntries(
-    manifest.contracts.map((contract) => [normalizeSelector(contract.selector), contract.address]),
-  );
+const buildS2GameProfile = async (name: string, worldId?: string): Promise<GameProfile> => {
+  const world = getWorldById(worldId) ?? getDefaultWorld();
 
   const [game, chainConfig] = await Promise.all([
-    resolveS2GameRow(toriiBaseUrl, name),
-    resolveS2ChainConfig(toriiBaseUrl),
+    resolveS2GameRow(world.toriiBaseUrl, name),
+    resolveS2ChainConfig(world.toriiBaseUrl),
   ]);
   if (!game) {
-    throw new Error(`Game "${name}" not found in the s2_blitz GameRegistry`);
+    throw new Error(`Game "${name}" not found in the ${world.id} world's GameRegistry`);
   }
 
   const profile: GameProfile = {
     name,
-    chain: "appchain",
-    toriiBaseUrl,
-    rpcUrl: normalizeRpcUrl(env.VITE_PUBLIC_NODE_URL),
-    worldAddress: manifest.world.address,
-    contractsBySelector,
+    chain: world.chain,
+    worldId: world.id,
+    namespace: world.namespace,
+    toriiBaseUrl: world.toriiBaseUrl,
+    rpcUrl: normalizeRpcUrl(world.rpcUrl),
+    worldAddress: world.worldAddress,
+    contractsBySelector: world.contractsBySelector,
     entryTokenAddress: chainConfig.entryTokenAddress,
     feeTokenAddress: chainConfig.feeTokenAddress,
     gameId: game.gameId,
@@ -174,9 +158,9 @@ const buildS2GameProfile = async (name: string): Promise<GameProfile> => {
  * Build a GameProfile. Appchain resolves against the persistent s2 world;
  * mainnet keeps the legacy factory/per-world-torii flow until its own migration.
  */
-export const buildWorldProfile = async (chain: Chain, name: string): Promise<WorldProfile> => {
+export const buildWorldProfile = async (chain: Chain, name: string, worldId?: string): Promise<WorldProfile> => {
   if (chain === "appchain") {
-    return buildS2GameProfile(name);
+    return buildS2GameProfile(name, worldId);
   }
   const factorySqlBaseUrl = getFactorySqlBaseUrl(chain);
   const isSharedTorii = false;

@@ -66,6 +66,7 @@ export const summaryToWorldConfigMeta = (
 
   return {
     mode,
+    gameId: summary.gameId ?? null,
     startSettlingAt: summary.startSettlingAt ?? null,
     startMainAt,
     endAt,

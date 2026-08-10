@@ -43,6 +43,14 @@ export const gameCallArgs = (): number[] => (activeGameId > 0 ? [activeGameId] :
 /** Fully-qualified Torii model name for the active arm, e.g. `s2_blitz-TileOpt`. */
 export const gameModel = (name: string): string => `${activeNamespace}-${name}`;
 
+/**
+ * Qualified model/table name on the appchain worlds, independent of the
+ * active scope — for landing-side queries that target a CHOSEN world before
+ * bootstrap. All appchain worlds share one namespace by design, so this is a
+ * constant; the W2 namespace rename lands here (via namespaceForChain) alone.
+ */
+export const appchainModel = (name: string): string => `${namespaceForChain("appchain")}-${name}`;
+
 /** The active game id as a KeysClause key slot (unpadded hex — D16-pinned encoding). */
 export const gameIdKey = (): string => `0x${activeGameId.toString(16)}`;
 

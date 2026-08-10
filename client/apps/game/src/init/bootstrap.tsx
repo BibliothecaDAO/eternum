@@ -18,7 +18,7 @@ import { Chain, getGameManifest } from "@contracts";
 import { dojoConfig } from "../../dojo-config";
 import { env } from "../../env";
 import { clearSubscriptionQueue } from "../dojo/debounced-queries";
-import { namespaceForChain, setGameScope } from "../dojo/game-scope";
+import { namespaceForChain, setGameScope, type GameNamespace } from "../dojo/game-scope";
 import { cancelEntityStreamSubscription, initialSync } from "../dojo/sync";
 import { usePlayerStore } from "../hooks/store/use-player-store";
 import useSettlementStore from "../hooks/store/use-settlement-store";
@@ -127,16 +127,18 @@ const runBootstrap = async ({
     profile,
     toriiUrl: resolveBootstrapToriiUrl(context.chain, profile),
   };
-  // s2 single world: scope config reads and sync clauses to the active game
-  // before any setup/sync touches component data. Legacy profiles carry no
-  // gameId/presetId -> 0/0 keeps the WORLD_CONFIG_ID + inline-rulebook paths.
+  // World-scoped bootstrap: the profile carries its world's namespace + game
+  // id (world directory); scope config reads and sync clauses to that game
+  // before any setup/sync touches component data. Stale stored profiles
+  // without a namespace fall back to the chain-derived one.
+  const worldNamespace = profile.namespace ?? namespaceForChain(context.chain);
   configManager.setActiveGame(profile.gameId ?? 0, profile.presetId ?? 0);
-  setGameScope(namespaceForChain(context.chain), profile.gameId ?? 0);
-  setSqlGameScope(namespaceForChain(context.chain), profile.gameId ?? 0);
+  setGameScope(worldNamespace as GameNamespace, profile.gameId ?? 0);
+  setSqlGameScope(worldNamespace, profile.gameId ?? 0);
   await assertBootstrapToriiIsAvailable(worldContext);
   console.log("[STARTING DOJO SETUP]");
   configureDojoRuntime(worldContext);
-  const setupResult = await runDojoSetup(worldContext.chain, profile.gameId ?? 0);
+  const setupResult = await runDojoSetup(worldNamespace, profile.gameId ?? 0);
   // When the config fast path resolves in the background after boot, re-run
   // the config snapshot so cost tables don't stay empty for the session.
   const refreshGameSystems = () => configureGameSystems(setupResult, worldContext.chain);
@@ -265,16 +267,16 @@ const assertBootstrapToriiIsAvailable = async ({ profile, toriiUrl }: BootstrapW
   throw new Error(`World indexer is not available: ${profile.name}`);
 };
 
-const runDojoSetup = async (chain: Chain, gameId: number): Promise<SetupResult> => {
+const runDojoSetup = async (namespace: string, gameId: number): Promise<SetupResult> => {
   markGameEntryMilestone("setup-started");
   const setupResult = await setup(
     { ...dojoConfig },
     {
       vrfProviderAddress: env.VITE_PUBLIC_VRF_PROVIDER_ADDRESS,
       useBurner: false,
-      // s2 single world uses the s2_blitz namespace; legacy worlds stay s1_eternum.
-      namespace: namespaceForChain(chain),
-      // The provider prepends this to every game-system call's calldata on s2.
+      // The profile's world namespace; the provider also prepends gameId to
+      // every game-system call's calldata on the appchain worlds.
+      namespace,
       gameId,
     },
     {

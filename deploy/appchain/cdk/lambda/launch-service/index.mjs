@@ -108,6 +108,8 @@ async function listRunRecords(environment) {
 function buildLaunchOptions(request) {
   const options = {};
   for (const key of [
+    // Registered registrar preset id the game runs on (appchain worlds).
+    "version",
     "devModeOn",
     "twoPlayerMode",
     "singleRealmMode",

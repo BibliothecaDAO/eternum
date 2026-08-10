@@ -5,6 +5,8 @@ interface BuildBlitzSettleCallsParams {
   blitzSystemsAddress: string;
   signerAddress: string;
   usernameFelt: string;
+  /** The chosen game's registry id — settle's first calldata slot on the appchain worlds. */
+  gameId?: number | null;
   vrfProviderAddress?: string | null;
   entryTokenAddress?: string | null;
   feeTokenAddress?: string | null;
@@ -71,21 +73,30 @@ const buildRequestRandomCall = ({
 const buildSettleCall = ({
   blitzSystemsAddress,
   usernameFelt,
+  gameId,
   cosmeticTokenIds,
   grantStartingTroops,
 }: {
   blitzSystemsAddress: string;
   usernameFelt: string;
+  gameId?: number | null;
   cosmeticTokenIds: readonly string[];
   grantStartingTroops: boolean;
 }): Call => {
   const cosmeticCalldata = cosmeticTokenIds.length > 0 ? [String(cosmeticTokenIds.length), ...cosmeticTokenIds] : ["0"];
+  const gameCalldata = gameId && gameId > 0 ? [String(gameId)] : [];
 
   return {
     contractAddress: blitzSystemsAddress,
     entrypoint: "settle",
     // `Option<u128>::None` serializes as enum index `1` in the current manifest.
-    calldata: CallData.compile([usernameFelt, "1", ...cosmeticCalldata, grantStartingTroops ? "1" : "0"]),
+    calldata: CallData.compile([
+      ...gameCalldata,
+      usernameFelt,
+      "1",
+      ...cosmeticCalldata,
+      grantStartingTroops ? "1" : "0",
+    ]),
   };
 };
 
@@ -93,6 +104,7 @@ export const buildBlitzSettleCalls = ({
   blitzSystemsAddress,
   signerAddress,
   usernameFelt,
+  gameId,
   vrfProviderAddress,
   entryTokenAddress,
   feeTokenAddress,
@@ -125,6 +137,7 @@ export const buildBlitzSettleCalls = ({
     buildSettleCall({
       blitzSystemsAddress,
       usernameFelt,
+      gameId,
       cosmeticTokenIds,
       grantStartingTroops,
     }),

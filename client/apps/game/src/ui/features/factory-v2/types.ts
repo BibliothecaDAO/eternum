@@ -94,6 +94,12 @@ export interface FactoryLaunchPresetDefaults {
   devMode: boolean;
   twoPlayerMode: boolean;
   singleRealmMode: boolean;
+  /**
+   * Registered on-chain preset id the launch runs on (appchain registrar):
+   * "2" = Regular Fast rulebook, "3" = Duel balance. Legacy chains ignore it
+   * and use their factory config version default.
+   */
+  version?: string;
 }
 
 export interface FactoryLaunchPreset {
@@ -224,6 +230,8 @@ export interface FactoryRun {
   summary: string;
   updatedAt: string;
   worldAddress?: string;
+  /** Registrar-assigned game id inside the persistent appchain world. */
+  gameId?: number;
   recovery?: FactoryRunRecovery;
   autoRetry?: FactoryAutoRetryState;
   prizeFunding?: FactoryPrizeFundingState;

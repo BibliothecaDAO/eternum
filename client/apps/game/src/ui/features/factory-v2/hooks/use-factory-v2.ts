@@ -2629,6 +2629,17 @@ function buildPendingPaymasterSteps(environmentId: string): FactoryRun["steps"] 
 }
 
 function buildPendingGameRunSteps(mode: FactoryGameMode, environmentId: string): FactoryRun["steps"] {
+  // Appchain launches are two registrar steps: create the game row, wait for
+  // it to index. Configuration rides the create transaction; there is no
+  // per-game world, indexer, or role grant.
+  if (environmentId.startsWith("appchain.")) {
+    return [
+      createPendingStep("launch-request", "running"),
+      createPendingStep("create-world", "pending"),
+      createPendingStep("wait-for-factory-index", "pending"),
+    ];
+  }
+
   return [
     createPendingStep("launch-request", "running"),
     createPendingStep("create-world", "pending"),
