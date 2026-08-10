@@ -204,7 +204,7 @@ export class DevStack extends cdk.Stack {
       'grep -q "$UUID" /etc/fstab || echo "UUID=$UUID /data ext4 defaults,nofail 0 2" >> /etc/fstab',
       "mount -a",
       // Subdir because katana rejects a data dir with lost+found in it.
-      "mkdir -p /data/katana-db-v1",
+      "mkdir -p /data/katana-db-v2",
       // Config file: [dev]/[server]/[starknet]/[metrics] only. chain-id,
       // cartridge, paymaster and vrf MUST stay CLI flags — rc.9 silently
       // ignores chain_id in the file and panics on [cartridge]/[paymaster].
@@ -240,7 +240,7 @@ export class DevStack extends cdk.Stack {
         `--log-driver=awslogs --log-opt awslogs-group=${katanaLogs.logGroupName} --log-opt awslogs-stream=katana --log-opt awslogs-region=${this.region}`,
         "-e RUST_LOG=info",
         image,
-        `/bin/sh -c 'exec katana --config /config/katana.toml --data-dir /data/katana-db-v1 --chain-id ${cfg.chainId} --cartridge.controllers --paymaster --cartridge.paymaster --paymaster.bin /usr/local/bin/paymaster-service --vrf --vrf.bin /usr/local/bin/vrf-server-untagged'`,
+        `/bin/sh -c 'exec katana --config /config/katana.toml --data-dir /data/katana-db-v2 --chain-id ${cfg.chainId} --cartridge.controllers --paymaster --cartridge.paymaster --paymaster.bin /usr/local/bin/paymaster-service --vrf --vrf.bin /usr/local/bin/vrf-server-untagged'`,
       ].join(" "),
       // Heartbeat: mine an empty block while idle (--block-time is broken on
       // rc.9). Host network so a katana container restart can't strand it.

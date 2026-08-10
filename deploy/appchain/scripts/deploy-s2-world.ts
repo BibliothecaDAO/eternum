@@ -14,15 +14,8 @@ import { buildGrantRoleCall, grantRoles } from "../../../config/deployer/clean/r
 import { resolveAccountCredentials } from "../../../config/deployer/clean/shared/credentials";
 import { Account, RpcProvider } from "starknet";
 
-const PRESET_ID = 1;
-
-function requireEnvironmentAddress(name: string): string {
-  const address = process.env[name];
-  if (!address || BigInt(address) === 0n) {
-    throw new Error(`${name} must contain a non-zero deployed contract address`);
-  }
-  return address;
-}
+// Regular Fast — the default launch preset (frozen mapping; preset 1 is retired).
+const PRESET_ID = 2;
 
 function optionalEnvironmentAddress(name: string): string | undefined {
   const address = process.env[name];
@@ -120,27 +113,35 @@ async function deployS2World(): Promise<void> {
     privateKey: process.env.DOJO_PRIVATE_KEY,
     context: "s2 appchain deployment",
   });
-  const entryTokenAddress = requireEnvironmentAddress("ENTRY_TOKEN_ADDRESS");
-  const lootChestAddress = requireEnvironmentAddress("LOOT_CHEST_ADDRESS");
+  // Dev chains run the free-entry flow (amendment S3): no entry token or
+  // loot chest exists until the W6 gateway, so both are optional and their
+  // collectible role wiring is skipped when absent. Real-value chains must
+  // set both.
+  const entryTokenAddress = optionalEnvironmentAddress("ENTRY_TOKEN_ADDRESS");
+  const lootChestAddress = optionalEnvironmentAddress("LOOT_CHEST_ADDRESS");
   const account = new Account({
     provider: new RpcProvider({ nodeUrl: rpcUrl }),
     address: credentials.accountAddress,
     signer: credentials.privateKey,
   });
 
-  await wireSharedCollectibles({
-    rpcUrl,
-    accountAddress: credentials.accountAddress,
-    privateKey: credentials.privateKey,
-    entryTokenAddress,
-    lootChestAddress,
-    dryRun,
-  });
+  if (entryTokenAddress && lootChestAddress) {
+    await wireSharedCollectibles({
+      rpcUrl,
+      accountAddress: credentials.accountAddress,
+      privateKey: credentials.privateKey,
+      entryTokenAddress,
+      lootChestAddress,
+      dryRun,
+    });
+  } else {
+    console.log("No entry token / loot chest configured — skipping collectible role wiring (dev free-entry flow).");
+  }
   await bootstrapRegistrar({
     account,
     adminAddress: credentials.accountAddress,
-    entryTokenAddress,
-    lootChestAddress,
+    entryTokenAddress: entryTokenAddress ?? "0x0",
+    lootChestAddress: lootChestAddress ?? "0x0",
     dryRun,
   });
   await registerAppchainPreset({ presetId: PRESET_ID, dryRun });
