@@ -1,8 +1,9 @@
 # Phase 2 — One Codebase, Two Worlds: Eternum & Blitz on Self-Hosted Appchains
 
-Status: **RATIFIED 2026-08-10** (design review with owner). This document is the umbrella architecture for
-Phase 2 and supersedes the blitz-only framing of `appchain-single-world.md` — the A-series work continues
-as the *Blitz world track* inside this plan. Motto: KISS.
+Status: **RATIFIED 2026-08-10** (design review with owner; scope amended same day — see §0.1). This
+document is the umbrella architecture for Phase 2 and supersedes the blitz-only framing of
+`appchain-single-world.md` — the A-series work continues as the *Blitz world track* inside this plan.
+Motto: KISS.
 
 ## 0. Decisions ratified (owner, 2026-08-10)
 
@@ -12,6 +13,15 @@ as the *Blitz world track* inside this plan. Motto: KISS.
 | D2 | Mainnet assets at entry | **Operator-attested grants**: pay/lock/own on mainnet, a gateway signs a grant the appchain contracts accept (same trust shape as our VRF provider/paymaster). One primitive serves blitz entry fees AND eternum passes. |
 | D3 | "Settling back to mainnet" | **Staged**: idempotent mainnet results/escrow contract + operator worker now; upgrade the verification to proven state later **via Katana's native settlement mode** (`katana init` settlement config → Herodotus Atlantic fact registry → settlement contract). Saya as a standalone orchestrator is NOT part of the plan — settlement/proving is Katana-native now. |
 | D4 | Eternum feature scope | **Everything**: trade + banks/AMM, villages + village passes, quests, faith + wonders all carry into the appchain era. "If we want to play eternum on the appchain" — full parity. |
+
+### 0.1 Scope amendments (owner, 2026-08-10, second review)
+
+| # | Amendment | Consequence |
+|---|-----------|-------------|
+| S1 | **No legacy support in this client.** | The client on this branch is appchain-only. The live mainnet game keeps running on its already-deployed build until cutover; we spend zero effort keeping the legacy arm working here. Legacy code (factory reads, cartridge torii URLs, cross-world market/leaderboard reads, `wf-` tables, realtime-server summary) is *unsupported immediately* and *excised* in a post-MVP cleanup — deletion must never block MVP velocity. |
+| S2 | **MVP topology = ONE katana, two worlds, two torii.** | The single-chain dual-world shape is the MVP target, not a contingency. Splitting eternum onto its own chain is a later scaling step (post-MVP W7) that changes only world-directory entries and CDK parameters. |
+| S3 | **MVP = milestones W1–W5.** | W6 (gateway, entitlements, ResultsEscrow) and W7 (chain split, prod cutover, legacy excision) are post-MVP. Therefore MVP entry flows stay dev-token/free: blitz keeps the current dev-fee flow, eternum seasons settle in dev/free mode — season-pass gating arrives with the gateway. |
+| S4 | **The dev katana is disposable.** | W2 remakes the chain from scratch (fresh state, namespace `s2` from genesis) instead of in-place surgery — the old `s2_blitz` world and any fork-torii remnants simply vanish. Remake again later whenever it is cheaper than migrating state. |
 
 ## 1. Why we corrected course
 
@@ -91,8 +101,8 @@ the dev world redeploys, which is acceptable pre-launch.
 
 ### 4.2 One build, two profiles
 
-- `dojo_appchain_blitz.toml` — `[world] seed = "s2_blitz_aws_1"` (or fresh seed post-rename)
-- `dojo_appchain_eternum.toml` — `[world] seed = "s2_eternum_aws_1"`
+- `dojo_appchain_blitz.toml` — `[world] seed = "s2_blitz_1"` (fresh seed on the remade chain)
+- `dojo_appchain_eternum.toml` — `[world] seed = "s2_eternum_1"`
 - Identical `[namespace]`/`[writers]` blocks; same class hashes; `sozo migrate` per profile produces
   `manifest_appchain_blitz.json` / `manifest_appchain_eternum.json`.
 
@@ -137,19 +147,19 @@ appchain state) without redesign. Collectible mints and MMR updates ride the sam
 ```ts
 interface WorldDeployment {
   id: "blitz" | "eternum";       // world key
-  chain: Chain;                   // endpoint set (rpc); two worlds may share one chain
+  chain: Chain;                   // endpoint set (rpc); both worlds share one chain in the MVP
   rpcUrl: string;
   toriiBaseUrl: string;
-  namespace: "s2";               // "s1_eternum" for legacy entries during transition
+  namespace: "s2";
   worldAddress: string;
   manifest: Manifest;             // committed per world
 }
 ```
 
-Env-driven list (dev: one entry today, two after W4; prod: two entries; legacy mainnet entries
-synthesized until retirement). The landing games list is the **union of `GameRegistry` rows across
-directory worlds**; every summary row carries `(worldId, namespace, toriiBaseUrl, gameId, mode)`; entry,
-registration and settlement flows target `(world, gameId)` explicitly.
+Env-driven list — appchain entries only (S1: no legacy entries, ever). Dev/MVP: two entries on one
+chain. The landing games list is the **union of `GameRegistry` rows across directory worlds**; every
+summary row carries `(worldId, namespace, toriiBaseUrl, gameId, mode)`; entry, registration and
+settlement flows target `(world, gameId)` explicitly.
 
 ### 5.2 Seam generalization (small — the seams are already parametric)
 
@@ -180,8 +190,8 @@ registration and settlement flows target `(world, gameId)` explicitly.
 
 - **One vanilla torii per world** (`torii-blitz`, `torii-eternum`), separate DBs. CDK gains a
   `WorldService` construct (torii service + target group + DNS); a `ChainStack` (katana) hosts N
-  `WorldService`s. Dev: 1 chain × 2 worlds (permanently proving the contingency). Prod Phase 2:
-  2 chains × 1 world.
+  `WorldService`s. MVP: 1 chain × 2 worlds — dev and first prod shape alike. Post-MVP: split to
+  2 chains × 1 world when scale calls for it.
 - DNS: `blitz-torii.jcndata.com` / `eternum-torii.jcndata.com`; per-chain RPC endpoints
   (`blitz-katana.` / `eternum-katana.`) once chains split. Current `torii.jcndata.com`/`katana.` stay
   through the transition.
@@ -207,37 +217,43 @@ registration and settlement flows target `(world, gameId)` explicitly.
 
 | Topology | Chains | Worlds | Torii | When |
 |---|---|---|---|---|
-| Dev today | 1 (`WP_REALMS_DEV`) | 1 (blitz) | torii-s2 | now |
-| Dev dual (W4+) | 1 | 2 (blitz + eternum) | 2 | co-location proof, permanent dev shape |
-| Contingency prod | 1 | 2 | 2 | if we must consolidate |
-| Target prod | 2 | 1 each | 1 each | Phase 2 end state |
+| Dev today | 1 (`WP_REALMS_DEV`) | 1 (blitz, `s2_blitz`) | torii-s2 | now — retired by the W2 chain remake |
+| **MVP (W4+)** | 1 (fresh chain) | 2 (blitz + eternum, `s2`) | 2 | **the target** — dev and first prod shape |
+| Split (post-MVP) | 2 | 1 each | 1 each | later scaling step |
 
 Moving between topologies changes world-directory entries and CDK parameters only.
 
 ## 9. Milestones
 
 Owners per the standing role split: **Codex** executes contracts + pipeline from briefs; **Claude** owns
-client, infra, deploys, reviews.
+client, infra, deploys, reviews. **MVP = W1–W5** (S3).
 
-- **W1 (client, Claude — immediate):** world-handle generalization (§5.1–5.2) + resume the stashed
+### MVP
+
+- **W1 (client, Claude — immediate):** world-handle generalization (§5.1–5.2), appchain-only per S1
+  (landing/entry surfaces list directory worlds exclusively; no legacy entries); resume the stashed
   P5b/P5c on that shape; two-tab blitz isolation acceptance (old P6).
-- **W2 (contracts, Codex brief):** namespace rename `s2_blitz` → `s2`; two-profile build
-  (`appchain_blitz` / `appchain_eternum`); dev world redeploy; bindings + client scope constant update.
+- **W2 (contracts Codex brief + infra Claude):** namespace rename `s2_blitz` → `s2`; two-profile build
+  (`appchain_blitz` / `appchain_eternum`); **remake the dev katana from scratch** (S4) and redeploy the
+  blitz world + torii on the fresh chain; bindings + client scope constant update; pipeline env update.
 - **W3 (contracts, Codex brief):** eternum system + model `game_id` migration (§4.3); full-set manifest;
   eternum presets registered.
 - **W4 (infra, Claude):** `WorldService` CDK construct; deploy the eternum world + `torii-eternum` on the
-  dev chain — the contingency topology becomes the everyday dev shape.
+  same chain — the MVP topology is live.
 - **W5 (client, Claude):** eternum world entry in the directory; eternum flows re-enabled (queries, entry
-  modal season path, villages); playtest an appchain eternum season.
-- **W6 (gateway, Codex brief + Claude deploy):** entitlement contract, ResultsEscrow, gateway worker;
-  first real-value flows.
-- **W7 (ops, Claude):** split chains (second katana stack; eternum world redeploys there — worlds don't
-  "move", pre-launch redeploys are fine); **W7a** blitz mainnet cutover (old A5: Lambda
-  `DEFAULT_WORKFLOW_REF` flip, retire fork torii + s1 worlds); legacy mainnet arm removal from the client
-  once both games live on appchains.
+  modal season path, villages); dev/free eternum settling (S3 — no pass gating yet). **MVP exit:** a
+  blitz game and an eternum season running concurrently on one chain, isolated, both playable end-to-end.
 
-Sequencing: W1 ‖ W2 can run in parallel (W1 avoids touching the namespace constant's value, only its
-plumbing). W3 needs W2. W4 needs W3's manifest. W5 needs W4. W6 is independent of W4/W5 after W2. W7 last.
+### Post-MVP
+
+- **W6 (gateway, Codex brief + Claude deploy):** entitlement contract, ResultsEscrow, gateway worker;
+  first real-value flows (season passes, $LORDS fees, payouts).
+- **W7 (ops, Claude):** split eternum onto its own chain when scale calls for it; blitz mainnet cutover
+  (old A5: Lambda `DEFAULT_WORKFLOW_REF` flip, retire fork torii + s1 worlds); **legacy excision** — the
+  dedicated sweep deleting factory reads, cartridge URLs, cross-world legacy features from the client.
+
+Sequencing: W1 ‖ W2 in parallel (W1 touches the namespace constant's plumbing, not its value). W3 needs
+W2. W4 needs W3's manifest. W5 needs W4. W6/W7 whenever after MVP.
 
 ## 10. Open questions (not blocking W1–W3)
 
@@ -255,6 +271,8 @@ plumbing). W3 needs W2. W4 needs W3's manifest. W5 needs W4. W6 is independent o
 - **Namespace rename invalidates the current dev world** — scheduled first (W2) so nothing accumulates.
 - **Operator trust concentration** in the gateway — mitigated by idempotent evented escrow, key
   separation, and the D3 proof upgrade path.
-- **Two toriis on one dev host** — RAM/DB sizing on the ECS instance; watch before W4.
-- Mid-transition, the client carries three world flavors (legacy s1, s2 worlds, directory) — the
-  directory abstraction is what keeps that from becoming three code paths.
+- **Two toriis on one host is now the MVP shape** — RAM/DB sizing on the ECS instance; watch before W4
+  and size the instance up if needed (it is one dial).
+- **Dead legacy code lingers until the W7 excision** (S1 makes it unsupported, not absent). Contained by
+  the rule that nothing new may call into it; the directory abstraction is the only supported entry
+  surface.
