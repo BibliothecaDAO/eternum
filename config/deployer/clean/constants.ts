@@ -108,7 +108,7 @@ export const DEPLOYMENT_ENVIRONMENTS: Record<DeploymentEnvironmentId, Deployment
       manifestPath: "contracts/game/manifest_appchain_blitz.json",
       registrarAddress:
         process.env.APPCHAIN_BLITZ_REGISTRAR_ADDRESS ||
-        "0x51b8a03d3d65bb44f41d0415a99987c128252a78e25f9c136a9dcbd79650068",
+        "0x27853c5cafdfb2561e47fc0c250b51bc651cb441a3e3a846c99f29ad752b6f0",
     },
     ...APPCHAIN_DEFAULTS,
   },
@@ -121,8 +121,9 @@ export const DEPLOYMENT_ENVIRONMENTS: Record<DeploymentEnvironmentId, Deployment
     appchainWorld: {
       namespace: "s2",
       manifestPath: "contracts/game/manifest_appchain_eternum.json",
-      // W4 replaces this one value after the Eternum world is deployed.
-      registrarAddress: process.env.APPCHAIN_ETERNUM_REGISTRAR_ADDRESS || "0x0",
+      registrarAddress:
+        process.env.APPCHAIN_ETERNUM_REGISTRAR_ADDRESS ||
+        "0x4b10e72d41ffe5edcf9254ab03f4ca58b5863b82bb2e2011ce4fdab849d939b",
     },
     ...APPCHAIN_DEFAULTS,
   },

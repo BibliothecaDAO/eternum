@@ -410,7 +410,7 @@ describe("runLaunchStep mainnet launch steps", () => {
 
     expect(createGameExecuteMock).toHaveBeenCalledTimes(1);
     expect(createGameExecuteMock.mock.calls[0]?.[0]).toMatchObject({
-      contractAddress: "0x51b8a03d3d65bb44f41d0415a99987c128252a78e25f9c136a9dcbd79650068",
+      contractAddress: "0x27853c5cafdfb2561e47fc0c250b51bc651cb441a3e3a846c99f29ad752b6f0",
       entrypoint: "create_game",
     });
     expect((createGameExecuteMock.mock.calls[0]?.[0] as { calldata: string[] }).calldata).toHaveLength(42);
@@ -547,7 +547,7 @@ describe("runLaunchStep mainnet launch steps", () => {
 
     expect(createGameExecuteMock).toHaveBeenCalledTimes(1);
     expect(createGameExecuteMock.mock.calls[0]?.[0]).toMatchObject({
-      contractAddress: "0x51b8a03d3d65bb44f41d0415a99987c128252a78e25f9c136a9dcbd79650068",
+      contractAddress: "0x27853c5cafdfb2561e47fc0c250b51bc651cb441a3e3a846c99f29ad752b6f0",
       entrypoint: "register_series",
     });
     expect(nextSummary.seriesCreated).toBe(true);

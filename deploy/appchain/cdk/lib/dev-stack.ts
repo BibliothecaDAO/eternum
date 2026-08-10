@@ -204,7 +204,7 @@ export class DevStack extends cdk.Stack {
       'grep -q "$UUID" /etc/fstab || echo "UUID=$UUID /data ext4 defaults,nofail 0 2" >> /etc/fstab',
       "mount -a",
       // Subdir because katana rejects a data dir with lost+found in it.
-      "mkdir -p /data/katana-db-v2",
+      "mkdir -p /data/katana-db-v3",
       // Config file: [dev]/[server]/[starknet]/[metrics] only. chain-id,
       // cartridge, paymaster and vrf MUST stay CLI flags — rc.9 silently
       // ignores chain_id in the file and panics on [cartridge]/[paymaster].
@@ -240,7 +240,7 @@ export class DevStack extends cdk.Stack {
         `--log-driver=awslogs --log-opt awslogs-group=${katanaLogs.logGroupName} --log-opt awslogs-stream=katana --log-opt awslogs-region=${this.region}`,
         "-e RUST_LOG=info",
         image,
-        `/bin/sh -c 'exec katana --config /config/katana.toml --data-dir /data/katana-db-v2 --chain-id ${cfg.chainId} --cartridge.controllers --paymaster --cartridge.paymaster --paymaster.bin /usr/local/bin/paymaster-service --vrf --vrf.bin /usr/local/bin/vrf-server-untagged'`,
+        `/bin/sh -c 'exec katana --config /config/katana.toml --data-dir /data/katana-db-v3 --chain-id ${cfg.chainId} --cartridge.controllers --paymaster --cartridge.paymaster --paymaster.bin /usr/local/bin/paymaster-service --vrf --vrf.bin /usr/local/bin/vrf-server-untagged'`,
       ].join(" "),
       // Heartbeat: mine an empty block while idle (--block-time is broken on
       // rc.9). Host network so a katana container restart can't strand it.
@@ -510,6 +510,76 @@ export class DevStack extends cdk.Stack {
       defaultAction: elbv2.ListenerAction.forward([toriiS2Tg]),
     });
     new cdk.CfnOutput(this, "ToriiS2ServiceName", { value: toriiS2.serviceName });
+
+    // --- torii-eternum: same shape as torii-s2, pinned to the eternum world ---
+    // (W4). MVP topology: one katana, two worlds, two toriis. ALB :8082.
+    const toriiEternumConfigParam = new ssm.StringParameter(this, "ToriiEternumConfig", {
+      parameterName: "/realms-appchain/dev/torii-eternum-config",
+      description: "torii.toml for the eternum-world torii (W4 runbook fills values)",
+      stringValue: "# placeholder — replaced by the W4 runbook (deploy/appchain/torii-s2/render-config.ts)",
+    });
+    const toriiEternumLogs = new logs.LogGroup(this, "ToriiEternumLogs", {
+      logGroupName: "/realms-appchain/dev/torii-eternum",
+      retention: logs.RetentionDays.ONE_WEEK,
+      removalPolicy: cdk.RemovalPolicy.DESTROY,
+    });
+    const toriiEternumTask = new ecs.FargateTaskDefinition(this, "ToriiEternumTask", {
+      cpu: cfg.toriiCpu,
+      memoryLimitMiB: cfg.toriiMemoryMib,
+      runtimePlatform: {
+        cpuArchitecture: ecs.CpuArchitecture.X86_64,
+        operatingSystemFamily: ecs.OperatingSystemFamily.LINUX,
+      },
+    });
+    toriiEternumTask.addContainer("torii", {
+      // Stock upstream torii, digest-pinned (v1.8.16) — same image as torii-s2.
+      image: ecs.ContainerImage.fromRegistry(
+        "ghcr.io/dojoengine/torii@sha256:4f6633c1f8fddbc68d647e14f424c91f083c20d14a5dd4661eb0ab77841899ac",
+      ),
+      logging: ecs.LogDrivers.awsLogs({ logGroup: toriiEternumLogs, streamPrefix: "torii-eternum" }),
+      entryPoint: ["/bin/sh", "-c"],
+      command: [
+        'mkdir -p /data && printf \'%s\' "$TORII_CONFIG" > /tmp/torii.toml && exec torii --config /tmp/torii.toml --http.addr 0.0.0.0 --http.port 8080 --http.cors_origins "*"',
+      ],
+      secrets: {
+        TORII_CONFIG: ecs.Secret.fromSsmParameter(toriiEternumConfigParam),
+      },
+      portMappings: [{ containerPort: 8080 }],
+    });
+    const toriiEternum = new ecs.FargateService(this, "ToriiEternum", {
+      cluster,
+      serviceName: "torii-eternum",
+      taskDefinition: toriiEternumTask,
+      desiredCount: 1,
+      assignPublicIp: true,
+      vpcSubnets: { subnetType: ec2.SubnetType.PUBLIC },
+      securityGroups: [toriiSg],
+      minHealthyPercent: 100,
+      maxHealthyPercent: 200,
+      circuitBreaker: { rollback: true },
+      enableExecuteCommand: true,
+      healthCheckGracePeriod: cdk.Duration.minutes(15),
+    });
+    const toriiEternumTg = new elbv2.ApplicationTargetGroup(this, "ToriiEternumTg", {
+      vpc,
+      port: 8080,
+      protocol: elbv2.ApplicationProtocol.HTTP,
+      targetType: elbv2.TargetType.IP,
+      healthCheck: {
+        path: "/ready",
+        healthyHttpCodes: "200",
+        interval: cdk.Duration.seconds(15),
+      },
+      deregistrationDelay: cdk.Duration.seconds(10),
+    });
+    toriiEternumTg.addTarget(toriiEternum);
+    albSg.addIngressRule(ec2.Peer.anyIpv4(), ec2.Port.tcp(8082), "torii-eternum");
+    alb.addListener("ToriiEternumHttp", {
+      port: 8082,
+      protocol: elbv2.ApplicationProtocol.HTTP,
+      defaultAction: elbv2.ListenerAction.forward([toriiEternumTg]),
+    });
+    new cdk.CfnOutput(this, "ToriiEternumServiceName", { value: toriiEternum.serviceName });
 
     // --- Alarms ----------------------------------------------------------
     const alerts = new sns.Topic(this, "Alerts", {

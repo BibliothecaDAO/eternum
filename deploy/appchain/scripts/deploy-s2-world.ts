@@ -13,9 +13,27 @@ import { registerAppchainPreset } from "../../../config/deployer/clean/registrar
 import { buildGrantRoleCall, grantRoles } from "../../../config/deployer/clean/role-grants/grant-role";
 import { resolveAccountCredentials } from "../../../config/deployer/clean/shared/credentials";
 import { Account, RpcProvider } from "starknet";
+import {
+  DEFAULT_APPCHAIN_ETERNUM_PRESET_ID,
+  DEFAULT_APPCHAIN_PRESET_ID,
+} from "../../../config/deployer/clean/constants";
 
-// Regular Fast — the default launch preset (frozen mapping; preset 1 is retired).
-const PRESET_ID = 2;
+type AppchainEnvironmentId = "appchain.blitz" | "appchain.eternum";
+
+function resolveEnvironmentId(): AppchainEnvironmentId {
+  const index = process.argv.indexOf("--environment");
+  const value = index >= 0 ? process.argv[index + 1] : "appchain.blitz";
+  if (value !== "appchain.blitz" && value !== "appchain.eternum") {
+    throw new Error("--environment must be appchain.blitz or appchain.eternum");
+  }
+  return value;
+}
+
+// Blitz preset 2 = Regular Fast (launch default; preset 1 is retired);
+// eternum preset 10 = the standard eternum season.
+function resolveDefaultPresetId(environmentId: AppchainEnvironmentId): number {
+  return Number(environmentId === "appchain.eternum" ? DEFAULT_APPCHAIN_ETERNUM_PRESET_ID : DEFAULT_APPCHAIN_PRESET_ID);
+}
 
 function optionalEnvironmentAddress(name: string): string | undefined {
   const address = process.env[name];
@@ -23,6 +41,7 @@ function optionalEnvironmentAddress(name: string): string | undefined {
 }
 
 async function wireSharedCollectibles(params: {
+  environmentId: AppchainEnvironmentId;
   rpcUrl: string;
   accountAddress: string;
   privateKey: string;
@@ -34,12 +53,12 @@ async function wireSharedCollectibles(params: {
     buildGrantRoleCall(
       params.entryTokenAddress,
       MINTER_ROLE,
-      resolveAppchainContractAddress("blitz_realm_systems"),
+      resolveAppchainContractAddress("blitz_realm_systems", params.environmentId),
     ),
     buildGrantRoleCall(
       params.lootChestAddress,
       MINTER_ROLE,
-      resolveAppchainContractAddress("prize_distribution_systems"),
+      resolveAppchainContractAddress("prize_distribution_systems", params.environmentId),
     ),
   ];
   const result = await grantRoles({
@@ -59,13 +78,14 @@ async function wireSharedCollectibles(params: {
 }
 
 async function bootstrapRegistrar(params: {
+  environmentId: AppchainEnvironmentId;
   account: Account;
   adminAddress: string;
   entryTokenAddress: string;
   lootChestAddress: string;
   dryRun: boolean;
 }): Promise<void> {
-  const config = loadEnvironmentConfiguration("appchain.blitz");
+  const config = loadEnvironmentConfiguration(params.environmentId);
   const chainConfig = buildChainConfig(config, {
     adminAddress: params.adminAddress,
     vrfProviderAddress: optionalEnvironmentAddress("VRF_PROVIDER_ADDRESS"),
@@ -83,13 +103,18 @@ async function bootstrapRegistrar(params: {
     console.log("Prepared registrar chain configuration.");
     return;
   }
+  // isChainConfigInitialized reads whichever torii TORII_URL points at, which
+  // is NOT world-scoped: bootstrapping the eternum world with TORII_URL still
+  // aimed at torii-s2 (blitz) would false-skip. Leave TORII_URL unset (or aim
+  // it at this world's torii) — the catch falls through to the on-chain
+  // already-initialized guard, which is the real idempotency check.
   if (await isChainConfigInitialized().catch(() => false)) {
     console.log("ChainConfig is already initialized; skipping bootstrap.");
     return;
   }
 
   try {
-    const result = await bootstrapChainConfig(params.account, chainConfig);
+    const result = await bootstrapChainConfig(params.account, chainConfig, params.environmentId);
     console.log(`Bootstrapped ChainConfig: ${result.transactionHash}`);
   } catch (error) {
     if (!isRegistrarAlreadyInitializedError(error)) {
@@ -101,12 +126,14 @@ async function bootstrapRegistrar(params: {
 
 async function deployS2World(): Promise<void> {
   const dryRun = process.argv.includes("--dry-run");
+  const environmentId = resolveEnvironmentId();
+  const sozoProfile = environmentId === "appchain.eternum" ? "appchain-eternum" : "appchain-blitz";
   console.log(
-    "World migration is reviewer-owned. Run: sozo build --profile appchain-blitz && sozo migrate --profile appchain-blitz",
+    `World migration is reviewer-owned. Run: sozo build --profile ${sozoProfile} && sozo migrate --profile ${sozoProfile}`,
   );
-  assertAppchainRegistrarAvailable();
+  assertAppchainRegistrarAvailable(environmentId);
 
-  const environment = resolveDeploymentEnvironment("appchain.blitz");
+  const environment = resolveDeploymentEnvironment(environmentId);
   const rpcUrl = process.env.RPC_URL || environment.rpcUrl;
   const credentials = resolveAccountCredentials({
     accountAddress: process.env.DOJO_ACCOUNT_ADDRESS,
@@ -127,6 +154,7 @@ async function deployS2World(): Promise<void> {
 
   if (entryTokenAddress && lootChestAddress) {
     await wireSharedCollectibles({
+      environmentId,
       rpcUrl,
       accountAddress: credentials.accountAddress,
       privateKey: credentials.privateKey,
@@ -138,13 +166,14 @@ async function deployS2World(): Promise<void> {
     console.log("No entry token / loot chest configured — skipping collectible role wiring (dev free-entry flow).");
   }
   await bootstrapRegistrar({
+    environmentId,
     account,
     adminAddress: credentials.accountAddress,
     entryTokenAddress: entryTokenAddress ?? "0x0",
     lootChestAddress: lootChestAddress ?? "0x0",
     dryRun,
   });
-  await registerAppchainPreset({ presetId: PRESET_ID, dryRun });
+  await registerAppchainPreset({ presetId: resolveDefaultPresetId(environmentId), environmentId, dryRun });
 }
 
 deployS2World().catch((error) => {

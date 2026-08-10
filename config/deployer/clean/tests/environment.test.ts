@@ -14,7 +14,7 @@ describe("resolveDeploymentEnvironment", () => {
     expect(environment.appchainWorld).toEqual({
       namespace: "s2",
       manifestPath: "contracts/game/manifest_appchain_blitz.json",
-      registrarAddress: "0x51b8a03d3d65bb44f41d0415a99987c128252a78e25f9c136a9dcbd79650068",
+      registrarAddress: "0x27853c5cafdfb2561e47fc0c250b51bc651cb441a3e3a846c99f29ad752b6f0",
     });
     expect(environment.createGame).toEqual({
       maxActions: 20,
@@ -30,7 +30,7 @@ describe("resolveDeploymentEnvironment", () => {
     expect(environment.appchainWorld).toEqual({
       namespace: "s2",
       manifestPath: "contracts/game/manifest_appchain_eternum.json",
-      registrarAddress: "0x0",
+      registrarAddress: "0x4b10e72d41ffe5edcf9254ab03f4ca58b5863b82bb2e2011ce4fdab849d939b",
     });
   });
 
