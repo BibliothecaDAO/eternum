@@ -136,7 +136,10 @@ export function StarknetProvider({ children }: { children: React.ReactNode }) {
         // bootstrapGame() patches the manifest with the correct contract addresses.
         // No Slot project is ever passed: Slot is EoL and the self-hosted
         // appchain has none, so the keychain would resolve a foreign project.
+        // The world torii indexes trophies under the s2 namespace, so the
+        // keychain profile (achievements/inventory) reads it directly.
         namespace,
+        toriiUrl: env.VITE_PUBLIC_TORII || undefined,
       }),
     [runtimeConfig.controllerSupportedRpcUrls, runtimeConfig.defaultChainId],
   );
