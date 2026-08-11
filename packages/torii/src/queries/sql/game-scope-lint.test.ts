@@ -30,13 +30,19 @@ const gameScopedTables = new Set(
 // Table references are authored against the legacy namespace and rewritten at
 // the buildApiUrl chokepoint. Only FROM/JOIN references count — column refs
 // piggyback on their query's filter, and doc comments mention tables freely.
-const TABLE_REF = /(?:FROM|JOIN)\s*[\[`"']?s1_eternum-(\w+)/gi;
+// The escaped-backtick form (FROM \`s1_eternum-X\`) is the dominant authoring
+// style — the class must accept the backslash or 31 of 62 refs go unseen.
+const TABLE_REF = /(?:FROM|JOIN)\s*[\\\[`"']*s1_eternum-(\w+)/gi;
 
 const sqlFiles = readdirSync(here).filter((name) => name.endsWith(".ts") && !name.endsWith(".test.ts"));
 
 // Split a source file into template-literal chunks so each query is judged on
 // its own markers rather than the whole file's.
-const templateChunks = (source: string): string[] => source.split("`").filter((_, index) => index % 2 === 1);
+const templateChunks = (source: string): string[] =>
+  source
+    .replace(/\\`/g, "'")
+    .split("`")
+    .filter((_, index) => index % 2 === 1);
 
 describe("SQL game-scope lint", () => {
   it("classifies at least the core per-game tables", () => {

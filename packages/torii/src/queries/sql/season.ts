@@ -1,11 +1,12 @@
-// SeasonEnded is s1-only (the s2 single world tracks game end on
-// GameRegistry.status) — fetchSeasonEnded short-circuits on the s2 arm.
+// SeasonEnded carries game_id on s2 (winner announcement per game); on the
+// legacy arm the {GF} marker resolves to 1=1.
 export const SEASON_QUERIES = {
   SEASON_ENDED: `
     SELECT 
         winner_address,
         timestamp
     FROM \`s1_eternum-SeasonEnded\`
+    WHERE {GF}
     ORDER BY timestamp DESC
     LIMIT 1;
   `,

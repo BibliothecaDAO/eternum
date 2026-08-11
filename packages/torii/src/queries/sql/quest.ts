@@ -1,4 +1,3 @@
-// QuestTile is s1-only (quests are off on the s2 blitz world) — legacy-arm query.
 export const QUEST_QUERIES = {
   QUEST_BY_ENTITY_ID: `
     SELECT 
@@ -12,6 +11,6 @@ export const QUEST_QUERIES = {
         capacity,
         participant_count
     FROM \`s1_eternum-QuestTile\`
-    WHERE id = {entityId};
+    WHERE id = {entityId} AND {GF};
   `,
 } as const;

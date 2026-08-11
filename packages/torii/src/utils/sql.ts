@@ -50,23 +50,32 @@ export const getSqlGameScope = (): { namespace: string; gameId: number } => ({
 
 const GAME_FILTER_MARKER = /\{GF(?::([A-Za-z_][\w]*))?\}/g;
 
-export const applySqlGameScope = (query: string): string => {
+/** Explicit scope for queries that target a world other than the ambient one
+ * (e.g. entry-flow reads for a game the player has not bootstrapped into). */
+export interface SqlGameScope {
+  namespace: string;
+  gameId: number;
+}
+
+export const applySqlGameScope = (query: string, scope?: SqlGameScope): string => {
+  const namespace = scope?.namespace ?? sqlNamespace;
+  const gameId = scope?.gameId ?? sqlGameId;
   let scoped = query;
-  if (sqlNamespace !== "s1_eternum") {
-    scoped = scoped.split("s1_eternum-").join(`${sqlNamespace}-`);
+  if (namespace !== "s1_eternum") {
+    scoped = scoped.split("s1_eternum-").join(`${namespace}-`);
   }
   return scoped.replace(GAME_FILTER_MARKER, (_match, alias?: string) => {
-    if (sqlGameId <= 0) return "1=1";
-    return alias ? `${alias}.game_id = ${sqlGameId}` : `game_id = ${sqlGameId}`;
+    if (gameId <= 0) return "1=1";
+    return alias ? `${alias}.game_id = ${gameId}` : `game_id = ${gameId}`;
   });
 };
 
 /**
- * Constructs the full API URL with the encoded query, scoped to the active
- * arm/game (see applySqlGameScope).
+ * Constructs the full API URL with the encoded query, scoped to the given
+ * scope when provided, else the active arm/game (see applySqlGameScope).
  */
-export function buildApiUrl(baseUrl: string, query: string): string {
-  return `${baseUrl}?query=${encodeQuery(applySqlGameScope(query))}`;
+export function buildApiUrl(baseUrl: string, query: string, scope?: SqlGameScope): string {
+  return `${baseUrl}?query=${encodeQuery(applySqlGameScope(query, scope))}`;
 }
 
 /**

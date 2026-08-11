@@ -1,5 +1,4 @@
 export const TRADING_QUERIES = {
-  // SwapEvent is s1-only (no AMM on the s2 blitz world) — legacy-arm query.
   SWAP_EVENTS: `
     SELECT 
       se.entity_id,
@@ -11,7 +10,8 @@ export const TRADING_QUERIES = {
       se.timestamp,
       s.owner
     FROM \`s1_eternum-SwapEvent\` se
-    LEFT JOIN \`s1_eternum-Structure\` s ON se.entity_id = s.entity_id
+    LEFT JOIN \`s1_eternum-Structure\` s ON se.entity_id = s.entity_id AND {GF:s}
+    WHERE {GF:se}
     ORDER BY se.timestamp DESC;
   `,
 

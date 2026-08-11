@@ -81,7 +81,6 @@ export const STRUCTURE_QUERIES = {
     WHERE {GF};
   `,
 
-  // StructureVillageSlots is s1-only (no villages on the s2 blitz world).
   REALM_VILLAGE_SLOTS: `
     SELECT 
         \`connected_realm_coord.x\`, 
@@ -90,9 +89,9 @@ export const STRUCTURE_QUERIES = {
         connected_realm_id, 
         directions_left 
     FROM \`s1_eternum-StructureVillageSlots\`
+    WHERE {GF}
   `,
 
-  // Settlement planner is the eternum (s1) settling flow — legacy-arm queries.
   SETTLEMENT_PLANNER_REALMS: `
     SELECT
         s.entity_id,
@@ -107,8 +106,8 @@ export const STRUCTURE_QUERIES = {
     LEFT JOIN \`s1_eternum-AddressName\` an
       ON an.address = s.owner
     LEFT JOIN \`s1_eternum-StructureVillageSlots\` svs
-      ON svs.connected_realm_entity_id = s.entity_id
-    WHERE s.category == 1
+      ON svs.connected_realm_entity_id = s.entity_id AND {GF:svs}
+    WHERE s.category == 1 AND {GF:s}
     ORDER BY s.\`metadata.realm_id\`, s.entity_id;
   `,
 
@@ -118,7 +117,7 @@ export const STRUCTURE_QUERIES = {
         \`base.coord_x\` AS coord_x,
         \`base.coord_y\` AS coord_y
     FROM \`s1_eternum-Structure\`
-    WHERE category == 5
+    WHERE category == 5 AND {GF}
     ORDER BY entity_id;
   `,
 

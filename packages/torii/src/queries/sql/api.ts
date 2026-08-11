@@ -56,6 +56,7 @@ import {
   formatAddressForQuery,
   getSqlGameScope,
   hexToBigInt,
+  type SqlGameScope,
 } from "../../utils/sql";
 import { BATTLE_QUERIES } from "./battle";
 import { HYPERSTRUCTURE_QUERIES } from "./hyperstructure";
@@ -114,6 +115,9 @@ export class SqlApi {
   constructor(
     private readonly baseUrl: string,
     private readonly cacheBaseUrl?: string,
+    /** Pin every query to this world scope instead of the ambient one — for
+     * per-world instances used by entry flows before bootstrap. */
+    private readonly scope?: SqlGameScope,
   ) {}
 
   /**
@@ -122,7 +126,7 @@ export class SqlApi {
    */
   async fetchQuest(entityId: ID): Promise<QuestTileData | null> {
     const query = QUEST_QUERIES.QUEST_BY_ENTITY_ID.replace("{entityId}", entityId.toString());
-    const url = buildApiUrl(this.baseUrl, query);
+    const url = buildApiUrl(this.baseUrl, query, this.scope);
     const results = await fetchWithErrorHandling<QuestTileData>(url, "Failed to fetch quest");
     return extractFirstOrNull(results);
   }
@@ -132,7 +136,7 @@ export class SqlApi {
    * SQL queries always return arrays, so we extract the first result.
    */
   async fetchFirstStructure(): Promise<StructureDetails | null> {
-    const url = buildApiUrl(this.baseUrl, STRUCTURE_QUERIES.FIRST_STRUCTURE);
+    const url = buildApiUrl(this.baseUrl, STRUCTURE_QUERIES.FIRST_STRUCTURE, this.scope);
     const results = await fetchWithErrorHandling<StructureDetails>(url, "Failed to fetch first structure");
     return extractFirstOrNull(results);
   }
@@ -146,7 +150,7 @@ export class SqlApi {
       .replace("{maxX}", (coords.col + radius).toString())
       .replace("{minY}", (coords.row - radius).toString())
       .replace("{maxY}", (coords.row + radius).toString());
-    const url = buildApiUrl(this.baseUrl, query);
+    const url = buildApiUrl(this.baseUrl, query, this.scope);
     const results = await fetchWithErrorHandling<ID>(url, "Failed to fetch surrounding wonder bonus");
     return extractFirstOrNull(results);
   }
@@ -161,7 +165,7 @@ export class SqlApi {
       coordsList.map((coord) => `(${coord.col},${coord.row})`).join(","),
     );
     console.log("Tiles Querty:", query);
-    const url = buildApiUrl(this.baseUrl, query);
+    const url = buildApiUrl(this.baseUrl, query, this.scope);
     const rows = await fetchWithErrorHandling<TileOptRow>(url, "Failed to fetch tiles by coords");
     console.log("Tiles Rows:", rows);
     return rows.map((row) => tileDataToTile(row.data));
@@ -174,7 +178,7 @@ export class SqlApi {
    * @throws Error if API is not configured or request fails
    */
   async fetchRealmSettlements(): Promise<StructureLocation[]> {
-    const url = buildApiUrl(this.baseUrl, STRUCTURE_QUERIES.REALM_SETTLEMENTS);
+    const url = buildApiUrl(this.baseUrl, STRUCTURE_QUERIES.REALM_SETTLEMENTS, this.scope);
     return await fetchWithErrorHandling<StructureLocation>(url, "Failed to fetch settlements");
   }
 
@@ -194,7 +198,7 @@ export class SqlApi {
 
     const formattedOwner = formatAddressForQuery(owner);
     const query = STRUCTURE_QUERIES.STRUCTURES_BY_OWNER.replace("{owner}", formattedOwner);
-    const url = buildApiUrl(this.baseUrl, query);
+    const url = buildApiUrl(this.baseUrl, query, this.scope);
     const promise = fetchWithErrorHandling<StructureLocation>(url, "Failed to fetch structures by owner");
 
     // Evict on rejection so the next caller retries instead of inheriting the error.
@@ -218,7 +222,7 @@ export class SqlApi {
    * SQL queries always return arrays. We then transform the raw data.
    */
   async fetchRealmVillageSlots(): Promise<RealmVillageSlot[]> {
-    const url = buildApiUrl(this.baseUrl, STRUCTURE_QUERIES.REALM_VILLAGE_SLOTS);
+    const url = buildApiUrl(this.baseUrl, STRUCTURE_QUERIES.REALM_VILLAGE_SLOTS, this.scope);
     const rawData = await fetchWithErrorHandling<RawRealmVillageSlot>(url, "Failed to fetch village slots");
     return rawData.map((item) => ({
       connected_realm_coord: {
@@ -232,8 +236,8 @@ export class SqlApi {
   }
 
   async fetchSettlementPlannerSnapshot(): Promise<SettlementPlannerSnapshot> {
-    const realmsUrl = buildApiUrl(this.baseUrl, STRUCTURE_QUERIES.SETTLEMENT_PLANNER_REALMS);
-    const villagesUrl = buildApiUrl(this.baseUrl, STRUCTURE_QUERIES.SETTLEMENT_PLANNER_VILLAGES);
+    const realmsUrl = buildApiUrl(this.baseUrl, STRUCTURE_QUERIES.SETTLEMENT_PLANNER_REALMS, this.scope);
+    const villagesUrl = buildApiUrl(this.baseUrl, STRUCTURE_QUERIES.SETTLEMENT_PLANNER_VILLAGES, this.scope);
 
     const [rawRealms, rawVillages] = await Promise.all([
       fetchWithErrorHandling<RawSettlementPlannerRealm>(realmsUrl, "Failed to fetch settlement planner realms"),
@@ -264,7 +268,7 @@ export class SqlApi {
       .replace("{maxX}", bounds.maxX.toString())
       .replace("{minY}", bounds.minY.toString())
       .replace("{maxY}", bounds.maxY.toString());
-    const url = buildApiUrl(this.baseUrl, query);
+    const url = buildApiUrl(this.baseUrl, query, this.scope);
     const rows = await fetchWithErrorHandling<TileOptRow>(url, "Failed to fetch explored tiles in bounds");
 
     return rows
@@ -288,7 +292,7 @@ export class SqlApi {
       recipientAddress.toString(),
     );
 
-    const url = buildApiUrl(this.baseUrl, query);
+    const url = buildApiUrl(this.baseUrl, query, this.scope);
     return await fetchWithErrorHandling<TokenTransfer>(url, "Failed to fetch token transfers");
   }
 
@@ -302,7 +306,7 @@ export class SqlApi {
       coordY.toString(),
     );
 
-    const url = buildApiUrl(this.baseUrl, query);
+    const url = buildApiUrl(this.baseUrl, query, this.scope);
     const results = await fetchWithErrorHandling<StructureDetails>(url, "Failed to fetch structure details");
     return extractFirstOrNull(results);
   }
@@ -326,7 +330,7 @@ export class SqlApi {
       }
     }
 
-    const url = buildApiUrl(this.baseUrl, STRUCTURE_QUERIES.STRUCTURE_AND_EXPLORER_DETAILS);
+    const url = buildApiUrl(this.baseUrl, STRUCTURE_QUERIES.STRUCTURE_AND_EXPLORER_DETAILS, this.scope);
     return await fetchWithErrorHandling<PlayersData>(url, "Failed to fetch structure explorer and guild details");
   }
 
@@ -353,7 +357,7 @@ export class SqlApi {
       }
     }
 
-    const url = buildApiUrl(this.baseUrl, TILES_QUERIES.ALL_TILES);
+    const url = buildApiUrl(this.baseUrl, TILES_QUERIES.ALL_TILES, this.scope);
     const rows = await fetchWithErrorHandling<TileOptRow>(url, "Failed to fetch tiles");
     return rows.map((row) => tileDataToTile(row.data));
   }
@@ -381,7 +385,7 @@ export class SqlApi {
       }
     }
 
-    const url = buildApiUrl(this.baseUrl, STRUCTURE_QUERIES.HYPERSTRUCTURES);
+    const url = buildApiUrl(this.baseUrl, STRUCTURE_QUERIES.HYPERSTRUCTURES, this.scope);
     return await fetchWithErrorHandling<Hyperstructure>(url, "Failed to fetch hyperstructures");
   }
 
@@ -394,7 +398,7 @@ export class SqlApi {
   ): Promise<{ entityId: ID; owner: ContractAddress; category: StructureType; realmId: number }[]> {
     const formattedOwner = formatAddressForQuery(owner);
     const query = STRUCTURE_QUERIES.OTHER_STRUCTURES.replace("{owner}", formattedOwner);
-    const url = buildApiUrl(this.baseUrl, query);
+    const url = buildApiUrl(this.baseUrl, query, this.scope);
     return await fetchWithErrorHandling<{
       entityId: ID;
       owner: ContractAddress;
@@ -408,7 +412,7 @@ export class SqlApi {
    * SQL queries always return arrays.
    */
   async fetchSwapEvents(userEntityIds: ID[]): Promise<TradeEvent[]> {
-    const url = buildApiUrl(this.baseUrl, TRADING_QUERIES.SWAP_EVENTS);
+    const url = buildApiUrl(this.baseUrl, TRADING_QUERIES.SWAP_EVENTS, this.scope);
     const events = await fetchWithErrorHandling<SwapEventResponse>(url, "Failed to fetch swap events");
 
     const res = events.map((event) => {
@@ -445,7 +449,7 @@ export class SqlApi {
    */
   async fetchExplorerAddressOwner(entityId: ID): Promise<ContractAddress | null> {
     const query = BATTLE_QUERIES.EXPLORER_ADDRESS_OWNER.replace("{entityId}", entityId.toString());
-    const url = buildApiUrl(this.baseUrl, query);
+    const url = buildApiUrl(this.baseUrl, query, this.scope);
     const results = await fetchWithErrorHandling<{ address_owner: ContractAddress }>(
       url,
       "Failed to fetch explorer address owner",
@@ -462,11 +466,11 @@ export class SqlApi {
   async fetchBattleLogs(afterTimestamp?: string): Promise<BattleLogEvent[]> {
     // Every arm is game-filtered; ExplorerNewRaidEvent is s1-only, so the s2
     // arm drops that UNION branch entirely.
-    const scoped = getSqlGameScope().gameId > 0;
+    const scoped = (this.scope ?? getSqlGameScope()).gameId > 0;
     const timeFilter = afterTimestamp ? `AND timestamp > '${afterTimestamp}'` : "";
     const baseQuery = scoped ? BATTLE_QUERIES.BATTLE_LOGS_S2 : BATTLE_QUERIES.BATTLE_LOGS;
     const query = baseQuery.replaceAll("{timeFilter}", timeFilter);
-    const url = buildApiUrl(this.baseUrl, query);
+    const url = buildApiUrl(this.baseUrl, query, this.scope);
     return await fetchWithErrorHandling<BattleLogEvent>(url, "Failed to fetch battle logs");
   }
 
@@ -477,7 +481,7 @@ export class SqlApi {
   async fetchPlayerStructures(owner: string): Promise<PlayerStructure[]> {
     const formattedOwner = formatAddressForQuery(owner);
     const query = STRUCTURE_QUERIES.PLAYER_STRUCTURES.replace("{owner}", formattedOwner);
-    const url = buildApiUrl(this.baseUrl, query);
+    const url = buildApiUrl(this.baseUrl, query, this.scope);
     return await fetchWithErrorHandling<PlayerStructure>(url, "Failed to fetch player structures");
   }
 
@@ -489,7 +493,7 @@ export class SqlApi {
   async fetchResourceBalances(entityIds: number[]): Promise<ResourceBalanceRow[]> {
     if (entityIds.length === 0) return [];
     const query = RESOURCE_QUERIES.RESOURCE_BALANCES.replace("{entityIds}", entityIds.join(","));
-    const url = buildApiUrl(this.baseUrl, query);
+    const url = buildApiUrl(this.baseUrl, query, this.scope);
     return await fetchWithErrorHandling<ResourceBalanceRow>(url, "Failed to fetch resource balances");
   }
 
@@ -500,7 +504,7 @@ export class SqlApi {
   async fetchResourceBalancesAndProduction(entityIds: number[]): Promise<ResourceBalanceRow[]> {
     if (entityIds.length === 0) return [];
     const query = RESOURCE_QUERIES.RESOURCE_BALANCES_AND_PRODUCTION.replace("{entityIds}", entityIds.join(","));
-    const url = buildApiUrl(this.baseUrl, query);
+    const url = buildApiUrl(this.baseUrl, query, this.scope);
     return await fetchWithErrorHandling<ResourceBalanceRow>(url, "Failed to fetch resource balances and production");
   }
 
@@ -514,7 +518,7 @@ export class SqlApi {
       "{entityIds}",
       entityIds.join(","),
     );
-    const url = buildApiUrl(this.baseUrl, query);
+    const url = buildApiUrl(this.baseUrl, query, this.scope);
     return await fetchWithErrorHandling<ResourceBalanceRow>(url, "Failed to fetch resource balances with production");
   }
 
@@ -523,9 +527,8 @@ export class SqlApi {
    * SQL queries always return arrays, so we extract the first result.
    */
   async fetchSeasonEnded(): Promise<SeasonEnded | null> {
-    // s1-only table: the s2 single world tracks game end on GameRegistry.status.
-    if (getSqlGameScope().gameId > 0) return null;
-    const url = buildApiUrl(this.baseUrl, SEASON_QUERIES.SEASON_ENDED);
+    // SeasonEnded is game_id-keyed on s2 since W3 — the {GF} marker scopes it.
+    const url = buildApiUrl(this.baseUrl, SEASON_QUERIES.SEASON_ENDED, this.scope);
     const results = await fetchWithErrorHandling<SeasonEnded>(url, "Failed to fetch season ended");
     return extractFirstOrNull(results);
   }
@@ -536,7 +539,7 @@ export class SqlApi {
    */
   async fetchGuardsByStructure(entityId: ID): Promise<Guard[]> {
     const query = STRUCTURE_QUERIES.GUARDS_BY_STRUCTURE.replace("{entityId}", entityId.toString());
-    const url = buildApiUrl(this.baseUrl, query);
+    const url = buildApiUrl(this.baseUrl, query, this.scope);
     const results = await fetchWithErrorHandling<GuardData>(url, "Failed to fetch guards by structure");
 
     const guardData = extractFirstOrNull(results);
@@ -626,7 +629,7 @@ export class SqlApi {
       .replace("{maxX}", (center.x + radius).toString())
       .replace("{minY}", (center.y - radius).toString())
       .replace("{maxY}", (center.y + radius).toString());
-    const url = buildApiUrl(this.baseUrl, query);
+    const url = buildApiUrl(this.baseUrl, query, this.scope);
     const chestTiles = await fetchWithErrorHandling<ChestTile>(url, "Failed to fetch nearby chests");
 
     const centerCoord = new Coord(center.x, center.y);
@@ -654,7 +657,7 @@ export class SqlApi {
   async fetchPlayerStructureRelics(owner: string): Promise<StructureRelicsData[]> {
     const formattedOwner = formatAddressForQuery(owner);
     const query = RELICS_QUERIES.PLAYER_STRUCTURE_RELICS.replace("{owner}", formattedOwner);
-    const url = buildApiUrl(this.baseUrl, query);
+    const url = buildApiUrl(this.baseUrl, query, this.scope);
     return await fetchWithErrorHandling<StructureRelicsData>(url, "Failed to fetch player structure relics");
   }
 
@@ -665,7 +668,7 @@ export class SqlApi {
   async fetchPlayerArmyRelics(owner: string): Promise<ArmyRelicsData[]> {
     const formattedOwner = formatAddressForQuery(owner);
     const query = RELICS_QUERIES.PLAYER_ARMY_RELICS.replace("{owner}", formattedOwner);
-    const url = buildApiUrl(this.baseUrl, query);
+    const url = buildApiUrl(this.baseUrl, query, this.scope);
     return await fetchWithErrorHandling<ArmyRelicsData>(url, "Failed to fetch player army relics");
   }
 
@@ -723,7 +726,7 @@ export class SqlApi {
    * SQL queries always return arrays.
    */
   async fetchAllStructuresMapData(): Promise<StructureMapDataRaw[]> {
-    const url = buildApiUrl(this.baseUrl, STRUCTURE_QUERIES.ALL_STRUCTURES_MAP_DATA);
+    const url = buildApiUrl(this.baseUrl, STRUCTURE_QUERIES.ALL_STRUCTURES_MAP_DATA, this.scope);
     return await fetchWithErrorHandling<StructureMapDataRaw>(url, "Failed to fetch all structures map data");
   }
 
@@ -732,7 +735,7 @@ export class SqlApi {
    * SQL queries always return arrays.
    */
   async fetchAllArmiesMapData(): Promise<ArmyMapDataRaw[]> {
-    const url = buildApiUrl(this.baseUrl, STRUCTURE_QUERIES.ALL_ARMIES_MAP_DATA);
+    const url = buildApiUrl(this.baseUrl, STRUCTURE_QUERIES.ALL_ARMIES_MAP_DATA, this.scope);
     return await fetchWithErrorHandling<ArmyMapDataRaw>(url, "Failed to fetch all armies map data");
   }
 
@@ -745,7 +748,7 @@ export class SqlApi {
   ): Promise<{ outer_entity_id: number; inner_col: number; inner_row: number; category: number }[]> {
     if (entityIds.length === 0) return [];
     const query = `SELECT outer_entity_id, inner_col, inner_row, category FROM \`s1_eternum-Building\` WHERE {GF} AND outer_entity_id IN (${entityIds.join(",")})`;
-    const url = buildApiUrl(this.baseUrl, query);
+    const url = buildApiUrl(this.baseUrl, query, this.scope);
     return await fetchWithErrorHandling<{
       outer_entity_id: number;
       inner_col: number;
@@ -760,7 +763,7 @@ export class SqlApi {
    */
   async fetchWorldAddress(): Promise<ContractAddress | null> {
     const query = `SELECT contract_address FROM contracts WHERE contract_type = 'WORLD'`;
-    const url = buildApiUrl(this.baseUrl, query);
+    const url = buildApiUrl(this.baseUrl, query, this.scope);
     const results = await fetchWithErrorHandling<{ contract_address: ContractAddress }>(
       url,
       "Failed to fetch world address",
@@ -779,7 +782,7 @@ export class SqlApi {
       "{radius}",
       (radius * radius).toString(),
     );
-    const url = buildApiUrl(this.baseUrl, query);
+    const url = buildApiUrl(this.baseUrl, query, this.scope);
     return await fetchWithErrorHandling<HyperstructureRealmCountDataRaw>(
       url,
       "Failed to fetch hyperstructures with realm count",
@@ -811,7 +814,7 @@ export class SqlApi {
       "{offset}",
       offset.toString(),
     );
-    const url = buildApiUrl(this.baseUrl, query);
+    const url = buildApiUrl(this.baseUrl, query, this.scope);
     return await fetchWithErrorHandling<StoryEventData>(url, "Failed to fetch story events");
   }
 
@@ -821,7 +824,7 @@ export class SqlApi {
    */
   async fetchStoryEventsSince(timestamp: number): Promise<StoryEventData[]> {
     const query = STORY_QUERIES.STORY_EVENTS_SINCE.replace("{timestamp}", timestamp.toString());
-    const url = buildApiUrl(this.baseUrl, query);
+    const url = buildApiUrl(this.baseUrl, query, this.scope);
     return await fetchWithErrorHandling<StoryEventData>(url, "Failed to fetch story events since timestamp");
   }
 
@@ -833,7 +836,7 @@ export class SqlApi {
     const query = STORY_QUERIES.STORY_EVENTS_BY_ENTITY.replace("{entityId}", entityId.toString())
       .replace("{limit}", limit.toString())
       .replace("{offset}", offset.toString());
-    const url = buildApiUrl(this.baseUrl, query);
+    const url = buildApiUrl(this.baseUrl, query, this.scope);
     return await fetchWithErrorHandling<StoryEventData>(url, "Failed to fetch story events by entity");
   }
 
@@ -846,7 +849,7 @@ export class SqlApi {
     const query = STORY_QUERIES.STORY_EVENTS_BY_OWNER.replace("{owner}", formattedOwner)
       .replace("{limit}", limit.toString())
       .replace("{offset}", offset.toString());
-    const url = buildApiUrl(this.baseUrl, query);
+    const url = buildApiUrl(this.baseUrl, query, this.scope);
     return await fetchWithErrorHandling<StoryEventData>(url, "Failed to fetch story events by owner");
   }
 
@@ -855,7 +858,7 @@ export class SqlApi {
    * SQL queries always return arrays, so we extract the first result.
    */
   async fetchStoryEventsCount(): Promise<number> {
-    const url = buildApiUrl(this.baseUrl, STORY_QUERIES.STORY_EVENTS_COUNT);
+    const url = buildApiUrl(this.baseUrl, STORY_QUERIES.STORY_EVENTS_COUNT, this.scope);
     const results = await fetchWithErrorHandling<{ total_count: number }>(url, "Failed to count story events");
     const firstResult = extractFirstOrNull(results);
     return firstResult?.total_count ?? 0;
@@ -876,7 +879,7 @@ export class SqlApi {
       "{offset}",
       "0",
     );
-    const url = buildApiUrl(this.baseUrl, query);
+    const url = buildApiUrl(this.baseUrl, query, this.scope);
     const registeredRows = await fetchWithErrorHandling<RawPlayerLeaderboardRow>(
       url,
       "Failed to fetch registered player points",
