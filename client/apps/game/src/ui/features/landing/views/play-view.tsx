@@ -714,7 +714,9 @@ const RegisteredActiveGamesBar = ({
         onAutoSettleGame={onAutoSettleGame}
         onSpectate={onPlayGame}
         onRegistrationComplete={onRegistrationComplete}
-        modeFilter={mode}
+        // No mode filter: your active games stay visible even when the hero
+        // is on the other mode — a blitz player browsing Seasons must still
+        // see the game they're in.
         statusFilter={["ongoing", "upcoming"]}
         registeredFilter="registered"
         hideHeader

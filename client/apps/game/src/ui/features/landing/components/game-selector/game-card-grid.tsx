@@ -765,9 +765,6 @@ export const UnifiedGameGrid = ({
   registeredFilter,
   onGamesResolved,
 }: UnifiedGameGridProps) => {
-  // Track locally completed registrations (to show immediately before refetch)
-  const [localRegistrations, setLocalRegistrations] = useState<Record<string, boolean>>({});
-
   const queryClient = useQueryClient();
   const account = useAccountStore((state) => state.account);
   const playerAddress = account?.address && account.address !== "0x0" ? account.address : null;
@@ -837,8 +834,7 @@ export const UnifiedGameGrid = ({
         const registration = registrationsByWorldKey.get(worldKey) ?? null;
         const config: WorldConfigMeta = summaryToWorldConfigMeta(summary, registration);
 
-        // Local registration state takes precedence for immediate UI feedback.
-        const isRegistered = localRegistrations[worldKey] ?? config.isPlayerRegistered ?? null;
+        const isRegistered = config.isPlayerRegistered ?? config.hasPlayerSettledRealm ?? null;
 
         return {
           name: summary.name,
@@ -854,9 +850,12 @@ export const UnifiedGameGrid = ({
           config,
         };
       })
-      // Filter by dev mode if specified
+      // Filter by dev mode if specified — but never hide a game the player is
+      // in: with devModeFilter=false the Played column would otherwise drop
+      // every ended dev game along with its Review/Claim entry points.
       .filter((game) => {
         if (devModeFilter === undefined) return true;
+        if (devModeFilter === false && game.isRegistered === true) return true;
         const gameDevMode = game.config?.devModeOn ?? false;
         return devModeFilter === gameDevMode;
       })
@@ -900,7 +899,6 @@ export const UnifiedGameGrid = ({
   }, [
     liveSummaries,
     registrationsByWorldKey,
-    localRegistrations,
     isOngoing,
     isEnded,
     isUpcoming,
@@ -993,21 +991,27 @@ export const UnifiedGameGrid = ({
   }, [claimSummaryByWorldKey, games, sortClaimableRewardsFirst, sortEndedNewestFirst, sortRegisteredFirst]);
 
   const handleRefresh = useCallback(async () => {
-    setLocalRegistrations({});
     await refetchSummary();
   }, [refetchSummary]);
 
-  // Callback for when a registration completes - update local state immediately and invalidate cache
+  // When a registration completes, write the optimistic result into the SHARED
+  // registration cache so every grid instance (Open Games, the Active bar)
+  // moves the card atomically — per-grid state made the card vanish from one
+  // list before the other could pick it up. The 30s refetch interval confirms
+  // against torii once the settlement row is indexed; the availability cache is
+  // invalidated for the modal path. Deliberately NOT invalidating the
+  // registration query here: an instant refetch could race torii indexing and
+  // clobber the optimistic value with a stale "unregistered".
   const handleRegistrationComplete = useCallback(
     (worldKey: string) => {
-      // Update local state for immediate UI feedback
-      setLocalRegistrations((prev) => ({ ...prev, [worldKey]: true }));
-
-      // Invalidate both the legacy per-world availability cache (modal path)
-      // and the new player registration cache so fresh data is fetched when
-      // navigating back. This ensures the registration status persists across tab switches.
+      queryClient.setQueriesData(
+        { queryKey: [...PLAYER_WORLD_REGISTRATION_QUERY_KEY, worldKey] },
+        (previous: { isPlayerRegistered: boolean | null; hasPlayerSettledRealm: boolean | null } | undefined) => ({
+          isPlayerRegistered: true,
+          hasPlayerSettledRealm: previous?.hasPlayerSettledRealm ?? null,
+        }),
+      );
       queryClient.invalidateQueries({ queryKey: [...WORLD_AVAILABILITY_QUERY_KEY, worldKey] });
-      queryClient.invalidateQueries({ queryKey: [...PLAYER_WORLD_REGISTRATION_QUERY_KEY, worldKey] });
 
       onRegistrationComplete?.();
     },

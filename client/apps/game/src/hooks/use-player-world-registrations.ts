@@ -102,9 +102,14 @@ export const usePlayerWorldRegistrations = ({
           const deployment = getWorldById(world.worldId) ?? getDefaultWorld();
           if (isBlitz) {
             const isRegistered = await fetchPlayerRegistration(deployment.toriiBaseUrl, playerAddress, gameId);
+            // A failed check must not clobber known state (e.g. the optimistic
+            // "registered" written right after settle) — throw so React Query
+            // keeps the previous data and retries on its interval.
+            if (isRegistered === null) throw new Error("registration check unavailable");
             return { isPlayerRegistered: isRegistered, hasPlayerSettledRealm: null };
           }
           const hasSettled = await fetchPlayerSettledRealm(deployment.toriiBaseUrl, playerAddress, gameId);
+          if (hasSettled === null) throw new Error("settled-realm check unavailable");
           return { isPlayerRegistered: null, hasPlayerSettledRealm: hasSettled };
         },
         enabled: Boolean(playerAddress) && world.alive && (isBlitz || isEternum) && gameId > 0,
