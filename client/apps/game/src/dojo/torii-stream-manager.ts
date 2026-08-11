@@ -345,7 +345,7 @@ export class ToriiStreamManager {
 
     const signature = buildBoundsDescriptorSignature(descriptor);
 
-    if (signature === this.currentSignature) {
+    if (signature === this.currentSignature && this.currentSubscription) {
       return { outcome: "skipped_same_signature" };
     }
 
@@ -696,6 +696,10 @@ export class ToriiStreamManager {
       this.currentSubscription.cancel();
       this.currentSubscription = null;
     }
+    // A cancelled stream must never satisfy a future switchBounds: keeping the
+    // signature made scene re-entry skip resubscribing, leaving spatial sync
+    // dead until a reload or a bounds change.
+    this.currentSignature = null;
   }
 
   async waitForPendingSwitch(): Promise<void> {

@@ -1,6 +1,7 @@
 export interface ActiveWorldmapRecoveryHandle {
   refreshAfterReconnect: () => void;
   recoverAfterConnectionFailure: () => void;
+  resubscribeSpatialStream: () => Promise<void>;
 }
 
 let activeWorldmapRecoveryHandle: ActiveWorldmapRecoveryHandle | null = null;

@@ -39,6 +39,7 @@ export type WorldmapChunkTraceEvent =
   | "reconnect_refresh_drained"
   | "torii_resubscribe_requested"
   | "torii_resubscribe_completed"
+  | "spatial_stream_force_resubscribed"
   | "torii_resubscribe_failed"
   | "army_authoritative_sweep"
   | "army_authoritative_sweep_slow"

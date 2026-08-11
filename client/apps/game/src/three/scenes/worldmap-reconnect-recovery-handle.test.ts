@@ -6,6 +6,12 @@ import {
   registerActiveWorldmapRecoveryHandle,
 } from "./worldmap-reconnect-recovery-handle";
 
+const makeHandle = () => ({
+  refreshAfterReconnect: vi.fn(),
+  recoverAfterConnectionFailure: vi.fn(),
+  resubscribeSpatialStream: vi.fn(async () => {}),
+});
+
 describe("worldmap reconnect recovery handle", () => {
   afterEach(() => {
     clearActiveWorldmapRecoveryHandle();
@@ -15,15 +21,15 @@ describe("worldmap reconnect recovery handle", () => {
     expect(getActiveWorldmapRecoveryHandle()).toBe(null);
   });
 
-  it("exposes reconnect refresh and connection-failure recovery for the active scene", () => {
-    const refreshAfterReconnect = vi.fn();
-    const recoverAfterConnectionFailure = vi.fn();
-    const cleanup = registerActiveWorldmapRecoveryHandle({ refreshAfterReconnect, recoverAfterConnectionFailure });
+  it("exposes reconnect refresh, connection-failure recovery, and spatial resubscribe for the active scene", () => {
+    const handle = makeHandle();
+    const cleanup = registerActiveWorldmapRecoveryHandle(handle);
 
-    expect(getActiveWorldmapRecoveryHandle()).toEqual({ refreshAfterReconnect, recoverAfterConnectionFailure });
+    expect(getActiveWorldmapRecoveryHandle()).toEqual(handle);
     expect(Object.keys(getActiveWorldmapRecoveryHandle() ?? {})).toEqual([
       "refreshAfterReconnect",
       "recoverAfterConnectionFailure",
+      "resubscribeSpatialStream",
     ]);
 
     cleanup();
@@ -31,11 +37,8 @@ describe("worldmap reconnect recovery handle", () => {
   });
 
   it("does not let stale scene cleanup clear a newer active handle", () => {
-    const firstCleanup = registerActiveWorldmapRecoveryHandle({
-      refreshAfterReconnect: vi.fn(),
-      recoverAfterConnectionFailure: vi.fn(),
-    });
-    const secondHandle = { refreshAfterReconnect: vi.fn(), recoverAfterConnectionFailure: vi.fn() };
+    const firstCleanup = registerActiveWorldmapRecoveryHandle(makeHandle());
+    const secondHandle = makeHandle();
 
     registerActiveWorldmapRecoveryHandle(secondHandle);
     firstCleanup();

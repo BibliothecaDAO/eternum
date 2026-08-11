@@ -110,6 +110,29 @@ describe("ToriiStreamManager", () => {
     expect(syncMock).toHaveBeenCalledTimes(1);
   });
 
+  it("resubscribes after a cancel even when the bounds signature is unchanged", async () => {
+    // Regression: scene switch-off cancels the stream; re-entry re-requests the
+    // same bounds. Keeping the stale signature skipped the resubscribe and left
+    // spatial sync dead until a reload.
+    const syncMock = vi.mocked(syncEntitiesDebounced);
+    const cancel = vi.fn();
+    syncMock.mockImplementation(async () => syncSubscription(cancel));
+
+    const manager = new ToriiStreamManager({
+      client: {} as any,
+      setup: {} as any,
+      logging: false,
+    });
+
+    const first = await manager.switchBounds(descriptor(0));
+    manager.cancelCurrentSubscription();
+    const second = await manager.switchBounds(descriptor(0));
+
+    expect(first.outcome).toBe("applied");
+    expect(second.outcome).toBe("applied");
+    expect(syncMock).toHaveBeenCalledTimes(2);
+  });
+
   it("updates the active spatial subscription instead of recreating it when bounds change", async () => {
     const syncMock = vi.mocked(syncEntitiesDebounced);
     const updateClause = vi.fn(async () => undefined);

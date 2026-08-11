@@ -287,7 +287,7 @@ export const usePlayerStructureSync = () => {
       const playerStructureModels = getPlayerStructureModels();
       const structureClauses = structureEntityIds.map((id) => ({
         Keys: {
-          keys: isGameScoped() ? [gameIdKey(), id.toString()] : [id.toString()],
+          keys: isGameScoped() ? [gameIdKey(), `0x${id.toString(16)}`] : [id.toString()],
           pattern_matching: "VariableLen" as PatternMatching,
           models: playerStructureModels,
         },
@@ -296,9 +296,12 @@ export const usePlayerStructureSync = () => {
       const buildingClauses = structurePositions.map((pos) => ({
         Keys: {
           // s2 Building is keyed (game_id, alt, outer_col, outer_row, ...) —
-          // the alt slot stays a wildcard.
+          // structures never sit on the alt plane (Cairo pins alt to false),
+          // so match it exactly: a mid-pattern undefined wildcard does not
+          // survive the grpc key encoding and matches nothing (mirrors
+          // getBuildingsFromTorii in dojo/queries.ts).
           keys: isGameScoped()
-            ? [gameIdKey(), undefined, pos.col.toString(), pos.row.toString()]
+            ? [gameIdKey(), "0x0", `0x${pos.col.toString(16)}`, `0x${pos.row.toString(16)}`]
             : [pos.col.toString(), pos.row.toString()],
           pattern_matching: "VariableLen" as PatternMatching,
           models: [gameModel("Building")],

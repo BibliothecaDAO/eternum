@@ -210,11 +210,19 @@ const ConnectionMonitor = () => {
     const monitor = new ConnectionHealthMonitor({
       onReconnectSpatial: async () => {
         addNetworkBreadcrumb({ event: "reconnect_start", streamType: "spatial" });
-        addNetworkBreadcrumb({
-          event: "reconnect_success",
-          streamType: "spatial",
-          status: "global_initial_sync_owned",
-        });
+        try {
+          // Off the worldmap there is no spatial stream to heal (the scene
+          // resubscribes on re-entry); on it, force-recreate the stream.
+          await getActiveWorldmapRecoveryHandle()?.resubscribeSpatialStream();
+          addNetworkBreadcrumb({ event: "reconnect_success", streamType: "spatial" });
+        } catch (error) {
+          addNetworkBreadcrumb({
+            event: "reconnect_failure",
+            streamType: "spatial",
+            reason: getNetworkErrorReason(error),
+          });
+          throw error;
+        }
       },
       onReconnectGlobal: async () => {
         addNetworkBreadcrumb({ event: "reconnect_start", streamType: "global" });

@@ -1268,6 +1268,7 @@ export default class WorldmapScene extends WarpTravel {
     this.unregisterWorldmapRecoveryHandle = registerActiveWorldmapRecoveryHandle({
       refreshAfterReconnect: () => this.refreshAfterReconnect(),
       recoverAfterConnectionFailure: () => this.recoverAfterConnectionFailure(),
+      resubscribeSpatialStream: () => this.resubscribeSpatialStream(),
     });
   }
 
@@ -8760,6 +8761,20 @@ export default class WorldmapScene extends WarpTravel {
       areaKey,
       chunkKey: this.currentChunk,
     });
+  }
+
+  private async resubscribeSpatialStream(): Promise<void> {
+    if (this.isSwitchedOff || !this.toriiStreamManager) {
+      return;
+    }
+    // A stale stream cannot self-heal — recreate it, then refresh the visible
+    // chunks so updates that arrived while it was dead get picked up.
+    const result = await this.toriiStreamManager.forceResubscribe();
+    this.traceChunk("spatial_stream_force_resubscribed", {
+      outcome: result?.outcome ?? "no_descriptor",
+      chunkKey: this.currentChunk,
+    });
+    this.refreshAfterReconnect();
   }
 
   private refreshAfterReconnect(): void {
