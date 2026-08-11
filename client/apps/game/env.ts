@@ -85,10 +85,17 @@ const envSchema = z.object({
 
   // PostHog
   VITE_PUBLIC_POSTHOG_KEY: z.string().optional(),
-  VITE_PUBLIC_POSTHOG_HOST: z.string().url().optional(),
+  VITE_PUBLIC_POSTHOG_HOST: z
+    .union([z.string().url(), z.literal("")])
+    .optional()
+    .transform((v) => (v === "" ? undefined : v)),
 
-  // Sentry
-  VITE_PUBLIC_SENTRY_DSN: z.string().url().optional(),
+  // Sentry — empty means "off"; CI passes "" when the secret is unset and
+  // that must never white-screen the build.
+  VITE_PUBLIC_SENTRY_DSN: z
+    .union([z.string().url(), z.literal("")])
+    .optional()
+    .transform((v) => (v === "" ? undefined : v)),
   VITE_PUBLIC_SENTRY_ENVIRONMENT: z.string().optional(),
   VITE_PUBLIC_SENTRY_RELEASE: z.string().optional(),
   VITE_PUBLIC_SENTRY_TRACES_SAMPLE_RATE: z
