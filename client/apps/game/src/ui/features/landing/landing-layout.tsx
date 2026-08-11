@@ -6,7 +6,6 @@ import { BlankOverlayContainer } from "@/ui/shared/containers/blank-overlay-cont
 import { useCallback, useEffect, useState } from "react";
 import { Outlet, useLocation } from "react-router-dom";
 import { DynamicBackground } from "./components/background/dynamic-background";
-import { DashboardNetworkSwitch } from "./components/dashboard-network-switch";
 import { LandingHeader } from "./components/landing-header";
 import { LandingMusicPlayer } from "./components/landing-music-player";
 import { LandingSettings } from "./components/landing-settings";
@@ -92,7 +91,6 @@ const LandingLayoutContent = () => {
         headerControls={
           <>
             <LandingMusicPlayer className="hidden lg:flex" presentation="header" />
-            <DashboardNetworkSwitch className="hidden md:flex" />
             <Controller />
           </>
         }

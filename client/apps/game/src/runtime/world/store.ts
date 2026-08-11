@@ -1,4 +1,5 @@
 import type { Chain } from "@contracts";
+import { env } from "../../../env";
 import type { WorldProfile, WorldProfilesMap } from "./types";
 
 const ACTIVE_KEY = "ACTIVE_WORLD_NAME";
@@ -70,7 +71,12 @@ const clearSelectedChain = () => {
   notifySelectedChainChanged(null);
 };
 
-export const resolveChain = (fallback: Chain): Chain => getSelectedChain() ?? fallback;
+// Chain selection is not a user concept on this client (tester-gate D2): the
+// build's env chain is the only chain. Persisted preferences from older builds
+// are deliberately ignored so a stored "mainnet" can never blank the landing.
+const ENV_CHAIN: Chain = isValidChain(env.VITE_PUBLIC_CHAIN) ? (env.VITE_PUBLIC_CHAIN as Chain) : "appchain";
+
+export const resolveChain = (_fallback: Chain): Chain => ENV_CHAIN;
 
 export const subscribeSelectedChain = (listener: (chain: Chain | null) => void): (() => void) => {
   if (typeof window === "undefined") {

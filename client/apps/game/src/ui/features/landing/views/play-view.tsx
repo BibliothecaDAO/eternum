@@ -3,7 +3,6 @@ import { useUIStore } from "@/hooks/store/use-ui-store";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { SignInPromptModal } from "@/ui/layouts/sign-in-prompt-modal";
 import { latestFeatures, type FeatureType } from "@/ui/features/world/latest-features";
-import { MarketsProviders } from "@/ui/features/market/markets-providers";
 import {
   BookOpen,
   ChevronRight,
@@ -1089,7 +1088,9 @@ export const PlayView = ({
     }
   };
 
-  const shouldMountMarketsProviders = activeTab === "play" || activeTab === "learn";
+  // The landing never mounts the prediction-market providers: the PM SDK
+  // initializes against a retired host and rendered null in place of the whole
+  // page while it tried (audit C2). Prediction markets return with W6 infra.
   const content = (
     <div className={cn("flex flex-col gap-6", activeTab === "factory" && FACTORY_TAB_BLEED_CLASS_NAME, className)}>
       {renderContent()}
@@ -1098,7 +1099,7 @@ export const PlayView = ({
 
   return (
     <>
-      {shouldMountMarketsProviders ? <MarketsProviders chain={preferredChain}>{content}</MarketsProviders> : content}
+      {content}
 
       {reviewWorld && !disableReviewFlow && (
         <GameReviewModal

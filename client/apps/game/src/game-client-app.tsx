@@ -41,15 +41,6 @@ const LandingFactoryRoute = lazy(() =>
 const ProfileView = lazy(() =>
   import("./ui/features/landing/views/profile-view").then((module) => ({ default: module.ProfileView })),
 );
-const MarketsView = lazy(() =>
-  import("./ui/features/landing/views/markets-view").then((module) => ({ default: module.MarketsView })),
-);
-const AmmView = lazy(() =>
-  import("./ui/features/landing/views/amm-view").then((module) => ({ default: module.AmmView })),
-);
-const LeaderboardView = lazy(() =>
-  import("./ui/features/landing/views/leaderboard-view").then((module) => ({ default: module.LeaderboardView })),
-);
 const FactoryPage = lazy(() => import("./ui/features/admin").then((module) => ({ default: module.FactoryPage })));
 const FactoryV2Page = lazy(() =>
   import("./ui/features/factory-v2").then((module) => ({ default: module.FactoryV2Page })),
@@ -80,9 +71,11 @@ const GameClientRoutes = ({ backgroundImage }: { backgroundImage: string }) => (
           <Route path="news" element={renderLoadingRoute(<LandingNewsRoute />)} />
           <Route path="factory" element={renderLoadingRoute(<LandingFactoryRoute />)} />
           <Route path="profile" element={renderLoadingRoute(<ProfileView />)} />
-          <Route path="markets" element={renderLoadingRoute(<MarketsView />)} />
-          <Route path="amm" element={renderLoadingRoute(<AmmView />)} />
-          <Route path="leaderboard" element={renderLoadingRoute(<LeaderboardView />)} />
+          {/* Markets/Agora/Leaderboard are retired until their data planes
+              exist on this deployment (W6). Direct links go home. */}
+          <Route path="markets" element={<Navigate to="/" replace />} />
+          <Route path="amm" element={<Navigate to="/" replace />} />
+          <Route path="leaderboard" element={<Navigate to="/" replace />} />
         </Route>
 
         <Route path="/play/:chain/:world/:scene" element={<GameRouteShell backgroundImage={backgroundImage} />} />
