@@ -98,14 +98,14 @@ export const STRUCTURE_QUERIES = {
         s.entity_id,
         s.\`metadata.realm_id\` AS realm_id,
         s.owner AS owner_address,
-        sos.name AS owner_name,
+        an.name AS owner_name,
         s.\`base.coord_x\` AS coord_x,
         s.\`base.coord_y\` AS coord_y,
         COALESCE(s.\`metadata.villages_count\`, 0) AS villages_count,
         svs.directions_left AS directions_left
     FROM \`s1_eternum-Structure\` s
-    LEFT JOIN \`s1_eternum-StructureOwnerStats\` sos
-      ON sos.owner = s.owner
+    LEFT JOIN \`s1_eternum-AddressName\` an
+      ON an.address = s.owner
     LEFT JOIN \`s1_eternum-StructureVillageSlots\` svs
       ON svs.connected_realm_entity_id = s.entity_id
     WHERE s.category == 1
@@ -140,12 +140,12 @@ export const STRUCTURE_QUERIES = {
         COUNT(DISTINCT CASE WHEN s.category = 5 THEN s.entity_id END) as village_count,
         gm.guild_id,
         g.name AS guild_name,
-        sos.name AS player_name
+        an.name AS player_name
     FROM [s1_eternum-Structure] s
     LEFT JOIN [s1_eternum-ExplorerTroops] et ON {GF:et} AND et.owner = s.entity_id
     LEFT JOIN [s1_eternum-GuildMember] gm ON {GF:gm} AND gm.member = s.owner
     LEFT JOIN [s1_eternum-Guild] g ON {GF:g} AND g.guild_id = gm.guild_id
-    LEFT JOIN [s1_eternum-StructureOwnerStats] sos ON {GF:sos} AND sos.owner = s.owner
+    LEFT JOIN [s1_eternum-AddressName] an ON an.address = s.owner
     WHERE {GF:s}
     GROUP BY s.owner
   `,
@@ -221,7 +221,7 @@ export const STRUCTURE_QUERIES = {
         s.owner as owner_address,
         s.\`metadata.realm_id\` as realm_id,
         s.resources_packed,
-        sos.name as owner_name,
+        an.name as owner_name,
         SUBSTR(s.internal_entity_id, INSTR(s.internal_entity_id, ':') + 1) as internal_entity_id,
     
         -- Guard army data
@@ -263,7 +263,7 @@ export const STRUCTURE_QUERIES = {
         COALESCE(defender_struct.\`base.coord_y\`, defender_explorer.\`coord.y\`) as latest_defender_coord_y
 
     FROM [s1_eternum-Structure] s
-    LEFT JOIN [s1_eternum-StructureOwnerStats] sos ON {GF:sos} AND sos.owner = s.owner
+    LEFT JOIN [s1_eternum-AddressName] an ON an.address = s.owner
     LEFT JOIN [s1_eternum-StructureBuildings] sb ON {GF:sb} AND sb.entity_id = s.entity_id
     LEFT JOIN latest_battles lb ON lb.defender_id = s.entity_id
     LEFT JOIN latest_defenses ld ON ld.attacker_id = s.entity_id
@@ -323,7 +323,7 @@ export const STRUCTURE_QUERIES = {
       et.\`troops.stamina.updated_tick\` as stamina_updated_tick,
       et.\`troops.battle_cooldown_end\` as battle_cooldown_end,
       s.owner as owner_address,
-      sos.name as owner_name,
+      an.name as owner_name,
       SUBSTR(et.internal_entity_id, INSTR(et.internal_entity_id, ':') + 1) as internal_entity_id,
     
       -- Battle data with coordinates
@@ -339,7 +339,7 @@ export const STRUCTURE_QUERIES = {
     
   FROM [s1_eternum-ExplorerTroops] et
   LEFT JOIN [s1_eternum-Structure] s ON {GF:s} AND s.entity_id = et.owner
-  LEFT JOIN [s1_eternum-StructureOwnerStats] sos ON {GF:sos} AND sos.owner = s.owner
+  LEFT JOIN [s1_eternum-AddressName] an ON an.address = s.owner
   LEFT JOIN latest_battles lb ON lb.defender_id = et.explorer_id
   LEFT JOIN latest_defenses ld ON ld.attacker_id = et.explorer_id
   

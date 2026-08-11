@@ -4,6 +4,7 @@ import { ComponentValue } from "@dojoengine/recs";
 export const getQuestFromToriiEntity = (entityData: any) => {
   const coordValue = entityData.coord?.value;
   const quest: ComponentValue<ClientComponents["QuestTile"]["schema"]> = {
+    game_id: entityData.game_id?.value,
     id: entityData.id?.value,
     game_address: entityData.game_address?.value,
     coord: {
