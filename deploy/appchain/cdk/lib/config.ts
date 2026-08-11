@@ -71,8 +71,11 @@ export const CONFIG = {
     /** Empty-block heartbeat interval (rc.9's --block-time is broken). */
     heartbeatSeconds: 30,
 
-    /** WAF rate limit per IP per 5 minutes. */
-    wafRateLimit: 2000,
+    /** WAF rate limit per IP per 5 minutes. A live game session sustains
+     * ~10 req/s across SQL polling, chunked map fetches, and stream reopens —
+     * 2000/5min (≈6.7/s) rate-limited real players mid-game with CORS-less
+     * 403s that broke tx submission through the keychain. */
+    wafRateLimit: 30000,
 
     /** Alarm + budget notifications. */
     alertEmail: "jean.christophe.mehr@gmail.com",
