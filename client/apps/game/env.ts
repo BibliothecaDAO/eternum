@@ -1,15 +1,6 @@
 import { z } from "zod";
-import {
-  DEFAULT_STANDALONE_AMMV2_INDEXER_URL,
-  DEFAULT_STANDALONE_AMMV2_LORDS_ADDRESS,
-  DEFAULT_STANDALONE_AMMV2_ROUTER_ADDRESS,
-} from "@bibliothecadao/ammv2-sdk";
 
 const _rawEnv = import.meta.env as Record<string, string | undefined>;
-
-function resolveLegacyAmmRouterAddress(rawEnv: Record<string, string | undefined>) {
-  return rawEnv.VITE_PUBLIC_AMM_ROUTER_ADDRESS ?? rawEnv.VITE_PUBLIC_AMM_ADDRESS;
-}
 
 const optionalUrlOrEmpty = z.union([z.string().url(), z.literal("")]).optional();
 
@@ -28,17 +19,8 @@ const envSchema = z.object({
   VITE_PUBLIC_TORII: optionalUrlOrEmpty.default(""),
   // Eternum-world torii; empty = the eternum world is absent from the directory.
   VITE_PUBLIC_TORII_ETERNUM: optionalUrlOrEmpty.default(""),
-  VITE_PUBLIC_GLOBAL_TORII: optionalUrlOrEmpty.default(""),
   VITE_PUBLIC_NODE_URL: optionalUrlOrEmpty.default(""),
-  VITE_PUBLIC_TORII_RELAY: z.string().optional().default(""),
-  VITE_PUBLIC_SCORE_TO_BEAT_TORII_ENDPOINTS: z.string().optional().default(""),
-  // Optional external endpoints
   VITE_PUBLIC_CARTRIDGE_API_BASE: z.string().url().optional().default("https://api.cartridge.gg"),
-  VITE_PUBLIC_TORII_CREATOR_URL: z
-    .string()
-    .url()
-    .optional()
-    .default("https://torii-creator.zerocredence.workers.dev/dispatch/torii"),
   VITE_PUBLIC_FACTORY_WORKER_URL: z
     .string()
     .url()
@@ -62,25 +44,6 @@ const envSchema = z.object({
     .optional()
     .default("https://api.cartridge.gg/x/eternum-marketplace-sepolia-1/torii"),
 
-  // AMM
-  VITE_PUBLIC_AMM_ROUTER_ADDRESS: z
-    .union([z.string().startsWith("0x"), z.literal("")])
-    .optional()
-    .default(DEFAULT_STANDALONE_AMMV2_ROUTER_ADDRESS),
-  VITE_PUBLIC_AMM_ADDRESS: z.union([z.string().startsWith("0x"), z.literal("")]).optional(),
-  VITE_PUBLIC_AMM_LORDS_ADDRESS: z
-    .union([z.string().startsWith("0x"), z.literal("")])
-    .optional()
-    .default(DEFAULT_STANDALONE_AMMV2_LORDS_ADDRESS),
-  VITE_PUBLIC_AMM_INDEXER_URL: z
-    .union([z.string().url(), z.literal("")])
-    .optional()
-    .default(DEFAULT_STANDALONE_AMMV2_INDEXER_URL),
-
-  // Action Dispatcher
-  VITE_PUBLIC_ACTION_DISPATCHER_URL: z.string().url().optional(),
-  VITE_PUBLIC_ACTION_DISPATCHER_SECRET: z.string().optional(),
-
   VITE_PUBLIC_GRAPHICS_DEV: z
     .string()
     .transform((v) => v === "true")
@@ -93,8 +56,6 @@ const envSchema = z.object({
   // Version and chain info
   VITE_PUBLIC_GAME_VERSION: z.string().optional().default(""),
   VITE_PUBLIC_CHAIN: z.enum(["sepolia", "mainnet", "local", "appchain"]).optional().default("local"), // Add other chains as needed
-  VITE_PUBLIC_GAME_TYPE: z.enum(["blitz", "eternum"]).optional().default("blitz"),
-  // Deprecated for runtime mode selection. Kept for deploy tooling defaults.
   VITE_PUBLIC_FORCE_GAME_MODE_ID: z.enum(["eternum", "blitz"]).optional(),
   VITE_PUBLIC_FACTORY_DEPLOY_REPEATS: z.string().optional(),
 
@@ -109,33 +70,13 @@ const envSchema = z.object({
   // Social
   VITE_SOCIAL_LINK: optionalUrlOrEmpty.default(""),
 
-  VITE_PUBLIC_MOBILE_VERSION_URL: z.string().url().optional().default("https://m.eternum.realms.world"),
-
-  // timestamp
   VITE_PUBLIC_SEASON_START_TIME: z
     .string()
     .optional()
     .default("0")
     .transform((v) => Number(v)),
 
-  VITE_PUBLIC_SETTLING_START_TIME: z
-    .string()
-    .optional()
-    .default("0")
-    .transform((v) => Number(v)),
 
-  VITE_PUBLIC_SHOW_END_GAME_WARNING: z
-    .string()
-    .transform((v) => v === "true")
-    .optional()
-    .default("false"),
-  VITE_PUBLIC_ENABLE_TOS: z
-    .string()
-    .transform((v) => v === "true")
-    .optional()
-    .default("false"),
-
-  // Chest opening feature flag
   VITE_PUBLIC_CHEST_OPENING_ENABLED: z
     .string()
     .transform((v) => v === "true")
@@ -209,14 +150,8 @@ const envSchema = z.object({
     .optional()
     .default("false"),
   VITE_TRACING_ENDPOINT: z.string().url().optional().default("http://localhost:4318/v1/traces"),
-  VITE_TRACING_SERVICE_NAME: z.string().optional().default("eternum-game"),
   VITE_TRACING_SAMPLE_RATE: z.string().optional().default("0.1"),
   VITE_TRACING_ERROR_SAMPLE_RATE: z.string().optional().default("1.0"),
-  VITE_PERF_MONITORING_ENABLED: z
-    .string()
-    .transform((v) => v === "true")
-    .optional()
-    .default("true"),
   VITE_PUBLIC_ENABLE_MEMORY_MONITORING: z
     .string()
     .transform((v) => v === "true")
@@ -330,10 +265,6 @@ const envSchema = z.object({
     .transform((v) => v === "true")
     .optional()
     .default("true"),
-  VITE_PERF_FPS_THRESHOLD: z.string().optional().default("30"),
-  VITE_PERF_NETWORK_TIMEOUT: z.string().optional().default("5000"),
-
-  // Tracing Authentication (optional - for cloud providers)
   VITE_TRACING_AUTH_HEADER: z.string().optional(),
   VITE_DATADOG_API_KEY: z.string().optional(),
   VITE_NEW_RELIC_LICENSE_KEY: z.string().optional(),
@@ -344,7 +275,6 @@ type PublicEnv = z.infer<typeof envSchema>;
 const parsePublicEnv = (): PublicEnv => {
   return envSchema.parse({
     ...import.meta.env,
-    VITE_PUBLIC_AMM_ROUTER_ADDRESS: resolveLegacyAmmRouterAddress(_rawEnv),
   });
 };
 

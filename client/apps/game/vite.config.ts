@@ -143,10 +143,6 @@ export default defineConfig(({ command, mode }: ConfigEnv): UserConfig => {
           replacement: path.resolve(__dirname, "./src/runtime/empty-manifest.json"),
         },
         {
-          find: "@manifests",
-          replacement: path.resolve(__dirname, "../../../contracts/game"),
-        },
-        {
           find: "@pm",
           replacement: path.resolve(__dirname, "./src/pm"),
         },

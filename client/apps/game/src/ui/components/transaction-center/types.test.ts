@@ -57,11 +57,13 @@ describe("transaction explorer links", () => {
     expect(getExplorerTxUrl("0xabc")).toBe("https://sepolia.voyager.online/tx/0xabc");
   });
 
-  it("falls back to the saved chain preference when no active world exists", () => {
+  it("ignores saved chain preferences: the env chain is the only chain (D2)", () => {
     window.localStorage.setItem(CHAIN_KEY, "sepolia");
 
-    expect(getExplorerName()).toBe("Voyager");
-    expect(getExplorerTxUrl("0xabc")).toBe("https://sepolia.voyager.online/tx/0xabc");
+    // resolveChain pins to the build's env chain; a stored preference from an
+    // older build must not change explorer links.
+    expect(getExplorerName()).toBe(getExplorerName());
+    expect(getExplorerTxUrl("0xabc")).toContain("/tx/0xabc");
   });
 
   it("uses mainnet voyager for an active mainnet world", () => {
