@@ -2,7 +2,7 @@
   "version": 1,
   "environment": "appchain.blitz",
   "kind": "game",
-  "updatedAt": "2026-08-11T10:01:46.902Z",
+  "updatedAt": "2026-08-11T15:19:09.983Z",
   "entries": {
     "blitzlive1": {
       "kind": "game",
@@ -92,6 +92,23 @@
       "recoverableFailedStepId": null,
       "recoverablePendingStepId": null,
       "startTime": 1786442400,
+      "durationSeconds": 3600,
+      "artifacts": {}
+    },
+    "bltz-froth-76": {
+      "kind": "game",
+      "environment": "appchain.blitz",
+      "gameName": "bltz-froth-76",
+      "path": "runs/appchain/blitz/bltz-froth-76.json",
+      "inputPath": "inputs/appchain/blitz/bltz-froth-76/31506271499-1.json",
+      "status": "running",
+      "updatedAt": "2026-08-11T15:19:09.983Z",
+      "workflowRef": "feat/single-world-blitz",
+      "currentStepId": "create-world",
+      "hasRunningStep": false,
+      "recoverableFailedStepId": null,
+      "recoverablePendingStepId": "create-world",
+      "startTime": "2026-08-11T15:20:00.000Z",
       "durationSeconds": 3600,
       "artifacts": {}
     }
