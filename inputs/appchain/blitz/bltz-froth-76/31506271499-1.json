@@ -1,0 +1,51 @@
+{
+  "version": 1,
+  "kind": "game",
+  "runId": "appchain.blitz:bltz-froth-76",
+  "launchRequestId": "31506271499-1",
+  "environment": "appchain.blitz",
+  "chain": "appchain",
+  "gameType": "blitz",
+  "gameName": "bltz-froth-76",
+  "executionMode": "fast_trial",
+  "requestedLaunchStep": "full",
+  "createdAt": "2026-08-11T15:19:09.983Z",
+  "workflow": {
+    "workflowName": "Game Launch",
+    "workflowJob": "launch",
+    "workflowRunId": 31506271499,
+    "workflowRunAttempt": 1,
+    "workflowUrl": "https://github.com/BibliothecaDAO/eternum/actions/runs/31506271499",
+    "ref": "feat/single-world-blitz",
+    "sha": "ba75f9db33d661aa576d6b6104bc065ca7f4bc32"
+  },
+  "request": {
+    "launchKind": "game",
+    "environmentId": "appchain.blitz",
+    "gameName": "bltz-froth-76",
+    "startTime": "2026-08-11T15:20:00.000Z",
+    "rpcUrl": "http://Realms-Alb16-vyiZTcVBQthr-325094656.us-east-1.elb.amazonaws.com",
+    "factoryAddress": "0x4c50ced3c1fd6f2f4cef779e28adafb234ed9773dda3e0e39918f24f2936350",
+    "devModeOn": false,
+    "singleRealmMode": false,
+    "twoPlayerMode": false,
+    "durationSeconds": 3600,
+    "biomeClimateOverrides": {
+      "elevationSeed": 1878997106,
+      "moistureSeed": 740644719
+    },
+    "cartridgeApiBase": "https://api.cartridge.gg",
+    "toriiNamespaces": "s1_eternum",
+    "vrfProviderAddress": "0x0",
+    "executionMode": "batched",
+    "verboseConfigLogs": false,
+    "version": "4",
+    "waitForFactoryIndexTimeoutMs": 120000,
+    "waitForFactoryIndexPollMs": 2000,
+    "skipIndexer": false,
+    "skipLootChestRoleGrant": false,
+    "skipBanks": false,
+    "dryRun": false,
+    "maxActions": 20
+  }
+}
