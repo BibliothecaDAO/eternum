@@ -202,11 +202,13 @@ export function resolveBlitzChainConfig(chain: Chain, context: EnvironmentContex
         resolveLocalBlitzRegistrationConfig(context),
       );
     case "appchain":
-      // dev appchain (WP_REALMS_DEV): local-style balance, free entry
+      // dev appchain (WP_REALMS_DEV): REAL mainnet game balance, free entry.
+      // (The local-style dev balance shipped to testers as presets 2/3 —
+      // presets are immutable, so the corrected rulebooks register as new
+      // preset ids and the catalog points at them.)
       return mergeConfigPatches(
-        LOCAL_BLITZ_CHAIN_CONFIG,
+        MAINNET_BLITZ_CHAIN_CONFIG,
         resolveBlitzContractAddressConfig(context),
-        LOCAL_BLITZ_REALM_UPGRADE_CONFIG,
         resolveAppchainBlitzRegistrationConfig(context),
       );
     case "mainnet":

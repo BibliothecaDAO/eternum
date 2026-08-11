@@ -64,9 +64,9 @@ const factoryLaunchPresets: FactoryLaunchPreset[] = [
       singleRealmMode: false,
     },
   },
-  // Blitz launches run on registered registrar presets: 2 = Regular Fast
-  // (the default), 3 = Duel. The plain 90-minute and legacy 2h rulebooks are
-  // deliberately not offered.
+  // Blitz launches run on registered registrar presets: 4 = Regular Fast with
+  // real mainnet balance (the default), 5 = Duel. Presets 2/3 carried the
+  // local dev balance and are immutable — retired, not offered.
   {
     id: "blitz-fast",
     mode: "blitz",
@@ -78,7 +78,7 @@ const factoryLaunchPresets: FactoryLaunchPreset[] = [
       devMode: false,
       twoPlayerMode: false,
       singleRealmMode: false,
-      version: "2",
+      version: "4",
     },
   },
   {
@@ -92,7 +92,7 @@ const factoryLaunchPresets: FactoryLaunchPreset[] = [
       devMode: false,
       twoPlayerMode: true,
       singleRealmMode: false,
-      version: "3",
+      version: "5",
     },
   },
   {
@@ -106,7 +106,7 @@ const factoryLaunchPresets: FactoryLaunchPreset[] = [
       devMode: true,
       twoPlayerMode: false,
       singleRealmMode: false,
-      version: "2",
+      version: "4",
     },
   },
 ];

@@ -75,7 +75,7 @@ export const CONFIG = {
      * ~10 req/s across SQL polling, chunked map fetches, and stream reopens —
      * 2000/5min (≈6.7/s) rate-limited real players mid-game with CORS-less
      * 403s that broke tx submission through the keychain. */
-    wafRateLimit: 30000,
+    wafRateLimit: 150000,
 
     /** Alarm + budget notifications. */
     alertEmail: "jean.christophe.mehr@gmail.com",
