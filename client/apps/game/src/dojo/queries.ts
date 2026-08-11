@@ -666,10 +666,12 @@ export const getBuildingsFromTorii = async <S extends Schema>(
       clauses: structurePositions.map((position) => ({
         Keys: {
           // s2 Building is keyed (game_id, alt, outer_col, outer_row, ...) —
-          // the alt slot stays a wildcard.
+          // structures never sit on the alt plane (Cairo pins alt to false),
+          // so match it exactly: a mid-pattern undefined wildcard does not
+          // survive the grpc key encoding and matches nothing.
           keys: isGameScoped()
-            ? [gameIdKey(), undefined, position.col.toString(), position.row.toString()]
-            : [position.col.toString(), position.row.toString()],
+            ? [gameIdKey(), "0x0", `0x${position.col.toString(16)}`, `0x${position.row.toString(16)}`]
+            : [`0x${position.col.toString(16)}`, `0x${position.row.toString(16)}`],
           pattern_matching: "VariableLen" as PatternMatching,
           models: [buildingModel],
         },
