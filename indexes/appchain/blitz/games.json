@@ -2,7 +2,7 @@
   "version": 1,
   "environment": "appchain.blitz",
   "kind": "game",
-  "updatedAt": "2026-08-11T10:01:12.411Z",
+  "updatedAt": "2026-08-11T10:01:33.710Z",
   "entries": {
     "blitzlive1": {
       "kind": "game",
@@ -85,14 +85,13 @@
       "path": "runs/appchain/blitz/cfe2e1.json",
       "inputPath": "inputs/appchain/blitz/cfe2e1/31480226681-1.json",
       "status": "running",
-      "updatedAt": "2026-08-11T10:01:12.411Z",
+      "updatedAt": "2026-08-11T10:01:33.710Z",
       "workflowRef": "feat/single-world-blitz",
-      "currentStepId": "create-world",
-      "activeLeaseExpiresAt": "2026-08-11T10:46:12.411Z",
-      "hasRunningStep": true,
+      "currentStepId": "wait-for-factory-index",
+      "hasRunningStep": false,
       "recoverableFailedStepId": null,
       "recoverablePendingStepId": "wait-for-factory-index",
-      "startTime": "2026-08-11T10:00:00.000Z",
+      "startTime": 1786442400,
       "durationSeconds": 3600,
       "artifacts": {}
     }
