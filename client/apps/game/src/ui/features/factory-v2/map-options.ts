@@ -824,7 +824,9 @@ export const getFactoryMoreOptionSections = (
     sections.set(definition.section, sectionFields);
   });
 
-  if (mode === "blitz" && !visibility.twoPlayerMode) {
+  // No entry-cost fields on the appchain: ChainConfig has no entry token, so a
+  // non-zero fee_amount would make every settle throw and brick the game.
+  if (mode === "blitz" && !visibility.twoPlayerMode && chain !== "appchain") {
     sections.set("prize", buildBlitzPrizeFields());
   }
 
@@ -923,7 +925,7 @@ export const validateFactoryMoreOptions = (
     buildRawOverrides(definition, parsedValue, mapConfigOverrides, blitzRegistrationOverrides);
   });
 
-  if (mode === "blitz" && !visibility.twoPlayerMode) {
+  if (mode === "blitz" && !visibility.twoPlayerMode && chain !== "appchain") {
     const blitzPrizeValidation = validateBlitzPrizeOverrides(draft, blitzRegistrationConfig);
 
     errors.prizeToken = blitzPrizeValidation.errors.prizeToken;

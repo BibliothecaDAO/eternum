@@ -843,7 +843,13 @@ export const buildPolicies = (manifest: any) => {
       },
   };
   for (const key of Object.keys(contracts)) {
-    if (!key || key === "0x0") delete contracts[key];
+    let isZero = false;
+    try {
+      isZero = BigInt(key) === 0n;
+    } catch {
+      isZero = true;
+    }
+    if (!key || isZero) delete contracts[key];
   }
   return toSessionPolicies({
     contracts,

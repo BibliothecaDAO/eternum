@@ -27,8 +27,16 @@ const measureAsyncDuration = async <T>(name: string, run: () => Promise<T>): Pro
 
 const normalizeAddress = (addr: unknown): string | null => {
   if (addr == null) return null;
-  if (typeof addr === "string") return addr;
-  if (typeof addr === "bigint") return "0x" + addr.toString(16);
+  // Torii returns padded 66-char hex; treat numeric zero (any padding) as
+  // absent so 0x000…0 never leaks into profiles or session policies.
+  if (typeof addr === "string") {
+    try {
+      return BigInt(addr) === 0n ? null : addr;
+    } catch {
+      return addr;
+    }
+  }
+  if (typeof addr === "bigint") return addr === 0n ? null : "0x" + addr.toString(16);
   return null;
 };
 

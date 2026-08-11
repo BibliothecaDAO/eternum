@@ -87,8 +87,11 @@ const SETTLEMENT_SYNC_TIMEOUT_MS = 90000;
 const CONTRACT_MAP_CENTER = 2147483646;
 const NEXT_FREE_REALM_ID_SCAN_LIMIT = 512;
 const REALM_OWNER_LOOKUP_ENTRYPOINTS = ["owner_of", "ownerOf"] as const;
-const VILLAGE_PASS_DISTRIBUTOR_ADDRESS = "0x127fd5f1fe78a71f8bcd1fec63e3fe2f0486b6ecd5c86a0466c3a21fa5cfcec";
-const VILLAGE_PASS_DISTRIBUTOR_PRIVATE_KEY = "0xc5b2fcab997346f3ea1c00b002ecf6f382c5f9c9659a3894eb783c5320f912";
+// Sandbox-only escape hatch: the dev-chain master account hands out village
+// passes. Env-driven so no key literal ships in source and deployments choose
+// the account (never the paymaster).
+const VILLAGE_PASS_DISTRIBUTOR_ADDRESS = env.VITE_PUBLIC_MASTER_ADDRESS;
+const VILLAGE_PASS_DISTRIBUTOR_PRIVATE_KEY = env.VITE_PUBLIC_MASTER_PRIVATE_KEY;
 
 const START_DIRECTIONS: ReadonlyArray<readonly [Direction, Direction]> = [
   [Direction.EAST, Direction.SOUTH_WEST],
