@@ -363,8 +363,8 @@ export const PrizePanel = () => {
         setSubmission({ phase: "submitting_ranks", message: "Submitting single-player prize claim..." });
         await blitz_prize_claim_no_game({ signer: account, registered_player: onlyRegistered.toString() });
         setSubmission({ phase: "success", message: "Single-player prize claim submitted." });
-        toast("Submitted single-player prize claim", {
-          description: `Entry fee returned to ${displayAddress(toHexString(onlyRegistered))}.`,
+        toast("Claim submitted", {
+          description: `Single-player prize claim submitted for ${displayAddress(toHexString(onlyRegistered))}.`,
         });
         return;
       }
