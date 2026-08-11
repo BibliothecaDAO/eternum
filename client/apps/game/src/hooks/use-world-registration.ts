@@ -309,40 +309,11 @@ export const useWorldRegistration = ({
         // Cast account to starknet Account for execute
         const starknetAccount = account as unknown as Account;
 
-        // Season mode path (Eternum): realm_systems.create(owner, realm_id, frontend, {side, layer, point})
-        // Placement + realm ID are accepted as params for future UI wiring. Defaults are placeholders.
+        // Eternum seasons settle exclusively through the entry modal's planner
+        // path (placement + realm id are real choices there). A quick-settle
+        // with placeholder placement would collide on the shared world.
         if (config?.mode === "eternum") {
-          const realmSystemsAddress = getWorldSystemAddress(contracts, "realm_systems");
-          const owner = params?.ownerAddress ?? address!;
-          const frontend = params?.frontendAddress ?? address!;
-          const realmId = params?.realmId ?? 0;
-          const side = params?.side ?? 0;
-          const layer = params?.layer ?? 1;
-          const point = params?.point ?? 0;
-
-          setEntryStage("settling");
-          await executeObservedClientTransaction({
-            account: starknetAccount,
-            calls: {
-              contractAddress: realmSystemsAddress,
-              entrypoint: "create",
-              calldata: CallData.compile([owner, realmId, frontend, side, layer, point]),
-            },
-            surface: "registration",
-            operation: "realm_systems.create",
-            chain,
-            worldName,
-            confirm: async (txHash, observedAccount) => {
-              await waitForWorldEntryTransactionConfirmation({
-                txHash,
-                chain,
-                label: "realm_systems.create",
-                account: observedAccount as Account,
-              });
-            },
-          });
-          setEntryStage("done");
-          return;
+          throw new Error("Eternum seasons settle through the entry modal.");
         }
 
         const blitzSystemsAddress = getWorldSystemAddress(contracts, "blitz_realm_systems");
