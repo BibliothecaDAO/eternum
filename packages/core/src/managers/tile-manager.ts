@@ -101,19 +101,23 @@ export class TileManager {
       ]),
     );
 
-    const buildings = builtBuildings.map((entity) => {
-      const productionModelValue = getComponentValue(this.components.Building, entity);
-      const category = productionModelValue!.category;
+    const buildings = builtBuildings
+      .map((entity) => getComponentValue(this.components.Building, entity))
+      // A query hit can race a value update mid-render — skip vanished rows
+      // instead of crashing the construction menu.
+      .filter((value): value is NonNullable<typeof value> => value != null)
+      .map((productionModelValue) => {
+        const category = productionModelValue.category;
 
-      return {
-        col: Number(productionModelValue?.inner_col),
-        row: Number(productionModelValue?.inner_row),
-        category,
-        resource: getProducedResource(category),
-        paused: productionModelValue?.paused,
-        structureType: null,
-      };
-    });
+        return {
+          col: Number(productionModelValue.inner_col),
+          row: Number(productionModelValue.inner_row),
+          category,
+          resource: getProducedResource(category),
+          paused: productionModelValue.paused,
+          structureType: null,
+        };
+      });
 
     return buildings;
   };
