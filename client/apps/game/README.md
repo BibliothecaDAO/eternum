@@ -4,13 +4,14 @@ This is the main game application for Eternum, built with React, TypeScript, and
 
 ## Running Locally
 
-To start the game locally:
+The client targets the self-hosted dev appchain (see `deploy/appchain/README.md`):
 
-1. Make a copy of `.env.local.sample` and rename it to `.env.local`
-2. Update the following environment variables in `.env.local` based on your target environment:
-   - `VITE_PUBLIC_TORII="http://127.0.0.1:8080"`
-   - `VITE_PUBLIC_NODE_URL="http://127.0.0.1:5050"`
-3. Run `pnpm run dev` to start the development server
+1. Copy `.env.appchain.blitz` to `.env.local` — it points at the live dev endpoints
+   (`katana`/`torii`/`.jcndata.com`)
+2. Run `pnpm run dev` to start the development server
+
+`.env.production` is the committed config the `deploy-client.yml` workflow builds tester releases
+from (blitz-only; add `VITE_PUBLIC_TORII_ETERNUM` there to open eternum in phase 3).
 
 ## 🏗️ Architecture of the game
 
