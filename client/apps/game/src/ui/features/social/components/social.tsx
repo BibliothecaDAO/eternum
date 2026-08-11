@@ -79,6 +79,16 @@ export const Social = () => {
     return Boolean(chainCfg?.mmr_config?.enabled);
   }, [chainCfgEntities, components.ChainConfig]);
 
+  // The Blitz Prize tab is honest only when the chain actually runs prize
+  // infrastructure: ChainConfig's fee/entry token addresses are zero on chains
+  // without a pot (W6 wires the real appchain prize flow).
+  const hasPrizeInfra = useMemo(() => {
+    const chainCfg = chainCfgEntities[0] ? getComponentValue(components.ChainConfig, chainCfgEntities[0]) : undefined;
+    const feeToken = (chainCfg?.fee_token as unknown as bigint | undefined) ?? 0n;
+    const entryToken = (chainCfg?.entry_token_address as unknown as bigint | undefined) ?? 0n;
+    return feeToken !== 0n || entryToken !== 0n;
+  }, [chainCfgEntities, components.ChainConfig]);
+
   const refreshPlayerData = usePlayerStore((state) => state.refreshPlayerData);
   const lastPlayerDataRefreshTime = usePlayerStore((state) => state.lastRefreshTime);
 
@@ -240,7 +250,7 @@ export const Social = () => {
       });
     }
 
-    if (isBlitzMode) {
+    if (isBlitzMode && hasPrizeInfra) {
       baseTabs.push({
         key: "Blitz Prize",
         label: (
@@ -282,6 +292,7 @@ export const Social = () => {
     showGuildsTab,
     isEternumMode,
     isBlitzMode,
+    hasPrizeInfra,
     selectedGuild,
     selectedPlayer,
     playerInfo,

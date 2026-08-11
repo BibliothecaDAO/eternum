@@ -11,26 +11,36 @@ import { getComponentValue, Has } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { useEffect, useMemo, useState } from "react";
 import { env } from "../../../../../env";
-import { gameEntityKey } from "@/dojo/game-scope";
+import { appchainModel, gameEntityKey } from "@/dojo/game-scope";
 
 const POINTS_PRECISION = 1_000_000n;
-const GAME_CHEST_REWARD_QUERY = `
+
+// The shared s2 worlds host many games behind one torii: per-game rows lead
+// with `game_id`, so scope every read to the ACTIVE game explicitly (the
+// winners table only renders in-game, where the active game is the reviewed
+// one). ChainConfig is a chain singleton and carries no game id.
+const activeGameFilter = (gameId: number) => (gameId > 0 ? `game_id = ${gameId}` : "1=1");
+
+const buildGameChestRewardQuery = (gameId: number) => `
   SELECT
     allocated_chests,
     distributed_chests
-  FROM "s1_eternum-GameChestReward"
+  FROM "${appchainModel("GameChestReward")}"
+  WHERE ${activeGameFilter(gameId)}
   LIMIT 1;
 `;
-const SEASON_PRIZE_QUERY = `
+const buildSeasonPrizeQuery = (gameId: number) => `
   SELECT
     total_registered_points
-  FROM "s1_eternum-SeasonPrize"
+  FROM "${appchainModel("SeasonPrize")}"
+  WHERE ${activeGameFilter(gameId)}
   LIMIT 1;
 `;
+// s2: the loot chest collection moved to the chain-global ChainConfig singleton.
 const REWARD_CHEST_CONFIG_QUERY = `
   SELECT
-    "blitz_registration_config.collectibles_lootchest_address" AS loot_chest_address
-  FROM "s1_eternum-WorldConfig"
+    collectibles_lootchest_address AS loot_chest_address
+  FROM "${appchainModel("ChainConfig")}"
   LIMIT 1;
 `;
 
@@ -45,6 +55,7 @@ type RewardChestConfigRow = {
   loot_chest_address?: unknown;
 };
 type ChestRewardSnapshot = {
+  gameId: number;
   lootChestAddress: string | null;
   allocatedRewardChests: number;
   distributedRewardChests: number;
@@ -112,8 +123,9 @@ export const WinnersTable = ({ trialId }: { trialId?: bigint }) => {
     return points;
   }, [playerRegisteredPointsEntities, components.PlayerRegisteredPoints]);
 
-  const [chestRewardSnapshot, setChestRewardSnapshot] = useState<ChestRewardSnapshot | null>(
-    () => cachedChestRewardSnapshot,
+  const activeGameId = configManager.getActiveGameId();
+  const [chestRewardSnapshot, setChestRewardSnapshot] = useState<ChestRewardSnapshot | null>(() =>
+    cachedChestRewardSnapshot?.gameId === activeGameId ? cachedChestRewardSnapshot : null,
   );
   const allocatedRewardChests = chestRewardSnapshot?.allocatedRewardChests ?? 0;
   const distributedRewardChests = chestRewardSnapshot?.distributedRewardChests ?? 0;
@@ -131,11 +143,11 @@ export const WinnersTable = ({ trialId }: { trialId?: bigint }) => {
 
         const [chestRows, seasonRows, configRows] = await Promise.all([
           fetchWithErrorHandling<GameChestRewardRow>(
-            buildApiUrl(sqlBaseUrl, GAME_CHEST_REWARD_QUERY),
+            buildApiUrl(sqlBaseUrl, buildGameChestRewardQuery(activeGameId)),
             "Failed to fetch game chest reward state",
           ),
           fetchWithErrorHandling<SeasonPrizeRow>(
-            buildApiUrl(sqlBaseUrl, SEASON_PRIZE_QUERY),
+            buildApiUrl(sqlBaseUrl, buildSeasonPrizeQuery(activeGameId)),
             "Failed to fetch season prize state",
           ),
           fetchWithErrorHandling<RewardChestConfigRow>(
@@ -152,6 +164,7 @@ export const WinnersTable = ({ trialId }: { trialId?: bigint }) => {
         const nextLootChestAddress = normalizeNonZeroAddress(configRows[0]?.loot_chest_address);
 
         const nextSnapshot: ChestRewardSnapshot = {
+          gameId: activeGameId,
           lootChestAddress: nextLootChestAddress,
           allocatedRewardChests: nextAllocatedRewardChests,
           distributedRewardChests: nextDistributedRewardChests,
@@ -171,7 +184,7 @@ export const WinnersTable = ({ trialId }: { trialId?: bigint }) => {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [activeGameId]);
 
   // Fetch ERC20 decimals for the blitz fee token, fallback to raw units
   const decimals = 18;
