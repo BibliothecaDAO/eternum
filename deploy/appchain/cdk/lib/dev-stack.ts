@@ -695,8 +695,8 @@ export class DevStack extends cdk.Stack {
       environment: {
         GITHUB_REPO: "BibliothecaDAO/eternum",
         WORKFLOW_FILE: "game-launch.yml",
-        // The appchain launch steps live on the phase-1 branch until merged.
-        DEFAULT_WORKFLOW_REF: "feat/appchain-phase-1",
+        // The appchain launch steps live on the single-world branch until merged.
+        DEFAULT_WORKFLOW_REF: "feat/single-world-blitz",
         RUN_STORE_BRANCH: "factory-runs",
         ALLOWED_ENVIRONMENTS: "appchain.blitz,appchain.eternum",
         GITHUB_TOKEN_SECRET_ARN: launchGithubToken.secretArn,
@@ -707,7 +707,13 @@ export class DevStack extends cdk.Stack {
     const launchServiceUrl = launchService.addFunctionUrl({
       authType: lambda.FunctionUrlAuthType.NONE,
       cors: {
-        allowedOrigins: [`https://${cfg.publicClientHost}`, "http://localhost:5173", "http://127.0.0.1:5173"],
+        allowedOrigins: [
+          `https://${cfg.publicClientHost}`,
+          "https://localhost:5173",
+          "https://127.0.0.1:5173",
+          "http://localhost:5173",
+          "http://127.0.0.1:5173",
+        ],
         allowedMethods: [lambda.HttpMethod.GET, lambda.HttpMethod.POST],
         allowedHeaders: ["content-type"],
       },
