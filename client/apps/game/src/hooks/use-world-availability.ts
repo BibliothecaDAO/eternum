@@ -198,6 +198,12 @@ const buildGameMetaQuery = (paddedNameFelt: string) => `
     c."blitz_registration_config.fee_amount" AS fee_amount,
     c."blitz_settlement_config.single_realm_mode" AS single_realm_mode,
     c."blitz_settlement_config.two_player_mode" AS two_player_mode,
+    c."settlement_config.layer_max" AS settlement_layer_max,
+    c."settlement_config.layers_skipped" AS settlement_layers_skipped,
+    c."settlement_config.base_distance" AS settlement_base_distance,
+    c."settlement_config.spires_max_count" AS spires_max_count,
+    c."settlement_config.spires_settled_count" AS spires_settled_count,
+    c.map_center_offset AS map_center_offset,
     cc.entry_token_address AS entry_token_address,
     cc.fee_token AS fee_token
   FROM "${appchainModel("GameRegistry")}" g
@@ -243,6 +249,14 @@ const fetchGameMeta = async (
     meta.twoPlayerMode = parseMaybeBooleanFlag(row.two_player_mode) ?? false;
     meta.entryTokenAddress = parseMaybeHexToAddress(row.entry_token_address);
     meta.feeTokenAddress = parseMaybeHexToAddress(row.fee_token);
+    // Eternum settlement-planner geometry + spire progress (W3 put these on
+    // the per-game WorldConfig; the planner throws without them).
+    meta.settlementLayerMax = parseMaybeHexToNumber(row.settlement_layer_max);
+    meta.settlementLayersSkipped = parseMaybeHexToNumber(row.settlement_layers_skipped);
+    meta.settlementBaseDistance = parseMaybeHexToNumber(row.settlement_base_distance);
+    meta.spiresMaxCount = parseMaybeHexToNumber(row.spires_max_count);
+    meta.spiresSettledCount = parseMaybeHexToNumber(row.spires_settled_count);
+    meta.mapCenterOffset = parseMaybeHexToNumber(row.map_center_offset);
 
     if (playerAddress && meta.mode === "blitz") {
       meta.isPlayerRegistered = await fetchPlayerRegistration(toriiBaseUrl, playerAddress, gameId);

@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 
-import { sqlApi } from "@/services/api";
+import type { SqlApi } from "@bibliothecadao/torii";
 import type { SettlementPlannerSnapshot, SettlementPlannerTile } from "@bibliothecadao/torii";
 
 import {
@@ -22,6 +22,9 @@ interface UseSettlementPlannerDataProps {
   enabled: boolean;
   chain: string;
   worldName: string;
+  /** Per-world, per-game scoped client — never the ambient gameplay singleton
+   * (the planner reads a game the player has not bootstrapped into). */
+  sqlApi: SqlApi;
   layerMax: number | null;
   layersSkipped: number | null;
   baseDistance: number | null;
@@ -41,6 +44,7 @@ export const useSettlementPlannerData = ({
   enabled,
   chain,
   worldName,
+  sqlApi,
   layerMax,
   layersSkipped,
   baseDistance,

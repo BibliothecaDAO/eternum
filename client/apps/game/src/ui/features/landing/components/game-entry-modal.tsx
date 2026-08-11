@@ -2791,8 +2791,20 @@ export const GameEntryModal = ({
 
   const navigationEntryContext = entryContext;
   const selectedWorldRpcUrl = useMemo(() => getRpcUrlForChain(chain), [chain]);
-  const selectedWorldSqlBaseUrl = useMemo(() => resolveWorldSqlBaseUrl({ chain, worldName }), [chain, worldName]);
-  const selectedWorldSqlApi = useMemo(() => createSqlApi(selectedWorldSqlBaseUrl), [selectedWorldSqlBaseUrl]);
+  const selectedWorldSqlBaseUrl = useMemo(
+    () => resolveWorldSqlBaseUrl({ chain, worldName, worldId: worldMeta?.worldId ?? null }),
+    [chain, worldName, worldMeta?.worldId],
+  );
+  // Explicitly scoped: entry-flow reads target the selected game before any
+  // bootstrap sets the ambient scope (and regardless of a previous game's).
+  const selectedWorldSqlApi = useMemo(
+    () =>
+      createSqlApi(
+        selectedWorldSqlBaseUrl,
+        chain === "appchain" && worldMeta?.gameId ? { namespace: "s2", gameId: worldMeta.gameId } : undefined,
+      ),
+    [chain, selectedWorldSqlBaseUrl, worldMeta?.gameId],
+  );
   const seasonAddresses = getSeasonAddresses(chain);
   // realm_systems.create reads season_pass_address from world config, so prefer world metadata when available.
   const seasonPassAddress = worldMeta?.seasonPassAddress || seasonAddresses.seasonPass || null;
@@ -2953,6 +2965,7 @@ export const GameEntryModal = ({
     enabled: isOpen && isEternumMode && unifiedSettlementPlannerEnabled,
     chain,
     worldName,
+    sqlApi: selectedWorldSqlApi,
     layerMax: worldMeta?.settlementLayerMax ?? null,
     layersSkipped: worldMeta?.settlementLayersSkipped ?? null,
     baseDistance: worldMeta?.settlementBaseDistance ?? null,
@@ -3261,7 +3274,10 @@ export const GameEntryModal = ({
     spiresSettledCount != null && spiresMaxCount != null
       ? spiresMaxCount === 0 || spiresSettledCount >= spiresMaxCount
       : (spiresSettledCount ?? 0) > 0;
-  const hasSeasonPass = seasonPassBalance > 0n || seasonPasses.length > 0;
+  // Dev-mode games skip season-pass collection in the contract
+  // (realm/season/contracts.cairo) — the client gate must match.
+  const devModeSeasonSettle = worldMeta?.devModeOn ?? false;
+  const hasSeasonPass = devModeSeasonSettle || seasonPassBalance > 0n || seasonPasses.length > 0;
   const hasVillagePass = villagePassBalance > 0n || villagePasses.length > 0;
   const canAttemptSeasonSettle = seasonTimingValid && hasSeasonPass;
   const isLoadingEternumPrereqs =
@@ -4199,7 +4215,7 @@ export const GameEntryModal = ({
       setSeasonSettlementError("Select a free realm hex on the planner map.");
       return;
     }
-    if (!selectedSeasonPassTokenId) {
+    if (!selectedSeasonPassTokenId && !devModeSeasonSettle) {
       setSeasonSettlementError("Select a season pass before settling.");
       return;
     }
@@ -4215,19 +4231,31 @@ export const GameEntryModal = ({
       setSeasonSettlementError("Season pass not found in this wallet.");
       return;
     }
-    if (!seasonPassAddress) {
+    if (!seasonPassAddress && !devModeSeasonSettle) {
       setSeasonSettlementError("Season pass contract not configured for this world.");
       return;
     }
-    if (villagePassAddress && seasonPassAddress.toLowerCase() === villagePassAddress.toLowerCase()) {
+    if (villagePassAddress && seasonPassAddress && seasonPassAddress.toLowerCase() === villagePassAddress.toLowerCase()) {
       setSeasonSettlementError(
         `World config mismatch: season pass address points to village pass (${seasonPassAddress}). Update season_addresses_config on-chain.`,
       );
       return;
     }
 
-    const realmIdBigInt = selectedSeasonPassTokenId;
-    if (realmIdBigInt < 0n || realmIdBigInt > 4_294_967_295n) {
+    // Dev mode has no pass to derive the realm from: take the next unused
+    // realm id in this game (realm data is keyed by the global Realms id).
+    const nextFreeDevRealmId = (): bigint => {
+      const used = new Set(
+        settlementPlannerData.snapshot.realms
+          .map((realm) => realm.realmId)
+          .filter((id): id is number => id != null && id > 0),
+      );
+      let candidate = 1;
+      while (used.has(candidate) && candidate < 8000) candidate += 1;
+      return BigInt(candidate);
+    };
+    const realmIdBigInt = selectedSeasonPassTokenId ?? nextFreeDevRealmId();
+    if (realmIdBigInt <= 0n || realmIdBigInt > 4_294_967_295n) {
       setSeasonSettlementError("Season pass realm id is out of bounds.");
       return;
     }
@@ -4315,31 +4343,32 @@ export const GameEntryModal = ({
       const owner = account.address;
       const frontend = account.address;
 
-      const seasonPassTokenId = uint256.bnToUint256(realmIdBigInt);
       const optionalPlayerName = await resolveOptionalPlayerNameForSettlement();
       const settlementCalls: Call[] = [];
       if (optionalPlayerName) {
         settlementCalls.push(buildSetAddressNameCall(optionalPlayerName));
       }
-      settlementCalls.push(
-        {
+      // The contract only collects the pass outside dev mode — approving in
+      // dev mode would target address 0x0 and revert the whole multicall.
+      if (!devModeSeasonSettle && seasonPassAddress) {
+        settlementCalls.push({
           contractAddress: seasonPassAddress,
           entrypoint: "approve",
-          calldata: CallData.compile([realmSystemsAddress, seasonPassTokenId]),
-        },
-        {
-          contractAddress: realmSystemsAddress,
-          entrypoint: "create",
-          calldata: CallData.compile([
-            owner,
-            realmId,
-            frontend,
-            activeSeasonPlacement.side,
-            activeSeasonPlacement.layer,
-            activeSeasonPlacement.point,
-          ]),
-        },
-      );
+          calldata: CallData.compile([realmSystemsAddress, uint256.bnToUint256(realmIdBigInt)]),
+        });
+      }
+      settlementCalls.push({
+        contractAddress: realmSystemsAddress,
+        entrypoint: "create",
+        calldata: CallData.compile([
+          owner,
+          realmId,
+          frontend,
+          activeSeasonPlacement.side,
+          activeSeasonPlacement.layer,
+          activeSeasonPlacement.point,
+        ]),
+      });
 
       await executeEntryObservedTransaction({
         signer,
