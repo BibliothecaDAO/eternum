@@ -1,0 +1,51 @@
+{
+  "version": 1,
+  "kind": "game",
+  "runId": "appchain.blitz:bltz-blink-796",
+  "launchRequestId": "31526726100-1",
+  "environment": "appchain.blitz",
+  "chain": "appchain",
+  "gameType": "blitz",
+  "gameName": "bltz-blink-796",
+  "executionMode": "fast_trial",
+  "requestedLaunchStep": "full",
+  "createdAt": "2026-08-11T19:14:12.282Z",
+  "workflow": {
+    "workflowName": "Game Launch",
+    "workflowJob": "launch",
+    "workflowRunId": 31526726100,
+    "workflowRunAttempt": 1,
+    "workflowUrl": "https://github.com/BibliothecaDAO/eternum/actions/runs/31526726100",
+    "ref": "feat/single-world-blitz",
+    "sha": "59f51bcff674290e8d954708f567cf475c8341ab"
+  },
+  "request": {
+    "launchKind": "game",
+    "environmentId": "appchain.blitz",
+    "gameName": "bltz-blink-796",
+    "startTime": "2026-08-11T19:20:00.000Z",
+    "rpcUrl": "http://Realms-Alb16-vyiZTcVBQthr-325094656.us-east-1.elb.amazonaws.com",
+    "factoryAddress": "0x4c50ced3c1fd6f2f4cef779e28adafb234ed9773dda3e0e39918f24f2936350",
+    "devModeOn": false,
+    "singleRealmMode": false,
+    "twoPlayerMode": false,
+    "durationSeconds": 3600,
+    "biomeClimateOverrides": {
+      "elevationSeed": 269061182,
+      "moistureSeed": 2043776654
+    },
+    "cartridgeApiBase": "https://api.cartridge.gg",
+    "toriiNamespaces": "s1_eternum",
+    "vrfProviderAddress": "0x0",
+    "executionMode": "batched",
+    "verboseConfigLogs": false,
+    "version": "6",
+    "waitForFactoryIndexTimeoutMs": 120000,
+    "waitForFactoryIndexPollMs": 2000,
+    "skipIndexer": false,
+    "skipLootChestRoleGrant": false,
+    "skipBanks": false,
+    "dryRun": false,
+    "maxActions": 20
+  }
+}
