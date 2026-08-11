@@ -6,14 +6,14 @@
   "chain": "appchain",
   "gameType": "blitz",
   "gameName": "bltz-spark-986",
-  "status": "running",
+  "status": "complete",
   "executionMode": "fast_trial",
   "requestedLaunchStep": "full",
   "inputPath": "inputs/appchain/blitz/bltz-spark-986/31506588123-1.json",
   "latestLaunchRequestId": "31506588123-1",
-  "currentStepId": "wait-for-factory-index",
+  "currentStepId": null,
   "createdAt": "2026-08-11T15:22:40.869Z",
-  "updatedAt": "2026-08-11T15:23:18.713Z",
+  "updatedAt": "2026-08-11T15:23:24.221Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -36,10 +36,11 @@
     {
       "id": "wait-for-factory-index",
       "title": "Waiting for game",
-      "status": "running",
+      "status": "succeeded",
       "workflowStepName": "Waiting for game",
-      "latestEvent": "Waiting for game started",
-      "startedAt": "2026-08-11T15:23:18.713Z"
+      "latestEvent": "Waiting for game succeeded",
+      "startedAt": "2026-08-11T15:23:18.713Z",
+      "finishedAt": "2026-08-11T15:23:24.221Z"
     }
   ],
   "artifacts": {
@@ -50,12 +51,5 @@
     "worldAddress": "0x78ff85ac450bb559c97966b64666fd5292f4a98756a607349d9f93f4563bdd2",
     "createGameTxHash": "0x3e2aadb4aa3dca6765fd77502f13fb1efeec34d41682e3966b37d3032caa9ff"
   },
-  "activeLease": {
-    "launchRequestId": "31506588123-1",
-    "workflowRunId": 31506588123,
-    "workflowRunAttempt": 1,
-    "stepId": "wait-for-factory-index",
-    "acquiredAt": "2026-08-11T15:23:18.713Z",
-    "expiresAt": "2026-08-11T16:08:18.713Z"
-  }
+  "completedAt": "2026-08-11T15:23:24.221Z"
 }
