@@ -75,7 +75,10 @@ const HUNDRED_PERCENT = 100n;
 const DEFAULT_FEE_ESTIMATE_TIMEOUT_MS = 5_000;
 const DEFAULT_TRANSACTION_SUBMIT_TIMEOUT_MS = 20_000;
 const EXPLORE_RESOURCE_BOUNDS_CACHE_TTL_MS = 15_000;
-const TX_WAIT_RETRY_INTERVAL_MS = 500;
+// Katana mines instantly, so PRE_CONFIRMED usually exists on the first or
+// second poll — 200 ms shaves ~150–300 ms off action feedback for ~2 extra
+// tiny receipt reads per tx.
+const TX_WAIT_RETRY_INTERVAL_MS = 200;
 // Resolve confirmation at PRE_CONFIRMED: the sequencer pre-confirms within
 // ~a second and the receipt already carries execution_status, so reverts are
 // detected immediately while the receipt poll loop drops from dozens of RPC

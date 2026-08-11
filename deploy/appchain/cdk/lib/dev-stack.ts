@@ -324,7 +324,7 @@ export class DevStack extends cdk.Stack {
         "",
         "[indexing]",
         "pending = true",
-        "polling_interval = 250",
+        "polling_interval = 100",
         "controllers = true",
         "pre_confirmed = true",
         "transactions = true",
