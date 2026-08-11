@@ -41,7 +41,6 @@ const LandingFactoryRoute = lazy(() =>
 const ProfileView = lazy(() =>
   import("./ui/features/landing/views/profile-view").then((module) => ({ default: module.ProfileView })),
 );
-const FactoryPage = lazy(() => import("./ui/features/admin").then((module) => ({ default: module.FactoryPage })));
 const FactoryV2Page = lazy(() =>
   import("./ui/features/factory-v2").then((module) => ({ default: module.FactoryV2Page })),
 );
@@ -81,14 +80,6 @@ const GameClientRoutes = ({ backgroundImage }: { backgroundImage: string }) => (
         <Route path="/play/:chain/:world/:scene" element={<GameRouteShell backgroundImage={backgroundImage} />} />
         <Route path="/play/*" element={<GameRouteShell backgroundImage={backgroundImage} />} />
 
-        <Route
-          path="/factory/legacy"
-          element={
-            <Suspense fallback={<LoadingScreen />}>
-              <FactoryPage />
-            </Suspense>
-          }
-        />
 
         <Route
           path="/factory/v2"

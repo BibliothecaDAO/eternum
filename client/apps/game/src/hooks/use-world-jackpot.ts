@@ -1,6 +1,6 @@
 import { getCachedRpcProvider } from "@/utils/cached-rpc-provider";
 import type { Chain } from "@contracts";
-import { getRpcUrlForChain } from "@/ui/features/admin/constants";
+import { getRpcUrlForChain } from "@/runtime/chain-rpc";
 import { useQuery } from "@tanstack/react-query";
 
 export interface JackpotInput {

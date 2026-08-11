@@ -51,7 +51,6 @@ const FACTORY_TAB_HEADER_INSET_CLASS_NAME = "px-3 sm:px-4 lg:px-6";
 const FactoryV2Content = lazy(() =>
   import("../../factory-v2").then((module) => ({ default: module.FactoryV2Content })),
 );
-const FactoryPage = lazy(() => import("../../admin").then((module) => ({ default: module.FactoryPage })));
 
 const hasConnectedAccountAddress = (address: string | undefined): boolean => Boolean(address && address !== "0x0");
 
@@ -436,77 +435,19 @@ const NewsContent = () => (
   </div>
 );
 
-type FactoryVersion = "v2" | "v1";
-
-const FactoryTabContent = () => {
-  const [selectedFactoryVersion, setSelectedFactoryVersion] = useState<FactoryVersion>("v2");
-
-  return (
-    <div className="flex flex-col gap-4">
-      <Suspense
-        fallback={
-          <div className={FACTORY_TAB_HEADER_INSET_CLASS_NAME}>
-            <div className="rounded-xl border border-gold/20 bg-black/40 p-6 text-sm text-gold/70">
-              Loading factory...
-            </div>
-          </div>
-        }
-      >
-        {selectedFactoryVersion === "v2" ? <FactoryV2Content /> : <FactoryPage embedded />}
-      </Suspense>
-
-      <FactoryVersionChooser
-        selectedFactoryVersion={selectedFactoryVersion}
-        onSelectFactoryVersion={setSelectedFactoryVersion}
-      />
-    </div>
-  );
-};
-
-const FactoryVersionChooser = ({
-  selectedFactoryVersion,
-  onSelectFactoryVersion,
-}: {
-  selectedFactoryVersion: FactoryVersion;
-  onSelectFactoryVersion: (version: FactoryVersion) => void;
-}) => (
-  <div className={FACTORY_TAB_HEADER_INSET_CLASS_NAME}>
-    <div className="rounded-[22px] border border-gold/15 bg-black/45 px-4 py-4 backdrop-blur-xl">
-      <div className="flex flex-col items-center gap-4 text-center md:flex-row md:items-center md:justify-between md:text-left">
-        <div className="flex flex-col items-center gap-3 md:flex-row md:items-center">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gold/15">
-            <Factory className="h-5 w-5 text-gold" />
-          </div>
-          <div>
-            <h2 className="font-serif text-lg text-gold">Factory versions</h2>
-            <p className="text-sm text-gold/60">Choose the legacy factory or the new Factory V2.</p>
+const FactoryTabContent = () => (
+  <div className="flex flex-col gap-4">
+    <Suspense
+      fallback={
+        <div className={FACTORY_TAB_HEADER_INSET_CLASS_NAME}>
+          <div className="rounded-xl border border-gold/20 bg-black/40 p-6 text-sm text-gold/70">
+            Loading factory...
           </div>
         </div>
-
-        <div className="inline-flex rounded-full border border-gold/12 bg-black/30 p-1">
-          <button
-            type="button"
-            onClick={() => onSelectFactoryVersion("v2")}
-            className={cn(
-              "rounded-full px-4 py-2 text-sm font-semibold transition-colors",
-              selectedFactoryVersion === "v2" ? "bg-gold text-black" : "text-gold/70 hover:bg-gold/10 hover:text-gold",
-            )}
-          >
-            Factory V2
-          </button>
-          <button
-            type="button"
-            onClick={() => onSelectFactoryVersion("v1")}
-            className={cn(
-              "rounded-full px-4 py-2 text-sm font-semibold transition-colors",
-              selectedFactoryVersion === "v1" ? "bg-gold text-black" : "text-gold/70 hover:bg-gold/10 hover:text-gold",
-            )}
-          >
-            Factory V1
-          </button>
-        </div>
-      </div>
-    </div>
+      }
+    >
+      <FactoryV2Content />
+    </Suspense>
   </div>
 );
 

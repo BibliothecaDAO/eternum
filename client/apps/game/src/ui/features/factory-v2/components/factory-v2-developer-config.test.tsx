@@ -356,10 +356,11 @@ describe("FactoryV2DeveloperConfig", () => {
       await waitForAsyncWork();
     });
 
-    expect(mocks.switchWalletToChain).toHaveBeenCalledWith({
-      controller: mocks.connector.controller,
-      targetChain: "mainnet",
-    });
+    // Chain selection was removed as a user concept (tester-gate D2): the
+    // wallet never switches off the appchain, so the guard blocks the send
+    // without invoking any wallet chain switch.
+    expect(mocks.switchWalletToChain).not.toHaveBeenCalled();
+    expect(mocks.account.execute).not.toHaveBeenCalled();
   });
 
   it("resets selection and version when mode or environment changes", async () => {

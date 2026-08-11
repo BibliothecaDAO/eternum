@@ -1,7 +1,7 @@
 import { getCachedRpcProvider } from "@/utils/cached-rpc-provider";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { Chain } from "@contracts";
-import { getRpcUrlForChain } from "@/ui/features/admin/constants";
+import { getRpcUrlForChain } from "@/runtime/chain-rpc";
 import { createContractEntrypointSupportResolver, parseUint256CallResult } from "./pass-inventory-rpc";
 
 export interface VillagePassInventoryItem {

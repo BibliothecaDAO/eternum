@@ -12,7 +12,7 @@ import { normalizeSelector } from "@/runtime/world/normalize";
 import { resolveAppchainWorldIdForGame } from "@/runtime/world/game-registry";
 import { getDefaultWorld, getWorldById } from "@/runtime/world/world-directory";
 import { buildBlitzSettleCalls } from "@/services/blitz/blitz-settlement-calls";
-import { getRpcUrlForChain } from "@/ui/features/admin/constants";
+import { getRpcUrlForChain } from "@/runtime/chain-rpc";
 import { waitForTransactionConfirmation } from "@/ui/utils/transactions";
 import { getGameManifest, type Chain } from "@contracts";
 import { useAccount } from "@starknet-react/core";
