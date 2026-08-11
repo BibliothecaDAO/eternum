@@ -161,7 +161,7 @@ describe("usePlayerWorldRegistrations", () => {
     const [opts] = call[0].queries;
     expect(opts.queryKey).toEqual([
       "playerWorldRegistration",
-      getWorldSummaryKey({ name: "alpha", chain: "appchain" }),
+      getWorldSummaryKey({ name: "alpha", chain: "appchain", worldId: "blitz", gameId: 7 }),
       "0xplayer",
     ]);
   });
@@ -179,7 +179,7 @@ describe("usePlayerWorldRegistrations", () => {
     expect(opts.queryKey[2]).toBe("anonymous");
   });
 
-  it("returns a map keyed by chain:name from queries", () => {
+  it("returns a map keyed by (worldId, gameId) from queries", () => {
     reactQueryMocks.useQueries.mockReturnValue([
       { data: { isPlayerRegistered: true, hasPlayerSettledRealm: null }, isLoading: false },
       { data: { isPlayerRegistered: null, hasPlayerSettledRealm: null }, isLoading: false },
@@ -187,17 +187,17 @@ describe("usePlayerWorldRegistrations", () => {
 
     const result = usePlayerWorldRegistrations({
       worlds: [
-        makeSummary({ name: "alpha", chain: "appchain", mode: "blitz" }),
-        makeSummary({ name: "beta", chain: "appchain", mode: "eternum" }),
+        makeSummary({ name: "alpha", chain: "appchain", mode: "blitz", worldId: "blitz", gameId: 7 }),
+        makeSummary({ name: "beta", chain: "appchain", mode: "eternum", worldId: "eternum", gameId: 7 }),
       ],
       playerAddress: "0xplayer",
     });
 
-    expect(result.registrationsByWorldKey.get("appchain:alpha")).toEqual({
+    expect(result.registrationsByWorldKey.get("blitz:7")).toEqual({
       isPlayerRegistered: true,
       hasPlayerSettledRealm: null,
     });
-    expect(result.registrationsByWorldKey.get("appchain:beta")).toEqual({
+    expect(result.registrationsByWorldKey.get("eternum:7")).toEqual({
       isPlayerRegistered: null,
       hasPlayerSettledRealm: null,
     });
@@ -222,7 +222,7 @@ describe("usePlayerWorldRegistrations", () => {
       playerAddress: "0xplayer",
     });
 
-    expect(result.registrationsByWorldKey.get("appchain:alpha")).toEqual({
+    expect(result.registrationsByWorldKey.get("blitz:7")).toEqual({
       isPlayerRegistered: null,
       hasPlayerSettledRealm: null,
     });

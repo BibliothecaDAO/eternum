@@ -69,8 +69,11 @@ const fetchPlayerSettledRealm = async (
   }
 };
 
-export const getWorldSummaryKey = (world: Pick<WorldSummary, "name" | "chain">): string =>
-  `${world.chain}:${world.name}`;
+// Landing identity is (worldId, gameId): two same-named games in different
+// worlds must never collide on React keys or query caches. chain:name remains
+// only as a fallback for rows that predate the id fields.
+export const getWorldSummaryKey = (world: Pick<WorldSummary, "name" | "chain" | "worldId" | "gameId">): string =>
+  world.worldId && world.gameId ? `${world.worldId}:${world.gameId}` : `${world.chain}:${world.name}`;
 
 interface UsePlayerWorldRegistrationsInput {
   worlds: WorldSummary[];

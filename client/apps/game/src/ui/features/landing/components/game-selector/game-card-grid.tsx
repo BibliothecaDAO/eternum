@@ -232,7 +232,7 @@ interface GameCardProps {
   onSeeScore?: () => void;
   onClaimRewards?: () => void;
   claimSummary?: GameReviewClaimSummary | null;
-  onRegistrationComplete?: (worldKey: string) => void;
+  onRegistrationComplete?: (game: GameData) => void;
   playerAddress: string | null;
   showChainBadge?: boolean;
 }
@@ -383,8 +383,8 @@ const GameCard = ({
     toast.success("Settlement successful!", {
       description: `You are now settled in ${game.name}.`,
     });
-    onRegistrationComplete?.(game.worldKey);
-  }, [entryStage, game.name, game.worldKey, onRegistrationComplete]);
+    onRegistrationComplete?.(game);
+  }, [entryStage, game, onRegistrationComplete]);
 
   // Status colors - enhanced yellow for upcoming
   const statusColors = {
@@ -1003,15 +1003,17 @@ export const UnifiedGameGrid = ({
   // registration query here: an instant refetch could race torii indexing and
   // clobber the optimistic value with a stale "unregistered".
   const handleRegistrationComplete = useCallback(
-    (worldKey: string) => {
+    (game: GameData) => {
       queryClient.setQueriesData(
-        { queryKey: [...PLAYER_WORLD_REGISTRATION_QUERY_KEY, worldKey] },
+        { queryKey: [...PLAYER_WORLD_REGISTRATION_QUERY_KEY, game.worldKey] },
         (previous: { isPlayerRegistered: boolean | null; hasPlayerSettledRealm: boolean | null } | undefined) => ({
           isPlayerRegistered: true,
           hasPlayerSettledRealm: previous?.hasPlayerSettledRealm ?? null,
         }),
       );
-      queryClient.invalidateQueries({ queryKey: [...WORLD_AVAILABILITY_QUERY_KEY, worldKey] });
+      // The availability cache (entry-modal path) keys by chain:name, not by
+      // the (worldId, gameId) summary key.
+      queryClient.invalidateQueries({ queryKey: [...WORLD_AVAILABILITY_QUERY_KEY, `${game.chain}:${game.name}`] });
 
       onRegistrationComplete?.();
     },
