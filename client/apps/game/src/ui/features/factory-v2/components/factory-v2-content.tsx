@@ -4,7 +4,6 @@ import { factoryModeDefinitions } from "../catalog";
 import { useFactoryV2 } from "../hooks/use-factory-v2";
 import { resolveFactoryModeAppearance } from "../mode-appearance";
 import { FactoryV2DeveloperTools } from "./factory-v2-developer-tools";
-import { FactoryV2ManageIndexersWorkspace } from "./factory-v2-manage-indexers-workspace";
 import { FactoryV2ModeSwitch } from "./factory-v2-mode-switch";
 import { FactoryV2StartWorkspace } from "./factory-v2-start-workspace";
 import { FactoryV2WatchWorkspace } from "./factory-v2-watch-workspace";
@@ -195,37 +194,6 @@ export const FactoryV2Content = () => {
           </div>
         ) : null}
 
-        {selectedWorkflow === "manage" ? (
-          <div className="px-1 md:px-0">
-            <FactoryV2ManageIndexersWorkspace
-              mode={factory.selectedMode}
-              watcher={factory.watcher}
-              adminSecret={factory.factoryAdminSecret}
-              hasSavedAdminSecret={factory.hasSavedFactoryAdminSecret}
-              environmentLabel={factory.selectedEnvironment?.label ?? "Mainnet"}
-              liveIndexers={factory.liveIndexers}
-              liveIndexersUpdatedAt={factory.liveIndexersUpdatedAt}
-              hasLoadedLiveIndexersSnapshot={factory.hasLoadedLiveIndexersSnapshot}
-              notice={factory.notice}
-              isBusy={factory.isWatcherBusy}
-              onLoadLiveIndexers={(request) => {
-                void factory.loadLiveIndexers(request);
-              }}
-              onRefreshLiveIndexers={(request) => {
-                void factory.refreshLiveIndexerSnapshot(request);
-              }}
-              onCreateIndexers={(request) => {
-                void factory.createIndexers(request);
-              }}
-              onUpdateIndexerTier={(request) => {
-                void factory.updateIndexerTiers(request);
-              }}
-              onDeleteIndexers={(request) => {
-                return factory.deleteIndexers(request);
-              }}
-            />
-          </div>
-        ) : null}
       </div>
     </section>
   );

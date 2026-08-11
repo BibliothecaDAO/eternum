@@ -104,7 +104,7 @@ describe("Factory V2 mobile switches", () => {
     expect(workflowSwitch?.className).toContain("md:max-w-[30rem]");
     expect(workflowSwitch?.textContent).toContain("Create game");
     expect(workflowSwitch?.textContent).toContain("Check game");
-    expect(workflowSwitch?.textContent).toContain("Manage indexers");
+    expect(workflowSwitch?.textContent).not.toContain("Manage indexers");
     expect(rootGroup?.className).toContain("text-center");
   });
 });
