@@ -103,6 +103,21 @@ export class FoundationStack extends cdk.Stack {
     );
     this.toriiAdminToken.grantRead(launchRole);
 
+    // Client deploys: sync the built SPA into the public website bucket. The
+    // bucket lives in the dev stack; scope by name to avoid a cyclic reference.
+    const clientRole = new iam.Role(this, "GhaClientRole", {
+      roleName: "gha-appchain-client",
+      assumedBy: githubPrincipal,
+      description: "GitHub Actions: upload the game client to play.jcndata.com",
+    });
+    clientRole.addToPolicy(
+      new iam.PolicyStatement({
+        actions: ["s3:PutObject", "s3:DeleteObject", "s3:GetObject", "s3:ListBucket"],
+        resources: ["arn:aws:s3:::play.jcndata.com", "arn:aws:s3:::play.jcndata.com/*"],
+      }),
+    );
+
+    new cdk.CfnOutput(this, "ClientRoleArn", { value: clientRole.roleArn });
     new cdk.CfnOutput(this, "DeployRoleArn", { value: deployRole.roleArn });
     new cdk.CfnOutput(this, "ImageRoleArn", { value: imageRole.roleArn });
     new cdk.CfnOutput(this, "LaunchRoleArn", { value: launchRole.roleArn });

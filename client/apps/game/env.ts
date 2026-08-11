@@ -223,11 +223,13 @@ const envSchema = z.object({
     .optional()
     .default("true"),
 
+  // Debug logging must be opt-in — a defaulted-true flag spams every build
+  // that forgets to set it.
   VITE_PUBLIC_TORII_BOUNDS_DEBUG: z
     .string()
     .transform((v) => v === "true")
     .optional()
-    .default("true"),
+    .default("false"),
   VITE_PUBLIC_TORII_BOUNDS_DEBUG_OVERLAY: z
     .string()
     .transform((v) => v === "true")

@@ -1,0 +1,82 @@
+name: Deploy Client
+
+# Ships the game client to play.jcndata.com (S3 website bucket fronted by
+# Cloudflare). Manual dispatch keeps deploys deliberate; the build reads the
+# committed .env.production and stamps the version from the ref.
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version label shown in-app (defaults to the short SHA)"
+        required: false
+
+permissions:
+  id-token: write
+  contents: read
+
+concurrency:
+  group: deploy-client
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile --ignore-scripts
+
+      - name: Build packages
+        run: pnpm run build:packages
+
+      - name: Build client
+        env:
+          VITE_PUBLIC_GAME_VERSION: ${{ github.event.inputs.version || github.sha }}
+          VITE_PUBLIC_SENTRY_DSN: ${{ secrets.CLIENT_SENTRY_DSN }}
+        run: pnpm --dir client/apps/game build
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::061906581174:role/gha-appchain-client
+          aws-region: us-east-1
+
+      - name: Upload to S3
+        working-directory: client/apps/game
+        run: |
+          set -euo pipefail
+          # Never ship sourcemaps publicly.
+          find dist -name "*.js.map" -delete
+          # Hashed assets: immutable. HTML + service-worker files: revalidate
+          # every request — a stale sw.js is the one file that can pin testers
+          # to an old build.
+          aws s3 sync dist "s3://play.jcndata.com" \
+            --exclude "*.html" --exclude "sw.js" --exclude "registerSW.js" --exclude "manifest.webmanifest" \
+            --cache-control "public,max-age=31536000,immutable"
+          aws s3 sync dist "s3://play.jcndata.com" \
+            --exclude "*" --include "*.html" --include "sw.js" --include "registerSW.js" --include "manifest.webmanifest" \
+            --cache-control "public,max-age=0,must-revalidate"
+          # Remove files from previous builds last, once the new set is live.
+          aws s3 sync dist "s3://play.jcndata.com" --delete
+
+      - name: Purge Cloudflare cache
+        if: ${{ secrets.CLOUDFLARE_ZONE_ID != '' }}
+        env:
+          CF_ZONE_ID: ${{ secrets.CLOUDFLARE_ZONE_ID }}
+          CF_API_TOKEN: ${{ secrets.CLOUDFLARE_CACHE_PURGE_TOKEN }}
+        run: |
+          curl -sf -X POST "https://api.cloudflare.com/client/v4/zones/${CF_ZONE_ID}/purge_cache" \
+            -H "Authorization: Bearer ${CF_API_TOKEN}" \
+            -H "Content-Type: application/json" \
+            --data '{"purge_everything":true}'

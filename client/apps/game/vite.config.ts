@@ -135,6 +135,13 @@ export default defineConfig(({ command, mode }: ConfigEnv): UserConfig => {
           find: "@contracts",
           replacement: path.resolve(__dirname, "../../../contracts/utils/utils"),
         },
+        // The client is appchain-only: the legacy world manifests (~1.8 MB of
+        // JSON) must not ship in the bundle. getGameManifest's legacy arms are
+        // unreachable here; they resolve to an empty stub.
+        {
+          find: /^.*manifest_(mainnet|sepolia|local)\.json$/,
+          replacement: path.resolve(__dirname, "./src/runtime/empty-manifest.json"),
+        },
         {
           find: "@manifests",
           replacement: path.resolve(__dirname, "../../../contracts/game"),
