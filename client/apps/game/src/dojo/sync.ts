@@ -169,9 +169,10 @@ const GLOBAL_ENTITY_STREAM_MODEL_NAMES: Array<{ name: string; keyCount: number }
   { name: "GuildWhitelist", keyCount: 2 },
 ];
 
-// s1-only models with no s2 counterpart (SeasonEnded/finals live on
-// GameRegistry; quests are off) — never reference them against torii-s2.
-const S1_ONLY_GLOBAL_ENTITY_STREAM_MODELS = new Set(["SeasonEnded", "QuestLevels", "PlayersRankFinal"]);
+// Every stream model now exists on both arms (W3 carried SeasonEnded,
+// QuestLevels, and PlayersRankFinal onto s2 with game_id keys) — the set is
+// kept for the next genuinely legacy-only model.
+const S1_ONLY_GLOBAL_ENTITY_STREAM_MODELS = new Set<string>([]);
 // s2-only additions: the game's registry row is the live clock/status source.
 const S2_ONLY_GLOBAL_ENTITY_STREAM_MODELS = ["GameRegistry"];
 

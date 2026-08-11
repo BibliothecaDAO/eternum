@@ -38,7 +38,7 @@ export const getDetachedResources = (entityId: ID, components: ContractComponent
 };
 
 export const getTradeResources = (tradeId: ID, components: ContractComponents): TradeResources => {
-  let trade = getComponentValue(components.Trade, getEntityIdFromKeys([BigInt(tradeId)]));
+  let trade = getComponentValue(components.Trade, gameEntityKey([BigInt(tradeId)]));
 
   if (!trade) return { takerGets: [], makerGets: [] };
 
@@ -63,7 +63,7 @@ export const getTradeResourcesFromEntityViewpoint = (
   tradeId: ID,
   components: ContractComponents,
 ): TradeResourcesFromViewpoint => {
-  let trade = getComponentValue(components.Trade, getEntityIdFromKeys([BigInt(tradeId)]));
+  let trade = getComponentValue(components.Trade, gameEntityKey([BigInt(tradeId)]));
 
   if (!trade) return { resourcesGet: [], resourcesGive: [] };
 

@@ -1,7 +1,6 @@
 import { ClientComponents, ContractAddress, ID, ResourcesIds } from "@bibliothecadao/types";
 import { getComponentValue, HasValue, runQuery, type ComponentValue } from "@dojoengine/recs";
-import { getEntityIdFromKeys } from "@dojoengine/utils";
-import { configManager } from "./config-manager";
+import { configManager, gameEntityKey } from "./config-manager";
 
 export class MarketManager {
   constructor(
@@ -29,11 +28,11 @@ export class MarketManager {
   }
 
   public getPlayerLiquidity() {
-    return getComponentValue(this.components.Liquidity, getEntityIdFromKeys([this.player, BigInt(this.resourceId)]));
+    return getComponentValue(this.components.Liquidity, gameEntityKey([this.player, BigInt(this.resourceId)]));
   }
 
   public getMarket() {
-    const market = getComponentValue(this.components.Market, getEntityIdFromKeys([BigInt(this.resourceId)]));
+    const market = getComponentValue(this.components.Market, gameEntityKey([BigInt(this.resourceId)]));
     return !market || market.lords_amount === 0n || market.resource_amount === 0n ? null : market;
   }
 

@@ -1,5 +1,5 @@
 import { getRealmNameById } from "@bibliothecadao/eternum";
-import { buildUnscopedApiUrl, fetchWithErrorHandling } from "@bibliothecadao/torii";
+import { buildApiUrl, fetchWithErrorHandling } from "@bibliothecadao/torii";
 
 import { getSqlApiBaseUrl } from "@/services/api";
 
@@ -90,16 +90,16 @@ const WONDER_FAITH_LEADERBOARD_QUERY = `
   SELECT
     s.entity_id AS wonder_id,
     s.owner AS owner_address,
-    sos.name AS owner_name,
+    an.name AS owner_name,
     s.\`metadata.realm_id\` AS realm_id,
     COALESCE(wf.claimed_points, 0) AS claimed_points,
     COALESCE(wf.claim_per_sec, 0) AS claim_per_sec,
     COALESCE(wf.claim_last_at, 0) AS claim_last_at,
     COALESCE(wf.num_structures_pledged, 0) AS num_structures_pledged
   FROM [s1_eternum-Structure] s
-  LEFT JOIN [s1_eternum-WonderFaith] wf ON wf.wonder_id = s.entity_id
-  LEFT JOIN [s1_eternum-StructureOwnerStats] sos ON sos.owner = s.owner
-  WHERE s.\`metadata.has_wonder\` = true
+  LEFT JOIN [s1_eternum-WonderFaith] wf ON wf.wonder_id = s.entity_id AND {GF:wf}
+  LEFT JOIN [s1_eternum-AddressName] an ON an.address = s.owner
+  WHERE s.\`metadata.has_wonder\` = true AND {GF:s}
   ORDER BY COALESCE(wf.claimed_points, 0) DESC, COALESCE(wf.claim_per_sec, 0) DESC, s.entity_id ASC;
 `;
 
@@ -113,7 +113,7 @@ const buildWonderFaithDetailQuery = (wonderId: bigint): string => `
   SELECT
     s.entity_id AS wonder_id,
     s.owner AS owner_address,
-    sos.name AS owner_name,
+    an.name AS owner_name,
     s.\`metadata.realm_id\` AS realm_id,
     COALESCE(wf.claimed_points, 0) AS claimed_points,
     COALESCE(wf.claim_per_sec, 0) AS claim_per_sec,
@@ -121,9 +121,9 @@ const buildWonderFaithDetailQuery = (wonderId: bigint): string => `
     COALESCE(wf.owner_claim_per_sec, 0) AS owner_claim_per_sec,
     COALESCE(wf.num_structures_pledged, 0) AS num_structures_pledged
   FROM [s1_eternum-Structure] s
-  LEFT JOIN [s1_eternum-WonderFaith] wf ON wf.wonder_id = s.entity_id
-  LEFT JOIN [s1_eternum-StructureOwnerStats] sos ON sos.owner = s.owner
-  WHERE s.entity_id = ${wonderId.toString()} AND s.\`metadata.has_wonder\` = true
+  LEFT JOIN [s1_eternum-WonderFaith] wf ON wf.wonder_id = s.entity_id AND {GF:wf}
+  LEFT JOIN [s1_eternum-AddressName] an ON an.address = s.owner
+  WHERE s.entity_id = ${wonderId.toString()} AND s.\`metadata.has_wonder\` = true AND {GF:s}
   LIMIT 1;
 `;
 
@@ -133,14 +133,14 @@ const buildWonderFaithFollowersQuery = (wonderId: bigint): string => `
     s.\`base.category\` AS structure_type,
     s.\`metadata.realm_id\` AS realm_id,
     s.owner AS owner_address,
-    sos.name AS owner_name,
+    an.name AS owner_name,
     fs.faithful_since AS faithful_since,
     fs.fp_to_wonder_owner_per_sec AS fp_to_wonder_owner_per_sec,
     fs.fp_to_struct_owner_per_sec AS fp_to_struct_owner_per_sec
   FROM [s1_eternum-FaithfulStructure] fs
-  LEFT JOIN [s1_eternum-Structure] s ON s.entity_id = fs.structure_id
-  LEFT JOIN [s1_eternum-StructureOwnerStats] sos ON sos.owner = s.owner
-  WHERE fs.wonder_id = ${wonderId.toString()}
+  LEFT JOIN [s1_eternum-Structure] s ON s.entity_id = fs.structure_id AND {GF:s}
+  LEFT JOIN [s1_eternum-AddressName] an ON an.address = s.owner
+  WHERE fs.wonder_id = ${wonderId.toString()} AND {GF:fs}
     AND fs.structure_id != ${wonderId.toString()}
     AND s.\`base.category\` IN (${REALM_STRUCTURE_TYPE}, ${VILLAGE_STRUCTURE_TYPE}, ${HOLY_SITE_STRUCTURE_TYPE})
   ORDER BY fs.faithful_since ASC, fs.structure_id ASC;
@@ -154,7 +154,7 @@ const buildFaithfulStructureStatusQuery = (structureId: bigint): string => `
     fs.fp_to_wonder_owner_per_sec AS fp_to_wonder_owner_per_sec,
     fs.fp_to_struct_owner_per_sec AS fp_to_struct_owner_per_sec
   FROM [s1_eternum-FaithfulStructure] fs
-  WHERE fs.structure_id = ${structureId.toString()}
+  WHERE fs.structure_id = ${structureId.toString()} AND {GF:fs}
   LIMIT 1;
 `;
 
@@ -459,7 +459,7 @@ export const fetchFaithLeaderboard = async (toriiBaseUrl?: string): Promise<Fait
   }
 
   const sqlBaseUrl = ensureSqlSuffix(baseUrl.trim());
-  const url = buildUnscopedApiUrl(sqlBaseUrl, WONDER_FAITH_LEADERBOARD_QUERY);
+  const url = buildApiUrl(sqlBaseUrl, WONDER_FAITH_LEADERBOARD_QUERY);
   const rows = await fetchWithErrorHandling<FaithLeaderboardRow>(url, "Failed to fetch faith leaderboard");
   return transformFaithLeaderboardRows(rows);
 };
@@ -481,7 +481,7 @@ export const fetchFaithfulStructureStatus = async (
   }
 
   const sqlBaseUrl = ensureSqlSuffix(baseUrl.trim());
-  const url = buildUnscopedApiUrl(sqlBaseUrl, buildFaithfulStructureStatusQuery(structureId));
+  const url = buildApiUrl(sqlBaseUrl, buildFaithfulStructureStatusQuery(structureId));
 
   try {
     const rows = await fetchWithErrorHandling<FaithfulStructureRow>(url, "Failed to fetch faith devotion status");
@@ -512,7 +512,7 @@ export const fetchWonderFaithDetail = async (
   }
 
   const sqlBaseUrl = ensureSqlSuffix(baseUrl.trim());
-  const detailUrl = buildUnscopedApiUrl(sqlBaseUrl, buildWonderFaithDetailQuery(wonderId));
+  const detailUrl = buildApiUrl(sqlBaseUrl, buildWonderFaithDetailQuery(wonderId));
   const detailRows = await fetchWithErrorHandling<WonderFaithDetailRow>(
     detailUrl,
     "Failed to fetch wonder faith detail",
@@ -522,7 +522,7 @@ export const fetchWonderFaithDetail = async (
     return null;
   }
 
-  const followersUrl = buildUnscopedApiUrl(sqlBaseUrl, buildWonderFaithFollowersQuery(wonderId));
+  const followersUrl = buildApiUrl(sqlBaseUrl, buildWonderFaithFollowersQuery(wonderId));
   let followerRows: WonderFaithFollowerRow[] = [];
   try {
     followerRows = await fetchWithErrorHandling<WonderFaithFollowerRow>(

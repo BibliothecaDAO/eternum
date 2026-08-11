@@ -118,11 +118,6 @@ export class ClientConfigManager {
     return (this.getWorldConfig() as unknown as { season_config?: any })?.season_config;
   }
 
-  /** Members that only exist on legacy (s1) worlds: bank, bridge, quests. */
-  private getLegacyExtras() {
-    return this.getWorldConfig() as unknown as Record<string, any> | undefined;
-  }
-
   /** Chain-wide singleton (addresses, mmr, agent controller). */
   private getChainConfig() {
     return getComponentValue(this.components.ChainConfig, getEntityIdFromKeys([WORLD_CONFIG_ID]));
@@ -756,7 +751,7 @@ export class ClientConfigManager {
   getResourceBridgeFeeSplitConfig() {
     return this.getValueOrDefault(
       () => {
-        const resourceBridgeFeeSplitConfig = this.getLegacyExtras()?.res_bridge_fee_split_config;
+        const resourceBridgeFeeSplitConfig = (this.getRulebook() as unknown as Record<string, any> | undefined)?.res_bridge_fee_split_config;
         return {
           velords_fee_on_dpt_percent: Number(resourceBridgeFeeSplitConfig?.velords_fee_on_dpt_percent ?? 0),
           velords_fee_on_wtdr_percent: Number(resourceBridgeFeeSplitConfig?.velords_fee_on_wtdr_percent ?? 0),
@@ -804,7 +799,7 @@ export class ClientConfigManager {
   getBankConfig() {
     return this.getValueOrDefault(
       () => {
-        const bankConfig = this.getLegacyExtras()?.bank_config;
+        const bankConfig = (this.getRulebook() as unknown as Record<string, any> | undefined)?.bank_config;
 
         return {
           lpFeesNumerator: Number(bankConfig?.lp_fee_num ?? 0),
@@ -819,7 +814,7 @@ export class ClientConfigManager {
   }
 
   getAdminBankOwnerFee() {
-    const bankConfig = this.getLegacyExtras()?.bank_config;
+    const bankConfig = (this.getRulebook() as unknown as Record<string, any> | undefined)?.bank_config;
     const numerator = Number(bankConfig?.owner_fee_num) ?? 0;
     const denominator = Number(bankConfig?.owner_fee_denom) ?? 0;
     return numerator / denominator;

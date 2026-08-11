@@ -121,8 +121,7 @@ export const getStructuresDataFromTorii = async (
   const playerStructuresModels = [
     gameModel("Structure"),
     gameModel("Resource"),
-    // no villages on the s2 blitz world — never reference the model there
-    ...(isGameScoped() ? [] : [gameModel("VillageTroop")]),
+    gameModel("VillageTroop"),
     gameModel("StructureBuildings"),
     gameModel("ResourceArrival"),
     gameModel("ProductionBoostBonus"),
@@ -573,24 +572,25 @@ export const getEntitiesFromTorii = async <S extends Schema>(
   return getEntities(client, query, components as any, [], entityModels, 40_000, false);
 };
 
-// Market/Liquidity/Trade are s1-only models (no AMM on the s2 blitz world) —
-// this is a legacy-arm query and keeps its literal names.
+// Market/Liquidity/Trade are game_id-keyed on s2 (W3): prefix the key clause
+// with the active game on the scoped arm.
 export const getMarketFromTorii = async <S extends Schema>(
   client: ToriiClient,
   components: Component<S, Metadata, undefined>[],
 ) => {
+  const marketModels = [gameModel("Market"), gameModel("Liquidity"), gameModel("Trade")];
   const promiseMarket = getEntities(
     client,
     {
       Keys: {
-        keys: [undefined],
+        keys: isGameScoped() ? [gameIdKey()] : [undefined],
         pattern_matching: "VariableLen",
-        models: [],
+        models: marketModels,
       },
     },
     components,
     [],
-    ["s1_eternum-Market", "s1_eternum-Liquidity", "s1_eternum-Trade"],
+    marketModels,
     EVENT_QUERY_LIMIT,
     false,
   );
@@ -776,16 +776,16 @@ export const getStructuresFromToriiExact = async <S extends Schema>(
   );
 };
 
-// Quest is an s1-only model (quests are off on the s2 blitz world) — this is a
-// legacy-arm query and keeps its literal names.
+// s2 quests live on QuestTile (game_id-keyed); the legacy arm keeps s1 Quest.
 export const getQuestsFromTorii = async (client: ToriiClient, components: Component<Schema, Metadata, undefined>[]) => {
+  const questModels = isGameScoped() ? [gameModel("QuestTile")] : ["s1_eternum-Quest"];
   const query = {
     Keys: {
-      keys: [undefined, undefined],
+      keys: isGameScoped() ? [gameIdKey(), undefined] : [undefined, undefined],
       pattern_matching: "VariableLen" as PatternMatching,
-      models: ["s1_eternum-Quest"],
+      models: questModels,
     },
   };
 
-  return getEntities(client, query, components as any, [], ["s1_eternum-Quest"], EVENT_QUERY_LIMIT, false);
+  return getEntities(client, query, components as any, [], questModels, EVENT_QUERY_LIMIT, false);
 };

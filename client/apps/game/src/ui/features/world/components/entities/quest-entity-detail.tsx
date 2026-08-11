@@ -8,6 +8,7 @@ import { useDojo } from "@bibliothecadao/react";
 import { QuestTileData } from "@bibliothecadao/torii";
 import { ID } from "@bibliothecadao/types";
 import { getComponentValue } from "@dojoengine/recs";
+import { gameEntityKey } from "@/dojo/game-scope";
 
 import {
   EntityDetailLayoutVariant,
@@ -71,7 +72,7 @@ const QuestEntityDetailContent = ({
   const hasSlotsRemaining = useMemo(() => slotsRemaining > 0, [slotsRemaining]);
 
   const questLevelsEntity = useMemo(
-    () => getComponentValue(components.QuestLevels, getEntityIdFromKeys([BigInt(quest?.game_address || 0)])),
+    () => getComponentValue(components.QuestLevels, gameEntityKey([BigInt(quest?.game_address || 0)])),
     [components, quest?.game_address],
   );
 
