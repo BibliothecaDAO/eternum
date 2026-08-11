@@ -40,6 +40,11 @@ export const OPTIMISTIC_BUILDING_ENABLED = true;
 // Module-level slot transition state tracks optimistic placement until synced component state confirms it.
 const buildSlotTransitions = new Map<string, BuildSlotTransition>();
 const OPTIMISTIC_TX_FALLBACK_TIMEOUT_MS = 180_000;
+// The receipt resolves at PRE_CONFIRMED, usually before torii has indexed and
+// delivered the authoritative row. Dropping the override at that instant makes
+// counters (population, resources) snap back to the stale value and jump again
+// when the row lands — hold the override briefly so the row arrives underneath.
+const OPTIMISTIC_CLEANUP_AUTHORITATIVE_GRACE_MS = 2_000;
 const OCCUPIED_SPACE_REASON = "space is occupied";
 
 const extractErrorMessage = (error: unknown): string => {
@@ -341,13 +346,17 @@ export class TileManager {
                 : "Unknown revert reason";
           console.warn(`Transaction ${transactionHash} reverted: ${revertReason}`);
           options?.onReverted?.(revertReason);
+          finalizeAndClearTimeout();
+          return;
         }
+        // Success: keep the override up while the authoritative row travels
+        // katana → torii → client, so removal reveals the new value instead of
+        // flashing the old one. The 180 s fallback still bounds the wait.
+        setTimeout(finalizeAndClearTimeout, OPTIMISTIC_CLEANUP_AUTHORITATIVE_GRACE_MS);
       })
       .catch((error) => {
         console.error(`Error while waiting for transaction ${transactionHash}`, error);
         options?.onFailed?.(extractErrorMessage(error));
-      })
-      .finally(() => {
         finalizeAndClearTimeout();
       });
   };

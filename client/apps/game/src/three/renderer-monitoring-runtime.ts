@@ -203,9 +203,11 @@ class GameRendererMonitoringRuntime implements RendererMonitoringRuntime {
     const summary = this.memoryMonitor!.getSummary();
     const materialStats = MaterialPool.getInstance().getStats();
     const sharingRatio = materialStats.totalReferences / Math.max(materialStats.uniqueMaterials, 1);
-    const drawCalls = this.input.renderer.info.render.calls;
+    // WebGPU's Info keeps `calls` cumulative since page load; the per-frame
+    // count lives in `drawCalls` (WebGL keeps the per-frame count in `calls`).
+    const drawCalls = this.input.renderer.info.render.drawCalls ?? this.input.renderer.info.render.calls;
     const triangles = this.input.renderer.info.render.triangles;
-    const drawCallColor = drawCalls > 100 ? "#ff4444" : drawCalls > 50 ? "#ffaa00" : "#00ff00";
+    const drawCallColor = drawCalls > 3000 ? "#ff4444" : drawCalls > 1500 ? "#ffaa00" : "#00ff00";
 
     return {
       drawCallColor,

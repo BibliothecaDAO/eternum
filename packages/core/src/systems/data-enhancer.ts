@@ -159,6 +159,21 @@ export class DataEnhancer {
     }
   }
 
+  /**
+   * Non-blocking variant for hot update paths: reads whatever the store holds
+   * right now instead of awaiting an in-flight refresh (which can stall an
+   * entity update behind a full map-data SQL reload).
+   */
+  getStructureOwnerSync(structureId: ID): { address: bigint | undefined; ownerName: string } | undefined {
+    const structureMapData = this.mapDataStore.getStructureById(Number(structureId));
+
+    if (!structureMapData) {
+      return undefined;
+    }
+
+    return { address: BigInt(structureMapData.ownerAddress), ownerName: structureMapData.ownerName };
+  }
+
   updateStructureOwner(structureId: ID, ownerAddress: bigint | undefined, ownerName: string) {
     if (ownerAddress === undefined) {
       return;

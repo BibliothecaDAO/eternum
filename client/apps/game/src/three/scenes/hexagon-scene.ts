@@ -126,6 +126,7 @@ export abstract class HexagonScene {
   private cameraTransitionStatus: CameraTransitionStatus = "idle";
   protected shadowsEnabledByQuality = true;
   protected shadowMapSizeByQuality = 2048;
+  private shadowRefreshAccumulatorMs = 0;
   private sceneOwnershipBootstrapped = false;
   private lastClipNear = 0;
   private lastClipFar = 0;
@@ -275,6 +276,10 @@ export abstract class HexagonScene {
 
   private configureDirectionalLight(): void {
     this.mainDirectionalLight.castShadow = this.shadowsEnabledByQuality;
+    // Re-rendering the shadow map every frame doubles the scene submission;
+    // a throttled refresh (see updateShadowRefresh) is visually equivalent.
+    this.mainDirectionalLight.shadow.autoUpdate = false;
+    this.mainDirectionalLight.shadow.needsUpdate = true;
     this.mainDirectionalLight.shadow.mapSize.width = this.shadowMapSizeByQuality;
     this.mainDirectionalLight.shadow.mapSize.height = this.shadowMapSizeByQuality;
     this.mainDirectionalLight.shadow.camera.left = -20;
@@ -1055,6 +1060,17 @@ export abstract class HexagonScene {
     // Derived scenes can override to configure biome meshes on load.
   }
 
+  private updateShadowRefresh(deltaTime: number): void {
+    if (!this.mainDirectionalLight?.castShadow) {
+      return;
+    }
+    this.shadowRefreshAccumulatorMs += deltaTime * 1000;
+    if (this.shadowRefreshAccumulatorMs >= 100) {
+      this.shadowRefreshAccumulatorMs = 0;
+      this.mainDirectionalLight.shadow.needsUpdate = true;
+    }
+  }
+
   update(deltaTime: number): void {
     PerformanceMonitor.recordFrame();
     PerformanceMonitor.begin("scene.update");
@@ -1065,6 +1081,7 @@ export abstract class HexagonScene {
     PerformanceMonitor.end("interactiveHexManager.update");
 
     this.updateLights();
+    this.updateShadowRefresh(deltaTime);
     this.updateHighlightPulse();
     this.thunderBoltManager.update();
 

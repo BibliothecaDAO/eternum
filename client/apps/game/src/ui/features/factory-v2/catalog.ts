@@ -64,9 +64,10 @@ const factoryLaunchPresets: FactoryLaunchPreset[] = [
       singleRealmMode: false,
     },
   },
-  // Blitz launches run on registered registrar presets: 4 = Regular Fast with
-  // real mainnet balance (the default), 5 = Duel. Presets 2/3 carried the
-  // local dev balance and are immutable — retired, not offered.
+  // Blitz launches run on registered registrar presets: 6 = Regular Fast
+  // (official-60 profile), 7 = Duel (official-90 profile). Presets 2/3 carried
+  // local dev balance and 4/5 missed their balance profiles — all immutable,
+  // retired, not offered.
   {
     id: "blitz-fast",
     mode: "blitz",
@@ -78,7 +79,7 @@ const factoryLaunchPresets: FactoryLaunchPreset[] = [
       devMode: false,
       twoPlayerMode: false,
       singleRealmMode: false,
-      version: "4",
+      version: "6",
     },
   },
   {
@@ -92,7 +93,7 @@ const factoryLaunchPresets: FactoryLaunchPreset[] = [
       devMode: false,
       twoPlayerMode: true,
       singleRealmMode: false,
-      version: "5",
+      version: "7",
     },
   },
   {
@@ -106,7 +107,7 @@ const factoryLaunchPresets: FactoryLaunchPreset[] = [
       devMode: true,
       twoPlayerMode: false,
       singleRealmMode: false,
-      version: "4",
+      version: "6",
     },
   },
 ];

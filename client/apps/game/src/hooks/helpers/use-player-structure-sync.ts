@@ -14,8 +14,11 @@ import { useAccountStore } from "../store/use-account-store";
 import { useConnectionStore } from "../store/use-connection-store";
 import { selectUnsyncedOwnedStructureTargets } from "./player-structure-sync-utils";
 
-// Models synced per-player via a scoped subscription (see usePlayerStructureSync)
-const getPlayerStructureModels = (): string[] => ["ProductionBoostBonus", "Resource", "ResourceArrival"].map(gameModel);
+// Models synced per-player via a scoped subscription (see usePlayerStructureSync).
+// StructureBuildings carries population — keyed (game_id, entity_id) like the
+// rest; without it the counter only updates via the bounds-gated map stream.
+const getPlayerStructureModels = (): string[] =>
+  ["ProductionBoostBonus", "Resource", "ResourceArrival", "StructureBuildings"].map(gameModel);
 
 // Structures owned by an address, optionally pinned to the active s2 game.
 const buildOwnerStructureClause = (accountAddress: string): Clause => {

@@ -285,7 +285,10 @@ interface QualityControllerConfig {
 }
 
 const DEFAULT_CONFIG: Required<QualityControllerConfig> = {
-  autoAdjustEnabled: true,
+  // Manual settings only: the auto-adjuster compared the frame-cap-throttled
+  // FPS against its own target, so it treated every capped machine as
+  // GPU-bound and silently walked down the degradation ladder.
+  autoAdjustEnabled: false,
   fpsHistorySize: 60,
   downgradeThreshold: 0.7,
   upgradeThreshold: 0.95,

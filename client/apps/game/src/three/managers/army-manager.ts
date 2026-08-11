@@ -1,6 +1,6 @@
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useBlockTimestampStore } from "@/hooks/store/use-block-timestamp-store";
-import { getFreshPendingStaminaSource } from "@/lib/army-stamina/source-store";
+import { getFreshPendingStaminaSource, useArmyStaminaSourceStore } from "@/lib/army-stamina/source-store";
 import { getExplorerStaminaSnapshot } from "@/utils/explorer-stamina";
 import { ArmyModel } from "@/three/managers/army-model";
 import { CameraView, HexagonScene } from "@/three/scenes/hexagon-scene";
@@ -235,6 +235,7 @@ export class ArmyManager {
   private memoryMonitor?: MemoryMonitor;
   private debugStatsIntervalId?: ReturnType<typeof setInterval>;
   private unsubscribeAccountStore?: () => void;
+  private unsubscribePendingStaminaStore?: () => void;
   private attachmentManager: CosmeticAttachmentManager;
   private armyAttachmentSignatures: Map<number, string> = new Map();
   private activeArmyAttachmentEntities: Set<number> = new Set();
@@ -355,6 +356,20 @@ export class ArmyManager {
 
     this.unsubscribeAccountStore = useAccountStore.subscribe(() => {
       this.recheckOwnership();
+    });
+
+    // Push optimistic stamina into the 3D label the moment it's written (or
+    // cleared) instead of waiting for the next 1 s tick recompute.
+    this.unsubscribePendingStaminaStore = useArmyStaminaSourceStore.subscribe((state, prevState) => {
+      if (state.pendingSources === prevState.pendingSources) {
+        return;
+      }
+      const touched = new Set([...Object.keys(state.pendingSources), ...Object.keys(prevState.pendingSources)]);
+      for (const key of touched) {
+        if (state.pendingSources[key] !== prevState.pendingSources[key]) {
+          this.refreshArmyStamina(Number(key) as ID);
+        }
+      }
     });
 
     // Initialize the last known armies tick to current tick
@@ -3437,6 +3452,37 @@ ${
   }
 
   /**
+   * Recompute stamina for a single army and repaint its label immediately —
+   * used when an optimistic (pending) stamina value is written or cleared.
+   */
+  private refreshArmyStamina(entityId: ID): void {
+    const army = this.armies.get(entityId);
+    if (!army) {
+      return;
+    }
+
+    const staminaSnapshot = this.resolveArmyStaminaSnapshot({
+      entityId,
+      troopCount: army.troopCount,
+      onChainStamina: army.onChainStamina,
+      category: army.category,
+      tier: army.tier,
+    });
+    if (!staminaSnapshot) {
+      return;
+    }
+
+    army.currentStamina = staminaSnapshot.current;
+    army.maxStamina = staminaSnapshot.max;
+    army.displayStaminaRatio = staminaSnapshot.displayRatio;
+
+    const label = this.entityIdLabels.get(entityId);
+    if (label) {
+      this.updateArmyLabelData(entityId, army, label);
+    }
+  }
+
+  /**
    * Recompute battle timers for all armies and update visible labels every second
    */
   private recomputeBattleTimersForAllArmies(): void {
@@ -3670,6 +3716,11 @@ ${
     if (this.unsubscribeAccountStore) {
       this.unsubscribeAccountStore();
       this.unsubscribeAccountStore = undefined;
+    }
+
+    if (this.unsubscribePendingStaminaStore) {
+      this.unsubscribePendingStaminaStore();
+      this.unsubscribePendingStaminaStore = undefined;
     }
 
     // Clean up camera view listener

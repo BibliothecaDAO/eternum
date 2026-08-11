@@ -25,7 +25,7 @@ interface ResizeRendererDisplayInput {
   windowWidth: number;
 }
 
-const MAX_RENDERER_PIXEL_RATIO = 1.5;
+const MAX_RENDERER_PIXEL_RATIO = 1.25;
 
 export function resolveRendererTargetPixelRatio(
   input: RendererDisplayPolicyInput & { devicePixelRatio: number },
@@ -35,7 +35,7 @@ export function resolveRendererTargetPixelRatio(
 
   switch (input.graphicsSetting) {
     case GraphicsSettings.HIGH:
-      return Math.min(devicePixelRatio, 1.5, pixelRatioCap);
+      return Math.min(devicePixelRatio, 1.25, pixelRatioCap);
     case GraphicsSettings.MID:
       return Math.min(devicePixelRatio, 1.25, pixelRatioCap);
     case GraphicsSettings.ULTRA_LOW:
@@ -71,7 +71,7 @@ export function resolveRendererTargetFps(input: RendererDisplayPolicyInput): num
     case GraphicsSettings.MID:
       return 30;
     default:
-      return 45;
+      return 60;
   }
 }
 

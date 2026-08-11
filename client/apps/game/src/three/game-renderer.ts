@@ -507,10 +507,6 @@ export default class GameRenderer {
           worldmapScene: this.worldmapScene,
         });
 
-        if (rendered) {
-          qualityController.recordFrame(deltaTime * 1000);
-        }
-
         return rendered;
       },
       requestNextFrame: () =>

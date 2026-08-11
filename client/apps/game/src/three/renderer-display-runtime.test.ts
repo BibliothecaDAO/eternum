@@ -42,7 +42,7 @@ describe("renderer display runtime", () => {
         graphicsSetting: importedGraphicsSettings.HIGH,
         isMobileDevice: false,
       }),
-    ).toBe(1.5);
+    ).toBe(1.25);
 
     expect(
       resolveRendererTargetPixelRatio({
@@ -83,7 +83,7 @@ describe("renderer display runtime", () => {
         graphicsSetting: importedGraphicsSettings.HIGH,
         isMobileDevice: false,
       }),
-    ).toBe(45);
+    ).toBe(60);
     expect(
       resolveRendererTargetFps({
         graphicsSetting: importedGraphicsSettings.MID,
@@ -116,7 +116,7 @@ describe("renderer display runtime", () => {
         graphicsSetting: importedGraphicsSettings.LOW,
         isMobileDevice: false,
       }),
-    ).toBe(1.5);
+    ).toBe(1.25);
   });
 
   it("resizes using the renderer container when available", () => {

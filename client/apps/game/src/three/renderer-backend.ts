@@ -30,6 +30,10 @@ export interface RendererInfoLike {
   reset(): void;
   render: {
     calls: number;
+    // Per-frame draw-call count on the WebGPU backend (where `calls` is
+    // cumulative render() invocations since page load). Absent on WebGL,
+    // where `calls` itself is the per-frame count.
+    drawCalls?: number;
     triangles: number;
   };
   memory: {

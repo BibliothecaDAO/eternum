@@ -469,8 +469,10 @@ export class WorldUpdateListener {
 
               if (!currentState) return;
 
-              // maybe don't use mapdatastore here since these are all available from the tile listener
-              const owner = await this.dataEnhancer.getStructureOwner(currentState.owner);
+              // Sync read on purpose: awaiting the map-data store here can
+              // stall a stamina/troop label update behind an in-flight SQL
+              // refresh. Owner decoration also arrives via structure updates.
+              const owner = this.dataEnhancer.getStructureOwnerSync(currentState.owner);
               const normalizedOwnerStructureId =
                 currentState.owner && currentState.owner !== 0 ? currentState.owner : null;
 

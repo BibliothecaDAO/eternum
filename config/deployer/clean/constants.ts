@@ -3,10 +3,11 @@ import type { DeploymentEnvironment, DeploymentEnvironmentId } from "./types";
 
 export const DEFAULT_NAMESPACE = "s1_eternum";
 export const DEFAULT_VERSION = DEFAULT_FACTORY_CONFIG_VERSION;
-// Preset 2 = official-60 balance ("Regular Fast") — the owner-designated default game shape.
-// Preset 4 = Regular Fast with REAL mainnet balance (presets 2/3 carried the
-// local dev balance and are immutable; 5 is the Duel-labelled twin of 4).
-export const DEFAULT_APPCHAIN_PRESET_ID = "4";
+// Preset 6 = Regular Fast (official-60 profile applied at registration).
+// Preset 7 = Duel (official-90 profile). Presets 2/3 carried local dev balance
+// and 4/5 were registered WITHOUT their balance profiles (base sheet only) —
+// all immutable, retired, never offered again.
+export const DEFAULT_APPCHAIN_PRESET_ID = "6";
 export const DEFAULT_APPCHAIN_ETERNUM_PRESET_ID = "10";
 export const DEFAULT_APPCHAIN_GAME_INDEX_TIMEOUT_MS = 2 * 60 * 1_000;
 export const DEFAULT_APPCHAIN_GAME_INDEX_POLL_MS = 2_000;

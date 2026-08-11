@@ -71,10 +71,15 @@ function resolveRendererAnimationFrameState(
     };
   }
 
+  const frameTime = input.targetFPS ? 1000 / input.targetFPS : 0;
+
   return {
     currentTime,
     deltaTime: (currentTime - baselineTime) / 1000,
-    lastTime: currentTime,
+    // Carry the sub-frame remainder: snapping lastTime to currentTime makes
+    // the cap beat against the display refresh and quantises 60 down to
+    // 30/40/41 fps on 60/120/165 Hz monitors.
+    lastTime: frameTime > 0 ? currentTime - ((currentTime - baselineTime) % frameTime) : currentTime,
     shouldSkipFrame: false,
   };
 }
