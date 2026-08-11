@@ -1207,15 +1207,8 @@ const LeftActionsRow = ({ style }: { style?: React.CSSProperties }) => {
           onClick={() => toggleModalAction(<MarketModal />)}
         />
       )}
-      <CircleButton
-        variant="action"
-        size="md"
-        tooltipLocation="top"
-        image={BuildingThumbs.predictionMarket}
-        label="Prediction Market"
-        active={view === LeftView.PredictionMarket}
-        onClick={toggleView(LeftView.PredictionMarket)}
-      />
+      {/* Prediction Market button retired: the PM deployment is gone until
+          W6 — the modal would initialize against a dead host. */}
     </div>
   );
 };

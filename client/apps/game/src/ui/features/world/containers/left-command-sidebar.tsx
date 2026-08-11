@@ -100,11 +100,6 @@ const ChatModalContent = ({
 // Lazy view components used inside the centered action modal
 // ----------------------------------------------------------------------------
 
-const InGameMarket = lazy(() =>
-  import("@/ui/features/market").then((module) => ({
-    default: module.InGameMarket,
-  })),
-);
 
 // ----------------------------------------------------------------------------
 // LeftCommandSidebar
@@ -210,15 +205,6 @@ export const LeftCommandSidebar = memo(() => {
       {/* Bubble modals — each renders its own CenteredModalShell so the chrome
           (bronze frame, header strip, close button) and window size are the
           same everywhere. We just dispatch by view. */}
-      {isPanelOpen && view === LeftView.PredictionMarket && (
-        <CenteredModalShell title="Prediction Market" icon={Sparkles} onClose={closeView} size="xl">
-          <Suspense fallback={<div className="flex h-full items-center justify-center p-8">Loading…</div>}>
-            <div className="prediction-market-selector flex h-full min-h-0 flex-col overflow-y-auto">
-              <InGameMarket />
-            </div>
-          </Suspense>
-        </CenteredModalShell>
-      )}
       {isPanelOpen && view === LeftView.ChatView && (
         <CenteredModalShell title="Chat" icon={MessageCircle} onClose={closeView} size="xl">
           <div className="h-full">
