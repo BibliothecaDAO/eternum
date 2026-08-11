@@ -66,10 +66,37 @@ let activeMonitor: ConnectionHealthMonitor | null = null;
 
 export const getConnectionHealthMonitor = (): ConnectionHealthMonitor | null => activeMonitor;
 
+const GRPC_STATUS_UNIMPLEMENTED = "12";
+
+// Torii 1.8 answers SubscribeIndexer with a trailers-only UNIMPLEMENTED
+// response; the dojo.js 1.7 wasm client reads that as a dropped stream and
+// resubscribes forever. Probe the RPC once so unsupported servers skip the
+// heartbeat entirely — support self-heals once the server gains the RPC.
+export async function probeIndexerHeartbeatSupport(toriiBaseUrl: string): Promise<boolean> {
+  try {
+    const response = await fetch(`${toriiBaseUrl.replace(/\/+$/, "")}/world.World/SubscribeIndexer`, {
+      method: "POST",
+      headers: { "content-type": "application/grpc-web+proto", "x-grpc-web": "1" },
+      body: new Uint8Array(5),
+    });
+    const unsupported = response.headers.get("grpc-status") === GRPC_STATUS_UNIMPLEMENTED;
+    void response.body?.cancel().catch(() => {});
+    return !unsupported;
+  } catch {
+    // A transport failure says nothing about support; let the real subscription try.
+    return true;
+  }
+}
+
 export async function subscribeToToriiHeartbeat(
   toriiClient: ToriiHeartbeatClient,
+  toriiBaseUrl?: string,
 ): Promise<{ cancel: () => void } | null> {
   if (typeof toriiClient.onIndexerUpdated !== "function") {
+    return null;
+  }
+
+  if (toriiBaseUrl && !(await probeIndexerHeartbeatSupport(toriiBaseUrl))) {
     return null;
   }
 
@@ -81,7 +108,11 @@ export async function subscribeToToriiHeartbeat(
         streamType: "both",
       });
     });
-    useConnectionStore.getState().markToriiHeartbeatAvailable();
+    // Availability flips inside recordToriiHeartbeat on the FIRST real beat.
+    // Marking it here on subscribe alone is wrong against servers where
+    // SubscribeIndexer is UNIMPLEMENTED (upstream torii 1.8 vs dojo.js 1.7
+    // clients): the call resolves, no beat ever arrives, and the staleness
+    // watchdog turns into a permanent reconnect loop for every stream.
     // Best-effort: if the SDK ever surfaces a real close/error on the heartbeat
     // stream, record it so the next outage is classified REMOTE. No-op today.
     const detachLifecycle = observeToriiStreamLifecycle(subscription, () => {

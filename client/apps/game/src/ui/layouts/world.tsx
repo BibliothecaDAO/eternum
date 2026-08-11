@@ -192,7 +192,7 @@ const ConnectionMonitor = () => {
     void setNetworkHealthScopeTags({ toriiBaseUrl, walletAddress });
 
     const heartbeatLifecycle = createToriiHeartbeatLifecycle({
-      subscribe: () => subscribeToToriiHeartbeat(setupRef.current.network.toriiClient),
+      subscribe: () => subscribeToToriiHeartbeat(setupRef.current.network.toriiClient, toriiBaseUrl),
     });
     void heartbeatLifecycle.start();
 
