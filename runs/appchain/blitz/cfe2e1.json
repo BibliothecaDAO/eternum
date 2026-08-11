@@ -6,14 +6,14 @@
   "chain": "appchain",
   "gameType": "blitz",
   "gameName": "cfe2e1",
-  "status": "running",
+  "status": "complete",
   "executionMode": "fast_trial",
   "requestedLaunchStep": "full",
   "inputPath": "inputs/appchain/blitz/cfe2e1/31480226681-1.json",
   "latestLaunchRequestId": "31480226681-1",
-  "currentStepId": "wait-for-factory-index",
+  "currentStepId": null,
   "createdAt": "2026-08-11T10:01:06.346Z",
-  "updatedAt": "2026-08-11T10:01:42.030Z",
+  "updatedAt": "2026-08-11T10:01:46.902Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -36,10 +36,11 @@
     {
       "id": "wait-for-factory-index",
       "title": "Waiting for game",
-      "status": "running",
+      "status": "succeeded",
       "workflowStepName": "Waiting for game",
-      "latestEvent": "Waiting for game started",
-      "startedAt": "2026-08-11T10:01:42.030Z"
+      "latestEvent": "Waiting for game succeeded",
+      "startedAt": "2026-08-11T10:01:42.030Z",
+      "finishedAt": "2026-08-11T10:01:46.902Z"
     }
   ],
   "artifacts": {
@@ -50,12 +51,5 @@
     "worldAddress": "0x78ff85ac450bb559c97966b64666fd5292f4a98756a607349d9f93f4563bdd2",
     "createGameTxHash": "0x3b972485bff1f3c3d36688ed382082ec2b803d4aaa66cfb5c42f244cc470414"
   },
-  "activeLease": {
-    "launchRequestId": "31480226681-1",
-    "workflowRunId": 31480226681,
-    "workflowRunAttempt": 1,
-    "stepId": "wait-for-factory-index",
-    "acquiredAt": "2026-08-11T10:01:42.030Z",
-    "expiresAt": "2026-08-11T10:46:42.030Z"
-  }
+  "completedAt": "2026-08-11T10:01:46.902Z"
 }
