@@ -1,3 +1,4 @@
+import { namespaceForChain } from "@/dojo/game-scope";
 import { getActiveWorld, resolveRuntimeChain } from "@/runtime/world";
 import { getSeasonPassAddress, getVillagePassAddress } from "@/utils/addresses";
 import { Chain } from "@contracts";
@@ -48,6 +49,12 @@ const buildEntryTokenPolicies = (entryTokenAddress: string | null | undefined) =
 
 const resolvePolicyChain = (): Chain => resolveRuntimeChain(env.VITE_PUBLIC_CHAIN as Chain);
 
+// Contracts absent from the active manifest (e.g. config_systems on s2)
+// resolve to "" and are pruned from the policy map before submission.
+const contractAddress = (manifest: unknown, name: string): string =>
+  (getContractByName(manifest, namespaceForChain(resolvePolicyChain()), name) as { address?: string } | undefined)
+    ?.address ?? "";
+
 const resolveSeasonPassAddresses = (chain: Chain): string[] =>
   Array.from(new Set([getSeasonPassAddress(chain)])).filter((address): address is string =>
     Boolean(address && address !== "0x0"),
@@ -80,12 +87,11 @@ export const buildPolicies = (manifest: any) => {
   const seasonPassPolicies = buildSeasonPassPolicies(chain);
   const villagePassAddress = getVillagePassAddress(chain);
 
-  return toSessionPolicies({
-    contracts: {
+  const contracts: Record<string, unknown> = {
       ...feeTokenPolicies,
       ...entryTokenPolicies,
       ...seasonPassPolicies,
-      [getContractByName(manifest, "s1_eternum", "blitz_realm_systems").address]: {
+      [contractAddress(manifest, "blitz_realm_systems")]: {
         methods: [
           {
             name: "settle",
@@ -97,7 +103,7 @@ export const buildPolicies = (manifest: any) => {
           },
         ],
       },
-      [getContractByName(manifest, "s1_eternum", "hyperstructure_create_systems").address]: {
+      [contractAddress(manifest, "hyperstructure_create_systems")]: {
         methods: [
           {
             name: "create_hyperstructure",
@@ -105,7 +111,7 @@ export const buildPolicies = (manifest: any) => {
           },
         ],
       },
-      [getContractByName(manifest, "s1_eternum", "bank_systems").address]: {
+      [contractAddress(manifest, "bank_systems")]: {
         methods: [
           {
             name: "create_banks",
@@ -129,7 +135,7 @@ export const buildPolicies = (manifest: any) => {
           },
         ],
       },
-      [getContractByName(manifest, "s1_eternum", "config_systems").address]: {
+      [contractAddress(manifest, "config_systems")]: {
         methods: [
           {
             name: "set_agent_config",
@@ -245,7 +251,7 @@ export const buildPolicies = (manifest: any) => {
           },
         ],
       },
-      [getContractByName(manifest, "s1_eternum", "dev_resource_systems").address]: {
+      [contractAddress(manifest, "dev_resource_systems")]: {
         methods: [
           {
             name: "mint",
@@ -261,7 +267,7 @@ export const buildPolicies = (manifest: any) => {
           },
         ],
       },
-      [getContractByName(manifest, "s1_eternum", "guild_systems").address]: {
+      [contractAddress(manifest, "guild_systems")]: {
         methods: [
           {
             name: "create_guild",
@@ -309,7 +315,7 @@ export const buildPolicies = (manifest: any) => {
           },
         ],
       },
-      [getContractByName(manifest, "s1_eternum", "faith_systems").address]: {
+      [contractAddress(manifest, "faith_systems")]: {
         methods: [
           {
             name: "pledge_faith",
@@ -337,7 +343,7 @@ export const buildPolicies = (manifest: any) => {
           },
         ],
       },
-      [getContractByName(manifest, "s1_eternum", "hyperstructure_systems").address]: {
+      [contractAddress(manifest, "hyperstructure_systems")]: {
         methods: [
           {
             name: "initialize",
@@ -369,7 +375,7 @@ export const buildPolicies = (manifest: any) => {
           },
         ],
       },
-      [getContractByName(manifest, "s1_eternum", "liquidity_systems").address]: {
+      [contractAddress(manifest, "liquidity_systems")]: {
         methods: [
           {
             name: "add",
@@ -389,7 +395,7 @@ export const buildPolicies = (manifest: any) => {
           },
         ],
       },
-      [getContractByName(manifest, "s1_eternum", "name_systems").address]: {
+      [contractAddress(manifest, "name_systems")]: {
         methods: [
           {
             name: "set_address_name",
@@ -405,7 +411,7 @@ export const buildPolicies = (manifest: any) => {
           },
         ],
       },
-      [getContractByName(manifest, "s1_eternum", "ownership_systems").address]: {
+      [contractAddress(manifest, "ownership_systems")]: {
         methods: [
           {
             name: "transfer_structure_ownership",
@@ -425,7 +431,7 @@ export const buildPolicies = (manifest: any) => {
           },
         ],
       },
-      [getContractByName(manifest, "s1_eternum", "production_systems").address]: {
+      [contractAddress(manifest, "production_systems")]: {
         methods: [
           {
             name: "create_building",
@@ -465,7 +471,7 @@ export const buildPolicies = (manifest: any) => {
           },
         ],
       },
-      [getContractByName(dojoConfig.manifest, "s1_eternum", "realm_systems").address]: {
+      [contractAddress(dojoConfig.manifest, "realm_systems")]: {
         methods: [
           {
             name: "create",
@@ -481,7 +487,7 @@ export const buildPolicies = (manifest: any) => {
           },
         ],
       },
-      [getContractByName(dojoConfig.manifest, "s1_eternum", "resource_systems").address]: {
+      [contractAddress(dojoConfig.manifest, "resource_systems")]: {
         methods: [
           {
             name: "deposit",
@@ -501,7 +507,7 @@ export const buildPolicies = (manifest: any) => {
           },
         ],
       },
-      [getContractByName(dojoConfig.manifest, "s1_eternum", "resource_systems").address]: {
+      [contractAddress(dojoConfig.manifest, "resource_systems")]: {
         methods: [
           {
             name: "approve",
@@ -549,7 +555,7 @@ export const buildPolicies = (manifest: any) => {
           },
         ],
       },
-      [getContractByName(dojoConfig.manifest, "s1_eternum", "relic_systems").address]: {
+      [contractAddress(dojoConfig.manifest, "relic_systems")]: {
         methods: [
           {
             name: "open_chest",
@@ -569,7 +575,7 @@ export const buildPolicies = (manifest: any) => {
           },
         ],
       },
-      [getContractByName(dojoConfig.manifest, "s1_eternum", "artificer_systems").address]: {
+      [contractAddress(dojoConfig.manifest, "artificer_systems")]: {
         methods: [
           {
             name: "burn_research_for_relic",
@@ -585,7 +591,7 @@ export const buildPolicies = (manifest: any) => {
           },
         ],
       },
-      [getContractByName(dojoConfig.manifest, "s1_eternum", "season_systems").address]: {
+      [contractAddress(dojoConfig.manifest, "season_systems")]: {
         methods: [
           {
             name: "register_to_leaderboard",
@@ -605,7 +611,7 @@ export const buildPolicies = (manifest: any) => {
           },
         ],
       },
-      [getContractByName(dojoConfig.manifest, "s1_eternum", "structure_systems").address]: {
+      [contractAddress(dojoConfig.manifest, "structure_systems")]: {
         methods: [
           {
             name: "level_up",
@@ -621,7 +627,7 @@ export const buildPolicies = (manifest: any) => {
           },
         ],
       },
-      [getContractByName(dojoConfig.manifest, "s1_eternum", "swap_systems").address]: {
+      [contractAddress(dojoConfig.manifest, "swap_systems")]: {
         methods: [
           {
             name: "buy",
@@ -641,7 +647,7 @@ export const buildPolicies = (manifest: any) => {
           },
         ],
       },
-      [getContractByName(dojoConfig.manifest, "s1_eternum", "trade_systems").address]: {
+      [contractAddress(dojoConfig.manifest, "trade_systems")]: {
         methods: [
           {
             name: "create_order",
@@ -665,7 +671,7 @@ export const buildPolicies = (manifest: any) => {
           },
         ],
       },
-      [getContractByName(dojoConfig.manifest, "s1_eternum", "troop_battle_systems").address]: {
+      [contractAddress(dojoConfig.manifest, "troop_battle_systems")]: {
         methods: [
           {
             name: "attack_explorer_vs_explorer",
@@ -689,7 +695,7 @@ export const buildPolicies = (manifest: any) => {
           },
         ],
       },
-      [getContractByName(dojoConfig.manifest, "s1_eternum", "troop_management_systems").address]: {
+      [contractAddress(dojoConfig.manifest, "troop_management_systems")]: {
         methods: [
           {
             name: "guard_add",
@@ -733,7 +739,7 @@ export const buildPolicies = (manifest: any) => {
           },
         ],
       },
-      [getContractByName(dojoConfig.manifest, "s1_eternum", "alt_movement_systems").address]: {
+      [contractAddress(dojoConfig.manifest, "alt_movement_systems")]: {
         methods: [
           {
             name: "toggle_alternate",
@@ -749,7 +755,7 @@ export const buildPolicies = (manifest: any) => {
           },
         ],
       },
-      [getContractByName(dojoConfig.manifest, "s1_eternum", "troop_movement_systems").address]: {
+      [contractAddress(dojoConfig.manifest, "troop_movement_systems")]: {
         methods: [
           {
             name: "explorer_move",
@@ -770,7 +776,7 @@ export const buildPolicies = (manifest: any) => {
           },
         ],
       },
-      [getContractByName(dojoConfig.manifest, "s1_eternum", "troop_movement_util_systems").address]: {
+      [contractAddress(dojoConfig.manifest, "troop_movement_util_systems")]: {
         methods: [
           {
             name: "dojo_name",
@@ -782,7 +788,7 @@ export const buildPolicies = (manifest: any) => {
           },
         ],
       },
-      [getContractByName(dojoConfig.manifest, "s1_eternum", "troop_raid_systems").address]: {
+      [contractAddress(dojoConfig.manifest, "troop_raid_systems")]: {
         methods: [
           {
             name: "raid_explorer_vs_guard",
@@ -798,7 +804,7 @@ export const buildPolicies = (manifest: any) => {
           },
         ],
       },
-      [getContractByName(dojoConfig.manifest, "s1_eternum", "village_systems").address]: {
+      [contractAddress(dojoConfig.manifest, "village_systems")]: {
         methods: [
           {
             name: "upgrade",
@@ -818,7 +824,7 @@ export const buildPolicies = (manifest: any) => {
           },
         ],
       },
-      "0x051fea4450da9d6aee758bdeba88b2f665bcbf549d2c61421aa724e9ac0ced8f": {
+      [env.VITE_PUBLIC_VRF_PROVIDER_ADDRESS]: {
         methods: [
           {
             name: "VRF",
@@ -835,7 +841,12 @@ export const buildPolicies = (manifest: any) => {
           },
         ],
       },
-    },
+  };
+  for (const key of Object.keys(contracts)) {
+    if (!key || key === "0x0") delete contracts[key];
+  }
+  return toSessionPolicies({
+    contracts,
     messages: buildSigningMessages(chain),
-  });
+  } as Parameters<typeof toSessionPolicies>[0]);
 };

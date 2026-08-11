@@ -287,7 +287,7 @@ export class ClientConfigManager {
         for (let index = 0; index < levelConfig.required_resource_count; index++) {
           const resource = getComponentValue(
             this.components.ResourceList,
-            getEntityIdFromKeys([BigInt(levelConfig.required_resources_id), BigInt(index)]),
+            getEntityIdFromKeys(this.presetKey(BigInt(levelConfig.required_resources_id), BigInt(index))),
           );
           if (resource) {
             inputs.push({
