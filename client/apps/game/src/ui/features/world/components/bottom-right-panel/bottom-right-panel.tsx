@@ -1,7 +1,7 @@
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { debouncedGetEntitiesFromTorii } from "@/dojo/debounced-queries";
-import { gameEntityKey, gameModel } from "@/dojo/game-scope";
+import { buildingEntityKey, gameEntityKey, gameModel } from "@/dojo/game-scope";
 import { getStructuresDataFromTorii } from "@/dojo/queries";
 import { useEntityResync } from "@/hooks/helpers/use-entity-resync";
 import { isVillageLikeStructureCategory, normalizeStructureCategory } from "@/lib/structure-type-utils";
@@ -390,14 +390,18 @@ const LocalTilePanel = () => {
 
   const building = useMemo(() => {
     if (!selectedBuildingHex || !buildingComponent) return null;
-    const entityKeys = [
-      BigInt(selectedBuildingHex.outerCol),
-      BigInt(selectedBuildingHex.outerRow),
-      BigInt(selectedBuildingHex.innerCol),
-      BigInt(selectedBuildingHex.innerRow),
-    ];
-
-    return getComponentValue(buildingComponent, gameEntityKey(entityKeys));
+    // Building keys on s2 are (game_id, alt, outer_col, outer_row, inner_col,
+    // inner_row) — the dedicated helper inserts the alt key; a plain
+    // gameEntityKey lookup always missed, so every built tile read as empty.
+    return getComponentValue(
+      buildingComponent,
+      buildingEntityKey(
+        selectedBuildingHex.outerCol,
+        selectedBuildingHex.outerRow,
+        selectedBuildingHex.innerCol,
+        selectedBuildingHex.innerRow,
+      ),
+    );
   }, [buildingComponent, selectedBuildingHex]);
 
   const buildingCategory = useMemo(() => {
