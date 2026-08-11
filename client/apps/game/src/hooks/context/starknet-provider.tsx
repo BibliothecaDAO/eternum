@@ -11,9 +11,9 @@ import { useCallback, useMemo } from "react";
 import { shortString } from "starknet";
 import { env } from "../../../env";
 import { APPCHAIN_CHAIN_ID, resolveStarknetRuntimeConfig } from "./starknet-chain-config";
+import { namespaceForChain } from "@/dojo/game-scope";
 import { useControllerAccount } from "./use-controller-account";
 
-const namespace: string = "s1_eternum";
 
 // ==============================================
 
@@ -22,6 +22,9 @@ const KATANA_CHAIN_NETWORK = "Katana Local";
 const KATANA_CHAIN_NAME = "katana";
 const KATANA_RPC_URL = "http://localhost:5050";
 const fallbackChain = env.VITE_PUBLIC_CHAIN as RuntimeChain;
+// The keychain resolves trophies/profile data under this namespace — it must
+// match the active world family ("s2" on the appchain, legacy elsewhere).
+const namespace: string = namespaceForChain(fallbackChain);
 const cartridgeApiBase = env.VITE_PUBLIC_CARTRIDGE_API_BASE || "https://api.cartridge.gg";
 
 const katanaLocalChain = {

@@ -175,6 +175,10 @@ export const WalletSection = () => {
           <div>
             <p className="text-xl font-medium text-gold">{displayName || displayAddress(address)}</p>
             <p className="text-sm text-gold/50">Starknet Mainnet</p>
+            <p className="text-xs text-gold/40">
+              Your mainnet holdings, shown read-only — games run on the appchain. Spending and rewards arrive in phase
+              2.
+            </p>
           </div>
         </div>
         <button
