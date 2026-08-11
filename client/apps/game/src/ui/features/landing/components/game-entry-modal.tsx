@@ -1991,6 +1991,7 @@ const SettlementPlannerPhase = ({
   plannerConflict,
   plannerSuccess,
   seasonTimingValid,
+  devModeSeasonSettle,
   spiresSettled,
   spiresSettledCount,
   spiresMaxCount,
@@ -2046,6 +2047,8 @@ const SettlementPlannerPhase = ({
   plannerConflict: string | null;
   plannerSuccess: string | null;
   seasonTimingValid: boolean;
+  /** Dev seasons collect no pass on-chain — the panel must not demand one. */
+  devModeSeasonSettle: boolean;
   spiresSettled: boolean;
   spiresSettledCount: number | null;
   spiresMaxCount: number | null;
@@ -2252,11 +2255,20 @@ const SettlementPlannerPhase = ({
                   ? `${selectedSeasonPass.realmName} (Realm #${selectedSeasonPass.realmId})`
                   : selectedSeasonPassTokenId != null
                     ? `#${selectedSeasonPassTokenId.toString()}`
-                    : "missing"}
+                    : devModeSeasonSettle
+                      ? "not required (dev season)"
+                      : "missing"}
               </div>
             </div>
 
-            {selectedSeasonPassTokenId != null ? (
+            {devModeSeasonSettle && selectedSeasonPassTokenId == null ? (
+              <div className="rounded-xl border border-gold/20 bg-black/25 p-3">
+                <p className="text-sm font-semibold text-gold">Dev Season</p>
+                <p className="mt-1 text-xs text-gold/70">
+                  No season pass needed — the next free realm id is assigned automatically on settle.
+                </p>
+              </div>
+            ) : selectedSeasonPassTokenId != null ? (
               <div className="min-h-0 rounded-xl border border-gold/20 bg-black/25 p-3">
                 <div className="mb-2 flex items-center justify-between gap-2">
                   <p className="text-sm font-semibold text-gold">Season Pass</p>
@@ -2371,7 +2383,11 @@ const SettlementPlannerPhase = ({
 
             <Button
               onClick={onConfirmRealmSettlement}
-              disabled={!seasonTimingValid || selectedSeasonPassTokenId == null || isSubmittingRealmSettlement}
+              disabled={
+                !seasonTimingValid ||
+                (selectedSeasonPassTokenId == null && !devModeSeasonSettle) ||
+                isSubmittingRealmSettlement
+              }
               className="h-11 w-full !rounded-md !bg-gold !text-brown"
               forceUppercase={false}
             >
@@ -4943,6 +4959,7 @@ export const GameEntryModal = ({
                   mintRealmAndSeasonPassError={mintRealmAndSeasonPassError}
                   onConfirmRealmSettlement={handleSeasonSettle}
                   onConfirmVillageSettlement={handleVillageSettle}
+                  devModeSeasonSettle={devModeSeasonSettle}
                   isSubmittingRealmSettlement={isSubmittingSeasonSettlement}
                   isSubmittingVillageSettlement={isSubmittingVillageSettlement}
                   seasonSettlementError={seasonSettlementError}

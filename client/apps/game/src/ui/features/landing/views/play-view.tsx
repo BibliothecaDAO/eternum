@@ -28,6 +28,7 @@ import { buildEntryHrefFromEntryContext, resolveEntryContextFromLandingSelection
 import { startGameEntryTimeline } from "@/ui/layouts/game-entry-timeline";
 import { useLocation, useNavigate } from "react-router-dom";
 import { UnifiedGameGrid, type WorldSelection } from "../components/game-selector/game-card-grid";
+import { getWorldById } from "@/runtime/world/world-directory";
 import { GameReviewModal } from "../components/game-review-modal";
 import type { LandingModeFilter, LandingEntryRouteState } from "../lib/landing-entry-state";
 import { setGameReviewDismissed } from "../lib/game-review-storage";
@@ -573,9 +574,16 @@ const ModeCoexistenceHero = ({
     setBackgroundId(bgMap[modeFilter]);
   }, [modeFilter, setBackgroundId]);
 
+  // Eternum seasons open in phase 3: the hero only offers modes whose world
+  // is actually deployed (the eternum entry exists only when
+  // VITE_PUBLIC_TORII_ETERNUM is configured).
+  const availableModes = (Object.keys(MODE_VISUALS) as Array<LandingModeFilter>).filter(
+    (mode) => mode !== "season" || getWorldById("eternum") != null,
+  );
+
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-      {(Object.keys(MODE_VISUALS) as Array<LandingModeFilter>).map((mode, index) => {
+      {availableModes.map((mode, index) => {
         const config = MODE_VISUALS[mode];
         const Icon = config.icon;
         const isEmphasized = hoveredMode ? hoveredMode === mode : modeFilter === mode;
