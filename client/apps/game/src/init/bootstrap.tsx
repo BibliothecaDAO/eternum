@@ -1,4 +1,5 @@
 import { captureSystemError } from "@/posthog";
+import { DEV_MODE_ENABLED } from "@/utils/dev-mode";
 import { setup } from "@bibliothecadao/dojo";
 import { configManager, MapDataStore } from "@bibliothecadao/eternum";
 import { setSqlGameScope } from "@bibliothecadao/torii";
@@ -324,7 +325,7 @@ const startGameRenderer = async (setupResult: SetupResult) => {
   // a stuck initial sync.
   const rendererInitStartedAt = performance.now();
   markGameEntryMilestone("renderer-init-started");
-  const cleanup = await initializeGameRenderer(setupResult, env.VITE_PUBLIC_GRAPHICS_DEV == true);
+  const cleanup = await initializeGameRenderer(setupResult, DEV_MODE_ENABLED);
   markGameEntryMilestone("renderer-init-completed");
   recordGameEntryDuration("renderer-init", performance.now() - rendererInitStartedAt);
   bootstrapSession.replaceRendererCleanup(cleanup);

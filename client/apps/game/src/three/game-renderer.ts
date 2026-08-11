@@ -1,4 +1,5 @@
 import { useUIStore } from "@/hooks/store/use-ui-store";
+import { DEV_MODE_ENABLED } from "@/utils/dev-mode";
 import { getGameModeId } from "@/config/game-modes";
 import { GRAPHICS_DEV_GUI_ENABLED, createGuiFolder } from "@/three/utils/gui-manager";
 import { GRAPHICS_SETTING, GraphicsSettings, IS_MOBILE } from "@/ui/config";
@@ -42,7 +43,7 @@ import type WorldmapScene from "@/three/scenes/worldmap";
 import type { TransitionManager } from "@/three/managers/transition-manager";
 
 const MEMORY_MONITORING_ENABLED = env.VITE_PUBLIC_ENABLE_MEMORY_MONITORING;
-const GRAPHICS_DEV_ENABLED = env.VITE_PUBLIC_GRAPHICS_DEV;
+const GRAPHICS_DEV_ENABLED = DEV_MODE_ENABLED;
 
 type RendererBackendRuntime = RendererBackendV2 & { renderer: RendererSurfaceLike; dispose?: () => void };
 type ReconnectableRendererControls = NonNullable<RendererInteractionRuntime["controls"]> & {

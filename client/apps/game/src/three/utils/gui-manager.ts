@@ -1,7 +1,7 @@
 import GUI from "lil-gui";
-import { env } from "../../../env";
+import { DEV_MODE_ENABLED } from "@/utils/dev-mode";
 
-export const GRAPHICS_DEV_GUI_ENABLED = env.VITE_PUBLIC_GRAPHICS_DEV === true;
+export const GRAPHICS_DEV_GUI_ENABLED = DEV_MODE_ENABLED;
 
 type NoopGuiController = {
   listen(): NoopGuiController;
