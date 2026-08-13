@@ -2,7 +2,7 @@
   "version": 1,
   "environment": "appchain.blitz",
   "kind": "game",
-  "updatedAt": "2026-08-13T07:06:46.649Z",
+  "updatedAt": "2026-08-13T07:07:08.472Z",
   "entries": {
     "blitzlive1": {
       "kind": "game",
@@ -204,14 +204,13 @@
       "path": "runs/appchain/blitz/bltz-chirp-294.json",
       "inputPath": "inputs/appchain/blitz/bltz-chirp-294/31676356155-1.json",
       "status": "running",
-      "updatedAt": "2026-08-13T07:06:46.649Z",
+      "updatedAt": "2026-08-13T07:07:08.472Z",
       "workflowRef": "feat/single-world-blitz",
-      "currentStepId": "create-world",
-      "activeLeaseExpiresAt": "2026-08-13T07:51:46.649Z",
-      "hasRunningStep": true,
+      "currentStepId": "wait-for-factory-index",
+      "hasRunningStep": false,
       "recoverableFailedStepId": null,
       "recoverablePendingStepId": "wait-for-factory-index",
-      "startTime": "2026-08-13T07:15:00.000Z",
+      "startTime": 1786605300,
       "durationSeconds": 3600,
       "artifacts": {}
     }
