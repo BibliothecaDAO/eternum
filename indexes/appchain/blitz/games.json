@@ -2,7 +2,7 @@
   "version": 1,
   "environment": "appchain.blitz",
   "kind": "game",
-  "updatedAt": "2026-08-13T06:24:54.900Z",
+  "updatedAt": "2026-08-13T06:25:00.637Z",
   "entries": {
     "blitzlive1": {
       "kind": "game",
@@ -187,12 +187,13 @@
       "path": "runs/appchain/blitz/bltz-blink-215.json",
       "inputPath": "inputs/appchain/blitz/bltz-blink-215/31673679578-1.json",
       "status": "running",
-      "updatedAt": "2026-08-13T06:24:54.900Z",
+      "updatedAt": "2026-08-13T06:25:00.637Z",
       "workflowRef": "feat/single-world-blitz",
       "currentStepId": "create-world",
-      "hasRunningStep": false,
+      "activeLeaseExpiresAt": "2026-08-13T07:10:00.637Z",
+      "hasRunningStep": true,
       "recoverableFailedStepId": null,
-      "recoverablePendingStepId": "create-world",
+      "recoverablePendingStepId": "wait-for-factory-index",
       "startTime": "2026-08-13T11:00:00.000Z",
       "durationSeconds": 3600,
       "artifacts": {}
