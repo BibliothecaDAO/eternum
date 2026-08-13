@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { selectUnsyncedOwnedStructureTargets } from "./player-structure-sync-utils";
+import { selectUnsyncedOwnedStructureTargets } from "@bibliothecadao/eternum/game-sync";
 
 describe("selectUnsyncedOwnedStructureTargets", () => {
   it("returns valid unsynced owned structures", () => {

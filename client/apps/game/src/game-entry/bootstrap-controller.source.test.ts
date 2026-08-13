@@ -31,4 +31,17 @@ describe("game entry bootstrap controller source", () => {
     expect(forceFreshFailureIndex).toBeGreaterThanOrEqual(0);
     expect(forceFreshSuccessIndex).toBeLessThan(forceFreshFailureIndex);
   });
+
+  it("does not surface a deliberately superseded sync start as a bootstrap failure", () => {
+    const controllerSource = readSource("src/game-entry/bootstrap-controller.ts");
+    const bootstrapSource = readSource("src/init/bootstrap.tsx");
+
+    expect(controllerSource).toContain("incomingError instanceof SupersededGameSyncStartError");
+    expect(controllerSource.indexOf("incomingError instanceof SupersededGameSyncStartError")).toBeLessThan(
+      controllerSource.indexOf('console.error("[bootstrap] game entry bootstrap failed"'),
+    );
+    expect(bootstrapSource.indexOf("error instanceof SupersededGameSyncStartError")).toBeLessThan(
+      bootstrapSource.indexOf("bootstrapSession.clearFailure()"),
+    );
+  });
 });

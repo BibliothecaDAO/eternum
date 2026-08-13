@@ -1,4 +1,5 @@
 import type { Chain } from "@contracts";
+import { findGameSyncModel, getGameSyncModelsForChannel } from "@bibliothecadao/eternum/game-sync";
 
 /**
  * Active game scope for the s2 single-world arm.
@@ -75,31 +76,29 @@ export { buildingEntityKey, gameEntityKey, worldConfigKey } from "@bibliothecada
 // s2 world is per-game. Derived from manifest_appchain.json key flags and
 // pinned against it by game-scope.test.ts — fix the test, not this list.
 const S2_GLOBAL_MODELS = new Set([
-  "AddressName",
   "BiomeDiscovered",
-  "BuildingCategoryConfig",
   "ChainConfig",
   "GameCounter",
-  "HyperstrtConstructConfig",
   "Preset",
   "PresetConfig",
   "PresetGameConfig",
   "RNG",
-  "ResourceBridgeWtlConfig",
-  "ResourceFactoryConfig",
-  "ResourceList",
   "ResourceMinMaxList",
   "ResourceRevBridgeWtlConfig",
   "Series",
   "SeriesChestRewardState",
-  "StructureLevelConfig",
-  "WeightConfig",
   // events
   "TrophyCreation",
   "TrophyProgression",
 ]);
 
-export const s2GlobalModelNames = (): ReadonlySet<string> => S2_GLOBAL_MODELS;
+export const s2GlobalModelNames = (): ReadonlySet<string> =>
+  new Set([
+    ...S2_GLOBAL_MODELS,
+    ...getGameSyncModelsForChannel("global-entity", { includeS2Only: true })
+      .filter(({ s2Scope }) => s2Scope === "chain")
+      .map(({ name }) => name),
+  ]);
 
 /**
  * Whether a fully-qualified model's clauses must be prefixed with the active
@@ -109,5 +108,7 @@ export const isGameScopedModel = (qualifiedModel: string): boolean => {
   if (!isGameScoped()) return false;
   const separatorIndex = qualifiedModel.indexOf("-");
   const bareName = separatorIndex >= 0 ? qualifiedModel.slice(separatorIndex + 1) : qualifiedModel;
+  const syncModel = findGameSyncModel(bareName);
+  if (syncModel) return syncModel.s2Scope === "game";
   return !S2_GLOBAL_MODELS.has(bareName);
 };

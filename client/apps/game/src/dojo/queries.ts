@@ -14,7 +14,7 @@ import {
   debouncedGetOwnedArmiesFromTorii,
 } from "./debounced-queries";
 import { gameEntityKey, gameIdKey, gameModel, getScopedGameId, isGameScoped } from "./game-scope";
-import { EVENT_QUERY_LIMIT } from "./sync";
+import { ENTITY_QUERY_LIMIT } from "./sync";
 
 const CONFIG_FETCH_CACHE_PREFIX = "eternum:config-fetched";
 
@@ -89,7 +89,7 @@ export const getTilesForPositionsFromTorii = async <S extends Schema>(
     components as any,
     [],
     [tileModel],
-    EVENT_QUERY_LIMIT,
+    ENTITY_QUERY_LIMIT,
     false,
   );
 };
@@ -312,7 +312,7 @@ export const getConfigFromTorii = async <S extends Schema>(
     let cursor: string | undefined;
     for (;;) {
       const page = await client.getEntities({
-        pagination: { limit: EVENT_QUERY_LIMIT, cursor, direction: "Forward", order_by: [] },
+        pagination: { limit: ENTITY_QUERY_LIMIT, cursor, direction: "Forward", order_by: [] },
         clause: { Composite: { operator: "Or", clauses: configClauses } },
         no_hashed_keys: false,
         models: configModels,
@@ -320,7 +320,7 @@ export const getConfigFromTorii = async <S extends Schema>(
       });
       await setEntities(page.items, components, false);
       const count = Array.isArray(page.items) ? page.items.length : Object.keys(page.items ?? {}).length;
-      if (count < EVENT_QUERY_LIMIT || !page.next_cursor) break;
+      if (count < ENTITY_QUERY_LIMIT || !page.next_cursor) break;
       cursor = page.next_cursor;
     }
   };
@@ -367,7 +367,7 @@ export const getAddressNamesFromTorii = async <S extends Schema>(
     },
   };
 
-  return getEntities(client, query, components as any, [], models, EVENT_QUERY_LIMIT, false);
+  return getEntities(client, query, components as any, [], models, ENTITY_QUERY_LIMIT, false);
 };
 
 export const getGuildsFromTorii = async <S extends Schema>(
@@ -409,7 +409,7 @@ export const getGuildsFromTorii = async <S extends Schema>(
         },
       };
 
-  return getEntities(client, query, components as any, [], models, EVENT_QUERY_LIMIT, false);
+  return getEntities(client, query, components as any, [], models, ENTITY_QUERY_LIMIT, false);
 };
 
 export const getHyperstructureFromTorii = async <S extends Schema>(
@@ -455,7 +455,7 @@ export const getHyperstructureFromTorii = async <S extends Schema>(
     components as any,
     [],
     [structureModel],
-    EVENT_QUERY_LIMIT,
+    ENTITY_QUERY_LIMIT,
     false,
   );
 
@@ -512,7 +512,7 @@ export const getHyperstructureFromTorii = async <S extends Schema>(
     components as any,
     [],
     hyperstructureModels,
-    EVENT_QUERY_LIMIT,
+    ENTITY_QUERY_LIMIT,
     false,
   );
 
@@ -591,7 +591,7 @@ export const getMarketFromTorii = async <S extends Schema>(
     components,
     [],
     marketModels,
-    EVENT_QUERY_LIMIT,
+    ENTITY_QUERY_LIMIT,
     false,
   );
 
@@ -610,7 +610,7 @@ export const getBankStructuresFromTorii = async <S extends Schema>(
       ]).build()
     : MemberClause(structureModel, "category", "Eq", StructureType.Bank).build();
 
-  return getEntities(client, clause, components, [], [structureModel], EVENT_QUERY_LIMIT, false);
+  return getEntities(client, clause, components, [], [structureModel], ENTITY_QUERY_LIMIT, false);
 };
 
 export const getOwnedArmiesFromTorii = async <S extends Schema>(
@@ -651,7 +651,7 @@ export const getOwnedArmiesFromTorii = async <S extends Schema>(
       }
     : ownersClause;
 
-  return getEntities(client, clause, components, [], [explorerModel, gameModel("Resource")], EVENT_QUERY_LIMIT, false);
+  return getEntities(client, clause, components, [], [explorerModel, gameModel("Resource")], ENTITY_QUERY_LIMIT, false);
 };
 
 export const getBuildingsFromTorii = async <S extends Schema>(
@@ -679,7 +679,7 @@ export const getBuildingsFromTorii = async <S extends Schema>(
     },
   };
 
-  return getEntities(client, query, components as any, [], [buildingModel], EVENT_QUERY_LIMIT, false);
+  return getEntities(client, query, components as any, [], [buildingModel], ENTITY_QUERY_LIMIT, false);
 };
 
 const getMapFromTorii = async <S extends Schema>(
@@ -702,7 +702,7 @@ const getMapFromTorii = async <S extends Schema>(
     components as any,
     [],
     [tileModel],
-    EVENT_QUERY_LIMIT,
+    ENTITY_QUERY_LIMIT,
     false,
   );
 };
@@ -728,7 +728,7 @@ export const getMapFromToriiExact = async <S extends Schema>(
     components as any,
     [],
     [tileModel],
-    EVENT_QUERY_LIMIT,
+    ENTITY_QUERY_LIMIT,
     false,
   );
 };
@@ -771,7 +771,7 @@ export const getStructuresFromToriiExact = async <S extends Schema>(
     components as any,
     [],
     [structureModel, structureBuildingsModel],
-    EVENT_QUERY_LIMIT,
+    ENTITY_QUERY_LIMIT,
     false,
   );
 };
@@ -787,5 +787,5 @@ export const getQuestsFromTorii = async (client: ToriiClient, components: Compon
     },
   };
 
-  return getEntities(client, query, components as any, [], questModels, EVENT_QUERY_LIMIT, false);
+  return getEntities(client, query, components as any, [], questModels, ENTITY_QUERY_LIMIT, false);
 };

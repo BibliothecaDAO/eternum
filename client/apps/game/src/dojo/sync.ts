@@ -12,6 +12,13 @@ import {
   recordArmyMovementLatencyPhase,
   tileOptToTile,
 } from "@bibliothecadao/eternum";
+import {
+  disposeActiveGameSyncRuntime,
+  getActiveGameSyncRuntime,
+  getGameSyncModelsForChannel,
+  installFreshGameSyncRuntime,
+  requireActiveGameSyncRuntime,
+} from "@bibliothecadao/eternum/game-sync";
 import type { Component, Entity, Metadata, Schema } from "@dojoengine/recs";
 import { getEntities as getEntitiesSnapshot, setEntities } from "@dojoengine/state";
 import type { Clause, ToriiClient, Entity as ToriiEntity } from "@dojoengine/torii-wasm/types";
@@ -39,7 +46,7 @@ import {
   type ToriiSubscriptionSetupTimeoutInfo,
 } from "./torii-subscription-setup";
 
-export const EVENT_QUERY_LIMIT = 40_000;
+export const ENTITY_QUERY_LIMIT = 40_000;
 const TORII_SYNC_WORKER_QUEUE_WARNING_THRESHOLD = 500;
 
 interface SyncEntitiesSubscriptionOptions {
@@ -52,9 +59,6 @@ interface SyncEntitiesSubscriptionOptions {
   onSubscriptionSetupTimeout?: (info: ToriiSubscriptionSetupTimeoutInfo) => void;
 }
 
-let entityStreamSubscription: { cancel: () => void; ready: Promise<void> } | null = null;
-let isInitialSyncInFlight = false;
-
 /**
  * Cancel the global entity stream subscription.
  * Used during game switching to stop the old Torii client from writing
@@ -64,16 +68,10 @@ let isInitialSyncInFlight = false;
  * subscription strands RECS and the monitor then re-enters the same loop.
  */
 export const cancelEntityStreamSubscription = () => {
-  if (isInitialSyncInFlight) return;
-  cancelGlobalEntityStreamSubscriptions();
+  getActiveGameSyncRuntime()?.cancelGlobalWriter();
 };
 
-function cancelGlobalEntityStreamSubscriptions(): void {
-  if (entityStreamSubscription) {
-    entityStreamSubscription.cancel();
-    entityStreamSubscription = null;
-  }
-}
+export const disposeGameSyncSession = (): void => disposeActiveGameSyncRuntime();
 
 function toTraceBigInt(value: unknown): bigint | null {
   if (typeof value === "bigint") {
@@ -136,57 +134,13 @@ function recordTileOptStreamTrace(data: ToriiEntity): void {
 }
 
 // Bare names — the namespace resolves from the active game scope at call time.
-const GLOBAL_EVENT_MODEL_NAMES = ["OpenRelicChestEvent", "ExplorerRewardEvent", "BattleEvent"];
-
-const getGlobalEventModels = (): string[] => GLOBAL_EVENT_MODEL_NAMES.map(gameModel);
-
-// keyCount is the legacy (s1) arity; on s2 the game-id chokepoint in
-// buildModelKeysClause overrides it for every per-game model.
-const GLOBAL_ENTITY_STREAM_MODEL_NAMES: Array<{ name: string; keyCount: number }> = [
-  { name: "WorldConfig", keyCount: 1 },
-  { name: "HyperstrtConstructConfig", keyCount: 1 },
-  { name: "HyperstructureGlobals", keyCount: 1 },
-  { name: "WeightConfig", keyCount: 1 },
-  { name: "ResourceFactoryConfig", keyCount: 1 },
-  { name: "BuildingCategoryConfig", keyCount: 1 },
-  { name: "ResourceBridgeWtlConfig", keyCount: 1 },
-  { name: "StructureLevelConfig", keyCount: 1 },
-  { name: "SeasonPrize", keyCount: 1 },
-  { name: "SeasonEnded", keyCount: 1 },
-  { name: "QuestLevels", keyCount: 1 },
-  { name: "AddressName", keyCount: 1 },
-  { name: "PlayerRegisteredPoints", keyCount: 1 },
-  { name: "BlitzSettlement", keyCount: 1 },
-  { name: "BlitzEntryTokenRegister", keyCount: 1 },
-  { name: "PlayersRankTrial", keyCount: 1 },
-  { name: "PlayersRankFinal", keyCount: 1 },
-  { name: "MMRGameMeta", keyCount: 1 },
-  { name: "Guild", keyCount: 1 },
-  { name: "GuildMember", keyCount: 1 },
-  { name: "ResourceList", keyCount: 2 },
-  { name: "PlayerRank", keyCount: 2 },
-  { name: "RankPrize", keyCount: 2 },
-  { name: "GuildWhitelist", keyCount: 2 },
-];
-
-// Every stream model now exists on both arms (W3 carried SeasonEnded,
-// QuestLevels, and PlayersRankFinal onto s2 with game_id keys) — the set is
-// kept for the next genuinely legacy-only model.
-const S1_ONLY_GLOBAL_ENTITY_STREAM_MODELS = new Set<string>([]);
-// s2-only additions: the game's registry row is the live clock/status source.
-const S2_ONLY_GLOBAL_ENTITY_STREAM_MODELS = ["GameRegistry"];
+const getGlobalEventModels = (): string[] =>
+  getGameSyncModelsForChannel("global-event", { includeS2Only: isGameScoped() }).map(({ name }) => gameModel(name));
 
 const getGlobalEntityStreamModels = (): GlobalModelStreamConfig[] => {
-  if (!isGameScoped()) {
-    return GLOBAL_ENTITY_STREAM_MODEL_NAMES.map(({ name, keyCount }) => ({ model: gameModel(name), keyCount }));
-  }
-
-  return [
-    ...GLOBAL_ENTITY_STREAM_MODEL_NAMES.filter(({ name }) => !S1_ONLY_GLOBAL_ENTITY_STREAM_MODELS.has(name)).map(
-      ({ name, keyCount }) => ({ model: gameModel(name), keyCount }),
-    ),
-    ...S2_ONLY_GLOBAL_ENTITY_STREAM_MODELS.map((name) => ({ model: gameModel(name), keyCount: 1 })),
-  ];
+  return getGameSyncModelsForChannel("global-entity", { includeS2Only: isGameScoped() }).map(
+    ({ name, legacyKeyCount }) => ({ model: gameModel(name), keyCount: legacyKeyCount }),
+  );
 };
 
 const getGlobalEventStreamClause = (): Clause =>
@@ -755,7 +709,7 @@ async function hydrateGlobalSpatialBootstrapSnapshot(input: {
           input.setup.network.contractComponents as unknown as Component<Schema, Metadata, undefined>[],
           [],
           getGlobalSpatialMapBootstrapModelNames(),
-          EVENT_QUERY_LIMIT,
+          ENTITY_QUERY_LIMIT,
           input.logging,
         ),
     });
@@ -794,6 +748,33 @@ type InitialSyncOptions = {
   onConfigRefreshed?: () => void;
 };
 
+const startGlobalEntityWriter = async (input: {
+  setup: SetupResult;
+  logging: boolean;
+  subscriptionSetupTimeoutMs: number;
+  onSubscriptionSetupTimeout?: (info: ToriiSubscriptionSetupTimeoutInfo) => void;
+}): Promise<SyncEntitiesSubscription> => {
+  const subscription = await syncEntitiesDebounced(
+    input.setup.network.toriiClient,
+    input.setup,
+    {
+      entityClause: getInitialGlobalEntityStreamClause(),
+      eventClause: getGlobalEventStreamClause(),
+    },
+    input.logging,
+    () => useConnectionStore.getState().recordGlobalUpdate(),
+    {
+      streamType: "global",
+      subscriptionSetupTimeoutMs: input.subscriptionSetupTimeoutMs,
+      onSubscriptionSetupTimeout: input.onSubscriptionSetupTimeout,
+    },
+  );
+  useConnectionStore.getState().recordGlobalHandshake();
+  return subscription;
+};
+
+const getOrInstallGameSyncRuntime = () => getActiveGameSyncRuntime() ?? installFreshGameSyncRuntime();
+
 export const initialSync = async (
   setup: SetupResult,
   state: AppStore,
@@ -804,16 +785,13 @@ export const initialSync = async (
   const subscriptionSetupTimeoutMs =
     options.subscriptionSetupTimeoutMs ?? env.VITE_PUBLIC_TORII_SUBSCRIPTION_SETUP_TIMEOUT_MS;
   console.log("[STARTING syncEntitiesDebounced]");
-  cancelGlobalEntityStreamSubscriptions();
 
   if (reportProgress) {
     setInitialSyncProgress(0);
   }
 
-  isInitialSyncInFlight = true;
   const globalStreamSubscribeStart = performance.now();
   try {
-    const initialGlobalEntityClause = getInitialGlobalEntityStreamClause();
     logWorldmapSyncAB("Initial sync config", {
       boundedSpatialSync: env.VITE_PUBLIC_WORLDMAP_BOUNDED_SPATIAL_SYNC,
       boundedSpatialPadding: env.VITE_PUBLIC_WORLDMAP_BOUNDED_SPATIAL_PADDING,
@@ -823,37 +801,30 @@ export const initialSync = async (
       spatialBootstrapModels: getGlobalSpatialMapBootstrapModelNames(),
       timestamp: new Date().toISOString(),
     });
-    entityStreamSubscription = await syncEntitiesDebounced(
-      setup.network.toriiClient,
-      setup,
-      {
-        entityClause: initialGlobalEntityClause,
-        eventClause: getGlobalEventStreamClause(),
+    await getOrInstallGameSyncRuntime().startSession({
+      startGlobalWriter: () =>
+        startGlobalEntityWriter({
+          setup,
+          logging,
+          subscriptionSetupTimeoutMs,
+          onSubscriptionSetupTimeout: options.onSubscriptionSetupTimeout,
+        }),
+      hydrateSpatialSnapshot: async () => {
+        await syncGlobalSpatialBootstrapSnapshot({
+          setup,
+          logging,
+          subscriptionSetupTimeoutMs,
+          onSubscriptionSetupTimeout: options.onSubscriptionSetupTimeout,
+        });
+        useConnectionStore.getState().recordSpatialHandshake();
       },
-      logging,
-      () => useConnectionStore.getState().recordGlobalUpdate(),
-      {
-        streamType: "global",
-        subscriptionSetupTimeoutMs,
-        onSubscriptionSetupTimeout: options.onSubscriptionSetupTimeout,
-      },
-    );
-    useConnectionStore.getState().recordGlobalHandshake();
-
-    await syncGlobalSpatialBootstrapSnapshot({
-      setup,
-      logging,
-      subscriptionSetupTimeoutMs,
-      onSubscriptionSetupTimeout: options.onSubscriptionSetupTimeout,
     });
     // The global stream remains active for live owner/event updates. Startup
     // only blocks on the spatial snapshot and targeted queries below, because
     // the stream's first entity replay can resolve by timeout on busy worlds.
     // Handshakes are transport freshness. Data freshness is recorded by stream
     // updates, so quiet worlds do not look stale after a successful boot.
-    useConnectionStore.getState().recordSpatialHandshake();
   } catch (error) {
-    cancelGlobalEntityStreamSubscriptions();
     if (error instanceof Error && error.message.includes("global spatial map")) {
       throw error;
     }
@@ -863,7 +834,6 @@ export const initialSync = async (
     throw error;
   } finally {
     recordGameEntryDuration("initial-sync-global-stream-subscribe", performance.now() - globalStreamSubscribeStart);
-    isInitialSyncInFlight = false;
   }
 
   const contractComponents = setup.network.contractComponents as unknown as Component<Schema, Metadata, undefined>[];
@@ -972,18 +942,6 @@ export const initialSync = async (
   updateProgress(100);
 };
 
-const resubscribeEntityStream = async (
-  setup: SetupResult,
-  state: AppStore,
-  setInitialSyncProgress: (progress: number) => void,
-  logging = false,
-) => {
-  await initialSync(setup, state, setInitialSyncProgress, {
-    logging,
-    reportProgress: false,
-  });
-};
-
 /**
  * Lightweight reconnect: re-open ONLY the global entity + event stream.
  *
@@ -1006,32 +964,12 @@ export const resubscribeGlobalEntityStream = async (
   const subscriptionSetupTimeoutMs =
     options.subscriptionSetupTimeoutMs ?? env.VITE_PUBLIC_TORII_SUBSCRIPTION_SETUP_TIMEOUT_MS;
 
-  cancelGlobalEntityStreamSubscriptions();
-  // Guard the exported cancelEntityStreamSubscription() against tearing down the
-  // half-built subscription while we re-handshake.
-  isInitialSyncInFlight = true;
-  try {
-    const initialGlobalEntityClause = getInitialGlobalEntityStreamClause();
-    entityStreamSubscription = await syncEntitiesDebounced(
-      setup.network.toriiClient,
+  await requireActiveGameSyncRuntime().restartGlobalWriter(() =>
+    startGlobalEntityWriter({
       setup,
-      {
-        entityClause: initialGlobalEntityClause,
-        eventClause: getGlobalEventStreamClause(),
-      },
       logging,
-      () => useConnectionStore.getState().recordGlobalUpdate(),
-      {
-        streamType: "global",
-        subscriptionSetupTimeoutMs,
-        onSubscriptionSetupTimeout: options.onSubscriptionSetupTimeout,
-      },
-    );
-    useConnectionStore.getState().recordGlobalHandshake();
-  } catch (error) {
-    cancelGlobalEntityStreamSubscriptions();
-    throw error;
-  } finally {
-    isInitialSyncInFlight = false;
-  }
+      subscriptionSetupTimeoutMs,
+      onSubscriptionSetupTimeout: options.onSubscriptionSetupTimeout,
+    }),
+  );
 };

@@ -5,6 +5,7 @@ import { refreshSessionPolicies } from "@/hooks/context/session-policy-refresh";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useConnectionStore } from "@/hooks/store/use-connection-store";
 import { useSyncStore } from "@/hooks/store/use-sync-store";
+import { SupersededGameSyncStartError } from "@bibliothecadao/eternum/game-sync";
 import {
   bootstrapGameForEntryContext,
   getCachedBootstrappedEntrySession,
@@ -311,6 +312,10 @@ export const useGameEntryBootstrapController = ({
         })
         .catch((incomingError: unknown) => {
           if (activeRunIdRef.current !== runId) {
+            return;
+          }
+
+          if (incomingError instanceof SupersededGameSyncStartError) {
             return;
           }
 

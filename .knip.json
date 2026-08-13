@@ -129,6 +129,9 @@
         "@bibliothecadao/eternum/game-entity-keys": [
           "../../../packages/core/src/managers/game-entity-keys.ts"
         ],
+        "@bibliothecadao/eternum/game-sync": [
+          "../../../packages/core/src/sync/index.ts"
+        ],
         "@bibliothecadao/provider": [
           "../../../packages/provider/src/index.ts"
         ],

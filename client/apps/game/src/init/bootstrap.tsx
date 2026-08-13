@@ -2,6 +2,7 @@ import { captureSystemError } from "@/posthog";
 import { DEV_MODE_ENABLED } from "@/utils/dev-mode";
 import { setup } from "@bibliothecadao/dojo";
 import { configManager, MapDataStore } from "@bibliothecadao/eternum";
+import { SupersededGameSyncStartError } from "@bibliothecadao/eternum/game-sync";
 import { setSqlGameScope } from "@bibliothecadao/torii";
 import { world } from "@bibliothecadao/types";
 import { inject } from "@vercel/analytics";
@@ -20,7 +21,7 @@ import { dojoConfig } from "../../dojo-config";
 import { env } from "../../env";
 import { clearSubscriptionQueue } from "../dojo/debounced-queries";
 import { namespaceForChain, setGameScope, type GameNamespace } from "../dojo/game-scope";
-import { cancelEntityStreamSubscription, initialSync } from "../dojo/sync";
+import { disposeGameSyncSession, initialSync } from "../dojo/sync";
 import { usePlayerStore } from "../hooks/store/use-player-store";
 import useSettlementStore from "../hooks/store/use-settlement-store";
 import { useSyncStore } from "../hooks/store/use-sync-store";
@@ -189,6 +190,10 @@ export const bootstrapGameForEntryContext = async (
     markGameEntryMilestone("bootstrap-completed");
     return result;
   } catch (error) {
+    if (error instanceof SupersededGameSyncStartError) {
+      throw error;
+    }
+
     bootstrapSession.clearFailure();
     captureSystemError(error, {
       error_type: "dojo_setup",
@@ -335,7 +340,7 @@ const startGameRenderer = async (setupResult: SetupResult) => {
 };
 
 const cancelActiveBootstrapSubscriptions = () => {
-  cancelEntityStreamSubscription();
+  disposeGameSyncSession();
 };
 
 const clearBootstrapWorldData = () => {
