@@ -1,0 +1,46 @@
+{
+  "version": 1,
+  "kind": "game",
+  "runId": "appchain.blitz:bltz-chirp-294",
+  "environment": "appchain.blitz",
+  "chain": "appchain",
+  "gameType": "blitz",
+  "gameName": "bltz-chirp-294",
+  "status": "running",
+  "executionMode": "fast_trial",
+  "requestedLaunchStep": "full",
+  "inputPath": "inputs/appchain/blitz/bltz-chirp-294/31676356155-1.json",
+  "latestLaunchRequestId": "31676356155-1",
+  "currentStepId": "create-world",
+  "createdAt": "2026-08-13T07:06:41.684Z",
+  "updatedAt": "2026-08-13T07:06:41.684Z",
+  "workflow": {
+    "workflowName": "Game Launch",
+    "workflowJob": "launch",
+    "workflowRunId": 31676356155,
+    "workflowRunAttempt": 1,
+    "workflowUrl": "https://github.com/BibliothecaDAO/eternum/actions/runs/31676356155",
+    "ref": "feat/single-world-blitz",
+    "sha": "aebec980b85c9ce9f99bf17e2b7ecd4a3e9d8108"
+  },
+  "steps": [
+    {
+      "id": "create-world",
+      "title": "Creating world",
+      "status": "pending",
+      "workflowStepName": "Creating world",
+      "latestEvent": "Waiting to run"
+    },
+    {
+      "id": "wait-for-factory-index",
+      "title": "Waiting for game",
+      "status": "pending",
+      "workflowStepName": "Waiting for game",
+      "latestEvent": "Waiting to run"
+    }
+  ],
+  "artifacts": {
+    "scheduledStartTime": "2026-08-13T07:15:00.000Z",
+    "durationSeconds": 3600
+  }
+}
