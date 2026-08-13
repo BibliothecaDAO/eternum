@@ -6,7 +6,7 @@ import {
   ARMY_AUTHORITATIVE_SWEEP_INTERVAL_MS,
   sweepArmiesAgainstTorii,
 } from "@/dojo/army-authoritative-reconciler";
-import { ensureStructureSynced } from "@/dojo/queries";
+import { ensureStructureSynced, getTilesForPositionsFromTorii } from "@/dojo/queries";
 import { initializeSyncSimulator } from "@/dojo/sync-simulator";
 import { getBoundedSpatialMapModels, getGlobalSpatialMapModels } from "@/dojo/torii-spatial-models";
 import { buildBoundsDescriptorSignature, ToriiStreamManager, type BoundsDescriptor } from "@/dojo/torii-stream-manager";
@@ -3065,6 +3065,10 @@ export default class WorldmapScene extends WarpTravel {
       return;
     }
 
+    if (chest) {
+      void this.repairChestTileIfStale(hexCoords);
+    }
+
     if (structure) {
       console.log("[Worldmap] Structure entity id clicked:", structure.id);
     }
@@ -3097,6 +3101,32 @@ export default class WorldmapScene extends WarpTravel {
       ...this.getInteractionDebugSnapshot(),
     });
     this.clearEntitySelection();
+  }
+
+  // A clicked chest mesh proves a chest exists here (its stream update built
+  // the mesh), but the side panel reads the RECS TileOpt row, which a
+  // hydration snapshot taken before the spawn can overwrite. Repair on
+  // action: refetch this one tile row so the relic panel appears in place.
+  private async repairChestTileIfStale(hexCoords: HexPosition): Promise<void> {
+    const contract = new Position({ x: hexCoords.col, y: hexCoords.row }).getContract();
+    const tile = getTileAt(this.dojo.components, DEFAULT_COORD_ALT, contract.x, contract.y);
+    if (tile && isTileOccupierChest(tile.occupier_type)) {
+      return;
+    }
+
+    const toriiClient = this.dojo.network?.toriiClient;
+    const contractComponents = this.dojo.network?.contractComponents as unknown as
+      | Parameters<typeof getTilesForPositionsFromTorii>[1]
+      | undefined;
+    if (!toriiClient || !contractComponents) {
+      return;
+    }
+
+    try {
+      await getTilesForPositionsFromTorii(toriiClient, contractComponents, [{ col: contract.x, row: contract.y }]);
+    } catch (error) {
+      console.error("[WorldmapScene] Failed to repair chest tile from Torii", error);
+    }
   }
 
   protected handleHexSelection(hexCoords: HexPosition, isMine: boolean) {
@@ -9755,6 +9785,12 @@ export default class WorldmapScene extends WarpTravel {
       const tileOpt = getComponentValue(tileOptComponent, entity);
       const tile = tileOpt ? tileOptToTile(tileOpt) : undefined;
       if (!tile) {
+        continue;
+      }
+
+      // The worldmap renders the surface layer; ethereal (alt) rows share
+      // col/row and would ghost-paint tiles/chests/structures onto it.
+      if (tile.alt) {
         continue;
       }
 

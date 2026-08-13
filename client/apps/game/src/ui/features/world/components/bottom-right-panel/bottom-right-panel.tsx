@@ -4,6 +4,7 @@ import { debouncedGetEntitiesFromTorii } from "@/dojo/debounced-queries";
 import { buildingEntityKey, gameEntityKey, gameModel } from "@/dojo/game-scope";
 import { getStructuresDataFromTorii } from "@/dojo/queries";
 import { useEntityResync } from "@/hooks/helpers/use-entity-resync";
+import { useTileAt } from "@/hooks/helpers/use-tile-at";
 import { isVillageLikeStructureCategory, normalizeStructureCategory } from "@/lib/structure-type-utils";
 import { BuildingThumbs, FELT_CENTER } from "@/ui/config";
 import { LeftView } from "@/types";
@@ -30,9 +31,6 @@ import {
   isTileOccupierQuest,
   isTileOccupierReservedHyperstructure,
   isTileOccupierStructure,
-  Position as PositionInterface,
-  getTileAt,
-  DEFAULT_COORD_ALT,
 } from "@bibliothecadao/eternum";
 import { useDojo, useQuery } from "@bibliothecadao/react";
 import {
@@ -161,19 +159,11 @@ const PanelFrame = ({ title, children, headerAction, className, height }: PanelF
 const MapTilePanel = () => {
   const selectedHex = useUIStore((state) => state.selectedHex);
   const {
-    setup,
     network: { contractComponents, toriiClient },
   } = useDojo();
   const { syncEntity, isSyncing } = useEntityResync();
 
-  const tile = useMemo(() => {
-    if (!selectedHex) return null;
-    const selectedHexContract = new PositionInterface({
-      x: selectedHex.col,
-      y: selectedHex.row,
-    }).getContract();
-    return getTileAt(setup.components, DEFAULT_COORD_ALT, selectedHexContract.x, selectedHexContract.y);
-  }, [selectedHex, setup.components]);
+  const tile = useTileAt(selectedHex?.col, selectedHex?.row) ?? null;
 
   const hasOccupier = useMemo(() => {
     if (!tile) return false;

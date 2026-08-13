@@ -1018,6 +1018,10 @@ export class WorldUpdateListener {
 
               if (!currentState) return;
 
+              // Ethereal-layer (alt) chests share col/row with the surface;
+              // emitting them would ghost-render chests on the worldmap.
+              if (currentState.alt) return;
+
               const chest = currentState.occupier_type === TileOccupier.Chest;
 
               if (!chest) return;
@@ -1053,6 +1057,7 @@ export class WorldUpdateListener {
               // Check if the previous state was a chest and current state is not
               if (
                 prevState &&
+                !prevState.alt &&
                 prevState.occupier_type === TileOccupier.Chest &&
                 (!currentState || currentState.occupier_type !== TileOccupier.Chest)
               ) {
