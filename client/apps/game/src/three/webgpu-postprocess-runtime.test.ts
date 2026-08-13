@@ -2,6 +2,7 @@ import { ACESFilmicToneMapping, NeutralToneMapping } from "three";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { createWebGPUPostProcessRuntime } from "./webgpu-postprocess-runtime";
+import { createRenderableOverlayScene } from "./renderer-overlay-passes.test-fixture";
 import type { RendererPostProcessPlan } from "./renderer-backend-v2";
 
 function createPlan(overrides: Partial<RendererPostProcessPlan> = {}): RendererPostProcessPlan {
@@ -83,17 +84,19 @@ describe("createWebGPUPostProcessRuntime", () => {
     );
 
     runtime.setPlan(createPlan());
+    const interactionOverlayScene = createRenderableOverlayScene("interaction-scene");
+    const hudOverlayScene = createRenderableOverlayScene("hud-scene");
     runtime.renderFrame({
       mainCamera: { id: "main-camera" } as never,
       mainScene: { id: "main-scene" } as never,
       overlayPasses: [
         {
           camera: { id: "interaction-camera" } as never,
-          scene: { id: "interaction-scene" } as never,
+          scene: interactionOverlayScene as never,
         },
         {
           camera: { id: "hud-camera" } as never,
-          scene: { id: "hud-scene" } as never,
+          scene: hudOverlayScene as never,
         },
       ],
     });
@@ -107,8 +110,8 @@ describe("createWebGPUPostProcessRuntime", () => {
     expect(renderer.clear).not.toHaveBeenCalled();
     expect(postProcessing.render).toHaveBeenCalledTimes(1);
     expect(renderer.clearDepth).toHaveBeenCalledTimes(2);
-    expect(renderer.render).toHaveBeenNthCalledWith(1, { id: "interaction-scene" }, { id: "interaction-camera" });
-    expect(renderer.render).toHaveBeenNthCalledWith(2, { id: "hud-scene" }, { id: "hud-camera" });
+    expect(renderer.render).toHaveBeenNthCalledWith(1, interactionOverlayScene, { id: "interaction-camera" });
+    expect(renderer.render).toHaveBeenNthCalledWith(2, hudOverlayScene, { id: "hud-camera" });
   });
 
   it("falls back to the live renderer tone mapping when no explicit plan has been applied yet", () => {

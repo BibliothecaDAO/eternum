@@ -34,6 +34,14 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 // are surfaced in the What's New popup.
 const allLatestFeatures: LatestFeature[] = [
   {
+    date: "2026-08-13",
+    title: "Instant Chest Rewards",
+    description:
+      "Fixed relic-crate rewards so an open army panel receives the new relic immediately without requiring a refresh or reselect.",
+    type: "fix",
+    gameSlug: "world",
+  },
+  {
     date: "2026-06-05",
     title: "Lighter Structure Sync",
     description:

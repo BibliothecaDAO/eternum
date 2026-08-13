@@ -8,6 +8,7 @@ import {
 import { RendererInitTimeoutError } from "./renderer-backend-v2";
 import { resetRendererStartupTimings, snapshotRendererStartupTimings } from "./perf/renderer-startup-telemetry";
 import { createWebGPURendererBackend } from "./webgpu-renderer-backend";
+import { createRenderableOverlayScene } from "./renderer-overlay-passes.test-fixture";
 
 beforeEach(() => {
   vi.stubGlobal("window", {
@@ -456,13 +457,14 @@ describe("createWebGPURendererBackend", () => {
       height: 360,
     });
     backend.resize?.(800, 450);
+    const overlayScene = createRenderableOverlayScene("overlay-scene");
     backend.renderFrame?.({
       mainCamera: { id: "main-camera" } as never,
       mainScene: { id: "main-scene" } as never,
       overlayPasses: [
         {
           camera: { id: "overlay-camera" } as never,
-          scene: { id: "overlay-scene" } as never,
+          scene: overlayScene as never,
         },
       ],
     });

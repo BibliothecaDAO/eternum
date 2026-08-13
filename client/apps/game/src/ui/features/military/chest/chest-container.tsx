@@ -8,9 +8,10 @@ import { DEFAULT_COORD_ALT, getCrateName, getTileAt } from "@bibliothecadao/eter
 import { useComponentSystem, useDojo } from "@bibliothecadao/react";
 import { getRelicInfo, ID, RelicInfo, RELICS, ResourcesIds } from "@bibliothecadao/types";
 import { isComponentUpdate } from "@dojoengine/recs";
-import { useQueryClient } from "@tanstack/react-query";
 import { AnimatePresence, motion, useMotionValue } from "framer-motion";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { syncExplorerAfterChestOpen } from "./sync-explorer-after-chest-open";
+import type { ExplorerChestSyncComponents } from "./sync-explorer-after-chest-open";
 
 // Relic Card Component - Simplified without tooltip
 const RelicCard = ({ relic, isHovered }: { relic: RelicInfo; isHovered: boolean }) => {
@@ -351,12 +352,11 @@ export const ChestContainer = ({
 
   const toggleModal = useUIStore((state) => state.toggleModal);
   const triggerRelicsRefresh = useUIStore((state) => state.triggerRelicsRefresh);
-  const queryClient = useQueryClient();
 
   const {
     setup: {
       systemCalls,
-      network: { contractComponents },
+      network: { contractComponents, toriiClient },
     },
     account: { account },
   } = useDojo();
@@ -377,10 +377,14 @@ export const ChestContainer = ({
         const relics = currentState.relics.map((relic: any) => relic.value);
         setChestResult(relics);
         // The relic tray polls every 10s and the army inventory panel caches its
-        // snapshot with no invalidation anywhere; bump both now so the winnings
-        // are usable immediately instead of after the next poll/remount.
+        // aggregate snapshot. Refresh the tray and write the explorer's latest
+        // reward Resource row into RECS so the open army panel updates in place.
         triggerRelicsRefresh();
-        void queryClient.invalidateQueries({ queryKey: ["explorer", String(explorerEntityId)] });
+        void syncExplorerAfterChestOpen({
+          toriiClient,
+          contractComponents: contractComponents as unknown as ExplorerChestSyncComponents,
+          explorerEntityId,
+        });
 
         if (isOpening) {
           setTimeout(() => {
@@ -400,7 +404,16 @@ export const ChestContainer = ({
         }
       }
     },
-    [explorerEntityId, chestHex.x, chestHex.y, isOpening, playChestOpenSound, triggerRelicsRefresh, queryClient],
+    [
+      explorerEntityId,
+      chestHex.x,
+      chestHex.y,
+      isOpening,
+      playChestOpenSound,
+      triggerRelicsRefresh,
+      toriiClient,
+      contractComponents,
+    ],
   );
 
   const handleChestClick = async () => {

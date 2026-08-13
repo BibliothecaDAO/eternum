@@ -7,6 +7,7 @@ import {
   renderRendererBackendFrame,
   resizeRendererBackend,
 } from "./renderer-backend-compat";
+import { createRenderableOverlayScene } from "./renderer-overlay-passes.test-fixture";
 
 function createRenderer() {
   return {
@@ -68,6 +69,8 @@ describe("renderer backend compat", () => {
     const backend = {
       renderer,
     };
+    const interactionOverlayScene = createRenderableOverlayScene("interaction-overlay-scene");
+    const hudOverlayScene = createRenderableOverlayScene("hud-overlay-scene");
 
     renderRendererBackendFrame(backend as never, {
       mainCamera: "main-camera" as never,
@@ -75,11 +78,11 @@ describe("renderer backend compat", () => {
       overlayPasses: [
         {
           camera: "interaction-camera" as never,
-          scene: "interaction-overlay-scene" as never,
+          scene: interactionOverlayScene as never,
         },
         {
           camera: "hud-camera" as never,
-          scene: "hud-overlay-scene" as never,
+          scene: hudOverlayScene as never,
         },
       ],
     });
@@ -88,8 +91,8 @@ describe("renderer backend compat", () => {
     expect(renderer.clear).toHaveBeenCalled();
     expect(renderer.render).toHaveBeenNthCalledWith(1, "main-scene", "main-camera");
     expect(renderer.clearDepth).toHaveBeenCalledTimes(2);
-    expect(renderer.render).toHaveBeenNthCalledWith(2, "interaction-overlay-scene", "interaction-camera");
-    expect(renderer.render).toHaveBeenNthCalledWith(3, "hud-overlay-scene", "hud-camera");
+    expect(renderer.render).toHaveBeenNthCalledWith(2, interactionOverlayScene, "interaction-camera");
+    expect(renderer.render).toHaveBeenNthCalledWith(3, hudOverlayScene, "hud-camera");
   });
 
   it("provides no-op postprocess and dispose fallbacks when optional hooks are missing", () => {
