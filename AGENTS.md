@@ -22,9 +22,12 @@ When changing workflows, deployer code, shared runtime packages, or observabilit
 Every client bug class in the Aug 2026 playtest traced to a violation of one of these rules. They apply to
 `client/apps/game` and `packages/*`.
 
-1. **One truth.** UI reads on-chain state from RECS only. Anything fetched from torii (gRPC or SQL) is written into RECS
-   — never held in a side store, react-query cache, or scene-local map as the primary copy. Do not add new direct-fetch
-   read paths; when touching one, delete it.
+1. **One truth, per fact.** Current authoritative game facts live in RECS only: anything fetched from torii that
+   represents current entity state is written into RECS — never held in a side store, react-query cache, or scene-local
+   map as the primary copy. Immutable history and query-derived aggregates that are not current entity truth (story
+   logs, battle logs, swaps, token transfers) may be SQL read models, but SQL must never provide an alternative or
+   fallback version of a fact that is also present in RECS. Do not add new direct-fetch read paths for live state; when
+   touching one, delete it.
 2. **No silent defaults.** A config or keyed lookup that misses must be loud in dev. Never let a silent fallback return
    a zero that gameplay math consumes.
 3. **Recoverable without events.** Every entity class must be restorable from a snapshot, replay, or poll. A
