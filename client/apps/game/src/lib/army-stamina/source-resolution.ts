@@ -1,4 +1,4 @@
-import { StaminaManager } from "@bibliothecadao/eternum";
+import { pickFresherArmyStaminaReading, StaminaManager } from "@bibliothecadao/eternum";
 import { ID, Troops, TroopTier, TroopType } from "@bibliothecadao/types";
 
 import { getAuthoritativeTroopsSnapshot, getFreshPendingStaminaSource } from "./source-store";
@@ -22,13 +22,6 @@ interface ExplorerStaminaSnapshotInput {
     updatedTick: number;
   } | null;
 }
-
-const SOURCE_PRIORITY: Record<ArmyStaminaSourceKind, number> = {
-  pending: 0,
-  snapshot: 1,
-  live: 2,
-  cached: 3,
-};
 
 const buildFallbackTroopsSnapshot = (fallbackArmy: ExplorerArmyFallback): Troops => ({
   category: fallbackArmy.category,
@@ -146,21 +139,6 @@ const hasOnchainStaminaCaughtUpToPending = (
     return onchainTick === pendingSource.updatedTick && troops.stamina.amount === pendingSource.amount;
   });
 
-const compareSnapshots = (
-  left: ArmyStaminaSourceSnapshot,
-  right: ArmyStaminaSourceSnapshot,
-): ArmyStaminaSourceSnapshot => {
-  if (left.updatedTick !== right.updatedTick) {
-    return left.updatedTick > right.updatedTick ? left : right;
-  }
-
-  if (SOURCE_PRIORITY[left.source] !== SOURCE_PRIORITY[right.source]) {
-    return SOURCE_PRIORITY[left.source] < SOURCE_PRIORITY[right.source] ? left : right;
-  }
-
-  return (left.capturedAtMs ?? 0) >= (right.capturedAtMs ?? 0) ? left : right;
-};
-
 export const selectFreshestArmyStaminaSource = (input: {
   entityId?: ID;
   snapshotTroops?: Troops | null;
@@ -191,7 +169,10 @@ export const selectFreshestArmyStaminaSource = (input: {
     return null;
   }
 
-  return candidates.reduce(compareSnapshots);
+  // Core's pickFresherArmyStaminaReading is the single definition of "which
+  // stamina reading is fresher" — shared with the world-update path so the
+  // detail panel and the 3D label resolve to the same value.
+  return candidates.reduce((left, right) => pickFresherArmyStaminaReading(left, right));
 };
 
 export const selectFreshestTroopsSnapshot = (input: {

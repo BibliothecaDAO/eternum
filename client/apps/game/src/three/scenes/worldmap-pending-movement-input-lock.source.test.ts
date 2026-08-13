@@ -34,7 +34,7 @@ describe("Worldmap pending movement input lock", () => {
     expect(helperStart).toBeGreaterThan(0);
     const helperBody = source.slice(helperStart, helperStart + 500);
 
-    expect(helperBody).toContain("this.pendingArmyMovements.has(entityId)");
+    expect(helperBody).toContain("this.isArmyMovementPending(entityId)");
     expect(helperBody).toContain("this.armyManager.hasUnresolvedOptimisticMovement(entityId)");
   });
 
@@ -46,7 +46,7 @@ describe("Worldmap pending movement input lock", () => {
     const helperBody = source.slice(helperStart, helperStart + 900);
 
     expect(helperBody).toContain("this.hasPendingMovementTransactionForArmy(entityId)");
-    expect(helperBody).toContain("this.pendingArmyMovementTxMap");
+    expect(helperBody).toContain("txHashes.size");
   });
 
   it("keeps movement input locked while authoritative resolution waits for visual completion", () => {
@@ -56,7 +56,7 @@ describe("Worldmap pending movement input lock", () => {
     expect(helperStart).toBeGreaterThan(0);
     const helperBody = source.slice(helperStart, helperStart + 700);
 
-    expect(helperBody).toContain("this.pendingArmyMovementAuthoritativeResolutions.has(entityId)");
+    expect(helperBody).toContain("awaitingVisualCompletion === true");
   });
 
   it("passes unresolved optimistic movement into the selection plan", () => {

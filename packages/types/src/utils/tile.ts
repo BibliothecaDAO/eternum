@@ -1,3 +1,4 @@
+import { MAX_U32 } from "../constants/market";
 import type { Tile, TileOpt } from "../types/common";
 
 export type TileDataInput = bigint | string | number;
@@ -18,7 +19,6 @@ const REWARD_EXTRACTED_SHIFT = 113;
 const REWARD_EXTRACTED_MASK = 0x1n;
 const ALT_SHIFT = 127;
 const ALT_MASK = 0x1n;
-const MAX_U32 = 0xffff_ffffn;
 
 const extractField = (data: bigint, shift: number, mask: bigint): bigint => (data >> BigInt(shift)) & mask;
 

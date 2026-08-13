@@ -50,6 +50,9 @@ describe("ArmyManager authoritative reconciliation seam", () => {
     const source = readSource();
 
     expect(source).toContain("public hasUnresolvedOptimisticMovement(entityId: ID): boolean");
-    expect(source).toMatch(/optimisticPositionLocks\.has\(entityId\)/);
+    // The accessor must consult the lock map AND honour the lock TTL — a lock
+    // with no further entity updates would otherwise block selection forever.
+    expect(source).toMatch(/const lock = this\.optimisticPositionLocks\.get\(entityId\);/);
+    expect(source).toMatch(/OPTIMISTIC_POSITION_LOCK_TTL_MS/);
   });
 });

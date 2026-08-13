@@ -1552,6 +1552,10 @@ export abstract class HexagonScene {
     this.cameraViewListeners.forEach((listener) => listener(nextView));
   }
 
+  protected isCameraTransitionInProgress(): boolean {
+    return this.cameraTransitionStatus === "transitioning";
+  }
+
   private setCameraTransitionStatus(status: CameraTransitionStatus): void {
     if (this.cameraTransitionStatus === status) {
       return;

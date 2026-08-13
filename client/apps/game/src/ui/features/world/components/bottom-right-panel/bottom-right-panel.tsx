@@ -24,6 +24,8 @@ import {
   getBalance,
   getBlockTimestamp,
   hasTileOccupier,
+  MAP_DATA_REFRESH_INTERVAL,
+  MapDataStore,
   isTileOccupierChest,
   isTileOccupierQuest,
   isTileOccupierReservedHyperstructure,
@@ -955,8 +957,7 @@ const LocalTilePanel = () => {
 
 const MinimapPanel = () => {
   const [tiles, setTiles] = useState<MinimapTile[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
   const { isMapView } = useQuery();
   const selectedHex = useUIStore((state) => state.selectedHex);
   const navigationTarget = useUIStore((state) => state.navigationTarget);
@@ -978,46 +979,45 @@ const MinimapPanel = () => {
   const focusHex = activeRealmHex ?? cameraTargetHex;
   const focusSelectedHex = activeRealmHex ?? selectedHex;
 
+  // Tiles come from MapDataStore's tiles facet — the designated single
+  // SQL-aggregate layer — instead of a component-local fetchAllTiles poll.
+  // The store owns the ~60s cadence, retry/backoff and refresh callbacks;
+  // we only mirror its tiles into render state whenever it refreshes.
+  const mapDataStore = useMemo(() => MapDataStore.getInstance(MAP_DATA_REFRESH_INTERVAL, sqlApi), []);
+
   useEffect(() => {
-    // MinimapPanel only mounts in map view (parent gating), so fetch unconditionally.
     let cancelled = false;
-    const loadTiles = async () => {
-      setIsLoading(true);
-      try {
-        const fetched = await sqlApi.fetchAllTiles();
-        if (!cancelled) {
-          setTiles(
-            fetched.map((tile) =>
-              normalizeMinimapTile({
-                col: tile.col,
-                row: tile.row,
-                biome: tile.biome,
-                occupier_id: tile.occupier_id?.toString(),
-                occupier_type: tile.occupier_type,
-                occupier_is_structure: tile.occupier_is_structure,
-              }),
-            ),
-          );
-          setError(null);
-        }
-      } catch (err) {
-        if (!cancelled) {
-          setError(err instanceof Error ? err.message : "Failed to load minimap data");
-        }
-      } finally {
-        if (!cancelled) {
-          setIsLoading(false);
-        }
-      }
+    const readTiles = () => {
+      if (cancelled) return;
+      setTiles(
+        mapDataStore.getAllTiles().map((tile) =>
+          normalizeMinimapTile({
+            col: tile.col,
+            row: tile.row,
+            biome: tile.biome,
+            occupier_id: tile.occupier_id?.toString(),
+            occupier_type: tile.occupier_type,
+            occupier_is_structure: tile.occupier_is_structure,
+          }),
+        ),
+      );
+      setIsLoading(false);
     };
 
-    loadTiles();
-    const interval = setInterval(loadTiles, 60_000);
+    mapDataStore.onRefresh(readTiles);
+    // The minimap is the one always-mounted consumer that needs push
+    // freshness while the player idles, so it owns the store's built-in
+    // refresh loop (60s — same cadence the old component poll used).
+    mapDataStore.startAutoRefresh();
+    // Initial read: resolves immediately when the boot warmup already
+    // populated the store, otherwise triggers the first fetch.
+    void mapDataStore.waitForData().then(readTiles);
     return () => {
       cancelled = true;
-      clearInterval(interval);
+      mapDataStore.offRefresh(readTiles);
+      mapDataStore.stopAutoRefresh();
     };
-  }, []);
+  }, [mapDataStore]);
 
   return (
     <PanelFrame title="Minimap" height={MINIMAP_SIZE}>
@@ -1033,9 +1033,6 @@ const MinimapPanel = () => {
             <div className="absolute inset-0 flex items-center justify-center bg-black/30">
               <div className="h-10 w-10 animate-spin rounded-full border-2 border-gold/40 border-t-gold" />
             </div>
-          )}
-          {error && (
-            <div className="absolute bottom-3 right-3 rounded bg-black/70 px-3 py-1 text-xxs text-red-200">{error}</div>
           )}
         </div>
       </div>

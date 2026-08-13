@@ -8,6 +8,7 @@ import { DEFAULT_COORD_ALT, getCrateName, getTileAt } from "@bibliothecadao/eter
 import { useComponentSystem, useDojo } from "@bibliothecadao/react";
 import { getRelicInfo, ID, RelicInfo, RELICS, ResourcesIds } from "@bibliothecadao/types";
 import { isComponentUpdate } from "@dojoengine/recs";
+import { useQueryClient } from "@tanstack/react-query";
 import { AnimatePresence, motion, useMotionValue } from "framer-motion";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
@@ -349,6 +350,8 @@ export const ChestContainer = ({
   const playChestOpenSound = useUISound("relic.chest");
 
   const toggleModal = useUIStore((state) => state.toggleModal);
+  const triggerRelicsRefresh = useUIStore((state) => state.triggerRelicsRefresh);
+  const queryClient = useQueryClient();
 
   const {
     setup: {
@@ -373,6 +376,11 @@ export const ChestContainer = ({
       ) {
         const relics = currentState.relics.map((relic: any) => relic.value);
         setChestResult(relics);
+        // The relic tray polls every 10s and the army inventory panel caches its
+        // snapshot with no invalidation anywhere; bump both now so the winnings
+        // are usable immediately instead of after the next poll/remount.
+        triggerRelicsRefresh();
+        void queryClient.invalidateQueries({ queryKey: ["explorer", String(explorerEntityId)] });
 
         if (isOpening) {
           setTimeout(() => {
@@ -392,7 +400,7 @@ export const ChestContainer = ({
         }
       }
     },
-    [explorerEntityId, chestHex.x, chestHex.y, isOpening, playChestOpenSound],
+    [explorerEntityId, chestHex.x, chestHex.y, isOpening, playChestOpenSound, triggerRelicsRefresh, queryClient],
   );
 
   const handleChestClick = async () => {

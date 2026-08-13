@@ -1,6 +1,4 @@
 import type { Chain } from "@contracts";
-import { WORLD_CONFIG_ID } from "@bibliothecadao/types";
-import { getEntityIdFromKeys } from "@dojoengine/utils";
 
 /**
  * Active game scope for the s2 single-world arm.
@@ -55,29 +53,22 @@ export const appchainModel = (name: string): string => `${namespaceForChain("app
 export const gameIdKey = (): string => `0x${activeGameId.toString(16)}`;
 
 /**
- * RECS entity key for a per-game model. On s2 every per-game model leads with
- * `game_id` as key[0], so lookups must hash it in or they miss every entity;
- * legacy worlds hash the bare keys. Never use for chain-global models
- * (AddressName, preset tables, ChainConfig, ...). Client-side twin of
- * packages/core's gameEntityKey — same formula, fed by the same bootstrap line.
+ * RECS entity keys for per-game models (gameEntityKey, buildingEntityKey) and
+ * the WorldConfig row (worldConfigKey). Single source: packages/core's
+ * config-manager, which reads the game id set by configManager.setActiveGame —
+ * the bootstrap line adjacent to setGameScope, always fed the same
+ * profile.gameId. Re-exported here so client call sites keep one import path;
+ * never use gameEntityKey for chain-global models (AddressName, preset
+ * tables, ChainConfig, ...).
  */
-export const gameEntityKey = (keys: (bigint | string)[]) => {
-  const bigints = keys.map((key) => BigInt(key));
-  return getEntityIdFromKeys(activeGameId > 0 ? [BigInt(activeGameId), ...bigints] : bigints);
-};
-
-/**
- * Building is keyed (game_id, alt, outer, outer, inner, inner) on s2 and
- * (outer, outer, inner, inner) on legacy worlds. Structures never sit on the
- * alt plane (Cairo `StructureBase.coord()` pins alt to false), so alt is 0.
- */
-export const buildingEntityKey = (outerCol: number, outerRow: number, innerCol: number, innerRow: number) => {
-  const coords = [BigInt(outerCol), BigInt(outerRow), BigInt(innerCol), BigInt(innerRow)];
-  return getEntityIdFromKeys(activeGameId > 0 ? [BigInt(activeGameId), 0n, ...coords] : coords);
-};
-
-/** WorldConfig row key: [gameId] on s2, [WORLD_CONFIG_ID] on legacy worlds. */
-export const worldConfigKey = () => getEntityIdFromKeys([activeGameId > 0 ? BigInt(activeGameId) : WORLD_CONFIG_ID]);
+// Key helpers are core's single implementation, imported via its subpath
+// export rather than the package root: evaluating the core barrel runs
+// module-scope resource tables that break tests partially mocking
+// @bibliothecadao/types, and drags all of core into every game-scope
+// consumer. The subpath resolves to the same module instance as the barrel
+// re-export (esm chunk splitting in dist, alias to the same source file in
+// vitest), so the active-game-id mirror stays singular.
+export { buildingEntityKey, gameEntityKey, worldConfigKey } from "@bibliothecadao/eternum/game-entity-keys";
 
 // s2 models and events WITHOUT a game_id key[0] (chain singletons, preset
 // rulebook side tables, player identity, series rows). Everything else in the

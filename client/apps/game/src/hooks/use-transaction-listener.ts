@@ -1,5 +1,10 @@
 import { useEffect } from "react";
-import { TransactionFailedPayload, TransactionLifecycleMeta, TransactionType } from "@bibliothecadao/provider";
+import {
+  classifyTransactionError,
+  TransactionFailedPayload,
+  TransactionLifecycleMeta,
+  TransactionType,
+} from "@bibliothecadao/provider";
 import { useDojo } from "@bibliothecadao/react";
 import {
   addClientTransactionBreadcrumb,
@@ -150,14 +155,18 @@ export const useTransactionListener = () => {
     };
 
     const handleTransactionFailed = (payload: TransactionFailedPayload) => {
-      const message = extractReadableErrorMessage(payload.message, "Transaction failed");
+      // Payloads carry the original error since the provider attaches it; the
+      // message string is the fallback for payloads emitted without one.
+      const classified = classifyTransactionError("error" in payload ? payload.error : payload.message);
+      const message =
+        classified.reason ?? extractReadableErrorMessage(payload.revertReason ?? payload.message, "Transaction failed");
       clearRecoveredClaimSharePointsMarker(payload);
       void reportClientTransactionFailure({
-        error: new Error(message),
+        error: payload.error ?? new Error(message),
         context: {
           surface: "dojo_provider",
           operation: payload.type ?? "provider_transaction_failure",
-          stage: payload.stage,
+          stage: classified.kind === "user_cancelled" ? "wallet_rejected" : payload.stage,
           transactionType: payload.type,
           transactionHash: payload.transactionHash,
           transactionCount: payload.transactionCount,

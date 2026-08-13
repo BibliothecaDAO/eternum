@@ -35,11 +35,10 @@ describe("Worldmap pending movement visual handoff wiring", () => {
     const helperEnd = source.indexOf("private clearPendingArmyMovement(", helperStart);
     const helperBody = source.slice(helperStart, helperEnd);
 
-    expect(helperBody).toContain("this.pendingArmyMovements.delete(entityId)");
+    expect(helperBody).toContain("movement.handedOffToVisuals = true");
     expect(helperBody).toContain('reason: "movement_started"');
     expect(helperBody).toContain("trackedEffect.cleanup()");
-    expect(helperBody).not.toContain("this.pendingArmyMovementTargetKeys.delete(entityId)");
-    expect(helperBody).not.toContain("this.pendingArmyMovementFallbackTimeouts");
+    expect(helperBody).not.toContain("this.pendingArmyMovements.delete(entityId)");
     expect(helperBody).not.toContain("clearTimeout");
   });
 
@@ -114,7 +113,7 @@ describe("Worldmap pending movement visual handoff wiring", () => {
     const helperBody = source.slice(helperStart, helperEnd);
 
     expect(helperBody).toContain("trackedEffect.key === key");
-    expect(helperBody).toContain("this.pendingArmyMovementTargetKeys.has(entityId)");
+    expect(helperBody).toContain("this.getPendingArmyMovement(entityId)?.movement");
   });
 
   it("does not register tx hashes after authoritative updates already cleared pending movement", () => {
@@ -124,7 +123,7 @@ describe("Worldmap pending movement visual handoff wiring", () => {
 
     const catchStart = source.indexOf(".catch((e) => {", txResponseStart);
     const body = source.slice(txResponseStart, catchStart);
-    const pendingGuard = body.indexOf("this.pendingArmyMovements.has(selectedEntityId)");
+    const pendingGuard = body.indexOf("this.isArmyMovementPending(selectedEntityId)");
     const submittedTxRegistration = body.indexOf(
       "this.handleSubmittedArmyMovementTx({ entityId: selectedEntityId, txHash })",
     );
@@ -142,8 +141,8 @@ describe("Worldmap pending movement visual handoff wiring", () => {
     const applyEnd = source.indexOf("private mirrorOptimisticArmyDestinationIntoWorldmapCache", applyStart);
     const body = source.slice(applyStart, applyEnd);
 
-    expect(body).toContain("if (!this.pendingArmyMovements.has(entityId)) return");
-    expect(body.indexOf("this.pendingArmyMovements.has(entityId)")).toBeLessThan(
+    expect(body).toContain("if (!this.isArmyMovementPending(entityId)) return");
+    expect(body.indexOf("this.isArmyMovementPending(entityId)")).toBeLessThan(
       body.indexOf("this.armyManager.applyMovementPlan"),
     );
   });
@@ -184,6 +183,6 @@ describe("Worldmap pending movement visual handoff wiring", () => {
     expect(helperBody).toContain("trackedEffect.cleanup()");
     expect(helperBody).toContain('this.arrivalGhostManager.clearArrivalGhost(entityId, "movement_evicted")');
     expect(helperBody).not.toContain("pendingArmyMovements.delete");
-    expect(helperBody).not.toContain("pendingArmyMovementFallbackTimeouts");
+    expect(helperBody).not.toContain("fallbackTimeout");
   });
 });

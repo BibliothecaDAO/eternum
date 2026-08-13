@@ -1,6 +1,7 @@
 import { AudioManager } from "@/audio/core/AudioManager";
 import { getCurrentPlayRouteBootToken, usePlayRouteReadinessStore } from "@/game-entry/play-route-readiness-store";
 import { useAccountStore } from "@/hooks/store/use-account-store";
+import { resolveStoredLocalCameraDistance, useCameraZoomStore } from "@/hooks/store/use-camera-zoom-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { isVillageLikeStructureCategory } from "@/lib/structure-type-utils";
 import { resolvePlayRouteTarget } from "@/play/navigation/play-route-target";
@@ -10,6 +11,7 @@ import {
   BUILDINGS_CATEGORIES_TYPES,
   BUILDINGS_GROUPS,
   HEX_SIZE,
+  LOCAL_CAMERA_ZOOM,
   MinesMaterialsParams,
   WONDER_REALM,
   castleLevelToRealmCastle,
@@ -184,6 +186,15 @@ export default class HexceptionScene extends HexagonScene {
   private lastRealmKey?: string;
   // Store Zustand unsubscribe functions to clean up on destroy
   private storeUnsubscribes: (() => void)[] = [];
+  private readonly localZoomPersistDebounceMs = 500;
+  private localZoomPersistTimeout: ReturnType<typeof setTimeout> | null = null;
+  private readonly handleLocalZoomControlsChange = () => {
+    if (this.sceneManager.getCurrentScene() !== SceneName.Hexception) return;
+    // Programmatic camera transitions (scene entry, camera-view resets) must
+    // not overwrite the player's chosen zoom; only interactive zooms persist.
+    if (this.isCameraTransitionInProgress()) return;
+    this.scheduleLocalZoomPersist();
+  };
 
   constructor(
     controls: MapControls,
@@ -382,6 +393,96 @@ export default class HexceptionScene extends HexagonScene {
         },
       ),
     );
+
+    // Persist the player's interactive zoom once it settles (debounced).
+    this.controls.addEventListener("change", this.handleLocalZoomControlsChange);
+
+    // Apply zoom-preference changes coming from the settings UI while this scene is active.
+    this.storeUnsubscribes.push(
+      useCameraZoomStore.subscribe(
+        (state) => state.localDistance,
+        () => this.applyLocalZoomPreferenceLive(),
+      ),
+    );
+  }
+
+  private applyPersistedLocalZoom(): void {
+    const persistedDistance = this.resolveStoredLocalZoomDistance();
+    if (persistedDistance === null) {
+      return;
+    }
+
+    this.animateCameraToLocalZoomDistance(persistedDistance);
+  }
+
+  private applyLocalZoomPreferenceLive(): void {
+    if (this.sceneManager.getCurrentScene() !== SceneName.Hexception) {
+      return;
+    }
+
+    const preferredDistance = this.resolveStoredLocalZoomDistance() ?? this.resolveDefaultLocalZoomDistance();
+    const currentDistance = this.controls.object.position.distanceTo(this.controls.target);
+    if (Math.abs(preferredDistance - currentDistance) < 0.1) {
+      return;
+    }
+
+    this.animateCameraToLocalZoomDistance(preferredDistance);
+  }
+
+  private resolveStoredLocalZoomDistance(): number | null {
+    return resolveStoredLocalCameraDistance({
+      min: this.controls.minDistance,
+      max: this.controls.maxDistance,
+    });
+  }
+
+  private resolveDefaultLocalZoomDistance(): number {
+    return Math.min(LOCAL_CAMERA_ZOOM.defaultDistance, this.controls.maxDistance);
+  }
+
+  private animateCameraToLocalZoomDistance(distance: number): void {
+    const target = this.controls.target;
+    const cameraHeight = Math.sin(this.cameraAngle) * distance;
+    const cameraDepth = Math.cos(this.cameraAngle) * distance;
+    const newPosition = new Vector3(target.x, target.y + cameraHeight, target.z + cameraDepth);
+    this.cameraAnimate(newPosition, target.clone(), 0.6);
+  }
+
+  private scheduleLocalZoomPersist(): void {
+    this.cancelPendingLocalZoomPersist();
+    this.localZoomPersistTimeout = setTimeout(() => {
+      this.localZoomPersistTimeout = null;
+      this.persistSettledLocalZoom();
+    }, this.localZoomPersistDebounceMs);
+  }
+
+  private cancelPendingLocalZoomPersist(): void {
+    if (this.localZoomPersistTimeout) {
+      clearTimeout(this.localZoomPersistTimeout);
+      this.localZoomPersistTimeout = null;
+    }
+  }
+
+  private flushPendingLocalZoomPersist(): void {
+    if (!this.localZoomPersistTimeout) {
+      return;
+    }
+
+    this.cancelPendingLocalZoomPersist();
+    this.persistSettledLocalZoom();
+  }
+
+  private persistSettledLocalZoom(): void {
+    if (this.sceneManager.getCurrentScene() !== SceneName.Hexception) return;
+    if (this.isCameraTransitionInProgress()) return;
+
+    const distance = Math.round(this.controls.object.position.distanceTo(this.controls.target) * 100) / 100;
+    const storedDistance = useCameraZoomStore.getState().localDistance;
+    if (storedDistance !== null && Math.abs(storedDistance - distance) < 0.05) {
+      return;
+    }
+
+    useCameraZoomStore.getState().setLocalDistance(distance);
   }
 
   private clearBuildingMode() {
@@ -504,13 +605,14 @@ export default class HexceptionScene extends HexagonScene {
     // Setup ambience system at grid center (origin for the main hex)
     this.ambienceSystem?.setup(new Vector3(0, 0, 0), this.hexceptionRadius);
 
-    this.controls.maxDistance = IS_FLAT_MODE ? 36 : 20;
+    this.controls.maxDistance = LOCAL_CAMERA_ZOOM.maxDistance;
     this.controls.enablePan = false;
     this.controls.enableZoom = useUIStore.getState().enableMapZoom;
     this.controls.zoomToCursor = false;
 
     this.moveCameraToURLLocation();
     this.changeCameraView(2);
+    this.applyPersistedLocalZoom();
 
     // Configure thunder bolts for hexception - focused storm effect
     this.getThunderBoltManager().setConfig({
@@ -534,6 +636,9 @@ export default class HexceptionScene extends HexagonScene {
   }
 
   onSwitchOff(_nextSceneName?: SceneName) {
+    // Capture a zoom still waiting on its debounce so quick scene switches keep it.
+    this.flushPendingLocalZoomPersist();
+
     this.labels.forEach((label) => {
       this.scene.remove(label.label);
     });
@@ -548,6 +653,9 @@ export default class HexceptionScene extends HexagonScene {
     clearRememberedHexceptionGridReady();
     this.clearHoverLabel();
     this.hoverLabelManager.dispose();
+
+    this.controls.removeEventListener("change", this.handleLocalZoomControlsChange);
+    this.cancelPendingLocalZoomPersist();
 
     // Clean up building update subscription
     this.buildingUpdateUnsubscribe?.();

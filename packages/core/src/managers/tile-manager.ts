@@ -35,7 +35,7 @@ import {
 import { configManager, buildingEntityKey, gameEntityKey } from "./config-manager";
 
 // Global const to flick optimistic building on or off
-export const OPTIMISTIC_BUILDING_ENABLED = true;
+const OPTIMISTIC_BUILDING_ENABLED = true;
 
 // Module-level slot transition state tracks optimistic placement until synced component state confirms it.
 const buildSlotTransitions = new Map<string, BuildSlotTransition>();

@@ -48,7 +48,7 @@ describe("Worldmap tab-cycle eligibility", () => {
     expect(helperStart).toBeGreaterThan(0);
     const helperBody = source.slice(helperStart, helperStart + 500);
 
-    expect(helperBody).toContain("this.pendingArmyMovements.has(entityId)");
+    expect(helperBody).toContain("this.isArmyMovementPending(entityId)");
     expect(helperBody).toContain("this.armyManager.hasUnresolvedOptimisticMovement(entityId)");
     expect(source).toMatch(
       /this\.selectableArmies\.some\(\s*\(army\) => !this\.isArmyMovementInputLocked\(army\.entityId\)/,

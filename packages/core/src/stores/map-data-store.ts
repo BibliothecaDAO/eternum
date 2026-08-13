@@ -15,6 +15,9 @@
  * - Current stamina and troop count
  * - Owner information
  *
+ * For Tiles:
+ * - The full map-wide tile snapshot (biome + occupier), see getAllTiles()
+ *
  * Usage:
  * const mapStore = MapDataStore.getInstance(5 * 60 * 1000); // 5-minute refresh
  * const allData = mapStore.getAllMapEntities();
@@ -23,7 +26,7 @@
  */
 
 import { ArmyMapDataRaw, SqlApi, StructureMapDataRaw } from "@bibliothecadao/torii";
-import { BuildingType, GuardSlot, ID, StructureType, TroopTier } from "@bibliothecadao/types";
+import { BuildingType, GuardSlot, ID, StructureType, Tile, TroopTier } from "@bibliothecadao/types";
 import { shortString } from "starknet";
 import { getRealmNameById } from "../data/realm-names";
 import {
@@ -130,6 +133,15 @@ export class MapDataStore {
   private hyperstructureRealmCountMap: Map<ID, number> = new Map();
   private addressToNameMap: Map<string, string> = new Map();
   private entityToEntityIdMap: Map<string, number> = new Map();
+  private tiles: Tile[] = [];
+  /**
+   * Wall-clock ms of the last live (RECS-driven) in-place write per structure
+   * row (updateStructureOwner / updateStructureBuildings / updateStructureGuards).
+   * Used by the refresh apply-path to avoid clobbering rows that were mutated
+   * after the SQL snapshot was taken. Entries expire once a snapshot newer than
+   * the write commits.
+   */
+  private structureLiveWriteMs: Map<number, number> = new Map();
   private isLoading: boolean = false;
   private lastFetchTime: number = 0;
   private readonly REFRESH_INTERVAL: number;
@@ -390,11 +402,16 @@ export class MapDataStore {
     const isBlitz = getIsBlitz();
     const hyperstructureRealmCheckRadius = getHyperstructureRealmCheckRadius();
 
-    // Fetch all structures and armies in parallel
-    const [structuresRaw, armiesRaw, hyperstructuresWithRealmCount] = await Promise.all([
+    // Snapshot timestamp: any live in-place write stamped AFTER this moment is
+    // newer than the data this fetch returns, and must survive the apply below.
+    const fetchStartMs = Date.now();
+
+    // Fetch all structures, armies and tiles in parallel
+    const [structuresRaw, armiesRaw, hyperstructuresWithRealmCount, tiles] = await Promise.all([
       this.sqlApi.fetchAllStructuresMapData(),
       this.sqlApi.fetchAllArmiesMapData(),
       this.sqlApi.fetchHyperstructuresWithRealmCount(hyperstructureRealmCheckRadius),
+      this.sqlApi.fetchAllTiles(),
     ]);
 
     // Build fresh maps so refresh commits atomically and drops stale entries.
@@ -518,10 +535,39 @@ export class MapDataStore {
       nextHyperstructureRealmCountMap.set(hyperstructure.hyperstructure_entity_id, realmCount);
     });
 
+    // Freshness guard — the SQL snapshot can be OLDER than live RECS writes that
+    // landed while it was in flight; blindly committing it would roll those rows
+    // back (last-write-wins by wall clock). Deliberately dumb: a timestamp/tick
+    // compare in the merge, nothing more. Only the two live-mutated families are
+    // protected; everything else stays last-write-wins.
+    //
+    // Structures: keep the live row when its in-place write is newer than the
+    // moment this fetch STARTED. Writes older than the snapshot expire here.
+    this.structureLiveWriteMs.forEach((writeMs, entityId) => {
+      if (writeMs <= fetchStartMs) {
+        this.structureLiveWriteMs.delete(entityId);
+        return;
+      }
+      const liveRow = this.structuresMap.get(entityId);
+      if (liveRow) {
+        nextStructuresMap.set(entityId, liveRow);
+      }
+    });
+
+    // Armies: rows carry the on-chain stamina.updated_tick, so compare per row —
+    // never replace a cached army with a snapshot row whose tick is older.
+    nextArmiesMap.forEach((incoming, entityId) => {
+      const existing = this.armiesMap.get(entityId);
+      if (existing && existing.stamina.updated_tick > incoming.stamina.updated_tick) {
+        nextArmiesMap.set(entityId, existing);
+      }
+    });
+
     this.structuresMap = nextStructuresMap;
     this.armiesMap = nextArmiesMap;
     this.addressToNameMap = nextAddressToNameMap;
     this.entityToEntityIdMap = nextEntityToEntityIdMap;
+    this.tiles = tiles;
     // Keep map identity stable for consumers that hold a reference (e.g. LeaderboardManager singleton).
     this.hyperstructureRealmCountMap.clear();
     nextHyperstructureRealmCountMap.forEach((realmCount, hyperstructureEntityId) => {
@@ -533,6 +579,23 @@ export class MapDataStore {
 
   public getRealmCountPerHyperstructure(): Map<ID, number> {
     return this.hyperstructureRealmCountMap;
+  }
+
+  /**
+   * Tiles facet — the full map-wide tile snapshot (biome + occupier).
+   *
+   * WHY this aggregate is SQL-polled rather than RECS-fed: RECS tile state is
+   * camera-bounded plus the boot snapshot, so it never holds the whole map, and
+   * a map-wide tile subscription would be heavier than this poll. Map-wide
+   * aggregates that subscriptions can't serve are exactly what MapDataStore
+   * exists for — it is the designated single SQL-aggregate layer (guardrail #1's
+   * sanctioned exception). Consumers (the minimap) subscribe via onRefresh()
+   * and read this getter; the facet rides the store's shared refresh cadence,
+   * retry and callback plumbing — no separate poll.
+   */
+  public getAllTiles(): Tile[] {
+    this._checkRefresh();
+    return this.tiles;
   }
 
   private _checkRefresh(): void {
@@ -657,6 +720,7 @@ export class MapDataStore {
       structure.ownerAddress = normalizedAddress;
       structure.ownerName = ownerName;
       this.structuresMap.set(entityId, structure);
+      this.structureLiveWriteMs.set(entityId, Date.now());
     }
 
     if (ownerName) {
@@ -673,6 +737,7 @@ export class MapDataStore {
 
     structure.activeProductions = activeProductions;
     this.structuresMap.set(entityId, structure);
+    this.structureLiveWriteMs.set(entityId, Date.now());
   }
 
   public updateStructureGuards(entityId: number, guardArmies: GuardArmy[], battleCooldownEnd?: number): void {
@@ -701,6 +766,7 @@ export class MapDataStore {
     }
 
     this.structuresMap.set(entityId, structure);
+    this.structureLiveWriteMs.set(entityId, Date.now());
   }
 
   public clear(): void {
@@ -709,6 +775,8 @@ export class MapDataStore {
     this.hyperstructureRealmCountMap.clear();
     this.addressToNameMap.clear();
     this.entityToEntityIdMap.clear();
+    this.tiles = [];
+    this.structureLiveWriteMs.clear();
     this.lastFetchTime = 0;
   }
 
@@ -745,9 +813,12 @@ export class MapDataStore {
       return;
     }
 
-    // If currently loading, wait for the loading promise
+    // If currently loading, wait for the loading promise. Never propagate a fetch
+    // failure to awaiters: refresh() already logs and retries, and callers use this
+    // as a freshness barrier before enriching entities — a rejection here silently
+    // drops every in-flight entity add (e.g. the boot-time army replay).
     if (this.isLoading && this.loadingPromise) {
-      await this.loadingPromise;
+      await this.loadingPromise.catch(() => {});
       return;
     }
 
@@ -767,6 +838,8 @@ export class MapDataStore {
     this.hyperstructureRealmCountMap.clear();
     this.addressToNameMap.clear();
     this.entityToEntityIdMap.clear();
+    this.tiles = [];
+    this.structureLiveWriteMs.clear();
     console.log("MapDataStore: Destroyed and cleaned up");
   }
 }

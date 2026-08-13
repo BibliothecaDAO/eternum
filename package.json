@@ -166,18 +166,6 @@
     "manifest:copy-abis:sepolia": "node scripts/copy-abis.mjs sepolia",
     "manifest:copy-abis:mainnet": "node scripts/copy-abis.mjs mainnet"
   },
-  "knip": {
-    "ignoreFiles": [
-      "client/apps/amm-indexerv2/apibara.config.ts",
-      "client/apps/amm-indexerv2/indexers/ammv2.indexer.ts",
-      "client/apps/amm-indexerv2/indexers/factory-client.ts",
-      "deploy/appchain/cdk/bin/appchain.ts",
-      "deploy/appchain/cdk/lib/**",
-      "deploy/appchain/cdk/lambda/**",
-      "deploy/appchain/cdk/cdk.out/**",
-      "deploy/appchain/scripts/**"
-    ]
-  },
   "dependencies": {
     "@cartridge/connector": "catalog:",
     "@cartridge/controller": "catalog:",

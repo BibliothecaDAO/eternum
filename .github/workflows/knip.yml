@@ -3,7 +3,6 @@ name: knip
 on:
   pull_request:
     paths-ignore:
-      - "eliza/**"
       - "contracts/**"
       - "**/manifest.json"
       - ".github/**"
@@ -16,15 +15,23 @@ concurrency:
 jobs:
   knip:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
-      - uses: actions/checkout@v4
-      - uses: oven-sh/setup-bun@v1
-      - uses: pnpm/action-setup@v3
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Use Node.js 22
+        uses: actions/setup-node@v4
         with:
-          version: 9.7.0
+          node-version: 22
+          cache: pnpm
 
       - name: Install dependencies
-        run: pnpm i
+        run: pnpm install --frozen-lockfile
 
-      - name: Run knip
-        run: pnpm knip
+      - name: Check for unused files, exports and types
+        run: pnpm run knip

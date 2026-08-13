@@ -9,7 +9,11 @@ const { getStaminaMock, getMaxStaminaMock } = vi.hoisted(() => ({
   getMaxStaminaMock: vi.fn(() => 120),
 }));
 
-vi.mock("@bibliothecadao/eternum", () => ({
+// Partial mock: keep the real exports (source-resolution delegates its
+// freshness comparison to core's pickFresherArmyStaminaReading) and stub only
+// the stamina math.
+vi.mock("@bibliothecadao/eternum", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@bibliothecadao/eternum")>()),
   StaminaManager: {
     getStamina: getStaminaMock,
     getMaxStamina: getMaxStaminaMock,

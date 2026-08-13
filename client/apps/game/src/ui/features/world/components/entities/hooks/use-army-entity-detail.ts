@@ -8,7 +8,6 @@ import { useDojo } from "@bibliothecadao/react";
 import { getExplorerFromToriiClient, getStructureFromToriiClient } from "@bibliothecadao/torii";
 import { ArmyInfo, ContractAddress, HexPosition, ID, TroopTier, TroopType } from "@bibliothecadao/types";
 import { useComponentValue } from "@dojoengine/react";
-import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { useQuery } from "@tanstack/react-query";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { gameEntityKey } from "@/dojo/game-scope";
@@ -56,10 +55,14 @@ export const useArmyEntityDetail = ({ armyEntityId }: UseArmyEntityDetailOptions
   const [isRefreshing, setIsRefreshing] = useState(false);
   const setAuthoritativeTroopsSnapshot = useArmyStaminaSourceStore((state) => state.setAuthoritativeTroopsSnapshot);
   const pendingStamina = useArmyStaminaSourceStore((state) => state.pendingSources[String(armyEntityId)]);
-  const liveExplorerTroops = useComponentValue(
-    components.ExplorerTroops,
-    gameEntityKey([BigInt(armyEntityId)]),
-  )?.troops;
+  const armyRecsEntity = gameEntityKey([BigInt(armyEntityId)]);
+  const liveExplorerTroops = useComponentValue(components.ExplorerTroops, armyRecsEntity)?.troops;
+  // Live-RECS override, mirroring the structure detail hook: when the
+  // explorer's Resource row is RECS-synced it carries every live update and
+  // must win over the one-shot torii snapshot below. The row is only fetched
+  // into RECS at structure sync, so it can be absent for some sessions — the
+  // snapshot then remains the cold-start fallback.
+  const liveExplorerResources = useComponentValue(components.Resource, armyRecsEntity);
 
   const {
     data: explorerData,
@@ -75,7 +78,7 @@ export const useArmyEntityDetail = ({ armyEntityId }: UseArmyEntityDetailOptions
   });
 
   const explorer = explorerData?.explorer;
-  const explorerResources = explorerData?.resources;
+  const explorerResources = liveExplorerResources ?? explorerData?.resources;
 
   useEffect(() => {
     if (!explorer?.troops) return;

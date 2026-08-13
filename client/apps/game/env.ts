@@ -76,7 +76,6 @@ const envSchema = z.object({
     .default("0")
     .transform((v) => Number(v)),
 
-
   VITE_PUBLIC_CHEST_OPENING_ENABLED: z
     .string()
     .transform((v) => v === "true")
@@ -235,11 +234,14 @@ const envSchema = z.object({
     .transform((v) => v === "true")
     .optional()
     .default("true"),
+  // Default ON: this flag selects the live spatial sync engine, and every arm
+  // that sets it sets true. An env file omitting it must not silently ship a
+  // client with no live map stream (the eternum appchain env did exactly that).
   VITE_PUBLIC_WORLDMAP_BOUNDED_SPATIAL_SYNC: z
     .string()
     .transform((v) => v === "true")
     .optional()
-    .default("false"),
+    .default("true"),
   VITE_PUBLIC_WORLDMAP_BOUNDED_SPATIAL_PADDING: z
     .string()
     .optional()

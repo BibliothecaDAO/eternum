@@ -5,7 +5,10 @@ import { ReactComponent as DojoMark } from "@/assets/icons/dojo-mark-full-dark.s
 import { Controller as WalletController } from "@/ui/modules/controller/controller";
 import { ReactComponent as RealmsWorld } from "@/assets/icons/rw-logo.svg";
 import { AudioCategory, ScrollingTrackName, useAudio, useMusicPlayer, useUISound } from "@/audio";
+import { useCameraZoomStore } from "@/hooks/store/use-camera-zoom-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
+import { LOCAL_CAMERA_ZOOM } from "@/three/constants";
+import { CameraView } from "@/three/scenes/camera-view";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { GraphicsSettings } from "@/ui/config";
 import { Avatar, Button, Checkbox, RangeInput } from "@/ui/design-system/atoms";
@@ -23,6 +26,12 @@ import { toast } from "sonner";
 import { RENDERER_MODE_STORAGE_KEY, usesExperimentalWebGPUThreeBuild } from "@/three/renderer-build-mode";
 import { env as gameEnv } from "../../../../env";
 
+const WORLDMAP_ZOOM_OPTIONS: { label: string; view: CameraView }[] = [
+  { label: "Close", view: CameraView.Close },
+  { label: "Medium", view: CameraView.Medium },
+  { label: "Far", view: CameraView.Far },
+];
+
 export const SettingsWindow = () => {
   const {
     account: { account },
@@ -37,6 +46,12 @@ export const SettingsWindow = () => {
   const { trackName, next: nextTrack } = useMusicPlayer();
   const enableMapZoom = useUIStore((state) => state.enableMapZoom);
   const setEnableMapZoom = useUIStore((state) => state.setEnableMapZoom);
+
+  const worldmapZoomView = useCameraZoomStore((state) => state.worldmapView) ?? CameraView.Medium;
+  const localZoomDistance = useCameraZoomStore((state) => state.localDistance) ?? LOCAL_CAMERA_ZOOM.defaultDistance;
+  const setWorldmapZoomView = useCameraZoomStore((state) => state.setWorldmapView);
+  const setLocalZoomDistance = useCameraZoomStore((state) => state.setLocalDistance);
+  const resetCameraZoom = useCameraZoomStore((state) => state.resetToDefaults);
 
   const playToggleOn = useUISound("ui.toggle_on");
   const playToggleOff = useUISound("ui.toggle_off");
@@ -252,6 +267,37 @@ export const SettingsWindow = () => {
                 </div>
               </>
             )}
+          </section>
+
+          {/* Camera — persisted zoom per scene. Changes apply immediately to the
+              active scene and are restored on every scene switch and reload. */}
+          <section className="space-y-3">
+            <Headline>Camera</Headline>
+            <div className="text-xs text-gray-gold">World Map Zoom</div>
+            <div className="flex space-x-2">
+              {WORLDMAP_ZOOM_OPTIONS.map(({ label, view }) => (
+                <Button
+                  key={view}
+                  disabled={worldmapZoomView === view}
+                  variant={worldmapZoomView === view ? "success" : "outline"}
+                  onClick={() => setWorldmapZoomView(view)}
+                >
+                  {label}
+                </Button>
+              ))}
+            </div>
+            <RangeInput
+              title="Local View Zoom"
+              fromTitle="Close"
+              toTitle="Far"
+              min={LOCAL_CAMERA_ZOOM.minDistance}
+              max={LOCAL_CAMERA_ZOOM.maxDistance}
+              value={Math.round(localZoomDistance)}
+              onChange={setLocalZoomDistance}
+            />
+            <Button size="xs" variant="outline" onClick={resetCameraZoom}>
+              Reset to Default
+            </Button>
           </section>
 
           {/* Guild Section */}

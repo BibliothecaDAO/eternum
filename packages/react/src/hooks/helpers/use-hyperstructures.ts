@@ -1,29 +1,8 @@
-import {
-  DEFAULT_COORD_ALT,
-  getAddressNameFromEntity,
-  getHyperstructureCurrentAmounts,
-  getHyperstructureProgress,
-  toInteger,
-} from "@bibliothecadao/eternum";
-import {
-  ContractAddress,
-  StructureType,
-  type HyperstructureInfo,
-  type ID,
-  type ResourcesIds,
-} from "@bibliothecadao/types";
+import { DEFAULT_COORD_ALT, getAddressNameFromEntity } from "@bibliothecadao/eternum";
+import { ContractAddress, StructureType, type HyperstructureInfo, type ID } from "@bibliothecadao/types";
 import { useEntityQuery } from "@dojoengine/react";
 import { Has, HasValue, getComponentValue } from "@dojoengine/recs";
-import { useMemo } from "react";
 import { useDojo } from "../context";
-
-export type ProgressWithPercentage = {
-  percentage: number;
-  costNeeded: number;
-  hyperstructure_entity_id: ID;
-  resource_type: ResourcesIds;
-  amount: number;
-};
 
 export const useOwnedHyperstructuresEntityIds = (): ID[] => {
   const {
@@ -75,25 +54,6 @@ export const useHyperstructures = (): HyperstructureInfo[] => {
   return hyperstructures.filter((h): h is HyperstructureInfo => h !== undefined);
 };
 
-export const useHyperstructureProgress = (hyperstructureEntityId: ID) => {
-  const {
-    setup: {
-      components: { HyperstructureRequirements },
-      components,
-    },
-  } = useDojo();
-
-  const progressQueryResult = useEntityQuery([
-    HasValue(HyperstructureRequirements, {
-      hyperstructure_id: hyperstructureEntityId,
-    }),
-  ]);
-  return useMemo(() => {
-    const { initialized, percentage } = getHyperstructureProgress(hyperstructureEntityId, components);
-    return { percentage: toInteger(percentage), initialized };
-  }, [progressQueryResult, hyperstructureEntityId]);
-};
-
 export const useHyperstructureUpdates = (hyperstructureEntityId: ID) => {
   const {
     setup: {
@@ -107,23 +67,4 @@ export const useHyperstructureUpdates = (hyperstructureEntityId: ID) => {
   ]);
 
   return updates.map((updateEntityId) => getComponentValue(Hyperstructure, updateEntityId));
-};
-
-export const useCurrentAmounts = (hyperstructureEntityId: ID) => {
-  const {
-    setup: {
-      components: { HyperstructureRequirements },
-      components,
-    },
-  } = useDojo();
-
-  const currentAmounts = useEntityQuery([
-    HasValue(HyperstructureRequirements, {
-      hyperstructure_id: hyperstructureEntityId,
-    }),
-  ]);
-
-  return useMemo(() => {
-    return getHyperstructureCurrentAmounts(hyperstructureEntityId, components);
-  }, [currentAmounts, hyperstructureEntityId]);
 };

@@ -387,7 +387,7 @@ describe("WorldUpdateListener army tile bootstrap", () => {
     );
   });
 
-  it("uses enhanced stamina when updated ticks tie but amounts differ", async () => {
+  it("uses live stamina when updated ticks tie with the enhanced row", async () => {
     isComponentUpdateMock.mockReturnValue(true);
     tileOptToTileMock.mockReturnValue({
       occupier_type: 1,
@@ -452,12 +452,14 @@ describe("WorldUpdateListener army tile bootstrap", () => {
     const handleUpdate = defineComponentSystemMock.mock.calls[0][2];
     await handleUpdate({ value: [{ value: "tile" }, undefined] });
 
+    // Regression pin: the enhanced row is the up-to-60s-stale SQL map row.
+    // On an updated-tick tie the live RECS reading must win.
     expect(callback).toHaveBeenCalledWith(
       expect.objectContaining({
         entityId: 779,
-        currentStamina: 45,
+        currentStamina: 80,
         onChainStamina: {
-          amount: 45n,
+          amount: 80n,
           updatedTick: 7,
         },
       }),

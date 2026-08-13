@@ -7,8 +7,12 @@
   "type": "module",
   "exports": {
     ".": {
-      "import": "./dist/index.js",
-      "types": "./dist/index.d.ts"
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./game-entity-keys": {
+      "types": "./dist/managers/game-entity-keys.d.ts",
+      "import": "./dist/managers/game-entity-keys.js"
     }
   },
   "main": "./dist/index.js",

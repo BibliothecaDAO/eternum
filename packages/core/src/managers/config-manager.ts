@@ -17,6 +17,7 @@ import {
 import { getComponentValue, Has, runQuery } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { Biome, BiomeClimateConfig, NEUTRAL_BIOME_CLIMATE } from "../utils/biome";
+import { setGameEntityKeyGameId } from "./game-entity-keys";
 import { getTotalResourceWeightKg, gramToKg } from "../utils";
 
 const MAP_CENTER = 2147483646;
@@ -58,10 +59,29 @@ export class ClientConfigManager {
   private gameId = 0;
   private presetId = 0;
 
+  // Guardrail #2 (AGENTS.md "No silent defaults"): before the initial config
+  // sync lands, keyed lookups legitimately miss while data streams in; after
+  // it, an empty lookup is a real bug (wrong key shape, missing preset row).
+  private configSynced = false;
+  private warnedConfigMissSites = new Set<string>();
+
   /** Must be called before setDojo on the s2 arm so cost snapshots read the right preset. */
   public setActiveGame(gameId: number, presetId: number) {
     this.gameId = gameId;
     this.presetId = presetId;
+    // Mirror the active game into the leaf key-helper module (see its header
+    // for why the helpers cannot read this singleton directly).
+    setGameEntityKeyGameId(gameId);
+    // A new game selection restarts sync, so misses are expected again until
+    // the client re-marks the config as synced.
+    this.configSynced = false;
+    this.warnedConfigMissSites.clear();
+  }
+
+  /** Called by the client bootstrap once the initial config sync completes;
+   *  from then on empty keyed lookups warn instead of silently defaulting. */
+  public markConfigSynced() {
+    this.configSynced = true;
   }
 
   public getActiveGameId(): number {
@@ -156,11 +176,32 @@ export class ClientConfigManager {
 
     try {
       const value = callback();
-      return value ?? defaultValue;
+      if (value === undefined || value === null) {
+        this.warnConfigMissOnce();
+        return defaultValue;
+      }
+      return value;
     } catch (error) {
       console.warn("ClientConfigManager fallback due to error", error);
       return defaultValue;
     }
+  }
+
+  /**
+   * Loud once per call site, in every environment: packages/core is built
+   * env-agnostic, and a config miss after sync is a bug worth one console
+   * line even in prod (the silent {0,0} variant disabled the population UX
+   * for weeks). The site key is the stack frame that called
+   * getValueOrDefault — cheap, and keeps all getter signatures unchanged.
+   */
+  private warnConfigMissOnce() {
+    if (!this.configSynced) return;
+    const stackFrames = new Error().stack?.split("\n") ?? [];
+    // Frame 0 is "Error", 1 this helper, 2 getValueOrDefault, 3 the getter.
+    const site = (stackFrames[3] ?? "unknown-config-site").trim();
+    if (this.warnedConfigMissSites.has(site)) return;
+    this.warnedConfigMissSites.add(site);
+    console.warn(`ClientConfigManager: config lookup returned empty after sync — using default (${site})`);
   }
 
   private initializeMapCenter() {
@@ -400,8 +441,13 @@ export class ClientConfigManager {
   }
   getTravelStaminaCost(biome: BiomeType, troopType: TroopType) {
     return this.getValueOrDefault(() => {
-      const baseStaminaCost = this.getRulebook()?.troop_stamina_config?.stamina_travel_stamina_cost || 0;
-      const biomeBonus = this.getRulebook()?.troop_stamina_config?.stamina_bonus_value || 0;
+      // A missing rulebook row must reach getValueOrDefault as a miss so the
+      // loud layer fires (guardrail #2); field-level defaults stay as-is.
+      const rulebook = this.getRulebook();
+      if (!rulebook) return undefined;
+      const staminaConfig = rulebook.troop_stamina_config;
+      const baseStaminaCost = staminaConfig?.stamina_travel_stamina_cost || 0;
+      const biomeBonus = staminaConfig?.stamina_bonus_value || 0;
 
       // Biome-specific modifiers per troop type
       switch (biome) {
@@ -537,8 +583,9 @@ export class ClientConfigManager {
 
   getExploreStaminaCost() {
     return this.getValueOrDefault(() => {
-      const staminaConfig = this.getRulebook()?.troop_stamina_config;
-      return staminaConfig?.stamina_explore_stamina_cost ?? 0;
+      const rulebook = this.getRulebook();
+      if (!rulebook) return undefined;
+      return rulebook.troop_stamina_config?.stamina_explore_stamina_cost ?? 0;
     }, 1);
   }
 
@@ -553,9 +600,15 @@ export class ClientConfigManager {
   getExploreReward() {
     return this.getValueOrDefault(
       () => {
-        const exploreConfig = this.getRulebook()?.map_config;
+        const rulebook = this.getRulebook();
+        if (!rulebook) return undefined;
+        const worldConfig = this.getWorldConfig();
+        if (!worldConfig) return undefined;
+        const exploreConfig = rulebook.map_config;
 
-        const blitzModeOn = this.getWorldConfig()?.blitz_mode_on;
+        // A silently-missed WorldConfig row would flip the reward resource
+        // (Essence vs AncientFragment), so it is guarded above, not defaulted.
+        const blitzModeOn = worldConfig.blitz_mode_on;
 
         let reward_resource = ResourcesIds.AncientFragment;
         if (blitzModeOn) {
@@ -625,7 +678,10 @@ export class ClientConfigManager {
       // todo: need to fix this
       const rulebook = this.getRulebook();
 
-      if (!rulebook) return defaultTroopConfig;
+      // Miss must reach getValueOrDefault so it warns after sync; the loud
+      // layer returns defaultTroopConfig either way. The cast keeps the
+      // getter's return type the same union it always was.
+      if (!rulebook) return undefined as typeof defaultTroopConfig | undefined;
 
       const { troop_damage_config, troop_limit_config, troop_stamina_config } = rulebook;
 
@@ -667,9 +723,11 @@ export class ClientConfigManager {
   getCombatConfig() {
     return this.getValueOrDefault(
       () => {
-        const combatConfig = this.getRulebook()?.troop_damage_config;
+        const rulebook = this.getRulebook();
+        if (!rulebook) return undefined;
+        const combatConfig = rulebook.troop_damage_config;
 
-        const troopStaminaConfig = this.getRulebook()?.troop_stamina_config;
+        const troopStaminaConfig = rulebook.troop_stamina_config;
 
         return {
           stamina_bonus_value: troopStaminaConfig?.stamina_bonus_value ?? 0,
@@ -709,28 +767,33 @@ export class ClientConfigManager {
 
   getBattleGraceTickCount() {
     return this.getValueOrDefault(() => {
-      const battleConfig = this.getRulebook()?.battle_config;
-      return Number(battleConfig?.regular_immunity_ticks ?? 0);
+      const rulebook = this.getRulebook();
+      if (!rulebook) return undefined;
+      return Number(rulebook.battle_config?.regular_immunity_ticks ?? 0);
     }, 0);
   }
 
   getVillageSettlementImmunityTickCount() {
     return this.getValueOrDefault(() => {
-      const battleConfig = this.getRulebook()?.battle_config;
-      return Number(battleConfig?.village_immunity_ticks ?? 0);
+      const rulebook = this.getRulebook();
+      if (!rulebook) return undefined;
+      return Number(rulebook.battle_config?.village_immunity_ticks ?? 0);
     }, 0);
   }
 
   getVillagePostRaidImmunityTickCount() {
     return this.getValueOrDefault(() => {
-      const battleConfig = this.getRulebook()?.battle_config;
-      return Number(battleConfig?.village_raid_immunity_ticks ?? 0);
+      const rulebook = this.getRulebook();
+      if (!rulebook) return undefined;
+      return Number(rulebook.battle_config?.village_raid_immunity_ticks ?? 0);
     }, 0);
   }
 
   getMinTravelStaminaCost() {
     return this.getValueOrDefault(() => {
-      const staminaConfig = this.getRulebook()?.troop_stamina_config;
+      const rulebook = this.getRulebook();
+      if (!rulebook) return undefined;
+      const staminaConfig = rulebook.troop_stamina_config;
       const baseTravelCost = staminaConfig?.stamina_travel_stamina_cost ?? 0;
       const biomeBonus = staminaConfig?.stamina_bonus_value ?? 0;
       return Math.max(baseTravelCost - biomeBonus, 10);
@@ -751,7 +814,9 @@ export class ClientConfigManager {
   getResourceBridgeFeeSplitConfig() {
     return this.getValueOrDefault(
       () => {
-        const resourceBridgeFeeSplitConfig = (this.getRulebook() as unknown as Record<string, any> | undefined)?.res_bridge_fee_split_config;
+        const rulebook = this.getRulebook() as unknown as Record<string, any> | undefined;
+        if (!rulebook) return undefined;
+        const resourceBridgeFeeSplitConfig = rulebook.res_bridge_fee_split_config;
         return {
           velords_fee_on_dpt_percent: Number(resourceBridgeFeeSplitConfig?.velords_fee_on_dpt_percent ?? 0),
           velords_fee_on_wtdr_percent: Number(resourceBridgeFeeSplitConfig?.velords_fee_on_wtdr_percent ?? 0),
@@ -782,12 +847,15 @@ export class ClientConfigManager {
 
   getTick(tickId: TickIds) {
     return this.getValueOrDefault(() => {
-      const tickConfig = this.getRulebook()?.tick_config;
+      // Fixed 1s tick never reads config — stays silent on a missing row.
+      if (tickId === TickIds.Default) return 1;
+
+      const rulebook = this.getRulebook();
+      if (!rulebook) return undefined;
+      const tickConfig = rulebook.tick_config;
 
       if (tickId === TickIds.Armies) {
         return Number(tickConfig?.armies_tick_in_seconds ?? 0);
-      } else if (tickId === TickIds.Default) {
-        return 1;
       } else if (tickId === TickIds.Delivery) {
         return Number(tickConfig?.delivery_tick_in_seconds ?? 0);
       } else {
@@ -799,7 +867,9 @@ export class ClientConfigManager {
   getBankConfig() {
     return this.getValueOrDefault(
       () => {
-        const bankConfig = (this.getRulebook() as unknown as Record<string, any> | undefined)?.bank_config;
+        const rulebook = this.getRulebook() as unknown as Record<string, any> | undefined;
+        if (!rulebook) return undefined;
+        const bankConfig = rulebook.bank_config;
 
         return {
           lpFeesNumerator: Number(bankConfig?.lp_fee_num ?? 0),
@@ -828,9 +898,14 @@ export class ClientConfigManager {
 
   getCapacityConfigKg(category: CapacityConfig) {
     return this.getValueOrDefault(() => {
-      const nonStructureCapacityConfig = this.getRulebook()?.capacity_config;
+      // None never reads config — stays silent on a missing row.
+      if (category === CapacityConfig.None) return 0;
 
-      const structureCapacityConfig = this.getRulebook()?.structure_capacity_config;
+      const rulebook = this.getRulebook();
+      if (!rulebook) return undefined;
+      const nonStructureCapacityConfig = rulebook.capacity_config;
+
+      const structureCapacityConfig = rulebook.structure_capacity_config;
 
       let capacityInGrams = 0;
       switch (category) {
@@ -858,8 +933,6 @@ export class ClientConfigManager {
         case CapacityConfig.Storehouse:
           capacityInGrams = Number(nonStructureCapacityConfig?.storehouse_boost_capacity ?? 0);
           break;
-        case CapacityConfig.None:
-          return 0;
         default:
           throw new Error("Invalid capacity config category");
       }
@@ -871,13 +944,13 @@ export class ClientConfigManager {
 
   getSpeedConfig(entityType: EntityType): number {
     return this.getValueOrDefault(() => {
-      const speedConfig = this.getRulebook()?.speed_config;
-
-      if (entityType === EntityType.DONKEY) {
-        return Number(speedConfig?.donkey_sec_per_km ?? 0);
-      } else {
+      if (entityType !== EntityType.DONKEY) {
         throw new Error("Undefined entity type in getSpeedConfig");
       }
+
+      const rulebook = this.getRulebook();
+      if (!rulebook) return undefined;
+      return Number(rulebook.speed_config?.donkey_sec_per_km ?? 0);
     }, 0);
   }
 
@@ -1001,13 +1074,15 @@ export class ClientConfigManager {
     return this.getValueOrDefault(
       () => {
         if (this.gameId > 0) {
-          return { dev_mode_on: this.getGameRegistry()?.dev_mode_on ?? false };
+          const game = this.getGameRegistry();
+          if (!game) return undefined;
+          return { dev_mode_on: game.dev_mode_on ?? false };
         }
-        return {
-          dev_mode_on:
-            (this.getWorldConfig() as unknown as { season_config?: { dev_mode_on?: boolean } })?.season_config
-              ?.dev_mode_on ?? false,
-        };
+        const worldConfig = this.getWorldConfig() as unknown as
+          | { season_config?: { dev_mode_on?: boolean } }
+          | undefined;
+        if (!worldConfig) return undefined;
+        return { dev_mode_on: worldConfig.season_config?.dev_mode_on ?? false };
       },
       {
         dev_mode_on: false,
@@ -1018,9 +1093,11 @@ export class ClientConfigManager {
   getHyperstructureConfig() {
     return this.getValueOrDefault(
       () => {
-        const victoryPointsGrantConfig = this.getRulebook()?.victory_points_grant_config;
+        const rulebook = this.getRulebook();
+        if (!rulebook) return undefined;
+        const victoryPointsGrantConfig = rulebook.victory_points_grant_config;
 
-        const victoryPointsWinConfig = this.getRulebook()?.victory_points_win_config;
+        const victoryPointsWinConfig = rulebook.victory_points_win_config;
 
         return {
           // todo: need to fix this
@@ -1039,7 +1116,9 @@ export class ClientConfigManager {
 
   getBasePopulationCapacity(): number {
     return this.getValueOrDefault(() => {
-      return this.getRulebook()?.building_config?.base_population ?? 0;
+      const rulebook = this.getRulebook();
+      if (!rulebook) return undefined;
+      return rulebook.building_config?.base_population ?? 0;
     }, 0);
   }
 
@@ -1048,11 +1127,14 @@ export class ClientConfigManager {
       () => {
         const buildingCategoryConfig = getComponentValue(
           this.components.BuildingCategoryConfig,
-          getEntityIdFromKeys([BigInt(buildingType)]),
+          getEntityIdFromKeys(this.presetKey(BigInt(buildingType))),
         );
+        // A missing row must reach getValueOrDefault as a miss, not be masked
+        // into {0, 0} here — a silent zero disables the entire population UX.
+        if (!buildingCategoryConfig) return undefined;
         return {
-          population_cost: buildingCategoryConfig?.population_cost ?? 0,
-          capacity_grant: buildingCategoryConfig?.capacity_grant ?? 0,
+          population_cost: buildingCategoryConfig.population_cost,
+          capacity_grant: buildingCategoryConfig.capacity_grant,
         };
       },
       {
@@ -1076,7 +1158,9 @@ export class ClientConfigManager {
   getTravelFoodCostConfig(troopType: number) {
     return this.getValueOrDefault(
       () => {
-        const travelFoodCostConfig = this.getRulebook()?.troop_stamina_config;
+        const rulebook = this.getRulebook();
+        if (!rulebook) return undefined;
+        const travelFoodCostConfig = rulebook.troop_stamina_config;
 
         return {
           exploreWheatBurnAmount:
@@ -1116,7 +1200,9 @@ export class ClientConfigManager {
   getTroopStaminaConfig(troopType: TroopType, troopTier: TroopTier) {
     return this.getValueOrDefault(
       () => {
-        const staminaConfig = this.getRulebook()?.troop_stamina_config;
+        const rulebook = this.getRulebook();
+        if (!rulebook) return undefined;
+        const staminaConfig = rulebook.troop_stamina_config;
 
         let tierBonus = 0;
         if (troopTier === TroopTier.T2) {
@@ -1175,8 +1261,9 @@ export class ClientConfigManager {
 
   getBuildingBaseCostPercentIncrease() {
     return this.getValueOrDefault(() => {
-      const buildingGeneralConfig = this.getRulebook()?.building_config;
-      return buildingGeneralConfig?.base_cost_percent_increase ?? 0;
+      const rulebook = this.getRulebook();
+      if (!rulebook) return undefined;
+      return rulebook.building_config?.base_cost_percent_increase ?? 0;
     }, 0);
   }
 
@@ -1184,11 +1271,12 @@ export class ClientConfigManager {
     return this.getValueOrDefault(
       () => {
         const seasonConfig = this.getSeasonClock();
+        if (!seasonConfig) return undefined;
         return {
-          startSettlingAt: seasonConfig?.start_settling_at ?? 0,
-          startMainAt: seasonConfig?.start_main_at ?? 0,
-          endAt: seasonConfig?.end_at ?? 0,
-          bridgeCloseAfterEndSeconds: seasonConfig?.end_grace_seconds ?? 0,
+          startSettlingAt: seasonConfig.start_settling_at ?? 0,
+          startMainAt: seasonConfig.start_main_at ?? 0,
+          endAt: seasonConfig.end_at ?? 0,
+          bridgeCloseAfterEndSeconds: seasonConfig.end_grace_seconds ?? 0,
         };
       },
       {
@@ -1203,8 +1291,10 @@ export class ClientConfigManager {
   getArtificerConfig() {
     return this.getValueOrDefault(
       () => {
+        const rulebook = this.getRulebook();
+        if (!rulebook) return undefined;
         return {
-          research_cost_for_relic: Number(this.getRulebook()?.artificer_config?.research_cost_for_relic ?? 0),
+          research_cost_for_relic: Number(rulebook.artificer_config?.research_cost_for_relic ?? 0),
         };
       },
       {
@@ -1272,32 +1362,6 @@ export class ClientConfigManager {
 
 export const configManager = ClientConfigManager.instance();
 
-/**
- * RECS entity key for a per-game model. On the s2 single world every per-game
- * model leads with `game_id` as key[0], so lookups must hash it in or they
- * miss every entity; legacy worlds hash the bare keys. Never use this for
- * chain-global models (AddressName, preset tables, ChainConfig, ...).
- */
-export const gameEntityKey = (keys: (bigint | string)[]) => {
-  const gameId = ClientConfigManager.instance().getActiveGameId();
-  return getEntityIdFromKeys(
-    gameId > 0 ? [BigInt(gameId), ...keys.map((key) => BigInt(key))] : keys.map((key) => BigInt(key)),
-  );
-};
-
-/**
- * Building is keyed (game_id, alt, outer, outer, inner, inner) on s2 and
- * (outer, outer, inner, inner) on legacy worlds. Structures never sit on the
- * alt plane (Cairo `StructureBase.coord()` pins alt to false), so alt is 0.
- */
-export const buildingEntityKey = (outerCol: number, outerRow: number, innerCol: number, innerRow: number) => {
-  const gameId = ClientConfigManager.instance().getActiveGameId();
-  const coords = [BigInt(outerCol), BigInt(outerRow), BigInt(innerCol), BigInt(innerRow)];
-  return getEntityIdFromKeys(gameId > 0 ? [BigInt(gameId), 0n, ...coords] : coords);
-};
-
-/** WorldConfig row key: [gameId] on s2, [WORLD_CONFIG_ID] on legacy worlds. */
-export const worldConfigKey = () => {
-  const gameId = ClientConfigManager.instance().getActiveGameId();
-  return getEntityIdFromKeys([gameId > 0 ? BigInt(gameId) : WORLD_CONFIG_ID]);
-};
+// The key helpers live in ./game-entity-keys (a leaf module). worldConfigKey
+// is not re-exported here: its only consumers import the subpath entry.
+export { buildingEntityKey, gameEntityKey } from "./game-entity-keys";

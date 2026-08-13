@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef } from "react";
 
+import { POLLING_INTERVALS } from "@/config/polling";
 import { gameIdKey, gameModel, getScopedGameId, isGameScoped } from "@/dojo/game-scope";
 import { getStructuresDataFromTorii } from "@/dojo/queries";
 import { syncEntitiesDebounced } from "@/dojo/sync";
@@ -187,8 +188,16 @@ export const usePlayerStructureSync = () => {
     requestOwnedStructureBackfillRef.current = requestOwnedStructureBackfill;
     void backfillOwnedStructures();
 
+    // Reconciliation backstop: ownership changes reach the client only through
+    // event-shaped paths that can each miss (subscription churn during a claim,
+    // SQL backfill racing the indexer). The periodic backfill turns a missed
+    // event into ≤10s of staleness instead of a structure that never appears.
+    // Near-free when nothing was missed: one cached SQL read, then a no-op.
+    const reconciliationIntervalId = setInterval(requestOwnedStructureBackfill, POLLING_INTERVALS.playerStructuresMs);
+
     return () => {
       cancelled = true;
+      clearInterval(reconciliationIntervalId);
       clearScheduledBackfill();
       rerunBackfillAfterCurrent.current = false;
       if (requestOwnedStructureBackfillRef.current === requestOwnedStructureBackfill) {

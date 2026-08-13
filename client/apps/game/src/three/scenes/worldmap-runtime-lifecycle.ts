@@ -1,15 +1,15 @@
 import { SceneName } from "../types";
 
+interface PendingArmyMovementRecordLike<TTimeout> {
+  movement?: { fallbackTimeout?: TTimeout };
+}
+
 interface WorldmapSwitchOffRuntimeStateInput<TEntityId, TTimeout> {
   pendingArmyRemovals: Map<TEntityId, TTimeout>;
   pendingArmyRemovalMeta: Map<TEntityId, unknown>;
   deferredChunkRemovals: Map<TEntityId, unknown>;
   armyLastTileSyncAt: Map<TEntityId, number>;
-  pendingArmyMovements: Set<TEntityId>;
-  pendingArmyMovementStartedAt: Map<TEntityId, number>;
-  pendingArmyMovementFallbackTimeouts: Map<TEntityId, TTimeout>;
-  pendingArmyMovementTargetKeys: Map<TEntityId, string>;
-  pendingArmyMovementAuthoritativeResolutions: Set<TEntityId>;
+  pendingArmyMovements: Map<TEntityId, PendingArmyMovementRecordLike<TTimeout>>;
   armyStructureOwners: Map<TEntityId, unknown>;
   suppressedArmies?: Set<TEntityId>;
   clearRenderAreaHydrationState: () => void;
@@ -58,10 +58,6 @@ export const applyWorldmapSwitchOffRuntimeState = <TEntityId, TTimeout>({
   deferredChunkRemovals,
   armyLastTileSyncAt,
   pendingArmyMovements,
-  pendingArmyMovementStartedAt,
-  pendingArmyMovementFallbackTimeouts,
-  pendingArmyMovementTargetKeys,
-  pendingArmyMovementAuthoritativeResolutions,
   armyStructureOwners,
   suppressedArmies,
   clearRenderAreaHydrationState,
@@ -82,13 +78,18 @@ export const applyWorldmapSwitchOffRuntimeState = <TEntityId, TTimeout>({
   pendingArmyRemovalMeta.clear();
   deferredChunkRemovals.clear();
   armyLastTileSyncAt.clear();
-  pendingArmyMovements.forEach((entityId) => clearPendingArmyMovement(entityId));
+  pendingArmyMovements.forEach((record, entityId) => {
+    const fallbackTimeout = record.movement?.fallbackTimeout;
+    if (fallbackTimeout !== undefined) {
+      clearTimeout(fallbackTimeout);
+    }
+    clearPendingArmyMovement(entityId);
+  });
+  // Without this, a tx submitted just before the scene switch strands its
+  // record (clearPendingArmyMovement keeps tx-only residue for in-flight
+  // receipts) and the army stays locked out of movement selection when the
+  // map is re-entered.
   pendingArmyMovements.clear();
-  pendingArmyMovementStartedAt.clear();
-  pendingArmyMovementFallbackTimeouts.forEach((timeoutId) => clearTimeout(timeoutId));
-  pendingArmyMovementFallbackTimeouts.clear();
-  pendingArmyMovementTargetKeys.clear();
-  pendingArmyMovementAuthoritativeResolutions.clear();
   armyStructureOwners.clear();
   suppressedArmies?.clear();
 

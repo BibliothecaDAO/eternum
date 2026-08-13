@@ -19,7 +19,7 @@ describe("Stage 5: removal visual hide", () => {
     const methodBody = src.slice(methodStart, methodStart + 2600);
 
     expect(methodBody).toContain(
-      'const hasPendingMovement = reason === "tile" && this.pendingArmyMovements.has(entityId);',
+      'const hasPendingMovement = reason === "tile" && this.isArmyMovementPending(entityId);',
     );
     expect(methodBody).toContain("this.armyManager.isArmyMoving(entityId)");
     expect(methodBody).toContain("hasMovementInFlight");

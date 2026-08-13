@@ -43,7 +43,19 @@ export default defineConfig({
       "@bibliothecadao/amm-sdk": path.resolve(__dirname, "../../../packages/amm-sdk/src/index.ts"),
       "@bibliothecadao/ammv2-sdk": path.resolve(__dirname, "../../../packages/ammv2-sdk/src/index.ts"),
       "@bibliothecadao/client": path.resolve(__dirname, "../../../packages/client/src/index.ts"),
+      // Subpath alias must precede the package root: alias matching is
+      // prefix-based, so the root entry would otherwise swallow it.
+      "@bibliothecadao/eternum/game-entity-keys": path.resolve(
+        __dirname,
+        "../../../packages/core/src/managers/game-entity-keys.ts",
+      ),
       "@bibliothecadao/eternum": path.resolve(__dirname, "../../../packages/core/src/index.ts"),
+      // Subpath alias must precede the package root: alias matching is
+      // prefix-based, so the root entry would otherwise swallow it.
+      "@bibliothecadao/provider/errors": path.resolve(
+        __dirname,
+        "../../../packages/provider/src/classify-transaction-error.ts",
+      ),
       "@bibliothecadao/provider": path.resolve(__dirname, "../../../packages/provider/src/index.ts"),
       "@bibliothecadao/react": path.resolve(__dirname, "../../../packages/react/src/index.ts"),
       "@bibliothecadao/torii": path.resolve(__dirname, "../../../packages/torii/src/index.ts"),

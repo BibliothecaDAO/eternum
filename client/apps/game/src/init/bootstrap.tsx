@@ -145,6 +145,9 @@ const runBootstrap = async ({
   const refreshGameSystems = () => configureGameSystems(setupResult, worldContext.chain);
   await runInitialWorldSync(setupResult, stores, refreshGameSystems);
   configureGameSystems(setupResult, worldContext.chain);
+  // From here on an empty keyed config lookup is a bug, not a boot race —
+  // make it loud (guardrail #2, AGENTS.md "No silent defaults").
+  configManager.markConfigSynced();
   await startGameRenderer(setupResult);
   inject();
   return {

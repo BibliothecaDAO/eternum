@@ -41,6 +41,14 @@ export const CONTROL_CONFIG = {
   keyPanSpeed: 75,
 };
 
+// Continuous zoom limits for the local (hexception) scene. The settings UI and the
+// scene itself must agree on this range so persisted values can be clamped consistently.
+export const LOCAL_CAMERA_ZOOM = {
+  minDistance: CONTROL_CONFIG.minDistance,
+  maxDistance: IS_FLAT_MODE ? 36 : 20,
+  defaultDistance: 20,
+};
+
 export const FOG_CONFIG = {
   color: 0x1b1e2b,
   near: 15,

@@ -127,6 +127,41 @@ describe("selectFreshestTroopsSnapshot", () => {
     expect(selected?.stamina?.updated_tick).toBe(101n);
   });
 
+  it("prefers the torii snapshot over live RECS on an updated-tick tie", () => {
+    const entityId = 1111;
+    const snapshotTroops = buildTroops({ amount: 70n, updatedTick: 200n });
+    const liveTroops = buildTroops({ amount: 80n, updatedTick: 200n });
+
+    const selected = selectFreshestTroopsSnapshot({
+      entityId,
+      snapshotTroops,
+      liveTroops,
+    });
+
+    expect(selected).toBe(snapshotTroops);
+  });
+
+  it("prefers live RECS over the cached map row on an updated-tick tie", () => {
+    // Regression pin: the cached fallback comes from the up-to-60s-stale SQL
+    // map data. On a tie live must win — the same ordering core applies when
+    // the world-update path compares live vs enhanced.
+    const entityId = 2222;
+    const liveTroops = buildTroops({ amount: 80n, updatedTick: 200n });
+
+    const selected = selectFreshestTroopsSnapshot({
+      entityId,
+      liveTroops,
+      fallbackArmy: {
+        category: TroopType.Crossbowman,
+        tier: TroopTier.T1,
+        troopCount: 1500,
+        onChainStamina: { amount: 50n, updatedTick: 200 },
+      },
+    });
+
+    expect(selected).toBe(liveTroops);
+  });
+
   it("keeps pending when live RECS has the same tick but a different stamina amount", () => {
     const entityId = 4321;
     const actionTick = 100;

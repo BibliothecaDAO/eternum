@@ -62,7 +62,12 @@ vi.mock("@bibliothecadao/torii", () => ({
   getStructureFromToriiClient: vi.fn(),
 }));
 
-vi.mock("@bibliothecadao/eternum", () => ({
+// Partial mock: keep the real exports — the hook needs gameEntityKey (re-
+// exported through @/dojo/game-scope) and source-resolution delegates its
+// freshness comparison to core's pickFresherArmyStaminaReading — and stub
+// only what the assertions steer.
+vi.mock("@bibliothecadao/eternum", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@bibliothecadao/eternum")>()),
   configManager: {
     getTick: () => 10,
   },

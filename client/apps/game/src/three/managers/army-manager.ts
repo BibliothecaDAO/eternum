@@ -2050,7 +2050,21 @@ export class ArmyManager {
   }
 
   public hasUnresolvedOptimisticMovement(entityId: ID): boolean {
-    return this.optimisticallyMovingArmies.has(entityId) || this.optimisticPositionLocks.has(entityId);
+    if (this.optimisticallyMovingArmies.has(entityId)) return true;
+
+    const lock = this.optimisticPositionLocks.get(entityId);
+    if (!lock) return false;
+
+    // Honour the TTL here too: it is otherwise only evaluated when a position
+    // update arrives for this entity, so an army that receives no further
+    // updates would keep its lock forever — permanently blocking movement
+    // selection (and the self-healing sweeps that consult this method).
+    if (Date.now() - lock.lockedAtMs > OPTIMISTIC_POSITION_LOCK_TTL_MS) {
+      this.optimisticPositionLocks.delete(entityId);
+      return false;
+    }
+
+    return true;
   }
 
   public hasReceivedAuthoritativeReconciliation(entityId: ID): boolean {
@@ -2272,6 +2286,11 @@ export class ArmyManager {
 
     // Clean up movement source bucket tracking if army was mid-movement
     this.cleanupMovementSourceBucket(entityId);
+
+    // Release optimistic movement state: a removed-then-re-added army (chunk
+    // eviction, capture) must not inherit a stale lock that blocks selection.
+    this.optimisticallyMovingArmies.delete(entityId);
+    this.optimisticPositionLocks.delete(entityId);
 
     // Update spatial index (remove from destination bucket)
     if (this.armies.has(entityId)) {

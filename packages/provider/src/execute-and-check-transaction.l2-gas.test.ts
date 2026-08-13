@@ -328,10 +328,11 @@ describe("EternumProvider.executeAndCheckTransaction gas bounds", () => {
 
   it("emits readable submission failures for object-shaped errors", async () => {
     const provider = makeProvider();
-    provider.execute = vi.fn().mockRejectedValue({
+    const submitError = {
       message: { code: 40, details: "fallback object message" },
       data: { message: "Execution reverted: insufficient balance" },
-    });
+    };
+    provider.execute = vi.fn().mockRejectedValue(submitError);
 
     const signer = {
       estimateInvokeFee: vi.fn().mockResolvedValue({
@@ -352,6 +353,90 @@ describe("EternumProvider.executeAndCheckTransaction gas bounds", () => {
       entrypoints: ["settle_realms"],
       contractAddresses: ["0x1"],
     });
+    expect(findTransactionFailedPayload(provider)?.error).toBe(submitError);
+  });
+
+  it("carries the Cartridge error code on plain-object controller rejections", async () => {
+    const provider = makeProvider();
+    const controllerError = { code: 142, message: "session refresh required" };
+    provider.execute = vi.fn().mockRejectedValue(controllerError);
+
+    const signer = {
+      estimateInvokeFee: vi.fn().mockResolvedValue({
+        resourceBounds: makeResourceBounds(1_000_000_000n),
+      }),
+    };
+    const call: Call = {
+      contractAddress: "0x1",
+      entrypoint: "settle_realms",
+      calldata: [],
+    };
+
+    await expect(provider.executeAndCheckTransaction(signer, call)).rejects.toBeDefined();
+
+    expect(findTransactionFailedPayload(provider)).toMatchObject({
+      stage: "submit",
+      errorCode: 142,
+    });
+    expect(findTransactionFailedPayload(provider)?.error).toBe(controllerError);
+  });
+
+  it("keeps the user-cancel rejection (undefined) as the payload error", async () => {
+    const provider = makeProvider();
+    // Even with a stashed estimate error, a Cartridge popup close must stay recognizable.
+    provider.lastEstimateError = { error: new Error("estimate trace"), atMs: Date.now() };
+    provider.execute = vi.fn().mockRejectedValue(undefined);
+
+    const signer = {
+      estimateInvokeFee: vi.fn().mockResolvedValue({
+        resourceBounds: makeResourceBounds(1_000_000_000n),
+      }),
+    };
+    const call: Call = {
+      contractAddress: "0x1",
+      entrypoint: "settle_realms",
+      calldata: [],
+    };
+
+    await expect(provider.executeAndCheckTransaction(signer, call)).rejects.toBeUndefined();
+
+    const payload = findTransactionFailedPayload(provider);
+    expect(payload).toMatchObject({ stage: "submit" });
+    expect(payload && Object.prototype.hasOwnProperty.call(payload, "error")).toBe(true);
+    expect(payload?.error).toBeUndefined();
+  });
+
+  it("prefers a recent fee-estimate error when the submit error is uninformative", async () => {
+    const provider = makeProvider();
+    const estimateError = {
+      code: 41,
+      message: "Transaction execution error",
+      data: {
+        execution_error:
+          "Execution failed. Failure reason: 0x506f70756c6174696f6e2065786365656473206361706163697479 ('Population exceeds capacity').",
+      },
+    };
+    provider.execute = vi.fn().mockRejectedValue({});
+
+    const signer = {
+      estimateInvokeFee: vi.fn().mockRejectedValue(estimateError),
+    };
+    const call: Call = {
+      contractAddress: "0x1",
+      entrypoint: "settle_realms",
+      calldata: [],
+    };
+
+    await expect(provider.executeAndCheckTransaction(signer, call)).rejects.toBeDefined();
+
+    // Estimate failure must not block submission — execute still ran.
+    expect(provider.execute).toHaveBeenCalledTimes(1);
+    expect(findTransactionFailedPayload(provider)).toMatchObject({
+      message: "Transaction failed to submit: Unknown error",
+      stage: "submit",
+      errorCode: 41,
+    });
+    expect(findTransactionFailedPayload(provider)?.error).toBe(estimateError);
   });
 
   it("prefers nested revert reason over generic short rpc messages", async () => {
@@ -390,6 +475,35 @@ describe("EternumProvider.executeAndCheckTransaction gas bounds", () => {
         `(0x617267656e742f6d756c746963616c6c2d6661696c6564 ('argent/multicall-failed'), ` +
         `0x0 (''), 0x506f70756c6174696f6e2065786365656473206361706163697479 ('Population exceeds capacity'), ` +
         `0x454e545259504f494e545f4641494c4544 ('ENTRYPOINT_FAILED'))"}`,
+    });
+
+    const signer = {
+      estimateInvokeFee: vi.fn().mockResolvedValue({
+        resourceBounds: makeResourceBounds(1_000_000_000n),
+      }),
+    };
+    const call: Call = {
+      contractAddress: "0x1",
+      entrypoint: "settle_realms",
+      calldata: [],
+    };
+
+    await expect(provider.executeAndCheckTransaction(signer, call)).rejects.toBeDefined();
+
+    expect(findTransactionFailedPayload(provider)).toMatchObject({
+      message: "Transaction failed to submit: Population exceeds capacity",
+      stage: "submit",
+    });
+  });
+
+  it("extracts the innermost katana failure reason frame", async () => {
+    const provider = makeProvider();
+    provider.execute = vi.fn().mockRejectedValue({
+      shortMessage: "Transaction execution error",
+      details:
+        `Transaction execution error: {"transaction_index":0,"execution_error":"Contract error: ` +
+        `Failure reason: 0x454e545259504f494e545f4641494c4544 ('ENTRYPOINT_FAILED').\\n` +
+        `Execution failed. Failure reason: 0x506f70756c6174696f6e2065786365656473206361706163697479 ('Population exceeds capacity')."}`,
     });
 
     const signer = {
@@ -488,7 +602,9 @@ describe("EternumProvider.executeAndCheckTransaction gas bounds", () => {
       transactionHash: "0xabc",
       stage: "revert",
       message: "realm occupied",
+      revertReason: "Execution reverted: realm occupied",
     });
+    expect(findTransactionFailedPayload(provider)?.error).toBeInstanceOf(Error);
   });
 
   it("marks asynchronous post-timeout confirmation failures as background confirmation", async () => {

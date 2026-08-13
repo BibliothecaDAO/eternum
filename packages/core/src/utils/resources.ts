@@ -4,9 +4,7 @@ import {
   type ID,
   RESOURCE_PRECISION,
   type Resource,
-  type ResourceCostMinMax,
   type ResourceInputs,
-  type ResourceOutputs,
   ResourcesIds,
   StructureType,
   resources,
@@ -53,7 +51,7 @@ export const getQuestResources = (realmEntityId: ID, components: ClientComponent
   return getStartingResources(resourcesProduced, [], []);
 };
 
-export const scaleResourceInputs = (resourceInputs: ResourceInputs, multiplier: number) => {
+const scaleResourceInputs = (resourceInputs: ResourceInputs, multiplier: number) => {
   const multipliedCosts: ResourceInputs = {};
 
   for (const buildingType in resourceInputs) {
@@ -64,13 +62,6 @@ export const scaleResourceInputs = (resourceInputs: ResourceInputs, multiplier: 
   }
 
   return multipliedCosts;
-};
-
-export const scaleResources = (resources: any[], multiplier: number): any[] => {
-  return resources.map((resource) => ({
-    ...resource,
-    amount: resource.amount * multiplier,
-  }));
 };
 
 export const uniqueResourceInputs = (
@@ -122,17 +113,6 @@ export const getStartingResources = (
   return applyInputProductionFactor(QUEST_RESOURCES_SCALED, resourcesOnRealm, resourceProductionInputResources);
 };
 
-export const scaleResourceCostMinMax = (
-  resourceCost: ResourceCostMinMax[],
-  multiplier: number,
-): ResourceCostMinMax[] => {
-  return resourceCost.map((resource) => ({
-    ...resource,
-    min_amount: resource.min_amount * multiplier,
-    max_amount: resource.max_amount * multiplier,
-  }));
-};
-
 export const scaleHyperstructureConstructionCostMinMax = (
   resourceCost: HyperstructureResourceCostMinMax[],
   multiplier: number,
@@ -142,15 +122,6 @@ export const scaleHyperstructureConstructionCostMinMax = (
     min_amount: resource.min_amount * multiplier,
     max_amount: resource.max_amount * multiplier,
   }));
-};
-
-export const scaleResourceOutputs = (resourceOutputs: ResourceOutputs, multiplier: number) => {
-  const multipliedCosts: ResourceOutputs = {};
-
-  for (const buildingType in resourceOutputs) {
-    multipliedCosts[buildingType] = resourceOutputs[buildingType] * multiplier;
-  }
-  return multipliedCosts;
 };
 
 export const isMilitaryResource = (resourceId: ResourcesIds) => {

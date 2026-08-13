@@ -23,6 +23,7 @@ import {
   uint256,
   UniversalDetails,
 } from "starknet";
+import { classifyTransactionError, extractErrorMessage, readCartridgeErrorCode } from "./classify-transaction-error";
 import { PromiseQueue, QueueableTransaction } from "./promise-queue";
 import { ExecutionOptions } from "./transaction-executor";
 import { withRetry } from "./retry";
@@ -49,6 +50,8 @@ export {
   getDelayForTransaction,
 } from "./batch-config";
 export type { BatchDelayConfig } from "./batch-config";
+export { classifyTransactionError, extractErrorMessage } from "./classify-transaction-error";
+export type { ClassifiedTransactionError } from "./classify-transaction-error";
 export { PromiseQueue } from "./promise-queue";
 export type { QueueableTransaction } from "./promise-queue";
 export type { TransactionExecutor, ExecutionOptions } from "./transaction-executor";
@@ -73,6 +76,9 @@ const MAX_V3_L2_GAS_MAX_AMOUNT = 1_200_000_000n;
 const V3_L2_GAS_OVERHEAD_PERCENT = 50n;
 const HUNDRED_PERCENT = 100n;
 const DEFAULT_FEE_ESTIMATE_TIMEOUT_MS = 5_000;
+// A failed fee estimate carries the full Cairo trace before any gas is spent;
+// keep it briefly so the eventual submit/confirmation failure can surface it.
+const ESTIMATE_ERROR_TTL_MS = 60_000;
 const DEFAULT_TRANSACTION_SUBMIT_TIMEOUT_MS = 20_000;
 const EXPLORE_RESOURCE_BOUNDS_CACHE_TTL_MS = 15_000;
 // Katana mines instantly, so PRE_CONFIRMED usually exists on the first or
@@ -91,22 +97,6 @@ const TX_WAIT_SUCCESS_STATES = [
 ];
 export const SUBMISSION_TIMEOUT_UNCERTAIN_MESSAGE =
   "Submission timed out before a tx hash was returned. Check wallet/activity before retrying.";
-const NON_MEANINGFUL_ERROR_MESSAGES = new Set(["", "[object Object]", "undefined", "null"]);
-const GENERIC_ERROR_MESSAGES = new Set([
-  "transaction execution error",
-  "execution error",
-  "rpc error",
-  "unknown error",
-  "unknown revert reason",
-  "transaction failed",
-]);
-const GENERIC_ERROR_PREFIXES = ["transaction execution error:", "rpc error:", "rpc:"];
-const WRAPPED_ERROR_PREFIXES = [
-  "Transaction failed to submit:",
-  "Transaction failed while waiting for confirmation:",
-  "Transaction failed with reason:",
-];
-
 const formatTimeoutDuration = (timeoutMs: number): string =>
   timeoutMs >= 1_000 ? `${Math.round(timeoutMs / 1_000)}s` : `${timeoutMs}ms`;
 
@@ -118,275 +108,6 @@ class TransactionSubmissionTimeoutError extends Error {
     this.name = "TransactionSubmissionTimeoutError";
   }
 }
-
-const normalizeErrorKey = (value: string): string =>
-  value
-    .trim()
-    .toLowerCase()
-    .replace(/[.:]+$/g, "");
-
-const isProtocolErrorCode = (value: string): boolean => {
-  const trimmed = value.trim();
-  if (!trimmed) return false;
-  if (/^0x[0-9a-f]+$/i.test(trimmed)) return true;
-  if (/^[A-Z0-9_]{3,}$/.test(trimmed)) return true;
-  if (/^[a-z0-9_-]+\/[a-z0-9_-]+$/i.test(trimmed)) return true;
-  return false;
-};
-
-const isWrappedGenericErrorMessage = (message: string): boolean => {
-  const normalizedMessage = normalizeErrorKey(message);
-  for (const wrappedPrefix of WRAPPED_ERROR_PREFIXES) {
-    const normalizedPrefix = wrappedPrefix.toLowerCase();
-    if (!normalizedMessage.startsWith(normalizedPrefix)) continue;
-    const rawSuffix = message.trim().slice(wrappedPrefix.length).trim();
-    const normalizedSuffix = normalizeErrorKey(rawSuffix);
-    return !rawSuffix || GENERIC_ERROR_MESSAGES.has(normalizedSuffix) || isProtocolErrorCode(rawSuffix);
-  }
-
-  return false;
-};
-
-const sanitizeReason = (value: string): string | null => {
-  const trimmed = value.trim().replace(/^['"]|['"]$/g, "");
-  if (!trimmed || NON_MEANINGFUL_ERROR_MESSAGES.has(trimmed)) {
-    return null;
-  }
-
-  return trimmed;
-};
-
-const asReasonCandidate = (value: string): string | null => {
-  const reason = sanitizeReason(value);
-  if (!reason) {
-    return null;
-  }
-
-  const normalized = normalizeErrorKey(reason);
-  if (GENERIC_ERROR_MESSAGES.has(normalized) || isWrappedGenericErrorMessage(reason) || isProtocolErrorCode(reason)) {
-    return null;
-  }
-
-  if (reason.includes("/")) return null;
-  if (/^[A-Z0-9_/-]+$/.test(reason)) return null;
-  if (/^0x[0-9a-f]+$/i.test(reason)) return null;
-  if (!/[a-zA-Z]/.test(reason)) return null;
-
-  return reason;
-};
-
-const decodeHexToAscii = (value: string): string | null => {
-  const normalized = value.startsWith("0x") ? value.slice(2) : value;
-  if (normalized.length < 4 || normalized.length % 2 !== 0) {
-    return null;
-  }
-
-  let decoded = "";
-  for (let i = 0; i < normalized.length; i += 2) {
-    const byte = Number.parseInt(normalized.slice(i, i + 2), 16);
-    if (Number.isNaN(byte)) {
-      return null;
-    }
-    decoded += String.fromCharCode(byte);
-  }
-
-  const cleaned = decoded.replace(/\0/g, "").trim();
-  if (!cleaned) {
-    return null;
-  }
-
-  const printableCount = [...cleaned].filter((char) => {
-    const code = char.charCodeAt(0);
-    return (code >= 32 && code <= 126) || code === 9 || code === 10 || code === 13;
-  }).length;
-
-  return printableCount / cleaned.length >= 0.85 ? cleaned : null;
-};
-
-const extractSpecificReasonFromMessage = (message: string): string | null => {
-  const explicitReasonPatterns = [
-    /,\s*\\"([^"\\]+)\\"\s*,\s*0x[0-9a-f]+ \('ENTRYPOINT_FAILED'\)/i,
-    /,\s*0x[0-9a-f]+ \('([^']+)'\)\s*,\s*0x[0-9a-f]+ \('ENTRYPOINT_FAILED'\)/i,
-    /Transaction failed with reason:\s*([^\n]+)/i,
-    /execution reverted(?: with reason)?[:\s]+["']?([^"\n']+)["']?/i,
-    /revert(?:ed)?(?: with reason)?[:\s]+["']?([^"\n']+)["']?/i,
-  ];
-  for (const pattern of explicitReasonPatterns) {
-    const match = message.match(pattern);
-    if (!match?.[1]) continue;
-    const reason = asReasonCandidate(match[1]);
-    if (reason) {
-      return reason;
-    }
-  }
-
-  for (const match of message.matchAll(/"([^"]+)"/g)) {
-    const candidate = match[1]?.trim();
-    if (!candidate) continue;
-    const matchIndex = match.index ?? 0;
-    const charAfterQuote = message.slice(matchIndex + match[0].length).trimStart();
-    if (charAfterQuote.startsWith(":")) continue;
-    const reason = asReasonCandidate(candidate);
-    if (reason) {
-      return reason;
-    }
-  }
-
-  for (const match of message.matchAll(/'([^']+)'/g)) {
-    const candidate = match[1]?.trim();
-    if (!candidate) continue;
-    const matchIndex = match.index ?? 0;
-    const charAfterQuote = message.slice(matchIndex + match[0].length).trimStart();
-    if (charAfterQuote.startsWith(":")) continue;
-    const reason = asReasonCandidate(candidate);
-    if (reason) {
-      return reason;
-    }
-  }
-
-  for (const match of message.matchAll(/0x[0-9a-f]{8,}/gi)) {
-    const decoded = decodeHexToAscii(match[0]);
-    if (!decoded) continue;
-    const reason = asReasonCandidate(decoded);
-    if (reason) {
-      return reason;
-    }
-  }
-
-  return null;
-};
-
-const isGenericErrorMessage = (message: string): boolean => {
-  const normalized = normalizeErrorKey(message);
-  if (
-    GENERIC_ERROR_MESSAGES.has(normalized) ||
-    GENERIC_ERROR_PREFIXES.some((prefix) => normalized.startsWith(prefix)) ||
-    isProtocolErrorCode(message)
-  ) {
-    return true;
-  }
-
-  return isWrappedGenericErrorMessage(message);
-};
-
-const asMeaningfulErrorMessage = (value: unknown): string | null => {
-  if (typeof value === "string") {
-    const trimmed = value.trim();
-    if (NON_MEANINGFUL_ERROR_MESSAGES.has(trimmed)) {
-      return null;
-    }
-
-    for (const prefix of WRAPPED_ERROR_PREFIXES) {
-      if (!trimmed.startsWith(prefix)) continue;
-      const suffix = trimmed.slice(prefix.length).trim();
-      if (NON_MEANINGFUL_ERROR_MESSAGES.has(suffix)) {
-        return null;
-      }
-    }
-
-    const specificReason = extractSpecificReasonFromMessage(trimmed);
-    if (specificReason) {
-      return specificReason;
-    }
-
-    return trimmed;
-  }
-
-  if (typeof value === "number" || typeof value === "boolean" || typeof value === "bigint") {
-    return String(value);
-  }
-
-  return null;
-};
-
-const extractErrorMessage = (error: unknown, fallback = "Unknown error"): string => {
-  const queue: unknown[] = [error];
-  const visited = new Set<object>();
-
-  const getSpecificMessage = (value: unknown): string | null => {
-    const candidate = asMeaningfulErrorMessage(value);
-    if (!candidate) {
-      return null;
-    }
-    if (isGenericErrorMessage(candidate)) {
-      return null;
-    }
-    return candidate;
-  };
-
-  while (queue.length > 0) {
-    const current = queue.shift();
-    const directMessage = getSpecificMessage(current);
-    if (directMessage) {
-      return directMessage;
-    }
-
-    if (current instanceof Error) {
-      queue.push(current.message);
-      queue.push((current as Error & { cause?: unknown }).cause);
-      continue;
-    }
-
-    if (Array.isArray(current)) {
-      queue.push(...current);
-      continue;
-    }
-
-    if (current && typeof current === "object") {
-      if (visited.has(current)) continue;
-      visited.add(current);
-      const record = current as Record<string, unknown>;
-
-      const directCandidates = [
-        record.shortMessage,
-        record.reason,
-        record.execution_error,
-        record.executionError,
-        record.revert_reason,
-        record.revertReason,
-        record.description,
-        record.message,
-      ];
-      for (const candidate of directCandidates) {
-        const directCandidateMessage = getSpecificMessage(candidate);
-        if (directCandidateMessage) {
-          return directCandidateMessage;
-        }
-      }
-
-      queue.push(
-        record.data,
-        record.error,
-        record.cause,
-        record.details,
-        record.execution_error,
-        record.executionError,
-        record.message,
-        record.reason,
-        record.revert_reason,
-        record.revertReason,
-        record.shortMessage,
-        record.description,
-      );
-    }
-  }
-
-  try {
-    if (error && typeof error === "object") {
-      const serialized = JSON.stringify(error);
-      if (serialized && serialized !== "{}" && serialized !== "[]") {
-        const serializedReason = extractSpecificReasonFromMessage(serialized);
-        if (serializedReason && !isGenericErrorMessage(serializedReason)) {
-          return serializedReason;
-        }
-      }
-    }
-  } catch {
-    // Ignore serialization errors and use fallback
-  }
-
-  return fallback;
-};
 
 const isTransactionSubmissionTimeoutError = (error: unknown): boolean => {
   return error instanceof TransactionSubmissionTimeoutError;
@@ -466,6 +187,26 @@ type CachedExploreExecutionDetails = {
 
 type TransactionFailureError = Error & {
   transactionFailureStage?: TransactionFailureStage;
+  /** Raw receipt revert reason, verbatim, attached on the revert path. */
+  rawRevertReason?: string;
+};
+
+/**
+ * Structured error context for a TransactionFailedPayload: the original error
+ * verbatim, the Cartridge error code when the error is a plain-object
+ * controller rejection, and the raw revert reason when the error came off a
+ * reverted receipt.
+ */
+const buildFailureDiagnostics = (
+  error: unknown,
+): Pick<TransactionFailedPayload, "error" | "errorCode" | "revertReason"> => {
+  const errorCode = readCartridgeErrorCode(error);
+  const revertReason = error instanceof Error ? (error as TransactionFailureError).rawRevertReason : undefined;
+  return {
+    error,
+    ...(errorCode !== undefined ? { errorCode } : {}),
+    ...(revertReason !== undefined ? { revertReason } : {}),
+  };
 };
 
 const attachTransactionFailureStage = (
@@ -591,6 +332,7 @@ export class EternumProvider extends EnhancedDojoProvider {
   private pendingTransactionSpans = new Map<string, Span>();
   private pendingVrfExecutionLocks = new Map<string, VrfExecutionLock>();
   private cachedExploreExecutionDetails = new Map<string, CachedExploreExecutionDetails>();
+  private lastEstimateError?: { error: unknown; atMs: number };
   private readonly retryConfig?: RetryConfig;
   private transactionSubmitGuard?: TransactionSubmitGuard;
   /** Model/contract-tag namespace: "s2" on appchain worlds, "s1_eternum" on legacy worlds. */
@@ -631,7 +373,10 @@ export class EternumProvider extends EnhancedDojoProvider {
       const worldAddress = this.manifest.world.address;
       return worldAddress;
     };
-    this.promiseQueue = new PromiseQueue(this);
+    // No timed batching: appchain txs land in <1s, so waiting to merge actions only adds
+    // latency (and a merged multicall makes one revert fail unrelated actions). The queue
+    // stays for per-signer serialization; a backlog still coalesces naturally.
+    this.promiseQueue = new PromiseQueue(this, { batchDelayMs: 0 });
   }
 
   /**
@@ -942,9 +687,34 @@ export class EternumProvider extends EnhancedDojoProvider {
         resourceBounds,
       };
     } catch (error) {
+      // Submission proceeds with default v3 details, but the estimate error is
+      // the richest failure signal we get — stash it for the failure payload.
+      this.lastEstimateError = { error, atMs: Date.now() };
       console.warn("[provider] Failed to estimate invoke fee, using default v3 tx details", error);
       return details;
     }
+  }
+
+  private takeRecentEstimateError(): unknown {
+    const stashed = this.lastEstimateError;
+    this.lastEstimateError = undefined;
+    if (!stashed || Date.now() - stashed.atMs > ESTIMATE_ERROR_TTL_MS) {
+      return undefined;
+    }
+    return stashed.error;
+  }
+
+  /**
+   * The submit error the payload should carry: usually the submit error
+   * itself, but when it decoded to nothing actionable and a recent fee
+   * estimate failed with a real trace, prefer that. Never overrides a user
+   * cancel (Cartridge rejects with `undefined` on popup close).
+   */
+  private resolveSubmitFailureError(error: unknown, extractedMessage: string): unknown {
+    const estimateError = this.takeRecentEstimateError();
+    if (estimateError === undefined) return error;
+    if (classifyTransactionError(error).kind === "user_cancelled") return error;
+    return extractedMessage === "Unknown error" ? estimateError : error;
   }
 
   private async submitTransaction(
@@ -1184,6 +954,7 @@ export class EternumProvider extends EnhancedDojoProvider {
               ...recoveredTransactionMetaWithHash,
               message: extractErrorMessage(error),
               stage: resolveTransactionFailureStage(error, "background_confirmation"),
+              ...buildFailureDiagnostics(error),
             });
           });
       })
@@ -1368,6 +1139,7 @@ export class EternumProvider extends EnhancedDojoProvider {
         message: `Transaction failed to submit: ${message}`,
         stage: "submit",
         ...submitFailure,
+        ...buildFailureDiagnostics(this.resolveSubmitFailureError(error, message)),
       });
       this.failTransactionSpan(span, undefined, error);
       throw error;
@@ -1414,6 +1186,7 @@ export class EternumProvider extends EnhancedDojoProvider {
             ...transactionMetaWithHash,
             message: extractErrorMessage(error),
             stage: resolveTransactionFailureStage(error, "background_confirmation"),
+            ...buildFailureDiagnostics(error),
           });
           this.failTransactionSpan(span, tx.transaction_hash, error);
         })
@@ -1435,6 +1208,7 @@ export class EternumProvider extends EnhancedDojoProvider {
         ...transactionMetaWithHash,
         message: extractErrorMessage(error),
         stage: resolveTransactionFailureStage(error, "confirmation"),
+        ...buildFailureDiagnostics(error),
       });
       this.failTransactionSpan(span, tx.transaction_hash, error);
       throw error;
@@ -1459,6 +1233,7 @@ export class EternumProvider extends EnhancedDojoProvider {
             ...transactionMetaWithHash,
             message: extractErrorMessage(error),
             stage: resolveTransactionFailureStage(error, "background_confirmation"),
+            ...buildFailureDiagnostics(error),
           });
           this.failTransactionSpan(span, tx.transaction_hash, error);
         })
@@ -1756,6 +1531,7 @@ export class EternumProvider extends EnhancedDojoProvider {
       });
     } catch (error) {
       console.error(`Error waiting for transaction ${transactionHash}`, {
+        error,
         nodeUrl,
         manifestRpcUrl,
         worldAddress: this.manifest?.world?.address,
@@ -1779,8 +1555,17 @@ export class EternumProvider extends EnhancedDojoProvider {
         },
         "Unknown revert reason",
       );
+      // Keep the untouched receipt reason alongside the extracted one so the
+      // failure payload can carry the full trace verbatim.
+      const rawRevertReason = [receiptAny?.revert_reason, receiptAny?.execution_error].find(
+        (value): value is string => typeof value === "string" && value.length > 0,
+      );
       const message = `Transaction failed with reason: ${revertReason}`;
-      throw attachTransactionFailureStage(new Error(message), "revert", message);
+      const revertError = attachTransactionFailureStage(new Error(message), "revert", message);
+      if (rawRevertReason !== undefined) {
+        revertError.rawRevertReason = rawRevertReason;
+      }
+      throw revertError;
     }
 
     return receipt;
