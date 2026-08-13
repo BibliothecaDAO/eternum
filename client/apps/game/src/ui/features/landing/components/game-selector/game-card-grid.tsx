@@ -1222,7 +1222,7 @@ export const UnifiedGameGrid = ({
                     onRegistrationComplete={handleRegistrationComplete}
                     playerAddress={playerAddress}
                     showChainBadge={true}
-                    />
+                  />
                 </div>
               );
             })}

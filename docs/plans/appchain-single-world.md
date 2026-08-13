@@ -50,8 +50,8 @@ approved **once, ever**, instead of once per game.
 
 ### A0 — Design + audit (1–2 days)
 
-Model-by-model inventory (per-game key vs global vs config-row), system-by-system entrypoint audit (game_id threading;
-flag any "iterate all entities" logic), id strategy (global `uuid()` is fine — only _keyed_ lookups need game_id),
+Model-by-model inventory (per-game key vs global vs config-row), system-by-system entrypoint audit (game*id threading;
+flag any "iterate all entities" logic), id strategy (global `uuid()` is fine — only \_keyed* lookups need game_id),
 decide preset representation (on-chain preset rows written from the existing TS config builders). Deliverable: schema
 delta + checklist doc reviewed before any Cairo lands.
 

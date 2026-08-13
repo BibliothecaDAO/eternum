@@ -252,7 +252,9 @@ export async function resolveFactoryManifestContractAddress(
           `Game "${normalizedRequest.worldName}" was not found in any deployed world's registry.`,
         );
       }
-      const manifest = getGameManifest("appchain", world.id as "blitz" | "eternum") as Parameters<typeof findManifestContractEntry>[0];
+      const manifest = getGameManifest("appchain", world.id as "blitz" | "eternum") as Parameters<
+        typeof findManifestContractEntry
+      >[0];
       const manifestContract = findManifestContractEntry(manifest, normalizedRequest.manifestTag);
       if (!manifestContract?.address) {
         return buildContractNotFoundFailure(

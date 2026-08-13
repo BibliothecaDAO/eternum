@@ -108,9 +108,9 @@ describe("entity label view model", () => {
 
     it("resolves the structure title (name, else type + id fallback) matching compactText", () => {
       expect(resolveStructureTitle(structure)).toBe(buildStructureEntityLabelViewModel(structure).compactText);
-      expect(
-        resolveStructureTitle({ ...structure, structureName: "", structureType: StructureType.Realm }),
-      ).toBe("Realm #202");
+      expect(resolveStructureTitle({ ...structure, structureName: "", structureType: StructureType.Realm })).toBe(
+        "Realm #202",
+      );
     });
   });
 });

@@ -72,8 +72,8 @@ refactors outside the audit's file lists.
   model into one `keys: [gameIdHex]` VariableLen clause (D16 encoding); the per-model key-arity table turned out to be
   unnecessary — VariableLen with the game-id prefix covers all arities, so only the per-game/chain-global classification
   matters, and that set is pinned against `manifest_appchain.json` by `game-scope.test.ts` instead of generated.
-  Subscribe-to-everything fallback deleted; appchain env now runs bounded spatial sync (matches mainnet blitz prod).
-  s2 stream list drops SeasonEnded/QuestLevels/PlayersRankFinal, adds GameRegistry.
+  Subscribe-to-everything fallback deleted; appchain env now runs bounded spatial sync (matches mainnet blitz prod). s2
+  stream list drops SeasonEnded/QuestLevels/PlayersRankFinal, adds GameRegistry.
 - **P3 codemod shipped**: `gameEntityKey` (plus `buildingEntityKey` — s2 Building inserted an `alt` key, always 0 since
   structures never sit on the alt plane — and `worldConfigKey` for s1-const→s2-gameId rows: WorldConfig,
   HyperstructureGlobals, SeasonPrize, MMRGameMeta). Core/react import from `managers/config-manager`; **client files
@@ -94,13 +94,13 @@ refactors outside the audit's file lists.
 
 ## P4 execution notes (2026-08-10, `f8cfade684`)
 
-- `buildApiUrl` is the SQL chokepoint: `{GF}`/`{GF:alias}` markers on every per-game table, resolved to
-  `game_id = N` (s2) or `1=1` (legacy); namespace swap rides the same transform. `setSqlGameScope` set at bootstrap.
-- The scoping lint is live: `packages/torii/src/queries/sql/game-scope-lint.test.ts` derives the per-game table set
-  from the manifest and fails any unmarked reference. `-- legacy-only` comments opt out queries that never run on s2.
+- `buildApiUrl` is the SQL chokepoint: `{GF}`/`{GF:alias}` markers on every per-game table, resolved to `game_id = N`
+  (s2) or `1=1` (legacy); namespace swap rides the same transform. `setSqlGameScope` set at bootstrap.
+- The scoping lint is live: `packages/torii/src/queries/sql/game-scope-lint.test.ts` derives the per-game table set from
+  the manifest and fails any unmarked reference. `-- legacy-only` comments opt out queries that never run on s2.
 - Arm splits: battle logs (raid arm s1-only), hyperstructure leaderboard config (S2 variant joins
   GameRegistry+PresetConfig+WorldConfig), fetchSeasonEnded → null on s2. `buildUnscopedApiUrl` protects cross-world
   reads (market ranks, faith leaderboard) from the active-game rewrite.
 - Deferred to P5 (by design): blitz-settlement/entry-flow SQL still runs the world-address `withWorldScope` fork
-  machinery — P5 replaces it with explicit game-id predicates from GameRegistry (registration targets a chosen game,
-  not the ambient scope); game-review-service needs per-game parameterization for reviewing non-active games.
+  machinery — P5 replaces it with explicit game-id predicates from GameRegistry (registration targets a chosen game, not
+  the ambient scope); game-review-service needs per-game parameterization for reviewing non-active games.

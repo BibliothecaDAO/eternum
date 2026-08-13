@@ -193,7 +193,6 @@ export const FactoryV2Content = () => {
             />
           </div>
         ) : null}
-
       </div>
     </section>
   );

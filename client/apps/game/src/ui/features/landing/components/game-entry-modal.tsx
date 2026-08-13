@@ -4251,7 +4251,11 @@ export const GameEntryModal = ({
       setSeasonSettlementError("Season pass contract not configured for this world.");
       return;
     }
-    if (villagePassAddress && seasonPassAddress && seasonPassAddress.toLowerCase() === villagePassAddress.toLowerCase()) {
+    if (
+      villagePassAddress &&
+      seasonPassAddress &&
+      seasonPassAddress.toLowerCase() === villagePassAddress.toLowerCase()
+    ) {
       setSeasonSettlementError(
         `World config mismatch: season pass address points to village pass (${seasonPassAddress}). Update season_addresses_config on-chain.`,
       );

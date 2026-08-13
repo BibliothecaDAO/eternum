@@ -22,15 +22,15 @@ When changing workflows, deployer code, shared runtime packages, or observabilit
 Every client bug class in the Aug 2026 playtest traced to a violation of one of these rules. They apply to
 `client/apps/game` and `packages/*`.
 
-1. **One truth.** UI reads on-chain state from RECS only. Anything fetched from torii (gRPC or SQL) is written into
-   RECS — never held in a side store, react-query cache, or scene-local map as the primary copy. Do not add new
-   direct-fetch read paths; when touching one, delete it.
-2. **No silent defaults.** A config or keyed lookup that misses must be loud in dev. Never let a silent fallback
-   return a zero that gameplay math consumes.
+1. **One truth.** UI reads on-chain state from RECS only. Anything fetched from torii (gRPC or SQL) is written into RECS
+   — never held in a side store, react-query cache, or scene-local map as the primary copy. Do not add new direct-fetch
+   read paths; when touching one, delete it.
+2. **No silent defaults.** A config or keyed lookup that misses must be loud in dev. Never let a silent fallback return
+   a zero that gameplay math consumes.
 3. **Recoverable without events.** Every entity class must be restorable from a snapshot, replay, or poll. A
    subscription is an accelerator, not the source of truth.
-4. **Pending state expires, and lives in one place.** Optimistic/lock state is one record per entity with a TTL
-   enforced where the state is consumed — never parallel maps that must be cleaned in sync, never keyed by tx hash.
+4. **Pending state expires, and lives in one place.** Optimistic/lock state is one record per entity with a TTL enforced
+   where the state is consumed — never parallel maps that must be cleaned in sync, never keyed by tx hash.
 5. **Wired or deleted.** If it is exported, something imports it; if it is config, something reads it. Do not land a
    capability without its call site.
 

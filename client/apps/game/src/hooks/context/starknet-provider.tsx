@@ -14,7 +14,6 @@ import { APPCHAIN_CHAIN_ID, resolveStarknetRuntimeConfig } from "./starknet-chai
 import { namespaceForChain } from "@/dojo/game-scope";
 import { useControllerAccount } from "./use-controller-account";
 
-
 // ==============================================
 
 const KATANA_CHAIN_ID = shortString.encodeShortString("KATANA");

@@ -47,7 +47,6 @@ export const FactoryV2WorkflowSwitch = ({
           >
             Check game
           </button>
-
         </div>
       </div>
     </section>

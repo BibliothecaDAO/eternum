@@ -39,7 +39,6 @@ export const FactoryV2Header = ({ onBack }: { onBack: () => void }) => {
             <ChevronLeft className="h-4 w-4" />
             Back to home
           </button>
-
         </div>
       </div>
     </section>

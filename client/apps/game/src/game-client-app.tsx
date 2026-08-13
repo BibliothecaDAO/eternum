@@ -80,7 +80,6 @@ const GameClientRoutes = ({ backgroundImage }: { backgroundImage: string }) => (
         <Route path="/play/:chain/:world/:scene" element={<GameRouteShell backgroundImage={backgroundImage} />} />
         <Route path="/play/*" element={<GameRouteShell backgroundImage={backgroundImage} />} />
 
-
         <Route
           path="/factory/v2"
           element={

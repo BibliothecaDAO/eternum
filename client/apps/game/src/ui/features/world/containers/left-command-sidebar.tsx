@@ -100,7 +100,6 @@ const ChatModalContent = ({
 // Lazy view components used inside the centered action modal
 // ----------------------------------------------------------------------------
 
-
 // ----------------------------------------------------------------------------
 // LeftCommandSidebar
 //
