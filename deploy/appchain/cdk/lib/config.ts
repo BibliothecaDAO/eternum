@@ -49,19 +49,19 @@ export const CONFIG = {
     chainId: "WP_REALMS_DEV",
 
     /**
-     * Sequencer host. Capped at ONE vCPU until the account's On-Demand quota
-     * increase lands (spot is capped at 1 too), so this is the best 1-vCPU
-     * box available rather than the m6a.large we actually want:
-     * m7a.medium is modern AMD, non-burstable and 4 GiB, vs t2.small's older
-     * burstable core and 2 GiB. Block execution is effectively single-core,
-     * so per-core performance is what matters most here.
+     * Sequencer host. m7a vCPUs are full physical Genoa cores (no SMT) with
+     * the best per-core performance in the M family — what katana wants,
+     * since block execution is effectively single-core per chain. 4 vCPU
+     * gives headroom for several concurrent games (a 2-player game peaks at
+     * ~0.6 core) plus the planned torii colocation.
      *
-     * Bump to m6a.large (2 vCPU/8 GiB) the moment quota allows — a type change
-     * is applied as stop → modify → start, and the chain data lives on a
-     * separate RETAIN volume mounted by UUID, so the chain survives it. That
-     * is the whole reason katana is on EC2 rather than Fargate.
+     * Type changes are applied as stop → modify → start, and the chain data
+     * lives on a separate RETAIN volume mounted by UUID, so the chain
+     * survives them. That is the whole reason katana is on EC2 rather than
+     * Fargate. (Quota history: account was capped at 1 vCPU until 2026-08-13,
+     * now 256.)
      */
-    katanaInstanceType: "m7a.medium",
+    katanaInstanceType: "m7a.xlarge",
     katanaDataGib: 50,
 
     /** Multi-world indexing needs headroom above the 4 GiB single-world load-test size. */
