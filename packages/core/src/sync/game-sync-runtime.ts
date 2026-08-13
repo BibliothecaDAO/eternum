@@ -1,13 +1,8 @@
-export interface GameSyncWriter {
-  cancel: () => void;
-}
+import { EntityIngestQueue, type EntityIngestBatchInfo } from "./entity-ingest-queue";
+import type { GameSyncEntity, GameSyncRuntimeMetrics, GameSyncSessionStart, GameSyncWriter } from "./game-sync-types";
+import { createMicrotaskGameSyncScheduler } from "./scheduler";
 
-export interface GameSyncSessionStart {
-  startGlobalWriter: () => Promise<GameSyncWriter>;
-  hydrateSpatialSnapshot: () => Promise<void>;
-}
-
-export type GameSyncRuntimeStatus = "idle" | "starting" | "running" | "stopped";
+export type GameSyncRuntimeStatus = "idle" | "subscribing" | "snapshotting" | "replaying" | "running" | "stopped";
 
 export class SupersededGameSyncStartError extends Error {
   constructor() {
@@ -16,65 +11,125 @@ export class SupersededGameSyncStartError extends Error {
   }
 }
 
+interface BufferedEntityUpdate {
+  entity: GameSyncEntity;
+  receiveSequence: number;
+}
+
+interface LegacyGameSyncSessionStart {
+  startGlobalWriter: () => Promise<GameSyncWriter>;
+  hydrateSpatialSnapshot: () => Promise<void>;
+}
+
+const DEFAULT_EVENT_IDENTITY_LIMIT = 512;
+
+const isRecord = (value: unknown): value is Record<string, unknown> => typeof value === "object" && value !== null;
+
+const resolveEventTimestamp = (model: string, value: unknown): string => {
+  if (!isRecord(value) || !("timestamp" in value)) {
+    throw new Error(`Game sync event ${model} is missing its timestamp`);
+  }
+
+  const timestampField = value.timestamp;
+  const timestamp = isRecord(timestampField) && "value" in timestampField ? timestampField.value : timestampField;
+  if (!["bigint", "number", "string"].includes(typeof timestamp)) {
+    throw new Error(`Game sync event ${model} has an invalid timestamp`);
+  }
+
+  return String(timestamp);
+};
+
+const createEmptyMetrics = (): GameSyncRuntimeMetrics => ({
+  appliedBatchCount: 0,
+  lastRecoveryDurationMs: 0,
+  maxBatchApplyDurationMs: 0,
+  peakLiveUpdatesPerSecond: 0,
+  snapshotEntityCount: 0,
+  snapshotPageCount: 0,
+  totalLiveEntityUpdates: 0,
+  totalLiveEventUpdates: 0,
+});
+
 /**
- * Owns the lifetime of every session-scoped sync writer.
+ * Owns the single session-scoped writer and convergent recovery lifecycle.
  *
- * S1 deliberately keeps transport and RECS application behind injected
- * adapters. That preserves today's behavior while moving lifecycle ownership
- * out of React hooks and module globals. S2 replaces those adapters with the
- * convergent snapshot-and-buffer implementation.
+ * Torii exposes no universal server revision on entity callbacks. Buffered
+ * ordering is therefore explicit and honest: generation first, then client
+ * receive sequence. Every reconnect reruns the same subscribe → paginated
+ * snapshot → component diff → ordered replay routine.
  */
 export class GameSyncRuntime {
   private generation = 0;
-  private globalWriter: GameSyncWriter | null = null;
-  private playerWriter: GameSyncWriter | null = null;
+  private writer: GameSyncWriter | null = null;
+  private legacyPlayerWriter: GameSyncWriter | null = null;
   private status: GameSyncRuntimeStatus = "idle";
+  private session: GameSyncSessionStart | null = null;
+  private ingestQueue: EntityIngestQueue | null = null;
+  private recentEventIdentities = new Map<string, true>();
+  private liveUpdateTimestamps: number[] = [];
+  private receiveSequence = 0;
+  private metrics = createEmptyMetrics();
 
   public getStatus(): GameSyncRuntimeStatus {
     return this.status;
   }
 
+  public getMetrics(): GameSyncRuntimeMetrics {
+    return { ...this.metrics };
+  }
+
   public isStarting(): boolean {
-    return this.status === "starting";
+    return ["subscribing", "snapshotting", "replaying"].includes(this.status);
   }
 
   public async startSession(input: GameSyncSessionStart): Promise<void> {
-    const generation = this.beginStart();
+    this.session = input;
+    this.recentEventIdentities.clear();
+    this.liveUpdateTimestamps = [];
+    this.receiveSequence = 0;
+    this.metrics = createEmptyMetrics();
+    await this.runRecovery();
+  }
+
+  public async recover(): Promise<void> {
+    if (!this.session) throw new Error("GameSyncRuntime has no session to recover");
+    await this.runRecovery();
+  }
+
+  /** Complete S1 lifecycle retained only for the bounded rollback adapter. */
+  public async startLegacySession(input: LegacyGameSyncSessionStart): Promise<void> {
+    this.session = null;
+    const generation = this.beginRun("subscribing");
 
     try {
-      const globalWriter = await input.startGlobalWriter();
-      this.adoptGlobalWriter(generation, globalWriter);
+      const writer = await input.startGlobalWriter();
+      this.adoptWriter(generation, writer);
+      this.status = "snapshotting";
       await input.hydrateSpatialSnapshot();
-      this.finishStart(generation);
+      this.assertCurrentGeneration(generation);
+      this.status = "running";
     } catch (error) {
-      this.stopFailedStart(generation);
+      this.stopFailedRun(generation);
       throw error;
     }
   }
 
-  public async restartGlobalWriter(startGlobalWriter: () => Promise<GameSyncWriter>): Promise<void> {
-    const generation = this.beginStart();
-
+  public async restartLegacyGlobalWriter(startGlobalWriter: () => Promise<GameSyncWriter>): Promise<void> {
+    const generation = this.beginRun("subscribing");
     try {
-      const globalWriter = await startGlobalWriter();
-      this.adoptGlobalWriter(generation, globalWriter);
-      this.finishStart(generation);
+      const writer = await startGlobalWriter();
+      this.adoptWriter(generation, writer);
+      this.status = "running";
     } catch (error) {
-      this.stopFailedStart(generation);
+      this.stopFailedRun(generation);
       throw error;
     }
   }
 
-  /**
-   * Preserve the existing bootstrap guard: UI cleanup must not interrupt a
-   * half-built writer. A game change calls dispose(), which always fences and
-   * cancels the old generation.
-   */
+  /** UI cleanup cannot interrupt an in-flight recovery; dispose() always can. */
   public cancelGlobalWriter(): void {
-    if (this.isStarting()) {
-      return;
-    }
-    this.cancelGlobalWriterImmediately();
+    if (this.isStarting()) return;
+    this.cancelWriterImmediately();
   }
 
   public installPlayerWriter(playerWriter: GameSyncWriter): void {
@@ -83,52 +138,210 @@ export class GameSyncRuntime {
       playerWriter.cancel();
       return;
     }
-    this.playerWriter = playerWriter;
+    this.legacyPlayerWriter = playerWriter;
   }
 
   public cancelPlayerWriter(expectedWriter?: GameSyncWriter): void {
-    if (expectedWriter && this.playerWriter !== expectedWriter) {
-      return;
-    }
-    this.playerWriter?.cancel();
-    this.playerWriter = null;
+    if (expectedWriter && this.legacyPlayerWriter !== expectedWriter) return;
+    this.legacyPlayerWriter?.cancel();
+    this.legacyPlayerWriter = null;
   }
 
   public dispose(): void {
     this.generation += 1;
-    this.cancelGlobalWriterImmediately();
+    this.cancelWriterImmediately();
     this.cancelPlayerWriter();
+    this.ingestQueue?.dispose();
+    this.ingestQueue = null;
+    this.session = null;
     this.status = "stopped";
   }
 
-  private beginStart(): number {
+  private async runRecovery(): Promise<void> {
+    const session = this.session;
+    if (!session) throw new Error("GameSyncRuntime has no session to recover");
+
+    const generation = this.beginRun("subscribing");
+    const recoveryStartedAt = this.now();
+    const bufferedUpdates: BufferedEntityUpdate[] = [];
+    const existingEntitiesByModel = this.captureExistingEntities(session);
+    const seenEntitiesByModel = new Map(session.snapshotModels.map((model) => [model, new Set<string>()]));
+    this.ingestQueue = this.createIngestQueue(session);
+
+    try {
+      const writer = await session.transport.subscribe({
+        onEntity: (entity) => {
+          if (!this.isCurrentGeneration(generation)) return;
+          const update = { entity, receiveSequence: ++this.receiveSequence };
+          this.recordLiveUpdate("entity");
+          if (this.status === "running") this.ingestQueue?.enqueueEntity(entity);
+          else bufferedUpdates.push(update);
+        },
+        onEvent: (event) => {
+          if (!this.isCurrentGeneration(generation)) return;
+          this.recordLiveUpdate("event");
+          this.enqueueEventOnce(event);
+        },
+      });
+      this.adoptWriter(generation, writer);
+      session.onSubscriptionActive?.();
+
+      this.status = "snapshotting";
+      await this.hydrateSnapshot(generation, session, seenEntitiesByModel);
+      this.reconcileAbsentSnapshotComponents(existingEntitiesByModel, seenEntitiesByModel);
+      await this.ingestQueue.drain();
+
+      this.status = "replaying";
+      await this.replayBufferedUpdates(generation, bufferedUpdates);
+      this.assertCurrentGeneration(generation);
+      this.status = "running";
+      this.metrics.lastRecoveryDurationMs = this.now() - recoveryStartedAt;
+      this.publishMetrics();
+    } catch (error) {
+      this.stopFailedRun(generation);
+      throw error;
+    }
+  }
+
+  private captureExistingEntities(session: GameSyncSessionStart): Map<string, Set<string>> {
+    return new Map(
+      session.snapshotModels.map((model) => [model, new Set(session.store.listModelEntityIds(model))] as const),
+    );
+  }
+
+  private async hydrateSnapshot(
+    generation: number,
+    session: GameSyncSessionStart,
+    seenEntitiesByModel: Map<string, Set<string>>,
+  ): Promise<void> {
+    const visitedCursors = new Set<string>();
+    let cursor: string | undefined;
+
+    do {
+      const page = await session.transport.fetchSnapshotPage(cursor);
+      this.assertCurrentGeneration(generation);
+      this.metrics.snapshotPageCount += 1;
+      this.metrics.snapshotEntityCount += page.items.length;
+
+      page.items.forEach((entity) => {
+        Object.keys(entity.models).forEach((model) => seenEntitiesByModel.get(model)?.add(entity.hashed_keys));
+        this.ingestQueue?.enqueueEntity(entity);
+      });
+      await this.ingestQueue?.drain();
+
+      cursor = page.nextCursor;
+      if (cursor) {
+        if (visitedCursors.has(cursor)) throw new Error(`Game sync snapshot cursor repeated: ${cursor}`);
+        visitedCursors.add(cursor);
+      }
+    } while (cursor);
+  }
+
+  private reconcileAbsentSnapshotComponents(
+    existingEntitiesByModel: Map<string, Set<string>>,
+    seenEntitiesByModel: Map<string, Set<string>>,
+  ): void {
+    existingEntitiesByModel.forEach((existingEntities, model) => {
+      const seenEntities = seenEntitiesByModel.get(model) ?? new Set<string>();
+      existingEntities.forEach((entityId) => {
+        if (!seenEntities.has(entityId)) this.ingestQueue?.enqueueComponentRemoval(entityId, model);
+      });
+    });
+  }
+
+  private async replayBufferedUpdates(generation: number, bufferedUpdates: BufferedEntityUpdate[]): Promise<void> {
+    while (bufferedUpdates.length > 0) {
+      this.assertCurrentGeneration(generation);
+      const replay = bufferedUpdates.splice(0).sort((left, right) => left.receiveSequence - right.receiveSequence);
+      replay.forEach(({ entity }) => this.ingestQueue?.enqueueEntity(entity));
+      await this.ingestQueue?.drain();
+    }
+  }
+
+  private enqueueEventOnce(event: GameSyncEntity): void {
+    const session = this.session;
+    if (!session) return;
+
+    Object.entries(event.models).forEach(([model, value]) => {
+      const identity = `${model}:${event.hashed_keys}:${resolveEventTimestamp(model, value)}`;
+      if (this.recentEventIdentities.has(identity)) return;
+
+      this.recentEventIdentities.set(identity, true);
+      const limit = session.eventIdentityLimit ?? DEFAULT_EVENT_IDENTITY_LIMIT;
+      while (this.recentEventIdentities.size > limit) {
+        const oldest = this.recentEventIdentities.keys().next().value;
+        if (oldest === undefined) break;
+        this.recentEventIdentities.delete(oldest);
+      }
+      this.ingestQueue?.enqueueEvent({ hashed_keys: event.hashed_keys, models: { [model]: value } });
+    });
+  }
+
+  private createIngestQueue(session: GameSyncSessionStart): EntityIngestQueue {
+    return new EntityIngestQueue({
+      scheduler: session.scheduler ?? createMicrotaskGameSyncScheduler(),
+      store: session.store,
+      now: session.now ?? (() => Date.now()),
+      onBatchApplied: (info) => this.recordAppliedBatch(info),
+    });
+  }
+
+  private recordAppliedBatch(info: EntityIngestBatchInfo): void {
+    this.metrics.appliedBatchCount += 1;
+    this.metrics.maxBatchApplyDurationMs = Math.max(this.metrics.maxBatchApplyDurationMs, info.applyDurationMs);
+  }
+
+  private recordLiveUpdate(kind: "entity" | "event"): void {
+    const session = this.session;
+    if (!session) return;
+
+    if (kind === "entity") this.metrics.totalLiveEntityUpdates += 1;
+    else this.metrics.totalLiveEventUpdates += 1;
+
+    const now = this.now();
+    this.liveUpdateTimestamps.push(now);
+    while (this.liveUpdateTimestamps[0] < now - 1_000) this.liveUpdateTimestamps.shift();
+    const nextPeak = Math.max(this.metrics.peakLiveUpdatesPerSecond, this.liveUpdateTimestamps.length);
+    const peakChanged = nextPeak !== this.metrics.peakLiveUpdatesPerSecond;
+    this.metrics.peakLiveUpdatesPerSecond = nextPeak;
+    session.onLiveUpdate?.(kind);
+    if (peakChanged) this.publishMetrics();
+  }
+
+  private publishMetrics(): void {
+    this.session?.onMetrics?.(this.getMetrics());
+  }
+
+  private now(): number {
+    return this.session?.now?.() ?? Date.now();
+  }
+
+  private beginRun(status: GameSyncRuntimeStatus): number {
     this.generation += 1;
-    this.cancelGlobalWriterImmediately();
-    this.status = "starting";
+    this.cancelWriterImmediately();
+    this.ingestQueue?.dispose();
+    this.ingestQueue = null;
+    this.status = status;
     return this.generation;
   }
 
-  private adoptGlobalWriter(generation: number, writer: GameSyncWriter): void {
+  private adoptWriter(generation: number, writer: GameSyncWriter): void {
     if (!this.isCurrentGeneration(generation)) {
       writer.cancel();
       throw new SupersededGameSyncStartError();
     }
-
-    this.globalWriter = writer;
+    this.writer = writer;
   }
 
-  private finishStart(generation: number): void {
-    if (!this.isCurrentGeneration(generation)) {
-      throw new SupersededGameSyncStartError();
-    }
-    this.status = "running";
+  private assertCurrentGeneration(generation: number): void {
+    if (!this.isCurrentGeneration(generation)) throw new SupersededGameSyncStartError();
   }
 
-  private stopFailedStart(generation: number): void {
-    if (!this.isCurrentGeneration(generation)) {
-      return;
-    }
-    this.cancelGlobalWriterImmediately();
+  private stopFailedRun(generation: number): void {
+    if (!this.isCurrentGeneration(generation)) return;
+    this.cancelWriterImmediately();
+    this.ingestQueue?.dispose();
+    this.ingestQueue = null;
     this.status = "stopped";
   }
 
@@ -136,9 +349,9 @@ export class GameSyncRuntime {
     return generation === this.generation;
   }
 
-  private cancelGlobalWriterImmediately(): void {
-    this.globalWriter?.cancel();
-    this.globalWriter = null;
+  private cancelWriterImmediately(): void {
+    this.writer?.cancel();
+    this.writer = null;
   }
 }
 
@@ -149,9 +362,7 @@ export function getActiveGameSyncRuntime(): GameSyncRuntime | null {
 }
 
 export function requireActiveGameSyncRuntime(): GameSyncRuntime {
-  if (!activeGameSyncRuntime) {
-    throw new Error("GameSyncRuntime has not been installed for the active game");
-  }
+  if (!activeGameSyncRuntime) throw new Error("GameSyncRuntime has not been installed for the active game");
   return activeGameSyncRuntime;
 }
 

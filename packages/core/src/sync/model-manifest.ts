@@ -1,8 +1,14 @@
-type GameSyncChannel = "global-entity" | "global-event" | "spatial-bootstrap" | "bounded-spatial" | "player-entity";
+type GameSyncChannel =
+  | "gamewide-entity"
+  | "global-entity"
+  | "global-event"
+  | "spatial-bootstrap"
+  | "bounded-spatial"
+  | "player-entity";
 
 type GameSyncModelAvailability = "all" | "s2-only";
-type GameSyncRecoveryPolicy = "snapshot" | "subscription-only" | "legacy-dual-channel" | "legacy-targeted";
-type GameSyncDeletionPolicy = "component" | "event-retention";
+type GameSyncRecoveryPolicy = "convergent-snapshot" | "event-deduped";
+type GameSyncDeletionPolicy = "component" | "event-ephemeral";
 
 interface GameSyncModelDefinition {
   name: string;
@@ -16,18 +22,16 @@ interface GameSyncModelDefinition {
     colField: string;
     rowField: string;
   };
-  plannedEventRetention?: {
+  eventRetention?: {
     retainRecsRows: false;
     dedupeIdentityLimit: number;
     replayEffectsOnRecovery: false;
   };
-  /** S2 must adjudicate models currently delivered through both paths. */
-  pendingChannelAdjudication?: boolean;
 }
 
 const EVENT_DEDUPE_IDENTITY_LIMIT = 512;
 
-const plannedEventRetention = (): NonNullable<GameSyncModelDefinition["plannedEventRetention"]> => ({
+const eventRetention = (): NonNullable<GameSyncModelDefinition["eventRetention"]> => ({
   retainRecsRows: false,
   dedupeIdentityLimit: EVENT_DEDUPE_IDENTITY_LIMIT,
   replayEffectsOnRecovery: false,
@@ -42,11 +46,11 @@ const globalEntity = (
   } = {},
 ): GameSyncModelDefinition => ({
   name,
-  channels: ["global-entity"],
+  channels: ["gamewide-entity", "global-entity"],
   availability: options.availability ?? "all",
   s2Scope: options.s2Scope ?? "game",
   legacyKeyCount: options.legacyKeyCount ?? 1,
-  recovery: "snapshot",
+  recovery: "convergent-snapshot",
   deletion: "component",
 });
 
@@ -56,48 +60,46 @@ const globalEvent = (name: string): GameSyncModelDefinition => ({
   availability: "all",
   s2Scope: "game",
   legacyKeyCount: 1,
-  recovery: "subscription-only",
-  deletion: "event-retention",
-  plannedEventRetention: plannedEventRetention(),
+  recovery: "event-deduped",
+  deletion: "event-ephemeral",
+  eventRetention: eventRetention(),
 });
 
 const spatial = (
   name: string,
   colField: string,
   rowField: string,
-  options: { bootstrap?: boolean; event?: boolean; player?: boolean } = {},
+  options: { bootstrap?: boolean; player?: boolean } = {},
 ): GameSyncModelDefinition => ({
   name,
   channels: [
+    "gamewide-entity",
     ...(options.bootstrap === false ? [] : (["spatial-bootstrap"] as const)),
     "bounded-spatial",
-    ...(options.event ? (["global-event"] as const) : []),
     ...(options.player ? (["player-entity"] as const) : []),
   ],
   availability: "all",
   s2Scope: "game",
   legacyKeyCount: 1,
-  recovery: options.event ? "legacy-dual-channel" : options.bootstrap === false ? "legacy-targeted" : "snapshot",
-  deletion: options.event ? "event-retention" : "component",
+  recovery: "convergent-snapshot",
+  deletion: "component",
   spatial: { colField, rowField },
-  plannedEventRetention: options.event ? plannedEventRetention() : undefined,
-  pendingChannelAdjudication: options.event,
 });
 
 const playerEntity = (name: string): GameSyncModelDefinition => ({
   name,
-  channels: ["player-entity"],
+  channels: ["gamewide-entity", "player-entity"],
   availability: "all",
   s2Scope: "game",
   legacyKeyCount: 1,
-  recovery: "legacy-targeted",
+  recovery: "convergent-snapshot",
   deletion: "component",
 });
 
 /**
- * Executable inventory of current S1 sync ownership. Selectors below are the
- * only source for subscription and snapshot model lists. S2 changes channel
- * assignments here when spatial truth becomes game-wide.
+ * Executable S2 ownership map. The gamewide channel is authoritative; legacy
+ * channel selectors remain only for the complete bounded rollback adapter and
+ * are deleted with that adapter in S4.
  */
 export const GAME_SYNC_MODEL_MANIFEST: readonly GameSyncModelDefinition[] = [
   globalEntity("WorldConfig"),
@@ -131,8 +133,8 @@ export const GAME_SYNC_MODEL_MANIFEST: readonly GameSyncModelDefinition[] = [
   spatial("StructureBuildings", "coord.x", "coord.y", { player: true }),
   spatial("Building", "outer_col", "outer_row", { player: true }),
   spatial("ExplorerTroops", "coord.x", "coord.y"),
-  spatial("ExplorerRewardEvent", "coord.x", "coord.y", { event: true }),
-  spatial("BattleEvent", "coord.x", "coord.y", { event: true }),
+  globalEvent("ExplorerRewardEvent"),
+  globalEvent("BattleEvent"),
   playerEntity("ProductionBoostBonus"),
   playerEntity("Resource"),
   playerEntity("ResourceArrival"),

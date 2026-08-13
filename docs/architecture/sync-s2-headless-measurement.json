@@ -1,0 +1,41 @@
+{
+  "schemaVersion": 1,
+  "capturedAt": "2026-08-13T20:49:00+02:00",
+  "command": "pnpm --dir client/apps/game smoke:game-sync-headless",
+  "target": {
+    "toriiUrl": "https://torii.jcndata.com",
+    "worldAddress": "0x78ff85ac450bb559c97966b64666fd5292f4a98756a607349d9f93f4563bdd2",
+    "namespace": "s2",
+    "gameId": 13,
+    "coordinate": {
+      "col": 1076167050,
+      "row": 1076167056
+    },
+    "watchMs": 1000
+  },
+  "result": {
+    "status": "running",
+    "occupancy": {
+      "tileEntityId": "0x1c1f7f1b578d4da17d4d44ae0ca2c5e9bb0c1cf4f6c7915d2997728a1a4ba10",
+      "col": 1076167050,
+      "row": 1076167056,
+      "occupierId": 0,
+      "occupierType": 0
+    },
+    "metrics": {
+      "appliedBatchCount": 5,
+      "lastRecoveryDurationMs": 2598,
+      "maxBatchApplyDurationMs": 23,
+      "peakLiveUpdatesPerSecond": 0,
+      "snapshotEntityCount": 2472,
+      "snapshotPageCount": 5,
+      "totalLiveEntityUpdates": 0,
+      "totalLiveEventUpdates": 0
+    }
+  },
+  "activeBattleMeasurement": {
+    "status": "pending-live-window",
+    "reason": "Game 13 had ended, so the observation window contained no battle traffic.",
+    "mergeGate": "Repeat with --watch-ms during an active battle and record a non-zero peakLiveUpdatesPerSecond."
+  }
+}

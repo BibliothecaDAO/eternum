@@ -7,20 +7,18 @@ describe("GAME_SYNC_MODEL_MANIFEST", () => {
     expect(new Set(names).size).toBe(names.length);
   });
 
-  it("derives current global model availability", () => {
-    const legacyNames = getGameSyncModelsForChannel("global-entity").map(({ name }) => name);
-    const s2Names = getGameSyncModelsForChannel("global-entity", { includeS2Only: true }).map(({ name }) => name);
+  it("puts all current entity truth in the gamewide channel", () => {
+    const names = getGameSyncModelsForChannel("gamewide-entity", { includeS2Only: true }).map(({ name }) => name);
 
-    expect(legacyNames).not.toContain("GameRegistry");
-    expect(s2Names).toContain("GameRegistry");
-    expect(s2Names).not.toContain("Structure");
+    expect(names).toEqual(expect.arrayContaining(["GameRegistry", "Structure", "Resource", "ExplorerTroops"]));
+    expect(names).not.toEqual(expect.arrayContaining(["OpenRelicChestEvent", "ExplorerRewardEvent", "BattleEvent"]));
   });
 
-  it("records the S1 Structure ownership hole explicitly", () => {
+  it("retains the complete legacy selectors only for rollback", () => {
     const structure = getGameSyncModel("Structure");
-    expect(structure.channels).toEqual(["bounded-spatial", "player-entity"]);
-    expect(structure.recovery).toBe("legacy-targeted");
+    expect(structure.channels).toEqual(["gamewide-entity", "bounded-spatial", "player-entity"]);
     expect(getGameSyncModelsForChannel("spatial-bootstrap").map(({ name }) => name)).not.toContain("Structure");
+    expect(getGameSyncModelsForChannel("player-entity").map(({ name }) => name)).toContain("Resource");
   });
 
   it("owns game scoping for every sync model", () => {
@@ -29,25 +27,25 @@ describe("GAME_SYNC_MODEL_MANIFEST", () => {
     expect(getGameSyncModel("TileOpt").s2Scope).toBe("game");
   });
 
-  it("forces S2 adjudication for events currently delivered through two paths", () => {
-    const pending = GAME_SYNC_MODEL_MANIFEST.filter(({ pendingChannelAdjudication }) => pendingChannelAdjudication);
-    expect(pending.map(({ name }) => name).sort()).toEqual(["BattleEvent", "ExplorerRewardEvent"]);
-    pending.forEach(({ channels }) =>
-      expect(channels).toEqual(["spatial-bootstrap", "bounded-spatial", "global-event"]),
+  it("adjudicates BattleEvent and ExplorerRewardEvent as events only", () => {
+    ["BattleEvent", "ExplorerRewardEvent"].forEach((name) => {
+      const event = getGameSyncModel(name);
+      expect(event.channels).toEqual(["global-event"]);
+      expect(event.recovery).toBe("event-deduped");
+      expect(event.deletion).toBe("event-ephemeral");
+    });
+    expect(getGameSyncModelsForChannel("bounded-spatial").map(({ name }) => name)).not.toEqual(
+      expect.arrayContaining(["BattleEvent", "ExplorerRewardEvent"]),
     );
   });
 
-  it("records the S2 event-retention decision without claiming S1 already implements it", () => {
-    const events = getGameSyncModelsForChannel("global-event");
-
-    events.forEach((event) => {
-      expect(event.plannedEventRetention).toEqual({
+  it("enforces bounded event identities without retaining event rows", () => {
+    getGameSyncModelsForChannel("global-event").forEach((event) => {
+      expect(event.eventRetention).toEqual({
         retainRecsRows: false,
         dedupeIdentityLimit: 512,
         replayEffectsOnRecovery: false,
       });
     });
-    expect(getGameSyncModel("OpenRelicChestEvent").recovery).toBe("subscription-only");
-    expect(getGameSyncModel("BattleEvent").recovery).toBe("legacy-dual-channel");
   });
 });

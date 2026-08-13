@@ -234,14 +234,13 @@ const envSchema = z.object({
     .transform((v) => v === "true")
     .optional()
     .default("true"),
-  // Default ON: this flag selects the live spatial sync engine, and every arm
-  // that sets it sets true. An env file omitting it must not silently ship a
-  // client with no live map stream (the eternum appchain env did exactly that).
+  // Default OFF: true is an explicit rollback to the legacy bounded writers.
+  // An arm that omits this flag must stay on the game-wide S2 runtime.
   VITE_PUBLIC_WORLDMAP_BOUNDED_SPATIAL_SYNC: z
     .string()
     .transform((v) => v === "true")
     .optional()
-    .default("true"),
+    .default("false"),
   VITE_PUBLIC_WORLDMAP_BOUNDED_SPATIAL_PADDING: z
     .string()
     .optional()

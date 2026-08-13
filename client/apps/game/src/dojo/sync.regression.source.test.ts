@@ -35,6 +35,15 @@ describe("network boot-regression guards", () => {
     expect(source).toContain("recordSpatialHandshake()");
   });
 
+  it("the active path owns every current fact with one game-wide recovery session", () => {
+    const source = readSource("src/dojo/sync.ts");
+
+    expect(source).toContain('getGameSyncModelsForChannel("gamewide-entity"');
+    expect(source).toContain("createGamewideSyncSession");
+    expect(source).toContain("await runtime.recover()");
+    expect(source).toContain("shouldUseLegacyBoundedSpatialSync()");
+  });
+
   it("connection-health-monitor exposes the boot grace gate", () => {
     const source = readSource("src/dojo/connection-health-monitor.ts");
 

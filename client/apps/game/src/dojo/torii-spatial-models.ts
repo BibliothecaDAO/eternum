@@ -1,6 +1,7 @@
 import { getGameSyncModelsForChannel } from "@bibliothecadao/eternum/game-sync";
 import { gameModel } from "./game-scope";
-import type { BoundsModelConfig, GlobalModelStreamConfig } from "./torii-stream-manager";
+import type { GlobalModelStreamConfig } from "./torii-model-clause";
+import type { BoundsModelConfig } from "./torii-stream-manager";
 
 interface ToriiSpatialMapModelConfig {
   name: string;

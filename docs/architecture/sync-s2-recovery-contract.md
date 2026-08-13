@@ -1,0 +1,61 @@
+# Sync S2 recovery contract
+
+S2 changes spatial synchronization from camera-bounded writers to one session-owned runtime using a static game scope.
+RECS remains the only current-state store; the camera only chooses which RECS entities Three.js displays.
+
+## Recovery sequence
+
+Every boot and reconnect runs the same sequence:
+
+1. Create both entity and event subscriptions for the fixed session clauses.
+2. Count the subscription as active only after both Torii subscription promises resolve.
+3. Buffer entity callbacks with a monotonically increasing client receive sequence.
+4. Fetch the entity snapshot in 500-row cursor pages, applying each page through the scheduler-backed ingest queue.
+5. Diff snapshot absence per model and remove only that component. Sibling components on the same RECS entity survive.
+6. Replay buffered entity callbacks in receive-sequence order, then enter `running`.
+
+Torii does not expose a universal server revision or transactional multi-page snapshot. The guarantee is convergence,
+not gap-free history. Subscribing first means a mutation crossing a page boundary is replayed after the older snapshot
+value. The inverse race is also possible: a buffered callback older than the page it crossed can regress that entity by
+at most one observed update; its next live update or recovery heals it. A fetch or detected stream failure aborts the
+generation; reconnect starts the full sequence again. Silent stream death is still inferred by the existing health
+monitor because the current Torii subscription object has no close signal.
+
+## Deletion and event rules
+
+- `models: {}` is a full entity deletion.
+- `{ Model: {} }` is a component tombstone and never deletes sibling components.
+- Snapshot absence is reconciled independently for every manifest model.
+- `OpenRelicChestEvent`, `ExplorerRewardEvent`, and `BattleEvent` are event-only. They trigger RECS systems and their
+  component is removed immediately; event rows are never retained as current truth.
+- Event identities use a fixed FIFO of 512 `model:hashed_keys:timestamp` values. The FIFO survives reconnect recovery,
+  so replayed callbacks cannot fire an effect twice while later events for the same on-chain keys still fire. It resets
+  for a genuinely new session.
+
+## Ordering and fencing
+
+Live callbacks carry `(runtime generation, client receive sequence)`. A new recovery or game switch increments the
+generation, cancels the old writer, and rejects late writers/callbacks. Deletions and events are ingest barriers;
+upserts between barriers coalesce per entity and model for one scheduler tick. A failed RECS write rejects recovery
+rather than silently advancing the queue.
+
+## Rollback and camera behavior
+
+`VITE_PUBLIC_WORLDMAP_BOUNDED_SPATIAL_SYNC=false` selects S2. Setting it to `true` selects the complete legacy bounded
+adapter (global writer, boot spatial snapshot, scene bounds stream, and player writer) until S4 deletes it. In S2 mode
+no bounded adapter exists, so camera movement cannot issue a Torii subscription/update call; this is pinned by the
+adapter test.
+
+## Headless and measurement
+
+`pnpm --dir client/apps/game smoke:game-sync-headless -- --help` documents the repeatable live smoke. It instantiates
+the same `GameSyncRuntime`, a RECS world, and a Torii provider in Node, hydrates every page, and prints decoded
+occupancy plus runtime metrics without DOM, React, or Three.js.
+
+On 2026-08-13, game 13 against `https://torii.jcndata.com` hydrated 2,472 entities across five pages in 2,598 ms. The
+largest scheduled RECS batch took 23 ms, and the requested coordinate decoded correctly. The one-second observation
+window saw zero live updates because the indexed game had already ended. `peakLiveUpdatesPerSecond` is emitted by the
+runtime and printed by the smoke's `--watch-ms` mode; a non-zero active-battle capture still requires a live playtest
+window and is an explicit merge-gate measurement, not a fabricated result.
+
+The machine-readable capture is `docs/architecture/sync-s2-headless-measurement.json`.

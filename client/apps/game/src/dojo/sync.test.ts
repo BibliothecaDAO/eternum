@@ -1,6 +1,6 @@
 // @vitest-environment node
 
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const { getEntitiesMock, mapDataRefreshMock, setEntitiesMock } = vi.hoisted(() => ({
   getEntitiesMock: vi.fn(),
@@ -75,14 +75,19 @@ vi.mock("./sync-utils", () => ({
   ),
 }));
 
-vi.mock("./torii-stream-manager", () => ({
+vi.mock("./torii-model-clause", () => ({
   buildModelKeysClause: vi.fn((models: Array<{ model: string }>) => ({
     mocked: "model-stream-clause",
     models: models.map(({ model }) => model),
   })),
 }));
 
-import { cancelEntityStreamSubscription, initialSync, syncEntitiesDebounced } from "./sync";
+import {
+  cancelEntityStreamSubscription,
+  initialSync,
+  resubscribeGlobalEntityStream,
+  syncEntitiesDebounced,
+} from "./sync";
 
 type ToriiEntityStub = {
   hashed_keys: string;
@@ -108,6 +113,12 @@ function createSyncHarness() {
     onEventMessageUpdated: vi.fn(async () => eventSubscription),
     updateEntitySubscription: vi.fn(async () => undefined),
     updateEventMessageSubscription: vi.fn(async () => undefined),
+    getEntities: vi.fn(
+      async (_input: unknown): Promise<{ items: ToriiEntityStub[]; next_cursor?: string }> => ({
+        items: [],
+        next_cursor: undefined,
+      }),
+    ),
   };
 
   const setup = {
@@ -437,37 +448,34 @@ describe("syncEntitiesDebounced", () => {
 });
 
 describe("initialSync global streams", () => {
+  beforeEach(() => {
+    envMock.env.VITE_PUBLIC_WORLDMAP_BOUNDED_SPATIAL_SYNC = true;
+  });
+
   afterEach(() => {
     cancelEntityStreamSubscription();
     mapDataRefreshMock.mockReset();
   });
 
-  it("keeps the global stream model-bounded even without bounded spatial sync", async () => {
-    // The subscribe-to-everything fallback is deliberately gone: on the shared
-    // s2 world an unclaused stream replays every game's entities.
-    vi.useFakeTimers();
-    getEntitiesMock.mockResolvedValue(undefined);
+  it("uses one static game-wide entity stream and paginated snapshot in the active mode", async () => {
+    envMock.env.VITE_PUBLIC_WORLDMAP_BOUNDED_SPATIAL_SYNC = false;
     const harness = createSyncHarness();
 
-    const syncPromise = initialSync(harness.setup as any, createInitialSyncState() as any, vi.fn(), {
+    await initialSync(harness.setup as any, createInitialSyncState() as any, vi.fn(), {
       logging: false,
       reportProgress: false,
     });
 
-    await flushMicrotasks();
-    harness.emitEntityUpdate({
-      hashed_keys: "global-entity-1",
-      models: {
-        "s1_eternum-Guild": { entity_id: 1 },
-      },
-    });
-    await vi.advanceTimersByTimeAsync(200);
-    await syncPromise;
-
     expect(harness.client.onEntityUpdated).toHaveBeenCalledTimes(1);
     expect(harness.client.onEntityUpdated).toHaveBeenCalledWith(
       expect.objectContaining({
-        models: expect.arrayContaining(["s1_eternum-AddressName", "s1_eternum-Guild"]),
+        models: expect.arrayContaining([
+          "s1_eternum-AddressName",
+          "s1_eternum-Guild",
+          "s1_eternum-TileOpt",
+          "s1_eternum-Structure",
+          "s1_eternum-Resource",
+        ]),
       }),
       expect.any(Function),
     );
@@ -482,12 +490,42 @@ describe("initialSync global streams", () => {
       }),
       expect.any(Function),
     );
-    expect(getEntitiesMock).toHaveBeenCalledTimes(1);
+    expect(harness.client.getEntities).toHaveBeenCalledWith(
+      expect.objectContaining({
+        models: expect.arrayContaining([
+          "s1_eternum-Guild",
+          "s1_eternum-TileOpt",
+          "s1_eternum-Structure",
+          "s1_eternum-Resource",
+        ]),
+        pagination: expect.objectContaining({ limit: 500 }),
+      }),
+    );
+    expect(getEntitiesMock).not.toHaveBeenCalled();
+  });
+
+  it("reruns the same paginated game-wide recovery on reconnect", async () => {
+    envMock.env.VITE_PUBLIC_WORLDMAP_BOUNDED_SPATIAL_SYNC = false;
+    const harness = createSyncHarness();
+    harness.client.getEntities
+      .mockResolvedValueOnce({ items: [], next_cursor: "page-2" })
+      .mockResolvedValueOnce({ items: [], next_cursor: undefined })
+      .mockResolvedValueOnce({ items: [], next_cursor: undefined });
+
+    await initialSync(harness.setup as any, createInitialSyncState() as any, vi.fn(), {
+      logging: false,
+      reportProgress: false,
+    });
+    await resubscribeGlobalEntityStream(harness.setup as any);
+
+    expect(harness.client.getEntities).toHaveBeenCalledTimes(3);
+    expect((harness.client.getEntities.mock.calls[1]?.[0] as any).pagination.cursor).toBe("page-2");
+    expect(harness.client.onEntityUpdated).toHaveBeenCalledTimes(2);
+    expect(harness.cancelEntitySubscription).toHaveBeenCalledOnce();
   });
 
   it("narrows the global entity stream when bounded spatial sync is enabled", async () => {
     vi.useFakeTimers();
-    envMock.env.VITE_PUBLIC_WORLDMAP_BOUNDED_SPATIAL_SYNC = true;
     getEntitiesMock.mockResolvedValue(undefined);
     const harness = createSyncHarness();
 
