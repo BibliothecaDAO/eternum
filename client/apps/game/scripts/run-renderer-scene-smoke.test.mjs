@@ -127,28 +127,19 @@ describe("resolveSceneSmokeWorldName", () => {
     ).resolves.toBe("bltz-spark-702");
   });
 
-  it("discovers the first configured world on the shared appchain torii", async () => {
+  it("discovers the newest configured game from the appchain GameRegistry", async () => {
     vi.stubEnv("TORII_URL", "https://torii.example.test");
 
-    const fetchSpy = vi
-      .spyOn(globalThis, "fetch")
-      .mockResolvedValueOnce(
-        new Response(
-          JSON.stringify([
-            {
-              address: "0x0aaa",
-              name: "0x0000000000000000000000000000000000000000626c747a2d646561642d393939",
-            },
-            {
-              address: "0x0bbb",
-              name: "0x0000000000000000000000000000000000000000626c747a2d737061726b2d373032",
-            },
-          ]),
-          { status: 200, headers: { "Content-Type": "application/json" } },
-        ),
-      )
-      .mockResolvedValueOnce(new Response(JSON.stringify([]), { status: 200 }))
-      .mockResolvedValueOnce(new Response(JSON.stringify([{ ok: 1 }]), { status: 200 }));
+    const fetchSpy = vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(
+      new Response(
+        JSON.stringify([
+          {
+            name: "0x0000000000000000000000000000000000000000626c747a2d737061726b2d373032",
+          },
+        ]),
+        { status: 200, headers: { "Content-Type": "application/json" } },
+      ),
+    );
 
     await expect(
       resolveSceneSmokeWorldName({
@@ -157,11 +148,10 @@ describe("resolveSceneSmokeWorldName", () => {
       }),
     ).resolves.toBe("bltz-spark-702");
 
-    const configProbeUrl = new URL(String(fetchSpy.mock.calls[2][0]));
-    expect(configProbeUrl.host).toBe("torii.example.test");
-    expect(configProbeUrl.searchParams.get("query")).toContain(
-      "internal_id LIKE '0x0000000000000000000000000000000000000000000000000000000000000bbb:%'",
-    );
+    const discoveryUrl = new URL(String(fetchSpy.mock.calls[0][0]));
+    expect(discoveryUrl.host).toBe("torii.example.test");
+    expect(discoveryUrl.searchParams.get("query")).toContain("FROM [s2-GameRegistry]");
+    expect(discoveryUrl.searchParams.get("query")).toContain("INNER JOIN [s2-WorldConfig]");
   });
 
   it("fails loudly when the appchain torii location is not configured", async () => {
