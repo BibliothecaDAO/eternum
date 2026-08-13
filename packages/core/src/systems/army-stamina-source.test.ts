@@ -80,15 +80,19 @@ describe("pickFresherArmyStaminaReading", () => {
     expect(pickFresherArmyStaminaReading(pending, cached)).toBe(cached);
   });
 
-  it("breaks updated-tick ties by source priority: pending > snapshot > live > cached", () => {
+  it("breaks updated-tick ties by source priority: pending > live > snapshot > cached", () => {
+    // live over snapshot: same-tick spends reuse the updated tick, so the
+    // frozen one-shot snapshot ties with the RECS row that carries the spend.
+    // The snapshot winning pinned the panel at the pre-move stamina until a
+    // remount refetch (Aug 13 playtest).
     const pending = reading({ source: "pending", updatedTick: 7 });
     const snapshot = reading({ source: "snapshot", updatedTick: 7 });
     const live = reading({ source: "live", updatedTick: 7 });
     const cached = reading({ source: "cached", updatedTick: 7 });
 
-    expect(pickFresherArmyStaminaReading(snapshot, pending)).toBe(pending);
-    expect(pickFresherArmyStaminaReading(live, snapshot)).toBe(snapshot);
-    expect(pickFresherArmyStaminaReading(cached, live)).toBe(live);
+    expect(pickFresherArmyStaminaReading(live, pending)).toBe(pending);
+    expect(pickFresherArmyStaminaReading(snapshot, live)).toBe(live);
+    expect(pickFresherArmyStaminaReading(cached, snapshot)).toBe(snapshot);
   });
 
   it("breaks full ties by capture time, preferring left on equal capture", () => {

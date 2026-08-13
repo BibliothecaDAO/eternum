@@ -193,11 +193,28 @@ export const useBlitzRealmProvision = (structureEntityId: number | null): Struct
   const isProvisionLoading = isProvisionLoadingState(provisionActionState);
   const isProvisionLocked = isProvisionLoading;
 
+  // Repair-on-action: the provisioned signal can flip from a spatial-stream
+  // StructureBuildings/Building update, but the Labor credit only rides the
+  // per-player Resource stream — which can miss the update entirely (the
+  // subscription re-creates itself when the structure list changes, e.g.
+  // right after settling, and missed updates are never replayed). Fetch the
+  // structure once more on success so the Resource row in RECS carries the
+  // credit without a manual re-sync.
   useEffect(() => {
-    if (isProvisioned && provisionActionState !== "idle") {
-      setProvisionActionState("idle");
+    if (!isProvisioned || provisionActionState === "idle") {
+      return;
     }
-  }, [isProvisioned, provisionActionState]);
+
+    setProvisionActionState("idle");
+
+    if (syncTarget) {
+      void syncRealmStructureIfPossible({
+        toriiClient: network.toriiClient,
+        contractComponents: toriiComponents,
+        syncTarget,
+      });
+    }
+  }, [isProvisioned, network.toriiClient, provisionActionState, syncTarget, toriiComponents]);
 
   useEffect(() => {
     if (provisionActionState !== "syncing" || !syncTarget) {

@@ -55,8 +55,13 @@ import { gameEntityKey } from "../managers/config-manager";
 export class WorldUpdateListener {
   private mapDataStore: MapDataStore;
   private dataEnhancer: DataEnhancer;
-  private updateSequenceMap: Map<ID, number> = new Map(); // Track update sequence numbers
-  private pendingUpdates: Map<ID, Promise<any>> = new Map(); // Track pending async updates
+  // Sequential-update state is keyed by "<scope>:<entityId>". Scoping per stream matters:
+  // a newer Structure component update must never cancel a pending Tile update for the same
+  // entity — the Tile stream is the only live path that places the structure mesh (a dropped
+  // tile update leaves a freshly created hyperstructure invisible until the next rehydration).
+  // Supersession is only valid within one stream, where updates are true substitutes.
+  private updateSequenceMap: Map<string, number> = new Map(); // Track update sequence numbers
+  private pendingUpdates: Map<string, Promise<any>> = new Map(); // Track pending async updates
 
   constructor(
     private setup: SetupResult,
@@ -384,7 +389,7 @@ export class WorldUpdateListener {
               const { currentArmiesTick } = getBlockTimestamp();
 
               // Use sequential update processing to prevent race conditions
-              const result = await this.processSequentialUpdate(rawOccupierId, async () => {
+              const result = await this.processSequentialUpdate("army-tile", rawOccupierId, async () => {
                 // Try to get the structure owner ID from ExplorerTroops component
                 let structureOwnerId: ID | undefined;
                 try {
@@ -592,7 +597,7 @@ export class WorldUpdateListener {
               }
 
               return (
-                (await this.processSequentialUpdate(entityId, async () => {
+                (await this.processSequentialUpdate("structure", entityId, async () => {
                   const playerName = this.resolveOwnerNameFromAddress(
                     ownerValue,
                     await this.dataEnhancer.getPlayerName(ownerString),
@@ -741,7 +746,7 @@ export class WorldUpdateListener {
       hyperstructureRealmCount = this.dataEnhancer.getHyperstructureRealmCount(rawOccupierId);
     }
 
-    const result = await this.processSequentialUpdate(rawOccupierId, async () => {
+    const result = await this.processSequentialUpdate("structure-tile", rawOccupierId, async () => {
       const enhancedData = await this.dataEnhancer.enhanceStructureData(rawOccupierId);
 
       const structureComponent = getComponentValue(
@@ -1283,17 +1288,23 @@ export class WorldUpdateListener {
    * Ensures async updates are processed in the correct order
    * Prevents race conditions where newer updates get overwritten by older ones
    */
-  private async processSequentialUpdate<T>(entityId: ID, updateFunction: () => Promise<T>): Promise<T | null> {
+  private async processSequentialUpdate<T>(
+    sequenceScope: string,
+    entityId: ID,
+    updateFunction: () => Promise<T>,
+  ): Promise<T | null> {
+    const sequenceKey = `${sequenceScope}:${entityId}`;
+
     // Generate a sequence number for this update
-    const currentSequence = (this.updateSequenceMap.get(entityId) || 0) + 1;
-    this.updateSequenceMap.set(entityId, currentSequence);
+    const currentSequence = (this.updateSequenceMap.get(sequenceKey) || 0) + 1;
+    this.updateSequenceMap.set(sequenceKey, currentSequence);
 
     // Wait for any pending update for this entity to complete first
-    if (this.pendingUpdates.has(entityId)) {
+    if (this.pendingUpdates.has(sequenceKey)) {
       try {
-        await this.pendingUpdates.get(entityId);
+        await this.pendingUpdates.get(sequenceKey);
       } catch (error) {
-        console.warn(`Previous update for entity ${entityId} failed:`, error);
+        console.warn(`Previous update for ${sequenceKey} failed:`, error);
       }
     }
 
@@ -1301,37 +1312,32 @@ export class WorldUpdateListener {
     const updatePromise = (async () => {
       try {
         // Check if this update is still the latest before processing
-        if (this.updateSequenceMap.get(entityId) !== currentSequence) {
+        if (this.updateSequenceMap.get(sequenceKey) !== currentSequence) {
           return null;
         }
 
         const result = await updateFunction();
 
         // Double-check sequence number before returning result
-        if (this.updateSequenceMap.get(entityId) !== currentSequence) {
+        if (this.updateSequenceMap.get(sequenceKey) !== currentSequence) {
           return null;
-        }
-
-        // Add a log for every sequential update before returning result
-        if (result !== null && result !== undefined) {
-          // console.log(`[processSequentialUpdate] update:`, result);
         }
 
         return result;
       } catch (error) {
-        console.error(`Sequential update failed for entity ${entityId}:`, error);
+        console.error(`Sequential update failed for ${sequenceKey}:`, error);
         throw error;
       }
     })();
 
     // Track this update as pending
-    this.pendingUpdates.set(entityId, updatePromise);
+    this.pendingUpdates.set(sequenceKey, updatePromise);
 
     // Clean up when the promise completes
     updatePromise.finally(() => {
       // Only clean up if this is still the current promise for this entity
-      if (this.pendingUpdates.get(entityId) === updatePromise) {
-        this.pendingUpdates.delete(entityId);
+      if (this.pendingUpdates.get(sequenceKey) === updatePromise) {
+        this.pendingUpdates.delete(sequenceKey);
       }
     });
 

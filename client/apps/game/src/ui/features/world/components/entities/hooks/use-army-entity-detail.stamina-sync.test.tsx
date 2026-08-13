@@ -109,16 +109,6 @@ const liveTroops = {
   stamina: { amount: 20n, updated_tick: 5n },
 };
 
-const sameTickLiveTroops = {
-  ...snapshotTroops,
-  stamina: { amount: 80n, updated_tick: 5n },
-};
-
-const sameTickSnapshotTroops = {
-  ...snapshotTroops,
-  stamina: { amount: 20n, updated_tick: 5n },
-};
-
 type CapturedDerivedData = ReturnType<typeof useArmyEntityDetail>["derivedData"];
 
 let captured: CapturedDerivedData;
@@ -285,13 +275,27 @@ describe("useArmyEntityDetail stamina sync", () => {
     expect(captured?.staminaDisplay?.displayCurrent).toBe(65);
   });
 
-  it("prefers the Torii snapshot when both snapshots share the same tick but differ in amount", async () => {
+  it("follows a same-tick live RECS spend in place, without a remount", async () => {
+    // Aug 13 playtest: chained moves land within one 60s armies tick, so the
+    // post-move ExplorerTroops row ties with the panel's one-shot torii
+    // snapshot on updated_tick. The open panel must follow the live row to
+    // the post-move amount — deselect/reselect (remount refetch) must not be
+    // required.
+    const preMoveTroops = {
+      ...snapshotTroops,
+      stamina: { amount: 30n, updated_tick: 5n },
+    };
+    const postMoveLiveTroops = {
+      ...snapshotTroops,
+      stamina: { amount: 0n, updated_tick: 5n },
+    };
+
     useQueryMock.mockImplementation(({ queryKey }: { queryKey: [string] }) => {
       if (queryKey[0] === "explorer") {
         return {
           data: {
             explorer: {
-              troops: sameTickSnapshotTroops,
+              troops: preMoveTroops,
               owner: "0x123",
             },
             resources: [],
@@ -315,28 +319,36 @@ describe("useArmyEntityDetail stamina sync", () => {
     });
 
     useComponentValueMock.mockReturnValue({
-      troops: sameTickLiveTroops,
+      troops: preMoveTroops,
     });
 
-    getStaminaMock.mockImplementation((troops: typeof snapshotTroops, currentTick: number) => {
-      if (troops === sameTickSnapshotTroops) {
-        return { amount: currentTick === 5 ? 20n : 40n, updated_tick: BigInt(currentTick) };
+    getStaminaMock.mockImplementation((troops: typeof snapshotTroops) => {
+      if (troops === postMoveLiveTroops) {
+        return { amount: 0n, updated_tick: 5n };
       }
 
-      if (troops === sameTickLiveTroops) {
-        return { amount: 80n, updated_tick: 5n };
-      }
-
-      return { amount: 80n, updated_tick: 5n };
+      return { amount: 30n, updated_tick: 5n };
     });
 
     await act(async () => {
       root.render(<Capture />);
     });
 
-    expect(captured?.stamina.amount).toBe(20n);
+    expect(captured?.staminaDisplay?.displayCurrent).toBe(30);
+
+    // The move resolves: live RECS delivers the same-tick spend. The query
+    // snapshot (and the authoritative store row it seeded) still hold 30.
+    useComponentValueMock.mockReturnValue({
+      troops: postMoveLiveTroops,
+    });
+
+    await act(async () => {
+      root.render(<Capture />);
+    });
+
+    expect(captured?.stamina.amount).toBe(0n);
     expect(captured?.stamina.updated_tick).toBe(5n);
     expect(captured?.maxStamina).toBe(120);
-    expect(captured?.staminaDisplay?.displayCurrent).toBe(20);
+    expect(captured?.staminaDisplay?.displayCurrent).toBe(0);
   });
 });

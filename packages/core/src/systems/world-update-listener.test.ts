@@ -668,7 +668,13 @@ describe("WorldUpdateListener army tile bootstrap", () => {
     });
   });
 
-  it("drops a stale tile hydration result when a newer structure update arrives", async () => {
+  it("completes a pending tile update when a newer structure update arrives for the same entity", async () => {
+    // Regression pin (live hyperstructure-creation bug): the Tile stream is the only
+    // live path that places a structure mesh. A Structure component update landing
+    // while the tile update is still resolving must NOT cancel it — the mesh add
+    // would be dropped and the new structure stays invisible until rehydration.
+    // Owner freshness is preserved because the tile resolver reads the Structure
+    // component live from RECS at execution time.
     isComponentUpdateMock.mockReturnValue(true);
     tileOptToTileMock.mockReturnValue({
       occupier_type: 1,
@@ -683,6 +689,26 @@ describe("WorldUpdateListener army tile bootstrap", () => {
       hasWonder: false,
     });
     getPlayerNameMock.mockResolvedValue("Alice");
+    getComponentValueMock.mockImplementation((component) => {
+      if (component === structureComponents.Structure) {
+        return {
+          entity_id: 921,
+          owner: 123n,
+          troop_guards: null,
+          base: {
+            category: 0,
+          },
+        };
+      }
+
+      if (component === structureComponents.AddressName) {
+        return {
+          name: encodeAddressName("Alice"),
+        };
+      }
+
+      return undefined;
+    });
 
     let resolveTileUpdate!: (value: {
       owner: { address: bigint; ownerName: string; guildName: string };
@@ -740,13 +766,84 @@ describe("WorldUpdateListener army tile bootstrap", () => {
 
     await Promise.all([pendingTileUpdate, pendingStructureUpdate]);
 
-    expect(tileCallback).not.toHaveBeenCalled();
+    expect(tileCallback).toHaveBeenCalledTimes(1);
+    expect(tileCallback.mock.calls[0][0]).toMatchObject({
+      entityId: 921,
+      hexCoords: { col: 10, row: 15 },
+      owner: {
+        address: 123n,
+        ownerName: "Alice",
+        guildName: "",
+      },
+    });
     expect(structureCallback).toHaveBeenCalledTimes(1);
     expect(structureCallback.mock.calls[0][0].owner).toEqual({
       address: 123n,
       ownerName: "Alice",
       guildName: "",
     });
+  });
+
+  it("still drops a stale tile update when a newer tile update for the same entity supersedes it", async () => {
+    isComponentUpdateMock.mockReturnValue(true);
+    tileOptToTileMock.mockReturnValue({
+      occupier_type: 1,
+      occupier_id: 921,
+      col: 10,
+      row: 15,
+    });
+    getStructureInfoFromTileOccupierMock.mockReturnValue({
+      type: 4,
+      stage: 0,
+      level: 1,
+      hasWonder: false,
+    });
+
+    let resolveStaleTileUpdate!: (value: {
+      owner: { address: bigint; ownerName: string; guildName: string };
+      guardArmies: never[];
+      activeProductions: never[];
+      battleData: undefined;
+    }) => void;
+    enhanceStructureDataMock.mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          resolveStaleTileUpdate = resolve;
+        }),
+    );
+
+    const listener = new WorldUpdateListener(
+      {
+        network: { world: {} },
+        components: structureComponents,
+      } as any,
+      {} as any,
+    );
+
+    const tileCallback = vi.fn();
+    listener.Structure.onTileUpdate(tileCallback);
+
+    const tileHandleUpdate = defineComponentSystemMock.mock.calls[0][2];
+
+    const staleTileUpdate = tileHandleUpdate({
+      value: [{}, undefined],
+      entity: "0x123",
+    });
+    const freshTileUpdate = tileHandleUpdate({
+      value: [{}, undefined],
+      entity: "0x123",
+    });
+
+    resolveStaleTileUpdate({
+      owner: { address: 0n, ownerName: "The Vanguard", guildName: "" },
+      guardArmies: [],
+      activeProductions: [],
+      battleData: undefined,
+    });
+
+    await Promise.all([staleTileUpdate, freshTileUpdate]);
+
+    expect(tileCallback).toHaveBeenCalledTimes(1);
   });
 
   it("skips reserved hyperstructure placeholders in the real structure tile stream", async () => {

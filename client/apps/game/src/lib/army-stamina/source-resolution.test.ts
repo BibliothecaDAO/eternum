@@ -127,7 +127,12 @@ describe("selectFreshestTroopsSnapshot", () => {
     expect(selected?.stamina?.updated_tick).toBe(101n);
   });
 
-  it("prefers the torii snapshot over live RECS on an updated-tick tie", () => {
+  it("prefers live RECS over the torii snapshot on an updated-tick tie", () => {
+    // Regression pin (Aug 13 playtest): stamina spends within one 60s armies
+    // tick reuse the same updated_tick, so after a same-tick move the panel's
+    // one-shot snapshot (pre-move amount) ties with the live RECS row
+    // (post-move amount). Live must win or the panel sticks at the pre-move
+    // value until a deselect/reselect refetches the snapshot.
     const entityId = 1111;
     const snapshotTroops = buildTroops({ amount: 70n, updatedTick: 200n });
     const liveTroops = buildTroops({ amount: 80n, updatedTick: 200n });
@@ -138,7 +143,7 @@ describe("selectFreshestTroopsSnapshot", () => {
       liveTroops,
     });
 
-    expect(selected).toBe(snapshotTroops);
+    expect(selected).toBe(liveTroops);
   });
 
   it("prefers live RECS over the cached map row on an updated-tick tie", () => {

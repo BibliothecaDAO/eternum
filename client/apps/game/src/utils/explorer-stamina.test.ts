@@ -63,7 +63,7 @@ describe("explorer stamina source selection", () => {
     ).toBe(snapshotTroops);
   });
 
-  it("prefers the authoritative snapshot when both snapshots are equally fresh", () => {
+  it("prefers the live RECS row when both snapshots are equally fresh", () => {
     const liveTroops = buildTroops(6n, 10n);
     const snapshotTroops = buildTroops(6n, 25n);
 
@@ -72,10 +72,12 @@ describe("explorer stamina source selection", () => {
         liveTroops: liveTroops as never,
         snapshotTroops: snapshotTroops as never,
       }),
-    ).toBe(snapshotTroops);
+    ).toBe(liveTroops);
   });
 
-  it("prefers the authoritative snapshot when stamina amount differs at the same tick", () => {
+  it("prefers the live RECS row when stamina amount differs at the same tick", () => {
+    // Same-tick spends reuse the updated tick: the one-shot snapshot freezes
+    // the pre-spend amount while live carries the spend. Live must win the tie.
     const liveTroops = buildTroops(6n, 80n);
     const snapshotTroops = buildTroops(6n, 50n);
 
@@ -84,7 +86,7 @@ describe("explorer stamina source selection", () => {
         liveTroops: liveTroops as never,
         snapshotTroops: snapshotTroops as never,
       }),
-    ).toBe(snapshotTroops);
+    ).toBe(liveTroops);
   });
 
   it("falls back to synthesized troops when no troop snapshot is available", () => {
@@ -134,16 +136,18 @@ describe("explorer stamina source selection", () => {
     const liveTroops = buildTroops(6n, 80n);
     const snapshotTroops = buildTroops(6n, 20n);
 
-    expect(
-      selectFreshestTroopsSnapshot({
-        liveTroops: liveTroops as never,
-        snapshotTroops: snapshotTroops as never,
-        pendingStamina: {
-          amount: 20n,
-          updatedTick: 6,
-        },
-      }),
-    ).toBe(snapshotTroops);
+    const selected = selectFreshestTroopsSnapshot({
+      liveTroops: liveTroops as never,
+      snapshotTroops: snapshotTroops as never,
+      pendingStamina: {
+        amount: 20n,
+        updatedTick: 6,
+      },
+    });
+
+    // The pending overlay is dropped (the snapshot confirmed its tick and
+    // amount); the remaining tick tie then resolves to the live RECS row.
+    expect(selected).toBe(liveTroops);
   });
 
   it("projects stamina from the freshest selected source", () => {

@@ -295,6 +295,28 @@ describe("useBlitzRealmProvision", () => {
     expect(readProbeValue("status")).toBe("idle");
   });
 
+  it("refreshes synced realm data once the provisioned signal flips, so the labor credit lands in RECS", async () => {
+    await renderProbe();
+    await clickProvision();
+
+    expect(readProbeValue("status")).toBe("syncing");
+    mocks.getStructuresDataFromTorii.mockClear();
+
+    // The provisioned signal can flip via the spatial stream (Building rows)
+    // while the per-player Resource stream misses the Labor credit. The hook
+    // must fetch the structure once more on success — otherwise the labor
+    // balance stays stale until a manual re-sync.
+    mocks.buildings = [{ category: 28 }];
+    await rerenderProbe();
+
+    expect(readProbeValue("status")).toBe("idle");
+    expect(mocks.getStructuresDataFromTorii).toHaveBeenCalledWith(
+      { id: "torii" },
+      [],
+      [{ entityId: 101, position: { col: 12, row: 34 } }],
+    );
+  });
+
   it("releases the spinner when submission never returns a transaction hash", async () => {
     mocks.executeObservedClientTransaction.mockReturnValueOnce(new Promise(() => undefined));
 

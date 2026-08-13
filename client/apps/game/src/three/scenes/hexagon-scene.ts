@@ -128,8 +128,6 @@ export abstract class HexagonScene {
   protected shadowMapSizeByQuality = 2048;
   private shadowRefreshAccumulatorMs = 0;
   private sceneOwnershipBootstrapped = false;
-  private lastClipNear = 0;
-  private lastClipFar = 0;
   private fogEnabledByQuality = false;
   private fogEnabledByUser = true;
 
@@ -137,8 +135,6 @@ export abstract class HexagonScene {
   protected biomeShadowsEnabled = false;
   protected biomeAnimationsEnabled = false;
   protected animationDistanceThreshold = 80; // Distance beyond which animations are skipped
-  private lastFogNear = 0;
-  private lastFogFar = 0;
 
   constructor(
     protected sceneName: SceneName,
@@ -1467,15 +1463,16 @@ export abstract class HexagonScene {
     const desiredNear = Math.min(maxNear, Math.max(minNear, distance * 0.02));
     const desiredFar = Math.min(maxFar, Math.max(minFar, distance * farMultiplier));
 
-    if (Math.abs(desiredNear - this.lastClipNear) < 0.005 && Math.abs(desiredFar - this.lastClipFar) < 0.5) {
+    // Guard against the camera's live planes, not a scene-local cache: the camera is
+    // shared across scenes, so a cache goes stale whenever another scene retunes it
+    // (e.g. hexception's close zoom before a worldmap resume snaps back to Far).
+    if (Math.abs(desiredNear - this.camera.near) < 0.005 && Math.abs(desiredFar - this.camera.far) < 0.5) {
       return;
     }
 
     this.camera.near = desiredNear;
     this.camera.far = desiredFar;
     this.camera.updateProjectionMatrix();
-    this.lastClipNear = desiredNear;
-    this.lastClipFar = desiredFar;
   }
 
   private updateFogForDistance(distance: number): void {
@@ -1498,14 +1495,12 @@ export abstract class HexagonScene {
     const desiredNear = Math.max(FOG_CONFIG.near, clipFar * startFactor);
     const desiredFar = Math.max(desiredNear + 1, clipFar * endFactor);
 
-    if (Math.abs(desiredNear - this.lastFogNear) < 0.5 && Math.abs(desiredFar - this.lastFogFar) < 0.5) {
+    if (Math.abs(desiredNear - this.fog.near) < 0.5 && Math.abs(desiredFar - this.fog.far) < 0.5) {
       return;
     }
 
     this.fog.near = desiredNear;
     this.fog.far = desiredFar;
-    this.lastFogNear = desiredNear;
-    this.lastFogFar = desiredFar;
   }
 
   private applyTargetCameraView(position: CameraView): void {

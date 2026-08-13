@@ -2454,6 +2454,14 @@ export default class WorldmapScene extends WarpTravel {
   }
 
   private alignWorldmapCameraToView(view: CameraView): void {
+    // Commit the same view state the interactive changeCameraView path commits,
+    // so later zoom intents and the settings-store guard compare against the
+    // snapped band instead of a stale one.
+    this.targetCameraView = view;
+    const profile = resolveWorldmapCameraViewProfile(view);
+    this.cameraDistance = profile.distance;
+    this.cameraAngle = profile.angleRadians;
+
     this.alignWorldmapCameraToBand(view);
     this.zoomControllerState = setWorldmapZoomTargetView(this.zoomControllerState, view);
     this.zoomCoordinator.syncToBand(view, performance.now());
