@@ -107,6 +107,14 @@ Runtime invariants (build once, in one place):
 - **Scheduler-driven batch ingest:** coalesce RECS writes per entity+model per scheduler tick. Deletions, event records,
   and lifecycle transitions are **never** collapsed and keep explicit ordering. Browser = animation frame; node = timer;
   tests = manual flush.
+- **Subscription scope is a runtime input, not an architecture** (owner decision, 2026-08-13). The runtime subscribes
+  with the clause it is handed; today that clause is game-wide and static, set at session start. Nothing in the runtime
+  may assume game-wide is the only possible scope — a per-world-mode config (blitz = game-wide; a future oversized
+  eternum world = a coarser static clause) must be a data change, not a code change. Two hard limits: the scope is never
+  derived from the camera and never changes mid-session without a full re-snapshot; and this does NOT preserve the
+  legacy bounded architecture as a permanent toggle — a two-architecture flag rots (the
+  `VITE_PUBLIC_WORLDMAP_BOUNDED_SPATIAL_SYNC` default-off incident left four environments silently degraded) and would
+  keep alive everything S4 deletes. The legacy adapter still dies in S4.
 - **Recovery = the same routine re-run.** Torii has no resume cursor; on stream death, re-snapshot (~1.2k rows) and diff
   into RECS. One reconnect path replaces the global/spatial/player trio. Event effects must not fire twice across a
   recovery.
@@ -200,7 +208,8 @@ the next phase from the updated base).
 
 - Deploys and torii/infra tuning (Claude).
 - The eternum-long-world contingency (semantic partitioning / server delta feed): out of scope unless S2 measurement
-  forces it — do not design for it.
+  forces it — do not build it. The runtime's scope-as-input invariant above is the only accommodation: don't preclude a
+  coarser clause, don't implement one.
 - Deleting repair-on-action paths before S4's recovery proof.
 - Three.js-specific performance work (later branch).
 
