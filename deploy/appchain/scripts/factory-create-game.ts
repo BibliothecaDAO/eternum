@@ -14,8 +14,8 @@ import factoryManifest from "../../../contracts/factory/manifest_appchain.json";
 import { resolveAccountCredentials } from "../../../config/deployer/clean/shared/credentials";
 import { Account, CallData, RpcProvider, shortString } from "starknet";
 
-const RPC_URL = process.env.RPC_URL ?? "http://Realms-Alb16-vyiZTcVBQthr-325094656.us-east-1.elb.amazonaws.com";
-const TORII_URL = process.env.TORII_URL ?? "http://Realms-Alb16-vyiZTcVBQthr-325094656.us-east-1.elb.amazonaws.com:8080";
+const RPC_URL = process.env.RPC_URL ?? "http://52.54.98.119";
+const TORII_URL = process.env.TORII_URL ?? "http://52.54.98.119:8081";
 const { accountAddress: ACCOUNT_ADDRESS, privateKey: PRIVATE_KEY } = resolveAccountCredentials({
   accountAddress: process.env.ACCOUNT_ADDRESS,
   privateKey: process.env.PRIVATE_KEY,

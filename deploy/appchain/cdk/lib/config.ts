@@ -11,19 +11,12 @@ export const CONFIG = {
 
   dev: {
     /**
-     * TLS + named hosts. false = HTTP-only mode: no cert, no Route53 records,
-     * ALB port-routing (:80 katana, :8080 torii) — used until DNS access for
-     * realms.world (or a substitute domain) exists. Controller testing in
-     * this mode goes through a cloudflared tunnel, like M0.
-     */
-    tls: false,
-    /**
-     * Public hostnames fronted by Cloudflare (proxied CNAMEs -> the ALB).
-     * Cloudflare terminates TLS with its own certificate, so we need no ACM
-     * cert and no Route53 delegation. They must be SINGLE-level subdomains:
-     * Cloudflare's Universal SSL covers `*.jcndata.com` but not
-     * `*.appchain.jcndata.com`, which would fail TLS.
-     * The ALB routes these by Host header on :80.
+     * Public hostnames fronted by Cloudflare (proxied A records -> the box's
+     * Elastic IP). Cloudflare terminates TLS with its own certificate
+     * (Flexible mode: origin speaks plain HTTP on :80, nginx routes by Host
+     * header). They must be SINGLE-level subdomains: Cloudflare's Universal
+     * SSL covers `*.jcndata.com` but not `*.appchain.jcndata.com`, which
+     * would fail TLS.
      */
     publicKatanaHost: "katana.jcndata.com",
     publicToriiHost: "torii.jcndata.com",
@@ -36,11 +29,6 @@ export const CONFIG = {
      * Flexible mode).
      */
     publicClientHost: "play.jcndata.com",
-    /** Host names under the delegated zone (used when tls: true). */
-    katanaHost: "katana.dev.appchain.realms.world",
-    toriiHost: "torii.dev.appchain.realms.world",
-    /** Wildcard cert covering the dev hosts. */
-    certWildcard: "*.dev.appchain.realms.world",
 
     /**
      * Bespoke chain id. Never SN_SEPOLIA — the Controller keychain must be
@@ -65,18 +53,8 @@ export const CONFIG = {
     katanaInstanceType: "m7a.xlarge",
     katanaDataGib: 50,
 
-    /** Multi-world indexing needs headroom above the 4 GiB single-world load-test size. */
-    toriiCpu: 2048,
-    toriiMemoryMib: 8192,
-
     /** Empty-block heartbeat interval (rc.9's --block-time is broken). */
     heartbeatSeconds: 30,
-
-    /** WAF rate limit per IP per 5 minutes. A live game session sustains
-     * ~10 req/s across SQL polling, chunked map fetches, and stream reopens —
-     * 2000/5min (≈6.7/s) rate-limited real players mid-game with CORS-less
-     * 403s that broke tx submission through the keychain. */
-    wafRateLimit: 150000,
 
     /** Alarm + budget notifications. */
     alertEmail: "jean.christophe.mehr@gmail.com",

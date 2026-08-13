@@ -1,38 +1,30 @@
 import * as cdk from "aws-cdk-lib";
-import * as acm from "aws-cdk-lib/aws-certificatemanager";
 import * as cloudwatch from "aws-cdk-lib/aws-cloudwatch";
 import * as cw_actions from "aws-cdk-lib/aws-cloudwatch-actions";
 import * as ec2 from "aws-cdk-lib/aws-ec2";
 import * as ecr from "aws-cdk-lib/aws-ecr";
-import * as ecs from "aws-cdk-lib/aws-ecs";
-import * as elbv2 from "aws-cdk-lib/aws-elasticloadbalancingv2";
-import * as elbv2_targets from "aws-cdk-lib/aws-elasticloadbalancingv2-targets";
 import * as iam from "aws-cdk-lib/aws-iam";
 import * as logs from "aws-cdk-lib/aws-logs";
 import * as lambda from "aws-cdk-lib/aws-lambda";
-import * as route53 from "aws-cdk-lib/aws-route53";
 import * as s3 from "aws-cdk-lib/aws-s3";
 import * as secretsmanager from "aws-cdk-lib/aws-secretsmanager";
-import * as r53_targets from "aws-cdk-lib/aws-route53-targets";
 import * as sns from "aws-cdk-lib/aws-sns";
 import * as subs from "aws-cdk-lib/aws-sns-subscriptions";
 import * as ssm from "aws-cdk-lib/aws-ssm";
-import * as wafv2 from "aws-cdk-lib/aws-wafv2";
 import { Construct } from "constructs";
 import { CONFIG } from "./config";
 
 export interface DevStackProps extends cdk.StackProps {
-  zone: route53.IPublicHostedZone;
   katanaRepo: ecr.IRepository;
-  toriiRepo: ecr.IRepository;
-  toriiAdminToken: secretsmanager.ISecret;
 }
 
 /**
- * The Phase 1 dev appchain: sovereign katana (EC2 + instance-attached EBS so
- * a resize never resets the chain), ONE multi-world torii (Fargate), a single
- * host-routed ALB with ACM TLS and a WAF rate limit, public subnets only (no
- * NAT — tasks get public IPs, inbound is SG-locked to the ALB).
+ * The Phase 1 dev appchain, prod-pattern: ONE EC2 box runs katana + both
+ * toriis in docker plus nginx doing Host-header routing on :80. Cloudflare
+ * (Flexible mode) fronts the public hostnames and points at the box's
+ * Elastic IP; scripts hit :8081/:8082 directly. Chain data and torii DBs
+ * live on an instance-attached RETAIN volume, so resizes, replacements and
+ * config rolls keep both the chain and the indexes.
  */
 /** Stock upstream torii, digest-pinned (v1.8.16) — no fork patches. */
 const TORII_IMAGE =
@@ -51,109 +43,7 @@ export class DevStack extends cdk.Stack {
       ],
     });
 
-    const cluster = new ecs.Cluster(this, "Cluster", {
-      vpc,
-      clusterName: "realms-appchain-dev",
-    });
-
-    // --- ALB + TLS + WAF -------------------------------------------------
-    const albSg = new ec2.SecurityGroup(this, "AlbSg", {
-      vpc,
-      description: "appchain dev ALB",
-      allowAllOutbound: true,
-    });
-    albSg.addIngressRule(ec2.Peer.anyIpv4(), ec2.Port.tcp(80), "katana rpc / http");
-    if (cfg.tls) {
-      albSg.addIngressRule(ec2.Peer.anyIpv4(), ec2.Port.tcp(443), "https");
-    } else {
-      albSg.addIngressRule(ec2.Peer.anyIpv4(), ec2.Port.tcp(8080), "torii (http mode)");
-    }
-
-    const alb = new elbv2.ApplicationLoadBalancer(this, "Alb", {
-      vpc,
-      internetFacing: true,
-      securityGroup: albSg,
-      // long-poll / websocket friendliness (cagecalls used 4000s)
-      idleTimeout: cdk.Duration.seconds(3600),
-    });
-
-    // tls mode: one 443 listener, host-header routing, 80 redirects.
-    // http mode (no DNS access yet): port routing — :80 katana, :8080 torii.
-    // HTTP/1.1 target groups everywhere — h2 target groups reject
-    // non-browser clients with 464 (cagecalls production incident).
-    let routeListener: elbv2.ApplicationListener;
-    if (cfg.tls) {
-      const cert = new acm.Certificate(this, "Cert", {
-        domainName: cfg.certWildcard,
-        validation: acm.CertificateValidation.fromDns(props.zone),
-      });
-      alb.addListener("Http", {
-        port: 80,
-        defaultAction: elbv2.ListenerAction.redirect({
-          protocol: "HTTPS",
-          port: "443",
-          permanent: true,
-        }),
-      });
-      routeListener = alb.addListener("Https", {
-        port: 443,
-        certificates: [cert],
-        defaultAction: elbv2.ListenerAction.fixedResponse(404, {
-          contentType: "text/plain",
-          messageBody: "unknown host",
-        }),
-      });
-    } else {
-      routeListener = alb.addListener("Http", {
-        port: 80,
-        defaultAction: elbv2.ListenerAction.fixedResponse(404, {
-          contentType: "text/plain",
-          messageBody: "katana on :80 via target group, torii on :8080",
-        }),
-      });
-    }
-
-    const waf = new wafv2.CfnWebACL(this, "Waf", {
-      defaultAction: { allow: {} },
-      scope: "REGIONAL",
-      visibilityConfig: {
-        cloudWatchMetricsEnabled: true,
-        metricName: "realms-appchain-dev",
-        sampledRequestsEnabled: true,
-      },
-      rules: [
-        {
-          name: "rate-limit-per-ip",
-          priority: 0,
-          action: { block: {} },
-          statement: {
-            rateBasedStatement: {
-              limit: cfg.wafRateLimit,
-              // Cloudflare supplies the original client address. Requests
-              // without this header are direct ALB traffic (including
-              // Torii's Katana RPC polling) and must not be grouped under a
-              // single task or proxy address.
-              aggregateKeyType: "FORWARDED_IP",
-              forwardedIpConfig: {
-                headerName: "X-Forwarded-For",
-                fallbackBehavior: "NO_MATCH",
-              },
-            },
-          },
-          visibilityConfig: {
-            cloudWatchMetricsEnabled: true,
-            metricName: "rate-limit-per-ip",
-            sampledRequestsEnabled: true,
-          },
-        },
-      ],
-    });
-    new wafv2.CfnWebACLAssociation(this, "WafAssoc", {
-      resourceArn: alb.loadBalancerArn,
-      webAclArn: waf.attrArn,
-    });
-
-    // --- Katana: EC2 singleton ------------------------------------------
+    // --- Katana box: EC2 singleton ---------------------------------------
     const katanaSubnet = vpc.publicSubnets[0];
 
     const katanaSg = new ec2.SecurityGroup(this, "KatanaSg", {
@@ -161,10 +51,9 @@ export class DevStack extends cdk.Stack {
       description: "katana sequencer",
       allowAllOutbound: true,
     });
-    katanaSg.addIngressRule(albSg, ec2.Port.tcp(5050), "rpc from alb (until ALB teardown)");
     // Prod-pattern colocation: the box serves Cloudflare directly on :80
-    // (nginx host-routing, same surface as the ALB) and scripts on the torii
-    // ports. Same open posture the ALB had.
+    // (nginx host-routing, the surface the ALB used to provide) and scripts
+    // on the torii ports.
     katanaSg.addIngressRule(ec2.Peer.anyIpv4(), ec2.Port.tcp(80), "nginx: cloudflare + cli");
     katanaSg.addIngressRule(ec2.Peer.anyIpv4(), ec2.Port.tcp(8081), "torii-s2 direct (scripts)");
     katanaSg.addIngressRule(ec2.Peer.anyIpv4(), ec2.Port.tcp(8082), "torii-eternum direct (scripts)");
@@ -390,170 +279,8 @@ export class DevStack extends cdk.Stack {
       description: "Cloudflare A-record target for katana/torii/torii-eternum.jcndata.com",
     });
 
-    const katanaTg = new elbv2.ApplicationTargetGroup(this, "KatanaTg", {
-      vpc,
-      port: 5050,
-      protocol: elbv2.ApplicationProtocol.HTTP,
-      targetType: elbv2.TargetType.INSTANCE,
-      targets: [new elbv2_targets.InstanceTarget(katana, 5050)],
-      healthCheck: {
-        path: "/",
-        // JSON-RPC answers GET with 405 — that still proves liveness.
-        healthyHttpCodes: "200-499",
-        interval: cdk.Duration.seconds(15),
-      },
-      deregistrationDelay: cdk.Duration.seconds(10),
-    });
-    if (cfg.tls) {
-      routeListener.addAction("KatanaRoute", {
-        priority: 10,
-        conditions: [elbv2.ListenerCondition.hostHeaders([cfg.katanaHost])],
-        action: elbv2.ListenerAction.forward([katanaTg]),
-      });
-    } else {
-      // Cloudflare proxies both hostnames to :80, so route by Host header.
-      routeListener.addAction("KatanaPublicHost", {
-        priority: 5,
-        conditions: [elbv2.ListenerCondition.hostHeaders([cfg.publicKatanaHost])],
-        action: elbv2.ListenerAction.forward([katanaTg]),
-      });
-      // Anything else on :80 is katana too (direct ALB access for CLI tools).
-      routeListener.addAction("KatanaDefault", {
-        priority: 10,
-        conditions: [elbv2.ListenerCondition.pathPatterns(["*"])],
-        action: elbv2.ListenerAction.forward([katanaTg]),
-      });
-    }
-
-    // --- Torii: ONE multi-world indexer (Fargate) -----------------------
-    // Config (the durable WORLD list) lives in SSM and is injected at task
-    // start. Normal launches also hot-add the world through Torii's protected
-    // API, so the task only reads this list again after an unrelated restart.
-    const toriiConfigParam = new ssm.StringParameter(this, "ToriiConfig", {
-      parameterName: "/realms-appchain/dev/torii-config",
-      description: "torii.toml for the shared multi-world torii (M2 bootstrap fills contracts)",
-      stringValue: [
-        "# placeholder — replaced by the M2 chain-bootstrap runbook",
-        cfg.tls
-          ? `rpc = "https://${cfg.katanaHost}"`
-          : "# rpc = filled by M2 with the ALB http url",
-        'db_dir = "/data/torii-db-v1"',
-        "",
-        "[indexing]",
-        "pending = true",
-        "polling_interval = 100",
-        "controllers = true",
-        "pre_confirmed = true",
-        "transactions = true",
-        "contracts = []",
-        'namespaces = ["s1_eternum"]',
-        "world_block = 0",
-        "",
-        "[events]",
-        "raw = true",
-        "",
-        "[erc]",
-        "max_metadata_tasks = 10",
-      ].join("\n"),
-    });
-
-    const toriiLogs = new logs.LogGroup(this, "ToriiLogs", {
-      logGroupName: "/realms-appchain/dev/torii",
-      retention: logs.RetentionDays.ONE_WEEK,
-      removalPolicy: cdk.RemovalPolicy.DESTROY,
-    });
-
-    const toriiTask = new ecs.FargateTaskDefinition(this, "ToriiTask", {
-      cpu: cfg.toriiCpu,
-      memoryLimitMiB: cfg.toriiMemoryMib,
-      runtimePlatform: {
-        cpuArchitecture: ecs.CpuArchitecture.X86_64,
-        operatingSystemFamily: ecs.OperatingSystemFamily.LINUX,
-      },
-    });
-    toriiTask.addContainer("torii", {
-      image: ecs.ContainerImage.fromEcrRepository(props.toriiRepo, CONFIG.ecr.toriiTag),
-      logging: ecs.LogDrivers.awsLogs({ logGroup: toriiLogs, streamPrefix: "torii" }),
-      entryPoint: ["/bin/sh", "-c"],
-      command: [
-        'mkdir -p /data && printf \'%s\' "$TORII_CONFIG" > /tmp/torii.toml && exec torii --config /tmp/torii.toml --http.addr 0.0.0.0 --http.port 8080 --http.cors_origins "*"',
-      ],
-      secrets: {
-        TORII_CONFIG: ecs.Secret.fromSsmParameter(toriiConfigParam),
-        TORII_ADMIN_TOKEN: ecs.Secret.fromSecretsManager(props.toriiAdminToken),
-      },
-      portMappings: [{ containerPort: 8080 }],
-    });
-
-    const toriiSg = new ec2.SecurityGroup(this, "ToriiSg", {
-      vpc,
-      description: "shared torii",
-      allowAllOutbound: true,
-    });
-
-    const torii = new ecs.FargateService(this, "Torii", {
-      cluster,
-      serviceName: "torii",
-      taskDefinition: toriiTask,
-      desiredCount: 1,
-      assignPublicIp: true,
-      vpcSubnets: { subnetType: ec2.SubnetType.PUBLIC },
-      securityGroups: [toriiSg],
-      minHealthyPercent: 100,
-      maxHealthyPercent: 200,
-      circuitBreaker: { rollback: true },
-      enableExecuteCommand: true,
-      // Torii's /data directory is task-local, so each replacement reindexes
-      // from block 0 and is unhealthy until it catches up. Without a grace
-      // period ECS kills it mid-index and it never finishes — a restart loop
-      // that grows worse with each new world.
-      healthCheckGracePeriod: cdk.Duration.minutes(15),
-    });
-
-    const toriiTg = new elbv2.ApplicationTargetGroup(this, "ToriiTg", {
-      vpc,
-      port: 8080,
-      protocol: elbv2.ApplicationProtocol.HTTP,
-      targetType: elbv2.TargetType.IP,
-      healthCheck: {
-        path: "/ready",
-        healthyHttpCodes: "200",
-        interval: cdk.Duration.seconds(15),
-      },
-      deregistrationDelay: cdk.Duration.seconds(10),
-    });
-    toriiTg.addTarget(torii);
-    if (cfg.tls) {
-      routeListener.addAction("ToriiRoute", {
-        priority: 20,
-        conditions: [elbv2.ListenerCondition.hostHeaders([cfg.toriiHost])],
-        action: elbv2.ListenerAction.forward([toriiTg]),
-      });
-      // --- DNS -----------------------------------------------------------
-      new route53.ARecord(this, "KatanaRecord", {
-        zone: props.zone,
-        recordName: "katana.dev",
-        target: route53.RecordTarget.fromAlias(new r53_targets.LoadBalancerTarget(alb)),
-      });
-      new route53.ARecord(this, "ToriiRecord", {
-        zone: props.zone,
-        recordName: "torii.dev",
-        target: route53.RecordTarget.fromAlias(new r53_targets.LoadBalancerTarget(alb)),
-      });
-    } else {
-      // Keep :8080 for direct ALB access (CLI/scripts bypass Cloudflare).
-      // The torii.jcndata.com Host rule moved to torii-s2 below (W5) — this
-      // legacy multi-world fork stays reachable on :8080 until the W7 excision.
-      alb.addListener("ToriiHttp", {
-        port: 8080,
-        protocol: elbv2.ApplicationProtocol.HTTP,
-        defaultAction: elbv2.ListenerAction.forward([toriiTg]),
-      });
-    }
-
-    // --- torii-s2: stock upstream torii pinned to the persistent s2 ---
-    // world (A3). Parallel to the multi-world fork above, which keeps serving
-    // s1 playtests until the A5 cutover. Reached on ALB :8081 (no DNS dep).
+    // --- torii config params: source of truth for the on-box toriis -----
+    // (torii-refresh on the box fetches these; see the userData above.)
     const toriiS2ConfigParam = new ssm.StringParameter(this, "ToriiS2Config", {
       parameterName: "/realms-appchain/dev/torii-s2-config",
       description: "torii.toml for the vanilla single-world s2 torii (A3 runbook fills values)",
@@ -564,72 +291,6 @@ export class DevStack extends cdk.Stack {
       retention: logs.RetentionDays.ONE_WEEK,
       removalPolicy: cdk.RemovalPolicy.DESTROY,
     });
-    const toriiS2Task = new ecs.FargateTaskDefinition(this, "ToriiS2Task", {
-      cpu: cfg.toriiCpu,
-      memoryLimitMiB: cfg.toriiMemoryMib,
-      runtimePlatform: {
-        cpuArchitecture: ecs.CpuArchitecture.X86_64,
-        operatingSystemFamily: ecs.OperatingSystemFamily.LINUX,
-      },
-    });
-    toriiS2Task.addContainer("torii", {
-      // Stock upstream torii, digest-pinned (v1.8.16) — no fork patches.
-      image: ecs.ContainerImage.fromRegistry(TORII_IMAGE),
-      logging: ecs.LogDrivers.awsLogs({ logGroup: toriiS2Logs, streamPrefix: "torii-s2" }),
-      entryPoint: ["/bin/sh", "-c"],
-      command: [
-        'mkdir -p /data && printf \'%s\' "$TORII_CONFIG" > /tmp/torii.toml && exec torii --config /tmp/torii.toml --http.addr 0.0.0.0 --http.port 8080 --http.cors_origins "*"',
-      ],
-      secrets: {
-        TORII_CONFIG: ecs.Secret.fromSsmParameter(toriiS2ConfigParam),
-      },
-      portMappings: [{ containerPort: 8080 }],
-    });
-    const toriiS2 = new ecs.FargateService(this, "ToriiS2", {
-      cluster,
-      serviceName: "torii-s2",
-      taskDefinition: toriiS2Task,
-      desiredCount: 1,
-      assignPublicIp: true,
-      vpcSubnets: { subnetType: ec2.SubnetType.PUBLIC },
-      securityGroups: [toriiSg],
-      minHealthyPercent: 100,
-      maxHealthyPercent: 200,
-      circuitBreaker: { rollback: true },
-      enableExecuteCommand: true,
-      healthCheckGracePeriod: cdk.Duration.minutes(15),
-    });
-    const toriiS2Tg = new elbv2.ApplicationTargetGroup(this, "ToriiS2Tg", {
-      vpc,
-      port: 8080,
-      protocol: elbv2.ApplicationProtocol.HTTP,
-      targetType: elbv2.TargetType.IP,
-      healthCheck: {
-        path: "/ready",
-        healthyHttpCodes: "200",
-        interval: cdk.Duration.seconds(15),
-      },
-      deregistrationDelay: cdk.Duration.seconds(10),
-    });
-    toriiS2Tg.addTarget(toriiS2);
-    albSg.addIngressRule(ec2.Peer.anyIpv4(), ec2.Port.tcp(8081), "torii-s2 (vanilla single-world)");
-    alb.addListener("ToriiS2Http", {
-      port: 8081,
-      protocol: elbv2.ApplicationProtocol.HTTP,
-      defaultAction: elbv2.ListenerAction.forward([toriiS2Tg]),
-    });
-    // Cloudflare terminates TLS for torii.jcndata.com and proxies to :80 —
-    // route the public hostname to the blitz-world torii (the Controller
-    // keychain iframe requires https endpoints, so :8081 alone is not enough).
-    routeListener.addAction("ToriiPublicHost", {
-      priority: 4,
-      conditions: [elbv2.ListenerCondition.hostHeaders([cfg.publicToriiHost])],
-      action: elbv2.ListenerAction.forward([toriiS2Tg]),
-    });
-    new cdk.CfnOutput(this, "ToriiS2ServiceName", { value: toriiS2.serviceName });
-
-    // --- torii-eternum: same shape as torii-s2, pinned to the eternum world ---
-    // (W4). MVP topology: one katana, two worlds, two toriis. ALB :8082.
     const toriiEternumConfigParam = new ssm.StringParameter(this, "ToriiEternumConfig", {
       parameterName: "/realms-appchain/dev/torii-eternum-config",
       description: "torii.toml for the eternum-world torii (W4 runbook fills values)",
@@ -640,68 +301,6 @@ export class DevStack extends cdk.Stack {
       retention: logs.RetentionDays.ONE_WEEK,
       removalPolicy: cdk.RemovalPolicy.DESTROY,
     });
-    const toriiEternumTask = new ecs.FargateTaskDefinition(this, "ToriiEternumTask", {
-      cpu: cfg.toriiCpu,
-      memoryLimitMiB: cfg.toriiMemoryMib,
-      runtimePlatform: {
-        cpuArchitecture: ecs.CpuArchitecture.X86_64,
-        operatingSystemFamily: ecs.OperatingSystemFamily.LINUX,
-      },
-    });
-    toriiEternumTask.addContainer("torii", {
-      // Stock upstream torii, digest-pinned (v1.8.16) — same image as torii-s2.
-      image: ecs.ContainerImage.fromRegistry(TORII_IMAGE),
-      logging: ecs.LogDrivers.awsLogs({ logGroup: toriiEternumLogs, streamPrefix: "torii-eternum" }),
-      entryPoint: ["/bin/sh", "-c"],
-      command: [
-        'mkdir -p /data && printf \'%s\' "$TORII_CONFIG" > /tmp/torii.toml && exec torii --config /tmp/torii.toml --http.addr 0.0.0.0 --http.port 8080 --http.cors_origins "*"',
-      ],
-      secrets: {
-        TORII_CONFIG: ecs.Secret.fromSsmParameter(toriiEternumConfigParam),
-      },
-      portMappings: [{ containerPort: 8080 }],
-    });
-    const toriiEternum = new ecs.FargateService(this, "ToriiEternum", {
-      cluster,
-      serviceName: "torii-eternum",
-      taskDefinition: toriiEternumTask,
-      desiredCount: 1,
-      assignPublicIp: true,
-      vpcSubnets: { subnetType: ec2.SubnetType.PUBLIC },
-      securityGroups: [toriiSg],
-      minHealthyPercent: 100,
-      maxHealthyPercent: 200,
-      circuitBreaker: { rollback: true },
-      enableExecuteCommand: true,
-      healthCheckGracePeriod: cdk.Duration.minutes(15),
-    });
-    const toriiEternumTg = new elbv2.ApplicationTargetGroup(this, "ToriiEternumTg", {
-      vpc,
-      port: 8080,
-      protocol: elbv2.ApplicationProtocol.HTTP,
-      targetType: elbv2.TargetType.IP,
-      healthCheck: {
-        path: "/ready",
-        healthyHttpCodes: "200",
-        interval: cdk.Duration.seconds(15),
-      },
-      deregistrationDelay: cdk.Duration.seconds(10),
-    });
-    toriiEternumTg.addTarget(toriiEternum);
-    albSg.addIngressRule(ec2.Peer.anyIpv4(), ec2.Port.tcp(8082), "torii-eternum");
-    alb.addListener("ToriiEternumHttp", {
-      port: 8082,
-      protocol: elbv2.ApplicationProtocol.HTTP,
-      defaultAction: elbv2.ListenerAction.forward([toriiEternumTg]),
-    });
-    // Public https hostname (Cloudflare-proxied CNAME -> the ALB, like torii.jcndata.com).
-    routeListener.addAction("ToriiEternumPublicHost", {
-      priority: 3,
-      conditions: [elbv2.ListenerCondition.hostHeaders([cfg.publicToriiEternumHost])],
-      action: elbv2.ListenerAction.forward([toriiEternumTg]),
-    });
-    new cdk.CfnOutput(this, "ToriiEternumServiceName", { value: toriiEternum.serviceName });
-
     // --- Alarms ----------------------------------------------------------
     const alerts = new sns.Topic(this, "Alerts", {
       topicName: "realms-appchain-dev-alerts",
@@ -729,42 +328,6 @@ export class DevStack extends cdk.Stack {
         comparisonOperator: cloudwatch.ComparisonOperator.GREATER_THAN_OR_EQUAL_TO_THRESHOLD,
         treatMissingData: cloudwatch.TreatMissingData.BREACHING,
         alarmDescription: "katana instance failing EC2 status checks",
-      }),
-    );
-    addAlarm(
-      "KatanaUnhealthy",
-      new cloudwatch.Alarm(this, "KatanaUnhealthyAlarm", {
-        metric: katanaTg.metrics.unhealthyHostCount(),
-        threshold: 1,
-        evaluationPeriods: 3,
-        comparisonOperator: cloudwatch.ComparisonOperator.GREATER_THAN_OR_EQUAL_TO_THRESHOLD,
-        treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
-        alarmDescription: "katana RPC unhealthy behind the ALB",
-      }),
-    );
-    addAlarm(
-      "ToriiUnhealthy",
-      new cloudwatch.Alarm(this, "ToriiUnhealthyAlarm", {
-        metric: toriiTg.metrics.unhealthyHostCount(),
-        threshold: 1,
-        evaluationPeriods: 3,
-        comparisonOperator: cloudwatch.ComparisonOperator.GREATER_THAN_OR_EQUAL_TO_THRESHOLD,
-        // desiredCount starts at 0 — no hosts is not an incident
-        treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
-        alarmDescription: "torii unhealthy behind the ALB",
-      }),
-    );
-    addAlarm(
-      "Alb5xx",
-      new cloudwatch.Alarm(this, "Alb5xxAlarm", {
-        metric: alb.metrics.httpCodeElb(elbv2.HttpCodeElb.ELB_5XX_COUNT, {
-          period: cdk.Duration.minutes(5),
-          statistic: "Sum",
-        }),
-        threshold: 20,
-        evaluationPeriods: 1,
-        treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
-        alarmDescription: "ALB returning 5xx",
       }),
     );
 
@@ -837,15 +400,16 @@ export class DevStack extends cdk.Stack {
     });
 
     // --- Outputs ---------------------------------------------------------
-    new cdk.CfnOutput(this, "KatanaUrl", {
-      value: cfg.tls ? `https://${cfg.katanaHost}` : `http://${alb.loadBalancerDnsName}`,
+    new cdk.CfnOutput(this, "KatanaUrl", { value: `https://${cfg.publicKatanaHost}` });
+    new cdk.CfnOutput(this, "ToriiUrl", { value: `https://${cfg.publicToriiHost}` });
+    new cdk.CfnOutput(this, "ToriiS2Direct", {
+      value: `http://${katanaEip.ref}:8081`,
+      description: "script/SQL access to the blitz torii (bypasses Cloudflare)",
     });
-    new cdk.CfnOutput(this, "ToriiUrl", {
-      value: cfg.tls ? `https://${cfg.toriiHost}` : `http://${alb.loadBalancerDnsName}:8080`,
+    new cdk.CfnOutput(this, "ToriiEternumDirect", {
+      value: `http://${katanaEip.ref}:8082`,
+      description: "script/SQL access to the eternum torii (bypasses Cloudflare)",
     });
     new cdk.CfnOutput(this, "KatanaInstanceId", { value: katana.instanceId });
-    new cdk.CfnOutput(this, "ToriiServiceName", { value: torii.serviceName });
-    new cdk.CfnOutput(this, "ToriiConfigParam", { value: toriiConfigParam.parameterName });
-    new cdk.CfnOutput(this, "AlbDns", { value: alb.loadBalancerDnsName });
   }
 }

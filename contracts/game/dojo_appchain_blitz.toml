@@ -10,7 +10,7 @@ default = "s2"
 "s2-structure_creation_library" = "0_1_18"
 
 [env]
-rpc_url = "http://Realms-Alb16-vyiZTcVBQthr-325094656.us-east-1.elb.amazonaws.com"
+rpc_url = "http://52.54.98.119"
 world_address = "0x78ff85ac450bb559c97966b64666fd5292f4a98756a607349d9f93f4563bdd2"
 
 [world]

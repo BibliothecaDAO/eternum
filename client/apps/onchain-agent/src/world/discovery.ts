@@ -43,7 +43,7 @@ async function getFactorySqlBaseUrls(chain: Chain): Promise<string[]> {
 const buildToriiBaseUrl = (worldName: string) => `https://api.cartridge.gg/x/${worldName}/torii`;
 
 /** Realms dev appchain (self-hosted katana, chain id WP_REALMS_DEV) — see contracts/game/dojo_appchain.toml. */
-const APPCHAIN_DEFAULT_RPC_URL = "http://Realms-Alb16-vyiZTcVBQthr-325094656.us-east-1.elb.amazonaws.com";
+const APPCHAIN_DEFAULT_RPC_URL = "http://52.54.98.119";
 
 function getDefaultRpcUrl(chain: Chain): string {
   const base = process.env.CARTRIDGE_API_BASE || "https://api.cartridge.gg";
