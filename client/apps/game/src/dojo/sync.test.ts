@@ -559,14 +559,7 @@ describe("initialSync global streams", () => {
       reportProgress: false,
       subscriptionSetupTimeoutMs: 25,
     });
-    let syncResolved = false;
-    syncPromise.then(() => {
-      syncResolved = true;
-    });
-
-    await flushMicrotasks(20);
-
-    expect(syncResolved).toBe(true);
+    await syncPromise;
     expect(getEntitiesMock).toHaveBeenCalledTimes(1);
   });
 
@@ -579,14 +572,7 @@ describe("initialSync global streams", () => {
       reportProgress: false,
       subscriptionSetupTimeoutMs: 25,
     });
-    let syncResolved = false;
-    syncPromise.then(() => {
-      syncResolved = true;
-    });
-
-    await flushMicrotasks(20);
-
-    expect(syncResolved).toBe(true);
+    await syncPromise;
     expect(mapDataRefreshMock).toHaveBeenCalledTimes(1);
   });
 

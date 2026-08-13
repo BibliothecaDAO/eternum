@@ -1,3 +1,4 @@
+import { getGameSyncModelsForChannel } from "@bibliothecadao/eternum/game-sync";
 import { gameModel } from "./game-scope";
 import type { BoundsModelConfig, GlobalModelStreamConfig } from "./torii-stream-manager";
 
@@ -10,18 +11,15 @@ interface ToriiSpatialMapModelConfig {
 // Bare model names: the namespace (s1_eternum / s2) is resolved at call
 // time from the active game scope, so every list here is a factory — module
 // constants would bake in the default namespace before bootstrap sets it.
-const SPATIAL_MAP_MODEL_CONFIGS = [
-  { name: "TileOpt", colField: "col", rowField: "row" },
-  { name: "Structure", colField: "base.coord_x", rowField: "base.coord_y" },
-  { name: "StructureBuildings", colField: "coord.x", rowField: "coord.y" },
-  { name: "Building", colField: "outer_col", rowField: "outer_row" },
-  { name: "ExplorerTroops", colField: "coord.x", rowField: "coord.y" },
-  { name: "ExplorerRewardEvent", colField: "coord.x", rowField: "coord.y" },
-  { name: "BattleEvent", colField: "coord.x", rowField: "coord.y" },
-] as const satisfies readonly ToriiSpatialMapModelConfig[];
+const getSpatialMapModelConfigs = (): readonly ToriiSpatialMapModelConfig[] =>
+  getGameSyncModelsForChannel("bounded-spatial").map((model) => ({
+    name: model.name,
+    colField: model.spatial?.colField,
+    rowField: model.spatial?.rowField,
+  }));
 
 export const getGlobalSpatialMapModels = (): BoundsModelConfig[] =>
-  SPATIAL_MAP_MODEL_CONFIGS.map(({ name, colField, rowField }) => ({
+  getSpatialMapModelConfigs().map(({ name, colField, rowField }) => ({
     model: gameModel(name),
     colField: colField ?? "col",
     rowField: rowField ?? "row",
@@ -29,12 +27,11 @@ export const getGlobalSpatialMapModels = (): BoundsModelConfig[] =>
 
 export const getBoundedSpatialMapModels = (): BoundsModelConfig[] => getGlobalSpatialMapModels();
 
-const SPATIAL_OWNER_MODEL_NAME = "Structure";
-
-// Structure carries ownership, so the live all-entity stream owns that model.
-// A late bootstrap snapshot must not replay stale owners after a capture.
+// Structure stays out of the late bootstrap snapshot because its owner field
+// can overwrite a newer bounded/player update. S2 closes this legacy ownership
+// hole by assigning Structure to the game-wide runtime stream.
 export const getGlobalSpatialMapBootstrapModelNames = (): string[] =>
-  SPATIAL_MAP_MODEL_CONFIGS.filter(({ name }) => name !== SPATIAL_OWNER_MODEL_NAME).map(({ name }) => gameModel(name));
+  getGameSyncModelsForChannel("spatial-bootstrap").map(({ name }) => gameModel(name));
 
 export const getGlobalSpatialMapBootstrapSnapshotModels = (): GlobalModelStreamConfig[] =>
   getGlobalSpatialMapBootstrapModelNames().map((model) => ({ model }));

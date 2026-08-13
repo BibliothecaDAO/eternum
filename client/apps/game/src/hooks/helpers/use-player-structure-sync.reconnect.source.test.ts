@@ -12,17 +12,21 @@ describe("usePlayerStructureSync reconnect wiring", () => {
     const source = readSource("src/hooks/helpers/use-player-structure-sync.ts");
 
     expect(source).toContain("useConnectionStore");
-    expect(source).toContain("streamReconnectVersion");
+    expect(source).toContain("state.streamReconnectVersion");
+    expect(source).toContain("writerRef.current?.reconnect()");
     expect(source).toContain("subscriptionSetupTimeoutMs: env.VITE_PUBLIC_TORII_SUBSCRIPTION_SETUP_TIMEOUT_MS");
   });
 
-  it("coalesces owner-triggered SQL backfills instead of firing one query per owner event", () => {
+  it("delegates player writer ownership and coalescing to the headless runtime", () => {
     const source = readSource("src/hooks/helpers/use-player-structure-sync.ts");
+    const writerSource = readSource("../../../packages/core/src/sync/player-structure-sync-writer.ts");
 
     expect(source).toContain("OWNED_STRUCTURE_BACKFILL_DEBOUNCE_MS");
-    expect(source).toContain("requestOwnedStructureBackfillRef");
-    expect(source).toContain("rerunBackfillAfterCurrent");
+    expect(source).toContain("getActiveGameSyncRuntime()");
+    expect(source).not.toContain("requireActiveGameSyncRuntime()");
+    expect(source).toContain("runtime.installPlayerWriter(writer)");
     expect(source).toContain("sqlApi.fetchStructuresByOwner(accountAddress)");
-    expect(source).toContain("requestOwnedStructureBackfillRef.current?.()");
+    expect(writerSource).toContain("rerunBackfill");
+    expect(writerSource).toContain("requestOwnedStructureBackfill");
   });
 });

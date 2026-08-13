@@ -49,6 +49,7 @@ export default defineConfig({
         __dirname,
         "../../../packages/core/src/managers/game-entity-keys.ts",
       ),
+      "@bibliothecadao/eternum/game-sync": path.resolve(__dirname, "../../../packages/core/src/sync/index.ts"),
       "@bibliothecadao/eternum": path.resolve(__dirname, "../../../packages/core/src/index.ts"),
       // Subpath alias must precede the package root: alias matching is
       // prefix-based, so the root entry would otherwise swallow it.

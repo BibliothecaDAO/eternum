@@ -11,23 +11,25 @@ describe("network boot-regression guards", () => {
   it("sync.ts resets the global handshake clock after a successful subscription handshake", () => {
     const source = readSource("src/dojo/sync.ts");
 
-    expect(source).toContain("isInitialSyncInFlight");
-    // Reset happens after successful await, before the try{}'s catch branch.
-    expect(source).toMatch(/entityStreamSubscription = await syncEntitiesDebounced[\s\S]*?recordGlobalHandshake\(\)/);
+    expect(source).toMatch(/const subscription = await syncEntitiesDebounced[\s\S]*?recordGlobalHandshake\(\)/);
+    expect(source).toContain("startSession");
   });
 
-  it("sync.ts cancelEntityStreamSubscription no-ops while initial sync is in flight", () => {
+  it("the session runtime owns the bootstrap cancellation guard", () => {
     const source = readSource("src/dojo/sync.ts");
+    const runtimeSource = readSource("../../../packages/core/src/sync/game-sync-runtime.ts");
 
-    expect(source).toMatch(/cancelEntityStreamSubscription[\s\S]*?if \(isInitialSyncInFlight\) return/);
+    expect(source).toContain("getActiveGameSyncRuntime()?.cancelGlobalWriter()");
+    expect(runtimeSource).toMatch(/cancelGlobalWriter\(\)[\s\S]*?if \(this\.isStarting\(\)\)/);
   });
 
   it("sync.ts keeps Structure owners out of the global spatial bootstrap snapshot", () => {
     const source = readSource("src/dojo/sync.ts");
     const spatialModelsSource = readSource("src/dojo/torii-spatial-models.ts");
+    const manifestSource = readSource("../../../packages/core/src/sync/model-manifest.ts");
 
-    expect(spatialModelsSource).toContain('SPATIAL_OWNER_MODEL_NAME = "Structure"');
-    expect(spatialModelsSource).toContain("name !== SPATIAL_OWNER_MODEL_NAME");
+    expect(spatialModelsSource).toContain('getGameSyncModelsForChannel("spatial-bootstrap")');
+    expect(manifestSource).toContain('spatial("Structure", "base.coord_x", "base.coord_y", { bootstrap: false');
     expect(source).toContain("syncGlobalSpatialBootstrapSnapshot");
     expect(source).not.toContain("spatialMapStreamSubscription");
     expect(source).toContain("recordSpatialHandshake()");

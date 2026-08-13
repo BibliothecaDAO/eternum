@@ -16,6 +16,7 @@ import {
 } from "@bibliothecadao/types";
 import { getComponentValue, Has, runQuery } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
+import { disposeActiveGameSyncRuntime } from "../sync/game-sync-runtime";
 import { Biome, BiomeClimateConfig, NEUTRAL_BIOME_CLIMATE } from "../utils/biome";
 import { setGameEntityKeyGameId } from "./game-entity-keys";
 import { getTotalResourceWeightKg, gramToKg } from "../utils";
@@ -67,6 +68,7 @@ export class ClientConfigManager {
 
   /** Must be called before setDojo on the s2 arm so cost snapshots read the right preset. */
   public setActiveGame(gameId: number, presetId: number) {
+    disposeActiveGameSyncRuntime();
     this.gameId = gameId;
     this.presetId = presetId;
     // Mirror the active game into the leaf key-helper module (see its header
