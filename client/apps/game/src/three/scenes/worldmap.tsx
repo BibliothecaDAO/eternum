@@ -9,7 +9,13 @@ import {
 import { ensureStructureSynced, getTilesForPositionsFromTorii } from "@/dojo/queries";
 import { initializeSyncSimulator } from "@/dojo/sync-simulator";
 import { getBoundedSpatialMapModels, getGlobalSpatialMapModels } from "@/dojo/torii-spatial-models";
-import { buildBoundsDescriptorSignature, ToriiStreamManager, type BoundsDescriptor } from "@/dojo/torii-stream-manager";
+import { shouldUseLegacyBoundedSpatialSync } from "@/dojo/game-sync-mode";
+import {
+  createLegacyBoundedSyncAdapter,
+  switchLegacyBoundedSyncForCamera,
+  type LegacyBoundedSyncAdapter,
+} from "@/dojo/legacy-bounded-sync-adapter";
+import { buildBoundsDescriptorSignature, type BoundsDescriptor } from "@/dojo/torii-stream-manager";
 import { useConnectionStore } from "@/hooks/store/use-connection-store";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import {
@@ -636,7 +642,7 @@ const WORLDMAP_CHUNK_TRANSITION_HARD_TIMEOUT_MS = Math.max(WORLDMAP_CHUNK_PHASE_
 const WORLDMAP_STREAMING_ROLLOUT = {
   stagedPathEnabled: env.VITE_PUBLIC_WORLDMAP_STREAMING_STAGED !== false,
 };
-const WORLDMAP_BOUNDED_SPATIAL_SYNC = env.VITE_PUBLIC_WORLDMAP_BOUNDED_SPATIAL_SYNC === true;
+const WORLDMAP_BOUNDED_SPATIAL_SYNC = shouldUseLegacyBoundedSpatialSync();
 const HOVER_LABEL_RECOVERY_FRAME_BUDGET = 12;
 const WORLDMAP_ZOOM_HARDENING = createWorldmapZoomHardeningConfig({
   enabled: env.VITE_PUBLIC_WORLDMAP_ZOOM_HARDENING === true,
@@ -1155,7 +1161,7 @@ export default class WorldmapScene extends WarpTravel {
   private hoverLabelManager!: HoverLabelManager;
 
   private worldUpdateUnsubscribes: Array<() => void> = [];
-  private toriiStreamManager: ToriiStreamManager | null = null;
+  private toriiStreamManager: LegacyBoundedSyncAdapter | null = null;
   private visibilityChangeHandler?: () => void;
   private cosmeticsSubscriptionCleanup?: () => void;
   private unregisterWorldmapRecoveryHandle: (() => void) | null = null;
@@ -1208,7 +1214,7 @@ export default class WorldmapScene extends WarpTravel {
       boundedSpatialModels: getBoundedSpatialMapModels().map(({ model }) => model),
       boundedSpatialPadding: env.VITE_PUBLIC_WORLDMAP_BOUNDED_SPATIAL_PADDING,
       boundedSpatialSync: WORLDMAP_BOUNDED_SPATIAL_SYNC,
-      mode: WORLDMAP_BOUNDED_SPATIAL_SYNC ? "bounded_spatial_stream" : "legacy_global_spatial_stream",
+      mode: WORLDMAP_BOUNDED_SPATIAL_SYNC ? "legacy_bounded_spatial_stream" : "gamewide_runtime_stream",
       timestamp: new Date().toISOString(),
     });
 
@@ -1216,7 +1222,7 @@ export default class WorldmapScene extends WarpTravel {
       return;
     }
 
-    this.toriiStreamManager = new ToriiStreamManager({
+    this.toriiStreamManager = createLegacyBoundedSyncAdapter({
       client: this.dojo.network.toriiClient,
       setup: this.dojo,
       logging: false,
@@ -9199,7 +9205,10 @@ export default class WorldmapScene extends WarpTravel {
       });
 
       try {
-        const result = await this.toriiStreamManager.switchBounds(descriptor);
+        const result = await switchLegacyBoundedSyncForCamera(this.toriiStreamManager, descriptor);
+        if (!result) {
+          return;
+        }
         if (transitionToken !== undefined && transitionToken !== this.chunkTransitionToken) {
           recordChunkDiagnosticsEvent(this.chunkDiagnostics, "bounds_switch_skipped_stale_token");
           this.refreshToriiBoundsDebugOverlay({ lastOutcome: "stale_token_after_switch" });
@@ -9287,7 +9296,7 @@ export default class WorldmapScene extends WarpTravel {
       subscribedAreaKey: requestedAreaKey,
       lastOutcome: "global_spatial_sync",
     });
-    this.logToriiBoundsDebug("Legacy global spatial bounds ready", {
+    this.logToriiBoundsDebug("Game-wide runtime bounds ready", {
       areaKey: requestedAreaKey,
       boundedSpatialPadding: env.VITE_PUBLIC_WORLDMAP_BOUNDED_SPATIAL_PADDING,
       boundedSpatialSync: false,

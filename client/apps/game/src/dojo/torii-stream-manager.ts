@@ -1,6 +1,5 @@
 import { SetupResult } from "@bibliothecadao/dojo";
 import { AndComposeClause, MemberClause } from "@dojoengine/sdk";
-import { PatternMatching } from "@dojoengine/torii-client";
 import type { Clause, ToriiClient } from "@dojoengine/torii-wasm/types";
 import { useConnectionStore } from "@/hooks/store/use-connection-store";
 import {
@@ -9,8 +8,10 @@ import {
   reportToriiSubscriptionLifecycle,
 } from "@/observability/network-health-reporting";
 import { env } from "../../env";
-import { gameIdKey, gameModel, getScopedGameId, isGameScopedModel } from "./game-scope";
+import { gameModel, getScopedGameId, isGameScopedModel } from "./game-scope";
 import { syncEntitiesDebounced } from "./sync";
+import type { GlobalModelStreamConfig } from "./torii-model-clause";
+export { buildModelKeysClause } from "./torii-model-clause";
 import type { ToriiSubscriptionSetupTimeoutInfo } from "./torii-subscription-setup";
 
 export interface BoundsModelConfig {
@@ -31,7 +32,7 @@ export interface BoundsDescriptor {
 
 type BoundsSwitchOutcome = "applied" | "skipped_same_signature" | "stale_dropped";
 
-interface BoundsSwitchResult {
+export interface BoundsSwitchResult {
   outcome: BoundsSwitchOutcome;
 }
 
@@ -57,7 +58,7 @@ export interface BoundsSubscriptionSetupTimeoutInfo extends ToriiSubscriptionSet
   requestId: number;
 }
 
-interface ToriiStreamManagerConfig {
+export interface ToriiStreamManagerConfig {
   client: ToriiClient;
   setup: SetupResult;
   logging?: boolean;
@@ -68,12 +69,6 @@ interface ToriiStreamManagerConfig {
   onSpatialReadyEntityReceived?: (info: ToriiSpatialReadinessEntityInfo) => void;
   onSpatialReadyTimeout?: (info: ToriiSpatialReadinessTimeoutInfo) => void;
   onSubscriptionSetupTimeout?: (info: BoundsSubscriptionSetupTimeoutInfo) => void;
-}
-
-export interface GlobalModelStreamConfig {
-  model: string;
-  keyCount?: number;
-  patternMatching?: PatternMatching;
 }
 
 const DEFAULT_SUBSCRIPTION_SETUP_TIMEOUT_MS = 8_000;
@@ -745,65 +740,3 @@ export class ToriiStreamManager {
     this.currentSignature = null;
   }
 }
-
-export const buildModelKeysClause = (models: GlobalModelStreamConfig[]): Clause => {
-  // s2 single world: per-game models take the active game id as key[0]. One
-  // VariableLen clause covers every arity, so legacy keyCounts only apply to
-  // the unscoped remainder (legacy arm + s2 chain-global models).
-  const scopedModels = models.filter(({ model }) => isGameScopedModel(model));
-  const unscopedModels = models.filter(({ model }) => !isGameScopedModel(model));
-
-  const scopedClauses: Clause[] =
-    scopedModels.length > 0
-      ? [
-          {
-            Keys: {
-              keys: [gameIdKey()],
-              pattern_matching: "VariableLen" as PatternMatching,
-              models: scopedModels.map(({ model }) => model),
-            },
-          },
-        ]
-      : [];
-
-  const grouped = unscopedModels.reduce<
-    Map<
-      string,
-      {
-        keys: Array<string | undefined>;
-        pattern_matching: PatternMatching;
-        models: string[];
-      }
-    >
-  >((acc, { model, keyCount, patternMatching }) => {
-    const normalizedKeyCount = typeof keyCount === "number" ? Math.max(0, keyCount) : 0;
-    const normalizedPattern = patternMatching ?? ("VariableLen" as PatternMatching);
-    const signature = `${normalizedPattern}:${normalizedKeyCount}`;
-    let entry = acc.get(signature);
-
-    if (!entry) {
-      entry = {
-        keys: normalizedKeyCount > 0 ? new Array(normalizedKeyCount).fill(undefined) : [undefined],
-        pattern_matching: normalizedPattern,
-        models: [],
-      };
-      acc.set(signature, entry);
-    }
-
-    entry.models.push(model);
-    return acc;
-  }, new Map());
-
-  const clauses: Clause[] = [
-    ...scopedClauses,
-    ...Array.from(grouped.values()).map(({ keys, pattern_matching, models }) => ({
-      Keys: {
-        keys,
-        pattern_matching,
-        models,
-      },
-    })),
-  ];
-
-  return buildCompositeClause(clauses);
-};

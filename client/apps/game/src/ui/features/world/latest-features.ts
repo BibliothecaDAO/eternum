@@ -35,6 +35,14 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-08-13",
+    title: "Whole-World Live Sync",
+    description:
+      "Improved map synchronization so offscreen armies, structures, resources, and chests stay current and are ready when you move the camera, including after reconnecting.",
+    type: "improvement",
+    gameSlug: "world",
+  },
+  {
+    date: "2026-08-13",
     title: "Instant Chest Rewards",
     description:
       "Fixed relic-crate rewards so an open army panel receives the new relic immediately without requiring a refresh or reselect.",

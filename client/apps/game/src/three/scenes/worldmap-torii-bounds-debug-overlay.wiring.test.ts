@@ -47,10 +47,10 @@ describe("worldmap Torii bounds debug overlay wiring", () => {
     const methodEnd = source.indexOf("\n  private addWorldUpdateSubscription", methodStart);
     const body = source.slice(methodStart, methodEnd);
 
-    expect(source).toContain("VITE_PUBLIC_WORLDMAP_BOUNDED_SPATIAL_SYNC");
-    expect(source).toContain("new ToriiStreamManager");
+    expect(source).toContain("shouldUseLegacyBoundedSpatialSync");
+    expect(source).toContain("createLegacyBoundedSyncAdapter");
     expect(source).toContain("buildBoundsDescriptorSignature");
-    expect(body).toContain("this.toriiStreamManager.switchBounds(descriptor)");
+    expect(body).toContain("switchLegacyBoundedSyncForCamera(this.toriiStreamManager, descriptor)");
     expect(body).toContain("bounds_switch_skipped_same_signature");
     expect(body).toContain("spatialBoundsSwitchRequests");
     expect(body).toContain("torii_bounds_switch_applied");

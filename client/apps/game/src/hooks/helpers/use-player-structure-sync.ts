@@ -1,4 +1,5 @@
 import { POLLING_INTERVALS } from "@/config/polling";
+import { shouldUseLegacyBoundedSpatialSync } from "@/dojo/game-sync-mode";
 import { gameIdKey, gameModel, getScopedGameId, isGameScoped } from "@/dojo/game-scope";
 import { getStructuresDataFromTorii } from "@/dojo/queries";
 import { syncEntitiesDebounced } from "@/dojo/sync";
@@ -116,6 +117,7 @@ export const usePlayerStructureSync = () => {
   );
 
   useEffect(() => {
+    if (!shouldUseLegacyBoundedSpatialSync()) return;
     if (!accountAddress || !toriiClient || !contractComponents) return;
 
     const normalizedAccountAddress = padHexAddressTo66(accountAddress).toLowerCase();

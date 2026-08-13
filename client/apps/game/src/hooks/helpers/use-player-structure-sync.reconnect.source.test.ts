@@ -29,4 +29,10 @@ describe("usePlayerStructureSync reconnect wiring", () => {
     expect(writerSource).toContain("rerunBackfill");
     expect(writerSource).toContain("requestOwnedStructureBackfill");
   });
+
+  it("starts the player writer only as part of the complete legacy rollback path", () => {
+    const source = readSource("src/hooks/helpers/use-player-structure-sync.ts");
+
+    expect(source).toContain("if (!shouldUseLegacyBoundedSpatialSync()) return");
+  });
 });

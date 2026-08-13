@@ -1,4 +1,4 @@
-import type { GameSyncWriter } from "./game-sync-runtime";
+import type { GameSyncWriter } from "./game-sync-types";
 
 export interface PlayerStructureSyncTarget {
   entityId: number;

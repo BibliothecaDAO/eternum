@@ -19,6 +19,7 @@ import {
   installFreshGameSyncRuntime,
   requireActiveGameSyncRuntime,
 } from "@bibliothecadao/eternum/game-sync";
+import type { GameSyncRuntimeMetrics } from "@bibliothecadao/eternum/game-sync";
 import type { Component, Entity, Metadata, Schema } from "@dojoengine/recs";
 import { getEntities as getEntitiesSnapshot, setEntities } from "@dojoengine/state";
 import type { Clause, ToriiClient, Entity as ToriiEntity } from "@dojoengine/torii-wasm/types";
@@ -30,6 +31,8 @@ import {
   getStructuresDataFromTorii,
 } from "./queries";
 import { env } from "../../env";
+import { createGamewideSyncSession } from "./gamewide-sync-adapter";
+import { shouldUseLegacyBoundedSpatialSync } from "./game-sync-mode";
 import { gameModel, isGameScoped } from "./game-scope";
 import { resolveInitialStructureSelection } from "./sync-initial-selection";
 import { isDeletionPayload } from "./sync-utils";
@@ -39,7 +42,7 @@ import {
   getGlobalSpatialMapBootstrapSnapshotModels,
 } from "./torii-spatial-models";
 import { observeToriiStreamLifecycle } from "./torii-stream-lifecycle-observer";
-import { buildModelKeysClause, type GlobalModelStreamConfig } from "./torii-stream-manager";
+import { buildModelKeysClause, type GlobalModelStreamConfig } from "./torii-model-clause";
 import {
   setupToriiSubscriptions,
   updateToriiSubscriptions,
@@ -71,7 +74,10 @@ export const cancelEntityStreamSubscription = () => {
   getActiveGameSyncRuntime()?.cancelGlobalWriter();
 };
 
-export const disposeGameSyncSession = (): void => disposeActiveGameSyncRuntime();
+export const disposeGameSyncSession = (): void => {
+  disposeActiveGameSyncRuntime();
+  clearGamewideMetricsReporter();
+};
 
 function toTraceBigInt(value: unknown): bigint | null {
   if (typeof value === "bigint") {
@@ -143,6 +149,12 @@ const getGlobalEntityStreamModels = (): GlobalModelStreamConfig[] => {
   );
 };
 
+const getGamewideEntityStreamModels = (): GlobalModelStreamConfig[] =>
+  getGameSyncModelsForChannel("gamewide-entity", { includeS2Only: isGameScoped() }).map(({ name, legacyKeyCount }) => ({
+    model: gameModel(name),
+    keyCount: legacyKeyCount,
+  }));
+
 const getGlobalEventStreamClause = (): Clause =>
   buildModelKeysClause(getGlobalEventModels().map((model) => ({ model })));
 
@@ -150,6 +162,8 @@ const getGlobalEventStreamClause = (): Clause =>
 // world — on the shared s2 world that meant other games' settlements ghosting
 // into RECS. The subscribe-to-everything fallback is deliberately gone.
 const getInitialGlobalEntityStreamClause = (): Clause => buildModelKeysClause(getGlobalEntityStreamModels());
+
+const getGamewideEntityStreamClause = (): Clause => buildModelKeysClause(getGamewideEntityStreamModels());
 
 const stringifyWorldmapSyncABPayload = (payload: Record<string, unknown>): string => {
   try {
@@ -773,6 +787,81 @@ const startGlobalEntityWriter = async (input: {
   return subscription;
 };
 
+const recordGamewideSubscriptionActive = (): void => {
+  const connection = useConnectionStore.getState();
+  connection.recordGlobalHandshake();
+  connection.recordSpatialHandshake();
+};
+
+const recordGamewideLiveUpdate = (): void => {
+  const connection = useConnectionStore.getState();
+  connection.recordGlobalUpdate();
+  connection.recordSpatialUpdate();
+};
+
+let pendingGamewideMetrics: GameSyncRuntimeMetrics | null = null;
+let gamewideMetricsLogTimer: ReturnType<typeof setTimeout> | null = null;
+
+function clearGamewideMetricsReporter(): void {
+  if (gamewideMetricsLogTimer) clearTimeout(gamewideMetricsLogTimer);
+  pendingGamewideMetrics = null;
+  gamewideMetricsLogTimer = null;
+}
+
+const reportGamewideSyncMetrics = (metrics: GameSyncRuntimeMetrics): void => {
+  logWorldmapSyncAB("Game-wide sync metrics", metrics as unknown as Record<string, unknown>);
+  pendingGamewideMetrics = metrics;
+  if (gamewideMetricsLogTimer) return;
+
+  gamewideMetricsLogTimer = setTimeout(() => {
+    if (pendingGamewideMetrics) {
+      console.info(
+        `[GameSyncMetrics] ${stringifyWorldmapSyncABPayload(pendingGamewideMetrics as unknown as Record<string, unknown>)}`,
+      );
+    }
+    pendingGamewideMetrics = null;
+    gamewideMetricsLogTimer = null;
+  }, 1_000);
+};
+
+const createActiveGamewideSyncSession = (input: {
+  setup: SetupResult;
+  logging: boolean;
+  subscriptionSetupTimeoutMs: number;
+  onSubscriptionSetupTimeout?: (info: ToriiSubscriptionSetupTimeoutInfo) => void;
+}) => {
+  const entityModels = getGamewideEntityStreamModels().map(({ model }) => model);
+  return createGamewideSyncSession({
+    setup: input.setup,
+    entityClause: getGamewideEntityStreamClause(),
+    eventClause: getGlobalEventStreamClause(),
+    entityModels,
+    logging: input.logging,
+    subscriptionSetupTimeoutMs: input.subscriptionSetupTimeoutMs,
+    onSubscriptionSetupTimeout: input.onSubscriptionSetupTimeout,
+    onSubscriptionActive: recordGamewideSubscriptionActive,
+    onLiveEntity: (entity) => recordTileOptStreamTrace(entity as ToriiEntity),
+    onLiveUpdate: recordGamewideLiveUpdate,
+    onMetrics: reportGamewideSyncMetrics,
+    onStreamClose: () => useConnectionStore.getState().recordStreamClose(),
+  });
+};
+
+const startLegacyBoundedSyncSession = async (input: {
+  setup: SetupResult;
+  logging: boolean;
+  subscriptionSetupTimeoutMs: number;
+  onSubscriptionSetupTimeout?: (info: ToriiSubscriptionSetupTimeoutInfo) => void;
+}): Promise<void> => {
+  await getOrInstallGameSyncRuntime().startLegacySession({
+    startGlobalWriter: () => startGlobalEntityWriter(input),
+    hydrateSpatialSnapshot: async () => {
+      await syncGlobalSpatialBootstrapSnapshot(input);
+      useConnectionStore.getState().recordSpatialHandshake();
+    },
+  });
+};
+
 const getOrInstallGameSyncRuntime = () => getActiveGameSyncRuntime() ?? installFreshGameSyncRuntime();
 
 export const initialSync = async (
@@ -784,7 +873,7 @@ export const initialSync = async (
   const { logging = false, reportProgress = true } = options;
   const subscriptionSetupTimeoutMs =
     options.subscriptionSetupTimeoutMs ?? env.VITE_PUBLIC_TORII_SUBSCRIPTION_SETUP_TIMEOUT_MS;
-  console.log("[STARTING syncEntitiesDebounced]");
+  console.log("[STARTING game sync]");
 
   if (reportProgress) {
     setInitialSyncProgress(0);
@@ -792,36 +881,29 @@ export const initialSync = async (
 
   const globalStreamSubscribeStart = performance.now();
   try {
+    const usesLegacyBoundedSync = shouldUseLegacyBoundedSpatialSync();
     logWorldmapSyncAB("Initial sync config", {
-      boundedSpatialSync: env.VITE_PUBLIC_WORLDMAP_BOUNDED_SPATIAL_SYNC,
+      boundedSpatialSync: usesLegacyBoundedSync,
       boundedSpatialPadding: env.VITE_PUBLIC_WORLDMAP_BOUNDED_SPATIAL_PADDING,
       eventModels: getGlobalEventModels(),
-      globalEntityMode: "bounded_global_models",
-      globalEntityModels: getGlobalEntityStreamModels().map(({ model }) => model),
-      spatialBootstrapModels: getGlobalSpatialMapBootstrapModelNames(),
+      globalEntityMode: usesLegacyBoundedSync ? "legacy_bounded" : "gamewide_static_scope",
+      globalEntityModels: (usesLegacyBoundedSync ? getGlobalEntityStreamModels() : getGamewideEntityStreamModels()).map(
+        ({ model }) => model,
+      ),
+      spatialBootstrapModels: usesLegacyBoundedSync ? getGlobalSpatialMapBootstrapModelNames() : [],
       timestamp: new Date().toISOString(),
     });
-    await getOrInstallGameSyncRuntime().startSession({
-      startGlobalWriter: () =>
-        startGlobalEntityWriter({
-          setup,
-          logging,
-          subscriptionSetupTimeoutMs,
-          onSubscriptionSetupTimeout: options.onSubscriptionSetupTimeout,
-        }),
-      hydrateSpatialSnapshot: async () => {
-        await syncGlobalSpatialBootstrapSnapshot({
-          setup,
-          logging,
-          subscriptionSetupTimeoutMs,
-          onSubscriptionSetupTimeout: options.onSubscriptionSetupTimeout,
-        });
-        useConnectionStore.getState().recordSpatialHandshake();
-      },
-    });
-    // The global stream remains active for live owner/event updates. Startup
-    // only blocks on the spatial snapshot and targeted queries below, because
-    // the stream's first entity replay can resolve by timeout on busy worlds.
+    const sessionInput = {
+      setup,
+      logging,
+      subscriptionSetupTimeoutMs,
+      onSubscriptionSetupTimeout: options.onSubscriptionSetupTimeout,
+    };
+    if (usesLegacyBoundedSync) {
+      await startLegacyBoundedSyncSession(sessionInput);
+    } else {
+      await getOrInstallGameSyncRuntime().startSession(createActiveGamewideSyncSession(sessionInput));
+    }
     // Handshakes are transport freshness. Data freshness is recorded by stream
     // updates, so quiet worlds do not look stale after a successful boot.
   } catch (error) {
@@ -943,14 +1025,8 @@ export const initialSync = async (
 };
 
 /**
- * Lightweight reconnect: re-open ONLY the global entity + event stream.
- *
- * A silently-dropped stream needs its subscription re-created, but the one-time
- * hydration that {@link initialSync} also performs (config, guilds, address
- * names, owned structures, spatial bootstrap snapshot) is already in RECS and
- * does not change across a brief drop — re-running it turns a transient blip
- * into a full re-bootstrap. This re-subscribes the global stream only; spatial
- * recovery is owned by the worldmap recovery handle (onReconnectComplete).
+ * Reconnect through the same convergent subscribe → snapshot → replay routine
+ * used at boot. The bounded rollback path preserves its S1 stream-only restart.
  */
 export const resubscribeGlobalEntityStream = async (
   setup: SetupResult,
@@ -964,7 +1040,13 @@ export const resubscribeGlobalEntityStream = async (
   const subscriptionSetupTimeoutMs =
     options.subscriptionSetupTimeoutMs ?? env.VITE_PUBLIC_TORII_SUBSCRIPTION_SETUP_TIMEOUT_MS;
 
-  await requireActiveGameSyncRuntime().restartGlobalWriter(() =>
+  const runtime = requireActiveGameSyncRuntime();
+  if (!shouldUseLegacyBoundedSpatialSync()) {
+    await runtime.recover();
+    return;
+  }
+
+  await runtime.restartLegacyGlobalWriter(() =>
     startGlobalEntityWriter({
       setup,
       logging,

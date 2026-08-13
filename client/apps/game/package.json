@@ -22,6 +22,7 @@
     "preview": "vite preview",
     "smoke:renderer-debug": "node ./scripts/run-renderer-debug-smoke.mjs",
     "smoke:renderer-scenes": "node ./scripts/run-renderer-scene-smoke.mjs",
+    "smoke:game-sync-headless": "node ./scripts/run-game-sync-headless-smoke.mjs",
     "test": "node ./scripts/run-vitest.mjs",
     "test:three:changed-guard": "node ./scripts/check-three-changed-tests.mjs",
     "test:three:types": "tsc --noEmit --pretty false -p tsconfig.three-types.json",
