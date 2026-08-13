@@ -51,9 +51,9 @@ export const CONFIG = {
     /**
      * Sequencer host. m7a vCPUs are full physical Genoa cores (no SMT) with
      * the best per-core performance in the M family — what katana wants,
-     * since block execution is effectively single-core per chain. 4 vCPU
-     * gives headroom for several concurrent games (a 2-player game peaks at
-     * ~0.6 core) plus the planned torii colocation.
+     * since block execution is effectively single-core per chain. 8 vCPU
+     * sizes for the 24-player game target (~4–6 players per core measured)
+     * plus the colocated toriis and nginx.
      *
      * Type changes are applied as stop → modify → start, and the chain data
      * lives on a separate RETAIN volume mounted by UUID, so the chain
@@ -61,7 +61,7 @@ export const CONFIG = {
      * Fargate. (Quota history: account was capped at 1 vCPU until 2026-08-13,
      * now 256.)
      */
-    katanaInstanceType: "m7a.xlarge",
+    katanaInstanceType: "m7a.2xlarge",
     katanaDataGib: 50,
 
     /** Multi-world indexing needs headroom above the 4 GiB single-world load-test size. */

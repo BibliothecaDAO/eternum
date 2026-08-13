@@ -34,6 +34,10 @@ export interface DevStackProps extends cdk.StackProps {
  * host-routed ALB with ACM TLS and a WAF rate limit, public subnets only (no
  * NAT — tasks get public IPs, inbound is SG-locked to the ALB).
  */
+/** Stock upstream torii, digest-pinned (v1.8.16) — no fork patches. */
+const TORII_IMAGE =
+  "ghcr.io/dojoengine/torii@sha256:4f6633c1f8fddbc68d647e14f424c91f083c20d14a5dd4661eb0ab77841899ac";
+
 export class DevStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props: DevStackProps) {
     super(scope, id, props);
@@ -157,7 +161,13 @@ export class DevStack extends cdk.Stack {
       description: "katana sequencer",
       allowAllOutbound: true,
     });
-    katanaSg.addIngressRule(albSg, ec2.Port.tcp(5050), "rpc from alb");
+    katanaSg.addIngressRule(albSg, ec2.Port.tcp(5050), "rpc from alb (until ALB teardown)");
+    // Prod-pattern colocation: the box serves Cloudflare directly on :80
+    // (nginx host-routing, same surface as the ALB) and scripts on the torii
+    // ports. Same open posture the ALB had.
+    katanaSg.addIngressRule(ec2.Peer.anyIpv4(), ec2.Port.tcp(80), "nginx: cloudflare + cli");
+    katanaSg.addIngressRule(ec2.Peer.anyIpv4(), ec2.Port.tcp(8081), "torii-s2 direct (scripts)");
+    katanaSg.addIngressRule(ec2.Peer.anyIpv4(), ec2.Port.tcp(8082), "torii-eternum direct (scripts)");
 
     const katanaLogs = new logs.LogGroup(this, "KatanaLogs", {
       logGroupName: "/realms-appchain/dev/katana",
@@ -174,6 +184,24 @@ export class DevStack extends cdk.Stack {
     });
     props.katanaRepo.grantPull(katanaRole);
     katanaLogs.grantWrite(katanaRole);
+    // Colocated toriis: config fetch from SSM + awslogs into the torii groups.
+    katanaRole.addToPolicy(
+      new iam.PolicyStatement({
+        actions: ["ssm:GetParameter"],
+        resources: [
+          `arn:aws:ssm:${this.region}:${this.account}:parameter/realms-appchain/dev/torii-*-config`,
+        ],
+      }),
+    );
+    katanaRole.addToPolicy(
+      new iam.PolicyStatement({
+        actions: ["logs:CreateLogStream", "logs:PutLogEvents"],
+        resources: [
+          `arn:aws:logs:${this.region}:${this.account}:log-group:/realms-appchain/dev/torii-*`,
+          `arn:aws:logs:${this.region}:${this.account}:log-group:/realms-appchain/dev/torii-*:*`,
+        ],
+      }),
+    );
 
     // Chain data lives on this volume, not the instance — instance
     // replacement or resize keeps the chain. RETAIN so a stack delete can't
@@ -250,6 +278,84 @@ export class DevStack extends cdk.Stack {
         image,
         `/bin/sh -c 'while true; do curl -sf -m 10 -o /dev/null -X POST -H "content-type: application/json" -d "{\\"jsonrpc\\":\\"2.0\\",\\"id\\":1,\\"method\\":\\"dev_generateBlock\\",\\"params\\":[]}" http://127.0.0.1:5050 || true; sleep ${cfg.heartbeatSeconds}; done'`,
       ].join(" "),
+      // --- Colocated toriis (prod pattern: everything on the box) ---------
+      // Config source of truth stays in SSM; the refresh script fetches it
+      // and forces rpc to the local katana (the SSM copy carries the external
+      // RPC URL, which the box must not loop through). DBs live on the
+      // persistent data volume, so config rolls and instance replacements no
+      // longer reindex from block 0 — bump the db-vN dir to force a wipe.
+      "mkdir -p /etc/torii /data/torii-s2 /data/torii-eternum",
+      "cat > /usr/local/bin/torii-refresh <<'TORII_REFRESH'",
+      "#!/bin/bash",
+      "# torii-refresh <s2|eternum> — re-fetch SSM config and restart the container.",
+      "set -euo pipefail",
+      'NAME="$1"',
+      'PARAM="/realms-appchain/dev/torii-${NAME}-config"',
+      `aws ssm get-parameter --region ${this.region} --name "$PARAM" --query Parameter.Value --output text \\`,
+      "  | sed 's|^rpc = .*|rpc = \"http://katana:5050\"|' > \"/etc/torii/torii-${NAME}.toml\"",
+      'docker restart "torii-${NAME}" 2>/dev/null || true',
+      "TORII_REFRESH",
+      "chmod +x /usr/local/bin/torii-refresh",
+      "docker network create appchain || true",
+      "docker network connect appchain katana || true",
+      "/usr/local/bin/torii-refresh s2",
+      "/usr/local/bin/torii-refresh eternum",
+      "docker rm -f torii-s2 torii-eternum || true",
+      [
+        "docker run -d --name torii-s2 --restart=always --network appchain -p 8081:8080",
+        "-v /etc/torii/torii-s2.toml:/config/torii.toml:ro -v /data/torii-s2:/data",
+        `--log-driver=awslogs --log-opt awslogs-group=/realms-appchain/dev/torii-s2 --log-opt awslogs-stream=torii-s2-box --log-opt awslogs-region=${this.region}`,
+        "--entrypoint /bin/sh",
+        TORII_IMAGE,
+        `-c 'exec torii --config /config/torii.toml --http.addr 0.0.0.0 --http.port 8080 --http.cors_origins "*"'`,
+      ].join(" "),
+      [
+        "docker run -d --name torii-eternum --restart=always --network appchain -p 8082:8080",
+        "-v /etc/torii/torii-eternum.toml:/config/torii.toml:ro -v /data/torii-eternum:/data",
+        `--log-driver=awslogs --log-opt awslogs-group=/realms-appchain/dev/torii-eternum --log-opt awslogs-stream=torii-eternum-box --log-opt awslogs-region=${this.region}`,
+        "--entrypoint /bin/sh",
+        TORII_IMAGE,
+        `-c 'exec torii --config /config/torii.toml --http.addr 0.0.0.0 --http.port 8080 --http.cors_origins "*"'`,
+      ].join(" "),
+      // --- nginx: the ALB's :80 Host-header routing, on the box -----------
+      // Cloudflare (Flexible mode) proxies the public hostnames to :80.
+      // Streaming-friendly: HTTP/1.1, no buffering, 3600 s read timeout
+      // (matches the ALB idle timeout the grpc-web streams rely on).
+      "dnf install -y nginx",
+      "cat > /etc/nginx/nginx.conf <<'NGINX_CONF'",
+      "user nginx;",
+      "worker_processes auto;",
+      "events { worker_connections 4096; }",
+      "http {",
+      "  access_log off;",
+      "  map $http_upgrade $connection_upgrade { default upgrade; '' close; }",
+      "  server {",
+      `    listen 80; server_name ${cfg.publicToriiHost};`,
+      "    location / { proxy_pass http://127.0.0.1:8081; include /etc/nginx/proxy-common.conf; }",
+      "  }",
+      "  server {",
+      `    listen 80; server_name ${cfg.publicToriiEternumHost};`,
+      "    location / { proxy_pass http://127.0.0.1:8082; include /etc/nginx/proxy-common.conf; }",
+      "  }",
+      "  server {",
+      `    listen 80 default_server; server_name ${cfg.publicKatanaHost} _;`,
+      "    location / { proxy_pass http://127.0.0.1:5050; include /etc/nginx/proxy-common.conf; }",
+      "  }",
+      "}",
+      "NGINX_CONF",
+      "cat > /etc/nginx/proxy-common.conf <<'NGINX_PROXY'",
+      "proxy_http_version 1.1;",
+      "proxy_buffering off;",
+      "proxy_request_buffering off;",
+      "proxy_read_timeout 3600s;",
+      "proxy_send_timeout 3600s;",
+      "client_max_body_size 64m;",
+      "proxy_set_header Host $host;",
+      "proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;",
+      "proxy_set_header Upgrade $http_upgrade;",
+      "proxy_set_header Connection $connection_upgrade;",
+      "NGINX_PROXY",
+      "systemctl enable --now nginx",
     );
 
     const katana = new ec2.Instance(this, "Katana", {
@@ -271,6 +377,17 @@ export class DevStack extends cdk.Stack {
       device: "/dev/sdf",
       instanceId: katana.instanceId,
       volumeId: dataVolume.volumeId,
+    });
+    // Stable public address: Cloudflare's A records point here (proxied), so
+    // an instance replacement never needs a DNS change.
+    const katanaEip = new ec2.CfnEIP(this, "KatanaEip", { domain: "vpc" });
+    new ec2.CfnEIPAssociation(this, "KatanaEipAssociation", {
+      allocationId: katanaEip.attrAllocationId,
+      instanceId: katana.instanceId,
+    });
+    new cdk.CfnOutput(this, "KatanaPublicIp", {
+      value: katanaEip.ref,
+      description: "Cloudflare A-record target for katana/torii/torii-eternum.jcndata.com",
     });
 
     const katanaTg = new elbv2.ApplicationTargetGroup(this, "KatanaTg", {
@@ -457,9 +574,7 @@ export class DevStack extends cdk.Stack {
     });
     toriiS2Task.addContainer("torii", {
       // Stock upstream torii, digest-pinned (v1.8.16) — no fork patches.
-      image: ecs.ContainerImage.fromRegistry(
-        "ghcr.io/dojoengine/torii@sha256:4f6633c1f8fddbc68d647e14f424c91f083c20d14a5dd4661eb0ab77841899ac",
-      ),
+      image: ecs.ContainerImage.fromRegistry(TORII_IMAGE),
       logging: ecs.LogDrivers.awsLogs({ logGroup: toriiS2Logs, streamPrefix: "torii-s2" }),
       entryPoint: ["/bin/sh", "-c"],
       command: [
@@ -535,9 +650,7 @@ export class DevStack extends cdk.Stack {
     });
     toriiEternumTask.addContainer("torii", {
       // Stock upstream torii, digest-pinned (v1.8.16) — same image as torii-s2.
-      image: ecs.ContainerImage.fromRegistry(
-        "ghcr.io/dojoengine/torii@sha256:4f6633c1f8fddbc68d647e14f424c91f083c20d14a5dd4661eb0ab77841899ac",
-      ),
+      image: ecs.ContainerImage.fromRegistry(TORII_IMAGE),
       logging: ecs.LogDrivers.awsLogs({ logGroup: toriiEternumLogs, streamPrefix: "torii-eternum" }),
       entryPoint: ["/bin/sh", "-c"],
       command: [
