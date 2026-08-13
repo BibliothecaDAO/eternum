@@ -132,6 +132,15 @@ deleting the old paths (acceptance tests below).
   forces it — do not design for it.
 - Deleting repair-on-action paths before S4's recovery proof.
 
+## Branch strategy
+
+One short-lived branch per phase, based off `feat/single-world-blitz` (the overhaul depends on the s2 `game_id` work
+that lives only there): `feat/sync-s1-runtime`, `feat/sync-s2-gamewide`, `feat/sync-s3-projection`,
+`feat/sync-s4-deletions`. Each phase PRs back into `feat/single-world-blitz` when its acceptance criteria pass. Do NOT
+work directly on `feat/single-world-blitz` (it is the live playtest deploy source and must stay deployable at all times)
+and do NOT keep one long-running overhaul branch (it rots against daily commits — merge each phase promptly, then branch
+the next phase from the updated base).
+
 ## Constraints
 
 - AGENTS.md guardrails are binding; cite the fact-ownership rule in every PR description.
