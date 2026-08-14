@@ -19,27 +19,21 @@ describe("createWorldmapChunkPresentationRuntime", () => {
       },
       recordDuration,
       recordTileHydrationDrainCompleted,
-      waitForStructureHydrationIdle: async () => {
-        nowMs = 118;
-      },
       waitForTileHydrationIdle: async () => {
         nowMs = 108;
       },
     });
 
     await runtime.waitForTileHydrationIdle("24,24");
-    await runtime.waitForStructureHydrationIdle("24,24");
     await runtime.prewarmChunkAssets("24,24");
     await runtime.prepareTerrainChunk(24, 24, 80, 90);
 
     expect(runtime.phaseDurations).toEqual({
       structureAssetPrewarmMs: 12,
-      structureHydrationDrainMs: 10,
       terrainPreparedMs: 14,
       tileHydrationDrainMs: 8,
     });
     expect(recordDuration).toHaveBeenCalledWith("tileHydrationDrainMs", 8);
-    expect(recordDuration).toHaveBeenCalledWith("structureHydrationDrainMs", 10);
     expect(recordDuration).toHaveBeenCalledWith("structureAssetPrewarmMs", 12);
     expect(recordDuration).toHaveBeenCalledWith("terrainPreparedMs", 14);
     expect(recordTileHydrationDrainCompleted).toHaveBeenCalledTimes(1);
@@ -54,7 +48,6 @@ describe("createWorldmapChunkPresentationRuntime", () => {
       prepareTerrainChunk: async () => ({ chunkKey: "prepared" }),
       recordDuration: vi.fn(),
       recordTileHydrationDrainCompleted: vi.fn(),
-      waitForStructureHydrationIdle: async () => undefined,
       waitForTileHydrationIdle: async () => undefined,
     });
 

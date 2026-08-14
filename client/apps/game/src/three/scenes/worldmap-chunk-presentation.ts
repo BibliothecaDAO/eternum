@@ -1,11 +1,6 @@
 import { settleWorldmapAsyncStage } from "./worldmap-async-timeout";
 
-export type WorldmapChunkPresentationPhase =
-  | "tile_fetch"
-  | "tile_hydration"
-  | "bounds_ready"
-  | "structure_hydration"
-  | "asset_prewarm";
+export type WorldmapChunkPresentationPhase = "tile_fetch" | "tile_hydration" | "bounds_ready" | "asset_prewarm";
 
 export interface WorldmapChunkPresentationTimeoutInfo {
   chunkKey: string;
@@ -24,7 +19,6 @@ interface PrepareWorldmapChunkPresentationInput<TPreparedTerrain> {
   tileFetchPromise: Promise<boolean>;
   tileHydrationReadyPromise: Promise<void>;
   boundsReadyPromise: Promise<void>;
-  structureReadyPromise: Promise<void>;
   assetPrewarmPromise: Promise<void>;
   prepareTerrainChunk: (startRow: number, startCol: number, height: number, width: number) => Promise<TPreparedTerrain>;
   onChunkReady?: (chunkKey: string) => void;
@@ -67,7 +61,6 @@ export async function prepareWorldmapChunkPresentation<TPreparedTerrain>(
       input.tileFetchPromise,
       input.tileHydrationReadyPromise,
       input.boundsReadyPromise,
-      input.structureReadyPromise,
       input.assetPrewarmPromise,
     ]);
 
@@ -101,12 +94,6 @@ export async function prepareWorldmapChunkPresentation<TPreparedTerrain>(
     });
   };
 
-  void settleWorldmapAsyncStage({
-    label: "structure_hydration" as const,
-    promise: input.structureReadyPromise,
-    timeoutMs: input.phaseTimeoutMs,
-    onTimeout: ({ timeoutMs }) => resolvePhaseTimeout("structure_hydration", timeoutMs),
-  });
   void settleWorldmapAsyncStage({
     label: "asset_prewarm" as const,
     promise: input.assetPrewarmPromise,

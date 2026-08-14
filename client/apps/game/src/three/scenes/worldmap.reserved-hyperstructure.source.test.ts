@@ -21,7 +21,8 @@ describe("Worldmap reserved hyperstructure interaction", () => {
     const source = readSource("worldmap.tsx");
 
     expect(source).toContain("if (isPendingReservedHyperstructureCreation(hexCoords)) {");
-    expect(source).toContain("if (update.removed) {");
-    expect(source).toContain("clearPendingReservedHyperstructureCreation(update.hexCoords);");
+    expect(source).toContain("this.worldSpatialProjection.subscribeStructures((changes) => {");
+    expect(source).toContain("if (previous?.reserved && !current?.reserved) {");
+    expect(source).toContain("clearPendingReservedHyperstructureCreation(previous.hexCoords);");
   });
 });

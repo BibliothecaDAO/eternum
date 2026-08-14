@@ -24,16 +24,10 @@ describe("createWorldmapChunkPolicy", () => {
       "toriiFetch.explorerTroopsSuperAreaStrides",
       WORLD_CHUNK_CONFIG.toriiFetch.explorerTroopsSuperAreaStrides,
     );
-    expect(policy).toHaveProperty(
-      "toriiFetch.structuresSuperAreaStrides",
-      WORLD_CHUNK_CONFIG.toriiFetch.structuresSuperAreaStrides,
-    );
     expect(policy.toriiFetch.explorerTroopsSuperAreaStrides).toBe(
       WORLD_CHUNK_CONFIG.toriiSubscription.superAreaStrides,
     );
-    expect(policy.toriiFetch.structuresSuperAreaStrides).toBe(WORLD_CHUNK_CONFIG.toriiSubscription.superAreaStrides);
     expect(policy.toriiFetch.explorerTroopsSuperAreaStrides).toBeGreaterThan(policy.toriiFetch.superAreaStrides);
-    expect(policy.toriiFetch.structuresSuperAreaStrides).toBeGreaterThan(policy.toriiFetch.superAreaStrides);
     expect(policy).toHaveProperty("toriiSubscription.superAreaStrides", 48);
     expect(policy.toriiSubscription.superAreaStrides).toBeGreaterThan(policy.toriiFetch.superAreaStrides);
     expect(policy).toHaveProperty("prefetch.forwardDepthStrides", WORLD_CHUNK_CONFIG.prefetch.forwardDepthStrides);
@@ -84,19 +78,7 @@ describe("createWorldmapChunkPolicy", () => {
       policy.chunkSize,
       policy.toriiFetch.explorerTroopsSuperAreaStrides,
     );
-    const firstStructuresArea = getRenderAreaKeyForChunk(
-      firstChunkKey,
-      policy.chunkSize,
-      policy.toriiFetch.structuresSuperAreaStrides,
-    );
-    const nextStructuresArea = getRenderAreaKeyForChunk(
-      nextTerrainAreaChunkKey,
-      policy.chunkSize,
-      policy.toriiFetch.structuresSuperAreaStrides,
-    );
-
     expect(firstTerrainArea).not.toBe(nextTerrainArea);
     expect(firstExplorerTroopsArea).toBe(nextExplorerTroopsArea);
-    expect(firstStructuresArea).toBe(nextStructuresArea);
   });
 });

@@ -2,10 +2,10 @@ import { describe, expect, it } from "vitest";
 
 /**
  * Minimal stubs that simulate the hydration-fetch state map
- * used by waitForStructureHydrationIdle / waitForTileHydrationIdle.
+ * used by waitForTileHydrationIdle.
  *
  * The real methods live on the WorldmapScene class and depend on
- * `structureHydrationFetches` / `tileHydrationFetches` Maps.
+ * `tileHydrationFetches` Map.
  * We replicate the while-loop logic here to prove it is stack-safe.
  */
 
@@ -24,7 +24,7 @@ function flushWaiters(state: HydrationState) {
 }
 
 /**
- * Iterative version of waitForStructureHydrationIdle matching
+ * Iterative hydration-idle loop matching
  * the production while-loop implementation.
  */
 async function waitForHydrationIdleIterative(
@@ -62,40 +62,6 @@ async function waitForHydrationIdleIterative(
     }
   }
 }
-
-describe("waitForStructureHydrationIdle (iterative)", () => {
-  it("resolves immediately when state is already settled", async () => {
-    const state: HydrationState = { fetchSettled: true, pendingCount: 0, waiters: [] };
-    await waitForHydrationIdleIterative(() => state, flushWaiters);
-  });
-
-  it("resolves immediately when no state exists", async () => {
-    await waitForHydrationIdleIterative(() => undefined, flushWaiters);
-  });
-
-  it("resolves without stack growth when hydration state oscillates N times", async () => {
-    const oscillations = 200;
-    let flushCount = 0;
-    const state: HydrationState = { fetchSettled: false, pendingCount: 1, waiters: [] };
-
-    await waitForHydrationIdleIterative(
-      () => state,
-      (s) => {
-        flushCount++;
-        if (flushCount >= oscillations) {
-          s.fetchSettled = true;
-          s.pendingCount = 0;
-        }
-        // Always resolve waiters to simulate external hydration progression
-        const waiters = [...s.waiters];
-        s.waiters.length = 0;
-        waiters.forEach((resolve) => resolve());
-      },
-    );
-
-    expect(flushCount).toBeGreaterThanOrEqual(oscillations);
-  });
-});
 
 describe("waitForTileHydrationIdle (iterative)", () => {
   it("resolves immediately when state is already settled", async () => {

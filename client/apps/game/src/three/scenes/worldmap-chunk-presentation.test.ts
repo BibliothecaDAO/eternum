@@ -9,12 +9,11 @@ describe("prepareWorldmapChunkPresentation", () => {
     vi.useRealTimers();
   });
 
-  it("does not prepare target terrain before the structure barrier and asset prewarm complete", async () => {
+  it("does not prepare target terrain before tile hydration and asset prewarm complete", async () => {
     const prepareTerrainChunk = createControlledAsyncCall<[number, number, number, number], { chunkKey: string }>();
     const tileFetch = createControlledAsyncCall<[], boolean>();
     const tileHydrationReady = createControlledAsyncCall<[], void>();
     const boundsReady = createControlledAsyncCall<[], void>();
-    const structureReady = createControlledAsyncCall<[], void>();
     const assetPrewarm = createControlledAsyncCall<[], void>();
     const hydratedChunks: string[] = [];
 
@@ -26,7 +25,6 @@ describe("prepareWorldmapChunkPresentation", () => {
       tileFetchPromise: tileFetch.fn(),
       tileHydrationReadyPromise: tileHydrationReady.fn(),
       boundsReadyPromise: boundsReady.fn(),
-      structureReadyPromise: structureReady.fn(),
       assetPrewarmPromise: assetPrewarm.fn(),
       prepareTerrainChunk: prepareTerrainChunk.fn,
       onChunkReady: (chunkKey) => hydratedChunks.push(chunkKey),
@@ -41,7 +39,6 @@ describe("prepareWorldmapChunkPresentation", () => {
     expect(hydratedChunks).toEqual([]);
 
     tileHydrationReady.resolveNext();
-    structureReady.resolveNext();
     assetPrewarm.resolveNext();
     await flushMicrotasks(2);
 
@@ -60,7 +57,6 @@ describe("prepareWorldmapChunkPresentation", () => {
     const tileFetch = createControlledAsyncCall<[], boolean>();
     const tileHydrationReady = createControlledAsyncCall<[], void>();
     const boundsReady = createControlledAsyncCall<[], void>();
-    const structureReady = createControlledAsyncCall<[], void>();
     const assetPrewarm = createControlledAsyncCall<[], void>();
 
     const presentationPromise = prepareWorldmapChunkPresentation({
@@ -71,14 +67,12 @@ describe("prepareWorldmapChunkPresentation", () => {
       tileFetchPromise: tileFetch.fn(),
       tileHydrationReadyPromise: tileHydrationReady.fn(),
       boundsReadyPromise: boundsReady.fn(),
-      structureReadyPromise: structureReady.fn(),
       assetPrewarmPromise: assetPrewarm.fn(),
       prepareTerrainChunk: prepareTerrainChunk.fn,
     });
 
     await flushMicrotasks(2);
     tileHydrationReady.resolveNext();
-    structureReady.resolveNext();
     assetPrewarm.resolveNext();
     tileFetch.resolveNext(false);
     boundsReady.resolveNext();
@@ -95,7 +89,6 @@ describe("prepareWorldmapChunkPresentation", () => {
     const tileFetch = createControlledAsyncCall<[], boolean>();
     const tileHydrationReady = createControlledAsyncCall<[], void>();
     const boundsReady = createControlledAsyncCall<[], void>();
-    const structureReady = createControlledAsyncCall<[], void>();
     const assetPrewarm = createControlledAsyncCall<[], void>();
 
     const presentationPromise = prepareWorldmapChunkPresentation({
@@ -106,12 +99,11 @@ describe("prepareWorldmapChunkPresentation", () => {
       tileFetchPromise: tileFetch.fn(),
       tileHydrationReadyPromise: tileHydrationReady.fn(),
       boundsReadyPromise: boundsReady.fn(),
-      structureReadyPromise: structureReady.fn(),
       assetPrewarmPromise: assetPrewarm.fn(),
       prepareTerrainChunk: prepareTerrainChunk.fn,
     });
 
-    // Tile fetch and bounds resolve, but structure and asset prewarm are still pending
+    // Tile fetch and bounds resolve, but tile hydration and asset prewarm are still pending
     await flushMicrotasks(2);
     tileFetch.resolveNext(true);
     boundsReady.resolveNext();
@@ -122,7 +114,6 @@ describe("prepareWorldmapChunkPresentation", () => {
 
     // Now resolve the manager readiness barriers
     tileHydrationReady.resolveNext();
-    structureReady.resolveNext();
     assetPrewarm.resolveNext();
     await flushMicrotasks(2);
 
@@ -139,7 +130,6 @@ describe("prepareWorldmapChunkPresentation", () => {
     const tileFetch = createControlledAsyncCall<[], boolean>();
     const tileHydrationReady = createControlledAsyncCall<[], void>();
     const boundsReady = createControlledAsyncCall<[], void>();
-    const structureReady = createControlledAsyncCall<[], void>();
     const assetPrewarm = createControlledAsyncCall<[], void>();
 
     const presentationPromise = prepareWorldmapChunkPresentation({
@@ -150,7 +140,6 @@ describe("prepareWorldmapChunkPresentation", () => {
       tileFetchPromise: tileFetch.fn(),
       tileHydrationReadyPromise: tileHydrationReady.fn(),
       boundsReadyPromise: boundsReady.fn(),
-      structureReadyPromise: structureReady.fn(),
       assetPrewarmPromise: assetPrewarm.fn(),
       prepareTerrainChunk: prepareTerrainChunk.fn,
     });
@@ -158,7 +147,6 @@ describe("prepareWorldmapChunkPresentation", () => {
     await flushMicrotasks(2);
     tileFetch.resolveNext(true);
     boundsReady.resolveNext();
-    structureReady.resolveNext();
     assetPrewarm.resolveNext();
     await flushMicrotasks(2);
 
@@ -183,7 +171,6 @@ describe("prepareWorldmapChunkPresentation", () => {
     const tileFetch = createControlledAsyncCall<[], boolean>();
     const tileHydrationReady = createControlledAsyncCall<[], void>();
     const boundsReady = createControlledAsyncCall<[], void>();
-    const structureReady = createControlledAsyncCall<[], void>();
     const assetPrewarm = createControlledAsyncCall<[], void>();
     const onPhaseTimeout = vi.fn();
 
@@ -195,7 +182,6 @@ describe("prepareWorldmapChunkPresentation", () => {
       tileFetchPromise: tileFetch.fn(),
       tileHydrationReadyPromise: tileHydrationReady.fn(),
       boundsReadyPromise: boundsReady.fn(),
-      structureReadyPromise: structureReady.fn(),
       assetPrewarmPromise: assetPrewarm.fn(),
       prepareTerrainChunk: prepareTerrainChunk.fn,
       phaseTimeoutMs: 25,
@@ -205,7 +191,6 @@ describe("prepareWorldmapChunkPresentation", () => {
     await flushMicrotasks(2);
     tileFetch.resolveNext(true);
     tileHydrationReady.resolveNext();
-    structureReady.resolveNext();
     assetPrewarm.resolveNext();
     await flushMicrotasks(2);
 

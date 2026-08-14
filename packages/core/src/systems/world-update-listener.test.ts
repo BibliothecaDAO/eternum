@@ -513,7 +513,7 @@ describe("WorldUpdateListener army tile bootstrap", () => {
     expect(callback.mock.calls[0][0].structureName).toBe("Essence Rift 921");
   });
 
-  it("uses enhanced structure name when Structure component is unavailable", async () => {
+  it("does not consult enhanced structure state when Structure is unavailable", async () => {
     isComponentUpdateMock.mockReturnValue(true);
     tileOptToTileMock.mockReturnValue({
       occupier_type: 1,
@@ -558,10 +558,11 @@ describe("WorldUpdateListener army tile bootstrap", () => {
     });
 
     expect(callback).toHaveBeenCalledTimes(1);
-    expect(callback.mock.calls[0][0].structureName).toBe("Realm of Testing");
+    expect(callback.mock.calls[0][0].structureName).toBe("Essence Rift 921");
+    expect(enhanceStructureDataMock).not.toHaveBeenCalled();
   });
 
-  it("resolves a structure tile update directly from a TileOpt snapshot value", async () => {
+  it("does not expose a direct TileOpt structure hydration helper", async () => {
     tileOptToTileMock.mockReturnValue({
       occupier_type: 1,
       occupier_id: 921,
@@ -595,11 +596,7 @@ describe("WorldUpdateListener army tile bootstrap", () => {
       {} as any,
     );
 
-    await expect(listener.resolveStructureTileUpdateFromTileOpt({} as never)).resolves.toMatchObject({
-      entityId: 921,
-      structureName: "Realm of Testing",
-      hexCoords: { col: 10, row: 15 },
-    });
+    expect((listener as any).resolveStructureTileUpdateFromTileOpt).toBeUndefined();
   });
 
   it("re-resolves a non-zero owner when cached data still says The Vanguard", async () => {
@@ -710,19 +707,6 @@ describe("WorldUpdateListener army tile bootstrap", () => {
       return undefined;
     });
 
-    let resolveTileUpdate!: (value: {
-      owner: { address: bigint; ownerName: string; guildName: string };
-      guardArmies: never[];
-      activeProductions: never[];
-      battleData: undefined;
-    }) => void;
-    enhanceStructureDataMock.mockImplementationOnce(
-      () =>
-        new Promise((resolve) => {
-          resolveTileUpdate = resolve;
-        }),
-    );
-
     const listener = new WorldUpdateListener(
       {
         network: { world: {} },
@@ -757,13 +741,6 @@ describe("WorldUpdateListener army tile bootstrap", () => {
       entity: "0x123",
     });
 
-    resolveTileUpdate({
-      owner: { address: 0n, ownerName: "The Vanguard", guildName: "" },
-      guardArmies: [],
-      activeProductions: [],
-      battleData: undefined,
-    });
-
     await Promise.all([pendingTileUpdate, pendingStructureUpdate]);
 
     expect(tileCallback).toHaveBeenCalledTimes(1);
@@ -784,7 +761,7 @@ describe("WorldUpdateListener army tile bootstrap", () => {
     });
   });
 
-  it("still drops a stale tile update when a newer tile update for the same entity supersedes it", async () => {
+  it("emits repeated structure tile updates without async supersession", async () => {
     isComponentUpdateMock.mockReturnValue(true);
     tileOptToTileMock.mockReturnValue({
       occupier_type: 1,
@@ -798,19 +775,6 @@ describe("WorldUpdateListener army tile bootstrap", () => {
       level: 1,
       hasWonder: false,
     });
-
-    let resolveStaleTileUpdate!: (value: {
-      owner: { address: bigint; ownerName: string; guildName: string };
-      guardArmies: never[];
-      activeProductions: never[];
-      battleData: undefined;
-    }) => void;
-    enhanceStructureDataMock.mockImplementationOnce(
-      () =>
-        new Promise((resolve) => {
-          resolveStaleTileUpdate = resolve;
-        }),
-    );
 
     const listener = new WorldUpdateListener(
       {
@@ -834,16 +798,9 @@ describe("WorldUpdateListener army tile bootstrap", () => {
       entity: "0x123",
     });
 
-    resolveStaleTileUpdate({
-      owner: { address: 0n, ownerName: "The Vanguard", guildName: "" },
-      guardArmies: [],
-      activeProductions: [],
-      battleData: undefined,
-    });
-
     await Promise.all([staleTileUpdate, freshTileUpdate]);
 
-    expect(tileCallback).toHaveBeenCalledTimes(1);
+    expect(tileCallback).toHaveBeenCalledTimes(2);
   });
 
   it("skips reserved hyperstructure placeholders in the real structure tile stream", async () => {

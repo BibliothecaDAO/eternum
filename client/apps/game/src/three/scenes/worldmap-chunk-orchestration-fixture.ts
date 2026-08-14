@@ -23,7 +23,6 @@ interface RunChunkSwitchResult {
 export function createWorldmapChunkOrchestrationFixture() {
   const tileFetch = createControlledAsyncCall<[string], boolean>();
   const boundsSwitch = createControlledAsyncCall<[string, number | undefined], void>();
-  const structureHydration = createControlledAsyncCall<[string], void>();
   const assetPrewarm = createControlledAsyncCall<[string], void>();
   const terrainPreparation = createControlledAsyncCall<[number, number], { chunkKey: string }>();
   const managerUpdate = createControlledAsyncCall<[string, { force: boolean; transitionToken: number }], void>();
@@ -32,7 +31,6 @@ export function createWorldmapChunkOrchestrationFixture() {
   return {
     tileFetch,
     boundsSwitch,
-    structureHydration,
     assetPrewarm,
     terrainPreparation,
     managerUpdate,
@@ -47,15 +45,9 @@ export function createWorldmapChunkOrchestrationFixture() {
       const oldChunk = currentChunk;
       const tileFetchPromise = tileFetch.fn(input.chunkKey);
       const boundsSwitchPromise = boundsSwitch.fn(input.chunkKey, input.transitionToken);
-      const structureHydrationPromise = structureHydration.fn(input.chunkKey);
       const assetPrewarmPromise = assetPrewarm.fn(input.chunkKey);
 
-      const [tileFetchSucceeded] = await Promise.all([
-        tileFetchPromise,
-        boundsSwitchPromise,
-        structureHydrationPromise,
-        assetPrewarmPromise,
-      ]);
+      const [tileFetchSucceeded] = await Promise.all([tileFetchPromise, boundsSwitchPromise, assetPrewarmPromise]);
       if (tileFetchSucceeded) {
         await terrainPreparation.fn(input.startRow, input.startCol);
       }

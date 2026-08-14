@@ -42,7 +42,6 @@ describe("commitWorldmapPreparedTerrainPresentation", () => {
       onAfterApply: vi.fn(),
       phaseDurations: {
         structureAssetPrewarmMs: 18,
-        structureHydrationDrainMs: 10,
         terrainPreparedMs: 22,
         tileHydrationDrainMs: 8,
       },
@@ -80,7 +79,6 @@ describe("commitWorldmapPreparedTerrainPresentation", () => {
       now: () => 10,
       phaseDurations: {
         structureAssetPrewarmMs: 0,
-        structureHydrationDrainMs: 0,
         terrainPreparedMs: 0,
         tileHydrationDrainMs: 0,
       },

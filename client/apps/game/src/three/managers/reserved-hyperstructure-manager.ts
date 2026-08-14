@@ -1,7 +1,7 @@
 import { ReservedHyperstructureModelPath } from "@/three/constants";
 import InstancedModel from "@/three/managers/instanced-model";
 import { FELT_CENTER } from "@/ui/config";
-import { type ReservedHyperstructureTileSystemUpdate } from "@bibliothecadao/eternum";
+import type { WorldSpatialProjection } from "@bibliothecadao/eternum/game-sync";
 import { type HexPosition } from "@bibliothecadao/types";
 import { Color, Material, Matrix4, Mesh, MeshStandardMaterial, Object3D, Scene } from "three";
 import { getWorldPositionForHex } from "../utils";
@@ -11,8 +11,6 @@ const INITIAL_CAPACITY = 32;
 const RESERVED_HYPERSTRUCTURE_COLOR = new Color(0xf3cc5b);
 const RESERVED_HYPERSTRUCTURE_OPACITY = 0.42;
 const RESERVED_HYPERSTRUCTURE_Y_OFFSET = 0.05;
-
-const createReservedHyperstructureKey = (hexCoords: HexPosition) => `${hexCoords.col}:${hexCoords.row}`;
 
 const cloneReservedHyperstructureMaterial = (material: Material) => {
   const cloned = material.clone();
@@ -44,37 +42,30 @@ const applyReservedHyperstructureMaterialStyle = (gltf: any) => {
 
 export class ReservedHyperstructureManager {
   private readonly dummy = new Object3D();
-  private readonly reservedHyperstructureHexes = new Map<string, HexPosition>();
   private readonly instanceMatrix = new Matrix4();
+  private readonly unsubscribeProjection: () => void;
   private reservedHyperstructureModel: InstancedModel | null = null;
   private destroyed = false;
 
-  constructor(private readonly scene: Scene) {
+  constructor(
+    private readonly scene: Scene,
+    private readonly worldSpatialProjection: WorldSpatialProjection,
+  ) {
+    this.unsubscribeProjection = worldSpatialProjection.subscribeStructures(() => {
+      this.renderReservedHyperstructures();
+    });
     void this.loadModel();
   }
 
   public getVisibleCount(): number {
-    return this.reservedHyperstructureHexes.size;
-  }
-
-  public onUpdate(update: ReservedHyperstructureTileSystemUpdate): void {
-    const normalizedHexCoords = this.normalizeHexCoords(update.hexCoords);
-    const key = createReservedHyperstructureKey(normalizedHexCoords);
-
-    if (update.removed) {
-      this.reservedHyperstructureHexes.delete(key);
-    } else {
-      this.reservedHyperstructureHexes.set(key, normalizedHexCoords);
-    }
-
-    this.renderReservedHyperstructures();
+    return this.getReservedHyperstructureHexes().length;
   }
 
   public destroy(): void {
     this.destroyed = true;
+    this.unsubscribeProjection();
     this.reservedHyperstructureModel?.dispose();
     this.reservedHyperstructureModel = null;
-    this.reservedHyperstructureHexes.clear();
   }
 
   private async loadModel(): Promise<void> {
@@ -104,7 +95,7 @@ export class ReservedHyperstructureManager {
       return;
     }
 
-    const entries = Array.from(this.reservedHyperstructureHexes.values());
+    const entries = this.getReservedHyperstructureHexes();
     const previousCount = reservedHyperstructureModel.getCount();
 
     entries.forEach((hexCoords, index) => {
@@ -119,6 +110,13 @@ export class ReservedHyperstructureManager {
 
     reservedHyperstructureModel.setCount(entries.length);
     reservedHyperstructureModel.needsUpdate();
+  }
+
+  private getReservedHyperstructureHexes(): HexPosition[] {
+    return this.worldSpatialProjection
+      .getStructures()
+      .filter((structure) => structure.reserved)
+      .map((structure) => this.normalizeHexCoords(structure.hexCoords));
   }
 
   private resolveInstanceMatrix(hexCoords: HexPosition): Matrix4 {

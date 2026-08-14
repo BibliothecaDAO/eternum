@@ -19,7 +19,6 @@ describe("runWorldmapRefreshRuntime", () => {
           presentationRuntime: {
             phaseDurations: {
               structureAssetPrewarmMs: 1,
-              structureHydrationDrainMs: 2,
               terrainPreparedMs: 3,
               tileHydrationDrainMs: 4,
             },
@@ -67,7 +66,6 @@ describe("runWorldmapRefreshRuntime", () => {
         presentationRuntime: {
           phaseDurations: {
             structureAssetPrewarmMs: 0,
-            structureHydrationDrainMs: 0,
             terrainPreparedMs: 0,
             tileHydrationDrainMs: 0,
           },

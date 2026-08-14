@@ -21,7 +21,7 @@ function ownerResolutionRegion(): string {
   expect(start).toBeGreaterThan(-1);
   // Region spans updateArmyHexes + its extracted private helpers
   // (findCachedArmyOwner, resolveArmyOwnerFromEcs), up to the next public method.
-  const end = src.indexOf("public updateStructureHexes(", start);
+  const end = src.indexOf("public async updateExploredHex(", start);
   expect(end).toBeGreaterThan(start);
   return src.slice(start, end);
 }

@@ -35,9 +35,6 @@ describe("worldmap hover label wiring", () => {
       ),
     ).toContain("this.reconcileHoverLabels()");
     expect(extractSourceBetween(source, "processExplorerTroopsUpdate(update", "}),")).toContain("reconcileHoverLabels");
-    expect(extractSourceBetween(source, "await this.trackStructureHydrationUpdate(value", "const newCount")).toContain(
-      "this.reconcileHoverLabels()",
-    );
     expect(
       extractSourceBetween(
         source,
@@ -45,7 +42,7 @@ describe("worldmap hover label wiring", () => {
         "private bindWorldmapCameraViewLifecycle()",
       ),
     ).toContain("this.reconcileHoverLabels()");
-    expect(extractSourceBetween(source, "public updateArmyHexes(", "public updateStructureHexes(")).not.toContain(
+    expect(extractSourceBetween(source, "public updateArmyHexes(", "public async updateExploredHex(")).not.toContain(
       "reconcileHoverLabels",
     );
   });

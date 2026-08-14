@@ -57,7 +57,6 @@ describe("prewarmDirectionalPresentationChunk tile fetch correctness", () => {
       tileFetchPromise: Promise.resolve(false),
       tileHydrationReadyPromise: Promise.resolve(),
       boundsReadyPromise: Promise.resolve(),
-      structureReadyPromise: Promise.resolve(),
       assetPrewarmPromise: Promise.resolve(),
       prepareTerrainChunk,
     });

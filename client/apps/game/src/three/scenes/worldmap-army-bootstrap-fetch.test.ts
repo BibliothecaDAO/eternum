@@ -72,7 +72,8 @@ describe("worldmap army bootstrap fetch", () => {
     );
     const stagedHydrationBody = extractMethodBody(source, "private async hydrateRenderAreaFromGlobalSpatialState(");
     expect(stagedHydrationBody).toContain("hydrateExploredTilesFromGlobalTileOptRecs");
-    expect(stagedHydrationBody).toContain("hydrateStructuresFromGlobalTileOptRecs");
+    expect(stagedHydrationBody).not.toContain("hydrateStructuresFromGlobalTileOptRecs");
+    expect(source).not.toContain("resolveStructureTileUpdateFromTileOpt");
     expect(stagedHydrationBody).toContain("global_spatial_recs_hydrated");
     expect(stagedHydrationBody).not.toContain("chestManager");
   });
