@@ -22,27 +22,17 @@ describe("worldmap fetch ownership race hardening", () => {
     const firstOwner = Promise.resolve(true);
     const secondOwner = Promise.resolve(true);
     const state = createWorldmapRenderAreaHydrationState();
-    registerPendingRenderAreaHydration(state, fetchKey, ["tileOpt", "explorerTroops"], secondOwner);
+    registerPendingRenderAreaHydration(state, fetchKey, ["tileOpt"], secondOwner);
 
-    const staleDeleted = finalizePendingRenderAreaHydrationOwnership(
-      state,
-      fetchKey,
-      ["tileOpt", "explorerTroops"],
-      firstOwner,
-    );
+    const staleDeleted = finalizePendingRenderAreaHydrationOwnership(state, fetchKey, ["tileOpt"], firstOwner);
 
     expect(staleDeleted).toBe(false);
-    expect(getPendingRenderAreaHydrationPromise(state, fetchKey, ["tileOpt", "explorerTroops"])).toBe(secondOwner);
+    expect(getPendingRenderAreaHydrationPromise(state, fetchKey, ["tileOpt"])).toBe(secondOwner);
 
-    const currentDeleted = finalizePendingRenderAreaHydrationOwnership(
-      state,
-      fetchKey,
-      ["tileOpt", "explorerTroops"],
-      secondOwner,
-    );
+    const currentDeleted = finalizePendingRenderAreaHydrationOwnership(state, fetchKey, ["tileOpt"], secondOwner);
 
     expect(currentDeleted).toBe(true);
-    expect(getPendingRenderAreaHydrationPromise(state, fetchKey, ["tileOpt", "explorerTroops"])).toBe(null);
+    expect(getPendingRenderAreaHydrationPromise(state, fetchKey, ["tileOpt"])).toBe(null);
   });
 
   it("wires ownership-aware finalizer into executeTileEntitiesFetch", () => {

@@ -30,16 +30,12 @@ describe("worldmap connection failure recovery", () => {
     expect(methodSource).not.toContain("requestChunkRefresh");
   });
 
-  it("clears terrain and army hydration keys when recovering a stalled chunk", () => {
+  it("clears the terrain hydration key when recovering a stalled chunk", () => {
     const methodSource = extractClearStalledChunkAreaState(readSource("src/three/scenes/worldmap.tsx"));
 
     expect(methodSource).toContain("this.getRenderAreaKeyForChunk(chunkKey)");
-    expect(methodSource).toContain("this.getExplorerTroopsRenderAreaKeyForChunk(chunkKey)");
     expect(methodSource).toContain("clearRenderAreaHydrationState(this.renderAreaHydrationState, areaKey)");
-    expect(methodSource).toContain(
-      "clearRenderAreaHydrationState(this.renderAreaHydrationState, explorerTroopsAreaKey)",
-    );
-    expect(methodSource).not.toContain("explorerTroopsSpatialSqlBackoffUntilMs");
+    expect(methodSource).not.toContain("explorerTroops");
     expect(methodSource).not.toContain("structuresAreaKey");
   });
 });

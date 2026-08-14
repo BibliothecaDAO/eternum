@@ -11,8 +11,6 @@ import {
   type ID,
   ResourcesIds,
   TileOccupier,
-  type TroopTier,
-  type TroopType,
 } from "@bibliothecadao/types";
 import {
   type Component,
@@ -25,42 +23,27 @@ import {
 } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { shortString } from "starknet";
-import { StaminaManager } from "../managers";
 import { ActiveProduction, GuardArmy, MapDataStore, TROOP_TIERS } from "../stores/map-data-store";
 import { divideByPrecision, getIsBlitz, getStructureTypeName, tileOptToTile, unpackBuildingCounts } from "../utils";
 import { MAP_DATA_REFRESH_INTERVAL } from "../utils/constants";
 import { getStructureName } from "../utils/entities";
-import { getBlockTimestamp } from "../utils/timestamp";
-import { DataEnhancer } from "./data-enhancer";
-import { recordArmyMovementLatencyPhase } from "./army-movement-latency-trace";
-import { resolveFreshestArmyStaminaSource } from "./army-stamina-source";
 import {
   type BattleEventSystemUpdate,
   type BuildingSystemUpdate,
   ExplorerRewardSystemUpdate,
-  ExplorerTroopsSystemUpdate,
-  type ExplorerTroopsTileSystemUpdate,
   type ReservedHyperstructureTileSystemUpdate,
   type StructureBuildingsSystemUpdate,
   StructureSystemUpdate,
   type StructureTileSystemUpdate,
   type TileSystemUpdate,
 } from "./types";
-import { getExplorerInfoFromTileOccupier, getStructureInfoFromTileOccupier } from "./utils";
+import { getStructureInfoFromTileOccupier } from "./utils";
 import { gameEntityKey } from "../managers/config-manager";
 
 // The WorldUpdateListener class is responsible for updating the Three.js models when there are changes in the game state.
 // It listens for updates from torii and translates them into a format that can be consumed by the Three.js model managers.
 export class WorldUpdateListener {
   private mapDataStore: MapDataStore;
-  private dataEnhancer: DataEnhancer;
-  // Sequential-update state is keyed by "<scope>:<entityId>". Scoping per stream matters:
-  // a newer Structure component update must never cancel a pending Tile update for the same
-  // entity — the Tile stream is the only live path that places the structure mesh (a dropped
-  // tile update leaves a freshly created hyperstructure invisible until the next rehydration).
-  // Supersession is only valid within one stream, where updates are true substitutes.
-  private updateSequenceMap: Map<string, number> = new Map(); // Track update sequence numbers
-  private pendingUpdates: Map<string, Promise<any>> = new Map(); // Track pending async updates
 
   constructor(
     private setup: SetupResult,
@@ -68,9 +51,6 @@ export class WorldUpdateListener {
   ) {
     // Initialize MapDataStore with centralized refresh interval
     this.mapDataStore = MapDataStore.getInstance(MAP_DATA_REFRESH_INTERVAL, sqlApi);
-
-    // Initialize DataEnhancer to handle all data fetching
-    this.dataEnhancer = new DataEnhancer(this.mapDataStore);
 
     // Start initial data fetch
     this.mapDataStore.refresh().catch((error) => {
@@ -115,43 +95,6 @@ export class WorldUpdateListener {
     // );
     // console.error(`🛑 [WorldUpdateListener] Missing entityId context: ${context} 🛑`, details);
     // console.trace(`🔍 [WorldUpdateListener] Missing entityId stack trace (${context})`);
-  }
-
-  private resolveLiveArmySnapshot(
-    entityId: ID,
-    currentArmiesTick: number,
-  ):
-    | {
-        troopCount: number;
-        currentStamina: number;
-        onChainStamina?: {
-          amount: bigint;
-          updatedTick: number;
-        };
-        ownerStructureId?: ID;
-      }
-    | undefined {
-    try {
-      const explorerTroops = getComponentValue(this.setup.components.ExplorerTroops, gameEntityKey([BigInt(entityId)]));
-      if (!explorerTroops?.troops) {
-        return undefined;
-      }
-
-      const ownerStructureId = explorerTroops.owner && explorerTroops.owner !== 0 ? explorerTroops.owner : undefined;
-
-      return {
-        troopCount: divideByPrecision(Number(explorerTroops.troops.count)),
-        currentStamina: Number(StaminaManager.getStamina(explorerTroops.troops, currentArmiesTick).amount),
-        onChainStamina: {
-          amount: BigInt(explorerTroops.troops.stamina.amount),
-          updatedTick: Number(explorerTroops.troops.stamina.updated_tick),
-        },
-        ownerStructureId,
-      };
-    } catch (error) {
-      console.warn(`[DEBUG] Could not get live explorer stamina snapshot for army ${entityId}:`, error);
-      return undefined;
-    }
   }
 
   private buildGuardArmies(troopGuards: any): GuardArmy[] {
@@ -251,296 +194,6 @@ export class WorldUpdateListener {
 
     return () => {
       active = false;
-    };
-  }
-
-  public get Army() {
-    return {
-      onTileUpdate: (callback: (value: ExplorerTroopsTileSystemUpdate) => void) => {
-        this.setupSystem(
-          this.setup.components.TileOpt,
-          callback,
-          async (update: any): Promise<ExplorerTroopsTileSystemUpdate | undefined> => {
-            if (isComponentUpdate(update, this.setup.components.TileOpt)) {
-              const [currentStateOpt, _prevStateOpt] = update.value;
-              const currentState = currentStateOpt ? tileOptToTile(currentStateOpt) : undefined;
-              const _prevState = _prevStateOpt ? tileOptToTile(_prevStateOpt) : undefined;
-
-              const explorer = currentState && getExplorerInfoFromTileOccupier(currentState?.occupier_type);
-              const previousExplorer = _prevState && getExplorerInfoFromTileOccupier(_prevState.occupier_type);
-
-              if (!explorer) {
-                if (currentState) {
-                  // console.debug(`[WorldUpdateListener] Tile update without explorer`, {
-                  //   entity: update.entity,
-                  //   occupierType: currentState.occupier_type,
-                  //   occupierId: currentState.occupier_id,
-                  //   prevOccupierId: _prevState?.occupier_id,
-                  //   prevOccupierType: _prevState?.occupier_type,
-                  // });
-                }
-
-                // When an army leaves a tile, verify it's actually dead before marking as removed
-                if (previousExplorer && _prevState) {
-                  // Check if the army still exists in ExplorerTroops component
-                  // If it exists, it's just moving to a new tile and shouldn't be marked as removed
-                  try {
-                    const explorerTroops = getComponentValue(
-                      this.setup.components.ExplorerTroops,
-                      gameEntityKey([BigInt(_prevState.occupier_id)]),
-                    );
-
-                    // If ExplorerTroops still exists and has non-zero troops, the army is alive (just moving)
-                    if (explorerTroops && explorerTroops.troops.count > 0n) {
-                      // console.debug(
-                      //   `[WorldUpdateListener] Army ${_prevState.occupier_id} left tile but still exists (count: ${explorerTroops.troops.count}) - likely moving`,
-                      // );
-                      // Don't send removal update - army is just moving
-                      return;
-                    }
-
-                    // console.debug(
-                    //   `[WorldUpdateListener] Army ${_prevState.occupier_id} left tile and ExplorerTroops is gone or count=0 - marking as removed`,
-                    // );
-                  } catch (error) {
-                    // console.debug(
-                    //   `[WorldUpdateListener] Could not verify army ${_prevState.occupier_id} existence - assuming removed`,
-                    // );
-                  }
-
-                  // Army is confirmed dead or doesn't exist - mark as removed
-                  const coordsSource = currentState ?? _prevState;
-                  const removedEntityId = _prevState?.occupier_id;
-
-                  if (removedEntityId === undefined || removedEntityId === null) {
-                    this.logMissingEntityId("Army.onTileUpdate.removed", {
-                      update,
-                      currentState,
-                      prevState: _prevState,
-                    });
-                    return;
-                  }
-
-                  return {
-                    entityId: removedEntityId,
-                    hexCoords: { col: coordsSource.col, row: coordsSource.row },
-                    troopType: previousExplorer.troopType as TroopType,
-                    troopTier: previousExplorer.troopTier as TroopTier,
-                    isDaydreamsAgent: previousExplorer.isDaydreamsAgent,
-                    troopCount: 0,
-                    ownerName: "",
-                    guildName: "",
-                    ownerAddress: 0n,
-                    ownerStructureId: null,
-                    removed: true,
-                  };
-                }
-
-                return;
-              }
-
-              const rawOccupierId = currentState?.occupier_id;
-
-              if (rawOccupierId === undefined || rawOccupierId === null) {
-                this.logMissingEntityId("Army.onTileUpdate.current", {
-                  update,
-                  currentState,
-                  prevState: _prevState,
-                });
-                return;
-              }
-
-              // Cross-check TileOpt against the fresher ExplorerTroops coord. If they
-              // disagree, this TileOpt is stale (e.g. a subscription replay after a
-              // chunk-bounds shift) — emitting it would rubber-band the visual back
-              // to the outdated tile and then forward again when the fresh update
-              // arrives.
-              try {
-                const explorerTroops = getComponentValue(
-                  this.setup.components.ExplorerTroops,
-                  gameEntityKey([BigInt(rawOccupierId)]),
-                );
-                if (explorerTroops?.coord) {
-                  const explorerCol = Number((explorerTroops.coord as { x?: unknown }).x ?? NaN);
-                  const explorerRow = Number((explorerTroops.coord as { y?: unknown }).y ?? NaN);
-                  if (
-                    Number.isFinite(explorerCol) &&
-                    Number.isFinite(explorerRow) &&
-                    (explorerCol !== currentState.col || explorerRow !== currentState.row)
-                  ) {
-                    return;
-                  }
-                }
-              } catch (_) {
-                // ExplorerTroops unavailable — fall through and emit the TileOpt as-is.
-              }
-
-              recordArmyMovementLatencyPhase({
-                phase: "tileopt_component_received",
-                source: "world_update_listener",
-                entityId: rawOccupierId,
-                details: {
-                  col: currentState.col,
-                  row: currentState.row,
-                },
-              });
-
-              const { currentArmiesTick } = getBlockTimestamp();
-
-              // Use sequential update processing to prevent race conditions
-              const result = await this.processSequentialUpdate("army-tile", rawOccupierId, async () => {
-                // Try to get the structure owner ID from ExplorerTroops component
-                let structureOwnerId: ID | undefined;
-                try {
-                  const explorerTroops = getComponentValue(
-                    this.setup.components.ExplorerTroops,
-                    gameEntityKey([BigInt(rawOccupierId)]),
-                  );
-                  structureOwnerId = explorerTroops?.owner;
-                } catch (error) {
-                  console.warn(`[DEBUG] Could not get structure owner for army ${rawOccupierId}:`, error);
-                }
-
-                const normalizedStructureOwnerId =
-                  structureOwnerId && structureOwnerId !== 0 ? structureOwnerId : undefined;
-
-                // Use DataEnhancer to fetch all enhanced data
-                const enhancedData = await this.dataEnhancer.enhanceArmyData(
-                  rawOccupierId,
-                  explorer,
-                  currentArmiesTick,
-                  normalizedStructureOwnerId,
-                );
-                const liveArmySnapshot = this.resolveLiveArmySnapshot(rawOccupierId, currentArmiesTick);
-                const freshestArmyStaminaSource = resolveFreshestArmyStaminaSource({
-                  liveSnapshot: liveArmySnapshot,
-                  enhancedSnapshot: enhancedData,
-                });
-                const freshestArmyStaminaSnapshot =
-                  freshestArmyStaminaSource === "live" ? liveArmySnapshot : enhancedData;
-
-                const maxStamina = StaminaManager.getMaxStamina(explorer.troopType, explorer.troopTier);
-
-                return {
-                  entityId: rawOccupierId,
-                  hexCoords: { col: currentState.col, row: currentState.row },
-                  // need to set it to 0n if no owner address because else it won't be registered on the worldmap
-                  ownerAddress: enhancedData?.owner.address ? BigInt(enhancedData.owner.address) : 0n,
-                  ownerName: enhancedData?.owner.ownerName || "",
-                  guildName: enhancedData?.owner.guildName || "",
-                  troopType: explorer.troopType as TroopType,
-                  troopTier: explorer.troopTier as TroopTier,
-                  isDaydreamsAgent: explorer.isDaydreamsAgent,
-                  ownerStructureId:
-                    liveArmySnapshot?.ownerStructureId ??
-                    normalizedStructureOwnerId ??
-                    enhancedData.ownerStructureId ??
-                    null,
-                  // Enhanced data from DataEnhancer
-                  troopCount: liveArmySnapshot?.troopCount ?? enhancedData.troopCount,
-                  currentStamina: freshestArmyStaminaSnapshot?.currentStamina ?? enhancedData.currentStamina,
-                  onChainStamina: freshestArmyStaminaSnapshot?.onChainStamina ?? enhancedData.onChainStamina,
-                  battleData: enhancedData.battleData,
-                  maxStamina,
-                };
-              });
-
-              // Return undefined if update was cancelled due to being outdated
-              if (result) {
-                recordArmyMovementLatencyPhase({
-                  phase: "tileopt_component_ready",
-                  source: "world_update_listener",
-                  entityId: rawOccupierId,
-                  details: {
-                    col: result.hexCoords.col,
-                    row: result.hexCoords.row,
-                  },
-                });
-              }
-              return result || undefined;
-            }
-          },
-          true,
-        );
-      },
-      onExplorerTroopsUpdate: (callback: (value: ExplorerTroopsSystemUpdate) => void) => {
-        this.setupSystem(
-          this.setup.components.ExplorerTroops,
-          callback,
-          async (update: any): Promise<ExplorerTroopsSystemUpdate | undefined> => {
-            if (isComponentUpdate(update, this.setup.components.ExplorerTroops)) {
-              const [currentState, _prevState] = update.value;
-
-              if (!currentState) return;
-
-              // Sync read on purpose: awaiting the map-data store here can
-              // stall a stamina/troop label update behind an in-flight SQL
-              // refresh. Owner decoration also arrives via structure updates.
-              const owner = this.dataEnhancer.getStructureOwnerSync(currentState.owner);
-              const normalizedOwnerStructureId =
-                currentState.owner && currentState.owner !== 0 ? currentState.owner : null;
-
-              const entityId = this.resolveEntityId(currentState.explorer_id as ID | undefined, update.entity, () => {
-                const componentState = getComponentValue(this.setup.components.ExplorerTroops, update.entity) as
-                  | { explorer_id?: ID }
-                  | undefined;
-                return componentState?.explorer_id;
-              });
-
-              if (!entityId) {
-                this.logMissingEntityId("onExplorerTroopsUpdate", { update });
-                return;
-              }
-
-              return {
-                entityId,
-                troopCount: divideByPrecision(Number(currentState.troops.count)),
-                onChainStamina: {
-                  amount: BigInt(currentState.troops.stamina.amount),
-                  updatedTick: Number(currentState.troops.stamina.updated_tick),
-                },
-                ownerStructureId: normalizedOwnerStructureId,
-                hexCoords: { col: currentState.coord.x, row: currentState.coord.y },
-                ownerAddress: owner?.address || 0n,
-                ownerName: owner?.ownerName || "",
-                battleCooldownEnd: currentState.troops.battle_cooldown_end,
-              };
-            }
-          },
-          true,
-        );
-      },
-      onDeadArmy: (callback: (value: ID) => void) => {
-        // console.debug(`[WorldUpdateListener] Subscribing to dead army updates`);
-        this.setupSystem(
-          this.setup.components.ExplorerTroops,
-          callback,
-          async (update: any): Promise<ID | undefined> => {
-            if (isComponentUpdate(update, this.setup.components.ExplorerTroops)) {
-              const [currentState, prevState] = update.value;
-              // console.debug(`[WorldUpdateListener] ExplorerTroops component update received`, {
-              //   entity: update.entity,
-              //   hasCurrentState: currentState !== undefined,
-              //   hasPrevState: prevState !== undefined,
-              // });
-              const explorer = getComponentValue(this.setup.components.ExplorerTroops, update.entity);
-              if (!explorer && !prevState) return;
-              if (!explorer && undefined === currentState && prevState) {
-                const deadArmyEntityId = prevState?.explorer_id;
-
-                if (deadArmyEntityId === undefined || deadArmyEntityId === null) {
-                  this.logMissingEntityId("Army.onDeadArmy", { update, prevState });
-                  return;
-                }
-
-                // console.debug(`[WorldUpdateListener] ExplorerTroops removed for entity ${deadArmyEntityId}`);
-                return deadArmyEntityId;
-              }
-            }
-          },
-          false,
-        );
-      },
     };
   }
 
@@ -1206,73 +859,9 @@ export class WorldUpdateListener {
   }
 
   /**
-   * Ensures async updates are processed in the correct order
-   * Prevents race conditions where newer updates get overwritten by older ones
-   */
-  private async processSequentialUpdate<T>(
-    sequenceScope: string,
-    entityId: ID,
-    updateFunction: () => Promise<T>,
-  ): Promise<T | null> {
-    const sequenceKey = `${sequenceScope}:${entityId}`;
-
-    // Generate a sequence number for this update
-    const currentSequence = (this.updateSequenceMap.get(sequenceKey) || 0) + 1;
-    this.updateSequenceMap.set(sequenceKey, currentSequence);
-
-    // Wait for any pending update for this entity to complete first
-    if (this.pendingUpdates.has(sequenceKey)) {
-      try {
-        await this.pendingUpdates.get(sequenceKey);
-      } catch (error) {
-        console.warn(`Previous update for ${sequenceKey} failed:`, error);
-      }
-    }
-
-    // Create and execute the update promise
-    const updatePromise = (async () => {
-      try {
-        // Check if this update is still the latest before processing
-        if (this.updateSequenceMap.get(sequenceKey) !== currentSequence) {
-          return null;
-        }
-
-        const result = await updateFunction();
-
-        // Double-check sequence number before returning result
-        if (this.updateSequenceMap.get(sequenceKey) !== currentSequence) {
-          return null;
-        }
-
-        return result;
-      } catch (error) {
-        console.error(`Sequential update failed for ${sequenceKey}:`, error);
-        throw error;
-      }
-    })();
-
-    // Track this update as pending
-    this.pendingUpdates.set(sequenceKey, updatePromise);
-
-    // Clean up when the promise completes
-    updatePromise.finally(() => {
-      // Only clean up if this is still the current promise for this entity
-      if (this.pendingUpdates.get(sequenceKey) === updatePromise) {
-        this.pendingUpdates.delete(sequenceKey);
-      }
-    });
-
-    return updatePromise;
-  }
-
-  /**
    * Clean up resources and stop timers
    */
   public destroy(): void {
-    // Clear any pending updates
-    this.pendingUpdates.clear();
-    this.updateSequenceMap.clear();
-
     this.mapDataStore.destroy();
   }
 }

@@ -45,14 +45,18 @@ describe("ArmyManager optimistic position lock", () => {
     expect(body).toContain("targetNormalized");
   });
 
-  it("guards onTileUpdate with the skip predicate before moveArmy/addArmy", () => {
+  it("guards projected position updates with the skip predicate before moveArmy", () => {
     const source = readSource();
 
-    const methodStart = source.indexOf("async onTileUpdate(update: ExplorerTroopsTileSystemUpdate)");
+    const methodStart = source.indexOf("private async ensureArmyPresentation(");
     expect(methodStart).toBeGreaterThan(0);
-    const prologue = source.slice(methodStart, methodStart + 700);
+    const methodEnd = source.indexOf("private buildProjectedArmyPresentation(", methodStart);
+    const body = source.slice(methodStart, methodEnd);
 
-    expect(prologue).toContain("this.shouldSkipStalePositionUpdate");
+    const guard = body.indexOf("this.shouldSkipStalePositionUpdate");
+    const move = body.indexOf("await this.moveArmy");
+    expect(guard).toBeGreaterThan(-1);
+    expect(move).toBeGreaterThan(guard);
   });
 
   it("clears the lock on rewindOptimisticMovement", () => {

@@ -111,9 +111,7 @@ describe("worldmap create-army ghost wiring", () => {
     expect(resolvePendingCreateArmyGhostOnArmyUpdate).toContain("removed: Boolean(update.removed)");
     expect(resolvePendingCreateArmyGhostOnArmyUpdate).toContain('this.clearPendingActionFx(key, "arrived")');
     expect(resolvePendingCreateArmyGhostOnArmyUpdate).toContain("this.clearPendingCreateArmyGhostsForOccupiedTiles()");
-    expect(clearPendingCreateArmyGhostsForOccupiedTiles).toContain(
-      "this.armyHexes.get(pending.targetHex.col)?.get(pending.targetHex.row)",
-    );
+    expect(clearPendingCreateArmyGhostsForOccupiedTiles).toContain("this.getArmyAtHex(pending.targetHex)");
     expect(clearPendingCreateArmyGhostsForOccupiedTiles).toContain('this.clearPendingActionFx(key, "arrived")');
   });
 });

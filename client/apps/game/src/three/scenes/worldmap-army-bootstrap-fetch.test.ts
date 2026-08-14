@@ -51,8 +51,8 @@ function findMethodSignatureEnd(source: string, searchStart: number): number {
   throw new Error("Unable to find method signature end");
 }
 
-describe("worldmap army bootstrap fetch", () => {
-  it("hydrates army bootstrap render areas from global spatial RECS instead of exact SQL", () => {
+describe("worldmap projection-backed army bootstrap", () => {
+  it("keeps render-area hydration terrain-only while armies come from the projection", () => {
     const source = readWorldmapSource();
 
     expect(source).not.toContain("getExplorerTroopsFromToriiExact");
@@ -63,8 +63,8 @@ describe("worldmap army bootstrap fetch", () => {
     expect(computeMethodBody).toContain("this.resolveRenderAreaHydrationFetchPlans(chunkKey, requiredStages)");
 
     const hydrationPlanBody = extractMethodBody(source, "private resolveRenderAreaHydrationFetchPlans(");
-    expect(hydrationPlanBody).toContain("this.getExplorerTroopsRenderAreaKeyForChunk(chunkKey)");
-    expect(hydrationPlanBody).toContain('stages: ["explorerTroops"]');
+    expect(hydrationPlanBody).toContain('stages: ["tileOpt"]');
+    expect(hydrationPlanBody).not.toContain("explorerTroops");
 
     const fetchMethodBody = extractMethodBody(source, "private async executeTileEntitiesFetch(");
     expect(fetchMethodBody).toContain(
@@ -76,5 +76,6 @@ describe("worldmap army bootstrap fetch", () => {
     expect(source).not.toContain("resolveStructureTileUpdateFromTileOpt");
     expect(stagedHydrationBody).toContain("global_spatial_recs_hydrated");
     expect(stagedHydrationBody).not.toContain("chestManager");
+    expect(source).toContain("this.worldSpatialProjection.subscribeArmies");
   });
 });

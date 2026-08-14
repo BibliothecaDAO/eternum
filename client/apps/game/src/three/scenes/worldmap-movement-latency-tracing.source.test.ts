@@ -31,17 +31,12 @@ describe("Worldmap movement latency tracing wiring", () => {
     expect(source).toContain("authoritativePendingArmyMovementMs = 30_000");
   });
 
-  it("records raw TileOpt stream delivery from the torii sync layer", () => {
-    const source = readRepoSource("client/apps/game/src/dojo/sync.ts");
+  it("does not treat TileOpt delivery as an army movement phase", () => {
+    const syncSource = readRepoSource("client/apps/game/src/dojo/sync.ts");
+    const listenerSource = readRepoSource("packages/core/src/systems/world-update-listener.ts");
 
-    expect(source).toContain('"tileopt_stream_received"');
-  });
-
-  it("records TileOpt processing phases in the world update listener", () => {
-    const source = readRepoSource("packages/core/src/systems/world-update-listener.ts");
-
-    expect(source).toContain('"tileopt_component_received"');
-    expect(source).toContain('"tileopt_component_ready"');
+    expect(syncSource).not.toContain("recordTileOptStreamTrace");
+    expect(listenerSource).not.toContain("tileopt_component_received");
   });
 
   it("records explore reconcile and next-safe-unblocked phases when authoritative position catches up", () => {

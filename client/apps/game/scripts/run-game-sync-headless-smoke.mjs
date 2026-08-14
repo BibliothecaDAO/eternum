@@ -173,6 +173,36 @@ const verifyChestProjection = (projection, occupancy) => {
   };
 };
 
+const verifyArmyProjection = (projection, explorerTroopsComponent) => {
+  const expectedArmies = Array.from(getComponentEntities(explorerTroopsComponent)).flatMap((entityId) => {
+    const explorerTroops = getComponentValue(explorerTroopsComponent, entityId);
+    if (!explorerTroops || explorerTroops.coord.alt || explorerTroops.troops.count <= 0n) return [];
+    return [
+      {
+        entityId: explorerTroops.explorer_id,
+        col: Number(explorerTroops.coord.x),
+        row: Number(explorerTroops.coord.y),
+      },
+    ];
+  });
+  const projectedArmies = projection.getArmies();
+
+  if (projectedArmies.length !== expectedArmies.length) {
+    throw new Error(`Projection contains ${projectedArmies.length} armies; expected ${expectedArmies.length}`);
+  }
+  for (const expected of expectedArmies) {
+    const projected = projection.getArmy(expected.entityId);
+    if (projected?.hexCoords.col !== expected.col || projected.hexCoords.row !== expected.row) {
+      throw new Error(`Projection has stale coordinates for army ${expected.entityId}`);
+    }
+  }
+
+  return {
+    armyCount: projectedArmies.length,
+    sampleArmy: projectedArmies[0] ?? null,
+  };
+};
+
 const delay = (milliseconds) => new Promise((resolve) => setTimeout(resolve, milliseconds));
 
 const run = async (config) => {
@@ -196,7 +226,10 @@ const run = async (config) => {
       scheduler: createTimerGameSyncScheduler(),
       eventIdentityLimit: EVENT_IDENTITY_LIMIT,
     });
-    const projection = new WorldSpatialProjection({ tileOptComponent: contractComponents.TileOpt });
+    const projection = new WorldSpatialProjection({
+      tileOptComponent: contractComponents.TileOpt,
+      explorerTroopsComponent: contractComponents.ExplorerTroops,
+    });
     runtime.installWorldSpatialProjection(projection);
     if (config.watchMs > 0) await delay(config.watchMs);
 
@@ -204,7 +237,10 @@ const run = async (config) => {
     if (config.expectedOccupierId !== undefined && occupancy.occupierId !== config.expectedOccupierId) {
       throw new Error(`Expected occupier ${config.expectedOccupierId}, received ${occupancy.occupierId}`);
     }
-    const spatialProjection = verifyChestProjection(projection, occupancy);
+    const spatialProjection = {
+      ...verifyChestProjection(projection, occupancy),
+      ...verifyArmyProjection(projection, contractComponents.ExplorerTroops),
+    };
     console.log(
       JSON.stringify(
         { status: runtime.getStatus(), occupancy, spatialProjection, metrics: runtime.getMetrics() },

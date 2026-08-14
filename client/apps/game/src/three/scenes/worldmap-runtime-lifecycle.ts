@@ -5,13 +5,7 @@ interface PendingArmyMovementRecordLike<TTimeout> {
 }
 
 interface WorldmapSwitchOffRuntimeStateInput<TEntityId, TTimeout> {
-  pendingArmyRemovals: Map<TEntityId, TTimeout>;
-  pendingArmyRemovalMeta: Map<TEntityId, unknown>;
-  deferredChunkRemovals: Map<TEntityId, unknown>;
-  armyLastTileSyncAt: Map<TEntityId, number>;
   pendingArmyMovements: Map<TEntityId, PendingArmyMovementRecordLike<TTimeout>>;
-  armyStructureOwners: Map<TEntityId, unknown>;
-  suppressedArmies?: Set<TEntityId>;
   clearRenderAreaHydrationState: () => void;
   pinnedChunkKeys: Set<string>;
   pinnedRenderAreas: Set<string>;
@@ -53,13 +47,7 @@ interface ShouldApplyWorldmapFetchResultInput {
 }
 
 export const applyWorldmapSwitchOffRuntimeState = <TEntityId, TTimeout>({
-  pendingArmyRemovals,
-  pendingArmyRemovalMeta,
-  deferredChunkRemovals,
-  armyLastTileSyncAt,
   pendingArmyMovements,
-  armyStructureOwners,
-  suppressedArmies,
   clearRenderAreaHydrationState,
   pinnedChunkKeys,
   pinnedRenderAreas,
@@ -73,11 +61,6 @@ export const applyWorldmapSwitchOffRuntimeState = <TEntityId, TTimeout>({
   releaseInactiveResources,
   invalidatePendingFetches,
 }: WorldmapSwitchOffRuntimeStateInput<TEntityId, TTimeout>): WorldmapSwitchOffRuntimeStateResult => {
-  pendingArmyRemovals.forEach((timeoutId) => clearTimeout(timeoutId));
-  pendingArmyRemovals.clear();
-  pendingArmyRemovalMeta.clear();
-  deferredChunkRemovals.clear();
-  armyLastTileSyncAt.clear();
   pendingArmyMovements.forEach((record, entityId) => {
     const fallbackTimeout = record.movement?.fallbackTimeout;
     if (fallbackTimeout !== undefined) {
@@ -90,8 +73,6 @@ export const applyWorldmapSwitchOffRuntimeState = <TEntityId, TTimeout>({
   // receipts) and the army stays locked out of movement selection when the
   // map is re-entered.
   pendingArmyMovements.clear();
-  armyStructureOwners.clear();
-  suppressedArmies?.clear();
 
   clearStreamingWork();
   clearQueuedPrefetchState();

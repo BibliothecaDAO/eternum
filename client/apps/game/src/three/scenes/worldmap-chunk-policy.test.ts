@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest";
 import { WORLD_CHUNK_CONFIG } from "../constants/world-chunk-config";
-import { getRenderAreaKeyForChunk } from "./worldmap-chunk-bounds";
 import { createWorldmapChunkPolicy } from "./worldmap-chunk-policy";
 
 describe("createWorldmapChunkPolicy", () => {
@@ -20,14 +19,6 @@ describe("createWorldmapChunkPolicy", () => {
     const policy = createWorldmapChunkPolicy(WORLD_CHUNK_CONFIG);
 
     expect(policy).toHaveProperty("toriiFetch.superAreaStrides", WORLD_CHUNK_CONFIG.toriiFetch.superAreaStrides);
-    expect(policy).toHaveProperty(
-      "toriiFetch.explorerTroopsSuperAreaStrides",
-      WORLD_CHUNK_CONFIG.toriiFetch.explorerTroopsSuperAreaStrides,
-    );
-    expect(policy.toriiFetch.explorerTroopsSuperAreaStrides).toBe(
-      WORLD_CHUNK_CONFIG.toriiSubscription.superAreaStrides,
-    );
-    expect(policy.toriiFetch.explorerTroopsSuperAreaStrides).toBeGreaterThan(policy.toriiFetch.superAreaStrides);
     expect(policy).toHaveProperty("toriiSubscription.superAreaStrides", 48);
     expect(policy.toriiSubscription.superAreaStrides).toBeGreaterThan(policy.toriiFetch.superAreaStrides);
     expect(policy).toHaveProperty("prefetch.forwardDepthStrides", WORLD_CHUNK_CONFIG.prefetch.forwardDepthStrides);
@@ -51,34 +42,5 @@ describe("createWorldmapChunkPolicy", () => {
     expect((policy as { cache?: { recommendedMinSize?: number } }).cache?.recommendedMinSize).toBeGreaterThanOrEqual(
       pinnedChunkFloor,
     );
-  });
-
-  it("coalesces sparse hydration across terrain hydration boundaries", () => {
-    const policy = createWorldmapChunkPolicy(WORLD_CHUNK_CONFIG);
-    const firstChunkKey = "0,0";
-    const nextTerrainAreaChunkKey = `${WORLD_CHUNK_CONFIG.stride * WORLD_CHUNK_CONFIG.toriiFetch.superAreaStrides},0`;
-
-    const firstTerrainArea = getRenderAreaKeyForChunk(
-      firstChunkKey,
-      policy.chunkSize,
-      policy.toriiFetch.superAreaStrides,
-    );
-    const nextTerrainArea = getRenderAreaKeyForChunk(
-      nextTerrainAreaChunkKey,
-      policy.chunkSize,
-      policy.toriiFetch.superAreaStrides,
-    );
-    const firstExplorerTroopsArea = getRenderAreaKeyForChunk(
-      firstChunkKey,
-      policy.chunkSize,
-      policy.toriiFetch.explorerTroopsSuperAreaStrides,
-    );
-    const nextExplorerTroopsArea = getRenderAreaKeyForChunk(
-      nextTerrainAreaChunkKey,
-      policy.chunkSize,
-      policy.toriiFetch.explorerTroopsSuperAreaStrides,
-    );
-    expect(firstTerrainArea).not.toBe(nextTerrainArea);
-    expect(firstExplorerTroopsArea).toBe(nextExplorerTroopsArea);
   });
 });

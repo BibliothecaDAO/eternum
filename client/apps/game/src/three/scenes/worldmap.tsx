@@ -1,11 +1,6 @@
 import { playUnitCommandSound, playUnitCommandSoundForWorldmapAction } from "@/audio/unit-command-audio";
 import { toast } from "sonner";
 
-import {
-  ARMY_AUTHORITATIVE_MIN_TRACKED_AGE_MS,
-  ARMY_AUTHORITATIVE_SWEEP_INTERVAL_MS,
-  sweepArmiesAgainstTorii,
-} from "@/dojo/army-authoritative-reconciler";
 import { initializeSyncSimulator } from "@/dojo/sync-simulator";
 import { getBoundedSpatialMapModels, getGlobalSpatialMapModels } from "@/dojo/torii-spatial-models";
 import { shouldUseLegacyBoundedSpatialSync } from "@/dojo/game-sync-mode";
@@ -56,16 +51,13 @@ import { CameraView } from "@/three/scenes/camera-view";
 import { CAMERA_CONFIG } from "@/three/constants";
 import { HexagonScene } from "@/three/scenes/hexagon-scene";
 import type { QualityFeatures } from "@/three/utils/quality-controller";
-import {
-  processExplorerTroopsUpdate,
-  type PendingArmyRemovalCancelSource,
-} from "@/three/scenes/worldmap-update-helpers";
 import { WorldmapPerfSimulation } from "@/three/scenes/worldmap-perf-simulation";
 import { playResourceSound } from "@/three/sound/utils";
 import { LeftView } from "@/types";
 import { configManager, Position } from "@bibliothecadao/eternum";
 import {
   requireActiveGameSyncRuntime,
+  type ArmySpatialProjectionChange,
   type StructureSpatialProjectionChange,
   type WorldSpatialProjection,
 } from "@bibliothecadao/eternum/game-sync";
@@ -83,10 +75,7 @@ import {
   ActionType,
   ArmyActionManager,
   BattleEventSystemUpdate,
-  divideByPrecision,
   ExplorerRewardSystemUpdate,
-  ExplorerTroopsSystemUpdate,
-  ExplorerTroopsTileSystemUpdate,
   getBlockTimestamp,
   getGuardsByStructure,
   getTileAt,
@@ -114,14 +103,7 @@ import {
   TroopTier,
   TroopType,
 } from "@bibliothecadao/types";
-import {
-  getComponentEntities,
-  getComponentValue,
-  removeComponent,
-  type Component,
-  type Metadata,
-  type Schema,
-} from "@dojoengine/recs";
+import { getComponentEntities, getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import throttle from "lodash/throttle";
 import { Account, AccountInterface } from "starknet";
@@ -228,10 +210,6 @@ import {
 } from "./worldmap-terrain-commit-runtime";
 import { runWorldmapArmySelectionRecovery } from "./worldmap-army-selection-recovery-runtime";
 import {
-  retryDeferredWorldmapArmyRemovals,
-  type DeferredWorldmapArmyRemoval,
-} from "./worldmap-deferred-army-removal-runtime";
-import {
   resolveArmyTabSelectionPosition,
   resolvePendingArmyMovementFallbackPlan,
   resolvePendingArmyMovementSelectionPlan,
@@ -247,7 +225,6 @@ import { shouldPlayArmyMovementFx } from "./worldmap-movement-fx-policy";
 import {
   resolveArrivalGhostVisualStyle,
   shouldCreatePredictiveArrivalGhost,
-  shouldHideSourceArmyOnTileRemoval,
   type ArrivalGhostClearReason,
 } from "../managers/arrival-ghost-policy";
 import {
@@ -257,19 +234,7 @@ import {
   type PendingArmyMovementEffectClearReason,
   type TravelEffectType,
 } from "./worldmap-travel-effect-policy";
-import {
-  findSupersededArmyRemoval,
-  isStaleTrackedArmyTileRemoval,
-  shouldRecoverPendingArmyRemovalFromExplorerTroops as shouldRecoverArmyRemovalFromTroopsPosition,
-} from "./worldmap-army-removal";
-import {
-  ARMY_RECS_SWEEP_INTERVAL_MS,
-  evaluateArmyRecsConsistency,
-  type ArmyRecsConsistencyAction,
-  type ArmyRecsConsistencyCandidate,
-} from "./worldmap-army-recs-consistency";
 import { resolveArmyActionPathOrigin } from "./worldmap-action-path-origin";
-import { resolveArmyOwnerCacheAction } from "./worldmap-army-owner-resolution";
 import { resolveOwnershipPulseHexes } from "./worldmap-ownership-pulse-policy";
 import {
   resolveDuplicateTileReconcilePlan,
@@ -314,7 +279,6 @@ import {
   planWorldmapZoomRefresh,
 } from "./worldmap-zoom/worldmap-zoom-refresh-planner";
 import type { WorldmapCameraSnapshot } from "./worldmap-zoom/worldmap-zoom-types";
-import { shouldInvalidateTerrainForArmyTileUpdate } from "./worldmap-army-terrain-invalidation-policy";
 import {
   resolveWorldmapChunkRefreshDebounceMs,
   shouldDelayWorldmapChunkSwitch,
@@ -617,7 +581,6 @@ const TORII_BOUNDS_DEBUG = env.VITE_PUBLIC_TORII_BOUNDS_DEBUG === true;
 const TORII_BOUNDS_DEBUG_OVERLAY = env.VITE_PUBLIC_TORII_BOUNDS_DEBUG_OVERLAY === true;
 const WORLDMAP_CHUNK_PHASE_TIMEOUT_MS = env.VITE_PUBLIC_WORLDMAP_CHUNK_PHASE_TIMEOUT_MS;
 const WORLDMAP_CHUNK_RECOVERY_COOLDOWN_MS = 2_000;
-const EXPLORER_TROOPS_HYDRATION_KEY_PREFIX = "explorerTroops:";
 // Hard timeout wrapping the entire chunk transition (phase timeouts + post-phase work).
 // Catches cases where post-phase awaits (e.g. manager catch-up, finalize rollback)
 // hang past all per-phase timeouts and would otherwise lock isChunkTransitioning.
@@ -911,11 +874,6 @@ export default class WorldmapScene extends WarpTravel {
   private unsubscribeWorldSpatialProjection?: () => void;
   private exploredTiles: Map<number, Map<number, BiomeType>> = new Map();
   // normalized positions and if they are allied or not
-  private armyHexes: Map<number, Map<number, HexEntityInfo>> = new Map();
-  // store armies positions by ID, to remove previous positions when army moves
-  // normalized coordinates
-  private armiesPositions: Map<ID, HexPosition> = new Map();
-  private armyLastTileSyncAt: Map<ID, number> = new Map();
 
   // Battle direction manager for tracking attacker/defender relationships
   private battleDirectionManager!: BattleDirectionManager;
@@ -924,7 +882,6 @@ export default class WorldmapScene extends WarpTravel {
   private interactionAdapter!: ReturnType<typeof createWorldmapInteractionAdapter>;
   private selectionPulseManager!: SelectionPulseManager;
   private structurePulseColorCache: Map<string, { base: Color; pulse: Color }> = new Map();
-  private armyStructureOwners: Map<ID, ID> = new Map();
   private updateCameraTargetHexThrottled?: ReturnType<typeof throttle>;
   private refreshVisualTerrainWindowThrottled?: ReturnType<typeof throttle>;
   private updateCameraTargetHex = () => {
@@ -1067,33 +1024,6 @@ export default class WorldmapScene extends WarpTravel {
   private tileHydrationFetches: Map<string, TileHydrationFetchState> = new Map();
   private visibleTerrainMembership: Map<string, VisibleTerrainInstanceRef> = new Map();
   private pinnedRenderAreas: Set<string> = new Set();
-  private pendingArmyRemovals: Map<ID, ReturnType<typeof setTimeout>> = new Map();
-  private pendingArmyRemovalMeta: Map<
-    ID,
-    {
-      scheduledAt: number;
-      chunkKey: string;
-      reason: "tile" | "zero";
-      ownerAddress?: bigint;
-      ownerStructureId?: ID | null;
-      position?: HexPosition;
-    }
-  > = new Map();
-  private deferredChunkRemovals: Map<ID, DeferredWorldmapArmyRemoval> = new Map();
-  // Loop B sweep state: two-strike tracker for ExplorerTroops components that
-  // vanished from local RECS while the army is still rendered on-chunk.
-  private armyRecsMissingSince: Map<ID, number> = new Map();
-  private lastArmyRecsSweepAtMs = 0;
-  // Loop A sweep state: two-strike tracker for armies missing from Torii, the
-  // first-seen stamps that guard freshly created armies from the create-tx
-  // indexing race, and single-flight/throttle bookkeeping.
-  private armyAuthoritativeMissing: ReadonlySet<ID> = new Set();
-  private armyAuthoritativeFirstSeenAtMs: Map<ID, number> = new Map();
-  private armyAuthoritativeSweepInFlight = false;
-  private lastArmyAuthoritativeSweepAtMs = 0;
-  // DEV desync harness: one-shot suppression of the next onDeadArmy event per
-  // entity, so the production "missed deletion" failure mode can be injected.
-  private devSuppressedDeadArmies: Set<ID> = new Set();
 
   private fxManager!: FXManager;
   private arrivalGhostManager!: ArrivalGhostManager;
@@ -1320,7 +1250,7 @@ export default class WorldmapScene extends WarpTravel {
       });
       if (plan.shouldClearPendingMovement && plan.entityId !== undefined) {
         this.pendingMovementPlans.delete(plan.entityId);
-        this.rewindOptimisticMovementAndArmyHexes(plan.entityId);
+        this.rewindOptimisticMovement(plan.entityId);
         this.clearPendingArmyMovement(plan.entityId);
         useArmyStaminaSourceStore.getState().clearPendingStaminaSource(plan.entityId);
         this.disposePendingMovementVisualLifecycle(plan.entityId);
@@ -1395,7 +1325,6 @@ export default class WorldmapScene extends WarpTravel {
       entityId,
       txHash,
     });
-    this.mirrorOptimisticArmyDestinationIntoWorldmapCache(entityId, plan);
     this.paintOptimisticDestinationBiome(plan);
   }
 
@@ -1409,19 +1338,6 @@ export default class WorldmapScene extends WarpTravel {
     // Keep the pending movement lifecycle installed so the later authoritative
     // movement handoff can still clear pending state and resolve travel FX.
     this.arrivalGhostManager.clearArrivalGhost(entityId, "optimistic_aborted");
-  }
-
-  private mirrorOptimisticArmyDestinationIntoWorldmapCache(entityId: ID, plan: ArmyMovementPlan): void {
-    const movedArmy = this.armyManager.getArmy(entityId);
-    if (movedArmy?.owner?.address === undefined) return;
-
-    const targetContract = plan.targetHexCoords.getContract();
-    this.updateArmyHexes({
-      entityId,
-      hexCoords: { col: targetContract.x, row: targetContract.y },
-      ownerAddress: movedArmy.owner.address,
-      ownerStructureId: this.armyStructureOwners.get(entityId) ?? null,
-    });
   }
 
   private paintOptimisticDestinationBiome(plan: ArmyMovementPlan): void {
@@ -1526,6 +1442,7 @@ export default class WorldmapScene extends WarpTravel {
     this.armyManager = new ArmyManager(
       this.scene,
       this.renderChunkSize,
+      this.worldSpatialProjection,
       this.armyLabelsGroup,
       this,
       this.dojo,
@@ -1547,14 +1464,6 @@ export default class WorldmapScene extends WarpTravel {
         console.log(`[TestTroopDiffFx] Spawning FX at camera target with diff: ${testDiff}`);
         this.fxManager.playTroopDiffFx(testDiff, worldPos.x, worldPos.y + 3, worldPos.z);
       },
-      armyDesyncHarness: import.meta.env.DEV
-        ? {
-            simulateArmyGhostDesync: (entityId: number) => this.simulateArmyGhostDesync(entityId as ID),
-            simulateArmyPositionDesync: (entityId: number, col: number, row: number) =>
-              this.simulateArmyPositionDesync(entityId as ID, col, row),
-            getArmyGhostHardeningStats: () => this.getArmyGhostHardeningStats(),
-          }
-        : undefined,
     });
     this.installChunkDiagnosticsDebugHooks();
 
@@ -1618,7 +1527,7 @@ export default class WorldmapScene extends WarpTravel {
         this.armyManager.updateBattleDirection(entityId, direction, role),
       (entityId: ID, direction: Direction | undefined, role: "attacker" | "defender") =>
         this.structureManager.updateBattleDirection(entityId, direction, role),
-      (entityId: ID) => this.armiesPositions.get(entityId) || this.getStructureHexPosition(entityId),
+      (entityId: ID) => this.getArmyDisplayPosition(entityId) || this.getStructureHexPosition(entityId),
     );
 
     this.hoverLabelManager = new HoverLabelManager(
@@ -1655,7 +1564,15 @@ export default class WorldmapScene extends WarpTravel {
       });
     });
 
-    this.unsubscribeWorldSpatialProjection = this.worldSpatialProjection.subscribeStructures((changes) => {
+    this.worldSpatialProjection.getArmies().forEach((army) => {
+      const normalized = new Position({ x: army.hexCoords.col, y: army.hexCoords.row }).getNormalized();
+      gameWorkerManager.updateArmyHex(normalized.x, normalized.y, {
+        id: army.entityId,
+        owner: this.getArmyOwnerAddress(army.entityId) ?? 0n,
+      });
+    });
+
+    const unsubscribeStructures = this.worldSpatialProjection.subscribeStructures((changes) => {
       this.syncProjectedStructurePathfinding(changes);
       changes.forEach(({ previous, current }) => {
         if (previous?.reserved && !current?.reserved) {
@@ -1664,6 +1581,52 @@ export default class WorldmapScene extends WarpTravel {
       });
       this.reconcileHoverLabels();
     });
+    const unsubscribeArmies = this.worldSpatialProjection.subscribeArmies((changes) => {
+      this.syncProjectedArmyPathfinding(changes);
+      this.handleProjectedArmyChanges(changes);
+    });
+    this.unsubscribeWorldSpatialProjection = () => {
+      unsubscribeStructures();
+      unsubscribeArmies();
+    };
+  }
+
+  private syncProjectedArmyPathfinding(changes: readonly ArmySpatialProjectionChange[]): void {
+    changes.forEach(({ previous, current }) => {
+      if (previous) {
+        const previousHex = new Position({ x: previous.hexCoords.col, y: previous.hexCoords.row }).getNormalized();
+        const stayedAtPreviousHex =
+          current?.hexCoords.col === previous.hexCoords.col && current.hexCoords.row === previous.hexCoords.row;
+        if (!stayedAtPreviousHex) gameWorkerManager.updateArmyHex(previousHex.x, previousHex.y, null);
+      }
+
+      if (current) {
+        const currentHex = new Position({ x: current.hexCoords.col, y: current.hexCoords.row }).getNormalized();
+        gameWorkerManager.updateArmyHex(currentHex.x, currentHex.y, {
+          id: current.entityId,
+          owner: this.getArmyOwnerAddress(current.entityId) ?? 0n,
+        });
+      }
+    });
+  }
+
+  private handleProjectedArmyChanges(changes: readonly ArmySpatialProjectionChange[]): void {
+    changes.forEach(({ entityId, current }) => {
+      if (!current) {
+        this.disposePendingMovementVisualLifecycle(entityId);
+        this.arrivalGhostManager.clearArrivalGhost(entityId, "army_removed");
+        this.clearArmyMovementTxEntriesForEntity(entityId);
+        this.clearPendingArmyMovement(entityId);
+        this.battleDirectionManager.removeEntityFromTracking(entityId);
+        return;
+      }
+
+      this.resolvePendingCreateArmyGhostOnArmyUpdate({ hexCoords: current.hexCoords });
+      this.clearPendingArmyMovementFromAuthoritativePosition({ entityId, hexCoords: current.hexCoords });
+      this.recalculateArrowsForEntity(entityId);
+      this.recalculateArrowsForEntitiesRelatedTo(entityId);
+    });
+    this.reconcileHoverLabels();
   }
 
   private syncProjectedStructurePathfinding(changes: readonly StructureSpatialProjectionChange[]): void {
@@ -1700,153 +1663,9 @@ export default class WorldmapScene extends WarpTravel {
     if (this.worldUpdateUnsubscribes.length > 0) {
       return;
     }
-    this.registerArmyWorldUpdateSubscriptions();
     this.registerBattleWorldUpdateSubscriptions();
     this.registerTileWorldUpdateSubscriptions();
     this.registerExplorerRewardWorldUpdateSubscriptions();
-  }
-
-  private registerArmyWorldUpdateSubscriptions(): void {
-    this.addWorldUpdateSubscription(
-      this.worldUpdateListener.Army.onTileUpdate(async (update: ExplorerTroopsTileSystemUpdate) => {
-        this.incrementToriiBoundsCounter("explorerTiles");
-        recordArmyMovementLatencyPhase({
-          phase: "worldmap_tile_update_received",
-          source: "worldmap",
-          entityId: update.entityId,
-          details: {
-            col: update.hexCoords.col,
-            row: update.hexCoords.row,
-          },
-        });
-        const normalizedPos = new Position({ x: update.hexCoords.col, y: update.hexCoords.row }).getNormalized();
-
-        if (update.removed) {
-          // A fresh removal supersedes any deferred entry (scheduleArmyRemoval
-          // already clears a pending timer and rewrites the meta itself).
-          this.deferredChunkRemovals.delete(update.entityId);
-          this.scheduleArmyRemoval(update.entityId, "tile", {
-            ownerAddress: update.ownerAddress,
-            ownerStructureId: update.ownerStructureId,
-            position: { col: normalizedPos.x, row: normalizedPos.y },
-          });
-          return;
-        }
-
-        // Only a live (non-removed) tile update is evidence the army still
-        // exists. Cancelling before the removed-check let a stale TileOpt
-        // replay permanently cancel a scheduled removal — the deletion edge
-        // was already consumed, so nothing ever re-fired it (ghost army).
-        const recoveredPendingRemoval = this.cancelPendingArmyRemoval(update.entityId, "tile_recovery");
-
-        this.resolveSupersededPendingArmyRemoval(update.entityId, update.ownerAddress, update.ownerStructureId, {
-          col: normalizedPos.x,
-          row: normalizedPos.y,
-        });
-
-        if (this.armyManager.shouldSkipStalePositionUpdate(update.entityId, normalizedPos)) {
-          return;
-        }
-
-        this.updateArmyHexes(update);
-        this.resolvePendingCreateArmyGhostOnArmyUpdate(update);
-
-        if (update.battleData?.latestAttackerId) {
-          this.addCombatRelationship(update.battleData.latestAttackerId, update.entityId);
-        }
-        if (update.battleData?.latestDefenderId) {
-          this.addCombatRelationship(update.entityId, update.battleData.latestDefenderId);
-        }
-
-        const spawnResult = resolveArmySpawnBiome(
-          this.exploredTiles,
-          normalizedPos.x,
-          normalizedPos.y,
-          // Biome is computed from felt-offset (contract) coords, matching
-          // the Cairo biome_library. update.hexCoords arrives in contract
-          // format from world-update-listener (TileOpt currentState.col/row).
-          configManager.getBiome(update.hexCoords.col, update.hexCoords.row),
-        );
-        const wroteProvisionalBiome = spawnResult.action === "write_provisional";
-        if (wroteProvisionalBiome) {
-          if (!this.exploredTiles.has(normalizedPos.x)) {
-            this.exploredTiles.set(normalizedPos.x, new Map());
-          }
-          this.exploredTiles.get(normalizedPos.x)!.set(normalizedPos.y, spawnResult.biome);
-          this.provisionalBiomes.mark(normalizedPos.x, normalizedPos.y);
-          this.bumpTerrainGenerationForHex(normalizedPos.x, normalizedPos.y);
-        }
-
-        await this.armyManager.onTileUpdate(update);
-        this.reconcileHoverLabels();
-        this.clearPendingArmyMovementFromAuthoritativePosition(update);
-        recordArmyMovementLatencyPhase({
-          phase: "army_manager_tile_update_applied",
-          source: "worldmap",
-          entityId: update.entityId,
-          details: {
-            col: update.hexCoords.col,
-            row: update.hexCoords.row,
-          },
-        });
-        this.armyLastTileSyncAt.set(update.entityId, Date.now());
-        if (recoveredPendingRemoval) {
-          void this.armyManager.restoreArmyVisualIfVisible(update.entityId);
-        }
-
-        // Phase 1.2: army movement does not change terrain — only invalidate when
-        // this update wrote a provisional biome (revealing an unexplored spawn hex).
-        if (shouldInvalidateTerrainForArmyTileUpdate({ wroteProvisionalBiome })) {
-          this.invalidateAllChunkCachesContainingHex(normalizedPos.x, normalizedPos.y);
-        }
-
-        const armyEntityId = update.entityId;
-        const prevPosition = this.armiesPositions.get(armyEntityId);
-
-        this.recalculateArrowsForEntity(armyEntityId);
-        if (prevPosition) {
-          this.recalculateArrowsForEntitiesRelatedTo(armyEntityId);
-        }
-      }),
-    );
-
-    this.addWorldUpdateSubscription(
-      this.worldUpdateListener.Army.onExplorerTroopsUpdate((update) => {
-        this.applyExplorerTroopsSystemUpdate(update);
-      }),
-    );
-
-    this.addWorldUpdateSubscription(
-      this.worldUpdateListener.Army.onDeadArmy((entityId) => {
-        // DEV desync harness: swallow the event once to reproduce a missed
-        // deletion; the reconcile sweeps must clean the ghost up instead.
-        if (import.meta.env.DEV && this.devSuppressedDeadArmies.delete(entityId)) {
-          return;
-        }
-        this.deleteArmy(entityId);
-        this.removeEntityFromTracking(entityId);
-        this.requestChunkRefresh(false, "army_dead");
-      }),
-    );
-  }
-
-  // Single apply path for authoritative ExplorerTroops state, shared by the
-  // live subscription above and the Loop B RECS sweep so snap_position heals
-  // flow through the same ordered helper as real Torii deliveries.
-  private applyExplorerTroopsSystemUpdate(update: ExplorerTroopsSystemUpdate): void {
-    processExplorerTroopsUpdate(update, {
-      cancelPendingArmyRemoval: (entityId, source) => this.cancelPendingArmyRemoval(entityId, source),
-      scheduleArmyRemoval: (entityId, reason) => this.scheduleArmyRemoval(entityId, reason),
-      updateArmyHexes: (troopsUpdate) => this.updateArmyHexes(troopsUpdate),
-      updateArmyFromExplorerTroopsUpdate: (update) => this.armyManager.updateArmyFromExplorerTroopsUpdate(update),
-      onManagerUpdateApplied: () => this.reconcileHoverLabels(),
-      onAuthoritativePositionApplied: (update) => this.clearPendingArmyMovementFromAuthoritativePosition(update),
-      shouldRecoverPendingArmyRemovalFromExplorerTroops: (update) =>
-        this.shouldRecoverPendingArmyRemovalFromExplorerTroopsUpdate(update),
-      recoverPendingArmyRemovalFromExplorerTroops: (update) => this.recoverPendingArmyRemovalFromExplorerTroops(update),
-      shouldSkipStalePositionUpdate: (entityId, normalized) =>
-        this.armyManager.shouldSkipStalePositionUpdate(entityId, normalized),
-    });
   }
 
   private registerBattleWorldUpdateSubscriptions(): void {
@@ -1868,11 +1687,11 @@ export default class WorldmapScene extends WarpTravel {
         if (followArmyCombats && currentScene === SceneName.WorldMap) {
           const attackerPosition =
             attackerId !== undefined
-              ? (this.armiesPositions.get(attackerId) ?? this.getStructureHexPosition(attackerId))
+              ? (this.getArmyDisplayPosition(attackerId) ?? this.getStructureHexPosition(attackerId))
               : undefined;
           const defenderPosition =
             defenderId !== undefined
-              ? (this.armiesPositions.get(defenderId) ?? this.getStructureHexPosition(defenderId))
+              ? (this.getArmyDisplayPosition(defenderId) ?? this.getStructureHexPosition(defenderId))
               : undefined;
           const targetPosition = defenderPosition ?? attackerPosition;
 
@@ -2369,12 +2188,61 @@ export default class WorldmapScene extends WarpTravel {
   }
 
   private getEntityOwnerAddress(entityId: ID): ContractAddress | undefined {
-    const armyPosition = this.armiesPositions.get(entityId);
-    if (armyPosition) {
-      return this.armyHexes.get(armyPosition.col)?.get(armyPosition.row)?.owner;
-    }
+    if (this.worldSpatialProjection.getArmy(entityId)) return this.getArmyOwnerAddress(entityId);
 
     return this.getStructureOwnerAddress(entityId);
+  }
+
+  private getArmyOwnerAddress(entityId: ID): ContractAddress | undefined {
+    const explorer = getComponentValue(this.dojo.components.ExplorerTroops, gameEntityKey([BigInt(entityId)]));
+    if (!explorer || explorer.owner === 0) return undefined;
+    return this.getStructureOwnerAddress(explorer.owner);
+  }
+
+  private getArmyOwnerStructureId(entityId: ID): ID | null {
+    const explorer = getComponentValue(this.dojo.components.ExplorerTroops, gameEntityKey([BigInt(entityId)]));
+    return explorer?.owner && explorer.owner !== 0 ? explorer.owner : null;
+  }
+
+  private getArmyDisplayPosition(entityId: ID): HexPosition | undefined {
+    const pendingTarget = this.getValidPendingArmyMovementTarget(entityId);
+    if (pendingTarget) return pendingTarget;
+
+    const army = this.worldSpatialProjection.getArmy(entityId);
+    if (!army) return undefined;
+    const normalized = new Position({ x: army.hexCoords.col, y: army.hexCoords.row }).getNormalized();
+    return { col: normalized.x, row: normalized.y };
+  }
+
+  private getArmyAtHex(hexCoords: HexPosition): HexEntityInfo | undefined {
+    for (const entityId of this.pendingArmyMovements.keys()) {
+      const pendingTarget = this.getValidPendingArmyMovementTarget(entityId);
+      if (pendingTarget?.col === hexCoords.col && pendingTarget.row === hexCoords.row) {
+        return { id: entityId, owner: this.getArmyOwnerAddress(entityId) ?? 0n };
+      }
+    }
+
+    const contract = new Position({ x: hexCoords.col, y: hexCoords.row }).getContract();
+    const renderable = this.worldSpatialProjection
+      .getArmiesAtHex({ col: contract.x, row: contract.y })
+      .find(({ entityId }) => {
+        const pendingPosition = this.getArmyDisplayPosition(entityId);
+        return pendingPosition?.col === hexCoords.col && pendingPosition.row === hexCoords.row;
+      });
+    return renderable
+      ? { id: renderable.entityId, owner: this.getArmyOwnerAddress(renderable.entityId) ?? 0n }
+      : undefined;
+  }
+
+  private getValidPendingArmyMovementTarget(entityId: ID): HexPosition | undefined {
+    const movement = this.getPendingArmyMovement(entityId)?.movement;
+    if (!movement || Date.now() - movement.startedAt > this.authoritativePendingArmyMovementMs) return undefined;
+
+    const [col, row] = movement.targetKey.split(",").map(Number);
+    if (!Number.isFinite(col) || !Number.isFinite(row)) return undefined;
+
+    const normalized = new Position({ x: col, y: row }).getNormalized();
+    return { col: normalized.x, row: normalized.y };
   }
 
   private getStructureOwnerAddress(entityId: ID): ContractAddress | undefined {
@@ -2393,7 +2261,7 @@ export default class WorldmapScene extends WarpTravel {
     }
 
     setTimeout(() => {
-      const armyPosition = this.armiesPositions.get(explorerId);
+      const armyPosition = this.getArmyDisplayPosition(explorerId);
       if (!armyPosition) {
         console.warn("ExplorerRewardEvent missing position for reward display", { explorerId, update });
         return;
@@ -2417,7 +2285,7 @@ export default class WorldmapScene extends WarpTravel {
   }
 
   private getEntityLabel(entityId: ID): string {
-    if (this.armiesPositions.has(entityId)) {
+    if (this.worldSpatialProjection.getArmy(entityId)) {
       return `Army #${entityId}`;
     }
     if (this.worldSpatialProjection.getStructure(entityId)) {
@@ -2452,7 +2320,7 @@ export default class WorldmapScene extends WarpTravel {
       return;
     }
 
-    const focusPosition = this.armiesPositions.get(defenderId) ?? this.getStructureHexPosition(defenderId);
+    const focusPosition = this.getArmyDisplayPosition(defenderId) ?? this.getStructureHexPosition(defenderId);
 
     const notificationKey = `${update.entityId}-${update.battleData.timestamp}`;
     if (this.notifiedBattleEvents.has(notificationKey)) {
@@ -2620,7 +2488,7 @@ export default class WorldmapScene extends WarpTravel {
     const position = new Position({ x: hexCoords.col, y: hexCoords.row });
     const hex = position.getNormalized();
     const contractHex = position.getContract();
-    const army = this.armyHexes.get(hex.x)?.get(hex.y);
+    const army = this.getArmyAtHex({ col: hex.x, row: hex.y });
     const projectedStructure = this.worldSpatialProjection
       .getStructuresAtHex({ col: contractHex.x, row: contractHex.y })
       .find((candidate) => !candidate.reserved);
@@ -2685,7 +2553,7 @@ export default class WorldmapScene extends WarpTravel {
 
     return {
       entityId,
-      position: this.armiesPositions.get(entityId),
+      position: this.getArmyDisplayPosition(entityId),
     };
   }
 
@@ -2810,7 +2678,7 @@ export default class WorldmapScene extends WarpTravel {
     if (!this.armyManager) return null;
     const entityId = this.armyManager.onMouseMove(raycaster);
     if (entityId === undefined) return null;
-    const position = this.armiesPositions.get(entityId);
+    const position = this.getArmyDisplayPosition(entityId);
     if (!position) return null;
     if (import.meta.env.DEV) {
       console.warn(
@@ -2947,7 +2815,7 @@ export default class WorldmapScene extends WarpTravel {
 
         // Only validate army availability for army-specific actions
         const armyActions = [ActionType.Explore, ActionType.Move, ActionType.Attack, ActionType.SpireTravel];
-        const isArmySelection = this.armiesPositions.has(selectedEntityId);
+        const isArmySelection = this.worldSpatialProjection.getArmy(selectedEntityId) !== undefined;
         if (actionType && armyActions.includes(actionType) && isArmySelection) {
           if (this.armyManager && !this.armyManager.isArmySelectable(selectedEntityId)) {
             console.warn(`Army ${selectedEntityId} no longer available for movement`);
@@ -3228,7 +3096,7 @@ export default class WorldmapScene extends WarpTravel {
         .catch((e) => {
           // Transaction failed at submission, remove from pending and cleanup
           this.pendingMovementPlans.delete(selectedEntityId);
-          this.rewindOptimisticMovementAndArmyHexes(selectedEntityId);
+          this.rewindOptimisticMovement(selectedEntityId);
           this.clearPendingArmyMovement(selectedEntityId);
           useArmyStaminaSourceStore.getState().clearPendingStaminaSource(selectedEntityId);
           this.disposePendingMovementVisualLifecycle(selectedEntityId);
@@ -3381,7 +3249,7 @@ export default class WorldmapScene extends WarpTravel {
 
     const actionPaths = structure.findActionPaths(
       hexCoords,
-      this.armyHexes,
+      this.buildProjectedArmyActionIndex(),
       this.exploredTiles,
       ContractAddress(playerAddress),
       attackRange,
@@ -3840,7 +3708,7 @@ export default class WorldmapScene extends WarpTravel {
     const keysToClear: string[] = [];
 
     for (const [key, pending] of this.pendingCreateArmyEffectsByKey.entries()) {
-      if (this.armyHexes.get(pending.targetHex.col)?.get(pending.targetHex.row)) {
+      if (this.getArmyAtHex(pending.targetHex)) {
         keysToClear.push(key);
       }
     }
@@ -4003,7 +3871,7 @@ export default class WorldmapScene extends WarpTravel {
 
       this.pendingMovementPlans.delete(entityId);
       this.clearArmyMovementTxEntriesForEntity(entityId);
-      this.rewindOptimisticMovementAndArmyHexes(entityId);
+      this.rewindOptimisticMovement(entityId);
       this.clearPendingArmyMovement(entityId);
       useArmyStaminaSourceStore.getState().clearPendingStaminaSource(entityId);
       this.disposePendingMovementVisualLifecycle(entityId);
@@ -4018,35 +3886,9 @@ export default class WorldmapScene extends WarpTravel {
     }, this.authoritativePendingArmyMovementMs);
   }
 
-  /**
-   * Rewind an optimistic move on both the visual and spatial cache layers.
-   * armyManager.rewindOptimisticMovement snaps the mesh back to source but
-   * leaves armyHexes / armiesPositions pinned at the optimistic destination
-   * (written by the submitted-tx optimistic cache mirror). Without this
-   * paired write, getHexagonEntity(destination) still resolves the rewound
-   * army — the player sees a mesh back at source but the destination hex
-   * remains clickable and selects the army — until Torii eventually delivers
-   * a reconciling TileOpt. Route every worldmap-side rewind through here so
-   * the two layers move together.
-   */
-  private rewindOptimisticMovementAndArmyHexes(entityId: ID): void {
+  private rewindOptimisticMovement(entityId: ID): void {
     if (!this.armyManager.hasUnresolvedOptimisticMovement(entityId)) return;
-
-    const movedArmy = this.armyManager.getArmy(entityId);
-    const ownerAddress = movedArmy?.owner?.address;
-    const ownerStructureId = this.armyStructureOwners.get(entityId) ?? null;
-
-    const source = this.armyManager.rewindOptimisticMovement(entityId);
-    if (!source || ownerAddress === undefined) return;
-
-    // updateArmyHexes normalizes whatever col/row we hand it; pass the source
-    // normalized coords directly (Position's constructor detects magnitude).
-    this.updateArmyHexes({
-      entityId,
-      hexCoords: { col: source.col, row: source.row },
-      ownerAddress,
-      ownerStructureId,
-    });
+    this.armyManager.rewindOptimisticMovement(entityId);
   }
 
   private onArmySelection(
@@ -4145,7 +3987,7 @@ export default class WorldmapScene extends WarpTravel {
     const armyActionManager = new ArmyActionManager(this.dojo.components, this.dojo.systemCalls, selectedEntityId);
 
     const { currentDefaultTick, currentArmiesTick } = getBlockTimestamp();
-    const armyPosition = this.armiesPositions.get(selectedEntityId);
+    const armyPosition = this.getArmyDisplayPosition(selectedEntityId);
     const explorerTroopsCoord = getComponentValue(
       this.dojo.components.ExplorerTroops,
       gameEntityKey([BigInt(selectedEntityId)]),
@@ -4164,7 +4006,7 @@ export default class WorldmapScene extends WarpTravel {
 
     const actionPaths = armyActionManager.findActionPaths(
       this.buildProjectedStructureActionIndex(),
-      this.armyHexes,
+      this.buildProjectedArmyActionIndex(),
       this.exploredTiles,
       this.buildProjectedChestActionIndex(),
       currentDefaultTick,
@@ -4186,11 +4028,7 @@ export default class WorldmapScene extends WarpTravel {
       extraHexes.push(armyPosition);
     }
 
-    const selectedArmyData = this.armyManager
-      .getArmies()
-      .find((army) => Number(army.entityId) === Number(selectedEntityId));
-    const owningStructureId =
-      selectedArmyData?.owningStructureId ?? this.armyStructureOwners.get(selectedEntityId) ?? null;
+    const owningStructureId = this.getArmyOwnerStructureId(selectedEntityId);
 
     this.updateStructureOwnershipPulses(owningStructureId ?? undefined, extraHexes, extraHexes);
     this.applyContextualHoverPalette(this.previouslyHoveredHex ?? null);
@@ -4204,6 +4042,18 @@ export default class WorldmapScene extends WarpTravel {
       const row = index.get(normalized.x) ?? new Map<number, HexEntityInfo>();
       row.set(normalized.y, { id: chest.entityId, owner: 0n });
       index.set(normalized.x, row);
+    });
+    return index;
+  }
+
+  private buildProjectedArmyActionIndex(): Map<number, Map<number, HexEntityInfo>> {
+    const index = new Map<number, Map<number, HexEntityInfo>>();
+    this.worldSpatialProjection.getArmies().forEach(({ entityId }) => {
+      const position = this.getArmyDisplayPosition(entityId);
+      if (!position) return;
+      const row = index.get(position.col) ?? new Map<number, HexEntityInfo>();
+      row.set(position.row, { id: entityId, owner: this.getArmyOwnerAddress(entityId) ?? 0n });
+      index.set(position.col, row);
     });
     return index;
   }
@@ -4237,14 +4087,14 @@ export default class WorldmapScene extends WarpTravel {
   }
 
   private showSelectedArmyPulse(selectedEntityId: ID): void {
-    const armyPosition = this.armiesPositions.get(selectedEntityId);
+    const armyPosition = this.getArmyDisplayPosition(selectedEntityId);
     if (armyPosition) {
       const worldPos = getWorldPositionForHex(armyPosition);
       this.selectionPulseManager.showSelection(worldPos.x, worldPos.z, selectedEntityId);
       this.selectionPulseManager.applyPulsePalette(resolveSelectionPulsePalette("army"));
     } else {
       if (import.meta.env.DEV) {
-        console.warn(`[DEBUG] No army position found for ${selectedEntityId} in armiesPositions map`);
+        console.warn(`[DEBUG] No projected army position found for ${selectedEntityId}`);
       }
     }
   }
@@ -4414,16 +4264,10 @@ export default class WorldmapScene extends WarpTravel {
     const ownershipHexes = resolveOwnershipPulseHexes({
       structureHex: this.getStructureHexPosition(structureId),
       ownedArmyHexes: [
-        ...this.armyManager
+        ...this.worldSpatialProjection
           .getArmies()
-          .filter((army) => army.owningStructureId === structureId)
-          .map((army) => {
-            const normalized = army.hexCoords.getNormalized();
-            return { col: normalized.x, row: normalized.y };
-          }),
-        ...Array.from(this.armyStructureOwners.entries())
-          .filter(([, ownerStructureId]) => ownerStructureId === structureId)
-          .map(([armyId]) => this.armiesPositions.get(armyId)),
+          .filter(({ entityId }) => this.getArmyOwnerStructureId(entityId) === structureId)
+          .map(({ entityId }) => this.getArmyDisplayPosition(entityId)),
       ],
       extraHexes,
       suppressedHexes,
@@ -4775,13 +4619,7 @@ export default class WorldmapScene extends WarpTravel {
     this.clearWorldmapVisibilityRuntimeForSwitchOff();
 
     const runtimeState = applyWorldmapSwitchOffRuntimeState({
-      pendingArmyRemovals: this.pendingArmyRemovals,
-      pendingArmyRemovalMeta: this.pendingArmyRemovalMeta,
-      deferredChunkRemovals: this.deferredChunkRemovals,
-      armyLastTileSyncAt: this.armyLastTileSyncAt,
       pendingArmyMovements: this.pendingArmyMovements,
-      armyStructureOwners: this.armyStructureOwners,
-      suppressedArmies: this.armyManager.getSuppressedArmiesRef(),
       clearRenderAreaHydrationState: () => {
         clearAllRenderAreaHydrationState(this.renderAreaHydrationState);
         this.clearRetainedHydrationAreas();
@@ -4805,11 +4643,6 @@ export default class WorldmapScene extends WarpTravel {
     this.toriiLoadingCounter = runtimeState.toriiLoadingCounter;
     this.lastControlsCameraDistance = runtimeState.lastControlsCameraDistance;
     this.currentChunk = runtimeState.currentChunk;
-    this.armyRecsMissingSince.clear();
-    this.armyAuthoritativeFirstSeenAtMs.clear();
-    this.armyAuthoritativeMissing = new Set();
-    this.lastArmyAuthoritativeSweepAtMs = 0;
-    this.devSuppressedDeadArmies.clear();
 
     // Clear follow camera timeout to prevent callback firing on destroyed UI store state
     if (this.followCameraTimeout) {
@@ -4824,783 +4657,6 @@ export default class WorldmapScene extends WarpTravel {
 
     // Note: Don't clean up shortcuts here - they should persist across scene switches
     // Shortcuts will be cleaned up when the scene is actually destroyed
-  }
-
-  public deleteArmy(entityId: ID, options: { playDefeatFx?: boolean } = {}) {
-    const { playDefeatFx = true } = options;
-    this.cancelPendingArmyRemoval(entityId, "delete");
-    this.disposePendingMovementVisualLifecycle(entityId);
-    this.arrivalGhostManager.clearArrivalGhost(entityId, "army_removed");
-    this.armyManager.removeArmy(entityId, { playDefeatFx });
-    const oldPos = this.armiesPositions.get(entityId);
-    if (oldPos) {
-      this.armyHexes.get(oldPos.col)?.delete(oldPos.row);
-    } else {
-      // Fallback: scan hex cache in case tracking was cleared before cleanup
-      for (const rowMap of this.armyHexes.values()) {
-        const entry = Array.from(rowMap.entries()).find(([, data]) => data.id === entityId);
-        if (entry) {
-          rowMap.delete(entry[0]);
-          break;
-        }
-      }
-    }
-    this.armiesPositions.delete(entityId);
-    this.armyLastTileSyncAt.delete(entityId);
-    this.pendingArmyRemovalMeta.delete(entityId);
-    this.armyRecsMissingSince.delete(entityId);
-    this.armyAuthoritativeFirstSeenAtMs.delete(entityId);
-    this.armyStructureOwners.delete(entityId);
-    this.clearArmyMovementTxEntriesForEntity(entityId);
-    this.clearPendingArmyMovement(entityId);
-    this.reconcileHoverLabels();
-  }
-
-  private resolveSupersededPendingArmyRemoval(
-    incomingEntityId: ID,
-    incomingOwnerAddress: bigint | undefined,
-    incomingOwnerStructureId: ID | null | undefined,
-    incomingPosition: HexPosition,
-  ): void {
-    const pending = Array.from(this.pendingArmyRemovalMeta.entries()).map(([entityId, meta]) => ({
-      entityId,
-      scheduledAt: meta.scheduledAt,
-      chunkKey: meta.chunkKey,
-      reason: meta.reason,
-      ownerAddress: meta.ownerAddress,
-      ownerStructureId: meta.ownerStructureId,
-      position: meta.position,
-    }));
-
-    const supersededEntityId = findSupersededArmyRemoval({
-      incomingEntityId,
-      incomingOwnerAddress,
-      incomingOwnerStructureId,
-      incomingPosition,
-      pending,
-    });
-
-    if (supersededEntityId === undefined) {
-      return;
-    }
-
-    this.cancelPendingArmyRemoval(supersededEntityId, "superseded");
-    this.deleteArmy(supersededEntityId, { playDefeatFx: false });
-  }
-
-  private scheduleArmyRemoval(
-    entityId: ID,
-    reason: "tile" | "zero" = "tile",
-    context?: { ownerAddress?: bigint; ownerStructureId?: ID | null; position?: HexPosition },
-  ) {
-    const existing = this.pendingArmyRemovals.get(entityId);
-    if (existing) {
-      clearTimeout(existing);
-    }
-
-    const hasPendingMovement = reason === "tile" && this.isArmyMovementPending(entityId);
-    const hasMovementInFlight = reason === "tile" && (hasPendingMovement || this.armyManager.isArmyMoving(entityId));
-    // Tile removals wait longer (1500ms) to ensure movement updates arrive.
-    // Zero troop removals wait briefly so death animations can be visible before cleanup.
-    const baseDelay = reason === "tile" ? 1500 : 1000;
-    const initialDelay = hasMovementInFlight ? 3000 : baseDelay;
-    const retryDelay = 500;
-    const maxPendingWaitMs = 10000;
-
-    const scheduledAt = Date.now();
-    const removalPosition = context?.position ?? this.armiesPositions.get(entityId);
-    const trackedPosition = this.armiesPositions.get(entityId);
-    const removalOwnerAddress =
-      context?.ownerAddress ??
-      (removalPosition ? this.armyHexes.get(removalPosition.col)?.get(removalPosition.row)?.owner : undefined);
-    const removalOwnerStructureId = context?.ownerStructureId ?? this.armyStructureOwners.get(entityId);
-
-    if (
-      isStaleTrackedArmyTileRemoval({
-        reason,
-        trackedPosition,
-        removalPosition,
-      })
-    ) {
-      this.pendingArmyRemovalMeta.delete(entityId);
-      this.armyManager.unsuppressArmy(entityId);
-      void this.armyManager.restoreArmyVisualIfVisible(entityId);
-      return;
-    }
-
-    this.pendingArmyRemovalMeta.set(entityId, {
-      scheduledAt,
-      chunkKey: this.currentChunk,
-      reason,
-      ownerAddress: removalOwnerAddress,
-      ownerStructureId: removalOwnerStructureId,
-      position: removalPosition,
-    });
-
-    // Preserve the source visual while the move is still pending or actively
-    // rendering. Torii can emit the old-tile removal before or during the
-    // destination handoff, and hiding here creates a dead zone where the army
-    // vanishes until the add catches up.
-    if (
-      shouldHideSourceArmyOnTileRemoval({
-        hasMovementInFlight,
-        reason,
-      })
-    ) {
-      this.armyManager.hideArmyVisual(entityId);
-    }
-
-    const schedule = (delay: number) => {
-      const timeout = setTimeout(() => {
-        const meta = this.pendingArmyRemovalMeta.get(entityId);
-        if (!meta) {
-          this.pendingArmyRemovals.delete(entityId);
-          return;
-        }
-
-        if (reason === "tile") {
-          const lastUpdate = this.resolveLastArmyTileSyncAt(entityId);
-          if (lastUpdate > meta.scheduledAt) {
-            this.pendingArmyRemovalMeta.delete(entityId);
-            this.pendingArmyRemovals.delete(entityId);
-            this.armyManager.unsuppressArmy(entityId);
-            void this.armyManager.restoreArmyVisualIfVisible(entityId);
-            this.requestChunkRefresh(true, "default");
-            return;
-          }
-
-          if (this.currentChunk !== meta.chunkKey) {
-            this.deferArmyRemovalDuringChunkSwitch(entityId, meta);
-            return;
-          }
-
-          if (this.isArmyMovementPending(entityId) || this.armyManager.isArmyMoving(entityId)) {
-            const elapsed = Date.now() - meta.scheduledAt;
-            if (elapsed < maxPendingWaitMs) {
-              schedule(retryDelay);
-              return;
-            }
-
-            this.clearArmyMovementTxEntriesForEntity(entityId);
-            this.clearPendingArmyMovement(entityId);
-            this.disposePendingMovementVisualLifecycle(entityId);
-          }
-        }
-
-        this.pendingArmyRemovals.delete(entityId);
-        this.pendingArmyRemovalMeta.delete(entityId);
-        const playDefeatFx = reason !== "tile";
-        this.deleteArmy(entityId, { playDefeatFx });
-      }, delay);
-
-      this.pendingArmyRemovals.set(entityId, timeout);
-    };
-
-    schedule(initialDelay);
-  }
-
-  private deferArmyRemovalDuringChunkSwitch(entityId: ID, removal: DeferredWorldmapArmyRemoval) {
-    const timeout = this.pendingArmyRemovals.get(entityId);
-    if (timeout) {
-      clearTimeout(timeout);
-      this.pendingArmyRemovals.delete(entityId);
-    }
-
-    this.pendingArmyRemovalMeta.delete(entityId);
-    this.deferredChunkRemovals.set(entityId, removal);
-  }
-
-  private retryDeferredChunkRemovals() {
-    retryDeferredWorldmapArmyRemovals({
-      deferredChunkRemovals: this.deferredChunkRemovals,
-      onRecoveredArmy: (entityId) => {
-        this.armyManager.unsuppressArmy(entityId);
-        void this.armyManager.restoreArmyVisualIfVisible(entityId);
-      },
-      onRetryRemoval: (entityId, reason, context) => {
-        this.scheduleArmyRemoval(entityId, reason, context);
-      },
-      resolveLastTileSyncAt: (entityId) => this.resolveLastArmyTileSyncAt(entityId),
-    });
-  }
-
-  private cancelPendingArmyRemoval(entityId: ID, source: PendingArmyRemovalCancelSource): boolean {
-    const timeout = this.pendingArmyRemovals.get(entityId);
-    const hasDeferredRemoval = this.deferredChunkRemovals.has(entityId);
-    const hasRemovalMeta = this.pendingArmyRemovalMeta.has(entityId);
-    if (!timeout && !hasDeferredRemoval && !hasRemovalMeta) return false;
-
-    if (timeout) {
-      clearTimeout(timeout);
-    }
-    this.pendingArmyRemovals.delete(entityId);
-    this.pendingArmyRemovalMeta.delete(entityId);
-    this.deferredChunkRemovals.delete(entityId);
-    this.armyManager.unsuppressArmy(entityId);
-    this.recordPendingArmyRemovalCancelled(source);
-    return true;
-  }
-
-  private shouldRecoverPendingArmyRemovalFromExplorerTroopsUpdate(update: ExplorerTroopsSystemUpdate): boolean {
-    const meta = this.resolvePendingArmyRemovalRecoveryMeta(update.entityId);
-    if (!meta) {
-      return false;
-    }
-
-    return shouldRecoverArmyRemovalFromTroopsPosition({
-      reason: meta.reason,
-      removalPosition: meta.position,
-      troopsPosition: this.resolveNormalizedArmyUpdatePosition(update),
-    });
-  }
-
-  private resolvePendingArmyRemovalRecoveryMeta(entityId: ID): DeferredWorldmapArmyRemoval | undefined {
-    return this.pendingArmyRemovalMeta.get(entityId) ?? this.deferredChunkRemovals.get(entityId);
-  }
-
-  private recoverPendingArmyRemovalFromExplorerTroops(update: { entityId: ID }): void {
-    const recoveredPendingRemoval = this.cancelPendingArmyRemoval(update.entityId, "explorer_troops_live_recovery");
-    if (recoveredPendingRemoval) {
-      void this.armyManager.restoreArmyVisualIfVisible(update.entityId);
-    }
-  }
-
-  private resolveLastArmyTileSyncAt(entityId: ID): number {
-    return this.armyLastTileSyncAt.get(entityId) ?? 0;
-  }
-
-  private resolveNormalizedArmyUpdatePosition(update: { hexCoords: HexPosition }): HexPosition {
-    const normalizedPos = new Position({ x: update.hexCoords.col, y: update.hexCoords.row }).getNormalized();
-    return { col: normalizedPos.x, row: normalizedPos.y };
-  }
-
-  private recordPendingArmyRemovalCancelled(source: PendingArmyRemovalCancelSource): void {
-    switch (source) {
-      case "tile_recovery":
-        incrementWorldmapRenderCounter("pendingArmyRemovalCancelledByTileRecovery");
-        return;
-      case "delete":
-        incrementWorldmapRenderCounter("pendingArmyRemovalCancelledByDelete");
-        return;
-      case "superseded":
-        incrementWorldmapRenderCounter("pendingArmyRemovalCancelledBySuperseded");
-        return;
-      case "explorer_troops_zero":
-        incrementWorldmapRenderCounter("pendingArmyRemovalCancelledByExplorerTroopsZero");
-        return;
-      case "explorer_troops_live_recovery":
-        incrementWorldmapRenderCounter("pendingArmyRemovalCancelledByExplorerTroopsLiveRecovery");
-        return;
-      case "recs_sweep":
-        incrementWorldmapRenderCounter("pendingArmyRemovalCancelledByRecsSweep");
-        return;
-    }
-  }
-
-  // Loop B of the ghost-army fix: level-triggered "scene == RECS" enforcement.
-  // The event listeners above handle the fast path; this throttled sweep
-  // compares every tracked army against its local RECS snapshot and heals any
-  // divergence a dropped or out-of-order event left behind. Policy lives in
-  // worldmap-army-recs-consistency.ts; this driver only gathers candidates and
-  // applies the returned actions.
-  private sweepArmyRecsConsistency(): void {
-    const nowMs = Date.now();
-    if (nowMs - this.lastArmyRecsSweepAtMs < ARMY_RECS_SWEEP_INTERVAL_MS) {
-      return;
-    }
-
-    if (
-      this.isSwitchedOff ||
-      this.sceneManager.getCurrentScene() !== SceneName.WorldMap ||
-      this.currentChunk === "null" ||
-      this.isChunkTransitioning
-    ) {
-      return;
-    }
-
-    this.lastArmyRecsSweepAtMs = nowMs;
-
-    // Loop B runs synchronously inside update(); a pass over N armies that
-    // exceeds a frame budget drops frames and reads to players as a freeze. Time
-    // the whole pass so a perceived "disconnect" can be attributed to it (LOCAL).
-    const passStartedAtMs = performance.now();
-
-    const candidates: ArmyRecsConsistencyCandidate[] = [];
-    for (const army of this.armyManager.getArmies()) {
-      const entityId = army.entityId;
-      // Synthetic pending-create ghost ids are negative; never sweep them.
-      if (entityId <= 0) {
-        continue;
-      }
-
-      const explorer = getComponentValue(this.dojo.components.ExplorerTroops, gameEntityKey([BigInt(entityId)]));
-      // explorer.coord is contract (felt-offset); the policy compares against
-      // armiesPositions, which stores normalized col/row.
-      const normalizedCoord = explorer
-        ? new Position({ x: explorer.coord.x, y: explorer.coord.y }).getNormalized()
-        : null;
-
-      candidates.push({
-        entityId,
-        renderedPosition: this.armiesPositions.get(entityId),
-        recs: {
-          troopCount: explorer ? divideByPrecision(Number(explorer.troops.count)) : null,
-          normalizedCoord: normalizedCoord ? { col: normalizedCoord.x, row: normalizedCoord.y } : null,
-        },
-        isVisibleInCurrentChunk: this.armyManager.isArmyVisibleInCommittedChunk(entityId),
-        hasPendingMovement: this.isArmyMovementPending(entityId),
-        isMoving: this.armyManager.isArmyMoving(entityId),
-        hasOptimisticState: this.armyManager.hasUnresolvedOptimisticMovement(entityId),
-        pendingRemovalScheduledAtMs:
-          this.pendingArmyRemovalMeta.get(entityId)?.scheduledAt ??
-          this.deferredChunkRemovals.get(entityId)?.scheduledAt ??
-          null,
-      });
-    }
-
-    const actions = evaluateArmyRecsConsistency({
-      candidates,
-      missingSince: this.armyRecsMissingSince,
-      nowMs,
-    });
-
-    for (const action of actions) {
-      this.applyArmyRecsConsistencyAction(action, nowMs);
-    }
-
-    const SWEEP_SLOW_PASS_WARN_MS = 16; // one 60fps frame budget
-    const passMs = performance.now() - passStartedAtMs;
-    if (passMs >= SWEEP_SLOW_PASS_WARN_MS) {
-      incrementWorldmapRenderCounter("armyRecsSweepSlowPass");
-      this.traceChunk("army_recs_sweep_slow_pass", {
-        candidateCount: candidates.length,
-        actionCount: actions.length,
-        passMs: Math.round(passMs),
-      });
-    }
-  }
-
-  private applyArmyRecsConsistencyAction(action: ArmyRecsConsistencyAction, nowMs: number): void {
-    switch (action.kind) {
-      case "mark_missing":
-        this.armyRecsMissingSince.set(action.entityId, nowMs);
-        return;
-      case "clear_missing":
-        this.armyRecsMissingSince.delete(action.entityId);
-        return;
-      case "remove_dead":
-        incrementWorldmapRenderCounter(
-          action.cause === "zero_troops" ? "armyRecsSweepRemovedDeadZero" : "armyRecsSweepRemovedDeadMissing",
-        );
-        this.traceChunk("army_recs_sweep_heal", {
-          action: action.kind,
-          entityId: action.entityId,
-          cause: action.cause,
-        });
-        this.armyRecsMissingSince.delete(action.entityId);
-        // Same triple as the onDeadArmy subscription, minus the defeat FX —
-        // by the time the sweep fires the death is stale, not a live event.
-        this.deleteArmy(action.entityId, { playDefeatFx: false });
-        this.removeEntityFromTracking(action.entityId);
-        this.requestChunkRefresh(false, "army_dead");
-        return;
-      case "snap_position":
-        incrementWorldmapRenderCounter("armyRecsSweepSnappedPosition");
-        this.traceChunk("army_recs_sweep_heal", {
-          action: action.kind,
-          entityId: action.entityId,
-          to: action.to,
-        });
-        this.snapArmyToRecsPosition(action.entityId);
-        return;
-      case "restore_alive":
-        incrementWorldmapRenderCounter("armyRecsSweepRestoredAlive");
-        this.traceChunk("army_recs_sweep_heal", {
-          action: action.kind,
-          entityId: action.entityId,
-        });
-        // Cancel already unsuppresses the visual.
-        this.cancelPendingArmyRemoval(action.entityId, "recs_sweep");
-        void this.armyManager.restoreArmyVisualIfVisible(action.entityId);
-        return;
-    }
-  }
-
-  // Re-applies authoritative RECS state through the same ordered helper the
-  // live onExplorerTroopsUpdate listener uses, so a sweep heal is
-  // indistinguishable from a real Torii delivery downstream. Owner fields come
-  // from the tracked army because the RECS component only carries the owning
-  // structure id.
-  private snapArmyToRecsPosition(entityId: ID): void {
-    const explorer = getComponentValue(this.dojo.components.ExplorerTroops, gameEntityKey([BigInt(entityId)]));
-    if (!explorer) {
-      return;
-    }
-
-    const army = this.armyManager.getArmy(entityId);
-    const update: ExplorerTroopsSystemUpdate = {
-      entityId,
-      troopCount: divideByPrecision(Number(explorer.troops.count)),
-      onChainStamina: {
-        amount: BigInt(explorer.troops.stamina.amount),
-        updatedTick: Number(explorer.troops.stamina.updated_tick),
-      },
-      ownerStructureId: explorer.owner && explorer.owner !== 0 ? explorer.owner : null,
-      hexCoords: { col: explorer.coord.x, row: explorer.coord.y },
-      ownerAddress: army?.owner.address ?? 0n,
-      ownerName: army?.owner.ownerName ?? "",
-      battleCooldownEnd: explorer.troops.battle_cooldown_end,
-    };
-
-    this.applyExplorerTroopsSystemUpdate(update);
-  }
-
-  // Loop A of the ghost-army fix: level-triggered "local RECS == Torii"
-  // enforcement. Deletions reach the client as single push events; a reconnect
-  // gap or a stale snapshot write can swallow one, after which the dead army
-  // never emits again and Loop B sees a perfectly "alive" RECS component. This
-  // throttled sweep re-queries Torii by id for every settled tracked army and
-  // lets army-authoritative-reconciler.ts remove stale ExplorerTroops
-  // components — firing the same removal edge as a real deletion, so the
-  // existing onDeadArmy pipeline does the cleanup.
-  private maybeRunArmyAuthoritativeSweep(): void {
-    const nowMs = Date.now();
-    if (nowMs - this.lastArmyAuthoritativeSweepAtMs < ARMY_AUTHORITATIVE_SWEEP_INTERVAL_MS) {
-      return;
-    }
-
-    this.lastArmyAuthoritativeSweepAtMs = nowMs;
-    void this.runArmyAuthoritativeSweep("interval");
-  }
-
-  private async runArmyAuthoritativeSweep(reason: "interval" | "reconnect"): Promise<void> {
-    if (
-      this.armyAuthoritativeSweepInFlight ||
-      this.isSwitchedOff ||
-      this.sceneManager.getCurrentScene() !== SceneName.WorldMap ||
-      this.currentChunk === "null" ||
-      this.isChunkTransitioning
-    ) {
-      return;
-    }
-
-    // A hidden tab throttles timers and animation frames; sweeping there would
-    // race the backlog of stream updates that replays on visibility. A
-    // non-connected stream means absence from Torii proves nothing.
-    if (typeof document !== "undefined" && document.hidden) {
-      return;
-    }
-    if (useConnectionStore.getState().status !== "connected") {
-      return;
-    }
-
-    const toriiClient = this.dojo.network?.toriiClient;
-    const contractComponents = this.dojo.network?.contractComponents as unknown as
-      | Component<Schema, Metadata, undefined>[]
-      | undefined;
-    if (!toriiClient || !contractComponents) {
-      return;
-    }
-
-    const nowMs = Date.now();
-    const candidateIds: ID[] = [];
-    for (const army of this.armyManager.getArmies()) {
-      const entityId = army.entityId;
-      // Synthetic pending-create ghost ids are negative; never sweep them.
-      if (entityId <= 0) {
-        continue;
-      }
-
-      // Stamp first sight and let freshly seen armies settle: a just-created
-      // army can render optimistically before Torii has indexed its create tx.
-      const firstSeenAtMs = this.armyAuthoritativeFirstSeenAtMs.get(entityId);
-      if (firstSeenAtMs === undefined) {
-        this.armyAuthoritativeFirstSeenAtMs.set(entityId, nowMs);
-        continue;
-      }
-      if (nowMs - firstSeenAtMs < ARMY_AUTHORITATIVE_MIN_TRACKED_AGE_MS) {
-        continue;
-      }
-
-      // In-flight movement or optimistic state owns the entity; defer judgement.
-      if (
-        this.isArmyMovementPending(entityId) ||
-        this.armyManager.isArmyMoving(entityId) ||
-        this.armyManager.hasUnresolvedOptimisticMovement(entityId)
-      ) {
-        continue;
-      }
-
-      candidateIds.push(entityId);
-    }
-
-    if (candidateIds.length === 0) {
-      return;
-    }
-
-    this.armyAuthoritativeSweepInFlight = true;
-    try {
-      const result = await sweepArmiesAgainstTorii({
-        toriiClient,
-        components: contractComponents,
-        explorerTroopsComponent: this.dojo.components.ExplorerTroops as unknown as Component<
-          Schema,
-          Metadata,
-          undefined
-        >,
-        candidateIds,
-        previousMissing: this.armyAuthoritativeMissing,
-      });
-
-      this.armyAuthoritativeMissing = result.nextMissing;
-      if (result.reappliedCount > 0) {
-        incrementWorldmapRenderCounter("armyAuthoritativeSweepReapplied", result.reappliedCount);
-      }
-      if (result.outcome === "failed" || result.outcome === "aborted_suspicious") {
-        incrementWorldmapRenderCounter("armyAuthoritativeSweepFailed");
-      }
-      if (result.confirmedDead.length > 0) {
-        incrementWorldmapRenderCounter("armyAuthoritativeSweepConfirmedDead", result.confirmedDead.length);
-        result.confirmedDead.forEach((entityId) => this.armyAuthoritativeFirstSeenAtMs.delete(entityId));
-      }
-      // Quiet sweeps (everything present) stay out of the trace ring buffer.
-      if (result.confirmedDead.length > 0 || result.outcome !== "completed") {
-        this.traceChunk("army_authoritative_sweep", {
-          reason,
-          outcome: result.outcome,
-          candidateCount: candidateIds.length,
-          confirmedDead: result.confirmedDead,
-          reappliedCount: result.reappliedCount,
-        });
-      }
-
-      // Loop A blocks the event loop while it awaits Torii/RECS. A single op this
-      // slow is the LOCAL-freeze signal Phase 3 is hunting — record it alongside
-      // heartbeat age so a "disconnect" can be traced back to a self-inflicted stall.
-      const SWEEP_SLOW_OP_WARN_MS = 100;
-      if (result.timing.maxQueryMs >= SWEEP_SLOW_OP_WARN_MS || result.timing.maxApplyMs >= SWEEP_SLOW_OP_WARN_MS) {
-        incrementWorldmapRenderCounter("armyAuthoritativeSweepSlowOp");
-        const connection = useConnectionStore.getState();
-        this.traceChunk("army_authoritative_sweep_slow", {
-          reason,
-          candidateCount: candidateIds.length,
-          maxQueryMs: Math.round(result.timing.maxQueryMs),
-          maxApplyMs: Math.round(result.timing.maxApplyMs),
-          totalMs: Math.round(result.timing.totalMs),
-          pageCount: result.timing.pageCount,
-          msSinceHeartbeat: connection.toriiHeartbeatAvailable
-            ? Math.round(Date.now() - connection.lastToriiHeartbeat)
-            : null,
-        });
-      }
-    } finally {
-      this.armyAuthoritativeSweepInFlight = false;
-    }
-  }
-
-  // DEV desync harness: reproduces the production "missed deletion" desync by
-  // swallowing the next onDeadArmy event and removing the ExplorerTroops
-  // component from local RECS. Loop B must clear the ghost within its confirm
-  // window. Note: if the army is still alive on Torii, Loop A will legitimately
-  // resurrect it on its next sweep — that is Loop A working, not a bug.
-  private simulateArmyGhostDesync(entityId: ID): boolean {
-    if (!import.meta.env.DEV) {
-      return false;
-    }
-    const entity = gameEntityKey([BigInt(entityId)]);
-    if (getComponentValue(this.dojo.components.ExplorerTroops, entity) === undefined) {
-      console.warn(`[desync-harness] army ${entityId} has no ExplorerTroops component in RECS`);
-      return false;
-    }
-    this.devSuppressedDeadArmies.add(entityId);
-    removeComponent(this.dojo.components.ExplorerTroops, entity);
-    console.warn(`[desync-harness] injected ghost desync for army ${entityId} — Loop B should heal it`);
-    return true;
-  }
-
-  // DEV desync harness: diverges both the rendered visual and the scene's
-  // tracked position from RECS. Loop B must snap them back.
-  private simulateArmyPositionDesync(entityId: ID, col: number, row: number): boolean {
-    if (!import.meta.env.DEV) {
-      return false;
-    }
-    if (!this.armyManager.getArmy(entityId)) {
-      console.warn(`[desync-harness] army ${entityId} is not tracked by the army manager`);
-      return false;
-    }
-    this.armyManager.debugSetArmyHexCoords(entityId, { col, row });
-    this.armiesPositions.set(entityId, { col, row });
-    console.warn(`[desync-harness] injected position desync for army ${entityId} — Loop B should snap it back`);
-    return true;
-  }
-
-  private getArmyGhostHardeningStats() {
-    return {
-      counters: snapshotWorldmapRenderDiagnostics().counters,
-      recsMissingSince: Array.from(this.armyRecsMissingSince.entries()),
-      authoritativeMissing: Array.from(this.armyAuthoritativeMissing),
-      authoritativeFirstSeenCount: this.armyAuthoritativeFirstSeenAtMs.size,
-      suppressedDeadArmies: Array.from(this.devSuppressedDeadArmies),
-    };
-  }
-
-  // used to track the position of the armies on the map
-  public updateArmyHexes(update: {
-    entityId: ID;
-    hexCoords: HexPosition;
-    ownerAddress?: bigint | undefined;
-    ownerStructureId?: ID | null;
-  }) {
-    const {
-      hexCoords: { col, row },
-      ownerAddress,
-      entityId,
-      ownerStructureId,
-    } = update;
-
-    if (ownerAddress === undefined) {
-      if (import.meta.env.DEV) {
-        console.warn(`[DEBUG] Army ${entityId} has undefined owner address, skipping update`);
-      }
-      return;
-    }
-
-    if (ownerStructureId !== undefined && ownerStructureId !== null && ownerStructureId !== 0) {
-      this.armyStructureOwners.set(entityId, ownerStructureId);
-    } else {
-      this.armyStructureOwners.delete(entityId);
-    }
-
-    const isAlreadyCached = this.armiesPositions.has(entityId);
-
-    // A 0n owner means "defeated/deleted OR not-yet-synced". Gather the fallback
-    // owners the decision may use: the last known owner from the spatial cache
-    // (for a known army) or an ECS Structure lookup (for a brand-new army).
-    let cachedOwner: bigint | undefined;
-    let ecsResolvedOwner: bigint | undefined;
-    if (ownerAddress === 0n) {
-      if (import.meta.env.DEV) {
-        console.warn(`[DEBUG] Army ${entityId} has zero owner address (0n) - army defeated/deleted`);
-      }
-      if (isAlreadyCached) {
-        cachedOwner = this.findCachedArmyOwner(entityId);
-      } else {
-        ecsResolvedOwner = this.resolveArmyOwnerFromEcs(entityId, ownerStructureId);
-      }
-    }
-
-    const action = resolveArmyOwnerCacheAction({
-      ownerAddress,
-      isAlreadyCached,
-      cachedOwner,
-      ecsResolvedOwner,
-    });
-
-    if (action.kind === "evict") {
-      // Already-cached army confirmed defeated/deleted (0n owner, nothing to
-      // preserve) — purge it from the spatial cache.
-      if (import.meta.env.DEV) {
-        console.warn(`[DEBUG] Removing army ${entityId} from cache (0n owner indicates defeat/deletion)`);
-      }
-      const oldPos = this.armiesPositions.get(entityId);
-      if (oldPos) {
-        this.armyHexes.get(oldPos.col)?.delete(oldPos.row);
-        gameWorkerManager.updateArmyHex(oldPos.col, oldPos.row, null);
-      }
-      this.armiesPositions.delete(entityId);
-      this.armyStructureOwners.delete(entityId);
-      return;
-    }
-
-    if (action.kind === "skip") {
-      // New army whose owner stayed unresolved (0n). Do NOT write a bogus
-      // owner:0n entry — it would mis-flag the army as unowned/defeated for
-      // clicks and ownership coloring. Let the next authoritative update, which
-      // carries a real owner, register it.
-      if (import.meta.env.DEV) {
-        console.warn(
-          `[Worldmap] Skipping spatial cache write for new army ${entityId}: owner unresolved (0n), awaiting authoritative update`,
-        );
-      }
-      return;
-    }
-
-    const actualOwnerAddress = action.owner;
-
-    const normalized = new Position({ x: col, y: row }).getNormalized();
-    const newPos = { col: normalized.x, row: normalized.y };
-    const oldPos = this.armiesPositions.get(entityId);
-
-    // Update army position
-    this.armiesPositions.set(entityId, newPos);
-
-    // Remove from old position if it changed
-    if (
-      oldPos &&
-      (oldPos.col !== newPos.col || oldPos.row !== newPos.row) &&
-      this.armyHexes.get(oldPos.col)?.get(oldPos.row)?.id === entityId
-    ) {
-      this.armyHexes.get(oldPos.col)?.delete(oldPos.row);
-      gameWorkerManager.updateArmyHex(oldPos.col, oldPos.row, null);
-    }
-
-    // Add to new position
-    if (!this.armyHexes.has(newPos.col)) {
-      this.armyHexes.set(newPos.col, new Map());
-    }
-
-    const armyHexData = { id: entityId, owner: actualOwnerAddress };
-
-    this.armyHexes.get(newPos.col)?.set(newPos.row, armyHexData);
-    gameWorkerManager.updateArmyHex(newPos.col, newPos.row, armyHexData);
-    // Phase 1.2: army position changes do not affect cached terrain (biome tiles +
-    // structures only), so tracking army hexes no longer invalidates chunk caches.
-  }
-
-  /**
-   * Search the spatial cache for the army's last known non-zero owner. Used to
-   * preserve ownership when an already-cached army reports a transient 0n owner.
-   */
-  private findCachedArmyOwner(entityId: ID): bigint | undefined {
-    for (const rowMap of this.armyHexes.values()) {
-      for (const armyData of rowMap.values()) {
-        if (armyData.id === entityId && armyData.owner !== 0n) {
-          return armyData.owner;
-        }
-      }
-    }
-    return undefined;
-  }
-
-  /**
-   * Resolve an army's owner directly from the ECS Structure component — used for
-   * a brand-new army that MapDataStore has not cached yet. Returns undefined if
-   * there is no structure to resolve against or the lookup throws; the failure
-   * is surfaced (DEV) rather than silently poisoning the cache with a 0n owner.
-   */
-  private resolveArmyOwnerFromEcs(entityId: ID, ownerStructureId?: ID | null): bigint | undefined {
-    const resolvedStructureId = ownerStructureId ?? this.armyStructureOwners.get(entityId);
-    if (!resolvedStructureId) {
-      return undefined;
-    }
-    try {
-      const components = this.dojo.components;
-      const structureEntity = gameEntityKey([BigInt(resolvedStructureId)]);
-      const structureComponent = components.Structure;
-      if (structureComponent) {
-        const structure = getComponentValue(structureComponent, structureEntity);
-        if (structure?.owner) {
-          return BigInt(structure.owner);
-        }
-      }
-    } catch (error) {
-      // Surface the failure instead of silently treating the army as unowned
-      // (which would poison the spatial cache with a bogus owner).
-      if (import.meta.env.DEV) {
-        console.warn(`[Worldmap] Structure owner ECS lookup failed for army ${entityId}`, error);
-      }
-    }
-    return undefined;
   }
 
   public async updateExploredHex(update: TileSystemUpdate) {
@@ -5909,15 +4965,6 @@ export default class WorldmapScene extends WarpTravel {
     );
   }
 
-  private getExplorerTroopsRenderAreaKeyForChunk(chunkKey: string): string {
-    const areaKey = getCanonicalRenderAreaKeyForChunk(
-      chunkKey,
-      this.chunkSize,
-      WORLDMAP_CHUNK_POLICY.toriiFetch.explorerTroopsSuperAreaStrides,
-    );
-    return this.getExplorerTroopsHydrationKey(areaKey);
-  }
-
   /**
    * Derive a stable live Torii subscription key for a chunk key.
    * Subscription areas are intentionally larger than hydration fetch areas.
@@ -5945,30 +4992,6 @@ export default class WorldmapScene extends WarpTravel {
       this.chunkSize,
       WORLDMAP_CHUNK_POLICY.toriiFetch.superAreaStrides,
     );
-  }
-
-  private getExplorerTroopsFetchBoundsForArea(fetchKey: string): {
-    minCol: number;
-    maxCol: number;
-    minRow: number;
-    maxRow: number;
-  } {
-    return getCanonicalRenderFetchBoundsForArea(
-      this.getExplorerTroopsAreaKeyFromHydrationKey(fetchKey),
-      this.renderChunkSize,
-      this.chunkSize,
-      WORLDMAP_CHUNK_POLICY.toriiFetch.explorerTroopsSuperAreaStrides,
-    );
-  }
-
-  private getExplorerTroopsHydrationKey(areaKey: string): string {
-    return `${EXPLORER_TROOPS_HYDRATION_KEY_PREFIX}${areaKey}`;
-  }
-
-  private getExplorerTroopsAreaKeyFromHydrationKey(fetchKey: string): string {
-    return fetchKey.startsWith(EXPLORER_TROOPS_HYDRATION_KEY_PREFIX)
-      ? fetchKey.slice(EXPLORER_TROOPS_HYDRATION_KEY_PREFIX.length)
-      : fetchKey;
   }
 
   /**
@@ -6120,14 +5143,8 @@ export default class WorldmapScene extends WarpTravel {
 
   private resolveRenderAreaHydrationFetchKeyForStage(
     fetchKey: string,
-    stage: WorldmapRenderAreaHydrationStage,
+    _stage: WorldmapRenderAreaHydrationStage,
   ): string {
-    if (stage === "explorerTroops") {
-      return fetchKey.startsWith(EXPLORER_TROOPS_HYDRATION_KEY_PREFIX)
-        ? fetchKey
-        : this.getExplorerTroopsRenderAreaKeyForChunk(fetchKey);
-    }
-
     return fetchKey;
   }
 
@@ -7128,9 +6145,7 @@ export default class WorldmapScene extends WarpTravel {
           : undefined,
         currentChunk: this.currentChunk,
         isChunkTransitioning: this.isChunkTransitioning,
-        onAfterRefresh: () => {
-          this.retryDeferredChunkRemovals();
-        },
+        onAfterRefresh: () => undefined,
         queueFlush: () => this.scheduleHydratedRefreshFlush(),
         refreshCurrentChunk: async () => {
           const refreshToken = this.requestChunkRefresh(true, "hydrated_chunk");
@@ -8493,9 +7508,7 @@ export default class WorldmapScene extends WarpTravel {
     }
 
     const areaKey = this.getRenderAreaKeyForChunk(chunkKey);
-    const explorerTroopsAreaKey = this.getExplorerTroopsRenderAreaKeyForChunk(chunkKey);
     clearRenderAreaHydrationState(this.renderAreaHydrationState, areaKey);
-    clearRenderAreaHydrationState(this.renderAreaHydrationState, explorerTroopsAreaKey);
     this.removeRetainedHydrationArea(areaKey);
     this.clearTileHydrationFetch(areaKey);
     this.hydratedRefreshSuppressionAreaKeys.delete(areaKey);
@@ -8591,10 +7604,6 @@ export default class WorldmapScene extends WarpTravel {
           chunkKey: this.currentChunk,
         });
         this.requestChunkRefresh(true, "reconnect");
-        // Deletions that happened during the gap were never delivered and the
-        // recreated subscription will not replay them — sweep Torii now.
-        this.lastArmyAuthoritativeSweepAtMs = Date.now();
-        void this.runArmyAuthoritativeSweep("reconnect");
       },
     });
 
@@ -8620,9 +7629,6 @@ export default class WorldmapScene extends WarpTravel {
           chunkKey: this.currentChunk,
         });
         this.requestChunkRefresh(true, "reconnect");
-        // Same gap-fill as the immediate reconnect path.
-        this.lastArmyAuthoritativeSweepAtMs = Date.now();
-        void this.runArmyAuthoritativeSweep("reconnect");
       },
     });
   }
@@ -8743,12 +7749,6 @@ export default class WorldmapScene extends WarpTravel {
       force: true,
       transitionToken: this.chunkTransitionToken,
     });
-
-    // Removals parked by deferArmyRemovalDuringChunkSwitch are normally drained
-    // at the healthy chunk-settle points. A stalled transition skips all of
-    // them; without this drain the deferred removals sit forever and the dead
-    // armies keep rendering (ghost army).
-    this.retryDeferredChunkRemovals();
   }
 
   private handleChunkPresentationTimeout(info: WorldmapChunkPresentationTimeoutInfo): void {
@@ -9046,9 +8046,7 @@ export default class WorldmapScene extends WarpTravel {
       return ownedFetchPromise;
     });
 
-    if (plansToFetch.some((plan) => !this.isExplorerTroopsOnlyHydration(plan.stages))) {
-      recordChunkDiagnosticsEvent(this.chunkDiagnostics, "tile_fetch_started");
-    }
+    recordChunkDiagnosticsEvent(this.chunkDiagnostics, "tile_fetch_started");
 
     return Promise.all([...pendingPromises, ...ownedFetchPromises]).then((results) => results.every(Boolean));
   }
@@ -9057,27 +8055,9 @@ export default class WorldmapScene extends WarpTravel {
     chunkKey: string,
     requiredStages: readonly WorldmapRenderAreaHydrationStage[],
   ): WorldmapHydrationFetchPlan[] {
-    const plans: WorldmapHydrationFetchPlan[] = [];
-    const terrainStages = requiredStages.filter((stage) => stage === "tileOpt");
-    if (terrainStages.length > 0) {
-      const fetchKey = this.getRenderAreaKeyForChunk(chunkKey);
-      plans.push({
-        fetchKey,
-        localBounds: this.getRenderFetchBoundsForArea(fetchKey),
-        stages: terrainStages,
-      });
-    }
-
-    if (requiredStages.includes("explorerTroops")) {
-      const fetchKey = this.getExplorerTroopsRenderAreaKeyForChunk(chunkKey);
-      plans.push({
-        fetchKey,
-        localBounds: this.getExplorerTroopsFetchBoundsForArea(fetchKey),
-        stages: ["explorerTroops"],
-      });
-    }
-
-    return plans;
+    if (!requiredStages.includes("tileOpt")) return [];
+    const fetchKey = this.getRenderAreaKeyForChunk(chunkKey);
+    return [{ fetchKey, localBounds: this.getRenderFetchBoundsForArea(fetchKey), stages: ["tileOpt"] }];
   }
 
   private isRenderAreaHydrationPlanComplete(plan: WorldmapHydrationFetchPlan): boolean {
@@ -9245,17 +8225,13 @@ export default class WorldmapScene extends WarpTravel {
         markRenderAreaHydrationStagesComplete(this.renderAreaHydrationState, fetchKey, stages);
         this.scheduleRefreshForBlockingHydration(fetchKey, stages);
       }
-      if (!this.isExplorerTroopsOnlyHydration(stages)) {
-        recordChunkDiagnosticsEvent(this.chunkDiagnostics, "tile_fetch_succeeded");
-      }
+      recordChunkDiagnosticsEvent(this.chunkDiagnostics, "tile_fetch_succeeded");
       return true;
     } catch (error) {
       console.error("Error fetching tile entities:", error);
       // Do not mark stages complete on error so they can be retried.
-      if (!this.isExplorerTroopsOnlyHydration(stages)) {
-        recordChunkDiagnosticsEvent(this.chunkDiagnostics, "tile_fetch_failed");
-      }
-      return this.isExplorerTroopsOnlyHydration(stages);
+      recordChunkDiagnosticsEvent(this.chunkDiagnostics, "tile_fetch_failed");
+      return false;
     } finally {
       if (this.shouldFetchTileOpt(stages)) {
         this.settleTileHydrationFetch(fetchKey, fetchGeneration);
@@ -9337,10 +8313,6 @@ export default class WorldmapScene extends WarpTravel {
     fetchGeneration: number,
     stages: readonly WorldmapRenderAreaHydrationStage[],
   ): boolean {
-    if (this.isExplorerTroopsOnlyHydration(stages)) {
-      return true;
-    }
-
     return shouldApplyWorldmapFetchResult({
       fetchGeneration,
       activeFetchGeneration: this.pendingChunkFetchGeneration,
@@ -9353,10 +8325,6 @@ export default class WorldmapScene extends WarpTravel {
     fetchKey: string,
     stages: readonly WorldmapRenderAreaHydrationStage[],
   ): void {
-    if (this.isExplorerTroopsOnlyHydration(stages)) {
-      return;
-    }
-
     const currentAreaKey = this.resolveCurrentHydrationAreaKey(stages);
     if (
       shouldScheduleHydratedChunkRefreshForFetch({
@@ -9375,10 +8343,6 @@ export default class WorldmapScene extends WarpTravel {
     }
 
     return this.getRenderAreaKeyForChunk(this.currentChunk);
-  }
-
-  private isExplorerTroopsOnlyHydration(stages: readonly WorldmapRenderAreaHydrationStage[]): boolean {
-    return stages.length === 1 && stages[0] === "explorerTroops";
   }
 
   private getRetainedRenderAreaKeys(): Set<string> {
@@ -10147,7 +9111,6 @@ export default class WorldmapScene extends WarpTravel {
             return false;
           },
           onResolved: () => {
-            this.retryDeferredChunkRemovals();
             this.drainQueuedReconnectRefresh();
             return true;
           },
@@ -10190,7 +9153,6 @@ export default class WorldmapScene extends WarpTravel {
             return false;
           },
           onResolved: () => {
-            this.retryDeferredChunkRemovals();
             this.drainQueuedReconnectRefresh();
             return true;
           },
@@ -10816,8 +9778,6 @@ export default class WorldmapScene extends WarpTravel {
     this.updateCameraTargetHexThrottled?.();
     setWorldmapRenderGauge("activeLabels", this.hoverLabelManager.getActiveLabelCount());
     this.runPendingHoverLabelRecoveryFrame();
-    this.sweepArmyRecsConsistency();
-    this.maybeRunArmyAuthoritativeSweep();
     if (WORLDMAP_ZOOM_HARDENING.terrainSelfHeal) {
       this.monitorTerrainVisibilityHealth();
     } else {
@@ -11298,7 +10258,6 @@ export default class WorldmapScene extends WarpTravel {
     this.clearRetainedHydrationAreas();
     this.pinnedRenderAreas.clear();
     this.clearCache();
-    this.armyLastTileSyncAt.clear();
     // Also clear the interactive hexes when clearing the entire cache
     this.interactiveHexManager.clearHexes();
   }
@@ -11471,7 +10430,7 @@ export default class WorldmapScene extends WarpTravel {
           y: army.position.row,
         }).getNormalized();
         const resolvedPosition = resolveArmyTabSelectionPosition({
-          renderedArmyPosition: this.armiesPositions.get(army.entityId),
+          renderedArmyPosition: this.getArmyDisplayPosition(army.entityId),
           selectableArmyNormalizedPosition: {
             col: selectableArmyNormalizedPosition.x,
             row: selectableArmyNormalizedPosition.y,
@@ -11984,16 +10943,5 @@ export default class WorldmapScene extends WarpTravel {
    */
   private recalculateArrowsForEntitiesRelatedTo(entityId: ID) {
     this.battleDirectionManager.recalculateArrowsForEntitiesRelatedTo(entityId);
-  }
-
-  /**
-   * Remove entity from tracking when it's destroyed
-   */
-  private removeEntityFromTracking(entityId: ID) {
-    // Remove from position tracking
-    this.armiesPositions.delete(entityId);
-
-    // Remove from battle direction relationships
-    this.battleDirectionManager.removeEntityFromTracking(entityId);
   }
 }

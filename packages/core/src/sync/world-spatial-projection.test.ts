@@ -19,6 +19,19 @@ const createHarness = () => {
     row: Type.Number,
     data: Type.BigInt,
   });
+  const explorerTroops = defineComponent(world, {
+    explorer_id: Type.Number,
+    troops: {
+      category: Type.String,
+      tier: Type.String,
+      count: Type.BigInt,
+    },
+    coord: {
+      alt: Type.Boolean,
+      x: Type.Number,
+      y: Type.Number,
+    },
+  });
   const writeTile = (
     entityId: string,
     input: { alt?: boolean; col: number; row: number; occupierId: number; occupierType?: number },
@@ -37,8 +50,46 @@ const createHarness = () => {
       { skipUpdateStream },
     );
   };
+  const writeArmy = (
+    entityId: string,
+    input: {
+      explorerId: number;
+      col: number;
+      row: number;
+      alt?: boolean;
+      count?: bigint;
+      category?: string;
+      tier?: string;
+    },
+    skipUpdateStream = false,
+  ) => {
+    setComponent(
+      explorerTroops,
+      entityId,
+      {
+        explorer_id: input.explorerId,
+        troops: {
+          category: input.category ?? "Knight",
+          tier: input.tier ?? "T1",
+          count: input.count ?? 100n,
+        },
+        coord: { alt: input.alt ?? false, x: input.col, y: input.row },
+      },
+      { skipUpdateStream },
+    );
+  };
 
-  return { projection: new WorldSpatialProjection({ tileOptComponent: tileOpt, bucketSize: 8 }), tileOpt, writeTile };
+  return {
+    projection: new WorldSpatialProjection({
+      tileOptComponent: tileOpt,
+      explorerTroopsComponent: explorerTroops,
+      bucketSize: 8,
+    }),
+    explorerTroops,
+    tileOpt,
+    writeArmy,
+    writeTile,
+  };
 };
 
 describe("WorldSpatialProjection", () => {
@@ -113,6 +164,38 @@ describe("WorldSpatialProjection", () => {
         .map(({ spatialId }) => spatialId),
     ).toEqual(["entity:7", "reserved:101:200", "reserved:102:200"]);
     expect(projection.getStructures()).toHaveLength(3);
+  });
+
+  it("indexes live surface armies from ExplorerTroops only", () => {
+    const { projection, writeArmy, writeTile } = createHarness();
+    writeArmy("live-army", { explorerId: 7, col: 100, row: 200, category: "Paladin", tier: "T2" });
+    writeArmy("dead-army", { explorerId: 8, col: 101, row: 200, count: 0n });
+    writeArmy("alt-army", { explorerId: 9, col: 102, row: 200, alt: true });
+    writeTile("stale-explorer-tile", {
+      col: 103,
+      row: 200,
+      occupierId: 10,
+      occupierType: TileOccupier.ExplorerKnightT1Regular,
+    });
+
+    projection.start();
+
+    expect(projection.getArmies()).toEqual([
+      {
+        kind: "army",
+        entityId: 7,
+        hexCoords: { col: 100, row: 200 },
+        troopCategory: "Paladin",
+        troopTier: "T2",
+      },
+    ]);
+    expect(projection.getArmiesAtHex({ col: 100, row: 200 }).map(({ entityId }) => entityId)).toEqual([7]);
+    expect(
+      projection
+        .getArmiesInBounds({ minCol: 96, maxCol: 104, minRow: 196, maxRow: 204 })
+        .map(({ entityId }) => entityId),
+    ).toEqual([7]);
+    expect(projection.getArmy(10)).toBeUndefined();
   });
 
   it.each(["destination-first", "origin-first"] as const)(
@@ -226,6 +309,55 @@ describe("WorldSpatialProjection", () => {
     ]);
   });
 
+  it("publishes army create, move, variant, and removal changes incrementally", () => {
+    const { projection, explorerTroops, writeArmy } = createHarness();
+    projection.start();
+    const listener = vi.fn();
+    projection.subscribeArmies(listener);
+
+    writeArmy("army", { explorerId: 7, col: 10, row: 11 });
+    writeArmy("army", { explorerId: 7, col: 20, row: 21, category: "Crossbowman", tier: "T3" });
+    removeComponent(explorerTroops, "army");
+
+    expect(listener).toHaveBeenNthCalledWith(1, [
+      {
+        kind: "army",
+        entityId: 7,
+        current: expect.objectContaining({ hexCoords: { col: 10, row: 11 }, troopCategory: "Knight", troopTier: "T1" }),
+      },
+    ]);
+    expect(listener).toHaveBeenNthCalledWith(2, [
+      {
+        kind: "army",
+        entityId: 7,
+        previous: expect.objectContaining({ hexCoords: { col: 10, row: 11 } }),
+        current: expect.objectContaining({
+          hexCoords: { col: 20, row: 21 },
+          troopCategory: "Crossbowman",
+          troopTier: "T3",
+        }),
+      },
+    ]);
+    expect(listener).toHaveBeenNthCalledWith(3, [
+      {
+        kind: "army",
+        entityId: 7,
+        previous: expect.objectContaining({ hexCoords: { col: 20, row: 21 } }),
+      },
+    ]);
+  });
+
+  it("removes the previous projection key when an ExplorerTroops identity changes", () => {
+    const { projection, writeArmy } = createHarness();
+    writeArmy("army", { explorerId: 7, col: 10, row: 11 });
+    projection.start();
+
+    writeArmy("army", { explorerId: 8, col: 20, row: 21 });
+
+    expect(projection.getArmy(7)).toBeUndefined();
+    expect(projection.getArmy(8)).toMatchObject({ entityId: 8, hexCoords: { col: 20, row: 21 } });
+  });
+
   it("replaces a reserved construction site with its new hyperstructure immediately", () => {
     const { projection, writeTile } = createHarness();
     writeTile("construction-site", {
@@ -295,5 +427,18 @@ describe("WorldSpatialProjection", () => {
       hexCoords: { col: 20, row: 21 },
       occupierType: TileOccupier.RealmWonderLevel2,
     });
+  });
+
+  it("restores missed army updates and deletions from a full rebuild", () => {
+    const { projection, explorerTroops, writeArmy } = createHarness();
+    writeArmy("army", { explorerId: 7, col: 10, row: 11 });
+    projection.start();
+
+    removeComponent(explorerTroops, "army", { skipUpdateStream: true });
+    expect(projection.getArmy(7)).toBeDefined();
+
+    projection.rebuild();
+
+    expect(projection.getArmy(7)).toBeUndefined();
   });
 });

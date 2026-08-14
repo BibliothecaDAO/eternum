@@ -4,15 +4,18 @@ import {
   ActionType,
   ArmyActionManager,
   configManager,
+  divideByPrecision,
   ExplorerTroopsSystemUpdate,
   ExplorerTroopsTileSystemUpdate,
   FELT_CENTER,
+  gameEntityKey,
   getBlockTimestamp,
   Position,
   StaminaManager,
 } from "@bibliothecadao/eternum";
 import { DojoResult } from "@bibliothecadao/react";
 import { HexEntityInfo, TroopTier, TroopType } from "@bibliothecadao/types";
+import { getComponentValue } from "@dojoengine/recs";
 import * as THREE from "three";
 import { CSS2DObject } from "three/examples/jsm/renderers/CSS2DRenderer.js";
 import { UnitTilePosition, UnitTileRenderer } from "../tiles/unit-tile-renderer";
@@ -21,6 +24,36 @@ import { findShortestPath } from "../utils/pathfinding";
 import { getWorldPositionForHex, HEX_SIZE, loggedInAccount } from "../utils/utils";
 import { EntityManager } from "./entity-manager";
 import { ArmyObject } from "./types";
+
+interface ExplorerTroopsRecsValue {
+  readonly explorer_id: number;
+  readonly owner: number;
+  readonly troops: {
+    readonly category: string;
+    readonly tier: string;
+    readonly count: bigint;
+    readonly stamina: {
+      readonly amount: bigint;
+      readonly updated_tick: bigint;
+    };
+    readonly boosts: {
+      readonly incr_stamina_regen_percent_num: number;
+      readonly incr_stamina_regen_tick_count: number;
+      readonly incr_explore_reward_percent_num: number;
+      readonly incr_explore_reward_end_tick: number;
+      readonly incr_damage_dealt_percent_num: number;
+      readonly incr_damage_dealt_end_tick: number;
+      readonly decr_damage_gotten_percent_num: number;
+      readonly decr_damage_gotten_end_tick: number;
+    };
+    readonly battle_cooldown_end: number;
+  };
+  readonly coord: {
+    readonly alt: boolean;
+    readonly x: number;
+    readonly y: number;
+  };
+}
 
 export class ArmyManager extends EntityManager<ArmyObject> {
   private labels: Map<number, CSS2DObject> = new Map();
@@ -398,8 +431,96 @@ export class ArmyManager extends EntityManager<ArmyObject> {
     return this.movingObjects.has(objectId);
   }
 
+  public synchronizeExplorerTroops(
+    current: ExplorerTroopsRecsValue | undefined,
+    previous?: ExplorerTroopsRecsValue,
+  ): void {
+    const entityId = current?.explorer_id ?? previous?.explorer_id;
+    if (entityId === undefined) return;
+
+    if (!this.isRenderableExplorerTroops(current)) {
+      this.deleteArmy(entityId);
+      return;
+    }
+
+    const tileUpdate = this.buildExplorerTroopsTileUpdate(current);
+    this.applyExplorerTroopsTileUpdate(tileUpdate);
+    this.applyExplorerTroopsPresentationUpdate(this.buildExplorerTroopsPresentationUpdate(current, tileUpdate));
+  }
+
+  private isRenderableExplorerTroops(current: ExplorerTroopsRecsValue | undefined): current is ExplorerTroopsRecsValue {
+    return Boolean(current && !current.coord.alt && current.troops.count > 0n);
+  }
+
+  private buildExplorerTroopsTileUpdate(current: ExplorerTroopsRecsValue): ExplorerTroopsTileSystemUpdate {
+    const troopType = current.troops.category as TroopType;
+    const troopTier = current.troops.tier as TroopTier;
+    const troopCount = divideByPrecision(Number(current.troops.count));
+    const onChainStamina = {
+      amount: current.troops.stamina.amount,
+      updatedTick: Number(current.troops.stamina.updated_tick),
+    };
+    const { currentArmiesTick } = getBlockTimestamp();
+    const currentStamina = Number(
+      StaminaManager.getStamina(
+        {
+          ...current.troops,
+          category: troopType,
+          tier: troopTier,
+        },
+        currentArmiesTick,
+      ).amount,
+    );
+    const ownerAddress = this.resolveArmyOwnerAddress(current.owner);
+
+    return {
+      entityId: current.explorer_id,
+      hexCoords: { col: current.coord.x, row: current.coord.y },
+      ownerAddress,
+      ownerName: "",
+      guildName: "",
+      troopType,
+      troopTier,
+      isDaydreamsAgent: false,
+      ownerStructureId: current.owner === 0 ? null : current.owner,
+      troopCount,
+      currentStamina,
+      onChainStamina,
+      battleData: undefined,
+      maxStamina: StaminaManager.getMaxStamina(troopType, troopTier),
+    };
+  }
+
+  private buildExplorerTroopsPresentationUpdate(
+    current: ExplorerTroopsRecsValue,
+    tileUpdate: ExplorerTroopsTileSystemUpdate,
+  ): ExplorerTroopsSystemUpdate {
+    return {
+      entityId: current.explorer_id,
+      troopCount: divideByPrecision(Number(current.troops.count)),
+      onChainStamina: {
+        amount: current.troops.stamina.amount,
+        updatedTick: Number(current.troops.stamina.updated_tick),
+      },
+      ownerStructureId: current.owner === 0 ? null : current.owner,
+      hexCoords: tileUpdate.hexCoords,
+      ownerAddress: tileUpdate.ownerAddress,
+      ownerName: "",
+      battleCooldownEnd: current.troops.battle_cooldown_end,
+    };
+  }
+
+  private resolveArmyOwnerAddress(ownerStructureId: number): bigint {
+    if (!this.dojo || ownerStructureId === 0) return 0n;
+    const structure = getComponentValue(
+      this.dojo.setup.components.Structure,
+      gameEntityKey([BigInt(ownerStructureId)]),
+    );
+    return structure ? BigInt(structure.owner) : 0n;
+  }
+
   // Army-specific methods moved from HexagonMap
-  public async handleSystemUpdate(update: ExplorerTroopsTileSystemUpdate): Promise<void> {
+  private applyExplorerTroopsTileUpdate(update: ExplorerTroopsTileSystemUpdate): void {
     const {
       hexCoords: { col, row },
       ownerAddress,
@@ -531,7 +652,7 @@ export class ArmyManager extends EntityManager<ArmyObject> {
     this.pendingArmyMovements.delete(entityId);
   }
 
-  public handleExplorerTroopsUpdate(update: ExplorerTroopsSystemUpdate): void {
+  private applyExplorerTroopsPresentationUpdate(update: ExplorerTroopsSystemUpdate): void {
     const armyObject = this.getObject(update.entityId);
 
     if (!armyObject) {

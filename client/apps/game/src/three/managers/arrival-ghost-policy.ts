@@ -30,13 +30,6 @@ function isPredictiveArrivalGhostMovement(movementType: "travel" | "explore"): b
   return movementType === "travel" || movementType === "explore";
 }
 
-export function shouldHideSourceArmyOnTileRemoval(input: {
-  hasMovementInFlight: boolean;
-  reason: "tile" | "zero";
-}): boolean {
-  return input.reason !== "tile" || !input.hasMovementInFlight;
-}
-
 export function resolveArrivalGhostVisualStyle(input: { armyColor: string }): ArrivalGhostVisualStyle {
   const ghostColor = new Color(input.armyColor);
   const ghostHsl = { h: 0, s: 0, l: 0 };

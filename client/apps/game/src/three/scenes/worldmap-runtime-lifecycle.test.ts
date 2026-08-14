@@ -9,20 +9,12 @@ import { SceneName } from "../types";
 
 describe("worldmap runtime lifecycle", () => {
   it("clears switch-off transient state and returns reset primitives", () => {
-    const pendingArmyRemovals = new Map<number, string>([
-      [101, "timeout-a"],
-      [202, "timeout-b"],
-    ]);
-    const pendingArmyRemovalMeta = new Map<number, { scheduledAt: number }>([[101, { scheduledAt: Date.now() }]]);
-    const deferredChunkRemovals = new Map<number, { reason: string }>([[101, { reason: "tile" }]]);
-    const armyLastTileSyncAt = new Map<number, number>([[101, Date.now()]]);
     const pendingArmyMovements = new Map<number, { movement?: { fallbackTimeout?: string } }>([
       [101, { movement: { fallbackTimeout: "fallback-timeout" } }],
       [202, { movement: {} }],
       // tx-only residue: movement already cleared, receipt still tracked.
       [303, {}],
     ]);
-    const armyStructureOwners = new Map<number, number>([[101, 88]]);
     const pinnedChunkKeys = new Set<string>(["8,8"]);
     const pinnedRenderAreas = new Set<string>(["8,8:render"]);
 
@@ -35,12 +27,7 @@ describe("worldmap runtime lifecycle", () => {
     const releaseInactiveResourcesSpy = vi.fn();
 
     const result = applyWorldmapSwitchOffRuntimeState({
-      pendingArmyRemovals,
-      pendingArmyRemovalMeta,
-      deferredChunkRemovals,
-      armyLastTileSyncAt,
       pendingArmyMovements,
-      armyStructureOwners,
       clearRenderAreaHydrationState: clearRenderAreaHydrationStateSpy,
       pinnedChunkKeys,
       pinnedRenderAreas,
@@ -54,7 +41,7 @@ describe("worldmap runtime lifecycle", () => {
       invalidatePendingFetches: invalidatePendingFetchesSpy,
     });
 
-    expect(clearTimeoutSpy).toHaveBeenCalledTimes(3);
+    expect(clearTimeoutSpy).toHaveBeenCalledTimes(1);
     expect(clearTimeoutSpy).toHaveBeenCalledWith("fallback-timeout");
     expect(clearPendingArmyMovementSpy).toHaveBeenCalledTimes(3);
     expect(clearPendingArmyMovementSpy).toHaveBeenCalledWith(101);
@@ -66,12 +53,7 @@ describe("worldmap runtime lifecycle", () => {
     expect(invalidatePendingFetchesSpy).toHaveBeenCalledTimes(1);
     expect(releaseInactiveResourcesSpy).not.toHaveBeenCalled();
 
-    expect(pendingArmyRemovals.size).toBe(0);
-    expect(pendingArmyRemovalMeta.size).toBe(0);
-    expect(deferredChunkRemovals.size).toBe(0);
-    expect(armyLastTileSyncAt.size).toBe(0);
     expect(pendingArmyMovements.size).toBe(0);
-    expect(armyStructureOwners.size).toBe(0);
     expect(pinnedChunkKeys.size).toBe(0);
     expect(pinnedRenderAreas.size).toBe(0);
 
@@ -93,12 +75,7 @@ describe("worldmap runtime lifecycle", () => {
     const releaseInactiveResourcesSpy = vi.fn();
 
     const result = applyWorldmapSwitchOffRuntimeState({
-      pendingArmyRemovals: new Map(),
-      pendingArmyRemovalMeta: new Map(),
-      deferredChunkRemovals: new Map(),
-      armyLastTileSyncAt: new Map(),
       pendingArmyMovements: new Map(),
-      armyStructureOwners: new Map(),
       clearRenderAreaHydrationState: clearRenderAreaHydrationStateSpy,
       pinnedChunkKeys: new Set(),
       pinnedRenderAreas: new Set(),
@@ -145,12 +122,7 @@ describe("worldmap runtime lifecycle", () => {
     const invalidatePendingFetchesSpy = vi.fn();
 
     applyWorldmapSwitchOffRuntimeState({
-      pendingArmyRemovals: new Map(),
-      pendingArmyRemovalMeta: new Map(),
-      deferredChunkRemovals: new Map(),
-      armyLastTileSyncAt: new Map(),
       pendingArmyMovements: new Map(),
-      armyStructureOwners: new Map(),
       clearRenderAreaHydrationState: vi.fn(),
       pinnedChunkKeys: new Set(),
       pinnedRenderAreas: new Set(),
@@ -169,33 +141,6 @@ describe("worldmap runtime lifecycle", () => {
     expect(hydratedRefreshSuppressionAreaKeys.size).toBe(0);
     expect(releaseInactiveResourcesSpy).toHaveBeenCalledTimes(1);
     expect(invalidatePendingFetchesSpy).toHaveBeenCalledTimes(1);
-  });
-
-  it("clears suppressedArmies when provided", () => {
-    const suppressedArmies = new Set<number>([101, 202]);
-
-    applyWorldmapSwitchOffRuntimeState({
-      pendingArmyRemovals: new Map(),
-      pendingArmyRemovalMeta: new Map(),
-      deferredChunkRemovals: new Map(),
-      armyLastTileSyncAt: new Map(),
-      pendingArmyMovements: new Map(),
-      armyStructureOwners: new Map(),
-      suppressedArmies,
-      clearRenderAreaHydrationState: vi.fn(),
-      pinnedChunkKeys: new Set(),
-      pinnedRenderAreas: new Set(),
-      hydratedChunkRefreshes: new Set(),
-      hydratedRefreshSuppressionAreaKeys: new Set(),
-      clearTimeout: vi.fn(),
-      clearPendingArmyMovement: vi.fn(),
-      clearStreamingWork: vi.fn(),
-      clearQueuedPrefetchState: vi.fn(),
-      releaseInactiveResources: vi.fn(),
-      invalidatePendingFetches: vi.fn(),
-    });
-
-    expect(suppressedArmies.size).toBe(0);
   });
 
   it("invalidates stale fetch generations after switch-off", () => {

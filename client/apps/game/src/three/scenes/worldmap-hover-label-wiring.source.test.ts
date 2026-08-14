@@ -27,24 +27,20 @@ describe("worldmap hover label wiring", () => {
   it("reconciles current hover only after entity managers catch up", () => {
     const source = readWorldmapSource();
 
-    expect(
-      extractSourceBetween(
-        source,
-        "await this.armyManager.onTileUpdate(update)",
-        "this.clearPendingArmyMovementFromAuthoritativePosition(update)",
-      ),
-    ).toContain("this.reconcileHoverLabels()");
-    expect(extractSourceBetween(source, "processExplorerTroopsUpdate(update", "}),")).toContain("reconcileHoverLabels");
-    expect(
-      extractSourceBetween(
-        source,
-        "private bindWorldSpatialProjectionLifecycle()",
-        "private bindWorldmapCameraViewLifecycle()",
-      ),
-    ).toContain("this.reconcileHoverLabels()");
-    expect(extractSourceBetween(source, "public updateArmyHexes(", "public async updateExploredHex(")).not.toContain(
-      "reconcileHoverLabels",
+    const projectionLifecycle = extractSourceBetween(
+      source,
+      "private bindWorldSpatialProjectionLifecycle()",
+      "private bindWorldmapCameraViewLifecycle()",
     );
+    const armyChanges = extractSourceBetween(
+      source,
+      "private handleProjectedArmyChanges(",
+      "private syncProjectedStructurePathfinding(",
+    );
+
+    expect(projectionLifecycle).toContain("this.handleProjectedArmyChanges(changes)");
+    expect(armyChanges).toContain("this.reconcileHoverLabels()");
+    expect(source).not.toContain("public updateArmyHexes(");
   });
 
   it("resolves hover labels with direct army raycast fallback", () => {

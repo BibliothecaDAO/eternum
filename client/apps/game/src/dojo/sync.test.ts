@@ -127,6 +127,10 @@ function createSyncHarness() {
         entities: function* () {},
         update$: { subscribe: vi.fn(() => ({ unsubscribe: vi.fn() })) },
       },
+      ExplorerTroops: {
+        entities: function* () {},
+        update$: { subscribe: vi.fn(() => ({ unsubscribe: vi.fn() })) },
+      },
     },
     network: {
       toriiClient: client,
