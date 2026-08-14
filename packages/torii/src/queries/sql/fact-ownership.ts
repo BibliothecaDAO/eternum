@@ -4,12 +4,7 @@ type AsyncSqlApiMethodName = {
   [Key in keyof SqlApi]: SqlApi[Key] extends (...args: infer _Args) => Promise<unknown> ? Key : never;
 }[keyof SqlApi];
 
-type SqlFactDisposition =
-  | "keep-history"
-  | "keep-aggregate"
-  | "keep-external-snapshot"
-  | "delete-live-state-s4"
-  | "deleted-s4";
+type SqlFactDisposition = "keep-history" | "keep-aggregate" | "keep-external-snapshot" | "deleted-s4";
 
 interface SqlFactOwnershipDecision {
   disposition: SqlFactDisposition;
@@ -20,10 +15,6 @@ const keepHistory = (reason: string): SqlFactOwnershipDecision => ({ disposition
 const keepAggregate = (reason: string): SqlFactOwnershipDecision => ({ disposition: "keep-aggregate", reason });
 const keepExternalSnapshot = (reason: string): SqlFactOwnershipDecision => ({
   disposition: "keep-external-snapshot",
-  reason,
-});
-const deleteLiveState = (reason: string): SqlFactOwnershipDecision => ({
-  disposition: "delete-live-state-s4",
   reason,
 });
 const deletedS4 = (reason: string): SqlFactOwnershipDecision => ({ disposition: "deleted-s4", reason });
@@ -37,14 +28,13 @@ const deletedS4 = (reason: string): SqlFactOwnershipDecision => ({ disposition: 
  */
 export const SQL_API_FACT_OWNERSHIP = {
   fetchQuest: deletedS4("Current quest/tile state now comes from RECS."),
-  fetchFirstStructure: deleteLiveState("Bootstrap selection must select from the authoritative Structure snapshot."),
   fetchSurroundingWonderBonus: deletedS4("The in-session wonder lookup now derives from Structure in RECS."),
   fetchTilesByCoords: deletedS4("Current TileOpt state now comes from the spatial projection."),
   fetchRealmSettlements: keepExternalSnapshot(
     "The pre-session settlement picker has no active GameSyncRuntime; in-session ownership does not use this API.",
   ),
   fetchStructuresByOwner: keepExternalSnapshot(
-    "Mobile and headless consumers have not adopted GameSyncRuntime; the game client uses this only in the temporary legacy adapter.",
+    "Pre-session, mobile, and headless consumers have no active GameSyncRuntime; in-session game views read RECS.",
   ),
   fetchRealmVillageSlots: keepExternalSnapshot(
     "The pre-session village planner has no active GameSyncRuntime and needs a settlement-slot snapshot.",
@@ -64,7 +54,7 @@ export const SQL_API_FACT_OWNERSHIP = {
     "The headless client and onchain agent do not yet host GameSyncRuntime; the game client does not use this API.",
   ),
   fetchHyperstructures: keepExternalSnapshot(
-    "The headless client lacks GameSyncRuntime; the game client uses this only in the temporary legacy adapter.",
+    "The headless client lacks GameSyncRuntime; in-session game views read RECS and the spatial projection.",
   ),
   fetchOtherStructures: deletedS4("Current Structure ownership and category now come from RECS."),
   fetchSwapEvents: keepHistory("Immutable swap history is a SQL read model."),

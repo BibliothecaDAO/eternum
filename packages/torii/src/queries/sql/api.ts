@@ -19,7 +19,6 @@ import {
   SettlementPlannerSnapshot,
   SettlementPlannerTile,
   StoryEventData,
-  StructureDetails,
   StructureLocation,
   StructureMapDataRaw,
   SwapEventResponse,
@@ -79,9 +78,8 @@ const buildCacheUrl = (baseUrl: string, path: string): URL => {
   return new URL(`${trimmed}${normalizedPath}`);
 };
 
-// Short-lived dedupe + TTL for fetchStructuresByOwner. Callers mount concurrently
-// during boot (use-player-structure-sync + others) and re-query the same owner
-// within a few hundred ms. gRPC subscription reconciles any staleness within a block.
+// Short-lived dedupe + TTL for fetchStructuresByOwner. Pre-session entry callers
+// mount concurrently and can query the same owner within a few hundred ms.
 const STRUCTURES_BY_OWNER_TTL_MS = 500;
 const structuresByOwnerCache = new Map<string, { promise: Promise<StructureLocation[]>; expiresAt: number }>();
 
@@ -93,16 +91,6 @@ export class SqlApi {
      * per-world instances used by entry flows before bootstrap. */
     private readonly scope?: SqlGameScope,
   ) {}
-
-  /**
-   * Fetches the first structure from the SQL database.
-   * SQL queries always return arrays, so we extract the first result.
-   */
-  async fetchFirstStructure(): Promise<StructureDetails | null> {
-    const url = buildApiUrl(this.baseUrl, STRUCTURE_QUERIES.FIRST_STRUCTURE, this.scope);
-    const results = await fetchWithErrorHandling<StructureDetails>(url, "Failed to fetch first structure");
-    return extractFirstOrNull(results);
-  }
 
   /**
    * Fetches all settlement structures from the SQL database.

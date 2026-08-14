@@ -26,17 +26,6 @@ export const STRUCTURE_QUERIES = {
     ORDER BY category, entity_id;
   `,
 
-  FIRST_STRUCTURE: `
-    SELECT 
-        entity_id,
-        owner,
-        \`base.coord_x\` as coord_x,
-        \`base.coord_y\` as coord_y
-    FROM \`s1_eternum-Structure\`
-    WHERE {GF}
-    LIMIT 1;
-  `,
-
   HYPERSTRUCTURES: `
     SELECT hyperstructure_id
     FROM \`s1_eternum-Hyperstructure\`
