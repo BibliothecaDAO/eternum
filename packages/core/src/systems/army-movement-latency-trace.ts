@@ -11,11 +11,6 @@ export type ArmyMovementLatencyPhase =
   | "tx_submitted"
   | "tx_response_received"
   | "tx_confirmed"
-  | "tileopt_stream_received"
-  | "tileopt_component_received"
-  | "tileopt_component_ready"
-  | "worldmap_tile_update_received"
-  | "army_manager_tile_update_applied"
   | "movement_started"
   | "movement_completed"
   | "optimistic_animation_started"
@@ -23,7 +18,7 @@ export type ArmyMovementLatencyPhase =
   | "optimistic_animation_reconciled"
   | "optimistic_animation_rewound";
 
-export type ArmyMovementLatencySource = "worldmap" | "torii_sync" | "world_update_listener";
+export type ArmyMovementLatencySource = "worldmap";
 
 export interface ArmyMovementLatencyTraceEntry {
   sequence: number;

@@ -9,6 +9,7 @@ import {
 } from "@bibliothecadao/eternum";
 import { DojoResult } from "@bibliothecadao/react";
 import { ActorType, findResourceById, getDirectionBetweenAdjacentHexes } from "@bibliothecadao/types";
+import { getComponentValue } from "@dojoengine/recs";
 import * as THREE from "three";
 import { getMapFromTorii } from "../../../../../app/dojo/queries";
 import { ArmyManager, BiomesManager, ChestManager, StructureManager } from "../../entity-managers";
@@ -75,6 +76,7 @@ export class HexagonMap {
   // === INITIALIZATION STATE ===
   private isInitialized: boolean = false;
   private initializationPromise: Promise<void> | null = null;
+  private unsubscribeArmyRecs?: () => void;
 
   // === CONSTRUCTOR & INITIALIZATION ===
   constructor(
@@ -129,9 +131,7 @@ export class HexagonMap {
 
   private setupSystemListeners(): void {
     this.systemManager.Tile.onTileUpdate((value) => this.biomesManager.handleTileUpdate(value));
-    this.systemManager.Army.onTileUpdate((update) => this.armyManager.handleSystemUpdate(update));
-    this.systemManager.Army.onExplorerTroopsUpdate((update) => this.armyManager.handleExplorerTroopsUpdate(update));
-    this.systemManager.Army.onDeadArmy((entityId) => this.armyManager.deleteArmy(entityId));
+    this.installArmyRecsProjection();
     this.systemManager.Structure.onTileUpdate((update) => this.structureManager.handleSystemUpdate(update));
     this.systemManager.Structure.onStructureUpdate((update) => this.structureManager.handleStructureUpdate(update));
     this.systemManager.Structure.onStructureBuildingsUpdate((update) =>
@@ -140,6 +140,19 @@ export class HexagonMap {
     this.systemManager.Chest.onTileUpdate((update) => this.chestManager.handleSystemUpdate(update));
     this.systemManager.Chest.onDeadChest((entityId) => this.chestManager.deleteChest(entityId));
     this.systemManager.ExplorerReward.onExplorerRewardEventUpdate((update) => this.handleExplorerRewardEvent(update));
+  }
+
+  private installArmyRecsProjection(): void {
+    const component = this.dojo.setup.components.ExplorerTroops;
+    for (const entity of component.entities()) {
+      this.armyManager.synchronizeExplorerTroops(getComponentValue(component, entity));
+    }
+
+    const subscription = component.update$.subscribe(({ value }) => {
+      const [current, previous] = value;
+      this.armyManager.synchronizeExplorerTroops(current, previous);
+    });
+    this.unsubscribeArmyRecs = () => subscription.unsubscribe();
   }
 
   private initializeGUI(): void {
@@ -735,6 +748,9 @@ export class HexagonMap {
   }
 
   public dispose(): void {
+    this.unsubscribeArmyRecs?.();
+    this.unsubscribeArmyRecs = undefined;
+
     // Clean up resource FX manager
     this.resourceFXManager.destroy();
 

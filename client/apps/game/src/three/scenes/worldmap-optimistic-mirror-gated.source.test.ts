@@ -10,10 +10,8 @@ function readSource(filename: string): string {
 
 // applyMovementPlan has unsafe early-return paths (missing army, already at
 // target, source drifted). When any of those fires, no optimistic lock is
-// written and no tween runs. Without gating, armyHexes[dest] would get pinned
-// with nothing left to rewind it on discovery-revert or stale Torii replay,
-// producing the "mesh at source, destination still selectable" desync.
-describe("Worldmap optimistic mirror gated on applyMovementPlan result", () => {
+// written and no tween runs, so presentation-only optimistic work must stop.
+describe("Worldmap optimistic presentation gated on applyMovementPlan result", () => {
   it("applyMovementPlan returns Promise<boolean>", () => {
     const currentDir = dirname(fileURLToPath(import.meta.url));
     const source = readFileSync(resolve(currentDir, "../managers/army-manager.ts"), "utf8");
@@ -53,7 +51,7 @@ describe("Worldmap optimistic mirror gated on applyMovementPlan result", () => {
     expect(body).toMatch(/return true;/);
   });
 
-  it("the submitted optimistic-plan helper gates the mirror on applyMovementPlan's return", () => {
+  it("the submitted optimistic-plan helper gates provisional terrain on applyMovementPlan's return", () => {
     const source = readSource("worldmap.tsx");
 
     const handlerStart = source.indexOf("private async applySubmittedArmyMovementOptimisticPlan(");
@@ -67,12 +65,11 @@ describe("Worldmap optimistic mirror gated on applyMovementPlan result", () => {
       "const planApplied = await this.armyManager.applyMovementPlan(plan, { optimistic: true });",
     );
     expect(handler).toMatch(/if \(!planApplied\)[\s\S]*?return;/);
-    // The mirror and biome paint must live AFTER the guard, not before.
+    // The biome paint must live AFTER the guard, not before.
     const guardIdx = handler.search(/if \(!planApplied\)/);
-    const mirrorIdx = handler.indexOf("this.mirrorOptimisticArmyDestinationIntoWorldmapCache(", guardIdx);
     const biomeIdx = handler.indexOf("this.paintOptimisticDestinationBiome(", guardIdx);
-    expect(mirrorIdx).toBeGreaterThan(guardIdx);
     expect(biomeIdx).toBeGreaterThan(guardIdx);
+    expect(handler).not.toContain("mirrorOptimisticArmyDestinationIntoWorldmapCache");
   });
 
   it("emits optimistic_animation_skipped latency phase when the plan no-ops", () => {

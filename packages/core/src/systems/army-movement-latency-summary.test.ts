@@ -153,8 +153,7 @@ describe("summarizeArmyMovementLatency", () => {
     const pairs = ARMY_MOVEMENT_LATENCY_PHASE_PAIRS.map((p) => `${p.from}->${p.to}`);
 
     expect(pairs).toContain("move_requested->tx_confirmed");
-    expect(pairs).toContain("tx_confirmed->tileopt_stream_received");
-    expect(pairs).toContain("tileopt_stream_received->movement_started");
+    expect(pairs.some((pair) => pair.includes("tileopt"))).toBe(false);
     expect(pairs).toContain("move_requested->movement_started");
     expect(pairs).toContain("movement_started->movement_completed");
     expect(pairs).toContain("tx_submitted->optimistic_animation_started");

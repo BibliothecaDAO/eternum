@@ -8,15 +8,12 @@ import { describe, expect, it } from "vitest";
 const readSource = (relativePath: string) => readFileSync(resolve(process.cwd(), relativePath), "utf8");
 
 describe("Worldmap pending movement visual handoff wiring", () => {
-  it("keeps updateArmyHexes focused on cache sync instead of clearing pending movement", () => {
+  it("does not mirror optimistic movement into a scene-local spatial cache", () => {
     const source = readSource("src/three/scenes/worldmap.tsx");
-    const methodStart = source.indexOf("public updateArmyHexes(");
 
-    expect(methodStart).toBeGreaterThan(-1);
-
-    const methodBody = source.slice(methodStart, methodStart + 2600);
-    expect(methodBody).not.toContain('this.clearPendingArmyMovement(entityId, "movement_started")');
-    expect(methodBody).not.toContain("this.clearPendingArmyMovement(entityId)");
+    expect(source).not.toContain("public updateArmyHexes(");
+    expect(source).not.toContain("mirrorOptimisticArmyDestinationIntoWorldmapCache");
+    expect(source).toContain("private getValidPendingArmyMovementTarget(");
   });
 
   it("hands movement-start off without clearing authoritative resolution handles", () => {
@@ -42,32 +39,16 @@ describe("Worldmap pending movement visual handoff wiring", () => {
     expect(helperBody).not.toContain("clearTimeout");
   });
 
-  it("clears pending movement from authoritative tile updates after manager reconciliation", () => {
+  it("clears pending movement from authoritative projection changes", () => {
     const source = readSource("src/three/scenes/worldmap.tsx");
-    const onTileStart = source.indexOf("this.worldUpdateListener.Army.onTileUpdate(async");
-    expect(onTileStart).toBeGreaterThan(-1);
-
-    const nextSubscription = source.indexOf("this.addWorldUpdateSubscription(", onTileStart + 100);
-    const body = source.slice(onTileStart, nextSubscription);
-    const managerApply = body.indexOf("await this.armyManager.onTileUpdate(update)");
-    const pendingClear = body.indexOf("this.clearPendingArmyMovementFromAuthoritativePosition(update)");
-
-    expect(managerApply).toBeGreaterThan(-1);
-    expect(pendingClear).toBeGreaterThan(-1);
-    expect(managerApply).toBeLessThan(pendingClear);
-  });
-
-  it("clears pending movement from authoritative ExplorerTroops updates", () => {
-    const source = readSource("src/three/scenes/worldmap.tsx");
-    const callStart = source.indexOf("processExplorerTroopsUpdate(update, {");
-    expect(callStart).toBeGreaterThan(-1);
-
-    const callEnd = source.indexOf("});", callStart);
-    const body = source.slice(callStart, callEnd);
+    const methodStart = source.indexOf("private handleProjectedArmyChanges(");
+    const methodEnd = source.indexOf("private syncProjectedStructurePathfinding(", methodStart);
+    const body = source.slice(methodStart, methodEnd);
 
     expect(source).toContain("private clearPendingArmyMovementFromAuthoritativePosition(");
-    expect(body).toContain("onAuthoritativePositionApplied:");
-    expect(body).toContain("this.clearPendingArmyMovementFromAuthoritativePosition(update)");
+    expect(body).toContain(
+      "this.clearPendingArmyMovementFromAuthoritativePosition({ entityId, hexCoords: current.hexCoords })",
+    );
   });
 
   it("clears retained pending movement handles when visual completion follows authoritative target match", () => {
@@ -138,7 +119,7 @@ describe("Worldmap pending movement visual handoff wiring", () => {
     const applyStart = source.indexOf("private async applySubmittedArmyMovementOptimisticPlan(");
     expect(applyStart).toBeGreaterThan(-1);
 
-    const applyEnd = source.indexOf("private mirrorOptimisticArmyDestinationIntoWorldmapCache", applyStart);
+    const applyEnd = source.indexOf("private clearArrivalGhostAfterOptimisticMovementAbort(", applyStart);
     const body = source.slice(applyStart, applyEnd);
 
     expect(body).toContain("if (!this.isArmyMovementPending(entityId)) return");
@@ -152,7 +133,7 @@ describe("Worldmap pending movement visual handoff wiring", () => {
     const helperStart = source.indexOf("private clearArrivalGhostAfterOptimisticMovementAbort(");
     expect(helperStart).toBeGreaterThan(-1);
 
-    const helperEnd = source.indexOf("private mirrorOptimisticArmyDestinationIntoWorldmapCache", helperStart);
+    const helperEnd = source.indexOf("private paintOptimisticDestinationBiome(", helperStart);
     const helperBody = source.slice(helperStart, helperEnd);
 
     expect(helperBody).toContain('"optimistic_animation_skipped"');

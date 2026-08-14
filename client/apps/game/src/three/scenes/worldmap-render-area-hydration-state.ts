@@ -1,4 +1,4 @@
-export type WorldmapRenderAreaHydrationStage = "tileOpt" | "explorerTroops";
+export type WorldmapRenderAreaHydrationStage = "tileOpt";
 
 export interface WorldmapRenderAreaHydrationState {
   completedStages: Map<string, Set<WorldmapRenderAreaHydrationStage>>;
@@ -26,15 +26,9 @@ interface FetchResultRetainedAreaKeysInput {
   isRetainedAreaCoveredByActiveSubscription?: (areaKey: string) => boolean;
 }
 
-export const WORLDMAP_PREFETCH_HYDRATION_STAGES: readonly WorldmapRenderAreaHydrationStage[] = [
-  "tileOpt",
-  "explorerTroops",
-];
+export const WORLDMAP_PREFETCH_HYDRATION_STAGES: readonly WorldmapRenderAreaHydrationStage[] = ["tileOpt"];
 
-export const WORLDMAP_ACTIVE_HYDRATION_STAGES: readonly WorldmapRenderAreaHydrationStage[] = [
-  "tileOpt",
-  "explorerTroops",
-];
+export const WORLDMAP_ACTIVE_HYDRATION_STAGES: readonly WorldmapRenderAreaHydrationStage[] = ["tileOpt"];
 
 export function createWorldmapRenderAreaHydrationState(): WorldmapRenderAreaHydrationState {
   return {

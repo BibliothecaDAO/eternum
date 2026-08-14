@@ -68,9 +68,8 @@ describe("ArmyManager optimistic revert-on-source", () => {
     const methodEnd = source.indexOf("\n  public ", methodStart + 20);
     const body = source.slice(methodStart, methodEnd);
 
-    // A bare updateArmyHexes isn't enough when only ExplorerTroops fires (no
-    // TileOpt on discovery-revert). We must tear down the in-flight tween so
-    // the visual snaps back to `from` instead of parking on the camp tile.
+    // The projection returns to the RECS source immediately, so the in-flight
+    // presentation must rewind too instead of parking on the camp tile.
     expect(body).toMatch(/matchesSource[\s\S]{0,1200}?rewindOptimisticMovement\(entityId\)/);
   });
 

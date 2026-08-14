@@ -40,33 +40,4 @@ describe("Worldmap optimistic destination biome", () => {
     // different biome and the player sees the tile flicker.
     expect(body).toMatch(/configManager\.getBiome\(\s*[A-Za-z]+Contract\.x,\s*[A-Za-z]+Contract\.y\s*\)/);
   });
-
-  it("army TileOpt spawn-biome fallback uses configured biome on contract coords, not a hardcoded Grassland", () => {
-    const source = readSource("worldmap.tsx");
-
-    // Scope to registerArmyWorldUpdateSubscriptions so we don't collide with
-    // the optimistic write in the submitted-tx helper above.
-    const subStart = source.indexOf("private registerArmyWorldUpdateSubscriptions");
-    expect(subStart).toBeGreaterThan(0);
-    const subEnd = source.indexOf("private registerBattleWorldUpdateSubscriptions", subStart);
-    expect(subEnd).toBeGreaterThan(subStart);
-    const scope = source.slice(subStart, subEnd);
-
-    const spawnCallStart = scope.indexOf("resolveArmySpawnBiome(");
-    expect(spawnCallStart).toBeGreaterThan(-1);
-    const spawnCallBlock = scope.slice(spawnCallStart, spawnCallStart + 500);
-
-    // The fallback biome must come from configManager.getBiome on *contract* coords
-    // (update.hexCoords is felt-offset from world-update-listener). Normalized
-    // coords produce a different simplex output than the Cairo biome_library,
-    // which would make the provisional value disagree with the authoritative.
-    expect(spawnCallBlock).toMatch(/configManager\.getBiome\(\s*update\.hexCoords\.col,\s*update\.hexCoords\.row\s*\)/);
-
-    // And the subsequent exploredTiles write must use spawnResult.biome, not a
-    // hardcoded Grassland — otherwise the fallback upgrade is cosmetic.
-    const writeBlock = scope.slice(spawnCallStart, spawnCallStart + 800);
-    expect(writeBlock).toMatch(
-      /exploredTiles\.get\(normalizedPos\.x\)!\.set\(normalizedPos\.y,\s*spawnResult\.biome\)/,
-    );
-  });
 });

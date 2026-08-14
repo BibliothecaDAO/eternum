@@ -3,36 +3,30 @@ import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 
-function readSource(filename: string): string {
-  const currentDir = dirname(fileURLToPath(import.meta.url));
-  return readFileSync(resolve(currentDir, filename), "utf8");
-}
+const currentDir = dirname(fileURLToPath(import.meta.url));
+const readWorldmap = () => readFileSync(resolve(currentDir, "worldmap.tsx"), "utf8");
 
-describe("Optimistic worldmap cache mirror", () => {
-  it("calls updateArmyHexes with the optimistic target after submitted tx starts the tween", () => {
-    const source = readSource("worldmap.tsx");
+describe("optimistic worldmap position overlay", () => {
+  it("resolves a valid pending target before authoritative projection position", () => {
+    const source = readWorldmap();
+    const methodStart = source.indexOf("private getArmyDisplayPosition(");
+    const methodEnd = source.indexOf("private getArmyAtHex(", methodStart);
+    const body = source.slice(methodStart, methodEnd);
+    const pending = body.indexOf("this.getValidPendingArmyMovementTarget(entityId)");
+    const projection = body.indexOf("this.worldSpatialProjection.getArmy(entityId)");
 
-    const handlerStart = source.indexOf("private mirrorOptimisticArmyDestinationIntoWorldmapCache(");
-    expect(handlerStart).toBeGreaterThan(0);
-    const handlerEnd = source.indexOf("\n  private ", handlerStart + 20);
-    expect(handlerEnd).toBeGreaterThan(handlerStart);
-    const handlerBody = source.slice(handlerStart, handlerEnd);
-
-    expect(handlerBody).toMatch(/this\.updateArmyHexes\(\s*\{[\s\S]*?entityId[\s\S]*?hexCoords/);
-    expect(handlerBody).toContain("plan.targetHexCoords.getContract()");
+    expect(pending).toBeGreaterThan(-1);
+    expect(projection).toBeGreaterThan(pending);
   });
 
-  it("guards the mirror call so an army without an owner address is skipped", () => {
-    const source = readSource("worldmap.tsx");
+  it("enforces pending movement TTL at the accessor boundary", () => {
+    const source = readWorldmap();
+    const methodStart = source.indexOf("private getValidPendingArmyMovementTarget(");
+    const methodEnd = source.indexOf("private getStructureOwnerAddress(", methodStart);
+    const body = source.slice(methodStart, methodEnd);
 
-    // updateArmyHexes early-returns on undefined ownerAddress — we read the
-    // address from armyManager.getArmy(entityId).owner, which can be zero for
-    // detached/failed armies. The mirror must only write cache state when a
-    // usable owner exists.
-    const handlerStart = source.indexOf("private mirrorOptimisticArmyDestinationIntoWorldmapCache(");
-    const handlerEnd = source.indexOf("\n  private ", handlerStart + 20);
-    const handlerBody = source.slice(handlerStart, handlerEnd);
-
-    expect(handlerBody).toContain("this.armyManager.getArmy(entityId)");
+    expect(body).toContain("Date.now() - movement.startedAt > this.authoritativePendingArmyMovementMs");
+    expect(source).not.toContain("mirrorOptimisticArmyDestinationIntoWorldmapCache");
+    expect(source).not.toContain("updateArmyHexes(");
   });
 });

@@ -35,6 +35,14 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-08-14",
+    title: "Reliable Map Armies",
+    description:
+      "Fixed armies so movement, creation, and defeat stay current across the world map without stale units or camera-driven repair fetches.",
+    type: "fix",
+    gameSlug: "world",
+  },
+  {
+    date: "2026-08-14",
     title: "Reliable Map Structures",
     description:
       "Fixed structures so new realms, upgrades, and Hyperstructure sites appear and stay current immediately without leaving and returning to the area.",

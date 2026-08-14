@@ -28,12 +28,15 @@ describe("army manager delta pipeline wiring", () => {
     expect(source).toMatch(/slot !== undefined[\s\S]*this\.refreshArmyInstance\(army, slot, modelType\)/);
   });
 
-  it("routes pending explorer deltas through shared reconciliation helpers", () => {
+  it("routes ExplorerTroops through the projection and direct presentation refresh", () => {
     const source = readArmyManagerSource();
 
-    expect(source).toMatch(/takeFreshPendingExplorerTroopsUpdate\(/);
-    expect(source).toMatch(/queuePendingExplorerTroopsUpdate\(/);
+    expect(source).toMatch(/worldSpatialProjection\.subscribeArmies\(/);
+    expect(source).toMatch(/queueArmyProjectionSync\(/);
+    expect(source).toMatch(/components\.ExplorerTroops\.update\$\.subscribe\(/);
+    expect(source).toMatch(/applyExplorerTroopsPresentationUpdate\(/);
     expect(source).toMatch(/resolveArmyStaminaSnapshot\(/);
+    expect(source).not.toMatch(/pendingExplorerTroops/);
   });
 
   it("routes instance presentation through shared position and cosmetic helpers", () => {

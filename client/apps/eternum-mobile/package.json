@@ -19,6 +19,7 @@
     "@bibliothecadao/types": "workspace:*",
     "@dojoengine/core": "catalog:",
     "@dojoengine/predeployed-connector": "catalog:",
+    "@dojoengine/recs": "catalog:",
     "@dojoengine/sdk": "catalog:",
     "@dojoengine/state": "catalog:",
     "@dojoengine/torii-client": "catalog:",

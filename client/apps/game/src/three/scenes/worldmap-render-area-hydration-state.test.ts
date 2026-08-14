@@ -10,14 +10,13 @@ import {
   isRenderAreaHydrationComplete,
   markRenderAreaHydrationStagesComplete,
   registerPendingRenderAreaHydration,
-  retainRenderAreaHydrationStages,
   resolveFetchResultRetainedAreaKeys,
   resolveRecentRenderAreaRetention,
   type WorldmapRenderAreaHydrationStage,
 } from "./worldmap-render-area-hydration-state";
 
-const PREFETCH_STAGES: WorldmapRenderAreaHydrationStage[] = ["tileOpt", "explorerTroops"];
-const ACTIVE_STAGES: WorldmapRenderAreaHydrationStage[] = ["tileOpt", "explorerTroops"];
+const PREFETCH_STAGES: WorldmapRenderAreaHydrationStage[] = ["tileOpt"];
+const ACTIVE_STAGES: WorldmapRenderAreaHydrationStage[] = ["tileOpt"];
 
 describe("worldmap render area hydration state", () => {
   it("uses the same entity-independent stages for prefetch and active presentation", () => {
@@ -33,21 +32,18 @@ describe("worldmap render area hydration state", () => {
   it("dedupes pending work by stage and ownership identity", () => {
     const state = createWorldmapRenderAreaHydrationState();
     const tileFetch = Promise.resolve(true);
-    const explorerFetch = Promise.resolve(true);
     const staleTileFetch = Promise.resolve(false);
 
     registerPendingRenderAreaHydration(state, "area-a", ["tileOpt"], tileFetch);
-    registerPendingRenderAreaHydration(state, "area-a", ["explorerTroops"], explorerFetch);
 
     expect(getPendingRenderAreaHydrationPromise(state, "area-a", ["tileOpt"])).toBe(tileFetch);
-    expect(getPendingRenderAreaHydrationPromise(state, "area-a", ACTIVE_STAGES)).toBe(null);
+    expect(getPendingRenderAreaHydrationPromise(state, "area-a", ACTIVE_STAGES)).toBe(tileFetch);
 
     expect(finalizePendingRenderAreaHydrationOwnership(state, "area-a", ["tileOpt"], staleTileFetch)).toBe(false);
     expect(getPendingRenderAreaHydrationPromise(state, "area-a", ["tileOpt"])).toBe(tileFetch);
 
     expect(finalizePendingRenderAreaHydrationOwnership(state, "area-a", ["tileOpt"], tileFetch)).toBe(true);
     expect(getPendingRenderAreaHydrationPromise(state, "area-a", ["tileOpt"])).toBe(null);
-    expect(getPendingRenderAreaHydrationPromise(state, "area-a", ["explorerTroops"])).toBe(explorerFetch);
   });
 
   it("clears completed and pending state for a render area", () => {
@@ -55,11 +51,11 @@ describe("worldmap render area hydration state", () => {
     const pendingFetch = Promise.resolve(true);
 
     markRenderAreaHydrationStagesComplete(state, "area-a", ["tileOpt"]);
-    registerPendingRenderAreaHydration(state, "area-a", ["explorerTroops"], pendingFetch);
+    registerPendingRenderAreaHydration(state, "area-a", ["tileOpt"], pendingFetch);
     clearRenderAreaHydrationState(state, "area-a");
 
     expect(isRenderAreaHydrationComplete(state, "area-a", ["tileOpt"])).toBe(false);
-    expect(getPendingRenderAreaHydrationPromise(state, "area-a", ["explorerTroops"])).toBe(null);
+    expect(getPendingRenderAreaHydrationPromise(state, "area-a", ["tileOpt"])).toBe(null);
   });
 
   it("can clear completed stages while preserving in-flight ownership for dedupe", () => {
@@ -67,11 +63,11 @@ describe("worldmap render area hydration state", () => {
     const pendingFetch = Promise.resolve(true);
 
     markRenderAreaHydrationStagesComplete(state, "area-a", ["tileOpt"]);
-    registerPendingRenderAreaHydration(state, "area-a", ["explorerTroops"], pendingFetch);
+    registerPendingRenderAreaHydration(state, "area-a", ["tileOpt"], pendingFetch);
     clearCompletedRenderAreaHydrationState(state, "area-a");
 
     expect(isRenderAreaHydrationComplete(state, "area-a", ["tileOpt"])).toBe(false);
-    expect(getPendingRenderAreaHydrationPromise(state, "area-a", ["explorerTroops"])).toBe(pendingFetch);
+    expect(getPendingRenderAreaHydrationPromise(state, "area-a", ["tileOpt"])).toBe(pendingFetch);
   });
 
   it("retains recently unpinned completed areas until the retention budget is exceeded", () => {
@@ -103,20 +99,6 @@ describe("worldmap render area hydration state", () => {
       areaKeysToRetainTerrainOnly: ["area-stale"],
       nextRetainedAreaKeys: ["area-live", "area-stale"],
     });
-  });
-
-  it("can keep terrain hydration while clearing dynamic stage ownership", () => {
-    const state = createWorldmapRenderAreaHydrationState();
-    const dynamicFetch = Promise.resolve(true);
-
-    markRenderAreaHydrationStagesComplete(state, "area-a", ACTIVE_STAGES);
-    registerPendingRenderAreaHydration(state, "area-a", ["explorerTroops"], dynamicFetch);
-    retainRenderAreaHydrationStages(state, "area-a", ["tileOpt"]);
-
-    expect(isRenderAreaHydrationComplete(state, "area-a", ["tileOpt"])).toBe(true);
-    expect(isRenderAreaHydrationComplete(state, "area-a", PREFETCH_STAGES)).toBe(false);
-    expect(isRenderAreaHydrationComplete(state, "area-a", ACTIVE_STAGES)).toBe(false);
-    expect(getPendingRenderAreaHydrationPromise(state, "area-a", ["explorerTroops"])).toBe(null);
   });
 
   it("excludes terrain-only retained areas from late dynamic fetch result ownership", () => {

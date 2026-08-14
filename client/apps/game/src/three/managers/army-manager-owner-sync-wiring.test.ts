@@ -10,11 +10,12 @@ function readArmyManagerSource(): string {
 }
 
 describe("army manager owner-sync wiring", () => {
-  it("wires existing-army tile updates through shared owner sync", () => {
+  it("wires live ExplorerTroops presentation updates through shared owner sync", () => {
     const source = readArmyManagerSource();
 
     expect(source).toMatch(/private\s+syncTrackedArmyOwnerState\s*\(/);
-    expect(source).toMatch(/this\.syncTrackedArmyOwnerState\s*\(\s*\{\s*entityId:\s*update\.entityId/);
+    expect(source).toContain("this.components.ExplorerTroops.update$.subscribe");
+    expect(source).toMatch(/this\.syncTrackedArmyOwnerState\s*\(\s*\{\s*entityId,/);
   });
 
   it("routes owner-structure lookups through a shared resolver", () => {

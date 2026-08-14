@@ -1,4 +1,4 @@
-import type { ID, TileOpt } from "@bibliothecadao/types";
+import type { ID, TileOpt, TroopTier, TroopType } from "@bibliothecadao/types";
 import { TileOccupier } from "@bibliothecadao/types";
 import { getComponentValue, type Component, type Metadata, type Schema } from "@dojoengine/recs";
 import { isTileOccupierStructure } from "../utils/map/hex";
@@ -21,6 +21,15 @@ export interface ChestSpatialRenderable {
   readonly entityId: ID;
   /** Contract-space coordinates, matching TileOpt. */
   readonly hexCoords: WorldSpatialHex;
+}
+
+export interface ArmySpatialRenderable {
+  readonly kind: "army";
+  readonly entityId: ID;
+  /** Contract-space coordinates, matching ExplorerTroops.coord. */
+  readonly hexCoords: WorldSpatialHex;
+  readonly troopCategory: TroopType;
+  readonly troopTier: TroopTier;
 }
 
 interface EntityStructureSpatialRenderable {
@@ -60,16 +69,42 @@ export interface StructureSpatialProjectionChange {
   readonly current?: StructureSpatialRenderable;
 }
 
-export type WorldSpatialProjectionChange = ChestSpatialProjectionChange | StructureSpatialProjectionChange;
+export interface ArmySpatialProjectionChange {
+  readonly kind: "army";
+  readonly entityId: ID;
+  readonly previous?: ArmySpatialRenderable;
+  readonly current?: ArmySpatialRenderable;
+}
+
+export type WorldSpatialProjectionChange =
+  | ChestSpatialProjectionChange
+  | StructureSpatialProjectionChange
+  | ArmySpatialProjectionChange;
 
 export interface WorldSpatialProjectionOptions {
   tileOptComponent: Component<Schema, Metadata, unknown>;
+  explorerTroopsComponent: Component<Schema, Metadata, unknown>;
   bucketSize?: number;
 }
 
 type ChestProjectionListener = (changes: readonly ChestSpatialProjectionChange[]) => void;
 type StructureProjectionListener = (changes: readonly StructureSpatialProjectionChange[]) => void;
+type ArmyProjectionListener = (changes: readonly ArmySpatialProjectionChange[]) => void;
 type WorldSpatialProjectionListener = (changes: readonly WorldSpatialProjectionChange[]) => void;
+
+interface ExplorerTroopsSpatialSource {
+  readonly explorer_id: ID;
+  readonly troops: {
+    readonly category: string;
+    readonly tier: string;
+    readonly count: bigint;
+  };
+  readonly coord: {
+    readonly alt: boolean;
+    readonly x: number;
+    readonly y: number;
+  };
+}
 
 interface SpatialRenderable {
   readonly hexCoords: WorldSpatialHex;
@@ -94,6 +129,12 @@ const isSameChest = (left: ChestSpatialRenderable, right: ChestSpatialRenderable
 const isSameStructure = (left: StructureSpatialRenderable, right: StructureSpatialRenderable): boolean =>
   left.entityId === right.entityId &&
   left.occupierType === right.occupierType &&
+  left.hexCoords.col === right.hexCoords.col &&
+  left.hexCoords.row === right.hexCoords.row;
+
+const isSameArmy = (left: ArmySpatialRenderable, right: ArmySpatialRenderable): boolean =>
+  left.troopCategory === right.troopCategory &&
+  left.troopTier === right.troopTier &&
   left.hexCoords.col === right.hexCoords.col &&
   left.hexCoords.row === right.hexCoords.row;
 
@@ -135,6 +176,24 @@ const resolveStructureRenderable = (tileOpt: TileOpt | undefined): StructureSpat
     reserved: false as const,
     hexCoords,
     occupierType: tile.occupier_type,
+  });
+};
+
+const resolveArmyRenderable = (
+  explorerTroops: ExplorerTroopsSpatialSource | undefined,
+): ArmySpatialRenderable | undefined => {
+  if (!explorerTroops || explorerTroops.coord.alt || explorerTroops.troops.count <= 0n) return undefined;
+
+  const col = Number(explorerTroops.coord.x);
+  const row = Number(explorerTroops.coord.y);
+  if (!Number.isFinite(col) || !Number.isFinite(row)) return undefined;
+
+  return Object.freeze({
+    kind: "army" as const,
+    entityId: explorerTroops.explorer_id,
+    hexCoords: Object.freeze({ col, row }),
+    troopCategory: explorerTroops.troops.category as TroopType,
+    troopTier: explorerTroops.troops.tier as TroopTier,
   });
 };
 
@@ -272,39 +331,55 @@ const isInsideBounds = (hexCoords: WorldSpatialHex, bounds: WorldSpatialBounds):
 /**
  * Rebuildable spatial read model derived exclusively from authoritative RECS facts.
  *
- * The projection stores renderable identity and location only. Gameplay panels
- * continue to read RECS directly; renderers use this index to select visible
- * entities without introducing another source of gameplay truth.
+ * The projection stores renderable identity, location, and mesh variant only.
+ * Gameplay panels continue to read RECS directly; renderers use this index to
+ * select visible entities without introducing another source of gameplay truth.
  */
 export class WorldSpatialProjection {
   private readonly tileOptComponent: Component<Schema, Metadata, unknown>;
+  private readonly explorerTroopsComponent: Component<Schema, Metadata, unknown>;
   private readonly chestIndex: SpatialIndex<ID, ChestSpatialRenderable>;
   private readonly structureIndex: SpatialIndex<StructureSpatialRenderable["spatialId"], StructureSpatialRenderable>;
+  private readonly armyIndex: SpatialIndex<ID, ArmySpatialRenderable>;
   private readonly chestsByTileEntity = new Map<unknown, ChestSpatialRenderable>();
   private readonly structuresByTileEntity = new Map<unknown, StructureSpatialRenderable>();
   private readonly listeners = new Set<WorldSpatialProjectionListener>();
   private readonly chestListeners = new Set<ChestProjectionListener>();
   private readonly structureListeners = new Set<StructureProjectionListener>();
+  private readonly armyListeners = new Set<ArmyProjectionListener>();
   private unsubscribeTileOpt: (() => void) | null = null;
+  private unsubscribeExplorerTroops: (() => void) | null = null;
 
-  constructor({ tileOptComponent, bucketSize = DEFAULT_SPATIAL_BUCKET_SIZE }: WorldSpatialProjectionOptions) {
+  constructor({
+    tileOptComponent,
+    explorerTroopsComponent,
+    bucketSize = DEFAULT_SPATIAL_BUCKET_SIZE,
+  }: WorldSpatialProjectionOptions) {
     if (!Number.isFinite(bucketSize) || bucketSize <= 0) {
       throw new Error(`WorldSpatialProjection requires a positive bucket size; received ${bucketSize}`);
     }
 
     this.tileOptComponent = tileOptComponent;
+    this.explorerTroopsComponent = explorerTroopsComponent;
     const normalizedBucketSize = Math.floor(bucketSize);
     this.chestIndex = new SpatialIndex(normalizedBucketSize, isSameChest);
     this.structureIndex = new SpatialIndex(normalizedBucketSize, isSameStructure);
+    this.armyIndex = new SpatialIndex(normalizedBucketSize, isSameArmy);
   }
 
   public start(): void {
-    if (this.unsubscribeTileOpt) return;
+    if (this.unsubscribeTileOpt || this.unsubscribeExplorerTroops) return;
 
-    const subscription = this.tileOptComponent.update$.subscribe(({ entity, value }) => {
+    const tileOptSubscription = this.tileOptComponent.update$.subscribe(({ entity, value }) => {
       this.applyTileOptUpdate(entity, value as [TileOpt | undefined, TileOpt | undefined]);
     });
-    this.unsubscribeTileOpt = () => subscription.unsubscribe();
+    const explorerTroopsSubscription = this.explorerTroopsComponent.update$.subscribe(({ value }) => {
+      this.applyExplorerTroopsUpdate(
+        value as [ExplorerTroopsSpatialSource | undefined, ExplorerTroopsSpatialSource | undefined],
+      );
+    });
+    this.unsubscribeTileOpt = () => tileOptSubscription.unsubscribe();
+    this.unsubscribeExplorerTroops = () => explorerTroopsSubscription.unsubscribe();
     try {
       this.rebuild();
     } catch (error) {
@@ -316,6 +391,7 @@ export class WorldSpatialProjection {
   public rebuild(): void {
     const nextChests = new Map<ID, ChestSpatialRenderable>();
     const nextStructures = new Map<StructureSpatialRenderable["spatialId"], StructureSpatialRenderable>();
+    const nextArmies = new Map<ID, ArmySpatialRenderable>();
     this.chestsByTileEntity.clear();
     this.structuresByTileEntity.clear();
 
@@ -334,6 +410,14 @@ export class WorldSpatialProjection {
       }
     }
 
+    for (const entity of this.explorerTroopsComponent.entities()) {
+      const explorerTroops = getComponentValue(this.explorerTroopsComponent, entity) as
+        | ExplorerTroopsSpatialSource
+        | undefined;
+      const army = resolveArmyRenderable(explorerTroops);
+      if (army) nextArmies.set(army.entityId, army);
+    }
+
     const chestChanges = this.chestIndex.replace(nextChests).map(
       ({ key: entityId, previous, current }): ChestSpatialProjectionChange => ({
         kind: "chest",
@@ -350,8 +434,16 @@ export class WorldSpatialProjection {
         current,
       }),
     );
+    const armyChanges = this.armyIndex.replace(nextArmies).map(
+      ({ key: entityId, previous, current }): ArmySpatialProjectionChange => ({
+        kind: "army",
+        entityId,
+        previous,
+        current,
+      }),
+    );
 
-    this.publishChanges(chestChanges, structureChanges);
+    this.publishChanges(chestChanges, structureChanges, armyChanges);
   }
 
   private applyTileOptUpdate(tileEntity: unknown, [currentTileOpt]: [TileOpt | undefined, TileOpt | undefined]): void {
@@ -393,7 +485,26 @@ export class WorldSpatialProjection {
       }),
     );
 
-    this.publishChanges(chestChanges, structureChanges);
+    this.publishChanges(chestChanges, structureChanges, []);
+  }
+
+  private applyExplorerTroopsUpdate([currentExplorerTroops, previousExplorerTroops]: [
+    ExplorerTroopsSpatialSource | undefined,
+    ExplorerTroopsSpatialSource | undefined,
+  ]): void {
+    const currentArmy = resolveArmyRenderable(currentExplorerTroops);
+    const previousEntityId = previousExplorerTroops?.explorer_id;
+    const currentEntityId = currentArmy?.entityId;
+    const entityIds = new Set<ID>();
+    if (previousEntityId !== undefined && previousEntityId !== null) entityIds.add(previousEntityId);
+    if (currentEntityId !== undefined && currentEntityId !== null) entityIds.add(currentEntityId);
+
+    const changes = [...entityIds].flatMap((entityId): ArmySpatialProjectionChange[] => {
+      const nextArmy = currentEntityId === entityId ? currentArmy : undefined;
+      const change = this.armyIndex.update(entityId, nextArmy);
+      return change ? [{ kind: "army", entityId, previous: change.previous, current: change.current }] : [];
+    });
+    this.publishChanges([], [], changes);
   }
 
   private replaceTileSource<TRenderable>(
@@ -430,10 +541,12 @@ export class WorldSpatialProjection {
   private publishChanges(
     chestChanges: readonly ChestSpatialProjectionChange[],
     structureChanges: readonly StructureSpatialProjectionChange[],
+    armyChanges: readonly ArmySpatialProjectionChange[],
   ): void {
     if (chestChanges.length > 0) this.chestListeners.forEach((listener) => listener(chestChanges));
     if (structureChanges.length > 0) this.structureListeners.forEach((listener) => listener(structureChanges));
-    const changes: WorldSpatialProjectionChange[] = [...chestChanges, ...structureChanges];
+    if (armyChanges.length > 0) this.armyListeners.forEach((listener) => listener(armyChanges));
+    const changes: WorldSpatialProjectionChange[] = [...chestChanges, ...structureChanges, ...armyChanges];
     if (changes.length > 0) this.listeners.forEach((listener) => listener(changes));
   }
 
@@ -470,6 +583,22 @@ export class WorldSpatialProjection {
     return this.structureIndex.getInBounds(bounds);
   }
 
+  public getArmy(entityId: ID): ArmySpatialRenderable | undefined {
+    return this.armyIndex.get(entityId);
+  }
+
+  public getArmies(): readonly ArmySpatialRenderable[] {
+    return this.armyIndex.getAll();
+  }
+
+  public getArmiesAtHex(hexCoords: WorldSpatialHex): readonly ArmySpatialRenderable[] {
+    return this.armyIndex.getAtHex(hexCoords);
+  }
+
+  public getArmiesInBounds(bounds: WorldSpatialBounds): readonly ArmySpatialRenderable[] {
+    return this.armyIndex.getInBounds(bounds);
+  }
+
   public subscribe(listener: WorldSpatialProjectionListener): () => void {
     this.listeners.add(listener);
     return () => this.listeners.delete(listener);
@@ -485,14 +614,23 @@ export class WorldSpatialProjection {
     return () => this.structureListeners.delete(listener);
   }
 
+  public subscribeArmies(listener: ArmyProjectionListener): () => void {
+    this.armyListeners.add(listener);
+    return () => this.armyListeners.delete(listener);
+  }
+
   public dispose(): void {
     this.unsubscribeTileOpt?.();
+    this.unsubscribeExplorerTroops?.();
     this.unsubscribeTileOpt = null;
+    this.unsubscribeExplorerTroops = null;
     this.listeners.clear();
     this.chestListeners.clear();
     this.structureListeners.clear();
+    this.armyListeners.clear();
     this.chestIndex.clear();
     this.structureIndex.clear();
+    this.armyIndex.clear();
     this.chestsByTileEntity.clear();
     this.structuresByTileEntity.clear();
   }

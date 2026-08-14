@@ -3,37 +3,31 @@ import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 
-function readSource(filename: string): string {
-  const currentDir = dirname(fileURLToPath(import.meta.url));
-  return readFileSync(resolve(currentDir, filename), "utf8");
-}
+const currentDir = dirname(fileURLToPath(import.meta.url));
+const readManager = () => readFileSync(resolve(currentDir, "../managers/army-manager.ts"), "utf8");
+const readProjection = () =>
+  readFileSync(resolve(currentDir, "../../../../../../packages/core/src/sync/world-spatial-projection.ts"), "utf8");
 
-describe("Worldmap stale-position filter wiring", () => {
-  it("consults armyManager.shouldSkipStalePositionUpdate before updateArmyHexes in onTileUpdate", () => {
-    const source = readSource("worldmap.tsx");
+describe("projected army stale-position filter", () => {
+  it("checks the optimistic lock before applying a projected move", () => {
+    const source = readManager();
+    const methodStart = source.indexOf("private async ensureArmyPresentation(");
+    const methodEnd = source.indexOf("private buildProjectedArmyPresentation(", methodStart);
+    const body = source.slice(methodStart, methodEnd);
+    const staleCheck = body.indexOf("this.shouldSkipStalePositionUpdate");
+    const move = body.indexOf("await this.moveArmy");
 
-    const onTileStart = source.indexOf("this.worldUpdateListener.Army.onTileUpdate(async");
-    expect(onTileStart).toBeGreaterThan(0);
-    const nextSubStart = source.indexOf("this.addWorldUpdateSubscription(", onTileStart + 100);
-    const body = source.slice(onTileStart, nextSubStart);
-
-    const skipPos = body.indexOf("this.armyManager.shouldSkipStalePositionUpdate");
-    const updatePos = body.indexOf("this.updateArmyHexes(update)");
-
-    expect(skipPos).toBeGreaterThan(-1);
-    expect(updatePos).toBeGreaterThan(-1);
-    expect(skipPos).toBeLessThan(updatePos);
+    expect(staleCheck).toBeGreaterThan(-1);
+    expect(move).toBeGreaterThan(staleCheck);
   });
 
-  it("passes shouldSkipStalePositionUpdate into processExplorerTroopsUpdate", () => {
-    const source = readSource("worldmap.tsx");
+  it("rejects alternate-layer and empty ExplorerTroops rows at the projection boundary", () => {
+    const source = readProjection();
+    const resolverStart = source.indexOf("const resolveArmyRenderable");
+    const resolverEnd = source.indexOf("class SpatialIndex", resolverStart);
+    const resolver = source.slice(resolverStart, resolverEnd);
 
-    const callStart = source.indexOf("processExplorerTroopsUpdate(update, {");
-    expect(callStart).toBeGreaterThan(0);
-    const callEnd = source.indexOf("});", callStart);
-    const body = source.slice(callStart, callEnd);
-
-    expect(body).toContain("shouldSkipStalePositionUpdate:");
-    expect(body).toContain("this.armyManager.shouldSkipStalePositionUpdate");
+    expect(resolver).toContain("explorerTroops.coord.alt");
+    expect(resolver).toContain("explorerTroops.troops.count <= 0n");
   });
 });

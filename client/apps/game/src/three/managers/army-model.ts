@@ -121,7 +121,6 @@ export class ArmyModel {
   private bucketIndicesMaxCount = 0;
   private readonly freeSlots: number[] = [];
   private readonly freeSlotSet: Set<number> = new Set();
-  private readonly hiddenSlots: Set<number> = new Set();
   private nextInstanceIndex = 0;
   private hasPendingBounds = false;
 
@@ -799,7 +798,6 @@ export class ArmyModel {
 
     this.clearMovementState(entityId);
     this.clearInstanceSlot(resolvedSlot);
-    this.hiddenSlots.delete(resolvedSlot);
     this.matrixIndexOwners.delete(resolvedSlot);
 
     // Detach the entity from the freed slot up front. If the slot is already
@@ -832,10 +830,6 @@ export class ArmyModel {
     }
 
     this.takeFreedSlot(newSlot);
-    const wasHidden = this.hiddenSlots.delete(previousSlot);
-    if (wasHidden) {
-      this.hiddenSlots.add(newSlot);
-    }
     const wasWalking = this.animationStates[previousSlot] === ANIMATION_STATE_MOVING;
     this.updateInstance(
       entityId,
@@ -890,10 +884,6 @@ export class ArmyModel {
     this.matrixIndexOwners.set(index, entityId);
 
     const state = this.storeInstanceState(entityId, index, position, scale, rotation, color);
-    if (this.hiddenSlots.has(index)) {
-      this.writeHiddenSlotMatrices(entityId, index);
-      return;
-    }
 
     const desiredModelType = this.entityModelMap.get(entityId) ?? null;
     const desiredCosmeticId = this.entityCosmeticMap.get(entityId);
@@ -1010,7 +1000,6 @@ export class ArmyModel {
     this.clearMovementStateForSlot(slot);
     this.clearSlotFromEveryRenderable(slot);
     this.matrixIndexOwners.delete(slot);
-    this.hiddenSlots.delete(slot);
     this.setAnimationState(slot, false);
     if (!this.freeSlotSet.has(slot)) {
       this.freeSlotSet.add(slot);
@@ -1121,44 +1110,6 @@ export class ArmyModel {
 
     state.matrixIndex = matrixIndex;
     return state;
-  }
-
-  private writeHiddenSlotMatrices(entityId: number, matrixIndex: number): void {
-    const activeBaseModel = this.activeBaseModelByEntity.get(entityId);
-    if (activeBaseModel) {
-      const modelData = this.models.get(activeBaseModel);
-      if (modelData) {
-        this.ensureModelCapacity(modelData, matrixIndex + 1);
-        modelData.instancedMeshes.forEach((mesh) => {
-          mesh.setMatrixAt(matrixIndex, this.zeroInstanceMatrix);
-          mesh.instanceMatrix.needsUpdate = true;
-        });
-        if (modelData.contactShadowMesh) {
-          modelData.contactShadowMesh.setMatrixAt(matrixIndex, this.zeroInstanceMatrix);
-          modelData.contactShadowMesh.instanceMatrix.needsUpdate = true;
-        }
-      }
-    }
-
-    const activeCosmetic = this.activeCosmeticByEntity.get(entityId);
-    if (!activeCosmetic) {
-      return;
-    }
-
-    const cosmeticData = this.cosmeticModels.get(activeCosmetic);
-    if (!cosmeticData) {
-      return;
-    }
-
-    this.ensureModelCapacity(cosmeticData, matrixIndex + 1);
-    cosmeticData.instancedMeshes.forEach((mesh) => {
-      mesh.setMatrixAt(matrixIndex, this.zeroInstanceMatrix);
-      mesh.instanceMatrix.needsUpdate = true;
-    });
-    if (cosmeticData.contactShadowMesh) {
-      cosmeticData.contactShadowMesh.setMatrixAt(matrixIndex, this.zeroInstanceMatrix);
-      cosmeticData.contactShadowMesh.instanceMatrix.needsUpdate = true;
-    }
   }
 
   private updateInstanceTransform(position: Vector3, scale: Vector3, rotation?: Euler): void {
@@ -2576,44 +2527,6 @@ export class ArmyModel {
 
   public setAnimationState(index: number, isWalking: boolean): void {
     this.animationStates[index] = isWalking ? ANIMATION_STATE_MOVING : ANIMATION_STATE_IDLE;
-  }
-
-  /**
-   * Visually hide an instance slot by zeroing its matrix without freeing
-   * the slot or removing it from activeInstances. Used when an army enters
-   * the deferred-removal queue so it disappears immediately while remaining
-   * matchable for supersede logic.
-   */
-  public hideInstanceSlot(matrixIndex: number): void {
-    this.hiddenSlots.add(matrixIndex);
-    this.models.forEach((modelData) => {
-      if (modelData.activeInstances.has(matrixIndex)) {
-        modelData.instancedMeshes.forEach((mesh) => {
-          mesh.setMatrixAt(matrixIndex, this.zeroInstanceMatrix);
-          mesh.instanceMatrix.needsUpdate = true;
-        });
-        if (modelData.contactShadowMesh) {
-          modelData.contactShadowMesh.setMatrixAt(matrixIndex, this.zeroInstanceMatrix);
-          modelData.contactShadowMesh.instanceMatrix.needsUpdate = true;
-        }
-      }
-    });
-    this.cosmeticModels.forEach((modelData) => {
-      if (modelData.activeInstances.has(matrixIndex)) {
-        modelData.instancedMeshes.forEach((mesh) => {
-          mesh.setMatrixAt(matrixIndex, this.zeroInstanceMatrix);
-          mesh.instanceMatrix.needsUpdate = true;
-        });
-        if (modelData.contactShadowMesh) {
-          modelData.contactShadowMesh.setMatrixAt(matrixIndex, this.zeroInstanceMatrix);
-          modelData.contactShadowMesh.instanceMatrix.needsUpdate = true;
-        }
-      }
-    });
-  }
-
-  public restoreHiddenSlot(matrixIndex: number): void {
-    this.hiddenSlots.delete(matrixIndex);
   }
 
   public requestBoundsUpdate(): void {
