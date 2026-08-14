@@ -5,7 +5,6 @@ import {
   incrementWorldmapRenderUploadBytes,
   recordWorldmapRenderDuration,
   resetWorldmapRenderDiagnostics,
-  setWorldmapRenderGauge,
   snapshotWorldmapRenderDiagnostics,
 } from "./worldmap-render-diagnostics";
 
@@ -46,10 +45,6 @@ describe("worldmap render diagnostics wiring", () => {
     incrementWorldmapRenderCounter("updateVisibleChunksCalls", 1);
     incrementWorldmapRenderCounter("preparedChunkPrewarmHits", 5);
     incrementWorldmapRenderCounter("preparedChunkPrewarmMisses", 2);
-    incrementWorldmapRenderCounter("spatialBoundsSwitchRequests", 2);
-    incrementWorldmapRenderCounter("spatialBoundsSwitchApplied", 1);
-    incrementWorldmapRenderCounter("spatialBoundsSwitchSkipped", 3);
-    incrementWorldmapRenderCounter("spatialStreamUpdates", 7);
     incrementWorldmapRenderCounter("controlsChangeEvents", 10);
     incrementWorldmapRenderCounter("zoomTransitionsStarted", 1);
 
@@ -59,10 +54,6 @@ describe("worldmap render diagnostics wiring", () => {
     expect(snapshot.counters.updateVisibleChunksCalls).toBe(1);
     expect(snapshot.counters.preparedChunkPrewarmHits).toBe(5);
     expect(snapshot.counters.preparedChunkPrewarmMisses).toBe(2);
-    expect(snapshot.counters.spatialBoundsSwitchRequests).toBe(2);
-    expect(snapshot.counters.spatialBoundsSwitchApplied).toBe(1);
-    expect(snapshot.counters.spatialBoundsSwitchSkipped).toBe(3);
-    expect(snapshot.counters.spatialStreamUpdates).toBe(7);
     expect(snapshot.counters.controlsChangeEvents).toBe(10);
     expect(snapshot.counters.zoomTransitionsStarted).toBe(1);
   });
@@ -73,22 +64,6 @@ describe("worldmap render diagnostics wiring", () => {
     const snapshot = snapshotWorldmapRenderDiagnostics();
 
     expect(snapshot.uploadBytes.cachedChunkReplay).toBe(1024);
-  });
-
-  it("records spatial subscription gauges", () => {
-    setWorldmapRenderGauge("spatialSubscriptionMinCol", 100);
-    setWorldmapRenderGauge("spatialSubscriptionMaxCol", 180);
-    setWorldmapRenderGauge("spatialSubscriptionMinRow", 200);
-    setWorldmapRenderGauge("spatialSubscriptionMaxRow", 260);
-    setWorldmapRenderGauge("spatialSubscriptionModelCount", 7);
-
-    const snapshot = snapshotWorldmapRenderDiagnostics();
-
-    expect(snapshot.gauges.spatialSubscriptionMinCol).toBe(100);
-    expect(snapshot.gauges.spatialSubscriptionMaxCol).toBe(180);
-    expect(snapshot.gauges.spatialSubscriptionMinRow).toBe(200);
-    expect(snapshot.gauges.spatialSubscriptionMaxRow).toBe(260);
-    expect(snapshot.gauges.spatialSubscriptionModelCount).toBe(7);
   });
 
   it("reset clears all recorded state", () => {

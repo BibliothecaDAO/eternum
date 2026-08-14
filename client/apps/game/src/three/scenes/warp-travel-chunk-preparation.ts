@@ -8,14 +8,12 @@ export interface WarpTravelChunkPreparationInput<TPreparedTerrain> {
   startRow: number;
   startCol: number;
   surroundingChunks: string[];
-  transitionToken: number;
   renderSize: {
     height: number;
     width: number;
   };
   syncProjectionTiles: (chunkKey: string) => Promise<boolean>;
   updatePinnedChunks: (chunkKeys: string[]) => void;
-  updateBoundsSubscription: (chunkKey: string, transitionToken: number) => Promise<void>;
   prewarmChunkAssets: (chunkKey: string) => Promise<void>;
   prepareTerrainChunk: (startRow: number, startCol: number, height: number, width: number) => Promise<TPreparedTerrain>;
   onChunkPrepared: (chunkKey: string) => void;
@@ -30,7 +28,6 @@ export async function prepareWarpTravelChunk<TPreparedTerrain>(
   const assetPrewarmPromise = input.prewarmChunkAssets(input.chunkKey);
 
   input.updatePinnedChunks(input.surroundingChunks);
-  const boundsSwitchPromise = input.updateBoundsSubscription(input.chunkKey, input.transitionToken);
   input.surroundingChunks.forEach((chunkKey) => {
     void input.syncProjectionTiles(chunkKey).catch((error) => {
       console.warn(`[ChunkSync] Projection sync failed for surrounding chunk "${chunkKey}"`, error);
@@ -43,7 +40,6 @@ export async function prepareWarpTravelChunk<TPreparedTerrain>(
     startCol: input.startCol,
     renderSize: input.renderSize,
     projectionSyncPromise,
-    boundsReadyPromise: boundsSwitchPromise,
     assetPrewarmPromise,
     prepareTerrainChunk: input.prepareTerrainChunk,
     onChunkPrepared: input.onChunkPrepared,

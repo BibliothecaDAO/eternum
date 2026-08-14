@@ -20,8 +20,6 @@ interface PrepareWorldmapChunkRuntimeInput<TPreparedTerrain> {
   startCol: number;
   startRow: number;
   surroundingChunks: string[];
-  transitionToken: number;
-  updateBoundsSubscription: (chunkKey: string, transitionToken: number) => Promise<void>;
   updatePinnedChunks: (chunkKeys: string[]) => void;
 }
 
@@ -41,11 +39,9 @@ export async function prepareWorldmapChunkRuntime<TPreparedTerrain>(
     startRow: input.startRow,
     startCol: input.startCol,
     surroundingChunks: input.surroundingChunks,
-    transitionToken: input.transitionToken,
     renderSize: input.renderSize,
     syncProjectionTiles: input.syncProjectionTiles,
     updatePinnedChunks: input.updatePinnedChunks,
-    updateBoundsSubscription: input.updateBoundsSubscription,
     prewarmChunkAssets: presentationRuntime.prewarmChunkAssets,
     prepareTerrainChunk: presentationRuntime.prepareTerrainChunk,
     onChunkPrepared: presentationRuntime.onChunkPrepared,

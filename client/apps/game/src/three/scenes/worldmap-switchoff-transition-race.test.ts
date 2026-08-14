@@ -53,7 +53,6 @@ describe("worldmap switch-off transition race hardening", () => {
 
     await flushMicrotasks(2);
     fixture.projectionSync.resolveNext(true);
-    fixture.boundsSwitch.resolveNext();
     fixture.assetPrewarm.resolveNext();
     await flushMicrotasks(2);
     fixture.terrainPreparation.resolveNext({ chunkKey: "24,24" });

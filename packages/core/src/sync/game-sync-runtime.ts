@@ -17,11 +17,6 @@ interface BufferedEntityUpdate {
   receiveSequence: number;
 }
 
-interface LegacyGameSyncSessionStart {
-  startGlobalWriter: () => Promise<GameSyncWriter>;
-  hydrateSpatialSnapshot: () => Promise<void>;
-}
-
 const DEFAULT_EVENT_IDENTITY_LIMIT = 512;
 
 const isRecord = (value: unknown): value is Record<string, unknown> => typeof value === "object" && value !== null;
@@ -62,7 +57,6 @@ const createEmptyMetrics = (): GameSyncRuntimeMetrics => ({
 export class GameSyncRuntime {
   private generation = 0;
   private writer: GameSyncWriter | null = null;
-  private legacyPlayerWriter: GameSyncWriter | null = null;
   private status: GameSyncRuntimeStatus = "idle";
   private session: GameSyncSessionStart | null = null;
   private ingestQueue: EntityIngestQueue | null = null;
@@ -99,56 +93,10 @@ export class GameSyncRuntime {
     await this.runRecovery();
   }
 
-  /** Complete S1 lifecycle retained only for the bounded rollback adapter. */
-  public async startLegacySession(input: LegacyGameSyncSessionStart): Promise<void> {
-    this.disposeWorldSpatialProjection();
-    this.session = null;
-    const generation = this.beginRun("subscribing");
-
-    try {
-      const writer = await input.startGlobalWriter();
-      this.adoptWriter(generation, writer);
-      this.status = "snapshotting";
-      await input.hydrateSpatialSnapshot();
-      this.assertCurrentGeneration(generation);
-      this.status = "running";
-    } catch (error) {
-      this.stopFailedRun(generation);
-      throw error;
-    }
-  }
-
-  public async restartLegacyGlobalWriter(startGlobalWriter: () => Promise<GameSyncWriter>): Promise<void> {
-    const generation = this.beginRun("subscribing");
-    try {
-      const writer = await startGlobalWriter();
-      this.adoptWriter(generation, writer);
-      this.status = "running";
-    } catch (error) {
-      this.stopFailedRun(generation);
-      throw error;
-    }
-  }
-
   /** UI cleanup cannot interrupt an in-flight recovery; dispose() always can. */
   public cancelGlobalWriter(): void {
     if (this.isStarting()) return;
     this.cancelWriterImmediately();
-  }
-
-  public installPlayerWriter(playerWriter: GameSyncWriter): void {
-    this.cancelPlayerWriter();
-    if (this.status === "stopped") {
-      playerWriter.cancel();
-      return;
-    }
-    this.legacyPlayerWriter = playerWriter;
-  }
-
-  public cancelPlayerWriter(expectedWriter?: GameSyncWriter): void {
-    if (expectedWriter && this.legacyPlayerWriter !== expectedWriter) return;
-    this.legacyPlayerWriter?.cancel();
-    this.legacyPlayerWriter = null;
   }
 
   public installWorldSpatialProjection(projection: WorldSpatialProjection): void {
@@ -176,7 +124,6 @@ export class GameSyncRuntime {
   public dispose(): void {
     this.generation += 1;
     this.cancelWriterImmediately();
-    this.cancelPlayerWriter();
     this.disposeWorldSpatialProjection();
     this.ingestQueue?.dispose();
     this.ingestQueue = null;

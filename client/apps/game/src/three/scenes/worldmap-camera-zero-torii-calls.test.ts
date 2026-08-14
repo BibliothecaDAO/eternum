@@ -31,6 +31,7 @@ describe("worldmap camera movement performs zero Torii fetches", () => {
     expect(presentation).toContain("syncProjectionTiles: (targetChunkKey) => this.syncProjectionTilesForChunk");
     expect(projectionSync).toContain("this.worldSpatialProjection.getTilesInBounds");
     expect(projectionSync).not.toMatch(/toriiClient|getEntities|getMapFromTorii|fetch\s*\(/);
+    expect(source).not.toMatch(/LegacyBounded|toriiStreamManager|updateToriiBoundsSubscription/);
   });
 
   it("has no remaining exact spatial query helper for camera-driven reads", () => {

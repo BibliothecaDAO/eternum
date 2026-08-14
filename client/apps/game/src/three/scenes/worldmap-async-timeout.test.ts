@@ -26,7 +26,7 @@ describe("settleWorldmapAsyncStage", () => {
     const onTimeout = vi.fn();
     const stalledPromise = new Promise<string>(() => {});
     const resultPromise = settleWorldmapAsyncStage({
-      label: "bounds_ready",
+      label: "projection_sync",
       promise: stalledPromise,
       timeoutMs: 25,
       onTimeout,
@@ -38,7 +38,7 @@ describe("settleWorldmapAsyncStage", () => {
       status: "timed_out",
     });
     expect(onTimeout).toHaveBeenCalledWith({
-      label: "bounds_ready",
+      label: "projection_sync",
       timeoutMs: 25,
     });
   });

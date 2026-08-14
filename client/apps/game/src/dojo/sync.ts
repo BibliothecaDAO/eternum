@@ -1,10 +1,8 @@
 import type { AppStore } from "@/hooks/store/use-ui-store";
 import { useAccountStore } from "@/hooks/store/use-account-store";
-import { reportToriiQueuePressure, type NetworkStreamType } from "@/observability/network-health-reporting";
 import { type SetupResult } from "@bibliothecadao/dojo";
 
 import { useConnectionStore } from "@/hooks/store/use-connection-store";
-import { sqlApi } from "@/services/api";
 import { recordGameEntryDuration } from "@/ui/layouts/game-entry-timeline";
 import {
   disposeActiveGameSyncRuntime,
@@ -15,55 +13,20 @@ import {
   WorldSpatialProjection,
 } from "@bibliothecadao/eternum/game-sync";
 import type { GameSyncRuntimeMetrics } from "@bibliothecadao/eternum/game-sync";
-import {
-  getComponentValue,
-  Has,
-  runQuery,
-  type Component,
-  type Entity,
-  type Metadata,
-  type Schema,
-} from "@dojoengine/recs";
-import { getEntities as getEntitiesSnapshot, setEntities } from "@dojoengine/state";
-import type { Clause, ToriiClient, Entity as ToriiEntity } from "@dojoengine/torii-wasm/types";
+import { getComponentValue, Has, runQuery, type Component, type Metadata, type Schema } from "@dojoengine/recs";
+import type { Clause } from "@dojoengine/torii-wasm/types";
 import {
   getAddressNamesFromTorii,
   getBankStructuresFromTorii,
   getConfigFromTorii,
   getGuildsFromTorii,
-  getStructuresDataFromTorii,
 } from "./queries";
 import { env } from "../../env";
 import { createGamewideSyncSession } from "./gamewide-sync-adapter";
-import { shouldUseLegacyBoundedSpatialSync } from "./game-sync-mode";
 import { gameEntityKey, gameModel, isGameScoped } from "./game-scope";
 import { resolveInitialStructureSelection } from "./sync-initial-selection";
-import { isDeletionPayload } from "./sync-utils";
-import { ToriiSyncWorkerManager } from "./sync-worker-manager";
-import {
-  getGlobalSpatialMapBootstrapModelNames,
-  getGlobalSpatialMapBootstrapSnapshotModels,
-} from "./torii-spatial-models";
-import { observeToriiStreamLifecycle } from "./torii-stream-lifecycle-observer";
 import { buildModelKeysClause, type GlobalModelStreamConfig } from "./torii-model-clause";
-import {
-  setupToriiSubscriptions,
-  updateToriiSubscriptions,
-  type ToriiSubscriptionSetupTimeoutInfo,
-} from "./torii-subscription-setup";
-
-export const ENTITY_QUERY_LIMIT = 40_000;
-const TORII_SYNC_WORKER_QUEUE_WARNING_THRESHOLD = 500;
-
-interface SyncEntitiesSubscriptionOptions {
-  isReadyEntity?: SyncEntityReadinessMatcher;
-  onReadyEntityApplied?: (info: SyncEntityReadinessInfo) => void;
-  onReadyEntityReceived?: (info: SyncEntityReadinessInfo) => void;
-  readyOnSubscriptionsReady?: boolean;
-  streamType?: NetworkStreamType;
-  subscriptionSetupTimeoutMs?: number;
-  onSubscriptionSetupTimeout?: (info: ToriiSubscriptionSetupTimeoutInfo) => void;
-}
+import type { ToriiSubscriptionSetupTimeoutInfo } from "./torii-subscription-setup";
 
 /**
  * Cancel the global entity stream subscription.
@@ -73,7 +36,7 @@ interface SyncEntitiesSubscriptionOptions {
  * No-op while a boot is still handshaking — tearing down a half-built
  * subscription strands RECS and the monitor then re-enters the same loop.
  */
-export const cancelEntityStreamSubscription = () => {
+export const cancelGameSyncWriter = () => {
   getActiveGameSyncRuntime()?.cancelGlobalWriter();
 };
 
@@ -86,25 +49,13 @@ export const disposeGameSyncSession = (): void => {
 const getGlobalEventModels = (): string[] =>
   getGameSyncModelsForChannel("global-event", { includeS2Only: isGameScoped() }).map(({ name }) => gameModel(name));
 
-const getGlobalEntityStreamModels = (): GlobalModelStreamConfig[] => {
-  return getGameSyncModelsForChannel("global-entity", { includeS2Only: isGameScoped() }).map(
-    ({ name, legacyKeyCount }) => ({ model: gameModel(name), keyCount: legacyKeyCount }),
-  );
-};
-
 const getGamewideEntityStreamModels = (): GlobalModelStreamConfig[] =>
-  getGameSyncModelsForChannel("gamewide-entity", { includeS2Only: isGameScoped() }).map(({ name, legacyKeyCount }) => ({
+  getGameSyncModelsForChannel("gamewide-entity", { includeS2Only: isGameScoped() }).map(({ name }) => ({
     model: gameModel(name),
-    keyCount: legacyKeyCount,
   }));
 
 const getGlobalEventStreamClause = (): Clause =>
   buildModelKeysClause(getGlobalEventModels().map((model) => ({ model })));
-
-// Always model-bounded: an unclaused subscription streams every entity in the
-// world — on the shared s2 world that meant other games' settlements ghosting
-// into RECS. The subscribe-to-everything fallback is deliberately gone.
-const getInitialGlobalEntityStreamClause = (): Clause => buildModelKeysClause(getGlobalEntityStreamModels());
 
 const getGamewideEntityStreamClause = (): Clause => buildModelKeysClause(getGamewideEntityStreamModels());
 
@@ -119,568 +70,12 @@ const stringifyWorldmapSyncABPayload = (payload: Record<string, unknown>): strin
 };
 
 const logWorldmapSyncAB = (message: string, payload: Record<string, unknown>): void => {
-  if (env.VITE_PUBLIC_TORII_BOUNDS_DEBUG !== true && env.VITE_PUBLIC_TORII_BOUNDS_DEBUG_OVERLAY !== true) {
+  if (env.VITE_PUBLIC_TORII_BOUNDS_DEBUG !== true) {
     return;
   }
 
   console.info(`[WorldmapSyncAB] ${message} ${stringifyWorldmapSyncABPayload(payload)}`);
 };
-
-type BatchPayload = { upserts: ToriiEntity[]; deletions: string[] };
-type SyncEntityReadinessMatcher = (data: ToriiEntity) => boolean;
-type SyncEntityReadinessInfo = {
-  entityId: string;
-  models: string[];
-};
-
-interface QueueProcessor {
-  queueUpdate: (entityId: string, data: ToriiEntity, origin?: "entity" | "event") => Promise<void>;
-  dispose: () => void;
-}
-
-interface SyncEntitiesSubscription {
-  cancel: () => void;
-  ready: Promise<void>;
-  updateClause?: (clause: SyncSubscriptionClauseInput) => Promise<void>;
-}
-
-type SyncSubscriptionClausePair = {
-  entityClause?: Clause | null;
-  eventClause?: Clause | null;
-};
-
-type SyncSubscriptionClauseInput = Clause | undefined | null | SyncSubscriptionClausePair;
-
-type ResolvedSyncSubscriptionClauses = {
-  entityClause: Clause | undefined | null;
-  eventClause: Clause | undefined | null;
-};
-
-interface SyncReadinessController {
-  ready: Promise<void>;
-  trackReadyEntityWrite: (writeComplete: Promise<void>) => void;
-  markSubscriptionsReady: () => void;
-  reset: () => void;
-  cancel: () => void;
-}
-
-interface WriteCompletionTracker {
-  track: (entityId: string) => Promise<void>;
-  resolveBatch: (batch: BatchPayload) => void;
-  resolveAll: () => void;
-}
-
-type QueuedUpdate = { entityId: string; data: ToriiEntity; resolve: () => void };
-
-const createSyncReadinessController = (
-  options: { readyOnSubscriptionsReady?: boolean } = {},
-): SyncReadinessController => {
-  let readyEntityUpdateReceived = false;
-  let subscriptionsReady = false;
-  let pendingReadyEntityWrites = 0;
-  let settled = false;
-
-  let resolveReady!: () => void;
-  let rejectReady!: (error: Error) => void;
-  let ready: Promise<void>;
-
-  const createReadyPromise = () => {
-    readyEntityUpdateReceived = false;
-    subscriptionsReady = false;
-    pendingReadyEntityWrites = 0;
-    settled = false;
-    ready = new Promise<void>((resolve, reject) => {
-      resolveReady = resolve;
-      rejectReady = reject;
-    });
-    ready.catch(() => undefined);
-  };
-
-  createReadyPromise();
-
-  const resolveWhenReadyEntitiesAreApplied = () => {
-    const hasRequiredReadySignal = readyEntityUpdateReceived || options.readyOnSubscriptionsReady === true;
-    if (settled || !hasRequiredReadySignal || !subscriptionsReady || pendingReadyEntityWrites > 0) {
-      return;
-    }
-
-    settled = true;
-    resolveReady();
-  };
-
-  return {
-    get ready() {
-      return ready;
-    },
-    trackReadyEntityWrite: (writeComplete: Promise<void>) => {
-      readyEntityUpdateReceived = true;
-      pendingReadyEntityWrites += 1;
-      writeComplete.then(
-        () => {
-          pendingReadyEntityWrites -= 1;
-          resolveWhenReadyEntitiesAreApplied();
-        },
-        () => {
-          pendingReadyEntityWrites -= 1;
-          resolveWhenReadyEntitiesAreApplied();
-        },
-      );
-    },
-    markSubscriptionsReady: () => {
-      subscriptionsReady = true;
-      resolveWhenReadyEntitiesAreApplied();
-    },
-    reset: () => {
-      if (!settled) {
-        rejectReady(new Error("syncEntitiesDebounced readiness reset before ready"));
-      }
-      createReadyPromise();
-    },
-    cancel: () => {
-      if (settled) {
-        return;
-      }
-
-      settled = true;
-      rejectReady(new Error("syncEntitiesDebounced canceled before ready"));
-    },
-  };
-};
-
-const createSyncEntityReadinessInfo = (data: ToriiEntity): SyncEntityReadinessInfo => ({
-  entityId: data.hashed_keys,
-  models: Object.keys((data.models as Record<string, unknown>) ?? {}),
-});
-
-const isSyncSubscriptionClausePair = (input: SyncSubscriptionClauseInput): input is SyncSubscriptionClausePair =>
-  typeof input === "object" && input !== null && ("entityClause" in input || "eventClause" in input);
-
-const resolveSyncSubscriptionClauses = (input: SyncSubscriptionClauseInput): ResolvedSyncSubscriptionClauses => {
-  if (isSyncSubscriptionClausePair(input)) {
-    return {
-      entityClause: "entityClause" in input ? input.entityClause : input.eventClause,
-      eventClause: "eventClause" in input ? input.eventClause : input.entityClause,
-    };
-  }
-
-  return {
-    entityClause: input,
-    eventClause: input,
-  };
-};
-
-const createWriteCompletionTracker = (): WriteCompletionTracker => {
-  const pendingWriteResolvers = new Map<string, Array<() => void>>();
-
-  const resolveEntityWrites = (entityId: string) => {
-    const resolvers = pendingWriteResolvers.get(entityId);
-    if (!resolvers) {
-      return;
-    }
-
-    resolvers.forEach((resolve) => resolve());
-    pendingWriteResolvers.delete(entityId);
-  };
-
-  return {
-    track: (entityId: string) =>
-      new Promise<void>((resolve) => {
-        const resolvers = pendingWriteResolvers.get(entityId) ?? [];
-        resolvers.push(resolve);
-        pendingWriteResolvers.set(entityId, resolvers);
-      }),
-    resolveBatch: (batch: BatchPayload) => {
-      const appliedEntityIds = new Set([...batch.deletions, ...batch.upserts.map((entity) => entity.hashed_keys)]);
-      appliedEntityIds.forEach(resolveEntityWrites);
-    },
-    resolveAll: () => {
-      pendingWriteResolvers.forEach((resolvers) => {
-        resolvers.forEach((resolve) => resolve());
-      });
-      pendingWriteResolvers.clear();
-    },
-  };
-};
-
-const createMainThreadQueueProcessor = (
-  applyBatch: (batch: BatchPayload) => void,
-  logging: boolean,
-): QueueProcessor => {
-  const updateQueue: QueuedUpdate[] = [];
-  let isProcessing = false;
-  let pendingTimeoutId: ReturnType<typeof setTimeout> | null = null;
-
-  const mergeDeep = (target: ToriiEntity, source: ToriiEntity): ToriiEntity => {
-    if (!source) return target;
-    const output = { ...target } as ToriiEntity;
-    const mutableOutput = output as unknown as Record<string, unknown>;
-    const sourceRecord = source as unknown as Record<string, unknown>;
-
-    Object.keys(sourceRecord).forEach((key) => {
-      const sourceValue = sourceRecord[key];
-      const targetValue = mutableOutput[key];
-
-      if (
-        sourceValue &&
-        typeof sourceValue === "object" &&
-        !Array.isArray(sourceValue) &&
-        targetValue &&
-        typeof targetValue === "object" &&
-        !Array.isArray(targetValue)
-      ) {
-        mutableOutput[key] = mergeDeep(targetValue as ToriiEntity, sourceValue as ToriiEntity);
-      } else {
-        mutableOutput[key] = sourceValue;
-      }
-    });
-
-    return output;
-  };
-
-  const processNextInQueue = async () => {
-    if (updateQueue.length === 0 || isProcessing) return;
-
-    isProcessing = true;
-    const batchSize = 10;
-    const batchRecord: Record<string, ToriiEntity> = {};
-
-    const itemsToProcess = updateQueue.splice(0, batchSize);
-    if (logging) console.log(`Processing batch of ${itemsToProcess.length} updates`);
-
-    itemsToProcess.forEach(({ entityId, data }) => {
-      const isEntityDelete = isDeletionPayload(data);
-      if (isEntityDelete) {
-        batchRecord[entityId] = data;
-      }
-      if (batchRecord[entityId]) {
-        const entityHasBeenDeleted = isDeletionPayload(batchRecord[entityId]);
-        if (entityHasBeenDeleted) return;
-        batchRecord[entityId] = mergeDeep(batchRecord[entityId], data);
-      } else {
-        batchRecord[entityId] = data;
-      }
-    });
-
-    const entityIds = Object.keys(batchRecord);
-    if (entityIds.length > 0) {
-      try {
-        if (logging) console.log("Applying batch update", batchRecord);
-        const deletions = entityIds.filter((id) => isDeletionPayload(batchRecord[id]));
-        const upserts = entityIds.filter((id) => !isDeletionPayload(batchRecord[id])).map((id) => batchRecord[id]);
-
-        applyBatch({ upserts, deletions });
-      } catch (error) {
-        console.error("Error processing entity batch:", error);
-      }
-    }
-
-    itemsToProcess.forEach(({ resolve }) => resolve());
-
-    isProcessing = false;
-    if (updateQueue.length > 0) {
-      pendingTimeoutId = setTimeout(processNextInQueue, 0);
-    }
-  };
-
-  return {
-    queueUpdate: (entityId: string, data: ToriiEntity) => {
-      const writeComplete = new Promise<void>((resolve) => {
-        updateQueue.push({ entityId, data, resolve });
-      });
-      if (!isProcessing) {
-        if (pendingTimeoutId !== null) clearTimeout(pendingTimeoutId);
-        pendingTimeoutId = setTimeout(processNextInQueue, 200);
-      }
-      return writeComplete;
-    },
-    dispose: () => {
-      if (pendingTimeoutId !== null) {
-        clearTimeout(pendingTimeoutId);
-        pendingTimeoutId = null;
-      }
-      updateQueue.forEach(({ resolve }) => resolve());
-      updateQueue.length = 0;
-    },
-  };
-};
-
-const createWorkerQueueProcessor = (
-  applyBatch: (batch: BatchPayload) => void,
-  logging: boolean,
-  streamType: NetworkStreamType,
-): QueueProcessor | null => {
-  if (typeof window === "undefined" || typeof Worker === "undefined") {
-    return null;
-  }
-
-  try {
-    const writeCompletion = createWriteCompletionTracker();
-
-    const manager = new ToriiSyncWorkerManager({
-      logging,
-      onBatch: (batch) => {
-        const syncBatch = { upserts: batch.upserts, deletions: batch.deletions };
-        applyBatch(syncBatch);
-        writeCompletion.resolveBatch(syncBatch);
-        reportToriiQueuePressure({
-          streamType,
-          queueSize: batch.queueSize,
-          batchSize: batch.upserts.length + batch.deletions.length,
-          threshold: TORII_SYNC_WORKER_QUEUE_WARNING_THRESHOLD,
-        });
-      },
-      onError: (message, error) => {
-        console.error("[sync-worker] error", message, error);
-      },
-    });
-
-    if (!manager.isAvailable) {
-      manager.dispose();
-      return null;
-    }
-
-    return {
-      queueUpdate: (_entityId: string, data: ToriiEntity, origin?: "entity" | "event") => {
-        const writeComplete = writeCompletion.track(data.hashed_keys);
-        if (!manager.enqueue(data, origin ?? "entity")) {
-          writeCompletion.resolveAll();
-        }
-        return writeComplete;
-      },
-      dispose: () => {
-        writeCompletion.resolveAll();
-        manager.dispose();
-      },
-    };
-  } catch (error) {
-    console.error("[sync-worker] failed to initialize", error);
-    return null;
-  }
-};
-
-export const syncEntitiesDebounced = async (
-  client: ToriiClient,
-  setupResult: SetupResult,
-  subscriptionClause: SyncSubscriptionClauseInput,
-  logging = true,
-  onUpdate?: () => void,
-  options?: SyncEntitiesSubscriptionOptions,
-): Promise<SyncEntitiesSubscription> => {
-  if (logging) console.log("Starting syncEntities");
-
-  const {
-    network: { world },
-  } = setupResult;
-
-  const applyBatch = ({ upserts, deletions }: BatchPayload) => {
-    if (deletions.length > 0) {
-      deletions.forEach((entityId) => {
-        try {
-          world.deleteEntity(entityId as Entity);
-        } catch (error) {
-          console.error("[sync] failed to delete entity", entityId, error);
-        }
-      });
-    }
-
-    if (upserts.length > 0) {
-      const modelsArray = upserts.map((value) => {
-        return { hashed_keys: value.hashed_keys, models: value.models };
-      });
-      try {
-        setEntities(modelsArray, world.components, logging);
-      } catch (error) {
-        console.error("[sync] failed to apply entity upserts", error);
-      }
-    }
-  };
-
-  const streamType = options?.streamType ?? "global";
-  const queueProcessor =
-    createWorkerQueueProcessor(applyBatch, logging, streamType) ?? createMainThreadQueueProcessor(applyBatch, logging);
-  const readiness = createSyncReadinessController({
-    readyOnSubscriptionsReady: options?.readyOnSubscriptionsReady,
-  });
-  const isReadyEntity = options?.isReadyEntity ?? (() => true);
-  const initialClauses = resolveSyncSubscriptionClauses(subscriptionClause);
-
-  const queueUpdate = (data: ToriiEntity, origin: "entity" | "event") => {
-    try {
-      const writeComplete = queueProcessor.queueUpdate(data.hashed_keys, data, origin);
-      onUpdate?.();
-      return writeComplete;
-    } catch (error) {
-      console.error("Error queuing entity update:", error);
-      return Promise.resolve();
-    }
-  };
-
-  try {
-    const subscriptions = await setupToriiSubscriptions({
-      createEntitySubscription: () =>
-        client.onEntityUpdated(initialClauses.entityClause, (data: ToriiEntity) => {
-          if (logging) console.log("Entity updated", data);
-          const writeComplete = queueUpdate(data, "entity");
-          if (isReadyEntity(data)) {
-            const readyEntityInfo = createSyncEntityReadinessInfo(data);
-            options?.onReadyEntityReceived?.(readyEntityInfo);
-            void writeComplete.finally(() => {
-              options?.onReadyEntityApplied?.(readyEntityInfo);
-            });
-            readiness.trackReadyEntityWrite(writeComplete);
-          }
-        }),
-      createEventSubscription: () =>
-        client.onEventMessageUpdated(initialClauses.eventClause, (data: ToriiEntity) => {
-          if (logging) console.log("Event message updated", data.hashed_keys);
-          queueUpdate(data, "event");
-        }),
-      subscriptionSetupTimeoutMs: options?.subscriptionSetupTimeoutMs,
-      onSubscriptionSetupTimeout: options?.onSubscriptionSetupTimeout,
-    });
-
-    readiness.markSubscriptionsReady();
-
-    // Best-effort runtime close/error detection. torii-wasm exposes none today,
-    // so these are no-ops; if a future SDK adds one, a silent stream drop records
-    // a close timestamp that classifies the next outage as REMOTE.
-    const recordStreamClose = () => useConnectionStore.getState().recordStreamClose();
-    const detachLifecycle = [
-      observeToriiStreamLifecycle(subscriptions.entitySubscription, recordStreamClose),
-      observeToriiStreamLifecycle(subscriptions.eventSubscription, recordStreamClose),
-    ];
-
-    const canUpdateSubscriptionClause =
-      typeof client.updateEntitySubscription === "function" &&
-      typeof client.updateEventMessageSubscription === "function";
-
-    const subscription: SyncEntitiesSubscription = {
-      get ready() {
-        return readiness.ready;
-      },
-      cancel: () => {
-        detachLifecycle.forEach((detach) => detach());
-        subscriptions.cancel();
-        queueProcessor.dispose();
-        readiness.cancel();
-      },
-    };
-
-    if (canUpdateSubscriptionClause) {
-      subscription.updateClause = async (clause: SyncSubscriptionClauseInput) => {
-        const nextClauses = resolveSyncSubscriptionClauses(clause);
-        readiness.reset();
-        await updateToriiSubscriptions({
-          updateEntitySubscription: () =>
-            client.updateEntitySubscription(subscriptions.entitySubscription as any, nextClauses.entityClause),
-          updateEventSubscription: () =>
-            client.updateEventMessageSubscription(subscriptions.eventSubscription as any, nextClauses.eventClause),
-          subscriptionSetupTimeoutMs: options?.subscriptionSetupTimeoutMs,
-          onSubscriptionSetupTimeout: options?.onSubscriptionSetupTimeout,
-        });
-        readiness.markSubscriptionsReady();
-      };
-    }
-
-    return subscription;
-  } catch (error) {
-    queueProcessor.dispose();
-    throw error;
-  }
-};
-
-async function runRequiredToriiOperationWithTimeout<T>(input: {
-  label: string;
-  operation: () => Promise<T>;
-  timeoutMs: number;
-  onTimeout?: (info: ToriiSubscriptionSetupTimeoutInfo) => void;
-}): Promise<T> {
-  const { label, operation, timeoutMs, onTimeout } = input;
-  if (!timeoutMs || timeoutMs <= 0) {
-    return operation();
-  }
-
-  return new Promise<T>((resolve, reject) => {
-    let settled = false;
-    const timeoutId = setTimeout(() => {
-      if (settled) {
-        return;
-      }
-
-      settled = true;
-      onTimeout?.({ label, timeoutMs });
-      reject(new Error(`Timed out waiting for ${label} after ${timeoutMs}ms`));
-    }, timeoutMs);
-
-    operation().then(
-      (result) => {
-        clearTimeout(timeoutId);
-        if (settled) {
-          return;
-        }
-
-        settled = true;
-        resolve(result);
-      },
-      (error) => {
-        clearTimeout(timeoutId);
-        if (settled) {
-          return;
-        }
-
-        settled = true;
-        reject(error);
-      },
-    );
-  });
-}
-
-async function hydrateGlobalSpatialBootstrapSnapshot(input: {
-  setup: SetupResult;
-  logging: boolean;
-  timeoutMs: number;
-  onTimeout?: (info: ToriiSubscriptionSetupTimeoutInfo) => void;
-}): Promise<void> {
-  const snapshotStart = performance.now();
-  try {
-    await runRequiredToriiOperationWithTimeout({
-      label: "global spatial map bootstrap snapshot",
-      timeoutMs: input.timeoutMs,
-      onTimeout: input.onTimeout,
-      operation: () =>
-        getEntitiesSnapshot(
-          input.setup.network.toriiClient,
-          buildModelKeysClause(getGlobalSpatialMapBootstrapSnapshotModels()),
-          input.setup.network.contractComponents as unknown as Component<Schema, Metadata, undefined>[],
-          [],
-          getGlobalSpatialMapBootstrapModelNames(),
-          ENTITY_QUERY_LIMIT,
-          input.logging,
-        ),
-    });
-  } finally {
-    recordGameEntryDuration("initial-sync-global-spatial-map-snapshot", performance.now() - snapshotStart);
-  }
-}
-
-async function syncGlobalSpatialBootstrapSnapshot(input: {
-  setup: SetupResult;
-  logging: boolean;
-  subscriptionSetupTimeoutMs: number;
-  onSubscriptionSetupTimeout?: (info: ToriiSubscriptionSetupTimeoutInfo) => void;
-}): Promise<void> {
-  const totalStart = performance.now();
-  try {
-    await hydrateGlobalSpatialBootstrapSnapshot({
-      setup: input.setup,
-      logging: input.logging,
-      timeoutMs: input.subscriptionSetupTimeoutMs,
-      onTimeout: input.onSubscriptionSetupTimeout,
-    });
-  } finally {
-    recordGameEntryDuration("initial-sync-global-spatial-map-sync", performance.now() - totalStart);
-  }
-}
 
 // initial sync runs before the game is playable and should sync minimal data
 type InitialSyncOptions = {
@@ -691,31 +86,6 @@ type InitialSyncOptions = {
   // Re-applies config-derived snapshots (configManager.setDojo) when the
   // session-cached config fast path finishes its background revalidation.
   onConfigRefreshed?: () => void;
-};
-
-const startGlobalEntityWriter = async (input: {
-  setup: SetupResult;
-  logging: boolean;
-  subscriptionSetupTimeoutMs: number;
-  onSubscriptionSetupTimeout?: (info: ToriiSubscriptionSetupTimeoutInfo) => void;
-}): Promise<SyncEntitiesSubscription> => {
-  const subscription = await syncEntitiesDebounced(
-    input.setup.network.toriiClient,
-    input.setup,
-    {
-      entityClause: getInitialGlobalEntityStreamClause(),
-      eventClause: getGlobalEventStreamClause(),
-    },
-    input.logging,
-    () => useConnectionStore.getState().recordGlobalUpdate(),
-    {
-      streamType: "global",
-      subscriptionSetupTimeoutMs: input.subscriptionSetupTimeoutMs,
-      onSubscriptionSetupTimeout: input.onSubscriptionSetupTimeout,
-    },
-  );
-  useConnectionStore.getState().recordGlobalHandshake();
-  return subscription;
 };
 
 const recordGamewideSubscriptionActive = (): void => {
@@ -777,21 +147,6 @@ const createActiveGamewideSyncSession = (input: {
   });
 };
 
-const startLegacyBoundedSyncSession = async (input: {
-  setup: SetupResult;
-  logging: boolean;
-  subscriptionSetupTimeoutMs: number;
-  onSubscriptionSetupTimeout?: (info: ToriiSubscriptionSetupTimeoutInfo) => void;
-}): Promise<void> => {
-  await getOrInstallGameSyncRuntime().startLegacySession({
-    startGlobalWriter: () => startGlobalEntityWriter(input),
-    hydrateSpatialSnapshot: async () => {
-      await syncGlobalSpatialBootstrapSnapshot(input);
-      useConnectionStore.getState().recordSpatialHandshake();
-    },
-  });
-};
-
 const getOrInstallGameSyncRuntime = () => getActiveGameSyncRuntime() ?? installFreshGameSyncRuntime();
 
 const installActiveWorldSpatialProjection = (setup: SetupResult): void => {
@@ -839,201 +194,179 @@ const readOwnedInitialStructures = (
   });
 };
 
-export const initialSync = async (
-  setup: SetupResult,
-  state: AppStore,
-  setInitialSyncProgress: (progress: number) => void,
-  options: InitialSyncOptions = {},
-) => {
-  const { logging = false, reportProgress = true } = options;
-  const subscriptionSetupTimeoutMs =
-    options.subscriptionSetupTimeoutMs ?? env.VITE_PUBLIC_TORII_SUBSCRIPTION_SETUP_TIMEOUT_MS;
-  console.log("[STARTING game sync]");
+type InitialSyncProgressReporter = (progress: number) => void;
 
-  if (reportProgress) {
-    setInitialSyncProgress(0);
+const createInitialSyncProgressReporter = (
+  enabled: boolean,
+  setProgress: (progress: number) => void,
+): InitialSyncProgressReporter => {
+  if (!enabled) {
+    return () => undefined;
   }
 
-  const usesLegacyBoundedSync = shouldUseLegacyBoundedSpatialSync();
-  const globalStreamSubscribeStart = performance.now();
+  let highestProgress = -1;
+  return (progress) => {
+    if (progress <= highestProgress) {
+      return;
+    }
+
+    highestProgress = progress;
+    setProgress(progress);
+  };
+};
+
+const runInitialSyncTask = async ({
+  label,
+  targetProgress,
+  task,
+  reportProgress,
+}: {
+  label: string;
+  targetProgress: number;
+  task: () => Promise<void>;
+  reportProgress: InitialSyncProgressReporter;
+}): Promise<void> => {
+  const startedAt = performance.now();
+  await task();
+  const elapsedMs = performance.now() - startedAt;
+  console.log(`[sync] ${label}`, elapsedMs);
+  recordGameEntryDuration(`initial-sync-${label.replace(/\s+/g, "-")}`, elapsedMs);
+  reportProgress(targetProgress);
+};
+
+const startAuthoritativeGameSyncSession = async ({
+  setup,
+  logging,
+  subscriptionSetupTimeoutMs,
+  onSubscriptionSetupTimeout,
+}: {
+  setup: SetupResult;
+  logging: boolean;
+  subscriptionSetupTimeoutMs: number;
+  onSubscriptionSetupTimeout?: (info: ToriiSubscriptionSetupTimeoutInfo) => void;
+}): Promise<void> => {
+  const startedAt = performance.now();
   try {
     logWorldmapSyncAB("Initial sync config", {
-      boundedSpatialSync: usesLegacyBoundedSync,
-      boundedSpatialPadding: env.VITE_PUBLIC_WORLDMAP_BOUNDED_SPATIAL_PADDING,
       eventModels: getGlobalEventModels(),
-      globalEntityMode: usesLegacyBoundedSync ? "legacy_bounded" : "gamewide_static_scope",
-      globalEntityModels: (usesLegacyBoundedSync ? getGlobalEntityStreamModels() : getGamewideEntityStreamModels()).map(
-        ({ model }) => model,
-      ),
-      spatialBootstrapModels: usesLegacyBoundedSync ? getGlobalSpatialMapBootstrapModelNames() : [],
+      globalEntityMode: "gamewide_static_scope",
+      globalEntityModels: getGamewideEntityStreamModels().map(({ model }) => model),
       timestamp: new Date().toISOString(),
     });
-    const sessionInput = {
-      setup,
-      logging,
-      subscriptionSetupTimeoutMs,
-      onSubscriptionSetupTimeout: options.onSubscriptionSetupTimeout,
-    };
-    if (usesLegacyBoundedSync) {
-      await startLegacyBoundedSyncSession(sessionInput);
-    } else {
-      await getOrInstallGameSyncRuntime().startSession(createActiveGamewideSyncSession(sessionInput));
-    }
+    await getOrInstallGameSyncRuntime().startSession(
+      createActiveGamewideSyncSession({
+        setup,
+        logging,
+        subscriptionSetupTimeoutMs,
+        onSubscriptionSetupTimeout,
+      }),
+    );
     installActiveWorldSpatialProjection(setup);
-    // Handshakes are transport freshness. Data freshness is recorded by stream
-    // updates, so quiet worlds do not look stale after a successful boot.
   } catch (error) {
-    if (error instanceof Error && error.message.includes("global spatial map")) {
-      throw error;
-    }
     if (error instanceof Error && error.message.includes("Timed out waiting for")) {
       throw new Error(`Timed out connecting to the world stream after ${subscriptionSetupTimeoutMs}ms.`);
     }
     throw error;
   } finally {
-    recordGameEntryDuration("initial-sync-global-stream-subscribe", performance.now() - globalStreamSubscribeStart);
+    recordGameEntryDuration("initial-sync-game-session-start", performance.now() - startedAt);
   }
-
-  const contractComponents = setup.network.contractComponents as unknown as Component<Schema, Metadata, undefined>[];
-
-  let highestProgress = reportProgress ? 0 : -1;
-  const updateProgress = (value: number) => {
-    if (!reportProgress) {
-      return;
-    }
-    if (value <= highestProgress) {
-      return;
-    }
-    highestProgress = value;
-    setInitialSyncProgress(value);
-  };
-
-  const runTimedTask = async (label: string, targetProgress: number, task: () => Promise<void>) => {
-    const start = performance.now();
-    await task();
-    const elapsedMs = performance.now() - start;
-    console.log(`[sync] ${label}`, elapsedMs);
-    // Surface in the boot debug panel under a deterministic key so a slow
-    // sub-step (e.g. "guilds query") immediately points at the bottleneck
-    // instead of being hidden inside the aggregate `initial-sync` total.
-    recordGameEntryDuration(`initial-sync-${label.replace(/\s+/g, "-")}`, elapsedMs);
-    updateProgress(targetProgress);
-  };
-
-  const parallelTasks: Promise<void>[] = [];
-
-  // BANKS (kicked off immediately so the request overlaps with other sync work)
-  parallelTasks.push(
-    runTimedTask("bank structures query", 10, async () => {
-      await getBankStructuresFromTorii(setup.network.toriiClient, contractComponents);
-    }),
-  );
-
-  // Initial structure selection:
-  // 1) connected players: first owned realm (fallback: first owned structure)
-  // 2) spectators / no owned structures: first global structure
-  const currentStructureEntityId = state.structureEntityId;
-  if (!currentStructureEntityId || currentStructureEntityId === 0) {
-    const accountAddress = useAccountStore.getState().account?.address;
-    const hasConnectedAccount =
-      typeof accountAddress === "string" && accountAddress.length > 0 && accountAddress !== "0x0";
-
-    let ownedStructures: InitialSelectableStructure[] = [];
-
-    if (!usesLegacyBoundedSync) {
-      ownedStructures = readOwnedInitialStructures(setup, hasConnectedAccount ? accountAddress : undefined);
-    } else if (hasConnectedAccount) {
-      try {
-        ownedStructures = await sqlApi.fetchPlayerStructures(accountAddress);
-      } catch (error) {
-        console.error("[sync] Failed to fetch player-owned structures for initial selection", error);
-      }
-    }
-
-    const firstGlobalStructure =
-      ownedStructures.length > 0
-        ? null
-        : usesLegacyBoundedSync
-          ? await sqlApi.fetchFirstStructure()
-          : (readInitialSelectableStructures(setup)[0] ?? null);
-    const { selectedStructure, spectator: selectAsSpectator } = resolveInitialStructureSelection({
-      ownedStructures,
-      firstGlobalStructure,
-    });
-
-    if (selectedStructure) {
-      const start = performance.now();
-      state.setStructureEntityId(selectedStructure.entity_id, {
-        spectator: selectAsSpectator,
-        worldMapPosition: { col: selectedStructure.coord_x, row: selectedStructure.coord_y },
-      });
-      if (usesLegacyBoundedSync) {
-        await getStructuresDataFromTorii(setup.network.toriiClient, contractComponents, [
-          {
-            entityId: selectedStructure.entity_id,
-            position: { col: selectedStructure.coord_x, row: selectedStructure.coord_y },
-          },
-        ]);
-      }
-      const end = performance.now();
-      console.log("[sync] initial structure query", end - start);
-      updateProgress(25);
-    }
-  } else {
-    updateProgress(25);
-  }
-
-  // Config, AddressNames and Guilds write to disjoint components with no
-  // ordering constraints, so run them concurrently. updateProgress keeps the
-  // highest value, so individual checkpoints are safe in any order.
-  await Promise.all([
-    runTimedTask("config query", 50, async () => {
-      await getConfigFromTorii(
-        setup.network.toriiClient,
-        setup.network.contractComponents as any,
-        options.onConfigRefreshed,
-      );
-    }),
-    runTimedTask("address names query", 75, async () => {
-      await getAddressNamesFromTorii(setup.network.toriiClient, setup.network.contractComponents as any);
-    }),
-    runTimedTask("guilds query", 90, async () => {
-      await getGuildsFromTorii(setup.network.toriiClient, setup.network.contractComponents as any);
-    }),
-  ]);
-  await Promise.all(parallelTasks);
-
-  updateProgress(100);
 };
 
-/**
- * Reconnect through the same convergent subscribe → snapshot → replay routine
- * used at boot. The bounded rollback path preserves its S1 stream-only restart.
- */
-export const resubscribeGlobalEntityStream = async (
+const selectInitialStructure = (
   setup: SetupResult,
-  options: {
-    logging?: boolean;
-    subscriptionSetupTimeoutMs?: number;
-    onSubscriptionSetupTimeout?: (info: ToriiSubscriptionSetupTimeoutInfo) => void;
-  } = {},
+  state: AppStore,
+  reportProgress: InitialSyncProgressReporter,
+): void => {
+  if (state.structureEntityId && state.structureEntityId !== 0) {
+    reportProgress(25);
+    return;
+  }
+
+  const accountAddress = useAccountStore.getState().account?.address;
+  const hasConnectedAccount =
+    typeof accountAddress === "string" && accountAddress.length > 0 && accountAddress !== "0x0";
+  const ownedStructures = readOwnedInitialStructures(setup, hasConnectedAccount ? accountAddress : undefined);
+  const firstGlobalStructure = ownedStructures.length > 0 ? null : (readInitialSelectableStructures(setup)[0] ?? null);
+  const { selectedStructure, spectator } = resolveInitialStructureSelection({
+    ownedStructures,
+    firstGlobalStructure,
+  });
+  if (!selectedStructure) {
+    return;
+  }
+
+  state.setStructureEntityId(selectedStructure.entity_id, {
+    spectator,
+    worldMapPosition: { col: selectedStructure.coord_x, row: selectedStructure.coord_y },
+  });
+  reportProgress(25);
+};
+
+const syncInitialSupportData = async (
+  setup: SetupResult,
+  options: InitialSyncOptions,
+  reportProgress: InitialSyncProgressReporter,
+): Promise<void> => {
+  const contractComponents = setup.network.contractComponents as unknown as Component<Schema, Metadata, undefined>[];
+
+  await Promise.all([
+    runInitialSyncTask({
+      label: "bank structures query",
+      targetProgress: 10,
+      reportProgress,
+      task: () => getBankStructuresFromTorii(setup.network.toriiClient, contractComponents),
+    }),
+    runInitialSyncTask({
+      label: "config query",
+      targetProgress: 50,
+      reportProgress,
+      task: () =>
+        getConfigFromTorii(
+          setup.network.toriiClient,
+          setup.network.contractComponents as any,
+          options.onConfigRefreshed,
+        ),
+    }),
+    runInitialSyncTask({
+      label: "address names query",
+      targetProgress: 75,
+      reportProgress,
+      task: () => getAddressNamesFromTorii(setup.network.toriiClient, setup.network.contractComponents as any),
+    }),
+    runInitialSyncTask({
+      label: "guilds query",
+      targetProgress: 90,
+      reportProgress,
+      task: () => getGuildsFromTorii(setup.network.toriiClient, setup.network.contractComponents as any),
+    }),
+  ]);
+};
+
+export const initialSync = async (
+  setup: SetupResult,
+  state: AppStore,
+  setInitialSyncProgress: (progress: number) => void,
+  options: InitialSyncOptions = {},
 ): Promise<void> => {
   const logging = options.logging ?? false;
   const subscriptionSetupTimeoutMs =
     options.subscriptionSetupTimeoutMs ?? env.VITE_PUBLIC_TORII_SUBSCRIPTION_SETUP_TIMEOUT_MS;
+  const reportProgress = createInitialSyncProgressReporter(options.reportProgress ?? true, setInitialSyncProgress);
 
-  const runtime = requireActiveGameSyncRuntime();
-  if (!shouldUseLegacyBoundedSpatialSync()) {
-    await runtime.recover();
-    return;
-  }
+  console.log("[STARTING game sync]");
+  reportProgress(0);
+  await startAuthoritativeGameSyncSession({
+    setup,
+    logging,
+    subscriptionSetupTimeoutMs,
+    onSubscriptionSetupTimeout: options.onSubscriptionSetupTimeout,
+  });
+  selectInitialStructure(setup, state, reportProgress);
+  await syncInitialSupportData(setup, options, reportProgress);
+  reportProgress(100);
+};
 
-  await runtime.restartLegacyGlobalWriter(() =>
-    startGlobalEntityWriter({
-      setup,
-      logging,
-      subscriptionSetupTimeoutMs,
-      onSubscriptionSetupTimeout: options.onSubscriptionSetupTimeout,
-    }),
-  );
+/** Reconnect through the same convergent subscribe → snapshot → replay routine used at boot. */
+export const recoverGameSyncSession = async (): Promise<void> => {
+  await requireActiveGameSyncRuntime().recover();
 };

@@ -28,11 +28,6 @@ describe("worldmap-render-diagnostics", () => {
     recordWorldmapRenderDuration("presentationSkewMs", 0.5);
     setWorldmapRenderGauge("activePaths", 17);
     setWorldmapRenderGauge("visibleArmies", 301);
-    setWorldmapRenderGauge("spatialSubscriptionMinCol", 100);
-    setWorldmapRenderGauge("spatialSubscriptionMaxCol", 180);
-    setWorldmapRenderGauge("spatialSubscriptionMinRow", 200);
-    setWorldmapRenderGauge("spatialSubscriptionMaxRow", 260);
-    setWorldmapRenderGauge("spatialSubscriptionModelCount", 7);
     incrementWorldmapRenderUploadBytes("cachedChunkReplay", 256);
     incrementWorldmapRenderCounter("controlsChangeEvents", 4);
     incrementWorldmapRenderCounter("chunkRefreshRequests", 3);
@@ -49,11 +44,6 @@ describe("worldmap-render-diagnostics", () => {
     incrementWorldmapRenderCounter("staleTerrainCacheFingerprintRejectCount" as any, 5);
     incrementWorldmapRenderCounter("preparedChunkPrewarmHits" as any, 6);
     incrementWorldmapRenderCounter("preparedChunkPrewarmMisses" as any, 2);
-    incrementWorldmapRenderCounter("spatialBoundsSwitchRequests", 2);
-    incrementWorldmapRenderCounter("spatialBoundsSwitchApplied", 1);
-    incrementWorldmapRenderCounter("spatialBoundsSwitchSkipped", 3);
-    incrementWorldmapRenderCounter("spatialBoundsSwitchFailures", 1);
-    incrementWorldmapRenderCounter("spatialStreamUpdates", 9);
     incrementWorldmapRenderCounter("postCommitManagerCatchUpImmediate" as any, 3);
     incrementWorldmapRenderCounter("postCommitManagerCatchUpDeferred" as any, 1);
     incrementWorldmapForceRefreshReason("duplicate_tile");
@@ -79,11 +69,6 @@ describe("worldmap-render-diagnostics", () => {
     expect(snapshot.durations.presentationSkewMs.samples).toEqual([0.5]);
     expect(snapshot.gauges.activePaths).toBe(17);
     expect(snapshot.gauges.visibleArmies).toBe(301);
-    expect(snapshot.gauges.spatialSubscriptionMinCol).toBe(100);
-    expect(snapshot.gauges.spatialSubscriptionMaxCol).toBe(180);
-    expect(snapshot.gauges.spatialSubscriptionMinRow).toBe(200);
-    expect(snapshot.gauges.spatialSubscriptionMaxRow).toBe(260);
-    expect(snapshot.gauges.spatialSubscriptionModelCount).toBe(7);
     expect(snapshot.uploadBytes.cachedChunkReplay).toBe(256);
     expect(snapshot.counters.controlsChangeEvents).toBe(4);
     expect(snapshot.counters.chunkRefreshRequests).toBe(3);
@@ -100,11 +85,6 @@ describe("worldmap-render-diagnostics", () => {
     expect(snapshot.counters).toHaveProperty("staleTerrainCacheFingerprintRejectCount", 5);
     expect(snapshot.counters).toHaveProperty("preparedChunkPrewarmHits", 6);
     expect(snapshot.counters).toHaveProperty("preparedChunkPrewarmMisses", 2);
-    expect(snapshot.counters).toHaveProperty("spatialBoundsSwitchRequests", 2);
-    expect(snapshot.counters).toHaveProperty("spatialBoundsSwitchApplied", 1);
-    expect(snapshot.counters).toHaveProperty("spatialBoundsSwitchSkipped", 3);
-    expect(snapshot.counters).toHaveProperty("spatialBoundsSwitchFailures", 1);
-    expect(snapshot.counters).toHaveProperty("spatialStreamUpdates", 9);
     expect(snapshot.counters).toHaveProperty("postCommitManagerCatchUpImmediate", 3);
     expect(snapshot.counters).toHaveProperty("postCommitManagerCatchUpDeferred", 1);
     expect(snapshot.forceRefreshReasons.duplicate_tile).toBe(2);

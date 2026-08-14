@@ -44,8 +44,6 @@ describe("prepareWorldmapChunkRuntime", () => {
       startCol: 24,
       startRow: 24,
       surroundingChunks: ["0,24"],
-      transitionToken: 7,
-      updateBoundsSubscription: vi.fn(),
       updatePinnedChunks: vi.fn(),
     });
 

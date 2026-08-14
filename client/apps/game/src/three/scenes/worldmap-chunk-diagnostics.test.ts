@@ -24,12 +24,6 @@ describe("worldmap-chunk-diagnostics", () => {
     expect(diagnostics.prefetchQueued).toBe(0);
     expect(diagnostics.prefetchSkipped).toBe(0);
     expect(diagnostics.prefetchExecuted).toBe(0);
-    expect(diagnostics.boundsSwitchRequested).toBe(0);
-    expect(diagnostics.boundsSwitchApplied).toBe(0);
-    expect(diagnostics.boundsSwitchSkippedSameSignature).toBe(0);
-    expect(diagnostics.boundsSwitchStaleDropped).toBe(0);
-    expect(diagnostics.boundsSwitchSkippedStaleToken).toBe(0);
-    expect(diagnostics.boundsSwitchFailed).toBe(0);
     expect(diagnostics.duplicateTileCacheInvalidated).toBe(0);
     expect(diagnostics.duplicateTileReconcileRequested).toBe(0);
     expect(diagnostics.switchDurationMsTotal).toBe(0);
@@ -75,12 +69,6 @@ describe("worldmap-chunk-diagnostics", () => {
       "prefetch_queued",
       "prefetch_skipped",
       "prefetch_executed",
-      "bounds_switch_requested",
-      "bounds_switch_applied",
-      "bounds_switch_skipped_same_signature",
-      "bounds_switch_stale_dropped",
-      "bounds_switch_skipped_stale_token",
-      "bounds_switch_failed",
       "refresh_requested",
       "refresh_executed",
       "refresh_superseded",
@@ -107,12 +95,6 @@ describe("worldmap-chunk-diagnostics", () => {
     expect(diagnostics.prefetchQueued).toBe(1);
     expect(diagnostics.prefetchSkipped).toBe(1);
     expect(diagnostics.prefetchExecuted).toBe(1);
-    expect(diagnostics.boundsSwitchRequested).toBe(1);
-    expect(diagnostics.boundsSwitchApplied).toBe(1);
-    expect(diagnostics.boundsSwitchSkippedSameSignature).toBe(1);
-    expect(diagnostics.boundsSwitchStaleDropped).toBe(1);
-    expect(diagnostics.boundsSwitchSkippedStaleToken).toBe(1);
-    expect(diagnostics.boundsSwitchFailed).toBe(1);
     expect(diagnostics.refreshRequested).toBe(1);
     expect(diagnostics.refreshExecuted).toBe(1);
     expect(diagnostics.refreshSuperseded).toBe(1);

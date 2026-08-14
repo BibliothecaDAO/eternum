@@ -14,7 +14,7 @@ store.
 | Event effects do not fire twice across recovery.                           | `GameSyncRuntime recovery > deduplicates event effects across recovery without snapshotting event rows`                                                                                                   |
 | A snapshot larger than one page hydrates completely.                       | `GameSyncRuntime recovery > activates subscriptions before hydrating every snapshot page`                                                                                                                 |
 | Pending movement expires without transaction confirmation.                 | `resolvePendingArmyMovementFallbackPlan > clears stale movement after visual handoff when resolution never arrives` and `> clears stale movement and requests refresh when fallback threshold is reached` |
-| Camera movement performs zero Torii calls in game-wide mode.               | `worldmap camera movement performs zero Torii fetches > syncs visible terrain from the in-memory projection` and `> has no remaining exact spatial query helper for camera-driven reads`                |
+| Camera movement performs zero Torii calls.                                 | `worldmap camera movement performs zero Torii fetches > syncs visible terrain from the in-memory projection` and `> has no remaining exact spatial query helper for camera-driven reads`                  |
 
 The three live acceptance behaviors remain owner-attested playtest gates: mutate an offscreen entity and pan to it, kill
 the connection for 30 seconds and restore it, and hard-reload during active play. The repeatable headless smoke remains

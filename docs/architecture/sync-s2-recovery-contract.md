@@ -39,12 +39,11 @@ generation, cancels the old writer, and rejects late writers/callbacks. Deletion
 upserts between barriers coalesce per entity and model for one scheduler tick. A failed RECS write rejects recovery
 rather than silently advancing the queue.
 
-## Rollback and camera behavior
+## Camera behavior
 
-`VITE_PUBLIC_WORLDMAP_BOUNDED_SPATIAL_SYNC=false` selects S2. Setting it to `true` selects the complete legacy bounded
-adapter (global writer, boot spatial snapshot, scene bounds stream, and player writer) until S4 deletes it. In S2 mode
-no bounded adapter exists, so camera movement cannot issue a Torii subscription/update call; this is pinned by the
-adapter test.
+There is one session-owned game-wide runtime and no bounded rollback mode. Camera movement selects already-synced rows
+from `WorldSpatialProjection`; it cannot create, replace, or update a Torii subscription. The camera zero-calls source
+test pins that boundary.
 
 ## S3 spatial projection ownership
 
@@ -58,10 +57,6 @@ interaction, ownership checks, and panels resolve those facts from their RECS co
 Hyperstructure sites are coordinate-keyed renderables because they deliberately have no Structure entity until the site
 becomes a real structure. Both surface resolvers reject nonzero `alt`, so ethereal occupancy cannot appear on the world
 map.
-
-The legacy rollback adapter still feeds TileOpt into RECS, so it can drive the projection, but it no longer has the
-deleted chest or structure repair fetches. Rollback mode is therefore an emergency compatibility path with weaker
-staleness healing than the game-wide runtime.
 
 ## Headless and measurement
 

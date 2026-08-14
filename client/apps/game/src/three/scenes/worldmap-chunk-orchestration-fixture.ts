@@ -22,7 +22,6 @@ interface RunChunkSwitchResult {
 
 export function createWorldmapChunkOrchestrationFixture() {
   const projectionSync = createControlledAsyncCall<[string], boolean>();
-  const boundsSwitch = createControlledAsyncCall<[string, number | undefined], void>();
   const assetPrewarm = createControlledAsyncCall<[string], void>();
   const terrainPreparation = createControlledAsyncCall<[number, number], { chunkKey: string }>();
   const managerUpdate = createControlledAsyncCall<[string, { force: boolean; transitionToken: number }], void>();
@@ -30,7 +29,6 @@ export function createWorldmapChunkOrchestrationFixture() {
 
   return {
     projectionSync,
-    boundsSwitch,
     assetPrewarm,
     terrainPreparation,
     managerUpdate,
@@ -44,14 +42,9 @@ export function createWorldmapChunkOrchestrationFixture() {
       const previousChunk = input.previousChunk ?? currentChunk;
       const oldChunk = currentChunk;
       const projectionSyncPromise = projectionSync.fn(input.chunkKey);
-      const boundsSwitchPromise = boundsSwitch.fn(input.chunkKey, input.transitionToken);
       const assetPrewarmPromise = assetPrewarm.fn(input.chunkKey);
 
-      const [projectionSyncSucceeded] = await Promise.all([
-        projectionSyncPromise,
-        boundsSwitchPromise,
-        assetPrewarmPromise,
-      ]);
+      const [projectionSyncSucceeded] = await Promise.all([projectionSyncPromise, assetPrewarmPromise]);
       if (projectionSyncSucceeded) {
         await terrainPreparation.fn(input.startRow, input.startCol);
       }

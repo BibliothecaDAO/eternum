@@ -16,16 +16,7 @@ export type WorldmapRenderDurationMetric =
   | "workerFindPath"
   | "createPath";
 
-export type WorldmapRenderGauge =
-  | "activePaths"
-  | "visibleArmies"
-  | "visibleStructures"
-  | "activeLabels"
-  | "spatialSubscriptionMinCol"
-  | "spatialSubscriptionMaxCol"
-  | "spatialSubscriptionMinRow"
-  | "spatialSubscriptionMaxRow"
-  | "spatialSubscriptionModelCount";
+export type WorldmapRenderGauge = "activePaths" | "visibleArmies" | "visibleStructures" | "activeLabels";
 export type WorldmapRenderUploadMetric = "cachedChunkReplay";
 
 export type WorldmapRenderCounter =
@@ -61,14 +52,6 @@ export type WorldmapRenderCounter =
   | "preparedChunkPrewarmHits"
   | "preparedChunkPrewarmMisses"
   | "projectionTilesSynced"
-  | "spatialBoundsSwitchRequests"
-  | "spatialBoundsSwitchApplied"
-  | "spatialBoundsSwitchSkipped"
-  | "spatialBoundsSwitchFailures"
-  | "spatialStreamUpdates"
-  | "spatialTileOptRecsApplied"
-  | "spatialTileOptReadyTimeouts"
-  | "spatialTileOptStreamReceived"
   | "postCommitManagerCatchUpImmediate"
   | "postCommitManagerCatchUpDeferred"
   | "pendingArmyRemovalCancelledByTileRecovery"
@@ -159,11 +142,6 @@ const createDiagnosticsState = (): WorldmapRenderDiagnosticsSnapshot => ({
     visibleArmies: 0,
     visibleStructures: 0,
     activeLabels: 0,
-    spatialSubscriptionMinCol: 0,
-    spatialSubscriptionMaxCol: 0,
-    spatialSubscriptionMinRow: 0,
-    spatialSubscriptionMaxRow: 0,
-    spatialSubscriptionModelCount: 0,
   },
   uploadBytes: {
     cachedChunkReplay: 0,
@@ -201,14 +179,6 @@ const createDiagnosticsState = (): WorldmapRenderDiagnosticsSnapshot => ({
     preparedChunkPrewarmHits: 0,
     preparedChunkPrewarmMisses: 0,
     projectionTilesSynced: 0,
-    spatialBoundsSwitchRequests: 0,
-    spatialBoundsSwitchApplied: 0,
-    spatialBoundsSwitchSkipped: 0,
-    spatialBoundsSwitchFailures: 0,
-    spatialStreamUpdates: 0,
-    spatialTileOptRecsApplied: 0,
-    spatialTileOptReadyTimeouts: 0,
-    spatialTileOptStreamReceived: 0,
     postCommitManagerCatchUpImmediate: 0,
     postCommitManagerCatchUpDeferred: 0,
     pendingArmyRemovalCancelledByTileRecovery: 0,

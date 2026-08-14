@@ -76,7 +76,6 @@ const buildChannelClause = (channel, config) =>
   buildGameSyncModelKeysClause(
     getGameSyncModelsForChannel(channel, { includeS2Only: config.namespace === "s2" }).map((model) => ({
       model: qualify(config.namespace, model.name),
-      keyCount: model.legacyKeyCount,
       scopedKey: config.namespace === "s2" && model.s2Scope === "game" ? `0x${config.gameId.toString(16)}` : undefined,
     })),
   );

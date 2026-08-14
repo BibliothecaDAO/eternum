@@ -1,6 +1,5 @@
 import { POLLING_INTERVALS } from "@/config/polling";
 import { gameEntityKey } from "@/dojo/game-scope";
-import { usePlayerStructureSync } from "@/hooks/helpers/use-player-structure-sync";
 import { useChainTimeStore } from "@/hooks/store/use-chain-time-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { sqlApi } from "@/services/api";
@@ -492,10 +491,6 @@ const AutoRegisterPointsStoreManager = () => {
 const PlayerStructuresStoreManager = () => {
   const playerStructures = usePlayerStructures();
   const setPlayerStructures = useUIStore((state) => state.setPlayerStructures);
-
-  // Sync structure-scoped models (Resource, StructureBuildings, ProductionBoostBonus)
-  // scoped to only the player's own structures
-  usePlayerStructureSync();
 
   useEffect(() => {
     setPlayerStructures(playerStructures);

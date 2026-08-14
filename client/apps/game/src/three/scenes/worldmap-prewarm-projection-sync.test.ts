@@ -54,7 +54,6 @@ describe("prewarmDirectionalPresentationChunk projection sync", () => {
       startCol: 24,
       renderSize: { height: 80, width: 90 },
       projectionSyncPromise: Promise.resolve(false),
-      boundsReadyPromise: Promise.resolve(),
       assetPrewarmPromise: Promise.resolve(),
       prepareTerrainChunk,
     });

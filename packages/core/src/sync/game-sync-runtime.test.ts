@@ -325,19 +325,19 @@ describe("GameSyncRuntime lifecycle", () => {
 
   it("preserves the cancellation guard but force-cancels on dispose", async () => {
     const runtime = new GameSyncRuntime();
-    const writer = { cancel: vi.fn() };
     let finishSnapshot!: () => void;
-
-    const start = runtime.startLegacySession({
-      startGlobalWriter: async () => writer,
-      hydrateSpatialSnapshot: () => new Promise<void>((resolve) => (finishSnapshot = resolve)),
+    const harness = createSessionHarness({
+      async onFetchPage() {
+        await new Promise<void>((resolve) => (finishSnapshot = resolve));
+      },
     });
-    await Promise.resolve();
+    const start = runtime.startSession(harness.session);
+    await flushMicrotasks();
 
     runtime.cancelGlobalWriter();
-    expect(writer.cancel).not.toHaveBeenCalled();
+    expect(harness.writers[0].cancel).not.toHaveBeenCalled();
     runtime.dispose();
-    expect(writer.cancel).toHaveBeenCalledOnce();
+    expect(harness.writers[0].cancel).toHaveBeenCalledOnce();
     finishSnapshot();
     await expect(start).rejects.toBeInstanceOf(SupersededGameSyncStartError);
   });

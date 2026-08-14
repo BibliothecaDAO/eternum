@@ -11,7 +11,7 @@ describe("network boot-regression guards", () => {
   it("sync.ts resets the global handshake clock after a successful subscription handshake", () => {
     const source = readSource("src/dojo/sync.ts");
 
-    expect(source).toMatch(/const subscription = await syncEntitiesDebounced[\s\S]*?recordGlobalHandshake\(\)/);
+    expect(source).toMatch(/const recordGamewideSubscriptionActive[\s\S]*?recordGlobalHandshake\(\)/);
     expect(source).toContain("startSession");
   });
 
@@ -23,16 +23,14 @@ describe("network boot-regression guards", () => {
     expect(runtimeSource).toMatch(/cancelGlobalWriter\(\)[\s\S]*?if \(this\.isStarting\(\)\)/);
   });
 
-  it("sync.ts keeps Structure owners out of the global spatial bootstrap snapshot", () => {
+  it("has no legacy spatial bootstrap ownership path", () => {
     const source = readSource("src/dojo/sync.ts");
-    const spatialModelsSource = readSource("src/dojo/torii-spatial-models.ts");
     const manifestSource = readSource("../../../packages/core/src/sync/model-manifest.ts");
 
-    expect(spatialModelsSource).toContain('getGameSyncModelsForChannel("spatial-bootstrap")');
-    expect(manifestSource).toContain('spatial("Structure", "base.coord_x", "base.coord_y", { bootstrap: false');
-    expect(source).toContain("syncGlobalSpatialBootstrapSnapshot");
-    expect(source).not.toContain("spatialMapStreamSubscription");
-    expect(source).toContain("recordSpatialHandshake()");
+    expect(manifestSource).toContain('spatial("Structure", "base.coord_x", "base.coord_y")');
+    expect(manifestSource).not.toContain("spatial-bootstrap");
+    expect(source).not.toContain("syncGlobalSpatialBootstrapSnapshot");
+    expect(source).not.toContain("startLegacySession");
   });
 
   it("the active path owns every current fact with one game-wide recovery session", () => {
@@ -40,8 +38,8 @@ describe("network boot-regression guards", () => {
 
     expect(source).toContain('getGameSyncModelsForChannel("gamewide-entity"');
     expect(source).toContain("createGamewideSyncSession");
-    expect(source).toContain("await runtime.recover()");
-    expect(source).toContain("shouldUseLegacyBoundedSpatialSync()");
+    expect(source).toContain("requireActiveGameSyncRuntime().recover()");
+    expect(source).not.toContain("LegacyBounded");
     expect(source).toContain("installActiveWorldSpatialProjection(setup)");
   });
 

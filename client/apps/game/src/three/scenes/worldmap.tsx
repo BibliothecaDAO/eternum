@@ -2,14 +2,6 @@ import { playUnitCommandSound, playUnitCommandSoundForWorldmapAction } from "@/a
 import { toast } from "sonner";
 
 import { initializeSyncSimulator } from "@/dojo/sync-simulator";
-import { getBoundedSpatialMapModels, getGlobalSpatialMapModels } from "@/dojo/torii-spatial-models";
-import { shouldUseLegacyBoundedSpatialSync } from "@/dojo/game-sync-mode";
-import {
-  createLegacyBoundedSyncAdapter,
-  switchLegacyBoundedSyncForCamera,
-  type LegacyBoundedSyncAdapter,
-} from "@/dojo/legacy-bounded-sync-adapter";
-import { buildBoundsDescriptorSignature, type BoundsDescriptor } from "@/dojo/torii-stream-manager";
 import { useConnectionStore } from "@/hooks/store/use-connection-store";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import {
@@ -386,12 +378,6 @@ import {
   type WorldmapChunkTraceEvent,
 } from "./worldmap-chunk-trace";
 import {
-  removeToriiBoundsDebugOverlay,
-  upsertToriiBoundsDebugOverlay,
-  type ToriiBoundsDebugOverlaySnapshot,
-  type ToriiBoundsDebugRange,
-} from "./worldmap-torii-bounds-debug-overlay";
-import {
   applyWorldmapTerrainPresentation,
   applyWorldmapVisualTerrainPage,
   composeWorldmapTerrainPresentations,
@@ -460,8 +446,6 @@ interface WorldmapVisualTerrainPageBuildRequest {
   transitionToken?: number;
 }
 
-type ToriiBoundsCounterKey = "tiles" | "explorerTiles" | "explorerTroops";
-
 type WorldmapChunkSwitchP95RegressionDebugResult = {
   baselineLabel: string | null;
   result: ChunkSwitchP95RegressionResult;
@@ -514,7 +498,6 @@ type WorldmapChunkDiagnosticsDebugWindow = Window & {
   getWorldmapRenderDiagnostics?: () => ReturnType<typeof snapshotWorldmapRenderDiagnostics>;
   resetWorldmapRenderDiagnostics?: () => void;
   getWorldmapChunkTrace?: () => WorldmapChunkTraceEntry[];
-  getToriiBoundsDebugSnapshot?: () => ToriiBoundsDebugOverlaySnapshot;
 };
 
 const dummy = new Object3D();
@@ -522,8 +505,6 @@ const MEMORY_MONITORING_ENABLED = env.VITE_PUBLIC_ENABLE_MEMORY_MONITORING;
 const MIN_TRAVEL_EFFECT_VISIBLE_MS = 600;
 const MAX_TRAVEL_EFFECT_LIFETIME_MS = 90_000;
 const SHORTCUT_NAVIGATION_DURATION_SECONDS = 0;
-const TORII_BOUNDS_DEBUG = env.VITE_PUBLIC_TORII_BOUNDS_DEBUG === true;
-const TORII_BOUNDS_DEBUG_OVERLAY = env.VITE_PUBLIC_TORII_BOUNDS_DEBUG_OVERLAY === true;
 const WORLDMAP_CHUNK_PHASE_TIMEOUT_MS = env.VITE_PUBLIC_WORLDMAP_CHUNK_PHASE_TIMEOUT_MS;
 const WORLDMAP_CHUNK_RECOVERY_COOLDOWN_MS = 2_000;
 // Hard timeout wrapping the entire chunk transition (phase timeouts + post-phase work).
@@ -534,7 +515,6 @@ const WORLDMAP_CHUNK_TRANSITION_HARD_TIMEOUT_MS = Math.max(WORLDMAP_CHUNK_PHASE_
 const WORLDMAP_STREAMING_ROLLOUT = {
   stagedPathEnabled: env.VITE_PUBLIC_WORLDMAP_STREAMING_STAGED !== false,
 };
-const WORLDMAP_BOUNDED_SPATIAL_SYNC = shouldUseLegacyBoundedSpatialSync();
 const HOVER_LABEL_RECOVERY_FRAME_BUDGET = 12;
 const WORLDMAP_ZOOM_HARDENING = createWorldmapZoomHardeningConfig({
   enabled: env.VITE_PUBLIC_WORLDMAP_ZOOM_HARDENING === true,
@@ -976,19 +956,9 @@ export default class WorldmapScene extends WarpTravel {
   private hoverLabelManager!: HoverLabelManager;
 
   private worldUpdateUnsubscribes: Array<() => void> = [];
-  private toriiStreamManager: LegacyBoundedSyncAdapter | null = null;
   private visibilityChangeHandler?: () => void;
   private cosmeticsSubscriptionCleanup?: () => void;
   private unregisterWorldmapRecoveryHandle: (() => void) | null = null;
-  private toriiBoundsAreaKey: string | null = null;
-  private activeBoundedSpatialDescriptorSignature: string | null = null;
-  private toriiBoundsDebugSnapshot: ToriiBoundsDebugOverlaySnapshot = {};
-  private toriiBoundsUpdateCounts: Record<ToriiBoundsCounterKey, number> = {
-    tiles: 0,
-    explorerTiles: 0,
-    explorerTroops: 0,
-  };
-  private toriiBoundsLogInterval: ReturnType<typeof setInterval> | null = null;
   private readonly hoverLabelRaycaster: Raycaster;
   private currentHoverLabelHex: HexPosition | null = null;
   private pendingHoverLabelRecovery: PendingHoverLabelRecovery | null = null;
@@ -1006,8 +976,6 @@ export default class WorldmapScene extends WarpTravel {
     this.dojo = dojoContext;
     this.hoverLabelRaycaster = raycaster;
     this.logWorldmapSceneConstruction();
-    this.initializeGlobalSpatialMapSyncDebug();
-    this.initializeBoundedSpatialSync();
     this.registerWorldmapRecoveryHandle();
     this.initializeWorldmapSceneServices(dojoContext);
     this.bindTransactionFailureLifecycle(dojoContext);
@@ -1022,77 +990,6 @@ export default class WorldmapScene extends WarpTravel {
     this.registerWorldmapShortcuts();
   }
 
-  private initializeBoundedSpatialSync(): void {
-    this.logToriiBoundsDebug("Bounded spatial sync config", {
-      boundedSpatialModels: getBoundedSpatialMapModels().map(({ model }) => model),
-      boundedSpatialPadding: env.VITE_PUBLIC_WORLDMAP_BOUNDED_SPATIAL_PADDING,
-      boundedSpatialSync: WORLDMAP_BOUNDED_SPATIAL_SYNC,
-      mode: WORLDMAP_BOUNDED_SPATIAL_SYNC ? "legacy_bounded_spatial_stream" : "gamewide_runtime_stream",
-      timestamp: new Date().toISOString(),
-    });
-
-    if (!WORLDMAP_BOUNDED_SPATIAL_SYNC) {
-      return;
-    }
-
-    this.toriiStreamManager = createLegacyBoundedSyncAdapter({
-      client: this.dojo.network.toriiClient,
-      setup: this.dojo,
-      logging: false,
-      subscriptionSetupTimeoutMs: env.VITE_PUBLIC_TORII_SUBSCRIPTION_SETUP_TIMEOUT_MS,
-      onUpdate: () => {
-        useConnectionStore.getState().recordSpatialUpdate();
-        incrementWorldmapRenderCounter("spatialStreamUpdates");
-      },
-      onSpatialReadyEntityReceived: (info) => {
-        incrementWorldmapRenderCounter("spatialTileOptStreamReceived");
-        this.traceChunk("spatial_tileopt_stream_received", {
-          entityId: info.entityId,
-          models: info.models,
-          requestId: info.requestId,
-          elapsedMs: info.elapsedMs,
-        });
-      },
-      onSpatialReadyEntityApplied: (info) => {
-        incrementWorldmapRenderCounter("spatialTileOptRecsApplied");
-        this.traceChunk("spatial_tileopt_recs_applied", {
-          entityId: info.entityId,
-          models: info.models,
-          requestId: info.requestId,
-          elapsedMs: info.elapsedMs,
-        });
-      },
-      onSpatialReadyTimeout: (info) => {
-        incrementWorldmapRenderCounter("spatialTileOptReadyTimeouts");
-        this.traceChunk("spatial_tileopt_ready_timeout", {
-          requestId: info.requestId,
-          elapsedMs: info.elapsedMs,
-          timeoutMs: info.timeoutMs,
-        });
-        if (this.currentChunk !== "null") {
-          this.recoverChunkStreamingAfterStall({
-            reason: "spatial_tileopt_ready_timeout",
-            chunkKey: this.currentChunk,
-            details: {
-              requestId: info.requestId,
-              elapsedMs: info.elapsedMs,
-              timeoutMs: info.timeoutMs,
-            },
-            refreshReason: "reconnect",
-            resetBoundsOutcome: "spatial_ready_timeout",
-          });
-        }
-      },
-      onSubscriptionSetupTimeout: (info) => {
-        this.traceChunk("torii_bounds_switch_timeout", {
-          label: info.label,
-          requestId: info.requestId,
-          timeoutMs: info.timeoutMs,
-        });
-      },
-    });
-  }
-
   public override setInputSurface(surface: HTMLElement): void {
     super.setInputSurface(surface);
     this.detachWorldmapWheelHandler();
@@ -1103,7 +1000,6 @@ export default class WorldmapScene extends WarpTravel {
     this.unregisterWorldmapRecoveryHandle = registerActiveWorldmapRecoveryHandle({
       refreshAfterReconnect: () => this.refreshAfterReconnect(),
       recoverAfterConnectionFailure: () => this.recoverAfterConnectionFailure(),
-      resubscribeSpatialStream: () => this.resubscribeSpatialStream(),
     });
   }
 
@@ -1116,11 +1012,6 @@ export default class WorldmapScene extends WarpTravel {
       sceneName: SceneName.WorldMap,
       existingStoreSubscriptionCount: this.storeSubscriptions.length,
     });
-  }
-
-  private initializeGlobalSpatialMapSyncDebug(): void {
-    this.startToriiBoundsCounterLog();
-    this.refreshToriiBoundsDebugOverlay({ lastOutcome: "global_spatial_sync" });
   }
 
   private initializeWorldmapSceneServices(dojoContext: SetupResult): void {
@@ -1647,7 +1538,6 @@ export default class WorldmapScene extends WarpTravel {
   private registerTileWorldUpdateSubscriptions(): void {
     this.addWorldUpdateSubscription(
       this.worldUpdateListener.Tile.onTileUpdate((value) => {
-        this.incrementToriiBoundsCounter("tiles");
         void this.updateExploredHex(value);
       }),
     );
@@ -4366,15 +4256,9 @@ export default class WorldmapScene extends WarpTravel {
     this.visibilityManager?.unregisterChunk(chunkKey);
   }
 
-  private async restorePreviousChunkVisualsAfterRollback(
-    oldStartRow: number,
-    oldStartCol: number,
-    previousChunk: string,
-    transitionToken: number,
-  ): Promise<void> {
+  private async restorePreviousChunkVisualsAfterRollback(oldStartRow: number, oldStartCol: number): Promise<void> {
     this.updateCurrentChunkBounds(oldStartRow, oldStartCol);
     await this.updateHexagonGrid(oldStartRow, oldStartCol, this.renderChunkSize.height, this.renderChunkSize.width);
-    await this.updateToriiBoundsSubscription(previousChunk, transitionToken);
   }
 
   private clearSceneChunkBounds(): void {
@@ -4534,7 +4418,6 @@ export default class WorldmapScene extends WarpTravel {
       ...this.getInteractionDebugSnapshot(),
     });
     this.applyWorldmapSceneExitProjection(nextSceneName);
-    this.cancelBoundedSpatialSubscription();
     this.invalidateWorldmapSwitchOffTransitions();
     this.clearWorldmapLoadingStateForSwitchOff();
     this.resetWorldmapInteractionForSwitchOff(nextSceneName);
@@ -5154,7 +5037,6 @@ export default class WorldmapScene extends WarpTravel {
             startCol,
             renderSize: this.renderChunkSize,
             projectionSyncPromise: this.syncProjectionTilesForChunk(chunkKey),
-            boundsReadyPromise: Promise.resolve(),
             assetPrewarmPromise: this.structureManager.prewarmChunkAssets(chunkKey),
             prepareTerrainChunk: (targetStartRow, targetStartCol, height, width) =>
               this.prepareTerrainChunk(targetStartRow, targetStartCol, height, width),
@@ -7100,204 +6982,6 @@ export default class WorldmapScene extends WarpTravel {
     });
   }
 
-  private buildToriiBoundsDebugRanges(areaKey: string): {
-    localBounds: ToriiBoundsDebugRange;
-    subscriptionBounds: ToriiBoundsDebugRange;
-  } {
-    const localBounds = this.getToriiSubscriptionBoundsForArea(areaKey);
-    const feltCenter = FELT_CENTER();
-
-    return {
-      localBounds,
-      subscriptionBounds: {
-        minCol: localBounds.minCol + feltCenter,
-        maxCol: localBounds.maxCol + feltCenter,
-        minRow: localBounds.minRow + feltCenter,
-        maxRow: localBounds.maxRow + feltCenter,
-      },
-    };
-  }
-
-  private buildBoundedSpatialSubscriptionBounds(chunkKey: string): ToriiBoundsDebugRange {
-    const chunkKeys = new Set<string>([chunkKey, ...this.pinnedChunkKeys]);
-    const localBounds = Array.from(chunkKeys).reduce<ToriiBoundsDebugRange | null>((mergedBounds, pinnedChunkKey) => {
-      if (!pinnedChunkKey || pinnedChunkKey === "null") {
-        return mergedBounds;
-      }
-
-      const areaKey = this.getToriiSubscriptionAreaKeyForChunk(pinnedChunkKey);
-      const bounds = this.getToriiSubscriptionBoundsForArea(areaKey);
-      if (!mergedBounds) {
-        return { ...bounds };
-      }
-
-      return {
-        minCol: Math.min(mergedBounds.minCol, bounds.minCol),
-        maxCol: Math.max(mergedBounds.maxCol, bounds.maxCol),
-        minRow: Math.min(mergedBounds.minRow, bounds.minRow),
-        maxRow: Math.max(mergedBounds.maxRow, bounds.maxRow),
-      };
-    }, null);
-
-    const resolvedLocalBounds =
-      localBounds ?? this.getToriiSubscriptionBoundsForArea(this.getToriiSubscriptionAreaKeyForChunk(chunkKey));
-    const feltCenter = FELT_CENTER();
-    return {
-      minCol: resolvedLocalBounds.minCol + feltCenter,
-      maxCol: resolvedLocalBounds.maxCol + feltCenter,
-      minRow: resolvedLocalBounds.minRow + feltCenter,
-      maxRow: resolvedLocalBounds.maxRow + feltCenter,
-    };
-  }
-
-  private buildBoundedSpatialDescriptor(subscriptionBounds: ToriiBoundsDebugRange): BoundsDescriptor {
-    return {
-      minCol: subscriptionBounds.minCol,
-      maxCol: subscriptionBounds.maxCol,
-      minRow: subscriptionBounds.minRow,
-      maxRow: subscriptionBounds.maxRow,
-      padding: env.VITE_PUBLIC_WORLDMAP_BOUNDED_SPATIAL_PADDING,
-      models: getBoundedSpatialMapModels(),
-    };
-  }
-
-  private setSpatialSubscriptionDiagnostics(bounds: ToriiBoundsDebugRange | null, modelCount: number): void {
-    setWorldmapRenderGauge("spatialSubscriptionMinCol", bounds?.minCol ?? 0);
-    setWorldmapRenderGauge("spatialSubscriptionMaxCol", bounds?.maxCol ?? 0);
-    setWorldmapRenderGauge("spatialSubscriptionMinRow", bounds?.minRow ?? 0);
-    setWorldmapRenderGauge("spatialSubscriptionMaxRow", bounds?.maxRow ?? 0);
-    setWorldmapRenderGauge("spatialSubscriptionModelCount", bounds ? modelCount : 0);
-  }
-
-  private buildToriiBoundsDebugSnapshot(
-    extra: Partial<ToriiBoundsDebugOverlaySnapshot> = {},
-  ): ToriiBoundsDebugOverlaySnapshot {
-    const currentAreaKey =
-      this.currentChunk !== "null" ? this.getToriiSubscriptionAreaKeyForChunk(this.currentChunk) : null;
-
-    this.toriiBoundsDebugSnapshot = {
-      ...this.toriiBoundsDebugSnapshot,
-      currentChunk: this.currentChunk,
-      currentAreaKey,
-      subscribedAreaKey: this.toriiBoundsAreaKey,
-      ...extra,
-    };
-
-    return this.toriiBoundsDebugSnapshot;
-  }
-
-  private refreshToriiBoundsDebugOverlay(extra: Partial<ToriiBoundsDebugOverlaySnapshot> = {}): void {
-    const snapshot = this.buildToriiBoundsDebugSnapshot(extra);
-    if (!TORII_BOUNDS_DEBUG_OVERLAY) {
-      removeToriiBoundsDebugOverlay();
-      return;
-    }
-
-    upsertToriiBoundsDebugOverlay(snapshot);
-  }
-
-  private getToriiBoundsDebugSnapshot(): ToriiBoundsDebugOverlaySnapshot {
-    return this.buildToriiBoundsDebugSnapshot();
-  }
-
-  private clearToriiBoundsDebugOverlay(): void {
-    removeToriiBoundsDebugOverlay();
-  }
-
-  private incrementToriiBoundsCounter(key: ToriiBoundsCounterKey): void {
-    if (!TORII_BOUNDS_DEBUG) {
-      return;
-    }
-
-    this.toriiBoundsUpdateCounts[key] += 1;
-  }
-
-  private resetToriiBoundsCounters(): void {
-    this.toriiBoundsUpdateCounts = {
-      tiles: 0,
-      explorerTiles: 0,
-      explorerTroops: 0,
-    };
-  }
-
-  private logToriiBoundsDebug(message: string, payload: Record<string, unknown>): void {
-    if (!TORII_BOUNDS_DEBUG) {
-      return;
-    }
-
-    console.info(`[WorldmapSyncAB] ${message} ${this.stringifyToriiBoundsDebugPayload(payload)}`);
-  }
-
-  private stringifyToriiBoundsDebugPayload(payload: Record<string, unknown>): string {
-    try {
-      return JSON.stringify(payload, (_key, value) => (typeof value === "bigint" ? value.toString() : value));
-    } catch (error) {
-      return JSON.stringify({
-        serializationError: error instanceof Error ? error.message : String(error),
-      });
-    }
-  }
-
-  private startToriiBoundsCounterLog(): void {
-    if (!TORII_BOUNDS_DEBUG || this.toriiBoundsLogInterval) {
-      return;
-    }
-
-    this.resetToriiBoundsCounters();
-    this.toriiBoundsLogInterval = setInterval(() => {
-      const now = Date.now();
-      const snapshot = { ...this.toriiBoundsUpdateCounts };
-      const total = Object.values(snapshot).reduce((sum, value) => sum + value, 0);
-      const diagnostics = snapshotWorldmapRenderDiagnostics();
-      const connectionState = useConnectionStore.getState();
-      const spatialSubscriptionBounds =
-        this.currentChunk !== "null" && diagnostics.gauges.spatialSubscriptionModelCount > 0
-          ? {
-              minCol: diagnostics.gauges.spatialSubscriptionMinCol,
-              maxCol: diagnostics.gauges.spatialSubscriptionMaxCol,
-              minRow: diagnostics.gauges.spatialSubscriptionMinRow,
-              maxRow: diagnostics.gauges.spatialSubscriptionMaxRow,
-            }
-          : null;
-      this.refreshToriiBoundsDebugOverlay({ updateCounts: snapshot });
-      this.logToriiBoundsDebug("Spatial sync summary (last 5s)", {
-        areaKey: this.toriiBoundsAreaKey,
-        boundedSpatialPadding: env.VITE_PUBLIC_WORLDMAP_BOUNDED_SPATIAL_PADDING,
-        boundedSync: WORLDMAP_BOUNDED_SPATIAL_SYNC,
-        chunkKey: this.currentChunk,
-        connection: {
-          globalStatus: connectionState.globalStatus,
-          lastDisconnectedAgeMs: connectionState.lastDisconnectedAt ? now - connectionState.lastDisconnectedAt : null,
-          lastGlobalDataUpdateAgeMs: now - connectionState.lastGlobalDataUpdate,
-          lastGlobalUpdateAgeMs: now - connectionState.lastGlobalUpdate,
-          lastSpatialDataUpdateAgeMs: now - connectionState.lastSpatialDataUpdate,
-          lastSpatialHandshakeAgeMs:
-            connectionState.lastSpatialHandshake > 0 ? now - connectionState.lastSpatialHandshake : null,
-          lastSpatialUpdateAgeMs: now - connectionState.lastSpatialUpdate,
-          lastToriiHeartbeatAgeMs: now - connectionState.lastToriiHeartbeat,
-          reconnectAttempts: connectionState.reconnectAttempts,
-          spatialStatus: connectionState.spatialStatus,
-          status: connectionState.status,
-          toriiHeartbeatAvailable: connectionState.toriiHeartbeatAvailable,
-        },
-        counts: snapshot,
-        currentAreaKey:
-          this.currentChunk !== "null" ? this.getToriiSubscriptionAreaKeyForChunk(this.currentChunk) : null,
-        spatialBoundsSwitchApplied: diagnostics.counters.spatialBoundsSwitchApplied,
-        spatialBoundsSwitchFailures: diagnostics.counters.spatialBoundsSwitchFailures,
-        spatialBoundsSwitchRequests: diagnostics.counters.spatialBoundsSwitchRequests,
-        spatialBoundsSwitchSkipped: diagnostics.counters.spatialBoundsSwitchSkipped,
-        spatialStreamUpdates: diagnostics.counters.spatialStreamUpdates,
-        spatialSubscriptionBounds,
-        spatialSubscriptionModelCount: spatialSubscriptionBounds ? diagnostics.gauges.spatialSubscriptionModelCount : 0,
-        spatialTileOptReadyTimeouts: diagnostics.counters.spatialTileOptReadyTimeouts,
-        timestamp: new Date(now).toISOString(),
-        total,
-      });
-      this.resetToriiBoundsCounters();
-    }, 5000);
-  }
-
   private clearStalledChunkAreaState(chunkKey: string): string | null {
     if (!chunkKey || chunkKey === "null") {
       return null;
@@ -7314,34 +6998,17 @@ export default class WorldmapScene extends WarpTravel {
     chunkKey: string;
     details?: Record<string, unknown>;
     refreshReason?: WorldmapForceRefreshReason;
-    resetBoundsOutcome?: string;
-    resubscribeReason?: string;
   }): string | null {
     const areaKey = this.clearStalledChunkAreaState(input.chunkKey);
-    if (input.resetBoundsOutcome) {
-      this.toriiBoundsAreaKey = null;
-      this.refreshToriiBoundsDebugOverlay({ subscribedAreaKey: null, lastOutcome: input.resetBoundsOutcome });
-    }
-
-    const scheduleRefresh = () =>
-      this.scheduleChunkRecoveryWithReason(
-        input.reason,
-        input.chunkKey,
-        {
-          areaKey,
-          ...input.details,
-        },
-        input.refreshReason ?? "default",
-      );
-
-    if (input.resubscribeReason) {
-      this.traceChunk("torii_resubscribe_completed", {
-        reason: input.resubscribeReason,
-        chunkKey: input.chunkKey,
-        outcome: "global_spatial_sync_owned",
-      });
-    }
-    scheduleRefresh();
+    this.scheduleChunkRecoveryWithReason(
+      input.reason,
+      input.chunkKey,
+      {
+        areaKey,
+        ...input.details,
+      },
+      input.refreshReason ?? "default",
+    );
 
     return areaKey;
   }
@@ -7360,20 +7027,6 @@ export default class WorldmapScene extends WarpTravel {
     });
   }
 
-  private async resubscribeSpatialStream(): Promise<void> {
-    if (this.isSwitchedOff || !this.toriiStreamManager) {
-      return;
-    }
-    // A stale stream cannot self-heal — recreate it, then refresh the visible
-    // chunks so updates that arrived while it was dead get picked up.
-    const result = await this.toriiStreamManager.forceResubscribe();
-    this.traceChunk("spatial_stream_force_resubscribed", {
-      outcome: result?.outcome ?? "no_descriptor",
-      chunkKey: this.currentChunk,
-    });
-    this.refreshAfterReconnect();
-  }
-
   private refreshAfterReconnect(): void {
     if (this.isSwitchedOff) {
       this.traceChunk("reconnect_refresh_skipped", {
@@ -7388,8 +7041,6 @@ export default class WorldmapScene extends WarpTravel {
       currentChunk: this.currentChunk,
       runRefresh: () => {
         const areaKey = this.clearStalledChunkAreaState(this.currentChunk);
-        this.toriiBoundsAreaKey = null;
-        this.refreshToriiBoundsDebugOverlay({ subscribedAreaKey: null, lastOutcome: "reconnect" });
         this.traceChunk("reconnect_refresh_requested", {
           areaKey,
           chunkKey: this.currentChunk,
@@ -7413,8 +7064,6 @@ export default class WorldmapScene extends WarpTravel {
       state: this.reconnectRefreshQueueState,
       runRefresh: () => {
         const areaKey = this.clearStalledChunkAreaState(this.currentChunk);
-        this.toriiBoundsAreaKey = null;
-        this.refreshToriiBoundsDebugOverlay({ subscribedAreaKey: null, lastOutcome: "reconnect_deferred" });
         this.traceChunk("reconnect_refresh_drained", {
           areaKey,
           chunkKey: this.currentChunk,
@@ -7496,8 +7145,6 @@ export default class WorldmapScene extends WarpTravel {
     this.recoverChunkStreamingAfterStall({
       reason: "chunk_transition_hard_timeout",
       chunkKey,
-      resetBoundsOutcome: "chunk_transition_hard_timeout",
-      resubscribeReason: "chunk_transition_hard_timeout",
       details: {
         reason,
         timeoutMs: info.timeoutMs,
@@ -7557,179 +7204,6 @@ export default class WorldmapScene extends WarpTravel {
     });
   }
 
-  private stopToriiBoundsCounterLog(): void {
-    this.clearToriiBoundsDebugOverlay();
-    if (!this.toriiBoundsLogInterval) {
-      return;
-    }
-
-    clearInterval(this.toriiBoundsLogInterval);
-    this.toriiBoundsLogInterval = null;
-  }
-
-  private async updateToriiBoundsSubscription(chunkKey: string, transitionToken?: number): Promise<void> {
-    if (transitionToken !== undefined && transitionToken !== this.chunkTransitionToken) {
-      recordChunkDiagnosticsEvent(this.chunkDiagnostics, "bounds_switch_skipped_stale_token");
-      this.refreshToriiBoundsDebugOverlay({ lastOutcome: "stale_token_before_switch" });
-      return;
-    }
-
-    if (!chunkKey || chunkKey === "null") {
-      return;
-    }
-
-    const requestedAreaKey = this.getToriiSubscriptionAreaKeyForChunk(chunkKey);
-    const { localBounds, subscriptionBounds } = this.buildToriiBoundsDebugRanges(requestedAreaKey);
-    const activeSubscriptionBounds = WORLDMAP_BOUNDED_SPATIAL_SYNC
-      ? this.buildBoundedSpatialSubscriptionBounds(chunkKey)
-      : subscriptionBounds;
-    const modelCount = WORLDMAP_BOUNDED_SPATIAL_SYNC
-      ? getBoundedSpatialMapModels().length
-      : getGlobalSpatialMapModels().length;
-    const debugBounds = {
-      requestedAreaKey,
-      localBounds,
-      subscriptionBounds: activeSubscriptionBounds,
-      modelCount,
-    };
-    this.setSpatialSubscriptionDiagnostics(activeSubscriptionBounds, modelCount);
-
-    if (WORLDMAP_BOUNDED_SPATIAL_SYNC && this.toriiStreamManager) {
-      const descriptor = this.buildBoundedSpatialDescriptor(activeSubscriptionBounds);
-      const descriptorSignature = buildBoundsDescriptorSignature(descriptor);
-      if (descriptorSignature === this.activeBoundedSpatialDescriptorSignature) {
-        recordChunkDiagnosticsEvent(this.chunkDiagnostics, "bounds_switch_skipped_same_signature");
-        incrementWorldmapRenderCounter("spatialBoundsSwitchSkipped");
-        this.toriiBoundsAreaKey = requestedAreaKey;
-        this.refreshToriiBoundsDebugOverlay({
-          ...debugBounds,
-          subscribedAreaKey: requestedAreaKey,
-          lastOutcome: "skipped_same_signature",
-        });
-        this.traceChunk("torii_bounds_switch_skipped_same_signature", {
-          chunkKey,
-          areaKey: requestedAreaKey,
-          transitionToken: transitionToken ?? null,
-        });
-        return;
-      }
-
-      incrementWorldmapRenderCounter("spatialBoundsSwitchRequests");
-      this.traceChunk("torii_bounds_switch_requested", {
-        chunkKey,
-        areaKey: requestedAreaKey,
-        transitionToken: transitionToken ?? null,
-        modelCount: descriptor.models.length,
-        subscriptionBounds: activeSubscriptionBounds,
-      });
-
-      try {
-        const result = await switchLegacyBoundedSyncForCamera(this.toriiStreamManager, descriptor);
-        if (!result) {
-          return;
-        }
-        if (transitionToken !== undefined && transitionToken !== this.chunkTransitionToken) {
-          recordChunkDiagnosticsEvent(this.chunkDiagnostics, "bounds_switch_skipped_stale_token");
-          this.refreshToriiBoundsDebugOverlay({ lastOutcome: "stale_token_after_switch" });
-          return;
-        }
-
-        recordChunkDiagnosticsEvent(this.chunkDiagnostics, "bounds_switch_applied");
-        if (result.outcome === "applied") {
-          incrementWorldmapRenderCounter("spatialBoundsSwitchApplied");
-        } else {
-          incrementWorldmapRenderCounter("spatialBoundsSwitchSkipped");
-        }
-        if (result.outcome !== "stale_dropped") {
-          this.activeBoundedSpatialDescriptorSignature = descriptorSignature;
-        }
-        this.toriiBoundsAreaKey = requestedAreaKey;
-        this.refreshToriiBoundsDebugOverlay({
-          ...debugBounds,
-          subscribedAreaKey: requestedAreaKey,
-          lastOutcome: result.outcome,
-        });
-        if (result.outcome === "applied") {
-          this.logToriiBoundsDebug("Switch applied", {
-            areaKey: requestedAreaKey,
-            boundedSpatialPadding: env.VITE_PUBLIC_WORLDMAP_BOUNDED_SPATIAL_PADDING,
-            boundedSpatialSync: true,
-            chunkKey,
-            modelCount: descriptor.models.length,
-            outcome: result.outcome,
-            pinnedChunks: this.pinnedChunkKeys.size,
-            subscriptionBounds: activeSubscriptionBounds,
-            transitionToken: transitionToken ?? null,
-          });
-        }
-        this.traceChunk("torii_bounds_switch_applied", {
-          chunkKey,
-          areaKey: requestedAreaKey,
-          outcome: result.outcome,
-          transitionToken: transitionToken ?? null,
-        });
-        return;
-      } catch (error) {
-        recordChunkDiagnosticsEvent(this.chunkDiagnostics, "bounds_switch_failed");
-        incrementWorldmapRenderCounter("spatialBoundsSwitchFailures");
-        this.activeBoundedSpatialDescriptorSignature = null;
-        this.refreshToriiBoundsDebugOverlay({
-          ...debugBounds,
-          subscribedAreaKey: this.toriiBoundsAreaKey,
-          lastOutcome: "switch_failed",
-        });
-        this.traceChunk("torii_bounds_switch_failed", {
-          chunkKey,
-          areaKey: requestedAreaKey,
-          transitionToken: transitionToken ?? null,
-          error: error instanceof Error ? error.message : String(error),
-        });
-        this.logToriiBoundsDebug("Switch failed", {
-          areaKey: requestedAreaKey,
-          boundedSpatialPadding: env.VITE_PUBLIC_WORLDMAP_BOUNDED_SPATIAL_PADDING,
-          boundedSpatialSync: true,
-          chunkKey,
-          error: error instanceof Error ? error.message : String(error),
-          subscriptionBounds: activeSubscriptionBounds,
-          transitionToken: transitionToken ?? null,
-        });
-        console.warn("[WorldmapScene] Bounded spatial Torii subscription failed", error);
-        this.recoverChunkStreamingAfterStall({
-          reason: "bounded_spatial_subscription_failed",
-          chunkKey,
-          details: {
-            areaKey: requestedAreaKey,
-            subscriptionBounds: activeSubscriptionBounds,
-          },
-          refreshReason: "reconnect",
-          resetBoundsOutcome: "switch_failed",
-        });
-        return;
-      }
-    }
-
-    recordChunkDiagnosticsEvent(this.chunkDiagnostics, "bounds_switch_applied");
-    this.toriiBoundsAreaKey = requestedAreaKey;
-    this.refreshToriiBoundsDebugOverlay({
-      ...debugBounds,
-      subscribedAreaKey: requestedAreaKey,
-      lastOutcome: "global_spatial_sync",
-    });
-    this.logToriiBoundsDebug("Game-wide runtime bounds ready", {
-      areaKey: requestedAreaKey,
-      boundedSpatialPadding: env.VITE_PUBLIC_WORLDMAP_BOUNDED_SPATIAL_PADDING,
-      boundedSpatialSync: false,
-      chunkKey,
-      subscriptionBounds: activeSubscriptionBounds,
-      transitionToken: transitionToken ?? null,
-    });
-    this.traceChunk("global_spatial_sync_bounds_ready", {
-      chunkKey,
-      areaKey: requestedAreaKey,
-      transitionToken: transitionToken ?? null,
-    });
-  }
-
   private addWorldUpdateSubscription(unsub: unknown) {
     if (typeof unsub === "function") {
       this.worldUpdateUnsubscribes.push(unsub as () => void);
@@ -7745,21 +7219,6 @@ export default class WorldmapScene extends WarpTravel {
       }
     });
     this.worldUpdateUnsubscribes = [];
-  }
-
-  private cancelBoundedSpatialSubscription(): void {
-    this.toriiStreamManager?.cancelCurrentSubscription();
-    this.toriiBoundsAreaKey = null;
-    this.activeBoundedSpatialDescriptorSignature = null;
-    this.setSpatialSubscriptionDiagnostics(null, 0);
-  }
-
-  private shutdownBoundedSpatialSync(): void {
-    this.toriiStreamManager?.shutdown();
-    this.toriiStreamManager = null;
-    this.toriiBoundsAreaKey = null;
-    this.activeBoundedSpatialDescriptorSignature = null;
-    this.setSpatialSubscriptionDiagnostics(null, 0);
   }
 
   private async syncProjectionTilesForChunk(chunkKey: string): Promise<boolean> {
@@ -8593,7 +8052,6 @@ export default class WorldmapScene extends WarpTravel {
     startCol: number;
     startRow: number;
     surroundingChunks: string[];
-    transitionToken: number;
   }) {
     return prepareWorldmapChunkRuntime<PreparedTerrainChunk>({
       chunkKey: input.chunkKey,
@@ -8613,10 +8071,7 @@ export default class WorldmapScene extends WarpTravel {
       startCol: input.startCol,
       startRow: input.startRow,
       surroundingChunks: input.surroundingChunks,
-      transitionToken: input.transitionToken,
       updatePinnedChunks: (chunkKeys) => this.updatePinnedChunks(chunkKeys),
-      updateBoundsSubscription: (targetChunkKey, nextTransitionToken) =>
-        this.updateToriiBoundsSubscription(targetChunkKey, nextTransitionToken),
     });
   }
 
@@ -8742,7 +8197,6 @@ export default class WorldmapScene extends WarpTravel {
         startCol,
         startRow,
         surroundingChunks,
-        transitionToken,
       });
 
       this.recordPreparedTerrainReady(chunkSwitchStartedAt, {
@@ -8788,13 +8242,8 @@ export default class WorldmapScene extends WarpTravel {
         setCurrentChunk: (targetChunkKey) => this.commitCurrentChunkAuthority(targetChunkKey),
         updatePinnedChunks: (chunkKeys) => this.updatePinnedChunks(chunkKeys),
         unregisterChunk: (targetChunkKey) => this.unregisterVisibilityChunk(targetChunkKey),
-        restorePreviousChunkVisuals: (oldStartRow, oldStartCol, previousChunk, previousTransitionToken) =>
-          this.restorePreviousChunkVisualsAfterRollback(
-            oldStartRow,
-            oldStartCol,
-            previousChunk,
-            previousTransitionToken,
-          ),
+        restorePreviousChunkVisuals: (oldStartRow, oldStartCol) =>
+          this.restorePreviousChunkVisualsAfterRollback(oldStartRow, oldStartCol),
         clearSceneChunkBounds: () => this.clearSceneChunkBounds(),
         forceVisibilityUpdate: () => this.forceVisibilityManagerUpdate(),
         updateCurrentChunkBounds: (targetStartRow, targetStartCol) =>
@@ -8921,7 +8370,6 @@ export default class WorldmapScene extends WarpTravel {
           startCol,
           startRow,
           surroundingChunks,
-          transitionToken,
         }),
       onPreparedTerrainReady: (preparationResult) => {
         this.recordPreparedTerrainReady(refreshStartedAt, {
@@ -9255,7 +8703,6 @@ export default class WorldmapScene extends WarpTravel {
     return {
       currentChunk: this.currentChunk,
       currentAreaKey,
-      toriiBoundsAreaKey: this.toriiBoundsAreaKey,
       isChunkTransitioning: this.isChunkTransitioning,
       hasGlobalChunkSwitchPromise: this.globalChunkSwitchPromise !== null,
       chunkTransitionToken: this.chunkTransitionToken,
@@ -9276,9 +8723,6 @@ export default class WorldmapScene extends WarpTravel {
 
   private traceChunk(event: WorldmapChunkTraceEvent, details: Record<string, unknown> = {}): void {
     const isErrorEvent =
-      event === "torii_bounds_switch_failed" ||
-      event === "torii_bounds_switch_timeout" ||
-      event === "torii_resubscribe_failed" ||
       event === "chunk_presentation_timeout" ||
       event === "connection_failure_recovery" ||
       event === "terrain_shell_stale_dropped" ||
@@ -9420,26 +8864,7 @@ export default class WorldmapScene extends WarpTravel {
     };
   }
 
-  private installToriiBoundsDebugHook(): void {
-    if (!import.meta.env.DEV && !TORII_BOUNDS_DEBUG_OVERLAY) {
-      return;
-    }
-
-    const debugWindow = window as WorldmapChunkDiagnosticsDebugWindow;
-    debugWindow.getToriiBoundsDebugSnapshot = () => this.getToriiBoundsDebugSnapshot();
-  }
-
-  private removeToriiBoundsDebugHook(): void {
-    if (!import.meta.env.DEV && !TORII_BOUNDS_DEBUG_OVERLAY) {
-      return;
-    }
-
-    const debugWindow = window as WorldmapChunkDiagnosticsDebugWindow;
-    debugWindow.getToriiBoundsDebugSnapshot = undefined;
-  }
-
   private installChunkDiagnosticsDebugHooks(): void {
-    this.installToriiBoundsDebugHook();
     if (!import.meta.env.DEV) {
       return;
     }
@@ -9466,7 +8891,6 @@ export default class WorldmapScene extends WarpTravel {
   }
 
   private removeChunkDiagnosticsDebugHooks(): void {
-    this.removeToriiBoundsDebugHook();
     if (!import.meta.env.DEV) {
       return;
     }
@@ -9703,11 +9127,8 @@ export default class WorldmapScene extends WarpTravel {
     if (this.handleTransactionProgress) {
       this.dojo.network?.provider?.off("transactionProgress", this.handleTransactionProgress);
     }
-    this.stopToriiBoundsCounterLog();
     this.unregisterWorldmapRecoveryHandle?.();
     this.unregisterWorldmapRecoveryHandle = null;
-    this.shutdownBoundedSpatialSync();
-    this.toriiBoundsAreaKey = null;
 
     destroyWorldmapOwnedManagers({
       armyManager: this.armyManager,

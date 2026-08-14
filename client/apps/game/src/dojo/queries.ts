@@ -14,9 +14,9 @@ import {
   debouncedGetOwnedArmiesFromTorii,
 } from "./debounced-queries";
 import { gameIdKey, gameModel, getScopedGameId, isGameScoped } from "./game-scope";
-import { ENTITY_QUERY_LIMIT } from "./sync";
 
 const CONFIG_FETCH_CACHE_PREFIX = "eternum:config-fetched";
+const ENTITY_QUERY_LIMIT = 40_000;
 
 const getConfigCacheKey = () =>
   `${CONFIG_FETCH_CACHE_PREFIX}:${env.VITE_PUBLIC_CHAIN}:${env.VITE_PUBLIC_TORII}:${getScopedGameId()}`;

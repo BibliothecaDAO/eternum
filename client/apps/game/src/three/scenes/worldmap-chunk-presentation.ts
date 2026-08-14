@@ -1,6 +1,6 @@
 import { settleWorldmapAsyncStage } from "./worldmap-async-timeout";
 
-export type WorldmapChunkPresentationPhase = "projection_sync" | "bounds_ready" | "asset_prewarm";
+export type WorldmapChunkPresentationPhase = "projection_sync" | "asset_prewarm";
 
 export interface WorldmapChunkPresentationTimeoutInfo {
   chunkKey: string;
@@ -17,7 +17,6 @@ interface PrepareWorldmapChunkPresentationInput<TPreparedTerrain> {
     width: number;
   };
   projectionSyncPromise: Promise<boolean>;
-  boundsReadyPromise: Promise<void>;
   assetPrewarmPromise: Promise<void>;
   prepareTerrainChunk: (startRow: number, startCol: number, height: number, width: number) => Promise<TPreparedTerrain>;
   onChunkPrepared?: (chunkKey: string) => void;
@@ -56,11 +55,7 @@ export async function prepareWorldmapChunkPresentation<TPreparedTerrain>(
   input: PrepareWorldmapChunkPresentationInput<TPreparedTerrain>,
 ): Promise<PreparedWorldmapChunkPresentation<TPreparedTerrain>> {
   if (input.phaseTimeoutMs === undefined || input.phaseTimeoutMs <= 0) {
-    const [projectionSyncSucceeded] = await Promise.all([
-      input.projectionSyncPromise,
-      input.boundsReadyPromise,
-      input.assetPrewarmPromise,
-    ]);
+    const [projectionSyncSucceeded] = await Promise.all([input.projectionSyncPromise, input.assetPrewarmPromise]);
 
     if (!projectionSyncSucceeded) {
       input.onChunkPrepared?.(input.chunkKey);
@@ -99,20 +94,12 @@ export async function prepareWorldmapChunkPresentation<TPreparedTerrain>(
     onTimeout: ({ timeoutMs }) => resolvePhaseTimeout("asset_prewarm", timeoutMs),
   });
 
-  const [projectionSyncResult, boundsReadyResult] = await Promise.all([
-    settleWorldmapAsyncStage({
-      label: "projection_sync" as const,
-      promise: input.projectionSyncPromise,
-      timeoutMs: input.phaseTimeoutMs,
-      onTimeout: ({ timeoutMs }) => resolvePhaseTimeout("projection_sync", timeoutMs),
-    }),
-    settleWorldmapAsyncStage({
-      label: "bounds_ready" as const,
-      promise: input.boundsReadyPromise,
-      timeoutMs: input.phaseTimeoutMs,
-      onTimeout: ({ timeoutMs }) => resolvePhaseTimeout("bounds_ready", timeoutMs),
-    }),
-  ]);
+  const projectionSyncResult = await settleWorldmapAsyncStage({
+    label: "projection_sync" as const,
+    promise: input.projectionSyncPromise,
+    timeoutMs: input.phaseTimeoutMs,
+    onTimeout: ({ timeoutMs }) => resolvePhaseTimeout("projection_sync", timeoutMs),
+  });
 
   if (projectionSyncResult.status !== "resolved") {
     input.onChunkPrepared?.(input.chunkKey);
@@ -120,15 +107,6 @@ export async function prepareWorldmapChunkPresentation<TPreparedTerrain>(
       projectionSyncSucceeded: false,
       preparedTerrain: null,
       timedOutPhase: "projection_sync",
-    };
-  }
-
-  if (boundsReadyResult.status !== "resolved") {
-    input.onChunkPrepared?.(input.chunkKey);
-    return {
-      projectionSyncSucceeded: false,
-      preparedTerrain: null,
-      timedOutPhase: "bounds_ready",
     };
   }
 

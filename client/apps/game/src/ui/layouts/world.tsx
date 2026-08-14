@@ -6,7 +6,7 @@ import {
 import { DEV_MODE_ENABLED } from "@/utils/dev-mode";
 import { createConnectionDeadEndRecoveryGate } from "@/dojo/connection-dead-end-recovery-gate";
 import { createToriiHeartbeatLifecycle } from "@/dojo/torii-heartbeat-lifecycle";
-import { cancelEntityStreamSubscription, initialSync, resubscribeGlobalEntityStream } from "@/dojo/sync";
+import { cancelGameSyncWriter, initialSync, recoverGameSyncSession } from "@/dojo/sync";
 import { probeToriiHealth } from "@/dojo/torii-health-probe";
 import { fetchServerWorldAvailability } from "@/dojo/fetch-server-world-availability";
 import { requestGameRebootstrap } from "@/game-entry/bootstrap-controller";
@@ -209,20 +209,8 @@ const ConnectionMonitor = () => {
 
     const monitor = new ConnectionHealthMonitor({
       onReconnectSpatial: async () => {
-        addNetworkBreadcrumb({ event: "reconnect_start", streamType: "spatial" });
-        try {
-          // Off the worldmap there is no spatial stream to heal (the scene
-          // resubscribes on re-entry); on it, force-recreate the stream.
-          await getActiveWorldmapRecoveryHandle()?.resubscribeSpatialStream();
-          addNetworkBreadcrumb({ event: "reconnect_success", streamType: "spatial" });
-        } catch (error) {
-          addNetworkBreadcrumb({
-            event: "reconnect_failure",
-            streamType: "spatial",
-            reason: getNetworkErrorReason(error),
-          });
-          throw error;
-        }
+        // Connection health still exposes global/spatial status for the UI,
+        // but both are fed by the one game sync session recovered below.
       },
       onReconnectGlobal: async () => {
         addNetworkBreadcrumb({ event: "reconnect_start", streamType: "global" });
@@ -230,9 +218,9 @@ const ConnectionMonitor = () => {
           if (env.VITE_PUBLIC_TORII_LIGHTWEIGHT_RECONNECT) {
             // Re-open just the global stream; config/guilds/structures already
             // live in RECS and a full initialSync would turn a blip into a reboot.
-            await resubscribeGlobalEntityStream(setup, { logging: false });
+            await recoverGameSyncSession();
           } else {
-            cancelEntityStreamSubscription();
+            cancelGameSyncWriter();
             await initialSync(setup, state, () => {}, { logging: false, reportProgress: false });
           }
           addNetworkBreadcrumb({ event: "reconnect_success", streamType: "global" });

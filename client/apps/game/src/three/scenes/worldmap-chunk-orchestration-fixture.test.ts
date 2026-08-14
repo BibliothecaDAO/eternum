@@ -21,13 +21,11 @@ describe("createWorldmapChunkOrchestrationFixture", () => {
 
     expect(fixture.getCurrentChunk()).toBe("0,0");
     expect(fixture.projectionSync.calls).toEqual([["24,24"]]);
-    expect(fixture.boundsSwitch.calls).toEqual([["24,24", 7]]);
     expect(fixture.assetPrewarm.calls).toEqual([["24,24"]]);
     expect(fixture.terrainPreparation.calls).toEqual([]);
     expect(fixture.managerUpdate.calls).toEqual([]);
 
     fixture.projectionSync.resolveNext(true);
-    fixture.boundsSwitch.resolveNext();
     await flushMicrotasks(2);
     expect(fixture.terrainPreparation.calls).toEqual([]);
     expect(fixture.getCurrentChunk()).toBe("0,0");
@@ -78,7 +76,6 @@ describe("createWorldmapChunkOrchestrationFixture", () => {
     expect(fixture.getCurrentChunk()).toBe("0,0");
     fixture.assetPrewarm.resolveNext();
     fixture.projectionSync.resolveNext(false);
-    fixture.boundsSwitch.resolveNext();
 
     const result = await switchPromise;
     expect(result).toEqual({
@@ -109,7 +106,6 @@ describe("createWorldmapChunkOrchestrationFixture", () => {
     await flushMicrotasks(2);
     fixture.assetPrewarm.resolveNext();
     fixture.projectionSync.resolveNext(true);
-    fixture.boundsSwitch.resolveNext();
     await flushMicrotasks(2);
     fixture.terrainPreparation.resolveNext({ chunkKey: "24,24" });
 

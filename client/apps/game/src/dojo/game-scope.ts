@@ -8,7 +8,7 @@ import { findGameSyncModel, getGameSyncModelsForChannel } from "@bibliothecadao/
  * per-game model leads with `game_id` as key[0]. Every Torii clause the client
  * builds (streams, snapshots, targeted queries) must carry that prefix or it
  * reads other games' state — the ghost-settlement / wrong-clock class of bug.
- * Legacy chains keep one world per game (`s1_eternum`, gameId 0) and build the
+ * Single-world chains keep one world per game (`s1_eternum`, gameId 0) and build the
  * exact same clauses they always have.
  *
  * Set once during bootstrap, before any subscription or query is created.
@@ -34,7 +34,7 @@ export const isGameScoped = (): boolean => activeGameId > 0;
 
 /**
  * Leading calldata for direct (non-provider) game-system calls: every deployed
- * s2 entrypoint takes `game_id` first; legacy worlds take nothing. Spread this
+ * s2 entrypoint takes `game_id` first; single-world deployments take nothing. Spread this
  * ahead of the call's own arguments.
  */
 export const gameCallArgs = (): number[] => (activeGameId > 0 ? [activeGameId] : []);
@@ -95,14 +95,14 @@ const S2_GLOBAL_MODELS = new Set([
 export const s2GlobalModelNames = (): ReadonlySet<string> =>
   new Set([
     ...S2_GLOBAL_MODELS,
-    ...getGameSyncModelsForChannel("global-entity", { includeS2Only: true })
+    ...getGameSyncModelsForChannel("gamewide-entity", { includeS2Only: true })
       .filter(({ s2Scope }) => s2Scope === "chain")
       .map(({ name }) => name),
   ]);
 
 /**
  * Whether a fully-qualified model's clauses must be prefixed with the active
- * game id. Always false on the legacy arm (gameId 0).
+ * game id. Always false in the s1 world (gameId 0).
  */
 export const isGameScopedModel = (qualifiedModel: string): boolean => {
   if (!isGameScoped()) return false;
