@@ -292,6 +292,37 @@ describe("GameSyncRuntime recovery", () => {
 });
 
 describe("GameSyncRuntime lifecycle", () => {
+  it("owns and replaces the session spatial projection", () => {
+    const runtime = new GameSyncRuntime();
+    const first = { start: vi.fn(), dispose: vi.fn() };
+    const second = { start: vi.fn(), dispose: vi.fn() };
+
+    runtime.installWorldSpatialProjection(first as never);
+    runtime.installWorldSpatialProjection(second as never);
+
+    expect(first.start).toHaveBeenCalledOnce();
+    expect(first.dispose).toHaveBeenCalledOnce();
+    expect(second.start).toHaveBeenCalledOnce();
+    expect(runtime.requireWorldSpatialProjection()).toBe(second);
+
+    runtime.dispose();
+    expect(second.dispose).toHaveBeenCalledOnce();
+  });
+
+  it("does not retain a spatial projection that fails to start", () => {
+    const runtime = new GameSyncRuntime();
+    const projection = {
+      start: vi.fn(() => {
+        throw new Error("projection failed");
+      }),
+      dispose: vi.fn(),
+    };
+
+    expect(() => runtime.installWorldSpatialProjection(projection as never)).toThrow("projection failed");
+    expect(projection.dispose).toHaveBeenCalledOnce();
+    expect(() => runtime.requireWorldSpatialProjection()).toThrow("has not been installed");
+  });
+
   it("preserves the cancellation guard but force-cancels on dispose", async () => {
     const runtime = new GameSyncRuntime();
     const writer = { cancel: vi.fn() };

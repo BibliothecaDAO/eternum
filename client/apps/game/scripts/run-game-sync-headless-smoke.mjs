@@ -2,12 +2,13 @@
 
 import {
   GameSyncRuntime,
+  WorldSpatialProjection,
   buildGameSyncModelKeysClause,
   createTimerGameSyncScheduler,
   getGameSyncModelsForChannel,
 } from "@bibliothecadao/eternum/game-sync";
 import { tileOptToTile } from "@bibliothecadao/eternum";
-import { defineContractComponents } from "@bibliothecadao/types";
+import { TileOccupier, defineContractComponents } from "@bibliothecadao/types";
 import { createWorld, getComponentEntities, getComponentValue, removeComponent } from "@dojoengine/recs";
 import { createClient } from "@dojoengine/sdk";
 import { setEntities } from "@dojoengine/state";
@@ -152,6 +153,26 @@ const findHexOccupancy = (tileOptComponent, col, row) => {
   throw new Error(`No TileOpt row found at (${col}, ${row})`);
 };
 
+const verifyChestProjection = (projection, occupancy) => {
+  const projectedChestSnapshot = projection.getChests();
+  const projectedChests = projection.getChestsAtHex({ col: occupancy.col, row: occupancy.row });
+  const expectedChestId = occupancy.occupierType === TileOccupier.Chest ? occupancy.occupierId : undefined;
+  const matchesOccupancy = projectedChests.some(({ entityId }) => entityId === expectedChestId);
+
+  if (expectedChestId !== undefined && !matchesOccupancy) {
+    throw new Error(`Projection is missing chest ${expectedChestId} at (${occupancy.col}, ${occupancy.row})`);
+  }
+  if (expectedChestId === undefined && projectedChests.length > 0) {
+    throw new Error(`Projection contains a chest on non-chest tile (${occupancy.col}, ${occupancy.row})`);
+  }
+
+  return {
+    chestCount: projectedChestSnapshot.length,
+    chestsAtCoordinate: projectedChests,
+    sampleChest: projectedChestSnapshot[0] ?? null,
+  };
+};
+
 const delay = (milliseconds) => new Promise((resolve) => setTimeout(resolve, milliseconds));
 
 const run = async (config) => {
@@ -175,13 +196,22 @@ const run = async (config) => {
       scheduler: createTimerGameSyncScheduler(),
       eventIdentityLimit: EVENT_IDENTITY_LIMIT,
     });
+    const projection = new WorldSpatialProjection({ tileOptComponent: contractComponents.TileOpt });
+    runtime.installWorldSpatialProjection(projection);
     if (config.watchMs > 0) await delay(config.watchMs);
 
     const occupancy = findHexOccupancy(contractComponents.TileOpt, config.col, config.row);
     if (config.expectedOccupierId !== undefined && occupancy.occupierId !== config.expectedOccupierId) {
       throw new Error(`Expected occupier ${config.expectedOccupierId}, received ${occupancy.occupierId}`);
     }
-    console.log(JSON.stringify({ status: runtime.getStatus(), occupancy, metrics: runtime.getMetrics() }, null, 2));
+    const spatialProjection = verifyChestProjection(projection, occupancy);
+    console.log(
+      JSON.stringify(
+        { status: runtime.getStatus(), occupancy, spatialProjection, metrics: runtime.getMetrics() },
+        null,
+        2,
+      ),
+    );
   } finally {
     runtime.dispose();
   }

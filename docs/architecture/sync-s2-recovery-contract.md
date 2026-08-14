@@ -49,8 +49,9 @@ adapter test.
 ## Headless and measurement
 
 `pnpm --dir client/apps/game smoke:game-sync-headless -- --help` documents the repeatable live smoke. It instantiates
-the same `GameSyncRuntime`, a RECS world, and a Torii provider in Node, hydrates every page, and prints decoded
-occupancy plus runtime metrics without DOM, React, or Three.js.
+the same `GameSyncRuntime`, a RECS world, the session-owned `WorldSpatialProjection`, and a Torii provider in Node. It
+hydrates every page and prints decoded occupancy, projected chest occupancy, and runtime metrics without DOM, React, or
+Three.js.
 
 On 2026-08-13, game 13 against `https://torii.jcndata.com` hydrated 2,472 entities across five pages in 2,598 ms. The
 largest scheduled RECS batch took 23 ms, and the requested coordinate decoded correctly. The one-second observation
@@ -59,3 +60,7 @@ runtime and printed by the smoke's `--watch-ms` mode; a non-zero active-battle c
 window and is an explicit merge-gate measurement, not a fabricated result.
 
 The machine-readable capture is `docs/architecture/sync-s2-headless-measurement.json`.
+
+The S3 chest conversion was also checked against a live chest. Game 13 decoded chest 10,775 at
+`(1076167049, 1076167075)`, and the projection returned that same entity at that coordinate. The machine-readable
+capture is `docs/architecture/sync-s3-chest-projection-measurement.json`.

@@ -1,6 +1,7 @@
 import { EntityIngestQueue, type EntityIngestBatchInfo } from "./entity-ingest-queue";
 import type { GameSyncEntity, GameSyncRuntimeMetrics, GameSyncSessionStart, GameSyncWriter } from "./game-sync-types";
 import { createMicrotaskGameSyncScheduler } from "./scheduler";
+import type { WorldSpatialProjection } from "./world-spatial-projection";
 
 export type GameSyncRuntimeStatus = "idle" | "subscribing" | "snapshotting" | "replaying" | "running" | "stopped";
 
@@ -65,6 +66,7 @@ export class GameSyncRuntime {
   private status: GameSyncRuntimeStatus = "idle";
   private session: GameSyncSessionStart | null = null;
   private ingestQueue: EntityIngestQueue | null = null;
+  private worldSpatialProjection: WorldSpatialProjection | null = null;
   private recentEventIdentities = new Map<string, true>();
   private liveUpdateTimestamps: number[] = [];
   private receiveSequence = 0;
@@ -83,6 +85,7 @@ export class GameSyncRuntime {
   }
 
   public async startSession(input: GameSyncSessionStart): Promise<void> {
+    this.disposeWorldSpatialProjection();
     this.session = input;
     this.recentEventIdentities.clear();
     this.liveUpdateTimestamps = [];
@@ -98,6 +101,7 @@ export class GameSyncRuntime {
 
   /** Complete S1 lifecycle retained only for the bounded rollback adapter. */
   public async startLegacySession(input: LegacyGameSyncSessionStart): Promise<void> {
+    this.disposeWorldSpatialProjection();
     this.session = null;
     const generation = this.beginRun("subscribing");
 
@@ -147,10 +151,29 @@ export class GameSyncRuntime {
     this.legacyPlayerWriter = null;
   }
 
+  public installWorldSpatialProjection(projection: WorldSpatialProjection): void {
+    this.disposeWorldSpatialProjection();
+    try {
+      projection.start();
+      this.worldSpatialProjection = projection;
+    } catch (error) {
+      projection.dispose();
+      throw error;
+    }
+  }
+
+  public requireWorldSpatialProjection(): WorldSpatialProjection {
+    if (!this.worldSpatialProjection) {
+      throw new Error("WorldSpatialProjection has not been installed for the active game");
+    }
+    return this.worldSpatialProjection;
+  }
+
   public dispose(): void {
     this.generation += 1;
     this.cancelWriterImmediately();
     this.cancelPlayerWriter();
+    this.disposeWorldSpatialProjection();
     this.ingestQueue?.dispose();
     this.ingestQueue = null;
     this.session = null;
@@ -352,6 +375,11 @@ export class GameSyncRuntime {
   private cancelWriterImmediately(): void {
     this.writer?.cancel();
     this.writer = null;
+  }
+
+  private disposeWorldSpatialProjection(): void {
+    this.worldSpatialProjection?.dispose();
+    this.worldSpatialProjection = null;
   }
 }
 

@@ -5,3 +5,4 @@ export * from "./model-manifest";
 export * from "./model-stream-clause";
 export * from "./player-structure-sync-writer";
 export * from "./scheduler";
+export * from "./world-spatial-projection";

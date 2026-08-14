@@ -1,0 +1,57 @@
+{
+  "schemaVersion": 1,
+  "capturedAt": "2026-08-13T22:57:55+02:00",
+  "command": "pnpm --dir client/apps/game smoke:game-sync-headless",
+  "target": {
+    "toriiUrl": "https://torii.jcndata.com",
+    "worldAddress": "0x78ff85ac450bb559c97966b64666fd5292f4a98756a607349d9f93f4563bdd2",
+    "namespace": "s2",
+    "gameId": 13,
+    "coordinate": {
+      "col": 1076167049,
+      "row": 1076167075
+    },
+    "expectedOccupierId": 10775
+  },
+  "result": {
+    "status": "running",
+    "occupancy": {
+      "tileEntityId": "0x3bc8c5b71cdba3a74303f9e34677d36f4255ae0aac49ba0c56003c8472532e1",
+      "col": 1076167049,
+      "row": 1076167075,
+      "occupierId": 10775,
+      "occupierType": 34
+    },
+    "spatialProjection": {
+      "chestCount": 4,
+      "chestsAtCoordinate": [
+        {
+          "kind": "chest",
+          "entityId": 10775,
+          "hexCoords": {
+            "col": 1076167049,
+            "row": 1076167075
+          }
+        }
+      ],
+      "sampleChest": {
+        "kind": "chest",
+        "entityId": 10775,
+        "hexCoords": {
+          "col": 1076167049,
+          "row": 1076167075
+        }
+      }
+    },
+    "metrics": {
+      "appliedBatchCount": 5,
+      "lastRecoveryDurationMs": 2173,
+      "maxBatchApplyDurationMs": 19,
+      "peakLiveUpdatesPerSecond": 0,
+      "snapshotEntityCount": 2472,
+      "snapshotPageCount": 5,
+      "totalLiveEntityUpdates": 0,
+      "totalLiveEventUpdates": 0
+    }
+  }
+}

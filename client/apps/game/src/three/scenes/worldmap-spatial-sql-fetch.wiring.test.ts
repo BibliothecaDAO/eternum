@@ -14,17 +14,19 @@ const extractGlobalSpatialHydration = (source: string): string => {
 };
 
 describe("worldmap global spatial hydration", () => {
-  it("hydrates render areas from the global RECS spatial sync instead of per-area SQL", () => {
+  it("hydrates remaining render state without rebuilding chest truth per area", () => {
     const source = readSource("src/three/scenes/worldmap.tsx");
     const methodSource = extractGlobalSpatialHydration(source);
 
     expect(source).not.toContain("private async runSpatialSqlFetch");
     expect(source).not.toContain("spatial_sql_fetch_timeout");
     expect(methodSource).toContain("hydrateExploredTilesFromGlobalTileOptRecs");
-    expect(methodSource).toContain("hydrateChestsFromGlobalTileOptRecs");
     expect(methodSource).toContain("hydrateStructuresFromGlobalTileOptRecs");
-    expect(methodSource).toContain("chestManager.onUpdate");
     expect(methodSource).toContain("applyStructureTileUpdate");
     expect(methodSource).toContain("global_spatial_recs_hydrated");
+    expect(source).not.toContain("hydrateChestsFromGlobalTileOptRecs");
+    expect(source).not.toContain("chestManager.onUpdate");
+    expect(source).not.toContain("repairChestTileIfStale");
+    expect(source).toContain("worldSpatialProjection.getChestsAtHex");
   });
 });

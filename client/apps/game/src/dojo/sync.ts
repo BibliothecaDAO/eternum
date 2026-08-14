@@ -18,6 +18,7 @@ import {
   getGameSyncModelsForChannel,
   installFreshGameSyncRuntime,
   requireActiveGameSyncRuntime,
+  WorldSpatialProjection,
 } from "@bibliothecadao/eternum/game-sync";
 import type { GameSyncRuntimeMetrics } from "@bibliothecadao/eternum/game-sync";
 import type { Component, Entity, Metadata, Schema } from "@dojoengine/recs";
@@ -864,6 +865,12 @@ const startLegacyBoundedSyncSession = async (input: {
 
 const getOrInstallGameSyncRuntime = () => getActiveGameSyncRuntime() ?? installFreshGameSyncRuntime();
 
+const installActiveWorldSpatialProjection = (setup: SetupResult): void => {
+  getOrInstallGameSyncRuntime().installWorldSpatialProjection(
+    new WorldSpatialProjection({ tileOptComponent: setup.components.TileOpt }),
+  );
+};
+
 export const initialSync = async (
   setup: SetupResult,
   state: AppStore,
@@ -904,6 +911,7 @@ export const initialSync = async (
     } else {
       await getOrInstallGameSyncRuntime().startSession(createActiveGamewideSyncSession(sessionInput));
     }
+    installActiveWorldSpatialProjection(setup);
     // Handshakes are transport freshness. Data freshness is recorded by stream
     // updates, so quiet worlds do not look stale after a successful boot.
   } catch (error) {

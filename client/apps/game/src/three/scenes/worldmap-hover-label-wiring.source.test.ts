@@ -38,9 +38,13 @@ describe("worldmap hover label wiring", () => {
     expect(extractSourceBetween(source, "await this.trackStructureHydrationUpdate(value", "const newCount")).toContain(
       "this.reconcileHoverLabels()",
     );
-    expect(extractSourceBetween(source, "this.chestManager.onUpdate(update)", "}),")).toContain(
-      "this.reconcileHoverLabels()",
-    );
+    expect(
+      extractSourceBetween(
+        source,
+        "private bindWorldSpatialProjectionLifecycle()",
+        "private bindWorldmapCameraViewLifecycle()",
+      ),
+    ).toContain("this.reconcileHoverLabels()");
     expect(extractSourceBetween(source, "public updateArmyHexes(", "public updateStructureHexes(")).not.toContain(
       "reconcileHoverLabels",
     );
