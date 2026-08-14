@@ -3144,12 +3144,6 @@ ${
       entityId: input.entityId,
       currentArmiesTick,
       liveTroops: this.resolveLiveExplorerTroops(input.entityId),
-      fallbackArmy: {
-        category: input.category,
-        tier: input.tier,
-        troopCount: input.troopCount,
-        onChainStamina: input.onChainStamina,
-      },
       pendingStamina: pendingStamina
         ? {
             amount: pendingStamina.amount,

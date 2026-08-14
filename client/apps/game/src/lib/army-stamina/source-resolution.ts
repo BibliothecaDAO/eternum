@@ -1,80 +1,42 @@
 import { pickFresherArmyStaminaReading, StaminaManager } from "@bibliothecadao/eternum";
 import { ID, Troops, TroopTier, TroopType } from "@bibliothecadao/types";
 
-import { getAuthoritativeTroopsSnapshot, getFreshPendingStaminaSource } from "./source-store";
-import { ArmyStaminaSourceKind, ArmyStaminaSourceSnapshot } from "./types";
-
-export interface ExplorerArmyFallback {
-  category: TroopType;
-  tier: TroopTier;
-  troopCount: number;
-  onChainStamina: { amount: bigint; updatedTick: number };
-}
+import { getFreshPendingStaminaSource } from "./source-store";
+import { ArmyStaminaSourceSnapshot } from "./types";
 
 interface ExplorerStaminaSnapshotInput {
   entityId?: ID;
   currentArmiesTick: number;
-  snapshotTroops?: Troops | null;
   liveTroops?: Troops | null;
-  fallbackArmy?: ExplorerArmyFallback | null;
   pendingStamina?: {
     amount: bigint;
     updatedTick: number;
   } | null;
 }
 
-const buildFallbackTroopsSnapshot = (fallbackArmy: ExplorerArmyFallback): Troops => ({
-  category: fallbackArmy.category,
-  tier: fallbackArmy.tier,
-  count: BigInt(fallbackArmy.troopCount),
-  stamina: {
-    amount: fallbackArmy.onChainStamina.amount,
-    updated_tick: BigInt(fallbackArmy.onChainStamina.updatedTick),
-  },
-  boosts: {
-    incr_damage_dealt_percent_num: 0,
-    incr_damage_dealt_end_tick: 0,
-    decr_damage_gotten_percent_num: 0,
-    decr_damage_gotten_end_tick: 0,
-    incr_stamina_regen_percent_num: 0,
-    incr_stamina_regen_tick_count: 0,
-    incr_explore_reward_percent_num: 0,
-    incr_explore_reward_end_tick: 0,
-  },
-  battle_cooldown_end: 0,
-});
-
 export const getTroopsStaminaUpdatedTick = (troops: Troops | null | undefined): bigint => {
   const updatedTick = troops?.stamina?.updated_tick;
   return typeof updatedTick === "bigint" ? updatedTick : 0n;
 };
 
-const buildSnapshotCandidate = (input: {
-  source: ArmyStaminaSourceKind;
-  entityId?: ID;
-  troops?: Troops | null;
-  capturedAtMs?: number;
-}): ArmyStaminaSourceSnapshot | null => {
+const buildLiveCandidate = (input: { entityId?: ID; troops?: Troops | null }): ArmyStaminaSourceSnapshot | null => {
   if (!input.troops) {
     return null;
   }
 
   return {
-    source: input.source,
+    source: "live",
     entityId: (input.entityId ?? 0) as ID,
     amount: input.troops.stamina?.amount ?? 0n,
     updatedTick: Number(input.troops.stamina?.updated_tick ?? 0n),
     troopCount: Number(input.troops.count ?? 0n),
-    capturedAtMs: input.capturedAtMs,
     troops: input.troops,
   };
 };
 
 const buildPendingTroopsSnapshot = (input: {
   entityId?: ID;
-  snapshotTroops?: Troops | null;
   liveTroops?: Troops | null;
-  fallbackTroops?: Troops | null;
   pendingStamina?: {
     amount: bigint;
     updatedTick: number;
@@ -94,14 +56,12 @@ const buildPendingTroopsSnapshot = (input: {
     return null;
   }
 
-  const baseTroops = input.snapshotTroops ?? input.liveTroops ?? input.fallbackTroops;
+  const baseTroops = input.liveTroops;
   if (!baseTroops) {
     return null;
   }
 
-  if (
-    hasOnchainStaminaCaughtUpToPending([input.liveTroops, input.snapshotTroops, input.fallbackTroops], pendingSource)
-  ) {
+  if (hasLiveStaminaCaughtUpToPending(input.liveTroops, pendingSource)) {
     return null;
   }
 
@@ -118,68 +78,47 @@ const buildPendingTroopsSnapshot = (input: {
   };
 };
 
-const hasOnchainStaminaCaughtUpToPending = (
-  onchainTroops: Array<Troops | null | undefined>,
+const hasLiveStaminaCaughtUpToPending = (
+  liveTroops: Troops | null | undefined,
   pendingSource: { amount: bigint; updatedTick: number },
-): boolean =>
-  onchainTroops.some((troops) => {
-    if (!troops?.stamina) {
-      return false;
-    }
+): boolean => {
+  if (!liveTroops?.stamina) return false;
 
-    const onchainTick = Number(troops.stamina.updated_tick);
-    if (!Number.isFinite(onchainTick)) {
-      return false;
-    }
+  const liveTick = Number(liveTroops.stamina.updated_tick);
+  if (!Number.isFinite(liveTick)) return false;
 
-    if (onchainTick > pendingSource.updatedTick) {
-      return true;
-    }
+  if (liveTick > pendingSource.updatedTick) return true;
 
-    return onchainTick === pendingSource.updatedTick && troops.stamina.amount === pendingSource.amount;
-  });
+  return liveTick === pendingSource.updatedTick && liveTroops.stamina.amount === pendingSource.amount;
+};
 
 export const selectFreshestArmyStaminaSource = (input: {
   entityId?: ID;
-  snapshotTroops?: Troops | null;
   liveTroops?: Troops | null;
-  fallbackArmy?: ExplorerArmyFallback | null;
   pendingStamina?: {
     amount: bigint;
     updatedTick: number;
   } | null;
 }): ArmyStaminaSourceSnapshot | null => {
-  const fallbackTroops = input.fallbackArmy ? buildFallbackTroopsSnapshot(input.fallbackArmy) : null;
-  const authoritativeSnapshot = input.entityId ? getAuthoritativeTroopsSnapshot(input.entityId) : undefined;
   const candidates = [
     buildPendingTroopsSnapshot({
       entityId: input.entityId,
-      snapshotTroops: input.snapshotTroops ?? authoritativeSnapshot?.troops ?? null,
       liveTroops: input.liveTroops,
-      fallbackTroops,
       pendingStamina: input.pendingStamina,
     }),
-    authoritativeSnapshot,
-    buildSnapshotCandidate({ source: "snapshot", entityId: input.entityId, troops: input.snapshotTroops }),
-    buildSnapshotCandidate({ source: "live", entityId: input.entityId, troops: input.liveTroops }),
-    buildSnapshotCandidate({ source: "cached", entityId: input.entityId, troops: fallbackTroops }),
+    buildLiveCandidate({ entityId: input.entityId, troops: input.liveTroops }),
   ].filter((candidate): candidate is ArmyStaminaSourceSnapshot => candidate !== null && candidate !== undefined);
 
   if (candidates.length === 0) {
     return null;
   }
 
-  // Core's pickFresherArmyStaminaReading is the single definition of "which
-  // stamina reading is fresher" — shared with the world-update path so the
-  // detail panel and the 3D label resolve to the same value.
   return candidates.reduce((left, right) => pickFresherArmyStaminaReading(left, right));
 };
 
 export const selectFreshestTroopsSnapshot = (input: {
   entityId?: ID;
-  snapshotTroops?: Troops | null;
   liveTroops?: Troops | null;
-  fallbackArmy?: ExplorerArmyFallback | null;
   pendingStamina?: {
     amount: bigint;
     updatedTick: number;

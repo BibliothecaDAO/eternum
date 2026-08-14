@@ -9,7 +9,7 @@ import { getExplorerFromToriiClient, getStructureFromToriiClient } from "@biblio
 import { ArmyInfo, ContractAddress, HexPosition, ID, TroopTier, TroopType } from "@bibliothecadao/types";
 import { useComponentValue } from "@dojoengine/react";
 import { useQuery } from "@tanstack/react-query";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { gameEntityKey } from "@/dojo/game-scope";
 
 interface UseArmyEntityDetailOptions {
@@ -53,15 +53,10 @@ export const useArmyEntityDetail = ({ armyEntityId }: UseArmyEntityDetailOptions
   const [isLoadingDelete, setIsLoadingDelete] = useState(false);
   const [lastRefresh, setLastRefresh] = useState(0);
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const setAuthoritativeTroopsSnapshot = useArmyStaminaSourceStore((state) => state.setAuthoritativeTroopsSnapshot);
   const pendingStamina = useArmyStaminaSourceStore((state) => state.pendingSources[String(armyEntityId)]);
   const armyRecsEntity = gameEntityKey([BigInt(armyEntityId)]);
   const liveExplorerTroops = useComponentValue(components.ExplorerTroops, armyRecsEntity)?.troops;
-  // Live-RECS override, mirroring the structure detail hook: when the
-  // explorer's Resource row is RECS-synced it carries every live update and
-  // must win over the one-shot torii snapshot below. The row is only fetched
-  // into RECS at structure sync, so it can be absent for some sessions — the
-  // snapshot then remains the cold-start fallback.
+  // Current explorer resources and stamina are always read from live RECS.
   const liveExplorerResources = useComponentValue(components.Resource, armyRecsEntity);
 
   const {
@@ -80,22 +75,11 @@ export const useArmyEntityDetail = ({ armyEntityId }: UseArmyEntityDetailOptions
   const explorer = explorerData?.explorer;
   const explorerResources = liveExplorerResources ?? explorerData?.resources;
 
-  useEffect(() => {
-    if (!explorer?.troops) return;
-
-    setAuthoritativeTroopsSnapshot({
-      entityId: armyEntityId,
-      source: "snapshot",
-      troops: explorer.troops,
-    });
-  }, [armyEntityId, explorer?.troops, setAuthoritativeTroopsSnapshot]);
-
   const staminaSnapshot = useMemo(() => {
     const freshPendingStamina = getFreshPendingStaminaSource(armyEntityId);
     return getExplorerStaminaSnapshot({
       entityId: armyEntityId,
       currentArmiesTick,
-      snapshotTroops: explorer?.troops,
       liveTroops: liveExplorerTroops,
       pendingStamina: freshPendingStamina
         ? {
@@ -104,7 +88,7 @@ export const useArmyEntityDetail = ({ armyEntityId }: UseArmyEntityDetailOptions
           }
         : null,
     });
-  }, [armyEntityId, currentArmiesTick, explorer?.troops, liveExplorerTroops, pendingStamina]);
+  }, [armyEntityId, currentArmiesTick, liveExplorerTroops, pendingStamina]);
 
   const currentTroops = staminaSnapshot?.troops ?? null;
   const relicEffects = useMemo(

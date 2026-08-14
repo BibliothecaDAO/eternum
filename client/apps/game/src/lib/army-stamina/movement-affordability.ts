@@ -2,12 +2,8 @@ import { StaminaManager } from "@bibliothecadao/eternum";
 import type { ID, Troops } from "@bibliothecadao/types";
 
 import { getFreshPendingStaminaSource } from "./source-store";
-import { selectFreshestArmyStaminaSource, type ExplorerArmyFallback } from "./source-resolution";
-import type { ArmyStaminaSourceKind, ArmyStaminaSourceSnapshot } from "./types";
-
-export interface MovementStaminaFallbackArmy extends ExplorerArmyFallback {
-  currentStamina?: number;
-}
+import { selectFreshestArmyStaminaSource } from "./source-resolution";
+import type { ArmyStaminaSourceKind, PendingArmyStaminaSourceSnapshot } from "./types";
 
 interface MovementStaminaPathStep {
   staminaCost?: number | null;
@@ -25,7 +21,6 @@ export interface MovementStaminaResolution {
   currentArmiesTick: number;
   source: ArmyStaminaSourceKind | "none";
   diagnostics: {
-    cachedCurrentStamina?: number;
     liveAmount?: number;
     liveUpdatedTick?: number;
     pendingAmount?: number;
@@ -44,15 +39,12 @@ export const resolveMovementStamina = (input: {
   actionPath: MovementStaminaPathStep[];
   currentArmiesTick: number;
   liveTroops?: Troops | null;
-  snapshotTroops?: Troops | null;
-  fallbackArmy?: MovementStaminaFallbackArmy | null;
   pendingStamina?: MovementStaminaPendingInput | null;
 }): MovementStaminaResolution => {
   const staminaCost = calculateMovementStaminaCost(input.actionPath);
   const pendingStamina = resolvePendingStamina(input.entityId, input.pendingStamina);
   const diagnostics = buildMovementStaminaDiagnostics({
     liveTroops: input.liveTroops,
-    fallbackArmy: input.fallbackArmy,
     pendingStamina,
   });
 
@@ -69,9 +61,7 @@ export const resolveMovementStamina = (input: {
 
   const selectedSource = selectFreshestArmyStaminaSource({
     entityId: input.entityId,
-    snapshotTroops: input.snapshotTroops,
     liveTroops: input.liveTroops,
-    fallbackArmy: input.fallbackArmy,
     pendingStamina,
   });
 
@@ -83,18 +73,6 @@ export const resolveMovementStamina = (input: {
       currentStamina: Number(stamina.amount),
       currentArmiesTick: input.currentArmiesTick,
       source: selectedSource.source,
-      diagnostics,
-    };
-  }
-
-  if (Number.isFinite(input.fallbackArmy?.currentStamina)) {
-    const currentStamina = input.fallbackArmy?.currentStamina ?? 0;
-    return {
-      canAfford: canAffordStaminaCost(currentStamina, staminaCost),
-      staminaCost,
-      currentStamina,
-      currentArmiesTick: input.currentArmiesTick,
-      source: "cached",
       diagnostics,
     };
   }
@@ -115,7 +93,7 @@ export const buildPendingMovementStaminaSource = (input: {
   currentArmiesTick: number;
   staminaCost: number;
   capturedAtMs?: number;
-}): ArmyStaminaSourceSnapshot | null => {
+}): PendingArmyStaminaSourceSnapshot | null => {
   if (!Number.isFinite(input.staminaCost) || input.staminaCost <= 0) {
     return null;
   }
@@ -142,10 +120,8 @@ const resolvePendingStamina = (
 
 const buildMovementStaminaDiagnostics = (input: {
   liveTroops?: Troops | null;
-  fallbackArmy?: MovementStaminaFallbackArmy | null;
   pendingStamina?: MovementStaminaPendingInput | null;
 }): MovementStaminaResolution["diagnostics"] => ({
-  cachedCurrentStamina: input.fallbackArmy?.currentStamina,
   liveAmount: input.liveTroops?.stamina ? Number(input.liveTroops.stamina.amount) : undefined,
   liveUpdatedTick: input.liveTroops?.stamina ? Number(input.liveTroops.stamina.updated_tick) : undefined,
   pendingAmount: input.pendingStamina ? Number(input.pendingStamina.amount) : undefined,

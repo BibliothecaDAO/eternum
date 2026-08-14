@@ -15,7 +15,6 @@ import { useAccountStore } from "@/hooks/store/use-account-store";
 import {
   buildPendingMovementStaminaSource,
   resolveMovementStamina,
-  type MovementStaminaFallbackArmy,
   type MovementStaminaResolution,
 } from "@/lib/army-stamina/movement-affordability";
 import { useArmyStaminaSourceStore } from "@/lib/army-stamina/source-store";
@@ -3742,32 +3741,16 @@ export default class WorldmapScene extends WarpTravel {
     actionPath: ActionPath[];
     currentArmiesTick: number;
   }): MovementStaminaResolution {
-    const army = this.armyManager.getArmy(input.entityId);
     return resolveMovementStamina({
       entityId: input.entityId,
       actionPath: input.actionPath,
       currentArmiesTick: input.currentArmiesTick,
       liveTroops: this.resolveLiveExplorerTroopsForMovementStamina(input.entityId),
-      fallbackArmy: this.buildMovementStaminaFallbackArmy(army),
     });
   }
 
   private resolveLiveExplorerTroopsForMovementStamina(entityId: ID) {
     return getComponentValue(this.dojo.components.ExplorerTroops, gameEntityKey([BigInt(entityId)]))?.troops ?? null;
-  }
-
-  private buildMovementStaminaFallbackArmy(army: ArmyData | undefined): MovementStaminaFallbackArmy | null {
-    if (!army) {
-      return null;
-    }
-
-    return {
-      category: army.category,
-      tier: army.tier,
-      troopCount: army.troopCount,
-      currentStamina: army.currentStamina,
-      onChainStamina: army.onChainStamina,
-    };
   }
 
   private logBlockedMovementStamina(input: {

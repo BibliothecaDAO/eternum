@@ -27,172 +27,65 @@ const buildTroops = (overrides: { amount: bigint; updatedTick: bigint }): Troops
 
 describe("selectFreshestTroopsSnapshot", () => {
   beforeEach(() => {
-    useArmyStaminaSourceStore.setState({ pendingSources: {}, authoritativeSources: {} });
+    useArmyStaminaSourceStore.setState({ pendingSources: {} });
   });
 
-  it("ignores pending source when live RECS has equal or newer updated_tick", () => {
-    // Scenario: User did a move 1 tick ago. Pending was set with amount=90 updatedTick=T.
-    // Onchain has caught up: live RECS has amount=90 updated_tick=T (same tick).
-    // The pending is now obsolete - live reflects the actual onchain state.
-    // selectFreshestTroopsSnapshot should return live, not pending, so that
-    // regen calculation in getStamina uses the correct updated_tick.
-    const entityId = 1234;
-    const actionTick = 100;
+  it("uses the live RECS row when no pending movement exists", () => {
+    const liveTroops = buildTroops({ amount: 90n, updatedTick: 100n });
 
-    // Pending prediction from the user's action
-    useArmyStaminaSourceStore.setState({
-      pendingSources: {
-        [String(entityId)]: {
-          source: "pending",
-          entityId,
-          amount: 90n,
-          updatedTick: actionTick,
-          capturedAtMs: Date.now(),
-        },
-      },
-      authoritativeSources: {},
-    });
-
-    // Live RECS has the same onchain state (caught up)
-    const liveTroops = buildTroops({ amount: 90n, updatedTick: BigInt(actionTick) });
-
-    const selected = selectFreshestTroopsSnapshot({
-      entityId,
-      liveTroops,
-    });
-
-    // Should pick live troops (not the pending-wrapped troops)
-    // Both would have the same amount/tick in this case, but we want the
-    // original live troops object returned.
-    expect(selected).toBe(liveTroops);
+    expect(selectFreshestTroopsSnapshot({ entityId: 1234, liveTroops })).toBe(liveTroops);
   });
 
-  it("ignores obsolete pending when onchain has advanced past pending tick", () => {
-    // Scenario: User's pending is from tick 100, onchain has since been updated
-    // to tick 150 (maybe another action, or just Torii catching up).
-    // selectFreshestTroopsSnapshot should use live, not stale pending.
-    const entityId = 5678;
-
-    useArmyStaminaSourceStore.setState({
-      pendingSources: {
-        [String(entityId)]: {
-          source: "pending",
-          entityId,
-          amount: 90n,
-          updatedTick: 100,
-          capturedAtMs: Date.now(),
-        },
-      },
-      authoritativeSources: {},
-    });
-
-    const liveTroops = buildTroops({ amount: 120n, updatedTick: 150n });
-
-    const selected = selectFreshestTroopsSnapshot({
-      entityId,
-      liveTroops,
-    });
-
-    expect(selected).toBe(liveTroops);
-  });
-
-  it("still uses pending when it is strictly newer than live", () => {
-    // Scenario: User just clicked; pending is at tick T, live RECS is still at T-1.
-    // Pending must win to give optimistic UI feedback.
-    const entityId = 9999;
-
-    useArmyStaminaSourceStore.setState({
-      pendingSources: {
-        [String(entityId)]: {
-          source: "pending",
-          entityId,
-          amount: 90n,
-          updatedTick: 101,
-          capturedAtMs: Date.now(),
-        },
-      },
-      authoritativeSources: {},
-    });
-
+  it("uses pending stamina while it is newer than live RECS", () => {
     const liveTroops = buildTroops({ amount: 120n, updatedTick: 100n });
-
     const selected = selectFreshestTroopsSnapshot({
-      entityId,
+      entityId: 9999,
       liveTroops,
+      pendingStamina: { amount: 90n, updatedTick: 101 },
     });
 
-    // Pending wins — live hasn't caught up yet
     expect(selected).not.toBe(liveTroops);
-    expect(selected?.stamina?.amount).toBe(90n);
-    expect(selected?.stamina?.updated_tick).toBe(101n);
+    expect(selected?.stamina).toMatchObject({ amount: 90n, updated_tick: 101n });
   });
 
-  it("prefers live RECS over the torii snapshot on an updated-tick tie", () => {
-    // Regression pin (Aug 13 playtest): stamina spends within one 60s armies
-    // tick reuse the same updated_tick, so after a same-tick move the panel's
-    // one-shot snapshot (pre-move amount) ties with the live RECS row
-    // (post-move amount). Live must win or the panel sticks at the pre-move
-    // value until a deselect/reselect refetches the snapshot.
-    const entityId = 1111;
-    const snapshotTroops = buildTroops({ amount: 70n, updatedTick: 200n });
-    const liveTroops = buildTroops({ amount: 80n, updatedTick: 200n });
-
+  it("keeps same-tick pending stamina until live confirms its amount", () => {
+    const liveTroops = buildTroops({ amount: 80n, updatedTick: 100n });
     const selected = selectFreshestTroopsSnapshot({
-      entityId,
-      snapshotTroops,
+      entityId: 4321,
       liveTroops,
+      pendingStamina: { amount: 60n, updatedTick: 100 },
     });
 
-    expect(selected).toBe(liveTroops);
+    expect(selected?.stamina).toMatchObject({ amount: 60n, updated_tick: 100n });
   });
 
-  it("prefers live RECS over the cached map row on an updated-tick tie", () => {
-    // Regression pin: the cached fallback comes from the up-to-60s-stale SQL
-    // map data. On a tie live must win — the same ordering core applies when
-    // the world-update path compares live vs enhanced.
-    const entityId = 2222;
-    const liveTroops = buildTroops({ amount: 80n, updatedTick: 200n });
+  it("drops pending stamina once live RECS confirms the tick and amount", () => {
+    const liveTroops = buildTroops({ amount: 40n, updatedTick: 103n });
 
-    const selected = selectFreshestTroopsSnapshot({
-      entityId,
-      liveTroops,
-      fallbackArmy: {
-        category: TroopType.Crossbowman,
-        tier: TroopTier.T1,
-        troopCount: 1500,
-        onChainStamina: { amount: 50n, updatedTick: 200 },
-      },
-    });
-
-    expect(selected).toBe(liveTroops);
+    expect(
+      selectFreshestTroopsSnapshot({
+        entityId: 987,
+        liveTroops,
+        pendingStamina: { amount: 40n, updatedTick: 103 },
+      }),
+    ).toBe(liveTroops);
   });
 
-  it("keeps pending when live RECS has the same tick but a different stamina amount", () => {
-    const entityId = 4321;
-    const actionTick = 100;
-
+  it("rejects an expired pending record from the single pending-state store", () => {
+    const entityId = 5555;
+    const liveTroops = buildTroops({ amount: 70n, updatedTick: 200n });
     useArmyStaminaSourceStore.setState({
       pendingSources: {
         [String(entityId)]: {
           source: "pending",
           entityId,
-          amount: 60n,
-          updatedTick: actionTick,
-          capturedAtMs: Date.now(),
+          amount: 20n,
+          updatedTick: 201,
+          capturedAtMs: Date.now() - 60_001,
         },
       },
-      authoritativeSources: {},
     });
 
-    const liveTroops = buildTroops({ amount: 80n, updatedTick: BigInt(actionTick) });
-
-    const selected = selectFreshestTroopsSnapshot({
-      entityId,
-      liveTroops,
-    });
-
-    expect(selected).not.toBe(liveTroops);
-    expect(selected?.stamina?.amount).toBe(60n);
-    expect(selected?.stamina?.updated_tick).toBe(BigInt(actionTick));
+    expect(selectFreshestTroopsSnapshot({ entityId, liveTroops })).toBe(liveTroops);
   });
 });

@@ -131,7 +131,6 @@ describe("useArmyEntityDetail stamina sync", () => {
     captured = undefined;
     useArmyStaminaSourceStore.setState({
       pendingSources: {},
-      authoritativeSources: {},
     });
 
     useDojoMock.mockReturnValue({
@@ -200,7 +199,7 @@ describe("useArmyEntityDetail stamina sync", () => {
     (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = false;
   });
 
-  it("prefers live troop stamina over the stale Torii snapshot", async () => {
+  it("reads troop stamina from live RECS", async () => {
     await act(async () => {
       root.render(<Capture />);
     });
@@ -211,7 +210,7 @@ describe("useArmyEntityDetail stamina sync", () => {
     expect(captured?.staminaDisplay?.displayCurrent).toBe(20);
   });
 
-  it("prefers the newer Torii troop stamina when the live troop snapshot is stale", async () => {
+  it("does not substitute a newer one-shot Torii snapshot for live RECS", async () => {
     const newerSnapshotTroops = {
       ...snapshotTroops,
       stamina: { amount: 65n, updated_tick: 9n },
@@ -269,10 +268,10 @@ describe("useArmyEntityDetail stamina sync", () => {
       root.render(<Capture />);
     });
 
-    expect(captured?.stamina.amount).toBe(65n);
-    expect(captured?.stamina.updated_tick).toBe(9n);
+    expect(captured?.stamina.amount).toBe(20n);
+    expect(captured?.stamina.updated_tick).toBe(5n);
     expect(captured?.maxStamina).toBe(120);
-    expect(captured?.staminaDisplay?.displayCurrent).toBe(65);
+    expect(captured?.staminaDisplay?.displayCurrent).toBe(20);
   });
 
   it("follows a same-tick live RECS spend in place, without a remount", async () => {
@@ -337,7 +336,7 @@ describe("useArmyEntityDetail stamina sync", () => {
     expect(captured?.staminaDisplay?.displayCurrent).toBe(30);
 
     // The move resolves: live RECS delivers the same-tick spend. The query
-    // snapshot (and the authoritative store row it seeded) still hold 30.
+    // snapshot still holds 30, but is not a stamina source.
     useComponentValueMock.mockReturnValue({
       troops: postMoveLiveTroops,
     });

@@ -49,26 +49,17 @@ const buildTroops = (overrides: { amount: bigint; updatedTick: bigint }): Troops
   battle_cooldown_end: 0,
 });
 
-const fallbackArmy = {
-  category: TroopType.Crossbowman,
-  tier: TroopTier.T1,
-  troopCount: 1500,
-  currentStamina: 20,
-  onChainStamina: { amount: 20n, updatedTick: 90 },
-};
-
 describe("movement stamina affordability", () => {
   beforeEach(() => {
-    useArmyStaminaSourceStore.setState({ pendingSources: {}, authoritativeSources: {} });
+    useArmyStaminaSourceStore.setState({ pendingSources: {} });
   });
 
-  it("allows movement when live stamina is sufficient even if cached army stamina is stale low", () => {
+  it("allows movement when live RECS stamina is sufficient", () => {
     const result = resolveMovementStamina({
       entityId: 123 as ID,
       currentArmiesTick: 100,
       actionPath: [{ staminaCost: 35 }],
       liveTroops: buildTroops({ amount: 45n, updatedTick: 100n }),
-      fallbackArmy,
     });
 
     expect(result.canAfford).toBe(true);
@@ -83,7 +74,6 @@ describe("movement stamina affordability", () => {
       actionPath: [{ staminaCost: 30 }, { staminaCost: 15 }],
       pendingStamina: { amount: 70n, updatedTick: 101 },
       liveTroops: buildTroops({ amount: 100n, updatedTick: 100n }),
-      fallbackArmy,
     });
 
     const pending = buildPendingMovementStaminaSource({
@@ -111,7 +101,6 @@ describe("movement stamina affordability", () => {
       actionPath: [{ staminaCost: 50 }],
       pendingStamina: { amount: 40n, updatedTick: 102 },
       liveTroops: buildTroops({ amount: 80n, updatedTick: 102n }),
-      fallbackArmy,
     });
 
     expect(result.canAfford).toBe(false);
@@ -126,7 +115,6 @@ describe("movement stamina affordability", () => {
       actionPath: [{ staminaCost: 35 }],
       pendingStamina: { amount: 40n, updatedTick: 103 },
       liveTroops: buildTroops({ amount: 40n, updatedTick: 103n }),
-      fallbackArmy,
     });
 
     expect(result.canAfford).toBe(true);
