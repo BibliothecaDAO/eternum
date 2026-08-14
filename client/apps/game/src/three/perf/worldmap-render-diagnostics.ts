@@ -66,7 +66,6 @@ export type WorldmapRenderCounter =
   | "preparedChunkPrewarmHits"
   | "preparedChunkPrewarmMisses"
   | "globalSpatialRecsHydratedTiles"
-  | "globalSpatialRecsHydratedChests"
   | "globalSpatialRecsHydratedStructures"
   | "spatialBoundsSwitchRequests"
   | "spatialBoundsSwitchApplied"
@@ -214,7 +213,6 @@ const createDiagnosticsState = (): WorldmapRenderDiagnosticsSnapshot => ({
     preparedChunkPrewarmHits: 0,
     preparedChunkPrewarmMisses: 0,
     globalSpatialRecsHydratedTiles: 0,
-    globalSpatialRecsHydratedChests: 0,
     globalSpatialRecsHydratedStructures: 0,
     spatialBoundsSwitchRequests: 0,
     spatialBoundsSwitchApplied: 0,

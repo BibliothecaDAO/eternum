@@ -122,6 +122,12 @@ function createSyncHarness() {
   };
 
   const setup = {
+    components: {
+      TileOpt: {
+        entities: function* () {},
+        update$: { subscribe: vi.fn(() => ({ unsubscribe: vi.fn() })) },
+      },
+    },
     network: {
       toriiClient: client,
       contractComponents: [],

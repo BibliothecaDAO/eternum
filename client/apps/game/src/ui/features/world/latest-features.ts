@@ -35,6 +35,14 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-08-13",
+    title: "Reliable Map Chests",
+    description:
+      "Fixed relic chests so discoveries, moves, and removals stay current while you pan around the world map without an extra area fetch.",
+    type: "fix",
+    gameSlug: "world",
+  },
+  {
+    date: "2026-08-13",
     title: "Whole-World Live Sync",
     description:
       "Improved map synchronization so offscreen armies, structures, resources, and chests stay current and are ready when you move the camera, including after reconnecting.",

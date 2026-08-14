@@ -6,7 +6,7 @@ import {
   ARMY_AUTHORITATIVE_SWEEP_INTERVAL_MS,
   sweepArmiesAgainstTorii,
 } from "@/dojo/army-authoritative-reconciler";
-import { ensureStructureSynced, getTilesForPositionsFromTorii } from "@/dojo/queries";
+import { ensureStructureSynced } from "@/dojo/queries";
 import { initializeSyncSimulator } from "@/dojo/sync-simulator";
 import { getBoundedSpatialMapModels, getGlobalSpatialMapModels } from "@/dojo/torii-spatial-models";
 import { shouldUseLegacyBoundedSpatialSync } from "@/dojo/game-sync-mode";
@@ -65,6 +65,7 @@ import { WorldmapPerfSimulation } from "@/three/scenes/worldmap-perf-simulation"
 import { playResourceSound } from "@/three/sound/utils";
 import { LeftView } from "@/types";
 import { configManager, Position } from "@bibliothecadao/eternum";
+import { requireActiveGameSyncRuntime, type WorldSpatialProjection } from "@bibliothecadao/eternum/game-sync";
 import { gameWorkerManager } from "../../managers/game-worker-manager";
 
 import { FELT_CENTER, IS_FLAT_MODE } from "@/ui/config";
@@ -79,7 +80,6 @@ import {
   ActionType,
   ArmyActionManager,
   BattleEventSystemUpdate,
-  ChestSystemUpdate,
   DEFAULT_COORD_ALT,
   divideByPrecision,
   ExplorerRewardSystemUpdate,
@@ -89,7 +89,6 @@ import {
   getGuardsByStructure,
   getStructureInfoFromTileOccupier,
   getTileAt,
-  isTileOccupierChest,
   isTileOccupierReservedHyperstructure,
   recordArmyMovementLatencyPhase,
   ReservedHyperstructureTileSystemUpdate,
@@ -923,14 +922,13 @@ export default class WorldmapScene extends WarpTravel {
   private structureManager!: StructureManager;
   private memoryMonitor?: MemoryMonitor;
   private chestManager!: ChestManager;
+  private worldSpatialProjection!: WorldSpatialProjection;
+  private unsubscribeWorldSpatialProjection?: () => void;
   private exploredTiles: Map<number, Map<number, BiomeType>> = new Map();
   // normalized positions and if they are allied or not
   private armyHexes: Map<number, Map<number, HexEntityInfo>> = new Map();
   // normalized positions and if they are allied or not
   private structureHexes: Map<number, Map<number, HexEntityInfo>> = new Map();
-  // normalized positions and if they are allied or not
-  // normalized positions and if they are allied or not
-  private chestHexes: Map<number, Map<number, HexEntityInfo>> = new Map();
   // store armies positions by ID, to remove previous positions when army moves
   // normalized coordinates
   private armiesPositions: Map<ID, HexPosition> = new Map();
@@ -1202,6 +1200,7 @@ export default class WorldmapScene extends WarpTravel {
     this.initializeWorldmapManagers();
     this.configureWorldmapRecoveryLifecycle();
     this.initializeWorldmapSupportManagers();
+    this.bindWorldSpatialProjectionLifecycle();
     this.bindWorldmapCameraViewLifecycle();
     this.registerWorldUpdateSubscriptions();
     this.initializeWorldmapInteractionRuntime();
@@ -1571,6 +1570,7 @@ export default class WorldmapScene extends WarpTravel {
   }
 
   private initializeWorldmapManagers(): void {
+    this.worldSpatialProjection = requireActiveGameSyncRuntime().requireWorldSpatialProjection();
     this.armyLabelsGroup = new Group();
     this.armyLabelsGroup.name = "ArmyLabelsGroup";
     this.structureLabelsGroup = new Group();
@@ -1625,7 +1625,14 @@ export default class WorldmapScene extends WarpTravel {
       this.chunkSize,
     );
     this.reservedHyperstructureManager = new ReservedHyperstructureManager(this.scene);
-    this.chestManager = new ChestManager(this.scene, this.renderChunkSize, this.chestLabelsGroup, this, this.chunkSize);
+    this.chestManager = new ChestManager(
+      this.scene,
+      this.renderChunkSize,
+      this.worldSpatialProjection,
+      this.chestLabelsGroup,
+      this,
+      this.chunkSize,
+    );
 
     // Bootstrap applyQualityFeatures may have run before these managers existed; apply the
     // latest known quality limits now that the managers are available.
@@ -1692,6 +1699,12 @@ export default class WorldmapScene extends WarpTravel {
     );
   }
 
+  private bindWorldSpatialProjectionLifecycle(): void {
+    this.unsubscribeWorldSpatialProjection = this.worldSpatialProjection.subscribe(() => {
+      this.reconcileHoverLabels();
+    });
+  }
+
   private bindWorldmapCameraViewLifecycle(): void {
     this.addCameraViewListener((view: CameraView) => {
       this.hoverLabelManager.updateCameraView(view);
@@ -1712,7 +1725,6 @@ export default class WorldmapScene extends WarpTravel {
     this.registerStructureWorldUpdateSubscriptions();
     this.registerTileWorldUpdateSubscriptions();
     this.registerReservedHyperstructureWorldUpdateSubscriptions();
-    this.registerChestWorldUpdateSubscriptions();
     this.registerExplorerRewardWorldUpdateSubscriptions();
   }
 
@@ -2005,21 +2017,6 @@ export default class WorldmapScene extends WarpTravel {
     if (structureTileActions.shouldRefreshVisibleChunks) {
       this.requestChunkRefresh(true, "structure_count_change");
     }
-  }
-
-  private registerChestWorldUpdateSubscriptions(): void {
-    this.addWorldUpdateSubscription(
-      this.worldUpdateListener.Chest.onTileUpdate((update: ChestSystemUpdate) => {
-        this.updateChestHexes(update);
-        this.chestManager.onUpdate(update);
-        this.reconcileHoverLabels();
-      }),
-    );
-    this.addWorldUpdateSubscription(
-      this.worldUpdateListener.Chest.onDeadChest((entityId) => {
-        this.deleteChest(entityId);
-      }),
-    );
   }
 
   private registerReservedHyperstructureWorldUpdateSubscriptions(): void {
@@ -2851,10 +2848,16 @@ export default class WorldmapScene extends WarpTravel {
   }
 
   protected getHexagonEntity(hexCoords: HexPosition) {
-    const hex = new Position({ x: hexCoords.col, y: hexCoords.row }).getNormalized();
+    const position = new Position({ x: hexCoords.col, y: hexCoords.row });
+    const hex = position.getNormalized();
+    const contractHex = position.getContract();
     const army = this.armyHexes.get(hex.x)?.get(hex.y);
     const structure = this.structureHexes.get(hex.x)?.get(hex.y);
-    const chest = this.chestHexes.get(hex.x)?.get(hex.y);
+    const projectedChest = this.worldSpatialProjection.getChestsAtHex({
+      col: contractHex.x,
+      row: contractHex.y,
+    })[0];
+    const chest = projectedChest ? { id: projectedChest.entityId, owner: 0n } : undefined;
 
     return { army, structure, chest };
   }
@@ -2883,7 +2886,6 @@ export default class WorldmapScene extends WarpTravel {
     return {
       army: cachedEntities.army ? undefined : this.resolveArmyHoverLabelEntityFromManager(hexCoords),
       structure: cachedEntities.structure ? undefined : this.resolveStructureHoverLabelEntityFromManager(hexCoords),
-      chest: cachedEntities.chest ? undefined : this.resolveChestHoverLabelEntityFromManager(hexCoords),
     };
   }
 
@@ -2899,15 +2901,6 @@ export default class WorldmapScene extends WarpTravel {
   private resolveStructureHoverLabelEntityFromManager(hexCoords: HexPosition): HexEntityInfo | undefined {
     const structure = this.structureManager.getStructureByHexCoords(hexCoords);
     return structure ? { id: structure.entityId, owner: structure.owner.address } : undefined;
-  }
-
-  private resolveChestHoverLabelEntityFromManager(hexCoords: HexPosition): HexEntityInfo | undefined {
-    const chest = Array.from(this.chestManager.chests.getChests().values()).find((candidate) => {
-      const normalized = candidate.hexCoords.getNormalized();
-      return normalized.x === hexCoords.col && normalized.y === hexCoords.row;
-    });
-
-    return chest ? { id: chest.entityId, owner: 0n } : undefined;
   }
 
   private resolveRaycastArmyHoverTarget() {
@@ -3071,10 +3064,6 @@ export default class WorldmapScene extends WarpTravel {
       return;
     }
 
-    if (chest) {
-      void this.repairChestTileIfStale(hexCoords);
-    }
-
     if (structure) {
       console.log("[Worldmap] Structure entity id clicked:", structure.id);
     }
@@ -3107,32 +3096,6 @@ export default class WorldmapScene extends WarpTravel {
       ...this.getInteractionDebugSnapshot(),
     });
     this.clearEntitySelection();
-  }
-
-  // A clicked chest mesh proves a chest exists here (its stream update built
-  // the mesh), but the side panel reads the RECS TileOpt row, which a
-  // hydration snapshot taken before the spawn can overwrite. Repair on
-  // action: refetch this one tile row so the relic panel appears in place.
-  private async repairChestTileIfStale(hexCoords: HexPosition): Promise<void> {
-    const contract = new Position({ x: hexCoords.col, y: hexCoords.row }).getContract();
-    const tile = getTileAt(this.dojo.components, DEFAULT_COORD_ALT, contract.x, contract.y);
-    if (tile && isTileOccupierChest(tile.occupier_type)) {
-      return;
-    }
-
-    const toriiClient = this.dojo.network?.toriiClient;
-    const contractComponents = this.dojo.network?.contractComponents as unknown as
-      | Parameters<typeof getTilesForPositionsFromTorii>[1]
-      | undefined;
-    if (!toriiClient || !contractComponents) {
-      return;
-    }
-
-    try {
-      await getTilesForPositionsFromTorii(toriiClient, contractComponents, [{ col: contract.x, row: contract.y }]);
-    } catch (error) {
-      console.error("[WorldmapScene] Failed to repair chest tile from Torii", error);
-    }
   }
 
   protected handleHexSelection(hexCoords: HexPosition, isMine: boolean) {
@@ -4429,7 +4392,7 @@ export default class WorldmapScene extends WarpTravel {
       this.structureHexes,
       this.armyHexes,
       this.exploredTiles,
-      this.chestHexes,
+      this.buildProjectedChestActionIndex(),
       currentDefaultTick,
       currentArmiesTick,
       playerAddress,
@@ -4458,6 +4421,17 @@ export default class WorldmapScene extends WarpTravel {
     this.updateStructureOwnershipPulses(owningStructureId ?? undefined, extraHexes, extraHexes);
     this.applyContextualHoverPalette(this.previouslyHoveredHex ?? null);
     return true;
+  }
+
+  private buildProjectedChestActionIndex(): Map<number, Map<number, HexEntityInfo>> {
+    const index = new Map<number, Map<number, HexEntityInfo>>();
+    this.worldSpatialProjection.getChests().forEach((chest) => {
+      const normalized = new Position({ x: chest.hexCoords.col, y: chest.hexCoords.row }).getNormalized();
+      const row = index.get(normalized.x) ?? new Map<number, HexEntityInfo>();
+      row.set(normalized.y, { id: chest.entityId, owner: 0n });
+      index.set(normalized.x, row);
+    });
+    return index;
   }
 
   private clearMovementActionOptionsForSelectedArmy(entityId: ID): void {
@@ -5687,19 +5661,6 @@ export default class WorldmapScene extends WarpTravel {
     };
   }
 
-  public deleteChest(entityId: ID) {
-    this.chestManager.removeChest(entityId);
-    // Find and remove from chestHexes
-    this.chestHexes.forEach((rowMap) => {
-      rowMap.forEach((hex, row) => {
-        if (hex.id === entityId) {
-          rowMap.delete(row);
-        }
-      });
-    });
-    this.reconcileHoverLabels();
-  }
-
   // used to track the position of the armies on the map
   public updateArmyHexes(update: {
     entityId: ID;
@@ -5897,24 +5858,6 @@ export default class WorldmapScene extends WarpTravel {
     gameWorkerManager.updateStructureHex(newPos.col, newPos.row, structureInfo);
     this.invalidateAllChunkCachesContainingHex(newPos.col, newPos.row);
     return { oldPos, newPos };
-  }
-
-  // update chest hexes on the map
-  public updateChestHexes(update: ChestSystemUpdate) {
-    const {
-      hexCoords: { col, row },
-      occupierId,
-    } = update;
-
-    const normalized = new Position({ x: col, y: row }).getNormalized();
-
-    const newCol = normalized.x;
-    const newRow = normalized.y;
-
-    if (!this.chestHexes.has(newCol)) {
-      this.chestHexes.set(newCol, new Map());
-    }
-    this.chestHexes.get(newCol)?.set(newRow, { id: occupierId, owner: 0n });
   }
 
   public async updateExploredHex(update: TileSystemUpdate) {
@@ -9758,16 +9701,12 @@ export default class WorldmapScene extends WarpTravel {
     const hydratedTileCount = shouldHydrateTileOpt
       ? this.hydrateExploredTilesFromGlobalTileOptRecs(fetchKey, localBounds, tileOptEntries)
       : 0;
-    const hydratedChestCount = shouldHydrateTileOpt
-      ? this.hydrateChestsFromGlobalTileOptRecs(fetchKey, tileOptEntries)
-      : 0;
     const hydratedStructureCount = shouldHydrateStructures
       ? await this.hydrateStructuresFromGlobalTileOptRecs(fetchKey, tileOptEntries)
       : 0;
 
     this.traceChunk("global_spatial_recs_hydrated", {
       fetchKey,
-      hydratedChestCount,
       hydratedStructureCount,
       hydratedTileCount,
       tileOptCandidateCount: tileOptEntries.length,
@@ -9854,32 +9793,6 @@ export default class WorldmapScene extends WarpTravel {
     }
 
     return hydratedStructureCount;
-  }
-
-  private hydrateChestsFromGlobalTileOptRecs(
-    _fetchKey: string,
-    entries: readonly GlobalTileOptHydrationEntry[],
-  ): number {
-    let hydratedChestCount = 0;
-    for (const entry of entries) {
-      if (!isTileOccupierChest(entry.tile.occupier_type)) {
-        continue;
-      }
-
-      const update: ChestSystemUpdate = {
-        occupierId: entry.tile.occupier_id,
-        hexCoords: { col: entry.tile.col, row: entry.tile.row },
-      };
-      this.updateChestHexes(update);
-      void this.chestManager.onUpdate(update);
-      hydratedChestCount += 1;
-    }
-
-    if (hydratedChestCount > 0) {
-      incrementWorldmapRenderCounter("globalSpatialRecsHydratedChests", hydratedChestCount);
-    }
-
-    return hydratedChestCount;
   }
 
   private shouldFetchTileOpt(stages: readonly WorldmapRenderAreaHydrationStage[]): boolean {
@@ -11890,6 +11803,8 @@ export default class WorldmapScene extends WarpTravel {
 
     this.disposeStoreSubscriptions();
     this.disposeWorldUpdateSubscriptions();
+    this.unsubscribeWorldSpatialProjection?.();
+    this.unsubscribeWorldSpatialProjection = undefined;
     this.pendingArmyMovements.forEach((_record, entityId) => this.clearPendingArmyMovement(entityId));
     this.pendingArmyMovementVisualLifecycleDisposers.forEach((dispose) => dispose());
     this.pendingArmyMovementVisualLifecycleDisposers.clear();

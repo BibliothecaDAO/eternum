@@ -42,6 +42,7 @@ describe("network boot-regression guards", () => {
     expect(source).toContain("createGamewideSyncSession");
     expect(source).toContain("await runtime.recover()");
     expect(source).toContain("shouldUseLegacyBoundedSpatialSync()");
+    expect(source).toContain("installActiveWorldSpatialProjection(setup)");
   });
 
   it("connection-health-monitor exposes the boot grace gate", () => {
