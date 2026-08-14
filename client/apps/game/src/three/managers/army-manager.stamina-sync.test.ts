@@ -81,7 +81,6 @@ describe("ArmyManager stamina sync", () => {
       troopCount: 10,
       category: "Knight",
       tier: 1,
-      onChainStamina: { amount: 10n, updatedTick: 1 },
       currentStamina: 0,
     };
 
@@ -124,14 +123,8 @@ describe("ArmyManager stamina sync", () => {
       resolveLiveExplorerTroops(entityId: number) {
         return ArmyManager.prototype["resolveLiveExplorerTroops"].call(this, entityId);
       },
-      resolveArmyStaminaSnapshot(input: {
-        entityId: number;
-        troopCount: number;
-        onChainStamina: { amount: bigint; updatedTick: number };
-        category: any;
-        tier: any;
-      }) {
-        return ArmyManager.prototype["resolveArmyStaminaSnapshot"].call(this, input);
+      resolveArmyStaminaSnapshot(entityId: number) {
+        return ArmyManager.prototype["resolveArmyStaminaSnapshot"].call(this, entityId);
       },
       updateArmyLabelData: vi.fn(),
     };
@@ -142,13 +135,12 @@ describe("ArmyManager stamina sync", () => {
     expect(army.currentStamina).toBe(50);
   });
 
-  it("falls back to cached on-chain stamina when the live explorer snapshot is older", () => {
+  it("uses live RECS stamina even when a presentation cache was previously newer", () => {
     const army = {
       entityId: 1,
       troopCount: 10,
       category: "Knight",
       tier: 1,
-      onChainStamina: { amount: 40n, updatedTick: 6 },
       currentStamina: 0,
     };
 
@@ -191,20 +183,14 @@ describe("ArmyManager stamina sync", () => {
       resolveLiveExplorerTroops(entityId: number) {
         return ArmyManager.prototype["resolveLiveExplorerTroops"].call(this, entityId);
       },
-      resolveArmyStaminaSnapshot(input: {
-        entityId: number;
-        troopCount: number;
-        onChainStamina: { amount: bigint; updatedTick: number };
-        category: any;
-        tier: any;
-      }) {
-        return ArmyManager.prototype["resolveArmyStaminaSnapshot"].call(this, input);
+      resolveArmyStaminaSnapshot(entityId: number) {
+        return ArmyManager.prototype["resolveArmyStaminaSnapshot"].call(this, entityId);
       },
       updateArmyLabelData: vi.fn(),
     };
 
     ArmyManager.prototype["recomputeStaminaForAllArmies"].call(fakeManager);
 
-    expect(army.currentStamina).toBe(40);
+    expect(army.currentStamina).toBe(10);
   });
 });

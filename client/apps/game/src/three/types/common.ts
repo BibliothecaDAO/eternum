@@ -63,7 +63,6 @@ export interface ArmyData {
   currentStamina: number;
   maxStamina: number;
   displayStaminaRatio?: number;
-  onChainStamina: { amount: bigint; updatedTick: number };
   attackedFromDegrees?: number; // Degrees from which this army has been attacked
   attackedTowardDegrees?: number; // Degrees in which this army has attacked someone
   battleCooldownEnd?: number; // Unix timestamp when battle cooldown ends

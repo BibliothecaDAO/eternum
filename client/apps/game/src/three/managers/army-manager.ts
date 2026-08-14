@@ -162,7 +162,6 @@ interface AddArmyParams {
   isDaydreamsAgent: boolean;
   troopCount?: number;
   currentStamina?: number;
-  onChainStamina?: { amount: bigint; updatedTick: number };
   maxStamina?: number;
   attackedFromDegrees?: number;
   attackedTowardDegrees?: number;
@@ -476,10 +475,6 @@ export class ArmyManager {
       isDaydreamsAgent: false,
       troopCount: divideByPrecision(Number(explorerTroops.troops.count)),
       currentStamina: Number(explorerTroops.troops.stamina.amount),
-      onChainStamina: {
-        amount: explorerTroops.troops.stamina.amount,
-        updatedTick: Number(explorerTroops.troops.stamina.updated_tick),
-      },
       maxStamina: StaminaManager.getMaxStamina(category, tier),
       battleCooldownEnd: explorerTroops.troops.battle_cooldown_end,
     };
@@ -578,10 +573,6 @@ export class ArmyManager {
       isDaydreamsAgent: false,
       troopCount: 10,
       currentStamina: 10,
-      onChainStamina: {
-        amount: 100n,
-        updatedTick: getBlockTimestamp().currentArmiesTick,
-      },
       maxStamina: 100,
     });
   }
@@ -750,10 +741,6 @@ export class ArmyManager {
         isDaydreamsAgent: false,
         troopCount: Math.floor(Math.random() * 100) + 10,
         currentStamina: Math.floor(Math.random() * 100),
-        onChainStamina: {
-          amount: 100n,
-          updatedTick: getBlockTimestamp().currentArmiesTick,
-        },
         maxStamina: 100,
       });
     }
@@ -1623,7 +1610,6 @@ export class ArmyManager {
     // Variables to hold the final values
     let finalTroopCount = params.troopCount || 0;
     let finalCurrentStamina = params.currentStamina || 0;
-    let finalOnChainStamina = params.onChainStamina || { amount: 0n, updatedTick: 0 };
     const finalMaxStamina = params.maxStamina || 0;
     let finalOwnerAddress = params.owner.address;
     let finalOwnerName = params.owner.ownerName;
@@ -1696,13 +1682,7 @@ export class ArmyManager {
       owner: { address: finalOwnerAddress || 0n },
     });
 
-    const initialStaminaPresentation = this.resolveArmyStaminaSnapshot({
-      entityId: params.entityId,
-      troopCount: finalTroopCount,
-      onChainStamina: finalOnChainStamina,
-      category: params.category,
-      tier: params.tier,
-    });
+    const initialStaminaPresentation = this.resolveArmyStaminaSnapshot(params.entityId);
     finalCurrentStamina = initialStaminaPresentation?.current ?? finalCurrentStamina;
 
     this.armyPresentations.set(
@@ -1730,8 +1710,6 @@ export class ArmyManager {
         currentStamina: finalCurrentStamina,
         maxStamina: finalMaxStamina,
         displayStaminaRatio: initialStaminaPresentation?.displayRatio,
-        // we need to check if there's any pending before we set it because onchain stamina might be 0 from the map data store in the system-manager
-        onChainStamina: finalOnChainStamina,
         attackedFromDegrees: attackedFromDegrees ?? undefined,
         attackedTowardDegrees: attackTowardDegrees ?? undefined,
         battleCooldownEnd: finalBattleCooldownEnd,
@@ -3127,23 +3105,17 @@ ${
     return getComponentValue(this.components.ExplorerTroops, gameEntityKey([BigInt(entityId)]))?.troops ?? null;
   }
 
-  private resolveArmyStaminaSnapshot(input: {
-    entityId: ID;
-    troopCount: number;
-    onChainStamina: { amount: bigint; updatedTick: number };
-    category: TroopType;
-    tier: TroopTier;
-  }): { current: number; max: number; displayRatio: number } | null {
-    const { currentArmiesTick, armiesTickTimeRemaining } = useBlockTimestampStore.getState();
+  private resolveArmyStaminaSnapshot(entityId: ID): { current: number; max: number; displayRatio: number } | null {
+    const { currentArmiesTick } = useBlockTimestampStore.getState();
     if (!Number.isFinite(currentArmiesTick) || currentArmiesTick <= 0) {
       return null;
     }
 
-    const pendingStamina = getFreshPendingStaminaSource(input.entityId);
+    const pendingStamina = getFreshPendingStaminaSource(entityId);
     const staminaSnapshot = getExplorerStaminaSnapshot({
-      entityId: input.entityId,
+      entityId,
       currentArmiesTick,
-      liveTroops: this.resolveLiveExplorerTroops(input.entityId),
+      liveTroops: this.resolveLiveExplorerTroops(entityId),
       pendingStamina: pendingStamina
         ? {
             amount: pendingStamina.amount,
@@ -3171,13 +3143,7 @@ ${
     // Update all army data in cache
     this.armyPresentations.forEach((army, entityId) => {
       try {
-        const staminaSnapshot = this.resolveArmyStaminaSnapshot({
-          entityId,
-          troopCount: army.troopCount,
-          onChainStamina: army.onChainStamina,
-          category: army.category,
-          tier: army.tier,
-        });
+        const staminaSnapshot = this.resolveArmyStaminaSnapshot(entityId);
 
         // Update cached army data with new stamina
         army.currentStamina = staminaSnapshot?.current ?? army.currentStamina;
@@ -3205,13 +3171,7 @@ ${
       return;
     }
 
-    const staminaSnapshot = this.resolveArmyStaminaSnapshot({
-      entityId,
-      troopCount: army.troopCount,
-      onChainStamina: army.onChainStamina,
-      category: army.category,
-      tier: army.tier,
-    });
+    const staminaSnapshot = this.resolveArmyStaminaSnapshot(entityId);
     if (!staminaSnapshot) {
       return;
     }
@@ -3303,11 +3263,6 @@ ${
     if (!army) return;
 
     const troopCount = divideByPrecision(Number(explorerTroops.troops.count));
-    const onChainStamina = {
-      amount: explorerTroops.troops.stamina.amount,
-      updatedTick: Number(explorerTroops.troops.stamina.updated_tick),
-    };
-
     // Log troop count diff and play visual FX for battle damage/healing
     const previousCount = army.troopCount;
     if (previousCount !== troopCount) {
@@ -3324,15 +3279,8 @@ ${
     }
 
     army.troopCount = troopCount;
-    army.onChainStamina = onChainStamina;
 
-    const staminaSnapshot = this.resolveArmyStaminaSnapshot({
-      entityId,
-      troopCount,
-      onChainStamina,
-      category: army.category,
-      tier: army.tier,
-    });
+    const staminaSnapshot = this.resolveArmyStaminaSnapshot(entityId);
     army.currentStamina = staminaSnapshot?.current ?? army.currentStamina;
     army.maxStamina = staminaSnapshot?.max ?? army.maxStamina;
     army.displayStaminaRatio = staminaSnapshot?.displayRatio ?? army.displayStaminaRatio;

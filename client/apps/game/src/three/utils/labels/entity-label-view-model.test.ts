@@ -23,7 +23,6 @@ const army = {
   troopCount: 1500,
   currentStamina: 75,
   maxStamina: 100,
-  onChainStamina: { amount: 75n, updatedTick: 1 },
 } satisfies ArmyData;
 
 const structure = {
