@@ -233,6 +233,16 @@ describe("WorldSpatialProjection", () => {
     expect(projection.getChest(7)).toBeUndefined();
   });
 
+  it("does not return an offscreen deletion when its bounds are queried later", () => {
+    const { projection, tileOpt, writeTile } = createHarness();
+    writeTile("offscreen-chest", { col: 200, row: 201, occupierId: 7 });
+    projection.start();
+
+    removeComponent(tileOpt, "offscreen-chest");
+
+    expect(projection.getChestsInBounds({ minCol: 196, maxCol: 204, minRow: 196, maxRow: 204 })).toEqual([]);
+  });
+
   it("publishes one complete change and detaches cleanly", () => {
     const { projection, writeTile } = createHarness();
     const listener = vi.fn();
@@ -344,6 +354,19 @@ describe("WorldSpatialProjection", () => {
         entityId: 7,
         previous: expect.objectContaining({ hexCoords: { col: 20, row: 21 } }),
       },
+    ]);
+  });
+
+  it("returns an offscreen army at its destination only after it moves", () => {
+    const { projection, writeArmy } = createHarness();
+    writeArmy("army", { explorerId: 7, col: 100, row: 101 });
+    projection.start();
+
+    writeArmy("army", { explorerId: 7, col: 200, row: 201 });
+
+    expect(projection.getArmiesInBounds({ minCol: 96, maxCol: 104, minRow: 96, maxRow: 104 })).toEqual([]);
+    expect(projection.getArmiesInBounds({ minCol: 196, maxCol: 204, minRow: 196, maxRow: 204 })).toEqual([
+      expect.objectContaining({ entityId: 7, hexCoords: { col: 200, row: 201 } }),
     ]);
   });
 

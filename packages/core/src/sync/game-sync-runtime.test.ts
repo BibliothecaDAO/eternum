@@ -57,7 +57,7 @@ const createMemoryStore = (initial: Record<string, Record<string, unknown>> = {}
 const createSessionHarness = (input: {
   pages?: Array<{ items: GameSyncEntity[]; nextCursor?: string }>;
   store?: GameSyncStore;
-  onFetchPage?: (pageIndex: number, handlers: GameSyncSubscriptionHandlers) => void;
+  onFetchPage?: (pageIndex: number, handlers: GameSyncSubscriptionHandlers) => void | Promise<void>;
 }) => {
   const order: string[] = [];
   const writers: Array<GameSyncWriter & { cancel: ReturnType<typeof vi.fn> }> = [];
@@ -78,7 +78,7 @@ const createSessionHarness = (input: {
       },
       async fetchSnapshotPage() {
         order.push(`snapshot-page-${pageIndex + 1}`);
-        input.onFetchPage?.(pageIndex, handlers!);
+        await input.onFetchPage?.(pageIndex, handlers!);
         return pages[pageIndex++] ?? { items: [] };
       },
     },
@@ -351,5 +351,29 @@ describe("GameSyncRuntime lifecycle", () => {
 
     expect(harness.writers[0].cancel).toHaveBeenCalledOnce();
     expect(getActiveGameSyncRuntime()).toBeNull();
+  });
+
+  it("rejects buffered updates from the previous game when the active game changes", async () => {
+    const memory = createMemoryStore();
+    let finishSnapshot!: () => void;
+    const snapshotBlocked = new Promise<void>((resolve) => (finishSnapshot = resolve));
+    const harness = createSessionHarness({
+      store: memory.store,
+      pages: [{ items: [] }],
+      async onFetchPage(_pageIndex, handlers) {
+        handlers.onEntity(entity("old-game-army", { Position: { x: 99 } }));
+        await snapshotBlocked;
+      },
+    });
+    const runtime = installGameSyncRuntime(new GameSyncRuntime());
+    const start = runtime.startSession(harness.session);
+    await flushMicrotasks();
+
+    configManager.setActiveGame(15, 7);
+    finishSnapshot();
+
+    await expect(start).rejects.toBeInstanceOf(SupersededGameSyncStartError);
+    expect(memory.rows.has("old-game-army")).toBe(false);
+    expect(harness.writers[0].cancel).toHaveBeenCalledOnce();
   });
 });
