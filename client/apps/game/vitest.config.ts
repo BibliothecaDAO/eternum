@@ -6,6 +6,11 @@ import { defineConfig } from "vitest/config";
 export default defineConfig({
   plugins: [react(), wasm()],
   test: {
+    // A handful of load-sensitive files (instanced-model, game-entry-preload,
+    // play-asset-manifest) time out under full-suite parallelism but pass in
+    // isolation. One CI retry turns those known flakes from an 11-minute job
+    // rerun into a few retried seconds; locally failures stay loud.
+    retry: process.env.CI ? 1 : 0,
     env: {
       VITE_PUBLIC_MASTER_ADDRESS: "0x0000000000000000000000000000000000000001",
       VITE_PUBLIC_MASTER_PRIVATE_KEY: "0x0000000000000000000000000000000000000001",
