@@ -89,7 +89,7 @@ export class ChestManager {
       hexagonScene.addCameraViewListener(this.handleCameraViewChange);
     }
 
-    this.unsubscribeProjection = worldSpatialProjection.subscribe(() => {
+    this.unsubscribeProjection = worldSpatialProjection.subscribeChests(() => {
       if (isCommittedManagerChunk(this.currentChunkKey)) {
         this.renderVisibleChests(this.currentChunkKey);
       }

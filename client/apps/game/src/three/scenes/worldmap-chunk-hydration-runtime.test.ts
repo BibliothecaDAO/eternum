@@ -19,13 +19,11 @@ describe("hydrateWorldmapChunkRuntime", () => {
       onChunkHydrated: vi.fn(),
       phaseDurations: {
         structureAssetPrewarmMs: 1,
-        structureHydrationDrainMs: 2,
         terrainPreparedMs: 3,
         tileHydrationDrainMs: 4,
       },
       prepareTerrainChunk: vi.fn(),
       prewarmChunkAssets: vi.fn(),
-      waitForStructureHydrationIdle: vi.fn(),
       waitForTileHydrationIdle: vi.fn(),
     };
     createWorldmapChunkPresentationRuntime.mockReturnValue(presentationRuntime);
@@ -53,7 +51,6 @@ describe("hydrateWorldmapChunkRuntime", () => {
       transitionToken: 7,
       updateBoundsSubscription: vi.fn(),
       updatePinnedChunks: vi.fn(),
-      waitForStructureHydrationIdle: vi.fn(),
       waitForTileHydrationIdle: vi.fn(),
     });
 
@@ -64,7 +61,6 @@ describe("hydrateWorldmapChunkRuntime", () => {
         onChunkHydrated: presentationRuntime.onChunkHydrated,
         prepareTerrainChunk: presentationRuntime.prepareTerrainChunk,
         prewarmChunkAssets: presentationRuntime.prewarmChunkAssets,
-        waitForStructureHydrationIdle: presentationRuntime.waitForStructureHydrationIdle,
         waitForTileHydrationIdle: presentationRuntime.waitForTileHydrationIdle,
       }),
     );

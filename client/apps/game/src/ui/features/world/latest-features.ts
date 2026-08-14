@@ -34,6 +34,14 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 // are surfaced in the What's New popup.
 const allLatestFeatures: LatestFeature[] = [
   {
+    date: "2026-08-14",
+    title: "Reliable Map Structures",
+    description:
+      "Fixed structures so new realms, upgrades, and Hyperstructure sites appear and stay current immediately without leaving and returning to the area.",
+    type: "fix",
+    gameSlug: "world",
+  },
+  {
     date: "2026-08-13",
     title: "Reliable Map Chests",
     description:

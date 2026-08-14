@@ -48,7 +48,6 @@ describe("worldmap render diagnostics wiring", () => {
     incrementWorldmapRenderCounter("updateVisibleChunksCalls", 1);
     incrementWorldmapRenderCounter("preparedChunkPrewarmHits", 5);
     incrementWorldmapRenderCounter("preparedChunkPrewarmMisses", 2);
-    incrementWorldmapRenderCounter("globalSpatialRecsHydratedStructures", 4);
     incrementWorldmapRenderCounter("spatialBoundsSwitchRequests", 2);
     incrementWorldmapRenderCounter("spatialBoundsSwitchApplied", 1);
     incrementWorldmapRenderCounter("spatialBoundsSwitchSkipped", 3);
@@ -62,7 +61,6 @@ describe("worldmap render diagnostics wiring", () => {
     expect(snapshot.counters.updateVisibleChunksCalls).toBe(1);
     expect(snapshot.counters.preparedChunkPrewarmHits).toBe(5);
     expect(snapshot.counters.preparedChunkPrewarmMisses).toBe(2);
-    expect(snapshot.counters.globalSpatialRecsHydratedStructures).toBe(4);
     expect(snapshot.counters.spatialBoundsSwitchRequests).toBe(2);
     expect(snapshot.counters.spatialBoundsSwitchApplied).toBe(1);
     expect(snapshot.counters.spatialBoundsSwitchSkipped).toBe(3);

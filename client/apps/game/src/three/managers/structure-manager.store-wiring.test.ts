@@ -8,11 +8,12 @@ function readStructureManagerSource(): string {
   return readFileSync(resolve(currentDir, "structure-manager.ts"), "utf8");
 }
 
-describe("StructureManager store wiring", () => {
-  it("imports the structure store instead of declaring it inline", () => {
+describe("StructureManager projection wiring", () => {
+  it("uses the shared projection for spatial truth without a structure truth store", () => {
     const source = readStructureManagerSource();
 
-    expect(source).toMatch(/from "\.\/structure-record-store"/);
-    expect(source).not.toMatch(/class Structures \{/);
+    expect(source).toMatch(/private readonly worldSpatialProjection: WorldSpatialProjection/);
+    expect(source).toMatch(/worldSpatialProjection\.subscribeStructures/);
+    expect(source).not.toMatch(/StructureRecordStore|structureHexCoords|chunkToStructures/);
   });
 });

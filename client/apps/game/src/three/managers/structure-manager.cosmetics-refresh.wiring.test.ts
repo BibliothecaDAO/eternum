@@ -13,13 +13,14 @@ describe("structure manager cosmetics refresh wiring", () => {
     const source = readStructureManagerSource();
 
     expect(source).toMatch(/public\s+refreshCosmeticsForOwner\s*\(\s*owner:\s*string\s*\|\s*bigint\s*\)/);
-    expect(source).toMatch(/refreshStructureCosmeticsByOwner\(/);
+    expect(source).toMatch(/this\.worldSpatialProjection\.getStructures\(\)\.some/);
+    expect(source).toMatch(/getComponentValue\(this\.components\.Structure/);
     expect(source).toMatch(/void\s+this\.requestVisibleStructuresRefresh\s*\(\s*\)/);
   });
 
-  it("constructs its structure store through the extracted store module", () => {
+  it("does not maintain a second structure truth store", () => {
     const source = readStructureManagerSource();
 
-    expect(source).toMatch(/new\s+StructureRecordStore\(/);
+    expect(source).not.toMatch(/StructureRecordStore|refreshStructureCosmeticsByOwner/);
   });
 });

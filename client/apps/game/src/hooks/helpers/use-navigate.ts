@@ -2,7 +2,6 @@ import { useCallback } from "react";
 
 import { Position } from "@bibliothecadao/eternum";
 
-import { ensureStructureSynced } from "@/dojo/queries";
 import { buildPlayHref, parsePlayRoute, type PlayScene } from "@/play/navigation/play-route";
 import { UNDEFINED_STRUCTURE_ENTITY_ID } from "@/ui/constants";
 import { SetupResult } from "@bibliothecadao/dojo";
@@ -10,7 +9,6 @@ import { useQuery } from "@bibliothecadao/react";
 import { ID } from "@bibliothecadao/types";
 import { getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
-import { useAccountStore } from "../store/use-account-store";
 import { useUIStore } from "../store/use-ui-store";
 import { gameEntityKey } from "@/dojo/game-scope";
 
@@ -173,43 +171,6 @@ export const useGoToStructure = (setupResult: SetupResult | null) => {
   const navigateToHexView = useNavigateToHexView();
   const navigateToMapView = useNavigateToMapView();
 
-  const ensureStructureSyncedCb = useCallback(
-    async (structureEntityId: ID, position: Position, worldMapPosition?: { col: number; row: number }) => {
-      const components = setupResult?.components;
-      const toriiClient = setupResult?.network?.toriiClient;
-      const contractComponents = setupResult?.network?.contractComponents;
-
-      if (!components || !toriiClient || !contractComponents) {
-        return;
-      }
-
-      const effectivePosition = worldMapPosition ?? toWorldMapPosition(position);
-      if (!effectivePosition) {
-        return;
-      }
-
-      const previousCursor = document.body.style.cursor;
-      document.body.style.cursor = "wait";
-
-      try {
-        const account = useAccountStore.getState().account?.address;
-        await ensureStructureSynced(
-          components,
-          toriiClient,
-          contractComponents as any,
-          structureEntityId,
-          effectivePosition,
-          account,
-        );
-      } catch (error) {
-        console.error("[useGoToStructure] Failed to sync structure before navigation", error);
-      } finally {
-        document.body.style.cursor = previousCursor;
-      }
-    },
-    [setupResult],
-  );
-
   const updateSelectedHex = useCallback(
     (worldMapPosition?: { col: number; row: number }) => {
       if (!worldMapPosition) {
@@ -239,12 +200,6 @@ export const useGoToStructure = (setupResult: SetupResult | null) => {
   ) => {
     const targetPosition = normalizeToPosition(positionInput);
     const worldMapPosition = toWorldMapPosition(targetPosition);
-
-    try {
-      await ensureStructureSyncedCb(structureEntityId, targetPosition, worldMapPosition);
-    } catch (error) {
-      console.error("[useGoToStructure] Unexpected error while syncing structure", error);
-    }
 
     setStructureEntityId(structureEntityId, {
       spectator: options?.spectator ?? false,

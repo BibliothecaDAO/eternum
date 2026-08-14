@@ -9,10 +9,9 @@ function readStructureManagerSource(): string {
 }
 
 describe("structure visible presentation wiring", () => {
-  it("routes patch and render passes through shared presentation helpers", () => {
+  it("routes projected render passes through shared presentation helpers", () => {
     const source = readStructureManagerSource();
 
-    expect(source).toMatch(/this\.syncVisibleStructurePresentation\(previous, next, rotationY\)/);
     expect(source).toMatch(
       /this\.syncVisibleStructurePresentation\(undefined, structure, rotationY, attachmentRetain\)/,
     );

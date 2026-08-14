@@ -40,6 +40,14 @@ vi.mock("@/ui/config", () => ({
   FELT_CENTER: () => 0,
 }));
 
+vi.mock("@bibliothecadao/eternum", () => {
+  const proxy = new Proxy({}, { get: (_, key) => key });
+  return new Proxy({ TROOP_TIERS: proxy } as Record<string, unknown>, {
+    get: (target, prop) => (prop in target ? target[prop as string] : proxy),
+    has: () => true,
+  });
+});
+
 vi.mock("@bibliothecadao/types", () => {
   const enumProxy = new Proxy(
     {},

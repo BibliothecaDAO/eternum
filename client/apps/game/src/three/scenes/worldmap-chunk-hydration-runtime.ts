@@ -1,11 +1,11 @@
 import type { WorldmapChunkDiagnostics } from "./worldmap-chunk-diagnostics";
 import { createWorldmapChunkPresentationRuntime } from "./worldmap-chunk-presentation-runtime";
-import { hydrateWarpTravelChunk, type ComputeTileEntitiesOptions } from "./warp-travel-chunk-hydration";
+import { hydrateWarpTravelChunk } from "./warp-travel-chunk-hydration";
 import type { WorldmapRenderDurationMetric } from "../perf/worldmap-render-diagnostics";
 
 interface HydrateWorldmapChunkRuntimeInput<TPreparedTerrain> {
   chunkKey: string;
-  computeTileEntities: (chunkKey: string, options: ComputeTileEntitiesOptions) => Promise<boolean>;
+  computeTileEntities: (chunkKey: string) => Promise<boolean>;
   diagnostics: WorldmapChunkDiagnostics;
   now: () => number;
   onChunkHydrated: (chunkKey: string) => void;
@@ -25,7 +25,6 @@ interface HydrateWorldmapChunkRuntimeInput<TPreparedTerrain> {
   transitionToken: number;
   updateBoundsSubscription: (chunkKey: string, transitionToken: number) => Promise<void>;
   updatePinnedChunks: (chunkKeys: string[]) => void;
-  waitForStructureHydrationIdle: (chunkKey: string) => Promise<void>;
   waitForTileHydrationIdle: (chunkKey: string) => Promise<void>;
 }
 
@@ -41,7 +40,6 @@ export async function hydrateWorldmapChunkRuntime<TPreparedTerrain>(
     recordTileHydrationDrainCompleted: () => {
       input.recordChunkDiagnosticsEvent(input.diagnostics, "tile_hydration_drain_completed");
     },
-    waitForStructureHydrationIdle: input.waitForStructureHydrationIdle,
     waitForTileHydrationIdle: input.waitForTileHydrationIdle,
   });
 
@@ -56,7 +54,6 @@ export async function hydrateWorldmapChunkRuntime<TPreparedTerrain>(
     updatePinnedChunks: input.updatePinnedChunks,
     updateBoundsSubscription: input.updateBoundsSubscription,
     waitForTileHydrationIdle: presentationRuntime.waitForTileHydrationIdle,
-    waitForStructureHydrationIdle: presentationRuntime.waitForStructureHydrationIdle,
     prewarmChunkAssets: presentationRuntime.prewarmChunkAssets,
     prepareTerrainChunk: presentationRuntime.prepareTerrainChunk,
     onChunkHydrated: presentationRuntime.onChunkHydrated,

@@ -6,7 +6,6 @@ import {
   ARMY_AUTHORITATIVE_SWEEP_INTERVAL_MS,
   sweepArmiesAgainstTorii,
 } from "@/dojo/army-authoritative-reconciler";
-import { ensureStructureSynced } from "@/dojo/queries";
 import { initializeSyncSimulator } from "@/dojo/sync-simulator";
 import { getBoundedSpatialMapModels, getGlobalSpatialMapModels } from "@/dojo/torii-spatial-models";
 import { shouldUseLegacyBoundedSpatialSync } from "@/dojo/game-sync-mode";
@@ -65,7 +64,11 @@ import { WorldmapPerfSimulation } from "@/three/scenes/worldmap-perf-simulation"
 import { playResourceSound } from "@/three/sound/utils";
 import { LeftView } from "@/types";
 import { configManager, Position } from "@bibliothecadao/eternum";
-import { requireActiveGameSyncRuntime, type WorldSpatialProjection } from "@bibliothecadao/eternum/game-sync";
+import {
+  requireActiveGameSyncRuntime,
+  type StructureSpatialProjectionChange,
+  type WorldSpatialProjection,
+} from "@bibliothecadao/eternum/game-sync";
 import { gameWorkerManager } from "../../managers/game-worker-manager";
 
 import { FELT_CENTER, IS_FLAT_MODE } from "@/ui/config";
@@ -80,21 +83,16 @@ import {
   ActionType,
   ArmyActionManager,
   BattleEventSystemUpdate,
-  DEFAULT_COORD_ALT,
   divideByPrecision,
   ExplorerRewardSystemUpdate,
   ExplorerTroopsSystemUpdate,
   ExplorerTroopsTileSystemUpdate,
   getBlockTimestamp,
   getGuardsByStructure,
-  getStructureInfoFromTileOccupier,
   getTileAt,
-  isTileOccupierReservedHyperstructure,
   recordArmyMovementLatencyPhase,
-  ReservedHyperstructureTileSystemUpdate,
   SelectableArmy,
   StructureActionManager,
-  StructureTileSystemUpdate,
   TileSystemUpdate,
   tileOptToTile,
 } from "@bibliothecadao/eternum";
@@ -104,7 +102,6 @@ import {
   BiomeType,
   ContractAddress,
   Direction,
-  DUMMY_HYPERSTRUCTURE_ENTITY_ID,
   findResourceById,
   getDirectionBetweenAdjacentHexes,
   getTroopAttackRange,
@@ -271,7 +268,6 @@ import {
   type ArmyRecsConsistencyAction,
   type ArmyRecsConsistencyCandidate,
 } from "./worldmap-army-recs-consistency";
-import { resolveAttachedArmyOwnerFromStructure } from "./worldmap-attached-army-owner-sync";
 import { resolveArmyActionPathOrigin } from "./worldmap-action-path-origin";
 import { resolveArmyOwnerCacheAction } from "./worldmap-army-owner-resolution";
 import { resolveOwnershipPulseHexes } from "./worldmap-ownership-pulse-policy";
@@ -318,7 +314,6 @@ import {
   planWorldmapZoomRefresh,
 } from "./worldmap-zoom/worldmap-zoom-refresh-planner";
 import type { WorldmapCameraSnapshot } from "./worldmap-zoom/worldmap-zoom-types";
-import { resolveStructureTileUpdateActions } from "./worldmap-structure-update-policy";
 import { shouldInvalidateTerrainForArmyTileUpdate } from "./worldmap-army-terrain-invalidation-policy";
 import {
   resolveWorldmapChunkRefreshDebounceMs,
@@ -527,7 +522,7 @@ interface WorldmapVisualTerrainPageBuildRequest {
   transitionToken?: number;
 }
 
-interface StructureHydrationFetchState {
+interface TileHydrationFetchState {
   fetchGeneration: number;
   minCol: number;
   maxCol: number;
@@ -538,15 +533,7 @@ interface StructureHydrationFetchState {
   waiters: Array<() => void>;
 }
 
-type TileHydrationFetchState = StructureHydrationFetchState;
-
-type ToriiBoundsCounterKey =
-  | "tiles"
-  | "structureTiles"
-  | "structures"
-  | "structureBuildings"
-  | "explorerTiles"
-  | "explorerTroops";
+type ToriiBoundsCounterKey = "tiles" | "explorerTiles" | "explorerTroops";
 
 type WorldmapChunkSwitchP95RegressionDebugResult = {
   baselineLabel: string | null;
@@ -568,7 +555,6 @@ interface WorldmapRenderAreaBounds {
 type GlobalTileOptHydrationEntry = {
   normalized: { x: number; y: number };
   tile: NonNullable<ReturnType<typeof tileOptToTile>>;
-  tileOpt: Parameters<typeof tileOptToTile>[0];
 };
 
 interface WorldmapHydrationFetchPlan {
@@ -632,7 +618,6 @@ const TORII_BOUNDS_DEBUG_OVERLAY = env.VITE_PUBLIC_TORII_BOUNDS_DEBUG_OVERLAY ==
 const WORLDMAP_CHUNK_PHASE_TIMEOUT_MS = env.VITE_PUBLIC_WORLDMAP_CHUNK_PHASE_TIMEOUT_MS;
 const WORLDMAP_CHUNK_RECOVERY_COOLDOWN_MS = 2_000;
 const EXPLORER_TROOPS_HYDRATION_KEY_PREFIX = "explorerTroops:";
-const STRUCTURES_HYDRATION_KEY_PREFIX = "structures:";
 // Hard timeout wrapping the entire chunk transition (phase timeouts + post-phase work).
 // Catches cases where post-phase awaits (e.g. manager catch-up, finalize rollback)
 // hang past all per-phase timeouts and would otherwise lock isChunkTransitioning.
@@ -927,14 +912,10 @@ export default class WorldmapScene extends WarpTravel {
   private exploredTiles: Map<number, Map<number, BiomeType>> = new Map();
   // normalized positions and if they are allied or not
   private armyHexes: Map<number, Map<number, HexEntityInfo>> = new Map();
-  // normalized positions and if they are allied or not
-  private structureHexes: Map<number, Map<number, HexEntityInfo>> = new Map();
   // store armies positions by ID, to remove previous positions when army moves
   // normalized coordinates
   private armiesPositions: Map<ID, HexPosition> = new Map();
   private armyLastTileSyncAt: Map<ID, number> = new Map();
-  // normalized coordinates
-  private structuresPositions: Map<ID, HexPosition> = new Map();
 
   // Battle direction manager for tracking attacker/defender relationships
   private battleDirectionManager!: BattleDirectionManager;
@@ -1027,38 +1008,6 @@ export default class WorldmapScene extends WarpTravel {
   private perfSimulation: WorldmapPerfSimulation | null = null;
   // Performance simulation: Show all biomes as explored (bypasses fog of war)
   private simulateAllExplored: boolean = false;
-  private async ensureStructureQueriedMethod(structureId: ID, hexCoords: HexPosition) {
-    const contractCoords = new Position({ x: hexCoords.col, y: hexCoords.row }).getContract();
-    const components = this.dojo.components as Parameters<typeof ensureStructureSynced>[0];
-    const toriiClient = this.dojo.network?.toriiClient;
-    const contractComponents = this.dojo.network?.contractComponents as unknown as
-      | Parameters<typeof ensureStructureSynced>[2]
-      | undefined;
-
-    if (!toriiClient || !contractComponents) {
-      return;
-    }
-
-    const previousCursor = document.body.style.cursor;
-    document.body.style.cursor = "wait";
-
-    try {
-      const accountAddress = useAccountStore.getState().account?.address;
-      await ensureStructureSynced(
-        components,
-        toriiClient,
-        contractComponents,
-        structureId,
-        { col: contractCoords.x, row: contractCoords.y },
-        accountAddress,
-      );
-    } catch (error) {
-      console.error("[WorldmapScene] Failed to fetch structure data from Torii", error);
-    } finally {
-      document.body.style.cursor = previousCursor;
-    }
-  }
-
   private exploredTilesGeneration = createTerrainCacheGeneration();
   private provisionalBiomes = createProvisionalBiomeTracker();
   private cachedMatrices: Map<string, Map<string, CachedMatrixEntry>> = new Map();
@@ -1116,7 +1065,6 @@ export default class WorldmapScene extends WarpTravel {
   private readonly renderAreaHydrationState = createWorldmapRenderAreaHydrationState();
   private pendingChunkFetchGeneration = 0;
   private tileHydrationFetches: Map<string, TileHydrationFetchState> = new Map();
-  private structureHydrationFetches: Map<string, StructureHydrationFetchState> = new Map();
   private visibleTerrainMembership: Map<string, VisibleTerrainInstanceRef> = new Map();
   private pinnedRenderAreas: Set<string> = new Set();
   private pendingArmyRemovals: Map<ID, ReturnType<typeof setTimeout>> = new Map();
@@ -1168,9 +1116,6 @@ export default class WorldmapScene extends WarpTravel {
   private toriiBoundsDebugSnapshot: ToriiBoundsDebugOverlaySnapshot = {};
   private toriiBoundsUpdateCounts: Record<ToriiBoundsCounterKey, number> = {
     tiles: 0,
-    structureTiles: 0,
-    structures: 0,
-    structureBuildings: 0,
     explorerTiles: 0,
     explorerTroops: 0,
   };
@@ -1616,6 +1561,7 @@ export default class WorldmapScene extends WarpTravel {
     this.structureManager = new StructureManager(
       this.scene,
       this.renderChunkSize,
+      this.worldSpatialProjection,
       this.structureLabelsGroup,
       this,
       this.fxManager,
@@ -1624,7 +1570,7 @@ export default class WorldmapScene extends WarpTravel {
       this.visibilityManager,
       this.chunkSize,
     );
-    this.reservedHyperstructureManager = new ReservedHyperstructureManager(this.scene);
+    this.reservedHyperstructureManager = new ReservedHyperstructureManager(this.scene, this.worldSpatialProjection);
     this.chestManager = new ChestManager(
       this.scene,
       this.renderChunkSize,
@@ -1672,7 +1618,7 @@ export default class WorldmapScene extends WarpTravel {
         this.armyManager.updateBattleDirection(entityId, direction, role),
       (entityId: ID, direction: Direction | undefined, role: "attacker" | "defender") =>
         this.structureManager.updateBattleDirection(entityId, direction, role),
-      (entityId: ID) => this.armiesPositions.get(entityId) || this.structuresPositions.get(entityId),
+      (entityId: ID) => this.armiesPositions.get(entityId) || this.getStructureHexPosition(entityId),
     );
 
     this.hoverLabelManager = new HoverLabelManager(
@@ -1700,8 +1646,42 @@ export default class WorldmapScene extends WarpTravel {
   }
 
   private bindWorldSpatialProjectionLifecycle(): void {
-    this.unsubscribeWorldSpatialProjection = this.worldSpatialProjection.subscribe(() => {
+    this.worldSpatialProjection.getStructures().forEach((structure) => {
+      if (structure.reserved) return;
+      const normalized = new Position({ x: structure.hexCoords.col, y: structure.hexCoords.row }).getNormalized();
+      gameWorkerManager.updateStructureHex(normalized.x, normalized.y, {
+        id: structure.entityId,
+        owner: this.getStructureOwnerAddress(structure.entityId) ?? 0n,
+      });
+    });
+
+    this.unsubscribeWorldSpatialProjection = this.worldSpatialProjection.subscribeStructures((changes) => {
+      this.syncProjectedStructurePathfinding(changes);
+      changes.forEach(({ previous, current }) => {
+        if (previous?.reserved && !current?.reserved) {
+          clearPendingReservedHyperstructureCreation(previous.hexCoords);
+        }
+      });
       this.reconcileHoverLabels();
+    });
+  }
+
+  private syncProjectedStructurePathfinding(changes: readonly StructureSpatialProjectionChange[]): void {
+    changes.forEach(({ previous, current }) => {
+      if (previous && !previous.reserved) {
+        const previousHex = new Position({ x: previous.hexCoords.col, y: previous.hexCoords.row }).getNormalized();
+        const currentStayedAtPreviousHex =
+          current?.hexCoords.col === previous.hexCoords.col && current.hexCoords.row === previous.hexCoords.row;
+        if (!currentStayedAtPreviousHex) gameWorkerManager.updateStructureHex(previousHex.x, previousHex.y, null);
+      }
+
+      if (current && !current.reserved) {
+        const currentHex = new Position({ x: current.hexCoords.col, y: current.hexCoords.row }).getNormalized();
+        gameWorkerManager.updateStructureHex(currentHex.x, currentHex.y, {
+          id: current.entityId,
+          owner: this.getStructureOwnerAddress(current.entityId) ?? 0n,
+        });
+      }
     });
   }
 
@@ -1722,9 +1702,7 @@ export default class WorldmapScene extends WarpTravel {
     }
     this.registerArmyWorldUpdateSubscriptions();
     this.registerBattleWorldUpdateSubscriptions();
-    this.registerStructureWorldUpdateSubscriptions();
     this.registerTileWorldUpdateSubscriptions();
-    this.registerReservedHyperstructureWorldUpdateSubscriptions();
     this.registerExplorerRewardWorldUpdateSubscriptions();
   }
 
@@ -1890,11 +1868,11 @@ export default class WorldmapScene extends WarpTravel {
         if (followArmyCombats && currentScene === SceneName.WorldMap) {
           const attackerPosition =
             attackerId !== undefined
-              ? (this.armiesPositions.get(attackerId) ?? this.structuresPositions.get(attackerId))
+              ? (this.armiesPositions.get(attackerId) ?? this.getStructureHexPosition(attackerId))
               : undefined;
           const defenderPosition =
             defenderId !== undefined
-              ? (this.armiesPositions.get(defenderId) ?? this.structuresPositions.get(defenderId))
+              ? (this.armiesPositions.get(defenderId) ?? this.getStructureHexPosition(defenderId))
               : undefined;
           const targetPosition = defenderPosition ?? attackerPosition;
 
@@ -1908,125 +1886,11 @@ export default class WorldmapScene extends WarpTravel {
     );
   }
 
-  private registerStructureWorldUpdateSubscriptions(): void {
-    this.addWorldUpdateSubscription(
-      this.worldUpdateListener.Structure.onStructureUpdate((update) => {
-        void this.trackStructureHydrationUpdate(update, () => {
-          this.incrementToriiBoundsCounter("structures");
-          const previousStructureOwner = this.getTrackedStructureOwner(update.entityId);
-          this.updateStructureHexes(update);
-          this.structureManager.updateStructureLabelFromStructureUpdate(update);
-          this.reconcileHoverLabels();
-          if (previousStructureOwner !== update.owner.address) {
-            this.syncAttachedArmiesForStructureOwner(update);
-          }
-        }).catch((error) => {
-          console.warn("[Worldmap] Structure hydration update failed", error);
-        });
-      }),
-    );
-
-    this.addWorldUpdateSubscription(
-      this.worldUpdateListener.Structure.onStructureBuildingsUpdate((update) => {
-        void this.trackStructureHydrationUpdate(update, () => {
-          this.incrementToriiBoundsCounter("structureBuildings");
-          this.structureManager.updateStructureLabelFromBuildingUpdate(update);
-          this.reconcileHoverLabels();
-        }).catch((error) => {
-          console.warn("[Worldmap] Structure-building hydration update failed", error);
-        });
-      }),
-    );
-  }
-
   private registerTileWorldUpdateSubscriptions(): void {
     this.addWorldUpdateSubscription(
       this.worldUpdateListener.Tile.onTileUpdate((value) => {
         this.incrementToriiBoundsCounter("tiles");
         void this.trackTileHydrationUpdate(value, this.updateExploredHex(value));
-      }),
-    );
-
-    this.addWorldUpdateSubscription(
-      this.worldUpdateListener.Structure.onTileUpdate(async (value) => {
-        await this.applyStructureTileUpdate(value);
-      }),
-    );
-  }
-
-  private async applyStructureTileUpdate(value: StructureTileSystemUpdate): Promise<void> {
-    this.incrementToriiBoundsCounter("structureTiles");
-    const positions = this.updateStructureHexes(value);
-
-    const optimisticStructure = this.structureManager.structures.removeStructure(
-      Number(DUMMY_HYPERSTRUCTURE_ENTITY_ID),
-    );
-    if (optimisticStructure) {
-      this.dojo.components.Structure.removeOverride(DUMMY_HYPERSTRUCTURE_ENTITY_ID.toString());
-      this.structureManager.structureHexCoords
-        .get(optimisticStructure.hexCoords.col)
-        ?.delete(optimisticStructure.hexCoords.row);
-      this.structureManager.updateChunk(this.currentChunk);
-    }
-
-    await this.trackStructureHydrationUpdate(value, () => this.structureManager.onUpdate(value));
-    this.reconcileHoverLabels();
-
-    const newCount = this.structureManager.getTotalStructures();
-    const countChanged = this.totalStructures !== newCount;
-
-    if (import.meta.env.DEV && countChanged) {
-      console.log(
-        `[Structure.onTileUpdate] Count changed: ${this.totalStructures} -> ${newCount}, entityId: ${value.entityId}`,
-      );
-    }
-
-    const structureTileActions = resolveStructureTileUpdateActions({
-      hasPositions: Boolean(positions),
-      countChanged,
-    });
-
-    if (structureTileActions.shouldScheduleTileRefresh && positions) {
-      this.scheduleTileRefreshIfAffectsCurrentRenderBounds(positions.oldPos ?? null, positions.newPos);
-    }
-
-    if (structureTileActions.shouldUpdateTotalStructures) {
-      this.totalStructures = newCount;
-    }
-
-    if (structureTileActions.shouldInvalidateAffectedChunks) {
-      // Phase 1.1: invalidate only the chunks overlapping the affected structure
-      // hex instead of flushing the entire terrain matrix cache + global pools +
-      // hydration state. updateStructureHexes already invalidated these hexes; the
-      // calls here are idempotent and also cover the count-changed-without-move
-      // path (e.g. founding/destruction reported via the optimistic removal above).
-      if (positions) {
-        this.invalidateAllChunkCachesContainingHex(positions.newPos.col, positions.newPos.row);
-        if (positions.oldPos) {
-          this.invalidateAllChunkCachesContainingHex(positions.oldPos.col, positions.oldPos.row);
-        }
-      } else {
-        // Owner-less update (updateStructureHexes bailed before tracking positions):
-        // fall back to the update's own hex so a count change never skips
-        // invalidation entirely (the pre-Phase-1.1 code flushed the whole cache).
-        const fallbackHex = new Position({ x: value.hexCoords.col, y: value.hexCoords.row }).getNormalized();
-        this.invalidateAllChunkCachesContainingHex(fallbackHex.x, fallbackHex.y);
-      }
-    }
-
-    if (structureTileActions.shouldRefreshVisibleChunks) {
-      this.requestChunkRefresh(true, "structure_count_change");
-    }
-  }
-
-  private registerReservedHyperstructureWorldUpdateSubscriptions(): void {
-    this.addWorldUpdateSubscription(
-      this.worldUpdateListener.ReservedHyperstructure.onTileUpdate((update: ReservedHyperstructureTileSystemUpdate) => {
-        if (update.removed) {
-          clearPendingReservedHyperstructureCreation(update.hexCoords);
-        }
-
-        this.reservedHyperstructureManager.onUpdate(update);
       }),
     );
   }
@@ -2510,100 +2374,12 @@ export default class WorldmapScene extends WarpTravel {
       return this.armyHexes.get(armyPosition.col)?.get(armyPosition.row)?.owner;
     }
 
-    const structurePosition = this.structuresPositions.get(entityId);
-    if (structurePosition) {
-      return this.structureHexes.get(structurePosition.col)?.get(structurePosition.row)?.owner;
-    }
-
-    return undefined;
+    return this.getStructureOwnerAddress(entityId);
   }
 
-  private getTrackedStructureOwner(entityId: ID): ContractAddress | undefined {
-    const structurePosition = this.structuresPositions.get(entityId);
-    if (structurePosition) {
-      return this.structureHexes.get(structurePosition.col)?.get(structurePosition.row)?.owner;
-    }
-
-    for (const rowMap of this.structureHexes.values()) {
-      for (const structure of rowMap.values()) {
-        if (structure.id === entityId) {
-          return structure.owner;
-        }
-      }
-    }
-
-    return undefined;
-  }
-
-  private getTrackedArmyOwner(entityId: ID): ContractAddress | undefined {
-    const armyPosition = this.armiesPositions.get(entityId);
-    if (armyPosition) {
-      return this.armyHexes.get(armyPosition.col)?.get(armyPosition.row)?.owner;
-    }
-
-    for (const rowMap of this.armyHexes.values()) {
-      for (const army of rowMap.values()) {
-        if (army.id === entityId) {
-          return army.owner;
-        }
-      }
-    }
-
-    return undefined;
-  }
-
-  private syncAttachedArmiesForStructureOwner(update: {
-    entityId: ID;
-    owner: { address: bigint | undefined; ownerName: string; guildName: string };
-  }): void {
-    const structureOwnerAddress = update.owner.address;
-    if (structureOwnerAddress === undefined) {
-      return;
-    }
-
-    const attachedArmyIds = new Set<ID>();
-
-    this.armyManager
-      .syncAttachedArmiesOwnerForStructure({
-        structureId: update.entityId,
-        ownerAddress: structureOwnerAddress,
-        ownerName: update.owner.ownerName,
-        guildName: update.owner.guildName,
-      })
-      .forEach((armyId) => attachedArmyIds.add(armyId));
-
-    this.armyStructureOwners.forEach((ownerStructureId, armyId) => {
-      if (ownerStructureId === update.entityId) {
-        attachedArmyIds.add(armyId);
-      }
-    });
-
-    attachedArmyIds.forEach((armyId) => {
-      const resolvedOwnerAddress = resolveAttachedArmyOwnerFromStructure({
-        existingArmyOwner: this.getTrackedArmyOwner(armyId),
-        incomingStructureOwner: structureOwnerAddress,
-      });
-
-      let armyPosition = this.armiesPositions.get(armyId);
-      if (!armyPosition) {
-        const army = this.armyManager.getArmy(armyId);
-        if (army) {
-          const normalized = army.hexCoords.getNormalized();
-          armyPosition = { col: normalized.x, row: normalized.y };
-        }
-      }
-
-      if (!armyPosition) {
-        return;
-      }
-
-      this.updateArmyHexes({
-        entityId: armyId,
-        hexCoords: armyPosition,
-        ownerAddress: resolvedOwnerAddress,
-        ownerStructureId: update.entityId,
-      });
-    });
+  private getStructureOwnerAddress(entityId: ID): ContractAddress | undefined {
+    const structure = getComponentValue(this.dojo.components.Structure, gameEntityKey([BigInt(entityId)]));
+    return structure ? ContractAddress(structure.owner) : undefined;
   }
 
   private handleExplorerRewardEvent(update: ExplorerRewardSystemUpdate): void {
@@ -2644,7 +2420,7 @@ export default class WorldmapScene extends WarpTravel {
     if (this.armiesPositions.has(entityId)) {
       return `Army #${entityId}`;
     }
-    if (this.structuresPositions.has(entityId)) {
+    if (this.worldSpatialProjection.getStructure(entityId)) {
       return `Structure #${entityId}`;
     }
     return `Entity #${entityId}`;
@@ -2676,7 +2452,7 @@ export default class WorldmapScene extends WarpTravel {
       return;
     }
 
-    const focusPosition = this.armiesPositions.get(defenderId) ?? this.structuresPositions.get(defenderId);
+    const focusPosition = this.armiesPositions.get(defenderId) ?? this.getStructureHexPosition(defenderId);
 
     const notificationKey = `${update.entityId}-${update.battleData.timestamp}`;
     if (this.notifiedBattleEvents.has(notificationKey)) {
@@ -2815,21 +2591,14 @@ export default class WorldmapScene extends WarpTravel {
 
   private isReservedHyperstructureHex(hexCoords: HexPosition): boolean {
     const contractPosition = new Position({ x: hexCoords.col, y: hexCoords.row }).getContract();
-    const tile = getTileAt(this.dojo.components, DEFAULT_COORD_ALT, contractPosition.x, contractPosition.y);
-
-    return Boolean(tile && isTileOccupierReservedHyperstructure(tile.occupier_type));
+    return this.worldSpatialProjection
+      .getStructuresAtHex({ col: contractPosition.x, row: contractPosition.y })
+      .some((structure) => structure.reserved);
   }
 
   private async enterStructureFromWorldmap(structure: HexEntityInfo, hexCoords: HexPosition) {
     const accountAddress = ContractAddress(useAccountStore.getState().account?.address || "");
     const isMine = structure.owner === accountAddress;
-
-    try {
-      console.log("[WorldmapScene] Syncing structure before entry", structure.id, hexCoords);
-      await this.ensureStructureQueriedMethod(structure.id, hexCoords);
-    } catch (error) {
-      console.error("[WorldmapScene] Failed to sync structure before entry", error);
-    }
 
     const contractPosition = new Position({ x: hexCoords.col, y: hexCoords.row }).getContract();
     const worldMapPosition =
@@ -2852,7 +2621,12 @@ export default class WorldmapScene extends WarpTravel {
     const hex = position.getNormalized();
     const contractHex = position.getContract();
     const army = this.armyHexes.get(hex.x)?.get(hex.y);
-    const structure = this.structureHexes.get(hex.x)?.get(hex.y);
+    const projectedStructure = this.worldSpatialProjection
+      .getStructuresAtHex({ col: contractHex.x, row: contractHex.y })
+      .find((candidate) => !candidate.reserved);
+    const structure = projectedStructure
+      ? { id: projectedStructure.entityId, owner: this.getStructureOwnerAddress(projectedStructure.entityId) ?? 0n }
+      : undefined;
     const projectedChest = this.worldSpatialProjection.getChestsAtHex({
       col: contractHex.x,
       row: contractHex.y,
@@ -3912,7 +3686,7 @@ export default class WorldmapScene extends WarpTravel {
   }
 
   private startPendingCreateArmyGhost(payload: Extract<PendingWorldmapFxStartPayload, { kind: "create-army" }>): void {
-    const structureHex = this.structuresPositions.get(payload.structureId);
+    const structureHex = this.getStructureHexPosition(payload.structureId);
     const targetHex = resolveCreateArmyEffectTargetHex(structureHex, payload.direction);
     if (!targetHex) {
       return;
@@ -4389,7 +4163,7 @@ export default class WorldmapScene extends WarpTravel {
     }
 
     const actionPaths = armyActionManager.findActionPaths(
-      this.structureHexes,
+      this.buildProjectedStructureActionIndex(),
       this.armyHexes,
       this.exploredTiles,
       this.buildProjectedChestActionIndex(),
@@ -4429,6 +4203,22 @@ export default class WorldmapScene extends WarpTravel {
       const normalized = new Position({ x: chest.hexCoords.col, y: chest.hexCoords.row }).getNormalized();
       const row = index.get(normalized.x) ?? new Map<number, HexEntityInfo>();
       row.set(normalized.y, { id: chest.entityId, owner: 0n });
+      index.set(normalized.x, row);
+    });
+    return index;
+  }
+
+  private buildProjectedStructureActionIndex(): Map<number, Map<number, HexEntityInfo>> {
+    const index = new Map<number, Map<number, HexEntityInfo>>();
+    this.worldSpatialProjection.getStructures().forEach((structure) => {
+      if (structure.reserved) return;
+
+      const normalized = new Position({ x: structure.hexCoords.col, y: structure.hexCoords.row }).getNormalized();
+      const row = index.get(normalized.x) ?? new Map<number, HexEntityInfo>();
+      row.set(normalized.y, {
+        id: structure.entityId,
+        owner: this.getStructureOwnerAddress(structure.entityId) ?? 0n,
+      });
       index.set(normalized.x, row);
     });
     return index;
@@ -4668,23 +4458,16 @@ export default class WorldmapScene extends WarpTravel {
     return colors;
   }
 
-  private getStructureHexPosition(structureId: ID): HexPosition | null {
-    const cached = this.structuresPositions.get(structureId);
-    if (cached) {
-      return cached;
-    }
+  private getStructureHexPosition(structureId: ID): HexPosition | undefined {
+    const structure = this.worldSpatialProjection.getStructure(structureId);
+    if (!structure) return undefined;
+    const normalized = new Position({ x: structure.hexCoords.col, y: structure.hexCoords.row }).getNormalized();
+    return { col: normalized.x, row: normalized.y };
+  }
 
-    for (const [col, rowMap] of this.structureHexes) {
-      for (const [row, info] of rowMap) {
-        if (info.id === structureId) {
-          const hex = { col, row };
-          this.structuresPositions.set(structureId, hex);
-          return hex;
-        }
-      }
-    }
-
-    return null;
+  private isProjectedStructureHex(col: number, row: number): boolean {
+    const contract = new Position({ x: col, y: row }).getContract();
+    return this.worldSpatialProjection.getStructuresAtHex({ col: contract.x, row: contract.y }).length > 0;
   }
 
   protected getWarpTravelLifecycleAdapter(): WarpTravelLifecycleAdapter {
@@ -5801,7 +5584,7 @@ export default class WorldmapScene extends WarpTravel {
       return undefined;
     }
     try {
-      const components = this.dojo.components as Parameters<typeof ensureStructureSynced>[0];
+      const components = this.dojo.components;
       const structureEntity = gameEntityKey([BigInt(resolvedStructureId)]);
       const structureComponent = components.Structure;
       if (structureComponent) {
@@ -5818,46 +5601,6 @@ export default class WorldmapScene extends WarpTravel {
       }
     }
     return undefined;
-  }
-
-  public updateStructureHexes(update: {
-    entityId: ID;
-    hexCoords: HexPosition;
-    owner: { address: bigint | undefined };
-  }): { oldPos?: HexPosition; newPos: HexPosition } | null {
-    const {
-      hexCoords: { col, row },
-      owner: { address },
-      entityId,
-    } = update;
-
-    if (address === undefined) return null;
-    const normalized = new Position({ x: col, y: row }).getNormalized();
-    const newPos = { col: normalized.x, row: normalized.y };
-    const oldPos = this.structuresPositions.get(entityId);
-
-    // Remove from old position if it changed
-    if (
-      oldPos &&
-      (oldPos.col !== newPos.col || oldPos.row !== newPos.row) &&
-      this.structureHexes.get(oldPos.col)?.get(oldPos.row)?.id === entityId
-    ) {
-      this.structureHexes.get(oldPos.col)?.delete(oldPos.row);
-      gameWorkerManager.updateStructureHex(oldPos.col, oldPos.row, null);
-      this.invalidateAllChunkCachesContainingHex(oldPos.col, oldPos.row);
-    }
-
-    // Update structure position
-    this.structuresPositions.set(entityId, newPos);
-
-    if (!this.structureHexes.has(newPos.col)) {
-      this.structureHexes.set(newPos.col, new Map());
-    }
-    const structureInfo = { id: entityId, owner: address };
-    this.structureHexes.get(newPos.col)?.set(newPos.row, structureInfo);
-    gameWorkerManager.updateStructureHex(newPos.col, newPos.row, structureInfo);
-    this.invalidateAllChunkCachesContainingHex(newPos.col, newPos.row);
-    return { oldPos, newPos };
   }
 
   public async updateExploredHex(update: TileSystemUpdate) {
@@ -5971,7 +5714,7 @@ export default class WorldmapScene extends WarpTravel {
 
     const pos = getWorldPositionForHex({ row, col });
 
-    const isStructure = this.structureManager.structureHexCoords.get(col)?.has(row) || false;
+    const isStructure = this.isProjectedStructureHex(col, row);
     const shouldHideTile = isStructure;
 
     const renderedChunkStartRow = parseInt(this.currentChunk.split(",")[0]);
@@ -6148,11 +5891,8 @@ export default class WorldmapScene extends WarpTravel {
       this.removeCachedMatricesForChunk(chunkRow, chunkCol);
       if (options?.invalidateFetchAreas) {
         const areaKey = this.getRenderAreaKeyForChunk(chunkKey);
-        const structuresAreaKey = this.getStructuresRenderAreaKeyForChunk(chunkKey);
         clearRenderAreaHydrationState(this.renderAreaHydrationState, areaKey);
-        clearRenderAreaHydrationState(this.renderAreaHydrationState, structuresAreaKey);
         this.removeRetainedHydrationArea(areaKey);
-        this.clearStructureHydrationFetch(structuresAreaKey);
       }
     });
   }
@@ -6176,15 +5916,6 @@ export default class WorldmapScene extends WarpTravel {
       WORLDMAP_CHUNK_POLICY.toriiFetch.explorerTroopsSuperAreaStrides,
     );
     return this.getExplorerTroopsHydrationKey(areaKey);
-  }
-
-  private getStructuresRenderAreaKeyForChunk(chunkKey: string): string {
-    const areaKey = getCanonicalRenderAreaKeyForChunk(
-      chunkKey,
-      this.chunkSize,
-      WORLDMAP_CHUNK_POLICY.toriiFetch.structuresSuperAreaStrides,
-    );
-    return this.getStructuresHydrationKey(areaKey);
   }
 
   /**
@@ -6230,20 +5961,6 @@ export default class WorldmapScene extends WarpTravel {
     );
   }
 
-  private getStructuresFetchBoundsForArea(fetchKey: string): {
-    minCol: number;
-    maxCol: number;
-    minRow: number;
-    maxRow: number;
-  } {
-    return getCanonicalRenderFetchBoundsForArea(
-      this.getStructuresAreaKeyFromHydrationKey(fetchKey),
-      this.renderChunkSize,
-      this.chunkSize,
-      WORLDMAP_CHUNK_POLICY.toriiFetch.structuresSuperAreaStrides,
-    );
-  }
-
   private getExplorerTroopsHydrationKey(areaKey: string): string {
     return `${EXPLORER_TROOPS_HYDRATION_KEY_PREFIX}${areaKey}`;
   }
@@ -6251,16 +5968,6 @@ export default class WorldmapScene extends WarpTravel {
   private getExplorerTroopsAreaKeyFromHydrationKey(fetchKey: string): string {
     return fetchKey.startsWith(EXPLORER_TROOPS_HYDRATION_KEY_PREFIX)
       ? fetchKey.slice(EXPLORER_TROOPS_HYDRATION_KEY_PREFIX.length)
-      : fetchKey;
-  }
-
-  private getStructuresHydrationKey(areaKey: string): string {
-    return `${STRUCTURES_HYDRATION_KEY_PREFIX}${areaKey}`;
-  }
-
-  private getStructuresAreaKeyFromHydrationKey(fetchKey: string): string {
-    return fetchKey.startsWith(STRUCTURES_HYDRATION_KEY_PREFIX)
-      ? fetchKey.slice(STRUCTURES_HYDRATION_KEY_PREFIX.length)
       : fetchKey;
   }
 
@@ -6421,12 +6128,6 @@ export default class WorldmapScene extends WarpTravel {
         : this.getExplorerTroopsRenderAreaKeyForChunk(fetchKey);
     }
 
-    if (stage === "structures") {
-      return fetchKey.startsWith(STRUCTURES_HYDRATION_KEY_PREFIX)
-        ? fetchKey
-        : this.getStructuresRenderAreaKeyForChunk(fetchKey);
-    }
-
     return fetchKey;
   }
 
@@ -6530,7 +6231,7 @@ export default class WorldmapScene extends WarpTravel {
         try {
           if (item.fetchTiles) {
             recordChunkDiagnosticsEvent(this.chunkDiagnostics, "prefetch_executed");
-            const tileFetchSucceeded = await this.computeTileEntities(item.chunkKey, { requireStructures: false });
+            const tileFetchSucceeded = await this.computeTileEntities(item.chunkKey);
             if (tileFetchSucceeded && this.directionalPresentationChunkKeys.has(item.chunkKey)) {
               await this.prewarmDirectionalPresentationChunk(item.chunkKey);
             }
@@ -6579,10 +6280,9 @@ export default class WorldmapScene extends WarpTravel {
             startRow,
             startCol,
             renderSize: this.renderChunkSize,
-            tileFetchPromise: this.computeTileEntities(chunkKey, { requireStructures: true }),
+            tileFetchPromise: this.computeTileEntities(chunkKey),
             tileHydrationReadyPromise: this.waitForTileHydrationIdle(chunkKey),
             boundsReadyPromise: Promise.resolve(),
-            structureReadyPromise: this.waitForStructureHydrationIdle(chunkKey),
             assetPrewarmPromise: this.structureManager.prewarmChunkAssets(chunkKey),
             prepareTerrainChunk: (targetStartRow, targetStartCol, height, width) =>
               this.prepareTerrainChunk(targetStartRow, targetStartCol, height, width),
@@ -6981,7 +6681,7 @@ export default class WorldmapScene extends WarpTravel {
     const baseX = globalCol * Math.sqrt(3) * HEX_SIZE - rowOffsetValue;
     const baseZ = globalRow * HEX_SIZE * 1.5;
 
-    if (this.structureManager.structureHexCoords.get(globalCol)?.has(globalRow)) {
+    if (this.isProjectedStructureHex(globalCol, globalRow)) {
       return null;
     }
 
@@ -7388,7 +7088,6 @@ export default class WorldmapScene extends WarpTravel {
     this.cachedMatrices.clear();
     this.cachedMatrixOrder = [];
     this.tileHydrationFetches.clear();
-    this.structureHydrationFetches.clear();
     this.exploredTilesGeneration.clear();
     MatrixPool.getInstance().clear();
     InstancedMatrixAttributePool.getInstance().clear();
@@ -7664,7 +7363,7 @@ export default class WorldmapScene extends WarpTravel {
         const baseZ = globalRow * vertDist;
         tempPosition.set(baseX, 0, baseZ);
 
-        const isStructure = this.structureManager.structureHexCoords.get(globalCol)?.has(globalRow) || false;
+        const isStructure = this.isProjectedStructureHex(globalCol, globalRow);
         const shouldHideTile = isStructure;
         const isExplored = lookupSnapshotBiome(exploredTilesSnapshot, globalCol, globalRow) || false;
 
@@ -7989,7 +7688,7 @@ export default class WorldmapScene extends WarpTravel {
         const baseZ = globalRow * vertDist;
         tempPosition.set(baseX, 0, baseZ);
 
-        const isStructure = this.structureManager.structureHexCoords.get(globalCol)?.has(globalRow) || false;
+        const isStructure = this.isProjectedStructureHex(globalCol, globalRow);
         const isExplored = lookupSnapshotBiome(prepSnapshot, globalCol, globalRow) || false;
 
         if (isStructure) {
@@ -8703,9 +8402,6 @@ export default class WorldmapScene extends WarpTravel {
   private resetToriiBoundsCounters(): void {
     this.toriiBoundsUpdateCounts = {
       tiles: 0,
-      structureTiles: 0,
-      structures: 0,
-      structureBuildings: 0,
       explorerTiles: 0,
       explorerTroops: 0,
     };
@@ -8797,16 +8493,12 @@ export default class WorldmapScene extends WarpTravel {
     }
 
     const areaKey = this.getRenderAreaKeyForChunk(chunkKey);
-    const structuresAreaKey = this.getStructuresRenderAreaKeyForChunk(chunkKey);
     const explorerTroopsAreaKey = this.getExplorerTroopsRenderAreaKeyForChunk(chunkKey);
     clearRenderAreaHydrationState(this.renderAreaHydrationState, areaKey);
-    clearRenderAreaHydrationState(this.renderAreaHydrationState, structuresAreaKey);
     clearRenderAreaHydrationState(this.renderAreaHydrationState, explorerTroopsAreaKey);
     this.removeRetainedHydrationArea(areaKey);
     this.clearTileHydrationFetch(areaKey);
-    this.clearStructureHydrationFetch(structuresAreaKey);
     this.hydratedRefreshSuppressionAreaKeys.delete(areaKey);
-    this.hydratedRefreshSuppressionAreaKeys.delete(structuresAreaKey);
     this.hydratedChunkRefreshes.delete(chunkKey);
     this.pendingChunkFetchGeneration = invalidateWorldmapPendingFetchGeneration(this.pendingChunkFetchGeneration);
     return areaKey;
@@ -9305,15 +8997,12 @@ export default class WorldmapScene extends WarpTravel {
     }
   }
 
-  private async computeTileEntities(
-    chunkKey: string,
-    options: { requireStructures: boolean } = { requireStructures: true },
-  ): Promise<boolean> {
+  private async computeTileEntities(chunkKey: string): Promise<boolean> {
     if (this.isSwitchedOff) {
       return false;
     }
 
-    const requiredStages = this.resolveRenderAreaHydrationRequirements(options);
+    const requiredStages = WORLDMAP_ACTIVE_HYDRATION_STAGES;
     const hydrationPlans = this.resolveRenderAreaHydrationFetchPlans(chunkKey, requiredStages);
     if (hydrationPlans.every((plan) => this.isRenderAreaHydrationPlanComplete(plan))) {
       return true;
@@ -9364,12 +9053,6 @@ export default class WorldmapScene extends WarpTravel {
     return Promise.all([...pendingPromises, ...ownedFetchPromises]).then((results) => results.every(Boolean));
   }
 
-  private resolveRenderAreaHydrationRequirements(input: {
-    requireStructures: boolean;
-  }): readonly WorldmapRenderAreaHydrationStage[] {
-    return input.requireStructures ? WORLDMAP_ACTIVE_HYDRATION_STAGES : WORLDMAP_PREFETCH_HYDRATION_STAGES;
-  }
-
   private resolveRenderAreaHydrationFetchPlans(
     chunkKey: string,
     requiredStages: readonly WorldmapRenderAreaHydrationStage[],
@@ -9382,15 +9065,6 @@ export default class WorldmapScene extends WarpTravel {
         fetchKey,
         localBounds: this.getRenderFetchBoundsForArea(fetchKey),
         stages: terrainStages,
-      });
-    }
-
-    if (requiredStages.includes("structures")) {
-      const fetchKey = this.getStructuresRenderAreaKeyForChunk(chunkKey);
-      plans.push({
-        fetchKey,
-        localBounds: this.getStructuresFetchBoundsForArea(fetchKey),
-        stages: ["structures"],
       });
     }
 
@@ -9456,29 +9130,6 @@ export default class WorldmapScene extends WarpTravel {
     if (this.shouldFetchTileOpt(stages)) {
       this.beginTileHydrationFetch(fetchKey, this.pendingChunkFetchGeneration, minCol, maxCol, minRow, maxRow);
     }
-    if (stages.includes("structures")) {
-      this.beginStructureHydrationFetch(fetchKey, this.pendingChunkFetchGeneration, minCol, maxCol, minRow, maxRow);
-    }
-  }
-
-  private beginStructureHydrationFetch(
-    fetchKey: string,
-    fetchGeneration: number,
-    minCol: number,
-    maxCol: number,
-    minRow: number,
-    maxRow: number,
-  ): void {
-    this.structureHydrationFetches.set(fetchKey, {
-      fetchGeneration,
-      minCol,
-      maxCol,
-      minRow,
-      maxRow,
-      pendingCount: 0,
-      fetchSettled: false,
-      waiters: [],
-    });
   }
 
   private beginTileHydrationFetch(
@@ -9501,33 +9152,8 @@ export default class WorldmapScene extends WarpTravel {
     });
   }
 
-  private clearStructureHydrationFetch(fetchKey: string): void {
-    clearHydrationFetchState(this.structureHydrationFetches, fetchKey);
-  }
-
   private clearTileHydrationFetch(fetchKey: string): void {
     clearHydrationFetchState(this.tileHydrationFetches, fetchKey);
-  }
-
-  private settleStructureHydrationFetch(fetchKey: string, fetchGeneration: number): void {
-    const state = this.structureHydrationFetches.get(fetchKey);
-    if (!state || state.fetchGeneration !== fetchGeneration) {
-      return;
-    }
-
-    state.fetchSettled = true;
-    this.flushStructureHydrationWaiters(fetchKey, state);
-  }
-
-  private flushStructureHydrationWaiters(fetchKey: string, state: StructureHydrationFetchState): void {
-    if (!state.fetchSettled || state.pendingCount > 0) {
-      return;
-    }
-
-    const waiters = [...state.waiters];
-    state.waiters.length = 0;
-    waiters.forEach((resolve) => resolve());
-    this.structureHydrationFetches.set(fetchKey, state);
   }
 
   private settleTileHydrationFetch(fetchKey: string, fetchGeneration: number): void {
@@ -9549,41 +9175,6 @@ export default class WorldmapScene extends WarpTravel {
     state.waiters.length = 0;
     waiters.forEach((resolve) => resolve());
     this.tileHydrationFetches.set(fetchKey, state);
-  }
-
-  private async waitForStructureHydrationIdle(chunkKey: string): Promise<void> {
-    const fetchKey = this.getStructuresRenderAreaKeyForChunk(chunkKey);
-
-    while (true) {
-      const state = this.structureHydrationFetches.get(fetchKey);
-      if (!state) {
-        return;
-      }
-
-      if (state.fetchSettled && state.pendingCount === 0) {
-        await Promise.resolve();
-        const refreshed = this.structureHydrationFetches.get(fetchKey);
-        if (!refreshed || (refreshed.fetchSettled && refreshed.pendingCount === 0)) {
-          return;
-        }
-      }
-
-      await new Promise<void>((resolve) => {
-        const currentState = this.structureHydrationFetches.get(fetchKey);
-        if (!currentState) {
-          resolve();
-          return;
-        }
-        currentState.waiters.push(resolve);
-        this.flushStructureHydrationWaiters(fetchKey, currentState);
-      });
-
-      await Promise.resolve();
-      const refreshed = this.structureHydrationFetches.get(fetchKey);
-      if (!refreshed || (refreshed.fetchSettled && refreshed.pendingCount === 0)) {
-        return;
-      }
-    }
   }
 
   private async waitForTileHydrationIdle(chunkKey: string): Promise<void> {
@@ -9619,19 +9210,6 @@ export default class WorldmapScene extends WarpTravel {
         return;
       }
     }
-  }
-
-  private trackStructureHydrationUpdate(
-    update: { hexCoords: HexPosition },
-    runWork: () => Promise<void> | void,
-  ): Promise<void> {
-    const normalized = new Position({ x: update.hexCoords.col, y: update.hexCoords.row }).getNormalized();
-    return trackHydrationUpdateWorkForFetches({
-      fetches: this.structureHydrationFetches,
-      position: { col: normalized.x, row: normalized.y },
-      work: Promise.resolve().then(runWork),
-      flushWaiters: (fetchKey, state) => this.flushStructureHydrationWaiters(fetchKey, state),
-    });
   }
 
   private trackTileHydrationUpdate(update: { hexCoords: HexPosition }, work: Promise<void>): Promise<void> {
@@ -9682,9 +9260,6 @@ export default class WorldmapScene extends WarpTravel {
       if (this.shouldFetchTileOpt(stages)) {
         this.settleTileHydrationFetch(fetchKey, fetchGeneration);
       }
-      if (stages.includes("structures")) {
-        this.settleStructureHydrationFetch(fetchKey, fetchGeneration);
-      }
       this.endToriiFetch();
     }
   }
@@ -9695,19 +9270,12 @@ export default class WorldmapScene extends WarpTravel {
     stages: readonly WorldmapRenderAreaHydrationStage[],
   ): Promise<void> {
     const shouldHydrateTileOpt = this.shouldFetchTileOpt(stages);
-    const shouldHydrateStructures = stages.includes("structures");
-    const tileOptEntries =
-      shouldHydrateTileOpt || shouldHydrateStructures ? this.collectGlobalTileOptHydrationEntries(localBounds) : [];
+    const tileOptEntries = shouldHydrateTileOpt ? this.collectGlobalTileOptHydrationEntries(localBounds) : [];
     const hydratedTileCount = shouldHydrateTileOpt
       ? this.hydrateExploredTilesFromGlobalTileOptRecs(fetchKey, localBounds, tileOptEntries)
       : 0;
-    const hydratedStructureCount = shouldHydrateStructures
-      ? await this.hydrateStructuresFromGlobalTileOptRecs(fetchKey, tileOptEntries)
-      : 0;
-
     this.traceChunk("global_spatial_recs_hydrated", {
       fetchKey,
-      hydratedStructureCount,
       hydratedTileCount,
       tileOptCandidateCount: tileOptEntries.length,
       localBounds,
@@ -9750,7 +9318,6 @@ export default class WorldmapScene extends WarpTravel {
       entries.push({
         normalized: { x: normalized.x, y: normalized.y },
         tile,
-        tileOpt,
       });
     }
 
@@ -9759,40 +9326,6 @@ export default class WorldmapScene extends WarpTravel {
     setWorldmapRenderGauge("globalSpatialHydrationCandidates", entries.length);
 
     return entries;
-  }
-
-  private async hydrateStructuresFromGlobalTileOptRecs(
-    fetchKey: string,
-    entries: readonly GlobalTileOptHydrationEntry[],
-  ): Promise<number> {
-    let hydratedStructureCount = 0;
-    for (const entry of entries) {
-      const structureInfo = getStructureInfoFromTileOccupier(entry.tile.occupier_type);
-      if (!structureInfo || structureInfo.reserved) {
-        continue;
-      }
-
-      const structureUpdate = await this.worldUpdateListener.resolveStructureTileUpdateFromTileOpt(entry.tileOpt);
-      if (!structureUpdate) {
-        continue;
-      }
-
-      await this.applyStructureTileUpdate(structureUpdate);
-      hydratedStructureCount += 1;
-    }
-
-    if (hydratedStructureCount > 0) {
-      incrementWorldmapRenderCounter("globalSpatialRecsHydratedStructures", hydratedStructureCount);
-    }
-
-    if (import.meta.env.DEV && hydratedStructureCount > 0) {
-      console.debug("[WorldmapScene] Hydrated structures from global TileOpt RECS", {
-        fetchKey,
-        hydratedStructureCount,
-      });
-    }
-
-    return hydratedStructureCount;
   }
 
   private shouldFetchTileOpt(stages: readonly WorldmapRenderAreaHydrationStage[]): boolean {
@@ -9804,7 +9337,7 @@ export default class WorldmapScene extends WarpTravel {
     fetchGeneration: number,
     stages: readonly WorldmapRenderAreaHydrationStage[],
   ): boolean {
-    if (this.isExplorerTroopsOnlyHydration(stages) || this.isStructuresOnlyHydration(stages)) {
+    if (this.isExplorerTroopsOnlyHydration(stages)) {
       return true;
     }
 
@@ -9841,15 +9374,7 @@ export default class WorldmapScene extends WarpTravel {
       return null;
     }
 
-    if (this.isStructuresOnlyHydration(stages)) {
-      return this.getStructuresRenderAreaKeyForChunk(this.currentChunk);
-    }
-
     return this.getRenderAreaKeyForChunk(this.currentChunk);
-  }
-
-  private isStructuresOnlyHydration(stages: readonly WorldmapRenderAreaHydrationStage[]): boolean {
-    return stages.length === 1 && stages[0] === "structures";
   }
 
   private isExplorerTroopsOnlyHydration(stages: readonly WorldmapRenderAreaHydrationStage[]): boolean {
@@ -10018,7 +9543,7 @@ export default class WorldmapScene extends WarpTravel {
 
     for (let row = bounds.minRow; row <= bounds.maxRow; row++) {
       for (let col = bounds.minCol; col <= bounds.maxCol; col++) {
-        const isStructure = this.structureManager.structureHexCoords.get(col)?.has(row) || false;
+        const isStructure = this.isProjectedStructureHex(col, row);
         if (isStructure) {
           continue;
         }
@@ -10045,7 +9570,7 @@ export default class WorldmapScene extends WarpTravel {
 
     for (let row = bounds.minRow; row <= bounds.maxRow; row++) {
       for (let col = bounds.minCol; col <= bounds.maxCol; col++) {
-        const isStructure = this.structureManager.structureHexCoords.get(col)?.has(row) || false;
+        const isStructure = this.isProjectedStructureHex(col, row);
         if (isStructure) {
           continue;
         }
@@ -10353,7 +9878,7 @@ export default class WorldmapScene extends WarpTravel {
     }
 
     try {
-      await this.computeTileEntities(targetChunkKey, { requireStructures: true });
+      await this.computeTileEntities(targetChunkKey);
       const [targetStartRow, targetStartCol] = targetChunkKey.split(",").map(Number);
       if (!Number.isFinite(targetStartRow) || !Number.isFinite(targetStartCol)) {
         return;
@@ -10361,7 +9886,7 @@ export default class WorldmapScene extends WarpTravel {
 
       // Fire-and-forget surrounding prewarm to reduce edge pop-in on cross-chunk tabbing.
       this.getSurroundingChunkKeys(targetStartRow, targetStartCol).forEach((chunkKey) => {
-        void this.computeTileEntities(chunkKey, { requireStructures: false });
+        void this.computeTileEntities(chunkKey);
       });
     } catch (error) {
       if (import.meta.env.DEV) {
@@ -10689,7 +10214,7 @@ export default class WorldmapScene extends WarpTravel {
   }) {
     return hydrateWorldmapChunkRuntime<PreparedTerrainChunk>({
       chunkKey: input.chunkKey,
-      computeTileEntities: (targetChunkKey, options) => this.computeTileEntities(targetChunkKey, options),
+      computeTileEntities: (targetChunkKey) => this.computeTileEntities(targetChunkKey),
       diagnostics: this.chunkDiagnostics,
       now: () => performance.now(),
       onChunkHydrated: (hydratedChunkKey) => {
@@ -10711,7 +10236,6 @@ export default class WorldmapScene extends WarpTravel {
       updatePinnedChunks: (chunkKeys) => this.updatePinnedChunks(chunkKeys),
       updateBoundsSubscription: (targetChunkKey, nextTransitionToken) =>
         this.updateToriiBoundsSubscription(targetChunkKey, nextTransitionToken),
-      waitForStructureHydrationIdle: (targetChunkKey) => this.waitForStructureHydrationIdle(targetChunkKey),
       waitForTileHydrationIdle: (targetChunkKey) => this.waitForTileHydrationIdle(targetChunkKey),
     });
   }
@@ -11346,7 +10870,7 @@ export default class WorldmapScene extends WarpTravel {
     resetWorldmapRenderDiagnostics();
   }
 
-  private summarizeHydrationState<TState extends StructureHydrationFetchState>(fetches: Map<string, TState>) {
+  private summarizeHydrationState<TState extends TileHydrationFetchState>(fetches: Map<string, TState>) {
     return Array.from(fetches.entries()).map(([fetchKey, state]) => ({
       fetchKey,
       fetchSettled: state.fetchSettled,
@@ -11378,7 +10902,6 @@ export default class WorldmapScene extends WarpTravel {
       pinnedRenderAreas: Array.from(this.pinnedRenderAreas),
       hydratedChunkRefreshes: Array.from(this.hydratedChunkRefreshes),
       tileHydration: this.summarizeHydrationState(this.tileHydrationFetches),
-      structureHydration: this.summarizeHydrationState(this.structureHydrationFetches),
       hoveredHex: liveEntityActions.hoveredHex,
       selectedEntityId: liveEntityActions.selectedEntityId,
       actionPathCount: liveEntityActions.actionPaths.size,
@@ -12469,7 +11992,6 @@ export default class WorldmapScene extends WarpTravel {
   private removeEntityFromTracking(entityId: ID) {
     // Remove from position tracking
     this.armiesPositions.delete(entityId);
-    this.structuresPositions.delete(entityId);
 
     // Remove from battle direction relationships
     this.battleDirectionManager.removeEntityFromTracking(entityId);

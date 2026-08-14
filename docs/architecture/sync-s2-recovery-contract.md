@@ -46,6 +46,23 @@ adapter (global writer, boot spatial snapshot, scene bounds stream, and player w
 no bounded adapter exists, so camera movement cannot issue a Torii subscription/update call; this is pinned by the
 adapter test.
 
+## S3 spatial projection ownership
+
+Chest and structure membership, identity, and contract-space location are derived from `TileOpt` by the session-owned
+`WorldSpatialProjection`. The projection rebuilds from RECS at session start and recovery, then updates only the
+affected TileOpt source during live play. Three.js bounds queries select presentation work from that projection; they do
+not fetch entity state when the camera moves.
+
+Structure owner, guards, buildings, names, and Hyperstructure state are not copied into the projection. Labels,
+interaction, ownership checks, and panels resolve those facts from their RECS components when used. Reserved
+Hyperstructure sites are coordinate-keyed renderables because they deliberately have no Structure entity until the site
+becomes a real structure. Both surface resolvers reject nonzero `alt`, so ethereal occupancy cannot appear on the world
+map.
+
+The legacy rollback adapter still feeds TileOpt into RECS, so it can drive the projection, but it no longer has the
+deleted chest or structure repair fetches. Rollback mode is therefore an emergency compatibility path with weaker
+staleness healing than the game-wide runtime.
+
 ## Headless and measurement
 
 `pnpm --dir client/apps/game smoke:game-sync-headless -- --help` documents the repeatable live smoke. It instantiates

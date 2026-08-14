@@ -4,11 +4,10 @@ import { hydrateWarpTravelChunk } from "./warp-travel-chunk-hydration";
 import { createControlledAsyncCall, flushMicrotasks } from "./worldmap-test-harness";
 
 describe("hydrateWarpTravelChunk", () => {
-  it("prepares target terrain only after fetch, bounds, structure drain, and asset prewarm are ready", async () => {
-    const computeTileEntities = createControlledAsyncCall<[string, { requireStructures: boolean }], boolean>();
+  it("prepares target terrain only after fetch, bounds, tile drain, and asset prewarm are ready", async () => {
+    const computeTileEntities = createControlledAsyncCall<[string], boolean>();
     const updateBoundsSubscription = createControlledAsyncCall<[string, number], void>();
     const waitForTileHydrationIdle = createControlledAsyncCall<[string], void>();
-    const waitForStructureHydrationIdle = createControlledAsyncCall<[string], void>();
     const prewarmChunkAssets = createControlledAsyncCall<[string], void>();
     const prepareTerrainChunk = createControlledAsyncCall<
       [number, number, number, number],
@@ -28,7 +27,6 @@ describe("hydrateWarpTravelChunk", () => {
       updatePinnedChunks: (chunks) => pinnedChunkUpdates.push(chunks),
       updateBoundsSubscription: updateBoundsSubscription.fn,
       waitForTileHydrationIdle: waitForTileHydrationIdle.fn,
-      waitForStructureHydrationIdle: waitForStructureHydrationIdle.fn,
       prewarmChunkAssets: prewarmChunkAssets.fn,
       prepareTerrainChunk: prepareTerrainChunk.fn,
       onChunkHydrated: (chunkKey) => hydratedChunks.push(chunkKey),
@@ -36,15 +34,10 @@ describe("hydrateWarpTravelChunk", () => {
 
     await flushMicrotasks(2);
 
-    expect(computeTileEntities.calls).toEqual([
-      ["24,24", { requireStructures: true }],
-      ["0,24", { requireStructures: false }],
-      ["24,0", { requireStructures: false }],
-    ]);
+    expect(computeTileEntities.calls).toEqual([["24,24"], ["0,24"], ["24,0"]]);
     expect(pinnedChunkUpdates).toEqual([["0,24", "24,0"]]);
     expect(updateBoundsSubscription.calls).toEqual([["24,24", 7]]);
     expect(waitForTileHydrationIdle.calls).toEqual([["24,24"]]);
-    expect(waitForStructureHydrationIdle.calls).toEqual([["24,24"]]);
     expect(prewarmChunkAssets.calls).toEqual([["24,24"]]);
     expect(prepareTerrainChunk.calls).toEqual([]);
     expect(hydratedChunks).toEqual([]);
@@ -56,7 +49,6 @@ describe("hydrateWarpTravelChunk", () => {
     expect(prepareTerrainChunk.calls).toEqual([]);
 
     waitForTileHydrationIdle.resolveNext();
-    waitForStructureHydrationIdle.resolveNext();
     prewarmChunkAssets.resolveNext();
     updateBoundsSubscription.resolveNext();
     await flushMicrotasks(2);
@@ -79,10 +71,9 @@ describe("hydrateWarpTravelChunk", () => {
   });
 
   it("still waits for bounds completion but skips terrain preparation when tile fetch fails", async () => {
-    const computeTileEntities = createControlledAsyncCall<[string, { requireStructures: boolean }], boolean>();
+    const computeTileEntities = createControlledAsyncCall<[string], boolean>();
     const updateBoundsSubscription = createControlledAsyncCall<[string, number], void>();
     const waitForTileHydrationIdle = createControlledAsyncCall<[string], void>();
-    const waitForStructureHydrationIdle = createControlledAsyncCall<[string], void>();
     const prewarmChunkAssets = createControlledAsyncCall<[string], void>();
     const prepareTerrainChunk = createControlledAsyncCall<[number, number, number, number], { chunkKey: string }>();
     const hydratedChunks: string[] = [];
@@ -98,7 +89,6 @@ describe("hydrateWarpTravelChunk", () => {
       updatePinnedChunks: () => undefined,
       updateBoundsSubscription: updateBoundsSubscription.fn,
       waitForTileHydrationIdle: waitForTileHydrationIdle.fn,
-      waitForStructureHydrationIdle: waitForStructureHydrationIdle.fn,
       prewarmChunkAssets: prewarmChunkAssets.fn,
       prepareTerrainChunk: prepareTerrainChunk.fn,
       onChunkHydrated: (chunkKey) => hydratedChunks.push(chunkKey),
@@ -107,7 +97,6 @@ describe("hydrateWarpTravelChunk", () => {
     await flushMicrotasks(2);
 
     waitForTileHydrationIdle.resolveNext();
-    waitForStructureHydrationIdle.resolveNext();
     prewarmChunkAssets.resolveNext();
     computeTileEntities.resolveNext(false);
     updateBoundsSubscription.resolveNext();
@@ -119,10 +108,9 @@ describe("hydrateWarpTravelChunk", () => {
   });
 
   it("does not prepare terrain until tile hydration drain finishes for the target chunk", async () => {
-    const computeTileEntities = createControlledAsyncCall<[string, { requireStructures: boolean }], boolean>();
+    const computeTileEntities = createControlledAsyncCall<[string], boolean>();
     const updateBoundsSubscription = createControlledAsyncCall<[string, number], void>();
     const waitForTileHydrationIdle = createControlledAsyncCall<[string], void>();
-    const waitForStructureHydrationIdle = createControlledAsyncCall<[string], void>();
     const prewarmChunkAssets = createControlledAsyncCall<[string], void>();
     const prepareTerrainChunk = createControlledAsyncCall<[number, number, number, number], { chunkKey: string }>();
 
@@ -137,7 +125,6 @@ describe("hydrateWarpTravelChunk", () => {
       updatePinnedChunks: () => undefined,
       updateBoundsSubscription: updateBoundsSubscription.fn,
       waitForTileHydrationIdle: waitForTileHydrationIdle.fn,
-      waitForStructureHydrationIdle: waitForStructureHydrationIdle.fn,
       prewarmChunkAssets: prewarmChunkAssets.fn,
       prepareTerrainChunk: prepareTerrainChunk.fn,
       onChunkHydrated: () => undefined,
@@ -146,7 +133,6 @@ describe("hydrateWarpTravelChunk", () => {
     await flushMicrotasks(2);
     computeTileEntities.resolveNext(true);
     updateBoundsSubscription.resolveNext();
-    waitForStructureHydrationIdle.resolveNext();
     prewarmChunkAssets.resolveNext();
     await flushMicrotasks(2);
 

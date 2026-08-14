@@ -1,4 +1,4 @@
-export type WorldmapRenderAreaHydrationStage = "tileOpt" | "explorerTroops" | "structures";
+export type WorldmapRenderAreaHydrationStage = "tileOpt" | "explorerTroops";
 
 export interface WorldmapRenderAreaHydrationState {
   completedStages: Map<string, Set<WorldmapRenderAreaHydrationStage>>;
@@ -34,7 +34,6 @@ export const WORLDMAP_PREFETCH_HYDRATION_STAGES: readonly WorldmapRenderAreaHydr
 export const WORLDMAP_ACTIVE_HYDRATION_STAGES: readonly WorldmapRenderAreaHydrationStage[] = [
   "tileOpt",
   "explorerTroops",
-  "structures",
 ];
 
 export function createWorldmapRenderAreaHydrationState(): WorldmapRenderAreaHydrationState {

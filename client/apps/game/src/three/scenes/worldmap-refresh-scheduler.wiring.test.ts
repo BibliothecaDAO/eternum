@@ -13,7 +13,6 @@ describe("worldmap refresh scheduler wiring", () => {
     const source = readWorldmapSource();
 
     expect(source).toMatch(/requestChunkRefresh\(true,\s*"visibility_recovery"\)/);
-    expect(source).toMatch(/requestChunkRefresh\(true,\s*"structure_count_change"\)/);
     expect(source).toMatch(/requestChunkRefresh\(true,\s*"duplicate_tile"\)/);
     expect(source).toMatch(/requestChunkRefresh\(true,\s*"hydrated_chunk"\)/);
     expect(source).toMatch(/requestChunkRefresh\(true,\s*"offscreen_chunk"\)/);

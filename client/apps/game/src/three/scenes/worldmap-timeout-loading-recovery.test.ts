@@ -22,7 +22,7 @@ describe("worldmap timeout loading recovery", () => {
     const clearMapLoading = vi.fn();
 
     const nextCounter = recoverWorldmapMapLoadingStateFromChunkTimeout({
-      phase: "structure_hydration",
+      phase: "asset_prewarm",
       toriiLoadingCounter: 2,
       clearMapLoading,
     });

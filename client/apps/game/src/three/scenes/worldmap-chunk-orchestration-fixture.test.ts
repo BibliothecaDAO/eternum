@@ -22,7 +22,6 @@ describe("createWorldmapChunkOrchestrationFixture", () => {
     expect(fixture.getCurrentChunk()).toBe("0,0");
     expect(fixture.tileFetch.calls).toEqual([["24,24"]]);
     expect(fixture.boundsSwitch.calls).toEqual([["24,24", 7]]);
-    expect(fixture.structureHydration.calls).toEqual([["24,24"]]);
     expect(fixture.assetPrewarm.calls).toEqual([["24,24"]]);
     expect(fixture.terrainPreparation.calls).toEqual([]);
     expect(fixture.managerUpdate.calls).toEqual([]);
@@ -33,7 +32,6 @@ describe("createWorldmapChunkOrchestrationFixture", () => {
     expect(fixture.terrainPreparation.calls).toEqual([]);
     expect(fixture.getCurrentChunk()).toBe("0,0");
 
-    fixture.structureHydration.resolveNext();
     fixture.assetPrewarm.resolveNext();
     await flushMicrotasks(2);
 
@@ -78,7 +76,6 @@ describe("createWorldmapChunkOrchestrationFixture", () => {
 
     await flushMicrotasks(2);
     expect(fixture.getCurrentChunk()).toBe("0,0");
-    fixture.structureHydration.resolveNext();
     fixture.assetPrewarm.resolveNext();
     fixture.tileFetch.resolveNext(false);
     fixture.boundsSwitch.resolveNext();
@@ -110,7 +107,6 @@ describe("createWorldmapChunkOrchestrationFixture", () => {
     });
 
     await flushMicrotasks(2);
-    fixture.structureHydration.resolveNext();
     fixture.assetPrewarm.resolveNext();
     fixture.tileFetch.resolveNext(true);
     fixture.boundsSwitch.resolveNext();

@@ -22,7 +22,8 @@ describe("worldmap hydrated refresh regression", () => {
     const source = readWorldmapSource();
 
     expect(source).toMatch(/waitForTileHydrationIdle/);
-    expect(source).toMatch(/waitForStructureHydrationIdle/);
+    expect(source).not.toMatch(/waitForStructureHydrationIdle/);
+    expect(source).toMatch(/worldSpatialProjection/);
     expect(source).toMatch(/prewarmChunkAssets/);
     expect(source).toMatch(/prepareTerrainChunk/);
     expect(source).toMatch(/applyPreparedTerrainChunk/);

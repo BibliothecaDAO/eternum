@@ -11,7 +11,6 @@ export type WorldmapRenderDurationMetric =
   | "chunkTerrainCommitMs"
   | "chunkManagerCatchUpMs"
   | "tileHydrationDrainMs"
-  | "structureHydrationDrainMs"
   | "globalSpatialTileOptScanMs"
   | "structureAssetPrewarmMs"
   | "presentationCommittedMs"
@@ -66,7 +65,6 @@ export type WorldmapRenderCounter =
   | "preparedChunkPrewarmHits"
   | "preparedChunkPrewarmMisses"
   | "globalSpatialRecsHydratedTiles"
-  | "globalSpatialRecsHydratedStructures"
   | "spatialBoundsSwitchRequests"
   | "spatialBoundsSwitchApplied"
   | "spatialBoundsSwitchSkipped"
@@ -111,7 +109,6 @@ export type WorldmapForceRefreshReason =
   | "visibility_recovery"
   | "duplicate_tile"
   | "deferred_transition_tile"
-  | "structure_count_change"
   | "hydrated_chunk"
   | "terrain_self_heal"
   | "offscreen_chunk"
@@ -156,7 +153,6 @@ const createDiagnosticsState = (): WorldmapRenderDiagnosticsSnapshot => ({
     chunkTerrainCommitMs: createDurationStats(),
     chunkManagerCatchUpMs: createDurationStats(),
     tileHydrationDrainMs: createDurationStats(),
-    structureHydrationDrainMs: createDurationStats(),
     globalSpatialTileOptScanMs: createDurationStats(),
     structureAssetPrewarmMs: createDurationStats(),
     presentationCommittedMs: createDurationStats(),
@@ -213,7 +209,6 @@ const createDiagnosticsState = (): WorldmapRenderDiagnosticsSnapshot => ({
     preparedChunkPrewarmHits: 0,
     preparedChunkPrewarmMisses: 0,
     globalSpatialRecsHydratedTiles: 0,
-    globalSpatialRecsHydratedStructures: 0,
     spatialBoundsSwitchRequests: 0,
     spatialBoundsSwitchApplied: 0,
     spatialBoundsSwitchSkipped: 0,
@@ -247,7 +242,6 @@ const createDiagnosticsState = (): WorldmapRenderDiagnosticsSnapshot => ({
     visibility_recovery: 0,
     duplicate_tile: 0,
     deferred_transition_tile: 0,
-    structure_count_change: 0,
     hydrated_chunk: 0,
     terrain_self_heal: 0,
     offscreen_chunk: 0,
