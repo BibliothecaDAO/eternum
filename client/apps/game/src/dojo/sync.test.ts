@@ -116,6 +116,10 @@ function createSyncHarness() {
 
   const setup = {
     components: {
+      Structure: {
+        entities: function* () {},
+        update$: { subscribe: vi.fn(() => ({ unsubscribe: vi.fn() })) },
+      },
       TileOpt: {
         entities: function* () {},
         update$: { subscribe: vi.fn(() => ({ unsubscribe: vi.fn() })) },

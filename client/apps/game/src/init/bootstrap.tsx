@@ -22,7 +22,6 @@ import { env } from "../../env";
 import { clearSubscriptionQueue } from "../dojo/debounced-queries";
 import { namespaceForChain, setGameScope, type GameNamespace } from "../dojo/game-scope";
 import { disposeGameSyncSession, initialSync } from "../dojo/sync";
-import { usePlayerStore } from "../hooks/store/use-player-store";
 import useSettlementStore from "../hooks/store/use-settlement-store";
 import { useSyncStore } from "../hooks/store/use-sync-store";
 import { useTransactionStore } from "../hooks/store/use-transaction-store";
@@ -363,20 +362,9 @@ const resetBootstrapUiState = () => {
   uiStore.setStructureEntityId(0, { spectator: false, worldMapPosition: undefined });
   uiStore.setSelectableArmies([]);
 
-  usePlayerStore.getState().clearPlayerData();
   useTransactionStore.getState().clearAllTransactions();
 
-  const settlementState = useSettlementStore.getState();
-  if (settlementState.pollingIntervalId) {
-    clearInterval(settlementState.pollingIntervalId);
-  }
-  if (settlementState.pollingTimeoutId) {
-    clearTimeout(settlementState.pollingTimeoutId);
-  }
-
   useSettlementStore.setState({
-    pollingIntervalId: null,
-    pollingTimeoutId: null,
     availableLocations: [],
     settledLocations: [],
     selectedLocation: null,

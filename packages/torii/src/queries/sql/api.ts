@@ -1,48 +1,27 @@
-import {
-  ContractAddress,
-  Coord,
-  EntityType,
-  GuardSlot,
-  ID,
-  ResourcesIds,
-  StructureType,
-  TileDataInput,
-  TileOccupier,
-  tileDataToTile,
-} from "@bibliothecadao/types";
+import { ContractAddress, GuardSlot, ID, ResourcesIds, TileDataInput, tileDataToTile } from "@bibliothecadao/types";
 
 import {
   ArmyMapDataRaw,
-  ArmyRelicsData,
   BattleLogEvent,
-  ChestInfo,
-  ChestTile,
   ExploredTileBounds,
-  EntityWithRelics,
   EventType,
   Guard,
   GuardData,
   Hyperstructure,
-  HyperstructureRealmCountDataRaw,
   PlayerLeaderboardRow,
-  PlayerRelicsData,
-  PlayersData,
   PlayerStructure,
-  QuestTileData,
   RawSettlementPlannerRealm,
   RawSettlementPlannerVillage,
   RawPlayerLeaderboardRow,
   RawRealmVillageSlot,
   RealmVillageSlot,
   ResourceBalanceRow,
-  SeasonEnded,
   SettlementPlannerSnapshot,
   SettlementPlannerTile,
   StoryEventData,
   StructureDetails,
   StructureLocation,
   StructureMapDataRaw,
-  StructureRelicsData,
   SwapEventResponse,
   Tile,
   TokenTransfer,
@@ -59,7 +38,6 @@ import {
   type SqlGameScope,
 } from "../../utils/sql";
 import { BATTLE_QUERIES } from "./battle";
-import { HYPERSTRUCTURE_QUERIES } from "./hyperstructure";
 import { LEADERBOARD_QUERIES } from "./leaderboard";
 import {
   addLeaderboardRanks,
@@ -70,11 +48,7 @@ import {
   sanitizeLeaderboardPagination,
   sortLeaderboardEntries,
 } from "./leaderboard-helpers";
-import { QUEST_QUERIES } from "./quest";
-import { RELICS_QUERIES } from "./relics";
 import { RESOURCE_QUERIES } from "./resource";
-import { extractRelicsFromResourceData } from "./relics-utils";
-import { SEASON_QUERIES } from "./season";
 import { STORY_QUERIES } from "./story";
 import { STRUCTURE_QUERIES } from "./structure";
 import { TILES_QUERIES } from "./tiles";
@@ -121,17 +95,6 @@ export class SqlApi {
   ) {}
 
   /**
-   * Fetches quest data by entity ID from the SQL database.
-   * SQL queries always return arrays, so we extract the first result.
-   */
-  async fetchQuest(entityId: ID): Promise<QuestTileData | null> {
-    const query = QUEST_QUERIES.QUEST_BY_ENTITY_ID.replace("{entityId}", entityId.toString());
-    const url = buildApiUrl(this.baseUrl, query, this.scope);
-    const results = await fetchWithErrorHandling<QuestTileData>(url, "Failed to fetch quest");
-    return extractFirstOrNull(results);
-  }
-
-  /**
    * Fetches the first structure from the SQL database.
    * SQL queries always return arrays, so we extract the first result.
    */
@@ -139,36 +102,6 @@ export class SqlApi {
     const url = buildApiUrl(this.baseUrl, STRUCTURE_QUERIES.FIRST_STRUCTURE, this.scope);
     const results = await fetchWithErrorHandling<StructureDetails>(url, "Failed to fetch first structure");
     return extractFirstOrNull(results);
-  }
-
-  /**
-   * Fetches surrounding wonder bonus by coordinates and radius.
-   * SQL queries always return arrays, so we extract the first result.
-   */
-  async fetchSurroundingWonderBonus(radius: number, coords: { col: number; row: number }): Promise<ID | null> {
-    const query = STRUCTURE_QUERIES.SURROUNDING_WONDER_BONUS.replace("{minX}", (coords.col - radius).toString())
-      .replace("{maxX}", (coords.col + radius).toString())
-      .replace("{minY}", (coords.row - radius).toString())
-      .replace("{maxY}", (coords.row + radius).toString());
-    const url = buildApiUrl(this.baseUrl, query, this.scope);
-    const results = await fetchWithErrorHandling<ID>(url, "Failed to fetch surrounding wonder bonus");
-    return extractFirstOrNull(results);
-  }
-
-  /**
-   * Fetches tiles by their coordinates from the SQL database.
-   * SQL queries always return arrays.
-   */
-  async fetchTilesByCoords(coordsList: { col: number; row: number }[]): Promise<Tile[]> {
-    const query = TILES_QUERIES.TILES_BY_COORDS.replace(
-      "{coords}",
-      coordsList.map((coord) => `(${coord.col},${coord.row})`).join(","),
-    );
-    console.log("Tiles Querty:", query);
-    const url = buildApiUrl(this.baseUrl, query, this.scope);
-    const rows = await fetchWithErrorHandling<TileOptRow>(url, "Failed to fetch tiles by coords");
-    console.log("Tiles Rows:", rows);
-    return rows.map((row) => tileDataToTile(row.data));
   }
 
   /**
@@ -297,44 +230,6 @@ export class SqlApi {
   }
 
   /**
-   * Fetch structure details for a specific coordinate from the SQL database.
-   * SQL queries always return arrays, so we extract the first result.
-   */
-  async fetchStructureByCoord(coordX: number, coordY: number): Promise<StructureDetails | null> {
-    const query = STRUCTURE_QUERIES.STRUCTURE_BY_COORD.replace("{coord_x}", coordX.toString()).replace(
-      "{coord_y}",
-      coordY.toString(),
-    );
-
-    const url = buildApiUrl(this.baseUrl, query, this.scope);
-    const results = await fetchWithErrorHandling<StructureDetails>(url, "Failed to fetch structure details");
-    return extractFirstOrNull(results);
-  }
-
-  /**
-   * Fetch global structure explorer and guild details from the SQL database.
-   * SQL queries always return arrays.
-   */
-  async fetchGlobalStructureExplorerAndGuildDetails(): Promise<PlayersData[]> {
-    const cacheBase = this.cacheBaseUrl?.trim();
-    if (cacheBase) {
-      try {
-        const cacheUrl = buildCacheUrl(cacheBase, "/api/cache/structure-explorer-details");
-        cacheUrl.searchParams.set("toriiSqlBaseUrl", this.baseUrl);
-        return await fetchJsonWithErrorHandling<PlayersData[]>(
-          cacheUrl.toString(),
-          "Failed to fetch cached structure explorer details",
-        );
-      } catch (error) {
-        console.warn("Cached structure explorer details fetch failed; falling back to direct SQL.", error);
-      }
-    }
-
-    const url = buildApiUrl(this.baseUrl, STRUCTURE_QUERIES.STRUCTURE_AND_EXPLORER_DETAILS, this.scope);
-    return await fetchWithErrorHandling<PlayersData>(url, "Failed to fetch structure explorer and guild details");
-  }
-
-  /**
    * Fetch all tiles on the map from the SQL database.
    * SQL queries always return arrays.
    */
@@ -387,24 +282,6 @@ export class SqlApi {
 
     const url = buildApiUrl(this.baseUrl, STRUCTURE_QUERIES.HYPERSTRUCTURES, this.scope);
     return await fetchWithErrorHandling<Hyperstructure>(url, "Failed to fetch hyperstructures");
-  }
-
-  /**
-   * Fetch other structures (not owned by the specified owner) from the SQL database.
-   * SQL queries always return arrays.
-   */
-  async fetchOtherStructures(
-    owner: string,
-  ): Promise<{ entityId: ID; owner: ContractAddress; category: StructureType; realmId: number }[]> {
-    const formattedOwner = formatAddressForQuery(owner);
-    const query = STRUCTURE_QUERIES.OTHER_STRUCTURES.replace("{owner}", formattedOwner);
-    const url = buildApiUrl(this.baseUrl, query, this.scope);
-    return await fetchWithErrorHandling<{
-      entityId: ID;
-      owner: ContractAddress;
-      category: StructureType;
-      realmId: number;
-    }>(url, "Failed to fetch other structures");
   }
 
   /**
@@ -498,17 +375,6 @@ export class SqlApi {
   }
 
   /**
-   * Fetch resource balances AND production building counts for a set of entity IDs.
-   * Returns rows with both *_BALANCE hex columns and *_PRODUCTION.building_count integers.
-   */
-  async fetchResourceBalancesAndProduction(entityIds: number[]): Promise<ResourceBalanceRow[]> {
-    if (entityIds.length === 0) return [];
-    const query = RESOURCE_QUERIES.RESOURCE_BALANCES_AND_PRODUCTION.replace("{entityIds}", entityIds.join(","));
-    const url = buildApiUrl(this.baseUrl, query, this.scope);
-    return await fetchWithErrorHandling<ResourceBalanceRow>(url, "Failed to fetch resource balances and production");
-  }
-
-  /**
    * Fetch resource balances with full production data for dynamic balance computation.
    * Includes production_rate, output_amount_left, and last_updated_at per resource.
    */
@@ -520,17 +386,6 @@ export class SqlApi {
     );
     const url = buildApiUrl(this.baseUrl, query, this.scope);
     return await fetchWithErrorHandling<ResourceBalanceRow>(url, "Failed to fetch resource balances with production");
-  }
-
-  /**
-   * Fetch season ended info from the SQL database.
-   * SQL queries always return arrays, so we extract the first result.
-   */
-  async fetchSeasonEnded(): Promise<SeasonEnded | null> {
-    // SeasonEnded is game_id-keyed on s2 since W3 — the {GF} marker scopes it.
-    const url = buildApiUrl(this.baseUrl, SEASON_QUERIES.SEASON_ENDED, this.scope);
-    const results = await fetchWithErrorHandling<SeasonEnded>(url, "Failed to fetch season ended");
-    return extractFirstOrNull(results);
   }
 
   /**
@@ -621,107 +476,6 @@ export class SqlApi {
   }
 
   /**
-   * Fetch chest tiles near a given position from the SQL database.
-   * SQL queries always return arrays.
-   */
-  async fetchChestsNearPosition(center: { x: number; y: number }, radius: number): Promise<ChestInfo[]> {
-    const query = RELICS_QUERIES.CHESTS_NEAR_POSITION.replace("{minX}", (center.x - radius).toString())
-      .replace("{maxX}", (center.x + radius).toString())
-      .replace("{minY}", (center.y - radius).toString())
-      .replace("{maxY}", (center.y + radius).toString());
-    const url = buildApiUrl(this.baseUrl, query, this.scope);
-    const chestTiles = await fetchWithErrorHandling<ChestTile>(url, "Failed to fetch nearby chests");
-
-    const centerCoord = new Coord(center.x, center.y);
-
-    return chestTiles
-      .map((chest) => tileDataToTile(chest.data))
-      .filter((tile) => tile.occupier_type === TileOccupier.Chest)
-      .map((tile) => {
-        const chestCoord = new Coord(tile.col, tile.row);
-        const distance = centerCoord.distance(chestCoord);
-
-        return {
-          entityId: tile.occupier_id,
-          position: { alt: false, x: tile.col, y: tile.row },
-          distance: distance,
-        };
-      })
-      .toSorted((a, b) => a.distance - b.distance);
-  }
-
-  /**
-   * Fetch all relics owned by a player's structures from the SQL database.
-   * SQL queries always return arrays.
-   */
-  async fetchPlayerStructureRelics(owner: string): Promise<StructureRelicsData[]> {
-    const formattedOwner = formatAddressForQuery(owner);
-    const query = RELICS_QUERIES.PLAYER_STRUCTURE_RELICS.replace("{owner}", formattedOwner);
-    const url = buildApiUrl(this.baseUrl, query, this.scope);
-    return await fetchWithErrorHandling<StructureRelicsData>(url, "Failed to fetch player structure relics");
-  }
-
-  /**
-   * Fetch all relics owned by a player's armies from the SQL database.
-   * SQL queries always return arrays.
-   */
-  async fetchPlayerArmyRelics(owner: string): Promise<ArmyRelicsData[]> {
-    const formattedOwner = formatAddressForQuery(owner);
-    const query = RELICS_QUERIES.PLAYER_ARMY_RELICS.replace("{owner}", formattedOwner);
-    const url = buildApiUrl(this.baseUrl, query, this.scope);
-    return await fetchWithErrorHandling<ArmyRelicsData>(url, "Failed to fetch player army relics");
-  }
-
-  /**
-   * Get all relics owned by a player across all their entities
-   * @param sqlApi - The SQL API instance
-   * @param playerAddress - The player's contract address
-   * @returns All relics grouped by entity type
-   */
-  async fetchAllPlayerRelics(playerAddress: string): Promise<PlayerRelicsData> {
-    try {
-      const [structureRelics, armyRelics] = await Promise.all([
-        this.fetchPlayerStructureRelics(playerAddress),
-        this.fetchPlayerArmyRelics(playerAddress),
-      ]);
-
-      const structures: EntityWithRelics[] = structureRelics.map((structure) => {
-        const relics = extractRelicsFromResourceData(structure);
-
-        return {
-          entityId: structure.entity_id,
-          structureType: structure.entity_type,
-          type: EntityType.STRUCTURE,
-          position: { alt: false, x: structure.coord_x, y: structure.coord_y },
-          relics,
-        };
-      });
-
-      const armies: EntityWithRelics[] = armyRelics.map((army) => {
-        const relics = extractRelicsFromResourceData(army);
-
-        return {
-          entityId: army.entity_id,
-          type: EntityType.ARMY,
-          position: { alt: false, x: army.coord_x, y: army.coord_y },
-          relics,
-        };
-      });
-
-      return {
-        structures,
-        armies,
-      };
-    } catch (error) {
-      console.error("Error fetching player relics:", error);
-      return {
-        structures: [],
-        armies: [],
-      };
-    }
-  }
-
-  /**
    * Fetch all structures for map display from the SQL database.
    * SQL queries always return arrays.
    */
@@ -771,22 +525,6 @@ export class SqlApi {
 
     const firstResult = extractFirstOrNull(results);
     return firstResult?.contract_address ?? null;
-  }
-
-  /**
-   * Fetch hyperstructures with count of realms within a given radius.
-   * SQL queries always return arrays.
-   */
-  async fetchHyperstructuresWithRealmCount(radius: number): Promise<HyperstructureRealmCountDataRaw[]> {
-    const query = HYPERSTRUCTURE_QUERIES.HYPERSTRUCTURES_WITH_REALM_COUNT.replace(
-      "{radius}",
-      (radius * radius).toString(),
-    );
-    const url = buildApiUrl(this.baseUrl, query, this.scope);
-    return await fetchWithErrorHandling<HyperstructureRealmCountDataRaw>(
-      url,
-      "Failed to fetch hyperstructures with realm count",
-    );
   }
 
   /**

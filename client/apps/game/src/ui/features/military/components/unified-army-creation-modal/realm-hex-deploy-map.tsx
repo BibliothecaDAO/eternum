@@ -1,6 +1,5 @@
 import { BIOME_COLORS } from "@/three/managers/biome-colors";
-import { useUIStore } from "@/hooks/store/use-ui-store";
-import { sqlApi } from "@/services/api";
+import { useWorldSpatialTiles } from "@/hooks/use-world-spatial-tiles";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import {
   BiomeIdToType,
@@ -10,7 +9,7 @@ import {
   getNeighborHexes,
 } from "@bibliothecadao/types";
 import AlertTriangle from "lucide-react/dist/esm/icons/alert-triangle";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo } from "react";
 
 interface RealmHexDeployMapProps {
   centerCol: number;
@@ -133,42 +132,17 @@ export const RealmHexDeployMap = ({
 }: RealmHexDeployMapProps) => {
   const hexes = useMemo(() => buildHexRings(centerCol, centerRow, radius), [centerCol, centerRow, radius]);
 
-  const [tiles, setTiles] = useState<Map<string, { biome?: number; occupierId?: bigint }>>(new Map());
-  const [tilesLoading, setTilesLoading] = useState(false);
-  // External signal — bumped after create/disband so we re-fetch occupier state.
-  const militaryMapVersion = useUIStore((state) => state.militaryMapVersion);
-
-  // Pull real tile data for the visible hexes. We index by "col,row" so we can
-  // look up each ring entry in O(1) during render.
-  useEffect(() => {
-    let cancelled = false;
-    setTilesLoading(true);
-
-    const coords = hexes.map(({ col, row }) => ({ col, row }));
-    sqlApi
-      .fetchTilesByCoords(coords)
-      .then((rows) => {
-        if (cancelled) return;
-        const next = new Map<string, { biome?: number; occupierId?: bigint }>();
-        for (const tile of rows) {
-          next.set(`${tile.col},${tile.row}`, {
-            biome: Number(tile.biome ?? 0),
-            occupierId: tile.occupier_id ? BigInt(tile.occupier_id) : 0n,
-          });
-        }
-        setTiles(next);
-      })
-      .catch((error) => {
-        if (!cancelled) console.error("Failed to load deploy map tiles", error);
-      })
-      .finally(() => {
-        if (!cancelled) setTilesLoading(false);
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [hexes, militaryMapVersion]);
+  const projectedTiles = useWorldSpatialTiles(hexes);
+  const tiles = useMemo(
+    () =>
+      new Map(
+        projectedTiles.map((tile) => [
+          `${tile.hexCoords.col},${tile.hexCoords.row}`,
+          { biome: tile.biome, occupierId: BigInt(tile.occupierId) },
+        ]),
+      ),
+    [projectedTiles],
+  );
 
   const layout = useMemo(() => {
     const centerPixel = offsetToPixel(centerCol, centerRow);
@@ -313,7 +287,6 @@ export const RealmHexDeployMap = ({
             <span className="inline-flex items-center gap-1">
               <span className="inline-block h-1.5 w-1.5 rounded-full bg-gold/30" />? unexplored
             </span>
-            {tilesLoading && <span className="text-gold/45">refreshing…</span>}
           </div>
         </>
       )}

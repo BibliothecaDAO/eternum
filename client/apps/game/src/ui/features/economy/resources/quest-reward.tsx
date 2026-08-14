@@ -1,9 +1,13 @@
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { currencyFormat } from "@/ui/utils/utils";
-import { QuestTileData } from "@bibliothecadao/torii";
 import { ResourcesIds } from "@bibliothecadao/types";
 
-export const QuestReward = ({ quest }: { quest: QuestTileData }) => {
+interface QuestRewardSource {
+  amount: bigint | number | string;
+  resource_type: number;
+}
+
+export const QuestReward = ({ quest }: { quest: QuestRewardSource }) => {
   if (!quest) return null;
 
   const reward = quest?.amount ?? 0;

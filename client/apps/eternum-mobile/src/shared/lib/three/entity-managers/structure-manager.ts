@@ -149,13 +149,15 @@ export class StructureManager extends EntityManager<StructureObject> {
   private resolveGuardArmies(troopGuards: any): NonNullable<StructureTileSystemUpdate["guardArmies"]> {
     if (!troopGuards) return [];
 
-    return [
+    const guards: Array<readonly [GuardSlot, any]> = [
       [GuardSlot.Delta, troopGuards.delta],
       [GuardSlot.Charlie, troopGuards.charlie],
       [GuardSlot.Bravo, troopGuards.bravo],
       [GuardSlot.Alpha, troopGuards.alpha],
-    ]
-      .map(([slot, guard]: [GuardSlot, any]) => ({
+    ];
+
+    return guards
+      .map(([slot, guard]) => ({
         slot,
         category: guard?.category ?? null,
         tier: TROOP_TIERS[guard?.tier] ?? 0,

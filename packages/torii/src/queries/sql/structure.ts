@@ -5,36 +5,10 @@ export const STRUCTURE_QUERIES = {
     WHERE {GF} AND owner = '{owner}';
   `,
 
-  OTHER_STRUCTURES: `
-    SELECT entity_id AS entityId, \`metadata.realm_id\` AS realmId, owner, category 
-    FROM [s1_eternum-Structure] 
-    WHERE {GF} AND owner != '{owner}';
-  `,
-
   REALM_SETTLEMENTS: `
     SELECT \`base.coord_x\` AS coord_x, \`base.coord_y\` AS coord_y, entity_id, owner 
     FROM [s1_eternum-Structure] 
     WHERE {GF} AND category == 1;
-  `,
-
-  STRUCTURE_BY_COORD: `
-    SELECT
-        internal_id,
-        entity_id,
-        owner AS occupier_id,
-        \`base.category\` AS structure_category,
-        \`base.level\` AS structure_level,
-        \`base.coord_x\` AS coord_x,
-        \`base.coord_y\` AS coord_y,
-        \`base.created_at\` AS created_tick,
-        \`metadata.realm_id\` AS realm_id,
-        category AS top_level_category,
-        internal_created_at,
-        internal_updated_at,
-        resources_packed
-    FROM \`s1_eternum-Structure\`
-    WHERE {GF} AND \`base.coord_x\` = {coord_x} AND \`base.coord_y\` = {coord_y};
-    LIMIT 1;
   `,
 
   PLAYER_STRUCTURES: `
@@ -60,18 +34,6 @@ export const STRUCTURE_QUERIES = {
         \`base.coord_y\` as coord_y
     FROM \`s1_eternum-Structure\`
     WHERE {GF}
-    LIMIT 1;
-  `,
-
-  SURROUNDING_WONDER_BONUS: `
-    SELECT entity_id
-    FROM \`s1_eternum-Structure\`
-    WHERE {GF}
-      AND \`base.coord_x\` >= {minX} 
-      AND \`base.coord_x\` <= {maxX}
-      AND \`base.coord_y\` >= {minY} 
-      AND \`base.coord_y\` <= {maxY}
-      AND \`metadata.has_wonder\` = true
     LIMIT 1;
   `,
 
@@ -119,34 +81,6 @@ export const STRUCTURE_QUERIES = {
     FROM \`s1_eternum-Structure\`
     WHERE category == 5 AND {GF}
     ORDER BY entity_id;
-  `,
-
-  STRUCTURE_AND_EXPLORER_DETAILS: `
-    SELECT
-        s.owner AS owner_address,
-        GROUP_CONCAT(DISTINCT s.entity_id || ':' || s.\`metadata.realm_id\`|| ':' || s.\`category\`) AS structure_ids,
-        GROUP_CONCAT(
-            CASE 
-                WHEN et.explorer_id IS NOT NULL 
-                THEN et.explorer_id || ':' || s.entity_id 
-                ELSE NULL 
-            END
-        ) AS explorer_ids,
-        COUNT(DISTINCT CASE WHEN s.category = 1 THEN s.entity_id END) as realms_count,
-        COUNT(DISTINCT CASE WHEN s.category = 2 THEN s.entity_id END) as hyperstructures_count,
-        COUNT(DISTINCT CASE WHEN s.category = 3 THEN s.entity_id END) as bank_count,
-        COUNT(DISTINCT CASE WHEN s.category = 4 THEN s.entity_id END) as mine_count,
-        COUNT(DISTINCT CASE WHEN s.category = 5 THEN s.entity_id END) as village_count,
-        gm.guild_id,
-        g.name AS guild_name,
-        an.name AS player_name
-    FROM [s1_eternum-Structure] s
-    LEFT JOIN [s1_eternum-ExplorerTroops] et ON {GF:et} AND et.owner = s.entity_id
-    LEFT JOIN [s1_eternum-GuildMember] gm ON {GF:gm} AND gm.member = s.owner
-    LEFT JOIN [s1_eternum-Guild] g ON {GF:g} AND g.guild_id = gm.guild_id
-    LEFT JOIN [s1_eternum-AddressName] an ON an.address = s.owner
-    WHERE {GF:s}
-    GROUP BY s.owner
   `,
 
   GUARDS_BY_STRUCTURE: `

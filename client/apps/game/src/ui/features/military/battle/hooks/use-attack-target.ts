@@ -1,4 +1,3 @@
-import { sqlApi } from "@/services/api";
 import { useBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
 import { getEntityIdFromKeys } from "@/ui/utils/utils";
 import {
@@ -20,7 +19,7 @@ import { getStructureDefenseSlotLimit, MAX_GUARD_SLOT_COUNT } from "../../utils/
 import { AttackTarget, TargetType } from "../types";
 
 import type { ID, RelicEffectWithEndTick, StructureType } from "@bibliothecadao/types";
-import { STEALABLE_RESOURCES } from "@bibliothecadao/types";
+import { ContractAddress, STEALABLE_RESOURCES } from "@bibliothecadao/types";
 import { gameEntityKey } from "@/dojo/game-scope";
 
 const orderResourcesByPriority = (resourceBalances: Array<{ resourceId: number; amount: number }>) => {
@@ -79,7 +78,7 @@ type FetchedAttackTarget =
       hex: { x: number; y: number };
       explorer: NonNullable<ExplorerTargetFetchResult["explorer"]>;
       resources: ExplorerTargetFetchResult["resources"];
-      addressOwner: Awaited<ReturnType<typeof sqlApi.fetchExplorerAddressOwner>>;
+      addressOwner: ContractAddress | null;
     };
 
 export const useAttackTargetData = (
@@ -172,7 +171,10 @@ export const useAttackTargetData = (
           if (!isActive) return;
 
           if (explorer) {
-            const addressOwner = await sqlApi.fetchExplorerAddressOwner(targetTile.occupier_id);
+            const ownerStructure = explorer.owner
+              ? getComponentValue(Structure, gameEntityKey([BigInt(explorer.owner)]))
+              : undefined;
+            const addressOwner = ownerStructure ? ContractAddress(ownerStructure.owner) : null;
             if (!isActive) return;
 
             setFetchedTarget({

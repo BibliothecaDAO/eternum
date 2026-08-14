@@ -1,6 +1,5 @@
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import { usePlayerStore } from "@/hooks/store/use-player-store";
 import { FELT_CENTER } from "@/ui/config";
 import { BIOME_COLORS } from "@/three/managers/biome-colors";
 import {
@@ -209,7 +208,6 @@ export const HexMinimap = ({ tiles, selectedHex, navigationTarget, cameraTargetH
   const playerStructures = useUIStore((state) => state.playerStructures);
   const selectableArmies = useUIStore((state) => state.selectableArmies);
   const cameraDistance = useUIStore((state) => state.cameraDistance);
-  const currentPlayerData = usePlayerStore((state) => state.currentPlayerData);
   const mode = useGameModeConfig();
 
   const ownedStructureIds = useMemo(() => {
@@ -228,13 +226,8 @@ export const HexMinimap = ({ tiles, selectedHex, navigationTarget, cameraTargetH
       if (id) ids.add(id);
     });
 
-    currentPlayerData?.explorerIds?.forEach((entry) => {
-      const id = normalizeEntityId(entry.split(":")[0]);
-      if (id) ids.add(id);
-    });
-
     return ids;
-  }, [selectableArmies, currentPlayerData]);
+  }, [selectableArmies]);
 
   const centeredIndex = useMemo(() => buildCenteredIndex(tiles), [tiles]);
 

@@ -1,7 +1,7 @@
 import { POLLING_INTERVALS } from "@/config/polling";
+import { gameEntityKey } from "@/dojo/game-scope";
 import { usePlayerStructureSync } from "@/hooks/helpers/use-player-structure-sync";
 import { useChainTimeStore } from "@/hooks/store/use-chain-time-store";
-import { usePlayerStore } from "@/hooks/store/use-player-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { sqlApi } from "@/services/api";
 import { RESOURCE_ARRIVAL_AUTO_CLAIM_RETRY_DELAY_SECONDS, RESOURCE_ARRIVAL_READY_BUFFER_SECONDS } from "@/ui/constants";
@@ -15,6 +15,7 @@ import {
 } from "@/ui/utils/uncertain-transaction-registry";
 import {
   ClientConfigManager,
+  DEFAULT_COORD_ALT,
   formatArmies,
   formatArrivals,
   getAddressName,
@@ -22,13 +23,21 @@ import {
   getEntityIdFromKeys,
   getGuildFromPlayerAddress,
   LeaderboardManager,
+  ResourceManager,
   ResourceArrivalManager,
   SelectableArmy,
   summarizeIncomingTroopArrivals,
 } from "@bibliothecadao/eternum";
 import { useDojo, usePlayerStructures } from "@bibliothecadao/react";
-import { SeasonEnded } from "@bibliothecadao/torii";
-import { ClientComponents, ContractAddress, ResourceArrivalInfo, WORLD_CONFIG_ID } from "@bibliothecadao/types";
+import {
+  ClientComponents,
+  ContractAddress,
+  EntityType,
+  ResourceArrivalInfo,
+  ResourcesIds,
+  WORLD_CONFIG_ID,
+} from "@bibliothecadao/types";
+import type { PlayerRelicsData } from "@bibliothecadao/torii";
 import { useEntityQuery } from "@dojoengine/react";
 import { ComponentValue, getComponentValue, Has } from "@dojoengine/recs";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -277,98 +286,70 @@ const PublicTroopArrivalsStoreManager = () => {
 const RelicsStoreManager = () => {
   const {
     account: { account },
+    setup: { components },
   } = useDojo();
 
   const setPlayerRelics = useUIStore((state) => state.setPlayerRelics);
   const setPlayerRelicsLoading = useUIStore((state) => state.setPlayerRelicsLoading);
   const relicsRefreshNonce = useUIStore((state) => state.relicsRefreshNonce);
-
-  const isMountedRef = useRef(true);
-  const lastHandledRefresh = useRef(0);
-
-  useEffect(() => {
-    isMountedRef.current = true;
-
-    return () => {
-      isMountedRef.current = false;
-    };
-  }, []);
-
-  const fetchPlayerRelics = useCallback(
-    async (showLoading = true) => {
-      if (!isMountedRef.current) {
-        return;
-      }
-
-      if (!account.address || account.address === "0x0") {
-        setPlayerRelics(null);
-        setPlayerRelicsLoading(false);
-        return;
-      }
-
-      if (showLoading) {
-        setPlayerRelicsLoading(true);
-      }
-
-      try {
-        const relicsData = await sqlApi.fetchAllPlayerRelics(account.address);
-
-        if (!isMountedRef.current) {
-          return;
-        }
-
-        setPlayerRelics(relicsData);
-      } catch (error) {
-        if (isMountedRef.current) {
-          console.error("Failed to update available relics:", error);
-        }
-      } finally {
-        if (showLoading && isMountedRef.current) {
-          setPlayerRelicsLoading(false);
-        }
-      }
-    },
-    [account.address, setPlayerRelics, setPlayerRelicsLoading],
-  );
+  const resourceEntities = useEntityQuery([Has(components.Resource)]);
 
   useEffect(() => {
     if (!account.address || account.address === "0x0") {
-      if (isMountedRef.current) {
-        setPlayerRelics(null);
-        setPlayerRelicsLoading(false);
-      }
+      setPlayerRelics(null);
+      setPlayerRelicsLoading(false);
       return;
     }
 
-    fetchPlayerRelics(true);
+    const accountAddress = BigInt(account.address);
+    const relicsData = resourceEntities.reduce<PlayerRelicsData>(
+      (result, entity) => {
+        const resource = getComponentValue(components.Resource, entity);
+        if (!resource) return result;
 
-    const intervalId = setInterval(() => {
-      fetchPlayerRelics(false);
-    }, 10000);
+        const relics = ResourceManager.getResourceBalances(resource).filter(
+          ({ resourceId }) =>
+            resourceId >= ResourcesIds.StaminaRelic1 && resourceId <= ResourcesIds.TroopProductionRelic2,
+        );
+        if (relics.length === 0) return result;
 
-    return () => {
-      clearInterval(intervalId);
-    };
-  }, [account.address, fetchPlayerRelics, setPlayerRelics, setPlayerRelicsLoading]);
+        const entityId = resource.entity_id;
+        const structure = getComponentValue(components.Structure, gameEntityKey([BigInt(entityId)]));
+        if (structure?.owner === accountAddress) {
+          result.structures.push({
+            entityId,
+            structureType: structure.base.category,
+            type: EntityType.STRUCTURE,
+            position: {
+              alt: DEFAULT_COORD_ALT,
+              x: structure.base.coord_x,
+              y: structure.base.coord_y,
+            },
+            relics,
+          });
+          return result;
+        }
 
-  useEffect(() => {
-    if (!account.address || account.address === "0x0") {
-      lastHandledRefresh.current = relicsRefreshNonce;
-      return;
-    }
+        const army = getComponentValue(components.ExplorerTroops, gameEntityKey([BigInt(entityId)]));
+        const ownerStructure = army
+          ? getComponentValue(components.Structure, gameEntityKey([BigInt(army.owner)]))
+          : undefined;
+        if (army && ownerStructure?.owner === accountAddress) {
+          result.armies.push({
+            entityId,
+            type: EntityType.ARMY,
+            position: { alt: army.coord.alt, x: army.coord.x, y: army.coord.y },
+            relics,
+          });
+        }
+        return result;
+      },
+      { structures: [], armies: [] },
+    );
 
-    if (relicsRefreshNonce === lastHandledRefresh.current) {
-      return;
-    }
-
-    lastHandledRefresh.current = relicsRefreshNonce;
-
-    if (relicsRefreshNonce === 0) {
-      return;
-    }
-
-    fetchPlayerRelics(true);
-  }, [account.address, fetchPlayerRelics, relicsRefreshNonce]);
+    setPlayerRelics(relicsData);
+    setPlayerRelicsLoading(false);
+  }, [account.address, components, relicsRefreshNonce, resourceEntities, setPlayerRelics, setPlayerRelicsLoading]);
 
   return null;
 };
@@ -546,46 +527,20 @@ const ButtonStateStoreManager = () => {
   return null;
 };
 
-const PlayerDataStoreManager = () => {
-  const {
-    account: { account },
-  } = useDojo();
-
-  const initializePlayerStore = usePlayerStore((state) => state.initializePlayerStore);
-  const getCurrentPlayerData = usePlayerStore((state) => state.getCurrentPlayerData);
-  const playerDataStore = usePlayerStore((state) => state.playerDataStore);
-
-  // Initialize the player store on mount
-  useEffect(() => {
-    if (!playerDataStore) {
-      initializePlayerStore();
-    }
-  }, [initializePlayerStore, playerDataStore]);
-
-  // Update current player data when account changes
-  useEffect(() => {
-    if (account?.address && playerDataStore) {
-      getCurrentPlayerData(account.address);
-    }
-  }, [account?.address, getCurrentPlayerData, playerDataStore]);
-
-  return null;
-};
-
 const SeasonWinnerStoreManager = () => {
   const {
     setup: { components },
   } = useDojo();
   const setSeasonWinner = useUIStore((state) => state.setGameWinner);
-  const [seasonEnded, setSeasonEnded] = useState<SeasonEnded | null>(null);
-
-  useEffect(() => {
-    const fetchSeasonEnded = async () => {
-      const seasonEnded = await sqlApi.fetchSeasonEnded();
-      setSeasonEnded(seasonEnded);
-    };
-    fetchSeasonEnded();
-  }, []);
+  const seasonEndedEntities = useEntityQuery([Has(components.events.SeasonEnded)]);
+  const seasonEnded = useMemo(
+    () =>
+      seasonEndedEntities
+        .map((entity) => getComponentValue(components.events.SeasonEnded, entity))
+        .filter((value) => value !== undefined)
+        .toSorted((left, right) => right.timestamp - left.timestamp)[0],
+    [components.events.SeasonEnded, seasonEndedEntities],
+  );
 
   useEffect(() => {
     if (seasonEnded) {
@@ -665,7 +620,6 @@ export const StoreManagers = () => {
       <AutoRegisterPointsStoreManager />
       <PlayerStructuresStoreManager />
       <ButtonStateStoreManager />
-      <PlayerDataStoreManager />
       <SeasonWinnerStoreManager />
       <SeasonTimerStoreManager />
       <SelectableArmiesStoreManager />

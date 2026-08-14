@@ -15,7 +15,15 @@ import {
   WorldSpatialProjection,
 } from "@bibliothecadao/eternum/game-sync";
 import type { GameSyncRuntimeMetrics } from "@bibliothecadao/eternum/game-sync";
-import type { Component, Entity, Metadata, Schema } from "@dojoengine/recs";
+import {
+  getComponentValue,
+  Has,
+  runQuery,
+  type Component,
+  type Entity,
+  type Metadata,
+  type Schema,
+} from "@dojoengine/recs";
 import { getEntities as getEntitiesSnapshot, setEntities } from "@dojoengine/state";
 import type { Clause, ToriiClient, Entity as ToriiEntity } from "@dojoengine/torii-wasm/types";
 import {
@@ -28,7 +36,7 @@ import {
 import { env } from "../../env";
 import { createGamewideSyncSession } from "./gamewide-sync-adapter";
 import { shouldUseLegacyBoundedSpatialSync } from "./game-sync-mode";
-import { gameModel, isGameScoped } from "./game-scope";
+import { gameEntityKey, gameModel, isGameScoped } from "./game-scope";
 import { resolveInitialStructureSelection } from "./sync-initial-selection";
 import { isDeletionPayload } from "./sync-utils";
 import { ToriiSyncWorkerManager } from "./sync-worker-manager";
@@ -795,6 +803,42 @@ const installActiveWorldSpatialProjection = (setup: SetupResult): void => {
   );
 };
 
+interface InitialSelectableStructure {
+  entity_id: number;
+  coord_x: number;
+  coord_y: number;
+  category: number;
+}
+
+const readInitialSelectableStructures = (setup: SetupResult): InitialSelectableStructure[] =>
+  Array.from(runQuery([Has(setup.components.Structure)]))
+    .flatMap((entity) => {
+      const structure = getComponentValue(setup.components.Structure, entity);
+      if (!structure) return [];
+
+      return [
+        {
+          entity_id: Number(structure.entity_id),
+          coord_x: Number(structure.base.coord_x),
+          coord_y: Number(structure.base.coord_y),
+          category: Number(structure.base.category),
+        },
+      ];
+    })
+    .sort((left, right) => left.entity_id - right.entity_id);
+
+const readOwnedInitialStructures = (
+  setup: SetupResult,
+  ownerAddress: string | undefined,
+): InitialSelectableStructure[] => {
+  if (!ownerAddress) return [];
+  const owner = BigInt(ownerAddress);
+  return readInitialSelectableStructures(setup).filter((candidate) => {
+    const structure = getComponentValue(setup.components.Structure, gameEntityKey([BigInt(candidate.entity_id)]));
+    return structure?.owner === owner;
+  });
+};
+
 export const initialSync = async (
   setup: SetupResult,
   state: AppStore,
@@ -810,9 +854,9 @@ export const initialSync = async (
     setInitialSyncProgress(0);
   }
 
+  const usesLegacyBoundedSync = shouldUseLegacyBoundedSpatialSync();
   const globalStreamSubscribeStart = performance.now();
   try {
-    const usesLegacyBoundedSync = shouldUseLegacyBoundedSpatialSync();
     logWorldmapSyncAB("Initial sync config", {
       boundedSpatialSync: usesLegacyBoundedSync,
       boundedSpatialPadding: env.VITE_PUBLIC_WORLDMAP_BOUNDED_SPATIAL_PADDING,
@@ -894,10 +938,11 @@ export const initialSync = async (
     const hasConnectedAccount =
       typeof accountAddress === "string" && accountAddress.length > 0 && accountAddress !== "0x0";
 
-    let ownedStructures: Array<{ entity_id: number; coord_x: number; coord_y: number; category?: number | string }> =
-      [];
+    let ownedStructures: InitialSelectableStructure[] = [];
 
-    if (hasConnectedAccount) {
+    if (!usesLegacyBoundedSync) {
+      ownedStructures = readOwnedInitialStructures(setup, hasConnectedAccount ? accountAddress : undefined);
+    } else if (hasConnectedAccount) {
       try {
         ownedStructures = await sqlApi.fetchPlayerStructures(accountAddress);
       } catch (error) {
@@ -905,7 +950,12 @@ export const initialSync = async (
       }
     }
 
-    const firstGlobalStructure = ownedStructures.length === 0 ? await sqlApi.fetchFirstStructure() : null;
+    const firstGlobalStructure =
+      ownedStructures.length > 0
+        ? null
+        : usesLegacyBoundedSync
+          ? await sqlApi.fetchFirstStructure()
+          : (readInitialSelectableStructures(setup)[0] ?? null);
     const { selectedStructure, spectator: selectAsSpectator } = resolveInitialStructureSelection({
       ownedStructures,
       firstGlobalStructure,
@@ -917,12 +967,14 @@ export const initialSync = async (
         spectator: selectAsSpectator,
         worldMapPosition: { col: selectedStructure.coord_x, row: selectedStructure.coord_y },
       });
-      await getStructuresDataFromTorii(setup.network.toriiClient, contractComponents, [
-        {
-          entityId: selectedStructure.entity_id,
-          position: { col: selectedStructure.coord_x, row: selectedStructure.coord_y },
-        },
-      ]);
+      if (usesLegacyBoundedSync) {
+        await getStructuresDataFromTorii(setup.network.toriiClient, contractComponents, [
+          {
+            entityId: selectedStructure.entity_id,
+            position: { col: selectedStructure.coord_x, row: selectedStructure.coord_y },
+          },
+        ]);
+      }
       const end = performance.now();
       console.log("[sync] initial structure query", end - start);
       updateProgress(25);
