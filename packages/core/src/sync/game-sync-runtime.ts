@@ -169,6 +169,10 @@ export class GameSyncRuntime {
     return this.worldSpatialProjection;
   }
 
+  public getWorldSpatialProjection(): WorldSpatialProjection | null {
+    return this.worldSpatialProjection;
+  }
+
   public dispose(): void {
     this.generation += 1;
     this.cancelWriterImmediately();

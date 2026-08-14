@@ -1,7 +1,7 @@
 import { captureSystemError } from "@/posthog";
 import { DEV_MODE_ENABLED } from "@/utils/dev-mode";
 import { setup } from "@bibliothecadao/dojo";
-import { configManager, MapDataStore } from "@bibliothecadao/eternum";
+import { configManager } from "@bibliothecadao/eternum";
 import { SupersededGameSyncStartError } from "@bibliothecadao/eternum/game-sync";
 import { setSqlGameScope } from "@bibliothecadao/torii";
 import { world } from "@bibliothecadao/types";
@@ -354,7 +354,6 @@ const clearBootstrapWorldData = () => {
   world.components.length = 0;
   console.log(`[BOOTSTRAP] Cleared ${entities.length} entities and component registry from RECS world`);
 
-  MapDataStore.clearIfExists();
   clearSubscriptionQueue();
   useSyncStore.getState().resetSubscriptions();
 };

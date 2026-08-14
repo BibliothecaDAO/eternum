@@ -7,7 +7,6 @@ import { usePlayerAvatar, getAvatarUrl } from "@/hooks/use-player-avatar";
 import { Button } from "@/ui/design-system/atoms";
 import { ViewOnMapIcon } from "@/ui/design-system/molecules";
 import { NavigateToPositionIcon } from "@/ui/features/military/components/army-chip";
-import { getRealmCountPerHyperstructure } from "@/ui/utils/utils";
 import {
   configManager,
   getAddressName,
@@ -111,10 +110,7 @@ export const PlayerId = ({
   // Get hyperstructure shareholder points breakdown
   const unregisteredShareholderPointsBreakdown = useMemo(() => {
     if (!selectedPlayer) return [];
-    return LeaderboardManager.instance(
-      components,
-      getRealmCountPerHyperstructure(),
-    ).getPlayerHyperstructurePointsBreakdown(selectedPlayer);
+    return LeaderboardManager.instance(components).getPlayerHyperstructurePointsBreakdown(selectedPlayer);
   }, [selectedPlayer, components]);
 
   // Helper function to get structure name

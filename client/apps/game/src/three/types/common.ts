@@ -32,7 +32,7 @@ export interface StructureInfo {
   cosmeticAssetPaths?: string[];
   usesFallbackCosmeticSkin?: boolean;
   attachments?: CosmeticAttachmentTemplate[];
-  // Enhanced data from MapDataStore
+  // Live presentation facts derived from RECS
   guardArmies?: Array<{ slot: number; category: string | null; tier: number; count: number; stamina: number }>;
   activeProductions?: Array<{ buildingCount: number; buildingType: BuildingType }>;
   incomingTroopArrivals?: IncomingTroopArrival[];
@@ -58,7 +58,7 @@ export interface ArmyData {
   cosmeticAssetPaths?: string[];
   usesFallbackCosmeticSkin?: boolean;
   attachments?: CosmeticAttachmentTemplate[];
-  // Enhanced data from MapDataStore
+  // Live presentation facts derived from RECS
   troopCount: number;
   currentStamina: number;
   maxStamina: number;

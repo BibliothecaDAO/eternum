@@ -14,7 +14,6 @@ import { Guilds } from "../guilds/guilds";
 import { PlayersPanel } from "../player/players-panel";
 import { leaderboard } from "@/ui/features/world";
 import { CenteredModalShell } from "@/ui/features/world/containers/centered-modal-shell";
-import { getRealmCountPerHyperstructure } from "@/ui/utils/utils";
 import { getPlayerInfo, LeaderboardManager } from "@bibliothecadao/eternum";
 import { useDojo, usePlayers } from "@bibliothecadao/react";
 import { ContractAddress } from "@bibliothecadao/types";
@@ -100,11 +99,7 @@ export const Social = () => {
     if (!isOpen) return;
 
     // update first time - initialize with interval on first call
-    const manager = LeaderboardManager.instance(
-      components,
-      getRealmCountPerHyperstructure(),
-      LEADERBOARD_UPDATE_INTERVAL,
-    );
+    const manager = LeaderboardManager.instance(components, LEADERBOARD_UPDATE_INTERVAL);
     manager.initialize();
     setPlayersByRank(manager.playersByRank);
   }, [components, isOpen, setPlayersByRank]);
@@ -114,7 +109,7 @@ export const Social = () => {
     if (!isOpen) return;
 
     const interval = setInterval(() => {
-      const manager = LeaderboardManager.instance(components, getRealmCountPerHyperstructure());
+      const manager = LeaderboardManager.instance(components);
       manager.updatePoints();
       setPlayersByRank(manager.playersByRank);
     }, LEADERBOARD_UPDATE_INTERVAL);

@@ -13,7 +13,6 @@ import {
   rememberUncertainClaimSharePointsSubmission,
   shouldSkipAutomaticClaimSharePointsSubmission,
 } from "@/ui/utils/uncertain-transaction-registry";
-import { getRealmCountPerHyperstructure } from "@/ui/utils/utils";
 import {
   ClientConfigManager,
   formatArmies,
@@ -410,7 +409,7 @@ const AutoRegisterPointsStoreManager = () => {
       }
 
       // Get current points
-      const leaderboardManager = LeaderboardManager.instance(components, getRealmCountPerHyperstructure());
+      const leaderboardManager = LeaderboardManager.instance(components);
       const registeredPoints = leaderboardManager.getPlayerRegisteredPoints(ContractAddress(account.address));
       const unregisteredPoints = leaderboardManager.getPlayerHyperstructureUnregisteredShareholderPoints(
         ContractAddress(account.address),

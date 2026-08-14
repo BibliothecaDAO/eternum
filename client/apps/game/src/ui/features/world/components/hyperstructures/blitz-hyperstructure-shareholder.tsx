@@ -1,5 +1,4 @@
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
-import { getRealmCountPerHyperstructure } from "@/ui/utils/utils";
 import { LeaderboardManager } from "@bibliothecadao/eternum";
 import { useDojo, useOwnedHyperstructuresEntityIds } from "@bibliothecadao/react";
 import { ContractAddress, type ID } from "@bibliothecadao/types";
@@ -45,7 +44,7 @@ export const BlitzSetHyperstructureShareholdersTo100 = React.memo(() => {
       // Skip if no hyperstructures or effect was cancelled
       if (cancelled || ownedHyperstructures.length === 0) return;
 
-      const leaderboardManager = LeaderboardManager.instance(components, getRealmCountPerHyperstructure());
+      const leaderboardManager = LeaderboardManager.instance(components);
 
       for (const hyperstructure of ownedHyperstructures) {
         // Skip if this hyperstructure was already processed or effect was cancelled

@@ -2,7 +2,6 @@ import { useUIStore } from "@/hooks/store/use-ui-store";
 import Button from "@/ui/design-system/atoms/button";
 import { hasFiniteSeasonEnd } from "@/ui/features/world/utils/season-timing";
 import { CenteredModalShell } from "@/ui/features/world/containers/centered-modal-shell";
-import { getRealmCountPerHyperstructure } from "@/ui/utils/utils";
 import { getBlockTimestamp } from "@bibliothecadao/eternum";
 
 import { configManager, LeaderboardManager } from "@bibliothecadao/eternum";
@@ -35,7 +34,7 @@ export const EndSeasonButton = ({ className }: EndSeasonButtonProps) => {
   const pointsForWin = configManager.getHyperstructureConfig().pointsForWin;
 
   const { registeredPoints, percentageOfPoints } = useMemo(() => {
-    const leaderboardManager = LeaderboardManager.instance(setup.components, getRealmCountPerHyperstructure());
+    const leaderboardManager = LeaderboardManager.instance(setup.components);
     const registeredPoints = leaderboardManager.getPlayerRegisteredPoints(ContractAddress(account.address));
 
     return { registeredPoints, percentageOfPoints: Math.min((registeredPoints / pointsForWin) * 100, 100) };

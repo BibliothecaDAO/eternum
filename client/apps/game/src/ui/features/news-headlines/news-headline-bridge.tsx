@@ -2,7 +2,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore — module resolution handled by bundler at runtime
-import { MAP_DATA_REFRESH_INTERVAL, MapDataStore, Position } from "@bibliothecadao/eternum";
+import { Position } from "@bibliothecadao/eternum";
+import { getActiveGameSyncRuntime } from "@bibliothecadao/eternum/game-sync";
 // @ts-ignore
 import { ContractAddress, StructureType } from "@bibliothecadao/types";
 // @ts-ignore
@@ -11,12 +12,12 @@ import { useDojo, useHyperstructures, useQuery } from "@bibliothecadao/react";
 import { useStoryEvents } from "@/hooks/store/use-story-events-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { useGoToStructure, useNavigateToMapView } from "@/hooks/helpers/use-navigate";
-import { sqlApi } from "@/services/api";
 import { AudioManager } from "@/audio/core/AudioManager";
 
 import { type Headline, HEADLINE_DISPLAY_MS, RECENT_HEADLINE_WINDOW_MS } from "./headline-types";
 import { NewsHeadlineBanner } from "./news-headline-banner";
 import { parseNumeric } from "../story-events/story-event-utils";
+import { createWorldEventEntityReader } from "../story-events/world-event-entity-reader";
 
 /** Fields we access on story events — typed locally to avoid cascading module resolution issues */
 interface BattleEvent {
@@ -87,7 +88,10 @@ export function NewsHeadlineBridge() {
   const gameWinner = useUIStore((state) => state.gameWinner);
   const goToStructure = useGoToStructure(setup);
   const navigateToMapView = useNavigateToMapView();
-  const mapDataStore = useMemo(() => MapDataStore.getInstance(MAP_DATA_REFRESH_INTERVAL, sqlApi), []);
+  const entityReader = useMemo(() => {
+    const projection = getActiveGameSyncRuntime()?.getWorldSpatialProjection();
+    return projection ? createWorldEventEntityReader(setup.components, projection) : null;
+  }, [setup.components]);
 
   const { data: storyEventLog = [] } = useStoryEvents(350);
   const hyperstructures = useHyperstructures();
@@ -162,7 +166,7 @@ export function NewsHeadlineBridge() {
       const defenderId = parseNumeric(event.battle_defender_id);
       if (defenderId === null) continue;
 
-      const structure = mapDataStore.getStructureById(defenderId);
+      const structure = entityReader?.getStructure(defenderId);
       if (!structure || structure.structureType !== StructureType.Realm) continue;
 
       // Check if attacker won (realm fell)
@@ -176,8 +180,8 @@ export function NewsHeadlineBridge() {
       // Resolve names
       const defenderAddr = String(event.battle_defender_owner_address ?? "");
       const attackerAddr = String(event.battle_attacker_owner_address ?? "");
-      const realmName = structure.ownerName || structure.structureTypeName || `Realm #${defenderId}`;
-      const attackerName = attackerAddr ? mapDataStore.getPlayerName(attackerAddr) || "Unknown" : "Unknown";
+      const realmName = structure.ownerName || structure.structureName || `Realm #${defenderId}`;
+      const attackerName = attackerAddr ? entityReader?.getPlayerName(attackerAddr) || "Unknown" : "Unknown";
 
       enqueue({
         id: realmFallKey,
@@ -192,13 +196,13 @@ export function NewsHeadlineBridge() {
       // Check for player elimination
       if (defenderAddr) {
         try {
-          const ownedStructures = mapDataStore.getStructuresByOwner(defenderAddr);
+          const ownedStructures = entityReader?.getStructuresByOwner(defenderAddr) ?? [];
           const ownedRealms = ownedStructures.filter(
             (s: { structureType: number }) => s.structureType === StructureType.Realm,
           );
           // If 0 or 1 realms left (the fallen one may still be in cache), player may be eliminated
           if (ownedRealms.length <= 1) {
-            const defenderName = mapDataStore.getPlayerName(defenderAddr) || realmName;
+            const defenderName = entityReader?.getPlayerName(defenderAddr) || realmName;
             const elimKey = `elimination:${defenderAddr}:${now}`;
             enqueue({
               id: elimKey,
@@ -214,7 +218,7 @@ export function NewsHeadlineBridge() {
         }
       }
     }
-  }, [storyEventLog, mapDataStore, enqueue]);
+  }, [storyEventLog, entityReader, enqueue]);
 
   // --- First T2 / T3 army creation detection ---
   useEffect(() => {
@@ -260,8 +264,8 @@ export function NewsHeadlineBridge() {
         continue;
       }
 
-      const structure = structureId !== null ? mapDataStore.getStructureById(structureId) : null;
-      const ownerName = structure?.ownerName || structure?.structureTypeName || "Unknown commander";
+      const structure = structureId !== null ? entityReader?.getStructure(structureId) : null;
+      const ownerName = structure?.ownerName || structure?.structureName || "Unknown commander";
       const headlineType = troopTier === 2 ? "first-t2-army" : "first-t3-army";
 
       enqueue({
@@ -285,7 +289,7 @@ export function NewsHeadlineBridge() {
         firstT3ArmyFiredRef.current = true;
       }
     }
-  }, [storyEventLog, mapDataStore, enqueue]);
+  }, [storyEventLog, entityReader, enqueue]);
 
   // --- Hyperstructure capture detection ---
   useEffect(() => {
@@ -305,8 +309,8 @@ export function NewsHeadlineBridge() {
       const prevOwner = hyperOwnerRef.current.get(h.entity_id);
 
       if (prevOwner !== undefined && prevOwner !== currentOwner) {
-        const newOwnerName = h.ownerName || mapDataStore.getPlayerName(currentOwner) || "Unknown";
-        const oldOwnerName = mapDataStore.getPlayerName(prevOwner) || "Unknown";
+        const newOwnerName = h.ownerName || entityReader?.getPlayerName(currentOwner) || "Unknown";
+        const oldOwnerName = entityReader?.getPlayerName(prevOwner) || "Unknown";
         const captureKey = `hyper-capture:${h.entity_id}:${currentOwner}`;
 
         const position = h.position;
@@ -323,7 +327,7 @@ export function NewsHeadlineBridge() {
 
       hyperOwnerRef.current.set(h.entity_id, currentOwner);
     }
-  }, [hyperstructures, mapDataStore, enqueue]);
+  }, [hyperstructures, entityReader, enqueue]);
 
   // --- Game end detection ---
   useEffect(() => {

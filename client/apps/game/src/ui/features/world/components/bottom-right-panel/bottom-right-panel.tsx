@@ -15,7 +15,6 @@ import { OVERLAY_SURFACE_BASE } from "@/ui/design-system/atoms/overlay-surface";
 import Button from "@/ui/design-system/atoms/button";
 import CircleButton from "@/ui/design-system/molecules/circle-button";
 import { MarketModal } from "@/ui/features/economy/trading";
-import { sqlApi } from "@/services/api";
 import {
   configManager,
   divideByPrecision,
@@ -25,13 +24,12 @@ import {
   getBalance,
   getBlockTimestamp,
   hasTileOccupier,
-  MAP_DATA_REFRESH_INTERVAL,
-  MapDataStore,
   isTileOccupierChest,
   isTileOccupierQuest,
   isTileOccupierReservedHyperstructure,
   isTileOccupierStructure,
 } from "@bibliothecadao/eternum";
+import { getActiveGameSyncRuntime } from "@bibliothecadao/eternum/game-sync";
 import { useDojo, useQuery } from "@bibliothecadao/react";
 import {
   BUILDINGS_CENTER,
@@ -969,45 +967,33 @@ const MinimapPanel = () => {
   const focusHex = activeRealmHex ?? cameraTargetHex;
   const focusSelectedHex = activeRealmHex ?? selectedHex;
 
-  // Tiles come from MapDataStore's tiles facet — the designated single
-  // SQL-aggregate layer — instead of a component-local fetchAllTiles poll.
-  // The store owns the ~60s cadence, retry/backoff and refresh callbacks;
-  // we only mirror its tiles into render state whenever it refreshes.
-  const mapDataStore = useMemo(() => MapDataStore.getInstance(MAP_DATA_REFRESH_INTERVAL, sqlApi), []);
-
   useEffect(() => {
-    let cancelled = false;
+    const projection = getActiveGameSyncRuntime()?.getWorldSpatialProjection();
+    if (!projection) {
+      console.error("[MinimapPanel] WorldSpatialProjection is unavailable for the active game");
+      setIsLoading(false);
+      return;
+    }
+
     const readTiles = () => {
-      if (cancelled) return;
       setTiles(
-        mapDataStore.getAllTiles().map((tile) =>
+        projection.getTiles().map((tile) =>
           normalizeMinimapTile({
-            col: tile.col,
-            row: tile.row,
+            col: tile.hexCoords.col,
+            row: tile.hexCoords.row,
             biome: tile.biome,
-            occupier_id: tile.occupier_id?.toString(),
-            occupier_type: tile.occupier_type,
-            occupier_is_structure: tile.occupier_is_structure,
+            occupier_id: tile.occupierId.toString(),
+            occupier_type: tile.occupierType,
+            occupier_is_structure: tile.occupierIsStructure,
           }),
         ),
       );
       setIsLoading(false);
     };
 
-    mapDataStore.onRefresh(readTiles);
-    // The minimap is the one always-mounted consumer that needs push
-    // freshness while the player idles, so it owns the store's built-in
-    // refresh loop (60s — same cadence the old component poll used).
-    mapDataStore.startAutoRefresh();
-    // Initial read: resolves immediately when the boot warmup already
-    // populated the store, otherwise triggers the first fetch.
-    void mapDataStore.waitForData().then(readTiles);
-    return () => {
-      cancelled = true;
-      mapDataStore.offRefresh(readTiles);
-      mapDataStore.stopAutoRefresh();
-    };
-  }, [mapDataStore]);
+    readTiles();
+    return projection.subscribeTiles(readTiles);
+  }, []);
 
   return (
     <PanelFrame title="Minimap" height={MINIMAP_SIZE}>

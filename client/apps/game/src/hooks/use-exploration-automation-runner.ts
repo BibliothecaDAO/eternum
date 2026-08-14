@@ -7,6 +7,7 @@ import {
   Position,
   StaminaManager,
 } from "@bibliothecadao/eternum";
+import { getActiveGameSyncRuntime } from "@bibliothecadao/eternum/game-sync";
 import { useDojo } from "@bibliothecadao/react";
 import { ContractAddress } from "@bibliothecadao/types";
 import { getComponentValue, getEntityString } from "@dojoengine/recs";
@@ -61,7 +62,7 @@ type SnapshotCache = {
 
 export const useExplorationAutomationRunner = () => {
   const {
-    setup: { components, systemCalls, network },
+    setup: { components, systemCalls },
     account: { account },
   } = useDojo();
 
@@ -175,7 +176,8 @@ export const useExplorationAutomationRunner = () => {
         scheduleNextCheck();
         return;
       }
-      if (!components || !network?.toriiClient || !network?.contractComponents) {
+      const worldSpatialProjection = getActiveGameSyncRuntime()?.getWorldSpatialProjection();
+      if (!components || !worldSpatialProjection) {
         scheduleNextCheck();
         return;
       }
@@ -243,10 +245,9 @@ export const useExplorationAutomationRunner = () => {
                 ? cached.snapshot
                 : await buildExplorationSnapshot({
                     components,
-                    contractComponents: network.contractComponents,
-                    toriiClient: network.toriiClient,
                     explorerId,
                     scopeRadius: entry.scopeRadius ?? DEFAULT_SCOPE_RADIUS,
+                    worldSpatialProjection,
                   });
 
             if (!snapshot) {
@@ -284,10 +285,9 @@ export const useExplorationAutomationRunner = () => {
               if (filtered.size === 0) {
                 const refreshed = await buildExplorationSnapshot({
                   components,
-                  contractComponents: network.contractComponents,
-                  toriiClient: network.toriiClient,
                   explorerId,
                   scopeRadius: entry.scopeRadius ?? DEFAULT_SCOPE_RADIUS,
+                  worldSpatialProjection,
                 });
                 if (!refreshed) {
                   update(entry.id, { blockedReason: "no-snapshot", lastError: null });
@@ -384,8 +384,6 @@ export const useExplorationAutomationRunner = () => {
     account,
     components,
     isSeasonOver,
-    network?.contractComponents,
-    network?.toriiClient,
     scheduleNext,
     scheduleNextCheck,
     stopAutomation,

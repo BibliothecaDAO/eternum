@@ -8,7 +8,6 @@ import {
   isNoHashSubmissionTimeout,
   rememberUncertainClaimSharePointsSubmission,
 } from "@/ui/utils/uncertain-transaction-registry";
-import { getRealmCountPerHyperstructure } from "@/ui/utils/utils";
 import { LeaderboardManager } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
 import { ContractAddress } from "@bibliothecadao/types";
@@ -47,7 +46,7 @@ export const RegisterPointsButton = ({ className, variant = "bar" }: RegisterPoi
 
   const hyperstructure_entities = useEntityQuery([Has(components.Hyperstructure)]);
   const playerAddress = ContractAddress(account.address);
-  const leaderboardManager = LeaderboardManager.instance(components, getRealmCountPerHyperstructure());
+  const leaderboardManager = LeaderboardManager.instance(components);
 
   const registeredPoints = leaderboardManager.getPlayerRegisteredPoints(playerAddress);
   const unregisteredShareholderPoints =

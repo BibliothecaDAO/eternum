@@ -4,14 +4,13 @@ import { isVillageLikeStructureCategory } from "@/lib/structure-type-utils";
 import { sqlApi } from "@/services/api";
 import { displayAddress } from "@/ui/utils/utils";
 import {
-  MAP_DATA_REFRESH_INTERVAL,
-  MapDataStore,
   Position,
   getAddressName,
   getBlockTimestamp,
   getGuardsByStructure,
   getGuildFromPlayerAddress,
   getHyperstructureProgress,
+  getRealmCountPerHyperstructure,
   getStructureArmyRelicEffects,
   getStructureRelicEffects,
 } from "@bibliothecadao/eternum";
@@ -183,7 +182,6 @@ export const useStructureEntityDetail = ({ structureEntityId }: UseStructureEnti
           isAlly: false,
           addressName: BANDITS_NAME,
           isMine: false,
-          hyperstructureRealmCount: undefined,
           relicEffects,
         };
 
@@ -199,11 +197,6 @@ export const useStructureEntityDetail = ({ structureEntityId }: UseStructureEnti
       const isAlly = isMine || (guild && userGuild && guild.entityId === userGuild.entityId) || false;
       const addressName = structure.owner ? getAddressName(structure.owner, components) : BANDITS_NAME;
 
-      const hyperstructureRealmCount =
-        structure.base.category === StructureType.Hyperstructure
-          ? MapDataStore.getInstance(MAP_DATA_REFRESH_INTERVAL, sqlApi).getHyperstructureRealmCount(structure.entity_id)
-          : undefined;
-
       return {
         structure,
         resources: hydratedResources,
@@ -213,7 +206,6 @@ export const useStructureEntityDetail = ({ structureEntityId }: UseStructureEnti
         addressName,
         isMine,
         relicEffects,
-        hyperstructureRealmCount,
       };
     },
     staleTime: 5000,
@@ -253,7 +245,10 @@ export const useStructureEntityDetail = ({ structureEntityId }: UseStructureEnti
   const addressName = structureDetails?.addressName;
   const isMine = structureDetails?.isMine || false;
   const isAlly = structureDetails?.isAlly || false;
-  const hyperstructureRealmCount = structureDetails?.hyperstructureRealmCount;
+  const hyperstructureRealmCount =
+    liveStructure?.category === StructureType.Hyperstructure
+      ? getRealmCountPerHyperstructure(components).get(structureEntityId)
+      : undefined;
   const relicEffects = structureDetails?.relicEffects ?? [];
 
   const ownerHex = structure?.owner ? `0x${structure.owner.toString(16)}` : undefined;

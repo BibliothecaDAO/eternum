@@ -6,7 +6,6 @@ import { type SetupResult } from "@bibliothecadao/dojo";
 import { useConnectionStore } from "@/hooks/store/use-connection-store";
 import { sqlApi } from "@/services/api";
 import { recordGameEntryDuration } from "@/ui/layouts/game-entry-timeline";
-import { MAP_DATA_REFRESH_INTERVAL, MapDataStore } from "@bibliothecadao/eternum";
 import {
   disposeActiveGameSyncRuntime,
   getActiveGameSyncRuntime,
@@ -117,17 +116,6 @@ const logWorldmapSyncAB = (message: string, payload: Record<string, unknown>): v
   }
 
   console.info(`[WorldmapSyncAB] ${message} ${stringifyWorldmapSyncABPayload(payload)}`);
-};
-
-const warmMapDataStore = (): void => {
-  const mapDataRefreshStart = performance.now();
-  void Promise.resolve(MapDataStore.getInstance(MAP_DATA_REFRESH_INTERVAL, sqlApi).refresh())
-    .then(() => {
-      recordGameEntryDuration("initial-sync-map-data-refresh", performance.now() - mapDataRefreshStart);
-    })
-    .catch((error) => {
-      console.warn("[sync] MapDataStore warmup failed", error);
-    });
 };
 
 type BatchPayload = { upserts: ToriiEntity[]; deletions: string[] };
@@ -962,8 +950,6 @@ export const initialSync = async (
     }),
   ]);
   await Promise.all(parallelTasks);
-
-  warmMapDataStore();
 
   updateProgress(100);
 };

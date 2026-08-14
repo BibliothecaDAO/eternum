@@ -2,7 +2,8 @@ import { useCallback, useEffect, useMemo, useRef } from "react";
 import { toast } from "sonner";
 
 import { AudioManager } from "@/audio/core/AudioManager";
-import { MAP_DATA_REFRESH_INTERVAL, MapDataStore, Position } from "@bibliothecadao/eternum";
+import { Position } from "@bibliothecadao/eternum";
+import { getActiveGameSyncRuntime } from "@bibliothecadao/eternum/game-sync";
 import { StructureType } from "@bibliothecadao/types";
 import { useDojo, useQuery } from "@bibliothecadao/react";
 
@@ -10,7 +11,6 @@ import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useGoToStructure, useNavigateToMapView } from "@/hooks/helpers/use-navigate";
 import { type ProcessedStoryEvent, useStoryEvents } from "@/hooks/store/use-story-events-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import { sqlApi } from "@/services/api";
 
 import { BattleToast } from "./battle-toast";
 import {
@@ -24,6 +24,7 @@ import {
   parsePresentationDescription,
   shortenAddress,
 } from "./story-event-utils";
+import { createWorldEventEntityReader } from "./world-event-entity-reader";
 
 /** How far back (ms) from now to consider events as "recent" for toasting. */
 const RECENT_WINDOW_MS = 20_000;
@@ -60,7 +61,10 @@ export function StoryEventToastBridge() {
   const setSelectedHex = useUIStore((state) => state.setSelectedHex);
   const goToStructure = useGoToStructure(setup);
   const navigateToMapView = useNavigateToMapView();
-  const mapDataStore = useMemo(() => MapDataStore.getInstance(MAP_DATA_REFRESH_INTERVAL, sqlApi), []);
+  const entityReader = useMemo(() => {
+    const projection = getActiveGameSyncRuntime()?.getWorldSpatialProjection();
+    return projection ? createWorldEventEntityReader(setup.components, projection) : null;
+  }, [setup.components]);
 
   const { data: storyEventLog = [] } = useStoryEvents(350);
 
@@ -85,7 +89,7 @@ export function StoryEventToastBridge() {
       const ownerAddress = resolveOwnerAddress(ownerValue) ?? resolveOwnerAddress(entityValue);
       if (ownerAddress) {
         try {
-          const name = mapDataStore.getPlayerName(ownerAddress);
+          const name = entityReader?.getPlayerName(ownerAddress);
           if (name) return name;
         } catch {
           // fall through
@@ -94,16 +98,16 @@ export function StoryEventToastBridge() {
 
       const entityId = parseNumeric(entityValue);
       if (entityId !== null) {
-        const structure = mapDataStore.getStructureById(entityId);
-        if (structure) return structure.ownerName || structure.structureTypeName || `Entity ${entityId}`;
-        const army = mapDataStore.getArmyById(entityId);
+        const structure = entityReader?.getStructure(entityId);
+        if (structure) return structure.ownerName || structure.structureName || `Entity ${entityId}`;
+        const army = entityReader?.getArmy(entityId);
         if (army) return army.ownerName || `Army ${entityId}`;
       }
 
       if (ownerAddress) return shortenAddress(ownerAddress);
       return formatPlayerLabel(ownerValue ?? entityValue);
     },
-    [mapDataStore],
+    [entityReader],
   );
 
   const getBattleLocation = useCallback(
@@ -122,26 +126,20 @@ export function StoryEventToastBridge() {
       addCandidate(event.battle_winner_id);
 
       for (const candidate of candidateIds) {
-        const structure = mapDataStore.getStructureById(candidate);
-        if (structure) {
-          return { entityId: candidate, coordX: structure.coordX, coordY: structure.coordY, type: "structure" };
-        }
-        const army = mapDataStore.getArmyById(candidate);
-        if (army) {
-          return { entityId: candidate, coordX: army.coordX, coordY: army.coordY, type: "army" };
-        }
+        const location = entityReader?.getEntityLocation(candidate);
+        if (location) return location;
       }
 
       return null;
     },
-    [mapDataStore],
+    [entityReader],
   );
 
   const getLocationLabel = useCallback(
     (location: BattleLocation | null): string => {
       if (!location) return "Hex";
       if (location.type === "army") return "Hex";
-      const structure = mapDataStore.getStructureById(location.entityId);
+      const structure = entityReader?.getStructure(location.entityId);
       if (!structure) return "Hex";
 
       switch (structure.structureType) {
@@ -159,16 +157,14 @@ export function StoryEventToastBridge() {
           break;
       }
 
-      if (structure.realmId && structure.realmId !== 0) return "Realm";
-
-      const typeName = structure.structureTypeName?.toLowerCase?.() ?? "";
+      const typeName = structure.structureName.toLowerCase();
       if (typeName.includes("hyper")) return "Hyperstructure";
       if (typeName.includes("realm")) return "Realm";
       if (typeName.includes("camp")) return "Camp";
       if (typeName.includes("essence") || typeName.includes("shrine") || typeName.includes("rift")) return "Rift";
       return "Hex";
     },
-    [mapDataStore],
+    [entityReader],
   );
 
   const handleNavigate = useCallback(async (location: BattleLocation) => {

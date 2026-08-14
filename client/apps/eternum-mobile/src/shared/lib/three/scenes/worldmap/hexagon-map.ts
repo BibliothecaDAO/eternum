@@ -7,6 +7,7 @@ import {
   Position,
   WorldUpdateListener,
 } from "@bibliothecadao/eternum";
+import { WorldSpatialProjection } from "@bibliothecadao/eternum/game-sync";
 import { DojoResult } from "@bibliothecadao/react";
 import { ActorType, findResourceById, getDirectionBetweenAdjacentHexes } from "@bibliothecadao/types";
 import { getComponentValue } from "@dojoengine/recs";
@@ -35,6 +36,7 @@ export class HexagonMap {
   private dojo: DojoResult;
   private store: Store;
   private systemManager: WorldUpdateListener;
+  private worldSpatialProjection!: WorldSpatialProjection;
   private fxManager: FXManager;
   private resourceFXManager: ResourceFXManager;
 
@@ -95,6 +97,7 @@ export class HexagonMap {
     this.raycaster = new THREE.Raycaster();
 
     this.initializeManagers();
+    this.installWorldSpatialProjection();
     this.setupSystemListeners();
     this.initializeGUI();
 
@@ -129,16 +132,19 @@ export class HexagonMap {
     this.selectionManager.registerObjectRenderer("chest", this.chestManager);
   }
 
+  private installWorldSpatialProjection(): void {
+    this.worldSpatialProjection = new WorldSpatialProjection({
+      tileOptComponent: this.dojo.setup.components.TileOpt,
+      explorerTroopsComponent: this.dojo.setup.components.ExplorerTroops,
+    });
+    this.worldSpatialProjection.start();
+    this.structureManager.bindWorldSpatialProjection(this.worldSpatialProjection);
+    this.chestManager.bindWorldSpatialProjection(this.worldSpatialProjection);
+  }
+
   private setupSystemListeners(): void {
     this.systemManager.Tile.onTileUpdate((value) => this.biomesManager.handleTileUpdate(value));
     this.installArmyRecsProjection();
-    this.systemManager.Structure.onTileUpdate((update) => this.structureManager.handleSystemUpdate(update));
-    this.systemManager.Structure.onStructureUpdate((update) => this.structureManager.handleStructureUpdate(update));
-    this.systemManager.Structure.onStructureBuildingsUpdate((update) =>
-      this.structureManager.handleBuildingUpdate(update),
-    );
-    this.systemManager.Chest.onTileUpdate((update) => this.chestManager.handleSystemUpdate(update));
-    this.systemManager.Chest.onDeadChest((entityId) => this.chestManager.deleteChest(entityId));
     this.systemManager.ExplorerReward.onExplorerRewardEventUpdate((update) => this.handleExplorerRewardEvent(update));
   }
 
@@ -777,6 +783,7 @@ export class HexagonMap {
     this.structureManager.dispose();
     this.chestManager.dispose();
     this.selectionManager.dispose();
+    this.worldSpatialProjection.dispose();
 
     this.allHexes.clear();
     this.visibleHexes.clear();

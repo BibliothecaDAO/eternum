@@ -1,12 +1,5 @@
-import { sqlApi } from "@/services/api";
 import { SortInterface } from "@/ui/design-system/atoms/sort-button";
-import {
-  divideByPrecision,
-  getBlockTimestamp,
-  MAP_DATA_REFRESH_INTERVAL,
-  MapDataStore,
-  toHexString,
-} from "@bibliothecadao/eternum";
+import { divideByPrecision, getBlockTimestamp, toHexString } from "@bibliothecadao/eternum";
 import { ContractAddress, ResourceCost, ResourcesIds } from "@bibliothecadao/types";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 
@@ -180,9 +173,4 @@ export const formatArrivalTime = (date: Date | null) => {
   const minutes = date.getMinutes();
 
   return `${hours.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")} `;
-};
-
-export const getRealmCountPerHyperstructure = () => {
-  const mapDataStore = MapDataStore.getInstance(MAP_DATA_REFRESH_INTERVAL, sqlApi);
-  return mapDataStore.getRealmCountPerHyperstructure();
 };

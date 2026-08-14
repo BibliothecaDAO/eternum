@@ -1,4 +1,3 @@
-import { sqlApi } from "@/app/services/api";
 import useStore from "@/shared/store";
 import { WorldUpdateListener } from "@bibliothecadao/eternum";
 import { DojoResult } from "@bibliothecadao/react";
@@ -40,7 +39,7 @@ export abstract class BaseScene {
     this.controls = controls;
     this.sceneId = sceneId || "BaseScene";
     this.scene = new THREE.Scene();
-    this.systemManager = new WorldUpdateListener(this.dojo.setup, sqlApi);
+    this.systemManager = new WorldUpdateListener(this.dojo.setup);
     this.tileRenderer = new BiomeTileRenderer(this.scene);
     this.fxManager = new FXManager(this.scene);
     this.raycaster = new THREE.Raycaster();

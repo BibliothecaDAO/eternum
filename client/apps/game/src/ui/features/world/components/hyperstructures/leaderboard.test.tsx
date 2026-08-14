@@ -32,7 +32,6 @@ vi.mock("@/ui/utils/utils", () => ({
   currencyIntlFormat: (value: number) => String(value),
   displayAddress: (value: string) => value,
   getEntityIdFromKeys: () => 1n,
-  getRealmCountPerHyperstructure: () => 1,
 }));
 
 vi.mock("@/hooks/use-player-avatar", () => ({

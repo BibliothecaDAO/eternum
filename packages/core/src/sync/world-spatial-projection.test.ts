@@ -3,12 +3,24 @@ import { Type, createWorld, defineComponent, removeComponent, setComponent } fro
 import { describe, expect, it, vi } from "vitest";
 import { WorldSpatialProjection } from "./world-spatial-projection";
 
-const encodeTile = (input: { alt?: boolean; col: number; row: number; occupierId: number; occupierType: number }) =>
+const encodeTile = (input: {
+  alt?: boolean;
+  biome?: number;
+  col: number;
+  row: number;
+  occupierId: number;
+  occupierType: number;
+  occupierIsStructure?: boolean;
+  rewardExtracted?: boolean;
+}) =>
   (BigInt(input.alt ? 1 : 0) << 127n) |
+  (BigInt(input.rewardExtracted ? 1 : 0) << 113n) |
   (BigInt(input.col) << 81n) |
   (BigInt(input.row) << 49n) |
+  (BigInt(input.biome ?? 0) << 41n) |
   (BigInt(input.occupierId) << 9n) |
-  (BigInt(input.occupierType) << 1n);
+  (BigInt(input.occupierType) << 1n) |
+  BigInt(input.occupierIsStructure ? 1 : 0);
 
 const createHarness = () => {
   const world = createWorld();
@@ -34,7 +46,16 @@ const createHarness = () => {
   });
   const writeTile = (
     entityId: string,
-    input: { alt?: boolean; col: number; row: number; occupierId: number; occupierType?: number },
+    input: {
+      alt?: boolean;
+      biome?: number;
+      col: number;
+      row: number;
+      occupierId: number;
+      occupierType?: number;
+      occupierIsStructure?: boolean;
+      rewardExtracted?: boolean;
+    },
     skipUpdateStream = false,
   ) => {
     setComponent(
@@ -93,6 +114,37 @@ const createHarness = () => {
 };
 
 describe("WorldSpatialProjection", () => {
+  it("indexes live surface tiles for map-wide spatial reads", () => {
+    const { projection, writeTile } = createHarness();
+    writeTile("surface", {
+      biome: 4,
+      col: 100,
+      row: 200,
+      occupierId: 7,
+      occupierType: TileOccupier.RealmRegularLevel1,
+      occupierIsStructure: true,
+      rewardExtracted: true,
+    });
+    writeTile("ethereal", { alt: true, col: 101, row: 200, occupierId: 8 });
+
+    projection.start();
+
+    expect(projection.getTiles()).toEqual([
+      {
+        kind: "tile",
+        spatialId: "tile:100:200",
+        hexCoords: { col: 100, row: 200 },
+        biome: 4,
+        occupierId: 7,
+        occupierType: TileOccupier.RealmRegularLevel1,
+        occupierIsStructure: true,
+        rewardExtracted: true,
+      },
+    ]);
+    expect(projection.getTileAtHex({ col: 100, row: 200 })?.occupierId).toBe(7);
+    expect(projection.getTilesInBounds({ minCol: 96, maxCol: 104, minRow: 196, maxRow: 204 })).toHaveLength(1);
+  });
+
   it("rebuilds a surface-chest index from RECS and excludes non-renderable tiles", () => {
     const { projection, writeTile } = createHarness();
     writeTile("chest", { col: 100, row: 200, occupierId: 7 });
@@ -252,11 +304,20 @@ describe("WorldSpatialProjection", () => {
     writeTile("chest", { col: 10, row: 11, occupierId: 7 });
 
     expect(listener).toHaveBeenCalledWith([
-      {
+      expect.objectContaining({
+        kind: "tile",
+        spatialId: "tile:10:11",
+        current: expect.objectContaining({
+          kind: "tile",
+          spatialId: "tile:10:11",
+          hexCoords: { col: 10, row: 11 },
+        }),
+      }),
+      expect.objectContaining({
         kind: "chest",
         entityId: 7,
         current: { kind: "chest", entityId: 7, hexCoords: { col: 10, row: 11 } },
-      },
+      }),
     ]);
 
     unsubscribe();
