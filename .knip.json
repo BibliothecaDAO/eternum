@@ -10,6 +10,7 @@
     "client/apps/game/src/ui/shared/components/blitz-awards-hero-left-card.tsx",
     "client/apps/game/src/ui/shared/components/blitz-game-stats-card.tsx",
     "scripts/codemod-lucide-imports.mjs",
+    "common/factory/endpoints.ts",
     "deploy/appchain/torii-s2/**",
     "config/**",
     "contracts/**",
