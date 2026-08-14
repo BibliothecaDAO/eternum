@@ -35,6 +35,14 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-08-14",
+    title: "Live In-Game Rankings",
+    description:
+      "Fixed the rank pill and leaderboard totals so they update from live game state, while activity history refreshes on demand without background polling.",
+    type: "fix",
+    gameSlug: "world",
+  },
+  {
+    date: "2026-08-14",
     title: "Reliable Map Armies",
     description:
       "Fixed armies so movement, creation, and defeat stay current across the world map without stale units or camera-driven repair fetches.",

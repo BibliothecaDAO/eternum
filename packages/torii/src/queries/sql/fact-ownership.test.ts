@@ -30,4 +30,14 @@ describe("SQL_API_FACT_OWNERSHIP", () => {
     expect(SQL_API_FACT_OWNERSHIP.fetchPlayerLeaderboard.disposition).toBe("keep-aggregate");
     expect(SQL_API_FACT_OWNERSHIP.fetchPlayerLeaderboardByAddress.disposition).toBe("keep-aggregate");
   });
+
+  it("keeps live leaderboard facts in RECS and SQL limited to history aggregates or sessionless views", () => {
+    expect(SQL_API_FACT_OWNERSHIP.fetchRegisteredPlayerPoints.reason).toContain(
+      "in-session registered points read RECS",
+    );
+    expect(SQL_API_FACT_OWNERSHIP.fetchPlayerLeaderboard.reason).toContain("immutable StoryEvent history");
+    expect(SQL_API_FACT_OWNERSHIP.fetchPlayerLeaderboard.reason).toContain("rank and points read RECS");
+    expect(SQL_API_FACT_OWNERSHIP.fetchPlayerLeaderboardByAddress.reason).toContain("no active game RECS session");
+    expect(SQL_API_FACT_OWNERSHIP.fetchPlayerLeaderboardByAddress.reason).toContain("immutable-history aggregate");
+  });
 });

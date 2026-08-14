@@ -99,13 +99,13 @@ export const SQL_API_FACT_OWNERSHIP = {
   fetchStoryEventsByOwner: keepHistory("StoryEvent is immutable paginated history."),
   fetchStoryEventsCount: keepAggregate("Pagination count over immutable StoryEvent history."),
   fetchRegisteredPlayerPoints: keepAggregate(
-    "Out-of-session leaderboard views need ranked points without a game RECS session.",
+    "Landing and post-game review views have no active game RECS session; in-session registered points read RECS.",
   ),
   fetchPlayerLeaderboard: keepAggregate(
-    "Out-of-session ranked pagination is a SQL aggregate because no game RECS session exists.",
+    "Landing pagination has no active game RECS session; in-session consumers use only the aggregate over immutable StoryEvent history while rank and points read RECS.",
   ),
   fetchPlayerLeaderboardByAddress: keepAggregate(
-    "Out-of-session player rank lookup is a SQL aggregate because no game RECS session exists.",
+    "Landing and post-game review lookup has no active game RECS session; its StoryEvent activity breakdown is an immutable-history aggregate, not current entity truth.",
   ),
 } satisfies Record<string, SqlFactOwnershipDecision>;
 

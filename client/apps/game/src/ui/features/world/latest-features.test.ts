@@ -23,11 +23,11 @@ describe("latestFeatures landing feed", () => {
     ).toBe(true);
   });
 
-  it("announces the latest map rendering & graphics polish in the feed", () => {
+  it("announces live in-game rankings in the feed", () => {
     expect(latestFeatures).toContainEqual(
       expect.objectContaining({
-        date: "2026-06-05",
-        title: "Map Rendering & Graphics Polish",
+        date: "2026-08-14",
+        title: "Live In-Game Rankings",
         type: "fix",
         gameSlug: "world",
       }),
