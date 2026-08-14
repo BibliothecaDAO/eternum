@@ -1,19 +1,17 @@
-import type { WorldmapChunkDiagnostics } from "./worldmap-chunk-diagnostics";
 import { createWorldmapChunkPresentationRuntime } from "./worldmap-chunk-presentation-runtime";
-import { hydrateWarpTravelChunk } from "./warp-travel-chunk-hydration";
+import { prepareWarpTravelChunk } from "./warp-travel-chunk-preparation";
+import type { WorldmapChunkPresentationTimeoutInfo } from "./worldmap-chunk-presentation";
 import type { WorldmapRenderDurationMetric } from "../perf/worldmap-render-diagnostics";
 
-interface HydrateWorldmapChunkRuntimeInput<TPreparedTerrain> {
+interface PrepareWorldmapChunkRuntimeInput<TPreparedTerrain> {
   chunkKey: string;
-  computeTileEntities: (chunkKey: string) => Promise<boolean>;
-  diagnostics: WorldmapChunkDiagnostics;
+  syncProjectionTiles: (chunkKey: string) => Promise<boolean>;
   now: () => number;
-  onChunkHydrated: (chunkKey: string) => void;
-  onPhaseTimeout: (info: unknown) => void;
+  onChunkPrepared: (chunkKey: string) => void;
+  onPhaseTimeout: (info: WorldmapChunkPresentationTimeoutInfo) => void;
   phaseTimeoutMs?: number;
   prewarmChunkAssets: (chunkKey: string) => Promise<void>;
   prepareTerrainChunk: (startRow: number, startCol: number, height: number, width: number) => Promise<TPreparedTerrain>;
-  recordChunkDiagnosticsEvent: (diagnostics: WorldmapChunkDiagnostics, event: "tile_hydration_drain_completed") => void;
   recordWorldmapRenderDuration: (metric: WorldmapRenderDurationMetric, durationMs: number) => void;
   renderSize: {
     height: number;
@@ -25,40 +23,34 @@ interface HydrateWorldmapChunkRuntimeInput<TPreparedTerrain> {
   transitionToken: number;
   updateBoundsSubscription: (chunkKey: string, transitionToken: number) => Promise<void>;
   updatePinnedChunks: (chunkKeys: string[]) => void;
-  waitForTileHydrationIdle: (chunkKey: string) => Promise<void>;
 }
 
-export async function hydrateWorldmapChunkRuntime<TPreparedTerrain>(
-  input: HydrateWorldmapChunkRuntimeInput<TPreparedTerrain>,
+export async function prepareWorldmapChunkRuntime<TPreparedTerrain>(
+  input: PrepareWorldmapChunkRuntimeInput<TPreparedTerrain>,
 ) {
   const presentationRuntime = createWorldmapChunkPresentationRuntime({
     now: input.now,
-    onChunkHydrated: input.onChunkHydrated,
+    onChunkPrepared: input.onChunkPrepared,
     prewarmChunkAssets: input.prewarmChunkAssets,
     prepareTerrainChunk: input.prepareTerrainChunk,
     recordDuration: input.recordWorldmapRenderDuration,
-    recordTileHydrationDrainCompleted: () => {
-      input.recordChunkDiagnosticsEvent(input.diagnostics, "tile_hydration_drain_completed");
-    },
-    waitForTileHydrationIdle: input.waitForTileHydrationIdle,
   });
 
-  const result = await hydrateWarpTravelChunk({
+  const result = await prepareWarpTravelChunk({
     chunkKey: input.chunkKey,
     startRow: input.startRow,
     startCol: input.startCol,
     surroundingChunks: input.surroundingChunks,
     transitionToken: input.transitionToken,
     renderSize: input.renderSize,
-    computeTileEntities: input.computeTileEntities,
+    syncProjectionTiles: input.syncProjectionTiles,
     updatePinnedChunks: input.updatePinnedChunks,
     updateBoundsSubscription: input.updateBoundsSubscription,
-    waitForTileHydrationIdle: presentationRuntime.waitForTileHydrationIdle,
     prewarmChunkAssets: presentationRuntime.prewarmChunkAssets,
     prepareTerrainChunk: presentationRuntime.prepareTerrainChunk,
-    onChunkHydrated: presentationRuntime.onChunkHydrated,
+    onChunkPrepared: presentationRuntime.onChunkPrepared,
     phaseTimeoutMs: input.phaseTimeoutMs,
-    onPhaseTimeout: input.onPhaseTimeout as never,
+    onPhaseTimeout: input.onPhaseTimeout,
   });
 
   return {

@@ -23,7 +23,6 @@ describe("worldmap render diagnostics wiring", () => {
     recordWorldmapRenderDuration("updateManagersForChunk", 1.5);
     recordWorldmapRenderDuration("executeRenderForChunk", 7.0);
     recordWorldmapRenderDuration("performVisibleStructuresUpdate", 4.0);
-    recordWorldmapRenderDuration("globalSpatialTileOptScanMs", 6.0);
     recordWorldmapRenderDuration("workerFindPath", 6.0);
     recordWorldmapRenderDuration("createPath", 9.0);
 
@@ -38,7 +37,6 @@ describe("worldmap render diagnostics wiring", () => {
     expect(snapshot.durations.updateManagersForChunk.count).toBe(1);
     expect(snapshot.durations.executeRenderForChunk.count).toBe(1);
     expect(snapshot.durations.performVisibleStructuresUpdate.count).toBe(1);
-    expect(snapshot.durations.globalSpatialTileOptScanMs.count).toBe(1);
     expect(snapshot.durations.workerFindPath.count).toBe(1);
     expect(snapshot.durations.createPath.count).toBe(1);
   });
@@ -77,9 +75,7 @@ describe("worldmap render diagnostics wiring", () => {
     expect(snapshot.uploadBytes.cachedChunkReplay).toBe(1024);
   });
 
-  it("records global spatial hydration gauges", () => {
-    setWorldmapRenderGauge("globalSpatialTileOptRecs", 1200);
-    setWorldmapRenderGauge("globalSpatialHydrationCandidates", 84);
+  it("records spatial subscription gauges", () => {
     setWorldmapRenderGauge("spatialSubscriptionMinCol", 100);
     setWorldmapRenderGauge("spatialSubscriptionMaxCol", 180);
     setWorldmapRenderGauge("spatialSubscriptionMinRow", 200);
@@ -88,8 +84,6 @@ describe("worldmap render diagnostics wiring", () => {
 
     const snapshot = snapshotWorldmapRenderDiagnostics();
 
-    expect(snapshot.gauges.globalSpatialTileOptRecs).toBe(1200);
-    expect(snapshot.gauges.globalSpatialHydrationCandidates).toBe(84);
     expect(snapshot.gauges.spatialSubscriptionMinCol).toBe(100);
     expect(snapshot.gauges.spatialSubscriptionMaxCol).toBe(180);
     expect(snapshot.gauges.spatialSubscriptionMinRow).toBe(200);

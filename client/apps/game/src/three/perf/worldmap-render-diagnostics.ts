@@ -10,8 +10,6 @@ export type WorldmapRenderDurationMetric =
   | "chunkTerrainReadyMs"
   | "chunkTerrainCommitMs"
   | "chunkManagerCatchUpMs"
-  | "tileHydrationDrainMs"
-  | "globalSpatialTileOptScanMs"
   | "structureAssetPrewarmMs"
   | "presentationCommittedMs"
   | "presentationSkewMs"
@@ -23,8 +21,6 @@ export type WorldmapRenderGauge =
   | "visibleArmies"
   | "visibleStructures"
   | "activeLabels"
-  | "globalSpatialTileOptRecs"
-  | "globalSpatialHydrationCandidates"
   | "spatialSubscriptionMinCol"
   | "spatialSubscriptionMaxCol"
   | "spatialSubscriptionMinRow"
@@ -64,7 +60,7 @@ export type WorldmapRenderCounter =
   | "staleTerrainCacheFingerprintRejectCount"
   | "preparedChunkPrewarmHits"
   | "preparedChunkPrewarmMisses"
-  | "globalSpatialRecsHydratedTiles"
+  | "projectionTilesSynced"
   | "spatialBoundsSwitchRequests"
   | "spatialBoundsSwitchApplied"
   | "spatialBoundsSwitchSkipped"
@@ -152,8 +148,6 @@ const createDiagnosticsState = (): WorldmapRenderDiagnosticsSnapshot => ({
     chunkTerrainReadyMs: createDurationStats(),
     chunkTerrainCommitMs: createDurationStats(),
     chunkManagerCatchUpMs: createDurationStats(),
-    tileHydrationDrainMs: createDurationStats(),
-    globalSpatialTileOptScanMs: createDurationStats(),
     structureAssetPrewarmMs: createDurationStats(),
     presentationCommittedMs: createDurationStats(),
     presentationSkewMs: createDurationStats(),
@@ -165,8 +159,6 @@ const createDiagnosticsState = (): WorldmapRenderDiagnosticsSnapshot => ({
     visibleArmies: 0,
     visibleStructures: 0,
     activeLabels: 0,
-    globalSpatialTileOptRecs: 0,
-    globalSpatialHydrationCandidates: 0,
     spatialSubscriptionMinCol: 0,
     spatialSubscriptionMaxCol: 0,
     spatialSubscriptionMinRow: 0,
@@ -208,7 +200,7 @@ const createDiagnosticsState = (): WorldmapRenderDiagnosticsSnapshot => ({
     staleTerrainCacheFingerprintRejectCount: 0,
     preparedChunkPrewarmHits: 0,
     preparedChunkPrewarmMisses: 0,
-    globalSpatialRecsHydratedTiles: 0,
+    projectionTilesSynced: 0,
     spatialBoundsSwitchRequests: 0,
     spatialBoundsSwitchApplied: 0,
     spatialBoundsSwitchSkipped: 0,

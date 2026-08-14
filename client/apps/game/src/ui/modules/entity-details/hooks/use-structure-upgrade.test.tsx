@@ -10,7 +10,6 @@ const mocks = vi.hoisted(() => ({
   structureEntityId: 101,
   upgradeRealm: vi.fn(),
   waitForTransactionConfirmation: vi.fn(),
-  getStructuresDataFromTorii: vi.fn(),
   toastError: vi.fn(),
   removeResourceOverrides: vi.fn(),
 }));
@@ -18,10 +17,6 @@ const mocks = vi.hoisted(() => ({
 vi.mock("@/hooks/helpers/use-block-timestamp", () => ({
   useCurrentDefaultTick: () => 0,
   useBlockTimestamp: () => ({ currentDefaultTick: 0 }),
-}));
-
-vi.mock("@/dojo/queries", () => ({
-  getStructuresDataFromTorii: mocks.getStructuresDataFromTorii,
 }));
 
 vi.mock("@/ui/utils/transactions", () => ({
@@ -56,8 +51,6 @@ vi.mock("@bibliothecadao/react", () => ({
       provider: {
         waitForTransactionWithCheck: vi.fn(),
       },
-      toriiClient: { id: "torii" },
-      contractComponents: [],
     },
   }),
 }));
@@ -186,14 +179,12 @@ describe("useStructureUpgrade", () => {
     mocks.currentLevel = 1;
     mocks.upgradeRealm.mockReset();
     mocks.waitForTransactionConfirmation.mockReset();
-    mocks.getStructuresDataFromTorii.mockReset();
     mocks.toastError.mockReset();
     mocks.removeResourceOverrides.mockReset();
     useRealmUpgradeStore.setState({ upgradesByRealm: {} });
 
     mocks.upgradeRealm.mockResolvedValue({ transaction_hash: "0xtx" });
     mocks.waitForTransactionConfirmation.mockResolvedValue(undefined);
-    mocks.getStructuresDataFromTorii.mockResolvedValue(undefined);
 
     vi.useFakeTimers();
 

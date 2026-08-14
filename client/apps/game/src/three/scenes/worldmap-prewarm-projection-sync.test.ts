@@ -8,8 +8,8 @@ function readWorldmapSource(): string {
   return readFileSync(resolve(currentDir, "worldmap.tsx"), "utf8");
 }
 
-describe("prewarmDirectionalPresentationChunk tile fetch correctness", () => {
-  it("uses a real tile fetch via computeTileEntities instead of Promise.resolve(true)", () => {
+describe("prewarmDirectionalPresentationChunk projection sync", () => {
+  it("syncs projection tiles before preparing terrain", () => {
     const source = readWorldmapSource();
 
     // Extract the prewarmDirectionalPresentationChunk method body
@@ -19,11 +19,10 @@ describe("prewarmDirectionalPresentationChunk tile fetch correctness", () => {
     // Get a reasonable window of the method body (enough to cover the prepareWorldmapChunkPresentation call)
     const methodBody = source.slice(methodStart, methodStart + 1500);
 
-    // The method must NOT use Promise.resolve(true) as the tileFetchPromise
-    expect(methodBody).not.toMatch(/tileFetchPromise:\s*Promise\.resolve\(true\)/);
+    // The method must NOT use Promise.resolve(true) as the projectionSyncPromise
+    expect(methodBody).not.toMatch(/projectionSyncPromise:\s*Promise\.resolve\(true\)/);
 
-    // The method MUST use computeTileEntities for the tileFetchPromise
-    expect(methodBody).toMatch(/tileFetchPromise:.*computeTileEntities/s);
+    expect(methodBody).toMatch(/projectionSyncPromise:.*syncProjectionTilesForChunk/s);
   });
 
   it("prewarm still respects isLatestToken and isSwitchedOff guards", () => {
@@ -41,10 +40,10 @@ describe("prewarmDirectionalPresentationChunk tile fetch correctness", () => {
     expect(methodBody).toMatch(/chunkTransitionToken/);
   });
 
-  it("prepareWorldmapChunkPresentation skips terrain when tileFetchPromise resolves false", async () => {
+  it("prepareWorldmapChunkPresentation skips terrain when projectionSyncPromise resolves false", async () => {
     // This test validates that the downstream presentation function correctly
-    // gates terrain preparation on tile fetch result, so a failed computeTileEntities
-    // (returning false) prevents stale terrain from being cached.
+    // gates terrain preparation on projection sync, so a failed local sync
+    // prevents stale terrain from being cached.
     const { prepareWorldmapChunkPresentation } = await import("./worldmap-chunk-presentation");
 
     const prepareTerrainChunk = vi.fn().mockResolvedValue({ chunkKey: "24,24" });
@@ -54,19 +53,18 @@ describe("prewarmDirectionalPresentationChunk tile fetch correctness", () => {
       startRow: 24,
       startCol: 24,
       renderSize: { height: 80, width: 90 },
-      tileFetchPromise: Promise.resolve(false),
-      tileHydrationReadyPromise: Promise.resolve(),
+      projectionSyncPromise: Promise.resolve(false),
       boundsReadyPromise: Promise.resolve(),
       assetPrewarmPromise: Promise.resolve(),
       prepareTerrainChunk,
     });
 
-    expect(result.tileFetchSucceeded).toBe(false);
+    expect(result.projectionSyncSucceeded).toBe(false);
     expect(result.preparedTerrain).toBeNull();
     expect(prepareTerrainChunk).not.toHaveBeenCalled();
   });
 
-  it("prewarmWorldmapChunkPresentation returns fetch_failed when tile fetch fails", async () => {
+  it("prewarmWorldmapChunkPresentation returns sync_failed when projection sync fails", async () => {
     const { prewarmWorldmapChunkPresentation } = await import("./worldmap-chunk-presentation");
 
     const cachePreparedTerrain = vi.fn();
@@ -77,13 +75,13 @@ describe("prewarmDirectionalPresentationChunk tile fetch correctness", () => {
       isLatestToken: () => true,
       isPresentationHot: () => false,
       preparePresentation: async () => ({
-        tileFetchSucceeded: false,
+        projectionSyncSucceeded: false,
         preparedTerrain: null,
       }),
       cachePreparedTerrain,
     });
 
-    expect(result.status).toBe("fetch_failed");
+    expect(result.status).toBe("sync_failed");
     expect(result.preparedTerrain).toBeNull();
     expect(cachePreparedTerrain).not.toHaveBeenCalled();
   });
@@ -100,7 +98,7 @@ describe("prewarmDirectionalPresentationChunk tile fetch correctness", () => {
       isLatestToken: () => true,
       isPresentationHot: () => false,
       preparePresentation: async () => ({
-        tileFetchSucceeded: true,
+        projectionSyncSucceeded: true,
         preparedTerrain: terrainData,
       }),
       cachePreparedTerrain,

@@ -6,7 +6,6 @@ const queryMocks = vi.hoisted(() => ({
   getBuildingsFromTorii: vi.fn(),
   getEntitiesFromTorii: vi.fn(),
   getOwnedArmiesFromTorii: vi.fn(),
-  getTilesForPositionsFromTorii: vi.fn(),
 }));
 
 vi.mock("./queries", () => queryMocks);

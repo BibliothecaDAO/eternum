@@ -6,8 +6,8 @@ import { describe, expect, it } from "vitest";
 
 describe("chunk switch critical path", () => {
   it("has no structure hydration gate after structure truth moves to the projection", () => {
-    const hydrationSource = readFileSync(
-      resolve(process.cwd(), "src/three/scenes/warp-travel-chunk-hydration.ts"),
+    const preparationSource = readFileSync(
+      resolve(process.cwd(), "src/three/scenes/warp-travel-chunk-preparation.ts"),
       "utf8",
     );
     const presentationSource = readFileSync(
@@ -15,8 +15,8 @@ describe("chunk switch critical path", () => {
       "utf8",
     );
 
-    expect(hydrationSource).not.toContain("waitForStructureHydrationIdle");
-    expect(hydrationSource).not.toContain("requireStructures");
+    expect(preparationSource).not.toContain("waitForStructureHydrationIdle");
+    expect(preparationSource).not.toContain("requireStructures");
     expect(presentationSource).not.toContain("structureReadyPromise");
     expect(presentationSource).not.toContain("structure_hydration");
   });

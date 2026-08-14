@@ -1,7 +1,7 @@
 import { resolveChunkSwitchActions } from "./worldmap-chunk-transition";
 
 interface FinalizeWarpTravelChunkSwitchInput {
-  fetchSucceeded: boolean;
+  projectionSyncSucceeded: boolean;
   isCurrentTransition: boolean;
   targetChunk: string;
   previousChunk: string;
@@ -41,7 +41,7 @@ export async function finalizeWarpTravelChunkSwitch(
   input: FinalizeWarpTravelChunkSwitchInput,
 ): Promise<{ status: "rolled_back" | "stale_dropped" | "committed" }> {
   const chunkSwitchActions = resolveChunkSwitchActions({
-    fetchSucceeded: input.fetchSucceeded,
+    projectionSyncSucceeded: input.projectionSyncSucceeded,
     isCurrentTransition: input.isCurrentTransition,
     targetChunk: input.targetChunk,
     previousChunk: input.previousChunk,

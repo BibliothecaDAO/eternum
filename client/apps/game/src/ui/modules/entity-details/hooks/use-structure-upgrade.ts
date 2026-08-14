@@ -1,4 +1,3 @@
-import { getStructuresDataFromTorii } from "@/dojo/queries";
 import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import {
   type RealmUpgradeAction,
@@ -18,8 +17,6 @@ const REALM_UPGRADE_SYNC_TIMEOUT_MS = 30_000;
 const REALM_UPGRADE_SYNC_POLL_INTERVAL_MS = 1_000;
 
 type LiveRealmInfo = NonNullable<ReturnType<typeof getRealmInfo>>;
-type RealmUpgradeSyncTarget = Parameters<typeof getStructuresDataFromTorii>[2][number];
-type RealmUpgradeToriiComponents = Parameters<typeof getStructuresDataFromTorii>[1];
 type RealmUpgradeWaitProvider = { waitForTransactionWithCheck?: (txHash: string) => Promise<unknown> };
 type RealmUpgradeWaitAccount = { waitForTransaction?: (txHash: string) => Promise<unknown> };
 
@@ -60,22 +57,6 @@ const readLiveRealmInfo = (realmEntity: unknown, components: unknown): LiveRealm
   return getRealmInfo(realmEntity as never, components as never) ?? null;
 };
 
-const buildRealmUpgradeSyncTarget = (structureInfo: LiveRealmInfo): RealmUpgradeSyncTarget => ({
-  entityId: structureInfo.entityId,
-  position: {
-    col: structureInfo.position.x,
-    row: structureInfo.position.y,
-  },
-});
-
-const resolveRealmUpgradeToriiComponents = (contractComponents: unknown): RealmUpgradeToriiComponents | null => {
-  if (!contractComponents) {
-    return null;
-  }
-
-  return contractComponents as unknown as RealmUpgradeToriiComponents;
-};
-
 const hasRealmReachedExpectedLevel = ({
   realmEntity,
   components,
@@ -95,50 +76,18 @@ const waitForRealmUpgradePollInterval = async () => {
   });
 };
 
-const syncRealmStructureIfPossible = async ({
-  toriiClient,
-  contractComponents,
-  syncTarget,
-}: {
-  toriiClient: Parameters<typeof getStructuresDataFromTorii>[0] | null | undefined;
-  contractComponents: Parameters<typeof getStructuresDataFromTorii>[1] | null | undefined;
-  syncTarget: RealmUpgradeSyncTarget;
-}) => {
-  if (!toriiClient || !contractComponents) {
-    return;
-  }
-
-  try {
-    await getStructuresDataFromTorii(toriiClient, contractComponents, [syncTarget]);
-  } catch (error) {
-    console.error("[realm-upgrade] Failed to refresh realm structure data", error);
-  }
-};
-
 const waitForRealmUpgradeSync = async ({
   realmEntity,
   components,
   expectedLevel,
-  syncTarget,
-  toriiClient,
-  contractComponents,
 }: {
   realmEntity: unknown;
   components: unknown;
   expectedLevel: number;
-  syncTarget: RealmUpgradeSyncTarget;
-  toriiClient: Parameters<typeof getStructuresDataFromTorii>[0] | null | undefined;
-  contractComponents: Parameters<typeof getStructuresDataFromTorii>[1] | null | undefined;
 }) => {
   const maxAttempts = Math.ceil(REALM_UPGRADE_SYNC_TIMEOUT_MS / REALM_UPGRADE_SYNC_POLL_INTERVAL_MS);
 
   for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
-    if (hasRealmReachedExpectedLevel({ realmEntity, components, expectedLevel })) {
-      return true;
-    }
-
-    await syncRealmStructureIfPossible({ toriiClient, contractComponents, syncTarget });
-
     if (hasRealmReachedExpectedLevel({ realmEntity, components, expectedLevel })) {
       return true;
     }
@@ -278,9 +227,6 @@ export const useStructureUpgrade = (structureEntityId: number | null): Structure
       return;
     }
 
-    const syncTarget = buildRealmUpgradeSyncTarget(structureInfo);
-    const toriiComponents = resolveRealmUpgradeToriiComponents(network.contractComponents);
-
     startUpgrade(structureInfo.entityId, nextLevel);
     const removeResourceOverrides = new ResourceManager(
       setup.components,
@@ -318,9 +264,6 @@ export const useStructureUpgrade = (structureEntityId: number | null): Structure
         realmEntity,
         components: setup.components,
         expectedLevel: nextLevel,
-        syncTarget,
-        toriiClient: network.toriiClient,
-        contractComponents: toriiComponents,
       });
 
       if (synced) {
@@ -339,9 +282,7 @@ export const useStructureUpgrade = (structureEntityId: number | null): Structure
   }, [
     account.account,
     clearUpgrade,
-    network.contractComponents,
     network.provider,
-    network.toriiClient,
     nextLevel,
     realmEntity,
     rawCosts,

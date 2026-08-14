@@ -4,7 +4,7 @@ interface WorldmapChunkPolicy {
   chunkSize: number;
   renderSize: { width: number; height: number };
   switchPadding: number;
-  toriiFetch: {
+  projectionSync: {
     superAreaStrides: number;
   };
   toriiSubscription: {
@@ -21,9 +21,6 @@ interface WorldmapChunkPolicy {
     areaBoundaryLookaheadStrides: number;
     maxAhead: number;
     maxConcurrent: number;
-  };
-  recentHydrationCache: {
-    maxAreas: number;
   };
   visualPresentation: {
     maxCompositeChunks: number;
@@ -50,7 +47,7 @@ interface WorldChunkPolicyInput {
   renderSize: { width: number; height: number };
   pinRadius: number;
   switchPadding: number;
-  toriiFetch: {
+  projectionSync: {
     superAreaStrides: number;
   };
   toriiSubscription: {
@@ -62,9 +59,6 @@ interface WorldChunkPolicyInput {
     areaBoundaryLookaheadStrides: number;
     maxAhead: number;
     maxConcurrent: number;
-  };
-  recentHydrationCache: {
-    maxAreas: number;
   };
   visualPresentation: {
     maxCompositeChunks: number;
@@ -89,8 +83,8 @@ export function createWorldmapChunkPolicy(config: WorldChunkPolicyInput = WORLD_
     chunkSize: config.stride,
     renderSize: config.renderSize,
     switchPadding: config.switchPadding,
-    toriiFetch: {
-      superAreaStrides: config.toriiFetch.superAreaStrides,
+    projectionSync: {
+      superAreaStrides: config.projectionSync.superAreaStrides,
     },
     toriiSubscription: {
       superAreaStrides: config.toriiSubscription.superAreaStrides,
@@ -106,9 +100,6 @@ export function createWorldmapChunkPolicy(config: WorldChunkPolicyInput = WORLD_
       areaBoundaryLookaheadStrides: config.prefetch.areaBoundaryLookaheadStrides,
       maxAhead: config.prefetch.maxAhead,
       maxConcurrent: config.prefetch.maxConcurrent,
-    },
-    recentHydrationCache: {
-      maxAreas: config.recentHydrationCache.maxAreas,
     },
     visualPresentation: {
       maxCompositeChunks: config.visualPresentation.maxCompositeChunks,

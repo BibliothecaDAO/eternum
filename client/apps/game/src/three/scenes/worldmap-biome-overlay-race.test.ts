@@ -10,12 +10,11 @@ function readWorldmapSource(): string {
 }
 
 describe("worldmap biome overlay race hardening", () => {
-  it("wires tile hydration drain into chunk hydration and refresh paths", () => {
+  it("syncs projection tiles before chunk presentation", () => {
     const source = readWorldmapSource();
 
-    expect(source).toMatch(
-      /waitForTileHydrationIdle:\s*\(targetChunkKey\)\s*=>\s*this\.waitForTileHydrationIdle\(targetChunkKey\)/,
-    );
+    expect(source).toMatch(/syncProjectionTiles:\s*\(targetChunkKey\)\s*=>\s*this\.syncProjectionTilesForChunk/);
+    expect(source).not.toContain("waitForTileHydrationIdle");
   });
 
   it("uses visible terrain membership and reconcile policy to avoid append-on-conflict", () => {

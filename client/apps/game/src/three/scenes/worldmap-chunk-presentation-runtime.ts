@@ -3,17 +3,14 @@ import type { WorldmapRenderDurationMetric } from "../perf/worldmap-render-diagn
 export interface WorldmapChunkPresentationPhaseDurations {
   structureAssetPrewarmMs: number;
   terrainPreparedMs: number;
-  tileHydrationDrainMs: number;
 }
 
 interface CreateWorldmapChunkPresentationRuntimeInput<TPreparedTerrain> {
   now: () => number;
-  onChunkHydrated: (chunkKey: string) => void;
+  onChunkPrepared: (chunkKey: string) => void;
   prewarmChunkAssets: (chunkKey: string) => Promise<void>;
   prepareTerrainChunk: (startRow: number, startCol: number, height: number, width: number) => Promise<TPreparedTerrain>;
   recordDuration: (metric: WorldmapRenderDurationMetric, durationMs: number) => void;
-  recordTileHydrationDrainCompleted: () => void;
-  waitForTileHydrationIdle: (chunkKey: string) => Promise<void>;
 }
 
 export function createWorldmapChunkPresentationRuntime<TPreparedTerrain>(
@@ -22,12 +19,11 @@ export function createWorldmapChunkPresentationRuntime<TPreparedTerrain>(
   const phaseDurations: WorldmapChunkPresentationPhaseDurations = {
     structureAssetPrewarmMs: 0,
     terrainPreparedMs: 0,
-    tileHydrationDrainMs: 0,
   };
 
   return {
-    onChunkHydrated(chunkKey: string) {
-      input.onChunkHydrated(chunkKey);
+    onChunkPrepared(chunkKey: string) {
+      input.onChunkPrepared(chunkKey);
     },
 
     phaseDurations,
@@ -45,14 +41,6 @@ export function createWorldmapChunkPresentationRuntime<TPreparedTerrain>(
       phaseDurations.terrainPreparedMs = input.now() - startedAt;
       input.recordDuration("terrainPreparedMs", phaseDurations.terrainPreparedMs);
       return preparedChunk;
-    },
-
-    async waitForTileHydrationIdle(chunkKey: string) {
-      const startedAt = input.now();
-      await input.waitForTileHydrationIdle(chunkKey);
-      phaseDurations.tileHydrationDrainMs = input.now() - startedAt;
-      input.recordDuration("tileHydrationDrainMs", phaseDurations.tileHydrationDrainMs);
-      input.recordTileHydrationDrainCompleted();
     },
   };
 }

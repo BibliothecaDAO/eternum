@@ -1,48 +1,44 @@
 import { describe, expect, it, vi } from "vitest";
 
 const createWorldmapChunkPresentationRuntime = vi.fn();
-const hydrateWarpTravelChunk = vi.fn();
+const prepareWarpTravelChunk = vi.fn();
 
 vi.mock("./worldmap-chunk-presentation-runtime", () => ({
   createWorldmapChunkPresentationRuntime,
 }));
 
-vi.mock("./warp-travel-chunk-hydration", () => ({
-  hydrateWarpTravelChunk,
+vi.mock("./warp-travel-chunk-preparation", () => ({
+  prepareWarpTravelChunk,
 }));
 
-const { hydrateWorldmapChunkRuntime } = await import("./worldmap-chunk-hydration-runtime");
+const { prepareWorldmapChunkRuntime } = await import("./worldmap-chunk-preparation-runtime");
 
-describe("hydrateWorldmapChunkRuntime", () => {
-  it("builds the presentation runtime once and passes its callbacks into warp-travel hydration", async () => {
+describe("prepareWorldmapChunkRuntime", () => {
+  it("builds the presentation runtime once and passes its callbacks into warp-travel preparation", async () => {
     const presentationRuntime = {
-      onChunkHydrated: vi.fn(),
+      onChunkPrepared: vi.fn(),
       phaseDurations: {
         structureAssetPrewarmMs: 1,
         terrainPreparedMs: 3,
-        tileHydrationDrainMs: 4,
       },
       prepareTerrainChunk: vi.fn(),
       prewarmChunkAssets: vi.fn(),
-      waitForTileHydrationIdle: vi.fn(),
     };
     createWorldmapChunkPresentationRuntime.mockReturnValue(presentationRuntime);
-    hydrateWarpTravelChunk.mockResolvedValue({
+    prepareWarpTravelChunk.mockResolvedValue({
       preparedTerrain: { chunkKey: "24,24" },
-      tileFetchSucceeded: true,
+      projectionSyncSucceeded: true,
     });
 
-    const result = await hydrateWorldmapChunkRuntime({
+    const result = await prepareWorldmapChunkRuntime({
       chunkKey: "24,24",
-      computeTileEntities: vi.fn(),
-      diagnostics: { id: "diagnostics" } as never,
+      syncProjectionTiles: vi.fn(),
       now: () => 10,
-      onChunkHydrated: vi.fn(),
+      onChunkPrepared: vi.fn(),
       onPhaseTimeout: vi.fn(),
       phaseTimeoutMs: 500,
       prewarmChunkAssets: vi.fn(),
       prepareTerrainChunk: vi.fn(),
-      recordChunkDiagnosticsEvent: vi.fn(),
       recordWorldmapRenderDuration: vi.fn(),
       renderSize: { height: 80, width: 90 },
       startCol: 24,
@@ -51,23 +47,21 @@ describe("hydrateWorldmapChunkRuntime", () => {
       transitionToken: 7,
       updateBoundsSubscription: vi.fn(),
       updatePinnedChunks: vi.fn(),
-      waitForTileHydrationIdle: vi.fn(),
     });
 
     expect(createWorldmapChunkPresentationRuntime).toHaveBeenCalledTimes(1);
-    expect(hydrateWarpTravelChunk).toHaveBeenCalledWith(
+    expect(prepareWarpTravelChunk).toHaveBeenCalledWith(
       expect.objectContaining({
         chunkKey: "24,24",
-        onChunkHydrated: presentationRuntime.onChunkHydrated,
+        onChunkPrepared: presentationRuntime.onChunkPrepared,
         prepareTerrainChunk: presentationRuntime.prepareTerrainChunk,
         prewarmChunkAssets: presentationRuntime.prewarmChunkAssets,
-        waitForTileHydrationIdle: presentationRuntime.waitForTileHydrationIdle,
       }),
     );
     expect(result).toEqual({
       preparedTerrain: { chunkKey: "24,24" },
       presentationRuntime,
-      tileFetchSucceeded: true,
+      projectionSyncSucceeded: true,
     });
   });
 });

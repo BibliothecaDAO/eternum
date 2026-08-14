@@ -7,19 +7,16 @@ interface WorldChunkConfig {
   pinRadius: number;
   /** Boundary padding for delaying chunk switches */
   switchPadding: number;
-  /** Exact Torii SQL fetch coalescing */
-  toriiFetch: {
-    /**
-     * Number of stride chunks per side in a hydration "super-area".
-     * Larger values reduce repeated SQL hydration across neighboring render windows.
-     */
+  /** Local projection-to-terrain sync coalescing */
+  projectionSync: {
+    /** Number of stride chunks per side in a projection sync area. */
     superAreaStrides: number;
   };
   /** Live Torii subscription bounds coalescing */
   toriiSubscription: {
     /**
      * Number of stride chunks per side in a subscription "super-area".
-     * This can be larger than hydration fetch areas to reduce live stream churn.
+     * This can be larger than projection-sync areas to reduce live stream churn.
      */
     superAreaStrides: number;
   };
@@ -29,16 +26,12 @@ interface WorldChunkConfig {
     forwardDepthStrides: number;
     /** How many stride steps to each side to prefetch */
     sideRadiusStrides: number;
-    /** How close to a hydration super-area edge before warming the next area */
+    /** How close to a projection sync area edge before warming the next area */
     areaBoundaryLookaheadStrides: number;
     /** Max remembered prefetched chunk keys */
     maxAhead: number;
     /** Max concurrent background prefetches */
     maxConcurrent: number;
-  };
-  /** Recently hydrated areas to keep warm after leaving the pinned neighborhood */
-  recentHydrationCache: {
-    maxAreas: number;
   };
   /** Visual terrain presentation tuning */
   visualPresentation: {
@@ -60,7 +53,7 @@ interface WorldChunkConfig {
     retainedPageMs: number;
     /** Camera sampling throttle for rolling terrain updates */
     cameraSampleThrottleMs: number;
-    /** Whether cold target chunks may show local provisional terrain before exact hydration */
+    /** Whether cold target chunks may show local provisional terrain before exact preparation */
     provisionalShellEnabled: boolean;
     /** How long to retain the previous exact presentation after exact target commit */
     previousExactRetainMs: number;
@@ -80,8 +73,8 @@ export const WORLD_CHUNK_CONFIG: WorldChunkConfig = {
   },
   pinRadius: 2, // 5x5 pinned neighborhood
   switchPadding: 0.05,
-  toriiFetch: {
-    // Coalesce overlapping render windows into larger stable fetch areas.
+  projectionSync: {
+    // Coalesce overlapping render windows into larger stable projection areas.
     superAreaStrides: 16,
   },
   toriiSubscription: {
@@ -94,9 +87,6 @@ export const WORLD_CHUNK_CONFIG: WorldChunkConfig = {
     areaBoundaryLookaheadStrides: 3,
     maxAhead: 6,
     maxConcurrent: 1,
-  },
-  recentHydrationCache: {
-    maxAreas: 32,
   },
   visualPresentation: {
     maxCompositeChunks: 3,

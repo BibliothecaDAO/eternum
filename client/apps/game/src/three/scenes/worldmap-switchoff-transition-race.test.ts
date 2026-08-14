@@ -52,7 +52,7 @@ describe("worldmap switch-off transition race hardening", () => {
     });
 
     await flushMicrotasks(2);
-    fixture.tileFetch.resolveNext(true);
+    fixture.projectionSync.resolveNext(true);
     fixture.boundsSwitch.resolveNext();
     fixture.assetPrewarm.resolveNext();
     await flushMicrotasks(2);
@@ -61,7 +61,7 @@ describe("worldmap switch-off transition race hardening", () => {
     const result = await switchPromise;
 
     expect(result).toEqual({
-      tileFetchSucceeded: true,
+      projectionSyncSucceeded: true,
       committedManagers: false,
       rolledBack: false,
       unregisteredPreviousChunk: false,

@@ -96,23 +96,22 @@ Torii/Dojo ECS → `WorldUpdateListener` → `WorldmapScene` caches (`exploredTi
 - `updateVisibleChunks()` computes a ground focus point, derives the next chunk key, and uses a small padding
   (`chunkSwitchPadding`) to delay switching right at boundaries.
 - The worldmap-specific method now delegates most shared switch/prefetch orchestration through `WarpTravel` helper
-  modules (`warp-travel-chunk-runtime.ts`, `warp-travel-chunk-hydration.ts`, `warp-travel-chunk-switch-commit.ts`,
+  modules (`warp-travel-chunk-runtime.ts`, `warp-travel-chunk-preparation.ts`, `warp-travel-chunk-switch-commit.ts`,
   `warp-travel-directional-prefetch.ts`, `warp-travel-prefetch-enqueue.ts`, `warp-travel-prefetch-drain.ts`).
 - On chunk change `performChunkSwitch()`:
-  1. prepares bounds, then commits `currentChunk` through one finalize-helper callback path before manager fanout while
+  1. syncs projected tiles and prepares bounds, then commits `currentChunk` through one finalize-helper callback path before manager fanout while
      registering/unregistering chunk bounds with the `CentralizedVisibilityManager`.
-  2. Starts deterministic Torii fetches for tiles (`computeTileEntities`) and structures (`refreshStructuresForChunks`)
-     for the new render window.
+  2. Reads tiles for the new render window from the session-owned spatial projection without issuing camera-driven
+     Torii queries.
   3. Pins the 5×5 neighborhood and kicks background prefetch for those chunks.
   4. Immediately rebuilds the visible hex grid (instanced biome tiles).
-  5. Once tile+structure hydration completes, calls all entity managers’ `updateChunk()` concurrently.
+  5. Once projection sync completes, calls all entity managers’ `updateChunk()` concurrently.
 
-**Fetch caching**
+**Projection preparation**
 
-- Tile fetches are deduped by `fetchedChunks` (completed) and `pendingChunks` (in‑flight), keyed by Torii super‑areas
-  (`getRenderAreaKeyForChunk`), so multiple stride chunks share one fetch.
-- Prefetch enqueue/drain helpers now consume a lightweight fetch-key lookup, so the worldmap hot path no longer rebuilds
-  transient Sets from `pendingChunks`.
+- Chunk preparation reads bucketed bounds from `WorldSpatialProjection`; camera movement selects already-synced data
+  and does not own current game state.
+- Prefetch enqueue/drain helpers dedupe projection preparation by render-area key so adjacent stride chunks share work.
 - A completed fetch is only cached if its render area is still pinned when it finishes, preventing stale caching.
 
 ## Rendering pipeline

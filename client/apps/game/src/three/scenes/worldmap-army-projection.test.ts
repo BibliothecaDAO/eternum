@@ -52,30 +52,21 @@ function findMethodSignatureEnd(source: string, searchStart: number): number {
 }
 
 describe("worldmap projection-backed army bootstrap", () => {
-  it("keeps render-area hydration terrain-only while armies come from the projection", () => {
+  it("syncs visible terrain and armies from the projection without Torii fetches", () => {
     const source = readWorldmapSource();
 
     expect(source).not.toContain("getExplorerTroopsFromToriiExact");
     expect(source).not.toContain("getMapFromToriiExact");
     expect(source).not.toContain("getStructuresFromToriiExact");
 
-    const computeMethodBody = extractMethodBody(source, "private async computeTileEntities(");
-    expect(computeMethodBody).toContain("this.resolveRenderAreaHydrationFetchPlans(chunkKey, requiredStages)");
-
-    const hydrationPlanBody = extractMethodBody(source, "private resolveRenderAreaHydrationFetchPlans(");
-    expect(hydrationPlanBody).toContain('stages: ["tileOpt"]');
-    expect(hydrationPlanBody).not.toContain("explorerTroops");
-
-    const fetchMethodBody = extractMethodBody(source, "private async executeTileEntitiesFetch(");
-    expect(fetchMethodBody).toContain(
-      "await this.hydrateRenderAreaFromGlobalSpatialState(fetchKey, localBounds, stages)",
-    );
-    const stagedHydrationBody = extractMethodBody(source, "private async hydrateRenderAreaFromGlobalSpatialState(");
-    expect(stagedHydrationBody).toContain("hydrateExploredTilesFromGlobalTileOptRecs");
-    expect(stagedHydrationBody).not.toContain("hydrateStructuresFromGlobalTileOptRecs");
+    const projectionSyncBody = extractMethodBody(source, "private async syncProjectionTilesForChunk(");
+    expect(projectionSyncBody).toContain("this.worldSpatialProjection.getTilesInBounds");
+    expect(projectionSyncBody).toContain("this.syncExploredTilesFromProjection(tiles)");
+    expect(projectionSyncBody).not.toContain("toriiClient");
+    expect(projectionSyncBody).not.toContain("getEntities");
     expect(source).not.toContain("resolveStructureTileUpdateFromTileOpt");
-    expect(stagedHydrationBody).toContain("global_spatial_recs_hydrated");
-    expect(stagedHydrationBody).not.toContain("chestManager");
+    expect(projectionSyncBody).toContain("projection_tiles_synced");
+    expect(projectionSyncBody).not.toContain("chestManager");
     expect(source).toContain("this.worldSpatialProjection.subscribeArmies");
   });
 });

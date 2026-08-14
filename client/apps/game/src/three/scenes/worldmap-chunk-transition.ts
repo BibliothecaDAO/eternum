@@ -1,7 +1,7 @@
 import { getRenderFetchBoundsForChunk } from "./worldmap-chunk-bounds";
 
 interface ChunkSwitchDecisionInput {
-  fetchSucceeded: boolean;
+  projectionSyncSucceeded: boolean;
   isCurrentTransition: boolean;
   targetChunk: string;
   previousChunk?: string | null;
@@ -161,7 +161,7 @@ interface StructureBoundsRefreshInput {
 }
 
 /**
- * Resolve chunk-switch side effects after hydration completes.
+ * Resolve chunk-switch side effects after projection sync and terrain preparation complete.
  * Keeps behavior deterministic for success, failure, and stale transitions.
  */
 export function resolveChunkSwitchActions(input: ChunkSwitchDecisionInput): ChunkSwitchActions {
@@ -174,7 +174,7 @@ export function resolveChunkSwitchActions(input: ChunkSwitchDecisionInput): Chun
     };
   }
 
-  if (!input.fetchSucceeded) {
+  if (!input.projectionSyncSucceeded) {
     return {
       shouldRollback: true,
       shouldCommitManagers: false,

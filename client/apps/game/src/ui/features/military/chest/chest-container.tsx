@@ -10,8 +10,6 @@ import { getRelicInfo, ID, RelicInfo, RELICS, ResourcesIds } from "@bibliothecad
 import { isComponentUpdate } from "@dojoengine/recs";
 import { AnimatePresence, motion, useMotionValue } from "framer-motion";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { syncExplorerAfterChestOpen } from "./sync-explorer-after-chest-open";
-import type { ExplorerChestSyncComponents } from "./sync-explorer-after-chest-open";
 
 // Relic Card Component - Simplified without tooltip
 const RelicCard = ({ relic, isHovered }: { relic: RelicInfo; isHovered: boolean }) => {
@@ -356,7 +354,7 @@ export const ChestContainer = ({
   const {
     setup: {
       systemCalls,
-      network: { contractComponents, toriiClient },
+      network: { contractComponents },
     },
     account: { account },
   } = useDojo();
@@ -376,15 +374,8 @@ export const ChestContainer = ({
       ) {
         const relics = currentState.relics.map((relic: any) => relic.value);
         setChestResult(relics);
-        // The relic tray polls every 10s and the army inventory panel caches its
-        // aggregate snapshot. Refresh the tray and write the explorer's latest
-        // reward Resource row into RECS so the open army panel updates in place.
+        // Resource updates arrive through the authoritative game-wide stream.
         triggerRelicsRefresh();
-        void syncExplorerAfterChestOpen({
-          toriiClient,
-          contractComponents: contractComponents as unknown as ExplorerChestSyncComponents,
-          explorerEntityId,
-        });
 
         if (isOpening) {
           setTimeout(() => {
@@ -404,16 +395,7 @@ export const ChestContainer = ({
         }
       }
     },
-    [
-      explorerEntityId,
-      chestHex.x,
-      chestHex.y,
-      isOpening,
-      playChestOpenSound,
-      triggerRelicsRefresh,
-      toriiClient,
-      contractComponents,
-    ],
+    [explorerEntityId, chestHex.x, chestHex.y, isOpening, playChestOpenSound, triggerRelicsRefresh, contractComponents],
   );
 
   const handleChestClick = async () => {

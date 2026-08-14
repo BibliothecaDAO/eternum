@@ -6,7 +6,6 @@ interface PendingArmyMovementRecordLike<TTimeout> {
 
 interface WorldmapSwitchOffRuntimeStateInput<TEntityId, TTimeout> {
   pendingArmyMovements: Map<TEntityId, PendingArmyMovementRecordLike<TTimeout>>;
-  clearRenderAreaHydrationState: () => void;
   pinnedChunkKeys: Set<string>;
   pinnedRenderAreas: Set<string>;
   hydratedChunkRefreshes: Set<string>;
@@ -17,12 +16,10 @@ interface WorldmapSwitchOffRuntimeStateInput<TEntityId, TTimeout> {
   clearStreamingWork: () => void;
   clearQueuedPrefetchState: () => void;
   releaseInactiveResources: () => void;
-  invalidatePendingFetches: () => void;
 }
 
 interface WorldmapSwitchOffRuntimeStateResult {
   isSwitchedOff: boolean;
-  toriiLoadingCounter: number;
   currentChunk: string;
   lastControlsCameraDistance: null;
 }
@@ -39,16 +36,8 @@ interface WorldmapSwitchOffTransitionStateResult {
   globalChunkSwitchPromise: null;
 }
 
-interface ShouldApplyWorldmapFetchResultInput {
-  fetchGeneration: number;
-  activeFetchGeneration: number;
-  fetchKey: string;
-  retainedRenderAreas: { has(fetchKey: string): boolean };
-}
-
 export const applyWorldmapSwitchOffRuntimeState = <TEntityId, TTimeout>({
   pendingArmyMovements,
-  clearRenderAreaHydrationState,
   pinnedChunkKeys,
   pinnedRenderAreas,
   hydratedChunkRefreshes,
@@ -59,7 +48,6 @@ export const applyWorldmapSwitchOffRuntimeState = <TEntityId, TTimeout>({
   clearStreamingWork,
   clearQueuedPrefetchState,
   releaseInactiveResources,
-  invalidatePendingFetches,
 }: WorldmapSwitchOffRuntimeStateInput<TEntityId, TTimeout>): WorldmapSwitchOffRuntimeStateResult => {
   pendingArmyMovements.forEach((record, entityId) => {
     const fallbackTimeout = record.movement?.fallbackTimeout;
@@ -76,8 +64,6 @@ export const applyWorldmapSwitchOffRuntimeState = <TEntityId, TTimeout>({
 
   clearStreamingWork();
   clearQueuedPrefetchState();
-  invalidatePendingFetches();
-  clearRenderAreaHydrationState();
   pinnedChunkKeys.clear();
   pinnedRenderAreas.clear();
   hydratedChunkRefreshes.clear();
@@ -89,7 +75,6 @@ export const applyWorldmapSwitchOffRuntimeState = <TEntityId, TTimeout>({
 
   return {
     isSwitchedOff: true,
-    toriiLoadingCounter: 0,
     currentChunk: "null",
     lastControlsCameraDistance: null,
   };
@@ -106,15 +91,4 @@ export const invalidateWorldmapSwitchOffTransitionState = <TChunkSwitchPromise>(
     isChunkTransitioning: false,
     globalChunkSwitchPromise: null,
   };
-};
-
-export const invalidateWorldmapPendingFetchGeneration = (currentGeneration: number): number => currentGeneration + 1;
-
-export const shouldApplyWorldmapFetchResult = ({
-  fetchGeneration,
-  activeFetchGeneration,
-  fetchKey,
-  retainedRenderAreas,
-}: ShouldApplyWorldmapFetchResultInput): boolean => {
-  return fetchGeneration === activeFetchGeneration && retainedRenderAreas.has(fetchKey);
 };

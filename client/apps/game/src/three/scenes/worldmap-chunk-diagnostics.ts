@@ -8,9 +8,9 @@ export type WorldmapChunkDiagnosticsEvent =
   | "manager_update_failed"
   | "critical_manager_catch_up_started"
   | "critical_manager_catch_up_failed"
-  | "tile_fetch_started"
-  | "tile_fetch_succeeded"
-  | "tile_fetch_failed"
+  | "projection_sync_started"
+  | "projection_sync_succeeded"
+  | "projection_sync_failed"
   | "prefetch_queued"
   | "prefetch_skipped"
   | "prefetch_executed"
@@ -45,7 +45,6 @@ export type WorldmapChunkDiagnosticsEvent =
   | "duplicate_tile_reconcile_mode_atomic_refresh"
   | "stale_terrain_refresh_dropped"
   | "terrain_bounds_recovery"
-  | "tile_hydration_drain_completed"
   | "cache_reject_fingerprint";
 
 export interface WorldmapChunkDiagnostics {
@@ -58,9 +57,9 @@ export interface WorldmapChunkDiagnostics {
   managerUpdateFailed: number;
   criticalManagerCatchUpStarted: number;
   criticalManagerCatchUpFailed: number;
-  tileFetchStarted: number;
-  tileFetchSucceeded: number;
-  tileFetchFailed: number;
+  projectionSyncStarted: number;
+  projectionSyncSucceeded: number;
+  projectionSyncFailed: number;
   prefetchQueued: number;
   prefetchSkipped: number;
   prefetchExecuted: number;
@@ -86,7 +85,6 @@ export interface WorldmapChunkDiagnostics {
   duplicateTileReconcileModeAtomicRefresh: number;
   staleTerrainRefreshDropped: number;
   terrainBoundsRecovery: number;
-  tileHydrationDrainCompleted: number;
   cacheRejectFingerprint: number;
   switchDurationMsTotal: number;
   switchDurationMsMax: number;
@@ -131,9 +129,9 @@ export function createWorldmapChunkDiagnostics(): WorldmapChunkDiagnostics {
     managerUpdateFailed: 0,
     criticalManagerCatchUpStarted: 0,
     criticalManagerCatchUpFailed: 0,
-    tileFetchStarted: 0,
-    tileFetchSucceeded: 0,
-    tileFetchFailed: 0,
+    projectionSyncStarted: 0,
+    projectionSyncSucceeded: 0,
+    projectionSyncFailed: 0,
     prefetchQueued: 0,
     prefetchSkipped: 0,
     prefetchExecuted: 0,
@@ -159,7 +157,6 @@ export function createWorldmapChunkDiagnostics(): WorldmapChunkDiagnostics {
     duplicateTileReconcileModeAtomicRefresh: 0,
     staleTerrainRefreshDropped: 0,
     terrainBoundsRecovery: 0,
-    tileHydrationDrainCompleted: 0,
     cacheRejectFingerprint: 0,
     switchDurationMsTotal: 0,
     switchDurationMsMax: 0,
@@ -231,14 +228,14 @@ export function recordChunkDiagnosticsEvent(
     case "critical_manager_catch_up_failed":
       diagnostics.criticalManagerCatchUpFailed += 1;
       break;
-    case "tile_fetch_started":
-      diagnostics.tileFetchStarted += 1;
+    case "projection_sync_started":
+      diagnostics.projectionSyncStarted += 1;
       break;
-    case "tile_fetch_succeeded":
-      diagnostics.tileFetchSucceeded += 1;
+    case "projection_sync_succeeded":
+      diagnostics.projectionSyncSucceeded += 1;
       break;
-    case "tile_fetch_failed":
-      diagnostics.tileFetchFailed += 1;
+    case "projection_sync_failed":
+      diagnostics.projectionSyncFailed += 1;
       break;
     case "prefetch_queued":
       diagnostics.prefetchQueued += 1;
@@ -320,9 +317,6 @@ export function recordChunkDiagnosticsEvent(
       break;
     case "terrain_bounds_recovery":
       diagnostics.terrainBoundsRecovery += 1;
-      break;
-    case "tile_hydration_drain_completed":
-      diagnostics.tileHydrationDrainCompleted += 1;
       break;
     case "cache_reject_fingerprint":
       diagnostics.cacheRejectFingerprint += 1;

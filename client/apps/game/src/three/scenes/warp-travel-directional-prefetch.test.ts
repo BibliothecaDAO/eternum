@@ -106,7 +106,7 @@ describe("resolveWarpTravelDirectionalPrefetchPlan", () => {
       forwardDepthStrides: 1,
       sideRadiusStrides: 0,
       areaBoundaryLookaheadStrides: 3,
-      fetchSuperAreaStrides: 16,
+      projectionSuperAreaStrides: 16,
       pinnedChunkKeys: new Set(["0,336", "0,360"]),
       currentChunk: "0,288",
       prefetchedAhead: [],

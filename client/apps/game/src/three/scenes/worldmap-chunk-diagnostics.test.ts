@@ -18,9 +18,9 @@ describe("worldmap-chunk-diagnostics", () => {
     expect(diagnostics.managerUpdateSkippedStale).toBe(0);
     expect(diagnostics.criticalManagerCatchUpStarted).toBe(0);
     expect(diagnostics.criticalManagerCatchUpFailed).toBe(0);
-    expect(diagnostics.tileFetchStarted).toBe(0);
-    expect(diagnostics.tileFetchSucceeded).toBe(0);
-    expect(diagnostics.tileFetchFailed).toBe(0);
+    expect(diagnostics.projectionSyncStarted).toBe(0);
+    expect(diagnostics.projectionSyncSucceeded).toBe(0);
+    expect(diagnostics.projectionSyncFailed).toBe(0);
     expect(diagnostics.prefetchQueued).toBe(0);
     expect(diagnostics.prefetchSkipped).toBe(0);
     expect(diagnostics.prefetchExecuted).toBe(0);
@@ -69,9 +69,9 @@ describe("worldmap-chunk-diagnostics", () => {
       "manager_update_failed",
       "critical_manager_catch_up_started",
       "critical_manager_catch_up_failed",
-      "tile_fetch_started",
-      "tile_fetch_succeeded",
-      "tile_fetch_failed",
+      "projection_sync_started",
+      "projection_sync_succeeded",
+      "projection_sync_failed",
       "prefetch_queued",
       "prefetch_skipped",
       "prefetch_executed",
@@ -101,9 +101,9 @@ describe("worldmap-chunk-diagnostics", () => {
     expect(diagnostics.managerUpdateFailed).toBe(1);
     expect(diagnostics.criticalManagerCatchUpStarted).toBe(1);
     expect(diagnostics.criticalManagerCatchUpFailed).toBe(1);
-    expect(diagnostics.tileFetchStarted).toBe(1);
-    expect(diagnostics.tileFetchSucceeded).toBe(1);
-    expect(diagnostics.tileFetchFailed).toBe(1);
+    expect(diagnostics.projectionSyncStarted).toBe(1);
+    expect(diagnostics.projectionSyncSucceeded).toBe(1);
+    expect(diagnostics.projectionSyncFailed).toBe(1);
     expect(diagnostics.prefetchQueued).toBe(1);
     expect(diagnostics.prefetchSkipped).toBe(1);
     expect(diagnostics.prefetchExecuted).toBe(1);
@@ -269,14 +269,12 @@ describe("worldmap-chunk-diagnostics – Stage 0: terrain commit and refresh rea
     expect(diagnostics).toHaveProperty("terrainBoundsRecovery", 1);
   });
 
-  it("records tile hydration drain completion and cache fingerprint reject events", () => {
+  it("records cache fingerprint reject events", () => {
     const diagnostics = createWorldmapChunkDiagnostics();
 
-    recordChunkDiagnosticsEvent(diagnostics, "tile_hydration_drain_completed" as WorldmapChunkDiagnosticsEvent);
     recordChunkDiagnosticsEvent(diagnostics, "cache_reject_fingerprint" as WorldmapChunkDiagnosticsEvent);
     recordChunkDiagnosticsEvent(diagnostics, "cache_reject_fingerprint" as WorldmapChunkDiagnosticsEvent);
 
-    expect(diagnostics).toHaveProperty("tileHydrationDrainCompleted", 1);
     expect(diagnostics).toHaveProperty("cacheRejectFingerprint", 2);
   });
 });

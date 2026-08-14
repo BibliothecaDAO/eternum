@@ -7,21 +7,22 @@ import { describe, expect, it } from "vitest";
 
 const readSource = (relativePath: string) => readFileSync(resolve(process.cwd(), relativePath), "utf8");
 
-const extractGlobalSpatialHydration = (source: string): string => {
-  const start = source.indexOf("  private async hydrateRenderAreaFromGlobalSpatialState");
-  const end = source.indexOf("  private shouldFetchTileOpt", start);
+const extractProjectionProjectionSync = (source: string): string => {
+  const start = source.indexOf("  private async syncProjectionTilesForChunk");
+  const end = source.indexOf("  private toContractBounds", start);
   return source.slice(start, end);
 };
 
-describe("worldmap global spatial hydration", () => {
-  it("hydrates terrain without rebuilding projected entity truth per area", () => {
+describe("worldmap projection tile sync", () => {
+  it("syncs terrain from the projection without any spatial SQL read", () => {
     const source = readSource("src/three/scenes/worldmap.tsx");
-    const methodSource = extractGlobalSpatialHydration(source);
+    const methodSource = extractProjectionProjectionSync(source);
 
     expect(source).not.toContain("private async runSpatialSqlFetch");
     expect(source).not.toContain("spatial_sql_fetch_timeout");
-    expect(methodSource).toContain("hydrateExploredTilesFromGlobalTileOptRecs");
-    expect(methodSource).toContain("global_spatial_recs_hydrated");
+    expect(methodSource).toContain("worldSpatialProjection.getTilesInBounds");
+    expect(methodSource).toContain("syncExploredTilesFromProjection");
+    expect(methodSource).toContain("projection_tiles_synced");
     expect(methodSource).not.toContain("hydrateStructuresFromGlobalTileOptRecs");
     expect(methodSource).not.toContain("applyStructureTileUpdate");
     expect(source).not.toContain("hydrateChestsFromGlobalTileOptRecs");

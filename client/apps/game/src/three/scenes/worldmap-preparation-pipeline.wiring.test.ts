@@ -14,8 +14,8 @@ function extractMethod(source: string, signature: string, nextSignature: string)
   return source.slice(start, end);
 }
 
-describe("worldmap hydration pipeline wiring", () => {
-  it("routes chunk switch and refresh hydration through the shared scene helper", () => {
+describe("worldmap preparation pipeline wiring", () => {
+  it("routes chunk switch and refresh preparation through the shared scene helper", () => {
     const source = readWorldmapSource();
     const performChunkSwitchSource = extractMethod(
       source,
@@ -28,9 +28,9 @@ describe("worldmap hydration pipeline wiring", () => {
       "  private async updateManagersForChunk(",
     );
 
-    expect(source).toMatch(/private hydrateChunkForPresentation\(/);
-    expect(performChunkSwitchSource).toMatch(/await this\.hydrateChunkForPresentation\(\{/);
-    expect(refreshCurrentChunkSource).toMatch(/hydrateChunk: \(\) =>\s*this\.hydrateChunkForPresentation\(\{/);
+    expect(source).toMatch(/private prepareChunkPresentation\(/);
+    expect(performChunkSwitchSource).toMatch(/await this\.prepareChunkPresentation\(\{/);
+    expect(refreshCurrentChunkSource).toMatch(/prepareChunk: \(\) =>\s*this\.prepareChunkPresentation\(\{/);
   });
 
   it("reuses shared terrain-ready bookkeeping for both switches and refreshes", () => {

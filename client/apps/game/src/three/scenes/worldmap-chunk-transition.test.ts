@@ -37,7 +37,7 @@ describe("resolveChunkSwitchActions", () => {
   it("rolls back when fetch failed and transition is still current", () => {
     expect(
       resolveChunkSwitchActions({
-        fetchSucceeded: false,
+        projectionSyncSucceeded: false,
         isCurrentTransition: true,
         targetChunk: "24,24",
         previousChunk: "0,0",
@@ -53,7 +53,7 @@ describe("resolveChunkSwitchActions", () => {
   it("commits and unregisters previous chunk on successful switch", () => {
     expect(
       resolveChunkSwitchActions({
-        fetchSucceeded: true,
+        projectionSyncSucceeded: true,
         isCurrentTransition: true,
         targetChunk: "24,24",
         previousChunk: "0,0",
@@ -69,7 +69,7 @@ describe("resolveChunkSwitchActions", () => {
   it("ignores stale transitions when transition token is no longer current", () => {
     expect(
       resolveChunkSwitchActions({
-        fetchSucceeded: true,
+        projectionSyncSucceeded: true,
         isCurrentTransition: false,
         targetChunk: "24,24",
         previousChunk: "0,0",
@@ -85,7 +85,7 @@ describe("resolveChunkSwitchActions", () => {
   it("does not unregister when previous chunk equals target", () => {
     expect(
       resolveChunkSwitchActions({
-        fetchSucceeded: true,
+        projectionSyncSucceeded: true,
         isCurrentTransition: true,
         targetChunk: "24,24",
         previousChunk: "24,24",

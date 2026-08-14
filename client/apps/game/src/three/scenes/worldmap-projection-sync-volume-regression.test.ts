@@ -1,24 +1,24 @@
 import { describe, expect, it } from "vitest";
 
 import { createWorldmapChunkDiagnostics } from "./worldmap-chunk-diagnostics";
-import { evaluateTileFetchVolumeRegression } from "./worldmap-tile-fetch-volume-regression";
+import { evaluateProjectionSyncVolumeRegression } from "./worldmap-projection-sync-volume-regression";
 
-const diagnosticsWithFetchCount = (tileFetchStarted: number) => {
+const diagnosticsWithFetchCount = (projectionSyncStarted: number) => {
   const diagnostics = createWorldmapChunkDiagnostics();
-  diagnostics.tileFetchStarted = tileFetchStarted;
+  diagnostics.projectionSyncStarted = projectionSyncStarted;
   return diagnostics;
 };
 
-describe("evaluateTileFetchVolumeRegression", () => {
+describe("evaluateProjectionSyncVolumeRegression", () => {
   it("passes when current fetch volume does not increase", () => {
     const baseline = diagnosticsWithFetchCount(20);
     const current = diagnosticsWithFetchCount(20);
 
-    const result = evaluateTileFetchVolumeRegression({ baseline, current });
+    const result = evaluateProjectionSyncVolumeRegression({ baseline, current });
 
     expect(result.status).toBe("pass");
-    expect(result.baselineFetchCount).toBe(20);
-    expect(result.currentFetchCount).toBe(20);
+    expect(result.baselineSyncCount).toBe(20);
+    expect(result.currentSyncCount).toBe(20);
     expect(result.increaseFraction).toBe(0);
   });
 
@@ -26,15 +26,15 @@ describe("evaluateTileFetchVolumeRegression", () => {
     const baseline = diagnosticsWithFetchCount(20);
     const current = diagnosticsWithFetchCount(21);
 
-    const result = evaluateTileFetchVolumeRegression({
+    const result = evaluateProjectionSyncVolumeRegression({
       baseline,
       current,
       allowedIncreaseFraction: 0,
     });
 
     expect(result.status).toBe("fail");
-    expect(result.baselineFetchCount).toBe(20);
-    expect(result.currentFetchCount).toBe(21);
+    expect(result.baselineSyncCount).toBe(20);
+    expect(result.currentSyncCount).toBe(21);
     expect(result.increaseFraction).toBeCloseTo(0.05);
   });
 
@@ -42,7 +42,7 @@ describe("evaluateTileFetchVolumeRegression", () => {
     const baseline = diagnosticsWithFetchCount(100);
     const current = diagnosticsWithFetchCount(104);
 
-    const result = evaluateTileFetchVolumeRegression({
+    const result = evaluateProjectionSyncVolumeRegression({
       baseline,
       current,
       allowedIncreaseFraction: 0.05,
@@ -56,7 +56,7 @@ describe("evaluateTileFetchVolumeRegression", () => {
     const baseline = diagnosticsWithFetchCount(0);
     const current = diagnosticsWithFetchCount(1);
 
-    const result = evaluateTileFetchVolumeRegression({ baseline, current });
+    const result = evaluateProjectionSyncVolumeRegression({ baseline, current });
 
     expect(result.status).toBe("fail");
     expect(result.increaseFraction).toBe(Number.POSITIVE_INFINITY);

@@ -58,6 +58,7 @@ import {
   requireActiveGameSyncRuntime,
   type ArmySpatialProjectionChange,
   type StructureSpatialProjectionChange,
+  type TileSpatialRenderable,
   type WorldSpatialProjection,
 } from "@bibliothecadao/eternum/game-sync";
 import { gameWorkerManager } from "../../managers/game-worker-manager";
@@ -82,7 +83,6 @@ import {
   SelectableArmy,
   StructureActionManager,
   TileSystemUpdate,
-  tileOptToTile,
 } from "@bibliothecadao/eternum";
 import {
   ActorType,
@@ -102,7 +102,7 @@ import {
   TroopTier,
   TroopType,
 } from "@bibliothecadao/types";
-import { getComponentEntities, getComponentValue } from "@dojoengine/recs";
+import { getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import throttle from "lodash/throttle";
 import { Account, AccountInterface } from "starknet";
@@ -147,7 +147,6 @@ import {
 import { snapshotRendererFxCapabilities } from "../renderer-fx-capabilities";
 import { SceneShortcutManager } from "../utils/shortcuts";
 import { createWorldmapInteractionAdapter } from "./worldmap-interaction-adapter";
-import { clearHydrationFetchState, trackHydrationUpdateWorkForFetches } from "./worldmap-hydration-tracking";
 import {
   claimWorldmapInteractionOwner,
   getWorldmapInteractionOwnerInstanceId,
@@ -188,7 +187,7 @@ import {
   enqueueWorldmapPostCommitManagerCatchUpTask,
   scheduleWorldmapPostCommitManagerCatchUpDrain,
 } from "./worldmap-post-commit-manager-catchup-runtime";
-import { hydrateWorldmapChunkRuntime } from "./worldmap-chunk-hydration-runtime";
+import { prepareWorldmapChunkRuntime } from "./worldmap-chunk-preparation-runtime";
 import { handleWorldmapChunkFinalizeResult } from "./worldmap-chunk-finalize-runtime";
 import { prepareWorldmapChunkSwitchRuntime } from "./worldmap-chunk-switch-runtime";
 import { catchUpCommittedWorldmapChunkManagers } from "./worldmap-committed-chunk-manager-catchup";
@@ -248,7 +247,6 @@ import {
   shouldForceShortcutNavigationRefresh,
   shouldRunShortcutForceFallback,
   shouldRunManagerUpdate,
-  shouldScheduleHydratedChunkRefreshForFetch,
   shouldForceChunkRefreshForZoomDistanceChange,
   waitForChunkTransitionToSettle,
 } from "./worldmap-chunk-transition";
@@ -285,9 +283,7 @@ import {
 import { classifyWorldmapUploadWork, resolveWorldmapPostCommitWorkAction } from "./worldmap-upload-budget-policy";
 import {
   applyWorldmapSwitchOffRuntimeState,
-  invalidateWorldmapPendingFetchGeneration,
   invalidateWorldmapSwitchOffTransitionState,
-  shouldApplyWorldmapFetchResult,
 } from "./worldmap-runtime-lifecycle";
 import { installWorldmapDebugHooks, uninstallWorldmapDebugHooks } from "./worldmap-debug-hooks";
 import { destroyWorldmapOwnedManagers } from "./worldmap-ownership-lifecycle";
@@ -302,7 +298,7 @@ import {
 } from "./worldmap-chunk-bounds";
 import { resolveTerrainPresentationWorldBounds } from "./worldmap-terrain-bounds-policy";
 import { getRenderOverlapChunkKeys, getRenderOverlapNeighborChunkKeys } from "./worldmap-chunk-neighbors";
-import { prunePrefetchQueueByFetchKey, type PrefetchQueueItem } from "./worldmap-prefetch-queue";
+import { prunePrefetchQueueByAreaKey, type PrefetchQueueItem } from "./worldmap-prefetch-queue";
 import { resolveUrlChangedListenerLifecycle } from "./worldmap-lifecycle-policy";
 import {
   disposeWorldmapStoreBridge,
@@ -345,9 +341,9 @@ import {
   type ChunkSwitchP95RegressionResult,
 } from "./worldmap-chunk-latency-regression";
 import {
-  evaluateTileFetchVolumeRegression,
-  type TileFetchVolumeRegressionResult,
-} from "./worldmap-tile-fetch-volume-regression";
+  evaluateProjectionSyncVolumeRegression,
+  type ProjectionSyncVolumeRegressionResult,
+} from "./worldmap-projection-sync-volume-regression";
 import { prepareWarpTravelChunkBounds } from "./warp-travel-chunk-bounds-preparation";
 import { resolveWarpTravelDirectionalPrefetchPlan } from "./warp-travel-directional-prefetch";
 import { drainWarpTravelPrefetchQueue } from "./warp-travel-prefetch-drain";
@@ -363,31 +359,10 @@ import {
   prewarmWorldmapChunkPresentation,
   type WorldmapChunkPresentationTimeoutInfo,
 } from "./worldmap-chunk-presentation";
-import { recoverWorldmapMapLoadingStateFromChunkTimeout } from "./worldmap-timeout-loading-recovery";
 import {
   resolveWorldmapChunkFromHexPosition,
   resolveWorldmapChunkFromWorldPosition,
 } from "./worldmap-chunk-selection-policy";
-import {
-  clearAllRenderAreaHydrationState,
-  clearCompletedRenderAreaHydrationState,
-  clearRenderAreaHydrationState,
-  createWorldmapRenderAreaHydrationState,
-  finalizePendingRenderAreaHydrationOwnership,
-  getMissingRenderAreaHydrationStages,
-  getPendingRenderAreaHydrationPromises,
-  getPendingRenderAreaHydrationStages,
-  isRenderAreaHydrationComplete,
-  listCompletedRenderAreaHydrationKeys,
-  listPendingRenderAreaHydrationKeys,
-  markRenderAreaHydrationStagesComplete,
-  registerPendingRenderAreaHydration,
-  retainRenderAreaHydrationStages,
-  resolveRecentRenderAreaRetention,
-  WORLDMAP_ACTIVE_HYDRATION_STAGES,
-  WORLDMAP_PREFETCH_HYDRATION_STAGES,
-  type WorldmapRenderAreaHydrationStage,
-} from "./worldmap-render-area-hydration-state";
 import { registerActiveWorldmapRecoveryHandle } from "./worldmap-reconnect-recovery-handle";
 import {
   createReconnectRefreshQueueState,
@@ -485,17 +460,6 @@ interface WorldmapVisualTerrainPageBuildRequest {
   transitionToken?: number;
 }
 
-interface TileHydrationFetchState {
-  fetchGeneration: number;
-  minCol: number;
-  maxCol: number;
-  minRow: number;
-  maxRow: number;
-  pendingCount: number;
-  fetchSettled: boolean;
-  waiters: Array<() => void>;
-}
-
 type ToriiBoundsCounterKey = "tiles" | "explorerTiles" | "explorerTroops";
 
 type WorldmapChunkSwitchP95RegressionDebugResult = {
@@ -508,24 +472,6 @@ type WorldmapChunkFirstVisibleCommitP95RegressionDebugResult = {
   result: ChunkSwitchP95RegressionResult;
 };
 
-interface WorldmapRenderAreaBounds {
-  maxCol: number;
-  maxRow: number;
-  minCol: number;
-  minRow: number;
-}
-
-type GlobalTileOptHydrationEntry = {
-  normalized: { x: number; y: number };
-  tile: NonNullable<ReturnType<typeof tileOptToTile>>;
-};
-
-interface WorldmapHydrationFetchPlan {
-  fetchKey: string;
-  localBounds: WorldmapRenderAreaBounds;
-  stages: WorldmapRenderAreaHydrationStage[];
-}
-
 interface WorldmapManagerChunkRecoveryInput {
   chunkKey: string;
   transitionToken: number;
@@ -537,9 +483,9 @@ interface CriticalManagerStallRecoveryResolver {
   shouldScheduleRecoveryRefresh: () => boolean;
 }
 
-type WorldmapTileFetchVolumeRegressionDebugResult = {
+type WorldmapProjectionSyncVolumeRegressionDebugResult = {
   baselineLabel: string | null;
-  result: TileFetchVolumeRegressionResult;
+  result: ProjectionSyncVolumeRegressionResult;
 };
 
 type WorldmapChunkDiagnosticsDebugWindow = Window & {
@@ -561,10 +507,10 @@ type WorldmapChunkDiagnosticsDebugWindow = Window & {
     baselineLabel?: string,
     allowedRegressionFraction?: number,
   ) => WorldmapChunkFirstVisibleCommitP95RegressionDebugResult;
-  evaluateWorldmapTileFetchVolumeRegression?: (
+  evaluateWorldmapProjectionSyncVolumeRegression?: (
     baselineLabel?: string,
     allowedIncreaseFraction?: number,
-  ) => WorldmapTileFetchVolumeRegressionDebugResult;
+  ) => WorldmapProjectionSyncVolumeRegressionDebugResult;
   getWorldmapRenderDiagnostics?: () => ReturnType<typeof snapshotWorldmapRenderDiagnostics>;
   resetWorldmapRenderDiagnostics?: () => void;
   getWorldmapChunkTrace?: () => WorldmapChunkTraceEntry[];
@@ -687,7 +633,6 @@ export default class WorldmapScene extends WarpTravel {
   private prefetchQueue: PrefetchQueueItem[] = [];
   private directionalPrefetchAreaKeys: Set<string> = new Set();
   private queuedPrefetchAreaKeys: Set<string> = new Set();
-  private retainedHydrationAreaKeys: string[] = [];
   private activePrefetches = 0;
   private readonly maxConcurrentPrefetches = WORLDMAP_CHUNK_POLICY.prefetch.maxConcurrent;
   private readonly worldmapMinZoomDistance = 10;
@@ -737,7 +682,6 @@ export default class WorldmapScene extends WarpTravel {
   private readonly minCachedTerrainCoverageFraction = 0.08;
   private readonly minCachedExploredRetentionFraction = 0.6;
   private readonly minExpectedExploredForCacheValidation = 48;
-  private toriiLoadingCounter = 0;
   private readonly chunkRowsAhead = WORLDMAP_CHUNK_POLICY.pin.rowsAhead;
   private readonly chunkRowsBehind = WORLDMAP_CHUNK_POLICY.pin.rowsBehind;
   private readonly chunkColsEachSide = WORLDMAP_CHUNK_POLICY.pin.colsEachSide;
@@ -1017,10 +961,6 @@ export default class WorldmapScene extends WarpTravel {
 
   dojo: SetupResult;
 
-  // Render-area hydration bookkeeping (keys represent render-sized regions, not chunk stride)
-  private readonly renderAreaHydrationState = createWorldmapRenderAreaHydrationState();
-  private pendingChunkFetchGeneration = 0;
-  private tileHydrationFetches: Map<string, TileHydrationFetchState> = new Map();
   private visibleTerrainMembership: Map<string, VisibleTerrainInstanceRef> = new Map();
   private pinnedRenderAreas: Set<string> = new Set();
 
@@ -1495,7 +1435,7 @@ export default class WorldmapScene extends WarpTravel {
     }
 
     // NOTE: Chunk integration system disabled for performance.
-    // The chunk integration adds overhead via hydration tracking callbacks on every entity update.
+    // The chunk integration adds overhead via lifecycle callbacks on every entity update.
     // Uncomment if you need advanced chunk lifecycle debugging/tracking features.
     // this.initializeChunkIntegration();
   }
@@ -1708,7 +1648,7 @@ export default class WorldmapScene extends WarpTravel {
     this.addWorldUpdateSubscription(
       this.worldUpdateListener.Tile.onTileUpdate((value) => {
         this.incrementToriiBoundsCounter("tiles");
-        void this.trackTileHydrationUpdate(value, this.updateExploredHex(value));
+        void this.updateExploredHex(value);
       }),
     );
   }
@@ -4312,7 +4252,7 @@ export default class WorldmapScene extends WarpTravel {
         // World-update (RECS→scene) listeners are disposed on every switch-off but were
         // only registered in the constructor, leaving the map permanently deaf after any
         // scene switch (armies never re-appear: unlike tiles/structures they have no
-        // chunk re-hydration path). Re-arming here also replays existing RECS entities
+        // scene-local repair path). Re-arming here also replays existing RECS entities
         // (runOnInit), so re-entry re-adds anything missed while the listeners were dead.
         this.registerWorldUpdateSubscriptions();
       },
@@ -4566,8 +4506,7 @@ export default class WorldmapScene extends WarpTravel {
     }
 
     // Clear map loading state so "Charting Territories" doesn't persist
-    // when switching away while fetches are still in-flight.
-    this.toriiLoadingCounter = 0;
+    // when switching away during a chunk transition.
     this.state.setLoading(LoadingStateKey.Map, false);
     this.state.setLoading(LoadingStateKey.ChunkTransition, false);
   }
@@ -4603,10 +4542,6 @@ export default class WorldmapScene extends WarpTravel {
 
     const runtimeState = applyWorldmapSwitchOffRuntimeState({
       pendingArmyMovements: this.pendingArmyMovements,
-      clearRenderAreaHydrationState: () => {
-        clearAllRenderAreaHydrationState(this.renderAreaHydrationState);
-        this.clearRetainedHydrationAreas();
-      },
       pinnedChunkKeys: this.pinnedChunkKeys,
       pinnedRenderAreas: this.pinnedRenderAreas,
       hydratedChunkRefreshes: this.hydratedChunkRefreshes,
@@ -4617,13 +4552,9 @@ export default class WorldmapScene extends WarpTravel {
       clearStreamingWork: () => this.clearStreamingWorkState(),
       clearQueuedPrefetchState: () => this.clearQueuedPrefetchState(),
       releaseInactiveResources: () => this.clearCache(),
-      invalidatePendingFetches: () => {
-        this.pendingChunkFetchGeneration = invalidateWorldmapPendingFetchGeneration(this.pendingChunkFetchGeneration);
-      },
     });
 
     this.isSwitchedOff = runtimeState.isSwitchedOff;
-    this.toriiLoadingCounter = runtimeState.toriiLoadingCounter;
     this.lastControlsCameraDistance = runtimeState.lastControlsCameraDistance;
     this.currentChunk = runtimeState.currentChunk;
 
@@ -4917,7 +4848,7 @@ export default class WorldmapScene extends WarpTravel {
 
   private aggressivelyInvalidateChunkTerrainCaches(
     centerChunkKey: string,
-    options?: { includeSurroundingChunks?: string[]; invalidateFetchAreas?: boolean },
+    options?: { includeSurroundingChunks?: string[] },
   ): void {
     const targetChunkKeys = new Set<string>([centerChunkKey, ...this.getChunksAround(centerChunkKey)]);
     options?.includeSurroundingChunks?.forEach((chunkKey) => targetChunkKeys.add(chunkKey));
@@ -4928,29 +4859,24 @@ export default class WorldmapScene extends WarpTravel {
         return;
       }
       this.removeCachedMatricesForChunk(chunkRow, chunkCol);
-      if (options?.invalidateFetchAreas) {
-        const areaKey = this.getRenderAreaKeyForChunk(chunkKey);
-        clearRenderAreaHydrationState(this.renderAreaHydrationState, areaKey);
-        this.removeRetainedHydrationArea(areaKey);
-      }
     });
   }
 
   /**
-   * Derive a stable Torii render-area key for a chunk key.
-   * Key by Torii "super-area" so overlapping render windows coalesce.
+   * Derive a stable projection-sync area key for a chunk key.
+   * Overlapping render windows share one area so local presentation work coalesces.
    */
   private getRenderAreaKeyForChunk(chunkKey: string): string {
     return getCanonicalRenderAreaKeyForChunk(
       chunkKey,
       this.chunkSize,
-      WORLDMAP_CHUNK_POLICY.toriiFetch.superAreaStrides,
+      WORLDMAP_CHUNK_POLICY.projectionSync.superAreaStrides,
     );
   }
 
   /**
    * Derive a stable live Torii subscription key for a chunk key.
-   * Subscription areas are intentionally larger than hydration fetch areas.
+   * Subscription areas are intentionally larger than projection-sync areas.
    */
   private getToriiSubscriptionAreaKeyForChunk(chunkKey: string): string {
     return getCanonicalRenderAreaKeyForChunk(
@@ -4961,7 +4887,7 @@ export default class WorldmapScene extends WarpTravel {
   }
 
   /**
-   * Compute integer fetch bounds that fully cover all render windows inside a Torii super-area.
+   * Compute integer bounds that fully cover all render windows inside a projection-sync area.
    */
   private getRenderFetchBoundsForArea(areaKey: string): {
     minCol: number;
@@ -4973,7 +4899,7 @@ export default class WorldmapScene extends WarpTravel {
       areaKey,
       this.renderChunkSize,
       this.chunkSize,
-      WORLDMAP_CHUNK_POLICY.toriiFetch.superAreaStrides,
+      WORLDMAP_CHUNK_POLICY.projectionSync.superAreaStrides,
     );
   }
 
@@ -5085,52 +5011,6 @@ export default class WorldmapScene extends WarpTravel {
     };
   }
 
-  private getRenderAreaHydrationCompletionLookup(requiredStages: readonly WorldmapRenderAreaHydrationStage[]) {
-    return {
-      has: (fetchKey: string) => this.isRenderAreaHydrationCompleteForFetchKey(fetchKey, requiredStages),
-    };
-  }
-
-  private getRenderAreaHydrationPendingLookup(requiredStages: readonly WorldmapRenderAreaHydrationStage[]) {
-    return {
-      has: (fetchKey: string) => this.hasPendingRenderAreaHydrationForFetchKey(fetchKey, requiredStages),
-    };
-  }
-
-  private isRenderAreaHydrationCompleteForFetchKey(
-    fetchKey: string,
-    requiredStages: readonly WorldmapRenderAreaHydrationStage[],
-  ): boolean {
-    return requiredStages.every((stage) =>
-      isRenderAreaHydrationComplete(
-        this.renderAreaHydrationState,
-        this.resolveRenderAreaHydrationFetchKeyForStage(fetchKey, stage),
-        [stage],
-      ),
-    );
-  }
-
-  private hasPendingRenderAreaHydrationForFetchKey(
-    fetchKey: string,
-    requiredStages: readonly WorldmapRenderAreaHydrationStage[],
-  ): boolean {
-    return requiredStages.some(
-      (stage) =>
-        getPendingRenderAreaHydrationStages(
-          this.renderAreaHydrationState,
-          this.resolveRenderAreaHydrationFetchKeyForStage(fetchKey, stage),
-          [stage],
-        ).length > 0,
-    );
-  }
-
-  private resolveRenderAreaHydrationFetchKeyForStage(
-    fetchKey: string,
-    _stage: WorldmapRenderAreaHydrationStage,
-  ): string {
-    return fetchKey;
-  }
-
   /**
    * Prefetch the chunk in front of the camera to reduce pop-in.
    */
@@ -5141,7 +5021,7 @@ export default class WorldmapScene extends WarpTravel {
       forwardDepthStrides: WORLDMAP_CHUNK_POLICY.prefetch.forwardDepthStrides,
       sideRadiusStrides: WORLDMAP_CHUNK_POLICY.prefetch.sideRadiusStrides,
       areaBoundaryLookaheadStrides: WORLDMAP_CHUNK_POLICY.prefetch.areaBoundaryLookaheadStrides,
-      fetchSuperAreaStrides: WORLDMAP_CHUNK_POLICY.toriiFetch.superAreaStrides,
+      projectionSuperAreaStrides: WORLDMAP_CHUNK_POLICY.projectionSync.superAreaStrides,
       pinnedChunkKeys: this.pinnedChunkKeys,
       currentChunk: this.currentChunk,
       prefetchedAhead: this.prefetchedAhead,
@@ -5163,17 +5043,14 @@ export default class WorldmapScene extends WarpTravel {
 
     if (WORLDMAP_STREAMING_ROLLOUT.stagedPathEnabled) {
       this.directionalPresentationChunkKeys.forEach((chunkKey) => {
-        const presentationFetchKey = this.getRenderAreaKeyForChunk(chunkKey);
-        if (this.isRenderAreaHydrationCompleteForFetchKey(presentationFetchKey, WORLDMAP_PREFETCH_HYDRATION_STAGES)) {
-          void this.prewarmDirectionalPresentationChunk(chunkKey);
-        }
+        void this.prewarmDirectionalPresentationChunk(chunkKey);
       });
     }
   }
 
   private pruneQueuedDirectionalPrefetches(): void {
-    prunePrefetchQueueByFetchKey(this.prefetchQueue, this.directionalPrefetchAreaKeys);
-    this.queuedPrefetchAreaKeys = new Set(this.prefetchQueue.map((item) => item.fetchKey));
+    prunePrefetchQueueByAreaKey(this.prefetchQueue, this.directionalPrefetchAreaKeys);
+    this.queuedPrefetchAreaKeys = new Set(this.prefetchQueue.map((item) => item.areaKey));
   }
 
   private clearQueuedPrefetchState(): void {
@@ -5185,15 +5062,13 @@ export default class WorldmapScene extends WarpTravel {
   }
 
   private enqueueChunkPrefetch(chunkKey: string, priority: number): void {
-    const fetchKey = this.getRenderAreaKeyForChunk(chunkKey);
+    const areaKey = this.getRenderAreaKeyForChunk(chunkKey);
     const enqueueResult = enqueueWarpTravelPrefetch({
       chunkKey,
-      fetchKey,
+      areaKey,
       priority,
       queue: this.prefetchQueue,
-      queuedFetchKeys: this.queuedPrefetchAreaKeys,
-      fetchedFetchKeys: this.getRenderAreaHydrationCompletionLookup(WORLDMAP_PREFETCH_HYDRATION_STAGES),
-      pendingFetchKeys: this.getRenderAreaHydrationPendingLookup(WORLDMAP_PREFETCH_HYDRATION_STAGES),
+      queuedAreaKeys: this.queuedPrefetchAreaKeys,
     });
     if (enqueueResult.skipped) {
       recordChunkDiagnosticsEvent(this.chunkDiagnostics, "prefetch_skipped");
@@ -5208,12 +5083,10 @@ export default class WorldmapScene extends WarpTravel {
     const drainResult = drainWarpTravelPrefetchQueue({
       isSwitchedOff: this.isSwitchedOff,
       queue: this.prefetchQueue,
-      queuedFetchKeys: this.queuedPrefetchAreaKeys,
+      queuedAreaKeys: this.queuedPrefetchAreaKeys,
       activePrefetches: this.activePrefetches,
       maxConcurrentPrefetches: this.maxConcurrentPrefetches,
-      desiredFetchKeys: this.directionalPrefetchAreaKeys,
-      fetchedFetchKeys: this.getRenderAreaHydrationCompletionLookup(WORLDMAP_PREFETCH_HYDRATION_STAGES),
-      pendingFetchKeys: this.getRenderAreaHydrationPendingLookup(WORLDMAP_PREFETCH_HYDRATION_STAGES),
+      desiredAreaKeys: this.directionalPrefetchAreaKeys,
       pinnedAreaKeys: this.pinnedRenderAreas,
     });
 
@@ -5229,10 +5102,10 @@ export default class WorldmapScene extends WarpTravel {
       this.activePrefetches += 1;
       void (async () => {
         try {
-          if (item.fetchTiles) {
+          if (item.syncTiles) {
             recordChunkDiagnosticsEvent(this.chunkDiagnostics, "prefetch_executed");
-            const tileFetchSucceeded = await this.computeTileEntities(item.chunkKey);
-            if (tileFetchSucceeded && this.directionalPresentationChunkKeys.has(item.chunkKey)) {
+            const projectionSyncSucceeded = await this.syncProjectionTilesForChunk(item.chunkKey);
+            if (projectionSyncSucceeded && this.directionalPresentationChunkKeys.has(item.chunkKey)) {
               await this.prewarmDirectionalPresentationChunk(item.chunkKey);
             }
           }
@@ -5280,8 +5153,7 @@ export default class WorldmapScene extends WarpTravel {
             startRow,
             startCol,
             renderSize: this.renderChunkSize,
-            tileFetchPromise: this.computeTileEntities(chunkKey),
-            tileHydrationReadyPromise: this.waitForTileHydrationIdle(chunkKey),
+            projectionSyncPromise: this.syncProjectionTilesForChunk(chunkKey),
             boundsReadyPromise: Promise.resolve(),
             assetPrewarmPromise: this.structureManager.prewarmChunkAssets(chunkKey),
             prepareTerrainChunk: (targetStartRow, targetStartCol, height, width) =>
@@ -6087,7 +5959,6 @@ export default class WorldmapScene extends WarpTravel {
     }
     this.cachedMatrices.clear();
     this.cachedMatrixOrder = [];
-    this.tileHydrationFetches.clear();
     this.exploredTilesGeneration.clear();
     MatrixPool.getInstance().clear();
     InstancedMatrixAttributePool.getInstance().clear();
@@ -7204,44 +7075,6 @@ export default class WorldmapScene extends WarpTravel {
     );
   }
 
-  private removeRetainedHydrationArea(areaKey: string): void {
-    this.retainedHydrationAreaKeys = this.retainedHydrationAreaKeys.filter(
-      (retainedAreaKey) => retainedAreaKey !== areaKey,
-    );
-  }
-
-  private clearRetainedHydrationAreas(): void {
-    this.retainedHydrationAreaKeys = [];
-  }
-
-  private getProtectedHydrationAreaKeys(nextPinnedAreas: ReadonlySet<string>): Set<string> {
-    return new Set([...nextPinnedAreas, ...this.directionalPrefetchAreaKeys]);
-  }
-
-  private applyRecentHydrationRetention(retention: ReturnType<typeof resolveRecentRenderAreaRetention>): void {
-    this.retainedHydrationAreaKeys = retention.nextRetainedAreaKeys;
-    retention.areaKeysToRetainTerrainOnly.forEach((areaKey) => {
-      retainRenderAreaHydrationStages(this.renderAreaHydrationState, areaKey, ["tileOpt"]);
-    });
-    retention.areaKeysToClear.forEach((areaKey) => {
-      clearCompletedRenderAreaHydrationState(this.renderAreaHydrationState, areaKey);
-    });
-  }
-
-  private retainRecentlyUnpinnedHydrationAreas(
-    removedPinnedAreas: readonly string[],
-    nextPinnedAreas: ReadonlySet<string>,
-  ): void {
-    const retention = resolveRecentRenderAreaRetention({
-      retainedAreaKeys: this.retainedHydrationAreaKeys,
-      recentlyUnpinnedAreaKeys: removedPinnedAreas,
-      protectedAreaKeys: this.getProtectedHydrationAreaKeys(nextPinnedAreas),
-      maxRetainedAreas: WORLDMAP_CHUNK_POLICY.recentHydrationCache.maxAreas,
-    });
-
-    this.applyRecentHydrationRetention(retention);
-  }
-
   private updatePinnedChunks(newChunkKeys: string[]): void {
     const nextPinned = new Set(newChunkKeys);
     const prevPinned = this.pinnedChunkKeys;
@@ -7250,29 +7083,11 @@ export default class WorldmapScene extends WarpTravel {
     // Compute render-area coverage for the new/old pinned sets
     const nextPinnedAreas = new Set<string>();
     nextPinned.forEach((chunkKey) => nextPinnedAreas.add(this.getRenderAreaKeyForChunk(chunkKey)));
-    const prevPinnedAreas = this.pinnedRenderAreas;
-    const newlyPinnedAreas: string[] = [];
-    const removedPinnedAreas: string[] = [];
-
-    nextPinnedAreas.forEach((areaKey) => {
-      if (!prevPinnedAreas.has(areaKey)) {
-        newlyPinnedAreas.push(areaKey);
-      }
-    });
-
-    prevPinnedAreas.forEach((areaKey) => {
-      if (!nextPinnedAreas.has(areaKey)) {
-        removedPinnedAreas.push(areaKey);
-      }
-    });
-
     prevPinned.forEach((chunkKey) => {
       if (!nextPinned.has(chunkKey)) {
         removedPinnedChunks.push(chunkKey);
       }
     });
-
-    this.retainRecentlyUnpinnedHydrationAreas(removedPinnedAreas, nextPinnedAreas);
 
     this.pinnedChunkKeys = nextPinned;
     this.pinnedRenderAreas = nextPinnedAreas;
@@ -7468,8 +7283,6 @@ export default class WorldmapScene extends WarpTravel {
         counts: snapshot,
         currentAreaKey:
           this.currentChunk !== "null" ? this.getToriiSubscriptionAreaKeyForChunk(this.currentChunk) : null,
-        hydrationCandidates: diagnostics.gauges.globalSpatialHydrationCandidates,
-        scannedTileOptRecs: diagnostics.gauges.globalSpatialTileOptRecs,
         spatialBoundsSwitchApplied: diagnostics.counters.spatialBoundsSwitchApplied,
         spatialBoundsSwitchFailures: diagnostics.counters.spatialBoundsSwitchFailures,
         spatialBoundsSwitchRequests: diagnostics.counters.spatialBoundsSwitchRequests,
@@ -7491,12 +7304,8 @@ export default class WorldmapScene extends WarpTravel {
     }
 
     const areaKey = this.getRenderAreaKeyForChunk(chunkKey);
-    clearRenderAreaHydrationState(this.renderAreaHydrationState, areaKey);
-    this.removeRetainedHydrationArea(areaKey);
-    this.clearTileHydrationFetch(areaKey);
     this.hydratedRefreshSuppressionAreaKeys.delete(areaKey);
     this.hydratedChunkRefreshes.delete(chunkKey);
-    this.pendingChunkFetchGeneration = invalidateWorldmapPendingFetchGeneration(this.pendingChunkFetchGeneration);
     return areaKey;
   }
 
@@ -7543,7 +7352,6 @@ export default class WorldmapScene extends WarpTravel {
     }
 
     const areaKey = this.clearStalledChunkAreaState(this.currentChunk);
-    this.toriiLoadingCounter = 0;
     this.state.setLoading(LoadingStateKey.Map, false);
     this.state.setLoading(LoadingStateKey.ChunkTransition, false);
     this.traceChunk("connection_failure_recovery", {
@@ -7682,10 +7490,7 @@ export default class WorldmapScene extends WarpTravel {
       return;
     }
 
-    if (this.toriiLoadingCounter > 0) {
-      this.toriiLoadingCounter = 0;
-      this.state.setLoading(LoadingStateKey.Map, false);
-    }
+    this.state.setLoading(LoadingStateKey.Map, false);
 
     this.recoverChunkManagersAfterStall(chunkKey, recoveryDecision.recoveryTransitionToken);
     this.recoverChunkStreamingAfterStall({
@@ -7735,11 +7540,7 @@ export default class WorldmapScene extends WarpTravel {
   }
 
   private handleChunkPresentationTimeout(info: WorldmapChunkPresentationTimeoutInfo): void {
-    this.toriiLoadingCounter = recoverWorldmapMapLoadingStateFromChunkTimeout({
-      phase: info.phase,
-      toriiLoadingCounter: this.toriiLoadingCounter,
-      clearMapLoading: () => this.state.setLoading(LoadingStateKey.Map, false),
-    });
+    this.state.setLoading(LoadingStateKey.Map, false);
     const areaKey = this.recoverChunkStreamingAfterStall({
       reason: "chunk_presentation_timeout",
       chunkKey: info.chunkKey,
@@ -7961,428 +7762,65 @@ export default class WorldmapScene extends WarpTravel {
     this.setSpatialSubscriptionDiagnostics(null, 0);
   }
 
-  private beginToriiFetch() {
-    if (this.isSwitchedOff) return;
-    if (this.toriiLoadingCounter === 0) {
-      this.state.setLoading(LoadingStateKey.Map, true);
-    }
-    this.toriiLoadingCounter += 1;
-  }
-
-  private endToriiFetch() {
-    if (this.toriiLoadingCounter === 0) {
-      return;
-    }
-
-    this.toriiLoadingCounter -= 1;
-    if (this.toriiLoadingCounter === 0) {
-      this.state.setLoading(LoadingStateKey.Map, false);
-    }
-  }
-
-  private async computeTileEntities(chunkKey: string): Promise<boolean> {
+  private async syncProjectionTilesForChunk(chunkKey: string): Promise<boolean> {
     if (this.isSwitchedOff) {
       return false;
     }
 
-    const requiredStages = WORLDMAP_ACTIVE_HYDRATION_STAGES;
-    const hydrationPlans = this.resolveRenderAreaHydrationFetchPlans(chunkKey, requiredStages);
-    if (hydrationPlans.every((plan) => this.isRenderAreaHydrationPlanComplete(plan))) {
-      return true;
-    }
-
-    const pendingPromises = this.getPendingRenderAreaHydrationPlanPromises(hydrationPlans);
-    const plansToFetch = this.resolveRenderAreaHydrationPlansToFetch(hydrationPlans);
-    if (plansToFetch.length === 0) {
-      return Promise.all(pendingPromises).then((results) => results.every(Boolean));
-    }
-
-    const ownedFetchPromises = plansToFetch.map((plan) => {
-      const { fetchKey, localBounds, stages } = plan;
-      const { minCol, maxCol, minRow, maxRow } = localBounds;
-
-      if (import.meta.env.DEV) {
-        console.log(
-          "[RENDER FETCH]",
-          { chunkKey, fetchKey, stages },
-          `cols: ${minCol}-${maxCol}`,
-          `rows: ${minRow}-${maxRow}`,
-          "hydrated render areas",
-          listCompletedRenderAreaHydrationKeys(this.renderAreaHydrationState),
-        );
-      }
-
-      this.beginRenderAreaHydrationFetch(fetchKey, stages, minCol, maxCol, minRow, maxRow);
-      const fetchPromise = this.executeTileEntitiesFetch(
-        fetchKey,
-        minCol,
-        maxCol,
-        minRow,
-        maxRow,
-        this.pendingChunkFetchGeneration,
-        stages,
-      );
-      const ownedFetchPromise = fetchPromise.finally(() => {
-        finalizePendingRenderAreaHydrationOwnership(this.renderAreaHydrationState, fetchKey, stages, ownedFetchPromise);
-      });
-      registerPendingRenderAreaHydration(this.renderAreaHydrationState, fetchKey, stages, ownedFetchPromise);
-      return ownedFetchPromise;
-    });
-
-    recordChunkDiagnosticsEvent(this.chunkDiagnostics, "tile_fetch_started");
-
-    return Promise.all([...pendingPromises, ...ownedFetchPromises]).then((results) => results.every(Boolean));
-  }
-
-  private resolveRenderAreaHydrationFetchPlans(
-    chunkKey: string,
-    requiredStages: readonly WorldmapRenderAreaHydrationStage[],
-  ): WorldmapHydrationFetchPlan[] {
-    if (!requiredStages.includes("tileOpt")) return [];
-    const fetchKey = this.getRenderAreaKeyForChunk(chunkKey);
-    return [{ fetchKey, localBounds: this.getRenderFetchBoundsForArea(fetchKey), stages: ["tileOpt"] }];
-  }
-
-  private isRenderAreaHydrationPlanComplete(plan: WorldmapHydrationFetchPlan): boolean {
-    return isRenderAreaHydrationComplete(this.renderAreaHydrationState, plan.fetchKey, plan.stages);
-  }
-
-  private getPendingRenderAreaHydrationPlanPromises(plans: readonly WorldmapHydrationFetchPlan[]): Promise<boolean>[] {
-    const pendingPromises = plans.flatMap((plan) =>
-      getPendingRenderAreaHydrationPromises(this.renderAreaHydrationState, plan.fetchKey, plan.stages),
-    );
-    return Array.from(new Set(pendingPromises));
-  }
-
-  private resolveRenderAreaHydrationPlansToFetch(
-    plans: readonly WorldmapHydrationFetchPlan[],
-  ): WorldmapHydrationFetchPlan[] {
-    return plans
-      .map((plan) => ({
-        ...plan,
-        stages: this.resolveRenderAreaHydrationStagesToFetchForPlan(plan),
-      }))
-      .filter((plan) => plan.stages.length > 0);
-  }
-
-  private resolveRenderAreaHydrationStagesToFetchForPlan(
-    plan: WorldmapHydrationFetchPlan,
-  ): WorldmapRenderAreaHydrationStage[] {
-    return this.resolveRenderAreaHydrationStagesToFetch(plan.fetchKey, plan.stages);
-  }
-
-  private resolveRenderAreaHydrationStagesToFetch(
-    fetchKey: string,
-    requiredStages: readonly WorldmapRenderAreaHydrationStage[],
-  ): WorldmapRenderAreaHydrationStage[] {
-    const missingStages = getMissingRenderAreaHydrationStages(this.renderAreaHydrationState, fetchKey, requiredStages);
-    const pendingStages = new Set(
-      getPendingRenderAreaHydrationStages(this.renderAreaHydrationState, fetchKey, missingStages),
-    );
-    return missingStages.filter((stage) => !pendingStages.has(stage));
-  }
-
-  private beginRenderAreaHydrationFetch(
-    fetchKey: string,
-    stages: readonly WorldmapRenderAreaHydrationStage[],
-    minCol: number,
-    maxCol: number,
-    minRow: number,
-    maxRow: number,
-  ): void {
-    if (this.shouldFetchTileOpt(stages)) {
-      this.beginTileHydrationFetch(fetchKey, this.pendingChunkFetchGeneration, minCol, maxCol, minRow, maxRow);
-    }
-  }
-
-  private beginTileHydrationFetch(
-    fetchKey: string,
-    fetchGeneration: number,
-    minCol: number,
-    maxCol: number,
-    minRow: number,
-    maxRow: number,
-  ): void {
-    this.tileHydrationFetches.set(fetchKey, {
-      fetchGeneration,
-      minCol,
-      maxCol,
-      minRow,
-      maxRow,
-      pendingCount: 0,
-      fetchSettled: false,
-      waiters: [],
-    });
-  }
-
-  private clearTileHydrationFetch(fetchKey: string): void {
-    clearHydrationFetchState(this.tileHydrationFetches, fetchKey);
-  }
-
-  private settleTileHydrationFetch(fetchKey: string, fetchGeneration: number): void {
-    const state = this.tileHydrationFetches.get(fetchKey);
-    if (!state || state.fetchGeneration !== fetchGeneration) {
-      return;
-    }
-
-    state.fetchSettled = true;
-    this.flushTileHydrationWaiters(fetchKey, state);
-  }
-
-  private flushTileHydrationWaiters(fetchKey: string, state: TileHydrationFetchState): void {
-    if (!state.fetchSettled || state.pendingCount > 0) {
-      return;
-    }
-
-    const waiters = [...state.waiters];
-    state.waiters.length = 0;
-    waiters.forEach((resolve) => resolve());
-    this.tileHydrationFetches.set(fetchKey, state);
-  }
-
-  private async waitForTileHydrationIdle(chunkKey: string): Promise<void> {
-    const fetchKey = this.getRenderAreaKeyForChunk(chunkKey);
-
-    while (true) {
-      const state = this.tileHydrationFetches.get(fetchKey);
-      if (!state) {
-        return;
-      }
-
-      if (state.fetchSettled && state.pendingCount === 0) {
-        await Promise.resolve();
-        const refreshed = this.tileHydrationFetches.get(fetchKey);
-        if (!refreshed || (refreshed.fetchSettled && refreshed.pendingCount === 0)) {
-          return;
-        }
-      }
-
-      await new Promise<void>((resolve) => {
-        const currentState = this.tileHydrationFetches.get(fetchKey);
-        if (!currentState) {
-          resolve();
-          return;
-        }
-        currentState.waiters.push(resolve);
-        this.flushTileHydrationWaiters(fetchKey, currentState);
-      });
-
-      await Promise.resolve();
-      const refreshed = this.tileHydrationFetches.get(fetchKey);
-      if (!refreshed || (refreshed.fetchSettled && refreshed.pendingCount === 0)) {
-        return;
-      }
-    }
-  }
-
-  private trackTileHydrationUpdate(update: { hexCoords: HexPosition }, work: Promise<void>): Promise<void> {
-    const normalized = new Position({ x: update.hexCoords.col, y: update.hexCoords.row }).getNormalized();
-    return trackHydrationUpdateWorkForFetches({
-      fetches: this.tileHydrationFetches,
-      position: { col: normalized.x, row: normalized.y },
-      work,
-      flushWaiters: (fetchKey, state) => this.flushTileHydrationWaiters(fetchKey, state),
-    });
-  }
-
-  private async executeTileEntitiesFetch(
-    fetchKey: string,
-    minCol: number,
-    maxCol: number,
-    minRow: number,
-    maxRow: number,
-    fetchGeneration: number,
-    stages: readonly WorldmapRenderAreaHydrationStage[],
-  ): Promise<boolean> {
-    this.beginToriiFetch();
-    const localBounds = {
-      minCol,
-      maxCol,
-      minRow,
-      maxRow,
-    };
-
+    recordChunkDiagnosticsEvent(this.chunkDiagnostics, "projection_sync_started");
     try {
-      await this.hydrateRenderAreaFromGlobalSpatialState(fetchKey, localBounds, stages);
-      if (this.shouldApplyHydrationFetchResult(fetchKey, fetchGeneration, stages)) {
-        markRenderAreaHydrationStagesComplete(this.renderAreaHydrationState, fetchKey, stages);
-        this.scheduleRefreshForBlockingHydration(fetchKey, stages);
-      }
-      recordChunkDiagnosticsEvent(this.chunkDiagnostics, "tile_fetch_succeeded");
+      const areaKey = this.getRenderAreaKeyForChunk(chunkKey);
+      const localBounds = this.getRenderFetchBoundsForArea(areaKey);
+      const tiles = this.worldSpatialProjection.getTilesInBounds(this.toContractBounds(localBounds));
+      const syncedTileCount = this.syncExploredTilesFromProjection(tiles);
+
+      this.traceChunk("projection_tiles_synced", {
+        areaKey,
+        localBounds,
+        projectedTileCount: tiles.length,
+        syncedTileCount,
+      });
+      recordChunkDiagnosticsEvent(this.chunkDiagnostics, "projection_sync_succeeded");
       return true;
     } catch (error) {
-      console.error("Error fetching tile entities:", error);
-      // Do not mark stages complete on error so they can be retried.
-      recordChunkDiagnosticsEvent(this.chunkDiagnostics, "tile_fetch_failed");
+      console.error("Error syncing projected tiles:", error);
+      recordChunkDiagnosticsEvent(this.chunkDiagnostics, "projection_sync_failed");
       return false;
-    } finally {
-      if (this.shouldFetchTileOpt(stages)) {
-        this.settleTileHydrationFetch(fetchKey, fetchGeneration);
-      }
-      this.endToriiFetch();
     }
   }
 
-  private async hydrateRenderAreaFromGlobalSpatialState(
-    fetchKey: string,
-    localBounds: WorldmapRenderAreaBounds,
-    stages: readonly WorldmapRenderAreaHydrationStage[],
-  ): Promise<void> {
-    const shouldHydrateTileOpt = this.shouldFetchTileOpt(stages);
-    const tileOptEntries = shouldHydrateTileOpt ? this.collectGlobalTileOptHydrationEntries(localBounds) : [];
-    const hydratedTileCount = shouldHydrateTileOpt
-      ? this.hydrateExploredTilesFromGlobalTileOptRecs(fetchKey, localBounds, tileOptEntries)
-      : 0;
-    this.traceChunk("global_spatial_recs_hydrated", {
-      fetchKey,
-      hydratedTileCount,
-      tileOptCandidateCount: tileOptEntries.length,
-      localBounds,
-      stages,
-    });
+  private toContractBounds(bounds: { minCol: number; maxCol: number; minRow: number; maxRow: number }) {
+    const feltCenter = FELT_CENTER();
+    return {
+      minCol: bounds.minCol + feltCenter,
+      maxCol: bounds.maxCol + feltCenter,
+      minRow: bounds.minRow + feltCenter,
+      maxRow: bounds.maxRow + feltCenter,
+    };
   }
 
-  private collectGlobalTileOptHydrationEntries(bounds: WorldmapRenderAreaBounds): GlobalTileOptHydrationEntry[] {
-    const scanStartedAt = performance.now();
-    const tileOptComponent = this.dojo.components.TileOpt;
-    if (!tileOptComponent) {
-      recordWorldmapRenderDuration("globalSpatialTileOptScanMs", performance.now() - scanStartedAt);
-      setWorldmapRenderGauge("globalSpatialTileOptRecs", 0);
-      setWorldmapRenderGauge("globalSpatialHydrationCandidates", 0);
-      return [];
-    }
-
-    const entries: GlobalTileOptHydrationEntry[] = [];
-    let scannedCount = 0;
-
-    for (const entity of getComponentEntities(tileOptComponent)) {
-      scannedCount += 1;
-      const tileOpt = getComponentValue(tileOptComponent, entity);
-      const tile = tileOpt ? tileOptToTile(tileOpt) : undefined;
-      if (!tile) {
+  private syncExploredTilesFromProjection(tiles: readonly TileSpatialRenderable[]): number {
+    let syncedTileCount = 0;
+    for (const tile of tiles) {
+      const normalized = new Position({ x: tile.hexCoords.col, y: tile.hexCoords.row }).getNormalized();
+      const biome = resolveTileBiomeType(tile.biome);
+      const existingBiome = this.exploredTiles.get(normalized.x)?.get(normalized.y);
+      if (existingBiome === biome && !this.provisionalBiomes.isProvisional(normalized.x, normalized.y)) {
         continue;
       }
 
-      // The worldmap renders the surface layer; ethereal (alt) rows share
-      // col/row and would ghost-paint tiles/chests/structures onto it.
-      if (tile.alt) {
-        continue;
-      }
-
-      const normalized = new Position({ x: tile.col, y: tile.row }).getNormalized();
-      if (!this.isPositionWithinBounds(normalized, bounds)) {
-        continue;
-      }
-
-      entries.push({
-        normalized: { x: normalized.x, y: normalized.y },
-        tile,
-      });
+      this.writeExploredTileFromProjection(normalized.x, normalized.y, biome);
+      syncedTileCount += 1;
     }
 
-    recordWorldmapRenderDuration("globalSpatialTileOptScanMs", performance.now() - scanStartedAt);
-    setWorldmapRenderGauge("globalSpatialTileOptRecs", scannedCount);
-    setWorldmapRenderGauge("globalSpatialHydrationCandidates", entries.length);
-
-    return entries;
-  }
-
-  private shouldFetchTileOpt(stages: readonly WorldmapRenderAreaHydrationStage[]): boolean {
-    return stages.includes("tileOpt");
-  }
-
-  private shouldApplyHydrationFetchResult(
-    fetchKey: string,
-    fetchGeneration: number,
-    stages: readonly WorldmapRenderAreaHydrationStage[],
-  ): boolean {
-    return shouldApplyWorldmapFetchResult({
-      fetchGeneration,
-      activeFetchGeneration: this.pendingChunkFetchGeneration,
-      fetchKey,
-      retainedRenderAreas: this.getRetainedRenderAreaKeys(),
-    });
-  }
-
-  private scheduleRefreshForBlockingHydration(
-    fetchKey: string,
-    stages: readonly WorldmapRenderAreaHydrationStage[],
-  ): void {
-    const currentAreaKey = this.resolveCurrentHydrationAreaKey(stages);
-    if (
-      shouldScheduleHydratedChunkRefreshForFetch({
-        fetchAreaKey: fetchKey,
-        currentAreaKey,
-        suppressedAreaKeys: this.hydratedRefreshSuppressionAreaKeys,
-      })
-    ) {
-      this.scheduleHydratedChunkRefresh(this.currentChunk);
-    }
-  }
-
-  private resolveCurrentHydrationAreaKey(stages: readonly WorldmapRenderAreaHydrationStage[]): string | null {
-    if (this.currentChunk === "null") {
-      return null;
+    if (syncedTileCount > 0) {
+      incrementWorldmapRenderCounter("projectionTilesSynced", syncedTileCount);
     }
 
-    return this.getRenderAreaKeyForChunk(this.currentChunk);
+    return syncedTileCount;
   }
 
-  private getRetainedRenderAreaKeys(): Set<string> {
-    return new Set([...this.pinnedRenderAreas, ...this.directionalPrefetchAreaKeys, ...this.retainedHydrationAreaKeys]);
-  }
-
-  private hydrateExploredTilesFromGlobalTileOptRecs(
-    fetchKey: string,
-    bounds: {
-      maxCol: number;
-      maxRow: number;
-      minCol: number;
-      minRow: number;
-    },
-    entries: readonly GlobalTileOptHydrationEntry[],
-  ): number {
-    let hydratedTileCount = 0;
-    for (const entry of entries) {
-      const biome = resolveTileBiomeType(entry.tile.biome);
-      const existingBiome = this.exploredTiles.get(entry.normalized.x)?.get(entry.normalized.y);
-      if (existingBiome === biome && !this.provisionalBiomes.isProvisional(entry.normalized.x, entry.normalized.y)) {
-        continue;
-      }
-
-      this.writeExploredTileFromGlobalSpatialHydration(entry.normalized.x, entry.normalized.y, biome);
-      hydratedTileCount += 1;
-    }
-
-    if (hydratedTileCount > 0) {
-      incrementWorldmapRenderCounter("globalSpatialRecsHydratedTiles", hydratedTileCount);
-    }
-
-    if (import.meta.env.DEV && hydratedTileCount === 0) {
-      console.warn("[WorldmapScene] Global TileOpt sync has no RECS tiles for render bounds", { fetchKey, bounds });
-    }
-
-    return hydratedTileCount;
-  }
-
-  private isPositionWithinBounds(
-    position: { x: number; y: number },
-    bounds: {
-      maxCol: number;
-      maxRow: number;
-      minCol: number;
-      minRow: number;
-    },
-  ): boolean {
-    return (
-      position.x >= bounds.minCol &&
-      position.x <= bounds.maxCol &&
-      position.y >= bounds.minRow &&
-      position.y <= bounds.maxRow
-    );
-  }
-
-  private writeExploredTileFromGlobalSpatialHydration(col: number, row: number, biome: BiomeType): void {
+  private writeExploredTileFromProjection(col: number, row: number, biome: BiomeType): void {
     if (!this.exploredTiles.has(col)) {
       this.exploredTiles.set(col, new Map());
     }
@@ -8825,7 +8263,7 @@ export default class WorldmapScene extends WarpTravel {
     }
 
     try {
-      await this.computeTileEntities(targetChunkKey);
+      await this.syncProjectionTilesForChunk(targetChunkKey);
       const [targetStartRow, targetStartCol] = targetChunkKey.split(",").map(Number);
       if (!Number.isFinite(targetStartRow) || !Number.isFinite(targetStartCol)) {
         return;
@@ -8833,7 +8271,7 @@ export default class WorldmapScene extends WarpTravel {
 
       // Fire-and-forget surrounding prewarm to reduce edge pop-in on cross-chunk tabbing.
       this.getSurroundingChunkKeys(targetStartRow, targetStartCol).forEach((chunkKey) => {
-        void this.computeTileEntities(chunkKey);
+        void this.syncProjectionTilesForChunk(chunkKey);
       });
     } catch (error) {
       if (import.meta.env.DEV) {
@@ -9150,27 +8588,25 @@ export default class WorldmapScene extends WarpTravel {
     }
   }
 
-  private hydrateChunkForPresentation(input: {
+  private prepareChunkPresentation(input: {
     chunkKey: string;
     startCol: number;
     startRow: number;
     surroundingChunks: string[];
     transitionToken: number;
   }) {
-    return hydrateWorldmapChunkRuntime<PreparedTerrainChunk>({
+    return prepareWorldmapChunkRuntime<PreparedTerrainChunk>({
       chunkKey: input.chunkKey,
-      computeTileEntities: (targetChunkKey) => this.computeTileEntities(targetChunkKey),
-      diagnostics: this.chunkDiagnostics,
+      syncProjectionTiles: (targetChunkKey) => this.syncProjectionTilesForChunk(targetChunkKey),
       now: () => performance.now(),
-      onChunkHydrated: (hydratedChunkKey) => {
-        this.hydratedChunkRefreshes.delete(hydratedChunkKey);
+      onChunkPrepared: (preparedChunkKey) => {
+        this.hydratedChunkRefreshes.delete(preparedChunkKey);
       },
-      onPhaseTimeout: (info) => this.handleChunkPresentationTimeout(info as never),
+      onPhaseTimeout: (info) => this.handleChunkPresentationTimeout(info),
       phaseTimeoutMs: WORLDMAP_CHUNK_PHASE_TIMEOUT_MS,
       prewarmChunkAssets: (targetChunkKey) => this.structureManager.prewarmChunkAssets(targetChunkKey),
       prepareTerrainChunk: (targetStartRow, targetStartCol, height, width) =>
         this.prepareTerrainChunk(targetStartRow, targetStartCol, height, width),
-      recordChunkDiagnosticsEvent,
       recordWorldmapRenderDuration: (metric, durationMs) =>
         recordWorldmapRenderDuration(metric as WorldmapRenderDurationMetric, durationMs),
       renderSize: this.renderChunkSize,
@@ -9181,18 +8617,17 @@ export default class WorldmapScene extends WarpTravel {
       updatePinnedChunks: (chunkKeys) => this.updatePinnedChunks(chunkKeys),
       updateBoundsSubscription: (targetChunkKey, nextTransitionToken) =>
         this.updateToriiBoundsSubscription(targetChunkKey, nextTransitionToken),
-      waitForTileHydrationIdle: (targetChunkKey) => this.waitForTileHydrationIdle(targetChunkKey),
     });
   }
 
   private recordPreparedTerrainReady(
     startedAtMs: number,
-    hydrationResult: {
-      tileFetchSucceeded: boolean;
+    preparationResult: {
+      projectionSyncSucceeded: boolean;
       preparedTerrain: PreparedTerrainChunk | null;
     },
   ): void {
-    if (!hydrationResult.tileFetchSucceeded || !hydrationResult.preparedTerrain) {
+    if (!preparationResult.projectionSyncSucceeded || !preparationResult.preparedTerrain) {
       return;
     }
 
@@ -9302,7 +8737,7 @@ export default class WorldmapScene extends WarpTravel {
         transitionToken,
       });
 
-      const { tileFetchSucceeded, preparedTerrain, presentationRuntime } = await this.hydrateChunkForPresentation({
+      const { projectionSyncSucceeded, preparedTerrain, presentationRuntime } = await this.prepareChunkPresentation({
         chunkKey,
         startCol,
         startRow,
@@ -9311,13 +8746,13 @@ export default class WorldmapScene extends WarpTravel {
       });
 
       this.recordPreparedTerrainReady(chunkSwitchStartedAt, {
-        tileFetchSucceeded,
+        projectionSyncSucceeded,
         preparedTerrain,
       });
 
       let managerCatchUpPromise: Promise<void> | null = null;
       const finalizeResult = await finalizeWarpTravelChunkSwitch({
-        fetchSucceeded: tileFetchSucceeded,
+        projectionSyncSucceeded,
         isCurrentTransition: transitionToken === this.chunkTransitionToken,
         targetChunk: chunkKey,
         previousChunk: oldChunk,
@@ -9429,7 +8864,7 @@ export default class WorldmapScene extends WarpTravel {
     this.removeCachedMatricesForChunk(startRow, startCol);
     const refreshStartedAt = performance.now();
     await runWorldmapRefreshRuntime({
-      commitRefresh: async ({ preparedTerrain, tileFetchSucceeded, presentationRuntime }) => {
+      commitRefresh: async ({ preparedTerrain, projectionSyncSucceeded, presentationRuntime }) => {
         const commitDecision = resolveSameChunkRefreshCommit({
           refreshToken: transitionToken,
           currentRefreshToken: this.chunkTransitionToken,
@@ -9472,7 +8907,7 @@ export default class WorldmapScene extends WarpTravel {
           scheduleDeferredNonCriticalManagerCatchUp: (targetChunkKey, options) =>
             this.deferNonCriticalManagerCatchUpForChunk(targetChunkKey, options),
           stagedPathEnabled: WORLDMAP_STREAMING_ROLLOUT.stagedPathEnabled,
-          tileFetchSucceeded,
+          projectionSyncSucceeded,
           transitionToken,
         });
 
@@ -9480,18 +8915,18 @@ export default class WorldmapScene extends WarpTravel {
           return;
         }
       },
-      hydrateChunk: () =>
-        this.hydrateChunkForPresentation({
+      prepareChunk: () =>
+        this.prepareChunkPresentation({
           chunkKey,
           startCol,
           startRow,
           surroundingChunks,
           transitionToken,
         }),
-      onPreparedTerrainReady: (hydrationResult) => {
+      onPreparedTerrainReady: (preparationResult) => {
         this.recordPreparedTerrainReady(refreshStartedAt, {
-          tileFetchSucceeded: hydrationResult.tileFetchSucceeded,
-          preparedTerrain: hydrationResult.preparedTerrain,
+          projectionSyncSucceeded: preparationResult.projectionSyncSucceeded,
+          preparedTerrain: preparationResult.preparedTerrain,
         });
       },
       refreshAreaKey,
@@ -9567,16 +9002,15 @@ export default class WorldmapScene extends WarpTravel {
     }
 
     if (import.meta.env.DEV) {
-      const debugFetchKey = this.getRenderAreaKeyForChunk(chunkKey);
+      const debugAreaKey = this.getRenderAreaKeyForChunk(chunkKey);
       console.info("[CHUNK DEBUG]", {
         currentChunk: this.currentChunk,
-        fetchKey: debugFetchKey,
+        areaKey: debugAreaKey,
         visible: {
           armies: this.armyManager.getVisibleCount(),
           structures: this.structureManager.getVisibleCount(),
           chests: this.chestManager.getVisibleCount(),
         },
-        pendingFetches: listPendingRenderAreaHydrationKeys(this.renderAreaHydrationState).length,
       });
     }
   }
@@ -9813,15 +9247,6 @@ export default class WorldmapScene extends WarpTravel {
     resetWorldmapRenderDiagnostics();
   }
 
-  private summarizeHydrationState<TState extends TileHydrationFetchState>(fetches: Map<string, TState>) {
-    return Array.from(fetches.entries()).map(([fetchKey, state]) => ({
-      fetchKey,
-      fetchSettled: state.fetchSettled,
-      pendingCount: state.pendingCount,
-      fetchGeneration: state.fetchGeneration,
-    }));
-  }
-
   private buildChunkTraceState(extra: Record<string, unknown> = {}): Record<string, unknown> {
     const liveEntityActions = getLiveWorldmapEntityActions();
     const currentAreaKey = this.currentChunk !== "null" ? this.getRenderAreaKeyForChunk(this.currentChunk) : null;
@@ -9838,13 +9263,9 @@ export default class WorldmapScene extends WarpTravel {
       chunkRefreshAppliedToken: this.chunkRefreshAppliedToken,
       chunkRefreshRunning: this.chunkRefreshRunning,
       chunkRefreshRerunRequested: this.chunkRefreshRerunRequested,
-      pendingChunkFetchGeneration: this.pendingChunkFetchGeneration,
-      pendingChunkKeys: listPendingRenderAreaHydrationKeys(this.renderAreaHydrationState),
-      fetchedChunkKeys: listCompletedRenderAreaHydrationKeys(this.renderAreaHydrationState),
       pinnedChunkKeys: Array.from(this.pinnedChunkKeys),
       pinnedRenderAreas: Array.from(this.pinnedRenderAreas),
       hydratedChunkRefreshes: Array.from(this.hydratedChunkRefreshes),
-      tileHydration: this.summarizeHydrationState(this.tileHydrationFetches),
       hoveredHex: liveEntityActions.hoveredHex,
       selectedEntityId: liveEntityActions.selectedEntityId,
       actionPathCount: liveEntityActions.actionPaths.size,
@@ -9958,10 +9379,10 @@ export default class WorldmapScene extends WarpTravel {
     );
   }
 
-  private evaluateTileFetchVolumeRegressionAgainstBaseline(
+  private evaluateProjectionSyncVolumeRegressionAgainstBaseline(
     baselineLabel?: string,
     allowedIncreaseFraction: number = 0,
-  ): WorldmapTileFetchVolumeRegressionDebugResult {
+  ): WorldmapProjectionSyncVolumeRegressionDebugResult {
     let selectedBaseline: WorldmapChunkDiagnosticsBaselineEntry | undefined;
     if (baselineLabel) {
       for (let i = this.chunkDiagnosticsBaselines.length - 1; i >= 0; i--) {
@@ -9981,8 +9402,8 @@ export default class WorldmapScene extends WarpTravel {
         result: {
           status: "fail",
           reason: "No baseline found. Capture one first with captureWorldmapChunkBaseline(label).",
-          baselineFetchCount: 0,
-          currentFetchCount: Math.max(0, Math.floor(this.chunkDiagnostics.tileFetchStarted)),
+          baselineSyncCount: 0,
+          currentSyncCount: Math.max(0, Math.floor(this.chunkDiagnostics.projectionSyncStarted)),
           allowedIncreaseFraction: Math.max(0, allowedIncreaseFraction),
           increaseFraction: Number.POSITIVE_INFINITY,
         },
@@ -9991,7 +9412,7 @@ export default class WorldmapScene extends WarpTravel {
 
     return {
       baselineLabel: selectedBaseline.label,
-      result: evaluateTileFetchVolumeRegression({
+      result: evaluateProjectionSyncVolumeRegression({
         baseline: selectedBaseline.diagnostics,
         current: this.chunkDiagnostics,
         allowedIncreaseFraction,
@@ -10038,10 +9459,10 @@ export default class WorldmapScene extends WarpTravel {
       baselineLabel?: string,
       allowedRegressionFraction?: number,
     ) => this.evaluateChunkFirstVisibleCommitP95RegressionAgainstBaseline(baselineLabel, allowedRegressionFraction);
-    debugWindow.evaluateWorldmapTileFetchVolumeRegression = (
+    debugWindow.evaluateWorldmapProjectionSyncVolumeRegression = (
       baselineLabel?: string,
       allowedIncreaseFraction?: number,
-    ) => this.evaluateTileFetchVolumeRegressionAgainstBaseline(baselineLabel, allowedIncreaseFraction);
+    ) => this.evaluateProjectionSyncVolumeRegressionAgainstBaseline(baselineLabel, allowedIncreaseFraction);
   }
 
   private removeChunkDiagnosticsDebugHooks(): void {
@@ -10059,7 +9480,7 @@ export default class WorldmapScene extends WarpTravel {
     debugWindow.captureWorldmapChunkBaseline = undefined;
     debugWindow.evaluateWorldmapChunkSwitchP95Regression = undefined;
     debugWindow.evaluateWorldmapChunkFirstVisibleCommitP95Regression = undefined;
-    debugWindow.evaluateWorldmapTileFetchVolumeRegression = undefined;
+    debugWindow.evaluateWorldmapProjectionSyncVolumeRegression = undefined;
   }
 
   private monitorTerrainVisibilityHealth(): void {
@@ -10237,8 +9658,6 @@ export default class WorldmapScene extends WarpTravel {
 
   public clearTileEntityCache() {
     this.clearQueuedPrefetchState();
-    clearAllRenderAreaHydrationState(this.renderAreaHydrationState);
-    this.clearRetainedHydrationAreas();
     this.pinnedRenderAreas.clear();
     this.clearCache();
     // Also clear the interactive hexes when clearing the entire cache

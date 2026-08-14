@@ -31,14 +31,14 @@ interface HandleWorldmapRefreshCommitRuntimeInput {
     options: { force: boolean; transitionToken: number },
   ) => void;
   stagedPathEnabled: boolean;
-  tileFetchSucceeded: boolean;
+  projectionSyncSucceeded: boolean;
   transitionToken: number;
 }
 
 export async function handleWorldmapRefreshCommitRuntime(
   input: HandleWorldmapRefreshCommitRuntimeInput,
 ): Promise<"skipped" | "stale_dropped" | "committed"> {
-  if (!input.tileFetchSucceeded) {
+  if (!input.projectionSyncSucceeded) {
     return "skipped";
   }
 

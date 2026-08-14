@@ -42,7 +42,7 @@ describe("prewarmWorldmapChunkPresentation", () => {
       isLatestToken: () => true,
       isPresentationHot: () => false,
       preparePresentation: async () => ({
-        tileFetchSucceeded: true,
+        projectionSyncSucceeded: true,
         preparedTerrain,
       }),
       cachePreparedTerrain,
@@ -64,7 +64,7 @@ describe("prewarmWorldmapChunkPresentation", () => {
       isLatestToken: () => false,
       isPresentationHot: () => false,
       preparePresentation: async () => ({
-        tileFetchSucceeded: true,
+        projectionSyncSucceeded: true,
         preparedTerrain: { chunkKey: "24,24" },
       }),
       cachePreparedTerrain,

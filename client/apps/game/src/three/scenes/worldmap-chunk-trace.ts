@@ -11,7 +11,7 @@ export type WorldmapChunkTraceEvent =
   | "torii_bounds_switch_failed"
   | "torii_bounds_switch_timeout"
   | "global_spatial_sync_bounds_ready"
-  | "global_spatial_recs_hydrated"
+  | "projection_tiles_synced"
   | "spatial_tileopt_stream_received"
   | "spatial_tileopt_recs_applied"
   | "spatial_tileopt_ready_timeout"

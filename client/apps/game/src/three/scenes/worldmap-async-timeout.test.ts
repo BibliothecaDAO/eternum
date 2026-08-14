@@ -9,7 +9,7 @@ describe("settleWorldmapAsyncStage", () => {
 
   it("returns the resolved value before the timeout expires", async () => {
     const result = await settleWorldmapAsyncStage({
-      label: "tile_fetch",
+      label: "projection_sync",
       promise: Promise.resolve("ok"),
       timeoutMs: 25,
     });

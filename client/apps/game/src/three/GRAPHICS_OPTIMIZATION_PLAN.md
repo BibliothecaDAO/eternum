@@ -72,7 +72,7 @@ The single biggest win: stop destroying valid cached work.
 
 **Expected impact:** chunk-switch hitches and pan-time GC storms drop sharply; pooled memory stops oscillating; bulk
 hydration no longer quadratic-ish. **Risk:** invalidation under-coverage → stale tiles. Mitigate with the existing chunk
-debug overlay, `worldmap-chunk-latency-regression.ts`, and `worldmap-tile-fetch-volume-regression.ts` tests; add policy
+debug overlay, `worldmap-chunk-latency-regression.ts`, and `worldmap-projection-sync-volume-regression.ts` tests; add policy
 unit tests for the new invalidation decisions (the policy files are pure and already have test siblings).
 
 ## Phase 2 — GPU resource leaks & the morph-texture bug (small diffs, high certainty)
