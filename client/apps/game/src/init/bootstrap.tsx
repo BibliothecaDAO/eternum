@@ -1,5 +1,6 @@
 import { captureSystemError } from "@/posthog";
 import { DEV_MODE_ENABLED } from "@/utils/dev-mode";
+import { captureSpectateIntentFromUrl, isExplicitSpectateSession } from "@/utils/spectator-session";
 import { setup } from "@bibliothecadao/dojo";
 import { configManager } from "@bibliothecadao/eternum";
 import { SupersededGameSyncStartError } from "@bibliothecadao/eternum/game-sync";
@@ -81,14 +82,9 @@ const resolveBootstrapSelection = (context: ResolvedEntryContext): BootstrapSele
   };
 };
 
-const isSpectateModeFromUrl = (): boolean => {
-  if (typeof window === "undefined") return false;
-  return new URLSearchParams(window.location.search).get("spectate") === "true";
-};
-
 const shouldBypassNoAccountModal = (): boolean => {
   const isSpectatingInStore = useUIStore.getState().isSpectating;
-  return isSpectateModeFromUrl() || isSpectatingInStore;
+  return isExplicitSpectateSession() || isSpectatingInStore;
 };
 
 const handleNoAccount = (modalContent: ReactNode) => {
@@ -168,6 +164,9 @@ export const bootstrapGameForEntryContext = async (
   context: ResolvedEntryContext,
   lifecycle: BootstrapLifecycle = {},
 ): Promise<BootstrapResult> => {
+  // Latch spectator intent while the entry URL still carries ?spectate —
+  // in-app navigation strips the query string later.
+  captureSpectateIntentFromUrl();
   const cachedSession = getCachedBootstrappedEntrySession(context);
   if (cachedSession) {
     return cachedSession;

@@ -636,6 +636,7 @@ export class SqlApi {
         cacheBaseUrl: this.cacheBaseUrl,
         effectiveLimit,
         defaultHyperstructureRadius: DEFAULT_HYPERSTRUCTURE_RADIUS,
+        scope: this.scope,
       });
 
     const unregisteredShareholderPoints = computeUnregisteredShareholderPoints({
@@ -686,6 +687,7 @@ export class SqlApi {
       cacheBaseUrl: this.cacheBaseUrl,
       effectiveLimit: 0,
       defaultHyperstructureRadius: DEFAULT_HYPERSTRUCTURE_RADIUS,
+      scope: this.scope,
     });
 
     const unregisteredShareholderPoints = computeUnregisteredShareholderPoints({

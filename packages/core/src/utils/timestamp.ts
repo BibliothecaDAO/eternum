@@ -27,8 +27,11 @@ export const getBlockTimestamp = () => {
   const tickConfigArmies = configManager.getTick(TickIds.Armies);
   const tickConfigDefault = configManager.getTick(TickIds.Default);
 
-  const currentDefaultTick = Math.floor(timestamp / Number(tickConfigDefault));
-  const currentArmiesTick = Math.floor(timestamp / Number(tickConfigArmies));
+  // Config not hydrated yet reads as interval 0; report tick 0 (not Infinity) until it lands.
+  const tickOrZero = (interval: number) =>
+    Number.isFinite(interval) && interval > 0 ? Math.floor(timestamp / interval) : 0;
+  const currentDefaultTick = tickOrZero(Number(tickConfigDefault));
+  const currentArmiesTick = tickOrZero(Number(tickConfigArmies));
 
   return {
     currentBlockTimestamp: timestamp,

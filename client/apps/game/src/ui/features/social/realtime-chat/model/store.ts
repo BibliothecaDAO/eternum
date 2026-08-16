@@ -2,6 +2,7 @@ import { create } from "zustand";
 import { toast } from "sonner";
 
 import { AudioManager } from "@/audio/core/AudioManager";
+import { VERBOSE_LOGS_ENABLED } from "@/utils/dev-mode";
 import { RealtimeClient } from "@bibliothecadao/types";
 import type {
   DirectMessage,
@@ -314,7 +315,7 @@ export const useRealtimeChatStore = create<RealtimeChatStore>((set, get) => ({
               });
               break;
             default:
-              console.debug("[realtime] unhandled message", message);
+              if (VERBOSE_LOGS_ENABLED) console.debug("[realtime] unhandled message", message);
           }
         },
       });

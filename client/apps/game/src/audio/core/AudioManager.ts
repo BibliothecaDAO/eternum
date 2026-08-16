@@ -1,3 +1,4 @@
+import { VERBOSE_LOGS_ENABLED } from "@/utils/dev-mode";
 import { AudioAsset, AudioCategory, AudioMetrics, AudioPlayOptions, AudioState } from "../types";
 import { AudioPlaybackPolicy, PlaybackRejectionReason } from "./AudioPlaybackPolicy";
 import { AudioPoolManager } from "./AudioPoolManager";
@@ -559,7 +560,7 @@ export class AudioManager {
   private handlePlaybackRejection(assetId: string, reason?: PlaybackRejectionReason): void {
     if (!reason) return;
 
-    if (import.meta.env.DEV) {
+    if (import.meta.env.DEV && VERBOSE_LOGS_ENABLED) {
       console.debug(`Skipped audio playback for ${assetId} due to ${reason}`);
     }
   }

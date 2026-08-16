@@ -1260,7 +1260,10 @@ export class ResourceManager {
   ): ResourceProductionData {
     const productionPerSecond = divideByPrecision(Number(productionInfo.production.production_rate || 0), false);
 
-    const ticksSinceLastUpdate = currentTick - productionInfo.production.last_updated_at;
+    // A pre-config tick or a malformed row must degrade to "no elapsed production", never throw.
+    const rawTicksSinceLastUpdate = currentTick - productionInfo.production.last_updated_at;
+    const ticksSinceLastUpdate =
+      Number.isFinite(rawTicksSinceLastUpdate) && rawTicksSinceLastUpdate > 0 ? Math.floor(rawTicksSinceLastUpdate) : 0;
     const totalAmountProduced = BigInt(ticksSinceLastUpdate) * productionInfo.production.production_rate;
     const isContinuousProductionResource = ResourceManager.isContinuousProductionResource(resourceId);
     const remainingOutput = isContinuousProductionResource

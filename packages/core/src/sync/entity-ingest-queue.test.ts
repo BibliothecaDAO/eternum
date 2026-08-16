@@ -42,6 +42,39 @@ describe("EntityIngestQueue", () => {
     ]);
   });
 
+  it("unions member fields when coalescing same-frame partial updates for one entity and model", async () => {
+    const scheduler = createManualGameSyncScheduler();
+    const calls: GameSyncEntityStoreOperation[][] = [];
+    const store: GameSyncStore = {
+      applyEntityOperations: vi.fn((operations) => calls.push([...operations])),
+      applyEvent: vi.fn(),
+      listModelEntityIds: () => [],
+    };
+    const queue = new EntityIngestQueue({ scheduler, store, now: () => 0 });
+
+    // A provision-style burst: torii delivers one member per update.
+    queue.enqueueEntity({ hashed_keys: "realm", models: { Resource: { LABOR_BALANCE: 10n } } });
+    queue.enqueueEntity({ hashed_keys: "realm", models: { Resource: { WHEAT_BALANCE: 20n } } });
+    queue.enqueueEntity({ hashed_keys: "realm", models: { Resource: { WOOD_BALANCE: 30n, WHEAT_BALANCE: 25n } } });
+    const drained = queue.drain();
+    scheduler.flushNext();
+    await drained;
+
+    expect(calls).toEqual([
+      [
+        {
+          type: "upsert",
+          entities: [
+            {
+              hashed_keys: "realm",
+              models: { Resource: { LABOR_BALANCE: 10n, WHEAT_BALANCE: 25n, WOOD_BALANCE: 30n } },
+            },
+          ],
+        },
+      ],
+    ]);
+  });
+
   it("rejects recovery drains when a RECS batch fails", async () => {
     const scheduler = createManualGameSyncScheduler();
     const store: GameSyncStore = {

@@ -10,6 +10,7 @@ import type { Component, Entity, Metadata, Schema } from "@dojoengine/recs";
 import { getComponentEntities, removeComponent } from "@dojoengine/recs";
 import { setEntities } from "@dojoengine/state";
 import type { Clause, Entity as ToriiEntity } from "@dojoengine/torii-wasm/types";
+import { filterEntityToActiveGameScope } from "./game-scope-entity-filter";
 import { observeToriiStreamLifecycle } from "./torii-stream-lifecycle-observer";
 import { setupToriiSubscriptions, type ToriiSubscriptionSetupTimeoutInfo } from "./torii-subscription-setup";
 
@@ -148,8 +149,10 @@ export const createGamewideSyncSession = (input: CreateGamewideSyncSessionInput)
         const subscriptions = await setupToriiSubscriptions({
           createEntitySubscription: () =>
             client.onEntityUpdated(input.entityClause, (entity: ToriiEntity) => {
-              input.onLiveEntity?.(entity);
-              handlers.onEntity(entity);
+              const scoped = filterEntityToActiveGameScope(entity);
+              if (!scoped) return;
+              input.onLiveEntity?.(scoped);
+              handlers.onEntity(scoped);
             }),
           createEventSubscription: () =>
             client.onEventMessageUpdated(input.eventClause, (event: ToriiEntity) => handlers.onEvent(event)),
@@ -184,7 +187,10 @@ export const createGamewideSyncSession = (input: CreateGamewideSyncSessionInput)
               models: [...input.entityModels],
               historical: false,
             });
-            return { items: page.items, nextCursor: page.next_cursor };
+            const items = page.items
+              .map((item) => filterEntityToActiveGameScope(item))
+              .filter((item): item is ToriiEntity => item !== null);
+            return { items, nextCursor: page.next_cursor };
           },
           input.onSubscriptionSetupTimeout,
         );

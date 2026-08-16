@@ -1,5 +1,5 @@
 import { createSqlApi, sqlApi } from "@/services/api";
-import { SqlApi, type PlayerLeaderboardRow } from "@bibliothecadao/torii";
+import { SqlApi, type PlayerLeaderboardRow, type SqlGameScope } from "@bibliothecadao/torii";
 
 const DEFAULT_LIMIT = 20;
 const REGISTERED_POINTS_PRECISION = 1_000_000;
@@ -592,21 +592,23 @@ export const fetchLandingLeaderboard = async (
   limit: number = DEFAULT_LIMIT,
   offset: number = 0,
   toriiBaseUrl?: string,
+  scope?: SqlGameScope,
 ): Promise<PlayerLeaderboardData[]> => {
-  const client = toriiBaseUrl ? createSqlApi(toriiBaseUrl) : sqlApi;
+  const client = toriiBaseUrl ? createSqlApi(toriiBaseUrl, scope) : sqlApi;
   return fetchLeaderboardWithClient(client, limit, offset);
 };
 
 export const fetchLandingLeaderboardEntryByAddress = async (
   playerAddress: string,
   toriiBaseUrl?: string,
+  scope?: SqlGameScope,
 ): Promise<PlayerLeaderboardData | null> => {
   const normalizedAddress = normaliseAddress(playerAddress);
   if (!normalizedAddress) {
     return null;
   }
 
-  const client = toriiBaseUrl ? createSqlApi(toriiBaseUrl) : sqlApi;
+  const client = toriiBaseUrl ? createSqlApi(toriiBaseUrl, scope) : sqlApi;
   const rawRow = await client.fetchPlayerLeaderboardByAddress(normalizedAddress);
 
   if (!rawRow) {

@@ -4,6 +4,7 @@ import { countAvailableRelics } from "@/ui/features/relics/utils/count-available
 import type { IncomingTroopArrival } from "@bibliothecadao/eternum";
 import { PlayerRelicsData } from "@bibliothecadao/torii";
 import { ID, RelicRecipientType, Structure, StructureType } from "@bibliothecadao/types";
+import { isExplicitSpectateSession, overrideSpectateIntent } from "@/utils/spectator-session";
 
 const idsMatch = (left: unknown, right: unknown) => String(left) === String(right);
 
@@ -116,9 +117,11 @@ export const createRealmStoreSlice = (
       // if the caller passed spectator: true. worldmap.tsx forwards the stale
       // isSpectating flag when a hex is clicked, which would otherwise keep
       // the SPECTATING badge on after the player mid-sessions settles their
-      // first realm.
-      const requestedSpectate = options?.spectator ?? !ownsStructure;
-      const shouldSpectate = ownsStructure ? false : requestedSpectate;
+      // first realm. Exception: an explicit ?spectate=true session stays a
+      // spectator even when the logged-in account owns structures here.
+      const explicitSpectate = isExplicitSpectateSession();
+      const requestedSpectate = options?.spectator ?? (explicitSpectate || !ownsStructure);
+      const shouldSpectate = ownsStructure && !explicitSpectate ? false : requestedSpectate;
       const currentStructureIsOwned = state.playerStructures.some((structure) =>
         idsMatch(structure.entityId, state.structureEntityId),
       );
@@ -162,6 +165,9 @@ export const createRealmStoreSlice = (
     }),
   exitSpectatorMode: () =>
     set((state: RealmStore) => {
+      // A deliberate exit clears the latched session intent too, or the
+      // spectator chokepoints would keep suppressing ownership chrome.
+      overrideSpectateIntent(false);
       const fallback =
         state.lastControlledStructureEntityId !== UNDEFINED_STRUCTURE_ENTITY_ID
           ? state.lastControlledStructureEntityId
@@ -188,6 +194,7 @@ export const createRealmStoreSlice = (
 
       const shouldRecoverFromStartupSpectator =
         state.isSpectating &&
+        !isExplicitSpectateSession() &&
         state.lastControlledStructureEntityId === UNDEFINED_STRUCTURE_ENTITY_ID &&
         !currentStructureIsOwned &&
         playerStructures.length > 0;
@@ -203,7 +210,7 @@ export const createRealmStoreSlice = (
       // Mid-session settle: the player started as a spectator and has just
       // acquired the very structure they were viewing. Drop the stale flag so
       // the HUD chrome (structure list, action buttons) reappears.
-      if (state.isSpectating && currentStructureIsOwned) {
+      if (state.isSpectating && currentStructureIsOwned && !isExplicitSpectateSession()) {
         updates.isSpectating = false;
         if (state.lastControlledStructureEntityId === UNDEFINED_STRUCTURE_ENTITY_ID) {
           updates.lastControlledStructureEntityId = state.structureEntityId;

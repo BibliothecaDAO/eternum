@@ -4,6 +4,8 @@ import { useChainTimeStore } from "@/hooks/store/use-chain-time-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { sqlApi } from "@/services/api";
 import { RESOURCE_ARRIVAL_AUTO_CLAIM_RETRY_DELAY_SECONDS, RESOURCE_ARRIVAL_READY_BUFFER_SECONDS } from "@/ui/constants";
+import { VERBOSE_LOGS_ENABLED } from "@/utils/dev-mode";
+import { isExplicitSpectateSession } from "@/utils/spectator-session";
 import { resolveFiniteSeasonEndAt, resolveSeasonStartTimestamp } from "@/ui/features/world/utils/season-timing";
 import { extractTransactionHash, waitForTransactionConfirmation } from "@/ui/utils/transactions";
 import {
@@ -353,7 +355,7 @@ const RelicsStoreManager = () => {
   return null;
 };
 
-const AUTO_REGISTER_POINTS_DEBUG = true;
+const AUTO_REGISTER_POINTS_DEBUG = VERBOSE_LOGS_ENABLED;
 
 const AutoRegisterPointsStoreManager = () => {
   const {
@@ -367,8 +369,18 @@ const AutoRegisterPointsStoreManager = () => {
 
   const isProcessingRef = useRef(false);
   const hyperstructure_entities = useEntityQuery([Has(components.Hyperstructure)]);
+  // Read through a ref so entity churn doesn't tear down and re-register the
+  // interval (it produced several parallel "Interval set" registrations at boot).
+  const hyperstructureEntitiesRef = useRef(hyperstructure_entities);
+  hyperstructureEntitiesRef.current = hyperstructure_entities;
 
   useEffect(() => {
+    // No usable account (spectators, pre-login): no interval at all — the
+    // effect re-runs via deps when an account connects.
+    if (!account?.address || account.address === "0x0") {
+      return;
+    }
+
     const log = (...args: unknown[]) => {
       if (AUTO_REGISTER_POINTS_DEBUG) {
         console.log("[AutoRegisterPoints]", ...args);
@@ -378,13 +390,9 @@ const AutoRegisterPointsStoreManager = () => {
     const checkAndRegisterPoints = async () => {
       log("Checking points...");
 
-      // Guard: skip if already processing or no account
+      // Guard: skip if already processing
       if (isProcessingRef.current) {
         log("Skipped: already processing");
-        return;
-      }
-      if (!account?.address || account.address === "0x0") {
-        log("Skipped: no account");
         return;
       }
 
@@ -404,7 +412,7 @@ const AutoRegisterPointsStoreManager = () => {
       }
 
       // Get completed hyperstructure IDs
-      const hyperstructureIds = hyperstructure_entities
+      const hyperstructureIds = hyperstructureEntitiesRef.current
         .map((entity) => getComponentValue(components.Hyperstructure, entity))
         .filter((hs) => hs?.completed)
         .map((hs) => hs?.hyperstructure_id)
@@ -483,7 +491,7 @@ const AutoRegisterPointsStoreManager = () => {
     const intervalId = setInterval(checkAndRegisterPoints, POLLING_INTERVALS.autoRegisterPointsMs);
 
     return () => clearInterval(intervalId);
-  }, [account, components, claim_share_points, hyperstructure_entities, network.provider]);
+  }, [account, components, claim_share_points, network.provider]);
 
   return null;
 };
@@ -493,7 +501,10 @@ const PlayerStructuresStoreManager = () => {
   const setPlayerStructures = useUIStore((state) => state.setPlayerStructures);
 
   useEffect(() => {
-    setPlayerStructures(playerStructures);
+    // Explicit spectator sessions are pure observers: publishing no owned
+    // structures here removes ALL ownership chrome (structure panel, cycling,
+    // auto-flips) at the single chokepoint every consumer reads from.
+    setPlayerStructures(isExplicitSpectateSession() ? [] : playerStructures);
   }, [playerStructures, setPlayerStructures]);
 
   return null;
