@@ -10,10 +10,7 @@ interface ReconcileVisibleArmySetInput<TArmy extends { entityId: TEntityId }, TM
   refreshVisibleArmy: (army: TArmy, slot: number, modelType: TModelType) => void;
   removeEntityIdLabel: (entityId: TEntityId) => void;
   commitVisibleArmyOrder: (entityIds: TEntityId[]) => void;
-  refreshVisibleArmyCollection: () => void;
-  syncVisibleArmyAttachments: () => void;
-  updateArmyAttachmentTransforms: () => void;
-  flushVisibleArmyBuffers: () => void;
+  markVisibleArmyPresentationDirty: (buffersDirty: boolean) => void;
   sortEntityIds: (entityIds: TEntityId[]) => TEntityId[];
 }
 
@@ -66,11 +63,5 @@ export function reconcileVisibleArmySet<TArmy extends { entityId: TEntityId }, T
   });
 
   input.commitVisibleArmyOrder(desiredOrder.filter((entityId) => input.getVisibleArmySlot(entityId) !== undefined));
-  input.refreshVisibleArmyCollection();
-  input.syncVisibleArmyAttachments();
-  input.updateArmyAttachmentTransforms();
-
-  if (buffersDirty) {
-    input.flushVisibleArmyBuffers();
-  }
+  input.markVisibleArmyPresentationDirty(buffersDirty);
 }

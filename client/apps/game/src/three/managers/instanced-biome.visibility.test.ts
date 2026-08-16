@@ -1,5 +1,15 @@
 import { describe, expect, it, vi } from "vitest";
-import { Box3, BoxGeometry, Group, Mesh, MeshStandardMaterial, Sphere, Vector3 } from "three";
+import {
+  Box3,
+  BoxGeometry,
+  Group,
+  InstancedBufferAttribute,
+  Matrix4,
+  Mesh,
+  MeshStandardMaterial,
+  Sphere,
+  Vector3,
+} from "three";
 
 vi.mock("@/three/constants", () => ({
   PREVIEW_BUILD_COLOR_INVALID: 0xff00ff,
@@ -30,6 +40,18 @@ function createBiomeModel(name: string): InstancedBiome {
   return new InstancedBiome(gltf, 4, false, name);
 }
 
+function createGroupedBiomeModel(): InstancedBiome {
+  const scene = new Group();
+  const geometry = new BoxGeometry(1, 1, 1);
+  const materials = geometry.groups.map((_, index) => {
+    const material = new MeshStandardMaterial({ transparent: index === 0 });
+    material.name = index === 0 ? "forest_opacity" : `terrain_${index}`;
+    return material;
+  });
+  scene.add(new Mesh(geometry, materials));
+  return new InstancedBiome({ scene, animations: [] }, 8, false, "TemperateDeciduousForest");
+}
+
 describe("InstancedBiome visibility", () => {
   it("restores mesh visibility when instance count grows from zero", () => {
     const biomeModel = createBiomeModel("Grassland");
@@ -58,5 +80,31 @@ describe("InstancedBiome visibility", () => {
     expect(mesh.boundingSphere?.radius).toBe(35);
     expect(mesh.boundingBox?.min.toArray()).toEqual([-25, -5, -25]);
     expect(mesh.boundingBox?.max.toArray()).toEqual([25, 10, 25]);
+  });
+
+  it("thins only decorative geometry at far view and restores the exact full matrices", () => {
+    const biomeModel = createGroupedBiomeModel();
+    const source = new Float32Array(8 * 16);
+    for (let index = 0; index < 8; index += 1) {
+      source.set(new Matrix4().makeTranslation(index, 0, index).elements, index * 16);
+    }
+    biomeModel.setMatricesAndCount(new InstancedBufferAttribute(source, 16), 8);
+
+    const detailMeshes = biomeModel.instancedMeshes.filter((mesh) => mesh.userData.isFarBiomeDetail === true);
+    const terrainMeshes = biomeModel.instancedMeshes.filter((mesh) => mesh.userData.isFarBiomeDetail !== true);
+    expect(detailMeshes).toHaveLength(1);
+    expect(detailMeshes[0].count).toBe(8);
+
+    biomeModel.setFarDetailEnabled(true);
+
+    expect(detailMeshes[0].count).toBe(2);
+    expect(terrainMeshes.every((mesh) => mesh.count === 8)).toBe(true);
+
+    biomeModel.setFarDetailEnabled(false);
+
+    expect(detailMeshes[0].count).toBe(8);
+    expect(Array.from((detailMeshes[0].instanceMatrix.array as Float32Array).subarray(0, source.length))).toEqual(
+      Array.from(source),
+    );
   });
 });

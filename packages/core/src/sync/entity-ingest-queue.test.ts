@@ -93,4 +93,53 @@ describe("EntityIngestQueue", () => {
     await expect(drained).rejects.toThrow("RECS write failed");
     await expect(queue.drain()).rejects.toThrow("RECS write failed");
   });
+
+  it("slices large snapshot writes across scheduled tasks", async () => {
+    let nowMs = 0;
+    const appliedBatches: Array<{ applyDurationMs: number; operationCount: number }> = [];
+    const applyEntityOperations = vi.fn(() => {
+      nowMs += 30;
+    });
+    const store: GameSyncStore = {
+      applyEntityOperations,
+      applyEvent: vi.fn(),
+      listModelEntityIds: () => [],
+    };
+    const queue = new EntityIngestQueue({
+      scheduler: {
+        schedule(task) {
+          let cancelled = false;
+          queueMicrotask(() => {
+            if (!cancelled) task();
+          });
+          return () => {
+            cancelled = true;
+          };
+        },
+      },
+      store,
+      now: () => nowMs,
+      onBatchApplied: (batch) => appliedBatches.push(batch),
+    });
+
+    for (let index = 0; index < 120; index += 1) {
+      queue.enqueueEntity({ hashed_keys: `entity-${index}`, models: { Position: { x: index } } });
+    }
+    await queue.drain();
+
+    expect(applyEntityOperations).toHaveBeenCalledTimes(3);
+    expect(
+      applyEntityOperations.mock.calls.map(([operations]) =>
+        operations.reduce(
+          (count: number, operation: GameSyncEntityStoreOperation) =>
+            count + (operation.type === "upsert" ? operation.entities.length : 1),
+          0,
+        ),
+      ),
+    ).toEqual([50, 50, 20]);
+    expect(appliedBatches).toEqual([
+      { applyDurationMs: 60, operationCount: 100 },
+      { applyDurationMs: 30, operationCount: 20 },
+    ]);
+  });
 });

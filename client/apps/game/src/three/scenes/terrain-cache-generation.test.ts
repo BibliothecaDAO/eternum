@@ -36,6 +36,17 @@ describe("createTerrainCacheGeneration", () => {
     expect(gen.current("0,24")).toBe(1);
   });
 
+  it("forgets generations outside the retained render set", () => {
+    const gen = createTerrainCacheGeneration();
+    gen.bump(["0,0", "24,0", "48,0"]);
+
+    gen.retain(new Set(["24,0"]));
+
+    expect(gen.current("0,0")).toBe(0);
+    expect(gen.current("24,0")).toBe(1);
+    expect(gen.current("48,0")).toBe(0);
+  });
+
   it("resets all chunk generations on clear", () => {
     const gen = createTerrainCacheGeneration();
     gen.bump(["0,0", "24,0"]);

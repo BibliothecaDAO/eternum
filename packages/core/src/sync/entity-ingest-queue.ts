@@ -21,6 +21,15 @@ type EventStep = {
 
 type IngestStep = UpsertStep | EntityBarrierStep | EventStep;
 
+type ApplyBatch =
+  | {
+      type: "entities";
+      completedOperationIds: number[];
+      operationCount: number;
+      operations: GameSyncEntityStoreOperation[];
+    }
+  | { type: "event"; completedOperationIds: number[]; event: GameSyncEntity; operationCount: 1 };
+
 interface DrainWaiter {
   operationId: number;
   resolve: () => void;
@@ -41,6 +50,9 @@ interface EntityIngestQueueOptions {
 
 const isEmptyModel = (model: unknown): boolean =>
   typeof model === "object" && model !== null && !Array.isArray(model) && Object.keys(model).length === 0;
+
+const MAX_APPLY_SLICE_MS = 50;
+const MAX_ENTITY_CHANGES_PER_STORE_WRITE = 50;
 
 const mergeEntityModel = (entities: Map<string, GameSyncEntity>, entityId: string, model: string, value: unknown) => {
   const existing = entities.get(entityId);
@@ -167,39 +179,25 @@ export class EntityIngestQueue {
     if (this.disposed || this.flushing || this.steps.length === 0) return;
 
     this.flushing = true;
-    const steps = this.steps;
-    this.steps = [];
     const startedAt = this.now();
     let operationCount = 0;
 
     try {
-      const entityOperations: GameSyncEntityStoreOperation[] = [];
-      const applyEntityOperations = async () => {
-        if (entityOperations.length === 0) return;
-        await this.store.applyEntityOperations(entityOperations.splice(0));
-      };
-
-      for (const step of steps) {
-        if (step.type === "upsert") {
-          const entities = [...step.entities.values()];
-          operationCount += entities.reduce((count, entity) => count + Object.keys(entity.models).length, 0);
-          entityOperations.push({ type: "upsert", entities });
-          continue;
+      while (this.steps.length > 0) {
+        const batch = this.takeNextApplyBatch();
+        await this.applyBatch(batch);
+        operationCount += batch.operationCount;
+        if (batch.completedOperationIds.length > 0) {
+          this.appliedOperationId = Math.max(this.appliedOperationId, ...batch.completedOperationIds);
         }
-        if (step.type === "entity-barrier") {
-          operationCount += 1;
-          entityOperations.push(step.operation);
-          continue;
+        if (this.now() - startedAt >= MAX_APPLY_SLICE_MS) {
+          break;
         }
-
-        await applyEntityOperations();
-        operationCount += 1;
-        await this.store.applyEvent(step.event);
       }
 
-      await applyEntityOperations();
-      this.appliedOperationId = Math.max(this.appliedOperationId, ...steps.map(({ operationId }) => operationId));
-      this.onBatchApplied?.({ applyDurationMs: this.now() - startedAt, operationCount });
+      if (operationCount > 0) {
+        this.onBatchApplied?.({ applyDurationMs: this.now() - startedAt, operationCount });
+      }
     } catch (error) {
       this.failure = error instanceof Error ? error : new Error(String(error));
       this.steps = [];
@@ -208,6 +206,63 @@ export class EntityIngestQueue {
       this.resolveDrainWaiters();
       this.scheduleFlush();
     }
+  }
+
+  private takeNextApplyBatch(): ApplyBatch {
+    const firstStep = this.steps[0];
+    if (firstStep.type === "event") {
+      this.steps.shift();
+      return {
+        type: "event",
+        completedOperationIds: [firstStep.operationId],
+        event: firstStep.event,
+        operationCount: 1,
+      };
+    }
+
+    const completedOperationIds: number[] = [];
+    const operations: GameSyncEntityStoreOperation[] = [];
+    let entityChangeCount = 0;
+    let operationCount = 0;
+
+    while (this.steps.length > 0 && entityChangeCount < MAX_ENTITY_CHANGES_PER_STORE_WRITE) {
+      const step = this.steps[0];
+      if (step.type === "event") {
+        break;
+      }
+
+      if (step.type === "entity-barrier") {
+        this.steps.shift();
+        operations.push(step.operation);
+        completedOperationIds.push(step.operationId);
+        entityChangeCount += 1;
+        operationCount += 1;
+        continue;
+      }
+
+      const remainingCapacity = MAX_ENTITY_CHANGES_PER_STORE_WRITE - entityChangeCount;
+      const entries = [...step.entities.entries()].slice(0, remainingCapacity);
+      const entities = entries.map(([, entity]) => entity);
+      entries.forEach(([entityId]) => step.entities.delete(entityId));
+      operations.push({ type: "upsert", entities });
+      entityChangeCount += entities.length;
+      operationCount += entities.reduce((count, entity) => count + Object.keys(entity.models).length, 0);
+      if (step.entities.size === 0) {
+        this.steps.shift();
+        completedOperationIds.push(step.operationId);
+      }
+    }
+
+    return { type: "entities", completedOperationIds, operationCount, operations };
+  }
+
+  private async applyBatch(batch: ApplyBatch): Promise<void> {
+    if (batch.type === "event") {
+      await this.store.applyEvent(batch.event);
+      return;
+    }
+
+    await this.store.applyEntityOperations(batch.operations);
   }
 
   private resolveDrainWaiters(): void {

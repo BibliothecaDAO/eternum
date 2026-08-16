@@ -195,6 +195,8 @@ export class ArmyManager {
   private visibleArmyOrder: ID[] = [];
   private visibleArmyOrderIndices: Map<ID, number> = new Map();
   private visibleArmyIndices: Map<ID, number> = new Map();
+  private visibleArmyPresentationDirty = false;
+  private visibleArmyBuffersDirty = false;
   private renderQueuePromise: Promise<void> | null = null;
   private renderQueueActive = false;
   private pendingRenderChunkKey: string | null = null;
@@ -914,8 +916,7 @@ export class ArmyManager {
       const biome = configManager.getBiome(x, y);
       const modelType = this.armyModel.getModelTypeForEntity(numericId, army.category, army.tier, biome);
       this.refreshArmyInstance(army, slot, modelType);
-      this.refreshVisibleArmyCollection();
-      this.updateVisibleArmyBuffers();
+      this.markVisibleArmyPresentationDirty();
     }
 
     return true;
@@ -1131,6 +1132,27 @@ export class ArmyManager {
       .map((entityId) => this.armyPresentations.get(entityId))
       .filter((army): army is ArmyData => Boolean(army));
     setWorldmapRenderGauge("visibleArmies", this.visibleArmyOrder.length);
+  }
+
+  private markVisibleArmyPresentationDirty(buffersDirty: boolean = true): void {
+    this.visibleArmyPresentationDirty = true;
+    this.visibleArmyBuffersDirty ||= buffersDirty;
+  }
+
+  private flushVisibleArmyPresentation(): void {
+    if (!this.visibleArmyPresentationDirty) {
+      return;
+    }
+
+    const shouldFlushBuffers = this.visibleArmyBuffersDirty;
+    this.visibleArmyPresentationDirty = false;
+    this.visibleArmyBuffersDirty = false;
+    this.refreshVisibleArmyCollection();
+    this.syncVisibleArmyAttachments(this.visibleArmies);
+    this.updateArmyAttachmentTransforms();
+    if (shouldFlushBuffers) {
+      this.updateVisibleArmyBuffers();
+    }
   }
 
   private updateVisibleArmyBuffers(): void {
@@ -1533,10 +1555,7 @@ export class ArmyManager {
       },
       removeEntityIdLabel: (entityId) => this.removeEntityIdLabel(entityId),
       commitVisibleArmyOrder: (entityIds) => this.setVisibleArmyOrder(entityIds),
-      refreshVisibleArmyCollection: () => this.refreshVisibleArmyCollection(),
-      syncVisibleArmyAttachments: () => this.syncVisibleArmyAttachments(this.visibleArmies),
-      updateArmyAttachmentTransforms: () => this.updateArmyAttachmentTransforms(),
-      flushVisibleArmyBuffers: () => this.updateVisibleArmyBuffers(),
+      markVisibleArmyPresentationDirty: (buffersDirty) => this.markVisibleArmyPresentationDirty(buffersDirty),
       sortEntityIds: (entityIds) => entityIds.toSorted((a, b) => this.toNumericId(a) - this.toNumericId(b)),
     });
   }
@@ -1641,10 +1660,7 @@ export class ArmyManager {
       this.addVisibleArmy(latestArmy, modelType);
     }
 
-    this.refreshVisibleArmyCollection();
-    this.syncVisibleArmyAttachments(this.visibleArmies);
-    this.updateArmyAttachmentTransforms();
-    this.updateVisibleArmyBuffers();
+    this.markVisibleArmyPresentationDirty();
     return true;
   }
 
@@ -2127,8 +2143,7 @@ export class ArmyManager {
     this.armyPresentations.delete(entityId);
 
     if (removedSlot !== null) {
-      this.refreshVisibleArmyCollection();
-      this.updateVisibleArmyBuffers();
+      this.markVisibleArmyPresentationDirty();
     }
 
     this.armyModel.releaseEntity(numericEntityId);
@@ -2479,6 +2494,8 @@ export class ArmyManager {
   private readonly loggedSlotViolations = new Set<string>();
 
   update(deltaTime: number, animationContext?: AnimationVisibilityContext) {
+    this.flushVisibleArmyPresentation();
+
     // Update movements in ArmyModel
     this.armyModel.updateMovements(deltaTime);
     this.armyModel.updateAnimations(deltaTime, animationContext);
@@ -2587,9 +2604,9 @@ export class ArmyManager {
     }
 
     // Purges mutate activeInstances directly; recompact draw counts so the freed
-    // slot stops drawing this frame.
+    // slot stops drawing on the next frame.
     if (purgedAny) {
-      this.updateVisibleArmyBuffers();
+      this.markVisibleArmyPresentationDirty();
     }
   }
 
@@ -3386,8 +3403,7 @@ ${
     const modelType = this.armyModel.getModelTypeForEntity(numericId, army.category, army.tier, biome);
 
     this.refreshArmyInstance(army, slot, modelType);
-    this.refreshVisibleArmyCollection();
-    this.updateVisibleArmyBuffers();
+    this.markVisibleArmyPresentationDirty();
   }
 
   public destroy() {

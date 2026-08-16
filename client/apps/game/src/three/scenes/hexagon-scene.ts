@@ -86,6 +86,7 @@ export abstract class HexagonScene {
   protected worldAtmosphereController!: WorldAtmosphereController;
   protected GUIFolder!: any;
   protected biomeModels = new Map<BiomeType, InstancedBiome>();
+  protected biomeModelLoadPromises = new Map<string, Promise<void>>();
   protected modelLoadPromises: Array<Promise<void>> = [];
   protected state!: AppStore;
   protected fog!: Fog;
@@ -1021,6 +1022,7 @@ export abstract class HexagonScene {
           throw error;
         });
       this.modelLoadPromises.push(loadPromise);
+      this.biomeModelLoadPromises.set(biome, loadPromise);
     }
   }
 
@@ -1362,6 +1364,7 @@ export abstract class HexagonScene {
 
     // Clean up any pending promises or model loading
     this.modelLoadPromises = [];
+    this.biomeModelLoadPromises.clear();
 
     // Finally, clear the scene
     this.scene.clear();

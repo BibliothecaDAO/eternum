@@ -12,6 +12,13 @@ interface ChunkBounds {
   maxRow: number;
 }
 
+export function isHexInsideAnyBounds(col: number, row: number, bounds: readonly ChunkBounds[]): boolean {
+  return bounds.some(
+    (candidate) =>
+      col >= candidate.minCol && col <= candidate.maxCol && row >= candidate.minRow && row <= candidate.maxRow,
+  );
+}
+
 interface ToriiSubscriptionSwitchDecisionInput {
   currentSubscriptionAreaKey: string | null;
   requestedSubscriptionAreaKey: string;

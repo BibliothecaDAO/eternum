@@ -21,6 +21,58 @@ const ANIMATION_BUCKET_STRIDE_MEDIUM = 2;
 const ANIMATION_BUCKET_STRIDE_LARGE = 4;
 const ANIMATION_INTERVAL_MULTIPLIER_MEDIUM = 2;
 const ANIMATION_INTERVAL_MULTIPLIER_LARGE = 3;
+const FAR_DETAIL_INSTANCE_STRIDE = 4;
+
+interface BiomeMeshPart {
+  geometry: THREE.BufferGeometry;
+  isFarDetail: boolean;
+  material: THREE.Material | THREE.Material[];
+}
+
+interface BiomeGltf {
+  animations: THREE.AnimationClip[];
+  scene: THREE.Group;
+}
+
+function isFarDetailMaterial(material: THREE.Material): boolean {
+  return material.transparent || material.name.toLowerCase().includes("opacity");
+}
+
+function createGeometryDrawRangeView(source: THREE.BufferGeometry, start: number, count: number): THREE.BufferGeometry {
+  const geometry = new THREE.BufferGeometry();
+  geometry.setIndex(source.index);
+  Object.entries(source.attributes).forEach(([name, attribute]) => geometry.setAttribute(name, attribute));
+  geometry.morphAttributes = source.morphAttributes;
+  geometry.morphTargetsRelative = source.morphTargetsRelative;
+  geometry.boundingBox = source.boundingBox?.clone() ?? null;
+  geometry.boundingSphere = source.boundingSphere?.clone() ?? null;
+  geometry.setDrawRange(start, count);
+  return geometry;
+}
+
+function resolveBiomeMeshParts(mesh: THREE.Mesh): BiomeMeshPart[] {
+  const materials = mesh.material;
+  if (!Array.isArray(materials) || mesh.geometry.groups.length < 2) {
+    return [{ geometry: mesh.geometry, isFarDetail: false, material: mesh.material }];
+  }
+
+  const groupedParts = mesh.geometry.groups.flatMap((group) => {
+    const material = materials[group.materialIndex ?? 0];
+    if (!material) {
+      return [];
+    }
+    return [
+      {
+        geometry: createGeometryDrawRangeView(mesh.geometry, group.start, group.count),
+        isFarDetail: isFarDetailMaterial(material),
+        material,
+      },
+    ];
+  });
+  const hasTerrainBase = groupedParts.some((part) => !part.isFarDetail);
+  return hasTerrainBase ? groupedParts : groupedParts.map((part) => ({ ...part, isFarDetail: false }));
+}
+
 export default class InstancedModel {
   public group: THREE.Group;
   public instancedMeshes: THREE.InstancedMesh[] = [];
@@ -30,6 +82,10 @@ export default class InstancedModel {
   private animation: AnimationClip | null = null;
   private animationActions: Map<number, THREE.AnimationAction> = new Map();
   private worldBounds?: { box: THREE.Box3; sphere: THREE.Sphere };
+  private canonicalMatrices = new Float32Array(0);
+  private farDetailEnabled = false;
+  private readonly farDetailMeshes = new Set<THREE.InstancedMesh>();
+  private readonly farDetailOffset: number;
   animationBuckets: Uint8Array;
   // Animation throttling to reduce morph texture uploads
   private lastAnimationUpdate = 0;
@@ -53,99 +109,180 @@ export default class InstancedModel {
   private canCastShadows: boolean = true;
   private hasAnimations: boolean = false;
 
-  constructor(gltf: any, count: number, enableRaycast: boolean = false, name: string = "") {
+  constructor(gltf: BiomeGltf, count: number, enableRaycast: boolean = false, name: string = "") {
     this.group = new THREE.Group();
-    this.count = count;
-
-    // Store biome name and compute optimization flags
+    this.count = 0;
     this.biomeName = name;
+    this.farDetailOffset = this.resolveFarDetailOffset(name);
+
     const lowerName = name.toLowerCase();
     this.isStaticBiome = STATIC_BIOMES.has(lowerName);
     this.canCastShadows = !NO_SHADOW_BIOMES.has(lowerName);
     this.hasAnimations = gltf.animations.length > 0 && !this.isStaticBiome;
+    this.animationBuckets = this.createAnimationBuckets(count);
 
-    this.animationBuckets = new Uint8Array(count);
-    for (let i = 0; i < count; i++) {
-      this.animationBuckets[i] = Math.floor(Math.random() * this.ANIMATION_BUCKETS);
-    }
-    // Phase 5.1 follow-up: the gltf is shared across scenes (biome-gltf-cache), but the
-    // AnimationMixer writes morphTargetInfluences on the meshes it animates. Clone the
-    // object graph for animated biomes so each InstancedBiome drives its own influence
-    // arrays; geometry/materials/textures stay shared by reference through the clone.
-    const animationScene: THREE.Group = gltf.animations.length > 0 ? gltf.scene.clone() : gltf.scene;
-    let renderOrder = 0;
-    animationScene.traverse((child: any) => {
+    const sourceScene = this.resolveBiomeSourceScene(gltf);
+    this.animation = gltf.animations[0] ?? null;
+    this.mixer = this.animation ? new AnimationMixer(sourceScene) : null;
+    sourceScene.traverse((child) => {
       if (child instanceof THREE.Mesh) {
-        const isAlt = name.toLowerCase().includes("alt");
-        if (name.toLowerCase().includes("deepocean") && child.material) {
-          child.material.transparent = false;
-        }
-        // hack for models materials, need to be removed after the models are updated
-        if (child?.material?.name?.includes("opacity")) {
-          child.material.roughness = 1;
-          child.material.normalMap = null;
-        }
-        // Phase 5.1: derive the draw order idempotently so a biome material shared
-        // across scenes resolves the same renderOrder on every pass (the first pass
-        // flips depthWrite, which would otherwise change later passes' result).
-        const biomeRenderOrder = resolveBiomeMeshRenderOrder(child.material);
-        if (biomeRenderOrder.applyTransparentDepthWrite) {
-          child.material.depthWrite = true;
-          child.material.alphaTest = 0.075;
-        }
-        renderOrder = biomeRenderOrder.renderOrder;
-        if (child?.material?.emissiveIntensity > 1 && !isAlt) {
-          child.material.emissiveIntensity = 3;
-        }
-        const tmp = new THREE.InstancedMesh(child.geometry, child.material, count);
-        const biomeMesh = child;
-        if (gltf.animations.length > 0) {
-          for (let i = 0; i < count; i++) {
-            tmp.setMorphAt(i, biomeMesh as any);
-          }
-          tmp.morphTexture!.name = `biome-morph:${name || "unnamed"}:${child.name || this.instancedMeshes.length}`;
-          tmp.morphTexture!.needsUpdate = true;
-        }
-
-        const isLand = child.name.includes(LAND_NAME) || (child.parent?.name && child.parent.name.includes(LAND_NAME));
-
-        if (isLand && child.material) {
-          // Enable per-instance vertex colors on terrain base.
-          (child.material as THREE.MeshStandardMaterial).vertexColors = true;
-          (child.material as THREE.MeshStandardMaterial).needsUpdate = true;
-          tmp.name = LAND_NAME;
-        }
-
-        if (name !== "Outline" && !name.toLowerCase().includes("ocean")) {
-          // Terrain base should receive shadows but not cast them to avoid far-view noise.
-          tmp.castShadow = !isLand;
-          tmp.receiveShadow = true;
-          tmp.renderOrder = renderOrder;
-        }
-        if (name === "Outline") {
-          tmp.renderOrder = 4;
-          child.material.color.setHex(0xffffff);
-          child.material.opacity = 0.075;
-          child.material.transparent = true;
-        }
-        if (name.toLowerCase().includes("ocean")) {
-          tmp.renderOrder = 1;
-        }
-        tmp.userData.isInstanceModel = true;
-
-        if (!enableRaycast) {
-          tmp.raycast = () => {};
-        }
-
-        this.mixer = new AnimationMixer(animationScene);
-        this.animation = gltf.animations[0];
-
-        tmp.count = 0;
-        this.group.add(tmp);
-        this.instancedMeshes.push(tmp);
-        this.biomeMeshes.push(biomeMesh);
+        this.addBiomeSourceMesh(child, count, enableRaycast, name, gltf.animations.length > 0);
       }
     });
+  }
+
+  private createAnimationBuckets(count: number): Uint8Array {
+    const buckets = new Uint8Array(count);
+    for (let index = 0; index < count; index += 1) {
+      buckets[index] = Math.floor(Math.random() * this.ANIMATION_BUCKETS);
+    }
+    return buckets;
+  }
+
+  private resolveBiomeSourceScene(gltf: BiomeGltf): THREE.Group {
+    if (gltf.animations.length === 0) {
+      return gltf.scene;
+    }
+
+    // The GLTF is shared across scenes, while AnimationMixer mutates morph weights.
+    // Animated biomes need their own object graph; geometry, materials, and textures
+    // remain shared by reference through the clone.
+    return gltf.scene.clone();
+  }
+
+  private addBiomeSourceMesh(
+    sourceMesh: THREE.Mesh,
+    capacity: number,
+    enableRaycast: boolean,
+    biomeName: string,
+    isAnimated: boolean,
+  ): void {
+    const meshParts = isAnimated
+      ? [{ geometry: sourceMesh.geometry, isFarDetail: false, material: sourceMesh.material }]
+      : resolveBiomeMeshParts(sourceMesh);
+
+    meshParts.forEach((part) => {
+      const instancedMesh = this.createBiomeInstancedMesh(sourceMesh, part, capacity, biomeName, isAnimated);
+      this.registerBiomeInstancedMesh(instancedMesh, sourceMesh, part, enableRaycast, biomeName);
+    });
+  }
+
+  private createBiomeInstancedMesh(
+    sourceMesh: THREE.Mesh,
+    part: BiomeMeshPart,
+    capacity: number,
+    biomeName: string,
+    isAnimated: boolean,
+  ): THREE.InstancedMesh {
+    const renderOrder = this.configureBiomeMaterial(part.material, biomeName);
+    const instancedMesh = new THREE.InstancedMesh(part.geometry, part.material, capacity);
+    this.configureBiomeMorphTargets(instancedMesh, sourceMesh, capacity, biomeName, isAnimated);
+    this.configureBiomeMeshAppearance(instancedMesh, sourceMesh, part.material, biomeName, renderOrder);
+    return instancedMesh;
+  }
+
+  private configureBiomeMaterial(material: THREE.Material | THREE.Material[], biomeName: string): number {
+    if (Array.isArray(material)) {
+      return 0;
+    }
+
+    if (biomeName.toLowerCase().includes("deepocean")) {
+      material.transparent = false;
+    }
+    // Compatibility for legacy assets. Remove when their materials are corrected.
+    if (material.name.includes("opacity") && material instanceof THREE.MeshStandardMaterial) {
+      material.roughness = 1;
+      material.normalMap = null;
+    }
+
+    // Shared biome materials must resolve the same draw order after depthWrite is mutated.
+    const biomeRenderOrder = resolveBiomeMeshRenderOrder(material);
+    if (biomeRenderOrder.applyTransparentDepthWrite) {
+      material.depthWrite = true;
+      material.alphaTest = 0.075;
+    }
+    if (
+      material instanceof THREE.MeshStandardMaterial &&
+      material.emissiveIntensity > 1 &&
+      !biomeName.toLowerCase().includes("alt")
+    ) {
+      material.emissiveIntensity = 3;
+    }
+    return biomeRenderOrder.renderOrder;
+  }
+
+  private configureBiomeMorphTargets(
+    instancedMesh: THREE.InstancedMesh,
+    sourceMesh: THREE.Mesh,
+    capacity: number,
+    biomeName: string,
+    isAnimated: boolean,
+  ): void {
+    if (!isAnimated) {
+      return;
+    }
+
+    for (let index = 0; index < capacity; index += 1) {
+      instancedMesh.setMorphAt(index, sourceMesh);
+    }
+    instancedMesh.morphTexture!.name = `biome-morph:${biomeName || "unnamed"}:${sourceMesh.name || this.instancedMeshes.length}`;
+    instancedMesh.morphTexture!.needsUpdate = true;
+  }
+
+  private configureBiomeMeshAppearance(
+    instancedMesh: THREE.InstancedMesh,
+    sourceMesh: THREE.Mesh,
+    material: THREE.Material | THREE.Material[],
+    biomeName: string,
+    renderOrder: number,
+  ): void {
+    const lowerName = biomeName.toLowerCase();
+    const isLand = sourceMesh.name.includes(LAND_NAME) || Boolean(sourceMesh.parent?.name?.includes(LAND_NAME));
+
+    if (isLand && !Array.isArray(material) && material instanceof THREE.MeshStandardMaterial) {
+      material.vertexColors = true;
+      material.needsUpdate = true;
+      instancedMesh.name = LAND_NAME;
+    }
+
+    if (biomeName !== "Outline" && !lowerName.includes("ocean")) {
+      instancedMesh.castShadow = !isLand;
+      instancedMesh.receiveShadow = true;
+      instancedMesh.renderOrder = renderOrder;
+    }
+    if (biomeName === "Outline" && !Array.isArray(material) && material instanceof THREE.MeshStandardMaterial) {
+      instancedMesh.renderOrder = 4;
+      material.color.setHex(0xffffff);
+      material.opacity = 0.075;
+      material.transparent = true;
+    }
+    if (lowerName.includes("ocean")) {
+      instancedMesh.renderOrder = 1;
+    }
+  }
+
+  private registerBiomeInstancedMesh(
+    instancedMesh: THREE.InstancedMesh,
+    sourceMesh: THREE.Mesh,
+    part: BiomeMeshPart,
+    enableRaycast: boolean,
+    biomeName: string,
+  ): void {
+    const lowerName = biomeName.toLowerCase();
+    const isFarBiomeDetail = part.isFarDetail && !lowerName.includes("ocean") && biomeName !== "Outline";
+    instancedMesh.userData.isInstanceModel = true;
+    instancedMesh.userData.isFarBiomeDetail = isFarBiomeDetail;
+    if (isFarBiomeDetail) {
+      this.farDetailMeshes.add(instancedMesh);
+    }
+    if (!enableRaycast) {
+      instancedMesh.raycast = () => {};
+    }
+
+    instancedMesh.count = 0;
+    this.group.add(instancedMesh);
+    this.instancedMeshes.push(instancedMesh);
+    this.biomeMeshes.push(sourceMesh);
   }
 
   public setAnimationFPS(fps: number): void {
@@ -239,6 +376,16 @@ export default class InstancedModel {
     return this.count;
   }
 
+  public setFarDetailEnabled(enabled: boolean): void {
+    if (this.farDetailEnabled === enabled) {
+      return;
+    }
+
+    this.farDetailEnabled = enabled;
+    this.applyInstanceDetailPolicy();
+    this.updateMeshVisibility();
+  }
+
   getLandColor() {
     const land = this.group.children.find((child) => child.name === LAND_NAME);
     if (land instanceof THREE.InstancedMesh) {
@@ -248,54 +395,39 @@ export default class InstancedModel {
   }
 
   getMatricesAndCount() {
-    const mesh = this.group.children[0] as THREE.InstancedMesh;
-    const count = mesh.count;
+    const count = this.count;
     const pool = InstancedMatrixAttributePool.getInstance();
     const snapshot = pool.acquire(count);
     const requiredFloats = count * snapshot.itemSize;
 
-    snapshot.array.set((mesh.instanceMatrix.array as Float32Array).subarray(0, requiredFloats));
+    snapshot.array.set(this.canonicalMatrices.subarray(0, requiredFloats));
 
     return { matrices: snapshot, count };
   }
 
   setMatricesAndCount(matrices: THREE.InstancedBufferAttribute, count: number) {
-    let resolvedCount = count;
-    this.group.children.forEach((child) => {
-      if (child instanceof THREE.InstancedMesh) {
-        const targetArray = child.instanceMatrix.array as Float32Array;
-        const sourceArray = matrices.array as Float32Array;
-        const maxInstances = Math.floor(targetArray.length / child.instanceMatrix.itemSize);
-        const finalCount = Math.min(count, maxInstances);
-        const floatsToCopy = Math.min(
-          finalCount * child.instanceMatrix.itemSize,
-          sourceArray.length,
-          targetArray.length,
-        );
-        if (floatsToCopy > 0) {
-          targetArray.set(sourceArray.subarray(0, floatsToCopy));
-        }
-        child.count = finalCount;
-        // Upload only the region we actually wrote. A bare needsUpdate marks
-        // the ENTIRE preallocated buffer dirty — at large zoom windows that
-        // was tens of MB per mesh through queue.writeBuffer inside the render
-        // loop, the multi-second zoom/entry freeze. The stale tail beyond
-        // `count` is never drawn.
-        child.instanceMatrix.clearUpdateRanges();
-        if (floatsToCopy > 0) {
-          child.instanceMatrix.addUpdateRange(0, floatsToCopy);
-        }
-        child.instanceMatrix.needsUpdate = true;
-        resolvedCount = Math.min(resolvedCount, finalCount);
-      }
-    });
-    this.count = resolvedCount;
+    const sourceArray = matrices.array as Float32Array;
+    this.count = Math.min(count, this.resolveMaxInstanceCapacity());
+    const requiredFloats = this.count * matrices.itemSize;
+    this.ensureCanonicalMatrixCapacity(requiredFloats);
+    this.canonicalMatrices.set(sourceArray.subarray(0, requiredFloats), 0);
+    this.applyInstanceDetailPolicy();
   }
 
   setMatrixAt(index: number, matrix: THREE.Matrix4) {
-    this.group.children.forEach((child) => {
-      if (child instanceof THREE.InstancedMesh) {
-        child.setMatrixAt(index, matrix);
+    const matrixOffset = index * 16;
+    this.ensureCanonicalMatrixCapacity(matrixOffset + 16);
+    this.canonicalMatrices.set(matrix.elements, matrixOffset);
+
+    this.instancedMeshes.forEach((mesh) => {
+      if (!this.farDetailEnabled || !this.farDetailMeshes.has(mesh)) {
+        mesh.setMatrixAt(index, matrix);
+        return;
+      }
+
+      const detailIndex = this.resolveFarDetailIndex(index);
+      if (detailIndex !== null) {
+        mesh.setMatrixAt(detailIndex, matrix);
       }
     });
   }
@@ -309,26 +441,100 @@ export default class InstancedModel {
   }
 
   setCount(count: number) {
-    this.count = count;
-    this.group.children.forEach((child) => {
-      if (child instanceof THREE.InstancedMesh) {
-        child.count = count;
-      }
-    });
+    this.count = Math.min(count, this.resolveMaxInstanceCapacity());
+    this.ensureCanonicalMatrixCapacity(this.count * 16);
+    this.applyInstanceDetailPolicy();
     this.updateMeshVisibility();
-    this.needsUpdate();
   }
 
   removeInstance(index: number) {
-    this.setMatrixAt(index, zeroScaledMatrix);
-    // Single-instance edit: dirty just that matrix, not the whole buffer.
-    this.group.children.forEach((child) => {
-      if (child instanceof THREE.InstancedMesh) {
-        const itemSize = child.instanceMatrix.itemSize;
-        child.instanceMatrix.addUpdateRange(index * itemSize, itemSize);
-        child.instanceMatrix.needsUpdate = true;
+    const matrixOffset = index * 16;
+    this.ensureCanonicalMatrixCapacity(matrixOffset + 16);
+    this.canonicalMatrices.set(zeroScaledMatrix.elements, matrixOffset);
+
+    this.instancedMeshes.forEach((mesh) => {
+      const renderedIndex =
+        this.farDetailEnabled && this.farDetailMeshes.has(mesh) ? this.resolveFarDetailIndex(index) : index;
+      if (renderedIndex === null) {
+        return;
+      }
+
+      mesh.setMatrixAt(renderedIndex, zeroScaledMatrix);
+      const itemSize = mesh.instanceMatrix.itemSize;
+      mesh.instanceMatrix.addUpdateRange(renderedIndex * itemSize, itemSize);
+      mesh.instanceMatrix.needsUpdate = true;
+    });
+  }
+
+  private resolveMaxInstanceCapacity(): number {
+    const capacity = this.instancedMeshes.reduce(
+      (capacity, mesh) => Math.min(capacity, mesh.instanceMatrix.count),
+      Number.POSITIVE_INFINITY,
+    );
+    return Number.isFinite(capacity) ? capacity : 0;
+  }
+
+  private ensureCanonicalMatrixCapacity(requiredFloats: number): void {
+    if (this.canonicalMatrices.length >= requiredFloats) {
+      return;
+    }
+
+    const nextCapacity = Math.max(requiredFloats, Math.max(16, this.canonicalMatrices.length * 2));
+    const nextMatrices = new Float32Array(nextCapacity);
+    nextMatrices.set(this.canonicalMatrices);
+    this.canonicalMatrices = nextMatrices;
+  }
+
+  private applyInstanceDetailPolicy(): void {
+    this.instancedMeshes.forEach((mesh) => {
+      const renderedCount =
+        this.farDetailEnabled && this.farDetailMeshes.has(mesh)
+          ? this.copyFarDetailMatrices(mesh.instanceMatrix.array as Float32Array)
+          : this.copyFullDetailMatrices(mesh.instanceMatrix.array as Float32Array);
+      mesh.count = renderedCount;
+      mesh.instanceMatrix.clearUpdateRanges();
+      if (renderedCount > 0) {
+        mesh.instanceMatrix.addUpdateRange(0, renderedCount * mesh.instanceMatrix.itemSize);
+      }
+      mesh.instanceMatrix.needsUpdate = true;
+      if (this.worldBounds) {
+        this.applyWorldBounds(mesh);
+      } else {
+        mesh.computeBoundingSphere();
+        this.applyWorldBounds(mesh);
       }
     });
+  }
+
+  private copyFullDetailMatrices(target: Float32Array): number {
+    const renderedCount = Math.min(this.count, Math.floor(target.length / 16));
+    target.set(this.canonicalMatrices.subarray(0, renderedCount * 16), 0);
+    return renderedCount;
+  }
+
+  private copyFarDetailMatrices(target: Float32Array): number {
+    let targetIndex = 0;
+    for (let sourceIndex = this.farDetailOffset; sourceIndex < this.count; sourceIndex += FAR_DETAIL_INSTANCE_STRIDE) {
+      const sourceOffset = sourceIndex * 16;
+      target.set(this.canonicalMatrices.subarray(sourceOffset, sourceOffset + 16), targetIndex * 16);
+      targetIndex += 1;
+    }
+    return targetIndex;
+  }
+
+  private resolveFarDetailIndex(sourceIndex: number): number | null {
+    if (sourceIndex < this.farDetailOffset || (sourceIndex - this.farDetailOffset) % FAR_DETAIL_INSTANCE_STRIDE !== 0) {
+      return null;
+    }
+    return (sourceIndex - this.farDetailOffset) / FAR_DETAIL_INSTANCE_STRIDE;
+  }
+
+  private resolveFarDetailOffset(name: string): number {
+    let hash = 0;
+    for (let index = 0; index < name.length; index += 1) {
+      hash = (hash * 31 + name.charCodeAt(index)) >>> 0;
+    }
+    return hash % FAR_DETAIL_INSTANCE_STRIDE;
   }
 
   needsUpdate() {
@@ -554,6 +760,8 @@ export default class InstancedModel {
     this.bucketWeightsBuffer = null;
     this.bucketToIndices.clear();
     this.bucketIndicesBuilt = false;
+    this.canonicalMatrices = new Float32Array(0);
+    this.farDetailMeshes.clear();
 
     // Dispose of instanced meshes and their resources
     this.instancedMeshes.forEach((mesh) => {

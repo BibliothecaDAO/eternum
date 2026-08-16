@@ -37,7 +37,7 @@ const allLatestFeatures: LatestFeature[] = [
     date: "2026-08-16",
     title: "Faster World Rendering",
     description:
-      "Improved model loading and map updates so entering the world uses less memory and terrain, armies, structures, and labels appear with fewer frame stalls while you travel.",
+      "Improved model loading, distant terrain detail, and map updates so entering, zooming, and returning to the world use less memory with fewer frame stalls or terrain pop-ins.",
     type: "improvement",
     gameSlug: "world",
   },

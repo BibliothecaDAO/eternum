@@ -59,7 +59,12 @@ import {
   type TileSpatialRenderable,
   type WorldSpatialProjection,
 } from "@bibliothecadao/eternum/game-sync";
-import { gameWorkerManager } from "../../managers/game-worker-manager";
+import {
+  gameWorkerManager,
+  type GameWorkerEntityHex,
+  type GameWorkerExploredTile,
+  type GameWorkerWorldState,
+} from "../../managers/game-worker-manager";
 
 import { FELT_CENTER, IS_FLAT_MODE } from "@/ui/config";
 import { ChestModal, HelpModal } from "@/ui/features/military";
@@ -293,6 +298,7 @@ import {
 import {
   getRenderAreaKeyForChunk as getCanonicalRenderAreaKeyForChunk,
   getRenderFetchBoundsForArea as getCanonicalRenderFetchBoundsForArea,
+  isHexInsideAnyBounds,
 } from "./worldmap-chunk-bounds";
 import { resolveTerrainPresentationWorldBounds } from "./worldmap-terrain-bounds-policy";
 import { getRenderOverlapChunkKeys, getRenderOverlapNeighborChunkKeys } from "./worldmap-chunk-neighbors";
@@ -423,6 +429,13 @@ interface PreparedTerrainChunk {
   visibleTerrainOwnership: Array<[string, VisibleTerrainInstanceRef]>;
   terrainCells: WorldmapTerrainSourceCellRef[];
   biomeEntries: Map<string, CachedMatrixEntry>;
+}
+
+interface WorldmapLocalBounds {
+  minCol: number;
+  maxCol: number;
+  minRow: number;
+  maxRow: number;
 }
 
 type WorldmapTerrainPresentationEntry = WorldmapTerrainPresentation<
@@ -1395,23 +1408,6 @@ export default class WorldmapScene extends WarpTravel {
   }
 
   private bindWorldSpatialProjectionLifecycle(): void {
-    this.worldSpatialProjection.getStructures().forEach((structure) => {
-      if (structure.reserved) return;
-      const normalized = new Position({ x: structure.hexCoords.col, y: structure.hexCoords.row }).getNormalized();
-      gameWorkerManager.updateStructureHex(normalized.x, normalized.y, {
-        id: structure.entityId,
-        owner: this.getStructureOwnerAddress(structure.entityId) ?? 0n,
-      });
-    });
-
-    this.worldSpatialProjection.getArmies().forEach((army) => {
-      const normalized = new Position({ x: army.hexCoords.col, y: army.hexCoords.row }).getNormalized();
-      gameWorkerManager.updateArmyHex(normalized.x, normalized.y, {
-        id: army.entityId,
-        owner: this.getArmyOwnerAddress(army.entityId) ?? 0n,
-      });
-    });
-
     const unsubscribeStructures = this.worldSpatialProjection.subscribeStructures((changes) => {
       this.syncProjectedStructurePathfinding(changes);
       changes.forEach(({ previous, current }) => {
@@ -1437,15 +1433,19 @@ export default class WorldmapScene extends WarpTravel {
         const previousHex = new Position({ x: previous.hexCoords.col, y: previous.hexCoords.row }).getNormalized();
         const stayedAtPreviousHex =
           current?.hexCoords.col === previous.hexCoords.col && current.hexCoords.row === previous.hexCoords.row;
-        if (!stayedAtPreviousHex) gameWorkerManager.updateArmyHex(previousHex.x, previousHex.y, null);
+        if (!stayedAtPreviousHex && this.isHexInRetainedRenderArea(previousHex.x, previousHex.y)) {
+          gameWorkerManager.updateArmyHex(previousHex.x, previousHex.y, null);
+        }
       }
 
       if (current) {
         const currentHex = new Position({ x: current.hexCoords.col, y: current.hexCoords.row }).getNormalized();
-        gameWorkerManager.updateArmyHex(currentHex.x, currentHex.y, {
-          id: current.entityId,
-          owner: this.getArmyOwnerAddress(current.entityId) ?? 0n,
-        });
+        if (this.isHexInRetainedRenderArea(currentHex.x, currentHex.y)) {
+          gameWorkerManager.updateArmyHex(currentHex.x, currentHex.y, {
+            id: current.entityId,
+            owner: this.getArmyOwnerAddress(current.entityId) ?? 0n,
+          });
+        }
       }
     });
   }
@@ -1475,15 +1475,19 @@ export default class WorldmapScene extends WarpTravel {
         const previousHex = new Position({ x: previous.hexCoords.col, y: previous.hexCoords.row }).getNormalized();
         const currentStayedAtPreviousHex =
           current?.hexCoords.col === previous.hexCoords.col && current.hexCoords.row === previous.hexCoords.row;
-        if (!currentStayedAtPreviousHex) gameWorkerManager.updateStructureHex(previousHex.x, previousHex.y, null);
+        if (!currentStayedAtPreviousHex && this.isHexInRetainedRenderArea(previousHex.x, previousHex.y)) {
+          gameWorkerManager.updateStructureHex(previousHex.x, previousHex.y, null);
+        }
       }
 
       if (current && !current.reserved) {
         const currentHex = new Position({ x: current.hexCoords.col, y: current.hexCoords.row }).getNormalized();
-        gameWorkerManager.updateStructureHex(currentHex.x, currentHex.y, {
-          id: current.entityId,
-          owner: this.getStructureOwnerAddress(current.entityId) ?? 0n,
-        });
+        if (this.isHexInRetainedRenderArea(currentHex.x, currentHex.y)) {
+          gameWorkerManager.updateStructureHex(currentHex.x, currentHex.y, {
+            id: current.entityId,
+            owner: this.getStructureOwnerAddress(current.entityId) ?? 0n,
+          });
+        }
       }
     });
   }
@@ -1493,6 +1497,7 @@ export default class WorldmapScene extends WarpTravel {
       this.hoverLabelManager.updateCameraView(view);
       this.highlightHexManager.setCameraView(view);
       this.interactiveHexManager.setCameraView(view);
+      this.biomeModels.forEach((model) => model.setFarDetailEnabled(view === CameraView.Far));
       this.configureWorldmapShadows();
     });
   }
@@ -4219,7 +4224,7 @@ export default class WorldmapScene extends WarpTravel {
 
   private async refreshWarpTravelScene(): Promise<void> {
     const isInitialSetup = !this.hasInitialized;
-    const didRefresh = await this.updateVisibleChunks(true);
+    const didRefresh = await this.refreshVisibleChunksForWarpTravel();
     if (!didRefresh) {
       throw new Error("World map did not finish its initial interactive refresh.");
     }
@@ -4230,6 +4235,19 @@ export default class WorldmapScene extends WarpTravel {
     }
 
     this.reconcileHoverLabels("initial_refresh");
+  }
+
+  private async refreshVisibleChunksForWarpTravel(): Promise<boolean> {
+    if (!this.globalChunkSwitchPromise) {
+      return this.updateVisibleChunks(true);
+    }
+
+    await waitForChunkTransitionToSettle(
+      () => this.globalChunkSwitchPromise,
+      (error) => console.warn("Active world map refresh failed while resuming:", error),
+      { isSwitchedOff: () => this.isSwitchedOff },
+    );
+    return !this.isSwitchedOff && this.currentChunk !== "null";
   }
 
   private async awaitInitialTerrainConvergence(): Promise<void> {
@@ -4480,6 +4498,12 @@ export default class WorldmapScene extends WarpTravel {
 
     const col = normalized.x;
     const row = normalized.y;
+    if (!this.isHexInRetainedRenderArea(col, row)) {
+      if (!removeExplored) {
+        this.completePendingExploreEffects(hexCoords);
+      }
+      return;
+    }
 
     const existingBiome = this.exploredTiles.get(col)?.get(row);
     // If tile was provisionally set by army spawn, treat as new tile (allow overwrite)
@@ -4542,26 +4566,15 @@ export default class WorldmapScene extends WarpTravel {
       return;
     }
 
-    // Check if there's a compass effect for this hex and end it
-    const key = `${hexCoords.col},${hexCoords.row}`;
-    const pendingExploreEntities = resolveExploreCompletionPendingClearPlan({
-      exploredHexKey: key,
-      trackedEffectsByEntity: this.travelEffectsByEntity,
-      pendingArmyMovements: this.getPendingArmyMovementEntityIds(),
-    });
-    for (const entityId of pendingExploreEntities) {
-      this.clearPendingArmyMovement(entityId);
-      this.disposePendingMovementVisualLifecycle(entityId);
-      this.arrivalGhostManager.clearArrivalGhost(entityId, "arrived");
-    }
-
-    const endCompass = this.travelEffects.get(key);
-    if (endCompass && !this.hasPendingTravelEffectForHex(key)) {
-      endCompass();
-    }
+    this.completePendingExploreEffects(hexCoords);
 
     if (removeExplored) {
-      this.exploredTiles.get(col)?.delete(row);
+      const rows = this.exploredTiles.get(col);
+      rows?.delete(row);
+      if (rows?.size === 0) {
+        this.exploredTiles.delete(col);
+      }
+      gameWorkerManager.updateExploredTile(col, row, null);
       this.bumpTerrainGenerationForHex(col, row);
 
       const [chunkRow, chunkCol] = this.currentChunk.split(",").map(Number);
@@ -4638,7 +4651,7 @@ export default class WorldmapScene extends WarpTravel {
       // Update which hexes are visible in the current chunk
       this.interactiveHexManager.updateVisibleHexes(chunkCenterRow, chunkCenterCol, chunkWidth, chunkHeight);
 
-      await Promise.all(this.modelLoadPromises);
+      const hexMesh = await this.requireLoadedBiomeModel(biomeVariant);
       dummy.position.copy(pos);
       dummy.scale.set(HEX_SIZE, HEX_SIZE, HEX_SIZE);
 
@@ -4648,7 +4661,6 @@ export default class WorldmapScene extends WarpTravel {
 
       dummy.updateMatrix();
 
-      const hexMesh = this.biomeModels.get(biomeVariant as BiomeType)!;
       const currentCount = hexMesh.getCount();
       hexMesh.setMatrixAt(currentCount, dummy.matrix);
       hexMesh.setCount(currentCount + 1);
@@ -4660,6 +4672,25 @@ export default class WorldmapScene extends WarpTravel {
       incrementWorldmapRenderCounter("terrainVisibleAppendCount");
 
       this.requestChunkRefresh(true, "terrain_self_heal");
+    }
+  }
+
+  private completePendingExploreEffects(hexCoords: HexPosition): void {
+    const key = `${hexCoords.col},${hexCoords.row}`;
+    const pendingExploreEntities = resolveExploreCompletionPendingClearPlan({
+      exploredHexKey: key,
+      trackedEffectsByEntity: this.travelEffectsByEntity,
+      pendingArmyMovements: this.getPendingArmyMovementEntityIds(),
+    });
+    for (const entityId of pendingExploreEntities) {
+      this.clearPendingArmyMovement(entityId);
+      this.disposePendingMovementVisualLifecycle(entityId);
+      this.arrivalGhostManager.clearArrivalGhost(entityId, "arrived");
+    }
+
+    const endCompass = this.travelEffects.get(key);
+    if (endCompass && !this.hasPendingTravelEffectForHex(key)) {
+      endCompass();
     }
   }
 
@@ -4929,11 +4960,19 @@ export default class WorldmapScene extends WarpTravel {
       getRenderAreaKeyForChunk: (chunkKey) => this.getRenderAreaKeyForChunk(chunkKey),
     });
 
-    this.directionalPrefetchAreaKeys = new Set(prefetchPlan.desiredAreaKeys);
+    const nextDirectionalPrefetchAreaKeys = new Set(prefetchPlan.desiredAreaKeys);
+    const retainedAreasChanged =
+      nextDirectionalPrefetchAreaKeys.size !== this.directionalPrefetchAreaKeys.size ||
+      [...nextDirectionalPrefetchAreaKeys].some((areaKey) => !this.directionalPrefetchAreaKeys.has(areaKey));
+    this.directionalPrefetchAreaKeys = nextDirectionalPrefetchAreaKeys;
     this.directionalPresentationChunkKeys = WORLDMAP_STREAMING_ROLLOUT.stagedPathEnabled
       ? new Set(prefetchPlan.presentationChunkKeysToPrewarm)
       : new Set();
     this.pruneQueuedDirectionalPrefetches();
+    if (retainedAreasChanged) {
+      this.pruneWorldmapSpatialCaches();
+      this.rebuildPathfindingWorkerState();
+    }
     this.prefetchedAhead.splice(0, this.prefetchedAhead.length, ...prefetchPlan.nextPrefetchedAhead);
 
     prefetchPlan.chunkKeysToEnqueue.forEach((chunkKey) => {
@@ -5326,8 +5365,7 @@ export default class WorldmapScene extends WarpTravel {
       throw new Error(`Invalid visual terrain page key: ${pageKey}`);
     }
 
-    await Promise.all(this.modelLoadPromises);
-    return this.chunkWorkQueue.schedule(workLane, () =>
+    const preparedTerrain = await this.chunkWorkQueue.schedule(workLane, () =>
       this.buildPreparedTerrainArea(
         startRow,
         startCol,
@@ -5335,6 +5373,42 @@ export default class WorldmapScene extends WarpTravel {
         WORLDMAP_CHUNK_POLICY.visualPresentation.visualPageSize.width,
       ),
     );
+    return this.awaitPreparedTerrainBiomeModels(preparedTerrain);
+  }
+
+  private async awaitPreparedTerrainBiomeModels(preparedTerrain: PreparedTerrainChunk): Promise<PreparedTerrainChunk> {
+    try {
+      const requiredModelPromises: Promise<void>[] = [];
+      preparedTerrain.biomeEntries.forEach((entry, biomeKey) => {
+        if (entry.count === 0) {
+          return;
+        }
+
+        requiredModelPromises.push(this.requireBiomeModelLoadPromise(biomeKey));
+      });
+      await Promise.all(requiredModelPromises);
+      return preparedTerrain;
+    } catch (error) {
+      this.disposePreparedTerrainChunk(preparedTerrain);
+      throw error;
+    }
+  }
+
+  private requireBiomeModelLoadPromise(biomeKey: string): Promise<void> {
+    const modelPromise = this.biomeModelLoadPromises.get(biomeKey);
+    if (!modelPromise) {
+      throw new Error(`No biome model load was registered for ${biomeKey}`);
+    }
+    return modelPromise;
+  }
+
+  private async requireLoadedBiomeModel(biomeKey: string): Promise<InstancedBiome> {
+    await this.requireBiomeModelLoadPromise(biomeKey);
+    const model = this.biomeModels.get(biomeKey as BiomeType);
+    if (!model) {
+      throw new Error(`Biome model ${biomeKey} finished loading without registering an instance`);
+    }
+    return model;
   }
 
   private buildPreparedTerrainArea(
@@ -5898,7 +5972,10 @@ export default class WorldmapScene extends WarpTravel {
     }
     this.cachedMatrices.clear();
     this.cachedMatrixOrder = [];
+    this.exploredTiles.clear();
+    this.provisionalBiomes = createProvisionalBiomeTracker();
     this.exploredTilesGeneration.clear();
+    gameWorkerManager.resetWorldState();
     MatrixPool.getInstance().clear();
     InstancedMatrixAttributePool.getInstance().clear();
     this.pinnedChunkKeys.clear();
@@ -6377,7 +6454,7 @@ export default class WorldmapScene extends WarpTravel {
     if (cachedChunk) {
       recordChunkDiagnosticsEvent(this.chunkDiagnostics, "prepared_chunk_prewarm_hit");
       incrementWorldmapRenderCounter("preparedChunkPrewarmHits");
-      return cachedChunk;
+      return this.awaitPreparedTerrainBiomeModels(cachedChunk);
     }
 
     recordChunkDiagnosticsEvent(this.chunkDiagnostics, "prepared_chunk_prewarm_miss");
@@ -6391,9 +6468,7 @@ export default class WorldmapScene extends WarpTravel {
       halfCols: prepHalfCols,
       halfRows: prepHalfRows,
     });
-    await Promise.all(this.modelLoadPromises);
-
-    return new Promise<PreparedTerrainChunk>((resolve, reject) => {
+    const preparedTerrain = await new Promise<PreparedTerrainChunk>((resolve, reject) => {
       const matrixPool = MatrixPool.getInstance();
       const totalHexes = rows * cols;
       matrixPool.ensureCapacity(totalHexes + 512);
@@ -6591,6 +6666,7 @@ export default class WorldmapScene extends WarpTravel {
 
       scheduleWorkUnit();
     });
+    return this.awaitPreparedTerrainBiomeModels(preparedTerrain);
   }
 
   private createTerrainPresentationFromPreparedTerrain(
@@ -7035,6 +7111,9 @@ export default class WorldmapScene extends WarpTravel {
     // Compute render-area coverage for the new/old pinned sets
     const nextPinnedAreas = new Set<string>();
     nextPinned.forEach((chunkKey) => nextPinnedAreas.add(this.getRenderAreaKeyForChunk(chunkKey)));
+    const pinnedAreasChanged =
+      nextPinnedAreas.size !== this.pinnedRenderAreas.size ||
+      [...nextPinnedAreas].some((areaKey) => !this.pinnedRenderAreas.has(areaKey));
     prevPinned.forEach((chunkKey) => {
       if (!nextPinned.has(chunkKey)) {
         removedPinnedChunks.push(chunkKey);
@@ -7044,12 +7123,135 @@ export default class WorldmapScene extends WarpTravel {
     this.pinnedChunkKeys = nextPinned;
     this.pinnedRenderAreas = nextPinnedAreas;
     this.pruneQueuedDirectionalPrefetches();
+    if (pinnedAreasChanged) {
+      this.pruneWorldmapSpatialCaches();
+      this.rebuildPathfindingWorkerState();
+    }
 
     removedPinnedChunks.forEach((chunkKey) => {
       if (chunkKey !== this.currentChunk) {
         this.visibilityManager?.unregisterChunk(chunkKey);
       }
     });
+  }
+
+  private getRetainedRenderAreaBounds(): WorldmapLocalBounds[] {
+    const retainedAreaKeys = new Set([...this.pinnedRenderAreas, ...this.directionalPrefetchAreaKeys]);
+    if (this.currentChunk !== "null") {
+      retainedAreaKeys.add(this.getRenderAreaKeyForChunk(this.currentChunk));
+    }
+    return [...retainedAreaKeys].map((areaKey) => this.getRenderFetchBoundsForArea(areaKey));
+  }
+
+  private isHexInRetainedRenderArea(
+    col: number,
+    row: number,
+    retainedBounds: readonly WorldmapLocalBounds[] = this.getRetainedRenderAreaBounds(),
+  ): boolean {
+    return isHexInsideAnyBounds(col, row, retainedBounds);
+  }
+
+  private pruneWorldmapSpatialCaches(): void {
+    const retainedBounds = this.getRetainedRenderAreaBounds();
+    this.pruneExploredTilesOutsideBounds(retainedBounds);
+    this.retainActiveTerrainGenerations();
+  }
+
+  private pruneExploredTilesOutsideBounds(retainedBounds: readonly WorldmapLocalBounds[]): void {
+    for (const [col, rows] of this.exploredTiles) {
+      for (const row of rows.keys()) {
+        if (!this.isHexInRetainedRenderArea(col, row, retainedBounds)) {
+          rows.delete(row);
+          this.provisionalBiomes.clear(col, row);
+        }
+      }
+      if (rows.size === 0) {
+        this.exploredTiles.delete(col);
+      }
+    }
+  }
+
+  private retainActiveTerrainGenerations(): void {
+    const retainedGenerationKeys = new Set([
+      ...this.cachedMatrices.keys(),
+      ...this.pinnedChunkKeys,
+      ...this.directionalPresentationChunkKeys,
+    ]);
+    if (this.currentChunk !== "null") {
+      retainedGenerationKeys.add(this.currentChunk);
+    }
+    this.exploredTilesGeneration.retain(retainedGenerationKeys);
+  }
+
+  private rebuildPathfindingWorkerState(): void {
+    const retainedBounds = this.getRetainedRenderAreaBounds();
+    gameWorkerManager.hydrateWorldState(this.buildRetainedPathfindingWorldState(retainedBounds));
+  }
+
+  private buildRetainedPathfindingWorldState(retainedBounds: readonly WorldmapLocalBounds[]): GameWorkerWorldState {
+    return {
+      armies: this.collectRetainedArmyPathfinding(retainedBounds),
+      exploredTiles: this.collectRetainedExploredTilePathfinding(),
+      structures: this.collectRetainedStructurePathfinding(retainedBounds),
+    };
+  }
+
+  private collectRetainedExploredTilePathfinding(): GameWorkerExploredTile[] {
+    const exploredTiles: GameWorkerExploredTile[] = [];
+    for (const [col, rows] of this.exploredTiles) {
+      for (const [row, biome] of rows) {
+        exploredTiles.push({ biome, col, row });
+      }
+    }
+    return exploredTiles;
+  }
+
+  private collectRetainedStructurePathfinding(retainedBounds: readonly WorldmapLocalBounds[]): GameWorkerEntityHex[] {
+    const structures: GameWorkerEntityHex[] = [];
+    const retainedStructureIds = new Set<ID>();
+    retainedBounds.forEach((bounds) => {
+      const contractBounds = this.toContractBounds(bounds);
+      this.worldSpatialProjection.getStructuresInBounds(contractBounds).forEach((structure) => {
+        if (structure.reserved || retainedStructureIds.has(structure.entityId)) {
+          return;
+        }
+        retainedStructureIds.add(structure.entityId);
+        const normalized = new Position({ x: structure.hexCoords.col, y: structure.hexCoords.row }).getNormalized();
+        structures.push({
+          col: normalized.x,
+          info: {
+            id: structure.entityId,
+            owner: this.getStructureOwnerAddress(structure.entityId) ?? 0n,
+          },
+          row: normalized.y,
+        });
+      });
+    });
+    return structures;
+  }
+
+  private collectRetainedArmyPathfinding(retainedBounds: readonly WorldmapLocalBounds[]): GameWorkerEntityHex[] {
+    const armies: GameWorkerEntityHex[] = [];
+    const retainedArmyIds = new Set<ID>();
+    retainedBounds.forEach((bounds) => {
+      const contractBounds = this.toContractBounds(bounds);
+      this.worldSpatialProjection.getArmiesInBounds(contractBounds).forEach((army) => {
+        if (retainedArmyIds.has(army.entityId)) {
+          return;
+        }
+        retainedArmyIds.add(army.entityId);
+        const normalized = new Position({ x: army.hexCoords.col, y: army.hexCoords.row }).getNormalized();
+        armies.push({
+          col: normalized.x,
+          info: {
+            id: army.entityId,
+            owner: this.getArmyOwnerAddress(army.entityId) ?? 0n,
+          },
+          row: normalized.y,
+        });
+      });
+    });
+    return armies;
   }
 
   private clearStalledChunkAreaState(chunkKey: string): string | null {
@@ -9143,6 +9345,7 @@ export default class WorldmapScene extends WarpTravel {
   }
 
   protected override onBiomeModelLoaded(model: InstancedBiome): void {
+    model.setFarDetailEnabled(this.getCurrentCameraView() === CameraView.Far);
     if (this.currentChunkBounds) {
       model.setWorldBounds(this.currentChunkBounds);
     }

@@ -1,4 +1,6 @@
-import { BiomeType, HexEntityInfo, getNeighborOffsets } from "@bibliothecadao/types";
+import { getNeighborOffsets } from "@bibliothecadao/types";
+import type { BiomeType, HexEntityInfo } from "@bibliothecadao/types";
+import type { GameWorkerRequestMessage, GameWorkerWorldState } from "./game-worker-messages";
 
 // Simplified Position interface
 interface WorkerPosition {
@@ -19,42 +21,56 @@ const exploredTiles = new Map<number, Map<number, BiomeType>>();
 const structureHexes = new Map<number, Map<number, HexEntityInfo>>();
 const armyHexes = new Map<number, Map<number, HexEntityInfo>>();
 
-// Message Types
-type WorkerMessage =
-  | { type: "UPDATE_EXPLORED"; col: number; row: number; biome: BiomeType | null }
-  | { type: "UPDATE_STRUCTURE"; col: number; row: number; info: HexEntityInfo | null }
-  | { type: "UPDATE_ARMY"; col: number; row: number; info: HexEntityInfo | null }
-  | { type: "FIND_PATH"; requestId: number; start: WorkerPosition; end: WorkerPosition; maxDistance: number };
+function updateSpatialMap<T>(map: Map<number, Map<number, T>>, col: number, row: number, value: T | null): void {
+  if (value !== null) {
+    const column = map.get(col) ?? new Map<number, T>();
+    column.set(row, value);
+    map.set(col, column);
+    return;
+  }
 
-self.onmessage = (event: MessageEvent<WorkerMessage>) => {
+  const column = map.get(col);
+  column?.delete(row);
+  if (column?.size === 0) {
+    map.delete(col);
+  }
+}
+
+function resetWorldState(): void {
+  exploredTiles.clear();
+  structureHexes.clear();
+  armyHexes.clear();
+}
+
+function hydrateWorldState(worldState: GameWorkerWorldState): void {
+  resetWorldState();
+  worldState.exploredTiles.forEach(({ biome, col, row }) => updateSpatialMap(exploredTiles, col, row, biome));
+  worldState.structures.forEach(({ col, info, row }) => updateSpatialMap(structureHexes, col, row, info));
+  worldState.armies.forEach(({ col, info, row }) => updateSpatialMap(armyHexes, col, row, info));
+}
+
+self.onmessage = (event: MessageEvent<GameWorkerRequestMessage>) => {
   const msg = event.data;
 
   switch (msg.type) {
     case "UPDATE_EXPLORED": {
-      if (msg.biome === null) {
-        exploredTiles.get(msg.col)?.delete(msg.row);
-      } else {
-        if (!exploredTiles.has(msg.col)) exploredTiles.set(msg.col, new Map());
-        exploredTiles.get(msg.col)!.set(msg.row, msg.biome);
-      }
+      updateSpatialMap(exploredTiles, msg.col, msg.row, msg.biome);
       break;
     }
     case "UPDATE_STRUCTURE": {
-      if (msg.info === null) {
-        structureHexes.get(msg.col)?.delete(msg.row);
-      } else {
-        if (!structureHexes.has(msg.col)) structureHexes.set(msg.col, new Map());
-        structureHexes.get(msg.col)!.set(msg.row, msg.info);
-      }
+      updateSpatialMap(structureHexes, msg.col, msg.row, msg.info);
       break;
     }
     case "UPDATE_ARMY": {
-      if (msg.info === null) {
-        armyHexes.get(msg.col)?.delete(msg.row);
-      } else {
-        if (!armyHexes.has(msg.col)) armyHexes.set(msg.col, new Map());
-        armyHexes.get(msg.col)!.set(msg.row, msg.info);
-      }
+      updateSpatialMap(armyHexes, msg.col, msg.row, msg.info);
+      break;
+    }
+    case "HYDRATE_WORLD_STATE": {
+      hydrateWorldState(msg);
+      break;
+    }
+    case "RESET_WORLD_STATE": {
+      resetWorldState();
       break;
     }
     case "FIND_PATH": {
