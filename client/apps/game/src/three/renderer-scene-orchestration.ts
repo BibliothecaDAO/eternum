@@ -8,8 +8,7 @@ import type WorldmapScene from "@/three/scenes/worldmap";
 import type { TransitionManager } from "@/three/managers/transition-manager";
 import type { RendererSurfaceLike } from "./renderer-backend";
 import type { RendererEffectsBridgeRuntime } from "./renderer-effects-bridge-runtime";
-import type { QualityFeatures } from "./utils/quality-controller";
-import type { SceneName } from "./types";
+import type { RenderVisualProfile } from "./render-profile";
 import {
   bootstrapRendererSceneRuntime,
   createGameRendererSceneRegistry,
@@ -30,14 +29,13 @@ interface PrepareGameRendererScenesInput {
   dojo: SetupResult;
   effectsBridgeRuntime: Pick<
     RendererEffectsBridgeRuntime,
-    "applyEnvironment" | "applyQualityFeatures" | "setupPostProcessingEffects" | "subscribeToQualityController"
+    "applyEnvironment" | "applyRenderVisualProfile" | "setupPostProcessingEffects"
   >;
   fastTravelEnabled: boolean;
-  initialSceneName: SceneName;
   inputSurface: HTMLElement;
   markLabelsDirty?: () => void;
   mouse: Vector2;
-  qualityFeatures: QualityFeatures;
+  renderVisuals: RenderVisualProfile;
   raycaster: Raycaster;
   renderer?: RendererSurfaceLike;
   warn?: (message: string, error: unknown) => void;
@@ -59,8 +57,7 @@ export function prepareGameRendererScenes(input: PrepareGameRendererScenesInput)
     effectsBridgeRuntime: input.effectsBridgeRuntime,
     fastTravelScene: sceneRegistry.fastTravelScene,
     hexceptionScene: sceneRegistry.hexceptionScene,
-    initialSceneName: input.initialSceneName,
-    qualityFeatures: input.qualityFeatures,
+    renderVisuals: input.renderVisuals,
     renderer: input.renderer,
     sceneManager: sceneRegistry.sceneManager,
     warn: input.warn,

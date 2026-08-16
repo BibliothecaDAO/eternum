@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { resolveRendererBuildMode } from "./src/three/renderer-build-mode";
 
 const _rawEnv = import.meta.env as Record<string, string | undefined>;
 
@@ -49,10 +50,7 @@ const envSchema = z.object({
     .transform((v) => v === "true")
     .optional()
     .default("false"),
-  VITE_PUBLIC_RENDERER_BUILD_MODE: z
-    .enum(["legacy-webgl", "experimental-webgpu-auto", "experimental-webgpu-force-webgl"])
-    .optional()
-    .default("experimental-webgpu-auto"),
+  VITE_PUBLIC_RENDERER_BUILD_MODE: z.string().optional().default("webgpu-auto").transform(resolveRendererBuildMode),
   // Version and chain info
   VITE_PUBLIC_GAME_VERSION: z.string().optional().default(""),
   VITE_PUBLIC_CHAIN: z.enum(["sepolia", "mainnet", "local", "appchain"]).optional().default("local"), // Add other chains as needed

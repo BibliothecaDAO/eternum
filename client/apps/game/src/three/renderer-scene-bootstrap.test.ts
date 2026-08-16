@@ -19,6 +19,7 @@ function createPrewarmableScene() {
   return {
     getCamera: vi.fn(() => camera),
     getScene: vi.fn(() => scene),
+    setPipelinePrewarmer: vi.fn(),
   };
 }
 
@@ -142,26 +143,28 @@ describe("createGameRendererSceneRegistry", () => {
 });
 
 describe("bootstrapRendererSceneRuntime", () => {
-  it("prewarms the initial scene immediately and defers inactive scene prewarm", async () => {
+  it("configures every scene to prewarm when its loading gate requests it", async () => {
     requestRendererScenePrewarmMock.mockReset();
-    const deferredPrewarmTasks: Array<() => void> = [];
     const effectsBridgeRuntime = {
       applyEnvironment: vi.fn(),
-      applyQualityFeatures: vi.fn(),
+      applyRenderVisualProfile: vi.fn(),
       setupPostProcessingEffects: vi.fn(),
-      subscribeToQualityController: vi.fn(),
     };
     const renderer = { id: "renderer" };
     const worldmapScene = createPrewarmableScene();
     const hexceptionScene = createPrewarmableScene();
     const fastTravelScene = createPrewarmableScene();
     const sceneManager = { moveCameraForScene: vi.fn() };
-    const qualityFeatures = {
+    const renderVisuals = {
+      animationCullDistance: 120,
+      animationFps: 24,
       bloom: true,
       bloomIntensity: 0.4,
       chromaticAberration: false,
       fxaa: true,
+      labelRenderDistance: 160,
       pixelRatio: 1.5,
+      shadowMapSize: 1024,
       shadows: true,
       vignette: true,
     };
@@ -170,41 +173,26 @@ describe("bootstrapRendererSceneRuntime", () => {
       effectsBridgeRuntime,
       fastTravelScene,
       hexceptionScene,
-      initialSceneName: SceneName.FastTravel,
-      qualityFeatures,
+      renderVisuals,
       renderer: renderer as never,
-      scheduleInactiveScenePrewarm: (task) => {
-        deferredPrewarmTasks.push(task);
-      },
       sceneManager: sceneManager as never,
       warn: vi.fn(),
       worldmapScene,
     });
 
-    expect(requestRendererScenePrewarmMock).toHaveBeenNthCalledWith(
-      1,
-      renderer,
-      fastTravelScene.getScene(),
-      fastTravelScene.getCamera(),
-    );
-    expect(requestRendererScenePrewarmMock).toHaveBeenCalledTimes(1);
+    expect(requestRendererScenePrewarmMock).not.toHaveBeenCalled();
+    expect(worldmapScene.setPipelinePrewarmer).toHaveBeenCalledOnce();
+    expect(hexceptionScene.setPipelinePrewarmer).toHaveBeenCalledOnce();
+    expect(fastTravelScene.setPipelinePrewarmer).toHaveBeenCalledOnce();
     expect(effectsBridgeRuntime.applyEnvironment).toHaveBeenCalledTimes(1);
     expect(effectsBridgeRuntime.setupPostProcessingEffects).toHaveBeenCalledTimes(1);
     expect(sceneManager.moveCameraForScene).toHaveBeenCalledTimes(1);
-    expect(effectsBridgeRuntime.applyQualityFeatures).toHaveBeenCalledWith(qualityFeatures);
-    expect(effectsBridgeRuntime.subscribeToQualityController).toHaveBeenCalledTimes(1);
+    expect(effectsBridgeRuntime.applyRenderVisualProfile).toHaveBeenCalledWith(renderVisuals);
 
-    expect(deferredPrewarmTasks).toHaveLength(1);
-    deferredPrewarmTasks[0]();
+    const prewarmHexception = hexceptionScene.setPipelinePrewarmer.mock.calls[0][0];
+    await prewarmHexception(hexceptionScene.getScene(), hexceptionScene.getCamera());
 
-    expect(requestRendererScenePrewarmMock).toHaveBeenNthCalledWith(
-      2,
-      renderer,
-      worldmapScene.getScene(),
-      worldmapScene.getCamera(),
-    );
-    expect(requestRendererScenePrewarmMock).toHaveBeenNthCalledWith(
-      3,
+    expect(requestRendererScenePrewarmMock).toHaveBeenCalledWith(
       renderer,
       hexceptionScene.getScene(),
       hexceptionScene.getCamera(),
@@ -222,18 +210,20 @@ describe("bootstrapRendererSceneRuntime", () => {
     bootstrapRendererSceneRuntime({
       effectsBridgeRuntime: {
         applyEnvironment: vi.fn(),
-        applyQualityFeatures: vi.fn(),
+        applyRenderVisualProfile: vi.fn(),
         setupPostProcessingEffects: vi.fn(),
-        subscribeToQualityController: vi.fn(),
       },
       hexceptionScene,
-      initialSceneName: SceneName.WorldMap,
-      qualityFeatures: {
+      renderVisuals: {
+        animationCullDistance: 120,
+        animationFps: 24,
         bloom: false,
         bloomIntensity: 0,
         chromaticAberration: false,
         fxaa: false,
+        labelRenderDistance: 160,
         pixelRatio: 1,
+        shadowMapSize: 1024,
         shadows: true,
         vignette: false,
       },
@@ -243,7 +233,8 @@ describe("bootstrapRendererSceneRuntime", () => {
       worldmapScene,
     });
 
-    await Promise.resolve();
+    const prewarmWorldmap = worldmapScene.setPipelinePrewarmer.mock.calls[0][0];
+    await prewarmWorldmap(worldmapScene.getScene(), worldmapScene.getCamera());
 
     expect(warn).toHaveBeenCalledWith("GameRenderer: Scene prewarm failed", error);
   });

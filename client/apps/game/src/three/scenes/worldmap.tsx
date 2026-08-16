@@ -47,7 +47,7 @@ import { SceneManager } from "@/three/scene-manager";
 import { CameraView } from "@/three/scenes/camera-view";
 import { CAMERA_CONFIG } from "@/three/constants";
 import { HexagonScene } from "@/three/scenes/hexagon-scene";
-import type { QualityFeatures } from "@/three/utils/quality-controller";
+import type { RenderVisualProfile } from "@/three/render-profile";
 import { WorldmapPerfSimulation } from "@/three/scenes/worldmap-perf-simulation";
 import { playResourceSound } from "@/three/sound/utils";
 import { LeftView } from "@/types";
@@ -695,7 +695,7 @@ export default class WorldmapScene extends WarpTravel {
   private interactiveHexWindowKey: string | null = null;
 
   private armyManager!: ArmyManager;
-  private latestQualityFeatures?: QualityFeatures;
+  private latestRenderVisualProfile?: RenderVisualProfile;
   private pendingArmyMovements: Map<ID, PendingArmyMovement> = new Map();
   private pendingArmyMovementVisualLifecycleDisposers: Map<ID, () => void> = new Map();
   // Pre-computed optimistic movement plans keyed by entityId. Planned at submit
@@ -1267,13 +1267,13 @@ export default class WorldmapScene extends WarpTravel {
     }
   }
 
-  override applyQualityFeatures(features: QualityFeatures): void {
-    super.applyQualityFeatures(features);
-    this.latestQualityFeatures = features;
-    this.applyWorldmapQualityLimits(features);
+  override applyRenderVisualProfile(features: RenderVisualProfile): void {
+    super.applyRenderVisualProfile(features);
+    this.latestRenderVisualProfile = features;
+    this.applyWorldmapVisualLimits(features);
   }
 
-  private applyWorldmapQualityLimits(features: QualityFeatures): void {
+  private applyWorldmapVisualLimits(features: RenderVisualProfile): void {
     this.visibilityManager?.setAnimationMaxDistance(features.animationCullDistance);
     this.structureManager?.setAnimationCullDistance(features.animationCullDistance);
     this.armyManager?.setLabelRenderDistance(features.labelRenderDistance);
@@ -1342,10 +1342,10 @@ export default class WorldmapScene extends WarpTravel {
       this.chunkWorkQueue,
     );
 
-    // Bootstrap applyQualityFeatures may have run before these managers existed; apply the
-    // latest known quality limits now that the managers are available.
-    if (this.latestQualityFeatures) {
-      this.applyWorldmapQualityLimits(this.latestQualityFeatures);
+    // Bootstrap applyRenderVisualProfile may have run before these managers existed; apply the
+    // fixed visual limits now that the managers are available.
+    if (this.latestRenderVisualProfile) {
+      this.applyWorldmapVisualLimits(this.latestRenderVisualProfile);
     }
 
     // NOTE: Chunk integration system disabled for performance.
@@ -1849,14 +1849,11 @@ export default class WorldmapScene extends WarpTravel {
     }
     // castShadow must not flip with the camera view: toggling the light's
     // topology rebuilds every material's shader graph (the multi-second zoom
-    // freeze). Quality pins the topology; the per-view part is the intensity
+    // freeze). The visual profile pins topology; the per-view part is the intensity
     // uniform. Per-mesh castShadow flags already empty the Far shadow pass.
-    this.mainDirectionalLight.castShadow = this.getShadowsEnabledByQuality();
+    this.mainDirectionalLight.castShadow = this.getShadowsEnabled();
     this.setMainDirectionalShadowActive(
-      shouldCastWorldmapDirectionalShadow(
-        this.getShadowsEnabledByQuality(),
-        this.getCurrentCameraView() === CameraView.Far,
-      ),
+      shouldCastWorldmapDirectionalShadow(this.getShadowsEnabled(), this.getCurrentCameraView() === CameraView.Far),
     );
     this.mainDirectionalLight.shadow.mapSize.set(1024, 1024);
     this.mainDirectionalLight.shadow.camera.left = -60;
@@ -4170,7 +4167,8 @@ export default class WorldmapScene extends WarpTravel {
       },
       setupCameraZoomHandler: () => this.setupCameraZoomHandler(),
       refreshScene: () => this.refreshWarpTravelScene(),
-      onInitialSetupComplete: () => {
+      onInitialSetupComplete: async () => {
+        await this.prewarmPipeline();
         this.announceWorldmapSceneReady();
         this.preloadWorldmapCosmeticAssets();
       },
@@ -4664,6 +4662,7 @@ export default class WorldmapScene extends WarpTravel {
       const currentCount = hexMesh.getCount();
       hexMesh.setMatrixAt(currentCount, dummy.matrix);
       hexMesh.setCount(currentCount + 1);
+      this.requestShadowContentRefresh();
       this.visibleTerrainMembership.set(hexKey, {
         biomeKey: biomeVariant,
         chunkKey: this.currentChunk,
@@ -6947,6 +6946,7 @@ export default class WorldmapScene extends WarpTravel {
       presentationChunkKeys: composite.presentationChunkKeys,
     });
     incrementWorldmapRenderCounter("terrainCompositeRebuilt");
+    this.requestShadowContentRefresh();
   }
 
   private copyTerrainCompositeMatrices(
@@ -9345,6 +9345,7 @@ export default class WorldmapScene extends WarpTravel {
   }
 
   protected override onBiomeModelLoaded(model: InstancedBiome): void {
+    super.onBiomeModelLoaded(model);
     model.setFarDetailEnabled(this.getCurrentCameraView() === CameraView.Far);
     if (this.currentChunkBounds) {
       model.setWorldBounds(this.currentChunkBounds);

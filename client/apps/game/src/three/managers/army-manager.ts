@@ -2498,6 +2498,7 @@ export class ArmyManager {
 
     // Update movements in ArmyModel
     this.armyModel.updateMovements(deltaTime);
+    this.requestMovingArmyShadowRefresh();
     this.armyModel.updateAnimations(deltaTime, animationContext);
     this.updateCompactLabelCamera();
 
@@ -2641,6 +2642,14 @@ export class ArmyManager {
     if (camera) {
       this.compactLabelRenderer.updateCamera(camera);
     }
+  }
+
+  private requestMovingArmyShadowRefresh(): void {
+    if (this.currentCameraView !== CameraView.Close || !this.hasMovingArmies()) {
+      return;
+    }
+
+    this.hexagonScene?.requestShadowContentRefresh();
   }
 
   private syncArmyBoundsForMovementState() {
@@ -3096,14 +3105,11 @@ export class ArmyManager {
   }
 
   private handleCameraViewChange = (view: CameraView) => {
-    const qualityShadowsEnabled = this.hexagonScene?.getShadowsEnabledByQuality() ?? true;
-    const contactShadowsAllowed = this.hexagonScene?.contactShadowsAllowedByQuality() ?? true;
-    const enableRealShadows = view === CameraView.Close && qualityShadowsEnabled;
-    // Contact shadows are the fallback for real shadows; gate them off on LOW/below
-    // so the weakest hardware pays for neither real nor contact shadows.
-    const enableContactShadows = !enableRealShadows && contactShadowsAllowed;
+    const shadowsEnabled = this.hexagonScene?.getShadowsEnabled() ?? true;
+    const enableRealShadows = view === CameraView.Close && shadowsEnabled;
+    const enableContactShadows = !enableRealShadows;
 
-    // Keep shadow flags in sync even if view is unchanged (quality can toggle shadows dynamically).
+    // Keep shadow flags in sync when the scene reapplies its visual profile.
     this.armyModel.setShadowsEnabled(enableRealShadows);
     this.armyModel.setContactShadowsEnabled(enableContactShadows);
 

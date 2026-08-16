@@ -15,5 +15,8 @@ describe("Worldmap ready signal", () => {
     expect(source).toContain("onInitialSetupComplete");
     expect(source).toContain("onResumeComplete");
     expect(source).toContain("window.dispatchEvent(new Event(WORLDMAP_SCENE_READY_EVENT))");
+    expect(source.indexOf("await this.prewarmPipeline()")).toBeLessThan(
+      source.indexOf("this.announceWorldmapSceneReady()"),
+    );
   });
 });

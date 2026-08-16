@@ -19,12 +19,7 @@ vi.mock("@/three/managers/instanced-model", () => ({
   LAND_NAME: "LAND",
 }));
 
-vi.mock("@/ui/config", () => ({
-  GRAPHICS_SETTING: "high",
-  GraphicsSettings: {
-    LOW: "low",
-  },
-}));
+vi.mock("@/ui/config", () => ({}));
 
 import InstancedBiome from "./instanced-biome";
 

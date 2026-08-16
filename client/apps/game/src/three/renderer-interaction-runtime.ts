@@ -1,6 +1,5 @@
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { CAMERA_CONFIG, CAMERA_FAR_PLANE, CONTROL_CONFIG } from "@/three/constants";
-import { GraphicsSettings } from "@/ui/config";
 import { PerspectiveCamera, Raycaster, Vector2 } from "three";
 import { MapControls } from "three/examples/jsm/controls/MapControls.js";
 import { SceneName } from "./types";
@@ -15,8 +14,8 @@ export interface RendererInteractionRuntime {
 }
 
 interface CreateRendererInteractionRuntimeInput {
-  graphicsSetting: GraphicsSettings;
   onControlsChange: () => void;
+  onInteraction: () => void;
   resolveCurrentSceneName: () => SceneName | undefined;
 }
 
@@ -33,6 +32,8 @@ class GameRendererInteractionRuntime implements RendererInteractionRuntime {
   public controls?: MapControls;
   private unsubscribeEnableMapZoom?: () => void;
   private hasDocumentKeyboardLifecycle = false;
+  private inputSurface?: HTMLElement;
+  private readonly handleSurfaceInteraction = () => this.input.onInteraction();
 
   private readonly handleDocumentFocus = (event: FocusEvent) => {
     if (event.target instanceof HTMLInputElement && this.controls) {
@@ -50,9 +51,9 @@ class GameRendererInteractionRuntime implements RendererInteractionRuntime {
 
   public attachSurface(surface: HTMLElement): void {
     this.disposeControls();
+    this.attachInteractionListeners(surface);
     this.controls = createConfiguredMapControls({
       camera: this.camera,
-      graphicsSetting: this.input.graphicsSetting,
       onControlsChange: this.input.onControlsChange,
       surface,
     });
@@ -65,6 +66,7 @@ class GameRendererInteractionRuntime implements RendererInteractionRuntime {
   }
 
   private disposeControls(): void {
+    this.detachInteractionListeners();
     this.unsubscribeEnableMapZoom?.();
     this.unsubscribeEnableMapZoom = undefined;
 
@@ -76,6 +78,20 @@ class GameRendererInteractionRuntime implements RendererInteractionRuntime {
 
     this.controls?.dispose();
     this.controls = undefined;
+  }
+
+  private attachInteractionListeners(surface: HTMLElement): void {
+    this.inputSurface = surface;
+    surface.addEventListener("pointerdown", this.handleSurfaceInteraction, { passive: true });
+    surface.addEventListener("pointermove", this.handleSurfaceInteraction, { passive: true });
+    surface.addEventListener("wheel", this.handleSurfaceInteraction, { passive: true });
+  }
+
+  private detachInteractionListeners(): void {
+    this.inputSurface?.removeEventListener("pointerdown", this.handleSurfaceInteraction);
+    this.inputSurface?.removeEventListener("pointermove", this.handleSurfaceInteraction);
+    this.inputSurface?.removeEventListener("wheel", this.handleSurfaceInteraction);
+    this.inputSurface = undefined;
   }
 
   private registerDocumentKeyboardLifecycle(): void {
@@ -124,7 +140,6 @@ function createRendererCamera(): PerspectiveCamera {
 
 function createConfiguredMapControls(input: {
   camera: PerspectiveCamera;
-  graphicsSetting: GraphicsSettings;
   onControlsChange: () => void;
   surface: HTMLElement;
 }): MapControls {
@@ -137,7 +152,7 @@ function createConfiguredMapControls(input: {
   controls.zoomToCursor = CONTROL_CONFIG.zoomToCursor;
   controls.minDistance = CONTROL_CONFIG.minDistance;
   controls.maxDistance = CONTROL_CONFIG.maxDistance;
-  controls.enableDamping = CONTROL_CONFIG.enableDamping && input.graphicsSetting === GraphicsSettings.HIGH;
+  controls.enableDamping = CONTROL_CONFIG.enableDamping;
   controls.dampingFactor = CONTROL_CONFIG.dampingFactor;
   controls.target.set(0, 0, 0);
   controls.addEventListener("change", input.onControlsChange);

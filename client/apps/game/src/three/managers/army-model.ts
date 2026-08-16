@@ -1,6 +1,6 @@
 import { CameraView } from "@/three/scenes/hexagon-scene";
 import { gltfLoader } from "@/three/utils/utils";
-import { FELT_CENTER, GRAPHICS_SETTING, GraphicsSettings, isLowOrBelow } from "@/ui/config";
+import { FELT_CENTER } from "@/ui/config";
 import { getCharacterModel } from "@/utils/agent";
 import { configManager } from "@bibliothecadao/eternum";
 import { BiomeType, TroopTier, TroopType } from "@bibliothecadao/types";
@@ -258,7 +258,7 @@ export class ArmyModel {
         registryEntry,
       })
         .then((gltf) => {
-          const modelData = this.createModelData(gltf);
+          const modelData = this.createModelData(gltf, false);
           this.cosmeticModels.set(cosmeticId, modelData);
           this.reapplyInstancesForCosmeticModel(cosmeticId, modelData);
           resolve(modelData);
@@ -359,7 +359,7 @@ export class ArmyModel {
     }
   }
 
-  private createModelData(gltf: any): ModelData {
+  private createModelData(gltf: any, ownsGeometry: boolean = true): ModelData {
     const group = new Group();
     const sourceScene = this.createRenderableSourceScene(gltf.scene);
     const instancedMeshes: AnimatedInstancedMesh[] = [];
@@ -408,6 +408,7 @@ export class ArmyModel {
       currentScales: new Map(),
       lastAnimationUpdate: 0,
       animationUpdateInterval: this.MODEL_ANIMATION_UPDATE_INTERVAL,
+      ownsGeometry,
     };
   }
 
@@ -1168,8 +1169,6 @@ export class ArmyModel {
 
   // Animation Methods
   public updateAnimations(_deltaTime: number, visibility?: AnimationVisibilityContext): void {
-    if (isLowOrBelow(GRAPHICS_SETTING)) return;
-
     const now = performance.now();
     const time = now * 0.001;
 
@@ -1399,11 +1398,7 @@ export class ArmyModel {
   }
 
   private shouldSkipAnimation(animationState: number): boolean {
-    return (
-      (GRAPHICS_SETTING === GraphicsSettings.MID && animationState === ANIMATION_STATE_IDLE) ||
-      isLowOrBelow(GRAPHICS_SETTING) ||
-      (this.currentCameraView === CameraView.Far && animationState === ANIMATION_STATE_IDLE)
-    );
+    return this.currentCameraView === CameraView.Far && animationState === ANIMATION_STATE_IDLE;
   }
 
   private getAnimationUpdateFrequency(instanceCount: number): number {
@@ -2615,8 +2610,9 @@ export class ArmyModel {
       modelData.instancedMeshes.forEach((mesh) => {
         releasePooledInstancedMaterial(mesh.material);
 
-        // Dispose geometry
-        mesh.geometry.dispose();
+        if (modelData.ownsGeometry) {
+          mesh.geometry.dispose();
+        }
 
         // Phase 2.5: free the instanceMatrix/instanceColor GPU buffers (via the
         // renderer 'dispose' event) and the morph DataTexture. InstancedMesh.dispose
@@ -2646,7 +2642,6 @@ export class ArmyModel {
     this.cosmeticModels.forEach((modelData) => {
       modelData.instancedMeshes.forEach((mesh) => {
         releasePooledInstancedMaterial(mesh.material);
-        mesh.geometry.dispose();
         mesh.dispose();
         this.scene.remove(mesh);
       });

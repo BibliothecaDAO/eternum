@@ -516,7 +516,7 @@ async function runSceneSmoke({
 async function main(argv) {
   const baseUrl = readOption(argv, "--base-url", DEFAULT_BASE_URL);
   const chain = readOption(argv, "--chain", DEFAULT_CHAIN);
-  const rendererMode = readOption(argv, "--renderer-mode", "experimental-webgpu-auto");
+  const rendererMode = readOption(argv, "--renderer-mode", "webgpu-auto");
   const scenes = normalizeSceneList(readOption(argv, "--scenes", ""));
   const waitMs = Number(readOption(argv, "--wait-ms", String(DEFAULT_WAIT_MS)));
   const requestedWorldName = readOption(argv, "--world", "");

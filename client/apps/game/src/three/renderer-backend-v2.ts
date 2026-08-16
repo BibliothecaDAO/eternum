@@ -1,15 +1,10 @@
-import type { GraphicsSettings as GraphicsSettingsType } from "@/ui/config";
 import type { Camera, Scene } from "three";
 
 import type { RendererSurfaceLike } from "./renderer-backend";
 import type { RendererBuildMode } from "./renderer-build-mode";
 
-export type RendererActiveMode = "legacy-webgl" | "webgpu" | "webgl2-fallback";
-export type RendererFallbackReason =
-  | "experimental-init-error"
-  | "experimental-init-timeout"
-  | "webgpu-device-lost"
-  | null;
+export type RendererActiveMode = "webgpu" | "webgl2-fallback";
+export type RendererFallbackReason = "webgpu-device-lost" | "webgpu-unavailable" | null;
 
 export interface RendererBackendCapabilities {
   supportsEnvironmentIbl: boolean;
@@ -33,7 +28,7 @@ export type RendererCapabilityFeature =
 export interface RendererFeatureDegradation {
   detail?: string;
   feature: RendererCapabilityFeature;
-  reason: "disabled-by-quality" | "disabled-by-user" | "fallback-active" | "unsupported-backend";
+  reason: "disabled-by-profile" | "disabled-by-user" | "fallback-active" | "unsupported-backend";
 }
 
 export interface RendererInitDiagnostics {
@@ -54,7 +49,7 @@ export interface RendererBackendV2 {
   readonly renderer?: RendererSurfaceLike;
   applyEnvironment?(targets: unknown): Promise<void>;
   applyPostProcessPlan?(plan: RendererPostProcessPlan): RendererPostProcessController;
-  applyQuality?(input: { pixelRatio: number; shadows: boolean; width: number; height: number }): void;
+  applyRenderVisuals?(input: { pixelRatio: number; shadows: boolean; width: number; height: number }): void;
   dispose?(): void;
   initialize(): Promise<RendererInitDiagnostics>;
   renderFrame?(pipeline: RendererFramePipeline): void;
@@ -113,11 +108,7 @@ export interface RendererPostProcessRuntime {
   setSize(width: number, height: number): void;
 }
 
-export type RendererBackendV2Factory = (options: {
-  graphicsSetting: GraphicsSettingsType;
-  isMobileDevice: boolean;
-  pixelRatio: number;
-}) => RendererBackendV2;
+export type RendererBackendV2Factory = (options: { isMobileDevice: boolean; pixelRatio: number }) => RendererBackendV2;
 
 export function createRendererBackendCapabilities(
   input: Partial<RendererBackendCapabilities> = {},
@@ -138,10 +129,6 @@ export class RendererInitTimeoutError extends Error {
     super(message);
     this.name = "RendererInitTimeoutError";
   }
-}
-
-export function isRendererInitTimeoutError(error: unknown): error is RendererInitTimeoutError {
-  return error instanceof RendererInitTimeoutError || (error as { name?: string })?.name === "RendererInitTimeoutError";
 }
 
 export function createRendererInitDiagnostics(

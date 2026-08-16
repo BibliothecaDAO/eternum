@@ -38,7 +38,7 @@ describe("renderer startup telemetry", () => {
 
   it("ignores non-finite and negative timings", () => {
     recordRendererStartupTiming("webgpu-backend-total", Number.NaN);
-    recordRendererStartupTiming("experimental-backend-total", -10);
+    recordRendererStartupTiming("webgpu-renderer-create", -10);
 
     expect(snapshotRendererStartupTimings()).toEqual({});
     expect(recordGameEntryDuration).not.toHaveBeenCalled();

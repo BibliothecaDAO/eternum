@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import type { QualityFeatures } from "./utils/quality-controller";
+import type { RenderVisualProfile } from "./render-profile";
 import { describe, expect, it, vi } from "vitest";
 
 const sceneBootstrapMocks = vi.hoisted(() => ({
@@ -23,26 +23,20 @@ describe("prepareGameRendererScenes", () => {
     };
     const effectsBridgeRuntime = {
       applyEnvironment: vi.fn(),
-      applyQualityFeatures: vi.fn(),
+      applyRenderVisualProfile: vi.fn(),
       setupPostProcessingEffects: vi.fn(),
-      subscribeToQualityController: vi.fn(),
     };
     const applySceneRegistry = vi.fn();
     const renderer = { id: "renderer" };
     const warn = vi.fn();
-    const qualityFeatures: QualityFeatures = {
+    const renderVisuals: RenderVisualProfile = {
       bloom: true,
       bloomIntensity: 0.4,
-      chunkLoadRadius: 3,
       chromaticAberration: false,
       animationCullDistance: 140,
-      animationFPS: 30,
+      animationFps: 30,
       fxaa: true,
       labelRenderDistance: 200,
-      maxVisibleArmies: 1000,
-      maxVisibleLabels: 500,
-      maxVisibleStructures: 500,
-      morphAnimations: true,
       pixelRatio: 1.5,
       shadowMapSize: 2048,
       shadows: true,
@@ -57,10 +51,9 @@ describe("prepareGameRendererScenes", () => {
       dojo: { id: "dojo" } as never,
       effectsBridgeRuntime: effectsBridgeRuntime as never,
       fastTravelEnabled: true,
-      initialSceneName: "travel" as never,
       inputSurface: document.createElement("canvas"),
       mouse: { id: "mouse" } as never,
-      qualityFeatures,
+      renderVisuals,
       raycaster: { id: "raycaster" } as never,
       renderer: renderer as never,
       warn,
@@ -72,8 +65,7 @@ describe("prepareGameRendererScenes", () => {
       effectsBridgeRuntime,
       fastTravelScene: registry.fastTravelScene,
       hexceptionScene: registry.hexceptionScene,
-      initialSceneName: "travel",
-      qualityFeatures,
+      renderVisuals,
       renderer,
       sceneManager: registry.sceneManager,
       warn,

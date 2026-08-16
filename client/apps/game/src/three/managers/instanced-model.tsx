@@ -1,5 +1,4 @@
 import { MinesMaterialsParams, PREVIEW_BUILD_COLOR_INVALID } from "@/three/constants";
-import { GRAPHICS_SETTING, isLowOrBelow } from "@/ui/config";
 import { ResourcesIds, StructureType } from "@bibliothecadao/types";
 import {
   AnimationAction,
@@ -130,6 +129,7 @@ export default class InstancedModel {
     initialCapacity: number = DEFAULT_INITIAL_CAPACITY,
     enableRaycast: boolean = false,
     name: string = "",
+    private readonly sourceAssetOwnership: "cache" | "consumer" = "consumer",
   ) {
     this.name = name;
     this.group = new Group();
@@ -150,6 +150,9 @@ export default class InstancedModel {
           return;
         }
         let material = child.material as MeshStandardMaterial;
+        if (this.sourceAssetOwnership === "cache") {
+          material = material.clone();
+        }
         applyStructureMaterialOverrides(material, name);
         if (name === StructureType[StructureType.FragmentMine] && child.material.name.includes("crystal")) {
           material = new MeshStandardMaterial(MinesMaterialsParams[ResourcesIds.AncientFragment]);
@@ -447,10 +450,6 @@ export default class InstancedModel {
     if (!this.shouldAnimate(visibility)) {
       return;
     }
-    if (isLowOrBelow(GRAPHICS_SETTING)) {
-      return;
-    }
-
     const now = performance.now();
     const maxInstanceCount = this.getMaxInstanceCount();
     const interval = this.getAnimationUpdateIntervalMs(maxInstanceCount);
@@ -710,7 +709,7 @@ export default class InstancedModel {
 
     // Dispose of instanced meshes and their resources
     this.instancedMeshes.forEach((mesh) => {
-      if (mesh.geometry) {
+      if (mesh.geometry && this.sourceAssetOwnership === "consumer") {
         mesh.geometry.dispose();
       }
       if (mesh.material) {

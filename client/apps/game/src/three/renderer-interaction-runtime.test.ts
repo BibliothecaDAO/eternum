@@ -66,14 +66,6 @@ vi.mock("@/three/constants", () => ({
   },
 }));
 
-vi.mock("@/ui/config", () => ({
-  GraphicsSettings: {
-    HIGH: "HIGH",
-    LOW: "LOW",
-    MID: "MID",
-  },
-}));
-
 vi.mock("@/hooks/store/use-ui-store", () => ({
   useUIStore: {
     getState: () => ({
@@ -88,7 +80,6 @@ vi.mock("three/examples/jsm/controls/MapControls.js", () => ({
 }));
 
 const { createRendererInteractionRuntime } = await import("./renderer-interaction-runtime");
-const { GraphicsSettings } = await import("@/ui/config");
 const { SceneName } = await import("./types");
 
 describe("createRendererInteractionRuntime", () => {
@@ -106,9 +97,10 @@ describe("createRendererInteractionRuntime", () => {
 
   it("configures shared camera, picking primitives, and control change wiring", () => {
     const onControlsChange = vi.fn();
+    const onInteraction = vi.fn();
     const runtime = createRendererInteractionRuntime({
-      graphicsSetting: GraphicsSettings.HIGH,
       onControlsChange,
+      onInteraction,
       resolveCurrentSceneName: () => SceneName.FastTravel,
     });
 
@@ -129,13 +121,15 @@ describe("createRendererInteractionRuntime", () => {
 
     controls?.fireChange();
     expect(onControlsChange).toHaveBeenCalledTimes(1);
+    surface.dispatchEvent(new PointerEvent("pointerdown"));
+    expect(onInteraction).toHaveBeenCalledTimes(1);
   });
 
   it("preserves the current world map zoom lockout when the zoom preference changes", () => {
     let currentSceneName = SceneName.WorldMap;
     const runtime = createRendererInteractionRuntime({
-      graphicsSetting: GraphicsSettings.MID,
       onControlsChange: vi.fn(),
+      onInteraction: vi.fn(),
       resolveCurrentSceneName: () => currentSceneName,
     });
 
@@ -153,15 +147,15 @@ describe("createRendererInteractionRuntime", () => {
 
     zoomSubscriber.current?.(false);
     expect(controls?.enableZoom).toBe(false);
-    expect(controls?.enableDamping).toBe(false);
+    expect(controls?.enableDamping).toBe(true);
   });
 
   it("removes document listeners, unsubscribes zoom sync, and disposes controls once", () => {
     const addDocumentListenerSpy = vi.spyOn(document, "addEventListener");
     const removeDocumentListenerSpy = vi.spyOn(document, "removeEventListener");
     const runtime = createRendererInteractionRuntime({
-      graphicsSetting: GraphicsSettings.HIGH,
       onControlsChange: vi.fn(),
+      onInteraction: vi.fn(),
       resolveCurrentSceneName: () => SceneName.FastTravel,
     });
 

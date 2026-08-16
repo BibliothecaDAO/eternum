@@ -2,51 +2,28 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { createRendererBackendCapabilities, createRendererInitDiagnostics } from "./renderer-backend-v2";
 
-const initializeSelectedRendererBackend = vi.fn();
+const captureClientEvent = vi.fn();
 const incrementRendererDiagnosticError = vi.fn();
 const syncRendererBackendDiagnostics = vi.fn();
 const setRendererDiagnosticCapabilities = vi.fn();
 const setRendererDiagnosticDegradations = vi.fn();
-const createWebGLRendererBackend = vi.fn();
 const createWebGPURendererBackend = vi.fn();
-const mockGraphicsSettings = {
-  HIGH: "HIGH",
-  LOW: "LOW",
-  MID: "MID",
-} as const;
 
-vi.mock("./renderer-backend-loader", () => ({
-  initializeSelectedRendererBackend,
-}));
-
+vi.mock("@/posthog", () => ({ captureClientEvent }));
 vi.mock("./renderer-diagnostics", () => ({
   incrementRendererDiagnosticError,
   syncRendererBackendDiagnostics,
   setRendererDiagnosticCapabilities,
   setRendererDiagnosticDegradations,
 }));
-
-vi.mock("./renderer-backend", () => ({
-  createWebGLRendererBackend,
-}));
-
-vi.mock("./webgpu-renderer-backend", () => ({
-  createWebGPURendererBackend,
-}));
-
-vi.mock("@/ui/config", () => ({
-  GraphicsSettings: mockGraphicsSettings,
-}));
+vi.mock("./webgpu-renderer-backend", () => ({ createWebGPURendererBackend }));
 
 const { initializeRendererBackendRuntime, initializeRendererDeviceLossFallbackRuntime } =
   await import("./renderer-backend-runtime");
-const { GraphicsSettings } = await import("@/ui/config");
 
-function createFakeBackend() {
+function createFakeBackend(activeMode: "webgpu" | "webgl2-fallback" = "webgpu") {
   return {
-    capabilities: createRendererBackendCapabilities({
-      supportsBloom: true,
-    }),
+    capabilities: createRendererBackendCapabilities({ supportsToneMappingControl: true }),
     renderer: {
       autoClear: false,
       clear: vi.fn(),
@@ -67,150 +44,71 @@ function createFakeBackend() {
     },
     initialize: vi.fn(async () =>
       createRendererInitDiagnostics({
-        activeMode: "legacy-webgl",
-        buildMode: "legacy-webgl",
-        requestedMode: "legacy-webgl",
+        activeMode,
+        buildMode: activeMode === "webgpu" ? "webgpu-auto" : "webgpu-force-webgl",
+        requestedMode: activeMode === "webgpu" ? "webgpu-auto" : "webgpu-force-webgl",
       }),
     ),
-    resize: vi.fn(),
-    applyQuality: vi.fn(),
-    applyPostProcessPlan: vi.fn(),
-    applyEnvironment: vi.fn(),
-    renderFrame: vi.fn(),
     dispose: vi.fn(),
   };
 }
 
-describe("initializeRendererBackendRuntime", () => {
+describe("renderer backend runtime", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    localStorage.clear();
   });
 
-  it("initializes diagnostics for an injected backend factory", async () => {
+  it("initializes the selected WebGPU renderer and records its resolved backend", async () => {
     const backend = createFakeBackend();
-    const backendFactory = vi.fn(() => backend);
+    createWebGPURendererBackend.mockReturnValue(backend);
+    localStorage.setItem("RENDERER_MODE", "retired-choice");
 
     const result = await initializeRendererBackendRuntime({
-      backendFactory,
-      envBuildMode: "experimental-webgpu-auto",
-      graphicsSetting: GraphicsSettings.HIGH,
-      isMobileDevice: false,
-      pixelRatio: 1.25,
-      search: "?rendererMode=legacy-webgl",
-    });
-
-    expect(backendFactory).toHaveBeenCalledWith({
-      graphicsSetting: GraphicsSettings.HIGH,
-      isMobileDevice: false,
-      pixelRatio: 1.25,
-    });
-    expect(backend.initialize).toHaveBeenCalledTimes(1);
-    expect(syncRendererBackendDiagnostics).toHaveBeenCalledTimes(1);
-    expect(setRendererDiagnosticCapabilities).toHaveBeenCalledWith(backend.capabilities);
-    expect(setRendererDiagnosticDegradations).toHaveBeenCalledWith([]);
-    expect(result).toEqual({
-      backend,
-      renderer: backend.renderer,
-    });
-  });
-
-  it("builds selected backend factories from renderer settings", async () => {
-    const webgpuBackend = createFakeBackend();
-    const webglBackend = createFakeBackend();
-    createWebGPURendererBackend.mockReturnValue(webgpuBackend);
-    createWebGLRendererBackend.mockReturnValue(webglBackend);
-
-    initializeSelectedRendererBackend.mockImplementation(async (input) => {
-      const experimentalResult = await input.experimentalFactory({
-        requestedMode: "experimental-webgpu-auto",
-      });
-      const legacyResult = await input.legacyFactory();
-
-      expect(createWebGPURendererBackend).toHaveBeenCalledWith({
-        graphicsSetting: GraphicsSettings.HIGH,
-        isMobileDevice: true,
-        onDeviceLost: undefined,
-        pixelRatio: 1.5,
-        requestedMode: "experimental-webgpu-auto",
-      });
-      expect(createWebGLRendererBackend).toHaveBeenCalledWith({
-        graphicsSetting: GraphicsSettings.HIGH,
-        isMobileDevice: true,
-        pixelRatio: 1.5,
-      });
-      expect(experimentalResult).toEqual({
-        backend: webgpuBackend,
-        diagnostics: await webgpuBackend.initialize.mock.results[0]?.value,
-      });
-      expect(legacyResult).toEqual({
-        backend: webglBackend,
-        diagnostics: await webglBackend.initialize.mock.results[0]?.value,
-      });
-
-      return {
-        backend: webgpuBackend,
-        diagnostics: await webgpuBackend.initialize.mock.results[0]?.value,
-      };
-    });
-
-    const result = await initializeRendererBackendRuntime({
-      envBuildMode: "experimental-webgpu-auto",
-      graphicsSetting: GraphicsSettings.HIGH,
+      envBuildMode: "webgpu-auto",
       isMobileDevice: true,
       pixelRatio: 1.5,
-      search: "?rendererMode=experimental-webgpu-auto",
+      search: "",
     });
 
-    expect(initializeSelectedRendererBackend).toHaveBeenCalledWith({
-      experimentalFactory: expect.any(Function),
-      legacyFactory: expect.any(Function),
-      options: {
-        envBuildMode: "experimental-webgpu-auto",
-        graphicsSetting: GraphicsSettings.HIGH,
-        isMobileDevice: true,
-        pixelRatio: 1.5,
-        search: "?rendererMode=experimental-webgpu-auto",
-      },
+    expect(createWebGPURendererBackend).toHaveBeenCalledWith({
+      isMobileDevice: true,
+      onDeviceLost: undefined,
+      pixelRatio: 1.5,
+      requestedMode: "webgpu-auto",
     });
-    expect(webgpuBackend.initialize).toHaveBeenCalledTimes(1);
-    expect(webglBackend.initialize).toHaveBeenCalledTimes(1);
-    expect(result).toEqual({
-      backend: webgpuBackend,
-      renderer: webgpuBackend.renderer,
+    expect(localStorage.getItem("RENDERER_MODE")).toBeNull();
+    expect(captureClientEvent).toHaveBeenCalledWith("renderer_backend_initialized", {
+      backend: "webgpu",
+      build_mode: "webgpu-auto",
+      fallback_reason: null,
     });
+    expect(result).toEqual({ backend, renderer: backend.renderer });
   });
 
-  it("initializes a legacy fallback backend after runtime webgpu device loss", async () => {
-    const backend = createFakeBackend();
-    createWebGLRendererBackend.mockReturnValue(backend);
+  it("restarts on the maintained WebGL2 fallback after device loss", async () => {
+    const backend = createFakeBackend("webgl2-fallback");
+    createWebGPURendererBackend.mockReturnValue(backend);
 
     const result = await initializeRendererDeviceLossFallbackRuntime({
-      envBuildMode: "experimental-webgpu-auto",
-      graphicsSetting: GraphicsSettings.HIGH,
+      envBuildMode: "webgpu-auto",
       isMobileDevice: false,
       pixelRatio: 1,
-      search: "?rendererMode=experimental-webgpu-auto",
+      search: "",
     });
 
-    expect(createWebGLRendererBackend).toHaveBeenCalledWith({
-      graphicsSetting: GraphicsSettings.HIGH,
+    expect(createWebGPURendererBackend).toHaveBeenCalledWith({
       isMobileDevice: false,
       pixelRatio: 1,
+      requestedMode: "webgpu-force-webgl",
     });
     expect(incrementRendererDiagnosticError).toHaveBeenCalledWith("fallbacks");
     expect(syncRendererBackendDiagnostics).toHaveBeenCalledWith(
       expect.objectContaining({
-        activeMode: "legacy-webgl",
-        buildMode: "experimental-webgpu-auto",
+        activeMode: "webgl2-fallback",
         fallbackReason: "webgpu-device-lost",
-        requestedMode: "experimental-webgpu-auto",
       }),
     );
-    expect(setRendererDiagnosticCapabilities).toHaveBeenCalledWith(backend.capabilities);
-    expect(setRendererDiagnosticDegradations).toHaveBeenCalledWith([]);
-    expect(result).toEqual({
-      backend,
-      renderer: backend.renderer,
-    });
+    expect(result).toEqual({ backend, renderer: backend.renderer });
   });
 });

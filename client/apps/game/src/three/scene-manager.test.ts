@@ -5,6 +5,42 @@ import { HexagonScene } from "./scenes/hexagon-scene";
 import { SceneName } from "./types";
 
 describe("SceneManager transition baseline", () => {
+  it("keeps the transition overlay up until first-scene pipeline warmup completes", async () => {
+    const fadeOutCallbacks: Array<() => void | Promise<void>> = [];
+    const transitionManager = {
+      fadeOut: vi.fn((callback: () => void | Promise<void>) => fadeOutCallbacks.push(callback)),
+      fadeIn: vi.fn(),
+    };
+    let finishPrewarm!: () => void;
+    const prewarmPipeline = vi.fn(
+      () =>
+        new Promise<void>((resolve) => {
+          finishPrewarm = resolve;
+        }),
+    );
+    const sceneManager = new SceneManager(transitionManager as unknown as TransitionManager);
+    sceneManager.addScene(SceneName.WorldMap, {
+      setup: vi.fn(async () => {}),
+      prewarmPipeline,
+      onSwitchOff: vi.fn(),
+      moveCameraToURLLocation: vi.fn(),
+    } as unknown as HexagonScene);
+
+    sceneManager.switchScene(SceneName.WorldMap);
+    const transition = fadeOutCallbacks[0]();
+    await Promise.resolve();
+
+    expect(prewarmPipeline).toHaveBeenCalledOnce();
+    expect(sceneManager.getCurrentScene()).toBeUndefined();
+    expect(transitionManager.fadeIn).not.toHaveBeenCalled();
+
+    finishPrewarm();
+    await transition;
+
+    expect(sceneManager.getCurrentScene()).toBe(SceneName.WorldMap);
+    expect(transitionManager.fadeIn).toHaveBeenCalledOnce();
+  });
+
   it("does not start a second transition while a fade-out callback is still pending", () => {
     const fadeOutCallbacks: Array<() => void | Promise<void>> = [];
     const transitionManager = {

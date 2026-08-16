@@ -21,11 +21,11 @@ describe("buildRendererLoadBenchmarkUrl", () => {
       buildRendererLoadBenchmarkUrl({
         baseUrl: "https://127.0.0.1:4173",
         chain: "slot",
-        rendererMode: "experimental-webgpu-auto",
+        rendererMode: "webgpu-auto",
         scene: "map",
         worldName: "eternum-blitz-slot-4",
       }),
-      "https://127.0.0.1:4173/play/slot/eternum-blitz-slot-4/map?col=0&row=0&spectate=true&rendererMode=experimental-webgpu-auto",
+      "https://127.0.0.1:4173/play/slot/eternum-blitz-slot-4/map?col=0&row=0&spectate=true&rendererMode=webgpu-auto",
     );
   });
 });
@@ -37,7 +37,7 @@ describe("deriveRendererLoadRunMetrics", () => {
         activeMode: "webgpu",
         fallbackReason: null,
         startupTimings: {
-          "experimental-backend-total": 1450,
+          "webgpu-backend-total": 1450,
           "webgpu-module-import": 320,
           "webgpu-renderer-init": 840,
         },
@@ -56,8 +56,7 @@ describe("deriveRendererLoadRunMetrics", () => {
 
     assert.deepEqual(metrics, {
       entryReadyMs: 7200,
-      experimentalBackendTotalMs: 1450,
-      fallbackMs: null,
+      backendTotalMs: 1450,
       rendererBackendAwaitMs: 1600,
       rendererInitMs: 2500,
       rendererStalledAfterStartMs: 2500,
@@ -73,26 +72,26 @@ describe("summarizeRendererLoadBenchmarkResults", () => {
       {
         ok: true,
         metrics: { entryReadyMs: 100, rendererInitMs: 10 },
-        rendererMode: "legacy-webgl",
+        rendererMode: "webgpu-force-webgl",
       },
       {
         ok: true,
         metrics: { entryReadyMs: 200, rendererInitMs: 20 },
-        rendererMode: "legacy-webgl",
+        rendererMode: "webgpu-force-webgl",
       },
       {
         ok: false,
         metrics: { entryReadyMs: 300, rendererInitMs: 30 },
-        rendererMode: "legacy-webgl",
+        rendererMode: "webgpu-force-webgl",
       },
     ]);
 
-    assert.deepEqual(summary.metricsByMode["legacy-webgl"].entryReadyMs, {
+    assert.deepEqual(summary.metricsByMode["webgpu-force-webgl"].entryReadyMs, {
       max: 300,
       p50: 200,
       p95: 300,
     });
-    assert.equal(summary.metricsByMode["legacy-webgl"].failureCount, 1);
+    assert.equal(summary.metricsByMode["webgpu-force-webgl"].failureCount, 1);
   });
 });
 
@@ -105,10 +104,9 @@ describe("evaluateRendererLoadBenchmarkSummary", () => {
           elapsedMs: 9200,
           metrics: {
             entryReadyMs: null,
-            fallbackMs: null,
             rendererStalledAfterStartMs: 8200,
           },
-          rendererMode: "experimental-webgpu-auto",
+          rendererMode: "webgpu-auto",
         },
       ],
     });
@@ -123,17 +121,16 @@ describe("evaluateRendererLoadBenchmarkSummary", () => {
       results: [
         {
           diagnostics: {
-            activeMode: "legacy-webgl",
+            activeMode: "webgl2-fallback",
             fallbackReason: null,
-            requestedMode: "experimental-webgpu-auto",
+            requestedMode: "webgpu-auto",
           },
           elapsedMs: 4000,
           metrics: {
             entryReadyMs: 3500,
-            fallbackMs: 900,
             rendererStalledAfterStartMs: 900,
           },
-          rendererMode: "experimental-webgpu-auto",
+          rendererMode: "webgpu-auto",
         },
       ],
     });
@@ -148,7 +145,7 @@ describe("compareRendererLoadBenchmarkSummary", () => {
     const comparison = compareRendererLoadBenchmarkSummary(
       {
         metricsByMode: {
-          "experimental-webgpu-auto": {
+          "webgpu-auto": {
             entryReadyMs: { p95: 3000 },
             rendererInitMs: { p95: 1200 },
           },
@@ -156,7 +153,7 @@ describe("compareRendererLoadBenchmarkSummary", () => {
       },
       {
         metricsByMode: {
-          "experimental-webgpu-auto": {
+          "webgpu-auto": {
             entryReadyMs: { p95: 5000 },
             rendererInitMs: { p95: 1300 },
           },

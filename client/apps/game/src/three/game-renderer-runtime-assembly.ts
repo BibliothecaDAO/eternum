@@ -1,4 +1,3 @@
-import type { GraphicsSettings } from "@/ui/config";
 import HUDScene from "@/three/scenes/hud-scene";
 import type { MapControls } from "three/examples/jsm/controls/MapControls.js";
 import { createRendererControlBridgeRuntime } from "./renderer-control-bridge-runtime";
@@ -11,7 +10,7 @@ import { createRendererRuntimeAssembly } from "./renderer-runtime-assembly";
 import type { RendererBackendV2 } from "./renderer-backend-v2";
 import type { RendererSessionRuntime } from "./renderer-session-runtime";
 import type { RendererSupportRuntimeRegistry } from "./renderer-support-runtime-registry";
-import { qualityController } from "./utils/quality-controller";
+import { renderProfile } from "./render-profile";
 import { getContactShadowResources } from "./utils/contact-shadow";
 import type { TrackableGuiFolder } from "./utils/gui-folder-lifecycle";
 import type { SceneManager } from "@/three/scene-manager";
@@ -40,7 +39,6 @@ interface CreateGameRendererRuntimeAssemblyInput {
   addWindowListener: (type: string, listener: EventListenerOrEventListenerObject) => void;
   createFolder: (name: string) => TrackableGuiFolder;
   fastTravelEnabled: () => boolean;
-  graphicsSetting: GraphicsSettings;
   isGraphicsDevEnabled: boolean;
   isMemoryMonitoringEnabled: boolean;
   isMobileDevice: boolean;
@@ -102,16 +100,13 @@ function createGameRendererControlBridgeRuntime(input: CreateGameRendererRuntime
 
 function createGameRendererEffectsBridgeRuntime(input: CreateGameRendererRuntimeAssemblyInput) {
   return createRendererEffectsBridgeRuntime({
-    addQualityListener: (listener) => qualityController.addEventListener(listener),
     createEffectsRuntime: () => {
       const runtimeState = input.resolveRuntimeState();
 
       return createRendererEffectsRuntime({
         backend: runtimeState.backend as RendererBackendRuntime,
         createFolder: input.createFolder,
-        graphicsSetting: input.graphicsSetting,
         isGraphicsDevEnabled: input.isGraphicsDevEnabled,
-        isMobileDevice: input.isMobileDevice,
         resolvePixelRatio: input.resolvePixelRatio,
         scenes: {
           fastTravelScene: runtimeState.fastTravelScene,
@@ -120,7 +115,7 @@ function createGameRendererEffectsBridgeRuntime(input: CreateGameRendererRuntime
         },
       });
     },
-    resolveQualityFeatures: () => qualityController.getFeatures(),
+    resolveRenderVisualProfile: () => renderProfile.visuals,
     resolveWeatherState: () => input.resolveRuntimeState().hudScene?.getWeatherManager?.()?.getState(),
   });
 }

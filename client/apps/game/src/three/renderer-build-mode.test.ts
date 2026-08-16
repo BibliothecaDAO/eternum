@@ -1,127 +1,35 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import {
   DEFAULT_RENDERER_BUILD_MODE,
-  RENDERER_MODE_STORAGE_KEY,
+  removeRetiredRendererModePreference,
   resolveRendererBuildMode,
   resolveRendererBuildModeFromSearch,
-  resolveThreeEntryPoint,
 } from "./renderer-build-mode";
 
 describe("renderer build mode", () => {
-  it("defaults to the experimental webgpu shipping lane", () => {
+  it("ships the WebGPU renderer with automatic WebGL2 fallback", () => {
     expect(resolveRendererBuildMode(undefined)).toBe(DEFAULT_RENDERER_BUILD_MODE);
-    expect(DEFAULT_RENDERER_BUILD_MODE).toBe("experimental-webgpu-auto");
+    expect(DEFAULT_RENDERER_BUILD_MODE).toBe("webgpu-auto");
   });
 
-  it("resolves the legacy webgl lane when explicitly requested", () => {
-    expect(resolveRendererBuildMode("legacy-webgl")).toBe("legacy-webgl");
+  it("accepts retired deployment names as aliases", () => {
+    expect(resolveRendererBuildMode(["experimental", "webgpu", "auto"].join("-"))).toBe("webgpu-auto");
+    expect(resolveRendererBuildMode(["experimental", "webgpu", "force", "webgl"].join("-"))).toBe("webgpu-force-webgl");
   });
 
-  it("ignores unknown env values and falls back to the default (webgpu)", () => {
-    expect(resolveRendererBuildMode("bogus")).toBe("experimental-webgpu-auto");
-  });
-});
-
-describe("renderer build mode search overrides", () => {
-  it("uses the env build mode when no renderer query override is present", () => {
+  it("uses a supported query override and ignores unknown values", () => {
     expect(
       resolveRendererBuildModeFromSearch({
-        envBuildMode: "experimental-webgpu-auto",
-        search: "",
+        envBuildMode: "webgpu-auto",
+        search: "?rendererMode=webgpu-force-webgl",
       }),
-    ).toBe("experimental-webgpu-auto");
+    ).toBe("webgpu-force-webgl");
+    expect(resolveRendererBuildMode("bogus")).toBe("webgpu-auto");
   });
 
-  it("allows experimental builds to be killed back to legacy webgl from the query param", () => {
-    expect(
-      resolveRendererBuildModeFromSearch({
-        envBuildMode: "experimental-webgpu-auto",
-        search: "?rendererMode=legacy-webgl",
-      }),
-    ).toBe("legacy-webgl");
-  });
-
-  it("allows experimental auto builds to be forced onto the webgl fallback lane", () => {
-    expect(
-      resolveRendererBuildModeFromSearch({
-        envBuildMode: "experimental-webgpu-auto",
-        search: "?rendererMode=experimental-webgpu-force-webgl",
-      }),
-    ).toBe("experimental-webgpu-force-webgl");
-  });
-
-  it("keeps legacy builds on the legacy lane even when the query asks for webgpu", () => {
-    expect(
-      resolveRendererBuildModeFromSearch({
-        envBuildMode: "legacy-webgl",
-        search: "?rendererMode=experimental-webgpu-auto",
-      }),
-    ).toBe("legacy-webgl");
-  });
-});
-
-describe("localStorage user preference", () => {
-  it("uses userPreference when no query param is present", () => {
-    expect(
-      resolveRendererBuildModeFromSearch({
-        envBuildMode: "experimental-webgpu-auto",
-        search: "",
-        userPreference: "legacy-webgl",
-      }),
-    ).toBe("legacy-webgl");
-  });
-
-  it("query param takes priority over userPreference", () => {
-    expect(
-      resolveRendererBuildModeFromSearch({
-        envBuildMode: "experimental-webgpu-auto",
-        search: "?rendererMode=experimental-webgpu-force-webgl",
-        userPreference: "legacy-webgl",
-      }),
-    ).toBe("experimental-webgpu-force-webgl");
-  });
-
-  it("ignores userPreference on legacy-webgl builds (cannot upgrade to webgpu)", () => {
-    expect(
-      resolveRendererBuildModeFromSearch({
-        envBuildMode: "legacy-webgl",
-        search: "",
-        userPreference: "experimental-webgpu-auto",
-      }),
-    ).toBe("legacy-webgl");
-  });
-
-  it("ignores invalid userPreference values", () => {
-    expect(
-      resolveRendererBuildModeFromSearch({
-        envBuildMode: "experimental-webgpu-auto",
-        search: "",
-        userPreference: "nonsense",
-      }),
-    ).toBe("experimental-webgpu-auto");
-  });
-
-  it("falls through to envBuildMode when userPreference is undefined", () => {
-    expect(
-      resolveRendererBuildModeFromSearch({
-        envBuildMode: "experimental-webgpu-auto",
-        search: "",
-      }),
-    ).toBe("experimental-webgpu-auto");
-  });
-
-  it("exports the storage key constant", () => {
-    expect(RENDERER_MODE_STORAGE_KEY).toBe("RENDERER_MODE");
-  });
-});
-
-describe("resolveThreeEntryPoint", () => {
-  it("uses the default three build for the legacy lane", () => {
-    expect(resolveThreeEntryPoint("legacy-webgl")).toBe("three");
-  });
-
-  it("uses the three/webgpu build for experimental lanes", () => {
-    expect(resolveThreeEntryPoint("experimental-webgpu-auto")).toBe("three/webgpu");
-    expect(resolveThreeEntryPoint("experimental-webgpu-force-webgl")).toBe("three/webgpu");
+  it("removes the retired renderer preference", () => {
+    const removeItem = vi.fn();
+    removeRetiredRendererModePreference({ removeItem });
+    expect(removeItem).toHaveBeenCalledWith("RENDERER_MODE");
   });
 });

@@ -108,10 +108,8 @@ export class ChestManager {
   }
 
   private handleCameraViewChange = (view: CameraView) => {
-    const qualityShadowsEnabled = this.hexagonScene?.getShadowsEnabledByQuality() ?? true;
-    const contactShadowsAllowed = this.hexagonScene?.contactShadowsAllowedByQuality() ?? true;
-    // Contact shadows are the fallback for real shadows; gate them off on LOW/below.
-    const enableContactShadows = !(view === CameraView.Close && qualityShadowsEnabled) && contactShadowsAllowed;
+    const shadowsEnabled = this.hexagonScene?.getShadowsEnabled() ?? true;
+    const enableContactShadows = !(view === CameraView.Close && shadowsEnabled);
 
     // Cheap grounding in zoomed-out views (and as a fallback if shadows are disabled).
     if (this.chestModel) {
@@ -238,11 +236,8 @@ export class ChestManager {
         this.chestModel = model;
         this.animationClips = clips;
         this.scene.add(model.group);
-        const qualityShadowsEnabled = this.hexagonScene?.getShadowsEnabledByQuality() ?? true;
-        const contactShadowsAllowed = this.hexagonScene?.contactShadowsAllowedByQuality() ?? true;
-        // Contact shadows are the fallback for real shadows; gate them off on LOW/below.
-        const enableContactShadows =
-          !(this.currentCameraView === CameraView.Close && qualityShadowsEnabled) && contactShadowsAllowed;
+        const shadowsEnabled = this.hexagonScene?.getShadowsEnabled() ?? true;
+        const enableContactShadows = !(this.currentCameraView === CameraView.Close && shadowsEnabled);
         this.chestModel.setContactShadowsEnabled(enableContactShadows);
       })
       .catch((error) => {

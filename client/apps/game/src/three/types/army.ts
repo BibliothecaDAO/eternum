@@ -104,4 +104,5 @@ export interface ModelData {
   currentScales: Map<number, Vector3>;
   lastAnimationUpdate: number;
   animationUpdateInterval: number;
+  ownsGeometry: boolean;
 }

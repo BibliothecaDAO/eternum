@@ -93,6 +93,9 @@ export class SceneManager {
       }
       if (resolveFinalizePlan().isSuperseded) return;
 
+      await scene.prewarmPipeline?.();
+      if (resolveFinalizePlan().isSuperseded) return;
+
       this._updateCurrentScene(sceneName);
       scene.activateInputSurface?.();
       setupSucceeded = true;

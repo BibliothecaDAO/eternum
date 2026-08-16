@@ -122,8 +122,27 @@ describe("PathRenderer lifecycle", () => {
     };
 
     expect(internals.batchObjects).toHaveLength(2);
-    expect([...internals.batchObjects[0]!.entityIds]).toEqual([1, 2]);
-    expect([...internals.batchObjects[1]!.entityIds]).toEqual([3]);
+    expect(internals.batchObjects.map((batch) => [...batch.entityIds])).toEqual([[3], [1, 2]]);
+  });
+
+  it("rewrites persistent buffers without reallocating geometry or materials", () => {
+    const fixture = createPathRendererFixture();
+    const firstGeometry = fixture.pathObject.geometry;
+    const firstMaterial = fixture.pathObject.material;
+
+    fixture.subject.createPath(1, [new THREE.Vector3(0, 0, 0), new THREE.Vector3(4, 0, 0)], new THREE.Color("#f00"));
+    fixture.subject.update(0);
+
+    const internals = fixture.subject as unknown as {
+      batchObjects: Array<{ line: THREE.LineSegments }>;
+    };
+    const rewrittenPath = internals.batchObjects[0]!.line;
+    const position = rewrittenPath.geometry.getAttribute("position") as THREE.BufferAttribute;
+
+    expect(rewrittenPath.geometry).toBe(firstGeometry);
+    expect(rewrittenPath.material).toBe(firstMaterial);
+    expect(rewrittenPath.geometry.drawRange).toEqual({ count: 2, start: 0 });
+    expect(position.updateRanges).toEqual([{ count: 6, start: 0 }]);
   });
 
   it("disposes owned line resources and detaches the scene container", () => {

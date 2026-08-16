@@ -34,12 +34,12 @@ describe("latestFeatures landing feed", () => {
     );
   });
 
-  it("announces army ghost cleanup in the latest feed", () => {
+  it("announces battery-friendly rendering in the latest feed", () => {
     expect(latestFeatures).toContainEqual(
       expect.objectContaining({
-        date: "2026-06-05",
-        title: "Army Ghost Cleanup",
-        type: "fix",
+        date: "2026-08-16",
+        title: "Battery-Friendly Rendering",
+        type: "improvement",
         gameSlug: "world",
       }),
     );

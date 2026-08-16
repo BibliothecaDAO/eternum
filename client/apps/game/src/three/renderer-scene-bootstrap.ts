@@ -22,12 +22,8 @@ interface SceneManagerLike<TScene> {
 type PrewarmableScene = {
   getCamera(): Camera;
   getScene(): Object3D<Object3DEventMap>;
+  setPipelinePrewarmer(prewarmer: (scene: Object3D, camera: Camera) => Promise<void>): void;
 };
-
-type ScheduleInactiveScenePrewarm = (task: () => void) => void;
-
-const INACTIVE_SCENE_PREWARM_FALLBACK_DELAY_MS = 1500;
-const INACTIVE_SCENE_PREWARM_IDLE_TIMEOUT_MS = 3000;
 
 export interface RendererSceneRegistry<
   TTransitionManager,
@@ -91,22 +87,19 @@ interface BootstrapRendererSceneRuntimeInput<
   TSceneManager extends Pick<SceneManagerLike<unknown>, "moveCameraForScene">,
   TEffectsBridgeRuntime extends {
     applyEnvironment(): void;
-    applyQualityFeatures(features: TQualityFeatures): void;
+    applyRenderVisualProfile(features: TRenderVisualProfile): void;
     setupPostProcessingEffects(): void;
-    subscribeToQualityController(): void;
   },
   THexceptionScene extends PrewarmableScene,
   TWorldmapScene extends PrewarmableScene,
   TFastTravelScene extends PrewarmableScene,
-  TQualityFeatures,
+  TRenderVisualProfile,
 > {
   effectsBridgeRuntime: TEffectsBridgeRuntime;
   fastTravelScene?: TFastTravelScene;
   hexceptionScene: THexceptionScene;
-  initialSceneName: SceneName;
-  qualityFeatures: TQualityFeatures;
+  renderVisuals: TRenderVisualProfile;
   renderer?: RendererSurfaceLike;
-  scheduleInactiveScenePrewarm?: ScheduleInactiveScenePrewarm;
   sceneManager: TSceneManager;
   warn?: (message: string, error: unknown) => void;
   worldmapScene: TWorldmapScene;
@@ -212,14 +205,13 @@ export function bootstrapRendererSceneRuntime<
   TSceneManager extends Pick<SceneManagerLike<unknown>, "moveCameraForScene">,
   TEffectsBridgeRuntime extends {
     applyEnvironment(): void;
-    applyQualityFeatures(features: TQualityFeatures): void;
+    applyRenderVisualProfile(features: TRenderVisualProfile): void;
     setupPostProcessingEffects(): void;
-    subscribeToQualityController(): void;
   },
   THexceptionScene extends PrewarmableScene,
   TWorldmapScene extends PrewarmableScene,
   TFastTravelScene extends PrewarmableScene,
-  TQualityFeatures,
+  TRenderVisualProfile,
 >(
   input: BootstrapRendererSceneRuntimeInput<
     TSceneManager,
@@ -227,116 +219,40 @@ export function bootstrapRendererSceneRuntime<
     THexceptionScene,
     TWorldmapScene,
     TFastTravelScene,
-    TQualityFeatures
+    TRenderVisualProfile
   >,
 ): void {
-  prewarmRendererBootstrapScenes({
+  configureRendererScenePipelinePrewarm({
     fastTravelScene: input.fastTravelScene,
     hexceptionScene: input.hexceptionScene,
-    initialSceneName: input.initialSceneName,
     renderer: input.renderer,
-    scheduleInactiveScenePrewarm: input.scheduleInactiveScenePrewarm,
     warn: input.warn,
     worldmapScene: input.worldmapScene,
   });
   input.effectsBridgeRuntime.applyEnvironment();
   input.effectsBridgeRuntime.setupPostProcessingEffects();
   input.sceneManager.moveCameraForScene();
-  input.effectsBridgeRuntime.applyQualityFeatures(input.qualityFeatures);
-  input.effectsBridgeRuntime.subscribeToQualityController();
+  input.effectsBridgeRuntime.applyRenderVisualProfile(input.renderVisuals);
 }
 
 function attachRendererSceneToSurface(scene: SceneInputSurfaceOwner, inputSurface: HTMLElement): void {
   scene.setInputSurface(inputSurface);
 }
 
-function prewarmRendererBootstrapScenes(input: {
+function configureRendererScenePipelinePrewarm(input: {
   fastTravelScene?: PrewarmableScene;
   hexceptionScene: PrewarmableScene;
-  initialSceneName: SceneName;
   renderer?: RendererSurfaceLike;
-  scheduleInactiveScenePrewarm?: ScheduleInactiveScenePrewarm;
   warn?: (message: string, error: unknown) => void;
   worldmapScene: PrewarmableScene;
 }): void {
-  const scenePrewarmPlan = resolveScenePrewarmPlan(input);
-  void prewarmRendererScene({
-    renderer: input.renderer,
-    scene: scenePrewarmPlan.initialScene,
-    warn: input.warn,
-  });
-
-  if (scenePrewarmPlan.inactiveScenes.length === 0) {
-    return;
-  }
-
-  const scheduleInactiveScenePrewarm = input.scheduleInactiveScenePrewarm ?? scheduleInactiveRendererScenePrewarm;
-  scheduleInactiveScenePrewarm(() => {
-    scenePrewarmPlan.inactiveScenes.forEach((scene) => {
-      void prewarmRendererScene({
-        renderer: input.renderer,
-        scene,
-        warn: input.warn,
-      });
+  [input.worldmapScene, input.hexceptionScene, input.fastTravelScene].forEach((scene) => {
+    scene?.setPipelinePrewarmer(async (sceneRoot, camera) => {
+      try {
+        await requestRendererScenePrewarm(input.renderer, sceneRoot, camera);
+      } catch (error) {
+        input.warn?.("GameRenderer: Scene prewarm failed", error);
+      }
     });
   });
-}
-
-function resolveScenePrewarmPlan(input: {
-  fastTravelScene?: PrewarmableScene;
-  hexceptionScene: PrewarmableScene;
-  initialSceneName: SceneName;
-  worldmapScene: PrewarmableScene;
-}): {
-  inactiveScenes: PrewarmableScene[];
-  initialScene: PrewarmableScene;
-} {
-  const prewarmEntries = [
-    { scene: input.worldmapScene, sceneName: SceneName.WorldMap },
-    { scene: input.hexceptionScene, sceneName: SceneName.Hexception },
-    { scene: input.fastTravelScene, sceneName: SceneName.FastTravel },
-  ];
-  const initialEntry = prewarmEntries.find(
-    (entry): entry is { scene: PrewarmableScene; sceneName: SceneName } =>
-      entry.sceneName === input.initialSceneName && Boolean(entry.scene),
-  );
-
-  return {
-    inactiveScenes: prewarmEntries
-      .filter((entry) => entry !== initialEntry)
-      .map((entry) => entry.scene)
-      .filter((scene): scene is PrewarmableScene => Boolean(scene)),
-    initialScene: initialEntry?.scene ?? input.worldmapScene,
-  };
-}
-
-function scheduleInactiveRendererScenePrewarm(task: () => void): void {
-  const requestIdleCallback = (
-    globalThis as typeof globalThis & {
-      requestIdleCallback?: (callback: () => void, options?: { timeout: number }) => number;
-    }
-  ).requestIdleCallback;
-
-  if (typeof requestIdleCallback === "function") {
-    requestIdleCallback(task, { timeout: INACTIVE_SCENE_PREWARM_IDLE_TIMEOUT_MS });
-    return;
-  }
-
-  globalThis.setTimeout(task, INACTIVE_SCENE_PREWARM_FALLBACK_DELAY_MS);
-}
-
-async function prewarmRendererScene(input: {
-  renderer?: RendererSurfaceLike;
-  scene?: PrewarmableScene;
-  warn?: (message: string, error: unknown) => void;
-}): Promise<void> {
-  if (!input.scene) {
-    return;
-  }
-
-  try {
-    await requestRendererScenePrewarm(input.renderer, input.scene.getScene(), input.scene.getCamera());
-  } catch (error) {
-    input.warn?.("GameRenderer: Scene prewarm failed", error);
-  }
 }

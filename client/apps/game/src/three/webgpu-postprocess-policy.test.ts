@@ -5,27 +5,6 @@ import { resolveWebgpuPostprocessPolicy } from "./webgpu-postprocess-policy";
 import { requestRendererScenePrewarm } from "./webgpu-postprocess-policy";
 
 describe("resolveWebgpuPostprocessPolicy", () => {
-  it("keeps the full post stack in legacy webgl mode", () => {
-    expect(
-      resolveWebgpuPostprocessPolicy({
-        activeMode: "legacy-webgl",
-        capabilities: createRendererBackendCapabilities({
-          supportsBloom: true,
-          supportsChromaticAberration: true,
-          supportsColorGrade: true,
-          supportsEnvironmentIbl: true,
-          supportsToneMappingControl: true,
-          supportsVignette: true,
-        }),
-      }),
-    ).toEqual({
-      bloomRouting: "none",
-      mode: "legacy-webgl-postprocess",
-      prewarmStrategy: "compile-async",
-      unsupportedFeatures: [],
-    });
-  });
-
   it("reports the native webgpu lane as a postprocess graph once tone mapping parity is implemented", () => {
     expect(
       resolveWebgpuPostprocessPolicy({

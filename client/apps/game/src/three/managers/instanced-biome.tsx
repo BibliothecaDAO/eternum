@@ -1,6 +1,6 @@
 import { PREVIEW_BUILD_COLOR_INVALID } from "@/three/constants";
 import { LAND_NAME } from "@/three/managers/instanced-model";
-import { GRAPHICS_SETTING, isLowOrBelow } from "@/ui/config";
+import { renderProfile } from "@/three/render-profile";
 import * as THREE from "three";
 import { AnimationClip, AnimationMixer } from "three";
 import { AnimationVisibilityContext } from "../types/animation";
@@ -93,6 +93,7 @@ export default class InstancedModel {
   private readonly ANIMATION_BUCKETS = 20;
   private animationFrameOffset = 0;
   private lastBucketStride = 1;
+  private distantAnimationSamplingEnabled = false;
 
   // Pre-allocated buffer for morph animation optimization
   // Reused every frame to avoid allocations in the hot path
@@ -290,6 +291,10 @@ export default class InstancedModel {
     this.animationUpdateInterval = 1000 / resolved;
   }
 
+  public setDistantAnimationSamplingEnabled(enabled: boolean): void {
+    this.distantAnimationSamplingEnabled = enabled;
+  }
+
   private getMaxInstanceCount(): number {
     let maxCount = 0;
     this.instancedMeshes.forEach((mesh) => {
@@ -301,23 +306,29 @@ export default class InstancedModel {
   }
 
   private getAnimationUpdateIntervalMs(instanceCount: number): number {
+    const profileMultiplier = this.distantAnimationSamplingEnabled
+      ? renderProfile.animation.distantIntervalMultiplier
+      : 1;
     if (instanceCount >= ANIMATION_INSTANCE_THRESHOLD_LARGE) {
-      return this.animationUpdateInterval * ANIMATION_INTERVAL_MULTIPLIER_LARGE;
+      return this.animationUpdateInterval * ANIMATION_INTERVAL_MULTIPLIER_LARGE * profileMultiplier;
     }
     if (instanceCount >= ANIMATION_INSTANCE_THRESHOLD_MEDIUM) {
-      return this.animationUpdateInterval * ANIMATION_INTERVAL_MULTIPLIER_MEDIUM;
+      return this.animationUpdateInterval * ANIMATION_INTERVAL_MULTIPLIER_MEDIUM * profileMultiplier;
     }
-    return this.animationUpdateInterval;
+    return this.animationUpdateInterval * profileMultiplier;
   }
 
   private getBucketStride(instanceCount: number): number {
+    let bucketStride = 1;
     if (instanceCount >= ANIMATION_INSTANCE_THRESHOLD_LARGE) {
-      return ANIMATION_BUCKET_STRIDE_LARGE;
+      bucketStride = ANIMATION_BUCKET_STRIDE_LARGE;
+    } else if (instanceCount >= ANIMATION_INSTANCE_THRESHOLD_MEDIUM) {
+      bucketStride = ANIMATION_BUCKET_STRIDE_MEDIUM;
     }
-    if (instanceCount >= ANIMATION_INSTANCE_THRESHOLD_MEDIUM) {
-      return ANIMATION_BUCKET_STRIDE_MEDIUM;
-    }
-    return 1;
+    const profileMultiplier = this.distantAnimationSamplingEnabled
+      ? renderProfile.animation.distantBucketStrideMultiplier
+      : 1;
+    return Math.min(this.ANIMATION_BUCKETS, bucketStride * profileMultiplier);
   }
 
   /**
@@ -635,10 +646,6 @@ export default class InstancedModel {
     if (!this.shouldAnimate(visibility)) {
       return;
     }
-    if (isLowOrBelow(GRAPHICS_SETTING)) {
-      return;
-    }
-
     if (this.mixer && this.animation) {
       const now = performance.now();
       const maxInstanceCount = this.getMaxInstanceCount();

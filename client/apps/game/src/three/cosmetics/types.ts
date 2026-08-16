@@ -50,8 +50,6 @@ export interface CosmeticRegistryEntry {
   attachments?: CosmeticAttachmentTemplate[];
   /** Optional metadata for downstream systems (FX intensity etc.). */
   metadata?: Record<string, unknown>;
-  /** Optional graphics tier guardrail (e.g. "low", "medium", "high"). */
-  minGraphicsTier?: "low" | "medium" | "high";
   /** Attachment slot enforced for category `attachment`. */
   attachmentSlot?: string;
   /** Normalized ownership keys that unlock this cosmetic at runtime. */

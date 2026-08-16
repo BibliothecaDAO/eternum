@@ -11,15 +11,14 @@ describe("initializeRendererBackendV2", () => {
   it("awaits backend initialization and returns its diagnostics", async () => {
     const diagnostics = createRendererInitDiagnostics({
       activeMode: "webgpu",
-      buildMode: "experimental-webgpu-auto",
-      requestedMode: "experimental-webgpu-auto",
+      buildMode: "webgpu-auto",
+      requestedMode: "webgpu-auto",
     });
     const initialize = vi.fn(async () => diagnostics);
     const backend = { initialize } as unknown as RendererBackendV2;
     const factory: RendererBackendV2Factory = vi.fn(() => backend);
 
     const result = await initializeRendererBackendV2(factory, {
-      graphicsSetting: "HIGH" as never,
       isMobileDevice: false,
       pixelRatio: 1,
     });
@@ -42,7 +41,6 @@ describe("initializeRendererBackendV2", () => {
 
     await expect(
       initializeRendererBackendV2(() => backend, {
-        graphicsSetting: "HIGH" as never,
         isMobileDevice: false,
         pixelRatio: 1,
       }),
@@ -54,16 +52,16 @@ describe("createRendererInitDiagnostics", () => {
   it("defaults fallback reason and counters consistently", () => {
     expect(
       createRendererInitDiagnostics({
-        activeMode: "legacy-webgl",
-        buildMode: "legacy-webgl",
-        requestedMode: "legacy-webgl",
+        activeMode: "webgl2-fallback",
+        buildMode: "webgpu-force-webgl",
+        requestedMode: "webgpu-force-webgl",
       }),
     ).toEqual({
-      activeMode: "legacy-webgl",
-      buildMode: "legacy-webgl",
+      activeMode: "webgl2-fallback",
+      buildMode: "webgpu-force-webgl",
       fallbackReason: null,
       initTimeMs: 0,
-      requestedMode: "legacy-webgl",
+      requestedMode: "webgpu-force-webgl",
     });
   });
 });

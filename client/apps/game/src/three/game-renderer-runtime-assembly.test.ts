@@ -8,20 +8,11 @@ const runtimeAssemblyMocks = vi.hoisted(() => ({
   createRendererMonitoringRuntime: vi.fn(() => ({ id: "monitoring-runtime" })),
   createRendererRouteRuntime: vi.fn(() => ({ id: "route-runtime" })),
   createRendererRuntimeAssembly: vi.fn(),
-  GraphicsSettings: {
-    HIGH: "HIGH",
-    LOW: "LOW",
-    MID: "MID",
-  },
   HUDScene: vi.fn(function MockHUDScene(this: Record<string, unknown>, sceneManager: unknown, controls: unknown) {
     this.sceneManager = sceneManager;
     this.controls = controls;
   }),
   contactShadowMaterial: { opacity: 0.5 },
-  qualityController: {
-    addEventListener: vi.fn(() => vi.fn()),
-    getFeatures: vi.fn(() => ({ bloom: true })),
-  },
 }));
 
 vi.mock("./renderer-control-bridge-runtime", () => ({
@@ -54,20 +45,11 @@ vi.mock("./utils/contact-shadow", () => ({
   }),
 }));
 
-vi.mock("./utils/quality-controller", () => ({
-  qualityController: runtimeAssemblyMocks.qualityController,
-}));
-
-vi.mock("@/ui/config", () => ({
-  GraphicsSettings: runtimeAssemblyMocks.GraphicsSettings,
-}));
-
 vi.mock("@/three/scenes/hud-scene", () => ({
   default: runtimeAssemblyMocks.HUDScene,
 }));
 
 const { createGameRendererRuntimeAssembly } = await import("./game-renderer-runtime-assembly");
-const { GraphicsSettings } = await import("@/ui/config");
 
 function requireMockCallInput<T>(input: T | undefined, label: string): T {
   if (!input) {
@@ -140,7 +122,6 @@ describe("createGameRendererRuntimeAssembly", () => {
       addWindowListener,
       createFolder,
       fastTravelEnabled: () => true,
-      graphicsSetting: GraphicsSettings.HIGH,
       isGraphicsDevEnabled: true,
       isMemoryMonitoringEnabled: false,
       isMobileDevice: false,
@@ -191,9 +172,7 @@ describe("createGameRendererRuntimeAssembly", () => {
     expect(runtimeAssemblyMocks.createRendererEffectsRuntime).toHaveBeenCalledWith({
       backend: runtimeState.backend,
       createFolder,
-      graphicsSetting: GraphicsSettings.HIGH,
       isGraphicsDevEnabled: true,
-      isMobileDevice: false,
       resolvePixelRatio: expect.any(Function),
       scenes: {
         fastTravelScene: runtimeState.fastTravelScene,
@@ -201,7 +180,6 @@ describe("createGameRendererRuntimeAssembly", () => {
         worldmapScene: runtimeState.worldmapScene,
       },
     });
-    expect(runtimeAssemblyMocks.qualityController.getFeatures).toHaveBeenCalledTimes(0);
 
     const monitoringInput = requireMockCallInput(
       (runtimeAssemblyMocks.createRendererMonitoringRuntime.mock.lastCall as unknown as [unknown] | undefined)?.[0] as

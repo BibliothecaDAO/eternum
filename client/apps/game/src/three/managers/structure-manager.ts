@@ -645,12 +645,9 @@ export class StructureManager {
   };
 
   private updateShadowFlags(): void {
-    const qualityShadowsEnabled = this.hexagonScene?.getShadowsEnabledByQuality() ?? true;
-    const contactShadowsAllowed = this.hexagonScene?.contactShadowsAllowedByQuality() ?? true;
-    const enableCasting = this.currentCameraView === CameraView.Close && qualityShadowsEnabled;
-    // Contact shadows are the fallback for real shadows; gate them off on LOW/below
-    // so the weakest hardware pays for neither casting nor contact shadows.
-    const enableContactShadows = !enableCasting && contactShadowsAllowed;
+    const shadowsEnabled = this.hexagonScene?.getShadowsEnabled() ?? true;
+    const enableCasting = this.currentCameraView === CameraView.Close && shadowsEnabled;
+    const enableContactShadows = !enableCasting;
     const applyToModels = (models: InstancedModel[]) => {
       models.forEach((model) => {
         model.instancedMeshes.forEach((mesh) => {
@@ -921,7 +918,7 @@ export class StructureManager {
       registryEntry: findCosmeticById(cosmeticId),
     });
 
-    return gltfs.map((gltf) => new InstancedModel(gltf, INITIAL_STRUCTURE_CAPACITY, false, cosmeticId));
+    return gltfs.map((gltf) => new InstancedModel(gltf, INITIAL_STRUCTURE_CAPACITY, false, cosmeticId, "cache"));
   }
 
   private resolveLiveStructureOwnerName(entityId: ID, ownerAddress: bigint, fallbackOwnerName: string): string {

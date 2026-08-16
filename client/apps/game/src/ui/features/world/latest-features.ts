@@ -35,6 +35,14 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-08-16",
+    title: "Battery-Friendly Rendering",
+    description:
+      "Added Quality and Battery modes with identical visuals. Battery mode lowers background frame, animation, shadow, and map-prefetch work while the game is idle, then resumes immediately when you interact.",
+    type: "improvement",
+    gameSlug: "world",
+  },
+  {
+    date: "2026-08-16",
     title: "Faster World Rendering",
     description:
       "Improved model loading, distant terrain detail, and map updates so entering, zooming, and returning to the world use less memory with fewer frame stalls or terrain pop-ins.",

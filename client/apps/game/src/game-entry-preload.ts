@@ -1,12 +1,9 @@
-import { usesExperimentalWebGPUThreeBuild, type RendererBuildMode } from "@/three/renderer-build-mode";
 import {
   GAME_ENTRY_TIMELINE_EVENT_NAME,
   getGameEntryTimelineSnapshot,
   type GameEntryTimelineSnapshot,
 } from "@/ui/layouts/game-entry-timeline";
 import { prefetchDashboardPlayAssets, prefetchPlayEntryAssets } from "@/ui/utils/prefetch-play-assets";
-
-import { env } from "../env";
 
 type GameRouteModule = typeof import("./game-route");
 type WindowEventTarget = Pick<Window, "addEventListener" | "removeEventListener">;
@@ -66,17 +63,11 @@ export const createDashboardPlayAssetPrimer = ({
 };
 
 const createWebGpuRendererModulePrimer = ({
-  envBuildMode,
   preloadWebGpuRendererModules,
 }: {
-  envBuildMode: RendererBuildMode;
   preloadWebGpuRendererModules: () => Promise<void> | void;
 }) => {
   return () => {
-    if (!usesExperimentalWebGPUThreeBuild(envBuildMode)) {
-      return;
-    }
-
     schedule(() => {
       void preloadWebGpuRendererModules();
     });
@@ -146,7 +137,6 @@ const preloadWebGpuRendererBackendModules = async (): Promise<void> => {
 };
 
 const primeWebGpuRendererModules = createWebGpuRendererModulePrimer({
-  envBuildMode: env.VITE_PUBLIC_RENDERER_BUILD_MODE,
   preloadWebGpuRendererModules: preloadWebGpuRendererBackendModules,
 });
 

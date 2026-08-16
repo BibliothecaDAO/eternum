@@ -1,4 +1,5 @@
 import { WORLD_CHUNK_CONFIG } from "../constants/world-chunk-config";
+import { renderProfile } from "../render-profile";
 
 interface WorldmapChunkPolicy {
   chunkSize: number;
@@ -93,11 +94,14 @@ export function createWorldmapChunkPolicy(config: WorldChunkPolicyInput = WORLD_
       colsEachSide: config.pinRadius,
     },
     prefetch: {
-      forwardDepthStrides: config.prefetch.forwardDepthStrides,
-      sideRadiusStrides: config.prefetch.sideRadiusStrides,
-      areaBoundaryLookaheadStrides: config.prefetch.areaBoundaryLookaheadStrides,
-      maxAhead: config.prefetch.maxAhead,
-      maxConcurrent: config.prefetch.maxConcurrent,
+      forwardDepthStrides: Math.min(config.prefetch.forwardDepthStrides, renderProfile.prefetch.forwardDepthLimit),
+      sideRadiusStrides: Math.min(config.prefetch.sideRadiusStrides, renderProfile.prefetch.sideRadiusLimit),
+      areaBoundaryLookaheadStrides: Math.min(
+        config.prefetch.areaBoundaryLookaheadStrides,
+        renderProfile.prefetch.areaBoundaryLookaheadLimit,
+      ),
+      maxAhead: Math.min(config.prefetch.maxAhead, renderProfile.prefetch.maxAheadLimit),
+      maxConcurrent: Math.min(config.prefetch.maxConcurrent, renderProfile.prefetch.maxConcurrentLimit),
     },
     visualPresentation: {
       maxCompositeChunks: config.visualPresentation.maxCompositeChunks,

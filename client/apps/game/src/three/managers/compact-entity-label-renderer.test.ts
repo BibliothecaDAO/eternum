@@ -97,7 +97,7 @@ describe("CompactEntityLabelRenderer", () => {
     expect(intersections).toEqual([]);
   });
 
-  it("reuses cached textures and releases them after the last label is removed", () => {
+  it("reuses cached textures and materials until the last label is removed", () => {
     const scene = new THREE.Scene();
     const renderer = new CompactEntityLabelRenderer(scene);
 
@@ -118,13 +118,18 @@ describe("CompactEntityLabelRenderer", () => {
       textureCache: Map<string, { texture: THREE.Texture }>;
     };
     const texture = [...textureCache.textureCache.values()][0].texture;
+    const group = (renderer as unknown as { group: THREE.Group }).group;
+    expect((group.children[0] as THREE.Mesh).material).toBe((group.children[1] as THREE.Mesh).material);
+    const materialDispose = vi.spyOn((group.children[0] as THREE.Mesh).material as THREE.Material, "dispose");
     const textureDispose = vi.spyOn(texture, "dispose");
 
     renderer.removeLabel(1);
     expect(textureDispose).not.toHaveBeenCalled();
+    expect(materialDispose).not.toHaveBeenCalled();
 
     renderer.removeLabel(2);
     expect(textureDispose).toHaveBeenCalledTimes(1);
+    expect(materialDispose).toHaveBeenCalledTimes(1);
   });
 
   it("faces labels toward the active camera", () => {

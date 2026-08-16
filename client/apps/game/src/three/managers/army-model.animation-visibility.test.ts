@@ -21,14 +21,7 @@ vi.hoisted(() => {
 
 vi.mock("@/ui/config", () => ({
   FELT_CENTER: 0,
-  GRAPHICS_SETTING: "HIGH",
-  GraphicsSettings: {
-    HIGH: "HIGH",
-    LOW: "LOW",
-    MID: "MID",
-  },
   IS_FLAT_MODE: false,
-  isLowOrBelow: (setting: string) => setting === "LOW" || setting === "ULTRA_LOW",
 }));
 
 vi.mock("@/utils/agent", () => ({

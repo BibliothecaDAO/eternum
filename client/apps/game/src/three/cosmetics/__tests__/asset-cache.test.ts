@@ -13,11 +13,18 @@ const threeMocks = vi.hoisted(() => {
     dispose() {}
   }
 
+  class MockGeometry {
+    dispose = vi.fn();
+  }
+
   class MockMesh {
+    geometry = new MockGeometry();
     material: any;
   }
 
-  class MockTexture {}
+  class MockTexture {
+    dispose = vi.fn();
+  }
 
   class MockMeshStandardMaterial extends MockMaterial {}
 
@@ -26,6 +33,7 @@ const threeMocks = vi.hoisted(() => {
   return {
     MockMaterial,
     MockMesh,
+    MockGeometry,
     MockTexture,
     MockMeshStandardMaterial,
     MockMeshBasicMaterial,
@@ -132,16 +140,17 @@ describe("cosmetic asset cache", () => {
       assetPaths: ["units/example.glb", "/images/example.png"],
     });
 
-    const texture = new threeMocks.MockTexture() as InstanceType<typeof threeMocks.MockTexture> & {
-      dispose: ReturnType<typeof vi.fn>;
-    };
-    (texture as any).dispose = vi.fn();
+    const texture = new threeMocks.MockTexture();
+    const embeddedTexture = new threeMocks.MockTexture();
+    let geometry: InstanceType<typeof threeMocks.MockGeometry> | null = null;
     testMocks.textureLoadAsyncMock.mockResolvedValue(texture);
     testMocks.gltfLoadMock.mockImplementation((_path, onLoad) => {
       const materialA = new threeMocks.MockMeshStandardMaterial();
       const materialB = new threeMocks.MockMeshBasicMaterial();
+      (materialA as any).map = embeddedTexture;
       const mesh = new threeMocks.MockMesh();
       mesh.material = [materialA, materialB];
+      geometry = mesh.geometry;
       onLoad({ scene: { traverse: (callback: (node: any) => void) => callback(mesh) } });
     });
 
@@ -151,6 +160,33 @@ describe("cosmetic asset cache", () => {
 
     expect(getCosmeticAsset(entry.id)).toBeUndefined();
     expect(testMocks.releaseMaterialMock).toHaveBeenCalledTimes(2);
-    expect((texture as any).dispose).toHaveBeenCalledTimes(1);
+    expect(geometry!.dispose).toHaveBeenCalledTimes(1);
+    expect(texture.dispose).toHaveBeenCalledTimes(1);
+    expect(embeddedTexture.dispose).toHaveBeenCalledTimes(1);
+  });
+
+  it("disposes an in-flight asset that completes after renderer teardown", async () => {
+    const entry = registerCosmetic({
+      id: "army:Test:T1:late",
+      category: "army-skin",
+      appliesTo: ["army:Test:T1"],
+      assetPaths: ["units/late.glb"],
+    });
+    const mesh = new threeMocks.MockMesh();
+    mesh.material = new threeMocks.MockMeshStandardMaterial();
+    let finishLoad: ((gltf: unknown) => void) | undefined;
+    testMocks.gltfLoadMock.mockImplementation((_path, onLoad) => {
+      finishLoad = onLoad;
+    });
+
+    const preload = preloadAllCosmeticAssets({ quiet: true });
+    await vi.waitFor(() => expect(finishLoad).toBeDefined());
+    clearCosmeticAssetCache();
+    finishLoad!({ scene: { traverse: (callback: (node: any) => void) => callback(mesh) } });
+    await preload;
+
+    expect(getCosmeticAsset(entry.id)).toBeUndefined();
+    expect(mesh.geometry.dispose).toHaveBeenCalledTimes(1);
+    expect(testMocks.releaseMaterialMock).toHaveBeenCalledTimes(1);
   });
 });

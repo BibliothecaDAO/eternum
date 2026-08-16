@@ -4,6 +4,7 @@ import type { CompactEntityLabelVariant } from "./compact-entity-label-policy";
 
 interface CompactLabelTextureRecord {
   height: number;
+  material: THREE.MeshBasicMaterial;
   references: number;
   texture: THREE.CanvasTexture;
   width: number;
@@ -12,7 +13,6 @@ interface CompactLabelTextureRecord {
 interface ActiveCompactLabel {
   baseRenderOrder: number;
   cacheKey: string;
-  material: THREE.MeshBasicMaterial;
   mesh: THREE.Mesh<THREE.PlaneGeometry, THREE.MeshBasicMaterial>;
   size: number;
 }
@@ -81,6 +81,8 @@ export class CompactEntityLabelRenderer {
   private readonly labels = new Map<ID, ActiveCompactLabel>();
   private readonly group = new THREE.Group();
   private readonly textureCache = new Map<string, CompactLabelTextureRecord>();
+  private readonly cameraQuaternion = new THREE.Quaternion();
+  private hasCameraQuaternion = false;
   private hoveredEntityId?: ID;
 
   constructor(private readonly scene: THREE.Scene) {
@@ -121,21 +123,11 @@ export class CompactEntityLabelRenderer {
     }
 
     const textureRecord = this.acquireTexture(cacheKey, text, input.variant);
-    const material = new THREE.MeshBasicMaterial({
-      alphaTest: 0.05,
-      depthTest: false,
-      depthWrite: false,
-      map: textureRecord.texture,
-      side: THREE.DoubleSide,
-      toneMapped: false,
-      transparent: true,
-    });
-    const mesh = new THREE.Mesh(this.geometry, material);
+    const mesh = new THREE.Mesh(this.geometry, textureRecord.material);
     const baseRenderOrder = COMPACT_LABEL_RENDER_ORDER + (input.priority ?? 0);
     const label = {
       baseRenderOrder,
       cacheKey,
-      material,
       mesh,
       size,
     };
@@ -143,6 +135,9 @@ export class CompactEntityLabelRenderer {
     mesh.name = `compact-entity-label-${input.entityId}`;
     mesh.raycast = () => {};
     mesh.position.copy(input.position);
+    if (this.hasCameraQuaternion) {
+      mesh.quaternion.copy(this.cameraQuaternion);
+    }
     mesh.renderOrder = baseRenderOrder;
     this.applyLabelScale(label, textureRecord);
 
@@ -205,8 +200,14 @@ export class CompactEntityLabelRenderer {
   }
 
   public updateCamera(camera: THREE.Camera): void {
+    if (this.hasCameraQuaternion && this.cameraQuaternion.equals(camera.quaternion)) {
+      return;
+    }
+
+    this.cameraQuaternion.copy(camera.quaternion);
+    this.hasCameraQuaternion = true;
     for (const label of this.labels.values()) {
-      label.mesh.quaternion.copy(camera.quaternion);
+      label.mesh.quaternion.copy(this.cameraQuaternion);
     }
   }
 
@@ -236,7 +237,6 @@ export class CompactEntityLabelRenderer {
 
   private releaseActiveLabel(entityId: ID, label: ActiveCompactLabel): void {
     this.group.remove(label.mesh);
-    label.material.dispose();
     this.releaseTexture(label.cacheKey);
     this.labels.delete(entityId);
 
@@ -257,6 +257,7 @@ export class CompactEntityLabelRenderer {
     }
 
     textureRecord.texture.dispose();
+    textureRecord.material.dispose();
     this.textureCache.delete(cacheKey);
   }
 
@@ -288,9 +289,19 @@ function createLabelTextureRecord(text: string, style: CompactEntityLabelStyle):
   texture.magFilter = THREE.LinearFilter;
   texture.colorSpace = THREE.SRGBColorSpace;
   texture.needsUpdate = true;
+  const material = new THREE.MeshBasicMaterial({
+    alphaTest: 0.05,
+    depthTest: false,
+    depthWrite: false,
+    map: texture,
+    side: THREE.DoubleSide,
+    toneMapped: false,
+    transparent: true,
+  });
 
   return {
     height,
+    material,
     references: 1,
     texture,
     width,

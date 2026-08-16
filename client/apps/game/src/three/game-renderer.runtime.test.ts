@@ -62,7 +62,7 @@ vi.mock("../../env", () => ({
   env: {
     VITE_PUBLIC_ENABLE_MEMORY_MONITORING: false,
     VITE_PUBLIC_GRAPHICS_DEV: false,
-    VITE_PUBLIC_RENDERER_BUILD_MODE: "experimental-webgpu-auto",
+    VITE_PUBLIC_RENDERER_BUILD_MODE: "webgpu-auto",
   },
 }));
 vi.mock("@/three/scenes/hexagon-scene", () => ({
@@ -98,7 +98,7 @@ describe("GameRenderer runtime harness", () => {
     const subject = Object.assign(Object.create(GameRenderer.prototype), harness.createSubject());
 
     harness.sceneManager.switchScene(SceneName.WorldMap);
-    await Promise.resolve();
+    await vi.waitFor(() => expect(harness.worldmapScene.activateInputSurface).toHaveBeenCalledTimes(1));
     subject.animate();
 
     expect(harness.worldmapScene.setup).toHaveBeenCalledTimes(1);
@@ -125,9 +125,9 @@ describe("GameRenderer runtime harness", () => {
     const harness = createGameRendererRuntimeHarness();
 
     harness.sceneManager.switchScene(SceneName.WorldMap);
-    await Promise.resolve();
+    await vi.waitFor(() => expect(harness.worldmapScene.activateInputSurface).toHaveBeenCalledTimes(1));
     harness.sceneManager.switchScene(SceneName.Hexception);
-    await Promise.resolve();
+    await vi.waitFor(() => expect(harness.hexceptionScene.activateInputSurface).toHaveBeenCalledTimes(1));
 
     expect(harness.worldmapScene.activateInputSurface).toHaveBeenCalledTimes(1);
     expect(harness.worldmapScene.deactivateInputSurface).toHaveBeenCalledTimes(1);
@@ -144,7 +144,6 @@ describe("GameRenderer runtime harness", () => {
     document.body.appendChild(container);
     Object.defineProperty(window, "devicePixelRatio", { configurable: true, value: 2 });
     subject.isMobileDevice = false;
-    subject.graphicsSetting = "HIGH";
     subject.resolvePixelRatio = GameRenderer.prototype.resolvePixelRatio.bind(subject);
 
     subject.onWindowResize();

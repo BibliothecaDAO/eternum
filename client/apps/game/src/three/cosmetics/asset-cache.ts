@@ -1,6 +1,14 @@
 import { gltfLoader } from "@/three/utils/utils";
 import type { GLTF } from "three/addons/loaders/GLTFLoader.js";
-import { Material, Mesh, MeshBasicMaterial, MeshStandardMaterial, Texture, TextureLoader } from "three";
+import {
+  type BufferGeometry,
+  Material,
+  Mesh,
+  MeshBasicMaterial,
+  MeshStandardMaterial,
+  Texture,
+  TextureLoader,
+} from "three";
 import { CosmeticRegistryEntry } from "./types";
 import { getCosmeticRegistry } from "./registry";
 import { MaterialPool } from "../utils/material-pool";
@@ -90,8 +98,8 @@ async function loadCosmeticEntry(handle: CosmeticAssetHandle): Promise<CosmeticA
   const textures: Texture[] = [];
   const materials = new Set<Material>();
 
-  for (const path of handle.entry.assetPaths) {
-    try {
+  try {
+    for (const path of handle.entry.assetPaths) {
       if (isGltfAsset(path)) {
         const gltf = await loadWithRetry<GLTF>(
           () =>
@@ -105,11 +113,12 @@ async function loadCosmeticEntry(handle: CosmeticAssetHandle): Promise<CosmeticA
         const texture = await loadWithRetry(() => textureLoader.loadAsync(path));
         textures.push(texture);
       }
-    } catch (error) {
-      handle.error = error as Error;
-      handle.status = "failed";
-      throw error;
     }
+  } catch (error) {
+    disposeCosmeticPayloads([{ gltfs, materials: Array.from(materials), textures }]);
+    handle.error = error as Error;
+    handle.status = "failed";
+    throw error;
   }
 
   const payload: CosmeticAssetPayload = {
@@ -117,6 +126,14 @@ async function loadCosmeticEntry(handle: CosmeticAssetHandle): Promise<CosmeticA
     textures,
     materials: Array.from(materials),
   };
+
+  if (assetCache.get(handle.entry.id) !== handle) {
+    disposeCosmeticPayloads([payload]);
+    const error = new Error(`[Cosmetics] Asset load for ${handle.entry.id} was cleared before completion`);
+    handle.error = error;
+    handle.status = "failed";
+    throw error;
+  }
 
   handle.payload = payload;
   handle.status = "ready";
@@ -144,11 +161,6 @@ function startAssetLoad(handle: CosmeticAssetHandle): Promise<CosmeticAssetPaylo
     });
 
   return handle.promise;
-}
-
-function disposeCosmeticPayload(payload: CosmeticAssetPayload) {
-  payload.textures.forEach((texture) => texture.dispose?.());
-  payload.materials.forEach((material) => materialPool.releaseMaterial(material));
 }
 
 interface PreloadOptions {
@@ -204,8 +216,45 @@ export function getCosmeticAsset(id: string): CosmeticAssetHandle | undefined {
 }
 
 export function clearCosmeticAssetCache() {
-  assetCache.forEach((handle) => {
-    disposeCosmeticPayload(handle.payload);
-  });
+  disposeCosmeticPayloads(Array.from(assetCache.values(), (handle) => handle.payload));
   assetCache.clear();
+}
+
+function disposeCosmeticPayloads(payloads: CosmeticAssetPayload[]): void {
+  const geometries = new Set<BufferGeometry>();
+  const textures = new Set<Texture>();
+
+  payloads.forEach((payload) => {
+    collectCosmeticPayloadResources(payload, geometries, textures);
+    payload.materials.forEach((material) => materialPool.releaseMaterial(material));
+  });
+  geometries.forEach((geometry) => geometry.dispose());
+  textures.forEach((texture) => texture.dispose());
+}
+
+function collectCosmeticPayloadResources(
+  payload: CosmeticAssetPayload,
+  geometries: Set<BufferGeometry>,
+  textures: Set<Texture>,
+): void {
+  payload.textures.forEach((texture) => textures.add(texture));
+  payload.gltfs.forEach((gltf) => {
+    gltf.scene.traverse((node) => {
+      if (!(node instanceof Mesh)) {
+        return;
+      }
+
+      geometries.add(node.geometry);
+      const materials = Array.isArray(node.material) ? node.material : [node.material];
+      materials.forEach((material) => collectMaterialTextures(material, textures));
+    });
+  });
+}
+
+function collectMaterialTextures(material: Material, textures: Set<Texture>): void {
+  Object.values(material).forEach((value) => {
+    if (value instanceof Texture) {
+      textures.add(value);
+    }
+  });
 }
