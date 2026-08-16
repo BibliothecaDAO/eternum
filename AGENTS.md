@@ -1,153 +1,220 @@
-# Eternum — Agent Instructions
+# Repository Agent Instructions
 
-This file is the coding, review, and operating standard for the whole repository. `CLAUDE.md` is a symlink to it. Read
-this first; a subdirectory `AGENTS.md` (e.g. `client/apps/game/AGENTS.md`) may add local rules but never lowers the bar
-set here.
+This file defines the default coding and review standard for the entire repository. `CLAUDE.md` is a symlink to it, so
+every agent harness reads the same standard.
+
+On startup, read this file first. Then read any more specific `AGENTS.md` file in the subdirectory you are working in.
+More specific files may add local rules, but they should not lower the quality bar defined here.
 
 ## What this repo is
 
-Eternum is a fully onchain strategy game built with Dojo (Cairo) running on our own Katana appchain. One codebase serves
-two persistent worlds — **Blitz** (short, timed matches) and **Eternum** (long format). Games are not separate
-deployments: they are rows keyed by `game_id` inside a world, created through the factory (GameRegistry) with immutable
-balance presets. The client is a React + three.js app; players sign with a Cartridge Controller session wallet.
+Eternum is a fully onchain strategy game built with Dojo (Cairo). One codebase serves multiple game worlds and formats —
+**Blitz** (short, timed matches) and **Eternum** (long format). Games are rows keyed by `game_id` inside a persistent
+world, created through the factory (GameRegistry) with immutable balance presets — not separate deployments.
 
-## Engineering principles
+The data pipeline, end to end: Cairo contracts (`contracts/game`) define the world (realms, buildings, resources,
+armies, exploration, battles, relics, hyperstructures, victory points) → transactions execute on a Starknet sequencer →
+Torii indexes the world and serves clients three ways (entity subscriptions for current state, event-message
+subscriptions for transient notifications, SQL for immutable history) → the client's sync runtime ingests updates into
+RECS, the single authoritative store → three.js scenes (`WorldmapScene`, `HexceptionScene`) and the React UI render from
+it. Player actions apply optimistically, then reconcile against the indexed echo.
 
-1. **KISS, always.** The simplest workable design wins. Overcomplication is a bug: flag it in review like one. Do not
-   add layers, options, or abstractions a current requirement does not demand.
-2. **Systemic fixes over point patches.** Before fixing an instance, ask what CLASS of bug it belongs to. If the same
-   root cause can bite elsewhere, fix the root: one source of truth, guard at the chokepoint, migrate the existing
-   copies. A fix that leaves siblings alive is incomplete.
+Key directories: `client/apps/game` (the game client — has its own `AGENTS.md`), `packages/core` (game logic and sync
+runtime), `packages/*` (Dojo/RECS bindings, shared types), `contracts/*` (Cairo), `deploy/appchain` (self-hosted chain
+infra — read its README before touching it), `docs/plans` (implementation briefs: each item states its evidence, the
+fix, and a verifiable gate).
+
+## Engineering Principles
+
+1. **KISS, always.** The simplest workable design wins. Overcomplication is a bug: flag it in review like one, and do
+   not add layers, options, or abstractions a current requirement does not demand.
+2. **Systemic fixes over point patches.** When a bug appears, ask what CLASS of bug it belongs to before fixing the
+   instance. If the same root cause can bite elsewhere (a signal derived ad-hoc in several places, a guard every call
+   site must remember, an unbounded cache pattern), fix the root: create the single source of truth, move the guard to
+   the chokepoint, and migrate the existing copies onto it. A fix that leaves siblings of the same bug alive is
+   incomplete. Example: spectator intent lives in `client/apps/game/src/utils/spectator-session.ts` — consumers import
+   it; nobody re-derives it from the URL or account heuristics.
 3. **Success of systemic work is deletion.** When a layer becomes trustworthy, the bespoke fallbacks, holds, TTLs, and
-   timers above it must disappear. A "fix" that only adds code is suspect.
-4. **Evidence before optimization.** Instrument, convict, then fix what the data names. Briefs and PRs cite the log
-   line, profile, or metric that motivated the change.
+   timers stacked above it should disappear. A systemic "fix" that only adds code is suspect.
+4. **Evidence before optimization.** Instrument, convict, then fix what the data names. Performance and bug-fix changes
+   cite the log line, profile, or measurement that motivated them.
 
-## How the game works, end to end
+## AI-First Harness Standard
 
-**Chain.** Cairo/Dojo contracts (`contracts/game`) define the world: realms and structures on a hex map, resource
-production and buildings, armies (explorers) that travel/explore/battle, relic crates, hyperstructures, and victory
-points. Transactions go to Katana (instant mining, 30s idle heartbeat).
+This repo follows `docs/architecture/ai-first-harness-architecture.md`.
 
-**Indexing.** Torii indexes each world and serves clients three ways: entity subscriptions (current state, grpc-web
-stream), event-message subscriptions (transient notifications), and SQL (immutable history / aggregates).
+When changing workflows, deployer code, shared runtime packages, or observability:
 
-**Client sync.** One pipeline: bootstrap → Dojo setup → snapshot sync → `GameSyncRuntime` ingest queue (time-budgeted
-slices, ~25ms) → RECS components. RECS is the single authoritative store; everything renders from it. The event stream
-has failure detection, backoff re-subscribe, and renewal for cancel-only handles (gap-fill replay is the current
-workstream).
+- prefer one workflow responsibility per job
+- prefer explicit step names, artifacts, and retry boundaries
+- prefer structured, machine-readable results over free-form status text
+- centralize shared runtime, world, factory, manifest, release, and incident logic
+- design operational code so agents can tell what ran, what changed, and how success is verified
 
-**Rendering.** three.js `WebGPURenderer` only (modes `webgpu-auto` / `webgpu-force-webgl`; the legacy WebGL stack is
-deleted). Two main scenes: `WorldmapScene` (chunked hex terrain, instanced models, camera acts as a view filter over
-synced state) and `HexceptionScene` (local realm view, buildings). Heavy work goes through the frame-budget work queue;
-pipelines prewarm behind loading gates with a time-box, never blocking a visible transition. `RenderProfile` has Quality
-and Battery modes — Battery changes when/how often work happens, never what pixels look like. Both cap at 60fps.
+## Client State & Sync Guardrails
 
-**Player actions.** UI → optimistic write → tx via Controller → Katana → torii echo reconciles. Optimistic state is
-being unified onto a single provisional-write path through the normal ingest pipeline (see Direction below); do not add
-new bespoke optimistic channels.
+Every client bug class in the Aug 2026 playtests traced to a violation of one of these rules. They apply to
+`client/apps/game` and `packages/*`.
 
-## State & sync guardrails
-
-Every client bug class in the Aug 2026 playtests traced to a violation of one of these. They apply to `client/apps/game`
-and `packages/*`.
-
-1. **One truth, per fact.** Current entity state lives in RECS only. SQL serves immutable history and aggregates, never
-   an alternative copy of a live fact. When touching a stray direct-fetch read path for live state, delete it.
+1. **One truth, per fact.** Current authoritative game facts live in RECS only: anything fetched from torii that
+   represents current entity state is written into RECS — never held in a side store, react-query cache, or scene-local
+   map as the primary copy. Immutable history and query-derived aggregates that are not current entity truth (story
+   logs, battle logs, swaps, token transfers) may be SQL read models, but SQL must never provide an alternative or
+   fallback version of a fact that is also present in RECS. Do not add new direct-fetch read paths for live state; when
+   touching one, delete it.
 2. **Entities are state; events are ephemera.** Anything persistent renders from the entity stream. Event messages drive
-   only transient flourishes (toasts, FX triggers) — and every event-driven feature must survive a dead event stream
-   (query-on-demand or entity-derived fallback).
+   only transient flourishes (toasts, FX triggers) — and every event-driven feature must survive a dead event stream via
+   a snapshot, replay, poll, or query-on-demand path. A subscription is an accelerator, not the source of truth.
 3. **Spread ambient work; apply player events atomically.** Batching, slicing, and lane scheduling exist for
    bulk/ambient churn. One player-initiated or single logical event (a move, a placement, a provisioned realm) must
-   become visible in one step. Batching must never show in the result of one action.
+   become visible in one step: batching must never show in the result of one action.
 4. **No silent defaults.** A config or keyed lookup that misses must be loud in dev. Never let a silent fallback return
    a zero that gameplay math consumes.
-5. **Pending state expires, and lives in one place.** Optimistic/provisional state is one record per entity with an
-   expiry enforced where it is consumed — never parallel maps cleaned in sync.
-6. **Wired or deleted.** If it is exported, something imports it; if it is config, something reads it. No capability
-   lands without its call site.
+5. **Pending state expires, and lives in one place.** Optimistic/lock state is one record per entity with a TTL enforced
+   where the state is consumed — never parallel maps that must be cleaned in sync, never keyed by tx hash. Do not add
+   new bespoke optimistic channels; route provisional writes through the same update path as authoritative data.
+6. **Wired or deleted.** If it is exported, something imports it; if it is config, something reads it. Do not land a
+   capability without its call site.
 
-## Repo map
+## Clean Code Standard
 
-- `client/apps/game` — the game client (React, three.js, Vite). Has its own `AGENTS.md`.
-- `client/apps/game-docs`, `landing`, others — auxiliary apps.
-- `packages/core` — game logic, sync runtime, managers (chain-agnostic TypeScript).
-- `packages/{dojo,react,types,provider,torii}` — Dojo/RECS bindings and shared types.
-- `contracts/game` — the world's Cairo contracts; other `contracts/*` are peripheral (passes, marketplace, factory).
-- `deploy/appchain` — CDK stack, torii config, ops scripts, and the infra README (read it before touching infra).
-- `docs/plans` — implementation briefs (the handoff format between planning and execution agents).
-- `docs/architecture/ai-first-harness-architecture.md` — standard for workflows/deployer/observability code: one
-  responsibility per job, explicit steps and artifacts, machine-readable results.
+Write code so the top level reads like an outline of intent. The reader should understand what the code does before they
+need to understand how it does it.
 
-## Working on the code
+### Core Rule
 
-**Run the client:** `pnpm dev` in `client/apps/game` with `--mode appchain.blitz` or `--mode appchain.eternum` (env
-files per mode; `.env.production` is what the deployed client uses).
+At the top level of a file, exported functions, orchestration functions, and workflow steps should read in business
+terms, not implementation terms.
 
-**Tests — the traps:**
+### One Level Of Abstraction Per Function
 
-- Never run bare `npx vitest` from the repo root: duplicate workspace names under `contracts/*/ext` break it. In
-  `client/apps/game` use `pnpm test [files]` (wrapper). In `packages/core` use `pnpm exec vitest run` (bare `pnpm test`
-  there is watch mode and never exits).
-- Known load-sensitive flake: `instanced-model.material-semantics.test.ts` times out in full runs and passes in
-  isolation. Verify in isolation before blaming your change.
+Each function should stay at one conceptual level.
 
-**Required checks before finishing:** `pnpm run format` and `pnpm run knip` for non-Cairo changes; `scarb fmt` for
-Cairo. Typecheck the packages you touched. Say so explicitly if a required command fails or is unavailable.
+- Orchestration functions should orchestrate.
+- Payload builders should build payloads.
+- Resolvers should resolve values.
+- Writers should write artifacts.
+- Validators should validate.
 
-**Client UX changes** must add an entry to `client/apps/game/src/ui/features/world/latest-features.ts` (see the client
-`AGENTS.md`).
+Do not mix these responsibilities in one function unless the function is trivially small.
 
-**Git:** stage explicit paths only — never `git add -A`/`git add .` (parallel agents may share the worktree, and blind
-staging has swept junk before). Never `reset --hard`, `checkout .`, `clean -fd`, `stash`, or `--no-verify`. Commit only
-what you changed.
+### Top-Level Readability
 
-## Clean code standard
+When reading an exported function from top to bottom, it should feel like a checklist.
 
-The top level of a file reads like an outline of intent, in domain terms.
+If a top-level `if` block contains a full transaction body, a long object literal, or several unrelated operations,
+extract that body into a helper with a precise name.
 
-- One level of abstraction per function: orchestrators orchestrate, builders build, validators validate. Extract long
-  bodies out of top-level branches into precisely named helpers (`is…`/`should…` for conditions,
-  `build…`/`resolve…`/`run…` for actions).
-- Names describe domain meaning, not syntax. A vague helper name is hiding the wrong abstraction.
-- Shared resolution or IO gets centralized, not copied "temporarily" across files.
-- Comments state a constraint the code cannot show — why a choice exists, never what the next line does.
-- PR descriptions sound like an engineer explaining a change: specific, honest about verification and non-goals. No
-  autogenerated summaries or file-move inventories. Do not commit PRD documents unless explicitly asked.
-- Before finishing, reread your exported functions top to bottom: if flow requires descending into helpers, or shared
-  logic is duplicated, refactor before stopping. Do not leave sloppy code behind because it "works".
+### Naming
 
-## Infra & deployment
+Use names that describe what the code means in the domain, not what the syntax is doing.
 
-Everything runs in AWS `061906581174` (us-east-1) on one EC2 box (m7a.xlarge, Elastic IP `52.54.98.119`), managed by CDK
-(`deploy/appchain/cdk`). Katana + two torii instances run in docker; nginx routes by Host header. Chain data, torii DBs,
-and TLS certs live on a RETAIN EBS volume at `/data`, so instance replacement keeps them.
+If a helper name feels vague, the helper is probably hiding the wrong abstraction.
 
-| Endpoint                    | Path                                                        |
-| --------------------------- | ----------------------------------------------------------- |
-| `katana.jcndata.com`        | Cloudflare-proxied → nginx :80 → katana :5050               |
-| `torii.jcndata.com` (blitz) | **DNS-only** → nginx :443 (direct TLS, http2) → torii :8081 |
-| `torii-eternum.jcndata.com` | **DNS-only** → nginx :443 (direct TLS, http2) → torii :8082 |
-| `play.jcndata.com`          | Tester client, S3 + Cloudflare                              |
+### Conditional Logic
 
-The torii hostnames are deliberately not proxied: Cloudflare's ~100s idle cutoff killed the sparse event-message stream.
-Direct TLS (Let's Encrypt on the box, auto-renewed, certs on `/data`) is the systemic fix; the client's stream-recovery
-machinery is insurance on top, not life support.
+Keep conditions simple at the top level.
 
-- **Deploy the client:** `gh workflow run deploy-client.yml --ref <branch> -f version=<label>` (builds from the
-  committed `.env.production`).
-- **Launch a game:** factory UI in the client (`/factory`) → `game-launch.yml`.
-- **Change infra:** edit the CDK stack; note that userData changes replace the instance (data survives on `/data`). See
-  `deploy/appchain/README.md` for torii config via SSM and other ops.
-- Box access is via AWS SSM (`aws ssm send-command`, profile `realms-appchain`).
+- Pull complex boolean logic into `is...`, `has...`, `should...`, or `matches...` helpers.
+- Pull action bodies into `build...`, `resolve...`, `create...`, `grant...`, `write...`, or `run...` helpers.
+- Prefer one clear condition per branch.
 
-## Direction & handoffs
+If two branches do different domain actions, they should usually call different helpers.
 
-Current direction: the appchain is the home chain (two persistent worlds, factory-created games), with a gateway to
-mainnet later. The client stabilization arc (sync overhaul S1–S4, render overhaul P0–P3.x) is converging on **P4
-systemic consolidation**: event-feed gap-fill replay, optimistic state unification, and material/texture consolidation —
-see `docs/plans/render-overhaul-p4-codex-brief.md`.
+### Data Construction
 
-Work is handed between agents as briefs in `docs/plans/`: each item states the evidence (log line, measurement), the
-fix, and a verifiable gate. Follow the brief's gates literally; if the evidence contradicts the brief, say so instead of
-building it anyway.
+Do not bury business intent inside large inline object literals.
+
+When a payload is trivial and obviously local, keeping it inline is acceptable.
+
+### Shared Logic
+
+If the same kind of resolution or IO exists in more than one place, centralize it.
+
+Do not copy small "temporary" helpers across files in the clean module. If it is reusable, make it shared.
+
+### File Structure
+
+Keep related code together and keep file names honest.
+
+- `shared/` is for genuinely shared helpers
+- `factory/` is for factory discovery or factory-owned concepts
+- `launch/` is for launch orchestration and launch artifacts
+- `role-grants/` is for generic and specialized role-grant flows
+- `config/` is for config loading, step selection, execution, and native config application
+- `indexing/` is for indexer dispatch and tracking
+
+Do not leave domain logic in the wrong folder once the true ownership is clear.
+
+### Mutations And Results
+
+Prefer clear result flow over scattered mutation.
+
+- Collect related data into named result objects.
+- Mutate summaries deliberately and near the orchestration flow.
+- Avoid passing partially-known state through many helpers.
+
+If a helper requires a fully resolved object, require it explicitly instead of threading optionals through the success
+path.
+
+### Comments
+
+Comments should explain why a choice exists, not restate obvious code.
+
+### PR Writing
+
+Pull request titles and descriptions should sound like a thoughtful engineer explaining a change to another engineer.
+
+Keep them specific, concise, and honest about verification and non-goals. Avoid autogenerated-sounding summaries,
+file-move inventories, and vague cleanup language.
+
+Do not commit PRD documents unless the user explicitly asks for that documentation change.
+
+### Required Checks
+
+When non-Cairo code changes, run these commands before finishing:
+
+- `pnpm run format`
+- `pnpm run knip`
+
+When Cairo code changes, run:
+
+- `scarb fmt`
+
+If a change touches both non-Cairo and Cairo code, run all relevant commands.
+
+If a required command fails or is unavailable, say so explicitly in the final handoff.
+
+### Running Tests
+
+- Never run bare `npx vitest` from the repo root: duplicate workspace names under `contracts/*/ext` break it.
+- In `client/apps/game`, use `pnpm test [files]` (the wrapper script).
+- In `packages/core`, use `pnpm exec vitest run` — bare `pnpm test` there is watch mode and never exits.
+- `instanced-model.material-semantics.test.ts` is a known load-sensitive flake in full runs; verify it in isolation
+  before blaming your change.
+
+### Before Finishing
+
+Do one review pass specifically for readability.
+
+Read the exported functions and top-level helpers in order and ask:
+
+1. Can I understand the flow without descending into helper bodies?
+2. Are helper names specific enough that I trust them immediately?
+3. Is any top-level block still carrying payload, query, fs, or transaction detail?
+4. Is any shared logic duplicated across files?
+5. Is any file doing work that belongs in a different folder?
+
+If the answer to any of these is yes, refactor again before stopping.
+
+## Git Discipline
+
+Stage explicit paths only — never `git add -A` or `git add .`; parallel agents may share a worktree, and blind staging
+sweeps in work that is not yours. Never use `reset --hard`, `checkout .`, `clean -fd`, `stash`, or `--no-verify`. Commit
+only what you changed.
+
+## Non-Negotiable Rule
+
+Do not leave sloppy code behind because it "works".
+
+If the structure is hard to read, the work is not done.
