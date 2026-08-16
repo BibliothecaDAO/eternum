@@ -2,48 +2,8 @@
   "version": 1,
   "environment": "appchain.blitz",
   "kind": "game",
-  "updatedAt": "2026-08-15T16:18:33.432Z",
+  "updatedAt": "2026-08-16T05:52:40.447Z",
   "entries": {
-    "blitzlive1": {
-      "kind": "game",
-      "environment": "appchain.blitz",
-      "gameName": "blitzlive1",
-      "path": "runs/appchain/blitz/blitzlive1.json",
-      "inputPath": "inputs/appchain/blitz/blitzlive1/31262530412-1.json",
-      "status": "complete",
-      "updatedAt": "2026-08-08T14:47:26.693Z",
-      "workflowRef": "feat/appchain-phase-1",
-      "currentStepId": null,
-      "hasRunningStep": false,
-      "recoverableFailedStepId": null,
-      "recoverablePendingStepId": null,
-      "startTime": 1786205400,
-      "durationSeconds": 7200,
-      "artifacts": {
-        "indexerCreated": true,
-        "indexerTier": "basic"
-      }
-    },
-    "blitzlive2": {
-      "kind": "game",
-      "environment": "appchain.blitz",
-      "gameName": "blitzlive2",
-      "path": "runs/appchain/blitz/blitzlive2.json",
-      "inputPath": "inputs/appchain/blitz/blitzlive2/31264470827-1.json",
-      "status": "complete",
-      "updatedAt": "2026-08-08T15:33:40.632Z",
-      "workflowRef": "feat/appchain-phase-1",
-      "currentStepId": null,
-      "hasRunningStep": false,
-      "recoverableFailedStepId": null,
-      "recoverablePendingStepId": null,
-      "startTime": 1786207002,
-      "durationSeconds": 7200,
-      "artifacts": {
-        "indexerCreated": true,
-        "indexerTier": "basic"
-      }
-    },
     "s2smoke1": {
       "kind": "game",
       "environment": "appchain.blitz",
