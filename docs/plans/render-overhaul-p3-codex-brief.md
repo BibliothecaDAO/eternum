@@ -136,11 +136,34 @@ issue instead.
 - Do NOT touch: the forced-WebGL fallback (`VITE_PUBLIC_RENDERER_BUILD_MODE=experimental-webgpu-force-webgl` must
   still boot and render), the DEV-only GPU instrumentation, the `docs/plans/` briefs.
 
+### 7. Decommission the legacy WebGL renderer stack (owner-ratified; the WebGL2 fallback backend STAYS)
+
+Two different "WebGL"s exist in the codebase; only one dies. The `legacy-webgl` build mode is a full parallel stack:
+classic `WebGLRenderer` in `three/renderer-backend.ts` (~309 lines), a separate composer on the `postprocessing` npm
+package in `three/webgl-postprocess-runtime.ts` (~245 lines), the `three` vs `three/webgpu` build aliasing in
+`renderer-build-mode.ts` / `vite.config.ts`, the root `package.json` `packageExtensions` shim for `postprocessing`,
+and a renderer-mode user preference in `ui/modules/settings/settings.tsx` (`RENDERER_MODE_STORAGE_KEY`). The WebGPU
+build has carried the entire perf program and every gate; the escape hatch has served its purpose.
+
+- Delete: the `legacy-webgl` mode from `RENDERER_BUILD_MODES`, `renderer-backend.ts`, `webgl-postprocess-runtime.ts`,
+  the renderer-mode picker + localStorage preference (migrate silently: ignore and remove the stored key), the
+  `postprocessing` dependency and its `packageExtensions` entry — verify `renderer-effects-runtime.ts` /
+  `constants/rendering.ts` imports from `postprocessing` and unpick or inline what the WebGPU path actually uses.
+- KEEP: the WebGL2 fallback backend inside `WebGPURenderer` (`webgpu-renderer-backend.ts` `"webgl2-fallback"`) — it
+  is what players without WebGPU (blocklisted drivers, older Safari/Firefox, some Linux) get, it shares the whole
+  render path, and it is upstream-maintained. `force-webgl` stays as its test mode.
+- Rename the surviving modes to drop the `experimental-` prefix (`webgpu-auto`, `webgpu-force-webgl`), accepting the
+  old names as aliases so existing env files/deploys don't break; update `.env.*` files in the same PR.
+- Add one PostHog event at renderer init recording the resolved backend (`webgpu` vs `webgl2-fallback`) so a later
+  decision about the fallback itself is made with data.
+- Gate: `webgpu-auto` and `webgpu-force-webgl` both boot and render worldmap + hexception; `pnpm build` succeeds with
+  the `postprocessing` dependency gone; zero `legacy-webgl` references; bundle-size delta reported.
+
 ## Sequencing
 
 1 first (independent, user-felt, small). Then 2, with 5 riding its shadow lever. 3 and 4 are independent of both and
-of each other. 6 last — it is the verification sweep for 2's deletions. One PR per numbered item is fine; do not
-bundle 2 and 6 into one commit with 3/4.
+of each other. 7 is independent and pairs naturally with 6. 6 last — it is the verification sweep for 2's and 7's
+deletions. One PR per numbered item is fine; do not bundle 2, 6, or 7 into one commit with 3/4.
 
 ## Out of scope
 
@@ -153,7 +176,8 @@ bundle 2 and 6 into one commit with 3/4.
 
 - `pnpm test` + `pnpm typecheck` green in `client/apps/game`; touched-package tests green.
 - `pnpm run format` + `pnpm run knip` green at root.
-- Forced-WebGL fallback boots and renders after item 2.
+- The `webgpu-force-webgl` fallback backend boots and renders after items 2 and 7 (the WebGL2 backend must survive
+  the legacy-stack deletion).
 - Measurement protocol before/after in every PR; a gate that regresses blocks merge.
 - No new settings, flags, or abstraction layers beyond the single Quality/Battery mode and its one RenderProfile
   module.
