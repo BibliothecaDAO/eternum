@@ -54,7 +54,11 @@ export class DevStack extends cdk.Stack {
     // Prod-pattern colocation: the box serves Cloudflare directly on :80
     // (nginx host-routing, the surface the ALB used to provide) and scripts
     // on the torii ports.
-    katanaSg.addIngressRule(ec2.Peer.anyIpv4(), ec2.Port.tcp(80), "nginx: cloudflare + cli");
+    katanaSg.addIngressRule(ec2.Peer.anyIpv4(), ec2.Port.tcp(80), "nginx: cloudflare + cli + ACME");
+    // Torii hostnames are grey-clouded (DNS-only): browsers hit nginx :443
+    // directly, escaping Cloudflare's ~100s idle cutoff that killed the
+    // sparse SubscribeEventMessages grpc-web stream.
+    katanaSg.addIngressRule(ec2.Peer.anyIpv4(), ec2.Port.tcp(443), "nginx: direct TLS (torii hosts)");
     katanaSg.addIngressRule(ec2.Peer.anyIpv4(), ec2.Port.tcp(8081), "torii-s2 direct (scripts)");
     katanaSg.addIngressRule(ec2.Peer.anyIpv4(), ec2.Port.tcp(8082), "torii-eternum direct (scripts)");
 
@@ -210,7 +214,11 @@ export class DevStack extends cdk.Stack {
       // Cloudflare (Flexible mode) proxies the public hostnames to :80.
       // Streaming-friendly: HTTP/1.1, no buffering, 3600 s read timeout
       // (matches the ALB idle timeout the grpc-web streams rely on).
-      "dnf install -y nginx",
+      "dnf install -y nginx certbot",
+      // Certs live on the RETAIN /data volume: instance replacement comes up
+      // with the existing certs; certbot below is a no-op until renewal.
+      "mkdir -p /var/www/certbot /data/letsencrypt",
+      "rm -rf /etc/letsencrypt && ln -s /data/letsencrypt /etc/letsencrypt",
       "cat > /etc/nginx/nginx.conf <<'NGINX_CONF'",
       "user nginx;",
       "worker_processes auto;",
@@ -223,10 +231,12 @@ export class DevStack extends cdk.Stack {
       "  map $http_upgrade $connection_upgrade { default upgrade; '' close; }",
       "  server {",
       `    listen 80; server_name ${cfg.publicToriiHost};`,
+      "    location /.well-known/acme-challenge/ { root /var/www/certbot; }",
       "    location / { proxy_pass http://127.0.0.1:8081; include /etc/nginx/proxy-common.conf; }",
       "  }",
       "  server {",
       `    listen 80; server_name ${cfg.publicToriiEternumHost};`,
+      "    location /.well-known/acme-challenge/ { root /var/www/certbot; }",
       "    location / { proxy_pass http://127.0.0.1:8082; include /etc/nginx/proxy-common.conf; }",
       "  }",
       "  server {",
@@ -248,6 +258,31 @@ export class DevStack extends cdk.Stack {
       "proxy_set_header Connection $connection_upgrade;",
       "NGINX_PROXY",
       "systemctl enable --now nginx",
+      // --- direct TLS for the grey-clouded torii hostnames ----------------
+      // HTTP-01 hits nginx :80 straight (DNS-only records point at the EIP);
+      // --keep-until-expiring makes this a no-op while /data still has certs.
+      `certbot certonly --webroot -w /var/www/certbot -d ${cfg.publicToriiHost} -d ${cfg.publicToriiEternumHost} --non-interactive --agree-tos -m jean.christophe.mehr@gmail.com --keep-until-expiring --deploy-hook 'systemctl reload nginx' || true`,
+      `if [ -f /etc/letsencrypt/live/${cfg.publicToriiHost}/fullchain.pem ]; then`,
+      "sed -i '$ d' /etc/nginx/nginx.conf",
+      "cat >> /etc/nginx/nginx.conf <<'CONF443'",
+      "  server {",
+      `    listen 443 ssl; http2 on; server_name ${cfg.publicToriiHost};`,
+      `    ssl_certificate /etc/letsencrypt/live/${cfg.publicToriiHost}/fullchain.pem;`,
+      `    ssl_certificate_key /etc/letsencrypt/live/${cfg.publicToriiHost}/privkey.pem;`,
+      "    location /.well-known/acme-challenge/ { root /var/www/certbot; }",
+      "    location / { proxy_pass http://127.0.0.1:8081; include /etc/nginx/proxy-common.conf; }",
+      "  }",
+      "  server {",
+      `    listen 443 ssl; http2 on; server_name ${cfg.publicToriiEternumHost};`,
+      `    ssl_certificate /etc/letsencrypt/live/${cfg.publicToriiHost}/fullchain.pem;`,
+      `    ssl_certificate_key /etc/letsencrypt/live/${cfg.publicToriiHost}/privkey.pem;`,
+      "    location /.well-known/acme-challenge/ { root /var/www/certbot; }",
+      "    location / { proxy_pass http://127.0.0.1:8082; include /etc/nginx/proxy-common.conf; }",
+      "  }",
+      "}",
+      "CONF443",
+      "nginx -t && systemctl reload nginx",
+      "fi",
     );
 
     const katana = new ec2.Instance(this, "Katana", {
