@@ -217,6 +217,9 @@ export class DevStack extends cdk.Stack {
       "events { worker_connections 4096; }",
       "http {",
       "  access_log off;",
+      // The client's StoryEvent SQL SELECT travels as a ~9 KB GET query string;
+      // the 8k default request-line buffer 414s it before torii ever sees it.
+      "  large_client_header_buffers 4 64k;",
       "  map $http_upgrade $connection_upgrade { default upgrade; '' close; }",
       "  server {",
       `    listen 80; server_name ${cfg.publicToriiHost};`,
