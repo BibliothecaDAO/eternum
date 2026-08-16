@@ -43,8 +43,7 @@ export const DEFAULT_MAINNET_RPC_URL = "https://api.cartridge.gg/x/starknet/main
 export const DEFAULT_SEPOLIA_RPC_URL = "https://api.cartridge.gg/x/starknet/sepolia/rpc/v0_9";
 // Realms dev appchain (chain id WP_REALMS_DEV) — see docs/plans/appchain-phase-1.md.
 // Override with APPCHAIN_RPC_URL / --rpc-url once the stable hostname lands.
-export const DEFAULT_APPCHAIN_RPC_URL =
-  process.env.APPCHAIN_RPC_URL || "http://52.54.98.119";
+export const DEFAULT_APPCHAIN_RPC_URL = process.env.APPCHAIN_RPC_URL || "http://52.54.98.119";
 export const DEFAULT_LOCAL_RPC_URL = "http://127.0.0.1:5050/rpc/v0_9";
 
 export const DEFAULT_CHAIN_RPC_URLS: Record<string, string> = {
