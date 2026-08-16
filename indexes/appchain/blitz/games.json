@@ -2,7 +2,7 @@
   "version": 1,
   "environment": "appchain.blitz",
   "kind": "game",
-  "updatedAt": "2026-08-16T16:30:24.358Z",
+  "updatedAt": "2026-08-16T16:30:32.711Z",
   "entries": {
     "s2smoke1": {
       "kind": "game",
@@ -249,12 +249,13 @@
       "path": "runs/appchain/blitz/bltz-whiz-504.json",
       "inputPath": "inputs/appchain/blitz/bltz-whiz-504/31958732229-1.json",
       "status": "running",
-      "updatedAt": "2026-08-16T16:30:24.358Z",
+      "updatedAt": "2026-08-16T16:30:32.711Z",
       "workflowRef": "feat/single-world-blitz",
       "currentStepId": "wait-for-factory-index",
-      "hasRunningStep": false,
+      "activeLeaseExpiresAt": "2026-08-16T17:15:32.711Z",
+      "hasRunningStep": true,
       "recoverableFailedStepId": null,
-      "recoverablePendingStepId": "wait-for-factory-index",
+      "recoverablePendingStepId": null,
       "startTime": 1786898400,
       "durationSeconds": 432000,
       "artifacts": {}
