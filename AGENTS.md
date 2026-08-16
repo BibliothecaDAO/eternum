@@ -5,6 +5,17 @@ This file defines the default coding and review standard for the entire reposito
 On startup, read this file first. Then read any more specific `AGENTS.md` file in the subdirectory you are working in.
 More specific files may add local rules, but they should not lower the quality bar defined here.
 
+## Engineering Principles
+
+1. **KISS, always.** The simplest workable design wins. Overcomplication is a bug: flag it in review like one, and do
+   not add layers, options, or abstractions a current requirement does not demand.
+2. **Systemic fixes over point patches.** When a bug appears, ask what CLASS of bug it belongs to before fixing the
+   instance. If the same root cause can bite elsewhere (a signal derived ad-hoc in several places, a guard every call
+   site must remember, an unbounded cache pattern), fix the root: create the single source of truth, move the guard to
+   the chokepoint, and migrate the existing copies onto it. A fix that leaves siblings of the same bug alive is
+   incomplete. Example: spectator intent lives in `client/apps/game/src/utils/spectator-session.ts` — consumers import
+   it; nobody re-derives it from the URL or account heuristics.
+
 ## AI-First Harness Standard
 
 This repo follows `docs/architecture/ai-first-harness-architecture.md`.
