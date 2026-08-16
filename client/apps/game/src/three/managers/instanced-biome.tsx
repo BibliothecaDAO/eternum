@@ -6,6 +6,7 @@ import { AnimationClip, AnimationMixer } from "three";
 import { AnimationVisibilityContext } from "../types/animation";
 import { InstancedMatrixAttributePool } from "../utils/instanced-matrix-attribute-pool";
 import { resolveBiomeMeshRenderOrder } from "./instanced-biome-render-order";
+import { writeMorphWeightsIfChanged } from "./morph-texture-dirty-state";
 
 const zeroScaledMatrix = new THREE.Matrix4().makeScale(0, 0, 0);
 
@@ -102,6 +103,7 @@ export default class InstancedModel {
           for (let i = 0; i < count; i++) {
             tmp.setMorphAt(i, biomeMesh as any);
           }
+          tmp.morphTexture!.name = `biome-morph:${name || "unnamed"}:${child.name || this.instancedMeshes.length}`;
           tmp.morphTexture!.needsUpdate = true;
         }
 
@@ -274,6 +276,15 @@ export default class InstancedModel {
           targetArray.set(sourceArray.subarray(0, floatsToCopy));
         }
         child.count = finalCount;
+        // Upload only the region we actually wrote. A bare needsUpdate marks
+        // the ENTIRE preallocated buffer dirty — at large zoom windows that
+        // was tens of MB per mesh through queue.writeBuffer inside the render
+        // loop, the multi-second zoom/entry freeze. The stale tail beyond
+        // `count` is never drawn.
+        child.instanceMatrix.clearUpdateRanges();
+        if (floatsToCopy > 0) {
+          child.instanceMatrix.addUpdateRange(0, floatsToCopy);
+        }
         child.instanceMatrix.needsUpdate = true;
         resolvedCount = Math.min(resolvedCount, finalCount);
       }
@@ -310,7 +321,14 @@ export default class InstancedModel {
 
   removeInstance(index: number) {
     this.setMatrixAt(index, zeroScaledMatrix);
-    this.needsUpdate();
+    // Single-instance edit: dirty just that matrix, not the whole buffer.
+    this.group.children.forEach((child) => {
+      if (child instanceof THREE.InstancedMesh) {
+        const itemSize = child.instanceMatrix.itemSize;
+        child.instanceMatrix.addUpdateRange(index * itemSize, itemSize);
+        child.instanceMatrix.needsUpdate = true;
+      }
+    });
   }
 
   needsUpdate() {
@@ -433,7 +451,7 @@ export default class InstancedModel {
       this.animationFrameOffset = (this.animationFrameOffset + 1) % bucketStride;
 
       const time = now * 0.001;
-      let needsUpdate = false;
+      let completedAnimationPass = false;
 
       this.instancedMeshes.forEach((mesh, meshIndex) => {
         // Skip if no instances to animate
@@ -481,8 +499,10 @@ export default class InstancedModel {
         // Direct texture data manipulation - much faster than setMorphAt per instance
         const morphTexture = mesh.morphTexture;
         if (morphTexture && morphTexture.image && morphTexture.image.data) {
+          completedAnimationPass = true;
           const textureData = morphTexture.image.data as unknown as Float32Array;
           const textureWidth = morphTexture.image.width;
+          let textureChanged = false;
 
           // OPTIMIZED: Batch by bucket for cache locality
           // Process all instances in the same bucket together, using TypedArray.set()
@@ -493,35 +513,27 @@ export default class InstancedModel {
 
             const srcOffset = bucket * morphCount;
 
-            // For small morphCount (typical case: 1-4 morph targets), use subarray.set()
-            // For larger morphCount, the overhead of subarray creation isn't worth it
-            if (morphCount <= 8) {
-              const bucketWeights = this.bucketWeightsBuffer.subarray(srcOffset, srcOffset + morphCount);
-              for (let idx = 0; idx < indices.length; idx++) {
-                const i = indices[idx];
-                if (i >= instanceCount) continue;
-                const dstOffset = i * textureWidth;
-                textureData.set(bucketWeights, dstOffset);
-              }
-            } else {
-              // Fallback for many morph targets: direct copy is still faster than setMorphAt
-              for (let idx = 0; idx < indices.length; idx++) {
-                const i = indices[idx];
-                if (i >= instanceCount) continue;
-                const dstOffset = i * textureWidth;
-                for (let m = 0; m < morphCount; m++) {
-                  textureData[dstOffset + m] = this.bucketWeightsBuffer[srcOffset + m];
-                }
-              }
+            for (let idx = 0; idx < indices.length; idx++) {
+              const i = indices[idx];
+              if (i >= instanceCount) continue;
+              textureChanged =
+                writeMorphWeightsIfChanged(
+                  textureData,
+                  i * textureWidth,
+                  this.bucketWeightsBuffer,
+                  srcOffset,
+                  morphCount,
+                ) || textureChanged;
             }
           }
 
-          morphTexture.needsUpdate = true;
-          needsUpdate = true;
+          if (textureChanged) {
+            morphTexture.needsUpdate = true;
+          }
         }
       });
 
-      if (needsUpdate) {
+      if (completedAnimationPass) {
         this.lastAnimationUpdate = now;
       }
     }

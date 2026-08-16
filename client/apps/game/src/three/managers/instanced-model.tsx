@@ -20,6 +20,7 @@ import { AnimationVisibilityContext } from "../types/animation";
 import { getContactShadowResources } from "../utils/contact-shadow";
 import { InstancedMatrixAttributePool } from "../utils/instanced-matrix-attribute-pool";
 import { resizeInstancedMorphTexture } from "./morph-texture-resize";
+import { writeMorphWeightsIfChanged } from "./morph-texture-dirty-state";
 
 const BIG_DETAILS_NAME = "big_details";
 const BUILDING_NAME = "building";
@@ -166,6 +167,7 @@ export default class InstancedModel {
             for (let i = 0; i < this.capacity; i++) {
               tmp.setMorphAt(i, biomeMesh as any);
             }
+            tmp.morphTexture!.name = `structure-morph:${name || "unnamed"}:${child.name || this.instancedMeshes.length}`;
             tmp.morphTexture!.needsUpdate = true;
           }
         }
@@ -468,7 +470,7 @@ export default class InstancedModel {
 
     if (this.mixer && this.animation) {
       const time = now * 0.001;
-      let needsUpdate = false;
+      let completedAnimationPass = false;
 
       this.instancedMeshes.forEach((mesh, meshIndex) => {
         if (!mesh.animated) return;
@@ -514,8 +516,10 @@ export default class InstancedModel {
         // Direct texture data manipulation - much faster than setMorphAt per instance
         const morphTexture = mesh.morphTexture;
         if (morphTexture && morphTexture.image && morphTexture.image.data) {
+          completedAnimationPass = true;
           const textureData = morphTexture.image.data as unknown as Float32Array;
           const textureWidth = morphTexture.image.width;
+          let textureChanged = false;
 
           // OPTIMIZED: Batch by bucket for cache locality
           for (let bucket = bucketOffset; bucket < ANIMATION_BUCKETS; bucket += bucketStride) {
@@ -524,34 +528,27 @@ export default class InstancedModel {
 
             const srcOffset = bucket * morphCount;
 
-            // For small morphCount (typical case), use subarray.set()
-            if (morphCount <= 8) {
-              const bucketWeights = this.bucketWeightsBuffer.subarray(srcOffset, srcOffset + morphCount);
-              for (let idx = 0; idx < indices.length; idx++) {
-                const i = indices[idx];
-                if (i >= instanceCount) continue;
-                const dstOffset = i * textureWidth;
-                textureData.set(bucketWeights, dstOffset);
-              }
-            } else {
-              // Fallback for many morph targets
-              for (let idx = 0; idx < indices.length; idx++) {
-                const i = indices[idx];
-                if (i >= instanceCount) continue;
-                const dstOffset = i * textureWidth;
-                for (let m = 0; m < morphCount; m++) {
-                  textureData[dstOffset + m] = this.bucketWeightsBuffer[srcOffset + m];
-                }
-              }
+            for (let idx = 0; idx < indices.length; idx++) {
+              const i = indices[idx];
+              if (i >= instanceCount) continue;
+              textureChanged =
+                writeMorphWeightsIfChanged(
+                  textureData,
+                  i * textureWidth,
+                  this.bucketWeightsBuffer,
+                  srcOffset,
+                  morphCount,
+                ) || textureChanged;
             }
           }
 
-          morphTexture.needsUpdate = true;
-          needsUpdate = true;
+          if (textureChanged) {
+            morphTexture.needsUpdate = true;
+          }
         }
       });
 
-      if (needsUpdate) {
+      if (completedAnimationPass) {
         this.lastAnimationUpdate = now;
       }
     }

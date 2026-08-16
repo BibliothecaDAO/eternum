@@ -22,6 +22,7 @@ import {
 } from "three";
 import { CSS2DObject } from "three/examples/jsm/renderers/CSS2DRenderer.js";
 import { resizeInstancedMorphTexture } from "./morph-texture-resize";
+import { writeMorphWeightsIfChanged } from "./morph-texture-dirty-state";
 import { BoundedHexCache } from "../utils/bounded-hex-cache";
 import { env } from "../../../env";
 import {
@@ -565,6 +566,7 @@ export class ArmyModel {
       for (let i = 0; i < this.INITIAL_INSTANCE_CAPACITY; i++) {
         instancedMesh.setMorphAt(i, mesh as any);
       }
+      instancedMesh.morphTexture!.name = `army-morph:${mesh.name || "mesh"}`;
       instancedMesh.morphTexture!.needsUpdate = true;
     }
   }
@@ -1349,6 +1351,7 @@ export class ArmyModel {
       if (morphTexture && morphTexture.image && morphTexture.image.data) {
         const textureData = morphTexture.image.data as unknown as Float32Array;
         const textureWidth = morphTexture.image.width;
+        let textureChanged = false;
 
         for (let bucket = bucketOffset; bucket < this.ANIMATION_BUCKETS; bucket += bucketStride) {
           const indices = this.bucketToIndices.get(bucket);
@@ -1356,14 +1359,6 @@ export class ArmyModel {
 
           const idleOffset = bucket * morphCount;
           const movingOffset = bucket * morphCount;
-          const idleWeights =
-            needsIdleWeights && this.idleWeightsBuffer
-              ? this.idleWeightsBuffer.subarray(idleOffset, idleOffset + morphCount)
-              : null;
-          const movingWeights =
-            needsMovingWeights && this.movingWeightsBuffer
-              ? this.movingWeightsBuffer.subarray(movingOffset, movingOffset + morphCount)
-              : null;
 
           for (let idx = 0; idx < indices.length; idx++) {
             const i = indices[idx];
@@ -1372,29 +1367,28 @@ export class ArmyModel {
             if (this.shouldSkipAnimation(state)) continue;
 
             const dstOffset = i * textureWidth;
+            let sourceWeights: Float32Array | null = null;
+            let sourceOffset = 0;
             if (state === ANIMATION_STATE_MOVING) {
-              if (!movingWeights) continue;
-              if (morphCount <= 8) {
-                textureData.set(movingWeights, dstOffset);
-              } else {
-                for (let m = 0; m < morphCount; m++) {
-                  textureData[dstOffset + m] = this.movingWeightsBuffer![movingOffset + m];
-                }
-              }
+              if (!needsMovingWeights || !this.movingWeightsBuffer) continue;
+              sourceWeights = this.movingWeightsBuffer;
+              sourceOffset = movingOffset;
             } else {
-              if (!idleWeights) continue;
-              if (morphCount <= 8) {
-                textureData.set(idleWeights, dstOffset);
-              } else {
-                for (let m = 0; m < morphCount; m++) {
-                  textureData[dstOffset + m] = this.idleWeightsBuffer![idleOffset + m];
-                }
-              }
+              if (!needsIdleWeights || !this.idleWeightsBuffer) continue;
+              sourceWeights = this.idleWeightsBuffer;
+              sourceOffset = idleOffset;
+            }
+            if (sourceWeights) {
+              textureChanged =
+                writeMorphWeightsIfChanged(textureData, dstOffset, sourceWeights, sourceOffset, morphCount) ||
+                textureChanged;
             }
           }
         }
 
-        morphTexture.needsUpdate = true;
+        if (textureChanged) {
+          morphTexture.needsUpdate = true;
+        }
         performedUpdate = true;
       }
     });

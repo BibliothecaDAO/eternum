@@ -10,6 +10,7 @@ import { useUIStore } from "./hooks/store/use-ui-store";
 import { normalizeLegacyPlayLocation } from "./play/navigation/play-route";
 import { normalizePlayBootLocation } from "./play/navigation/play-route-boot-normalization";
 import { getActiveWorld } from "./runtime/world/store";
+import { TRACING_RUNTIME_ENABLED } from "./tracing/runtime-policy";
 import { resolveLegacyLandingHref } from "./ui/features/landing/navigation/landing-route-redirects";
 import { useBootDocumentState } from "./ui/modules/boot-loader";
 import { ConstructionGate } from "./ui/modules/construction-gate";
@@ -50,7 +51,7 @@ export const GameClientApp = () => {
   const [backgroundImage] = useState(() => getRandomBackgroundImage());
 
   useBootDocumentState(isConstructionMode ? "app-ready" : null);
-  useTracingCleanup();
+  useTracingCleanup(TRACING_RUNTIME_ENABLED);
 
   if (isConstructionMode) {
     return <ConstructionGate />;
@@ -129,8 +130,12 @@ const GameRouteShell = ({ backgroundImage }: { backgroundImage: string }) => {
   );
 };
 
-const useTracingCleanup = () => {
+const useTracingCleanup = (enabled: boolean) => {
   useEffect(() => {
+    if (!enabled) {
+      return;
+    }
+
     const handleBeforeUnload = () => {
       void cleanupTracing();
     };
@@ -141,5 +146,5 @@ const useTracingCleanup = () => {
       window.removeEventListener("beforeunload", handleBeforeUnload);
       void cleanupTracing();
     };
-  }, []);
+  }, [enabled]);
 };

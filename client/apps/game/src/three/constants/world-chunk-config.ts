@@ -47,8 +47,6 @@ interface WorldChunkConfig {
     maxCompositePages: number;
     /** Missing critical pages to build synchronously per camera window update */
     criticalPageImmediateBudget: number;
-    /** Target frame budget for non-critical visual page builds */
-    pageBuildFrameBudgetMs: number;
     /** How long visual pages outside the active window remain available */
     retainedPageMs: number;
     /** Camera sampling throttle for rolling terrain updates */
@@ -98,7 +96,6 @@ export const WORLD_CHUNK_CONFIG: WorldChunkConfig = {
     viewportMarginPages: 1,
     maxCompositePages: 12,
     criticalPageImmediateBudget: 1,
-    pageBuildFrameBudgetMs: 2,
     retainedPageMs: 350,
     cameraSampleThrottleMs: 66,
     provisionalShellEnabled: true,

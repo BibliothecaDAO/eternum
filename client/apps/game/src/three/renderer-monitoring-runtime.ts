@@ -1,3 +1,4 @@
+import { VERBOSE_LOGS_ENABLED } from "@/utils/dev-mode";
 import Stats from "three/examples/jsm/libs/stats.module.js";
 import type { RendererSurfaceLike } from "./renderer-backend";
 import {
@@ -144,6 +145,7 @@ class GameRendererMonitoringRuntime implements RendererMonitoringRuntime {
   }
 
   private handleMemorySpike(spike: MemorySpike): void {
+    if (!VERBOSE_LOGS_ENABLED) return;
     console.warn(`🚨 Memory spike in ${spike.context}: +${spike.increaseMB.toFixed(1)}MB`);
     if (spike.increaseMB > 100) {
       console.error("🔥 Large memory spike detected!", spike);

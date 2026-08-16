@@ -4,6 +4,8 @@ interface CountUpdatableModel {
 
 interface FinalizeVisibleStructureModelPassInput<TModel extends CountUpdatableModel> {
   modelInstanceCounts: Map<TModel, number>;
+  previouslyActiveStructureModels: Set<TModel>;
+  previouslyActiveCosmeticStructureModels: Set<TModel>;
   nextActiveStructureModels: Set<TModel>;
   nextActiveCosmeticStructureModels: Set<TModel>;
   applyPendingModelBounds: () => void;
@@ -16,6 +18,9 @@ export function finalizeVisibleStructureModelPass<TModel extends CountUpdatableM
   activeStructureModels: Set<TModel>;
   activeCosmeticStructureModels: Set<TModel>;
 } {
+  input.previouslyActiveStructureModels.forEach((model) => model.setCount(0));
+  input.previouslyActiveCosmeticStructureModels.forEach((model) => model.setCount(0));
+
   for (const [model, count] of input.modelInstanceCounts) {
     model.setCount(count);
   }

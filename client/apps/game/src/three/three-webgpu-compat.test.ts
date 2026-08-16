@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 describe("three-webgpu-compat", () => {
-  it("re-exports the legacy shader helpers required by three-stdlib", async () => {
+  it("re-exports the legacy shader helpers required by postprocessing", async () => {
     const compatModule = await import("./three-webgpu-compat");
 
     expect(compatModule.UniformsUtils).toBeDefined();

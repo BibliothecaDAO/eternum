@@ -95,6 +95,12 @@ import {
 import { removeStructureLabels, syncStructureLabelVisibility } from "./structure-label-visibility";
 import { normalizeStructureEntityId as normalizeEntityId } from "./structure-entity-id";
 import { gameEntityKey } from "@/dojo/game-scope";
+import {
+  isFrameBudgetWorkQueueDisposedError,
+  scheduleFrameBudgetWork,
+  type FrameBudgetWorkLane,
+  type FrameBudgetWorkScheduler,
+} from "../frame-budget-work-queue";
 
 const INITIAL_STRUCTURE_CAPACITY = 64;
 const WONDER_MODEL_INDEX = 4;
@@ -211,6 +217,7 @@ export class StructureManager {
   private hasPendingModelBounds = false;
   private visibleStructureCount = 0;
   private readonly visibleStructurePassFence = createAsyncPassFence();
+  private pendingVisibleStructureWorkLane: FrameBudgetWorkLane = "visible";
   private previousVisibleIds: Set<ID> = new Set(); // Track visible structures for diff-based point cleanup
   private previouslyActiveStructureModels: Set<InstancedModel> = new Set();
   private previouslyActiveCosmeticStructureModels: Set<InstancedModel> = new Set();
@@ -229,13 +236,16 @@ export class StructureManager {
     frustumManager?: FrustumManager,
     visibilityManager?: CentralizedVisibilityManager,
     chunkStride?: number,
+    private readonly chunkWorkScheduler?: FrameBudgetWorkScheduler,
   ) {
     this.scene = scene;
     this.worldSpatialProjection = worldSpatialProjection;
     this.runVisibleStructuresUpdate = createCoalescedAsyncUpdateRunner(async () => {
       this.isUpdatingVisibleStructures = true;
+      const workLane = this.pendingVisibleStructureWorkLane;
+      this.pendingVisibleStructureWorkLane = "visible";
       try {
-        await this.performVisibleStructuresUpdate();
+        await this.performVisibleStructuresUpdate(workLane);
       } finally {
         this.isUpdatingVisibleStructures = false;
       }
@@ -988,7 +998,7 @@ export class StructureManager {
           return false;
         }
 
-        await this.requestVisibleStructuresRefresh();
+        await this.requestVisibleStructuresRefresh("critical");
       },
       isDestroyed: () => this.isDestroyed,
       onPreviousUpdateFailed: (error) => {
@@ -1052,7 +1062,7 @@ export class StructureManager {
     if (hasMatchingStructure) void this.requestVisibleStructuresRefresh();
   }
 
-  private requestVisibleStructuresRefresh(): Promise<void> {
+  private requestVisibleStructuresRefresh(workLane: FrameBudgetWorkLane = "visible"): Promise<void> {
     this.visibleStructurePassFence.invalidate();
 
     if (this.isDestroyed) {
@@ -1063,7 +1073,14 @@ export class StructureManager {
       return Promise.resolve();
     }
 
+    if (workLane === "critical") {
+      this.pendingVisibleStructureWorkLane = "critical";
+    }
+
     return this.runVisibleStructuresUpdate().catch((error) => {
+      if (isFrameBudgetWorkQueueDisposedError(error)) {
+        return;
+      }
       console.error("Failed to update visible structures", error);
     });
   }
@@ -1103,7 +1120,7 @@ export class StructureManager {
     return models[structure.stage];
   }
 
-  private async performVisibleStructuresUpdate(): Promise<void> {
+  private async performVisibleStructuresUpdate(workLane: FrameBudgetWorkLane = "visible"): Promise<void> {
     if (this.isDestroyed) {
       return;
     }
@@ -1129,15 +1146,12 @@ export class StructureManager {
         return;
       }
 
-      this.visibleStructureCount = visibleStructures.length;
-      this.wonderEntityIdMaps.clear();
-
-      this.previouslyActiveStructureModels.forEach((model) => model.setCount(0));
-      this.previouslyActiveCosmeticStructureModels.forEach((model) => model.setCount(0));
-      this.previouslyActiveStructureModels.clear();
-      this.previouslyActiveCosmeticStructureModels.clear();
-      this.entityIdMaps.clear();
-      this.cosmeticEntityIdMaps.clear();
+      await scheduleFrameBudgetWork(this.chunkWorkScheduler, workLane, () => {
+        this.visibleStructureCount = visibleStructures.length;
+        this.wonderEntityIdMaps.clear();
+        this.entityIdMaps.clear();
+        this.cosmeticEntityIdMaps.clear();
+      });
 
       // Track instance counts per model to batch setCount calls (avoids N calls to computeBoundingSphere)
       const modelInstanceCounts = new Map<InstancedModel, number>();
@@ -1156,18 +1170,20 @@ export class StructureManager {
           continue;
         }
 
-        structures.forEach((structure) => {
-          visibleStructureIds.add(structure.entityId);
-          const rotationY = this.resolveVisibleStructureRotationY(structure);
-          this.syncVisibleStructurePresentation(undefined, structure, rotationY, attachmentRetain);
-          this.bindVisibleStructureInstance(
-            structureType,
-            structure,
-            models,
-            modelInstanceCounts,
-            nextActiveStructureModels,
-          );
-        });
+        for (const structure of structures) {
+          await scheduleFrameBudgetWork(this.chunkWorkScheduler, workLane, () => {
+            visibleStructureIds.add(structure.entityId);
+            const rotationY = this.resolveVisibleStructureRotationY(structure);
+            this.syncVisibleStructurePresentation(undefined, structure, rotationY, attachmentRetain);
+            this.bindVisibleStructureInstance(
+              structureType,
+              structure,
+              models,
+              modelInstanceCounts,
+              nextActiveStructureModels,
+            );
+          });
+        }
 
         // Note: setCount will be called once per model after all structures are processed
       }
@@ -1180,29 +1196,32 @@ export class StructureManager {
           continue;
         }
 
-        structures.forEach((structure) => {
-          visibleStructureIds.add(structure.entityId);
-          const rotationY = this.resolveVisibleStructureRotationY(structure);
-          this.syncVisibleStructurePresentation(undefined, structure, rotationY, attachmentRetain);
-          this.bindVisibleCosmeticStructureInstance(
-            cosmeticId,
-            structure,
-            models,
-            modelInstanceCounts,
-            nextActiveCosmeticStructureModels,
-          );
-        });
+        for (const structure of structures) {
+          await scheduleFrameBudgetWork(this.chunkWorkScheduler, workLane, () => {
+            visibleStructureIds.add(structure.entityId);
+            const rotationY = this.resolveVisibleStructureRotationY(structure);
+            this.syncVisibleStructurePresentation(undefined, structure, rotationY, attachmentRetain);
+            this.bindVisibleCosmeticStructureInstance(
+              cosmeticId,
+              structure,
+              models,
+              modelInstanceCounts,
+              nextActiveCosmeticStructureModels,
+            );
+          });
+        }
 
         // Note: setCount will be called once per model after all structures are processed
       }
 
-      this.finalizeVisibleStructureModelPass(
-        modelInstanceCounts,
-        nextActiveStructureModels,
-        nextActiveCosmeticStructureModels,
-      );
-
-      this.finalizeVisibleStructurePass(visibleStructureIds, attachmentRetain);
+      await scheduleFrameBudgetWork(this.chunkWorkScheduler, workLane, () => {
+        this.finalizeVisibleStructureModelPass(
+          modelInstanceCounts,
+          nextActiveStructureModels,
+          nextActiveCosmeticStructureModels,
+        );
+        this.finalizeVisibleStructurePass(visibleStructureIds, attachmentRetain);
+      });
     } finally {
       recordWorldmapRenderDuration("performVisibleStructuresUpdate", performance.now() - updateStartedAt);
       setWorldmapRenderGauge("visibleStructures", this.visibleStructureCount);
@@ -1371,6 +1390,8 @@ export class StructureManager {
   ): void {
     const finalizedModelSets = finalizeVisibleStructureModelPass({
       modelInstanceCounts,
+      previouslyActiveStructureModels: this.previouslyActiveStructureModels,
+      previouslyActiveCosmeticStructureModels: this.previouslyActiveCosmeticStructureModels,
       nextActiveStructureModels,
       nextActiveCosmeticStructureModels,
       applyPendingModelBounds: () => this.applyPendingModelBounds(),

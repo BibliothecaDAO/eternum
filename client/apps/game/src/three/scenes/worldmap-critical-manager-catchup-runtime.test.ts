@@ -98,6 +98,31 @@ describe("handleWorldmapCriticalManagerCatchUpFailures", () => {
     expect(clearTimeoutFn).not.toHaveBeenCalled();
   });
 
+  it("labels slow sliced catch-up as convergence latency rather than blocking time", async () => {
+    const info = vi.spyOn(console, "info").mockImplementation(() => undefined);
+    const timestamps = [0, 181];
+
+    try {
+      await runWorldmapCriticalManagerCatchUp({
+        timeoutMs: 0,
+        now: () => timestamps.shift() ?? 181,
+        managers: [
+          {
+            label: "structure",
+            run: async () => undefined,
+            recover: vi.fn(),
+          },
+        ],
+      });
+
+      expect(info).toHaveBeenCalledWith(
+        "[WorldmapPerf] critical structure manager catch-up converged over 181ms of sliced wall time",
+      );
+    } finally {
+      info.mockRestore();
+    }
+  });
+
   it("recovers rejected critical manager work without blocking successful managers", async () => {
     const recoverArmy = vi.fn();
     const recoverStructure = vi.fn();

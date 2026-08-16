@@ -1,5 +1,6 @@
 import { AudioManager } from "@/audio/core/AudioManager";
 import { getCurrentPlayRouteBootToken, usePlayRouteReadinessStore } from "@/game-entry/play-route-readiness-store";
+import { VERBOSE_LOGS_ENABLED } from "@/utils/dev-mode";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { resolveStoredLocalCameraDistance, useCameraZoomStore } from "@/hooks/store/use-camera-zoom-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
@@ -102,7 +103,7 @@ import {
   Vector2,
   Vector3,
 } from "three";
-import { CSS2DObject } from "three-stdlib";
+import { CSS2DObject } from "three/addons/renderers/CSS2DRenderer.js";
 import { MapControls } from "three/examples/jsm/controls/MapControls.js";
 import { SceneName } from "../types";
 import { getHexForWorldPosition, getWorldPositionForHex } from "../utils";
@@ -352,7 +353,7 @@ export default class HexceptionScene extends HexagonScene {
 
           // Only create a new subscription if we have a valid entity ID
           if (structureEntityId && structureEntityId !== 0) {
-            console.log(`Setting up Structure listener for entity ID: ${structureEntityId}`);
+            if (VERBOSE_LOGS_ENABLED) console.log(`Setting up Structure listener for entity ID: ${structureEntityId}`);
 
             this.structureUpdateSubscription = this.worldUpdateListener.StructureEntityListener.onLevelUpdate(
               structureEntityId,
@@ -1295,7 +1296,7 @@ export default class HexceptionScene extends HexagonScene {
         // Clear the array to prevent accidental reuse of released matrices
         matrices.length = 0;
       }
-      console.log(`🧹 Released ${totalMatricesReleased} matrices back to pool`);
+      if (VERBOSE_LOGS_ENABLED) console.log(`🧹 Released ${totalMatricesReleased} matrices back to pool`);
 
       if (typeof window !== "undefined") {
         usePlayRouteReadinessStore.getState().markHexReady(getCurrentPlayRouteBootToken(), {

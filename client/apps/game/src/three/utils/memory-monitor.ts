@@ -8,6 +8,7 @@
  * - Manager-specific memory usage
  */
 
+import { VERBOSE_LOGS_ENABLED } from "@/utils/dev-mode";
 import type { RendererSurfaceLike } from "../renderer-backend";
 
 interface MemoryStats {
@@ -186,8 +187,11 @@ export class MemoryMonitor {
       this.spikes.shift();
     }
 
-    // Log the spike
-    console.warn(`🚨 Memory spike detected: +${spike.increaseMB.toFixed(1)}MB in ${spike.context}`, spike);
+    // Log the spike (opt-in: attribution is fuzzy — it names whatever sampled
+    // last, not the allocator — so it reads as noise in normal sessions)
+    if (VERBOSE_LOGS_ENABLED) {
+      console.warn(`🚨 Memory spike detected: +${spike.increaseMB.toFixed(1)}MB in ${spike.context}`, spike);
+    }
 
     // Call callback if provided
     if (this.onMemorySpike) {

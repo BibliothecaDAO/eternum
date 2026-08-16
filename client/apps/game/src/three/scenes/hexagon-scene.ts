@@ -17,7 +17,7 @@ import { MatrixPool } from "@/three/utils/matrix-pool";
 import { PerformanceMonitor } from "@/three/utils/performance-monitor";
 import { gltfLoader } from "@/three/utils/utils";
 import { loadBiomeGltf } from "@/three/utils/biome-gltf-cache";
-import type { GLTF } from "three-stdlib";
+import type { GLTF } from "three/addons/loaders/GLTFLoader.js";
 import type { QualityFeatures } from "@/three/utils/quality-controller";
 import { LeftView } from "@/types";
 import { GRAPHICS_SETTING, IS_FLAT_MODE, isLowOrBelow } from "@/ui/config";
@@ -797,7 +797,10 @@ export abstract class HexagonScene {
     }
 
     if (this.mainDirectionalLight) {
-      this.mainDirectionalLight.castShadow = this.shadowsEnabledByQuality && this.currentCameraView !== CameraView.Far;
+      // Quality is the only input allowed to change light topology; the
+      // per-view part rides the intensity uniform (no shader rebuilds).
+      this.mainDirectionalLight.castShadow = this.shadowsEnabledByQuality;
+      this.setMainDirectionalShadowActive(this.shadowsEnabledByQuality && this.currentCameraView !== CameraView.Far);
       if (this.shadowMapSizeByQuality > 0) {
         this.mainDirectionalLight.shadow.mapSize.set(this.shadowMapSizeByQuality, this.shadowMapSizeByQuality);
       }
@@ -1429,7 +1432,6 @@ export abstract class HexagonScene {
   }
 
   public changeCameraView(position: CameraView) {
-    console.log("HexagonScene changeCameraView:", this.targetCameraView, "->", position);
     const previousView = this.targetCameraView;
     const target = this.controls.target;
     if (position !== previousView) {
@@ -1508,6 +1510,25 @@ export abstract class HexagonScene {
     this.cameraAngle = profile.angleRadians;
   }
 
+  /**
+   * Fade/freeze the main shadow WITHOUT touching light topology. Toggling
+   * `castShadow` on the light invalidates every material's shader graph — a
+   * multi-second whole-scene rebuild on zoom transitions. `shadow.intensity`
+   * is a live uniform in the node renderer, and freezing `autoUpdate` skips
+   * the shadow-map render while faded.
+   */
+  protected setMainDirectionalShadowActive(active: boolean): void {
+    if (!this.mainDirectionalLight) {
+      return;
+    }
+    const shadow = this.mainDirectionalLight.shadow;
+    shadow.intensity = active ? 1 : 0;
+    shadow.autoUpdate = active;
+    if (active) {
+      shadow.needsUpdate = true;
+    }
+  }
+
   private applyResolvedCameraView(view: CameraView): void {
     if (!this.mainDirectionalLight) {
       return;
@@ -1517,17 +1538,20 @@ export abstract class HexagonScene {
       return;
     }
 
+    // castShadow stays pinned to the quality setting (rare changes only) —
+    // per-view shadow presence is expressed through the intensity uniform.
+    this.mainDirectionalLight.castShadow = this.shadowsEnabledByQuality;
     switch (view) {
       case CameraView.Close:
-        this.mainDirectionalLight.castShadow = this.shadowsEnabledByQuality;
         this.mainDirectionalLight.shadow.bias = -0.02;
+        this.setMainDirectionalShadowActive(this.shadowsEnabledByQuality);
         break;
       case CameraView.Medium:
-        this.mainDirectionalLight.castShadow = this.shadowsEnabledByQuality;
         this.mainDirectionalLight.shadow.bias = -0.015;
+        this.setMainDirectionalShadowActive(this.shadowsEnabledByQuality);
         break;
       case CameraView.Far:
-        this.mainDirectionalLight.castShadow = false;
+        this.setMainDirectionalShadowActive(false);
         break;
     }
   }

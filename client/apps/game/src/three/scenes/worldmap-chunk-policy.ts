@@ -29,7 +29,6 @@ interface WorldmapChunkPolicy {
     viewportMarginPages: number;
     maxCompositePages: number;
     criticalPageImmediateBudget: number;
-    pageBuildFrameBudgetMs: number;
     retainedPageMs: number;
     cameraSampleThrottleMs: number;
     provisionalShellEnabled: boolean;
@@ -67,7 +66,6 @@ interface WorldChunkPolicyInput {
     viewportMarginPages: number;
     maxCompositePages: number;
     criticalPageImmediateBudget: number;
-    pageBuildFrameBudgetMs: number;
     retainedPageMs: number;
     cameraSampleThrottleMs: number;
     provisionalShellEnabled: boolean;
@@ -108,7 +106,6 @@ export function createWorldmapChunkPolicy(config: WorldChunkPolicyInput = WORLD_
       viewportMarginPages: config.visualPresentation.viewportMarginPages,
       maxCompositePages: config.visualPresentation.maxCompositePages,
       criticalPageImmediateBudget: config.visualPresentation.criticalPageImmediateBudget,
-      pageBuildFrameBudgetMs: config.visualPresentation.pageBuildFrameBudgetMs,
       retainedPageMs: config.visualPresentation.retainedPageMs,
       cameraSampleThrottleMs: config.visualPresentation.cameraSampleThrottleMs,
       provisionalShellEnabled: config.visualPresentation.provisionalShellEnabled,

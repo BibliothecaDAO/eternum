@@ -109,6 +109,10 @@ function createFakeBackend() {
       memory: { geometries: 0, textures: 0 },
       reset: vi.fn(),
     },
+    extensions: {
+      get: vi.fn(() => undefined),
+      has: vi.fn(() => false),
+    },
     render: vi.fn(),
     setPixelRatio: vi.fn(),
     setSize: vi.fn(),

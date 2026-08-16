@@ -1,5 +1,5 @@
 import { gltfLoader } from "@/three/utils/utils";
-import type { GLTF } from "three-stdlib";
+import type { GLTF } from "three/addons/loaders/GLTFLoader.js";
 import { loadCosmeticAsset } from "./asset-cache";
 import type { CosmeticRegistryEntry } from "./types";
 

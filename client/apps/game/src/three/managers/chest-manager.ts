@@ -32,6 +32,12 @@ import {
 } from "./manager-update-convergence";
 import { resolvePointLabelTextureFlipY } from "./point-label-texture-policy";
 import type { HoverLabelShowResult } from "./hover-label-show-result";
+import {
+  isFrameBudgetWorkQueueDisposedError,
+  scheduleFrameBudgetWork,
+  type FrameBudgetWorkLane,
+  type FrameBudgetWorkScheduler,
+} from "../frame-budget-work-queue";
 
 const MAX_INSTANCES = 1000;
 
@@ -68,6 +74,7 @@ export class ChestManager {
     labelsGroup?: THREE.Group,
     hexagonScene?: HexagonScene,
     chunkSize: number = Math.max(1, Math.floor(renderChunkSize.width / 2)),
+    private readonly chunkWorkScheduler?: FrameBudgetWorkScheduler,
   ) {
     this.scene = scene;
     this.worldSpatialProjection = worldSpatialProjection;
@@ -78,7 +85,7 @@ export class ChestManager {
     this.currentCameraView = hexagonScene?.getCurrentCameraView() ?? CameraView.Medium;
     this.loadModel().then(() => {
       if (isCommittedManagerChunk(this.currentChunkKey)) {
-        this.renderVisibleChests(this.currentChunkKey);
+        void this.requestVisibleChestsRefresh(this.currentChunkKey);
       }
     });
 
@@ -91,7 +98,7 @@ export class ChestManager {
 
     this.unsubscribeProjection = worldSpatialProjection.subscribeChests(() => {
       if (isCommittedManagerChunk(this.currentChunkKey)) {
-        this.renderVisibleChests(this.currentChunkKey);
+        void this.requestVisibleChestsRefresh(this.currentChunkKey);
       }
     });
   }
@@ -156,7 +163,7 @@ export class ChestManager {
 
         // Re-render visible chests to populate points
         if (isCommittedManagerChunk(this.currentChunkKey)) {
-          this.renderVisibleChests(this.currentChunkKey);
+          void this.requestVisibleChestsRefresh(this.currentChunkKey);
         }
       },
       undefined,
@@ -258,7 +265,7 @@ export class ChestManager {
           return false;
         }
 
-        this.renderVisibleChests(nextChunkKey);
+        return this.requestVisibleChestsRefresh(nextChunkKey);
       },
       onPreviousUpdateFailed: (error) => {
         console.warn(`Previous chest chunk switch failed:`, error);
@@ -312,8 +319,19 @@ export class ChestManager {
     });
   }
 
+  private requestVisibleChestsRefresh(chunkKey: string, workLane: FrameBudgetWorkLane = "visible"): Promise<void> {
+    return scheduleFrameBudgetWork(this.chunkWorkScheduler, workLane, () => this.renderVisibleChests(chunkKey)).catch(
+      (error) => {
+        if (isFrameBudgetWorkQueueDisposedError(error)) {
+          return;
+        }
+        console.error("[ChestManager] Failed to refresh visible chests", error);
+      },
+    );
+  }
+
   private renderVisibleChests(chunkKey: string) {
-    if (!this.chestModel) {
+    if (this.isDestroyed || !this.chestModel) {
       return;
     }
 

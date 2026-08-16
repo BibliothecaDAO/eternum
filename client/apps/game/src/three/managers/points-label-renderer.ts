@@ -77,6 +77,7 @@ export class PointsLabelRenderer {
     this.geometry = new THREE.BufferGeometry();
     this.geometry.setAttribute("position", new THREE.BufferAttribute(this.positionsArray, 3));
     this.geometry.setAttribute("color", new THREE.BufferAttribute(this.colorsArray, 3));
+    this.geometry.setAttribute("uv", createPointSpriteUvAttribute(maxPoints));
 
     // Set initial draw range to 0 (no points visible)
     this.geometry.setDrawRange(0, 0);
@@ -449,4 +450,10 @@ export class PointsLabelRenderer {
     this.colorsArray[colorIndex + 1] = brightness;
     this.colorsArray[colorIndex + 2] = brightness;
   }
+}
+
+function createPointSpriteUvAttribute(maxPoints: number): THREE.BufferAttribute {
+  const uvs = new Float32Array(maxPoints * 2);
+  uvs.fill(0.5);
+  return new THREE.BufferAttribute(uvs, 2);
 }

@@ -10,6 +10,8 @@ describe("finalizeVisibleStructureModelPass", () => {
   it("flushes model counts, hands off active model sets, applies bounds, and ends point batches", () => {
     const structureModelA: CountableModel = { setCount: vi.fn() };
     const structureModelB: CountableModel = { setCount: vi.fn() };
+    const staleStructureModel: CountableModel = { setCount: vi.fn() };
+    const staleCosmeticModel: CountableModel = { setCount: vi.fn() };
     const nextActiveStructureModels = new Set([structureModelA]);
     const nextActiveCosmeticStructureModels = new Set([structureModelB]);
     const applyPendingModelBounds = vi.fn();
@@ -20,13 +22,19 @@ describe("finalizeVisibleStructureModelPass", () => {
         [structureModelA, 3],
         [structureModelB, 7],
       ]),
+      previouslyActiveStructureModels: new Set([structureModelA, staleStructureModel]),
+      previouslyActiveCosmeticStructureModels: new Set([structureModelB, staleCosmeticModel]),
       nextActiveStructureModels,
       nextActiveCosmeticStructureModels,
       applyPendingModelBounds,
       endPointBatches,
     });
 
+    expect(staleStructureModel.setCount).toHaveBeenCalledWith(0);
+    expect(staleCosmeticModel.setCount).toHaveBeenCalledWith(0);
+    expect(structureModelA.setCount).toHaveBeenNthCalledWith(1, 0);
     expect(structureModelA.setCount).toHaveBeenCalledWith(3);
+    expect(structureModelB.setCount).toHaveBeenNthCalledWith(1, 0);
     expect(structureModelB.setCount).toHaveBeenCalledWith(7);
     expect(applyPendingModelBounds).toHaveBeenCalledTimes(1);
     expect(endPointBatches).toHaveBeenCalledTimes(1);
@@ -40,6 +48,8 @@ describe("finalizeVisibleStructureModelPass", () => {
 
     finalizeVisibleStructureModelPass({
       modelInstanceCounts: new Map<CountableModel, number>([[model, 1]]),
+      previouslyActiveStructureModels: new Set<CountableModel>(),
+      previouslyActiveCosmeticStructureModels: new Set<CountableModel>(),
       nextActiveStructureModels: new Set<CountableModel>([model]),
       nextActiveCosmeticStructureModels: new Set<CountableModel>(),
       applyPendingModelBounds,

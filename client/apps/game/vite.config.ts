@@ -172,7 +172,7 @@ export default defineConfig(({ command, mode }: ConfigEnv): UserConfig => {
           },
           manualChunks: {
             // Three.js ecosystem - Separate chunk for 3D graphics
-            three: [resolveThreeEntryPoint(rendererBuildMode), "three-stdlib", "postprocessing"],
+            three: [resolveThreeEntryPoint(rendererBuildMode), "postprocessing"],
 
             // Blockchain/Dojo ecosystem - Separate chunk for crypto functionality
             blockchain: [
@@ -198,7 +198,6 @@ export default defineConfig(({ command, mode }: ConfigEnv): UserConfig => {
             // OpenTelemetry observability - Can be lazy loaded
             telemetry: [
               "@opentelemetry/api",
-              "@opentelemetry/context-zone",
               "@opentelemetry/exporter-trace-otlp-http",
               "@opentelemetry/instrumentation",
               "@opentelemetry/instrumentation-fetch",

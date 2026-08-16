@@ -3,7 +3,7 @@ import { gltfLoader } from "@/three/utils/utils";
 import { type HexPosition } from "@bibliothecadao/types";
 import throttle from "lodash/throttle";
 import * as THREE from "three";
-import { CSS2DObject } from "three-stdlib";
+import { CSS2DObject } from "three/addons/renderers/CSS2DRenderer.js";
 import { type MapControls } from "three/examples/jsm/controls/MapControls.js";
 import { calculateDistanceInHexes, getWorldPositionForHex } from "../utils";
 

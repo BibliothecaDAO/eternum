@@ -7,7 +7,7 @@ import { SetupResult } from "@bibliothecadao/dojo";
 import { env } from "../../env";
 import { recordGameEntryDuration } from "@/ui/layouts/game-entry-timeline";
 import { SceneName } from "./types";
-import { transitionDB } from "./utils/";
+import { configureGltfTextureSupport, transitionDB } from "./utils/";
 import { trackGuiFolder, type TrackableGuiFolder } from "./utils/gui-folder-lifecycle";
 import { runRendererAnimationTick } from "./renderer-animation-runtime";
 import {
@@ -157,6 +157,7 @@ export default class GameRenderer {
     });
     this.backend = backend as RendererBackendRuntime;
     this.renderer = renderer;
+    configureGltfTextureSupport(renderer as Parameters<typeof configureGltfTextureSupport>[0]);
   }
 
   private handleRendererDeviceLost(event: RendererDeviceLostEvent): void {
@@ -220,6 +221,7 @@ export default class GameRenderer {
 
     this.backend = input.backend;
     this.renderer = input.renderer;
+    configureGltfTextureSupport(input.renderer as Parameters<typeof configureGltfTextureSupport>[0]);
     this.mountRecoveredRendererSurface(input.renderer.domElement);
     this.reconnectRendererControlsToSurface(input.renderer.domElement);
     this.reattachSceneInputSurfaces(input.renderer.domElement);

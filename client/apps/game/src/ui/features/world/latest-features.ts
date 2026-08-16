@@ -34,6 +34,14 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 // are surfaced in the What's New popup.
 const allLatestFeatures: LatestFeature[] = [
   {
+    date: "2026-08-16",
+    title: "Faster World Rendering",
+    description:
+      "Improved model loading and map updates so entering the world uses less memory and terrain, armies, structures, and labels appear with fewer frame stalls while you travel.",
+    type: "improvement",
+    gameSlug: "world",
+  },
+  {
     date: "2026-08-14",
     title: "Live In-Game Rankings",
     description:

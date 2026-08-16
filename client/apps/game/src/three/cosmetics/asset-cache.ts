@@ -1,5 +1,5 @@
 import { gltfLoader } from "@/three/utils/utils";
-import type { GLTF } from "three-stdlib";
+import type { GLTF } from "three/addons/loaders/GLTFLoader.js";
 import { Material, Mesh, MeshBasicMaterial, MeshStandardMaterial, Texture, TextureLoader } from "three";
 import { CosmeticRegistryEntry } from "./types";
 import { getCosmeticRegistry } from "./registry";

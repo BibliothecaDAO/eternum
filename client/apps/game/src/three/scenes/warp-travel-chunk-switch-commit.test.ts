@@ -274,14 +274,14 @@ describe("finalizeWarpTravelChunkSwitch", () => {
       unregisterPreviousChunkOnNextFrame,
     });
 
+    await expect(resultPromise).resolves.toEqual({
+      status: "committed",
+    });
     expect(updateCurrentChunkBounds).toHaveBeenCalledWith(24, 24);
     expect(forceVisibilityUpdate).toHaveBeenCalledTimes(1);
     expect(scheduleManagerCatchUp).toHaveBeenCalledWith("24,24", { force: true, transitionToken: 17 });
     expect(managerCatchUp.calls).toEqual([["24,24", { force: true, transitionToken: 17 }]]);
     expect(phaseOrder).toEqual(["authority", "terrain", "bounds:24,24", "visibility", "manager-scheduled"]);
-    await expect(resultPromise).resolves.toEqual({
-      status: "committed",
-    });
 
     managerCatchUp.resolveNext();
     await Promise.resolve();

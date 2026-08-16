@@ -29,6 +29,7 @@ import type { RendererBuildMode } from "./renderer-build-mode";
 import { recordRendererStartupTiming } from "./perf/renderer-startup-telemetry";
 import { renderRendererOverlayPasses } from "./renderer-overlay-passes";
 import { createWebGPUPostProcessRuntime } from "./webgpu-postprocess-runtime";
+import { instrumentGpuBackendHotPaths } from "./gpu-backend-hot-path-instrumentation";
 
 type ExperimentalRendererBuildMode = Exclude<RendererBuildMode, "legacy-webgl">;
 
@@ -110,11 +111,24 @@ async function createDefaultWebGPURenderer(input: {
   }
   recordRendererStartupTiming("webgpu-renderer-create", performance.now() - rendererCreateStartedAt);
 
+  if (import.meta.env.DEV) {
+    instrumentWebGpuBackendHotPaths(renderer);
+  }
+
   return {
     activeMode: input.forceWebGL || !WebGPU.isAvailable() ? "webgl2-fallback" : "webgpu",
     device: resolveWebGpuRendererDevice(renderer),
     renderer,
   };
+}
+
+// Dev-only rolling attribution for pipeline, buffer, binding, and texture work.
+// This keeps future render regressions attributable without player overhead.
+function instrumentWebGpuBackendHotPaths(renderer: WebGPURendererSurface): void {
+  const backend = (renderer as unknown as { backend?: Record<string, unknown> }).backend;
+  if (backend) {
+    instrumentGpuBackendHotPaths(backend);
+  }
 }
 
 const defaultDependencies: WebGPURendererBackendDependencies = {

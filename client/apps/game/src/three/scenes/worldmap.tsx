@@ -1,4 +1,5 @@
 import { playUnitCommandSound, playUnitCommandSoundForWorldmapAction } from "@/audio/unit-command-audio";
+import { VERBOSE_LOGS_ENABLED } from "@/utils/dev-mode";
 import { toast } from "sonner";
 
 import { initializeSyncSimulator } from "@/dojo/sync-simulator";
@@ -37,6 +38,11 @@ import { ReservedHyperstructureManager } from "@/three/managers/reserved-hyperst
 import { SelectedHexManager } from "@/three/managers/selected-hex-manager";
 import { SelectionPulseManager } from "@/three/managers/selection-pulse-manager";
 import { StructureManager } from "@/three/managers/structure-manager";
+import {
+  FrameBudgetWorkQueue,
+  isFrameBudgetWorkQueueDisposedError,
+  type FrameBudgetWorkLane,
+} from "@/three/frame-budget-work-queue";
 import { SceneManager } from "@/three/scene-manager";
 import { CameraView } from "@/three/scenes/camera-view";
 import { CAMERA_CONFIG } from "@/three/constants";
@@ -442,7 +448,7 @@ interface WorldmapChunkSwitchTerrainShellInput {
 interface WorldmapVisualTerrainPageBuildRequest {
   generation: number;
   pageKey: string;
-  priority: "critical" | "normal";
+  priority: "critical" | "visible";
   transitionToken?: number;
 }
 
@@ -607,8 +613,10 @@ export default class WorldmapScene extends WarpTravel {
   private visualTerrainGeneration = 0;
   private visualTerrainWindow: WorldmapVisualTerrainWindow | null = null;
   private visualTerrainWindowPageKeys: Set<string> = new Set();
-  private visualTerrainBuildQueue: WorldmapVisualTerrainPageBuildRequest[] = [];
-  private visualTerrainBuildFrameHandle: number | null = null;
+  private readonly chunkWorkQueue = new FrameBudgetWorkQueue({
+    isLoading: () => !this.hasInitialized,
+  });
+  private queuedVisualTerrainBuildPageKeys: Map<string, number> = new Map();
   private activeVisualTerrainBuildPageKeys: Map<string, number> = new Map();
   private prefetchQueue: PrefetchQueueItem[] = [];
   private directionalPrefetchAreaKeys: Set<string> = new Set();
@@ -895,9 +903,8 @@ export default class WorldmapScene extends WarpTravel {
   private readonly maxMatrixCacheSize = WORLDMAP_CHUNK_POLICY.cache.recommendedMinSize;
   private pinnedChunkKeys: Set<string> = new Set();
   private updateHexagonGridPromise: Promise<void> | null = null;
-  private hexGridFrameHandle: number | null = null;
   private currentHexGridTask: symbol | null = null;
-  private readonly hexGridFrameBudgetMs = 6.5;
+  private readonly terrainWorkUnitBudgetMs = 5.5;
   private readonly hexGridMinBatch = 120;
   private readonly hexGridMaxBatch = 900;
   private travelEffects: Map<string, () => void> = new Map();
@@ -1279,6 +1286,7 @@ export default class WorldmapScene extends WarpTravel {
       this.frustumManager,
       this.visibilityManager,
       this.chunkSize,
+      this.chunkWorkQueue,
     );
     this.arrivalGhostManager = new ArrivalGhostManager(this.scene, {
       chunkStride: this.chunkSize,
@@ -1308,6 +1316,7 @@ export default class WorldmapScene extends WarpTravel {
       this.frustumManager,
       this.visibilityManager,
       this.chunkSize,
+      this.chunkWorkQueue,
     );
     this.reservedHyperstructureManager = new ReservedHyperstructureManager(this.scene, this.worldSpatialProjection);
     this.chestManager = new ChestManager(
@@ -1317,6 +1326,7 @@ export default class WorldmapScene extends WarpTravel {
       this.chestLabelsGroup,
       this,
       this.chunkSize,
+      this.chunkWorkQueue,
     );
 
     // Bootstrap applyQualityFeatures may have run before these managers existed; apply the
@@ -1832,9 +1842,16 @@ export default class WorldmapScene extends WarpTravel {
     if (!this.mainDirectionalLight) {
       return;
     }
-    this.mainDirectionalLight.castShadow = shouldCastWorldmapDirectionalShadow(
-      this.getShadowsEnabledByQuality(),
-      this.getCurrentCameraView() === CameraView.Far,
+    // castShadow must not flip with the camera view: toggling the light's
+    // topology rebuilds every material's shader graph (the multi-second zoom
+    // freeze). Quality pins the topology; the per-view part is the intensity
+    // uniform. Per-mesh castShadow flags already empty the Far shadow pass.
+    this.mainDirectionalLight.castShadow = this.getShadowsEnabledByQuality();
+    this.setMainDirectionalShadowActive(
+      shouldCastWorldmapDirectionalShadow(
+        this.getShadowsEnabledByQuality(),
+        this.getCurrentCameraView() === CameraView.Far,
+      ),
     );
     this.mainDirectionalLight.shadow.mapSize.set(1024, 1024);
     this.mainDirectionalLight.shadow.camera.left = -60;
@@ -2496,7 +2513,7 @@ export default class WorldmapScene extends WarpTravel {
   }
 
   private traceHoverLabelRecovery(event: string, details: Record<string, unknown>): void {
-    if (!import.meta.env.DEV) {
+    if (!import.meta.env.DEV || !VERBOSE_LOGS_ENABLED) {
       return;
     }
 
@@ -5039,7 +5056,7 @@ export default class WorldmapScene extends WarpTravel {
             projectionSyncPromise: this.syncProjectionTilesForChunk(chunkKey),
             assetPrewarmPromise: this.structureManager.prewarmChunkAssets(chunkKey),
             prepareTerrainChunk: (targetStartRow, targetStartCol, height, width) =>
-              this.prepareTerrainChunk(targetStartRow, targetStartCol, height, width),
+              this.prepareTerrainChunk(targetStartRow, targetStartCol, height, width, "prefetch"),
             phaseTimeoutMs: WORLDMAP_CHUNK_PHASE_TIMEOUT_MS,
             onPhaseTimeout: (info) => this.handleChunkPresentationTimeout(info),
           }),
@@ -5081,6 +5098,7 @@ export default class WorldmapScene extends WarpTravel {
       return;
     }
 
+    const windowRebuildStartedAt = performance.now();
     this.visualTerrainGeneration = nextGeneration;
     this.visualTerrainWindow = nextWindow;
     this.visualTerrainWindowPageKeys = new Set(nextWindow.pageKeys);
@@ -5095,9 +5113,24 @@ export default class WorldmapScene extends WarpTravel {
     });
     incrementWorldmapRenderCounter("visualWindowResolved");
 
+    const criticalBuildStartedAt = performance.now();
     await this.buildCriticalVisualTerrainPages(nextWindow);
+    const compositeStartedAt = performance.now();
     this.enqueueMissingVisualTerrainPages(nextWindow);
     this.rebuildTerrainPresentationComposite(nextWindow.centerPageKey);
+    const totalMs = performance.now() - windowRebuildStartedAt;
+    // Zoom-level changes resolve a new window; when that stalls the frame,
+    // name the phase so the freeze is attributable from a single log line.
+    if (totalMs > 150) {
+      const retainMs = Math.round(criticalBuildStartedAt - windowRebuildStartedAt);
+      const criticalMs = Math.round(compositeStartedAt - criticalBuildStartedAt);
+      const compositeMs = Math.round(performance.now() - compositeStartedAt);
+      console.warn(
+        `[WorldmapPerf] visual window rebuild took ${Math.round(totalMs)}ms ` +
+          `(retention=${retainMs}ms, criticalPages=${criticalMs}ms, composite=${compositeMs}ms, ` +
+          `critical=${nextWindow.criticalPageKeys.length}, pages=${nextWindow.pageKeys.length})`,
+      );
+    }
   }
 
   private visualTerrainWindowsMatch(
@@ -5146,6 +5179,7 @@ export default class WorldmapScene extends WarpTravel {
   private async buildCriticalVisualTerrainPages(window: WorldmapVisualTerrainWindow): Promise<void> {
     const criticalBudget = WORLDMAP_CHUNK_POLICY.visualPresentation.criticalPageImmediateBudget;
     const criticalPageKeys = window.criticalPageKeys.slice(0, criticalBudget);
+    const startedAt = performance.now();
     for (const pageKey of criticalPageKeys) {
       if (this.hasVisualTerrainCoverage(pageKey)) {
         continue;
@@ -5156,6 +5190,10 @@ export default class WorldmapScene extends WarpTravel {
         priority: "critical",
       });
     }
+
+    if (import.meta.env.DEV) {
+      console.info(`[WorldmapPerf] critical terrain pages took ${Math.round(performance.now() - startedAt)}ms`);
+    }
   }
 
   private enqueueMissingVisualTerrainPages(window: WorldmapVisualTerrainWindow): void {
@@ -5163,62 +5201,35 @@ export default class WorldmapScene extends WarpTravel {
       if (
         this.hasVisualTerrainCoverage(pageKey) ||
         this.activeVisualTerrainBuildPageKeys.get(pageKey) === window.generation ||
-        this.visualTerrainBuildQueue.some(
-          (request) => request.pageKey === pageKey && request.generation === window.generation,
-        )
+        this.queuedVisualTerrainBuildPageKeys.get(pageKey) === window.generation
       ) {
         return;
       }
 
-      this.visualTerrainBuildQueue.push({
+      const request: WorldmapVisualTerrainPageBuildRequest = {
         generation: window.generation,
         pageKey,
-        priority: "normal",
-      });
+        priority: "visible",
+      };
+      this.queuedVisualTerrainBuildPageKeys.set(pageKey, window.generation);
       this.traceChunk("visual_page_queued", {
         generation: window.generation,
         pageKey,
-        queueLength: this.visualTerrainBuildQueue.length,
       });
       incrementWorldmapRenderCounter("visualPageQueued");
-    });
-
-    this.processVisualTerrainBuildQueue();
-  }
-
-  private processVisualTerrainBuildQueue(): void {
-    if (this.visualTerrainBuildFrameHandle !== null || this.visualTerrainBuildQueue.length === 0) {
-      return;
-    }
-
-    this.visualTerrainBuildFrameHandle = window.requestAnimationFrame(() => {
-      this.visualTerrainBuildFrameHandle = null;
-      void this.drainVisualTerrainBuildQueueFrame();
-    });
-  }
-
-  private async drainVisualTerrainBuildQueueFrame(): Promise<void> {
-    const frameStartedAt = performance.now();
-    const frameBudgetMs = WORLDMAP_CHUNK_POLICY.visualPresentation.pageBuildFrameBudgetMs;
-
-    while (this.visualTerrainBuildQueue.length > 0) {
-      const request = this.visualTerrainBuildQueue.shift();
-      if (!request) {
-        break;
-      }
-
-      await this.buildAndApplyVisualTerrainPage(request);
-      if (performance.now() - frameStartedAt >= frameBudgetMs) {
-        this.traceChunk("visual_page_budget_exhausted", {
-          generation: this.visualTerrainGeneration,
-          queueLength: this.visualTerrainBuildQueue.length,
+      void this.buildAndApplyVisualTerrainPage(request)
+        .catch((error) => {
+          if (isFrameBudgetWorkQueueDisposedError(error)) {
+            return;
+          }
+          console.error(`[WorldMap] Visual terrain page ${pageKey} failed`, error);
+        })
+        .finally(() => {
+          if (this.queuedVisualTerrainBuildPageKeys.get(pageKey) === window.generation) {
+            this.queuedVisualTerrainBuildPageKeys.delete(pageKey);
+          }
         });
-        incrementWorldmapRenderCounter("visualPageBudgetExhausted");
-        break;
-      }
-    }
-
-    this.processVisualTerrainBuildQueue();
+    });
   }
 
   private async buildAndApplyVisualTerrainPage(request: WorldmapVisualTerrainPageBuildRequest): Promise<void> {
@@ -5229,31 +5240,16 @@ export default class WorldmapScene extends WarpTravel {
 
     this.activeVisualTerrainBuildPageKeys.set(request.pageKey, request.generation);
     try {
-      const preparedTerrain = await this.prepareVisualTerrainPage(request.pageKey);
+      const preparedTerrain = await this.prepareVisualTerrainPage(request.pageKey, request.priority);
       if (!this.shouldApplyVisualTerrainPageBuild(request)) {
         this.disposePreparedTerrainChunk(preparedTerrain);
         this.traceVisualTerrainPageStaleDrop(request, "stale_after_prepare");
         return;
       }
 
-      const presentation = this.createTerrainPresentationFromPreparedTerrain(preparedTerrain, {
-        authoritative: false,
-        authorityChunkKey: null,
-        claimBiomeEntries: true,
-        coverageKey: request.pageKey,
-        coverageKind: "visual_page",
-        generation: request.generation,
-        kind: "provisional",
-        transitionToken: request.transitionToken ?? this.chunkTransitionToken,
+      await this.schedulePreparedTerrainCommit(request.priority, preparedTerrain, () => {
+        this.commitVisualTerrainPageBuild(request, preparedTerrain);
       });
-      this.traceChunk("visual_page_built", {
-        cellCount: presentation.cells.length,
-        generation: request.generation,
-        pageKey: request.pageKey,
-        priority: request.priority,
-      });
-      incrementWorldmapRenderCounter("visualPageBuilt");
-      this.applyVisualTerrainPagePresentation(presentation);
     } finally {
       if (this.activeVisualTerrainBuildPageKeys.get(request.pageKey) === request.generation) {
         this.activeVisualTerrainBuildPageKeys.delete(request.pageKey);
@@ -5268,6 +5264,30 @@ export default class WorldmapScene extends WarpTravel {
       this.visualTerrainWindowPageKeys.has(request.pageKey) &&
       (request.transitionToken === undefined || request.transitionToken === this.chunkTransitionToken)
     );
+  }
+
+  private commitVisualTerrainPageBuild(
+    request: WorldmapVisualTerrainPageBuildRequest,
+    preparedTerrain: PreparedTerrainChunk,
+  ): void {
+    const presentation = this.createTerrainPresentationFromPreparedTerrain(preparedTerrain, {
+      authoritative: false,
+      authorityChunkKey: null,
+      claimBiomeEntries: true,
+      coverageKey: request.pageKey,
+      coverageKind: "visual_page",
+      generation: request.generation,
+      kind: "provisional",
+      transitionToken: request.transitionToken ?? this.chunkTransitionToken,
+    });
+    this.traceChunk("visual_page_built", {
+      cellCount: presentation.cells.length,
+      generation: request.generation,
+      pageKey: request.pageKey,
+      priority: request.priority,
+    });
+    incrementWorldmapRenderCounter("visualPageBuilt");
+    this.applyVisualTerrainPagePresentation(presentation);
   }
 
   private traceVisualTerrainPageStaleDrop(request: WorldmapVisualTerrainPageBuildRequest, reason: string): void {
@@ -5297,18 +5317,23 @@ export default class WorldmapScene extends WarpTravel {
     return new Set(this.visualTerrainWindowPageKeys);
   }
 
-  private async prepareVisualTerrainPage(pageKey: string): Promise<PreparedTerrainChunk> {
+  private async prepareVisualTerrainPage(
+    pageKey: string,
+    workLane: FrameBudgetWorkLane,
+  ): Promise<PreparedTerrainChunk> {
     const [startRow, startCol] = pageKey.split(",").map(Number);
     if (!Number.isFinite(startRow) || !Number.isFinite(startCol)) {
       throw new Error(`Invalid visual terrain page key: ${pageKey}`);
     }
 
     await Promise.all(this.modelLoadPromises);
-    return this.buildPreparedTerrainArea(
-      startRow,
-      startCol,
-      WORLDMAP_CHUNK_POLICY.visualPresentation.visualPageSize.height,
-      WORLDMAP_CHUNK_POLICY.visualPresentation.visualPageSize.width,
+    return this.chunkWorkQueue.schedule(workLane, () =>
+      this.buildPreparedTerrainArea(
+        startRow,
+        startCol,
+        WORLDMAP_CHUNK_POLICY.visualPresentation.visualPageSize.height,
+        WORLDMAP_CHUNK_POLICY.visualPresentation.visualPageSize.width,
+      ),
     );
   }
 
@@ -5522,6 +5547,25 @@ export default class WorldmapScene extends WarpTravel {
     });
   }
 
+  private async schedulePreparedTerrainCommit(
+    workLane: FrameBudgetWorkLane,
+    preparedTerrain: PreparedTerrainChunk,
+    commit: () => void,
+  ): Promise<void> {
+    let commitStarted = false;
+    try {
+      await this.chunkWorkQueue.schedule(workLane, () => {
+        commitStarted = true;
+        commit();
+      });
+    } catch (error) {
+      if (!commitStarted) {
+        this.disposePreparedTerrainChunk(preparedTerrain);
+      }
+      throw error;
+    }
+  }
+
   private ensureCurrentExactTerrainPresentation(transitionToken: number): void {
     if (
       this.currentChunk === "null" ||
@@ -5574,6 +5618,9 @@ export default class WorldmapScene extends WarpTravel {
     try {
       await this.prepareAndApplyChunkSwitchTerrainShell(input);
     } catch (error) {
+      if (isFrameBudgetWorkQueueDisposedError(error)) {
+        return;
+      }
       console.warn("[WorldMap] Failed to build chunk switch terrain shell:", error);
     }
   }
@@ -5589,6 +5636,16 @@ export default class WorldmapScene extends WarpTravel {
         this.renderChunkSize.width,
       ));
     const kind: WorldmapTerrainPresentationKind = cachedTerrain ? "exact" : "provisional";
+    await this.schedulePreparedTerrainCommit("critical", preparedTerrain, () =>
+      this.applyChunkSwitchTerrainShell(input, preparedTerrain, kind),
+    );
+  }
+
+  private applyChunkSwitchTerrainShell(
+    input: WorldmapChunkSwitchTerrainShellInput,
+    preparedTerrain: PreparedTerrainChunk,
+    kind: WorldmapTerrainPresentationKind,
+  ): void {
     const presentations = this.partitionPreparedTerrainIntoVisualPagesForPresentation(preparedTerrain, {
       authoritative: false,
       authorityChunkKey: kind === "exact" ? input.chunkKey : null,
@@ -5950,10 +6007,6 @@ export default class WorldmapScene extends WarpTravel {
 
     const taskToken = Symbol("hex-grid-task");
     this.currentHexGridTask = taskToken;
-    if (this.hexGridFrameHandle !== null) {
-      cancelAnimationFrame(this.hexGridFrameHandle);
-      this.hexGridFrameHandle = null;
-    }
 
     const halfRows = rows / 2;
     const halfCols = cols / 2;
@@ -5966,7 +6019,7 @@ export default class WorldmapScene extends WarpTravel {
     });
     const minBatch = Math.min(this.hexGridMinBatch, totalHexes);
     const maxBatch = Math.max(minBatch, Math.min(this.hexGridMaxBatch, totalHexes));
-    const frameBudget = this.hexGridFrameBudgetMs;
+    const workUnitBudgetMs = this.terrainWorkUnitBudgetMs;
 
     this.updateHexagonGridPromise = new Promise((resolve) => {
       const biomeHexes: Record<BiomeType | "Outline" | string, Matrix4[]> = {
@@ -6011,10 +6064,6 @@ export default class WorldmapScene extends WarpTravel {
       const { row: chunkCenterRow, col: chunkCenterCol } = this.getChunkCenter(startRow, startCol);
 
       const cleanupTask = () => {
-        if (this.hexGridFrameHandle !== null) {
-          cancelAnimationFrame(this.hexGridFrameHandle);
-          this.hexGridFrameHandle = null;
-        }
         if (this.currentHexGridTask === taskToken) {
           this.currentHexGridTask = null;
         }
@@ -6171,40 +6220,49 @@ export default class WorldmapScene extends WarpTravel {
         }
       };
 
-      const processFrame = () => {
+      const processWorkUnit = () => {
         if (this.currentHexGridTask !== taskToken) {
           abortTask();
           return;
         }
 
-        const frameStart = performance.now();
-        let processedThisFrame = 0;
+        const workUnitStartedAt = performance.now();
+        let processedThisUnit = 0;
 
         while (currentIndex < totalHexes) {
           processCell(currentIndex);
           currentIndex += 1;
-          processedThisFrame += 1;
+          processedThisUnit += 1;
 
           if (currentIndex >= totalHexes) {
             break;
           }
 
-          if (processedThisFrame >= minBatch) {
-            const elapsed = performance.now() - frameStart;
-            if (elapsed >= frameBudget || processedThisFrame >= maxBatch) {
+          if (processedThisUnit >= minBatch) {
+            const elapsed = performance.now() - workUnitStartedAt;
+            if (elapsed >= workUnitBudgetMs || processedThisUnit >= maxBatch) {
               break;
             }
           }
         }
 
         if (currentIndex < totalHexes) {
-          this.hexGridFrameHandle = requestAnimationFrame(processFrame);
+          scheduleWorkUnit();
         } else {
           finalizeSuccess();
         }
       };
 
-      this.hexGridFrameHandle = requestAnimationFrame(processFrame);
+      const scheduleWorkUnit = () => {
+        void this.chunkWorkQueue.schedule("critical", processWorkUnit).catch((error) => {
+          abortTask();
+          if (!isFrameBudgetWorkQueueDisposedError(error)) {
+            console.error("[WorldMap] Hex grid work failed:", error);
+          }
+        });
+      };
+
+      scheduleWorkUnit();
     });
 
     await this.updateHexagonGridPromise;
@@ -6313,6 +6371,7 @@ export default class WorldmapScene extends WarpTravel {
     startCol: number,
     rows: number,
     cols: number,
+    workLane: FrameBudgetWorkLane = "critical",
   ): Promise<PreparedTerrainChunk> {
     const cachedChunk = this.createPreparedTerrainChunkFromCache(startRow, startCol);
     if (cachedChunk) {
@@ -6334,7 +6393,7 @@ export default class WorldmapScene extends WarpTravel {
     });
     await Promise.all(this.modelLoadPromises);
 
-    return new Promise<PreparedTerrainChunk>((resolve) => {
+    return new Promise<PreparedTerrainChunk>((resolve, reject) => {
       const matrixPool = MatrixPool.getInstance();
       const totalHexes = rows * cols;
       matrixPool.ensureCapacity(totalHexes + 512);
@@ -6367,7 +6426,7 @@ export default class WorldmapScene extends WarpTravel {
       const halfCols = cols / 2;
       const minBatch = Math.min(this.hexGridMinBatch, totalHexes);
       const maxBatch = Math.max(minBatch, Math.min(this.hexGridMaxBatch, totalHexes));
-      const frameBudget = this.hexGridFrameBudgetMs;
+      const workUnitBudgetMs = this.terrainWorkUnitBudgetMs;
       const tempMatrix = new Matrix4();
       const tempPosition = new Vector3();
       const hexRadius = HEX_SIZE;
@@ -6378,7 +6437,7 @@ export default class WorldmapScene extends WarpTravel {
       const { row: chunkCenterRow, col: chunkCenterCol } = this.getChunkCenter(startRow, startCol);
       let currentIndex = 0;
       let expectedExploredTerrainInstances = 0;
-      let frameHandle: number | null = null;
+      let settled = false;
       const visibleTerrainOwnership: Array<[string, VisibleTerrainInstanceRef]> = [];
       const terrainCells: WorldmapTerrainSourceCellRef[] = [];
       const fingerprintEntries: Array<{ hexKey: string; biomeKey: string }> = [];
@@ -6411,9 +6470,7 @@ export default class WorldmapScene extends WarpTravel {
         }
 
         releaseAllMatrices();
-        if (frameHandle !== null) {
-          cancelAnimationFrame(frameHandle);
-        }
+        settled = true;
         resolve({
           chunkKey: `${startRow},${startCol}`,
           startRow,
@@ -6493,35 +6550,46 @@ export default class WorldmapScene extends WarpTravel {
         biomeHexes.Outline.push(pooledMatrix);
       };
 
-      const processFrame = () => {
-        const frameStart = performance.now();
-        let processedThisFrame = 0;
+      const processWorkUnit = () => {
+        const workUnitStartedAt = performance.now();
+        let processedThisUnit = 0;
 
         while (currentIndex < totalHexes) {
           processCell(currentIndex);
           currentIndex += 1;
-          processedThisFrame += 1;
+          processedThisUnit += 1;
 
           if (currentIndex >= totalHexes) {
             break;
           }
 
-          if (processedThisFrame >= minBatch) {
-            const elapsed = performance.now() - frameStart;
-            if (elapsed >= frameBudget || processedThisFrame >= maxBatch) {
+          if (processedThisUnit >= minBatch) {
+            const elapsed = performance.now() - workUnitStartedAt;
+            if (elapsed >= workUnitBudgetMs || processedThisUnit >= maxBatch) {
               break;
             }
           }
         }
 
         if (currentIndex < totalHexes) {
-          frameHandle = requestAnimationFrame(processFrame);
+          scheduleWorkUnit();
         } else {
           finalizeSuccess();
         }
       };
 
-      frameHandle = requestAnimationFrame(processFrame);
+      const scheduleWorkUnit = () => {
+        void this.chunkWorkQueue.schedule(workLane, processWorkUnit).catch((error) => {
+          if (settled) {
+            return;
+          }
+          settled = true;
+          releaseAllMatrices();
+          reject(error);
+        });
+      };
+
+      scheduleWorkUnit();
     });
   }
 
@@ -6845,6 +6913,12 @@ export default class WorldmapScene extends WarpTravel {
         mesh.geometry.setAttribute("instanceColor", mesh.instanceColor);
       }
       (mesh.instanceColor.array as Float32Array).set(landColors);
+      // Upload only the written region — a bare needsUpdate re-uploads the
+      // full preallocated capacity through writeBuffer inside the render loop.
+      mesh.instanceColor.clearUpdateRanges();
+      if (landColors.length > 0) {
+        mesh.instanceColor.addUpdateRange(0, landColors.length);
+      }
       mesh.instanceColor.needsUpdate = true;
     });
   }
@@ -6867,11 +6941,7 @@ export default class WorldmapScene extends WarpTravel {
       window.clearTimeout(this.visualTerrainRetentionTimeout);
       this.visualTerrainRetentionTimeout = null;
     }
-    if (this.visualTerrainBuildFrameHandle !== null) {
-      window.cancelAnimationFrame(this.visualTerrainBuildFrameHandle);
-      this.visualTerrainBuildFrameHandle = null;
-    }
-    this.visualTerrainBuildQueue = [];
+    this.queuedVisualTerrainBuildPageKeys.clear();
     this.activeVisualTerrainBuildPageKeys.clear();
     this.visualTerrainWindow = null;
     this.visualTerrainWindowPageKeys.clear();
@@ -7612,15 +7682,7 @@ export default class WorldmapScene extends WarpTravel {
         hexMesh.updateMeshVisibility(); // Update visibility based on count
 
         if (landColors && count > 0) {
-          const landMeshes = hexMesh.instancedMeshes.filter((mesh) => mesh.name === LAND_NAME);
-          landMeshes.forEach((mesh) => {
-            if (!mesh.instanceColor || (mesh.instanceColor.array as Float32Array).length < count * 3) {
-              mesh.instanceColor = new InstancedBufferAttribute(new Float32Array(mesh.instanceMatrix.count * 3), 3);
-              mesh.geometry.setAttribute("instanceColor", mesh.instanceColor);
-            }
-            (mesh.instanceColor.array as Float32Array).set(landColors);
-            mesh.instanceColor.needsUpdate = true;
-          });
+          this.applyCompositeLandColors(hexMesh, count, landColors);
           const colorUploadBytes = count * Float32Array.BYTES_PER_ELEMENT * 3;
           incrementWorldmapRenderUploadBytes("cachedChunkReplay", colorUploadBytes);
           recordRendererColorUploadBytes(count, "worldmap-cache-replay");
@@ -8223,18 +8285,21 @@ export default class WorldmapScene extends WarpTravel {
         transitionToken,
         preparedTerrain,
         applyPreparedTerrain: (nextPreparedTerrain) => {
-          commitWorldmapPreparedTerrainPresentation({
-            applyPreparedTerrain: (preparedTerrain) => {
-              this.applyPreparedTerrainChunk(preparedTerrain as PreparedTerrainChunk);
-            },
-            diagnostics: this.chunkDiagnostics,
-            now: () => performance.now(),
-            phaseDurations: presentationRuntime.phaseDurations,
-            preparedTerrain: nextPreparedTerrain,
-            presentationStartedAtMs: chunkSwitchStartedAt,
-            recordChunkDiagnosticsEvent,
-            recordWorldmapRenderDuration,
-            incrementWorldmapRenderCounter,
+          const preparedTerrain = nextPreparedTerrain as PreparedTerrainChunk;
+          return this.schedulePreparedTerrainCommit("critical", preparedTerrain, () => {
+            commitWorldmapPreparedTerrainPresentation({
+              applyPreparedTerrain: (preparedTerrain) => {
+                this.applyPreparedTerrainChunk(preparedTerrain as PreparedTerrainChunk);
+              },
+              diagnostics: this.chunkDiagnostics,
+              now: () => performance.now(),
+              phaseDurations: presentationRuntime.phaseDurations,
+              preparedTerrain: nextPreparedTerrain,
+              presentationStartedAtMs: chunkSwitchStartedAt,
+              recordChunkDiagnosticsEvent,
+              recordWorldmapRenderDuration,
+              incrementWorldmapRenderCounter,
+            });
           });
         },
         disposePreparedTerrain: (droppedPreparedTerrain) =>
@@ -8325,21 +8390,24 @@ export default class WorldmapScene extends WarpTravel {
         const refreshCommitStatus = await handleWorldmapRefreshCommitRuntime({
           chunkKey,
           commitPreparedTerrain: (nextPreparedTerrain) => {
-            commitWorldmapPreparedTerrainPresentation({
-              applyPreparedTerrain: (preparedTerrain) => {
-                this.applyPreparedTerrainChunk(preparedTerrain as PreparedTerrainChunk);
-              },
-              diagnostics: this.chunkDiagnostics,
-              now: () => performance.now(),
-              onAfterApply: () => {
-                this.updateCurrentChunkBounds(startRow, startCol);
-              },
-              phaseDurations: presentationRuntime.phaseDurations,
-              preparedTerrain: nextPreparedTerrain,
-              presentationStartedAtMs: refreshStartedAt,
-              recordChunkDiagnosticsEvent,
-              recordWorldmapRenderDuration,
-              incrementWorldmapRenderCounter,
+            const preparedTerrain = nextPreparedTerrain as PreparedTerrainChunk;
+            return this.schedulePreparedTerrainCommit("critical", preparedTerrain, () => {
+              commitWorldmapPreparedTerrainPresentation({
+                applyPreparedTerrain: (preparedTerrain) => {
+                  this.applyPreparedTerrainChunk(preparedTerrain as PreparedTerrainChunk);
+                },
+                diagnostics: this.chunkDiagnostics,
+                now: () => performance.now(),
+                onAfterApply: () => {
+                  this.updateCurrentChunkBounds(startRow, startCol);
+                },
+                phaseDurations: presentationRuntime.phaseDurations,
+                preparedTerrain: nextPreparedTerrain,
+                presentationStartedAtMs: refreshStartedAt,
+                recordChunkDiagnosticsEvent,
+                recordWorldmapRenderDuration,
+                incrementWorldmapRenderCounter,
+              });
             });
           },
           disposePreparedTerrain: (droppedPreparedTerrain) =>
@@ -8664,7 +8732,7 @@ export default class WorldmapScene extends WarpTravel {
   }
 
   private emitZoomHardeningTelemetry(event: string, payload: Record<string, unknown>): void {
-    if (!WORLDMAP_ZOOM_HARDENING.telemetry) {
+    if (!WORLDMAP_ZOOM_HARDENING.telemetry || !VERBOSE_LOGS_ENABLED) {
       return;
     }
 
@@ -8738,7 +8806,7 @@ export default class WorldmapScene extends WarpTravel {
     }
 
     const entry = appendWorldmapChunkTrace(this.chunkTraceBuffer, event, this.buildChunkTraceState(details));
-    console.debug("[WorldmapChunkTrace]", entry);
+    if (VERBOSE_LOGS_ENABLED) console.debug("[WorldmapChunkTrace]", entry);
   }
 
   private getChunkTraceSnapshot(): WorldmapChunkTraceEntry[] {
@@ -9102,10 +9170,6 @@ export default class WorldmapScene extends WarpTravel {
       clearTimeout(this.chunkRecoveryTimeout);
       this.chunkRecoveryTimeout = null;
     }
-    if (this.hexGridFrameHandle !== null) {
-      cancelAnimationFrame(this.hexGridFrameHandle);
-      this.hexGridFrameHandle = null;
-    }
     this.clearVisualTerrainPresentations();
     this.currentHexGridTask = null;
 
@@ -9162,6 +9226,7 @@ export default class WorldmapScene extends WarpTravel {
     }
     this.cosmeticsSubscriptionCleanup?.();
     this.cosmeticsSubscriptionCleanup = undefined;
+    this.chunkWorkQueue.dispose();
 
     super.destroy();
   }
@@ -9654,7 +9719,7 @@ export default class WorldmapScene extends WarpTravel {
   }
 
   private logInteractionDebug(event: string, details: Record<string, unknown>): void {
-    if (!import.meta.env.DEV) {
+    if (!import.meta.env.DEV || !VERBOSE_LOGS_ENABLED) {
       return;
     }
 

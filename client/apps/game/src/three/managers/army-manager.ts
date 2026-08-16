@@ -120,6 +120,11 @@ import {
   waitForVisualSettle,
 } from "./manager-update-convergence";
 import { snapshotRendererDiagnostics } from "../renderer-diagnostics";
+import {
+  isFrameBudgetWorkQueueDisposedError,
+  scheduleFrameBudgetWork,
+  type FrameBudgetWorkScheduler,
+} from "../frame-budget-work-queue";
 import { gameEntityKey } from "@/dojo/game-scope";
 
 const MEMORY_MONITORING_ENABLED = env.VITE_PUBLIC_ENABLE_MEMORY_MONITORING;
@@ -296,6 +301,7 @@ export class ArmyManager {
     frustumManager?: FrustumManager,
     visibilityManager?: CentralizedVisibilityManager,
     chunkStride?: number,
+    private readonly chunkWorkScheduler?: FrameBudgetWorkScheduler,
   ) {
     this.scene = scene;
     this.worldSpatialProjection = worldSpatialProjection;
@@ -400,8 +406,16 @@ export class ArmyManager {
     const previous = this.armyProjectionSyncs.get(entityId) ?? Promise.resolve();
     const current = previous
       .catch(() => undefined)
-      .then(() => this.synchronizeArmyProjectionEntity(entityId))
+      .then(() => this.preloadMissingProjectedArmyModelsForEntity(entityId))
+      .then(() =>
+        scheduleFrameBudgetWork(this.chunkWorkScheduler, "visible", () =>
+          this.synchronizeArmyProjectionEntity(entityId),
+        ),
+      )
       .catch((error) => {
+        if (isFrameBudgetWorkQueueDisposedError(error)) {
+          return;
+        }
         console.error(`[ArmyManager] Failed to synchronize projected army ${entityId}`, error);
       })
       .finally(() => {
@@ -478,6 +492,38 @@ export class ArmyManager {
       maxStamina: StaminaManager.getMaxStamina(category, tier),
       battleCooldownEnd: explorerTroops.troops.battle_cooldown_end,
     };
+  }
+
+  private async preloadMissingProjectedArmyModelsForEntity(entityId: ID): Promise<void> {
+    const renderable = this.worldSpatialProjection.getArmy(entityId);
+    if (!renderable || !this.isProjectedArmyInCurrentChunk(renderable)) {
+      return;
+    }
+
+    await this.preloadMissingProjectedArmyModels([renderable]);
+  }
+
+  private async preloadMissingProjectedArmyModels(renderables: readonly ArmySpatialRenderable[]): Promise<void> {
+    const requiredModelTypes = new Set<ModelType>();
+
+    for (const renderable of renderables) {
+      if (this.armyPresentations.has(renderable.entityId)) {
+        continue;
+      }
+
+      const explorerTroops = this.resolveLiveExplorerTroopsComponent(renderable.entityId);
+      if (!explorerTroops || explorerTroops.troops.count <= 0n || explorerTroops.coord.alt) {
+        continue;
+      }
+
+      const params = this.buildProjectedArmyPresentation(renderable, explorerTroops);
+      const { resolvedModelType } = this.resolveArmyModelSelection(params, params.owner.address ?? 0n);
+      requiredModelTypes.add(resolvedModelType);
+    }
+
+    if (requiredModelTypes.size > 0) {
+      await this.armyModel.preloadModels(requiredModelTypes);
+    }
   }
 
   private resolveLiveExplorerTroopsComponent(entityId: ID): ExplorerTroopsComponentValue | undefined {
@@ -1417,8 +1463,10 @@ export class ArmyManager {
         (a, b) => this.toNumericId(a.entityId) - this.toNumericId(b.entityId),
       );
       ({ modelTypesByEntity } = this.collectModelInfo(sortedVisibleArmies));
-      this.reconcileVisibleArmies(visibleArmies, modelTypesByEntity, options?.force);
-      this.pruneArmyPresentationsOutsideCurrentChunk();
+      await scheduleFrameBudgetWork(this.chunkWorkScheduler, "critical", () => {
+        this.reconcileVisibleArmies(visibleArmies, modelTypesByEntity, options?.force);
+        this.pruneArmyPresentationsOutsideCurrentChunk();
+      });
     } finally {
       this.isArmyChunkTransitioning = false;
       this.drainDeferredArmyQueue();
@@ -1514,8 +1562,12 @@ export class ArmyManager {
   }
 
   private async ensureProjectedArmyPresentationsForChunk(startRow: number, startCol: number): Promise<void> {
+    const renderables = this.getProjectedArmiesForChunk(startRow, startCol);
+    await this.preloadMissingProjectedArmyModels(renderables);
     await Promise.all(
-      this.getProjectedArmiesForChunk(startRow, startCol).map((renderable) => this.ensureArmyPresentation(renderable)),
+      renderables.map((renderable) =>
+        scheduleFrameBudgetWork(this.chunkWorkScheduler, "critical", () => this.ensureArmyPresentation(renderable)),
+      ),
     );
   }
 
@@ -1604,8 +1656,6 @@ export class ArmyManager {
     const numericEntityId = this.toNumericId(params.entityId);
 
     const { x, y } = params.hexCoords.getContract();
-    const biome = configManager.getBiome(x, y);
-    const baseModelType = this.armyModel.getModelTypeForEntity(numericEntityId, params.category, params.tier, biome);
 
     // Variables to hold the final values
     let finalTroopCount = params.troopCount || 0;
@@ -1649,16 +1699,7 @@ export class ArmyManager {
     finalOwningStructureId = structureIdForOwner ?? finalOwningStructureId;
 
     const ownerForCosmetics = finalOwnerAddress ?? 0n;
-    if (this.components && ownerForCosmetics !== 0n) {
-      playerCosmeticsStore.hydrateFromBlitzComponent(this.components, ownerForCosmetics);
-    }
-    const cosmetic = resolveArmyCosmetic({
-      owner: ownerForCosmetics,
-      troopType: params.category,
-      tier: params.tier,
-      defaultModelType: baseModelType,
-    });
-    const resolvedModelType = cosmetic.skin.modelType ?? baseModelType;
+    const { cosmetic, resolvedModelType } = this.resolveArmyModelSelection(params, ownerForCosmetics);
 
     // Extract cosmetic asset paths for potential custom model
     const cosmeticAssetPaths = cosmetic.skin.assetPaths;
@@ -1718,6 +1759,29 @@ export class ArmyManager {
     );
 
     await this.renderArmyIntoCurrentChunkIfVisible(params.entityId);
+  }
+
+  private resolveArmyModelSelection(params: AddArmyParams, ownerAddress: bigint) {
+    const numericEntityId = this.toNumericId(params.entityId);
+    const { x, y } = params.hexCoords.getContract();
+    const biome = configManager.getBiome(x, y);
+    const baseModelType = this.armyModel.getModelTypeForEntity(numericEntityId, params.category, params.tier, biome);
+
+    if (this.components && ownerAddress !== 0n) {
+      playerCosmeticsStore.hydrateFromBlitzComponent(this.components, ownerAddress);
+    }
+
+    const cosmetic = resolveArmyCosmetic({
+      owner: ownerAddress,
+      troopType: params.category,
+      tier: params.tier,
+      defaultModelType: baseModelType,
+    });
+
+    return {
+      cosmetic,
+      resolvedModelType: cosmetic.skin.modelType ?? baseModelType,
+    };
   }
 
   public async computeMovementPlan(entityId: ID, hexCoords: Position): Promise<ArmyMovementPlan | null> {

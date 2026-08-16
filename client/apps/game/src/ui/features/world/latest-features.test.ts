@@ -45,12 +45,12 @@ describe("latestFeatures landing feed", () => {
     );
   });
 
-  it("announces the compact realm list in the latest feed", () => {
+  it("announces faster world rendering in the latest feed", () => {
     expect(latestFeatures).toContainEqual(
       expect.objectContaining({
-        date: "2026-06-05",
-        title: "Compact Realm List",
-        type: "fix",
+        date: "2026-08-16",
+        title: "Faster World Rendering",
+        type: "improvement",
         gameSlug: "world",
       }),
     );

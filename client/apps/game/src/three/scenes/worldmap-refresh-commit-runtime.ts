@@ -2,7 +2,7 @@ import type { WorldmapChunkDiagnostics } from "./worldmap-chunk-diagnostics";
 
 interface HandleWorldmapRefreshCommitRuntimeInput {
   chunkKey: string;
-  commitPreparedTerrain: (preparedTerrain: unknown) => void;
+  commitPreparedTerrain: (preparedTerrain: unknown) => void | Promise<void>;
   /**
    * Phase 2.2: release pooled attributes held by prepared terrain that is dropped
    * (stale, or not committed) instead of committed. Optional so existing callers
@@ -61,7 +61,7 @@ export async function handleWorldmapRefreshCommitRuntime(
     return "skipped";
   }
 
-  input.commitPreparedTerrain(input.preparedTerrain);
+  await input.commitPreparedTerrain(input.preparedTerrain);
   if (input.stagedPathEnabled) {
     await input.runImmediateCriticalManagerCatchUp(input.chunkKey, {
       force: input.force,

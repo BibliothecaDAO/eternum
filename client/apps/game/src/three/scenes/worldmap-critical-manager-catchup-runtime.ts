@@ -12,6 +12,7 @@ interface WorldmapCriticalManagerCatchUpTask {
 interface RunWorldmapCriticalManagerCatchUpInput {
   managers: WorldmapCriticalManagerCatchUpTask[];
   timeoutMs: number;
+  now?: () => number;
   setTimeoutFn?: (callback: () => void, timeoutMs: number) => ReturnType<typeof setTimeout>;
   clearTimeoutFn?: (handle: ReturnType<typeof setTimeout>) => void;
 }
@@ -68,7 +69,15 @@ async function settleCriticalManagerCatchUp(
   manager: WorldmapCriticalManagerCatchUpTask,
   input: RunWorldmapCriticalManagerCatchUpInput,
 ): Promise<FailedWorldmapCriticalManagerCatchUp | null> {
+  const now = input.now ?? (() => performance.now());
+  const startedAt = now();
   const result = await settleCriticalManagerPromise(manager, input);
+  const durationMs = now() - startedAt;
+  if (durationMs > 100) {
+    console.info(
+      `[WorldmapPerf] critical ${manager.label} manager catch-up converged over ${Math.round(durationMs)}ms of sliced wall time`,
+    );
+  }
   if (result === null) {
     return null;
   }

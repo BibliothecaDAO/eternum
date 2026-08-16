@@ -7,6 +7,7 @@ const sourceDir = dirname(fileURLToPath(import.meta.url));
 const appRoot = resolve(sourceDir, "../..");
 
 function readGamePackageJson(): {
+  dependencies?: Record<string, string>;
   devDependencies?: Record<string, string>;
   scripts?: Record<string, string>;
 } {
@@ -19,7 +20,14 @@ function readCustomTypesSource(): string {
 
 describe("Three.js typing policy", () => {
   it("keeps the Three.js ambient types aligned with the runtime package version", () => {
-    expect(readGamePackageJson().devDependencies?.["@types/three"]).toBe("^0.182.0");
+    const packageJson = readGamePackageJson();
+    expect({
+      runtime: packageJson.dependencies?.three,
+      types: packageJson.devDependencies?.["@types/three"],
+    }).toEqual({
+      runtime: "^0.184.0",
+      types: "^0.184.0",
+    });
   });
 
   it("keeps a dedicated WebGPU typing guard script", () => {

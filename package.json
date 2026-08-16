@@ -201,6 +201,13 @@
   "pnpm": {
     "overrides": {
       "@dojoengine/recs": "2.1.0"
+    },
+    "packageExtensions": {
+      "postprocessing@>=6.39.1 <7": {
+        "dependencies": {
+          "@types/three": "^0.184.0"
+        }
+      }
     }
   },
   "workspaces": {
