@@ -22,7 +22,7 @@ interface SceneManagerLike<TScene> {
 type PrewarmableScene = {
   getCamera(): Camera;
   getScene(): Object3D<Object3DEventMap>;
-  setPipelinePrewarmer(prewarmer: (scene: Object3D, camera: Camera) => Promise<void>): void;
+  setPipelinePrewarmer(prewarmer: (scene: Object3D, camera: Camera, targetScene?: Object3D) => Promise<void>): void;
 };
 
 export interface RendererSceneRegistry<
@@ -247,9 +247,13 @@ function configureRendererScenePipelinePrewarm(input: {
   worldmapScene: PrewarmableScene;
 }): void {
   [input.worldmapScene, input.hexceptionScene, input.fastTravelScene].forEach((scene) => {
-    scene?.setPipelinePrewarmer(async (sceneRoot, camera) => {
+    scene?.setPipelinePrewarmer(async (sceneRoot, camera, targetScene) => {
       try {
-        await requestRendererScenePrewarm(input.renderer, sceneRoot, camera);
+        if (targetScene) {
+          await requestRendererScenePrewarm(input.renderer, sceneRoot, camera, targetScene);
+        } else {
+          await requestRendererScenePrewarm(input.renderer, sceneRoot, camera);
+        }
       } catch (error) {
         input.warn?.("GameRenderer: Scene prewarm failed", error);
       }

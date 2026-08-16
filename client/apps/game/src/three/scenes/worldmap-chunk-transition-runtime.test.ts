@@ -160,6 +160,21 @@ describe("runWorldmapChunkTransition", () => {
     }
   });
 
+  it("passes the transition commit result to the resolved handler", async () => {
+    const state = createWorldmapChunkTransitionRuntimeState();
+    const onResolved = vi.fn((committed: boolean) => committed);
+
+    const result = await runWorldmapChunkTransition({
+      onResolved,
+      state,
+      transitionPromise: Promise.resolve(false),
+      yieldFrame: () => Promise.resolve(),
+    });
+
+    expect(result).toBe(false);
+    expect(onResolved).toHaveBeenCalledWith(false);
+  });
+
   it("swallows a transition rejection that lands after the hard timeout without unhandled rejection", async () => {
     vi.useFakeTimers();
     const rejection = new Error("late rejection");

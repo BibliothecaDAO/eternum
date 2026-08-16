@@ -94,7 +94,7 @@ describe("EntityIngestQueue", () => {
     await expect(queue.drain()).rejects.toThrow("RECS write failed");
   });
 
-  it("slices large snapshot writes across scheduled tasks", async () => {
+  it("keeps a typical logical update burst in one store write", async () => {
     let nowMs = 0;
     const appliedBatches: Array<{ applyDurationMs: number; operationCount: number }> = [];
     const applyEntityOperations = vi.fn(() => {
@@ -127,7 +127,7 @@ describe("EntityIngestQueue", () => {
     }
     await queue.drain();
 
-    expect(applyEntityOperations).toHaveBeenCalledTimes(3);
+    expect(applyEntityOperations).toHaveBeenCalledTimes(1);
     expect(
       applyEntityOperations.mock.calls.map(([operations]) =>
         operations.reduce(
@@ -136,10 +136,35 @@ describe("EntityIngestQueue", () => {
           0,
         ),
       ),
-    ).toEqual([50, 50, 20]);
-    expect(appliedBatches).toEqual([
-      { applyDurationMs: 60, operationCount: 100 },
-      { applyDurationMs: 30, operationCount: 20 },
-    ]);
+    ).toEqual([120]);
+    expect(appliedBatches).toEqual([{ applyDurationMs: 30, operationCount: 120 }]);
+  });
+
+  it("retains a high runaway cap on individual store writes", async () => {
+    const scheduler = createManualGameSyncScheduler();
+    const applyEntityOperations = vi.fn();
+    const store: GameSyncStore = {
+      applyEntityOperations,
+      applyEvent: vi.fn(),
+      listModelEntityIds: () => [],
+    };
+    const queue = new EntityIngestQueue({ scheduler, store, now: () => 0 });
+
+    for (let index = 0; index < 1_200; index += 1) {
+      queue.enqueueEntity({ hashed_keys: `entity-${index}`, models: { Position: { x: index } } });
+    }
+    const drained = queue.drain();
+    scheduler.flushNext();
+    await drained;
+
+    expect(
+      applyEntityOperations.mock.calls.map(([operations]) =>
+        operations.reduce(
+          (count: number, operation: GameSyncEntityStoreOperation) =>
+            count + (operation.type === "upsert" ? operation.entities.length : 1),
+          0,
+        ),
+      ),
+    ).toEqual([1_000, 200]);
   });
 });

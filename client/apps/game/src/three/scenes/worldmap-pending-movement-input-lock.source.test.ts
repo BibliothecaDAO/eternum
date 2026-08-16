@@ -27,7 +27,7 @@ describe("Worldmap pending movement input lock", () => {
     expect(affordCheck).toBeGreaterThan(lockCheck);
   });
 
-  it("locks movement input for both pending tx state and unresolved optimistic movement", () => {
+  it("locks movement input before and during the visual tween", () => {
     const source = readSource("worldmap.tsx");
 
     const helperStart = source.indexOf("private isArmyMovementInputLocked(entityId: ID)");
@@ -35,7 +35,8 @@ describe("Worldmap pending movement input lock", () => {
     const helperBody = source.slice(helperStart, helperStart + 500);
 
     expect(helperBody).toContain("this.isArmyMovementPending(entityId)");
-    expect(helperBody).toContain("this.armyManager.hasUnresolvedOptimisticMovement(entityId)");
+    expect(helperBody).toContain("this.armyManager.isArmyMoving(entityId)");
+    expect(helperBody).not.toContain("this.armyManager.hasUnresolvedOptimisticMovement(entityId)");
   });
 
   it("locks movement input for transaction hashes that are still tracked", () => {
@@ -46,25 +47,44 @@ describe("Worldmap pending movement input lock", () => {
     const helperBody = source.slice(helperStart, helperStart + 900);
 
     expect(helperBody).toContain("this.hasPendingMovementTransactionForArmy(entityId)");
-    expect(helperBody).toContain("txHashes.size");
+    expect(source).toContain("hasUnconfirmedMovementTransaction(this.getPendingArmyMovement(entityId))");
+    expect(source).toMatch(/hasUnconfirmedMovementTransaction[\s\S]*?submissionPending === true[\s\S]*?txHashes\.size/);
   });
 
-  it("keeps movement input locked while authoritative resolution waits for visual completion", () => {
+  it("does not let authoritative position cleanup confirm a transaction", () => {
+    const source = readSource("worldmap.tsx");
+    const clearStart = source.indexOf("private clearPendingArmyMovementFromAuthoritativePosition(");
+    const clearEnd = source.indexOf("private installPendingMovementVisualLifecycle(", clearStart);
+    const body = source.slice(clearStart, clearEnd);
+
+    expect(body).not.toContain("clearArmyMovementTxEntriesForEntity");
+  });
+
+  it("does not rewind a confirmed optimistic position when the stale fallback cleans up", () => {
+    const source = readSource("worldmap.tsx");
+    const methodStart = source.indexOf("private schedulePendingArmyMovementFallback(");
+    const methodEnd = source.indexOf("private rewindOptimisticMovement(", methodStart);
+    const body = source.slice(methodStart, methodEnd);
+
+    expect(body).toContain("transactionStillUnconfirmed");
+    expect(body).toContain("if (transactionStillUnconfirmed) this.rewindOptimisticMovement(entityId)");
+  });
+
+  it("does not keep movement input locked for a Torii echo or visual-completion record", () => {
     const source = readSource("worldmap.tsx");
 
     const helperStart = source.indexOf("private isArmyMovementInputLocked(entityId: ID)");
     expect(helperStart).toBeGreaterThan(0);
     const helperBody = source.slice(helperStart, helperStart + 700);
 
-    expect(helperBody).toContain("awaitingVisualCompletion === true");
+    expect(helperBody).not.toContain("awaitingVisualCompletion === true");
+    expect(helperBody).not.toContain("hasUnresolvedOptimisticMovement");
   });
 
-  it("passes unresolved optimistic movement into the selection plan", () => {
+  it("does not pass unresolved optimistic movement into the selection plan", () => {
     const source = readSource("worldmap.tsx");
 
-    expect(source).toMatch(
-      /resolvePendingArmyMovementSelectionPlan\(\{[\s\S]*?isOptimisticMovementActive: this\.armyManager\.hasUnresolvedOptimisticMovement/,
-    );
+    expect(source).not.toContain("isOptimisticMovementActive:");
   });
 
   it("does not compute or publish movement action paths while selected movement is unavailable", () => {

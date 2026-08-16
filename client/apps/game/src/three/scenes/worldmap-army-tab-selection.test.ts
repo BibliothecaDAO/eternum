@@ -219,27 +219,10 @@ describe("resolvePendingArmyMovementSelectionPlan", () => {
     });
   });
 
-  it("blocks re-selection while optimistic movement is still unresolved", () => {
-    expect(
-      resolvePendingArmyMovementSelectionPlan({
-        hasPendingMovement: true,
-        isOptimisticMovementActive: true,
-        pendingMovementStartedAtMs: 1000,
-        nowMs: 2000,
-        staleAfterMs: 8000,
-      }),
-    ).toEqual({
-      shouldClearPendingMovement: false,
-      shouldRequestChunkRefresh: false,
-      shouldBlockSelection: true,
-    });
-  });
-
-  it("blocks selection when pending state cleared but optimistic movement is still unresolved", () => {
+  it("does not block selection after pending state has cleared", () => {
     expect(
       resolvePendingArmyMovementSelectionPlan({
         hasPendingMovement: false,
-        isOptimisticMovementActive: true,
         pendingMovementStartedAtMs: 1000,
         nowMs: 2000,
         staleAfterMs: 8000,
@@ -247,23 +230,7 @@ describe("resolvePendingArmyMovementSelectionPlan", () => {
     ).toEqual({
       shouldClearPendingMovement: false,
       shouldRequestChunkRefresh: false,
-      shouldBlockSelection: true,
-    });
-  });
-
-  it("still blocks selection when pending but optimistic has not started yet", () => {
-    expect(
-      resolvePendingArmyMovementSelectionPlan({
-        hasPendingMovement: true,
-        isOptimisticMovementActive: false,
-        pendingMovementStartedAtMs: 1000,
-        nowMs: 2000,
-        staleAfterMs: 8000,
-      }),
-    ).toEqual({
-      shouldClearPendingMovement: false,
-      shouldRequestChunkRefresh: true,
-      shouldBlockSelection: true,
+      shouldBlockSelection: false,
     });
   });
 });

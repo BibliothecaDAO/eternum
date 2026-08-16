@@ -134,10 +134,18 @@ const MEMORY_MONITORING_ENABLED = env.VITE_PUBLIC_ENABLE_MEMORY_MONITORING;
 // released so the next update can drive a correction tween — covers the rare
 // server-divergent-path case without stranding the visual state.
 const OPTIMISTIC_POSITION_LOCK_TTL_MS = 15_000;
+const OPTIMISTIC_SOURCE_MATCH_HOLD_MS = 2_500;
 
 interface MovingArmySourceState {
   col: number;
   row: number;
+}
+
+interface OptimisticPositionLock {
+  normalizedSource: { x: number; y: number };
+  normalizedTarget: { x: number; y: number };
+  lockedAtMs: number;
+  sourceMatchTimeout?: ReturnType<typeof setTimeout>;
 }
 
 export interface ArmyMovementPlan {
@@ -272,14 +280,7 @@ export class ArmyManager {
   // where the chain leaves `explorer.coord = from` after rolling a treasure —
   // are recognised as authoritative and allowed through instead of being
   // suppressed as stale. Auto-release on matching update or TTL expiry.
-  private optimisticPositionLocks: Map<
-    ID,
-    {
-      normalizedSource: { x: number; y: number };
-      normalizedTarget: { x: number; y: number };
-      lockedAtMs: number;
-    }
-  > = new Map();
+  private optimisticPositionLocks: Map<ID, OptimisticPositionLock> = new Map();
   // Armies that have been visually hidden but not yet fully removed — all rendering
   // paths must skip these to prevent ghost units from reappearing during chunk transitions
 
@@ -304,11 +305,12 @@ export class ArmyManager {
     visibilityManager?: CentralizedVisibilityManager,
     chunkStride?: number,
     private readonly chunkWorkScheduler?: FrameBudgetWorkScheduler,
+    requestPipelinePrewarm?: (object: Object3D) => void,
   ) {
     this.scene = scene;
     this.worldSpatialProjection = worldSpatialProjection;
     this.currentCameraView = hexagonScene?.getCurrentCameraView() ?? CameraView.Medium;
-    this.armyModel = new ArmyModel(scene, labelsGroup, this.currentCameraView);
+    this.armyModel = new ArmyModel(scene, labelsGroup, this.currentCameraView, requestPipelinePrewarm);
     // Warm boat model up to avoid first shoreline transition rendering as a ghost while GLTF loads.
     void this.armyModel.preloadModels([ModelType.Boat]);
     this.scale = new Vector3(0.3, 0.3, 0.3);
@@ -1801,8 +1803,6 @@ export class ArmyManager {
   }
 
   public async computeMovementPlan(entityId: ID, hexCoords: Position): Promise<ArmyMovementPlan | null> {
-    this.memoryMonitor?.getCurrentStats(`moveArmy-start-${entityId}`);
-
     const armyData = this.armyPresentations.get(entityId);
     if (!armyData) return null;
 
@@ -1872,6 +1872,7 @@ export class ArmyManager {
       // this entity — we're starting fresh and will wait for the next authoritative
       // update.
       this.authoritativeReconciledArmies.delete(entityId);
+      this.clearDeferredSourceMatch(this.optimisticPositionLocks.get(entityId));
       this.optimisticPositionLocks.set(entityId, {
         normalizedSource: { x: sourceNormalized.x, y: sourceNormalized.y },
         normalizedTarget: { x: targetNormalized.x, y: targetNormalized.y },
@@ -1917,7 +1918,6 @@ export class ArmyManager {
     const displayState = this.selectedArmyForPath === entityId ? "selected" : "moving";
     this.pathRenderer.createPath(numericEntityId, worldPath, colorProfile.primary, displayState);
 
-    this.memoryMonitor?.getCurrentStats(`moveArmy-complete-${entityId}`);
     return true;
   }
 
@@ -1946,6 +1946,7 @@ export class ArmyManager {
     // updates would keep its lock forever — permanently blocking movement
     // selection (and the self-healing sweeps that consult this method).
     if (Date.now() - lock.lockedAtMs > OPTIMISTIC_POSITION_LOCK_TTL_MS) {
+      this.clearDeferredSourceMatch(lock);
       this.optimisticPositionLocks.delete(entityId);
       return false;
     }
@@ -1962,11 +1963,10 @@ export class ArmyManager {
    * with an active optimistic lock and the TTL hasn't elapsed. Matching updates
    * release the lock as a side effect.
    *
-   * Source-match is treated the same as target-match: `explorer_explore` can
-   * roll a treasure that leaves `explorer.coord = from` on-chain
-   * (troop_movement.cairo:193). That authoritative revert would otherwise be
-   * swallowed as "stale" and the army would stay visually stranded on the
-   * discovered tile until the TTL expired.
+   * A source match is held briefly because it can mean either an old stream
+   * echo or an `explorer_explore` treasure roll that leaves
+   * `explorer.coord = from` on-chain. A following target match cancels the
+   * hold; otherwise the source becomes authoritative when the hold expires.
    */
   public shouldSkipStalePositionUpdate(entityId: ID, incomingNormalized: { x: number; y: number }): boolean {
     const lock = this.optimisticPositionLocks.get(entityId);
@@ -1975,6 +1975,17 @@ export class ArmyManager {
     const matchesTarget =
       lock.normalizedTarget.x === incomingNormalized.x && lock.normalizedTarget.y === incomingNormalized.y;
     if (matchesTarget) {
+      if (lock.sourceMatchTimeout !== undefined) {
+        this.logAuthoritativePositionLockDecision(
+          entityId,
+          incomingNormalized,
+          lock,
+          "suppressed",
+          "source_match_discarded_stale",
+        );
+        this.clearDeferredSourceMatch(lock);
+      }
+      this.logAuthoritativePositionLockDecision(entityId, incomingNormalized, lock, "applied", "target_match");
       this.optimisticPositionLocks.delete(entityId);
       this.markOptimisticMovementReconciled(entityId);
       return false;
@@ -1983,23 +1994,66 @@ export class ArmyManager {
     const matchesSource =
       lock.normalizedSource.x === incomingNormalized.x && lock.normalizedSource.y === incomingNormalized.y;
     if (matchesSource) {
-      // Discovery revert: `explorer_explore` rolled a treasure, the chain left
-      // `explorer.coord = from`, and the tx emits an ExplorerTroops delta
-      // (stamina/biomes) but no TileOpt change for the source tile. The
-      // optimistic tween has already parked the visual on `target`, so merely
-      // releasing the lock isn't enough. Tear the tween down here so the
-      // presentation snaps back to the authoritative source. The worldmap's
-      // interaction accessor independently falls back to the RECS projection.
-      this.rewindOptimisticMovement(entityId);
-      return false;
+      this.deferSourceMatchRewind(entityId, incomingNormalized, lock);
+      return true;
     }
 
     if (Date.now() - lock.lockedAtMs > OPTIMISTIC_POSITION_LOCK_TTL_MS) {
+      this.logAuthoritativePositionLockDecision(entityId, incomingNormalized, lock, "applied", "lock_expired");
+      this.clearDeferredSourceMatch(lock);
       this.optimisticPositionLocks.delete(entityId);
       return false;
     }
 
+    this.logAuthoritativePositionLockDecision(entityId, incomingNormalized, lock, "suppressed", "active_lock");
     return true;
+  }
+
+  private deferSourceMatchRewind(
+    entityId: ID,
+    authoritative: { x: number; y: number },
+    lock: OptimisticPositionLock,
+  ): void {
+    if (lock.sourceMatchTimeout !== undefined) return;
+
+    this.logAuthoritativePositionLockDecision(entityId, authoritative, lock, "suppressed", "source_match_deferred");
+    lock.sourceMatchTimeout = setTimeout(() => {
+      const activeLock = this.optimisticPositionLocks.get(entityId);
+      if (activeLock !== lock) return;
+
+      lock.sourceMatchTimeout = undefined;
+      this.logAuthoritativePositionLockDecision(entityId, authoritative, lock, "applied", "source_match_honored");
+      this.runMovementVisualCancelListeners(this.toNumericId(entityId));
+      this.rewindOptimisticMovement(entityId);
+    }, OPTIMISTIC_SOURCE_MATCH_HOLD_MS);
+  }
+
+  private clearDeferredSourceMatch(lock: OptimisticPositionLock | undefined): void {
+    if (lock?.sourceMatchTimeout === undefined) return;
+    clearTimeout(lock.sourceMatchTimeout);
+    lock.sourceMatchTimeout = undefined;
+  }
+
+  private logAuthoritativePositionLockDecision(
+    entityId: ID,
+    authoritative: { x: number; y: number },
+    lock: OptimisticPositionLock,
+    decision: "applied" | "suppressed",
+    reason:
+      | "target_match"
+      | "source_match_deferred"
+      | "source_match_discarded_stale"
+      | "source_match_honored"
+      | "lock_expired"
+      | "active_lock",
+  ): void {
+    if (!import.meta.env.DEV) return;
+
+    const source = `${lock.normalizedSource.x},${lock.normalizedSource.y}`;
+    const target = `${lock.normalizedTarget.x},${lock.normalizedTarget.y}`;
+    console.debug(
+      `[ArmyLock] entity=${entityId} ${decision} authoritative=(${authoritative.x},${authoritative.y}) lock=(${source}→${target}) reason=${reason}`,
+    );
   }
 
   private markOptimisticMovementReconciled(entityId: ID): void {
@@ -2009,6 +2063,7 @@ export class ArmyManager {
       entityId,
     });
     this.optimisticallyMovingArmies.delete(entityId);
+    this.clearDeferredSourceMatch(this.optimisticPositionLocks.get(entityId));
     this.optimisticPositionLocks.delete(entityId);
     this.authoritativeReconciledArmies.add(entityId);
     this.runAuthoritativeReconcileListeners(this.toNumericId(entityId));
@@ -2057,6 +2112,7 @@ export class ArmyManager {
     this.optimisticallyMovingArmies.delete(entityId);
     this.authoritativeReconciledArmies.delete(entityId);
     this.authoritativeReconcileListeners.delete(this.toNumericId(entityId));
+    this.clearDeferredSourceMatch(lock);
     this.optimisticPositionLocks.delete(entityId);
 
     const numericEntityId = this.toNumericId(entityId);
@@ -2121,6 +2177,7 @@ export class ArmyManager {
     // Release optimistic movement state: a removed-then-re-added army (chunk
     // eviction, capture) must not inherit a stale lock that blocks selection.
     this.optimisticallyMovingArmies.delete(entityId);
+    this.clearDeferredSourceMatch(this.optimisticPositionLocks.get(entityId));
     this.optimisticPositionLocks.delete(entityId);
 
     const army = this.armyPresentations.get(entityId);
@@ -3472,6 +3529,7 @@ ${
     this.optimisticallyMovingArmies.clear();
     this.authoritativeReconciledArmies.clear();
     this.authoritativeReconcileListeners.clear();
+    this.optimisticPositionLocks.forEach((lock) => this.clearDeferredSourceMatch(lock));
     this.optimisticPositionLocks.clear();
     this.preCommitArmyQueue.clear();
     this.movementStartListeners.clear();

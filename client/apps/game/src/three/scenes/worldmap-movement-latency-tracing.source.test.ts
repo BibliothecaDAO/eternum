@@ -25,10 +25,10 @@ describe("Worldmap movement latency tracing wiring", () => {
     expect(source).toContain('"movement_completed"');
   });
 
-  it("uses an authoritative world-sync timeout longer than the old 10 second stale cutoff", () => {
+  it("uses an eight-second safety fallback after movement submission", () => {
     const source = readSource("worldmap.tsx");
 
-    expect(source).toContain("authoritativePendingArmyMovementMs = 30_000");
+    expect(source).toContain("authoritativePendingArmyMovementMs = 8_000");
   });
 
   it("does not treat TileOpt delivery as an army movement phase", () => {

@@ -23,6 +23,7 @@ import {
 } from "./renderer-backend-runtime";
 import { createRendererFoundationRuntime } from "./renderer-foundation-runtime";
 import { runRendererFrame } from "./renderer-frame-runtime";
+import { startGpuBackendFrame } from "./gpu-backend-hot-path-instrumentation";
 import type { RendererInteractionRuntime } from "./renderer-interaction-runtime";
 import type { RendererLabelRuntime } from "./renderer-label-runtime";
 import { renderProfile } from "./render-profile";
@@ -474,6 +475,10 @@ export default class GameRenderer {
   }
 
   animate() {
+    if (import.meta.env.DEV) {
+      startGpuBackendFrame();
+    }
+
     this.lastTime = runRendererAnimationTick({
       getCurrentTime: () => performance.now(),
       getCycleProgress: () => useUIStore.getState().cycleProgress || 0,

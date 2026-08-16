@@ -7,14 +7,21 @@ import { describe, expect, it } from "vitest";
 
 const readSource = (relativePath: string) => readFileSync(resolve(process.cwd(), relativePath), "utf8");
 
-describe("Worldmap initial refresh", () => {
-  it("joins an active transition and still fails closed when no chunk commits", () => {
+describe("Worldmap interactive refresh", () => {
+  it("joins active transitions and delegates phase-aware retry and failure handling", () => {
     const source = readSource("src/three/scenes/worldmap.tsx");
 
-    expect(source).toContain("const didRefresh = await this.refreshVisibleChunksForWarpTravel();");
+    expect(source).toContain("await completeWorldmapInteractiveRefresh({");
+    expect(source).toContain('const phase: WorldmapWarpTravelPhase = this.hasInitialized ? "resume" : "initial";');
     expect(source).toMatch(
       /private async refreshVisibleChunksForWarpTravel\(\): Promise<boolean> \{[\s\S]*waitForChunkTransitionToSettle/,
     );
-    expect(source).toContain('throw new Error("World map did not finish its initial interactive refresh.");');
+  });
+
+  it("propagates the terrain commit result instead of treating every settled transition as success", () => {
+    const source = readSource("src/three/scenes/worldmap.tsx");
+
+    expect(source).toContain("onResolved: (committed) => {");
+    expect(source).toContain('return refreshCommitStatus === "committed";');
   });
 });

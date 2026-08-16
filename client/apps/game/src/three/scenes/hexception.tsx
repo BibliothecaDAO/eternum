@@ -619,7 +619,7 @@ export default class HexceptionScene extends HexagonScene {
         { col: this.centerColRow[0], row: this.centerColRow[1] },
         (update: BuildingSystemUpdate) => {
           const { innerCol, innerRow, buildingType } = update;
-          if (buildingType === BuildingType.None && innerCol && innerRow) {
+          if (buildingType === BuildingType.None && innerCol !== undefined && innerRow !== undefined) {
             this.removeBuilding(innerCol, innerRow);
           } else if (buildingType !== BuildingType.None) {
             playBuildingSound(buildingType);

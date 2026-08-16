@@ -72,6 +72,19 @@ describe("resolveWebgpuPostprocessPolicy", () => {
     expect(renderer.compileAsync).toHaveBeenCalledWith({ id: "scene" }, { id: "camera" });
   });
 
+  it("compiles a newly loaded object against its target scene", async () => {
+    const compileAsync = vi.fn(async () => {});
+
+    await requestRendererScenePrewarm(
+      { compileAsync } as never,
+      { id: "model" } as never,
+      { id: "camera" } as never,
+      { id: "worldmap" } as never,
+    );
+
+    expect(compileAsync).toHaveBeenCalledWith({ id: "model" }, { id: "camera" }, { id: "worldmap" });
+  });
+
   it("no-ops when renderer is undefined", async () => {
     // Should resolve without throwing
     await expect(

@@ -41,7 +41,7 @@ describe("Worldmap tab-cycle eligibility", () => {
     expect(eligibilityPos).toBeGreaterThan(pendingPos);
   });
 
-  it("treats unresolved optimistic movement as ineligible for tab cycle", () => {
+  it("treats only pre-tween, active-tween, and unconfirmed-tx movement as ineligible", () => {
     const source = readSource("worldmap.tsx");
 
     const helperStart = source.indexOf("private isArmyMovementInputLocked(entityId: ID)");
@@ -49,7 +49,9 @@ describe("Worldmap tab-cycle eligibility", () => {
     const helperBody = source.slice(helperStart, helperStart + 500);
 
     expect(helperBody).toContain("this.isArmyMovementPending(entityId)");
-    expect(helperBody).toContain("this.armyManager.hasUnresolvedOptimisticMovement(entityId)");
+    expect(helperBody).toContain("this.armyManager.isArmyMoving(entityId)");
+    expect(helperBody).toContain("this.hasPendingMovementTransactionForArmy(entityId)");
+    expect(helperBody).not.toContain("this.armyManager.hasUnresolvedOptimisticMovement(entityId)");
     expect(source).toMatch(
       /this\.selectableArmies\.some\(\s*\(army\) => !this\.isArmyMovementInputLocked\(army\.entityId\)/,
     );

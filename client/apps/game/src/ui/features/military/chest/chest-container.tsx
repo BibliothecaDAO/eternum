@@ -1,4 +1,5 @@
 import { useUISound } from "@/audio";
+import { decodeOpenRelicChestRelics, fetchOpenRelicChestEvent } from "@/dojo/relic-chest-event-query";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { Position } from "@bibliothecadao/eternum";
 
@@ -320,7 +321,12 @@ export const ChestContainer = ({
   chestHex: { x: number; y: number };
 }) => {
   const {
-    setup: { components },
+    setup: {
+      components,
+      systemCalls,
+      network: { contractComponents, toriiClient },
+    },
+    account: { account },
   } = useDojo();
 
   const [isShaking, setIsShaking] = useState(false);
@@ -332,9 +338,14 @@ export const ChestContainer = ({
   const [isOpening, setIsOpening] = useState(false);
   const [revealedCards, setRevealedCards] = useState<number[]>([]);
   const [numberParticles, setNumberParticles] = useState<{ id: number; number: number }[]>([]);
+  const [revealError, setRevealError] = useState<string | null>(null);
+  const [isRecoveringReveal, setIsRecoveringReveal] = useState(false);
 
   const shakeTimeout = useRef<NodeJS.Timeout | null>(null);
+  const revealFallbackTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const hasMatchingEvent = useRef(false);
   const CLICKS_TO_OPEN = 5;
+  const REVEAL_FALLBACK_MS = 10_000;
 
   const chestName = useMemo(() => {
     const tile = getTileAt(components, DEFAULT_COORD_ALT, chestHex.x, chestHex.y);
@@ -351,13 +362,75 @@ export const ChestContainer = ({
   const toggleModal = useUIStore((state) => state.toggleModal);
   const triggerRelicsRefresh = useUIStore((state) => state.triggerRelicsRefresh);
 
-  const {
-    setup: {
-      systemCalls,
-      network: { contractComponents },
+  const clearRevealFallback = useCallback(() => {
+    if (!revealFallbackTimeout.current) return;
+    clearTimeout(revealFallbackTimeout.current);
+    revealFallbackTimeout.current = null;
+  }, []);
+
+  const revealRelics = useCallback(
+    (relics: number[]) => {
+      hasMatchingEvent.current = true;
+      clearRevealFallback();
+      setRevealError(null);
+      setChestResult(relics);
+      // Resource updates arrive through the authoritative game-wide stream.
+      triggerRelicsRefresh();
+
+      if (isOpening) {
+        setTimeout(() => {
+          setShowResult(true);
+          playChestOpenSound();
+
+          relics.forEach((_, index) => {
+            setTimeout(() => {
+              setRevealedCards((previous) => [...previous, index]);
+            }, index * 600);
+          });
+        }, 500);
+        return;
+      }
+
+      setShowResult(true);
+      playChestOpenSound();
+      setRevealedCards(relics.map((_, index) => index));
     },
-    account: { account },
-  } = useDojo();
+    [clearRevealFallback, isOpening, playChestOpenSound, triggerRelicsRefresh],
+  );
+
+  const recoverChestReveal = useCallback(async () => {
+    if (hasMatchingEvent.current || isRecoveringReveal) return;
+
+    setIsRecoveringReveal(true);
+    setRevealError(null);
+    try {
+      const event = await fetchOpenRelicChestEvent({ client: toriiClient, explorerEntityId, chestHex });
+      if (!event) throw new Error("The chest result has not reached the indexer yet.");
+      if (
+        event.explorer_id !== explorerEntityId ||
+        event.chest_coord.x !== chestHex.x ||
+        event.chest_coord.y !== chestHex.y
+      ) {
+        throw new Error("The indexed chest result did not match this chest.");
+      }
+
+      revealRelics(decodeOpenRelicChestRelics(event));
+    } catch (error) {
+      if (!hasMatchingEvent.current) {
+        setIsOpening(false);
+        setRevealError(error instanceof Error ? error.message : "Unable to load the chest result.");
+      }
+    } finally {
+      setIsRecoveringReveal(false);
+    }
+  }, [chestHex, explorerEntityId, isRecoveringReveal, revealRelics, toriiClient]);
+
+  const scheduleChestRevealFallback = useCallback(() => {
+    clearRevealFallback();
+    revealFallbackTimeout.current = setTimeout(() => {
+      void recoverChestReveal();
+    }, REVEAL_FALLBACK_MS);
+  }, [clearRevealFallback, recoverChestReveal]);
 
   // Event listener for OpenRelicChestEvent
   useComponentSystem(
@@ -372,30 +445,10 @@ export const ChestContainer = ({
         currentState?.chest_coord?.x === chestHex.x &&
         currentState?.chest_coord?.y === chestHex.y
       ) {
-        const relics = currentState.relics.map((relic: any) => relic.value);
-        setChestResult(relics);
-        // Resource updates arrive through the authoritative game-wide stream.
-        triggerRelicsRefresh();
-
-        if (isOpening) {
-          setTimeout(() => {
-            setShowResult(true);
-            playChestOpenSound();
-
-            relics.forEach((_, index) => {
-              setTimeout(() => {
-                setRevealedCards((prev) => [...prev, index]);
-              }, index * 600);
-            });
-          }, 500);
-        } else {
-          setShowResult(true);
-          playChestOpenSound();
-          setRevealedCards(relics.map((_, i) => i));
-        }
+        revealRelics(decodeOpenRelicChestRelics(currentState));
       }
     },
-    [explorerEntityId, chestHex.x, chestHex.y, isOpening, playChestOpenSound, triggerRelicsRefresh, contractComponents],
+    [explorerEntityId, chestHex.x, chestHex.y, revealRelics, contractComponents],
   );
 
   const handleChestClick = async () => {
@@ -436,11 +489,7 @@ export const ChestContainer = ({
     // Check if we've reached the opening threshold
     if (newClickCount >= CLICKS_TO_OPEN) {
       setIsOpening(true);
-
-      // Dramatic pause before opening
-      setTimeout(() => {
-        openChest();
-      }, 1000);
+      if (revealError) void recoverChestReveal();
     }
 
     // Trigger transaction on first click
@@ -456,15 +505,14 @@ export const ChestContainer = ({
             y: chestHex.y,
           },
         });
+        if (!hasMatchingEvent.current) scheduleChestRevealFallback();
       } catch (error) {
         console.error("Failed to open chest:", error);
+        setHasClicked(false);
+        setIsOpening(false);
+        setRevealError("The chest transaction failed. Please try again.");
       }
     }
-  };
-
-  const openChest = () => {
-    // This will be called when the chest animation completes
-    // The actual result display will be triggered by the event listener
   };
 
   // Cleanup timeout on unmount
@@ -473,8 +521,9 @@ export const ChestContainer = ({
       if (shakeTimeout.current) {
         clearTimeout(shakeTimeout.current);
       }
+      clearRevealFallback();
     };
-  }, []);
+  }, [clearRevealFallback]);
 
   // Show result when event arrives - integrated into main view
   const relicInfos =
@@ -671,6 +720,23 @@ export const ChestContainer = ({
                   animate={{ scale: 3, opacity: [0, 0.8, 0] }}
                   transition={{ duration: 0.6 }}
                 />
+              )}
+
+              {revealError && (
+                <div className="mt-3 max-w-xs rounded border border-gold/30 bg-dark-brown/95 p-3 text-center text-sm text-gold/80">
+                  <p>{revealError}</p>
+                  <button
+                    type="button"
+                    className="mt-2 rounded border border-gold/50 px-3 py-1 text-gold disabled:opacity-50"
+                    disabled={isRecoveringReveal}
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      void recoverChestReveal();
+                    }}
+                  >
+                    {isRecoveringReveal ? "Checking result…" : "Retry reveal"}
+                  </button>
+                </div>
               )}
             </motion.div>
           )}

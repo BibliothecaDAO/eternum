@@ -25,6 +25,12 @@ interface TextureHotPathStat extends HotPathStat {
   name: string;
 }
 
+interface ActiveGpuBackendFrame {
+  hotPathStats: Map<string, HotPathStat> | null;
+  startedAt: number;
+  textureStats: Map<object, TextureHotPathStat> | null;
+}
+
 interface InstrumentGpuBackendHotPathsOptions {
   now?: () => number;
   reportIntervalMs?: number;
@@ -45,8 +51,41 @@ const HOT_PATH_NAMES = [
   "createSampler",
 ] as const;
 const SLOW_CALL_THRESHOLD_MS = 80;
+const SPIKE_FRAME_THRESHOLD_MS = 33;
+const TOP_FRAME_HOT_PATH_LIMIT = 8;
 const TOP_TEXTURE_LIMIT = 8;
 const instrumentedBackends = new WeakSet<object>();
+let activeFrame: ActiveGpuBackendFrame | null = null;
+
+export function startGpuBackendFrame(
+  startedAt: number = performance.now(),
+  warn: (message: string) => void = console.warn,
+): void {
+  reportCompletedGpuBackendFrame(startedAt, warn);
+  activeFrame = {
+    hotPathStats: null,
+    startedAt,
+    textureStats: null,
+  };
+}
+
+function reportCompletedGpuBackendFrame(
+  endedAt: number = performance.now(),
+  warn: (message: string) => void = console.warn,
+): void {
+  const completedFrame = activeFrame;
+  activeFrame = null;
+  if (!completedFrame) {
+    return;
+  }
+
+  const durationMs = endedAt - completedFrame.startedAt;
+  if (durationMs <= SPIKE_FRAME_THRESHOLD_MS) {
+    return;
+  }
+
+  warn(buildGpuBackendSpikeReport(durationMs, completedFrame.hotPathStats, completedFrame.textureStats));
+}
 
 export function instrumentGpuBackendHotPaths(
   backend: Record<string, unknown>,
@@ -89,8 +128,10 @@ export function instrumentGpuBackendHotPaths(
       const elapsedMs = endedAt - startedAt;
 
       addHotPathSample(hotPathStats, name, elapsedMs);
+      addFrameHotPathSample(name, elapsedMs);
       if (name === "updateTexture") {
         addTextureSample(textureStats, args[0], elapsedMs);
+        addFrameTextureSample(args[0], elapsedMs);
       }
       if (elapsedMs > SLOW_CALL_THRESHOLD_MS) {
         warn(`[GpuBackendPerf] ${name} took ${Math.round(elapsedMs)}ms in one call`);
@@ -102,6 +143,24 @@ export function instrumentGpuBackendHotPaths(
       return result;
     };
   }
+}
+
+function addFrameHotPathSample(name: string, elapsedMs: number): void {
+  if (!activeFrame) {
+    return;
+  }
+
+  activeFrame.hotPathStats ??= new Map();
+  addHotPathSample(activeFrame.hotPathStats, name, elapsedMs);
+}
+
+function addFrameTextureSample(candidate: unknown, elapsedMs: number): void {
+  if (!activeFrame) {
+    return;
+  }
+
+  activeFrame.textureStats ??= new Map();
+  addTextureSample(activeFrame.textureStats, candidate, elapsedMs);
 }
 
 function addHotPathSample(stats: Map<string, HotPathStat>, name: string, elapsedMs: number): void {
@@ -145,6 +204,30 @@ function buildGpuBackendReport(
   const textureSummary = textureStats.size > 0 ? `; textures[${textureStats.size}]=${topTextures}` : "";
 
   return `[GpuBackendPerf] window=${Math.round(windowMs)}ms ${hotPaths}${textureSummary}`;
+}
+
+function buildGpuBackendSpikeReport(
+  durationMs: number,
+  hotPathStats: ReadonlyMap<string, HotPathStat> | null,
+  textureStats: ReadonlyMap<object, TextureHotPathStat> | null,
+): string {
+  const contributors = hotPathStats
+    ? [...hotPathStats.entries()]
+        .sort(([, left], [, right]) => right.accumulatedMs - left.accumulatedMs)
+        .slice(0, TOP_FRAME_HOT_PATH_LIMIT)
+        .map(([name, stat]) => `${name}=${stat.calls}x/${formatMilliseconds(stat.accumulatedMs)}`)
+        .join(", ")
+    : "no GPU backend hot paths";
+  const topTextures = textureStats
+    ? [...textureStats.values()]
+        .sort((left, right) => right.accumulatedMs - left.accumulatedMs)
+        .slice(0, TOP_TEXTURE_LIMIT)
+        .map((stat) => `${stat.name}(${stat.dimensions})=${stat.calls}x/${formatMilliseconds(stat.accumulatedMs)}`)
+        .join(", ")
+    : "";
+  const textureSummary = topTextures ? `; textures=${topTextures}` : "";
+
+  return `[GpuBackendPerf] spike ${Math.round(durationMs)}ms: ${contributors}${textureSummary}`;
 }
 
 function resolveTextureDimensions(texture: InstrumentedTexture): string {

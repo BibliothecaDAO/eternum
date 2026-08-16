@@ -62,8 +62,8 @@ describe("Worldmap pending movement visual handoff wiring", () => {
     const completeEnd = lifecycleBody.indexOf("const disposeAuthoritativeReconcile", completeStart);
     const completeHandler = lifecycleBody.slice(completeStart, completeEnd);
 
-    expect(completeHandler).toContain("this.completePendingArmyMovementAuthoritativeResolution(entityId)");
-    expect(completeHandler.indexOf("this.completePendingArmyMovementAuthoritativeResolution(entityId)")).toBeLessThan(
+    expect(completeHandler).toContain("this.completePendingArmyMovementVisuals(entityId)");
+    expect(completeHandler.indexOf("this.completePendingArmyMovementVisuals(entityId)")).toBeLessThan(
       completeHandler.indexOf("this.disposePendingMovementVisualLifecycle(entityId)"),
     );
   });
@@ -79,10 +79,25 @@ describe("Worldmap pending movement visual handoff wiring", () => {
     const cancelEnd = lifecycleBody.indexOf("this.pendingArmyMovementVisualLifecycleDisposers.set", cancelStart);
     const cancelHandler = lifecycleBody.slice(cancelStart, cancelEnd);
 
-    expect(cancelHandler).toContain("this.completePendingArmyMovementAuthoritativeResolution(entityId)");
-    expect(cancelHandler.indexOf("this.completePendingArmyMovementAuthoritativeResolution(entityId)")).toBeLessThan(
+    expect(cancelHandler).toContain("this.completePendingArmyMovementVisuals(entityId)");
+    expect(cancelHandler.indexOf("this.completePendingArmyMovementVisuals(entityId)")).toBeLessThan(
       cancelHandler.indexOf("this.disposePendingMovementVisualLifecycle(entityId)"),
     );
+  });
+
+  it("finalizes only after both transaction and visual completion regardless of their order", () => {
+    const source = readSource("src/three/scenes/worldmap.tsx");
+    const deleteTxStart = source.indexOf("private deletePendingArmyMovementTx(");
+    const deleteTxEnd = source.indexOf("private clearArmyMovementTxEntriesForEntity(", deleteTxStart);
+    const deleteTxBody = source.slice(deleteTxStart, deleteTxEnd);
+    const completeVisualsStart = source.indexOf("private completePendingArmyMovementVisuals(");
+    const completeVisualsEnd = source.indexOf("private installPendingMovementVisualLifecycle(", completeVisualsStart);
+    const completeVisualsBody = source.slice(completeVisualsStart, completeVisualsEnd);
+
+    expect(source).toContain("visualsCompleted: boolean");
+    expect(deleteTxBody).toContain("this.finalizePendingArmyMovementIfResolved(entityId, record)");
+    expect(completeVisualsBody).toContain("record.movement.visualsCompleted = true");
+    expect(completeVisualsBody).toContain("movement.visualsCompleted && !hasUnconfirmedMovementTransaction(record)");
   });
 
   it("keeps travel effects pending after movement-start handoff retains target handles", () => {
@@ -97,21 +112,19 @@ describe("Worldmap pending movement visual handoff wiring", () => {
     expect(helperBody).toContain("this.getPendingArmyMovement(entityId)?.movement");
   });
 
-  it("does not register tx hashes after authoritative updates already cleared pending movement", () => {
+  it("registers tx hashes even when an authoritative update wins the response race", () => {
     const source = readSource("src/three/scenes/worldmap.tsx");
     const txResponseStart = source.indexOf(".then((result: any) => {");
     expect(txResponseStart).toBeGreaterThan(-1);
 
     const catchStart = source.indexOf(".catch((e) => {", txResponseStart);
     const body = source.slice(txResponseStart, catchStart);
-    const pendingGuard = body.indexOf("this.isArmyMovementPending(selectedEntityId)");
     const submittedTxRegistration = body.indexOf(
       "this.handleSubmittedArmyMovementTx({ entityId: selectedEntityId, txHash })",
     );
 
-    expect(pendingGuard).toBeGreaterThan(-1);
     expect(submittedTxRegistration).toBeGreaterThan(-1);
-    expect(pendingGuard).toBeLessThan(submittedTxRegistration);
+    expect(body).not.toContain("txHash && this.isArmyMovementPending(selectedEntityId)");
   });
 
   it("does not apply submitted movement plans after authoritative updates already cleared pending movement", () => {

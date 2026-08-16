@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { instrumentGpuBackendHotPaths } from "./gpu-backend-hot-path-instrumentation";
+import { instrumentGpuBackendHotPaths, startGpuBackendFrame } from "./gpu-backend-hot-path-instrumentation";
 
 describe("GPU backend hot-path instrumentation", () => {
   it("attributes texture upload time by texture identity and dimensions per report window", () => {
@@ -36,5 +36,57 @@ describe("GPU backend hot-path instrumentation", () => {
     instrumentGpuBackendHotPaths(backend);
 
     expect(backend.updateTexture).toBe(wrapped);
+  });
+
+  it("attributes backend work to a single spike frame", () => {
+    const texture = {
+      image: { width: 1024, height: 1024 },
+      name: "structure-label",
+    };
+    const backend = {
+      createAttribute: vi.fn(),
+      createRenderPipeline: vi.fn(),
+      updateTexture: vi.fn(),
+    };
+    const warn = vi.fn();
+    const timestamps = [0, 1, 13, 14, 20, 21, 26];
+
+    instrumentGpuBackendHotPaths(backend, {
+      now: () => timestamps.shift() ?? 26,
+      reportIntervalMs: 10_000,
+      warn,
+    });
+    startGpuBackendFrame(0, warn);
+
+    backend.createRenderPipeline();
+    backend.createAttribute();
+    backend.updateTexture(texture);
+    startGpuBackendFrame(87, warn);
+
+    expect(warn).toHaveBeenCalledWith(
+      "[GpuBackendPerf] spike 87ms: createRenderPipeline=1x/12ms, createAttribute=1x/6.0ms, updateTexture=1x/5.0ms; textures=structure-label(1024x1024)=1x/5.0ms",
+    );
+  });
+
+  it("does no reporting work for a frame within budget and resets samples between frames", () => {
+    const backend = {
+      createBindings: vi.fn(),
+    };
+    const warn = vi.fn();
+    const timestamps = [1, 3];
+
+    instrumentGpuBackendHotPaths(backend, {
+      now: () => timestamps.shift() ?? 3,
+      reportIntervalMs: 10_000,
+      warn,
+    });
+    startGpuBackendFrame(0, warn);
+    backend.createBindings();
+
+    startGpuBackendFrame(20, warn);
+    startGpuBackendFrame(60, warn);
+
+    expect(warn).toHaveBeenCalledOnce();
+    expect(warn).toHaveBeenCalledWith("[GpuBackendPerf] spike 40ms: no GPU backend hot paths");
   });
 });

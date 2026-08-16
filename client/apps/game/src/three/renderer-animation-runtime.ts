@@ -55,11 +55,11 @@ export function resolveRendererPacedFps(input: {
   lastInteractionTime: number;
   profile: Pick<RenderProfile, "pacing">;
 }): number | null {
-  const idleFps = input.profile.pacing.idleFps;
-  if (!idleFps || input.currentTime - input.lastInteractionTime < input.profile.pacing.idleAfterMs) {
-    return null;
+  const { idleFps, idleAfterMs, maxFps } = input.profile.pacing;
+  if (!idleFps || input.currentTime - input.lastInteractionTime < idleAfterMs) {
+    return maxFps;
   }
-  return idleFps;
+  return Math.min(idleFps, maxFps);
 }
 
 function shouldStopRendererAnimation(input: Pick<RunRendererAnimationTickInput, "isDestroyed">): boolean {

@@ -11,6 +11,7 @@ import { getComponentEntities, removeComponent } from "@dojoengine/recs";
 import { setEntities } from "@dojoengine/state";
 import type { Clause, Entity as ToriiEntity } from "@dojoengine/torii-wasm/types";
 import { filterEntityToActiveGameScope } from "./game-scope-entity-filter";
+import { createRecoveringToriiEventSubscription } from "./recovering-torii-event-subscription";
 import { observeToriiStreamLifecycle } from "./torii-stream-lifecycle-observer";
 import { setupToriiSubscriptions, type ToriiSubscriptionSetupTimeoutInfo } from "./torii-subscription-setup";
 
@@ -29,6 +30,8 @@ interface CreateGamewideSyncSessionInput {
   onLiveUpdate?: (kind: "entity" | "event") => void;
   onMetrics?: (metrics: GameSyncRuntimeMetrics) => void;
   onStreamClose?: () => void;
+  onEventStreamLost?: (reason: string) => void;
+  onEventStreamRestored?: () => void;
 }
 
 const qualifiedComponentName = (component: Component): string | null => {
@@ -155,17 +158,22 @@ export const createGamewideSyncSession = (input: CreateGamewideSyncSessionInput)
               handlers.onEntity(scoped);
             }),
           createEventSubscription: () =>
-            client.onEventMessageUpdated(input.eventClause, (event: ToriiEntity) => handlers.onEvent(event)),
+            createRecoveringToriiEventSubscription({
+              createSubscription: () =>
+                client.onEventMessageUpdated(input.eventClause, (event: ToriiEntity) => handlers.onEvent(event)),
+              onLost: (reason) => input.onEventStreamLost?.(reason),
+              onRestored: () => input.onEventStreamRestored?.(),
+              attemptTimeoutMs: input.subscriptionSetupTimeoutMs,
+            }),
           subscriptionSetupTimeoutMs: input.subscriptionSetupTimeoutMs,
           onSubscriptionSetupTimeout: input.onSubscriptionSetupTimeout,
         });
-        const detachLifecycle = [
-          observeToriiStreamLifecycle(subscriptions.entitySubscription, () => input.onStreamClose?.()),
-          observeToriiStreamLifecycle(subscriptions.eventSubscription, () => input.onStreamClose?.()),
-        ];
+        const detachLifecycle = observeToriiStreamLifecycle(subscriptions.entitySubscription, () =>
+          input.onStreamClose?.(),
+        );
         return {
           cancel() {
-            detachLifecycle.forEach((detach) => detach());
+            detachLifecycle();
             subscriptions.cancel();
           },
         };

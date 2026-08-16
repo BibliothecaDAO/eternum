@@ -19,4 +19,18 @@ describe("Worldmap ready signal", () => {
       source.indexOf("this.announceWorldmapSceneReady()"),
     );
   });
+
+  it("starts local-scene prewarms only after announcing worldmap readiness", () => {
+    const source = readSource("src/three/scenes/worldmap.tsx");
+    const methodStart = source.indexOf("private announceWorldmapSceneReady()");
+    const methodEnd = source.indexOf("private prepareWarpTravelInitialSetup", methodStart);
+    const body = source.slice(methodStart, methodEnd);
+
+    expect(body.indexOf("markWorldmapReady")).toBeLessThan(body.indexOf("prewarmHexceptionPipelineInBackground"));
+    expect(body.indexOf("markWorldmapReady")).toBeLessThan(body.indexOf("prewarmFastTravelPipelineInBackground"));
+    expect(body).toContain("this.sceneManager.getSceneByName(SceneName.Hexception)");
+    expect(body).toContain("void hexceptionScene.prewarmPipeline().catch");
+    expect(body).toContain("this.sceneManager.getSceneByName(SceneName.FastTravel)");
+    expect(body).toContain("void fastTravelScene.prewarmPipeline().catch");
+  });
 });

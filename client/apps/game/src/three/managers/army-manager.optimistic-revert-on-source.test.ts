@@ -12,20 +12,20 @@ function readSource(): string {
  * Discovery-revert coverage. `explorer_explore` on a tile that rolls a treasure
  * (Camp, Mine, Hyperstructure, …) sets `occupy_destination = false` and reverts
  * `explorer.coord = from` on-chain (troop_movement.cairo:193). The optimistic
- * lock must recognise this by treating an incoming position that matches the
- * locked source — not just the target — as a valid authoritative update, so
- * the visual can reconcile back to `from` instead of staying stuck on the
- * camp tile until the TTL expires.
+ * lock must recognise this without immediately accepting a stale echo from a
+ * preceding move. Source matches are held briefly and only rewind when no
+ * matching target update arrives during the hold.
  */
 describe("ArmyManager optimistic revert-on-source", () => {
   it("stores normalizedSource alongside normalizedTarget in the lock type", () => {
     const source = readSource();
 
-    const fieldStart = source.indexOf("private optimisticPositionLocks: Map<");
-    expect(fieldStart).toBeGreaterThan(0);
-    const declaration = source.slice(fieldStart, fieldStart + 500);
+    const typeStart = source.indexOf("interface OptimisticPositionLock");
+    expect(typeStart).toBeGreaterThan(0);
+    const declaration = source.slice(typeStart, typeStart + 300);
     expect(declaration).toContain("normalizedSource");
     expect(declaration).toContain("normalizedTarget");
+    expect(source).toContain("private optimisticPositionLocks: Map<ID, OptimisticPositionLock>");
   });
 
   it("applyMovementPlan writes both sourceNormalized and targetNormalized into the lock", () => {
@@ -45,7 +45,7 @@ describe("ArmyManager optimistic revert-on-source", () => {
     expect(setCall).toContain("targetNormalized");
   });
 
-  it("shouldSkipStalePositionUpdate releases the lock and returns false when incoming matches normalizedSource", () => {
+  it("shouldSkipStalePositionUpdate defers an incoming normalizedSource match", () => {
     const source = readSource();
 
     const methodStart = source.indexOf(
@@ -56,9 +56,27 @@ describe("ArmyManager optimistic revert-on-source", () => {
     const body = source.slice(methodStart, methodEnd);
 
     expect(body).toContain("normalizedSource");
+    expect(body).toContain("this.deferSourceMatchRewind(entityId, incomingNormalized, lock)");
+    expect(body).toMatch(/matchesSource[\s\S]{0,500}?return true/);
   });
 
-  it("shouldSkipStalePositionUpdate rewinds the optimistic tween on source match", () => {
+  it("honors the source match only after the hold window", () => {
+    const source = readSource();
+
+    const methodStart = source.indexOf("private deferSourceMatchRewind(");
+    expect(methodStart).toBeGreaterThan(0);
+    const methodEnd = source.indexOf("\n  private clearDeferredSourceMatch", methodStart + 20);
+    const body = source.slice(methodStart, methodEnd);
+
+    expect(body).toContain("OPTIMISTIC_SOURCE_MATCH_HOLD_MS");
+    expect(body).toContain('"source_match_honored"');
+    expect(body.indexOf("this.runMovementVisualCancelListeners")).toBeLessThan(
+      body.indexOf("this.rewindOptimisticMovement(entityId)"),
+    );
+    expect(body).toContain("this.rewindOptimisticMovement(entityId)");
+  });
+
+  it("discards a held source echo when the target follows", () => {
     const source = readSource();
 
     const methodStart = source.indexOf(
@@ -68,23 +86,9 @@ describe("ArmyManager optimistic revert-on-source", () => {
     const methodEnd = source.indexOf("\n  public ", methodStart + 20);
     const body = source.slice(methodStart, methodEnd);
 
-    // The projection returns to the RECS source immediately, so the in-flight
-    // presentation must rewind too instead of parking on the camp tile.
-    expect(body).toMatch(/matchesSource[\s\S]{0,1200}?rewindOptimisticMovement\(entityId\)/);
-  });
-
-  it("shouldSkipStalePositionUpdate does not rewind on target match", () => {
-    const source = readSource();
-
-    const methodStart = source.indexOf(
-      "public shouldSkipStalePositionUpdate(entityId: ID, incomingNormalized: { x: number; y: number }): boolean",
-    );
-    expect(methodStart).toBeGreaterThan(0);
-    const methodEnd = source.indexOf("\n  public ", methodStart + 20);
-    const body = source.slice(methodStart, methodEnd);
-
-    // Target match is the success path — no rewind; the tween completes naturally.
     const targetBlock = body.slice(body.indexOf("matchesTarget"), body.indexOf("matchesSource"));
     expect(targetBlock).not.toContain("rewindOptimisticMovement");
+    expect(targetBlock).toContain('"source_match_discarded_stale"');
+    expect(targetBlock).toContain("this.clearDeferredSourceMatch(lock)");
   });
 });

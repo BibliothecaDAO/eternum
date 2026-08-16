@@ -20,6 +20,7 @@ import { loadBiomeGltf } from "@/three/utils/biome-gltf-cache";
 import type { GLTF } from "three/addons/loaders/GLTFLoader.js";
 import { renderProfile, type RenderVisualProfile } from "@/three/render-profile";
 import { ShadowRefreshPolicy } from "@/three/shadow-refresh-policy";
+import { runTimeboxedPipelinePrewarm } from "@/three/pipeline-prewarm-runtime";
 import { LeftView } from "@/types";
 import { IS_FLAT_MODE } from "@/ui/config";
 import { type SetupResult } from "@bibliothecadao/dojo";
@@ -72,7 +73,7 @@ import { resolveWorldmapZoomBand } from "./worldmap-zoom/worldmap-zoom-band-poli
 
 export { CameraView } from "./camera-view";
 type CameraTransitionStatus = "idle" | "transitioning";
-type PipelinePrewarmer = (scene: Object3D, camera: Camera) => Promise<void>;
+type PipelinePrewarmer = (scene: Object3D, camera: Camera, targetScene?: Object3D) => Promise<void>;
 
 export abstract class HexagonScene {
   protected scene!: Scene;
@@ -791,17 +792,28 @@ export abstract class HexagonScene {
     return this.pipelinePrewarmPromise;
   }
 
-  private async runPipelinePrewarm(prewarmer: PipelinePrewarmer): Promise<void> {
-    await Promise.allSettled(this.modelLoadPromises);
-    const previousView = this.currentCameraView;
-    const warmupCamera = this.createPipelineWarmupCamera();
-    this.applyPipelineWarmupView(CameraView.Close);
-
-    try {
-      await prewarmer(this.scene, warmupCamera);
-    } finally {
-      this.applyPipelineWarmupView(previousView);
+  public prewarmObjectPipeline(object: Object3D): Promise<void> {
+    if (!this.pipelinePrewarmer) {
+      return Promise.resolve();
     }
+
+    return this.pipelinePrewarmer(object, this.camera, this.scene);
+  }
+
+  private async runPipelinePrewarm(prewarmer: PipelinePrewarmer): Promise<void> {
+    await runTimeboxedPipelinePrewarm({
+      prepare: async () => {
+        await Promise.allSettled(this.modelLoadPromises);
+      },
+      enterWarmupView: () => this.enterPipelineWarmupView(),
+      compile: () => prewarmer(this.scene, this.createPipelineWarmupCamera()),
+    });
+  }
+
+  private enterPipelineWarmupView(): () => void {
+    const previousView = this.currentCameraView;
+    this.applyPipelineWarmupView(CameraView.Close);
+    return () => this.applyPipelineWarmupView(previousView);
   }
 
   private createPipelineWarmupCamera(): PerspectiveCamera {
@@ -1096,7 +1108,7 @@ export abstract class HexagonScene {
     mesh.rotation.set(Math.PI / 2, 0, Math.PI);
     const { x, z } = getWorldPositionForHex({ col: 185, row: 150 });
     mesh.position.set(x, -0.05, z);
-    mesh.receiveShadow = true;
+    mesh.receiveShadow = false;
     // disable raycast
     mesh.raycast = () => {};
 

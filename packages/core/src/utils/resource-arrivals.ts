@@ -8,7 +8,7 @@ import {
   TroopTier,
   TroopType,
 } from "@bibliothecadao/types";
-import { ComponentValue, getComponentValue, HasValue, runQuery } from "@dojoengine/recs";
+import { ComponentValue } from "@dojoengine/recs";
 import { configManager } from "../managers";
 import { isMilitaryResource } from "./resources";
 import { divideByPrecision } from "./utils";
@@ -116,22 +116,6 @@ export const summarizeIncomingTroopArrivals = (
   });
 
   return arrivalsByStructure;
-};
-
-export const getAllArrivals = (structureEntityIds: ID[], components: ClientComponents) => {
-  const arrivals: ComponentValue<ClientComponents["ResourceArrival"]["schema"]>[] = [];
-
-  for (const structureEntityId of structureEntityIds) {
-    const arrivalEntities = runQuery([HasValue(components.ResourceArrival, { structure_id: structureEntityId })]);
-    arrivalEntities.forEach((arrivalsEntityId) => {
-      const arrival = getComponentValue(components.ResourceArrival, arrivalsEntityId);
-      if (arrival) {
-        arrivals.push(arrival);
-      }
-    });
-  }
-
-  return formatArrivals(arrivals);
 };
 
 export const formatArrivals = (arrivals: ComponentValue<ClientComponents["ResourceArrival"]["schema"]>[]) => {

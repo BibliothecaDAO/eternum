@@ -100,6 +100,20 @@ const recordGamewideLiveUpdate = (): void => {
   connection.recordSpatialUpdate();
 };
 
+const recordEventStreamLost = (reason: string): void => {
+  console.warn(`[Sync] event stream lost: ${reason}`);
+  const connection = useConnectionStore.getState();
+  connection.recordStreamClose();
+  connection.setGlobalStatus("reconnecting");
+};
+
+const recordEventStreamRestored = (): void => {
+  console.info("[Sync] event stream restored");
+  const connection = useConnectionStore.getState();
+  connection.recordGlobalHandshake();
+  connection.setGlobalStatus("connected");
+};
+
 let pendingGamewideMetrics: GameSyncRuntimeMetrics | null = null;
 let gamewideMetricsLogTimer: ReturnType<typeof setTimeout> | null = null;
 
@@ -144,6 +158,8 @@ const createActiveGamewideSyncSession = (input: {
     onLiveUpdate: recordGamewideLiveUpdate,
     onMetrics: reportGamewideSyncMetrics,
     onStreamClose: () => useConnectionStore.getState().recordStreamClose(),
+    onEventStreamLost: recordEventStreamLost,
+    onEventStreamRestored: recordEventStreamRestored,
   });
 };
 

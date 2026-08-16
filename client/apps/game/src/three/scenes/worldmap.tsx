@@ -357,6 +357,7 @@ import { finalizeWarpTravelChunkSwitch } from "./warp-travel-chunk-switch-commit
 import { resolveSameChunkRefreshCommit } from "./worldmap-same-chunk-refresh-commit";
 import { runWarpTravelManagerFanout } from "./warp-travel-manager-fanout";
 import { WarpTravel, type WarpTravelLifecycleAdapter } from "./warp-travel";
+import { completeWorldmapInteractiveRefresh, type WorldmapWarpTravelPhase } from "./worldmap-warp-travel-refresh";
 import { resolveWorldmapChunkHysteresis } from "./worldmap-chunk-hysteresis-policy";
 import {
   prepareWorldmapChunkPresentation,
@@ -591,10 +592,16 @@ interface PendingArmyMovement {
     targetKey: string;
     handedOffToVisuals: boolean;
     awaitingVisualCompletion: boolean;
-    fallbackTimeout?: ReturnType<typeof setTimeout>;
+    visualsCompleted: boolean;
   };
+  submissionPending: boolean;
   txHashes: Set<string>;
+  fallbackStartedAtMs?: number;
+  fallbackTimeout?: ReturnType<typeof setTimeout>;
 }
+
+const hasUnconfirmedMovementTransaction = (record: PendingArmyMovement | undefined): boolean =>
+  record?.submissionPending === true || (record?.txHashes.size ?? 0) > 0;
 
 export default class WorldmapScene extends WarpTravel {
   private readonly interactionDebugInstanceId = allocateWorldmapInteractionDebugInstanceId();
@@ -659,7 +666,7 @@ export default class WorldmapScene extends WarpTravel {
   private totalStructures: number = 0;
 
   private currentChunk: string = "null";
-  private chunkTransitionRuntimeState = createWorldmapChunkTransitionRuntimeState<Promise<void>>();
+  private chunkTransitionRuntimeState = createWorldmapChunkTransitionRuntimeState();
   private reconnectRefreshQueueState = createReconnectRefreshQueueState();
   private chunkRefreshRuntimeState = createWorldmapChunkRefreshRuntimeState();
   private pendingChunkRefreshForce = false;
@@ -807,7 +814,7 @@ export default class WorldmapScene extends WarpTravel {
   private handleTransactionComplete?: (...args: any[]) => void;
   private handleTransactionFailed?: (...args: any[]) => void;
   private handleTransactionProgress?: (...args: any[]) => void;
-  private readonly authoritativePendingArmyMovementMs = 30_000;
+  private readonly authoritativePendingArmyMovementMs = 8_000;
   private readonly cameraTargetHexUpdateIntervalMs = 100;
   private readonly cameraDistanceUpdateEpsilon = 0.5;
   private armySelectionRecoveryInFlight: Set<ID> = new Set();
@@ -1134,7 +1141,9 @@ export default class WorldmapScene extends WarpTravel {
   private handleSubmittedArmyMovementTx(input: { entityId: ID; txHash: string }): void {
     const { entityId, txHash } = input;
 
-    this.upsertPendingArmyMovement(entityId).txHashes.add(txHash);
+    const record = this.upsertPendingArmyMovement(entityId);
+    record.submissionPending = false;
+    record.txHashes.add(txHash);
     recordArmyMovementLatencyPhase({
       phase: "tx_submitted",
       source: "worldmap",
@@ -1244,6 +1253,7 @@ export default class WorldmapScene extends WarpTravel {
         continue;
       }
 
+      this.finalizePendingArmyMovementIfResolved(entityId, record);
       this.prunePendingArmyMovementIfEmpty(entityId, record);
       return entityId;
     }
@@ -1257,14 +1267,16 @@ export default class WorldmapScene extends WarpTravel {
       return;
     }
 
+    record.submissionPending = false;
     record.txHashes.clear();
     this.prunePendingArmyMovementIfEmpty(entityId, record);
   }
 
   private prunePendingArmyMovementIfEmpty(entityId: ID, record: PendingArmyMovement): void {
-    if (!record.movement && record.txHashes.size === 0) {
-      this.pendingArmyMovements.delete(entityId);
-    }
+    if (record.movement || record.submissionPending || record.txHashes.size > 0) return;
+
+    if (record.fallbackTimeout !== undefined) clearTimeout(record.fallbackTimeout);
+    this.pendingArmyMovements.delete(entityId);
   }
 
   override applyRenderVisualProfile(features: RenderVisualProfile): void {
@@ -1300,6 +1312,7 @@ export default class WorldmapScene extends WarpTravel {
       this.visibilityManager,
       this.chunkSize,
       this.chunkWorkQueue,
+      (object) => this.requestNewModelPipelinePrewarm(object),
     );
     this.arrivalGhostManager = new ArrivalGhostManager(this.scene, {
       chunkStride: this.chunkSize,
@@ -1330,6 +1343,7 @@ export default class WorldmapScene extends WarpTravel {
       this.visibilityManager,
       this.chunkSize,
       this.chunkWorkQueue,
+      (object) => this.requestNewModelPipelinePrewarm(object),
     );
     this.reservedHyperstructureManager = new ReservedHyperstructureManager(this.scene, this.worldSpatialProjection);
     this.chestManager = new ChestManager(
@@ -1352,6 +1366,24 @@ export default class WorldmapScene extends WarpTravel {
     // The chunk integration adds overhead via lifecycle callbacks on every entity update.
     // Uncomment if you need advanced chunk lifecycle debugging/tracking features.
     // this.initializeChunkIntegration();
+  }
+
+  private requestNewModelPipelinePrewarm(object: Object3D): void {
+    void this.chunkWorkQueue
+      .schedule("prefetch", () => {
+        // Launch compilation from the shared queue without awaiting it. The
+        // renderer compiles object pipelines incrementally; awaiting here would
+        // head-of-line block visible terrain and manager work behind a cold GLB.
+        const prewarm = this.prewarmObjectPipeline(object);
+        void prewarm.catch((error) => {
+          console.warn("[WorldMap] New model pipeline prewarm failed", error);
+        });
+      })
+      .catch((error) => {
+        if (!isFrameBudgetWorkQueueDisposedError(error)) {
+          console.warn("[WorldMap] Failed to schedule new model pipeline prewarm", error);
+        }
+      });
   }
 
   private configureWorldmapRecoveryLifecycle(): void {
@@ -2904,8 +2936,6 @@ export default class WorldmapScene extends WarpTravel {
         }),
       );
 
-      // Monitor memory usage before army movement action
-      this.memoryMonitor?.getCurrentStats(`worldmap-moveArmy-start-${selectedEntityId}`);
       this.queuePendingMovementStamina({
         entityId: selectedEntityId,
         currentStamina: movementStamina.currentStamina,
@@ -2932,19 +2962,18 @@ export default class WorldmapScene extends WarpTravel {
               txHash,
             });
           }
-          // Torii can reconcile the authoritative target before the RPC promise
-          // returns. Avoid re-registering tx lifecycle for a move we already
-          // resolved from the stream.
-          if (txHash && this.isArmyMovementPending(selectedEntityId)) {
+          // Transaction ownership outlives the visual/stream resolution. A
+          // preconfirmed Torii echo may clear movement before this promise
+          // returns, but input must still wait for the provider confirmation.
+          if (txHash) {
             this.handleSubmittedArmyMovementTx({ entityId: selectedEntityId, txHash });
           }
-          // Monitor memory usage after army movement completion
-          this.memoryMonitor?.getCurrentStats(`worldmap-moveArmy-complete-${selectedEntityId}`);
         })
         .catch((e) => {
           // Transaction failed at submission, remove from pending and cleanup
           this.pendingMovementPlans.delete(selectedEntityId);
           this.rewindOptimisticMovement(selectedEntityId);
+          this.clearArmyMovementTxEntriesForEntity(selectedEntityId);
           this.clearPendingArmyMovement(selectedEntityId);
           useArmyStaminaSourceStore.getState().clearPendingStaminaSource(selectedEntityId);
           this.disposePendingMovementVisualLifecycle(selectedEntityId);
@@ -3166,10 +3195,6 @@ export default class WorldmapScene extends WarpTravel {
   ): void {
     const record = this.pendingArmyMovements.get(entityId);
     if (record) {
-      if (record.movement?.fallbackTimeout !== undefined) {
-        clearTimeout(record.movement.fallbackTimeout);
-      }
-
       record.movement = undefined;
       this.prunePendingArmyMovementIfEmpty(entityId, record);
     }
@@ -3201,24 +3226,32 @@ export default class WorldmapScene extends WarpTravel {
 
     this.pendingMovementPlans.delete(entityId);
     this.clearPendingArmyMovement(entityId, "authoritative_reconciled");
-    // Pair the tx-map clear with the rest of the happy-path cleanup: entries were
-    // otherwise only removed by matching the receipt hash, and a hash-format
-    // mismatch (or a hash-less success payload) locked the army out of movement
-    // selection forever.
-    this.clearArmyMovementTxEntriesForEntity(entityId);
     useArmyStaminaSourceStore.getState().clearPendingStaminaSource(entityId);
     this.disposePendingMovementVisualLifecycle(entityId);
     this.arrivalGhostManager.clearArrivalGhost(entityId, "arrived");
   }
 
-  private completePendingArmyMovementAuthoritativeResolution(entityId: ID): void {
-    if (!this.getPendingArmyMovement(entityId)?.movement?.awaitingVisualCompletion) {
-      return;
-    }
+  private completePendingArmyMovementVisuals(entityId: ID): void {
+    const record = this.getPendingArmyMovement(entityId);
+    if (!record?.movement) return;
+
+    record.movement.visualsCompleted = true;
+    this.finalizePendingArmyMovementIfResolved(entityId, record);
+  }
+
+  private finalizePendingArmyMovementIfResolved(entityId: ID, record: PendingArmyMovement): void {
+    const movement = record.movement;
+    if (!movement) return;
+
+    const resolvedByAuthoritativeTarget = movement.awaitingVisualCompletion;
+    const resolvedByTransactionAndVisuals = movement.visualsCompleted && !hasUnconfirmedMovementTransaction(record);
+    if (!resolvedByAuthoritativeTarget && !resolvedByTransactionAndVisuals) return;
 
     this.pendingMovementPlans.delete(entityId);
-    this.clearPendingArmyMovement(entityId, "authoritative_reconciled");
-    this.clearArmyMovementTxEntriesForEntity(entityId);
+    this.clearPendingArmyMovement(
+      entityId,
+      resolvedByAuthoritativeTarget ? "authoritative_reconciled" : "cleanup_requested",
+    );
     useArmyStaminaSourceStore.getState().clearPendingStaminaSource(entityId);
   }
 
@@ -3248,7 +3281,7 @@ export default class WorldmapScene extends WarpTravel {
       if (shouldAnimateArrivalGhostOnCompletion) {
         this.arrivalGhostManager.resolveArrivalGhost(entityId);
       }
-      this.completePendingArmyMovementAuthoritativeResolution(entityId);
+      this.completePendingArmyMovementVisuals(entityId);
       this.disposePendingMovementVisualLifecycle(entityId);
     });
     const disposeAuthoritativeReconcile = this.armyManager.onAuthoritativeReconciliation(entityId, () => {
@@ -3266,7 +3299,7 @@ export default class WorldmapScene extends WarpTravel {
       }
     });
     const disposeMovementVisualCancel = this.armyManager.onMovementVisualCancel(entityId, () => {
-      this.completePendingArmyMovementAuthoritativeResolution(entityId);
+      this.completePendingArmyMovementVisuals(entityId);
       this.clearEvictedArmyMovementVisuals(entityId);
       this.disposePendingMovementVisualLifecycle(entityId);
     });
@@ -3296,9 +3329,9 @@ export default class WorldmapScene extends WarpTravel {
       targetKey,
       handedOffToVisuals: false,
       awaitingVisualCompletion: false,
-      // Carried over so schedulePendingArmyMovementFallback can clear it before re-arming.
-      fallbackTimeout: record.movement?.fallbackTimeout,
+      visualsCompleted: false,
     };
+    record.submissionPending = true;
     this.clearMovementActionOptionsForSelectedArmy(entityId);
     this.schedulePendingArmyMovementFallback(entityId);
   }
@@ -3310,7 +3343,7 @@ export default class WorldmapScene extends WarpTravel {
   private upsertPendingArmyMovement(entityId: ID): PendingArmyMovement {
     let record = this.pendingArmyMovements.get(entityId);
     if (!record) {
-      record = { txHashes: new Set() };
+      record = { submissionPending: false, txHashes: new Set() };
       this.pendingArmyMovements.set(entityId, record);
     }
 
@@ -3656,14 +3689,13 @@ export default class WorldmapScene extends WarpTravel {
   private isArmyMovementActionUnavailable(entityId: ID): boolean {
     return (
       this.isArmyMovementPending(entityId) ||
-      this.getPendingArmyMovement(entityId)?.movement?.awaitingVisualCompletion === true ||
-      this.hasPendingMovementTransactionForArmy(entityId) ||
-      this.armyManager.hasUnresolvedOptimisticMovement(entityId)
+      this.armyManager.isArmyMoving(entityId) ||
+      this.hasPendingMovementTransactionForArmy(entityId)
     );
   }
 
   private hasPendingMovementTransactionForArmy(entityId: ID): boolean {
-    return (this.getPendingArmyMovement(entityId)?.txHashes.size ?? 0) > 0;
+    return hasUnconfirmedMovementTransaction(this.getPendingArmyMovement(entityId));
   }
 
   private hasEligibleArmyForTabCycle(): boolean {
@@ -3673,21 +3705,23 @@ export default class WorldmapScene extends WarpTravel {
   }
 
   private schedulePendingArmyMovementFallback(entityId: ID): void {
-    const movement = this.getPendingArmyMovement(entityId)?.movement;
-    if (!movement) {
-      return;
+    const record = this.getPendingArmyMovement(entityId);
+    const movement = record?.movement;
+    if (!record || !movement) return;
+
+    if (record.fallbackTimeout !== undefined) {
+      clearTimeout(record.fallbackTimeout);
     }
 
-    if (movement.fallbackTimeout !== undefined) {
-      clearTimeout(movement.fallbackTimeout);
-    }
-
-    movement.fallbackTimeout = setTimeout(() => {
-      const record = this.getPendingArmyMovement(entityId);
+    record.fallbackStartedAtMs = movement.startedAt;
+    record.fallbackTimeout = setTimeout(() => {
+      const pendingRecord = this.getPendingArmyMovement(entityId);
+      if (pendingRecord) pendingRecord.fallbackTimeout = undefined;
+      const transactionStillUnconfirmed = hasUnconfirmedMovementTransaction(pendingRecord);
       const fallbackPlan = resolvePendingArmyMovementFallbackPlan({
         hasPendingMovement: this.isArmyMovementPending(entityId),
-        hasPendingMovementResolution: record?.movement !== undefined,
-        pendingMovementStartedAtMs: record?.movement?.startedAt,
+        hasPendingMovementResolution: pendingRecord?.movement !== undefined || transactionStillUnconfirmed,
+        pendingMovementStartedAtMs: pendingRecord?.fallbackStartedAtMs,
         nowMs: Date.now(),
         staleAfterMs: this.authoritativePendingArmyMovementMs,
       });
@@ -3703,7 +3737,7 @@ export default class WorldmapScene extends WarpTravel {
 
       this.pendingMovementPlans.delete(entityId);
       this.clearArmyMovementTxEntriesForEntity(entityId);
-      this.rewindOptimisticMovement(entityId);
+      if (transactionStillUnconfirmed) this.rewindOptimisticMovement(entityId);
       this.clearPendingArmyMovement(entityId);
       useArmyStaminaSourceStore.getState().clearPendingStaminaSource(entityId);
       this.disposePendingMovementVisualLifecycle(entityId);
@@ -3733,7 +3767,6 @@ export default class WorldmapScene extends WarpTravel {
     // Check if army has pending movement transactions
     const selectionPlan = resolvePendingArmyMovementSelectionPlan({
       hasPendingMovement: this.isArmyMovementPending(selectedEntityId),
-      isOptimisticMovementActive: this.armyManager.hasUnresolvedOptimisticMovement(selectedEntityId),
       pendingMovementStartedAtMs: this.getPendingArmyMovement(selectedEntityId)?.movement?.startedAt,
       nowMs: Date.now(),
       staleAfterMs: this.authoritativePendingArmyMovementMs,
@@ -4185,11 +4218,30 @@ export default class WorldmapScene extends WarpTravel {
     usePlayRouteReadinessStore.getState().markWorldmapReady(getCurrentPlayRouteBootToken());
     this.retryPendingHoverLabelRecovery("scene_ready");
 
-    if (typeof window === "undefined") {
-      return;
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new Event(WORLDMAP_SCENE_READY_EVENT));
     }
 
-    window.dispatchEvent(new Event(WORLDMAP_SCENE_READY_EVENT));
+    this.prewarmHexceptionPipelineInBackground();
+    this.prewarmFastTravelPipelineInBackground();
+  }
+
+  private prewarmHexceptionPipelineInBackground(): void {
+    const hexceptionScene = this.sceneManager.getSceneByName(SceneName.Hexception);
+    if (!hexceptionScene) return;
+
+    void hexceptionScene.prewarmPipeline().catch((error) => {
+      console.warn("[GpuBackendPerf] Hexception pipeline prewarm failed", error);
+    });
+  }
+
+  private prewarmFastTravelPipelineInBackground(): void {
+    const fastTravelScene = this.sceneManager.getSceneByName(SceneName.FastTravel);
+    if (!fastTravelScene) return;
+
+    void fastTravelScene.prewarmPipeline().catch((error) => {
+      console.warn("[GpuBackendPerf] Fast-travel pipeline prewarm failed", error);
+    });
   }
 
   private prepareWarpTravelInitialSetup(): void {
@@ -4221,13 +4273,13 @@ export default class WorldmapScene extends WarpTravel {
   }
 
   private async refreshWarpTravelScene(): Promise<void> {
-    const isInitialSetup = !this.hasInitialized;
-    const didRefresh = await this.refreshVisibleChunksForWarpTravel();
-    if (!didRefresh) {
-      throw new Error("World map did not finish its initial interactive refresh.");
-    }
+    const phase: WorldmapWarpTravelPhase = this.hasInitialized ? "resume" : "initial";
+    await completeWorldmapInteractiveRefresh({
+      phase,
+      refresh: () => this.refreshVisibleChunksForWarpTravel(),
+    });
 
-    if (isInitialSetup) {
+    if (phase === "initial") {
       await this.awaitInitialTerrainConvergence();
       this.skipNextUrlRefreshAfterInitialConvergence = true;
     }
@@ -8254,9 +8306,9 @@ export default class WorldmapScene extends WarpTravel {
             this.handleChunkTransitionHardTimeout("switch_chunk", chunkKey, info, transitionToken);
             return false;
           },
-          onResolved: () => {
+          onResolved: (committed) => {
             this.drainQueuedReconnectRefresh();
-            return true;
+            return committed;
           },
           state: this.chunkTransitionRuntimeState,
           transitionPromise: this.performChunkSwitch(
@@ -8296,9 +8348,9 @@ export default class WorldmapScene extends WarpTravel {
             this.handleChunkTransitionHardTimeout("refresh_current_chunk", chunkKey, info, transitionToken);
             return false;
           },
-          onResolved: () => {
+          onResolved: (committed) => {
             this.drainQueuedReconnectRefresh();
-            return true;
+            return committed;
           },
           state: this.chunkTransitionRuntimeState,
           transitionPromise: this.refreshCurrentChunk(chunkKey, startCol, startRow, transitionToken),
@@ -8545,7 +8597,7 @@ export default class WorldmapScene extends WarpTravel {
       });
 
       if (!committed) {
-        return;
+        return false;
       }
 
       if (oldChunk === "null") {
@@ -8565,6 +8617,7 @@ export default class WorldmapScene extends WarpTravel {
         // Memory monitoring hooks - intentionally silent unless threshold exceeded
         void memoryDelta;
       }
+      return true;
     } finally {
       recordWorldmapRenderDuration("performChunkSwitch", performance.now() - chunkSwitchStartedAt);
     }
@@ -8579,7 +8632,7 @@ export default class WorldmapScene extends WarpTravel {
     const surroundingChunks = this.getSurroundingChunkKeys(startRow, startCol);
     this.removeCachedMatricesForChunk(startRow, startCol);
     const refreshStartedAt = performance.now();
-    await runWorldmapRefreshRuntime({
+    const refreshCommitStatus = await runWorldmapRefreshRuntime({
       commitRefresh: async ({ preparedTerrain, projectionSyncSucceeded, presentationRuntime }) => {
         const commitDecision = resolveSameChunkRefreshCommit({
           refreshToken: transitionToken,
@@ -8589,7 +8642,7 @@ export default class WorldmapScene extends WarpTravel {
           preparedTerrain,
         });
 
-        const refreshCommitStatus = await handleWorldmapRefreshCommitRuntime({
+        return handleWorldmapRefreshCommitRuntime({
           chunkKey,
           commitPreparedTerrain: (nextPreparedTerrain) => {
             const preparedTerrain = nextPreparedTerrain as PreparedTerrainChunk;
@@ -8629,10 +8682,6 @@ export default class WorldmapScene extends WarpTravel {
           projectionSyncSucceeded,
           transitionToken,
         });
-
-        if (refreshCommitStatus === "stale_dropped") {
-          return;
-        }
       },
       prepareChunk: () =>
         this.prepareChunkPresentation({
@@ -8660,6 +8709,7 @@ export default class WorldmapScene extends WarpTravel {
       // Memory monitoring hooks - intentionally silent unless threshold exceeded
       void memoryDelta;
     }
+    return refreshCommitStatus === "committed";
   }
 
   private async updateManagersForChunk(chunkKey: string, options?: { force?: boolean; transitionToken?: number }) {
@@ -9350,6 +9400,7 @@ export default class WorldmapScene extends WarpTravel {
     if (this.currentChunkBounds) {
       model.setWorldBounds(this.currentChunkBounds);
     }
+    this.requestNewModelPipelinePrewarm(model.group);
   }
 
   public clearTileEntityCache() {
@@ -9381,7 +9432,10 @@ export default class WorldmapScene extends WarpTravel {
     this.disposeWorldUpdateSubscriptions();
     this.unsubscribeWorldSpatialProjection?.();
     this.unsubscribeWorldSpatialProjection = undefined;
-    this.pendingArmyMovements.forEach((_record, entityId) => this.clearPendingArmyMovement(entityId));
+    this.pendingArmyMovements.forEach((_record, entityId) => {
+      this.clearArmyMovementTxEntriesForEntity(entityId);
+      this.clearPendingArmyMovement(entityId);
+    });
     this.pendingArmyMovementVisualLifecycleDisposers.forEach((dispose) => dispose());
     this.pendingArmyMovementVisualLifecycleDisposers.clear();
     this.pendingArmyMovements.clear();

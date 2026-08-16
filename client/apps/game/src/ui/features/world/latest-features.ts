@@ -35,6 +35,38 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-08-16",
+    title: "Instant Building Placement",
+    description:
+      "New buildings now appear as soon as placement is submitted, while successful army moves stay at their destination and unlock promptly after confirmation.",
+    type: "fix",
+    gameSlug: "world",
+  },
+  {
+    date: "2026-08-16",
+    title: "Action-Ready Armies and Chests",
+    description:
+      "Armies unlock as soon as movement confirms, realm provisioning appears in one step, and relic chests recover their reveal even if the live event connection drops.",
+    type: "fix",
+    gameSlug: "world",
+  },
+  {
+    date: "2026-08-16",
+    title: "Smoother World Map Frames",
+    description:
+      "Reduced one-frame stalls during map travel by preparing newly loaded models before their first appearance and spreading heavy structure buffer work across frames.",
+    type: "improvement",
+    gameSlug: "world",
+  },
+  {
+    date: "2026-08-16",
+    title: "Faster Reliable World Entry",
+    description:
+      "Fixed long world-entry warm-up stalls and made returns from Hexception recover dropped map refreshes automatically, without needing a camera or URL nudge.",
+    type: "fix",
+    gameSlug: "world",
+  },
+  {
+    date: "2026-08-16",
     title: "Battery-Friendly Rendering",
     description:
       "Added Quality and Battery modes with identical visuals. Battery mode lowers background frame, animation, shadow, and map-prefetch work while the game is idle, then resumes immediately when you interact.",

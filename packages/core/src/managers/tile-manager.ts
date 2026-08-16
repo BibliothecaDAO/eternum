@@ -10,10 +10,11 @@ import {
   StructureType,
   SystemCalls,
   getDirectionBetweenAdjacentHexes,
+  getHexesWithinRadius,
   getNeighborHexes,
   getProducedResource,
 } from "@bibliothecadao/types";
-import { Has, HasValue, NotValue, getComponentValue, runQuery } from "@dojoengine/recs";
+import { getComponentValue } from "@dojoengine/recs";
 import { uuid } from "@latticexyz/utils";
 import {
   DEFAULT_COORD_ALT,
@@ -36,6 +37,10 @@ import { configManager, buildingEntityKey, gameEntityKey } from "./config-manage
 
 // Global const to flick optimistic building on or off
 const OPTIMISTIC_BUILDING_ENABLED = true;
+const BUILDING_SLOT_COORDINATES = [
+  { col: BUILDINGS_CENTER[0], row: BUILDINGS_CENTER[1] },
+  ...getHexesWithinRadius(BUILDINGS_CENTER[0], BUILDINGS_CENTER[1], RealmLevels.Empire + 1),
+];
 
 // Module-level slot transition state tracks optimistic placement until synced component state confirms it.
 const buildSlotTransitions = new Map<string, BuildSlotTransition>();
@@ -98,19 +103,20 @@ export class TileManager {
   };
 
   existingBuildings = () => {
-    const builtBuildings = Array.from(
-      runQuery([
-        Has(this.components.Building),
-        HasValue(this.components.Building, { outer_col: this.col, outer_row: this.row }),
-        NotValue(this.components.Building, { entity_id: 0 }),
-      ]),
-    );
-
-    const buildings = builtBuildings
-      .map((entity) => getComponentValue(this.components.Building, entity))
-      // A query hit can race a value update mid-render — skip vanished rows
-      // instead of crashing the construction menu.
+    // Read every bounded local slot through the overridable component. Indexed
+    // HasValue queries can omit override-only entities, while scanning the
+    // whole streamed world component makes local redraw cost grow with the map.
+    const buildings = BUILDING_SLOT_COORDINATES.map(({ col, row }) =>
+      getComponentValue(this.components.Building, buildingEntityKey(this.col, this.row, col, row)),
+    )
       .filter((value): value is NonNullable<typeof value> => value != null)
+      .filter(
+        (value) =>
+          value.outer_col === this.col &&
+          value.outer_row === this.row &&
+          value.entity_id !== 0 &&
+          value.category !== BuildingType.None,
+      )
       .map((productionModelValue) => {
         const category = productionModelValue.category;
 

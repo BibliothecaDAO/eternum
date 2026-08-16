@@ -35,7 +35,7 @@ describe("ArmyManager authoritative reconciliation seam", () => {
     const body = source.slice(skipStart, skipStart + 1200);
     const targetMatchStart = body.indexOf("if (matchesTarget)");
     expect(targetMatchStart).toBeGreaterThan(0);
-    const targetMatchBlock = body.slice(targetMatchStart, targetMatchStart + 350);
+    const targetMatchBlock = body.slice(targetMatchStart, targetMatchStart + 700);
 
     expect(targetMatchBlock).toContain("this.markOptimisticMovementReconciled(entityId");
   });
@@ -54,5 +54,17 @@ describe("ArmyManager authoritative reconciliation seam", () => {
     // with no further entity updates would otherwise block selection forever.
     expect(source).toMatch(/const lock = this\.optimisticPositionLocks\.get\(entityId\);/);
     expect(source).toMatch(/OPTIMISTIC_POSITION_LOCK_TTL_MS/);
+  });
+
+  it("logs every authoritative position decision made while a lock exists", () => {
+    const source = readSource();
+    const methodStart = source.indexOf("public shouldSkipStalePositionUpdate(");
+    const methodEnd = source.indexOf("\n  private markOptimisticMovementReconciled", methodStart);
+    const body = source.slice(methodStart, methodEnd);
+
+    expect(body.match(/this\.logAuthoritativePositionLockDecision/g)?.length).toBeGreaterThanOrEqual(5);
+    expect(source).toContain("[ArmyLock] entity=${entityId} ${decision}");
+    expect(source).toContain('"source_match_discarded_stale"');
+    expect(source).toContain('"source_match_honored"');
   });
 });

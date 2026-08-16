@@ -7,8 +7,8 @@ import { SceneName } from "../types";
 
 describe("worldmap runtime lifecycle", () => {
   it("clears switch-off transient state and returns reset primitives", () => {
-    const pendingArmyMovements = new Map<number, { movement?: { fallbackTimeout?: string } }>([
-      [101, { movement: { fallbackTimeout: "fallback-timeout" } }],
+    const pendingArmyMovements = new Map<number, { movement?: object; fallbackTimeout?: string }>([
+      [101, { movement: {}, fallbackTimeout: "fallback-timeout" }],
       [202, { movement: {} }],
       // tx-only residue: movement already cleared, receipt still tracked.
       [303, {}],

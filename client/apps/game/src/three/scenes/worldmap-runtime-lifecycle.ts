@@ -1,7 +1,7 @@
 import { SceneName } from "../types";
 
 interface PendingArmyMovementRecordLike<TTimeout> {
-  movement?: { fallbackTimeout?: TTimeout };
+  fallbackTimeout?: TTimeout;
 }
 
 interface WorldmapSwitchOffRuntimeStateInput<TEntityId, TTimeout> {
@@ -50,7 +50,7 @@ export const applyWorldmapSwitchOffRuntimeState = <TEntityId, TTimeout>({
   releaseInactiveResources,
 }: WorldmapSwitchOffRuntimeStateInput<TEntityId, TTimeout>): WorldmapSwitchOffRuntimeStateResult => {
   pendingArmyMovements.forEach((record, entityId) => {
-    const fallbackTimeout = record.movement?.fallbackTimeout;
+    const fallbackTimeout = record.fallbackTimeout;
     if (fallbackTimeout !== undefined) {
       clearTimeout(fallbackTimeout);
     }

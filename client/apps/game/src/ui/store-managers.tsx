@@ -20,7 +20,6 @@ import {
   formatArmies,
   formatArrivals,
   getAddressName,
-  getAllArrivals,
   getEntityIdFromKeys,
   getGuildFromPlayerAddress,
   LeaderboardManager,
@@ -47,12 +46,30 @@ import { env } from "../../env";
 const getArrivalKey = (arrival: ResourceArrivalInfo) =>
   `${arrival.structureEntityId}-${arrival.day}-${arrival.slot.toString()}`;
 
+const useFormattedResourceArrivals = (components: ClientComponents): ResourceArrivalInfo[] => {
+  const resourceArrivalEntities = useEntityQuery([Has(components.ResourceArrival)]);
+
+  return useMemo(
+    () =>
+      formatArrivals(
+        resourceArrivalEntities
+          .map((entity) => getComponentValue(components.ResourceArrival, entity))
+          .filter(
+            (arrival): arrival is ComponentValue<ClientComponents["ResourceArrival"]["schema"]> =>
+              arrival !== undefined && arrival !== null,
+          ),
+      ),
+    [components.ResourceArrival, resourceArrivalEntities],
+  );
+};
+
 const ResourceArrivalsStoreManager = () => {
   const setArrivedArrivalsNumber = useUIStore((state) => state.setArrivedArrivalsNumber);
   const setPendingArrivalsNumber = useUIStore((state) => state.setPendingArrivalsNumber);
   const playerStructures = useUIStore((state) => state.playerStructures);
   const gameEndAt = useUIStore((state) => state.gameEndAt);
   const gameWinner = useUIStore((state) => state.gameWinner);
+  const chainNowMs = useChainTimeStore((state) => state.nowMs);
   const getChainNowSeconds = useChainTimeStore((state) => state.getNowSeconds);
   const {
     account: { account },
@@ -63,6 +80,11 @@ const ResourceArrivalsStoreManager = () => {
   const isAutoClaimingRef = useRef(false);
   const autoClaimTimeoutIdRef = useRef<number | null>(null);
   const processAutoClaimRef = useRef<() => Promise<void>>(async () => {});
+  const resourceArrivals = useFormattedResourceArrivals(components);
+  const playerResourceArrivals = useMemo(() => {
+    const playerStructureIds = new Set(playerStructures.map((structure) => structure.entityId));
+    return resourceArrivals.filter((arrival) => playerStructureIds.has(arrival.structureEntityId));
+  }, [playerStructures, resourceArrivals]);
 
   const stopAutoClaim = useCallback(() => {
     if (autoClaimTimeoutIdRef.current !== null) {
@@ -116,23 +138,8 @@ const ResourceArrivalsStoreManager = () => {
   }, [isSeasonOver, stopAutoClaim]);
 
   useEffect(() => {
-    const updateArrivals = () => {
-      const arrivals = getAllArrivals(
-        playerStructures.map((structure) => structure.entityId),
-        components,
-      );
-      updateArrivalIndicators(arrivals);
-    };
-
-    // Initial update
-    updateArrivals();
-
-    // Set up interval to run periodically (configurable)
-    const intervalId = setInterval(updateArrivals, POLLING_INTERVALS.resourceArrivalsMs);
-
-    // Cleanup interval on unmount
-    return () => clearInterval(intervalId);
-  }, [playerStructures, components, updateArrivalIndicators]);
+    updateArrivalIndicators(playerResourceArrivals, Math.floor(chainNowMs / 1000));
+  }, [chainNowMs, playerResourceArrivals, updateArrivalIndicators]);
 
   useEffect(() => {
     processAutoClaimRef.current = async () => {
@@ -162,8 +169,7 @@ const ResourceArrivalsStoreManager = () => {
         return;
       }
 
-      const structureIds = playerStructures.map((structure) => structure.entityId);
-      const arrivals = getAllArrivals(structureIds, components);
+      const arrivals = playerResourceArrivals;
 
       if (arrivals.length === 0) {
         autoClaimedArrivals.current.clear();
@@ -249,6 +255,7 @@ const ResourceArrivalsStoreManager = () => {
     components,
     getChainNowSeconds,
     isSeasonOver,
+    playerResourceArrivals,
     playerStructures,
     scheduleNextAutoClaim,
     stopAutoClaim,
@@ -263,23 +270,15 @@ const PublicTroopArrivalsStoreManager = () => {
   const setPublicIncomingTroopArrivalsByStructure = useUIStore(
     (state) => state.setPublicIncomingTroopArrivalsByStructure,
   );
-  const chainNowMs = useChainTimeStore((state) => state.nowMs);
   const {
     setup: { components },
   } = useDojo();
-  const resourceArrivals = useEntityQuery([Has(components.ResourceArrival)]);
+  const resourceArrivals = useFormattedResourceArrivals(components);
 
   useEffect(() => {
-    const rawArrivals = resourceArrivals
-      .map((entity) => getComponentValue(components.ResourceArrival, entity))
-      .filter(
-        (arrival): arrival is ComponentValue<ClientComponents["ResourceArrival"]["schema"]> =>
-          arrival !== undefined && arrival !== null,
-      );
-    const nowSeconds = Math.floor(chainNowMs / 1000);
-
-    setPublicIncomingTroopArrivalsByStructure(summarizeIncomingTroopArrivals(formatArrivals(rawArrivals), nowSeconds));
-  }, [chainNowMs, components.ResourceArrival, resourceArrivals, setPublicIncomingTroopArrivalsByStructure]);
+    const nowSeconds = useChainTimeStore.getState().getNowSeconds();
+    setPublicIncomingTroopArrivalsByStructure(summarizeIncomingTroopArrivals(resourceArrivals, nowSeconds));
+  }, [resourceArrivals, setPublicIncomingTroopArrivalsByStructure]);
 
   return null;
 };

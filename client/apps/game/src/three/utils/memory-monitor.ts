@@ -43,6 +43,12 @@ export interface MemorySpike {
   context: string;
 }
 
+export interface ScopedMemoryMeasurement {
+  context: string;
+  startedHeapUsedMB: number;
+  spikeThresholdMB: number;
+}
+
 export class MemoryMonitor {
   private previousHeapSize: number = 0;
   private spikeThresholdMB: number = 50; // Alert when memory increases by 50MB+
@@ -113,6 +119,35 @@ export class MemoryMonitor {
     this.previousHeapSize = heapUsedMB;
 
     return stats;
+  }
+
+  /**
+   * Start a synchronous attribution scope. Unlike periodic samples, this
+   * baseline belongs to the named operation and cannot include heap growth
+   * accumulated since an unrelated earlier sample.
+   */
+  public beginScopedMeasurement(context: string, spikeThresholdMB: number): ScopedMemoryMeasurement {
+    return {
+      context,
+      startedHeapUsedMB: this.getHeapUsedMB(),
+      spikeThresholdMB,
+    };
+  }
+
+  public finishScopedMeasurement(measurement: ScopedMemoryMeasurement): number {
+    const currentHeapUsedMB = this.getHeapUsedMB();
+    const increaseMB = currentHeapUsedMB - measurement.startedHeapUsedMB;
+    if (increaseMB > measurement.spikeThresholdMB) {
+      this.recordSpike({
+        timestamp: Date.now(),
+        previousMB: measurement.startedHeapUsedMB,
+        currentMB: currentHeapUsedMB,
+        increaseMB,
+        context: measurement.context,
+      });
+    }
+
+    return increaseMB;
   }
 
   /**

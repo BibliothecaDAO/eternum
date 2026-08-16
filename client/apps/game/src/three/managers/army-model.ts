@@ -168,7 +168,12 @@ export class ArmyModel {
     ["T3" as TroopTier, EasingType.EaseOutQuart],
   ]);
 
-  constructor(scene: Scene, labelsGroup?: Group, cameraView?: CameraView) {
+  constructor(
+    scene: Scene,
+    labelsGroup?: Group,
+    cameraView?: CameraView,
+    private readonly requestPipelinePrewarm?: (object: Object3D) => void,
+  ) {
     this.scene = scene;
     this.dummyObject = new Object3D();
     this.loadPromise = Promise.resolve();
@@ -221,6 +226,7 @@ export class ArmyModel {
             const modelData = this.createModelData(gltf);
             this.models.set(modelType, modelData);
             this.reapplyInstancesForModel(modelType, modelData);
+            this.requestPipelinePrewarm?.(modelData.group);
             resolve(modelData);
           } catch (error) {
             reject(error as Error);
@@ -261,6 +267,7 @@ export class ArmyModel {
           const modelData = this.createModelData(gltf, false);
           this.cosmeticModels.set(cosmeticId, modelData);
           this.reapplyInstancesForCosmeticModel(cosmeticId, modelData);
+          this.requestPipelinePrewarm?.(modelData.group);
           resolve(modelData);
         })
         .catch((error) => {
@@ -1502,8 +1509,7 @@ export class ArmyModel {
   ): void {
     if (path.length < 2) return;
 
-    // Monitor memory usage before starting movement
-    this.memoryMonitor?.getCurrentStats(`startMovement-${entityId}`);
+    const memoryMeasurement = this.memoryMonitor?.beginScopedMeasurement(`startMovement-${entityId}`, 5);
 
     // Log material sharing stats periodically (every 10th movement)
     if (entityId % 10 === 0) {
@@ -1553,6 +1559,10 @@ export class ArmyModel {
         isArrivalSlamming: false,
         endpointCache: new Vector3(),
       });
+    }
+
+    if (memoryMeasurement) {
+      this.memoryMonitor?.finishScopedMeasurement(memoryMeasurement);
     }
   }
 

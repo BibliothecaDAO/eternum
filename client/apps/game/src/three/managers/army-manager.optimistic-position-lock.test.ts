@@ -12,11 +12,12 @@ describe("ArmyManager optimistic position lock", () => {
   it("exposes an optimisticPositionLocks map keyed per entity with normalizedTarget + lockedAtMs", () => {
     const source = readSource();
 
-    const fieldStart = source.indexOf("private optimisticPositionLocks: Map<");
-    expect(fieldStart).toBeGreaterThan(0);
-    const declaration = source.slice(fieldStart, fieldStart + 500);
+    const typeStart = source.indexOf("interface OptimisticPositionLock");
+    expect(typeStart).toBeGreaterThan(0);
+    const declaration = source.slice(typeStart, typeStart + 300);
     expect(declaration).toContain("normalizedTarget");
     expect(declaration).toContain("lockedAtMs");
+    expect(source).toContain("private optimisticPositionLocks: Map<ID, OptimisticPositionLock>");
   });
 
   it("exposes a public shouldSkipStalePositionUpdate predicate", () => {
@@ -31,6 +32,13 @@ describe("ArmyManager optimistic position lock", () => {
     const source = readSource();
 
     expect(source).toMatch(/LOCK_TTL_MS\s*=\s*15[_\d]*/);
+  });
+
+  it("defines a short source-match hold inside the lock lifecycle", () => {
+    const source = readSource();
+
+    expect(source).toMatch(/OPTIMISTIC_SOURCE_MATCH_HOLD_MS\s*=\s*2_500/);
+    expect(source).toContain("sourceMatchTimeout?: ReturnType<typeof setTimeout>");
   });
 
   it("writes the lock inside applyMovementPlan when the optimistic flag is set", () => {
@@ -72,6 +80,7 @@ describe("ArmyManager optimistic position lock", () => {
   it("clears the lock map on destroy", () => {
     const source = readSource();
 
+    expect(source).toContain("this.optimisticPositionLocks.forEach((lock) => this.clearDeferredSourceMatch(lock))");
     expect(source).toContain("this.optimisticPositionLocks.clear()");
   });
 });

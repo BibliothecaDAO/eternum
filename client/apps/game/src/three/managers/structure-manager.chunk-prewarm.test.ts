@@ -179,6 +179,24 @@ describe("StructureManager.prewarmChunkAssets", () => {
     expect(subject.ensureCosmeticStructureModels).not.toHaveBeenCalled();
   });
 
+  it("requests pipeline prewarm when a structure model is attached to the scene", async () => {
+    const subject = Object.create(StructureManager.prototype) as any;
+    const group = {};
+    const model = { group, setWorldBounds: vi.fn() };
+    subject.structureModels = new Map();
+    subject.structureModelPromises = new Map();
+    subject.structureModelPaths = { Village: ["/village.glb"] };
+    subject.loadStructureModel = vi.fn(async () => model);
+    subject.scene = { add: vi.fn() };
+    subject.currentChunkBounds = undefined;
+    subject.requestPipelinePrewarm = vi.fn();
+
+    await subject.ensureStructureModels("Village");
+
+    expect(subject.scene.add).toHaveBeenCalledWith(group);
+    expect(subject.requestPipelinePrewarm).toHaveBeenCalledWith(group);
+  });
+
   it("loads visible chunk cosmetic models before the visible update path runs", async () => {
     const subject = createSubject();
     subject.getVisibleStructuresForChunk.mockReturnValue([

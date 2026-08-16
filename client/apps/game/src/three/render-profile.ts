@@ -23,6 +23,7 @@ export interface RenderProfile {
   pacing: {
     idleAfterMs: number;
     idleFps: number | null;
+    maxFps: number;
   };
   prefetch: {
     areaBoundaryLookaheadLimit: number;
@@ -96,6 +97,10 @@ export function createRenderProfile(mode: RenderMode): RenderProfile {
     pacing: {
       idleAfterMs: 2_000,
       idleFps: isBattery ? 30 : null,
+      // Both modes cap at 60: above that, high-refresh displays spend the
+      // whole frame budget re-rendering and starve streaming/compile work,
+      // which reads as unsteady fps rather than extra smoothness.
+      maxFps: 60,
     },
     prefetch: {
       areaBoundaryLookaheadLimit: isBattery ? 1 : unlimited,

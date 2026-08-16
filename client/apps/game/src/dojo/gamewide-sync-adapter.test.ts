@@ -22,7 +22,7 @@ const createHarness = () => {
   let onEntity: ((entity: unknown) => void) | null = null;
   let onEvent: ((event: unknown) => void) | null = null;
   const entitySubscription = { cancel: vi.fn() };
-  const eventSubscription = { cancel: vi.fn() };
+  const eventSubscription = { cancel: vi.fn(), on: vi.fn(), off: vi.fn() };
   const positionComponent = { metadata: { namespace: "s2", name: "Position" } };
   const eventComponent = { metadata: { namespace: "s2", name: "BattleEvent" } };
   const client = {

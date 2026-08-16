@@ -51,8 +51,10 @@ interface EntityIngestQueueOptions {
 const isEmptyModel = (model: unknown): boolean =>
   typeof model === "object" && model !== null && !Array.isArray(model) && Object.keys(model).length === 0;
 
-const MAX_APPLY_SLICE_MS = 50;
-const MAX_ENTITY_CHANGES_PER_STORE_WRITE = 50;
+const MAX_APPLY_SLICE_MS = 25;
+// The wall-clock slice is the normal yield boundary. This cap only protects
+// against a pathological delivery growing a single store write without bound.
+const MAX_ENTITY_CHANGES_PER_STORE_WRITE = 1_000;
 
 const mergeEntityModel = (entities: Map<string, GameSyncEntity>, entityId: string, model: string, value: unknown) => {
   const existing = entities.get(entityId);

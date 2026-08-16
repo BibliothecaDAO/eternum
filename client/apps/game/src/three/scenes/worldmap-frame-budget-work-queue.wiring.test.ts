@@ -21,7 +21,7 @@ describe("worldmap frame-budget work queue wiring", () => {
       'this.prepareTerrainChunk(targetStartRow, targetStartCol, height, width, "prefetch")',
     );
     expect(worldmapSource).not.toContain("requestAnimationFrame(processFrame)");
-    expect(worldmapSource.match(/this\.chunkWorkQueue,\s*\)/g)).toHaveLength(3);
+    expect(worldmapSource.match(/this\.chunkWorkQueue,/g)).toHaveLength(3);
     expect(armyManagerSource).toContain(
       'scheduleFrameBudgetWork(this.chunkWorkScheduler, "critical", () => this.ensureArmyPresentation(renderable))',
     );

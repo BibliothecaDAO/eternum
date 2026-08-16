@@ -24,7 +24,6 @@ interface ShouldClearPendingArmyMovementInput {
 
 interface ResolvePendingArmyMovementSelectionPlanInput extends ShouldClearPendingArmyMovementInput {
   hasPendingMovement: boolean;
-  isOptimisticMovementActive?: boolean;
 }
 
 interface ResolvePendingArmyMovementFallbackPlanInput extends ShouldClearPendingArmyMovementInput {
@@ -108,21 +107,12 @@ export function shouldClearPendingArmyMovement(input: ShouldClearPendingArmyMove
 /**
  * Decide stale-clear behavior when an army selection is attempted.
  *
- * When optimistic movement is unresolved, selection stays blocked. The tx is
- * still valid, just visually running ahead of the indexer, and accepting a new
- * command here would create a hidden follow-up intent rather than a real tx.
+ * Movement selection is blocked only until the pending record is handed to the
+ * visual tween. The worldmap's action gate separately owns tween and tx state.
  */
 export function resolvePendingArmyMovementSelectionPlan(
   input: ResolvePendingArmyMovementSelectionPlanInput,
 ): PendingArmyMovementSelectionPlan {
-  if (input.isOptimisticMovementActive) {
-    return {
-      shouldClearPendingMovement: false,
-      shouldRequestChunkRefresh: false,
-      shouldBlockSelection: true,
-    };
-  }
-
   if (!input.hasPendingMovement) {
     return {
       shouldClearPendingMovement: false,

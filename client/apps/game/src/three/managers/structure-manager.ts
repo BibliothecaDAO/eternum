@@ -237,6 +237,7 @@ export class StructureManager {
     visibilityManager?: CentralizedVisibilityManager,
     chunkStride?: number,
     private readonly chunkWorkScheduler?: FrameBudgetWorkScheduler,
+    private readonly requestPipelinePrewarm?: (object: Object3D) => void,
   ) {
     this.scene = scene;
     this.worldSpatialProjection = worldSpatialProjection;
@@ -825,6 +826,7 @@ export class StructureManager {
         this.structureModels.set(structureType, models);
         models.forEach((model) => {
           this.scene.add(model.group);
+          this.requestPipelinePrewarm?.(model.group);
           if (this.currentChunkBounds) {
             model.setWorldBounds(this.currentChunkBounds);
           }
@@ -891,6 +893,7 @@ export class StructureManager {
         this.cosmeticStructureModels.set(cosmeticId, models);
         models.forEach((model) => {
           this.scene.add(model.group);
+          this.requestPipelinePrewarm?.(model.group);
           if (this.currentChunkBounds) {
             model.setWorldBounds(this.currentChunkBounds);
           }
@@ -1211,12 +1214,13 @@ export class StructureManager {
         // Note: setCount will be called once per model after all structures are processed
       }
 
+      await this.finalizeVisibleStructureModelPass(
+        modelInstanceCounts,
+        nextActiveStructureModels,
+        nextActiveCosmeticStructureModels,
+        workLane,
+      );
       await scheduleFrameBudgetWork(this.chunkWorkScheduler, workLane, () => {
-        this.finalizeVisibleStructureModelPass(
-          modelInstanceCounts,
-          nextActiveStructureModels,
-          nextActiveCosmeticStructureModels,
-        );
         this.finalizeVisibleStructurePass(visibleStructureIds, attachmentRetain);
       });
     } finally {
@@ -1380,27 +1384,30 @@ export class StructureManager {
     this.frustumVisibilityDirty = true;
   }
 
-  private finalizeVisibleStructureModelPass(
+  private async finalizeVisibleStructureModelPass(
     modelInstanceCounts: Map<InstancedModel, number>,
     nextActiveStructureModels: Set<InstancedModel>,
     nextActiveCosmeticStructureModels: Set<InstancedModel>,
-  ): void {
-    const finalizedModelSets = finalizeVisibleStructureModelPass({
-      modelInstanceCounts,
-      previouslyActiveStructureModels: this.previouslyActiveStructureModels,
-      previouslyActiveCosmeticStructureModels: this.previouslyActiveCosmeticStructureModels,
-      nextActiveStructureModels,
-      nextActiveCosmeticStructureModels,
-      applyPendingModelBounds: () => this.applyPendingModelBounds(),
-      endPointBatches: this.pointsRenderers
-        ? () => {
-            Object.values(this.pointsRenderers!).forEach((renderer) => renderer.endBatch());
-          }
-        : undefined,
-    });
+    workLane: FrameBudgetWorkLane = "visible",
+  ): Promise<void> {
+    await scheduleFrameBudgetWork(this.chunkWorkScheduler, workLane, () => {
+      const finalizedModelSets = finalizeVisibleStructureModelPass({
+        modelInstanceCounts,
+        previouslyActiveStructureModels: this.previouslyActiveStructureModels,
+        previouslyActiveCosmeticStructureModels: this.previouslyActiveCosmeticStructureModels,
+        nextActiveStructureModels,
+        nextActiveCosmeticStructureModels,
+        applyPendingModelBounds: () => this.applyPendingModelBounds(),
+        endPointBatches: this.pointsRenderers
+          ? () => {
+              Object.values(this.pointsRenderers!).forEach((renderer) => renderer.endBatch());
+            }
+          : undefined,
+      });
 
-    this.previouslyActiveStructureModels = finalizedModelSets.activeStructureModels;
-    this.previouslyActiveCosmeticStructureModels = finalizedModelSets.activeCosmeticStructureModels;
+      this.previouslyActiveStructureModels = finalizedModelSets.activeStructureModels;
+      this.previouslyActiveCosmeticStructureModels = finalizedModelSets.activeCosmeticStructureModels;
+    });
   }
 
   private getRendererForStructure(structure: StructureInfo): PointsLabelRenderer | null {

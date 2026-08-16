@@ -23,6 +23,8 @@ describe("render profile", () => {
 
     expect(quality.pacing.idleFps).toBeNull();
     expect(battery.pacing.idleFps).toBe(30);
+    expect(quality.pacing.maxFps).toBe(60);
+    expect(battery.pacing.maxFps).toBe(60);
     expect(battery.animation.distantIntervalMultiplier).toBeGreaterThan(quality.animation.distantIntervalMultiplier);
     expect(battery.prefetch.sideRadiusLimit).toBeLessThan(quality.prefetch.sideRadiusLimit);
     expect(battery.shadows.minimumRefreshIntervalMs).toBeGreaterThan(quality.shadows.minimumRefreshIntervalMs);

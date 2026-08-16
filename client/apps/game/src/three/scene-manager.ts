@@ -93,7 +93,9 @@ export class SceneManager {
       }
       if (resolveFinalizePlan().isSuperseded) return;
 
-      await scene.prewarmPipeline?.();
+      // Compilation is opportunistic. A scene transition must never inherit
+      // the prewarm time-box as part of its visible fade.
+      void scene.prewarmPipeline?.();
       if (resolveFinalizePlan().isSuperseded) return;
 
       this._updateCurrentScene(sceneName);

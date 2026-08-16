@@ -11,6 +11,7 @@ import {
   Vector3,
 } from "three";
 import { ModelType } from "@/three/types/army";
+import { gltfLoader } from "@/three/utils/utils";
 import { ArmyModel } from "./army-model";
 
 vi.hoisted(() => {
@@ -121,6 +122,19 @@ vi.mock("@bibliothecadao/types", () => {
 });
 
 describe("ArmyModel visibility after async model load", () => {
+  it("requests pipeline prewarm for a newly loaded instanced model", async () => {
+    const requestPipelinePrewarm = vi.fn();
+    vi.mocked(gltfLoader.load).mockImplementationOnce(((_path: string, onLoad: (gltf: unknown) => void) => {
+      onLoad({ animations: [], scene: new Group() });
+    }) as never);
+    const subject = new ArmyModel(new Scene(), undefined, undefined, requestPipelinePrewarm);
+
+    await subject.preloadModels([ModelType.Knight1]);
+
+    expect(requestPipelinePrewarm).toHaveBeenCalledOnce();
+    expect(requestPipelinePrewarm).toHaveBeenCalledWith(expect.any(Group));
+  });
+
   it("restores draw count when a model finishes loading after visible slots were already resolved", () => {
     const subject = new ArmyModel(new Scene());
 
