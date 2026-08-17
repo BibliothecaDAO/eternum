@@ -133,8 +133,10 @@ provisioning run, and deadlines only ever log.
   fires `credentials.get()` from a `useEffect` during auto session creation with no gesture (`ConnectRoute.tsx`,
   special-cased only for Chrome iOS), and its login path runs async work between click and ceremony that can outlive
   activation (`useCreateController.ts:929` comment admits this). A gestureless/expired-activation in-iframe get() throws
-  exactly this NotAllowedError. Fix belongs to Cartridge's keychain (extend the "Continue" button pattern beyond Chrome
-  iOS); nothing in this repo to change. The in-iframe path was verified working on Linux Chrome with a fresh gesture.
+  exactly this NotAllowedError. Mitigated on our side: `webauthnPopup: true` in the ControllerConnector options
+  (hotfix/webauthn-popup, c270c6c084) forces every platform onto the activation-safe popup path — carry that option
+  forward in any future connector work. The proper in-iframe fix (extend the "Continue" button pattern beyond Chrome
+  iOS) belongs to Cartridge's keychain.
 - **`@cartridge/controller` 0.14.0 is a coordinated migration, not a bump.** It is the starknet 8→10 release; the bump
   alone fails typecheck at four sites (starknet-10 `WalletAccount` vs our starknet-8 `AccountInterface` paths). The
   ecosystem HAS moved — dojo.js 2.0.0 (latest) pins starknet 10.0.2 exactly and peers react ^19; Cartridge's own
