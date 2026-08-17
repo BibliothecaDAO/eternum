@@ -128,7 +128,7 @@ export class ProvisionalWriteManager {
   public hasInputLock(model: string, entityId: string): boolean {
     return [...this.intents.values()].some(
       (intent) =>
-        (intent.status === "submitting" || intent.status === "pending") &&
+        intent.status === "submitting" &&
         intent.writes.some((write) => modelName(write.model) === modelName(model) && write.entityId === entityId),
     );
   }
@@ -146,7 +146,12 @@ export class ProvisionalWriteManager {
       get transactionHash() {
         return intent.transactionHash;
       },
-      isInputLocked: () => intent.status === "submitting" || intent.status === "pending",
+      // Input locks only while no transaction hash exists — the sole window
+      // where a second submission would double-spend. Once the hash is bound
+      // the move is nonce-committed: chaining is valid, the overlay models the
+      // outcome, and a revert unwinds through fail(). Input never waits on
+      // receipts, block cadence, or torii.
+      isInputLocked: () => intent.status === "submitting",
       bindTransaction: (transactionHash) => {
         if (intent.status !== "submitting") return;
         intent.transactionHash = transactionHash;

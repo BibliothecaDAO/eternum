@@ -25,9 +25,13 @@ describe("ProvisionalWriteManager", () => {
     const manager = new ProvisionalWriteManager(store);
     const intent = manager.createIntent([WRITE]);
 
-    intent.bindTransaction("0xtx");
     expect(intent.isInputLocked()).toBe(true);
     expect(manager.hasInputLock("s1_eternum-Building", "0x1")).toBe(true);
+    // The hash makes the write nonce-committed: chaining is valid from here,
+    // so the receipt wait ("pending") must never freeze input.
+    intent.bindTransaction("0xtx");
+    expect(intent.isInputLocked()).toBe(false);
+    expect(manager.hasInputLock("s1_eternum-Building", "0x1")).toBe(false);
     intent.confirm();
     expect(intent.isInputLocked()).toBe(false);
     expect(manager.hasInputLock("Building", "0x1")).toBe(false);
@@ -173,5 +177,25 @@ describe("ProvisionalWriteManager", () => {
     await Promise.resolve();
     await Promise.resolve();
     expect(receiptFailure.status).toBe("failed");
+  });
+
+  it("allows a chained intent while the prior one awaits its receipt, unwinding each failure independently", () => {
+    const store = createStore();
+    const manager = new ProvisionalWriteManager(store);
+
+    const first = manager.createIntent([WRITE]);
+    first.bindTransaction("0xtx1");
+    expect(manager.hasInputLock("Building", "0x1")).toBe(false);
+
+    const second = manager.createIntent([WRITE]);
+    second.bindTransaction("0xtx2");
+    expect(manager.hasInputLock("Building", "0x1")).toBe(false);
+
+    first.fail();
+    expect(store.removeProvisionalWrites).toHaveBeenCalledWith(first.id);
+    expect(store.removeProvisionalWrites).not.toHaveBeenCalledWith(second.id);
+
+    second.fail();
+    expect(store.removeProvisionalWrites).toHaveBeenCalledWith(second.id);
   });
 });
