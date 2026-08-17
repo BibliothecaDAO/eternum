@@ -269,7 +269,7 @@ describe("GameRenderer backend seam", () => {
     };
     subject.camera = "camera";
     subject.lastTime = performance.now() - 16;
-    subject.getTargetFPS = vi.fn(() => null);
+    subject.getTargetFps = vi.fn(() => null);
     subject.updateWeatherPostProcessing = vi.fn();
     subject.supportRuntimeRegistry = {
       getEffectsBridge: vi.fn(() => undefined),
