@@ -126,15 +126,21 @@ provisioning run, and deadlines only ever log.
 ## Login-stack findings (Aug 17 — recorded so nobody re-litigates them)
 
 - **Passkey login failures ("publickey-credentials-get is not enabled in this document") are upstream, not ours.**
-  Frame-chain probe on the deployed client: `play.jcndata.com` ✓ delegated → `x.cartridge.gg` keychain ✓ delegated →
-  nested `auth.turnkey.com` iframe **not delegated** (`allow="clipboard-write"` only). Any account whose passkey
-  assertion runs through the Turnkey frame fails on every OS. The classic keychain passkey path was verified working
-  end-to-end on Linux Chrome. Fix belongs to Cartridge's keychain; nothing in this repo to change.
-- **Do not bump `@cartridge/controller`/`connector` to 0.14.0.** It is the starknet 8→10 migration release; verified
-  Aug 17 that the bump fails typecheck at four sites (the connector returns a starknet-10 `WalletAccount`,
-  structurally incompatible with our starknet-8 `AccountInterface` paths), and the surrounding stack cannot follow —
-  `@starknet-react/core` ≤5.0.3 and all `@dojoengine/*` 1.7.0-preview.3 peer on starknet ^8. Revisit only when
-  dojo.js and starknet-react publish starknet-10 support. Stay on 0.13.16 until then.
+  Verified from keychain source (cartridge-gg/controller): on Windows Chromium the keychain always routes passkey
+  ceremonies to a popup (`hooks/connection.ts:624`), so Windows never exercises in-iframe WebAuthn — the OS split is by
+  design. On macOS/Linux Chrome the ceremony runs inside the keychain iframe, where Chrome requires BOTH delegation
+  (present and verified correct on our deployed client, frame-chain probed) AND transient user activation. The keychain
+  fires `credentials.get()` from a `useEffect` during auto session creation with no gesture (`ConnectRoute.tsx`,
+  special-cased only for Chrome iOS), and its login path runs async work between click and ceremony that can outlive
+  activation (`useCreateController.ts:929` comment admits this). A gestureless/expired-activation in-iframe get() throws
+  exactly this NotAllowedError. Fix belongs to Cartridge's keychain (extend the "Continue" button pattern beyond Chrome
+  iOS); nothing in this repo to change. The in-iframe path was verified working on Linux Chrome with a fresh gesture.
+- **`@cartridge/controller` 0.14.0 is a coordinated migration, not a bump.** It is the starknet 8→10 release; the bump
+  alone fails typecheck at four sites (starknet-10 `WalletAccount` vs our starknet-8 `AccountInterface` paths). The
+  ecosystem HAS moved — dojo.js 2.0.0 (latest) pins starknet 10.0.2 exactly and peers react ^19; Cartridge's own
+  examples pair 0.14.0 with starknet ^10 and `@starknet-start/react` (they left `@starknet-react/core`). We are behind
+  on `@dojoengine/* 1.7.0-preview.3`, starknet ^8, react 18. The upgrade bundle (dojo.js 2.0 + starknet 10 + react 19 +
+  starknet-start) deserves its own brief; until then stay on 0.13.16.
 - **`ControllerConnector` is instantiated per-render.** `starknet-provider.tsx:125` builds it in a `useMemo` inside the
   component; the package logs `ControllerConnector was instantiated multiple times` in live sessions and re-instantiates
   on chain-config changes. Move construction to module level per the package's own guidance. Verdict: FIX (rides P7D).
