@@ -34,6 +34,14 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 // are surfaced in the What's New popup.
 const allLatestFeatures: LatestFeature[] = [
   {
+    date: "2026-08-17",
+    title: "Truthful Army Movement",
+    description:
+      "Army models now move when the world confirms their destination, keeping revealed terrain and unit positions together after exploration succeeds or rewinds.",
+    type: "fix",
+    gameSlug: "world",
+  },
+  {
     date: "2026-08-16",
     title: "Reliable Battle Results",
     description:

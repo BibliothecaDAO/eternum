@@ -386,9 +386,6 @@ export class ArmyActionManager {
     // chain-visible coord, the salted request_random and the real consume will
     // reference different tiles → "VrfProvider: not consumed". Reject upfront
     // so the user retries with a fresh action path instead of eating a failed tx.
-    // The worldmap applies this move's provisional overlay before submitting,
-    // so an overridable read legitimately reports the DESTINATION for an
-    // in-flight move — accept either coord; reject only when it matches neither.
     const pathStart = path[0]?.hex;
     const explorerTroops = getComponentValue(this.components.ExplorerTroops, this.entity);
     const chainCoord = explorerTroops?.coord as { x?: unknown; y?: unknown } | undefined;
@@ -397,8 +394,7 @@ export class ArmyActionManager {
       const chainRow = Number(chainCoord.y);
       if (Number.isFinite(chainCol) && Number.isFinite(chainRow)) {
         const matchesPathStart = pathStart.col === chainCol && pathStart.row === chainRow;
-        const matchesProvisionalDestination = destinationHex.col === chainCol && destinationHex.row === chainRow;
-        if (!matchesPathStart && !matchesProvisionalDestination) {
+        if (!matchesPathStart) {
           return Promise.reject(
             new Error(
               `Explorer position drifted — path expected (${pathStart.col}, ${pathStart.row}) but chain reports (${chainCol}, ${chainRow}). Retry with a fresh path.`,

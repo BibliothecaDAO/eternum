@@ -8,7 +8,7 @@ import { describe, expect, it } from "vitest";
 const currentDir = dirname(fileURLToPath(import.meta.url));
 
 describe("worldmap provisional movement", () => {
-  it("writes coordinate and stamina through one runtime-owned ExplorerTroops overlay", () => {
+  it("predicts stamina without moving the authoritative spatial coordinate", () => {
     const source = readFileSync(resolve(currentDir, "worldmap.tsx"), "utf8");
     const methodStart = source.indexOf("private createProvisionalArmyMovementIntent(");
     const methodEnd = source.indexOf("private handleProvisionalArmyMovementFailure(", methodStart);
@@ -16,10 +16,15 @@ describe("worldmap provisional movement", () => {
 
     expect(body).toContain("createProvisionalIntent");
     expect(body).toContain('model: "ExplorerTroops"');
-    expect(body).toContain("coord:");
     expect(body).toContain("troops:");
     expect(body).toContain("stamina:");
+    const provisionalPatch = body.slice(body.indexOf("patch:"), body.indexOf("matchPatch:"));
+    expect(provisionalPatch).not.toContain("coord:");
+    expect(body).toContain("matchPatch:");
+    expect(body).toContain("sourcePatch:");
     expect(source).toContain("hasProvisionalInputLock");
+    expect(source).not.toContain("paintProvisionalDestinationBiome");
+    expect(source).not.toContain("provisionalBiomes");
     expect(source).not.toContain("private pendingArmyMovements");
     expect(source).not.toContain("pendingMovementPlans");
     expect(source).not.toContain("useArmyStaminaSourceStore");

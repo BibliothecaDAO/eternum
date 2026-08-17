@@ -169,8 +169,8 @@ const getOrInstallGameSyncRuntime = () => getActiveGameSyncRuntime() ?? installF
 const installActiveWorldSpatialProjection = (setup: SetupResult): void => {
   getOrInstallGameSyncRuntime().installWorldSpatialProjection(
     new WorldSpatialProjection({
-      tileOptComponent: setup.components.TileOpt,
-      explorerTroopsComponent: setup.components.ExplorerTroops,
+      tileOptComponent: setup.network.contractComponents.TileOpt,
+      explorerTroopsComponent: setup.network.contractComponents.ExplorerTroops,
     }),
   );
 };

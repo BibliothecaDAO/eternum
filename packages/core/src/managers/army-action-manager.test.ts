@@ -410,17 +410,16 @@ describe("ArmyActionManager.moveArmy explore position-freshness guard", () => {
     expect(systemCalls.explorer_explore).toHaveBeenCalledTimes(1);
   });
 
-  it("allows explore when the coord already reports this move's destination (in-flight provisional overlay)", async () => {
+  it("rejects explore when an obsolete provisional coord reports the destination", async () => {
     const systemCalls = {
       explorer_explore: vi.fn().mockResolvedValue({}),
       explorer_travel: vi.fn().mockResolvedValue({}),
       toggle_alternate: vi.fn().mockResolvedValue({}),
     };
     const { manager, oldFeltStart } = createTestSetup(systemCalls);
-    // The worldmap applies the provisional coord overlay before submitting, so
-    // ExplorerTroops.coord reads as the DESTINATION while the move is in
-    // flight. Model that: path travels neighbor → oldFeltStart, and the
-    // component reports oldFeltStart.
+    // The path starts at a neighbor while ExplorerTroops still reports
+    // oldFeltStart. Destination matching is not freshness evidence: movement
+    // now starts only from the authoritative source coordinate.
     const neighbor = getNeighborHexes(oldFeltStart.col, oldFeltStart.row)[0];
 
     const actionPath = [
@@ -430,9 +429,8 @@ describe("ArmyActionManager.moveArmy explore position-freshness guard", () => {
 
     const signer = { address: "0x123" } as any;
 
-    await manager.moveArmy(signer, actionPath as any, false, 0);
-
-    expect(systemCalls.explorer_explore).toHaveBeenCalledTimes(1);
+    await expect(manager.moveArmy(signer, actionPath as any, false, 0)).rejects.toThrow(/drifted|position/i);
+    expect(systemCalls.explorer_explore).not.toHaveBeenCalled();
   });
 });
 

@@ -371,7 +371,6 @@ import {
 import { computeMatrixCacheEvictions } from "./worldmap-matrix-cache-eviction";
 import { snapshotExploredTilesRegion, lookupSnapshotBiome } from "./explored-tiles-snapshot";
 import { createTerrainCacheGeneration, isTerrainCacheStale } from "./terrain-cache-generation";
-import { createProvisionalBiomeTracker, resolveArmySpawnBiome } from "./provisional-biome";
 import { gameEntityKey } from "@/dojo/game-scope";
 import {
   resolveWorldmapCameraFieldOfViewDegrees,
@@ -896,7 +895,6 @@ export default class WorldmapScene extends WarpTravel {
   // Performance simulation: Show all biomes as explored (bypasses fog of war)
   private simulateAllExplored: boolean = false;
   private exploredTilesGeneration = createTerrainCacheGeneration();
-  private provisionalBiomes = createProvisionalBiomeTracker();
   private cachedMatrices: Map<string, Map<string, CachedMatrixEntry>> = new Map();
   private cachedMatrixOrder: string[] = [];
   private readonly maxMatrixCacheSize = WORLDMAP_CHUNK_POLICY.cache.recommendedMinSize;
@@ -1079,29 +1077,6 @@ export default class WorldmapScene extends WarpTravel {
     };
 
     dojoContext.network?.provider?.on("transactionProgress", this.handleTransactionProgress);
-  }
-
-  private paintProvisionalDestinationBiome(targetHex: HexPosition): void {
-    const targetPosition = new Position({ x: targetHex.col, y: targetHex.row });
-    const targetContract = targetPosition.getContract();
-    const targetNormalized = targetPosition.getNormalized();
-    const provisionalSpawn = resolveArmySpawnBiome(
-      this.exploredTiles,
-      targetNormalized.x,
-      targetNormalized.y,
-      configManager.getBiome(targetContract.x, targetContract.y),
-    );
-
-    if (provisionalSpawn.action !== "write_provisional") return;
-
-    if (!this.exploredTiles.has(targetNormalized.x)) {
-      this.exploredTiles.set(targetNormalized.x, new Map());
-    }
-    this.exploredTiles.get(targetNormalized.x)!.set(targetNormalized.y, provisionalSpawn.biome);
-    this.provisionalBiomes.mark(targetNormalized.x, targetNormalized.y);
-    this.bumpTerrainGenerationForHex(targetNormalized.x, targetNormalized.y);
-    gameWorkerManager.updateExploredTile(targetNormalized.x, targetNormalized.y, provisionalSpawn.biome);
-    this.invalidateAllChunkCachesContainingHex(targetNormalized.x, targetNormalized.y);
   }
 
   override applyRenderVisualProfile(features: RenderVisualProfile): void {
@@ -2732,7 +2707,6 @@ export default class WorldmapScene extends WarpTravel {
         this.handleProvisionalArmyMovementFailure(selectedEntityId, cleanup);
         throw error;
       }
-      this.paintProvisionalDestinationBiome(targetHex);
       recordArmyMovementLatencyPhase({
         phase: "move_requested",
         source: "worldmap",
@@ -3091,7 +3065,6 @@ export default class WorldmapScene extends WarpTravel {
         entityId,
         model: "ExplorerTroops",
         patch: {
-          coord: { ...explorerTroops.coord, x: input.targetHex.col, y: input.targetHex.row },
           troops: {
             ...explorerTroops.troops,
             stamina: {
@@ -4203,12 +4176,7 @@ export default class WorldmapScene extends WarpTravel {
     }
 
     const existingBiome = this.exploredTiles.get(col)?.get(row);
-    // If tile was provisionally set by army spawn, treat as new tile (allow overwrite)
-    const wasProvisional = existingBiome !== undefined && this.provisionalBiomes.isProvisional(col, row);
-    if (wasProvisional) {
-      this.provisionalBiomes.clear(col, row);
-    }
-    const tileAlreadyKnown = !removeExplored && existingBiome !== undefined && !wasProvisional;
+    const tileAlreadyKnown = !removeExplored && existingBiome !== undefined;
     const hasBiomeDelta = !removeExplored && tileAlreadyKnown && existingBiome !== biome;
 
     // Duplicate tile updates can happen across chunk/bounds churn. Invalidate overlapping caches
@@ -5722,7 +5690,6 @@ export default class WorldmapScene extends WarpTravel {
     this.cachedMatrices.clear();
     this.cachedMatrixOrder = [];
     this.exploredTiles.clear();
-    this.provisionalBiomes = createProvisionalBiomeTracker();
     this.exploredTilesGeneration.clear();
     gameWorkerManager.resetWorldState();
     MatrixPool.getInstance().clear();
@@ -6912,7 +6879,6 @@ export default class WorldmapScene extends WarpTravel {
       for (const row of rows.keys()) {
         if (!this.isHexInRetainedRenderArea(col, row, retainedBounds)) {
           rows.delete(row);
-          this.provisionalBiomes.clear(col, row);
         }
       }
       if (rows.size === 0) {
@@ -7286,7 +7252,7 @@ export default class WorldmapScene extends WarpTravel {
       const normalized = new Position({ x: tile.hexCoords.col, y: tile.hexCoords.row }).getNormalized();
       const biome = resolveTileBiomeType(tile.biome);
       const existingBiome = this.exploredTiles.get(normalized.x)?.get(normalized.y);
-      if (existingBiome === biome && !this.provisionalBiomes.isProvisional(normalized.x, normalized.y)) {
+      if (existingBiome === biome) {
         continue;
       }
 
@@ -7307,7 +7273,6 @@ export default class WorldmapScene extends WarpTravel {
     }
 
     this.exploredTiles.get(col)!.set(row, biome);
-    this.provisionalBiomes.clear(col, row);
     this.bumpTerrainGenerationForHex(col, row);
     gameWorkerManager.updateExploredTile(col, row, biome);
     this.invalidateAllChunkCachesContainingHex(col, row);
