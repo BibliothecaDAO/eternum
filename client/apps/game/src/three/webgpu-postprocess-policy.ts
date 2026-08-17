@@ -1,12 +1,8 @@
-import type { Camera, Object3D } from "three";
-
 import type { RendererBackendCapabilities, RendererCapabilityFeature, RendererActiveMode } from "./renderer-backend-v2";
-import type { RendererSurfaceLike } from "./renderer-backend";
 
 export interface WebgpuPostprocessPolicy {
   bloomRouting: "deferred" | "mrt-emissive" | "none";
   mode: "native-webgpu-minimal" | "native-webgpu-postprocess" | "webgl2-fallback-postprocess";
-  prewarmStrategy: "compile-async" | "none";
   unsupportedFeatures: RendererCapabilityFeature[];
 }
 
@@ -27,7 +23,6 @@ export function resolveWebgpuPostprocessPolicy(input: {
     return {
       bloomRouting: "none",
       mode: "webgl2-fallback-postprocess",
-      prewarmStrategy: "compile-async",
       unsupportedFeatures: [],
     };
   }
@@ -54,31 +49,6 @@ export function resolveWebgpuPostprocessPolicy(input: {
   return {
     bloomRouting: input.capabilities.supportsBloom ? "mrt-emissive" : "deferred",
     mode: "native-webgpu-minimal",
-    prewarmStrategy: "compile-async",
     unsupportedFeatures,
   };
-}
-
-export async function requestRendererScenePrewarm(
-  renderer: RendererSurfaceLike | undefined,
-  scene: Object3D,
-  camera: Camera,
-  targetScene?: Object3D,
-): Promise<void> {
-  const rendererWithCompile = renderer as
-    | (RendererSurfaceLike & {
-        compileAsync?: (scene: Object3D, camera: Camera, targetScene?: Object3D) => Promise<void>;
-      })
-    | undefined;
-
-  if (typeof rendererWithCompile?.compileAsync !== "function") {
-    return;
-  }
-
-  if (targetScene) {
-    await rendererWithCompile.compileAsync(scene, camera, targetScene);
-    return;
-  }
-
-  await rendererWithCompile.compileAsync(scene, camera);
 }

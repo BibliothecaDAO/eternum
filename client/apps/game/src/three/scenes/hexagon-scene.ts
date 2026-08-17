@@ -20,11 +20,6 @@ import { loadBiomeGltf } from "@/three/utils/biome-gltf-cache";
 import type { GLTF } from "three/addons/loaders/GLTFLoader.js";
 import { renderProfile, type RenderVisualProfile } from "@/three/render-profile";
 import { ShadowRefreshPolicy } from "@/three/shadow-refresh-policy";
-import {
-  runTimeboxedPipelinePrewarm,
-  shouldSkipPipelinePrewarmForP5Measurement,
-} from "@/three/pipeline-prewarm-runtime";
-import { runWithFrameWorkOwner } from "@/three/frame-work-owner";
 import { LeftView } from "@/types";
 import { IS_FLAT_MODE } from "@/ui/config";
 import { type SetupResult } from "@bibliothecadao/dojo";
@@ -35,7 +30,6 @@ import type GUI from "lil-gui";
 import throttle from "lodash/throttle";
 import {
   AmbientLight,
-  type Camera,
   Color,
   DirectionalLight,
   DirectionalLightHelper,
@@ -46,7 +40,6 @@ import {
   InstancedMesh,
   Mesh,
   MeshStandardMaterial,
-  type Object3D,
   PerspectiveCamera,
   Plane,
   PlaneGeometry,
@@ -77,7 +70,6 @@ import { resolveWorldmapZoomBand } from "./worldmap-zoom/worldmap-zoom-band-poli
 
 export { CameraView } from "./camera-view";
 type CameraTransitionStatus = "idle" | "transitioning";
-type PipelinePrewarmer = (scene: Object3D, camera: Camera, targetScene?: Object3D) => Promise<void>;
 
 export abstract class HexagonScene {
   protected scene!: Scene;
@@ -139,8 +131,6 @@ export abstract class HexagonScene {
   private sceneOwnershipBootstrapped = false;
   private fogVisualsEnabled = false;
   private fogEnabledByUser = true;
-  private pipelinePrewarmer?: PipelinePrewarmer;
-  private pipelinePrewarmPromise: Promise<void> | null = null;
 
   // Performance tuning options (optimized defaults for better FPS)
   protected biomeShadowsEnabled = false;
@@ -780,72 +770,6 @@ export abstract class HexagonScene {
 
   public getCamera() {
     return this.camera;
-  }
-
-  public setPipelinePrewarmer(prewarmer: PipelinePrewarmer): void {
-    this.pipelinePrewarmer = prewarmer;
-  }
-
-  public prewarmPipeline(): Promise<void> {
-    if (shouldSkipPipelinePrewarmForP5Measurement()) {
-      return Promise.resolve();
-    }
-    if (!this.pipelinePrewarmer) {
-      return Promise.resolve();
-    }
-    if (!this.pipelinePrewarmPromise) {
-      this.pipelinePrewarmPromise = this.runPipelinePrewarm(this.pipelinePrewarmer);
-    }
-    return this.pipelinePrewarmPromise;
-  }
-
-  public prewarmObjectPipeline(object: Object3D): Promise<void> {
-    if (shouldSkipPipelinePrewarmForP5Measurement()) {
-      return Promise.resolve();
-    }
-    if (!this.pipelinePrewarmer) {
-      return Promise.resolve();
-    }
-
-    return this.pipelinePrewarmer(object, this.camera, this.scene);
-  }
-
-  private async runPipelinePrewarm(prewarmer: PipelinePrewarmer): Promise<void> {
-    await runTimeboxedPipelinePrewarm({
-      prepare: () => this.awaitPipelinePrewarmModelLoads(),
-      enterWarmupView: () => this.enterPipelineWarmupView(),
-      compile: () =>
-        runWithFrameWorkOwner("prewarm:scene", () => prewarmer(this.scene, this.createPipelineWarmupCamera())),
-    });
-  }
-
-  private async awaitPipelinePrewarmModelLoads(): Promise<void> {
-    await runWithFrameWorkOwner("prewarm:model-barrier", () => Promise.allSettled(this.modelLoadPromises));
-  }
-
-  private enterPipelineWarmupView(): () => void {
-    const previousView = this.currentCameraView;
-    this.applyPipelineWarmupView(CameraView.Close);
-    return () => this.applyPipelineWarmupView(previousView);
-  }
-
-  private createPipelineWarmupCamera(): PerspectiveCamera {
-    const profile = resolveWorldmapCameraViewProfile(CameraView.Close);
-    const target = this.controls.target;
-    const camera = this.camera.clone();
-    camera.position.set(
-      target.x,
-      target.y + Math.sin(profile.angleRadians) * profile.distance,
-      target.z + Math.cos(profile.angleRadians) * profile.distance,
-    );
-    camera.lookAt(target);
-    camera.updateMatrixWorld(true);
-    return camera;
-  }
-
-  private applyPipelineWarmupView(view: CameraView): void {
-    this.applyResolvedCameraView(view);
-    this.cameraViewListeners.forEach((listener) => listener(view));
   }
 
   public getThunderBoltManager(): ThunderBoltManager {

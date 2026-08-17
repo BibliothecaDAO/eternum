@@ -237,7 +237,6 @@ export class StructureManager {
     visibilityManager?: CentralizedVisibilityManager,
     chunkStride?: number,
     private readonly chunkWorkScheduler?: FrameBudgetWorkScheduler,
-    private readonly requestPipelinePrewarm?: (object: Object3D) => void,
   ) {
     this.scene = scene;
     this.worldSpatialProjection = worldSpatialProjection;
@@ -826,7 +825,6 @@ export class StructureManager {
         this.structureModels.set(structureType, models);
         models.forEach((model) => {
           this.scene.add(model.group);
-          this.requestPipelinePrewarm?.(model.group);
           if (this.currentChunkBounds) {
             model.setWorldBounds(this.currentChunkBounds);
           }
@@ -893,7 +891,6 @@ export class StructureManager {
         this.cosmeticStructureModels.set(cosmeticId, models);
         models.forEach((model) => {
           this.scene.add(model.group);
-          this.requestPipelinePrewarm?.(model.group);
           if (this.currentChunkBounds) {
             model.setWorldBounds(this.currentChunkBounds);
           }

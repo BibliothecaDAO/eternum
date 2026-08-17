@@ -405,8 +405,6 @@ export default class GameRenderer {
       mouse: this.mouse,
       renderVisuals: renderProfile.visuals,
       raycaster: this.raycaster,
-      renderer: this.backend?.renderer,
-      warn: (message, error) => console.warn(message, error),
     });
   }
 

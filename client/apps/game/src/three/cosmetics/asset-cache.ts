@@ -10,7 +10,6 @@ import {
   TextureLoader,
 } from "three";
 import { CosmeticRegistryEntry } from "./types";
-import { getCosmeticRegistry } from "./registry";
 import { MaterialPool } from "../utils/material-pool";
 
 const textureLoader = new TextureLoader();
@@ -157,36 +156,6 @@ function startAssetLoad(handle: CosmeticAssetHandle): Promise<CosmeticAssetPaylo
     });
 
   return handle.promise;
-}
-
-interface PreloadOptions {
-  onProgress?: (details: { id: string; loaded: number; total: number }) => void;
-  quiet?: boolean;
-}
-
-/**
- * Preloads every registered cosmetic asset. Errors are logged and surfaced via the returned promise.
- */
-export async function preloadAllCosmeticAssets(options?: PreloadOptions) {
-  const registry = getCosmeticRegistry();
-  const total = registry.length;
-  let loaded = 0;
-
-  const tasks = registry.map((entry) => {
-    const handle = ensureCosmeticAsset(entry);
-    return startAssetLoad(handle)
-      .catch((error) => {
-        if (!options?.quiet) {
-          console.warn(`[Cosmetics] Failed to preload asset ${entry.id}`, error);
-        }
-      })
-      .finally(() => {
-        loaded += 1;
-        options?.onProgress?.({ id: entry.id, loaded, total });
-      });
-  });
-
-  await Promise.all(tasks);
 }
 
 export function ensureCosmeticAsset(entry: CosmeticRegistryEntry): CosmeticAssetHandle {

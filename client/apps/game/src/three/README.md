@@ -31,7 +31,7 @@ must be identical between them.
 - `game-renderer.ts`: renderer bootstrap, controls, frame loop, and top-level runtime ownership.
 - `renderer-backend-runtime.ts`: initializes the WebGPU/WebGL2-fallback backend and handles device-loss recovery.
 - `renderer-effects-runtime.ts`: owns the shared post-process plan.
-- `scene-manager.ts`: switches scenes and keeps first-use pipeline warm-up behind transition overlays.
+- `scene-manager.ts`: switches scenes and owns transition ordering and input-surface handoff.
 - `scenes/hexagon-scene.ts`: shared camera, lighting, fog, shadow refresh, input, and visibility behavior.
 - `scenes/worldmap.tsx`: chunked world traversal rendered from the session spatial projection.
 - `scenes/hexception.tsx`: settlement view and lazy building preview.
@@ -85,7 +85,6 @@ Do not dispose cosmetic- or FX-cache-owned geometry or textures from a scene man
 
 ## Performance and diagnostics
 
-- Pipeline warm-up uses `compileAsync` behind initial loading and first settlement-transition gates.
 - `frame-budget-work-queue.ts` slices heavy presentation commits across frames.
 - `shadow-refresh-policy.ts` refreshes shadows only for sun, content, or camera-cell changes.
 - `perf/renderer-gpu-telemetry.ts`, `stats-recorder.ts`, and world-map diagnostics provide DEV-only measurement.

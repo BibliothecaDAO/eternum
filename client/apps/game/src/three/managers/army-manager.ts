@@ -271,12 +271,11 @@ export class ArmyManager {
     visibilityManager?: CentralizedVisibilityManager,
     chunkStride?: number,
     private readonly chunkWorkScheduler?: FrameBudgetWorkScheduler,
-    requestPipelinePrewarm?: (object: Object3D) => void,
   ) {
     this.scene = scene;
     this.worldSpatialProjection = worldSpatialProjection;
     this.currentCameraView = hexagonScene?.getCurrentCameraView() ?? CameraView.Medium;
-    this.armyModel = new ArmyModel(scene, labelsGroup, this.currentCameraView, requestPipelinePrewarm);
+    this.armyModel = new ArmyModel(scene, labelsGroup, this.currentCameraView);
     // Warm boat model up to avoid first shoreline transition rendering as a ghost while GLTF loads.
     void this.armyModel.preloadModels([ModelType.Boat]);
     this.scale = new Vector3(0.3, 0.3, 0.3);

@@ -6,7 +6,6 @@ function createFakeScene(name: string) {
   return {
     name,
     setup: vi.fn(async () => {}),
-    prewarmPipeline: vi.fn(async () => {}),
     onSwitchOff: vi.fn(),
     moveCameraToURLLocation: vi.fn(),
     activateInputSurface: vi.fn(),

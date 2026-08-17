@@ -15,22 +15,13 @@ describe("Worldmap ready signal", () => {
     expect(source).toContain("onInitialSetupComplete");
     expect(source).toContain("onResumeComplete");
     expect(source).toContain("window.dispatchEvent(new Event(WORLDMAP_SCENE_READY_EVENT))");
-    expect(source.indexOf("await this.prewarmPipeline()")).toBeLessThan(
-      source.indexOf("this.announceWorldmapSceneReady()"),
-    );
+    expect(source).toContain("onInitialSetupComplete: () => this.announceWorldmapSceneReady()");
   });
 
-  it("starts local-scene prewarms only after announcing worldmap readiness", () => {
+  it("does not defer readiness behind speculative pipeline or cosmetic work", () => {
     const source = readSource("src/three/scenes/worldmap.tsx");
-    const methodStart = source.indexOf("private announceWorldmapSceneReady()");
-    const methodEnd = source.indexOf("private prepareWarpTravelInitialSetup", methodStart);
-    const body = source.slice(methodStart, methodEnd);
 
-    expect(body.indexOf("markWorldmapReady")).toBeLessThan(body.indexOf("prewarmHexceptionPipelineInBackground"));
-    expect(body.indexOf("markWorldmapReady")).toBeLessThan(body.indexOf("prewarmFastTravelPipelineInBackground"));
-    expect(body).toContain("this.sceneManager.getSceneByName(SceneName.Hexception)");
-    expect(body).toContain("void hexceptionScene.prewarmPipeline().catch");
-    expect(body).toContain("this.sceneManager.getSceneByName(SceneName.FastTravel)");
-    expect(body).toContain("void fastTravelScene.prewarmPipeline().catch");
+    expect(source).not.toContain("prewarmPipeline");
+    expect(source).not.toContain("preloadAllCosmeticAssets");
   });
 });

@@ -23,6 +23,8 @@ describe("worldmap refresh scheduler wiring", () => {
     const directForceRefreshCalls = source.match(/updateVisibleChunks\(true\)/g) ?? [];
 
     expect(directForceRefreshCalls).toHaveLength(0);
-    expect(source).toMatch(/await this\.updateVisibleChunks\(true,\s*\{ reason: "shortcut" \}\)/);
+    expect(source).toMatch(
+      /await this\.updateVisibleChunks\(true,\s*\{\s*reason: "shortcut",\s*triggerReason: "army_shortcut_selection_fallback",\s*\}\)/,
+    );
   });
 });

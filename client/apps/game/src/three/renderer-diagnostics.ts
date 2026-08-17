@@ -163,7 +163,6 @@ export function setRendererDiagnosticPostprocessPolicy(policy: WebgpuPostprocess
   rendererDiagnosticsState.postprocessPolicy = {
     bloomRouting: policy.bloomRouting,
     mode: policy.mode,
-    prewarmStrategy: policy.prewarmStrategy,
     unsupportedFeatures: [...policy.unsupportedFeatures],
   };
   syncRendererDiagnosticsWindow();
@@ -205,7 +204,6 @@ export function snapshotRendererDiagnostics(): RendererDiagnosticsSnapshot {
       ? {
           bloomRouting: rendererDiagnosticsState.postprocessPolicy.bloomRouting,
           mode: rendererDiagnosticsState.postprocessPolicy.mode,
-          prewarmStrategy: rendererDiagnosticsState.postprocessPolicy.prewarmStrategy,
           unsupportedFeatures: [...rendererDiagnosticsState.postprocessPolicy.unsupportedFeatures],
         }
       : null,

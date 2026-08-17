@@ -69,7 +69,6 @@ describe("renderer-diagnostics", () => {
     setRendererDiagnosticPostprocessPolicy({
       bloomRouting: "deferred",
       mode: "native-webgpu-minimal",
-      prewarmStrategy: "compile-async",
       unsupportedFeatures: ["environmentIbl", "toneMappingControl"],
     });
     setRendererDiagnosticSceneName("worldmap");
@@ -139,7 +138,6 @@ describe("renderer-diagnostics", () => {
       postprocessPolicy: {
         bloomRouting: "deferred",
         mode: "native-webgpu-minimal",
-        prewarmStrategy: "compile-async",
         unsupportedFeatures: ["environmentIbl", "toneMappingControl"],
       },
       requestedMode: "webgpu-auto",

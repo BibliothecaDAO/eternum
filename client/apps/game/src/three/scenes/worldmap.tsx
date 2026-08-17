@@ -126,7 +126,7 @@ import {
 } from "three";
 import { MapControls } from "three/examples/jsm/controls/MapControls.js";
 import { env } from "../../../env";
-import { playerCosmeticsStore, preloadAllCosmeticAssets } from "../cosmetics";
+import { playerCosmeticsStore } from "../cosmetics";
 import { FXManager } from "../managers/fx-manager";
 import { HoverLabelManager, type HoverLabelReconcileResult } from "../managers/hover-label-manager";
 import { resolveWorldmapHoverLabelEntity } from "./worldmap-hover-label-entities";
@@ -461,8 +461,8 @@ interface WorldmapVisualTerrainPageBuildRequest {
 }
 
 interface WorldmapVisibleChunkUpdateOptions {
-  reason?: "default" | "shortcut";
-  triggerReason?: string;
+  reason: "default" | "shortcut";
+  triggerReason: string;
 }
 
 interface WorldmapManagerCatchUpOptions {
@@ -1115,7 +1115,6 @@ export default class WorldmapScene extends WarpTravel {
       this.visibilityManager,
       this.chunkSize,
       this.chunkWorkQueue,
-      (object) => this.requestNewModelPipelinePrewarm(object),
     );
     this.arrivalGhostManager = new ArrivalGhostManager(this.scene, {
       chunkStride: this.chunkSize,
@@ -1146,7 +1145,6 @@ export default class WorldmapScene extends WarpTravel {
       this.visibilityManager,
       this.chunkSize,
       this.chunkWorkQueue,
-      (object) => this.requestNewModelPipelinePrewarm(object),
     );
     this.reservedHyperstructureManager = new ReservedHyperstructureManager(this.scene, this.worldSpatialProjection);
     this.chestManager = new ChestManager(
@@ -1169,24 +1167,6 @@ export default class WorldmapScene extends WarpTravel {
     // The chunk integration adds overhead via lifecycle callbacks on every entity update.
     // Uncomment if you need advanced chunk lifecycle debugging/tracking features.
     // this.initializeChunkIntegration();
-  }
-
-  private requestNewModelPipelinePrewarm(object: Object3D): void {
-    void this.chunkWorkQueue
-      .schedule("prefetch", () => {
-        // Launch compilation from the shared queue without awaiting it. The
-        // renderer compiles object pipelines incrementally; awaiting here would
-        // head-of-line block visible terrain and manager work behind a cold GLB.
-        const prewarm = this.prewarmObjectPipeline(object);
-        void prewarm.catch((error) => {
-          console.warn("[WorldMap] New model pipeline prewarm failed", error);
-        });
-      })
-      .catch((error) => {
-        if (!isFrameBudgetWorkQueueDisposedError(error)) {
-          console.warn("[WorldMap] Failed to schedule new model pipeline prewarm", error);
-        }
-      });
   }
 
   private configureWorldmapRecoveryLifecycle(): void {
@@ -3641,7 +3621,10 @@ export default class WorldmapScene extends WarpTravel {
               }
             : undefined,
           forceChunkRefresh: async () => {
-            await this.updateVisibleChunks(true, { reason: "default" });
+            await this.updateVisibleChunks(true, {
+              reason: "default",
+              triggerReason: "army_selection_recovery",
+            });
           },
           isArmyAvailable: () => this.armyManager.hasArmy(selectedEntityId),
           isArmyPendingMovement: () => this.isArmyMovementInputLocked(selectedEntityId),
@@ -3861,11 +3844,7 @@ export default class WorldmapScene extends WarpTravel {
       },
       setupCameraZoomHandler: () => this.setupCameraZoomHandler(),
       refreshScene: () => this.refreshWarpTravelScene(),
-      onInitialSetupComplete: async () => {
-        await this.prewarmPipeline();
-        this.announceWorldmapSceneReady();
-        this.preloadWorldmapCosmeticAssets();
-      },
+      onInitialSetupComplete: () => this.announceWorldmapSceneReady(),
       onResumeComplete: () => this.announceWorldmapSceneReady(),
       reportSetupError: (error, phase) => this.reportWarpTravelRefreshError(error, phase),
       disposeStoreSubscriptions: () => this.disposeStoreSubscriptions(),
@@ -3882,27 +3861,6 @@ export default class WorldmapScene extends WarpTravel {
     if (typeof window !== "undefined") {
       window.dispatchEvent(new Event(WORLDMAP_SCENE_READY_EVENT));
     }
-
-    this.prewarmHexceptionPipelineInBackground();
-    this.prewarmFastTravelPipelineInBackground();
-  }
-
-  private prewarmHexceptionPipelineInBackground(): void {
-    const hexceptionScene = this.sceneManager.getSceneByName(SceneName.Hexception);
-    if (!hexceptionScene) return;
-
-    void hexceptionScene.prewarmPipeline().catch((error) => {
-      console.warn("[GpuBackendPerf] Hexception pipeline prewarm failed", error);
-    });
-  }
-
-  private prewarmFastTravelPipelineInBackground(): void {
-    const fastTravelScene = this.sceneManager.getSceneByName(SceneName.FastTravel);
-    if (!fastTravelScene) return;
-
-    void fastTravelScene.prewarmPipeline().catch((error) => {
-      console.warn("[GpuBackendPerf] Fast-travel pipeline prewarm failed", error);
-    });
   }
 
   private prepareWarpTravelInitialSetup(): void {
@@ -3950,7 +3908,7 @@ export default class WorldmapScene extends WarpTravel {
 
   private async refreshVisibleChunksForWarpTravel(phase: WorldmapWarpTravelPhase): Promise<boolean> {
     if (!this.globalChunkSwitchPromise) {
-      return this.updateVisibleChunks(true, { triggerReason: `${phase}_setup` });
+      return this.updateVisibleChunks(true, { reason: "default", triggerReason: `${phase}_setup` });
     }
 
     await waitForChunkTransitionToSettle(
@@ -4048,19 +4006,6 @@ export default class WorldmapScene extends WarpTravel {
     });
 
     useUIStore.getState().setLeftNavigationView(LeftView.None);
-  }
-
-  private preloadWorldmapCosmeticAssets(): void {
-    // Fire-and-forget cosmetic asset preloading (non-blocking)
-    preloadAllCosmeticAssets({
-      onProgress: ({ loaded, total }) => {
-        if (loaded === total) {
-          console.log(`[Cosmetics] Preloaded ${total} cosmetic assets`);
-        }
-      },
-    }).catch((error) => {
-      console.warn("[Cosmetics] Some assets failed to preload:", error);
-    });
   }
 
   private reportWarpTravelRefreshError(error: unknown, phase: "initial" | "resume"): void {
@@ -7878,7 +7823,7 @@ export default class WorldmapScene extends WarpTravel {
     });
   }
 
-  async updateVisibleChunks(force: boolean = false, options?: WorldmapVisibleChunkUpdateOptions): Promise<boolean> {
+  async updateVisibleChunks(force: boolean, options: WorldmapVisibleChunkUpdateOptions): Promise<boolean> {
     if (this.isSwitchedOff) {
       return false;
     }
@@ -7893,7 +7838,7 @@ export default class WorldmapScene extends WarpTravel {
       );
 
       const focusPoint = this.getCameraGroundIntersection().clone();
-      const triggerReason = options?.triggerReason ?? `direct:${options?.reason ?? "default"}`;
+      const triggerReason = options.triggerReason;
       const chunkDecision = resolveWarpTravelVisibleChunkDecision({
         isSwitchedOff: this.isSwitchedOff,
         focusPoint,
@@ -7901,13 +7846,13 @@ export default class WorldmapScene extends WarpTravel {
         hexSize: HEX_SIZE,
         currentChunk: this.currentChunk,
         force,
-        reason: options?.reason ?? "default",
+        reason: options.reason,
         shouldDelayChunkSwitch: this.shouldDelayChunkSwitch(focusPoint),
       });
 
       if (chunkDecision.action === "noop" && !chunkDecision.shouldPrefetch) {
         this.traceChunk("chunk_transition_noop", {
-          reason: options?.reason ?? "default",
+          reason: options.reason,
           focusPoint: {
             x: focusPoint.x,
             y: focusPoint.y,
@@ -7954,7 +7899,7 @@ export default class WorldmapScene extends WarpTravel {
             startRow,
             force,
             transitionToken,
-            options?.reason ?? "default",
+            options.reason,
             triggerReason,
             focusPoint.clone(),
           ),
@@ -9051,7 +8996,6 @@ export default class WorldmapScene extends WarpTravel {
     if (this.currentChunkBounds) {
       model.setWorldBounds(this.currentChunkBounds);
     }
-    this.requestNewModelPipelinePrewarm(model.group);
   }
 
   public clearTileEntityCache() {
@@ -9241,7 +9185,10 @@ export default class WorldmapScene extends WarpTravel {
 
         if (!selectionSucceeded) {
           try {
-            await this.updateVisibleChunks(true, { reason: "shortcut" });
+            await this.updateVisibleChunks(true, {
+              reason: "shortcut",
+              triggerReason: "army_shortcut_selection_fallback",
+            });
           } catch (error) {
             if (import.meta.env.DEV) {
               console.warn(
@@ -9318,7 +9265,10 @@ export default class WorldmapScene extends WarpTravel {
     void this.prewarmShortcutChunk(targetChunkKey);
     await this.waitForShortcutCameraSettle(transitionDurationSeconds);
 
-    const switched = await this.updateVisibleChunks(forceChunkRefresh, { reason: "shortcut" });
+    const switched = await this.updateVisibleChunks(forceChunkRefresh, {
+      reason: "shortcut",
+      triggerReason: "shortcut_navigation",
+    });
     if (
       shouldRunShortcutForceFallback({
         isShortcutNavigation: true,
@@ -9326,7 +9276,10 @@ export default class WorldmapScene extends WarpTravel {
         initialSwitchSucceeded: switched,
       })
     ) {
-      await this.updateVisibleChunks(true, { reason: "shortcut" });
+      await this.updateVisibleChunks(true, {
+        reason: "shortcut",
+        triggerReason: "shortcut_navigation_fallback",
+      });
     }
   }
 
@@ -9475,7 +9428,7 @@ export default class WorldmapScene extends WarpTravel {
   }
 
   private refreshRouteOwnedChunkState(): void {
-    void this.updateVisibleChunks(true, { reason: "default" }).catch((error) => {
+    void this.updateVisibleChunks(true, { reason: "default", triggerReason: "route_owned_refresh" }).catch((error) => {
       console.error("[WorldMap] Route-owned refresh failed:", error);
     });
   }

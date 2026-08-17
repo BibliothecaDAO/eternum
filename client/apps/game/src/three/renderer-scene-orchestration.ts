@@ -6,7 +6,6 @@ import type FastTravelScene from "@/three/scenes/fast-travel";
 import type HexceptionScene from "@/three/scenes/hexception";
 import type WorldmapScene from "@/three/scenes/worldmap";
 import type { TransitionManager } from "@/three/managers/transition-manager";
-import type { RendererSurfaceLike } from "./renderer-backend";
 import type { RendererEffectsBridgeRuntime } from "./renderer-effects-bridge-runtime";
 import type { RenderVisualProfile } from "./render-profile";
 import {
@@ -37,8 +36,6 @@ interface PrepareGameRendererScenesInput {
   mouse: Vector2;
   renderVisuals: RenderVisualProfile;
   raycaster: Raycaster;
-  renderer?: RendererSurfaceLike;
-  warn?: (message: string, error: unknown) => void;
 }
 
 export function prepareGameRendererScenes(input: PrepareGameRendererScenesInput): void {
@@ -55,12 +52,7 @@ export function prepareGameRendererScenes(input: PrepareGameRendererScenesInput)
   input.applySceneRegistry(sceneRegistry);
   bootstrapRendererSceneRuntime({
     effectsBridgeRuntime: input.effectsBridgeRuntime,
-    fastTravelScene: sceneRegistry.fastTravelScene,
-    hexceptionScene: sceneRegistry.hexceptionScene,
     renderVisuals: input.renderVisuals,
-    renderer: input.renderer,
     sceneManager: sceneRegistry.sceneManager,
-    warn: input.warn,
-    worldmapScene: sceneRegistry.worldmapScene,
   });
 }

@@ -18,7 +18,17 @@ describe("Worldmap route-owned refresh", () => {
     expect(source).toContain('if (playRoute?.scene !== "map" || playRoute.col === null || playRoute.row === null) {');
     expect(source).toContain("this.moveCameraToURLLocation({ requestRefresh: false });");
     expect(source).toContain("this.refreshRouteOwnedChunkState();");
-    expect(source).toContain('void this.updateVisibleChunks(true, { reason: "default" }).catch((error) => {');
+    expect(source).toContain(
+      'void this.updateVisibleChunks(true, { reason: "default", triggerReason: "route_owned_refresh" }).catch((error) => {',
+    );
     expect(source).toContain('console.error("[WorldMap] Route-owned refresh failed:", error);');
+  });
+
+  it("requires every direct chunk update to carry a concrete trigger", () => {
+    const source = readSource("src/three/scenes/worldmap.tsx");
+
+    expect(source).toContain("triggerReason: string;");
+    expect(source).toContain("async updateVisibleChunks(force: boolean, options: WorldmapVisibleChunkUpdateOptions)");
+    expect(source).not.toContain("direct:default");
   });
 });

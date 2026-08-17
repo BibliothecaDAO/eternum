@@ -4,11 +4,9 @@ import FastTravelScene from "@/three/scenes/fast-travel";
 import HexceptionScene from "@/three/scenes/hexception";
 import WorldmapScene from "@/three/scenes/worldmap";
 import type { SetupResult } from "@bibliothecadao/dojo";
-import type { Camera, Object3D, Object3DEventMap, Raycaster, Vector2 } from "three";
+import type { Raycaster, Vector2 } from "three";
 import type { MapControls } from "three/examples/jsm/controls/MapControls.js";
-import type { RendererSurfaceLike } from "./renderer-backend";
 import { SceneName } from "./types";
-import { requestRendererScenePrewarm } from "./webgpu-postprocess-policy";
 
 interface SceneInputSurfaceOwner {
   setInputSurface(surface: HTMLElement): void;
@@ -18,12 +16,6 @@ interface SceneManagerLike<TScene> {
   addScene(name: SceneName, scene: TScene): void;
   moveCameraForScene(): void;
 }
-
-type PrewarmableScene = {
-  getCamera(): Camera;
-  getScene(): Object3D<Object3DEventMap>;
-  setPipelinePrewarmer(prewarmer: (scene: Object3D, camera: Camera, targetScene?: Object3D) => Promise<void>): void;
-};
 
 export interface RendererSceneRegistry<
   TTransitionManager,
@@ -90,19 +82,11 @@ interface BootstrapRendererSceneRuntimeInput<
     applyRenderVisualProfile(features: TRenderVisualProfile): void;
     setupPostProcessingEffects(): void;
   },
-  THexceptionScene extends PrewarmableScene,
-  TWorldmapScene extends PrewarmableScene,
-  TFastTravelScene extends PrewarmableScene,
   TRenderVisualProfile,
 > {
   effectsBridgeRuntime: TEffectsBridgeRuntime;
-  fastTravelScene?: TFastTravelScene;
-  hexceptionScene: THexceptionScene;
   renderVisuals: TRenderVisualProfile;
-  renderer?: RendererSurfaceLike;
   sceneManager: TSceneManager;
-  warn?: (message: string, error: unknown) => void;
-  worldmapScene: TWorldmapScene;
 }
 
 export function createRendererSceneRegistry<
@@ -208,27 +192,8 @@ export function bootstrapRendererSceneRuntime<
     applyRenderVisualProfile(features: TRenderVisualProfile): void;
     setupPostProcessingEffects(): void;
   },
-  THexceptionScene extends PrewarmableScene,
-  TWorldmapScene extends PrewarmableScene,
-  TFastTravelScene extends PrewarmableScene,
   TRenderVisualProfile,
->(
-  input: BootstrapRendererSceneRuntimeInput<
-    TSceneManager,
-    TEffectsBridgeRuntime,
-    THexceptionScene,
-    TWorldmapScene,
-    TFastTravelScene,
-    TRenderVisualProfile
-  >,
-): void {
-  configureRendererScenePipelinePrewarm({
-    fastTravelScene: input.fastTravelScene,
-    hexceptionScene: input.hexceptionScene,
-    renderer: input.renderer,
-    warn: input.warn,
-    worldmapScene: input.worldmapScene,
-  });
+>(input: BootstrapRendererSceneRuntimeInput<TSceneManager, TEffectsBridgeRuntime, TRenderVisualProfile>): void {
   input.effectsBridgeRuntime.applyEnvironment();
   input.effectsBridgeRuntime.setupPostProcessingEffects();
   input.sceneManager.moveCameraForScene();
@@ -237,26 +202,4 @@ export function bootstrapRendererSceneRuntime<
 
 function attachRendererSceneToSurface(scene: SceneInputSurfaceOwner, inputSurface: HTMLElement): void {
   scene.setInputSurface(inputSurface);
-}
-
-function configureRendererScenePipelinePrewarm(input: {
-  fastTravelScene?: PrewarmableScene;
-  hexceptionScene: PrewarmableScene;
-  renderer?: RendererSurfaceLike;
-  warn?: (message: string, error: unknown) => void;
-  worldmapScene: PrewarmableScene;
-}): void {
-  [input.worldmapScene, input.hexceptionScene, input.fastTravelScene].forEach((scene) => {
-    scene?.setPipelinePrewarmer(async (sceneRoot, camera, targetScene) => {
-      try {
-        if (targetScene) {
-          await requestRendererScenePrewarm(input.renderer, sceneRoot, camera, targetScene);
-        } else {
-          await requestRendererScenePrewarm(input.renderer, sceneRoot, camera);
-        }
-      } catch (error) {
-        input.warn?.("GameRenderer: Scene prewarm failed", error);
-      }
-    });
-  });
 }

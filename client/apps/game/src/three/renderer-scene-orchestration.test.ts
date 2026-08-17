@@ -27,8 +27,6 @@ describe("prepareGameRendererScenes", () => {
       setupPostProcessingEffects: vi.fn(),
     };
     const applySceneRegistry = vi.fn();
-    const renderer = { id: "renderer" };
-    const warn = vi.fn();
     const renderVisuals: RenderVisualProfile = {
       bloom: true,
       bloomIntensity: 0.4,
@@ -55,21 +53,14 @@ describe("prepareGameRendererScenes", () => {
       mouse: { id: "mouse" } as never,
       renderVisuals,
       raycaster: { id: "raycaster" } as never,
-      renderer: renderer as never,
-      warn,
     });
 
     expect(sceneBootstrapModule.createGameRendererSceneRegistry).toHaveBeenCalledTimes(1);
     expect(applySceneRegistry).toHaveBeenCalledWith(registry);
     expect(sceneBootstrapModule.bootstrapRendererSceneRuntime).toHaveBeenCalledWith({
       effectsBridgeRuntime,
-      fastTravelScene: registry.fastTravelScene,
-      hexceptionScene: registry.hexceptionScene,
       renderVisuals,
-      renderer,
       sceneManager: registry.sceneManager,
-      warn,
-      worldmapScene: registry.worldmapScene,
     });
   });
 });

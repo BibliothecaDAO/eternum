@@ -168,12 +168,7 @@ export class ArmyModel {
     ["T3" as TroopTier, EasingType.EaseOutQuart],
   ]);
 
-  constructor(
-    scene: Scene,
-    labelsGroup?: Group,
-    cameraView?: CameraView,
-    private readonly requestPipelinePrewarm?: (object: Object3D) => void,
-  ) {
+  constructor(scene: Scene, labelsGroup?: Group, cameraView?: CameraView) {
     this.scene = scene;
     this.dummyObject = new Object3D();
     this.loadPromise = Promise.resolve();
@@ -226,7 +221,6 @@ export class ArmyModel {
             const modelData = this.createModelData(gltf);
             this.models.set(modelType, modelData);
             this.reapplyInstancesForModel(modelType, modelData);
-            this.requestPipelinePrewarm?.(modelData.group);
             resolve(modelData);
           } catch (error) {
             reject(error as Error);
@@ -267,7 +261,6 @@ export class ArmyModel {
           const modelData = this.createModelData(gltf, false);
           this.cosmeticModels.set(cosmeticId, modelData);
           this.reapplyInstancesForCosmeticModel(cosmeticId, modelData);
-          this.requestPipelinePrewarm?.(modelData.group);
           resolve(modelData);
         })
         .catch((error) => {

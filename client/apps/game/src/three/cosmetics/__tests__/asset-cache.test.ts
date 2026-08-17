@@ -92,7 +92,7 @@ vi.mock("../../utils/material-pool", () => ({
   },
 }));
 
-import { clearCosmeticAssetCache, getCosmeticAsset, preloadAllCosmeticAssets } from "../asset-cache";
+import { clearCosmeticAssetCache, getCosmeticAsset, loadCosmeticAsset } from "../asset-cache";
 import { clearRegistry, registerCosmetic } from "../registry";
 
 describe("cosmetic asset cache", () => {
@@ -122,7 +122,7 @@ describe("cosmetic asset cache", () => {
       onLoad({ scene: { traverse: (callback: (node: any) => void) => callback(mesh) } });
     });
 
-    await preloadAllCosmeticAssets();
+    await loadCosmeticAsset(entry);
 
     const handle = getCosmeticAsset(entry.id);
 
@@ -154,7 +154,7 @@ describe("cosmetic asset cache", () => {
       onLoad({ scene: { traverse: (callback: (node: any) => void) => callback(mesh) } });
     });
 
-    await preloadAllCosmeticAssets();
+    await loadCosmeticAsset(entry);
 
     clearCosmeticAssetCache();
 
@@ -179,11 +179,11 @@ describe("cosmetic asset cache", () => {
       finishLoad = onLoad;
     });
 
-    const preload = preloadAllCosmeticAssets({ quiet: true });
+    const load = loadCosmeticAsset(entry);
     await vi.waitFor(() => expect(finishLoad).toBeDefined());
     clearCosmeticAssetCache();
     finishLoad!({ scene: { traverse: (callback: (node: any) => void) => callback(mesh) } });
-    await preload;
+    await expect(load).rejects.toThrow("was cleared before completion");
 
     expect(getCosmeticAsset(entry.id)).toBeUndefined();
     expect(mesh.geometry.dispose).toHaveBeenCalledTimes(1);

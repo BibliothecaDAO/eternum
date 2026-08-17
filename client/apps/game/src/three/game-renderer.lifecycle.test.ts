@@ -485,7 +485,6 @@ describe("initScene destruction guard", () => {
     subject.cleanupIntervals = [];
     subject.renderer = {
       domElement: document.createElement("canvas"),
-      compileAsync: vi.fn(),
     };
 
     // Stub out the downstream calls that initScene makes
