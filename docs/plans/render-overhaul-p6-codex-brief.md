@@ -67,6 +67,12 @@ explore reveals keep working; no per-frame cost added to the ambient path (attri
 
 ## P6C — first max-zoom-in and first world→local swap freeze (P1)
 
+**Status (Aug 17): attempted and fully reverted** — 1cc4365fa5 instrumented, 6d6f05e874 attempted the fix, 8e24679c34
+reverted both; the slice nets to zero code. Deferred until after P7 (operator decision). The conviction capture stands:
+998ms `owner=zoom:terrain-detail` (45 pipeline compiles account for only 7.2ms — the cost is main-thread), 698ms first
+world→local swap dominated by first-use texture uploads (a single 768×768 normal map costs 195ms — the P5 watch item
+recurring), and one unattributed 3015ms stall with zero GPU-backend work.
+
 **Evidence:** operator reports both freezes on **both** localhost (prewarm off) and deployed (prewarm on, hexception
 background prewarm active), similar duration. Two conclusions: the freeze predates and survives prewarm, further
 evidence for P6D's deletion; and nothing currently names the stall.

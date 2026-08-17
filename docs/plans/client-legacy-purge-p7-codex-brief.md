@@ -8,9 +8,10 @@ rendering on honest authoritative signals. The remaining player-felt jank does n
 the layers built before it was trustworthy: timers standing in for data signals, recovery loops fighting healthy
 streams, optimistic side-channels that never migrated, and second copies of facts RECS already owns. Four full-code
 audit sweeps (Aug 17: wall-clock gates, fallback paths, optimistic census, side stores) convicted everything below with
-file:line evidence; refs re-verified against 8e24679c34. This brief is the purge, organized by class. P6A/B/C are landed
-(358a329174, b68f0cd01b, 6d6f05e874); P7 starts once P6D (the P5-capture deletions) lands. Rendered version with the
-full tables: https://claude.ai/code/artifact/081b9bc1-ae5e-47a9-8217-55a3bcc65dc2
+file:line evidence; refs re-verified against 8e24679c34. This brief is the purge, organized by class. P6A/B/D are landed
+(358a329174, b68f0cd01b, 3f862d5efe); P6C was attempted and fully reverted (8e24679c34) and is deferred until after P7
+(operator decision, Aug 17) — its conviction capture still stands. P7 is unblocked. Rendered version with the full
+tables: https://claude.ai/code/artifact/081b9bc1-ae5e-47a9-8217-55a3bcc65dc2
 
 ## Doctrine (each slice is these rules applied to one subsystem)
 
@@ -146,11 +147,11 @@ guards (e.g. the 30s realm-action submit race) — each must log when it fires.
 
 ## Order and rules
 
-P6D finishes first — A/B/C are already landed. P7 then runs as four separate slices in order: **A** (transport), **B**
-(one channel), **C** (one truth), **D** (polls & dead waits). Do not combine slices in one change; each PR carries its
-own gates. The two MEASURE items land their log line in the same slice, and their deletion only lands once a session log
-shows the evidence. Expect every slice to be net-negative LOC — a slice that grows the codebase is prima facie
-off-doctrine and needs to say why.
+P6A/B/D are landed; P6C is deferred until after P7 (operator decision, Aug 17). P7 runs now, as four separate slices in
+order: **A** (transport), **B** (one channel), **C** (one truth), **D** (polls & dead waits). Do not combine slices in
+one change; each PR carries its own gates. The two MEASURE items land their log line in the same slice, and their
+deletion only lands once a session log shows the evidence. Expect every slice to be net-negative LOC — a slice that
+grows the codebase is prima facie off-doctrine and needs to say why.
 
 ## Validation
 
