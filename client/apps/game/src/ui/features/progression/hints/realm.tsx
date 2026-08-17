@@ -60,8 +60,6 @@ const LevelTable = () => {
     }));
   }, []);
 
-  console.log(levelTable);
-
   return (
     <div className="rounded-lg border border-gold/20 overflow-hidden">
       <table className="not-prose w-full">

@@ -1281,8 +1281,6 @@ export abstract class HexagonScene {
 
   // Abstract methods
   public destroy(): void {
-    console.log(`[HexagonScene] Destroying scene: ${this.sceneName}`);
-
     this.cleanupLightning();
     this.disposeStateSyncSubscription();
 
@@ -1383,8 +1381,6 @@ export abstract class HexagonScene {
     // Finally, clear the scene
     this.scene.clear();
     this.interactionOverlayScene.clear();
-
-    console.log(`[HexagonScene] Destroyed ${this.sceneName}`);
   }
 
   protected abstract onHexagonMouseMove(
@@ -1417,7 +1413,6 @@ export abstract class HexagonScene {
   }
 
   public addCameraViewListener(listener: (view: CameraView) => void) {
-    console.log("HexagonScene addCameraViewListener:", this.currentCameraView, "->", listener);
     this.cameraViewListeners.add(listener);
     // Immediately notify the listener of the current view
     listener(this.currentCameraView);

@@ -65,7 +65,6 @@ export const useToriiCosmetics = (options: UseToriiCosmeticsOptions = {}) => {
       const tokenBalances = await fetchTokenBalancesWithMetadata(cosmeticsAddress, accountAddress, {
         baseUrl: networkConfig.marketplaceUrl,
       });
-      console.log({ tokenBalances });
 
       // Map to ToriiCosmeticAsset format (already grouped by SQL)
       return tokenBalances.map((token) => ({

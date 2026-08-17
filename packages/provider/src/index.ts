@@ -1055,9 +1055,6 @@ export class EternumProvider extends EnhancedDojoProvider {
     const transactionDetails = this.withGameIdCalldata(rawTransactionDetails);
     this.assertSingleVrfRequestRandomCall(transactionDetails);
 
-    if (typeof window !== "undefined") {
-      console.log({ signer, transactionDetails });
-    }
     const isMultipleTransactions = Array.isArray(transactionDetails);
 
     // Get the transaction type based on the entrypoint name
@@ -1257,9 +1254,6 @@ export class EternumProvider extends EnhancedDojoProvider {
   }
 
   async callAndReturnResult(signer: Account | AccountInterface, transactionDetails: DojoCall | Call) {
-    if (typeof window !== "undefined") {
-      console.log({ signer, transactionDetails });
-    }
     const tx = await this.call(this.namespace ?? NAMESPACE, transactionDetails);
     return tx;
   }
@@ -1515,15 +1509,6 @@ export class EternumProvider extends EnhancedDojoProvider {
     let receipt;
     const nodeUrl = (this.provider as any)?.channel?.nodeUrl;
     const manifestRpcUrl = (this.manifest as any)?.world?.metadata?.rpc_url;
-    console.info("[provider] waitForTransaction start", {
-      transactionHash,
-      retryInterval: TX_WAIT_RETRY_INTERVAL_MS,
-      successStates: TX_WAIT_SUCCESS_STATES,
-      nodeUrl,
-      manifestRpcUrl,
-      worldAddress: this.manifest?.world?.address,
-      transactionType: transactionMeta?.type,
-    });
     try {
       receipt = await this.provider.waitForTransaction(transactionHash, {
         retryInterval: TX_WAIT_RETRY_INTERVAL_MS,
@@ -4776,7 +4761,6 @@ export class EternumProvider extends EnhancedDojoProvider {
   public async accept_marketplace_orders(props: SystemProps.AcceptMarketplaceOrdersProps, approval: Call) {
     const { order_ids, signer } = props;
 
-    console.log("approval", approval);
     const calls = order_ids.map((order_id) => {
       return {
         contractAddress: props.marketplace_address.toString(),
@@ -4784,7 +4768,6 @@ export class EternumProvider extends EnhancedDojoProvider {
         calldata: [order_id.toString()],
       };
     });
-    console.log(calls);
 
     return await this.executeAndCheckTransaction(signer, [approval, ...calls]);
   }

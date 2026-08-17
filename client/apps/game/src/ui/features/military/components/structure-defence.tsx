@@ -100,7 +100,6 @@ const StructureDefence = ({
   };
 
   const handleConfirm = () => {
-    console.log("New defense order confirmed:", defenseTroops);
     setIsReordering(false);
   };
 

@@ -10,6 +10,7 @@ import {
 } from "@/ui/features/infrastructure/automation/model/automation-processor";
 import { isSignerTransientError } from "@/ui/features/infrastructure/automation/model/automation-runner";
 import { computeAutomationConfigSignature } from "@/utils/automation-signature";
+import { verboseLog } from "@/utils/dev-mode";
 import { isEntityOwnedByAccount } from "@/utils/entity-ownership";
 import {
   computeNextEligibleMs,
@@ -228,17 +229,17 @@ export const useAutomation = () => {
     if (processingRef.current) return { ran: false, anyExecuted: false };
 
     if (isGameOver()) {
-      console.log("Automation: Game has ended. Skipping automation pass.");
+      verboseLog("Automation: Game has ended. Skipping automation pass.");
       return { ran: false, anyExecuted: false };
     }
 
     if (!starknetSignerAccount || !starknetSignerAccount.address || starknetSignerAccount.address === "0x0") {
-      console.log("Automation: Missing Starknet signer. Skipping automation pass.");
+      verboseLog("Automation: Missing Starknet signer. Skipping automation pass.");
       return { ran: false, anyExecuted: false };
     }
 
     if (!components) {
-      console.log("Automation: Missing Dojo components. Skipping automation pass.");
+      verboseLog("Automation: Missing Dojo components. Skipping automation pass.");
       return { ran: false, anyExecuted: false };
     }
 
@@ -274,7 +275,7 @@ export const useAutomation = () => {
       let skipRemainingRealmsMessage: string | null = null;
       let signerFaultSurfacedForTick = false;
 
-      console.log(`[Automation] Starting just-in-time planning for ${realmList.length} realms`);
+      verboseLog(`[Automation] Starting just-in-time planning for ${realmList.length} realms`);
       for (const realmConfig of realmList) {
         const realmLabel = realmConfig.realmName ?? `Realm ${realmConfig.realmId}`;
 
@@ -333,7 +334,7 @@ export const useAutomation = () => {
             : new Map();
         const snapshot = rawSnapshot;
 
-        console.log("[Automation] Prepared realm snapshot", {
+        verboseLog("[Automation] Prepared realm snapshot", {
           realmId: activeRealmConfig.realmId,
           realmName: realmLabel,
           blockTick: conservativeTick,
@@ -348,7 +349,7 @@ export const useAutomation = () => {
         });
 
         if (activeRealmConfig.presetId === "idle") {
-          console.log("[Automation] Skipping automation run due to idle preset", {
+          verboseLog("[Automation] Skipping automation run due to idle preset", {
             realmId: activeRealmConfig.realmId,
             realmName: realmLabel,
           });
@@ -392,7 +393,7 @@ export const useAutomation = () => {
 
             if (resourceOver || laborOver) {
               runStatusNote = "Custom allocation over budget; used Smart for this run";
-              console.log("[Automation] Using smart preset for this run due to over-allocation", {
+              verboseLog("[Automation] Using smart preset for this run due to over-allocation", {
                 realmId: activeRealmConfig.realmId,
                 realmName: realmLabel,
                 producedResourceIds,
@@ -436,10 +437,10 @@ export const useAutomation = () => {
           })),
         };
 
-        console.log("[Automation] Planned production run", planLogPayload);
+        verboseLog("[Automation] Planned production run", planLogPayload);
 
         if (!planHasExecutableCalls(plan)) {
-          console.log("[Automation] No executable automation calls detected", planLogPayload);
+          verboseLog("[Automation] No executable automation calls detected", planLogPayload);
           recordExecution(activeRealmConfig.realmId, buildExecutionSummary(plan, Date.now()));
           recordRealmSkippedStatus({
             realmId: activeRealmConfig.realmId,
@@ -474,7 +475,7 @@ export const useAutomation = () => {
           runStatusNote,
         };
 
-        console.log("[Automation] Executing production plan", planLogPayloadWithStatus);
+        verboseLog("[Automation] Executing production plan", planLogPayloadWithStatus);
 
         try {
           await new ResourceManager(components, plan.realmId).submitProvisionalResourceTransaction(
@@ -507,7 +508,7 @@ export const useAutomation = () => {
             attemptedAt: Date.now(),
             consecutiveFailures: 0,
           });
-          console.log("[Automation] Automation execution complete", {
+          verboseLog("[Automation] Automation execution complete", {
             realmId: plan.realmId,
             realmName: realmLabel,
             outputs: planLogPayload.outputs,
@@ -564,7 +565,7 @@ export const useAutomation = () => {
       }
 
       if (skipRemainingRealmsMessage) {
-        console.log("[Automation] Pass ended early", {
+        verboseLog("[Automation] Pass ended early", {
           reason: skipRemainingRealmsMessage,
         });
       }

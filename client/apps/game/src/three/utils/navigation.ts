@@ -112,10 +112,6 @@ export function selectNextStructure(
 
   navigateToStructure(structure.position.x, structure.position.y, scene);
 
-  console.log(
-    `Selected structure: ${structure.ownerName}'s structure at (${structure.position.x}, ${structure.position.y})`,
-  );
-
   return nextIndex;
 }
 
@@ -192,8 +188,6 @@ export function toggleMapHexView() {
 
     window.history.pushState({}, "", nextUrl);
     window.dispatchEvent(new Event("urlChanged"));
-
-    console.log(`Toggled view from ${currentPath} to ${nextUrl}`);
     return;
   }
 
@@ -205,6 +199,4 @@ export function toggleMapHexView() {
 
   // Dispatch URL changed event to trigger scene updates
   window.dispatchEvent(new Event("urlChanged"));
-
-  console.log(`Toggled view from ${currentPath} to ${newPath}`);
 }

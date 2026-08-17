@@ -361,7 +361,9 @@ export default class GameRenderer {
       animate: () => measure("animate-start", () => this.animate()),
       attachInteractionRuntime: () => measure("attach-interaction", () => this.attachInteractionRuntime()),
       cleanupExpiredTransitions: (maxAgeMs) => transitionDB.cleanupExpired(maxAgeMs),
-      debug: (message) => console.debug(message),
+      debug: (message) => {
+        if (import.meta.env.DEV) console.debug(message);
+      },
       document,
       initializeHudScene: () =>
         measure("hud-scene", () => {
@@ -485,7 +487,7 @@ export default class GameRenderer {
       lastTime: this.lastTime,
       logDestroyed: (message) => {
         if (this.isDestroyed) {
-          console.log(message);
+          console.warn(message);
         }
       },
       renderFrame: ({ currentTime, cycleProgress, deltaTime }) => {

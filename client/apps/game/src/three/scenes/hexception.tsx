@@ -680,7 +680,6 @@ export default class HexceptionScene extends HexagonScene {
     this.buildingUpdateUnsubscribe = null;
 
     // CRITICAL: Clean up all Zustand store subscriptions to prevent memory leaks
-    console.log("🧹 Cleaning up Zustand subscriptions:", this.storeUnsubscribes.length);
     this.storeUnsubscribes.forEach((unsubscribe) => unsubscribe());
     this.storeUnsubscribes = [];
 
@@ -691,19 +690,15 @@ export default class HexceptionScene extends HexagonScene {
     }
 
     // CRITICAL: Clean up animation mixers to prevent memory leaks
-    console.log("🧹 Disposing animation mixers:", this.buildingMixers.size);
     this.buildingMixers.forEach((mixer, key) => {
       mixer.stopAllAction();
       mixer.uncacheRoot(mixer.getRoot());
-      console.log(`  ✅ Disposed mixer: ${key}`);
     });
     this.buildingMixers.clear();
 
     // Clean up mines materials
-    console.log("🧹 Disposing mines materials:", this.minesMaterials.size);
     this.minesMaterials.forEach((material, resourceId) => {
       material.dispose();
-      console.log(`  ✅ Disposed material for resource: ${resourceId}`);
     });
     this.minesMaterials.clear();
 
@@ -739,7 +734,6 @@ export default class HexceptionScene extends HexagonScene {
     this.buildingModels.clear();
 
     // OPTIMIZED: Release any matrices back to the pool
-    console.log("🧹 Hexception scene cleanup - releasing matrices");
 
     // Dispose of pillars
     if (this.pillars) {
@@ -803,14 +797,6 @@ export default class HexceptionScene extends HexagonScene {
 
       this.clearBuildingMode();
       try {
-        console.log("Placing building at:", {
-          dojo: account!,
-          entityId: structureEntityId,
-          col: normalizedCoords.col,
-          row: normalizedCoords.row,
-          buildingId: buildingType.type,
-        });
-
         await this.tileManager.placeBuilding(
           account!,
           structureEntityId,
@@ -820,7 +806,7 @@ export default class HexceptionScene extends HexagonScene {
         );
         AudioManager.getInstance().play("ui.build_place");
       } catch (error) {
-        console.log("catched error so removing building", error);
+        console.error("[Hexception] building placement failed; removing provisional building", error);
         this.removeBuilding(normalizedCoords.col, normalizedCoords.row);
       }
       this.updateHexceptionGrid(this.hexceptionRadius);

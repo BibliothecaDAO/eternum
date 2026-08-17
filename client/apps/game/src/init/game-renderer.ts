@@ -25,7 +25,6 @@ function disposeActiveGameRendererSession() {
     return;
   }
 
-  console.log("[initializeGameRenderer] Cleaning up existing GameRenderer before creating new one");
   activeGameRendererSession.cleanup();
   activeGameRendererSession = null;
 }

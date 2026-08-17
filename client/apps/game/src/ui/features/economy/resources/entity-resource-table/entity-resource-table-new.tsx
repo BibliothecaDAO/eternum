@@ -447,7 +447,6 @@ export const EntityResourceTableNew = React.memo(({ entityId }: EntityResourceTa
 
   const handleTransferSelected = useCallback(async () => {
     const draftsToSend = transferDrafts.filter((draft) => (draft.isSelected ?? true) && !draft.isProcessing);
-    console.log("draftsToSend", draftsToSend);
     if (draftsToSend.length === 0) return;
 
     setIsBatchProcessing(true);

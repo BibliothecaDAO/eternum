@@ -55,7 +55,6 @@ export function useRevealShare({ chestRarity }: UseRevealShareOptions): UseRevea
       ]);
 
       // Optionally show success feedback here
-      console.log("Image copied to clipboard!");
     } catch (error) {
       console.error("Failed to copy image:", error);
     } finally {

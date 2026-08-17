@@ -4,6 +4,7 @@ import { type SetupResult } from "@bibliothecadao/dojo";
 
 import { useConnectionStore } from "@/hooks/store/use-connection-store";
 import { recordGameEntryDuration } from "@/ui/layouts/game-entry-timeline";
+import { verboseLog } from "@/utils/dev-mode";
 import {
   disposeActiveGameSyncRuntime,
   getActiveGameSyncRuntime,
@@ -116,7 +117,7 @@ const reportGamewideSyncMetrics = (metrics: GameSyncRuntimeMetrics): void => {
   if (gamewideMetricsLogTimer) return;
 
   gamewideMetricsLogTimer = setTimeout(() => {
-    if (pendingGamewideMetrics) {
+    if (pendingGamewideMetrics && import.meta.env.DEV) {
       console.info(
         `[GameSyncMetrics] ${stringifyWorldmapSyncABPayload(pendingGamewideMetrics as unknown as Record<string, unknown>)}`,
       );
@@ -234,7 +235,7 @@ const runInitialSyncTask = async ({
   const startedAt = performance.now();
   await task();
   const elapsedMs = performance.now() - startedAt;
-  console.log(`[sync] ${label}`, elapsedMs);
+  verboseLog(`[sync] ${label}`, elapsedMs);
   recordGameEntryDuration(`initial-sync-${label.replace(/\s+/g, "-")}`, elapsedMs);
   reportProgress(targetProgress);
 };
@@ -351,7 +352,7 @@ export const initialSync = async (
     options.subscriptionSetupTimeoutMs ?? env.VITE_PUBLIC_TORII_SUBSCRIPTION_SETUP_TIMEOUT_MS;
   const reportProgress = createInitialSyncProgressReporter(options.reportProgress ?? true, setInitialSyncProgress);
 
-  console.log("[STARTING game sync]");
+  verboseLog("[STARTING game sync]");
   reportProgress(0);
   await startAuthoritativeGameSyncSession({
     setup,

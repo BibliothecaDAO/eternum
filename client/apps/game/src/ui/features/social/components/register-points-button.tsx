@@ -27,7 +27,7 @@ interface RegisterPointsButtonProps {
   variant?: "bar" | "inline";
 }
 
-const POINTS_SUMMARY_DEBUG = true;
+const POINTS_SUMMARY_DEBUG = false;
 
 export const RegisterPointsButton = ({ className, variant = "bar" }: RegisterPointsButtonProps) => {
   const {

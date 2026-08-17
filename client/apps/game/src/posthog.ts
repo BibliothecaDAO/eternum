@@ -4,7 +4,6 @@ import { env } from "../env";
 const initPostHog = () => {
   // Only initialize if we have a project API key
   if (!env.VITE_PUBLIC_POSTHOG_KEY) {
-    console.log("PostHog API key not configured, skipping initialization");
     return;
   }
 

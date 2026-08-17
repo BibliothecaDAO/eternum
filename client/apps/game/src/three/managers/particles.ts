@@ -122,8 +122,6 @@ export class Particles {
   }
 
   public dispose(): void {
-    console.log("🧹 Particles: Starting disposal");
-
     // Remove from scene
     if (this.points?.parent) {
       this.points.parent.remove(this.points);
@@ -144,7 +142,5 @@ export class Particles {
     this.pointsPositions = new Float32Array();
     this.particleVelocities = new Float32Array();
     this.particleAngles = new Float32Array();
-
-    console.log("🧹 Particles: Disposed geometry, material, and cleaned up");
   }
 }

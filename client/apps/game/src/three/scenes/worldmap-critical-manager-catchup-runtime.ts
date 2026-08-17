@@ -81,7 +81,9 @@ async function settleCriticalManagerCatchUp(
   const startedAt = now();
   const result = await settleCriticalManagerPromise(manager, input);
   const durationMs = now() - startedAt;
-  const log = input.log ?? (durationMs > 100 ? console.info : undefined);
+  // Console reporting is caller-injected (DEV-gated at the call site); there is
+  // no production fallback — perf lines never leak into shipped builds.
+  const log = input.log;
   if (log) {
     log(
       `[WorldmapPerf] critical ${manager.label} manager catch-up ` +

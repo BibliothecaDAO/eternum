@@ -3056,10 +3056,6 @@ ${
     const previousCount = army.troopCount;
     if (previousCount !== troopCount) {
       const diff = troopCount - previousCount;
-      const diffSign = diff > 0 ? "+" : "";
-      console.log(
-        `[TroopCountDiff] Army #${entityId} | Previous: ${previousCount} | Current: ${troopCount} | Diff: ${diffSign}${diff}`,
-      );
 
       // Play floating damage/heal FX at the army's position
       const normalizedHex = army.hexCoords.getNormalized();

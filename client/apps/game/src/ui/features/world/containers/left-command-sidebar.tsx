@@ -43,7 +43,7 @@ const useRealtimeChatConfig = () => {
 
   useEffect(() => {
     if (import.meta.env.DEV && !chatBaseUrl) {
-      console.info("[RealtimeChat] disabled: VITE_PUBLIC_CHAT_URL is unset");
+      console.warn("[RealtimeChat] disabled: VITE_PUBLIC_CHAT_URL is unset");
     }
   }, [chatBaseUrl]);
 

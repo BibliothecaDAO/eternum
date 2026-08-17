@@ -47,8 +47,6 @@ export function useOwnedChests(network: CosmeticsNetwork = DEFAULT_COSMETICS_NET
         return [];
       }
 
-      console.log({ lootChestAddress });
-
       try {
         const tokenBalances = await fetchLootChestBalances(lootChestAddress, address, {
           collectionId: networkConfig.lootChestCollectionId,

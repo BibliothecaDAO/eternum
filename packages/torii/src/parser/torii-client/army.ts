@@ -4,7 +4,6 @@ import { ComponentValue } from "@dojoengine/recs";
 export const getExplorerFromToriiEntity = (
   entity: any,
 ): ComponentValue<ClientComponents["ExplorerTroops"]["schema"]> => {
-  console.log({ entity });
   const coordValue = entity.coord?.value;
   return {
     // s2 single world: every per-game model leads with game_id (absent on legacy worlds -> 0).

@@ -426,7 +426,6 @@ export class HighlightHexManager {
     this.highlightTimeline?.kill();
     this.highlightTimeline = null;
     this.cleanupLaunchGlows();
-    console.log("🧹 HighlightHexManager: Starting disposal");
 
     [this.routeLayer, this.endpointLayer, this.frontierLayer].forEach((layer) => {
       if (layer.mesh.parent) {
@@ -437,7 +436,5 @@ export class HighlightHexManager {
     });
 
     this.activeInstances = [];
-
-    console.log("🧹 HighlightHexManager: Disposed layered InstancedMesh highlight field");
   }
 }

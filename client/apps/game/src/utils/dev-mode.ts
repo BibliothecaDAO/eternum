@@ -51,6 +51,15 @@ const readVerboseFlag = (): boolean => {
 
 export const VERBOSE_LOGS_ENABLED: boolean = readVerboseFlag();
 
+/**
+ * The one sanctioned home for informational console output. Silent unless
+ * `?logs=1` — console.log/info/debug outside this helper fails the
+ * console-discipline source test.
+ */
+export const verboseLog = (...args: unknown[]): void => {
+  if (VERBOSE_LOGS_ENABLED) console.log(...args);
+};
+
 export const setDevModeEnabled = (enabled: boolean): void => {
   try {
     window.localStorage.setItem(STORAGE_KEY, enabled ? "1" : "0");

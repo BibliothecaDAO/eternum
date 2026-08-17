@@ -9,6 +9,7 @@ import { useEffect } from "react";
 import { toast } from "sonner";
 import { AudioManager } from "@/audio/core/AudioManager";
 import { getTxMessage as getBaseMessage, getTxIcon } from "@/ui/components/transaction-center/types";
+import { verboseLog } from "@/utils/dev-mode";
 import { extractReadableErrorMessage } from "@/utils/error-message";
 
 const getTxMessage = (type: TransactionType): string => {
@@ -51,7 +52,7 @@ export function TransactionNotification() {
 
   useEffect(() => {
     const handleTransactionPending = (receipt: any) => {
-      console.log("Transaction pending:", receipt);
+      verboseLog("Transaction pending:", receipt);
       const description = getTxMessage(receipt.type);
       const txCount = receipt.transactionCount ? ` (${receipt.transactionCount} transactions)` : "";
       toast("⏳ Transaction pending", { description: description + txCount });
@@ -59,7 +60,7 @@ export function TransactionNotification() {
     };
 
     const handleTransactionComplete = (receipt: any) => {
-      console.log("Transaction completed:", receipt);
+      verboseLog("Transaction completed:", receipt);
       const description = getTxMessage(receipt.type);
       const txCount = receipt.transactionCount ? ` (${receipt.transactionCount} transactions)` : "";
       toast("Completed Action", { description: description + txCount });
@@ -86,7 +87,7 @@ export function TransactionNotification() {
       const classified = classifyTransactionError("error" in payload ? payload.error : payload.message);
 
       if (classified.kind === "user_cancelled") {
-        console.info("Transaction cancelled by user:", payload.type);
+        verboseLog("Transaction cancelled by user:", payload.type);
         // No failure sound: closing the wallet popup is not an error.
         toast("Transaction cancelled", { description: actionLabel });
         return;

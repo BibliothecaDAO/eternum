@@ -303,7 +303,6 @@ export default class HUDScene {
     if (this.navigationTargetUnsubscribe) {
       this.navigationTargetUnsubscribe();
       this.navigationTargetUnsubscribe = null;
-      console.log("🧹 HUDScene: Unsubscribed from navigationTarget store");
     }
 
     // Clean up navigator (if it has a destroy method)
@@ -348,7 +347,5 @@ export default class HUDScene {
 
     // Clear scene
     this.scene.clear();
-
-    console.log("HUDScene: Destroyed and cleaned up");
   }
 }

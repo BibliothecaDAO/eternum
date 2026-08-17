@@ -15,6 +15,7 @@ import { getComponentEntities, getComponentValue, removeComponent } from "@dojoe
 import { setEntities } from "@dojoengine/state";
 import type { Clause, Entity as ToriiEntity, Query } from "@dojoengine/torii-wasm/types";
 import { captureClientEvent } from "@/posthog";
+import { VERBOSE_LOGS_ENABLED } from "@/utils/dev-mode";
 import { filterEntityToActiveGameScope } from "./game-scope-entity-filter";
 import { observeToriiStreamLifecycle } from "./torii-stream-lifecycle-observer";
 import { setupToriiSubscriptions, type ToriiSubscriptionSetupTimeoutInfo } from "./torii-subscription-setup";
@@ -110,7 +111,11 @@ const createComponentLookup = (components: readonly Component[]): Map<string, Co
   return lookup;
 };
 
-const createRecsGameSyncStore = (setup: SetupResult, logging: boolean, syncModels: readonly string[]): GameSyncStore => {
+const createRecsGameSyncStore = (
+  setup: SetupResult,
+  logging: boolean,
+  syncModels: readonly string[],
+): GameSyncStore => {
   const authoritativeComponents = flattenContractComponents(setup.network.contractComponents);
   const authoritativeComponentLookup = createComponentLookup(authoritativeComponents);
   assertSyncModelsResolvable(authoritativeComponentLookup, syncModels);
@@ -300,7 +305,7 @@ const reportProvisionalIntentStalled = (info: GameSyncProvisionalIntentStalledIn
 };
 
 const reportProvisionalIntentPhase = (info: GameSyncProvisionalIntentPhaseInfo): void => {
-  if (import.meta.env.DEV) console.info("[GameSync] provisional intent phase", info);
+  if (import.meta.env.DEV && VERBOSE_LOGS_ENABLED) console.info("[GameSync] provisional intent phase", info);
   captureClientEvent("game_sync_provisional_intent_phase", {
     phase: info.phase,
     intent_id: info.intentId,
@@ -402,7 +407,7 @@ export const createGamewideSyncSession = (input: CreateGamewideSyncSessionInput)
           if (replayWatermark) {
             const replayedEventCount = await eventGapFill.replaySince(replayWatermark, handlers.onEvent);
             if (replayedEventCount > 0) {
-              console.info(`[Sync] event gap-fill replayed ${replayedEventCount} events`);
+              console.warn(`[Sync] event gap-fill replayed ${replayedEventCount} events`);
               handlers.onEventGapFill(replayedEventCount);
             }
           } else if (hasOpenedEventStream) {

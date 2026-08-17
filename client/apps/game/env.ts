@@ -159,11 +159,12 @@ const envSchema = z.object({
   VITE_TRACING_ENDPOINT: z.string().url().optional().default("http://localhost:4318/v1/traces"),
   VITE_TRACING_SAMPLE_RATE: z.string().optional().default("0.1"),
   VITE_TRACING_ERROR_SAMPLE_RATE: z.string().optional().default("1.0"),
+  // Debug monitoring must be opt-in — see the note on TORII_BOUNDS_DEBUG below.
   VITE_PUBLIC_ENABLE_MEMORY_MONITORING: z
     .string()
     .transform((v) => v === "true")
     .optional()
-    .default("true"),
+    .default("false"),
 
   // Debug logging must be opt-in — a defaulted-true flag spams every build
   // that forgets to set it.

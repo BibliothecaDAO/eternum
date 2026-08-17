@@ -1,5 +1,5 @@
 import { playUnitCommandSound, playUnitCommandSoundForWorldmapAction } from "@/audio/unit-command-audio";
-import { VERBOSE_LOGS_ENABLED } from "@/utils/dev-mode";
+import { VERBOSE_LOGS_ENABLED, verboseLog } from "@/utils/dev-mode";
 import { toast } from "sonner";
 
 import { initializeSyncSimulator } from "@/dojo/sync-simulator";
@@ -1001,7 +1001,9 @@ export default class WorldmapScene extends WarpTravel {
       this.memoryMonitor = new MemoryMonitor({
         spikeThresholdMB: 30,
         onMemorySpike: (spike) => {
-          console.warn(`🗺️  WorldMap Memory Spike: +${spike.increaseMB.toFixed(1)}MB in ${spike.context}`);
+          if (VERBOSE_LOGS_ENABLED) {
+            console.warn(`🗺️  WorldMap Memory Spike: +${spike.increaseMB.toFixed(1)}MB in ${spike.context}`);
+          }
         },
       });
     }
@@ -1021,7 +1023,7 @@ export default class WorldmapScene extends WarpTravel {
       this.perfSimulation.setupPerformanceSimulationGUI();
     }
 
-    initializeSyncSimulator(dojoContext);
+    if (import.meta.env.DEV) initializeSyncSimulator(dojoContext);
     this.loadBiomeModels(this.getTerrainCompositeCellCapacity());
   }
 
@@ -2353,7 +2355,7 @@ export default class WorldmapScene extends WarpTravel {
     }
 
     if (structure) {
-      console.log("[Worldmap] Structure entity id clicked:", structure.id);
+      verboseLog("[Worldmap] Structure entity id clicked:", structure.id);
     }
 
     this.handleHexSelection(hexCoords, clickPlan.isMine);
@@ -3332,7 +3334,7 @@ export default class WorldmapScene extends WarpTravel {
             });
 
             if (import.meta.env.DEV) {
-              console.warn(`[DEBUG] Army ${selectedEntityId} not available after chunk switch`);
+              console.warn(`[Worldmap] Army ${selectedEntityId} not available after chunk switch`);
             }
             if (shouldQueueRecovery) {
               this.queueArmySelectionRecovery(selectedEntityId, playerAddress);
@@ -3366,7 +3368,7 @@ export default class WorldmapScene extends WarpTravel {
       }
 
       if (import.meta.env.DEV) {
-        console.warn(`[DEBUG] Army ${selectedEntityId} not available in current chunk for selection`);
+        console.warn(`[Worldmap] Army ${selectedEntityId} not available in current chunk for selection`);
       }
 
       return false;
@@ -3394,7 +3396,7 @@ export default class WorldmapScene extends WarpTravel {
     )?.coord;
     if (!explorerTroopsCoord) {
       if (import.meta.env.DEV) {
-        console.error(`[DEBUG] Army ${selectedEntityId} has no ExplorerTroops coord; suppressing action paths`);
+        console.error(`[Worldmap] Army ${selectedEntityId} has no ExplorerTroops coord; suppressing action paths`);
       }
       this.clearMovementActionOptionsForSelectedArmy(selectedEntityId);
       this.showSelectedArmyPulse(selectedEntityId);
@@ -3501,7 +3503,7 @@ export default class WorldmapScene extends WarpTravel {
       this.selectionPulseManager.applyPulsePalette(resolveSelectionPulsePalette("army"));
     } else {
       if (import.meta.env.DEV) {
-        console.warn(`[DEBUG] No projected army position found for ${selectedEntityId}`);
+        console.warn(`[Worldmap] No projected army position found for ${selectedEntityId}`);
       }
     }
   }
@@ -3535,13 +3537,13 @@ export default class WorldmapScene extends WarpTravel {
           onUnavailable: () => {
             if (import.meta.env.DEV) {
               console.warn(
-                `[DEBUG] Army ${selectedEntityId} still unavailable after forced chunk refresh during selection recovery`,
+                `[Worldmap] Army ${selectedEntityId} still unavailable after forced chunk refresh during selection recovery`,
               );
             }
           },
           onError: (error) => {
             if (import.meta.env.DEV) {
-              console.warn(`[DEBUG] Army selection recovery failed for ${selectedEntityId}`, error);
+              console.warn(`[Worldmap] Army selection recovery failed for ${selectedEntityId}`, error);
             }
           },
           wait: (delayMs) => new Promise((resolve) => setTimeout(resolve, delayMs)),
@@ -4608,7 +4610,7 @@ export default class WorldmapScene extends WarpTravel {
     const totalMs = performance.now() - windowRebuildStartedAt;
     // Zoom-level changes resolve a new window; when that stalls the frame,
     // name the phase so the freeze is attributable from a single log line.
-    if (totalMs > 150) {
+    if (import.meta.env.DEV && totalMs > 150) {
       const retainMs = Math.round(criticalBuildStartedAt - windowRebuildStartedAt);
       const criticalMs = Math.round(compositeStartedAt - criticalBuildStartedAt);
       const compositeMs = Math.round(performance.now() - compositeStartedAt);
@@ -8269,19 +8271,6 @@ export default class WorldmapScene extends WarpTravel {
       setWorldmapRenderGauge("activePaths", this.armyManager.getActivePathCount());
       setWorldmapRenderGauge("activeLabels", this.hoverLabelManager.getActiveLabelCount());
       this.reconcileHoverLabels("manager_catch_up");
-    }
-
-    if (import.meta.env.DEV) {
-      const debugAreaKey = this.getRenderAreaKeyForChunk(chunkKey);
-      console.info("[CHUNK DEBUG]", {
-        currentChunk: this.currentChunk,
-        areaKey: debugAreaKey,
-        visible: {
-          armies: this.armyManager.getVisibleCount(),
-          structures: this.structureManager.getVisibleCount(),
-          chests: this.chestManager.getVisibleCount(),
-        },
-      });
     }
   }
 
