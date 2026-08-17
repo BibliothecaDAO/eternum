@@ -63,7 +63,7 @@ async function loadWithRetry<T>(loader: () => Promise<T>): Promise<T> {
   throw (lastError as Error) ?? new Error("Unknown asset load failure");
 }
 
-function poolMaterial(material: Material, accumulator: Set<Material>): Material {
+function poolMaterial(material: Material, accumulator: Material[]): Material {
   let pooled = material;
 
   if (material instanceof MeshStandardMaterial) {
@@ -72,15 +72,11 @@ function poolMaterial(material: Material, accumulator: Set<Material>): Material 
     pooled = materialPool.getBasicMaterial(material);
   }
 
-  if (pooled !== material && typeof material.dispose === "function") {
-    material.dispose();
-  }
-
-  accumulator.add(pooled);
+  accumulator.push(pooled);
   return pooled;
 }
 
-function applyMaterialPooling(gltf: GLTF, accumulator: Set<Material>) {
+function applyMaterialPooling(gltf: GLTF, accumulator: Material[]) {
   gltf.scene.traverse((node) => {
     if (!(node instanceof Mesh)) return;
 
@@ -96,7 +92,7 @@ function applyMaterialPooling(gltf: GLTF, accumulator: Set<Material>) {
 async function loadCosmeticEntry(handle: CosmeticAssetHandle): Promise<CosmeticAssetPayload> {
   const gltfs: GLTF[] = [];
   const textures: Texture[] = [];
-  const materials = new Set<Material>();
+  const materials: Material[] = [];
 
   try {
     for (const path of handle.entry.assetPaths) {
@@ -115,7 +111,7 @@ async function loadCosmeticEntry(handle: CosmeticAssetHandle): Promise<CosmeticA
       }
     }
   } catch (error) {
-    disposeCosmeticPayloads([{ gltfs, materials: Array.from(materials), textures }]);
+    disposeCosmeticPayloads([{ gltfs, materials, textures }]);
     handle.error = error as Error;
     handle.status = "failed";
     throw error;
@@ -124,7 +120,7 @@ async function loadCosmeticEntry(handle: CosmeticAssetHandle): Promise<CosmeticA
   const payload: CosmeticAssetPayload = {
     gltfs,
     textures,
-    materials: Array.from(materials),
+    materials,
   };
 
   if (assetCache.get(handle.entry.id) !== handle) {

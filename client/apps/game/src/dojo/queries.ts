@@ -1,9 +1,8 @@
 // onload -> fetch single key entities
 
 import { HexPosition, ID, StructureType } from "@bibliothecadao/types";
-import { Component, Metadata, Schema } from "@dojoengine/recs";
+import { requireActiveGameSyncRuntime, type GameSyncEntity } from "@bibliothecadao/eternum/game-sync";
 import { AndComposeClause, MemberClause } from "@dojoengine/sdk";
-import { getEntities, setEntities } from "@dojoengine/state";
 import { PatternMatching, ToriiClient } from "@dojoengine/torii-client";
 import { Clause, LogicalOperator } from "@dojoengine/torii-wasm";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
@@ -17,6 +16,33 @@ import { gameIdKey, gameModel, getScopedGameId, isGameScoped } from "./game-scop
 
 const CONFIG_FETCH_CACHE_PREFIX = "eternum:config-fetched";
 const ENTITY_QUERY_LIMIT = 40_000;
+
+const fetchEntitiesIntoGameSync = async (
+  client: ToriiClient,
+  clause: Clause,
+  models: string[],
+  limit = ENTITY_QUERY_LIMIT,
+): Promise<void> => {
+  const visitedCursors = new Set<string>();
+  let cursor: string | undefined;
+
+  for (;;) {
+    const page = await client.getEntities({
+      pagination: { limit, cursor, direction: "Forward", order_by: [] },
+      clause,
+      no_hashed_keys: false,
+      models,
+      historical: false,
+    });
+    await requireActiveGameSyncRuntime().applyAuthoritativeEntities(page.items as GameSyncEntity[]);
+    if (page.items.length < limit || !page.next_cursor) return;
+    if (visitedCursors.has(page.next_cursor)) {
+      throw new Error(`Torii entity query cursor repeated: ${page.next_cursor}`);
+    }
+    visitedCursors.add(page.next_cursor);
+    cursor = page.next_cursor;
+  }
+};
 
 const getConfigCacheKey = () =>
   `${CONFIG_FETCH_CACHE_PREFIX}:${env.VITE_PUBLIC_CHAIN}:${env.VITE_PUBLIC_TORII}:${getScopedGameId()}`;
@@ -62,7 +88,6 @@ const hasValidPosition = (position: HexPosition | undefined): position is HexPos
 
 export const getStructuresDataFromTorii = async (
   client: ToriiClient,
-  components: Component<Schema, Metadata, undefined>[],
   structures: { entityId: ID; position: HexPosition }[],
   onComplete?: () => void,
 ) => {
@@ -111,7 +136,6 @@ export const getStructuresDataFromTorii = async (
   // Create promises for all queries without awaiting them
   const structuresPromise = debouncedGetEntitiesFromTorii(
     client,
-    components as any,
     structuresToSync.map((structure) => structure.entityId),
     playerStructuresModels,
     runOnComplete,
@@ -119,14 +143,12 @@ export const getStructuresDataFromTorii = async (
 
   const armiesPromise = debouncedGetOwnedArmiesFromTorii(
     client,
-    components as any,
     structuresToSync.map((structure) => structure.entityId),
     runOnComplete,
   );
 
   const buildingsPromise = debouncedGetBuildingsFromTorii(
     client,
-    components as any,
     structuresToSync.map((structure) => structure.position),
     runOnComplete,
   );
@@ -135,11 +157,7 @@ export const getStructuresDataFromTorii = async (
   return Promise.all([structuresPromise, armiesPromise, buildingsPromise]);
 };
 
-export const getConfigFromTorii = async <S extends Schema>(
-  client: ToriiClient,
-  components: Component<S, Metadata, undefined>[],
-  onBackgroundRefresh?: () => void,
-) => {
+export const getConfigFromTorii = async (client: ToriiClient, onBackgroundRefresh?: () => void) => {
   let configModels: string[];
   let configClauses: Clause[];
 
@@ -238,27 +256,10 @@ export const getConfigFromTorii = async <S extends Schema>(
     ];
   }
 
-  // NOT @dojoengine/state's getEntities: that helper fires its RECS writes
-  // without awaiting them, so its promise resolves before any entity lands
-  // (verified live: 0 config entities at resolve time, all present seconds
-  // later). configManager snapshots RECS immediately after this fetch, so the
-  // writes must be awaited — page manually and await setEntities per page.
-  const fetchConfig = async () => {
-    let cursor: string | undefined;
-    for (;;) {
-      const page = await client.getEntities({
-        pagination: { limit: ENTITY_QUERY_LIMIT, cursor, direction: "Forward", order_by: [] },
-        clause: { Composite: { operator: "Or", clauses: configClauses } },
-        no_hashed_keys: false,
-        models: configModels,
-        historical: false,
-      });
-      await setEntities(page.items, components, false);
-      const count = Array.isArray(page.items) ? page.items.length : Object.keys(page.items ?? {}).length;
-      if (count < ENTITY_QUERY_LIMIT || !page.next_cursor) break;
-      cursor = page.next_cursor;
-    }
-  };
+  // Config must land through the runtime before configManager snapshots RECS.
+  // This also keeps every in-session Torii query visible to provisional reconciliation.
+  const fetchConfig = () =>
+    fetchEntitiesIntoGameSync(client, { Composite: { operator: "Or", clauses: configClauses } }, configModels);
 
   // Per issue #4653: config data is static within a chain/world deployment and
   // most config models are also covered by GLOBAL_STREAM_CLAUSE's initial state
@@ -288,10 +289,7 @@ export const getConfigFromTorii = async <S extends Schema>(
   return result;
 };
 
-export const getAddressNamesFromTorii = async <S extends Schema>(
-  client: ToriiClient,
-  components: Component<S, Metadata, undefined>[],
-) => {
+export const getAddressNamesFromTorii = async (client: ToriiClient) => {
   // AddressName is player identity — chain-global on both arms (1 key).
   const models = [gameModel("AddressName")];
   const query = {
@@ -302,13 +300,10 @@ export const getAddressNamesFromTorii = async <S extends Schema>(
     },
   };
 
-  return getEntities(client, query, components as any, [], models, ENTITY_QUERY_LIMIT, false);
+  return fetchEntitiesIntoGameSync(client, query, models);
 };
 
-export const getGuildsFromTorii = async <S extends Schema>(
-  client: ToriiClient,
-  components: Component<S, Metadata, undefined>[],
-) => {
+export const getGuildsFromTorii = async (client: ToriiClient) => {
   const singleKeyModels = [gameModel("Guild"), gameModel("GuildMember")];
   const twoKeyModels = [gameModel("GuildWhitelist")];
   const models = [...singleKeyModels, ...twoKeyModels];
@@ -344,15 +339,10 @@ export const getGuildsFromTorii = async <S extends Schema>(
         },
       };
 
-  return getEntities(client, query, components as any, [], models, ENTITY_QUERY_LIMIT, false);
+  return fetchEntitiesIntoGameSync(client, query, models);
 };
 
-export const getEntitiesFromTorii = async <S extends Schema>(
-  client: ToriiClient,
-  components: Component<S, Metadata, undefined>[],
-  entityIDs: ID[],
-  entityModels: string[],
-) => {
+export const getEntitiesFromTorii = async (client: ToriiClient, entityIDs: ID[], entityModels: string[]) => {
   const validEntityIDs = entityIDs.filter((id) => {
     const valid = isValidId(id);
 
@@ -397,17 +387,14 @@ export const getEntitiesFromTorii = async <S extends Schema>(
           },
         };
 
-  return getEntities(client, query, components as any, [], entityModels, 40_000, false);
+  return fetchEntitiesIntoGameSync(client, query, entityModels);
 };
 
 // Market/Liquidity/Trade are game_id-keyed on s2 (W3): prefix the key clause
 // with the active game on the scoped arm.
-export const getMarketFromTorii = async <S extends Schema>(
-  client: ToriiClient,
-  components: Component<S, Metadata, undefined>[],
-) => {
+export const getMarketFromTorii = async (client: ToriiClient) => {
   const marketModels = [gameModel("Market"), gameModel("Liquidity"), gameModel("Trade")];
-  const promiseMarket = getEntities(
+  return fetchEntitiesIntoGameSync(
     client,
     {
       Keys: {
@@ -416,20 +403,11 @@ export const getMarketFromTorii = async <S extends Schema>(
         models: marketModels,
       },
     },
-    components,
-    [],
     marketModels,
-    ENTITY_QUERY_LIMIT,
-    false,
   );
-
-  return Promise.all([promiseMarket]);
 };
 
-export const getBankStructuresFromTorii = async <S extends Schema>(
-  client: ToriiClient,
-  components: Component<S, Metadata, undefined>[],
-) => {
+export const getBankStructuresFromTorii = async (client: ToriiClient) => {
   const structureModel = gameModel("Structure") as `${string}-${string}`;
   const clause = isGameScoped()
     ? AndComposeClause([
@@ -438,14 +416,10 @@ export const getBankStructuresFromTorii = async <S extends Schema>(
       ]).build()
     : MemberClause(structureModel, "category", "Eq", StructureType.Bank).build();
 
-  return getEntities(client, clause, components, [], [structureModel], ENTITY_QUERY_LIMIT, false);
+  return fetchEntitiesIntoGameSync(client, clause, [structureModel]);
 };
 
-export const getOwnedArmiesFromTorii = async <S extends Schema>(
-  client: ToriiClient,
-  components: Component<S, Metadata, undefined>[],
-  owners: number[],
-) => {
+export const getOwnedArmiesFromTorii = async (client: ToriiClient, owners: number[]) => {
   const explorerModel = gameModel("ExplorerTroops");
   const ownersClause: Clause = {
     Composite: {
@@ -479,14 +453,10 @@ export const getOwnedArmiesFromTorii = async <S extends Schema>(
       }
     : ownersClause;
 
-  return getEntities(client, clause, components, [], [explorerModel, gameModel("Resource")], ENTITY_QUERY_LIMIT, false);
+  return fetchEntitiesIntoGameSync(client, clause, [explorerModel, gameModel("Resource")]);
 };
 
-export const getBuildingsFromTorii = async <S extends Schema>(
-  client: ToriiClient,
-  components: Component<S, Metadata, undefined>[],
-  structurePositions: HexPosition[],
-) => {
+export const getBuildingsFromTorii = async (client: ToriiClient, structurePositions: HexPosition[]) => {
   const buildingModel = gameModel("Building");
   const query = {
     Composite: {
@@ -507,5 +477,5 @@ export const getBuildingsFromTorii = async <S extends Schema>(
     },
   };
 
-  return getEntities(client, query, components as any, [], [buildingModel], ENTITY_QUERY_LIMIT, false);
+  return fetchEntitiesIntoGameSync(client, query, [buildingModel]);
 };

@@ -14,10 +14,10 @@ function readSource(relativePath: string): string {
 // (ArmyData.matrixIndex). These guards lock in the two manager-side rules that,
 // together with the army-model fixes, keep the slot a single source of truth.
 describe("ArmyManager movement uses the model's live slot, not the cached mirror", () => {
-  it("applyMovementPlan sources the move slot from the army-model SSOT (getEntitySlot)", () => {
+  it("projection-driven movement sources the move slot from the army-model SSOT (getEntitySlot)", () => {
     const src = readSource("army-manager.ts");
 
-    const start = src.indexOf("public async applyMovementPlan");
+    const start = src.indexOf("private async applyMovementPlan");
     expect(start).toBeGreaterThan(-1);
 
     const body = src.slice(start, start + 3200);

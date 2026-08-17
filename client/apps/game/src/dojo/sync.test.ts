@@ -82,6 +82,7 @@ function createSyncHarness() {
         next_cursor: undefined,
       }),
     ),
+    getEventMessages: vi.fn(async () => ({ items: [], next_cursor: undefined })),
   };
 
   const setup = {

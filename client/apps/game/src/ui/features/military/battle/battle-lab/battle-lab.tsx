@@ -254,7 +254,7 @@ export const BattleLab = ({
   const raidActive = state.attackType === "raid" && showRaidToggle;
 
   const onAttack = async () => {
-    if (mode !== "live" || !selectedHex || !target || actionDisabled || !snapshot) return;
+    if (mode !== "live" || !selected || !targetRef || !selectedHex || !target || actionDisabled || !snapshot) return;
     let pendingFxKey: string | null = null;
     try {
       setLoading(true);
@@ -264,7 +264,9 @@ export const BattleLab = ({
         key: pendingFxKey,
         kind: "attack",
         attackerId: attackerEntityId,
+        attackerActorType: selected.type,
         defenderId: target.id || undefined,
+        defenderActorType: targetRef.type,
         attackerHex: { col: selectedHex.col, row: selectedHex.row },
         targetHex: { col: target.hex.x, row: target.hex.y },
       });

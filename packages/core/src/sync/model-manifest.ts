@@ -18,7 +18,7 @@ interface GameSyncModelDefinition {
   eventRetention?: {
     retainRecsRows: false;
     dedupeIdentityLimit: number;
-    replayEffectsOnRecovery: false;
+    replayEffectsOnRecovery: true;
   };
 }
 
@@ -27,7 +27,7 @@ const EVENT_DEDUPE_IDENTITY_LIMIT = 512;
 const eventRetention = (): NonNullable<GameSyncModelDefinition["eventRetention"]> => ({
   retainRecsRows: false,
   dedupeIdentityLimit: EVENT_DEDUPE_IDENTITY_LIMIT,
-  replayEffectsOnRecovery: false,
+  replayEffectsOnRecovery: true,
 });
 
 const globalEntity = (

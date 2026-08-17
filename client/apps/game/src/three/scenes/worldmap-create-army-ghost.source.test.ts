@@ -100,7 +100,7 @@ describe("worldmap create-army ghost wiring", () => {
     const clearPendingCreateArmyGhostsForOccupiedTiles = extractSourceBetween(
       source,
       "private clearPendingCreateArmyGhostsForOccupiedTiles()",
-      "private resolvePendingAttackFxOnBattleUpdate(",
+      "private resolvePendingAttackFxOnEntityEvidence(",
     );
 
     expect(source).toContain('this.clearPendingActionFx(detail.key, "tx_failed")');

@@ -5,6 +5,7 @@ import * as THREE from "three";
 import { AnimationClip, AnimationMixer } from "three";
 import { AnimationVisibilityContext } from "../types/animation";
 import { InstancedMatrixAttributePool } from "../utils/instanced-matrix-attribute-pool";
+import { MaterialPool } from "../utils/material-pool";
 import { resolveBiomeMeshRenderOrder } from "./instanced-biome-render-order";
 import { writeMorphWeightsIfChanged } from "./morph-texture-dirty-state";
 
@@ -74,6 +75,7 @@ function resolveBiomeMeshParts(mesh: THREE.Mesh): BiomeMeshPart[] {
 }
 
 export default class InstancedModel {
+  private static readonly materialPool = MaterialPool.getInstance();
   public group: THREE.Group;
   public instancedMeshes: THREE.InstancedMesh[] = [];
   private biomeMeshes: THREE.Mesh[] = [];
@@ -125,6 +127,7 @@ export default class InstancedModel {
     const sourceScene = this.resolveBiomeSourceScene(gltf);
     this.animation = gltf.animations[0] ?? null;
     this.mixer = this.animation ? new AnimationMixer(sourceScene) : null;
+    this.prepareBiomeSourceMaterials(sourceScene, name);
     sourceScene.traverse((child) => {
       if (child instanceof THREE.Mesh) {
         this.addBiomeSourceMesh(child, count, enableRaycast, name, gltf.animations.length > 0);
@@ -175,11 +178,37 @@ export default class InstancedModel {
     biomeName: string,
     isAnimated: boolean,
   ): THREE.InstancedMesh {
-    const renderOrder = this.configureBiomeMaterial(part.material, biomeName);
-    const instancedMesh = new THREE.InstancedMesh(part.geometry, part.material, capacity);
+    const renderOrder = this.resolveConfiguredBiomeRenderOrder(part.material);
+    const isLand = this.isLandMesh(sourceMesh);
+    const material = this.poolBiomeMaterial(part.material);
+    const instancedMesh = new THREE.InstancedMesh(part.geometry, material, capacity);
     this.configureBiomeMorphTargets(instancedMesh, sourceMesh, capacity, biomeName, isAnimated);
-    this.configureBiomeMeshAppearance(instancedMesh, sourceMesh, part.material, biomeName, renderOrder);
+    this.configureBiomeMeshAppearance(instancedMesh, isLand, biomeName, renderOrder);
     return instancedMesh;
+  }
+
+  private prepareBiomeSourceMaterials(sourceScene: THREE.Group, biomeName: string): void {
+    sourceScene.traverse((child) => {
+      if (!(child instanceof THREE.Mesh)) return;
+      const materials = Array.isArray(child.material) ? child.material : [child.material];
+      materials.forEach((material) => {
+        this.configureBiomeMaterial(material, biomeName);
+        this.configureBiomeMeshMaterial(child, material, biomeName);
+      });
+    });
+  }
+
+  private resolveConfiguredBiomeRenderOrder(material: THREE.Material | THREE.Material[]): number {
+    return Array.isArray(material) ? 0 : resolveBiomeMeshRenderOrder(material).renderOrder;
+  }
+
+  private poolBiomeMaterial(material: THREE.Material | THREE.Material[]): THREE.Material | THREE.Material[] {
+    const pool = (entry: THREE.Material): THREE.Material => {
+      if (entry instanceof THREE.MeshStandardMaterial) return InstancedModel.materialPool.getStandardMaterial(entry);
+      if (entry instanceof THREE.MeshBasicMaterial) return InstancedModel.materialPool.getBasicMaterial(entry);
+      return entry;
+    };
+    return Array.isArray(material) ? material.map(pool) : pool(material);
   }
 
   private configureBiomeMaterial(material: THREE.Material | THREE.Material[], biomeName: string): number {
@@ -230,33 +259,36 @@ export default class InstancedModel {
     instancedMesh.morphTexture!.needsUpdate = true;
   }
 
+  private configureBiomeMeshMaterial(sourceMesh: THREE.Mesh, material: THREE.Material, biomeName: string): void {
+    if (this.isLandMesh(sourceMesh) && material instanceof THREE.MeshStandardMaterial) {
+      material.vertexColors = true;
+      material.needsUpdate = true;
+    }
+    if (biomeName === "Outline" && material instanceof THREE.MeshStandardMaterial) {
+      material.color.setHex(0xffffff);
+      material.opacity = 0.075;
+      material.transparent = true;
+    }
+  }
+
+  private isLandMesh(sourceMesh: THREE.Mesh): boolean {
+    return sourceMesh.name.includes(LAND_NAME) || Boolean(sourceMesh.parent?.name?.includes(LAND_NAME));
+  }
+
   private configureBiomeMeshAppearance(
     instancedMesh: THREE.InstancedMesh,
-    sourceMesh: THREE.Mesh,
-    material: THREE.Material | THREE.Material[],
+    isLand: boolean,
     biomeName: string,
     renderOrder: number,
   ): void {
     const lowerName = biomeName.toLowerCase();
-    const isLand = sourceMesh.name.includes(LAND_NAME) || Boolean(sourceMesh.parent?.name?.includes(LAND_NAME));
-
-    if (isLand && !Array.isArray(material) && material instanceof THREE.MeshStandardMaterial) {
-      material.vertexColors = true;
-      material.needsUpdate = true;
-      instancedMesh.name = LAND_NAME;
-    }
-
+    if (isLand) instancedMesh.name = LAND_NAME;
     if (biomeName !== "Outline" && !lowerName.includes("ocean")) {
       instancedMesh.castShadow = !isLand;
       instancedMesh.receiveShadow = true;
       instancedMesh.renderOrder = renderOrder;
     }
-    if (biomeName === "Outline" && !Array.isArray(material) && material instanceof THREE.MeshStandardMaterial) {
-      instancedMesh.renderOrder = 4;
-      material.color.setHex(0xffffff);
-      material.opacity = 0.075;
-      material.transparent = true;
-    }
+    if (biomeName === "Outline") instancedMesh.renderOrder = 4;
     if (lowerName.includes("ocean")) {
       instancedMesh.renderOrder = 1;
     }
@@ -777,9 +809,15 @@ export default class InstancedModel {
       }
       if (mesh.material) {
         if (Array.isArray(mesh.material)) {
-          mesh.material.forEach((mat) => mat.dispose());
+          mesh.material.forEach((mat) =>
+            InstancedModel.materialPool.isManagedMaterial(mat)
+              ? InstancedModel.materialPool.releaseMaterial(mat)
+              : mat.dispose(),
+          );
         } else {
-          mesh.material.dispose();
+          InstancedModel.materialPool.isManagedMaterial(mesh.material)
+            ? InstancedModel.materialPool.releaseMaterial(mesh.material)
+            : mesh.material.dispose();
         }
       }
       if (mesh.morphTexture) {

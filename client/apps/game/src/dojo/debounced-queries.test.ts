@@ -40,7 +40,7 @@ describe("debounced Torii query queue", () => {
     queryMocks.getBuildingsFromTorii.mockReturnValueOnce(request.promise);
 
     let settled = false;
-    const promise = debouncedGetBuildingsFromTorii({} as any, [] as any, [{ col: 12, row: 34 }]).then(() => {
+    const promise = debouncedGetBuildingsFromTorii({} as any, [{ col: 12, row: 34 }]).then(() => {
       settled = true;
     });
 
@@ -58,9 +58,9 @@ describe("debounced Torii query queue", () => {
     const blockingRequest = createDeferred();
     queryMocks.getBuildingsFromTorii.mockReturnValueOnce(blockingRequest.promise).mockResolvedValueOnce(undefined);
 
-    const inFlightPromise = debouncedGetBuildingsFromTorii({} as any, [] as any, [{ col: 1, row: 1 }]);
+    const inFlightPromise = debouncedGetBuildingsFromTorii({} as any, [{ col: 1, row: 1 }]);
     let queuedSettled = false;
-    const queuedPromise = debouncedGetBuildingsFromTorii({} as any, [] as any, [{ col: 99, row: 99 }]).then(() => {
+    const queuedPromise = debouncedGetBuildingsFromTorii({} as any, [{ col: 99, row: 99 }]).then(() => {
       queuedSettled = true;
     });
 

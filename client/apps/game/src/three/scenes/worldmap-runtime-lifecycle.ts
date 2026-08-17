@@ -1,18 +1,11 @@
 import { SceneName } from "../types";
 
-interface PendingArmyMovementRecordLike<TTimeout> {
-  fallbackTimeout?: TTimeout;
-}
-
-interface WorldmapSwitchOffRuntimeStateInput<TEntityId, TTimeout> {
-  pendingArmyMovements: Map<TEntityId, PendingArmyMovementRecordLike<TTimeout>>;
+interface WorldmapSwitchOffRuntimeStateInput {
   pinnedChunkKeys: Set<string>;
   pinnedRenderAreas: Set<string>;
   hydratedChunkRefreshes: Set<string>;
   hydratedRefreshSuppressionAreaKeys: Set<string>;
   nextSceneName?: SceneName;
-  clearTimeout: (timeoutId: TTimeout) => void;
-  clearPendingArmyMovement: (entityId: TEntityId) => void;
   clearStreamingWork: () => void;
   clearQueuedPrefetchState: () => void;
   releaseInactiveResources: () => void;
@@ -36,32 +29,16 @@ interface WorldmapSwitchOffTransitionStateResult {
   globalChunkSwitchPromise: null;
 }
 
-export const applyWorldmapSwitchOffRuntimeState = <TEntityId, TTimeout>({
-  pendingArmyMovements,
+export const applyWorldmapSwitchOffRuntimeState = ({
   pinnedChunkKeys,
   pinnedRenderAreas,
   hydratedChunkRefreshes,
   hydratedRefreshSuppressionAreaKeys,
   nextSceneName,
-  clearTimeout,
-  clearPendingArmyMovement,
   clearStreamingWork,
   clearQueuedPrefetchState,
   releaseInactiveResources,
-}: WorldmapSwitchOffRuntimeStateInput<TEntityId, TTimeout>): WorldmapSwitchOffRuntimeStateResult => {
-  pendingArmyMovements.forEach((record, entityId) => {
-    const fallbackTimeout = record.fallbackTimeout;
-    if (fallbackTimeout !== undefined) {
-      clearTimeout(fallbackTimeout);
-    }
-    clearPendingArmyMovement(entityId);
-  });
-  // Without this, a tx submitted just before the scene switch strands its
-  // record (clearPendingArmyMovement keeps tx-only residue for in-flight
-  // receipts) and the army stays locked out of movement selection when the
-  // map is re-entered.
-  pendingArmyMovements.clear();
-
+}: WorldmapSwitchOffRuntimeStateInput): WorldmapSwitchOffRuntimeStateResult => {
   clearStreamingWork();
   clearQueuedPrefetchState();
   pinnedChunkKeys.clear();

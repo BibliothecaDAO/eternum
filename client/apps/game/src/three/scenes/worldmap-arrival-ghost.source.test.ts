@@ -32,28 +32,28 @@ describe("Worldmap arrival ghost wiring", () => {
 
   it("clears tracked arrival ghosts when explore completes without movement", () => {
     const source = readSource("src/three/scenes/worldmap.tsx");
-    const completionStart = source.indexOf("const pendingExploreEntities = resolveExploreCompletionPendingClearPlan");
+    const completionStart = source.indexOf("const pendingExploreEntities = resolveExploreCompletionVisualCleanup");
     expect(completionStart).toBeGreaterThan(-1);
 
     const completionEnd = source.indexOf("const endCompass = this.travelEffects.get(key)", completionStart);
     const completionBody = source.slice(completionStart, completionEnd);
 
     expect(completionBody).toContain('this.arrivalGhostManager.clearArrivalGhost(entityId, "arrived")');
-    expect(completionBody.indexOf("this.clearPendingArmyMovement(entityId)")).toBeLessThan(
+    expect(completionBody.indexOf("this.clearPendingArmyMovementVisuals(entityId)")).toBeLessThan(
       completionBody.indexOf('this.arrivalGhostManager.clearArrivalGhost(entityId, "arrived")'),
     );
   });
 
-  it("clears tracked arrival ghosts when optimistic movement aborts before animation starts", () => {
+  it("clears tracked arrival ghosts when a provisional movement transaction fails", () => {
     const source = readSource("src/three/scenes/worldmap.tsx");
 
-    const handlerStart = source.indexOf("private async applySubmittedArmyMovementOptimisticPlan(");
+    const handlerStart = source.indexOf("private handleProvisionalArmyMovementFailure(");
     expect(handlerStart).toBeGreaterThan(-1);
     const handlerEnd = source.indexOf("\n  private ", handlerStart + 20);
     const handler = source.slice(handlerStart, handlerEnd);
-    const abortCleanupCalls = handler.match(/this\.clearArrivalGhostAfterOptimisticMovementAbort\(entityId, txHash\)/g);
 
-    expect(abortCleanupCalls).toHaveLength(2);
-    expect(source).toContain('this.arrivalGhostManager.clearArrivalGhost(entityId, "optimistic_aborted")');
+    expect(handler).toContain("this.clearPendingArmyMovementVisuals(entityId)");
+    expect(handler).toContain("this.disposePendingMovementVisualLifecycle(entityId)");
+    expect(handler).toContain('this.arrivalGhostManager.clearArrivalGhost(entityId, "tx_failed")');
   });
 });

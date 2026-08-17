@@ -8,6 +8,7 @@ import {
   SupersededGameSyncStartError,
 } from "./game-sync-runtime";
 import type {
+  GameSyncAuthoritativeObservation,
   GameSyncEntity,
   GameSyncEntityStoreOperation,
   GameSyncSessionStart,
@@ -29,19 +30,33 @@ const createMemoryStore = (initial: Record<string, Record<string, unknown>> = {}
 
   const store: GameSyncStore = {
     applyEntityOperations(nextOperations) {
+      const observations: GameSyncAuthoritativeObservation[] = [];
       operations.push(...nextOperations);
       nextOperations.forEach((operation) => {
         if (operation.type === "upsert") {
           operation.entities.forEach((update) => {
             rows.set(update.hashed_keys, { ...rows.get(update.hashed_keys), ...update.models });
+            Object.entries(update.models).forEach(([model, value]) => {
+              observations.push({
+                type: "model",
+                entityId: update.hashed_keys,
+                model,
+                value: value as Record<string, unknown>,
+              });
+            });
           });
         } else if (operation.type === "remove-components") {
           const models = rows.get(operation.entityId);
-          operation.models.forEach((model) => delete models?.[model]);
+          operation.models.forEach((model) => {
+            delete models?.[model];
+            observations.push({ type: "model", entityId: operation.entityId, model, value: null });
+          });
         } else {
           rows.delete(operation.entityId);
+          observations.push({ type: "delete-entity", entityId: operation.entityId });
         }
       });
+      return observations;
     },
     applyEvent(eventUpdate) {
       events.push(eventUpdate);
@@ -91,6 +106,9 @@ const createSessionHarness = (input: {
     emitEvent(update: GameSyncEntity) {
       handlers?.onEvent(update);
     },
+    recordEventGapFill(replayedEventCount: number) {
+      handlers?.onEventGapFill(replayedEventCount);
+    },
     order,
     resetPages(nextPages: typeof pages) {
       pages = nextPages;
@@ -121,6 +139,21 @@ describe("GameSyncRuntime recovery", () => {
     expect([...memory.rows.keys()]).toEqual(["one", "two"]);
     expect(runtime.getMetrics()).toMatchObject({ snapshotEntityCount: 2, snapshotPageCount: 2 });
     expect(runtime.getStatus()).toBe("running");
+  });
+
+  it("routes targeted authoritative queries through the active ingest queue", async () => {
+    const memory = createMemoryStore();
+    const harness = createSessionHarness({ store: memory.store });
+    const runtime = new GameSyncRuntime();
+    await runtime.startSession(harness.session);
+
+    await runtime.applyAuthoritativeEntities([entity("queried-army", { ExplorerTroops: { coord: { x: 12, y: 9 } } })]);
+
+    expect(memory.rows.get("queried-army")).toEqual({ ExplorerTroops: { coord: { x: 12, y: 9 } } });
+    expect(memory.operations.at(-1)).toEqual({
+      type: "upsert",
+      entities: [entity("queried-army", { ExplorerTroops: { coord: { x: 12, y: 9 } } })],
+    });
   });
 
   it("replays live updates in client receive order after the snapshot", async () => {
@@ -288,6 +321,20 @@ describe("GameSyncRuntime recovery", () => {
     await flushMicrotasks();
 
     expect(memory.events.map(({ hashed_keys }) => hashed_keys)).toEqual(["event-1", "event-2", "event-3", "event-1"]);
+  });
+
+  it("reports event gap-fill replay counts in runtime metrics", async () => {
+    const harness = createSessionHarness({});
+    const runtime = new GameSyncRuntime();
+    await runtime.startSession(harness.session);
+
+    harness.recordEventGapFill(3);
+    harness.recordEventGapFill(2);
+
+    expect(runtime.getMetrics()).toMatchObject({
+      eventGapFillReplayCount: 2,
+      totalReplayedEventUpdates: 5,
+    });
   });
 });
 

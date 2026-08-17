@@ -1,4 +1,9 @@
-import type { GameSyncEntity, GameSyncEntityStoreOperation, GameSyncStore } from "./game-sync-types";
+import type {
+  GameSyncAuthoritativeObservation,
+  GameSyncEntity,
+  GameSyncEntityStoreOperation,
+  GameSyncStore,
+} from "./game-sync-types";
 import type { GameSyncScheduler } from "./scheduler";
 
 type UpsertStep = {
@@ -46,6 +51,7 @@ interface EntityIngestQueueOptions {
   store: GameSyncStore;
   now: () => number;
   onBatchApplied?: (info: EntityIngestBatchInfo) => void;
+  onAuthoritativeObservationsApplied?: (observations: readonly GameSyncAuthoritativeObservation[]) => void;
 }
 
 const isEmptyModel = (model: unknown): boolean =>
@@ -81,6 +87,9 @@ export class EntityIngestQueue {
   private readonly store: GameSyncStore;
   private readonly now: () => number;
   private readonly onBatchApplied?: (info: EntityIngestBatchInfo) => void;
+  private readonly onAuthoritativeObservationsApplied?: (
+    observations: readonly GameSyncAuthoritativeObservation[],
+  ) => void;
   private steps: IngestStep[] = [];
   private drainWaiters: DrainWaiter[] = [];
   private cancelScheduledFlush: (() => void) | null = null;
@@ -90,11 +99,12 @@ export class EntityIngestQueue {
   private appliedOperationId = 0;
   private failure: Error | null = null;
 
-  constructor({ scheduler, store, now, onBatchApplied }: EntityIngestQueueOptions) {
+  constructor({ scheduler, store, now, onBatchApplied, onAuthoritativeObservationsApplied }: EntityIngestQueueOptions) {
     this.scheduler = scheduler;
     this.store = store;
     this.now = now;
     this.onBatchApplied = onBatchApplied;
+    this.onAuthoritativeObservationsApplied = onAuthoritativeObservationsApplied;
   }
 
   public enqueueEntity(entity: GameSyncEntity): void {
@@ -264,7 +274,8 @@ export class EntityIngestQueue {
       return;
     }
 
-    await this.store.applyEntityOperations(batch.operations);
+    const observations = await this.store.applyEntityOperations(batch.operations);
+    this.onAuthoritativeObservationsApplied?.(observations ?? []);
   }
 
   private resolveDrainWaiters(): void {

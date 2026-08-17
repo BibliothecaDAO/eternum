@@ -38,15 +38,12 @@ const useSyncHyperstructure = () => {
 };
 
 export const useSyncMarket = () => {
-  const syncMarket = useCallback(
-    async ({ toriiClient, contractComponents }: { toriiClient: ToriiClient; contractComponents: unknown }) => {
-      const start = performance.now();
-      await getMarketFromTorii(toriiClient, contractComponents as any);
-      const end = performance.now();
-      console.log("[sync] market query", end - start);
-    },
-    [],
-  );
+  const syncMarket = useCallback(async ({ toriiClient }: { toriiClient: ToriiClient }) => {
+    const start = performance.now();
+    await getMarketFromTorii(toriiClient);
+    const end = performance.now();
+    console.log("[sync] market query", end - start);
+  }, []);
 
   const { isSyncing } = useToriiSync({
     subscriptionKey: Subscription.Market,

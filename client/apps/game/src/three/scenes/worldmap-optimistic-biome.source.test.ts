@@ -24,7 +24,7 @@ describe("Worldmap optimistic destination biome", () => {
   it("the optimistic destination painter writes provisional biome using configured biome on contract coords", () => {
     const source = readSource("worldmap.tsx");
 
-    const handlerStart = source.indexOf("private paintOptimisticDestinationBiome(");
+    const handlerStart = source.indexOf("private paintProvisionalDestinationBiome(");
     const handlerEnd = source.indexOf("\n  private ", handlerStart + 20);
     expect(handlerStart).toBeGreaterThan(0);
     expect(handlerEnd).toBeGreaterThan(handlerStart);

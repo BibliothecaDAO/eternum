@@ -5,11 +5,15 @@ import {
   type ToriiStreamCloseHandler,
 } from "./torii-stream-lifecycle-observer";
 
-const EVENT_STREAM_LEASE_MS = 15_000;
+const EVENT_STREAM_LEASE_MS = 60_000;
 const MAX_EVENT_STREAM_RETRY_MS = 8_000;
 
 interface RecoveringToriiEventSubscriptionInput {
   createSubscription: () => Promise<ToriiCancelableSubscription>;
+  establishReplayBaseline?: () => Promise<void>;
+  captureReplayWatermark?: () => unknown;
+  replaySince?: (watermark: unknown) => Promise<number>;
+  onGapFillReplayed?: (replayedEventCount: number) => void;
   onLost: (reason: string) => void;
   onRestored: () => void;
   attemptTimeoutMs?: number;
@@ -74,6 +78,7 @@ class RecoveringToriiEventSubscription implements ToriiCancelableSubscription {
 
   public async start(): Promise<ToriiCancelableSubscription> {
     this.activeSubscription = await openSubscription(this.input.createSubscription, this.input.attemptTimeoutMs);
+    await this.establishReplayBaseline();
     this.armActiveSubscription();
     return this;
   }
@@ -113,6 +118,7 @@ class RecoveringToriiEventSubscription implements ToriiCancelableSubscription {
 
   private async openReplacement(): Promise<void> {
     this.retryTimer = null;
+    const replayWatermark = this.input.captureReplayWatermark?.();
     try {
       const replacement = await openSubscription(this.input.createSubscription, this.input.attemptTimeoutMs);
       if (this.disposed) {
@@ -120,12 +126,33 @@ class RecoveringToriiEventSubscription implements ToriiCancelableSubscription {
         return;
       }
 
+      const replayedEventCount = await this.replayGap(replayWatermark, replacement);
       this.replaceActiveSubscription(replacement);
+      this.input.onGapFillReplayed?.(replayedEventCount);
       this.markRestored();
       this.armActiveSubscription();
     } catch (error) {
       this.markLost(error instanceof Error ? error.message : String(error));
       this.scheduleRecovery();
+    }
+  }
+
+  private async establishReplayBaseline(): Promise<void> {
+    try {
+      await this.input.establishReplayBaseline?.();
+    } catch (error) {
+      cancelSubscription(this.activeSubscription);
+      this.activeSubscription = null;
+      throw error;
+    }
+  }
+
+  private async replayGap(watermark: unknown, replacement: ToriiCancelableSubscription): Promise<number> {
+    try {
+      return this.input.replaySince && watermark !== undefined ? await this.input.replaySince(watermark) : 0;
+    } catch (error) {
+      cancelSubscription(replacement);
+      throw error;
     }
   }
 
@@ -159,8 +186,8 @@ class RecoveringToriiEventSubscription implements ToriiCancelableSubscription {
     this.detachLifecycle = observeToriiStreamLifecycle(this.activeSubscription, this.handleLifecycleClose);
     if (hasToriiStreamLifecycleSignals(this.activeSubscription)) return;
 
-    // torii-wasm currently returns cancel-only handles. A short replacement
-    // lease is the only way to detect and recover a silently dead event route.
+    // torii-wasm currently returns cancel-only handles. A replacement lease
+    // is the only way to detect and recover a silently dead event route.
     this.leaseTimer = setTimeout(this.recover, this.input.leaseMs ?? EVENT_STREAM_LEASE_MS);
   }
 }

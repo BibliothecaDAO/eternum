@@ -13,7 +13,7 @@ import {
   WorldSpatialProjection,
 } from "@bibliothecadao/eternum/game-sync";
 import type { GameSyncRuntimeMetrics } from "@bibliothecadao/eternum/game-sync";
-import { getComponentValue, Has, runQuery, type Component, type Metadata, type Schema } from "@dojoengine/recs";
+import { getComponentValue, Has, runQuery } from "@dojoengine/recs";
 import type { Clause } from "@dojoengine/torii-wasm/types";
 import {
   getAddressNamesFromTorii,
@@ -150,6 +150,7 @@ const createActiveGamewideSyncSession = (input: {
     setup: input.setup,
     entityClause: getGamewideEntityStreamClause(),
     eventClause: getGlobalEventStreamClause(),
+    eventModels: getGlobalEventModels(),
     entityModels,
     logging: input.logging,
     subscriptionSetupTimeoutMs: input.subscriptionSetupTimeoutMs,
@@ -323,37 +324,30 @@ const syncInitialSupportData = async (
   options: InitialSyncOptions,
   reportProgress: InitialSyncProgressReporter,
 ): Promise<void> => {
-  const contractComponents = setup.network.contractComponents as unknown as Component<Schema, Metadata, undefined>[];
-
   await Promise.all([
     runInitialSyncTask({
       label: "bank structures query",
       targetProgress: 10,
       reportProgress,
-      task: () => getBankStructuresFromTorii(setup.network.toriiClient, contractComponents),
+      task: () => getBankStructuresFromTorii(setup.network.toriiClient),
     }),
     runInitialSyncTask({
       label: "config query",
       targetProgress: 50,
       reportProgress,
-      task: () =>
-        getConfigFromTorii(
-          setup.network.toriiClient,
-          setup.network.contractComponents as any,
-          options.onConfigRefreshed,
-        ),
+      task: () => getConfigFromTorii(setup.network.toriiClient, options.onConfigRefreshed),
     }),
     runInitialSyncTask({
       label: "address names query",
       targetProgress: 75,
       reportProgress,
-      task: () => getAddressNamesFromTorii(setup.network.toriiClient, setup.network.contractComponents as any),
+      task: () => getAddressNamesFromTorii(setup.network.toriiClient),
     }),
     runInitialSyncTask({
       label: "guilds query",
       targetProgress: 90,
       reportProgress,
-      task: () => getGuildsFromTorii(setup.network.toriiClient, setup.network.contractComponents as any),
+      task: () => getGuildsFromTorii(setup.network.toriiClient),
     }),
   ]);
 };

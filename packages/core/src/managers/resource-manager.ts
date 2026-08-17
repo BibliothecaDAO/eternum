@@ -17,6 +17,49 @@ export interface OptimisticResourceChange {
   amount: number;
 }
 
+type ResourceValue = ComponentValue<ClientComponents["Resource"]["schema"]>;
+
+const RESOURCE_BALANCE_FIELDS = {
+  [ResourcesIds.Stone]: "STONE_BALANCE",
+  [ResourcesIds.Coal]: "COAL_BALANCE",
+  [ResourcesIds.Wood]: "WOOD_BALANCE",
+  [ResourcesIds.Copper]: "COPPER_BALANCE",
+  [ResourcesIds.Ironwood]: "IRONWOOD_BALANCE",
+  [ResourcesIds.Obsidian]: "OBSIDIAN_BALANCE",
+  [ResourcesIds.Gold]: "GOLD_BALANCE",
+  [ResourcesIds.Silver]: "SILVER_BALANCE",
+  [ResourcesIds.Mithral]: "MITHRAL_BALANCE",
+  [ResourcesIds.AlchemicalSilver]: "ALCHEMICAL_SILVER_BALANCE",
+  [ResourcesIds.ColdIron]: "COLD_IRON_BALANCE",
+  [ResourcesIds.DeepCrystal]: "DEEP_CRYSTAL_BALANCE",
+  [ResourcesIds.Ruby]: "RUBY_BALANCE",
+  [ResourcesIds.Diamonds]: "DIAMONDS_BALANCE",
+  [ResourcesIds.Hartwood]: "HARTWOOD_BALANCE",
+  [ResourcesIds.Ignium]: "IGNIUM_BALANCE",
+  [ResourcesIds.TwilightQuartz]: "TWILIGHT_QUARTZ_BALANCE",
+  [ResourcesIds.TrueIce]: "TRUE_ICE_BALANCE",
+  [ResourcesIds.Adamantine]: "ADAMANTINE_BALANCE",
+  [ResourcesIds.Sapphire]: "SAPPHIRE_BALANCE",
+  [ResourcesIds.EtherealSilica]: "ETHEREAL_SILICA_BALANCE",
+  [ResourcesIds.Dragonhide]: "DRAGONHIDE_BALANCE",
+  [ResourcesIds.Labor]: "LABOR_BALANCE",
+  [ResourcesIds.AncientFragment]: "EARTHEN_SHARD_BALANCE",
+  [ResourcesIds.Donkey]: "DONKEY_BALANCE",
+  [ResourcesIds.Knight]: "KNIGHT_T1_BALANCE",
+  [ResourcesIds.KnightT2]: "KNIGHT_T2_BALANCE",
+  [ResourcesIds.KnightT3]: "KNIGHT_T3_BALANCE",
+  [ResourcesIds.Crossbowman]: "CROSSBOWMAN_T1_BALANCE",
+  [ResourcesIds.CrossbowmanT2]: "CROSSBOWMAN_T2_BALANCE",
+  [ResourcesIds.CrossbowmanT3]: "CROSSBOWMAN_T3_BALANCE",
+  [ResourcesIds.Paladin]: "PALADIN_T1_BALANCE",
+  [ResourcesIds.PaladinT2]: "PALADIN_T2_BALANCE",
+  [ResourcesIds.PaladinT3]: "PALADIN_T3_BALANCE",
+  [ResourcesIds.Wheat]: "WHEAT_BALANCE",
+  [ResourcesIds.Fish]: "FISH_BALANCE",
+  [ResourcesIds.Lords]: "LORDS_BALANCE",
+  [ResourcesIds.Research]: "RESEARCH_BALANCE",
+} as const satisfies Partial<Record<ResourcesIds, keyof ResourceValue>>;
+
 // s2 changed production_rate to u64 (schema: number); internal math stays bigint.
 // Absent members (partial RECS rows, test fixtures) normalize to zero production.
 const normalizeProduction = (
@@ -107,515 +150,11 @@ export class ResourceManager {
 
   public optimisticResourceUpdate = (resourceId: ResourcesIds, actualResourceChange: number) => {
     const overrideId = uuid();
-
     const entity = gameEntityKey([BigInt(this.entityId)]);
-    const currentResource = getComponentValue(this.components.Resource, entity);
-    const currentBalance = this.balance(resourceId);
-    const weight = configManager.getResourceWeightKg(resourceId) || 0;
-    // current weight in nanograms per unit with precision
-    const currentWeight = currentResource?.weight || { capacity: 0n, weight: 0n };
-    const amountWithPrecision = BigInt(Math.floor(multiplyByPrecision(actualResourceChange)));
-    const weightChange = BigInt(kgToGram(weight)) * amountWithPrecision;
-
     try {
-      switch (resourceId) {
-        case ResourcesIds.Stone:
-          this.components.Resource.addOverride(overrideId, {
-            entity,
-            value: {
-              ...currentResource,
-              weight: {
-                ...currentWeight,
-                weight: currentWeight.weight + weightChange,
-              },
-              STONE_BALANCE: currentBalance + amountWithPrecision,
-            },
-          });
-          break;
-        case ResourcesIds.Coal:
-          this.components.Resource.addOverride(overrideId, {
-            entity,
-            value: {
-              ...currentResource,
-              weight: {
-                ...currentWeight,
-                weight: currentWeight.weight + weightChange,
-              },
-              COAL_BALANCE: currentBalance + amountWithPrecision,
-            },
-          });
-          break;
-        case ResourcesIds.Wood:
-          this.components.Resource.addOverride(overrideId, {
-            entity,
-            value: {
-              ...currentResource,
-              weight: {
-                ...currentWeight,
-                weight: currentWeight.weight + weightChange,
-              },
-              WOOD_BALANCE: currentBalance + amountWithPrecision,
-            },
-          });
-          break;
-        case ResourcesIds.Copper:
-          this.components.Resource.addOverride(overrideId, {
-            entity,
-            value: {
-              ...currentResource,
-              weight: {
-                ...currentWeight,
-                weight: currentWeight.weight + weightChange,
-              },
-              COPPER_BALANCE: currentBalance + amountWithPrecision,
-            },
-          });
-          break;
-        case ResourcesIds.Ironwood:
-          this.components.Resource.addOverride(overrideId, {
-            entity,
-            value: {
-              ...currentResource,
-              weight: {
-                ...currentWeight,
-                weight: currentWeight.weight + weightChange,
-              },
-              IRONWOOD_BALANCE: currentBalance + amountWithPrecision,
-            },
-          });
-          break;
-        case ResourcesIds.Obsidian:
-          this.components.Resource.addOverride(overrideId, {
-            entity,
-            value: {
-              ...currentResource,
-              weight: {
-                ...currentWeight,
-                weight: currentWeight.weight + weightChange,
-              },
-              OBSIDIAN_BALANCE: currentBalance + amountWithPrecision,
-            },
-          });
-          break;
-        case ResourcesIds.Gold:
-          this.components.Resource.addOverride(overrideId, {
-            entity,
-            value: {
-              ...currentResource,
-              weight: {
-                ...currentWeight,
-                weight: currentWeight.weight + weightChange,
-              },
-              GOLD_BALANCE: currentBalance + amountWithPrecision,
-            },
-          });
-          break;
-        case ResourcesIds.Silver:
-          this.components.Resource.addOverride(overrideId, {
-            entity,
-            value: {
-              ...currentResource,
-              weight: {
-                ...currentWeight,
-                weight: currentWeight.weight + weightChange,
-              },
-              SILVER_BALANCE: currentBalance + amountWithPrecision,
-            },
-          });
-          break;
-        case ResourcesIds.Mithral:
-          this.components.Resource.addOverride(overrideId, {
-            entity,
-            value: {
-              ...currentResource,
-              weight: {
-                ...currentWeight,
-                weight: currentWeight.weight + weightChange,
-              },
-              MITHRAL_BALANCE: currentBalance + amountWithPrecision,
-            },
-          });
-          break;
-        case ResourcesIds.AlchemicalSilver:
-          this.components.Resource.addOverride(overrideId, {
-            entity,
-            value: {
-              ...currentResource,
-              weight: {
-                ...currentWeight,
-                weight: currentWeight.weight + weightChange,
-              },
-              ALCHEMICAL_SILVER_BALANCE: currentBalance + amountWithPrecision,
-            },
-          });
-          break;
-        case ResourcesIds.ColdIron:
-          this.components.Resource.addOverride(overrideId, {
-            entity,
-            value: {
-              ...currentResource,
-              weight: {
-                ...currentWeight,
-                weight: currentWeight.weight + weightChange,
-              },
-              COLD_IRON_BALANCE: currentBalance + amountWithPrecision,
-            },
-          });
-          break;
-        case ResourcesIds.DeepCrystal:
-          this.components.Resource.addOverride(overrideId, {
-            entity,
-            value: {
-              ...currentResource,
-              weight: {
-                ...currentWeight,
-                weight: currentWeight.weight + weightChange,
-              },
-              DEEP_CRYSTAL_BALANCE: currentBalance + amountWithPrecision,
-            },
-          });
-          break;
-        case ResourcesIds.Ruby:
-          this.components.Resource.addOverride(overrideId, {
-            entity,
-            value: {
-              ...currentResource,
-              weight: {
-                ...currentWeight,
-                weight: currentWeight.weight + weightChange,
-              },
-              RUBY_BALANCE: currentBalance + amountWithPrecision,
-            },
-          });
-          break;
-        case ResourcesIds.Diamonds:
-          this.components.Resource.addOverride(overrideId, {
-            entity,
-            value: {
-              ...currentResource,
-              weight: {
-                ...currentWeight,
-                weight: currentWeight.weight + weightChange,
-              },
-              DIAMONDS_BALANCE: currentBalance + amountWithPrecision,
-            },
-          });
-          break;
-        case ResourcesIds.Hartwood:
-          this.components.Resource.addOverride(overrideId, {
-            entity,
-            value: {
-              ...currentResource,
-              weight: {
-                ...currentWeight,
-                weight: currentWeight.weight + weightChange,
-              },
-              HARTWOOD_BALANCE: currentBalance + amountWithPrecision,
-            },
-          });
-          break;
-        case ResourcesIds.Ignium:
-          this.components.Resource.addOverride(overrideId, {
-            entity,
-            value: {
-              ...currentResource,
-              weight: {
-                ...currentWeight,
-                weight: currentWeight.weight + weightChange,
-              },
-              IGNIUM_BALANCE: currentBalance + amountWithPrecision,
-            },
-          });
-          break;
-        case ResourcesIds.TwilightQuartz:
-          this.components.Resource.addOverride(overrideId, {
-            entity,
-            value: {
-              ...currentResource,
-              weight: {
-                ...currentWeight,
-                weight: currentWeight.weight + weightChange,
-              },
-              TWILIGHT_QUARTZ_BALANCE: currentBalance + amountWithPrecision,
-            },
-          });
-          break;
-        case ResourcesIds.TrueIce:
-          this.components.Resource.addOverride(overrideId, {
-            entity,
-            value: {
-              ...currentResource,
-              weight: {
-                ...currentWeight,
-                weight: currentWeight.weight + weightChange,
-              },
-              TRUE_ICE_BALANCE: currentBalance + amountWithPrecision,
-            },
-          });
-          break;
-        case ResourcesIds.Adamantine:
-          this.components.Resource.addOverride(overrideId, {
-            entity,
-            value: {
-              ...currentResource,
-              weight: {
-                ...currentWeight,
-                weight: currentWeight.weight + weightChange,
-              },
-              ADAMANTINE_BALANCE: currentBalance + amountWithPrecision,
-            },
-          });
-          break;
-        case ResourcesIds.Sapphire:
-          this.components.Resource.addOverride(overrideId, {
-            entity,
-            value: {
-              ...currentResource,
-              weight: {
-                ...currentWeight,
-                weight: currentWeight.weight + weightChange,
-              },
-              SAPPHIRE_BALANCE: currentBalance + amountWithPrecision,
-            },
-          });
-          break;
-        case ResourcesIds.EtherealSilica:
-          this.components.Resource.addOverride(overrideId, {
-            entity,
-            value: {
-              ...currentResource,
-              weight: {
-                ...currentWeight,
-                weight: currentWeight.weight + weightChange,
-              },
-              ETHEREAL_SILICA_BALANCE: currentBalance + amountWithPrecision,
-            },
-          });
-          break;
-        case ResourcesIds.Dragonhide:
-          this.components.Resource.addOverride(overrideId, {
-            entity,
-            value: {
-              ...currentResource,
-              weight: {
-                ...currentWeight,
-                weight: currentWeight.weight + weightChange,
-              },
-              DRAGONHIDE_BALANCE: currentBalance + amountWithPrecision,
-            },
-          });
-          break;
-        case ResourcesIds.Labor:
-          this.components.Resource.addOverride(overrideId, {
-            entity,
-            value: {
-              ...currentResource,
-              weight: {
-                ...currentWeight,
-                weight: currentWeight.weight + weightChange,
-              },
-              LABOR_BALANCE: currentBalance + amountWithPrecision,
-            },
-          });
-          break;
-        case ResourcesIds.AncientFragment:
-          this.components.Resource.addOverride(overrideId, {
-            entity,
-            value: {
-              ...currentResource,
-              weight: {
-                ...currentWeight,
-                weight: currentWeight.weight + weightChange,
-              },
-              EARTHEN_SHARD_BALANCE: currentBalance + amountWithPrecision,
-            },
-          });
-          break;
-        case ResourcesIds.Donkey:
-          this.components.Resource.addOverride(overrideId, {
-            entity,
-            value: {
-              ...currentResource,
-              weight: {
-                ...currentWeight,
-                weight: currentWeight.weight + weightChange,
-              },
-              DONKEY_BALANCE: currentBalance + amountWithPrecision,
-            },
-          });
-          break;
-        case ResourcesIds.Knight:
-          this.components.Resource.addOverride(overrideId, {
-            entity,
-            value: {
-              ...currentResource,
-              weight: {
-                ...currentWeight,
-                weight: currentWeight.weight + weightChange,
-              },
-              KNIGHT_T1_BALANCE: currentBalance + amountWithPrecision,
-            },
-          });
-          break;
-        case ResourcesIds.KnightT2:
-          this.components.Resource.addOverride(overrideId, {
-            entity,
-            value: {
-              ...currentResource,
-              weight: {
-                ...currentWeight,
-                weight: currentWeight.weight + weightChange,
-              },
-              KNIGHT_T2_BALANCE: currentBalance + amountWithPrecision,
-            },
-          });
-          break;
-        case ResourcesIds.KnightT3:
-          this.components.Resource.addOverride(overrideId, {
-            entity,
-            value: {
-              ...currentResource,
-              weight: {
-                ...currentWeight,
-                weight: currentWeight.weight + weightChange,
-              },
-              KNIGHT_T3_BALANCE: currentBalance + amountWithPrecision,
-            },
-          });
-          break;
-        case ResourcesIds.Crossbowman:
-          this.components.Resource.addOverride(overrideId, {
-            entity,
-            value: {
-              ...currentResource,
-              weight: {
-                ...currentWeight,
-                weight: currentWeight.weight + weightChange,
-              },
-              CROSSBOWMAN_T1_BALANCE: currentBalance + amountWithPrecision,
-            },
-          });
-          break;
-        case ResourcesIds.CrossbowmanT2:
-          this.components.Resource.addOverride(overrideId, {
-            entity,
-            value: {
-              ...currentResource,
-              weight: {
-                ...currentWeight,
-                weight: currentWeight.weight + weightChange,
-              },
-              CROSSBOWMAN_T2_BALANCE: currentBalance + amountWithPrecision,
-            },
-          });
-          break;
-        case ResourcesIds.CrossbowmanT3:
-          this.components.Resource.addOverride(overrideId, {
-            entity,
-            value: {
-              ...currentResource,
-              weight: {
-                ...currentWeight,
-                weight: currentWeight.weight + weightChange,
-              },
-              CROSSBOWMAN_T3_BALANCE: currentBalance + amountWithPrecision,
-            },
-          });
-          break;
-        case ResourcesIds.Paladin:
-          this.components.Resource.addOverride(overrideId, {
-            entity,
-            value: {
-              ...currentResource,
-              weight: {
-                ...currentWeight,
-                weight: currentWeight.weight + weightChange,
-              },
-              PALADIN_T1_BALANCE: currentBalance + amountWithPrecision,
-            },
-          });
-          break;
-        case ResourcesIds.PaladinT2:
-          this.components.Resource.addOverride(overrideId, {
-            entity,
-            value: {
-              ...currentResource,
-              weight: {
-                ...currentWeight,
-                weight: currentWeight.weight + weightChange,
-              },
-              PALADIN_T2_BALANCE: currentBalance + amountWithPrecision,
-            },
-          });
-          break;
-        case ResourcesIds.PaladinT3:
-          this.components.Resource.addOverride(overrideId, {
-            entity,
-            value: {
-              ...currentResource,
-              weight: {
-                ...currentWeight,
-                weight: currentWeight.weight + weightChange,
-              },
-              PALADIN_T3_BALANCE: currentBalance + amountWithPrecision,
-            },
-          });
-          break;
-        case ResourcesIds.Wheat:
-          this.components.Resource.addOverride(overrideId, {
-            entity,
-            value: {
-              ...currentResource,
-              weight: {
-                ...currentWeight,
-                weight: currentWeight.weight + weightChange,
-              },
-              WHEAT_BALANCE: currentBalance + amountWithPrecision,
-            },
-          });
-          break;
-        case ResourcesIds.Fish:
-          this.components.Resource.addOverride(overrideId, {
-            entity,
-            value: {
-              ...currentResource,
-              weight: {
-                ...currentWeight,
-                weight: currentWeight.weight + weightChange,
-              },
-              FISH_BALANCE: currentBalance + amountWithPrecision,
-            },
-          });
-          break;
-        case ResourcesIds.Lords:
-          this.components.Resource.addOverride(overrideId, {
-            entity,
-            value: {
-              ...currentResource,
-              weight: {
-                ...currentWeight,
-                weight: currentWeight.weight + weightChange,
-              },
-              LORDS_BALANCE: currentBalance + amountWithPrecision,
-            },
-          });
-          break;
-        case ResourcesIds.Research:
-          this.components.Resource.addOverride(overrideId, {
-            entity,
-            value: {
-              ...currentResource,
-              weight: {
-                ...currentWeight,
-                weight: currentWeight.weight + weightChange,
-              },
-              RESEARCH_BALANCE: currentBalance + amountWithPrecision,
-            },
-          });
-          break;
-        default:
-          break;
-      }
+      const patch = this.resolveOptimisticResourcePatch(resourceId, actualResourceChange);
+      if (patch)
+        this.components.Resource.addOverride(overrideId, { entity, value: { ...this._getResource(), ...patch } });
     } catch (error) {
       console.error(error);
       this.components.Resource.removeOverride(overrideId);
@@ -625,6 +164,40 @@ export class ResourceManager {
       this.components.Resource.removeOverride(overrideId);
     };
   };
+
+  public resolveOptimisticResourcePatch(
+    resourceId: ResourcesIds,
+    actualResourceChange: number,
+  ): Partial<ResourceValue> | null {
+    return this.resolveOptimisticResourceChangesPatch([{ resourceId, amount: actualResourceChange }]);
+  }
+
+  public resolveOptimisticResourceChangesPatch(
+    changes: readonly OptimisticResourceChange[],
+  ): Partial<ResourceValue> | null {
+    const applicableChanges = changes.filter(({ resourceId }) =>
+      Boolean(RESOURCE_BALANCE_FIELDS[resourceId as keyof typeof RESOURCE_BALANCE_FIELDS]),
+    );
+    if (applicableChanges.length === 0) return null;
+
+    const currentResource = this._getResource();
+    const currentWeight = currentResource?.weight || { capacity: 0n, weight: 0n };
+    const patch: Record<string, unknown> = {};
+    let nextWeight = currentWeight.weight;
+
+    applicableChanges.forEach(({ resourceId, amount }) => {
+      const balanceField = RESOURCE_BALANCE_FIELDS[resourceId as keyof typeof RESOURCE_BALANCE_FIELDS];
+      const amountWithPrecision = BigInt(Math.floor(multiplyByPrecision(amount)));
+      const patchedBalance = patch[balanceField];
+      patch[balanceField] =
+        (typeof patchedBalance === "bigint" ? patchedBalance : this.balance(resourceId)) + amountWithPrecision;
+      const resourceWeight = configManager.getResourceWeightKg(resourceId) || 0;
+      nextWeight += BigInt(kgToGram(resourceWeight)) * amountWithPrecision;
+    });
+
+    patch.weight = { ...currentWeight, weight: nextWeight };
+    return patch as Partial<ResourceValue>;
+  }
 
   public optimisticResourceUpdates = (resourceChanges: OptimisticResourceChange[]) => {
     const removeResourceOverrides = resourceChanges

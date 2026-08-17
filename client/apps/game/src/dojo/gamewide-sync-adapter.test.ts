@@ -2,8 +2,9 @@
 
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const { getComponentEntitiesMock, removeComponentMock, setEntitiesMock } = vi.hoisted(() => ({
+const { getComponentEntitiesMock, getComponentValueMock, removeComponentMock, setEntitiesMock } = vi.hoisted(() => ({
   getComponentEntitiesMock: vi.fn(),
+  getComponentValueMock: vi.fn(),
   removeComponentMock: vi.fn(),
   setEntitiesMock: vi.fn(),
 }));
@@ -11,6 +12,7 @@ const { getComponentEntitiesMock, removeComponentMock, setEntitiesMock } = vi.ho
 vi.mock("@dojoengine/recs", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@dojoengine/recs")>()),
   getComponentEntities: getComponentEntitiesMock,
+  getComponentValue: getComponentValueMock,
   removeComponent: removeComponentMock,
 }));
 
@@ -19,6 +21,7 @@ vi.mock("@dojoengine/state", () => ({ setEntities: setEntitiesMock }));
 import { createGamewideSyncSession, GAMEWIDE_SNAPSHOT_PAGE_SIZE } from "./gamewide-sync-adapter";
 
 const createHarness = () => {
+  getComponentValueMock.mockReturnValue({ x: 2 });
   let onEntity: ((entity: unknown) => void) | null = null;
   let onEvent: ((event: unknown) => void) | null = null;
   const entitySubscription = { cancel: vi.fn() };
@@ -38,8 +41,10 @@ const createHarness = () => {
       items: [{ hashed_keys: pagination.cursor ?? "first", models: { "s2-Position": { x: 1 } } }],
       next_cursor: pagination.cursor ? undefined : "second-page",
     })),
+    getEventMessages: vi.fn(async () => ({ items: [], next_cursor: undefined })),
   };
   const setup = {
+    components: { Position: positionComponent, BattleEvent: eventComponent },
     network: {
       toriiClient: client,
       contractComponents: { Position: positionComponent, BattleEvent: eventComponent },
@@ -50,6 +55,7 @@ const createHarness = () => {
     setup: setup as never,
     entityClause: { Keys: { keys: ["0xd"], pattern_matching: "VariableLen", models: ["s2-Position"] } },
     eventClause: { Keys: { keys: ["0xd"], pattern_matching: "VariableLen", models: ["s2-BattleEvent"] } },
+    eventModels: ["s2-BattleEvent"],
     entityModels: ["s2-Position"],
     logging: false,
     subscriptionSetupTimeoutMs: 0,
@@ -90,10 +96,10 @@ describe("game-wide sync adapter", () => {
 
   it("bridges subscriptions and cancels the complete entity/event pair", async () => {
     const harness = createHarness();
-    const handlers = { onEntity: vi.fn(), onEvent: vi.fn() };
+    const handlers = { onEntity: vi.fn(), onEvent: vi.fn(), onEventGapFill: vi.fn() };
     const writer = await harness.session.transport.subscribe(handlers);
     const entity = { hashed_keys: "entity", models: { "s2-Position": { x: 2 } } };
-    const event = { hashed_keys: "event", models: { "s2-BattleEvent": { winner: 1 } } };
+    const event = { hashed_keys: "event", models: { "s2-BattleEvent": { timestamp: 1, winner: 1 } } };
 
     harness.emitEntity(entity);
     harness.emitEvent(event);

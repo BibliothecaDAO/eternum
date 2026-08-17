@@ -1,5 +1,12 @@
 import { EntityIngestQueue, type EntityIngestBatchInfo } from "./entity-ingest-queue";
-import type { GameSyncEntity, GameSyncRuntimeMetrics, GameSyncSessionStart, GameSyncWriter } from "./game-sync-types";
+import type {
+  GameSyncEntity,
+  GameSyncProvisionalWrite,
+  GameSyncRuntimeMetrics,
+  GameSyncSessionStart,
+  GameSyncWriter,
+} from "./game-sync-types";
+import { ProvisionalWriteManager, type ProvisionalIntent } from "./provisional-write-manager";
 import { createMicrotaskGameSyncScheduler } from "./scheduler";
 import type { WorldSpatialProjection } from "./world-spatial-projection";
 
@@ -37,6 +44,7 @@ const resolveEventTimestamp = (model: string, value: unknown): string => {
 
 const createEmptyMetrics = (): GameSyncRuntimeMetrics => ({
   appliedBatchCount: 0,
+  eventGapFillReplayCount: 0,
   lastRecoveryDurationMs: 0,
   maxBatchApplyDurationMs: 0,
   peakLiveUpdatesPerSecond: 0,
@@ -44,6 +52,7 @@ const createEmptyMetrics = (): GameSyncRuntimeMetrics => ({
   snapshotPageCount: 0,
   totalLiveEntityUpdates: 0,
   totalLiveEventUpdates: 0,
+  totalReplayedEventUpdates: 0,
 });
 
 /**
@@ -61,6 +70,7 @@ export class GameSyncRuntime {
   private session: GameSyncSessionStart | null = null;
   private ingestQueue: EntityIngestQueue | null = null;
   private worldSpatialProjection: WorldSpatialProjection | null = null;
+  private provisionalWriteManager: ProvisionalWriteManager | null = null;
   private recentEventIdentities = new Map<string, true>();
   private liveUpdateTimestamps: number[] = [];
   private receiveSequence = 0;
@@ -80,7 +90,11 @@ export class GameSyncRuntime {
 
   public async startSession(input: GameSyncSessionStart): Promise<void> {
     this.disposeWorldSpatialProjection();
+    this.provisionalWriteManager?.dispose();
     this.session = input;
+    this.provisionalWriteManager = new ProvisionalWriteManager(input.store, {
+      onIntentStalled: input.onProvisionalIntentStalled,
+    });
     this.recentEventIdentities.clear();
     this.liveUpdateTimestamps = [];
     this.receiveSequence = 0;
@@ -121,12 +135,33 @@ export class GameSyncRuntime {
     return this.worldSpatialProjection;
   }
 
+  public createProvisionalIntent(writes: readonly GameSyncProvisionalWrite[]): ProvisionalIntent {
+    if (!this.provisionalWriteManager) {
+      throw new Error("GameSyncRuntime has no active provisional write manager");
+    }
+    return this.provisionalWriteManager.createIntent(writes);
+  }
+
+  public hasProvisionalInputLock(model: string, entityId: string): boolean {
+    return this.provisionalWriteManager?.hasInputLock(model, entityId) ?? false;
+  }
+
+  public async applyAuthoritativeEntities(entities: readonly GameSyncEntity[]): Promise<void> {
+    if (this.status !== "running" || !this.ingestQueue) {
+      throw new Error("GameSyncRuntime cannot apply an authoritative query outside a running session");
+    }
+    entities.forEach((entity) => this.ingestQueue?.enqueueEntity(entity));
+    await this.ingestQueue.drain();
+  }
+
   public dispose(): void {
     this.generation += 1;
     this.cancelWriterImmediately();
     this.disposeWorldSpatialProjection();
     this.ingestQueue?.dispose();
     this.ingestQueue = null;
+    this.provisionalWriteManager?.dispose();
+    this.provisionalWriteManager = null;
     this.session = null;
     this.status = "stopped";
   }
@@ -155,6 +190,12 @@ export class GameSyncRuntime {
           if (!this.isCurrentGeneration(generation)) return;
           this.recordLiveUpdate("event");
           this.enqueueEventOnce(event);
+        },
+        onEventGapFill: (replayedEventCount) => {
+          if (!this.isCurrentGeneration(generation) || replayedEventCount <= 0) return;
+          this.metrics.eventGapFillReplayCount += 1;
+          this.metrics.totalReplayedEventUpdates += replayedEventCount;
+          this.publishMetrics();
         },
       });
       this.adoptWriter(generation, writer);
@@ -257,6 +298,8 @@ export class GameSyncRuntime {
       store: session.store,
       now: session.now ?? (() => Date.now()),
       onBatchApplied: (info) => this.recordAppliedBatch(info),
+      onAuthoritativeObservationsApplied: (observations) =>
+        this.provisionalWriteManager?.observeAuthoritativeObservations(observations),
     });
   }
 

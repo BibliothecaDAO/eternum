@@ -1,4 +1,5 @@
 import { spawnSync } from "node:child_process";
+import { createHash } from "node:crypto";
 import {
   copyFileSync,
   existsSync,
@@ -44,11 +45,26 @@ const maxModelPayloadBytes = 80 * 1_024 * 1_024;
 main();
 
 function main() {
+  const args = process.argv.slice(2);
+  const requestedModel = readRequestedModel(args);
+  const modelPaths = listModelPaths(requestedModel);
+  if (args.includes("--stamp-only")) {
+    const summary = modelPaths.reduce(
+      (result, modelPath) => {
+        const stamp = stampTextureContentHashes(modelPath);
+        result.stampedTextureCount += stamp.textureCount;
+        if (stamp.changed) result.changedModelCount += 1;
+        return result;
+      },
+      { changedModelCount: 0, stampedTextureCount: 0 },
+    );
+    process.stdout.write(`${JSON.stringify({ modelCount: modelPaths.length, ...summary })}\n`);
+    return;
+  }
+
   requireTool(gltfTransform, "Install workspace dependencies before compressing models.");
   requireCommand("ktx", "Install Khronos KTX-Software and put `ktx` on PATH.");
 
-  const requestedModel = readRequestedModel(process.argv.slice(2));
-  const modelPaths = listModelPaths(requestedModel);
   const beforeBytes = sumFileSizes(modelPaths);
   // Keep the completed output beside the source tree so each final rename is
   // atomic and cannot fail at the cross-filesystem boundary of the OS temp dir.
@@ -63,6 +79,7 @@ function main() {
       mkdirSync(dirname(outputPath), { recursive: true });
       process.stdout.write(`[models ${index + 1}/${modelPaths.length}] ${relativePath}\n`);
       transformModel(modelPath, outputPath, relativePath);
+      stampTextureContentHashes(outputPath);
       assertCompressedTextures(outputPath, relativePath, resolveTextureSizeLimit(relativePath));
       transformed.push({ outputPath, modelPath });
     }
@@ -88,6 +105,31 @@ function main() {
     unregisterSignalCleanup();
     rmSync(outputRoot, { recursive: true, force: true });
   }
+}
+
+function stampTextureContentHashes(modelPath) {
+  const glb = readGlb(modelPath);
+  const binaryChunk = glb.chunks.find((chunk) => chunk.type === 0x004e4942)?.data;
+  if (!binaryChunk) return { changed: false, textureCount: 0 };
+
+  let changed = false;
+  let stampedTextureCount = 0;
+  for (const image of glb.json.images ?? []) {
+    if (!Number.isInteger(image.bufferView)) continue;
+    const bufferView = glb.json.bufferViews?.[image.bufferView];
+    if (!bufferView) continue;
+
+    const byteOffset = bufferView.byteOffset ?? 0;
+    const content = binaryChunk.subarray(byteOffset, byteOffset + bufferView.byteLength);
+    const contentHash = createHash("sha256").update(content).digest("hex");
+    stampedTextureCount += 1;
+    if (image.extras?.eternumContentHash === contentHash) continue;
+    image.extras = { ...image.extras, eternumContentHash: contentHash };
+    changed = true;
+  }
+
+  if (changed) writeGlb(modelPath, glb);
+  return { changed, textureCount: stampedTextureCount };
 }
 
 function registerSignalCleanup(outputRoot) {

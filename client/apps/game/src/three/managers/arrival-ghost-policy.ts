@@ -2,6 +2,7 @@ import { Color } from "three";
 
 export type ArrivalGhostClearReason =
   | "arrived"
+  | "entity_evidence"
   | "tx_failed"
   | "stale_timeout"
   | "army_removed"

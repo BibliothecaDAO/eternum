@@ -41,7 +41,7 @@ import {
   TileOccupier,
   findResourceById,
 } from "@bibliothecadao/types";
-import { Component, getComponentValue, Metadata, Schema } from "@dojoengine/recs";
+import { getComponentValue } from "@dojoengine/recs";
 import { memo, ReactNode, useCallback, useEffect, useMemo, useState } from "react";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { SelectedWorldmapEntity } from "@/ui/features/world/components/actions/selected-worldmap-entity";
@@ -157,7 +157,7 @@ const PanelFrame = ({ title, children, headerAction, className, height }: PanelF
 const MapTilePanel = () => {
   const selectedHex = useUIStore((state) => state.selectedHex);
   const {
-    network: { contractComponents, toriiClient },
+    network: { toriiClient },
   } = useDojo();
   const { syncEntity, isSyncing } = useEntityResync();
 
@@ -230,7 +230,7 @@ const MapTilePanel = () => {
   const handleResyncCurrentEntity = useCallback(() => {
     if (!syncableEntityType || syncableEntityId === null) return;
 
-    if (!toriiClient || !contractComponents) {
+    if (!toriiClient) {
       toast.error("Unable to sync right now.");
       return;
     }
@@ -252,7 +252,6 @@ const MapTilePanel = () => {
 
           void debouncedGetEntitiesFromTorii(
             toriiClient,
-            contractComponents as unknown as Component<Schema, Metadata, undefined>[],
             [syncableEntityId],
             ENTITY_SYNC_MODEL_NAMES[syncableEntityType].map(gameModel),
             complete,
@@ -263,7 +262,7 @@ const MapTilePanel = () => {
           });
         }),
     });
-  }, [contractComponents, getEntitySyncKey, syncEntity, syncableEntityId, syncableEntityType, toriiClient]);
+  }, [getEntitySyncKey, syncEntity, syncableEntityId, syncableEntityType, toriiClient]);
 
   const headerAction =
     syncableEntityType && syncableEntityId !== null ? (
@@ -297,7 +296,7 @@ const LocalTilePanel = () => {
   const {
     setup,
     account,
-    network: { toriiClient, contractComponents },
+    network: { toriiClient },
   } = useDojo();
   const { syncEntity, isSyncing } = useEntityResync();
   const buildingComponent = setup.components.Building;
@@ -516,14 +515,12 @@ const LocalTilePanel = () => {
 
   const handleResyncStructure = useCallback(() => {
     if (!structureSyncTarget) return;
-    if (!toriiClient || !contractComponents) {
+    if (!toriiClient) {
       toast.error("Unable to sync right now.");
       return;
     }
 
     const { entityId, position } = structureSyncTarget;
-    const toriiComponents = contractComponents as unknown as Parameters<typeof getStructuresDataFromTorii>[1];
-
     void syncEntity({
       syncKey: `structure:${String(entityId)}`,
       entityLabel: "Structure",
@@ -538,16 +535,14 @@ const LocalTilePanel = () => {
             resolve();
           };
 
-          void getStructuresDataFromTorii(toriiClient, toriiComponents, [{ entityId, position }], complete).catch(
-            (error) => {
-              if (settled) return;
-              settled = true;
-              reject(error);
-            },
-          );
+          void getStructuresDataFromTorii(toriiClient, [{ entityId, position }], complete).catch((error) => {
+            if (settled) return;
+            settled = true;
+            reject(error);
+          });
         }),
     });
-  }, [contractComponents, structureSyncTarget, syncEntity, toriiClient]);
+  }, [structureSyncTarget, syncEntity, toriiClient]);
 
   const headerAction = structureSyncTarget ? (
     <button

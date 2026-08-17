@@ -35,6 +35,14 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-08-16",
+    title: "Reliable Battle Results",
+    description:
+      "Missed crate reveals and combat effects now recover automatically after brief connection interruptions.",
+    type: "fix",
+    gameSlug: "world",
+  },
+  {
+    date: "2026-08-16",
     title: "Instant Building Placement",
     description:
       "New buildings now appear as soon as placement is submitted, while successful army moves stay at their destination and unlock promptly after confirmation.",

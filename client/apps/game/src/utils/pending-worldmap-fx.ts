@@ -1,4 +1,4 @@
-import { Direction, HexPosition, ID, TroopTier, TroopType } from "@bibliothecadao/types";
+import { ActorType, Direction, HexPosition, ID, TroopTier, TroopType } from "@bibliothecadao/types";
 
 export const WORLDMAP_PENDING_FX_START_EVENT = "worldmapPendingFxStart";
 export const WORLDMAP_PENDING_FX_STOP_EVENT = "worldmapPendingFxStop";
@@ -17,7 +17,9 @@ export type PendingWorldmapFxStartPayload =
       key: string;
       kind: "attack";
       attackerId: ID;
+      attackerActorType: ActorType;
       defenderId?: ID;
+      defenderActorType?: ActorType;
       attackerHex: HexPosition;
       targetHex: HexPosition;
       timeoutMs?: number;

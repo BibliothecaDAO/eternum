@@ -43,7 +43,7 @@ describe("GAME_SYNC_MODEL_MANIFEST", () => {
       expect(event.eventRetention).toEqual({
         retainRecsRows: false,
         dedupeIdentityLimit: 512,
-        replayEffectsOnRecovery: false,
+        replayEffectsOnRecovery: true,
       });
     });
   });

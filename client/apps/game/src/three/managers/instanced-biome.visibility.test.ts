@@ -47,6 +47,14 @@ function createGroupedBiomeModel(): InstancedBiome {
   return new InstancedBiome({ scene, animations: [] }, 8, false, "TemperateDeciduousForest");
 }
 
+function createNamedBiomeModel(biomeName: string, meshName: string): InstancedBiome {
+  const scene = new Group();
+  const mesh = new Mesh(new BoxGeometry(1, 1, 1), new MeshStandardMaterial());
+  mesh.name = meshName;
+  scene.add(mesh);
+  return new InstancedBiome({ scene, animations: [] }, 1, false, biomeName);
+}
+
 describe("InstancedBiome visibility", () => {
   it("restores mesh visibility when instance count grows from zero", () => {
     const biomeModel = createBiomeModel("Grassland");
@@ -101,5 +109,28 @@ describe("InstancedBiome visibility", () => {
     expect(Array.from((detailMeshes[0].instanceMatrix.array as Float32Array).subarray(0, source.length))).toEqual(
       Array.from(source),
     );
+  });
+
+  it("configures land and outline render state before exact material pooling", () => {
+    const firstLand = createNamedBiomeModel("Grassland", "LAND");
+    const secondLand = createNamedBiomeModel("Grassland", "LAND");
+    const firstOutline = createNamedBiomeModel("Outline", "outline");
+    const secondOutline = createNamedBiomeModel("Outline", "outline");
+
+    const firstLandMaterial = firstLand.instancedMeshes[0].material as MeshStandardMaterial;
+    const secondLandMaterial = secondLand.instancedMeshes[0].material as MeshStandardMaterial;
+    const firstOutlineMaterial = firstOutline.instancedMeshes[0].material as MeshStandardMaterial;
+    const secondOutlineMaterial = secondOutline.instancedMeshes[0].material as MeshStandardMaterial;
+
+    expect(firstLandMaterial).toBe(secondLandMaterial);
+    expect(firstLandMaterial.vertexColors).toBe(true);
+    expect(firstOutlineMaterial).toBe(secondOutlineMaterial);
+    expect(firstOutlineMaterial.transparent).toBe(true);
+    expect(firstOutlineMaterial.opacity).toBe(0.075);
+
+    firstLand.dispose();
+    secondLand.dispose();
+    firstOutline.dispose();
+    secondOutline.dispose();
   });
 });

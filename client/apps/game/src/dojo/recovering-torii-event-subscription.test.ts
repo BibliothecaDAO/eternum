@@ -20,8 +20,14 @@ describe("createRecoveringToriiEventSubscription", () => {
     const createSubscription = vi.fn().mockResolvedValueOnce(first).mockResolvedValueOnce(second);
     const onLost = vi.fn();
     const onRestored = vi.fn();
+    const replaySince = vi.fn(async () => 2);
+    const onGapFillReplayed = vi.fn();
     const subscription = await createRecoveringToriiEventSubscription({
       createSubscription,
+      establishReplayBaseline: vi.fn(async () => undefined),
+      captureReplayWatermark: () => ({ timestamp: 10n }),
+      replaySince,
+      onGapFillReplayed,
       onLost,
       onRestored,
       retryDelayMs: () => 10,
@@ -32,6 +38,8 @@ describe("createRecoveringToriiEventSubscription", () => {
     await vi.advanceTimersByTimeAsync(10);
 
     expect(createSubscription).toHaveBeenCalledTimes(2);
+    expect(replaySince).toHaveBeenCalledWith({ timestamp: 10n });
+    expect(onGapFillReplayed).toHaveBeenCalledWith(2);
     expect(onRestored).toHaveBeenCalledOnce();
     expect(first.cancel).toHaveBeenCalledOnce();
     subscription.cancel();
@@ -49,8 +57,12 @@ describe("createRecoveringToriiEventSubscription", () => {
       .mockResolvedValueOnce(second);
     const onLost = vi.fn();
     const onRestored = vi.fn();
+    const replaySince = vi.fn(async () => 1);
     const subscription = await createRecoveringToriiEventSubscription({
       createSubscription,
+      establishReplayBaseline: vi.fn(async () => undefined),
+      captureReplayWatermark: () => ({ timestamp: 12n }),
+      replaySince,
       onLost,
       onRestored,
       leaseMs: 20,
@@ -62,6 +74,7 @@ describe("createRecoveringToriiEventSubscription", () => {
     await vi.advanceTimersByTimeAsync(10);
 
     expect(onRestored).toHaveBeenCalledOnce();
+    expect(replaySince).toHaveBeenCalledOnce();
     expect(first.cancel).toHaveBeenCalledOnce();
     subscription.cancel();
     expect(second.cancel).toHaveBeenCalledOnce();

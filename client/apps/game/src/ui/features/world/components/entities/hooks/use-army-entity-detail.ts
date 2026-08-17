@@ -1,5 +1,4 @@
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
-import { getFreshPendingStaminaSource, useArmyStaminaSourceStore } from "@/lib/army-stamina/source-store";
 import { useBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
 import { getCharacterName } from "@/utils/agent";
 import { getExplorerStaminaSnapshot } from "@/utils/explorer-stamina";
@@ -53,7 +52,6 @@ export const useArmyEntityDetail = ({ armyEntityId }: UseArmyEntityDetailOptions
   const [isLoadingDelete, setIsLoadingDelete] = useState(false);
   const [lastRefresh, setLastRefresh] = useState(0);
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const pendingStamina = useArmyStaminaSourceStore((state) => state.pendingSources[String(armyEntityId)]);
   const armyRecsEntity = gameEntityKey([BigInt(armyEntityId)]);
   const liveExplorerTroops = useComponentValue(components.ExplorerTroops, armyRecsEntity)?.troops;
   // Current explorer resources and stamina are always read from live RECS.
@@ -76,19 +74,12 @@ export const useArmyEntityDetail = ({ armyEntityId }: UseArmyEntityDetailOptions
   const explorerResources = liveExplorerResources ?? explorerData?.resources;
 
   const staminaSnapshot = useMemo(() => {
-    const freshPendingStamina = getFreshPendingStaminaSource(armyEntityId);
     return getExplorerStaminaSnapshot({
       entityId: armyEntityId,
       currentArmiesTick,
       liveTroops: liveExplorerTroops,
-      pendingStamina: freshPendingStamina
-        ? {
-            amount: freshPendingStamina.amount,
-            updatedTick: freshPendingStamina.updatedTick,
-          }
-        : null,
     });
-  }, [armyEntityId, currentArmiesTick, liveExplorerTroops, pendingStamina]);
+  }, [armyEntityId, currentArmiesTick, liveExplorerTroops]);
 
   const currentTroops = staminaSnapshot?.troops ?? null;
   const relicEffects = useMemo(

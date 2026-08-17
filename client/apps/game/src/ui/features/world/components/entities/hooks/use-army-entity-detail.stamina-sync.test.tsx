@@ -2,7 +2,6 @@ import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { useArmyStaminaSourceStore } from "@/lib/army-stamina/source-store";
 import { useArmyEntityDetail } from "./use-army-entity-detail";
 
 const {
@@ -129,10 +128,6 @@ describe("useArmyEntityDetail stamina sync", () => {
     document.body.appendChild(container);
     root = createRoot(container);
     captured = undefined;
-    useArmyStaminaSourceStore.setState({
-      pendingSources: {},
-    });
-
     useDojoMock.mockReturnValue({
       network: { toriiClient: {} },
       account: { account: { address: "0x123" } },

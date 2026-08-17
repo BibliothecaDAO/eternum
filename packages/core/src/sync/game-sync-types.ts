@@ -17,6 +17,7 @@ export interface GameSyncWriter {
 export interface GameSyncSubscriptionHandlers {
   onEntity: (entity: GameSyncEntity) => void;
   onEvent: (event: GameSyncEntity) => void;
+  onEventGapFill: (replayedEventCount: number) => void;
 }
 
 export interface GameSyncTransport {
@@ -30,14 +31,44 @@ export type GameSyncEntityStoreOperation =
   | { type: "remove-components"; entityId: string; models: string[] }
   | { type: "delete-entity"; entityId: string };
 
+export type GameSyncAuthoritativeObservation =
+  | { type: "model"; entityId: string; model: string; value: Record<string, unknown> | null }
+  | { type: "delete-entity"; entityId: string };
+
+export interface GameSyncProvisionalWrite {
+  entityId: string;
+  model: string;
+  patch: Record<string, unknown> | null;
+  /** Deterministic authoritative subset that settles this write. Undefined means overlay-only. */
+  matchPatch: Record<string, unknown> | null | undefined;
+  /** Optional legitimate no-op outcome, held briefly to distinguish it from a stale echo. */
+  sourcePatch?: Record<string, unknown>;
+}
+
+export interface GameSyncProvisionalIntentStalledInfo {
+  intentId: string;
+  transactionHash?: string;
+  unmatchedWrites: Array<{
+    entityId: string;
+    model: string;
+    matchPatch: Record<string, unknown> | null;
+    sourcePatch?: Record<string, unknown>;
+  }>;
+}
+
 export interface GameSyncStore {
-  applyEntityOperations: (operations: readonly GameSyncEntityStoreOperation[]) => Promise<void> | void;
+  applyEntityOperations: (
+    operations: readonly GameSyncEntityStoreOperation[],
+  ) => Promise<readonly GameSyncAuthoritativeObservation[] | void> | readonly GameSyncAuthoritativeObservation[] | void;
   applyEvent: (event: GameSyncEntity) => Promise<void> | void;
   listModelEntityIds: (model: string) => Iterable<string>;
+  applyProvisionalWrites?: (intentId: string, writes: readonly GameSyncProvisionalWrite[]) => void;
+  removeProvisionalWrites?: (intentId: string) => void;
 }
 
 export interface GameSyncRuntimeMetrics {
   appliedBatchCount: number;
+  eventGapFillReplayCount: number;
   lastRecoveryDurationMs: number;
   maxBatchApplyDurationMs: number;
   peakLiveUpdatesPerSecond: number;
@@ -45,6 +76,7 @@ export interface GameSyncRuntimeMetrics {
   snapshotPageCount: number;
   totalLiveEntityUpdates: number;
   totalLiveEventUpdates: number;
+  totalReplayedEventUpdates: number;
 }
 
 export interface GameSyncSessionStart {
@@ -57,4 +89,5 @@ export interface GameSyncSessionStart {
   onSubscriptionActive?: () => void;
   onLiveUpdate?: (kind: "entity" | "event") => void;
   onMetrics?: (metrics: GameSyncRuntimeMetrics) => void;
+  onProvisionalIntentStalled?: (info: GameSyncProvisionalIntentStalledInfo) => void;
 }

@@ -53,17 +53,6 @@ describe("explorer stamina source selection", () => {
     expect(selectFreshestTroopsSnapshot({ liveTroops: liveTroops as never })).toBe(liveTroops);
   });
 
-  it("overlays valid pending stamina onto live RECS troops", () => {
-    const liveTroops = buildTroops(6n, 80n);
-
-    expect(
-      selectFreshestTroopsSnapshot({
-        liveTroops: liveTroops as never,
-        pendingStamina: { amount: 20n, updatedTick: 7 },
-      }),
-    ).toMatchObject({ stamina: { amount: 20n, updated_tick: 7n } });
-  });
-
   it("projects stamina from the selected live source", () => {
     const liveTroops = buildTroops(6n, 25n);
     const staminaSnapshot = getExplorerStaminaSnapshot({

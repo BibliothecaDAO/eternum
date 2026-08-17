@@ -5,12 +5,7 @@ import { toast } from "sonner";
 import { initializeSyncSimulator } from "@/dojo/sync-simulator";
 import { useConnectionStore } from "@/hooks/store/use-connection-store";
 import { useAccountStore } from "@/hooks/store/use-account-store";
-import {
-  buildPendingMovementStaminaSource,
-  resolveMovementStamina,
-  type MovementStaminaResolution,
-} from "@/lib/army-stamina/movement-affordability";
-import { useArmyStaminaSourceStore } from "@/lib/army-stamina/source-store";
+import { resolveMovementStamina, type MovementStaminaResolution } from "@/lib/army-stamina/movement-affordability";
 import { resolveStoredWorldmapCameraView, useCameraZoomStore } from "@/hooks/store/use-camera-zoom-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { getCurrentPlayRouteBootToken, usePlayRouteReadinessStore } from "@/game-entry/play-route-readiness-store";
@@ -29,7 +24,7 @@ import {
   WORLDMAP_PENDING_FX_STOP_EVENT,
 } from "@/utils/pending-worldmap-fx";
 import { getBiomeVariant, HEX_SIZE, WORLD_CHUNK_CONFIG } from "@/three/constants";
-import { ArmyManager, type ArmyMovementPlan } from "@/three/managers/army-manager";
+import { ArmyManager } from "@/three/managers/army-manager";
 import { BattleDirectionManager } from "@/three/managers/battle-direction-manager";
 import { ChestManager } from "@/three/managers/chest-manager";
 import InstancedBiome from "@/three/managers/instanced-biome";
@@ -45,6 +40,12 @@ import {
 } from "@/three/frame-budget-work-queue";
 import { SceneManager } from "@/three/scene-manager";
 import { CameraView } from "@/three/scenes/camera-view";
+import {
+  matchesPendingAttackEvidence,
+  resolveExplorerBattleEvidence,
+  resolveStructureBattleEvidence,
+  type PendingAttackEntityEvidence,
+} from "@/three/scenes/worldmap-pending-attack-evidence";
 import { CAMERA_CONFIG } from "@/three/constants";
 import { HexagonScene } from "@/three/scenes/hexagon-scene";
 import type { RenderVisualProfile } from "@/three/render-profile";
@@ -54,7 +55,9 @@ import { LeftView } from "@/types";
 import { configManager, Position } from "@bibliothecadao/eternum";
 import {
   requireActiveGameSyncRuntime,
+  trackProvisionalTransaction,
   type ArmySpatialProjectionChange,
+  type ProvisionalIntent,
   type StructureSpatialProjectionChange,
   type TileSpatialRenderable,
   type WorldSpatialProjection,
@@ -210,16 +213,9 @@ import {
   recordWorldmapTerrainReadyDuration,
 } from "./worldmap-terrain-commit-runtime";
 import { runWorldmapArmySelectionRecovery } from "./worldmap-army-selection-recovery-runtime";
-import {
-  resolveArmyTabSelectionPosition,
-  resolvePendingArmyMovementFallbackPlan,
-  resolvePendingArmyMovementSelectionPlan,
-  resolvePendingArmyMovementTxFailurePlan,
-  shouldQueueArmySelectionRecovery,
-} from "./worldmap-army-tab-selection";
+import { resolveArmyTabSelectionPosition, shouldQueueArmySelectionRecovery } from "./worldmap-army-tab-selection";
 import {
   resolveCreateArmyEffectTargetHex,
-  shouldClearPendingAttackEffect,
   shouldClearPendingCreateArmyEffect,
 } from "./worldmap-pending-action-effect-policy";
 import { shouldPlayArmyMovementFx } from "./worldmap-movement-fx-policy";
@@ -229,10 +225,9 @@ import {
   type ArrivalGhostClearReason,
 } from "../managers/arrival-ghost-policy";
 import {
-  resolveExploreCompletionPendingClearPlan,
-  resolvePendingMovementAuthoritativeResolutionPlan,
-  shouldCleanupTrackedTravelEffectOnPendingClear,
-  type PendingArmyMovementEffectClearReason,
+  resolveExploreCompletionVisualCleanup,
+  shouldCleanupTrackedTravelEffect,
+  type MovementEffectClearReason,
   type TravelEffectType,
 } from "./worldmap-travel-effect-policy";
 import { resolveArmyActionPathOrigin } from "./worldmap-action-path-origin";
@@ -577,32 +572,6 @@ function resolveTileBiomeType(biomeId: number): BiomeType {
   return biome === BiomeType.None ? BiomeType.Grassland : biome || BiomeType.Grassland;
 }
 
-/**
- * The single pending-movement record per army (AGENTS.md guardrail #4): every
- * lifecycle field lives on one record so no path can partially clean state.
- * `movement` covers the mark → visual/authoritative resolution lifecycle and
- * is cleared atomically; `txHashes` tracks submitted transactions until the
- * provider confirms or fails them and can outlive `movement` (an explore that
- * reveals a structure clears the movement while the receipt is still in
- * flight) — that residue keeps movement input locked until the receipt lands.
- */
-interface PendingArmyMovement {
-  movement?: {
-    startedAt: number;
-    targetKey: string;
-    handedOffToVisuals: boolean;
-    awaitingVisualCompletion: boolean;
-    visualsCompleted: boolean;
-  };
-  submissionPending: boolean;
-  txHashes: Set<string>;
-  fallbackStartedAtMs?: number;
-  fallbackTimeout?: ReturnType<typeof setTimeout>;
-}
-
-const hasUnconfirmedMovementTransaction = (record: PendingArmyMovement | undefined): boolean =>
-  record?.submissionPending === true || (record?.txHashes.size ?? 0) > 0;
-
 export default class WorldmapScene extends WarpTravel {
   private readonly interactionDebugInstanceId = allocateWorldmapInteractionDebugInstanceId();
   // Single source of truth for chunk geometry to avoid drift across fetch/render/visibility.
@@ -703,12 +672,7 @@ export default class WorldmapScene extends WarpTravel {
 
   private armyManager!: ArmyManager;
   private latestRenderVisualProfile?: RenderVisualProfile;
-  private pendingArmyMovements: Map<ID, PendingArmyMovement> = new Map();
   private pendingArmyMovementVisualLifecycleDisposers: Map<ID, () => void> = new Map();
-  // Pre-computed optimistic movement plans keyed by entityId. Planned at submit
-  // time in parallel with the tx, applied as soon as the tx hash is submitted
-  // so the army moves during provider confirmation instead of waiting on Torii.
-  private pendingMovementPlans: Map<ID, Promise<ArmyMovementPlan | null>> = new Map();
   private get hydratedChunkRefreshes(): Set<string> {
     return this.hydratedRefreshQueueState.queuedChunkKeys;
   }
@@ -811,10 +775,7 @@ export default class WorldmapScene extends WarpTravel {
   private set postCommitManagerCatchUpFrameHandle(value: number | null) {
     this.postCommitManagerCatchUpRuntimeState.frameHandle = value;
   }
-  private handleTransactionComplete?: (...args: any[]) => void;
-  private handleTransactionFailed?: (...args: any[]) => void;
   private handleTransactionProgress?: (...args: any[]) => void;
-  private readonly authoritativePendingArmyMovementMs = 8_000;
   private readonly cameraTargetHexUpdateIntervalMs = 100;
   private readonly cameraDistanceUpdateEpsilon = 0.5;
   private armySelectionRecoveryInFlight: Set<ID> = new Set();
@@ -943,7 +904,15 @@ export default class WorldmapScene extends WarpTravel {
       troopType: TroopType;
     }
   > = new Map();
-  private pendingAttackEffectsByKey: Map<string, { attackerId: ID; defenderId?: ID }> = new Map();
+  private pendingAttackEffectsByKey: Map<
+    string,
+    {
+      attackerId: ID;
+      attackerActorType: ActorType;
+      defenderId?: ID;
+      defenderActorType?: ActorType;
+    }
+  > = new Map();
   private nextPendingCreateArmyGhostId = -1;
   private cancelHexGridComputation?: () => void;
 
@@ -1074,48 +1043,6 @@ export default class WorldmapScene extends WarpTravel {
   }
 
   private bindTransactionFailureLifecycle(dojoContext: SetupResult): void {
-    this.handleTransactionComplete = (payload: { details?: { transaction_hash?: string } }) => {
-      const txHash = payload?.details?.transaction_hash;
-      if (!txHash) {
-        return;
-      }
-
-      const entityId = this.deletePendingArmyMovementTx(txHash);
-      if (entityId === undefined) {
-        return;
-      }
-
-      recordArmyMovementLatencyPhase({
-        phase: "tx_confirmed",
-        source: "worldmap",
-        entityId,
-        txHash,
-      });
-    };
-
-    this.handleTransactionFailed = (payload: { transactionHash?: string }) => {
-      const txHash = payload?.transactionHash;
-      if (!txHash) {
-        return;
-      }
-
-      const plan = resolvePendingArmyMovementTxFailurePlan({
-        txHash,
-        txEntityMap: this.buildPendingArmyMovementTxEntityMap(),
-        pendingEntities: this.getPendingArmyMovementEntityIds(),
-        optimisticEntities: this.getOptimisticArmyMovementTxEntities(),
-      });
-      if (plan.shouldClearPendingMovement && plan.entityId !== undefined) {
-        this.pendingMovementPlans.delete(plan.entityId);
-        this.rewindOptimisticMovement(plan.entityId);
-        this.clearPendingArmyMovement(plan.entityId);
-        useArmyStaminaSourceStore.getState().clearPendingStaminaSource(plan.entityId);
-        this.disposePendingMovementVisualLifecycle(plan.entityId);
-        this.arrivalGhostManager?.clearArrivalGhost(plan.entityId, "tx_failed");
-      }
-      this.deletePendingArmyMovementTx(txHash);
-    };
-
     this.handleTransactionProgress = (payload: { stage?: string; type?: string; explorerId?: number | string }) => {
       if (payload?.stage !== "explore_provider_lock_acquired" || payload?.type !== "explore") {
         return;
@@ -1133,75 +1060,13 @@ export default class WorldmapScene extends WarpTravel {
       });
     };
 
-    dojoContext.network?.provider?.on("transactionComplete", this.handleTransactionComplete);
-    dojoContext.network?.provider?.on("transactionFailed", this.handleTransactionFailed);
     dojoContext.network?.provider?.on("transactionProgress", this.handleTransactionProgress);
   }
 
-  private handleSubmittedArmyMovementTx(input: { entityId: ID; txHash: string }): void {
-    const { entityId, txHash } = input;
-
-    const record = this.upsertPendingArmyMovement(entityId);
-    record.submissionPending = false;
-    record.txHashes.add(txHash);
-    recordArmyMovementLatencyPhase({
-      phase: "tx_submitted",
-      source: "worldmap",
-      entityId,
-      txHash,
-    });
-    this.startSubmittedArmyMovementOptimisticPlan(entityId, txHash);
-  }
-
-  private startSubmittedArmyMovementOptimisticPlan(entityId: ID, txHash: string): void {
-    const planPromise = this.pendingMovementPlans.get(entityId);
-    if (!planPromise) return;
-
-    this.pendingMovementPlans.delete(entityId);
-    void planPromise.then((plan) => this.applySubmittedArmyMovementOptimisticPlan(entityId, txHash, plan));
-  }
-
-  private async applySubmittedArmyMovementOptimisticPlan(
-    entityId: ID,
-    txHash: string,
-    plan: ArmyMovementPlan | null,
-  ): Promise<void> {
-    if (!this.isArmyMovementPending(entityId)) return;
-    if (!plan) {
-      this.clearArrivalGhostAfterOptimisticMovementAbort(entityId, txHash);
-      return;
-    }
-
-    const planApplied = await this.armyManager.applyMovementPlan(plan, { optimistic: true });
-    if (!planApplied) {
-      this.clearArrivalGhostAfterOptimisticMovementAbort(entityId, txHash);
-      return;
-    }
-
-    recordArmyMovementLatencyPhase({
-      phase: "optimistic_animation_started",
-      source: "worldmap",
-      entityId,
-      txHash,
-    });
-    this.paintOptimisticDestinationBiome(plan);
-  }
-
-  private clearArrivalGhostAfterOptimisticMovementAbort(entityId: ID, txHash: string): void {
-    recordArmyMovementLatencyPhase({
-      phase: "optimistic_animation_skipped",
-      source: "worldmap",
-      entityId,
-      txHash,
-    });
-    // Keep the pending movement lifecycle installed so the later authoritative
-    // movement handoff can still clear pending state and resolve travel FX.
-    this.arrivalGhostManager.clearArrivalGhost(entityId, "optimistic_aborted");
-  }
-
-  private paintOptimisticDestinationBiome(plan: ArmyMovementPlan): void {
-    const targetContract = plan.targetHexCoords.getContract();
-    const targetNormalized = plan.targetHexCoords.getNormalized();
+  private paintProvisionalDestinationBiome(targetHex: HexPosition): void {
+    const targetPosition = new Position({ x: targetHex.col, y: targetHex.row });
+    const targetContract = targetPosition.getContract();
+    const targetNormalized = targetPosition.getNormalized();
     const provisionalSpawn = resolveArmySpawnBiome(
       this.exploredTiles,
       targetNormalized.x,
@@ -1219,64 +1084,6 @@ export default class WorldmapScene extends WarpTravel {
     this.bumpTerrainGenerationForHex(targetNormalized.x, targetNormalized.y);
     gameWorkerManager.updateExploredTile(targetNormalized.x, targetNormalized.y, provisionalSpawn.biome);
     this.invalidateAllChunkCachesContainingHex(targetNormalized.x, targetNormalized.y);
-  }
-
-  private getOptimisticArmyMovementTxEntities(): Set<ID> {
-    const optimisticEntities = new Set<ID>();
-
-    for (const [entityId, record] of this.pendingArmyMovements) {
-      if (record.txHashes.size > 0 && this.armyManager.hasUnresolvedOptimisticMovement(entityId)) {
-        optimisticEntities.add(entityId);
-      }
-    }
-
-    return optimisticEntities;
-  }
-
-  // Tx-hash lookups scan the pending records linearly: only the local player's
-  // in-flight movements live here (a handful at most), so a reverse index would
-  // just be a second copy to keep in sync.
-  private buildPendingArmyMovementTxEntityMap(): Map<string, ID> {
-    const txEntityMap = new Map<string, ID>();
-    for (const [entityId, record] of this.pendingArmyMovements) {
-      for (const txHash of record.txHashes) {
-        txEntityMap.set(txHash, entityId);
-      }
-    }
-
-    return txEntityMap;
-  }
-
-  private deletePendingArmyMovementTx(txHash: string): ID | undefined {
-    for (const [entityId, record] of this.pendingArmyMovements) {
-      if (!record.txHashes.delete(txHash)) {
-        continue;
-      }
-
-      this.finalizePendingArmyMovementIfResolved(entityId, record);
-      this.prunePendingArmyMovementIfEmpty(entityId, record);
-      return entityId;
-    }
-
-    return undefined;
-  }
-
-  private clearArmyMovementTxEntriesForEntity(entityId: ID): void {
-    const record = this.pendingArmyMovements.get(entityId);
-    if (!record) {
-      return;
-    }
-
-    record.submissionPending = false;
-    record.txHashes.clear();
-    this.prunePendingArmyMovementIfEmpty(entityId, record);
-  }
-
-  private prunePendingArmyMovementIfEmpty(entityId: ID, record: PendingArmyMovement): void {
-    if (record.movement || record.submissionPending || record.txHashes.size > 0) return;
-
-    if (record.fallbackTimeout !== undefined) clearTimeout(record.fallbackTimeout);
-    this.pendingArmyMovements.delete(entityId);
   }
 
   override applyRenderVisualProfile(features: RenderVisualProfile): void {
@@ -1487,14 +1294,11 @@ export default class WorldmapScene extends WarpTravel {
       if (!current) {
         this.disposePendingMovementVisualLifecycle(entityId);
         this.arrivalGhostManager.clearArrivalGhost(entityId, "army_removed");
-        this.clearArmyMovementTxEntriesForEntity(entityId);
-        this.clearPendingArmyMovement(entityId);
         this.battleDirectionManager.removeEntityFromTracking(entityId);
         return;
       }
 
       this.resolvePendingCreateArmyGhostOnArmyUpdate({ hexCoords: current.hexCoords });
-      this.clearPendingArmyMovementFromAuthoritativePosition({ entityId, hexCoords: current.hexCoords });
       this.recalculateArrowsForEntity(entityId);
       this.recalculateArrowsForEntitiesRelatedTo(entityId);
     });
@@ -1541,6 +1345,7 @@ export default class WorldmapScene extends WarpTravel {
       return;
     }
     this.registerBattleWorldUpdateSubscriptions();
+    this.registerPendingAttackEntityEvidenceSubscriptions();
     this.registerTileWorldUpdateSubscriptions();
     this.registerExplorerRewardWorldUpdateSubscriptions();
   }
@@ -1548,8 +1353,6 @@ export default class WorldmapScene extends WarpTravel {
   private registerBattleWorldUpdateSubscriptions(): void {
     this.addWorldUpdateSubscription(
       this.worldUpdateListener.BattleEvent.onBattleUpdate((update: BattleEventSystemUpdate) => {
-        this.resolvePendingAttackFxOnBattleUpdate(update);
-
         const { attackerId, defenderId } = update.battleData;
         if (attackerId && defenderId) {
           this.addCombatRelationship(attackerId, defenderId);
@@ -1580,6 +1383,28 @@ export default class WorldmapScene extends WarpTravel {
         this.notifyArmyUnderAttack(update);
       }),
     );
+  }
+
+  private registerPendingAttackEntityEvidenceSubscriptions(): void {
+    const explorerSubscription = this.dojo.components.ExplorerTroops.update$.subscribe(({ value }) => {
+      const [current, previous] = value as [
+        Parameters<typeof resolveExplorerBattleEvidence>[0],
+        Parameters<typeof resolveExplorerBattleEvidence>[1],
+      ];
+      const evidence = resolveExplorerBattleEvidence(current, previous);
+      if (evidence) this.resolvePendingAttackFxOnEntityEvidence(evidence);
+    });
+    const structureSubscription = this.dojo.components.Structure.update$.subscribe(({ value }) => {
+      const [current, previous] = value as [
+        Parameters<typeof resolveStructureBattleEvidence>[0],
+        Parameters<typeof resolveStructureBattleEvidence>[1],
+      ];
+      const evidence = resolveStructureBattleEvidence(current, previous);
+      if (evidence) this.resolvePendingAttackFxOnEntityEvidence(evidence);
+    });
+
+    this.addWorldUpdateSubscription(() => explorerSubscription.unsubscribe());
+    this.addWorldUpdateSubscription(() => structureSubscription.unsubscribe());
   }
 
   private registerTileWorldUpdateSubscriptions(): void {
@@ -2085,9 +1910,6 @@ export default class WorldmapScene extends WarpTravel {
   }
 
   private getArmyDisplayPosition(entityId: ID): HexPosition | undefined {
-    const pendingTarget = this.getValidPendingArmyMovementTarget(entityId);
-    if (pendingTarget) return pendingTarget;
-
     const army = this.worldSpatialProjection.getArmy(entityId);
     if (!army) return undefined;
     const normalized = new Position({ x: army.hexCoords.col, y: army.hexCoords.row }).getNormalized();
@@ -2095,13 +1917,6 @@ export default class WorldmapScene extends WarpTravel {
   }
 
   private getArmyAtHex(hexCoords: HexPosition): HexEntityInfo | undefined {
-    for (const entityId of this.pendingArmyMovements.keys()) {
-      const pendingTarget = this.getValidPendingArmyMovementTarget(entityId);
-      if (pendingTarget?.col === hexCoords.col && pendingTarget.row === hexCoords.row) {
-        return { id: entityId, owner: this.getArmyOwnerAddress(entityId) ?? 0n };
-      }
-    }
-
     const contract = new Position({ x: hexCoords.col, y: hexCoords.row }).getContract();
     const renderable = this.worldSpatialProjection
       .getArmiesAtHex({ col: contract.x, row: contract.y })
@@ -2114,15 +1929,9 @@ export default class WorldmapScene extends WarpTravel {
       : undefined;
   }
 
-  private getValidPendingArmyMovementTarget(entityId: ID): HexPosition | undefined {
-    const movement = this.getPendingArmyMovement(entityId)?.movement;
-    if (!movement || Date.now() - movement.startedAt > this.authoritativePendingArmyMovementMs) return undefined;
-
-    const [col, row] = movement.targetKey.split(",").map(Number);
-    if (!Number.isFinite(col) || !Number.isFinite(row)) return undefined;
-
-    const normalized = new Position({ x: col, y: row }).getNormalized();
-    return { col: normalized.x, row: normalized.y };
+  private resolveContractHexKey(hexCoords: HexPosition): string {
+    const contract = new Position({ x: hexCoords.col, y: hexCoords.row }).getContract();
+    return `${contract.x},${contract.y}`;
   }
 
   private getStructureOwnerAddress(entityId: ID): ContractAddress | undefined {
@@ -2891,12 +2700,21 @@ export default class WorldmapScene extends WarpTravel {
 
       this.installPendingMovementVisualLifecycle({
         entityId: selectedEntityId,
-        isExploreAction: actionType === ActionType.Explore,
         shouldAnimateArrivalGhostOnCompletion: shouldTrackArrivalGhost,
       });
 
-      // Mark army as having pending movement transaction
-      this.markPendingArmyMovement(selectedEntityId, key);
+      let movementIntent: ProvisionalIntent;
+      try {
+        movementIntent = this.createProvisionalArmyMovementIntent({
+          entityId: selectedEntityId,
+          targetHex,
+          movementStamina,
+        });
+      } catch (error) {
+        this.handleProvisionalArmyMovementFailure(selectedEntityId, cleanup);
+        throw error;
+      }
+      this.paintProvisionalDestinationBiome(targetHex);
       recordArmyMovementLatencyPhase({
         phase: "move_requested",
         source: "worldmap",
@@ -2924,29 +2742,9 @@ export default class WorldmapScene extends WarpTravel {
         });
       }
 
-      // Pre-compute the optimistic movement plan in parallel with the tx so the
-      // submitted tx hash can start animation without waiting for provider
-      // confirmation or Torii's authoritative TileOpt update.
-      const destPosition = new Position({ x: targetHex.col, y: targetHex.row });
-      this.pendingMovementPlans.set(
-        selectedEntityId,
-        this.armyManager.computeMovementPlan(selectedEntityId, destPosition).catch((error) => {
-          console.error("[worldmap] computeMovementPlan failed", error);
-          return null;
-        }),
-      );
-
-      this.queuePendingMovementStamina({
-        entityId: selectedEntityId,
-        currentStamina: movementStamina.currentStamina,
-        currentArmiesTick,
-        staminaCost: movementStamina.staminaCost,
-      });
-
       armyActionManager
         .moveArmy(account!, actionPath, isTravelAction, currentArmiesTick)
         .then((result: any) => {
-          // Track txHash → entityId so provider transactionFailed events can clear pending state
           const txHash = result?.transaction_hash;
           recordArmyMovementLatencyPhase({
             phase: "tx_response_received",
@@ -2962,23 +2760,34 @@ export default class WorldmapScene extends WarpTravel {
               txHash,
             });
           }
-          // Transaction ownership outlives the visual/stream resolution. A
-          // preconfirmed Torii echo may clear movement before this promise
-          // returns, but input must still wait for the provider confirmation.
-          if (txHash) {
-            this.handleSubmittedArmyMovementTx({ entityId: selectedEntityId, txHash });
-          }
+          recordArmyMovementLatencyPhase({
+            phase: "tx_submitted",
+            source: "worldmap",
+            entityId: selectedEntityId,
+            txHash,
+          });
+          trackProvisionalTransaction(movementIntent, account, result, {
+            onConfirmed: () => {
+              recordArmyMovementLatencyPhase({
+                phase: "tx_confirmed",
+                source: "worldmap",
+                entityId: selectedEntityId,
+                txHash,
+              });
+              if (actionType === ActionType.Explore) {
+                recordArmyMovementLatencyPhase({
+                  phase: "explore_next_safe_unblocked",
+                  source: "worldmap",
+                  entityId: selectedEntityId,
+                });
+              }
+            },
+            onFailed: () => this.handleProvisionalArmyMovementFailure(selectedEntityId, cleanup),
+          });
         })
         .catch((e) => {
-          // Transaction failed at submission, remove from pending and cleanup
-          this.pendingMovementPlans.delete(selectedEntityId);
-          this.rewindOptimisticMovement(selectedEntityId);
-          this.clearArmyMovementTxEntriesForEntity(selectedEntityId);
-          this.clearPendingArmyMovement(selectedEntityId);
-          useArmyStaminaSourceStore.getState().clearPendingStaminaSource(selectedEntityId);
-          this.disposePendingMovementVisualLifecycle(selectedEntityId);
-          this.arrivalGhostManager.clearArrivalGhost(selectedEntityId, "tx_failed");
-          cleanup();
+          movementIntent.fail();
+          this.handleProvisionalArmyMovementFailure(selectedEntityId, cleanup);
           console.error("Army movement failed:", e);
         });
 
@@ -3174,93 +2983,32 @@ export default class WorldmapScene extends WarpTravel {
   }
 
   private handoffPendingArmyMovementToVisualLifecycle(entityId: ID): void {
-    const movement = this.getPendingArmyMovement(entityId)?.movement;
-    if (movement) {
-      movement.handedOffToVisuals = true;
-    }
-
     const trackedEffect = this.travelEffectsByEntity.get(entityId);
     if (!trackedEffect) {
       return;
     }
 
-    if (shouldCleanupTrackedTravelEffectOnPendingClear({ trackedEffect, reason: "movement_started" })) {
+    if (shouldCleanupTrackedTravelEffect({ trackedEffect, reason: "movement_started" })) {
       trackedEffect.cleanup();
     }
   }
 
-  private clearPendingArmyMovement(
-    entityId: ID,
-    reason: PendingArmyMovementEffectClearReason = "cleanup_requested",
-  ): void {
-    const record = this.pendingArmyMovements.get(entityId);
-    if (record) {
-      record.movement = undefined;
-      this.prunePendingArmyMovementIfEmpty(entityId, record);
-    }
-
+  private clearPendingArmyMovementVisuals(entityId: ID, reason: MovementEffectClearReason = "cleanup_requested"): void {
     const trackedEffect = this.travelEffectsByEntity.get(entityId);
-    if (trackedEffect && shouldCleanupTrackedTravelEffectOnPendingClear({ trackedEffect, reason })) {
+    if (trackedEffect && shouldCleanupTrackedTravelEffect({ trackedEffect, reason })) {
       trackedEffect.cleanup();
     }
-  }
-
-  private clearPendingArmyMovementFromAuthoritativePosition(update: { entityId: ID; hexCoords: HexPosition }): void {
-    const entityId = update.entityId;
-    const movement = this.getPendingArmyMovement(entityId)?.movement;
-    const authoritativePositionKey = this.resolveContractHexKey(update.hexCoords);
-    const authoritativeResolutionPlan = resolvePendingMovementAuthoritativeResolutionPlan({
-      pendingTargetKey: movement?.targetKey,
-      authoritativePositionKey,
-      isMovementInFlight:
-        this.armyManager.isArmyMoving(entityId) || this.armyManager.isArmyMovingOptimistically(entityId),
-    });
-
-    if (authoritativeResolutionPlan.shouldClearAfterVisualCompletion && movement) {
-      movement.awaitingVisualCompletion = true;
-    }
-
-    if (!authoritativeResolutionPlan.shouldClearPendingMovement) {
-      return;
-    }
-
-    this.pendingMovementPlans.delete(entityId);
-    this.clearPendingArmyMovement(entityId, "authoritative_reconciled");
-    useArmyStaminaSourceStore.getState().clearPendingStaminaSource(entityId);
-    this.disposePendingMovementVisualLifecycle(entityId);
-    this.arrivalGhostManager.clearArrivalGhost(entityId, "arrived");
   }
 
   private completePendingArmyMovementVisuals(entityId: ID): void {
-    const record = this.getPendingArmyMovement(entityId);
-    if (!record?.movement) return;
-
-    record.movement.visualsCompleted = true;
-    this.finalizePendingArmyMovementIfResolved(entityId, record);
-  }
-
-  private finalizePendingArmyMovementIfResolved(entityId: ID, record: PendingArmyMovement): void {
-    const movement = record.movement;
-    if (!movement) return;
-
-    const resolvedByAuthoritativeTarget = movement.awaitingVisualCompletion;
-    const resolvedByTransactionAndVisuals = movement.visualsCompleted && !hasUnconfirmedMovementTransaction(record);
-    if (!resolvedByAuthoritativeTarget && !resolvedByTransactionAndVisuals) return;
-
-    this.pendingMovementPlans.delete(entityId);
-    this.clearPendingArmyMovement(
-      entityId,
-      resolvedByAuthoritativeTarget ? "authoritative_reconciled" : "cleanup_requested",
-    );
-    useArmyStaminaSourceStore.getState().clearPendingStaminaSource(entityId);
+    this.clearPendingArmyMovementVisuals(entityId);
   }
 
   private installPendingMovementVisualLifecycle(input: {
     entityId: ID;
-    isExploreAction: boolean;
     shouldAnimateArrivalGhostOnCompletion: boolean;
   }): void {
-    const { entityId, isExploreAction, shouldAnimateArrivalGhostOnCompletion } = input;
+    const { entityId, shouldAnimateArrivalGhostOnCompletion } = input;
 
     this.disposePendingMovementVisualLifecycle(entityId);
 
@@ -3284,20 +3032,6 @@ export default class WorldmapScene extends WarpTravel {
       this.completePendingArmyMovementVisuals(entityId);
       this.disposePendingMovementVisualLifecycle(entityId);
     });
-    const disposeAuthoritativeReconcile = this.armyManager.onAuthoritativeReconciliation(entityId, () => {
-      if (isExploreAction) {
-        recordArmyMovementLatencyPhase({
-          phase: "explore_authoritative_reconcile_complete",
-          source: "worldmap",
-          entityId,
-        });
-        recordArmyMovementLatencyPhase({
-          phase: "explore_next_safe_unblocked",
-          source: "worldmap",
-          entityId,
-        });
-      }
-    });
     const disposeMovementVisualCancel = this.armyManager.onMovementVisualCancel(entityId, () => {
       this.completePendingArmyMovementVisuals(entityId);
       this.clearEvictedArmyMovementVisuals(entityId);
@@ -3307,7 +3041,6 @@ export default class WorldmapScene extends WarpTravel {
     this.pendingArmyMovementVisualLifecycleDisposers.set(entityId, () => {
       disposeMovementStart();
       disposeMovementComplete();
-      disposeAuthoritativeReconcile();
       disposeMovementVisualCancel();
       this.pendingArmyMovementVisualLifecycleDisposers.delete(entityId);
     });
@@ -3322,72 +3055,54 @@ export default class WorldmapScene extends WarpTravel {
     dispose();
   }
 
-  private markPendingArmyMovement(entityId: ID, targetKey: string): void {
-    const record = this.upsertPendingArmyMovement(entityId);
-    record.movement = {
-      startedAt: Date.now(),
-      targetKey,
-      handedOffToVisuals: false,
-      awaitingVisualCompletion: false,
-      visualsCompleted: false,
-    };
-    record.submissionPending = true;
-    this.clearMovementActionOptionsForSelectedArmy(entityId);
-    this.schedulePendingArmyMovementFallback(entityId);
-  }
-
-  private getPendingArmyMovement(entityId: ID): PendingArmyMovement | undefined {
-    return this.pendingArmyMovements.get(entityId);
-  }
-
-  private upsertPendingArmyMovement(entityId: ID): PendingArmyMovement {
-    let record = this.pendingArmyMovements.get(entityId);
-    if (!record) {
-      record = { submissionPending: false, txHashes: new Set() };
-      this.pendingArmyMovements.set(entityId, record);
-    }
-
-    return record;
-  }
-
-  private isArmyMovementPending(entityId: ID): boolean {
-    const movement = this.pendingArmyMovements.get(entityId)?.movement;
-    return movement !== undefined && !movement.handedOffToVisuals;
-  }
-
-  private getPendingArmyMovementEntityIds(): Set<ID> {
-    const pendingEntityIds = new Set<ID>();
-    for (const entityId of this.pendingArmyMovements.keys()) {
-      if (this.isArmyMovementPending(entityId)) {
-        pendingEntityIds.add(entityId);
-      }
-    }
-
-    return pendingEntityIds;
-  }
-
-  private resolveContractHexKey(hexCoords: HexPosition): string {
-    const contract = new Position({ x: hexCoords.col, y: hexCoords.row }).getContract();
-    return `${contract.x},${contract.y}`;
-  }
-
-  private queuePendingMovementStamina(input: {
+  private createProvisionalArmyMovementIntent(input: {
     entityId: ID;
-    currentStamina: number;
-    currentArmiesTick: number;
-    staminaCost: number;
-  }): void {
-    const pendingStamina = buildPendingMovementStaminaSource(input);
-    if (!pendingStamina) {
-      return;
-    }
+    targetHex: HexPosition;
+    movementStamina: MovementStaminaResolution;
+  }): ProvisionalIntent {
+    const entityId = gameEntityKey([BigInt(input.entityId)]);
+    const explorerTroops = getComponentValue(this.dojo.components.ExplorerTroops, entityId);
+    if (!explorerTroops) throw new Error(`Cannot move missing explorer ${input.entityId}`);
 
-    useArmyStaminaSourceStore.getState().setPendingStaminaSource(pendingStamina);
+    const nextStamina = BigInt(
+      Math.max(0, Math.floor(input.movementStamina.currentStamina) - Math.floor(input.movementStamina.staminaCost)),
+    );
+    this.clearMovementActionOptionsForSelectedArmy(input.entityId);
+    return requireActiveGameSyncRuntime().createProvisionalIntent([
+      {
+        entityId,
+        model: "ExplorerTroops",
+        patch: {
+          coord: { ...explorerTroops.coord, x: input.targetHex.col, y: input.targetHex.row },
+          troops: {
+            ...explorerTroops.troops,
+            stamina: {
+              ...explorerTroops.troops.stamina,
+              amount: nextStamina,
+              updated_tick: BigInt(input.movementStamina.currentArmiesTick),
+            },
+          },
+        },
+        matchPatch: {
+          coord: { ...explorerTroops.coord, x: input.targetHex.col, y: input.targetHex.row },
+        },
+        sourcePatch: {
+          coord: explorerTroops.coord,
+        },
+      },
+    ]);
+  }
+
+  private handleProvisionalArmyMovementFailure(entityId: ID, cleanup: () => void): void {
+    this.clearPendingArmyMovementVisuals(entityId);
+    this.disposePendingMovementVisualLifecycle(entityId);
+    this.arrivalGhostManager.clearArrivalGhost(entityId, "tx_failed");
+    cleanup();
   }
 
   private hasPendingTravelEffectForHex(key: string): boolean {
     for (const [entityId, trackedEffect] of this.travelEffectsByEntity.entries()) {
-      if (trackedEffect.key === key && this.getPendingArmyMovement(entityId)?.movement) {
+      if (trackedEffect.key === key && this.pendingArmyMovementVisualLifecycleDisposers.has(entityId)) {
         return true;
       }
     }
@@ -3424,7 +3139,9 @@ export default class WorldmapScene extends WarpTravel {
     });
     this.pendingAttackEffectsByKey.set(payload.key, {
       attackerId: payload.attackerId,
+      attackerActorType: payload.attackerActorType,
       defenderId: payload.defenderId,
+      defenderActorType: payload.defenderActorType,
     });
 
     const timeout = setTimeout(
@@ -3432,6 +3149,7 @@ export default class WorldmapScene extends WarpTravel {
       Math.max(5_000, payload.timeoutMs ?? 45_000),
     );
     this.pendingActionEffectTimeoutsByKey.set(payload.key, timeout);
+    if (import.meta.env.DEV) console.debug(`[PendingFx] start key=${payload.key} kind=${payload.kind}`);
   }
 
   private startPendingCreateArmyGhost(payload: Extract<PendingWorldmapFxStartPayload, { kind: "create-army" }>): void {
@@ -3538,6 +3256,11 @@ export default class WorldmapScene extends WarpTravel {
   }
 
   private clearPendingActionFx(key: string, reason: ArrivalGhostClearReason): void {
+    const existed =
+      this.pendingActionEffectsByKey.has(key) ||
+      this.pendingActionEffectTimeoutsByKey.has(key) ||
+      this.pendingCreateArmyEffectsByKey.has(key) ||
+      this.pendingAttackEffectsByKey.has(key);
     const cleanup = this.pendingActionEffectsByKey.get(key);
     if (cleanup) {
       cleanup(reason);
@@ -3552,6 +3275,7 @@ export default class WorldmapScene extends WarpTravel {
 
     this.pendingCreateArmyEffectsByKey.delete(key);
     this.pendingAttackEffectsByKey.delete(key);
+    if (existed && import.meta.env.DEV) console.debug(`[PendingFx] clear key=${key} reason=${reason}`);
   }
 
   private clearAllPendingActionFx(): void {
@@ -3599,22 +3323,9 @@ export default class WorldmapScene extends WarpTravel {
     }
   }
 
-  private resolvePendingAttackFxOnBattleUpdate(update: BattleEventSystemUpdate): void {
-    const battleAttackerId =
-      typeof update.battleData.attackerId === "number" ? update.battleData.attackerId : undefined;
-    const battleDefenderId =
-      typeof update.battleData.defenderId === "number" ? update.battleData.defenderId : undefined;
-
+  private resolvePendingAttackFxOnEntityEvidence(evidence: PendingAttackEntityEvidence): void {
     for (const [key, pending] of this.pendingAttackEffectsByKey.entries()) {
-      const shouldClear = shouldClearPendingAttackEffect({
-        pendingAttackerId: pending.attackerId,
-        pendingDefenderId: pending.defenderId,
-        battleAttackerId,
-        battleDefenderId,
-      });
-      if (shouldClear) {
-        this.clearPendingActionFx(key, "arrived");
-      }
+      if (matchesPendingAttackEvidence(pending, evidence)) this.clearPendingActionFx(key, "entity_evidence");
     }
   }
 
@@ -3683,19 +3394,11 @@ export default class WorldmapScene extends WarpTravel {
   }
 
   private isArmyMovementInputLocked(entityId: ID): boolean {
-    return this.isArmyMovementActionUnavailable(entityId);
+    return requireActiveGameSyncRuntime().hasProvisionalInputLock("ExplorerTroops", gameEntityKey([BigInt(entityId)]));
   }
 
   private isArmyMovementActionUnavailable(entityId: ID): boolean {
-    return (
-      this.isArmyMovementPending(entityId) ||
-      this.armyManager.isArmyMoving(entityId) ||
-      this.hasPendingMovementTransactionForArmy(entityId)
-    );
-  }
-
-  private hasPendingMovementTransactionForArmy(entityId: ID): boolean {
-    return hasUnconfirmedMovementTransaction(this.getPendingArmyMovement(entityId));
+    return this.isArmyMovementInputLocked(entityId);
   }
 
   private hasEligibleArmyForTabCycle(): boolean {
@@ -3704,85 +3407,12 @@ export default class WorldmapScene extends WarpTravel {
     );
   }
 
-  private schedulePendingArmyMovementFallback(entityId: ID): void {
-    const record = this.getPendingArmyMovement(entityId);
-    const movement = record?.movement;
-    if (!record || !movement) return;
-
-    if (record.fallbackTimeout !== undefined) {
-      clearTimeout(record.fallbackTimeout);
-    }
-
-    record.fallbackStartedAtMs = movement.startedAt;
-    record.fallbackTimeout = setTimeout(() => {
-      const pendingRecord = this.getPendingArmyMovement(entityId);
-      if (pendingRecord) pendingRecord.fallbackTimeout = undefined;
-      const transactionStillUnconfirmed = hasUnconfirmedMovementTransaction(pendingRecord);
-      const fallbackPlan = resolvePendingArmyMovementFallbackPlan({
-        hasPendingMovement: this.isArmyMovementPending(entityId),
-        hasPendingMovementResolution: pendingRecord?.movement !== undefined || transactionStillUnconfirmed,
-        pendingMovementStartedAtMs: pendingRecord?.fallbackStartedAtMs,
-        nowMs: Date.now(),
-        staleAfterMs: this.authoritativePendingArmyMovementMs,
-      });
-
-      if (fallbackPlan.shouldDeleteFallbackTimeout) {
-        // No movement record survived to the timer; nothing holds the fired handle.
-        return;
-      }
-
-      if (!fallbackPlan.shouldClearPendingMovement) {
-        return;
-      }
-
-      this.pendingMovementPlans.delete(entityId);
-      this.clearArmyMovementTxEntriesForEntity(entityId);
-      if (transactionStillUnconfirmed) this.rewindOptimisticMovement(entityId);
-      this.clearPendingArmyMovement(entityId);
-      useArmyStaminaSourceStore.getState().clearPendingStaminaSource(entityId);
-      this.disposePendingMovementVisualLifecycle(entityId);
-      this.arrivalGhostManager.clearArrivalGhost(entityId, "stale_timeout");
-      if (fallbackPlan.shouldRequestChunkRefresh) {
-        this.requestChunkRefresh(true);
-      }
-
-      if (import.meta.env.DEV) {
-        console.warn(`[DEBUG] Cleared stale pending movement for army ${entityId} via fallback timeout`);
-      }
-    }, this.authoritativePendingArmyMovementMs);
-  }
-
-  private rewindOptimisticMovement(entityId: ID): void {
-    if (!this.armyManager.hasUnresolvedOptimisticMovement(entityId)) return;
-    this.armyManager.rewindOptimisticMovement(entityId);
-  }
-
   private onArmySelection(
     selectedEntityId: ID,
     playerAddress: ContractAddress,
     options?: { deferDuringChunkTransition?: boolean },
   ): boolean {
     const deferDuringChunkTransition = options?.deferDuringChunkTransition ?? true;
-
-    // Check if army has pending movement transactions
-    const selectionPlan = resolvePendingArmyMovementSelectionPlan({
-      hasPendingMovement: this.isArmyMovementPending(selectedEntityId),
-      pendingMovementStartedAtMs: this.getPendingArmyMovement(selectedEntityId)?.movement?.startedAt,
-      nowMs: Date.now(),
-      staleAfterMs: this.authoritativePendingArmyMovementMs,
-    });
-
-    if (selectionPlan.shouldClearPendingMovement) {
-      this.pendingMovementPlans.delete(selectedEntityId);
-      this.clearArmyMovementTxEntriesForEntity(selectedEntityId);
-      this.clearPendingArmyMovement(selectedEntityId);
-      this.disposePendingMovementVisualLifecycle(selectedEntityId);
-      this.arrivalGhostManager.clearArrivalGhost(selectedEntityId, "stale_timeout");
-    }
-
-    if (selectionPlan.shouldRequestChunkRefresh) {
-      this.requestChunkRefresh(true);
-    }
 
     // Check if army is currently being rendered or is in chunk transition
     if (this.isChunkTransitioning) {
@@ -3793,7 +3423,7 @@ export default class WorldmapScene extends WarpTravel {
           } else {
             const shouldQueueRecovery = shouldQueueArmySelectionRecovery({
               deferDuringChunkTransition,
-              hasPendingMovement: this.isArmyMovementPending(selectedEntityId),
+              hasPendingMovement: this.isArmyMovementInputLocked(selectedEntityId),
               isChunkTransitioning: this.isChunkTransitioning,
               armyPresentInManager: false,
               recoveryInFlight: this.armySelectionRecoveryInFlight.has(selectedEntityId),
@@ -3824,7 +3454,7 @@ export default class WorldmapScene extends WarpTravel {
       if (
         shouldQueueArmySelectionRecovery({
           deferDuringChunkTransition,
-          hasPendingMovement: this.isArmyMovementPending(selectedEntityId),
+          hasPendingMovement: this.isArmyMovementInputLocked(selectedEntityId),
           isChunkTransitioning: this.isChunkTransitioning,
           armyPresentInManager: false,
           recoveryInFlight: this.armySelectionRecoveryInFlight.has(selectedEntityId),
@@ -3843,7 +3473,7 @@ export default class WorldmapScene extends WarpTravel {
     this.state.updateEntityActionSelectedEntityId(selectedEntityId);
     playUnitCommandSound("select");
 
-    if (selectionPlan.shouldBlockSelection || this.isArmyMovementActionUnavailable(selectedEntityId)) {
+    if (this.isArmyMovementActionUnavailable(selectedEntityId)) {
       this.clearMovementActionOptionsForSelectedArmy(selectedEntityId);
       this.showSelectedArmyPulse(selectedEntityId);
       return true;
@@ -3983,7 +3613,7 @@ export default class WorldmapScene extends WarpTravel {
             await this.updateVisibleChunks(true, { reason: "default" });
           },
           isArmyAvailable: () => this.armyManager.hasArmy(selectedEntityId),
-          isArmyPendingMovement: () => this.isArmyMovementPending(selectedEntityId),
+          isArmyPendingMovement: () => this.isArmyMovementInputLocked(selectedEntityId),
           onRecovered: () => {
             this.onArmySelection(selectedEntityId, playerAddress, { deferDuringChunkTransition: false });
           },
@@ -4509,18 +4139,17 @@ export default class WorldmapScene extends WarpTravel {
     this.clearWorldmapVisibilityRuntimeForSwitchOff();
 
     const runtimeState = applyWorldmapSwitchOffRuntimeState({
-      pendingArmyMovements: this.pendingArmyMovements,
       pinnedChunkKeys: this.pinnedChunkKeys,
       pinnedRenderAreas: this.pinnedRenderAreas,
       hydratedChunkRefreshes: this.hydratedChunkRefreshes,
       hydratedRefreshSuppressionAreaKeys: this.hydratedRefreshSuppressionAreaKeys,
       nextSceneName: nextSceneName,
-      clearTimeout: (timeoutId) => clearTimeout(timeoutId),
-      clearPendingArmyMovement: (entityId) => this.clearPendingArmyMovement(entityId),
       clearStreamingWork: () => this.clearStreamingWorkState(),
       clearQueuedPrefetchState: () => this.clearQueuedPrefetchState(),
       releaseInactiveResources: () => this.clearCache(),
     });
+    this.pendingArmyMovementVisualLifecycleDisposers.forEach((dispose) => dispose());
+    this.pendingArmyMovementVisualLifecycleDisposers.clear();
 
     this.isSwitchedOff = runtimeState.isSwitchedOff;
     this.lastControlsCameraDistance = runtimeState.lastControlsCameraDistance;
@@ -4728,13 +4357,13 @@ export default class WorldmapScene extends WarpTravel {
 
   private completePendingExploreEffects(hexCoords: HexPosition): void {
     const key = `${hexCoords.col},${hexCoords.row}`;
-    const pendingExploreEntities = resolveExploreCompletionPendingClearPlan({
+    const pendingExploreEntities = resolveExploreCompletionVisualCleanup({
+      activeMovementVisuals: new Set(this.pendingArmyMovementVisualLifecycleDisposers.keys()),
       exploredHexKey: key,
       trackedEffectsByEntity: this.travelEffectsByEntity,
-      pendingArmyMovements: this.getPendingArmyMovementEntityIds(),
     });
     for (const entityId of pendingExploreEntities) {
-      this.clearPendingArmyMovement(entityId);
+      this.clearPendingArmyMovementVisuals(entityId);
       this.disposePendingMovementVisualLifecycle(entityId);
       this.arrivalGhostManager.clearArrivalGhost(entityId, "arrived");
     }
@@ -9432,20 +9061,8 @@ export default class WorldmapScene extends WarpTravel {
     this.disposeWorldUpdateSubscriptions();
     this.unsubscribeWorldSpatialProjection?.();
     this.unsubscribeWorldSpatialProjection = undefined;
-    this.pendingArmyMovements.forEach((_record, entityId) => {
-      this.clearArmyMovementTxEntriesForEntity(entityId);
-      this.clearPendingArmyMovement(entityId);
-    });
     this.pendingArmyMovementVisualLifecycleDisposers.forEach((dispose) => dispose());
     this.pendingArmyMovementVisualLifecycleDisposers.clear();
-    this.pendingArmyMovements.clear();
-    this.pendingMovementPlans.clear();
-    if (this.handleTransactionComplete) {
-      this.dojo.network?.provider?.off("transactionComplete", this.handleTransactionComplete);
-    }
-    if (this.handleTransactionFailed) {
-      this.dojo.network?.provider?.off("transactionFailed", this.handleTransactionFailed);
-    }
     if (this.handleTransactionProgress) {
       this.dojo.network?.provider?.off("transactionProgress", this.handleTransactionProgress);
     }

@@ -1,5 +1,4 @@
 import { useUISound } from "@/audio";
-import { decodeOpenRelicChestRelics, fetchOpenRelicChestEvent } from "@/dojo/relic-chest-event-query";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { Position } from "@bibliothecadao/eternum";
 
@@ -11,6 +10,39 @@ import { getRelicInfo, ID, RelicInfo, RELICS, ResourcesIds } from "@bibliothecad
 import { isComponentUpdate } from "@dojoengine/recs";
 import { AnimatePresence, motion, useMotionValue } from "framer-motion";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+
+const unwrapToriiField = (value: unknown): unknown =>
+  typeof value === "object" && value !== null && "value" in value ? (value as { value: unknown }).value : value;
+
+const readToriiNumber = (value: unknown): number | null => {
+  const unwrapped = unwrapToriiField(value);
+  if (typeof unwrapped === "number") return Number.isFinite(unwrapped) ? unwrapped : null;
+  if (typeof unwrapped === "bigint") return Number(unwrapped);
+  if (typeof unwrapped !== "string" || unwrapped.length === 0) return null;
+  const parsed = Number(unwrapped);
+  return Number.isFinite(parsed) ? parsed : null;
+};
+
+const readChestEvent = (value: unknown) => {
+  if (typeof value !== "object" || value === null) return null;
+  const event = value as Record<string, unknown>;
+  const rawCoord = unwrapToriiField(event.chest_coord);
+  if (typeof rawCoord !== "object" || rawCoord === null) return null;
+  const coord = rawCoord as Record<string, unknown>;
+  const rawRelics = unwrapToriiField(event.relics);
+
+  return {
+    explorerId: readToriiNumber(event.explorer_id),
+    chestX: readToriiNumber(coord.x),
+    chestY: readToriiNumber(coord.y),
+    relics: Array.isArray(rawRelics)
+      ? rawRelics.flatMap((relic) => {
+          const decoded = readToriiNumber(relic);
+          return decoded === null ? [] : [decoded];
+        })
+      : [],
+  };
+};
 
 // Relic Card Component - Simplified without tooltip
 const RelicCard = ({ relic, isHovered }: { relic: RelicInfo; isHovered: boolean }) => {
@@ -324,7 +356,7 @@ export const ChestContainer = ({
     setup: {
       components,
       systemCalls,
-      network: { contractComponents, toriiClient },
+      network: { contractComponents },
     },
     account: { account },
   } = useDojo();
@@ -339,13 +371,10 @@ export const ChestContainer = ({
   const [revealedCards, setRevealedCards] = useState<number[]>([]);
   const [numberParticles, setNumberParticles] = useState<{ id: number; number: number }[]>([]);
   const [revealError, setRevealError] = useState<string | null>(null);
-  const [isRecoveringReveal, setIsRecoveringReveal] = useState(false);
 
   const shakeTimeout = useRef<NodeJS.Timeout | null>(null);
-  const revealFallbackTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
   const hasMatchingEvent = useRef(false);
   const CLICKS_TO_OPEN = 5;
-  const REVEAL_FALLBACK_MS = 10_000;
 
   const chestName = useMemo(() => {
     const tile = getTileAt(components, DEFAULT_COORD_ALT, chestHex.x, chestHex.y);
@@ -362,16 +391,9 @@ export const ChestContainer = ({
   const toggleModal = useUIStore((state) => state.toggleModal);
   const triggerRelicsRefresh = useUIStore((state) => state.triggerRelicsRefresh);
 
-  const clearRevealFallback = useCallback(() => {
-    if (!revealFallbackTimeout.current) return;
-    clearTimeout(revealFallbackTimeout.current);
-    revealFallbackTimeout.current = null;
-  }, []);
-
   const revealRelics = useCallback(
     (relics: number[]) => {
       hasMatchingEvent.current = true;
-      clearRevealFallback();
       setRevealError(null);
       setChestResult(relics);
       // Resource updates arrive through the authoritative game-wide stream.
@@ -395,42 +417,8 @@ export const ChestContainer = ({
       playChestOpenSound();
       setRevealedCards(relics.map((_, index) => index));
     },
-    [clearRevealFallback, isOpening, playChestOpenSound, triggerRelicsRefresh],
+    [isOpening, playChestOpenSound, triggerRelicsRefresh],
   );
-
-  const recoverChestReveal = useCallback(async () => {
-    if (hasMatchingEvent.current || isRecoveringReveal) return;
-
-    setIsRecoveringReveal(true);
-    setRevealError(null);
-    try {
-      const event = await fetchOpenRelicChestEvent({ client: toriiClient, explorerEntityId, chestHex });
-      if (!event) throw new Error("The chest result has not reached the indexer yet.");
-      if (
-        event.explorer_id !== explorerEntityId ||
-        event.chest_coord.x !== chestHex.x ||
-        event.chest_coord.y !== chestHex.y
-      ) {
-        throw new Error("The indexed chest result did not match this chest.");
-      }
-
-      revealRelics(decodeOpenRelicChestRelics(event));
-    } catch (error) {
-      if (!hasMatchingEvent.current) {
-        setIsOpening(false);
-        setRevealError(error instanceof Error ? error.message : "Unable to load the chest result.");
-      }
-    } finally {
-      setIsRecoveringReveal(false);
-    }
-  }, [chestHex, explorerEntityId, isRecoveringReveal, revealRelics, toriiClient]);
-
-  const scheduleChestRevealFallback = useCallback(() => {
-    clearRevealFallback();
-    revealFallbackTimeout.current = setTimeout(() => {
-      void recoverChestReveal();
-    }, REVEAL_FALLBACK_MS);
-  }, [clearRevealFallback, recoverChestReveal]);
 
   // Event listener for OpenRelicChestEvent
   useComponentSystem(
@@ -439,13 +427,23 @@ export const ChestContainer = ({
       if (!isComponentUpdate(update, contractComponents.events.OpenRelicChestEvent)) return;
 
       const [currentState] = update.value;
+      const received = readChestEvent(currentState);
+
+      if (import.meta.env.DEV) {
+        console.debug("[ChestReveal] event match", {
+          received: received
+            ? { explorerId: received.explorerId, chestX: received.chestX, chestY: received.chestY }
+            : null,
+          expected: { explorerId: explorerEntityId, chestX: chestHex.x, chestY: chestHex.y },
+        });
+      }
 
       if (
-        currentState?.explorer_id === explorerEntityId &&
-        currentState?.chest_coord?.x === chestHex.x &&
-        currentState?.chest_coord?.y === chestHex.y
+        received?.explorerId === explorerEntityId &&
+        received.chestX === chestHex.x &&
+        received.chestY === chestHex.y
       ) {
-        revealRelics(decodeOpenRelicChestRelics(currentState));
+        revealRelics(received.relics);
       }
     },
     [explorerEntityId, chestHex.x, chestHex.y, revealRelics, contractComponents],
@@ -489,12 +487,12 @@ export const ChestContainer = ({
     // Check if we've reached the opening threshold
     if (newClickCount >= CLICKS_TO_OPEN) {
       setIsOpening(true);
-      if (revealError) void recoverChestReveal();
     }
 
     // Trigger transaction on first click
     if (!hasClicked) {
       setHasClicked(true);
+      setRevealError(null);
       try {
         await systemCalls.open_chest({
           signer: account,
@@ -505,7 +503,6 @@ export const ChestContainer = ({
             y: chestHex.y,
           },
         });
-        if (!hasMatchingEvent.current) scheduleChestRevealFallback();
       } catch (error) {
         console.error("Failed to open chest:", error);
         setHasClicked(false);
@@ -521,9 +518,8 @@ export const ChestContainer = ({
       if (shakeTimeout.current) {
         clearTimeout(shakeTimeout.current);
       }
-      clearRevealFallback();
     };
-  }, [clearRevealFallback]);
+  }, []);
 
   // Show result when event arrives - integrated into main view
   const relicInfos =
@@ -725,17 +721,6 @@ export const ChestContainer = ({
               {revealError && (
                 <div className="mt-3 max-w-xs rounded border border-gold/30 bg-dark-brown/95 p-3 text-center text-sm text-gold/80">
                   <p>{revealError}</p>
-                  <button
-                    type="button"
-                    className="mt-2 rounded border border-gold/50 px-3 py-1 text-gold disabled:opacity-50"
-                    disabled={isRecoveringReveal}
-                    onClick={(event) => {
-                      event.stopPropagation();
-                      void recoverChestReveal();
-                    }}
-                  >
-                    {isRecoveringReveal ? "Checking result…" : "Retry reveal"}
-                  </button>
                 </div>
               )}
             </motion.div>

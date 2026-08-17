@@ -1,5 +1,9 @@
 import { describe, expect, it, vi } from "vitest";
-import { instrumentGpuBackendHotPaths, startGpuBackendFrame } from "./gpu-backend-hot-path-instrumentation";
+import {
+  getCompiledRenderPipelineCount,
+  instrumentGpuBackendHotPaths,
+  startGpuBackendFrame,
+} from "./gpu-backend-hot-path-instrumentation";
 
 describe("GPU backend hot-path instrumentation", () => {
   it("attributes texture upload time by texture identity and dimensions per report window", () => {
@@ -36,6 +40,17 @@ describe("GPU backend hot-path instrumentation", () => {
     instrumentGpuBackendHotPaths(backend);
 
     expect(backend.updateTexture).toBe(wrapped);
+  });
+
+  it("counts actual backend render-pipeline compilations directly", () => {
+    const backend = { createRenderPipeline: vi.fn() };
+    const before = getCompiledRenderPipelineCount();
+
+    instrumentGpuBackendHotPaths(backend, { now: () => 0, reportIntervalMs: 10_000 });
+    backend.createRenderPipeline();
+    backend.createRenderPipeline();
+
+    expect(getCompiledRenderPipelineCount() - before).toBe(2);
   });
 
   it("attributes backend work to a single spike frame", () => {

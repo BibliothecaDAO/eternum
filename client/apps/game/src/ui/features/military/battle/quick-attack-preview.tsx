@@ -469,7 +469,9 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
         key: pendingFxKey,
         kind: "attack",
         attackerId: attacker.id,
+        attackerActorType: attacker.type,
         defenderId: resolvedTarget.id,
+        defenderActorType: target.type,
         attackerHex: { col: selectedHex.col, row: selectedHex.row },
         targetHex: { col: target.hex.x, row: target.hex.y },
       });

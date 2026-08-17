@@ -56,6 +56,11 @@ const TOP_FRAME_HOT_PATH_LIMIT = 8;
 const TOP_TEXTURE_LIMIT = 8;
 const instrumentedBackends = new WeakSet<object>();
 let activeFrame: ActiveGpuBackendFrame | null = null;
+let compiledRenderPipelineCount = 0;
+
+export function getCompiledRenderPipelineCount(): number {
+  return compiledRenderPipelineCount;
+}
 
 export function startGpuBackendFrame(
   startedAt: number = performance.now(),
@@ -126,6 +131,10 @@ export function instrumentGpuBackendHotPaths(
       const result = (original as (...fnArgs: unknown[]) => unknown).apply(this, args);
       const endedAt = now();
       const elapsedMs = endedAt - startedAt;
+
+      if (name === "createRenderPipeline") {
+        compiledRenderPipelineCount += 1;
+      }
 
       addHotPathSample(hotPathStats, name, elapsedMs);
       addFrameHotPathSample(name, elapsedMs);

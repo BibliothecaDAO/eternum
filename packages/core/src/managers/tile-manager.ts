@@ -15,7 +15,6 @@ import {
   getProducedResource,
 } from "@bibliothecadao/types";
 import { getComponentValue } from "@dojoengine/recs";
-import { uuid } from "@latticexyz/utils";
 import {
   DEFAULT_COORD_ALT,
   FELT_CENTER,
@@ -26,30 +25,17 @@ import {
   setBuildingCount,
 } from "..";
 import {
-  type BuildSlotTransition,
-  clearBuildSlotTransition,
-  markBuildPending,
-  markDestroyPending,
-  markOccupiedUnconfirmed,
-  resolveOccupiedState,
-} from "./build-slot-state";
+  getActiveGameSyncRuntime,
+  trackProvisionalTransaction,
+  type GameSyncProvisionalWrite,
+  type ProvisionalIntent,
+} from "../sync";
 import { configManager, buildingEntityKey, gameEntityKey } from "./config-manager";
 
-// Global const to flick optimistic building on or off
-const OPTIMISTIC_BUILDING_ENABLED = true;
 const BUILDING_SLOT_COORDINATES = [
   { col: BUILDINGS_CENTER[0], row: BUILDINGS_CENTER[1] },
   ...getHexesWithinRadius(BUILDINGS_CENTER[0], BUILDINGS_CENTER[1], RealmLevels.Empire + 1),
 ];
-
-// Module-level slot transition state tracks optimistic placement until synced component state confirms it.
-const buildSlotTransitions = new Map<string, BuildSlotTransition>();
-const OPTIMISTIC_TX_FALLBACK_TIMEOUT_MS = 180_000;
-// The receipt resolves at PRE_CONFIRMED, usually before torii has indexed and
-// delivered the authoritative row. Dropping the override at that instant makes
-// counters (population, resources) snap back to the stale value and jump again
-// when the row lands — hold the override briefly so the row arrives underneath.
-const OPTIMISTIC_CLEANUP_AUTHORITATIVE_GRACE_MS = 2_000;
 const OCCUPIED_SPACE_REASON = "space is occupied";
 
 const extractErrorMessage = (error: unknown): string => {
@@ -64,9 +50,6 @@ const extractErrorMessage = (error: unknown): string => {
 
 const isOccupiedSpaceError = (error: unknown): boolean =>
   extractErrorMessage(error).toLowerCase().includes(OCCUPIED_SPACE_REASON);
-
-const toBuildSlotKey = (outerCol: number, outerRow: number, innerCol: number, innerRow: number) =>
-  `${outerCol},${outerRow},${innerCol},${innerRow}`;
 
 export class TileManager {
   private col: number;
@@ -143,11 +126,8 @@ export class TileManager {
 
   isHexOccupied = (hexCoords: HexPosition) => {
     const { col, row } = hexCoords;
-    const buildKey = toBuildSlotKey(this.col, this.row, col, row);
-
     const building = getComponentValue(this.components.Building, buildingEntityKey(this.col, this.row, col, row));
-    const confirmedOccupied = building !== undefined && building.category !== BuildingType.None;
-    return resolveOccupiedState(buildSlotTransitions, buildKey, confirmedOccupied);
+    return building !== undefined && building.category !== BuildingType.None;
   };
 
   structureType = () => {
@@ -162,7 +142,7 @@ export class TileManager {
     }
   };
 
-  private _getBonusFromNeighborBuildings = (col: number, row: number) => {
+  private getBonusFromNeighborBuildings = (col: number, row: number) => {
     const neighborBuildingCoords = getNeighborHexes(col, row);
 
     let bonusPercent = 0;
@@ -178,48 +158,17 @@ export class TileManager {
     return bonusPercent;
   };
 
-  private _optimisticBuilding = (
+  private createBuildingProvisionalWrites = (
     entityId: ID,
     col: number,
     row: number,
     buildingType: BuildingType,
     useSimpleCost: boolean,
-  ) => {
-    let buildingOverrideId = uuid();
-    const entity = buildingEntityKey(this.col, this.row, col, row);
-
-    // override building
-    this.components.Building.addOverride(buildingOverrideId, {
-      entity,
-      value: {
-        outer_col: this.col,
-        outer_row: this.row,
-        inner_col: col,
-        inner_row: row,
-        category: buildingType,
-        bonus_percent: this._getBonusFromNeighborBuildings(col, row),
-        entity_id: entityId,
-        outer_entity_id: entityId,
-        paused: false,
-      },
-    });
-
-    // override resource balance
-    // need to retrieve the reosurce cost before adding extra building to the structure
-    // because the resource cost increase when adding more buildings
+  ): GameSyncProvisionalWrite[] => {
+    const buildingEntity = buildingEntityKey(this.col, this.row, col, row);
     const resourceChange = getBuildingCosts(entityId, this.components, buildingType, useSimpleCost);
-
-    const removeResourceOverrides: Array<() => void> = [];
-    resourceChange?.forEach((resource) => {
-      const removeOverride = this._overrideResource(entityId, resource.resource, -resource.amount);
-      removeResourceOverrides.push(removeOverride);
-    });
-
     const realmEntity = gameEntityKey([BigInt(entityId)]);
     const structureBuildings = getComponentValue(this.components.StructureBuildings, realmEntity);
-
-    const quantityOverrideId = uuid();
-
     const buildingCount = getBuildingCount(buildingType, [
       structureBuildings?.packed_counts_1 || 0n,
       structureBuildings?.packed_counts_2 || 0n,
@@ -236,177 +185,69 @@ export class TileManager {
       ],
       buildingCount + 1,
     );
-
-    // override structure buildings
-    this.components.StructureBuildings.addOverride(quantityOverrideId, {
-      entity: realmEntity,
-      value: {
-        ...structureBuildings,
-        packed_counts_1: packedBuildingCount[0],
-        packed_counts_2: packedBuildingCount[1],
-        packed_counts_3: packedBuildingCount[2],
-        population: {
-          current:
-            (structureBuildings?.population.current || 0) +
-            configManager.getBuildingCategoryConfig(buildingType)?.population_cost,
-          max:
-            (structureBuildings?.population.max || 0) +
-            configManager.getBuildingCategoryConfig(buildingType)?.capacity_grant,
+    const buildingConfig = configManager.getBuildingCategoryConfig(buildingType);
+    const buildingPatch = {
+      outer_col: this.col,
+      outer_row: this.row,
+      inner_col: col,
+      inner_row: row,
+      category: buildingType,
+      bonus_percent: this.getBonusFromNeighborBuildings(col, row),
+      entity_id: entityId,
+      outer_entity_id: entityId,
+      paused: false,
+    };
+    const writes: GameSyncProvisionalWrite[] = [
+      {
+        entityId: buildingEntity,
+        model: "Building",
+        patch: buildingPatch,
+        matchPatch: buildingPatch,
+      },
+      {
+        entityId: realmEntity,
+        model: "StructureBuildings",
+        patch: {
+          packed_counts_1: packedBuildingCount[0],
+          packed_counts_2: packedBuildingCount[1],
+          packed_counts_3: packedBuildingCount[2],
+          population: {
+            current: (structureBuildings?.population.current || 0) + (buildingConfig?.population_cost ?? 0),
+            max: (structureBuildings?.population.max || 0) + (buildingConfig?.capacity_grant ?? 0),
+          },
+        },
+        matchPatch: {
+          packed_counts_1: packedBuildingCount[0],
+          packed_counts_2: packedBuildingCount[1],
+          packed_counts_3: packedBuildingCount[2],
         },
       },
-    });
-
-    return () => {
-      this.components.Building.removeOverride(buildingOverrideId);
-      this.components.StructureBuildings.removeOverride(quantityOverrideId);
-      removeResourceOverrides.forEach((removeOverride) => removeOverride());
-    };
+    ];
+    const resourcePatch = new ResourceManager(this.components, entityId).resolveOptimisticResourceChangesPatch(
+      (resourceChange ?? []).map(({ resource, amount }) => ({ resourceId: resource, amount: -amount })),
+    );
+    if (resourcePatch) {
+      writes.push({ entityId: realmEntity, model: "Resource", patch: resourcePatch, matchPatch: undefined });
+    }
+    return writes;
   };
 
-  private _overrideResource = (entity: ID, resourceType: number, actualResourceChange: number) => {
-    const resourceManager = new ResourceManager(this.components, entity);
-    return resourceManager.optimisticResourceUpdate(resourceType, actualResourceChange);
-  };
-
-  private _extractTransactionHash = (result: unknown): string | undefined => {
-    const tx = result as { transaction_hash?: unknown; transactionHash?: unknown } | undefined;
-    const transactionHash = tx?.transaction_hash ?? tx?.transactionHash;
-    return typeof transactionHash === "string" ? transactionHash : undefined;
-  };
-
-  private _resolveTransactionWaiter = (signer: DojoAccount): ((transactionHash: string) => Promise<unknown>) | null => {
-    const signerWithWaiters = signer as DojoAccount & {
-      waitForTransaction?: (transactionHash: string) => Promise<unknown>;
-      waitForTransactionWithCheck?: (transactionHash: string) => Promise<unknown>;
-      provider?: {
-        waitForTransaction?: (transactionHash: string) => Promise<unknown>;
-        waitForTransactionWithCheck?: (transactionHash: string) => Promise<unknown>;
-      };
-    };
-
-    if (typeof signerWithWaiters.provider?.waitForTransactionWithCheck === "function") {
-      return signerWithWaiters.provider.waitForTransactionWithCheck.bind(signerWithWaiters.provider);
-    }
-
-    if (typeof signerWithWaiters.waitForTransactionWithCheck === "function") {
-      return signerWithWaiters.waitForTransactionWithCheck.bind(signerWithWaiters);
-    }
-
-    if (typeof signerWithWaiters.waitForTransaction === "function") {
-      return signerWithWaiters.waitForTransaction.bind(signerWithWaiters);
-    }
-
-    if (typeof signerWithWaiters.provider?.waitForTransaction === "function") {
-      return signerWithWaiters.provider.waitForTransaction.bind(signerWithWaiters.provider);
-    }
-
-    return null;
-  };
-
-  private _scheduleOptimisticCleanupOnTransaction = (
-    signer: DojoAccount,
-    transactionHash: string | undefined,
-    cleanup: () => void,
-    options?: {
-      onReverted?: (revertReason: string) => void;
-      onFailed?: (failureReason: string) => void;
-    },
-  ) => {
-    let isCleanedUp = false;
-    const finalize = () => {
-      if (isCleanedUp) return;
-      isCleanedUp = true;
-      cleanup();
-    };
-
-    const fallbackTimeout = setTimeout(() => {
-      console.warn("Forcing optimistic cleanup after transaction wait timeout.", { transactionHash });
-      finalize();
-    }, OPTIMISTIC_TX_FALLBACK_TIMEOUT_MS);
-
-    const finalizeAndClearTimeout = () => {
-      clearTimeout(fallbackTimeout);
-      finalize();
-    };
-
-    if (!transactionHash) {
-      finalizeAndClearTimeout();
-      return;
-    }
-
-    const waitForTransaction = this._resolveTransactionWaiter(signer);
-    if (!waitForTransaction) {
-      finalizeAndClearTimeout();
-      return;
-    }
-
-    void waitForTransaction(transactionHash)
-      .then((receipt) => {
-        const receiptAny = receipt as { isReverted?: () => boolean; revert_reason?: string; revertReason?: string };
-        if (typeof receiptAny.isReverted === "function" && receiptAny.isReverted()) {
-          const revertReason =
-            typeof receiptAny.revert_reason === "string"
-              ? receiptAny.revert_reason
-              : typeof receiptAny.revertReason === "string"
-                ? receiptAny.revertReason
-                : "Unknown revert reason";
-          console.warn(`Transaction ${transactionHash} reverted: ${revertReason}`);
-          options?.onReverted?.(revertReason);
-          finalizeAndClearTimeout();
-          return;
-        }
-        // Success: keep the override up while the authoritative row travels
-        // katana → torii → client, so removal reveals the new value instead of
-        // flashing the old one. The 180 s fallback still bounds the wait.
-        setTimeout(finalizeAndClearTimeout, OPTIMISTIC_CLEANUP_AUTHORITATIVE_GRACE_MS);
-      })
-      .catch((error) => {
-        console.error(`Error while waiting for transaction ${transactionHash}`, error);
-        options?.onFailed?.(extractErrorMessage(error));
-        finalizeAndClearTimeout();
-      });
-  };
-
-  private _optimisticDestroy = (entityId: ID, col: number, row: number) => {
-    const overrideId = uuid();
+  private createDestroyProvisionalWrites = (entityId: ID, col: number, row: number): GameSyncProvisionalWrite[] => {
     const realmBase = getComponentValue(this.components.Structure, gameEntityKey([BigInt(entityId)]))?.base;
     const { coord_x: outercol, coord_y: outerrow } = realmBase || { coord_x: 0, coord_y: 0 };
     const entity = gameEntityKey([outercol, outerrow, col, row].map((v) => BigInt(v)));
-
     const currentBuilding = getComponentValue(this.components.Building, entity);
-    const type = currentBuilding?.category as BuildingType;
-
-    this.components.Building.addOverride(overrideId, {
-      entity,
-      value: {
-        ...currentBuilding,
-        outer_col: outercol,
-        outer_row: outerrow,
-        inner_col: col,
-        inner_row: row,
-        category: BuildingType.None,
-        bonus_percent: 0,
-        entity_id: 0,
-        outer_entity_id: 0,
-      },
-    });
-
-    const populationOverrideId = uuid();
-
+    if (!currentBuilding) throw new Error(`Cannot destroy missing building at ${col},${row}`);
+    const type = currentBuilding.category as BuildingType;
     const realmEntityId = gameEntityKey([BigInt(entityId)]);
     const currentStructureBuildings = getComponentValue(this.components.StructureBuildings, realmEntityId);
-
-    // Get the current building count
     const buildingCount = getBuildingCount(type, [
       currentStructureBuildings?.packed_counts_1 || 0n,
       currentStructureBuildings?.packed_counts_2 || 0n,
       currentStructureBuildings?.packed_counts_3 || 0n,
     ]);
 
-    // Decrease the count by 1 (ensuring it doesn't go below 0)
     const newCount = buildingCount > 0 ? buildingCount - 1 : 0;
-
-    // Update the packed counts
     const packedBuildingCount = setBuildingCount(
       type,
       [
@@ -416,81 +257,62 @@ export class TileManager {
       ],
       newCount,
     );
-    console.log("packedBuildingCount", packedBuildingCount, "newCount", newCount, "type", type);
-    const newBuildingCount = getBuildingCount(type, [
-      packedBuildingCount[0],
-      packedBuildingCount[1],
-      packedBuildingCount[2],
-    ]);
-    console.log("newBuildingCount", newBuildingCount, "type", type);
-
-    this.components.StructureBuildings.addOverride(populationOverrideId, {
-      entity: realmEntityId,
-      value: {
-        ...currentStructureBuildings,
-        packed_counts_1: packedBuildingCount[0],
-        packed_counts_2: packedBuildingCount[1],
-        packed_counts_3: packedBuildingCount[2],
-        population: {
-          current:
-            (currentStructureBuildings?.population.current || 0) -
-            configManager.getBuildingCategoryConfig(type).population_cost,
-          max:
-            (currentStructureBuildings?.population.max || 0) -
-            configManager.getBuildingCategoryConfig(type).capacity_grant,
+    const buildingConfig = configManager.getBuildingCategoryConfig(type);
+    const buildingPatch = {
+      outer_col: outercol,
+      outer_row: outerrow,
+      inner_col: col,
+      inner_row: row,
+      category: BuildingType.None,
+      bonus_percent: 0,
+      entity_id: 0,
+      outer_entity_id: 0,
+    };
+    return [
+      {
+        entityId: entity,
+        model: "Building",
+        patch: buildingPatch,
+        matchPatch: buildingPatch,
+      },
+      {
+        entityId: realmEntityId,
+        model: "StructureBuildings",
+        patch: {
+          packed_counts_1: packedBuildingCount[0],
+          packed_counts_2: packedBuildingCount[1],
+          packed_counts_3: packedBuildingCount[2],
+          population: {
+            current: (currentStructureBuildings?.population.current || 0) - buildingConfig.population_cost,
+            max: (currentStructureBuildings?.population.max || 0) - buildingConfig.capacity_grant,
+          },
+        },
+        matchPatch: {
+          packed_counts_1: packedBuildingCount[0],
+          packed_counts_2: packedBuildingCount[1],
+          packed_counts_3: packedBuildingCount[2],
         },
       },
-    });
-
-    return () => {
-      console.log("removing overrides");
-      this.components.Building.removeOverride(overrideId);
-      this.components.StructureBuildings.removeOverride(populationOverrideId);
-    };
+    ];
   };
 
-  private _optimisticPause = (col: number, row: number) => {
-    let overrideId = uuid();
+  private createProductionProvisionalWrite = (col: number, row: number, paused: boolean): GameSyncProvisionalWrite => {
     const entity = buildingEntityKey(this.col, this.row, col, row);
     const building = getComponentValue(this.components.Building, entity);
-    this.components.Building.addOverride(overrideId, {
-      entity,
-      value: {
-        ...building,
-        outer_col: building?.outer_col,
-        outer_row: building?.outer_row,
-        inner_col: building?.inner_col,
-        inner_row: building?.inner_row,
-        category: building?.category,
-        bonus_percent: building?.bonus_percent,
-        entity_id: building?.entity_id,
-        outer_entity_id: building?.outer_entity_id,
-        paused: true,
-      },
-    });
-    return overrideId;
+    if (!building) throw new Error(`Cannot update missing building at ${col},${row}`);
+    return { entityId: entity, model: "Building", patch: { paused }, matchPatch: { paused } };
   };
 
-  private _optimisticResume = (col: number, row: number) => {
-    let overrideId = uuid();
-    const entity = buildingEntityKey(this.col, this.row, col, row);
-    const building = getComponentValue(this.components.Building, entity);
-    this.components.Building.addOverride(overrideId, {
-      entity,
-      value: {
-        ...building,
-        outer_col: building?.outer_col,
-        outer_row: building?.outer_row,
-        inner_col: building?.inner_col,
-        inner_row: building?.inner_row,
-        category: building?.category,
-        bonus_percent: building?.bonus_percent,
-        entity_id: building?.entity_id,
-        outer_entity_id: building?.outer_entity_id,
-        paused: false,
-      },
-    });
-    return overrideId;
+  private createProvisionalIntent = (writes: readonly GameSyncProvisionalWrite[]): ProvisionalIntent | null => {
+    return getActiveGameSyncRuntime()?.createProvisionalIntent(writes) ?? null;
+  };
+
+  private trackTransaction = (
+    intent: ProvisionalIntent | null,
+    signer: DojoAccount,
+    transactionResult: unknown,
+  ): void => {
+    if (intent) trackProvisionalTransaction(intent, signer, transactionResult);
   };
 
   placeBuilding = async (
@@ -501,24 +323,15 @@ export class TileManager {
     useSimpleCost: boolean,
   ) => {
     const { col, row } = hexCoords;
-    const buildKey = toBuildSlotKey(this.col, this.row, col, row);
-
-    // Re-check occupancy at call time to avoid sending a known-invalid tx.
     if (this.isHexOccupied({ col, row })) {
       throw new Error(OCCUPIED_SPACE_REASON);
     }
-
-    markBuildPending(buildSlotTransitions, buildKey);
-
     const startingPosition: [number, number] = [BUILDINGS_CENTER[0], BUILDINGS_CENTER[1]];
     const endPosition: [number, number] = [col, row];
     const directions = getDirectionsArray(startingPosition, endPosition);
-
-    // add optimistic rendering if enabled
-    let removeBuildingOverride = () => {};
-    if (OPTIMISTIC_BUILDING_ENABLED) {
-      removeBuildingOverride = this._optimisticBuilding(structureEntityId, col, row, buildingType, useSimpleCost);
-    }
+    const intent = this.createProvisionalIntent(
+      this.createBuildingProvisionalWrites(structureEntityId, col, row, buildingType, useSimpleCost),
+    );
 
     try {
       const result = await this.systemCalls.create_building({
@@ -528,54 +341,20 @@ export class TileManager {
         building_category: buildingType,
         use_simple: useSimpleCost,
       });
-
-      const transactionHash = this._extractTransactionHash(result);
-      const clearFailedBuildTransition = (failureReason: string) => {
-        removeBuildingOverride();
-        if (failureReason.toLowerCase().includes(OCCUPIED_SPACE_REASON)) {
-          markOccupiedUnconfirmed(buildSlotTransitions, buildKey);
-          return;
-        }
-        clearBuildSlotTransition(buildSlotTransitions, buildKey);
-      };
-
-      this._scheduleOptimisticCleanupOnTransaction(
-        signer,
-        transactionHash,
-        () => {
-          removeBuildingOverride();
-        },
-        {
-          onReverted: clearFailedBuildTransition,
-          onFailed: (failureReason) => {
-            clearFailedBuildTransition(failureReason);
-          },
-        },
-      );
-
+      this.trackTransaction(intent, signer, result);
       return result;
     } catch (error) {
-      // On error, remove immediately
-      removeBuildingOverride();
+      intent?.fail();
       console.error(error);
       if (isOccupiedSpaceError(error)) {
-        markOccupiedUnconfirmed(buildSlotTransitions, buildKey);
         throw new Error(OCCUPIED_SPACE_REASON);
       }
-      clearBuildSlotTransition(buildSlotTransitions, buildKey);
       throw error;
     }
   };
 
   destroyBuilding = async (signer: DojoAccount, structureEntityId: ID, col: number, row: number) => {
-    const buildKey = toBuildSlotKey(this.col, this.row, col, row);
-    markDestroyPending(buildSlotTransitions, buildKey);
-
-    // add optimistic rendering if enabled
-    let removeBuildingOverride = () => {};
-    if (OPTIMISTIC_BUILDING_ENABLED) {
-      removeBuildingOverride = this._optimisticDestroy(structureEntityId, col, row);
-    }
+    const intent = this.createProvisionalIntent(this.createDestroyProvisionalWrites(structureEntityId, col, row));
 
     try {
       const result = await this.systemCalls.destroy_building({
@@ -587,34 +366,18 @@ export class TileManager {
           y: row,
         },
       });
-
-      const transactionHash = this._extractTransactionHash(result);
-      this._scheduleOptimisticCleanupOnTransaction(signer, transactionHash, removeBuildingOverride, {
-        onReverted: () => {
-          removeBuildingOverride();
-          clearBuildSlotTransition(buildSlotTransitions, buildKey);
-        },
-        onFailed: () => {
-          removeBuildingOverride();
-          clearBuildSlotTransition(buildSlotTransitions, buildKey);
-        },
-      });
+      this.trackTransaction(intent, signer, result);
     } catch (error) {
-      console.log("error", error);
-      removeBuildingOverride();
-      clearBuildSlotTransition(buildSlotTransitions, buildKey);
+      intent?.fail();
       throw error;
     }
   };
 
   pauseProduction = async (signer: DojoAccount, structureEntityId: ID, col: number, row: number) => {
-    let overrideId: string | undefined;
-    if (OPTIMISTIC_BUILDING_ENABLED) {
-      overrideId = this._optimisticPause(col, row);
-    }
+    const intent = this.createProvisionalIntent([this.createProductionProvisionalWrite(col, row, true)]);
 
     try {
-      await this.systemCalls.pause_production({
+      const result = await this.systemCalls.pause_production({
         signer,
         entity_id: structureEntityId,
         building_coord: {
@@ -623,24 +386,19 @@ export class TileManager {
           y: row,
         },
       });
+      this.trackTransaction(intent, signer, result);
     } catch (error) {
+      intent?.fail();
       console.error(error);
       throw error;
-    } finally {
-      if (OPTIMISTIC_BUILDING_ENABLED && overrideId) {
-        this.components.Building.removeOverride(overrideId);
-      }
     }
   };
 
   resumeProduction = async (signer: DojoAccount, structureEntityId: ID, col: number, row: number) => {
-    let overrideId: string | undefined;
-    if (OPTIMISTIC_BUILDING_ENABLED) {
-      overrideId = this._optimisticResume(col, row);
-    }
+    const intent = this.createProvisionalIntent([this.createProductionProvisionalWrite(col, row, false)]);
 
     try {
-      await this.systemCalls.resume_production({
+      const result = await this.systemCalls.resume_production({
         signer,
         entity_id: structureEntityId,
         building_coord: {
@@ -649,13 +407,11 @@ export class TileManager {
           y: row,
         },
       });
+      this.trackTransaction(intent, signer, result);
     } catch (error) {
+      intent?.fail();
       console.error(error);
       throw error;
-    } finally {
-      if (OPTIMISTIC_BUILDING_ENABLED && overrideId) {
-        this.components.Building.removeOverride(overrideId);
-      }
     }
   };
 }

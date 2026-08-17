@@ -18,6 +18,7 @@ import {
 import { AnimationVisibilityContext } from "../types/animation";
 import { getContactShadowResources } from "../utils/contact-shadow";
 import { InstancedMatrixAttributePool } from "../utils/instanced-matrix-attribute-pool";
+import { MaterialPool } from "../utils/material-pool";
 import { resizeInstancedMorphTexture } from "./morph-texture-resize";
 import { writeMorphWeightsIfChanged } from "./morph-texture-dirty-state";
 
@@ -94,6 +95,7 @@ function createAnimatedInstancedMesh(geometry: Mesh["geometry"], material: MeshS
 const ANIMATION_BUCKETS = 16;
 
 export default class InstancedModel {
+  private static readonly materialPool = MaterialPool.getInstance();
   public group: Group;
   public instancedMeshes: AnimatedInstancedMesh[] = [];
   private biomeMeshes: Mesh[] = [];
@@ -157,6 +159,7 @@ export default class InstancedModel {
         if (name === StructureType[StructureType.FragmentMine] && child.material.name.includes("crystal")) {
           material = new MeshStandardMaterial(MinesMaterialsParams[ResourcesIds.AncientFragment]);
         }
+        material = InstancedModel.materialPool.getStandardMaterial(material);
         const tmp = createAnimatedInstancedMesh(child.geometry, material, this.capacity);
         tmp.renderOrder = 10;
         const biomeMesh = child;
@@ -714,9 +717,15 @@ export default class InstancedModel {
       }
       if (mesh.material) {
         if (Array.isArray(mesh.material)) {
-          mesh.material.forEach((mat) => mat.dispose());
+          mesh.material.forEach((mat) =>
+            InstancedModel.materialPool.isManagedMaterial(mat)
+              ? InstancedModel.materialPool.releaseMaterial(mat)
+              : mat.dispose(),
+          );
         } else {
-          mesh.material.dispose();
+          InstancedModel.materialPool.isManagedMaterial(mesh.material)
+            ? InstancedModel.materialPool.releaseMaterial(mesh.material)
+            : mesh.material.dispose();
         }
       }
       // Phase 2.5: dispose the InstancedMesh itself to free the instanceMatrix/

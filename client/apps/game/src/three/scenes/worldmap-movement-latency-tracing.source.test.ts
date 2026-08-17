@@ -25,10 +25,11 @@ describe("Worldmap movement latency tracing wiring", () => {
     expect(source).toContain('"movement_completed"');
   });
 
-  it("uses an eight-second safety fallback after movement submission", () => {
+  it("delegates transaction lifetime without a worldmap fallback timer", () => {
     const source = readSource("worldmap.tsx");
 
-    expect(source).toContain("authoritativePendingArmyMovementMs = 8_000");
+    expect(source).toContain("trackProvisionalTransaction");
+    expect(source).not.toContain("authoritativePendingArmyMovementMs");
   });
 
   it("does not treat TileOpt delivery as an army movement phase", () => {
@@ -39,18 +40,16 @@ describe("Worldmap movement latency tracing wiring", () => {
     expect(listenerSource).not.toContain("tileopt_component_received");
   });
 
-  it("records explore reconcile and next-safe-unblocked phases when authoritative position catches up", () => {
+  it("records next-safe-unblocked when the movement transaction confirms", () => {
     const source = readSource("worldmap.tsx");
 
-    expect(source).toContain('"explore_authoritative_reconcile_complete"');
     expect(source).toContain('"explore_next_safe_unblocked"');
   });
 
-  it("gates explore-only reconcile tracing behind an explicit explore flag", () => {
+  it("gates explore-only confirmation tracing by action type", () => {
     const source = readSource("worldmap.tsx");
 
-    expect(source).toContain("isExploreAction");
-    expect(source).toContain("if (isExploreAction)");
+    expect(source).toContain("if (actionType === ActionType.Explore)");
   });
 
   it("exposes debug hooks for reading and clearing movement latency traces", () => {

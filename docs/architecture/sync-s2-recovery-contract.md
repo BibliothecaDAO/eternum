@@ -14,12 +14,16 @@ Every boot and reconnect runs the same sequence:
 5. Diff snapshot absence per model and remove only that component. Sibling components on the same RECS entity survive.
 6. Replay buffered entity callbacks in receive-sequence order, then enter `running`.
 
-Torii does not expose a universal server revision or transactional multi-page snapshot. The guarantee is convergence,
-not gap-free history. Subscribing first means a mutation crossing a page boundary is replayed after the older snapshot
-value. The inverse race is also possible: a buffered callback older than the page it crossed can regress that entity by
-at most one observed update; its next live update or recovery heals it. A fetch or detected stream failure aborts the
-generation; reconnect starts the full sequence again. Silent stream death is still inferred by the existing health
-monitor because the current Torii subscription object has no close signal.
+Torii does not expose a universal server revision or transactional multi-page snapshot. The installed wasm entity
+callback carries only `{ hashed_keys, models }`: no block number, event ID, update timestamp, or cursor. Client-side
+per-entity monotonicity therefore cannot be implemented honestly. The upstream feature request is a monotonic per-entity
+version on subscription payloads; until Torii provides it, model-specific reconciliation must remain where an older
+callback can race a provisional write. The guarantee is convergence, not gap-free history. Subscribing first means a
+mutation crossing a page boundary is replayed after the older snapshot value. The inverse race is also possible: a
+buffered callback older than the page it crossed can regress that entity by at most one observed update; its next live
+update or recovery heals it. A fetch or detected stream failure aborts the generation; reconnect starts the full
+sequence again. Silent stream death is still inferred by the existing health monitor because the current Torii
+subscription object has no close signal.
 
 ## Deletion and event rules
 
@@ -31,6 +35,10 @@ monitor because the current Torii subscription object has no close signal.
 - Event identities use a fixed FIFO of 512 `model:hashed_keys:timestamp` values. The FIFO survives reconnect recovery,
   so replayed callbacks cannot fire an effect twice while later events for the same on-chain keys still fire. It resets
   for a genuinely new session.
+- Event callbacks expose no server cursor. The client establishes a timestamp watermark without replaying historical
+  effects, then queries backward inclusively from the frozen watermark after every replacement subscription and lease
+  renewal. Results pass through the normal event handler and identity dedupe path. This is gap-fill replay, not a claim
+  of gap-free server ordering.
 
 ## Ordering and fencing
 
