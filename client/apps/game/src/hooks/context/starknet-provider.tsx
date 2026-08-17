@@ -125,6 +125,12 @@ export function StarknetProvider({ children }: { children: React.ReactNode }) {
       new ControllerConnector({
         errorDisplayMode: "notification",
         propagateSessionErrors: true,
+        // Passkey ceremonies escape the keychain iframe into a popup. Chrome
+        // gates in-iframe WebAuthn on transient user activation, and the
+        // keychain's click-to-ceremony async gap can outlive it (macOS/Linux
+        // Chrome take the in-iframe path; Windows already pops up). The popup
+        // path is activation-safe on every platform.
+        webauthnPopup: true,
         chains: runtimeConfig.controllerSupportedRpcUrls.map((chainRpcUrl) => ({
           rpcUrl: chainRpcUrl,
         })),
