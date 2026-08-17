@@ -77,6 +77,28 @@ const qualifiedComponentName = (component: Component): string | null => {
   return namespace && name ? `${namespace}-${name}` : null;
 };
 
+// Event components live nested under `events`. RECS writes need every component in
+// one flat list — a component missing from the list makes setEntities skip its rows
+// silently, which is how the entire event stream went dark for chest reveals.
+const flattenContractComponents = (
+  contractComponents: SetupResult["network"]["contractComponents"],
+): Component<Schema, Metadata, undefined>[] => {
+  const { events, ...modelComponents } = contractComponents;
+  return [...Object.values(modelComponents), ...Object.values(events)] as unknown as Component<
+    Schema,
+    Metadata,
+    undefined
+  >[];
+};
+
+const assertSyncModelsResolvable = (lookup: Map<string, Component>, models: readonly string[]): void => {
+  const unresolved = models.filter((model) => !lookup.has(model));
+  if (unresolved.length === 0) return;
+  const message = `[GameSync] sync models without a RECS component would be dropped silently: ${unresolved.join(", ")}`;
+  if (import.meta.env.DEV) throw new Error(message);
+  console.error(message);
+};
+
 const createComponentLookup = (components: readonly Component[]): Map<string, Component> => {
   const lookup = new Map<string, Component>();
   components.forEach((component) => {
@@ -88,13 +110,10 @@ const createComponentLookup = (components: readonly Component[]): Map<string, Co
   return lookup;
 };
 
-const createRecsGameSyncStore = (setup: SetupResult, logging: boolean): GameSyncStore => {
-  const authoritativeComponents = Object.values(setup.network.contractComponents) as unknown as Component<
-    Schema,
-    Metadata,
-    undefined
-  >[];
+const createRecsGameSyncStore = (setup: SetupResult, logging: boolean, syncModels: readonly string[]): GameSyncStore => {
+  const authoritativeComponents = flattenContractComponents(setup.network.contractComponents);
   const authoritativeComponentLookup = createComponentLookup(authoritativeComponents);
+  assertSyncModelsResolvable(authoritativeComponentLookup, syncModels);
   // setup.components mixes overridable wrappers with the `events` sub-record;
   // createComponentLookup's metadata guards skip the non-component entries.
   const provisionalComponentLookup = createComponentLookup(
@@ -342,7 +361,7 @@ export const createGamewideSyncSession = (input: CreateGamewideSyncSessionInput)
 
   return {
     snapshotModels: input.entityModels,
-    store: createRecsGameSyncStore(input.setup, input.logging),
+    store: createRecsGameSyncStore(input.setup, input.logging, [...input.entityModels, ...input.eventModels]),
     scheduler: createBrowserScheduler(),
     now: () => performance.now(),
     onSubscriptionActive: input.onSubscriptionActive,
