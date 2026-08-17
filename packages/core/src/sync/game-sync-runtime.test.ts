@@ -8,6 +8,7 @@ import {
   SupersededGameSyncStartError,
 } from "./game-sync-runtime";
 import type {
+  GameSyncAuthoritativeObservation,
   GameSyncEntity,
   GameSyncEntityStoreOperation,
   GameSyncSessionStart,
@@ -29,19 +30,33 @@ const createMemoryStore = (initial: Record<string, Record<string, unknown>> = {}
 
   const store: GameSyncStore = {
     applyEntityOperations(nextOperations) {
+      const observations: GameSyncAuthoritativeObservation[] = [];
       operations.push(...nextOperations);
       nextOperations.forEach((operation) => {
         if (operation.type === "upsert") {
           operation.entities.forEach((update) => {
             rows.set(update.hashed_keys, { ...rows.get(update.hashed_keys), ...update.models });
+            Object.entries(update.models).forEach(([model, value]) => {
+              observations.push({
+                type: "model",
+                entityId: update.hashed_keys,
+                model,
+                value: value as Record<string, unknown>,
+              });
+            });
           });
         } else if (operation.type === "remove-components") {
           const models = rows.get(operation.entityId);
-          operation.models.forEach((model) => delete models?.[model]);
+          operation.models.forEach((model) => {
+            delete models?.[model];
+            observations.push({ type: "model", entityId: operation.entityId, model, value: null });
+          });
         } else {
           rows.delete(operation.entityId);
+          observations.push({ type: "delete-entity", entityId: operation.entityId });
         }
       });
+      return observations;
     },
     applyEvent(eventUpdate) {
       events.push(eventUpdate);
@@ -57,7 +72,7 @@ const createMemoryStore = (initial: Record<string, Record<string, unknown>> = {}
 const createSessionHarness = (input: {
   pages?: Array<{ items: GameSyncEntity[]; nextCursor?: string }>;
   store?: GameSyncStore;
-  onFetchPage?: (pageIndex: number, handlers: GameSyncSubscriptionHandlers) => void;
+  onFetchPage?: (pageIndex: number, handlers: GameSyncSubscriptionHandlers) => void | Promise<void>;
 }) => {
   const order: string[] = [];
   const writers: Array<GameSyncWriter & { cancel: ReturnType<typeof vi.fn> }> = [];
@@ -78,7 +93,7 @@ const createSessionHarness = (input: {
       },
       async fetchSnapshotPage() {
         order.push(`snapshot-page-${pageIndex + 1}`);
-        input.onFetchPage?.(pageIndex, handlers!);
+        await input.onFetchPage?.(pageIndex, handlers!);
         return pages[pageIndex++] ?? { items: [] };
       },
     },
@@ -90,6 +105,9 @@ const createSessionHarness = (input: {
     },
     emitEvent(update: GameSyncEntity) {
       handlers?.onEvent(update);
+    },
+    recordEventGapFill(replayedEventCount: number) {
+      handlers?.onEventGapFill(replayedEventCount);
     },
     order,
     resetPages(nextPages: typeof pages) {
@@ -121,6 +139,21 @@ describe("GameSyncRuntime recovery", () => {
     expect([...memory.rows.keys()]).toEqual(["one", "two"]);
     expect(runtime.getMetrics()).toMatchObject({ snapshotEntityCount: 2, snapshotPageCount: 2 });
     expect(runtime.getStatus()).toBe("running");
+  });
+
+  it("routes targeted authoritative queries through the active ingest queue", async () => {
+    const memory = createMemoryStore();
+    const harness = createSessionHarness({ store: memory.store });
+    const runtime = new GameSyncRuntime();
+    await runtime.startSession(harness.session);
+
+    await runtime.applyAuthoritativeEntities([entity("queried-army", { ExplorerTroops: { coord: { x: 12, y: 9 } } })]);
+
+    expect(memory.rows.get("queried-army")).toEqual({ ExplorerTroops: { coord: { x: 12, y: 9 } } });
+    expect(memory.operations.at(-1)).toEqual({
+      type: "upsert",
+      entities: [entity("queried-army", { ExplorerTroops: { coord: { x: 12, y: 9 } } })],
+    });
   });
 
   it("replays live updates in client receive order after the snapshot", async () => {
@@ -289,6 +322,20 @@ describe("GameSyncRuntime recovery", () => {
 
     expect(memory.events.map(({ hashed_keys }) => hashed_keys)).toEqual(["event-1", "event-2", "event-3", "event-1"]);
   });
+
+  it("reports event gap-fill replay counts in runtime metrics", async () => {
+    const harness = createSessionHarness({});
+    const runtime = new GameSyncRuntime();
+    await runtime.startSession(harness.session);
+
+    harness.recordEventGapFill(3);
+    harness.recordEventGapFill(2);
+
+    expect(runtime.getMetrics()).toMatchObject({
+      eventGapFillReplayCount: 2,
+      totalReplayedEventUpdates: 5,
+    });
+  });
 });
 
 describe("GameSyncRuntime lifecycle", () => {
@@ -325,19 +372,19 @@ describe("GameSyncRuntime lifecycle", () => {
 
   it("preserves the cancellation guard but force-cancels on dispose", async () => {
     const runtime = new GameSyncRuntime();
-    const writer = { cancel: vi.fn() };
     let finishSnapshot!: () => void;
-
-    const start = runtime.startLegacySession({
-      startGlobalWriter: async () => writer,
-      hydrateSpatialSnapshot: () => new Promise<void>((resolve) => (finishSnapshot = resolve)),
+    const harness = createSessionHarness({
+      async onFetchPage() {
+        await new Promise<void>((resolve) => (finishSnapshot = resolve));
+      },
     });
-    await Promise.resolve();
+    const start = runtime.startSession(harness.session);
+    await flushMicrotasks();
 
     runtime.cancelGlobalWriter();
-    expect(writer.cancel).not.toHaveBeenCalled();
+    expect(harness.writers[0].cancel).not.toHaveBeenCalled();
     runtime.dispose();
-    expect(writer.cancel).toHaveBeenCalledOnce();
+    expect(harness.writers[0].cancel).toHaveBeenCalledOnce();
     finishSnapshot();
     await expect(start).rejects.toBeInstanceOf(SupersededGameSyncStartError);
   });
@@ -351,5 +398,29 @@ describe("GameSyncRuntime lifecycle", () => {
 
     expect(harness.writers[0].cancel).toHaveBeenCalledOnce();
     expect(getActiveGameSyncRuntime()).toBeNull();
+  });
+
+  it("rejects buffered updates from the previous game when the active game changes", async () => {
+    const memory = createMemoryStore();
+    let finishSnapshot!: () => void;
+    const snapshotBlocked = new Promise<void>((resolve) => (finishSnapshot = resolve));
+    const harness = createSessionHarness({
+      store: memory.store,
+      pages: [{ items: [] }],
+      async onFetchPage(_pageIndex, handlers) {
+        handlers.onEntity(entity("old-game-army", { Position: { x: 99 } }));
+        await snapshotBlocked;
+      },
+    });
+    const runtime = installGameSyncRuntime(new GameSyncRuntime());
+    const start = runtime.startSession(harness.session);
+    await flushMicrotasks();
+
+    configManager.setActiveGame(15, 7);
+    finishSnapshot();
+
+    await expect(start).rejects.toBeInstanceOf(SupersededGameSyncStartError);
+    expect(memory.rows.has("old-game-army")).toBe(false);
+    expect(harness.writers[0].cancel).toHaveBeenCalledOnce();
   });
 });

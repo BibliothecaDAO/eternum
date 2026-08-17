@@ -24,6 +24,38 @@ interface FXManagerOptions {
 }
 
 const buildSharedFxTexturePath = (fileName: string): string => `/textures/${fileName}`;
+const fxTextureLoader = new THREE.TextureLoader();
+const fxTextureCache = new Map<string, { references: number; texture: THREE.Texture }>();
+
+function acquireFxTexture(textureUrl: string): THREE.Texture {
+  const cached = fxTextureCache.get(textureUrl);
+  if (cached) {
+    cached.references += 1;
+    return cached.texture;
+  }
+
+  const texture = fxTextureLoader.load(textureUrl);
+  texture.colorSpace = THREE.SRGBColorSpace;
+  texture.minFilter = THREE.LinearFilter;
+  texture.magFilter = THREE.LinearFilter;
+  fxTextureCache.set(textureUrl, { references: 1, texture });
+  return texture;
+}
+
+function releaseFxTexture(textureUrl: string): void {
+  const cached = fxTextureCache.get(textureUrl);
+  if (!cached) {
+    return;
+  }
+
+  cached.references -= 1;
+  if (cached.references > 0) {
+    return;
+  }
+
+  cached.texture.dispose();
+  fxTextureCache.delete(textureUrl);
+}
 
 export class FXManager {
   private readonly backend: WorldFxBackend;
@@ -143,9 +175,7 @@ export class FXManager {
   public destroy(): void {
     this.activeLabelFx.clear();
     this.backend.destroy();
-    this.textures.forEach((texture) => {
-      texture.dispose();
-    });
+    this.textures.forEach((_texture, textureUrl) => releaseFxTexture(textureUrl));
     this.textures.clear();
   }
 
@@ -230,11 +260,7 @@ export class FXManager {
 
   private registerFX(type: FXType, config: FXConfig): void {
     if (!this.textures.has(config.textureUrl)) {
-      const texture = new THREE.TextureLoader().load(config.textureUrl);
-      texture.colorSpace = THREE.SRGBColorSpace;
-      texture.minFilter = THREE.LinearFilter;
-      texture.magFilter = THREE.LinearFilter;
-      this.textures.set(config.textureUrl, texture);
+      this.textures.set(config.textureUrl, acquireFxTexture(config.textureUrl));
     }
 
     this.fxConfigs.set(type, config);

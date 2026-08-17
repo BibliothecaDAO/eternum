@@ -39,9 +39,6 @@ import {
   addToriiStreamBreadcrumb,
   reportNetworkOutageDeadEnd,
   reportNetworkOutageResolved,
-  reportSubscriptionSetupTimeout,
-  reportToriiQueuePressure,
-  reportToriiReadinessTimeout,
   reportToriiSubscriptionLifecycle,
   resetNetworkHealthStateForTests,
   setNetworkHealthEnabledForTests,
@@ -63,14 +60,14 @@ describe("network-health-reporting", () => {
   });
 
   it("reportNetworkOutageResolved captures a warning-level message with measurements", () => {
-    reportNetworkOutageResolved({ streamType: "spatial", outageMs: 45_000, attempts: 2 });
+    reportNetworkOutageResolved({ streamType: "both", outageMs: 45_000, attempts: 2 });
 
     expect(sentryMocks.captureMessage).toHaveBeenCalledTimes(1);
     const [message, opts] = sentryMocks.captureMessage.mock.calls[0];
     expect(message).toContain("Network outage resolved");
     expect(opts.level).toBe("warning");
     expect(opts.tags.feature).toBe("network-health");
-    expect(opts.tags["network.stream_type"]).toBe("spatial");
+    expect(opts.tags["network.stream_type"]).toBe("both");
     expect(opts.tags["network.outcome"]).toBe("resolved");
     expect(opts.contexts.network.outage_seconds).toBe(45);
     expect(opts.contexts.network.reconnect_attempts).toBe(2);
@@ -87,48 +84,26 @@ describe("network-health-reporting", () => {
   });
 
   it("skips duplicate outage reports within the dedup window", () => {
-    reportNetworkOutageResolved({ streamType: "spatial", outageMs: 45_000, attempts: 1 });
-    reportNetworkOutageResolved({ streamType: "spatial", outageMs: 45_000, attempts: 1 });
+    reportNetworkOutageResolved({ streamType: "both", outageMs: 45_000, attempts: 1 });
+    reportNetworkOutageResolved({ streamType: "both", outageMs: 45_000, attempts: 1 });
 
     expect(sentryMocks.captureMessage).toHaveBeenCalledTimes(1);
   });
 
   it("skips outages below the minimum outage threshold", () => {
-    reportNetworkOutageResolved({ streamType: "spatial", outageMs: 5_000, attempts: 1 });
+    reportNetworkOutageResolved({ streamType: "both", outageMs: 5_000, attempts: 1 });
 
     expect(sentryMocks.captureMessage).not.toHaveBeenCalled();
   });
 
-  it("reportSubscriptionSetupTimeout captures and dedups by label", () => {
-    reportSubscriptionSetupTimeout({
-      label: "entity subscription",
-      streamType: "spatial",
-      timeoutMs: 8000,
-      requestId: 42,
-    });
-    reportSubscriptionSetupTimeout({
-      label: "entity subscription",
-      streamType: "spatial",
-      timeoutMs: 8000,
-      requestId: 43,
-    });
-
-    expect(sentryMocks.captureMessage).toHaveBeenCalledTimes(1);
-    const [message, opts] = sentryMocks.captureMessage.mock.calls[0];
-    expect(message).toContain("entity subscription");
-    expect(opts.tags["network.kind"]).toBe("subscription_setup_timeout");
-    expect(opts.tags["network.stream_type"]).toBe("spatial");
-    expect(opts.contexts.network.label).toBe("entity subscription");
-  });
-
   it("addNetworkBreadcrumb writes a breadcrumb with structured data", () => {
-    addNetworkBreadcrumb({ event: "reconnect_start", streamType: "spatial" });
+    addNetworkBreadcrumb({ event: "reconnect_start", streamType: "global" });
 
     expect(sentryMocks.addBreadcrumb).toHaveBeenCalledTimes(1);
     const crumb = sentryMocks.addBreadcrumb.mock.calls[0][0];
     expect(crumb.category).toBe("network-health");
     expect(crumb.message).toBe("network-health:reconnect_start");
-    expect(crumb.data.stream_type).toBe("spatial");
+    expect(crumb.data.stream_type).toBe("global");
   });
 
   it("setNetworkHealthScopeTags sets host and world tags", async () => {
@@ -141,114 +116,34 @@ describe("network-health-reporting", () => {
     expect(tags["world"]).toBe("eternum");
   });
 
-  it("addToriiStreamBreadcrumb writes bounded stream lifecycle data", () => {
+  it("addToriiStreamBreadcrumb records the shared heartbeat", () => {
     addToriiStreamBreadcrumb({
-      event: "subscription_update_succeeded",
-      streamType: "spatial",
-      requestId: 7,
-      areaKey: "1:2",
-      durationMs: 42.4,
-      signatureHash: "abc123",
+      event: "heartbeat_received",
+      streamType: "both",
     });
 
     expect(sentryMocks.addBreadcrumb).toHaveBeenCalledTimes(1);
     const crumb = sentryMocks.addBreadcrumb.mock.calls[0][0];
     expect(crumb.category).toBe("torii-stream");
-    expect(crumb.message).toBe("torii-stream:subscription_update_succeeded");
-    expect(crumb.data).toMatchObject({
-      stream_type: "spatial",
-      request_id: "7",
-      area_key: "1:2",
-      duration_ms: 42,
-      signature_hash: "abc123",
-    });
+    expect(crumb.message).toBe("torii-stream:heartbeat_received");
+    expect(crumb.data).toEqual({ stream_type: "both" });
   });
 
-  it("reportToriiSubscriptionLifecycle captures update fallback with filterable tags", () => {
+  it("reportToriiSubscriptionLifecycle captures a stale shared heartbeat", () => {
     reportToriiSubscriptionLifecycle({
-      streamType: "spatial",
-      kind: "subscription_update",
-      outcome: "fallback",
-      requestId: 7,
+      streamType: "both",
+      kind: "heartbeat",
+      outcome: "stale",
       durationMs: 125.2,
-      areaKey: "1:2",
-      reason: "update failed",
     });
 
     expect(sentryMocks.captureMessage).toHaveBeenCalledTimes(1);
     const [message, opts] = sentryMocks.captureMessage.mock.calls[0];
-    expect(message).toContain("subscription_update");
+    expect(message).toContain("heartbeat");
     expect(opts.level).toBe("warning");
-    expect(opts.tags["network.stream_type"]).toBe("spatial");
-    expect(opts.tags["network.kind"]).toBe("subscription_update");
-    expect(opts.tags["network.outcome"]).toBe("fallback");
-    expect(opts.contexts.network).toMatchObject({
-      request_id: "7",
-      duration_ms: 125,
-      area_key: "1:2",
-      reason: "update failed",
-    });
-  });
-
-  it("reportToriiSubscriptionLifecycle redacts long hex values and truncates reasons", () => {
-    reportToriiSubscriptionLifecycle({
-      streamType: "spatial",
-      kind: "fallback_recreate",
-      outcome: "failed",
-      reason: `failed for 0x${"a".repeat(64)} ${"x".repeat(260)}`,
-    });
-
-    const [, opts] = sentryMocks.captureMessage.mock.calls[0];
-    const reason = opts.contexts.network.reason;
-    expect(reason).toContain("0x[redacted]");
-    expect(reason).not.toContain(`0x${"a".repeat(64)}`);
-    expect(reason.length).toBeLessThanOrEqual(180);
-  });
-
-  it("reportToriiReadinessTimeout captures spatial readiness failures", () => {
-    reportToriiReadinessTimeout({
-      streamType: "spatial",
-      requestId: 8,
-      timeoutMs: 8000,
-      elapsedMs: 8012.8,
-    });
-
-    expect(sentryMocks.captureMessage).toHaveBeenCalledTimes(1);
-    const [message, opts] = sentryMocks.captureMessage.mock.calls[0];
-    expect(message).toContain("readiness timed out");
-    expect(opts.tags["network.kind"]).toBe("readiness_timeout");
-    expect(opts.contexts.network.timeout_ms).toBe(8000);
-  });
-
-  it("groups spatial Torii lifecycle failures under the world-level Sentry fingerprint", () => {
-    reportToriiSubscriptionLifecycle({
-      streamType: "spatial",
-      kind: "fallback_recreate",
-      outcome: "failed",
-      reason: "recreate failed",
-    });
-    reportToriiReadinessTimeout({
-      streamType: "spatial",
-      requestId: 8,
-      timeoutMs: 8000,
-      elapsedMs: 8012.8,
-    });
-
-    expect(sentryMocks.captureMessage).toHaveBeenCalledTimes(2);
-    const [, lifecycleOpts] = sentryMocks.captureMessage.mock.calls[0];
-    const [, readinessOpts] = sentryMocks.captureMessage.mock.calls[1];
-    expect(lifecycleOpts.fingerprint).toEqual(["torii_spatial:spatial_lifecycle:spatial:eternum"]);
-    expect(readinessOpts.fingerprint).toEqual(lifecycleOpts.fingerprint);
-  });
-
-  it("reportToriiQueuePressure dedups by stream and queue bucket", () => {
-    reportToriiQueuePressure({ streamType: "spatial", queueSize: 550, batchSize: 25, threshold: 500 });
-    reportToriiQueuePressure({ streamType: "spatial", queueSize: 575, batchSize: 25, threshold: 500 });
-    reportToriiQueuePressure({ streamType: "spatial", queueSize: 1_250, batchSize: 25, threshold: 500 });
-
-    expect(sentryMocks.captureMessage).toHaveBeenCalledTimes(2);
-    const [, firstOpts] = sentryMocks.captureMessage.mock.calls[0];
-    expect(firstOpts.tags["network.kind"]).toBe("queue_pressure");
-    expect(firstOpts.tags["network.queue_bucket"]).toBe("500-999");
+    expect(opts.tags["network.stream_type"]).toBe("both");
+    expect(opts.tags["network.kind"]).toBe("heartbeat");
+    expect(opts.tags["network.outcome"]).toBe("stale");
+    expect(opts.contexts.network).toEqual({ duration_ms: 125 });
   });
 });

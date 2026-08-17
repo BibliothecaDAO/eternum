@@ -43,7 +43,7 @@ describe("worldmap army projection recovery", () => {
 
     expect(source).not.toContain("this.worldUpdateListener.Army.onTileUpdate");
     expect(source).not.toContain("this.worldUpdateListener.Army.onExplorerTroopsUpdate");
-    expect(source).not.toContain("armyLastTileSyncAt");
+    expect(source).not.toContain("armyLastProjectionSyncAt");
     expect(source).not.toContain("scheduleArmyRemoval");
   });
 

@@ -1,5 +1,6 @@
-import { GraphicsSettings, IS_FLAT_MODE } from "@/ui/config";
-import type { ToneMappingMode } from "postprocessing";
+import { IS_FLAT_MODE } from "@/ui/config";
+
+export type RendererToneMappingMode = "aces-filmic" | "cineon" | "linear" | "neutral" | "reinhard";
 
 export interface PostProcessingConfig {
   brightness: number;
@@ -7,7 +8,7 @@ export interface PostProcessingConfig {
   hue: number;
   saturation: number;
   toneMapping: {
-    mode: ToneMappingMode;
+    mode: RendererToneMappingMode;
     exposure: number;
     whitePoint: number;
   };
@@ -55,11 +56,6 @@ export const FOG_CONFIG = {
   far: 35,
 };
 
-export const POST_PROCESSING_CONFIG: Record<GraphicsSettings, PostProcessingConfig | null> = {
-  [GraphicsSettings.HIGH]: null,
-  [GraphicsSettings.MID]: null,
-  [GraphicsSettings.LOW]: null,
-  [GraphicsSettings.ULTRA_LOW]: null,
-};
+export const POST_PROCESSING_CONFIG: PostProcessingConfig | null = null;
 
 export const CAMERA_FAR_PLANE = IS_FLAT_MODE ? CAMERA_CONFIG.far.flat : CAMERA_CONFIG.far.default;

@@ -15,7 +15,6 @@ import { OVERLAY_SURFACE_BASE } from "@/ui/design-system/atoms/overlay-surface";
 import Button from "@/ui/design-system/atoms/button";
 import CircleButton from "@/ui/design-system/molecules/circle-button";
 import { MarketModal } from "@/ui/features/economy/trading";
-import { sqlApi } from "@/services/api";
 import {
   configManager,
   divideByPrecision,
@@ -25,13 +24,12 @@ import {
   getBalance,
   getBlockTimestamp,
   hasTileOccupier,
-  MAP_DATA_REFRESH_INTERVAL,
-  MapDataStore,
   isTileOccupierChest,
   isTileOccupierQuest,
   isTileOccupierReservedHyperstructure,
   isTileOccupierStructure,
 } from "@bibliothecadao/eternum";
+import { getActiveGameSyncRuntime } from "@bibliothecadao/eternum/game-sync";
 import { useDojo, useQuery } from "@bibliothecadao/react";
 import {
   BUILDINGS_CENTER,
@@ -43,7 +41,7 @@ import {
   TileOccupier,
   findResourceById,
 } from "@bibliothecadao/types";
-import { Component, getComponentValue, Metadata, Schema } from "@dojoengine/recs";
+import { getComponentValue } from "@dojoengine/recs";
 import { memo, ReactNode, useCallback, useEffect, useMemo, useState } from "react";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { SelectedWorldmapEntity } from "@/ui/features/world/components/actions/selected-worldmap-entity";
@@ -159,7 +157,7 @@ const PanelFrame = ({ title, children, headerAction, className, height }: PanelF
 const MapTilePanel = () => {
   const selectedHex = useUIStore((state) => state.selectedHex);
   const {
-    network: { contractComponents, toriiClient },
+    network: { toriiClient },
   } = useDojo();
   const { syncEntity, isSyncing } = useEntityResync();
 
@@ -232,7 +230,7 @@ const MapTilePanel = () => {
   const handleResyncCurrentEntity = useCallback(() => {
     if (!syncableEntityType || syncableEntityId === null) return;
 
-    if (!toriiClient || !contractComponents) {
+    if (!toriiClient) {
       toast.error("Unable to sync right now.");
       return;
     }
@@ -254,7 +252,6 @@ const MapTilePanel = () => {
 
           void debouncedGetEntitiesFromTorii(
             toriiClient,
-            contractComponents as unknown as Component<Schema, Metadata, undefined>[],
             [syncableEntityId],
             ENTITY_SYNC_MODEL_NAMES[syncableEntityType].map(gameModel),
             complete,
@@ -265,7 +262,7 @@ const MapTilePanel = () => {
           });
         }),
     });
-  }, [contractComponents, getEntitySyncKey, syncEntity, syncableEntityId, syncableEntityType, toriiClient]);
+  }, [getEntitySyncKey, syncEntity, syncableEntityId, syncableEntityType, toriiClient]);
 
   const headerAction =
     syncableEntityType && syncableEntityId !== null ? (
@@ -299,7 +296,7 @@ const LocalTilePanel = () => {
   const {
     setup,
     account,
-    network: { toriiClient, contractComponents },
+    network: { toriiClient },
   } = useDojo();
   const { syncEntity, isSyncing } = useEntityResync();
   const buildingComponent = setup.components.Building;
@@ -518,14 +515,12 @@ const LocalTilePanel = () => {
 
   const handleResyncStructure = useCallback(() => {
     if (!structureSyncTarget) return;
-    if (!toriiClient || !contractComponents) {
+    if (!toriiClient) {
       toast.error("Unable to sync right now.");
       return;
     }
 
     const { entityId, position } = structureSyncTarget;
-    const toriiComponents = contractComponents as unknown as Parameters<typeof getStructuresDataFromTorii>[1];
-
     void syncEntity({
       syncKey: `structure:${String(entityId)}`,
       entityLabel: "Structure",
@@ -540,16 +535,14 @@ const LocalTilePanel = () => {
             resolve();
           };
 
-          void getStructuresDataFromTorii(toriiClient, toriiComponents, [{ entityId, position }], complete).catch(
-            (error) => {
-              if (settled) return;
-              settled = true;
-              reject(error);
-            },
-          );
+          void getStructuresDataFromTorii(toriiClient, [{ entityId, position }], complete).catch((error) => {
+            if (settled) return;
+            settled = true;
+            reject(error);
+          });
         }),
     });
-  }, [contractComponents, structureSyncTarget, syncEntity, toriiClient]);
+  }, [structureSyncTarget, syncEntity, toriiClient]);
 
   const headerAction = structureSyncTarget ? (
     <button
@@ -969,45 +962,33 @@ const MinimapPanel = () => {
   const focusHex = activeRealmHex ?? cameraTargetHex;
   const focusSelectedHex = activeRealmHex ?? selectedHex;
 
-  // Tiles come from MapDataStore's tiles facet — the designated single
-  // SQL-aggregate layer — instead of a component-local fetchAllTiles poll.
-  // The store owns the ~60s cadence, retry/backoff and refresh callbacks;
-  // we only mirror its tiles into render state whenever it refreshes.
-  const mapDataStore = useMemo(() => MapDataStore.getInstance(MAP_DATA_REFRESH_INTERVAL, sqlApi), []);
-
   useEffect(() => {
-    let cancelled = false;
+    const projection = getActiveGameSyncRuntime()?.getWorldSpatialProjection();
+    if (!projection) {
+      console.error("[MinimapPanel] WorldSpatialProjection is unavailable for the active game");
+      setIsLoading(false);
+      return;
+    }
+
     const readTiles = () => {
-      if (cancelled) return;
       setTiles(
-        mapDataStore.getAllTiles().map((tile) =>
+        projection.getTiles().map((tile) =>
           normalizeMinimapTile({
-            col: tile.col,
-            row: tile.row,
+            col: tile.hexCoords.col,
+            row: tile.hexCoords.row,
             biome: tile.biome,
-            occupier_id: tile.occupier_id?.toString(),
-            occupier_type: tile.occupier_type,
-            occupier_is_structure: tile.occupier_is_structure,
+            occupier_id: tile.occupierId.toString(),
+            occupier_type: tile.occupierType,
+            occupier_is_structure: tile.occupierIsStructure,
           }),
         ),
       );
       setIsLoading(false);
     };
 
-    mapDataStore.onRefresh(readTiles);
-    // The minimap is the one always-mounted consumer that needs push
-    // freshness while the player idles, so it owns the store's built-in
-    // refresh loop (60s — same cadence the old component poll used).
-    mapDataStore.startAutoRefresh();
-    // Initial read: resolves immediately when the boot warmup already
-    // populated the store, otherwise triggers the first fetch.
-    void mapDataStore.waitForData().then(readTiles);
-    return () => {
-      cancelled = true;
-      mapDataStore.offRefresh(readTiles);
-      mapDataStore.stopAutoRefresh();
-    };
-  }, [mapDataStore]);
+    readTiles();
+    return projection.subscribeTiles(readTiles);
+  }, []);
 
   return (
     <PanelFrame title="Minimap" height={MINIMAP_SIZE}>

@@ -1,5 +1,5 @@
 import type { Camera, Object3D, Object3DEventMap } from "three";
-import { CSS2DRenderer } from "three-stdlib";
+import { CSS2DRenderer } from "three/addons/renderers/CSS2DRenderer.js";
 import { resolveLabelRenderDecision, resolveLabelRenderIntervalMs } from "./game-renderer-policy";
 
 export type RendererLabelCadenceView = "close" | "medium" | "far" | undefined;
@@ -75,7 +75,7 @@ class GameRendererLabelRuntime implements RendererLabelRuntime {
     const labelRendererElement = await waitForRendererLabelElement({
       getElementById: (id) => document.getElementById(id) as HTMLDivElement | null,
       isDisposed: () => this.isDisposed,
-      requestAnimationFrame,
+      requestAnimationFrame: (callback) => window.requestAnimationFrame(callback),
     });
     if (this.isDisposed) {
       return;

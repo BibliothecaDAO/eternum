@@ -46,11 +46,20 @@ interface ConnectionHealthMonitorConfig {
   minReconnectCooldownMs?: number;
   maxReconnectCooldownMs?: number;
   /**
-   * Proactively re-subscribe streams after this long with no activity, to dodge
-   * proxy idle / MAX_CONNECTION_AGE reaps in quiet worlds. Omit/0 to disable.
+   * Last-resort refresh cadence for deployments without indexer heartbeat.
+   * Omit/0 to disable.
    */
   quietStreamRefreshMs?: number;
 }
+
+export type ConnectionRecoveryRequest =
+  | { kind: "force_retry" }
+  | { kind: "visibility_resume" }
+  | { kind: "online_event" }
+  | { kind: "heartbeat_stale" }
+  | { kind: "quiet_stream_fallback" }
+  | { kind: "health_probe_failure"; reason: ToriiHealthUnreachableReason }
+  | { kind: "stream_close"; stream: "entity" | "event"; reason: string };
 
 interface ConnectionHealthToriiInput {
   activeWorld?: { toriiBaseUrl?: string | null } | null;
@@ -63,8 +72,22 @@ interface ToriiHeartbeatClient {
 }
 
 let activeMonitor: ConnectionHealthMonitor | null = null;
+let pendingRecoveryRequest: ConnectionRecoveryRequest | null = null;
 
 export const getConnectionHealthMonitor = (): ConnectionHealthMonitor | null => activeMonitor;
+
+export const requestConnectionRecovery = (request: ConnectionRecoveryRequest): void => {
+  if (activeMonitor) {
+    void activeMonitor.requestRecovery(request);
+    return;
+  }
+
+  pendingRecoveryRequest = request;
+  if (request.kind === "stream_close") {
+    useConnectionStore.getState().recordStreamClose();
+  }
+  console.warn("[ConnectionHealthMonitor] recovery requested before the monitor was active", request);
+};
 
 const GRPC_STATUS_UNIMPLEMENTED = "12";
 
@@ -195,6 +218,11 @@ export class ConnectionHealthMonitor {
     });
     this.startHealthCheckLoop();
     this.startHeartbeatWatchdog();
+    if (pendingRecoveryRequest) {
+      const request = pendingRecoveryRequest;
+      pendingRecoveryRequest = null;
+      void this.requestRecovery(request);
+    }
   }
 
   stop(): void {
@@ -216,11 +244,36 @@ export class ConnectionHealthMonitor {
 
   /** Bypasses the reconnect cooldown and boot grace — used by the UI retry button. */
   async forceReconnect(): Promise<void> {
+    await this.requestRecovery({ kind: "force_retry" });
+  }
+
+  async requestRecovery(request: ConnectionRecoveryRequest): Promise<void> {
     if (this.disposed) return;
-    this.lastStreamReconnectAtMs = Date.now();
-    this.hasObservedHealthyStreams = true;
-    this.consecutiveTransientHealthFailures = 0;
-    await this.reconnectStaleStreams(true, true);
+
+    console.info("[ConnectionHealthMonitor] recovery requested", request);
+    if (request.kind === "quiet_stream_fallback") {
+      await this.silentRefreshStreams();
+      return;
+    }
+
+    const store = useConnectionStore.getState();
+    if (request.kind === "stream_close") {
+      store.recordStreamClose();
+      store.setSpatialStatus("stale");
+      store.setGlobalStatus("stale");
+    }
+    if (["force_retry", "visibility_resume", "online_event", "stream_close"].includes(request.kind)) {
+      this.lastStreamReconnectAtMs = Date.now();
+      this.hasObservedHealthyStreams = true;
+    }
+    if (request.kind === "force_retry") {
+      this.consecutiveTransientHealthFailures = 0;
+    }
+
+    await this.reconnectStaleStreams(true, true, {
+      attemptAlreadyCounted: request.kind === "health_probe_failure",
+      deadEndReason: request.kind === "health_probe_failure" ? request.reason : undefined,
+    });
   }
 
   /** Test-only: skip the boot grace period so tests can exercise steady-state staleness. */
@@ -238,7 +291,7 @@ export class ConnectionHealthMonitor {
     const store = useConnectionStore.getState();
 
     if (this.isHeartbeatStale(store)) {
-      void this.reconnectStaleStreams(true, true);
+      void this.requestRecovery({ kind: "visibility_resume" });
     }
   };
 
@@ -247,7 +300,7 @@ export class ConnectionHealthMonitor {
     useConnectionStore.getState().recordOnline();
     if (!this.hasObservedHealthyStreams) return;
 
-    void this.reconnectStaleStreams(true, true);
+    void this.requestRecovery({ kind: "online_event" });
   };
 
   // A local network drop: record it so a subsequent outage is classified LOCAL.
@@ -278,7 +331,7 @@ export class ConnectionHealthMonitor {
     }
   }
 
-  // --- Heartbeat watchdog (fast detection) + proactive quiet-stream refresh ---
+  // --- Heartbeat watchdog + heartbeat-unavailable fallback ---
 
   private startHeartbeatWatchdog(): void {
     if (this.heartbeatWatchdogIntervalMs === null || this.heartbeatWatchdogIntervalMs <= 0) return;
@@ -303,7 +356,7 @@ export class ConnectionHealthMonitor {
     // Catch a silently-dropped stream within a watchdog tick rather than waiting
     // for the next (slower) HTTP probe. Reuses the cooldown-gated reconnect path.
     this.reconnectSilentStreamsAfterCooldown(store);
-    // Keep quiet streams under proxy idle / max-age limits.
+    // Cancel-only streams need a fallback where SubscribeIndexer is unavailable.
     void this.maybeProactivelyRefreshQuietStreams();
   }
 
@@ -311,6 +364,7 @@ export class ConnectionHealthMonitor {
     if (this.quietStreamRefreshMs <= 0 || this.reconnecting) return;
 
     const store = useConnectionStore.getState();
+    if (store.toriiHeartbeatAvailable) return;
     // Only refresh a healthy, quiet connection; a real outage uses the normal path.
     if (store.status !== "connected") return;
 
@@ -326,7 +380,7 @@ export class ConnectionHealthMonitor {
 
     this.lastProactiveRefreshAtMs = now;
     this.lastStreamReconnectAtMs = now;
-    await this.silentRefreshStreams();
+    await this.requestRecovery({ kind: "quiet_stream_fallback" });
   }
 
   // Re-open the streams WITHOUT flipping connection status: a proactive refresh
@@ -457,7 +511,7 @@ export class ConnectionHealthMonitor {
       durationMs: now - store.lastToriiHeartbeat,
     });
     this.lastStreamReconnectAtMs = now;
-    void this.reconnectStaleStreams(true, true);
+    void this.requestRecovery({ kind: "heartbeat_stale" });
   }
 
   private reconnectAfterFailedHealthCheck(reason: ToriiHealthUnreachableReason): void {
@@ -473,7 +527,7 @@ export class ConnectionHealthMonitor {
     this.reportDeadEndIfNeeded(reason);
 
     this.lastStreamReconnectAtMs = now;
-    void this.reconnectStaleStreams(true, true, { attemptAlreadyCounted: true, deadEndReason: reason });
+    void this.requestRecovery({ kind: "health_probe_failure", reason });
   }
 
   private isHeartbeatStale(store: ReturnType<typeof useConnectionStore.getState>): boolean {

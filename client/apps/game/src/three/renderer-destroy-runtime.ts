@@ -8,6 +8,7 @@ import type { RendererEffectsBridgeRuntime } from "./renderer-effects-bridge-run
 import type { RendererRouteRuntime } from "./renderer-route-runtime";
 import { disposeContactShadowResources } from "./utils/contact-shadow";
 import { clearBiomeGltfCache } from "./utils/biome-gltf-cache";
+import { clearCosmeticAssetCache } from "./cosmetics/asset-cache";
 import { destroyTrackedGuiFolders, type TrackableGuiFolder } from "./utils/gui-folder-lifecycle";
 
 type Destroyable = {
@@ -45,6 +46,7 @@ export function destroyRendererRuntime(input: DestroyRendererRuntimeInput): void
   // clear the parse cache so a re-created renderer re-parses fresh assets rather than
   // reusing the now-disposed GLTFs.
   clearBiomeGltfCache();
+  clearCosmeticAssetCache();
   disposeRendererInteraction(input.interactionRuntime, input.controls);
   destroyRendererTransitionManager(input.transitionManager);
   destroyTrackedGuiFolders(input.guiFolders);

@@ -7,7 +7,7 @@ import { fileURLToPath } from "node:url";
 const DEFAULT_BASE_URL = "https://127.0.0.1:4173";
 const DEFAULT_CHAIN = "slot";
 const DEFAULT_ITERATIONS = 5;
-const DEFAULT_RENDERER_MODES = ["legacy-webgl", "experimental-webgpu-auto"];
+const DEFAULT_RENDERER_MODES = ["webgpu-force-webgl", "webgpu-auto"];
 const DEFAULT_SCENE = "map";
 const DEFAULT_TIMEOUT_MS = 30_000;
 const DEFAULT_WORLD_NAME = "eternum-blitz-slot-4";
@@ -19,8 +19,7 @@ const METRIC_NAMES = [
   "rendererBackendAwaitMs",
   "webgpuModuleImportMs",
   "webgpuRendererInitMs",
-  "experimentalBackendTotalMs",
-  "fallbackMs",
+  "backendTotalMs",
 ];
 
 export function buildRendererLoadBenchmarkUrl({
@@ -50,8 +49,7 @@ export function deriveRendererLoadRunMetrics({ diagnostics, durations, elapsedMs
 
   return {
     entryReadyMs: entryReady?.elapsedMs ?? null,
-    experimentalBackendTotalMs: readTiming(startupTimings, "experimental-backend-total"),
-    fallbackMs: readTiming(startupTimings, "legacy-fallback-total"),
+    backendTotalMs: readTiming(startupTimings, "webgpu-backend-total"),
     rendererBackendAwaitMs: readDuration(durations, "renderer-init-backend-await"),
     rendererInitMs,
     rendererStalledAfterStartMs: rendererStarted
@@ -102,14 +100,14 @@ export function evaluateRendererLoadBenchmarkSummary(summary, options = {}) {
     }
 
     if (
-      result.rendererMode === "experimental-webgpu-auto" &&
+      result.rendererMode === "webgpu-auto" &&
       !hasRendererCompletedOrFallback(result) &&
       result.metrics?.rendererStalledAfterStartMs > rendererStallThresholdMs
     ) {
       failures.push(formatRunFailure(result, "stalled after renderer-init-started without completion or fallback"));
     }
 
-    if (hasExperimentalFallback(result)) {
+    if (hasWebGpuFallback(result)) {
       if (!result.diagnostics?.fallbackReason) {
         failures.push(formatRunFailure(result, "fallback happened without a fallback reason"));
       } else {
@@ -190,19 +188,18 @@ function isFiniteNumber(value) {
 }
 
 function hasRendererCompletedOrFallback(result) {
-  return isFiniteNumber(result.metrics?.rendererInitMs) || hasExperimentalFallback(result);
+  return isFiniteNumber(result.metrics?.rendererInitMs) || hasWebGpuFallback(result);
 }
 
-function hasExperimentalFallback(result) {
+function hasWebGpuFallback(result) {
   const diagnostics = result.diagnostics;
   return Boolean(
-    result.rendererMode !== "legacy-webgl" &&
-    (isFiniteNumber(result.metrics?.fallbackMs) ||
-      diagnostics?.fallbackReason ||
+    result.rendererMode !== "webgpu-force-webgl" &&
+    (diagnostics?.fallbackReason ||
       diagnostics?.fallbacks > 0 ||
       (diagnostics?.requestedMode &&
-        diagnostics.requestedMode !== "legacy-webgl" &&
-        diagnostics.activeMode === "legacy-webgl")),
+        diagnostics.requestedMode !== "webgpu-force-webgl" &&
+        diagnostics.activeMode === "webgl2-fallback")),
   );
 }
 

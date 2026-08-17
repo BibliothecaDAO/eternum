@@ -3,7 +3,8 @@ import { UNDEFINED_STRUCTURE_ENTITY_ID } from "@/ui/constants";
 import { countAvailableRelics } from "@/ui/features/relics/utils/count-available-relics";
 import type { IncomingTroopArrival } from "@bibliothecadao/eternum";
 import { PlayerRelicsData } from "@bibliothecadao/torii";
-import { ID, RelicRecipientType, Structure, StructureType } from "@bibliothecadao/types";
+import { ID, Structure, StructureType } from "@bibliothecadao/types";
+import { isExplicitSpectateSession, overrideSpectateIntent } from "@/utils/spectator-session";
 
 const idsMatch = (left: unknown, right: unknown) => String(left) === String(right);
 
@@ -36,32 +37,6 @@ const resolvePreferredControlledStructureId = (playerStructures: Structure[]): I
   return firstRealm?.entityId ?? playerStructures[0]?.entityId ?? UNDEFINED_STRUCTURE_ENTITY_ID;
 };
 
-const removeRelicFromCollection = <T extends { entityId: unknown; relics?: Array<{ resourceId: unknown }> }>(
-  collection: T[],
-  targetEntityId: ID,
-  targetResourceId: ID,
-): T[] => {
-  return collection.reduce<T[]>((acc, entity) => {
-    if (!idsMatch(entity.entityId, targetEntityId)) {
-      acc.push(entity);
-      return acc;
-    }
-
-    const filteredRelics = (entity.relics ?? []).filter((relic) => !idsMatch(relic.resourceId, targetResourceId));
-
-    if (filteredRelics.length === 0) {
-      return acc;
-    }
-
-    acc.push({
-      ...entity,
-      relics: filteredRelics,
-    });
-
-    return acc;
-  }, [] as T[]);
-};
-
 export interface RealmStore {
   structureEntityId: ID;
   lastControlledStructureEntityId: ID;
@@ -89,7 +64,6 @@ export interface RealmStore {
   setPlayerRelicsLoading: (loading: boolean) => void;
   relicsRefreshNonce: number;
   triggerRelicsRefresh: () => void;
-  removeRelicFromEntity: (params: { entityId: ID; resourceId: ID; recipientType: RelicRecipientType }) => void;
 }
 
 export const createRealmStoreSlice = (
@@ -116,9 +90,11 @@ export const createRealmStoreSlice = (
       // if the caller passed spectator: true. worldmap.tsx forwards the stale
       // isSpectating flag when a hex is clicked, which would otherwise keep
       // the SPECTATING badge on after the player mid-sessions settles their
-      // first realm.
-      const requestedSpectate = options?.spectator ?? !ownsStructure;
-      const shouldSpectate = ownsStructure ? false : requestedSpectate;
+      // first realm. Exception: an explicit ?spectate=true session stays a
+      // spectator even when the logged-in account owns structures here.
+      const explicitSpectate = isExplicitSpectateSession();
+      const requestedSpectate = options?.spectator ?? (explicitSpectate || !ownsStructure);
+      const shouldSpectate = ownsStructure && !explicitSpectate ? false : requestedSpectate;
       const currentStructureIsOwned = state.playerStructures.some((structure) =>
         idsMatch(structure.entityId, state.structureEntityId),
       );
@@ -162,6 +138,9 @@ export const createRealmStoreSlice = (
     }),
   exitSpectatorMode: () =>
     set((state: RealmStore) => {
+      // A deliberate exit clears the latched session intent too, or the
+      // spectator chokepoints would keep suppressing ownership chrome.
+      overrideSpectateIntent(false);
       const fallback =
         state.lastControlledStructureEntityId !== UNDEFINED_STRUCTURE_ENTITY_ID
           ? state.lastControlledStructureEntityId
@@ -188,6 +167,7 @@ export const createRealmStoreSlice = (
 
       const shouldRecoverFromStartupSpectator =
         state.isSpectating &&
+        !isExplicitSpectateSession() &&
         state.lastControlledStructureEntityId === UNDEFINED_STRUCTURE_ENTITY_ID &&
         !currentStructureIsOwned &&
         playerStructures.length > 0;
@@ -203,7 +183,7 @@ export const createRealmStoreSlice = (
       // Mid-session settle: the player started as a spectator and has just
       // acquired the very structure they were viewing. Drop the stale flag so
       // the HUD chrome (structure list, action buttons) reappears.
-      if (state.isSpectating && currentStructureIsOwned) {
+      if (state.isSpectating && currentStructureIsOwned && !isExplicitSpectateSession()) {
         updates.isSpectating = false;
         if (state.lastControlledStructureEntityId === UNDEFINED_STRUCTURE_ENTITY_ID) {
           updates.lastControlledStructureEntityId = state.structureEntityId;
@@ -241,42 +221,4 @@ export const createRealmStoreSlice = (
   setPlayerRelicsLoading: (loading: boolean) => set({ playerRelicsLoading: loading }),
   relicsRefreshNonce: 0,
   triggerRelicsRefresh: () => set((state: RealmStore) => ({ relicsRefreshNonce: state.relicsRefreshNonce + 1 })),
-  removeRelicFromEntity: ({
-    entityId,
-    resourceId,
-    recipientType,
-  }: {
-    entityId: ID;
-    resourceId: ID;
-    recipientType: RelicRecipientType;
-  }) =>
-    set((state: RealmStore) => {
-      if (!state.playerRelics) {
-        return {};
-      }
-
-      if (recipientType === RelicRecipientType.Structure) {
-        const updatedStructures = removeRelicFromCollection(state.playerRelics.structures ?? [], entityId, resourceId);
-        const updatedPlayerRelics: PlayerRelicsData = {
-          ...state.playerRelics,
-          structures: updatedStructures,
-        };
-
-        return {
-          playerRelics: updatedPlayerRelics,
-          availableRelicsNumber: countAvailableRelics(updatedPlayerRelics),
-        };
-      }
-
-      const updatedArmies = removeRelicFromCollection(state.playerRelics.armies ?? [], entityId, resourceId);
-      const updatedPlayerRelics: PlayerRelicsData = {
-        ...state.playerRelics,
-        armies: updatedArmies,
-      };
-
-      return {
-        playerRelics: updatedPlayerRelics,
-        availableRelicsNumber: countAvailableRelics(updatedPlayerRelics),
-      };
-    }),
 });

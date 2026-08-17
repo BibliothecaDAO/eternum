@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { resetRendererDiagnostics } from "./renderer-diagnostics";
 import { createRendererBackendCapabilities } from "./renderer-backend-v2";
 
-const initializeSelectedRendererBackendMock = vi.fn();
+const createWebGPURendererBackendMock = vi.fn();
 
 vi.mock("@bibliothecadao/eternum", () => {
   const scalar = new Proxy(
@@ -64,12 +64,10 @@ vi.mock("../../env", () => ({
   env: {
     VITE_PUBLIC_ENABLE_MEMORY_MONITORING: false,
     VITE_PUBLIC_GRAPHICS_DEV: false,
-    VITE_PUBLIC_RENDERER_BUILD_MODE: "experimental-webgpu-auto",
+    VITE_PUBLIC_RENDERER_BUILD_MODE: "webgpu-auto",
   },
 }));
-vi.mock("./renderer-backend-loader", () => ({
-  initializeSelectedRendererBackend: initializeSelectedRendererBackendMock,
-}));
+vi.mock("./webgpu-renderer-backend", () => ({ createWebGPURendererBackend: createWebGPURendererBackendMock }));
 vi.mock("@/three/scenes/hexagon-scene", () => ({
   HexagonScene: class MockHexagonScene {},
   CameraView: {
@@ -109,6 +107,10 @@ function createFakeBackend() {
       memory: { geometries: 0, textures: 0 },
       reset: vi.fn(),
     },
+    extensions: {
+      get: vi.fn(() => undefined),
+      has: vi.fn(() => false),
+    },
     render: vi.fn(),
     setPixelRatio: vi.fn(),
     setSize: vi.fn(),
@@ -131,14 +133,14 @@ function createFakeBackend() {
     }),
     renderer,
     initialize: vi.fn(async () => ({
-      activeMode: "legacy-webgl",
-      buildMode: "legacy-webgl",
+      activeMode: "webgl2-fallback",
+      buildMode: "webgpu-force-webgl",
       fallbackReason: null,
       initTimeMs: 0,
-      requestedMode: "legacy-webgl",
+      requestedMode: "webgpu-force-webgl",
     })),
     resize: vi.fn(),
-    applyQuality: vi.fn(),
+    applyRenderVisuals: vi.fn(),
     applyPostProcessPlan: vi.fn(() => ({
       setColorGrade: vi.fn(),
       setVignette: vi.fn(),
@@ -153,14 +155,13 @@ describe("GameRenderer backend seam", () => {
   beforeEach(() => {
     document.body.innerHTML = "";
     vi.restoreAllMocks();
-    initializeSelectedRendererBackendMock.mockReset();
+    createWebGPURendererBackendMock.mockReset();
     resetRendererDiagnostics();
   });
 
   it("initializes renderer state from a backend factory", async () => {
     const backend = createFakeBackend();
     const subject = Object.create(GameRenderer.prototype) as any;
-    subject.graphicsSetting = "HIGH";
     subject.isMobileDevice = false;
     subject.getTargetPixelRatio = vi.fn(() => 1);
 
@@ -170,28 +171,29 @@ describe("GameRenderer backend seam", () => {
     expect(subject.renderer).toBe(backend.renderer);
   });
 
-  it("routes experimental env boot through the selected-backend loader", async () => {
+  it("boots the configured WebGPU renderer through the shared runtime", async () => {
     const backend = createFakeBackend();
-    const diagnostics = {
+    backend.initialize.mockResolvedValue({
       activeMode: "webgpu",
-      buildMode: "experimental-webgpu-auto",
+      buildMode: "webgpu-auto",
       fallbackReason: null,
       initTimeMs: 4,
-      requestedMode: "experimental-webgpu-auto",
-    } as const;
+      requestedMode: "webgpu-auto",
+    });
     const subject = Object.create(GameRenderer.prototype) as any;
-    subject.graphicsSetting = "HIGH";
     subject.isMobileDevice = false;
     subject.getTargetPixelRatio = vi.fn(() => 1);
 
-    initializeSelectedRendererBackendMock.mockResolvedValue({
-      backend,
-      diagnostics,
-    });
+    createWebGPURendererBackendMock.mockReturnValue(backend);
 
     await subject.initializeRendererBackend();
 
-    expect(initializeSelectedRendererBackendMock).toHaveBeenCalledTimes(1);
+    expect(createWebGPURendererBackendMock).toHaveBeenCalledWith({
+      isMobileDevice: false,
+      onDeviceLost: expect.any(Function),
+      pixelRatio: 1,
+      requestedMode: "webgpu-auto",
+    });
     expect(subject.backend).toBe(backend);
     expect(subject.renderer).toBe(backend.renderer);
   });
@@ -296,7 +298,7 @@ describe("GameRenderer backend seam", () => {
     expect(requestAnimationFrameSpy).toHaveBeenCalled();
   });
 
-  it("falls back to a legacy backend and reconnects the live renderer surface after webgpu device loss", async () => {
+  it("reconnects the live renderer surface to the maintained WebGL2 backend after WebGPU device loss", async () => {
     const previousBackend = createFakeBackend();
     const fallbackBackend = createFakeBackend();
     previousBackend.renderer.domElement.id = "main-canvas";
@@ -309,10 +311,9 @@ describe("GameRenderer backend seam", () => {
     };
     const effectsBridge = {
       applyEnvironment: vi.fn(),
-      applyQualityFeatures: vi.fn(),
+      applyRenderVisualProfile: vi.fn(),
       dispose: vi.fn(),
       setupPostProcessingEffects: vi.fn(),
-      subscribeToQualityController: vi.fn(),
       updateWeatherPostProcessing: vi.fn(),
     };
     const monitoringRuntime = { dispose: vi.fn(), initialize: vi.fn() };
@@ -321,7 +322,6 @@ describe("GameRenderer backend seam", () => {
     subject.backend = previousBackend;
     subject.renderer = previousBackend.renderer;
     subject.controls = controls;
-    subject.graphicsSetting = "HIGH";
     subject.isMobileDevice = false;
     subject.isDestroyed = false;
     subject.getTargetPixelRatio = vi.fn(() => 1);
@@ -337,9 +337,9 @@ describe("GameRenderer backend seam", () => {
       onWindowResize: vi.fn(),
     };
     subject.sceneManager = {};
-    subject.worldmapScene = { setInputSurface: vi.fn(), applyQualityFeatures: vi.fn() };
-    subject.fastTravelScene = { setInputSurface: vi.fn(), applyQualityFeatures: vi.fn() };
-    subject.hexceptionScene = { setInputSurface: vi.fn(), applyQualityFeatures: vi.fn() };
+    subject.worldmapScene = { setInputSurface: vi.fn(), applyRenderVisualProfile: vi.fn() };
+    subject.fastTravelScene = { setInputSurface: vi.fn(), applyRenderVisualProfile: vi.fn() };
+    subject.hexceptionScene = { setInputSurface: vi.fn(), applyRenderVisualProfile: vi.fn() };
     subject.sessionRuntime = {
       initializeMonitoring: vi.fn(),
     };
@@ -370,8 +370,7 @@ describe("GameRenderer backend seam", () => {
     expect(subject.sessionRuntime.initializeMonitoring).toHaveBeenCalledTimes(1);
     expect(effectsBridge.applyEnvironment).toHaveBeenCalledTimes(1);
     expect(effectsBridge.setupPostProcessingEffects).toHaveBeenCalledTimes(1);
-    expect(effectsBridge.applyQualityFeatures).toHaveBeenCalledTimes(1);
-    expect(effectsBridge.subscribeToQualityController).toHaveBeenCalledTimes(1);
+    expect(effectsBridge.applyRenderVisualProfile).toHaveBeenCalledTimes(1);
     expect(effectsBridge.updateWeatherPostProcessing).toHaveBeenCalledTimes(1);
     expect(previousBackend.dispose).toHaveBeenCalledTimes(1);
     expect(fallbackBackend.resize).toHaveBeenCalledTimes(1);

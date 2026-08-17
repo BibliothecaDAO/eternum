@@ -78,7 +78,7 @@ describe("worldmap hover label wiring", () => {
       "private commitCurrentChunkAuthority(",
     );
 
-    const refreshPos = refreshWarpTravelScene.indexOf("await this.updateVisibleChunks(true)");
+    const refreshPos = refreshWarpTravelScene.indexOf("await completeWorldmapInteractiveRefresh({");
     const reconcilePos = refreshWarpTravelScene.indexOf('this.reconcileHoverLabels("initial_refresh")');
 
     expect(refreshPos).toBeGreaterThan(-1);

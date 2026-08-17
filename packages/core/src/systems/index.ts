@@ -1,6 +1,5 @@
 export * from "./army-movement-latency-summary";
 export * from "./army-movement-latency-trace";
-export * from "./army-stamina-source";
 export * from "./position";
 export * from "./story-event-formatter";
 export * from "./types";

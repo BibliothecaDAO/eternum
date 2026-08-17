@@ -22,6 +22,7 @@ import {
   fetchWithErrorHandling,
   formatAddressForQuery,
   getSqlGameScope,
+  type SqlGameScope,
 } from "../../utils/sql";
 import { LEADERBOARD_QUERIES } from "./leaderboard";
 
@@ -105,6 +106,8 @@ export interface FetchLeaderboardSourceDataOptions {
   cacheBaseUrl?: string;
   effectiveLimit: number;
   defaultHyperstructureRadius: number;
+  /** Pin the queries to a specific world/game instead of the ambient scope. */
+  scope?: SqlGameScope;
 }
 
 interface LeaderboardCacheResponse {
@@ -144,10 +147,13 @@ export const fetchLeaderboardSourceData = async ({
   baseUrl,
   cacheBaseUrl,
   effectiveLimit,
+  scope,
 }: FetchLeaderboardSourceDataOptions): Promise<LeaderboardSourceData> => {
   const cacheBase = cacheBaseUrl?.trim();
 
-  if (cacheBase) {
+  // The cache server aggregates the legacy global leaderboard; scoped
+  // (per-game s2) reads must always go straight to that world's torii.
+  if (cacheBase && !scope) {
     try {
       const cacheUrl = buildCacheUrl(cacheBase, "/api/cache/leaderboard");
       cacheUrl.searchParams.set("limit", effectiveLimit > 0 ? effectiveLimit.toString() : "0");
@@ -176,24 +182,25 @@ export const fetchLeaderboardSourceData = async ({
   const [registeredRows, hyperstructureShareholderRows, hyperstructureRows, hyperstructureConfigRows] =
     await Promise.all([
       fetchWithErrorHandling<RawPlayerLeaderboardRow>(
-        buildApiUrl(baseUrl, leaderboardQuery),
+        buildApiUrl(baseUrl, leaderboardQuery, scope),
         "Failed to fetch player leaderboard",
       ),
       fetchWithErrorHandling<HyperstructureShareholderRow>(
-        buildApiUrl(baseUrl, LEADERBOARD_QUERIES.HYPERSTRUCTURE_SHAREHOLDERS),
+        buildApiUrl(baseUrl, LEADERBOARD_QUERIES.HYPERSTRUCTURE_SHAREHOLDERS, scope),
         "Failed to fetch hyperstructure shareholders",
       ),
       fetchWithErrorHandling<HyperstructureRow>(
-        buildApiUrl(baseUrl, LEADERBOARD_QUERIES.HYPERSTRUCTURES_WITH_MULTIPLIER),
+        buildApiUrl(baseUrl, LEADERBOARD_QUERIES.HYPERSTRUCTURES_WITH_MULTIPLIER, scope),
         "Failed to fetch hyperstructure multipliers",
       ),
       fetchWithErrorHandling<HyperstructureLeaderboardConfigRow>(
         buildApiUrl(
           baseUrl,
           // s2 splits the row across GameRegistry/PresetConfig/WorldConfig.
-          getSqlGameScope().gameId > 0
+          (scope ?? getSqlGameScope()).gameId > 0
             ? LEADERBOARD_QUERIES.HYPERSTRUCTURE_LEADERBOARD_CONFIG_S2
             : LEADERBOARD_QUERIES.HYPERSTRUCTURE_LEADERBOARD_CONFIG,
+          scope,
         ),
         "Failed to fetch hyperstructure leaderboard config",
       ),
@@ -210,11 +217,13 @@ export const fetchLeaderboardSourceData = async ({
 export interface FetchRegisteredLeaderboardRowOptions {
   baseUrl: string;
   playerAddress: string;
+  scope?: SqlGameScope;
 }
 
 export const fetchRegisteredLeaderboardRow = async ({
   baseUrl,
   playerAddress,
+  scope,
 }: FetchRegisteredLeaderboardRowOptions): Promise<RawPlayerLeaderboardRow | null> => {
   const trimmed = playerAddress.trim().toLowerCase();
   if (!trimmed) {
@@ -236,7 +245,7 @@ export const fetchRegisteredLeaderboardRow = async ({
   const query = LEADERBOARD_QUERIES.PLAYER_LEADERBOARD_BY_ADDRESS.replace("{playerAddress}", canonicalAddress);
 
   const results = await fetchWithErrorHandling<RawPlayerLeaderboardRow>(
-    buildApiUrl(baseUrl, query),
+    buildApiUrl(baseUrl, query, scope),
     "Failed to fetch player leaderboard entry",
   );
 

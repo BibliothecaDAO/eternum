@@ -129,6 +129,57 @@ const waitForWorldEntryTransactionConfirmation = async ({
   });
 };
 
+const ensureFeeTokenBalance = async ({
+  accountAddress,
+  chain,
+  feeAmount,
+  feeTokenAddress,
+  worldName,
+}: {
+  accountAddress: string;
+  chain: Chain;
+  feeAmount: bigint;
+  feeTokenAddress: string;
+  worldName: string;
+}): Promise<void> => {
+  const rpcProvider = getCachedRpcProvider(getRpcUrlForChain(chain));
+  const currentBalance = await fetchTokenBalance(rpcProvider, feeTokenAddress, accountAddress);
+  if (currentBalance >= feeAmount) return;
+
+  const masterAccount = createMasterAccount(rpcProvider);
+  if (!masterAccount) {
+    throw new Error("Fee token balance is insufficient and no development top-up account is configured.");
+  }
+
+  const shortfall = feeAmount - currentBalance;
+  const amount = uint256.bnToUint256(shortfall);
+  await executeObservedClientTransaction({
+    account: masterAccount,
+    calls: {
+      contractAddress: feeTokenAddress,
+      entrypoint: "transfer",
+      calldata: CallData.compile([accountAddress, amount.low, amount.high]),
+    },
+    surface: "registration",
+    operation: "fee_token.transfer_top_up",
+    chain,
+    worldName,
+    confirm: async (txHash, observedAccount) => {
+      await waitForWorldEntryTransactionConfirmation({
+        txHash,
+        chain,
+        label: "fee_token.transfer_top_up",
+        account: observedAccount as Account,
+      });
+    },
+  });
+
+  const confirmedBalance = await fetchTokenBalance(rpcProvider, feeTokenAddress, accountAddress);
+  if (confirmedBalance < feeAmount) {
+    throw new Error("Fee token top-up confirmed, but the required balance is not available.");
+  }
+};
+
 export const useWorldRegistration = ({
   worldName,
   chain,
@@ -319,35 +370,13 @@ export const useWorldRegistration = ({
         const blitzSystemsAddress = getWorldSystemAddress(contracts, "blitz_realm_systems");
         const isNonMainnet = chain !== "mainnet";
         if (isNonMainnet && feeAmount > 0n && config?.feeTokenAddress) {
-          const rpcUrl = getRpcUrlForChain(chain);
-          const rpcProvider = getCachedRpcProvider(rpcUrl);
-          const currentBalance = await fetchTokenBalance(rpcProvider, config.feeTokenAddress, address!);
-
-          if (currentBalance < feeAmount) {
-            const masterAccount = createMasterAccount(rpcProvider);
-            if (masterAccount) {
-              const shortfall = feeAmount - currentBalance;
-              const amount = uint256.bnToUint256(shortfall);
-              try {
-                await executeObservedClientTransaction({
-                  account: masterAccount,
-                  calls: {
-                    contractAddress: config.feeTokenAddress,
-                    entrypoint: "transfer",
-                    calldata: CallData.compile([address!, amount.low, amount.high]),
-                  },
-                  surface: "registration",
-                  operation: "fee_token.transfer_top_up",
-                  chain,
-                  worldName,
-                  waitForConfirmation: false,
-                });
-                await new Promise((resolve) => setTimeout(resolve, 2000));
-              } catch (topUpError) {
-                console.error("Auto top-up failed:", topUpError);
-              }
-            }
-          }
+          await ensureFeeTokenBalance({
+            accountAddress: address!,
+            chain,
+            feeAmount,
+            feeTokenAddress: config.feeTokenAddress,
+            worldName,
+          });
         }
 
         setEntryStage("settling");

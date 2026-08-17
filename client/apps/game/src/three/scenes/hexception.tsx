@@ -1,5 +1,6 @@
 import { AudioManager } from "@/audio/core/AudioManager";
 import { getCurrentPlayRouteBootToken, usePlayRouteReadinessStore } from "@/game-entry/play-route-readiness-store";
+import { VERBOSE_LOGS_ENABLED } from "@/utils/dev-mode";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { resolveStoredLocalCameraDistance, useCameraZoomStore } from "@/hooks/store/use-camera-zoom-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
@@ -39,19 +40,9 @@ import { LeftView } from "@/types";
 import { BuildingSystemUpdate, Position, StructureProgress, getBlockTimestamp } from "@bibliothecadao/eternum";
 
 import { HexceptionAmbienceSystem } from "@/three/systems/hexception-ambience-system";
-import type { QualityLevel } from "@/three/systems/hexception-ambience-system";
-import { GRAPHICS_SETTING, IS_FLAT_MODE, isLowOrBelow } from "@/ui/config";
-import {
-  HEXCEPTION_GRID_READY_EVENT,
-  clearRememberedHexceptionGridReady,
-  rememberHexceptionGridReady,
-} from "@/ui/layouts/game-loading-overlay.utils";
+import { IS_FLAT_MODE } from "@/ui/config";
 
 import { ProductionModal } from "@/ui/features/settlement";
-import {
-  releaseOccupiedBuildSpot,
-  reserveOccupiedBuildSpot,
-} from "@/ui/features/settlement/construction/build-reservation-store";
 import { resolveConstructionBuildability } from "@/ui/features/settlement/construction/construction-buildability";
 import { SetupResult } from "@bibliothecadao/dojo";
 import {
@@ -102,7 +93,7 @@ import {
   Vector2,
   Vector3,
 } from "three";
-import { CSS2DObject } from "three-stdlib";
+import { CSS2DObject } from "three/addons/renderers/CSS2DRenderer.js";
 import { MapControls } from "three/examples/jsm/controls/MapControls.js";
 import { SceneName } from "../types";
 import { getHexForWorldPosition, getWorldPositionForHex } from "../utils";
@@ -206,7 +197,6 @@ export default class HexceptionScene extends HexagonScene {
     super(SceneName.Hexception, controls, dojo, mouse, raycaster, sceneManager);
 
     this.mode = getGameModeConfig();
-    this.buildingPreview = new BuildingPreview(this.scene);
     this.hoverLabelManager = new HexHoverLabel(this.scene);
 
     const pillarGeometry = new ExtrudeGeometry(createHexagonShape(1), { depth: 2, bevelEnabled: false });
@@ -216,8 +206,7 @@ export default class HexceptionScene extends HexagonScene {
     this.pillars.count = 0;
     this.scene.add(this.pillars);
 
-    const quality: QualityLevel = isLowOrBelow(GRAPHICS_SETTING) ? "LOW" : (GRAPHICS_SETTING as QualityLevel) || "HIGH";
-    this.ambienceSystem = new HexceptionAmbienceSystem(this.scene, quality);
+    this.ambienceSystem = new HexceptionAmbienceSystem(this.scene);
 
     this.loadBuildingModels();
     this.loadBiomeModels(900);
@@ -298,9 +287,7 @@ export default class HexceptionScene extends HexagonScene {
       useUIStore.subscribe(
         (state) => state.playerStructures,
         (playerStructures) => {
-          if (playerStructures.length > 0) {
-            this.updatePlayerStructures(playerStructures);
-          }
+          this.updatePlayerStructures(playerStructures);
         },
       ),
     );
@@ -311,7 +298,7 @@ export default class HexceptionScene extends HexagonScene {
         (building) => {
           if (building) {
             this.interactiveHexManager.setAuraVisibility(false);
-            this.buildingPreview?.setPreviewBuilding(building as any);
+            this.getOrCreateBuildingPreview().setPreviewBuilding(building as any);
             this.highlightHexManager.highlightHexes(
               this.highlights.map((hex) => ({
                 hex: { col: hex.col, row: hex.row },
@@ -352,7 +339,7 @@ export default class HexceptionScene extends HexagonScene {
 
           // Only create a new subscription if we have a valid entity ID
           if (structureEntityId && structureEntityId !== 0) {
-            console.log(`Setting up Structure listener for entity ID: ${structureEntityId}`);
+            if (VERBOSE_LOGS_ENABLED) console.log(`Setting up Structure listener for entity ID: ${structureEntityId}`);
 
             this.structureUpdateSubscription = this.worldUpdateListener.StructureEntityListener.onLevelUpdate(
               structureEntityId,
@@ -492,6 +479,7 @@ export default class HexceptionScene extends HexagonScene {
   }
 
   private loadBuildingModels() {
+    const modelLoadsByPath = new Map<string, Promise<{ model: Group; animations: AnimationClip[] }>>();
     for (const category of Object.values(BUILDINGS_GROUPS)) {
       const categoryPaths = this.mode.assets.buildingModelPaths[category];
       if (!this.buildingModels.has(category)) {
@@ -500,39 +488,70 @@ export default class HexceptionScene extends HexagonScene {
       const categoryMap = this.buildingModels.get(category)!;
 
       for (const [building, path] of Object.entries(categoryPaths)) {
-        const loadPromise = new Promise<void>((resolve, reject) => {
-          loader.load(
-            path,
-            (gltf) => {
-              const model = gltf.scene as Group;
-              model.position.set(0, 0, 0);
-              model.rotation.y = Math.PI;
-
-              model.traverse((child) => {
-                if (child instanceof Mesh) {
-                  if (!child.name.includes(SMALL_DETAILS_NAME) && !child.parent?.name.includes(SMALL_DETAILS_NAME)) {
-                    child.castShadow = true;
-                    child.receiveShadow = true;
-                  }
-                }
-              });
-
-              // Store the model and animations in the nested map
-              categoryMap.set(building as BUILDINGS_CATEGORIES_TYPES, { model, animations: gltf.animations });
-              resolve();
-            },
-            undefined,
-            (error) => {
-              console.error(`Error loading ${building} model:`, error);
-              reject(error);
-            },
-          );
+        let sourceLoad = modelLoadsByPath.get(path);
+        if (!sourceLoad) {
+          sourceLoad = this.loadBuildingModel(path, building);
+          modelLoadsByPath.set(path, sourceLoad);
+        }
+        const loadPromise = sourceLoad.then((modelData) => {
+          categoryMap.set(building as BUILDINGS_CATEGORIES_TYPES, modelData);
         });
         this.modelLoadPromises.push(loadPromise);
       }
     }
+  }
 
-    Promise.all(this.modelLoadPromises).then(() => {});
+  private loadBuildingModel(path: string, building: string): Promise<{ model: Group; animations: AnimationClip[] }> {
+    return new Promise((resolve, reject) => {
+      loader.load(
+        path,
+        (gltf) => {
+          const model = gltf.scene as Group;
+          model.position.set(0, 0, 0);
+          model.rotation.y = Math.PI;
+          model.traverse((child) => {
+            if (
+              child instanceof Mesh &&
+              !child.name.includes(SMALL_DETAILS_NAME) &&
+              !child.parent?.name.includes(SMALL_DETAILS_NAME)
+            ) {
+              child.castShadow = true;
+              child.receiveShadow = true;
+            }
+          });
+          resolve({ model, animations: gltf.animations });
+        },
+        undefined,
+        (error) => {
+          console.error(`Error loading ${building} model:`, error);
+          reject(error);
+        },
+      );
+    });
+  }
+
+  private getOrCreateBuildingPreview(): BuildingPreview {
+    if (!this.buildingPreview) {
+      this.buildingPreview = new BuildingPreview(this.scene, (group, building) => {
+        const groupPaths = this.mode.assets.buildingModelPaths[group] as Record<string, string>;
+        const path = groupPaths[building.toString()];
+        if (!path) {
+          return null;
+        }
+
+        return {
+          cacheKey: path,
+          load: async () => {
+            await Promise.allSettled(this.modelLoadPromises);
+            return (
+              this.buildingModels.get(group)?.get(building.toString() as BUILDINGS_CATEGORIES_TYPES)?.model ?? null
+            );
+          },
+        };
+      });
+    }
+
+    return this.buildingPreview;
   }
 
   setup() {
@@ -589,7 +608,7 @@ export default class HexceptionScene extends HexagonScene {
         { col: this.centerColRow[0], row: this.centerColRow[1] },
         (update: BuildingSystemUpdate) => {
           const { innerCol, innerRow, buildingType } = update;
-          if (buildingType === BuildingType.None && innerCol && innerRow) {
+          if (buildingType === BuildingType.None && innerCol !== undefined && innerRow !== undefined) {
             this.removeBuilding(innerCol, innerRow);
           } else if (buildingType !== BuildingType.None) {
             playBuildingSound(buildingType);
@@ -650,7 +669,6 @@ export default class HexceptionScene extends HexagonScene {
   }
 
   destroy() {
-    clearRememberedHexceptionGridReady();
     this.clearHoverLabel();
     this.hoverLabelManager.dispose();
 
@@ -694,8 +712,13 @@ export default class HexceptionScene extends HexagonScene {
     this.wonderInstances.clear();
 
     // Dispose of loaded building models (geometries and materials)
+    const disposedBuildingModels = new Set<Group>();
     this.buildingModels.forEach((categoryMap) => {
       categoryMap.forEach((data) => {
+        if (disposedBuildingModels.has(data.model)) {
+          return;
+        }
+        disposedBuildingModels.add(data.model);
         data.model.traverse((child: any) => {
           if (child.isMesh) {
             if (child.geometry) {
@@ -779,7 +802,6 @@ export default class HexceptionScene extends HexagonScene {
       }
 
       this.clearBuildingMode();
-      reserveOccupiedBuildSpot(structureEntityId, normalizedCoords);
       try {
         console.log("Placing building at:", {
           dojo: account!,
@@ -799,10 +821,6 @@ export default class HexceptionScene extends HexagonScene {
         AudioManager.getInstance().play("ui.build_place");
       } catch (error) {
         console.log("catched error so removing building", error);
-        const message = error instanceof Error ? error.message : String(error);
-        if (!message.toLowerCase().includes("space is occupied")) {
-          releaseOccupiedBuildSpot(structureEntityId, normalizedCoords);
-        }
         this.removeBuilding(normalizedCoords.col, normalizedCoords.row);
       }
       this.updateHexceptionGrid(this.hexceptionRadius);
@@ -1295,19 +1313,13 @@ export default class HexceptionScene extends HexagonScene {
         // Clear the array to prevent accidental reuse of released matrices
         matrices.length = 0;
       }
-      console.log(`🧹 Released ${totalMatricesReleased} matrices back to pool`);
+      if (VERBOSE_LOGS_ENABLED) console.log(`🧹 Released ${totalMatricesReleased} matrices back to pool`);
 
       if (typeof window !== "undefined") {
         usePlayRouteReadinessStore.getState().markHexReady(getCurrentPlayRouteBootToken(), {
           col: this.centerColRow[0],
           row: this.centerColRow[1],
         });
-        rememberHexceptionGridReady({ col: this.centerColRow[0], row: this.centerColRow[1] });
-        window.dispatchEvent(
-          new CustomEvent(HEXCEPTION_GRID_READY_EVENT, {
-            detail: { col: this.centerColRow[0], row: this.centerColRow[1] },
-          }),
-        );
       }
     });
   }

@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from "vitest";
 import { handleWorldmapRefreshCommitRuntime } from "./worldmap-refresh-commit-runtime";
 
 describe("handleWorldmapRefreshCommitRuntime", () => {
-  it("returns early when tile fetch did not succeed", async () => {
+  it("returns early when tile sync did not succeed", async () => {
     const result = await handleWorldmapRefreshCommitRuntime({
       chunkKey: "24,24",
       commitPreparedTerrain: vi.fn(),
@@ -17,7 +17,7 @@ describe("handleWorldmapRefreshCommitRuntime", () => {
       runImmediateCriticalManagerCatchUp: vi.fn(async () => undefined),
       scheduleDeferredNonCriticalManagerCatchUp: vi.fn(),
       stagedPathEnabled: true,
-      tileFetchSucceeded: false,
+      projectionSyncSucceeded: false,
       transitionToken: 7,
     });
 
@@ -39,7 +39,7 @@ describe("handleWorldmapRefreshCommitRuntime", () => {
       runImmediateCriticalManagerCatchUp: vi.fn(async () => undefined),
       scheduleDeferredNonCriticalManagerCatchUp: vi.fn(),
       stagedPathEnabled: true,
-      tileFetchSucceeded: true,
+      projectionSyncSucceeded: true,
       transitionToken: 9,
     });
 
@@ -66,7 +66,7 @@ describe("handleWorldmapRefreshCommitRuntime", () => {
       runImmediateCriticalManagerCatchUp: vi.fn(async () => undefined),
       scheduleDeferredNonCriticalManagerCatchUp: vi.fn(),
       stagedPathEnabled: true,
-      tileFetchSucceeded: true,
+      projectionSyncSucceeded: true,
       transitionToken: 9,
     });
 
@@ -92,7 +92,7 @@ describe("handleWorldmapRefreshCommitRuntime", () => {
       runImmediateCriticalManagerCatchUp: vi.fn(async () => undefined),
       scheduleDeferredNonCriticalManagerCatchUp: vi.fn(),
       stagedPathEnabled: true,
-      tileFetchSucceeded: true,
+      projectionSyncSucceeded: true,
       transitionToken: 10,
     });
 
@@ -117,7 +117,7 @@ describe("handleWorldmapRefreshCommitRuntime", () => {
       runImmediateCriticalManagerCatchUp: vi.fn(async () => undefined),
       scheduleDeferredNonCriticalManagerCatchUp: vi.fn(),
       stagedPathEnabled: true,
-      tileFetchSucceeded: true,
+      projectionSyncSucceeded: true,
       transitionToken: 11,
     });
 
@@ -143,7 +143,7 @@ describe("handleWorldmapRefreshCommitRuntime", () => {
       runImmediateCriticalManagerCatchUp,
       scheduleDeferredNonCriticalManagerCatchUp,
       stagedPathEnabled: true,
-      tileFetchSucceeded: true,
+      projectionSyncSucceeded: true,
       transitionToken: 11,
     });
 
@@ -172,7 +172,7 @@ describe("handleWorldmapRefreshCommitRuntime", () => {
       runImmediateCriticalManagerCatchUp: vi.fn(async () => undefined),
       scheduleDeferredNonCriticalManagerCatchUp: vi.fn(),
       stagedPathEnabled: false,
-      tileFetchSucceeded: true,
+      projectionSyncSucceeded: true,
       transitionToken: 13,
     });
 

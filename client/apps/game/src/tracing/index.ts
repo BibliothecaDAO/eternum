@@ -3,6 +3,7 @@ import { traceContextManager } from "./correlation/trace-context";
 import { errorReporter } from "./errors/error-reporter";
 import { metricsCollector } from "./performance/metrics-collector";
 import { initTracing, shutdownTracing } from "./tracer";
+import { TRACING_RUNTIME_ENABLED } from "./runtime-policy";
 
 export * from "./correlation/trace-context";
 export * from "./errors/error-reporter";
@@ -21,7 +22,7 @@ export function initializeTracing(config?: {
     serviceName: "eternum-game",
     environment: env.VITE_PUBLIC_CHAIN || "development",
     version: env.VITE_PUBLIC_GAME_VERSION || "0.0.1",
-    enabled: env.VITE_TRACING_ENABLED !== false,
+    enabled: TRACING_RUNTIME_ENABLED,
   });
 
   // Set initial context

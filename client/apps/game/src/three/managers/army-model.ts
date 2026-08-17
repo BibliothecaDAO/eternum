@@ -1,6 +1,6 @@
 import { CameraView } from "@/three/scenes/hexagon-scene";
 import { gltfLoader } from "@/three/utils/utils";
-import { FELT_CENTER, GRAPHICS_SETTING, GraphicsSettings, isLowOrBelow } from "@/ui/config";
+import { FELT_CENTER } from "@/ui/config";
 import { getCharacterModel } from "@/utils/agent";
 import { configManager } from "@bibliothecadao/eternum";
 import { BiomeType, TroopTier, TroopType } from "@bibliothecadao/types";
@@ -22,6 +22,7 @@ import {
 } from "three";
 import { CSS2DObject } from "three/examples/jsm/renderers/CSS2DRenderer.js";
 import { resizeInstancedMorphTexture } from "./morph-texture-resize";
+import { writeMorphWeightsIfChanged } from "./morph-texture-dirty-state";
 import { BoundedHexCache } from "../utils/bounded-hex-cache";
 import { env } from "../../../env";
 import {
@@ -257,7 +258,7 @@ export class ArmyModel {
         registryEntry,
       })
         .then((gltf) => {
-          const modelData = this.createModelData(gltf);
+          const modelData = this.createModelData(gltf, false);
           this.cosmeticModels.set(cosmeticId, modelData);
           this.reapplyInstancesForCosmeticModel(cosmeticId, modelData);
           resolve(modelData);
@@ -358,7 +359,7 @@ export class ArmyModel {
     }
   }
 
-  private createModelData(gltf: any): ModelData {
+  private createModelData(gltf: any, ownsGeometry: boolean = true): ModelData {
     const group = new Group();
     const sourceScene = this.createRenderableSourceScene(gltf.scene);
     const instancedMeshes: AnimatedInstancedMesh[] = [];
@@ -407,6 +408,7 @@ export class ArmyModel {
       currentScales: new Map(),
       lastAnimationUpdate: 0,
       animationUpdateInterval: this.MODEL_ANIMATION_UPDATE_INTERVAL,
+      ownsGeometry,
     };
   }
 
@@ -565,6 +567,7 @@ export class ArmyModel {
       for (let i = 0; i < this.INITIAL_INSTANCE_CAPACITY; i++) {
         instancedMesh.setMorphAt(i, mesh as any);
       }
+      instancedMesh.morphTexture!.name = `army-morph:${mesh.name || "mesh"}`;
       instancedMesh.morphTexture!.needsUpdate = true;
     }
   }
@@ -1166,8 +1169,6 @@ export class ArmyModel {
 
   // Animation Methods
   public updateAnimations(_deltaTime: number, visibility?: AnimationVisibilityContext): void {
-    if (isLowOrBelow(GRAPHICS_SETTING)) return;
-
     const now = performance.now();
     const time = now * 0.001;
 
@@ -1349,6 +1350,7 @@ export class ArmyModel {
       if (morphTexture && morphTexture.image && morphTexture.image.data) {
         const textureData = morphTexture.image.data as unknown as Float32Array;
         const textureWidth = morphTexture.image.width;
+        let textureChanged = false;
 
         for (let bucket = bucketOffset; bucket < this.ANIMATION_BUCKETS; bucket += bucketStride) {
           const indices = this.bucketToIndices.get(bucket);
@@ -1356,14 +1358,6 @@ export class ArmyModel {
 
           const idleOffset = bucket * morphCount;
           const movingOffset = bucket * morphCount;
-          const idleWeights =
-            needsIdleWeights && this.idleWeightsBuffer
-              ? this.idleWeightsBuffer.subarray(idleOffset, idleOffset + morphCount)
-              : null;
-          const movingWeights =
-            needsMovingWeights && this.movingWeightsBuffer
-              ? this.movingWeightsBuffer.subarray(movingOffset, movingOffset + morphCount)
-              : null;
 
           for (let idx = 0; idx < indices.length; idx++) {
             const i = indices[idx];
@@ -1372,29 +1366,28 @@ export class ArmyModel {
             if (this.shouldSkipAnimation(state)) continue;
 
             const dstOffset = i * textureWidth;
+            let sourceWeights: Float32Array | null = null;
+            let sourceOffset = 0;
             if (state === ANIMATION_STATE_MOVING) {
-              if (!movingWeights) continue;
-              if (morphCount <= 8) {
-                textureData.set(movingWeights, dstOffset);
-              } else {
-                for (let m = 0; m < morphCount; m++) {
-                  textureData[dstOffset + m] = this.movingWeightsBuffer![movingOffset + m];
-                }
-              }
+              if (!needsMovingWeights || !this.movingWeightsBuffer) continue;
+              sourceWeights = this.movingWeightsBuffer;
+              sourceOffset = movingOffset;
             } else {
-              if (!idleWeights) continue;
-              if (morphCount <= 8) {
-                textureData.set(idleWeights, dstOffset);
-              } else {
-                for (let m = 0; m < morphCount; m++) {
-                  textureData[dstOffset + m] = this.idleWeightsBuffer![idleOffset + m];
-                }
-              }
+              if (!needsIdleWeights || !this.idleWeightsBuffer) continue;
+              sourceWeights = this.idleWeightsBuffer;
+              sourceOffset = idleOffset;
+            }
+            if (sourceWeights) {
+              textureChanged =
+                writeMorphWeightsIfChanged(textureData, dstOffset, sourceWeights, sourceOffset, morphCount) ||
+                textureChanged;
             }
           }
         }
 
-        morphTexture.needsUpdate = true;
+        if (textureChanged) {
+          morphTexture.needsUpdate = true;
+        }
         performedUpdate = true;
       }
     });
@@ -1405,11 +1398,7 @@ export class ArmyModel {
   }
 
   private shouldSkipAnimation(animationState: number): boolean {
-    return (
-      (GRAPHICS_SETTING === GraphicsSettings.MID && animationState === ANIMATION_STATE_IDLE) ||
-      isLowOrBelow(GRAPHICS_SETTING) ||
-      (this.currentCameraView === CameraView.Far && animationState === ANIMATION_STATE_IDLE)
-    );
+    return this.currentCameraView === CameraView.Far && animationState === ANIMATION_STATE_IDLE;
   }
 
   private getAnimationUpdateFrequency(instanceCount: number): number {
@@ -1513,8 +1502,7 @@ export class ArmyModel {
   ): void {
     if (path.length < 2) return;
 
-    // Monitor memory usage before starting movement
-    this.memoryMonitor?.getCurrentStats(`startMovement-${entityId}`);
+    const memoryMeasurement = this.memoryMonitor?.beginScopedMeasurement(`startMovement-${entityId}`, 5);
 
     // Log material sharing stats periodically (every 10th movement)
     if (entityId % 10 === 0) {
@@ -1564,6 +1552,10 @@ export class ArmyModel {
         isArrivalSlamming: false,
         endpointCache: new Vector3(),
       });
+    }
+
+    if (memoryMeasurement) {
+      this.memoryMonitor?.finishScopedMeasurement(memoryMeasurement);
     }
   }
 
@@ -2621,8 +2613,9 @@ export class ArmyModel {
       modelData.instancedMeshes.forEach((mesh) => {
         releasePooledInstancedMaterial(mesh.material);
 
-        // Dispose geometry
-        mesh.geometry.dispose();
+        if (modelData.ownsGeometry) {
+          mesh.geometry.dispose();
+        }
 
         // Phase 2.5: free the instanceMatrix/instanceColor GPU buffers (via the
         // renderer 'dispose' event) and the morph DataTexture. InstancedMesh.dispose
@@ -2652,7 +2645,6 @@ export class ArmyModel {
     this.cosmeticModels.forEach((modelData) => {
       modelData.instancedMeshes.forEach((mesh) => {
         releasePooledInstancedMaterial(mesh.material);
-        mesh.geometry.dispose();
         mesh.dispose();
         this.scene.remove(mesh);
       });

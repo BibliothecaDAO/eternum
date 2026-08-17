@@ -17,14 +17,12 @@ describe("Worldmap initial terrain convergence", () => {
     expect(refreshEnd).toBeGreaterThan(refreshStart);
 
     const refreshBody = source.slice(refreshStart, refreshEnd);
-    const didRefreshGuardIndex = refreshBody.indexOf(
-      'throw new Error("World map did not finish its initial interactive refresh.")',
-    );
+    const interactiveRefreshIndex = refreshBody.indexOf("await completeWorldmapInteractiveRefresh({");
     const convergenceIndex = refreshBody.indexOf("await this.awaitInitialTerrainConvergence();");
     const hoverReconcileIndex = refreshBody.indexOf('this.reconcileHoverLabels("initial_refresh");');
 
-    expect(didRefreshGuardIndex).toBeGreaterThanOrEqual(0);
-    expect(convergenceIndex).toBeGreaterThan(didRefreshGuardIndex);
+    expect(interactiveRefreshIndex).toBeGreaterThanOrEqual(0);
+    expect(convergenceIndex).toBeGreaterThan(interactiveRefreshIndex);
     expect(hoverReconcileIndex).toBeGreaterThan(convergenceIndex);
   });
 

@@ -1,12 +1,8 @@
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { useOwnedMilitaryStructureInfos } from "@/hooks/helpers/use-owned-structure-info";
 import { useCurrentArmiesTick } from "@/hooks/helpers/use-block-timestamp";
-import {
-  createPendingWorldmapFxKey,
-  dispatchPendingWorldmapFxStart,
-  dispatchPendingWorldmapFxStop,
-} from "@/utils/pending-worldmap-fx";
-import { sqlApi } from "@/services/api";
+import { useWorldSpatialTiles } from "@/hooks/use-world-spatial-tiles";
+import { startWorldmapProvisionalFx } from "@/three/scenes/worldmap-provisional-fx";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { UNDEFINED_STRUCTURE_ENTITY_ID } from "@/ui/constants";
 import {
@@ -16,6 +12,7 @@ import {
   getBalance,
   getBlockTimestamp,
   getEntityIdFromKeys,
+  getGuardsByStructure,
   getTroopResourceId,
 } from "@bibliothecadao/eternum";
 import { useDojo, useExplorersByStructure } from "@bibliothecadao/react";
@@ -32,8 +29,7 @@ import {
   TroopTier,
   TroopType,
 } from "@bibliothecadao/types";
-import { getComponentValue } from "@dojoengine/recs";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useComponentValue } from "@dojoengine/react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import {
@@ -97,7 +93,6 @@ export const UnifiedArmyCreationBody = ({
     setup: { components, systemCalls },
     account: { account },
   } = useDojo();
-  const queryClient = useQueryClient();
   const mode = useGameModeConfig();
   const playerStructures = useOwnedMilitaryStructureInfos();
   const selectedStructureId = useUIStore((state) => state.structureEntityId);
@@ -112,12 +107,9 @@ export const UnifiedArmyCreationBody = ({
   );
 
   const [isLoading, setIsLoading] = useState(false);
-  const [freeDirections, setFreeDirections] = useState<Direction[]>([]);
-  const [isLoadingDirections, setIsLoadingDirections] = useState(false);
   const [selectedDirection, setSelectedDirection] = useState<Direction | null>(
     direction !== undefined ? direction : null,
   );
-  const [loadedDirectionsStructureId, setLoadedDirectionsStructureId] = useState<number | null>(null);
   const [selectedTroopCombo, setSelectedTroopCombo] = useState<SelectedTroopCombo>(() => ({
     ...DEFAULT_TROOP_COMBO,
   }));
@@ -189,10 +181,7 @@ export const UnifiedArmyCreationBody = ({
     return sortedPlayerStructures[0]?.entityId ?? 0;
   }, [shouldFollowSelection, resolvedSelectedStructureId, resolvedStructureIdProp, sortedPlayerStructures]);
 
-  const structureComponent = useMemo(() => {
-    if (!activeStructureId) return null;
-    return getComponentValue(components.Structure, gameEntityKey([BigInt(activeStructureId)]));
-  }, [components, activeStructureId]);
+  const structureComponent = useComponentValue(components.Structure, gameEntityKey([BigInt(activeStructureId || 0)]));
 
   const activeStructureInfo = useMemo(
     () => sortedPlayerStructures.find((realm) => realm.entityId === activeStructureId),
@@ -238,15 +227,10 @@ export const UnifiedArmyCreationBody = ({
     structureEntityId: activeStructureId || 0,
   });
 
-  const { data: guardsData } = useQuery({
-    queryKey: ["guards", String(activeStructureId)],
-    queryFn: async () => {
-      if (!activeStructureId) return [];
-      return await sqlApi.fetchGuardsByStructure(activeStructureId);
-    },
-    staleTime: 10000,
-    enabled: activeStructureId > 0,
-  });
+  const guardsData = useMemo(
+    () => (structureComponent ? getGuardsByStructure(structureComponent) : []),
+    [structureComponent],
+  );
 
   const currentExplorersCount = explorers.length;
   const currentGuardsCount =
@@ -336,67 +320,29 @@ export const UnifiedArmyCreationBody = ({
   }, [isExplorer]);
 
   useEffect(() => {
-    setLoadedDirectionsStructureId(null);
-    setFreeDirections([]);
     setSelectedDirection(direction !== undefined ? direction : null);
     setTroopCount(0);
     setGuardSlot(initialGuardSlot ?? 0);
   }, [activeStructureId, direction, initialGuardSlot]);
 
-  useEffect(() => {
-    if (structureCoordX === undefined || structureCoordY === undefined || !activeStructureId) {
-      return;
-    }
-
-    if (loadedDirectionsStructureId === activeStructureId) {
-      return;
-    }
-
-    let isCancelled = false;
-
-    const loadDirections = async () => {
-      setIsLoadingDirections(true);
-      try {
-        const coords = getNeighborHexes(structureCoordX, structureCoordY);
-        const tiles = await sqlApi.fetchTilesByCoords(coords.map((coord) => ({ col: coord.col, row: coord.row })));
-        if (isCancelled) {
-          return;
-        }
-        const freeTiles = tiles.filter((tile) => tile.occupier_id === 0);
-        const directions = freeTiles
-          .map((tile) =>
-            getDirectionBetweenAdjacentHexes(
-              { col: structureCoordX, row: structureCoordY },
-              { col: tile.col, row: tile.row },
-            ),
-          )
-          .filter((dir): dir is Direction => dir !== null);
-
-        if (isCancelled) {
-          return;
-        }
-
-        setFreeDirections(directions);
-        setLoadedDirectionsStructureId(activeStructureId);
-      } catch (error) {
-        if (!isCancelled) {
-          console.error("Failed to load available directions:", error);
-          setFreeDirections([]);
-        }
-      } finally {
-        if (!isCancelled) {
-          setIsLoadingDirections(false);
-        }
-      }
-    };
-
-    setFreeDirections([]);
-    loadDirections();
-
-    return () => {
-      isCancelled = true;
-    };
-  }, [structureCoordX, structureCoordY, activeStructureId, loadedDirectionsStructureId]);
+  const neighborHexes = useMemo(
+    () =>
+      structureCoordX === undefined || structureCoordY === undefined
+        ? []
+        : getNeighborHexes(structureCoordX, structureCoordY),
+    [structureCoordX, structureCoordY],
+  );
+  const neighborTiles = useWorldSpatialTiles(neighborHexes);
+  const freeDirections = useMemo(
+    () =>
+      neighborTiles
+        .filter((tile) => Number(tile.occupierId) === 0)
+        .map((tile) =>
+          getDirectionBetweenAdjacentHexes({ col: structureCoordX ?? 0, row: structureCoordY ?? 0 }, tile.hexCoords),
+        )
+        .filter((candidate): candidate is Direction => candidate !== null),
+    [neighborTiles, structureCoordX, structureCoordY],
+  );
 
   const isDefenseTroopLocked = !armyType && isSelectedSlotOccupied;
 
@@ -523,28 +469,28 @@ export const UnifiedArmyCreationBody = ({
     if (!armyManager || troopCount <= 0) return;
 
     setIsLoading(true);
-    let pendingFxKey: string | null = null;
-
     try {
       if (armyType) {
         if (selectedDirection === null) {
           throw new Error("No direction selected");
         }
-        pendingFxKey = createPendingWorldmapFxKey("create-army");
-        dispatchPendingWorldmapFxStart({
-          key: pendingFxKey,
-          kind: "create-army",
-          structureId: activeStructureId,
-          direction: selectedDirection,
-          troopType: selectedTroopCombo.type,
-          troopTier: selectedTroopCombo.tier,
-        });
         await armyManager.createExplorerArmy(
           account,
           selectedTroopCombo.type,
           selectedTroopCombo.tier,
           troopCount,
           selectedDirection,
+          (intent) =>
+            startWorldmapProvisionalFx(
+              {
+                kind: "create-army",
+                structureId: activeStructureId,
+                direction: selectedDirection,
+                troopType: selectedTroopCombo.type,
+                troopTier: selectedTroopCombo.tier,
+              },
+              intent,
+            ),
         );
         // Tile occupancy changed — kick the deploy map to re-fetch.
         useUIStore.getState().bumpMilitaryMapVersion();
@@ -567,22 +513,8 @@ export const UnifiedArmyCreationBody = ({
           troopCount,
           slotToUse,
         );
-        if (activeStructureId > 0) {
-          queryClient
-            .invalidateQueries({
-              queryKey: ["guards", String(activeStructureId)],
-              exact: true,
-              refetchType: "active",
-            })
-            .catch((error) => {
-              console.error("Failed to refresh guards after defense creation:", error);
-            });
-        }
       }
     } catch (error) {
-      if (pendingFxKey) {
-        dispatchPendingWorldmapFxStop({ key: pendingFxKey });
-      }
       console.error("Failed to create army:", error);
     } finally {
       setIsLoading(false);
@@ -760,7 +692,7 @@ export const UnifiedArmyCreationBody = ({
                   centerRow={Number(structureCoordY)}
                   availableDirections={freeDirections}
                   selectedDirection={selectedDirection}
-                  isLoading={isLoadingDirections}
+                  isLoading={false}
                   onSelect={handleDirectionSelect}
                 />
               )}

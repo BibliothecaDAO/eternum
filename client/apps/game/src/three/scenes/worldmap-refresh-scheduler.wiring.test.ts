@@ -13,7 +13,6 @@ describe("worldmap refresh scheduler wiring", () => {
     const source = readWorldmapSource();
 
     expect(source).toMatch(/requestChunkRefresh\(true,\s*"visibility_recovery"\)/);
-    expect(source).toMatch(/requestChunkRefresh\(true,\s*"duplicate_tile"\)/);
     expect(source).toMatch(/requestChunkRefresh\(true,\s*"hydrated_chunk"\)/);
     expect(source).toMatch(/requestChunkRefresh\(true,\s*"offscreen_chunk"\)/);
     expect(source).toMatch(/requestChunkRefresh\(true,\s*"terrain_self_heal"\)/);
@@ -23,7 +22,9 @@ describe("worldmap refresh scheduler wiring", () => {
     const source = readWorldmapSource();
     const directForceRefreshCalls = source.match(/updateVisibleChunks\(true\)/g) ?? [];
 
-    expect(directForceRefreshCalls).toHaveLength(1);
-    expect(source).toMatch(/await this\.updateVisibleChunks\(true,\s*\{ reason: "shortcut" \}\)/);
+    expect(directForceRefreshCalls).toHaveLength(0);
+    expect(source).toMatch(
+      /await this\.updateVisibleChunks\(true,\s*\{\s*reason: "shortcut",\s*triggerReason: "army_shortcut_selection_fallback",\s*\}\)/,
+    );
   });
 });

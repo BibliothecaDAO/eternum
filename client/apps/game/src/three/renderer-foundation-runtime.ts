@@ -1,4 +1,3 @@
-import type { GraphicsSettings } from "@/ui/config";
 import { createRendererInteractionRuntime, type RendererInteractionRuntime } from "./renderer-interaction-runtime";
 import { createRendererLabelRuntime, type RendererLabelRuntime } from "./renderer-label-runtime";
 import type { SceneName } from "./types";
@@ -12,9 +11,9 @@ export interface RendererFoundationRuntime {
 }
 
 interface CreateRendererFoundationRuntimeInput {
-  graphicsSetting: GraphicsSettings;
   isMobileDevice: boolean;
   onControlsChange: () => void;
+  onInteraction: () => void;
   resolveCurrentSceneName: () => SceneName | undefined;
   warn: (message: string, error: unknown) => void;
 }
@@ -23,8 +22,8 @@ export function createRendererFoundationRuntime(
   input: CreateRendererFoundationRuntimeInput,
 ): RendererFoundationRuntime {
   const interactionRuntime = createRendererInteractionRuntime({
-    graphicsSetting: input.graphicsSetting,
     onControlsChange: input.onControlsChange,
+    onInteraction: input.onInteraction,
     resolveCurrentSceneName: input.resolveCurrentSceneName,
   });
   const labelRuntime = createRendererLabelRuntime({

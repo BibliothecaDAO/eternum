@@ -24,8 +24,6 @@ interface LabelRenderDecision {
 
 interface PostProcessingConfigGateInput {
   hasPostProcessingConfig: boolean;
-  isMobileDevice: boolean;
-  isHighGraphicsSetting: boolean;
 }
 
 interface PostProcessingEffectPlanInput {
@@ -54,7 +52,7 @@ interface RendererEffectPlanInput {
 
 type RendererOptionalFeatureDisableReason = Extract<
   RendererFeatureDegradation["reason"],
-  "disabled-by-quality" | "disabled-by-user"
+  "disabled-by-profile" | "disabled-by-user"
 >;
 
 interface CapabilityAwareRendererEffectPlanInput extends RendererEffectPlanInput {
@@ -297,15 +295,7 @@ export function resolveLabelRenderDecision(input: LabelRenderDecisionInput): Lab
 }
 
 export function shouldEnablePostProcessingConfig(input: PostProcessingConfigGateInput): boolean {
-  if (!input.hasPostProcessingConfig) {
-    return false;
-  }
-
-  if (input.isMobileDevice && !input.isHighGraphicsSetting) {
-    return false;
-  }
-
-  return true;
+  return input.hasPostProcessingConfig;
 }
 
 export function resolvePostProcessingEffectPlan(input: PostProcessingEffectPlanInput): PostProcessingEffectPlan {

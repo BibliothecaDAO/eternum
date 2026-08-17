@@ -1,36 +1,23 @@
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
+import { gameEntityKey } from "@/dojo/game-scope";
 import { useGoToStructure } from "@/hooks/helpers/use-navigate";
 import { isVillageLikeStructureCategory } from "@/lib/structure-type-utils";
-import { sqlApi } from "@/services/api";
 import { displayAddress } from "@/ui/utils/utils";
 import {
-  MAP_DATA_REFRESH_INTERVAL,
-  MapDataStore,
   Position,
   getAddressName,
   getBlockTimestamp,
   getGuardsByStructure,
   getGuildFromPlayerAddress,
   getHyperstructureProgress,
+  getRealmCountPerHyperstructure,
   getStructureArmyRelicEffects,
   getStructureRelicEffects,
 } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
 import { useComponentValue } from "@dojoengine/react";
-import { getEntityIdFromKeys } from "@/ui/utils/utils";
-import { getStructureFromToriiClient, type ResourceBalanceRow } from "@bibliothecadao/torii";
-import {
-  type ClientComponents,
-  ContractAddress,
-  ID,
-  BANDITS_NAME,
-  RelicEffectWithEndTick,
-  StructureType,
-} from "@bibliothecadao/types";
-import { type ComponentValue } from "@dojoengine/recs";
-import { useQuery } from "@tanstack/react-query";
-import { useCallback, useMemo, useState } from "react";
-import { gameEntityKey } from "@/dojo/game-scope";
+import { ContractAddress, ID, BANDITS_NAME, RelicEffectWithEndTick, StructureType } from "@bibliothecadao/types";
+import { useCallback, useMemo } from "react";
 
 interface UseStructureEntityDetailOptions {
   structureEntityId: ID;
@@ -41,101 +28,9 @@ interface AlignmentBadge {
   className: string;
 }
 
-type ResourceComponent = ComponentValue<ClientComponents["Resource"]["schema"]>;
-
-const ZERO_RESEARCH_PRODUCTION = {
-  building_count: 0,
-  production_rate: 0n,
-  output_amount_left: 0n,
-  last_updated_at: 0,
-};
-
-const parseSqlBigInt = (value: unknown): bigint => {
-  if (typeof value === "bigint") return value;
-  if (typeof value === "number") return Number.isFinite(value) ? BigInt(Math.trunc(value)) : 0n;
-  if (typeof value === "string" && value.length > 0) {
-    try {
-      return BigInt(value);
-    } catch {
-      return 0n;
-    }
-  }
-  return 0n;
-};
-
-const parseSqlNumber = (value: unknown): number => {
-  if (typeof value === "number" && Number.isFinite(value)) return value;
-  if (typeof value === "bigint") return Number(value);
-  if (typeof value === "string" && value.length > 0) {
-    const parsed = Number(value);
-    return Number.isFinite(parsed) ? parsed : 0;
-  }
-  return 0;
-};
-
-const isRealmOrVillage = (category: number | undefined): boolean =>
-  category !== undefined && [StructureType.Realm, StructureType.Village].includes(Number(category) as StructureType);
-
-const shouldHydrateResearchFromSql = (resources: ResourceComponent, category: number | undefined): boolean => {
-  if (!isRealmOrVillage(category)) return false;
-
-  const researchBalance = resources.RESEARCH_BALANCE ?? 0n;
-  const researchProduction = resources.RESEARCH_PRODUCTION ?? ZERO_RESEARCH_PRODUCTION;
-
-  return (
-    researchBalance === 0n &&
-    researchProduction.building_count === 0 &&
-    Number(researchProduction.production_rate) === 0 &&
-    researchProduction.output_amount_left === 0n
-  );
-};
-
-const mergeResearchFromSqlRow = (resources: ResourceComponent, row: ResourceBalanceRow): ResourceComponent => {
-  const researchBalance = parseSqlBigInt(row.RESEARCH_BALANCE);
-  const researchProduction = {
-    building_count: parseSqlNumber(row["RESEARCH_PRODUCTION.building_count"]),
-    production_rate: parseSqlNumber(row["RESEARCH_PRODUCTION.production_rate"]),
-    output_amount_left: parseSqlBigInt(row["RESEARCH_PRODUCTION.output_amount_left"]),
-    last_updated_at: parseSqlNumber(row["RESEARCH_PRODUCTION.last_updated_at"]),
-  };
-
-  const hasResearchData =
-    researchBalance > 0n ||
-    researchProduction.building_count > 0 ||
-    researchProduction.production_rate > 0 ||
-    researchProduction.output_amount_left > 0n;
-
-  if (!hasResearchData) return resources;
-
-  return {
-    ...resources,
-    RESEARCH_BALANCE: researchBalance,
-    RESEARCH_PRODUCTION: researchProduction,
-  };
-};
-
-const hydrateResearchFromSqlIfMissing = async (
-  structureEntityId: ID,
-  category: number | undefined,
-  resources: ResourceComponent,
-): Promise<ResourceComponent> => {
-  if (!shouldHydrateResearchFromSql(resources, category)) return resources;
-
-  try {
-    const sqlRows = await sqlApi.fetchResourceBalancesWithProduction([Number(structureEntityId)]);
-    const sqlRow = sqlRows[0];
-    if (!sqlRow) return resources;
-    return mergeResearchFromSqlRow(resources, sqlRow);
-  } catch (error) {
-    console.warn("Failed to hydrate research balance from SQL fallback", { structureEntityId, error });
-    return resources;
-  }
-};
-
 export const useStructureEntityDetail = ({ structureEntityId }: UseStructureEntityDetailOptions) => {
   const {
     setup,
-    network: { toriiClient },
     account,
     setup: { components },
   } = useDojo();
@@ -144,117 +39,31 @@ export const useStructureEntityDetail = ({ structureEntityId }: UseStructureEnti
   const goToStructure = useGoToStructure(setup);
 
   const userAddress = ContractAddress(account.account.address);
-  const [lastRefresh, setLastRefresh] = useState(0);
-  const [isRefreshing, setIsRefreshing] = useState(false);
-
   const structureEntityIdNumber = Number(structureEntityId ?? 0);
-
-  const {
-    data: structureDetails,
-    isLoading: isLoadingStructure,
-    refetch: refetchStructure,
-  } = useQuery({
-    queryKey: ["structureDetails", String(structureEntityId), String(userAddress)],
-    queryFn: async () => {
-      // userAddress is intentionally omitted from the bail: spectators (no
-      // wallet connected, userAddress === 0n) still need to inspect remote
-      // structures. Downstream isMine/isAlly degrade to false naturally when
-      // userAddress is 0n, which is correct for a guest viewer.
-      if (!toriiClient || !structureEntityId || !components) return null;
-
-      const { structure, resources, productionBoostBonus } = await getStructureFromToriiClient(
-        toriiClient,
-        structureEntityId,
-      );
-      const relicEffects: RelicEffectWithEndTick[] = [];
-      const { currentArmiesTick } = getBlockTimestamp();
-      if (structure) {
-        relicEffects.push(...getStructureArmyRelicEffects(structure, currentArmiesTick));
-      }
-      if (productionBoostBonus) {
-        relicEffects.push(...getStructureRelicEffects(productionBoostBonus, currentArmiesTick));
-      }
-      if (!structure)
-        return {
-          structure: null,
-          resources: null,
-          playerGuild: undefined,
-          guards: [],
-          isAlly: false,
-          addressName: BANDITS_NAME,
-          isMine: false,
-          hyperstructureRealmCount: undefined,
-          relicEffects,
-        };
-
-      const hydratedResources =
-        resources && structure.entity_id !== undefined
-          ? await hydrateResearchFromSqlIfMissing(structure.entity_id, structure.base?.category, resources)
-          : resources;
-
-      const isMine = structure.owner === userAddress;
-      const guild = getGuildFromPlayerAddress(ContractAddress(structure.owner), components);
-      const guards = getGuardsByStructure(structure);
-      const userGuild = getGuildFromPlayerAddress(userAddress, components);
-      const isAlly = isMine || (guild && userGuild && guild.entityId === userGuild.entityId) || false;
-      const addressName = structure.owner ? getAddressName(structure.owner, components) : BANDITS_NAME;
-
-      const hyperstructureRealmCount =
-        structure.base.category === StructureType.Hyperstructure
-          ? MapDataStore.getInstance(MAP_DATA_REFRESH_INTERVAL, sqlApi).getHyperstructureRealmCount(structure.entity_id)
-          : undefined;
-
-      return {
-        structure,
-        resources: hydratedResources,
-        playerGuild: guild,
-        guards,
-        isAlly,
-        addressName,
-        isMine,
-        relicEffects,
-        hyperstructureRealmCount,
-      };
-    },
-    staleTime: 5000,
-  });
-
-  const handleRefresh = useCallback(async () => {
-    const now = Date.now();
-    if (now - lastRefresh < 10000) {
-      return;
-    }
-
-    setIsRefreshing(true);
-    setLastRefresh(now);
-
-    try {
-      await refetchStructure();
-    } finally {
-      setTimeout(() => setIsRefreshing(false), 1000);
-    }
-  }, [lastRefresh, refetchStructure]);
-
-  const structure = structureDetails?.structure;
-
-  // For player-owned structures the Resource row is RECS-synced live and
-  // carries optimistic overrides (building costs, automation spends). Prefer
-  // it over the one-shot torii snapshot above so balances agree with the
-  // build menu and resource table. Remote structures aren't in the RECS sync
-  // and keep the torii-fetched snapshot.
   const recsEntity = gameEntityKey([BigInt(structureEntityIdNumber || 0)]);
-  const liveStructure = useComponentValue(components.Structure, recsEntity);
-  const liveResources = useComponentValue(components.Resource, recsEntity);
-  const isOwnSyncedStructure =
-    liveStructure?.owner !== undefined && ContractAddress(liveStructure.owner) === userAddress;
-  const resources = isOwnSyncedStructure && liveResources ? liveResources : structureDetails?.resources;
-  const playerGuild = structureDetails?.playerGuild;
-  const guards = structureDetails?.guards || [];
-  const addressName = structureDetails?.addressName;
-  const isMine = structureDetails?.isMine || false;
-  const isAlly = structureDetails?.isAlly || false;
-  const hyperstructureRealmCount = structureDetails?.hyperstructureRealmCount;
-  const relicEffects = structureDetails?.relicEffects ?? [];
+  const structure = useComponentValue(components.Structure, recsEntity);
+  const resources = useComponentValue(components.Resource, recsEntity);
+  const productionBoostBonus = useComponentValue(components.ProductionBoostBonus, recsEntity);
+  const playerGuild = structure ? getGuildFromPlayerAddress(ContractAddress(structure.owner), components) : undefined;
+  const userGuild = getGuildFromPlayerAddress(userAddress, components);
+  const guards = structure ? getGuardsByStructure(structure) : [];
+  const isMine = structure?.owner === userAddress;
+  const isAlly = isMine || Boolean(playerGuild && userGuild && playerGuild.entityId === userGuild.entityId);
+  const addressName = structure?.owner ? getAddressName(structure.owner, components) : BANDITS_NAME;
+  const relicEffects: RelicEffectWithEndTick[] = useMemo(() => {
+    const effects: RelicEffectWithEndTick[] = [];
+    const { currentArmiesTick } = getBlockTimestamp();
+    if (structure) effects.push(...getStructureArmyRelicEffects(structure, currentArmiesTick));
+    if (productionBoostBonus) effects.push(...getStructureRelicEffects(productionBoostBonus, currentArmiesTick));
+    return effects;
+  }, [productionBoostBonus, structure]);
+  const structureDetails = structure
+    ? { structure, resources, playerGuild, guards, isAlly, addressName, isMine, relicEffects }
+    : null;
+  const hyperstructureRealmCount =
+    structure?.base.category === StructureType.Hyperstructure
+      ? getRealmCountPerHyperstructure(components).get(structureEntityId)
+      : undefined;
 
   const ownerHex = structure?.owner ? `0x${structure.owner.toString(16)}` : undefined;
   const ownerDisplayName = addressName || displayAddress(ownerHex ?? "0x0");
@@ -372,10 +181,7 @@ export const useStructureEntityDetail = ({ structureEntityId }: UseStructureEnti
     alignmentBadge,
     progress,
     structureName,
-    isLoadingStructure,
-    isRefreshing,
-    handleRefresh,
-    lastRefresh,
+    isLoadingStructure: false,
     handleViewStructure,
   };
 };

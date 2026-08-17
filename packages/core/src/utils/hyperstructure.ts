@@ -1,5 +1,5 @@
-import { ClientComponents, ResourcesIds } from "@bibliothecadao/types";
-import { ComponentValue, getComponentValue } from "@dojoengine/recs";
+import { ClientComponents, type ID, ResourcesIds, StructureType } from "@bibliothecadao/types";
+import { ComponentValue, getComponentValue, Has, runQuery } from "@dojoengine/recs";
 import { configManager } from "../managers";
 import { divideByPrecision } from "./utils";
 import { gameEntityKey } from "../managers/config-manager";
@@ -50,6 +50,29 @@ export const getHyperstructureRealmCheckRadius = () => {
 export const getEffectiveHyperstructureRealmCount = (realmCountWithinRadius: number): number => {
   const isTwoPlayerMode = configManager.getBlitzConfig()?.blitz_settlement_config?.two_player_mode ?? false;
   return isTwoPlayerMode ? HYPERSTRUCTURE_REALM_COUNT_TWO_PLAYER_MODE : realmCountWithinRadius;
+};
+
+export const getRealmCountPerHyperstructure = (components: ClientComponents): Map<ID, number> => {
+  const structures = [...runQuery([Has(components.Structure)])].flatMap((entity) => {
+    const structure = getComponentValue(components.Structure, entity);
+    return structure ? [structure] : [];
+  });
+  const realms = structures.filter((structure) => structure.category === StructureType.Realm);
+  const radiusSquared = getHyperstructureRealmCheckRadius() ** 2;
+  const realmCounts = new Map<ID, number>();
+
+  structures
+    .filter((structure) => structure.category === StructureType.Hyperstructure)
+    .forEach((hyperstructure) => {
+      const count = realms.filter((realm) => {
+        const colDistance = realm.base.coord_x - hyperstructure.base.coord_x;
+        const rowDistance = realm.base.coord_y - hyperstructure.base.coord_y;
+        return colDistance ** 2 + rowDistance ** 2 <= radiusSquared;
+      }).length;
+      realmCounts.set(hyperstructure.entity_id, getEffectiveHyperstructureRealmCount(count));
+    });
+
+  return realmCounts;
 };
 
 export const getHyperstructureProgress = (hyperstructureId: number, components: ClientComponents) => {

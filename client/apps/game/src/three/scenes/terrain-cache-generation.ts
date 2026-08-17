@@ -13,6 +13,8 @@ interface TerrainCacheGeneration {
   current(chunkKey: string): number;
   /** Increment the generation of each provided chunk key. */
   bump(chunkKeys: Iterable<string>): void;
+  /** Drop generations for chunks that no longer have retained render state. */
+  retain(chunkKeys: ReadonlySet<string>): void;
   /** Reset all chunk generations (used on a full cache flush). */
   clear(): void;
 }
@@ -24,6 +26,13 @@ export function createTerrainCacheGeneration(): TerrainCacheGeneration {
     bump: (chunkKeys: Iterable<string>) => {
       for (const chunkKey of chunkKeys) {
         generations.set(chunkKey, (generations.get(chunkKey) ?? 0) + 1);
+      }
+    },
+    retain: (chunkKeys) => {
+      for (const chunkKey of generations.keys()) {
+        if (!chunkKeys.has(chunkKey)) {
+          generations.delete(chunkKey);
+        }
       }
     },
     clear: () => {

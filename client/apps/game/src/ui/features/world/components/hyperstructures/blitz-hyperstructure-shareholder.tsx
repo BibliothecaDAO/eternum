@@ -1,5 +1,7 @@
+import { env } from "@/../env";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
-import { getRealmCountPerHyperstructure } from "@/ui/utils/utils";
+import { useUIStore } from "@/hooks/store/use-ui-store";
+import { isExplicitSpectateSession } from "@/utils/spectator-session";
 import { LeaderboardManager } from "@bibliothecadao/eternum";
 import { useDojo, useOwnedHyperstructuresEntityIds } from "@bibliothecadao/react";
 import { ContractAddress, type ID } from "@bibliothecadao/types";
@@ -16,6 +18,7 @@ export const BlitzSetHyperstructureShareholdersTo100 = React.memo(() => {
     },
   } = useDojo();
   const mode = useGameModeConfig();
+  const isSpectating = useUIStore((state) => state.isSpectating);
 
   // listen to all the hyperstructures where you are owner with useEntityQuery
   const ownedHyperstructures = useOwnedHyperstructuresEntityIds();
@@ -25,6 +28,11 @@ export const BlitzSetHyperstructureShareholdersTo100 = React.memo(() => {
 
   useEffect(() => {
     if (!mode.rules.autoAllocateHyperstructureShares) return;
+    // Spectators must never auto-fire transactions: the session either has no
+    // real wallet (master/fallback account, ownership queries can match
+    // against it) or is deliberately watching a game it owns structures in.
+    if (isSpectating || isExplicitSpectateSession() || !account?.address) return;
+    if (account.address === env.VITE_PUBLIC_MASTER_ADDRESS) return;
 
     const previousOwnedHyperstructuresSet = new Set(previousOwnedHyperstructures.current);
     const hasNewOwnedHyperstructure = ownedHyperstructures.some(
@@ -45,7 +53,7 @@ export const BlitzSetHyperstructureShareholdersTo100 = React.memo(() => {
       // Skip if no hyperstructures or effect was cancelled
       if (cancelled || ownedHyperstructures.length === 0) return;
 
-      const leaderboardManager = LeaderboardManager.instance(components, getRealmCountPerHyperstructure());
+      const leaderboardManager = LeaderboardManager.instance(components);
 
       for (const hyperstructure of ownedHyperstructures) {
         // Skip if this hyperstructure was already processed or effect was cancelled
@@ -86,7 +94,7 @@ export const BlitzSetHyperstructureShareholdersTo100 = React.memo(() => {
         allocateSharesTimeoutId.current = null;
       }
     };
-  }, [ownedHyperstructures, account, components, allocate_shares, mode]);
+  }, [ownedHyperstructures, account, components, allocate_shares, mode, isSpectating]);
 
   return null;
 });

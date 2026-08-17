@@ -1,4 +1,3 @@
-import { GRAPHICS_SETTING, isLowOrBelow } from "@/ui/config";
 import * as THREE from "three";
 
 // particle constants
@@ -21,21 +20,12 @@ export class Particles {
   private points?: THREE.Points;
   private light?: THREE.PointLight;
   private scene: THREE.Scene;
-  // On LOW/below we never allocate the Points geometry or the (always-on,
-  // intensity-10) PointLight, never add anything to the scene, and make every
-  // method a no-op. The selection marker simply does not appear on weak hardware.
-  private readonly disabled: boolean = isLowOrBelow(GRAPHICS_SETTING);
-
   constructor(scene: THREE.Scene) {
     this.scene = scene;
 
     this.pointsPositions = new Float32Array(0);
     this.particleVelocities = new Float32Array(0);
     this.particleAngles = new Float32Array(0);
-
-    if (this.disabled) {
-      return;
-    }
 
     this.pointsPositions = new Float32Array(PARTICLES_COUNT * 3);
     this.particleVelocities = new Float32Array(PARTICLES_COUNT);
@@ -103,7 +93,7 @@ export class Particles {
   }
 
   update(delta: number) {
-    if (this.disabled || !this.points) return;
+    if (!this.points) return;
     const clampedDelta = Math.min(delta, MAX_DELTA);
 
     for (let i = 0; i < PARTICLES_COUNT; i++) {

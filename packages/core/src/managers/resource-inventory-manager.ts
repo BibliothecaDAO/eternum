@@ -11,33 +11,19 @@ export class ResourceInventoryManager {
     this.carrierEntityId = carrierEntityId;
   }
 
-  private readonly _optimisticOffloadAll = (receiverEntityId: ID, inventoryResources: Resource[]) => {
-    const removeResourceOverrides: Array<() => void> = [];
-    inventoryResources.forEach((resource) => {
-      const resourceManager = new ResourceManager(this.components, receiverEntityId);
-      const removeOverride = resourceManager.optimisticResourceUpdate(resource.resourceId, resource.amount);
-      removeResourceOverrides.push(removeOverride);
-    });
-
-    return () => {
-      removeResourceOverrides.forEach((removeOverride) => removeOverride());
-    };
-  };
-
   public onOffloadAll = async (signer: DojoAccount, receiverEntityId: ID, inventoryResources: Resource[]) => {
-    const removeResourceOverride = this._optimisticOffloadAll(receiverEntityId, inventoryResources);
+    if (inventoryResources.length === 0) return;
 
-    if (inventoryResources.length > 0) {
-      await this.systemCalls
-        .send_resources({
+    await new ResourceManager(this.components, receiverEntityId).submitProvisionalResourceTransaction(
+      inventoryResources.map((resource) => ({ resourceId: resource.resourceId, amount: resource.amount })),
+      signer,
+      () =>
+        this.systemCalls.send_resources({
           signer,
           sender_entity_id: this.carrierEntityId,
           recipient_entity_id: receiverEntityId,
           resources: inventoryResources.map((resource) => ({ resource: resource.resourceId, amount: resource.amount })),
-        })
-        .finally(() => {
-          removeResourceOverride();
-        });
-    }
+        }),
+    );
   };
 }

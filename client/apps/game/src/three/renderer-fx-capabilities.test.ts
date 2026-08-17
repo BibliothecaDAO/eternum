@@ -27,10 +27,10 @@ describe("resolveRendererFxCapabilities", () => {
   it("keeps sprite scene fx enabled in legacy and fallback renderers", () => {
     expect(
       resolveRendererFxCapabilities({
-        activeMode: "legacy-webgl",
+        activeMode: "webgl2-fallback",
       }),
     ).toEqual({
-      activeMode: "legacy-webgl",
+      activeMode: "webgl2-fallback",
       supportsBillboardMeshFx: true,
       supportsDomLabelFx: true,
       supportsSpriteSceneFx: true,

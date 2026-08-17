@@ -1,7 +1,7 @@
 import { resolveChunkSwitchActions } from "./worldmap-chunk-transition";
 
 interface FinalizeWarpTravelChunkSwitchInput {
-  fetchSucceeded: boolean;
+  projectionSyncSucceeded: boolean;
   isCurrentTransition: boolean;
   targetChunk: string;
   previousChunk: string;
@@ -14,7 +14,7 @@ interface FinalizeWarpTravelChunkSwitchInput {
   force: boolean;
   transitionToken: number;
   preparedTerrain: unknown;
-  applyPreparedTerrain: (preparedTerrain: unknown) => void;
+  applyPreparedTerrain: (preparedTerrain: unknown) => void | Promise<void>;
   /**
    * Phase 2.2: release the pooled attributes held by prepared terrain that is
    * dropped (rollback / stale) instead of applied. Without this the pooled
@@ -41,7 +41,7 @@ export async function finalizeWarpTravelChunkSwitch(
   input: FinalizeWarpTravelChunkSwitchInput,
 ): Promise<{ status: "rolled_back" | "stale_dropped" | "committed" }> {
   const chunkSwitchActions = resolveChunkSwitchActions({
-    fetchSucceeded: input.fetchSucceeded,
+    projectionSyncSucceeded: input.projectionSyncSucceeded,
     isCurrentTransition: input.isCurrentTransition,
     targetChunk: input.targetChunk,
     previousChunk: input.previousChunk,
@@ -94,7 +94,7 @@ export async function finalizeWarpTravelChunkSwitch(
 
   input.setCurrentChunk(input.targetChunk);
   if (input.preparedTerrain !== null && input.preparedTerrain !== undefined) {
-    input.applyPreparedTerrain(input.preparedTerrain);
+    await input.applyPreparedTerrain(input.preparedTerrain);
   }
   input.updateCurrentChunkBounds(input.startRow, input.startCol);
   input.forceVisibilityUpdate();

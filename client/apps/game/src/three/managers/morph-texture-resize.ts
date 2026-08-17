@@ -52,6 +52,7 @@ export function resizeInstancedMorphTexture(mesh: MorphTextureHolder, newCapacit
     newCapacity,
   );
   const grownTexture = new DataTexture(grownData, rowWidth, newCapacity, RedFormat, FloatType);
+  grownTexture.name = morphTexture.name;
   grownTexture.needsUpdate = true;
 
   morphTexture.dispose();

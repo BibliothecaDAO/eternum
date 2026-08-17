@@ -320,22 +320,6 @@ export interface BattleLogEvent {
   timestamp: string;
 }
 
-export interface StructureDetails {
-  internal_id: string; // Assuming internal_id might be non-numeric or large
-  entity_id: number; // Assuming entity_id is numeric
-  structure_category: number; // Assuming category is numeric
-  structure_level: number; // Assuming level is numeric
-  coord_x: number;
-  coord_y: number;
-  created_tick: number; // Assuming tick is numeric
-  realm_id: number; // Assuming realm_id is numeric
-  top_level_category: number; // Assuming category is numeric
-  internal_created_at: string; // ISO date string or similar
-  internal_updated_at: string; // ISO date string or similar
-  resources_packed: string; // Assuming this is a packed format, represented as string initially
-  occupier_id: ID; // Added owner field aliased as occupier_id
-}
-
 export interface Hyperstructure {
   entity_id: number;
   hyperstructure_id: number;

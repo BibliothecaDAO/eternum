@@ -1,3 +1,3 @@
-export function shouldCastWorldmapDirectionalShadow(shadowsEnabledByQuality: boolean, isFarView: boolean): boolean {
-  return shadowsEnabledByQuality && !isFarView;
+export function shouldCastWorldmapDirectionalShadow(shadowsEnabled: boolean, isFarView: boolean): boolean {
+  return shadowsEnabled && !isFarView;
 }

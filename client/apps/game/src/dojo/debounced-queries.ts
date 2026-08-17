@@ -1,12 +1,6 @@
 import { HexPosition, ID } from "@bibliothecadao/types";
-import { Component, Metadata, Schema } from "@dojoengine/recs";
 import { ToriiClient } from "@dojoengine/torii-client";
-import {
-  getBuildingsFromTorii,
-  getEntitiesFromTorii,
-  getOwnedArmiesFromTorii,
-  getTilesForPositionsFromTorii,
-} from "./queries";
+import { getBuildingsFromTorii, getEntitiesFromTorii, getOwnedArmiesFromTorii } from "./queries";
 
 // Queue class to manage requests
 type QueuedRequest = {
@@ -83,14 +77,13 @@ export const clearSubscriptionQueue = () => {
   subscriptionQueue.clear();
 };
 
-export const debouncedGetOwnedArmiesFromTorii = async <S extends Schema>(
+export const debouncedGetOwnedArmiesFromTorii = async (
   client: ToriiClient,
-  components: Component<S, Metadata, undefined>[],
   owners: number[],
   onComplete?: () => void,
 ) => {
   try {
-    await subscriptionQueue.add(() => getOwnedArmiesFromTorii(client, components, owners), onComplete);
+    await subscriptionQueue.add(() => getOwnedArmiesFromTorii(client, owners), onComplete);
   } catch (error) {
     console.error("Error in debouncedGetOwnedEntitiesFromTorii:", error);
     // Make sure onComplete is called even if there's an error
@@ -98,15 +91,14 @@ export const debouncedGetOwnedArmiesFromTorii = async <S extends Schema>(
   }
 };
 
-export const debouncedGetEntitiesFromTorii = async <S extends Schema>(
+export const debouncedGetEntitiesFromTorii = async (
   client: ToriiClient,
-  components: Component<S, Metadata, undefined>[],
   entityIDs: ID[],
   entityModels: string[],
   onComplete?: () => void,
 ) => {
   try {
-    await subscriptionQueue.add(() => getEntitiesFromTorii(client, components, entityIDs, entityModels), onComplete);
+    await subscriptionQueue.add(() => getEntitiesFromTorii(client, entityIDs, entityModels), onComplete);
   } catch (error) {
     console.error("Error in debouncedGetEntitiesFromTorii:", error);
     // Make sure onComplete is called even if there's an error
@@ -114,14 +106,13 @@ export const debouncedGetEntitiesFromTorii = async <S extends Schema>(
   }
 };
 
-export const debouncedGetBuildingsFromTorii = async <S extends Schema>(
+export const debouncedGetBuildingsFromTorii = async (
   client: ToriiClient,
-  components: Component<S, Metadata, undefined>[],
   structurePositions: HexPosition[],
   onComplete?: () => void,
 ) => {
   try {
-    await subscriptionQueue.add(() => getBuildingsFromTorii(client, components, structurePositions), onComplete);
+    await subscriptionQueue.add(() => getBuildingsFromTorii(client, structurePositions), onComplete);
   } catch (error) {
     console.error("Error in debouncedGetBuildingsFromTorii:", error);
     // Make sure onComplete is called even if there's an error

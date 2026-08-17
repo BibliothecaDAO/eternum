@@ -161,7 +161,7 @@ export const RealmUpgradeCompact = () => {
 
   const resolvedNextLevel = nextLevel != null ? RealmLevels[nextLevel as RealmLevels] : null;
   const upgradeTargetLabel = nextLevelName ?? resolvedNextLevel ?? "Next level";
-  const upgradeBlockedReason = upgradeInfo.upgradeActionState === "syncTimeout" ? "Waiting for sync" : "Need resources";
+  const upgradeBlockedReason = upgradeInfo.isUpgradeLocked ? "Waiting for sync" : "Need resources";
 
   return (
     <div className="flex flex-col gap-2.5">

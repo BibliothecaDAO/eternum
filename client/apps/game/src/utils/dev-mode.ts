@@ -26,6 +26,31 @@ const readRuntimeFlag = (): boolean => {
 
 export const DEV_MODE_ENABLED: boolean = env.VITE_PUBLIC_GRAPHICS_DEV === true || readRuntimeFlag();
 
+/**
+ * Opt-in console verbosity for the high-volume debug streams (chunk traces,
+ * interaction traces, memory-spike reports, audio/realtime debug lines).
+ * `?logs=1` enables (persisted per browser), `?logs=0` clears. Default off —
+ * a readable console is the norm, firehoses are the exception.
+ */
+const VERBOSE_STORAGE_KEY = "eternum:verbose-logs";
+
+const readVerboseFlag = (): boolean => {
+  if (typeof window === "undefined") return false;
+  try {
+    const params = new URLSearchParams(window.location.search);
+    if (params.has("logs")) {
+      const enabled = params.get("logs") !== "0";
+      window.localStorage.setItem(VERBOSE_STORAGE_KEY, enabled ? "1" : "0");
+      return enabled;
+    }
+    return window.localStorage.getItem(VERBOSE_STORAGE_KEY) === "1";
+  } catch {
+    return false;
+  }
+};
+
+export const VERBOSE_LOGS_ENABLED: boolean = readVerboseFlag();
+
 export const setDevModeEnabled = (enabled: boolean): void => {
   try {
     window.localStorage.setItem(STORAGE_KEY, enabled ? "1" : "0");

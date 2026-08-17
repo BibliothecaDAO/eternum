@@ -2,120 +2,73 @@ import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { useBlockTimestampStore } from "@/hooks/store/use-block-timestamp-store";
-
 import { useAttackTargetData } from "./use-attack-target";
 
-const {
-  componentsMock,
-  getBlockTimestampMock,
-  getExplorerFromToriiClientMock,
-  getResourceBalancesWithProductionMock,
-  getTileAtMock,
-  toriiClientMock,
-  getStructureFromToriiClientMock,
-} = vi.hoisted(() => ({
-  componentsMock: {
-    Structure: Symbol("Structure"),
-    ExplorerTroops: Symbol("ExplorerTroops"),
-    ProductionBoostBonus: Symbol("ProductionBoostBonus"),
-  },
-  getBlockTimestampMock: vi.fn(() => ({
-    currentBlockTimestamp: 0,
-    currentDefaultTick: 0,
-    currentArmiesTick: 0,
-  })),
-  getExplorerFromToriiClientMock: vi.fn(async () => ({
-    explorer: {
-      troops: {
-        count: 1000n,
-        category: 1,
-        tier: 1,
-        stamina: {
-          amount: 0n,
-          updated_tick: 0n,
-        },
-        boosts: {
-          incr_damage_dealt_percent_num: 0,
-          incr_damage_dealt_end_tick: 0,
-          decr_damage_gotten_percent_num: 0,
-          decr_damage_gotten_end_tick: 0,
-          incr_stamina_regen_percent_num: 0,
-          incr_stamina_regen_tick_count: 0,
-          incr_explore_reward_percent_num: 0,
-          incr_explore_reward_end_tick: 0,
-        },
-        battle_cooldown_end: 0,
-      },
-    },
-    resources: undefined,
-  })),
-  getResourceBalancesWithProductionMock: vi.fn(() => []),
-  getTileAtMock: vi.fn(() => ({
+const { useComponentValueMock, getResourceBalancesMock } = vi.hoisted(() => ({
+  useComponentValueMock: vi.fn(),
+  getResourceBalancesMock: vi.fn(),
+}));
+
+const components = {
+  Structure: Symbol("Structure"),
+  ExplorerTroops: Symbol("ExplorerTroops"),
+  ProductionBoostBonus: Symbol("ProductionBoostBonus"),
+  Resource: Symbol("Resource"),
+  TileOpt: Symbol("TileOpt"),
+};
+
+let targetExplorer = createExplorer(1_000n);
+let targetResource = { version: 1 };
+
+vi.mock("@bibliothecadao/react", () => ({
+  useDojo: () => ({ setup: { components } }),
+}));
+vi.mock("@dojoengine/react", () => ({ useComponentValue: useComponentValueMock }));
+vi.mock("@/dojo/game-scope", () => ({
+  gameEntityKey: (keys: bigint[]) => `entity:${keys.join(":")}`,
+}));
+vi.mock("@/hooks/helpers/use-block-timestamp", () => ({
+  useBlockTimestamp: () => ({ currentBlockTimestamp: 60, currentArmiesTick: 2 }),
+}));
+vi.mock("@bibliothecadao/eternum", () => ({
+  DEFAULT_COORD_ALT: false,
+  getArmyRelicEffects: vi.fn(() => []),
+  getGuardsByStructure: vi.fn(() => []),
+  getStructureArmyRelicEffects: vi.fn(() => []),
+  getStructureRelicEffects: vi.fn(() => []),
+  tileOptToTile: vi.fn(() => ({
     occupier_id: 321,
     occupier_is_structure: false,
     col: 10,
     row: 12,
   })),
-  toriiClientMock: {},
-  getStructureFromToriiClientMock: vi.fn(),
-}));
-
-vi.mock("@bibliothecadao/react", () => ({
-  useDojo: () => ({
-    network: {
-      toriiClient: toriiClientMock,
-    },
-    setup: {
-      components: componentsMock,
-    },
-  }),
-}));
-
-vi.mock("@dojoengine/recs", () => ({
-  getComponentValue: vi.fn(() => undefined),
-}));
-
-vi.mock("@dojoengine/react", () => ({
-  useComponentValue: vi.fn(() => undefined),
-}));
-
-vi.mock("@bibliothecadao/torii", () => ({
-  getExplorerFromToriiClient: getExplorerFromToriiClientMock,
-  getStructureFromToriiClient: getStructureFromToriiClientMock,
-}));
-
-vi.mock("@/services/api", () => ({
-  sqlApi: {
-    fetchExplorerAddressOwner: vi.fn(async () => null),
-  },
-}));
-
-vi.mock("@/ui/utils/utils", () => ({
-  getEntityIdFromKeys: vi.fn(() => "entity"),
-}));
-
-vi.mock("@bibliothecadao/eternum", () => ({
-  DEFAULT_COORD_ALT: false,
-  getBlockTimestamp: getBlockTimestampMock,
-  getArmyRelicEffects: vi.fn(() => []),
-  getStructureArmyRelicEffects: vi.fn(() => []),
-  getStructureRelicEffects: vi.fn(() => []),
-  getTileAt: getTileAtMock,
-  configManager: {
-    getTick: () => 1,
-  },
   ResourceManager: {
-    getResourceBalances: vi.fn(() => []),
-    getResourceBalancesWithProduction: getResourceBalancesWithProductionMock,
+    getResourceBalances: getResourceBalancesMock,
+    getResourceBalancesWithProduction: vi.fn(() => []),
   },
   StaminaManager: {
-    getStamina: vi.fn((_troops: unknown, currentArmiesTick: number) => ({
-      amount: BigInt(currentArmiesTick * 10),
-      updated_tick: BigInt(currentArmiesTick),
-    })),
+    getStamina: vi.fn((troops) => troops.stamina),
   },
 }));
+vi.mock("@bibliothecadao/types", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@bibliothecadao/types")>()),
+  ContractAddress: (value: bigint) => value,
+  STEALABLE_RESOURCES: [1],
+}));
+
+function createExplorer(count: bigint) {
+  return {
+    owner: 99,
+    troops: {
+      count,
+      category: 1,
+      tier: 1,
+      stamina: { amount: count, updated_tick: 2n },
+      boosts: {},
+      battle_cooldown_end: 0,
+    },
+  };
+}
 
 let latestResult: ReturnType<typeof useAttackTargetData> | null = null;
 
@@ -124,7 +77,7 @@ function HookHarness() {
   return null;
 }
 
-describe("useAttackTargetData", () => {
+describe("useAttackTargetData live RECS target", () => {
   let container: HTMLDivElement;
   let root: Root;
 
@@ -134,47 +87,38 @@ describe("useAttackTargetData", () => {
     document.body.appendChild(container);
     root = createRoot(container);
     latestResult = null;
-    useBlockTimestampStore.setState({
-      currentBlockTimestamp: 0,
-      currentDefaultTick: 0,
-      currentArmiesTick: 1,
-      armiesTickTimeRemaining: 0,
+    targetExplorer = createExplorer(1_000n);
+    targetResource = { version: 1 };
+    useComponentValueMock.mockImplementation((component, entity) => {
+      if (component === components.TileOpt) return {};
+      if (component === components.ExplorerTroops && entity === "entity:321") return targetExplorer;
+      if (component === components.Structure && entity === "entity:99") return { owner: 123n };
+      if (component === components.Resource && entity === "entity:321") return targetResource;
+      return undefined;
     });
+    getResourceBalancesMock.mockImplementation((resource) => [{ resourceId: 1, amount: resource.version * 10 }]);
   });
 
   afterEach(async () => {
-    await act(async () => {
-      root.unmount();
-    });
+    await act(async () => root.unmount());
     container.remove();
     vi.clearAllMocks();
     (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = false;
   });
 
-  it("derives target stamina from the live armies tick without refetching the target", async () => {
-    await act(async () => {
-      root.render(<HookHarness />);
-    });
+  it("updates troops, stamina, and stealable resources while the preview remains mounted", async () => {
+    await act(async () => root.render(<HookHarness />));
 
-    await act(async () => {
-      await Promise.resolve();
-    });
+    expect(latestResult?.target?.info[0]?.count).toBe(1_000n);
+    expect(latestResult?.target?.info[0]?.stamina.amount).toBe(1_000n);
+    expect(latestResult?.targetResources).toEqual([{ resourceId: 1, amount: 10 }]);
 
-    expect(latestResult?.target?.info[0]?.stamina.amount).toBe(10n);
-    expect(getExplorerFromToriiClientMock).toHaveBeenCalledTimes(1);
+    targetExplorer = createExplorer(400n);
+    targetResource = { version: 2 };
+    await act(async () => root.render(<HookHarness />));
 
-    await act(async () => {
-      useBlockTimestampStore.setState({
-        currentBlockTimestamp: 60,
-        currentArmiesTick: 2,
-      });
-    });
-
-    await act(async () => {
-      await Promise.resolve();
-    });
-
-    expect(latestResult?.target?.info[0]?.stamina.amount).toBe(20n);
-    expect(getExplorerFromToriiClientMock).toHaveBeenCalledTimes(1);
+    expect(latestResult?.target?.info[0]?.count).toBe(400n);
+    expect(latestResult?.target?.info[0]?.stamina.amount).toBe(400n);
+    expect(latestResult?.targetResources).toEqual([{ resourceId: 1, amount: 20 }]);
   });
 });

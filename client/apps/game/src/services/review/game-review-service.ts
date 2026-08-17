@@ -1123,6 +1123,10 @@ export const fetchGameReviewData = async ({
   playerAddress: string | null;
 }): Promise<GameReviewData> => {
   const { toriiSqlBaseUrl, gameId } = await resolveReviewGameContext(worldName);
+  // Pin leaderboard reads to the reviewed world/game — from the landing, the
+  // ambient SQL scope is still the legacy s1 default and the shared s2 torii
+  // has no such tables. Keep the catch as a belt-and-braces degrade.
+  const reviewScope = gameId > 0 ? { namespace: namespaceForChain(chain), gameId } : undefined;
 
   const [
     leaderboard,
@@ -1134,10 +1138,9 @@ export const fetchGameReviewData = async ({
     firstBlood,
     competitiveMetrics,
   ] = await Promise.all([
-    // The shared leaderboard reads still run through SqlApi's ambient scope
-    // and can fail against the shared s2 torii from the landing — degrade to
-    // an empty leaderboard so the game-scoped review queries still render.
-    fetchLandingLeaderboard(LEADERBOARD_FETCH_LIMIT, 0, toriiSqlBaseUrl).catch(() => [] as LandingLeaderboardEntry[]),
+    fetchLandingLeaderboard(LEADERBOARD_FETCH_LIMIT, 0, toriiSqlBaseUrl, reviewScope).catch(
+      () => [] as LandingLeaderboardEntry[],
+    ),
     fetchReviewFinalizationMeta(toriiSqlBaseUrl, gameId),
     fetchStoryStats(toriiSqlBaseUrl, gameId),
     fetchTransactionsCount(toriiSqlBaseUrl),
@@ -1182,9 +1185,11 @@ export const fetchGameReviewData = async ({
       : (leaderboard.find((entry) => parseAddress(entry.address) === normalizedPlayerAddress) ?? null);
 
   if (!personalScore && normalizedPlayerAddress) {
-    personalScore = await fetchLandingLeaderboardEntryByAddress(normalizedPlayerAddress, toriiSqlBaseUrl).catch(
-      () => null,
-    );
+    personalScore = await fetchLandingLeaderboardEntryByAddress(
+      normalizedPlayerAddress,
+      toriiSqlBaseUrl,
+      reviewScope,
+    ).catch(() => null);
   }
 
   const isParticipant =
@@ -1245,18 +1250,16 @@ export const fetchGameReviewClaimSummary = async ({
   chain: Chain;
   playerAddress: string;
 }): Promise<GameReviewClaimSummary> => {
-  // Keep the chain param for stable query keys and future chain-dependent claim policies.
-  void chain;
-
   const normalizedPlayerAddress = parseAddress(playerAddress);
   if (!normalizedPlayerAddress) {
     throw new Error("Missing player address for claim summary.");
   }
 
   const { toriiSqlBaseUrl, gameId } = await resolveReviewGameContext(worldName);
+  const claimScope = gameId > 0 ? { namespace: namespaceForChain(chain), gameId } : undefined;
   const [finalization, personalScore] = await Promise.all([
     fetchReviewFinalizationMeta(toriiSqlBaseUrl, gameId),
-    fetchLandingLeaderboardEntryByAddress(normalizedPlayerAddress, toriiSqlBaseUrl).catch(() => null),
+    fetchLandingLeaderboardEntryByAddress(normalizedPlayerAddress, toriiSqlBaseUrl, claimScope).catch(() => null),
   ]);
 
   const rewards = await fetchReviewRewards({
@@ -1516,7 +1519,7 @@ const claimGameReviewRewardsForPlayers = async ({
       chain,
       worldName,
       worldAddress: profile.worldAddress,
-      waitForConfirmation: false,
+      waitForConfirmation: true,
     });
   }
 

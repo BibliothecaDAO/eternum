@@ -1,6 +1,6 @@
 import { settleWorldmapAsyncStage } from "./worldmap-async-timeout";
 
-export type WorldmapChunkPresentationPhase = "tile_fetch" | "tile_hydration" | "bounds_ready" | "asset_prewarm";
+export type WorldmapChunkPresentationPhase = "projection_sync" | "asset_prewarm";
 
 export interface WorldmapChunkPresentationTimeoutInfo {
   chunkKey: string;
@@ -16,18 +16,16 @@ interface PrepareWorldmapChunkPresentationInput<TPreparedTerrain> {
     height: number;
     width: number;
   };
-  tileFetchPromise: Promise<boolean>;
-  tileHydrationReadyPromise: Promise<void>;
-  boundsReadyPromise: Promise<void>;
+  projectionSyncPromise: Promise<boolean>;
   assetPrewarmPromise: Promise<void>;
   prepareTerrainChunk: (startRow: number, startCol: number, height: number, width: number) => Promise<TPreparedTerrain>;
-  onChunkReady?: (chunkKey: string) => void;
+  onChunkPrepared?: (chunkKey: string) => void;
   phaseTimeoutMs?: number;
   onPhaseTimeout?: (info: WorldmapChunkPresentationTimeoutInfo) => void;
 }
 
 interface PreparedWorldmapChunkPresentation<TPreparedTerrain> {
-  tileFetchSucceeded: boolean;
+  projectionSyncSucceeded: boolean;
   preparedTerrain: TPreparedTerrain | null;
   timedOutPhase?: WorldmapChunkPresentationPhase;
 }
@@ -49,7 +47,7 @@ interface PrewarmWorldmapChunkPresentationInput<TPreparedTerrain> {
 }
 
 interface PrewarmedWorldmapChunkPresentation<TPreparedTerrain> {
-  status: "prepared" | "skipped_hot" | "stale_dropped" | "fetch_failed";
+  status: "prepared" | "skipped_hot" | "stale_dropped" | "sync_failed";
   preparedTerrain: TPreparedTerrain | null;
 }
 
@@ -57,17 +55,12 @@ export async function prepareWorldmapChunkPresentation<TPreparedTerrain>(
   input: PrepareWorldmapChunkPresentationInput<TPreparedTerrain>,
 ): Promise<PreparedWorldmapChunkPresentation<TPreparedTerrain>> {
   if (input.phaseTimeoutMs === undefined || input.phaseTimeoutMs <= 0) {
-    const [tileFetchSucceeded] = await Promise.all([
-      input.tileFetchPromise,
-      input.tileHydrationReadyPromise,
-      input.boundsReadyPromise,
-      input.assetPrewarmPromise,
-    ]);
+    const [projectionSyncSucceeded] = await Promise.all([input.projectionSyncPromise, input.assetPrewarmPromise]);
 
-    if (!tileFetchSucceeded) {
-      input.onChunkReady?.(input.chunkKey);
+    if (!projectionSyncSucceeded) {
+      input.onChunkPrepared?.(input.chunkKey);
       return {
-        tileFetchSucceeded: false,
+        projectionSyncSucceeded: false,
         preparedTerrain: null,
       };
     }
@@ -78,10 +71,10 @@ export async function prepareWorldmapChunkPresentation<TPreparedTerrain>(
       input.renderSize.height,
       input.renderSize.width,
     );
-    input.onChunkReady?.(input.chunkKey);
+    input.onChunkPrepared?.(input.chunkKey);
 
     return {
-      tileFetchSucceeded: true,
+      projectionSyncSucceeded: true,
       preparedTerrain,
     };
   }
@@ -101,56 +94,27 @@ export async function prepareWorldmapChunkPresentation<TPreparedTerrain>(
     onTimeout: ({ timeoutMs }) => resolvePhaseTimeout("asset_prewarm", timeoutMs),
   });
 
-  const [tileFetchResult, tileHydrationResult, boundsReadyResult] = await Promise.all([
-    settleWorldmapAsyncStage({
-      label: "tile_fetch" as const,
-      promise: input.tileFetchPromise,
-      timeoutMs: input.phaseTimeoutMs,
-      onTimeout: ({ timeoutMs }) => resolvePhaseTimeout("tile_fetch", timeoutMs),
-    }),
-    settleWorldmapAsyncStage({
-      label: "tile_hydration" as const,
-      promise: input.tileHydrationReadyPromise,
-      timeoutMs: input.phaseTimeoutMs,
-      onTimeout: ({ timeoutMs }) => resolvePhaseTimeout("tile_hydration", timeoutMs),
-    }),
-    settleWorldmapAsyncStage({
-      label: "bounds_ready" as const,
-      promise: input.boundsReadyPromise,
-      timeoutMs: input.phaseTimeoutMs,
-      onTimeout: ({ timeoutMs }) => resolvePhaseTimeout("bounds_ready", timeoutMs),
-    }),
-  ]);
+  const projectionSyncResult = await settleWorldmapAsyncStage({
+    label: "projection_sync" as const,
+    promise: input.projectionSyncPromise,
+    timeoutMs: input.phaseTimeoutMs,
+    onTimeout: ({ timeoutMs }) => resolvePhaseTimeout("projection_sync", timeoutMs),
+  });
 
-  const failedPhase =
-    (tileFetchResult.status !== "resolved" && "tile_fetch") ||
-    (tileHydrationResult.status !== "resolved" && "tile_hydration") ||
-    (boundsReadyResult.status !== "resolved" && "bounds_ready") ||
-    undefined;
-
-  if (failedPhase) {
-    input.onChunkReady?.(input.chunkKey);
+  if (projectionSyncResult.status !== "resolved") {
+    input.onChunkPrepared?.(input.chunkKey);
     return {
-      tileFetchSucceeded: false,
+      projectionSyncSucceeded: false,
       preparedTerrain: null,
-      timedOutPhase: failedPhase,
+      timedOutPhase: "projection_sync",
     };
   }
 
-  if (tileFetchResult.status !== "resolved") {
-    input.onChunkReady?.(input.chunkKey);
+  const projectionSyncSucceeded = projectionSyncResult.value;
+  if (!projectionSyncSucceeded) {
+    input.onChunkPrepared?.(input.chunkKey);
     return {
-      tileFetchSucceeded: false,
-      preparedTerrain: null,
-      timedOutPhase: "tile_fetch",
-    };
-  }
-
-  const tileFetchSucceeded = tileFetchResult.value;
-  if (!tileFetchSucceeded) {
-    input.onChunkReady?.(input.chunkKey);
-    return {
-      tileFetchSucceeded: false,
+      projectionSyncSucceeded: false,
       preparedTerrain: null,
     };
   }
@@ -161,10 +125,10 @@ export async function prepareWorldmapChunkPresentation<TPreparedTerrain>(
     input.renderSize.height,
     input.renderSize.width,
   );
-  input.onChunkReady?.(input.chunkKey);
+  input.onChunkPrepared?.(input.chunkKey);
 
   return {
-    tileFetchSucceeded: true,
+    projectionSyncSucceeded: true,
     preparedTerrain,
   };
 }
@@ -180,9 +144,9 @@ export async function prewarmWorldmapChunkPresentation<TPreparedTerrain>(
   }
 
   const preparedPresentation = await input.preparePresentation();
-  if (!preparedPresentation.tileFetchSucceeded || preparedPresentation.preparedTerrain === null) {
+  if (!preparedPresentation.projectionSyncSucceeded || preparedPresentation.preparedTerrain === null) {
     return {
-      status: "fetch_failed",
+      status: "sync_failed",
       preparedTerrain: null,
     };
   }

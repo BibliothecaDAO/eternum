@@ -42,4 +42,12 @@ describe("HexceptionScene lifecycle – Stage 1 subscription leaks", () => {
       expect(destroyBody).toMatch(/this\.hoverLabelManager\.dispose\(\)/);
     });
   });
+
+  it("applies the empty player-structure transition instead of retaining stale entries", () => {
+    const subscriptionStart = source.indexOf("(state) => state.playerStructures");
+    const subscriptionBody = source.slice(subscriptionStart, subscriptionStart + 300);
+
+    expect(subscriptionBody).toContain("this.updatePlayerStructures(playerStructures)");
+    expect(subscriptionBody).not.toContain("playerStructures.length > 0");
+  });
 });

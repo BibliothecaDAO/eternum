@@ -16,7 +16,7 @@ function createFakeScene(name: string) {
     getCurrentCameraView: vi.fn(() => undefined),
     hasActiveLabelAnimations: vi.fn(() => false),
     setWeatherAtmosphereState: vi.fn(),
-    applyQualityFeatures: vi.fn(),
+    applyRenderVisualProfile: vi.fn(),
     destroy: vi.fn(),
   };
 }
@@ -43,14 +43,14 @@ export function createGameRendererRuntimeHarness() {
       autoClear: false,
     },
     initialize: vi.fn(async () => ({
-      activeMode: "legacy-webgl",
-      buildMode: "legacy-webgl",
+      activeMode: "webgl2-fallback",
+      buildMode: "webgpu-force-webgl",
       fallbackReason: null,
       initTimeMs: 0,
-      requestedMode: "legacy-webgl",
+      requestedMode: "webgpu-force-webgl",
     })),
     resize: vi.fn(),
-    applyQuality: vi.fn(),
+    applyRenderVisuals: vi.fn(),
     applyPostProcessPlan: vi.fn(() => ({
       setColorGrade: vi.fn(),
       setVignette: vi.fn(),
@@ -89,10 +89,9 @@ export function createGameRendererRuntimeHarness() {
       };
       const effectsBridge = {
         applyEnvironment: vi.fn(),
-        applyQualityFeatures: vi.fn(),
+        applyRenderVisualProfile: vi.fn(),
         dispose: vi.fn(),
         setupPostProcessingEffects: vi.fn(),
-        subscribeToQualityController: vi.fn(),
         updateWeatherPostProcessing: vi.fn(),
       };
       const monitoringRuntime = {

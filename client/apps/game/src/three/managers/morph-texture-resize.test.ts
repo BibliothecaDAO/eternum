@@ -22,6 +22,7 @@ describe("resizeInstancedMorphTexture", () => {
   // preserving the existing rows, before any write past the old capacity.
   it("rebuilds the morph texture at the new capacity, preserving existing rows", () => {
     const morphTexture = new DataTexture(new Float32Array([1, 2, 3, 4, 5, 6]), 3, 2, RedFormat, FloatType);
+    morphTexture.name = "army-morph:knight";
     const disposeSpy = vi.spyOn(morphTexture, "dispose");
     const mesh = { morphTexture } as { morphTexture: DataTexture | null };
 
@@ -32,6 +33,7 @@ describe("resizeInstancedMorphTexture", () => {
     expect(mesh.morphTexture!.image.height).toBe(4);
     expect(mesh.morphTexture!.image.width).toBe(3);
     expect(Array.from(mesh.morphTexture!.image.data as Float32Array)).toEqual([1, 2, 3, 4, 5, 6, 0, 0, 0, 0, 0, 0]);
+    expect(mesh.morphTexture!.name).toBe("army-morph:knight");
     // Texture.needsUpdate is a set-only accessor; setting it true bumps `version`.
     expect(mesh.morphTexture!.version).toBeGreaterThan(0);
     expect(disposeSpy).toHaveBeenCalledTimes(1);

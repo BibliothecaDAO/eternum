@@ -97,6 +97,32 @@ const queryClient = new QueryClient({
   },
 });
 
+const fallbackControllerRuntimeConfig = resolveStarknetRuntimeConfig({
+  fallbackChain,
+  selectedChain: fallbackChain,
+  baseRpcUrl: fallbackChain === "local" ? KATANA_RPC_URL : env.VITE_PUBLIC_NODE_URL,
+  cartridgeApiBase,
+});
+
+// The connector package keeps the first instance and ignores later options.
+// Own exactly one instance for the lifetime of this client module.
+const controller = new ControllerConnector({
+  errorDisplayMode: "notification",
+  propagateSessionErrors: true,
+  // Passkey ceremonies escape the keychain iframe into a popup. Chrome gates
+  // in-iframe WebAuthn on transient user activation; the popup path is stable
+  // across supported desktop platforms.
+  webauthnPopup: true,
+  chains: fallbackControllerRuntimeConfig.controllerSupportedRpcUrls.map((chainRpcUrl) => ({
+    rpcUrl: chainRpcUrl,
+  })),
+  defaultChainId: fallbackControllerRuntimeConfig.defaultChainId,
+  // Session policies are installed after game selection, once bootstrap has
+  // resolved the selected world's contract addresses.
+  namespace,
+  toriiUrl: env.VITE_PUBLIC_TORII || undefined,
+});
+
 export function StarknetProvider({ children }: { children: React.ReactNode }) {
   const activeWorld = useActiveWorldProfile();
   const runtimeChain = useRuntimeChain(fallbackChain);
@@ -118,29 +144,6 @@ export function StarknetProvider({ children }: { children: React.ReactNode }) {
         cartridgeApiBase,
       }),
     [baseRpcUrl, runtimeChain],
-  );
-
-  const controller = useMemo(
-    () =>
-      new ControllerConnector({
-        errorDisplayMode: "notification",
-        propagateSessionErrors: true,
-        chains: runtimeConfig.controllerSupportedRpcUrls.map((chainRpcUrl) => ({
-          rpcUrl: chainRpcUrl,
-        })),
-        defaultChainId: runtimeConfig.defaultChainId,
-        // Policies are intentionally omitted here so that login/connect does NOT
-        // create a session upfront. Session policies are set later by
-        // refreshSessionPolicies() after the player selects a game and
-        // bootstrapGame() patches the manifest with the correct contract addresses.
-        // No Slot project is ever passed: Slot is EoL and the self-hosted
-        // appchain has none, so the keychain would resolve a foreign project.
-        // The world torii indexes trophies under the s2 namespace, so the
-        // keychain profile (achievements/inventory) reads it directly.
-        namespace,
-        toriiUrl: env.VITE_PUBLIC_TORII || undefined,
-      }),
-    [runtimeConfig.controllerSupportedRpcUrls, runtimeConfig.defaultChainId],
   );
 
   const rpc = useCallback(() => {

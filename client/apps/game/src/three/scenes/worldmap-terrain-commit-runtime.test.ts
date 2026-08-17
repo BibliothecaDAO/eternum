@@ -43,7 +43,6 @@ describe("commitWorldmapPreparedTerrainPresentation", () => {
       phaseDurations: {
         structureAssetPrewarmMs: 18,
         terrainPreparedMs: 22,
-        tileHydrationDrainMs: 8,
       },
       preparedTerrain: { chunkKey: "24,24" },
       presentationStartedAtMs: 60,
@@ -66,7 +65,7 @@ describe("commitWorldmapPreparedTerrainPresentation", () => {
     expect(recordChunkDiagnosticsEvent).toHaveBeenCalledWith({ id: "diagnostics" }, "terrain_visible_commit");
     expect(recordWorldmapRenderDuration).toHaveBeenCalledWith("chunkTerrainCommitMs", 12);
     expect(recordWorldmapRenderDuration).toHaveBeenCalledWith("presentationCommittedMs", 52);
-    expect(recordWorldmapRenderDuration).toHaveBeenCalledWith("presentationSkewMs", 14);
+    expect(recordWorldmapRenderDuration).toHaveBeenCalledWith("presentationSkewMs", 4);
     expect(incrementWorldmapRenderCounter).toHaveBeenCalledWith("terrainVisibleCommits");
   });
 
@@ -80,7 +79,6 @@ describe("commitWorldmapPreparedTerrainPresentation", () => {
       phaseDurations: {
         structureAssetPrewarmMs: 0,
         terrainPreparedMs: 0,
-        tileHydrationDrainMs: 0,
       },
       preparedTerrain: { chunkKey: "0,0" },
       presentationStartedAtMs: 4,

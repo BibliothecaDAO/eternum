@@ -1,10 +1,4 @@
-type GameSyncChannel =
-  | "gamewide-entity"
-  | "global-entity"
-  | "global-event"
-  | "spatial-bootstrap"
-  | "bounded-spatial"
-  | "player-entity";
+type GameSyncChannel = "gamewide-entity" | "global-event";
 
 type GameSyncModelAvailability = "all" | "s2-only";
 type GameSyncRecoveryPolicy = "convergent-snapshot" | "event-deduped";
@@ -15,7 +9,6 @@ interface GameSyncModelDefinition {
   channels: readonly GameSyncChannel[];
   availability: GameSyncModelAvailability;
   s2Scope: "game" | "chain";
-  legacyKeyCount: number;
   recovery: GameSyncRecoveryPolicy;
   deletion: GameSyncDeletionPolicy;
   spatial?: {
@@ -25,7 +18,7 @@ interface GameSyncModelDefinition {
   eventRetention?: {
     retainRecsRows: false;
     dedupeIdentityLimit: number;
-    replayEffectsOnRecovery: false;
+    replayEffectsOnRecovery: true;
   };
 }
 
@@ -34,22 +27,20 @@ const EVENT_DEDUPE_IDENTITY_LIMIT = 512;
 const eventRetention = (): NonNullable<GameSyncModelDefinition["eventRetention"]> => ({
   retainRecsRows: false,
   dedupeIdentityLimit: EVENT_DEDUPE_IDENTITY_LIMIT,
-  replayEffectsOnRecovery: false,
+  replayEffectsOnRecovery: true,
 });
 
 const globalEntity = (
   name: string,
   options: {
-    legacyKeyCount?: number;
     availability?: GameSyncModelAvailability;
     s2Scope?: "game" | "chain";
   } = {},
 ): GameSyncModelDefinition => ({
   name,
-  channels: ["gamewide-entity", "global-entity"],
+  channels: ["gamewide-entity"],
   availability: options.availability ?? "all",
   s2Scope: options.s2Scope ?? "game",
-  legacyKeyCount: options.legacyKeyCount ?? 1,
   recovery: "convergent-snapshot",
   deletion: "component",
 });
@@ -59,52 +50,30 @@ const globalEvent = (name: string): GameSyncModelDefinition => ({
   channels: ["global-event"],
   availability: "all",
   s2Scope: "game",
-  legacyKeyCount: 1,
   recovery: "event-deduped",
   deletion: "event-ephemeral",
   eventRetention: eventRetention(),
 });
 
-const spatial = (
-  name: string,
-  colField: string,
-  rowField: string,
-  options: { bootstrap?: boolean; player?: boolean } = {},
-): GameSyncModelDefinition => ({
+const spatial = (name: string, colField: string, rowField: string): GameSyncModelDefinition => ({
   name,
-  channels: [
-    "gamewide-entity",
-    ...(options.bootstrap === false ? [] : (["spatial-bootstrap"] as const)),
-    "bounded-spatial",
-    ...(options.player ? (["player-entity"] as const) : []),
-  ],
+  channels: ["gamewide-entity"],
   availability: "all",
   s2Scope: "game",
-  legacyKeyCount: 1,
   recovery: "convergent-snapshot",
   deletion: "component",
   spatial: { colField, rowField },
 });
 
-const playerEntity = (name: string): GameSyncModelDefinition => ({
-  name,
-  channels: ["gamewide-entity", "player-entity"],
-  availability: "all",
-  s2Scope: "game",
-  legacyKeyCount: 1,
-  recovery: "convergent-snapshot",
-  deletion: "component",
-});
-
 /**
- * Executable S2 ownership map. The gamewide channel is authoritative; legacy
- * channel selectors remain only for the complete bounded rollback adapter and
- * are deleted with that adapter in S4.
+ * Executable ownership map. The gamewide channel is authoritative for current
+ * entity truth; event models remain ephemeral effects.
  */
 export const GAME_SYNC_MODEL_MANIFEST: readonly GameSyncModelDefinition[] = [
   globalEntity("WorldConfig"),
   globalEntity("HyperstrtConstructConfig", { s2Scope: "chain" }),
   globalEntity("HyperstructureGlobals"),
+  globalEntity("Hyperstructure"),
   globalEntity("WeightConfig", { s2Scope: "chain" }),
   globalEntity("ResourceFactoryConfig", { s2Scope: "chain" }),
   globalEntity("BuildingCategoryConfig", { s2Scope: "chain" }),
@@ -113,6 +82,7 @@ export const GAME_SYNC_MODEL_MANIFEST: readonly GameSyncModelDefinition[] = [
   globalEntity("SeasonPrize"),
   globalEntity("SeasonEnded"),
   globalEntity("QuestLevels"),
+  globalEntity("QuestTile"),
   globalEntity("AddressName", { s2Scope: "chain" }),
   globalEntity("PlayerRegisteredPoints"),
   globalEntity("BlitzSettlement"),
@@ -122,22 +92,22 @@ export const GAME_SYNC_MODEL_MANIFEST: readonly GameSyncModelDefinition[] = [
   globalEntity("MMRGameMeta"),
   globalEntity("Guild"),
   globalEntity("GuildMember"),
-  globalEntity("ResourceList", { legacyKeyCount: 2, s2Scope: "chain" }),
-  globalEntity("PlayerRank", { legacyKeyCount: 2 }),
-  globalEntity("RankPrize", { legacyKeyCount: 2 }),
-  globalEntity("GuildWhitelist", { legacyKeyCount: 2 }),
+  globalEntity("ResourceList", { s2Scope: "chain" }),
+  globalEntity("PlayerRank"),
+  globalEntity("RankPrize"),
+  globalEntity("GuildWhitelist"),
   globalEntity("GameRegistry", { availability: "s2-only" }),
   globalEvent("OpenRelicChestEvent"),
   spatial("TileOpt", "col", "row"),
-  spatial("Structure", "base.coord_x", "base.coord_y", { bootstrap: false, player: true }),
-  spatial("StructureBuildings", "coord.x", "coord.y", { player: true }),
-  spatial("Building", "outer_col", "outer_row", { player: true }),
+  spatial("Structure", "base.coord_x", "base.coord_y"),
+  spatial("StructureBuildings", "coord.x", "coord.y"),
+  spatial("Building", "outer_col", "outer_row"),
   spatial("ExplorerTroops", "coord.x", "coord.y"),
   globalEvent("ExplorerRewardEvent"),
   globalEvent("BattleEvent"),
-  playerEntity("ProductionBoostBonus"),
-  playerEntity("Resource"),
-  playerEntity("ResourceArrival"),
+  globalEntity("ProductionBoostBonus"),
+  globalEntity("Resource"),
+  globalEntity("ResourceArrival"),
 ];
 
 export const getGameSyncModelsForChannel = (

@@ -1,9 +1,9 @@
+import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
+import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
+import { useGameEntityComponentValue } from "@/hooks/helpers/use-game-entity-component-value";
 import { MaxButton } from "@/ui/design-system/atoms";
 import Button from "@/ui/design-system/atoms/button";
-import { LoadingAnimation } from "@/ui/design-system/molecules/loading-animation";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
-import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
-import { getBlockTimestamp } from "@bibliothecadao/eternum";
 
 import {
   configManager,
@@ -13,12 +13,9 @@ import {
   ResourceManager,
 } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
-import { getExplorerFromToriiClient, getStructureFromToriiClient } from "@bibliothecadao/torii";
 import { ActorType, ID, RelicRecipientType, RELICS, resources, ResourcesIds } from "@bibliothecadao/types";
-import { useQuery } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
-import { getActorTypes } from "./help-container";
-import { TransferDirection } from "./transfer-troops/transfer-direction";
+import { getActorTypes, TransferDirection } from "./transfer-troops/transfer-direction";
 
 const STRUCTURE_RELIC_IDS = new Set<number>(
   RELICS.filter(({ recipientType }) => recipientType === RelicRecipientType.Structure).map(({ id }) => id),
@@ -51,8 +48,8 @@ export const TransferResourcesContainer = ({
 }: TransferResourcesContainerProps) => {
   const {
     account: { account },
-    network: { toriiClient },
     setup: {
+      components,
       systemCalls: {
         troop_structure_adjacent_transfer,
         structure_troop_adjacent_transfer,
@@ -61,17 +58,25 @@ export const TransferResourcesContainer = ({
     },
   } = useDojo();
   const mode = useGameModeConfig();
+  const currentDefaultTick = useCurrentDefaultTick();
+  const actorTypes = useMemo(() => getActorTypes(transferDirection), [transferDirection]);
+  const selectedResourceState = useGameEntityComponentValue(components.Resource, selectedEntityId);
+  const targetResourceState = useGameEntityComponentValue(components.Resource, targetEntityId);
+  const selectedStructure = useGameEntityComponentValue(components.Structure, selectedEntityId);
+  const targetStructure = useGameEntityComponentValue(components.Structure, targetEntityId);
 
   const [loading, setLoading] = useState(false);
   const [selectedResources, setSelectedResources] = useState<ResourceTransfer[]>([]);
   const [resourceAmounts, setResourceAmounts] = useState<Record<number, number>>({});
   const [hasAutoSelected, setHasAutoSelected] = useState(false);
-  const [selectedResourcesWeightKg, setSelectedResourcesWeightKg] = useState<number>(0);
-  const [actorTypes, setActorTypes] = useState<{
-    selected: ActorType;
-    target: ActorType;
-  } | null>(null);
-
+  const selectedResourcesWeightKg = useMemo(
+    () =>
+      selectedResources.reduce((total, { resourceId, amount }) => {
+        const weight = configManager.resourceWeightsKg[resourceId] || 0;
+        return total + amount * weight;
+      }, 0),
+    [selectedResources],
+  );
   useEffect(() => {
     // when transfer context changes, reset the selected resources
     setSelectedResources([]);
@@ -79,59 +84,32 @@ export const TransferResourcesContainer = ({
     setHasAutoSelected(false);
   }, [transferDirection, selectedEntityId, targetEntityId]);
 
-  useEffect(() => {
-    const { selected, target } = getActorTypes(transferDirection);
-    setActorTypes({ selected, target });
-  }, [transferDirection]);
+  const availableResources = useMemo(() => {
+    if (!selectedResourceState) return [];
+    const allowedRelicIds = actorTypes.target === ActorType.Structure ? STRUCTURE_RELIC_IDS : ALL_RELIC_IDS;
+    return resources
+      .filter(({ id }) => allowedRelicIds.has(id))
+      .map(({ id }) => ({
+        resourceId: id,
+        amount: ResourceManager.balanceWithProduction(selectedResourceState, currentDefaultTick, id).balance,
+      }))
+      .filter(({ amount }) => amount > 0);
+  }, [actorTypes.target, currentDefaultTick, selectedResourceState]);
 
-  // Query for available resources
-  const { data: availableResourcesData, isLoading: isResourcesLoading } = useQuery({
-    queryKey: ["availableResources", String(selectedEntityId), String(actorTypes?.selected)],
-    queryFn: async () => {
-      if (!selectedEntityId || !actorTypes) return [];
-      const targetActorType = actorTypes.target;
-      const { currentDefaultTick } = getBlockTimestamp();
-      const { resources: resourcesData } =
-        actorTypes.selected === ActorType.Explorer
-          ? await getExplorerFromToriiClient(toriiClient, selectedEntityId)
-          : await getStructureFromToriiClient(toriiClient, selectedEntityId);
-      if (!resourcesData) return [];
-      const allowedRelicIds = targetActorType === ActorType.Structure ? STRUCTURE_RELIC_IDS : ALL_RELIC_IDS;
+  const explorerCapacity = useMemo(() => {
+    if (actorTypes.target !== ActorType.Explorer || !mode.ui.showExplorerCapacity || !targetResourceState) return null;
+    const maxCapacity = getArmyTotalCapacityInKg(targetResourceState);
+    const currentLoad = gramToKg(divideByPrecision(Number(targetResourceState.weight.weight)));
+    return {
+      maxCapacityKg: maxCapacity,
+      currentLoadKg: currentLoad,
+      remainingCapacityKg: maxCapacity - currentLoad,
+    };
+  }, [actorTypes.target, mode.ui.showExplorerCapacity, targetResourceState]);
 
-      return resources
-        .filter(({ id }) => allowedRelicIds.has(id))
-        .map(({ id }) => ({
-          resourceId: id,
-          amount: ResourceManager.balanceWithProduction(resourcesData, currentDefaultTick, id).balance,
-        }))
-        .filter(({ amount }) => amount > 0);
-    },
-    staleTime: 3000, // 3 seconds
-  });
-
-  // Query for explorer capacity
-  const { data: explorerCapacity, isLoading: isExplorerCapacityLoading } = useQuery({
-    queryKey: ["explorerCapacity", String(targetEntityId), String(actorTypes?.target)],
-    queryFn: async () => {
-      if (!targetEntityId || actorTypes?.target !== ActorType.Explorer) return null;
-      if (!mode.ui.showExplorerCapacity) return null;
-      const { resources: resourcesData } = await getExplorerFromToriiClient(toriiClient, targetEntityId);
-      if (!resourcesData) return null;
-      const maxCapacity = getArmyTotalCapacityInKg(resourcesData);
-      const currentLoad = gramToKg(divideByPrecision(Number(resourcesData.weight.weight)));
-      return {
-        maxCapacityKg: maxCapacity,
-        currentLoadKg: currentLoad,
-        remainingCapacityKg: maxCapacity - currentLoad,
-      };
-    },
-    staleTime: 10000, // 10 seconds
-  });
-
-  const availableResources = availableResourcesData || [];
   const availableCapacityKg = explorerCapacity ? explorerCapacity.remainingCapacityKg - selectedResourcesWeightKg : 0;
   const hasSelectedResources = selectedResources.length > 0;
-  const showExplorerCapacity = actorTypes?.target === ActorType.Explorer && Boolean(explorerCapacity);
+  const showExplorerCapacity = actorTypes.target === ActorType.Explorer && Boolean(explorerCapacity);
   const resourcesMidpoint = Math.ceil(availableResources.length / 2);
   const leftResources = availableResources.slice(0, resourcesMidpoint);
   const rightResources = availableResources.slice(resourcesMidpoint);
@@ -139,8 +117,8 @@ export const TransferResourcesContainer = ({
   useEffect(() => {
     if (
       transferDirection !== TransferDirection.ExplorerToStructure ||
-      actorTypes?.selected !== ActorType.Explorer ||
-      actorTypes?.target !== ActorType.Structure ||
+      actorTypes.selected !== ActorType.Explorer ||
+      actorTypes.target !== ActorType.Structure ||
       hasAutoSelected ||
       availableResources.length === 0 ||
       hasSelectedResources
@@ -164,16 +142,34 @@ export const TransferResourcesContainer = ({
     setSelectedResources(newSelectedResources);
     setResourceAmounts(newResourceAmounts);
     setHasAutoSelected(true);
-  }, [actorTypes, availableResources, hasAutoSelected, hasSelectedResources, transferDirection]);
+  }, [
+    actorTypes.selected,
+    actorTypes.target,
+    availableResources,
+    hasAutoSelected,
+    hasSelectedResources,
+    transferDirection,
+  ]);
 
   useEffect(() => {
-    // Calculate weight of selected resources
-    const selectedResourcesWeight = selectedResources.reduce((total, { resourceId, amount }) => {
-      const weight = configManager.resourceWeightsKg[resourceId] || 0;
-      return total + amount * weight;
-    }, 0);
-    setSelectedResourcesWeightKg(selectedResourcesWeight);
-  }, [selectedResources]);
+    const liveAmounts = new Map(
+      availableResources.map(({ resourceId, amount }) => [resourceId, divideByPrecision(amount)]),
+    );
+    setSelectedResources((current) =>
+      current.flatMap((resource) => {
+        const liveAmount = liveAmounts.get(resource.resourceId);
+        return liveAmount === undefined ? [] : [{ ...resource, amount: Math.min(resource.amount, liveAmount) }];
+      }),
+    );
+    setResourceAmounts((current) =>
+      Object.fromEntries(
+        Object.entries(current).flatMap(([resourceId, amount]) => {
+          const liveAmount = liveAmounts.get(Number(resourceId));
+          return liveAmount === undefined ? [] : [[resourceId, Math.min(amount, liveAmount)]];
+        }),
+      ),
+    );
+  }, [availableResources]);
 
   // Handle resource selection
   const toggleResourceSelection = (resource: ResourceTransfer) => {
@@ -192,7 +188,7 @@ export const TransferResourcesContainer = ({
       let defaultAmount = divideByPrecision(resource.amount);
 
       // If transferring to explorer, limit by available capacity
-      if (actorTypes?.target === ActorType.Explorer && explorerCapacity) {
+      if (actorTypes.target === ActorType.Explorer && explorerCapacity) {
         const resourceWeight = configManager.resourceWeightsKg[resource.resourceId] || 0;
         if (resourceWeight > 0) {
           // Only limit if resource has weight
@@ -218,7 +214,7 @@ export const TransferResourcesContainer = ({
     let maxAmount = divideByPrecision(resource.amount);
 
     // If transferring to explorer, limit by remaining capacity when available
-    if (actorTypes?.target === ActorType.Explorer && explorerCapacity) {
+    if (actorTypes.target === ActorType.Explorer && explorerCapacity) {
       const resourceWeight = configManager.resourceWeightsKg[resourceId] || 0;
 
       // Calculate how much capacity is used by other selected resources
@@ -257,7 +253,7 @@ export const TransferResourcesContainer = ({
 
     // If transferring to explorer, we need to calculate how much of each resource we can add
     // based on weight constraints
-    if (actorTypes?.target === ActorType.Explorer && explorerCapacity) {
+    if (actorTypes.target === ActorType.Explorer && explorerCapacity) {
       let remainingCapacity = explorerCapacity.remainingCapacityKg;
 
       // Sort resources by weight (lightest first) to maximize the number of resources we can transfer
@@ -314,12 +310,25 @@ export const TransferResourcesContainer = ({
     try {
       setLoading(true);
 
-      // Prepare resources with updated amounts and apply precision
-      const resourcesWithAmounts = selectedResources.map((resource) => ({
-        resourceId: resource.resourceId,
-        // Multiply by 10^9 to add precision for the transaction
-        amount: (resourceAmounts[resource.resourceId] || resource.amount) * 10 ** 9,
-      }));
+      // Re-check every requested amount against the latest RECS balance at
+      // submit time. A source spend received while this panel is open must not
+      // leave stale calldata behind in local selection state.
+      let remainingCapacityKg = explorerCapacity
+        ? Math.max(0, explorerCapacity.remainingCapacityKg)
+        : Number.POSITIVE_INFINITY;
+      const resourcesWithAmounts = selectedResources.flatMap((resource) => {
+        const current = availableResources.find(({ resourceId }) => resourceId === resource.resourceId);
+        if (!current) return [];
+        const requestedAmount = resourceAmounts[resource.resourceId] ?? resource.amount;
+        const resourceWeightKg = configManager.resourceWeightsKg[resource.resourceId] || 0;
+        const capacityLimit =
+          resourceWeightKg > 0 ? Math.floor(remainingCapacityKg / resourceWeightKg) : Number.POSITIVE_INFINITY;
+        const amount = Math.min(requestedAmount, divideByPrecision(current.amount), capacityLimit);
+        remainingCapacityKg -= amount * resourceWeightKg;
+        return amount > 0 ? [{ resourceId: resource.resourceId, amount: amount * 10 ** 9 }] : [];
+      });
+
+      if (resourcesWithAmounts.length === 0) return;
 
       if (transferDirection === TransferDirection.ExplorerToStructure) {
         const calldata = {
@@ -356,7 +365,7 @@ export const TransferResourcesContainer = ({
 
   // Render explorer capacity information
   const renderExplorerCapacity = () => {
-    if (actorTypes?.target !== ActorType.Explorer || !explorerCapacity) {
+    if (actorTypes.target !== ActorType.Explorer || !explorerCapacity) {
       return null;
     }
 
@@ -551,119 +560,91 @@ export const TransferResourcesContainer = ({
   };
 
   const formatActorLabel = (actorType?: ActorType, entityId?: ID, entityName?: string | null) => {
-    if (!actorType || !entityId) return "Unknown";
+    if (actorType === undefined || !entityId) return "Unknown";
     if (actorType === ActorType.Explorer) return `Explorer ${entityId}`;
     if (actorType === ActorType.Structure && entityName) return entityName;
     if (actorType === ActorType.Structure) return `Structure ${entityId}`;
     return `Entity ${entityId}`;
   };
 
-  const { data: selectedStructureInfo } = useQuery({
-    queryKey: ["transfer-selected-structure", String(selectedEntityId)],
-    queryFn: async () => {
-      if (!selectedEntityId || actorTypes?.selected !== ActorType.Structure) return null;
-      const res = await getStructureFromToriiClient(toriiClient, selectedEntityId);
-      return res.structure;
-    },
-    enabled: Boolean(selectedEntityId && actorTypes?.selected === ActorType.Structure),
-    staleTime: 10000,
-  });
-
-  const { data: targetStructureInfo } = useQuery({
-    queryKey: ["transfer-target-structure", String(targetEntityId)],
-    queryFn: async () => {
-      if (!targetEntityId || actorTypes?.target !== ActorType.Structure) return null;
-      const res = await getStructureFromToriiClient(toriiClient, targetEntityId);
-      return res.structure;
-    },
-    enabled: Boolean(targetEntityId && actorTypes?.target === ActorType.Structure),
-    staleTime: 10000,
-  });
-
   const selectedStructureName = useMemo(() => {
-    if (!selectedStructureInfo) return null;
-    return mode.structure.getName(selectedStructureInfo).name;
-  }, [selectedStructureInfo, mode]);
+    if (actorTypes.selected !== ActorType.Structure || !selectedStructure) return null;
+    return mode.structure.getName(selectedStructure).name;
+  }, [actorTypes.selected, selectedStructure, mode]);
 
   const targetStructureName = useMemo(() => {
-    if (!targetStructureInfo) return null;
-    return mode.structure.getName(targetStructureInfo).name;
-  }, [targetStructureInfo, mode]);
+    if (actorTypes.target !== ActorType.Structure || !targetStructure) return null;
+    return mode.structure.getName(targetStructure).name;
+  }, [actorTypes.target, targetStructure, mode]);
 
-  const fromLabel = formatActorLabel(actorTypes?.selected, selectedEntityId, selectedStructureName ?? undefined);
-  const toLabel = formatActorLabel(actorTypes?.target, targetEntityId, targetStructureName ?? undefined);
+  const fromLabel = formatActorLabel(actorTypes.selected, selectedEntityId, selectedStructureName ?? undefined);
+  const toLabel = formatActorLabel(actorTypes.target, targetEntityId, targetStructureName ?? undefined);
 
   return (
     <div className="flex flex-col h-full relative pb-32">
-      {isResourcesLoading || isExplorerCapacityLoading ? (
-        <LoadingAnimation />
+      {/* Top section with capacity info */}
+
+      {/* Add Select All / Unselect All buttons here */}
+      <div className="flex items-center justify-between mb-3 gap-3">
+        <div className="flex items-center gap-2">
+          <Button
+            onClick={handleSelectAllResources}
+            variant="outline"
+            size="xs"
+            disabled={availableResources.length === 0}
+          >
+            Select All Available
+          </Button>
+          <Button
+            onClick={handleUnselectAllResources}
+            variant="outline"
+            size="xs"
+            disabled={selectedResources.length === 0}
+          >
+            Unselect All
+          </Button>
+        </div>
+        <div className="text-xs text-gold/70 font-semibold whitespace-nowrap">
+          {fromLabel} → {toLabel}
+        </div>
+      </div>
+
+      {availableResources.length === 0 ? (
+        <p className="text-gold/60">No relics available to transfer.</p>
+      ) : showExplorerCapacity ? (
+        <div className="h-full grid grid-cols-1 gap-3 sm:grid-cols-3">
+          <div className="sticky top-0 z-10 sm:col-span-1">{renderExplorerCapacity()}</div>
+          <div className="overflow-y-auto sm:col-span-2">
+            <div className="grid grid-cols-1 sm:grid-cols-2 sm:gap-3 space-y-3 sm:space-y-0">
+              {availableResources.map(renderResourceCard)}
+            </div>
+          </div>
+        </div>
       ) : (
-        <>
-          {/* Top section with capacity info */}
-
-          {/* Add Select All / Unselect All buttons here */}
-          <div className="flex items-center justify-between mb-3 gap-3">
-            <div className="flex items-center gap-2">
-              <Button
-                onClick={handleSelectAllResources}
-                variant="outline"
-                size="xs"
-                disabled={availableResources.length === 0}
-              >
-                Select All Available
-              </Button>
-              <Button
-                onClick={handleUnselectAllResources}
-                variant="outline"
-                size="xs"
-                disabled={selectedResources.length === 0}
-              >
-                Unselect All
-              </Button>
-            </div>
-            <div className="text-xs text-gold/70 font-semibold whitespace-nowrap">
-              {fromLabel} → {toLabel}
-            </div>
+        <div className="overflow-y-auto">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4">
+            <div className="space-y-3">{leftResources.map(renderResourceCard)}</div>
+            <div className="space-y-3">{rightResources.map(renderResourceCard)}</div>
           </div>
-
-          {availableResources.length === 0 ? (
-            <p className="text-gold/60">No relics available to transfer.</p>
-          ) : showExplorerCapacity ? (
-            <div className="h-full grid grid-cols-1 gap-3 sm:grid-cols-3">
-              <div className="sticky top-0 z-10 sm:col-span-1">{renderExplorerCapacity()}</div>
-              <div className="overflow-y-auto sm:col-span-2">
-                <div className="grid grid-cols-1 sm:grid-cols-2 sm:gap-3 space-y-3 sm:space-y-0">
-                  {availableResources.map(renderResourceCard)}
-                </div>
-              </div>
-            </div>
-          ) : (
-            <div className="overflow-y-auto">
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4">
-                <div className="space-y-3">{leftResources.map(renderResourceCard)}</div>
-                <div className="space-y-3">{rightResources.map(renderResourceCard)}</div>
-              </div>
-            </div>
-          )}
-
-          {/* Fixed position transfer button at the bottom */}
-          <div className="mt-10 mx-auto">
-            <Button
-              onClick={handleTransfer}
-              variant="gold"
-              disabled={
-                loading ||
-                selectedResources.length === 0 ||
-                selectedResources.every((r) => (resourceAmounts[r.resourceId] || 0) === 0)
-              }
-              isLoading={loading}
-              className="w-full sm:w-auto"
-            >
-              {loading ? "Processing..." : "Transfer Relics"}
-            </Button>
-          </div>
-        </>
+        </div>
       )}
+
+      {/* Fixed position transfer button at the bottom */}
+      <div className="mt-10 mx-auto">
+        <Button
+          onClick={handleTransfer}
+          variant="gold"
+          disabled={
+            loading ||
+            selectedResources.length === 0 ||
+            selectedResources.every((r) => (resourceAmounts[r.resourceId] || 0) === 0)
+          }
+          isLoading={loading}
+          className="w-full sm:w-auto"
+        >
+          {loading ? "Processing..." : "Transfer Relics"}
+        </Button>
+      </div>
     </div>
   );
 };

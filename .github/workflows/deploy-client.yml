@@ -126,15 +126,23 @@ jobs:
           set -euo pipefail
           # Never ship sourcemaps publicly.
           find dist -name "*.js.map" -delete
-          # Hashed assets: immutable. HTML + service-worker files: revalidate
-          # every request — a stale sw.js is the one file that can pin testers
-          # to an old build.
+          # Three cache tiers. Only Vite's content-hashed assets/ may be
+          # immutable: a stable-path file cached immutable is unfixable in a
+          # browser for a year (the corrupt /basis/ wasm proved it). HTML +
+          # service-worker files revalidate every request — a stale sw.js is
+          # the one file that can pin testers to an old build. Everything else
+          # (public/ passthrough: models, basis, images, sounds) revalidates
+          # after 5 minutes — cheap 304s, and asset updates actually reach
+          # returning testers.
           aws s3 sync dist "s3://play.jcndata.com" \
-            --exclude "*.html" --exclude "sw.js" --exclude "registerSW.js" --exclude "manifest.webmanifest" \
+            --exclude "*" --include "assets/*" \
             --cache-control "public,max-age=31536000,immutable"
           aws s3 sync dist "s3://play.jcndata.com" \
             --exclude "*" --include "*.html" --include "sw.js" --include "registerSW.js" --include "manifest.webmanifest" \
             --cache-control "public,max-age=0,must-revalidate"
+          aws s3 sync dist "s3://play.jcndata.com" \
+            --exclude "assets/*" --exclude "*.html" --exclude "sw.js" --exclude "registerSW.js" --exclude "manifest.webmanifest" \
+            --cache-control "public,max-age=300,must-revalidate"
           # Remove files from previous builds last, once the new set is live.
           aws s3 sync dist "s3://play.jcndata.com" --delete
 

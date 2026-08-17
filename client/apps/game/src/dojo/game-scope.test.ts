@@ -44,7 +44,7 @@ describe("game-scope", () => {
     expect(namespaceForChain("local")).toBe("s1_eternum");
   });
 
-  it("scopes nothing on the legacy arm", () => {
+  it("scopes nothing in a single-world deployment", () => {
     expect(gameModel("TileOpt")).toBe("s1_eternum-TileOpt");
     expect(isGameScopedModel("s1_eternum-TileOpt")).toBe(false);
     expect(isGameScopedModel("s1_eternum-AddressName")).toBe(false);

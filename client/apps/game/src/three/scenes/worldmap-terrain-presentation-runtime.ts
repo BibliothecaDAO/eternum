@@ -201,7 +201,7 @@ export function resolveWorldmapVisualTerrainWindow(
   input: ResolveWorldmapVisualTerrainWindowInput,
 ): WorldmapVisualTerrainWindow {
   const focusHex = worldPointToHex(input.focusPoint, input.hexSize);
-  const centerPage = resolveVisualTerrainPageKeyForHex(focusHex, input.pageSize, input.pageOrigin);
+  const centerPage = resolveWorldmapVisualTerrainPageKeyForHex(focusHex, input.pageSize, input.pageOrigin);
   const pageColumns = Math.ceil(Math.max(1, input.renderSize.width) / Math.max(1, input.pageSize.width));
   const pageRows = Math.ceil(Math.max(1, input.renderSize.height) / Math.max(1, input.pageSize.height));
   const totalColumns = pageColumns + Math.max(0, input.marginPages) * 2;
@@ -240,7 +240,7 @@ export function partitionPreparedTerrainIntoVisualPages<TBiomeEntries = unknown,
       return;
     }
 
-    const page = resolveVisualTerrainPageKeyForHex(hex, input.pageSize, input.pageOrigin);
+    const page = resolveWorldmapVisualTerrainPageKeyForHex(hex, input.pageSize, input.pageOrigin);
     const pageCells = cellsByPage.get(page.pageKey) ?? [];
     const biomeCounts = biomeCountsByPage.get(page.pageKey) ?? new Map<string, number>();
     const nextInstanceIndex = biomeCounts.get(cell.biomeKey) ?? 0;
@@ -505,7 +505,7 @@ function getTerrainPresentationCoverageKey(presentation: WorldmapTerrainPresenta
   return presentation.coverageKey ?? presentation.chunkKey;
 }
 
-function resolveVisualTerrainPageKeyForHex(
+export function resolveWorldmapVisualTerrainPageKeyForHex(
   hex: { col: number; row: number },
   pageSize: WorldmapTerrainSize,
   pageOrigin: WorldmapTerrainPageOrigin = { col: 0, row: 0 },

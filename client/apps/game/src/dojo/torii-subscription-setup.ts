@@ -19,13 +19,6 @@ interface SetupToriiSubscriptionsInput {
   onSubscriptionSetupTimeout?: (info: ToriiSubscriptionSetupTimeoutInfo) => void;
 }
 
-interface UpdateToriiSubscriptionsInput {
-  updateEntitySubscription: () => Promise<void>;
-  updateEventSubscription: () => Promise<void>;
-  subscriptionSetupTimeoutMs?: number;
-  onSubscriptionSetupTimeout?: (info: ToriiSubscriptionSetupTimeoutInfo) => void;
-}
-
 interface ManagedToriiSubscriptionSetup {
   cancelResolved: () => void;
   promise: Promise<ToriiCancelableSubscription>;
@@ -45,46 +38,6 @@ class ToriiSubscriptionSetupTimeoutError extends Error {
 
 function createToriiSubscriptionSetupTimeoutInfo(label: string, timeoutMs: number): ToriiSubscriptionSetupTimeoutInfo {
   return { label, timeoutMs };
-}
-
-async function resolveToriiOperationWithTimeout<T>(
-  label: string,
-  runOperation: () => Promise<T>,
-  timeoutMs?: number,
-  onSubscriptionSetupTimeout?: (info: ToriiSubscriptionSetupTimeoutInfo) => void,
-): Promise<T> {
-  if (timeoutMs === undefined || timeoutMs <= 0) {
-    return runOperation();
-  }
-
-  return new Promise<T>((resolve, reject) => {
-    let settled = false;
-    const timeoutId = setTimeout(() => {
-      settled = true;
-      const timeoutInfo = createToriiSubscriptionSetupTimeoutInfo(label, timeoutMs);
-      onSubscriptionSetupTimeout?.(timeoutInfo);
-      reject(new ToriiSubscriptionSetupTimeoutError(timeoutInfo));
-    }, timeoutMs);
-
-    runOperation().then(
-      (result) => {
-        clearTimeout(timeoutId);
-        if (settled) {
-          return;
-        }
-        settled = true;
-        resolve(result);
-      },
-      (error) => {
-        clearTimeout(timeoutId);
-        if (settled) {
-          return;
-        }
-        settled = true;
-        reject(error);
-      },
-    );
-  });
 }
 
 async function resolveToriiSubscriptionWithTimeout(
@@ -200,26 +153,4 @@ export async function setupToriiSubscriptions({
     eventSetup.cancelResolved();
     throw error;
   }
-}
-
-export async function updateToriiSubscriptions({
-  updateEntitySubscription,
-  updateEventSubscription,
-  subscriptionSetupTimeoutMs,
-  onSubscriptionSetupTimeout,
-}: UpdateToriiSubscriptionsInput): Promise<void> {
-  await Promise.all([
-    resolveToriiOperationWithTimeout(
-      "entity subscription update",
-      updateEntitySubscription,
-      subscriptionSetupTimeoutMs,
-      onSubscriptionSetupTimeout,
-    ),
-    resolveToriiOperationWithTimeout(
-      "event subscription update",
-      updateEventSubscription,
-      subscriptionSetupTimeoutMs,
-      onSubscriptionSetupTimeout,
-    ),
-  ]);
 }

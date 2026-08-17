@@ -3,7 +3,7 @@ import { useBlitzSettlementPlayerAddresses } from "@/services/blitz/blitz-settle
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { NumberInput } from "@/ui/design-system/atoms";
 import Button from "@/ui/design-system/atoms/button";
-import { displayAddress, getRealmCountPerHyperstructure } from "@/ui/utils/utils";
+import { displayAddress } from "@/ui/utils/utils";
 import { ClientConfigManager, LeaderboardManager, toHexString } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
 import { useEntityQuery } from "@dojoengine/react";
@@ -369,7 +369,7 @@ export const PrizePanel = () => {
         return;
       }
 
-      const manager = LeaderboardManager.instance(components, getRealmCountPerHyperstructure());
+      const manager = LeaderboardManager.instance(components);
       manager.updatePoints();
 
       // Filter addresses list strictly by registered points ordering

@@ -57,8 +57,6 @@ const MAP_FINGERPRINT_ZOOM_LEVELS = [0.2, 0.3, 0.4, 0.6, 0.8, 1, 1.25, 1.5] as c
 const MAP_FINGERPRINT_DEFAULT_ZOOM = MAP_FINGERPRINT_ZOOM_LEVELS[3];
 const MAP_FINGERPRINT_GOLD_LEVELS = [0.4, 0.65, 0.8, 1] as const;
 const MAP_FINGERPRINT_DEFAULT_GOLD_LEVEL = MAP_FINGERPRINT_GOLD_LEVELS[0];
-const CLAIM_RECONCILIATION_POLL_MS = 5_000;
-const CLAIM_RECONCILIATION_MAX_ATTEMPTS = 12;
 const BLOCK_TIMESTAMP_REFRESH_MS = 10_000;
 
 const formatValue = (value: number): string => numberFormatter.format(Math.max(0, Math.round(value)));
@@ -89,24 +87,6 @@ const getErrorMessage = (error: unknown, fallback: string): string => {
   }
 
   return fallback;
-};
-
-const claimedRewardsOptimisticKeys = new Set<string>();
-
-const buildClaimRewardsOptimisticKey = ({
-  worldName,
-  chain,
-  playerAddress,
-}: {
-  worldName?: string;
-  chain?: string;
-  playerAddress?: string;
-}): string | null => {
-  if (!worldName || !chain || !playerAddress || playerAddress === "anonymous") {
-    return null;
-  }
-
-  return `${chain}:${worldName}:${playerAddress.toLowerCase()}`;
 };
 
 const STEP_LABELS: Record<ReviewStepId, string> = {
@@ -533,12 +513,6 @@ export const GameReviewModal = ({
   const currentBlockTimestamp = useBlockTimestampStore((state) => state.currentBlockTimestamp);
   const refreshBlockTimestamp = useBlockTimestampStore((state) => state.tick);
   const reviewPlayerAddress = account?.address && account.address !== "0x0" ? account.address : "anonymous";
-  const claimOptimisticKey = buildClaimRewardsOptimisticKey({
-    worldName,
-    chain: worldChain,
-    playerAddress: reviewPlayerAddress,
-  });
-
   const { data, isLoading, error, refetch } = useGameReviewData({
     worldName,
     chain: worldChain,
@@ -558,9 +532,6 @@ export const GameReviewModal = ({
   const [mapFingerprintGoldLevel, setMapFingerprintGoldLevel] = useState<number>(MAP_FINGERPRINT_DEFAULT_GOLD_LEVEL);
   const [submitTxError, setSubmitTxError] = useState<string | null>(null);
   const [claimTxError, setClaimTxError] = useState<string | null>(null);
-  const [claimedRewardsLocally, setClaimedRewardsLocally] = useState(() =>
-    claimOptimisticKey ? claimedRewardsOptimisticKeys.has(claimOptimisticKey) : false,
-  );
   const currentMapZoomIndex = useMemo(() => {
     const exactIndex = MAP_FINGERPRINT_ZOOM_LEVELS.findIndex(
       (zoomLevel) => Math.abs(mapFingerprintZoom - zoomLevel) < 0.001,
@@ -655,20 +626,8 @@ export const GameReviewModal = ({
         }
       : data;
 
-    if (!claimedRewardsLocally || !withFrozenSnapshot.rewards) {
-      return withFrozenSnapshot;
-    }
-
-    return {
-      ...withFrozenSnapshot,
-      rewards: {
-        ...withFrozenSnapshot.rewards,
-        canClaimNow: false,
-        alreadyClaimed: true,
-        claimBlockedReason: "Rewards already claimed.",
-      },
-    };
-  }, [claimedRewardsLocally, data, frozenSnapshot]);
+    return withFrozenSnapshot;
+  }, [data, frozenSnapshot]);
 
   const canProceedToNextStep = useMemo(() => {
     if (!reviewData) return true;
@@ -713,49 +672,6 @@ export const GameReviewModal = ({
     setSubmitTxError(null);
     setClaimTxError(null);
   }, [initialStep, isOpen, steps, worldName, worldChain]);
-
-  useEffect(() => {
-    if (!claimOptimisticKey) {
-      setClaimedRewardsLocally(false);
-      return;
-    }
-
-    setClaimedRewardsLocally(claimedRewardsOptimisticKeys.has(claimOptimisticKey));
-    setClaimTxError(null);
-  }, [claimOptimisticKey]);
-
-  useEffect(() => {
-    if (!claimOptimisticKey || !data?.rewards?.alreadyClaimed) return;
-
-    claimedRewardsOptimisticKeys.delete(claimOptimisticKey);
-    setClaimedRewardsLocally(false);
-  }, [claimOptimisticKey, data?.rewards?.alreadyClaimed]);
-
-  useEffect(() => {
-    if (!isOpen || !claimOptimisticKey || !claimedRewardsLocally || data?.rewards?.alreadyClaimed) {
-      return;
-    }
-
-    let attempts = 0;
-    const interval = setInterval(() => {
-      attempts += 1;
-      void queryClient.invalidateQueries({ queryKey: reviewQueryKey });
-      void queryClient.invalidateQueries({ queryKey: reviewClaimSummaryQueryKey });
-      if (attempts >= CLAIM_RECONCILIATION_MAX_ATTEMPTS) {
-        clearInterval(interval);
-      }
-    }, CLAIM_RECONCILIATION_POLL_MS);
-
-    return () => clearInterval(interval);
-  }, [
-    claimOptimisticKey,
-    claimedRewardsLocally,
-    data?.rewards?.alreadyClaimed,
-    isOpen,
-    queryClient,
-    reviewClaimSummaryQueryKey,
-    reviewQueryKey,
-  ]);
 
   useEffect(() => {
     if (!isOpen || !data) return;
@@ -866,12 +782,20 @@ export const GameReviewModal = ({
     onMutate: () => {
       setClaimTxError(null);
     },
-    onSuccess: async () => {
+    onSuccess: () => {
       setClaimTxError(null);
-      if (claimOptimisticKey) {
-        claimedRewardsOptimisticKeys.add(claimOptimisticKey);
-      }
-      setClaimedRewardsLocally(true);
+      queryClient.setQueryData<GameReviewData | undefined>(reviewQueryKey, (previous) => {
+        if (!previous?.rewards) return previous;
+        return {
+          ...previous,
+          rewards: {
+            ...previous.rewards,
+            canClaimNow: false,
+            alreadyClaimed: true,
+            claimBlockedReason: "Rewards already claimed.",
+          },
+        };
+      });
       queryClient.setQueryData<GameReviewClaimSummary | undefined>(reviewClaimSummaryQueryKey, (previous) => {
         if (!previous) {
           return previous;
@@ -885,8 +809,6 @@ export const GameReviewModal = ({
         };
       });
       toast.success("Rewards claimed.");
-      await queryClient.invalidateQueries({ queryKey: reviewQueryKey });
-      await queryClient.invalidateQueries({ queryKey: reviewClaimSummaryQueryKey });
     },
     onError: (caughtError) => {
       console.error("Failed to claim rewards", caughtError);

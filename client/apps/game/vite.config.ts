@@ -9,7 +9,6 @@ import mkcert from "vite-plugin-mkcert";
 import { VitePWA } from "vite-plugin-pwa";
 import topLevelAwait from "vite-plugin-top-level-await";
 import wasm from "vite-plugin-wasm";
-import { resolveRendererBuildMode, resolveThreeEntryPoint } from "./src/three/renderer-build-mode";
 import { resolveRendererViteAlias } from "./src/three/renderer-vite-config";
 
 // https://vitejs.dev/config/
@@ -22,10 +21,7 @@ export default defineConfig(({ command, mode }: ConfigEnv): UserConfig => {
   const sentryOrg = process.env.SENTRY_ORG;
   const sentryProject = process.env.SENTRY_PROJECT;
   const sentryUploadEnabled = isBuild && Boolean(sentryAuthToken && sentryOrg && sentryProject);
-  const rendererBuildMode = resolveRendererBuildMode(
-    appEnv.VITE_PUBLIC_RENDERER_BUILD_MODE || process.env.VITE_PUBLIC_RENDERER_BUILD_MODE,
-  );
-  const rendererViteAlias = resolveRendererViteAlias(rendererBuildMode);
+  const rendererViteAlias = resolveRendererViteAlias();
   const sentryRelease =
     process.env.SENTRY_RELEASE ||
     process.env.VERCEL_GIT_COMMIT_SHA ||
@@ -110,7 +106,7 @@ export default defineConfig(({ command, mode }: ConfigEnv): UserConfig => {
     plugins: plugins as unknown as PluginOption[],
     resolve: {
       alias: [
-        ...(rendererViteAlias ? [rendererViteAlias] : []),
+        rendererViteAlias,
         {
           find: "@/assets",
           replacement: path.resolve(__dirname, "../../public/assets"),
@@ -172,7 +168,7 @@ export default defineConfig(({ command, mode }: ConfigEnv): UserConfig => {
           },
           manualChunks: {
             // Three.js ecosystem - Separate chunk for 3D graphics
-            three: [resolveThreeEntryPoint(rendererBuildMode), "three-stdlib", "postprocessing"],
+            three: ["three/webgpu"],
 
             // Blockchain/Dojo ecosystem - Separate chunk for crypto functionality
             blockchain: [
@@ -198,7 +194,6 @@ export default defineConfig(({ command, mode }: ConfigEnv): UserConfig => {
             // OpenTelemetry observability - Can be lazy loaded
             telemetry: [
               "@opentelemetry/api",
-              "@opentelemetry/context-zone",
               "@opentelemetry/exporter-trace-otlp-http",
               "@opentelemetry/instrumentation",
               "@opentelemetry/instrumentation-fetch",

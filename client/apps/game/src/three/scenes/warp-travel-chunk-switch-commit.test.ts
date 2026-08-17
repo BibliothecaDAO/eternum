@@ -28,7 +28,7 @@ describe("finalizeWarpTravelChunkSwitch", () => {
     const unregisterPreviousChunkOnNextFrame = vi.fn();
 
     const resultPromise = finalizeWarpTravelChunkSwitch({
-      fetchSucceeded: false,
+      projectionSyncSucceeded: false,
       isCurrentTransition: true,
       targetChunk: "24,24",
       previousChunk: "0,0",
@@ -78,7 +78,7 @@ describe("finalizeWarpTravelChunkSwitch", () => {
     const unregisterChunk = vi.fn();
 
     const result = await finalizeWarpTravelChunkSwitch({
-      fetchSucceeded: true,
+      projectionSyncSucceeded: true,
       isCurrentTransition: false,
       targetChunk: "24,24",
       previousChunk: "0,0",
@@ -121,7 +121,7 @@ describe("finalizeWarpTravelChunkSwitch", () => {
     const preparedTerrain = { chunkKey: "24,24" };
 
     const result = await finalizeWarpTravelChunkSwitch({
-      fetchSucceeded: false,
+      projectionSyncSucceeded: false,
       isCurrentTransition: true,
       targetChunk: "24,24",
       previousChunk: "",
@@ -158,7 +158,7 @@ describe("finalizeWarpTravelChunkSwitch", () => {
     const preparedTerrain = { chunkKey: "24,24" };
 
     const result = await finalizeWarpTravelChunkSwitch({
-      fetchSucceeded: true,
+      projectionSyncSucceeded: true,
       isCurrentTransition: false,
       targetChunk: "24,24",
       previousChunk: "0,0",
@@ -195,7 +195,7 @@ describe("finalizeWarpTravelChunkSwitch", () => {
     const preparedTerrain = { chunkKey: "24,24" };
 
     const result = await finalizeWarpTravelChunkSwitch({
-      fetchSucceeded: true,
+      projectionSyncSucceeded: true,
       isCurrentTransition: true,
       targetChunk: "24,24",
       previousChunk: "0,0",
@@ -241,7 +241,7 @@ describe("finalizeWarpTravelChunkSwitch", () => {
     });
 
     const resultPromise = finalizeWarpTravelChunkSwitch({
-      fetchSucceeded: true,
+      projectionSyncSucceeded: true,
       isCurrentTransition: true,
       targetChunk: "24,24",
       previousChunk: "0,0",
@@ -274,14 +274,14 @@ describe("finalizeWarpTravelChunkSwitch", () => {
       unregisterPreviousChunkOnNextFrame,
     });
 
+    await expect(resultPromise).resolves.toEqual({
+      status: "committed",
+    });
     expect(updateCurrentChunkBounds).toHaveBeenCalledWith(24, 24);
     expect(forceVisibilityUpdate).toHaveBeenCalledTimes(1);
     expect(scheduleManagerCatchUp).toHaveBeenCalledWith("24,24", { force: true, transitionToken: 17 });
     expect(managerCatchUp.calls).toEqual([["24,24", { force: true, transitionToken: 17 }]]);
     expect(phaseOrder).toEqual(["authority", "terrain", "bounds:24,24", "visibility", "manager-scheduled"]);
-    await expect(resultPromise).resolves.toEqual({
-      status: "committed",
-    });
 
     managerCatchUp.resolveNext();
     await Promise.resolve();
@@ -292,7 +292,7 @@ describe("finalizeWarpTravelChunkSwitch", () => {
     const phaseOrder: string[] = [];
 
     await finalizeWarpTravelChunkSwitch({
-      fetchSucceeded: true,
+      projectionSyncSucceeded: true,
       isCurrentTransition: true,
       targetChunk: "24,24",
       previousChunk: "0,0",
@@ -348,7 +348,7 @@ describe("finalizeWarpTravelChunkSwitch", () => {
     });
 
     await finalizeWarpTravelChunkSwitch({
-      fetchSucceeded: true,
+      projectionSyncSucceeded: true,
       isCurrentTransition: true,
       targetChunk: "24,24",
       previousChunk: "0,0",

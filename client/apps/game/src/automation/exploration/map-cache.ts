@@ -1,329 +1,110 @@
-import { gameEntityKey, gameModel } from "@/dojo/game-scope";
-import { getEntitiesFromTorii, getMapFromToriiExact } from "@/dojo/queries";
-import {
-  DEFAULT_COORD_ALT,
-  Position,
-  configManager,
-  getTileAt,
-  isTileOccupierChest,
-  isTileOccupierQuest,
-  isTileOccupierStructure,
-} from "@bibliothecadao/eternum";
-import type { ClientComponents, HexEntityInfo, TileOccupier } from "@bibliothecadao/types";
-import { BiomeType } from "@bibliothecadao/types";
+import { gameEntityKey } from "@/dojo/game-scope";
+import { Position } from "@bibliothecadao/eternum";
+import type { WorldSpatialProjection } from "@bibliothecadao/eternum/game-sync";
+import type { ClientComponents, HexEntityInfo } from "@bibliothecadao/types";
+import { BiomeType, TileOccupier } from "@bibliothecadao/types";
 import { getComponentValue } from "@dojoengine/recs";
-import { getEntityIdFromKeys } from "@dojoengine/utils";
-import type { ToriiClient } from "@dojoengine/torii-client";
 import type { ExplorationMapSnapshot } from "./types";
 
-const MAP_CACHE_TTL_MS = 10_000;
-const MAP_CACHE_MAX_ENTRIES = 50;
-const MAP_CHUNK_SIZE = 32;
-
-type MapCacheEntry = {
-  updatedAt: number;
-  inFlight?: Promise<void>;
-};
-
-let cacheGameId = "unknown";
-const mapFetchCache = new Map<string, MapCacheEntry>();
-
-const resolveGameId = (): string => {
-  try {
-    const season = configManager.getSeasonConfig();
-    return `${season.startSettlingAt}-${season.startMainAt}-${season.endAt}`;
-  } catch {
-    return "unknown";
-  }
-};
-
-const ensureCacheForGame = () => {
-  const currentGameId = resolveGameId();
-  if (currentGameId !== cacheGameId) {
-    cacheGameId = currentGameId;
-    mapFetchCache.clear();
-  }
-};
-
-const clampToChunk = (min: number, max: number) => {
-  const minChunk = Math.floor(min / MAP_CHUNK_SIZE) * MAP_CHUNK_SIZE;
-  const maxChunk = Math.ceil((max + 1) / MAP_CHUNK_SIZE) * MAP_CHUNK_SIZE - 1;
-  return { minChunk, maxChunk };
-};
-
-const buildChunkedBounds = (minCol: number, maxCol: number, minRow: number, maxRow: number) => {
-  const { minChunk: chunkMinCol, maxChunk: chunkMaxCol } = clampToChunk(minCol, maxCol);
-  const { minChunk: chunkMinRow, maxChunk: chunkMaxRow } = clampToChunk(minRow, maxRow);
-  return {
-    minCol: chunkMinCol,
-    maxCol: chunkMaxCol,
-    minRow: chunkMinRow,
-    maxRow: chunkMaxRow,
-  };
-};
-
-const pruneCache = (now: number) => {
-  for (const [key, entry] of mapFetchCache.entries()) {
-    if (now - entry.updatedAt > MAP_CACHE_TTL_MS && !entry.inFlight) {
-      mapFetchCache.delete(key);
-    }
-  }
-  while (mapFetchCache.size > MAP_CACHE_MAX_ENTRIES) {
-    const oldestKey = mapFetchCache.keys().next().value;
-    if (oldestKey === undefined) break;
-    mapFetchCache.delete(oldestKey);
-  }
-};
-
-const getMapFromToriiChunked = async (
-  client: ToriiClient,
-  components: any,
-  minCol: number,
-  maxCol: number,
-  minRow: number,
-  maxRow: number,
-) => {
-  ensureCacheForGame();
-  const now = Date.now();
-  const bounds = buildChunkedBounds(minCol, maxCol, minRow, maxRow);
-  const key = `${bounds.minCol}:${bounds.maxCol}:${bounds.minRow}:${bounds.maxRow}`;
-  const existing = mapFetchCache.get(key);
-  if (existing) {
-    const isFresh = now - existing.updatedAt <= MAP_CACHE_TTL_MS;
-    if (existing.inFlight) {
-      return existing.inFlight;
-    }
-    if (isFresh) {
-      return;
-    }
-  }
-
-  let success = false;
-  const inFlight = getMapFromToriiExact(client, components, bounds.minCol, bounds.maxCol, bounds.minRow, bounds.maxRow)
-    .then(() => {
-      success = true;
-    })
-    .finally(() => {
-      const entry = mapFetchCache.get(key);
-      if (entry?.inFlight === inFlight) {
-        if (success) {
-          mapFetchCache.set(key, { updatedAt: Date.now() });
-        } else {
-          mapFetchCache.delete(key);
-        }
-      }
-    });
-
-  mapFetchCache.set(key, { updatedAt: now, inFlight });
-  pruneCache(now);
-  return inFlight;
-};
-
 const setNestedValue = <T>(map: Map<number, Map<number, T>>, col: number, row: number, value: T) => {
-  if (!map.has(col)) {
-    map.set(col, new Map());
-  }
-  map.get(col)!.set(row, value);
-};
-
-const normalizeEntityId = (value: unknown): number | null => {
-  if (typeof value === "number" && Number.isFinite(value) && value !== 0) {
-    return value;
-  }
-
-  if (typeof value === "bigint" && value !== 0n) {
-    const normalized = Number(value);
-    return Number.isFinite(normalized) ? normalized : null;
-  }
-
-  if (typeof value === "string" && value.length > 0) {
-    const normalized = Number(value);
-    return Number.isFinite(normalized) && normalized !== 0 ? normalized : null;
-  }
-
-  return null;
+  const column = map.get(col) ?? new Map<number, T>();
+  column.set(row, value);
+  map.set(col, column);
 };
 
 const normalizeOwnerAddress = (value: unknown): bigint => {
   if (typeof value === "bigint") return value;
   if (typeof value === "number" && Number.isFinite(value) && value !== 0) return BigInt(value);
-  if (typeof value === "string" && value.length > 0) {
-    try {
-      return BigInt(value);
-    } catch {
-      return 0n;
-    }
+  if (typeof value !== "string" || value.length === 0) return 0n;
+
+  try {
+    return BigInt(value);
+  } catch {
+    return 0n;
   }
-  return 0n;
 };
 
 const getStructureOwnerAddress = (components: ClientComponents, structureId: number): bigint => {
-  const structureEntity = gameEntityKey([BigInt(structureId)]);
-  const structure = getComponentValue(components.Structure, structureEntity);
+  const structure = getComponentValue(components.Structure, gameEntityKey([BigInt(structureId)]));
   return normalizeOwnerAddress(structure?.owner);
 };
 
 const getArmyOwnerAddress = (components: ClientComponents, armyId: number): bigint => {
-  const armyEntity = gameEntityKey([BigInt(armyId)]);
-  const explorer = getComponentValue(components.ExplorerTroops, armyEntity);
-  const ownerStructureId = normalizeEntityId(explorer?.owner);
-  if (!ownerStructureId) {
-    return 0n;
-  }
-
-  return getStructureOwnerAddress(components, ownerStructureId);
+  const explorer = getComponentValue(components.ExplorerTroops, gameEntityKey([BigInt(armyId)]));
+  const ownerStructureId = Number(explorer?.owner ?? 0);
+  return Number.isFinite(ownerStructureId) && ownerStructureId !== 0
+    ? getStructureOwnerAddress(components, ownerStructureId)
+    : 0n;
 };
 
 const buildHexInfo = (id: number, owner: bigint): HexEntityInfo => ({ id, owner });
 
-const hydrateOccupierEntities = async ({
-  components,
-  contractComponents,
-  toriiClient,
-  structureIds,
-  armyIds,
-}: {
-  components: ClientComponents;
-  contractComponents: any;
-  toriiClient: ToriiClient;
-  structureIds: Set<number>;
-  armyIds: Set<number>;
-}) => {
-  const occupierIds = new Set<number>([...structureIds, ...armyIds]);
-  if (occupierIds.size > 0) {
-    await getEntitiesFromTorii(
-      toriiClient,
-      contractComponents,
-      [...occupierIds],
-      [gameModel("Structure"), gameModel("ExplorerTroops")],
-    );
-  }
-
-  const ownerStructureIds = new Set<number>();
-  armyIds.forEach((armyId) => {
-    const explorerEntity = gameEntityKey([BigInt(armyId)]);
-    const explorer = getComponentValue(components.ExplorerTroops, explorerEntity);
-    const ownerStructureId = normalizeEntityId(explorer?.owner);
-    if (ownerStructureId) {
-      ownerStructureIds.add(ownerStructureId);
-    }
-  });
-
-  if (ownerStructureIds.size === 0) {
-    return;
-  }
-
-  const unresolvedOwnerStructures = [...ownerStructureIds].filter(
-    (ownerStructureId) => getStructureOwnerAddress(components, ownerStructureId) === 0n,
-  );
-
-  if (unresolvedOwnerStructures.length > 0) {
-    await getEntitiesFromTorii(toriiClient, contractComponents, unresolvedOwnerStructures, [gameModel("Structure")]);
-  }
-};
-
 type SnapshotParams = {
   components: ClientComponents;
-  contractComponents: any;
-  toriiClient: ToriiClient;
   explorerId: number;
   scopeRadius: number;
+  worldSpatialProjection: WorldSpatialProjection;
 };
 
 export const buildExplorationSnapshot = async ({
   components,
-  contractComponents,
-  toriiClient,
   explorerId,
   scopeRadius,
+  worldSpatialProjection,
 }: SnapshotParams): Promise<ExplorationMapSnapshot | null> => {
-  const explorerEntity = gameEntityKey([BigInt(explorerId)]);
-  const explorer = getComponentValue(components.ExplorerTroops, explorerEntity);
-  if (!explorer?.coord) {
-    return null;
-  }
+  const explorer = getComponentValue(components.ExplorerTroops, gameEntityKey([BigInt(explorerId)]));
+  if (!explorer?.coord) return null;
 
   const centerCol = Number(explorer.coord.x);
   const centerRow = Number(explorer.coord.y);
   const radius = Math.max(1, Math.round(scopeRadius));
-
-  const minCol = centerCol - radius;
-  const maxCol = centerCol + radius;
-  const minRow = centerRow - radius;
-  const maxRow = centerRow + radius;
-
-  await getMapFromToriiChunked(toriiClient, contractComponents as any, minCol, maxCol, minRow, maxRow);
+  const bounds = {
+    minCol: centerCol - radius,
+    maxCol: centerCol + radius,
+    minRow: centerRow - radius,
+    maxRow: centerRow + radius,
+  };
 
   const exploredTiles = new Map<number, Map<number, BiomeType>>();
   const structureHexes = new Map<number, Map<number, HexEntityInfo>>();
   const armyHexes = new Map<number, Map<number, HexEntityInfo>>();
   const questHexes = new Map<number, Map<number, HexEntityInfo>>();
   const chestHexes = new Map<number, Map<number, HexEntityInfo>>();
-  const occupiers: Array<{ col: number; row: number; id: number; type: TileOccupier }> = [];
-  const structureOccupierIds = new Set<number>();
-  const armyOccupierIds = new Set<number>();
 
-  for (let col = minCol; col <= maxCol; col += 1) {
-    for (let row = minRow; row <= maxRow; row += 1) {
-      const tile = getTileAt(components, DEFAULT_COORD_ALT, col, row);
-      if (!tile) continue;
-
-      const normalized = new Position({ x: col, y: row }).getNormalized();
-
-      if (tile.biome !== 0) {
-        const biome = tile.biome as unknown as BiomeType;
-        setNestedValue(exploredTiles, normalized.x, normalized.y, biome);
-      }
-
-      const occupierId = normalizeEntityId(tile.occupier_id);
-      if (occupierId) {
-        const occupierType = tile.occupier_type as TileOccupier;
-        occupiers.push({ col: normalized.x, row: normalized.y, id: occupierId, type: occupierType });
-
-        if (isTileOccupierStructure(occupierType)) {
-          structureOccupierIds.add(occupierId);
-        } else if (!isTileOccupierQuest(occupierType) && !isTileOccupierChest(occupierType)) {
-          armyOccupierIds.add(occupierId);
-        }
-      }
+  worldSpatialProjection.getTilesInBounds(bounds).forEach((tile) => {
+    const normalized = new Position({ x: tile.hexCoords.col, y: tile.hexCoords.row }).getNormalized();
+    if (tile.biome !== 0) {
+      setNestedValue(exploredTiles, normalized.x, normalized.y, tile.biome as unknown as BiomeType);
     }
-  }
+    if (tile.occupierId === 0 || tile.occupierType === TileOccupier.None) return;
 
-  await hydrateOccupierEntities({
-    components,
-    contractComponents,
-    toriiClient,
-    structureIds: structureOccupierIds,
-    armyIds: armyOccupierIds,
+    const info = buildHexInfo(Number(tile.occupierId), 0n);
+    if (tile.occupierType === TileOccupier.Quest) {
+      setNestedValue(questHexes, normalized.x, normalized.y, info);
+    } else if (tile.occupierType === TileOccupier.Chest) {
+      setNestedValue(chestHexes, normalized.x, normalized.y, info);
+    }
   });
 
-  occupiers.forEach(({ col, row, id, type }) => {
-    const isStructure = isTileOccupierStructure(type);
-    const isQuest = isTileOccupierQuest(type);
-    const isChest = isTileOccupierChest(type);
-    const owner = isStructure
-      ? getStructureOwnerAddress(components, id)
-      : isQuest || isChest
-        ? 0n
-        : getArmyOwnerAddress(components, id);
-    const info = buildHexInfo(id, owner);
+  worldSpatialProjection.getStructuresInBounds(bounds).forEach((structure) => {
+    if (structure.entityId === null) return;
+    const normalized = new Position({ x: structure.hexCoords.col, y: structure.hexCoords.row }).getNormalized();
+    setNestedValue(
+      structureHexes,
+      normalized.x,
+      normalized.y,
+      buildHexInfo(Number(structure.entityId), getStructureOwnerAddress(components, Number(structure.entityId))),
+    );
+  });
 
-    if (isQuest) {
-      setNestedValue(questHexes, col, row, info);
-      return;
-    }
-
-    if (isChest) {
-      setNestedValue(chestHexes, col, row, info);
-      return;
-    }
-
-    if (isStructure) {
-      setNestedValue(structureHexes, col, row, info);
-      return;
-    }
-
-    setNestedValue(armyHexes, col, row, info);
+  worldSpatialProjection.getArmiesInBounds(bounds).forEach((army) => {
+    const normalized = new Position({ x: army.hexCoords.col, y: army.hexCoords.row }).getNormalized();
+    setNestedValue(
+      armyHexes,
+      normalized.x,
+      normalized.y,
+      buildHexInfo(Number(army.entityId), getArmyOwnerAddress(components, Number(army.entityId))),
+    );
   });
 
   return {

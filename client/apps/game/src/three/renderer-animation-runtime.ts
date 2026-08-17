@@ -1,3 +1,5 @@
+import type { RenderProfile } from "./render-profile";
+
 interface RunRendererAnimationTickInput {
   getCurrentTime: () => number;
   getCycleProgress: () => number;
@@ -46,6 +48,18 @@ export function runRendererAnimationTick(input: RunRendererAnimationTickInput): 
   input.requestNextFrame();
 
   return frameState.lastTime;
+}
+
+export function resolveRendererPacedFps(input: {
+  currentTime: number;
+  lastInteractionTime: number;
+  profile: Pick<RenderProfile, "pacing">;
+}): number | null {
+  const { idleFps, idleAfterMs, maxFps } = input.profile.pacing;
+  if (!idleFps || input.currentTime - input.lastInteractionTime < idleAfterMs) {
+    return maxFps;
+  }
+  return Math.min(idleFps, maxFps);
 }
 
 function shouldStopRendererAnimation(input: Pick<RunRendererAnimationTickInput, "isDestroyed">): boolean {

@@ -10,7 +10,7 @@ import { useUIStore } from "@/hooks/store/use-ui-store";
 import { LOCAL_CAMERA_ZOOM } from "@/three/constants";
 import { CameraView } from "@/three/scenes/camera-view";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
-import { GraphicsSettings } from "@/ui/config";
+import { renderProfile, type RenderMode, writeRenderMode } from "@/three/render-profile";
 import { Avatar, Button, Checkbox, RangeInput } from "@/ui/design-system/atoms";
 import { Headline } from "@/ui/design-system/molecules";
 import { settings, shortcuts } from "@/ui/features/world";
@@ -23,13 +23,16 @@ import { useGuilds, useScreenOrientation } from "@bibliothecadao/react";
 import { useDojo } from "@bibliothecadao/react";
 import { useState } from "react";
 import { toast } from "sonner";
-import { RENDERER_MODE_STORAGE_KEY, usesExperimentalWebGPUThreeBuild } from "@/three/renderer-build-mode";
-import { env as gameEnv } from "../../../../env";
 
 const WORLDMAP_ZOOM_OPTIONS: { label: string; view: CameraView }[] = [
   { label: "Close", view: CameraView.Close },
   { label: "Medium", view: CameraView.Medium },
   { label: "Far", view: CameraView.Far },
+];
+
+const RENDER_MODE_OPTIONS: { label: string; mode: RenderMode }[] = [
+  { label: "Quality", mode: "quality" },
+  { label: "Battery", mode: "battery" },
 ];
 
 export const SettingsWindow = () => {
@@ -73,11 +76,6 @@ export const SettingsWindow = () => {
   const togglePopup = useUIStore((state) => state.togglePopup);
 
   const isOpen = useUIStore((state) => state.isPopupOpen(settings));
-
-  const GRAPHICS_SETTING = (localStorage.getItem("GRAPHICS_SETTING") as GraphicsSettings) || GraphicsSettings.HIGH;
-
-  const rendererMode = localStorage.getItem(RENDERER_MODE_STORAGE_KEY) || gameEnv.VITE_PUBLIC_RENDERER_BUILD_MODE;
-  const webgpuBuildAvailable = usesExperimentalWebGPUThreeBuild(gameEnv.VITE_PUBLIC_RENDERER_BUILD_MODE);
 
   const guilds = useGuilds();
   const [selectedGuilds, setSelectedGuilds] = useState<string[]>(() => {
@@ -170,9 +168,7 @@ export const SettingsWindow = () => {
               </Button>
             </div>
           </section>
-          {/* Video & Graphics — combined section. Video toggles (fullscreen,
-              map zoom) sit at the top, then quality tier, then renderer mode
-              when WebGPU is available. */}
+          {/* Video controls and the temporal render profile. */}
           <section className="space-y-3">
             <Headline>Video & Graphics</Headline>
             <div
@@ -197,76 +193,25 @@ export const SettingsWindow = () => {
               <div>Enable Map Zoom</div>
             </div>
 
-            <div className="text-xs text-gray-gold mt-2">Quality</div>
+            <div className="text-xs text-gray-gold mt-2">Render Mode</div>
             <div className="flex space-x-2">
-              <Button
-                disabled={GRAPHICS_SETTING === GraphicsSettings.ULTRA_LOW}
-                variant={GRAPHICS_SETTING === GraphicsSettings.ULTRA_LOW ? "success" : "outline"}
-                onClick={() => {
-                  localStorage.setItem("GRAPHICS_SETTING", GraphicsSettings.ULTRA_LOW);
-                  window.location.reload();
-                }}
-              >
-                Potato
-              </Button>
-              <Button
-                disabled={GRAPHICS_SETTING === GraphicsSettings.LOW}
-                variant={GRAPHICS_SETTING === GraphicsSettings.LOW ? "success" : "outline"}
-                onClick={() => {
-                  localStorage.setItem("GRAPHICS_SETTING", GraphicsSettings.LOW);
-                  window.location.reload();
-                }}
-              >
-                Low
-              </Button>
-              <Button
-                disabled={GRAPHICS_SETTING === GraphicsSettings.MID}
-                variant={GRAPHICS_SETTING === GraphicsSettings.MID ? "success" : "outline"}
-                onClick={() => {
-                  localStorage.setItem("GRAPHICS_SETTING", GraphicsSettings.MID);
-                  window.location.reload();
-                }}
-              >
-                Medium
-              </Button>
-              <Button
-                disabled={GRAPHICS_SETTING === GraphicsSettings.HIGH}
-                variant={GRAPHICS_SETTING === GraphicsSettings.HIGH ? "success" : "outline"}
-                onClick={() => {
-                  localStorage.setItem("GRAPHICS_SETTING", GraphicsSettings.HIGH);
-                  window.location.reload();
-                }}
-              >
-                High
-              </Button>
+              {RENDER_MODE_OPTIONS.map(({ label, mode: nextMode }) => (
+                <Button
+                  key={nextMode}
+                  disabled={renderProfile.mode === nextMode}
+                  variant={renderProfile.mode === nextMode ? "success" : "outline"}
+                  onClick={() => {
+                    writeRenderMode(localStorage, nextMode);
+                    window.location.reload();
+                  }}
+                >
+                  {label}
+                </Button>
+              ))}
             </div>
-            {webgpuBuildAvailable && (
-              <>
-                <div className="text-xs text-gray-gold mt-2">Renderer</div>
-                <div className="flex space-x-2">
-                  <Button
-                    disabled={rendererMode === "legacy-webgl"}
-                    variant={rendererMode === "legacy-webgl" ? "success" : "outline"}
-                    onClick={() => {
-                      localStorage.setItem(RENDERER_MODE_STORAGE_KEY, "legacy-webgl");
-                      window.location.reload();
-                    }}
-                  >
-                    WebGL
-                  </Button>
-                  <Button
-                    disabled={rendererMode === "experimental-webgpu-auto"}
-                    variant={rendererMode === "experimental-webgpu-auto" ? "success" : "outline"}
-                    onClick={() => {
-                      localStorage.setItem(RENDERER_MODE_STORAGE_KEY, "experimental-webgpu-auto");
-                      window.location.reload();
-                    }}
-                  >
-                    WebGPU
-                  </Button>
-                </div>
-              </>
-            )}
+            <p className="text-xs leading-relaxed text-gray-gold/70">
+              Battery reduces idle and distant update frequency without changing visual detail.
+            </p>
           </section>
 
           {/* Camera — persisted zoom per scene. Changes apply immediately to the

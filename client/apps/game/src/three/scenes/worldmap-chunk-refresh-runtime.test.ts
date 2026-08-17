@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 
 import {
+  cancelWorldmapChunkRefreshWaiters,
   createWorldmapChunkRefreshRuntimeState,
   requestWorldmapChunkRefreshToken,
   runWorldmapChunkRefreshExecution,
@@ -56,33 +57,21 @@ describe("waitForWorldmapRequestedChunkRefresh", () => {
 
     await expect(
       waitForWorldmapRequestedChunkRefresh({
-        fallbackDelayMs: 20,
         isSwitchedOff: () => true,
-        latestWinsRefresh: true,
         requestToken: 1,
-        setTimeoutFn: vi.fn(() => 0),
         state,
       }),
     ).resolves.toBeUndefined();
   });
 
-  it("waits for legacy scheduled refresh work to finish before resolving", async () => {
+  it("resolves from the refresh completion path without scheduling polls", async () => {
     const state = createWorldmapChunkRefreshRuntimeState();
     state.requestToken = 1;
-    state.timeoutId = 77;
-
-    const scheduledPolls: Array<() => void> = [];
     let didResolve = false;
 
     const waitPromise = waitForWorldmapRequestedChunkRefresh({
-      fallbackDelayMs: 0,
       isSwitchedOff: () => false,
-      latestWinsRefresh: false,
       requestToken: 1,
-      setTimeoutFn: (callback) => {
-        scheduledPolls.push(callback);
-        return scheduledPolls.length;
-      },
       state,
     }).then(() => {
       didResolve = true;
@@ -90,26 +79,35 @@ describe("waitForWorldmapRequestedChunkRefresh", () => {
 
     await Promise.resolve();
     expect(didResolve).toBe(false);
-    expect(scheduledPolls).toHaveLength(1);
 
-    scheduledPolls.shift()?.();
-    await Promise.resolve();
-    expect(didResolve).toBe(false);
-    expect(scheduledPolls).toHaveLength(1);
-
-    state.timeoutId = null;
-    state.running = true;
-    scheduledPolls.shift()?.();
-    await Promise.resolve();
-    expect(didResolve).toBe(false);
-    expect(scheduledPolls).toHaveLength(1);
-
-    state.running = false;
-    state.appliedToken = 1;
-    scheduledPolls.shift()?.();
+    await runWorldmapChunkRefreshExecution({
+      executeRefresh: vi.fn(async () => undefined),
+      onError: vi.fn(),
+      onExecutionComplete: vi.fn(),
+      onRescheduleWhileRunning: vi.fn(),
+      onSuperseded: vi.fn(),
+      scheduledToken: 1,
+      scheduleRerun: vi.fn(),
+      state,
+    });
     await waitPromise;
 
     expect(didResolve).toBe(true);
+  });
+
+  it("releases pending waits when the scene switches off", async () => {
+    const state = createWorldmapChunkRefreshRuntimeState();
+    state.requestToken = 1;
+    const waitPromise = waitForWorldmapRequestedChunkRefresh({
+      isSwitchedOff: () => false,
+      requestToken: 1,
+      state,
+    });
+
+    cancelWorldmapChunkRefreshWaiters(state);
+
+    await expect(waitPromise).resolves.toBeUndefined();
+    expect(state.waiters.size).toBe(0);
   });
 });
 

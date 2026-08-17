@@ -12,12 +12,11 @@ import {
   getGuildFromPlayerAddress,
   getHyperstructureProgress,
   getIsBlitz,
+  getRealmCountPerHyperstructure,
   getStructureArmyRelicEffects,
   getStructureName,
   getStructureRelicEffects,
   getTroopResourceId,
-  MAP_DATA_REFRESH_INTERVAL,
-  MapDataStore,
   ResourceManager,
 } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
@@ -105,9 +104,7 @@ export const StructureEntityDetail = memo(
 
         const hyperstructureRealmCount =
           structure.base.category === StructureType.Hyperstructure
-            ? MapDataStore.getInstance(MAP_DATA_REFRESH_INTERVAL, {} as any).getHyperstructureRealmCount?.(
-                structure.entity_id,
-              )
+            ? getRealmCountPerHyperstructure(components).get(structure.entity_id)
             : undefined;
 
         return {

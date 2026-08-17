@@ -428,12 +428,12 @@ describe("ConnectionHealthMonitor", () => {
     monitor.dispose();
   });
 
-  it("proactively refreshes quiet streams without flipping status or classifying", async () => {
+  it("uses the quiet-stream fallback only when Torii heartbeat is unavailable", async () => {
     useConnectionStore.setState({
       status: "connected",
       spatialStatus: "connected",
       globalStatus: "connected",
-      toriiHeartbeatAvailable: true,
+      toriiHeartbeatAvailable: false,
       lastToriiHeartbeat: Date.now(),
       lastGlobalDataUpdate: Date.now() - 60_000,
       lastSpatialDataUpdate: Date.now() - 60_000,
@@ -465,6 +465,60 @@ describe("ConnectionHealthMonitor", () => {
     expect(onReconnectGlobal).toHaveBeenCalled();
     expect(useConnectionStore.getState().status).toBe("connected");
     expect(onDisconnectClassified).not.toHaveBeenCalled();
+
+    monitor.dispose();
+  });
+
+  it("does not refresh a quiet stream when Torii heartbeat is available", async () => {
+    useConnectionStore.setState({
+      status: "connected",
+      spatialStatus: "connected",
+      globalStatus: "connected",
+      toriiHeartbeatAvailable: true,
+      lastToriiHeartbeat: Date.now(),
+      lastGlobalDataUpdate: Date.now() - 60_000,
+      lastSpatialDataUpdate: Date.now() - 60_000,
+      lastGlobalHandshake: Date.now() - 60_000,
+      lastSpatialHandshake: Date.now() - 60_000,
+    } as any);
+
+    const onReconnectSpatial = vi.fn(() => Promise.resolve());
+    const onReconnectGlobal = vi.fn(() => Promise.resolve());
+    const monitor = new ConnectionHealthMonitor({
+      healthCheckFn: vi.fn(() => Promise.resolve(reachableHealth())),
+      healthCheckIntervalMs: 60_000,
+      heartbeatWatchdogIntervalMs: 1_000,
+      quietStreamRefreshMs: 30_000,
+      onReconnectGlobal,
+      onReconnectSpatial,
+    });
+
+    monitor.start();
+    monitor.exitBootGraceForTests();
+    await vi.advanceTimersByTimeAsync(1_200);
+
+    expect(onReconnectGlobal).not.toHaveBeenCalled();
+    expect(onReconnectSpatial).not.toHaveBeenCalled();
+
+    monitor.dispose();
+  });
+
+  it("routes an observed stream close through the shared recovery entry point", async () => {
+    const onReconnectSpatial = vi.fn(() => Promise.resolve());
+    const onReconnectGlobal = vi.fn(() => Promise.resolve());
+    const monitor = new ConnectionHealthMonitor({
+      healthCheckFn: vi.fn(() => Promise.resolve(reachableHealth())),
+      onReconnectGlobal,
+      onReconnectSpatial,
+    });
+
+    monitor.start();
+    await monitor.requestRecovery({ kind: "stream_close", stream: "event", reason: "HTTP2 stream failed" });
+
+    expect(useConnectionStore.getState().lastStreamCloseAt).toBe(Date.now());
+    expect(onReconnectGlobal).toHaveBeenCalledOnce();
+    expect(onReconnectSpatial).toHaveBeenCalledOnce();
+    expect(useConnectionStore.getState().status).toBe("connected");
 
     monitor.dispose();
   });

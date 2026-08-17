@@ -6,28 +6,14 @@ import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { EffectIntensity, PlayerEffect, PointDeltas } from "./use-leaderboard-effects";
 
-// Category color mapping for per-category deltas
-const CATEGORY_COLORS = {
-  tilesExploredPoints: "#60a5fa", // blue
-  cratesOpenedPoints: "#c084fc", // purple
-  riftsTakenPoints: "#4ade80", // green
-  hyperstructuresTakenPoints: "#f97316", // orange
-  hyperstructuresHeldPoints: "#facc15", // yellow
-  totalPoints: "#dfaa54", // gold
-} as const;
-
-// Grid column indices for positioning (0-indexed, accounting for tribe column presence)
-const COLUMN_INDICES = {
-  rank: 0,
-  name: 1,
-  // tribe: 2 (only when showTribeDetails is true)
-  tiles: 3, // or 2 without tribe
-  crates: 4, // or 3 without tribe
-  rifts: 5, // or 4 without tribe
-  hsTaken: 6, // or 5 without tribe
-  hsHeld: 7, // or 6 without tribe
-  total: 8, // or 7 without tribe
-} as const;
+const CATEGORY_COLORS: Record<keyof PointDeltas, string> = {
+  tilesExploredPoints: "#60a5fa",
+  cratesOpenedPoints: "#c084fc",
+  riftsTakenPoints: "#4ade80",
+  hyperstructuresTakenPoints: "#f97316",
+  hyperstructuresHeldPoints: "#facc15",
+  totalPoints: "#dfaa54",
+};
 
 interface EffectPosition {
   x: number;
@@ -238,42 +224,22 @@ const EffectRenderer = ({ effect, rect, showTribeDetails }: EffectRendererProps)
     hyperstructuresHeldPoints: { x: getColumnCenter(7 + offset), y: baseY },
     totalPoints: { x: getColumnCenter(8 + offset), y: baseY },
   };
-
-  const categoryEffects: Array<{ key: keyof PointDeltas; value: number; color: string }> = [
-    { key: "tilesExploredPoints", value: pointDeltas.tilesExploredPoints, color: CATEGORY_COLORS.tilesExploredPoints },
-    { key: "cratesOpenedPoints", value: pointDeltas.cratesOpenedPoints, color: CATEGORY_COLORS.cratesOpenedPoints },
-    { key: "riftsTakenPoints", value: pointDeltas.riftsTakenPoints, color: CATEGORY_COLORS.riftsTakenPoints },
-    {
-      key: "hyperstructuresTakenPoints",
-      value: pointDeltas.hyperstructuresTakenPoints,
-      color: CATEGORY_COLORS.hyperstructuresTakenPoints,
-    },
-    {
-      key: "hyperstructuresHeldPoints",
-      value: pointDeltas.hyperstructuresHeldPoints,
-      color: CATEGORY_COLORS.hyperstructuresHeldPoints,
-    },
-    { key: "totalPoints", value: pointDeltas.totalPoints, color: CATEGORY_COLORS.totalPoints },
-  ];
+  const pointEffects = (Object.keys(pointDeltas) as Array<keyof PointDeltas>).filter((key) => pointDeltas[key] > 0);
 
   return (
     <>
       {/* Rank change effect */}
       {rankChange !== 0 && <RankChangeEffect change={rankChange} intensity={rankIntensity} position={positions.rank} />}
 
-      {/* Point delta effects per category */}
-      {categoryEffects.map(
-        ({ key, value, color }) =>
-          value > 0 && (
-            <PointDeltaEffect
-              key={key}
-              value={value}
-              color={color}
-              intensity={pointIntensity}
-              position={positions[key]}
-            />
-          ),
-      )}
+      {pointEffects.map((key) => (
+        <PointDeltaEffect
+          key={key}
+          value={pointDeltas[key]}
+          color={CATEGORY_COLORS[key]}
+          intensity={pointIntensity}
+          position={positions[key]}
+        />
+      ))}
     </>
   );
 };

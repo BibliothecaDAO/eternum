@@ -41,14 +41,16 @@ describe("StructureManager deferred bounds", () => {
 
     const finalizePassIdx = managerSource.indexOf("this.finalizeVisibleStructureModelPass(");
     const recordDurationIdx = managerSource.indexOf('recordWorldmapRenderDuration("performVisibleStructuresUpdate"');
+    const applyCountsIdx = finalizerSource.indexOf("applyModelInstanceCounts(input.modelInstanceCounts)");
     const setCountIdx = finalizerSource.indexOf("model.setCount(count)");
     const applyBoundsIdx = finalizerSource.indexOf("input.applyPendingModelBounds()");
 
     expect(finalizePassIdx).toBeGreaterThan(-1);
     expect(recordDurationIdx).toBeGreaterThan(-1);
+    expect(applyCountsIdx).toBeGreaterThan(-1);
     expect(applyBoundsIdx).toBeGreaterThan(-1);
     expect(setCountIdx).toBeGreaterThan(-1);
-    expect(applyBoundsIdx).toBeGreaterThan(setCountIdx);
+    expect(applyCountsIdx).toBeLessThan(applyBoundsIdx);
     expect(finalizePassIdx).toBeLessThan(recordDurationIdx);
   });
 });

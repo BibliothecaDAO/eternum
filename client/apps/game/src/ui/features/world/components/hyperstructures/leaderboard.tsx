@@ -1,12 +1,7 @@
 import Button from "@/ui/design-system/atoms/button";
 import { SortButton, SortInterface } from "@/ui/design-system/atoms/sort-button";
 import { SortPanel } from "@/ui/design-system/molecules/sort-panel";
-import {
-  currencyIntlFormat,
-  displayAddress,
-  getEntityIdFromKeys,
-  getRealmCountPerHyperstructure,
-} from "@/ui/utils/utils";
+import { currencyIntlFormat, displayAddress, getEntityIdFromKeys } from "@/ui/utils/utils";
 import { getAddressName, LeaderboardManager, toHexString } from "@bibliothecadao/eternum";
 import { useDojo, useHyperstructureUpdates } from "@bibliothecadao/react";
 import { ContractAddress, ID } from "@bibliothecadao/types";
@@ -32,7 +27,7 @@ export const Leaderboard = ({
   const [, setRefreshTick] = useState(0);
 
   const playerPointsLeaderboard = (() => {
-    const leaderboardManager = LeaderboardManager.instance(dojo.setup.components, getRealmCountPerHyperstructure());
+    const leaderboardManager = LeaderboardManager.instance(dojo.setup.components);
     const cachedPlayersByRank = leaderboardManager.playersByRank;
 
     // Calculate real-time points for each player including unregistered shareholder points

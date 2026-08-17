@@ -1,27 +1,32 @@
-import { sqlApi } from "@/services/api";
+import { gameEntityKey } from "@/dojo/game-scope";
+import { useGameEntityComponentValue } from "@/hooks/helpers/use-game-entity-component-value";
 import { useBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
-import { getEntityIdFromKeys } from "@/ui/utils/utils";
 import {
   DEFAULT_COORD_ALT,
   getArmyRelicEffects,
   getGuardsByStructure,
   getStructureArmyRelicEffects,
   getStructureRelicEffects,
-  getTileAt,
   ResourceManager,
   StaminaManager,
+  tileOptToTile,
 } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
-import { getExplorerFromToriiClient, getStructureFromToriiClient } from "@bibliothecadao/torii";
-import { getComponentValue } from "@dojoengine/recs";
-import { useEffect, useMemo, useState } from "react";
+import {
+  ContractAddress,
+  STEALABLE_RESOURCES,
+  type ClientComponents,
+  type ID,
+  type RelicEffectWithEndTick,
+  type StructureType,
+  type TileOpt,
+} from "@bibliothecadao/types";
+import { useComponentValue } from "@dojoengine/react";
+import type { ComponentValue } from "@dojoengine/recs";
+import { useMemo } from "react";
 
 import { getStructureDefenseSlotLimit, MAX_GUARD_SLOT_COUNT } from "../../utils/defense-slot-utils";
 import { AttackTarget, TargetType } from "../types";
-
-import type { ID, RelicEffectWithEndTick, StructureType } from "@bibliothecadao/types";
-import { STEALABLE_RESOURCES } from "@bibliothecadao/types";
-import { gameEntityKey } from "@/dojo/game-scope";
 
 const orderResourcesByPriority = (resourceBalances: Array<{ resourceId: number; amount: number }>) => {
   return STEALABLE_RESOURCES.reduce<Array<{ resourceId: number; amount: number }>>((acc, resourceId) => {
@@ -39,10 +44,9 @@ interface UseAttackTargetResult {
   isLoading: boolean;
 }
 
-type StructureTargetFetchResult = Awaited<ReturnType<typeof getStructureFromToriiClient>>;
-type ExplorerTargetFetchResult = Awaited<ReturnType<typeof getExplorerFromToriiClient>>;
+type StructureValue = ComponentValue<ClientComponents["Structure"]["schema"]>;
 
-const resolveStructureGuardSlotLimit = (structure: NonNullable<StructureTargetFetchResult["structure"]>) => {
+const resolveStructureGuardSlotLimit = (structure: StructureValue) => {
   const limits: number[] = [];
   const derivedLimit = getStructureDefenseSlotLimit(
     structure.category as StructureType | undefined,
@@ -64,148 +68,59 @@ const resolveStructureGuardSlotLimit = (structure: NonNullable<StructureTargetFe
   return Math.max(0, Math.min(Math.min(...limits), MAX_GUARD_SLOT_COUNT));
 };
 
-type FetchedAttackTarget =
-  | {
-      targetType: TargetType.Structure;
-      id: ID;
-      hex: { x: number; y: number };
-      structure: NonNullable<StructureTargetFetchResult["structure"]>;
-      resources: StructureTargetFetchResult["resources"];
-      productionBoostBonus: StructureTargetFetchResult["productionBoostBonus"];
-    }
-  | {
-      targetType: TargetType.Army;
-      id: ID;
-      hex: { x: number; y: number };
-      explorer: NonNullable<ExplorerTargetFetchResult["explorer"]>;
-      resources: ExplorerTargetFetchResult["resources"];
-      addressOwner: Awaited<ReturnType<typeof sqlApi.fetchExplorerAddressOwner>>;
-    };
-
 export const useAttackTargetData = (
   attackerEntityId: ID,
   targetHex: { x: number; y: number },
   targetAlt: boolean = DEFAULT_COORD_ALT,
 ): UseAttackTargetResult => {
   const {
-    network: { toriiClient },
-    setup: {
-      components,
-      components: { Structure, ExplorerTroops, ProductionBoostBonus },
-    },
+    setup: { components },
   } = useDojo();
 
+  const targetTileEntity = useMemo(
+    () => gameEntityKey([BigInt(targetAlt ? 1 : 0), BigInt(targetHex.x), BigInt(targetHex.y)]),
+    [targetAlt, targetHex.x, targetHex.y],
+  );
+  const targetTileOpt = useComponentValue(components.TileOpt, targetTileEntity);
   const targetTile = useMemo(
-    () => getTileAt(components, targetAlt, targetHex.x, targetHex.y),
-    [components, targetAlt, targetHex.x, targetHex.y],
+    () => (targetTileOpt ? tileOptToTile(targetTileOpt as unknown as TileOpt) : undefined),
+    [targetTileOpt],
   );
 
-  const [fetchedTarget, setFetchedTarget] = useState<FetchedAttackTarget | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
   const { currentArmiesTick, currentBlockTimestamp } = useBlockTimestamp();
+  const attackerStructure = useGameEntityComponentValue(components.Structure, attackerEntityId);
+  const attackerExplorer = useGameEntityComponentValue(components.ExplorerTroops, attackerEntityId);
+  const attackerProductionBoost = useGameEntityComponentValue(components.ProductionBoostBonus, attackerEntityId);
+  const targetEntityId = targetTile?.occupier_id;
+  const targetStructure = useGameEntityComponentValue(components.Structure, targetEntityId);
+  const targetExplorer = useGameEntityComponentValue(components.ExplorerTroops, targetEntityId);
+  const targetResource = useGameEntityComponentValue(components.Resource, targetEntityId);
+  const targetProductionBoost = useGameEntityComponentValue(components.ProductionBoostBonus, targetEntityId);
+  const targetOwnerStructure = useGameEntityComponentValue(components.Structure, targetExplorer?.owner);
 
   const attackerRelicEffects = useMemo(() => {
-    const structure = getComponentValue(Structure, gameEntityKey([BigInt(attackerEntityId)]));
-
-    if (structure) {
-      const productionBoostBonus = getComponentValue(
-        ProductionBoostBonus,
-        gameEntityKey([BigInt(structure.entity_id)]),
-      );
-
-      const structureRelicEffects = productionBoostBonus
-        ? getStructureRelicEffects(productionBoostBonus, currentArmiesTick)
+    if (attackerStructure) {
+      const structureRelicEffects = attackerProductionBoost
+        ? getStructureRelicEffects(attackerProductionBoost, currentArmiesTick)
         : [];
-      const structureArmyRelicEffects = getStructureArmyRelicEffects(structure, currentArmiesTick);
+      const structureArmyRelicEffects = getStructureArmyRelicEffects(attackerStructure, currentArmiesTick);
 
       return [...structureRelicEffects, ...structureArmyRelicEffects];
     }
 
-    const explorer = getComponentValue(ExplorerTroops, gameEntityKey([BigInt(attackerEntityId)]));
-    if (explorer) {
-      return getArmyRelicEffects(explorer.troops, currentArmiesTick);
+    if (attackerExplorer) {
+      return getArmyRelicEffects(attackerExplorer.troops, currentArmiesTick);
     }
 
     return [];
-  }, [attackerEntityId, Structure, ExplorerTroops, ProductionBoostBonus, currentArmiesTick]);
-
-  useEffect(() => {
-    let isActive = true;
-
-    const loadTarget = async () => {
-      if (!targetTile?.occupier_id) {
-        if (isActive) {
-          setFetchedTarget(null);
-          setIsLoading(false);
-        }
-        return;
-      }
-
-      setIsLoading(true);
-
-      try {
-        const isStructure = targetTile.occupier_is_structure;
-
-        if (isStructure) {
-          const { structure, resources, productionBoostBonus } = await getStructureFromToriiClient(
-            toriiClient,
-            targetTile.occupier_id,
-          );
-
-          if (!isActive) return;
-
-          if (structure) {
-            setFetchedTarget({
-              targetType: TargetType.Structure,
-              id: targetTile.occupier_id,
-              hex: { x: targetTile.col, y: targetTile.row },
-              structure,
-              resources,
-              productionBoostBonus,
-            });
-          } else {
-            setFetchedTarget(null);
-          }
-        } else {
-          const { explorer, resources } = await getExplorerFromToriiClient(toriiClient, targetTile.occupier_id);
-
-          if (!isActive) return;
-
-          if (explorer) {
-            const addressOwner = await sqlApi.fetchExplorerAddressOwner(targetTile.occupier_id);
-            if (!isActive) return;
-
-            setFetchedTarget({
-              targetType: TargetType.Army,
-              id: targetTile.occupier_id,
-              hex: { x: targetTile.col, y: targetTile.row },
-              addressOwner,
-              explorer,
-              resources,
-            });
-          } else {
-            setFetchedTarget(null);
-          }
-        }
-      } finally {
-        if (isActive) {
-          setIsLoading(false);
-        }
-      }
-    };
-
-    loadTarget();
-
-    return () => {
-      isActive = false;
-    };
-  }, [targetTile, toriiClient]);
+  }, [attackerExplorer, attackerProductionBoost, attackerStructure, currentArmiesTick]);
 
   const target = useMemo<AttackTarget | null>(() => {
-    if (!fetchedTarget) return null;
+    if (!targetTile || !targetEntityId) return null;
 
-    if (fetchedTarget.targetType === TargetType.Structure) {
-      const guards = getGuardsByStructure(fetchedTarget.structure)
+    if (targetTile.occupier_is_structure) {
+      if (!targetStructure) return null;
+      const guards = getGuardsByStructure(targetStructure)
         .filter((guard) => guard.troops.count > 0n)
         .toSorted((a, b) => a.slot - b.slot);
 
@@ -214,61 +129,58 @@ export const useAttackTargetData = (
           ...guard.troops,
           stamina: StaminaManager.getStamina(guard.troops, currentArmiesTick),
         })),
-        id: fetchedTarget.id,
+        id: targetEntityId,
         targetType: TargetType.Structure,
-        structureCategory: fetchedTarget.structure.category,
-        structureLevel: Number(fetchedTarget.structure.base?.level ?? 0),
-        guardSlotLimit: resolveStructureGuardSlotLimit(fetchedTarget.structure),
-        hex: fetchedTarget.hex,
-        addressOwner: fetchedTarget.structure.owner,
+        structureCategory: targetStructure.category,
+        structureLevel: Number(targetStructure.base?.level ?? 0),
+        guardSlotLimit: resolveStructureGuardSlotLimit(targetStructure),
+        hex: { x: targetTile.col, y: targetTile.row },
+        addressOwner: targetStructure.owner,
       };
     }
 
+    if (!targetExplorer) return null;
     return {
       info: [
         {
-          ...fetchedTarget.explorer.troops,
-          stamina: StaminaManager.getStamina(fetchedTarget.explorer.troops, currentArmiesTick),
+          ...targetExplorer.troops,
+          stamina: StaminaManager.getStamina(targetExplorer.troops, currentArmiesTick),
         },
       ],
-      id: fetchedTarget.id,
+      id: targetEntityId,
       targetType: TargetType.Army,
       structureCategory: null,
-      hex: fetchedTarget.hex,
-      addressOwner: fetchedTarget.addressOwner,
+      hex: { x: targetTile.col, y: targetTile.row },
+      addressOwner: targetOwnerStructure ? ContractAddress(targetOwnerStructure.owner) : null,
     };
-  }, [currentArmiesTick, fetchedTarget]);
+  }, [currentArmiesTick, targetEntityId, targetExplorer, targetOwnerStructure, targetStructure, targetTile]);
 
   const targetRelicEffects = useMemo<RelicEffectWithEndTick[]>(() => {
-    if (!fetchedTarget) return [];
-
-    if (fetchedTarget.targetType === TargetType.Structure) {
-      const structureRelicEffects = getStructureArmyRelicEffects(fetchedTarget.structure, currentArmiesTick);
-      if (!fetchedTarget.productionBoostBonus) {
+    if (targetTile?.occupier_is_structure) {
+      if (!targetStructure) return [];
+      const structureRelicEffects = getStructureArmyRelicEffects(targetStructure, currentArmiesTick);
+      if (!targetProductionBoost) {
         return structureRelicEffects;
       }
 
-      return [
-        ...structureRelicEffects,
-        ...getStructureRelicEffects(fetchedTarget.productionBoostBonus, currentArmiesTick),
-      ];
+      return [...structureRelicEffects, ...getStructureRelicEffects(targetProductionBoost, currentArmiesTick)];
     }
 
-    return getArmyRelicEffects(fetchedTarget.explorer.troops, currentArmiesTick);
-  }, [currentArmiesTick, fetchedTarget]);
+    return targetExplorer ? getArmyRelicEffects(targetExplorer.troops, currentArmiesTick) : [];
+  }, [currentArmiesTick, targetExplorer, targetProductionBoost, targetStructure, targetTile?.occupier_is_structure]);
 
   const targetResources = useMemo<Array<{ resourceId: number; amount: number }>>(() => {
-    if (!fetchedTarget?.resources) return [];
+    if (!targetResource) return [];
 
-    if (fetchedTarget.targetType === TargetType.Structure) {
+    if (targetTile?.occupier_is_structure) {
       const oneMinuteAgo = currentBlockTimestamp - 60;
-      return orderResourcesByPriority(
-        ResourceManager.getResourceBalancesWithProduction(fetchedTarget.resources, oneMinuteAgo),
-      );
+      return orderResourcesByPriority(ResourceManager.getResourceBalancesWithProduction(targetResource, oneMinuteAgo));
     }
 
-    return orderResourcesByPriority(ResourceManager.getResourceBalances(fetchedTarget.resources));
-  }, [currentBlockTimestamp, fetchedTarget]);
+    return orderResourcesByPriority(ResourceManager.getResourceBalances(targetResource));
+  }, [currentBlockTimestamp, targetResource, targetTile?.occupier_is_structure]);
+
+  const isLoading = Boolean(targetEntityId && (targetTile?.occupier_is_structure ? !targetStructure : !targetExplorer));
 
   return {
     attackerRelicEffects,

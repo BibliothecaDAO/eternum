@@ -7,12 +7,11 @@ import { useRealmUpgradeAndProvision } from "@/ui/modules/entity-details/hooks/u
 import { configManager, divideByPrecision, getBalance, getEntityIdFromKeys } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
 import { ContractAddress, ID, LEVEL_DESCRIPTIONS, RealmLevels, ResourcesIds } from "@bibliothecadao/types";
-import { useEffect, useMemo, useState } from "react";
-// todo: fix this
-import { sqlApi } from "@/services/api";
+import { useMemo, useState } from "react";
 import { getBlockTimestamp } from "@bibliothecadao/eternum";
 
-import { useComponentValue } from "@dojoengine/react";
+import { useComponentValue, useEntityQuery } from "@dojoengine/react";
+import { getComponentValue, Has } from "@dojoengine/recs";
 import AlertCircleIcon from "lucide-react/dist/esm/icons/alert-circle";
 import ArrowUpRightIcon from "lucide-react/dist/esm/icons/arrow-up-right";
 import ChevronDownIcon from "lucide-react/dist/esm/icons/chevron-down";
@@ -31,7 +30,6 @@ export const Castle = () => {
   const toggleModal = useUIStore((state) => state.toggleModal);
   const [isWonderBonusLoading, setIsWonderBonusLoading] = useState(false);
   const [isLevelUpLoading, setIsLevelUpLoading] = useState(false);
-  const [wonderStructureId, setWonderStructureId] = useState<ID | null>(null);
   const [showMissingResources, setShowMissingResources] = useState(false);
 
   const productionBoostBonus = useComponentValue(
@@ -61,18 +59,20 @@ export const Castle = () => {
   };
 
   const structure = useComponentValue(dojo.setup.components.Structure, gameEntityKey([BigInt(structureEntityId)]));
+  const structureEntities = useEntityQuery([Has(dojo.setup.components.Structure)]);
+  const wonderStructureId = useMemo<ID | null>(() => {
+    if (!structure) return null;
 
-  useEffect(() => {
-    const checkNearWonder = async () => {
-      if (!structure) return;
-      const wonderStructureId = await sqlApi.fetchSurroundingWonderBonus(WONDER_BONUS_DISTANCE, {
-        col: structure.base.coord_x,
-        row: structure.base.coord_y,
-      });
-      setWonderStructureId(wonderStructureId);
-    };
-    checkNearWonder();
-  }, [structure]);
+    const wonder = structureEntities
+      .map((entity) => getComponentValue(dojo.setup.components.Structure, entity))
+      .find(
+        (candidate) =>
+          candidate?.metadata.has_wonder &&
+          Math.abs(candidate.base.coord_x - structure.base.coord_x) <= WONDER_BONUS_DISTANCE &&
+          Math.abs(candidate.base.coord_y - structure.base.coord_y) <= WONDER_BONUS_DISTANCE,
+      );
+    return wonder?.entity_id ?? null;
+  }, [dojo.setup.components.Structure, structure, structureEntities]);
 
   const getNextRealmLevel = useMemo(() => {
     if (!structure) return null;

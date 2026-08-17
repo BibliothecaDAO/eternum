@@ -27,6 +27,7 @@ import PackageIcon from "lucide-react/dist/esm/icons/package";
 import Sparkles from "lucide-react/dist/esm/icons/sparkles";
 import { lazy, memo, Suspense, useCallback, useEffect, useMemo, useRef } from "react";
 import { gameEntityKey } from "@/dojo/game-scope";
+import { env } from "../../../../../env";
 
 // ----------------------------------------------------------------------------
 // Realtime chat config hook
@@ -38,10 +39,16 @@ const useRealtimeChatConfig = () => {
 
   const defaultZoneId = "global";
   const zoneIds = useMemo(() => [defaultZoneId], [defaultZoneId]);
-  const realtimeBaseUrl = (import.meta.env.VITE_PUBLIC_REALTIME_URL as string | undefined) ?? "";
+  const chatBaseUrl = env.VITE_PUBLIC_CHAT_URL;
+
+  useEffect(() => {
+    if (import.meta.env.DEV && !chatBaseUrl) {
+      console.info("[RealtimeChat] disabled: VITE_PUBLIC_CHAT_URL is unset");
+    }
+  }, [chatBaseUrl]);
 
   const initializer = useMemo<InitializeRealtimeClientParams | null>(() => {
-    if (!realtimeBaseUrl) return null;
+    if (!chatBaseUrl) return null;
 
     const walletAddress = ConnectedAccount?.address ?? undefined;
     const normalizedAccountName = accountName?.trim() ?? "";
@@ -50,12 +57,12 @@ const useRealtimeChatConfig = () => {
     const displayName = hasUsername ? normalizedAccountName : undefined;
 
     return {
-      baseUrl: realtimeBaseUrl,
+      baseUrl: chatBaseUrl,
       identity: { playerId, walletAddress, displayName },
       queryParams: { walletAddress, playerName: displayName },
       joinZones: zoneIds,
     };
-  }, [ConnectedAccount?.address, accountName, realtimeBaseUrl, zoneIds]);
+  }, [ConnectedAccount?.address, accountName, chatBaseUrl, zoneIds]);
 
   return { initializer, defaultZoneId, zoneIds };
 };

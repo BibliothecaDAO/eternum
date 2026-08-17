@@ -1,4 +1,5 @@
 import { useShortcutStore, KeyboardShortcut, KeyModifiers, createShortcutKey } from "@/hooks/store/use-shortcut-store";
+import { VERBOSE_LOGS_ENABLED } from "@/utils/dev-mode";
 
 /**
  * Centralized Shortcut Manager - Singleton class that manages keyboard shortcuts
@@ -62,7 +63,9 @@ export class CentralizedShortcutManager {
    */
   public registerShortcut(shortcut: KeyboardShortcut): void {
     useShortcutStore.getState().addShortcut(shortcut);
-    console.log(`Registered shortcut: ${shortcut.id} (${shortcut.key}) - ${shortcut.description}`);
+    if (VERBOSE_LOGS_ENABLED) {
+      console.log(`Registered shortcut: ${shortcut.id} (${shortcut.key}) - ${shortcut.description}`);
+    }
   }
 
   /**

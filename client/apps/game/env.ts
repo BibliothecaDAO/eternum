@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { resolveRendererBuildMode } from "./src/three/renderer-build-mode";
 
 const _rawEnv = import.meta.env as Record<string, string | undefined>;
 
@@ -31,6 +32,9 @@ const envSchema = z.object({
   // Empty = no realtime-server for this deployment; consumers skip their
   // calls instead of hammering a dead endpoint.
   VITE_PUBLIC_REALTIME_URL: optionalUrlOrEmpty.default(""),
+  // Empty = chat is deliberately unavailable for this environment. Chat has
+  // its own endpoint and must never inherit the deployment/realtime service.
+  VITE_PUBLIC_CHAT_URL: optionalUrlOrEmpty.default(""),
   VITE_PUBLIC_ENABLE_SQL_CACHE: z
     .string()
     .transform((v) => v === "true")
@@ -49,10 +53,7 @@ const envSchema = z.object({
     .transform((v) => v === "true")
     .optional()
     .default("false"),
-  VITE_PUBLIC_RENDERER_BUILD_MODE: z
-    .enum(["legacy-webgl", "experimental-webgpu-auto", "experimental-webgpu-force-webgl"])
-    .optional()
-    .default("experimental-webgpu-auto"),
+  VITE_PUBLIC_RENDERER_BUILD_MODE: z.string().optional().default("webgpu-auto").transform(resolveRendererBuildMode),
   // Version and chain info
   VITE_PUBLIC_GAME_VERSION: z.string().optional().default(""),
   VITE_PUBLIC_CHAIN: z.enum(["sepolia", "mainnet", "local", "appchain"]).optional().default("local"), // Add other chains as needed
@@ -171,17 +172,30 @@ const envSchema = z.object({
     .transform((v) => v === "true")
     .optional()
     .default("false"),
-  VITE_PUBLIC_TORII_BOUNDS_DEBUG_OVERLAY: z
-    .string()
-    .transform((v) => v === "true")
-    .optional()
-    .default("false"),
   VITE_PUBLIC_TORII_SUBSCRIPTION_SETUP_TIMEOUT_MS: z
     .string()
     .optional()
     .default("8000")
     .transform((v) => Number(v))
     .refine((value) => Number.isFinite(value) && value >= 0, "VITE_PUBLIC_TORII_SUBSCRIPTION_SETUP_TIMEOUT_MS"),
+  VITE_PUBLIC_TORII_SNAPSHOT_PAGE_TIMEOUT_MS: z
+    .string()
+    .optional()
+    .default("15000")
+    .transform((v) => Number(v))
+    .refine((value) => Number.isFinite(value) && value >= 0, "VITE_PUBLIC_TORII_SNAPSHOT_PAGE_TIMEOUT_MS"),
+  VITE_PUBLIC_TORII_EVENT_REPLAY_PAGE_TIMEOUT_MS: z
+    .string()
+    .optional()
+    .default("10000")
+    .transform((v) => Number(v))
+    .refine((value) => Number.isFinite(value) && value >= 0, "VITE_PUBLIC_TORII_EVENT_REPLAY_PAGE_TIMEOUT_MS"),
+  VITE_PUBLIC_TORII_PAGE_RETRY_COUNT: z
+    .string()
+    .optional()
+    .default("2")
+    .transform((v) => Number(v))
+    .refine((value) => Number.isInteger(value) && value >= 0, "VITE_PUBLIC_TORII_PAGE_RETRY_COUNT"),
   // How long without a Torii indexer heartbeat before a stream is treated as
   // stale. Lower = faster detection of a silently-dropped stream.
   VITE_PUBLIC_TORII_STALE_THRESHOLD_MS: z
@@ -214,8 +228,8 @@ const envSchema = z.object({
     .default("30000")
     .transform((v) => Number(v))
     .refine((value) => Number.isFinite(value) && value >= 0, "VITE_PUBLIC_TORII_RECONNECT_MAX_COOLDOWN_MS"),
-  // Proactively re-subscribe streams after this long with no activity, to dodge
-  // proxy idle / MAX_CONNECTION_AGE reaps in quiet worlds. 0 disables.
+  // Last-resort refresh for cancel-only streams when SubscribeIndexer heartbeat
+  // is unavailable. Healthy heartbeat-backed sessions never use it. 0 disables.
   VITE_PUBLIC_TORII_QUIET_STREAM_REFRESH_MS: z
     .string()
     .optional()
@@ -229,24 +243,6 @@ const envSchema = z.object({
     .transform((v) => v === "true")
     .optional()
     .default("true"),
-  VITE_PUBLIC_TORII_SPATIAL_SUBSCRIPTION_UPDATE_ENABLED: z
-    .string()
-    .transform((v) => v === "true")
-    .optional()
-    .default("true"),
-  // Default OFF: true is an explicit rollback to the legacy bounded writers.
-  // An arm that omits this flag must stay on the game-wide S2 runtime.
-  VITE_PUBLIC_WORLDMAP_BOUNDED_SPATIAL_SYNC: z
-    .string()
-    .transform((v) => v === "true")
-    .optional()
-    .default("false"),
-  VITE_PUBLIC_WORLDMAP_BOUNDED_SPATIAL_PADDING: z
-    .string()
-    .optional()
-    .default("0")
-    .transform((v) => Number(v))
-    .refine((value) => Number.isFinite(value) && value >= 0, "VITE_PUBLIC_WORLDMAP_BOUNDED_SPATIAL_PADDING"),
   VITE_PUBLIC_WORLDMAP_CHUNK_PHASE_TIMEOUT_MS: z
     .string()
     .optional()

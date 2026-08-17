@@ -1,4 +1,3 @@
-import { isLowOrBelow, type GraphicsSettings as GraphicsSettingsType } from "@/ui/config";
 import {
   ACESFilmicToneMapping,
   CineonToneMapping,
@@ -21,6 +20,7 @@ import {
   type RendererBackendV2,
   type RendererDeviceLostEvent,
   type RendererFramePipeline,
+  type RendererFallbackReason,
   type RendererPostProcessController,
   type RendererPostProcessRuntime,
   type RendererPostProcessPlan,
@@ -29,8 +29,7 @@ import type { RendererBuildMode } from "./renderer-build-mode";
 import { recordRendererStartupTiming } from "./perf/renderer-startup-telemetry";
 import { renderRendererOverlayPasses } from "./renderer-overlay-passes";
 import { createWebGPUPostProcessRuntime } from "./webgpu-postprocess-runtime";
-
-type ExperimentalRendererBuildMode = Exclude<RendererBuildMode, "legacy-webgl">;
+import { instrumentGpuBackendHotPaths } from "./gpu-backend-hot-path-instrumentation";
 
 interface WebGPURendererSurface extends RendererSurfaceLike {
   init(): Promise<void>;
@@ -40,6 +39,7 @@ interface WebGPURendererSurface extends RendererSurfaceLike {
 interface CreatedWebGPURenderer {
   activeMode: RendererActiveMode;
   device?: WebGPURendererDevice;
+  fallbackReason?: RendererFallbackReason;
   renderer: WebGPURendererSurface;
 }
 
@@ -63,7 +63,6 @@ interface WebGPURendererBackendDependencies {
   createPostProcessRuntime(input: { renderer: WebGPURendererSurface }): RendererPostProcessRuntime;
   createRenderer(input: {
     forceWebGL: boolean;
-    graphicsSetting: GraphicsSettingsType;
     isMobileDevice: boolean;
     pixelRatio: number;
     signal: AbortSignal;
@@ -80,7 +79,6 @@ interface WebGpuRendererModules {
 
 async function createDefaultWebGPURenderer(input: {
   forceWebGL: boolean;
-  graphicsSetting: GraphicsSettingsType;
   isMobileDevice: boolean;
   pixelRatio: number;
   signal: AbortSignal;
@@ -99,7 +97,7 @@ async function createDefaultWebGPURenderer(input: {
   }) as WebGPURendererSurface;
 
   renderer.autoClear = false;
-  renderer.shadowMap.enabled = !isLowOrBelow(input.graphicsSetting);
+  renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = input.isMobileDevice ? PCFShadowMap : PCFSoftShadowMap;
   renderer.toneMapping = ACESFilmicToneMapping;
   renderer.toneMappingExposure = 0.8;
@@ -110,11 +108,26 @@ async function createDefaultWebGPURenderer(input: {
   }
   recordRendererStartupTiming("webgpu-renderer-create", performance.now() - rendererCreateStartedAt);
 
+  if (import.meta.env.DEV) {
+    instrumentWebGpuBackendHotPaths(renderer);
+  }
+
+  const webGpuAvailable = WebGPU.isAvailable();
   return {
-    activeMode: input.forceWebGL || !WebGPU.isAvailable() ? "webgl2-fallback" : "webgpu",
+    activeMode: input.forceWebGL || !webGpuAvailable ? "webgl2-fallback" : "webgpu",
     device: resolveWebGpuRendererDevice(renderer),
+    fallbackReason: !input.forceWebGL && !webGpuAvailable ? "webgpu-unavailable" : null,
     renderer,
   };
+}
+
+// Dev-only rolling attribution for pipeline, buffer, binding, and texture work.
+// This keeps future render regressions attributable without player overhead.
+function instrumentWebGpuBackendHotPaths(renderer: WebGPURendererSurface): void {
+  const backend = (renderer as unknown as { backend?: Record<string, unknown> }).backend;
+  if (backend) {
+    instrumentGpuBackendHotPaths(backend);
+  }
 }
 
 const defaultDependencies: WebGPURendererBackendDependencies = {
@@ -363,11 +376,10 @@ function renderMainFrameWithRecovery(renderer: RendererSurfaceLike, pipeline: Re
 
 export function createWebGPURendererBackend(
   options: {
-    graphicsSetting: GraphicsSettingsType;
     isMobileDevice: boolean;
     onDeviceLost?: (event: RendererDeviceLostEvent) => void;
     pixelRatio: number;
-    requestedMode: ExperimentalRendererBuildMode;
+    requestedMode: RendererBuildMode;
   },
   dependencies: Partial<WebGPURendererBackendDependencies> = defaultDependencies,
 ): RendererBackendV2 {
@@ -397,7 +409,7 @@ export function createWebGPURendererBackend(
 
       return postProcessRuntime.setPlan(plan);
     },
-    applyQuality(input) {
+    applyRenderVisuals(input) {
       if (!renderer) {
         return;
       }
@@ -434,8 +446,7 @@ export function createWebGPURendererBackend(
       try {
         const startupPromise = (async () => {
           createdRenderer = await resolvedDependencies.createRenderer({
-            forceWebGL: options.requestedMode === "experimental-webgpu-force-webgl",
-            graphicsSetting: options.graphicsSetting,
+            forceWebGL: options.requestedMode === "webgpu-force-webgl",
             isMobileDevice: options.isMobileDevice,
             pixelRatio: options.pixelRatio,
             signal: abortController.signal,
@@ -490,6 +501,7 @@ export function createWebGPURendererBackend(
         return createRendererInitDiagnostics({
           activeMode: initializedRenderer.activeMode,
           buildMode: options.requestedMode,
+          fallbackReason: initializedRenderer.fallbackReason,
           initTimeMs: resolvedDependencies.now() - startTime,
           requestedMode: options.requestedMode,
         });

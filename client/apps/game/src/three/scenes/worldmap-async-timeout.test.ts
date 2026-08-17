@@ -9,7 +9,7 @@ describe("settleWorldmapAsyncStage", () => {
 
   it("returns the resolved value before the timeout expires", async () => {
     const result = await settleWorldmapAsyncStage({
-      label: "tile_fetch",
+      label: "projection_sync",
       promise: Promise.resolve("ok"),
       timeoutMs: 25,
     });
@@ -26,7 +26,7 @@ describe("settleWorldmapAsyncStage", () => {
     const onTimeout = vi.fn();
     const stalledPromise = new Promise<string>(() => {});
     const resultPromise = settleWorldmapAsyncStage({
-      label: "bounds_ready",
+      label: "projection_sync",
       promise: stalledPromise,
       timeoutMs: 25,
       onTimeout,
@@ -38,7 +38,7 @@ describe("settleWorldmapAsyncStage", () => {
       status: "timed_out",
     });
     expect(onTimeout).toHaveBeenCalledWith({
-      label: "bounds_ready",
+      label: "projection_sync",
       timeoutMs: 25,
     });
   });

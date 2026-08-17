@@ -6,6 +6,7 @@ import {
   applyWorldmapTerrainPresentation,
   composeWorldmapTerrainPresentations,
   createWorldmapTerrainPresentationState,
+  resolveWorldmapVisualTerrainPageKeyForHex,
   resolveWorldmapVisualTerrainWindow,
   type WorldmapTerrainPresentation,
 } from "./worldmap-terrain-presentation-runtime";
@@ -28,6 +29,16 @@ const presentation = (
 });
 
 describe("worldmap terrain presentation runtime", () => {
+  it("resolves live tile writes to the visual page that owns the hex", () => {
+    expect(
+      resolveWorldmapVisualTerrainPageKeyForHex(
+        { col: -25, row: 24 },
+        { width: 24, height: 24 },
+        { col: -24, row: -24 },
+      ),
+    ).toEqual({ pageKey: "24,-48", startCol: -48, startRow: 24 });
+  });
+
   it("composes active exact, target provisional, and retained previous terrain without duplicate hexes", () => {
     const retainedPrevious = presentation("0,0", "exact", 7, [
       { hexKey: "0,0", biomeKey: "Grassland", instanceIndex: 0 },

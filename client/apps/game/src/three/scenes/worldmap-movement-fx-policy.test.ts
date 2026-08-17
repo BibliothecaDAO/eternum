@@ -29,7 +29,7 @@ describe("shouldPlayArmyMovementFx", () => {
     expect(
       shouldPlayArmyMovementFx({
         capabilities: resolveRendererFxCapabilities({
-          activeMode: "legacy-webgl",
+          activeMode: "webgl2-fallback",
         }),
         movementType: "explore",
       }),

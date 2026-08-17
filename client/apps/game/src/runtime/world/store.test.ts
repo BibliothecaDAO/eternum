@@ -86,10 +86,4 @@ describe("world profile store", () => {
 
     expect(resolveRuntimeChain("mainnet")).toBe("appchain");
   });
-
-  it("uses the selected-chain preference when no active world exists", () => {
-    window.localStorage.setItem(CHAIN_KEY, "appchain");
-
-    expect(resolveRuntimeChain("mainnet")).toBe("appchain");
-  });
 });

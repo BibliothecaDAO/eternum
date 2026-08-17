@@ -21,14 +21,7 @@ vi.hoisted(() => {
 
 vi.mock("@/ui/config", () => ({
   FELT_CENTER: 0,
-  GRAPHICS_SETTING: "HIGH",
-  GraphicsSettings: {
-    HIGH: "HIGH",
-    LOW: "LOW",
-    MID: "MID",
-  },
   IS_FLAT_MODE: false,
-  isLowOrBelow: (setting: string) => setting === "LOW" || setting === "ULTRA_LOW",
 }));
 
 vi.mock("@/utils/agent", () => ({
@@ -217,5 +210,35 @@ describe("ArmyModel animation visibility", () => {
 
     expect(modelData.mixer.setTime).toHaveBeenCalled();
     expect(modelData.instancedMeshes[0].morphTexture.needsUpdate).toBe(true);
+  });
+
+  it("does not upload a visible morph texture when its weights are unchanged", () => {
+    vi.spyOn(performance, "now").mockReturnValue(33.32);
+
+    const subject = new ArmyModel(new Scene());
+    const modelData = createAnimatedModelData();
+    modelData.instancedMeshes[0].morphTexture.image.data[0] = 0.75;
+
+    (subject as any).models.set(ModelType.Knight1, modelData);
+    (subject as any).matrixIndexOwners.set(0, 9);
+    (subject as any).instanceData.set(9, {
+      entityId: 9,
+      isMoving: true,
+      matrixIndex: 0,
+      position: new Vector3(4, 0, 3),
+      scale: new Vector3(1, 1, 1),
+    });
+    subject.setAnimationState(0, true);
+
+    subject.updateAnimations(16, {
+      cameraPosition: new Vector3(0, 0, 0),
+      maxDistance: 100,
+      visibilityManager: {
+        isPointVisible: vi.fn(() => true),
+      } as never,
+    });
+
+    expect(modelData.mixer.setTime).toHaveBeenCalled();
+    expect(modelData.instancedMeshes[0].morphTexture.needsUpdate).toBe(false);
   });
 });

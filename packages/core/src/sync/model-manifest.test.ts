@@ -14,11 +14,10 @@ describe("GAME_SYNC_MODEL_MANIFEST", () => {
     expect(names).not.toEqual(expect.arrayContaining(["OpenRelicChestEvent", "ExplorerRewardEvent", "BattleEvent"]));
   });
 
-  it("retains the complete legacy selectors only for rollback", () => {
-    const structure = getGameSyncModel("Structure");
-    expect(structure.channels).toEqual(["gamewide-entity", "bounded-spatial", "player-entity"]);
-    expect(getGameSyncModelsForChannel("spatial-bootstrap").map(({ name }) => name)).not.toContain("Structure");
-    expect(getGameSyncModelsForChannel("player-entity").map(({ name }) => name)).toContain("Resource");
+  it("has one current-entity channel", () => {
+    ["Structure", "Building", "Resource", "ExplorerTroops"].forEach((name) => {
+      expect(getGameSyncModel(name).channels).toEqual(["gamewide-entity"]);
+    });
   });
 
   it("owns game scoping for every sync model", () => {
@@ -34,7 +33,7 @@ describe("GAME_SYNC_MODEL_MANIFEST", () => {
       expect(event.recovery).toBe("event-deduped");
       expect(event.deletion).toBe("event-ephemeral");
     });
-    expect(getGameSyncModelsForChannel("bounded-spatial").map(({ name }) => name)).not.toEqual(
+    expect(getGameSyncModelsForChannel("gamewide-entity").map(({ name }) => name)).not.toEqual(
       expect.arrayContaining(["BattleEvent", "ExplorerRewardEvent"]),
     );
   });
@@ -44,7 +43,7 @@ describe("GAME_SYNC_MODEL_MANIFEST", () => {
       expect(event.eventRetention).toEqual({
         retainRecsRows: false,
         dedupeIdentityLimit: 512,
-        replayEffectsOnRecovery: false,
+        replayEffectsOnRecovery: true,
       });
     });
   });

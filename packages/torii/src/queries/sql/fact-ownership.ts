@@ -4,12 +4,7 @@ type AsyncSqlApiMethodName = {
   [Key in keyof SqlApi]: SqlApi[Key] extends (...args: infer _Args) => Promise<unknown> ? Key : never;
 }[keyof SqlApi];
 
-type SqlFactDisposition =
-  | "keep-history"
-  | "keep-aggregate"
-  | "delete-live-state-s4"
-  | "review-in-s2-s3"
-  | "review-in-s3";
+type SqlFactDisposition = "keep-history" | "keep-aggregate" | "keep-external-snapshot" | "deleted-s4";
 
 interface SqlFactOwnershipDecision {
   disposition: SqlFactDisposition;
@@ -18,12 +13,11 @@ interface SqlFactOwnershipDecision {
 
 const keepHistory = (reason: string): SqlFactOwnershipDecision => ({ disposition: "keep-history", reason });
 const keepAggregate = (reason: string): SqlFactOwnershipDecision => ({ disposition: "keep-aggregate", reason });
-const deleteLiveState = (reason: string): SqlFactOwnershipDecision => ({
-  disposition: "delete-live-state-s4",
+const keepExternalSnapshot = (reason: string): SqlFactOwnershipDecision => ({
+  disposition: "keep-external-snapshot",
   reason,
 });
-const reviewInS2S3 = (reason: string): SqlFactOwnershipDecision => ({ disposition: "review-in-s2-s3", reason });
-const reviewInS3 = (reason: string): SqlFactOwnershipDecision => ({ disposition: "review-in-s3", reason });
+const deletedS4 = (reason: string): SqlFactOwnershipDecision => ({ disposition: "deleted-s4", reason });
 
 /**
  * Fact-level ownership audit for every public async SqlApi method.
@@ -33,53 +27,88 @@ const reviewInS3 = (reason: string): SqlFactOwnershipDecision => ({ disposition:
  * recovery and replacement consumers are proven.
  */
 export const SQL_API_FACT_OWNERSHIP = {
-  fetchQuest: deleteLiveState("Current quest/tile state must come from RECS."),
-  fetchFirstStructure: deleteLiveState("Bootstrap selection must select from the authoritative Structure snapshot."),
-  fetchSurroundingWonderBonus: reviewInS3("Decide when the spatial projection exists to replace this aggregate."),
-  fetchTilesByCoords: deleteLiveState("Current TileOpt state must come from RECS."),
-  fetchRealmSettlements: deleteLiveState("Current Structure locations must come from RECS."),
-  fetchStructuresByOwner: deleteLiveState("Current Structure ownership must come from RECS."),
-  fetchRealmVillageSlots: deleteLiveState("Current settlement slots must come from RECS."),
-  fetchSettlementPlannerSnapshot: deleteLiveState("Planner realms and villages duplicate current Structure facts."),
-  fetchExploredTilesInBounds: deleteLiveState("Current explored TileOpt state must come from RECS."),
+  fetchQuest: deletedS4("Current quest/tile state now comes from RECS."),
+  fetchSurroundingWonderBonus: deletedS4("The in-session wonder lookup now derives from Structure in RECS."),
+  fetchTilesByCoords: deletedS4("Current TileOpt state now comes from the spatial projection."),
+  fetchRealmSettlements: keepExternalSnapshot(
+    "The pre-session settlement picker has no active GameSyncRuntime; in-session ownership does not use this API.",
+  ),
+  fetchStructuresByOwner: keepExternalSnapshot(
+    "Pre-session, mobile, and headless consumers have no active GameSyncRuntime; in-session game views read RECS.",
+  ),
+  fetchRealmVillageSlots: keepExternalSnapshot(
+    "The pre-session village planner has no active GameSyncRuntime and needs a settlement-slot snapshot.",
+  ),
+  fetchSettlementPlannerSnapshot: keepExternalSnapshot(
+    "The pre-session settlement planner has no active GameSyncRuntime; no in-session consumer uses this snapshot.",
+  ),
+  fetchExploredTilesInBounds: keepExternalSnapshot(
+    "The pre-session settlement planner has no active GameSyncRuntime and requests a bounded planning snapshot.",
+  ),
   fetchTokenTransfers: keepHistory("Immutable token-transfer history is a SQL read model."),
-  fetchStructureByCoord: deleteLiveState("Current Structure lookup must use the RECS spatial projection."),
-  fetchGlobalStructureExplorerAndGuildDetails: deleteLiveState("Duplicates current structures, explorers, and owners."),
-  fetchAllTiles: deleteLiveState("Duplicates the authoritative TileOpt snapshot."),
-  fetchHyperstructures: deleteLiveState("Current Hyperstructure state must come from RECS."),
-  fetchOtherStructures: deleteLiveState("Current Structure ownership and category must come from RECS."),
+  fetchStructureByCoord: deletedS4("Current Structure lookup now uses the RECS spatial projection."),
+  fetchGlobalStructureExplorerAndGuildDetails: deletedS4(
+    "The PlayerDataStore duplicate of structures, explorers, and owners was retired.",
+  ),
+  fetchAllTiles: keepExternalSnapshot(
+    "The headless client and onchain agent do not yet host GameSyncRuntime; the game client does not use this API.",
+  ),
+  fetchHyperstructures: keepExternalSnapshot(
+    "The headless client lacks GameSyncRuntime; in-session game views read RECS and the spatial projection.",
+  ),
+  fetchOtherStructures: deletedS4("Current Structure ownership and category now come from RECS."),
   fetchSwapEvents: keepHistory("Immutable swap history is a SQL read model."),
-  fetchExplorerAddressOwner: deleteLiveState("Current explorer ownership must come from RECS."),
+  fetchExplorerAddressOwner: keepExternalSnapshot(
+    "The headless client lacks GameSyncRuntime; the game client resolves explorer ownership through Structure in RECS.",
+  ),
   fetchBattleLogs: keepHistory("Battle history is intentionally not current entity truth."),
-  fetchPlayerStructures: deleteLiveState("Current player Structure membership must come from RECS."),
-  fetchResourceBalances: deleteLiveState("Current Resource balances must come from RECS."),
-  fetchResourceBalancesAndProduction: deleteLiveState("Current balances and production must come from RECS."),
-  fetchResourceBalancesWithProduction: deleteLiveState("Current dynamic Resource production must come from RECS."),
-  fetchSeasonEnded: deleteLiveState("Current season status is streamed into RECS."),
-  fetchGuardsByStructure: deleteLiveState("Current troop guards must come from Structure in RECS."),
-  fetchChestsNearPosition: deleteLiveState("Current chest occupancy must use TileOpt in the spatial projection."),
-  fetchPlayerStructureRelics: deleteLiveState("Current relic ownership is Resource state in RECS."),
-  fetchPlayerArmyRelics: deleteLiveState("Current relic ownership is Resource state in RECS."),
-  fetchAllPlayerRelics: deleteLiveState("Combines two current-state relic queries."),
-  fetchAllStructuresMapData: deleteLiveState("MapDataStore duplicate of current Structure state."),
-  fetchAllArmiesMapData: deleteLiveState("MapDataStore duplicate of current ExplorerTroops state."),
-  fetchBuildingsByStructures: deleteLiveState("Current Building placement must come from RECS."),
+  fetchPlayerStructures: keepExternalSnapshot(
+    "Pre-session settlement entry and the headless client have no active GameSyncRuntime; in-session views read RECS.",
+  ),
+  fetchResourceBalances: keepExternalSnapshot(
+    "The headless client and onchain agent have not adopted GameSyncRuntime; the game client reads Resource from RECS.",
+  ),
+  fetchResourceBalancesAndProduction: deletedS4("Current balances and production now come from Resource in RECS."),
+  fetchResourceBalancesWithProduction: keepExternalSnapshot(
+    "The onchain agent has no active GameSyncRuntime; the game client computes dynamic balances from Resource in RECS.",
+  ),
+  fetchSeasonEnded: deletedS4("Current season status is streamed into RECS."),
+  fetchGuardsByStructure: keepExternalSnapshot(
+    "The headless client lacks GameSyncRuntime; game and mobile UI derive guards from Structure in RECS.",
+  ),
+  fetchChestsNearPosition: deletedS4("Current chest occupancy now uses TileOpt in the spatial projection."),
+  fetchPlayerStructureRelics: deletedS4("Current structure relic ownership now comes from Resource in RECS."),
+  fetchPlayerArmyRelics: deletedS4("Current army relic ownership now comes from Resource in RECS."),
+  fetchAllPlayerRelics: deletedS4("The duplicate relic aggregate was replaced by RECS-derived inventory."),
+  fetchAllStructuresMapData: keepExternalSnapshot(
+    "The headless client and onchain agent have not adopted GameSyncRuntime; the game map uses the projection.",
+  ),
+  fetchAllArmiesMapData: keepExternalSnapshot(
+    "The headless client and onchain agent have not adopted GameSyncRuntime; the game map uses the projection.",
+  ),
+  fetchBuildingsByStructures: keepExternalSnapshot(
+    "The onchain agent has no active GameSyncRuntime; the game client reads Building from RECS.",
+  ),
   fetchWorldAddress: keepAggregate("Indexer metadata identifies the world; it is not gameplay entity truth."),
-  fetchHyperstructuresWithRealmCount: reviewInS3(
-    "Decide when the spatial projection exists to replace this aggregate.",
+  fetchHyperstructuresWithRealmCount: deletedS4(
+    "Hyperstructure realm counts now derive from Structure in RECS and the spatial projection.",
   ),
   fetchStoryEvents: keepHistory("StoryEvent is immutable paginated history."),
   fetchStoryEventsSince: keepHistory("StoryEvent is immutable paginated history."),
   fetchStoryEventsByEntity: keepHistory("StoryEvent is immutable paginated history."),
   fetchStoryEventsByOwner: keepHistory("StoryEvent is immutable paginated history."),
   fetchStoryEventsCount: keepAggregate("Pagination count over immutable StoryEvent history."),
-  fetchRegisteredPlayerPoints: reviewInS2S3(
-    "RECS owns in-session points; decide how out-of-session leaderboard pages obtain ranked data.",
+  fetchRegisteredPlayerPoints: keepAggregate(
+    "Landing and post-game review views have no active game RECS session; in-session registered points read RECS.",
   ),
-  fetchPlayerLeaderboard: reviewInS2S3(
-    "Decide whether out-of-session ranked pagination remains a SQL aggregate when no game RECS session exists.",
+  fetchPlayerLeaderboard: keepAggregate(
+    "Landing pagination has no active game RECS session; in-session consumers use only the aggregate over immutable StoryEvent history while rank and points read RECS.",
   ),
-  fetchPlayerLeaderboardByAddress: reviewInS2S3(
-    "Decide whether out-of-session player rank lookup remains a SQL aggregate when no game RECS session exists.",
+  fetchPlayerLeaderboardByAddress: keepAggregate(
+    "Landing and post-game review lookup has no active game RECS session; its StoryEvent activity breakdown is an immutable-history aggregate, not current entity truth.",
   ),
-} satisfies Record<AsyncSqlApiMethodName, SqlFactOwnershipDecision>;
+} satisfies Record<string, SqlFactOwnershipDecision>;
+
+type UnclassifiedAsyncSqlApiMethod = Exclude<AsyncSqlApiMethodName, keyof typeof SQL_API_FACT_OWNERSHIP>;
+const allAsyncSqlApiMethodsAreClassified: Record<UnclassifiedAsyncSqlApiMethod, never> = {};
+void allAsyncSqlApiMethodsAreClassified;

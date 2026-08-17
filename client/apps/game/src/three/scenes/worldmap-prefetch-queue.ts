@@ -1,20 +1,14 @@
 export interface PrefetchQueueItem {
   chunkKey: string;
-  fetchKey: string;
+  areaKey: string;
   priority: number;
-  fetchTiles: boolean;
-}
-
-export interface PrefetchFetchKeyLookup {
-  has(fetchKey: string): boolean;
+  syncTiles: boolean;
 }
 
 interface ShouldProcessPrefetchQueueItemInput {
   item: PrefetchQueueItem;
   isSwitchedOff: boolean;
-  desiredFetchKeys: Set<string>;
-  fetchedFetchKeys: PrefetchFetchKeyLookup;
-  pendingFetchKeys: PrefetchFetchKeyLookup;
+  desiredAreaKeys: Set<string>;
   pinnedAreaKeys: Set<string>;
 }
 
@@ -54,9 +48,9 @@ export function insertPrefetchQueueItem(queue: PrefetchQueueItem[], item: Prefet
 /**
  * Remove queued prefetch work that is no longer relevant.
  */
-export function prunePrefetchQueueByFetchKey(queue: PrefetchQueueItem[], allowedFetchKeys: Set<string>): void {
+export function prunePrefetchQueueByAreaKey(queue: PrefetchQueueItem[], allowedAreaKeys: Set<string>): void {
   for (let i = queue.length - 1; i >= 0; i--) {
-    if (!allowedFetchKeys.has(queue[i].fetchKey)) {
+    if (!allowedAreaKeys.has(queue[i].areaKey)) {
       queue.splice(i, 1);
     }
   }
@@ -66,25 +60,17 @@ export function prunePrefetchQueueByFetchKey(queue: PrefetchQueueItem[], allowed
  * Guard whether a queued prefetch item should still execute.
  */
 export function shouldProcessPrefetchQueueItem(input: ShouldProcessPrefetchQueueItemInput): boolean {
-  const { item, isSwitchedOff, desiredFetchKeys, fetchedFetchKeys, pendingFetchKeys, pinnedAreaKeys } = input;
+  const { item, isSwitchedOff, desiredAreaKeys, pinnedAreaKeys } = input;
 
   if (isSwitchedOff) {
     return false;
   }
 
-  if (!desiredFetchKeys.has(item.fetchKey)) {
+  if (!desiredAreaKeys.has(item.areaKey)) {
     return false;
   }
 
-  if (fetchedFetchKeys.has(item.fetchKey)) {
-    return false;
-  }
-
-  if (pendingFetchKeys.has(item.fetchKey)) {
-    return false;
-  }
-
-  if (pinnedAreaKeys.has(item.fetchKey)) {
+  if (pinnedAreaKeys.has(item.areaKey)) {
     return false;
   }
 

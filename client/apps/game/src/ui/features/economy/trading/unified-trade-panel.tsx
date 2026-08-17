@@ -167,52 +167,52 @@ export const UnifiedTradePanel = memo(({ resourceId, entityId, askOffers, bidOff
       effectiveVenue === "orderbook" && bestOBOffer
         ? Math.ceil(precisionAmount / bestOBOffer.makerGivesMinResourceAmount)
         : 0;
-    const removeResourceOverrides =
+    const provisionalResourceChange =
       effectiveVenue === "orderbook" && bestOBOffer
-        ? new ResourceManager(dojo.setup.components, entityId).optimisticResourceUpdate(
-            bestOBOffer.makerGets[0].resourceId,
-            -divideByPrecision(bestOBOffer.takerPaysMinResourceAmount * orderbookTakerBuysCount),
-          )
-        : new ResourceManager(dojo.setup.components, entityId).optimisticResourceUpdate(
-            tradeDirection === "buy" ? ResourcesIds.Lords : resourceId,
-            -(tradeDirection === "buy" ? totalLords : tradeAmount),
-          );
+        ? {
+            resourceId: bestOBOffer.makerGets[0].resourceId,
+            amount: -divideByPrecision(bestOBOffer.takerPaysMinResourceAmount * orderbookTakerBuysCount),
+          }
+        : {
+            resourceId: tradeDirection === "buy" ? ResourcesIds.Lords : resourceId,
+            amount: -(tradeDirection === "buy" ? totalLords : tradeAmount),
+          };
 
     try {
-      if (effectiveVenue === "orderbook" && bestOBOffer) {
-        // Accept the best order book offer
-        await dojo.setup.systemCalls.accept_order({
-          signer: dojo.account.account,
-          taker_id: entityId,
-          trade_id: bestOBOffer.tradeId,
-          taker_buys_count: orderbookTakerBuysCount,
-        });
-      } else if (effectiveVenue === "amm") {
-        // Execute AMM swap
-        const closestBank = getClosestBank(entityId, dojo.setup.components);
-        if (!closestBank) return;
-        if (tradeDirection === "buy") {
-          await dojo.setup.systemCalls.buy_resources({
-            signer: dojo.account.account,
-            bank_entity_id: closestBank.bankId,
-            entity_id: entityId,
-            resource_type: resourceId,
-            amount: precisionAmount,
-          });
-        } else {
-          await dojo.setup.systemCalls.sell_resources({
-            signer: dojo.account.account,
-            bank_entity_id: closestBank.bankId,
-            entity_id: entityId,
-            resource_type: resourceId,
-            amount: precisionAmount,
-          });
-        }
-      }
+      await new ResourceManager(dojo.setup.components, entityId).submitProvisionalResourceTransaction(
+        [provisionalResourceChange],
+        dojo.account.account,
+        async () => {
+          if (effectiveVenue === "orderbook" && bestOBOffer) {
+            return dojo.setup.systemCalls.accept_order({
+              signer: dojo.account.account,
+              taker_id: entityId,
+              trade_id: bestOBOffer.tradeId,
+              taker_buys_count: orderbookTakerBuysCount,
+            });
+          }
+          const closestBank = getClosestBank(entityId, dojo.setup.components);
+          if (!closestBank) throw new Error("No bank is available for this trade");
+          return tradeDirection === "buy"
+            ? dojo.setup.systemCalls.buy_resources({
+                signer: dojo.account.account,
+                bank_entity_id: closestBank.bankId,
+                entity_id: entityId,
+                resource_type: resourceId,
+                amount: precisionAmount,
+              })
+            : dojo.setup.systemCalls.sell_resources({
+                signer: dojo.account.account,
+                bank_entity_id: closestBank.bankId,
+                entity_id: entityId,
+                resource_type: resourceId,
+                amount: precisionAmount,
+              });
+        },
+      );
     } catch (error) {
       console.error("Trade execution failed:", error);
     } finally {
-      removeResourceOverrides();
       setIsLoading(false);
     }
   }, [effectiveVenue, bestOBOffer, tradeAmount, tradeDirection, entityId, resourceId, totalLords, dojo]);

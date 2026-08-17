@@ -1,13 +1,12 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo } from "react";
 
-import { sqlApi } from "@/services/api";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { QuestReward } from "@/ui/features/economy/resources";
 import { formatTime, getEntityIdFromKeys } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
-import { QuestTileData } from "@bibliothecadao/torii";
 import { ID } from "@bibliothecadao/types";
 import { getComponentValue } from "@dojoengine/recs";
+import { useComponentValue } from "@dojoengine/react";
 import { gameEntityKey } from "@/dojo/game-scope";
 
 import {
@@ -51,19 +50,9 @@ const QuestEntityDetailContent = ({
     setup: { components },
   } = useDojo();
 
-  const [quest, setQuest] = useState<QuestTileData | undefined>(undefined);
+  const quest = useComponentValue(components.QuestTile, gameEntityKey([BigInt(questEntityId)]));
   const isBanner = variant === "banner";
   const isCompactLayout = compact;
-
-  useEffect(() => {
-    const fetchQuest = async () => {
-      const result = await sqlApi.fetchQuest(questEntityId);
-      if (result) {
-        setQuest(result);
-      }
-    };
-    fetchQuest();
-  }, [questEntityId]);
 
   const slotsRemaining = useMemo(
     () => (quest?.capacity ?? 0) - (quest?.participant_count ?? 0),

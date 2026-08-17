@@ -42,6 +42,39 @@ describe("EntityIngestQueue", () => {
     ]);
   });
 
+  it("unions member fields when coalescing same-frame partial updates for one entity and model", async () => {
+    const scheduler = createManualGameSyncScheduler();
+    const calls: GameSyncEntityStoreOperation[][] = [];
+    const store: GameSyncStore = {
+      applyEntityOperations: vi.fn((operations) => calls.push([...operations])),
+      applyEvent: vi.fn(),
+      listModelEntityIds: () => [],
+    };
+    const queue = new EntityIngestQueue({ scheduler, store, now: () => 0 });
+
+    // A provision-style burst: torii delivers one member per update.
+    queue.enqueueEntity({ hashed_keys: "realm", models: { Resource: { LABOR_BALANCE: 10n } } });
+    queue.enqueueEntity({ hashed_keys: "realm", models: { Resource: { WHEAT_BALANCE: 20n } } });
+    queue.enqueueEntity({ hashed_keys: "realm", models: { Resource: { WOOD_BALANCE: 30n, WHEAT_BALANCE: 25n } } });
+    const drained = queue.drain();
+    scheduler.flushNext();
+    await drained;
+
+    expect(calls).toEqual([
+      [
+        {
+          type: "upsert",
+          entities: [
+            {
+              hashed_keys: "realm",
+              models: { Resource: { LABOR_BALANCE: 10n, WHEAT_BALANCE: 25n, WOOD_BALANCE: 30n } },
+            },
+          ],
+        },
+      ],
+    ]);
+  });
+
   it("rejects recovery drains when a RECS batch fails", async () => {
     const scheduler = createManualGameSyncScheduler();
     const store: GameSyncStore = {
@@ -59,5 +92,79 @@ describe("EntityIngestQueue", () => {
 
     await expect(drained).rejects.toThrow("RECS write failed");
     await expect(queue.drain()).rejects.toThrow("RECS write failed");
+  });
+
+  it("keeps a typical logical update burst in one store write", async () => {
+    let nowMs = 0;
+    const appliedBatches: Array<{ applyDurationMs: number; operationCount: number }> = [];
+    const applyEntityOperations = vi.fn(() => {
+      nowMs += 30;
+    });
+    const store: GameSyncStore = {
+      applyEntityOperations,
+      applyEvent: vi.fn(),
+      listModelEntityIds: () => [],
+    };
+    const queue = new EntityIngestQueue({
+      scheduler: {
+        schedule(task) {
+          let cancelled = false;
+          queueMicrotask(() => {
+            if (!cancelled) task();
+          });
+          return () => {
+            cancelled = true;
+          };
+        },
+      },
+      store,
+      now: () => nowMs,
+      onBatchApplied: (batch) => appliedBatches.push(batch),
+    });
+
+    for (let index = 0; index < 120; index += 1) {
+      queue.enqueueEntity({ hashed_keys: `entity-${index}`, models: { Position: { x: index } } });
+    }
+    await queue.drain();
+
+    expect(applyEntityOperations).toHaveBeenCalledTimes(1);
+    expect(
+      applyEntityOperations.mock.calls.map(([operations]) =>
+        operations.reduce(
+          (count: number, operation: GameSyncEntityStoreOperation) =>
+            count + (operation.type === "upsert" ? operation.entities.length : 1),
+          0,
+        ),
+      ),
+    ).toEqual([120]);
+    expect(appliedBatches).toEqual([{ applyDurationMs: 30, operationCount: 120 }]);
+  });
+
+  it("retains a high runaway cap on individual store writes", async () => {
+    const scheduler = createManualGameSyncScheduler();
+    const applyEntityOperations = vi.fn();
+    const store: GameSyncStore = {
+      applyEntityOperations,
+      applyEvent: vi.fn(),
+      listModelEntityIds: () => [],
+    };
+    const queue = new EntityIngestQueue({ scheduler, store, now: () => 0 });
+
+    for (let index = 0; index < 1_200; index += 1) {
+      queue.enqueueEntity({ hashed_keys: `entity-${index}`, models: { Position: { x: index } } });
+    }
+    const drained = queue.drain();
+    scheduler.flushNext();
+    await drained;
+
+    expect(
+      applyEntityOperations.mock.calls.map(([operations]) =>
+        operations.reduce(
+          (count: number, operation: GameSyncEntityStoreOperation) =>
+            count + (operation.type === "upsert" ? operation.entities.length : 1),
+          0,
+        ),
+      ),
+    ).toEqual([1_000, 200]);
   });
 });

@@ -46,20 +46,18 @@ describe("buildSceneSmokeUrl", () => {
     expect(
       buildSceneSmokeUrl({
         baseUrl: "https://127.0.0.1:4173",
-        rendererMode: "experimental-webgpu-auto",
+        rendererMode: "webgpu-auto",
         scene: "map",
         worldName: "blitzplay1",
       }),
-    ).toBe(
-      "https://127.0.0.1:4173/play/appchain/blitzplay1/map?col=0&row=0&spectate=true&rendererMode=experimental-webgpu-auto",
-    );
+    ).toBe("https://127.0.0.1:4173/play/appchain/blitzplay1/map?col=0&row=0&spectate=true&rendererMode=webgpu-auto");
   });
 
   it("requires a world name instead of guessing a stale default", () => {
     expect(() =>
       buildSceneSmokeUrl({
         baseUrl: "https://127.0.0.1:4173",
-        rendererMode: "experimental-webgpu-auto",
+        rendererMode: "webgpu-auto",
         scene: "map",
       }),
     ).toThrow(/worldName/);
@@ -70,11 +68,13 @@ describe("buildSceneSmokeUrl", () => {
       buildSceneSmokeUrl({
         chain: "mainnet",
         baseUrl: "https://127.0.0.1:4173",
-        rendererMode: "legacy-webgl",
+        rendererMode: "webgpu-force-webgl",
         scene: "hex",
         worldName: "etrn-dawn",
       }),
-    ).toBe("https://127.0.0.1:4173/play/mainnet/etrn-dawn/hex?col=0&row=0&spectate=true&rendererMode=legacy-webgl");
+    ).toBe(
+      "https://127.0.0.1:4173/play/mainnet/etrn-dawn/hex?col=0&row=0&spectate=true&rendererMode=webgpu-force-webgl",
+    );
   });
 });
 
@@ -321,7 +321,7 @@ describe("evaluateRendererParitySummary", () => {
     expect(
       evaluateRendererParitySummary({
         activeMode: "webgpu",
-        buildMode: "experimental-webgpu-auto",
+        buildMode: "webgpu-auto",
         capabilities: {
           supportsBloom: false,
           supportsChromaticAberration: false,
@@ -346,7 +346,7 @@ describe("evaluateRendererParitySummary", () => {
           prewarmStrategy: "compile-async",
           unsupportedFeatures: ["environmentIbl"],
         },
-        requestedMode: "experimental-webgpu-auto",
+        requestedMode: "webgpu-auto",
         sceneName: "worldmap",
       }),
     ).toEqual({

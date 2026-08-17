@@ -1,12 +1,29 @@
 import {
   ActionPaths,
+  divideByPrecision,
+  gameEntityKey,
+  getAddressName,
   getGuardsByStructure,
+  getIsBlitz,
+  getStructureInfoFromTileOccupier,
+  getStructureName,
   Position,
   StructureActionManager,
   StructureTileSystemUpdate,
+  TROOP_TIERS,
+  unpackBuildingCounts,
 } from "@bibliothecadao/eternum";
+import type { StructureSpatialRenderable, WorldSpatialProjection } from "@bibliothecadao/eternum/game-sync";
 import { DojoResult } from "@bibliothecadao/react";
-import { getTroopAttackRange, HexEntityInfo, ID, StructureType } from "@bibliothecadao/types";
+import {
+  BuildingType,
+  ContractAddress,
+  getTroopAttackRange,
+  GuardSlot,
+  HexEntityInfo,
+  ID,
+  StructureType,
+} from "@bibliothecadao/types";
 import { getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import * as THREE from "three";
@@ -30,6 +47,8 @@ export class StructureManager extends EntityManager<StructureObject> {
   // Dependencies
   private dojo: DojoResult | null = null;
   private biomeRefreshCallback?: () => void;
+  private worldSpatialProjection?: WorldSpatialProjection;
+  private projectionUnsubscribes: Array<() => void> = [];
 
   constructor(scene: THREE.Scene, biomeRefreshCallback?: () => void) {
     super(scene);
@@ -40,6 +59,141 @@ export class StructureManager extends EntityManager<StructureObject> {
   public setDependencies(dojo: DojoResult, exploredTiles: Map<number, Map<number, any>>): void {
     this.dojo = dojo;
     this.exploredTiles = exploredTiles;
+  }
+
+  public bindWorldSpatialProjection(worldSpatialProjection: WorldSpatialProjection): void {
+    if (!this.dojo) throw new Error("StructureManager requires RECS dependencies before projection binding");
+
+    this.worldSpatialProjection = worldSpatialProjection;
+    worldSpatialProjection.getStructures().forEach((structure) => this.synchronizeProjectedStructure(structure));
+
+    this.projectionUnsubscribes.push(
+      worldSpatialProjection.subscribeStructures((changes) => {
+        changes.forEach(({ previous, current }) => {
+          if (previous && !previous.reserved && !current) this.removeProjectedStructure(previous.entityId);
+          if (current) this.synchronizeProjectedStructure(current);
+        });
+      }),
+      this.subscribeToStructurePresentationFacts(),
+    );
+  }
+
+  private subscribeToStructurePresentationFacts(): () => void {
+    const components = this.dojo!.setup.components;
+    const refreshEntity = ({ value }: any) => {
+      const [current, previous] = value;
+      const entityId =
+        current?.entity_id ?? current?.hyperstructure_id ?? previous?.entity_id ?? previous?.hyperstructure_id;
+      if (entityId !== undefined && entityId !== null) this.refreshProjectedStructure(entityId);
+    };
+    const subscriptions = [
+      components.Structure.update$.subscribe(refreshEntity),
+      components.StructureBuildings.update$.subscribe(refreshEntity),
+      components.Hyperstructure.update$.subscribe(refreshEntity),
+      components.AddressName.update$.subscribe(() => this.refreshAllProjectedStructures()),
+    ];
+    return () => subscriptions.forEach((subscription) => subscription.unsubscribe());
+  }
+
+  private refreshAllProjectedStructures(): void {
+    this.worldSpatialProjection?.getStructures().forEach((structure) => this.synchronizeProjectedStructure(structure));
+  }
+
+  private refreshProjectedStructure(entityId: ID): void {
+    const renderable = this.worldSpatialProjection?.getStructure(entityId);
+    if (renderable) this.synchronizeProjectedStructure(renderable);
+  }
+
+  private synchronizeProjectedStructure(renderable: StructureSpatialRenderable): void {
+    if (renderable.reserved || !this.dojo) return;
+
+    const update = this.resolveProjectedStructureUpdate(renderable);
+    if (update) this.handleSystemUpdate(update);
+  }
+
+  private resolveProjectedStructureUpdate(
+    renderable: StructureSpatialRenderable & { readonly reserved: false },
+  ): StructureTileSystemUpdate | undefined {
+    const structureInfo = getStructureInfoFromTileOccupier(renderable.occupierType);
+    if (!structureInfo || structureInfo.reserved || !this.dojo) return undefined;
+
+    const components = this.dojo.setup.components;
+    const entity = gameEntityKey([BigInt(renderable.entityId)]);
+    const structure = getComponentValue(components.Structure, entity);
+    const hyperstructure = getComponentValue(components.Hyperstructure, entity);
+    const ownerAddress = structure?.owner ?? 0n;
+
+    return {
+      entityId: renderable.entityId,
+      structureName: structure
+        ? getStructureName(structure, getIsBlitz()).name
+        : `${StructureType[structureInfo.type] ?? "Structure"} ${renderable.entityId}`,
+      hexCoords: renderable.hexCoords,
+      structureType: structureInfo.type,
+      stage: structureInfo.stage,
+      initialized: hyperstructure?.initialized ?? false,
+      level: structureInfo.level,
+      isAlly: false,
+      owner: {
+        address: ownerAddress,
+        ownerName: getAddressName(ContractAddress(ownerAddress), components) ?? "",
+        guildName: "",
+      },
+      hasWonder: structureInfo.hasWonder,
+      guardArmies: this.resolveGuardArmies(structure?.troop_guards),
+      activeProductions: this.resolveActiveProductions(renderable.entityId),
+      hyperstructureRealmCount: structure?.metadata?.villages_count,
+    };
+  }
+
+  private resolveGuardArmies(troopGuards: any): NonNullable<StructureTileSystemUpdate["guardArmies"]> {
+    if (!troopGuards) return [];
+
+    const guards: Array<readonly [GuardSlot, any]> = [
+      [GuardSlot.Delta, troopGuards.delta],
+      [GuardSlot.Charlie, troopGuards.charlie],
+      [GuardSlot.Bravo, troopGuards.bravo],
+      [GuardSlot.Alpha, troopGuards.alpha],
+    ];
+
+    return guards
+      .map(([slot, guard]) => ({
+        slot,
+        category: guard?.category ?? null,
+        tier: TROOP_TIERS[guard?.tier] ?? 0,
+        count: divideByPrecision(Number(guard?.count ?? 0)),
+        stamina: Number(guard?.stamina?.amount ?? 0),
+      }))
+      .filter((guard) => guard.category !== null);
+  }
+
+  private resolveActiveProductions(entityId: ID): NonNullable<StructureTileSystemUpdate["activeProductions"]> {
+    if (!this.dojo) return [];
+
+    const buildings = getComponentValue(
+      this.dojo.setup.components.StructureBuildings,
+      gameEntityKey([BigInt(entityId)]),
+    );
+    if (!buildings) return [];
+
+    return unpackBuildingCounts([
+      BigInt(buildings.packed_counts_1 ?? 0),
+      BigInt(buildings.packed_counts_2 ?? 0),
+      BigInt(buildings.packed_counts_3 ?? 0),
+    ]).flatMap((buildingCount, index) =>
+      buildingCount > 0 ? [{ buildingCount, buildingType: (index + 1) as BuildingType }] : [],
+    );
+  }
+
+  private removeProjectedStructure(entityId: ID): void {
+    this.structureHexes.forEach((rowMap, col) => {
+      rowMap.forEach((structure, row) => {
+        if (structure.id === entityId) rowMap.delete(row);
+      });
+      if (rowMap.size === 0) this.structureHexes.delete(col);
+    });
+    this.removeObject(entityId);
+    this.biomeRefreshCallback?.();
   }
 
   public addObject(object: StructureObject): void {
@@ -504,6 +658,9 @@ export class StructureManager extends EntityManager<StructureObject> {
   }
 
   public dispose(): void {
+    this.projectionUnsubscribes.forEach((unsubscribe) => unsubscribe());
+    this.projectionUnsubscribes = [];
+    this.worldSpatialProjection = undefined;
     this.labels.forEach((label) => {
       if (label.element && label.element.parentNode) {
         label.element.parentNode.removeChild(label.element);

@@ -18,8 +18,6 @@ import {
   Vector3,
 } from "three";
 
-export type QualityLevel = "LOW" | "MID" | "HIGH";
-
 interface FogParticleState {
   x: number;
   y: number;
@@ -70,7 +68,6 @@ function seededRandom(seed: number): () => number {
  */
 export class HexceptionAmbienceSystem {
   private scene: Scene;
-  private quality: QualityLevel;
 
   // Master state
   private enabled = true;
@@ -130,9 +127,8 @@ export class HexceptionAmbienceSystem {
   private windDirection = new Vector2(1, 0);
   private windSpeed = 0;
 
-  constructor(scene: Scene, quality: QualityLevel) {
+  constructor(scene: Scene) {
     this.scene = scene;
-    this.quality = quality;
 
     this.initSettlementLight();
     this.initRadialGradient();
@@ -144,8 +140,6 @@ export class HexceptionAmbienceSystem {
   // ───────── Feature 1: Central Settlement Light ─────────
 
   private initSettlementLight(): void {
-    if (this.quality === "LOW") return;
-
     this.settlementLight = new PointLight(0xffaa66, 0.3, 12, 2);
     this.settlementLight.position.set(0, 3, 0);
     this.settlementLight.castShadow = false;
@@ -155,8 +149,6 @@ export class HexceptionAmbienceSystem {
   // ───────── Feature 2: Radial Color Temperature ─────────
 
   private initRadialGradient(): void {
-    if (this.quality === "LOW") return;
-
     const size = 128;
     const data = new Uint8Array(size * size * 4);
     const half = size / 2;
@@ -196,9 +188,7 @@ export class HexceptionAmbienceSystem {
   // ───────── Feature 3: Ground Fog Layer ─────────
 
   private getFogParticleCount(): number {
-    if (this.quality === "HIGH") return 80;
-    if (this.quality === "MID") return 40;
-    return 0;
+    return 80;
   }
 
   private initGroundFog(): void {
@@ -304,9 +294,7 @@ export class HexceptionAmbienceSystem {
   // ───────── Feature 4: Edge Boundary Mist ─────────
 
   private getMistParticleCount(): number {
-    if (this.quality === "HIGH") return 100;
-    if (this.quality === "MID") return 50;
-    return 0;
+    return 100;
   }
 
   private initEdgeMist(gridCenter: Vector3, gridRadius: number): void {
@@ -469,8 +457,6 @@ export class HexceptionAmbienceSystem {
   }
 
   private initSeamGlow(): void {
-    if (this.quality === "LOW") return;
-
     const size = 256;
     const data = new Uint8Array(size * size * 4);
     const worldExtent = 14; // covers ~14x14 world units

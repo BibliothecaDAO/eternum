@@ -18,20 +18,12 @@ describe("worldmap-chunk-diagnostics", () => {
     expect(diagnostics.managerUpdateSkippedStale).toBe(0);
     expect(diagnostics.criticalManagerCatchUpStarted).toBe(0);
     expect(diagnostics.criticalManagerCatchUpFailed).toBe(0);
-    expect(diagnostics.tileFetchStarted).toBe(0);
-    expect(diagnostics.tileFetchSucceeded).toBe(0);
-    expect(diagnostics.tileFetchFailed).toBe(0);
+    expect(diagnostics.projectionSyncStarted).toBe(0);
+    expect(diagnostics.projectionSyncSucceeded).toBe(0);
+    expect(diagnostics.projectionSyncFailed).toBe(0);
     expect(diagnostics.prefetchQueued).toBe(0);
     expect(diagnostics.prefetchSkipped).toBe(0);
     expect(diagnostics.prefetchExecuted).toBe(0);
-    expect(diagnostics.boundsSwitchRequested).toBe(0);
-    expect(diagnostics.boundsSwitchApplied).toBe(0);
-    expect(diagnostics.boundsSwitchSkippedSameSignature).toBe(0);
-    expect(diagnostics.boundsSwitchStaleDropped).toBe(0);
-    expect(diagnostics.boundsSwitchSkippedStaleToken).toBe(0);
-    expect(diagnostics.boundsSwitchFailed).toBe(0);
-    expect(diagnostics.duplicateTileCacheInvalidated).toBe(0);
-    expect(diagnostics.duplicateTileReconcileRequested).toBe(0);
     expect(diagnostics.switchDurationMsTotal).toBe(0);
     expect(diagnostics.switchDurationMsMax).toBe(0);
     expect(diagnostics.switchDurationMsSamples).toEqual([]);
@@ -69,23 +61,15 @@ describe("worldmap-chunk-diagnostics", () => {
       "manager_update_failed",
       "critical_manager_catch_up_started",
       "critical_manager_catch_up_failed",
-      "tile_fetch_started",
-      "tile_fetch_succeeded",
-      "tile_fetch_failed",
+      "projection_sync_started",
+      "projection_sync_succeeded",
+      "projection_sync_failed",
       "prefetch_queued",
       "prefetch_skipped",
       "prefetch_executed",
-      "bounds_switch_requested",
-      "bounds_switch_applied",
-      "bounds_switch_skipped_same_signature",
-      "bounds_switch_stale_dropped",
-      "bounds_switch_skipped_stale_token",
-      "bounds_switch_failed",
       "refresh_requested",
       "refresh_executed",
       "refresh_superseded",
-      "duplicate_tile_cache_invalidated",
-      "duplicate_tile_reconcile_requested",
       "prepared_chunk_prewarm_hit",
       "prepared_chunk_prewarm_miss",
     ];
@@ -101,23 +85,15 @@ describe("worldmap-chunk-diagnostics", () => {
     expect(diagnostics.managerUpdateFailed).toBe(1);
     expect(diagnostics.criticalManagerCatchUpStarted).toBe(1);
     expect(diagnostics.criticalManagerCatchUpFailed).toBe(1);
-    expect(diagnostics.tileFetchStarted).toBe(1);
-    expect(diagnostics.tileFetchSucceeded).toBe(1);
-    expect(diagnostics.tileFetchFailed).toBe(1);
+    expect(diagnostics.projectionSyncStarted).toBe(1);
+    expect(diagnostics.projectionSyncSucceeded).toBe(1);
+    expect(diagnostics.projectionSyncFailed).toBe(1);
     expect(diagnostics.prefetchQueued).toBe(1);
     expect(diagnostics.prefetchSkipped).toBe(1);
     expect(diagnostics.prefetchExecuted).toBe(1);
-    expect(diagnostics.boundsSwitchRequested).toBe(1);
-    expect(diagnostics.boundsSwitchApplied).toBe(1);
-    expect(diagnostics.boundsSwitchSkippedSameSignature).toBe(1);
-    expect(diagnostics.boundsSwitchStaleDropped).toBe(1);
-    expect(diagnostics.boundsSwitchSkippedStaleToken).toBe(1);
-    expect(diagnostics.boundsSwitchFailed).toBe(1);
     expect(diagnostics.refreshRequested).toBe(1);
     expect(diagnostics.refreshExecuted).toBe(1);
     expect(diagnostics.refreshSuperseded).toBe(1);
-    expect(diagnostics.duplicateTileCacheInvalidated).toBe(1);
-    expect(diagnostics.duplicateTileReconcileRequested).toBe(1);
     expect(diagnostics.preparedChunkPrewarmHit).toBe(1);
     expect(diagnostics.preparedChunkPrewarmMiss).toBe(1);
   });
@@ -213,40 +189,13 @@ describe("worldmap-chunk-diagnostics – Stage 0: terrain commit and refresh rea
     const refreshReasonEvents = [
       "refresh_reason_default",
       "refresh_reason_hydrated_chunk",
-      "refresh_reason_duplicate_tile",
-      "refresh_reason_tile_overlap_repair" as WorldmapChunkDiagnosticsEvent,
     ] as WorldmapChunkDiagnosticsEvent[];
 
     refreshReasonEvents.forEach((event) => recordChunkDiagnosticsEvent(diagnostics, event));
-    recordChunkDiagnosticsEvent(diagnostics, "refresh_reason_duplicate_tile" as WorldmapChunkDiagnosticsEvent);
 
     // Stage 0: each refresh reason gets its own counter
     expect(diagnostics).toHaveProperty("refreshReasonDefault", 1);
     expect(diagnostics).toHaveProperty("refreshReasonHydratedChunk", 1);
-    expect(diagnostics).toHaveProperty("refreshReasonDuplicateTile", 2);
-    expect(diagnostics).toHaveProperty("refreshReasonTileOverlapRepair", 1);
-  });
-
-  it("records duplicate tile reconcile mode breakdown events", () => {
-    const diagnostics = createWorldmapChunkDiagnostics();
-
-    recordChunkDiagnosticsEvent(
-      diagnostics,
-      "duplicate_tile_reconcile_mode_invalidate_only" as WorldmapChunkDiagnosticsEvent,
-    );
-    recordChunkDiagnosticsEvent(
-      diagnostics,
-      "duplicate_tile_reconcile_mode_local_reconcile" as WorldmapChunkDiagnosticsEvent,
-    );
-    recordChunkDiagnosticsEvent(
-      diagnostics,
-      "duplicate_tile_reconcile_mode_atomic_refresh" as WorldmapChunkDiagnosticsEvent,
-    );
-
-    // Stage 0: per-mode counters for duplicate tile reconciliation
-    expect(diagnostics).toHaveProperty("duplicateTileReconcileModeInvalidateOnly", 1);
-    expect(diagnostics).toHaveProperty("duplicateTileReconcileModeLocalReconcile", 1);
-    expect(diagnostics).toHaveProperty("duplicateTileReconcileModeAtomicRefresh", 1);
   });
 
   it("records stale_terrain_refresh_dropped events", () => {
@@ -269,14 +218,12 @@ describe("worldmap-chunk-diagnostics – Stage 0: terrain commit and refresh rea
     expect(diagnostics).toHaveProperty("terrainBoundsRecovery", 1);
   });
 
-  it("records tile hydration drain completion and cache fingerprint reject events", () => {
+  it("records cache fingerprint reject events", () => {
     const diagnostics = createWorldmapChunkDiagnostics();
 
-    recordChunkDiagnosticsEvent(diagnostics, "tile_hydration_drain_completed" as WorldmapChunkDiagnosticsEvent);
     recordChunkDiagnosticsEvent(diagnostics, "cache_reject_fingerprint" as WorldmapChunkDiagnosticsEvent);
     recordChunkDiagnosticsEvent(diagnostics, "cache_reject_fingerprint" as WorldmapChunkDiagnosticsEvent);
 
-    expect(diagnostics).toHaveProperty("tileHydrationDrainCompleted", 1);
     expect(diagnostics).toHaveProperty("cacheRejectFingerprint", 2);
   });
 });

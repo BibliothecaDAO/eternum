@@ -13,13 +13,6 @@ import { GameStartCountdown } from "./game-start-countdown";
 import { SuggestionsPill } from "./pills/suggestions-pill";
 import { TickProgress } from "./tick-progress";
 import { TOP_PILL, TOP_PILL_TEXT } from "./top-pill";
-import { useLandingLeaderboardStore } from "@/services/leaderboard/use-landing-leaderboard-store";
-
-// Single shared leaderboard cache: poll the full board every 60s from here (the
-// always-mounted top bar). The rank pill and the Leaderboard panel both read the
-// same `entries`, so they stay aligned. Manual refresh in the panel still forces.
-const LEADERBOARD_FETCH_LIMIT = 1000;
-const LEADERBOARD_POLL_INTERVAL_MS = 60_000;
 import { useDojo, useQuery } from "@bibliothecadao/react";
 import { ContractAddress } from "@bibliothecadao/types";
 import { useComponentValue } from "@dojoengine/react";
@@ -92,37 +85,6 @@ export const TopHeader = memo(() => {
       window.removeEventListener("popstate", updatePathname);
     };
   }, []);
-
-  // Keep the leaderboard cache warm for the rank pill in SecondaryMenuItems. The
-  // pill reads the cached entries from the store; we drive the fetch from here
-  // so a single mount handles polling.
-  const fetchLeaderboardEntries = useLandingLeaderboardStore((state) => state.fetchLeaderboard);
-  const fetchPlayerEntry = useLandingLeaderboardStore((state) => state.fetchPlayerEntry);
-
-  useEffect(() => {
-    void fetchLeaderboardEntries({ limit: LEADERBOARD_FETCH_LIMIT });
-
-    const intervalId = window.setInterval(() => {
-      void fetchLeaderboardEntries({ limit: LEADERBOARD_FETCH_LIMIT });
-    }, LEADERBOARD_POLL_INTERVAL_MS);
-
-    return () => window.clearInterval(intervalId);
-  }, [fetchLeaderboardEntries]);
-
-  // Per-player lookup on the same 60s cadence. The full list above doesn't rank
-  // every player (e.g. Blitz), so the pill uses this as a rank fallback — and it
-  // guarantees the pill has data on load even before the list resolves.
-  useEffect(() => {
-    if (!account.address) return undefined;
-
-    const refreshPlayer = () => {
-      void fetchPlayerEntry(account.address);
-    };
-
-    refreshPlayer();
-    const intervalId = window.setInterval(refreshPlayer, LEADERBOARD_POLL_INTERVAL_MS);
-    return () => window.clearInterval(intervalId);
-  }, [account.address, fetchPlayerEntry]);
 
   const navigateToFastTravelLayer = useCallback(() => {
     playClick();

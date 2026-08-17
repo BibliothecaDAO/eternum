@@ -1,5 +1,16 @@
 import { EntityIngestQueue, type EntityIngestBatchInfo } from "./entity-ingest-queue";
-import type { GameSyncEntity, GameSyncRuntimeMetrics, GameSyncSessionStart, GameSyncWriter } from "./game-sync-types";
+import type {
+  GameSyncEntity,
+  GameSyncProvisionalWrite,
+  GameSyncRuntimeMetrics,
+  GameSyncSessionStart,
+  GameSyncWriter,
+} from "./game-sync-types";
+import {
+  ProvisionalWriteManager,
+  type ProvisionalIntent,
+  type ProvisionalIntentLockUntil,
+} from "./provisional-write-manager";
 import { createMicrotaskGameSyncScheduler } from "./scheduler";
 import type { WorldSpatialProjection } from "./world-spatial-projection";
 
@@ -15,11 +26,6 @@ export class SupersededGameSyncStartError extends Error {
 interface BufferedEntityUpdate {
   entity: GameSyncEntity;
   receiveSequence: number;
-}
-
-interface LegacyGameSyncSessionStart {
-  startGlobalWriter: () => Promise<GameSyncWriter>;
-  hydrateSpatialSnapshot: () => Promise<void>;
 }
 
 const DEFAULT_EVENT_IDENTITY_LIMIT = 512;
@@ -42,6 +48,7 @@ const resolveEventTimestamp = (model: string, value: unknown): string => {
 
 const createEmptyMetrics = (): GameSyncRuntimeMetrics => ({
   appliedBatchCount: 0,
+  eventGapFillReplayCount: 0,
   lastRecoveryDurationMs: 0,
   maxBatchApplyDurationMs: 0,
   peakLiveUpdatesPerSecond: 0,
@@ -49,6 +56,7 @@ const createEmptyMetrics = (): GameSyncRuntimeMetrics => ({
   snapshotPageCount: 0,
   totalLiveEntityUpdates: 0,
   totalLiveEventUpdates: 0,
+  totalReplayedEventUpdates: 0,
 });
 
 /**
@@ -62,11 +70,11 @@ const createEmptyMetrics = (): GameSyncRuntimeMetrics => ({
 export class GameSyncRuntime {
   private generation = 0;
   private writer: GameSyncWriter | null = null;
-  private legacyPlayerWriter: GameSyncWriter | null = null;
   private status: GameSyncRuntimeStatus = "idle";
   private session: GameSyncSessionStart | null = null;
   private ingestQueue: EntityIngestQueue | null = null;
   private worldSpatialProjection: WorldSpatialProjection | null = null;
+  private provisionalWriteManager: ProvisionalWriteManager | null = null;
   private recentEventIdentities = new Map<string, true>();
   private liveUpdateTimestamps: number[] = [];
   private receiveSequence = 0;
@@ -86,7 +94,12 @@ export class GameSyncRuntime {
 
   public async startSession(input: GameSyncSessionStart): Promise<void> {
     this.disposeWorldSpatialProjection();
+    this.provisionalWriteManager?.dispose();
     this.session = input;
+    this.provisionalWriteManager = new ProvisionalWriteManager(input.store, {
+      onIntentStalled: input.onProvisionalIntentStalled,
+      onIntentPhase: input.onProvisionalIntentPhase,
+    });
     this.recentEventIdentities.clear();
     this.liveUpdateTimestamps = [];
     this.receiveSequence = 0;
@@ -99,56 +112,10 @@ export class GameSyncRuntime {
     await this.runRecovery();
   }
 
-  /** Complete S1 lifecycle retained only for the bounded rollback adapter. */
-  public async startLegacySession(input: LegacyGameSyncSessionStart): Promise<void> {
-    this.disposeWorldSpatialProjection();
-    this.session = null;
-    const generation = this.beginRun("subscribing");
-
-    try {
-      const writer = await input.startGlobalWriter();
-      this.adoptWriter(generation, writer);
-      this.status = "snapshotting";
-      await input.hydrateSpatialSnapshot();
-      this.assertCurrentGeneration(generation);
-      this.status = "running";
-    } catch (error) {
-      this.stopFailedRun(generation);
-      throw error;
-    }
-  }
-
-  public async restartLegacyGlobalWriter(startGlobalWriter: () => Promise<GameSyncWriter>): Promise<void> {
-    const generation = this.beginRun("subscribing");
-    try {
-      const writer = await startGlobalWriter();
-      this.adoptWriter(generation, writer);
-      this.status = "running";
-    } catch (error) {
-      this.stopFailedRun(generation);
-      throw error;
-    }
-  }
-
   /** UI cleanup cannot interrupt an in-flight recovery; dispose() always can. */
   public cancelGlobalWriter(): void {
     if (this.isStarting()) return;
     this.cancelWriterImmediately();
-  }
-
-  public installPlayerWriter(playerWriter: GameSyncWriter): void {
-    this.cancelPlayerWriter();
-    if (this.status === "stopped") {
-      playerWriter.cancel();
-      return;
-    }
-    this.legacyPlayerWriter = playerWriter;
-  }
-
-  public cancelPlayerWriter(expectedWriter?: GameSyncWriter): void {
-    if (expectedWriter && this.legacyPlayerWriter !== expectedWriter) return;
-    this.legacyPlayerWriter?.cancel();
-    this.legacyPlayerWriter = null;
   }
 
   public installWorldSpatialProjection(projection: WorldSpatialProjection): void {
@@ -169,13 +136,44 @@ export class GameSyncRuntime {
     return this.worldSpatialProjection;
   }
 
+  public getWorldSpatialProjection(): WorldSpatialProjection | null {
+    return this.worldSpatialProjection;
+  }
+
+  public createProvisionalIntent(
+    writes: readonly GameSyncProvisionalWrite[],
+    options: { lockUntil?: ProvisionalIntentLockUntil } = {},
+  ): ProvisionalIntent {
+    if (!this.provisionalWriteManager) {
+      throw new Error("GameSyncRuntime has no active provisional write manager");
+    }
+    return this.provisionalWriteManager.createIntent(writes, options);
+  }
+
+  public hasProvisionalInputLock(model: string, entityId: string): boolean {
+    return this.provisionalWriteManager?.hasInputLock(model, entityId) ?? false;
+  }
+
+  public subscribeProvisionalState(listener: () => void): () => void {
+    return this.provisionalWriteManager?.subscribe(listener) ?? (() => {});
+  }
+
+  public async applyAuthoritativeEntities(entities: readonly GameSyncEntity[]): Promise<void> {
+    if (this.status !== "running" || !this.ingestQueue) {
+      throw new Error("GameSyncRuntime cannot apply an authoritative query outside a running session");
+    }
+    entities.forEach((entity) => this.ingestQueue?.enqueueEntity(entity));
+    await this.ingestQueue.drain();
+  }
+
   public dispose(): void {
     this.generation += 1;
     this.cancelWriterImmediately();
-    this.cancelPlayerWriter();
     this.disposeWorldSpatialProjection();
     this.ingestQueue?.dispose();
     this.ingestQueue = null;
+    this.provisionalWriteManager?.dispose();
+    this.provisionalWriteManager = null;
     this.session = null;
     this.status = "stopped";
   }
@@ -204,6 +202,12 @@ export class GameSyncRuntime {
           if (!this.isCurrentGeneration(generation)) return;
           this.recordLiveUpdate("event");
           this.enqueueEventOnce(event);
+        },
+        onEventGapFill: (replayedEventCount) => {
+          if (!this.isCurrentGeneration(generation) || replayedEventCount <= 0) return;
+          this.metrics.eventGapFillReplayCount += 1;
+          this.metrics.totalReplayedEventUpdates += replayedEventCount;
+          this.publishMetrics();
         },
       });
       this.adoptWriter(generation, writer);
@@ -306,6 +310,8 @@ export class GameSyncRuntime {
       store: session.store,
       now: session.now ?? (() => Date.now()),
       onBatchApplied: (info) => this.recordAppliedBatch(info),
+      onAuthoritativeObservationsApplied: (observations) =>
+        this.provisionalWriteManager?.observeAuthoritativeObservations(observations),
     });
   }
 

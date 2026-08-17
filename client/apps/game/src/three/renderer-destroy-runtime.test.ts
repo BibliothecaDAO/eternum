@@ -3,6 +3,8 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const disposeRendererBackend = vi.fn();
 const destroyTrackedGuiFolders = vi.fn();
 const disposeContactShadowResources = vi.fn();
+const clearBiomeGltfCache = vi.fn();
+const clearCosmeticAssetCache = vi.fn();
 
 vi.mock("./renderer-backend-compat", () => ({
   disposeRendererBackend,
@@ -15,6 +17,9 @@ vi.mock("./utils/gui-folder-lifecycle", () => ({
 vi.mock("./utils/contact-shadow", () => ({
   disposeContactShadowResources,
 }));
+
+vi.mock("./utils/biome-gltf-cache", () => ({ clearBiomeGltfCache }));
+vi.mock("./cosmetics/asset-cache", () => ({ clearCosmeticAssetCache }));
 
 const { destroyRendererRuntime } = await import("./renderer-destroy-runtime");
 
@@ -74,6 +79,8 @@ describe("destroyRendererRuntime", () => {
     expect(fastTravelScene.destroy).toHaveBeenCalledTimes(1);
     expect(hexceptionScene.destroy).toHaveBeenCalledTimes(1);
     expect(hudScene.destroy).toHaveBeenCalledTimes(1);
+    expect(clearBiomeGltfCache).toHaveBeenCalledTimes(1);
+    expect(clearCosmeticAssetCache).toHaveBeenCalledTimes(1);
     expect(interactionRuntime.dispose).toHaveBeenCalledTimes(1);
     expect(transitionManager.destroy).toHaveBeenCalledTimes(1);
     expect(destroyTrackedGuiFolders).toHaveBeenCalledWith([{}]);

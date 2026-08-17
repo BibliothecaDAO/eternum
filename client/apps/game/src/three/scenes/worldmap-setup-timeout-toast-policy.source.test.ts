@@ -7,30 +7,21 @@ import { describe, expect, it } from "vitest";
 
 const readSource = (relativePath: string) => readFileSync(resolve(process.cwd(), relativePath), "utf8");
 
-describe("global spatial setup-timeout wiring", () => {
-  it("routes global spatial bootstrap snapshot timeout reporting through initial sync", () => {
+describe("game sync setup-timeout wiring", () => {
+  it("passes the setup timeout into the one game-wide session", () => {
     const source = readSource("src/dojo/sync.ts");
-    const start = source.indexOf("async function hydrateGlobalSpatialBootstrapSnapshot");
-    const end = source.indexOf("async function syncGlobalSpatialBootstrapSnapshot", start);
-    expect(start).toBeGreaterThan(-1);
-    expect(end).toBeGreaterThan(start);
-    const methodSource = source.slice(start, end);
 
-    expect(methodSource).toContain('label: "global spatial map bootstrap snapshot"');
-    expect(methodSource).toContain("onTimeout: input.onTimeout");
-    expect(methodSource).toContain("recordGameEntryDuration");
+    expect(source).toContain("createActiveGamewideSyncSession");
+    expect(source).toContain("subscriptionSetupTimeoutMs: input.subscriptionSetupTimeoutMs");
+    expect(source).not.toContain("GlobalSpatialBootstrap");
   });
 
-  it("keeps live global spatial updates owned by the all-entity stream", () => {
-    const source = readSource("src/dojo/sync.ts");
-    const start = source.indexOf("async function syncGlobalSpatialBootstrapSnapshot");
-    const end = source.indexOf("// initial sync runs before the game is playable", start);
-    expect(start).toBeGreaterThan(-1);
-    const methodSource = source.slice(start, end);
+  it("applies the timeout to each paginated recovery snapshot", () => {
+    const source = readSource("src/dojo/gamewide-sync-adapter.ts");
 
-    expect(source).not.toContain("async function subscribeGlobalSpatialMapStream");
-    expect(methodSource).toContain("hydrateGlobalSpatialBootstrapSnapshot");
-    expect(methodSource).not.toContain("syncEntitiesDebounced");
+    expect(source).toContain('"game-wide snapshot page"');
+    expect(source).toContain("input.onSubscriptionSetupTimeout");
+    expect(source).toContain("GAMEWIDE_SNAPSHOT_PAGE_SIZE");
   });
 
   it("keeps worldmap free of the removed per-bounds timeout toast path", () => {

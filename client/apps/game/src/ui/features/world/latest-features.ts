@@ -34,6 +34,70 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 // are surfaced in the What's New popup.
 const allLatestFeatures: LatestFeature[] = [
   {
+    date: "2026-08-17",
+    title: "Live World Facts",
+    description:
+      "Army movement, battle previews, terrain, transfers, and game-entry progress now follow live indexed state, preventing stale displays, submissions, and fixed-delay waits.",
+    type: "fix",
+    gameSlug: "world",
+  },
+  {
+    date: "2026-08-16",
+    title: "Reliable Battle Results",
+    description:
+      "Missed crate reveals and combat effects now recover automatically after brief connection interruptions.",
+    type: "fix",
+    gameSlug: "world",
+  },
+  {
+    date: "2026-08-16",
+    title: "Instant Building Placement",
+    description:
+      "New buildings now appear as soon as placement is submitted, while successful army moves stay at their destination and unlock promptly after confirmation.",
+    type: "fix",
+    gameSlug: "world",
+  },
+  {
+    date: "2026-08-16",
+    title: "Action-Ready Armies and Chests",
+    description:
+      "Armies unlock as soon as movement confirms, realm provisioning appears in one step, and relic chests recover their reveal even if the live event connection drops.",
+    type: "fix",
+    gameSlug: "world",
+  },
+  {
+    date: "2026-08-16",
+    title: "Faster Reliable World Entry",
+    description:
+      "Fixed long world-entry warm-up stalls and made returns from Hexception recover dropped map refreshes automatically, without needing a camera or URL nudge.",
+    type: "fix",
+    gameSlug: "world",
+  },
+  {
+    date: "2026-08-16",
+    title: "Battery-Friendly Rendering",
+    description:
+      "Added Quality and Battery modes with identical visuals. Battery mode lowers background frame, animation, shadow, and map-prefetch work while the game is idle, then resumes immediately when you interact.",
+    type: "improvement",
+    gameSlug: "world",
+  },
+  {
+    date: "2026-08-16",
+    title: "Faster World Rendering",
+    description:
+      "Improved model loading, distant terrain detail, and map updates so entering, zooming, traveling, and returning to the world use less memory with fewer frame stalls or terrain pop-ins.",
+    type: "improvement",
+    gameSlug: "world",
+  },
+  {
+    date: "2026-08-14",
+    title: "Live In-Game Rankings",
+    description:
+      "Fixed the rank pill and leaderboard totals so they update from live game state, while activity history refreshes on demand without background polling.",
+    type: "fix",
+    gameSlug: "world",
+  },
+  {
     date: "2026-08-14",
     title: "Reliable Map Armies",
     description:

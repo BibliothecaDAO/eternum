@@ -9,7 +9,6 @@ import {
 const makeHandle = () => ({
   refreshAfterReconnect: vi.fn(),
   recoverAfterConnectionFailure: vi.fn(),
-  resubscribeSpatialStream: vi.fn(async () => {}),
 });
 
 describe("worldmap reconnect recovery handle", () => {
@@ -21,7 +20,7 @@ describe("worldmap reconnect recovery handle", () => {
     expect(getActiveWorldmapRecoveryHandle()).toBe(null);
   });
 
-  it("exposes reconnect refresh, connection-failure recovery, and spatial resubscribe for the active scene", () => {
+  it("exposes reconnect refresh and connection-failure recovery for the active scene", () => {
     const handle = makeHandle();
     const cleanup = registerActiveWorldmapRecoveryHandle(handle);
 
@@ -29,7 +28,6 @@ describe("worldmap reconnect recovery handle", () => {
     expect(Object.keys(getActiveWorldmapRecoveryHandle() ?? {})).toEqual([
       "refreshAfterReconnect",
       "recoverAfterConnectionFailure",
-      "resubscribeSpatialStream",
     ]);
 
     cleanup();

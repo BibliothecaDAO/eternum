@@ -10,17 +10,34 @@ vi.mock("@/hooks/store/use-account-store", () => ({
   },
 }));
 
-vi.mock("three-stdlib", () => ({
+vi.mock("three/addons/loaders/DRACOLoader.js", () => ({
   DRACOLoader: class {
     setDecoderPath() {}
     preload() {}
   },
+}));
+
+vi.mock("three/addons/loaders/GLTFLoader.js", () => ({
   GLTFLoader: class {
     setDRACOLoader() {}
+    setKTX2Loader() {}
     setMeshoptDecoder() {}
   },
-  MeshoptDecoder: () => ({}),
 }));
+
+vi.mock("three/addons/loaders/KTX2Loader.js", () => ({
+  KTX2Loader: class {
+    detectSupport() {}
+    setTranscoderPath() {
+      return this;
+    }
+    setWorkerLimit() {
+      return this;
+    }
+  },
+}));
+
+vi.mock("three/addons/libs/meshopt_decoder.module.js", () => ({ MeshoptDecoder: {} }));
 
 vi.mock("@bibliothecadao/eternum", () => ({
   calculateDistance: () => 0,

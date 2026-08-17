@@ -12,7 +12,7 @@ interface ResolveWarpTravelDirectionalPrefetchPlanInput {
   forwardDepthStrides: number;
   sideRadiusStrides: number;
   areaBoundaryLookaheadStrides?: number;
-  fetchSuperAreaStrides?: number;
+  projectionSuperAreaStrides?: number;
   pinnedChunkKeys: Set<string>;
   currentChunk: string;
   prefetchedAhead: string[];
@@ -26,8 +26,8 @@ function parseChunkKey(chunkKey: string): { row: number; col: number } {
 }
 
 function resolveBoundaryPrefetchChunkKey(input: ResolveWarpTravelDirectionalPrefetchPlanInput): string | null {
-  const { anchor, areaBoundaryLookaheadStrides, chunkSize, currentChunk, fetchSuperAreaStrides } = input;
-  if (!anchor || !areaBoundaryLookaheadStrides || !fetchSuperAreaStrides) {
+  const { anchor, areaBoundaryLookaheadStrides, chunkSize, currentChunk, projectionSuperAreaStrides } = input;
+  if (!anchor || !areaBoundaryLookaheadStrides || !projectionSuperAreaStrides) {
     return null;
   }
 
@@ -37,16 +37,18 @@ function resolveBoundaryPrefetchChunkKey(input: ResolveWarpTravelDirectionalPref
     return null;
   }
 
-  const areaStartIndex = Math.floor(strideIndex / fetchSuperAreaStrides) * fetchSuperAreaStrides;
+  const areaStartIndex = Math.floor(strideIndex / projectionSuperAreaStrides) * projectionSuperAreaStrides;
   const distanceToBoundary =
-    anchor.movementSign > 0 ? areaStartIndex + fetchSuperAreaStrides - 1 - strideIndex : strideIndex - areaStartIndex;
+    anchor.movementSign > 0
+      ? areaStartIndex + projectionSuperAreaStrides - 1 - strideIndex
+      : strideIndex - areaStartIndex;
 
   if (distanceToBoundary > areaBoundaryLookaheadStrides) {
     return null;
   }
 
   const boundaryStrideIndex =
-    anchor.movementSign > 0 ? areaStartIndex + fetchSuperAreaStrides : areaStartIndex - fetchSuperAreaStrides;
+    anchor.movementSign > 0 ? areaStartIndex + projectionSuperAreaStrides : areaStartIndex - projectionSuperAreaStrides;
   const boundaryRow = anchor.movementAxis === "z" ? boundaryStrideIndex * chunkSize : row;
   const boundaryCol = anchor.movementAxis === "x" ? boundaryStrideIndex * chunkSize : col;
   return `${boundaryRow},${boundaryCol}`;

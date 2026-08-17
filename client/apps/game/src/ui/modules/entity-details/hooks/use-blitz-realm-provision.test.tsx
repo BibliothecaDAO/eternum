@@ -12,7 +12,6 @@ const mocks = vi.hoisted(() => ({
   buildings: [] as Array<{ category: number }>,
   structureBuildings: null as Record<string, unknown> | null,
   executeObservedClientTransaction: vi.fn(),
-  getStructuresDataFromTorii: vi.fn(),
   toastError: vi.fn(),
   getContractByName: vi.fn(() => ({ address: "0xblitz" })),
   getBuildingCount: vi.fn(() => 0),
@@ -20,10 +19,6 @@ const mocks = vi.hoisted(() => ({
 
 vi.mock("@/hooks/helpers/use-block-timestamp", () => ({
   useCurrentBlockTimestamp: () => mocks.currentBlockTimestamp,
-}));
-
-vi.mock("@/dojo/queries", () => ({
-  getStructuresDataFromTorii: mocks.getStructuresDataFromTorii,
 }));
 
 vi.mock("@/observability/observed-client-transaction", () => ({
@@ -63,10 +58,6 @@ vi.mock("@bibliothecadao/react", () => ({
       account: {
         address: "0xowner",
       },
-    },
-    network: {
-      toriiClient: { id: "torii" },
-      contractComponents: [],
     },
   }),
   useBuildings: () => mocks.buildings,
@@ -186,8 +177,6 @@ describe("useBlitzRealmProvision", () => {
     mocks.structureBuildings = null;
     mocks.executeObservedClientTransaction.mockReset();
     mocks.executeObservedClientTransaction.mockResolvedValue({ transaction_hash: "0xtx" });
-    mocks.getStructuresDataFromTorii.mockReset();
-    mocks.getStructuresDataFromTorii.mockResolvedValue(undefined);
     mocks.toastError.mockReset();
     mocks.getContractByName.mockReset();
     mocks.getContractByName.mockReturnValue({ address: "0xblitz" });
@@ -295,26 +284,15 @@ describe("useBlitzRealmProvision", () => {
     expect(readProbeValue("status")).toBe("idle");
   });
 
-  it("refreshes synced realm data once the provisioned signal flips, so the labor credit lands in RECS", async () => {
+  it("settles once the authoritative stream publishes the provisioned building", async () => {
     await renderProbe();
     await clickProvision();
 
     expect(readProbeValue("status")).toBe("syncing");
-    mocks.getStructuresDataFromTorii.mockClear();
-
-    // The provisioned signal can flip via the spatial stream (Building rows)
-    // while the per-player Resource stream misses the Labor credit. The hook
-    // must fetch the structure once more on success — otherwise the labor
-    // balance stays stale until a manual re-sync.
     mocks.buildings = [{ category: 28 }];
     await rerenderProbe();
 
     expect(readProbeValue("status")).toBe("idle");
-    expect(mocks.getStructuresDataFromTorii).toHaveBeenCalledWith(
-      { id: "torii" },
-      [],
-      [{ entityId: 101, position: { col: 12, row: 34 } }],
-    );
   });
 
   it("releases the spinner when submission never returns a transaction hash", async () => {
@@ -361,17 +339,12 @@ describe("useBlitzRealmProvision", () => {
     );
   });
 
-  it("recovers duplicate already-provisioned errors by refreshing synced realm data", async () => {
+  it("waits for the authoritative stream after an already-provisioned response", async () => {
     mocks.executeObservedClientTransaction.mockRejectedValueOnce(new Error("realm is already provisioned"));
 
     await renderProbe();
     await clickProvision();
 
-    expect(mocks.getStructuresDataFromTorii).toHaveBeenCalledWith(
-      { id: "torii" },
-      [],
-      [{ entityId: 101, position: { col: 12, row: 34 } }],
-    );
     expect(readProbeValue("status")).toBe("syncing");
     expect(readProbeValue("loading")).toBe("true");
   });

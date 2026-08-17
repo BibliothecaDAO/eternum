@@ -11,6 +11,7 @@ import {
   Vector3,
 } from "three";
 import { ModelType } from "@/three/types/army";
+import { gltfLoader } from "@/three/utils/utils";
 import { ArmyModel } from "./army-model";
 
 vi.hoisted(() => {
@@ -30,12 +31,6 @@ vi.hoisted(() => {
 
 vi.mock("@/ui/config", () => ({
   FELT_CENTER: 0,
-  GRAPHICS_SETTING: "HIGH",
-  GraphicsSettings: {
-    HIGH: "HIGH",
-    LOW: "LOW",
-    MID: "MID",
-  },
   IS_FLAT_MODE: false,
 }));
 

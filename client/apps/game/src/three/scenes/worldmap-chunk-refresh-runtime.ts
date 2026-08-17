@@ -1,7 +1,4 @@
-import {
-  WORLDMAP_GENERIC_FORCED_REFRESH_DEBOUNCE_MS,
-  resolveWorldmapChunkRefreshSchedule,
-} from "./worldmap-chunk-switch-delay-policy";
+import { resolveWorldmapChunkRefreshSchedule } from "./worldmap-chunk-switch-delay-policy";
 import {
   resolveRefreshCompletionActions,
   resolveRefreshExecutionPlan,
@@ -15,6 +12,7 @@ export interface WorldmapChunkRefreshRuntimeState {
   rerunRequested: boolean;
   running: boolean;
   timeoutId: number | null;
+  waiters: Set<{ requestToken: number; resolve: () => void }>;
 }
 
 interface ScheduleWorldmapChunkRefreshTimerInput {
@@ -27,11 +25,8 @@ interface ScheduleWorldmapChunkRefreshTimerInput {
 }
 
 interface WaitForWorldmapRequestedChunkRefreshInput {
-  fallbackDelayMs?: number;
   isSwitchedOff: () => boolean;
-  latestWinsRefresh: boolean;
   requestToken: number;
-  setTimeoutFn: (callback: () => void, delayMs: number) => number;
   state: WorldmapChunkRefreshRuntimeState;
 }
 
@@ -54,6 +49,7 @@ export function createWorldmapChunkRefreshRuntimeState(): WorldmapChunkRefreshRu
     rerunRequested: false,
     running: false,
     timeoutId: null,
+    waiters: new Set(),
   };
 }
 
@@ -93,25 +89,24 @@ export function waitForWorldmapRequestedChunkRefresh(input: WaitForWorldmapReque
     return Promise.resolve();
   }
 
-  const pollDelayMs = input.latestWinsRefresh
-    ? 0
-    : (input.fallbackDelayMs ?? WORLDMAP_GENERIC_FORCED_REFRESH_DEBOUNCE_MS);
   return new Promise((resolve) => {
-    const poll = () => {
-      if (input.isSwitchedOff()) {
-        resolve();
-        return;
-      }
+    input.state.waiters.add({ requestToken: input.requestToken, resolve });
+    resolveCompletedWorldmapChunkRefreshWaiters(input.state);
+  });
+}
 
-      if (input.state.appliedToken >= input.requestToken && !input.state.running && input.state.timeoutId === null) {
-        resolve();
-        return;
-      }
+export function cancelWorldmapChunkRefreshWaiters(state: WorldmapChunkRefreshRuntimeState): void {
+  state.waiters.forEach(({ resolve }) => resolve());
+  state.waiters.clear();
+}
 
-      input.setTimeoutFn(poll, pollDelayMs);
-    };
+function resolveCompletedWorldmapChunkRefreshWaiters(state: WorldmapChunkRefreshRuntimeState): void {
+  if (state.running || state.timeoutId !== null) return;
 
-    poll();
+  state.waiters.forEach((waiter) => {
+    if (state.appliedToken < waiter.requestToken) return;
+    state.waiters.delete(waiter);
+    waiter.resolve();
   });
 }
 
@@ -167,5 +162,6 @@ export async function runWorldmapChunkRefreshExecution(input: RunWorldmapChunkRe
     if (completionActions.shouldScheduleRerun) {
       input.scheduleRerun();
     }
+    resolveCompletedWorldmapChunkRefreshWaiters(input.state);
   }
 }

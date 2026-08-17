@@ -4,8 +4,26 @@ import {
   getRenderAreaKeyForChunk,
   getRenderFetchBoundsForArea,
   getRenderFetchBoundsForChunk,
+  isHexInsideAnyBounds,
   resolveToriiSubscriptionSwitchDecision,
 } from "./worldmap-chunk-bounds";
+
+describe("isHexInsideAnyBounds", () => {
+  const retainedBounds = [
+    { minCol: -10, maxCol: 10, minRow: -5, maxRow: 5 },
+    { minCol: 20, maxCol: 30, minRow: 40, maxRow: 50 },
+  ];
+
+  it("keeps boundary positions in any retained render area", () => {
+    expect(isHexInsideAnyBounds(-10, 5, retainedBounds)).toBe(true);
+    expect(isHexInsideAnyBounds(25, 45, retainedBounds)).toBe(true);
+  });
+
+  it("rejects positions outside every retained render area", () => {
+    expect(isHexInsideAnyBounds(11, 5, retainedBounds)).toBe(false);
+    expect(isHexInsideAnyBounds(25, 39, retainedBounds)).toBe(false);
+  });
+});
 
 describe("getRenderFetchBoundsForChunk", () => {
   it("matches canonical getRenderBounds for representative chunk/render-size combinations", () => {

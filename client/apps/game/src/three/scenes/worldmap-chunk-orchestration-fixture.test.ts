@@ -20,14 +20,12 @@ describe("createWorldmapChunkOrchestrationFixture", () => {
     await flushMicrotasks(2);
 
     expect(fixture.getCurrentChunk()).toBe("0,0");
-    expect(fixture.tileFetch.calls).toEqual([["24,24"]]);
-    expect(fixture.boundsSwitch.calls).toEqual([["24,24", 7]]);
+    expect(fixture.projectionSync.calls).toEqual([["24,24"]]);
     expect(fixture.assetPrewarm.calls).toEqual([["24,24"]]);
     expect(fixture.terrainPreparation.calls).toEqual([]);
     expect(fixture.managerUpdate.calls).toEqual([]);
 
-    fixture.tileFetch.resolveNext(true);
-    fixture.boundsSwitch.resolveNext();
+    fixture.projectionSync.resolveNext(true);
     await flushMicrotasks(2);
     expect(fixture.terrainPreparation.calls).toEqual([]);
     expect(fixture.getCurrentChunk()).toBe("0,0");
@@ -51,7 +49,7 @@ describe("createWorldmapChunkOrchestrationFixture", () => {
 
     const result = await switchPromise;
     expect(result).toEqual({
-      tileFetchSucceeded: true,
+      projectionSyncSucceeded: true,
       committedManagers: true,
       rolledBack: false,
       unregisteredPreviousChunk: true,
@@ -60,7 +58,7 @@ describe("createWorldmapChunkOrchestrationFixture", () => {
     expect(fixture.getCurrentChunk()).toBe("24,24");
   });
 
-  it("rolls back to previous authority when tile fetch fails", async () => {
+  it("rolls back to previous authority when tile sync fails", async () => {
     const fixture = createWorldmapChunkOrchestrationFixture();
 
     const switchPromise = fixture.runChunkSwitch({
@@ -77,12 +75,11 @@ describe("createWorldmapChunkOrchestrationFixture", () => {
     await flushMicrotasks(2);
     expect(fixture.getCurrentChunk()).toBe("0,0");
     fixture.assetPrewarm.resolveNext();
-    fixture.tileFetch.resolveNext(false);
-    fixture.boundsSwitch.resolveNext();
+    fixture.projectionSync.resolveNext(false);
 
     const result = await switchPromise;
     expect(result).toEqual({
-      tileFetchSucceeded: false,
+      projectionSyncSucceeded: false,
       committedManagers: false,
       rolledBack: true,
       unregisteredPreviousChunk: false,
@@ -108,14 +105,13 @@ describe("createWorldmapChunkOrchestrationFixture", () => {
 
     await flushMicrotasks(2);
     fixture.assetPrewarm.resolveNext();
-    fixture.tileFetch.resolveNext(true);
-    fixture.boundsSwitch.resolveNext();
+    fixture.projectionSync.resolveNext(true);
     await flushMicrotasks(2);
     fixture.terrainPreparation.resolveNext({ chunkKey: "24,24" });
 
     const result = await switchPromise;
     expect(result).toEqual({
-      tileFetchSucceeded: true,
+      projectionSyncSucceeded: true,
       committedManagers: false,
       rolledBack: false,
       unregisteredPreviousChunk: false,

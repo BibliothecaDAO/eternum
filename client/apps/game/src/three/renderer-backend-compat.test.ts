@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import {
   applyRendererBackendEnvironment,
   applyRendererBackendPostProcessPlan,
-  applyRendererBackendQuality,
+  applyRendererBackendVisuals,
   disposeRendererBackend,
   renderRendererBackendFrame,
   resizeRendererBackend,
@@ -50,7 +50,7 @@ describe("renderer backend compat", () => {
       renderer,
     };
 
-    applyRendererBackendQuality(backend as never, {
+    applyRendererBackendVisuals(backend as never, {
       height: 360,
       pixelRatio: 1.5,
       shadows: true,

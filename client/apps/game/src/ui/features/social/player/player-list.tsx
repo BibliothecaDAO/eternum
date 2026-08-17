@@ -3,9 +3,9 @@ import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { getAvatarUrl, normalizeAvatarAddress, useAvatarProfiles } from "@/hooks/use-player-avatar";
 import { ENABLE_LEADERBOARD_EFFECTS_MOCKUP } from "@/ui/constants";
-import { type LandingLeaderboardEntry } from "@/services/leaderboard/landing-leaderboard-service";
 import { currencyIntlFormat } from "@/ui/utils/utils";
 import { RegisterPointsButton } from "../components/register-points-button";
+import type { PlayerActivityBreakdown } from "@bibliothecadao/torii";
 import { ContractAddress, GuildInfo, PlayerInfo } from "@bibliothecadao/types";
 import clsx from "clsx";
 import gsap from "gsap";
@@ -22,10 +22,8 @@ export interface PlayerCustom extends PlayerInfo {
   isUser: boolean;
   isInvited: boolean;
   guild: GuildInfo | undefined;
-  leaderboardEntry?: LandingLeaderboardEntry | null;
-  leaderboardRankOverride?: number;
-  leaderboardPointsOverride?: number;
-  includesLiveShareholderPoints?: boolean;
+  activityBreakdown: PlayerActivityBreakdown | null;
+  includesLiveShareholderPoints: boolean;
 }
 
 interface PlayerListProps {
@@ -35,11 +33,7 @@ interface PlayerListProps {
   isLoading: boolean;
 }
 
-interface PlayerWithStats extends PlayerCustom {
-  leaderboardEntry: LandingLeaderboardEntry | null;
-  leaderboardRank: number;
-  leaderboardPoints: number;
-  includesLiveShareholderPoints: boolean;
+interface PlayerWithActivityStats extends PlayerCustom {
   tilesExplored: number;
   tilesExploredPoints: number;
   cratesOpened: number;
@@ -52,23 +46,32 @@ interface PlayerWithStats extends PlayerCustom {
   hyperstructuresHeldPoints: number;
 }
 
-const formatActivityValue = (count?: number | null, points?: number | null): string => {
-  const hasCount = typeof count === "number" && count > 0;
-  const hasPoints = typeof points === "number" && points > 0;
-
-  if (hasCount && hasPoints) {
-    return `${COUNT_FORMATTER.format(count!)} · ${currencyIntlFormat(points!)} pts`;
+const formatActivityValue = (count: number, points: number): string => {
+  if (count > 0 && points > 0) {
+    return `${COUNT_FORMATTER.format(count)} · ${currencyIntlFormat(points)} pts`;
   }
 
-  if (hasCount) {
-    return COUNT_FORMATTER.format(count!);
-  }
-
-  if (hasPoints) {
-    return `${currencyIntlFormat(points!)} pts`;
-  }
-
+  if (count > 0) return COUNT_FORMATTER.format(count);
+  if (points > 0) return `${currencyIntlFormat(points)} pts`;
   return "—";
+};
+
+const resolvePlayerActivityStats = (player: PlayerCustom): PlayerWithActivityStats => {
+  const activity = player.activityBreakdown;
+
+  return {
+    ...player,
+    tilesExplored: activity?.exploration.count ?? 0,
+    tilesExploredPoints: activity?.exploration.points ?? 0,
+    cratesOpened: activity?.openRelicChest.count ?? 0,
+    cratesOpenedPoints: activity?.openRelicChest.points ?? 0,
+    riftsTaken: activity?.otherStructureBanditsDefeat.count ?? 0,
+    riftsTakenPoints: activity?.otherStructureBanditsDefeat.points ?? 0,
+    hyperstructuresTaken: activity?.hyperStructureBanditsDefeat.count ?? 0,
+    hyperstructuresTakenPoints: activity?.hyperStructureBanditsDefeat.points ?? 0,
+    hyperstructuresHeld: player.hyperstructures,
+    hyperstructuresHeldPoints: activity?.hyperstructureShare.points ?? 0,
+  };
 };
 
 export const PlayerList = ({ players, viewPlayerInfo, whitelistPlayer, isLoading }: PlayerListProps) => {
@@ -109,58 +112,20 @@ export const PlayerList = ({ players, viewPlayerInfo, whitelistPlayer, isLoading
     }
   }, [players, selectedPlayerAddress]);
 
-  const playersWithStats = useMemo<PlayerWithStats[]>(() => {
-    return players.map((player) => {
-      const entry = player.leaderboardEntry ?? null;
+  const playersWithActivityStats = useMemo(() => players.map(resolvePlayerActivityStats), [players]);
 
-      const tilesExplored = entry?.exploredTiles ?? 0;
-      const tilesExploredPoints = entry?.exploredTilePoints ?? 0;
-      const cratesOpened = entry?.relicCratesOpened ?? 0;
-      const cratesOpenedPoints = entry?.relicCratePoints ?? 0;
-      const riftsTaken = entry?.riftsTaken ?? entry?.campsTaken ?? 0;
-      const riftsTakenPoints = entry?.riftPoints ?? entry?.campPoints ?? 0;
-      const hyperstructuresTaken = entry?.hyperstructuresConquered ?? 0;
-      const hyperstructuresTakenPoints = entry?.hyperstructurePoints ?? 0;
-      const hyperstructuresHeld = player.hyperstructures ?? 0;
-      const includesLiveShareholderPoints = Boolean(player.includesLiveShareholderPoints);
-      const hyperstructuresHeldPoints = includesLiveShareholderPoints ? (entry?.hyperstructuresHeldPoints ?? 0) : 0;
-
-      return {
-        ...player,
-        leaderboardEntry: entry,
-        leaderboardRank: player.leaderboardRankOverride ?? entry?.rank ?? player.rank ?? Number.MAX_SAFE_INTEGER,
-        leaderboardPoints: player.leaderboardPointsOverride ?? entry?.points ?? player.points ?? 0,
-        includesLiveShareholderPoints,
-        tilesExplored,
-        tilesExploredPoints,
-        cratesOpened,
-        cratesOpenedPoints,
-        riftsTaken,
-        riftsTakenPoints,
-        hyperstructuresTaken,
-        hyperstructuresTakenPoints,
-        hyperstructuresHeld,
-        hyperstructuresHeldPoints,
-      } satisfies PlayerWithStats;
-    });
-  }, [players]);
-
-  const filteredPlayers = useMemo(() => {
-    return playersWithStats.filter(
-      (player) => !player.name.includes("Daydreams") && !player.name.includes("Central Bank"),
-    );
-  }, [playersWithStats]);
+  const filteredPlayers = useMemo(
+    () =>
+      playersWithActivityStats.filter(
+        (player) => !player.name.includes("Daydreams") && !player.name.includes("Central Bank"),
+      ),
+    [playersWithActivityStats],
+  );
 
   // The leaderboard is always ranked — no column sorting. Sort ascending by the
   // resolved leaderboard rank so #1 is on top.
   const sortedPlayers = useMemo(() => {
-    return filteredPlayers
-      .map((player) => ({
-        ...player,
-        rank: player.leaderboardRank,
-        points: player.leaderboardPoints,
-      }))
-      .toSorted((a, b) => a.leaderboardRank - b.leaderboardRank);
+    return filteredPlayers.toSorted((a, b) => a.rank - b.rank);
   }, [filteredPlayers]);
 
   // Leaderboard effects for animations
@@ -323,7 +288,7 @@ const PlayerRow = ({
   effect,
   registerRef,
 }: {
-  player: PlayerWithStats;
+  player: PlayerWithActivityStats;
   avatarUrl: string | null;
   onSelect: () => void;
   whitelistPlayer: (address: ContractAddress) => void;
@@ -336,8 +301,7 @@ const PlayerRow = ({
 }) => {
   const setTooltip = useUIStore((state) => state.setTooltip);
 
-  const { leaderboardPoints, leaderboardRank } = player;
-  const isUnranked = leaderboardRank === Number.MAX_SAFE_INTEGER;
+  const isUnranked = player.rank === Number.MAX_SAFE_INTEGER;
   const tilesLabel = formatActivityValue(player.tilesExplored, player.tilesExploredPoints);
   const cratesLabel = formatActivityValue(player.cratesOpened, player.cratesOpenedPoints);
   const riftsLabel = formatActivityValue(player.riftsTaken, player.riftsTakenPoints);
@@ -385,7 +349,7 @@ const PlayerRow = ({
               isUnranked ? "text-red-400" : isSelected ? "text-lightest" : "text-gold/90",
             )}
           >
-            {isUnranked ? " - " : `#${leaderboardRank}`}
+            {isUnranked ? " - " : `#${player.rank}`}
           </span>
         </div>
         <div className="flex min-w-0 items-center gap-2">
@@ -469,12 +433,12 @@ const PlayerRow = ({
         </div>
         <div
           className={clsx("flex items-center justify-center gap-2 text-sm font-semibold", {
-            "text-amber-200": leaderboardPoints > 1000,
-            "text-lightest": isSelected && leaderboardPoints <= 1000,
-            "text-gold/90": !isSelected && leaderboardPoints <= 1000,
+            "text-amber-200": player.points > 1000,
+            "text-lightest": isSelected && player.points <= 1000,
+            "text-gold/90": !isSelected && player.points <= 1000,
           })}
         >
-          <span>{currencyIntlFormat(leaderboardPoints)}</span>
+          <span>{currencyIntlFormat(player.points)}</span>
           {hasShareholderPoints && (
             <span
               className="text-order-brilliance text-xs"

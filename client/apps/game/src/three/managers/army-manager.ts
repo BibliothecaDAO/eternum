@@ -1,6 +1,6 @@
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useBlockTimestampStore } from "@/hooks/store/use-block-timestamp-store";
-import { getFreshPendingStaminaSource, useArmyStaminaSourceStore } from "@/lib/army-stamina/source-store";
+import { useChainTimeStore } from "@/hooks/store/use-chain-time-store";
 import { gameWorkerManager } from "@/managers/game-worker-manager";
 import { resolveArmyOwnerState } from "@/three/managers/army-owner-resolution";
 import { ArmyModel } from "@/three/managers/army-model";
@@ -120,15 +120,14 @@ import {
   waitForVisualSettle,
 } from "./manager-update-convergence";
 import { snapshotRendererDiagnostics } from "../renderer-diagnostics";
+import {
+  isFrameBudgetWorkQueueDisposedError,
+  scheduleFrameBudgetWork,
+  type FrameBudgetWorkScheduler,
+} from "../frame-budget-work-queue";
 import { gameEntityKey } from "@/dojo/game-scope";
 
 const MEMORY_MONITORING_ENABLED = env.VITE_PUBLIC_ENABLE_MEMORY_MONITORING;
-
-// Auto-release window for an optimistic position lock. If no authoritative
-// update matches the locked destination within this window, the lock is
-// released so the next update can drive a correction tween — covers the rare
-// server-divergent-path case without stranding the visual state.
-const OPTIMISTIC_POSITION_LOCK_TTL_MS = 15_000;
 
 interface MovingArmySourceState {
   col: number;
@@ -162,7 +161,6 @@ interface AddArmyParams {
   isDaydreamsAgent: boolean;
   troopCount?: number;
   currentStamina?: number;
-  onChainStamina?: { amount: bigint; updatedTick: number };
   maxStamina?: number;
   attackedFromDegrees?: number;
   attackedTowardDegrees?: number;
@@ -191,6 +189,8 @@ export class ArmyManager {
   private visibleArmyOrder: ID[] = [];
   private visibleArmyOrderIndices: Map<ID, number> = new Map();
   private visibleArmyIndices: Map<ID, number> = new Map();
+  private visibleArmyPresentationDirty = false;
+  private visibleArmyBuffersDirty = false;
   private renderQueuePromise: Promise<void> | null = null;
   private renderQueueActive = false;
   private pendingRenderChunkKey: string | null = null;
@@ -226,14 +226,13 @@ export class ArmyManager {
   private visibilityManager?: CentralizedVisibilityManager;
   private unsubscribeVisibility?: () => void;
   private lastKnownArmiesTick: number = 0;
-  private tickCheckTimeout: ReturnType<typeof setTimeout> | null = null;
+  private unsubscribeChainTime?: () => void;
   private chunkSwitchPromise: Promise<void> | null = null; // Track ongoing chunk switches
   private latestTransitionToken = 0;
   private transitionChunkByToken: Map<number, string> = new Map();
   private memoryMonitor?: MemoryMonitor;
   private debugStatsIntervalId?: ReturnType<typeof setInterval>;
   private unsubscribeAccountStore?: () => void;
-  private unsubscribePendingStaminaStore?: () => void;
   private readonly unsubscribeArmyProjection: () => void;
   private unsubscribeExplorerTroopsPresentation?: () => void;
   private readonly armyProjectionSyncs = new Map<ID, Promise<void>>();
@@ -249,31 +248,6 @@ export class ArmyManager {
   private preCommitArmyQueue: Set<ID> = new Set();
   // Track source buckets for moving armies to keep them visible during animation
   private movingArmySourceBuckets: Map<ID, MovingArmySourceState> = new Map();
-  // Armies animating via an optimistic tween started at tx submission. Used to
-  // distinguish predicted moves from authoritative ones so we can reconcile or
-  // rewind without double-animating when Torii eventually delivers the update.
-  private optimisticallyMovingArmies: Set<ID> = new Set();
-  // Entities for which the authoritative Torii tile update has already arrived
-  // after an optimistic submission. Phase C's dequeue consults this to avoid
-  // firing a second explorer_explore before the chain+indexer are settled —
-  // fixes the "VrfProvider: not consumed" race on rapid queued explores.
-  private authoritativeReconciledArmies: Set<ID> = new Set();
-  private authoritativeReconcileListeners: Map<number, Set<() => void>> = new Map();
-  // Position locks pinned at the optimistic destination. Suppresses stale
-  // position data from TileOpt / ExplorerTroops snapshot replays (bound-shift,
-  // chunk re-hydration) that would otherwise rubber-band the army back to its
-  // pre-tx tile. normalizedSource is retained so explore-discovery reverts —
-  // where the chain leaves `explorer.coord = from` after rolling a treasure —
-  // are recognised as authoritative and allowed through instead of being
-  // suppressed as stale. Auto-release on matching update or TTL expiry.
-  private optimisticPositionLocks: Map<
-    ID,
-    {
-      normalizedSource: { x: number; y: number };
-      normalizedTarget: { x: number; y: number };
-      lockedAtMs: number;
-    }
-  > = new Map();
   // Armies that have been visually hidden but not yet fully removed — all rendering
   // paths must skip these to prevent ghost units from reappearing during chunk transitions
 
@@ -297,6 +271,7 @@ export class ArmyManager {
     frustumManager?: FrustumManager,
     visibilityManager?: CentralizedVisibilityManager,
     chunkStride?: number,
+    private readonly chunkWorkScheduler?: FrameBudgetWorkScheduler,
   ) {
     this.scene = scene;
     this.worldSpatialProjection = worldSpatialProjection;
@@ -361,25 +336,9 @@ export class ArmyManager {
       this.recheckOwnership();
     });
 
-    // Push optimistic stamina into the 3D label the moment it's written (or
-    // cleared) instead of waiting for the next 1 s tick recompute.
-    this.unsubscribePendingStaminaStore = useArmyStaminaSourceStore.subscribe((state, prevState) => {
-      if (state.pendingSources === prevState.pendingSources) {
-        return;
-      }
-      const touched = new Set([...Object.keys(state.pendingSources), ...Object.keys(prevState.pendingSources)]);
-      for (const key of touched) {
-        if (state.pendingSources[key] !== prevState.pendingSources[key]) {
-          this.refreshArmyStamina(Number(key) as ID);
-        }
-      }
-    });
-
     // Initialize the last known armies tick to current tick
     this.lastKnownArmiesTick = getBlockTimestamp().currentArmiesTick;
-
-    // Start checking for tick changes every second
-    this.scheduleTickCheck();
+    this.unsubscribeChainTime = useChainTimeStore.subscribe(() => this.handleChainTimeAdvanceSafely());
   }
 
   private subscribeToExplorerTroopsPresentation(): void {
@@ -401,8 +360,16 @@ export class ArmyManager {
     const previous = this.armyProjectionSyncs.get(entityId) ?? Promise.resolve();
     const current = previous
       .catch(() => undefined)
-      .then(() => this.synchronizeArmyProjectionEntity(entityId))
+      .then(() => this.preloadMissingProjectedArmyModelsForEntity(entityId))
+      .then(() =>
+        scheduleFrameBudgetWork(this.chunkWorkScheduler, "visible", () =>
+          this.synchronizeArmyProjectionEntity(entityId),
+        ),
+      )
       .catch((error) => {
+        if (isFrameBudgetWorkQueueDisposedError(error)) {
+          return;
+        }
         console.error(`[ArmyManager] Failed to synchronize projected army ${entityId}`, error);
       })
       .finally(() => {
@@ -446,8 +413,6 @@ export class ArmyManager {
 
     const projectedPosition = new Position({ x: renderable.hexCoords.col, y: renderable.hexCoords.row });
     const projectedNormalized = projectedPosition.getNormalized();
-    if (this.shouldSkipStalePositionUpdate(renderable.entityId, projectedNormalized)) return;
-
     await this.moveArmy(renderable.entityId, projectedPosition);
   }
 
@@ -476,13 +441,41 @@ export class ArmyManager {
       isDaydreamsAgent: false,
       troopCount: divideByPrecision(Number(explorerTroops.troops.count)),
       currentStamina: Number(explorerTroops.troops.stamina.amount),
-      onChainStamina: {
-        amount: explorerTroops.troops.stamina.amount,
-        updatedTick: Number(explorerTroops.troops.stamina.updated_tick),
-      },
       maxStamina: StaminaManager.getMaxStamina(category, tier),
       battleCooldownEnd: explorerTroops.troops.battle_cooldown_end,
     };
+  }
+
+  private async preloadMissingProjectedArmyModelsForEntity(entityId: ID): Promise<void> {
+    const renderable = this.worldSpatialProjection.getArmy(entityId);
+    if (!renderable || !this.isProjectedArmyInCurrentChunk(renderable)) {
+      return;
+    }
+
+    await this.preloadMissingProjectedArmyModels([renderable]);
+  }
+
+  private async preloadMissingProjectedArmyModels(renderables: readonly ArmySpatialRenderable[]): Promise<void> {
+    const requiredModelTypes = new Set<ModelType>();
+
+    for (const renderable of renderables) {
+      if (this.armyPresentations.has(renderable.entityId)) {
+        continue;
+      }
+
+      const explorerTroops = this.resolveLiveExplorerTroopsComponent(renderable.entityId);
+      if (!explorerTroops || explorerTroops.troops.count <= 0n || explorerTroops.coord.alt) {
+        continue;
+      }
+
+      const params = this.buildProjectedArmyPresentation(renderable, explorerTroops);
+      const { resolvedModelType } = this.resolveArmyModelSelection(params, params.owner.address ?? 0n);
+      requiredModelTypes.add(resolvedModelType);
+    }
+
+    if (requiredModelTypes.size > 0) {
+      await this.armyModel.preloadModels(requiredModelTypes);
+    }
   }
 
   private resolveLiveExplorerTroopsComponent(entityId: ID): ExplorerTroopsComponentValue | undefined {
@@ -503,29 +496,25 @@ export class ArmyManager {
     );
   }
 
-  private scheduleTickCheck() {
-    this.tickCheckTimeout = setTimeout(() => {
-      try {
-        const { currentArmiesTick } = getBlockTimestamp();
-        const tickRefresh = resolveArmyStaminaTickRefresh({
-          currentTick: currentArmiesTick,
-          previousTick: this.lastKnownArmiesTick,
-        });
-        // Phase 3.6: stamina is derived from the armies tick, so only recompute it
-        // over all armies when the tick actually advanced (honouring the existing
-        // tick-gate policy) instead of every second. Battle timers keep the 1s
-        // cadence — they already early-out on armies without a battle cooldown.
-        if (tickRefresh.shouldRecompute) {
-          this.lastKnownArmiesTick = tickRefresh.nextTrackedTick;
-          this.recomputeStaminaForAllArmies();
-        }
-        this.recomputeBattleTimersForAllArmies();
-      } catch {
-        // Swallow errors to keep the tick loop alive
-      }
-      // Always schedule next check even if current cycle threw
-      this.scheduleTickCheck();
-    }, 1000);
+  private handleChainTimeAdvanceSafely(): void {
+    try {
+      this.handleChainTimeAdvance();
+    } catch (error) {
+      console.error("[ArmyManager] Failed to apply a chain-time update", error);
+    }
+  }
+
+  private handleChainTimeAdvance(): void {
+    const { currentArmiesTick } = getBlockTimestamp();
+    const tickRefresh = resolveArmyStaminaTickRefresh({
+      currentTick: currentArmiesTick,
+      previousTick: this.lastKnownArmiesTick,
+    });
+    if (tickRefresh.shouldRecompute) {
+      this.lastKnownArmiesTick = tickRefresh.nextTrackedTick;
+      this.recomputeStaminaForAllArmies();
+    }
+    this.recomputeBattleTimersForAllArmies();
   }
 
   // Debug army spawner state
@@ -578,10 +567,6 @@ export class ArmyManager {
       isDaydreamsAgent: false,
       troopCount: 10,
       currentStamina: 10,
-      onChainStamina: {
-        amount: 100n,
-        updatedTick: getBlockTimestamp().currentArmiesTick,
-      },
       maxStamina: 100,
     });
   }
@@ -750,10 +735,6 @@ export class ArmyManager {
         isDaydreamsAgent: false,
         troopCount: Math.floor(Math.random() * 100) + 10,
         currentStamina: Math.floor(Math.random() * 100),
-        onChainStamina: {
-          amount: 100n,
-          updatedTick: getBlockTimestamp().currentArmiesTick,
-        },
         maxStamina: 100,
       });
     }
@@ -881,8 +862,7 @@ export class ArmyManager {
       const biome = configManager.getBiome(x, y);
       const modelType = this.armyModel.getModelTypeForEntity(numericId, army.category, army.tier, biome);
       this.refreshArmyInstance(army, slot, modelType);
-      this.refreshVisibleArmyCollection();
-      this.updateVisibleArmyBuffers();
+      this.markVisibleArmyPresentationDirty();
     }
 
     return true;
@@ -1100,6 +1080,27 @@ export class ArmyManager {
     setWorldmapRenderGauge("visibleArmies", this.visibleArmyOrder.length);
   }
 
+  private markVisibleArmyPresentationDirty(buffersDirty: boolean = true): void {
+    this.visibleArmyPresentationDirty = true;
+    this.visibleArmyBuffersDirty ||= buffersDirty;
+  }
+
+  private flushVisibleArmyPresentation(): void {
+    if (!this.visibleArmyPresentationDirty) {
+      return;
+    }
+
+    const shouldFlushBuffers = this.visibleArmyBuffersDirty;
+    this.visibleArmyPresentationDirty = false;
+    this.visibleArmyBuffersDirty = false;
+    this.refreshVisibleArmyCollection();
+    this.syncVisibleArmyAttachments(this.visibleArmies);
+    this.updateArmyAttachmentTransforms();
+    if (shouldFlushBuffers) {
+      this.updateVisibleArmyBuffers();
+    }
+  }
+
   private updateVisibleArmyBuffers(): void {
     this.compactVisibleArmySlots();
     this.syncVisibleSlots();
@@ -1125,22 +1126,13 @@ export class ArmyManager {
 
     plan.reassignments.forEach(({ entityId, toSlot }) => {
       const numericId = this.toNumericId(entityId);
-      // Mirror EXACTLY the slot the model actually took. If the model declined
-      // the move (no live slot), skip — advancing the mirror to a slot the model
-      // never wrote is what desyncs the SSOT and strands ghosts.
+      // The army-model owns slots. visibleArmyIndices only tracks the compact
+      // visible set used by this manager; ArmyData carries no slot mirror.
       const movedSlot = this.armyModel.moveInstanceSlot(numericId, toSlot);
       if (movedSlot === undefined) {
         return;
       }
       this.visibleArmyIndices.set(entityId, movedSlot);
-
-      const army = this.armyPresentations.get(entityId);
-      if (army) {
-        this.armyPresentations.set(entityId, {
-          ...army,
-          matrixIndex: movedSlot,
-        });
-      }
     });
   }
 
@@ -1205,10 +1197,9 @@ export class ArmyManager {
       new Color(army.color),
     );
 
-    const updatedArmy = { ...army, matrixIndex: slot };
-    this.armyPresentations.set(army.entityId, updatedArmy);
+    this.armyPresentations.set(army.entityId, army);
     this.armyModel.rebindMovementMatrixIndex(numericId, slot);
-    this.syncArmyAuxiliaryPresentation(updatedArmy, position);
+    this.syncArmyAuxiliaryPresentation(army, position);
   }
 
   private syncArmyAuxiliaryPresentation(army: ArmyData, position: Vector3) {
@@ -1242,11 +1233,6 @@ export class ArmyManager {
       },
       entityId,
     );
-
-    const storedArmy = this.armyPresentations.get(entityId);
-    if (storedArmy) {
-      this.armyPresentations.set(entityId, { ...storedArmy, matrixIndex: undefined });
-    }
 
     this.armyPaths.delete(entityId);
     this.removeArmyPointIcon(entityId);
@@ -1430,8 +1416,10 @@ export class ArmyManager {
         (a, b) => this.toNumericId(a.entityId) - this.toNumericId(b.entityId),
       );
       ({ modelTypesByEntity } = this.collectModelInfo(sortedVisibleArmies));
-      this.reconcileVisibleArmies(visibleArmies, modelTypesByEntity, options?.force);
-      this.pruneArmyPresentationsOutsideCurrentChunk();
+      await scheduleFrameBudgetWork(this.chunkWorkScheduler, "critical", () => {
+        this.reconcileVisibleArmies(visibleArmies, modelTypesByEntity, options?.force);
+        this.pruneArmyPresentationsOutsideCurrentChunk();
+      });
     } finally {
       this.isArmyChunkTransitioning = false;
       this.drainDeferredArmyQueue();
@@ -1445,10 +1433,10 @@ export class ArmyManager {
   private isArmyVisible(army: ArmyData, bounds: { minCol: number; maxCol: number; minRow: number; maxRow: number }) {
     const entityIdNumber = this.toNumericId(army.entityId);
 
-    // Only trust instanceData world position if the army is actively rendered
-    // (has a matrixIndex). After chunk eviction, instanceData.position is stale
+    // Only trust instanceData world position if the army-model still owns a
+    // live slot. After chunk eviction, instanceData.position is stale
     // (frozen at mid-movement) and would poison the visibility decision.
-    const isActivelyRendered = army.matrixIndex !== undefined;
+    const isActivelyRendered = this.armyModel.getEntitySlot(entityIdNumber) !== undefined;
     const worldPos = isActivelyRendered ? this.armyModel.getEntityWorldPosition(entityIdNumber) : undefined;
     const worldHex = worldPos ? getHexForWorldPosition(worldPos) : undefined;
     const displayedHex = worldHex
@@ -1498,10 +1486,7 @@ export class ArmyManager {
       },
       removeEntityIdLabel: (entityId) => this.removeEntityIdLabel(entityId),
       commitVisibleArmyOrder: (entityIds) => this.setVisibleArmyOrder(entityIds),
-      refreshVisibleArmyCollection: () => this.refreshVisibleArmyCollection(),
-      syncVisibleArmyAttachments: () => this.syncVisibleArmyAttachments(this.visibleArmies),
-      updateArmyAttachmentTransforms: () => this.updateArmyAttachmentTransforms(),
-      flushVisibleArmyBuffers: () => this.updateVisibleArmyBuffers(),
+      markVisibleArmyPresentationDirty: (buffersDirty) => this.markVisibleArmyPresentationDirty(buffersDirty),
       sortEntityIds: (entityIds) => entityIds.toSorted((a, b) => this.toNumericId(a) - this.toNumericId(b)),
     });
   }
@@ -1527,8 +1512,12 @@ export class ArmyManager {
   }
 
   private async ensureProjectedArmyPresentationsForChunk(startRow: number, startCol: number): Promise<void> {
+    const renderables = this.getProjectedArmiesForChunk(startRow, startCol);
+    await this.preloadMissingProjectedArmyModels(renderables);
     await Promise.all(
-      this.getProjectedArmiesForChunk(startRow, startCol).map((renderable) => this.ensureArmyPresentation(renderable)),
+      renderables.map((renderable) =>
+        scheduleFrameBudgetWork(this.chunkWorkScheduler, "critical", () => this.ensureArmyPresentation(renderable)),
+      ),
     );
   }
 
@@ -1538,7 +1527,6 @@ export class ArmyManager {
     const [startRow, startCol] = this.currentChunkKey.split(",").map(Number);
     const retained = new Set(this.getProjectedArmiesForChunk(startRow, startCol).map(({ entityId }) => entityId));
     this.movingArmySourceBuckets.forEach((_, entityId) => retained.add(entityId));
-    this.optimisticallyMovingArmies.forEach((entityId) => retained.add(entityId));
     this.debugSpawnedArmyIds.forEach((entityId) => retained.add(entityId));
 
     const stalePresentations = [...this.armyPresentations.keys()].filter((entityId) => !retained.has(entityId));
@@ -1602,10 +1590,7 @@ export class ArmyManager {
       this.addVisibleArmy(latestArmy, modelType);
     }
 
-    this.refreshVisibleArmyCollection();
-    this.syncVisibleArmyAttachments(this.visibleArmies);
-    this.updateArmyAttachmentTransforms();
-    this.updateVisibleArmyBuffers();
+    this.markVisibleArmyPresentationDirty();
     return true;
   }
 
@@ -1617,13 +1602,10 @@ export class ArmyManager {
     const numericEntityId = this.toNumericId(params.entityId);
 
     const { x, y } = params.hexCoords.getContract();
-    const biome = configManager.getBiome(x, y);
-    const baseModelType = this.armyModel.getModelTypeForEntity(numericEntityId, params.category, params.tier, biome);
 
     // Variables to hold the final values
     let finalTroopCount = params.troopCount || 0;
     let finalCurrentStamina = params.currentStamina || 0;
-    let finalOnChainStamina = params.onChainStamina || { amount: 0n, updatedTick: 0 };
     const finalMaxStamina = params.maxStamina || 0;
     let finalOwnerAddress = params.owner.address;
     let finalOwnerName = params.owner.ownerName;
@@ -1663,16 +1645,7 @@ export class ArmyManager {
     finalOwningStructureId = structureIdForOwner ?? finalOwningStructureId;
 
     const ownerForCosmetics = finalOwnerAddress ?? 0n;
-    if (this.components && ownerForCosmetics !== 0n) {
-      playerCosmeticsStore.hydrateFromBlitzComponent(this.components, ownerForCosmetics);
-    }
-    const cosmetic = resolveArmyCosmetic({
-      owner: ownerForCosmetics,
-      troopType: params.category,
-      tier: params.tier,
-      defaultModelType: baseModelType,
-    });
-    const resolvedModelType = cosmetic.skin.modelType ?? baseModelType;
+    const { cosmetic, resolvedModelType } = this.resolveArmyModelSelection(params, ownerForCosmetics);
 
     // Extract cosmetic asset paths for potential custom model
     const cosmeticAssetPaths = cosmetic.skin.assetPaths;
@@ -1696,13 +1669,7 @@ export class ArmyManager {
       owner: { address: finalOwnerAddress || 0n },
     });
 
-    const initialStaminaPresentation = this.resolveArmyStaminaSnapshot({
-      entityId: params.entityId,
-      troopCount: finalTroopCount,
-      onChainStamina: finalOnChainStamina,
-      category: params.category,
-      tier: params.tier,
-    });
+    const initialStaminaPresentation = this.resolveArmyStaminaSnapshot(params.entityId);
     finalCurrentStamina = initialStaminaPresentation?.current ?? finalCurrentStamina;
 
     this.armyPresentations.set(
@@ -1730,8 +1697,6 @@ export class ArmyManager {
         currentStamina: finalCurrentStamina,
         maxStamina: finalMaxStamina,
         displayStaminaRatio: initialStaminaPresentation?.displayRatio,
-        // we need to check if there's any pending before we set it because onchain stamina might be 0 from the map data store in the system-manager
-        onChainStamina: finalOnChainStamina,
         attackedFromDegrees: attackedFromDegrees ?? undefined,
         attackedTowardDegrees: attackTowardDegrees ?? undefined,
         battleCooldownEnd: finalBattleCooldownEnd,
@@ -1742,9 +1707,30 @@ export class ArmyManager {
     await this.renderArmyIntoCurrentChunkIfVisible(params.entityId);
   }
 
-  public async computeMovementPlan(entityId: ID, hexCoords: Position): Promise<ArmyMovementPlan | null> {
-    this.memoryMonitor?.getCurrentStats(`moveArmy-start-${entityId}`);
+  private resolveArmyModelSelection(params: AddArmyParams, ownerAddress: bigint) {
+    const numericEntityId = this.toNumericId(params.entityId);
+    const { x, y } = params.hexCoords.getContract();
+    const biome = configManager.getBiome(x, y);
+    const baseModelType = this.armyModel.getModelTypeForEntity(numericEntityId, params.category, params.tier, biome);
 
+    if (this.components && ownerAddress !== 0n) {
+      playerCosmeticsStore.hydrateFromBlitzComponent(this.components, ownerAddress);
+    }
+
+    const cosmetic = resolveArmyCosmetic({
+      owner: ownerAddress,
+      troopType: params.category,
+      tier: params.tier,
+      defaultModelType: baseModelType,
+    });
+
+    return {
+      cosmetic,
+      resolvedModelType: cosmetic.skin.modelType ?? baseModelType,
+    };
+  }
+
+  public async computeMovementPlan(entityId: ID, hexCoords: Position): Promise<ArmyMovementPlan | null> {
     const armyData = this.armyPresentations.get(entityId);
     if (!armyData) return null;
 
@@ -1787,11 +1773,10 @@ export class ArmyManager {
   }
 
   /**
-   * Apply a pre-computed movement plan. Returns `true` when the plan wrote a
-   * local predicted or authoritative position. For optimistic calls, `true`
-   * means a rewind/reconcile lock exists, so sibling caches can mirror safely.
+   * Apply a pre-computed movement plan. The projected RECS position is already
+   * authoritative for presentation; this method owns only the visual tween.
    */
-  public async applyMovementPlan(plan: ArmyMovementPlan, options: { optimistic: boolean }): Promise<boolean> {
+  private async applyMovementPlan(plan: ArmyMovementPlan): Promise<boolean> {
     const { entityId, numericEntityId, sourceNormalized, targetNormalized, targetHexCoords, path, worldPath } = plan;
 
     const armyData = this.armyPresentations.get(entityId);
@@ -1809,22 +1794,8 @@ export class ArmyManager {
     });
     this.armyPresentations.set(entityId, { ...armyData, hexCoords: targetHexCoords });
 
-    if (options.optimistic) {
-      // Reset any prior reconciliation flag from an earlier optimistic move on
-      // this entity — we're starting fresh and will wait for the next authoritative
-      // update.
-      this.authoritativeReconciledArmies.delete(entityId);
-      this.optimisticPositionLocks.set(entityId, {
-        normalizedSource: { x: sourceNormalized.x, y: sourceNormalized.y },
-        normalizedTarget: { x: targetNormalized.x, y: targetNormalized.y },
-        lockedAtMs: Date.now(),
-      });
-    }
-
-    // Use the army-model's live slot (the single source of truth), not the
-    // cached ArmyData.matrixIndex mirror. Seeding a movement from a stale mirror
-    // animates the wrong slot and strands a frozen ghost at the unit's old slot.
-    const matrixIndex = this.armyModel.getEntitySlot(numericEntityId) ?? armyData.matrixIndex;
+    // The army-model is the single source of truth for render slots.
+    const matrixIndex = this.armyModel.getEntitySlot(numericEntityId);
     if (matrixIndex === undefined) {
       this.armyPaths.delete(entityId);
       this.armyModel.setMovementCompleteCallback(numericEntityId, undefined);
@@ -1832,9 +1803,7 @@ export class ArmyManager {
       await this.renderArmyIntoCurrentChunkIfVisible(entityId);
       this.runMovementStartListeners(numericEntityId);
       this.runMovementCompleteListeners(numericEntityId);
-      // No tween played, but optimistic callers still own a lock that can
-      // reconcile or rewind the predicted position.
-      return options.optimistic;
+      return false;
     }
 
     this.armyPaths.set(entityId, path);
@@ -1844,13 +1813,8 @@ export class ArmyManager {
       this.armyPaths.delete(entityId);
       this.cleanupMovementSourceBucket(entityId);
       this.pathRenderer.removePath(numericEntityId);
-      this.optimisticallyMovingArmies.delete(entityId);
       this.runMovementCompleteListeners(numericEntityId);
     });
-
-    if (options.optimistic) {
-      this.optimisticallyMovingArmies.add(entityId);
-    }
 
     this.armyModel.startMovement(numericEntityId, worldPath, matrixIndex, plan.armyCategory, plan.armyTier);
     this.runMovementStartListeners(numericEntityId);
@@ -1859,180 +1823,13 @@ export class ArmyManager {
     const displayState = this.selectedArmyForPath === entityId ? "selected" : "moving";
     this.pathRenderer.createPath(numericEntityId, worldPath, colorProfile.primary, displayState);
 
-    this.memoryMonitor?.getCurrentStats(`moveArmy-complete-${entityId}`);
     return true;
   }
 
   public async moveArmy(entityId: ID, hexCoords: Position): Promise<void> {
-    if (this.optimisticallyMovingArmies.has(entityId)) {
-      this.markOptimisticMovementReconciled(entityId);
-    }
-
     const plan = await this.computeMovementPlan(entityId, hexCoords);
     if (!plan) return;
-    await this.applyMovementPlan(plan, { optimistic: false });
-  }
-
-  public isArmyMovingOptimistically(entityId: ID): boolean {
-    return this.optimisticallyMovingArmies.has(entityId);
-  }
-
-  public hasUnresolvedOptimisticMovement(entityId: ID): boolean {
-    if (this.optimisticallyMovingArmies.has(entityId)) return true;
-
-    const lock = this.optimisticPositionLocks.get(entityId);
-    if (!lock) return false;
-
-    // Honour the TTL here too: it is otherwise only evaluated when a position
-    // update arrives for this entity, so an army that receives no further
-    // updates would keep its lock forever — permanently blocking movement
-    // selection (and the self-healing sweeps that consult this method).
-    if (Date.now() - lock.lockedAtMs > OPTIMISTIC_POSITION_LOCK_TTL_MS) {
-      this.optimisticPositionLocks.delete(entityId);
-      return false;
-    }
-
-    return true;
-  }
-
-  public hasReceivedAuthoritativeReconciliation(entityId: ID): boolean {
-    return this.authoritativeReconciledArmies.has(entityId);
-  }
-
-  /**
-   * True when an incoming position update should be skipped because it disagrees
-   * with an active optimistic lock and the TTL hasn't elapsed. Matching updates
-   * release the lock as a side effect.
-   *
-   * Source-match is treated the same as target-match: `explorer_explore` can
-   * roll a treasure that leaves `explorer.coord = from` on-chain
-   * (troop_movement.cairo:193). That authoritative revert would otherwise be
-   * swallowed as "stale" and the army would stay visually stranded on the
-   * discovered tile until the TTL expired.
-   */
-  public shouldSkipStalePositionUpdate(entityId: ID, incomingNormalized: { x: number; y: number }): boolean {
-    const lock = this.optimisticPositionLocks.get(entityId);
-    if (!lock) return false;
-
-    const matchesTarget =
-      lock.normalizedTarget.x === incomingNormalized.x && lock.normalizedTarget.y === incomingNormalized.y;
-    if (matchesTarget) {
-      this.optimisticPositionLocks.delete(entityId);
-      this.markOptimisticMovementReconciled(entityId);
-      return false;
-    }
-
-    const matchesSource =
-      lock.normalizedSource.x === incomingNormalized.x && lock.normalizedSource.y === incomingNormalized.y;
-    if (matchesSource) {
-      // Discovery revert: `explorer_explore` rolled a treasure, the chain left
-      // `explorer.coord = from`, and the tx emits an ExplorerTroops delta
-      // (stamina/biomes) but no TileOpt change for the source tile. The
-      // optimistic tween has already parked the visual on `target`, so merely
-      // releasing the lock isn't enough. Tear the tween down here so the
-      // presentation snaps back to the authoritative source. The worldmap's
-      // interaction accessor independently falls back to the RECS projection.
-      this.rewindOptimisticMovement(entityId);
-      return false;
-    }
-
-    if (Date.now() - lock.lockedAtMs > OPTIMISTIC_POSITION_LOCK_TTL_MS) {
-      this.optimisticPositionLocks.delete(entityId);
-      return false;
-    }
-
-    return true;
-  }
-
-  private markOptimisticMovementReconciled(entityId: ID): void {
-    recordArmyMovementLatencyPhase({
-      phase: "optimistic_animation_reconciled",
-      source: "worldmap",
-      entityId,
-    });
-    this.optimisticallyMovingArmies.delete(entityId);
-    this.optimisticPositionLocks.delete(entityId);
-    this.authoritativeReconciledArmies.add(entityId);
-    this.runAuthoritativeReconcileListeners(this.toNumericId(entityId));
-  }
-
-  public onAuthoritativeReconciliation(entityId: ID, callback: () => void): () => void {
-    const numericEntityId = this.toNumericId(entityId);
-    let listeners = this.authoritativeReconcileListeners.get(numericEntityId);
-    if (!listeners) {
-      listeners = new Set();
-      this.authoritativeReconcileListeners.set(numericEntityId, listeners);
-    }
-    listeners.add(callback);
-
-    return () => {
-      const active = this.authoritativeReconcileListeners.get(numericEntityId);
-      if (!active) return;
-      active.delete(callback);
-      if (active.size === 0) this.authoritativeReconcileListeners.delete(numericEntityId);
-    };
-  }
-
-  private runAuthoritativeReconcileListeners(entityId: number): void {
-    const listeners = this.authoritativeReconcileListeners.get(entityId);
-    if (!listeners || listeners.size === 0) return;
-
-    this.authoritativeReconcileListeners.delete(entityId);
-    listeners.forEach((listener) => {
-      try {
-        listener();
-      } catch (error) {
-        console.error("[ArmyManager] Authoritative reconciliation listener failed", error);
-      }
-    });
-  }
-
-  public rewindOptimisticMovement(entityId: ID): void {
-    // Read the lock's normalizedSource before the delete below — it's the
-    // canonical source-of-truth for the pre-tx hex, set for every optimistic
-    // move regardless of whether the source/dest share a spatial bucket.
-    const lock = this.optimisticPositionLocks.get(entityId);
-    if (!this.optimisticallyMovingArmies.has(entityId) && !lock) return;
-
-    const lockedSource = lock ? { col: lock.normalizedSource.x, row: lock.normalizedSource.y } : null;
-
-    this.optimisticallyMovingArmies.delete(entityId);
-    this.authoritativeReconciledArmies.delete(entityId);
-    this.authoritativeReconcileListeners.delete(this.toNumericId(entityId));
-    this.optimisticPositionLocks.delete(entityId);
-
-    const numericEntityId = this.toNumericId(entityId);
-    const sourceState = this.movingArmySourceBuckets.get(entityId);
-    const armyData = this.armyPresentations.get(entityId);
-
-    // Clear the complete callback so cancelMovement's teardown doesn't fire listeners.
-    this.armyModel.setMovementCompleteCallback(numericEntityId, undefined);
-    this.armyModel.cancelMovement(numericEntityId);
-
-    this.armyPaths.delete(entityId);
-    this.pathRenderer.removePath(numericEntityId);
-
-    // Drop any pending start/complete listeners — they were registered for the
-    // optimistic tween we just cancelled and should not fire.
-    this.movementStartListeners.delete(numericEntityId);
-    this.movementCompleteListeners.delete(numericEntityId);
-    this.movementVisualCancelListeners.delete(numericEntityId);
-
-    if (armyData && (sourceState || lockedSource)) {
-      const sourcePosition = new Position({
-        x: sourceState?.col ?? lockedSource!.col,
-        y: sourceState?.row ?? lockedSource!.row,
-      });
-      this.armyPresentations.set(entityId, { ...armyData, hexCoords: sourcePosition });
-      this.movingArmySourceBuckets.delete(entityId);
-      void this.renderArmyIntoCurrentChunkIfVisible(entityId);
-    }
-
-    recordArmyMovementLatencyPhase({
-      phase: "optimistic_animation_rewound",
-      source: "worldmap",
-      entityId,
-    });
+    await this.applyMovementPlan(plan);
   }
 
   public removeArmy(entityId: ID, options: { playDefeatFx?: boolean } = {}) {
@@ -2060,11 +1857,6 @@ export class ArmyManager {
     // Clean up movement source bucket tracking if army was mid-movement
     this.cleanupMovementSourceBucket(entityId);
 
-    // Release optimistic movement state: a removed-then-re-added army (chunk
-    // eviction, capture) must not inherit a stale lock that blocks selection.
-    this.optimisticallyMovingArmies.delete(entityId);
-    this.optimisticPositionLocks.delete(entityId);
-
     const army = this.armyPresentations.get(entityId);
     if (!army) {
       // console.warn(`[ArmyManager] removeArmy called for missing entity ${entityId}`);
@@ -2085,8 +1877,7 @@ export class ArmyManager {
     this.armyPresentations.delete(entityId);
 
     if (removedSlot !== null) {
-      this.refreshVisibleArmyCollection();
-      this.updateVisibleArmyBuffers();
+      this.markVisibleArmyPresentationDirty();
     }
 
     this.armyModel.releaseEntity(numericEntityId);
@@ -2437,8 +2228,11 @@ export class ArmyManager {
   private readonly loggedSlotViolations = new Set<string>();
 
   update(deltaTime: number, animationContext?: AnimationVisibilityContext) {
+    this.flushVisibleArmyPresentation();
+
     // Update movements in ArmyModel
     this.armyModel.updateMovements(deltaTime);
+    this.requestMovingArmyShadowRefresh();
     this.armyModel.updateAnimations(deltaTime, animationContext);
     this.updateCompactLabelCamera();
 
@@ -2545,9 +2339,9 @@ export class ArmyManager {
     }
 
     // Purges mutate activeInstances directly; recompact draw counts so the freed
-    // slot stops drawing this frame.
+    // slot stops drawing on the next frame.
     if (purgedAny) {
-      this.updateVisibleArmyBuffers();
+      this.markVisibleArmyPresentationDirty();
     }
   }
 
@@ -2582,6 +2376,14 @@ export class ArmyManager {
     if (camera) {
       this.compactLabelRenderer.updateCamera(camera);
     }
+  }
+
+  private requestMovingArmyShadowRefresh(): void {
+    if (this.currentCameraView !== CameraView.Close || !this.hasMovingArmies()) {
+      return;
+    }
+
+    this.hexagonScene?.requestShadowContentRefresh();
   }
 
   private syncArmyBoundsForMovementState() {
@@ -3037,14 +2839,11 @@ export class ArmyManager {
   }
 
   private handleCameraViewChange = (view: CameraView) => {
-    const qualityShadowsEnabled = this.hexagonScene?.getShadowsEnabledByQuality() ?? true;
-    const contactShadowsAllowed = this.hexagonScene?.contactShadowsAllowedByQuality() ?? true;
-    const enableRealShadows = view === CameraView.Close && qualityShadowsEnabled;
-    // Contact shadows are the fallback for real shadows; gate them off on LOW/below
-    // so the weakest hardware pays for neither real nor contact shadows.
-    const enableContactShadows = !enableRealShadows && contactShadowsAllowed;
+    const shadowsEnabled = this.hexagonScene?.getShadowsEnabled() ?? true;
+    const enableRealShadows = view === CameraView.Close && shadowsEnabled;
+    const enableContactShadows = !enableRealShadows;
 
-    // Keep shadow flags in sync even if view is unchanged (quality can toggle shadows dynamically).
+    // Keep shadow flags in sync when the scene reapplies its visual profile.
     this.armyModel.setShadowsEnabled(enableRealShadows);
     this.armyModel.setContactShadowsEnabled(enableContactShadows);
 
@@ -3127,35 +2926,16 @@ ${
     return getComponentValue(this.components.ExplorerTroops, gameEntityKey([BigInt(entityId)]))?.troops ?? null;
   }
 
-  private resolveArmyStaminaSnapshot(input: {
-    entityId: ID;
-    troopCount: number;
-    onChainStamina: { amount: bigint; updatedTick: number };
-    category: TroopType;
-    tier: TroopTier;
-  }): { current: number; max: number; displayRatio: number } | null {
-    const { currentArmiesTick, armiesTickTimeRemaining } = useBlockTimestampStore.getState();
+  private resolveArmyStaminaSnapshot(entityId: ID): { current: number; max: number; displayRatio: number } | null {
+    const { currentArmiesTick } = useBlockTimestampStore.getState();
     if (!Number.isFinite(currentArmiesTick) || currentArmiesTick <= 0) {
       return null;
     }
 
-    const pendingStamina = getFreshPendingStaminaSource(input.entityId);
     const staminaSnapshot = getExplorerStaminaSnapshot({
-      entityId: input.entityId,
+      entityId,
       currentArmiesTick,
-      liveTroops: this.resolveLiveExplorerTroops(input.entityId),
-      fallbackArmy: {
-        category: input.category,
-        tier: input.tier,
-        troopCount: input.troopCount,
-        onChainStamina: input.onChainStamina,
-      },
-      pendingStamina: pendingStamina
-        ? {
-            amount: pendingStamina.amount,
-            updatedTick: pendingStamina.updatedTick,
-          }
-        : null,
+      liveTroops: this.resolveLiveExplorerTroops(entityId),
     });
     if (!staminaSnapshot) {
       return null;
@@ -3177,13 +2957,7 @@ ${
     // Update all army data in cache
     this.armyPresentations.forEach((army, entityId) => {
       try {
-        const staminaSnapshot = this.resolveArmyStaminaSnapshot({
-          entityId,
-          troopCount: army.troopCount,
-          onChainStamina: army.onChainStamina,
-          category: army.category,
-          tier: army.tier,
-        });
+        const staminaSnapshot = this.resolveArmyStaminaSnapshot(entityId);
 
         // Update cached army data with new stamina
         army.currentStamina = staminaSnapshot?.current ?? army.currentStamina;
@@ -3199,37 +2973,6 @@ ${
         // Skip this army — don't let one bad entity block all others
       }
     });
-  }
-
-  /**
-   * Recompute stamina for a single army and repaint its label immediately —
-   * used when an optimistic (pending) stamina value is written or cleared.
-   */
-  private refreshArmyStamina(entityId: ID): void {
-    const army = this.armyPresentations.get(entityId);
-    if (!army) {
-      return;
-    }
-
-    const staminaSnapshot = this.resolveArmyStaminaSnapshot({
-      entityId,
-      troopCount: army.troopCount,
-      onChainStamina: army.onChainStamina,
-      category: army.category,
-      tier: army.tier,
-    });
-    if (!staminaSnapshot) {
-      return;
-    }
-
-    army.currentStamina = staminaSnapshot.current;
-    army.maxStamina = staminaSnapshot.max;
-    army.displayStaminaRatio = staminaSnapshot.displayRatio;
-
-    const label = this.entityIdLabels.get(entityId);
-    if (label) {
-      this.updateArmyLabelData(entityId, army, label);
-    }
   }
 
   /**
@@ -3309,11 +3052,6 @@ ${
     if (!army) return;
 
     const troopCount = divideByPrecision(Number(explorerTroops.troops.count));
-    const onChainStamina = {
-      amount: explorerTroops.troops.stamina.amount,
-      updatedTick: Number(explorerTroops.troops.stamina.updated_tick),
-    };
-
     // Log troop count diff and play visual FX for battle damage/healing
     const previousCount = army.troopCount;
     if (previousCount !== troopCount) {
@@ -3330,15 +3068,8 @@ ${
     }
 
     army.troopCount = troopCount;
-    army.onChainStamina = onChainStamina;
 
-    const staminaSnapshot = this.resolveArmyStaminaSnapshot({
-      entityId,
-      troopCount,
-      onChainStamina,
-      category: army.category,
-      tier: army.tier,
-    });
+    const staminaSnapshot = this.resolveArmyStaminaSnapshot(entityId);
     army.currentStamina = staminaSnapshot?.current ?? army.currentStamina;
     army.maxStamina = staminaSnapshot?.max ?? army.maxStamina;
     army.displayStaminaRatio = staminaSnapshot?.displayRatio ?? army.displayStaminaRatio;
@@ -3380,8 +3111,7 @@ ${
     const modelType = this.armyModel.getModelTypeForEntity(numericId, army.category, army.tier, biome);
 
     this.refreshArmyInstance(army, slot, modelType);
-    this.refreshVisibleArmyCollection();
-    this.updateVisibleArmyBuffers();
+    this.markVisibleArmyPresentationDirty();
   }
 
   public destroy() {
@@ -3411,21 +3141,13 @@ ${
       this.unsubscribeAccountStore = undefined;
     }
 
-    if (this.unsubscribePendingStaminaStore) {
-      this.unsubscribePendingStaminaStore();
-      this.unsubscribePendingStaminaStore = undefined;
-    }
-
     // Clean up camera view listener
     if (this.hexagonScene) {
       this.hexagonScene.removeCameraViewListener(this.handleCameraViewChange);
     }
 
-    // Clean up tick check timeout
-    if (this.tickCheckTimeout) {
-      clearTimeout(this.tickCheckTimeout);
-      this.tickCheckTimeout = null;
-    }
+    this.unsubscribeChainTime?.();
+    this.unsubscribeChainTime = undefined;
 
     // Clean up debug stats interval
     if (this.debugStatsIntervalId) {
@@ -3441,10 +3163,6 @@ ${
 
     this.armyPaths.clear();
     this.movingArmySourceBuckets.clear();
-    this.optimisticallyMovingArmies.clear();
-    this.authoritativeReconciledArmies.clear();
-    this.authoritativeReconcileListeners.clear();
-    this.optimisticPositionLocks.clear();
     this.preCommitArmyQueue.clear();
     this.movementStartListeners.clear();
     this.movementCompleteListeners.clear();

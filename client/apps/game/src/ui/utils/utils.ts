@@ -1,29 +1,9 @@
-import { sqlApi } from "@/services/api";
 import { SortInterface } from "@/ui/design-system/atoms/sort-button";
-import {
-  divideByPrecision,
-  getBlockTimestamp,
-  MAP_DATA_REFRESH_INTERVAL,
-  MapDataStore,
-  toHexString,
-} from "@bibliothecadao/eternum";
+import { divideByPrecision, getBlockTimestamp, toHexString } from "@bibliothecadao/eternum";
 import { ContractAddress, ResourceCost, ResourcesIds } from "@bibliothecadao/types";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 
 export { getEntityIdFromKeys };
-
-// Pads a hex address (with 0x prefix) to 66 characters (64 hex digits + 0x)
-// Example: '0xabc' => '0x' + '0'.repeat(61) + 'abc'
-export function padHexAddressTo66(address: string): string {
-  if (!address || typeof address !== "string") return "";
-  let norm = address.toLowerCase();
-  if (norm.startsWith("0x")) {
-    norm = norm.slice(2);
-  }
-  // Pad left with zeros to length 64
-  const padded = norm.padStart(64, "0");
-  return "0x" + padded;
-}
 
 export const formatStringNumber = (number: number, decimals: number): string => {
   return number.toLocaleString("en-US", {
@@ -180,9 +160,4 @@ export const formatArrivalTime = (date: Date | null) => {
   const minutes = date.getMinutes();
 
   return `${hours.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")} `;
-};
-
-export const getRealmCountPerHyperstructure = () => {
-  const mapDataStore = MapDataStore.getInstance(MAP_DATA_REFRESH_INTERVAL, sqlApi);
-  return mapDataStore.getRealmCountPerHyperstructure();
 };

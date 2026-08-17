@@ -1,5 +1,4 @@
 import {
-  BiomeType,
   BuildingType,
   ContractAddress,
   HexPosition,
@@ -10,10 +9,28 @@ import {
   TroopTier,
   TroopType,
 } from "@bibliothecadao/types";
-import type { ActiveProduction, GuardArmy } from "../stores/map-data-store";
 import { Position } from "./position";
 
-// data that you can get from the tile + mapdatastore
+export const TROOP_TIERS: Record<string, number> = {
+  T1: 1,
+  T2: 2,
+  T3: 3,
+};
+
+export interface GuardArmy {
+  slot: number;
+  category: string | null;
+  tier: number;
+  count: number;
+  stamina: number;
+}
+
+export interface ActiveProduction {
+  buildingCount: number;
+  buildingType: BuildingType;
+}
+
+// Spatial identity and live RECS presentation facts consumed by map renderers.
 export type ExplorerTroopsTileSystemUpdate = {
   entityId: ID;
   hexCoords: HexPosition;
@@ -21,7 +38,7 @@ export type ExplorerTroopsTileSystemUpdate = {
   troopTier: TroopTier;
   isDaydreamsAgent: boolean;
   removed?: boolean;
-  // Enhanced data from MapDataStore
+  // Live presentation facts derived from RECS
   ownerName: string;
   guildName: string;
   troopCount?: number | undefined;
@@ -76,7 +93,7 @@ export type StructureTileSystemUpdate = {
   isAlly: boolean;
   owner: { address: bigint | undefined; ownerName: string; guildName: string };
   hasWonder: boolean;
-  // Enhanced data from MapDataStore
+  // Live presentation facts derived from RECS
   guardArmies?: GuardArmy[];
   activeProductions?: ActiveProduction[];
   hyperstructureRealmCount?: number;
@@ -106,12 +123,6 @@ export type StructureBuildingsSystemUpdate = {
   entityId: ID;
   activeProductions: ActiveProduction[];
   hexCoords: HexPosition;
-};
-
-export type TileSystemUpdate = {
-  hexCoords: HexPosition;
-  removeExplored: boolean;
-  biome: BiomeType;
 };
 
 export type BuildingSystemUpdate = {
@@ -174,8 +185,6 @@ export interface ChestData {
 
 export interface SelectableArmy {
   entityId: ID;
-  position: HexPosition;
-  name: string;
 }
 
 export type BattleEventSystemUpdate = {

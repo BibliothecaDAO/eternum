@@ -107,8 +107,9 @@ class FetchResponseError extends Error {
   constructor(
     readonly status: number,
     readonly statusText: string,
+    readonly body: string = "",
   ) {
-    super(statusText);
+    super(body ? `${statusText}: ${body}` : statusText);
     this.name = "FetchResponseError";
   }
 }
@@ -134,6 +135,11 @@ const createFetchTimeout = (timeoutMs: number): { signal?: AbortSignal; clear: (
 
 const isRetryableFetchError = (error: unknown): boolean => {
   if (error instanceof FetchResponseError) {
+    // A missing model table is a permanent condition (torii only creates a
+    // table once the first row of that model lands) — retrying is pure waste.
+    if (error.body.includes("no such table")) {
+      return false;
+    }
     return RETRYABLE_HTTP_STATUSES.has(error.status);
   }
 
@@ -176,7 +182,8 @@ const fetchJsonOnce = async (url: string, options: FetchWithErrorHandlingOptions
     const response = await fetch(url, timeout.signal ? { signal: timeout.signal } : undefined);
 
     if (!response.ok) {
-      throw new FetchResponseError(response.status, response.statusText);
+      const body = await response.text().catch(() => "");
+      throw new FetchResponseError(response.status, response.statusText, body.slice(0, 300));
     }
 
     return await response.json();

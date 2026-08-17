@@ -1,6 +1,6 @@
 import { ID, Troops } from "@bibliothecadao/types";
 
-export type ArmyStaminaSourceKind = "pending" | "snapshot" | "live" | "cached";
+export type ArmyStaminaSourceKind = "live";
 
 export interface ArmyStaminaSourceSnapshot {
   source: ArmyStaminaSourceKind;
@@ -8,7 +8,6 @@ export interface ArmyStaminaSourceSnapshot {
   amount: bigint;
   updatedTick: number;
   troopCount?: number;
-  capturedAtMs?: number;
   troops?: Troops | null;
 }
 

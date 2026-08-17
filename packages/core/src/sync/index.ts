@@ -3,6 +3,6 @@ export * from "./game-sync-runtime";
 export * from "./game-sync-types";
 export * from "./model-manifest";
 export * from "./model-stream-clause";
-export * from "./player-structure-sync-writer";
+export * from "./provisional-write-manager";
 export * from "./scheduler";
 export * from "./world-spatial-projection";

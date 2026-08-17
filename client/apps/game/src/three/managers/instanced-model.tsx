@@ -1,5 +1,4 @@
 import { MinesMaterialsParams, PREVIEW_BUILD_COLOR_INVALID } from "@/three/constants";
-import { GRAPHICS_SETTING, isLowOrBelow } from "@/ui/config";
 import { ResourcesIds, StructureType } from "@bibliothecadao/types";
 import {
   AnimationAction,
@@ -19,7 +18,9 @@ import {
 import { AnimationVisibilityContext } from "../types/animation";
 import { getContactShadowResources } from "../utils/contact-shadow";
 import { InstancedMatrixAttributePool } from "../utils/instanced-matrix-attribute-pool";
+import { MaterialPool } from "../utils/material-pool";
 import { resizeInstancedMorphTexture } from "./morph-texture-resize";
+import { writeMorphWeightsIfChanged } from "./morph-texture-dirty-state";
 
 const BIG_DETAILS_NAME = "big_details";
 const BUILDING_NAME = "building";
@@ -94,6 +95,7 @@ function createAnimatedInstancedMesh(geometry: Mesh["geometry"], material: MeshS
 const ANIMATION_BUCKETS = 16;
 
 export default class InstancedModel {
+  private static readonly materialPool = MaterialPool.getInstance();
   public group: Group;
   public instancedMeshes: AnimatedInstancedMesh[] = [];
   private biomeMeshes: Mesh[] = [];
@@ -129,6 +131,7 @@ export default class InstancedModel {
     initialCapacity: number = DEFAULT_INITIAL_CAPACITY,
     enableRaycast: boolean = false,
     name: string = "",
+    private readonly sourceAssetOwnership: "cache" | "consumer" = "consumer",
   ) {
     this.name = name;
     this.group = new Group();
@@ -149,10 +152,14 @@ export default class InstancedModel {
           return;
         }
         let material = child.material as MeshStandardMaterial;
+        if (this.sourceAssetOwnership === "cache") {
+          material = material.clone();
+        }
         applyStructureMaterialOverrides(material, name);
         if (name === StructureType[StructureType.FragmentMine] && child.material.name.includes("crystal")) {
           material = new MeshStandardMaterial(MinesMaterialsParams[ResourcesIds.AncientFragment]);
         }
+        material = InstancedModel.materialPool.getStandardMaterial(material);
         const tmp = createAnimatedInstancedMesh(child.geometry, material, this.capacity);
         tmp.renderOrder = 10;
         const biomeMesh = child;
@@ -166,6 +173,7 @@ export default class InstancedModel {
             for (let i = 0; i < this.capacity; i++) {
               tmp.setMorphAt(i, biomeMesh as any);
             }
+            tmp.morphTexture!.name = `structure-morph:${name || "unnamed"}:${child.name || this.instancedMeshes.length}`;
             tmp.morphTexture!.needsUpdate = true;
           }
         }
@@ -445,10 +453,6 @@ export default class InstancedModel {
     if (!this.shouldAnimate(visibility)) {
       return;
     }
-    if (isLowOrBelow(GRAPHICS_SETTING)) {
-      return;
-    }
-
     const now = performance.now();
     const maxInstanceCount = this.getMaxInstanceCount();
     const interval = this.getAnimationUpdateIntervalMs(maxInstanceCount);
@@ -468,7 +472,7 @@ export default class InstancedModel {
 
     if (this.mixer && this.animation) {
       const time = now * 0.001;
-      let needsUpdate = false;
+      let completedAnimationPass = false;
 
       this.instancedMeshes.forEach((mesh, meshIndex) => {
         if (!mesh.animated) return;
@@ -514,8 +518,10 @@ export default class InstancedModel {
         // Direct texture data manipulation - much faster than setMorphAt per instance
         const morphTexture = mesh.morphTexture;
         if (morphTexture && morphTexture.image && morphTexture.image.data) {
+          completedAnimationPass = true;
           const textureData = morphTexture.image.data as unknown as Float32Array;
           const textureWidth = morphTexture.image.width;
+          let textureChanged = false;
 
           // OPTIMIZED: Batch by bucket for cache locality
           for (let bucket = bucketOffset; bucket < ANIMATION_BUCKETS; bucket += bucketStride) {
@@ -524,34 +530,27 @@ export default class InstancedModel {
 
             const srcOffset = bucket * morphCount;
 
-            // For small morphCount (typical case), use subarray.set()
-            if (morphCount <= 8) {
-              const bucketWeights = this.bucketWeightsBuffer.subarray(srcOffset, srcOffset + morphCount);
-              for (let idx = 0; idx < indices.length; idx++) {
-                const i = indices[idx];
-                if (i >= instanceCount) continue;
-                const dstOffset = i * textureWidth;
-                textureData.set(bucketWeights, dstOffset);
-              }
-            } else {
-              // Fallback for many morph targets
-              for (let idx = 0; idx < indices.length; idx++) {
-                const i = indices[idx];
-                if (i >= instanceCount) continue;
-                const dstOffset = i * textureWidth;
-                for (let m = 0; m < morphCount; m++) {
-                  textureData[dstOffset + m] = this.bucketWeightsBuffer[srcOffset + m];
-                }
-              }
+            for (let idx = 0; idx < indices.length; idx++) {
+              const i = indices[idx];
+              if (i >= instanceCount) continue;
+              textureChanged =
+                writeMorphWeightsIfChanged(
+                  textureData,
+                  i * textureWidth,
+                  this.bucketWeightsBuffer,
+                  srcOffset,
+                  morphCount,
+                ) || textureChanged;
             }
           }
 
-          morphTexture.needsUpdate = true;
-          needsUpdate = true;
+          if (textureChanged) {
+            morphTexture.needsUpdate = true;
+          }
         }
       });
 
-      if (needsUpdate) {
+      if (completedAnimationPass) {
         this.lastAnimationUpdate = now;
       }
     }
@@ -713,14 +712,20 @@ export default class InstancedModel {
 
     // Dispose of instanced meshes and their resources
     this.instancedMeshes.forEach((mesh) => {
-      if (mesh.geometry) {
+      if (mesh.geometry && this.sourceAssetOwnership === "consumer") {
         mesh.geometry.dispose();
       }
       if (mesh.material) {
         if (Array.isArray(mesh.material)) {
-          mesh.material.forEach((mat) => mat.dispose());
+          mesh.material.forEach((mat) =>
+            InstancedModel.materialPool.isManagedMaterial(mat)
+              ? InstancedModel.materialPool.releaseMaterial(mat)
+              : mat.dispose(),
+          );
         } else {
-          mesh.material.dispose();
+          InstancedModel.materialPool.isManagedMaterial(mesh.material)
+            ? InstancedModel.materialPool.releaseMaterial(mesh.material)
+            : mesh.material.dispose();
         }
       }
       // Phase 2.5: dispose the InstancedMesh itself to free the instanceMatrix/
