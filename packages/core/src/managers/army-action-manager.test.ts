@@ -409,6 +409,31 @@ describe("ArmyActionManager.moveArmy explore position-freshness guard", () => {
 
     expect(systemCalls.explorer_explore).toHaveBeenCalledTimes(1);
   });
+
+  it("allows explore when the coord already reports this move's destination (in-flight provisional overlay)", async () => {
+    const systemCalls = {
+      explorer_explore: vi.fn().mockResolvedValue({}),
+      explorer_travel: vi.fn().mockResolvedValue({}),
+      toggle_alternate: vi.fn().mockResolvedValue({}),
+    };
+    const { manager, oldFeltStart } = createTestSetup(systemCalls);
+    // The worldmap applies the provisional coord overlay before submitting, so
+    // ExplorerTroops.coord reads as the DESTINATION while the move is in
+    // flight. Model that: path travels neighbor → oldFeltStart, and the
+    // component reports oldFeltStart.
+    const neighbor = getNeighborHexes(oldFeltStart.col, oldFeltStart.row)[0];
+
+    const actionPath = [
+      { hex: { col: neighbor.col, row: neighbor.row }, actionType: ActionType.Explore },
+      { hex: { col: oldFeltStart.col, row: oldFeltStart.row }, actionType: ActionType.Explore },
+    ];
+
+    const signer = { address: "0x123" } as any;
+
+    await manager.moveArmy(signer, actionPath as any, false, 0);
+
+    expect(systemCalls.explorer_explore).toHaveBeenCalledTimes(1);
+  });
 });
 
 describe("ArmyActionManager.moveArmy resource optimism", () => {
