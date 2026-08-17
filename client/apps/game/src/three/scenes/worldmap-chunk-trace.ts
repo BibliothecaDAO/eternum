@@ -21,6 +21,7 @@ export type WorldmapChunkTraceEvent =
   | "visual_page_replaced"
   | "visual_page_evicted"
   | "visual_page_stale_dropped"
+  | "visual_page_live_tile_invalidated"
   | "visual_page_budget_exhausted"
   | "chunk_recovery_scheduled"
   | "chunk_recovery_executed"

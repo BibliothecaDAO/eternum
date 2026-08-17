@@ -35,9 +35,9 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-08-17",
-    title: "Truthful Army Movement",
+    title: "Truthful Map Updates",
     description:
-      "Army models now move when the world confirms their destination, keeping revealed terrain and unit positions together after exploration succeeds or rewinds.",
+      "Army models now move when the world confirms their destination, and newly revealed terrain appears immediately without requiring a pan or zoom.",
     type: "fix",
     gameSlug: "world",
   },
@@ -67,14 +67,6 @@ const allLatestFeatures: LatestFeature[] = [
   },
   {
     date: "2026-08-16",
-    title: "Smoother World Map Frames",
-    description:
-      "Reduced one-frame stalls during map travel by preparing newly loaded models before their first appearance and spreading heavy structure buffer work across frames.",
-    type: "improvement",
-    gameSlug: "world",
-  },
-  {
-    date: "2026-08-16",
     title: "Faster Reliable World Entry",
     description:
       "Fixed long world-entry warm-up stalls and made returns from Hexception recover dropped map refreshes automatically, without needing a camera or URL nudge.",
@@ -93,7 +85,7 @@ const allLatestFeatures: LatestFeature[] = [
     date: "2026-08-16",
     title: "Faster World Rendering",
     description:
-      "Improved model loading, distant terrain detail, and map updates so entering, zooming, and returning to the world use less memory with fewer frame stalls or terrain pop-ins.",
+      "Improved model loading, distant terrain detail, and map updates so entering, zooming, traveling, and returning to the world use less memory with fewer frame stalls or terrain pop-ins.",
     type: "improvement",
     gameSlug: "world",
   },

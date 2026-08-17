@@ -59,6 +59,7 @@ import {
   type ArmySpatialProjectionChange,
   type ProvisionalIntent,
   type StructureSpatialProjectionChange,
+  type TileSpatialProjectionChange,
   type TileSpatialRenderable,
   type WorldSpatialProjection,
 } from "@bibliothecadao/eternum/game-sync";
@@ -88,7 +89,6 @@ import {
   recordArmyMovementLatencyPhase,
   SelectableArmy,
   StructureActionManager,
-  TileSystemUpdate,
 } from "@bibliothecadao/eternum";
 import {
   ActorType,
@@ -232,7 +232,6 @@ import {
 } from "./worldmap-travel-effect-policy";
 import { resolveOwnershipPulseHexes } from "./worldmap-ownership-pulse-policy";
 import {
-  resolveDuplicateTileReconcilePlan,
   resolveEntityActionPathLookup,
   resolveEntityActionPathsTransitionTokenForForcedRefresh,
   resolveEntityActionPathsTransitionTokenSync,
@@ -325,7 +324,6 @@ import { recordRendererColorUploadBytes, recordRendererMatrixUploadBytes } from 
 import { resolveExploredHexTransform } from "./worldmap-explored-hex-transform-policy";
 import { resolveSpireTraversalAction } from "./worldmap-spire-travel-policy";
 import { buildVisibleTerrainMembership, type VisibleTerrainInstanceRef } from "./worldmap-visible-terrain-membership";
-import { resolveVisibleTerrainReconcileMode } from "./worldmap-visible-terrain-reconcile-policy";
 import { createWorldmapTerrainFingerprint } from "./worldmap-terrain-fingerprint";
 import {
   captureChunkDiagnosticsBaseline,
@@ -390,6 +388,7 @@ import {
   createWorldmapTerrainPresentationState,
   getPrioritizedWorldmapTerrainPresentations,
   partitionPreparedTerrainIntoVisualPages,
+  resolveWorldmapVisualTerrainPageKeyForHex,
   resolveWorldmapVisualTerrainWindow,
   type WorldmapTerrainCellRef,
   type WorldmapTerrainComposite,
@@ -456,6 +455,8 @@ interface WorldmapVisualTerrainPageBuildRequest {
   generation: number;
   pageKey: string;
   priority: "critical" | "visible";
+  revision: number;
+  preserveCoverageAuthority?: boolean;
   transitionToken?: number;
 }
 
@@ -622,7 +623,9 @@ export default class WorldmapScene extends WarpTravel {
     isLoading: () => !this.hasInitialized,
   });
   private queuedVisualTerrainBuildPageKeys: Map<string, number> = new Map();
-  private activeVisualTerrainBuildPageKeys: Map<string, number> = new Map();
+  private activeVisualTerrainBuildPageKeys: Map<string, WorldmapVisualTerrainPageBuildRequest> = new Map();
+  private readonly visualTerrainPageRevisions = new Map<string, number>();
+  private readonly liveTilePageRebuilds = new Map<string, Promise<void>>();
   private prefetchQueue: PrefetchQueueItem[] = [];
   private directionalPrefetchAreaKeys: Set<string> = new Set();
   private queuedPrefetchAreaKeys: Set<string> = new Set();
@@ -1240,6 +1243,9 @@ export default class WorldmapScene extends WarpTravel {
   }
 
   private bindWorldSpatialProjectionLifecycle(): void {
+    const unsubscribeTiles = this.worldSpatialProjection.subscribeTiles((changes) => {
+      this.handleProjectedTileChanges(changes);
+    });
     const unsubscribeStructures = this.worldSpatialProjection.subscribeStructures((changes) => {
       this.syncProjectedStructurePathfinding(changes);
       changes.forEach(({ previous, current }) => {
@@ -1254,9 +1260,53 @@ export default class WorldmapScene extends WarpTravel {
       this.handleProjectedArmyChanges(changes);
     });
     this.unsubscribeWorldSpatialProjection = () => {
+      unsubscribeTiles();
       unsubscribeStructures();
       unsubscribeArmies();
     };
+  }
+
+  private handleProjectedTileChanges(changes: readonly TileSpatialProjectionChange[]): void {
+    changes.forEach((change) => this.applyProjectedTileChange(change));
+  }
+
+  private applyProjectedTileChange({ previous, current }: TileSpatialProjectionChange): void {
+    const tile = current ?? previous;
+    if (!tile) {
+      return;
+    }
+
+    if (current) {
+      this.completePendingExploreEffects(current.hexCoords);
+    }
+
+    const normalized = new Position({ x: tile.hexCoords.col, y: tile.hexCoords.row }).getNormalized();
+    if (!this.isHexInRetainedRenderArea(normalized.x, normalized.y)) {
+      return;
+    }
+
+    this.applyProjectedExploredTileChange(normalized.x, normalized.y, current);
+    this.invalidateVisualTerrainPageForLiveTile(normalized.x, normalized.y);
+  }
+
+  private applyProjectedExploredTileChange(
+    col: number,
+    row: number,
+    current: TileSpatialProjectionChange["current"],
+  ): void {
+    if (current) {
+      this.writeExploredTileFromProjection(col, row, resolveTileBiomeType(current.biome));
+      return;
+    }
+
+    const rows = this.exploredTiles.get(col);
+    rows?.delete(row);
+    if (rows?.size === 0) {
+      this.exploredTiles.delete(col);
+    }
+    this.bumpTerrainGenerationForHex(col, row);
+    gameWorkerManager.updateExploredTile(col, row, null);
+    this.invalidateAllChunkCachesContainingHex(col, row);
   }
 
   private syncProjectedArmyPathfinding(changes: readonly ArmySpatialProjectionChange[]): void {
@@ -1339,7 +1389,6 @@ export default class WorldmapScene extends WarpTravel {
     }
     this.registerBattleWorldUpdateSubscriptions();
     this.registerPendingAttackEntityEvidenceSubscriptions();
-    this.registerTileWorldUpdateSubscriptions();
     this.registerExplorerRewardWorldUpdateSubscriptions();
   }
 
@@ -1398,14 +1447,6 @@ export default class WorldmapScene extends WarpTravel {
 
     this.addWorldUpdateSubscription(() => explorerSubscription.unsubscribe());
     this.addWorldUpdateSubscription(() => structureSubscription.unsubscribe());
-  }
-
-  private registerTileWorldUpdateSubscriptions(): void {
-    this.addWorldUpdateSubscription(
-      this.worldUpdateListener.Tile.onTileUpdate((value) => {
-        void this.updateExploredHex(value);
-      }),
-    );
   }
 
   private registerExplorerRewardWorldUpdateSubscriptions(): void {
@@ -4161,186 +4202,6 @@ export default class WorldmapScene extends WarpTravel {
     // Shortcuts will be cleaned up when the scene is actually destroyed
   }
 
-  public async updateExploredHex(update: TileSystemUpdate) {
-    const { hexCoords, removeExplored, biome } = update;
-
-    const normalized = new Position({ x: hexCoords.col, y: hexCoords.row }).getNormalized();
-
-    const col = normalized.x;
-    const row = normalized.y;
-    if (!this.isHexInRetainedRenderArea(col, row)) {
-      if (!removeExplored) {
-        this.completePendingExploreEffects(hexCoords);
-      }
-      return;
-    }
-
-    const existingBiome = this.exploredTiles.get(col)?.get(row);
-    const tileAlreadyKnown = !removeExplored && existingBiome !== undefined;
-    const hasBiomeDelta = !removeExplored && tileAlreadyKnown && existingBiome !== biome;
-
-    // Duplicate tile updates can happen across chunk/bounds churn. Invalidate overlapping caches
-    // and force a refresh when the duplicate impacts the currently visible chunk.
-    const duplicateTileDecisionInput = {
-      removeExplored,
-      tileAlreadyKnown,
-      hasBiomeDelta,
-      currentChunk: this.currentChunk,
-      isChunkTransitioning: this.isChunkTransitioning,
-      isVisibleInCurrentChunk:
-        this.currentChunk !== "null" && !this.isChunkTransitioning
-          ? this.isColRowInCurrentRenderBounds(col, row)
-          : false,
-    };
-    const duplicateTilePlan = resolveDuplicateTileReconcilePlan(duplicateTileDecisionInput);
-
-    if (duplicateTilePlan.shouldInvalidateCaches) {
-      // Critical fix (Stage 0): persist biome delta to authoritative state BEFORE
-      // early-returning for reconcile scheduling. Without this, incoming biome
-      // changes on already-known tiles are silently dropped from exploredTiles.
-      if (duplicateTilePlan.shouldUpdateAuthoritativeState) {
-        if (!this.exploredTiles.has(col)) {
-          this.exploredTiles.set(col, new Map());
-        }
-        this.exploredTiles.get(col)!.set(row, biome);
-        this.bumpTerrainGenerationForHex(col, row);
-        gameWorkerManager.updateExploredTile(col, row, biome);
-        incrementWorldmapRenderCounter("duplicateTileAuthoritativeUpdates");
-      }
-
-      this.invalidateAllChunkCachesContainingHex(col, row);
-      recordChunkDiagnosticsEvent(this.chunkDiagnostics, "duplicate_tile_cache_invalidated");
-
-      if (duplicateTilePlan.reconcileMode === "invalidate_only") {
-        recordChunkDiagnosticsEvent(this.chunkDiagnostics, "duplicate_tile_reconcile_mode_invalidate_only");
-      } else if (duplicateTilePlan.reconcileMode === "local_terrain_patch") {
-        recordChunkDiagnosticsEvent(this.chunkDiagnostics, "duplicate_tile_reconcile_mode_local_reconcile");
-      } else if (duplicateTilePlan.reconcileMode === "atomic_chunk_refresh") {
-        recordChunkDiagnosticsEvent(this.chunkDiagnostics, "duplicate_tile_reconcile_mode_atomic_refresh");
-      }
-
-      if (duplicateTilePlan.refreshStrategy !== "none") {
-        recordChunkDiagnosticsEvent(this.chunkDiagnostics, "duplicate_tile_reconcile_requested");
-        if (duplicateTilePlan.refreshStrategy === "immediate") {
-          this.requestChunkRefresh(true, "duplicate_tile");
-        } else {
-          this.requestChunkRefresh(true, "duplicate_tile");
-        }
-      }
-
-      return;
-    }
-
-    this.completePendingExploreEffects(hexCoords);
-
-    if (removeExplored) {
-      const rows = this.exploredTiles.get(col);
-      rows?.delete(row);
-      if (rows?.size === 0) {
-        this.exploredTiles.delete(col);
-      }
-      gameWorkerManager.updateExploredTile(col, row, null);
-      this.bumpTerrainGenerationForHex(col, row);
-
-      const [chunkRow, chunkCol] = this.currentChunk.split(",").map(Number);
-      if (Number.isFinite(chunkRow) && Number.isFinite(chunkCol)) {
-        this.removeCachedMatricesForChunk(chunkRow, chunkCol);
-        this.removeCachedMatricesAroundChunk(chunkRow, chunkCol);
-      }
-
-      this.requestChunkRefresh(true);
-      return;
-    }
-
-    // At this point, we know the tile is new (early check at top of function ensures this)
-    if (!this.exploredTiles.has(col)) {
-      this.exploredTiles.set(col, new Map());
-    }
-    this.exploredTiles.get(col)!.set(row, biome);
-    this.bumpTerrainGenerationForHex(col, row);
-    gameWorkerManager.updateExploredTile(col, row, biome);
-
-    const pos = getWorldPositionForHex({ row, col });
-
-    const isStructure = this.isProjectedStructureHex(col, row);
-    const shouldHideTile = isStructure;
-
-    const renderedChunkStartRow = parseInt(this.currentChunk.split(",")[0]);
-    const renderedChunkStartCol = parseInt(this.currentChunk.split(",")[1]);
-    const { row: chunkCenterRow, col: chunkCenterCol } = this.getChunkCenter(
-      renderedChunkStartRow,
-      renderedChunkStartCol,
-    );
-
-    this.invalidateAllChunkCachesContainingHex(col, row);
-
-    // if the hex is within the chunk, add it to the interactive hex manager and to the biome
-    if (this.isColRowInCurrentRenderBounds(col, row)) {
-      await this.updateHexagonGridPromise;
-      const chunkWidth = this.renderChunkSize.width;
-      const chunkHeight = this.renderChunkSize.height;
-      if (shouldHideTile) {
-        await this.updateHexagonGrid(renderedChunkStartRow, renderedChunkStartCol, chunkHeight, chunkWidth);
-        return;
-      }
-
-      const hexKey = `${col},${row}`;
-      const biomeVariant = getBiomeVariant(biome, col, row);
-      const visibleTerrainReconcileMode = resolveVisibleTerrainReconcileMode({
-        isVisibleInCurrentChunk: true,
-        currentOwner: this.visibleTerrainMembership.get(hexKey) ?? null,
-        nextBiomeKey: biomeVariant,
-        canDirectReplace: false,
-      });
-
-      if (visibleTerrainReconcileMode === "none") {
-        return;
-      }
-
-      if (visibleTerrainReconcileMode === "atomic_chunk_refresh") {
-        incrementWorldmapRenderCounter("terrainVisibleOverlapRepairCount");
-        incrementWorldmapRenderCounter("terrainVisibleRebuildCount");
-        recordChunkDiagnosticsEvent(this.chunkDiagnostics, "refresh_reason_tile_overlap_repair");
-        this.requestChunkRefresh(true, "tile_overlap_repair");
-        return;
-      }
-
-      if (this.isChunkTransitioning) {
-        this.requestChunkRefresh(true, "deferred_transition_tile");
-        return;
-      }
-
-      // Add hex to all interactive hexes
-      this.interactiveHexManager.addHex({ col, row });
-
-      // Update which hexes are visible in the current chunk
-      this.interactiveHexManager.updateVisibleHexes(chunkCenterRow, chunkCenterCol, chunkWidth, chunkHeight);
-
-      const hexMesh = await this.requireLoadedBiomeModel(biomeVariant);
-      dummy.position.copy(pos);
-      dummy.scale.set(HEX_SIZE, HEX_SIZE, HEX_SIZE);
-
-      const exploredHexTransform = resolveExploredHexTransform({ isFlatMode: IS_FLAT_MODE });
-      dummy.rotation.y = exploredHexTransform.rotationY;
-      dummy.position.y += exploredHexTransform.yOffset;
-
-      dummy.updateMatrix();
-
-      const currentCount = hexMesh.getCount();
-      hexMesh.setMatrixAt(currentCount, dummy.matrix);
-      hexMesh.setCount(currentCount + 1);
-      this.requestShadowContentRefresh();
-      this.visibleTerrainMembership.set(hexKey, {
-        biomeKey: biomeVariant,
-        chunkKey: this.currentChunk,
-        instanceIndex: currentCount,
-      });
-      incrementWorldmapRenderCounter("terrainVisibleAppendCount");
-
-      this.requestChunkRefresh(true, "terrain_self_heal");
-    }
-  }
-
   private completePendingExploreEffects(hexCoords: HexPosition): void {
     const key = `${hexCoords.col},${hexCoords.row}`;
     const pendingExploreEntities = resolveExploreCompletionVisualCleanup({
@@ -4784,6 +4645,78 @@ export default class WorldmapScene extends WarpTravel {
     await this.refreshVisualTerrainWindowForFocus(focusPoint);
   }
 
+  private invalidateVisualTerrainPageForLiveTile(col: number, row: number): void {
+    const pageKey = resolveWorldmapVisualTerrainPageKeyForHex(
+      { col, row },
+      WORLDMAP_CHUNK_POLICY.visualPresentation.visualPageSize,
+      this.getVisualTerrainPageOrigin(),
+    ).pageKey;
+    if (!this.visualTerrainWindowPageKeys.has(pageKey)) {
+      return;
+    }
+
+    const nextRevision = this.getVisualTerrainPageRevision(pageKey) + 1;
+    this.visualTerrainPageRevisions.set(pageKey, nextRevision);
+    incrementWorldmapRenderCounter("liveTilePageInvalidated");
+    this.traceChunk("visual_page_live_tile_invalidated", { col, pageKey, revision: nextRevision, row });
+
+    if (this.liveTilePageRebuilds.has(pageKey)) {
+      return;
+    }
+
+    let rebuild: Promise<void>;
+    rebuild = this.rebuildInvalidatedVisualTerrainPage(pageKey)
+      .catch((error) => {
+        if (!isFrameBudgetWorkQueueDisposedError(error)) {
+          console.error(`[WorldMap] Live tile page ${pageKey} failed`, error);
+        }
+      })
+      .finally(() => {
+        if (this.liveTilePageRebuilds.get(pageKey) === rebuild) {
+          this.liveTilePageRebuilds.delete(pageKey);
+        }
+      });
+    this.liveTilePageRebuilds.set(pageKey, rebuild);
+  }
+
+  private async rebuildInvalidatedVisualTerrainPage(pageKey: string): Promise<void> {
+    while (!this.isSwitchedOff && this.visualTerrainWindowPageKeys.has(pageKey)) {
+      const revision = this.getVisualTerrainPageRevision(pageKey);
+      const generation = this.visualTerrainGeneration;
+      await waitForChunkTransitionToSettle(
+        () => this.globalChunkSwitchPromise,
+        (error) =>
+          console.warn(`[WorldMap] Chunk transition failed before rebuilding live tile page ${pageKey}`, error),
+        { isSwitchedOff: () => this.isSwitchedOff },
+      );
+      if (revision !== this.getVisualTerrainPageRevision(pageKey)) {
+        continue;
+      }
+      if (!this.hasVisualTerrainCoverage(pageKey)) {
+        return;
+      }
+
+      await this.buildAndApplyVisualTerrainPage({
+        generation,
+        pageKey,
+        preserveCoverageAuthority: true,
+        priority: "visible",
+        revision,
+      });
+      if (generation !== this.visualTerrainGeneration) {
+        continue;
+      }
+      if (revision === this.getVisualTerrainPageRevision(pageKey)) {
+        incrementWorldmapRenderCounter("liveTilePageRebuilt");
+        return;
+      }
+    }
+  }
+
+  private getVisualTerrainPageRevision(pageKey: string): number {
+    return this.visualTerrainPageRevisions.get(pageKey) ?? 0;
+  }
+
   private async refreshVisualTerrainWindowForFocus(focusPoint: Vector3): Promise<void> {
     const nextGeneration = this.visualTerrainGeneration + 1;
     const nextWindow = resolveWorldmapVisualTerrainWindow({
@@ -4807,6 +4740,7 @@ export default class WorldmapScene extends WarpTravel {
     this.visualTerrainGeneration = nextGeneration;
     this.visualTerrainWindow = nextWindow;
     this.visualTerrainWindowPageKeys = new Set(nextWindow.pageKeys);
+    this.pruneVisualTerrainPageRevisions();
     this.retainVisualTerrainPagesOutsideWindow(performance.now());
     this.scheduleTerrainPresentationRetentionCleanup(WORLDMAP_CHUNK_POLICY.visualPresentation.retainedPageMs);
     this.traceChunk("visual_window_resolved", {
@@ -4847,6 +4781,14 @@ export default class WorldmapScene extends WarpTravel {
       currentWindow.pageKeys.length === nextWindow.pageKeys.length &&
       currentWindow.pageKeys.every((pageKey, index) => pageKey === nextWindow.pageKeys[index])
     );
+  }
+
+  private pruneVisualTerrainPageRevisions(): void {
+    for (const pageKey of this.visualTerrainPageRevisions.keys()) {
+      if (!this.visualTerrainWindowPageKeys.has(pageKey)) {
+        this.visualTerrainPageRevisions.delete(pageKey);
+      }
+    }
   }
 
   private getVisualTerrainPageOrigin(): { row: number; col: number } {
@@ -4893,6 +4835,7 @@ export default class WorldmapScene extends WarpTravel {
         generation: window.generation,
         pageKey,
         priority: "critical",
+        revision: this.getVisualTerrainPageRevision(pageKey),
       });
     }
 
@@ -4905,7 +4848,7 @@ export default class WorldmapScene extends WarpTravel {
     window.pageKeys.forEach((pageKey) => {
       if (
         this.hasVisualTerrainCoverage(pageKey) ||
-        this.activeVisualTerrainBuildPageKeys.get(pageKey) === window.generation ||
+        this.activeVisualTerrainBuildPageKeys.get(pageKey)?.generation === window.generation ||
         this.queuedVisualTerrainBuildPageKeys.get(pageKey) === window.generation
       ) {
         return;
@@ -4915,6 +4858,7 @@ export default class WorldmapScene extends WarpTravel {
         generation: window.generation,
         pageKey,
         priority: "visible",
+        revision: this.getVisualTerrainPageRevision(pageKey),
       };
       this.queuedVisualTerrainBuildPageKeys.set(pageKey, window.generation);
       this.traceChunk("visual_page_queued", {
@@ -4943,7 +4887,7 @@ export default class WorldmapScene extends WarpTravel {
       return;
     }
 
-    this.activeVisualTerrainBuildPageKeys.set(request.pageKey, request.generation);
+    this.activeVisualTerrainBuildPageKeys.set(request.pageKey, request);
     const pageStartedAt = performance.now();
     let phaseTimings: VisualTerrainPagePhaseTimings | null = null;
     try {
@@ -4962,6 +4906,11 @@ export default class WorldmapScene extends WarpTravel {
 
       const commitTimings = phaseTimings;
       await this.schedulePreparedTerrainCommit(request.priority, preparedTerrain, () => {
+        if (!this.shouldApplyVisualTerrainPageBuild(request)) {
+          this.disposePreparedTerrainChunk(preparedTerrain);
+          this.traceVisualTerrainPageStaleDrop(request, "stale_before_commit");
+          return;
+        }
         const commitStartedAt = performance.now();
         try {
           this.commitVisualTerrainPageBuild(request, preparedTerrain);
@@ -4974,7 +4923,7 @@ export default class WorldmapScene extends WarpTravel {
         phaseTimings.totalMs = performance.now() - pageStartedAt;
         this.reportCriticalVisualTerrainPagePhases(request, phaseTimings);
       }
-      if (this.activeVisualTerrainBuildPageKeys.get(request.pageKey) === request.generation) {
+      if (this.activeVisualTerrainBuildPageKeys.get(request.pageKey) === request) {
         this.activeVisualTerrainBuildPageKeys.delete(request.pageKey);
       }
     }
@@ -5002,6 +4951,7 @@ export default class WorldmapScene extends WarpTravel {
     return (
       !this.isSwitchedOff &&
       request.generation === this.visualTerrainGeneration &&
+      request.revision === this.getVisualTerrainPageRevision(request.pageKey) &&
       this.visualTerrainWindowPageKeys.has(request.pageKey) &&
       (request.transitionToken === undefined || request.transitionToken === this.chunkTransitionToken)
     );
@@ -5011,14 +4961,17 @@ export default class WorldmapScene extends WarpTravel {
     request: WorldmapVisualTerrainPageBuildRequest,
     preparedTerrain: PreparedTerrainChunk,
   ): void {
+    const existingPresentation = request.preserveCoverageAuthority
+      ? this.getCurrentVisualTerrainPresentation(request.pageKey)
+      : undefined;
     const presentation = this.createTerrainPresentationFromPreparedTerrain(preparedTerrain, {
-      authoritative: false,
-      authorityChunkKey: null,
+      authoritative: existingPresentation?.cells.some((cell) => cell.authoritative) ?? false,
+      authorityChunkKey: existingPresentation?.authorityChunkKey ?? null,
       claimBiomeEntries: true,
       coverageKey: request.pageKey,
       coverageKind: "visual_page",
       generation: request.generation,
-      kind: "provisional",
+      kind: existingPresentation?.kind ?? "provisional",
       transitionToken: request.transitionToken ?? this.chunkTransitionToken,
     });
     this.traceChunk("visual_page_built", {
@@ -5034,16 +4987,22 @@ export default class WorldmapScene extends WarpTravel {
   private traceVisualTerrainPageStaleDrop(request: WorldmapVisualTerrainPageBuildRequest, reason: string): void {
     this.traceChunk("visual_page_stale_dropped", {
       currentGeneration: this.visualTerrainGeneration,
+      currentRevision: this.getVisualTerrainPageRevision(request.pageKey),
       generation: request.generation,
       pageKey: request.pageKey,
       reason,
+      revision: request.revision,
     });
     incrementWorldmapRenderCounter("visualPageStaleDropped");
   }
 
   private hasVisualTerrainCoverage(pageKey: string): boolean {
+    return this.getCurrentVisualTerrainPresentation(pageKey) !== undefined;
+  }
+
+  private getCurrentVisualTerrainPresentation(pageKey: string): WorldmapTerrainPresentationEntry | undefined {
     const nowMs = performance.now();
-    return this.visualTerrainPresentationState.presentations.some((presentation) => {
+    return this.visualTerrainPresentationState.presentations.find((presentation) => {
       if (presentation.coverageKind !== "visual_page") {
         return false;
       }
@@ -6736,6 +6695,8 @@ export default class WorldmapScene extends WarpTravel {
     }
     this.queuedVisualTerrainBuildPageKeys.clear();
     this.activeVisualTerrainBuildPageKeys.clear();
+    this.visualTerrainPageRevisions.clear();
+    this.liveTilePageRebuilds.clear();
     this.visualTerrainWindow = null;
     this.visualTerrainWindowPageKeys.clear();
     this.visualTerrainPresentationState.presentations.forEach((presentation) =>
@@ -7783,10 +7744,6 @@ export default class WorldmapScene extends WarpTravel {
         recordChunkDiagnosticsEvent(this.chunkDiagnostics, "refresh_reason_default");
       } else if (reason === "hydrated_chunk") {
         recordChunkDiagnosticsEvent(this.chunkDiagnostics, "refresh_reason_hydrated_chunk");
-      } else if (reason === "duplicate_tile") {
-        recordChunkDiagnosticsEvent(this.chunkDiagnostics, "refresh_reason_duplicate_tile");
-      } else if (reason === "tile_overlap_repair") {
-        recordChunkDiagnosticsEvent(this.chunkDiagnostics, "refresh_reason_tile_overlap_repair");
       }
     }
 

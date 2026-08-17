@@ -30,11 +30,8 @@ export type WorldmapRenderCounter =
   | "zoomTransitionsCompleted"
   | "zoomTransitionsCancelled"
   | "terrainVisibleCommits"
-  | "duplicateTileAuthoritativeUpdates"
-  | "terrainVisibleOverlapRepairCount"
-  | "terrainVisibleReplaceCount"
-  | "terrainVisibleAppendCount"
-  | "terrainVisibleRebuildCount"
+  | "liveTilePageInvalidated"
+  | "liveTilePageRebuilt"
   | "terrainShellStarted"
   | "terrainShellCommitted"
   | "terrainShellReplaced"
@@ -86,12 +83,9 @@ export interface WorldmapZoomTelemetrySummary {
 export type WorldmapForceRefreshReason =
   | "default"
   | "visibility_recovery"
-  | "duplicate_tile"
-  | "deferred_transition_tile"
   | "hydrated_chunk"
   | "terrain_self_heal"
   | "offscreen_chunk"
-  | "tile_overlap_repair"
   | "shortcut"
   | "army_dead"
   | "reconnect"
@@ -157,11 +151,8 @@ const createDiagnosticsState = (): WorldmapRenderDiagnosticsSnapshot => ({
     zoomTransitionsCompleted: 0,
     zoomTransitionsCancelled: 0,
     terrainVisibleCommits: 0,
-    duplicateTileAuthoritativeUpdates: 0,
-    terrainVisibleOverlapRepairCount: 0,
-    terrainVisibleReplaceCount: 0,
-    terrainVisibleAppendCount: 0,
-    terrainVisibleRebuildCount: 0,
+    liveTilePageInvalidated: 0,
+    liveTilePageRebuilt: 0,
     terrainShellStarted: 0,
     terrainShellCommitted: 0,
     terrainShellReplaced: 0,
@@ -202,12 +193,9 @@ const createDiagnosticsState = (): WorldmapRenderDiagnosticsSnapshot => ({
   forceRefreshReasons: {
     default: 0,
     visibility_recovery: 0,
-    duplicate_tile: 0,
-    deferred_transition_tile: 0,
     hydrated_chunk: 0,
     terrain_self_heal: 0,
     offscreen_chunk: 0,
-    tile_overlap_repair: 0,
     shortcut: 0,
     army_dead: 0,
     reconnect: 0,

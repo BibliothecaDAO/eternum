@@ -24,8 +24,6 @@ describe("worldmap-chunk-diagnostics", () => {
     expect(diagnostics.prefetchQueued).toBe(0);
     expect(diagnostics.prefetchSkipped).toBe(0);
     expect(diagnostics.prefetchExecuted).toBe(0);
-    expect(diagnostics.duplicateTileCacheInvalidated).toBe(0);
-    expect(diagnostics.duplicateTileReconcileRequested).toBe(0);
     expect(diagnostics.switchDurationMsTotal).toBe(0);
     expect(diagnostics.switchDurationMsMax).toBe(0);
     expect(diagnostics.switchDurationMsSamples).toEqual([]);
@@ -72,8 +70,6 @@ describe("worldmap-chunk-diagnostics", () => {
       "refresh_requested",
       "refresh_executed",
       "refresh_superseded",
-      "duplicate_tile_cache_invalidated",
-      "duplicate_tile_reconcile_requested",
       "prepared_chunk_prewarm_hit",
       "prepared_chunk_prewarm_miss",
     ];
@@ -98,8 +94,6 @@ describe("worldmap-chunk-diagnostics", () => {
     expect(diagnostics.refreshRequested).toBe(1);
     expect(diagnostics.refreshExecuted).toBe(1);
     expect(diagnostics.refreshSuperseded).toBe(1);
-    expect(diagnostics.duplicateTileCacheInvalidated).toBe(1);
-    expect(diagnostics.duplicateTileReconcileRequested).toBe(1);
     expect(diagnostics.preparedChunkPrewarmHit).toBe(1);
     expect(diagnostics.preparedChunkPrewarmMiss).toBe(1);
   });
@@ -195,40 +189,13 @@ describe("worldmap-chunk-diagnostics – Stage 0: terrain commit and refresh rea
     const refreshReasonEvents = [
       "refresh_reason_default",
       "refresh_reason_hydrated_chunk",
-      "refresh_reason_duplicate_tile",
-      "refresh_reason_tile_overlap_repair" as WorldmapChunkDiagnosticsEvent,
     ] as WorldmapChunkDiagnosticsEvent[];
 
     refreshReasonEvents.forEach((event) => recordChunkDiagnosticsEvent(diagnostics, event));
-    recordChunkDiagnosticsEvent(diagnostics, "refresh_reason_duplicate_tile" as WorldmapChunkDiagnosticsEvent);
 
     // Stage 0: each refresh reason gets its own counter
     expect(diagnostics).toHaveProperty("refreshReasonDefault", 1);
     expect(diagnostics).toHaveProperty("refreshReasonHydratedChunk", 1);
-    expect(diagnostics).toHaveProperty("refreshReasonDuplicateTile", 2);
-    expect(diagnostics).toHaveProperty("refreshReasonTileOverlapRepair", 1);
-  });
-
-  it("records duplicate tile reconcile mode breakdown events", () => {
-    const diagnostics = createWorldmapChunkDiagnostics();
-
-    recordChunkDiagnosticsEvent(
-      diagnostics,
-      "duplicate_tile_reconcile_mode_invalidate_only" as WorldmapChunkDiagnosticsEvent,
-    );
-    recordChunkDiagnosticsEvent(
-      diagnostics,
-      "duplicate_tile_reconcile_mode_local_reconcile" as WorldmapChunkDiagnosticsEvent,
-    );
-    recordChunkDiagnosticsEvent(
-      diagnostics,
-      "duplicate_tile_reconcile_mode_atomic_refresh" as WorldmapChunkDiagnosticsEvent,
-    );
-
-    // Stage 0: per-mode counters for duplicate tile reconciliation
-    expect(diagnostics).toHaveProperty("duplicateTileReconcileModeInvalidateOnly", 1);
-    expect(diagnostics).toHaveProperty("duplicateTileReconcileModeLocalReconcile", 1);
-    expect(diagnostics).toHaveProperty("duplicateTileReconcileModeAtomicRefresh", 1);
   });
 
   it("records stale_terrain_refresh_dropped events", () => {

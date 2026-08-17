@@ -1,5 +1,4 @@
 import {
-  BiomeType,
   BuildingType,
   ContractAddress,
   HexPosition,
@@ -124,12 +123,6 @@ export type StructureBuildingsSystemUpdate = {
   entityId: ID;
   activeProductions: ActiveProduction[];
   hexCoords: HexPosition;
-};
-
-export type TileSystemUpdate = {
-  hexCoords: HexPosition;
-  removeExplored: boolean;
-  biome: BiomeType;
 };
 
 export type BuildingSystemUpdate = {

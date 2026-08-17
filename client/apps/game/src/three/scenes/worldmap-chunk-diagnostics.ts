@@ -17,8 +17,6 @@ export type WorldmapChunkDiagnosticsEvent =
   | "refresh_requested"
   | "refresh_executed"
   | "refresh_superseded"
-  | "duplicate_tile_cache_invalidated"
-  | "duplicate_tile_reconcile_requested"
   | "switch_duration_recorded"
   | "terrain_ready_duration_recorded"
   | "terrain_commit_duration_recorded"
@@ -31,11 +29,6 @@ export type WorldmapChunkDiagnosticsEvent =
   | "terrain_visible_commit"
   | "refresh_reason_default"
   | "refresh_reason_hydrated_chunk"
-  | "refresh_reason_duplicate_tile"
-  | "refresh_reason_tile_overlap_repair"
-  | "duplicate_tile_reconcile_mode_invalidate_only"
-  | "duplicate_tile_reconcile_mode_local_reconcile"
-  | "duplicate_tile_reconcile_mode_atomic_refresh"
   | "stale_terrain_refresh_dropped"
   | "terrain_bounds_recovery"
   | "cache_reject_fingerprint";
@@ -59,16 +52,9 @@ export interface WorldmapChunkDiagnostics {
   refreshRequested: number;
   refreshExecuted: number;
   refreshSuperseded: number;
-  duplicateTileCacheInvalidated: number;
-  duplicateTileReconcileRequested: number;
   terrainVisibleCommit: number;
   refreshReasonDefault: number;
   refreshReasonHydratedChunk: number;
-  refreshReasonDuplicateTile: number;
-  refreshReasonTileOverlapRepair: number;
-  duplicateTileReconcileModeInvalidateOnly: number;
-  duplicateTileReconcileModeLocalReconcile: number;
-  duplicateTileReconcileModeAtomicRefresh: number;
   staleTerrainRefreshDropped: number;
   terrainBoundsRecovery: number;
   cacheRejectFingerprint: number;
@@ -124,16 +110,9 @@ export function createWorldmapChunkDiagnostics(): WorldmapChunkDiagnostics {
     refreshRequested: 0,
     refreshExecuted: 0,
     refreshSuperseded: 0,
-    duplicateTileCacheInvalidated: 0,
-    duplicateTileReconcileRequested: 0,
     terrainVisibleCommit: 0,
     refreshReasonDefault: 0,
     refreshReasonHydratedChunk: 0,
-    refreshReasonDuplicateTile: 0,
-    refreshReasonTileOverlapRepair: 0,
-    duplicateTileReconcileModeInvalidateOnly: 0,
-    duplicateTileReconcileModeLocalReconcile: 0,
-    duplicateTileReconcileModeAtomicRefresh: 0,
     staleTerrainRefreshDropped: 0,
     terrainBoundsRecovery: 0,
     cacheRejectFingerprint: 0,
@@ -234,12 +213,6 @@ export function recordChunkDiagnosticsEvent(
     case "refresh_superseded":
       diagnostics.refreshSuperseded += 1;
       break;
-    case "duplicate_tile_cache_invalidated":
-      diagnostics.duplicateTileCacheInvalidated += 1;
-      break;
-    case "duplicate_tile_reconcile_requested":
-      diagnostics.duplicateTileReconcileRequested += 1;
-      break;
     case "prepared_chunk_prewarm_hit":
       diagnostics.preparedChunkPrewarmHit += 1;
       break;
@@ -254,21 +227,6 @@ export function recordChunkDiagnosticsEvent(
       break;
     case "refresh_reason_hydrated_chunk":
       diagnostics.refreshReasonHydratedChunk += 1;
-      break;
-    case "refresh_reason_duplicate_tile":
-      diagnostics.refreshReasonDuplicateTile += 1;
-      break;
-    case "refresh_reason_tile_overlap_repair":
-      diagnostics.refreshReasonTileOverlapRepair += 1;
-      break;
-    case "duplicate_tile_reconcile_mode_invalidate_only":
-      diagnostics.duplicateTileReconcileModeInvalidateOnly += 1;
-      break;
-    case "duplicate_tile_reconcile_mode_local_reconcile":
-      diagnostics.duplicateTileReconcileModeLocalReconcile += 1;
-      break;
-    case "duplicate_tile_reconcile_mode_atomic_refresh":
-      diagnostics.duplicateTileReconcileModeAtomicRefresh += 1;
       break;
     case "stale_terrain_refresh_dropped":
       diagnostics.staleTerrainRefreshDropped += 1;

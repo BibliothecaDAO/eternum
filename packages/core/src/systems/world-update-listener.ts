@@ -1,21 +1,8 @@
 import type { SetupResult } from "@bibliothecadao/dojo";
-import {
-  BiomeIdToType,
-  BiomeType,
-  BuildingType,
-  type ContractAddress,
-  type HexPosition,
-  type ID,
-  ResourcesIds,
-} from "@bibliothecadao/types";
+import { BuildingType, type ContractAddress, type HexPosition, type ID, ResourcesIds } from "@bibliothecadao/types";
 import { type Component, defineComponentSystem, defineQuery, HasValue, isComponentUpdate } from "@dojoengine/recs";
-import { divideByPrecision, tileOptToTile } from "../utils";
-import type {
-  BattleEventSystemUpdate,
-  BuildingSystemUpdate,
-  ExplorerRewardSystemUpdate,
-  TileSystemUpdate,
-} from "./types";
+import { divideByPrecision } from "../utils";
+import type { BattleEventSystemUpdate, BuildingSystemUpdate, ExplorerRewardSystemUpdate } from "./types";
 
 interface SubscriptionHandle {
   unsubscribe(): void;
@@ -41,30 +28,6 @@ export class WorldUpdateListener {
     defineComponentSystem(this.setup.network.world, component, handleUpdate, { runOnInit });
     return () => {
       active = false;
-    };
-  }
-
-  public get Tile() {
-    return {
-      onTileUpdate: (callback: (value: TileSystemUpdate) => void) =>
-        this.setupSystem(
-          this.setup.components.TileOpt,
-          callback,
-          (update: any) => {
-            const current = tileOptToTile(update.value[0]);
-            const previous = tileOptToTile(update.value[1]);
-            const coordinates = previous || current;
-            if (!coordinates) return;
-
-            const biome = BiomeIdToType[current?.biome];
-            return {
-              hexCoords: { col: coordinates.col, row: coordinates.row },
-              removeExplored: !current,
-              biome: biome === BiomeType.None ? BiomeType.Grassland : biome || BiomeType.Grassland,
-            };
-          },
-          false,
-        ),
     };
   }
 

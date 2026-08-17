@@ -37,18 +37,15 @@ describe("worldmap-render-diagnostics", () => {
     incrementWorldmapRenderCounter("zoomTransitionsCancelled");
     incrementWorldmapRenderCounter("workerFindPathCalls");
     incrementWorldmapRenderCounter("pathCreateCalls", 2);
-    incrementWorldmapRenderCounter("terrainVisibleOverlapRepairCount" as any);
-    incrementWorldmapRenderCounter("terrainVisibleReplaceCount" as any, 2);
-    incrementWorldmapRenderCounter("terrainVisibleAppendCount" as any, 3);
-    incrementWorldmapRenderCounter("terrainVisibleRebuildCount" as any, 4);
+    incrementWorldmapRenderCounter("liveTilePageInvalidated", 3);
+    incrementWorldmapRenderCounter("liveTilePageRebuilt", 2);
     incrementWorldmapRenderCounter("staleTerrainCacheFingerprintRejectCount" as any, 5);
     incrementWorldmapRenderCounter("preparedChunkPrewarmHits" as any, 6);
     incrementWorldmapRenderCounter("preparedChunkPrewarmMisses" as any, 2);
     incrementWorldmapRenderCounter("postCommitManagerCatchUpImmediate" as any, 3);
     incrementWorldmapRenderCounter("postCommitManagerCatchUpDeferred" as any, 1);
-    incrementWorldmapForceRefreshReason("duplicate_tile");
-    incrementWorldmapForceRefreshReason("duplicate_tile");
-    incrementWorldmapForceRefreshReason("tile_overlap_repair" as any);
+    incrementWorldmapForceRefreshReason("visibility_recovery");
+    incrementWorldmapForceRefreshReason("visibility_recovery");
 
     const snapshot = snapshotWorldmapRenderDiagnostics();
 
@@ -78,17 +75,14 @@ describe("worldmap-render-diagnostics", () => {
     expect(snapshot.counters.zoomTransitionsCancelled).toBe(1);
     expect(snapshot.counters.workerFindPathCalls).toBe(1);
     expect(snapshot.counters.pathCreateCalls).toBe(2);
-    expect(snapshot.counters).toHaveProperty("terrainVisibleOverlapRepairCount", 1);
-    expect(snapshot.counters).toHaveProperty("terrainVisibleReplaceCount", 2);
-    expect(snapshot.counters).toHaveProperty("terrainVisibleAppendCount", 3);
-    expect(snapshot.counters).toHaveProperty("terrainVisibleRebuildCount", 4);
+    expect(snapshot.counters).toHaveProperty("liveTilePageInvalidated", 3);
+    expect(snapshot.counters).toHaveProperty("liveTilePageRebuilt", 2);
     expect(snapshot.counters).toHaveProperty("staleTerrainCacheFingerprintRejectCount", 5);
     expect(snapshot.counters).toHaveProperty("preparedChunkPrewarmHits", 6);
     expect(snapshot.counters).toHaveProperty("preparedChunkPrewarmMisses", 2);
     expect(snapshot.counters).toHaveProperty("postCommitManagerCatchUpImmediate", 3);
     expect(snapshot.counters).toHaveProperty("postCommitManagerCatchUpDeferred", 1);
-    expect(snapshot.forceRefreshReasons.duplicate_tile).toBe(2);
-    expect(snapshot.forceRefreshReasons).toHaveProperty("tile_overlap_repair", 1);
+    expect(snapshot.forceRefreshReasons.visibility_recovery).toBe(2);
   });
 
   it("resets back to zeroed state", () => {
@@ -153,48 +147,12 @@ describe("worldmap-render-diagnostics", () => {
     expect(snapshot.counters).toHaveProperty("terrainVisibleCommits", 3);
   });
 
-  it("tracks terrain commit with refresh reason breakdown", () => {
-    // Stage 0: each terrain commit should be attributable to a refresh reason.
-    // This enables diagnosing whether duplicate tile biome deltas actually
-    // trigger terrain commits.
-    incrementWorldmapForceRefreshReason("duplicate_tile");
-    incrementWorldmapRenderCounter("terrainVisibleCommits" as any);
-
-    incrementWorldmapForceRefreshReason("hydrated_chunk");
-    incrementWorldmapRenderCounter("terrainVisibleCommits" as any);
-
-    const snapshot = snapshotWorldmapRenderDiagnostics();
-
-    expect(snapshot.counters).toHaveProperty("terrainVisibleCommits", 2);
-    expect(snapshot.forceRefreshReasons.duplicate_tile).toBe(1);
-    expect(snapshot.forceRefreshReasons.hydrated_chunk).toBe(1);
-  });
-
-  it("increments deferred_transition_tile reason without NaN corruption", () => {
-    incrementWorldmapForceRefreshReason("deferred_transition_tile");
-
-    const snapshot = snapshotWorldmapRenderDiagnostics();
-
-    expect(snapshot.forceRefreshReasons.deferred_transition_tile).toBe(1);
-    expect(Number.isNaN(snapshot.forceRefreshReasons.deferred_transition_tile)).toBe(false);
-  });
-
   it("initializes all forceRefreshReasons keys as finite numbers", () => {
     const snapshot = snapshotWorldmapRenderDiagnostics();
 
     for (const [key, value] of Object.entries(snapshot.forceRefreshReasons)) {
       expect(Number.isFinite(value), `forceRefreshReasons.${key} should be finite, got ${value}`).toBe(true);
     }
-  });
-
-  it("tracks duplicate tile authoritative state updates as a separate counter", () => {
-    // Stage 0: when a biome delta is written to authoritative state BEFORE
-    // reconcile scheduling, we need a counter to verify it happened.
-    incrementWorldmapRenderCounter("duplicateTileAuthoritativeUpdates" as any);
-
-    const snapshot = snapshotWorldmapRenderDiagnostics();
-
-    expect(snapshot.counters).toHaveProperty("duplicateTileAuthoritativeUpdates", 1);
   });
 
   it("tracks ghost-army recovery counters for pending removal cancellation sources", () => {
