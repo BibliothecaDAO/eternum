@@ -123,29 +123,17 @@ and transfer panels update with RECS against a concurrent state change.
 **Gate:** the greps for the rows above come back empty; entry-modal waits resolve from entity subscriptions in a live
 provisioning run, and deadlines only ever log.
 
-## Login-stack findings (Aug 17 — recorded so nobody re-litigates them)
+## Login-stack constraints (macOS passkey failure resolved Aug 17)
 
-- **Passkey login failures ("publickey-credentials-get is not enabled in this document") are upstream, not ours.**
-  Verified from keychain source (cartridge-gg/controller): on Windows Chromium the keychain always routes passkey
-  ceremonies to a popup (`hooks/connection.ts:624`), so Windows never exercises in-iframe WebAuthn — the OS split is by
-  design. On macOS/Linux Chrome the ceremony runs inside the keychain iframe, where Chrome requires BOTH delegation
-  (present and verified correct on our deployed client, frame-chain probed) AND transient user activation. The keychain
-  fires `credentials.get()` from a `useEffect` during auto session creation with no gesture (`ConnectRoute.tsx`,
-  special-cased only for Chrome iOS), and its login path runs async work between click and ceremony that can outlive
-  activation (`useCreateController.ts:929` comment admits this). A gestureless/expired-activation in-iframe get() throws
-  exactly this NotAllowedError. Mitigated on our side: `webauthnPopup: true` in the ControllerConnector options
-  (hotfix/webauthn-popup, c270c6c084) forces every platform onto the activation-safe popup path — carry that option
-  forward in any future connector work. The proper in-iframe fix (extend the "Continue" button pattern beyond Chrome
-  iOS) belongs to Cartridge's keychain.
-- **`@cartridge/controller` 0.14.0 is a coordinated migration, not a bump.** It is the starknet 8→10 release; the bump
-  alone fails typecheck at four sites (starknet-10 `WalletAccount` vs our starknet-8 `AccountInterface` paths). The
-  ecosystem HAS moved — dojo.js 2.0.0 (latest) pins starknet 10.0.2 exactly and peers react ^19; Cartridge's own
-  examples pair 0.14.0 with starknet ^10 and `@starknet-start/react` (they left `@starknet-react/core`). We are behind
-  on `@dojoengine/* 1.7.0-preview.3`, starknet ^8, react 18. The upgrade bundle (dojo.js 2.0 + starknet 10 + react 19 +
-  starknet-start) deserves its own brief; until then stay on 0.13.16.
+- **`webauthnPopup: true` on the ControllerConnector is load-bearing — never drop it.** Shipped in c270c6c084 and live;
+  it routes every passkey ceremony through the keychain popup. Without it, macOS/Linux Chrome run the ceremony inside
+  the keychain iframe, where the keychain's gestureless/async paths lose Chrome's transient-activation gate and throw
+  the `publickey-credentials-get` NotAllowedError. The in-iframe fix belongs to Cartridge's keychain, not us.
+- **Stay on `@cartridge/controller` 0.13.16.** 0.14.0 is the starknet 8→10 release; taking it means the whole
+  coordinated bundle — dojo.js 2.0, starknet 10, react 19, `@starknet-start/react`. That upgrade gets its own brief.
 - **`ControllerConnector` is instantiated per-render.** `starknet-provider.tsx:125` builds it in a `useMemo` inside the
-  component; the package logs `ControllerConnector was instantiated multiple times` in live sessions and re-instantiates
-  on chain-config changes. Move construction to module level per the package's own guidance. Verdict: FIX (rides P7D).
+  component; the package logs `ControllerConnector was instantiated multiple times`, reuses the FIRST instance, and
+  silently discards the new options. Move construction to module level. Verdict: FIX (rides P7D).
 
 ## What survives, on purpose
 
