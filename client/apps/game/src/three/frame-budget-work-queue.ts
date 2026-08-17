@@ -1,3 +1,5 @@
+import { getCurrentFrameWorkOwner, runWithFrameWorkOwner } from "./frame-work-owner";
+
 export type FrameBudgetWorkLane = "critical" | "visible" | "prefetch";
 
 export interface FrameBudgetWorkScheduler {
@@ -87,12 +89,13 @@ export class FrameBudgetWorkQueue implements FrameBudgetWorkScheduler {
       return Promise.reject(new FrameBudgetWorkQueueDisposedError());
     }
 
+    const owner = getCurrentFrameWorkOwner() ?? `chunk-work:${lane}`;
     const result = new Promise<T>((resolve, reject) => {
       this.queues[lane].push({
         reject,
         run: async () => {
           try {
-            resolve(await work());
+            resolve(await runWithFrameWorkOwner(owner, work, this.now));
           } catch (error) {
             reject(error);
           }

@@ -1,3 +1,5 @@
+import { consumeDominantFrameWorkOwner } from "./frame-work-owner";
+
 interface InstrumentedTexture {
   image?: TextureImage;
   name?: string;
@@ -32,6 +34,7 @@ interface ActiveGpuBackendFrame {
 }
 
 interface InstrumentGpuBackendHotPathsOptions {
+  compileMeasurementWindowMs?: number;
   now?: () => number;
   reportIntervalMs?: number;
   warn?: (message: string) => void;
@@ -54,6 +57,7 @@ const SLOW_CALL_THRESHOLD_MS = 80;
 const SPIKE_FRAME_THRESHOLD_MS = 33;
 const TOP_FRAME_HOT_PATH_LIMIT = 8;
 const TOP_TEXTURE_LIMIT = 8;
+const COMPILE_MEASUREMENT_WINDOW_MS = 60_000;
 const instrumentedBackends = new WeakSet<object>();
 let activeFrame: ActiveGpuBackendFrame | null = null;
 let compiledRenderPipelineCount = 0;
@@ -80,6 +84,7 @@ function reportCompletedGpuBackendFrame(
 ): void {
   const completedFrame = activeFrame;
   activeFrame = null;
+  const owner = consumeDominantFrameWorkOwner();
   if (!completedFrame) {
     return;
   }
@@ -89,7 +94,7 @@ function reportCompletedGpuBackendFrame(
     return;
   }
 
-  warn(buildGpuBackendSpikeReport(durationMs, completedFrame.hotPathStats, completedFrame.textureStats));
+  warn(buildGpuBackendSpikeReport(durationMs, owner, completedFrame.hotPathStats, completedFrame.textureStats));
 }
 
 export function instrumentGpuBackendHotPaths(
@@ -102,11 +107,15 @@ export function instrumentGpuBackendHotPaths(
   instrumentedBackends.add(backend);
 
   const now = options.now ?? (() => performance.now());
+  const compileMeasurementWindowMs = options.compileMeasurementWindowMs ?? COMPILE_MEASUREMENT_WINDOW_MS;
   const reportIntervalMs = options.reportIntervalMs ?? 1_000;
   const warn = options.warn ?? ((message: string) => console.warn(message));
   const hotPathStats = new Map<string, HotPathStat>();
   const textureStats = new Map<object, TextureHotPathStat>();
   let reportWindowStartedAt = now();
+  const compileMeasurementStartedAt = reportWindowStartedAt;
+  const compileStats = new Map<string, HotPathStat>();
+  let compileMeasurementReported = false;
 
   const reportWindow = (windowEndedAt: number) => {
     if (hotPathStats.size === 0) {
@@ -137,6 +146,9 @@ export function instrumentGpuBackendHotPaths(
       }
 
       addHotPathSample(hotPathStats, name, elapsedMs);
+      if (name === "createRenderPipeline" || name === "createProgram") {
+        addHotPathSample(compileStats, name, elapsedMs);
+      }
       addFrameHotPathSample(name, elapsedMs);
       if (name === "updateTexture") {
         addTextureSample(textureStats, args[0], elapsedMs);
@@ -147,6 +159,10 @@ export function instrumentGpuBackendHotPaths(
       }
       if (endedAt - reportWindowStartedAt >= reportIntervalMs) {
         reportWindow(endedAt);
+      }
+      if (!compileMeasurementReported && endedAt - compileMeasurementStartedAt >= compileMeasurementWindowMs) {
+        compileMeasurementReported = true;
+        warn(buildCompileMeasurementReport(endedAt - compileMeasurementStartedAt, compileStats));
       }
 
       return result;
@@ -217,6 +233,7 @@ function buildGpuBackendReport(
 
 function buildGpuBackendSpikeReport(
   durationMs: number,
+  owner: string | null,
   hotPathStats: ReadonlyMap<string, HotPathStat> | null,
   textureStats: ReadonlyMap<object, TextureHotPathStat> | null,
 ): string {
@@ -236,7 +253,18 @@ function buildGpuBackendSpikeReport(
     : "";
   const textureSummary = topTextures ? `; textures=${topTextures}` : "";
 
-  return `[GpuBackendPerf] spike ${Math.round(durationMs)}ms: ${contributors}${textureSummary}`;
+  const ownerSummary = owner ? ` owner=${owner}` : "";
+  return `[GpuBackendPerf] spike ${Math.round(durationMs)}ms${ownerSummary}: ${contributors}${textureSummary}`;
+}
+
+function buildCompileMeasurementReport(windowMs: number, stats: ReadonlyMap<string, HotPathStat>): string {
+  const summary = ["createRenderPipeline", "createProgram"]
+    .map((name) => {
+      const stat = stats.get(name) ?? { accumulatedMs: 0, calls: 0 };
+      return `${name}=${stat.calls}x/${formatMilliseconds(stat.accumulatedMs)}`;
+    })
+    .join(", ");
+  return `[GpuBackendPerf] compile-on-demand window=${Math.round(windowMs)}ms ${summary}`;
 }
 
 function resolveTextureDimensions(texture: InstrumentedTexture): string {

@@ -4,6 +4,7 @@ import {
   FrameBudgetWorkQueueDisposedError,
   scheduleFrameBudgetWork,
 } from "./frame-budget-work-queue";
+import { consumeDominantFrameWorkOwner, runWithFrameWorkOwner } from "./frame-work-owner";
 
 function createHarness(options: { isLoading?: () => boolean } = {}) {
   let now = 0;
@@ -126,6 +127,19 @@ describe("FrameBudgetWorkQueue", () => {
     await expect(initial).resolves.toBe(1);
     await expect(continuation!).resolves.toBe(2);
     expect(calls).toEqual(["initial", "continuation"]);
+  });
+
+  it("preserves the scheduling owner when the queued unit runs", async () => {
+    const harness = createHarness();
+    const pending = runWithFrameWorkOwner("catchup:army", () => harness.queue.schedule("visible", () => undefined));
+
+    // Discard the scheduling call itself; the queued execution must restore
+    // the captured owner on the following frame.
+    consumeDominantFrameWorkOwner();
+    await harness.flushFrame();
+    await pending;
+
+    expect(consumeDominantFrameWorkOwner()).toBe("catchup:army");
   });
 
   it("rejects queued work when disposed", async () => {

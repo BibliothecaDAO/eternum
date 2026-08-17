@@ -16,6 +16,7 @@ import { createRecoveringToriiEventSubscription } from "./recovering-torii-event
 import { observeToriiStreamLifecycle } from "./torii-stream-lifecycle-observer";
 import { setupToriiSubscriptions, type ToriiSubscriptionSetupTimeoutInfo } from "./torii-subscription-setup";
 import { ToriiEventGapFill } from "./torii-event-gap-fill";
+import { runWithFrameWorkOwner } from "@/three/frame-work-owner";
 
 export const GAMEWIDE_SNAPSHOT_PAGE_SIZE = 500;
 const EVENT_GAP_FILL_PAGE_SIZE = 100;
@@ -156,11 +157,12 @@ const createRecsGameSyncStore = (setup: SetupResult, logging: boolean): GameSync
 
 const createBrowserScheduler = (): NonNullable<GameSyncSessionStart["scheduler"]> => ({
   schedule(task) {
+    const runIngestSlice = () => runWithFrameWorkOwner("sync:ingest", task);
     if (typeof requestAnimationFrame === "function" && typeof cancelAnimationFrame === "function") {
-      const frame = requestAnimationFrame(task);
+      const frame = requestAnimationFrame(runIngestSlice);
       return () => cancelAnimationFrame(frame);
     }
-    const timeout = setTimeout(task, 0);
+    const timeout = setTimeout(runIngestSlice, 0);
     return () => clearTimeout(timeout);
   },
 });

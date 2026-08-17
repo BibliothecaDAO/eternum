@@ -20,7 +20,11 @@ import { loadBiomeGltf } from "@/three/utils/biome-gltf-cache";
 import type { GLTF } from "three/addons/loaders/GLTFLoader.js";
 import { renderProfile, type RenderVisualProfile } from "@/three/render-profile";
 import { ShadowRefreshPolicy } from "@/three/shadow-refresh-policy";
-import { runTimeboxedPipelinePrewarm } from "@/three/pipeline-prewarm-runtime";
+import {
+  runTimeboxedPipelinePrewarm,
+  shouldSkipPipelinePrewarmForP5Measurement,
+} from "@/three/pipeline-prewarm-runtime";
+import { runWithFrameWorkOwner } from "@/three/frame-work-owner";
 import { LeftView } from "@/types";
 import { IS_FLAT_MODE } from "@/ui/config";
 import { type SetupResult } from "@bibliothecadao/dojo";
@@ -783,6 +787,9 @@ export abstract class HexagonScene {
   }
 
   public prewarmPipeline(): Promise<void> {
+    if (shouldSkipPipelinePrewarmForP5Measurement()) {
+      return Promise.resolve();
+    }
     if (!this.pipelinePrewarmer) {
       return Promise.resolve();
     }
@@ -793,6 +800,9 @@ export abstract class HexagonScene {
   }
 
   public prewarmObjectPipeline(object: Object3D): Promise<void> {
+    if (shouldSkipPipelinePrewarmForP5Measurement()) {
+      return Promise.resolve();
+    }
     if (!this.pipelinePrewarmer) {
       return Promise.resolve();
     }
@@ -802,12 +812,15 @@ export abstract class HexagonScene {
 
   private async runPipelinePrewarm(prewarmer: PipelinePrewarmer): Promise<void> {
     await runTimeboxedPipelinePrewarm({
-      prepare: async () => {
-        await Promise.allSettled(this.modelLoadPromises);
-      },
+      prepare: () => this.awaitPipelinePrewarmModelLoads(),
       enterWarmupView: () => this.enterPipelineWarmupView(),
-      compile: () => prewarmer(this.scene, this.createPipelineWarmupCamera()),
+      compile: () =>
+        runWithFrameWorkOwner("prewarm:scene", () => prewarmer(this.scene, this.createPipelineWarmupCamera())),
     });
+  }
+
+  private async awaitPipelinePrewarmModelLoads(): Promise<void> {
+    await runWithFrameWorkOwner("prewarm:model-barrier", () => Promise.allSettled(this.modelLoadPromises));
   }
 
   private enterPipelineWarmupView(): () => void {

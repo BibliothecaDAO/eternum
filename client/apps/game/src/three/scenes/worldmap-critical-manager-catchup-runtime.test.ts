@@ -49,6 +49,7 @@ describe("handleWorldmapCriticalManagerCatchUpFailures", () => {
       const recoverStructure = vi.fn();
 
       const catchUpPromise = runWorldmapCriticalManagerCatchUp({
+        context: { chunkKey: "24,24", transitionToken: 1, triggerReason: "test" },
         timeoutMs: 25,
         managers: [
           {
@@ -80,6 +81,7 @@ describe("handleWorldmapCriticalManagerCatchUpFailures", () => {
     const clearTimeoutFn = vi.fn((handle: ReturnType<typeof setTimeout>) => clearTimeout(handle));
 
     const failures = await runWorldmapCriticalManagerCatchUp({
+      context: { chunkKey: "24,24", transitionToken: 1, triggerReason: "test" },
       timeoutMs: 0,
       setTimeoutFn,
       clearTimeoutFn,
@@ -104,6 +106,7 @@ describe("handleWorldmapCriticalManagerCatchUpFailures", () => {
 
     try {
       await runWorldmapCriticalManagerCatchUp({
+        context: { chunkKey: "24,24", transitionToken: 7, triggerReason: "initial_setup" },
         timeoutMs: 0,
         now: () => timestamps.shift() ?? 181,
         managers: [
@@ -116,7 +119,7 @@ describe("handleWorldmapCriticalManagerCatchUpFailures", () => {
       });
 
       expect(info).toHaveBeenCalledWith(
-        "[WorldmapPerf] critical structure manager catch-up converged over 181ms of sliced wall time",
+        "[WorldmapPerf] critical structure manager catch-up chunk=24,24 transition=7 trigger=initial_setup converged over 181ms of sliced wall time",
       );
     } finally {
       info.mockRestore();
@@ -128,6 +131,7 @@ describe("handleWorldmapCriticalManagerCatchUpFailures", () => {
     const recoverStructure = vi.fn();
 
     const failures = await runWorldmapCriticalManagerCatchUp({
+      context: { chunkKey: "24,24", transitionToken: 1, triggerReason: "test" },
       timeoutMs: 25,
       managers: [
         {
@@ -156,6 +160,7 @@ describe("handleWorldmapCriticalManagerCatchUpFailures", () => {
     let resolveStructure!: () => void;
 
     const catchUpPromise = runWorldmapCriticalManagerCatchUp({
+      context: { chunkKey: "24,24", transitionToken: 1, triggerReason: "test" },
       timeoutMs: 25,
       managers: [
         {

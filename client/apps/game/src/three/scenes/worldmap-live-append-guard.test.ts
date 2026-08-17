@@ -19,7 +19,7 @@ describe("worldmap live append transition guard", () => {
     const source = readWorldmapSource();
 
     expect(source).toMatch(
-      /if \(chunkDecision\.action === "refresh_current_chunk"\) \{[\s\S]*?return runWorldmapChunkTransition\(\{[\s\S]*?state: this\.chunkTransitionRuntimeState,[\s\S]*?transitionPromise: this\.refreshCurrentChunk\(chunkKey, startCol, startRow, transitionToken\),[\s\S]*?\}\);/s,
+      /if \(chunkDecision\.action === "refresh_current_chunk"\) \{[\s\S]*?return runWorldmapChunkTransition\(\{[\s\S]*?state: this\.chunkTransitionRuntimeState,[\s\S]*?transitionPromise: this\.refreshCurrentChunk\(chunkKey, startCol, startRow, transitionToken, triggerReason\),[\s\S]*?\}\);/s,
     );
   });
 

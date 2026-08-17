@@ -1,4 +1,18 @@
 export const PIPELINE_PREWARM_BUDGET_MS = 10_000;
+export const PIPELINE_PREWARM_DISABLED_FOR_P5_MEASUREMENT = true;
+
+let measurementDisableReported = false;
+
+export function shouldSkipPipelinePrewarmForP5Measurement(log: (message: string) => void = console.info): boolean {
+  if (!PIPELINE_PREWARM_DISABLED_FOR_P5_MEASUREMENT) {
+    return false;
+  }
+  if (!measurementDisableReported) {
+    measurementDisableReported = true;
+    log("[GpuBackendPerf] pipeline prewarm disabled for P5 cold-entry measurement");
+  }
+  return true;
+}
 
 export type PipelinePrewarmStatus = "completed" | "timed out";
 

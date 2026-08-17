@@ -14,8 +14,9 @@ describe("Worldmap interactive refresh", () => {
     expect(source).toContain("await completeWorldmapInteractiveRefresh({");
     expect(source).toContain('const phase: WorldmapWarpTravelPhase = this.hasInitialized ? "resume" : "initial";');
     expect(source).toMatch(
-      /private async refreshVisibleChunksForWarpTravel\(\): Promise<boolean> \{[\s\S]*waitForChunkTransitionToSettle/,
+      /private async refreshVisibleChunksForWarpTravel\(phase: WorldmapWarpTravelPhase\): Promise<boolean> \{[\s\S]*waitForChunkTransitionToSettle/,
     );
+    expect(source).toContain("this.updateVisibleChunks(true, { triggerReason: `${phase}_setup` })");
   });
 
   it("propagates the terrain commit result instead of treating every settled transition as success", () => {

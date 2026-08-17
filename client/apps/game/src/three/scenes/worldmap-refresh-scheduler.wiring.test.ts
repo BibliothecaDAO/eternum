@@ -23,7 +23,7 @@ describe("worldmap refresh scheduler wiring", () => {
     const source = readWorldmapSource();
     const directForceRefreshCalls = source.match(/updateVisibleChunks\(true\)/g) ?? [];
 
-    expect(directForceRefreshCalls).toHaveLength(1);
+    expect(directForceRefreshCalls).toHaveLength(0);
     expect(source).toMatch(/await this\.updateVisibleChunks\(true,\s*\{ reason: "shortcut" \}\)/);
   });
 });

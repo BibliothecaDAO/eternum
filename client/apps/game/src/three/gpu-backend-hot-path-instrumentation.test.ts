@@ -4,6 +4,7 @@ import {
   instrumentGpuBackendHotPaths,
   startGpuBackendFrame,
 } from "./gpu-backend-hot-path-instrumentation";
+import { runWithFrameWorkOwner } from "./frame-work-owner";
 
 describe("GPU backend hot-path instrumentation", () => {
   it("attributes texture upload time by texture identity and dimensions per report window", () => {
@@ -80,6 +81,44 @@ describe("GPU backend hot-path instrumentation", () => {
 
     expect(warn).toHaveBeenCalledWith(
       "[GpuBackendPerf] spike 87ms: createRenderPipeline=1x/12ms, createAttribute=1x/6.0ms, updateTexture=1x/5.0ms; textures=structure-label(1024x1024)=1x/5.0ms",
+    );
+  });
+
+  it("names the dominant ambient owner on a spike frame", () => {
+    const warn = vi.fn();
+
+    startGpuBackendFrame(0, warn);
+    runWithFrameWorkOwner(
+      "catchup:army",
+      () => undefined,
+      () => 1,
+    );
+    startGpuBackendFrame(62, warn);
+
+    expect(warn).toHaveBeenCalledWith("[GpuBackendPerf] spike 62ms owner=catchup:army: no GPU backend hot paths");
+  });
+
+  it("reports aggregate compile-on-demand cost over the measurement window", () => {
+    const backend = {
+      createProgram: vi.fn(),
+      createRenderPipeline: vi.fn(),
+      updateAttribute: vi.fn(),
+    };
+    const warn = vi.fn();
+    const timestamps = [0, 1, 3, 4, 7, 61, 62];
+
+    instrumentGpuBackendHotPaths(backend, {
+      compileMeasurementWindowMs: 60,
+      now: () => timestamps.shift() ?? 62,
+      reportIntervalMs: 10_000,
+      warn,
+    });
+    backend.createRenderPipeline();
+    backend.createProgram();
+    backend.updateAttribute();
+
+    expect(warn).toHaveBeenCalledWith(
+      "[GpuBackendPerf] compile-on-demand window=62ms createRenderPipeline=1x/2.0ms, createProgram=1x/3.0ms",
     );
   });
 

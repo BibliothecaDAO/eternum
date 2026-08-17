@@ -12,7 +12,10 @@ describe("Worldmap critical terrain model loading", () => {
     const prepareBody = source.slice(prepareStart, prepareEnd);
 
     expect(prepareBody).not.toContain("Promise.all(this.modelLoadPromises)");
-    expect(prepareBody).toContain("return this.awaitPreparedTerrainBiomeModels(preparedTerrain)");
+    expect(prepareBody).toContain(
+      "const preparedTerrainWithModels = await this.awaitPreparedTerrainBiomeModels(preparedTerrain)",
+    );
+    expect(prepareBody).toContain("modelWaitMs: performance.now() - modelWaitStartedAt");
     expect(prepareBody).toMatch(/entry\.count === 0[\s\S]*this\.biomeModelLoadPromises\.get\(biomeKey\)/);
   });
 });

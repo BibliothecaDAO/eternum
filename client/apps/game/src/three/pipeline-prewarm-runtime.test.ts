@@ -1,8 +1,15 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { PIPELINE_PREWARM_BUDGET_MS, runTimeboxedPipelinePrewarm } from "./pipeline-prewarm-runtime";
+import {
+  PIPELINE_PREWARM_BUDGET_MS,
+  PIPELINE_PREWARM_DISABLED_FOR_P5_MEASUREMENT,
+  runTimeboxedPipelinePrewarm,
+} from "./pipeline-prewarm-runtime";
 
 describe("runTimeboxedPipelinePrewarm", () => {
+  it("pins the explicit P5 cold-entry measurement with prewarm disabled", () => {
+    expect(PIPELINE_PREWARM_DISABLED_FOR_P5_MEASUREMENT).toBe(true);
+  });
   afterEach(() => {
     vi.useRealTimers();
   });
