@@ -154,6 +154,10 @@ export class GameSyncRuntime {
     return this.provisionalWriteManager?.hasInputLock(model, entityId) ?? false;
   }
 
+  public isProvisionalOnly(model: string, entityId: string): boolean {
+    return this.provisionalWriteManager?.isProvisionalOnly(model, entityId) ?? false;
+  }
+
   public subscribeProvisionalState(listener: () => void): () => void {
     return this.provisionalWriteManager?.subscribe(listener) ?? (() => {});
   }

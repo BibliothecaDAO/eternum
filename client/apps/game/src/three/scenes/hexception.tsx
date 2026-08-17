@@ -22,7 +22,11 @@ import {
 } from "@/three/constants";
 import { createHexagonShape } from "@/three/geometry/hexagon-geometry";
 import { BIOME_COLORS } from "@/three/managers/biome-colors";
-import { BuildingPreview } from "@/three/managers/building-preview";
+import {
+  BuildingPreview,
+  applyPendingBuildingMaterials,
+  disposeClonedBuildingMaterials,
+} from "@/three/managers/building-preview";
 import InstancedBiome from "@/three/managers/instanced-biome";
 import { SMALL_DETAILS_NAME } from "@/three/managers/instanced-model";
 import { SceneManager } from "@/three/scene-manager";
@@ -151,6 +155,7 @@ export default class HexceptionScene extends HexagonScene {
     Map<BUILDINGS_CATEGORIES_TYPES, { model: Group; animations: AnimationClip[] }>
   > = new Map();
   private buildingInstances: Map<string, Group> = new Map();
+  private pendingBuildingKeys: Set<string> = new Set();
   private wonderInstances: Map<string, Group> = new Map();
   private buildingMixers: Map<string, AnimationMixer> = new Map();
   private pillars: InstancedMesh | null = null;
@@ -586,8 +591,11 @@ export default class HexceptionScene extends HexagonScene {
       this.tileManager.setTile({ col, row });
 
       // remove all previous building instances
-      this.buildingInstances.forEach((instance) => {
+      this.buildingInstances.forEach((instance, key) => {
         this.scene.remove(instance);
+        if (this.pendingBuildingKeys.delete(key)) {
+          disposeClonedBuildingMaterials(instance);
+        }
       });
       this.buildingInstances.clear();
 
@@ -703,6 +711,11 @@ export default class HexceptionScene extends HexagonScene {
     this.minesMaterials.clear();
 
     // Clean up building instances
+    this.buildingInstances.forEach((instance, key) => {
+      if (this.pendingBuildingKeys.delete(key)) {
+        disposeClonedBuildingMaterials(instance);
+      }
+    });
     this.buildingInstances.clear();
     this.wonderInstances.clear();
 
@@ -1109,6 +1122,12 @@ export default class HexceptionScene extends HexagonScene {
       // add buildings to the scene in the center hex
       for (const building of this.buildings) {
         const key = `${building.col},${building.row}`;
+        const isPending = Boolean(building.pending);
+        if (this.buildingInstances.has(key) && this.pendingBuildingKeys.has(key) !== isPending) {
+          // The pending state flipped (tx confirmed, or the slot re-resolved) —
+          // rebuild the instance so its material treatment matches reality.
+          this.removeBuilding(building.col, building.row);
+        }
         if (!this.buildingInstances.has(key)) {
           let buildingGroup: BUILDINGS_GROUPS;
           let buildingType: BUILDINGS_CATEGORIES_TYPES;
@@ -1232,6 +1251,11 @@ export default class HexceptionScene extends HexagonScene {
                   child.material = this.minesMaterials.get(building.resource);
                 }
               });
+            }
+
+            if (isPending) {
+              applyPendingBuildingMaterials(instance);
+              this.pendingBuildingKeys.add(key);
             }
 
             // Add instance to scene BEFORE starting animation
@@ -1492,6 +1516,9 @@ export default class HexceptionScene extends HexagonScene {
     const instance = this.buildingInstances.get(key);
     if (instance) {
       this.scene.remove(instance);
+      if (this.pendingBuildingKeys.delete(key)) {
+        disposeClonedBuildingMaterials(instance);
+      }
       this.buildingInstances.delete(key);
     }
 

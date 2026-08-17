@@ -168,6 +168,69 @@ describe("ProvisionalWriteManager", () => {
     expect(store.removeProvisionalWrites).toHaveBeenCalledWith(createdIntentId(store));
   });
 
+  it("settles a null matchPatch when the authoritative row is deleted", () => {
+    vi.useFakeTimers();
+    const store = createStore();
+    const manager = new ProvisionalWriteManager(store);
+    const intent = manager.createIntent([
+      { entityId: "0x1", model: "Building", patch: { category: 0 }, matchPatch: null },
+    ]);
+    const outcomes = vi.fn();
+    intent.subscribe(outcomes);
+    intent.bindTransaction("0xtx");
+    intent.confirm();
+
+    manager.observeAuthoritativeObservations([
+      { type: "model", entityId: "0x1", model: "Building", value: { category: 7 } },
+    ]);
+    vi.advanceTimersByTime(2_500);
+    expect(outcomes).not.toHaveBeenCalled();
+
+    manager.observeAuthoritativeObservations([{ type: "delete-entity", entityId: "0x1" }]);
+    vi.advanceTimersByTime(2_500);
+
+    expect(outcomes).toHaveBeenCalledWith("settled");
+  });
+
+  it("keeps a matched write settled when a later action's echo diverges from it", () => {
+    vi.useFakeTimers();
+    const store = createStore();
+    const manager = new ProvisionalWriteManager(store);
+    const intent = manager.createIntent([WRITE]);
+    const outcomes = vi.fn();
+    intent.subscribe(outcomes);
+    intent.bindTransaction("0xtx");
+    intent.confirm();
+
+    manager.observeAuthoritativeObservations([
+      { type: "model", entityId: "0x1", model: "Building", value: WRITE.patch },
+    ]);
+    // The next placement bumps the same row past this intent's prediction
+    // before the reconciliation hold releases — the match must stay settled.
+    manager.observeAuthoritativeObservations([
+      { type: "model", entityId: "0x1", model: "Building", value: { category: 9 } },
+    ]);
+    vi.advanceTimersByTime(2_500);
+
+    expect(outcomes).toHaveBeenCalledWith("settled");
+  });
+
+  it("reports provisional-only rows until the chain backs them", () => {
+    const store = createStore();
+    const manager = new ProvisionalWriteManager(store);
+    expect(manager.isProvisionalOnly("Building", "0x1")).toBe(false);
+
+    const intent = manager.createIntent([WRITE]);
+    expect(manager.isProvisionalOnly("Building", "0x1")).toBe(true);
+
+    store.readAuthoritativeModel.mockReturnValue({ category: 7 });
+    expect(manager.isProvisionalOnly("Building", "0x1")).toBe(false);
+
+    store.readAuthoritativeModel.mockReturnValue(null);
+    intent.fail();
+    expect(manager.isProvisionalOnly("Building", "0x1")).toBe(false);
+  });
+
   it("fails independently when a tracked receipt rejects", async () => {
     const store = createStore();
     const manager = new ProvisionalWriteManager(store);
