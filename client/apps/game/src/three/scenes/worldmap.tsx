@@ -37,9 +37,7 @@ import {
   FrameBudgetWorkQueue,
   isFrameBudgetWorkQueueDisposedError,
   type FrameBudgetWorkLane,
-  type FrameBudgetWorkScheduler,
 } from "@/three/frame-budget-work-queue";
-import { runWithFrameWorkOwner } from "@/three/frame-work-owner";
 import { SceneManager } from "@/three/scene-manager";
 import { CameraView } from "@/three/scenes/camera-view";
 import {
@@ -1191,10 +1189,6 @@ export default class WorldmapScene extends WarpTravel {
       });
   }
 
-  public getFrameBudgetWorkScheduler(): FrameBudgetWorkScheduler {
-    return this.chunkWorkQueue;
-  }
-
   private configureWorldmapRecoveryLifecycle(): void {
     this.visibilityChangeHandler = () => {
       if (document.visibilityState !== "visible") {
@@ -1379,15 +1373,11 @@ export default class WorldmapScene extends WarpTravel {
 
   private bindWorldmapCameraViewLifecycle(): void {
     this.addCameraViewListener((view: CameraView) => {
-      runWithFrameWorkOwner("zoom:interaction-overlays", () => {
-        this.hoverLabelManager.updateCameraView(view);
-        this.highlightHexManager.setCameraView(view);
-        this.interactiveHexManager.setCameraView(view);
-      });
-      runWithFrameWorkOwner("zoom:terrain-detail", () => {
-        this.biomeModels.forEach((model) => model.setFarDetailEnabled(view === CameraView.Far));
-      });
-      runWithFrameWorkOwner("zoom:worldmap-shadows", () => this.configureWorldmapShadows());
+      this.hoverLabelManager.updateCameraView(view);
+      this.highlightHexManager.setCameraView(view);
+      this.interactiveHexManager.setCameraView(view);
+      this.biomeModels.forEach((model) => model.setFarDetailEnabled(view === CameraView.Far));
+      this.configureWorldmapShadows();
     });
   }
 

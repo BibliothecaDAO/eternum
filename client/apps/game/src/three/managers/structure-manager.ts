@@ -3,7 +3,6 @@ import { useChainTimeStore } from "@/hooks/store/use-chain-time-store";
 import { getGameModeConfig } from "@/config/game-modes";
 import type { GameModeConfig } from "@/config/game-modes";
 import { isVillageLikeStructureCategory } from "@/lib/structure-type-utils";
-import { runWithFrameWorkOwner } from "@/three/frame-work-owner";
 import InstancedModel, { LAND_NAME } from "@/three/managers/instanced-model";
 import { recordWorldmapRenderDuration, setWorldmapRenderGauge } from "@/three/perf/worldmap-render-diagnostics";
 import { CameraView, HexagonScene } from "@/three/scenes/hexagon-scene";
@@ -624,10 +623,6 @@ export class StructureManager {
   }
 
   private handleCameraViewChange = (view: CameraView) => {
-    runWithFrameWorkOwner("zoom:structure-presentation", () => this.applyCameraView(view));
-  };
-
-  private applyCameraView(view: CameraView): void {
     if (this.currentCameraView === view) {
       this.updateShadowFlags();
       return;
@@ -648,7 +643,7 @@ export class StructureManager {
     // Use the centralized label transition function
     applyLabelTransitions(this.entityIdLabels, view);
     this.updateShadowFlags();
-  }
+  };
 
   private updateShadowFlags(): void {
     const shadowsEnabled = this.hexagonScene?.getShadowsEnabled() ?? true;

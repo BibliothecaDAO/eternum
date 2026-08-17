@@ -6,14 +6,7 @@ describe("Hexception entry bootstrap", () => {
     const source = readFileSync(new URL("./hexception.tsx", import.meta.url), "utf8");
 
     expect(source).toMatch(
-      /this\.tileManager = new TileManager[\s\S]*void this\.setup\(\)\.catch[\s\S]*this\.inputManager\.addListener/,
+      /this\.tileManager = new TileManager[\s\S]*this\.setup\(\);[\s\S]*this\.inputManager\.addListener/,
     );
-  });
-
-  it("finishes the latest grid and queued texture preparation before scene activation", () => {
-    const source = readFileSync(new URL("./hexception.tsx", import.meta.url), "utf8");
-
-    expect(source).toMatch(/await this\.latestGridCommit;\s+await this\.prepareFirstRenderTextures\(\);/);
-    expect(source).toContain('owner: "scene:hexception:texture-upload"');
   });
 });

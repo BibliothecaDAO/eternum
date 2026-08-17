@@ -1,5 +1,4 @@
 import { ChestModelPath } from "@/three/constants";
-import { runWithFrameWorkOwner } from "@/three/frame-work-owner";
 import InstancedModel from "@/three/managers/instanced-model";
 import { FELT_CENTER } from "@/ui/config";
 import { Position } from "@bibliothecadao/eternum";
@@ -109,10 +108,6 @@ export class ChestManager {
   }
 
   private handleCameraViewChange = (view: CameraView) => {
-    runWithFrameWorkOwner("zoom:chest-presentation", () => this.applyCameraView(view));
-  };
-
-  private applyCameraView(view: CameraView): void {
     const shadowsEnabled = this.hexagonScene?.getShadowsEnabled() ?? true;
     const enableContactShadows = !(view === CameraView.Close && shadowsEnabled);
 
@@ -137,7 +132,7 @@ export class ChestManager {
 
     // Update all existing labels to reflect the new view
     applyLabelTransitions(this.entityIdLabels, view);
-  }
+  };
 
   private initializePointsRenderer(): void {
     // Load chest icon texture

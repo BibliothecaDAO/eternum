@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { PerspectiveCamera, Scene as ThreeScene, Texture } from "three";
+import { PerspectiveCamera, Scene as ThreeScene } from "three";
 import { describe, expect, it, vi } from "vitest";
 import { SceneName } from "./types";
 
@@ -15,14 +15,11 @@ function createScene(name: string) {
 function createPrewarmableScene() {
   const scene = new ThreeScene();
   const camera = new PerspectiveCamera();
-  const scheduler = { schedule: vi.fn() };
 
   return {
     getCamera: vi.fn(() => camera),
-    getFrameBudgetWorkScheduler: vi.fn(() => scheduler),
     getScene: vi.fn(() => scene),
     setPipelinePrewarmer: vi.fn(),
-    setTexturePreparationRuntime: vi.fn(),
   };
 }
 
@@ -240,33 +237,5 @@ describe("bootstrapRendererSceneRuntime", () => {
     await prewarmWorldmap(worldmapScene.getScene(), worldmapScene.getCamera());
 
     expect(warn).toHaveBeenCalledWith("GameRenderer: Scene prewarm failed", error);
-  });
-
-  it("routes hexception texture preparation through the worldmap frame-budget scheduler", () => {
-    const worldmapScene = createPrewarmableScene();
-    const hexceptionScene = createPrewarmableScene();
-    const initTexture = vi.fn();
-    const renderer = { initTexture };
-
-    bootstrapRendererSceneRuntime({
-      effectsBridgeRuntime: {
-        applyEnvironment: vi.fn(),
-        applyRenderVisualProfile: vi.fn(),
-        setupPostProcessingEffects: vi.fn(),
-      },
-      hexceptionScene,
-      renderVisuals: {},
-      renderer: renderer as never,
-      sceneManager: { moveCameraForScene: vi.fn() } as never,
-      worldmapScene,
-    });
-
-    const scheduler = worldmapScene.getFrameBudgetWorkScheduler();
-    const [, initializeTexture] = hexceptionScene.setTexturePreparationRuntime.mock.calls[0];
-    const texture = new Texture();
-    initializeTexture(texture);
-
-    expect(hexceptionScene.setTexturePreparationRuntime).toHaveBeenCalledWith(scheduler, expect.any(Function));
-    expect(initTexture).toHaveBeenCalledWith(texture);
   });
 });
