@@ -123,6 +123,22 @@ and transfer panels update with RECS against a concurrent state change.
 **Gate:** the greps for the rows above come back empty; entry-modal waits resolve from entity subscriptions in a live
 provisioning run, and deadlines only ever log.
 
+## Login-stack findings (Aug 17 — recorded so nobody re-litigates them)
+
+- **Passkey login failures ("publickey-credentials-get is not enabled in this document") are upstream, not ours.**
+  Frame-chain probe on the deployed client: `play.jcndata.com` ✓ delegated → `x.cartridge.gg` keychain ✓ delegated →
+  nested `auth.turnkey.com` iframe **not delegated** (`allow="clipboard-write"` only). Any account whose passkey
+  assertion runs through the Turnkey frame fails on every OS. The classic keychain passkey path was verified working
+  end-to-end on Linux Chrome. Fix belongs to Cartridge's keychain; nothing in this repo to change.
+- **Do not bump `@cartridge/controller`/`connector` to 0.14.0.** It is the starknet 8→10 migration release; verified
+  Aug 17 that the bump fails typecheck at four sites (the connector returns a starknet-10 `WalletAccount`,
+  structurally incompatible with our starknet-8 `AccountInterface` paths), and the surrounding stack cannot follow —
+  `@starknet-react/core` ≤5.0.3 and all `@dojoengine/*` 1.7.0-preview.3 peer on starknet ^8. Revisit only when
+  dojo.js and starknet-react publish starknet-10 support. Stay on 0.13.16 until then.
+- **`ControllerConnector` is instantiated per-render.** `starknet-provider.tsx:125` builds it in a `useMemo` inside the
+  component; the package logs `ControllerConnector was instantiated multiple times` in live sessions and re-instantiates
+  on chain-config changes. Move construction to module level per the package's own guidance. Verdict: FIX (rides P7D).
+
 ## What survives, on purpose
 
 Frame budgets and work slicing; UX/FX timing (animations, debounces, countdowns); alarms and telemetry windows (dedupe
