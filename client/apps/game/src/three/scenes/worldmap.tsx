@@ -37,6 +37,7 @@ import {
   FrameBudgetWorkQueue,
   isFrameBudgetWorkQueueDisposedError,
   type FrameBudgetWorkLane,
+  type FrameBudgetWorkScheduler,
 } from "@/three/frame-budget-work-queue";
 import { runWithFrameWorkOwner } from "@/three/frame-work-owner";
 import { SceneManager } from "@/three/scene-manager";
@@ -1188,6 +1189,10 @@ export default class WorldmapScene extends WarpTravel {
           console.warn("[WorldMap] Failed to schedule new model pipeline prewarm", error);
         }
       });
+  }
+
+  public getFrameBudgetWorkScheduler(): FrameBudgetWorkScheduler {
+    return this.chunkWorkQueue;
   }
 
   private configureWorldmapRecoveryLifecycle(): void {

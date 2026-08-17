@@ -97,18 +97,32 @@ describe("InstancedBiome visibility", () => {
     const terrainMeshes = biomeModel.instancedMeshes.filter((mesh) => mesh.userData.isFarBiomeDetail !== true);
     expect(detailMeshes).toHaveLength(1);
     expect(detailMeshes[0].count).toBe(8);
+    const fullDetailMatrix = detailMeshes[0].instanceMatrix;
 
     biomeModel.setFarDetailEnabled(true);
 
     expect(detailMeshes[0].count).toBe(2);
+    expect(detailMeshes[0].instanceMatrix).not.toBe(fullDetailMatrix);
     expect(terrainMeshes.every((mesh) => mesh.count === 8)).toBe(true);
 
     biomeModel.setFarDetailEnabled(false);
 
     expect(detailMeshes[0].count).toBe(8);
+    expect(detailMeshes[0].instanceMatrix).toBe(fullDetailMatrix);
     expect(Array.from((detailMeshes[0].instanceMatrix.array as Float32Array).subarray(0, source.length))).toEqual(
       Array.from(source),
     );
+  });
+
+  it("keeps the full instance capacity while the thinned buffer is selected", () => {
+    const biomeModel = createGroupedBiomeModel();
+
+    biomeModel.setFarDetailEnabled(true);
+    biomeModel.setCount(8);
+    biomeModel.setFarDetailEnabled(false);
+
+    const detailMesh = biomeModel.instancedMeshes.find((mesh) => mesh.userData.isFarBiomeDetail === true);
+    expect(detailMesh?.count).toBe(8);
   });
 
   it("configures land and outline render state before exact material pooling", () => {

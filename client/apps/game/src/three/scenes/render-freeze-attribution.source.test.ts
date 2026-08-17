@@ -13,6 +13,7 @@ describe("render freeze attribution", () => {
 
     expect(source).toContain('runWithFrameWorkOwner("scene:hexception:setup"');
     expect(source).toContain('runWithFrameWorkOwner("scene:hexception:grid", commitGrid)');
+    expect(source).toContain('owner: "scene:hexception:texture-upload"');
   });
 
   it("attributes each synchronous worldmap zoom-band workload", () => {

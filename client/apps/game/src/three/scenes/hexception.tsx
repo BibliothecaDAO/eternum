@@ -21,12 +21,14 @@ import {
   structureTypeToBuildingType,
 } from "@/three/constants";
 import { createHexagonShape } from "@/three/geometry/hexagon-geometry";
+import type { FrameBudgetWorkScheduler } from "@/three/frame-budget-work-queue";
 import { runWithFrameWorkOwner } from "@/three/frame-work-owner";
 import { BIOME_COLORS } from "@/three/managers/biome-colors";
 import { BuildingPreview } from "@/three/managers/building-preview";
 import InstancedBiome from "@/three/managers/instanced-biome";
 import { SMALL_DETAILS_NAME } from "@/three/managers/instanced-model";
 import { SceneManager } from "@/three/scene-manager";
+import { prepareSceneTextures } from "@/three/scene-texture-preparation";
 import { HexagonScene } from "@/three/scenes/hexagon-scene";
 import { playBuildingSound } from "@/three/sound/utils";
 import { MatrixPool } from "@/three/utils/matrix-pool";
@@ -100,6 +102,7 @@ import {
   Object3D,
   Raycaster,
   Sphere,
+  Texture,
   Vector2,
   Vector3,
 } from "three";
@@ -185,6 +188,10 @@ export default class HexceptionScene extends HexagonScene {
   private buildingUpdateUnsubscribe: (() => void) | null = null;
   private isInitialized = false;
   private lastRealmKey?: string;
+  private latestGridCommit: Promise<void> = Promise.resolve();
+  private texturePreparationScheduler?: FrameBudgetWorkScheduler;
+  private initializeTexture?: (texture: Texture) => void;
+  private readonly preparedFirstRenderTextures = new WeakSet<Texture>();
   // Store Zustand unsubscribe functions to clean up on destroy
   private storeUnsubscribes: (() => void)[] = [];
   private readonly localZoomPersistDebounceMs = 500;
@@ -225,7 +232,9 @@ export default class HexceptionScene extends HexagonScene {
 
     // Keep the initial local-view grid boot eager so the entry overlay receives
     // the first hexception:grid-ready event during player handoff.
-    this.setup();
+    void this.setup().catch((error) => {
+      console.error("[Hexception] Initial scene setup failed", error);
+    });
 
     this.inputManager.addListener("contextmenu", (raycaster) => {
       this.clearBuildingMode();
@@ -566,11 +575,19 @@ export default class HexceptionScene extends HexagonScene {
     return this.buildingPreview;
   }
 
-  setup() {
+  public setTexturePreparationRuntime(
+    scheduler: FrameBudgetWorkScheduler,
+    initializeTexture: (texture: Texture) => void,
+  ): void {
+    this.texturePreparationScheduler = scheduler;
+    this.initializeTexture = initializeTexture;
+  }
+
+  setup(): Promise<void> {
     return runWithFrameWorkOwner("scene:hexception:setup", () => this.setupScene());
   }
 
-  private setupScene() {
+  private async setupScene(): Promise<void> {
     this.bootstrapSceneOwnership();
     const routeTarget = resolvePlayRouteTarget(window.location, { fastTravelEnabled: true });
     const routeWorldPosition = routeTarget.routeWorldPosition;
@@ -668,6 +685,24 @@ export default class HexceptionScene extends HexagonScene {
 
     this.isInitialized = true;
     this.lastRealmKey = realmKey;
+
+    await this.latestGridCommit;
+    await this.prepareFirstRenderTextures();
+  }
+
+  private async prepareFirstRenderTextures(): Promise<void> {
+    if (!this.texturePreparationScheduler || !this.initializeTexture) {
+      return;
+    }
+
+    await prepareSceneTextures({
+      initializeTexture: this.initializeTexture,
+      owner: "scene:hexception:texture-upload",
+      preparedTextures: this.preparedFirstRenderTextures,
+      scene: this.scene,
+      scheduler: this.texturePreparationScheduler,
+      warn: (message, error) => console.warn(message, error),
+    });
   }
 
   onSwitchOff(_nextSceneName?: SceneName) {
@@ -1090,7 +1125,7 @@ export default class HexceptionScene extends HexagonScene {
     }
   }
 
-  updateHexceptionGrid(radius: number) {
+  updateHexceptionGrid(radius: number): Promise<void> {
     const dummy = new Object3D();
     const mainStructureType = this.tileManager.structureType();
     this.updateCastleLevel();
@@ -1351,7 +1386,10 @@ export default class HexceptionScene extends HexagonScene {
       }
     };
 
-    Promise.all(this.modelLoadPromises).then(() => runWithFrameWorkOwner("scene:hexception:grid", commitGrid));
+    this.latestGridCommit = Promise.all(this.modelLoadPromises).then(() => {
+      runWithFrameWorkOwner("scene:hexception:grid", commitGrid);
+    });
+    return this.latestGridCommit;
   }
 
   addPausedLabelToBuilding(building: { col: number; row: number; matrix: any }) {

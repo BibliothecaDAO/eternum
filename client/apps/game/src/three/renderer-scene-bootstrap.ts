@@ -4,8 +4,9 @@ import FastTravelScene from "@/three/scenes/fast-travel";
 import HexceptionScene from "@/three/scenes/hexception";
 import WorldmapScene from "@/three/scenes/worldmap";
 import type { SetupResult } from "@bibliothecadao/dojo";
-import type { Camera, Object3D, Object3DEventMap, Raycaster, Vector2 } from "three";
+import type { Camera, Object3D, Object3DEventMap, Raycaster, Texture, Vector2 } from "three";
 import type { MapControls } from "three/examples/jsm/controls/MapControls.js";
+import type { FrameBudgetWorkScheduler } from "./frame-budget-work-queue";
 import type { RendererSurfaceLike } from "./renderer-backend";
 import { SceneName } from "./types";
 import { requestRendererScenePrewarm } from "./webgpu-postprocess-policy";
@@ -23,6 +24,17 @@ type PrewarmableScene = {
   getCamera(): Camera;
   getScene(): Object3D<Object3DEventMap>;
   setPipelinePrewarmer(prewarmer: (scene: Object3D, camera: Camera, targetScene?: Object3D) => Promise<void>): void;
+};
+
+type TexturePreparationScene = {
+  setTexturePreparationRuntime(
+    scheduler: FrameBudgetWorkScheduler,
+    initializeTexture: (texture: Texture) => void,
+  ): void;
+};
+
+type TexturePreparationSchedulerOwner = {
+  getFrameBudgetWorkScheduler(): FrameBudgetWorkScheduler;
 };
 
 export interface RendererSceneRegistry<
@@ -90,8 +102,8 @@ interface BootstrapRendererSceneRuntimeInput<
     applyRenderVisualProfile(features: TRenderVisualProfile): void;
     setupPostProcessingEffects(): void;
   },
-  THexceptionScene extends PrewarmableScene,
-  TWorldmapScene extends PrewarmableScene,
+  THexceptionScene extends PrewarmableScene & TexturePreparationScene,
+  TWorldmapScene extends PrewarmableScene & TexturePreparationSchedulerOwner,
   TFastTravelScene extends PrewarmableScene,
   TRenderVisualProfile,
 > {
@@ -208,8 +220,8 @@ export function bootstrapRendererSceneRuntime<
     applyRenderVisualProfile(features: TRenderVisualProfile): void;
     setupPostProcessingEffects(): void;
   },
-  THexceptionScene extends PrewarmableScene,
-  TWorldmapScene extends PrewarmableScene,
+  THexceptionScene extends PrewarmableScene & TexturePreparationScene,
+  TWorldmapScene extends PrewarmableScene & TexturePreparationSchedulerOwner,
   TFastTravelScene extends PrewarmableScene,
   TRenderVisualProfile,
 >(
@@ -229,10 +241,30 @@ export function bootstrapRendererSceneRuntime<
     warn: input.warn,
     worldmapScene: input.worldmapScene,
   });
+  configureHexceptionTexturePreparation({
+    hexceptionScene: input.hexceptionScene,
+    renderer: input.renderer,
+    worldmapScene: input.worldmapScene,
+  });
   input.effectsBridgeRuntime.applyEnvironment();
   input.effectsBridgeRuntime.setupPostProcessingEffects();
   input.sceneManager.moveCameraForScene();
   input.effectsBridgeRuntime.applyRenderVisualProfile(input.renderVisuals);
+}
+
+function configureHexceptionTexturePreparation(input: {
+  hexceptionScene: TexturePreparationScene;
+  renderer?: RendererSurfaceLike;
+  worldmapScene: TexturePreparationSchedulerOwner;
+}): void {
+  const initializeTexture = input.renderer?.initTexture;
+  if (!initializeTexture) {
+    return;
+  }
+
+  input.hexceptionScene.setTexturePreparationRuntime(input.worldmapScene.getFrameBudgetWorkScheduler(), (texture) => {
+    initializeTexture.call(input.renderer, texture);
+  });
 }
 
 function attachRendererSceneToSurface(scene: SceneInputSurfaceOwner, inputSurface: HTMLElement): void {

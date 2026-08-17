@@ -87,6 +87,10 @@ export default class InstancedModel {
   private canonicalMatrices = new Float32Array(0);
   private farDetailEnabled = false;
   private readonly farDetailMeshes = new Set<THREE.InstancedMesh>();
+  // Terrain commits keep both representations current so a zoom-band change
+  // only selects a resident buffer; it never rewrites the world in an input frame.
+  private readonly fullDetailInstanceMatrices = new Map<THREE.InstancedMesh, THREE.InstancedBufferAttribute>();
+  private readonly farDetailInstanceMatrices = new Map<THREE.InstancedMesh, THREE.InstancedBufferAttribute>();
   private readonly farDetailOffset: number;
   animationBuckets: Uint8Array;
   // Animation throttling to reduce morph texture uploads
@@ -307,6 +311,11 @@ export default class InstancedModel {
     instancedMesh.userData.isFarBiomeDetail = isFarBiomeDetail;
     if (isFarBiomeDetail) {
       this.farDetailMeshes.add(instancedMesh);
+      this.fullDetailInstanceMatrices.set(instancedMesh, instancedMesh.instanceMatrix);
+      this.farDetailInstanceMatrices.set(
+        instancedMesh,
+        this.createFarDetailInstanceMatrix(instancedMesh.instanceMatrix),
+      );
     }
     if (!enableRaycast) {
       instancedMesh.raycast = () => {};
@@ -425,7 +434,7 @@ export default class InstancedModel {
     }
 
     this.farDetailEnabled = enabled;
-    this.applyInstanceDetailPolicy();
+    this.applyInstanceDetailSelection();
     this.updateMeshVisibility();
   }
 
@@ -454,7 +463,7 @@ export default class InstancedModel {
     const requiredFloats = this.count * matrices.itemSize;
     this.ensureCanonicalMatrixCapacity(requiredFloats);
     this.canonicalMatrices.set(sourceArray.subarray(0, requiredFloats), 0);
-    this.applyInstanceDetailPolicy();
+    this.syncInstanceDetailBuffers();
   }
 
   setMatrixAt(index: number, matrix: THREE.Matrix4) {
@@ -462,17 +471,7 @@ export default class InstancedModel {
     this.ensureCanonicalMatrixCapacity(matrixOffset + 16);
     this.canonicalMatrices.set(matrix.elements, matrixOffset);
 
-    this.instancedMeshes.forEach((mesh) => {
-      if (!this.farDetailEnabled || !this.farDetailMeshes.has(mesh)) {
-        mesh.setMatrixAt(index, matrix);
-        return;
-      }
-
-      const detailIndex = this.resolveFarDetailIndex(index);
-      if (detailIndex !== null) {
-        mesh.setMatrixAt(detailIndex, matrix);
-      }
-    });
+    this.instancedMeshes.forEach((mesh) => this.writeMatrixToDetailBuffers(mesh, index, matrix));
   }
 
   setColorAt(index: number, color: THREE.Color) {
@@ -486,7 +485,7 @@ export default class InstancedModel {
   setCount(count: number) {
     this.count = Math.min(count, this.resolveMaxInstanceCapacity());
     this.ensureCanonicalMatrixCapacity(this.count * 16);
-    this.applyInstanceDetailPolicy();
+    this.syncInstanceDetailBuffers();
     this.updateMeshVisibility();
   }
 
@@ -496,22 +495,14 @@ export default class InstancedModel {
     this.canonicalMatrices.set(zeroScaledMatrix.elements, matrixOffset);
 
     this.instancedMeshes.forEach((mesh) => {
-      const renderedIndex =
-        this.farDetailEnabled && this.farDetailMeshes.has(mesh) ? this.resolveFarDetailIndex(index) : index;
-      if (renderedIndex === null) {
-        return;
-      }
-
-      mesh.setMatrixAt(renderedIndex, zeroScaledMatrix);
-      const itemSize = mesh.instanceMatrix.itemSize;
-      mesh.instanceMatrix.addUpdateRange(renderedIndex * itemSize, itemSize);
-      mesh.instanceMatrix.needsUpdate = true;
+      this.writeMatrixToDetailBuffers(mesh, index, zeroScaledMatrix);
+      this.markDetailBufferRangeUpdated(mesh, index);
     });
   }
 
   private resolveMaxInstanceCapacity(): number {
     const capacity = this.instancedMeshes.reduce(
-      (capacity, mesh) => Math.min(capacity, mesh.instanceMatrix.count),
+      (capacity, mesh) => Math.min(capacity, this.resolveFullDetailInstanceMatrix(mesh).count),
       Number.POSITIVE_INFINITY,
     );
     return Number.isFinite(capacity) ? capacity : 0;
@@ -528,18 +519,28 @@ export default class InstancedModel {
     this.canonicalMatrices = nextMatrices;
   }
 
-  private applyInstanceDetailPolicy(): void {
+  private syncInstanceDetailBuffers(): void {
     this.instancedMeshes.forEach((mesh) => {
-      const renderedCount =
-        this.farDetailEnabled && this.farDetailMeshes.has(mesh)
-          ? this.copyFarDetailMatrices(mesh.instanceMatrix.array as Float32Array)
-          : this.copyFullDetailMatrices(mesh.instanceMatrix.array as Float32Array);
-      mesh.count = renderedCount;
-      mesh.instanceMatrix.clearUpdateRanges();
-      if (renderedCount > 0) {
-        mesh.instanceMatrix.addUpdateRange(0, renderedCount * mesh.instanceMatrix.itemSize);
+      const fullDetailMatrix = this.resolveFullDetailInstanceMatrix(mesh);
+      const fullDetailCount = this.copyFullDetailMatrices(fullDetailMatrix.array as Float32Array);
+      this.markDetailBufferUpdated(fullDetailMatrix, fullDetailCount);
+
+      const farDetailMatrix = this.farDetailInstanceMatrices.get(mesh);
+      if (farDetailMatrix) {
+        const farDetailCount = this.copyFarDetailMatrices(farDetailMatrix.array as Float32Array);
+        this.markDetailBufferUpdated(farDetailMatrix, farDetailCount);
       }
-      mesh.instanceMatrix.needsUpdate = true;
+    });
+    this.applyInstanceDetailSelection();
+  }
+
+  private applyInstanceDetailSelection(): void {
+    this.instancedMeshes.forEach((mesh) => {
+      const useFarDetail = this.farDetailEnabled && this.farDetailMeshes.has(mesh);
+      mesh.instanceMatrix = useFarDetail
+        ? this.farDetailInstanceMatrices.get(mesh)!
+        : this.resolveFullDetailInstanceMatrix(mesh);
+      mesh.count = useFarDetail ? this.resolveFarDetailCount() : this.count;
       if (this.worldBounds) {
         this.applyWorldBounds(mesh);
       } else {
@@ -547,6 +548,66 @@ export default class InstancedModel {
         this.applyWorldBounds(mesh);
       }
     });
+  }
+
+  private createFarDetailInstanceMatrix(
+    fullDetailMatrix: THREE.InstancedBufferAttribute,
+  ): THREE.InstancedBufferAttribute {
+    const capacity = this.resolveFarDetailCount(fullDetailMatrix.count);
+    const matrix = new THREE.InstancedBufferAttribute(
+      new Float32Array(capacity * fullDetailMatrix.itemSize),
+      fullDetailMatrix.itemSize,
+      fullDetailMatrix.normalized,
+      fullDetailMatrix.meshPerAttribute,
+    );
+    matrix.setUsage(fullDetailMatrix.usage);
+    matrix.gpuType = fullDetailMatrix.gpuType;
+    return matrix;
+  }
+
+  private resolveFullDetailInstanceMatrix(mesh: THREE.InstancedMesh): THREE.InstancedBufferAttribute {
+    return this.fullDetailInstanceMatrices.get(mesh) ?? mesh.instanceMatrix;
+  }
+
+  private writeMatrixToDetailBuffers(mesh: THREE.InstancedMesh, sourceIndex: number, matrix: THREE.Matrix4): void {
+    this.writeMatrixToBuffer(this.resolveFullDetailInstanceMatrix(mesh), sourceIndex, matrix);
+
+    const farDetailMatrix = this.farDetailInstanceMatrices.get(mesh);
+    const farDetailIndex = farDetailMatrix ? this.resolveFarDetailIndex(sourceIndex) : null;
+    if (farDetailMatrix && farDetailIndex !== null) {
+      this.writeMatrixToBuffer(farDetailMatrix, farDetailIndex, matrix);
+    }
+  }
+
+  private writeMatrixToBuffer(
+    matrixBuffer: THREE.InstancedBufferAttribute,
+    index: number,
+    matrix: THREE.Matrix4,
+  ): void {
+    (matrixBuffer.array as Float32Array).set(matrix.elements, index * matrixBuffer.itemSize);
+  }
+
+  private markDetailBufferRangeUpdated(mesh: THREE.InstancedMesh, sourceIndex: number): void {
+    this.markBufferRangeUpdated(this.resolveFullDetailInstanceMatrix(mesh), sourceIndex);
+
+    const farDetailMatrix = this.farDetailInstanceMatrices.get(mesh);
+    const farDetailIndex = farDetailMatrix ? this.resolveFarDetailIndex(sourceIndex) : null;
+    if (farDetailMatrix && farDetailIndex !== null) {
+      this.markBufferRangeUpdated(farDetailMatrix, farDetailIndex);
+    }
+  }
+
+  private markBufferRangeUpdated(matrix: THREE.InstancedBufferAttribute, index: number): void {
+    matrix.addUpdateRange(index * matrix.itemSize, matrix.itemSize);
+    matrix.needsUpdate = true;
+  }
+
+  private markDetailBufferUpdated(matrix: THREE.InstancedBufferAttribute, count: number): void {
+    matrix.clearUpdateRanges();
+    if (count > 0) {
+      matrix.addUpdateRange(0, count * matrix.itemSize);
+    }
+    matrix.needsUpdate = true;
   }
 
   private copyFullDetailMatrices(target: Float32Array): number {
@@ -563,6 +624,13 @@ export default class InstancedModel {
       targetIndex += 1;
     }
     return targetIndex;
+  }
+
+  private resolveFarDetailCount(count: number = this.count): number {
+    if (count <= this.farDetailOffset) {
+      return 0;
+    }
+    return Math.ceil((count - this.farDetailOffset) / FAR_DETAIL_INSTANCE_STRIDE);
   }
 
   private resolveFarDetailIndex(sourceIndex: number): number | null {
@@ -583,7 +651,11 @@ export default class InstancedModel {
   needsUpdate() {
     this.group.children.forEach((child) => {
       if (child instanceof THREE.InstancedMesh) {
-        child.instanceMatrix.needsUpdate = true;
+        this.resolveFullDetailInstanceMatrix(child).needsUpdate = true;
+        const farDetailMatrix = this.farDetailInstanceMatrices.get(child);
+        if (farDetailMatrix) {
+          farDetailMatrix.needsUpdate = true;
+        }
         if (this.worldBounds) {
           this.applyWorldBounds(child);
           return;
@@ -801,6 +873,8 @@ export default class InstancedModel {
     this.bucketIndicesBuilt = false;
     this.canonicalMatrices = new Float32Array(0);
     this.farDetailMeshes.clear();
+    this.fullDetailInstanceMatrices.clear();
+    this.farDetailInstanceMatrices.clear();
 
     // Dispose of instanced meshes and their resources
     this.instancedMeshes.forEach((mesh) => {
