@@ -197,12 +197,13 @@ export class ArmyActionManager {
     currentDefaultTick: number,
     currentArmiesTick: number,
     playerAddress: ContractAddress,
-    startPositionOverride?: HexPosition,
   ): ActionPaths {
     const armyStamina = Number(this.staminaManager.getStamina(currentArmiesTick).amount);
 
     const troopType = this._getTroopType();
-    const startPos = startPositionOverride ?? this._getCurrentPosition();
+    // One truth: paths plan from the same ExplorerTroops coord the submit
+    // freshness guard checks. Callers must not substitute a visual position.
+    const startPos = this._getCurrentPosition();
     // max hex based on food
     const maxHex = this._calculateMaxTravelPossible(currentDefaultTick, currentArmiesTick);
     const canExplore = this._canExplore(currentDefaultTick, currentArmiesTick);

@@ -72,13 +72,9 @@ function buildTileOptData(input: {
 
 function createTestSetup(systemCalls: Record<string, unknown> = {}) {
   const oldFeltStart = { col: TEST_FELT_CENTER, row: TEST_FELT_CENTER };
-  const overrideFeltStart = { col: TEST_FELT_CENTER + 5, row: TEST_FELT_CENTER + 3 };
   const exploredHexes = new Map<number, Map<number, BiomeType>>();
 
-  const allExploredNeighbors = [
-    ...getNeighborHexes(oldFeltStart.col, oldFeltStart.row),
-    ...getNeighborHexes(overrideFeltStart.col, overrideFeltStart.row),
-  ];
+  const allExploredNeighbors = [...getNeighborHexes(oldFeltStart.col, oldFeltStart.row)];
 
   for (const neighbor of allExploredNeighbors) {
     setNestedMapValue(exploredHexes, neighbor.col - TEST_FELT_CENTER, neighbor.row - TEST_FELT_CENTER, 1 as BiomeType);
@@ -114,7 +110,6 @@ function createTestSetup(systemCalls: Record<string, unknown> = {}) {
     manager,
     components,
     oldFeltStart,
-    overrideFeltStart,
     exploredHexes,
     structureHexes: new Map<number, Map<number, HexEntityInfo>>(),
     armyHexes: new Map<number, Map<number, HexEntityInfo>>(),
@@ -203,28 +198,7 @@ describe("ArmyActionManager.findActionPaths origin precedence", () => {
     vi.restoreAllMocks();
   });
 
-  it("anchors first-hop highlights to startPositionOverride when override and ECS coord diverge", () => {
-    const { manager, structureHexes, armyHexes, exploredHexes, chestHexes, overrideFeltStart } = createTestSetup();
-
-    const actionPaths = (manager.findActionPaths as any)(
-      structureHexes,
-      armyHexes,
-      exploredHexes,
-      chestHexes,
-      0,
-      0,
-      0x123n,
-      overrideFeltStart,
-    );
-
-    const highlightedHexes = new Set(
-      actionPaths.getHighlightedHexes().map((action) => `${action.hex.col},${action.hex.row}`),
-    );
-
-    expect(highlightedHexes).toEqual(toNormalizedNeighborSet(overrideFeltStart));
-  });
-
-  it("falls back to ExplorerTroops coord when no override is provided", () => {
+  it("anchors first-hop highlights to the ExplorerTroops coord — the same coord the submit freshness guard checks", () => {
     const { manager, structureHexes, armyHexes, exploredHexes, chestHexes, oldFeltStart } = createTestSetup();
 
     const actionPaths = manager.findActionPaths(

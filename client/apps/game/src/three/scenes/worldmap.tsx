@@ -230,7 +230,6 @@ import {
   type MovementEffectClearReason,
   type TravelEffectType,
 } from "./worldmap-travel-effect-policy";
-import { resolveArmyActionPathOrigin } from "./worldmap-action-path-origin";
 import { resolveOwnershipPulseHexes } from "./worldmap-ownership-pulse-policy";
 import {
   resolveDuplicateTileReconcilePlan,
@@ -3483,20 +3482,20 @@ export default class WorldmapScene extends WarpTravel {
 
     const { currentDefaultTick, currentArmiesTick } = getBlockTimestamp();
     const armyPosition = this.getArmyDisplayPosition(selectedEntityId);
+    // Action paths plan from RECS ExplorerTroops — the same coord the submit
+    // freshness guard checks. The visual display position may lag it mid-tween
+    // and is presentation only, never planning input.
     const explorerTroopsCoord = getComponentValue(
       this.dojo.components.ExplorerTroops,
       gameEntityKey([BigInt(selectedEntityId)]),
     )?.coord;
-    const { startPositionOverride, hasDivergentOrigin } = resolveArmyActionPathOrigin({
-      feltCenter: FELT_CENTER(),
-      worldmapArmyPosition: armyPosition,
-      explorerTroopsCoord,
-    });
-
-    if (import.meta.env.DEV && hasDivergentOrigin && armyPosition) {
-      console.warn(
-        `[DEBUG] Action-path origin divergence for army ${selectedEntityId}: worldmap=(${armyPosition.col},${armyPosition.row}), ecs=(${explorerTroopsCoord?.x},${explorerTroopsCoord?.y})`,
-      );
+    if (!explorerTroopsCoord) {
+      if (import.meta.env.DEV) {
+        console.error(`[DEBUG] Army ${selectedEntityId} has no ExplorerTroops coord; suppressing action paths`);
+      }
+      this.clearMovementActionOptionsForSelectedArmy(selectedEntityId);
+      this.showSelectedArmyPulse(selectedEntityId);
+      return true;
     }
 
     const actionPaths = armyActionManager.findActionPaths(
@@ -3507,7 +3506,6 @@ export default class WorldmapScene extends WarpTravel {
       currentDefaultTick,
       currentArmiesTick,
       playerAddress,
-      startPositionOverride,
     );
 
     const paths = actionPaths.getPaths();
