@@ -21,6 +21,7 @@ import {
   structureTypeToBuildingType,
 } from "@/three/constants";
 import { createHexagonShape } from "@/three/geometry/hexagon-geometry";
+import { runWithFrameWorkOwner } from "@/three/frame-work-owner";
 import { BIOME_COLORS } from "@/three/managers/biome-colors";
 import { BuildingPreview } from "@/three/managers/building-preview";
 import InstancedBiome from "@/three/managers/instanced-biome";
@@ -566,6 +567,10 @@ export default class HexceptionScene extends HexagonScene {
   }
 
   setup() {
+    return runWithFrameWorkOwner("scene:hexception:setup", () => this.setupScene());
+  }
+
+  private setupScene() {
     this.bootstrapSceneOwnership();
     const routeTarget = resolvePlayRouteTarget(window.location, { fastTravelEnabled: true });
     const routeWorldPosition = routeTarget.routeWorldPosition;
@@ -1114,7 +1119,7 @@ export default class HexceptionScene extends HexagonScene {
       Empty: [],
     };
 
-    Promise.all(this.modelLoadPromises).then(() => {
+    const commitGrid = () => {
       const centers = [
         [0, 0], //0, 0 (Main hex)
         [-6, 5], //-1, 1
@@ -1344,7 +1349,9 @@ export default class HexceptionScene extends HexagonScene {
           }),
         );
       }
-    });
+    };
+
+    Promise.all(this.modelLoadPromises).then(() => runWithFrameWorkOwner("scene:hexception:grid", commitGrid));
   }
 
   addPausedLabelToBuilding(building: { col: number; row: number; matrix: any }) {

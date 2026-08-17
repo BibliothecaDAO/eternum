@@ -1,6 +1,7 @@
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useBlockTimestampStore } from "@/hooks/store/use-block-timestamp-store";
 import { gameWorkerManager } from "@/managers/game-worker-manager";
+import { runWithFrameWorkOwner } from "@/three/frame-work-owner";
 import { resolveArmyOwnerState } from "@/three/managers/army-owner-resolution";
 import { ArmyModel } from "@/three/managers/army-model";
 import {
@@ -2862,6 +2863,10 @@ export class ArmyManager {
   }
 
   private handleCameraViewChange = (view: CameraView) => {
+    runWithFrameWorkOwner("zoom:army-presentation", () => this.applyCameraView(view));
+  };
+
+  private applyCameraView(view: CameraView): void {
     const shadowsEnabled = this.hexagonScene?.getShadowsEnabled() ?? true;
     const enableRealShadows = view === CameraView.Close && shadowsEnabled;
     const enableContactShadows = !enableRealShadows;
@@ -2880,7 +2885,7 @@ export class ArmyManager {
 
     // Apply label transitions using the centralized function
     applyLabelTransitions(this.entityIdLabels, view);
-  };
+  }
 
   public isArmySelectable(entityId: ID): boolean {
     // Check if army exists in our data
