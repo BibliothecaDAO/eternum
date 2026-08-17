@@ -18,7 +18,6 @@ describe("ToriiEventGapFill", () => {
     const handleEvent = vi.fn();
     const gapFill = new ToriiEventGapFill({
       fetchPage: vi.fn(async () => ({ items: [event("historical", 100)] })),
-      handleEvent,
     });
 
     await gapFill.establishBaseline();
@@ -37,10 +36,10 @@ describe("ToriiEventGapFill", () => {
         nextCursor: "older",
       })
       .mockResolvedValueOnce({ items: [event("older", 99)] });
-    const gapFill = new ToriiEventGapFill({ fetchPage, handleEvent });
+    const gapFill = new ToriiEventGapFill({ fetchPage });
     await gapFill.establishBaseline();
 
-    const replayed = await gapFill.replaySince(gapFill.captureWatermark());
+    const replayed = await gapFill.replaySince(gapFill.captureWatermark(), handleEvent);
 
     expect(replayed).toBe(2);
     expect(handleEvent.mock.calls.map(([value]) => value.hashed_keys)).toEqual(["middle", "latest"]);
@@ -54,12 +53,12 @@ describe("ToriiEventGapFill", () => {
       .fn()
       .mockResolvedValueOnce({ items: [event("baseline", 100)] })
       .mockResolvedValueOnce({ items: [replacementEvent, event("baseline", 100)] });
-    const gapFill = new ToriiEventGapFill({ fetchPage, handleEvent });
+    const gapFill = new ToriiEventGapFill({ fetchPage });
     await gapFill.establishBaseline();
     const watermark = gapFill.captureWatermark();
-    gapFill.handleLiveEvent(replacementEvent);
+    gapFill.handleLiveEvent(replacementEvent, handleEvent);
 
-    const replayed = await gapFill.replaySince(watermark);
+    const replayed = await gapFill.replaySince(watermark, handleEvent);
 
     expect(replayed).toBe(0);
     expect(handleEvent).toHaveBeenCalledOnce();

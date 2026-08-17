@@ -43,13 +43,14 @@ describe("network boot-regression guards", () => {
     expect(source).toContain("installActiveWorldSpatialProjection(setup)");
   });
 
-  it("reports recoverable event stream health transitions", () => {
+  it("routes stream failures through the connection recovery owner", () => {
     const source = readSource("src/dojo/sync.ts");
 
-    expect(source).toContain("[Sync] event stream lost");
-    expect(source).toContain("[Sync] event stream restored");
-    expect(source).toContain("onEventStreamLost: recordEventStreamLost");
-    expect(source).toContain("onEventStreamRestored: recordEventStreamRestored");
+    expect(source).toContain("requestConnectionRecovery");
+    expect(source).toContain("onStreamClose: (stream, reason)");
+    expect(source).toContain('kind: "stream_close"');
+    expect(source).not.toContain("onEventStreamLost");
+    expect(source).not.toContain("onEventStreamRestored");
   });
 
   it("connection-health-monitor exposes the boot grace gate", () => {

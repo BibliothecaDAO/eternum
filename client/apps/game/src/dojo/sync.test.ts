@@ -7,6 +7,9 @@ const setEntitiesMock = vi.hoisted(() => vi.fn());
 const envMock = vi.hoisted(() => ({
   env: {
     VITE_PUBLIC_TORII_SUBSCRIPTION_SETUP_TIMEOUT_MS: 8_000,
+    VITE_PUBLIC_TORII_SNAPSHOT_PAGE_TIMEOUT_MS: 15_000,
+    VITE_PUBLIC_TORII_EVENT_REPLAY_PAGE_TIMEOUT_MS: 10_000,
+    VITE_PUBLIC_TORII_PAGE_RETRY_COUNT: 2,
   },
 }));
 
@@ -45,6 +48,10 @@ vi.mock("./queries", () => ({
 
 vi.mock("../../env", () => envMock);
 
+vi.mock("./connection-health-monitor", () => ({
+  requestConnectionRecovery: vi.fn(),
+}));
+
 vi.mock("./sync-initial-selection", () => ({
   resolveInitialStructureSelection: vi.fn(() => ({ selectedStructure: null, spectator: false })),
 }));
@@ -74,8 +81,6 @@ function createSyncHarness() {
   const client = {
     onEntityUpdated: vi.fn(async (_clause, _callback: EntityUpdatedCallback) => entitySubscription),
     onEventMessageUpdated: vi.fn(async () => eventSubscription),
-    updateEntitySubscription: vi.fn(async () => undefined),
-    updateEventMessageSubscription: vi.fn(async () => undefined),
     getEntities: vi.fn(
       async (_input: unknown): Promise<{ items: ToriiEntityStub[]; next_cursor?: string }> => ({
         items: [],
@@ -85,24 +90,27 @@ function createSyncHarness() {
     getEventMessages: vi.fn(async () => ({ items: [], next_cursor: undefined })),
   };
 
+  const createEmptyComponent = () => ({
+    entities: function* () {},
+    update$: { subscribe: vi.fn(() => ({ unsubscribe: vi.fn() })) },
+  });
+  const structureComponent = createEmptyComponent();
+  const tileOptComponent = createEmptyComponent();
+  const explorerTroopsComponent = createEmptyComponent();
+
   const setup = {
     components: {
-      Structure: {
-        entities: function* () {},
-        update$: { subscribe: vi.fn(() => ({ unsubscribe: vi.fn() })) },
-      },
-      TileOpt: {
-        entities: function* () {},
-        update$: { subscribe: vi.fn(() => ({ unsubscribe: vi.fn() })) },
-      },
-      ExplorerTroops: {
-        entities: function* () {},
-        update$: { subscribe: vi.fn(() => ({ unsubscribe: vi.fn() })) },
-      },
+      Structure: structureComponent,
+      TileOpt: tileOptComponent,
+      ExplorerTroops: explorerTroopsComponent,
     },
     network: {
       toriiClient: client,
-      contractComponents: [],
+      contractComponents: {
+        Structure: structureComponent,
+        TileOpt: tileOptComponent,
+        ExplorerTroops: explorerTroopsComponent,
+      },
       world: {
         components: {},
         deleteEntity: vi.fn(),

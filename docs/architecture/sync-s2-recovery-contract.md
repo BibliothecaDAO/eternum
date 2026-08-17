@@ -22,8 +22,9 @@ callback can race a provisional write. The guarantee is convergence, not gap-fre
 mutation crossing a page boundary is replayed after the older snapshot value. The inverse race is also possible: a
 buffered callback older than the page it crossed can regress that entity by at most one observed update; its next live
 update or recovery heals it. A fetch or detected stream failure aborts the generation; reconnect starts the full
-sequence again. Silent stream death is still inferred by the existing health monitor because the current Torii
-subscription object has no close signal.
+sequence again. The connection health monitor owns recovery for both streams. It uses indexer heartbeat staleness where
+available, observable stream-close signals when a future SDK exposes them, and a logged quiet-stream refresh only on
+Torii deployments that do not provide indexer heartbeats.
 
 ## Deletion and event rules
 
@@ -35,10 +36,11 @@ subscription object has no close signal.
 - Event identities use a fixed FIFO of 512 `model:hashed_keys:timestamp` values. The FIFO survives reconnect recovery,
   so replayed callbacks cannot fire an effect twice while later events for the same on-chain keys still fire. It resets
   for a genuinely new session.
-- Event callbacks expose no server cursor. The client establishes a timestamp watermark without replaying historical
-  effects, then queries backward inclusively from the frozen watermark after every replacement subscription and lease
-  renewal. Results pass through the normal event handler and identity dedupe path. This is gap-fill replay, not a claim
-  of gap-free server ordering.
+- Event callbacks expose no server cursor. After the initial subscriptions are active, the session establishes its
+  timestamp watermark asynchronously without replaying historical effects. That watermark survives runtime recovery; a
+  replacement subscription queries backward inclusively from the frozen watermark after it is listening. Results pass
+  through the normal event handler and identity dedupe path. This is gap-fill replay, not a claim of gap-free server
+  ordering. Healthy event streams have no periodic lease or replay.
 
 ## Ordering and fencing
 

@@ -178,6 +178,24 @@ const envSchema = z.object({
     .default("8000")
     .transform((v) => Number(v))
     .refine((value) => Number.isFinite(value) && value >= 0, "VITE_PUBLIC_TORII_SUBSCRIPTION_SETUP_TIMEOUT_MS"),
+  VITE_PUBLIC_TORII_SNAPSHOT_PAGE_TIMEOUT_MS: z
+    .string()
+    .optional()
+    .default("15000")
+    .transform((v) => Number(v))
+    .refine((value) => Number.isFinite(value) && value >= 0, "VITE_PUBLIC_TORII_SNAPSHOT_PAGE_TIMEOUT_MS"),
+  VITE_PUBLIC_TORII_EVENT_REPLAY_PAGE_TIMEOUT_MS: z
+    .string()
+    .optional()
+    .default("10000")
+    .transform((v) => Number(v))
+    .refine((value) => Number.isFinite(value) && value >= 0, "VITE_PUBLIC_TORII_EVENT_REPLAY_PAGE_TIMEOUT_MS"),
+  VITE_PUBLIC_TORII_PAGE_RETRY_COUNT: z
+    .string()
+    .optional()
+    .default("2")
+    .transform((v) => Number(v))
+    .refine((value) => Number.isInteger(value) && value >= 0, "VITE_PUBLIC_TORII_PAGE_RETRY_COUNT"),
   // How long without a Torii indexer heartbeat before a stream is treated as
   // stale. Lower = faster detection of a silently-dropped stream.
   VITE_PUBLIC_TORII_STALE_THRESHOLD_MS: z
@@ -210,8 +228,8 @@ const envSchema = z.object({
     .default("30000")
     .transform((v) => Number(v))
     .refine((value) => Number.isFinite(value) && value >= 0, "VITE_PUBLIC_TORII_RECONNECT_MAX_COOLDOWN_MS"),
-  // Proactively re-subscribe streams after this long with no activity, to dodge
-  // proxy idle / MAX_CONNECTION_AGE reaps in quiet worlds. 0 disables.
+  // Last-resort refresh for cancel-only streams when SubscribeIndexer heartbeat
+  // is unavailable. Healthy heartbeat-backed sessions never use it. 0 disables.
   VITE_PUBLIC_TORII_QUIET_STREAM_REFRESH_MS: z
     .string()
     .optional()

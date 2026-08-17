@@ -57,6 +57,9 @@ describe("game-wide sync reconciliation adapter", () => {
       entityModels: ["s2-TestState"],
       logging: false,
       subscriptionSetupTimeoutMs: 0,
+      snapshotPageTimeoutMs: 0,
+      eventReplayPageTimeoutMs: 0,
+      pageRetryCount: 0,
     });
     const manager = new ProvisionalWriteManager(session.store);
     const intent = manager.createIntent([

@@ -11,7 +11,6 @@ export interface ToriiEventReplayWatermark {
 
 interface ToriiEventGapFillInput {
   fetchPage: (cursor?: string) => Promise<ToriiEventPage>;
-  handleEvent: (event: ToriiEntity) => void;
 }
 
 const EVENT_IDENTITY_LIMIT = 2_048;
@@ -67,12 +66,15 @@ export class ToriiEventGapFill {
     return { timestamp: this.latestTimestamp };
   }
 
-  public handleLiveEvent(event: ToriiEntity): void {
+  public handleLiveEvent(event: ToriiEntity, handleEvent: (event: ToriiEntity) => void): void {
     this.rememberEvent(event);
-    this.input.handleEvent(event);
+    handleEvent(event);
   }
 
-  public async replaySince(watermark: ToriiEventReplayWatermark): Promise<number> {
+  public async replaySince(
+    watermark: ToriiEventReplayWatermark,
+    handleEvent: (event: ToriiEntity) => void,
+  ): Promise<number> {
     const candidates = await this.fetchReplayCandidates(watermark.timestamp);
     let replayedEventCount = 0;
 
@@ -85,7 +87,7 @@ export class ToriiEventGapFill {
       })
       .forEach((event) => {
         if (this.hasSeenEvent(event)) return;
-        this.handleLiveEvent(event);
+        this.handleLiveEvent(event, handleEvent);
         replayedEventCount += 1;
       });
 

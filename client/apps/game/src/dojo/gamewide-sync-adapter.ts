@@ -3,6 +3,7 @@ import type {
   GameSyncAuthoritativeObservation,
   GameSyncEntity,
   GameSyncEntityStoreOperation,
+  GameSyncProvisionalIntentStalledInfo,
   GameSyncRuntimeMetrics,
   GameSyncSessionStart,
   GameSyncStore,
@@ -11,8 +12,8 @@ import type { Component, Entity, Metadata, OverridableComponent, Schema } from "
 import { getComponentEntities, getComponentValue, removeComponent } from "@dojoengine/recs";
 import { setEntities } from "@dojoengine/state";
 import type { Clause, Entity as ToriiEntity, Query } from "@dojoengine/torii-wasm/types";
+import { captureClientEvent } from "@/posthog";
 import { filterEntityToActiveGameScope } from "./game-scope-entity-filter";
-import { createRecoveringToriiEventSubscription } from "./recovering-torii-event-subscription";
 import { observeToriiStreamLifecycle } from "./torii-stream-lifecycle-observer";
 import { setupToriiSubscriptions, type ToriiSubscriptionSetupTimeoutInfo } from "./torii-subscription-setup";
 import { ToriiEventGapFill } from "./torii-event-gap-fill";
@@ -29,14 +30,15 @@ interface CreateGamewideSyncSessionInput {
   entityModels: readonly string[];
   logging: boolean;
   subscriptionSetupTimeoutMs: number;
+  snapshotPageTimeoutMs: number;
+  eventReplayPageTimeoutMs: number;
+  pageRetryCount: number;
   onSubscriptionSetupTimeout?: (info: ToriiSubscriptionSetupTimeoutInfo) => void;
   onSubscriptionActive?: () => void;
   onLiveEntity?: (entity: GameSyncEntity) => void;
   onLiveUpdate?: (kind: "entity" | "event") => void;
   onMetrics?: (metrics: GameSyncRuntimeMetrics) => void;
-  onStreamClose?: () => void;
-  onEventStreamLost?: (reason: string) => void;
-  onEventStreamRestored?: () => void;
+  onStreamClose?: (stream: "entity" | "event", reason: string) => void;
 }
 
 const qualifiedComponentName = (component: Component): string | null => {
@@ -201,14 +203,56 @@ const runWithTimeout = async <T>(
   });
 };
 
+const runPageWithRetries = async <T>({
+  label,
+  timeoutMs,
+  retryCount,
+  operation,
+  onTimeout,
+}: {
+  label: string;
+  timeoutMs: number;
+  retryCount: number;
+  operation: () => Promise<T>;
+  onTimeout?: (info: ToriiSubscriptionSetupTimeoutInfo) => void;
+}): Promise<T> => {
+  const maxAttempts = Math.max(1, retryCount + 1);
+  let lastError: unknown;
+
+  for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+    try {
+      return await runWithTimeout(label, timeoutMs, operation, onTimeout);
+    } catch (error) {
+      lastError = error;
+      if (attempt === maxAttempts) break;
+      console.warn(`[Sync] ${label} failed; retrying page (${attempt}/${maxAttempts})`, error);
+    }
+  }
+
+  throw lastError;
+};
+
+const reportProvisionalIntentStalled = (info: GameSyncProvisionalIntentStalledInfo): void => {
+  if (import.meta.env.DEV) {
+    console.error("[GameSync] confirmed provisional intent has not reconciled after 30s", info);
+  }
+  captureClientEvent("game_sync_provisional_intent_stalled", {
+    intent_id: info.intentId,
+    has_transaction_hash: Boolean(info.transactionHash),
+    unmatched_write_count: info.unmatchedWrites.length,
+    unmatched_models: [...new Set(info.unmatchedWrites.map(({ model }) => model))].sort(),
+  });
+};
+
 export const createGamewideSyncSession = (input: CreateGamewideSyncSessionInput): GameSyncSessionStart => {
   const client = input.setup.network.toriiClient;
 
   const fetchEventPage = (cursor?: string) =>
-    runWithTimeout(
-      "event gap-fill page",
-      input.subscriptionSetupTimeoutMs,
-      async () => {
+    runPageWithRetries({
+      label: "event gap-fill page",
+      timeoutMs: input.eventReplayPageTimeoutMs,
+      retryCount: input.pageRetryCount,
+      operation: async () => {
         const query: Query = {
           pagination: {
             limit: EVENT_GAP_FILL_PAGE_SIZE,
@@ -224,8 +268,29 @@ export const createGamewideSyncSession = (input: CreateGamewideSyncSessionInput)
         const page = await client.getEventMessages(query);
         return { items: page.items, nextCursor: page.next_cursor };
       },
-      input.onSubscriptionSetupTimeout,
-    );
+      onTimeout: input.onSubscriptionSetupTimeout,
+    });
+
+  const eventGapFill = new ToriiEventGapFill({ fetchPage: fetchEventPage });
+  let hasOpenedEventStream = false;
+  let replayArmed = false;
+  let baselinePromise: Promise<void> | null = null;
+
+  const armReplayBaseline = (): void => {
+    if (replayArmed || baselinePromise || input.eventModels.length === 0) return;
+
+    baselinePromise = eventGapFill
+      .establishBaseline()
+      .then(() => {
+        replayArmed = true;
+      })
+      .catch((error) => {
+        console.warn("[Sync] event replay baseline failed; the next live event will arm recovery replay", error);
+      })
+      .finally(() => {
+        baselinePromise = null;
+      });
+  };
 
   return {
     snapshotModels: input.entityModels,
@@ -235,15 +300,13 @@ export const createGamewideSyncSession = (input: CreateGamewideSyncSessionInput)
     onSubscriptionActive: input.onSubscriptionActive,
     onLiveUpdate: input.onLiveUpdate,
     onMetrics: input.onMetrics,
-    onProvisionalIntentStalled: import.meta.env.DEV
-      ? (info) => console.error("[GameSync] confirmed provisional intent has not reconciled after 30s", info)
-      : undefined,
+    onProvisionalIntentStalled: reportProvisionalIntentStalled,
     transport: {
       async subscribe(handlers) {
-        const eventGapFill = new ToriiEventGapFill({
-          fetchPage: fetchEventPage,
-          handleEvent: handlers.onEvent,
-        });
+        if (hasOpenedEventStream && !replayArmed && baselinePromise) {
+          await baselinePromise;
+        }
+        const replayWatermark = hasOpenedEventStream && replayArmed ? eventGapFill.captureWatermark() : null;
         const subscriptions = await setupToriiSubscriptions({
           createEntitySubscription: () =>
             client.onEntityUpdated(input.entityClause, (entity: ToriiEntity) => {
@@ -253,41 +316,53 @@ export const createGamewideSyncSession = (input: CreateGamewideSyncSessionInput)
               handlers.onEntity(scoped);
             }),
           createEventSubscription: () =>
-            createRecoveringToriiEventSubscription({
-              createSubscription: () =>
-                client.onEventMessageUpdated(input.eventClause, (event: ToriiEntity) =>
-                  eventGapFill.handleLiveEvent(event),
-                ),
-              establishReplayBaseline: () => eventGapFill.establishBaseline(),
-              captureReplayWatermark: () => eventGapFill.captureWatermark(),
-              replaySince: (watermark) =>
-                eventGapFill.replaySince(watermark as ReturnType<typeof eventGapFill.captureWatermark>),
-              onGapFillReplayed: (replayedEventCount) => {
-                console.info(`[Sync] event gap-fill replayed ${replayedEventCount} events`);
-                handlers.onEventGapFill(replayedEventCount);
-              },
-              onLost: (reason) => input.onEventStreamLost?.(reason),
-              onRestored: () => input.onEventStreamRestored?.(),
-              attemptTimeoutMs: input.subscriptionSetupTimeoutMs,
+            client.onEventMessageUpdated(input.eventClause, (event: ToriiEntity) => {
+              replayArmed = true;
+              eventGapFill.handleLiveEvent(event, handlers.onEvent);
             }),
           subscriptionSetupTimeoutMs: input.subscriptionSetupTimeoutMs,
           onSubscriptionSetupTimeout: input.onSubscriptionSetupTimeout,
         });
-        const detachLifecycle = observeToriiStreamLifecycle(subscriptions.entitySubscription, () =>
-          input.onStreamClose?.(),
+        const detachEntityLifecycle = observeToriiStreamLifecycle(subscriptions.entitySubscription, ({ reason }) =>
+          input.onStreamClose?.("entity", reason),
         );
+        const detachEventLifecycle = observeToriiStreamLifecycle(subscriptions.eventSubscription, ({ reason }) =>
+          input.onStreamClose?.("event", reason),
+        );
+
+        try {
+          if (replayWatermark) {
+            const replayedEventCount = await eventGapFill.replaySince(replayWatermark, handlers.onEvent);
+            if (replayedEventCount > 0) {
+              console.info(`[Sync] event gap-fill replayed ${replayedEventCount} events`);
+              handlers.onEventGapFill(replayedEventCount);
+            }
+          } else if (hasOpenedEventStream) {
+            console.warn("[Sync] event recovery opened before a replay watermark was available");
+          }
+        } catch (error) {
+          detachEntityLifecycle();
+          detachEventLifecycle();
+          subscriptions.cancel();
+          throw error;
+        }
+
+        hasOpenedEventStream = true;
+        armReplayBaseline();
         return {
           cancel() {
-            detachLifecycle();
+            detachEntityLifecycle();
+            detachEventLifecycle();
             subscriptions.cancel();
           },
         };
       },
       fetchSnapshotPage(cursor) {
-        return runWithTimeout(
-          "game-wide snapshot page",
-          input.subscriptionSetupTimeoutMs,
-          async () => {
+        return runPageWithRetries({
+          label: "game-wide snapshot page",
+          timeoutMs: input.snapshotPageTimeoutMs,
+          retryCount: input.pageRetryCount,
+          operation: async () => {
             const page = await client.getEntities({
               pagination: {
                 limit: GAMEWIDE_SNAPSHOT_PAGE_SIZE,
@@ -305,8 +380,8 @@ export const createGamewideSyncSession = (input: CreateGamewideSyncSessionInput)
               .filter((item): item is ToriiEntity => item !== null);
             return { items, nextCursor: page.next_cursor };
           },
-          input.onSubscriptionSetupTimeout,
-        );
+          onTimeout: input.onSubscriptionSetupTimeout,
+        });
       },
     },
   };

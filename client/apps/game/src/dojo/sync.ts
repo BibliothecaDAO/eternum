@@ -27,6 +27,7 @@ import { gameEntityKey, gameModel, isGameScoped } from "./game-scope";
 import { resolveInitialStructureSelection } from "./sync-initial-selection";
 import { buildModelKeysClause, type GlobalModelStreamConfig } from "./torii-model-clause";
 import type { ToriiSubscriptionSetupTimeoutInfo } from "./torii-subscription-setup";
+import { requestConnectionRecovery } from "./connection-health-monitor";
 
 /**
  * Cancel the global entity stream subscription.
@@ -100,20 +101,6 @@ const recordGamewideLiveUpdate = (): void => {
   connection.recordSpatialUpdate();
 };
 
-const recordEventStreamLost = (reason: string): void => {
-  console.warn(`[Sync] event stream lost: ${reason}`);
-  const connection = useConnectionStore.getState();
-  connection.recordStreamClose();
-  connection.setGlobalStatus("reconnecting");
-};
-
-const recordEventStreamRestored = (): void => {
-  console.info("[Sync] event stream restored");
-  const connection = useConnectionStore.getState();
-  connection.recordGlobalHandshake();
-  connection.setGlobalStatus("connected");
-};
-
 let pendingGamewideMetrics: GameSyncRuntimeMetrics | null = null;
 let gamewideMetricsLogTimer: ReturnType<typeof setTimeout> | null = null;
 
@@ -154,13 +141,14 @@ const createActiveGamewideSyncSession = (input: {
     entityModels,
     logging: input.logging,
     subscriptionSetupTimeoutMs: input.subscriptionSetupTimeoutMs,
+    snapshotPageTimeoutMs: env.VITE_PUBLIC_TORII_SNAPSHOT_PAGE_TIMEOUT_MS,
+    eventReplayPageTimeoutMs: env.VITE_PUBLIC_TORII_EVENT_REPLAY_PAGE_TIMEOUT_MS,
+    pageRetryCount: env.VITE_PUBLIC_TORII_PAGE_RETRY_COUNT,
     onSubscriptionSetupTimeout: input.onSubscriptionSetupTimeout,
     onSubscriptionActive: recordGamewideSubscriptionActive,
     onLiveUpdate: recordGamewideLiveUpdate,
     onMetrics: reportGamewideSyncMetrics,
-    onStreamClose: () => useConnectionStore.getState().recordStreamClose(),
-    onEventStreamLost: recordEventStreamLost,
-    onEventStreamRestored: recordEventStreamRestored,
+    onStreamClose: (stream, reason) => requestConnectionRecovery({ kind: "stream_close", stream, reason }),
   });
 };
 
