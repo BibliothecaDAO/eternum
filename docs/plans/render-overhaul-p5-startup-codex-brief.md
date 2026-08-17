@@ -1,6 +1,26 @@
-# P5 — startup: measure, then delete the vestiges — Codex brief
+# P5 — startup: measure, then delete the vestiges — Codex brief, v2
 
 Motto: **KISS, always. Systemic fixes over point patches. Success is deletion. Evidence before optimization.**
+
+v2 ratifies the pre-implementation review corrections; where they conflict with the slice text below, v2 wins:
+
+- **P5B's stamping diagnosis was wrong.** All 50 embedded cosmetic images carry `eternumContentHash`; the UUID names in
+  the GPU log are instrumentation display names, not pool keys. The real defect is the all-registry fan-out:
+  `asset-cache.ts:167` eagerly starts all 28 entries, including base army/structure models. Corrected fix: **delete the
+  eager preload** and load only equipped/needed cosmetics — no pacing wrapper around work that should not exist.
+- **P5D's 1.8s number is contaminated** — it includes asynchronous biome-model waits, and the critical budget is already
+  exactly one page (`world-chunk-config.ts:89`). P5D becomes measure-first: split page CPU build, model wait, and commit
+  timings; optimize only what the split convicts.
+- **P5C needs attribution before collapsing** — catch-up logs must record chunk key, transition token, and trigger
+  reason first.
+- **P5A's capture must be a genuine prewarm-off cold entry** — existing logs are contaminated because prewarm continues
+  in the background after its timeout.
+- **P5F names the wrong variable** — chat wrongly consumes `VITE_PUBLIC_REALTIME_URL`, which factory discovery also
+  needs; chat moves to `VITE_PUBLIC_CHAT_URL`, omitted in local development.
+
+Execution order: (1) owner attribution + phase-accurate terrain/catch-up logging, (2) chat endpoint correction, (3)
+genuine prewarm-off capture — stop at this gate and hand the capture request over, (4) delete prewarm if confirmed, (5)
+delete the eager all-cosmetics preload, (6) optimize only the terrain/catch-up phases the new evidence convicts.
 
 Context: with the corrupt KTX2 transcoder fixed deploy-side, a clean dev entry (Aug 17 log) still takes ~20s from wallet
 connect to interactive. The sync layer is exonerated — recovery 1.7s, 1,873 entities, support queries <550ms. The
