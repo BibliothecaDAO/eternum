@@ -32,7 +32,6 @@ import {
   TroopType,
 } from "@bibliothecadao/types";
 import { getComponentValue } from "@dojoengine/recs";
-import { useQueryClient } from "@tanstack/react-query";
 import clsx from "clsx";
 import LockIcon from "lucide-react/dist/esm/icons/lock";
 import Pen from "lucide-react/dist/esm/icons/pen";
@@ -102,7 +101,6 @@ export const ArmyCreate = ({
     setup: { components },
     account: { account },
   } = useDojo();
-  const queryClient = useQueryClient();
 
   const currentDefaultTick = getBlockTimestamp().currentDefaultTick;
 
@@ -207,15 +205,6 @@ export const ArmyCreate = ({
       } else {
         if (guardSlot !== undefined) {
           await armyManager.addTroopsToGuard(account, troopType, troopTier, troopCount, guardSlot);
-          queryClient
-            .invalidateQueries({
-              queryKey: ["guards", String(owner_entity)],
-              exact: true,
-              refetchType: "active",
-            })
-            .catch((error) => {
-              console.error("Failed to refresh guards after defense update:", error);
-            });
         }
       }
 

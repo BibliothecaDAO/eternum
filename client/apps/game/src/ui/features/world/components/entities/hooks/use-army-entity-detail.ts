@@ -1,15 +1,12 @@
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
+import { useGameEntityComponentValue } from "@/hooks/helpers/use-game-entity-component-value";
 import { useBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
 import { getCharacterName } from "@/utils/agent";
 import { getExplorerStaminaSnapshot } from "@/utils/explorer-stamina";
 import { getAddressName, getArmyRelicEffects, getGuildFromPlayerAddress } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
-import { getExplorerFromToriiClient, getStructureFromToriiClient } from "@bibliothecadao/torii";
-import { ArmyInfo, ContractAddress, HexPosition, ID, TroopTier, TroopType } from "@bibliothecadao/types";
-import { useComponentValue } from "@dojoengine/react";
-import { useQuery } from "@tanstack/react-query";
+import { ContractAddress, ID, TroopTier, TroopType } from "@bibliothecadao/types";
 import { useCallback, useMemo, useState } from "react";
-import { gameEntityKey } from "@/dojo/game-scope";
 
 interface UseArmyEntityDetailOptions {
   armyEntityId: ID;
@@ -38,7 +35,6 @@ interface AlignmentBadge {
 
 export const useArmyEntityDetail = ({ armyEntityId }: UseArmyEntityDetailOptions) => {
   const {
-    network: { toriiClient },
     account: { account },
     setup: {
       components,
@@ -50,75 +46,24 @@ export const useArmyEntityDetail = ({ armyEntityId }: UseArmyEntityDetailOptions
   const { currentArmiesTick } = useBlockTimestamp();
   const userAddress = ContractAddress(account.address);
   const [isLoadingDelete, setIsLoadingDelete] = useState(false);
-  const [lastRefresh, setLastRefresh] = useState(0);
-  const [isRefreshing, setIsRefreshing] = useState(false);
-  const armyRecsEntity = gameEntityKey([BigInt(armyEntityId)]);
-  const liveExplorerTroops = useComponentValue(components.ExplorerTroops, armyRecsEntity)?.troops;
-  // Current explorer resources and stamina are always read from live RECS.
-  const liveExplorerResources = useComponentValue(components.Resource, armyRecsEntity);
-
-  const {
-    data: explorerData,
-    isLoading: isLoadingExplorer,
-    refetch: refetchExplorer,
-  } = useQuery({
-    queryKey: ["explorer", String(armyEntityId)],
-    queryFn: async () => {
-      if (!toriiClient || !armyEntityId) return undefined;
-      return getExplorerFromToriiClient(toriiClient, armyEntityId);
-    },
-    staleTime: 5000,
-  });
-
-  const explorer = explorerData?.explorer;
-  const explorerResources = liveExplorerResources ?? explorerData?.resources;
+  const explorer = useGameEntityComponentValue(components.ExplorerTroops, armyEntityId);
+  const explorerResources = useGameEntityComponentValue(components.Resource, armyEntityId);
+  const structure = useGameEntityComponentValue(components.Structure, explorer?.owner);
+  const structureResources = useGameEntityComponentValue(components.Resource, explorer?.owner);
 
   const staminaSnapshot = useMemo(() => {
     return getExplorerStaminaSnapshot({
       entityId: armyEntityId,
       currentArmiesTick,
-      liveTroops: liveExplorerTroops,
+      liveTroops: explorer?.troops,
     });
-  }, [armyEntityId, currentArmiesTick, liveExplorerTroops]);
+  }, [armyEntityId, currentArmiesTick, explorer?.troops]);
 
   const currentTroops = staminaSnapshot?.troops ?? null;
   const relicEffects = useMemo(
     () => (currentTroops ? getArmyRelicEffects(currentTroops, currentArmiesTick) : []),
     [currentArmiesTick, currentTroops],
   );
-
-  const {
-    data: structureData,
-    isLoading: isLoadingStructure,
-    refetch: refetchStructure,
-  } = useQuery({
-    queryKey: ["structure", String(explorer?.owner ?? "")],
-    queryFn: async () => {
-      if (!toriiClient || !explorer?.owner) return undefined;
-      return getStructureFromToriiClient(toriiClient, explorer.owner);
-    },
-    enabled: !!explorer?.owner,
-    staleTime: 5000,
-  });
-
-  const structure = structureData?.structure;
-  const structureResources = structureData?.resources;
-
-  const handleRefresh = useCallback(async () => {
-    const now = Date.now();
-    if (now - lastRefresh < 10000) {
-      return;
-    }
-
-    setIsRefreshing(true);
-    setLastRefresh(now);
-
-    try {
-      await Promise.all([refetchExplorer(), explorer?.owner ? refetchStructure() : Promise.resolve()]);
-    } finally {
-      setTimeout(() => setIsRefreshing(false), 1000);
-    }
-  }, [lastRefresh, refetchExplorer, refetchStructure, explorer?.owner]);
 
   const derivedData: DerivedArmyData | undefined = useMemo(() => {
     if (!explorer) return undefined;
@@ -199,60 +144,9 @@ export const useArmyEntityDetail = ({ armyEntityId }: UseArmyEntityDetailOptions
     relicEffects,
     derivedData,
     alignmentBadge,
-    isLoadingExplorer,
-    isLoadingStructure,
-    isRefreshing,
-    handleRefresh,
-    lastRefresh,
+    isLoadingExplorer: explorer === undefined,
+    isLoadingStructure: explorer?.owner !== undefined && structure === undefined,
     handleDeleteExplorer,
     isLoadingDelete,
   };
-};
-
-const useBannerArmyInfo = (
-  explorer: NonNullable<ReturnType<typeof useArmyEntityDetail>["explorer"]> | undefined,
-  derivedData: DerivedArmyData | undefined,
-  armyEntityId: ID,
-  bannerPosition?: HexPosition,
-) => {
-  return useMemo<ArmyInfo | undefined>(() => {
-    if (!explorer) return undefined;
-
-    const baseName = derivedData?.addressName ?? `Army #${String(armyEntityId)}`;
-    const fallbackX = bannerPosition?.col ?? Number((explorer as any).coord_x ?? (explorer as any).position?.x ?? 0);
-    const fallbackY = bannerPosition?.row ?? Number((explorer as any).coord_y ?? (explorer as any).position?.y ?? 0);
-
-    // TODO: fix this
-    return {
-      entityId: Number(armyEntityId),
-      troops: explorer.troops,
-      stamina: derivedData?.stamina?.amount ?? 0n,
-      name: baseName,
-      ownerName: derivedData?.addressName ?? "",
-      isMine: derivedData?.isMine ?? false,
-      isMercenary: false,
-      isHome: false,
-      position: {
-        x: fallbackX,
-        y: fallbackY,
-        alt: false,
-      },
-      owner: BigInt(explorer.owner),
-      entity_owner_id: explorer.owner,
-      totalCapacity: 0,
-      weight: 0,
-      explorer: explorer,
-      structure: undefined,
-      hasAdjacentStructure: false,
-      relicEffects: [],
-    };
-  }, [
-    armyEntityId,
-    bannerPosition?.col,
-    bannerPosition?.row,
-    derivedData?.addressName,
-    derivedData?.isMine,
-    derivedData?.stamina?.amount,
-    explorer,
-  ]);
 };

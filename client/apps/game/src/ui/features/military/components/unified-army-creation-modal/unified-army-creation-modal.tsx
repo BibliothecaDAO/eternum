@@ -30,7 +30,6 @@ import {
   TroopType,
 } from "@bibliothecadao/types";
 import { useComponentValue } from "@dojoengine/react";
-import { useQueryClient } from "@tanstack/react-query";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import {
@@ -94,7 +93,6 @@ export const UnifiedArmyCreationBody = ({
     setup: { components, systemCalls },
     account: { account },
   } = useDojo();
-  const queryClient = useQueryClient();
   const mode = useGameModeConfig();
   const playerStructures = useOwnedMilitaryStructureInfos();
   const selectedStructureId = useUIStore((state) => state.structureEntityId);
@@ -515,17 +513,6 @@ export const UnifiedArmyCreationBody = ({
           troopCount,
           slotToUse,
         );
-        if (activeStructureId > 0) {
-          queryClient
-            .invalidateQueries({
-              queryKey: ["guards", String(activeStructureId)],
-              exact: true,
-              refetchType: "active",
-            })
-            .catch((error) => {
-              console.error("Failed to refresh guards after defense creation:", error);
-            });
-        }
       }
     } catch (error) {
       console.error("Failed to create army:", error);

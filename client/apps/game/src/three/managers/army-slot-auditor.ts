@@ -1,8 +1,8 @@
 /**
  * Dev-only tripwire for army InstancedMesh slot integrity.
  *
- * A unit's slot is tracked in two layers: the army-manager's mirror
- * (visibleArmyIndices / ArmyData.matrixIndex) and the army-model's single
+ * A visible unit's slot is tracked in two layers: the army-manager's compact
+ * visibleArmyIndices and the army-model's single
  * source of truth (instanceData.matrixIndex). The reported ghost — a frozen
  * duplicate at a unit's OLD position after it moves — is what happens when those
  * diverge and a movement is seeded from the stale mirror. This auditor reports
@@ -12,7 +12,7 @@
 
 export interface ArmySlotAuditEntry {
   entityId: number | string;
-  /** What the army-manager believes (visibleArmyIndices / ArmyData.matrixIndex). */
+  /** What the army-manager's compact visible set believes. */
   mirrorSlot: number | undefined;
   /** The army-model source of truth (instanceData.matrixIndex). */
   ssotSlot: number | undefined;

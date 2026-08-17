@@ -201,7 +201,7 @@ import {
   recordWorldmapTerrainReadyDuration,
 } from "./worldmap-terrain-commit-runtime";
 import { runWorldmapArmySelectionRecovery } from "./worldmap-army-selection-recovery-runtime";
-import { resolveArmyTabSelectionPosition, shouldQueueArmySelectionRecovery } from "./worldmap-army-tab-selection";
+import { shouldQueueArmySelectionRecovery } from "./worldmap-army-tab-selection";
 import { resolveCreateArmyEffectTargetHex } from "./worldmap-pending-action-effect-policy";
 import { registerWorldmapProvisionalFxRenderer, type WorldmapProvisionalFxSpec } from "./worldmap-provisional-fx";
 import { shouldPlayArmyMovementFx } from "./worldmap-movement-fx-policy";
@@ -2889,7 +2889,7 @@ export default class WorldmapScene extends WarpTravel {
     const actionPaths = structure.findActionPaths(
       hexCoords,
       this.buildProjectedArmyActionIndex(),
-      this.exploredTiles,
+      this.buildProjectedExploredTileIndex(),
       ContractAddress(playerAddress),
       attackRange,
     );
@@ -3404,7 +3404,7 @@ export default class WorldmapScene extends WarpTravel {
     const actionPaths = armyActionManager.findActionPaths(
       this.buildProjectedStructureActionIndex(),
       this.buildProjectedArmyActionIndex(),
-      this.exploredTiles,
+      this.buildProjectedExploredTileIndex(),
       this.buildProjectedChestActionIndex(),
       currentDefaultTick,
       currentArmiesTick,
@@ -3437,6 +3437,17 @@ export default class WorldmapScene extends WarpTravel {
       const normalized = new Position({ x: chest.hexCoords.col, y: chest.hexCoords.row }).getNormalized();
       const row = index.get(normalized.x) ?? new Map<number, HexEntityInfo>();
       row.set(normalized.y, { id: chest.entityId, owner: 0n });
+      index.set(normalized.x, row);
+    });
+    return index;
+  }
+
+  private buildProjectedExploredTileIndex(): Map<number, Map<number, BiomeType>> {
+    const index = new Map<number, Map<number, BiomeType>>();
+    this.worldSpatialProjection.getTiles().forEach((tile) => {
+      const normalized = new Position({ x: tile.hexCoords.col, y: tile.hexCoords.row }).getNormalized();
+      const row = index.get(normalized.x) ?? new Map<number, BiomeType>();
+      row.set(normalized.y, resolveTileBiomeType(tile.biome));
       index.set(normalized.x, row);
     });
     return index;
@@ -6708,18 +6719,26 @@ export default class WorldmapScene extends WarpTravel {
   private buildRetainedPathfindingWorldState(retainedBounds: readonly WorldmapLocalBounds[]): GameWorkerWorldState {
     return {
       armies: this.collectRetainedArmyPathfinding(retainedBounds),
-      exploredTiles: this.collectRetainedExploredTilePathfinding(),
+      exploredTiles: this.collectRetainedTilePathfinding(retainedBounds),
       structures: this.collectRetainedStructurePathfinding(retainedBounds),
     };
   }
 
-  private collectRetainedExploredTilePathfinding(): GameWorkerExploredTile[] {
+  private collectRetainedTilePathfinding(retainedBounds: readonly WorldmapLocalBounds[]): GameWorkerExploredTile[] {
     const exploredTiles: GameWorkerExploredTile[] = [];
-    for (const [col, rows] of this.exploredTiles) {
-      for (const [row, biome] of rows) {
-        exploredTiles.push({ biome, col, row });
-      }
-    }
+    const retainedTileIds = new Set<string>();
+    retainedBounds.forEach((bounds) => {
+      this.worldSpatialProjection.getTilesInBounds(this.toContractBounds(bounds)).forEach((tile) => {
+        if (retainedTileIds.has(tile.spatialId)) return;
+        retainedTileIds.add(tile.spatialId);
+        const normalized = new Position({ x: tile.hexCoords.col, y: tile.hexCoords.row }).getNormalized();
+        exploredTiles.push({
+          biome: resolveTileBiomeType(tile.biome),
+          col: normalized.x,
+          row: normalized.y,
+        });
+      });
+    });
     return exploredTiles;
   }
 
@@ -9049,17 +9068,14 @@ export default class WorldmapScene extends WarpTravel {
           continue;
         }
 
-        const selectableArmyNormalizedPosition = new Position({
-          x: army.position.col,
-          y: army.position.row,
-        }).getNormalized();
-        const resolvedPosition = resolveArmyTabSelectionPosition({
-          renderedArmyPosition: this.getArmyDisplayPosition(army.entityId),
-          selectableArmyNormalizedPosition: {
-            col: selectableArmyNormalizedPosition.x,
-            row: selectableArmyNormalizedPosition.y,
-          },
-        });
+        const resolvedPosition = this.getArmyDisplayPosition(army.entityId);
+        if (!resolvedPosition) {
+          if (import.meta.env.DEV) {
+            console.warn(`[WorldMap] Selectable army missing from spatial projection (entityId=${army.entityId})`);
+          }
+          attempts++;
+          continue;
+        }
         this.moveCameraToColRow(resolvedPosition.col, resolvedPosition.row, SHORTCUT_NAVIGATION_DURATION_SECONDS);
 
         try {

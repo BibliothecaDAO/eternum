@@ -2,18 +2,8 @@ import { useUIStore } from "@/hooks/store/use-ui-store";
 import { ActorType, ID } from "@bibliothecadao/types";
 import { useEffect, useState } from "react";
 import { TransferResourcesContainer } from "./transfer-resources-container";
-import { TransferDirection } from "./transfer-troops/transfer-direction";
+import { TransferDirection, getActorTypes } from "./transfer-troops/transfer-direction";
 import { TransferTroopsContainer } from "./transfer-troops-container";
-
-export const getActorTypes = (direction: TransferDirection) => {
-  if (direction === TransferDirection.ExplorerToStructure) {
-    return { selected: ActorType.Explorer, target: ActorType.Structure };
-  } else if (direction === TransferDirection.StructureToExplorer) {
-    return { selected: ActorType.Structure, target: ActorType.Explorer };
-  } else {
-    return { selected: ActorType.Explorer, target: ActorType.Explorer };
-  }
-};
 
 enum TransferType {
   Relics,

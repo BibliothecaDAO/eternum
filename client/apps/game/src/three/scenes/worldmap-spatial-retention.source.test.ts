@@ -13,6 +13,9 @@ describe("Worldmap spatial cache retention", () => {
     const rebuildStart = source.indexOf("private rebuildPathfindingWorkerState()");
     const rebuildEnd = source.indexOf("private buildRetainedPathfindingWorldState(", rebuildStart);
     const rebuildBody = source.slice(rebuildStart, rebuildEnd);
+    const tileCollectionStart = source.indexOf("private collectRetainedTilePathfinding(");
+    const tileCollectionEnd = source.indexOf("private collectRetainedStructurePathfinding(", tileCollectionStart);
+    const tileCollectionBody = source.slice(tileCollectionStart, tileCollectionEnd);
 
     expect(lifecycleBody).not.toContain("getStructures().forEach");
     expect(lifecycleBody).not.toContain("getArmies().forEach");
@@ -23,5 +26,9 @@ describe("Worldmap spatial cache retention", () => {
     expect(rebuildBody).not.toContain("gameWorkerManager.updateExploredTile(");
     expect(rebuildBody).not.toContain("gameWorkerManager.updateStructureHex(");
     expect(rebuildBody).not.toContain("gameWorkerManager.updateArmyHex(");
+    expect(tileCollectionBody).toContain("worldSpatialProjection.getTilesInBounds(");
+    expect(tileCollectionBody).not.toContain("this.exploredTiles");
+    expect(source).toContain("private buildProjectedExploredTileIndex(");
+    expect(source).not.toMatch(/findActionPaths\([\s\S]{0,250}this\.exploredTiles/);
   });
 });

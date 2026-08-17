@@ -606,8 +606,6 @@ const SelectableArmiesStoreManager = () => {
       .filter((army) => army.isMine)
       .map((army) => ({
         entityId: army.entityId,
-        position: { col: army.position.x ?? 0, row: army.position.y ?? 0 },
-        name: army.name,
       }));
 
     setSelectableArmies(selectableArmies);

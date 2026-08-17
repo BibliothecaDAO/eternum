@@ -10,7 +10,7 @@ function readSource(relativePath: string): string {
 
 describe("chunk-eviction ghosting prevention", () => {
   describe("isArmyVisible does not use stale instanceData.position after eviction", () => {
-    it("only reads getEntityWorldPosition when army has an active matrixIndex", () => {
+    it("only reads getEntityWorldPosition when the model owns a live slot", () => {
       const src = readSource("army-manager.ts");
 
       const methodStart = src.indexOf("private isArmyVisible(");
@@ -18,15 +18,13 @@ describe("chunk-eviction ghosting prevention", () => {
 
       const methodBody = src.slice(methodStart, methodStart + 1200);
 
-      // Must check matrixIndex before calling getEntityWorldPosition
-      expect(methodBody).toContain("army.matrixIndex !== undefined");
-      // Must NOT call getEntityWorldPosition unconditionally
-      const unconditionalCall = methodBody.indexOf("this.armyModel.getEntityWorldPosition(entityIdNumber);\n");
-      // The call should be conditional (gated by isActivelyRendered)
+      // The model's slot registry is the single source of render ownership.
+      expect(methodBody).toContain("this.armyModel.getEntitySlot(entityIdNumber) !== undefined");
+      // The call must remain conditional on model ownership.
       expect(methodBody).toContain("isActivelyRendered");
     });
 
-    it("falls back to army.hexCoords when army has no matrixIndex", () => {
+    it("falls back to army.hexCoords when the model has no live slot", () => {
       const src = readSource("army-manager.ts");
 
       const methodStart = src.indexOf("private isArmyVisible(");

@@ -364,8 +364,6 @@ const resetBootstrapUiState = () => {
   useTransactionStore.getState().clearAllTransactions();
 
   useSettlementStore.setState({
-    availableLocations: [],
-    settledLocations: [],
     selectedLocation: null,
     selectedCoords: null,
   });

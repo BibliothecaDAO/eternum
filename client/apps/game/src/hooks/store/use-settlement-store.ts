@@ -6,8 +6,6 @@ import { create } from "zustand";
 
 interface SettlementState {
   selectedLocation: SettlementLocation | null;
-  availableLocations: SettlementLocation[];
-  settledLocations: SettlementLocation[];
   bankLocations: SettlementLocation[];
   bankIcon: HTMLImageElement | null;
   selectedCoords: Position | null;
@@ -22,8 +20,6 @@ interface SettlementActions {
 
 const useSettlementStore = create<SettlementState>((set) => ({
   selectedLocation: null,
-  availableLocations: [],
-  settledLocations: [],
   bankLocations: [],
   bankIcon: null,
   selectedCoords: null,

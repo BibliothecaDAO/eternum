@@ -45,7 +45,6 @@ export interface StructureInfo {
 
 export interface ArmyData {
   entityId: ID;
-  matrixIndex?: number;
   hexCoords: Position;
   isMine: boolean;
   owningStructureId: ID | null;

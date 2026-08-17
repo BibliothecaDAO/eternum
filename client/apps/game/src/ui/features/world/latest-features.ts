@@ -35,9 +35,9 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-08-17",
-    title: "Truthful Map Updates",
+    title: "Live World Facts",
     description:
-      "Army models now move when the world confirms their destination, and newly revealed terrain appears immediately without requiring a pan or zoom.",
+      "Army movement, battle previews, army details, terrain, and transfer limits now follow confirmed game state while you play, preventing stale displays and submissions.",
     type: "fix",
     gameSlug: "world",
   },

@@ -1,4 +1,5 @@
 import { useBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
+import { useGameEntityComponentValue } from "@/hooks/helpers/use-game-entity-component-value";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import Button from "@/ui/design-system/atoms/button";
 import { resolveArmyToArmyTransferRestriction } from "@/ui/lib/structure-capabilities";
@@ -9,15 +10,14 @@ import {
   configManager,
   divideByPrecision,
   formatTime,
-  getBlockTimestamp,
   getGuardsByStructure,
   getTroopResourceId,
   multiplyByPrecision,
   ResourceManager,
 } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
-import { getExplorerFromToriiClient, getStructureFromToriiClient } from "@bibliothecadao/torii";
 import {
+  ActorType,
   DISPLAYED_SLOT_NUMBER_MAP,
   getDirectionBetweenAdjacentHexes,
   GUARD_SLOT_NAMES,
@@ -28,14 +28,13 @@ import {
   TroopTier,
   TroopType,
 } from "@bibliothecadao/types";
-import { useQuery } from "@tanstack/react-query";
 import AlertTriangle from "lucide-react/dist/esm/icons/alert-triangle";
 import ArrowLeftRight from "lucide-react/dist/esm/icons/arrow-left-right";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { getStructureDefenseSlotLimit, getUnlockedGuardSlots, MAX_GUARD_SLOT_COUNT } from "../utils/defense-slot-utils";
 import { getGuardStaminaSnapshot } from "../utils/guard-stamina";
 import { TransferBalanceCardData, TransferBalanceCards } from "./transfer-troops/transfer-balance-cards";
-import { TransferDirection } from "./transfer-troops/transfer-direction";
+import { getActorTypes, TransferDirection } from "./transfer-troops/transfer-direction";
 import { BALANCE_TRANSFER_SLOT, getSameStructureTransferBlockReason } from "./transfer-troops/transfer-eligibility";
 import { TransferSlotSelection } from "./transfer-troops/transfer-slot-selection";
 import { DeploymentStrengthSummary } from "./deployment-strength-summary";
@@ -75,8 +74,8 @@ export const TransferTroopsContainer = ({
   const mode = useGameModeConfig();
   const {
     account: { account },
-    network: { toriiClient },
     setup: {
+      components,
       systemCalls: {
         explorer_explorer_swap,
         explorer_guard_swap,
@@ -92,74 +91,42 @@ export const TransferTroopsContainer = ({
   const [loading, setLoading] = useState(false);
   const [troopAmount, setTroopAmount] = useState<number>(0);
   const [guardSlot, setGuardSlot] = useState<GuardSelection>(null);
-
-  // troopCapacityLimit computed below after query data is available
-
-  // Query for selected entity data
-  const { data: selectedEntityData, isLoading: isSelectedLoading } = useQuery({
-    queryKey: ["selectedEntity", String(selectedEntityId)],
-    queryFn: async () => {
-      const [structureData, explorerData] = await Promise.all([
-        getStructureFromToriiClient(toriiClient, selectedEntityId),
-        getExplorerFromToriiClient(toriiClient, selectedEntityId),
-      ]);
-      const explorerOwner = explorerData?.explorer?.owner ?? 0;
-
-      return {
-        structure: structureData.structure,
-        structureResources: structureData.resources,
-        explorer: explorerData.explorer,
-        explorerResources: explorerData.resources,
-        explorerConnectedStructure: await getStructureFromToriiClient(toriiClient, explorerOwner),
-      };
-    },
-    staleTime: 10000, // 10 seconds
-  });
-
-  // Query for target entity data
-  const { data: targetEntityData, isLoading: isTargetLoading } = useQuery({
-    queryKey: ["targetEntity", String(targetEntityId)],
-    queryFn: async () => {
-      const [structureData, explorerData] = await Promise.all([
-        getStructureFromToriiClient(toriiClient, targetEntityId),
-        getExplorerFromToriiClient(toriiClient, targetEntityId),
-      ]);
-
-      const explorerOwner = explorerData?.explorer?.owner ?? 0;
-      return {
-        structure: structureData.structure,
-        explorer: explorerData.explorer,
-        explorerConnectedStructure: await getStructureFromToriiClient(toriiClient, explorerOwner),
-      };
-    },
-    staleTime: 10000, // 10 seconds
-  });
+  const actorTypes = useMemo(() => getActorTypes(transferDirection), [transferDirection]);
+  const selectedStructure = useGameEntityComponentValue(components.Structure, selectedEntityId);
+  const selectedResourceState = useGameEntityComponentValue(components.Resource, selectedEntityId);
+  const selectedExplorerTroops = useGameEntityComponentValue(components.ExplorerTroops, selectedEntityId);
+  const targetStructure = useGameEntityComponentValue(components.Structure, targetEntityId);
+  const targetExplorerTroops = useGameEntityComponentValue(components.ExplorerTroops, targetEntityId);
+  const selectedExplorerConnectedStructure = useGameEntityComponentValue(
+    components.Structure,
+    selectedExplorerTroops?.owner,
+  );
+  const targetExplorerConnectedStructure = useGameEntityComponentValue(
+    components.Structure,
+    targetExplorerTroops?.owner,
+  );
+  const isSelectedLoading =
+    actorTypes.selected === ActorType.Structure
+      ? selectedStructure === undefined
+      : selectedExplorerTroops === undefined;
+  const isTargetLoading =
+    actorTypes.target === ActorType.Structure ? targetStructure === undefined : targetExplorerTroops === undefined;
 
   const isStructureOwnerOfExplorer = useMemo(() => {
-    return selectedEntityId === targetEntityData?.explorer?.owner;
-  }, [selectedEntityId, targetEntityData?.explorer?.owner]);
+    return selectedEntityId === targetExplorerTroops?.owner;
+  }, [selectedEntityId, targetExplorerTroops?.owner]);
 
   const structureTroopBalance = useMemo(() => {
-    const resources = selectedEntityData?.structureResources;
-    if (!targetEntityData?.explorer?.troops || !resources) return undefined;
-    const { category, tier } = targetEntityData.explorer.troops;
+    if (!targetExplorerTroops?.troops || !selectedResourceState) return undefined;
+    const { category, tier } = targetExplorerTroops.troops;
     const resourceId = getTroopResourceId(category as TroopType, tier as TroopTier);
-    const { currentDefaultTick } = getBlockTimestamp();
     return {
       resourceId,
-      balance: ResourceManager.balanceWithProduction(resources, currentDefaultTick, resourceId).balance,
+      balance: ResourceManager.balanceWithProduction(selectedResourceState, currentDefaultTick, resourceId).balance,
       category,
       tier,
     };
-  }, [selectedEntityData?.structureResources, targetEntityData?.explorer?.troops]);
-
-  const selectedStructure = selectedEntityData?.structure;
-  const selectedExplorerTroops = selectedEntityData?.explorer;
-  const selectedExplorerResources = selectedEntityData?.explorerResources;
-  const selectedExplorerConnectedStructure = selectedEntityData?.explorerConnectedStructure?.structure;
-  const targetStructure = targetEntityData?.structure;
-  const targetExplorerTroops = targetEntityData?.explorer;
-  const targetExplorerConnectedStructure = targetEntityData?.explorerConnectedStructure?.structure;
+  }, [currentDefaultTick, selectedResourceState, targetExplorerTroops?.troops]);
   const sameStructureBlockReason = useMemo(
     () =>
       getSameStructureTransferBlockReason({
@@ -485,10 +452,6 @@ export const TransferTroopsContainer = ({
     targetGuards,
   ]);
 
-  useEffect(() => {
-    setTroopAmount((current) => Math.max(0, Math.min(current, maxTroops)));
-  }, [maxTroops]);
-
   const capacityRemainingTarget = useMemo(() => {
     if (troopCapacityLimit === null) {
       return null;
@@ -521,6 +484,10 @@ export const TransferTroopsContainer = ({
       : null;
 
   const effectiveTroopAmount = Math.max(0, Math.min(troopAmount, maxTroops));
+
+  useEffect(() => {
+    setTroopAmount((current) => Math.max(0, Math.min(current, maxTroops)));
+  }, [maxTroops]);
   const capacityRemainingAfterTransfer =
     capacityRemainingTarget !== null && Number.isFinite(capacityRemainingTarget)
       ? Math.max(0, capacityRemainingTarget - effectiveTroopAmount)
@@ -807,8 +774,10 @@ export const TransferTroopsContainer = ({
     try {
       setLoading(true);
 
-      // Apply precision to troop amount for the transaction
-      const troopAmountWithPrecision = multiplyByPrecision(troopAmount);
+      // maxTroops is derived from live RECS rows. Re-apply it at submit time so
+      // a concurrent spend cannot leave stale troop calldata in this panel.
+      if (effectiveTroopAmount <= 0) return;
+      const troopAmountWithPrecision = multiplyByPrecision(effectiveTroopAmount);
       if (transferDirection === TransferDirection.ExplorerToStructure && typeof guardSlot !== "number") {
         return;
       }
@@ -821,16 +790,13 @@ export const TransferTroopsContainer = ({
         BigInt(troopAmountWithPrecision) >= sourceExplorerCount;
 
       if (willEmptySourceExplorer) {
-        const resolvedExplorerResources =
-          selectedExplorerResources ?? (await getExplorerFromToriiClient(toriiClient, selectedEntityId)).resources;
-
-        if (!resolvedExplorerResources) {
+        if (!selectedResourceState) {
           throw new Error("Unable to load explorer resources for auto relic transfer");
         }
 
         const relicResources: RelicResourceTransfer[] = RELIC_RESOURCE_IDS.map((resourceId) => {
           const { balance } = ResourceManager.balanceWithProduction(
-            resolvedExplorerResources,
+            selectedResourceState,
             currentDefaultTick,
             resourceId as ResourcesIds,
           );

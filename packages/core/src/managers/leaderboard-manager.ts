@@ -31,6 +31,15 @@ interface PendingSharePointsClaim {
   status: "submitted" | "confirmed";
 }
 
+/**
+ * Legacy leaderboard read-model boundary.
+ *
+ * Registered points remain authoritative in RECS, but this singleton also
+ * materializes rank maps, time-derived shareholder points, and a TTL claim
+ * overlay with several imperative writers. Keep new live facts out of these
+ * maps. Consolidating its ownership and lifecycle is deferred until the
+ * leaderboard itself is changed as a dedicated slice.
+ */
 export class LeaderboardManager {
   private static _instance: LeaderboardManager;
   public pointsPerPlayer: Map<ContractAddress, number> = new Map();

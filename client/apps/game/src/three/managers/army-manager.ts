@@ -1131,22 +1131,13 @@ export class ArmyManager {
 
     plan.reassignments.forEach(({ entityId, toSlot }) => {
       const numericId = this.toNumericId(entityId);
-      // Mirror EXACTLY the slot the model actually took. If the model declined
-      // the move (no live slot), skip — advancing the mirror to a slot the model
-      // never wrote is what desyncs the SSOT and strands ghosts.
+      // The army-model owns slots. visibleArmyIndices only tracks the compact
+      // visible set used by this manager; ArmyData carries no slot mirror.
       const movedSlot = this.armyModel.moveInstanceSlot(numericId, toSlot);
       if (movedSlot === undefined) {
         return;
       }
       this.visibleArmyIndices.set(entityId, movedSlot);
-
-      const army = this.armyPresentations.get(entityId);
-      if (army) {
-        this.armyPresentations.set(entityId, {
-          ...army,
-          matrixIndex: movedSlot,
-        });
-      }
     });
   }
 
@@ -1211,10 +1202,9 @@ export class ArmyManager {
       new Color(army.color),
     );
 
-    const updatedArmy = { ...army, matrixIndex: slot };
-    this.armyPresentations.set(army.entityId, updatedArmy);
+    this.armyPresentations.set(army.entityId, army);
     this.armyModel.rebindMovementMatrixIndex(numericId, slot);
-    this.syncArmyAuxiliaryPresentation(updatedArmy, position);
+    this.syncArmyAuxiliaryPresentation(army, position);
   }
 
   private syncArmyAuxiliaryPresentation(army: ArmyData, position: Vector3) {
@@ -1248,11 +1238,6 @@ export class ArmyManager {
       },
       entityId,
     );
-
-    const storedArmy = this.armyPresentations.get(entityId);
-    if (storedArmy) {
-      this.armyPresentations.set(entityId, { ...storedArmy, matrixIndex: undefined });
-    }
 
     this.armyPaths.delete(entityId);
     this.removeArmyPointIcon(entityId);
@@ -1453,10 +1438,10 @@ export class ArmyManager {
   private isArmyVisible(army: ArmyData, bounds: { minCol: number; maxCol: number; minRow: number; maxRow: number }) {
     const entityIdNumber = this.toNumericId(army.entityId);
 
-    // Only trust instanceData world position if the army is actively rendered
-    // (has a matrixIndex). After chunk eviction, instanceData.position is stale
+    // Only trust instanceData world position if the army-model still owns a
+    // live slot. After chunk eviction, instanceData.position is stale
     // (frozen at mid-movement) and would poison the visibility decision.
-    const isActivelyRendered = army.matrixIndex !== undefined;
+    const isActivelyRendered = this.armyModel.getEntitySlot(entityIdNumber) !== undefined;
     const worldPos = isActivelyRendered ? this.armyModel.getEntityWorldPosition(entityIdNumber) : undefined;
     const worldHex = worldPos ? getHexForWorldPosition(worldPos) : undefined;
     const displayedHex = worldHex
@@ -1814,10 +1799,8 @@ export class ArmyManager {
     });
     this.armyPresentations.set(entityId, { ...armyData, hexCoords: targetHexCoords });
 
-    // Use the army-model's live slot (the single source of truth), not the
-    // cached ArmyData.matrixIndex mirror. Seeding a movement from a stale mirror
-    // animates the wrong slot and strands a frozen ghost at the unit's old slot.
-    const matrixIndex = this.armyModel.getEntitySlot(numericEntityId) ?? armyData.matrixIndex;
+    // The army-model is the single source of truth for render slots.
+    const matrixIndex = this.armyModel.getEntitySlot(numericEntityId);
     if (matrixIndex === undefined) {
       this.armyPaths.delete(entityId);
       this.armyModel.setMovementCompleteCallback(numericEntityId, undefined);

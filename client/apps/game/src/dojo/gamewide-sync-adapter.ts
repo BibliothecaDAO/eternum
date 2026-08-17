@@ -9,6 +9,7 @@ import type {
   GameSyncSessionStart,
   GameSyncStore,
 } from "@bibliothecadao/eternum/game-sync";
+import { requireActiveGameSyncRuntime } from "@bibliothecadao/eternum/game-sync";
 import type { Component, Entity, Metadata, OverridableComponent, Schema } from "@dojoengine/recs";
 import { getComponentEntities, getComponentValue, removeComponent } from "@dojoengine/recs";
 import { setEntities } from "@dojoengine/state";
@@ -21,7 +22,35 @@ import { ToriiEventGapFill } from "./torii-event-gap-fill";
 import { runWithFrameWorkOwner } from "@/three/frame-work-owner";
 
 export const GAMEWIDE_SNAPSHOT_PAGE_SIZE = 500;
+const TARGETED_ENTITY_QUERY_LIMIT = 40_000;
 const EVENT_GAP_FILL_PAGE_SIZE = 100;
+
+export const fetchEntitiesIntoGameSync = async (
+  client: SetupResult["network"]["toriiClient"],
+  clause: Clause,
+  models: string[],
+  limit = TARGETED_ENTITY_QUERY_LIMIT,
+): Promise<void> => {
+  const visitedCursors = new Set<string>();
+  let cursor: string | undefined;
+
+  for (;;) {
+    const page = await client.getEntities({
+      pagination: { limit, cursor, direction: "Forward", order_by: [] },
+      clause,
+      no_hashed_keys: false,
+      models,
+      historical: false,
+    });
+    await requireActiveGameSyncRuntime().applyAuthoritativeEntities(page.items as GameSyncEntity[]);
+    if (page.items.length < limit || !page.next_cursor) return;
+    if (visitedCursors.has(page.next_cursor)) {
+      throw new Error(`Torii entity query cursor repeated: ${page.next_cursor}`);
+    }
+    visitedCursors.add(page.next_cursor);
+    cursor = page.next_cursor;
+  }
+};
 
 interface CreateGamewideSyncSessionInput {
   setup: SetupResult;

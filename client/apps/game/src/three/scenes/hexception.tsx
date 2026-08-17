@@ -292,9 +292,7 @@ export default class HexceptionScene extends HexagonScene {
       useUIStore.subscribe(
         (state) => state.playerStructures,
         (playerStructures) => {
-          if (playerStructures.length > 0) {
-            this.updatePlayerStructures(playerStructures);
-          }
+          this.updatePlayerStructures(playerStructures);
         },
       ),
     );

@@ -2,8 +2,8 @@ import { describe, expect, it } from "vitest";
 
 import { auditArmyRenderIntegrity, auditArmySlots } from "./army-slot-auditor";
 
-// The ghost bug is, at its core, the army-manager's mirror of an entity's slot
-// (visibleArmyIndices / ArmyData.matrixIndex) drifting from the army-model's
+// The ghost bug is, at its core, the army-manager's compact visible-slot map
+// drifting from the army-model's
 // single source of truth (instanceData.matrixIndex). This auditor is the
 // dev-only tripwire for exactly that divergence (and for two entities sharing a
 // live slot, which is how a drawn ghost manifests).

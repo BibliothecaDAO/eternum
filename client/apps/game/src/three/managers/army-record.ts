@@ -4,7 +4,6 @@ export function createArmyRecord(input: ArmyData): ArmyData {
   return {
     entityId: input.entityId,
     hexCoords: input.hexCoords,
-    matrixIndex: input.matrixIndex,
     isMine: input.isMine,
     owningStructureId: input.owningStructureId,
     owner: input.owner,

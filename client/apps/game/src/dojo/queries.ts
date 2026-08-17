@@ -1,7 +1,6 @@
 // onload -> fetch single key entities
 
 import { HexPosition, ID, StructureType } from "@bibliothecadao/types";
-import { requireActiveGameSyncRuntime, type GameSyncEntity } from "@bibliothecadao/eternum/game-sync";
 import { AndComposeClause, MemberClause } from "@dojoengine/sdk";
 import { PatternMatching, ToriiClient } from "@dojoengine/torii-client";
 import { Clause, LogicalOperator } from "@dojoengine/torii-wasm";
@@ -12,37 +11,10 @@ import {
   debouncedGetEntitiesFromTorii,
   debouncedGetOwnedArmiesFromTorii,
 } from "./debounced-queries";
+import { fetchEntitiesIntoGameSync } from "./gamewide-sync-adapter";
 import { gameIdKey, gameModel, getScopedGameId, isGameScoped } from "./game-scope";
 
 const CONFIG_FETCH_CACHE_PREFIX = "eternum:config-fetched";
-const ENTITY_QUERY_LIMIT = 40_000;
-
-const fetchEntitiesIntoGameSync = async (
-  client: ToriiClient,
-  clause: Clause,
-  models: string[],
-  limit = ENTITY_QUERY_LIMIT,
-): Promise<void> => {
-  const visitedCursors = new Set<string>();
-  let cursor: string | undefined;
-
-  for (;;) {
-    const page = await client.getEntities({
-      pagination: { limit, cursor, direction: "Forward", order_by: [] },
-      clause,
-      no_hashed_keys: false,
-      models,
-      historical: false,
-    });
-    await requireActiveGameSyncRuntime().applyAuthoritativeEntities(page.items as GameSyncEntity[]);
-    if (page.items.length < limit || !page.next_cursor) return;
-    if (visitedCursors.has(page.next_cursor)) {
-      throw new Error(`Torii entity query cursor repeated: ${page.next_cursor}`);
-    }
-    visitedCursors.add(page.next_cursor);
-    cursor = page.next_cursor;
-  }
-};
 
 const getConfigCacheKey = () =>
   `${CONFIG_FETCH_CACHE_PREFIX}:${env.VITE_PUBLIC_CHAIN}:${env.VITE_PUBLIC_TORII}:${getScopedGameId()}`;

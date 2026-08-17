@@ -185,8 +185,6 @@ export interface ChestData {
 
 export interface SelectableArmy {
   entityId: ID;
-  position: HexPosition;
-  name: string;
 }
 
 export type BattleEventSystemUpdate = {
