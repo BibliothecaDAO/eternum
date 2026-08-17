@@ -48,10 +48,6 @@ import {
 } from "@/ui/layouts/game-loading-overlay.utils";
 
 import { ProductionModal } from "@/ui/features/settlement";
-import {
-  releaseOccupiedBuildSpot,
-  reserveOccupiedBuildSpot,
-} from "@/ui/features/settlement/construction/build-reservation-store";
 import { resolveConstructionBuildability } from "@/ui/features/settlement/construction/construction-buildability";
 import { SetupResult } from "@bibliothecadao/dojo";
 import {
@@ -814,7 +810,6 @@ export default class HexceptionScene extends HexagonScene {
       }
 
       this.clearBuildingMode();
-      reserveOccupiedBuildSpot(structureEntityId, normalizedCoords);
       try {
         console.log("Placing building at:", {
           dojo: account!,
@@ -834,10 +829,6 @@ export default class HexceptionScene extends HexagonScene {
         AudioManager.getInstance().play("ui.build_place");
       } catch (error) {
         console.log("catched error so removing building", error);
-        const message = error instanceof Error ? error.message : String(error);
-        if (!message.toLowerCase().includes("space is occupied")) {
-          releaseOccupiedBuildSpot(structureEntityId, normalizedCoords);
-        }
         this.removeBuilding(normalizedCoords.col, normalizedCoords.row);
       }
       this.updateHexceptionGrid(this.hexceptionRadius);

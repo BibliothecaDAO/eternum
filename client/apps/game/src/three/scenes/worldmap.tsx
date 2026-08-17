@@ -17,12 +17,6 @@ import {
   isPendingReservedHyperstructureCreation,
   submitActiveWorldBlitzHyperstructureCreation,
 } from "@/services/blitz/blitz-hyperstructure-creation";
-import {
-  PendingWorldmapFxStartPayload,
-  PendingWorldmapFxStopPayload,
-  WORLDMAP_PENDING_FX_START_EVENT,
-  WORLDMAP_PENDING_FX_STOP_EVENT,
-} from "@/utils/pending-worldmap-fx";
 import { getBiomeVariant, HEX_SIZE, WORLD_CHUNK_CONFIG } from "@/three/constants";
 import { ArmyManager } from "@/three/managers/army-manager";
 import { BattleDirectionManager } from "@/three/managers/battle-direction-manager";
@@ -40,12 +34,6 @@ import {
 } from "@/three/frame-budget-work-queue";
 import { SceneManager } from "@/three/scene-manager";
 import { CameraView } from "@/three/scenes/camera-view";
-import {
-  matchesPendingAttackEvidence,
-  resolveExplorerBattleEvidence,
-  resolveStructureBattleEvidence,
-  type PendingAttackEntityEvidence,
-} from "@/three/scenes/worldmap-pending-attack-evidence";
 import { CAMERA_CONFIG } from "@/three/constants";
 import { HexagonScene } from "@/three/scenes/hexagon-scene";
 import type { RenderVisualProfile } from "@/three/render-profile";
@@ -214,10 +202,8 @@ import {
 } from "./worldmap-terrain-commit-runtime";
 import { runWorldmapArmySelectionRecovery } from "./worldmap-army-selection-recovery-runtime";
 import { resolveArmyTabSelectionPosition, shouldQueueArmySelectionRecovery } from "./worldmap-army-tab-selection";
-import {
-  resolveCreateArmyEffectTargetHex,
-  shouldClearPendingCreateArmyEffect,
-} from "./worldmap-pending-action-effect-policy";
+import { resolveCreateArmyEffectTargetHex } from "./worldmap-pending-action-effect-policy";
+import { registerWorldmapProvisionalFxRenderer, type WorldmapProvisionalFxSpec } from "./worldmap-provisional-fx";
 import { shouldPlayArmyMovementFx } from "./worldmap-movement-fx-policy";
 import {
   resolveArrivalGhostVisualStyle,
@@ -850,17 +836,6 @@ export default class WorldmapScene extends WarpTravel {
     if (!detail) return;
     this.applyDirectionalZoomIntent(detail.zoomOut);
   };
-  private pendingWorldmapFxStartHandler = (event: Event) => {
-    if (this.sceneManager.getCurrentScene() !== SceneName.WorldMap) return;
-    const detail = (event as CustomEvent<PendingWorldmapFxStartPayload>).detail;
-    if (!detail) return;
-    this.startPendingActionFx(detail);
-  };
-  private pendingWorldmapFxStopHandler = (event: Event) => {
-    const detail = (event as CustomEvent<PendingWorldmapFxStopPayload>).detail;
-    if (!detail?.key) return;
-    this.clearPendingActionFx(detail.key, "tx_failed");
-  };
   private handleWorldmapControlsChange = () => {
     if (this.sceneManager.getCurrentScene() !== SceneName.WorldMap) return;
     this.updateCameraTargetHexThrottled?.();
@@ -910,29 +885,18 @@ export default class WorldmapScene extends WarpTravel {
   private travelEffects: Map<string, () => void> = new Map();
   private travelEffectsByEntity: Map<ID, { key: string; cleanup: () => void; effectType: TravelEffectType }> =
     new Map();
-  private pendingActionEffectsByKey: Map<string, (reason: ArrivalGhostClearReason) => void> = new Map();
-  private pendingActionEffectTimeoutsByKey: Map<string, ReturnType<typeof setTimeout>> = new Map();
-  private pendingCreateArmyEffectsByKey: Map<
+  private provisionalAttackFxCleanups = new Set<() => void>();
+  private pendingCreateArmyEffects = new Map<
     string,
     {
-      direction: Direction;
-      ghostEntityId: ID;
-      structureId: ID;
+      ghostKey: string;
       targetHex: HexPosition;
-      troopTier: TroopTier;
-      troopType: TroopType;
+      unsubscribe: () => void;
     }
-  > = new Map();
-  private pendingAttackEffectsByKey: Map<
-    string,
-    {
-      attackerId: ID;
-      attackerActorType: ActorType;
-      defenderId?: ID;
-      defenderActorType?: ActorType;
-    }
-  > = new Map();
-  private nextPendingCreateArmyGhostId = -1;
+  >();
+  private pendingArrivalGhostIntentDisposers = new Map<ID, () => void>();
+  private nextProvisionalFxId = 1;
+  private unregisterWorldmapProvisionalFxRenderer: (() => void) | null = null;
   private cancelHexGridComputation?: () => void;
 
   // Global chunk switching coordination
@@ -1119,6 +1083,9 @@ export default class WorldmapScene extends WarpTravel {
     this.arrivalGhostManager = new ArrivalGhostManager(this.scene, {
       chunkStride: this.chunkSize,
       renderChunkSize: this.renderChunkSize,
+    });
+    this.unregisterWorldmapProvisionalFxRenderer = registerWorldmapProvisionalFxRenderer({
+      start: (spec, intent) => this.startWorldmapProvisionalFx(spec, intent),
     });
 
     installWorldmapDebugHooks(window, {
@@ -1315,13 +1282,14 @@ export default class WorldmapScene extends WarpTravel {
   private handleProjectedArmyChanges(changes: readonly ArmySpatialProjectionChange[]): void {
     changes.forEach(({ entityId, current }) => {
       if (!current) {
+        this.disposeArrivalGhostIntentSubscription(entityId);
         this.disposePendingMovementVisualLifecycle(entityId);
         this.arrivalGhostManager.clearArrivalGhost(entityId, "army_removed");
         this.battleDirectionManager.removeEntityFromTracking(entityId);
         return;
       }
 
-      this.resolvePendingCreateArmyGhostOnArmyUpdate({ hexCoords: current.hexCoords });
+      this.clearPendingCreateArmyGhostsForOccupiedTiles();
       this.recalculateArrowsForEntity(entityId);
       this.recalculateArrowsForEntitiesRelatedTo(entityId);
     });
@@ -1368,7 +1336,6 @@ export default class WorldmapScene extends WarpTravel {
       return;
     }
     this.registerBattleWorldUpdateSubscriptions();
-    this.registerPendingAttackEntityEvidenceSubscriptions();
     this.registerExplorerRewardWorldUpdateSubscriptions();
   }
 
@@ -1405,28 +1372,6 @@ export default class WorldmapScene extends WarpTravel {
         this.notifyArmyUnderAttack(update);
       }),
     );
-  }
-
-  private registerPendingAttackEntityEvidenceSubscriptions(): void {
-    const explorerSubscription = this.dojo.components.ExplorerTroops.update$.subscribe(({ value }) => {
-      const [current, previous] = value as [
-        Parameters<typeof resolveExplorerBattleEvidence>[0],
-        Parameters<typeof resolveExplorerBattleEvidence>[1],
-      ];
-      const evidence = resolveExplorerBattleEvidence(current, previous);
-      if (evidence) this.resolvePendingAttackFxOnEntityEvidence(evidence);
-    });
-    const structureSubscription = this.dojo.components.Structure.update$.subscribe(({ value }) => {
-      const [current, previous] = value as [
-        Parameters<typeof resolveStructureBattleEvidence>[0],
-        Parameters<typeof resolveStructureBattleEvidence>[1],
-      ];
-      const evidence = resolveStructureBattleEvidence(current, previous);
-      if (evidence) this.resolvePendingAttackFxOnEntityEvidence(evidence);
-    });
-
-    this.addWorldUpdateSubscription(() => explorerSubscription.unsubscribe());
-    this.addWorldUpdateSubscription(() => structureSubscription.unsubscribe());
   }
 
   private registerExplorerRewardWorldUpdateSubscriptions(): void {
@@ -1467,8 +1412,6 @@ export default class WorldmapScene extends WarpTravel {
 
     window.addEventListener("minimapCameraMove", this.minimapCameraMoveHandler as EventListener);
     window.addEventListener("minimapZoom", this.minimapZoomHandler as EventListener);
-    window.addEventListener(WORLDMAP_PENDING_FX_START_EVENT, this.pendingWorldmapFxStartHandler as EventListener);
-    window.addEventListener(WORLDMAP_PENDING_FX_STOP_EVENT, this.pendingWorldmapFxStopHandler as EventListener);
     this.controls.addEventListener("change", this.handleWorldmapControlsChange);
     this.updateCameraTargetHexThrottled();
     this.refreshVisualTerrainWindowThrottled();
@@ -2712,11 +2655,6 @@ export default class WorldmapScene extends WarpTravel {
         }
       }
 
-      this.installPendingMovementVisualLifecycle({
-        entityId: selectedEntityId,
-        shouldAnimateArrivalGhostOnCompletion: shouldTrackArrivalGhost,
-      });
-
       let movementIntent: ProvisionalIntent;
       try {
         movementIntent = this.createProvisionalArmyMovementIntent({
@@ -2728,6 +2666,8 @@ export default class WorldmapScene extends WarpTravel {
         this.handleProvisionalArmyMovementFailure(selectedEntityId, cleanup);
         throw error;
       }
+      this.installPendingMovementVisualLifecycle({ entityId: selectedEntityId });
+      if (shouldTrackArrivalGhost) this.installArrivalGhostIntentSubscription(selectedEntityId, movementIntent);
       recordArmyMovementLatencyPhase({
         phase: "move_requested",
         source: "worldmap",
@@ -2991,8 +2931,6 @@ export default class WorldmapScene extends WarpTravel {
     if (trackedEffect) {
       trackedEffect.cleanup();
     }
-
-    this.arrivalGhostManager.clearArrivalGhost(entityId, "movement_evicted");
   }
 
   private handoffPendingArmyMovementToVisualLifecycle(entityId: ID): void {
@@ -3017,11 +2955,8 @@ export default class WorldmapScene extends WarpTravel {
     this.clearPendingArmyMovementVisuals(entityId);
   }
 
-  private installPendingMovementVisualLifecycle(input: {
-    entityId: ID;
-    shouldAnimateArrivalGhostOnCompletion: boolean;
-  }): void {
-    const { entityId, shouldAnimateArrivalGhostOnCompletion } = input;
+  private installPendingMovementVisualLifecycle(input: { entityId: ID }): void {
+    const { entityId } = input;
 
     this.disposePendingMovementVisualLifecycle(entityId);
 
@@ -3039,9 +2974,6 @@ export default class WorldmapScene extends WarpTravel {
         source: "worldmap",
         entityId,
       });
-      if (shouldAnimateArrivalGhostOnCompletion) {
-        this.arrivalGhostManager.resolveArrivalGhost(entityId);
-      }
       this.completePendingArmyMovementVisuals(entityId);
       this.disposePendingMovementVisualLifecycle(entityId);
     });
@@ -3066,6 +2998,27 @@ export default class WorldmapScene extends WarpTravel {
     }
 
     dispose();
+  }
+
+  private installArrivalGhostIntentSubscription(entityId: ID, intent: ProvisionalIntent): void {
+    this.disposeArrivalGhostIntentSubscription(entityId);
+    let unsubscribe = () => {};
+    unsubscribe = intent.subscribe((outcome) => {
+      if (outcome === "settled") {
+        this.arrivalGhostManager.resolveArrivalGhost(entityId, "settled");
+      } else {
+        this.arrivalGhostManager.clearArrivalGhost(entityId, "failed");
+      }
+      this.disposeArrivalGhostIntentSubscription(entityId);
+    });
+    this.pendingArrivalGhostIntentDisposers.set(entityId, unsubscribe);
+  }
+
+  private disposeArrivalGhostIntentSubscription(entityId: ID): void {
+    const unsubscribe = this.pendingArrivalGhostIntentDisposers.get(entityId);
+    if (!unsubscribe) return;
+    unsubscribe();
+    this.pendingArrivalGhostIntentDisposers.delete(entityId);
   }
 
   private createProvisionalArmyMovementIntent(input: {
@@ -3108,7 +3061,8 @@ export default class WorldmapScene extends WarpTravel {
   private handleProvisionalArmyMovementFailure(entityId: ID, cleanup: () => void): void {
     this.clearPendingArmyMovementVisuals(entityId);
     this.disposePendingMovementVisualLifecycle(entityId);
-    this.arrivalGhostManager.clearArrivalGhost(entityId, "tx_failed");
+    this.disposeArrivalGhostIntentSubscription(entityId);
+    this.arrivalGhostManager.clearArrivalGhost(entityId, "failed");
     cleanup();
   }
 
@@ -3122,16 +3076,15 @@ export default class WorldmapScene extends WarpTravel {
     return false;
   }
 
-  private startPendingActionFx(payload: PendingWorldmapFxStartPayload): void {
-    this.clearPendingActionFx(payload.key, "superseded");
-
-    if (payload.kind === "create-army") {
-      this.startPendingCreateArmyGhost(payload);
+  private startWorldmapProvisionalFx(spec: WorldmapProvisionalFxSpec, intent: ProvisionalIntent): void {
+    if (this.sceneManager.getCurrentScene() !== SceneName.WorldMap) return;
+    if (spec.kind === "create-army") {
+      this.startProvisionalCreateArmyGhost(spec, intent);
       return;
     }
 
-    const attackerNormalized = new Position({ x: payload.attackerHex.col, y: payload.attackerHex.row }).getNormalized();
-    const targetNormalized = new Position({ x: payload.targetHex.col, y: payload.targetHex.row }).getNormalized();
+    const attackerNormalized = new Position({ x: spec.attackerHex.col, y: spec.attackerHex.row }).getNormalized();
+    const targetNormalized = new Position({ x: spec.targetHex.col, y: spec.targetHex.row }).getNormalized();
     const attackCleanup = this.playPendingFxAtHex({
       type: "attack",
       hex: { col: attackerNormalized.x, row: attackerNormalized.y },
@@ -3145,86 +3098,68 @@ export default class WorldmapScene extends WarpTravel {
       yOffset: 0.48,
     });
 
-    this.pendingActionEffectsByKey.set(payload.key, () => {
+    let unsubscribe = () => {};
+    const cleanup = () => {
       attackCleanup();
       defenseCleanup();
-    });
-    this.pendingAttackEffectsByKey.set(payload.key, {
-      attackerId: payload.attackerId,
-      attackerActorType: payload.attackerActorType,
-      defenderId: payload.defenderId,
-      defenderActorType: payload.defenderActorType,
-    });
-
-    const timeout = setTimeout(
-      () => this.clearPendingActionFx(payload.key, "stale_timeout"),
-      Math.max(5_000, payload.timeoutMs ?? 45_000),
-    );
-    this.pendingActionEffectTimeoutsByKey.set(payload.key, timeout);
-    if (import.meta.env.DEV) console.debug(`[PendingFx] start key=${payload.key} kind=${payload.kind}`);
+      unsubscribe();
+      this.provisionalAttackFxCleanups.delete(cleanup);
+    };
+    unsubscribe = intent.subscribe(cleanup);
+    this.provisionalAttackFxCleanups.add(cleanup);
   }
 
-  private startPendingCreateArmyGhost(payload: Extract<PendingWorldmapFxStartPayload, { kind: "create-army" }>): void {
-    const structureHex = this.getStructureHexPosition(payload.structureId);
-    const targetHex = resolveCreateArmyEffectTargetHex(structureHex, payload.direction);
-    if (!targetHex) {
-      return;
-    }
+  private startProvisionalCreateArmyGhost(
+    spec: Extract<WorldmapProvisionalFxSpec, { kind: "create-army" }>,
+    intent: ProvisionalIntent,
+  ): void {
+    const structureHex = this.getStructureHexPosition(spec.structureId);
+    const targetHex = resolveCreateArmyEffectTargetHex(structureHex, spec.direction);
+    if (!targetHex) return;
 
-    const ghostEntityId = this.allocatePendingCreateArmyGhostId();
-    this.pendingActionEffectsByKey.set(payload.key, (reason) => {
-      this.arrivalGhostManager.clearArrivalGhost(ghostEntityId, reason);
+    const key = `create-army:${this.nextProvisionalFxId++}`;
+    const ghostKey = key;
+    const unsubscribe = intent.subscribe((outcome) => {
+      if (outcome !== "settled") this.clearPendingCreateArmyGhost(key, "failed");
     });
-    this.pendingCreateArmyEffectsByKey.set(payload.key, {
-      structureId: payload.structureId,
-      direction: payload.direction,
+    this.pendingCreateArmyEffects.set(key, {
+      ghostKey,
       targetHex,
-      troopType: payload.troopType,
-      troopTier: payload.troopTier,
-      ghostEntityId,
+      unsubscribe,
     });
 
-    const timeout = setTimeout(
-      () => this.clearPendingActionFx(payload.key, "stale_timeout"),
-      Math.max(5_000, payload.timeoutMs ?? 45_000),
-    );
-    this.pendingActionEffectTimeoutsByKey.set(payload.key, timeout);
-    void this.renderPendingCreateArmyGhost({
-      key: payload.key,
-      ghostEntityId,
+    void this.renderProvisionalCreateArmyGhost({
+      key,
+      ghostKey,
+      structureId: spec.structureId,
       targetHex,
-      troopType: payload.troopType,
-      troopTier: payload.troopTier,
-    }).catch((error) => this.handlePendingCreateArmyGhostError(payload.key, error));
+      troopType: spec.troopType,
+      troopTier: spec.troopTier,
+    }).catch((error) => this.handlePendingCreateArmyGhostError(key, error));
     this.clearPendingCreateArmyGhostsForOccupiedTiles();
   }
 
-  private allocatePendingCreateArmyGhostId(): ID {
-    const ghostEntityId = this.nextPendingCreateArmyGhostId;
-    this.nextPendingCreateArmyGhostId -= 1;
-    return ghostEntityId;
-  }
-
-  private async renderPendingCreateArmyGhost(input: {
-    ghostEntityId: ID;
+  private async renderProvisionalCreateArmyGhost(input: {
+    ghostKey: string;
     key: string;
+    structureId: ID;
     targetHex: HexPosition;
     troopTier: TroopTier;
     troopType: TroopType;
   }): Promise<void> {
     const ghostSource = await this.armyManager.resolvePendingCreationGhostSource({
-      entityId: input.ghostEntityId,
+      entityId: input.structureId,
       hexCoords: input.targetHex,
       troopType: input.troopType,
       troopTier: input.troopTier,
     });
-    const pending = this.pendingCreateArmyEffectsByKey.get(input.key);
-    if (!pending || pending.ghostEntityId !== input.ghostEntityId) {
+    const pending = this.pendingCreateArmyEffects.get(input.key);
+    if (!pending || pending.ghostKey !== input.ghostKey) {
       return;
     }
 
     this.arrivalGhostManager.upsertLocalArrivalGhost({
-      entityId: input.ghostEntityId,
+      entityId: input.ghostKey,
       hexCoords: input.targetHex,
       sourceScene: ghostSource.sourceScene,
       visualStyle: resolveArrivalGhostVisualStyle({
@@ -3234,7 +3169,7 @@ export default class WorldmapScene extends WarpTravel {
   }
 
   private handlePendingCreateArmyGhostError(key: string, error: unknown): void {
-    if (!this.pendingCreateArmyEffectsByKey.has(key)) {
+    if (!this.pendingCreateArmyEffects.has(key)) {
       return;
     }
 
@@ -3267,77 +3202,32 @@ export default class WorldmapScene extends WarpTravel {
     };
   }
 
-  private clearPendingActionFx(key: string, reason: ArrivalGhostClearReason): void {
-    const existed =
-      this.pendingActionEffectsByKey.has(key) ||
-      this.pendingActionEffectTimeoutsByKey.has(key) ||
-      this.pendingCreateArmyEffectsByKey.has(key) ||
-      this.pendingAttackEffectsByKey.has(key);
-    const cleanup = this.pendingActionEffectsByKey.get(key);
-    if (cleanup) {
-      cleanup(reason);
-      this.pendingActionEffectsByKey.delete(key);
-    }
-
-    const timeout = this.pendingActionEffectTimeoutsByKey.get(key);
-    if (timeout) {
-      clearTimeout(timeout);
-      this.pendingActionEffectTimeoutsByKey.delete(key);
-    }
-
-    this.pendingCreateArmyEffectsByKey.delete(key);
-    this.pendingAttackEffectsByKey.delete(key);
-    if (existed && import.meta.env.DEV) console.debug(`[PendingFx] clear key=${key} reason=${reason}`);
+  private clearPendingCreateArmyGhost(key: string, reason: ArrivalGhostClearReason): void {
+    const pending = this.pendingCreateArmyEffects.get(key);
+    if (!pending) return;
+    pending.unsubscribe();
+    this.arrivalGhostManager.clearArrivalGhost(pending.ghostKey, reason);
+    this.pendingCreateArmyEffects.delete(key);
   }
 
   private clearAllPendingActionFx(): void {
-    const keys = new Set([...this.pendingActionEffectsByKey.keys(), ...this.pendingCreateArmyEffectsByKey.keys()]);
-    for (const key of keys) {
-      this.clearPendingActionFx(key, "scene_destroyed");
-    }
-  }
-
-  private resolvePendingCreateArmyGhostOnArmyUpdate(update: { hexCoords: HexPosition; removed?: boolean }): void {
-    const normalized = new Position({ x: update.hexCoords.col, y: update.hexCoords.row }).getNormalized();
-    const updateHex = { col: normalized.x, row: normalized.y };
-    const keysToClear: string[] = [];
-
-    for (const [key, pending] of this.pendingCreateArmyEffectsByKey.entries()) {
-      const shouldClear = shouldClearPendingCreateArmyEffect({
-        pendingTargetHex: pending.targetHex,
-        updateHex,
-        removed: Boolean(update.removed),
-      });
-
-      if (shouldClear) {
-        keysToClear.push(key);
-      }
-    }
-
-    for (const key of keysToClear) {
-      this.clearPendingActionFx(key, "arrived");
-    }
-
-    this.clearPendingCreateArmyGhostsForOccupiedTiles();
+    [...this.provisionalAttackFxCleanups].forEach((cleanup) => cleanup());
+    [...this.pendingCreateArmyEffects.keys()].forEach((key) =>
+      this.clearPendingCreateArmyGhost(key, "scene_destroyed"),
+    );
   }
 
   private clearPendingCreateArmyGhostsForOccupiedTiles(): void {
     const keysToClear: string[] = [];
 
-    for (const [key, pending] of this.pendingCreateArmyEffectsByKey.entries()) {
+    for (const [key, pending] of this.pendingCreateArmyEffects.entries()) {
       if (this.getArmyAtHex(pending.targetHex)) {
         keysToClear.push(key);
       }
     }
 
     for (const key of keysToClear) {
-      this.clearPendingActionFx(key, "arrived");
-    }
-  }
-
-  private resolvePendingAttackFxOnEntityEvidence(evidence: PendingAttackEntityEvidence): void {
-    for (const [key, pending] of this.pendingAttackEffectsByKey.entries()) {
-      if (matchesPendingAttackEvidence(pending, evidence)) this.clearPendingActionFx(key, "entity_evidence");
+      this.clearPendingCreateArmyGhost(key, "projection_occupied");
     }
   }
 
@@ -4127,6 +4017,12 @@ export default class WorldmapScene extends WarpTravel {
     });
     this.pendingArmyMovementVisualLifecycleDisposers.forEach((dispose) => dispose());
     this.pendingArmyMovementVisualLifecycleDisposers.clear();
+    this.pendingArrivalGhostIntentDisposers.forEach((dispose) => dispose());
+    this.pendingArrivalGhostIntentDisposers.clear();
+    this.clearAllPendingActionFx();
+    this.arrivalGhostManager
+      .getTrackedEntityIds()
+      .forEach((entityId) => this.arrivalGhostManager.clearArrivalGhost(entityId, "scene_destroyed"));
 
     this.isSwitchedOff = runtimeState.isSwitchedOff;
     this.lastControlsCameraDistance = runtimeState.lastControlsCameraDistance;
@@ -4157,7 +4053,6 @@ export default class WorldmapScene extends WarpTravel {
     for (const entityId of pendingExploreEntities) {
       this.clearPendingArmyMovementVisuals(entityId);
       this.disposePendingMovementVisualLifecycle(entityId);
-      this.arrivalGhostManager.clearArrivalGhost(entityId, "arrived");
     }
 
     const endCompass = this.travelEffects.get(key);
@@ -9012,6 +8907,8 @@ export default class WorldmapScene extends WarpTravel {
       ...this.getInteractionDebugSnapshot(),
     });
     this.onSwitchOff();
+    this.unregisterWorldmapProvisionalFxRenderer?.();
+    this.unregisterWorldmapProvisionalFxRenderer = null;
     this.syncUrlChangedListenerLifecycle("destroy");
     this.resetZoomHardeningRuntimeState();
     this.removeChunkDiagnosticsDebugHooks();
@@ -9050,8 +8947,6 @@ export default class WorldmapScene extends WarpTravel {
     this.controls.removeEventListener("change", this.handleWorldmapControlsChange);
     window.removeEventListener("minimapCameraMove", this.minimapCameraMoveHandler as EventListener);
     window.removeEventListener("minimapZoom", this.minimapZoomHandler as EventListener);
-    window.removeEventListener(WORLDMAP_PENDING_FX_START_EVENT, this.pendingWorldmapFxStartHandler as EventListener);
-    window.removeEventListener(WORLDMAP_PENDING_FX_STOP_EVENT, this.pendingWorldmapFxStopHandler as EventListener);
     this.clearCache();
 
     // Clean up selection pulse manager

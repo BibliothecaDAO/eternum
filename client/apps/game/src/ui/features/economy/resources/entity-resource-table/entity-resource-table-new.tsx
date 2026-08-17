@@ -385,21 +385,23 @@ export const EntityResourceTableNew = React.memo(({ entityId }: EntityResourceTa
       setTransferDrafts((prev) => prev.map((t) => (ids.has(t.id) ? { ...t, isProcessing: true } : t)));
 
       setTransferAnimations((prev) => new Set([...prev, ...animationKeys]));
-      const removeResourceOverrides = transfers.map((transfer) =>
-        new ResourceManager(components, transfer.fromStructureId).optimisticResourceUpdate(
-          transfer.resourceId,
-          -transfer.amount,
-        ),
-      );
-
       try {
-        await send_resources_multiple({
-          signer: account,
-          calls: transfers.map((transfer) => ({
-            sender_entity_id: transfer.fromStructureId,
-            recipient_entity_id: transfer.toStructureId,
-            resources: [transfer.resourceId, BigInt(Math.round(multiplyByPrecision(transfer.amount)))],
+        await ResourceManager.submitProvisionalResourceTransaction({
+          components,
+          changeSets: transfers.map((transfer) => ({
+            entityId: transfer.fromStructureId,
+            changes: [{ resourceId: transfer.resourceId, amount: -transfer.amount }],
           })),
+          waiterSource: account,
+          submit: () =>
+            send_resources_multiple({
+              signer: account,
+              calls: transfers.map((transfer) => ({
+                sender_entity_id: transfer.fromStructureId,
+                recipient_entity_id: transfer.toStructureId,
+                resources: [transfer.resourceId, BigInt(Math.round(multiplyByPrecision(transfer.amount)))],
+              })),
+            }),
         });
 
         setTransferDrafts((prev) => prev.filter((t) => !ids.has(t.id)));
@@ -408,7 +410,6 @@ export const EntityResourceTableNew = React.memo(({ entityId }: EntityResourceTa
         setTransferDrafts((prev) => prev.map((t) => (ids.has(t.id) ? { ...t, isProcessing: false } : t)));
         throw error;
       } finally {
-        removeResourceOverrides.forEach((removeOverride) => removeOverride());
         setTimeout(() => {
           setTransferAnimations((prev) => {
             const next = new Set(prev);

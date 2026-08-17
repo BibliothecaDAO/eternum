@@ -376,21 +376,22 @@ const OrderRow = memo(
 
         const v = !isBuy ? calculatedResourceAmount : calculatedLords;
         const takerBuysCount = Math.ceil(v / offer.makerGivesMinResourceAmount);
-        const removeResourceOverride = new ResourceManager(dojo.setup.components, entityId).optimisticResourceUpdate(
-          offer.makerGets[0].resourceId,
-          -divideByPrecision(offer.takerPaysMinResourceAmount * takerBuysCount),
+        await new ResourceManager(dojo.setup.components, entityId).submitProvisionalResourceTransaction(
+          [
+            {
+              resourceId: offer.makerGets[0].resourceId,
+              amount: -divideByPrecision(offer.takerPaysMinResourceAmount * takerBuysCount),
+            },
+          ],
+          dojo.account.account,
+          () =>
+            dojo.setup.systemCalls.accept_order({
+              signer: dojo.account.account,
+              taker_id: entityId,
+              trade_id: offer.tradeId,
+              taker_buys_count: takerBuysCount,
+            }),
         );
-
-        try {
-          await dojo.setup.systemCalls.accept_order({
-            signer: dojo.account.account,
-            taker_id: entityId,
-            trade_id: offer.tradeId,
-            taker_buys_count: takerBuysCount,
-          });
-        } finally {
-          removeResourceOverride();
-        }
       } catch (error) {
         console.error("Failed to accept order", error);
       } finally {
@@ -631,18 +632,16 @@ const OrderCreation = memo(
         taker_pays_min_resource_amount: createOrderParams.takerPaysMinResourceAmount,
         expires_at: currentBlockTimestamp + ONE_MONTH,
       };
-      const removeResourceOverride = new ResourceManager(components, entityId).optimisticResourceUpdate(
-        makerGives[0] as ResourcesIds,
-        -divideByPrecision(makerGives[1]),
-      );
-
       try {
-        await create_order(calldata);
+        await new ResourceManager(components, entityId).submitProvisionalResourceTransaction(
+          [{ resourceId: makerGives[0] as ResourcesIds, amount: -divideByPrecision(makerGives[1]) }],
+          account,
+          () => create_order(calldata),
+        );
         playTradePlaceSound();
       } catch (error) {
         console.error("Failed to create order:", error);
       } finally {
-        removeResourceOverride();
         setLoading(false);
         setShowConfirmation(false);
       }

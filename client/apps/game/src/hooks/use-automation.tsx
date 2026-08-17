@@ -40,7 +40,6 @@ import { useCallback, useEffect, useRef } from "react";
 import { toast } from "sonner";
 import { isVillageLikeStructureCategory } from "@/ui/lib/structure-capabilities";
 import { extractReadableErrorMessage } from "@/utils/error-message";
-import { scheduleAutomationResourceCleanup } from "./automation-resource-cleanup";
 
 const resolveResourceLabel = (resourceId: number): string => {
   const label = ResourcesIds[resourceId as ResourcesIds];
@@ -477,28 +476,25 @@ export const useAutomation = () => {
 
         console.log("[Automation] Executing production plan", planLogPayloadWithStatus);
 
-        const removeResourceOverrides = new ResourceManager(components, plan.realmId).optimisticResourceUpdates(
-          buildProductionResourceDebits(plan),
-        );
         try {
-          const productionResult = await execute_realm_production_plan({
-            signer: starknetSignerAccount,
-            realm_entity_id: plan.realmId,
-            skipQueue: true,
-            resource_to_resource: plan.callset.resourceToResource.map((item) => ({
-              resource_id: item.resourceId,
-              cycles: item.cycles,
-            })),
-            labor_to_resource: plan.callset.laborToResource.map((item) => ({
-              resource_id: item.resourceId,
-              cycles: item.cycles,
-            })),
-          });
-          scheduleAutomationResourceCleanup({
-            signer: starknetSignerAccount,
-            result: productionResult,
-            cleanup: removeResourceOverrides,
-          });
+          await new ResourceManager(components, plan.realmId).submitProvisionalResourceTransaction(
+            buildProductionResourceDebits(plan),
+            starknetSignerAccount,
+            () =>
+              execute_realm_production_plan({
+                signer: starknetSignerAccount,
+                realm_entity_id: plan.realmId,
+                skipQueue: true,
+                resource_to_resource: plan.callset.resourceToResource.map((item) => ({
+                  resource_id: item.resourceId,
+                  cycles: item.cycles,
+                })),
+                labor_to_resource: plan.callset.laborToResource.map((item) => ({
+                  resource_id: item.resourceId,
+                  cycles: item.cycles,
+                })),
+              }),
+          );
 
           const summary = buildExecutionSummary(plan, Date.now());
           recordExecution(activeRealmConfig.realmId, summary);
@@ -537,7 +533,6 @@ export const useAutomation = () => {
             toast.success(`Automation executed for ${activeRealmConfig.realmName ?? `Realm ${plan.realmId}`}.`);
           }
         } catch (rawError) {
-          removeResourceOverrides();
           const errorMessage = extractReadableErrorMessage(rawError, "Automation transaction failed");
           const isSignerFault = isSignerTransientError(rawError);
 

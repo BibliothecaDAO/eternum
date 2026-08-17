@@ -30,10 +30,27 @@ const CAPTURED_WRAPPED_ENTITY = {
   },
 };
 
+const CAPTURED_WRAPPED_BASELINE_ENTITY = {
+  ...CAPTURED_WRAPPED_ENTITY,
+  models: {
+    "s2-TestState": {
+      ...CAPTURED_WRAPPED_ENTITY.models["s2-TestState"],
+      amount: { key: false, type: "primitive", type_name: "u128", value: "40" },
+      coord: {
+        ...CAPTURED_WRAPPED_ENTITY.models["s2-TestState"].coord,
+        value: {
+          ...CAPTURED_WRAPPED_ENTITY.models["s2-TestState"].coord.value,
+          x: { key: false, type: "primitive", type_name: "u32", value: "11" },
+        },
+      },
+    },
+  },
+};
+
 afterEach(() => vi.useRealTimers());
 
 describe("game-wide sync reconciliation adapter", () => {
-  it("observes parsed base RECS values from a wrapped Torii entity while an override is active", async () => {
+  it("settles baseline-delta evidence from parsed Torii values while an override is active", async () => {
     vi.useFakeTimers();
     const world = createWorld();
     const authoritativeComponent = defineComponent(
@@ -61,15 +78,19 @@ describe("game-wide sync reconciliation adapter", () => {
       eventReplayPageTimeoutMs: 0,
       pageRetryCount: 0,
     });
+    await session.store.applyEntityOperations([{ type: "upsert", entities: [CAPTURED_WRAPPED_BASELINE_ENTITY] }]);
     const manager = new ProvisionalWriteManager(session.store);
     const intent = manager.createIntent([
       {
         entityId: "0x1",
         model: "TestState",
         patch: { amount: 29n, coord: { x: 12, y: 9 } },
-        matchPatch: { coord: { x: 12, y: 9 } },
+        baselineDeltaFields: ["amount"],
       },
     ]);
+    const outcomes: string[] = [];
+    intent.subscribe((outcome) => outcomes.push(outcome));
+    intent.bindTransaction("0xtx");
     intent.confirm();
 
     const observations = await session.store.applyEntityOperations([
@@ -90,7 +111,7 @@ describe("game-wide sync reconciliation adapter", () => {
     ]);
 
     vi.advanceTimersByTime(2_500);
-    expect(intent.status).toBe("settled");
+    expect(outcomes).toEqual(["settled"]);
     expect(getComponentValue(provisionalComponent, "0x1" as Entity)).toEqual({ amount: 30n, coord: { x: 12, y: 9 } });
   });
 });

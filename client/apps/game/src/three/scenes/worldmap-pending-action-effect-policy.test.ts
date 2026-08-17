@@ -1,9 +1,6 @@
 import { Direction } from "@bibliothecadao/types";
 import { describe, expect, it } from "vitest";
-import {
-  resolveCreateArmyEffectTargetHex,
-  shouldClearPendingCreateArmyEffect,
-} from "./worldmap-pending-action-effect-policy";
+import { resolveCreateArmyEffectTargetHex } from "./worldmap-pending-action-effect-policy";
 
 describe("resolveCreateArmyEffectTargetHex", () => {
   it("resolves the adjacent hex for a valid direction", () => {
@@ -14,37 +11,5 @@ describe("resolveCreateArmyEffectTargetHex", () => {
   it("returns null when structure hex is missing", () => {
     const target = resolveCreateArmyEffectTargetHex(undefined, Direction.NORTH_EAST);
     expect(target).toBeNull();
-  });
-});
-
-describe("shouldClearPendingCreateArmyEffect", () => {
-  it("clears when a non-removed army update matches pending target tile", () => {
-    const shouldClear = shouldClearPendingCreateArmyEffect({
-      pendingTargetHex: { col: 11, row: 10 },
-      updateHex: { col: 11, row: 10 },
-      removed: false,
-    });
-
-    expect(shouldClear).toBe(true);
-  });
-
-  it("does not clear when update hex does not match pending target", () => {
-    const shouldClear = shouldClearPendingCreateArmyEffect({
-      pendingTargetHex: { col: 11, row: 10 },
-      updateHex: { col: 11, row: 11 },
-      removed: false,
-    });
-
-    expect(shouldClear).toBe(false);
-  });
-
-  it("does not clear for removed updates", () => {
-    const shouldClear = shouldClearPendingCreateArmyEffect({
-      pendingTargetHex: { col: 11, row: 10 },
-      updateHex: { col: 11, row: 10 },
-      removed: true,
-    });
-
-    expect(shouldClear).toBe(false);
   });
 });

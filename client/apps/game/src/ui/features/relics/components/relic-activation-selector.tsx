@@ -1,12 +1,15 @@
 import { useMemo, useState } from "react";
 
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
+import { gameEntityKey } from "@/dojo/game-scope";
+import { useProvisionalInputLock } from "@/hooks/use-provisional-input-lock";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import Button from "@/ui/design-system/atoms/button";
 import { BasePopup } from "@/ui/design-system/molecules/base-popup";
 import { currencyFormat } from "@/ui/utils/utils";
 import { useDojo } from "@bibliothecadao/react";
-import { ContractAddress, EntityType, ID, RelicRecipientType, Troops } from "@bibliothecadao/types";
+import { ResourceManager } from "@bibliothecadao/eternum";
+import { ContractAddress, EntityType, ID, RelicRecipientType, ResourcesIds, Troops } from "@bibliothecadao/types";
 
 import { TroopChip } from "@/ui/features/military/components/troop-chip";
 import { isRelicCompatible, useRelicEssenceStatus, useRelicMetadata } from "../hooks/use-relic-activation";
@@ -178,11 +181,9 @@ export const RelicActivationSelector = ({
   } = useDojo();
   const mode = useGameModeConfig();
 
-  const removeRelicFromStore = useUIStore((state) => state.removeRelicFromEntity);
   const triggerRelicsRefresh = useUIStore((state) => state.triggerRelicsRefresh);
   const playerStructures = useUIStore((state) => state.playerStructures);
 
-  const [removedHolderIds, setRemovedHolderIds] = useState<string[]>([]);
   const [activatingHolderId, setActivatingHolderId] = useState<string | null>(null);
   const [activationError, setActivationError] = useState<{ holderId: string | null; message: string | null }>({
     holderId: null,
@@ -264,22 +265,20 @@ export const RelicActivationSelector = ({
     });
   }, [components, holders, mode, structureNameMap]);
 
-  const visibleHolders = useMemo(() => {
-    return enrichedHolders.filter((holder) => !removedHolderIds.includes(String(holder.entityId)));
-  }, [enrichedHolders, removedHolderIds]);
+  const resourceLockEntityIds = useMemo(
+    () =>
+      [...new Set(enrichedHolders.flatMap((holder) => [holder.entityId, holder.entityOwnerId]))].map((entityId) =>
+        gameEntityKey([BigInt(entityId)]),
+      ),
+    [enrichedHolders],
+  );
+  const isResourceLocked = useProvisionalInputLock("Resource", resourceLockEntityIds);
 
-  const visibleTotalAmount = useMemo(() => {
-    return visibleHolders.reduce((total, holder) => total + holder.amount, 0);
-  }, [visibleHolders]);
-
-  const visibleDisplayAmount = useMemo(() => {
-    if (removedHolderIds.length === 0) {
-      return _initialDisplayAmount;
-    }
-    return currencyFormat(visibleTotalAmount, 0);
-  }, [removedHolderIds, visibleTotalAmount, _initialDisplayAmount]);
+  const visibleHolders = enrichedHolders;
+  const visibleDisplayAmount = _initialDisplayAmount;
 
   const handleActivate = async ({ holder, hasEnoughEssence, essenceBalance }: ActivationRequest) => {
+    if (isResourceLocked) return;
     if (!relicInfo) {
       setActivationError({ holderId: String(holder.entityId), message: "Relic data unavailable." });
       return;
@@ -316,30 +315,33 @@ export const RelicActivationSelector = ({
     setActivatingHolderId(holderKey);
 
     try {
-      await systemCalls.apply_relic({
-        signer: account,
-        entity_id: holder.entityId,
-        relic_resource_id: resourceId,
-        recipient_type: relicInfo.recipientTypeParam,
+      await ResourceManager.submitProvisionalResourceTransaction({
+        components,
+        changeSets: [
+          { entityId: holder.entityId, changes: [{ resourceId: resourceId as ResourcesIds, amount: -1 }] },
+          {
+            entityId: holder.entityOwnerId,
+            changes: [{ resourceId: ResourcesIds.Essence, amount: -essenceCost }],
+          },
+        ],
+        waiterSource: account,
+        lockUntil: "settled",
+        onIntent: (intent) => {
+          intent.subscribe((outcome) => {
+            if (outcome === "settled") triggerRelicsRefresh();
+          });
+        },
+        submit: () =>
+          systemCalls.apply_relic!({
+            signer: account,
+            entity_id: holder.entityId,
+            relic_resource_id: resourceId,
+            recipient_type: relicInfo.recipientTypeParam,
+          }),
       });
-
-      if (account?.address && account.address !== "0x0") {
-        removeRelicFromStore({ entityId: holder.entityId, resourceId, recipientType: holder.recipientType });
-        triggerRelicsRefresh();
-      }
 
       setActivationError({ holderId: null, message: null });
-      setRemovedHolderIds((prev) => {
-        if (prev.includes(holderKey)) {
-          return prev;
-        }
-        const updated = [...prev, holderKey];
-        const remaining = enrichedHolders.filter((item) => !updated.includes(String(item.entityId)));
-        if (remaining.length === 0) {
-          onClose();
-        }
-        return updated;
-      });
+      onClose();
     } catch (error) {
       console.error("Failed to activate relic:", error);
       setActivationError({ holderId: holderKey, message: "Failed to activate relic. Please try again." });
@@ -366,7 +368,7 @@ export const RelicActivationSelector = ({
           <div className="max-h-[420px] space-y-3 overflow-y-auto pr-1">
             {visibleHolders.map((holder) => {
               const holderKey = String(holder.entityId);
-              const isActivating = activatingHolderId === holderKey;
+              const isActivating = activatingHolderId === holderKey || isResourceLocked;
               const holderError = activationError.holderId === holderKey ? activationError.message : null;
 
               return (

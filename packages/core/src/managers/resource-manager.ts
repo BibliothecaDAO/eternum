@@ -1,7 +1,13 @@
 // import { getEntityIdFromKeys, gramToKg, multiplyByPrecision } from "@/ui/utils/utils";
 import { BuildingType, ClientComponents, ID, Resource, ResourcesIds, RESOURCE_PRECISION } from "@bibliothecadao/types";
 import { ComponentValue, getComponentValue } from "@dojoengine/recs";
-import { uuid } from "@latticexyz/utils";
+import type { GameSyncProvisionalWrite } from "../sync/game-sync-types";
+import { getActiveGameSyncRuntime } from "../sync/game-sync-runtime";
+import {
+  trackProvisionalTransaction,
+  type ProvisionalIntent,
+  type ProvisionalIntentLockUntil,
+} from "../sync/provisional-write-manager";
 import { divideByPrecision, getBuildingCount, gramToKg, kgToGram, multiplyByPrecision } from "../utils";
 import { configManager, gameEntityKey } from "./config-manager";
 
@@ -15,6 +21,11 @@ export interface ResourceProductionData {
 export interface OptimisticResourceChange {
   resourceId: ResourcesIds;
   amount: number;
+}
+
+export interface ProvisionalResourceChangeSet {
+  entityId: ID;
+  changes: readonly OptimisticResourceChange[];
 }
 
 type ResourceValue = ComponentValue<ClientComponents["Resource"]["schema"]>;
@@ -57,6 +68,25 @@ const RESOURCE_BALANCE_FIELDS = {
   [ResourcesIds.Wheat]: "WHEAT_BALANCE",
   [ResourcesIds.Fish]: "FISH_BALANCE",
   [ResourcesIds.Lords]: "LORDS_BALANCE",
+  [ResourcesIds.Essence]: "ESSENCE_BALANCE",
+  [ResourcesIds.StaminaRelic1]: "RELIC_E1_BALANCE",
+  [ResourcesIds.StaminaRelic2]: "RELIC_E2_BALANCE",
+  [ResourcesIds.DamageRelic1]: "RELIC_E3_BALANCE",
+  [ResourcesIds.DamageRelic2]: "RELIC_E4_BALANCE",
+  [ResourcesIds.DamageReductionRelic1]: "RELIC_E5_BALANCE",
+  [ResourcesIds.DamageReductionRelic2]: "RELIC_E6_BALANCE",
+  [ResourcesIds.ExplorationRelic1]: "RELIC_E7_BALANCE",
+  [ResourcesIds.ExplorationRelic2]: "RELIC_E8_BALANCE",
+  [ResourcesIds.ExplorationRewardRelic1]: "RELIC_E9_BALANCE",
+  [ResourcesIds.ExplorationRewardRelic2]: "RELIC_E10_BALANCE",
+  [ResourcesIds.StructureDamageReductionRelic1]: "RELIC_E11_BALANCE",
+  [ResourcesIds.StructureDamageReductionRelic2]: "RELIC_E12_BALANCE",
+  [ResourcesIds.ProductionRelic1]: "RELIC_E13_BALANCE",
+  [ResourcesIds.ProductionRelic2]: "RELIC_E14_BALANCE",
+  [ResourcesIds.LaborProductionRelic1]: "RELIC_E15_BALANCE",
+  [ResourcesIds.LaborProductionRelic2]: "RELIC_E16_BALANCE",
+  [ResourcesIds.TroopProductionRelic1]: "RELIC_E17_BALANCE",
+  [ResourcesIds.TroopProductionRelic2]: "RELIC_E18_BALANCE",
   [ResourcesIds.Research]: "RESEARCH_BALANCE",
 } as const satisfies Partial<Record<ResourcesIds, keyof ResourceValue>>;
 
@@ -75,6 +105,25 @@ const normalizeProduction = (
   production
     ? { ...production, production_rate: BigInt(production.production_rate ?? 0) }
     : { building_count: 0, production_rate: 0n, output_amount_left: 0n, last_updated_at: 0 };
+
+const runProvisionalResourceTransaction = async <T>({
+  intent,
+  waiterSource,
+  submit,
+}: {
+  intent: ProvisionalIntent | null;
+  waiterSource: unknown;
+  submit: () => Promise<T>;
+}): Promise<T> => {
+  try {
+    const result = await submit();
+    if (intent) trackProvisionalTransaction(intent, waiterSource, result);
+    return result;
+  } catch (error) {
+    intent?.fail();
+    throw error;
+  }
+};
 
 export class ResourceManager {
   entityId: ID;
@@ -148,23 +197,6 @@ export class ResourceManager {
     };
   }
 
-  public optimisticResourceUpdate = (resourceId: ResourcesIds, actualResourceChange: number) => {
-    const overrideId = uuid();
-    const entity = gameEntityKey([BigInt(this.entityId)]);
-    try {
-      const patch = this.resolveOptimisticResourcePatch(resourceId, actualResourceChange);
-      if (patch)
-        this.components.Resource.addOverride(overrideId, { entity, value: { ...this._getResource(), ...patch } });
-    } catch (error) {
-      console.error(error);
-      this.components.Resource.removeOverride(overrideId);
-    }
-
-    return () => {
-      this.components.Resource.removeOverride(overrideId);
-    };
-  };
-
   public resolveOptimisticResourcePatch(
     resourceId: ResourcesIds,
     actualResourceChange: number,
@@ -199,18 +231,101 @@ export class ResourceManager {
     return patch as Partial<ResourceValue>;
   }
 
-  public optimisticResourceUpdates = (resourceChanges: OptimisticResourceChange[]) => {
-    const removeResourceOverrides = resourceChanges
-      .filter((resourceChange) => Number.isFinite(resourceChange.amount) && resourceChange.amount !== 0)
-      .map((resourceChange) => this.optimisticResourceUpdate(resourceChange.resourceId, resourceChange.amount));
+  public resolveProvisionalResourceWrite(
+    resourceChanges: readonly OptimisticResourceChange[],
+  ): GameSyncProvisionalWrite | null {
+    const patch = this.resolveOptimisticResourceChangesPatch(resourceChanges);
+    if (!patch) return null;
+    const baselineDeltaFields = this.resolveTouchedResourceBalanceFields(resourceChanges);
+    if (baselineDeltaFields.length === 0) return null;
 
-    let cleanedUp = false;
-    return () => {
-      if (cleanedUp) return;
-      cleanedUp = true;
-      removeResourceOverrides.toReversed().forEach((removeOverride) => removeOverride());
+    return {
+      entityId: gameEntityKey([BigInt(this.entityId)]),
+      model: "Resource",
+      patch,
+      matchPatch: undefined,
+      baselineDeltaFields,
     };
-  };
+  }
+
+  public createProvisionalResourceIntent(
+    resourceChanges: readonly OptimisticResourceChange[],
+    options: { lockUntil?: ProvisionalIntentLockUntil } = {},
+  ): ProvisionalIntent | null {
+    const write = this.resolveProvisionalResourceWrite(resourceChanges);
+    if (!write) return null;
+    return getActiveGameSyncRuntime()?.createProvisionalIntent([write], options) ?? null;
+  }
+
+  public submitProvisionalResourceTransaction<T>(
+    resourceChanges: readonly OptimisticResourceChange[],
+    waiterSource: unknown,
+    submit: () => Promise<T>,
+    options: {
+      lockUntil?: ProvisionalIntentLockUntil;
+      onIntent?: (intent: ProvisionalIntent) => void;
+    } = {},
+  ): Promise<T> {
+    const intent = this.createProvisionalResourceIntent(resourceChanges, options);
+    if (intent) options.onIntent?.(intent);
+    return runProvisionalResourceTransaction({
+      intent,
+      waiterSource,
+      submit,
+    });
+  }
+
+  public static submitProvisionalResourceTransaction<T>({
+    components,
+    changeSets,
+    waiterSource,
+    submit,
+    lockUntil,
+    onIntent,
+  }: {
+    components: ClientComponents;
+    changeSets: readonly ProvisionalResourceChangeSet[];
+    waiterSource: unknown;
+    submit: () => Promise<T>;
+    lockUntil?: ProvisionalIntentLockUntil;
+    onIntent?: (intent: ProvisionalIntent) => void;
+  }): Promise<T> {
+    const groupedChangeSets = [
+      ...changeSets
+        .reduce((groups, { entityId, changes }) => {
+          const key = String(entityId);
+          const current = groups.get(key);
+          if (current) {
+            current.changes.push(...changes);
+          } else {
+            groups.set(key, { entityId, changes: [...changes] });
+          }
+          return groups;
+        }, new Map<string, { entityId: ID; changes: OptimisticResourceChange[] }>())
+        .values(),
+    ];
+    const writes = groupedChangeSets
+      .map(({ entityId, changes }) =>
+        new ResourceManager(components, entityId).resolveProvisionalResourceWrite(changes),
+      )
+      .filter((write): write is GameSyncProvisionalWrite => write !== null);
+    const intent = writes.length
+      ? (getActiveGameSyncRuntime()?.createProvisionalIntent(writes, { lockUntil }) ?? null)
+      : null;
+    if (intent) onIntent?.(intent);
+    return runProvisionalResourceTransaction({ intent, waiterSource, submit });
+  }
+
+  private resolveTouchedResourceBalanceFields(resourceChanges: readonly OptimisticResourceChange[]): string[] {
+    return [
+      ...new Set(
+        resourceChanges
+          .filter(({ amount }) => Number.isFinite(amount) && amount !== 0)
+          .map(({ resourceId }) => RESOURCE_BALANCE_FIELDS[resourceId as keyof typeof RESOURCE_BALANCE_FIELDS])
+          .filter((field): field is NonNullable<typeof field> => Boolean(field)),
+      ),
+    ];
+  }
 
   public timeUntilValueReached(currentTick: number, resourceId: ResourcesIds): number {
     const resource = this._getResource();

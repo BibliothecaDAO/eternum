@@ -1,24 +1,12 @@
+import { gameEntityKey } from "@/dojo/game-scope";
 import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
-import {
-  type RealmUpgradeAction,
-  type RealmUpgradeActionStatus,
-  useRealmUpgradeStore,
-} from "@/hooks/store/use-realm-upgrade-store";
-import { extractTransactionHash, waitForTransactionConfirmation } from "@/ui/utils/transactions";
+import { useProvisionalInputLock } from "@/hooks/use-provisional-input-lock";
 import { configManager, divideByPrecision, getBalance, getRealmInfo, ResourceManager } from "@bibliothecadao/eternum";
+import { requireActiveGameSyncRuntime, trackProvisionalTransaction } from "@bibliothecadao/eternum/game-sync";
 import { useDojo } from "@bibliothecadao/react";
 import { ContractAddress, getLevelName, ResourcesIds } from "@bibliothecadao/types";
 import { useComponentValue } from "@dojoengine/react";
-import { useCallback, useEffect, useMemo } from "react";
-import { toast } from "sonner";
-import { gameEntityKey } from "@/dojo/game-scope";
-
-const REALM_UPGRADE_SYNC_TIMEOUT_MS = 30_000;
-const REALM_UPGRADE_SYNC_POLL_INTERVAL_MS = 1_000;
-
-type LiveRealmInfo = NonNullable<ReturnType<typeof getRealmInfo>>;
-type RealmUpgradeWaitProvider = { waitForTransactionWithCheck?: (txHash: string) => Promise<unknown> };
-type RealmUpgradeWaitAccount = { waitForTransaction?: (txHash: string) => Promise<unknown> };
+import { useCallback, useMemo } from "react";
 
 interface RawUpgradeCost {
   resource: number;
@@ -43,95 +31,33 @@ interface StructureUpgradeResult {
   missingRequirements: UpgradeRequirement[];
   isOwner: boolean;
   isMaxLevel: boolean;
-  upgradeActionState: RealmUpgradeActionStatus;
+  upgradeActionState: "idle" | "syncing";
   isUpgradeLoading: boolean;
   isUpgradeLocked: boolean;
   handleUpgrade: () => Promise<void>;
 }
 
-const readLiveRealmInfo = (realmEntity: unknown, components: unknown): LiveRealmInfo | null => {
-  if (!realmEntity) {
-    return null;
-  }
-
-  return getRealmInfo(realmEntity as never, components as never) ?? null;
-};
-
-const hasRealmReachedExpectedLevel = ({
-  realmEntity,
-  components,
-  expectedLevel,
-}: {
-  realmEntity: unknown;
-  components: unknown;
-  expectedLevel: number;
-}) => {
-  const liveRealmInfo = readLiveRealmInfo(realmEntity, components);
-  return (liveRealmInfo?.level ?? 0) >= expectedLevel;
-};
-
-const waitForRealmUpgradePollInterval = async () => {
-  await new Promise<void>((resolve) => {
-    setTimeout(resolve, REALM_UPGRADE_SYNC_POLL_INTERVAL_MS);
-  });
-};
-
-const waitForRealmUpgradeSync = async ({
-  realmEntity,
-  components,
-  expectedLevel,
-}: {
-  realmEntity: unknown;
-  components: unknown;
-  expectedLevel: number;
-}) => {
-  const maxAttempts = Math.ceil(REALM_UPGRADE_SYNC_TIMEOUT_MS / REALM_UPGRADE_SYNC_POLL_INTERVAL_MS);
-
-  for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
-    if (hasRealmReachedExpectedLevel({ realmEntity, components, expectedLevel })) {
-      return true;
-    }
-
-    if (attempt < maxAttempts - 1) {
-      await waitForRealmUpgradePollInterval();
-    }
-  }
-
-  return hasRealmReachedExpectedLevel({ realmEntity, components, expectedLevel });
-};
-
-const resolveUpgradeActionState = (pendingUpgrade: RealmUpgradeAction | null) => {
-  return pendingUpgrade?.status ?? "idle";
-};
-
-const isRealmUpgradeLoadingState = (upgradeActionState: RealmUpgradeActionStatus) => {
-  return upgradeActionState === "submitting" || upgradeActionState === "confirming" || upgradeActionState === "syncing";
-};
+const readRealmInfo = (realmEntity: string, components: unknown) =>
+  getRealmInfo(realmEntity as never, components as never) ?? null;
 
 export const useStructureUpgrade = (structureEntityId: number | null): StructureUpgradeResult | null => {
-  const { setup, account, network } = useDojo();
+  const { setup, account } = useDojo();
   const currentDefaultTick = useCurrentDefaultTick();
-  const pendingUpgrade = useRealmUpgradeStore((state) =>
-    structureEntityId ? (state.upgradesByRealm[structureEntityId] ?? null) : null,
-  );
-  const startUpgrade = useRealmUpgradeStore((state) => state.startUpgrade);
-  const setUpgradeStatus = useRealmUpgradeStore((state) => state.setUpgradeStatus);
-  const clearUpgrade = useRealmUpgradeStore((state) => state.clearUpgrade);
-
   const realmEntity = useMemo(
     () => (structureEntityId ? gameEntityKey([BigInt(structureEntityId)]) : null),
     [structureEntityId],
   );
+  const lockEntityIds = useMemo(() => (realmEntity ? [realmEntity] : []), [realmEntity]);
+  const isUpgradeLocked = useProvisionalInputLock("Structure", lockEntityIds);
 
-  const liveStructure = useComponentValue(setup.components.Structure, realmEntity as any);
-  const liveStructureBuildings = useComponentValue(setup.components.StructureBuildings, realmEntity as any);
-  const liveResources = useComponentValue(setup.components.Resource, realmEntity as any);
+  const liveStructure = useComponentValue(setup.components.Structure, realmEntity as never);
+  const liveStructureBuildings = useComponentValue(setup.components.StructureBuildings, realmEntity as never);
+  const liveResources = useComponentValue(setup.components.Resource, realmEntity as never);
 
   const structureInfo = useMemo(() => {
     if (!structureEntityId || !realmEntity || !liveStructure) return null;
-
-    return readLiveRealmInfo(realmEntity, setup.components);
-  }, [structureEntityId, realmEntity, liveStructure, liveStructureBuildings, liveResources, setup.components]);
+    return readRealmInfo(realmEntity, setup.components);
+  }, [liveResources, liveStructure, liveStructureBuildings, realmEntity, setup.components, structureEntityId]);
 
   const nextLevel = useMemo(() => {
     if (!structureInfo) return null;
@@ -141,175 +67,87 @@ export const useStructureUpgrade = (structureEntityId: number | null): Structure
 
   const rawCosts = useMemo<RawUpgradeCost[]>(() => {
     if (!nextLevel) return [];
-
     return (configManager.realmUpgradeCosts[nextLevel] as RawUpgradeCost[]) || [];
   }, [nextLevel]);
 
   const requirements = useMemo<UpgradeRequirement[]>(() => {
     if (!structureInfo || !nextLevel || !structureEntityId) return [];
-
     return rawCosts.map((cost) => {
-      try {
-        const balance = getBalance(structureEntityId, cost.resource, currentDefaultTick, setup.components);
-        // Guard against Infinity or NaN values that can cause BigInt conversion errors
-        const rawBalance = balance.balance;
-        const safeBalance = Number.isFinite(rawBalance) ? rawBalance : 0;
-        const currentAmount = divideByPrecision(safeBalance);
-        const progress = cost.amount > 0 ? Math.min(100, (currentAmount * 100) / cost.amount) : 100;
-
-        return {
-          resource: cost.resource,
-          amount: cost.amount,
-          current: currentAmount,
-          progress,
-        };
-      } catch {
-        // If balance calculation fails, return zero progress
-        return {
-          resource: cost.resource,
-          amount: cost.amount,
-          current: 0,
-          progress: 0,
-        };
-      }
+      const rawBalance = getBalance(structureEntityId, cost.resource, currentDefaultTick, setup.components).balance;
+      const current = divideByPrecision(Number.isFinite(rawBalance) ? rawBalance : 0);
+      return {
+        resource: cost.resource,
+        amount: cost.amount,
+        current,
+        progress: cost.amount > 0 ? Math.min(100, (current * 100) / cost.amount) : 100,
+      };
     });
-  }, [currentDefaultTick, liveResources, nextLevel, rawCosts, setup.components, structureEntityId, structureInfo]);
+  }, [currentDefaultTick, nextLevel, rawCosts, setup.components, structureEntityId, structureInfo]);
 
-  const { canUpgrade, upgradeProgress, missingRequirements } = useMemo(() => {
+  const upgradeReadiness = useMemo(() => {
     if (!structureInfo || !nextLevel) {
-      return {
-        canUpgrade: false,
-        upgradeProgress: 0,
-        missingRequirements: [] as UpgradeRequirement[],
-      };
+      return { canUpgrade: false, upgradeProgress: 0, missingRequirements: [] as UpgradeRequirement[] };
     }
-
     if (requirements.length === 0) {
-      return {
-        canUpgrade: true,
-        upgradeProgress: 100,
-        missingRequirements: [] as UpgradeRequirement[],
-      };
+      return { canUpgrade: true, upgradeProgress: 100, missingRequirements: [] as UpgradeRequirement[] };
     }
-
-    const missing = requirements.filter((requirement) => requirement.current < requirement.amount);
-    const totalProgress = requirements.reduce((sum, requirement) => sum + requirement.progress, 0);
-    const averageProgress = Math.floor(totalProgress / requirements.length);
-
+    const missingRequirements = requirements.filter(({ current, amount }) => current < amount);
     return {
-      canUpgrade: missing.length === 0,
-      upgradeProgress: averageProgress,
-      missingRequirements: missing,
+      canUpgrade: missingRequirements.length === 0,
+      upgradeProgress: Math.floor(
+        requirements.reduce((sum, requirement) => sum + requirement.progress, 0) / requirements.length,
+      ),
+      missingRequirements,
     };
-  }, [requirements, structureInfo, nextLevel]);
-
-  const upgradeActionState = resolveUpgradeActionState(pendingUpgrade);
-  const isUpgradeLoading = isRealmUpgradeLoadingState(upgradeActionState);
-  const isUpgradeLocked = upgradeActionState !== "idle";
-
-  useEffect(() => {
-    if (!structureInfo || !pendingUpgrade) {
-      return;
-    }
-
-    if (structureInfo.level >= pendingUpgrade.expectedLevel) {
-      clearUpgrade(structureInfo.entityId);
-    }
-  }, [clearUpgrade, pendingUpgrade, structureInfo]);
+  }, [nextLevel, requirements, structureInfo]);
 
   const handleUpgrade = useCallback(async () => {
-    if (!structureInfo || !nextLevel) {
-      return;
-    }
+    if (!structureInfo || !nextLevel || !realmEntity) return;
+    const runtime = requireActiveGameSyncRuntime();
+    if (runtime.hasProvisionalInputLock("Structure", realmEntity)) return;
 
-    const existingUpgrade = useRealmUpgradeStore.getState().getUpgrade(structureInfo.entityId);
-    if (existingUpgrade) {
-      return;
-    }
-
-    startUpgrade(structureInfo.entityId, nextLevel);
-    const removeResourceOverrides = new ResourceManager(
-      setup.components,
-      structureInfo.entityId,
-    ).optimisticResourceUpdates(
-      rawCosts.map((cost) => ({
-        resourceId: cost.resource as ResourcesIds,
-        amount: -cost.amount,
-      })),
+    const resourceWrite = new ResourceManager(setup.components, structureInfo.entityId).resolveProvisionalResourceWrite(
+      rawCosts.map((cost) => ({ resourceId: cost.resource as ResourcesIds, amount: -cost.amount })),
+    );
+    const intent = runtime.createProvisionalIntent(
+      [
+        ...(resourceWrite ? [resourceWrite] : []),
+        {
+          entityId: realmEntity,
+          model: "Structure",
+          matchPatch: { base: { level: nextLevel } },
+        },
+      ],
+      { lockUntil: "settled" },
     );
 
     try {
-      const upgradeResult = await setup.systemCalls.upgrade_realm({
+      const result = await setup.systemCalls.upgrade_realm({
         signer: account.account,
         realm_entity_id: structureInfo.entityId,
       });
-
-      const txHash = extractTransactionHash(upgradeResult);
-      if (!txHash) {
-        throw new Error("Realm upgrade transaction did not return a transaction hash.");
-      }
-
-      setUpgradeStatus(structureInfo.entityId, "confirming");
-
-      await waitForTransactionConfirmation({
-        txHash,
-        provider: network.provider as RealmUpgradeWaitProvider,
-        account: account.account as RealmUpgradeWaitAccount,
-        label: "realm upgrade",
-      });
-
-      setUpgradeStatus(structureInfo.entityId, "syncing");
-
-      const synced = await waitForRealmUpgradeSync({
-        realmEntity,
-        components: setup.components,
-        expectedLevel: nextLevel,
-      });
-
-      if (synced) {
-        clearUpgrade(structureInfo.entityId);
-        return;
-      }
-
-      setUpgradeStatus(structureInfo.entityId, "syncTimeout");
-      toast.error("Realm upgrade confirmed. Waiting for synced realm data before enabling the next upgrade.");
+      trackProvisionalTransaction(intent, account.account, result);
     } catch (error) {
-      clearUpgrade(structureInfo.entityId);
+      intent.fail();
       throw error;
-    } finally {
-      removeResourceOverrides();
     }
-  }, [
-    account.account,
-    clearUpgrade,
-    network.provider,
-    nextLevel,
-    realmEntity,
-    rawCosts,
-    setUpgradeStatus,
-    setup.components,
-    setup.systemCalls,
-    startUpgrade,
-    structureInfo,
-  ]);
+  }, [account.account, nextLevel, rawCosts, realmEntity, setup.components, setup.systemCalls, structureInfo]);
 
   if (!structureInfo) return null;
-
-  const isOwner = structureInfo.owner === ContractAddress(account.account.address);
 
   return {
     currentLevel: structureInfo.level,
     currentLevelName: getLevelName(structureInfo.level),
     nextLevel,
     nextLevelName: nextLevel ? getLevelName(nextLevel) : null,
-    canUpgrade,
-    upgradeProgress,
+    canUpgrade: upgradeReadiness.canUpgrade,
+    upgradeProgress: upgradeReadiness.upgradeProgress,
     requirements,
-    missingRequirements,
-    isOwner,
+    missingRequirements: upgradeReadiness.missingRequirements,
+    isOwner: structureInfo.owner === ContractAddress(account.account.address),
     isMaxLevel: nextLevel === null,
-    upgradeActionState,
-    isUpgradeLoading,
+    upgradeActionState: isUpgradeLocked ? "syncing" : "idle",
+    isUpgradeLoading: isUpgradeLocked,
     isUpgradeLocked,
     handleUpgrade,
   };

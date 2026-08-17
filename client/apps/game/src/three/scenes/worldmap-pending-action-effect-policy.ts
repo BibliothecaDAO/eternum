@@ -1,11 +1,5 @@
 import { Direction, getNeighborHexes, HexPosition } from "@bibliothecadao/types";
 
-interface ShouldClearPendingCreateArmyEffectInput {
-  pendingTargetHex: HexPosition;
-  updateHex: HexPosition;
-  removed: boolean;
-}
-
 export function resolveCreateArmyEffectTargetHex(
   structureHex: HexPosition | undefined,
   direction: Direction,
@@ -22,16 +16,4 @@ export function resolveCreateArmyEffectTargetHex(
   }
 
   return { col: match.col, row: match.row };
-}
-
-export function shouldClearPendingCreateArmyEffect(input: ShouldClearPendingCreateArmyEffectInput): boolean {
-  if (input.removed) {
-    return false;
-  }
-
-  if (input.updateHex.col !== input.pendingTargetHex.col || input.updateHex.row !== input.pendingTargetHex.row) {
-    return false;
-  }
-
-  return true;
 }

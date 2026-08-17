@@ -1,9 +1,5 @@
 import { useWorldSpatialTiles } from "@/hooks/use-world-spatial-tiles";
-import {
-  createPendingWorldmapFxKey,
-  dispatchPendingWorldmapFxStart,
-  dispatchPendingWorldmapFxStop,
-} from "@/utils/pending-worldmap-fx";
+import { startWorldmapProvisionalFx } from "@/three/scenes/worldmap-provisional-fx";
 import { Position as PositionInterface } from "@bibliothecadao/eternum";
 
 import Button from "@/ui/design-system/atoms/button";
@@ -169,8 +165,6 @@ export const ArmyCreate = ({
 
   const handleBuyArmy = async (isExplorer: boolean, troopType: TroopType, troopTier: TroopTier, troopCount: number) => {
     setIsLoading(true);
-    let pendingFxKey: string | null = null;
-
     try {
       const homeDirection =
         army?.position && army?.structure
@@ -197,16 +191,18 @@ export const ArmyCreate = ({
             console.error("No direction selected");
             return;
           }
-          pendingFxKey = createPendingWorldmapFxKey("create-army");
-          dispatchPendingWorldmapFxStart({
-            key: pendingFxKey,
-            kind: "create-army",
-            structureId: owner_entity,
-            direction: selectedDirection,
-            troopType,
-            troopTier,
-          });
-          await armyManager.createExplorerArmy(account, troopType, troopTier, troopCount, selectedDirection);
+          await armyManager.createExplorerArmy(account, troopType, troopTier, troopCount, selectedDirection, (intent) =>
+            startWorldmapProvisionalFx(
+              {
+                kind: "create-army",
+                structureId: owner_entity,
+                direction: selectedDirection,
+                troopType,
+                troopTier,
+              },
+              intent,
+            ),
+          );
         }
       } else {
         if (guardSlot !== undefined) {
@@ -225,9 +221,6 @@ export const ArmyCreate = ({
 
       setTroopCount(0);
     } catch (error) {
-      if (pendingFxKey) {
-        dispatchPendingWorldmapFxStop({ key: pendingFxKey });
-      }
       console.error("Failed to create army:", error);
     } finally {
       setIsLoading(false);

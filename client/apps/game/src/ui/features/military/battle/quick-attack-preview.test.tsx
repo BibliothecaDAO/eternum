@@ -14,8 +14,9 @@ const mocks = vi.hoisted(() => ({
   playUnitCommandSound: vi.fn(),
   toggleModal: vi.fn(),
   updateSelectedEntityId: vi.fn(),
-  dispatchPendingWorldmapFxStart: vi.fn(),
-  dispatchPendingWorldmapFxStop: vi.fn(),
+  startWorldmapProvisionalFx: vi.fn(),
+  trackProvisionalTransaction: vi.fn(),
+  provisionalIntent: { bindTransaction: vi.fn(), confirm: vi.fn(), fail: vi.fn(), subscribe: vi.fn() },
   components: {
     Structure: Symbol("Structure"),
     ExplorerTroops: Symbol("ExplorerTroops"),
@@ -92,10 +93,13 @@ vi.mock("@/hooks/store/use-ui-store", () => ({
     }),
 }));
 
-vi.mock("@/utils/pending-worldmap-fx", () => ({
-  createPendingWorldmapFxKey: () => "attack-preview-fx",
-  dispatchPendingWorldmapFxStart: mocks.dispatchPendingWorldmapFxStart,
-  dispatchPendingWorldmapFxStop: mocks.dispatchPendingWorldmapFxStop,
+vi.mock("@/three/scenes/worldmap-provisional-fx", () => ({
+  createAttackProvisionalIntent: () => mocks.provisionalIntent,
+  startWorldmapProvisionalFx: mocks.startWorldmapProvisionalFx,
+}));
+
+vi.mock("@bibliothecadao/eternum/game-sync", () => ({
+  trackProvisionalTransaction: mocks.trackProvisionalTransaction,
 }));
 
 vi.mock("@/ui/design-system/atoms/button", () => ({
@@ -277,8 +281,9 @@ describe("QuickAttackPreview", () => {
     mocks.playUnitCommandSound.mockClear();
     mocks.toggleModal.mockClear();
     mocks.updateSelectedEntityId.mockClear();
-    mocks.dispatchPendingWorldmapFxStart.mockClear();
-    mocks.dispatchPendingWorldmapFxStop.mockClear();
+    mocks.startWorldmapProvisionalFx.mockClear();
+    mocks.trackProvisionalTransaction.mockClear();
+    mocks.provisionalIntent.fail.mockClear();
   });
 
   afterEach(async () => {

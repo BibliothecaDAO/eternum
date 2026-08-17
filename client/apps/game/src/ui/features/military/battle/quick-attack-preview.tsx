@@ -4,11 +4,7 @@ import { playUnitCommandSound } from "@/audio/unit-command-audio";
 import { useBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import {
-  createPendingWorldmapFxKey,
-  dispatchPendingWorldmapFxStart,
-  dispatchPendingWorldmapFxStop,
-} from "@/utils/pending-worldmap-fx";
+import { createAttackProvisionalIntent, startWorldmapProvisionalFx } from "@/three/scenes/worldmap-provisional-fx";
 import Button from "@/ui/design-system/atoms/button";
 import { Checkbox } from "@/ui/design-system/atoms/checkbox";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
@@ -28,6 +24,7 @@ import {
   StaminaManager,
 } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
+import { trackProvisionalTransaction, type ProvisionalIntent } from "@bibliothecadao/eternum/game-sync";
 import { getComponentValue } from "@dojoengine/recs";
 
 import X from "lucide-react/dist/esm/icons/x";
@@ -452,7 +449,7 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
   // Shared submit pipeline: guards, pending worldmap FX, sound, and teardown are identical across
   // every attack variant — only the system call differs, so callers just provide that call.
   const runWorldmapAttack = async (
-    performCall: (ctx: { direction: number | null; resolvedTarget: AttackTarget }) => Promise<void>,
+    performCall: (ctx: { direction: number | null; resolvedTarget: AttackTarget }) => Promise<unknown>,
   ) => {
     if (!selectedHex || !targetData || attackDisabled) return;
     // Range-2 pokes are not adjacent, so direction is null for them; only the adjacency-only
@@ -460,31 +457,28 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
     const direction = getDirectionBetweenAdjacentHexes(selectedHex, { col: target.hex.x, row: target.hex.y });
     const resolvedTarget = targetData;
 
-    let pendingFxKey: string | null = null;
+    let intent: ProvisionalIntent | null = null;
     try {
       setIsSubmitting(true);
 
-      pendingFxKey = createPendingWorldmapFxKey("attack");
-      dispatchPendingWorldmapFxStart({
-        key: pendingFxKey,
-        kind: "attack",
-        attackerId: attacker.id,
-        attackerActorType: attacker.type,
-        defenderId: resolvedTarget.id,
-        defenderActorType: target.type,
-        attackerHex: { col: selectedHex.col, row: selectedHex.row },
-        targetHex: { col: target.hex.x, row: target.hex.y },
-      });
+      intent = createAttackProvisionalIntent(attacker.id, attacker.type);
+      startWorldmapProvisionalFx(
+        {
+          kind: "attack",
+          attackerHex: { col: selectedHex.col, row: selectedHex.row },
+          targetHex: { col: target.hex.x, row: target.hex.y },
+        },
+        intent,
+      );
 
       playUnitCommandSound("attack");
-      await performCall({ direction, resolvedTarget });
+      const result = await performCall({ direction, resolvedTarget });
+      trackProvisionalTransaction(intent, account, result);
 
       updateSelectedEntityId(null);
       toggleModal(null);
     } catch (error) {
-      if (pendingFxKey) {
-        dispatchPendingWorldmapFxStop({ key: pendingFxKey });
-      }
+      intent?.fail();
       console.error("Quick attack failed", error);
     } finally {
       setIsSubmitting(false);
@@ -496,23 +490,23 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
       // Combat v3 derives battle range from coordinates onchain, so no direction is passed.
       if (attackerType === AttackerType.Structure) {
         const guardSlot = activeGuard?.slot;
-        if (guardSlot === undefined) return;
+        if (guardSlot === undefined) throw new Error("No structure guard is selected");
 
-        await attack_guard_vs_explorer({
+        return attack_guard_vs_explorer({
           signer: account,
           structure_id: attacker.id,
           structure_guard_slot: guardSlot,
           explorer_id: resolvedTarget.id,
         });
       } else if (resolvedTarget.targetType === TargetType.Army) {
-        await attack_explorer_vs_explorer({
+        return attack_explorer_vs_explorer({
           signer: account,
           aggressor_id: attacker.id,
           defender_id: resolvedTarget.id,
           steal_resources: targetResources,
         });
       } else {
-        await attack_explorer_vs_guard({
+        return attack_explorer_vs_guard({
           signer: account,
           explorer_id: attacker.id,
           structure_id: resolvedTarget.id,
@@ -524,9 +518,11 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
   // first open guard slot. Claiming requires adjacency, so a direction is always available here.
   const handleClaimAndGarrison = () =>
     runWorldmapAttack(async ({ direction, resolvedTarget }) => {
-      if (direction === null || garrisonGuardSlot === null || garrisonTroopCount < 1) return;
+      if (direction === null || garrisonGuardSlot === null || garrisonTroopCount < 1) {
+        throw new Error("No valid garrison target is selected");
+      }
 
-      await attack_explorer_vs_guard_and_garrison({
+      return attack_explorer_vs_guard_and_garrison({
         signer: account,
         explorer_id: attacker.id,
         structure_id: resolvedTarget.id,

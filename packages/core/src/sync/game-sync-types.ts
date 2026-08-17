@@ -38,11 +38,14 @@ export type GameSyncAuthoritativeObservation =
 export interface GameSyncProvisionalWrite {
   entityId: string;
   model: string;
-  patch: Record<string, unknown> | null;
+  /** Optional optimistic overlay. Evidence-only writes omit it. */
+  patch?: Record<string, unknown> | null;
   /** Deterministic authoritative subset that settles this write. Undefined means overlay-only. */
-  matchPatch: Record<string, unknown> | null | undefined;
+  matchPatch?: Record<string, unknown> | null;
   /** Optional legitimate no-op outcome, held briefly to distinguish it from a stale echo. */
   sourcePatch?: Record<string, unknown>;
+  /** Top-level authoritative fields that settle once any differs from the creation-time base value. */
+  baselineDeltaFields?: readonly string[];
 }
 
 export interface GameSyncProvisionalIntentStalledInfo {
@@ -51,9 +54,19 @@ export interface GameSyncProvisionalIntentStalledInfo {
   unmatchedWrites: Array<{
     entityId: string;
     model: string;
-    matchPatch: Record<string, unknown> | null;
+    matchPatch?: Record<string, unknown> | null;
     sourcePatch?: Record<string, unknown>;
+    baselineDeltaFields?: readonly string[];
   }>;
+}
+
+export interface GameSyncProvisionalIntentPhaseInfo {
+  phase: "created" | "transaction_hash" | "authoritative_echo";
+  intentId: string;
+  transactionHash?: string;
+  model?: string;
+  elapsedSinceCreatedMs: number;
+  elapsedSinceTransactionHashMs?: number;
 }
 
 export interface GameSyncStore {
@@ -62,6 +75,7 @@ export interface GameSyncStore {
   ) => Promise<readonly GameSyncAuthoritativeObservation[] | void> | readonly GameSyncAuthoritativeObservation[] | void;
   applyEvent: (event: GameSyncEntity) => Promise<void> | void;
   listModelEntityIds: (model: string) => Iterable<string>;
+  readAuthoritativeModel?: (model: string, entityId: string) => Record<string, unknown> | null | undefined;
   applyProvisionalWrites?: (intentId: string, writes: readonly GameSyncProvisionalWrite[]) => void;
   removeProvisionalWrites?: (intentId: string) => void;
 }
@@ -90,4 +104,5 @@ export interface GameSyncSessionStart {
   onLiveUpdate?: (kind: "entity" | "event") => void;
   onMetrics?: (metrics: GameSyncRuntimeMetrics) => void;
   onProvisionalIntentStalled?: (info: GameSyncProvisionalIntentStalledInfo) => void;
+  onProvisionalIntentPhase?: (info: GameSyncProvisionalIntentPhaseInfo) => void;
 }

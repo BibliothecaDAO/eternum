@@ -151,26 +151,6 @@ describe("ArrivalGhostManager", () => {
     expect(manager.hasArrivalGhost(1)).toBe(false);
   });
 
-  it("clears stranded unresolved ghosts after the defensive max lifetime", () => {
-    const manager = new ArrivalGhostManager(new Scene(), {
-      chunkStride: 5,
-      renderChunkSize: { width: 10, height: 10 },
-    });
-
-    manager.setCurrentChunk("0,0");
-    manager.upsertLocalArrivalGhost({
-      entityId: 1,
-      hexCoords: hex(0, 0),
-      sourceScene: createTemplateScene(),
-      visualStyle: createVisualStyle(),
-    });
-
-    manager.update(120);
-
-    expect(manager.hasArrivalGhost(1)).toBe(false);
-    expect(manager.snapshotDiagnostics().cleared.max_lifetime).toBe(1);
-  });
-
   it("clears ghosts by reason and destroys all tracked ghosts", () => {
     const manager = new ArrivalGhostManager(new Scene(), {
       chunkStride: 5,
@@ -185,7 +165,7 @@ describe("ArrivalGhostManager", () => {
       visualStyle: createVisualStyle(),
     });
 
-    manager.clearArrivalGhost(1, "tx_failed");
+    manager.clearArrivalGhost(1, "failed");
     expect(manager.hasArrivalGhost(1)).toBe(false);
 
     manager.upsertLocalArrivalGhost({
@@ -248,7 +228,7 @@ describe("ArrivalGhostManager", () => {
     });
     const [sharedGeometryBeforeClear] = collectMeshGeometriesByName(scene, "arrival-ghost-ring");
 
-    manager.clearArrivalGhost(1, "arrived");
+    manager.clearArrivalGhost(1, "settled");
 
     // A fresh ghost reuses the same shared geometry and it still has its attributes.
     manager.upsertLocalArrivalGhost({
@@ -276,21 +256,21 @@ describe("ArrivalGhostManager", () => {
       sourceScene: createTemplateScene(),
       visualStyle: createVisualStyle(),
     });
-    manager.clearArrivalGhost(1, "movement_evicted");
+    manager.clearArrivalGhost(1, "projection_occupied");
     manager.upsertLocalArrivalGhost({
       entityId: 2,
       hexCoords: hex(0, 0),
       sourceScene: createTemplateScene(),
       visualStyle: createVisualStyle(),
     });
-    manager.clearArrivalGhost(2, "optimistic_aborted");
+    manager.clearArrivalGhost(2, "failed");
 
     expect(manager.snapshotDiagnostics()).toMatchObject({
       active: 0,
       created: 2,
       cleared: {
-        movement_evicted: 1,
-        optimistic_aborted: 1,
+        projection_occupied: 1,
+        failed: 1,
       },
     });
   });

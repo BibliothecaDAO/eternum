@@ -23,10 +23,7 @@ import { type ActionPath, ActionPaths, ActionType } from "../utils/action-paths"
 import { configManager, gameEntityKey } from "./config-manager";
 import { ResourceManager } from "./resource-manager";
 import { StaminaManager } from "./stamina-manager";
-import { scheduleTransactionCleanup } from "./transaction-cleanup";
 import { computeExploreFoodCosts, computeTravelFoodCosts } from "./utils";
-
-const OPTIMISTIC_RESOURCE_FALLBACK_TIMEOUT_MS = 180_000;
 
 export class ArmyActionManager {
   private readonly entity: Entity;
@@ -405,21 +402,18 @@ export class ArmyActionManager {
     }
 
     const vrfSourceSalt = packTileSeed({ alt: false, col: destinationHex.col, row: destinationHex.row });
-    const removeResourceOverrides = this._optimisticExploreFoodSpend(explorerTroops?.owner, explorerTroops?.troops);
-
-    try {
-      const result = await this.systemCalls.explorer_explore({
+    const resourceManager = this._getResourceManager(explorerTroops?.owner);
+    const resourceChanges = this._resolveExploreFoodSpend(explorerTroops?.troops);
+    const submit = () =>
+      this.systemCalls.explorer_explore({
         explorer_id: this.entityId,
         directions: [direction],
         vrf_source_salt: vrfSourceSalt,
         signer,
       });
-      this._scheduleResourceCleanupOnTransaction(signer, result, removeResourceOverrides);
-      return result;
-    } catch (e) {
-      removeResourceOverrides();
-      return Promise.reject(e);
-    }
+    return resourceManager
+      ? resourceManager.submitProvisionalResourceTransaction(resourceChanges, signer, submit)
+      : submit();
   };
 
   private readonly _travelToHex = async (
@@ -437,25 +431,17 @@ export class ArmyActionManager {
       })
       .filter((d) => d !== undefined) as number[];
     const explorerTroops = getComponentValue(this.components.ExplorerTroops, this.entity);
-    const removeResourceOverrides = this._optimisticTravelFoodSpend(
-      explorerTroops?.owner,
-      explorerTroops?.troops,
-      directions.length,
-    );
-
-    try {
-      const result = await this.systemCalls.explorer_travel({
+    const resourceManager = this._getResourceManager(explorerTroops?.owner);
+    const resourceChanges = this._resolveTravelFoodSpend(explorerTroops?.troops, directions.length);
+    const submit = () =>
+      this.systemCalls.explorer_travel({
         signer,
         explorer_id: this.entityId,
         directions,
       });
-      this._scheduleResourceCleanupOnTransaction(signer, result, removeResourceOverrides);
-      return result;
-    } catch (e) {
-      removeResourceOverrides();
-      console.log({ e });
-      return Promise.reject(e);
-    }
+    return resourceManager
+      ? resourceManager.submitProvisionalResourceTransaction(resourceChanges, signer, submit)
+      : submit();
   };
 
   private readonly _travelThroughSpire = async (
@@ -497,52 +483,34 @@ export class ArmyActionManager {
     }
   };
 
-  private _optimisticExploreFoodSpend(
-    ownerId: ID | undefined,
-    troops: Parameters<typeof computeExploreFoodCosts>[0] | undefined,
-  ) {
-    if (!troops) return () => {};
+  private _resolveExploreFoodSpend(troops: Parameters<typeof computeExploreFoodCosts>[0] | undefined) {
+    if (!troops) return [];
     const foodCosts = computeExploreFoodCosts(troops);
-    return this._optimisticFoodSpend(ownerId, foodCosts);
+    return this._resolveFoodSpend(foodCosts);
   }
 
-  private _optimisticTravelFoodSpend(
-    ownerId: ID | undefined,
-    troops: Parameters<typeof computeTravelFoodCosts>[0] | undefined,
-    steps: number,
-  ) {
-    if (!troops || steps <= 0) return () => {};
+  private _resolveTravelFoodSpend(troops: Parameters<typeof computeTravelFoodCosts>[0] | undefined, steps: number) {
+    if (!troops || steps <= 0) return [];
     const foodCosts = computeTravelFoodCosts(troops);
-    return this._optimisticFoodSpend(ownerId, {
+    return this._resolveFoodSpend({
       wheatPayAmount: foodCosts.wheatPayAmount * steps,
       fishPayAmount: foodCosts.fishPayAmount * steps,
     });
   }
 
-  private _optimisticFoodSpend(ownerId: ID | undefined, foodCosts: { wheatPayAmount: number; fishPayAmount: number }) {
-    if (!ownerId) return () => {};
-    const resourceManager = new ResourceManager(this.components, ownerId);
-    return resourceManager.optimisticResourceUpdates([
+  private _resolveFoodSpend(foodCosts: { wheatPayAmount: number; fishPayAmount: number }) {
+    return [
       { resourceId: ResourcesIds.Wheat, amount: -foodCosts.wheatPayAmount },
       { resourceId: ResourcesIds.Fish, amount: -foodCosts.fishPayAmount },
-    ]);
+    ];
+  }
+
+  private _getResourceManager(ownerId: ID | undefined) {
+    return ownerId ? new ResourceManager(this.components, ownerId) : null;
   }
 
   private _getOwnerResourceManager() {
     const ownerId = getComponentValue(this.components.ExplorerTroops, this.entity)?.owner;
     return ownerId ? new ResourceManager(this.components, ownerId) : null;
-  }
-
-  private _scheduleResourceCleanupOnTransaction(
-    signer: Account | AccountInterface,
-    result: unknown,
-    cleanup: () => void,
-  ) {
-    scheduleTransactionCleanup({
-      signer,
-      result,
-      cleanup,
-      fallbackTimeoutMs: OPTIMISTIC_RESOURCE_FALLBACK_TIMEOUT_MS,
-    });
   }
 }

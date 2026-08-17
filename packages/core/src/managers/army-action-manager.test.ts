@@ -434,7 +434,7 @@ describe("ArmyActionManager.moveArmy explore position-freshness guard", () => {
   });
 });
 
-describe("ArmyActionManager.moveArmy resource optimism", () => {
+describe("ArmyActionManager.moveArmy provisional resource writes", () => {
   beforeEach(() => {
     vi.spyOn(configManager, "getResourceWeightKg").mockReturnValue(0);
     vi.spyOn(configManager, "getTravelFoodCostConfig").mockReturnValue({
@@ -449,27 +449,24 @@ describe("ArmyActionManager.moveArmy resource optimism", () => {
     vi.restoreAllMocks();
   });
 
-  it("applies travel wheat and fish debits before submitting the travel transaction", async () => {
-    let components: ReturnType<typeof createTestSetup>["components"];
+  it("routes travel food through the session resource intent owner", async () => {
     const systemCalls = {
-      explorer_travel: vi.fn().mockImplementation(async () => {
-        const resourceManager = new ResourceManager(components, 77);
-        expect(resourceManager.balance(ResourcesIds.Wheat)).toBe(precise(96));
-        expect(resourceManager.balance(ResourcesIds.Fish)).toBe(precise(98));
-        return {};
-      }),
+      explorer_travel: vi.fn().mockResolvedValue({}),
       explorer_explore: vi.fn().mockResolvedValue({}),
       toggle_alternate: vi.fn().mockResolvedValue({}),
     };
     const setup = createTestSetup(systemCalls);
-    components = setup.components;
+    const signer = { address: "0x123" } as any;
+    const submitProvisionalResourceTransaction = vi
+      .spyOn(ResourceManager.prototype, "submitProvisionalResourceTransaction")
+      .mockImplementation(async (_changes, _waiterSource, submit) => submit());
     const firstStep = getNeighborHexes(setup.oldFeltStart.col, setup.oldFeltStart.row)[0];
     const secondStep = getNeighborHexes(firstStep.col, firstStep.row).find(
       (hex) => hex.col !== setup.oldFeltStart.col || hex.row !== setup.oldFeltStart.row,
     )!;
 
     await setup.manager.moveArmy(
-      { address: "0x123" } as any,
+      signer,
       [
         { hex: setup.oldFeltStart, actionType: ActionType.Move },
         { hex: firstStep, actionType: ActionType.Move },
@@ -479,70 +476,49 @@ describe("ArmyActionManager.moveArmy resource optimism", () => {
       0,
     );
 
+    expect(submitProvisionalResourceTransaction).toHaveBeenCalledWith(
+      [
+        { resourceId: ResourcesIds.Wheat, amount: -4 },
+        { resourceId: ResourcesIds.Fish, amount: -2 },
+      ],
+      signer,
+      expect.any(Function),
+    );
     expect(systemCalls.explorer_travel).toHaveBeenCalledTimes(1);
   });
 
-  it("cleans up travel food debits immediately when the submit result has no transaction hash", async () => {
-    let components: ReturnType<typeof createTestSetup>["components"];
+  it("routes exploration food through the same session resource intent owner", async () => {
     const systemCalls = {
       explorer_travel: vi.fn().mockResolvedValue({}),
       explorer_explore: vi.fn().mockResolvedValue({}),
       toggle_alternate: vi.fn().mockResolvedValue({}),
     };
     const setup = createTestSetup(systemCalls);
-    components = setup.components;
-    const firstStep = getNeighborHexes(setup.oldFeltStart.col, setup.oldFeltStart.row)[0];
-    const secondStep = getNeighborHexes(firstStep.col, firstStep.row).find(
-      (hex) => hex.col !== setup.oldFeltStart.col || hex.row !== setup.oldFeltStart.row,
-    )!;
+    const signer = { address: "0x123" } as any;
+    const submitProvisionalResourceTransaction = vi
+      .spyOn(ResourceManager.prototype, "submitProvisionalResourceTransaction")
+      .mockImplementation(async (_changes, _waiterSource, submit) => submit());
+    const target = getNeighborHexes(setup.oldFeltStart.col, setup.oldFeltStart.row)[0];
 
     await setup.manager.moveArmy(
-      { address: "0x123" } as any,
+      signer,
       [
-        { hex: setup.oldFeltStart, actionType: ActionType.Move },
-        { hex: firstStep, actionType: ActionType.Move },
-        { hex: secondStep, actionType: ActionType.Move },
+        { hex: setup.oldFeltStart, actionType: ActionType.Explore },
+        { hex: target, actionType: ActionType.Explore },
       ] as any,
-      true,
+      false,
       0,
     );
 
-    const resourceManager = new ResourceManager(components, 77);
-    expect(resourceManager.balance(ResourcesIds.Wheat)).toBe(precise(100));
-    expect(resourceManager.balance(ResourcesIds.Fish)).toBe(precise(100));
-  });
-
-  it("rolls back explore wheat and fish debits when submission fails", async () => {
-    let components: ReturnType<typeof createTestSetup>["components"];
-    const systemCalls = {
-      explorer_travel: vi.fn().mockResolvedValue({}),
-      explorer_explore: vi.fn().mockImplementation(async () => {
-        const resourceManager = new ResourceManager(components, 77);
-        expect(resourceManager.balance(ResourcesIds.Wheat)).toBe(precise(95));
-        expect(resourceManager.balance(ResourcesIds.Fish)).toBe(precise(98));
-        throw new Error("submit failed");
-      }),
-      toggle_alternate: vi.fn().mockResolvedValue({}),
-    };
-    const setup = createTestSetup(systemCalls);
-    components = setup.components;
-    const target = getNeighborHexes(setup.oldFeltStart.col, setup.oldFeltStart.row)[0];
-
-    await expect(
-      setup.manager.moveArmy(
-        { address: "0x123" } as any,
-        [
-          { hex: setup.oldFeltStart, actionType: ActionType.Explore },
-          { hex: target, actionType: ActionType.Explore },
-        ] as any,
-        false,
-        0,
-      ),
-    ).rejects.toThrow("submit failed");
-
-    const resourceManager = new ResourceManager(components, 77);
-    expect(resourceManager.balance(ResourcesIds.Wheat)).toBe(precise(100));
-    expect(resourceManager.balance(ResourcesIds.Fish)).toBe(precise(100));
+    expect(submitProvisionalResourceTransaction).toHaveBeenCalledWith(
+      [
+        { resourceId: ResourcesIds.Wheat, amount: -5 },
+        { resourceId: ResourcesIds.Fish, amount: -2 },
+      ],
+      signer,
+      expect.any(Function),
+    );
+    expect(systemCalls.explorer_explore).toHaveBeenCalledTimes(1);
   });
 });
 

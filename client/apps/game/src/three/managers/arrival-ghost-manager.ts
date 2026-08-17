@@ -33,28 +33,25 @@ const ARRIVAL_GHOST_RING_PULSE_AMPLITUDE = 0.22;
 const ARRIVAL_GHOST_RING_PULSE_SPEED = 2.4;
 const ARRIVAL_GHOST_BURST_RING_OPACITY = 0.52;
 const ARRIVAL_GHOST_BURST_RING_EXPANSION = 0.95;
-const ARRIVAL_GHOST_MAX_LIFETIME_S = 90;
 const ARRIVAL_GHOST_CLEAR_REASONS: ArrivalGhostClearReason[] = [
-  "arrived",
-  "tx_failed",
-  "stale_timeout",
+  "settled",
+  "failed",
+  "projection_occupied",
   "army_removed",
   "scene_destroyed",
   "superseded",
-  "movement_evicted",
-  "max_lifetime",
-  "optimistic_aborted",
 ];
 
+export type ArrivalGhostKey = ID | string;
+
 export interface ArrivalGhostSpec {
-  entityId: ID;
+  entityId: ArrivalGhostKey;
   hexCoords: HexPosition;
   sourceScene: Object3D;
   visualStyle: ArrivalGhostVisualStyle;
 }
 
 interface ArrivalGhostState extends ArrivalGhostSpec {
-  ageElapsedS: number;
   baseScale: Vector3;
   burstRing: Mesh<RingGeometry, MeshBasicMaterial>;
   container: Group;
@@ -62,6 +59,7 @@ interface ArrivalGhostState extends ArrivalGhostSpec {
   idleElapsedS: number;
   ring: Mesh<RingGeometry, MeshBasicMaterial>;
   resolveElapsedS: number;
+  resolveReason: ArrivalGhostClearReason;
   resolveRequested: boolean;
 }
 
@@ -109,7 +107,7 @@ const ARRIVAL_GHOST_BURST_RING_GEOMETRY = new RingGeometry(
 );
 
 export class ArrivalGhostManager {
-  private readonly ghosts = new Map<ID, ArrivalGhostState>();
+  private readonly ghosts = new Map<ArrivalGhostKey, ArrivalGhostState>();
   private readonly diagnostics = createArrivalGhostDiagnostics();
   private currentChunkKey: string | null = MANAGER_UNCOMMITTED_CHUNK;
 
@@ -124,7 +122,6 @@ export class ArrivalGhostManager {
     const container = this.buildGhostContainer(input);
     const state: ArrivalGhostState = {
       ...input,
-      ageElapsedS: 0,
       burstRing: container.getObjectByName("arrival-ghost-burst-ring") as Mesh<RingGeometry, MeshBasicMaterial>,
       baseScale: container.scale.clone(),
       container,
@@ -132,6 +129,7 @@ export class ArrivalGhostManager {
       idleElapsedS: 0,
       ring: container.getObjectByName("arrival-ghost-ring") as Mesh<RingGeometry, MeshBasicMaterial>,
       resolveElapsedS: 0,
+      resolveReason: "settled",
       resolveRequested: false,
     };
 
@@ -140,16 +138,17 @@ export class ArrivalGhostManager {
     this.syncGhostVisibility(state);
   }
 
-  public resolveArrivalGhost(entityId: ID): void {
+  public resolveArrivalGhost(entityId: ArrivalGhostKey, reason: ArrivalGhostClearReason = "settled"): void {
     const ghost = this.ghosts.get(entityId);
     if (!ghost) {
       return;
     }
 
     ghost.resolveRequested = true;
+    ghost.resolveReason = reason;
   }
 
-  public clearArrivalGhost(entityId: ID, reason: ArrivalGhostClearReason): void {
+  public clearArrivalGhost(entityId: ArrivalGhostKey, reason: ArrivalGhostClearReason): void {
     const ghost = this.ghosts.get(entityId);
     if (!ghost) {
       return;
@@ -161,11 +160,11 @@ export class ArrivalGhostManager {
     this.recordGhostCleared(reason);
   }
 
-  public hasArrivalGhost(entityId: ID): boolean {
+  public hasArrivalGhost(entityId: ArrivalGhostKey): boolean {
     return this.ghosts.has(entityId);
   }
 
-  public getTrackedEntityIds(): ID[] {
+  public getTrackedEntityIds(): ArrivalGhostKey[] {
     return Array.from(this.ghosts.keys());
   }
 
@@ -180,12 +179,6 @@ export class ArrivalGhostManager {
 
   public update(deltaTime: number): void {
     for (const ghost of Array.from(this.ghosts.values())) {
-      ghost.ageElapsedS += deltaTime;
-      if (this.hasExceededMaxLifetime(ghost)) {
-        this.clearArrivalGhost(ghost.entityId, "max_lifetime");
-        continue;
-      }
-
       this.syncGhostVisibility(ghost);
       if (!ghost.container.visible) {
         continue;
@@ -202,7 +195,7 @@ export class ArrivalGhostManager {
       this.applyResolvePresentation(ghost, resolveProgress);
 
       if (resolveProgress >= 1) {
-        this.clearArrivalGhost(ghost.entityId, "arrived");
+        this.clearArrivalGhost(ghost.entityId, ghost.resolveReason);
       }
     }
   }
@@ -339,10 +332,6 @@ export class ArrivalGhostManager {
     ghost.burstRing.visible = false;
     ghost.burstRing.material.opacity = 0;
     ghost.burstRing.scale.setScalar(1);
-  }
-
-  private hasExceededMaxLifetime(ghost: ArrivalGhostState): boolean {
-    return ghost.ageElapsedS >= ARRIVAL_GHOST_MAX_LIFETIME_S;
   }
 
   private syncGhostVisibility(ghost: ArrivalGhostState): void {

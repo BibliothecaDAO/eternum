@@ -199,21 +199,20 @@ export const RealmTransfer = memo(({ resource }: { resource: ResourcesIds }) => 
 
   const handleBurn = useCallback(async () => {
     setIsLoading(true);
-    const removeResourceOverrides = new ResourceManager(components, selectedStructureEntityId).optimisticResourceUpdate(
-      resource,
-      -burnAmount,
-    );
-
     try {
-      await structure_burn({
-        signer: account,
-        structure_id: selectedStructureEntityId,
-        resources: [{ resourceId: resource, amount: Math.round(burnAmount * RESOURCE_PRECISION) }],
-      });
+      await new ResourceManager(components, selectedStructureEntityId).submitProvisionalResourceTransaction(
+        [{ resourceId: resource, amount: -burnAmount }],
+        account,
+        () =>
+          structure_burn({
+            signer: account,
+            structure_id: selectedStructureEntityId,
+            resources: [{ resourceId: resource, amount: Math.round(burnAmount * RESOURCE_PRECISION) }],
+          }),
+      );
     } catch (error) {
       console.error(error);
     } finally {
-      removeResourceOverrides();
       setIsLoading(false);
     }
   }, [burnAmount, account, components, structure_burn, selectedStructureEntityId, resource]);
@@ -225,22 +224,23 @@ export const RealmTransfer = memo(({ resource }: { resource: ResourcesIds }) => 
       recipient_entity_id,
       resources: [resources[0], BigInt(Number(resources[1]) * RESOURCE_PRECISION)],
     }));
-    const removeResourceOverrides = calls.map((call) =>
-      new ResourceManager(components, Number(call.sender_entity_id)).optimisticResourceUpdate(
-        Number(call.resources[0]) as ResourcesIds,
-        -Number(call.resources[1]),
-      ),
-    );
-
     try {
-      await send_resources_multiple({
-        signer: account,
-        calls: cleanedCalls,
+      await ResourceManager.submitProvisionalResourceTransaction({
+        components,
+        changeSets: calls.map((call) => ({
+          entityId: Number(call.sender_entity_id),
+          changes: [{ resourceId: Number(call.resources[0]) as ResourcesIds, amount: -Number(call.resources[1]) }],
+        })),
+        waiterSource: account,
+        submit: () =>
+          send_resources_multiple({
+            signer: account,
+            calls: cleanedCalls,
+          }),
       });
     } catch (error) {
       console.error(error);
     } finally {
-      removeResourceOverrides.forEach((removeOverride) => removeOverride());
       setIsLoading(false);
     }
 

@@ -3,7 +3,7 @@ import { UNDEFINED_STRUCTURE_ENTITY_ID } from "@/ui/constants";
 import { countAvailableRelics } from "@/ui/features/relics/utils/count-available-relics";
 import type { IncomingTroopArrival } from "@bibliothecadao/eternum";
 import { PlayerRelicsData } from "@bibliothecadao/torii";
-import { ID, RelicRecipientType, Structure, StructureType } from "@bibliothecadao/types";
+import { ID, Structure, StructureType } from "@bibliothecadao/types";
 import { isExplicitSpectateSession, overrideSpectateIntent } from "@/utils/spectator-session";
 
 const idsMatch = (left: unknown, right: unknown) => String(left) === String(right);
@@ -37,32 +37,6 @@ const resolvePreferredControlledStructureId = (playerStructures: Structure[]): I
   return firstRealm?.entityId ?? playerStructures[0]?.entityId ?? UNDEFINED_STRUCTURE_ENTITY_ID;
 };
 
-const removeRelicFromCollection = <T extends { entityId: unknown; relics?: Array<{ resourceId: unknown }> }>(
-  collection: T[],
-  targetEntityId: ID,
-  targetResourceId: ID,
-): T[] => {
-  return collection.reduce<T[]>((acc, entity) => {
-    if (!idsMatch(entity.entityId, targetEntityId)) {
-      acc.push(entity);
-      return acc;
-    }
-
-    const filteredRelics = (entity.relics ?? []).filter((relic) => !idsMatch(relic.resourceId, targetResourceId));
-
-    if (filteredRelics.length === 0) {
-      return acc;
-    }
-
-    acc.push({
-      ...entity,
-      relics: filteredRelics,
-    });
-
-    return acc;
-  }, [] as T[]);
-};
-
 export interface RealmStore {
   structureEntityId: ID;
   lastControlledStructureEntityId: ID;
@@ -90,7 +64,6 @@ export interface RealmStore {
   setPlayerRelicsLoading: (loading: boolean) => void;
   relicsRefreshNonce: number;
   triggerRelicsRefresh: () => void;
-  removeRelicFromEntity: (params: { entityId: ID; resourceId: ID; recipientType: RelicRecipientType }) => void;
 }
 
 export const createRealmStoreSlice = (
@@ -248,42 +221,4 @@ export const createRealmStoreSlice = (
   setPlayerRelicsLoading: (loading: boolean) => set({ playerRelicsLoading: loading }),
   relicsRefreshNonce: 0,
   triggerRelicsRefresh: () => set((state: RealmStore) => ({ relicsRefreshNonce: state.relicsRefreshNonce + 1 })),
-  removeRelicFromEntity: ({
-    entityId,
-    resourceId,
-    recipientType,
-  }: {
-    entityId: ID;
-    resourceId: ID;
-    recipientType: RelicRecipientType;
-  }) =>
-    set((state: RealmStore) => {
-      if (!state.playerRelics) {
-        return {};
-      }
-
-      if (recipientType === RelicRecipientType.Structure) {
-        const updatedStructures = removeRelicFromCollection(state.playerRelics.structures ?? [], entityId, resourceId);
-        const updatedPlayerRelics: PlayerRelicsData = {
-          ...state.playerRelics,
-          structures: updatedStructures,
-        };
-
-        return {
-          playerRelics: updatedPlayerRelics,
-          availableRelicsNumber: countAvailableRelics(updatedPlayerRelics),
-        };
-      }
-
-      const updatedArmies = removeRelicFromCollection(state.playerRelics.armies ?? [], entityId, resourceId);
-      const updatedPlayerRelics: PlayerRelicsData = {
-        ...state.playerRelics,
-        armies: updatedArmies,
-      };
-
-      return {
-        playerRelics: updatedPlayerRelics,
-        availableRelicsNumber: countAvailableRelics(updatedPlayerRelics),
-      };
-    }),
 });

@@ -67,19 +67,20 @@ export const ResourceProductionControls = ({
       production_cycles: [ticks],
       signer: account,
     };
-    const removeResourceOverrides = resourceManager.optimisticResourceUpdates(
-      (configManager.complexSystemResourceInputs[selectedResource] ?? []).map(({ resource, amount }) => ({
+    const resourceChanges = (configManager.complexSystemResourceInputs[selectedResource] ?? []).map(
+      ({ resource, amount }) => ({
         resourceId: resource,
         amount: -amount * ticks,
-      })),
+      }),
     );
 
     try {
-      await burn_resource_for_resource_production(calldata);
+      await resourceManager.submitProvisionalResourceTransaction(resourceChanges, account, () =>
+        burn_resource_for_resource_production(calldata),
+      );
     } catch (error) {
       console.error(error);
     } finally {
-      removeResourceOverrides();
       setIsLoading(false);
     }
   };
@@ -95,19 +96,18 @@ export const ResourceProductionControls = ({
         produced_resource_types: [selectedResource],
         signer: account,
       };
-      const removeResourceOverrides = resourceManager.optimisticResourceUpdates(
-        laborConfig.inputResources.map(({ resource, amount }) => ({
-          resourceId: resource,
-          amount: -amount * productionCycles,
-        })),
-      );
+      const resourceChanges = laborConfig.inputResources.map(({ resource, amount }) => ({
+        resourceId: resource,
+        amount: -amount * productionCycles,
+      }));
 
       try {
-        await burn_labor_for_resource_production(calldata);
+        await resourceManager.submitProvisionalResourceTransaction(resourceChanges, account, () =>
+          burn_labor_for_resource_production(calldata),
+        );
       } catch (error) {
         console.error(error);
       } finally {
-        removeResourceOverrides();
         setIsLoading(false);
       }
     }

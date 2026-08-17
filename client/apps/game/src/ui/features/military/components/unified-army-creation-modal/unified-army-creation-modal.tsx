@@ -2,11 +2,7 @@ import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { useOwnedMilitaryStructureInfos } from "@/hooks/helpers/use-owned-structure-info";
 import { useCurrentArmiesTick } from "@/hooks/helpers/use-block-timestamp";
 import { useWorldSpatialTiles } from "@/hooks/use-world-spatial-tiles";
-import {
-  createPendingWorldmapFxKey,
-  dispatchPendingWorldmapFxStart,
-  dispatchPendingWorldmapFxStop,
-} from "@/utils/pending-worldmap-fx";
+import { startWorldmapProvisionalFx } from "@/three/scenes/worldmap-provisional-fx";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { UNDEFINED_STRUCTURE_ENTITY_ID } from "@/ui/constants";
 import {
@@ -475,28 +471,28 @@ export const UnifiedArmyCreationBody = ({
     if (!armyManager || troopCount <= 0) return;
 
     setIsLoading(true);
-    let pendingFxKey: string | null = null;
-
     try {
       if (armyType) {
         if (selectedDirection === null) {
           throw new Error("No direction selected");
         }
-        pendingFxKey = createPendingWorldmapFxKey("create-army");
-        dispatchPendingWorldmapFxStart({
-          key: pendingFxKey,
-          kind: "create-army",
-          structureId: activeStructureId,
-          direction: selectedDirection,
-          troopType: selectedTroopCombo.type,
-          troopTier: selectedTroopCombo.tier,
-        });
         await armyManager.createExplorerArmy(
           account,
           selectedTroopCombo.type,
           selectedTroopCombo.tier,
           troopCount,
           selectedDirection,
+          (intent) =>
+            startWorldmapProvisionalFx(
+              {
+                kind: "create-army",
+                structureId: activeStructureId,
+                direction: selectedDirection,
+                troopType: selectedTroopCombo.type,
+                troopTier: selectedTroopCombo.tier,
+              },
+              intent,
+            ),
         );
         // Tile occupancy changed — kick the deploy map to re-fetch.
         useUIStore.getState().bumpMilitaryMapVersion();
@@ -532,9 +528,6 @@ export const UnifiedArmyCreationBody = ({
         }
       }
     } catch (error) {
-      if (pendingFxKey) {
-        dispatchPendingWorldmapFxStop({ key: pendingFxKey });
-      }
       console.error("Failed to create army:", error);
     } finally {
       setIsLoading(false);

@@ -1519,7 +1519,7 @@ const claimGameReviewRewardsForPlayers = async ({
       chain,
       worldName,
       worldAddress: profile.worldAddress,
-      waitForConfirmation: false,
+      waitForConfirmation: true,
     });
   }
 

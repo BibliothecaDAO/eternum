@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import type { GameSyncProvisionalWrite, GameSyncStore } from "./game-sync-types";
 import { ProvisionalWriteManager, trackProvisionalTransaction } from "./provisional-write-manager";
 
@@ -9,193 +9,180 @@ const WRITE: GameSyncProvisionalWrite = {
   matchPatch: { category: 7, population: { current: 4 } },
 };
 
-const createStore = () =>
+const createStore = (authoritativeValue: Record<string, unknown> | null = null) =>
   ({
     applyEntityOperations: vi.fn(),
     applyEvent: vi.fn(),
     listModelEntityIds: vi.fn(() => []),
+    readAuthoritativeModel: vi.fn(() => authoritativeValue),
     applyProvisionalWrites: vi.fn(),
     removeProvisionalWrites: vi.fn(),
   }) satisfies GameSyncStore;
 
+const createdIntentId = (store: ReturnType<typeof createStore>): string =>
+  String(store.applyProvisionalWrites.mock.calls.at(-1)?.[0]);
+
+afterEach(() => vi.useRealTimers());
+
 describe("ProvisionalWriteManager", () => {
-  it("keeps confirmed overlays until every patch field is stable in authoritative ingest", () => {
+  it("holds an exact-match overlay until every evidence field is authoritative", () => {
     vi.useFakeTimers();
     const store = createStore();
     const manager = new ProvisionalWriteManager(store);
     const intent = manager.createIntent([WRITE]);
+    const outcomes = vi.fn();
+    intent.subscribe(outcomes);
 
-    expect(intent.isInputLocked()).toBe(true);
-    expect(manager.hasInputLock("s1_eternum-Building", "0x1")).toBe(true);
-    // The hash makes the write nonce-committed: chaining is valid from here,
-    // so the receipt wait ("pending") must never freeze input.
+    expect(manager.hasInputLock("Building", "0x1")).toBe(true);
     intent.bindTransaction("0xtx");
-    expect(intent.isInputLocked()).toBe(false);
-    expect(manager.hasInputLock("s1_eternum-Building", "0x1")).toBe(false);
-    intent.confirm();
-    expect(intent.isInputLocked()).toBe(false);
     expect(manager.hasInputLock("Building", "0x1")).toBe(false);
+    intent.confirm();
 
     manager.observeAuthoritativeObservations([
-      { type: "model", entityId: "0x1", model: "s1_eternum-Building", value: { category: 7 } },
+      { type: "model", entityId: "0x1", model: "Building", value: { category: 7 } },
     ]);
     vi.advanceTimersByTime(3_000);
     expect(store.removeProvisionalWrites).not.toHaveBeenCalled();
-
-    manager.observeAuthoritativeObservations([
-      {
-        type: "model",
-        entityId: "0x1",
-        model: "s1_eternum-Building",
-        value: { category: 7, population: { current: 4 } },
-      },
-    ]);
-    vi.advanceTimersByTime(2_499);
-    expect(store.removeProvisionalWrites).not.toHaveBeenCalled();
-    vi.advanceTimersByTime(1);
-    expect(store.removeProvisionalWrites).toHaveBeenCalledWith(intent.id);
-    expect(intent.status).toBe("settled");
-    vi.useRealTimers();
-  });
-
-  it("restarts the source-match hold when a stale echo follows a match", () => {
-    vi.useFakeTimers();
-    const store = createStore();
-    const manager = new ProvisionalWriteManager(store);
-    const intent = manager.createIntent([WRITE]);
-    intent.confirm();
 
     manager.observeAuthoritativeObservations([
       { type: "model", entityId: "0x1", model: "Building", value: WRITE.patch },
     ]);
-    manager.observeAuthoritativeObservations([
-      { type: "model", entityId: "0x1", model: "Building", value: { category: 6 } },
-    ]);
-    vi.advanceTimersByTime(3_000);
-    expect(store.removeProvisionalWrites).not.toHaveBeenCalled();
-    vi.useRealTimers();
+    vi.advanceTimersByTime(2_500);
+
+    expect(store.removeProvisionalWrites).toHaveBeenCalledWith(createdIntentId(store));
+    expect(outcomes).toHaveBeenCalledWith("settled");
   });
 
-  it("settles a declared no-op source outcome only after the stale-echo hold", () => {
+  it("counts baseline-delta evidence only after a transaction hash exists", () => {
     vi.useFakeTimers();
-    const store = createStore();
+    const store = createStore({ WOOD_BALANCE: 100n });
     const manager = new ProvisionalWriteManager(store);
     const intent = manager.createIntent([
       {
         entityId: "0x2",
+        model: "Resource",
+        patch: { WOOD_BALANCE: 90n },
+        baselineDeltaFields: ["WOOD_BALANCE"],
+      },
+    ]);
+    const outcomes = vi.fn();
+    intent.subscribe(outcomes);
+
+    manager.observeAuthoritativeObservations([
+      { type: "model", entityId: "0x2", model: "Resource", value: { WOOD_BALANCE: 90n } },
+    ]);
+    intent.bindTransaction("0xtx");
+    intent.confirm();
+    vi.advanceTimersByTime(2_500);
+    expect(outcomes).not.toHaveBeenCalled();
+
+    manager.observeAuthoritativeObservations([
+      { type: "model", entityId: "0x2", model: "Resource", value: { WOOD_BALANCE: 89n } },
+    ]);
+    vi.advanceTimersByTime(2_500);
+    expect(outcomes).toHaveBeenCalledWith("settled");
+  });
+
+  it("keeps settled-duration locks active until the authoritative echo", () => {
+    vi.useFakeTimers();
+    const manager = new ProvisionalWriteManager(createStore());
+    const intent = manager.createIntent([WRITE], { lockUntil: "settled" });
+    intent.bindTransaction("0xtx");
+    intent.confirm();
+
+    expect(manager.hasInputLock("Building", "0x1")).toBe(true);
+    manager.observeAuthoritativeObservations([
+      { type: "model", entityId: "0x1", model: "Building", value: WRITE.patch },
+    ]);
+    vi.advanceTimersByTime(2_500);
+    expect(manager.hasInputLock("Building", "0x1")).toBe(false);
+  });
+
+  it("reports created, transaction-hash, and first authoritative-echo phases once", () => {
+    const phases: string[] = [];
+    const manager = new ProvisionalWriteManager(createStore(), {
+      onIntentPhase: ({ phase }) => phases.push(phase),
+    });
+    const intent = manager.createIntent([WRITE]);
+
+    intent.bindTransaction("0xtx");
+    intent.confirm();
+    manager.observeAuthoritativeObservations([
+      { type: "model", entityId: "0x1", model: "Building", value: WRITE.patch },
+      { type: "model", entityId: "0x1", model: "Building", value: WRITE.patch },
+    ]);
+
+    expect(phases).toEqual(["created", "transaction_hash", "authoritative_echo"]);
+    manager.dispose();
+  });
+
+  it("settles a declared no-op source outcome", () => {
+    vi.useFakeTimers();
+    const manager = new ProvisionalWriteManager(createStore());
+    const intent = manager.createIntent([
+      {
+        entityId: "0x2",
         model: "ExplorerTroops",
-        patch: { coord: { x: 12, y: 9 }, troops: { stamina: { amount: 30n } } },
+        patch: { coord: { x: 12, y: 9 } },
         matchPatch: { coord: { x: 12, y: 9 } },
         sourcePatch: { coord: { x: 11, y: 9 } },
       },
     ]);
+    const outcomes = vi.fn();
+    intent.subscribe(outcomes);
     intent.confirm();
     manager.observeAuthoritativeObservations([
-      {
-        type: "model",
-        entityId: "0x2",
-        model: "ExplorerTroops",
-        value: { coord: { x: 11, y: 9 } },
-      },
+      { type: "model", entityId: "0x2", model: "ExplorerTroops", value: { coord: { x: 11, y: 9 } } },
     ]);
 
-    vi.advanceTimersByTime(2_499);
-    expect(intent.status).toBe("confirmed");
-    vi.advanceTimersByTime(1);
-    expect(intent.status).toBe("settled");
-    vi.useRealTimers();
+    vi.advanceTimersByTime(2_500);
+    expect(outcomes).toHaveBeenCalledWith("settled");
   });
 
-  it("settles on deterministic match fields while drifting overlay fields differ", () => {
+  it("reports, fails, and removes a confirmed intent that stalls", () => {
     vi.useFakeTimers();
     const store = createStore();
-    const manager = new ProvisionalWriteManager(store);
-    const intent = manager.createIntent([
-      {
-        entityId: "0x2",
-        model: "ExplorerTroops",
-        patch: { coord: { x: 12, y: 9 }, troops: { stamina: { amount: 30n, updated_tick: 5n } } },
-        matchPatch: { coord: { x: 12, y: 9 } },
-      },
-    ]);
-    intent.confirm();
-
-    manager.observeAuthoritativeObservations([
-      {
-        type: "model",
-        entityId: "0x2",
-        model: "ExplorerTroops",
-        value: { coord: { x: 12, y: 9 }, troops: { stamina: { amount: 34n, updated_tick: 6n } } },
-      },
-    ]);
-    vi.advanceTimersByTime(2_500);
-
-    expect(intent.status).toBe("settled");
-    vi.useRealTimers();
-  });
-
-  it("reports a confirmed intent that has not matched after 30 seconds", () => {
-    vi.useFakeTimers();
     const onIntentStalled = vi.fn();
-    const manager = new ProvisionalWriteManager(createStore(), { onIntentStalled });
+    const manager = new ProvisionalWriteManager(store, { onIntentStalled });
     const intent = manager.createIntent([WRITE]);
+    const outcomes: string[] = [];
+    intent.subscribe((outcome) => outcomes.push(outcome));
     intent.bindTransaction("0xtx");
     intent.confirm();
 
-    vi.advanceTimersByTime(29_999);
-    expect(onIntentStalled).not.toHaveBeenCalled();
-    vi.advanceTimersByTime(1);
+    vi.advanceTimersByTime(30_000);
 
-    expect(onIntentStalled).toHaveBeenCalledWith({
-      intentId: intent.id,
-      transactionHash: "0xtx",
-      unmatchedWrites: [
-        {
-          entityId: WRITE.entityId,
-          model: WRITE.model,
-          matchPatch: WRITE.matchPatch,
-          sourcePatch: undefined,
-        },
-      ],
-    });
-    vi.useRealTimers();
+    expect(onIntentStalled).toHaveBeenCalledWith(
+      expect.objectContaining({
+        transactionHash: "0xtx",
+        unmatchedWrites: [
+          expect.objectContaining({
+            entityId: WRITE.entityId,
+            model: WRITE.model,
+            matchPatch: WRITE.matchPatch,
+          }),
+        ],
+      }),
+    );
+    expect(outcomes).toEqual(["stalled", "failed"]);
+    expect(store.removeProvisionalWrites).toHaveBeenCalledWith(createdIntentId(store));
   });
 
-  it("removes the overlay immediately when submission or receipt fails", async () => {
+  it("fails independently when a tracked receipt rejects", async () => {
     const store = createStore();
     const manager = new ProvisionalWriteManager(store);
-    const submissionFailure = manager.createIntent([WRITE]);
-    submissionFailure.fail();
-    expect(store.removeProvisionalWrites).toHaveBeenCalledWith(submissionFailure.id);
+    const intent = manager.createIntent([WRITE]);
+    const outcomes = vi.fn();
+    intent.subscribe(outcomes);
 
-    const receiptFailure = manager.createIntent([WRITE]);
     trackProvisionalTransaction(
-      receiptFailure,
+      intent,
       { waitForTransactionWithCheck: vi.fn().mockRejectedValue(new Error("reverted")) },
       { transaction_hash: "0xtx" },
     );
     await Promise.resolve();
     await Promise.resolve();
-    expect(receiptFailure.status).toBe("failed");
-  });
 
-  it("allows a chained intent while the prior one awaits its receipt, unwinding each failure independently", () => {
-    const store = createStore();
-    const manager = new ProvisionalWriteManager(store);
-
-    const first = manager.createIntent([WRITE]);
-    first.bindTransaction("0xtx1");
-    expect(manager.hasInputLock("Building", "0x1")).toBe(false);
-
-    const second = manager.createIntent([WRITE]);
-    second.bindTransaction("0xtx2");
-    expect(manager.hasInputLock("Building", "0x1")).toBe(false);
-
-    first.fail();
-    expect(store.removeProvisionalWrites).toHaveBeenCalledWith(first.id);
-    expect(store.removeProvisionalWrites).not.toHaveBeenCalledWith(second.id);
-
-    second.fail();
-    expect(store.removeProvisionalWrites).toHaveBeenCalledWith(second.id);
+    expect(outcomes).toHaveBeenCalledWith("failed");
   });
 });

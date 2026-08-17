@@ -6,7 +6,11 @@ import type {
   GameSyncSessionStart,
   GameSyncWriter,
 } from "./game-sync-types";
-import { ProvisionalWriteManager, type ProvisionalIntent } from "./provisional-write-manager";
+import {
+  ProvisionalWriteManager,
+  type ProvisionalIntent,
+  type ProvisionalIntentLockUntil,
+} from "./provisional-write-manager";
 import { createMicrotaskGameSyncScheduler } from "./scheduler";
 import type { WorldSpatialProjection } from "./world-spatial-projection";
 
@@ -94,6 +98,7 @@ export class GameSyncRuntime {
     this.session = input;
     this.provisionalWriteManager = new ProvisionalWriteManager(input.store, {
       onIntentStalled: input.onProvisionalIntentStalled,
+      onIntentPhase: input.onProvisionalIntentPhase,
     });
     this.recentEventIdentities.clear();
     this.liveUpdateTimestamps = [];
@@ -135,15 +140,22 @@ export class GameSyncRuntime {
     return this.worldSpatialProjection;
   }
 
-  public createProvisionalIntent(writes: readonly GameSyncProvisionalWrite[]): ProvisionalIntent {
+  public createProvisionalIntent(
+    writes: readonly GameSyncProvisionalWrite[],
+    options: { lockUntil?: ProvisionalIntentLockUntil } = {},
+  ): ProvisionalIntent {
     if (!this.provisionalWriteManager) {
       throw new Error("GameSyncRuntime has no active provisional write manager");
     }
-    return this.provisionalWriteManager.createIntent(writes);
+    return this.provisionalWriteManager.createIntent(writes, options);
   }
 
   public hasProvisionalInputLock(model: string, entityId: string): boolean {
     return this.provisionalWriteManager?.hasInputLock(model, entityId) ?? false;
+  }
+
+  public subscribeProvisionalState(listener: () => void): () => void {
+    return this.provisionalWriteManager?.subscribe(listener) ?? (() => {});
   }
 
   public async applyAuthoritativeEntities(entities: readonly GameSyncEntity[]): Promise<void> {

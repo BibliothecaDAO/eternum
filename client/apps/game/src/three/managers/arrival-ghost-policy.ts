@@ -1,16 +1,12 @@
 import { Color } from "three";
 
 export type ArrivalGhostClearReason =
-  | "arrived"
-  | "entity_evidence"
-  | "tx_failed"
-  | "stale_timeout"
+  | "settled"
+  | "failed"
+  | "projection_occupied"
   | "army_removed"
   | "scene_destroyed"
-  | "superseded"
-  | "movement_evicted"
-  | "max_lifetime"
-  | "optimistic_aborted";
+  | "superseded";
 
 export interface ArrivalGhostVisualStyle {
   color: string;

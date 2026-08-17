@@ -4,6 +4,7 @@ import type {
   GameSyncEntity,
   GameSyncEntityStoreOperation,
   GameSyncProvisionalIntentStalledInfo,
+  GameSyncProvisionalIntentPhaseInfo,
   GameSyncRuntimeMetrics,
   GameSyncSessionStart,
   GameSyncStore,
@@ -132,17 +133,23 @@ const createRecsGameSyncStore = (setup: SetupResult, logging: boolean): GameSync
       const component = authoritativeComponentLookup.get(model);
       return component ? getComponentEntities(component) : [];
     },
+    readAuthoritativeModel(model, entityId) {
+      const component = authoritativeComponentLookup.get(model);
+      if (!component) return undefined;
+      return (getComponentValue(component, entityId as Entity) as Record<string, unknown> | undefined) ?? null;
+    },
     applyProvisionalWrites(intentId, writes) {
-      const resolvedWrites = writes.map((write, index) => {
+      const resolvedWrites = writes.flatMap((write, index) => {
+        if (write.patch === undefined) return [];
         const component = provisionalComponentLookup.get(write.model) as OverridableComponent | undefined;
         if (!component) throw new Error(`Cannot apply provisional write for unknown model ${write.model}`);
-        return { component, overrideId: `${intentId}:${index}`, write };
+        return [{ component, overrideId: `${intentId}:${index}`, write }];
       });
 
       resolvedWrites.forEach(({ component, overrideId, write }) => {
         component.addOverride(overrideId, {
           entity: write.entityId as Entity,
-          value: write.patch,
+          value: write.patch ?? null,
         });
       });
       provisionalOverrides.set(
@@ -244,6 +251,18 @@ const reportProvisionalIntentStalled = (info: GameSyncProvisionalIntentStalledIn
   });
 };
 
+const reportProvisionalIntentPhase = (info: GameSyncProvisionalIntentPhaseInfo): void => {
+  if (import.meta.env.DEV) console.info("[GameSync] provisional intent phase", info);
+  captureClientEvent("game_sync_provisional_intent_phase", {
+    phase: info.phase,
+    intent_id: info.intentId,
+    has_transaction_hash: Boolean(info.transactionHash),
+    model: info.model,
+    elapsed_since_created_ms: info.elapsedSinceCreatedMs,
+    elapsed_since_transaction_hash_ms: info.elapsedSinceTransactionHashMs,
+  });
+};
+
 export const createGamewideSyncSession = (input: CreateGamewideSyncSessionInput): GameSyncSessionStart => {
   const client = input.setup.network.toriiClient;
 
@@ -301,6 +320,7 @@ export const createGamewideSyncSession = (input: CreateGamewideSyncSessionInput)
     onLiveUpdate: input.onLiveUpdate,
     onMetrics: input.onMetrics,
     onProvisionalIntentStalled: reportProvisionalIntentStalled,
+    onProvisionalIntentPhase: reportProvisionalIntentPhase,
     transport: {
       async subscribe(handlers) {
         if (hasOpenedEventStream && !replayArmed && baselinePromise) {

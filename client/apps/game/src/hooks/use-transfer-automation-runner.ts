@@ -124,7 +124,6 @@ export const useTransferAutomationRunner = () => {
       }
 
       processingRef.current = true;
-      const passResourceCleanups: Array<() => void> = [];
 
       try {
         for (const entry of due) {
@@ -190,29 +189,24 @@ export const useTransferAutomationRunner = () => {
             }
 
             const resources = buildSendResourcesArgs(transferList);
-            const removeResourceOverrides = rm.optimisticResourceUpdates(
+            await rm.submitProvisionalResourceTransaction(
               transferList.map((transfer) => ({
                 resourceId: transfer.resourceId,
                 amount: -transfer.humanAmount,
               })),
+              account,
+              () =>
+                systemCalls.send_resources_multiple({
+                  signer: account,
+                  calls: [
+                    {
+                      sender_entity_id: BigInt(sourceId),
+                      recipient_entity_id: BigInt(destId),
+                      resources,
+                    },
+                  ],
+                }),
             );
-
-            try {
-              await systemCalls.send_resources_multiple({
-                signer: account,
-                calls: [
-                  {
-                    sender_entity_id: BigInt(sourceId),
-                    recipient_entity_id: BigInt(destId),
-                    resources,
-                  },
-                ],
-              });
-              passResourceCleanups.push(removeResourceOverrides);
-            } catch (error) {
-              removeResourceOverrides();
-              throw error;
-            }
 
             update(entry.id, { lastRunAt: nowMs });
             scheduleNext(entry.id, nowMs);
@@ -227,7 +221,6 @@ export const useTransferAutomationRunner = () => {
           }
         }
       } finally {
-        passResourceCleanups.toReversed().forEach((removeResourceOverrides) => removeResourceOverrides());
         processingRef.current = false;
         scheduleNextCheck();
       }

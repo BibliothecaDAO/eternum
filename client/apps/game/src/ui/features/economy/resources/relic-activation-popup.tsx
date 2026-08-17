@@ -1,10 +1,13 @@
 import Button from "@/ui/design-system/atoms/button";
+import { gameEntityKey } from "@/dojo/game-scope";
+import { useProvisionalInputLock } from "@/hooks/use-provisional-input-lock";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { BasePopup } from "@/ui/design-system/molecules/base-popup";
 import { getRecipientTypeColor, getRelicTypeColor } from "@/ui/design-system/molecules/relic-colors";
 import { useDojo } from "@bibliothecadao/react";
-import { ID, RelicRecipientType } from "@bibliothecadao/types";
-import React, { useState } from "react";
+import { ResourceManager } from "@bibliothecadao/eternum";
+import { ID, RelicRecipientType, ResourcesIds } from "@bibliothecadao/types";
+import React, { useMemo, useState } from "react";
 
 import { isRelicCompatible, useRelicEssenceStatus, useRelicMetadata } from "../../relics/hooks/use-relic-activation";
 import {
@@ -36,18 +39,23 @@ export const RelicActivationPopup: React.FC<RelicActivationPopupProps> = ({
   const [error, setError] = useState<string | null>(null);
 
   const {
-    setup: { systemCalls },
+    setup: { components, systemCalls },
     account: { account },
   } = useDojo();
 
-  const removeRelicFromStore = useUIStore((state) => state.removeRelicFromEntity);
   const triggerRelicsRefresh = useUIStore((state) => state.triggerRelicsRefresh);
+  const resourceLockEntityIds = useMemo(
+    () => [...new Set([entityId, entityOwnerId])].map((id) => gameEntityKey([BigInt(id)])),
+    [entityId, entityOwnerId],
+  );
+  const isResourceLocked = useProvisionalInputLock("Resource", resourceLockEntityIds);
 
   const { relicInfo, resourceName, resourceKey, essenceCost } = useRelicMetadata(relicId);
   const { essenceBalance, hasEnoughEssence, missingEssence } = useRelicEssenceStatus(entityOwnerId, essenceCost);
   const compatible = isRelicCompatible(relicInfo, recipientType);
 
   const handleConfirm = async () => {
+    if (isResourceLocked) return;
     if (!relicInfo) {
       setError("Relic not found");
       return;
@@ -72,19 +80,27 @@ export const RelicActivationPopup: React.FC<RelicActivationPopupProps> = ({
     setError(null);
 
     try {
-      const applyRelicCall = systemCalls.apply_relic({
-        signer: account,
-        entity_id: entityId,
-        relic_resource_id: relicId,
-        recipient_type: relicInfo.recipientTypeParam,
+      await ResourceManager.submitProvisionalResourceTransaction({
+        components,
+        changeSets: [
+          { entityId, changes: [{ resourceId: relicId as ResourcesIds, amount: -1 }] },
+          { entityId: entityOwnerId, changes: [{ resourceId: ResourcesIds.Essence, amount: -essenceCost }] },
+        ],
+        waiterSource: account,
+        lockUntil: "settled",
+        onIntent: (intent) => {
+          intent.subscribe((outcome) => {
+            if (outcome === "settled") triggerRelicsRefresh();
+          });
+        },
+        submit: () =>
+          systemCalls.apply_relic!({
+            signer: account,
+            entity_id: entityId,
+            relic_resource_id: relicId,
+            recipient_type: relicInfo.recipientTypeParam,
+          }),
       });
-
-      await applyRelicCall;
-
-      if (account?.address && account.address !== "0x0") {
-        removeRelicFromStore({ entityId, resourceId: relicId, recipientType });
-        triggerRelicsRefresh();
-      }
 
       onActivated?.();
       onClose();
@@ -103,8 +119,8 @@ export const RelicActivationPopup: React.FC<RelicActivationPopupProps> = ({
           Cancel
         </Button>
         <Button
-          disabled={isLoading || !!error || !compatible || !hasEnoughEssence}
-          isLoading={isLoading}
+          disabled={isLoading || isResourceLocked || !!error || !compatible || !hasEnoughEssence}
+          isLoading={isLoading || isResourceLocked}
           variant="gold"
           onClick={handleConfirm}
         >

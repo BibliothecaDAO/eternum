@@ -1,26 +1,27 @@
 import type {
   GameSyncAuthoritativeObservation,
+  GameSyncProvisionalIntentPhaseInfo,
   GameSyncProvisionalIntentStalledInfo,
   GameSyncProvisionalWrite,
   GameSyncStore,
 } from "./game-sync-types";
 
-export type ProvisionalIntentStatus = "submitting" | "pending" | "confirmed" | "settled" | "failed";
+type ProvisionalIntentStatus = "submitting" | "pending" | "confirmed" | "settled" | "failed";
+export type ProvisionalIntentOutcome = "settled" | "failed" | "stalled";
+export type ProvisionalIntentLockUntil = "transaction-hash" | "settled";
 
 export interface ProvisionalIntent {
-  readonly id: string;
-  readonly status: ProvisionalIntentStatus;
-  readonly transactionHash?: string;
-  isInputLocked(): boolean;
   bindTransaction(transactionHash?: string): void;
   confirm(): void;
   fail(): void;
+  subscribe(listener: (outcome: ProvisionalIntentOutcome) => void): () => void;
 }
 
 interface TrackedWrite extends GameSyncProvisionalWrite {
   authoritativePatch: Record<string, unknown> | null | undefined;
   matched: boolean;
   sourceMatched: boolean;
+  authoritativeBaseline?: Record<string, unknown> | null;
 }
 
 interface TrackedIntent {
@@ -30,14 +31,20 @@ interface TrackedIntent {
   writes: TrackedWrite[];
   releaseTimeout: ReturnType<typeof setTimeout> | null;
   stalledTimeout: ReturnType<typeof setTimeout> | null;
+  lockUntil: ProvisionalIntentLockUntil;
+  createdAtMs: number;
+  transactionHashAtMs?: number;
+  hasReportedAuthoritativeEcho: boolean;
+  outcomeListeners: Set<(outcome: ProvisionalIntentOutcome) => void>;
 }
 
 interface ProvisionalWriteManagerOptions {
-  reconciliationHoldMs?: number;
-  stalledIntentMs?: number;
   onIntentStalled?: (info: GameSyncProvisionalIntentStalledInfo) => void;
-  scheduleTimeout?: (task: () => void, delayMs: number) => ReturnType<typeof setTimeout>;
-  cancelTimeout?: (timeout: ReturnType<typeof setTimeout>) => void;
+  onIntentPhase?: (info: GameSyncProvisionalIntentPhaseInfo) => void;
+}
+
+interface CreateProvisionalIntentOptions {
+  lockUntil?: ProvisionalIntentLockUntil;
 }
 
 const PROVISIONAL_RECONCILIATION_HOLD_MS = 2_500;
@@ -76,25 +83,23 @@ const modelName = (qualifiedModel: string): string => qualifiedModel.slice(quali
 
 export class ProvisionalWriteManager {
   private readonly intents = new Map<string, TrackedIntent>();
-  private readonly reconciliationHoldMs: number;
-  private readonly stalledIntentMs: number;
   private readonly onIntentStalled?: (info: GameSyncProvisionalIntentStalledInfo) => void;
-  private readonly scheduleTimeout: NonNullable<ProvisionalWriteManagerOptions["scheduleTimeout"]>;
-  private readonly cancelTimeout: NonNullable<ProvisionalWriteManagerOptions["cancelTimeout"]>;
+  private readonly onIntentPhase?: (info: GameSyncProvisionalIntentPhaseInfo) => void;
+  private readonly stateListeners = new Set<() => void>();
   private nextIntentId = 1;
 
   constructor(
     private readonly store: GameSyncStore,
     options: ProvisionalWriteManagerOptions = {},
   ) {
-    this.reconciliationHoldMs = options.reconciliationHoldMs ?? PROVISIONAL_RECONCILIATION_HOLD_MS;
-    this.stalledIntentMs = options.stalledIntentMs ?? PROVISIONAL_STALLED_INTENT_MS;
     this.onIntentStalled = options.onIntentStalled;
-    this.scheduleTimeout = options.scheduleTimeout ?? ((task, delayMs) => setTimeout(task, delayMs));
-    this.cancelTimeout = options.cancelTimeout ?? ((timeout) => clearTimeout(timeout));
+    this.onIntentPhase = options.onIntentPhase;
   }
 
-  public createIntent(writes: readonly GameSyncProvisionalWrite[]): ProvisionalIntent {
+  public createIntent(
+    writes: readonly GameSyncProvisionalWrite[],
+    options: CreateProvisionalIntentOptions = {},
+  ): ProvisionalIntent {
     if (writes.length === 0) throw new Error("A provisional intent requires at least one write");
     if (!this.store.applyProvisionalWrites || !this.store.removeProvisionalWrites) {
       throw new Error("The active game sync store does not support provisional writes");
@@ -107,18 +112,30 @@ export class ProvisionalWriteManager {
       writes: writes.map((write) => ({
         ...write,
         authoritativePatch: undefined,
-        matched: write.matchPatch === undefined,
+        authoritativeBaseline: this.captureAuthoritativeBaseline(write),
+        matched: write.matchPatch === undefined && !write.baselineDeltaFields?.length,
         sourceMatched: false,
       })),
       releaseTimeout: null,
       stalledTimeout: null,
+      lockUntil: options.lockUntil ?? "transaction-hash",
+      createdAtMs: Date.now(),
+      hasReportedAuthoritativeEcho: false,
+      outcomeListeners: new Set(),
     };
-    if (!tracked.writes.some((write) => write.matchPatch !== undefined || write.sourcePatch !== undefined)) {
+    if (!tracked.writes.some((write) => this.hasAuthoritativeEvidence(write))) {
       throw new Error("A provisional intent requires at least one authoritative match field");
     }
     this.intents.set(id, tracked);
     this.store.applyProvisionalWrites?.(id, writes);
+    this.reportIntentPhase(tracked, "created");
+    this.publishState();
     return this.createHandle(tracked);
+  }
+
+  public subscribe(listener: () => void): () => void {
+    this.stateListeners.add(listener);
+    return () => this.stateListeners.delete(listener);
   }
 
   public observeAuthoritativeObservations(observations: readonly GameSyncAuthoritativeObservation[]): void {
@@ -128,7 +145,7 @@ export class ProvisionalWriteManager {
   public hasInputLock(model: string, entityId: string): boolean {
     return [...this.intents.values()].some(
       (intent) =>
-        intent.status === "submitting" &&
+        this.isIntentInputLocked(intent) &&
         intent.writes.some((write) => modelName(write.model) === modelName(model) && write.entityId === entityId),
     );
   }
@@ -139,31 +156,26 @@ export class ProvisionalWriteManager {
 
   private createHandle(intent: TrackedIntent): ProvisionalIntent {
     return {
-      id: intent.id,
-      get status() {
-        return intent.status;
-      },
-      get transactionHash() {
-        return intent.transactionHash;
-      },
-      // Input locks only while no transaction hash exists — the sole window
-      // where a second submission would double-spend. Once the hash is bound
-      // the move is nonce-committed: chaining is valid, the overlay models the
-      // outcome, and a revert unwinds through fail(). Input never waits on
-      // receipts, block cadence, or torii.
-      isInputLocked: () => intent.status === "submitting",
       bindTransaction: (transactionHash) => {
         if (intent.status !== "submitting") return;
         intent.transactionHash = transactionHash;
+        intent.transactionHashAtMs = Date.now();
         intent.status = "pending";
+        this.reportIntentPhase(intent, "transaction_hash");
+        this.publishState();
       },
       confirm: () => {
         if (intent.status === "settled" || intent.status === "failed") return;
         intent.status = "confirmed";
         this.scheduleStalledIntentTripwire(intent);
         this.scheduleReleaseWhenReconciled(intent);
+        this.publishState();
       },
       fail: () => this.finishIntent(intent, "failed"),
+      subscribe: (listener) => {
+        intent.outcomeListeners.add(listener);
+        return () => intent.outcomeListeners.delete(listener);
+      },
     };
   }
 
@@ -197,15 +209,16 @@ export class ProvisionalWriteManager {
     authoritativePatch: Record<string, unknown> | null,
   ): void {
     write.authoritativePatch = authoritativePatch;
-    write.matched = write.matchPatch === undefined || matchesPatch(authoritativePatch, write.matchPatch);
+    write.matched = this.matchesAuthoritativeEvidence(intent, write, authoritativePatch);
     write.sourceMatched = write.sourcePatch ? matchesPatch(authoritativePatch, write.sourcePatch) : false;
+    if (this.hasMatchedAuthoritativeEvidence(write)) this.reportFirstAuthoritativeEcho(intent, write.model);
     this.cancelScheduledRelease(intent);
     this.scheduleReleaseWhenReconciled(intent);
   }
 
   private scheduleReleaseWhenReconciled(intent: TrackedIntent): void {
     if (intent.status !== "confirmed" || !this.hasReconciledOutcome(intent)) return;
-    intent.releaseTimeout = this.scheduleTimeout(() => this.finishIntent(intent, "settled"), this.reconciliationHoldMs);
+    intent.releaseTimeout = setTimeout(() => this.finishIntent(intent, "settled"), PROVISIONAL_RECONCILIATION_HOLD_MS);
   }
 
   private hasReconciledOutcome(intent: TrackedIntent): boolean {
@@ -221,26 +234,30 @@ export class ProvisionalWriteManager {
     intent.status = status;
     this.store.removeProvisionalWrites?.(intent.id);
     this.intents.delete(intent.id);
+    this.publishOutcome(intent, status);
+    this.publishState();
   }
 
   private cancelScheduledRelease(intent: TrackedIntent): void {
     if (!intent.releaseTimeout) return;
-    this.cancelTimeout(intent.releaseTimeout);
+    clearTimeout(intent.releaseTimeout);
     intent.releaseTimeout = null;
   }
 
   private scheduleStalledIntentTripwire(intent: TrackedIntent): void {
-    if (!this.onIntentStalled || intent.stalledTimeout) return;
-    intent.stalledTimeout = this.scheduleTimeout(() => {
+    if (intent.stalledTimeout) return;
+    intent.stalledTimeout = setTimeout(() => {
       intent.stalledTimeout = null;
       if (intent.status !== "confirmed") return;
       this.onIntentStalled?.(this.describeStalledIntent(intent));
-    }, this.stalledIntentMs);
+      this.publishOutcome(intent, "stalled");
+      this.finishIntent(intent, "failed");
+    }, PROVISIONAL_STALLED_INTENT_MS);
   }
 
   private cancelStalledIntentTripwire(intent: TrackedIntent): void {
     if (!intent.stalledTimeout) return;
-    this.cancelTimeout(intent.stalledTimeout);
+    clearTimeout(intent.stalledTimeout);
     intent.stalledTimeout = null;
   }
 
@@ -249,14 +266,86 @@ export class ProvisionalWriteManager {
       intentId: intent.id,
       transactionHash: intent.transactionHash,
       unmatchedWrites: intent.writes
-        .filter((write) => write.matchPatch !== undefined && !write.matched && !write.sourceMatched)
+        .filter((write) => this.hasAuthoritativeEvidence(write) && !write.matched && !write.sourceMatched)
         .map((write) => ({
           entityId: write.entityId,
           model: write.model,
-          matchPatch: write.matchPatch as Record<string, unknown> | null,
+          matchPatch: write.matchPatch,
           sourcePatch: write.sourcePatch,
+          baselineDeltaFields: write.baselineDeltaFields,
         })),
     };
+  }
+
+  private captureAuthoritativeBaseline(write: GameSyncProvisionalWrite): Record<string, unknown> | null | undefined {
+    if (!write.baselineDeltaFields?.length) return undefined;
+    if (!this.store.readAuthoritativeModel) {
+      throw new Error("The active game sync store cannot capture authoritative baseline evidence");
+    }
+    const value = this.store.readAuthoritativeModel(write.model, write.entityId);
+    if (!value) return null;
+    return Object.fromEntries(write.baselineDeltaFields.map((field) => [field, value[field]]));
+  }
+
+  private hasAuthoritativeEvidence(write: TrackedWrite): boolean {
+    return Boolean(
+      write.matchPatch !== undefined || write.sourcePatch !== undefined || write.baselineDeltaFields?.length,
+    );
+  }
+
+  private matchesAuthoritativeEvidence(
+    intent: TrackedIntent,
+    write: TrackedWrite,
+    authoritativePatch: Record<string, unknown> | null,
+  ): boolean {
+    if (write.baselineDeltaFields?.length) {
+      if (intent.transactionHashAtMs === undefined) return false;
+      return write.baselineDeltaFields.some(
+        (field) => !matchesPatch(authoritativePatch?.[field], write.authoritativeBaseline?.[field]),
+      );
+    }
+    return write.matchPatch === undefined || matchesPatch(authoritativePatch, write.matchPatch);
+  }
+
+  private hasMatchedAuthoritativeEvidence(write: TrackedWrite): boolean {
+    const exactMatched = write.matchPatch !== undefined && write.matched;
+    const baselineDeltaMatched = Boolean(write.baselineDeltaFields?.length && write.matched);
+    return exactMatched || baselineDeltaMatched || write.sourceMatched;
+  }
+
+  private isIntentInputLocked(intent: TrackedIntent): boolean {
+    return intent.lockUntil === "settled" || intent.status === "submitting";
+  }
+
+  private publishState(): void {
+    this.stateListeners.forEach((listener) => listener());
+  }
+
+  private publishOutcome(intent: TrackedIntent, outcome: ProvisionalIntentOutcome): void {
+    intent.outcomeListeners.forEach((listener) => listener(outcome));
+  }
+
+  private reportFirstAuthoritativeEcho(intent: TrackedIntent, model: string): void {
+    if (intent.hasReportedAuthoritativeEcho) return;
+    intent.hasReportedAuthoritativeEcho = true;
+    this.reportIntentPhase(intent, "authoritative_echo", model);
+  }
+
+  private reportIntentPhase(
+    intent: TrackedIntent,
+    phase: GameSyncProvisionalIntentPhaseInfo["phase"],
+    model?: string,
+  ): void {
+    const now = Date.now();
+    this.onIntentPhase?.({
+      phase,
+      intentId: intent.id,
+      transactionHash: intent.transactionHash,
+      model,
+      elapsedSinceCreatedMs: now - intent.createdAtMs,
+      elapsedSinceTransactionHashMs:
+        intent.transactionHashAtMs === undefined ? undefined : now - intent.transactionHashAtMs,
+    });
   }
 }
 
