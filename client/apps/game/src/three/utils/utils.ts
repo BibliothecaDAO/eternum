@@ -29,7 +29,10 @@ export const gltfLoader = new GLTFLoader();
 gltfLoader.setDRACOLoader(dracoLoader);
 gltfLoader.setMeshoptDecoder(MeshoptDecoder);
 
-const ktx2Loader = new KTX2Loader().setTranscoderPath("/basis/").setWorkerLimit(2);
+// /basis-v2/: the original /basis/ URL shipped a git-corrupted wasm with an
+// immutable 1y cache header, so that path is permanently poisoned in tester
+// browsers. Bump the directory if these files ever change again.
+const ktx2Loader = new KTX2Loader().setTranscoderPath("/basis-v2/").setWorkerLimit(2);
 gltfLoader.setKTX2Loader(ktx2Loader);
 
 export function configureGltfTextureSupport(renderer: KtxRenderer): void {

@@ -58,7 +58,7 @@ describe("glTF compressed texture support", () => {
 
     configureGltfTextureSupport(renderer as never);
 
-    expect(loaderMocks.setTranscoderPath).toHaveBeenCalledWith("/basis/");
+    expect(loaderMocks.setTranscoderPath).toHaveBeenCalledWith("/basis-v2/");
     expect(loaderMocks.setWorkerLimit).toHaveBeenCalledWith(2);
     expect(loaderMocks.setKTX2Loader).toHaveBeenCalledTimes(1);
     expect(loaderMocks.detectSupport).toHaveBeenCalledWith(renderer);

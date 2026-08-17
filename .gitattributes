@@ -146,6 +146,7 @@ Procfile          text
 *.svgz            binary
 *.tif             binary
 *.tiff            binary
+*.wasm            binary
 *.wbmp            binary
 *.webp            binary
 *.avif            binary
