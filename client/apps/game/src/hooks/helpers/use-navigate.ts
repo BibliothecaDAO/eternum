@@ -3,14 +3,11 @@ import { useCallback } from "react";
 import { Position } from "@bibliothecadao/eternum";
 
 import { buildPlayHref, parsePlayRoute, type PlayScene } from "@/play/navigation/play-route";
-import { UNDEFINED_STRUCTURE_ENTITY_ID } from "@/ui/constants";
 import { SetupResult } from "@bibliothecadao/dojo";
 import { useQuery } from "@bibliothecadao/react";
 import { ID } from "@bibliothecadao/types";
-import { getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { useUIStore } from "../store/use-ui-store";
-import { gameEntityKey } from "@/dojo/game-scope";
 
 type PositionLike = Position | { x?: number; y?: number; col?: number; row?: number };
 
@@ -123,46 +120,6 @@ export const useNavigateToMapView = () => {
     setPreviewBuilding(null);
     handleUrlChange(url);
   };
-};
-
-export const useSpectatorModeClick = (setupResult: SetupResult | null) => {
-  const structureEntityId = useUIStore((state) => state.structureEntityId);
-  const worldMapReturnPosition = useUIStore((state) => state.worldMapReturnPosition);
-  const goToStructure = useGoToStructure(setupResult);
-
-  return useCallback(() => {
-    if (!setupResult) {
-      return;
-    }
-
-    if (!structureEntityId || structureEntityId === UNDEFINED_STRUCTURE_ENTITY_ID) {
-      return;
-    }
-
-    let structure: any = null;
-
-    try {
-      structure =
-        setupResult.components.Structure &&
-        getComponentValue(setupResult.components.Structure, gameEntityKey([BigInt(structureEntityId)]));
-    } catch (error) {
-      console.warn("[useSpectatorModeClick] Unable to resolve structure", structureEntityId, error);
-    }
-
-    if (structure) {
-      goToStructure(structure.entity_id, new Position({ x: structure.base.coord_x, y: structure.base.coord_y }), true, {
-        spectator: true,
-      });
-      return;
-    }
-
-    if (worldMapReturnPosition) {
-      const { col, row } = worldMapReturnPosition;
-      goToStructure(structureEntityId, new Position({ x: col, y: row }), true, {
-        spectator: true,
-      });
-    }
-  }, [goToStructure, setupResult, structureEntityId, worldMapReturnPosition]);
 };
 
 export const useGoToStructure = (setupResult: SetupResult | null) => {

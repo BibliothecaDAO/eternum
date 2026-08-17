@@ -62,7 +62,6 @@ import { FELT_CENTER, IS_FLAT_MODE } from "@/ui/config";
 import { ChestModal, HelpModal } from "@/ui/features/military";
 import { QuickAttackPreview } from "@/ui/features/military/battle/quick-attack-preview";
 import { SpireTravelModal } from "@/ui/features/world/components/actions/spire-travel-modal";
-import { WORLDMAP_SCENE_READY_EVENT } from "@/ui/layouts/game-loading-overlay.utils";
 import { SetupResult } from "@bibliothecadao/dojo";
 import {
   ActionPath,
@@ -158,6 +157,7 @@ import {
   waitForWorldmapHydratedRefreshQueueIdle,
 } from "./worldmap-hydrated-refresh-runtime";
 import {
+  cancelWorldmapChunkRefreshWaiters,
   createWorldmapChunkRefreshRuntimeState,
   requestWorldmapChunkRefreshToken,
   runWorldmapChunkRefreshExecution,
@@ -3758,10 +3758,6 @@ export default class WorldmapScene extends WarpTravel {
   private announceWorldmapSceneReady(): void {
     usePlayRouteReadinessStore.getState().markWorldmapReady(getCurrentPlayRouteBootToken());
     this.retryPendingHoverLabelRecovery("scene_ready");
-
-    if (typeof window !== "undefined") {
-      window.dispatchEvent(new Event(WORLDMAP_SCENE_READY_EVENT));
-    }
   }
 
   private prepareWarpTravelInitialSetup(): void {
@@ -3918,6 +3914,7 @@ export default class WorldmapScene extends WarpTravel {
   }
 
   private resetZoomHardeningRuntimeState(): void {
+    cancelWorldmapChunkRefreshWaiters(this.chunkRefreshRuntimeState);
     const resetState = resetWorldmapZoomHardeningRuntimeState(
       {
         chunkRefreshTimeout: this.chunkRefreshTimeout,
@@ -7633,9 +7630,7 @@ export default class WorldmapScene extends WarpTravel {
   private waitForRequestedChunkRefresh(requestToken: number): Promise<void> {
     return waitForWorldmapRequestedChunkRefresh({
       isSwitchedOff: () => this.isSwitchedOff,
-      latestWinsRefresh: WORLDMAP_ZOOM_HARDENING.latestWinsRefresh,
       requestToken,
-      setTimeoutFn: (callback, delayMs) => window.setTimeout(callback, delayMs),
       state: this.chunkRefreshRuntimeState,
     });
   }

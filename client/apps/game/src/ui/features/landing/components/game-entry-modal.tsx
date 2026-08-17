@@ -65,6 +65,7 @@ import {
   SettlementResourceBadges,
   resolvePlannerResourceLabel as resolveResourceLabel,
 } from "./settlement-resource-badges";
+import { isSelectedWorldEntityWaitAborted, waitForSelectedWorldEntityState } from "./selected-world-entity-wait";
 import {
   buildPlannerRealmSelectionDetails,
   resolvePlannerOwnerLabel,
@@ -81,9 +82,8 @@ import { env } from "../../../../../env";
 import { appchainModel, gameEntityKey, namespaceForChain } from "@/dojo/game-scope";
 
 const DEBUG_MODAL = false;
-const SETTLEMENT_PROGRESS_POLL_MS = 1000;
-const SETTLEMENT_PROGRESS_TIMEOUT_MS = 30000;
 const SETTLEMENT_SYNC_TIMEOUT_MS = 90000;
+const VILLAGE_REVEAL_SLOW_MS = 45_000;
 const CONTRACT_MAP_CENTER = 2147483646;
 const NEXT_FREE_REALM_ID_SCAN_LIMIT = 512;
 const REALM_OWNER_LOOKUP_ENTRYPOINTS = ["owner_of", "ownerOf"] as const;
@@ -2804,6 +2804,7 @@ export const GameEntryModal = ({
   const [mintRealmAndSeasonPassError, setMintRealmAndSeasonPassError] = useState<string | null>(null);
   const hasEnteredGameRef = useRef(false);
   const plannerOpenedRef = useRef(false);
+  const entityWaitAbortControllerRef = useRef<AbortController | null>(null);
 
   const navigationEntryContext = entryContext;
   const selectedWorldRpcUrl = useMemo(() => getRpcUrlForChain(chain), [chain]);
@@ -3260,6 +3261,26 @@ export const GameEntryModal = ({
     plannerOpenedRef.current = false;
   }, []);
 
+  const beginEntityWait = useCallback((): AbortSignal => {
+    entityWaitAbortControllerRef.current?.abort();
+    const controller = new AbortController();
+    entityWaitAbortControllerRef.current = controller;
+    return controller.signal;
+  }, []);
+
+  useEffect(() => {
+    if (!isOpen) {
+      entityWaitAbortControllerRef.current?.abort();
+      entityWaitAbortControllerRef.current = null;
+      return;
+    }
+
+    return () => {
+      entityWaitAbortControllerRef.current?.abort();
+      entityWaitAbortControllerRef.current = null;
+    };
+  }, [chain, isOpen, worldName]);
+
   useEffect(() => {
     if (!isOpen) {
       return;
@@ -3600,28 +3621,40 @@ export const GameEntryModal = ({
   );
 
   const waitForSettlementTarget = useCallback(
-    async (
-      targetSettleCount: number,
-      timeoutMs = SETTLEMENT_PROGRESS_TIMEOUT_MS,
-    ): Promise<SettlementSnapshot | null> => {
-      const startedAt = Date.now();
-      let latestSnapshot: SettlementSnapshot | null = null;
+    async (targetSettleCount: number): Promise<SettlementSnapshot> => {
+      const observation = await waitForSelectedWorldEntityState({
+        chain,
+        description: "settlement indexing",
+        gameId: worldMeta?.gameId ?? undefined,
+        isTarget: ({ status }) =>
+          status != null && (status.canPlay || status.settledCount >= Math.max(1, targetSettleCount)),
+        modelNames: ["BlitzSettlement", "Structure"],
+        onSlow: (elapsedMs) => {
+          captureClientEvent("game_entry_entity_wait_slow", {
+            elapsedMs,
+            fact: "settlement",
+            worldName,
+          });
+        },
+        read: async () => {
+          const snapshot = await readSettlementSnapshot();
+          return {
+            snapshot,
+            status: snapshot ? syncSettlementStateFromSnapshot(snapshot) : null,
+          };
+        },
+        signal: beginEntityWait(),
+        slowAfterMs: SETTLEMENT_SYNC_TIMEOUT_MS,
+        worldId: worldMeta?.worldId,
+        worldName,
+      });
 
-      while (Date.now() - startedAt < timeoutMs) {
-        const snapshot = await readSettlementSnapshot();
-        if (snapshot) {
-          latestSnapshot = snapshot;
-          const status = syncSettlementStateFromSnapshot(snapshot);
-          if (status.canPlay || status.settledCount >= Math.max(1, targetSettleCount)) {
-            return snapshot;
-          }
-        }
-        await new Promise((resolve) => setTimeout(resolve, SETTLEMENT_PROGRESS_POLL_MS));
+      if (!observation.snapshot) {
+        throw new Error("Settlement subscription matched without an indexed settlement snapshot.");
       }
-
-      return latestSnapshot;
+      return observation.snapshot;
     },
-    [readSettlementSnapshot, syncSettlementStateFromSnapshot],
+    [beginEntityWait, chain, readSettlementSnapshot, syncSettlementStateFromSnapshot, worldMeta, worldName],
   );
 
   const confirmSubmittedTransaction = useCallback(
@@ -3815,39 +3848,55 @@ export const GameEntryModal = ({
     async ({
       ownerAddress,
       existingVillageIds,
-      timeoutMs = 45_000,
     }: {
       ownerAddress: string;
       existingVillageIds: Set<number>;
-      timeoutMs?: number;
     }): Promise<VillageRevealResult> => {
-      const startedAt = Date.now();
-      while (Date.now() - startedAt < timeoutMs) {
-        const structures = await selectedWorldSqlApi.fetchPlayerStructures(ownerAddress);
-        const newVillage = structures
-          .filter(
-            (structure) => structure.category === StructureType.Village && !existingVillageIds.has(structure.entity_id),
-          )
-          .toSorted((left, right) => right.entity_id - left.entity_id)[0];
+      const result = await waitForSelectedWorldEntityState<VillageRevealResult | null>({
+        chain,
+        description: "village resource indexing",
+        gameId: worldMeta?.gameId ?? undefined,
+        isTarget: (reveal) => reveal != null,
+        modelNames: ["Structure"],
+        onSlow: (elapsedMs) => {
+          captureClientEvent("game_entry_entity_wait_slow", {
+            elapsedMs,
+            fact: "village_resource",
+            worldName,
+          });
+        },
+        read: async () => {
+          const structures = await selectedWorldSqlApi.fetchPlayerStructures(ownerAddress);
+          const newVillage = structures
+            .filter(
+              (structure) =>
+                structure.category === StructureType.Village && !existingVillageIds.has(structure.entity_id),
+            )
+            .toSorted((left, right) => right.entity_id - left.entity_id)[0];
+          if (!newVillage) return null;
 
-        if (newVillage) {
           const resourceId = resolvePrimaryVillageResource(newVillage.resources_packed);
           const resourceLabel = resourceId != null ? resolveResourceLabel(resourceId) : null;
-          if (resourceId != null && resourceLabel) {
-            return {
-              villageEntityId: newVillage.entity_id,
-              resourceId,
-              resourceLabel,
-            };
-          }
-        }
+          if (resourceId == null || !resourceLabel) return null;
 
-        await new Promise((resolve) => window.setTimeout(resolve, 1500));
+          return {
+            villageEntityId: newVillage.entity_id,
+            resourceId,
+            resourceLabel,
+          };
+        },
+        signal: beginEntityWait(),
+        slowAfterMs: VILLAGE_REVEAL_SLOW_MS,
+        worldId: worldMeta?.worldId,
+        worldName,
+      });
+
+      if (!result) {
+        throw new Error("Village subscription matched without an indexed resource assignment.");
       }
-
-      throw new Error("Village created but resource assignment is not indexed in Torii yet.");
+      return result;
     },
-    [selectedWorldSqlApi],
+    [beginEntityWait, chain, selectedWorldSqlApi, worldMeta?.gameId, worldMeta?.worldId, worldName],
   );
 
   // Check settlement status after bootstrap completes
@@ -4567,6 +4616,7 @@ export const GameEntryModal = ({
         });
       }
     } catch (error) {
+      if (isSelectedWorldEntityWaitAborted(error)) return;
       debugLog(worldName, "Village settlement failed:", error);
       setVillageSettlementError(mapVillageSettleError(error));
       if (unifiedSettlementPlannerEnabled) {
@@ -4695,10 +4745,7 @@ export const GameEntryModal = ({
       });
 
       setSettleStage("syncing");
-      const finalSnapshot = await waitForSettlementTarget(expectedBlitzSettlementCount, SETTLEMENT_SYNC_TIMEOUT_MS);
-      if (!finalSnapshot) {
-        throw new Error("Settlement is still syncing. Please try again if the world does not unlock shortly.");
-      }
+      const finalSnapshot = await waitForSettlementTarget(expectedBlitzSettlementCount);
 
       const finalStatus = syncSettlementStateFromSnapshot(finalSnapshot);
       if (!finalStatus.canPlay) {
@@ -4707,6 +4754,7 @@ export const GameEntryModal = ({
 
       finalizeSuccessfulBlitzSettlement();
     } catch (error) {
+      if (isSelectedWorldEntityWaitAborted(error)) return;
       finalizeFailedBlitzSettlement(error instanceof Error ? error : new Error("Settlement failed"));
     } finally {
       setIsSettling(false);

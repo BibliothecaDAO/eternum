@@ -8,6 +8,7 @@ import {
   StaminaManager,
 } from "@bibliothecadao/eternum";
 import { getActiveGameSyncRuntime } from "@bibliothecadao/eternum/game-sync";
+import type { WorldSpatialProjection } from "@bibliothecadao/eternum/game-sync";
 import { useDojo } from "@bibliothecadao/react";
 import { ContractAddress } from "@bibliothecadao/types";
 import { getComponentValue, getEntityString } from "@dojoengine/recs";
@@ -51,12 +52,10 @@ const isExplorerOwnedByAccount = (
 };
 
 const REPEAT_EXPLORE_DELAY_MS = 3_000;
-const FAST_CACHE_TTL_MS = 15_000;
 
 type SnapshotCache = {
   snapshot: ExplorationMapSnapshot;
-  updatedAt: number;
-  fastModeUntil?: number;
+  reusableUntilProjectionChange: boolean;
   recentlyExplored: Set<string>;
 };
 
@@ -78,6 +77,8 @@ export const useExplorationAutomationRunner = () => {
   const processRef = useRef<() => Promise<void>>(async () => {});
   const timeoutIdRef = useRef<number | null>(null);
   const snapshotCacheRef = useRef<Map<string, SnapshotCache>>(new Map());
+  const subscribedProjectionRef = useRef<WorldSpatialProjection | null>(null);
+  const unsubscribeProjectionRef = useRef<(() => void) | null>(null);
 
   const activeEntries = useMemo(() => Object.values(entries).filter((e) => e.active), [entries]);
   const activeEntriesRef = useRef(activeEntries);
@@ -181,6 +182,14 @@ export const useExplorationAutomationRunner = () => {
         scheduleNextCheck();
         return;
       }
+      if (subscribedProjectionRef.current !== worldSpatialProjection) {
+        unsubscribeProjectionRef.current?.();
+        subscribedProjectionRef.current = worldSpatialProjection;
+        snapshotCacheRef.current.clear();
+        unsubscribeProjectionRef.current = worldSpatialProjection.subscribe(() => {
+          snapshotCacheRef.current.clear();
+        });
+      }
       if (!account || !account.address || account.address === "0x0") {
         scheduleNextCheck();
         return;
@@ -239,7 +248,7 @@ export const useExplorationAutomationRunner = () => {
             }
 
             const cached = snapshotCacheRef.current.get(entry.id);
-            const useFastCache = Boolean(cached?.fastModeUntil && nowMs <= cached.fastModeUntil);
+            const useFastCache = cached?.reusableUntilProjectionChange === true;
             let snapshot =
               useFastCache && cached?.snapshot
                 ? cached.snapshot
@@ -259,7 +268,7 @@ export const useExplorationAutomationRunner = () => {
             if (!cached || !useFastCache) {
               snapshotCacheRef.current.set(entry.id, {
                 snapshot,
-                updatedAt: nowMs,
+                reusableUntilProjectionChange: false,
                 recentlyExplored: new Set(),
               });
             }
@@ -297,7 +306,7 @@ export const useExplorationAutomationRunner = () => {
                 snapshot = refreshed;
                 snapshotCacheRef.current.set(entry.id, {
                   snapshot,
-                  updatedAt: nowMs,
+                  reusableUntilProjectionChange: false,
                   recentlyExplored: new Set(),
                 });
                 const refreshedPaths = manager.findActionPaths(
@@ -349,8 +358,7 @@ export const useExplorationAutomationRunner = () => {
                 const cache = snapshotCacheRef.current.get(entry.id);
                 if (cache) {
                   cache.recentlyExplored.add(`${normalized.x},${normalized.y}`);
-                  cache.fastModeUntil = repeatAt + FAST_CACHE_TTL_MS;
-                  cache.updatedAt = nowMs;
+                  cache.reusableUntilProjectionChange = true;
                 }
               }
             }
@@ -399,6 +407,9 @@ export const useExplorationAutomationRunner = () => {
       if (timeoutIdRef.current !== null) {
         window.clearTimeout(timeoutIdRef.current);
       }
+      unsubscribeProjectionRef.current?.();
+      unsubscribeProjectionRef.current = null;
+      subscribedProjectionRef.current = null;
     };
   }, [scheduleNextCheck]);
 };

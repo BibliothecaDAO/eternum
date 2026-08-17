@@ -41,11 +41,6 @@ import { BuildingSystemUpdate, Position, StructureProgress, getBlockTimestamp } 
 
 import { HexceptionAmbienceSystem } from "@/three/systems/hexception-ambience-system";
 import { IS_FLAT_MODE } from "@/ui/config";
-import {
-  HEXCEPTION_GRID_READY_EVENT,
-  clearRememberedHexceptionGridReady,
-  rememberHexceptionGridReady,
-} from "@/ui/layouts/game-loading-overlay.utils";
 
 import { ProductionModal } from "@/ui/features/settlement";
 import { resolveConstructionBuildability } from "@/ui/features/settlement/construction/construction-buildability";
@@ -674,7 +669,6 @@ export default class HexceptionScene extends HexagonScene {
   }
 
   destroy() {
-    clearRememberedHexceptionGridReady();
     this.clearHoverLabel();
     this.hoverLabelManager.dispose();
 
@@ -1326,12 +1320,6 @@ export default class HexceptionScene extends HexagonScene {
           col: this.centerColRow[0],
           row: this.centerColRow[1],
         });
-        rememberHexceptionGridReady({ col: this.centerColRow[0], row: this.centerColRow[1] });
-        window.dispatchEvent(
-          new CustomEvent(HEXCEPTION_GRID_READY_EVENT, {
-            detail: { col: this.centerColRow[0], row: this.centerColRow[1] },
-          }),
-        );
       }
     });
   }

@@ -19,7 +19,7 @@ import { toast } from "sonner";
 
 import { resolveEntryContextCacheKey, type ResolvedEntryContext } from "./context";
 
-export type BootstrapStatus = "idle" | "pending-world" | "loading" | "ready" | "error";
+type BootstrapStatus = "idle" | "pending-world" | "loading" | "ready" | "error";
 
 export type BootstrapTask = {
   id: string;

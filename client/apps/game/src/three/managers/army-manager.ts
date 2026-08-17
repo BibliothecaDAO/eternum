@@ -1,5 +1,6 @@
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useBlockTimestampStore } from "@/hooks/store/use-block-timestamp-store";
+import { useChainTimeStore } from "@/hooks/store/use-chain-time-store";
 import { gameWorkerManager } from "@/managers/game-worker-manager";
 import { resolveArmyOwnerState } from "@/three/managers/army-owner-resolution";
 import { ArmyModel } from "@/three/managers/army-model";
@@ -225,7 +226,7 @@ export class ArmyManager {
   private visibilityManager?: CentralizedVisibilityManager;
   private unsubscribeVisibility?: () => void;
   private lastKnownArmiesTick: number = 0;
-  private tickCheckTimeout: ReturnType<typeof setTimeout> | null = null;
+  private unsubscribeChainTime?: () => void;
   private chunkSwitchPromise: Promise<void> | null = null; // Track ongoing chunk switches
   private latestTransitionToken = 0;
   private transitionChunkByToken: Map<number, string> = new Map();
@@ -337,9 +338,7 @@ export class ArmyManager {
 
     // Initialize the last known armies tick to current tick
     this.lastKnownArmiesTick = getBlockTimestamp().currentArmiesTick;
-
-    // Start checking for tick changes every second
-    this.scheduleTickCheck();
+    this.unsubscribeChainTime = useChainTimeStore.subscribe(() => this.handleChainTimeAdvanceSafely());
   }
 
   private subscribeToExplorerTroopsPresentation(): void {
@@ -497,29 +496,25 @@ export class ArmyManager {
     );
   }
 
-  private scheduleTickCheck() {
-    this.tickCheckTimeout = setTimeout(() => {
-      try {
-        const { currentArmiesTick } = getBlockTimestamp();
-        const tickRefresh = resolveArmyStaminaTickRefresh({
-          currentTick: currentArmiesTick,
-          previousTick: this.lastKnownArmiesTick,
-        });
-        // Phase 3.6: stamina is derived from the armies tick, so only recompute it
-        // over all armies when the tick actually advanced (honouring the existing
-        // tick-gate policy) instead of every second. Battle timers keep the 1s
-        // cadence — they already early-out on armies without a battle cooldown.
-        if (tickRefresh.shouldRecompute) {
-          this.lastKnownArmiesTick = tickRefresh.nextTrackedTick;
-          this.recomputeStaminaForAllArmies();
-        }
-        this.recomputeBattleTimersForAllArmies();
-      } catch {
-        // Swallow errors to keep the tick loop alive
-      }
-      // Always schedule next check even if current cycle threw
-      this.scheduleTickCheck();
-    }, 1000);
+  private handleChainTimeAdvanceSafely(): void {
+    try {
+      this.handleChainTimeAdvance();
+    } catch (error) {
+      console.error("[ArmyManager] Failed to apply a chain-time update", error);
+    }
+  }
+
+  private handleChainTimeAdvance(): void {
+    const { currentArmiesTick } = getBlockTimestamp();
+    const tickRefresh = resolveArmyStaminaTickRefresh({
+      currentTick: currentArmiesTick,
+      previousTick: this.lastKnownArmiesTick,
+    });
+    if (tickRefresh.shouldRecompute) {
+      this.lastKnownArmiesTick = tickRefresh.nextTrackedTick;
+      this.recomputeStaminaForAllArmies();
+    }
+    this.recomputeBattleTimersForAllArmies();
   }
 
   // Debug army spawner state
@@ -3151,11 +3146,8 @@ ${
       this.hexagonScene.removeCameraViewListener(this.handleCameraViewChange);
     }
 
-    // Clean up tick check timeout
-    if (this.tickCheckTimeout) {
-      clearTimeout(this.tickCheckTimeout);
-      this.tickCheckTimeout = null;
-    }
+    this.unsubscribeChainTime?.();
+    this.unsubscribeChainTime = undefined;
 
     // Clean up debug stats interval
     if (this.debugStatsIntervalId) {

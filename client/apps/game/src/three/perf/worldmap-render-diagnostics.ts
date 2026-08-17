@@ -87,7 +87,6 @@ export type WorldmapForceRefreshReason =
   | "terrain_self_heal"
   | "offscreen_chunk"
   | "shortcut"
-  | "army_dead"
   | "reconnect"
   | "manager_recovery";
 
@@ -197,7 +196,6 @@ const createDiagnosticsState = (): WorldmapRenderDiagnosticsSnapshot => ({
     terrain_self_heal: 0,
     offscreen_chunk: 0,
     shortcut: 0,
-    army_dead: 0,
     reconnect: 0,
     manager_recovery: 0,
   },

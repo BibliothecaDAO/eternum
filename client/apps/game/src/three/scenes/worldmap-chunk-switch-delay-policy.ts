@@ -33,7 +33,7 @@ interface WorldmapChunkRefreshScheduleDecision {
 
 const WORLDMAP_TRAVERSAL_REFRESH_DEBOUNCE_MS = 96;
 const WORLDMAP_FORCED_DEFAULT_REFRESH_DEBOUNCE_MS = 64;
-export const WORLDMAP_GENERIC_FORCED_REFRESH_DEBOUNCE_MS = 140;
+const WORLDMAP_GENERIC_FORCED_REFRESH_DEBOUNCE_MS = 140;
 
 export function shouldDelayWorldmapChunkSwitch(input: ChunkSwitchDelayInput): boolean {
   if (!input.hasChunkSwitchAnchor || !input.lastChunkSwitchPosition) {

@@ -1,6 +1,5 @@
 import { getCurrentPlayRouteBootToken, usePlayRouteReadinessStore } from "@/game-entry/play-route-readiness-store";
 import { resolvePlayRouteWorldPosition } from "@/play/navigation/play-route-target";
-import { FAST_TRAVEL_SCENE_READY_EVENT } from "@/ui/layouts/game-loading-overlay.utils";
 import type { SetupResult } from "@bibliothecadao/dojo";
 import { PathRenderer } from "../managers/path-renderer";
 import { SelectedHexManager } from "../managers/selected-hex-manager";
@@ -122,12 +121,6 @@ export default class FastTravelScene extends WarpTravel {
 
   private announceFastTravelSceneReady(): void {
     usePlayRouteReadinessStore.getState().markFastTravelReady(getCurrentPlayRouteBootToken());
-
-    if (typeof window === "undefined") {
-      return;
-    }
-
-    window.dispatchEvent(new Event(FAST_TRAVEL_SCENE_READY_EVENT));
   }
 
   private configureFastTravelSetupStart(): void {

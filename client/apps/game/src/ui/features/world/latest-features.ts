@@ -37,7 +37,7 @@ const allLatestFeatures: LatestFeature[] = [
     date: "2026-08-17",
     title: "Live World Facts",
     description:
-      "Army movement, battle previews, army details, terrain, and transfer limits now follow confirmed game state while you play, preventing stale displays and submissions.",
+      "Army movement, battle previews, terrain, transfers, and game-entry progress now follow live indexed state, preventing stale displays, submissions, and fixed-delay waits.",
     type: "fix",
     gameSlug: "world",
   },
