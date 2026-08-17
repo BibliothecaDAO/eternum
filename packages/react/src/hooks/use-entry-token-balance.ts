@@ -2,10 +2,9 @@ import { useCallback, useMemo } from "react";
 import { useAccount, useCall } from "@starknet-react/core";
 import type { Abi } from "starknet";
 import { CallData, uint256 } from "starknet";
-import { configManager, LordsAbi, toHexString } from "@bibliothecadao/eternum";
+import { configManager, gameEntityKey, LordsAbi, toHexString } from "@bibliothecadao/eternum";
 import { useDojo } from "./context";
 import { getComponentValue } from "@dojoengine/recs";
-import { getEntityIdFromKeys } from "@dojoengine/utils";
 
 const DEFAULT_REFETCH_INTERVAL_MS = 5_000;
 
@@ -121,7 +120,7 @@ export const useEntryTokenBalance = ({
         const isValid = await options.validate(tokenId);
         if (!isValid) return null;
       } else if (registerComponent) {
-        const registerRecord = getComponentValue(registerComponent, getEntityIdFromKeys([tokenId]));
+        const registerRecord = getComponentValue(registerComponent, gameEntityKey([tokenId]));
         if (registerRecord?.registered) {
           return null;
         }

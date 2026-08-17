@@ -3,10 +3,6 @@ import { useGoToStructure } from "@/hooks/helpers/use-navigate";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { LeftView } from "@/types";
 import { buildRealmBuilding } from "@/ui/features/settlement/construction/realm-build-actions";
-import {
-  beginRealmBuildPlacement,
-  completeRealmBuildPlacement,
-} from "@/ui/features/settlement/construction/build-reservation-store";
 import { ProductionModal } from "@/ui/features/settlement";
 import { useRealmActions } from "@/ui/modules/entity-details/hooks/use-realm-actions";
 import { getRealmInfo, Position } from "@bibliothecadao/eternum";
@@ -15,6 +11,7 @@ import { type BuildingType, type ID, type ResourcesIds } from "@bibliothecadao/t
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { useCallback, useRef, useState } from "react";
 import type { EmpireSuggestion } from "./use-empire-suggestions";
+import { gameEntityKey } from "@/dojo/game-scope";
 
 /**
  * Resolves a suggestion click into the right side-effect: focus the target
@@ -69,28 +66,21 @@ export const useSuggestionActions = () => {
       const entityId = Number(suggestion.realmId);
       if (!Number.isFinite(entityId)) return;
 
-      const placement = beginRealmBuildPlacement(entityId, target.type);
-      if (!placement.started) return;
-
-      try {
-        const realm = getRealmInfo(getEntityIdFromKeys([BigInt(entityId)]), setup.components);
-        await buildRealmBuilding({
-          entityId,
-          realmPosition: realm?.position,
-          realm,
-          mode,
-          target,
-          useSimpleCost,
-          world: {
-            account: account.account,
-            components: setup.components,
-            systemCalls: setup.systemCalls,
-          },
-          onBuildSuccess: setSelectedBuildingHex,
-        });
-      } finally {
-        completeRealmBuildPlacement(entityId, target.type);
-      }
+      const realm = getRealmInfo(gameEntityKey([BigInt(entityId)]), setup.components);
+      await buildRealmBuilding({
+        entityId,
+        realmPosition: realm?.position,
+        realm,
+        mode,
+        target,
+        useSimpleCost,
+        world: {
+          account: account.account,
+          components: setup.components,
+          systemCalls: setup.systemCalls,
+        },
+        onBuildSuccess: setSelectedBuildingHex,
+      });
     },
     [
       account.account,

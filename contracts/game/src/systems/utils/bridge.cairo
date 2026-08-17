@@ -3,7 +3,7 @@ use dojo::model::ModelStorage;
 use dojo::world::{WorldStorage, WorldStorageTrait};
 use starknet::ContractAddress;
 use crate::alias::ID;
-use crate::constants::{RESOURCE_PRECISION, ResourceTypes, WORLD_CONFIG_ID};
+use crate::constants::{RESOURCE_PRECISION, ResourceTypes};
 use crate::models::config::{
     ResourceBridgeConfig, ResourceBridgeFeeSplitConfig, ResourceBridgeWtlConfig, WorldConfigUtilImpl,
 };
@@ -61,16 +61,16 @@ pub impl iBridgeImpl of iBridgeTrait {
         assert!(caller == liquidity_systems_address, "Bridge: caller is not liquidity systems");
     }
 
-    fn assert_deposit_not_paused(world: WorldStorage) {
+    fn assert_deposit_not_paused(world: WorldStorage, game_id: u32) {
         let resource_bridge_config: ResourceBridgeConfig = WorldConfigUtilImpl::get_member(
-            world, selector!("resource_bridge_config"),
+            world, game_id, selector!("resource_bridge_config"),
         );
         assert!(resource_bridge_config.deposit_paused == false, "resource bridge deposit is paused");
     }
 
-    fn assert_withdraw_not_paused(world: WorldStorage) {
+    fn assert_withdraw_not_paused(world: WorldStorage, game_id: u32) {
         let resource_bridge_config: ResourceBridgeConfig = WorldConfigUtilImpl::get_member(
-            world, selector!("resource_bridge_config"),
+            world, game_id, selector!("resource_bridge_config"),
         );
         assert!(resource_bridge_config.withdraw_paused == false, "resource bridge withdrawal is paused");
     }
@@ -99,6 +99,7 @@ pub impl iBridgeImpl of iBridgeTrait {
 
     fn send_realm_fees(
         ref world: WorldStorage,
+        game_id: u32,
         from_structure_id: ID,
         from_structure_owner: ContractAddress,
         from_structure_base: StructureBase,
@@ -110,7 +111,7 @@ pub impl iBridgeImpl of iBridgeTrait {
         assert!(from_structure_base.category == StructureCategory::Village.into(), "Bridge: caller is not village");
 
         let fee_split_config: ResourceBridgeFeeSplitConfig = WorldConfigUtilImpl::get_member(
-            world, selector!("res_bridge_fee_split_config"),
+            world, game_id, selector!("res_bridge_fee_split_config"),
         );
         let realm_fee_percent = match tx_type {
             BridgeTxType::Deposit => { fee_split_config.realm_fee_dpt_percent },
@@ -121,7 +122,7 @@ pub impl iBridgeImpl of iBridgeTrait {
             assert!(realm_fee_amount.is_non_zero(), "Bridge: amount too small to pay realm fees");
 
             let from_structure_metadata: StructureMetadata = StructureMetadataStoreImpl::retrieve(
-                ref world, from_structure_id,
+                ref world, game_id, from_structure_id,
             );
             let realm_structure_id: ID = from_structure_metadata.village_realm;
 
@@ -129,20 +130,23 @@ pub impl iBridgeImpl of iBridgeTrait {
                 BridgeTxType::Deposit => {
                     // beam resources into the realm's resource arrivals. it costs 0 donkey and time
                     iResourceTransferImpl::portal_to_structure_arrivals_instant(
-                        ref world, realm_structure_id, array![(resource_type, realm_fee_amount)].span(),
+                        ref world, game_id, realm_structure_id, array![(resource_type, realm_fee_amount)].span(),
                     );
                 },
                 BridgeTxType::Withdrawal => {
                     // send fees from village to realm
                     let realm_structure_owner: ContractAddress = StructureOwnerStoreImpl::retrieve(
-                        ref world, realm_structure_id,
+                        ref world, game_id, realm_structure_id,
                     );
                     let realm_structure_base: StructureBase = StructureBaseStoreImpl::retrieve(
-                        ref world, realm_structure_id,
+                        ref world, game_id, realm_structure_id,
                     );
-                    let mut realm_structure_weight: Weight = WeightStoreImpl::retrieve(ref world, realm_structure_id);
+                    let mut realm_structure_weight: Weight = WeightStoreImpl::retrieve(
+                        ref world, game_id, realm_structure_id,
+                    );
                     iResourceTransferImpl::structure_to_structure_delayed(
                         ref world,
+                        game_id,
                         from_structure_id,
                         from_structure_owner,
                         from_structure_base,
@@ -164,10 +168,15 @@ pub impl iBridgeImpl of iBridgeTrait {
 
 
     fn send_bank_fees(
-        ref world: WorldStorage, bank_structure_id: ID, resource_type: u8, amount: u128, tx_type: BridgeTxType,
+        ref world: WorldStorage,
+        game_id: u32,
+        bank_structure_id: ID,
+        resource_type: u8,
+        amount: u128,
+        tx_type: BridgeTxType,
     ) -> u128 {
         let fee_split_config: ResourceBridgeFeeSplitConfig = WorldConfigUtilImpl::get_member(
-            world, selector!("res_bridge_fee_split_config"),
+            world, game_id, selector!("res_bridge_fee_split_config"),
         );
 
         // bank fee is same amount as realm fee
@@ -183,7 +192,7 @@ pub impl iBridgeImpl of iBridgeTrait {
                 BridgeTxType::Withdrawal => {
                     // beam resources into the bank's resource arrivals. it costs 0 donkey and time
                     iResourceTransferImpl::portal_to_structure_arrivals_instant(
-                        ref world, bank_structure_id, array![(resource_type, bank_fee_amount)].span(),
+                        ref world, game_id, bank_structure_id, array![(resource_type, bank_fee_amount)].span(),
                     );
                 },
             }
@@ -195,13 +204,14 @@ pub impl iBridgeImpl of iBridgeTrait {
 
     fn send_platform_fees(
         ref world: WorldStorage,
+        game_id: u32,
         token: ContractAddress,
         client_fee_recipient: ContractAddress,
         amount: u256,
         tx_type: BridgeTxType,
     ) -> u256 {
         let fee_split_config: ResourceBridgeFeeSplitConfig = WorldConfigUtilImpl::get_member(
-            world, selector!("res_bridge_fee_split_config"),
+            world, game_id, selector!("res_bridge_fee_split_config"),
         );
         let (velords_fee_amount, season_pool_fee_amount, client_fee_amount) = match tx_type {
             BridgeTxType::Deposit => {
@@ -243,12 +253,12 @@ pub impl iBridgeImpl of iBridgeTrait {
         velords_fee_amount + season_pool_fee_amount + client_fee_amount
     }
 
-    fn inefficiency_percentage(ref world: WorldStorage, resource_type: u8) -> (u32, u32) {
+    fn inefficiency_percentage(ref world: WorldStorage, game_id: u32, resource_type: u8) -> (u32, u32) {
         if resource_type == ResourceTypes::LORDS {
             return (100 - 100, 100);
         }
 
-        let hyperstructures_globals: HyperstructureGlobals = world.read_model(WORLD_CONFIG_ID);
+        let hyperstructures_globals: HyperstructureGlobals = world.read_model(game_id);
         let hyperstructures_completed: u32 = hyperstructures_globals.completed_count;
         let troop_inefficiencies: Array<(u32, u32)> = array![
             (100 - 0, 100), (100 - 25, 100), (100 - 50, 100), (100 - 70, 100), (100 - 85, 100), (100 - 95, 100),
@@ -278,4 +288,3 @@ pub impl iBridgeImpl of iBridgeTrait {
         return (amount * fee_percent.into()) / PercentageValueImpl::_100().into();
     }
 }
-

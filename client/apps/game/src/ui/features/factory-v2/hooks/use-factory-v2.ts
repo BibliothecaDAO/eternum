@@ -159,7 +159,8 @@ export const useFactoryV2 = () => {
   const initialPresetId = getDefaultPresetIdForModeSelection(initialMode);
   const initialPreset = getFactoryPresetById(initialPresetId);
   const initialStartAt = initialPreset ? getPresetStartAtValue(initialPreset) : "";
-  const initialChain = resolveFactoryChainFromEnvironmentId(initialSelection.environmentId);
+  // Mainnet is the only factory launch target now that Slot is EoL.
+  const initialChain: FactoryLaunchChain = "mainnet";
   const initialSuggestedGameName = buildSuggestedGameName(initialMode, []);
   const initialSuggestedSeriesName = buildSuggestedSeriesName(initialMode, []);
   const initialSuggestedRotationName = buildSuggestedRotationName(initialMode, []);
@@ -241,7 +242,10 @@ export const useFactoryV2 = () => {
   const selectedEnvironment =
     environmentOptions.find((environment) => environment.id === selectedEnvironmentId) ?? environmentOptions[0] ?? null;
   const presets = getFactoryLaunchPresetsForMode(selectedMode);
-  const ownedSeriesQuery = useFactorySeries((selectedEnvironment?.chain ?? "slot") as Chain, account?.address ?? null);
+  const ownedSeriesQuery = useFactorySeries(
+    (selectedEnvironment?.chain ?? "mainnet") as Chain,
+    account?.address ?? null,
+  );
   const ownedSeries = ownedSeriesQuery.data ?? [];
   const seriesSuggestions = useMemo(
     () =>
@@ -293,14 +297,14 @@ export const useFactoryV2 = () => {
   const environmentUnavailableReason = resolveEnvironmentUnavailableReason(selectedEnvironment?.id);
   const moreOptions = useFactoryV2MoreOptions({
     mode: selectedMode,
-    chain: selectedEnvironment?.chain ?? "slot",
+    chain: selectedEnvironment?.chain ?? "mainnet",
     presetId: selectedPreset?.id ?? null,
     twoPlayerMode,
     durationMinutes: draftDurationMinutes,
   });
   const biomeClimateOptions = buildFactoryBiomeClimateOptions({
     mode: selectedMode,
-    chain: selectedEnvironment?.chain ?? "slot",
+    chain: selectedEnvironment?.chain ?? "mainnet",
     launchKind: selectedLaunchKind,
     durationMinutes: draftDurationMinutes,
     gameName: draftGameName,
@@ -319,7 +323,7 @@ export const useFactoryV2 = () => {
 
   useEffect(() => {
     const nextDefaultDraft = createFactoryBiomeClimateDraft(
-      selectedEnvironment?.chain ?? "slot",
+      selectedEnvironment?.chain ?? "mainnet",
       selectedMode,
       draftDurationMinutes,
     );
@@ -332,7 +336,7 @@ export const useFactoryV2 = () => {
 
   useEffect(() => {
     const defaultDraft = createFactoryBiomeClimateDraft(
-      selectedEnvironment?.chain ?? "slot",
+      selectedEnvironment?.chain ?? "mainnet",
       selectedMode,
       draftDurationMinutes,
     );
@@ -355,7 +359,7 @@ export const useFactoryV2 = () => {
 
   useEffect(() => {
     const defaultDraft = createFactoryBiomeClimateDraft(
-      selectedEnvironment?.chain ?? "slot",
+      selectedEnvironment?.chain ?? "mainnet",
       selectedMode,
       draftDurationMinutes,
     );
@@ -706,7 +710,7 @@ export const useFactoryV2 = () => {
   ]);
 
   const selectMode = (mode: FactoryGameMode) => {
-    const nextEnvironmentId = resolveFactoryEnvironmentIdForModeAndChain(mode, selectedEnvironment?.chain ?? "slot");
+    const nextEnvironmentId = resolveFactoryEnvironmentIdForModeAndChain(mode, selectedEnvironment?.chain ?? "mainnet");
     const nextPresetId = getDefaultPresetIdForModeSelection(mode);
     const nextPreset = getFactoryPresetById(nextPresetId);
     const nextRuns = runsByEnvironmentRef.current[nextEnvironmentId] ?? [];
@@ -836,7 +840,7 @@ export const useFactoryV2 = () => {
 
   const resetSelectedBiomeClimate = () => {
     const defaultDraft = createFactoryBiomeClimateDraft(
-      selectedEnvironment?.chain ?? "slot",
+      selectedEnvironment?.chain ?? "mainnet",
       selectedMode,
       draftDurationMinutes,
     );
@@ -2297,10 +2301,6 @@ function resolveInitialFactorySelection(): InitialFactorySelection {
   };
 }
 
-function resolveFactoryChainFromEnvironmentId(environmentId: string): FactoryLaunchChain {
-  return environmentId.startsWith("mainnet") ? "mainnet" : "slot";
-}
-
 function buildFactoryBiomeClimateOptions({
   mode,
   chain,
@@ -2629,6 +2629,17 @@ function buildPendingPaymasterSteps(environmentId: string): FactoryRun["steps"] 
 }
 
 function buildPendingGameRunSteps(mode: FactoryGameMode, environmentId: string): FactoryRun["steps"] {
+  // Appchain launches are two registrar steps: create the game row, wait for
+  // it to index. Configuration rides the create transaction; there is no
+  // per-game world, indexer, or role grant.
+  if (environmentId.startsWith("appchain.")) {
+    return [
+      createPendingStep("launch-request", "running"),
+      createPendingStep("create-world", "pending"),
+      createPendingStep("wait-for-factory-index", "pending"),
+    ];
+  }
+
   return [
     createPendingStep("launch-request", "running"),
     createPendingStep("create-world", "pending"),

@@ -107,7 +107,7 @@ describe("grouped series-like runner fail-fast behavior", () => {
 function buildSeriesRequest(overrides: Partial<LaunchSeriesRequest> = {}): LaunchSeriesRequest {
   return {
     launchKind: "series",
-    environmentId: "slot.blitz",
+    environmentId: "appchain.blitz",
     seriesName: "bltz-knicker",
     games: [
       { gameName: "bltz-knicker-06", startTime: "2099-01-01T06:00:00Z" },

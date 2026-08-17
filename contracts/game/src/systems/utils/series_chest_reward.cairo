@@ -3,7 +3,7 @@
 // and using `allocate_chests` to update state per game.
 
 pub mod series_chest_reward_calculator {
-    use crate::constants::WORLD_CONFIG_ID;
+    use crate::models::game::Series;
     use crate::models::series_chest_reward::{AnchorRingImpl, RecentRingImpl, SeriesChestRewardState};
     use crate::utils::math::div_round;
 
@@ -14,10 +14,6 @@ pub mod series_chest_reward_calculator {
     const SCALE_MAX_BPS: u128 = 16_000; // 1.6x
     const RECENT_PLAYERS_MAX: u32 = 3; // fixed ring capacity
 
-    // Some sensible defaults (used in tests / examples)
-    const NUM_GAMES_IN_SERIES: u32 = 8;
-    const TOTAL_NUM_CHESTS_TO_BE_DISTRIBUTED: u128 = 584;
-    const CAP_RATIO_BPS: u128 = 11_000; // 1.10
     const EXPECTED_PLAYERS_START: u128 = 24;
     const EXPECTED_PLAYERS_END: u128 = 24;
     const FORECAST_SCHEDULE_WEIGHT_BPS: u128 = 6_000; // 0.6
@@ -39,22 +35,22 @@ pub mod series_chest_reward_calculator {
 
     #[generate_trait]
     pub impl SeriesChestRewardStateImpl of SeriesChestRewardStateTrait {
-        fn new() -> SeriesChestRewardState {
+        fn new(series_id: felt252, total_chests: u128, cap_ratio_bps: u128) -> SeriesChestRewardState {
             SeriesChestRewardState {
-                world_id: WORLD_CONFIG_ID,
+                series_id,
                 game_index: 0_u32,
                 ema_players_scaled: EXPECTED_PLAYERS_START * BPS,
                 recent: RecentRingImpl::new(),
                 anchor: AnchorRingImpl::new(),
                 has_last_rate: false,
                 last_rate_bps: 0_u128,
-                soft_supply: TOTAL_NUM_CHESTS_TO_BE_DISTRIBUTED,
-                overspend_remaining: (TOTAL_NUM_CHESTS_TO_BE_DISTRIBUTED * (CAP_RATIO_BPS - BPS)) / BPS,
+                soft_supply: total_chests,
+                overspend_remaining: (total_chests * (cap_ratio_bps - BPS)) / BPS,
             }
         }
-        fn games_remaining(self: @SeriesChestRewardState) -> u32 {
+        fn games_remaining(self: @SeriesChestRewardState, series: Series) -> u32 {
             let g = *self.game_index;
-            let G = NUM_GAMES_IN_SERIES;
+            let G = series.num_games;
             if G > g {
                 G - g
             } else {
@@ -62,10 +58,9 @@ pub mod series_chest_reward_calculator {
             }
         }
 
-        fn total_spent(self: @SeriesChestRewardState) -> u128 {
-            let soft_spent = TOTAL_NUM_CHESTS_TO_BE_DISTRIBUTED - *self.soft_supply;
-            let over_spent = ((TOTAL_NUM_CHESTS_TO_BE_DISTRIBUTED * (CAP_RATIO_BPS - BPS)) / BPS)
-                - *self.overspend_remaining;
+        fn total_spent(self: @SeriesChestRewardState, series: Series) -> u128 {
+            let soft_spent = series.total_chests - *self.soft_supply;
+            let over_spent = ((series.total_chests * (series.cap_ratio_bps - BPS)) / BPS) - *self.overspend_remaining;
             soft_spent + over_spent
         }
 
@@ -73,11 +68,11 @@ pub mod series_chest_reward_calculator {
             (*self.soft_supply, *self.overspend_remaining)
         }
 
-        fn allocate_chests(ref self: SeriesChestRewardState, observed_players: u128) -> u128 {
+        fn allocate_chests(ref self: SeriesChestRewardState, series: Series, observed_players: u128) -> u128 {
             // Bail out if out of games or no supply left
             let no_supply = self.soft_supply == 0_u128 && self.overspend_remaining == 0_u128;
-            if self.game_index >= NUM_GAMES_IN_SERIES || no_supply {
-                if self.game_index < NUM_GAMES_IN_SERIES {
+            if self.game_index >= series.num_games || no_supply {
+                if self.game_index < series.num_games {
                     self.game_index = self.game_index + 1_u32;
                 }
                 return 0_u128;
@@ -96,7 +91,7 @@ pub mod series_chest_reward_calculator {
             self.ema_players_scaled = div_round(alpha * obs_scaled + (BPS - alpha) * ema_prev, BPS);
 
             // Estimate current attendance
-            let G: u128 = NUM_GAMES_IN_SERIES.into();
+            let G: u128 = series.num_games.into();
             let g: u128 = self.game_index.into();
             let scheduled_current: u128 = if G <= 1_u128 {
                 EXPECTED_PLAYERS_END
@@ -123,7 +118,9 @@ pub mod series_chest_reward_calculator {
             };
 
             // Forecast remaining players
-            let mut expected_remaining_players = forecast_total_players(@self, self.ema_players_scaled);
+            let mut expected_remaining_players = forecast_total_players(
+                @self, series.num_games, self.ema_players_scaled,
+            );
             if expected_remaining_players == 0_u128 {
                 expected_remaining_players = n_obs;
             }
@@ -237,9 +234,9 @@ pub mod series_chest_reward_calculator {
 
     // Forecast the total number of players across remaining games.
     // Returns an integer number of players (rounded to nearest).
-    fn forecast_total_players(self: @SeriesChestRewardState, current_ema_players_scaled: u128) -> u128 {
+    fn forecast_total_players(self: @SeriesChestRewardState, num_games: u32, current_ema_players_scaled: u128) -> u128 {
         let g: u128 = (*self.game_index).into();
-        let G: u128 = NUM_GAMES_IN_SERIES.into();
+        let G: u128 = num_games.into();
         if G <= g {
             return 0_u128;
         }

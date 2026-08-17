@@ -27,23 +27,20 @@ describe("worldmap hover label wiring", () => {
   it("reconciles current hover only after entity managers catch up", () => {
     const source = readWorldmapSource();
 
-    expect(
-      extractSourceBetween(
-        source,
-        "await this.armyManager.onTileUpdate(update)",
-        "this.clearPendingArmyMovementFromAuthoritativePosition(update)",
-      ),
-    ).toContain("this.reconcileHoverLabels()");
-    expect(extractSourceBetween(source, "processExplorerTroopsUpdate(update", "}),")).toContain("reconcileHoverLabels");
-    expect(extractSourceBetween(source, "await this.trackStructureHydrationUpdate(value", "const newCount")).toContain(
-      "this.reconcileHoverLabels()",
+    const projectionLifecycle = extractSourceBetween(
+      source,
+      "private bindWorldSpatialProjectionLifecycle()",
+      "private bindWorldmapCameraViewLifecycle()",
     );
-    expect(extractSourceBetween(source, "this.chestManager.onUpdate(update)", "}),")).toContain(
-      "this.reconcileHoverLabels()",
+    const armyChanges = extractSourceBetween(
+      source,
+      "private handleProjectedArmyChanges(",
+      "private syncProjectedStructurePathfinding(",
     );
-    expect(extractSourceBetween(source, "public updateArmyHexes(", "public updateStructureHexes(")).not.toContain(
-      "reconcileHoverLabels",
-    );
+
+    expect(projectionLifecycle).toContain("this.handleProjectedArmyChanges(changes)");
+    expect(armyChanges).toContain("this.reconcileHoverLabels()");
+    expect(source).not.toContain("public updateArmyHexes(");
   });
 
   it("resolves hover labels with direct army raycast fallback", () => {
@@ -81,7 +78,7 @@ describe("worldmap hover label wiring", () => {
       "private commitCurrentChunkAuthority(",
     );
 
-    const refreshPos = refreshWarpTravelScene.indexOf("await this.updateVisibleChunks(true)");
+    const refreshPos = refreshWarpTravelScene.indexOf("await completeWorldmapInteractiveRefresh({");
     const reconcilePos = refreshWarpTravelScene.indexOf('this.reconcileHoverLabels("initial_refresh")');
 
     expect(refreshPos).toBeGreaterThan(-1);

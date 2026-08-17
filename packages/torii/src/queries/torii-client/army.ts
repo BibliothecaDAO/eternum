@@ -1,31 +1,32 @@
 import { ID } from "@bibliothecadao/types";
-// import { Entity } from "@dojoengine/recs"; // Will be removed
 import { PatternMatching, Query, ToriiClient } from "@dojoengine/torii-wasm";
 import { getExplorerFromToriiEntity, getResourcesFromToriiEntity } from "../../parser/torii-client";
+import { getSqlGameScope } from "../../utils/sql";
 
 export const getExplorerFromToriiClient = async (toriiClient: ToriiClient, entityId: ID) => {
+  const { namespace, gameId } = getSqlGameScope();
+  const models = [`${namespace}-ExplorerTroops`, `${namespace}-Resource`];
   const query: Query = {
-    // world_addresses: [],
     pagination: {
       limit: 1,
       cursor: undefined,
       direction: "Forward",
-      order_by: [], // Preserved from original query logic, now in pagination
+      order_by: [],
     },
-    no_hashed_keys: false, // Mapped from 'dont_include_hashed_keys'
-    models: ["s1_eternum-ExplorerTroops", "s1_eternum-Resource"], // Mapped from 'entity_models'
-    historical: false, // Added for consistency with address.ts
+    no_hashed_keys: false,
+    models,
+    historical: false,
     clause: {
       Keys: {
-        keys: [entityId.toString()],
+        // s2 per-game models key entities as (game_id, entity_id)
+        keys: gameId > 0 ? [`0x${gameId.toString(16)}`, entityId.toString()] : [entityId.toString()],
         pattern_matching: "FixedLen" as PatternMatching,
-        // Models associated with the keys, mirroring the top-level models
-        models: ["s1_eternum-ExplorerTroops", "s1_eternum-Resource"],
+        models,
       },
     },
   };
 
-  const response = await toriiClient.getEntities(query); // Updated call, removed second argument
+  const response = await toriiClient.getEntities(query);
 
   if (!response?.items?.[0]?.models) {
     return {
@@ -35,8 +36,8 @@ export const getExplorerFromToriiClient = async (toriiClient: ToriiClient, entit
   }
 
   const entityModels = response.items[0].models;
-  const explorerModelData = entityModels["s1_eternum-ExplorerTroops"];
-  const resourceModelData = entityModels["s1_eternum-Resource"];
+  const explorerModelData = entityModels[`${namespace}-ExplorerTroops`];
+  const resourceModelData = entityModels[`${namespace}-Resource`];
 
   if (!explorerModelData) {
     return {

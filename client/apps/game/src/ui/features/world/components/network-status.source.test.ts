@@ -41,12 +41,14 @@ describe("network status wiring", () => {
     expect(source).toContain('setGlobalStatus("reconnecting")');
   });
 
-  it("treats spatial reconnect as owned by the global initial sync stream", () => {
+  it("routes reconnect through the one game sync recovery session", () => {
     const worldSource = readSource("src/ui/layouts/world.tsx");
     const worldmapSource = readSource("src/three/scenes/worldmap.tsx");
 
-    expect(worldSource).toContain('status: "global_initial_sync_owned"');
+    expect(worldSource).toContain("await recoverGameSyncSession()");
     expect(worldSource).toContain("await initialSync(setup, state");
+    expect(worldmapSource).not.toContain("forceResubscribe()");
+    expect(worldmapSource).not.toContain("toriiStreamManager");
     expect(worldmapSource).not.toContain("SETUP_TIMEOUT_TOAST_THROTTLE_MS");
     expect(worldmapSource).not.toContain("handleToriiSubscriptionSetupTimeout");
   });

@@ -5,7 +5,7 @@ import type {
   FactoryMapConfigOverrides,
 } from "@bibliothecadao/types";
 
-export type FactoryWorkerEnvironmentId = "slot.eternum" | "mainnet.eternum" | "slot.blitz" | "mainnet.blitz";
+export type FactoryWorkerEnvironmentId = "mainnet.eternum" | "mainnet.blitz" | "appchain.eternum" | "appchain.blitz";
 type FactoryWorkerRunKind = "game" | "series" | "rotation";
 export type FactoryWorkerGameLaunchStepId =
   | "create-world"
@@ -91,6 +91,8 @@ interface FactoryWorkerGameArtifacts {
   summaryPath?: string;
   durationSeconds?: number;
   worldAddress?: string;
+  /** Registrar-assigned game id inside the persistent appchain world. */
+  gameId?: number;
   createGameTxHash?: string;
   configureTxHash?: string;
   lootChestRoleTxHash?: string;
@@ -112,7 +114,7 @@ interface FactoryWorkerRotationEvaluation {
 interface FactoryWorkerBaseRunRecord {
   version: 1;
   environment: FactoryWorkerEnvironmentId;
-  chain: "slot" | "mainnet";
+  chain: "mainnet" | "appchain";
   gameType: "eternum" | "blitz";
   status: FactoryWorkerRunStatus;
   executionMode: "fast_trial" | "guided_recovery";
@@ -212,7 +214,7 @@ export interface FactoryWorkerSeriesRunRecord extends FactoryWorkerBaseRunRecord
   }>;
   summary: {
     environment: FactoryWorkerEnvironmentId;
-    chain: "slot" | "mainnet";
+    chain: "mainnet" | "appchain";
     gameType: "eternum" | "blitz";
     seriesName: string;
     rpcUrl: string;
@@ -262,7 +264,7 @@ export interface FactoryWorkerRotationRunRecord extends FactoryWorkerBaseRunReco
   }>;
   summary: {
     environment: FactoryWorkerEnvironmentId;
-    chain: "slot" | "mainnet";
+    chain: "mainnet" | "appchain";
     gameType: "eternum" | "blitz";
     rotationName: string;
     seriesName: string;
@@ -309,6 +311,8 @@ export interface CreateFactoryRunRequest {
   gameName: string;
   gameStartTime: string;
   workflowRef?: string;
+  /** Registered registrar preset id ("2" Regular Fast, "3" Duel) on the appchain. */
+  version?: string;
   devModeOn?: boolean;
   twoPlayerMode?: boolean;
   singleRealmMode?: boolean;
@@ -469,10 +473,12 @@ interface FundFactoryRotationPrizesRequest {
 const FACTORY_WORKER_BASE_URL = env.VITE_PUBLIC_FACTORY_WORKER_URL.replace(/\/$/, "");
 
 const SUPPORTED_FACTORY_WORKER_ENVIRONMENTS = new Set<FactoryWorkerEnvironmentId>([
-  "slot.eternum",
-  "mainnet.eternum",
-  "slot.blitz",
-  "mainnet.blitz",
+  // Mainnet launches went through the hosted realms-game-launch worker; they
+  // are switched off in the appchain deployment. Uncomment to restore.
+  // "mainnet.eternum",
+  // "mainnet.blitz",
+  "appchain.eternum",
+  "appchain.blitz",
 ]);
 
 export class FactoryWorkerApiError extends Error {

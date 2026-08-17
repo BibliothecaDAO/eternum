@@ -603,6 +603,7 @@ export interface Config {
     startMainAfterSeconds: number;
     startMainAt: number;
 
+    endGraceSeconds: number;
     bridgeCloseAfterEndSeconds: number;
     pointRegistrationCloseAfterEndSeconds: number;
   };

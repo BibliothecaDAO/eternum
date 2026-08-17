@@ -5,6 +5,7 @@ import { refreshSessionPolicies } from "@/hooks/context/session-policy-refresh";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useConnectionStore } from "@/hooks/store/use-connection-store";
 import { useSyncStore } from "@/hooks/store/use-sync-store";
+import { SupersededGameSyncStartError } from "@bibliothecadao/eternum/game-sync";
 import {
   bootstrapGameForEntryContext,
   getCachedBootstrappedEntrySession,
@@ -18,7 +19,7 @@ import { toast } from "sonner";
 
 import { resolveEntryContextCacheKey, type ResolvedEntryContext } from "./context";
 
-export type BootstrapStatus = "idle" | "pending-world" | "loading" | "ready" | "error";
+type BootstrapStatus = "idle" | "pending-world" | "loading" | "ready" | "error";
 
 export type BootstrapTask = {
   id: string;
@@ -314,6 +315,13 @@ export const useGameEntryBootstrapController = ({
             return;
           }
 
+          if (incomingError instanceof SupersededGameSyncStartError) {
+            return;
+          }
+
+          // Surface the failure: this rejection otherwise only lives in React
+          // state and the recovery screen gives the player no diagnostic.
+          console.error("[bootstrap] game entry bootstrap failed", incomingError);
           const normalizedError = incomingError instanceof Error ? incomingError : new Error("Unknown bootstrap error");
           if (forceFresh) {
             recordRouteRebootstrapFailed(normalizedError);

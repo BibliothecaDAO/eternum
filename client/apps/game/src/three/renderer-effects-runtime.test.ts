@@ -1,65 +1,95 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { ToneMappingMode } from "postprocessing";
+import { createRenderProfile, RENDERER_PIXEL_RATIO_CAP } from "./render-profile";
 import { resetRendererDiagnostics, snapshotRendererDiagnostics } from "./renderer-diagnostics";
 import { createRendererBackendCapabilities } from "./renderer-backend-v2";
 
 vi.mock("@/three/constants", () => ({
   POST_PROCESSING_CONFIG: {
-    HIGH: {
-      bloomIntensity: 0.4,
-      brightness: 0.1,
-      contrast: 0.2,
-      hue: 0,
-      saturation: 0.05,
-      toneMapping: {
-        exposure: 0.8,
-        mode: 4,
-        whitePoint: 1.1,
-      },
-      vignette: {
-        darkness: 0.4,
-        offset: 0.3,
-      },
-    },
-    LOW: null,
-    MID: {
-      bloomIntensity: 0.2,
-      brightness: 0,
-      contrast: 0,
-      hue: 0,
-      saturation: 0,
-      toneMapping: {
-        exposure: 1,
-        mode: 2,
-        whitePoint: 1,
-      },
-      vignette: {
-        darkness: 0.2,
-        offset: 0.2,
-      },
-    },
-  },
-}));
-
-vi.mock("@/ui/config", () => ({
-  GraphicsSettings: {
-    HIGH: "HIGH",
-    LOW: "LOW",
-    MID: "MID",
+    bloomIntensity: 0.4,
+    brightness: 0.1,
+    contrast: 0.2,
+    hue: 0,
+    saturation: 0.05,
+    toneMapping: { exposure: 0.8, mode: "aces-filmic", whitePoint: 1.1 },
+    vignette: { darkness: 0.4, offset: 0.3 },
   },
 }));
 
 const { createRendererEffectsRuntime } = await import("./renderer-effects-runtime");
-const { GraphicsSettings } = await import("@/ui/config");
+
+describe("renderer effects runtime", () => {
+  beforeEach(() => {
+    resetRendererDiagnostics();
+    vi.stubGlobal("window", { devicePixelRatio: 2, innerHeight: 768, innerWidth: 1024 });
+  });
+
+  afterEach(() => vi.unstubAllGlobals());
+
+  it("applies the one visual profile through the backend and every scene", async () => {
+    const backend = createBackend();
+    const scenes = createScenes();
+    const runtime = createRuntime(backend, scenes);
+
+    await runtime.applyEnvironment();
+    runtime.setupPostProcessingEffects(createRenderProfile("quality").visuals);
+    runtime.applyRenderVisualProfile(createRenderProfile("battery").visuals);
+
+    expect(backend.applyEnvironment).toHaveBeenCalledWith({
+      fastTravelScene: scenes.fastTravelScene,
+      hexceptionScene: scenes.hexceptionScene,
+      intensity: 0.55,
+      worldmapScene: scenes.worldmapScene,
+    });
+    expect(backend.applyRenderVisuals).toHaveBeenCalledWith({
+      height: 768,
+      pixelRatio: RENDERER_PIXEL_RATIO_CAP,
+      shadows: true,
+      width: 1024,
+    });
+    expect(scenes.worldmapScene.applyRenderVisualProfile).toHaveBeenCalledTimes(1);
+    expect(scenes.fastTravelScene.applyRenderVisualProfile).toHaveBeenCalledTimes(1);
+    expect(scenes.hexceptionScene.applyRenderVisualProfile).toHaveBeenCalledTimes(1);
+  });
+
+  it("reports unsupported environment ownership explicitly", async () => {
+    const backend = createBackend();
+    backend.capabilities = createRendererBackendCapabilities({ supportsToneMappingControl: true });
+    const runtime = createRuntime(backend, createScenes());
+
+    await runtime.applyEnvironment();
+
+    expect(backend.applyEnvironment).not.toHaveBeenCalled();
+    expect(snapshotRendererDiagnostics().degradations).toContainEqual({
+      detail: expect.any(String),
+      feature: "environmentIbl",
+      reason: "unsupported-backend",
+    });
+  });
+
+  it("uses backend-neutral tone mapping names", () => {
+    const runtime = createRuntime(createBackend(), createScenes());
+    expect(runtime.resolveRendererToneMappingMode("aces-filmic")).toBe("aces-filmic");
+    expect(runtime.resolveRendererToneMappingMode("linear")).toBe("linear");
+    expect(runtime.resolveRendererToneMappingMode("neutral")).toBe("neutral");
+    expect(runtime.resolveRendererToneMappingMode("reinhard")).toBe("reinhard");
+    expect(runtime.resolveRendererToneMappingMode("cineon")).toBe("cineon");
+  });
+});
+
+function createRuntime(backend: ReturnType<typeof createBackend>, scenes: ReturnType<typeof createScenes>) {
+  return createRendererEffectsRuntime({
+    backend: backend as never,
+    createFolder: vi.fn(() => ({ add: vi.fn(), close: vi.fn() })),
+    isGraphicsDevEnabled: false,
+    scenes: scenes as never,
+  });
+}
 
 function createBackend() {
   return {
     applyEnvironment: vi.fn(async () => {}),
-    applyPostProcessPlan: vi.fn(() => ({
-      setColorGrade: vi.fn(),
-      setVignette: vi.fn(),
-    })),
-    applyQuality: vi.fn(),
+    applyPostProcessPlan: vi.fn(() => ({ setColorGrade: vi.fn(), setVignette: vi.fn() })),
+    applyRenderVisuals: vi.fn(),
     capabilities: createRendererBackendCapabilities({
       supportsBloom: true,
       supportsChromaticAberration: true,
@@ -83,233 +113,8 @@ function createBackend() {
 
 function createScenes() {
   return {
-    fastTravelScene: { applyQualityFeatures: vi.fn(), setEnvironment: vi.fn() },
-    hexceptionScene: { applyQualityFeatures: vi.fn(), setEnvironment: vi.fn() },
-    worldmapScene: { applyQualityFeatures: vi.fn(), setEnvironment: vi.fn() },
+    fastTravelScene: { applyRenderVisualProfile: vi.fn(), setEnvironment: vi.fn() },
+    hexceptionScene: { applyRenderVisualProfile: vi.fn(), setEnvironment: vi.fn() },
+    worldmapScene: { applyRenderVisualProfile: vi.fn(), setEnvironment: vi.fn() },
   };
 }
-
-function createFolderFactory() {
-  return vi.fn(() => ({
-    add: vi.fn(() => ({
-      name: vi.fn(() => ({
-        onChange: vi.fn(),
-      })),
-      onChange: vi.fn(),
-    })),
-    close: vi.fn(),
-  }));
-}
-
-function createQualityFeatures(overrides: Partial<import("./utils/quality-controller").QualityFeatures> = {}) {
-  return {
-    animationCullDistance: 120,
-    animationFPS: 20,
-    bloom: true,
-    bloomIntensity: 0.2,
-    chromaticAberration: false,
-    chunkLoadRadius: 2,
-    fxaa: true,
-    labelRenderDistance: 120,
-    maxVisibleArmies: 250,
-    maxVisibleLabels: 200,
-    maxVisibleStructures: 150,
-    morphAnimations: true,
-    pixelRatio: 1.5,
-    shadowMapSize: 1024,
-    shadows: true,
-    vignette: false,
-    ...overrides,
-  };
-}
-
-describe("renderer effects runtime", () => {
-  beforeEach(() => {
-    resetRendererDiagnostics();
-    vi.stubGlobal("window", {
-      devicePixelRatio: 1,
-      innerHeight: 768,
-      innerWidth: 1024,
-    });
-  });
-
-  afterEach(() => {
-    vi.unstubAllGlobals();
-  });
-
-  it("boots postprocess for supported graphics tiers and applies the backend plan", () => {
-    const backend = createBackend();
-    const scenes = createScenes();
-    const runtime = createRendererEffectsRuntime({
-      backend: backend as never,
-      createFolder: createFolderFactory(),
-      graphicsSetting: GraphicsSettings.HIGH,
-      isGraphicsDevEnabled: false,
-      isMobileDevice: false,
-      scenes: scenes as never,
-    });
-
-    runtime.setupPostProcessingEffects(
-      createQualityFeatures({
-        bloomIntensity: 0.3,
-        vignette: true,
-      }),
-    );
-
-    expect(backend.applyPostProcessPlan).toHaveBeenCalledTimes(1);
-    expect(runtime.hasPostProcessing()).toBe(true);
-  });
-
-  it("applies environment and quality policies through the backend and scene surfaces", async () => {
-    const backend = createBackend();
-    const scenes = createScenes();
-    Object.defineProperty(window, "devicePixelRatio", { configurable: true, value: 2 });
-    const runtime = createRendererEffectsRuntime({
-      backend: backend as never,
-      createFolder: createFolderFactory(),
-      graphicsSetting: GraphicsSettings.HIGH,
-      isGraphicsDevEnabled: false,
-      isMobileDevice: false,
-      scenes: scenes as never,
-    });
-
-    await runtime.applyEnvironment();
-    runtime.applyQualityFeatures(
-      createQualityFeatures({
-        bloom: false,
-        bloomIntensity: 0,
-        fxaa: false,
-      }),
-    );
-
-    expect(backend.applyEnvironment).toHaveBeenCalledWith({
-      fastTravelScene: scenes.fastTravelScene,
-      hexceptionScene: scenes.hexceptionScene,
-      intensity: 0.55,
-      worldmapScene: scenes.worldmapScene,
-    });
-    expect(backend.applyQuality).toHaveBeenCalledWith({
-      height: window.innerHeight,
-      pixelRatio: 1.5,
-      shadows: true,
-      width: window.innerWidth,
-    });
-    expect(scenes.worldmapScene.applyQualityFeatures).toHaveBeenCalledTimes(1);
-    expect(scenes.fastTravelScene.applyQualityFeatures).toHaveBeenCalledTimes(1);
-    expect(scenes.hexceptionScene.applyQualityFeatures).toHaveBeenCalledTimes(1);
-  });
-
-  it("degrades environment and unsupported postprocess features explicitly", () => {
-    const backend = createBackend();
-    backend.capabilities = createRendererBackendCapabilities({
-      supportsEnvironmentIbl: false,
-      supportsToneMappingControl: true,
-    });
-    const runtime = createRendererEffectsRuntime({
-      backend: backend as never,
-      createFolder: createFolderFactory(),
-      graphicsSetting: GraphicsSettings.HIGH,
-      isGraphicsDevEnabled: false,
-      isMobileDevice: false,
-      scenes: createScenes() as never,
-    });
-
-    runtime.setupPostProcessingEffects(
-      createQualityFeatures({
-        bloomIntensity: 0.6,
-        chromaticAberration: true,
-        vignette: true,
-      }),
-    );
-    void runtime.applyEnvironment();
-
-    expect(snapshotRendererDiagnostics().degradations).toEqual(
-      expect.arrayContaining([
-        { feature: "environmentIbl", reason: "unsupported-backend", detail: expect.any(String) },
-      ]),
-    );
-  });
-
-  it("updates weather-driven color grade through the active postprocess controller", () => {
-    const backend = createBackend();
-    const controller = {
-      setColorGrade: vi.fn(),
-      setVignette: vi.fn(),
-    };
-    backend.applyPostProcessPlan.mockReturnValue(controller);
-    const runtime = createRendererEffectsRuntime({
-      backend: backend as never,
-      createFolder: createFolderFactory(),
-      graphicsSetting: GraphicsSettings.HIGH,
-      isGraphicsDevEnabled: false,
-      isMobileDevice: false,
-      scenes: createScenes() as never,
-    });
-
-    runtime.setupPostProcessingEffects(
-      createQualityFeatures({
-        bloomIntensity: 0.6,
-        vignette: true,
-      }),
-    );
-    runtime.updateWeatherPostProcessing({
-      intensity: 0.6,
-      stormIntensity: 0.4,
-    });
-
-    expect(controller.setColorGrade).toHaveBeenCalledTimes(1);
-    expect(controller.setVignette).toHaveBeenCalledTimes(1);
-  });
-
-  it("caps weather-driven post-processing darkness", () => {
-    const backend = createBackend();
-    const controller = {
-      setColorGrade: vi.fn(),
-      setVignette: vi.fn(),
-    };
-    backend.applyPostProcessPlan.mockReturnValue(controller);
-    const runtime = createRendererEffectsRuntime({
-      backend: backend as never,
-      createFolder: createFolderFactory(),
-      graphicsSetting: GraphicsSettings.HIGH,
-      isGraphicsDevEnabled: false,
-      isMobileDevice: false,
-      scenes: createScenes() as never,
-    });
-
-    runtime.setupPostProcessingEffects(
-      createQualityFeatures({
-        bloomIntensity: 0.6,
-        vignette: true,
-      }),
-    );
-    runtime.updateWeatherPostProcessing({
-      intensity: 10,
-      stormIntensity: 10,
-    });
-
-    const [colorGrade] = controller.setColorGrade.mock.calls[0];
-    const [vignette] = controller.setVignette.mock.calls[0];
-    expect(colorGrade.brightness).toBeCloseTo(0.04);
-    expect(colorGrade.contrast).toBeCloseTo(1.7);
-    expect(colorGrade.saturation).toBeCloseTo(-0.13);
-    expect(vignette.darkness).toBeCloseTo(0.5);
-  });
-
-  it("maps tone mapping modes into backend-neutral values", () => {
-    const runtime = createRendererEffectsRuntime({
-      backend: createBackend() as never,
-      createFolder: createFolderFactory(),
-      graphicsSetting: GraphicsSettings.HIGH,
-      isGraphicsDevEnabled: false,
-      isMobileDevice: false,
-      scenes: createScenes() as never,
-    });
-
-    expect(runtime.resolveRendererToneMappingMode(ToneMappingMode.ACES_FILMIC)).toBe("aces-filmic");
-    expect(runtime.resolveRendererToneMappingMode(ToneMappingMode.LINEAR)).toBe("linear");
-    expect(runtime.resolveRendererToneMappingMode(ToneMappingMode.NEUTRAL)).toBe("neutral");
-    expect(runtime.resolveRendererToneMappingMode(ToneMappingMode.REINHARD)).toBe("reinhard");
-    expect(runtime.resolveRendererToneMappingMode(ToneMappingMode.OPTIMIZED_CINEON)).toBe("cineon");
-  });
-});

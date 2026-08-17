@@ -33,6 +33,7 @@ import Shield from "lucide-react/dist/esm/icons/shield";
 import Sparkles from "lucide-react/dist/esm/icons/sparkles";
 import Wheat from "lucide-react/dist/esm/icons/wheat";
 import { useMemo } from "react";
+import { gameEntityKey } from "@/dojo/game-scope";
 import {
   buildBlitzRealmSuggestions,
   type BlitzBuildKey,
@@ -282,7 +283,7 @@ export const useEmpireSuggestions = (): EmpireSuggestion[] => {
         if (structure.category !== StructureType.Realm) return [];
 
         const entityId = Number(structure.entityId);
-        const realm = getRealmInfo(getEntityIdFromKeys([BigInt(entityId)]), components);
+        const realm = getRealmInfo(gameEntityKey([BigInt(entityId)]), components);
         const hasAvailableBuildingTile = resolveRealmHasAvailableBuildingTile({
           entityId,
           realmPosition: realm?.position,

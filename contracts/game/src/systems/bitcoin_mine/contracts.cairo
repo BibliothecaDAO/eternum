@@ -3,16 +3,16 @@ use crate::alias::ID;
 #[starknet::interface]
 pub trait IBitcoinMineSystems<T> {
     /// Contribute labor to a phase
-    fn contribute_labor(ref self: T, mine_id: ID, target_phase_id: u64, labor_amount: u128);
+    fn contribute_labor(ref self: T, game_id: u32, mine_id: ID, target_phase_id: u64, labor_amount: u128);
 
     /// Process claims for multiple mines in a phase (permissionless)
-    fn claim_phase_reward(ref self: T, phase_id: u64, mine_ids: Array<ID>);
+    fn claim_phase_reward(ref self: T, game_id: u32, phase_id: u64, mine_ids: Array<ID>);
 
     /// View: Get current phase ID (time-based)
-    fn get_current_phase(self: @T) -> u64;
+    fn get_current_phase(self: @T, game_id: u32) -> u64;
 
     /// View: Get mine's contribution percentage for a phase (basis points)
-    fn get_mine_contribution(self: @T, mine_id: ID, phase_id: u64) -> u128;
+    fn get_mine_contribution(self: @T, game_id: u32, mine_id: ID, phase_id: u64) -> u128;
 }
 
 #[dojo::contract]
@@ -38,26 +38,30 @@ pub mod bitcoin_mine_systems {
 
     #[abi(embed_v0)]
     impl BitcoinMineSystemsImpl of super::IBitcoinMineSystems<ContractState> {
-        fn contribute_labor(ref self: ContractState, mine_id: ID, target_phase_id: u64, labor_amount: u128) {
+        fn contribute_labor(
+            ref self: ContractState, game_id: u32, mine_id: ID, target_phase_id: u64, labor_amount: u128,
+        ) {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
-            let season_config = SeasonConfigImpl::get(world);
+            let season_config = SeasonConfigImpl::get(world, game_id);
             season_config.assert_started_and_not_over();
 
-            let config: BitcoinMineConfig = WorldConfigUtilImpl::get_member(world, selector!("bitcoin_mine_config"));
+            let config: BitcoinMineConfig = WorldConfigUtilImpl::get_member(
+                world, game_id, selector!("bitcoin_mine_config"),
+            );
             assert!(config.enabled, "Bitcoin mine system is not enabled");
 
             // Verify mine ownership
-            let mine_owner: ContractAddress = StructureOwnerStoreImpl::retrieve(ref world, mine_id);
+            let mine_owner: ContractAddress = StructureOwnerStoreImpl::retrieve(ref world, game_id, mine_id);
             mine_owner.assert_caller_owner();
 
             // Verify it's a bitcoin mine
-            let structure_base = StructureBaseStoreImpl::retrieve(ref world, mine_id);
+            let structure_base = StructureBaseStoreImpl::retrieve(ref world, game_id, mine_id);
             assert!(
                 structure_base.category == StructureCategory::BitcoinMine.into(), "Structure is not a bitcoin mine",
             );
 
             // Get current phase from tick config
-            let bitcoin_tick = TickImpl::get_bitcoin_phase_interval(ref world);
+            let bitcoin_tick = TickImpl::get_bitcoin_phase_interval(ref world, game_id);
             let current_phase = bitcoin_tick.current();
 
             // Validate target_phase_id
@@ -74,7 +78,7 @@ pub mod bitcoin_mine_systems {
             );
 
             // Read target phase labor
-            let mut phase_labor: BitcoinPhaseLabor = world.read_model(target_phase_id);
+            let mut phase_labor: BitcoinPhaseLabor = world.read_model((game_id, target_phase_id));
 
             // Initialize phase prize pool if first contributor
             if phase_labor.participant_count == 0 {
@@ -82,15 +86,15 @@ pub mod bitcoin_mine_systems {
             }
 
             // Burn labor from mine
-            let labor_weight = ResourceWeightImpl::grams(ref world, ResourceTypes::LABOR);
-            let mut mine_weight: Weight = WeightStoreImpl::retrieve(ref world, mine_id);
+            let labor_weight = ResourceWeightImpl::grams(ref world, game_id, ResourceTypes::LABOR);
+            let mut mine_weight: Weight = WeightStoreImpl::retrieve(ref world, game_id, mine_id);
             let mut labor_resource = SingleResourceStoreImpl::retrieve(
-                ref world, mine_id, ResourceTypes::LABOR, ref mine_weight, labor_weight, true,
+                ref world, game_id, mine_id, ResourceTypes::LABOR, ref mine_weight, labor_weight, true,
             );
             assert!(labor_resource.balance >= labor_amount, "Not enough labor");
             labor_resource.spend(labor_amount, ref mine_weight, labor_weight);
             labor_resource.store(ref world);
-            mine_weight.store(ref world, mine_id);
+            mine_weight.store(ref world, game_id, mine_id);
 
             // Add labor to phase
             assert!(labor_amount > 0, "Labor amount must be > 0");
@@ -98,7 +102,7 @@ pub mod bitcoin_mine_systems {
             phase_labor.total_labor += labor_amount;
 
             // Track mine's contribution
-            let mut mine_phase_labor: BitcoinMinePhaseLabor = world.read_model((target_phase_id, mine_id));
+            let mut mine_phase_labor: BitcoinMinePhaseLabor = world.read_model((game_id, target_phase_id, mine_id));
             let is_first_contribution = mine_phase_labor.labor_contributed == 0;
             mine_phase_labor.labor_contributed += labor_amount;
             world.write_model(@mine_phase_labor);
@@ -114,6 +118,7 @@ pub mod bitcoin_mine_systems {
             world
                 .emit_event(
                     @StoryEvent {
+                        game_id,
                         id: world.dispatcher.uuid(),
                         owner: Option::Some(mine_owner),
                         entity_id: Option::Some(mine_id),
@@ -128,19 +133,21 @@ pub mod bitcoin_mine_systems {
                 );
         }
 
-        fn claim_phase_reward(ref self: ContractState, phase_id: u64, mine_ids: Array<ID>) {
+        fn claim_phase_reward(ref self: ContractState, game_id: u32, phase_id: u64, mine_ids: Array<ID>) {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
-            let season_config = SeasonConfigImpl::get(world);
+            let season_config = SeasonConfigImpl::get(world, game_id);
             season_config.assert_started_and_not_over();
 
-            let config: BitcoinMineConfig = WorldConfigUtilImpl::get_member(world, selector!("bitcoin_mine_config"));
+            let config: BitcoinMineConfig = WorldConfigUtilImpl::get_member(
+                world, game_id, selector!("bitcoin_mine_config"),
+            );
             assert!(config.enabled, "Bitcoin mine system is not enabled");
 
             // Get tick config for phase timing
-            let bitcoin_tick = TickImpl::get_bitcoin_phase_interval(ref world);
+            let bitcoin_tick = TickImpl::get_bitcoin_phase_interval(ref world, game_id);
 
             // Read phase labor
-            let mut phase_labor: BitcoinPhaseLabor = world.read_model(phase_id);
+            let mut phase_labor: BitcoinPhaseLabor = world.read_model((game_id, phase_id));
 
             // Validate phase has participants
             assert!(phase_labor.participant_count > 0, "Phase has no participants");
@@ -164,7 +171,7 @@ pub mod bitcoin_mine_systems {
             // Get VRF for lottery
             let caller = starknet::get_caller_address();
             let rng_library_dispatcher = rng_library::get_dispatcher(@world);
-            let vrf_seed: u256 = rng_library_dispatcher.get_random_number(Source::Nonce(caller), world);
+            let vrf_seed: u256 = rng_library_dispatcher.get_random_number(game_id, Source::Nonce(caller), world);
 
             let now = starknet::get_block_timestamp();
 
@@ -175,7 +182,7 @@ pub mod bitcoin_mine_systems {
                 let mine_id = *mine_ids_span.at(mine_index);
 
                 // Read mine's phase labor
-                let mut mine_phase_labor: BitcoinMinePhaseLabor = world.read_model((phase_id, mine_id));
+                let mut mine_phase_labor: BitcoinMinePhaseLabor = world.read_model((game_id, phase_id, mine_id));
 
                 // Skip if no labor contributed or already claimed
                 if mine_phase_labor.labor_contributed == 0 || mine_phase_labor.claimed {
@@ -201,20 +208,21 @@ pub mod bitcoin_mine_systems {
                     world.write_model(@phase_labor);
 
                     // Mint SATOSHI at the winning mine (owner can transport via donkeys)
-                    let winner_owner: ContractAddress = StructureOwnerStoreImpl::retrieve(ref world, mine_id);
-                    let satoshi_weight = ResourceWeightImpl::grams(ref world, ResourceTypes::SATOSHI);
-                    let mut mine_weight: Weight = WeightStoreImpl::retrieve(ref world, mine_id);
+                    let winner_owner: ContractAddress = StructureOwnerStoreImpl::retrieve(ref world, game_id, mine_id);
+                    let satoshi_weight = ResourceWeightImpl::grams(ref world, game_id, ResourceTypes::SATOSHI);
+                    let mut mine_weight: Weight = WeightStoreImpl::retrieve(ref world, game_id, mine_id);
                     let mut satoshi_resource = SingleResourceStoreImpl::retrieve(
-                        ref world, mine_id, ResourceTypes::SATOSHI, ref mine_weight, satoshi_weight, true,
+                        ref world, game_id, mine_id, ResourceTypes::SATOSHI, ref mine_weight, satoshi_weight, true,
                     );
                     satoshi_resource.add(phase_labor.prize_pool, ref mine_weight, satoshi_weight);
                     satoshi_resource.store(ref world);
-                    mine_weight.store(ref world, mine_id);
+                    mine_weight.store(ref world, game_id, mine_id);
 
                     // Emit event
                     world
                         .emit_event(
                             @StoryEvent {
+                                game_id,
                                 id: world.dispatcher.uuid(),
                                 owner: Option::Some(winner_owner),
                                 entity_id: Option::Some(mine_id),
@@ -249,7 +257,7 @@ pub mod bitcoin_mine_systems {
                 let mut rollover_offset: u64 = 0;
                 while rollover_offset < MAX_ROLLOVER_PHASES {
                     let next_phase_id = current_phase + rollover_offset;
-                    let mut next_phase: BitcoinPhaseLabor = world.read_model(next_phase_id);
+                    let mut next_phase: BitcoinPhaseLabor = world.read_model((game_id, next_phase_id));
 
                     // If reward not yet assigned, add rollover
                     if next_phase.reward_receiver_phase.is_zero() {
@@ -268,21 +276,21 @@ pub mod bitcoin_mine_systems {
             }
         }
 
-        fn get_current_phase(self: @ContractState) -> u64 {
+        fn get_current_phase(self: @ContractState, game_id: u32) -> u64 {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
-            let bitcoin_tick = TickImpl::get_bitcoin_phase_interval(ref world);
+            let bitcoin_tick = TickImpl::get_bitcoin_phase_interval(ref world, game_id);
             bitcoin_tick.current()
         }
 
-        fn get_mine_contribution(self: @ContractState, mine_id: ID, phase_id: u64) -> u128 {
+        fn get_mine_contribution(self: @ContractState, game_id: u32, mine_id: ID, phase_id: u64) -> u128 {
             let world: WorldStorage = self.world(DEFAULT_NS());
 
-            let phase_labor: BitcoinPhaseLabor = world.read_model(phase_id);
+            let phase_labor: BitcoinPhaseLabor = world.read_model((game_id, phase_id));
             if phase_labor.total_labor == 0 {
                 return 0;
             }
 
-            let mine_phase_labor: BitcoinMinePhaseLabor = world.read_model((phase_id, mine_id));
+            let mine_phase_labor: BitcoinMinePhaseLabor = world.read_model((game_id, phase_id, mine_id));
             (mine_phase_labor.labor_contributed * 10000) / phase_labor.total_labor
         }
     }

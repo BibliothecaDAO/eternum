@@ -67,19 +67,20 @@ export const ResourceProductionControls = ({
       production_cycles: [ticks],
       signer: account,
     };
-    const removeResourceOverrides = resourceManager.optimisticResourceUpdates(
-      (configManager.complexSystemResourceInputs[selectedResource] ?? []).map(({ resource, amount }) => ({
+    const resourceChanges = (configManager.complexSystemResourceInputs[selectedResource] ?? []).map(
+      ({ resource, amount }) => ({
         resourceId: resource,
         amount: -amount * ticks,
-      })),
+      }),
     );
 
     try {
-      await burn_resource_for_resource_production(calldata);
+      await resourceManager.submitProvisionalResourceTransaction(resourceChanges, account, () =>
+        burn_resource_for_resource_production(calldata),
+      );
     } catch (error) {
       console.error(error);
     } finally {
-      removeResourceOverrides();
       setIsLoading(false);
     }
   };
@@ -95,19 +96,18 @@ export const ResourceProductionControls = ({
         produced_resource_types: [selectedResource],
         signer: account,
       };
-      const removeResourceOverrides = resourceManager.optimisticResourceUpdates(
-        laborConfig.inputResources.map(({ resource, amount }) => ({
-          resourceId: resource,
-          amount: -amount * productionCycles,
-        })),
-      );
+      const resourceChanges = laborConfig.inputResources.map(({ resource, amount }) => ({
+        resourceId: resource,
+        amount: -amount * productionCycles,
+      }));
 
       try {
-        await burn_labor_for_resource_production(calldata);
+        await resourceManager.submitProvisionalResourceTransaction(resourceChanges, account, () =>
+          burn_labor_for_resource_production(calldata),
+        );
       } catch (error) {
         console.error(error);
       } finally {
-        removeResourceOverrides();
         setIsLoading(false);
       }
     }
@@ -209,6 +209,7 @@ export const ResourceProductionControls = ({
         />
       ) : null,
       canSelect: canUseLabor,
+      isRaw: false,
     },
     {
       label: "Resource Production",
@@ -224,22 +225,23 @@ export const ResourceProductionControls = ({
         />
       ),
       canSelect: true,
+      isRaw: true,
     },
   ].filter((tab) => tab.canSelect);
 
-  // Prevent selecting disabled tab if not available
-  const [selectedTab, setSelectedTab] = useState(0);
+  // The tab is derived from the production mode so the two can never disagree
+  const selectedTab = Math.max(
+    0,
+    selectableTabs.findIndex((tab) => tab.isRaw === useRawResources),
+  );
 
   useEffect(() => {
-    if (selectedTab >= selectableTabs.length) {
-      setSelectedTab(0);
-    }
-    // If labor panel isn't available, always stay on first (standard) tab & set to standard
+    // If labor panel isn't available, force resource production
     if (!canUseLabor && !useRawResources) {
       setUseRawResources(true);
     }
     // eslint-disable-next-line
-  }, [selectableTabs.length, canUseLabor]);
+  }, [canUseLabor, useRawResources]);
 
   if (rawCurrentInputs.length === 0 && laborCurrentInputs.length === 0) return null;
 
@@ -269,12 +271,7 @@ export const ResourceProductionControls = ({
           <Tabs
             selectedIndex={selectedTab}
             onChange={(index: any) => {
-              setSelectedTab(index);
-              if (selectableTabs[index].label === "Standard Production") {
-                setUseRawResources(true);
-              } else {
-                setUseRawResources(false);
-              }
+              setUseRawResources(selectableTabs[index].isRaw);
             }}
           >
             <Tabs.List className="p-2 w-full">

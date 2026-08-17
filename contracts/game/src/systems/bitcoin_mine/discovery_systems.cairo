@@ -6,6 +6,7 @@ use crate::models::map::Tile;
 pub trait IBitcoinMineDiscoverySystems<T> {
     fn find_treasure(
         self: @T,
+        game_id: u32,
         vrf_seed: u256,
         tile: Tile,
         caller: starknet::ContractAddress,
@@ -33,6 +34,7 @@ pub mod bitcoin_mine_discovery_systems {
     impl BitcoinMineDiscoverySystemsImpl of super::IBitcoinMineDiscoverySystems<ContractState> {
         fn find_treasure(
             self: @ContractState,
+            game_id: u32,
             vrf_seed: u256,
             tile: Tile,
             caller: starknet::ContractAddress,
@@ -53,7 +55,7 @@ pub mod bitcoin_mine_discovery_systems {
 
             // Check if bitcoin mine system is enabled
             let bitcoin_mine_config: BitcoinMineConfig = WorldConfigUtilImpl::get_member(
-                world, selector!("bitcoin_mine_config"),
+                world, game_id, selector!("bitcoin_mine_config"),
             );
             if !bitcoin_mine_config.enabled {
                 return (false, ExploreFind::None);
@@ -73,7 +75,9 @@ pub mod bitcoin_mine_discovery_systems {
             // Run lottery
             let won = iBitcoinMineDiscoveryImpl::lottery(map_config, vrf_seed, world);
             if won {
-                iBitcoinMineDiscoveryImpl::create(ref world, coord, troop_limit_config, troop_stamina_config, vrf_seed);
+                iBitcoinMineDiscoveryImpl::create(
+                    ref world, game_id, coord, troop_limit_config, troop_stamina_config, vrf_seed,
+                );
                 return (true, ExploreFind::BitcoinMine);
             }
 

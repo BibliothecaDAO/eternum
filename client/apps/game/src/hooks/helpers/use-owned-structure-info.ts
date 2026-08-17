@@ -4,13 +4,14 @@ import { ClientComponents, RealmInfo } from "@bibliothecadao/types";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { useMemo } from "react";
 import { resolveStructureUiCapabilities } from "@/ui/lib/structure-capabilities";
+import { gameEntityKey } from "@/dojo/game-scope";
 
 const buildOwnedStructureInfos = (
   playerStructures: ReturnType<typeof usePlayerStructures>,
   components: ClientComponents,
 ) =>
   playerStructures
-    .map((structure) => getRealmInfo(getEntityIdFromKeys([BigInt(structure.entityId)]), components))
+    .map((structure) => getRealmInfo(gameEntityKey([BigInt(structure.entityId)]), components))
     .filter((structureInfo): structureInfo is RealmInfo => Boolean(structureInfo));
 
 const useOwnedStructureInfos = () => {

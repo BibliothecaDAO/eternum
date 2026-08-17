@@ -10,51 +10,51 @@ import {
 describe("landing network state", () => {
   it("derives one shared preferred and connected state model for landing consumers", () => {
     expect(resolvePreferredLandingChain("mainnet")).toBe("mainnet");
-    expect(resolvePreferredLandingChain("slot")).toBe("slot");
-    expect(resolvePreferredLandingChain("slottest")).toBe("slot");
+    expect(resolvePreferredLandingChain("appchain")).toBe("appchain");
+    expect(resolvePreferredLandingChain("sepolia")).toBe("mainnet");
 
     const disconnected = resolveLandingNetworkState({
-      preferredChain: "slot",
+      preferredChain: "appchain",
       connectedChain: null,
       hasConnectedWallet: false,
     });
     expect(disconnected.status).toBe("disconnected");
-    expect(canInteractWithLandingChain(disconnected, "slot")).toBe(true);
+    expect(canInteractWithLandingChain(disconnected, "appchain")).toBe(true);
 
     const detecting = resolveLandingNetworkState({
-      preferredChain: "slot",
+      preferredChain: "appchain",
       connectedChain: null,
       hasConnectedWallet: true,
     });
     expect(detecting.status).toBe("detecting");
-    expect(canInteractWithLandingChain(detecting, "slot")).toBe(false);
+    expect(canInteractWithLandingChain(detecting, "appchain")).toBe(false);
 
     const matched = resolveLandingNetworkState({
-      preferredChain: "slot",
-      connectedChain: "slot",
+      preferredChain: "appchain",
+      connectedChain: "appchain",
       hasConnectedWallet: true,
     });
     expect(matched.status).toBe("matched");
-    expect(matched.connectedLandingChain).toBe("slot");
-    expect(canInteractWithLandingChain(matched, "slot")).toBe(true);
+    expect(matched.connectedLandingChain).toBe("appchain");
+    expect(canInteractWithLandingChain(matched, "appchain")).toBe(true);
     expect(canInteractWithLandingChain(matched, "mainnet")).toBe(false);
 
     const mismatched = resolveLandingNetworkState({
-      preferredChain: "slot",
+      preferredChain: "appchain",
       connectedChain: "mainnet",
       hasConnectedWallet: true,
     });
     expect(mismatched.status).toBe("mismatched");
     expect(mismatched.connectedLandingChain).toBe("mainnet");
-    expect(canInteractWithLandingChain(mismatched, "slot")).toBe(false);
+    expect(canInteractWithLandingChain(mismatched, "appchain")).toBe(false);
 
     const unsupportedWalletChain = resolveLandingNetworkState({
-      preferredChain: "slot",
+      preferredChain: "appchain",
       connectedChain: "local",
       hasConnectedWallet: true,
     });
     expect(unsupportedWalletChain.status).toBe("unsupported");
     expect(unsupportedWalletChain.connectedLandingChain).toBeNull();
-    expect(canInteractWithLandingChain(unsupportedWalletChain, "slot")).toBe(false);
+    expect(canInteractWithLandingChain(unsupportedWalletChain, "appchain")).toBe(false);
   });
 });

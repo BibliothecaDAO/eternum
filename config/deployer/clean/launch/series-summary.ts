@@ -1,5 +1,5 @@
 import { DEFAULT_CARTRIDGE_API_BASE } from "../constants";
-import { resolveDeploymentEnvironment } from "../environment";
+import { isMainnetDeploymentEnvironment, resolveDeploymentEnvironment } from "../environment";
 import { readFactorySeriesState } from "../factory/series";
 import type {
   LaunchSeriesGameRequest,
@@ -182,11 +182,17 @@ export async function assignSeriesGameNumbers(
     return summary;
   }
 
-  const seriesState = await readFactorySeriesState({
-    chain: summary.chain,
-    seriesName: summary.seriesName,
-    cartridgeApiBase: request.cartridgeApiBase || DEFAULT_CARTRIDGE_API_BASE,
-  });
+  const environment = resolveDeploymentEnvironment(request.environmentId);
+  const seriesState = isMainnetDeploymentEnvironment(environment)
+    ? await readFactorySeriesState({
+        chain: summary.chain,
+        seriesName: summary.seriesName,
+        cartridgeApiBase: request.cartridgeApiBase || DEFAULT_CARTRIDGE_API_BASE,
+      })
+    : {
+        exists: summary.seriesCreated,
+        lastGameNumber: Math.max(0, ...summary.games.map((game) => game.seriesGameNumber)),
+      };
   let nextGameNumber =
     Math.max(
       seriesState.lastGameNumber,

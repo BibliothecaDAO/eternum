@@ -36,7 +36,7 @@ describe("createIndexer", () => {
     await expect(
       createIndexer(
         {
-          env: "slot",
+          env: "appchain",
           rpcUrl: "https://rpc.example",
           namespaces: "s1_eternum",
           worldName: "bltz-fire-gate-42",
@@ -99,7 +99,7 @@ describe("createIndexer", () => {
               head_branch: "credence0x/clean-ci-game-launch",
               head_sha: "",
               created_at: new Date().toISOString(),
-              display_title: `Factory Torii Deployer / slot / bltz-fire-gate-42 / ${dispatchId}`,
+              display_title: `Factory Torii Deployer / appchain / bltz-fire-gate-42 / ${dispatchId}`,
             },
           ],
         });
@@ -116,7 +116,7 @@ describe("createIndexer", () => {
           head_branch: "credence0x/clean-ci-game-launch",
           head_sha: "",
           created_at: new Date().toISOString(),
-          display_title: `Factory Torii Deployer / slot / bltz-fire-gate-42 / ${dispatchId}`,
+          display_title: `Factory Torii Deployer / appchain / bltz-fire-gate-42 / ${dispatchId}`,
         });
       }
 
@@ -125,7 +125,7 @@ describe("createIndexer", () => {
 
     const result = await createIndexer(
       {
-        env: "slot",
+        env: "appchain",
         rpcUrl: "https://rpc.example",
         namespaces: "s1_eternum",
         worldName: "bltz-fire-gate-42",
@@ -169,7 +169,7 @@ describe("createIndexer", () => {
         };
         dispatchId = body.inputs.launch_request_id;
         expect(body.ref).toBe("credence0x/clean-ci-game-launch");
-        expect(body.inputs.env).toBe("slot");
+        expect(body.inputs.env).toBe("appchain");
         expect(body.inputs.torii_prefix).toBe("bltz-fire-gate-42");
         expect(body.inputs.rpc_url).toBe("https://rpc.example");
         expect(body.inputs.torii_world_address).toBe("0x123");
@@ -190,7 +190,7 @@ describe("createIndexer", () => {
               head_branch: "credence0x/clean-ci-game-launch",
               head_sha: "deadbeef",
               created_at: new Date().toISOString(),
-              display_title: `Factory Torii Deployer / slot / bltz-fire-gate-42 / ${dispatchId}`,
+              display_title: `Factory Torii Deployer / appchain / bltz-fire-gate-42 / ${dispatchId}`,
             },
           ],
         });
@@ -207,7 +207,7 @@ describe("createIndexer", () => {
           head_branch: "credence0x/clean-ci-game-launch",
           head_sha: "deadbeef",
           created_at: new Date().toISOString(),
-          display_title: `Factory Torii Deployer / slot / bltz-fire-gate-42 / ${dispatchId}`,
+          display_title: `Factory Torii Deployer / appchain / bltz-fire-gate-42 / ${dispatchId}`,
         });
       }
 
@@ -216,7 +216,7 @@ describe("createIndexer", () => {
 
     const result = await createIndexer(
       {
-        env: "slot",
+        env: "appchain",
         rpcUrl: "https://rpc.example",
         namespaces: "s1_eternum",
         worldName: "bltz-fire-gate-42",
@@ -295,7 +295,7 @@ describe("createIndexer", () => {
               head_branch: "credence0x/clean-ci-game-launch",
               head_sha: "",
               created_at: new Date().toISOString(),
-              display_title: `Factory Torii Deployer / slot / bltz-fire-gate-42 / ${dispatchId}`,
+              display_title: `Factory Torii Deployer / appchain / bltz-fire-gate-42 / ${dispatchId}`,
             },
           ],
         });
@@ -312,7 +312,7 @@ describe("createIndexer", () => {
           head_branch: "credence0x/clean-ci-game-launch",
           head_sha: "",
           created_at: new Date().toISOString(),
-          display_title: `Factory Torii Deployer / slot / bltz-fire-gate-42 / ${dispatchId}`,
+          display_title: `Factory Torii Deployer / appchain / bltz-fire-gate-42 / ${dispatchId}`,
         });
       }
 
@@ -321,7 +321,7 @@ describe("createIndexer", () => {
 
     const result = await createIndexer(
       {
-        env: "slot",
+        env: "appchain",
         rpcUrl: "https://rpc.example",
         namespaces: "s1_eternum",
         worldName: "bltz-fire-gate-42",

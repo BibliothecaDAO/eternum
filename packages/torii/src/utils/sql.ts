@@ -29,10 +29,61 @@ export function encodeQuery(query: string): string {
   return encodeURIComponent(query);
 }
 
+// s2 single-world SQL scope. Queries are authored against the legacy
+// `s1_eternum-` names with `{GF}` / `{GF:alias}` game-filter markers on every
+// per-game table; this chokepoint rewrites both per the active arm. On legacy
+// worlds markers resolve to `1=1` (s1 tables have no game_id column). Set at
+// bootstrap, before any query runs.
+let sqlNamespace = "s1_eternum";
+let sqlGameId = 0;
+
+export const setSqlGameScope = (namespace: string, gameId: number): void => {
+  sqlNamespace = namespace;
+  sqlGameId = gameId;
+};
+
+/** Active scope for this package's gRPC query builders (same source as SQL). */
+export const getSqlGameScope = (): { namespace: string; gameId: number } => ({
+  namespace: sqlNamespace,
+  gameId: sqlGameId,
+});
+
+const GAME_FILTER_MARKER = /\{GF(?::([A-Za-z_][\w]*))?\}/g;
+
+/** Explicit scope for queries that target a world other than the ambient one
+ * (e.g. entry-flow reads for a game the player has not bootstrapped into). */
+export interface SqlGameScope {
+  namespace: string;
+  gameId: number;
+}
+
+export const applySqlGameScope = (query: string, scope?: SqlGameScope): string => {
+  const namespace = scope?.namespace ?? sqlNamespace;
+  const gameId = scope?.gameId ?? sqlGameId;
+  let scoped = query;
+  if (namespace !== "s1_eternum") {
+    scoped = scoped.split("s1_eternum-").join(`${namespace}-`);
+  }
+  return scoped.replace(GAME_FILTER_MARKER, (_match, alias?: string) => {
+    if (gameId <= 0) return "1=1";
+    return alias ? `${alias}.game_id = ${gameId}` : `game_id = ${gameId}`;
+  });
+};
+
 /**
- * Constructs the full API URL with the encoded query
+ * Constructs the full API URL with the encoded query, scoped to the given
+ * scope when provided, else the active arm/game (see applySqlGameScope).
  */
-export function buildApiUrl(baseUrl: string, query: string): string {
+export function buildApiUrl(baseUrl: string, query: string, scope?: SqlGameScope): string {
+  return `${baseUrl}?query=${encodeQuery(applySqlGameScope(query, scope))}`;
+}
+
+/**
+ * Unscoped variant for queries that target OTHER worlds' torii (cross-world
+ * market/leaderboard reads against legacy s1 hosts) — the active game's
+ * namespace/filter rewrite must not apply to those.
+ */
+export function buildUnscopedApiUrl(baseUrl: string, query: string): string {
   return `${baseUrl}?query=${encodeQuery(query)}`;
 }
 
@@ -56,8 +107,9 @@ class FetchResponseError extends Error {
   constructor(
     readonly status: number,
     readonly statusText: string,
+    readonly body: string = "",
   ) {
-    super(statusText);
+    super(body ? `${statusText}: ${body}` : statusText);
     this.name = "FetchResponseError";
   }
 }
@@ -83,6 +135,11 @@ const createFetchTimeout = (timeoutMs: number): { signal?: AbortSignal; clear: (
 
 const isRetryableFetchError = (error: unknown): boolean => {
   if (error instanceof FetchResponseError) {
+    // A missing model table is a permanent condition (torii only creates a
+    // table once the first row of that model lands) — retrying is pure waste.
+    if (error.body.includes("no such table")) {
+      return false;
+    }
     return RETRYABLE_HTTP_STATUSES.has(error.status);
   }
 
@@ -125,7 +182,8 @@ const fetchJsonOnce = async (url: string, options: FetchWithErrorHandlingOptions
     const response = await fetch(url, timeout.signal ? { signal: timeout.signal } : undefined);
 
     if (!response.ok) {
-      throw new FetchResponseError(response.status, response.statusText);
+      const body = await response.text().catch(() => "");
+      throw new FetchResponseError(response.status, response.statusText, body.slice(0, 300));
     }
 
     return await response.json();

@@ -122,8 +122,8 @@ export const FactoryV2WatchWorkspace = ({
   onDeleteRun = () => {},
   adminSecret = "",
   hasAdminSecret = false,
-  deployerChain = "slot",
-  deployerEnvironmentLabel = "Slot",
+  deployerChain = "mainnet",
+  deployerEnvironmentLabel = "Mainnet",
   onFundPrize,
 }: FactoryV2WatchWorkspaceProps) => {
   const appearance = resolveFactoryModeAppearance(mode);

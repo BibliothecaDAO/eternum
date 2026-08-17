@@ -1,15 +1,12 @@
 import { Color } from "three";
 
 export type ArrivalGhostClearReason =
-  | "arrived"
-  | "tx_failed"
-  | "stale_timeout"
+  | "settled"
+  | "failed"
+  | "projection_occupied"
   | "army_removed"
   | "scene_destroyed"
-  | "superseded"
-  | "movement_evicted"
-  | "max_lifetime"
-  | "optimistic_aborted";
+  | "superseded";
 
 export interface ArrivalGhostVisualStyle {
   color: string;
@@ -28,13 +25,6 @@ export function shouldCreatePredictiveArrivalGhost(input: {
 
 function isPredictiveArrivalGhostMovement(movementType: "travel" | "explore"): boolean {
   return movementType === "travel" || movementType === "explore";
-}
-
-export function shouldHideSourceArmyOnTileRemoval(input: {
-  hasMovementInFlight: boolean;
-  reason: "tile" | "zero";
-}): boolean {
-  return input.reason !== "tile" || !input.hasMovementInFlight;
 }
 
 export function resolveArrivalGhostVisualStyle(input: { armyColor: string }): ArrivalGhostVisualStyle {

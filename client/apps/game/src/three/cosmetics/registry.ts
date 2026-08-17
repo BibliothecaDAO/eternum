@@ -13,7 +13,9 @@ let seeded = false;
 const ARMY_TROOP_TYPES = Object.values(TroopType) as TroopType[];
 const ARMY_TIERS = Object.values(TroopTier) as TroopTier[];
 const STRUCTURE_TYPES = Object.values(StructureType).filter((value) => typeof value === "number") as StructureType[];
-const COSMETIC_ROOT = "models/cosmetics";
+// Absolute so deep routes like /play/<chain>/<world>/map resolve assets from
+// the site root instead of relative to the current URL.
+const COSMETIC_ROOT = "/models/cosmetics";
 
 // Only using low-res models now - files are named by attributesRaw (e.g., 0x305020701.glb)
 const lowResPath = (attributesRaw: string) => `${COSMETIC_ROOT}/low-res/${attributesRaw}.glb`;
@@ -23,8 +25,8 @@ const lowResPath = (attributesRaw: string) => `${COSMETIC_ROOT}/low-res/${attrib
  */
 function normalizeAssetPath(path: string): string {
   if (path.startsWith("/")) return path;
-  if (path.startsWith("models/")) return path;
-  return `models/${path}`;
+  if (path.startsWith("models/")) return `/${path}`;
+  return `/models/${path}`;
 }
 
 /**

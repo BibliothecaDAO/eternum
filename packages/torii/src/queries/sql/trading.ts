@@ -10,7 +10,8 @@ export const TRADING_QUERIES = {
       se.timestamp,
       s.owner
     FROM \`s1_eternum-SwapEvent\` se
-    LEFT JOIN \`s1_eternum-Structure\` s ON se.entity_id = s.entity_id
+    LEFT JOIN \`s1_eternum-Structure\` s ON se.entity_id = s.entity_id AND {GF:s}
+    WHERE {GF:se}
     ORDER BY se.timestamp DESC;
   `,
 

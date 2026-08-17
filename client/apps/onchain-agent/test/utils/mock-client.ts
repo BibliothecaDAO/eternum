@@ -229,7 +229,6 @@ export function createMockClient() {
         },
       ]),
       fetchResourceBalancesWithProduction,
-      fetchResourceBalancesAndProduction: fetchResourceBalancesWithProduction,
       fetchAllArmiesMapData: vi.fn().mockResolvedValue([
         {
           entity_id: 100,

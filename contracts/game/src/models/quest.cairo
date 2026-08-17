@@ -8,6 +8,8 @@ use crate::models::position::Coord;
 #[derive(Copy, Drop, Serde, Introspect)]
 #[dojo::model]
 pub struct QuestTile {
+    #[key]
+    pub game_id: u32,
     /// Unique identifier for the quest tile.
     #[key]
     pub id: u32,
@@ -32,6 +34,8 @@ pub struct QuestTile {
 #[derive(Copy, Drop, Serde, Introspect)]
 #[dojo::model]
 pub struct Quest {
+    #[key]
+    pub game_id: u32,
     /// The unique identifier of the game token minted when the quest was started.
     #[key]
     pub game_token_id: u64,
@@ -69,6 +73,8 @@ pub struct QuestDetails {
 #[derive(Copy, Drop, Serde, Introspect)]
 #[dojo::model]
 pub struct QuestRegistrations {
+    #[key]
+    pub game_id: u32,
     /// The ID of the QuestTile.
     #[key]
     pub quest_tile_id: u32,
@@ -83,6 +89,8 @@ pub struct QuestRegistrations {
 #[derive(Introspect, Copy, Drop, Serde)]
 #[dojo::model]
 pub struct QuestGameRegistry {
+    #[key]
+    pub game_id: u32,
     /// A key, often representing a version or identifier for the registry.
     #[key]
     pub key: felt252,
@@ -94,6 +102,8 @@ pub struct QuestGameRegistry {
 #[derive(Introspect, Copy, Drop, Serde)]
 #[dojo::model]
 pub struct QuestLevels {
+    #[key]
+    pub game_id: u32,
     /// The address of the quest game contract.
     #[key]
     pub game_address: ContractAddress,
@@ -116,10 +126,11 @@ pub struct Level {
 #[derive(Copy, Drop, Serde, Introspect)]
 #[dojo::model]
 pub struct QuestFeatureFlag {
+    #[key]
+    pub game_id: u32,
     /// A key, often representing a version or identifier for the flag.
     #[key]
     pub key: felt252,
     /// Boolean flag indicating if the quest feature is currently enabled.
     pub enabled: bool,
 }
-

@@ -3,61 +3,63 @@ import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 
-function readSource(relativePath: string): string {
-  const currentDir = dirname(fileURLToPath(import.meta.url));
-  return readFileSync(resolve(currentDir, relativePath), "utf8");
-}
+const currentDir = dirname(fileURLToPath(import.meta.url));
+const readWorldmap = () => readFileSync(resolve(currentDir, "worldmap.tsx"), "utf8");
+const readProjection = () =>
+  readFileSync(resolve(currentDir, "../../../../../../packages/core/src/sync/world-spatial-projection.ts"), "utf8");
+const readWorldUpdateListener = () =>
+  readFileSync(resolve(currentDir, "../../../../../../packages/core/src/systems/world-update-listener.ts"), "utf8");
+const readMobileWorldmap = () =>
+  readFileSync(
+    resolve(
+      currentDir,
+      "../../../../../../client/apps/eternum-mobile/src/shared/lib/three/scenes/worldmap/hexagon-map.ts",
+    ),
+    "utf8",
+  );
 
-describe("worldmap army tile-sync recovery", () => {
-  it("tracks authoritative tile sync timestamps separately from generic army updates", () => {
-    const src = readSource("worldmap.tsx");
-    expect(src).toContain("private armyLastTileSyncAt: Map<ID, number> = new Map()");
+describe("worldmap army projection recovery", () => {
+  it("derives army existence and position from ExplorerTroops", () => {
+    const source = readProjection();
+
+    expect(source).toContain("explorerTroopsComponent.update$.subscribe");
+    expect(source).toContain("resolveArmyRenderable(explorerTroops)");
+    expect(source).toContain("this.armyIndex.replace(nextArmies)");
   });
 
-  it("records tile sync after ArmyManager applies the tile update", () => {
-    const src = readSource("worldmap.tsx");
+  it("routes worldmap side effects through projection changes", () => {
+    const source = readWorldmap();
+    const lifecycleStart = source.indexOf("private bindWorldSpatialProjectionLifecycle()");
+    const lifecycleEnd = source.indexOf("private bindWorldmapCameraViewLifecycle()", lifecycleStart);
+    const lifecycle = source.slice(lifecycleStart, lifecycleEnd);
 
-    const listenerStart = src.indexOf(
-      "this.worldUpdateListener.Army.onTileUpdate(async (update: ExplorerTroopsTileSystemUpdate) => {",
-    );
-    expect(listenerStart).toBeGreaterThan(-1);
-
-    const listenerBody = src.slice(listenerStart, listenerStart + 4400);
-    const applyPos = listenerBody.indexOf("await this.armyManager.onTileUpdate(update)");
-    const syncPos = listenerBody.indexOf("this.armyLastTileSyncAt.set(update.entityId, Date.now())");
-
-    expect(applyPos).toBeGreaterThan(-1);
-    expect(syncPos).toBeGreaterThan(-1);
-    expect(syncPos).toBeGreaterThan(applyPos);
+    expect(lifecycle).toContain("this.worldSpatialProjection.subscribeArmies");
+    expect(lifecycle).toContain("this.syncProjectedArmyPathfinding(changes)");
+    expect(lifecycle).toContain("this.handleProjectedArmyChanges(changes)");
   });
 
-  it("does not advance tile-sync recovery from troop updates", () => {
-    const src = readSource("worldmap.tsx");
+  it("does not keep desktop TileOpt army subscriptions or removal timestamps", () => {
+    const source = readWorldmap();
 
-    const listenerStart = src.indexOf("this.worldUpdateListener.Army.onExplorerTroopsUpdate((update) => {");
-    expect(listenerStart).toBeGreaterThan(-1);
-
-    const listenerBody = src.slice(listenerStart, listenerStart + 1400);
-    expect(listenerBody).not.toContain("this.armyLastTileSyncAt.set(update.entityId");
+    expect(source).not.toContain("this.worldUpdateListener.Army.onTileUpdate");
+    expect(source).not.toContain("this.worldUpdateListener.Army.onExplorerTroopsUpdate");
+    expect(source).not.toContain("armyLastProjectionSyncAt");
+    expect(source).not.toContain("scheduleArmyRemoval");
   });
 
-  it("uses tile-sync timestamps for scheduled removal cancellation and deferred retry", () => {
-    const src = readSource("worldmap.tsx");
+  it("deletes the shared TileOpt army listener and death heuristic", () => {
+    const source = readWorldUpdateListener();
 
-    const scheduleStart = src.indexOf("private scheduleArmyRemoval(");
-    const retryStart = src.indexOf("private retryDeferredChunkRemovals()");
-    const helperStart = src.indexOf("private resolveLastArmyTileSyncAt(");
-    expect(scheduleStart).toBeGreaterThan(-1);
-    expect(retryStart).toBeGreaterThan(-1);
-    expect(helperStart).toBeGreaterThan(-1);
+    expect(source).not.toContain("public get Army()");
+    expect(source).not.toContain("Army.onDeadArmy");
+    expect(source).not.toContain('processSequentialUpdate("army-tile"');
+  });
 
-    const scheduleBody = src.slice(scheduleStart, scheduleStart + 3200);
-    const retryBody = src.slice(retryStart, retryStart + 900);
-    const helperBody = src.slice(helperStart, helperStart + 300);
+  it("keeps mobile on ExplorerTroops RECS after the shared listener deletion", () => {
+    const source = readMobileWorldmap();
 
-    expect(scheduleBody).toContain("this.resolveLastArmyTileSyncAt(entityId)");
-    expect(retryBody).toContain("this.resolveLastArmyTileSyncAt(entityId)");
-    expect(helperBody).toContain("this.armyLastTileSyncAt.get(entityId)");
-    expect(helperBody).not.toContain("this.armyLastLiveUpdateAt.get(entityId)");
+    expect(source).toContain("installArmyRecsProjection");
+    expect(source).toContain("components.ExplorerTroops");
+    expect(source).not.toContain("systemManager.Army");
   });
 });

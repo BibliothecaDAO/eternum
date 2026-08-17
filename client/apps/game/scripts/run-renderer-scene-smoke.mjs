@@ -5,9 +5,8 @@ import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const DEFAULT_BASE_URL = "https://127.0.0.1:4173";
-const DEFAULT_CHAIN = "slot";
+const DEFAULT_CHAIN = "appchain";
 const DEFAULT_SCENES = ["map", "hex"];
-const DEFAULT_WORLD_NAME = "eternum-blitz-slot-4";
 const REQUIRED_RENDERER_PARITY_FEATURES = new Set(["environmentIbl", "toneMappingControl", "bloom"]);
 const VALID_SCENES = new Set(["map", "hex", "travel"]);
 const DEFAULT_WAIT_MS = 20000;
@@ -19,12 +18,9 @@ const RETRYABLE_AGENT_BROWSER_FAILURE_PATTERNS = [
   "Failed to read: Resource temporarily unavailable",
   "daemon may be busy or unresponsive",
 ];
-const FACTORY_SQL_BASE_URLS = {
-  local: [],
+const CARTRIDGE_FACTORY_SQL_BASE_URLS = {
   mainnet: [`${DEFAULT_CARTRIDGE_API_BASE}/x/eternum-factory-mainnet/torii/sql`],
   sepolia: [`${DEFAULT_CARTRIDGE_API_BASE}/x/eternum-factory-sepolia/torii/sql`],
-  slot: [`${DEFAULT_CARTRIDGE_API_BASE}/x/eternum-factory-slot-d/torii/sql`],
-  slottest: [`${DEFAULT_CARTRIDGE_API_BASE}/x/eternum-factory-slot-d/torii/sql`],
 };
 const WORLD_DISCOVERY_LIMIT = 200;
 const WORLD_DISCOVERY_TIMEOUT_MS = 2500;
@@ -55,13 +51,11 @@ export function normalizeSceneList(value) {
   return scenes;
 }
 
-export function buildSceneSmokeUrl({
-  baseUrl,
-  chain = DEFAULT_CHAIN,
-  rendererMode,
-  scene,
-  worldName = DEFAULT_WORLD_NAME,
-}) {
+export function buildSceneSmokeUrl({ baseUrl, chain = DEFAULT_CHAIN, rendererMode, scene, worldName }) {
+  if (!worldName) {
+    throw new Error("buildSceneSmokeUrl requires a worldName");
+  }
+
   const url = new URL(baseUrl);
   url.pathname = `/play/${chain}/${encodeURIComponent(worldName)}/${scene}`;
   url.searchParams.set("col", "0");
@@ -95,16 +89,57 @@ export function decodePaddedWorldName(hex) {
   return output;
 }
 
-function buildFactoryWorldQueryUrl(factorySqlBaseUrl) {
-  const url = new URL(factorySqlBaseUrl);
+// The smoke targets the configured appchain world directly. Games live in
+// that world's GameRegistry; the legacy factory deployment table is not part
+// of the s2 indexer.
+function resolveAppchainToriiBaseUrl(env = process.env) {
+  return String(env.TORII_URL || env.VITE_PUBLIC_TORII || "").replace(/\/+$/, "");
+}
+
+function resolveFactorySqlBaseUrls(chain) {
+  return CARTRIDGE_FACTORY_SQL_BASE_URLS[chain] ?? [];
+}
+
+function buildAppchainGameQueryUrl(toriiBaseUrl) {
+  const url = new URL(`${toriiBaseUrl}/sql`);
   url.searchParams.set(
     "query",
-    `SELECT name FROM [wf-WorldDeployed] ORDER BY internal_created_at DESC LIMIT ${WORLD_DISCOVERY_LIMIT};`,
+    `SELECT registry.name
+     FROM [s2-GameRegistry] registry
+     INNER JOIN [s2-WorldConfig] config ON config.game_id = registry.game_id
+     ORDER BY registry.game_id DESC
+     LIMIT ${WORLD_DISCOVERY_LIMIT};`,
   );
   return url;
 }
 
-async function fetchCandidateWorldNames(factorySqlBaseUrl) {
+async function fetchAppchainGameNames(toriiBaseUrl) {
+  const response = await fetch(buildAppchainGameQueryUrl(toriiBaseUrl), {
+    signal: AbortSignal.timeout(WORLD_DISCOVERY_TIMEOUT_MS),
+  });
+
+  if (!response.ok) {
+    throw new Error(`Appchain game discovery failed: ${response.status} ${response.statusText}`);
+  }
+
+  const rows = await response.json();
+  if (!Array.isArray(rows)) {
+    return [];
+  }
+
+  return rows.map((row) => decodePaddedWorldName(row?.name)).filter(Boolean);
+}
+
+function buildFactoryWorldQueryUrl(factorySqlBaseUrl) {
+  const url = new URL(factorySqlBaseUrl);
+  url.searchParams.set(
+    "query",
+    `SELECT name, address FROM [wf-WorldDeployed] ORDER BY internal_created_at DESC LIMIT ${WORLD_DISCOVERY_LIMIT};`,
+  );
+  return url;
+}
+
+async function fetchCandidateWorlds(factorySqlBaseUrl) {
   const response = await fetch(buildFactoryWorldQueryUrl(factorySqlBaseUrl), {
     signal: AbortSignal.timeout(WORLD_DISCOVERY_TIMEOUT_MS),
   });
@@ -119,7 +154,7 @@ async function fetchCandidateWorldNames(factorySqlBaseUrl) {
   }
 
   const seenNames = new Set();
-  const worldNames = [];
+  const worlds = [];
   for (const row of rows) {
     const decodedName = decodePaddedWorldName(row?.name);
     if (!decodedName || seenNames.has(decodedName)) {
@@ -127,13 +162,14 @@ async function fetchCandidateWorldNames(factorySqlBaseUrl) {
     }
 
     seenNames.add(decodedName);
-    worldNames.push(decodedName);
+    worlds.push({ address: typeof row?.address === "string" ? row.address : "", name: decodedName });
   }
 
-  return worldNames;
+  return worlds;
 }
 
-async function isWorldSceneSmokeCandidateAlive(worldName) {
+// Cartridge chains give every world its own torii, so alive = it responds.
+async function isCartridgeWorldAlive(worldName) {
   const probeUrl = new URL(`${DEFAULT_CARTRIDGE_API_BASE}/x/${encodeURIComponent(worldName)}/torii/sql`);
   probeUrl.searchParams.set("query", "SELECT 1 AS ok LIMIT 1;");
 
@@ -148,23 +184,47 @@ async function isWorldSceneSmokeCandidateAlive(worldName) {
   }
 }
 
+async function resolveAppchainSceneSmokeGameName() {
+  const toriiBaseUrl = resolveAppchainToriiBaseUrl();
+  if (!toriiBaseUrl) {
+    throw new Error(
+      "No appchain torii configured for world discovery: set TORII_URL or VITE_PUBLIC_TORII, or pass --world.",
+    );
+  }
+
+  const [latestConfiguredGame] = await fetchAppchainGameNames(toriiBaseUrl);
+  if (latestConfiguredGame) {
+    return latestConfiguredGame;
+  }
+
+  throw new Error('No live world found for chain "appchain": pass --world to target one explicitly.');
+}
+
+async function resolveCartridgeSceneSmokeWorldName(chain) {
+  const factorySqlBaseUrls = resolveFactorySqlBaseUrls(chain);
+  if (factorySqlBaseUrls.length === 0) {
+    throw new Error(`No factory configured for chain "${chain}": pass --world to target one explicitly.`);
+  }
+
+  for (const factorySqlBaseUrl of factorySqlBaseUrls) {
+    const candidates = await fetchCandidateWorlds(factorySqlBaseUrl);
+
+    for (const world of candidates) {
+      if (await isCartridgeWorldAlive(world.name)) {
+        return world.name;
+      }
+    }
+  }
+
+  throw new Error(`No live world found for chain "${chain}": pass --world to target one explicitly.`);
+}
+
 export async function resolveSceneSmokeWorldName({ chain, requestedWorldName }) {
   if (requestedWorldName) {
     return requestedWorldName;
   }
 
-  const factorySqlBaseUrls = FACTORY_SQL_BASE_URLS[chain] ?? [];
-  for (const factorySqlBaseUrl of factorySqlBaseUrls) {
-    const candidateWorldNames = await fetchCandidateWorldNames(factorySqlBaseUrl);
-
-    for (const worldName of candidateWorldNames) {
-      if (await isWorldSceneSmokeCandidateAlive(worldName)) {
-        return worldName;
-      }
-    }
-  }
-
-  return DEFAULT_WORLD_NAME;
+  return chain === "appchain" ? resolveAppchainSceneSmokeGameName() : resolveCartridgeSceneSmokeWorldName(chain);
 }
 
 export function evaluateSceneSmokeResult({ canvasExists, errors, expectedPathname, openedUrl, unableToStartCount }) {
@@ -456,7 +516,7 @@ async function runSceneSmoke({
 async function main(argv) {
   const baseUrl = readOption(argv, "--base-url", DEFAULT_BASE_URL);
   const chain = readOption(argv, "--chain", DEFAULT_CHAIN);
-  const rendererMode = readOption(argv, "--renderer-mode", "experimental-webgpu-auto");
+  const rendererMode = readOption(argv, "--renderer-mode", "webgpu-auto");
   const scenes = normalizeSceneList(readOption(argv, "--scenes", ""));
   const waitMs = Number(readOption(argv, "--wait-ms", String(DEFAULT_WAIT_MS)));
   const requestedWorldName = readOption(argv, "--world", "");

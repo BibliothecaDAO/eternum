@@ -3,9 +3,10 @@ import {
   resolveConnectionHealthToriiBaseUrl,
   subscribeToToriiHeartbeat,
 } from "@/dojo/connection-health-monitor";
+import { DEV_MODE_ENABLED } from "@/utils/dev-mode";
 import { createConnectionDeadEndRecoveryGate } from "@/dojo/connection-dead-end-recovery-gate";
 import { createToriiHeartbeatLifecycle } from "@/dojo/torii-heartbeat-lifecycle";
-import { cancelEntityStreamSubscription, initialSync, resubscribeGlobalEntityStream } from "@/dojo/sync";
+import { cancelGameSyncWriter, initialSync, recoverGameSyncSession } from "@/dojo/sync";
 import { probeToriiHealth } from "@/dojo/torii-health-probe";
 import { fetchServerWorldAvailability } from "@/dojo/fetch-server-world-availability";
 import { requestGameRebootstrap } from "@/game-entry/bootstrap-controller";
@@ -29,6 +30,7 @@ import { dojoConfig } from "../../../dojo-config";
 import { env } from "../../../env";
 import { useUIStore } from "../../hooks/store/use-ui-store";
 import { ArmyMovementLatencyOverlay } from "../debug/army-movement-latency-overlay";
+import { DevSyncOverlay } from "../debug/dev-sync-overlay";
 import { Tooltip } from "../design-system/molecules/tooltip";
 import { NetworkStatusBanner } from "../features/world/components/network-status-banner";
 import { triggerConnectionForceReconnect } from "../features/world/components/network-status-retry";
@@ -76,10 +78,11 @@ export const World = ({ backgroundImage }: { backgroundImage: string }) => {
         <HUD />
 
         {/* Utility overlays */}
-        <Leva hidden={!env.VITE_PUBLIC_GRAPHICS_DEV} collapsed titleBar={{ position: { x: 0, y: 50 } }} />
+        <Leva hidden={!DEV_MODE_ENABLED} collapsed titleBar={{ position: { x: 0, y: 50 } }} />
         <Tooltip />
         <VersionDisplay />
         <ArmyMovementLatencyOverlay />
+        <DevSyncOverlay />
         <div id="labelrenderer" className="absolute top-0 pointer-events-none z-10" />
       </div>
     </>
@@ -192,7 +195,7 @@ const ConnectionMonitor = () => {
     void setNetworkHealthScopeTags({ toriiBaseUrl, walletAddress });
 
     const heartbeatLifecycle = createToriiHeartbeatLifecycle({
-      subscribe: () => subscribeToToriiHeartbeat(setupRef.current.network.toriiClient),
+      subscribe: () => subscribeToToriiHeartbeat(setupRef.current.network.toriiClient, toriiBaseUrl),
     });
     void heartbeatLifecycle.start();
 
@@ -206,12 +209,8 @@ const ConnectionMonitor = () => {
 
     const monitor = new ConnectionHealthMonitor({
       onReconnectSpatial: async () => {
-        addNetworkBreadcrumb({ event: "reconnect_start", streamType: "spatial" });
-        addNetworkBreadcrumb({
-          event: "reconnect_success",
-          streamType: "spatial",
-          status: "global_initial_sync_owned",
-        });
+        // Connection health still exposes global/spatial status for the UI,
+        // but both are fed by the one game sync session recovered below.
       },
       onReconnectGlobal: async () => {
         addNetworkBreadcrumb({ event: "reconnect_start", streamType: "global" });
@@ -219,9 +218,9 @@ const ConnectionMonitor = () => {
           if (env.VITE_PUBLIC_TORII_LIGHTWEIGHT_RECONNECT) {
             // Re-open just the global stream; config/guilds/structures already
             // live in RECS and a full initialSync would turn a blip into a reboot.
-            await resubscribeGlobalEntityStream(setup, { logging: false });
+            await recoverGameSyncSession();
           } else {
-            cancelEntityStreamSubscription();
+            cancelGameSyncWriter();
             await initialSync(setup, state, () => {}, { logging: false, reportProgress: false });
           }
           addNetworkBreadcrumb({ event: "reconnect_success", streamType: "global" });

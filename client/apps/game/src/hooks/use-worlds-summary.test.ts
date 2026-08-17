@@ -5,52 +5,67 @@ const reactQueryMocks = vi.hoisted(() => ({
   useQuery: vi.fn(),
 }));
 
-vi.mock("@tanstack/react-query", () => reactQueryMocks);
-vi.mock("../../env", () => ({
-  env: {
-    VITE_PUBLIC_REALTIME_URL: "https://realtime.example",
-  },
+const directoryMocks = vi.hoisted(() => ({
+  getWorldDirectory: vi.fn(),
 }));
+
+const summaryMocks = vi.hoisted(() => ({
+  fetchAppchainWorldsSummary: vi.fn(),
+}));
+
+vi.mock("@tanstack/react-query", () => reactQueryMocks);
+vi.mock("@/runtime/world/world-directory", () => directoryMocks);
+vi.mock("./appchain-worlds-summary", () => summaryMocks);
 
 import { useWorldsSummary, fetchWorldsSummary } from "./use-worlds-summary";
 
-const mockFetch = vi.fn<typeof globalThis.fetch>();
+const blitzWorld = { id: "blitz", toriiBaseUrl: "https://torii.example" };
+const eternumWorld = { id: "eternum", toriiBaseUrl: "https://torii.example" };
 
 beforeEach(() => {
-  vi.stubGlobal("fetch", mockFetch);
   reactQueryMocks.useQuery.mockReset();
+  directoryMocks.getWorldDirectory.mockReset();
+  summaryMocks.fetchAppchainWorldsSummary.mockReset();
 });
 
 afterEach(() => {
-  mockFetch.mockReset();
   vi.restoreAllMocks();
 });
 
 describe("fetchWorldsSummary", () => {
-  it("hits the /api/worlds/summary endpoint and parses the JSON array", async () => {
-    const payload = [{ name: "alpha", chain: "mainnet", alive: true, mode: "blitz" }];
-    mockFetch.mockResolvedValueOnce(new Response(JSON.stringify(payload), { status: 200 }));
+  it("unions every directory world's games list", async () => {
+    directoryMocks.getWorldDirectory.mockReturnValue([blitzWorld, eternumWorld]);
+    summaryMocks.fetchAppchainWorldsSummary.mockImplementation(async (world: { id: string }) =>
+      world.id === "blitz"
+        ? [{ name: "quickblitz", worldId: "blitz", gameId: 7 }]
+        : [{ name: "season1", worldId: "eternum", gameId: 1 }],
+    );
 
-    const result = await fetchWorldsSummary("https://realtime.example");
+    const result = await fetchWorldsSummary();
+
+    expect(result).toHaveLength(2);
+    expect(result.map((game) => game.name)).toEqual(["quickblitz", "season1"]);
+    expect(summaryMocks.fetchAppchainWorldsSummary).toHaveBeenCalledTimes(2);
+  });
+
+  it("drops a failing world's contribution instead of failing the whole list", async () => {
+    directoryMocks.getWorldDirectory.mockReturnValue([blitzWorld, eternumWorld]);
+    summaryMocks.fetchAppchainWorldsSummary.mockImplementation(async (world: { id: string }) => {
+      if (world.id === "eternum") throw new Error("torii down");
+      return [{ name: "quickblitz", worldId: "blitz", gameId: 7 }];
+    });
+
+    const result = await fetchWorldsSummary();
 
     expect(result).toHaveLength(1);
-    expect(result[0]).toMatchObject({ name: "alpha", chain: "mainnet", alive: true });
-    const [url] = mockFetch.mock.calls[0]!;
-    expect(url).toBe("https://realtime.example/api/worlds/summary");
+    expect(result[0]).toMatchObject({ name: "quickblitz", worldId: "blitz" });
   });
 
-  it("throws on non-2xx response so react-query retry can kick in", async () => {
-    mockFetch.mockResolvedValueOnce(new Response(null, { status: 503 }));
+  it("returns an empty array when every world has no games", async () => {
+    directoryMocks.getWorldDirectory.mockReturnValue([blitzWorld]);
+    summaryMocks.fetchAppchainWorldsSummary.mockResolvedValue([]);
 
-    await expect(fetchWorldsSummary("https://realtime.example")).rejects.toThrow();
-  });
-
-  it("returns an empty array when payload is empty", async () => {
-    mockFetch.mockResolvedValueOnce(new Response(JSON.stringify([]), { status: 200 }));
-
-    const result = await fetchWorldsSummary("https://realtime.example");
-
-    expect(result).toEqual([]);
+    expect(await fetchWorldsSummary()).toEqual([]);
   });
 });
 

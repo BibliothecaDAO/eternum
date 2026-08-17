@@ -17,7 +17,8 @@ describe("Hexception build affordability", () => {
     );
     expect(source).toContain('toast.error("Insufficient resources to build here.");');
     expect(source).toMatch(
-      /if \(!this\.canAffordPreviewBuilding\(structureEntityId, buildingType\.type, useSimpleCost\)\) \{[\s\S]*reserveOccupiedBuildSpot\(structureEntityId, normalizedCoords\);/,
+      /if \(!this\.canAffordPreviewBuilding\(structureEntityId, buildingType\.type, useSimpleCost\)\) \{[\s\S]*this\.tileManager\.placeBuilding\(/,
     );
+    expect(source).not.toContain("reserveOccupiedBuildSpot");
   });
 });

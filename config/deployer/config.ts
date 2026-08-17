@@ -54,6 +54,10 @@ import { applyBiomeClimateDefaults } from "./biome-climate-defaults";
 import { buildBankCoordsForMapCenterOffset, deriveMapCenterOffsetFromWorldConfigTx } from "./clean/eternum/banks";
 import { addCommas, hourMinutesSeconds, inGameAmount, shortHexAddress } from "../utils/formatting";
 
+// "0x0" is a configured-but-absent peripheral (e.g. fee-free appchain) — a
+// grant against it would target a nonexistent contract and revert the batch.
+const isUnsetAddress = (address?: string | null): boolean => !address || /^0x0*$/.test(address);
+
 // Browser-compatible: Make fs optional for browser environments
 let fs: any;
 try {
@@ -1235,8 +1239,36 @@ export const setTradeConfig = async (config: Config) => {
   console.log(chalk.green(`\n    ✔ Trade configured `) + chalk.gray(tx.statusReceipt) + "\n");
 };
 
+/**
+ * Blitz derives the season schedule from its registration window, so both
+ * setters must agree on the same window within a run. Mirrors
+ * `getBlitzRegistrationWindow` in config/deployer/clean/config/native-steps.ts.
+ */
+let blitzRegistrationWindow: { registrationStartAt: number; registrationEndAt: number } | null = null;
+
+const getBlitzRegistrationWindow = (config: Config) => {
+  if (blitzRegistrationWindow) return blitzRegistrationWindow;
+
+  const periodSeconds = config.config.blitz.registration.registration_period_seconds;
+  let registrationStartAt =
+    Math.floor(new Date().getTime() / 1000) + config.config.blitz.registration.registration_delay_seconds;
+  let registrationEndAt = registrationStartAt + periodSeconds;
+
+  // A pinned start time means registration must close immediately before it.
+  const startMainAt = config.config.season.startMainAt;
+  if (startMainAt && startMainAt > 0) {
+    registrationEndAt = startMainAt - 1;
+    registrationStartAt = registrationEndAt - periodSeconds;
+  }
+
+  blitzRegistrationWindow = { registrationStartAt, registrationEndAt };
+  return blitzRegistrationWindow;
+};
+
 export const setSeasonConfig = async (config: Config) => {
   if (config.config.blitz.mode.on) {
+    // Blitz writes its season config inside setBlitzRegistrationConfig, where
+    // the schedule is derived from the registration window.
     console.log(chalk.yellow("Blitz mode is on, skipping season configuration \n"));
     return;
   }
@@ -1309,11 +1341,7 @@ export const setSeasonConfig = async (config: Config) => {
 };
 
 export const setVRFConfig = async (config: Config) => {
-  if (
-    config.config.setup?.chain !== "mainnet" &&
-    config.config.setup?.chain !== "sepolia" &&
-    config.config.setup?.chain !== "slot"
-  ) {
+  if (config.config.setup?.chain !== "mainnet" && config.config.setup?.chain !== "sepolia") {
     console.log(chalk.yellow("    ⚠ Skipping VRF configuration for local environment"));
     return;
   }
@@ -1791,17 +1819,8 @@ export const setBlitzRegistrationConfig = async (config: Config) => {
     return;
   }
 
-  let registration_delay_seconds = config.config.blitz.registration.registration_delay_seconds;
-  let registration_period_seconds = config.config.blitz.registration.registration_period_seconds;
-
-  let registration_start_at = Math.floor(new Date().getTime() / 1000) + registration_delay_seconds;
-  let registration_end_at = registration_start_at + registration_period_seconds;
-
-  let startMainAt = config.config.season.startMainAt;
-  if (startMainAt && startMainAt > 0) {
-    registration_end_at = startMainAt - 1;
-    registration_start_at = registration_end_at - registration_period_seconds;
-  }
+  const { registrationStartAt: registration_start_at, registrationEndAt: registration_end_at } =
+    getBlitzRegistrationWindow(config);
 
   const entryTokenClassHash = config.config.blitz.registration.entry_token_class_hash;
   const entryTokenIpfsCid = byteArray.byteArrayFromString(config.config.blitz.registration.entry_token_ipfs_cid);
@@ -1942,7 +1961,7 @@ export const grantCollectibleLootChestMinterRole = async (config: Config) => {
     return;
   }
 
-  if (!config.config.blitz?.registration?.collectibles_lootchest_address) {
+  if (isUnsetAddress(config.config.blitz?.registration?.collectibles_lootchest_address)) {
     console.log(chalk.yellow("⏭️  Skipping minter role grant (No loot chest address configured)"));
     return;
   }
@@ -1981,7 +2000,7 @@ export const grantCollectibleEliteNftMinterRole = async (config: Config) => {
     return;
   }
 
-  if (!config.config.blitz?.registration?.collectibles_elitenft_address) {
+  if (isUnsetAddress(config.config.blitz?.registration?.collectibles_elitenft_address)) {
     console.log(chalk.yellow("⏭️  Skipping minter role grant (No elite NFT address configured)"));
     return;
   }

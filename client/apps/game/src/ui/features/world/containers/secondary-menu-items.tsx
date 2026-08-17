@@ -1,28 +1,30 @@
 import { useTransactionStore } from "@/hooks/store/use-transaction-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { useLatestFeaturesSeen } from "@/hooks/use-latest-features-seen";
-import { useLandingLeaderboardStore } from "@/services/leaderboard/use-landing-leaderboard-store";
 import { BuildingThumbs } from "@/ui/config";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import CircleButton from "@/ui/design-system/molecules/circle-button";
+import { normalizeLeaderboardAddress } from "@/ui/features/social/player/finalized-blitz-leaderboard";
+import { useInGameLeaderboard } from "@/ui/features/social/player/use-in-game-leaderboard";
 import { NetworkStatusPill } from "@/ui/features/world/components/network-status-pill";
 import { triggerConnectionForceReconnect } from "@/ui/features/world/components/network-status-retry";
 import { latestFeatures, leaderboard, rewards, settings, transactions } from "@/ui/features/world";
 import { Controller } from "@/ui/modules/controller/controller";
 import { TOP_PILL, TOP_PILL_TEXT } from "@/ui/features/world/containers/top-header/top-pill";
-import { useDojo } from "@bibliothecadao/react";
-import { useEntityQuery } from "@dojoengine/react";
+
+import { useDojo, usePlayers } from "@bibliothecadao/react";
+import { ContractAddress } from "@bibliothecadao/types";
+import { useComponentValue, useEntityQuery } from "@dojoengine/react";
 import { Has } from "@dojoengine/recs";
 
 import { useCallback, useMemo } from "react";
+import { gameEntityKey } from "@/dojo/game-scope";
 
 const formatPoints = (points: number | null | undefined): string => {
   if (points === null || points === undefined) return "0";
   const rounded = Math.round(points);
   return Number.isFinite(rounded) ? rounded.toLocaleString() : "0";
 };
-
-const normalizeAddress = (value: string) => value.trim().toLowerCase();
 
 interface SecondaryMenuItemsProps {
   /**
@@ -35,17 +37,95 @@ interface SecondaryMenuItemsProps {
   variant?: "rank" | "rest";
 }
 
+const LeaderboardRankNode = ({
+  accountAddress,
+  isOpen,
+  onOpen,
+}: {
+  accountAddress: string | undefined;
+  isOpen: boolean;
+  onOpen: () => void;
+}) => {
+  const players = usePlayers();
+  const { standingsByAddress } = useInGameLeaderboard();
+  const rankPill = useMemo(() => {
+    if (!accountAddress) return null;
+    const playerAddress = ContractAddress(accountAddress);
+    const standing = standingsByAddress.get(normalizeLeaderboardAddress(playerAddress));
+    if (!standing) return null;
+
+    const { rank, points } = standing;
+    if (!Number.isFinite(rank)) return null;
+    if (rank > 500 && points <= 0) return null;
+    return {
+      rank,
+      points,
+      name: players.find((player) => player.address === playerAddress)?.name ?? null,
+    };
+  }, [accountAddress, players, standingsByAddress]);
+
+  if (!rankPill) {
+    return (
+      <CircleButton
+        variant="hud"
+        className="social-selector"
+        tooltipLocation="bottom"
+        image={BuildingThumbs.guild}
+        label={leaderboard}
+        active={isOpen}
+        size="topbar"
+        onClick={onOpen}
+      />
+    );
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={onOpen}
+      className={cn(
+        TOP_PILL,
+        TOP_PILL_TEXT,
+        "whitespace-nowrap transition hover:bg-gold/15",
+        isOpen && "border-gold/60 bg-gold/15",
+      )}
+      aria-label="Open leaderboard"
+      title="Open leaderboard"
+    >
+      <img src={BuildingThumbs.guild} alt="" aria-hidden="true" className="h-4 w-4 object-contain" />
+      {rankPill.name && (
+        <>
+          <span className="max-w-[120px] truncate">{rankPill.name}</span>
+          <span className="text-gold/50">·</span>
+        </>
+      )}
+      <span>#{rankPill.rank}</span>
+      <span className="text-gold/50">·</span>
+      <span>{formatPoints(rankPill.points)} VP</span>
+    </button>
+  );
+};
+
 export const SecondaryMenuItems = ({ variant }: SecondaryMenuItemsProps = {}) => {
   const {
     setup: {
       components: {
+        GameRegistry,
         events: { SeasonEnded },
       },
     },
     account: { account },
   } = useDojo();
 
-  const hasSeasonEnded = useEntityQuery([Has(SeasonEnded)]).length > 0;
+  // Legacy worlds emit a SeasonEnded event; the s2 single world flips the
+  // active game's registry status instead.
+  const hasSeasonEndedEvent = useEntityQuery([Has(SeasonEnded)]).length > 0;
+  const gameRegistry = useComponentValue(
+    GameRegistry,
+    useMemo(() => gameEntityKey([]), []),
+  );
+  const registryStatus = gameRegistry ? String(gameRegistry.status) : "";
+  const hasSeasonEnded = hasSeasonEndedEvent || registryStatus === "Ended" || registryStatus === "Settled";
 
   const { unseenCount: unseenFeaturesCount } = useLatestFeaturesSeen();
 
@@ -77,70 +157,12 @@ export const SecondaryMenuItems = ({ variant }: SecondaryMenuItemsProps = {}) =>
     };
   }, [txTransactions, txStuckThresholdMs]);
 
-  // Pull cached leaderboard data populated by TopHeader's auto-fetch.
-  const leaderboardEntries = useLandingLeaderboardStore((state) => state.entries);
-  const playerEntries = useLandingLeaderboardStore((state) => state.playerEntries);
-  const rankPill = useMemo(() => {
-    if (!account?.address) return null;
-    const normalized = normalizeAddress(account.address);
-    // Points come from the shared full list — the exact source the Leaderboard
-    // panel renders — so the pill and the board show the same total. The list
-    // doesn't rank every player (e.g. Blitz), so the rank falls back to the
-    // per-player lookup, which always carries a rank.
-    const listEntry = leaderboardEntries.find((e) => normalizeAddress(e.address) === normalized) ?? null;
-    const selfEntry = playerEntries[normalized]?.data ?? null;
-    const base = listEntry ?? selfEntry;
-    if (!base) return null;
-
-    const rankRaw = listEntry?.rank ?? selfEntry?.rank;
-    if (rankRaw === undefined || rankRaw === null) return null;
-    const rank = Number(rankRaw);
-    const points = Number(base.points ?? selfEntry?.points ?? 0);
-    // Match the gating in resolveTopHeaderPlayerStatus: only surface a rank suffix
-    // when the player is meaningfully ranked.
-    if (!Number.isFinite(rank)) return null;
-    if (rank > 500 && points <= 0) return null;
-    return { rank, points, name: base.displayName ?? selfEntry?.displayName ?? null };
-  }, [account?.address, leaderboardEntries, playerEntries]);
-
   const handleOpenLeaderboard = useCallback(() => togglePopup(leaderboard), [togglePopup]);
-
-  const rankNode = rankPill ? (
-    <button
-      type="button"
-      onClick={handleOpenLeaderboard}
-      className={cn(
-        TOP_PILL,
-        TOP_PILL_TEXT,
-        "whitespace-nowrap transition hover:bg-gold/15",
-        isPopupOpen(leaderboard) && "border-gold/60 bg-gold/15",
-      )}
-      aria-label="Open leaderboard"
-      title="Open leaderboard"
-    >
-      {/* Guild artwork (same icon as the leaderboard button), then
-          name · #rank · VP with middle-dot separators. */}
-      <img src={BuildingThumbs.guild} alt="" aria-hidden="true" className="h-4 w-4 object-contain" />
-      {rankPill.name && (
-        <>
-          <span className="max-w-[120px] truncate">{rankPill.name}</span>
-          <span className="text-gold/50">·</span>
-        </>
-      )}
-      <span>#{rankPill.rank}</span>
-      <span className="text-gold/50">·</span>
-      <span>{formatPoints(rankPill.points)} VP</span>
-    </button>
-  ) : (
-    <CircleButton
-      variant="hud"
-      className="social-selector"
-      tooltipLocation="bottom"
-      image={BuildingThumbs.guild}
-      label={leaderboard}
-      active={isPopupOpen(leaderboard)}
-      size="topbar"
-      onClick={handleOpenLeaderboard}
+  const rankNode = (
+    <LeaderboardRankNode
+      accountAddress={account?.address}
+      isOpen={isPopupOpen(leaderboard)}
+      onOpen={handleOpenLeaderboard}
     />
   );
 

@@ -1,7 +1,7 @@
 import ArrowUpRight from "lucide-react/dist/esm/icons/arrow-up-right";
 import ChevronLeft from "lucide-react/dist/esm/icons/chevron-left";
 
-export const FactoryV2Header = ({ onBack, onOpenLegacy }: { onBack: () => void; onOpenLegacy: () => void }) => {
+export const FactoryV2Header = ({ onBack }: { onBack: () => void }) => {
   return (
     <section className="animate-fade-in-up px-4 pt-4 md:px-0 md:pt-0">
       <div className="flex flex-col gap-6 text-center md:items-center">
@@ -38,15 +38,6 @@ export const FactoryV2Header = ({ onBack, onOpenLegacy }: { onBack: () => void; 
           >
             <ChevronLeft className="h-4 w-4" />
             Back to home
-          </button>
-
-          <button
-            type="button"
-            onClick={onOpenLegacy}
-            className="inline-flex w-full items-center justify-center gap-2 rounded-full border border-gold/15 bg-black/20 px-4 py-2.5 text-sm font-medium text-gold/70 backdrop-blur-[6px] transition-colors hover:bg-gold/10 hover:text-gold hover:border-gold/30"
-          >
-            Open legacy factory
-            <ArrowUpRight className="h-4 w-4" />
           </button>
         </div>
       </div>

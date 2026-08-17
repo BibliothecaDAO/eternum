@@ -3,7 +3,7 @@ import { Button, TextInput } from "@/ui/design-system/atoms";
 import { CreateGuildButton } from "./create-guild-button";
 import { GuildListHeader, GuildRow } from "./guild-list";
 import { useSocialStore } from "../components/use-social-store";
-import { getRealmCountPerHyperstructure, sortItems } from "@/ui/utils/utils";
+import { sortItems } from "@/ui/utils/utils";
 import {
   calculateGuildLordsPrize,
   getGuildFromPlayerAddress,
@@ -52,7 +52,7 @@ export const Guilds = ({
 
   // Aggregate player data per guild
   const guildsWithStats = useMemo(() => {
-    const leaderboardManager = LeaderboardManager.instance(components, getRealmCountPerHyperstructure());
+    const leaderboardManager = LeaderboardManager.instance(components);
 
     const guildStats = new Map<
       string,
@@ -145,7 +145,7 @@ export const Guilds = ({
   );
 
   const generateSocialData = () => {
-    const leaderboardManager = LeaderboardManager.instance(components, getRealmCountPerHyperstructure());
+    const leaderboardManager = LeaderboardManager.instance(components);
 
     const socialData = {
       timestamp: new Date().toISOString(),

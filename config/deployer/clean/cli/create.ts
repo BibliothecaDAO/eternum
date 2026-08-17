@@ -1,6 +1,6 @@
 #!/usr/bin/env bun
 import { buildLaunchGameRequest, parseArgs } from "./launch-request";
-import { DEFAULT_MAINNET_MAX_ACTIONS, DEFAULT_SLOT_MAX_ACTIONS, DEFAULT_VERSION } from "../constants";
+import { DEFAULT_APPCHAIN_MAX_ACTIONS, DEFAULT_MAINNET_MAX_ACTIONS, DEFAULT_VERSION } from "../constants";
 import { launchGame } from "../launch/runner";
 
 function usage(): void {
@@ -8,7 +8,7 @@ function usage(): void {
     [
       "",
       "Usage:",
-      "  bun config/deployer/clean/cli/create.ts --environment <slot.blitz|slot.eternum|mainnet.blitz|mainnet.eternum> --game <world-name> --start-time <unix|iso>",
+      "  bun config/deployer/clean/cli/create.ts --environment <appchain.blitz|appchain.eternum|mainnet.blitz|mainnet.eternum> --game <world-name> --start-time <unix|iso>",
       "  bun config/deployer/clean/cli/create.ts --config-path <path-to-launch.yaml>",
       "",
       "Optional env or flags:",
@@ -37,7 +37,7 @@ function usage(): void {
       "  BLITZ_REGISTRATION_OVERRIDES_JSON=<json> / --blitz-registration-overrides-json <json>",
       "  --mode <batched|sequential>",
       `  --version <felt>              default: ${DEFAULT_VERSION}`,
-      `  --max-actions <number>        default: slot ${DEFAULT_SLOT_MAX_ACTIONS}, mainnet ${DEFAULT_MAINNET_MAX_ACTIONS}`,
+      `  --max-actions <number>        default: appchain ${DEFAULT_APPCHAIN_MAX_ACTIONS}, mainnet ${DEFAULT_MAINNET_MAX_ACTIONS}`,
       "  --factory-address <0x...>     override the environment default",
       "  --series-name <value>",
       "  --series-game-number <number>",
@@ -47,8 +47,8 @@ function usage(): void {
       "  --dry-run",
       "",
       "Examples:",
-      "  bun config/deployer/clean/cli/create.ts --environment slot.blitz --game bltz-fire-gate-42 --start-time 1763112600",
-      "  bun config/deployer/clean/cli/create.ts --environment slot.eternum --game etrn-iron-mist-11 --start-time 2025-11-14T09:30:00Z",
+      "  bun config/deployer/clean/cli/create.ts --environment appchain.blitz --game bltz-fire-gate-42 --start-time 1763112600",
+      "  bun config/deployer/clean/cli/create.ts --environment appchain.eternum --game etrn-iron-mist-11 --start-time 2025-11-14T09:30:00Z",
       "  bun config/deployer/clean/cli/create.ts --environment mainnet.eternum --game etrn-iron-mist-11 --start-time 2025-11-14T09:30:00Z",
       "",
     ].join("\n"),

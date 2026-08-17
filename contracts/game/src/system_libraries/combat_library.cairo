@@ -8,6 +8,7 @@ pub trait ICombatLibrary<T> {
     fn troops_attack(
         self: @T,
         world: WorldStorage,
+        game_id: u32,
         attacker: Troops,
         defender: Troops,
         attacker_coord: Coord,
@@ -34,6 +35,7 @@ mod combat_library {
         fn troops_attack(
             self: @ContractState,
             world: WorldStorage,
+            game_id: u32,
             attacker: Troops,
             defender: Troops,
             attacker_coord: Coord,
@@ -49,7 +51,12 @@ mod combat_library {
             let mut attacker_mut = attacker;
             let mut defender_mut = defender;
             let combat_context = build_combat_context(
-                ref world, attacker_coord, defender_coord, attacker_is_structure_guard, defender_is_structure_guard,
+                ref world,
+                game_id,
+                attacker_coord,
+                defender_coord,
+                attacker_is_structure_guard,
+                defender_is_structure_guard,
             );
             attacker_mut
                 .attack_with_context(
@@ -71,6 +78,7 @@ mod combat_library {
 
     fn build_combat_context(
         ref world: WorldStorage,
+        game_id: u32,
         attacker_coord: Coord,
         defender_coord: Coord,
         attacker_is_structure_guard: bool,
@@ -78,7 +86,7 @@ mod combat_library {
     ) -> CombatContext {
         let biome_library = biome_library::get_dispatcher(@world);
         let defender_biome = biome_library
-            .get_biome(world, defender_coord.alt, defender_coord.x.into(), defender_coord.y.into());
+            .get_biome(world, game_id, defender_coord.alt, defender_coord.x.into(), defender_coord.y.into());
 
         CombatContext {
             attacker_biome: defender_biome,

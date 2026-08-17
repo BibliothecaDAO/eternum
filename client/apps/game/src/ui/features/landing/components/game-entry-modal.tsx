@@ -31,15 +31,20 @@ import { getFactorySqlBaseUrl } from "@/runtime/world/factory-endpoints";
 import { resolveWorldContracts } from "@/runtime/world/factory-resolver";
 import { normalizeSelector } from "@/runtime/world/normalize";
 import { createSqlApi, resolveWorldSqlBaseUrl } from "@/services/api";
-import { buildPlayerBlitzSettlementSnapshotQuery } from "@/services/blitz/blitz-settlement-sql";
+import {
+  buildPlayerBlitzSettlementSnapshotQuery,
+  buildPlayerOwnedStructureCountQuery,
+} from "@/services/blitz/blitz-settlement-sql";
+import { resolveAppchainGameId, resolveAppchainWorldIdForGame } from "@/runtime/world/game-registry";
+import { getDefaultWorld, getWorldById } from "@/runtime/world/world-directory";
 import Button from "@/ui/design-system/atoms/button";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
-import { getRpcUrlForChain } from "@/ui/features/admin/constants";
+import { getRpcUrlForChain } from "@/runtime/chain-rpc";
 import { BootstrapLoadingPanel } from "@/ui/layouts/bootstrap-loading/bootstrap-loading-panel";
 import { markGameEntryMilestone } from "@/ui/layouts/game-entry-timeline";
 import type { PlayerStructure, RealmVillageSlot } from "@bibliothecadao/torii";
-import { buildApiUrl, fetchWithErrorHandling, formatAddressForQuery } from "@bibliothecadao/torii";
+import { buildUnscopedApiUrl, fetchWithErrorHandling, formatAddressForQuery } from "@bibliothecadao/torii";
 import { getContractByName } from "@dojoengine/core";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { Coord, Direction, DirectionName, ResourcesIds, StructureType } from "@bibliothecadao/types";
@@ -60,6 +65,7 @@ import {
   SettlementResourceBadges,
   resolvePlannerResourceLabel as resolveResourceLabel,
 } from "./settlement-resource-badges";
+import { isSelectedWorldEntityWaitAborted, waitForSelectedWorldEntityState } from "./selected-world-entity-wait";
 import {
   buildPlannerRealmSelectionDetails,
   resolvePlannerOwnerLabel,
@@ -73,17 +79,19 @@ import {
 import { useSettlementPlannerData } from "./use-settlement-planner-data";
 import { waitForTransactionConfirmation } from "@/ui/utils/transactions";
 import { env } from "../../../../../env";
+import { appchainModel, gameEntityKey, namespaceForChain } from "@/dojo/game-scope";
 
 const DEBUG_MODAL = false;
-const ETERNUM_NAMESPACE = "s1_eternum";
-const SETTLEMENT_PROGRESS_POLL_MS = 1000;
-const SETTLEMENT_PROGRESS_TIMEOUT_MS = 30000;
 const SETTLEMENT_SYNC_TIMEOUT_MS = 90000;
+const VILLAGE_REVEAL_SLOW_MS = 45_000;
 const CONTRACT_MAP_CENTER = 2147483646;
 const NEXT_FREE_REALM_ID_SCAN_LIMIT = 512;
 const REALM_OWNER_LOOKUP_ENTRYPOINTS = ["owner_of", "ownerOf"] as const;
-const VILLAGE_PASS_DISTRIBUTOR_ADDRESS = "0x127fd5f1fe78a71f8bcd1fec63e3fe2f0486b6ecd5c86a0466c3a21fa5cfcec";
-const VILLAGE_PASS_DISTRIBUTOR_PRIVATE_KEY = "0xc5b2fcab997346f3ea1c00b002ecf6f382c5f9c9659a3894eb783c5320f912";
+// Sandbox-only escape hatch: the dev-chain master account hands out village
+// passes. Env-driven so no key literal ships in source and deployments choose
+// the account (never the paymaster).
+const VILLAGE_PASS_DISTRIBUTOR_ADDRESS = env.VITE_PUBLIC_MASTER_ADDRESS;
+const VILLAGE_PASS_DISTRIBUTOR_PRIVATE_KEY = env.VITE_PUBLIC_MASTER_PRIVATE_KEY;
 
 const START_DIRECTIONS: ReadonlyArray<readonly [Direction, Direction]> = [
   [Direction.EAST, Direction.SOUTH_WEST],
@@ -1983,6 +1991,7 @@ const SettlementPlannerPhase = ({
   plannerConflict,
   plannerSuccess,
   seasonTimingValid,
+  devModeSeasonSettle,
   spiresSettled,
   spiresSettledCount,
   spiresMaxCount,
@@ -2038,6 +2047,8 @@ const SettlementPlannerPhase = ({
   plannerConflict: string | null;
   plannerSuccess: string | null;
   seasonTimingValid: boolean;
+  /** Dev seasons collect no pass on-chain — the panel must not demand one. */
+  devModeSeasonSettle: boolean;
   spiresSettled: boolean;
   spiresSettledCount: number | null;
   spiresMaxCount: number | null;
@@ -2106,7 +2117,7 @@ const SettlementPlannerPhase = ({
 
     const realmEntityId = selectedPlannerRealm?.entityId ?? selectedRealmInfo?.entityId ?? null;
     if (realmEntityId == null) return null;
-    return getRealmInfo(getEntityIdFromKeys([BigInt(realmEntityId)]), plannerComponents) ?? null;
+    return getRealmInfo(gameEntityKey([BigInt(realmEntityId)]), plannerComponents) ?? null;
   }, [plannerComponents, selectedPlannerRealm?.entityId, selectedRealmInfo?.entityId]);
   const selectedPlannerRealmDetails = useMemo<PlannerRealmSelectionDetails | null>(() => {
     return buildPlannerRealmSelectionDetails({
@@ -2244,11 +2255,20 @@ const SettlementPlannerPhase = ({
                   ? `${selectedSeasonPass.realmName} (Realm #${selectedSeasonPass.realmId})`
                   : selectedSeasonPassTokenId != null
                     ? `#${selectedSeasonPassTokenId.toString()}`
-                    : "missing"}
+                    : devModeSeasonSettle
+                      ? "not required (dev season)"
+                      : "missing"}
               </div>
             </div>
 
-            {selectedSeasonPassTokenId != null ? (
+            {devModeSeasonSettle && selectedSeasonPassTokenId == null ? (
+              <div className="rounded-xl border border-gold/20 bg-black/25 p-3">
+                <p className="text-sm font-semibold text-gold">Dev Season</p>
+                <p className="mt-1 text-xs text-gold/70">
+                  No season pass needed — the next free realm id is assigned automatically on settle.
+                </p>
+              </div>
+            ) : selectedSeasonPassTokenId != null ? (
               <div className="min-h-0 rounded-xl border border-gold/20 bg-black/25 p-3">
                 <div className="mb-2 flex items-center justify-between gap-2">
                   <p className="text-sm font-semibold text-gold">Season Pass</p>
@@ -2363,7 +2383,11 @@ const SettlementPlannerPhase = ({
 
             <Button
               onClick={onConfirmRealmSettlement}
-              disabled={!seasonTimingValid || selectedSeasonPassTokenId == null || isSubmittingRealmSettlement}
+              disabled={
+                !seasonTimingValid ||
+                (selectedSeasonPassTokenId == null && !devModeSeasonSettle) ||
+                isSubmittingRealmSettlement
+              }
               className="h-11 w-full !rounded-md !bg-gold !text-brown"
               forceUppercase={false}
             >
@@ -2780,11 +2804,24 @@ export const GameEntryModal = ({
   const [mintRealmAndSeasonPassError, setMintRealmAndSeasonPassError] = useState<string | null>(null);
   const hasEnteredGameRef = useRef(false);
   const plannerOpenedRef = useRef(false);
+  const entityWaitAbortControllerRef = useRef<AbortController | null>(null);
 
   const navigationEntryContext = entryContext;
   const selectedWorldRpcUrl = useMemo(() => getRpcUrlForChain(chain), [chain]);
-  const selectedWorldSqlBaseUrl = useMemo(() => resolveWorldSqlBaseUrl({ chain, worldName }), [chain, worldName]);
-  const selectedWorldSqlApi = useMemo(() => createSqlApi(selectedWorldSqlBaseUrl), [selectedWorldSqlBaseUrl]);
+  const selectedWorldSqlBaseUrl = useMemo(
+    () => resolveWorldSqlBaseUrl({ chain, worldName, worldId: worldMeta?.worldId ?? null }),
+    [chain, worldName, worldMeta?.worldId],
+  );
+  // Explicitly scoped: entry-flow reads target the selected game before any
+  // bootstrap sets the ambient scope (and regardless of a previous game's).
+  const selectedWorldSqlApi = useMemo(
+    () =>
+      createSqlApi(
+        selectedWorldSqlBaseUrl,
+        chain === "appchain" && worldMeta?.gameId ? { namespace: "s2", gameId: worldMeta.gameId } : undefined,
+      ),
+    [chain, selectedWorldSqlBaseUrl, worldMeta?.gameId],
+  );
   const seasonAddresses = getSeasonAddresses(chain);
   // realm_systems.create reads season_pass_address from world config, so prefer world metadata when available.
   const seasonPassAddress = worldMeta?.seasonPassAddress || seasonAddresses.seasonPass || null;
@@ -2794,7 +2831,9 @@ export const GameEntryModal = ({
   const resolvedSystemSelectors = useMemo(() => {
     const resolveSelector = (systemName: string): string | null => {
       try {
-        const contract = getContractByName(systemManifest, ETERNUM_NAMESPACE, systemName) as { selector?: string };
+        const contract = getContractByName(systemManifest, namespaceForChain(chain), systemName) as {
+          selector?: string;
+        };
         return contract.selector ? normalizeSelector(contract.selector) : null;
       } catch {
         return null;
@@ -2818,12 +2857,13 @@ export const GameEntryModal = ({
     queryKey: ["worldSystemAddresses", chain, worldName],
     enabled: isOpen && Boolean(worldName),
     queryFn: async () => {
-      const factorySqlBaseUrl = getFactorySqlBaseUrl(chain);
-      if (!factorySqlBaseUrl) {
-        throw new Error(`Factory SQL base URL not configured for chain: ${chain}`);
-      }
-
-      const contracts = await resolveWorldContracts(factorySqlBaseUrl, worldName);
+      // The persistent appchain worlds ship their contract map in the
+      // committed manifest — no per-game deployment to resolve. Which world
+      // owns this game comes from its GameRegistry (blitz vs eternum).
+      const contracts =
+        chain === "appchain"
+          ? (getWorldById(await resolveAppchainWorldIdForGame(worldName)) ?? getDefaultWorld()).contractsBySelector
+          : await resolveWorldContracts(getFactorySqlBaseUrl(chain), worldName);
       return {
         blitzRealmSystemsAddress: resolvedSystemSelectors.blitzRealmSystemsSelector
           ? (contracts[resolvedSystemSelectors.blitzRealmSystemsSelector] ?? null)
@@ -2942,6 +2982,7 @@ export const GameEntryModal = ({
     enabled: isOpen && isEternumMode && unifiedSettlementPlannerEnabled,
     chain,
     worldName,
+    sqlApi: selectedWorldSqlApi,
     layerMax: worldMeta?.settlementLayerMax ?? null,
     layersSkipped: worldMeta?.settlementLayersSkipped ?? null,
     baseDistance: worldMeta?.settlementBaseDistance ?? null,
@@ -3220,6 +3261,26 @@ export const GameEntryModal = ({
     plannerOpenedRef.current = false;
   }, []);
 
+  const beginEntityWait = useCallback((): AbortSignal => {
+    entityWaitAbortControllerRef.current?.abort();
+    const controller = new AbortController();
+    entityWaitAbortControllerRef.current = controller;
+    return controller.signal;
+  }, []);
+
+  useEffect(() => {
+    if (!isOpen) {
+      entityWaitAbortControllerRef.current?.abort();
+      entityWaitAbortControllerRef.current = null;
+      return;
+    }
+
+    return () => {
+      entityWaitAbortControllerRef.current?.abort();
+      entityWaitAbortControllerRef.current = null;
+    };
+  }, [chain, isOpen, worldName]);
+
   useEffect(() => {
     if (!isOpen) {
       return;
@@ -3250,7 +3311,10 @@ export const GameEntryModal = ({
     spiresSettledCount != null && spiresMaxCount != null
       ? spiresMaxCount === 0 || spiresSettledCount >= spiresMaxCount
       : (spiresSettledCount ?? 0) > 0;
-  const hasSeasonPass = seasonPassBalance > 0n || seasonPasses.length > 0;
+  // Dev-mode games skip season-pass collection in the contract
+  // (realm/season/contracts.cairo) — the client gate must match.
+  const devModeSeasonSettle = worldMeta?.devModeOn ?? false;
+  const hasSeasonPass = devModeSeasonSettle || seasonPassBalance > 0n || seasonPasses.length > 0;
   const hasVillagePass = villagePassBalance > 0n || villagePasses.length > 0;
   const canAttemptSeasonSettle = seasonTimingValid && hasSeasonPass;
   const isLoadingEternumPrereqs =
@@ -3510,24 +3574,37 @@ export const GameEntryModal = ({
     if (!account?.address) return null;
 
     const playerAddress = formatAddressForQuery(account.address);
-    const [settlementRows, playerStructures] = await Promise.all([
+    // The shared world holds every game's rows; these queries target the
+    // CHOSEN game explicitly and bypass the ambient SQL scope (which isn't
+    // set until bootstrap).
+    const settlementGameId = await resolveAppchainGameId(worldName);
+    const [settlementRows, ownedRows] = await Promise.all([
       fetchWithErrorHandling<DirectSettlementSnapshotRow>(
-        buildApiUrl(selectedWorldSqlBaseUrl, buildPlayerBlitzSettlementSnapshotQuery(playerAddress)),
+        buildUnscopedApiUrl(
+          selectedWorldSqlBaseUrl,
+          buildPlayerBlitzSettlementSnapshotQuery(playerAddress, settlementGameId),
+        ),
         "Failed to fetch blitz settlement state",
       ),
       // Owned-structure indexing can lag behind settle-finish rows right after submission.
-      selectedWorldSqlApi.fetchPlayerStructures(account.address).catch(() => []),
+      fetchWithErrorHandling<{ owned_count?: unknown }>(
+        buildUnscopedApiUrl(
+          selectedWorldSqlBaseUrl,
+          buildPlayerOwnedStructureCountQuery(playerAddress, settlementGameId),
+        ),
+        "Failed to fetch owned structures",
+      ).catch(() => [] as { owned_count?: unknown }[]),
     ]);
     const settlement = settlementRows[0] ?? null;
     const indexedSettledCount = parseSpanLength(settlement?.structure_ids);
-    const ownedStructureCount = playerStructures.length;
+    const ownedStructureCount = Number(ownedRows[0]?.owned_count ?? 0) || 0;
 
     return {
       hasSettlementRecord: settlement != null,
       hasSettledStructure: ownedStructureCount > 0,
       settledCount: Math.max(indexedSettledCount, ownedStructureCount),
     };
-  }, [account, selectedWorldSqlApi, selectedWorldSqlBaseUrl]);
+  }, [account, selectedWorldSqlBaseUrl, worldName]);
 
   const syncSettlementStateFromSnapshot = useCallback(
     (snapshot: SettlementSnapshot) => {
@@ -3544,28 +3621,40 @@ export const GameEntryModal = ({
   );
 
   const waitForSettlementTarget = useCallback(
-    async (
-      targetSettleCount: number,
-      timeoutMs = SETTLEMENT_PROGRESS_TIMEOUT_MS,
-    ): Promise<SettlementSnapshot | null> => {
-      const startedAt = Date.now();
-      let latestSnapshot: SettlementSnapshot | null = null;
+    async (targetSettleCount: number): Promise<SettlementSnapshot> => {
+      const observation = await waitForSelectedWorldEntityState({
+        chain,
+        description: "settlement indexing",
+        gameId: worldMeta?.gameId ?? undefined,
+        isTarget: ({ status }) =>
+          status != null && (status.canPlay || status.settledCount >= Math.max(1, targetSettleCount)),
+        modelNames: ["BlitzSettlement", "Structure"],
+        onSlow: (elapsedMs) => {
+          captureClientEvent("game_entry_entity_wait_slow", {
+            elapsedMs,
+            fact: "settlement",
+            worldName,
+          });
+        },
+        read: async () => {
+          const snapshot = await readSettlementSnapshot();
+          return {
+            snapshot,
+            status: snapshot ? syncSettlementStateFromSnapshot(snapshot) : null,
+          };
+        },
+        signal: beginEntityWait(),
+        slowAfterMs: SETTLEMENT_SYNC_TIMEOUT_MS,
+        worldId: worldMeta?.worldId,
+        worldName,
+      });
 
-      while (Date.now() - startedAt < timeoutMs) {
-        const snapshot = await readSettlementSnapshot();
-        if (snapshot) {
-          latestSnapshot = snapshot;
-          const status = syncSettlementStateFromSnapshot(snapshot);
-          if (status.canPlay || status.settledCount >= Math.max(1, targetSettleCount)) {
-            return snapshot;
-          }
-        }
-        await new Promise((resolve) => setTimeout(resolve, SETTLEMENT_PROGRESS_POLL_MS));
+      if (!observation.snapshot) {
+        throw new Error("Settlement subscription matched without an indexed settlement snapshot.");
       }
-
-      return latestSnapshot;
+      return observation.snapshot;
     },
-    [readSettlementSnapshot, syncSettlementStateFromSnapshot],
+    [beginEntityWait, chain, readSettlementSnapshot, syncSettlementStateFromSnapshot, worldMeta, worldName],
   );
 
   const confirmSubmittedTransaction = useCallback(
@@ -3670,12 +3759,14 @@ export const GameEntryModal = ({
     if (!account?.address) return null;
 
     const playerAddress = formatAddressForQuery(account.address);
+    // AddressName is chain-global on the appchain worlds; explicit table +
+    // unscoped URL because this runs before any bootstrap scope exists.
     const rows = await fetchWithErrorHandling<{ name?: unknown }>(
-      buildApiUrl(
+      buildUnscopedApiUrl(
         selectedWorldSqlBaseUrl,
         `
           SELECT name
-          FROM "s1_eternum-AddressName"
+          FROM "${appchainModel("AddressName")}"
           WHERE address = '${playerAddress}'
           LIMIT 1;
         `,
@@ -3757,39 +3848,55 @@ export const GameEntryModal = ({
     async ({
       ownerAddress,
       existingVillageIds,
-      timeoutMs = 45_000,
     }: {
       ownerAddress: string;
       existingVillageIds: Set<number>;
-      timeoutMs?: number;
     }): Promise<VillageRevealResult> => {
-      const startedAt = Date.now();
-      while (Date.now() - startedAt < timeoutMs) {
-        const structures = await selectedWorldSqlApi.fetchPlayerStructures(ownerAddress);
-        const newVillage = structures
-          .filter(
-            (structure) => structure.category === StructureType.Village && !existingVillageIds.has(structure.entity_id),
-          )
-          .toSorted((left, right) => right.entity_id - left.entity_id)[0];
+      const result = await waitForSelectedWorldEntityState<VillageRevealResult | null>({
+        chain,
+        description: "village resource indexing",
+        gameId: worldMeta?.gameId ?? undefined,
+        isTarget: (reveal) => reveal != null,
+        modelNames: ["Structure"],
+        onSlow: (elapsedMs) => {
+          captureClientEvent("game_entry_entity_wait_slow", {
+            elapsedMs,
+            fact: "village_resource",
+            worldName,
+          });
+        },
+        read: async () => {
+          const structures = await selectedWorldSqlApi.fetchPlayerStructures(ownerAddress);
+          const newVillage = structures
+            .filter(
+              (structure) =>
+                structure.category === StructureType.Village && !existingVillageIds.has(structure.entity_id),
+            )
+            .toSorted((left, right) => right.entity_id - left.entity_id)[0];
+          if (!newVillage) return null;
 
-        if (newVillage) {
           const resourceId = resolvePrimaryVillageResource(newVillage.resources_packed);
           const resourceLabel = resourceId != null ? resolveResourceLabel(resourceId) : null;
-          if (resourceId != null && resourceLabel) {
-            return {
-              villageEntityId: newVillage.entity_id,
-              resourceId,
-              resourceLabel,
-            };
-          }
-        }
+          if (resourceId == null || !resourceLabel) return null;
 
-        await new Promise((resolve) => window.setTimeout(resolve, 1500));
+          return {
+            villageEntityId: newVillage.entity_id,
+            resourceId,
+            resourceLabel,
+          };
+        },
+        signal: beginEntityWait(),
+        slowAfterMs: VILLAGE_REVEAL_SLOW_MS,
+        worldId: worldMeta?.worldId,
+        worldName,
+      });
+
+      if (!result) {
+        throw new Error("Village subscription matched without an indexed resource assignment.");
       }
-
-      throw new Error("Village created but resource assignment is not indexed in Torii yet.");
+      return result;
     },
-    [selectedWorldSqlApi],
+    [beginEntityWait, chain, selectedWorldSqlApi, worldMeta?.gameId, worldMeta?.worldId, worldName],
   );
 
   // Check settlement status after bootstrap completes
@@ -4000,7 +4107,9 @@ export const GameEntryModal = ({
     refetchVillagePassInventory,
   ]);
 
-  const canUseSandboxMintFlow = isEternumMode && (chain === "slot" || chain === "slottest");
+  // Sandbox mint shortcut is dev-chain only (was slot; now the self-hosted
+  // appchain and a local katana).
+  const canUseSandboxMintFlow = isEternumMode && (chain === "appchain" || chain === "local");
 
   const handleAutoSelectNextRealmTokenId = useCallback(async () => {
     if (!realmsAddress) {
@@ -4171,7 +4280,7 @@ export const GameEntryModal = ({
       setSeasonSettlementError("Select a free realm hex on the planner map.");
       return;
     }
-    if (!selectedSeasonPassTokenId) {
+    if (!selectedSeasonPassTokenId && !devModeSeasonSettle) {
       setSeasonSettlementError("Select a season pass before settling.");
       return;
     }
@@ -4187,19 +4296,35 @@ export const GameEntryModal = ({
       setSeasonSettlementError("Season pass not found in this wallet.");
       return;
     }
-    if (!seasonPassAddress) {
+    if (!seasonPassAddress && !devModeSeasonSettle) {
       setSeasonSettlementError("Season pass contract not configured for this world.");
       return;
     }
-    if (villagePassAddress && seasonPassAddress.toLowerCase() === villagePassAddress.toLowerCase()) {
+    if (
+      villagePassAddress &&
+      seasonPassAddress &&
+      seasonPassAddress.toLowerCase() === villagePassAddress.toLowerCase()
+    ) {
       setSeasonSettlementError(
         `World config mismatch: season pass address points to village pass (${seasonPassAddress}). Update season_addresses_config on-chain.`,
       );
       return;
     }
 
-    const realmIdBigInt = selectedSeasonPassTokenId;
-    if (realmIdBigInt < 0n || realmIdBigInt > 4_294_967_295n) {
+    // Dev mode has no pass to derive the realm from: take the next unused
+    // realm id in this game (realm data is keyed by the global Realms id).
+    const nextFreeDevRealmId = (): bigint => {
+      const used = new Set(
+        settlementPlannerData.snapshot.realms
+          .map((realm) => realm.realmId)
+          .filter((id): id is number => id != null && id > 0),
+      );
+      let candidate = 1;
+      while (used.has(candidate) && candidate < 8000) candidate += 1;
+      return BigInt(candidate);
+    };
+    const realmIdBigInt = selectedSeasonPassTokenId ?? nextFreeDevRealmId();
+    if (realmIdBigInt <= 0n || realmIdBigInt > 4_294_967_295n) {
       setSeasonSettlementError("Season pass realm id is out of bounds.");
       return;
     }
@@ -4287,31 +4412,32 @@ export const GameEntryModal = ({
       const owner = account.address;
       const frontend = account.address;
 
-      const seasonPassTokenId = uint256.bnToUint256(realmIdBigInt);
       const optionalPlayerName = await resolveOptionalPlayerNameForSettlement();
       const settlementCalls: Call[] = [];
       if (optionalPlayerName) {
         settlementCalls.push(buildSetAddressNameCall(optionalPlayerName));
       }
-      settlementCalls.push(
-        {
+      // The contract only collects the pass outside dev mode — approving in
+      // dev mode would target address 0x0 and revert the whole multicall.
+      if (!devModeSeasonSettle && seasonPassAddress) {
+        settlementCalls.push({
           contractAddress: seasonPassAddress,
           entrypoint: "approve",
-          calldata: CallData.compile([realmSystemsAddress, seasonPassTokenId]),
-        },
-        {
-          contractAddress: realmSystemsAddress,
-          entrypoint: "create",
-          calldata: CallData.compile([
-            owner,
-            realmId,
-            frontend,
-            activeSeasonPlacement.side,
-            activeSeasonPlacement.layer,
-            activeSeasonPlacement.point,
-          ]),
-        },
-      );
+          calldata: CallData.compile([realmSystemsAddress, uint256.bnToUint256(realmIdBigInt)]),
+        });
+      }
+      settlementCalls.push({
+        contractAddress: realmSystemsAddress,
+        entrypoint: "create",
+        calldata: CallData.compile([
+          owner,
+          realmId,
+          frontend,
+          activeSeasonPlacement.side,
+          activeSeasonPlacement.layer,
+          activeSeasonPlacement.point,
+        ]),
+      });
 
       await executeEntryObservedTransaction({
         signer,
@@ -4490,6 +4616,7 @@ export const GameEntryModal = ({
         });
       }
     } catch (error) {
+      if (isSelectedWorldEntityWaitAborted(error)) return;
       debugLog(worldName, "Village settlement failed:", error);
       setVillageSettlementError(mapVillageSettleError(error));
       if (unifiedSettlementPlannerEnabled) {
@@ -4594,6 +4721,12 @@ export const GameEntryModal = ({
         }
       }
 
+      // Settle targets the CHOSEN game explicitly — its id is the call's
+      // first argument on the appchain worlds.
+      if (!worldMeta.gameId) {
+        throw new Error(`Game id for "${worldName}" is not resolved yet. Please retry in a moment.`);
+      }
+
       setSettleStage("settling");
       await executeEntryObservedTransaction({
         signer,
@@ -4601,6 +4734,7 @@ export const GameEntryModal = ({
           blitzSystemsAddress: blitzRealmSystemsAddress,
           signerAddress: signer.address,
           usernameFelt,
+          gameId: worldMeta.gameId,
           vrfProviderAddress: env.VITE_PUBLIC_VRF_PROVIDER_ADDRESS,
           entryTokenAddress: worldMeta.entryTokenAddress,
           feeTokenAddress: worldMeta.feeTokenAddress,
@@ -4611,10 +4745,7 @@ export const GameEntryModal = ({
       });
 
       setSettleStage("syncing");
-      const finalSnapshot = await waitForSettlementTarget(expectedBlitzSettlementCount, SETTLEMENT_SYNC_TIMEOUT_MS);
-      if (!finalSnapshot) {
-        throw new Error("Settlement is still syncing. Please try again if the world does not unlock shortly.");
-      }
+      const finalSnapshot = await waitForSettlementTarget(expectedBlitzSettlementCount);
 
       const finalStatus = syncSettlementStateFromSnapshot(finalSnapshot);
       if (!finalStatus.canPlay) {
@@ -4623,6 +4754,7 @@ export const GameEntryModal = ({
 
       finalizeSuccessfulBlitzSettlement();
     } catch (error) {
+      if (isSelectedWorldEntityWaitAborted(error)) return;
       finalizeFailedBlitzSettlement(error instanceof Error ? error : new Error("Settlement failed"));
     } finally {
       setIsSettling(false);
@@ -4879,6 +5011,7 @@ export const GameEntryModal = ({
                   mintRealmAndSeasonPassError={mintRealmAndSeasonPassError}
                   onConfirmRealmSettlement={handleSeasonSettle}
                   onConfirmVillageSettlement={handleVillageSettle}
+                  devModeSeasonSettle={devModeSeasonSettle}
                   isSubmittingRealmSettlement={isSubmittingSeasonSettlement}
                   isSubmittingVillageSettlement={isSubmittingVillageSettlement}
                   seasonSettlementError={seasonSettlementError}

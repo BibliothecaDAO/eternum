@@ -1,6 +1,6 @@
 import { shortString } from "starknet";
 
-type Chain = "slot" | "slottest" | "local" | "sepolia" | "mainnet" | string;
+type Chain = "local" | "sepolia" | "mainnet" | "appchain" | string;
 
 /**
  * Returns the Factory Torii SQL base URL for a given chain.
@@ -16,13 +16,26 @@ export function getFactorySqlBaseUrl(chain: Chain, cartridgeApiBase?: string): s
       return `${base}/x/eternum-factory-mainnet/torii/sql`;
     case "sepolia":
       return `${base}/x/eternum-factory-sepolia/torii/sql`;
-    case "slot":
-    case "slottest":
-    case "local":
-      return `${base}/x/eternum-factory-slot-d/torii/sql`;
+    case "appchain": {
+      // The appchain runs ONE torii indexing every world, factory included, so
+      // the factory SQL endpoint is just that torii. Without a configured
+      // torii return "" (≠ "/sql") so callers get their own "no factory
+      // configured" diagnostics instead of fetch() choking on a relative URL.
+      const appchainToriiBaseUrl = resolveAppchainToriiBaseUrl();
+      return appchainToriiBaseUrl ? `${appchainToriiBaseUrl}/sql` : "";
+    }
+    // "local" has no factory torii; callers treat "" as "no factory available"
+    // and skip factory-backed discovery.
     default:
       return "";
   }
+}
+
+/** Shared torii for the appchain — env-driven so it follows the deployment. */
+function resolveAppchainToriiBaseUrl(): string {
+  const fromVite = typeof import.meta !== "undefined" ? (import.meta as any).env?.VITE_PUBLIC_TORII : undefined;
+  const fromNode = typeof process !== "undefined" ? (process as any).env?.TORII_URL : undefined;
+  return String(fromVite || fromNode || "").replace(/\/+$/, "");
 }
 
 const asRecord = (value: unknown): Record<string, unknown> | null => {

@@ -23,7 +23,6 @@ export function useAudio() {
         const assets = getAllAssets();
         assets.forEach((asset) => managerRef.current!.registerAsset(asset));
         assetsRegisteredRef.current = true;
-        console.log(`Audio system ready! Registered ${assets.length} audio assets`);
       }
 
       setIsReady(true);

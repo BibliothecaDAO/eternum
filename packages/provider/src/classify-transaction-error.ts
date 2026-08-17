@@ -1,0 +1,426 @@
+/**
+ * Single home for making sense of unknown transaction errors.
+ *
+ * Two exports:
+ * - `extractErrorMessage` digs a human-readable panic/revert reason out of any
+ *   error shape (Error, string, plain object, nested Cairo traces).
+ * - `classifyTransactionError` maps any error to a small decision kind the UI
+ *   can act on (cancel vs session vs funds vs revert), using Cartridge
+ *   controller error codes when present and string markers otherwise.
+ *
+ * Cartridge's controller rejects with plain `{ code, message, data? }` objects
+ * (never Error instances) and with `undefined` when the user closes the popup.
+ */
+
+const NON_MEANINGFUL_ERROR_MESSAGES = new Set(["", "[object Object]", "undefined", "null"]);
+const GENERIC_ERROR_MESSAGES = new Set([
+  "transaction execution error",
+  "execution error",
+  "rpc error",
+  "unknown error",
+  "unknown revert reason",
+  "transaction failed",
+  // The bare word the /revert…/ pattern captures out of "Unknown revert reason";
+  // never a real panic message.
+  "reason",
+]);
+const GENERIC_ERROR_PREFIXES = ["transaction execution error:", "rpc error:", "rpc:"];
+const WRAPPED_ERROR_PREFIXES = [
+  "Transaction failed to submit:",
+  "Transaction failed while waiting for confirmation:",
+  "Transaction failed with reason:",
+];
+
+const normalizeErrorKey = (value: string): string =>
+  value
+    .trim()
+    .toLowerCase()
+    .replace(/[.:]+$/g, "");
+
+const isProtocolErrorCode = (value: string): boolean => {
+  const trimmed = value.trim();
+  if (!trimmed) return false;
+  if (/^0x[0-9a-f]+$/i.test(trimmed)) return true;
+  if (/^[A-Z0-9_]{3,}$/.test(trimmed)) return true;
+  if (/^[a-z0-9_-]+\/[a-z0-9_-]+$/i.test(trimmed)) return true;
+  return false;
+};
+
+const isWrappedGenericErrorMessage = (message: string): boolean => {
+  const normalizedMessage = normalizeErrorKey(message);
+  for (const wrappedPrefix of WRAPPED_ERROR_PREFIXES) {
+    const normalizedPrefix = wrappedPrefix.toLowerCase();
+    if (!normalizedMessage.startsWith(normalizedPrefix)) continue;
+    const rawSuffix = message.trim().slice(wrappedPrefix.length).trim();
+    const normalizedSuffix = normalizeErrorKey(rawSuffix);
+    return !rawSuffix || GENERIC_ERROR_MESSAGES.has(normalizedSuffix) || isProtocolErrorCode(rawSuffix);
+  }
+
+  return false;
+};
+
+const sanitizeReason = (value: string): string | null => {
+  const trimmed = value.trim().replace(/^['"]|['"]$/g, "");
+  if (!trimmed || NON_MEANINGFUL_ERROR_MESSAGES.has(trimmed)) {
+    return null;
+  }
+
+  return trimmed;
+};
+
+const asReasonCandidate = (value: string): string | null => {
+  const reason = sanitizeReason(value);
+  if (!reason) {
+    return null;
+  }
+
+  const normalized = normalizeErrorKey(reason);
+  if (GENERIC_ERROR_MESSAGES.has(normalized) || isWrappedGenericErrorMessage(reason) || isProtocolErrorCode(reason)) {
+    return null;
+  }
+
+  if (reason.includes("/")) return null;
+  if (/^[A-Z0-9_/-]+$/.test(reason)) return null;
+  if (/^0x[0-9a-f]+$/i.test(reason)) return null;
+  if (!/[a-zA-Z]/.test(reason)) return null;
+
+  return reason;
+};
+
+const decodeHexToAscii = (value: string): string | null => {
+  const normalized = value.startsWith("0x") ? value.slice(2) : value;
+  if (normalized.length < 4 || normalized.length % 2 !== 0) {
+    return null;
+  }
+
+  let decoded = "";
+  for (let i = 0; i < normalized.length; i += 2) {
+    const byte = Number.parseInt(normalized.slice(i, i + 2), 16);
+    if (Number.isNaN(byte)) {
+      return null;
+    }
+    decoded += String.fromCharCode(byte);
+  }
+
+  const cleaned = decoded.replace(/\0/g, "").trim();
+  if (!cleaned) {
+    return null;
+  }
+
+  const printableCount = [...cleaned].filter((char) => {
+    const code = char.charCodeAt(0);
+    return (code >= 32 && code <= 126) || code === 9 || code === 10 || code === 13;
+  }).length;
+
+  return printableCount / cleaned.length >= 0.85 ? cleaned : null;
+};
+
+const extractSpecificReasonFromMessage = (message: string): string | null => {
+  // Katana / RPC-0.8+ shape: "Execution failed. Failure reason: 0x… ('panic text')."
+  // Nested calls repeat the header, and the LAST frame is the innermost assert —
+  // the message the contract actually panicked with.
+  const failureReasonFrames = [...message.matchAll(/Failure reason:\s*0x[0-9a-f]+\s*\('([^']+)'\)/gi)];
+  const innermostFailureReason = failureReasonFrames[failureReasonFrames.length - 1]?.[1];
+  if (innermostFailureReason) {
+    const reason = asReasonCandidate(innermostFailureReason);
+    if (reason) {
+      return reason;
+    }
+  }
+
+  const explicitReasonPatterns = [
+    /,\s*\\"([^"\\]+)\\"\s*,\s*0x[0-9a-f]+ \('ENTRYPOINT_FAILED'\)/i,
+    /,\s*0x[0-9a-f]+ \('([^']+)'\)\s*,\s*0x[0-9a-f]+ \('ENTRYPOINT_FAILED'\)/i,
+    /Transaction failed with reason:\s*([^\n]+)/i,
+    /execution reverted(?: with reason)?[:\s]+["']?([^"\n']+)["']?/i,
+    /revert(?:ed)?(?: with reason)?[:\s]+["']?([^"\n']+)["']?/i,
+  ];
+  for (const pattern of explicitReasonPatterns) {
+    const match = message.match(pattern);
+    if (!match?.[1]) continue;
+    const reason = asReasonCandidate(match[1]);
+    if (reason) {
+      return reason;
+    }
+  }
+
+  for (const match of message.matchAll(/"([^"]+)"/g)) {
+    const candidate = match[1]?.trim();
+    if (!candidate) continue;
+    const matchIndex = match.index ?? 0;
+    const charAfterQuote = message.slice(matchIndex + match[0].length).trimStart();
+    if (charAfterQuote.startsWith(":")) continue;
+    const reason = asReasonCandidate(candidate);
+    if (reason) {
+      return reason;
+    }
+  }
+
+  for (const match of message.matchAll(/'([^']+)'/g)) {
+    const candidate = match[1]?.trim();
+    if (!candidate) continue;
+    const matchIndex = match.index ?? 0;
+    const charAfterQuote = message.slice(matchIndex + match[0].length).trimStart();
+    if (charAfterQuote.startsWith(":")) continue;
+    const reason = asReasonCandidate(candidate);
+    if (reason) {
+      return reason;
+    }
+  }
+
+  for (const match of message.matchAll(/0x[0-9a-f]{8,}/gi)) {
+    const decoded = decodeHexToAscii(match[0]);
+    if (!decoded) continue;
+    const reason = asReasonCandidate(decoded);
+    if (reason) {
+      return reason;
+    }
+  }
+
+  return null;
+};
+
+const isGenericErrorMessage = (message: string): boolean => {
+  const normalized = normalizeErrorKey(message);
+  if (
+    GENERIC_ERROR_MESSAGES.has(normalized) ||
+    GENERIC_ERROR_PREFIXES.some((prefix) => normalized.startsWith(prefix)) ||
+    isProtocolErrorCode(message)
+  ) {
+    return true;
+  }
+
+  return isWrappedGenericErrorMessage(message);
+};
+
+const asMeaningfulErrorMessage = (value: unknown): string | null => {
+  if (typeof value === "string") {
+    const trimmed = value.trim();
+    if (NON_MEANINGFUL_ERROR_MESSAGES.has(trimmed)) {
+      return null;
+    }
+
+    for (const prefix of WRAPPED_ERROR_PREFIXES) {
+      if (!trimmed.startsWith(prefix)) continue;
+      const suffix = trimmed.slice(prefix.length).trim();
+      if (NON_MEANINGFUL_ERROR_MESSAGES.has(suffix)) {
+        return null;
+      }
+    }
+
+    const specificReason = extractSpecificReasonFromMessage(trimmed);
+    if (specificReason) {
+      return specificReason;
+    }
+
+    return trimmed;
+  }
+
+  if (typeof value === "number" || typeof value === "boolean" || typeof value === "bigint") {
+    return String(value);
+  }
+
+  return null;
+};
+
+export const extractErrorMessage = (error: unknown, fallback = "Unknown error"): string => {
+  const queue: unknown[] = [error];
+  const visited = new Set<object>();
+
+  const getSpecificMessage = (value: unknown): string | null => {
+    const candidate = asMeaningfulErrorMessage(value);
+    if (!candidate) {
+      return null;
+    }
+    if (isGenericErrorMessage(candidate)) {
+      return null;
+    }
+    return candidate;
+  };
+
+  while (queue.length > 0) {
+    const current = queue.shift();
+    const directMessage = getSpecificMessage(current);
+    if (directMessage) {
+      return directMessage;
+    }
+
+    if (current instanceof Error) {
+      queue.push(current.message);
+      queue.push((current as Error & { cause?: unknown }).cause);
+      continue;
+    }
+
+    if (Array.isArray(current)) {
+      queue.push(...current);
+      continue;
+    }
+
+    if (current && typeof current === "object") {
+      if (visited.has(current)) continue;
+      visited.add(current);
+      const record = current as Record<string, unknown>;
+
+      const directCandidates = [
+        record.shortMessage,
+        record.reason,
+        record.execution_error,
+        record.executionError,
+        record.revert_reason,
+        record.revertReason,
+        record.description,
+        record.message,
+      ];
+      for (const candidate of directCandidates) {
+        const directCandidateMessage = getSpecificMessage(candidate);
+        if (directCandidateMessage) {
+          return directCandidateMessage;
+        }
+      }
+
+      queue.push(
+        record.data,
+        record.error,
+        record.cause,
+        record.details,
+        record.execution_error,
+        record.executionError,
+        record.message,
+        record.reason,
+        record.revert_reason,
+        record.revertReason,
+        record.shortMessage,
+        record.description,
+      );
+    }
+  }
+
+  try {
+    if (error && typeof error === "object") {
+      const serialized = JSON.stringify(error);
+      if (serialized && serialized !== "{}" && serialized !== "[]") {
+        const serializedReason = extractSpecificReasonFromMessage(serialized);
+        if (serializedReason && !isGenericErrorMessage(serializedReason)) {
+          return serializedReason;
+        }
+      }
+    }
+  } catch {
+    // Ignore serialization errors and use fallback
+  }
+
+  return fallback;
+};
+
+export type TransactionErrorKind =
+  | "user_cancelled"
+  | "session_invalid"
+  | "insufficient_funds"
+  | "reverted"
+  | "submit_failed"
+  | "unknown";
+
+export interface ClassifiedTransactionError {
+  kind: TransactionErrorKind;
+  code?: number;
+  reason?: string;
+}
+
+// Cartridge controller ErrorCode families (account_wasm.d.ts):
+// 132 SessionAlreadyRegistered, 142 SessionRefreshRequired, 143 ManualExecutionRequired,
+// 144 ForbiddenEntrypoint, 146 ApproveExecutionRequired — all need a controller reconnect/re-approve.
+const SESSION_INVALID_ERROR_CODES = new Set([132, 142, 143, 144, 146]);
+// 53 InsufficientMaxFee, 54 InsufficientAccountBalance, 113 InsufficientBalance.
+const INSUFFICIENT_FUNDS_ERROR_CODES = new Set([53, 54, 113]);
+// 41 StarknetTransactionExecutionError (data holds the Cairo trace), 55 StarknetValidationFailure.
+const REVERTED_ERROR_CODES = new Set([41, 55]);
+
+// String-shaped wallet cancels (mirrors the Sentry-side patterns in
+// client observability/transaction-failure-reporting.ts).
+const WALLET_REJECTION_PATTERNS = [
+  /4001/,
+  /action[_ ]?rejected/i,
+  /cancelled by user/i,
+  /denied by user/i,
+  /rejected by user/i,
+  /request aborted/i,
+  /transaction rejected/i,
+  /user (cancelled|canceled|closed|denied|rejected)/i,
+  /wallet.*(cancelled|canceled|denied|rejected)/i,
+];
+
+const REVERT_MARKER_PATTERNS = [
+  /execution reverted/i,
+  /failed with reason/i,
+  /\brevert(?:ed)?\b/i,
+  /\bentrypoint_failed\b/i,
+  /failure reason:/i,
+];
+
+const SUBMIT_FAILURE_PATTERNS = [/failed to submit/i, /submission timed out/i];
+
+/** Numeric `code` of a plain-object Cartridge error, if that is what `error` is. */
+export const readCartridgeErrorCode = (error: unknown): number | undefined => {
+  if (!error || typeof error !== "object") return undefined;
+  const code = (error as { code?: unknown }).code;
+  return typeof code === "number" ? code : undefined;
+};
+
+const asClassifiedReason = (error: unknown): string | undefined => {
+  const reason = extractErrorMessage(error, "");
+  return reason || undefined;
+};
+
+const buildSearchableErrorText = (error: unknown): string => {
+  const parts: string[] = [];
+  if (typeof error === "string") parts.push(error);
+  if (error instanceof Error) parts.push(error.message);
+  if (error && typeof error === "object") {
+    const message = (error as { message?: unknown }).message;
+    if (typeof message === "string") parts.push(message);
+  }
+  const readable = extractErrorMessage(error, "");
+  if (readable) parts.push(readable);
+  return parts.join("\n");
+};
+
+/**
+ * Decide what a transaction failure means for the player.
+ *
+ * Decision order: nullish rejection (Cartridge popup close) → Cartridge error
+ * code families → wallet-rejection string markers → revert string markers →
+ * submit-failure string markers → unknown.
+ */
+export const classifyTransactionError = (error: unknown): ClassifiedTransactionError => {
+  if (error === undefined || error === null) {
+    // Cartridge controller rejects with `undefined` when the user closes the popup.
+    return { kind: "user_cancelled" };
+  }
+
+  const code = readCartridgeErrorCode(error);
+  const withCode = code !== undefined ? { code } : {};
+  if (code !== undefined) {
+    if (SESSION_INVALID_ERROR_CODES.has(code)) {
+      return { kind: "session_invalid", code };
+    }
+    if (INSUFFICIENT_FUNDS_ERROR_CODES.has(code)) {
+      return { kind: "insufficient_funds", code, reason: asClassifiedReason(error) };
+    }
+    if (REVERTED_ERROR_CODES.has(code)) {
+      return { kind: "reverted", code, reason: asClassifiedReason(error) };
+    }
+  }
+
+  const searchableText = buildSearchableErrorText(error);
+  if (WALLET_REJECTION_PATTERNS.some((pattern) => pattern.test(searchableText))) {
+    return { kind: "user_cancelled", ...withCode };
+  }
+  if (REVERT_MARKER_PATTERNS.some((pattern) => pattern.test(searchableText))) {
+    return { kind: "reverted", ...withCode, reason: asClassifiedReason(error) };
+  }
+  if (SUBMIT_FAILURE_PATTERNS.some((pattern) => pattern.test(searchableText))) {
+    return { kind: "submit_failed", ...withCode, reason: asClassifiedReason(error) };
+  }
+
+  return { kind: "unknown", ...withCode, reason: asClassifiedReason(error) };
+};

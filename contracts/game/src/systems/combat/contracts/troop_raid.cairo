@@ -4,6 +4,7 @@ use crate::models::position::Direction;
 pub trait ITroopRaidSystems<T> {
     fn raid_explorer_vs_guard(
         ref self: T,
+        game_id: u32,
         explorer_id: ID,
         structure_id: ID,
         structure_direction: Direction,
@@ -50,6 +51,8 @@ pub mod troop_raid_systems {
     #[dojo::event(historical: false)]
     pub struct ExplorerNewRaidEvent {
         #[key]
+        pub game_id: u32,
+        #[key]
         pub explorer_id: ID,
         #[key]
         pub structure_id: ID,
@@ -64,6 +67,8 @@ pub mod troop_raid_systems {
     #[dojo::event(historical: false)]
     pub struct ExplorerRaidEvent {
         #[key]
+        pub game_id: u32,
+        #[key]
         pub explorer_id: ID,
         #[key]
         pub structure_id: ID,
@@ -75,25 +80,26 @@ pub mod troop_raid_systems {
     pub impl TroopRaidSystemsImpl of super::ITroopRaidSystems<ContractState> {
         fn raid_explorer_vs_guard(
             ref self: ContractState,
+            game_id: u32,
             explorer_id: ID,
             structure_id: ID,
             structure_direction: Direction,
             steal_resources: Span<(u8, u128)>,
         ) {
             let mut world = self.world(DEFAULT_NS());
-            let season_config: SeasonConfig = SeasonConfigImpl::get(world);
+            let season_config: SeasonConfig = SeasonConfigImpl::get(world, game_id);
             season_config.assert_started_and_not_over();
 
-            let blitz_mode_on: bool = WorldConfigUtilImpl::get_member(world, selector!("blitz_mode_on"));
+            let blitz_mode_on: bool = WorldConfigUtilImpl::get_member(world, game_id, selector!("blitz_mode_on"));
             assert!(!blitz_mode_on, "Eternum: no raid in blitz mode");
 
             // ensure caller owns aggressor
-            let mut explorer_aggressor: ExplorerTroops = world.read_model(explorer_id);
+            let mut explorer_aggressor: ExplorerTroops = world.read_model((game_id, explorer_id));
             explorer_aggressor.assert_caller_structure_or_agent_owner(ref world);
 
             // ensure caller does not own defender
             let mut guarded_structure_owner: starknet::ContractAddress = StructureOwnerStoreImpl::retrieve(
-                ref world, structure_id,
+                ref world, game_id, structure_id,
             );
             guarded_structure_owner.assert_caller_not_owner();
 
@@ -101,18 +107,22 @@ pub mod troop_raid_systems {
             assert!(explorer_aggressor.troops.count.is_non_zero(), "aggressor has no troops");
 
             // ensure structure id is for a structure
-            let mut guarded_structure: StructureBase = StructureBaseStoreImpl::retrieve(ref world, structure_id);
+            let mut guarded_structure: StructureBase = StructureBaseStoreImpl::retrieve(
+                ref world, game_id, structure_id,
+            );
             assert!(guarded_structure.category != StructureCategory::None.into(), "defender is not a structure");
 
             // ensure defender is not cloaked
-            let tick = TickImpl::get_tick_interval(ref world);
-            let battle_config: BattleConfig = WorldConfigUtilImpl::get_member(world, selector!("battle_config"));
+            let tick = TickImpl::get_tick_interval(ref world, game_id);
+            let battle_config: BattleConfig = WorldConfigUtilImpl::get_member(
+                world, game_id, selector!("battle_config"),
+            );
             guarded_structure.assert_not_cloaked(battle_config, tick, season_config);
 
             // ensure attacker is not cloaked
             if !explorer_aggressor.is_daydreams_agent() {
                 let mut explorer_aggressor_structure: StructureBase = StructureBaseStoreImpl::retrieve(
-                    ref world, explorer_aggressor.owner,
+                    ref world, game_id, explorer_aggressor.owner,
                 );
                 explorer_aggressor_structure.assert_not_cloaked(battle_config, tick, season_config);
             }
@@ -124,18 +134,21 @@ pub mod troop_raid_systems {
             );
 
             // get guard troops
-            let mut guard_defender: GuardTroops = StructureTroopGuardStoreImpl::retrieve(ref world, structure_id);
+            let mut guard_defender: GuardTroops = StructureTroopGuardStoreImpl::retrieve(
+                ref world, game_id, structure_id,
+            );
             let mut explorer_aggressor_troops = explorer_aggressor.troops;
             let biome_library = biome_library::get_dispatcher(@world);
             let defender_biome: Biome = biome_library
                 .get_biome(
                     world,
+                    game_id,
                     guarded_structure.coord().alt,
                     guarded_structure.coord().x.into(),
                     guarded_structure.coord().y.into(),
                 );
-            let troop_damage_config: TroopDamageConfig = CombatConfigImpl::troop_damage_config(ref world);
-            let troop_stamina_config: TroopStaminaConfig = CombatConfigImpl::troop_stamina_config(ref world);
+            let troop_damage_config: TroopDamageConfig = CombatConfigImpl::troop_damage_config(ref world, game_id);
+            let troop_stamina_config: TroopStaminaConfig = CombatConfigImpl::troop_stamina_config(ref world, game_id);
             let current_tick = tick.current();
             let current_tick_interval = tick.interval();
             let raid_library = raid_library::get_dispatcher(@world);
@@ -155,13 +168,15 @@ pub mod troop_raid_systems {
 
             if raid_resolution.had_non_zero_guards {
                 if raid_resolution.explorer_troops_lost.is_non_zero() {
-                    iExplorerImpl::update_capacity(ref world, explorer_id, raid_resolution.explorer_troops_lost, false);
+                    iExplorerImpl::update_capacity(
+                        ref world, game_id, explorer_id, raid_resolution.explorer_troops_lost, false,
+                    );
                 }
 
-                StructureTroopGuardStoreImpl::store(ref guard_defender, ref world, structure_id);
+                StructureTroopGuardStoreImpl::store(ref guard_defender, ref world, game_id, structure_id);
                 if raid_resolution.destroyed_guard_count.is_non_zero() {
                     guarded_structure.troop_guard_count -= raid_resolution.destroyed_guard_count.into();
-                    StructureBaseStoreImpl::store(ref guarded_structure, ref world, structure_id);
+                    StructureBaseStoreImpl::store(ref guarded_structure, ref world, game_id, structure_id);
                 }
 
                 explorer_aggressor.troops = explorer_aggressor_troops;
@@ -179,11 +194,11 @@ pub mod troop_raid_systems {
                         );
                     } else {
                         let mut explorer_aggressor_owner_structure: StructureBase = StructureBaseStoreImpl::retrieve(
-                            ref world, explorer_aggressor.owner,
+                            ref world, game_id, explorer_aggressor.owner,
                         );
                         let mut explorer_aggressor_structure_explorers_list: Array<ID> =
                             StructureTroopExplorerStoreImpl::retrieve(
-                            ref world, explorer_aggressor.owner,
+                            ref world, game_id, explorer_aggressor.owner,
                         )
                             .into();
                         iExplorerImpl::explorer_from_structure_delete(
@@ -210,7 +225,7 @@ pub mod troop_raid_systems {
                     TroopRaidOutcome::Chance => {
                         let rng_library_dispatcher = rng_library::get_dispatcher(@world);
                         let vrf_seed: u256 = rng_library_dispatcher
-                            .get_random_number(Source::Nonce(starknet::get_caller_address()), world);
+                            .get_random_number(game_id, Source::Nonce(starknet::get_caller_address()), world);
                         raid_success =
                             iTroopImpl::raid(
                                 raid_resolution.sum_damage_to_guards,
@@ -227,7 +242,7 @@ pub mod troop_raid_systems {
                 // check village raid resource immunity
                 let is_village = guarded_structure.category == StructureCategory::Village.into();
                 let troop_resources_only = if is_village {
-                    let immunity: VillageRaidImmunity = world.read_model(structure_id);
+                    let immunity: VillageRaidImmunity = world.read_model((game_id, structure_id));
                     if immunity.last_raided_at.is_non_zero() {
                         let immunity_end = immunity.last_raided_at + battle_config.village_raid_immunity_ticks.into();
                         current_tick < immunity_end
@@ -238,10 +253,11 @@ pub mod troop_raid_systems {
                     false
                 };
 
-                let mut structure_weight: Weight = WeightStoreImpl::retrieve(ref world, structure_id);
-                let mut explorer_weight: Weight = WeightStoreImpl::retrieve(ref world, explorer_id);
+                let mut structure_weight: Weight = WeightStoreImpl::retrieve(ref world, game_id, structure_id);
+                let mut explorer_weight: Weight = WeightStoreImpl::retrieve(ref world, game_id, explorer_id);
                 iResourceTransferImpl::structure_to_troop_raid_instant(
                     ref world,
+                    game_id,
                     structure_id,
                     ref structure_weight,
                     explorer_id,
@@ -249,17 +265,20 @@ pub mod troop_raid_systems {
                     steal_resources,
                     troop_resources_only,
                 );
-                structure_weight.store(ref world, structure_id);
-                explorer_weight.store(ref world, explorer_id);
+                structure_weight.store(ref world, game_id, structure_id);
+                explorer_weight.store(ref world, game_id, explorer_id);
 
                 // update village raid immunity timestamp
                 if is_village {
-                    world.write_model(@VillageRaidImmunity { village_id: structure_id, last_raided_at: current_tick });
+                    world
+                        .write_model(
+                            @VillageRaidImmunity { game_id, village_id: structure_id, last_raided_at: current_tick },
+                        );
                 }
 
                 // grant raid achievement
                 let explorer_structure_owner_address: starknet::ContractAddress = StructureOwnerStoreImpl::retrieve(
-                    ref world, explorer_aggressor.owner,
+                    ref world, game_id, explorer_aggressor.owner,
                 );
                 AchievementTrait::progress(
                     world,
@@ -273,13 +292,18 @@ pub mod troop_raid_systems {
             world
                 .emit_event(
                     @ExplorerRaidEvent {
-                        explorer_id, structure_id, success: raid_success, timestamp: starknet::get_block_timestamp(),
+                        game_id,
+                        explorer_id,
+                        structure_id,
+                        success: raid_success,
+                        timestamp: starknet::get_block_timestamp(),
                     },
                 );
 
             world
                 .emit_event(
                     @ExplorerNewRaidEvent {
+                        game_id,
                         explorer_id,
                         structure_id,
                         explorer_owner_id: explorer_aggressor.owner,

@@ -29,8 +29,8 @@ describe("resolveFactoryManifestContractAddress", () => {
 
     mocks.getFactorySqlBaseUrl.mockReturnValue("https://factory.example/sql");
     mocks.listFactoryWorlds.mockResolvedValue([
-      { name: "etrn-sunrise-01", chain: "slot", worldAddress: "0x111" },
-      { name: "etrn-sunset-02", chain: "slot", worldAddress: "0x222" },
+      { name: "etrn-sunrise-01", chain: "mainnet", worldAddress: "0x111" },
+      { name: "etrn-sunset-02", chain: "mainnet", worldAddress: "0x222" },
     ]);
     mocks.resolveWorldContracts.mockResolvedValue({ "0x1": "0xaaa" });
     mocks.resolveWorldDeploymentFromFactory.mockResolvedValue({ worldAddress: "0x111" });
@@ -45,7 +45,7 @@ describe("resolveFactoryManifestContractAddress", () => {
 
   it("resolves the default prize address tag", async () => {
     const result = await resolveFactoryManifestContractAddress({
-      chain: "slot",
+      chain: "mainnet",
       worldName: "etrn-sunrise-01",
       manifestContractName: "s1_eternum-prize_distribution_systems",
     });
@@ -60,7 +60,7 @@ describe("resolveFactoryManifestContractAddress", () => {
     expect(mocks.resolveWorldContracts).toHaveBeenCalledWith("https://factory.example/sql", "etrn-sunrise-01");
     expect(mocks.resolveWorldDeploymentFromFactory).toHaveBeenCalledWith(
       "https://factory.example/sql",
-      "slot",
+      "mainnet",
       "etrn-sunrise-01",
     );
   });
@@ -71,7 +71,7 @@ describe("resolveFactoryManifestContractAddress", () => {
     });
 
     const result = await resolveFactoryManifestContractAddress({
-      chain: "slot",
+      chain: "mainnet",
       worldName: "ETRN-SUNRISE-01",
       manifestContractName: "{prize_distribution_systems}",
     });
@@ -84,7 +84,7 @@ describe("resolveFactoryManifestContractAddress", () => {
 
   it("returns world suggestions when the world does not match exactly", async () => {
     const result = await resolveFactoryManifestContractAddress({
-      chain: "slot",
+      chain: "mainnet",
       worldName: "etrn-sun",
       manifestContractName: "prize_distribution_systems",
     });
@@ -106,7 +106,7 @@ describe("resolveFactoryManifestContractAddress", () => {
     });
 
     const result = await resolveFactoryManifestContractAddress({
-      chain: "slot",
+      chain: "mainnet",
       worldName: "etrn-sunrise-01",
       manifestContractName: "resource_systems",
     });

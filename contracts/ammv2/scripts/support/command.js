@@ -9,7 +9,7 @@ import {
   runContractPackageTask,
 } from "../../../scripts-runtime/js/contract-package.js";
 
-const SUPPORTED_AMMV2_DEPLOYMENT_NETWORKS = new Set(["mainnet", "sepolia", "slot"]);
+const SUPPORTED_AMMV2_DEPLOYMENT_NETWORKS = new Set(["mainnet", "sepolia"]);
 const MAINNET_CONFIRMATION_PHRASE = "mainnet";
 const MAINNET_CONFIRMATION_FLAG = "--confirm-mainnet";
 
@@ -17,11 +17,11 @@ export function resolveAmmv2DeploymentNetworkName(args) {
   const networkName = args[2];
 
   if (!networkName) {
-    throw new Error("Missing AMMv2 deployment network. Use one of: slot, sepolia, mainnet");
+    throw new Error("Missing AMMv2 deployment network. Use one of: sepolia, mainnet");
   }
 
   if (!SUPPORTED_AMMV2_DEPLOYMENT_NETWORKS.has(networkName)) {
-    throw new Error(`Unsupported AMMv2 deployment network ${networkName}. Use one of: slot, sepolia, mainnet`);
+    throw new Error(`Unsupported AMMv2 deployment network ${networkName}. Use one of: sepolia, mainnet`);
   }
 
   return networkName;

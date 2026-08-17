@@ -14,15 +14,14 @@ describe("worldmap chunk stream recovery wiring", () => {
     expect(source).not.toContain("runChunkStreamResubscribeThenRefresh");
   });
 
-  it("does not call resubscribe with the fire-and-forget void pattern", () => {
-    expect(source).not.toMatch(/void\s+this\.toriiStreamManager\s*\n?\s*\.resubscribe\(\)/);
+  it("has no camera-owned Torii stream manager", () => {
+    expect(source).not.toContain("toriiStreamManager");
   });
 
-  it("marks stall recovery as owned by global spatial sync before scheduling refresh", () => {
+  it("schedules a local projection refresh without resubscribing", () => {
     const start = source.indexOf("private recoverChunkStreamingAfterStall");
     const end = source.indexOf("private recoverAfterConnectionFailure", start);
     const methodSource = source.slice(start, end);
-    expect(methodSource).toContain("global_spatial_sync_owned");
     expect(methodSource).toContain("scheduleChunkRecoveryWithReason");
     expect(methodSource).not.toContain(".resubscribe()");
   });

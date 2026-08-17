@@ -16,9 +16,9 @@ import {
 import { describe, expect, it } from "vitest";
 import { HexceptionAmbienceSystem } from "../hexception-ambience-system";
 
-function createFixture(quality: "LOW" | "MID" | "HIGH" = "HIGH") {
+function createFixture() {
   const scene = new Scene();
-  const system = new HexceptionAmbienceSystem(scene, quality);
+  const system = new HexceptionAmbienceSystem(scene);
   return { scene, system };
 }
 
@@ -66,14 +66,14 @@ function findSeamGlowMesh(scene: Scene): Mesh | undefined {
 
 describe("CentralSettlementLight", () => {
   it("creates a PointLight and adds it to scene", () => {
-    const { scene } = createFixture("HIGH");
+    const { scene } = createFixture();
     const light = findPointLight(scene);
     expect(light).toBeDefined();
     expect(light).toBeInstanceOf(PointLight);
   });
 
   it("light has warm color (r > g > b)", () => {
-    const { scene } = createFixture("HIGH");
+    const { scene } = createFixture();
     const light = findPointLight(scene)!;
     const c = light.color;
     expect(c.r).toBeGreaterThan(c.g);
@@ -81,7 +81,7 @@ describe("CentralSettlementLight", () => {
   });
 
   it("light position defaults to (0, 3, 0)", () => {
-    const { scene } = createFixture("HIGH");
+    const { scene } = createFixture();
     const light = findPointLight(scene)!;
     expect(light.position.x).toBeCloseTo(0);
     expect(light.position.y).toBeCloseTo(3);
@@ -89,20 +89,20 @@ describe("CentralSettlementLight", () => {
   });
 
   it("light.distance is 12 and light.decay is 2", () => {
-    const { scene } = createFixture("HIGH");
+    const { scene } = createFixture();
     const light = findPointLight(scene)!;
     expect(light.distance).toBe(12);
     expect(light.decay).toBe(2);
   });
 
   it("light.castShadow is false", () => {
-    const { scene } = createFixture("HIGH");
+    const { scene } = createFixture();
     const light = findPointLight(scene)!;
     expect(light.castShadow).toBe(false);
   });
 
   it("intensity is higher when timeProgress is in night range (80-20) than day range (30-70)", () => {
-    const { system, scene } = createFixture("HIGH");
+    const { system, scene } = createFixture();
     const light = findPointLight(scene)!;
 
     system.setTimeProgress(50); // day
@@ -115,7 +115,7 @@ describe("CentralSettlementLight", () => {
   });
 
   it("setEnabled(false) sets intensity to 0 and visible to false", () => {
-    const { system, scene } = createFixture("HIGH");
+    const { system, scene } = createFixture();
     const light = findPointLight(scene)!;
 
     system.setEnabled(false);
@@ -124,7 +124,7 @@ describe("CentralSettlementLight", () => {
   });
 
   it("setEnabled(true) restores intensity", () => {
-    const { system, scene } = createFixture("HIGH");
+    const { system, scene } = createFixture();
     const light = findPointLight(scene)!;
 
     system.setTimeProgress(50);
@@ -138,15 +138,10 @@ describe("CentralSettlementLight", () => {
   });
 
   it("dispose() removes light from scene", () => {
-    const { system, scene } = createFixture("HIGH");
+    const { system, scene } = createFixture();
     expect(findPointLight(scene)).toBeDefined();
 
     system.dispose();
-    expect(findPointLight(scene)).toBeUndefined();
-  });
-
-  it("not created when quality is LOW", () => {
-    const { scene } = createFixture("LOW");
     expect(findPointLight(scene)).toBeUndefined();
   });
 });
@@ -155,20 +150,20 @@ describe("CentralSettlementLight", () => {
 
 describe("RadialColorTemperature", () => {
   it("creates a Mesh with PlaneGeometry added to scene", () => {
-    const { scene } = createFixture("HIGH");
+    const { scene } = createFixture();
     const mesh = findMeshWithPlane(scene);
     expect(mesh).toBeDefined();
     expect(mesh!.geometry).toBeInstanceOf(PlaneGeometry);
   });
 
   it("plane is at y=-0.03 (above ground at -0.05, below hex tiles)", () => {
-    const { scene } = createFixture("HIGH");
+    const { scene } = createFixture();
     const mesh = findMeshWithPlane(scene)!;
     expect(mesh.position.y).toBeCloseTo(-0.03);
   });
 
   it("material has transparent:true, depthWrite:false", () => {
-    const { scene } = createFixture("HIGH");
+    const { scene } = createFixture();
     const mesh = findMeshWithPlane(scene)!;
     const mat = mesh.material as MeshBasicMaterial;
     expect(mat.transparent).toBe(true);
@@ -176,7 +171,7 @@ describe("RadialColorTemperature", () => {
   });
 
   it("DataTexture center pixel RGB has higher R than B (warm)", () => {
-    const { scene } = createFixture("HIGH");
+    const { scene } = createFixture();
     const mesh = findMeshWithPlane(scene)!;
     const mat = mesh.material as MeshBasicMaterial;
     const tex = mat.map as DataTexture;
@@ -189,7 +184,7 @@ describe("RadialColorTemperature", () => {
   });
 
   it("DataTexture edge pixel has near-zero alpha", () => {
-    const { scene } = createFixture("HIGH");
+    const { scene } = createFixture();
     const mesh = findMeshWithPlane(scene)!;
     const mat = mesh.material as MeshBasicMaterial;
     const tex = mat.map as DataTexture;
@@ -200,7 +195,7 @@ describe("RadialColorTemperature", () => {
   });
 
   it("opacity modulates with timeProgress — higher at night", () => {
-    const { system, scene } = createFixture("HIGH");
+    const { system, scene } = createFixture();
     const mesh = findMeshWithPlane(scene)!;
     const mat = mesh.material as MeshBasicMaterial;
 
@@ -214,7 +209,7 @@ describe("RadialColorTemperature", () => {
   });
 
   it("setEnabled(false) sets mesh.visible to false", () => {
-    const { system, scene } = createFixture("HIGH");
+    const { system, scene } = createFixture();
     const mesh = findMeshWithPlane(scene)!;
 
     system.setEnabled(false);
@@ -222,16 +217,11 @@ describe("RadialColorTemperature", () => {
   });
 
   it("dispose() removes mesh, disposes geometry/material/texture", () => {
-    const { system, scene } = createFixture("HIGH");
+    const { system, scene } = createFixture();
     const mesh = findMeshWithPlane(scene)!;
     expect(mesh).toBeDefined();
 
     system.dispose();
-    expect(findMeshWithPlane(scene)).toBeUndefined();
-  });
-
-  it("not created when quality is LOW", () => {
-    const { scene } = createFixture("LOW");
     expect(findMeshWithPlane(scene)).toBeUndefined();
   });
 });
@@ -240,7 +230,7 @@ describe("RadialColorTemperature", () => {
 
 describe("SubtleBackground", () => {
   it("creates an inverted SphereGeometry mesh (material.side === BackSide)", () => {
-    const { scene } = createFixture("HIGH");
+    const { scene } = createFixture();
     const mesh = findMeshWithSphere(scene);
     expect(mesh).toBeDefined();
     const mat = mesh!.material as MeshBasicMaterial;
@@ -248,20 +238,20 @@ describe("SubtleBackground", () => {
   });
 
   it("sphere radius is large (>= 200)", () => {
-    const { scene } = createFixture("HIGH");
+    const { scene } = createFixture();
     const mesh = findMeshWithSphere(scene)!;
     const geo = mesh.geometry as SphereGeometry;
     expect(geo.parameters.radius).toBeGreaterThanOrEqual(200);
   });
 
   it("mesh.frustumCulled is false", () => {
-    const { scene } = createFixture("HIGH");
+    const { scene } = createFixture();
     const mesh = findMeshWithSphere(scene)!;
     expect(mesh.frustumCulled).toBe(false);
   });
 
   it("DataTexture has some bright pixels (stars) against dark background", () => {
-    const { scene } = createFixture("HIGH");
+    const { scene } = createFixture();
     const mesh = findMeshWithSphere(scene)!;
     const mat = mesh.material as MeshBasicMaterial;
     const tex = mat.map as DataTexture;
@@ -278,7 +268,7 @@ describe("SubtleBackground", () => {
   });
 
   it("base color of texture is darker than 0x2a1a3e", () => {
-    const { scene } = createFixture("HIGH");
+    const { scene } = createFixture();
     const mesh = findMeshWithSphere(scene)!;
     const mat = mesh.material as MeshBasicMaterial;
     const tex = mat.map as DataTexture;
@@ -297,7 +287,7 @@ describe("SubtleBackground", () => {
   });
 
   it("material opacity is higher during night timeProgress than day", () => {
-    const { system, scene } = createFixture("HIGH");
+    const { system, scene } = createFixture();
     const mesh = findMeshWithSphere(scene)!;
     const mat = mesh.material as MeshBasicMaterial;
 
@@ -311,7 +301,7 @@ describe("SubtleBackground", () => {
   });
 
   it("setEnabled(false) sets visible to false", () => {
-    const { system, scene } = createFixture("HIGH");
+    const { system, scene } = createFixture();
     const mesh = findMeshWithSphere(scene)!;
 
     system.setEnabled(false);
@@ -319,21 +309,11 @@ describe("SubtleBackground", () => {
   });
 
   it("dispose() removes sphere, disposes geometry/material/texture", () => {
-    const { system, scene } = createFixture("HIGH");
+    const { system, scene } = createFixture();
     expect(findMeshWithSphere(scene)).toBeDefined();
 
     system.dispose();
     expect(findMeshWithSphere(scene)).toBeUndefined();
-  });
-
-  it("works on all quality tiers (including LOW)", () => {
-    const { scene: lowScene } = createFixture("LOW");
-    const { scene: midScene } = createFixture("MID");
-    const { scene: highScene } = createFixture("HIGH");
-
-    expect(findMeshWithSphere(lowScene)).toBeDefined();
-    expect(findMeshWithSphere(midScene)).toBeDefined();
-    expect(findMeshWithSphere(highScene)).toBeDefined();
   });
 });
 
@@ -341,14 +321,14 @@ describe("SubtleBackground", () => {
 
 describe("GroundFogLayer", () => {
   it("creates Points mesh added to scene", () => {
-    const { scene } = createFixture("HIGH");
+    const { scene } = createFixture();
     const fog = findGroundFog(scene);
     expect(fog).toBeDefined();
     expect(fog).toBeInstanceOf(Points);
   });
 
   it("all initial particle Y positions are between 0.05 and 0.4", () => {
-    const { scene } = createFixture("HIGH");
+    const { scene } = createFixture();
     const fog = findGroundFog(scene)!;
     const positions = fog.geometry.getAttribute("position");
     for (let i = 0; i < positions.count; i++) {
@@ -359,7 +339,7 @@ describe("GroundFogLayer", () => {
   });
 
   it("all particle positions are within spawnRadius of center", () => {
-    const { scene } = createFixture("HIGH");
+    const { scene } = createFixture();
     const fog = findGroundFog(scene)!;
     const positions = fog.geometry.getAttribute("position");
     const spawnRadius = 8;
@@ -371,22 +351,13 @@ describe("GroundFogLayer", () => {
     }
   });
 
-  it("particle count is 80 on HIGH, 40 on MID, 0 on LOW", () => {
-    const { scene: highScene } = createFixture("HIGH");
-    const { scene: midScene } = createFixture("MID");
-    const { scene: lowScene } = createFixture("LOW");
-
-    const highFog = findGroundFog(highScene)!;
-    expect(highFog.geometry.getAttribute("position").count).toBe(80);
-
-    const midFog = findGroundFog(midScene)!;
-    expect(midFog.geometry.getAttribute("position").count).toBe(40);
-
-    expect(findGroundFog(lowScene)).toBeUndefined();
+  it("uses the fixed visual-profile particle count", () => {
+    const { scene } = createFixture();
+    expect(findGroundFog(scene)!.geometry.getAttribute("position").count).toBe(80);
   });
 
   it("material uses AdditiveBlending and depthWrite:false", () => {
-    const { scene } = createFixture("HIGH");
+    const { scene } = createFixture();
     const fog = findGroundFog(scene)!;
     const mat = fog.material as PointsMaterial;
     expect(mat.blending).toBe(AdditiveBlending);
@@ -394,7 +365,7 @@ describe("GroundFogLayer", () => {
   });
 
   it("after update(), particles have moved (positions changed)", () => {
-    const { system, scene } = createFixture("HIGH");
+    const { system, scene } = createFixture();
     const fog = findGroundFog(scene)!;
     const positions = fog.geometry.getAttribute("position");
 
@@ -421,7 +392,7 @@ describe("GroundFogLayer", () => {
   });
 
   it("setWeatherIntensity(1.0) sets material opacity to 0", () => {
-    const { system, scene } = createFixture("HIGH");
+    const { system, scene } = createFixture();
     const fog = findGroundFog(scene)!;
     const mat = fog.material as PointsMaterial;
 
@@ -431,7 +402,7 @@ describe("GroundFogLayer", () => {
   });
 
   it("setTimeProgress in dawn/dusk range increases opacity vs noon", () => {
-    const { system, scene } = createFixture("HIGH");
+    const { system, scene } = createFixture();
     const fog = findGroundFog(scene)!;
     const mat = fog.material as PointsMaterial;
 
@@ -447,7 +418,7 @@ describe("GroundFogLayer", () => {
   });
 
   it("setEnabled(false) sets Points.visible to false", () => {
-    const { system, scene } = createFixture("HIGH");
+    const { system, scene } = createFixture();
     const fog = findGroundFog(scene)!;
 
     system.setEnabled(false);
@@ -455,7 +426,7 @@ describe("GroundFogLayer", () => {
   });
 
   it("dispose() removes Points, disposes geometry and material", () => {
-    const { system, scene } = createFixture("HIGH");
+    const { system, scene } = createFixture();
     expect(findGroundFog(scene)).toBeDefined();
 
     system.dispose();
@@ -467,7 +438,7 @@ describe("GroundFogLayer", () => {
 
 describe("EdgeBoundaryMist", () => {
   it("creates Points mesh added to scene", () => {
-    const { system, scene } = createFixture("HIGH");
+    const { system, scene } = createFixture();
     system.setup(new Vector3(0, 0, 0), 10);
     const mist = findEdgeMist(scene);
     expect(mist).toBeDefined();
@@ -475,7 +446,7 @@ describe("EdgeBoundaryMist", () => {
   });
 
   it("no particles placed within 60% of grid radius from center", () => {
-    const { system, scene } = createFixture("HIGH");
+    const { system, scene } = createFixture();
     const gridRadius = 10;
     system.setup(new Vector3(0, 0, 0), gridRadius);
     const mist = findEdgeMist(scene)!;
@@ -490,7 +461,7 @@ describe("EdgeBoundaryMist", () => {
   });
 
   it("all particles placed between 60% and 120% of grid radius", () => {
-    const { system, scene } = createFixture("HIGH");
+    const { system, scene } = createFixture();
     const gridRadius = 10;
     system.setup(new Vector3(0, 0, 0), gridRadius);
     const mist = findEdgeMist(scene)!;
@@ -506,24 +477,14 @@ describe("EdgeBoundaryMist", () => {
     }
   });
 
-  it("particle count is 100 on HIGH, 50 on MID, 0 on LOW", () => {
-    const highFixture = createFixture("HIGH");
-    highFixture.system.setup(new Vector3(0, 0, 0), 10);
-    const highMist = findEdgeMist(highFixture.scene)!;
-    expect(highMist.geometry.getAttribute("position").count).toBe(100);
-
-    const midFixture = createFixture("MID");
-    midFixture.system.setup(new Vector3(0, 0, 0), 10);
-    const midMist = findEdgeMist(midFixture.scene)!;
-    expect(midMist.geometry.getAttribute("position").count).toBe(50);
-
-    const lowFixture = createFixture("LOW");
-    lowFixture.system.setup(new Vector3(0, 0, 0), 10);
-    expect(findEdgeMist(lowFixture.scene)).toBeUndefined();
+  it("uses the fixed visual-profile edge-mist count", () => {
+    const fixture = createFixture();
+    fixture.system.setup(new Vector3(0, 0, 0), 10);
+    expect(findEdgeMist(fixture.scene)!.geometry.getAttribute("position").count).toBe(100);
   });
 
   it("material uses AdditiveBlending", () => {
-    const { system, scene } = createFixture("HIGH");
+    const { system, scene } = createFixture();
     system.setup(new Vector3(0, 0, 0), 10);
     const mist = findEdgeMist(scene)!;
     const mat = mist.material as PointsMaterial;
@@ -531,7 +492,7 @@ describe("EdgeBoundaryMist", () => {
   });
 
   it("after multiple updates, particles have drifted (slow circular motion)", () => {
-    const { system, scene } = createFixture("HIGH");
+    const { system, scene } = createFixture();
     system.setup(new Vector3(0, 0, 0), 10);
     const mist = findEdgeMist(scene)!;
     const positions = mist.geometry.getAttribute("position");
@@ -556,7 +517,7 @@ describe("EdgeBoundaryMist", () => {
   });
 
   it("setEnabled(false) sets visible to false", () => {
-    const { system, scene } = createFixture("HIGH");
+    const { system, scene } = createFixture();
     system.setup(new Vector3(0, 0, 0), 10);
     const mist = findEdgeMist(scene)!;
 
@@ -565,7 +526,7 @@ describe("EdgeBoundaryMist", () => {
   });
 
   it("dispose() cleans up geometry, material, removes from scene", () => {
-    const { system, scene } = createFixture("HIGH");
+    const { system, scene } = createFixture();
     system.setup(new Vector3(0, 0, 0), 10);
     expect(findEdgeMist(scene)).toBeDefined();
 
@@ -578,20 +539,20 @@ describe("EdgeBoundaryMist", () => {
 
 describe("HexSeamGlow", () => {
   it("creates a Mesh with PlaneGeometry added to scene", () => {
-    const { scene } = createFixture("HIGH");
+    const { scene } = createFixture();
     const mesh = findSeamGlowMesh(scene);
     expect(mesh).toBeDefined();
     expect(mesh!.geometry).toBeInstanceOf(PlaneGeometry);
   });
 
   it("mesh is at y=0.02 (between ground and hex tiles)", () => {
-    const { scene } = createFixture("HIGH");
+    const { scene } = createFixture();
     const mesh = findSeamGlowMesh(scene)!;
     expect(mesh.position.y).toBeCloseTo(0.02);
   });
 
   it("material uses AdditiveBlending and depthWrite:false", () => {
-    const { scene } = createFixture("HIGH");
+    const { scene } = createFixture();
     const mesh = findSeamGlowMesh(scene)!;
     const mat = mesh.material as MeshBasicMaterial;
     expect(mat.blending).toBe(AdditiveBlending);
@@ -599,7 +560,7 @@ describe("HexSeamGlow", () => {
   });
 
   it("DataTexture has bright pixels at hex edge positions (SDF boundary)", () => {
-    const { scene } = createFixture("HIGH");
+    const { scene } = createFixture();
     const mesh = findSeamGlowMesh(scene)!;
     const mat = mesh.material as MeshBasicMaterial;
     const tex = mat.map as DataTexture;
@@ -620,7 +581,7 @@ describe("HexSeamGlow", () => {
   });
 
   it("DataTexture has dark/zero pixels at hex centers", () => {
-    const { scene } = createFixture("HIGH");
+    const { scene } = createFixture();
     const mesh = findSeamGlowMesh(scene)!;
     const mat = mesh.material as MeshBasicMaterial;
     const tex = mat.map as DataTexture;
@@ -639,7 +600,7 @@ describe("HexSeamGlow", () => {
   });
 
   it("glow color modulates with timeProgress — brighter at night", () => {
-    const { system, scene } = createFixture("HIGH");
+    const { system, scene } = createFixture();
     const mesh = findSeamGlowMesh(scene)!;
     const mat = mesh.material as MeshBasicMaterial;
 
@@ -653,7 +614,7 @@ describe("HexSeamGlow", () => {
   });
 
   it("setEnabled(false) sets mesh.visible to false", () => {
-    const { system, scene } = createFixture("HIGH");
+    const { system, scene } = createFixture();
     const mesh = findSeamGlowMesh(scene)!;
 
     system.setEnabled(false);
@@ -661,20 +622,15 @@ describe("HexSeamGlow", () => {
   });
 
   it("dispose() cleans up mesh, geometry, material, texture", () => {
-    const { system, scene } = createFixture("HIGH");
+    const { system, scene } = createFixture();
     expect(findSeamGlowMesh(scene)).toBeDefined();
 
     system.dispose();
     expect(findSeamGlowMesh(scene)).toBeUndefined();
   });
 
-  it("not created when quality is LOW", () => {
-    const { scene } = createFixture("LOW");
-    expect(findSeamGlowMesh(scene)).toBeUndefined();
-  });
-
   it("renderOrder is 1 (below biome tiles at 2-3)", () => {
-    const { scene } = createFixture("HIGH");
+    const { scene } = createFixture();
     const mesh = findSeamGlowMesh(scene)!;
     expect(mesh.renderOrder).toBe(1);
   });

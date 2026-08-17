@@ -7,9 +7,11 @@ type CountableModel = {
 };
 
 describe("finalizeVisibleStructureModelPass", () => {
-  it("flushes model counts, hands off active model sets, applies bounds, and ends point batches", () => {
+  it("hides stale models, hands off active model sets, applies bounds, and ends point batches", () => {
     const structureModelA: CountableModel = { setCount: vi.fn() };
     const structureModelB: CountableModel = { setCount: vi.fn() };
+    const staleStructureModel: CountableModel = { setCount: vi.fn() };
+    const staleCosmeticModel: CountableModel = { setCount: vi.fn() };
     const nextActiveStructureModels = new Set([structureModelA]);
     const nextActiveCosmeticStructureModels = new Set([structureModelB]);
     const applyPendingModelBounds = vi.fn();
@@ -17,17 +19,21 @@ describe("finalizeVisibleStructureModelPass", () => {
 
     const result = finalizeVisibleStructureModelPass({
       modelInstanceCounts: new Map([
-        [structureModelA, 3],
-        [structureModelB, 7],
+        [structureModelA, 4],
+        [structureModelB, 2],
       ]),
+      previouslyActiveStructureModels: new Set([structureModelA, staleStructureModel]),
+      previouslyActiveCosmeticStructureModels: new Set([structureModelB, staleCosmeticModel]),
       nextActiveStructureModels,
       nextActiveCosmeticStructureModels,
       applyPendingModelBounds,
       endPointBatches,
     });
 
-    expect(structureModelA.setCount).toHaveBeenCalledWith(3);
-    expect(structureModelB.setCount).toHaveBeenCalledWith(7);
+    expect(staleStructureModel.setCount).toHaveBeenCalledWith(0);
+    expect(staleCosmeticModel.setCount).toHaveBeenCalledWith(0);
+    expect(structureModelA.setCount).toHaveBeenCalledWith(4);
+    expect(structureModelB.setCount).toHaveBeenCalledWith(2);
     expect(applyPendingModelBounds).toHaveBeenCalledTimes(1);
     expect(endPointBatches).toHaveBeenCalledTimes(1);
     expect(result.activeStructureModels).toBe(nextActiveStructureModels);
@@ -39,7 +45,9 @@ describe("finalizeVisibleStructureModelPass", () => {
     const applyPendingModelBounds = vi.fn();
 
     finalizeVisibleStructureModelPass({
-      modelInstanceCounts: new Map<CountableModel, number>([[model, 1]]),
+      modelInstanceCounts: new Map([[model, 1]]),
+      previouslyActiveStructureModels: new Set<CountableModel>(),
+      previouslyActiveCosmeticStructureModels: new Set<CountableModel>(),
       nextActiveStructureModels: new Set<CountableModel>([model]),
       nextActiveCosmeticStructureModels: new Set<CountableModel>(),
       applyPendingModelBounds,
@@ -47,5 +55,22 @@ describe("finalizeVisibleStructureModelPass", () => {
 
     expect(model.setCount).toHaveBeenCalledWith(1);
     expect(applyPendingModelBounds).toHaveBeenCalledTimes(1);
+  });
+
+  it("does not hide active models while removing stale ones", () => {
+    const activeModel: CountableModel = { setCount: vi.fn() };
+    const staleModel: CountableModel = { setCount: vi.fn() };
+
+    finalizeVisibleStructureModelPass({
+      modelInstanceCounts: new Map([[activeModel, 3]]),
+      previouslyActiveStructureModels: new Set([activeModel, staleModel]),
+      previouslyActiveCosmeticStructureModels: new Set<CountableModel>(),
+      nextActiveStructureModels: new Set([activeModel]),
+      nextActiveCosmeticStructureModels: new Set<CountableModel>(),
+      applyPendingModelBounds: vi.fn(),
+    });
+
+    expect(activeModel.setCount).toHaveBeenCalledWith(3);
+    expect(staleModel.setCount).toHaveBeenCalledWith(0);
   });
 });

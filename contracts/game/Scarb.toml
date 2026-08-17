@@ -52,10 +52,14 @@ max-line-length = 120
 
 [profile.local]
 
-[profile.slot]
-
 [profile.sepolia]
 
 [profile.mainnet]
 
-[profile.slottest]
+# appchain M0 spike (deploy/appchain/spike); dojo_spike.toml is generated + gitignored
+[profile.spike]
+
+# Shared Realms appchain builds; each profile deploys the same classes as a distinct world.
+[profile.appchain-blitz]
+
+[profile.appchain-eternum]

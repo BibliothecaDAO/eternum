@@ -30,14 +30,14 @@ REQUIRED JSON FORMAT:
 FEATURES:
     • Updates ERC721/ERC20 contract addresses from JSON file
     • Auto-detects and updates world address from corresponding manifest file
-    • Supports slot, local, sepolia, and mainnet environments
+    • Supports local, appchain, sepolia, and mainnet environments
 
 EXAMPLES:
     1. Update local configuration:
        $(basename "$0") torii-local.toml addresses.json
 
-    2. Update slot configuration (auto-detects manifest_slot.json):
-       $(basename "$0") torii-slot.toml ../common/addresses/slot.json
+    2. Update mainnet configuration (auto-detects manifest_mainnet.json):
+       $(basename "$0") torii-mainnet.toml ../common/addresses/mainnet.json
 
 REQUIREMENTS:
     - jq (JSON processor)

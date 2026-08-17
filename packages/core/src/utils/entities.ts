@@ -15,6 +15,7 @@ import { configManager } from "../managers/config-manager";
 import { getHyperstructureName } from "./hyperstructure";
 import { getRealmNameById } from "./realm";
 import { getStructureTypeName } from "./structure";
+import { gameEntityKey } from "../managers/config-manager";
 
 const knownAddressesJSON: Record<string, string> = knownAddressesJSONData;
 
@@ -27,8 +28,8 @@ export const getEntityInfo = (
   const { Structure, ExplorerTroops } = components;
   const entityIdBigInt = BigInt(entityId);
 
-  const explorer = getComponentValue(ExplorerTroops, getEntityIdFromKeys([entityIdBigInt]));
-  const structure = getComponentValue(Structure, getEntityIdFromKeys([entityIdBigInt]));
+  const explorer = getComponentValue(ExplorerTroops, gameEntityKey([entityIdBigInt]));
+  const structure = getComponentValue(Structure, gameEntityKey([entityIdBigInt]));
 
   let name = undefined;
   if (explorer) {
@@ -46,7 +47,7 @@ export const getEntityInfo = (
   let owner = undefined;
   if (explorer) {
     owner = explorer.owner;
-    const structureOwner = getComponentValue(Structure, getEntityIdFromKeys([BigInt(explorer.owner)]));
+    const structureOwner = getComponentValue(Structure, gameEntityKey([BigInt(explorer.owner)]));
     owner = structureOwner?.owner;
   } else if (structure) {
     owner = structure.owner;
@@ -165,7 +166,7 @@ export const getAddressFromStructureEntity = (
   entityId: ID,
   components: ClientComponents,
 ): ContractAddress | undefined => {
-  return getComponentValue(components.Structure, getEntityIdFromKeys([BigInt(entityId)]))?.owner || undefined;
+  return getComponentValue(components.Structure, gameEntityKey([BigInt(entityId)]))?.owner || undefined;
 };
 
 export const getInternalAddressName = (address: string): string | undefined => {

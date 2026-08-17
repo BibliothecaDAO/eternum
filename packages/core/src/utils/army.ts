@@ -12,7 +12,6 @@ import {
   TroopType,
 } from "@bibliothecadao/types";
 import { type ComponentValue, type Entity, getComponentValue } from "@dojoengine/recs";
-import { getEntityIdFromKeys } from "@dojoengine/utils";
 import {
   configManager,
   divideByPrecision,
@@ -23,6 +22,7 @@ import {
   getTileAt,
   DEFAULT_COORD_ALT,
 } from "..";
+import { gameEntityKey } from "../managers/config-manager";
 
 export const formatArmies = (
   armies: Entity[],
@@ -41,7 +41,7 @@ export const formatArmies = (
       const weightKg = resource ? gramToKg(divideByPrecision(Number(resource.weight.weight))) : 0;
 
       const stamina = explorerTroops.troops.stamina.amount;
-      const structure = getComponentValue(components.Structure, getEntityIdFromKeys([BigInt(explorerTroops.owner)]));
+      const structure = getComponentValue(components.Structure, gameEntityKey([BigInt(explorerTroops.owner)]));
 
       const isMine = (structure?.owner || 0n) === playerAddress;
 
@@ -78,7 +78,7 @@ export const getArmy = (
   playerAddress: ContractAddress,
   components: ClientComponents,
 ): ArmyInfo | undefined => {
-  const entityId = typeof armyEntityId === "string" ? armyEntityId : getEntityIdFromKeys([BigInt(armyEntityId)]);
+  const entityId = typeof armyEntityId === "string" ? armyEntityId : gameEntityKey([BigInt(armyEntityId)]);
   return formatArmies([entityId], playerAddress, components)[0];
 };
 
@@ -204,7 +204,7 @@ export const hasAdjacentOwnedStructure = (
   for (const hex of neighborHexes) {
     const tile = getTileAt(components, DEFAULT_COORD_ALT, hex.col, hex.row);
     if (!tile?.occupier_is_structure) continue;
-    const structure = getComponentValue(components.Structure, getEntityIdFromKeys([BigInt(tile.occupier_id)]));
+    const structure = getComponentValue(components.Structure, gameEntityKey([BigInt(tile.occupier_id)]));
     if (!structure) continue;
     if (structure.owner === playerAddress) {
       return true;
@@ -223,7 +223,7 @@ export const isArmyAdjacentToStructure = (
 };
 
 export const getFreeDirectionsAroundStructure = (structureEntityId: ID, components: ClientComponents) => {
-  const structure = getComponentValue(components.Structure, getEntityIdFromKeys([BigInt(structureEntityId)]));
+  const structure = getComponentValue(components.Structure, gameEntityKey([BigInt(structureEntityId)]));
 
   const freeDirections: Direction[] = [];
 

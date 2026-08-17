@@ -6,6 +6,43 @@ import { useEntityQuery } from "@dojoengine/react";
 import { Has, getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { useEffect, useMemo, useState } from "react";
+import { configManager } from "@bibliothecadao/eternum";
+import { shortString } from "starknet";
+import { gameEntityKey } from "@/dojo/game-scope";
+
+/**
+ * Decode an ERC20 `symbol()` result. Handles the common felt252 short-string
+ * shape and the ByteArray shape; returns null when nothing readable comes back
+ * so the UI falls back to a neutral label.
+ */
+const decodeTokenSymbol = (raw: unknown): string | null => {
+  const values = Array.isArray(raw) ? raw : [raw];
+  try {
+    const decodeFelt = (value: unknown): string => {
+      try {
+        const asBigInt = BigInt(String(value));
+        if (asBigInt === 0n) return "";
+        return shortString.decodeShortString(`0x${asBigInt.toString(16)}`);
+      } catch {
+        return "";
+      }
+    };
+
+    if (values.length === 1) {
+      const symbol = decodeFelt(values[0]).trim();
+      return symbol.length > 0 ? symbol : null;
+    }
+
+    // ByteArray: [full_words_len, ...full_words, pending_word, pending_word_len]
+    const fullWordsLength = Number(BigInt(String(values[0])));
+    if (!Number.isFinite(fullWordsLength) || fullWordsLength < 0 || fullWordsLength + 3 !== values.length) return null;
+    const words = values.slice(1, 1 + fullWordsLength + 1);
+    const symbol = words.map(decodeFelt).join("").trim();
+    return symbol.length > 0 ? symbol : null;
+  } catch {
+    return null;
+  }
+};
 
 export const ClaimBlitzPrizeButton = ({ className }: { className?: string }) => {
   const {
@@ -30,10 +67,14 @@ export const ClaimBlitzPrizeButton = ({ className }: { className?: string }) => 
 
   const finalTrialId = final?.trial_id as bigint | undefined;
 
-  // Player rank for the connected account
+  // Player rank for the connected account. s2 keys prize rows by
+  // (game_id, ...) — the trial id only keys legacy (s1) worlds.
   const playerRank = useMemo(() => {
     if (!finalTrialId || !account?.address) return undefined;
-    const eid = getEntityIdFromKeys([finalTrialId as unknown as bigint, BigInt(account.address)]);
+    const eid =
+      configManager.getActiveGameId() > 0
+        ? gameEntityKey([BigInt(account.address)])
+        : getEntityIdFromKeys([finalTrialId as unknown as bigint, BigInt(account.address)]);
     return getComponentValue(components.PlayerRank, eid as any);
   }, [components.PlayerRank, finalTrialId, account?.address]);
 
@@ -42,7 +83,10 @@ export const ClaimBlitzPrizeButton = ({ className }: { className?: string }) => 
   const prizeShare = useMemo(() => {
     if (!finalTrialId || !playerRank) return undefined as undefined | bigint;
     try {
-      const prizeId = getEntityIdFromKeys([finalTrialId as unknown as bigint, BigInt(playerRank.rank)]);
+      const prizeId =
+        configManager.getActiveGameId() > 0
+          ? gameEntityKey([BigInt(playerRank.rank)])
+          : getEntityIdFromKeys([finalTrialId as unknown as bigint, BigInt(playerRank.rank)]);
       const prize = getComponentValue(components.RankPrize, prizeId as any);
       if (!prize || Number(prize.total_players_same_rank_count) === 0) return undefined;
       const total: bigint = prize.total_prize_amount as bigint;
@@ -52,17 +96,18 @@ export const ClaimBlitzPrizeButton = ({ className }: { className?: string }) => 
     }
   }, [components.RankPrize, finalTrialId, playerRank?.rank]);
 
-  // Fetch decimals from WorldConfig->blitz_registration_config.fee_token
-  const worldCfgEntities = useEntityQuery([Has(components.WorldConfig)]);
-  const worldCfg = useMemo(
-    () => (worldCfgEntities[0] ? getComponentValue(components.WorldConfig, worldCfgEntities[0]) : undefined),
-    [worldCfgEntities],
+  // s2: the fee token lives on the ChainConfig singleton.
+  const chainCfgEntities = useEntityQuery([Has(components.ChainConfig)]);
+  const chainCfg = useMemo(
+    () => (chainCfgEntities[0] ? getComponentValue(components.ChainConfig, chainCfgEntities[0]) : undefined),
+    [chainCfgEntities],
   );
   const [decimals, setDecimals] = useState<number | null>(null);
+  const [feeTokenSymbol, setFeeTokenSymbol] = useState<string | null>(null);
   useEffect(() => {
     (async () => {
       try {
-        const feeToken = worldCfg?.blitz_registration_config?.fee_token as unknown as string | undefined;
+        const feeToken = chainCfg?.fee_token as unknown as string | undefined;
         const connectedAccount = account;
         if (!feeToken || !connectedAccount) return;
         const result: any = await network.provider.callAndReturnResult(connectedAccount, {
@@ -75,9 +120,25 @@ export const ClaimBlitzPrizeButton = ({ className }: { className?: string }) => 
       } catch (e) {
         // ignore
       }
+
+      // Prize label comes from the chain's fee token; without one the UI keeps
+      // a neutral "prize share" label instead of assuming LORDS.
+      try {
+        const feeToken = chainCfg?.fee_token as unknown as string | undefined;
+        const connectedAccount = account;
+        if (!feeToken || !connectedAccount) return;
+        const result: any = await network.provider.callAndReturnResult(connectedAccount, {
+          contractAddress: feeToken,
+          entrypoint: "symbol",
+          calldata: [],
+        } as any);
+        setFeeTokenSymbol(decodeTokenSymbol(Array.isArray(result?.result) ? result.result : result));
+      } catch (e) {
+        // ignore
+      }
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [account, network.provider, worldCfg?.blitz_registration_config?.fee_token]);
+  }, [account, network.provider, chainCfg?.fee_token]);
 
   const formatTokenAmount = (amount?: bigint) => {
     if (typeof amount !== "bigint") return "-";
@@ -126,10 +187,7 @@ export const ClaimBlitzPrizeButton = ({ className }: { className?: string }) => 
                 <span>Share:</span>
                 <span className={prizeShare ? "text-yellow-400" : "text-gray-400"}>
                   {typeof prizeShare === "bigint" ? (
-                    <span className="inline-flex items-center gap-1">
-                      <img src="/tokens/lords.png" alt="LORDS" className="h-3 w-3 rounded-full object-contain" />
-                      <span>{formatTokenAmount(prizeShare)}</span>
-                    </span>
+                    <span>{`${formatTokenAmount(prizeShare)} ${feeTokenSymbol ?? "prize share"}`}</span>
                   ) : (
                     formatTokenAmount(prizeShare)
                   )}

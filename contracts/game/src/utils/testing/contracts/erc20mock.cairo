@@ -10,7 +10,7 @@ trait IERC20<TState> {
 }
 
 #[starknet::contract]
-mod MockERC20 {
+pub mod MockERC20 {
     use starknet::ContractAddress;
     use starknet::storage::{Map, StoragePathEntry, StoragePointerReadAccess, StoragePointerWriteAccess};
     use super::IERC20;

@@ -43,6 +43,7 @@ import Trash2 from "lucide-react/dist/esm/icons/trash-2";
 import X from "lucide-react/dist/esm/icons/x";
 import Zap from "lucide-react/dist/esm/icons/zap";
 import React, { useCallback, useMemo, useState } from "react";
+import { gameEntityKey } from "@/dojo/game-scope";
 import {
   ALWAYS_SHOW_RESOURCES,
   formatProductionPerHour,
@@ -207,10 +208,7 @@ export const EntityResourceTableNew = React.memo(({ entityId }: EntityResourceTa
     const craftableStructureIds = new Set<number>();
 
     structureColumns.forEach((structureColumn) => {
-      const structure = getComponentValue(
-        components.Structure,
-        getEntityIdFromKeys([BigInt(structureColumn.entityId)]),
-      );
+      const structure = getComponentValue(components.Structure, gameEntityKey([BigInt(structureColumn.entityId)]));
       const structureCategory = Number(structure?.base?.category ?? structure?.category ?? 0);
 
       if (structureCategory === StructureType.Realm || structureCategory === StructureType.Village) {
@@ -317,7 +315,7 @@ export const EntityResourceTableNew = React.memo(({ entityId }: EntityResourceTa
       if (selectedStructureId === structureId) return;
 
       // Get structure position and navigate based on current view mode
-      const structure = getComponentValue(components.Structure, getEntityIdFromKeys([BigInt(structureId)]));
+      const structure = getComponentValue(components.Structure, gameEntityKey([BigInt(structureId)]));
       if (structure) {
         const position = new Position({ x: structure.base.coord_x, y: structure.base.coord_y });
         // Use goToStructure which handles both map view and hex view
@@ -362,8 +360,8 @@ export const EntityResourceTableNew = React.memo(({ entityId }: EntityResourceTa
 
   const canTransferResource = useCallback(
     (fromStructureId: number, toStructureId: number, resourceId: ResourcesIds) => {
-      const fromStructure = getComponentValue(components.Structure, getEntityIdFromKeys([BigInt(fromStructureId)]));
-      const toStructure = getComponentValue(components.Structure, getEntityIdFromKeys([BigInt(toStructureId)]));
+      const fromStructure = getComponentValue(components.Structure, gameEntityKey([BigInt(fromStructureId)]));
+      const toStructure = getComponentValue(components.Structure, gameEntityKey([BigInt(toStructureId)]));
 
       if (!fromStructure || !toStructure) return false;
 
@@ -387,21 +385,23 @@ export const EntityResourceTableNew = React.memo(({ entityId }: EntityResourceTa
       setTransferDrafts((prev) => prev.map((t) => (ids.has(t.id) ? { ...t, isProcessing: true } : t)));
 
       setTransferAnimations((prev) => new Set([...prev, ...animationKeys]));
-      const removeResourceOverrides = transfers.map((transfer) =>
-        new ResourceManager(components, transfer.fromStructureId).optimisticResourceUpdate(
-          transfer.resourceId,
-          -transfer.amount,
-        ),
-      );
-
       try {
-        await send_resources_multiple({
-          signer: account,
-          calls: transfers.map((transfer) => ({
-            sender_entity_id: transfer.fromStructureId,
-            recipient_entity_id: transfer.toStructureId,
-            resources: [transfer.resourceId, BigInt(Math.round(multiplyByPrecision(transfer.amount)))],
+        await ResourceManager.submitProvisionalResourceTransaction({
+          components,
+          changeSets: transfers.map((transfer) => ({
+            entityId: transfer.fromStructureId,
+            changes: [{ resourceId: transfer.resourceId, amount: -transfer.amount }],
           })),
+          waiterSource: account,
+          submit: () =>
+            send_resources_multiple({
+              signer: account,
+              calls: transfers.map((transfer) => ({
+                sender_entity_id: transfer.fromStructureId,
+                recipient_entity_id: transfer.toStructureId,
+                resources: [transfer.resourceId, BigInt(Math.round(multiplyByPrecision(transfer.amount)))],
+              })),
+            }),
         });
 
         setTransferDrafts((prev) => prev.filter((t) => !ids.has(t.id)));
@@ -410,7 +410,6 @@ export const EntityResourceTableNew = React.memo(({ entityId }: EntityResourceTa
         setTransferDrafts((prev) => prev.map((t) => (ids.has(t.id) ? { ...t, isProcessing: false } : t)));
         throw error;
       } finally {
-        removeResourceOverrides.forEach((removeOverride) => removeOverride());
         setTimeout(() => {
           setTransferAnimations((prev) => {
             const next = new Set(prev);

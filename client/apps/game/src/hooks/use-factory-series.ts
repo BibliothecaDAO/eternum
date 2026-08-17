@@ -13,6 +13,10 @@ const SERIES_BY_OWNER_QUERY = (ownerHex: string) =>
   `SELECT name FROM [wf-Series] WHERE owner = "${ownerHex}" LIMIT 50;`;
 const SERIES_GAME_QUERY = (paddedName: string) =>
   `SELECT game_number FROM [wf-SeriesGame] WHERE name = "${paddedName}" ORDER BY game_number DESC LIMIT 1;`;
+// Appchain series live in the registrar's s2 world: series_id is the
+// felt-encoded series name and game_count already tracks the latest game.
+const S2_SERIES_BY_OWNER_QUERY = (ownerHex: string) =>
+  `SELECT series_id, game_count FROM [s2-Series] WHERE owner = "${ownerHex}" LIMIT 50;`;
 
 export interface FactorySeries {
   name: string;
@@ -52,6 +56,30 @@ const fetchSeriesOwned = async (factorySqlBaseUrl: string, ownerHex: string): Pr
   return enriched;
 };
 
+const fetchS2SeriesOwned = async (factorySqlBaseUrl: string, ownerHex: string): Promise<FactorySeries[]> => {
+  const rows = await fetchFactoryRows(factorySqlBaseUrl, S2_SERIES_BY_OWNER_QUERY(ownerHex));
+
+  const series: FactorySeries[] = [];
+  for (const row of rows) {
+    const paddedName = typeof row.series_id === "string" ? row.series_id : null;
+    if (!paddedName) continue;
+    const name = decodePaddedFeltAscii(paddedName);
+    if (!name) continue;
+
+    const rawCount = row.game_count;
+    const gameCount =
+      typeof rawCount === "number" && Number.isFinite(rawCount)
+        ? BigInt(rawCount)
+        : typeof rawCount === "string" && rawCount.trim()
+          ? BigInt(rawCount)
+          : null;
+
+    series.push({ name, paddedName, lastGameNumber: gameCount && gameCount > 0n ? gameCount : null });
+  }
+
+  return series;
+};
+
 export const useFactorySeries = (chain: Chain, ownerAddress: string | undefined | null) => {
   const normalizedOwner = ownerAddress ? normalizeHex(ownerAddress) : null;
   const factorySqlBaseUrl = getFactorySqlBaseUrl(chain);
@@ -60,7 +88,9 @@ export const useFactorySeries = (chain: Chain, ownerAddress: string | undefined 
     queryKey: ["factorySeries", chain, normalizedOwner],
     queryFn: () => {
       if (!normalizedOwner || !factorySqlBaseUrl) return [];
-      return fetchSeriesOwned(factorySqlBaseUrl, normalizedOwner);
+      return chain === "appchain"
+        ? fetchS2SeriesOwned(factorySqlBaseUrl, normalizedOwner)
+        : fetchSeriesOwned(factorySqlBaseUrl, normalizedOwner);
     },
     enabled: !!normalizedOwner && !!factorySqlBaseUrl,
     staleTime: 60_000,

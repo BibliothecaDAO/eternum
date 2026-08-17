@@ -26,7 +26,7 @@ interface EntryRouteDescriptor {
 
 type LocationLike = Pick<Location, "pathname" | "search">;
 
-const CHAIN_VALUES: Chain[] = ["sepolia", "mainnet", "slot", "slottest", "local"];
+const CHAIN_VALUES: Chain[] = ["sepolia", "mainnet", "local", "appchain"];
 const PLAY_SCENES: PlayScene[] = ["map", "hex", "travel"];
 const ENTRY_INTENTS: EntryIntent[] = ["play", "settle", "spectate"];
 const PLAY_BOOT_MODES: PlayBootMode[] = ["direct", "map-first"];

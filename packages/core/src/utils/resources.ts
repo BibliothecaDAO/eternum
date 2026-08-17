@@ -4,18 +4,16 @@ import {
   type ID,
   RESOURCE_PRECISION,
   type Resource,
-  type ResourceCostMinMax,
   type ResourceInputs,
-  type ResourceOutputs,
   ResourcesIds,
   StructureType,
   resources,
 } from "@bibliothecadao/types";
 import { getComponentValue } from "@dojoengine/recs";
-import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { ResourceManager } from "../managers";
 import { unpackValue } from "./packed-data";
 import { getIsBlitz } from "./utils";
+import { gameEntityKey } from "../managers/config-manager";
 
 // used for entities that don't have any production
 export const getInventoryResources = (entityId: ID, components: ClientComponents): Resource[] => {
@@ -46,14 +44,14 @@ export const getBalance = (
 };
 
 export const getQuestResources = (realmEntityId: ID, components: ClientComponents) => {
-  const structure = getComponentValue(components.Structure, getEntityIdFromKeys([BigInt(realmEntityId)]));
+  const structure = getComponentValue(components.Structure, gameEntityKey([BigInt(realmEntityId)]));
   const resourcesProduced = structure ? unpackValue(structure.resources_packed) : [];
 
   // todo: fix
   return getStartingResources(resourcesProduced, [], []);
 };
 
-export const scaleResourceInputs = (resourceInputs: ResourceInputs, multiplier: number) => {
+const scaleResourceInputs = (resourceInputs: ResourceInputs, multiplier: number) => {
   const multipliedCosts: ResourceInputs = {};
 
   for (const buildingType in resourceInputs) {
@@ -64,13 +62,6 @@ export const scaleResourceInputs = (resourceInputs: ResourceInputs, multiplier: 
   }
 
   return multipliedCosts;
-};
-
-export const scaleResources = (resources: any[], multiplier: number): any[] => {
-  return resources.map((resource) => ({
-    ...resource,
-    amount: resource.amount * multiplier,
-  }));
 };
 
 export const uniqueResourceInputs = (
@@ -122,17 +113,6 @@ export const getStartingResources = (
   return applyInputProductionFactor(QUEST_RESOURCES_SCALED, resourcesOnRealm, resourceProductionInputResources);
 };
 
-export const scaleResourceCostMinMax = (
-  resourceCost: ResourceCostMinMax[],
-  multiplier: number,
-): ResourceCostMinMax[] => {
-  return resourceCost.map((resource) => ({
-    ...resource,
-    min_amount: resource.min_amount * multiplier,
-    max_amount: resource.max_amount * multiplier,
-  }));
-};
-
 export const scaleHyperstructureConstructionCostMinMax = (
   resourceCost: HyperstructureResourceCostMinMax[],
   multiplier: number,
@@ -142,15 +122,6 @@ export const scaleHyperstructureConstructionCostMinMax = (
     min_amount: resource.min_amount * multiplier,
     max_amount: resource.max_amount * multiplier,
   }));
-};
-
-export const scaleResourceOutputs = (resourceOutputs: ResourceOutputs, multiplier: number) => {
-  const multipliedCosts: ResourceOutputs = {};
-
-  for (const buildingType in resourceOutputs) {
-    multipliedCosts[buildingType] = resourceOutputs[buildingType] * multiplier;
-  }
-  return multipliedCosts;
 };
 
 export const isMilitaryResource = (resourceId: ResourcesIds) => {
@@ -168,9 +139,9 @@ export const isMilitaryResource = (resourceId: ResourcesIds) => {
 };
 
 export const canTransferMilitaryResources = (fromEntityId: ID, toEntityId: ID, components: ClientComponents) => {
-  const fromStructure = getComponentValue(components.Structure, getEntityIdFromKeys([BigInt(fromEntityId)]));
+  const fromStructure = getComponentValue(components.Structure, gameEntityKey([BigInt(fromEntityId)]));
 
-  const toStructure = getComponentValue(components.Structure, getEntityIdFromKeys([BigInt(toEntityId)]));
+  const toStructure = getComponentValue(components.Structure, gameEntityKey([BigInt(toEntityId)]));
 
   if (getIsBlitz()) {
     return Boolean(fromStructure && toStructure && fromStructure.owner === toStructure.owner);

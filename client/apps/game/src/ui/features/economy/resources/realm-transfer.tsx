@@ -26,6 +26,7 @@ import ShieldCheck from "lucide-react/dist/esm/icons/shield-check";
 import X from "lucide-react/dist/esm/icons/x";
 import { Dispatch, memo, ReactNode, SetStateAction, useCallback, useEffect, useMemo, useState } from "react";
 import { BigNumberish } from "starknet";
+import { gameEntityKey } from "@/dojo/game-scope";
 
 type transferCall = {
   structureId: ID;
@@ -58,7 +59,7 @@ export const RealmTransfer = memo(({ resource }: { resource: ResourcesIds }) => 
   const playerStructures = useUIStore((state) => state.playerStructures);
 
   const selectedStructure = useMemo(() => {
-    return getComponentValue(components.Structure, getEntityIdFromKeys([BigInt(selectedStructureEntityId)]));
+    return getComponentValue(components.Structure, gameEntityKey([BigInt(selectedStructureEntityId)]));
   }, [components.Structure, selectedStructureEntityId]);
 
   const playerStructuresFiltered = useMemo(() => {
@@ -198,21 +199,20 @@ export const RealmTransfer = memo(({ resource }: { resource: ResourcesIds }) => 
 
   const handleBurn = useCallback(async () => {
     setIsLoading(true);
-    const removeResourceOverrides = new ResourceManager(components, selectedStructureEntityId).optimisticResourceUpdate(
-      resource,
-      -burnAmount,
-    );
-
     try {
-      await structure_burn({
-        signer: account,
-        structure_id: selectedStructureEntityId,
-        resources: [{ resourceId: resource, amount: Math.round(burnAmount * RESOURCE_PRECISION) }],
-      });
+      await new ResourceManager(components, selectedStructureEntityId).submitProvisionalResourceTransaction(
+        [{ resourceId: resource, amount: -burnAmount }],
+        account,
+        () =>
+          structure_burn({
+            signer: account,
+            structure_id: selectedStructureEntityId,
+            resources: [{ resourceId: resource, amount: Math.round(burnAmount * RESOURCE_PRECISION) }],
+          }),
+      );
     } catch (error) {
       console.error(error);
     } finally {
-      removeResourceOverrides();
       setIsLoading(false);
     }
   }, [burnAmount, account, components, structure_burn, selectedStructureEntityId, resource]);
@@ -224,22 +224,23 @@ export const RealmTransfer = memo(({ resource }: { resource: ResourcesIds }) => 
       recipient_entity_id,
       resources: [resources[0], BigInt(Number(resources[1]) * RESOURCE_PRECISION)],
     }));
-    const removeResourceOverrides = calls.map((call) =>
-      new ResourceManager(components, Number(call.sender_entity_id)).optimisticResourceUpdate(
-        Number(call.resources[0]) as ResourcesIds,
-        -Number(call.resources[1]),
-      ),
-    );
-
     try {
-      await send_resources_multiple({
-        signer: account,
-        calls: cleanedCalls,
+      await ResourceManager.submitProvisionalResourceTransaction({
+        components,
+        changeSets: calls.map((call) => ({
+          entityId: Number(call.sender_entity_id),
+          changes: [{ resourceId: Number(call.resources[0]) as ResourcesIds, amount: -Number(call.resources[1]) }],
+        })),
+        waiterSource: account,
+        submit: () =>
+          send_resources_multiple({
+            signer: account,
+            calls: cleanedCalls,
+          }),
       });
     } catch (error) {
       console.error(error);
     } finally {
-      removeResourceOverrides.forEach((removeOverride) => removeOverride());
       setIsLoading(false);
     }
 

@@ -62,6 +62,7 @@ function mapFactoryWorkerGameRun(record: FactoryWorkerGameRunRecord): FactoryRun
     summary: resolveFactoryGameRunSummary(record.status, record.currentStepId),
     updatedAt: formatFactoryUpdatedAt(record.updatedAt),
     worldAddress: record.artifacts.worldAddress,
+    gameId: record.artifacts.gameId,
     recovery: mapFactoryRunRecovery(record.recovery),
     prizeFunding: mapFactoryPrizeFunding(record.artifacts.prizeFunding),
     steps: record.steps.map(mapFactoryWorkerStep),

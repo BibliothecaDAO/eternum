@@ -31,3 +31,4 @@ dev-dist
 
 # Local scratch / tooling
 .playwright-mcp/
+.env.*.local

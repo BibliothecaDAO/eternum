@@ -4,6 +4,7 @@ use crate::alias::ID;
 pub trait ITradeSystems<T> {
     fn create_order(
         ref self: T,
+        game_id: u32,
         maker_id: ID,
         taker_id: ID,
         maker_gives_resource_type: u8,
@@ -13,9 +14,9 @@ pub trait ITradeSystems<T> {
         taker_pays_min_resource_amount: u64,
         expires_at: u32,
     ) -> ID;
-    fn accept_order(ref self: T, taker_id: ID, trade_id: ID, taker_buys_count: u64);
+    fn accept_order(ref self: T, game_id: u32, taker_id: ID, trade_id: ID, taker_buys_count: u64);
 
-    fn cancel_order(ref self: T, trade_id: ID);
+    fn cancel_order(ref self: T, game_id: u32, trade_id: ID);
 }
 
 #[dojo::contract]
@@ -51,6 +52,8 @@ pub mod trade_systems {
     #[dojo::event(historical: false)]
     struct CreateOrder {
         #[key]
+        game_id: u32,
+        #[key]
         taker_id: ID,
         #[key]
         maker_id: ID,
@@ -61,6 +64,8 @@ pub mod trade_systems {
     #[derive(Copy, Drop, Serde)]
     #[dojo::event(historical: false)]
     struct AcceptOrder {
+        #[key]
+        game_id: u32,
         #[key]
         taker_id: ID,
         #[key]
@@ -75,6 +80,8 @@ pub mod trade_systems {
     #[dojo::event(historical: false)]
     struct CancelOrder {
         #[key]
+        game_id: u32,
+        #[key]
         taker_id: ID,
         #[key]
         maker_id: ID,
@@ -87,6 +94,7 @@ pub mod trade_systems {
     impl TradeSystemsImpl of super::ITradeSystems<ContractState> {
         fn create_order(
             ref self: ContractState,
+            game_id: u32,
             maker_id: ID,
             taker_id: ID,
             maker_gives_resource_type: u8,
@@ -97,33 +105,35 @@ pub mod trade_systems {
             expires_at: u32,
         ) -> ID {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
-            SeasonConfigImpl::get(world).assert_started_and_not_over();
+            SeasonConfigImpl::get(world, game_id).assert_started_and_not_over();
 
             // ensure maker resource is not taker resource
             assert!(maker_gives_resource_type != taker_pays_resource_type, "maker resource is taker resource");
 
             // ensure maker structure is owned by caller
-            let maker_structure_owner: ContractAddress = StructureOwnerStoreImpl::retrieve(ref world, maker_id);
+            let maker_structure_owner: ContractAddress = StructureOwnerStoreImpl::retrieve(
+                ref world, game_id, maker_id,
+            );
             maker_structure_owner.assert_caller_owner();
 
-            let maker_structure: StructureBase = StructureBaseStoreImpl::retrieve(ref world, maker_id);
+            let maker_structure: StructureBase = StructureBaseStoreImpl::retrieve(ref world, game_id, maker_id);
             let mut taker_coord_for_donkey = maker_structure.coord();
 
             // ensure taker structure exists
             if taker_id.is_non_zero() {
-                let taker_structure: StructureBase = StructureBaseStoreImpl::retrieve(ref world, taker_id);
+                let taker_structure: StructureBase = StructureBaseStoreImpl::retrieve(ref world, game_id, taker_id);
                 taker_structure.assert_exists();
                 taker_coord_for_donkey = taker_structure.coord();
             }
 
             //  ensure donkey can transport resource
-            iDonkeyImpl::assert_can_transport(ref world, maker_structure.coord(), taker_coord_for_donkey);
+            iDonkeyImpl::assert_can_transport(ref world, game_id, maker_structure.coord(), taker_coord_for_donkey);
 
-            iDonkeyImpl::assert_can_transport(ref world, taker_coord_for_donkey, maker_structure.coord());
+            iDonkeyImpl::assert_can_transport(ref world, game_id, taker_coord_for_donkey, maker_structure.coord());
 
             // ensure trade count does not exceed max
-            let trade_config: TradeConfig = WorldConfigUtilImpl::get_member(world, selector!("trade_config"));
-            let mut trade_count: TradeCount = world.read_model(maker_id);
+            let trade_config: TradeConfig = WorldConfigUtilImpl::get_member(world, game_id, selector!("trade_config"));
+            let mut trade_count: TradeCount = world.read_model((game_id, maker_id));
             assert!(trade_count.count < trade_config.max_count, "trade count exceeds max");
 
             // ensure expires at is in the future
@@ -146,10 +156,13 @@ pub mod trade_systems {
                 * taker_pays_min_resource_amount.into();
 
             // burn offered resource from maker balance
-            let mut maker_structure_weight: Weight = WeightStoreImpl::retrieve(ref world, maker_id);
-            let maker_resource_weight_grams: u128 = ResourceWeightImpl::grams(ref world, maker_gives_resource_type);
+            let mut maker_structure_weight: Weight = WeightStoreImpl::retrieve(ref world, game_id, maker_id);
+            let maker_resource_weight_grams: u128 = ResourceWeightImpl::grams(
+                ref world, game_id, maker_gives_resource_type,
+            );
             let mut maker_resource = SingleResourceStoreImpl::retrieve(
                 ref world,
+                game_id,
                 maker_id,
                 maker_gives_resource_type,
                 ref maker_structure_weight,
@@ -161,19 +174,22 @@ pub mod trade_systems {
             maker_resource.store(ref world);
 
             // burn enough maker donkeys to carry resources given by taker
-            let taker_resource_weight_grams: u128 = ResourceWeightImpl::grams(ref world, taker_pays_resource_type);
+            let taker_resource_weight_grams: u128 = ResourceWeightImpl::grams(
+                ref world, game_id, taker_pays_resource_type,
+            );
             let taker_resource_weight: u128 = taker_gives_max_resource_amount * taker_resource_weight_grams;
-            let maker_donkey_amount = iDonkeyImpl::needed_amount(ref world, taker_resource_weight);
-            iDonkeyImpl::burn(ref world, maker_id, ref maker_structure_weight, maker_donkey_amount);
+            let maker_donkey_amount = iDonkeyImpl::needed_amount(ref world, game_id, taker_resource_weight);
+            iDonkeyImpl::burn(ref world, game_id, maker_id, ref maker_structure_weight, maker_donkey_amount);
 
             // update structure weight
-            maker_structure_weight.store(ref world, maker_id);
+            maker_structure_weight.store(ref world, game_id, maker_id);
 
             // create trade entity
             let trade_id = world.dispatcher.uuid();
             world
                 .write_model(
                     @Trade {
+                        game_id,
                         trade_id,
                         maker_id,
                         maker_gives_resource_type,
@@ -190,22 +206,27 @@ pub mod trade_systems {
             trade_count.count += 1;
             world.write_model(@trade_count);
 
-            world.emit_event(@CreateOrder { taker_id, maker_id, trade_id, timestamp: starknet::get_block_timestamp() });
+            world
+                .emit_event(
+                    @CreateOrder { game_id, taker_id, maker_id, trade_id, timestamp: starknet::get_block_timestamp() },
+                );
 
             trade_id
         }
 
 
-        fn accept_order(ref self: ContractState, taker_id: ID, trade_id: ID, taker_buys_count: u64) {
+        fn accept_order(ref self: ContractState, game_id: u32, taker_id: ID, trade_id: ID, taker_buys_count: u64) {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
-            SeasonConfigImpl::get(world).assert_started_and_not_over();
+            SeasonConfigImpl::get(world, game_id).assert_started_and_not_over();
 
             // ensure trade exists
-            let mut trade: Trade = world.read_model(trade_id);
+            let mut trade: Trade = world.read_model((game_id, trade_id));
             assert!(trade.maker_id.is_non_zero(), "trade does not exist");
 
             // ensure caller owns taker structure
-            let taker_structure_owner: ContractAddress = StructureOwnerStoreImpl::retrieve(ref world, taker_id);
+            let taker_structure_owner: ContractAddress = StructureOwnerStoreImpl::retrieve(
+                ref world, game_id, taker_id,
+            );
             taker_structure_owner.assert_caller_owner();
 
             // ensure trade is not expired
@@ -218,7 +239,7 @@ pub mod trade_systems {
             }
 
             // ensure taker structure exists if offer is public
-            let taker_structure: StructureBase = StructureBaseStoreImpl::retrieve(ref world, taker_id);
+            let taker_structure: StructureBase = StructureBaseStoreImpl::retrieve(ref world, game_id, taker_id);
             if trade.taker_id.is_zero() {
                 taker_structure.assert_exists();
             }
@@ -231,37 +252,37 @@ pub mod trade_systems {
             if taker_structure.category == StructureCategory::Village.into() {
                 if TroopResourceImpl::is_troop(trade.maker_gives_resource_type) {
                     let taker_village_structure_metadata: StructureMetadata = StructureMetadataStoreImpl::retrieve(
-                        ref world, taker_id,
+                        ref world, game_id, taker_id,
                     );
                     iVillageImpl::ensure_associated_with_village(
-                        ref world, taker_village_structure_metadata, trade.maker_id,
+                        ref world, game_id, taker_village_structure_metadata, trade.maker_id,
                     );
                 }
             }
 
             //  ensure donkey can transport resources
-            let maker_structure: StructureBase = StructureBaseStoreImpl::retrieve(ref world, trade.maker_id);
-            iDonkeyImpl::assert_can_transport(ref world, maker_structure.coord(), taker_structure.coord());
+            let maker_structure: StructureBase = StructureBaseStoreImpl::retrieve(ref world, game_id, trade.maker_id);
+            iDonkeyImpl::assert_can_transport(ref world, game_id, maker_structure.coord(), taker_structure.coord());
 
-            iDonkeyImpl::assert_can_transport(ref world, taker_structure.coord(), maker_structure.coord());
+            iDonkeyImpl::assert_can_transport(ref world, game_id, taker_structure.coord(), maker_structure.coord());
 
             // send the taker's resource to the maker
             let taker_pays_resource_amount: u128 = taker_buys_count.into()
                 * trade.taker_pays_min_resource_amount.into();
             let taker_to_maker_speed = SpeedImpl::for_donkey(
-                ref world, array![(trade.taker_pays_resource_type, taker_pays_resource_amount)].span(),
+                ref world, game_id, array![(trade.taker_pays_resource_type, taker_pays_resource_amount)].span(),
             );
             let taker_to_maker_travel_time = iDistanceKmImpl::time_required(
                 ref world, taker_structure.coord(), maker_structure.coord(), taker_to_maker_speed, true,
             );
             let (maker_arrival_day, maker_arrival_slot) = ResourceArrivalImpl::arrival_slot(
-                ref world, taker_to_maker_travel_time,
+                ref world, game_id, taker_to_maker_travel_time,
             );
             let mut maker_resources_array = ResourceArrivalImpl::read_slot(
-                ref world, trade.maker_id, maker_arrival_day, maker_arrival_slot,
+                ref world, game_id, trade.maker_id, maker_arrival_day, maker_arrival_slot,
             );
             let mut maker_resource_arrival_total_amount = ResourceArrivalImpl::read_day_total(
-                ref world, trade.maker_id, maker_arrival_day,
+                ref world, game_id, trade.maker_id, maker_arrival_day,
             );
             ResourceArrivalImpl::slot_increase_balances(
                 ref maker_resources_array,
@@ -270,29 +291,29 @@ pub mod trade_systems {
             );
 
             ResourceArrivalImpl::write_slot(
-                ref world, trade.maker_id, maker_arrival_day, maker_arrival_slot, maker_resources_array,
+                ref world, game_id, trade.maker_id, maker_arrival_day, maker_arrival_slot, maker_resources_array,
             );
             ResourceArrivalImpl::write_day_total(
-                ref world, trade.maker_id, maker_arrival_day, maker_resource_arrival_total_amount,
+                ref world, game_id, trade.maker_id, maker_arrival_day, maker_resource_arrival_total_amount,
             );
 
             // send the maker's resource to the taker
             let maker_gives_resource_amount: u128 = taker_buys_count.into()
                 * trade.maker_gives_min_resource_amount.into();
             let maker_to_taker_speed = SpeedImpl::for_donkey(
-                ref world, array![(trade.maker_gives_resource_type, maker_gives_resource_amount)].span(),
+                ref world, game_id, array![(trade.maker_gives_resource_type, maker_gives_resource_amount)].span(),
             );
             let maker_to_taker_travel_time = iDistanceKmImpl::time_required(
                 ref world, maker_structure.coord(), taker_structure.coord(), maker_to_taker_speed, true,
             );
             let (taker_arrival_day, taker_arrival_slot) = ResourceArrivalImpl::arrival_slot(
-                ref world, maker_to_taker_travel_time,
+                ref world, game_id, maker_to_taker_travel_time,
             );
             let mut taker_resources_array = ResourceArrivalImpl::read_slot(
-                ref world, taker_id, taker_arrival_day, taker_arrival_slot,
+                ref world, game_id, taker_id, taker_arrival_day, taker_arrival_slot,
             );
             let mut taker_resource_arrival_total_amount = ResourceArrivalImpl::read_day_total(
-                ref world, taker_id, taker_arrival_day,
+                ref world, game_id, taker_id, taker_arrival_day,
             );
             ResourceArrivalImpl::slot_increase_balances(
                 ref taker_resources_array,
@@ -300,28 +321,29 @@ pub mod trade_systems {
                 ref taker_resource_arrival_total_amount,
             );
             ResourceArrivalImpl::write_slot(
-                ref world, taker_id, taker_arrival_day, taker_arrival_slot, taker_resources_array,
+                ref world, game_id, taker_id, taker_arrival_day, taker_arrival_slot, taker_resources_array,
             );
             ResourceArrivalImpl::write_day_total(
-                ref world, taker_id, taker_arrival_day, taker_resource_arrival_total_amount,
+                ref world, game_id, taker_id, taker_arrival_day, taker_resource_arrival_total_amount,
             );
 
             // burn enough taker donkeys to carry resources given by maker
-            let mut taker_structure_weight: Weight = WeightStoreImpl::retrieve(ref world, taker_id);
+            let mut taker_structure_weight: Weight = WeightStoreImpl::retrieve(ref world, game_id, taker_id);
             let maker_resource_weight_grams: u128 = ResourceWeightImpl::grams(
-                ref world, trade.maker_gives_resource_type,
+                ref world, game_id, trade.maker_gives_resource_type,
             );
             let maker_resource_weight: u128 = maker_gives_resource_amount.into() * maker_resource_weight_grams;
-            let taker_donkey_amount = iDonkeyImpl::needed_amount(ref world, maker_resource_weight);
-            iDonkeyImpl::burn(ref world, taker_id, ref taker_structure_weight, taker_donkey_amount);
-            iDonkeyImpl::burn_finialize(ref world, taker_id, taker_donkey_amount, taker_structure_owner);
+            let taker_donkey_amount = iDonkeyImpl::needed_amount(ref world, game_id, maker_resource_weight);
+            iDonkeyImpl::burn(ref world, game_id, taker_id, ref taker_structure_weight, taker_donkey_amount);
+            iDonkeyImpl::burn_finialize(ref world, game_id, taker_id, taker_donkey_amount, taker_structure_owner);
 
             // deduct taker's resources
             let taker_resource_weight_grams: u128 = ResourceWeightImpl::grams(
-                ref world, trade.taker_pays_resource_type,
+                ref world, game_id, trade.taker_pays_resource_type,
             );
             let mut taker_resource = SingleResourceStoreImpl::retrieve(
                 ref world,
+                game_id,
                 taker_id,
                 trade.taker_pays_resource_type,
                 ref taker_structure_weight,
@@ -333,24 +355,24 @@ pub mod trade_systems {
             taker_resource.store(ref world);
 
             // update taker structure weight
-            taker_structure_weight.store(ref world, taker_id);
+            taker_structure_weight.store(ref world, game_id, taker_id);
 
             // finalize maker donkey burn to pickup resource from taker
             let mut maker_structure_owner: ContractAddress = StructureOwnerStoreImpl::retrieve(
-                ref world, trade.maker_id,
+                ref world, game_id, trade.maker_id,
             );
             let taker_resource_weight_grams: u128 = ResourceWeightImpl::grams(
-                ref world, trade.taker_pays_resource_type,
+                ref world, game_id, trade.taker_pays_resource_type,
             );
             let taker_resource_weight: u128 = taker_pays_resource_amount.into() * taker_resource_weight_grams;
-            let maker_donkey_amount = iDonkeyImpl::needed_amount(ref world, taker_resource_weight);
-            iDonkeyImpl::burn_finialize(ref world, trade.maker_id, maker_donkey_amount, maker_structure_owner);
+            let maker_donkey_amount = iDonkeyImpl::needed_amount(ref world, game_id, taker_resource_weight);
+            iDonkeyImpl::burn_finialize(ref world, game_id, trade.maker_id, maker_donkey_amount, maker_structure_owner);
 
             // update trade and trade count
             trade.maker_gives_max_count -= taker_buys_count;
             if trade.maker_gives_max_count.is_zero() {
                 // decrease trade count
-                let mut trade_count: TradeCount = world.read_model(trade.maker_id);
+                let mut trade_count: TradeCount = world.read_model((game_id, trade.maker_id));
                 trade_count.decrease(ref world);
 
                 // delete trade
@@ -363,6 +385,7 @@ pub mod trade_systems {
             world
                 .emit_event(
                     @AcceptOrder {
+                        game_id,
                         id: world.dispatcher.uuid(),
                         taker_id,
                         maker_id: trade.maker_id,
@@ -373,27 +396,30 @@ pub mod trade_systems {
         }
 
 
-        fn cancel_order(ref self: ContractState, trade_id: ID) {
+        fn cancel_order(ref self: ContractState, game_id: u32, trade_id: ID) {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
-            SeasonConfigImpl::get(world).assert_main_game_started_and_grace_period_not_elapsed();
+            SeasonConfigImpl::get(world, game_id).assert_main_game_started_and_grace_period_not_elapsed();
 
             // ensure trade exists
-            let mut trade: Trade = world.read_model(trade_id);
+            let mut trade: Trade = world.read_model((game_id, trade_id));
             assert!(trade.maker_id.is_non_zero(), "trade does not exist");
 
             // ensure caller owns maker structure
-            let maker_structure_owner: ContractAddress = StructureOwnerStoreImpl::retrieve(ref world, trade.maker_id);
+            let maker_structure_owner: ContractAddress = StructureOwnerStoreImpl::retrieve(
+                ref world, game_id, trade.maker_id,
+            );
             maker_structure_owner.assert_caller_owner();
 
             // return offered resource to maker balance
             let maker_gives_max_resource_amount = trade.maker_gives_max_count
                 * trade.maker_gives_min_resource_amount.into();
-            let mut maker_structure_weight: Weight = WeightStoreImpl::retrieve(ref world, trade.maker_id);
+            let mut maker_structure_weight: Weight = WeightStoreImpl::retrieve(ref world, game_id, trade.maker_id);
             let maker_resource_weight_grams: u128 = ResourceWeightImpl::grams(
-                ref world, trade.maker_gives_resource_type,
+                ref world, game_id, trade.maker_gives_resource_type,
             );
             let mut maker_resource = SingleResourceStoreImpl::retrieve(
                 ref world,
+                game_id,
                 trade.maker_id,
                 trade.maker_gives_resource_type,
                 ref maker_structure_weight,
@@ -408,29 +434,30 @@ pub mod trade_systems {
             let taker_gives_max_resource_amount: u128 = trade.maker_gives_max_count.into()
                 * trade.taker_pays_min_resource_amount.into();
             let taker_resource_weight_grams: u128 = ResourceWeightImpl::grams(
-                ref world, trade.taker_pays_resource_type,
+                ref world, game_id, trade.taker_pays_resource_type,
             );
             let taker_resource_weight: u128 = taker_gives_max_resource_amount * taker_resource_weight_grams;
 
             // todo: ensure the donkey amount cant be gamed
 
-            let maker_donkey_amount = iDonkeyImpl::needed_amount(ref world, taker_resource_weight);
-            iDonkeyImpl::create(ref world, trade.maker_id, ref maker_structure_weight, maker_donkey_amount);
+            let maker_donkey_amount = iDonkeyImpl::needed_amount(ref world, game_id, taker_resource_weight);
+            iDonkeyImpl::create(ref world, game_id, trade.maker_id, ref maker_structure_weight, maker_donkey_amount);
 
             // update maker structure weight
-            maker_structure_weight.store(ref world, trade.maker_id);
+            maker_structure_weight.store(ref world, game_id, trade.maker_id);
 
             // delete trade
             world.erase_model(@trade);
 
             // decrease trade count
-            let mut trade_count: TradeCount = world.read_model(trade.maker_id);
+            let mut trade_count: TradeCount = world.read_model((game_id, trade.maker_id));
             trade_count.decrease(ref world);
 
             // emit event
             world
                 .emit_event(
                     @CancelOrder {
+                        game_id,
                         taker_id: trade.taker_id,
                         maker_id: trade.maker_id,
                         trade_id,

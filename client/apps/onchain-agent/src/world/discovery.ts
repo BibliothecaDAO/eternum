@@ -7,10 +7,8 @@ import type { WorldProfile } from "./types";
 import manifestLocal from "../../../../../contracts/game/manifest_local.json";
 import manifestMainnet from "../../../../../contracts/game/manifest_mainnet.json";
 import manifestSepolia from "../../../../../contracts/game/manifest_sepolia.json";
-import manifestSlot from "../../../../../contracts/game/manifest_slot.json";
-import manifestSlottest from "../../../../../contracts/game/manifest_slottest.json";
 
-export type Chain = "slot" | "slottest" | "local" | "sepolia" | "mainnet";
+export type Chain = "local" | "sepolia" | "mainnet" | "appchain";
 
 export type GameStatus = "upcoming" | "ongoing" | "ended" | "unknown";
 
@@ -20,25 +18,14 @@ export interface DiscoveredWorld {
   status: GameStatus;
 }
 
-async function discoverSlotFactories(): Promise<string[]> {
-  const base = process.env.CARTRIDGE_API_BASE || "https://api.cartridge.gg";
-  const suffixes = "abcdefghijklmnopqrstuvwxyz".split("");
-  const probe = async (suffix: string): Promise<string | null> => {
-    const url = `${base}/x/eternum-factory-slot-${suffix}/torii/sql`;
-    try {
-      const res = await fetch(`${url}?query=${encodeURIComponent("SELECT 1 LIMIT 1;")}`, {
-        signal: AbortSignal.timeout(3000),
-      });
-      return res.ok ? url : null;
-    } catch {
-      return null;
-    }
-  };
-  const results = await Promise.all(suffixes.map(probe));
-  return results.filter((url): url is string => url !== null);
+/**
+ * Self-hosted chains ("appchain", "local") expose their factory torii via
+ * FACTORY_SQL_BASE_URL; there is no hosted Cartridge factory to discover.
+ */
+function getSelfHostedFactorySqlBaseUrls(): string[] {
+  const configured = process.env.FACTORY_SQL_BASE_URL?.trim();
+  return configured ? [configured] : [];
 }
-
-let cachedSlotFactories: string[] | null = null;
 
 async function getFactorySqlBaseUrls(chain: Chain): Promise<string[]> {
   const base = process.env.CARTRIDGE_API_BASE || "https://api.cartridge.gg";
@@ -47,17 +34,16 @@ async function getFactorySqlBaseUrls(chain: Chain): Promise<string[]> {
       return [`${base}/x/eternum-factory-mainnet/torii/sql`];
     case "sepolia":
       return [`${base}/x/eternum-factory-sepolia/torii/sql`];
-    case "slot":
-    case "slottest":
+    case "appchain":
     case "local":
-      if (!cachedSlotFactories) {
-        cachedSlotFactories = await discoverSlotFactories();
-      }
-      return cachedSlotFactories;
+      return getSelfHostedFactorySqlBaseUrls();
   }
 }
 
 const buildToriiBaseUrl = (worldName: string) => `https://api.cartridge.gg/x/${worldName}/torii`;
+
+/** Realms dev appchain (self-hosted katana, chain id WP_REALMS_DEV) — see contracts/game/dojo_appchain.toml. */
+const APPCHAIN_DEFAULT_RPC_URL = "http://52.54.98.119";
 
 function getDefaultRpcUrl(chain: Chain): string {
   const base = process.env.CARTRIDGE_API_BASE || "https://api.cartridge.gg";
@@ -66,10 +52,10 @@ function getDefaultRpcUrl(chain: Chain): string {
       return `${base}/x/starknet/mainnet`;
     case "sepolia":
       return `${base}/x/starknet/sepolia`;
-    case "slot":
-    case "slottest":
+    case "appchain":
+      return process.env.APPCHAIN_RPC_URL || APPCHAIN_DEFAULT_RPC_URL;
     case "local":
-      return `${base}/x/eternum-blitz-slot-4/katana`;
+      return process.env.LOCAL_RPC_URL || "http://localhost:5050";
   }
 }
 
@@ -121,7 +107,7 @@ async function checkWorldAvailability(worldName: string): Promise<{ available: b
   }
 }
 
-const DISCOVERABLE_CHAINS: Chain[] = ["slot", "sepolia", "mainnet"];
+const DISCOVERABLE_CHAINS: Chain[] = ["appchain", "sepolia", "mainnet"];
 
 async function discoverWorldsForChain(chain: Chain): Promise<DiscoveredWorld[]> {
   const factoryUrls = await getFactorySqlBaseUrls(chain);
@@ -275,9 +261,10 @@ export async function buildWorldProfile(chain: Chain, worldName: string): Promis
   };
 }
 
-const EMBEDDED_MANIFESTS: Record<Chain, { contracts: unknown[] }> = {
-  slot: manifestSlot as unknown as { contracts: unknown[] },
-  slottest: manifestSlottest as unknown as { contracts: unknown[] },
+// Only the committed manifests can be embedded. contracts/game/manifest_appchain.json
+// is a local `sozo migrate` artifact and is not in the repo, so "appchain" resolves
+// through the guard in buildResolvedManifest() below.
+const EMBEDDED_MANIFESTS: Partial<Record<Chain, { contracts: unknown[] }>> = {
   local: manifestLocal as unknown as { contracts: unknown[] },
   sepolia: manifestSepolia as unknown as { contracts: unknown[] },
   mainnet: manifestMainnet as unknown as { contracts: unknown[] },

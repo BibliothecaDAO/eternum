@@ -15,6 +15,7 @@ import { REALM_PRESETS, RealmPresetId } from "@/utils/automation-presets";
 import { useAutomationStore } from "@/hooks/store/use-automation-store";
 import { ProductionStatusBadge } from "@/ui/shared";
 import { formatTimeRemaining } from "../../economy/resources/entity-resource-table/utils";
+import { gameEntityKey } from "@/dojo/game-scope";
 
 interface ProductionSidebarProps {
   realms: RealmInfo[];
@@ -79,7 +80,7 @@ const SidebarRealm = ({
   }, [realm]);
 
   // Get production data
-  const resourceData = useComponentValue(Resource, getEntityIdFromKeys([BigInt(realm.entityId)]));
+  const resourceData = useComponentValue(Resource, gameEntityKey([BigInt(realm.entityId)]));
 
   const { currentDefaultTick } = getBlockTimestamp();
 
@@ -161,7 +162,7 @@ const SidebarRealm = ({
   const hasProduction = resourceProductionSummary.length > 0;
 
   // Get bonuses
-  const productionBoostBonus = useComponentValue(ProductionBoostBonus, getEntityIdFromKeys([BigInt(realm.entityId)]));
+  const productionBoostBonus = useComponentValue(ProductionBoostBonus, gameEntityKey([BigInt(realm.entityId)]));
 
   const { wonderBonus, hasActivatedWonderBonus } = useMemo(() => {
     const wonderBonusConfig = configManager.getWonderBonusConfig();

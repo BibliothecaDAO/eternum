@@ -12,7 +12,6 @@
 #                           where [network] is optional and defaults to 'local'
 #   Examples:
 #   ./grant.sh local     - grants to local
-#   ./grant.sh slot      - grants to slot
 #   ./grant.sh sepolia   - grants to sepolia
 #   ./grant.sh mainnet   - grants to mainnet
 #

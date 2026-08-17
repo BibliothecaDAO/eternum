@@ -2,14 +2,14 @@ import path from "node:path";
 import { resolveDefaultDataDir, resolveDefaultSessionBasePath } from "./runtime-paths";
 import { deriveChainIdFromRpcUrl } from "./world/normalize";
 
-export type Chain = "slot" | "slottest" | "local" | "sepolia" | "mainnet";
+export type Chain = "local" | "sepolia" | "mainnet" | "appchain";
 
 const CHAIN_ID_FALLBACK: Record<Chain, string> = {
-  slot: "0x4b4154414e41",
-  slottest: "0x4b4154414e41",
   local: "0x4b4154414e41",
   sepolia: "0x534e5f5345504f4c4941",
   mainnet: "0x534e5f4d41494e",
+  // WP_REALMS_DEV
+  appchain: "0x57505f5245414c4d535f444556",
 };
 
 export interface AgentConfig {
@@ -51,11 +51,11 @@ function parseBoolean(value: string | undefined, fallback: boolean): boolean {
 }
 
 function parseChain(value: string | undefined): Chain {
-  const valid: Chain[] = ["slot", "slottest", "local", "sepolia", "mainnet"];
+  const valid: Chain[] = ["local", "sepolia", "mainnet", "appchain"];
   if (value && valid.includes(value as Chain)) {
     return value as Chain;
   }
-  return "slot";
+  return "appchain";
 }
 
 export function loadConfig(): AgentConfig {

@@ -1,8 +1,6 @@
 use core::array::SpanTrait;
 use crate::constants::ResourceTypes;
-use crate::systems::utils::blitz_profile::{
-    DEFAULT_BLITZ_PROFILE_ID, OFFICIAL_60_BLITZ_PROFILE_ID, OFFICIAL_90_BLITZ_PROFILE_ID, iBlitzProfileImpl,
-};
+use crate::systems::utils::blitz_profile::{OFFICIAL_60_BLITZ_PROFILE_ID, iBlitzProfileImpl};
 
 #[generate_trait]
 pub impl iBlitzExplorationRewardsImpl of iBlitzExplorationRewardsTrait {

@@ -12,12 +12,12 @@ import type { FactoryRun } from "./types";
 
 function buildFactoryRun(overrides: Partial<FactoryRun> = {}): FactoryRun {
   return {
-    id: "slot.blitz:bltz-test-1",
-    syncKey: "slot.blitz:bltz-test-1|updated",
+    id: "mainnet.blitz:bltz-test-1",
+    syncKey: "mainnet.blitz:bltz-test-1|updated",
     kind: "game",
     mode: "blitz",
     name: "bltz-test-1",
-    environment: "slot.blitz",
+    environment: "mainnet.blitz",
     owner: "Factory",
     presetId: "open",
     status: "attention",

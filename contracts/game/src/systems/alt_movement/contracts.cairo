@@ -3,7 +3,7 @@ use crate::models::position::Direction;
 
 #[starknet::interface]
 pub trait IAltMovementSystems<TContractState> {
-    fn toggle_alternate(ref self: TContractState, explorer_id: ID, spire_direction: Direction);
+    fn toggle_alternate(ref self: TContractState, game_id: u32, explorer_id: ID, spire_direction: Direction);
 }
 
 #[dojo::contract]
@@ -27,12 +27,12 @@ pub mod alt_movement_systems {
 
     #[abi(embed_v0)]
     impl AltMovementSystemsImpl of super::IAltMovementSystems<ContractState> {
-        fn toggle_alternate(ref self: ContractState, explorer_id: ID, spire_direction: Direction) {
+        fn toggle_alternate(ref self: ContractState, game_id: u32, explorer_id: ID, spire_direction: Direction) {
             let mut world = self.world(DEFAULT_NS());
-            SeasonConfigImpl::get(world).assert_started_and_not_over();
+            SeasonConfigImpl::get(world, game_id).assert_started_and_not_over();
 
             // ensure caller owns explorer
-            let mut explorer: ExplorerTroops = world.read_model(explorer_id);
+            let mut explorer: ExplorerTroops = world.read_model((game_id, explorer_id));
             explorer.assert_caller_structure_or_agent_owner(ref world);
 
             // ensure explorer is alive
@@ -40,12 +40,12 @@ pub mod alt_movement_systems {
 
             // ensure current tile matches explorer
             let start_coord: Coord = explorer.coord;
-            let current_tile_opt: TileOpt = world.read_model((start_coord.alt, start_coord.x, start_coord.y));
+            let current_tile_opt: TileOpt = world.read_model((game_id, start_coord.alt, start_coord.x, start_coord.y));
             let mut current_tile: Tile = current_tile_opt.into();
             assert!(current_tile.occupier_id == explorer_id, "tile occupier should be explorer");
 
             let spire_coord = start_coord.neighbor(spire_direction);
-            let spire_tile_opt: TileOpt = world.read_model((start_coord.alt, spire_coord.x, spire_coord.y));
+            let spire_tile_opt: TileOpt = world.read_model((game_id, start_coord.alt, spire_coord.x, spire_coord.y));
             let spire_tile: Tile = spire_tile_opt.into();
             assert!(
                 spire_tile.occupier_type == TileOccupier::Spire.into(), "Eternum: explorer must be adjacent to spire",
@@ -54,7 +54,7 @@ pub mod alt_movement_systems {
 
             let destination_coord = Coord { alt: !start_coord.alt, x: start_coord.x, y: start_coord.y };
             let destination_tile_opt: TileOpt = world
-                .read_model((destination_coord.alt, destination_coord.x, destination_coord.y));
+                .read_model((game_id, destination_coord.alt, destination_coord.x, destination_coord.y));
             let mut destination_tile: Tile = destination_tile_opt.into();
             assert!(destination_tile.not_occupied(), "Eternum: destination tile is occupied");
 
@@ -67,11 +67,12 @@ pub mod alt_movement_systems {
             explorer.coord = destination_coord;
             world.write_model(@explorer);
 
-            let explorer_owner: ContractAddress = StructureOwnerStoreImpl::retrieve(ref world, explorer.owner);
+            let explorer_owner: ContractAddress = StructureOwnerStoreImpl::retrieve(ref world, game_id, explorer.owner);
             let directions: Array<Direction> = array![];
             world
                 .emit_event(
                     @StoryEvent {
+                        game_id,
                         id: world.dispatcher.uuid(),
                         owner: Option::Some(explorer_owner),
                         entity_id: Option::Some(explorer_id),

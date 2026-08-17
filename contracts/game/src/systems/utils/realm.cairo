@@ -34,6 +34,7 @@ pub trait ISeasonPass<TState> {
 pub impl iRealmImpl of iRealmTrait {
     fn create_realm_structure(
         ref world: WorldStorage,
+        game_id: u32,
         owner: ContractAddress,
         realm_id: ID,
         resources: Array<u8>,
@@ -48,10 +49,7 @@ pub impl iRealmImpl of iRealmTrait {
         let mut tile_occupier = TileOccupier::RealmRegularLevel1;
         if has_wonder {
             tile_occupier = TileOccupier::RealmWonderLevel1;
-            world
-                .write_model(
-                    @Wonder { structure_id: structure_id, realm_id: realm_id.try_into().unwrap(), coord: coord },
-                );
+            world.write_model(@Wonder { game_id, structure_id, realm_id: realm_id.try_into().unwrap(), coord });
         }
 
         // create the realm structure without granting startup economy yet
@@ -59,6 +57,7 @@ pub impl iRealmImpl of iRealmTrait {
         structure_creation_library
             .make_structure(
                 world,
+                game_id,
                 coord,
                 owner,
                 structure_id,
@@ -74,8 +73,8 @@ pub impl iRealmImpl of iRealmTrait {
         structure_id
     }
 
-    fn grant_realm_starting_troops(ref world: WorldStorage, structure_id: ID) {
-        let mut structure_base: StructureBase = StructureBaseStoreImpl::retrieve(ref world, structure_id);
+    fn grant_realm_starting_troops(ref world: WorldStorage, game_id: u32, structure_id: ID) {
+        let mut structure_base: StructureBase = StructureBaseStoreImpl::retrieve(ref world, game_id, structure_id);
         assert!(structure_base.category == StructureCategory::Realm.into(), "structure is not a realm");
         if structure_base.starting_troops_granted {
             return;
@@ -83,35 +82,38 @@ pub impl iRealmImpl of iRealmTrait {
 
         let structure_coord = structure_base.coord();
         structure_base.starting_troops_granted = true;
-        StructureBaseStoreImpl::store(ref structure_base, ref world, structure_id);
+        StructureBaseStoreImpl::store(ref structure_base, ref world, game_id, structure_id);
 
         let structure_creation_library = structure_creation_library::get_dispatcher(@world);
         structure_creation_library
-            .grant_starting_troop_resources(world, structure_id, StructureCategory::Realm, structure_coord);
+            .grant_starting_troop_resources(world, game_id, structure_id, StructureCategory::Realm, structure_coord);
     }
 
-    fn provision_realm(ref world: WorldStorage, structure_id: ID) {
-        let structure_base: StructureBase = StructureBaseStoreImpl::retrieve(ref world, structure_id);
+    fn provision_realm(ref world: WorldStorage, game_id: u32, structure_id: ID) {
+        let structure_base: StructureBase = StructureBaseStoreImpl::retrieve(ref world, game_id, structure_id);
         assert!(structure_base.category == StructureCategory::Realm.into(), "structure is not a realm");
         let structure_coord = structure_base.coord();
 
-        let structure_buildings: StructureBuildings = world.read_model(structure_id);
+        let structure_buildings: StructureBuildings = world.read_model((game_id, structure_id));
         assert!(
             structure_buildings.building_count(BuildingCategory::ResourceLabor) == 0, "realm is already provisioned",
         );
 
-        Self::reveal_realm_surroundings(ref world, structure_coord);
+        Self::reveal_realm_surroundings(ref world, game_id, structure_coord);
 
         // ensure troop start exists before the rest of the realm economy turns on
-        Self::grant_realm_starting_troops(ref world, structure_id);
+        Self::grant_realm_starting_troops(ref world, game_id, structure_id);
 
         let structure_creation_library = structure_creation_library::get_dispatcher(@world);
         structure_creation_library
-            .grant_starting_non_troop_resources(world, structure_id, StructureCategory::Realm, structure_coord);
+            .grant_starting_non_troop_resources(
+                world, game_id, structure_id, StructureCategory::Realm, structure_coord,
+            );
 
-        let owner = StructureOwnerStoreImpl::retrieve(ref world, structure_id);
+        let owner = StructureOwnerStoreImpl::retrieve(ref world, game_id, structure_id);
         BuildingImpl::create(
             ref world,
+            game_id,
             owner,
             structure_id,
             StructureCategory::Realm.into(),
@@ -120,10 +122,10 @@ pub impl iRealmImpl of iRealmTrait {
             BuildingImpl::center(),
         );
 
-        ProductionStrategyImpl::seed_unbounded_structure_labor_output(ref world, structure_id);
+        ProductionStrategyImpl::seed_unbounded_structure_labor_output(ref world, game_id, structure_id);
     }
 
-    fn reveal_realm_surroundings(ref world: WorldStorage, structure_coord: Coord) {
+    fn reveal_realm_surroundings(ref world: WorldStorage, game_id: u32, structure_coord: Coord) {
         let structure_surrounding = array![
             Direction::East, Direction::NorthEast, Direction::NorthWest, Direction::West, Direction::SouthWest,
             Direction::SouthEast,
@@ -131,14 +133,15 @@ pub impl iRealmImpl of iRealmTrait {
 
         for direction in structure_surrounding {
             let neighbor_coord = structure_coord.neighbor(direction);
-            let neighbor_tile_opt: TileOpt = world.read_model((neighbor_coord.alt, neighbor_coord.x, neighbor_coord.y));
+            let neighbor_tile_opt: TileOpt = world
+                .read_model((game_id, neighbor_coord.alt, neighbor_coord.x, neighbor_coord.y));
             let mut neighbor_tile: Tile = neighbor_tile_opt.into();
             if neighbor_tile.discovered() {
                 continue;
             }
 
             let biome: Biome = get_biome_from_world(
-                world, neighbor_coord.alt, neighbor_coord.x.into(), neighbor_coord.y.into(),
+                world, game_id, neighbor_coord.alt, neighbor_coord.x.into(), neighbor_coord.y.into(),
             );
             IMapImpl::explore(ref world, ref neighbor_tile, biome);
         }

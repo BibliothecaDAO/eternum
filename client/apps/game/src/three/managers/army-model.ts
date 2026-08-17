@@ -1,6 +1,6 @@
 import { CameraView } from "@/three/scenes/hexagon-scene";
 import { gltfLoader } from "@/three/utils/utils";
-import { FELT_CENTER, GRAPHICS_SETTING, GraphicsSettings, isLowOrBelow } from "@/ui/config";
+import { FELT_CENTER } from "@/ui/config";
 import { getCharacterModel } from "@/utils/agent";
 import { configManager } from "@bibliothecadao/eternum";
 import { BiomeType, TroopTier, TroopType } from "@bibliothecadao/types";
@@ -22,6 +22,8 @@ import {
 } from "three";
 import { CSS2DObject } from "three/examples/jsm/renderers/CSS2DRenderer.js";
 import { resizeInstancedMorphTexture } from "./morph-texture-resize";
+import { writeMorphWeightsIfChanged } from "./morph-texture-dirty-state";
+import { BoundedHexCache } from "../utils/bounded-hex-cache";
 import { env } from "../../../env";
 import {
   ANIMATION_STATE_IDLE,
@@ -120,7 +122,6 @@ export class ArmyModel {
   private bucketIndicesMaxCount = 0;
   private readonly freeSlots: number[] = [];
   private readonly freeSlotSet: Set<number> = new Set();
-  private readonly hiddenSlots: Set<number> = new Set();
   private nextInstanceIndex = 0;
   private hasPendingBounds = false;
 
@@ -141,6 +142,13 @@ export class ArmyModel {
   // Spline-based movement
   private readonly USE_SPLINE_MOVEMENT = true;
   private readonly splineMovingInstances: Map<number, SplineMovementData> = new Map();
+
+  // Phase 3.1: biome is immutable per hex but the resolution (BigInt/simplex noise)
+  // ran twice per frame per moving army. Memoize it by hex; the resolver is a stable
+  // instance field so the per-frame lookups allocate no closures.
+  private readonly biomeHexCache = new BoundedHexCache<BiomeType>();
+  private readonly resolveBiomeForHex = (col: number, row: number): BiomeType =>
+    configManager.getBiome(col + FELT_CENTER(), row + FELT_CENTER());
 
   // agent
   private isAgent: boolean = false;
@@ -250,7 +258,7 @@ export class ArmyModel {
         registryEntry,
       })
         .then((gltf) => {
-          const modelData = this.createModelData(gltf);
+          const modelData = this.createModelData(gltf, false);
           this.cosmeticModels.set(cosmeticId, modelData);
           this.reapplyInstancesForCosmeticModel(cosmeticId, modelData);
           resolve(modelData);
@@ -351,7 +359,7 @@ export class ArmyModel {
     }
   }
 
-  private createModelData(gltf: any): ModelData {
+  private createModelData(gltf: any, ownsGeometry: boolean = true): ModelData {
     const group = new Group();
     const sourceScene = this.createRenderableSourceScene(gltf.scene);
     const instancedMeshes: AnimatedInstancedMesh[] = [];
@@ -400,6 +408,7 @@ export class ArmyModel {
       currentScales: new Map(),
       lastAnimationUpdate: 0,
       animationUpdateInterval: this.MODEL_ANIMATION_UPDATE_INTERVAL,
+      ownsGeometry,
     };
   }
 
@@ -558,6 +567,7 @@ export class ArmyModel {
       for (let i = 0; i < this.INITIAL_INSTANCE_CAPACITY; i++) {
         instancedMesh.setMorphAt(i, mesh as any);
       }
+      instancedMesh.morphTexture!.name = `army-morph:${mesh.name || "mesh"}`;
       instancedMesh.morphTexture!.needsUpdate = true;
     }
   }
@@ -791,7 +801,6 @@ export class ArmyModel {
 
     this.clearMovementState(entityId);
     this.clearInstanceSlot(resolvedSlot);
-    this.hiddenSlots.delete(resolvedSlot);
     this.matrixIndexOwners.delete(resolvedSlot);
 
     // Detach the entity from the freed slot up front. If the slot is already
@@ -824,10 +833,6 @@ export class ArmyModel {
     }
 
     this.takeFreedSlot(newSlot);
-    const wasHidden = this.hiddenSlots.delete(previousSlot);
-    if (wasHidden) {
-      this.hiddenSlots.add(newSlot);
-    }
     const wasWalking = this.animationStates[previousSlot] === ANIMATION_STATE_MOVING;
     this.updateInstance(
       entityId,
@@ -882,10 +887,6 @@ export class ArmyModel {
     this.matrixIndexOwners.set(index, entityId);
 
     const state = this.storeInstanceState(entityId, index, position, scale, rotation, color);
-    if (this.hiddenSlots.has(index)) {
-      this.writeHiddenSlotMatrices(entityId, index);
-      return;
-    }
 
     const desiredModelType = this.entityModelMap.get(entityId) ?? null;
     const desiredCosmeticId = this.entityCosmeticMap.get(entityId);
@@ -1002,7 +1003,6 @@ export class ArmyModel {
     this.clearMovementStateForSlot(slot);
     this.clearSlotFromEveryRenderable(slot);
     this.matrixIndexOwners.delete(slot);
-    this.hiddenSlots.delete(slot);
     this.setAnimationState(slot, false);
     if (!this.freeSlotSet.has(slot)) {
       this.freeSlotSet.add(slot);
@@ -1115,44 +1115,6 @@ export class ArmyModel {
     return state;
   }
 
-  private writeHiddenSlotMatrices(entityId: number, matrixIndex: number): void {
-    const activeBaseModel = this.activeBaseModelByEntity.get(entityId);
-    if (activeBaseModel) {
-      const modelData = this.models.get(activeBaseModel);
-      if (modelData) {
-        this.ensureModelCapacity(modelData, matrixIndex + 1);
-        modelData.instancedMeshes.forEach((mesh) => {
-          mesh.setMatrixAt(matrixIndex, this.zeroInstanceMatrix);
-          mesh.instanceMatrix.needsUpdate = true;
-        });
-        if (modelData.contactShadowMesh) {
-          modelData.contactShadowMesh.setMatrixAt(matrixIndex, this.zeroInstanceMatrix);
-          modelData.contactShadowMesh.instanceMatrix.needsUpdate = true;
-        }
-      }
-    }
-
-    const activeCosmetic = this.activeCosmeticByEntity.get(entityId);
-    if (!activeCosmetic) {
-      return;
-    }
-
-    const cosmeticData = this.cosmeticModels.get(activeCosmetic);
-    if (!cosmeticData) {
-      return;
-    }
-
-    this.ensureModelCapacity(cosmeticData, matrixIndex + 1);
-    cosmeticData.instancedMeshes.forEach((mesh) => {
-      mesh.setMatrixAt(matrixIndex, this.zeroInstanceMatrix);
-      mesh.instanceMatrix.needsUpdate = true;
-    });
-    if (cosmeticData.contactShadowMesh) {
-      cosmeticData.contactShadowMesh.setMatrixAt(matrixIndex, this.zeroInstanceMatrix);
-      cosmeticData.contactShadowMesh.instanceMatrix.needsUpdate = true;
-    }
-  }
-
   private updateInstanceTransform(position: Vector3, scale: Vector3, rotation?: Euler): void {
     this.dummyObject.position.copy(position);
     this.dummyObject.position.y += 0.15;
@@ -1207,8 +1169,6 @@ export class ArmyModel {
 
   // Animation Methods
   public updateAnimations(_deltaTime: number, visibility?: AnimationVisibilityContext): void {
-    if (isLowOrBelow(GRAPHICS_SETTING)) return;
-
     const now = performance.now();
     const time = now * 0.001;
 
@@ -1390,6 +1350,7 @@ export class ArmyModel {
       if (morphTexture && morphTexture.image && morphTexture.image.data) {
         const textureData = morphTexture.image.data as unknown as Float32Array;
         const textureWidth = morphTexture.image.width;
+        let textureChanged = false;
 
         for (let bucket = bucketOffset; bucket < this.ANIMATION_BUCKETS; bucket += bucketStride) {
           const indices = this.bucketToIndices.get(bucket);
@@ -1397,14 +1358,6 @@ export class ArmyModel {
 
           const idleOffset = bucket * morphCount;
           const movingOffset = bucket * morphCount;
-          const idleWeights =
-            needsIdleWeights && this.idleWeightsBuffer
-              ? this.idleWeightsBuffer.subarray(idleOffset, idleOffset + morphCount)
-              : null;
-          const movingWeights =
-            needsMovingWeights && this.movingWeightsBuffer
-              ? this.movingWeightsBuffer.subarray(movingOffset, movingOffset + morphCount)
-              : null;
 
           for (let idx = 0; idx < indices.length; idx++) {
             const i = indices[idx];
@@ -1413,29 +1366,28 @@ export class ArmyModel {
             if (this.shouldSkipAnimation(state)) continue;
 
             const dstOffset = i * textureWidth;
+            let sourceWeights: Float32Array | null = null;
+            let sourceOffset = 0;
             if (state === ANIMATION_STATE_MOVING) {
-              if (!movingWeights) continue;
-              if (morphCount <= 8) {
-                textureData.set(movingWeights, dstOffset);
-              } else {
-                for (let m = 0; m < morphCount; m++) {
-                  textureData[dstOffset + m] = this.movingWeightsBuffer![movingOffset + m];
-                }
-              }
+              if (!needsMovingWeights || !this.movingWeightsBuffer) continue;
+              sourceWeights = this.movingWeightsBuffer;
+              sourceOffset = movingOffset;
             } else {
-              if (!idleWeights) continue;
-              if (morphCount <= 8) {
-                textureData.set(idleWeights, dstOffset);
-              } else {
-                for (let m = 0; m < morphCount; m++) {
-                  textureData[dstOffset + m] = this.idleWeightsBuffer![idleOffset + m];
-                }
-              }
+              if (!needsIdleWeights || !this.idleWeightsBuffer) continue;
+              sourceWeights = this.idleWeightsBuffer;
+              sourceOffset = idleOffset;
+            }
+            if (sourceWeights) {
+              textureChanged =
+                writeMorphWeightsIfChanged(textureData, dstOffset, sourceWeights, sourceOffset, morphCount) ||
+                textureChanged;
             }
           }
         }
 
-        morphTexture.needsUpdate = true;
+        if (textureChanged) {
+          morphTexture.needsUpdate = true;
+        }
         performedUpdate = true;
       }
     });
@@ -1446,11 +1398,7 @@ export class ArmyModel {
   }
 
   private shouldSkipAnimation(animationState: number): boolean {
-    return (
-      (GRAPHICS_SETTING === GraphicsSettings.MID && animationState === ANIMATION_STATE_IDLE) ||
-      isLowOrBelow(GRAPHICS_SETTING) ||
-      (this.currentCameraView === CameraView.Far && animationState === ANIMATION_STATE_IDLE)
-    );
+    return this.currentCameraView === CameraView.Far && animationState === ANIMATION_STATE_IDLE;
   }
 
   private getAnimationUpdateFrequency(instanceCount: number): number {
@@ -1554,8 +1502,7 @@ export class ArmyModel {
   ): void {
     if (path.length < 2) return;
 
-    // Monitor memory usage before starting movement
-    this.memoryMonitor?.getCurrentStats(`startMovement-${entityId}`);
+    const memoryMeasurement = this.memoryMonitor?.beginScopedMeasurement(`startMovement-${entityId}`, 5);
 
     // Log material sharing stats periodically (every 10th movement)
     if (entityId % 10 === 0) {
@@ -1605,6 +1552,10 @@ export class ArmyModel {
         isArrivalSlamming: false,
         endpointCache: new Vector3(),
       });
+    }
+
+    if (memoryMeasurement) {
+      this.memoryMonitor?.finishScopedMeasurement(memoryMeasurement);
     }
   }
 
@@ -1850,7 +1801,7 @@ export class ArmyModel {
 
     // Terrain speed variation — sample biome and lerp multiplier
     const { col, row } = getHexForWorldPosition(instanceData.position);
-    const biome = configManager.getBiome(col + FELT_CENTER(), row + FELT_CENTER());
+    const biome = this.biomeHexCache.get(col, row, this.resolveBiomeForHex);
     const targetMultiplier = resolveTerrainSpeedMultiplier(biome);
     splineData.currentSpeedMultiplier +=
       (targetMultiplier - splineData.currentSpeedMultiplier) *
@@ -2078,7 +2029,7 @@ export class ArmyModel {
 
   private updateModelTypeForPosition(entityId: number, position: Vector3, category: TroopType, tier: TroopTier): void {
     const { col, row } = getHexForWorldPosition(position);
-    const biome = configManager.getBiome(col + FELT_CENTER(), row + FELT_CENTER());
+    const biome = this.biomeHexCache.get(col, row, this.resolveBiomeForHex);
 
     const modelType = this.getModelTypeForEntity(entityId, category, tier, biome);
     if (shouldSwitchModelForPosition({ currentModel: this.entityModelMap.get(entityId), resolvedModel: modelType })) {
@@ -2570,44 +2521,6 @@ export class ArmyModel {
     this.animationStates[index] = isWalking ? ANIMATION_STATE_MOVING : ANIMATION_STATE_IDLE;
   }
 
-  /**
-   * Visually hide an instance slot by zeroing its matrix without freeing
-   * the slot or removing it from activeInstances. Used when an army enters
-   * the deferred-removal queue so it disappears immediately while remaining
-   * matchable for supersede logic.
-   */
-  public hideInstanceSlot(matrixIndex: number): void {
-    this.hiddenSlots.add(matrixIndex);
-    this.models.forEach((modelData) => {
-      if (modelData.activeInstances.has(matrixIndex)) {
-        modelData.instancedMeshes.forEach((mesh) => {
-          mesh.setMatrixAt(matrixIndex, this.zeroInstanceMatrix);
-          mesh.instanceMatrix.needsUpdate = true;
-        });
-        if (modelData.contactShadowMesh) {
-          modelData.contactShadowMesh.setMatrixAt(matrixIndex, this.zeroInstanceMatrix);
-          modelData.contactShadowMesh.instanceMatrix.needsUpdate = true;
-        }
-      }
-    });
-    this.cosmeticModels.forEach((modelData) => {
-      if (modelData.activeInstances.has(matrixIndex)) {
-        modelData.instancedMeshes.forEach((mesh) => {
-          mesh.setMatrixAt(matrixIndex, this.zeroInstanceMatrix);
-          mesh.instanceMatrix.needsUpdate = true;
-        });
-        if (modelData.contactShadowMesh) {
-          modelData.contactShadowMesh.setMatrixAt(matrixIndex, this.zeroInstanceMatrix);
-          modelData.contactShadowMesh.instanceMatrix.needsUpdate = true;
-        }
-      }
-    });
-  }
-
-  public restoreHiddenSlot(matrixIndex: number): void {
-    this.hiddenSlots.delete(matrixIndex);
-  }
-
   public requestBoundsUpdate(): void {
     this.hasPendingBounds = true;
   }
@@ -2700,8 +2613,9 @@ export class ArmyModel {
       modelData.instancedMeshes.forEach((mesh) => {
         releasePooledInstancedMaterial(mesh.material);
 
-        // Dispose geometry
-        mesh.geometry.dispose();
+        if (modelData.ownsGeometry) {
+          mesh.geometry.dispose();
+        }
 
         // Phase 2.5: free the instanceMatrix/instanceColor GPU buffers (via the
         // renderer 'dispose' event) and the morph DataTexture. InstancedMesh.dispose
@@ -2731,7 +2645,6 @@ export class ArmyModel {
     this.cosmeticModels.forEach((modelData) => {
       modelData.instancedMeshes.forEach((mesh) => {
         releasePooledInstancedMaterial(mesh.material);
-        mesh.geometry.dispose();
         mesh.dispose();
         this.scene.remove(mesh);
       });

@@ -72,4 +72,24 @@ describe("FXManager", () => {
 
     _fxManager.destroy();
   });
+
+  it("shares built-in textures between managers until the final owner is destroyed", () => {
+    const textures: THREE.Texture[] = [];
+    const loadSpy = vi.spyOn(THREE.TextureLoader.prototype, "load").mockImplementation(() => {
+      const texture = new THREE.Texture() as THREE.Texture<HTMLImageElement>;
+      textures.push(texture);
+      return texture;
+    });
+    const first = new FXManager(new THREE.Scene(), 1);
+    const second = new FXManager(new THREE.Scene(), 1);
+
+    expect(loadSpy).toHaveBeenCalledTimes(5);
+
+    const loadedDisposeSpies = textures.map((texture) => vi.spyOn(texture, "dispose"));
+    first.destroy();
+    loadedDisposeSpies.forEach((disposeSpy) => expect(disposeSpy).not.toHaveBeenCalled());
+
+    second.destroy();
+    loadedDisposeSpies.forEach((disposeSpy) => expect(disposeSpy).toHaveBeenCalledTimes(1));
+  });
 });

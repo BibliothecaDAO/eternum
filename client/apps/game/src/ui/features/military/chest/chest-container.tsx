@@ -11,6 +11,39 @@ import { isComponentUpdate } from "@dojoengine/recs";
 import { AnimatePresence, motion, useMotionValue } from "framer-motion";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
+const unwrapToriiField = (value: unknown): unknown =>
+  typeof value === "object" && value !== null && "value" in value ? (value as { value: unknown }).value : value;
+
+const readToriiNumber = (value: unknown): number | null => {
+  const unwrapped = unwrapToriiField(value);
+  if (typeof unwrapped === "number") return Number.isFinite(unwrapped) ? unwrapped : null;
+  if (typeof unwrapped === "bigint") return Number(unwrapped);
+  if (typeof unwrapped !== "string" || unwrapped.length === 0) return null;
+  const parsed = Number(unwrapped);
+  return Number.isFinite(parsed) ? parsed : null;
+};
+
+const readChestEvent = (value: unknown) => {
+  if (typeof value !== "object" || value === null) return null;
+  const event = value as Record<string, unknown>;
+  const rawCoord = unwrapToriiField(event.chest_coord);
+  if (typeof rawCoord !== "object" || rawCoord === null) return null;
+  const coord = rawCoord as Record<string, unknown>;
+  const rawRelics = unwrapToriiField(event.relics);
+
+  return {
+    explorerId: readToriiNumber(event.explorer_id),
+    chestX: readToriiNumber(coord.x),
+    chestY: readToriiNumber(coord.y),
+    relics: Array.isArray(rawRelics)
+      ? rawRelics.flatMap((relic) => {
+          const decoded = readToriiNumber(relic);
+          return decoded === null ? [] : [decoded];
+        })
+      : [],
+  };
+};
+
 // Relic Card Component - Simplified without tooltip
 const RelicCard = ({ relic, isHovered }: { relic: RelicInfo; isHovered: boolean }) => {
   // Map relic names to resource icon component names
@@ -320,7 +353,12 @@ export const ChestContainer = ({
   chestHex: { x: number; y: number };
 }) => {
   const {
-    setup: { components },
+    setup: {
+      components,
+      systemCalls,
+      network: { contractComponents },
+    },
+    account: { account },
   } = useDojo();
 
   const [isShaking, setIsShaking] = useState(false);
@@ -332,8 +370,10 @@ export const ChestContainer = ({
   const [isOpening, setIsOpening] = useState(false);
   const [revealedCards, setRevealedCards] = useState<number[]>([]);
   const [numberParticles, setNumberParticles] = useState<{ id: number; number: number }[]>([]);
+  const [revealError, setRevealError] = useState<string | null>(null);
 
   const shakeTimeout = useRef<NodeJS.Timeout | null>(null);
+  const hasMatchingEvent = useRef(false);
   const CLICKS_TO_OPEN = 5;
 
   const chestName = useMemo(() => {
@@ -349,14 +389,36 @@ export const ChestContainer = ({
   const playChestOpenSound = useUISound("relic.chest");
 
   const toggleModal = useUIStore((state) => state.toggleModal);
+  const triggerRelicsRefresh = useUIStore((state) => state.triggerRelicsRefresh);
 
-  const {
-    setup: {
-      systemCalls,
-      network: { contractComponents },
+  const revealRelics = useCallback(
+    (relics: number[]) => {
+      hasMatchingEvent.current = true;
+      setRevealError(null);
+      setChestResult(relics);
+      // Resource updates arrive through the authoritative game-wide stream.
+      triggerRelicsRefresh();
+
+      if (isOpening) {
+        setTimeout(() => {
+          setShowResult(true);
+          playChestOpenSound();
+
+          relics.forEach((_, index) => {
+            setTimeout(() => {
+              setRevealedCards((previous) => [...previous, index]);
+            }, index * 600);
+          });
+        }, 500);
+        return;
+      }
+
+      setShowResult(true);
+      playChestOpenSound();
+      setRevealedCards(relics.map((_, index) => index));
     },
-    account: { account },
-  } = useDojo();
+    [isOpening, playChestOpenSound, triggerRelicsRefresh],
+  );
 
   // Event listener for OpenRelicChestEvent
   useComponentSystem(
@@ -365,34 +427,26 @@ export const ChestContainer = ({
       if (!isComponentUpdate(update, contractComponents.events.OpenRelicChestEvent)) return;
 
       const [currentState] = update.value;
+      const received = readChestEvent(currentState);
+
+      if (import.meta.env.DEV) {
+        console.debug("[ChestReveal] event match", {
+          received: received
+            ? { explorerId: received.explorerId, chestX: received.chestX, chestY: received.chestY }
+            : null,
+          expected: { explorerId: explorerEntityId, chestX: chestHex.x, chestY: chestHex.y },
+        });
+      }
 
       if (
-        currentState?.explorer_id === explorerEntityId &&
-        currentState?.chest_coord?.x === chestHex.x &&
-        currentState?.chest_coord?.y === chestHex.y
+        received?.explorerId === explorerEntityId &&
+        received.chestX === chestHex.x &&
+        received.chestY === chestHex.y
       ) {
-        const relics = currentState.relics.map((relic: any) => relic.value);
-        setChestResult(relics);
-
-        if (isOpening) {
-          setTimeout(() => {
-            setShowResult(true);
-            playChestOpenSound();
-
-            relics.forEach((_, index) => {
-              setTimeout(() => {
-                setRevealedCards((prev) => [...prev, index]);
-              }, index * 600);
-            });
-          }, 500);
-        } else {
-          setShowResult(true);
-          playChestOpenSound();
-          setRevealedCards(relics.map((_, i) => i));
-        }
+        revealRelics(received.relics);
       }
     },
-    [explorerEntityId, chestHex.x, chestHex.y, isOpening, playChestOpenSound],
+    [explorerEntityId, chestHex.x, chestHex.y, revealRelics, contractComponents],
   );
 
   const handleChestClick = async () => {
@@ -433,16 +487,12 @@ export const ChestContainer = ({
     // Check if we've reached the opening threshold
     if (newClickCount >= CLICKS_TO_OPEN) {
       setIsOpening(true);
-
-      // Dramatic pause before opening
-      setTimeout(() => {
-        openChest();
-      }, 1000);
     }
 
     // Trigger transaction on first click
     if (!hasClicked) {
       setHasClicked(true);
+      setRevealError(null);
       try {
         await systemCalls.open_chest({
           signer: account,
@@ -455,13 +505,11 @@ export const ChestContainer = ({
         });
       } catch (error) {
         console.error("Failed to open chest:", error);
+        setHasClicked(false);
+        setIsOpening(false);
+        setRevealError("The chest transaction failed. Please try again.");
       }
     }
-  };
-
-  const openChest = () => {
-    // This will be called when the chest animation completes
-    // The actual result display will be triggered by the event listener
   };
 
   // Cleanup timeout on unmount
@@ -668,6 +716,12 @@ export const ChestContainer = ({
                   animate={{ scale: 3, opacity: [0, 0.8, 0] }}
                   transition={{ duration: 0.6 }}
                 />
+              )}
+
+              {revealError && (
+                <div className="mt-3 max-w-xs rounded border border-gold/30 bg-dark-brown/95 p-3 text-center text-sm text-gold/80">
+                  <p>{revealError}</p>
+                </div>
               )}
             </motion.div>
           )}

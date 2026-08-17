@@ -16,6 +16,7 @@ import {
 } from "@bibliothecadao/types";
 import { getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
+import { gameEntityKey } from "@/dojo/game-scope";
 
 type ConstructionSpot = {
   col: number;
@@ -44,7 +45,6 @@ type ConstructionBuildabilityCode =
   | "mode_excluded"
   | "center_tile"
   | "out_of_radius"
-  | "reserved_tile"
   | "occupied_tile"
   | "missing_cost"
   | "simple_cost_locked"
@@ -69,8 +69,6 @@ export type ConstructionBuildabilityInput = {
   mode?: ConstructionMode | null;
   targetSpot?: ConstructionSpot | null;
   tileManager?: ConstructionTileManager | null;
-  occupiedSpots?: ReadonlySet<string>;
-  vacatedSpots?: ReadonlySet<string>;
   hasAvailableBuildingTile?: boolean;
 };
 
@@ -248,16 +246,7 @@ const validateTargetSpot = (input: ConstructionBuildabilityInput) => {
     return fail("out_of_radius", "This tile is outside the current structure level radius.");
   }
 
-  const targetKey = toConstructionSpotKey(targetSpot);
-  if (input.occupiedSpots?.has(targetKey)) {
-    return fail("reserved_tile", "This tile already has a pending building.");
-  }
-
   const isOccupied = input.tileManager?.isHexOccupied?.(targetSpot) ?? false;
-  if (input.vacatedSpots?.has(targetKey) && isOccupied) {
-    return fail("occupied_tile", "This tile is still waiting for destroy confirmation.");
-  }
-
   if (isOccupied) {
     return fail("occupied_tile", "This tile is already occupied.");
   }
@@ -301,10 +290,7 @@ const resolveRecsPopulationState = (
   const structureBuildingsComponent = input.components?.StructureBuildings;
   if (!structureBuildingsComponent) return null;
 
-  const structureBuildings = getComponentValue(
-    structureBuildingsComponent,
-    getEntityIdFromKeys([BigInt(input.entityId)]),
-  );
+  const structureBuildings = getComponentValue(structureBuildingsComponent, gameEntityKey([BigInt(input.entityId)]));
   const population = structureBuildings?.population;
   if (!population) return null;
 

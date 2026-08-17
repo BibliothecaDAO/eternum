@@ -32,6 +32,12 @@ type EmitterLike = {
 const isEmitterLike = (value: Record<string, unknown>): value is Record<string, unknown> & EmitterLike =>
   typeof value.on === "function";
 
+export function hasToriiStreamLifecycleSignals(subscription: unknown): boolean {
+  if (!subscription || typeof subscription !== "object") return false;
+  const sub = subscription as Record<string, unknown>;
+  return isEmitterLike(sub) || "onerror" in sub || "onclose" in sub;
+}
+
 /**
  * Attaches close/error listeners if the subscription supports them. Returns a
  * detach function (always safe to call, even when nothing was attached).

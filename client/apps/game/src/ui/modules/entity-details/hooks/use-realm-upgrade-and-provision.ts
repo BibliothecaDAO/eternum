@@ -5,14 +5,13 @@ import { getContractByName } from "@dojoengine/core";
 
 import { dojoConfig } from "../../../../../dojo-config";
 import { executeObservedClientTransaction } from "@/observability/observed-client-transaction";
+import { gameCallArgs, getGameNamespace } from "@/dojo/game-scope";
 import { useDojo } from "@bibliothecadao/react";
 import { extractReadableErrorMessage } from "@/utils/error-message";
 
 import { useStructureUpgrade } from "./use-structure-upgrade";
 import { useBlitzRealmProvision } from "./use-blitz-realm-provision";
 import { withRealmActionSubmitTimeout } from "./realm-action-submit-timeout";
-
-const ETERNUM_NAMESPACE = "s1_eternum";
 
 interface RealmUpgradeAndProvisionResult {
   canUpgrade: boolean;
@@ -50,12 +49,12 @@ export const useRealmUpgradeAndProvision = (structureEntityId: number | null): R
   const canUpgradeAndProvision = canUpgrade && canProvision;
 
   const structureSystemsAddress = useMemo(() => {
-    const contract = getContractByName(dojoConfig.manifest, ETERNUM_NAMESPACE, "structure_systems");
+    const contract = getContractByName(dojoConfig.manifest, getGameNamespace(), "structure_systems");
     return contract?.address ?? null;
   }, []);
 
   const blitzRealmSystemsAddress = useMemo(() => {
-    const contract = getContractByName(dojoConfig.manifest, ETERNUM_NAMESPACE, "blitz_realm_systems");
+    const contract = getContractByName(dojoConfig.manifest, getGameNamespace(), "blitz_realm_systems");
     return contract?.address ?? null;
   }, []);
 
@@ -83,12 +82,12 @@ export const useRealmUpgradeAndProvision = (structureEntityId: number | null): R
       {
         contractAddress: blitzRealmSystemsAddress,
         entrypoint: "provision_realm",
-        calldata: CallData.compile([structureEntityId]),
+        calldata: CallData.compile([...gameCallArgs(), structureEntityId]),
       },
       {
         contractAddress: structureSystemsAddress,
         entrypoint: "level_up",
-        calldata: CallData.compile([structureEntityId]),
+        calldata: CallData.compile([...gameCallArgs(), structureEntityId]),
       },
     ];
 

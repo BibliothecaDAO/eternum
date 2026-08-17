@@ -1,22 +1,22 @@
 // @vitest-environment node
 
-import { constants } from "starknet";
+import { constants, shortString } from "starknet";
 import { describe, expect, it } from "vitest";
 
-import { resolveStarknetRuntimeConfig } from "./starknet-chain-config";
+import { APPCHAIN_CHAIN_ID, resolveStarknetRuntimeConfig } from "./starknet-chain-config";
 
 describe("resolveStarknetRuntimeConfig", () => {
-  it("falls back to the slot runtime rpc when the selected chain changes away from an incompatible startup rpc", () => {
+  it("falls back to the sepolia runtime rpc when the selected chain changes away from an incompatible startup rpc", () => {
     const config = resolveStarknetRuntimeConfig({
       fallbackChain: "mainnet",
-      selectedChain: "slot",
+      selectedChain: "sepolia",
       baseRpcUrl: "https://api.cartridge.gg/x/starknet/mainnet/rpc/v0_9",
       cartridgeApiBase: "https://api.cartridge.gg",
     });
 
-    expect(config.chainKind).toBe("slot");
-    expect(config.rpcUrl).toBe("https://api.cartridge.gg/x/eternum-blitz-slot-4/katana/rpc/v0_9");
-    expect(config.defaultChainId).toBe("0x57505f455445524e554d5f424c49545a5f534c4f545f34");
+    expect(config.chainKind).toBe("sepolia");
+    expect(config.rpcUrl).toBe("https://api.cartridge.gg/x/starknet/sepolia/rpc/v0_9");
+    expect(config.defaultChainId).toBe(constants.StarknetChainId.SN_SEPOLIA);
   });
 
   it("preserves a configured compatible mainnet rpc instead of forcing the cartridge default", () => {
@@ -32,11 +32,11 @@ describe("resolveStarknetRuntimeConfig", () => {
     expect(config.rpcUrl).toBe("https://mainnet.example-rpc.invalid/rpc");
   });
 
-  it("uses the selected mainnet chain instead of the startup slot configuration", () => {
+  it("uses the selected mainnet chain instead of an incompatible startup cartridge rpc", () => {
     const config = resolveStarknetRuntimeConfig({
-      fallbackChain: "slot",
+      fallbackChain: "appchain",
       selectedChain: "mainnet",
-      baseRpcUrl: "https://api.cartridge.gg/x/eternum-blitz-slot-4/katana/rpc/v0_9",
+      baseRpcUrl: "https://api.cartridge.gg/x/starknet/sepolia/rpc/v0_9",
       cartridgeApiBase: "https://api.cartridge.gg",
     });
 
@@ -45,29 +45,31 @@ describe("resolveStarknetRuntimeConfig", () => {
     expect(config.rpcUrl).toBe("https://api.cartridge.gg/x/starknet/mainnet/rpc/v0_9");
   });
 
-  it("keeps slot worlds on the selected slot runtime and derives the controller chain id from the active rpc", () => {
+  it("keeps the self-hosted appchain on its own rpc and bespoke controller chain id", () => {
     const config = resolveStarknetRuntimeConfig({
       fallbackChain: "mainnet",
-      selectedChain: "slot",
-      baseRpcUrl: "https://api.cartridge.gg/x/eternum-blitz-slot-4/katana/rpc/v0_9",
+      selectedChain: "appchain",
+      baseRpcUrl: "http://realms-appchain.invalid",
       cartridgeApiBase: "https://api.cartridge.gg",
     });
 
-    expect(config.chainKind).toBe("slot");
-    expect(config.rpcUrl).toBe("https://api.cartridge.gg/x/eternum-blitz-slot-4/katana/rpc/v0_9");
-    expect(config.defaultChainId).toBe("0x57505f455445524e554d5f424c49545a5f534c4f545f34");
+    expect(config.chainKind).toBe("appchain");
+    expect(config.rpcUrl).toBe("http://realms-appchain.invalid");
+    expect(config.defaultChainId).toBe(APPCHAIN_CHAIN_ID);
+    expect(config.defaultChainId).toBe(shortString.encodeShortString("WP_REALMS_DEV"));
+    // No cartridge-hosted fallbacks apply to a self-hosted katana.
+    expect(config.controllerSupportedRpcUrls).toEqual(["http://realms-appchain.invalid"]);
   });
 
-  it("pins slot worlds to the shared slot runtime even when the active profile has a per-world katana rpc", () => {
+  it("pins the local chain to the katana default rpc", () => {
     const config = resolveStarknetRuntimeConfig({
-      fallbackChain: "slot",
-      selectedChain: "slot",
-      baseRpcUrl: "https://api.cartridge.gg/x/s0-game-5/katana/rpc/v0_9",
+      fallbackChain: "mainnet",
+      selectedChain: "local",
+      baseRpcUrl: "https://api.cartridge.gg/x/starknet/mainnet/rpc/v0_9",
       cartridgeApiBase: "https://api.cartridge.gg",
     });
 
-    expect(config.chainKind).toBe("slot");
-    expect(config.rpcUrl).toBe("https://api.cartridge.gg/x/eternum-blitz-slot-4/katana/rpc/v0_9");
-    expect(config.defaultChainId).toBe("0x57505f455445524e554d5f424c49545a5f534c4f545f34");
+    expect(config.chainKind).toBe("local");
+    expect(config.rpcUrl).toBe("http://localhost:5050");
   });
 });

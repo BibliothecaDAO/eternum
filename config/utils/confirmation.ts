@@ -16,7 +16,7 @@ export function confirmNonLocalDeployment(chain: string): void {
   const chainColors: Record<string, string> = {
     mainnet: "31", // Red
     sepolia: "34", // Blue
-    slot: "35", // Magenta
+    appchain: "35", // Magenta
     default: "33", // Yellow
   };
 

@@ -24,6 +24,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: foundry-rs/setup-snfoundry@v3
+        with:
+          # Must match snforge_std in contracts/factory/Scarb.toml (and
+          # .tool-versions); unpinned, this installs latest and a binary/std
+          # mismatch fails cheatcode-based tests.
+          starknet-foundry-version: "0.51.2"
       - uses: software-mansion/setup-scarb@v1
         with:
           scarb-version: "2.13.1"

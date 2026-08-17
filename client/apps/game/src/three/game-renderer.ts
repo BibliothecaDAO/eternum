@@ -1,17 +1,17 @@
 import { useUIStore } from "@/hooks/store/use-ui-store";
+import { DEV_MODE_ENABLED } from "@/utils/dev-mode";
 import { getGameModeId } from "@/config/game-modes";
 import { GRAPHICS_DEV_GUI_ENABLED, createGuiFolder } from "@/three/utils/gui-manager";
-import { GRAPHICS_SETTING, GraphicsSettings, IS_MOBILE } from "@/ui/config";
+import { IS_MOBILE } from "@/ui/config";
 import { SetupResult } from "@bibliothecadao/dojo";
 import { env } from "../../env";
 import { recordGameEntryDuration } from "@/ui/layouts/game-entry-timeline";
 import { SceneName } from "./types";
-import { transitionDB } from "./utils/";
+import { configureGltfTextureSupport, transitionDB } from "./utils/";
 import { trackGuiFolder, type TrackableGuiFolder } from "./utils/gui-folder-lifecycle";
-import { runRendererAnimationTick } from "./renderer-animation-runtime";
+import { resolveRendererPacedFps, runRendererAnimationTick } from "./renderer-animation-runtime";
 import {
   resolveRendererPixelRatioCap,
-  resolveRendererTargetFps,
   resolveRendererTargetPixelRatio,
   resizeRendererDisplay,
 } from "./renderer-display-runtime";
@@ -23,9 +23,10 @@ import {
 } from "./renderer-backend-runtime";
 import { createRendererFoundationRuntime } from "./renderer-foundation-runtime";
 import { runRendererFrame } from "./renderer-frame-runtime";
+import { startGpuBackendFrame } from "./gpu-backend-hot-path-instrumentation";
 import type { RendererInteractionRuntime } from "./renderer-interaction-runtime";
 import type { RendererLabelRuntime } from "./renderer-label-runtime";
-import { qualityController } from "./utils/quality-controller";
+import { renderProfile } from "./render-profile";
 import { prepareGameRendererScenes } from "./renderer-scene-orchestration";
 import { destroyRendererRuntime } from "./renderer-destroy-runtime";
 import { bootstrapRendererStartupRuntime } from "./renderer-startup-runtime";
@@ -42,7 +43,7 @@ import type WorldmapScene from "@/three/scenes/worldmap";
 import type { TransitionManager } from "@/three/managers/transition-manager";
 
 const MEMORY_MONITORING_ENABLED = env.VITE_PUBLIC_ENABLE_MEMORY_MONITORING;
-const GRAPHICS_DEV_ENABLED = env.VITE_PUBLIC_GRAPHICS_DEV;
+const GRAPHICS_DEV_ENABLED = DEV_MODE_ENABLED;
 
 type RendererBackendRuntime = RendererBackendV2 & { renderer: RendererSurfaceLike; dispose?: () => void };
 type ReconnectableRendererControls = NonNullable<RendererInteractionRuntime["controls"]> & {
@@ -73,9 +74,9 @@ export default class GameRenderer {
   private hudScene!: HUDScene;
 
   private lastTime: number = 0;
+  private lastInteractionTime = performance.now();
   private dojo: SetupResult;
   private sceneManager!: SceneManager;
-  private graphicsSetting: GraphicsSettings;
   private cleanupIntervals: NodeJS.Timeout[] = [];
   private guiFolders: TrackableGuiFolder[] = [];
   private readonly isMobileDevice = IS_MOBILE;
@@ -86,14 +87,12 @@ export default class GameRenderer {
   private readonly handleWindowResize = () => this.onWindowResize();
 
   constructor(dojoContext: SetupResult) {
-    this.graphicsSetting = GRAPHICS_SETTING;
     this.dojo = dojoContext;
 
     const runtimeAssembly = createGameRendererRuntimeAssembly({
       addWindowListener: (type, listener) => window.addEventListener(type, listener),
       createFolder: (name) => trackGuiFolder(this.guiFolders, createGuiFolder(name)),
       fastTravelEnabled: () => this.isFastTravelEnabled(),
-      graphicsSetting: this.graphicsSetting,
       isGraphicsDevEnabled: !!GRAPHICS_DEV_ENABLED,
       isMemoryMonitoringEnabled: MEMORY_MONITORING_ENABLED,
       isMobileDevice: this.isMobileDevice,
@@ -126,9 +125,12 @@ export default class GameRenderer {
 
   private initializeFoundationRuntime() {
     const foundationRuntime = createRendererFoundationRuntime({
-      graphicsSetting: this.graphicsSetting,
       isMobileDevice: this.isMobileDevice,
-      onControlsChange: () => this.supportRuntimeRegistry.getControlBridge().handleInteractionChange(),
+      onControlsChange: () => {
+        this.markRendererInteraction();
+        this.supportRuntimeRegistry.getControlBridge().handleInteractionChange();
+      },
+      onInteraction: () => this.markRendererInteraction(),
       resolveCurrentSceneName: () => this.sceneManager?.getCurrentScene(),
       warn: (message, error) => console.warn(message, error),
     });
@@ -148,7 +150,6 @@ export default class GameRenderer {
     const { backend, renderer } = await initializeRendererBackendRuntime({
       backendFactory,
       envBuildMode: env.VITE_PUBLIC_RENDERER_BUILD_MODE,
-      graphicsSetting: this.graphicsSetting,
       isMobileDevice: this.isMobileDevice,
       onDeviceLost: (event) => this.handleRendererDeviceLost(event),
       pixelRatio: this.getTargetPixelRatio(),
@@ -156,6 +157,7 @@ export default class GameRenderer {
     });
     this.backend = backend as RendererBackendRuntime;
     this.renderer = renderer;
+    configureGltfTextureSupport(renderer as Parameters<typeof configureGltfTextureSupport>[0]);
   }
 
   private handleRendererDeviceLost(event: RendererDeviceLostEvent): void {
@@ -203,7 +205,6 @@ export default class GameRenderer {
   }> {
     return initializeRendererDeviceLossFallbackRuntime({
       envBuildMode: env.VITE_PUBLIC_RENDERER_BUILD_MODE,
-      graphicsSetting: this.graphicsSetting,
       isMobileDevice: this.isMobileDevice,
       pixelRatio: this.getTargetPixelRatio(),
       search: window.location.search,
@@ -219,6 +220,7 @@ export default class GameRenderer {
 
     this.backend = input.backend;
     this.renderer = input.renderer;
+    configureGltfTextureSupport(input.renderer as Parameters<typeof configureGltfTextureSupport>[0]);
     this.mountRecoveredRendererSurface(input.renderer.domElement);
     this.reconnectRendererControlsToSurface(input.renderer.domElement);
     this.reattachSceneInputSurfaces(input.renderer.domElement);
@@ -278,8 +280,7 @@ export default class GameRenderer {
     const effectsBridgeRuntime = this.supportRuntimeRegistry.ensureEffectsBridge();
     effectsBridgeRuntime.applyEnvironment();
     effectsBridgeRuntime.setupPostProcessingEffects();
-    effectsBridgeRuntime.applyQualityFeatures(qualityController.getFeatures());
-    effectsBridgeRuntime.subscribeToQualityController();
+    effectsBridgeRuntime.applyRenderVisualProfile(renderProfile.visuals);
     effectsBridgeRuntime.updateWeatherPostProcessing();
   }
 
@@ -368,7 +369,7 @@ export default class GameRenderer {
         }),
       initialSceneName,
       isDestroyed: this.isDestroyed,
-      prepareScenes: (sceneName) => measure("prepare-scenes", () => this.prepareScenes(sceneName)),
+      prepareScenes: () => measure("prepare-scenes", () => this.prepareScenes()),
       registerCleanupInterval: (intervalId) => {
         this.cleanupIntervals = this.cleanupIntervals || [];
         this.cleanupIntervals.push(intervalId);
@@ -392,21 +393,18 @@ export default class GameRenderer {
     this.controls = this.interactionRuntime.controls;
   }
 
-  prepareScenes(initialSceneName: SceneName) {
+  prepareScenes() {
     prepareGameRendererScenes({
       applySceneRegistry: (registry) => this.assignRendererSceneRegistry(registry),
       controls: this.controls,
       dojo: this.dojo,
       effectsBridgeRuntime: this.supportRuntimeRegistry.ensureEffectsBridge(),
       fastTravelEnabled: this.isFastTravelEnabled(),
-      initialSceneName,
       inputSurface: this.renderer.domElement,
       markLabelsDirty: () => this.labelRuntime?.markDirty(),
       mouse: this.mouse,
-      qualityFeatures: qualityController.getFeatures(),
+      renderVisuals: renderProfile.visuals,
       raycaster: this.raycaster,
-      renderer: this.backend?.renderer,
-      warn: (message, error) => console.warn(message, error),
     });
   }
 
@@ -426,26 +424,23 @@ export default class GameRenderer {
   private getTargetPixelRatio() {
     return resolveRendererTargetPixelRatio({
       devicePixelRatio: window.devicePixelRatio || 1,
-      graphicsSetting: this.graphicsSetting,
-      isMobileDevice: this.isMobileDevice,
-    });
-  }
-
-  private getTargetFPS(): number | null {
-    return resolveRendererTargetFps({
-      graphicsSetting: this.graphicsSetting,
-      isMobileDevice: this.isMobileDevice,
     });
   }
 
   public resolvePixelRatio(pixelRatio: number): number {
-    return Math.min(
-      pixelRatio,
-      resolveRendererPixelRatioCap({
-        graphicsSetting: this.graphicsSetting,
-        isMobileDevice: this.isMobileDevice,
-      }),
-    );
+    return Math.min(pixelRatio, resolveRendererPixelRatioCap());
+  }
+
+  private markRendererInteraction(): void {
+    this.lastInteractionTime = performance.now();
+  }
+
+  private getTargetFps(): number | null {
+    return resolveRendererPacedFps({
+      currentTime: performance.now(),
+      lastInteractionTime: this.lastInteractionTime,
+      profile: renderProfile,
+    });
   }
 
   handleKeyEvent(event: KeyboardEvent): void {
@@ -478,6 +473,10 @@ export default class GameRenderer {
   }
 
   animate() {
+    if (import.meta.env.DEV) {
+      startGpuBackendFrame();
+    }
+
     this.lastTime = runRendererAnimationTick({
       getCurrentTime: () => performance.now(),
       getCycleProgress: () => useUIStore.getState().cycleProgress || 0,
@@ -506,17 +505,13 @@ export default class GameRenderer {
           worldmapScene: this.worldmapScene,
         });
 
-        if (rendered) {
-          qualityController.recordFrame(deltaTime * 1000);
-        }
-
         return rendered;
       },
       requestNextFrame: () =>
         requestAnimationFrame(() => {
           this.animate();
         }),
-      targetFPS: this.getTargetFPS(),
+      targetFPS: this.getTargetFps(),
       updateControls: () => {
         this.controls?.update();
       },

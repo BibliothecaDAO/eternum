@@ -1,122 +1,19 @@
 // @vitest-environment jsdom
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { GraphicsSettings as GraphicsSettingsType } from "@/ui/config";
-
-const mockGraphicsSettings = {
-  HIGH: "HIGH",
-  LOW: "LOW",
-  MID: "MID",
-  ULTRA_LOW: "ULTRA_LOW",
-} as const;
 
 const resizeRendererBackend = vi.fn();
+vi.mock("./renderer-backend-compat", () => ({ resizeRendererBackend }));
 
-vi.mock("@/ui/config", () => ({
-  GraphicsSettings: mockGraphicsSettings,
-}));
-
-vi.mock("./renderer-backend-compat", () => ({
-  resizeRendererBackend,
-}));
-
-const {
-  resolveRendererPixelRatioCap,
-  resolveRendererTargetFps,
-  resolveRendererTargetPixelRatio,
-  resizeRendererDisplay,
-} = await import("./renderer-display-runtime");
-const importedGraphicsSettings = mockGraphicsSettings as Record<
-  keyof typeof mockGraphicsSettings,
-  GraphicsSettingsType
->;
+const { resolveRendererPixelRatioCap, resolveRendererTargetPixelRatio, resizeRendererDisplay } =
+  await import("./renderer-display-runtime");
 
 describe("renderer display runtime", () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-  });
+  beforeEach(() => vi.clearAllMocks());
 
-  it("resolves target pixel ratio with the mobile cap policy", () => {
-    expect(
-      resolveRendererTargetPixelRatio({
-        devicePixelRatio: 3,
-        graphicsSetting: importedGraphicsSettings.HIGH,
-        isMobileDevice: false,
-      }),
-    ).toBe(1.5);
-
-    expect(
-      resolveRendererTargetPixelRatio({
-        devicePixelRatio: 3,
-        graphicsSetting: importedGraphicsSettings.MID,
-        isMobileDevice: false,
-      }),
-    ).toBe(1.25);
-
-    expect(
-      resolveRendererTargetPixelRatio({
-        devicePixelRatio: 3,
-        graphicsSetting: importedGraphicsSettings.LOW,
-        isMobileDevice: false,
-      }),
-    ).toBe(0.9);
-
-    expect(
-      resolveRendererTargetPixelRatio({
-        devicePixelRatio: 3,
-        graphicsSetting: importedGraphicsSettings.ULTRA_LOW,
-        isMobileDevice: false,
-      }),
-    ).toBe(0.55);
-
-    expect(
-      resolveRendererTargetPixelRatio({
-        devicePixelRatio: 3,
-        graphicsSetting: importedGraphicsSettings.HIGH,
-        isMobileDevice: true,
-      }),
-    ).toBe(1.25);
-  });
-
-  it("resolves frame caps for desktop and mobile graphics settings", () => {
-    expect(
-      resolveRendererTargetFps({
-        graphicsSetting: importedGraphicsSettings.HIGH,
-        isMobileDevice: false,
-      }),
-    ).toBe(45);
-    expect(
-      resolveRendererTargetFps({
-        graphicsSetting: importedGraphicsSettings.MID,
-        isMobileDevice: false,
-      }),
-    ).toBe(30);
-    expect(
-      resolveRendererTargetFps({
-        graphicsSetting: importedGraphicsSettings.HIGH,
-        isMobileDevice: true,
-      }),
-    ).toBe(45);
-    expect(
-      resolveRendererTargetFps({
-        graphicsSetting: importedGraphicsSettings.LOW,
-        isMobileDevice: true,
-      }),
-    ).toBe(24);
-  });
-
-  it("exposes the pixel-ratio cap for runtime quality application", () => {
-    expect(
-      resolveRendererPixelRatioCap({
-        graphicsSetting: importedGraphicsSettings.MID,
-        isMobileDevice: true,
-      }),
-    ).toBe(1);
-    expect(
-      resolveRendererPixelRatioCap({
-        graphicsSetting: importedGraphicsSettings.LOW,
-        isMobileDevice: false,
-      }),
-    ).toBe(1.5);
+  it("keeps a single visual pixel-ratio policy", () => {
+    expect(resolveRendererTargetPixelRatio({ devicePixelRatio: 3 })).toBe(1.25);
+    expect(resolveRendererTargetPixelRatio({ devicePixelRatio: 1 })).toBe(1);
+    expect(resolveRendererPixelRatioCap()).toBe(1.25);
   });
 
   it("resizes using the renderer container when available", () => {
@@ -124,46 +21,23 @@ describe("renderer display runtime", () => {
     const labelRuntime = { resize: vi.fn() };
     const hudScene = { onWindowResize: vi.fn() };
     const markLabelsDirty = vi.fn();
-    const container = {
-      clientHeight: 200,
-      clientWidth: 320,
-    };
 
     resizeRendererDisplay({
       backend: {} as never,
-      camera: camera as never,
-      getContainer: () => container as never,
-      hudScene: hudScene as never,
+      camera,
+      getContainer: () => ({ clientHeight: 200, clientWidth: 320 }),
+      hudScene,
       labelRuntime: labelRuntime as never,
       markLabelsDirty,
       windowHeight: 720,
       windowWidth: 1280,
     });
 
-    expect(markLabelsDirty).toHaveBeenCalledTimes(1);
     expect(camera.aspect).toBe(1.6);
     expect(camera.updateProjectionMatrix).toHaveBeenCalledTimes(1);
     expect(resizeRendererBackend).toHaveBeenCalledWith({}, 320, 200);
     expect(labelRuntime.resize).toHaveBeenCalledWith(320, 200);
     expect(hudScene.onWindowResize).toHaveBeenCalledWith(320, 200);
-  });
-
-  it("falls back to the window size when the renderer container is missing", () => {
-    const camera = { aspect: 0, updateProjectionMatrix: vi.fn() };
-    const hudScene = { onWindowResize: vi.fn() };
-
-    resizeRendererDisplay({
-      backend: {} as never,
-      camera: camera as never,
-      getContainer: () => null,
-      hudScene: hudScene as never,
-      markLabelsDirty: vi.fn(),
-      windowHeight: 900,
-      windowWidth: 1600,
-    });
-
-    expect(camera.aspect).toBe(1600 / 900);
-    expect(resizeRendererBackend).toHaveBeenCalledWith({}, 1600, 900);
-    expect(hudScene.onWindowResize).toHaveBeenCalledWith(1600, 900);
+    expect(markLabelsDirty).toHaveBeenCalledTimes(1);
   });
 });

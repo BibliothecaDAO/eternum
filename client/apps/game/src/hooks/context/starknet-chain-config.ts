@@ -1,53 +1,20 @@
 import type { Chain } from "@contracts";
 
-import { buildSharedSlotRpcUrl, isRpcUrlCompatibleForChain, normalizeRpcUrl } from "@/runtime/world/normalize";
+import { isRpcUrlCompatibleForChain, normalizeRpcUrl } from "@/runtime/world/normalize";
 import { constants, shortString } from "starknet";
 
 const KATANA_CHAIN_ID = shortString.encodeShortString("KATANA");
 const KATANA_RPC_URL = "http://localhost:5050";
-const SLOT_CHAIN_ID = "0x57505f455445524e554d5f424c49545a5f534c4f545f34";
-const SLOT_CHAIN_ID_TEST = "0x57505f455445524e554d5f424c49545a5f534c4f545f54455354";
-
-type DerivedChain = {
-  kind: "slot" | "mainnet" | "sepolia";
-  chainId: string;
-};
+// Self-hosted appchain (AWS) — bespoke id so the Controller keychain can
+// distinguish it from public networks. RPC comes from VITE_PUBLIC_NODE_URL.
+export const APPCHAIN_CHAIN_ID = shortString.encodeShortString("WP_REALMS_DEV");
 
 interface StarknetRuntimeConfig {
-  chainKind: "local" | "slot" | "mainnet" | "sepolia";
+  chainKind: "local" | "mainnet" | "sepolia" | "appchain";
   defaultChainId: string;
   rpcUrl: string;
   controllerSupportedRpcUrls: string[];
 }
-
-const deriveChainFromRpcUrl = (value: string): DerivedChain | null => {
-  if (!value) return null;
-
-  try {
-    const url = new URL(value);
-    const path = url.pathname;
-    const lowerPath = path.toLowerCase();
-
-    if (lowerPath.includes("/starknet/mainnet")) {
-      return { kind: "mainnet", chainId: constants.StarknetChainId.SN_MAIN };
-    }
-
-    if (lowerPath.includes("/starknet/sepolia")) {
-      return { kind: "sepolia", chainId: constants.StarknetChainId.SN_SEPOLIA };
-    }
-
-    const match = path.match(/\/x\/([^/]+)\/katana/i);
-    if (!match) return null;
-
-    const slug = match[1];
-    const label = `WP_${slug.replace(/-/g, "_").toUpperCase()}`;
-    if (label.length > 31) return null;
-
-    return { kind: "slot", chainId: shortString.encodeShortString(label) };
-  } catch {
-    return null;
-  }
-};
 
 const buildCartridgeRpcUrl = (cartridgeApiBase: string, path: string) =>
   normalizeRpcUrl(`${cartridgeApiBase}${path.startsWith("/") ? path : `/${path}`}`);
@@ -68,19 +35,6 @@ const resolveChainCompatibleRuntimeRpcUrl = ({
   return isRpcUrlCompatibleForChain(chain, requestedRpcUrl) ? requestedRpcUrl : fallbackRpcUrl;
 };
 
-const resolveSlotRuntimeChainId = (selectedChain: Chain, baseRpcUrl: string): string => {
-  if (selectedChain === "slottest") {
-    return SLOT_CHAIN_ID_TEST;
-  }
-
-  const derivedChain = deriveChainFromRpcUrl(baseRpcUrl);
-  if (derivedChain?.kind === "slot") {
-    return derivedChain.chainId;
-  }
-
-  return SLOT_CHAIN_ID;
-};
-
 export const resolveStarknetRuntimeConfig = ({
   fallbackChain,
   selectedChain,
@@ -96,14 +50,24 @@ export const resolveStarknetRuntimeConfig = ({
   const effectiveChain = selectedChain ?? fallbackChain;
   const mainnetRpcUrl = buildCartridgeRpcUrl(cartridgeApiBase, "/x/starknet/mainnet/rpc/v0_9");
   const sepoliaRpcUrl = buildCartridgeRpcUrl(cartridgeApiBase, "/x/starknet/sepolia/rpc/v0_9");
-  const slotRpcUrl = buildSharedSlotRpcUrl(cartridgeApiBase);
 
   if (effectiveChain === "local") {
     return {
       chainKind: "local",
       defaultChainId: KATANA_CHAIN_ID,
       rpcUrl: KATANA_RPC_URL,
-      controllerSupportedRpcUrls: [KATANA_RPC_URL, slotRpcUrl, sepoliaRpcUrl, mainnetRpcUrl],
+      controllerSupportedRpcUrls: [KATANA_RPC_URL, sepoliaRpcUrl, mainnetRpcUrl],
+    };
+  }
+
+  if (effectiveChain === "appchain") {
+    return {
+      chainKind: "appchain",
+      defaultChainId: APPCHAIN_CHAIN_ID,
+      rpcUrl: normalizedBaseRpcUrl,
+      // the keychain only needs to recognize our chain; no cartridge-hosted
+      // fallbacks apply to a self-hosted katana
+      controllerSupportedRpcUrls: [normalizedBaseRpcUrl],
     };
   }
 
@@ -118,31 +82,20 @@ export const resolveStarknetRuntimeConfig = ({
       chainKind: "mainnet",
       defaultChainId: constants.StarknetChainId.SN_MAIN,
       rpcUrl: runtimeRpcUrl,
-      controllerSupportedRpcUrls: buildSupportedRpcUrls(runtimeRpcUrl, slotRpcUrl, sepoliaRpcUrl, mainnetRpcUrl),
+      controllerSupportedRpcUrls: buildSupportedRpcUrls(runtimeRpcUrl, sepoliaRpcUrl, mainnetRpcUrl),
     };
   }
 
-  if (effectiveChain === "sepolia") {
-    const runtimeRpcUrl = resolveChainCompatibleRuntimeRpcUrl({
-      chain: effectiveChain,
-      fallbackRpcUrl: sepoliaRpcUrl,
-      requestedRpcUrl: normalizedBaseRpcUrl,
-    });
-
-    return {
-      chainKind: "sepolia",
-      defaultChainId: constants.StarknetChainId.SN_SEPOLIA,
-      rpcUrl: runtimeRpcUrl,
-      controllerSupportedRpcUrls: buildSupportedRpcUrls(runtimeRpcUrl, slotRpcUrl, mainnetRpcUrl, sepoliaRpcUrl),
-    };
-  }
-
-  const runtimeRpcUrl = slotRpcUrl;
+  const runtimeRpcUrl = resolveChainCompatibleRuntimeRpcUrl({
+    chain: "sepolia",
+    fallbackRpcUrl: sepoliaRpcUrl,
+    requestedRpcUrl: normalizedBaseRpcUrl,
+  });
 
   return {
-    chainKind: "slot",
-    defaultChainId: resolveSlotRuntimeChainId(effectiveChain, runtimeRpcUrl),
+    chainKind: "sepolia",
+    defaultChainId: constants.StarknetChainId.SN_SEPOLIA,
     rpcUrl: runtimeRpcUrl,
-    controllerSupportedRpcUrls: buildSupportedRpcUrls(runtimeRpcUrl, slotRpcUrl, sepoliaRpcUrl, mainnetRpcUrl),
+    controllerSupportedRpcUrls: buildSupportedRpcUrls(runtimeRpcUrl, mainnetRpcUrl, sepoliaRpcUrl),
   };
 };

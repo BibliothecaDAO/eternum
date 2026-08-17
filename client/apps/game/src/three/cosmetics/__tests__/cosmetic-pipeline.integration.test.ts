@@ -90,7 +90,7 @@ describe("cosmetic pipeline integration", () => {
   });
 
   it("flows from a pending draft through preview entry into applied army and structure cosmetics", async () => {
-    playerCosmeticsStore.setPendingBlitzLoadout(resolveCosmeticsLoadoutScopeKeyForChain("slot"), "0x123", {
+    playerCosmeticsStore.setPendingBlitzLoadout(resolveCosmeticsLoadoutScopeKeyForChain("appchain"), "0x123", {
       tokenIds: ["0xaaa", "0xbbb", "0xccc"],
       selectedBySlot: {
         armor: {
@@ -112,7 +112,7 @@ describe("cosmetic pipeline integration", () => {
     const controller = createWorldPreviewEntryController({
       isDev: true,
       address: "0x123",
-      chain: "slot",
+      chain: "appchain",
       worldName: "alpha",
       previewEntries: {
         setPreviewEntry: (key, entry) => {
@@ -137,8 +137,8 @@ describe("cosmetic pipeline integration", () => {
       defaultModelKey: "Realm",
     });
 
-    expect(previewEntries.get("slot:alpha:0x123")).toEqual(
-      expect.objectContaining({ previewEntered: true, loadoutWorldKey: "blitz:slot:alpha" }),
+    expect(previewEntries.get("appchain:alpha:0x123")).toEqual(
+      expect.objectContaining({ previewEntered: true, loadoutWorldKey: "blitz:appchain:alpha" }),
     );
     expect(army.skin.cosmeticId).toBe("army:Knight:T3:legacy");
     expect(army.attachments).toEqual([expect.objectContaining({ id: "legacy-troop-aura" })]);
@@ -147,7 +147,7 @@ describe("cosmetic pipeline integration", () => {
   });
 
   it("clears preview state and reapplies a changed draft on the next explicit preview entry", async () => {
-    playerCosmeticsStore.setPendingBlitzLoadout(resolveCosmeticsLoadoutScopeKeyForChain("slot"), "0x123", {
+    playerCosmeticsStore.setPendingBlitzLoadout(resolveCosmeticsLoadoutScopeKeyForChain("appchain"), "0x123", {
       tokenIds: ["0xaaa"],
       selectedBySlot: {
         armor: {
@@ -160,7 +160,7 @@ describe("cosmetic pipeline integration", () => {
     const controller = createWorldPreviewEntryController({
       isDev: true,
       address: "0x123",
-      chain: "slot",
+      chain: "appchain",
       worldName: "alpha",
       previewEntries: useDevPreviewEntryStore.getState(),
       cosmeticsStore: playerCosmeticsStore,
@@ -178,13 +178,13 @@ describe("cosmetic pipeline integration", () => {
     ).toBe("army:Knight:T3:legacy");
 
     const previewWorldKey = buildDevPreviewWorldKey({
-      chain: "slot",
+      chain: "appchain",
       worldName: "alpha",
       address: "0x123",
     });
     useDevPreviewEntryStore.getState().clearPreviewEntry(previewWorldKey);
 
-    playerCosmeticsStore.setPendingBlitzLoadout(resolveCosmeticsLoadoutScopeKeyForChain("slot"), "0x123", {
+    playerCosmeticsStore.setPendingBlitzLoadout(resolveCosmeticsLoadoutScopeKeyForChain("appchain"), "0x123", {
       tokenIds: [],
       selectedBySlot: {},
     });

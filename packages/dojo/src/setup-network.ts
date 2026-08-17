@@ -21,9 +21,16 @@ export async function setupNetwork(
   env: {
     vrfProviderAddress: string;
     useBurner: boolean;
+    /** Model namespace: "s2" on appchain worlds, "s1_eternum" on legacy worlds. */
+    namespace?: string;
+    /** Active game on an s2 appchain world; 0/omitted on legacy worlds. */
+    gameId?: number;
   },
 ): Promise<SetupNetworkExplicitReturn> {
-  const provider = new EternumProvider(config.manifest, config.rpcUrl, env.vrfProviderAddress);
+  const provider = new EternumProvider(config.manifest, config.rpcUrl, env.vrfProviderAddress, undefined, {
+    namespace: env.namespace,
+    gameId: env.gameId,
+  });
 
   const toriiClient = await createClient({
     worldAddress: config.manifest.world.address || "",
@@ -33,7 +40,7 @@ export async function setupNetwork(
 
   return {
     toriiClient,
-    contractComponents: defineContractComponents(world),
+    contractComponents: defineContractComponents(world, env.namespace ?? "s1_eternum"),
     provider,
     world,
   };

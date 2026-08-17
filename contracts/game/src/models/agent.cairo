@@ -1,11 +1,12 @@
 use dojo::model::ModelStorage;
 use dojo::world::WorldStorage;
 use crate::alias::ID;
-use crate::constants::WORLD_CONFIG_ID;
 
 #[derive(Introspect, Copy, Drop, Serde)]
 #[dojo::model]
 pub struct AgentOwner {
+    #[key]
+    pub game_id: u32,
     #[key]
     pub explorer_id: ID,
     pub address: starknet::ContractAddress,
@@ -15,7 +16,7 @@ pub struct AgentOwner {
 #[dojo::model]
 pub struct AgentCount {
     #[key]
-    pub id: ID,
+    pub game_id: u32,
     pub count: u16,
 }
 
@@ -23,7 +24,7 @@ pub struct AgentCount {
 #[dojo::model]
 pub struct AgentLifetimeCount {
     #[key]
-    pub id: ID,
+    pub game_id: u32,
     pub count: u16,
 }
 
@@ -31,7 +32,7 @@ pub struct AgentLifetimeCount {
 #[dojo::model]
 pub struct AgentLordsMinted {
     #[key]
-    pub id: ID,
+    pub game_id: u32,
     pub amount: u32,
 }
 
@@ -39,7 +40,7 @@ pub struct AgentLordsMinted {
 #[dojo::model]
 pub struct AgentConfig {
     #[key]
-    pub id: ID,
+    pub game_id: u32,
     pub max_lifetime_count: u16,
     pub max_current_count: u16,
     pub min_spawn_lords_amount: u8,
@@ -48,14 +49,14 @@ pub struct AgentConfig {
 
 #[generate_trait]
 pub impl AgentCountImpl of AgentCountTrait {
-    fn limit_reached(world: WorldStorage) -> bool {
-        let agent_config: AgentConfig = world.read_model(WORLD_CONFIG_ID);
-        let agent_current_count: AgentCount = world.read_model(WORLD_CONFIG_ID);
+    fn limit_reached(world: WorldStorage, game_id: u32) -> bool {
+        let agent_config: AgentConfig = world.read_model(game_id);
+        let agent_current_count: AgentCount = world.read_model(game_id);
         if (agent_current_count.count >= agent_config.max_current_count) {
             return true;
         }
 
-        let agent_lifetime_count: AgentLifetimeCount = world.read_model(WORLD_CONFIG_ID);
+        let agent_lifetime_count: AgentLifetimeCount = world.read_model(game_id);
         if (agent_lifetime_count.count >= agent_config.max_lifetime_count) {
             return true;
         }
@@ -63,18 +64,18 @@ pub impl AgentCountImpl of AgentCountTrait {
         return false;
     }
 
-    fn increase(ref world: WorldStorage) {
-        let mut agent_current_count: AgentCount = world.read_model(WORLD_CONFIG_ID);
+    fn increase(ref world: WorldStorage, game_id: u32) {
+        let mut agent_current_count: AgentCount = world.read_model(game_id);
         agent_current_count.count += 1;
         world.write_model(@agent_current_count);
 
-        let mut agent_lifetime_count: AgentLifetimeCount = world.read_model(WORLD_CONFIG_ID);
+        let mut agent_lifetime_count: AgentLifetimeCount = world.read_model(game_id);
         agent_lifetime_count.count += 1;
         world.write_model(@agent_lifetime_count);
     }
 
-    fn decrease(ref world: WorldStorage) {
-        let mut agent_current_count: AgentCount = world.read_model(WORLD_CONFIG_ID);
+    fn decrease(ref world: WorldStorage, game_id: u32) {
+        let mut agent_current_count: AgentCount = world.read_model(game_id);
         agent_current_count.count -= 1;
         world.write_model(@agent_current_count);
     }
@@ -83,8 +84,8 @@ pub impl AgentCountImpl of AgentCountTrait {
 
 #[generate_trait]
 pub impl AgentLordsMintedImpl of AgentLordsMintedTrait {
-    fn increase(ref world: WorldStorage, amount: u32) {
-        let mut agent_lords_minted: AgentLordsMinted = world.read_model(WORLD_CONFIG_ID);
+    fn increase(ref world: WorldStorage, game_id: u32, amount: u32) {
+        let mut agent_lords_minted: AgentLordsMinted = world.read_model(game_id);
         agent_lords_minted.amount += amount;
         world.write_model(@agent_lords_minted);
     }

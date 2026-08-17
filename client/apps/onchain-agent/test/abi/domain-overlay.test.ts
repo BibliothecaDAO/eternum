@@ -17,7 +17,7 @@ import {
   contributionTuples,
 } from "../../src/abi/domain-overlay";
 
-const manifestPath = resolve(__dirname, "../../../../../contracts/game/manifest_slot.json");
+const manifestPath = resolve(__dirname, "../../../../../contracts/game/manifest_mainnet.json");
 const manifest = JSON.parse(readFileSync(manifestPath, "utf-8"));
 
 // ── Overlay key validation ───────────────────────────────────────────────────

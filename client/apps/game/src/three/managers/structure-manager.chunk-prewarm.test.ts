@@ -40,6 +40,14 @@ vi.mock("@/ui/config", () => ({
   FELT_CENTER: () => 0,
 }));
 
+vi.mock("@bibliothecadao/eternum", () => {
+  const proxy = new Proxy({}, { get: (_, key) => key });
+  return new Proxy({ TROOP_TIERS: proxy } as Record<string, unknown>, {
+    get: (target, prop) => (prop in target ? target[prop as string] : proxy),
+    has: () => true,
+  });
+});
+
 vi.mock("@bibliothecadao/types", () => {
   const enumProxy = new Proxy(
     {},
@@ -169,6 +177,22 @@ describe("StructureManager.prewarmChunkAssets", () => {
     expect(subject.getVisibleStructuresForChunk).toHaveBeenCalledWith(24, 24);
     expect(subject.ensureStructureModels.mock.calls).toEqual([["Village"], ["Bank"]]);
     expect(subject.ensureCosmeticStructureModels).not.toHaveBeenCalled();
+  });
+
+  it("attaches a loaded structure model to the scene", async () => {
+    const subject = Object.create(StructureManager.prototype) as any;
+    const group = {};
+    const model = { group, setWorldBounds: vi.fn() };
+    subject.structureModels = new Map();
+    subject.structureModelPromises = new Map();
+    subject.structureModelPaths = { Village: ["/village.glb"] };
+    subject.loadStructureModel = vi.fn(async () => model);
+    subject.scene = { add: vi.fn() };
+    subject.currentChunkBounds = undefined;
+
+    await subject.ensureStructureModels("Village");
+
+    expect(subject.scene.add).toHaveBeenCalledWith(group);
   });
 
   it("loads visible chunk cosmetic models before the visible update path runs", async () => {

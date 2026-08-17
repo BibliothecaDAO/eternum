@@ -64,11 +64,6 @@ const BALANCE_COLS = RESOURCE_BALANCE_COLUMNS.map((c) => c.column).join(", ");
 
 const TROOP_COLS = TROOP_BALANCE_COLUMNS.map((c) => c.column).join(", ");
 
-/** Production building_count column for each resource (dot-notation from Torii SQL). */
-const PRODUCTION_COLS = RESOURCE_BALANCE_COLUMNS.map(
-  (c) => `\`${c.column.replace("_BALANCE", "_PRODUCTION")}.building_count\``,
-).join(", ");
-
 /** Full production columns needed for dynamic balance computation. */
 const PRODUCTION_FULL_COLS = RESOURCE_BALANCE_COLUMNS.map((c) => {
   const prefix = c.column.replace("_BALANCE", "_PRODUCTION");
@@ -88,18 +83,7 @@ export const RESOURCE_QUERIES = {
   RESOURCE_BALANCES: `
     SELECT entity_id, ${BALANCE_COLS}, ${TROOP_COLS}
     FROM \`s1_eternum-Resource\`
-    WHERE entity_id IN ({entityIds});
-  `,
-
-  /**
-   * Fetch resource balances AND production building counts for a set of entity IDs.
-   * Returns both *_BALANCE hex columns and *_PRODUCTION.building_count integer columns,
-   * plus troop reserve balance columns.
-   */
-  RESOURCE_BALANCES_AND_PRODUCTION: `
-    SELECT entity_id, ${BALANCE_COLS}, ${TROOP_COLS}, ${PRODUCTION_COLS}
-    FROM \`s1_eternum-Resource\`
-    WHERE entity_id IN ({entityIds});
+    WHERE {GF} AND entity_id IN ({entityIds});
   `,
 
   /**
@@ -109,6 +93,6 @@ export const RESOURCE_QUERIES = {
   RESOURCE_BALANCES_WITH_DYNAMIC_PRODUCTION: `
     SELECT entity_id, ${BALANCE_COLS}, ${TROOP_COLS}, ${PRODUCTION_FULL_COLS}
     FROM \`s1_eternum-Resource\`
-    WHERE entity_id IN ({entityIds});
+    WHERE {GF} AND entity_id IN ({entityIds});
   `,
 } as const;

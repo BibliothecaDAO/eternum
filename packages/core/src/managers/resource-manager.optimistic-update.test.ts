@@ -14,8 +14,8 @@ import { ResourceManager } from "./resource-manager";
 
 type ResourceValue = ComponentValue<ClientComponents["Resource"]["schema"]>;
 
-describe("ResourceManager.optimisticResourceUpdate", () => {
-  it("composes optimistic debits across separate resource balance fields", () => {
+describe("ResourceManager provisional writes", () => {
+  it("builds one overlay with baseline-delta evidence for every touched balance", () => {
     const components = createTestComponents();
     seedResource(components, 1, {
       STONE_BALANCE: precise(100),
@@ -23,76 +23,35 @@ describe("ResourceManager.optimisticResourceUpdate", () => {
     });
     const resourceManager = new ResourceManager(components, 1);
 
-    const removeWoodDebit = resourceManager.optimisticResourceUpdate(ResourcesIds.Wood, -25);
-    const removeStoneDebit = resourceManager.optimisticResourceUpdate(ResourcesIds.Stone, -40);
-
-    expect(resourceManager.balance(ResourcesIds.Wood)).toBe(precise(75));
-    expect(resourceManager.balance(ResourcesIds.Stone)).toBe(precise(60));
-
-    removeStoneDebit();
-    expect(resourceManager.balance(ResourcesIds.Wood)).toBe(precise(75));
-    expect(resourceManager.balance(ResourcesIds.Stone)).toBe(precise(100));
-
-    removeWoodDebit();
-    expect(resourceManager.balance(ResourcesIds.Wood)).toBe(precise(100));
-    expect(resourceManager.balance(ResourcesIds.Stone)).toBe(precise(100));
-  });
-
-  it("keeps the latest same-resource optimistic debit visible when an older debit is cleaned up first", () => {
-    const components = createTestComponents();
-    seedResource(components, 1, {
-      WHEAT_BALANCE: precise(100),
-    });
-    const resourceManager = new ResourceManager(components, 1);
-
-    const removeFirstDebit = resourceManager.optimisticResourceUpdate(ResourcesIds.Wheat, -20);
-    const removeSecondDebit = resourceManager.optimisticResourceUpdate(ResourcesIds.Wheat, -30);
-
-    expect(resourceManager.balance(ResourcesIds.Wheat)).toBe(precise(50));
-
-    removeFirstDebit();
-    expect(resourceManager.balance(ResourcesIds.Wheat)).toBe(precise(50));
-
-    removeSecondDebit();
-    expect(resourceManager.balance(ResourcesIds.Wheat)).toBe(precise(100));
-  });
-
-  it("cleans up grouped optimistic resource changes without persistent state", () => {
-    const components = createTestComponents();
-    seedResource(components, 1, {
-      WHEAT_BALANCE: precise(100),
-      FISH_BALANCE: precise(80),
-    });
-    const resourceManager = new ResourceManager(components, 1);
-
-    const cleanup = resourceManager.optimisticResourceUpdates([
-      { resourceId: ResourcesIds.Wheat, amount: -15 },
-      { resourceId: ResourcesIds.Fish, amount: -10 },
+    const write = resourceManager.resolveProvisionalResourceWrite([
+      { resourceId: ResourcesIds.Wood, amount: -25 },
+      { resourceId: ResourcesIds.Stone, amount: -40 },
     ]);
 
-    expect(resourceManager.balance(ResourcesIds.Wheat)).toBe(precise(85));
-    expect(resourceManager.balance(ResourcesIds.Fish)).toBe(precise(70));
-
-    cleanup();
-
-    expect(resourceManager.balance(ResourcesIds.Wheat)).toBe(precise(100));
-    expect(resourceManager.balance(ResourcesIds.Fish)).toBe(precise(80));
+    expect(write).toMatchObject({
+      model: "Resource",
+      baselineDeltaFields: ["WOOD_BALANCE", "STONE_BALANCE"],
+      patch: { WOOD_BALANCE: precise(75), STONE_BALANCE: precise(60) },
+    });
   });
 
-  it("applies optimistic research debits", () => {
+  it("includes essence and relic balances in the same evidence path", () => {
     const components = createTestComponents();
     seedResource(components, 1, {
-      RESEARCH_BALANCE: precise(100),
+      ESSENCE_BALANCE: precise(100),
+      RELIC_E1_BALANCE: precise(1),
     });
     const resourceManager = new ResourceManager(components, 1);
 
-    const cleanup = resourceManager.optimisticResourceUpdate(ResourcesIds.Research, -25);
+    const write = resourceManager.resolveProvisionalResourceWrite([
+      { resourceId: ResourcesIds.Essence, amount: -25 },
+      { resourceId: ResourcesIds.StaminaRelic1, amount: -1 },
+    ]);
 
-    expect(resourceManager.balance(ResourcesIds.Research)).toBe(precise(75));
-
-    cleanup();
-
-    expect(resourceManager.balance(ResourcesIds.Research)).toBe(precise(100));
+    expect(write).toMatchObject({
+      baselineDeltaFields: ["ESSENCE_BALANCE", "RELIC_E1_BALANCE"],
+      patch: { ESSENCE_BALANCE: precise(75), RELIC_E1_BALANCE: 0n },
+    });
   });
 });
 

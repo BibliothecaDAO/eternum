@@ -1,15 +1,10 @@
-import { sqlApi } from "@/services/api";
-import {
-  createPendingWorldmapFxKey,
-  dispatchPendingWorldmapFxStart,
-  dispatchPendingWorldmapFxStop,
-} from "@/utils/pending-worldmap-fx";
+import { useWorldSpatialTiles } from "@/hooks/use-world-spatial-tiles";
+import { startWorldmapProvisionalFx } from "@/three/scenes/worldmap-provisional-fx";
 import { Position as PositionInterface } from "@bibliothecadao/eternum";
 
 import Button from "@/ui/design-system/atoms/button";
 import { NumberInput } from "@/ui/design-system/atoms/number-input";
 import TextInput from "@/ui/design-system/atoms/text-input";
-import { LoadingAnimation } from "@/ui/design-system/molecules/loading-animation";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { ViewOnMapIcon } from "@/ui/design-system/molecules/view-on-map-icon";
 import { currencyFormat } from "@/ui/utils/utils";
@@ -37,11 +32,11 @@ import {
   TroopType,
 } from "@bibliothecadao/types";
 import { getComponentValue } from "@dojoengine/recs";
-import { useQueryClient } from "@tanstack/react-query";
 import clsx from "clsx";
 import LockIcon from "lucide-react/dist/esm/icons/lock";
 import Pen from "lucide-react/dist/esm/icons/pen";
 import { useEffect, useMemo, useState } from "react";
+import { gameEntityKey } from "@/dojo/game-scope";
 
 type ArmyManagementCardProps = {
   owner_entity: ID;
@@ -106,14 +101,12 @@ export const ArmyCreate = ({
     setup: { components },
     account: { account },
   } = useDojo();
-  const queryClient = useQueryClient();
 
   const currentDefaultTick = getBlockTimestamp().currentDefaultTick;
 
   const [isLoading, setIsLoading] = useState(false);
   const [canCreate, setCanCreate] = useState(false);
   const [troopCount, setTroopCount] = useState<number>(0);
-  const [freeDirections, setFreeDirections] = useState<Direction[]>([]);
   const [selectedTroopType, setSelectedTroopType] = useState<TroopType>(
     army
       ? army.troops.count === 0n
@@ -125,10 +118,9 @@ export const ArmyCreate = ({
     army && army.troops.count > 0n ? (army.troops.tier as TroopTier) : TroopTier.T1,
   );
   const [selectedDirection, setSelectedDirection] = useState<Direction | null>(null);
-  const [isLoadingTiles, setIsLoadingTiles] = useState(true);
   const [activeTab, setActiveTab] = useState<"troops" | "direction">("troops");
 
-  const structure = getComponentValue(components.Structure, getEntityIdFromKeys([BigInt(owner_entity)]));
+  const structure = getComponentValue(components.Structure, gameEntityKey([BigInt(owner_entity)]));
   const structureLevel = structure?.base?.level ?? 0;
   const troopCapacityLimit = configManager.getMaxArmySize(structureLevel, selectedTier) || null;
   const currentTroopCountValue = Number(army?.troops?.count ?? 0);
@@ -142,26 +134,26 @@ export const ArmyCreate = ({
     setSelectedTier(tier);
   };
 
-  useEffect(() => {
-    const fetchTiles = async () => {
-      setIsLoadingTiles(true);
-      const structure = getComponentValue(components.Structure, getEntityIdFromKeys([BigInt(owner_entity)]));
-      if (structure) {
-        const coords = getNeighborHexes(structure.base.coord_x, structure.base.coord_y);
-        const tiles = await sqlApi.fetchTilesByCoords(coords.map((coord) => ({ col: coord.col, row: coord.row })));
-        const freeTiles = tiles.filter((tile) => tile.occupier_id === 0);
-        const freeDirections = freeTiles.map((tile) =>
-          getDirectionBetweenAdjacentHexes(
-            { col: structure.base.coord_x, row: structure.base.coord_y },
-            { col: tile.col, row: tile.row },
-          ),
-        );
-        setFreeDirections(freeDirections.filter((direction) => direction !== null) as Direction[]);
-      }
-      setIsLoadingTiles(false);
-    };
-    fetchTiles();
-  }, []);
+  const neighborHexes = useMemo(
+    () => (structure ? getNeighborHexes(structure.base.coord_x, structure.base.coord_y) : []),
+    [structure?.base.coord_x, structure?.base.coord_y],
+  );
+  const neighborTiles = useWorldSpatialTiles(neighborHexes);
+  const freeDirections = useMemo(
+    () =>
+      structure
+        ? neighborTiles
+            .filter((tile) => Number(tile.occupierId) === 0)
+            .map((tile) =>
+              getDirectionBetweenAdjacentHexes(
+                { col: structure.base.coord_x, row: structure.base.coord_y },
+                tile.hexCoords,
+              ),
+            )
+            .filter((direction): direction is Direction => direction !== null)
+        : [],
+    [neighborTiles, structure],
+  );
 
   useEffect(() => {
     if (freeDirections.length > 0) {
@@ -171,8 +163,6 @@ export const ArmyCreate = ({
 
   const handleBuyArmy = async (isExplorer: boolean, troopType: TroopType, troopTier: TroopTier, troopCount: number) => {
     setIsLoading(true);
-    let pendingFxKey: string | null = null;
-
     try {
       const homeDirection =
         army?.position && army?.structure
@@ -199,37 +189,27 @@ export const ArmyCreate = ({
             console.error("No direction selected");
             return;
           }
-          pendingFxKey = createPendingWorldmapFxKey("create-army");
-          dispatchPendingWorldmapFxStart({
-            key: pendingFxKey,
-            kind: "create-army",
-            structureId: owner_entity,
-            direction: selectedDirection,
-            troopType,
-            troopTier,
-          });
-          await armyManager.createExplorerArmy(account, troopType, troopTier, troopCount, selectedDirection);
+          await armyManager.createExplorerArmy(account, troopType, troopTier, troopCount, selectedDirection, (intent) =>
+            startWorldmapProvisionalFx(
+              {
+                kind: "create-army",
+                structureId: owner_entity,
+                direction: selectedDirection,
+                troopType,
+                troopTier,
+              },
+              intent,
+            ),
+          );
         }
       } else {
         if (guardSlot !== undefined) {
           await armyManager.addTroopsToGuard(account, troopType, troopTier, troopCount, guardSlot);
-          queryClient
-            .invalidateQueries({
-              queryKey: ["guards", String(owner_entity)],
-              exact: true,
-              refetchType: "active",
-            })
-            .catch((error) => {
-              console.error("Failed to refresh guards after defense update:", error);
-            });
         }
       }
 
       setTroopCount(0);
     } catch (error) {
-      if (pendingFxKey) {
-        dispatchPendingWorldmapFxStop({ key: pendingFxKey });
-      }
       console.error("Failed to create army:", error);
     } finally {
       setIsLoading(false);
@@ -283,7 +263,7 @@ export const ArmyCreate = ({
 
   return (
     <div className="">
-      {isExplorer && !army && freeDirections.length === 0 && !isLoadingTiles && (
+      {isExplorer && !army && freeDirections.length === 0 && (
         <div className="text-xs text-red-500 mb-4 p-2 bg-red-500/10 border border-red-500/30  flex items-center">
           <span className="mr-1">⚠️</span> No space available to create an army. Clear adjacent tiles to create an army.
         </div>
@@ -441,9 +421,7 @@ export const ArmyCreate = ({
       {activeTab === "direction" && isExplorer && !army && (
         <div className="mb-4">
           <h6 className="text-center mb-2">SELECT DIRECTION</h6>
-          {isLoadingTiles ? (
-            <LoadingAnimation />
-          ) : freeDirections.length > 0 ? (
+          {freeDirections.length > 0 ? (
             <div className="grid grid-cols-3 gap-2 mx-auto my-4 max-w-xs">
               <DirectionButton
                 direction={Direction.SOUTH_WEST}

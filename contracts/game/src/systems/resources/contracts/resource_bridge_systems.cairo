@@ -4,18 +4,26 @@ use crate::alias::ID;
 #[starknet::interface]
 pub trait IResourceBridgeSystems<T> {
     fn deposit(
-        ref self: T, token: ContractAddress, to_structure_id: ID, amount: u256, client_fee_recipient: ContractAddress,
+        ref self: T,
+        game_id: u32,
+        token: ContractAddress,
+        to_structure_id: ID,
+        amount: u256,
+        client_fee_recipient: ContractAddress,
     );
     fn withdraw(
         ref self: T,
+        game_id: u32,
         from_structure_id: ID,
         to_address: ContractAddress,
         token: ContractAddress,
         amount: u128,
         client_fee_recipient: ContractAddress,
     );
-    fn lp_withdraw(ref self: T, to_address: ContractAddress, through_bank_id: ID, resource_type: u8, amount: u128);
-    fn velords_claim(ref self: T);
+    fn lp_withdraw(
+        ref self: T, game_id: u32, to_address: ContractAddress, through_bank_id: ID, resource_type: u8, amount: u128,
+    );
+    fn velords_claim(ref self: T, game_id: u32);
 }
 
 
@@ -51,6 +59,7 @@ pub mod resource_bridge_systems {
     impl ResourceBridgeImpl of super::IResourceBridgeSystems<ContractState> {
         fn deposit(
             ref self: ContractState,
+            game_id: u32,
             token: ContractAddress,
             to_structure_id: ID,
             amount: u256,
@@ -61,10 +70,12 @@ pub mod resource_bridge_systems {
             let original_amount = amount;
 
             // ensure the bridge is open
-            SeasonConfigImpl::get(world).assert_main_game_started_and_grace_period_not_elapsed();
+            SeasonConfigImpl::get(world, game_id).assert_main_game_started_and_grace_period_not_elapsed();
 
             // ensure the recipient of the bridged resources is a realm or village
-            let mut to_structure_base: StructureBase = StructureBaseStoreImpl::retrieve(ref world, to_structure_id);
+            let mut to_structure_base: StructureBase = StructureBaseStoreImpl::retrieve(
+                ref world, game_id, to_structure_id,
+            );
             assert!(
                 to_structure_base.category == StructureCategory::Realm.into()
                     || to_structure_base.category == StructureCategory::Village.into(),
@@ -72,7 +83,7 @@ pub mod resource_bridge_systems {
             );
 
             // ensure bridge deposit is not paused
-            iBridgeImpl::assert_deposit_not_paused(world);
+            iBridgeImpl::assert_deposit_not_paused(world, game_id);
 
             // ensure token being bridged is whitelisted
             let resource_bridge_token_whitelist: ResourceBridgeWtlConfig = world.read_model(token);
@@ -84,7 +95,9 @@ pub mod resource_bridge_systems {
             );
 
             // ensure caller is owner of to_structure_id
-            let to_structure_owner: ContractAddress = StructureOwnerStoreImpl::retrieve(ref world, to_structure_id);
+            let to_structure_owner: ContractAddress = StructureOwnerStoreImpl::retrieve(
+                ref world, game_id, to_structure_id,
+            );
             to_structure_owner.assert_caller_owner();
 
             // transfer the deposit amount from the caller to this contract
@@ -98,7 +111,7 @@ pub mod resource_bridge_systems {
             // note: we only apply this AFTER the contract has received the deposit
             // apply inefficiency percentage to the deposit amount
             let (inefficiency_percentage_num, inefficiency_percentage_denom) = iBridgeImpl::inefficiency_percentage(
-                ref world, resource_bridge_token_whitelist.resource_type,
+                ref world, game_id, resource_bridge_token_whitelist.resource_type,
             );
             let amount_lost_to_inefficiency = (amount * inefficiency_percentage_num.into())
                 / inefficiency_percentage_denom.into();
@@ -106,19 +119,22 @@ pub mod resource_bridge_systems {
 
             // take platform fees from deposit
             let platform_fees = iBridgeImpl::send_platform_fees(
-                ref world, token, client_fee_recipient, amount, BridgeTxType::Deposit,
+                ref world, game_id, token, client_fee_recipient, amount, BridgeTxType::Deposit,
             );
             let token_amount_less_platform_fees = amount - platform_fees;
 
             // take realm fees from deposit and get final resource amount
             let resource_total_amount = iBridgeImpl::token_amount_to_resource_amount(token, amount);
-            let mut to_structure_weight: Weight = WeightStoreImpl::retrieve(ref world, to_structure_id);
+            let mut to_structure_weight: Weight = WeightStoreImpl::retrieve(ref world, game_id, to_structure_id);
             let mut resource_realm_fees: u128 = 0;
             if to_structure_base.category == StructureCategory::Village.into() {
-                let to_structure_owner: ContractAddress = StructureOwnerStoreImpl::retrieve(ref world, to_structure_id);
+                let to_structure_owner: ContractAddress = StructureOwnerStoreImpl::retrieve(
+                    ref world, game_id, to_structure_id,
+                );
                 resource_realm_fees =
                     iBridgeImpl::send_realm_fees(
                         ref world,
+                        game_id,
                         to_structure_id,
                         to_structure_owner,
                         to_structure_base,
@@ -128,7 +144,7 @@ pub mod resource_bridge_systems {
                         BridgeTxType::Deposit,
                     );
             }
-            to_structure_weight.store(ref world, to_structure_id);
+            to_structure_weight.store(ref world, game_id, to_structure_id);
 
             let resource_amount_less_platform_fees = iBridgeImpl::token_amount_to_resource_amount(
                 token, token_amount_less_platform_fees,
@@ -140,7 +156,7 @@ pub mod resource_bridge_systems {
                 .span();
 
             // beam resources into the recipient's resource arrivals. it costs 0 donkey and time
-            iResourceTransferImpl::portal_to_structure_arrivals_instant(ref world, to_structure_id, resources);
+            iResourceTransferImpl::portal_to_structure_arrivals_instant(ref world, game_id, to_structure_id, resources);
 
             // grant lords bridge in achievement
             if resource_bridge_token_whitelist.resource_type == ResourceTypes::LORDS {
@@ -159,6 +175,7 @@ pub mod resource_bridge_systems {
 
         fn withdraw(
             ref self: ContractState,
+            game_id: u32,
             from_structure_id: ID,
             to_address: ContractAddress,
             token: ContractAddress,
@@ -168,17 +185,19 @@ pub mod resource_bridge_systems {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
 
             // ensure the bridge is open
-            SeasonConfigImpl::get(world).assert_main_game_started_and_grace_period_not_elapsed();
+            SeasonConfigImpl::get(world, game_id).assert_main_game_started_and_grace_period_not_elapsed();
 
             // ensure bridge withdrawal is not paused
-            iBridgeImpl::assert_withdraw_not_paused(world);
+            iBridgeImpl::assert_withdraw_not_paused(world, game_id);
 
             // ensure caller is owner of from_structure_id
-            let from_structure_owner: ContractAddress = StructureOwnerStoreImpl::retrieve(ref world, from_structure_id);
+            let from_structure_owner: ContractAddress = StructureOwnerStoreImpl::retrieve(
+                ref world, game_id, from_structure_id,
+            );
             from_structure_owner.assert_caller_owner();
 
             // ensure from_structure_id is a realm or village
-            let from_structure: StructureBase = StructureBaseStoreImpl::retrieve(ref world, from_structure_id);
+            let from_structure: StructureBase = StructureBaseStoreImpl::retrieve(ref world, game_id, from_structure_id);
             assert!(
                 from_structure.category == StructureCategory::Realm.into()
                     || from_structure.category == StructureCategory::Village.into(),
@@ -191,10 +210,16 @@ pub mod resource_bridge_systems {
 
             // burn the resource from sender's structure balance
             let resource_type = resource_bridge_token_whitelist.resource_type;
-            let mut from_structure_weight: Weight = WeightStoreImpl::retrieve(ref world, from_structure_id);
-            let resource_weight_grams: u128 = ResourceWeightImpl::grams(ref world, resource_type);
+            let mut from_structure_weight: Weight = WeightStoreImpl::retrieve(ref world, game_id, from_structure_id);
+            let resource_weight_grams: u128 = ResourceWeightImpl::grams(ref world, game_id, resource_type);
             let mut resource: SingleResource = SingleResourceStoreImpl::retrieve(
-                ref world, from_structure_id, resource_type, ref from_structure_weight, resource_weight_grams, true,
+                ref world,
+                game_id,
+                from_structure_id,
+                resource_type,
+                ref from_structure_weight,
+                resource_weight_grams,
+                true,
             );
             resource.spend(amount, ref from_structure_weight, resource_weight_grams);
             resource.store(ref world);
@@ -202,7 +227,7 @@ pub mod resource_bridge_systems {
             // note: we only apply this AFTER the contract has burned the withdrawal amount
             // apply inefficiency percentage to the withdrawal amount
             let (inefficiency_percentage_num, inefficiency_percentage_denom) = iBridgeImpl::inefficiency_percentage(
-                ref world, resource_bridge_token_whitelist.resource_type,
+                ref world, game_id, resource_bridge_token_whitelist.resource_type,
             );
             let amount_lost_to_inefficiency = (amount * inefficiency_percentage_num.into())
                 / inefficiency_percentage_denom.into();
@@ -215,6 +240,7 @@ pub mod resource_bridge_systems {
                 realm_resource_fee_amount =
                     iBridgeImpl::send_realm_fees(
                         ref world,
+                        game_id,
                         from_structure_id,
                         from_structure_owner,
                         from_structure,
@@ -224,11 +250,11 @@ pub mod resource_bridge_systems {
                         BridgeTxType::Withdrawal,
                     );
             }
-            from_structure_weight.store(ref world, from_structure_id);
+            from_structure_weight.store(ref world, game_id, from_structure_id);
 
             // send platform fees
             let platform_token_fee_amount = iBridgeImpl::send_platform_fees(
-                ref world, token, client_fee_recipient, token_amount, BridgeTxType::Withdrawal,
+                ref world, game_id, token, client_fee_recipient, token_amount, BridgeTxType::Withdrawal,
             );
             let realm_token_fee_amount = iBridgeImpl::resource_amount_to_token_amount(token, realm_resource_fee_amount);
 
@@ -239,7 +265,12 @@ pub mod resource_bridge_systems {
 
 
         fn lp_withdraw(
-            ref self: ContractState, to_address: ContractAddress, through_bank_id: ID, resource_type: u8, amount: u128,
+            ref self: ContractState,
+            game_id: u32,
+            to_address: ContractAddress,
+            through_bank_id: ID,
+            resource_type: u8,
+            amount: u128,
         ) {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
 
@@ -247,10 +278,10 @@ pub mod resource_bridge_systems {
             iBridgeImpl::assert_only_liquidity_systems(world, get_caller_address());
 
             // ensure the bridge is open
-            SeasonConfigImpl::get(world).assert_main_game_started_and_grace_period_not_elapsed();
+            SeasonConfigImpl::get(world, game_id).assert_main_game_started_and_grace_period_not_elapsed();
 
             // ensure bridge withdrawal is not paused
-            iBridgeImpl::assert_withdraw_not_paused(world);
+            iBridgeImpl::assert_withdraw_not_paused(world, game_id);
 
             // obtain token address from reverse whitelist config
             let resource_bridge_token_whitelist_reverse: ResourceRevBridgeWtlConfig = world.read_model(resource_type);
@@ -262,7 +293,7 @@ pub mod resource_bridge_systems {
 
             // apply inefficiency percentage to the withdrawal amount
             let (inefficiency_percentage_num, inefficiency_percentage_denom) = iBridgeImpl::inefficiency_percentage(
-                ref world, resource_bridge_token_whitelist.resource_type,
+                ref world, game_id, resource_bridge_token_whitelist.resource_type,
             );
             let amount_lost_to_inefficiency = (amount * inefficiency_percentage_num.into())
                 / inefficiency_percentage_denom.into();
@@ -270,13 +301,13 @@ pub mod resource_bridge_systems {
 
             // send fees to realm if from_structure is a village
             let bank_resource_fee_amount = iBridgeImpl::send_bank_fees(
-                ref world, through_bank_id, resource_type, amount, BridgeTxType::Withdrawal,
+                ref world, game_id, through_bank_id, resource_type, amount, BridgeTxType::Withdrawal,
             );
 
             // send platform fees
             let token_amount = iBridgeImpl::resource_amount_to_token_amount(token, amount);
             let platform_token_fee_amount = iBridgeImpl::send_platform_fees(
-                ref world, token, Zero::zero(), token_amount, BridgeTxType::Withdrawal,
+                ref world, game_id, token, Zero::zero(), token_amount, BridgeTxType::Withdrawal,
             );
             // transfer withdrawm erc20 amount to recipient
             let bank_token_fee_amount = iBridgeImpl::resource_amount_to_token_amount(token, bank_resource_fee_amount);
@@ -284,12 +315,12 @@ pub mod resource_bridge_systems {
             iBridgeImpl::transfer_or_mint(token, to_address, withdrawal_amount_less_all_fees);
         }
 
-        fn velords_claim(ref self: ContractState) {
+        fn velords_claim(ref self: ContractState, game_id: u32) {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
 
             // ensure the season has ended
             // note: season.end_at must to set to avoid fatal bug
-            let season_config = SeasonConfigImpl::get(world);
+            let season_config = SeasonConfigImpl::get(world, game_id);
             assert!(season_config.has_ended(), "Season has not ended");
 
             // ensure bridging grace period has not elapsed
@@ -307,7 +338,7 @@ pub mod resource_bridge_systems {
             let lords_balance = lords_contract.balance_of(this);
 
             let res_bridge_fee_split_config: ResourceBridgeFeeSplitConfig = WorldConfigUtilImpl::get_member(
-                world, selector!("res_bridge_fee_split_config"),
+                world, game_id, selector!("res_bridge_fee_split_config"),
             );
             let velords_address = res_bridge_fee_split_config.velords_fee_recipient;
 

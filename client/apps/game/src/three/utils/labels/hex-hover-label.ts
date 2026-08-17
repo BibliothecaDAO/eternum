@@ -1,6 +1,6 @@
 import { ResourcesIds } from "@bibliothecadao/types";
 import { Scene, Vector3 } from "three";
-import { CSS2DObject } from "three-stdlib";
+import { CSS2DObject } from "three/addons/renderers/CSS2DRenderer.js";
 
 type HexHoverLabelContent =
   | {

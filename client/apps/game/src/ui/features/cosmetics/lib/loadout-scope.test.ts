@@ -8,8 +8,8 @@ describe("resolveCosmeticsLoadoutScopeKeyForChain", () => {
     expect(resolveCosmeticsLoadoutScopeKeyForChain("mainnet")).toBe("cosmetics:mainnet");
   });
 
-  it("maps slot-like worlds to the sepolia cosmetics scope", () => {
-    expect(resolveCosmeticsLoadoutScopeKeyForChain("slot")).toBe("cosmetics:sepolia");
+  it("maps non-mainnet worlds to the sepolia cosmetics scope", () => {
+    expect(resolveCosmeticsLoadoutScopeKeyForChain("appchain")).toBe("cosmetics:sepolia");
     expect(resolveCosmeticsLoadoutScopeKeyForChain("sepolia")).toBe("cosmetics:sepolia");
     expect(resolveCosmeticsLoadoutScopeKeyForChain("local")).toBe("cosmetics:sepolia");
   });

@@ -36,7 +36,6 @@ describe("prepareWorldmapChunkSwitchRuntime", () => {
     });
     expect(invalidateTerrainCaches).toHaveBeenCalledWith("24,24", {
       includeSurroundingChunks: ["0,24", "24,0"],
-      invalidateFetchAreas: true,
     });
     expect(removeCachedMatricesForChunk).not.toHaveBeenCalled();
   });

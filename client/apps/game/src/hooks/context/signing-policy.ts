@@ -4,7 +4,15 @@ const resolveSigningChainId = (chain: Chain): "SN_MAIN" | "SN_SEPOLIA" => {
   return chain === "mainnet" ? "SN_MAIN" : "SN_SEPOLIA";
 };
 
-export const buildSigningMessages = (chain: Chain) => [
+// The offchain-message typed data only exists on the legacy worlds (there is
+// no s2 Message model, and appchain chat is disabled) — announcing an
+// SN_SEPOLIA signing domain on the appchain was simply wrong. No messages.
+export const buildSigningMessages = (chain: Chain) => {
+  if (chain === "appchain" || chain === "local") return [];
+  return buildLegacySigningMessages(chain);
+};
+
+const buildLegacySigningMessages = (chain: Chain) => [
   {
     name: "Eternum Message Signing",
     description: "Allows signing messages for Eternum",

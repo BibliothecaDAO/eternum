@@ -7,14 +7,14 @@ describe("resolvePlayBootRequest", () => {
     expect(
       resolvePlayBootRequest(
         {
-          pathname: "/play/slot/blitz-world/map",
+          pathname: "/play/appchain/blitz-world/map",
           search: "?col=12&row=34&boot=map-first&resumeScene=travel",
         },
         { fastTravelEnabled: false },
       ),
     ).toEqual({
       bootScene: "map",
-      chain: "slot",
+      chain: "appchain",
       entryMode: "player",
       fallbackPolicy: "route",
       requestedScene: "travel",

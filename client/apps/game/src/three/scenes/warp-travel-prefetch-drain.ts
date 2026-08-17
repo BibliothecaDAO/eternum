@@ -1,19 +1,16 @@
 import {
   resolvePrefetchQueueProcessingPlan,
   shouldProcessPrefetchQueueItem,
-  type PrefetchFetchKeyLookup,
   type PrefetchQueueItem,
 } from "./worldmap-prefetch-queue";
 
 interface DrainWarpTravelPrefetchQueueInput {
   isSwitchedOff: boolean;
   queue: PrefetchQueueItem[];
-  queuedFetchKeys: Set<string>;
+  queuedAreaKeys: Set<string>;
   activePrefetches: number;
   maxConcurrentPrefetches: number;
-  desiredFetchKeys: Set<string>;
-  fetchedFetchKeys: PrefetchFetchKeyLookup;
-  pendingFetchKeys: PrefetchFetchKeyLookup;
+  desiredAreaKeys: Set<string>;
   pinnedAreaKeys: Set<string>;
 }
 
@@ -54,17 +51,15 @@ export function drainWarpTravelPrefetchQueue(input: DrainWarpTravelPrefetchQueue
       break;
     }
 
-    if (item.fetchTiles) {
-      input.queuedFetchKeys.delete(item.fetchKey);
+    if (item.syncTiles) {
+      input.queuedAreaKeys.delete(item.areaKey);
     }
 
     if (
       !shouldProcessPrefetchQueueItem({
         item,
         isSwitchedOff: input.isSwitchedOff,
-        desiredFetchKeys: input.desiredFetchKeys,
-        fetchedFetchKeys: input.fetchedFetchKeys,
-        pendingFetchKeys: input.pendingFetchKeys,
+        desiredAreaKeys: input.desiredAreaKeys,
         pinnedAreaKeys: input.pinnedAreaKeys,
       })
     ) {

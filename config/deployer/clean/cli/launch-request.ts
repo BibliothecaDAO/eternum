@@ -1,4 +1,8 @@
 import {
+  DEFAULT_APPCHAIN_GAME_INDEX_POLL_MS,
+  DEFAULT_APPCHAIN_GAME_INDEX_TIMEOUT_MS,
+  DEFAULT_APPCHAIN_ETERNUM_PRESET_ID,
+  DEFAULT_APPCHAIN_PRESET_ID,
   DEFAULT_CARTRIDGE_API_BASE,
   DEFAULT_FACTORY_INDEX_POLL_MS,
   DEFAULT_FACTORY_INDEX_TIMEOUT_MS,
@@ -12,6 +16,7 @@ import type {
   FactoryMapConfigOverrides,
 } from "@bibliothecadao/types";
 import type {
+  DeploymentEnvironment,
   ExecutionMode,
   LaunchGameRequest,
   LaunchGameStepId,
@@ -506,7 +511,23 @@ function requireRotationLaunchArgs(args: Args): {
   };
 }
 
-function resolveSharedLaunchRequestOptions(args: Args) {
+function resolveSharedLaunchDefaults(environment: DeploymentEnvironment) {
+  return environment.chain === "appchain"
+    ? {
+        version: environment.gameType === "eternum" ? DEFAULT_APPCHAIN_ETERNUM_PRESET_ID : DEFAULT_APPCHAIN_PRESET_ID,
+        waitForFactoryIndexTimeoutMs: DEFAULT_APPCHAIN_GAME_INDEX_TIMEOUT_MS,
+        waitForFactoryIndexPollMs: DEFAULT_APPCHAIN_GAME_INDEX_POLL_MS,
+      }
+    : {
+        version: DEFAULT_VERSION,
+        waitForFactoryIndexTimeoutMs: DEFAULT_FACTORY_INDEX_TIMEOUT_MS,
+        waitForFactoryIndexPollMs: DEFAULT_FACTORY_INDEX_POLL_MS,
+      };
+}
+
+function resolveSharedLaunchRequestOptions(args: Args, environment: DeploymentEnvironment) {
+  const defaults = resolveSharedLaunchDefaults(environment);
+
   return {
     rpcUrl: args["rpc-url"] || process.env.RPC_URL || process.env.VITE_PUBLIC_NODE_URL,
     factoryAddress: args["factory-address"] || process.env.FACTORY_ADDRESS,
@@ -546,11 +567,11 @@ function resolveSharedLaunchRequestOptions(args: Args) {
       "0x0",
     executionMode: resolveExecutionMode(args.mode),
     verboseConfigLogs: args["verbose-config-logs"] === "true" || process.env.VERBOSE_CONFIG_LOGS === "true",
-    version: args.version || DEFAULT_VERSION,
+    version: args.version || defaults.version,
     waitForFactoryIndexTimeoutMs:
-      resolveOptionalNumber(args["wait-timeout-ms"], "wait timeout") ?? DEFAULT_FACTORY_INDEX_TIMEOUT_MS,
+      resolveOptionalNumber(args["wait-timeout-ms"], "wait timeout") ?? defaults.waitForFactoryIndexTimeoutMs,
     waitForFactoryIndexPollMs:
-      resolveOptionalNumber(args["wait-poll-ms"], "wait poll interval") ?? DEFAULT_FACTORY_INDEX_POLL_MS,
+      resolveOptionalNumber(args["wait-poll-ms"], "wait poll interval") ?? defaults.waitForFactoryIndexPollMs,
     skipIndexer: args["skip-indexer"] === "true",
     skipLootChestRoleGrant: args["skip-lootchest-role-grant"] === "true",
     skipBanks: args["skip-banks"] === "true",
@@ -570,7 +591,7 @@ export function buildLaunchGameRequest(args: Args): LaunchGameRequest {
     environmentId: requiredArgs.environmentId,
     gameName: requiredArgs.gameName,
     startTime: requiredArgs.startTime,
-    ...resolveSharedLaunchRequestOptions(resolvedArgs),
+    ...resolveSharedLaunchRequestOptions(resolvedArgs, environment),
     maxActions: resolveOptionalNumber(resolvedArgs["max-actions"], "max actions") ?? environment.createGame.maxActions,
     seriesName: resolvedArgs["series-name"],
     seriesGameNumber: resolveOptionalNumber(resolvedArgs["series-game-number"], "series game number"),
@@ -588,7 +609,7 @@ export function buildLaunchSeriesRequest(args: Args): LaunchSeriesRequest {
     seriesName: requiredArgs.seriesName,
     games: requiredArgs.games,
     targetGameNames: resolveTargetGameNamesJson(resolvedArgs),
-    ...resolveSharedLaunchRequestOptions(resolvedArgs),
+    ...resolveSharedLaunchRequestOptions(resolvedArgs, environment),
     maxActions: resolveOptionalNumber(resolvedArgs["max-actions"], "max actions") ?? environment.createGame.maxActions,
     autoRetryEnabled:
       resolveOptionalBooleanArg(resolvedArgs, "auto-retry-enabled", ["GAME_LAUNCH_AUTO_RETRY_ENABLED"]) ?? true,
@@ -616,7 +637,7 @@ export function buildLaunchRotationRequest(args: Args): LaunchRotationRequest {
     weeklyCadence: requiredArgs.weeklyCadence,
     targetGameNames: resolveTargetGameNamesJson(resolvedArgs),
     evaluationIntervalMinutes: requiredArgs.evaluationIntervalMinutes,
-    ...resolveSharedLaunchRequestOptions(resolvedArgs),
+    ...resolveSharedLaunchRequestOptions(resolvedArgs, environment),
     biomeClimateOverridesByGameNumber: resolveBiomeClimateOverridesByGameNumber(
       resolveOptionalArg(resolvedArgs, "biome-climate-overrides-by-game-number-json", [
         "BIOME_CLIMATE_OVERRIDES_BY_GAME_NUMBER_JSON",

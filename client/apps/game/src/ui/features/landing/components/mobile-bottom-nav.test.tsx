@@ -35,11 +35,9 @@ describe("MobileBottomNav", () => {
 
     const links = Array.from(container.querySelectorAll("a"));
     const profileLink = links.find((link) => link.textContent?.includes("PROFILE"));
-    const cosmeticsLink = links.find((link) => link.textContent?.includes("COSMETICS"));
     const walletLink = links.find((link) => link.textContent?.includes("WALLET"));
 
     expect(profileLink?.getAttribute("href")).toBe("/profile?player=0xabc&name=Alice");
-    expect(cosmeticsLink?.getAttribute("href")).toBe("/profile?player=0xabc&name=Alice&tab=cosmetics");
     expect(walletLink?.getAttribute("href")).toBe("/profile?player=0xabc&name=Alice&tab=wallet");
   });
 });

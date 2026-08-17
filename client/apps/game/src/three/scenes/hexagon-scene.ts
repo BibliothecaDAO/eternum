@@ -1,5 +1,4 @@
 import { useUIStore, type AppStore } from "@/hooks/store/use-ui-store";
-import { sqlApi } from "@/services/api";
 import { CAMERA_CONFIG, FOG_CONFIG, HEX_SIZE, biomeModelPaths } from "@/three/constants";
 import { WorldAtmosphereController } from "@/three/effects/world-atmosphere-controller";
 import { type WeatherState } from "@/three/managers/weather-manager";
@@ -18,10 +17,11 @@ import { MatrixPool } from "@/three/utils/matrix-pool";
 import { PerformanceMonitor } from "@/three/utils/performance-monitor";
 import { gltfLoader } from "@/three/utils/utils";
 import { loadBiomeGltf } from "@/three/utils/biome-gltf-cache";
-import type { GLTF } from "three-stdlib";
-import type { QualityFeatures } from "@/three/utils/quality-controller";
+import type { GLTF } from "three/addons/loaders/GLTFLoader.js";
+import { renderProfile, type RenderVisualProfile } from "@/three/render-profile";
+import { ShadowRefreshPolicy } from "@/three/shadow-refresh-policy";
 import { LeftView } from "@/types";
-import { GRAPHICS_SETTING, IS_FLAT_MODE, isLowOrBelow } from "@/ui/config";
+import { IS_FLAT_MODE } from "@/ui/config";
 import { type SetupResult } from "@bibliothecadao/dojo";
 import { WorldUpdateListener } from "@bibliothecadao/eternum";
 import { BiomeType, type HexPosition } from "@bibliothecadao/types";
@@ -87,6 +87,7 @@ export abstract class HexagonScene {
   protected worldAtmosphereController!: WorldAtmosphereController;
   protected GUIFolder!: any;
   protected biomeModels = new Map<BiomeType, InstancedBiome>();
+  protected biomeModelLoadPromises = new Map<string, Promise<void>>();
   protected modelLoadPromises: Array<Promise<void>> = [];
   protected state!: AppStore;
   protected fog!: Fog;
@@ -124,20 +125,17 @@ export abstract class HexagonScene {
   private cameraTransitionState = createCameraTransitionState();
   private cameraTransitionTimeline: gsap.core.Timeline | null = null;
   private cameraTransitionStatus: CameraTransitionStatus = "idle";
-  protected shadowsEnabledByQuality = true;
-  protected shadowMapSizeByQuality = 2048;
+  protected shadowsEnabled = true;
+  protected shadowMapSize = renderProfile.visuals.shadowMapSize;
+  private readonly shadowRefreshPolicy = new ShadowRefreshPolicy();
   private sceneOwnershipBootstrapped = false;
-  private lastClipNear = 0;
-  private lastClipFar = 0;
-  private fogEnabledByQuality = false;
+  private fogVisualsEnabled = false;
   private fogEnabledByUser = true;
 
   // Performance tuning options (optimized defaults for better FPS)
   protected biomeShadowsEnabled = false;
   protected biomeAnimationsEnabled = false;
   protected animationDistanceThreshold = 80; // Distance beyond which animations are skipped
-  private lastFogNear = 0;
-  private lastFogFar = 0;
 
   constructor(
     protected sceneName: SceneName,
@@ -195,6 +193,8 @@ export abstract class HexagonScene {
       markVisibilityDirty: () => {
         incrementWorldmapRenderCounter("controlsChangeEvents");
         this.visibilityManager?.markDirty();
+        const targetHex = getHexForWorldPosition(this.controls.target);
+        this.shadowRefreshPolicy.markCameraCell(targetHex.col, targetHex.row);
       },
     });
   }
@@ -206,15 +206,15 @@ export abstract class HexagonScene {
     this.locationManager = new LocationManager();
     this.inputManager = new InputManager(this.sceneName, this.sceneManager, this.raycaster, this.mouse, this.camera);
     this.interactiveHexManager = new InteractiveHexManager(this.scene);
-    this.worldUpdateListener = new WorldUpdateListener(this.dojo, sqlApi);
+    this.worldUpdateListener = new WorldUpdateListener(this.dojo);
     this.highlightHexManager = new HighlightHexManager(this.scene);
     this.thunderBoltManager = new ThunderBoltManager(this.scene, this.controls);
     this.scene.background = new Color(0x2a1a3e);
     this.state = useUIStore.getState();
     this.fog = new Fog(FOG_CONFIG.color, FOG_CONFIG.near, FOG_CONFIG.far);
-    this.fogEnabledByQuality = !IS_FLAT_MODE && !isLowOrBelow(GRAPHICS_SETTING);
+    this.fogVisualsEnabled = !IS_FLAT_MODE;
     this.fogEnabledByUser = true;
-    if (this.fogEnabledByQuality && this.fogEnabledByUser) {
+    if (this.fogVisualsEnabled && this.fogEnabledByUser) {
       this.scene.fog = this.fog;
       const initialDistance = this.controls.object.position.distanceTo(this.controls.target);
       this.updateFogForDistance(initialDistance);
@@ -274,9 +274,13 @@ export abstract class HexagonScene {
   }
 
   private configureDirectionalLight(): void {
-    this.mainDirectionalLight.castShadow = this.shadowsEnabledByQuality;
-    this.mainDirectionalLight.shadow.mapSize.width = this.shadowMapSizeByQuality;
-    this.mainDirectionalLight.shadow.mapSize.height = this.shadowMapSizeByQuality;
+    this.mainDirectionalLight.castShadow = this.shadowsEnabled;
+    // Re-rendering the shadow map every frame doubles the scene submission;
+    // a throttled refresh (see updateShadowRefresh) is visually equivalent.
+    this.mainDirectionalLight.shadow.autoUpdate = false;
+    this.mainDirectionalLight.shadow.needsUpdate = true;
+    this.mainDirectionalLight.shadow.mapSize.width = this.shadowMapSize;
+    this.mainDirectionalLight.shadow.mapSize.height = this.shadowMapSize;
     this.mainDirectionalLight.shadow.camera.left = -20;
     this.mainDirectionalLight.shadow.camera.right = 20;
     this.mainDirectionalLight.shadow.camera.top = 13;
@@ -781,31 +785,34 @@ export abstract class HexagonScene {
     this.state.setLeftNavigationView(LeftView.None);
   }
 
-  public applyQualityFeatures(features: QualityFeatures): void {
-    const shadowsEnabledChanged = this.shadowsEnabledByQuality !== features.shadows;
-    this.shadowsEnabledByQuality = features.shadows;
+  public applyRenderVisualProfile(features: RenderVisualProfile): void {
+    const shadowsEnabledChanged = this.shadowsEnabled !== features.shadows;
+    this.shadowsEnabled = features.shadows;
     if (features.shadowMapSize > 0) {
-      this.shadowMapSizeByQuality = features.shadowMapSize;
+      this.shadowMapSize = features.shadowMapSize;
     }
 
-    const nextFogQualityEnabled = !IS_FLAT_MODE && features.pixelRatio > 1;
-    if (nextFogQualityEnabled !== this.fogEnabledByQuality) {
-      this.fogEnabledByQuality = nextFogQualityEnabled;
-      if (!this.fogEnabledByQuality) {
+    const nextFogEnabled = !IS_FLAT_MODE && features.pixelRatio > 1;
+    if (nextFogEnabled !== this.fogVisualsEnabled) {
+      this.fogVisualsEnabled = nextFogEnabled;
+      if (!this.fogVisualsEnabled) {
         this.scene.fog = null;
       }
     }
 
     if (this.mainDirectionalLight) {
-      this.mainDirectionalLight.castShadow = this.shadowsEnabledByQuality && this.currentCameraView !== CameraView.Far;
-      if (this.shadowMapSizeByQuality > 0) {
-        this.mainDirectionalLight.shadow.mapSize.set(this.shadowMapSizeByQuality, this.shadowMapSizeByQuality);
+      // The fixed visual profile is the only input allowed to change light topology; the
+      // per-view part rides the intensity uniform (no shader rebuilds).
+      this.mainDirectionalLight.castShadow = this.shadowsEnabled;
+      this.setMainDirectionalShadowActive(this.shadowsEnabled && this.currentCameraView !== CameraView.Far);
+      if (this.shadowMapSize > 0) {
+        this.mainDirectionalLight.shadow.mapSize.set(this.shadowMapSize, this.shadowMapSize);
       }
     }
 
-    if (features.animationFPS > 0) {
+    if (features.animationFps > 0) {
       this.biomeModels.forEach((model) => {
-        model.setAnimationFPS?.(features.animationFPS);
+        model.setAnimationFPS?.(features.animationFps);
       });
     }
 
@@ -1018,6 +1025,7 @@ export abstract class HexagonScene {
           throw error;
         });
       this.modelLoadPromises.push(loadPromise);
+      this.biomeModelLoadPromises.set(biome, loadPromise);
     }
   }
 
@@ -1037,7 +1045,7 @@ export abstract class HexagonScene {
     mesh.rotation.set(Math.PI / 2, 0, Math.PI);
     const { x, z } = getWorldPositionForHex({ col: 185, row: 150 });
     mesh.position.set(x, -0.05, z);
-    mesh.receiveShadow = true;
+    mesh.receiveShadow = false;
     // disable raycast
     mesh.raycast = () => {};
 
@@ -1052,7 +1060,28 @@ export abstract class HexagonScene {
   }
 
   protected onBiomeModelLoaded(_model: InstancedBiome): void {
-    // Derived scenes can override to configure biome meshes on load.
+    _model.setAnimationFPS(renderProfile.visuals.animationFps);
+    _model.setDistantAnimationSamplingEnabled(this.currentCameraView !== CameraView.Close);
+  }
+
+  private updateShadowRefresh(deltaTime: number): void {
+    if (!this.mainDirectionalLight?.castShadow) {
+      return;
+    }
+
+    const { position, target } = this.mainDirectionalLight;
+    this.shadowRefreshPolicy.observeSun([
+      position.x - target.position.x,
+      position.y - target.position.y,
+      position.z - target.position.z,
+    ]);
+    if (this.shadowRefreshPolicy.consumeRefresh(deltaTime * 1000, renderProfile.shadows.minimumRefreshIntervalMs)) {
+      this.mainDirectionalLight.shadow.needsUpdate = true;
+    }
+  }
+
+  public requestShadowContentRefresh(): void {
+    this.shadowRefreshPolicy.markContentChanged();
   }
 
   update(deltaTime: number): void {
@@ -1071,6 +1100,8 @@ export abstract class HexagonScene {
     if (this.shouldEnableStormEffects()) {
       this.updateStormEffects();
     }
+
+    this.updateShadowRefresh(deltaTime);
 
     if (this.shouldUpdateBiomeAnimations()) {
       PerformanceMonitor.begin("biomeAnimations.total");
@@ -1347,6 +1378,7 @@ export abstract class HexagonScene {
 
     // Clean up any pending promises or model loading
     this.modelLoadPromises = [];
+    this.biomeModelLoadPromises.clear();
 
     // Finally, clear the scene
     this.scene.clear();
@@ -1380,20 +1412,8 @@ export abstract class HexagonScene {
     return this.currentCameraView;
   }
 
-  public getShadowsEnabledByQuality(): boolean {
-    return this.shadowsEnabledByQuality;
-  }
-
-  /**
-   * Whether contact (fake) shadows are permitted by the current graphics tier.
-   *
-   * Contact shadows are the *fallback* for real shadows, so on LOW/below they
-   * would otherwise always be on (real shadows are off there). The weakest
-   * hardware should pay for neither, so gate them off for LOW and any tier
-   * below it. MID/HIGH are unaffected.
-   */
-  public contactShadowsAllowedByQuality(): boolean {
-    return !isLowOrBelow(GRAPHICS_SETTING);
+  public getShadowsEnabled(): boolean {
+    return this.shadowsEnabled;
   }
 
   public addCameraViewListener(listener: (view: CameraView) => void) {
@@ -1417,7 +1437,6 @@ export abstract class HexagonScene {
   }
 
   public changeCameraView(position: CameraView) {
-    console.log("HexagonScene changeCameraView:", this.targetCameraView, "->", position);
     const previousView = this.targetCameraView;
     const target = this.controls.target;
     if (position !== previousView) {
@@ -1450,19 +1469,20 @@ export abstract class HexagonScene {
     const desiredNear = Math.min(maxNear, Math.max(minNear, distance * 0.02));
     const desiredFar = Math.min(maxFar, Math.max(minFar, distance * farMultiplier));
 
-    if (Math.abs(desiredNear - this.lastClipNear) < 0.005 && Math.abs(desiredFar - this.lastClipFar) < 0.5) {
+    // Guard against the camera's live planes, not a scene-local cache: the camera is
+    // shared across scenes, so a cache goes stale whenever another scene retunes it
+    // (e.g. hexception's close zoom before a worldmap resume snaps back to Far).
+    if (Math.abs(desiredNear - this.camera.near) < 0.005 && Math.abs(desiredFar - this.camera.far) < 0.5) {
       return;
     }
 
     this.camera.near = desiredNear;
     this.camera.far = desiredFar;
     this.camera.updateProjectionMatrix();
-    this.lastClipNear = desiredNear;
-    this.lastClipFar = desiredFar;
   }
 
   private updateFogForDistance(distance: number): void {
-    if (!this.fogEnabledByQuality || !this.fogEnabledByUser) {
+    if (!this.fogVisualsEnabled || !this.fogEnabledByUser) {
       if (this.scene.fog) {
         this.scene.fog = null;
       }
@@ -1481,20 +1501,38 @@ export abstract class HexagonScene {
     const desiredNear = Math.max(FOG_CONFIG.near, clipFar * startFactor);
     const desiredFar = Math.max(desiredNear + 1, clipFar * endFactor);
 
-    if (Math.abs(desiredNear - this.lastFogNear) < 0.5 && Math.abs(desiredFar - this.lastFogFar) < 0.5) {
+    if (Math.abs(desiredNear - this.fog.near) < 0.5 && Math.abs(desiredFar - this.fog.far) < 0.5) {
       return;
     }
 
     this.fog.near = desiredNear;
     this.fog.far = desiredFar;
-    this.lastFogNear = desiredNear;
-    this.lastFogFar = desiredFar;
   }
 
   private applyTargetCameraView(position: CameraView): void {
     const profile = resolveWorldmapCameraViewProfile(position);
     this.cameraDistance = profile.distance;
     this.cameraAngle = profile.angleRadians;
+  }
+
+  /**
+   * Fade/freeze the main shadow WITHOUT touching light topology. Toggling
+   * `castShadow` on the light invalidates every material's shader graph — a
+   * multi-second whole-scene rebuild on zoom transitions. `shadow.intensity`
+   * is a live uniform in the node renderer, and freezing `autoUpdate` skips
+   * the shadow-map render while faded.
+   */
+  protected setMainDirectionalShadowActive(active: boolean): void {
+    if (!this.mainDirectionalLight) {
+      return;
+    }
+    const shadow = this.mainDirectionalLight.shadow;
+    shadow.intensity = active ? 1 : 0;
+    shadow.autoUpdate = false;
+    if (active) {
+      this.shadowRefreshPolicy.markContentChanged();
+      shadow.needsUpdate = true;
+    }
   }
 
   private applyResolvedCameraView(view: CameraView): void {
@@ -1506,17 +1544,20 @@ export abstract class HexagonScene {
       return;
     }
 
+    // castShadow stays pinned to the visual profile (rare changes only) —
+    // per-view shadow presence is expressed through the intensity uniform.
+    this.mainDirectionalLight.castShadow = this.shadowsEnabled;
     switch (view) {
       case CameraView.Close:
-        this.mainDirectionalLight.castShadow = this.shadowsEnabledByQuality;
         this.mainDirectionalLight.shadow.bias = -0.02;
+        this.setMainDirectionalShadowActive(this.shadowsEnabled);
         break;
       case CameraView.Medium:
-        this.mainDirectionalLight.castShadow = this.shadowsEnabledByQuality;
         this.mainDirectionalLight.shadow.bias = -0.015;
+        this.setMainDirectionalShadowActive(this.shadowsEnabled);
         break;
       case CameraView.Far:
-        this.mainDirectionalLight.castShadow = false;
+        this.setMainDirectionalShadowActive(false);
         break;
     }
   }
@@ -1532,7 +1573,12 @@ export abstract class HexagonScene {
 
     this.currentCameraView = nextView;
     this.applyResolvedCameraView(nextView);
+    this.biomeModels.forEach((model) => model.setDistantAnimationSamplingEnabled(nextView !== CameraView.Close));
     this.cameraViewListeners.forEach((listener) => listener(nextView));
+  }
+
+  protected isCameraTransitionInProgress(): boolean {
+    return this.cameraTransitionStatus === "transitioning";
   }
 
   private setCameraTransitionStatus(status: CameraTransitionStatus): void {

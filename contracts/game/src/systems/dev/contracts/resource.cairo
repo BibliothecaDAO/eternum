@@ -2,7 +2,7 @@ use crate::alias::ID;
 
 #[starknet::interface]
 pub trait IResourceSystems<T> {
-    fn mint(ref self: T, entity_id: ID, resources: Span<(u8, u128)>);
+    fn mint(ref self: T, game_id: u32, entity_id: ID, resources: Span<(u8, u128)>);
 }
 
 #[dojo::contract]
@@ -15,14 +15,15 @@ pub mod dev_resource_systems {
     };
     use crate::models::structure::{StructureBase, StructureBaseImpl, StructureBaseStoreImpl};
     use crate::models::weight::{Weight, WeightImpl};
-    use crate::systems::config::contracts::config_systems::assert_caller_is_admin;
+    use crate::systems::utils::auth::iGameAdminImpl;
 
 
     #[abi(embed_v0)]
     impl ResourceSystemsImpl of super::IResourceSystems<ContractState> {
-        fn mint(ref self: ContractState, entity_id: ID, resources: Span<(u8, u128)>) {
+        fn mint(ref self: ContractState, game_id: u32, entity_id: ID, resources: Span<(u8, u128)>) {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
-            assert_caller_is_admin(world);
+            iGameAdminImpl::assert_chain_admin(world);
+            iGameAdminImpl::assert_dev_mode(world, game_id);
 
             let mut resources = resources;
             loop {
@@ -33,14 +34,20 @@ pub mod dev_resource_systems {
                         let (resource_type, amount) = (*resource_type, *amount);
                         assert(amount > 0, 'amount must not be 0');
 
-                        let structure: StructureBase = StructureBaseStoreImpl::retrieve(ref world, entity_id);
+                        let structure: StructureBase = StructureBaseStoreImpl::retrieve(ref world, game_id, entity_id);
                         structure.assert_exists();
 
                         // add resource to structure
-                        let mut structure_weight: Weight = WeightStoreImpl::retrieve(ref world, entity_id);
-                        let resource_weight_grams: u128 = ResourceWeightImpl::grams(ref world, resource_type);
+                        let mut structure_weight: Weight = WeightStoreImpl::retrieve(ref world, game_id, entity_id);
+                        let resource_weight_grams: u128 = ResourceWeightImpl::grams(ref world, game_id, resource_type);
                         let mut resource = SingleResourceStoreImpl::retrieve(
-                            ref world, entity_id, resource_type, ref structure_weight, resource_weight_grams, true,
+                            ref world,
+                            game_id,
+                            entity_id,
+                            resource_type,
+                            ref structure_weight,
+                            resource_weight_grams,
+                            true,
                         );
 
                         // update resource
@@ -48,7 +55,7 @@ pub mod dev_resource_systems {
                         resource.store(ref world);
 
                         // update structure weight
-                        structure_weight.store(ref world, entity_id);
+                        structure_weight.store(ref world, game_id, entity_id);
                     },
                     Option::None => { break; },
                 };
@@ -56,4 +63,3 @@ pub mod dev_resource_systems {
         }
     }
 }
-

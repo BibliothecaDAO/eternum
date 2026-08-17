@@ -23,7 +23,7 @@ bun config/deployer/clean/cli/create.ts \
 
 Required inputs:
 
-- `--environment`: `slot.blitz`, `slot.eternum`, `mainnet.blitz`, or `mainnet.eternum`
+- `--environment`: `appchain.blitz`, `appchain.eternum`, `mainnet.blitz`, or `mainnet.eternum`
 - `--game`
 - `--start-time`: unix seconds, unix milliseconds, or ISO-8601
 
@@ -31,7 +31,7 @@ When `--config-path` is present, the YAML file can provide those required fields
 deployer request shape, so finite weekly schedules can be modeled as `launchKind: series` with an explicit `games:`
 list. Rolling weekly schedules should use `launchKind: rotation` with `weeklyCadence:` entries so the worker keeps the
 advance window filled until the rotation is cancelled. A weekly cadence entry can include `blitzRegistrationOverrides`
-when a slot needs a different buy-in from the parent/default Blitz registration config.
+when a game slot needs a different buy-in from the parent/default Blitz registration config.
 
 Optional env or flags:
 
@@ -52,18 +52,19 @@ Optional env or flags:
 - `TWO_PLAYER_MODE=true|false` or `--two-player-mode true|false`
 - `DURATION_SECONDS=<integer>` or `--duration-seconds <integer>`
 - `--mode batched|sequential`
-- `--max-actions <integer>` to override the environment default (`slot`: `300`, `mainnet`: `50`)
+- `--max-actions <integer>` to override the environment default (`appchain`: `300`, `mainnet`: `50`)
 - `--skip-indexer`
 - `--skip-lootchest-role-grant`
 - `--skip-banks`
 - `--dry-run`
 
-Environment defaults are currently defined for both slot environments for:
+Environment defaults are currently defined for both appchain environments for:
 
-- factory address
 - RPC URL
 - dojo account address
 - dojo private key
+
+The appchain has no baked-in factory address yet: pass `FACTORY_ADDRESS` or `--factory-address`.
 
 Mainnet environments now use the shared factory default
 `0x525410a4d0ebd4a313e2125ac986710cd8f1bd08d47379b7f45c8b9c71b4da`. You can still override it with `FACTORY_ADDRESS` or
@@ -72,16 +73,16 @@ explicit CLI flags.
 
 The launcher also inherits the legacy factory v1 `create_game` defaults by chain:
 
-- `slot.*`: one `create_game` submission with `max_actions=300`
+- `appchain.*`: one `create_game` submission with `max_actions=300`
 - `mainnet.*`: three `create_game` submissions with `max_actions=50`, waiting ten seconds between submissions to avoid
   nonce issues
 
 GitHub Actions credentials are selected through GitHub Environments:
 
-- environment `slot.blitz`
+- environment `appchain.blitz`
   - var: `GAME_LAUNCH_DOJO_ACCOUNT_ADDRESS`
   - secret: `GAME_LAUNCH_DOJO_PRIVATE_KEY`
-- environment `slot.eternum`
+- environment `appchain.eternum`
   - var: `GAME_LAUNCH_DOJO_ACCOUNT_ADDRESS`
   - secret: `GAME_LAUNCH_DOJO_PRIVATE_KEY`
 - environment `mainnet.blitz`
@@ -94,8 +95,8 @@ GitHub Actions credentials are selected through GitHub Environments:
   - secret: `SLOT_AUTH`
 
 The workflow does not need CI-provided defaults for Torii namespaces, Cartridge API base, or VRF provider address. Those
-are defaulted inside the clean deployer module, and the VRF provider default matches the shared slot value from the game
-env files.
+are defaulted inside the clean deployer module, and the VRF provider default matches the shared value from the game env
+files.
 
 The clean deployer creates indexers only by dispatching `.github/workflows/factory-torii-deployer.yml` directly with
 GitHub's workflow API. It waits for that workflow run to finish, and only marks the indexer as created when the workflow
@@ -118,7 +119,7 @@ Each launch step can also be executed directly:
 ```bash
 bun config/deployer/clean/cli/launch-step.ts \
   --step configure-world \
-  --environment slot.blitz \
+  --environment appchain.blitz \
   --game bltz-fire-gate-42 \
   --start-time 1763112600
 ```
@@ -136,7 +137,7 @@ Supported step ids:
 The step runner uses the same request shape and env defaults as the full launcher. This is the script boundary the
 workflow uses now, and it is also the intended recovery boundary for browser-driven reruns.
 
-`sync-paymaster` is only meaningful for `mainnet.*` environments. The workflow rejects that recovery scope on slot.
+`sync-paymaster` is only meaningful for `mainnet.*` environments. The workflow rejects that recovery scope on appchain.
 
 ## GitHub Workflow
 
@@ -165,7 +166,7 @@ schedules should be dispatched like:
 
 ```text
 launch_kind = series
-environment = slot.blitz
+environment = appchain.blitz
 config_path = config/deployer/clean/examples/blitz-weekly-series.yaml
 launch_step = full
 ```
@@ -210,8 +211,8 @@ It grants `MINTER_ROLE` to the deployed `realm_internal_systems` contract and `D
 launch.
 
 For mainnet environments, the launch flow also runs `sync-paymaster` after indexer creation. That step rebuilds the
-world policy from the factory-indexed manifest and applies it through the Slot CLI so gas coverage is ready without a
-separate manual workflow.
+world policy from the factory-indexed manifest and applies it through the Cartridge `slot paymaster` CLI so gas coverage
+is ready without a separate manual workflow.
 
 ## Village Pass Role Grant
 
@@ -220,7 +221,7 @@ one game:
 
 ```bash
 bun config/deployer/clean/cli/grant-village-pass-minter-role.ts \
-  --chain slot.eternum \
+  --chain appchain.eternum \
   --game etrn-iron-mist-11
 ```
 

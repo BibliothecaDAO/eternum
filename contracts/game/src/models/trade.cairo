@@ -6,6 +6,8 @@ use crate::alias::ID;
 #[dojo::model]
 pub struct Trade {
     #[key]
+    pub game_id: u32,
+    #[key]
     pub trade_id: ID,
     pub maker_id: ID,
     pub taker_id: ID,
@@ -21,6 +23,8 @@ pub struct Trade {
 #[derive(IntrospectPacked, Copy, Drop, Serde)]
 #[dojo::model]
 pub struct TradeCount {
+    #[key]
+    pub game_id: u32,
     #[key]
     pub structure_id: ID,
     pub count: u8,

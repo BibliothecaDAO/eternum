@@ -10,20 +10,20 @@ function readWorldmapSource(): string {
 }
 
 describe("worldmap biome overlay race hardening", () => {
-  it("wires tile hydration drain into chunk hydration and refresh paths", () => {
+  it("syncs projection tiles before chunk presentation", () => {
     const source = readWorldmapSource();
 
-    expect(source).toMatch(
-      /waitForTileHydrationIdle:\s*\(targetChunkKey\)\s*=>\s*this\.waitForTileHydrationIdle\(targetChunkKey\)/,
-    );
+    expect(source).toMatch(/syncProjectionTiles:\s*\(targetChunkKey\)\s*=>\s*this\.syncProjectionTilesForChunk/);
+    expect(source).not.toContain("waitForTileHydrationIdle");
   });
 
-  it("uses visible terrain membership and reconcile policy to avoid append-on-conflict", () => {
+  it("fences live tile page rebuilds instead of appending into composed terrain", () => {
     const source = readWorldmapSource();
 
-    expect(source).toMatch(/visibleTerrainMembership/i);
-    expect(source).toMatch(/resolveVisibleTerrainReconcileMode/);
-    expect(source).toMatch(/tile_overlap_repair/);
+    expect(source).toMatch(/subscribeTiles/);
+    expect(source).toMatch(/visualTerrainPageRevisions/);
+    expect(source).toMatch(/buildAndApplyVisualTerrainPage/);
+    expect(source).not.toMatch(/terrainVisibleAppendCount/);
   });
 
   it("checks terrain fingerprint before cache replay is accepted", () => {

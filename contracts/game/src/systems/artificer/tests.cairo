@@ -15,6 +15,7 @@ mod tests {
     use crate::models::config::{
         ArtificerConfig, CapacityConfig, SeasonConfig, StructureCapacityConfig, WeightConfig, WorldConfigUtilImpl,
     };
+    use crate::models::game::{GameRegistry, GameStatus};
     use crate::models::resource::resource::{
         ResourceImpl, ResourceWeightImpl, SingleResourceStoreImpl, SingleResourceTrait, WeightStoreImpl,
     };
@@ -32,6 +33,8 @@ mod tests {
     const RESEARCH_COST_FOR_RELIC_RAW: u128 = 50_000;
     // Config value includes precision (this is what gets stored in config)
     const RESEARCH_COST_FOR_RELIC: u128 = RESEARCH_COST_FOR_RELIC_RAW * RESOURCE_PRECISION;
+    const TEST_GAME_ID: u32 = 1;
+    const TEST_PRESET_ID: u32 = 1;
 
     // ============================================================================
     // Test Setup
@@ -90,9 +93,11 @@ mod tests {
             namespace: DEFAULT_NS_STR(),
             resources: [
                 // Core config
-                TestResource::Model("WorldConfig"), TestResource::Model("WeightConfig"),
-                // Structure models
-                TestResource::Model("Structure"), TestResource::Model("StructureOwnerStats"),
+                TestResource::Model("WorldConfig"), TestResource::Model("PresetConfig"),
+                TestResource::Model("GameMapConfig"), TestResource::Model("GameRegistry"),
+                TestResource::Model("WeightConfig"), // Structure models
+                TestResource::Model("Structure"),
+                TestResource::Model("StructureOwnerStats"),
                 // Resource models
                 TestResource::Model("Resource"), // RNG model (needed for VRF)
                 TestResource::Model("RNG"),
@@ -121,24 +126,50 @@ mod tests {
         world.sync_perms_and_inits(contract_defs_artificer());
         world.dispatcher.uuid();
 
+        set_test_season(ref world, get_active_season_config());
+
         // Set up configs
         let artificer_config = get_default_artificer_config();
-        WorldConfigUtilImpl::set_member(ref world, selector!("artificer_config"), artificer_config);
-
-        // Active season (started, not ended)
-        let season_config = get_active_season_config();
-        WorldConfigUtilImpl::set_member(ref world, selector!("season_config"), season_config);
+        WorldConfigUtilImpl::set_member(ref world, TEST_GAME_ID, selector!("artificer_config"), artificer_config);
 
         // Capacity configs
-        WorldConfigUtilImpl::set_member(ref world, selector!("capacity_config"), get_capacity_config());
+        WorldConfigUtilImpl::set_member(ref world, TEST_GAME_ID, selector!("capacity_config"), get_capacity_config());
         WorldConfigUtilImpl::set_member(
-            ref world, selector!("structure_capacity_config"), get_structure_capacity_config(),
+            ref world, TEST_GAME_ID, selector!("structure_capacity_config"), get_structure_capacity_config(),
         );
 
         // Set weight config for research (weightless)
-        world.write_model_test(@WeightConfig { resource_type: ResourceTypes::RESEARCH, weight_gram: 0 });
+        world
+            .write_model_test(
+                @WeightConfig { preset_id: TEST_PRESET_ID, resource_type: ResourceTypes::RESEARCH, weight_gram: 0 },
+            );
 
         world
+    }
+
+    fn set_test_season(ref world: WorldStorage, season: SeasonConfig) {
+        world
+            .write_model_test(
+                @GameRegistry {
+                    game_id: TEST_GAME_ID,
+                    name: 'test',
+                    series_id: 0,
+                    game_number_in_series: 0,
+                    preset_id: TEST_PRESET_ID,
+                    creator: starknet::contract_address_const::<'creator'>(),
+                    status: GameStatus::Live,
+                    dev_mode_on: season.dev_mode_on,
+                    start_settling_at: season.start_settling_at,
+                    start_main_at: season.start_main_at,
+                    end_at: season.end_at,
+                    end_grace_seconds: season.end_grace_seconds,
+                    registration_grace_seconds: season.registration_grace_seconds,
+                    final_trial_id: 0,
+                    seed: 1,
+                    fees_collected: 0,
+                    fees_paid_out: 0,
+                },
+            );
     }
 
     fn get_artificer_dispatcher(ref world: WorldStorage) -> (ContractAddress, IArtificerSystemsDispatcher) {
@@ -159,6 +190,7 @@ mod tests {
         };
 
         let structure = Structure {
+            game_id: TEST_GAME_ID,
             entity_id: structure_id,
             owner: owner,
             base: StructureBase {
@@ -193,9 +225,9 @@ mod tests {
         world.write_model_test(@structure);
 
         // Initialize resources and weight for the structure
-        ResourceImpl::initialize(ref world, structure_id);
+        ResourceImpl::initialize(ref world, TEST_GAME_ID, structure_id);
         let structure_weight = Weight { capacity: 1000000000000000 * RESOURCE_PRECISION, weight: 0 };
-        ResourceImpl::write_weight(ref world, structure_id, structure_weight);
+        ResourceImpl::write_weight(ref world, TEST_GAME_ID, structure_id, structure_weight);
 
         structure_id
     }
@@ -213,6 +245,7 @@ mod tests {
         };
 
         let structure = Structure {
+            game_id: TEST_GAME_ID,
             entity_id: structure_id,
             owner: owner,
             base: StructureBase {
@@ -250,25 +283,31 @@ mod tests {
     }
 
     fn grant_research(ref world: WorldStorage, structure_id: ID, amount: u128) {
-        let mut structure_weight = WeightStoreImpl::retrieve(ref world, structure_id);
-        let research_weight_grams = ResourceWeightImpl::grams(ref world, ResourceTypes::RESEARCH);
+        let mut structure_weight = WeightStoreImpl::retrieve(ref world, TEST_GAME_ID, structure_id);
+        let research_weight_grams = ResourceWeightImpl::grams(ref world, TEST_GAME_ID, ResourceTypes::RESEARCH);
         let mut research = SingleResourceStoreImpl::retrieve(
-            ref world, structure_id, ResourceTypes::RESEARCH, ref structure_weight, research_weight_grams, true,
+            ref world,
+            TEST_GAME_ID,
+            structure_id,
+            ResourceTypes::RESEARCH,
+            ref structure_weight,
+            research_weight_grams,
+            true,
         );
         research.add(amount, ref structure_weight, research_weight_grams);
         research.store(ref world);
-        structure_weight.store(ref world, structure_id);
+        structure_weight.store(ref world, TEST_GAME_ID, structure_id);
     }
 
     fn get_research_balance(ref world: WorldStorage, structure_id: ID) -> u128 {
-        ResourceImpl::read_balance(ref world, structure_id, ResourceTypes::RESEARCH)
+        ResourceImpl::read_balance(ref world, TEST_GAME_ID, structure_id, ResourceTypes::RESEARCH)
     }
 
     fn get_total_relic_balance(ref world: WorldStorage, structure_id: ID) -> u128 {
         use crate::constants::{RELICS_RESOURCE_END_ID, RELICS_RESOURCE_START_ID};
         let mut total: u128 = 0;
         for relic_id in RELICS_RESOURCE_START_ID..RELICS_RESOURCE_END_ID + 1 {
-            total += ResourceImpl::read_balance(ref world, structure_id, relic_id);
+            total += ResourceImpl::read_balance(ref world, TEST_GAME_ID, structure_id, relic_id);
         }
         total
     }
@@ -298,7 +337,7 @@ mod tests {
         start_cheat_block_timestamp_global(1000);
 
         start_cheat_caller_address(system_addr, owner);
-        dispatcher.burn_research_for_relic(realm_id);
+        dispatcher.burn_research_for_relic(TEST_GAME_ID, realm_id);
         stop_cheat_caller_address(system_addr);
 
         // Verify research was burned
@@ -329,7 +368,7 @@ mod tests {
         start_cheat_block_timestamp_global(1000);
 
         start_cheat_caller_address(system_addr, owner);
-        dispatcher.burn_research_for_relic(hyper_id);
+        dispatcher.burn_research_for_relic(TEST_GAME_ID, hyper_id);
         stop_cheat_caller_address(system_addr);
     }
 
@@ -349,7 +388,7 @@ mod tests {
         start_cheat_block_timestamp_global(1000);
 
         start_cheat_caller_address(system_addr, owner);
-        dispatcher.burn_research_for_relic(realm_id);
+        dispatcher.burn_research_for_relic(TEST_GAME_ID, realm_id);
         stop_cheat_caller_address(system_addr);
     }
 
@@ -366,7 +405,7 @@ mod tests {
         start_cheat_block_timestamp_global(1000);
 
         start_cheat_caller_address(system_addr, owner);
-        dispatcher.burn_research_for_relic(realm_id);
+        dispatcher.burn_research_for_relic(TEST_GAME_ID, realm_id);
         stop_cheat_caller_address(system_addr);
     }
 
@@ -386,7 +425,7 @@ mod tests {
         start_cheat_block_timestamp_global(50);
 
         start_cheat_caller_address(system_addr, owner);
-        dispatcher.burn_research_for_relic(realm_id);
+        dispatcher.burn_research_for_relic(TEST_GAME_ID, realm_id);
         stop_cheat_caller_address(system_addr);
     }
 
@@ -397,7 +436,7 @@ mod tests {
 
         // Override with ended season config
         let ended_season_config = get_ended_season_config();
-        WorldConfigUtilImpl::set_member(ref world, selector!("season_config"), ended_season_config);
+        set_test_season(ref world, ended_season_config);
 
         let (system_addr, dispatcher) = get_artificer_dispatcher(ref world);
 
@@ -411,7 +450,7 @@ mod tests {
         start_cheat_block_timestamp_global(1000);
 
         start_cheat_caller_address(system_addr, owner);
-        dispatcher.burn_research_for_relic(realm_id);
+        dispatcher.burn_research_for_relic(TEST_GAME_ID, realm_id);
         stop_cheat_caller_address(system_addr);
     }
 }

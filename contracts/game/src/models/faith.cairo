@@ -7,6 +7,8 @@ use crate::alias::ID;
 #[dojo::model]
 pub struct WonderFaithPrize {
     #[key]
+    pub game_id: u32,
+    #[key]
     pub wonder_id: ID,
     pub amount_won: u128,
 }
@@ -15,6 +17,8 @@ pub struct WonderFaithPrize {
 #[derive(IntrospectPacked, Copy, Drop, Serde)]
 #[dojo::model]
 pub struct PlayerFaithPrizeClaimed {
+    #[key]
+    pub game_id: u32,
     #[key]
     pub player: ContractAddress,
     #[key]
@@ -26,6 +30,8 @@ pub struct PlayerFaithPrizeClaimed {
 #[derive(IntrospectPacked, Copy, Drop, Serde)]
 #[dojo::model]
 pub struct WonderFaith {
+    #[key]
+    pub game_id: u32,
     #[key]
     pub wonder_id: ID,
     pub last_recorded_owner: ContractAddress,
@@ -41,6 +47,8 @@ pub struct WonderFaith {
 #[dojo::model]
 pub struct FaithfulStructure {
     #[key]
+    pub game_id: u32,
+    #[key]
     pub structure_id: ID,
     pub wonder_id: ID,
     pub faithful_since: u64,
@@ -53,6 +61,8 @@ pub struct FaithfulStructure {
 #[derive(Introspect, Copy, Drop, Serde)]
 #[dojo::model]
 pub struct PlayerFaithPoints {
+    #[key]
+    pub game_id: u32,
     #[key]
     pub player: ContractAddress,
     #[key]
@@ -68,7 +78,7 @@ pub struct PlayerFaithPoints {
 #[dojo::model]
 pub struct WonderFaithWinners {
     #[key]
-    pub world_id: ID,
+    pub game_id: u32,
     pub high_score: u128,
     pub wonder_ids: Array<ID>,
 }
@@ -77,6 +87,8 @@ pub struct WonderFaithWinners {
 #[derive(Introspect, Copy, Drop, Serde)]
 #[dojo::model]
 pub struct WonderFaithBlacklist {
+    #[key]
+    pub game_id: u32,
     #[key]
     pub wonder_id: ID,
     #[key]

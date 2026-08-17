@@ -23,9 +23,9 @@ const NETWORKS = {
     feeder_gateway_url: process.env.STARKNET_RPC + "/feeder_gateway",
     gateway_url: process.env.STARKNET_RPC + "/gateway",
   },
-  slot: {
-    name: "slot",
-    explorer_url: "https://slot.voyager.online",
+  appchain: {
+    name: "appchain",
+    explorer_url: "",
     rpc_url: process.env.STARKNET_RPC,
     feeder_gateway_url: process.env.STARKNET_RPC + "/feeder_gateway",
     gateway_url: process.env.STARKNET_RPC + "/gateway",

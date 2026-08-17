@@ -579,6 +579,7 @@ export async function recordFactoryRotationLaunchStepStarted(
   if (!request.stepId) {
     throw new Error("stepId is required to record a started rotation step");
   }
+  const stepId = request.stepId;
 
   const context = createFactoryRotationRunStoreEventContext(request);
   const summary = request.request.resumeSummary || (await resolvePlannedRotationSummary(request.request));
@@ -589,10 +590,10 @@ export async function recordFactoryRotationLaunchStepStarted(
     options,
     (current) => {
       const nextSummary = mergeRotationSummary(current.summary, null, {
-        stepId: request.stepId,
+        stepId,
         targetGameNames: request.request.targetGameNames,
         status: "running",
-        latestEvent: buildRotationStepStartedEvent(request.stepId),
+        latestEvent: buildRotationStepStartedEvent(stepId),
         timestamp: context.timestamp,
       });
 
@@ -603,12 +604,12 @@ export async function recordFactoryRotationLaunchStepStarted(
             context,
             nextSummary,
           ),
-          activeLease: buildFactoryRotationRunLease(context, request.stepId),
+          activeLease: buildFactoryRotationRunLease(context, stepId),
           steps: markRotationStepStatus(
             current.steps,
-            request.stepId,
+            stepId,
             "running",
-            buildRotationStepStartedEvent(request.stepId),
+            buildRotationStepStartedEvent(stepId),
             context.timestamp,
           ),
           summary: nextSummary,
@@ -620,7 +621,7 @@ export async function recordFactoryRotationLaunchStepStarted(
         context.timestamp,
       );
     },
-    `start ${request.stepId}`,
+    `start ${stepId}`,
   );
 }
 
@@ -631,6 +632,7 @@ export async function recordFactoryRotationLaunchStepSucceeded(
   if (!request.stepId) {
     throw new Error("stepId is required to record a successful rotation step");
   }
+  const stepId = request.stepId;
 
   const context = createFactoryRotationRunStoreEventContext(request);
 
@@ -641,25 +643,19 @@ export async function recordFactoryRotationLaunchStepSucceeded(
     (current) => {
       const nextSummary = persistRotationLaunchSummary(
         mergeRotationSummary(current.summary, resolveRotationSummaryFromWorkspace(request), {
-          stepId: request.stepId,
+          stepId,
           targetGameNames: request.request.targetGameNames,
           status: "succeeded",
-          latestEvent: buildRotationStepSucceededEvent(request.stepId),
+          latestEvent: buildRotationStepSucceededEvent(stepId),
           timestamp: context.timestamp,
         }),
       );
-      const nextStepStatus = resolveRotationSummaryStepStatus(nextSummary, request.stepId);
-      const nextStepEvent = resolveRotationSummaryStepEvent(nextSummary, request.stepId);
+      const nextStepStatus = resolveRotationSummaryStepStatus(nextSummary, stepId);
+      const nextStepEvent = resolveRotationSummaryStepEvent(nextSummary, stepId);
       const nextRun = finalizeRotationRunRecord(
         {
           ...updateFactoryRotationRunContext(releaseFactoryRotationRunLease(current, context), context, nextSummary),
-          steps: markRotationStepStatus(
-            current.steps,
-            request.stepId,
-            nextStepStatus,
-            nextStepEvent,
-            context.timestamp,
-          ),
+          steps: markRotationStepStatus(current.steps, stepId, nextStepStatus, nextStepEvent, context.timestamp),
           summary: nextSummary,
           artifacts: {
             summaryPath:
@@ -678,7 +674,7 @@ export async function recordFactoryRotationLaunchStepSucceeded(
         evaluation: buildRotationEvaluationSchedule(nextRun, nextRun.status, context.timestamp),
       };
     },
-    `complete ${request.stepId}`,
+    `complete ${stepId}`,
   );
 }
 
@@ -689,6 +685,7 @@ export async function recordFactoryRotationLaunchStepFailed(
   if (!request.stepId) {
     throw new Error("stepId is required to record a failed rotation step");
   }
+  const stepId = request.stepId;
 
   const context = createFactoryRotationRunStoreEventContext(request);
 
@@ -698,10 +695,10 @@ export async function recordFactoryRotationLaunchStepFailed(
     options,
     (current) => {
       const nextSummary = mergeRotationSummary(current.summary, resolveRotationSummaryFromWorkspace(request), {
-        stepId: request.stepId,
+        stepId,
         targetGameNames: request.request.targetGameNames,
         status: "failed",
-        latestEvent: buildRotationStepFailedEvent(request.stepId, request.errorMessage),
+        latestEvent: buildRotationStepFailedEvent(stepId, request.errorMessage),
         timestamp: context.timestamp,
         errorMessage: request.errorMessage,
       });
@@ -710,9 +707,9 @@ export async function recordFactoryRotationLaunchStepFailed(
           ...updateFactoryRotationRunContext(releaseFactoryRotationRunLease(current, context), context, nextSummary),
           steps: markRotationStepStatus(
             current.steps,
-            request.stepId,
+            stepId,
             "failed",
-            buildRotationStepFailedEvent(request.stepId, request.errorMessage),
+            buildRotationStepFailedEvent(stepId, request.errorMessage),
             context.timestamp,
             request.errorMessage,
           ),
@@ -734,7 +731,7 @@ export async function recordFactoryRotationLaunchStepFailed(
         evaluation: buildRotationEvaluationSchedule(nextRun, nextRun.status, context.timestamp),
       };
     },
-    `fail ${request.stepId}`,
+    `fail ${stepId}`,
   );
 }
 

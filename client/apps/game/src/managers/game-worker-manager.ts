@@ -1,38 +1,16 @@
 import { Position } from "@bibliothecadao/eternum";
 import { BiomeType, HexEntityInfo } from "@bibliothecadao/types";
 import GameWorker from "../workers/game-worker.ts?worker";
+import type {
+  GameWorkerPosition,
+  GameWorkerRequestMessage,
+  GameWorkerResponseMessage,
+  GameWorkerWorldState,
+} from "../workers/game-worker-messages";
 import {
   incrementWorldmapRenderCounter,
   recordWorldmapRenderDuration,
 } from "../three/perf/worldmap-render-diagnostics";
-
-interface WorkerPosition {
-  x: number;
-  y: number;
-}
-
-type WorkerPathResultMessage = {
-  path: WorkerPosition[];
-  requestId: number;
-  type: "PATH_RESULT";
-};
-
-type GameWorkerMessage = WorkerPathResultMessage;
-
-type GameWorkerUpdateMessage =
-  | { type: "UPDATE_ARMY"; col: number; row: number; info: HexEntityInfo | null }
-  | { type: "UPDATE_EXPLORED"; col: number; row: number; biome: BiomeType | null }
-  | { type: "UPDATE_STRUCTURE"; col: number; row: number; info: HexEntityInfo | null };
-
-type FindPathWorkerMessage = {
-  type: "FIND_PATH";
-  requestId: number;
-  start: WorkerPosition;
-  end: WorkerPosition;
-  maxDistance: number;
-};
-
-type GameWorkerRequestMessage = GameWorkerUpdateMessage | FindPathWorkerMessage;
 
 type PathRequest = {
   startedAt: number;
@@ -62,7 +40,7 @@ class GameWorkerManager {
     }
 
     const worker = this.input.createWorker();
-    worker.onmessage = (event) => this.handleWorkerMessage(event.data as GameWorkerMessage);
+    worker.onmessage = (event) => this.handleWorkerMessage(event.data as GameWorkerResponseMessage);
     worker.onerror = (event) =>
       this.handleWorkerFailure(event.error ?? new Error(event.message ?? "Unknown worker error"));
     this.worker = worker;
@@ -95,6 +73,18 @@ class GameWorkerManager {
       row,
       info,
     });
+  }
+
+  public resetWorldState() {
+    this.worker?.postMessage({ type: "RESET_WORLD_STATE" });
+  }
+
+  public hydrateWorldState(worldState: GameWorkerWorldState) {
+    if (!this.worker && !hasWorldStateEntries(worldState)) {
+      return;
+    }
+
+    this.postWorkerMessage({ type: "HYDRATE_WORLD_STATE", ...worldState });
   }
 
   public findPath(start: Position, end: Position, maxDistance: number): Promise<Position[]> {
@@ -132,7 +122,7 @@ class GameWorkerManager {
     this.ensureWorker().postMessage(message);
   }
 
-  private handleWorkerMessage(message: GameWorkerMessage) {
+  private handleWorkerMessage(message: GameWorkerResponseMessage) {
     if (message.type !== "PATH_RESULT") {
       return;
     }
@@ -146,7 +136,7 @@ class GameWorkerManager {
     this.finishPathRequest(message.requestId);
   }
 
-  private buildResolvedPath(path: WorkerPosition[]): Position[] {
+  private buildResolvedPath(path: GameWorkerPosition[]): Position[] {
     return path.map((position) => new Position({ x: position.x, y: position.y }));
   }
 
@@ -179,6 +169,10 @@ class GameWorkerManager {
   }
 }
 
+function hasWorldStateEntries(worldState: GameWorkerWorldState): boolean {
+  return worldState.armies.length > 0 || worldState.exploredTiles.length > 0 || worldState.structures.length > 0;
+}
+
 export const createGameWorkerManager = (input: CreateGameWorkerManagerInput = {}): GameWorkerManager =>
   new GameWorkerManager({
     createWorker: input.createWorker ?? (() => new GameWorker()),
@@ -188,3 +182,9 @@ export const createGameWorkerManager = (input: CreateGameWorkerManagerInput = {}
   });
 
 export const gameWorkerManager = createGameWorkerManager();
+
+export type {
+  GameWorkerEntityHex,
+  GameWorkerExploredTile,
+  GameWorkerWorldState,
+} from "../workers/game-worker-messages";

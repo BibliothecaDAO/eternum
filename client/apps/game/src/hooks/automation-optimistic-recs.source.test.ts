@@ -8,20 +8,20 @@ const readHookSource = (relativePath: string) =>
     encoding: "utf8",
   });
 
-describe("automation RECS optimistic resource spends", () => {
-  it("keeps production automation on ResourceManager RECS overrides", () => {
+describe("automation provisional resource spends", () => {
+  it("routes production automation through the session-owned intent lifecycle", () => {
     const source = readHookSource("use-automation.tsx");
 
-    expect(source).toContain("new ResourceManager(components, plan.realmId).optimisticResourceUpdates");
+    expect(source).toContain("new ResourceManager(components, plan.realmId).submitProvisionalResourceTransaction");
     expect(source).not.toContain("automation-resource-reservations");
     expect(source).not.toContain("reserveAutomationResources");
     expect(source).not.toContain("applyAutomationReservationsToSnapshot");
   });
 
-  it("keeps transfer automation on ResourceManager RECS overrides", () => {
+  it("routes transfer automation through the same lifecycle", () => {
     const source = readHookSource("use-transfer-automation-runner.ts");
 
-    expect(source).toContain("rm.optimisticResourceUpdates");
+    expect(source).toContain("rm.submitProvisionalResourceTransaction");
     expect(source).not.toContain("automation-resource-reservations");
     expect(source).not.toContain("reserveAutomationResources");
     expect(source).not.toContain("getSpendableResourceBalance");

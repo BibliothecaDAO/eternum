@@ -31,12 +31,12 @@ export function applyRendererBackendPostProcessPlan(
   return backend.applyPostProcessPlan?.(plan) ?? NOOP_POST_PROCESS_CONTROLLER;
 }
 
-export function applyRendererBackendQuality(
+export function applyRendererBackendVisuals(
   backend: CompatibleRendererBackend,
   input: { pixelRatio: number; shadows: boolean; width: number; height: number },
 ): void {
-  if (backend.applyQuality) {
-    backend.applyQuality(input);
+  if (backend.applyRenderVisuals) {
+    backend.applyRenderVisuals(input);
     return;
   }
 

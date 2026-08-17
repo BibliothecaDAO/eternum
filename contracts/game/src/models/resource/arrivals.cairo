@@ -10,6 +10,8 @@ use crate::models::config::TickImpl;
 #[dojo::model]
 pub struct ResourceArrival {
     #[key]
+    game_id: u32,
+    #[key]
     structure_id: ID,
     #[key]
     day: u64,
@@ -70,9 +72,15 @@ pub struct ResourceArrival {
 #[generate_trait]
 pub impl ResourceArrivalImpl of ResourceArrivalTrait {
     fn initialize(
-        ref world: WorldStorage, structure_id: ID, day: u64, slot_selector: felt252, slot_resources: Span<(u8, u128)>,
+        ref world: WorldStorage,
+        game_id: u32,
+        structure_id: ID,
+        day: u64,
+        slot_selector: felt252,
+        slot_resources: Span<(u8, u128)>,
     ) {
         let mut resource_arrival_model: ResourceArrival = Default::default();
+        resource_arrival_model.game_id = game_id;
         resource_arrival_model.structure_id = structure_id;
         resource_arrival_model.day = day;
         resource_arrival_model.initialized = true;
@@ -183,8 +191,8 @@ pub impl ResourceArrivalImpl of ResourceArrivalTrait {
 
 
     // todo: verify
-    fn slot_time_has_passed(ref world: WorldStorage, day: u64, slot: u8) -> bool {
-        let (last_open_slot_day, last_open_slot_hour) = Self::previous_arrival_slot(ref world);
+    fn slot_time_has_passed(ref world: WorldStorage, game_id: u32, day: u64, slot: u8) -> bool {
+        let (last_open_slot_day, last_open_slot_hour) = Self::previous_arrival_slot(ref world, game_id);
 
         if day < last_open_slot_day {
             return true;
@@ -201,8 +209,8 @@ pub impl ResourceArrivalImpl of ResourceArrivalTrait {
     }
 
 
-    fn previous_arrival_slot(ref world: WorldStorage) -> (u64, u8) {
-        let (arrival_day, arrival_slot) = Self::arrival_slot(ref world, 0);
+    fn previous_arrival_slot(ref world: WorldStorage, game_id: u32) -> (u64, u8) {
+        let (arrival_day, arrival_slot) = Self::arrival_slot(ref world, game_id, 0);
         if arrival_slot == 1 {
             // the last slot of the previous day
             (arrival_day - 1, Self::last_slot())
@@ -212,8 +220,8 @@ pub impl ResourceArrivalImpl of ResourceArrivalTrait {
         }
     }
 
-    fn arrival_slot(ref world: WorldStorage, travel_time: u64) -> (u64, u8) {
-        let delivery_interval = TickImpl::get_delivery_tick_interval(ref world);
+    fn arrival_slot(ref world: WorldStorage, game_id: u32, travel_time: u64) -> (u64, u8) {
+        let delivery_interval = TickImpl::get_delivery_tick_interval(ref world, game_id);
         let now = starknet::get_block_timestamp();
         let arrival_time = now + travel_time;
         let arrival_time_tick = delivery_interval.at(arrival_time);
@@ -258,9 +266,10 @@ pub impl ResourceArrivalImpl of ResourceArrivalTrait {
     }
 
 
-    fn delete(ref world: WorldStorage, structure_id: ID, day: u64) {
+    fn delete(ref world: WorldStorage, game_id: u32, structure_id: ID, day: u64) {
         let empty_resources: Span<(u8, u128)> = array![].span();
         let mut resource_arrival_model = ResourceArrival {
+            game_id,
             structure_id,
             day,
             slot_1: empty_resources,
@@ -317,37 +326,49 @@ pub impl ResourceArrivalImpl of ResourceArrivalTrait {
         world.erase_model(@resource_arrival_model);
     }
 
-    fn read_day_total(ref world: WorldStorage, structure_id: ID, day: u64) -> u128 {
+    fn read_day_total(ref world: WorldStorage, game_id: u32, structure_id: ID, day: u64) -> u128 {
         let total_amount = world
-            .read_member(Model::<ResourceArrival>::ptr_from_keys((structure_id, day)), selector!("total_amount"));
+            .read_member(
+                Model::<ResourceArrival>::ptr_from_keys((game_id, structure_id, day)), selector!("total_amount"),
+            );
         return total_amount;
     }
 
-    fn read_slot(ref world: WorldStorage, structure_id: ID, day: u64, slot: u8) -> Span<(u8, u128)> {
+    fn read_slot(ref world: WorldStorage, game_id: u32, structure_id: ID, day: u64, slot: u8) -> Span<(u8, u128)> {
         let slot_selector = Self::slot_selector(slot.into());
-        let resources = world.read_member(Model::<ResourceArrival>::ptr_from_keys((structure_id, day)), slot_selector);
+        let resources = world
+            .read_member(Model::<ResourceArrival>::ptr_from_keys((game_id, structure_id, day)), slot_selector);
         return resources;
     }
 
-    fn write_slot(ref world: WorldStorage, structure_id: ID, day: u64, slot: u8, resources: Span<(u8, u128)>) {
+    fn write_slot(
+        ref world: WorldStorage, game_id: u32, structure_id: ID, day: u64, slot: u8, resources: Span<(u8, u128)>,
+    ) {
         let slot_selector = Self::slot_selector(slot.into());
 
         // read the resource arrival tracker initialized flag
         // todo: check if this allows people create empty resource arrival models
 
         let initialized: bool = world
-            .read_member(Model::<ResourceArrival>::ptr_from_keys((structure_id, day)), selector!("initialized"));
+            .read_member(
+                Model::<ResourceArrival>::ptr_from_keys((game_id, structure_id, day)), selector!("initialized"),
+            );
         if !initialized {
-            Self::initialize(ref world, structure_id, day, slot_selector, resources);
+            Self::initialize(ref world, game_id, structure_id, day, slot_selector, resources);
         } else {
-            world.write_member(Model::<ResourceArrival>::ptr_from_keys((structure_id, day)), slot_selector, resources);
+            world
+                .write_member(
+                    Model::<ResourceArrival>::ptr_from_keys((game_id, structure_id, day)), slot_selector, resources,
+                );
         }
     }
 
-    fn write_day_total(ref world: WorldStorage, structure_id: ID, day: u64, total_amount: u128) {
+    fn write_day_total(ref world: WorldStorage, game_id: u32, structure_id: ID, day: u64, total_amount: u128) {
         world
             .write_member(
-                Model::<ResourceArrival>::ptr_from_keys((structure_id, day)), selector!("total_amount"), total_amount,
+                Model::<ResourceArrival>::ptr_from_keys((game_id, structure_id, day)),
+                selector!("total_amount"),
+                total_amount,
             );
     }
 
@@ -412,6 +433,7 @@ impl ResourceArrivalDefault of Default<ResourceArrival> {
     fn default() -> ResourceArrival {
         let zero_span: Span<(u8, u128)> = array![].span();
         return ResourceArrival {
+            game_id: 0,
             structure_id: 0,
             day: 0,
             slot_1: zero_span,

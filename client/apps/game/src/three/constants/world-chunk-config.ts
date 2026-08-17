@@ -7,29 +7,16 @@ interface WorldChunkConfig {
   pinRadius: number;
   /** Boundary padding for delaying chunk switches */
   switchPadding: number;
-  /** Exact Torii SQL fetch coalescing */
-  toriiFetch: {
-    /**
-     * Number of stride chunks per side in a hydration "super-area".
-     * Larger values reduce repeated SQL hydration across neighboring render windows.
-     */
+  /** Local projection-to-terrain sync coalescing */
+  projectionSync: {
+    /** Number of stride chunks per side in a projection sync area. */
     superAreaStrides: number;
-    /**
-     * Sparse explorer troop snapshots can safely use the larger live subscription
-     * area without multiplying dense terrain hydration payloads.
-     */
-    explorerTroopsSuperAreaStrides: number;
-    /**
-     * Structures are sparse enough to hydrate over the larger live subscription
-     * area while keeping dense terrain hydration on the smaller fetch area.
-     */
-    structuresSuperAreaStrides: number;
   };
   /** Live Torii subscription bounds coalescing */
   toriiSubscription: {
     /**
      * Number of stride chunks per side in a subscription "super-area".
-     * This can be larger than hydration fetch areas to reduce live stream churn.
+     * This can be larger than projection-sync areas to reduce live stream churn.
      */
     superAreaStrides: number;
   };
@@ -39,16 +26,12 @@ interface WorldChunkConfig {
     forwardDepthStrides: number;
     /** How many stride steps to each side to prefetch */
     sideRadiusStrides: number;
-    /** How close to a hydration super-area edge before warming the next area */
+    /** How close to a projection sync area edge before warming the next area */
     areaBoundaryLookaheadStrides: number;
     /** Max remembered prefetched chunk keys */
     maxAhead: number;
     /** Max concurrent background prefetches */
     maxConcurrent: number;
-  };
-  /** Recently hydrated areas to keep warm after leaving the pinned neighborhood */
-  recentHydrationCache: {
-    maxAreas: number;
   };
   /** Visual terrain presentation tuning */
   visualPresentation: {
@@ -64,13 +47,11 @@ interface WorldChunkConfig {
     maxCompositePages: number;
     /** Missing critical pages to build synchronously per camera window update */
     criticalPageImmediateBudget: number;
-    /** Target frame budget for non-critical visual page builds */
-    pageBuildFrameBudgetMs: number;
     /** How long visual pages outside the active window remain available */
     retainedPageMs: number;
     /** Camera sampling throttle for rolling terrain updates */
     cameraSampleThrottleMs: number;
-    /** Whether cold target chunks may show local provisional terrain before exact hydration */
+    /** Whether cold target chunks may show local provisional terrain before exact preparation */
     provisionalShellEnabled: boolean;
     /** How long to retain the previous exact presentation after exact target commit */
     previousExactRetainMs: number;
@@ -90,13 +71,9 @@ export const WORLD_CHUNK_CONFIG: WorldChunkConfig = {
   },
   pinRadius: 2, // 5x5 pinned neighborhood
   switchPadding: 0.05,
-  toriiFetch: {
-    // Coalesce overlapping render windows into larger stable fetch areas.
+  projectionSync: {
+    // Coalesce overlapping render windows into larger stable projection areas.
     superAreaStrides: 16,
-    // Match the live subscription area to reduce sparse army snapshot churn.
-    explorerTroopsSuperAreaStrides: 48,
-    // Match the live subscription area to reduce sparse structure snapshot churn.
-    structuresSuperAreaStrides: 48,
   },
   toriiSubscription: {
     // Keep live spatial stream bounds stable across multiple fetch areas.
@@ -109,9 +86,6 @@ export const WORLD_CHUNK_CONFIG: WorldChunkConfig = {
     maxAhead: 6,
     maxConcurrent: 1,
   },
-  recentHydrationCache: {
-    maxAreas: 32,
-  },
   visualPresentation: {
     maxCompositeChunks: 3,
     rollingWindowEnabled: true,
@@ -122,7 +96,6 @@ export const WORLD_CHUNK_CONFIG: WorldChunkConfig = {
     viewportMarginPages: 1,
     maxCompositePages: 12,
     criticalPageImmediateBudget: 1,
-    pageBuildFrameBudgetMs: 2,
     retainedPageMs: 350,
     cameraSampleThrottleMs: 66,
     provisionalShellEnabled: true,

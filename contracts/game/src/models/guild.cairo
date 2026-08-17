@@ -4,6 +4,8 @@ use starknet::ContractAddress;
 #[dojo::model]
 pub struct Guild {
     #[key]
+    pub game_id: u32,
+    #[key]
     pub guild_id: ContractAddress,
     pub public: bool,
     pub name: felt252,
@@ -14,6 +16,8 @@ pub struct Guild {
 #[dojo::model]
 pub struct GuildMember {
     #[key]
+    pub game_id: u32,
+    #[key]
     pub member: ContractAddress,
     pub guild_id: ContractAddress,
 }
@@ -21,6 +25,8 @@ pub struct GuildMember {
 #[derive(IntrospectPacked, Copy, Drop, Serde)]
 #[dojo::model]
 pub struct GuildWhitelist {
+    #[key]
+    pub game_id: u32,
     #[key]
     pub guild_id: ContractAddress,
     #[key]

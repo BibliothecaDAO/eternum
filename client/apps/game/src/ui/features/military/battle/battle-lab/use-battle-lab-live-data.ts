@@ -22,6 +22,7 @@ import { getGuardStaminaSnapshot } from "../../utils/guard-stamina";
 import { useAttackTargetData } from "../hooks/use-attack-target";
 import { AttackTarget } from "../types";
 import type { GuardOption, LiveSnapshot, WorkingArmy } from "./battle-lab.types";
+import { gameEntityKey } from "@/dojo/game-scope";
 
 const toResourceIds = (effects: RelicEffectWithEndTick[]): ResourcesIds[] =>
   effects.map((effect) => Number(effect.id)) as ResourcesIds[];
@@ -64,7 +65,7 @@ export const useBattleLabLiveData = (
   const snapshot = useMemo<LiveSnapshot | null>(() => {
     if (!enabled) return null;
 
-    const structure = getComponentValue(Structure, getEntityIdFromKeys([BigInt(attackerEntityId)]));
+    const structure = getComponentValue(Structure, gameEntityKey([BigInt(attackerEntityId)]));
     const biome = Biome.getBiome(targetHex.x, targetHex.y);
 
     // Attacker: structure (guard slots) vs explorer army.
@@ -91,7 +92,7 @@ export const useBattleLabLiveData = (
           return { slot: guard.slot, label: `Slot ${slotNumber}`, army };
         });
     } else {
-      const army = getComponentValue(ExplorerTroops, getEntityIdFromKeys([BigInt(attackerEntityId)]));
+      const army = getComponentValue(ExplorerTroops, gameEntityKey([BigInt(attackerEntityId)]));
       if (army) {
         const stamina = new StaminaManager(components, attackerEntityId).getStamina(currentArmiesTick).amount;
         armyAttacker = {

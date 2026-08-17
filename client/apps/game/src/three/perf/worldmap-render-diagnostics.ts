@@ -10,27 +10,13 @@ export type WorldmapRenderDurationMetric =
   | "chunkTerrainReadyMs"
   | "chunkTerrainCommitMs"
   | "chunkManagerCatchUpMs"
-  | "tileHydrationDrainMs"
-  | "structureHydrationDrainMs"
-  | "globalSpatialTileOptScanMs"
   | "structureAssetPrewarmMs"
   | "presentationCommittedMs"
   | "presentationSkewMs"
   | "workerFindPath"
   | "createPath";
 
-export type WorldmapRenderGauge =
-  | "activePaths"
-  | "visibleArmies"
-  | "visibleStructures"
-  | "activeLabels"
-  | "globalSpatialTileOptRecs"
-  | "globalSpatialHydrationCandidates"
-  | "spatialSubscriptionMinCol"
-  | "spatialSubscriptionMaxCol"
-  | "spatialSubscriptionMinRow"
-  | "spatialSubscriptionMaxRow"
-  | "spatialSubscriptionModelCount";
+export type WorldmapRenderGauge = "activePaths" | "visibleArmies" | "visibleStructures" | "activeLabels";
 export type WorldmapRenderUploadMetric = "cachedChunkReplay";
 
 export type WorldmapRenderCounter =
@@ -44,11 +30,8 @@ export type WorldmapRenderCounter =
   | "zoomTransitionsCompleted"
   | "zoomTransitionsCancelled"
   | "terrainVisibleCommits"
-  | "duplicateTileAuthoritativeUpdates"
-  | "terrainVisibleOverlapRepairCount"
-  | "terrainVisibleReplaceCount"
-  | "terrainVisibleAppendCount"
-  | "terrainVisibleRebuildCount"
+  | "liveTilePageInvalidated"
+  | "liveTilePageRebuilt"
   | "terrainShellStarted"
   | "terrainShellCommitted"
   | "terrainShellReplaced"
@@ -65,17 +48,7 @@ export type WorldmapRenderCounter =
   | "staleTerrainCacheFingerprintRejectCount"
   | "preparedChunkPrewarmHits"
   | "preparedChunkPrewarmMisses"
-  | "globalSpatialRecsHydratedTiles"
-  | "globalSpatialRecsHydratedChests"
-  | "globalSpatialRecsHydratedStructures"
-  | "spatialBoundsSwitchRequests"
-  | "spatialBoundsSwitchApplied"
-  | "spatialBoundsSwitchSkipped"
-  | "spatialBoundsSwitchFailures"
-  | "spatialStreamUpdates"
-  | "spatialTileOptRecsApplied"
-  | "spatialTileOptReadyTimeouts"
-  | "spatialTileOptStreamReceived"
+  | "projectionTilesSynced"
   | "postCommitManagerCatchUpImmediate"
   | "postCommitManagerCatchUpDeferred"
   | "pendingArmyRemovalCancelledByTileRecovery"
@@ -110,15 +83,10 @@ export interface WorldmapZoomTelemetrySummary {
 export type WorldmapForceRefreshReason =
   | "default"
   | "visibility_recovery"
-  | "duplicate_tile"
-  | "deferred_transition_tile"
-  | "structure_count_change"
   | "hydrated_chunk"
   | "terrain_self_heal"
   | "offscreen_chunk"
-  | "tile_overlap_repair"
   | "shortcut"
-  | "army_dead"
   | "reconnect"
   | "manager_recovery";
 
@@ -156,9 +124,6 @@ const createDiagnosticsState = (): WorldmapRenderDiagnosticsSnapshot => ({
     chunkTerrainReadyMs: createDurationStats(),
     chunkTerrainCommitMs: createDurationStats(),
     chunkManagerCatchUpMs: createDurationStats(),
-    tileHydrationDrainMs: createDurationStats(),
-    structureHydrationDrainMs: createDurationStats(),
-    globalSpatialTileOptScanMs: createDurationStats(),
     structureAssetPrewarmMs: createDurationStats(),
     presentationCommittedMs: createDurationStats(),
     presentationSkewMs: createDurationStats(),
@@ -170,13 +135,6 @@ const createDiagnosticsState = (): WorldmapRenderDiagnosticsSnapshot => ({
     visibleArmies: 0,
     visibleStructures: 0,
     activeLabels: 0,
-    globalSpatialTileOptRecs: 0,
-    globalSpatialHydrationCandidates: 0,
-    spatialSubscriptionMinCol: 0,
-    spatialSubscriptionMaxCol: 0,
-    spatialSubscriptionMinRow: 0,
-    spatialSubscriptionMaxRow: 0,
-    spatialSubscriptionModelCount: 0,
   },
   uploadBytes: {
     cachedChunkReplay: 0,
@@ -192,11 +150,8 @@ const createDiagnosticsState = (): WorldmapRenderDiagnosticsSnapshot => ({
     zoomTransitionsCompleted: 0,
     zoomTransitionsCancelled: 0,
     terrainVisibleCommits: 0,
-    duplicateTileAuthoritativeUpdates: 0,
-    terrainVisibleOverlapRepairCount: 0,
-    terrainVisibleReplaceCount: 0,
-    terrainVisibleAppendCount: 0,
-    terrainVisibleRebuildCount: 0,
+    liveTilePageInvalidated: 0,
+    liveTilePageRebuilt: 0,
     terrainShellStarted: 0,
     terrainShellCommitted: 0,
     terrainShellReplaced: 0,
@@ -213,17 +168,7 @@ const createDiagnosticsState = (): WorldmapRenderDiagnosticsSnapshot => ({
     staleTerrainCacheFingerprintRejectCount: 0,
     preparedChunkPrewarmHits: 0,
     preparedChunkPrewarmMisses: 0,
-    globalSpatialRecsHydratedTiles: 0,
-    globalSpatialRecsHydratedChests: 0,
-    globalSpatialRecsHydratedStructures: 0,
-    spatialBoundsSwitchRequests: 0,
-    spatialBoundsSwitchApplied: 0,
-    spatialBoundsSwitchSkipped: 0,
-    spatialBoundsSwitchFailures: 0,
-    spatialStreamUpdates: 0,
-    spatialTileOptRecsApplied: 0,
-    spatialTileOptReadyTimeouts: 0,
-    spatialTileOptStreamReceived: 0,
+    projectionTilesSynced: 0,
     postCommitManagerCatchUpImmediate: 0,
     postCommitManagerCatchUpDeferred: 0,
     pendingArmyRemovalCancelledByTileRecovery: 0,
@@ -247,15 +192,10 @@ const createDiagnosticsState = (): WorldmapRenderDiagnosticsSnapshot => ({
   forceRefreshReasons: {
     default: 0,
     visibility_recovery: 0,
-    duplicate_tile: 0,
-    deferred_transition_tile: 0,
-    structure_count_change: 0,
     hydrated_chunk: 0,
     terrain_self_heal: 0,
     offscreen_chunk: 0,
-    tile_overlap_repair: 0,
     shortcut: 0,
-    army_dead: 0,
     reconnect: 0,
     manager_recovery: 0,
   },

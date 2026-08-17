@@ -1,3 +1,6 @@
+import { resolveAppchainWorldIdForGame } from "@/runtime/world/game-registry";
+import { getWorldById } from "@/runtime/world/world-directory";
+import { getGameManifest } from "@contracts";
 import {
   getFactorySqlBaseUrl,
   listFactoryWorlds,
@@ -235,6 +238,40 @@ export async function resolveFactoryManifestContractAddress(
   const normalizedRequest = normalizeLookupRequest(request);
   if (!normalizedRequest) {
     return buildFactoryUnavailableFailure("Enter both a game name and a contract name.");
+  }
+
+  // Appchain worlds are committed manifests in the world directory — no
+  // factory tables exist. Resolve the owning world by game name and read the
+  // contract straight from its manifest.
+  if (request.chain === "appchain") {
+    try {
+      const worldId = await resolveAppchainWorldIdForGame(normalizedRequest.worldName);
+      const world = worldId ? getWorldById(worldId) : null;
+      if (!world) {
+        return buildFactoryUnavailableFailure(
+          `Game "${normalizedRequest.worldName}" was not found in any deployed world's registry.`,
+        );
+      }
+      const manifest = getGameManifest("appchain", world.id as "blitz" | "eternum") as Parameters<
+        typeof findManifestContractEntry
+      >[0];
+      const manifestContract = findManifestContractEntry(manifest, normalizedRequest.manifestTag);
+      if (!manifestContract?.address) {
+        return buildContractNotFoundFailure(
+          normalizedRequest.manifestTag,
+          buildContractSuggestions(manifest, normalizedRequest.manifestTag),
+        );
+      }
+      return {
+        kind: "success",
+        worldName: normalizedRequest.worldName,
+        resolvedTag: normalizedRequest.manifestTag,
+        worldAddress: world.worldAddress,
+        contractAddress: manifestContract.address,
+      };
+    } catch (error) {
+      return buildFactoryUnavailableFailure(error instanceof Error ? error.message : "World lookup failed.");
+    }
   }
 
   const factorySqlBaseUrl = getFactorySqlBaseUrl(request.chain);

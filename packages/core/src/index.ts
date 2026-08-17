@@ -1,4 +1,3 @@
-export { EternumProvider } from "@bibliothecadao/provider";
 export * from "./data";
 export * from "./managers";
 export * from "./stores";

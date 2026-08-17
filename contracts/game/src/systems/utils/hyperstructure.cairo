@@ -2,7 +2,6 @@ use core::num::traits::zero::Zero;
 use cubit::f128::types::fixed::FixedTrait;
 use dojo::model::{Model, ModelStorage};
 use dojo::world::{IWorldDispatcherTrait, WorldStorage};
-use crate::constants::WORLD_CONFIG_ID;
 use crate::models::config::{
     BlitzMapDistanceProfileImpl, BlitzSettlementConfig, MapConfig, TickImpl, TickInterval, TroopLimitConfig,
     TroopStaminaConfig, WorldConfigUtilImpl,
@@ -23,10 +22,10 @@ use crate::utils::math::{PercentageImpl, PercentageValueImpl};
 
 #[generate_trait]
 pub impl iHyperstructureDiscoveryImpl of iHyperstructureDiscoveryTrait {
-    fn lottery(world: WorldStorage, coord: Coord, map_config: MapConfig, vrf_seed: u256) -> bool {
+    fn lottery(world: WorldStorage, game_id: u32, coord: Coord, map_config: MapConfig, vrf_seed: u256) -> bool {
         // get hyperstructure foundation find probabilities
         let mut world = world;
-        let tile_distance_count: u128 = coord.tile_distance(CoordImpl::center(ref world));
+        let tile_distance_count: u128 = coord.tile_distance(CoordImpl::center(ref world, game_id));
         let hyps_fail_prob_increase_p_hex: u128 = map_config.hyps_fail_prob_increase_p_hex.into();
         let mut hyps_win_prob: u128 = map_config.hyps_win_prob.into();
         let hyps_probs_original_sum: u128 = map_config.hyps_win_prob.into() + map_config.hyps_fail_prob.into();
@@ -52,7 +51,7 @@ pub impl iHyperstructureDiscoveryImpl of iHyperstructureDiscoveryTrait {
         //   - P_initial = 8_000
         //   - Penalty = 10 * 500 = 5_000
         //   - P_final = max(0, 8_000 - 5_000) = 3_000
-        let hyperstructure_globals: HyperstructureGlobals = world.read_model(WORLD_CONFIG_ID);
+        let hyperstructure_globals: HyperstructureGlobals = world.read_model(game_id);
         let hyperstructure_count = hyperstructure_globals.created_count;
         let hyps_fail_prob_increase_p_fnd: u128 = hyperstructure_count.into()
             * map_config.hyps_fail_prob_increase_p_fnd.into();
@@ -84,6 +83,7 @@ pub impl iHyperstructureDiscoveryImpl of iHyperstructureDiscoveryTrait {
 
     fn create(
         ref world: WorldStorage,
+        game_id: u32,
         coord: Coord,
         caller: starknet::ContractAddress,
         map_config: MapConfig,
@@ -106,6 +106,7 @@ pub impl iHyperstructureDiscoveryImpl of iHyperstructureDiscoveryTrait {
         structure_creation_library
             .make_structure(
                 world,
+                game_id,
                 coord,
                 Zero::zero(),
                 structure_id,
@@ -117,13 +118,14 @@ pub impl iHyperstructureDiscoveryImpl of iHyperstructureDiscoveryTrait {
             );
 
         // add guards to structure
-        let tick_config: TickInterval = TickImpl::get_tick_interval(ref world);
+        let tick_config: TickInterval = TickImpl::get_tick_interval(ref world, game_id);
         let guard_slots = array![GuardSlot::Delta, GuardSlot::Charlie, GuardSlot::Bravo];
         let guard_troop_types_order = array![TroopType::Paladin, TroopType::Knight, TroopType::Crossbowman];
         let mut count = 0;
         for guard_slot in guard_slots {
             iMercenariesImpl::add(
                 ref world,
+                game_id,
                 structure_id,
                 vrf_seed + count.into(),
                 array![(guard_slot, TroopTier::T2, *guard_troop_types_order.at(count))].span(),
@@ -138,6 +140,7 @@ pub impl iHyperstructureDiscoveryImpl of iHyperstructureDiscoveryTrait {
         world
             .write_model(
                 @Hyperstructure {
+                    game_id,
                     hyperstructure_id: structure_id,
                     initialized: hyperstructure_initialized,
                     completed: hyperstructure_completed,
@@ -148,7 +151,8 @@ pub impl iHyperstructureDiscoveryImpl of iHyperstructureDiscoveryTrait {
             );
 
         // increment hyperstructures created count
-        let mut hyperstructure_globals: HyperstructureGlobals = world.read_model(WORLD_CONFIG_ID);
+        let mut hyperstructure_globals: HyperstructureGlobals = world.read_model(game_id);
+        hyperstructure_globals.game_id = game_id;
         hyperstructure_globals.created_count += 1;
         if hyperstructure_completed {
             hyperstructure_globals.completed_count += 1;
@@ -161,6 +165,7 @@ pub impl iHyperstructureDiscoveryImpl of iHyperstructureDiscoveryTrait {
 pub impl iHyperstructureBlitzImpl of iHyperstructureBlitzTrait {
     fn count_surrounding_realms(
         ref world: WorldStorage,
+        game_id: u32,
         hyperstructure_coord: Coord,
         settlement_config: BlitzSettlementConfig,
         reward_profile_id: u8,
@@ -187,12 +192,13 @@ pub impl iHyperstructureBlitzImpl of iHyperstructureBlitzTrait {
                 .neighbor_after_distance(triangle_direction, realm_tile_distance / 2);
 
             let potential_realm_tile_opt: TileOpt = world
-                .read_model((potential_realm_coord.alt, potential_realm_coord.x, potential_realm_coord.y));
+                .read_model((game_id, potential_realm_coord.alt, potential_realm_coord.x, potential_realm_coord.y));
             let potential_realm_tile: Tile = potential_realm_tile_opt.into();
             if potential_realm_tile.occupier_is_structure {
                 let structure_category: u8 = world
                     .read_member(
-                        Model::<Structure>::ptr_from_keys(potential_realm_tile.occupier_id), selector!("category"),
+                        Model::<Structure>::ptr_from_keys((game_id, potential_realm_tile.occupier_id)),
+                        selector!("category"),
                     );
                 if structure_category == StructureCategory::Realm.into() {
                     count += 1;

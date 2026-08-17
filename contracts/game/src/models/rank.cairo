@@ -3,7 +3,8 @@ use starknet::ContractAddress;
 #[dojo::model]
 pub struct PlayersRankTrial {
     #[key]
-    pub trial_id: u128,
+    pub game_id: u32,
+    pub nonce: u128,
     pub owner: ContractAddress,
     pub last_rank: u16,
     pub last_player_points: u128,
@@ -14,11 +15,12 @@ pub struct PlayersRankTrial {
     pub total_prize_amount_calculated: u128,
 }
 
+// Kept for manifest parity with Eternum indexers; GameRegistry.final_trial_id is authoritative (D5).
 #[derive(IntrospectPacked, Copy, Drop, Serde)]
 #[dojo::model]
 pub struct PlayersRankFinal {
     #[key]
-    pub world_id: u128,
+    pub game_id: u32,
     pub trial_id: u128,
 }
 
@@ -26,7 +28,7 @@ pub struct PlayersRankFinal {
 #[dojo::model]
 pub struct PlayerRank {
     #[key]
-    pub trial_id: u128,
+    pub game_id: u32,
     #[key]
     pub player: ContractAddress,
     pub rank: u16,
@@ -37,7 +39,7 @@ pub struct PlayerRank {
 #[dojo::model]
 pub struct RankPrize {
     #[key]
-    pub trial_id: u128,
+    pub game_id: u32,
     #[key]
     pub rank: u16,
     pub total_players_same_rank_count: u16,
@@ -73,7 +75,7 @@ pub impl RankPrizeImpl of RankPrizeTrait {
 #[dojo::model]
 pub struct RankList {
     #[key]
-    pub trial_id: u128,
+    pub game_id: u32,
     #[key]
     pub rank: u16,
     #[key]

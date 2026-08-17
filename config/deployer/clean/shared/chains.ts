@@ -7,7 +7,7 @@ export function resolveEternumNetwork(chain: string): string {
   const parts = chain.split(".");
   if (parts.length !== 2 || parts[1] !== "eternum" || !parts[0]) {
     throw new Error(
-      `Unsupported chain "${chain}". Expected a value like "slot.eternum" with the eternum suffix enforced.`,
+      `Unsupported chain "${chain}". Expected a value like "appchain.eternum" with the eternum suffix enforced.`,
     );
   }
 

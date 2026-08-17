@@ -1,6 +1,6 @@
 import { fetchFactoryRows, getFactorySqlBaseUrl } from "./factory-sql";
 
-type SupportedChain = "mainnet" | "sepolia" | "slot" | "slottest" | "local";
+type SupportedChain = "mainnet" | "sepolia" | "local" | "appchain";
 type CacheStatus = "hit" | "miss" | "stale";
 
 type WorldDeploymentRecord = {
@@ -20,7 +20,7 @@ type CacheEntry = {
   fetchedAt: number;
 };
 
-const SUPPORTED_CHAINS: readonly SupportedChain[] = ["mainnet", "sepolia", "slot", "slottest", "local"];
+const SUPPORTED_CHAINS: readonly SupportedChain[] = ["mainnet", "sepolia", "local", "appchain"];
 
 const DEFAULT_TTL_MS = 60_000;
 const DEFAULT_STALE_MS = 5 * 60_000;

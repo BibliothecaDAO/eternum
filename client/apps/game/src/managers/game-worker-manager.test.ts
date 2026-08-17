@@ -91,6 +91,61 @@ describe("game worker manager", () => {
     });
   });
 
+  it("clears retained worker state without creating an idle worker", () => {
+    const idleManager = createGameWorkerManager();
+    idleManager.resetWorldState();
+    expect(createdWorkers).toHaveLength(0);
+
+    const activeManager = createGameWorkerManager();
+    activeManager.updateExploredTile(5, 6, "forest" as never);
+    activeManager.resetWorldState();
+
+    expect(createdWorkers[0].postMessage).toHaveBeenLastCalledWith({ type: "RESET_WORLD_STATE" });
+  });
+
+  it("hydrates retained world state in one worker message", () => {
+    const manager = createGameWorkerManager();
+
+    manager.hydrateWorldState({
+      armies: [{ col: 7, info: { id: 3, owner: 4n }, row: 8 }],
+      exploredTiles: [{ biome: "forest" as never, col: 1, row: 2 }],
+      structures: [{ col: 5, info: { id: 1, owner: 2n }, row: 6 }],
+    });
+
+    expect(createdWorkers).toHaveLength(1);
+    expect(createdWorkers[0].postMessage).toHaveBeenCalledOnce();
+    expect(createdWorkers[0].postMessage).toHaveBeenCalledWith({
+      armies: [{ col: 7, info: { id: 3, owner: 4n }, row: 8 }],
+      exploredTiles: [{ biome: "forest", col: 1, row: 2 }],
+      structures: [{ col: 5, info: { id: 1, owner: 2n }, row: 6 }],
+      type: "HYDRATE_WORLD_STATE",
+    });
+  });
+
+  it("does not create an idle worker to hydrate empty world state", () => {
+    const manager = createGameWorkerManager();
+
+    manager.hydrateWorldState({ armies: [], exploredTiles: [], structures: [] });
+
+    expect(createdWorkers).toHaveLength(0);
+  });
+
+  it("hydrates empty world state into an active worker to clear it", () => {
+    const manager = createGameWorkerManager();
+    manager.updateExploredTile(1, 2, "forest" as never);
+    createdWorkers[0].postMessage.mockClear();
+
+    manager.hydrateWorldState({ armies: [], exploredTiles: [], structures: [] });
+
+    expect(createdWorkers[0].postMessage).toHaveBeenCalledOnce();
+    expect(createdWorkers[0].postMessage).toHaveBeenCalledWith({
+      armies: [],
+      exploredTiles: [],
+      structures: [],
+      type: "HYDRATE_WORLD_STATE",
+    });
+  });
+
   it("resolves worker path results back into normalized positions", async () => {
     const manager = createGameWorkerManager();
     const resultPromise = manager.findPath(

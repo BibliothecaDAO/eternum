@@ -23,24 +23,20 @@ describe("worldmap connection failure recovery", () => {
   it("clears map loading and invalidates outstanding fetches without scheduling an offline refresh", () => {
     const methodSource = extractRecoverAfterConnectionFailure(readSource("src/three/scenes/worldmap.tsx"));
 
-    expect(methodSource).toContain("this.toriiLoadingCounter = 0");
     expect(methodSource).toContain("this.state.setLoading(LoadingStateKey.Map, false)");
     expect(methodSource).toContain("this.state.setLoading(LoadingStateKey.ChunkTransition, false)");
     expect(methodSource).toContain("clearStalledChunkAreaState");
     expect(methodSource).not.toContain("requestChunkRefresh");
   });
 
-  it("clears all split hydration keys when recovering a stalled chunk", () => {
+  it("clears stale refresh bookkeeping without projection or fetch state", () => {
     const methodSource = extractClearStalledChunkAreaState(readSource("src/three/scenes/worldmap.tsx"));
 
     expect(methodSource).toContain("this.getRenderAreaKeyForChunk(chunkKey)");
-    expect(methodSource).toContain("this.getStructuresRenderAreaKeyForChunk(chunkKey)");
-    expect(methodSource).toContain("this.getExplorerTroopsRenderAreaKeyForChunk(chunkKey)");
-    expect(methodSource).toContain("clearRenderAreaHydrationState(this.renderAreaHydrationState, areaKey)");
-    expect(methodSource).toContain("clearRenderAreaHydrationState(this.renderAreaHydrationState, structuresAreaKey)");
-    expect(methodSource).toContain(
-      "clearRenderAreaHydrationState(this.renderAreaHydrationState, explorerTroopsAreaKey)",
-    );
-    expect(methodSource).not.toContain("explorerTroopsSpatialSqlBackoffUntilMs");
+    expect(methodSource).toContain("this.hydratedRefreshSuppressionAreaKeys.delete(areaKey)");
+    expect(methodSource).not.toContain("renderAreaHydrationState");
+    expect(methodSource).not.toContain("pendingChunkFetchGeneration");
+    expect(methodSource).not.toContain("explorerTroops");
+    expect(methodSource).not.toContain("structuresAreaKey");
   });
 });

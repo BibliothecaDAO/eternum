@@ -3,6 +3,8 @@ import { ComponentValue } from "@dojoengine/recs";
 
 export const getStructureFromToriiEntity = (entityData: any) => {
   const structure: ComponentValue<ClientComponents["Structure"]["schema"]> = {
+    // s2 single world: per-game models lead with game_id (absent on legacy -> 0).
+    game_id: entityData.game_id?.value ?? 0,
     entity_id: entityData.entity_id?.value,
     owner: ContractAddress(entityData.owner?.value),
     category: entityData.category?.value,
@@ -17,6 +19,7 @@ export const getStructureFromToriiEntity = (entityData: any) => {
       coord_x: entityData.base?.value?.coord_x?.value,
       coord_y: entityData.base?.value?.coord_y?.value,
       level: entityData.base?.value?.level?.value,
+      starting_troops_granted: entityData.base?.value?.starting_troops_granted?.value ?? false,
     },
     troop_guards: {
       delta: {

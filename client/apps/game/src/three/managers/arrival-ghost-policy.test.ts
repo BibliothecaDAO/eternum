@@ -1,9 +1,5 @@
 import { describe, expect, it } from "vitest";
-import {
-  resolveArrivalGhostVisualStyle,
-  shouldCreatePredictiveArrivalGhost,
-  shouldHideSourceArmyOnTileRemoval,
-} from "./arrival-ghost-policy";
+import { resolveArrivalGhostVisualStyle, shouldCreatePredictiveArrivalGhost } from "./arrival-ghost-policy";
 
 describe("arrival-ghost-policy", () => {
   it("creates predictive ghosts for local travel and explore moves with a target hex", () => {
@@ -38,22 +34,6 @@ describe("arrival-ghost-policy", () => {
         movementType: "travel",
       }),
     ).toBe(false);
-  });
-
-  it("keeps the source army visible while movement is still in flight", () => {
-    expect(
-      shouldHideSourceArmyOnTileRemoval({
-        hasMovementInFlight: true,
-        reason: "tile",
-      }),
-    ).toBe(false);
-
-    expect(
-      shouldHideSourceArmyOnTileRemoval({
-        hasMovementInFlight: false,
-        reason: "tile",
-      }),
-    ).toBe(true);
   });
 
   it("returns the configured ghost visuals", () => {

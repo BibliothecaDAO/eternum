@@ -7,7 +7,7 @@ export * from "./utils";
 
 // Settlement Types & Utils - Exports used externally
 export type { SettlementLocation } from "./utils/settlement-types";
-export { generateSettlementLocations, getBanksLocations, getOccupiedLocations } from "./utils/settlement-utils";
+export { getBanksLocations } from "./utils/settlement-utils";
 
 // Construction System - Exports used externally
 export { SelectPreviewBuildingMenu } from "./construction/select-preview-building";

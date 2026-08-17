@@ -1,4 +1,4 @@
-export type NetworkType = "local" | "sepolia" | "slot" | "slottest" | "mainnet";
+export type NetworkType = "local" | "sepolia" | "mainnet" | "appchain";
 export type GameType = "blitz" | "eternum";
 
 import fs from "fs";
@@ -65,6 +65,14 @@ export function logNetwork(network: NetworkType): void {
       emoji: "🌿",
       label: "LOCAL DEVELOPMENT",
     },
+    appchain: {
+      colors: {
+        primary: "\x1b[38;5;208m",
+        secondary: "\x1b[38;5;214m",
+      },
+      emoji: "⛓️",
+      label: "REALMS APPCHAIN (DEV)",
+    },
     sepolia: {
       colors: {
         primary: "\x1b[38;5;69m",
@@ -72,22 +80,6 @@ export function logNetwork(network: NetworkType): void {
       },
       emoji: "💫",
       label: "SEPOLIA TESTNET",
-    },
-    slot: {
-      colors: {
-        primary: "\x1b[38;5;183m",
-        secondary: "\x1b[38;5;219m",
-      },
-      emoji: "⚡",
-      label: "SLOT NETWORK",
-    },
-    slottest: {
-      colors: {
-        primary: "\x1b[38;5;183m",
-        secondary: "\x1b[38;5;219m",
-      },
-      emoji: "⚡",
-      label: "SLOTTEST Network",
     },
     mainnet: {
       colors: {

@@ -3,9 +3,7 @@ use dojo::event::EventStorage;
 use dojo::model::ModelStorage;
 use dojo::world::{IWorldDispatcherTrait, WorldStorage};
 use crate::alias::ID;
-use crate::constants::{
-    DAYDREAMS_AGENT_ID, RESOURCE_PRECISION, ResourceTypes, WORLD_CONFIG_ID, split_resources_and_probs,
-};
+use crate::constants::{DAYDREAMS_AGENT_ID, RESOURCE_PRECISION, ResourceTypes, split_resources_and_probs};
 use crate::models::agent::{AgentConfig, AgentCountImpl, AgentLordsMintedImpl, AgentOwner};
 use crate::models::config::{
     AgentControllerConfig, CapacityConfig, CombatConfigImpl, MapConfig, TickImpl, TickInterval, TroopLimitConfig,
@@ -13,7 +11,7 @@ use crate::models::config::{
 };
 use crate::models::map::{Tile, TileImpl, TileOccupier};
 use crate::models::map2::TileOpt;
-use crate::models::name::AddressName;
+use crate::models::name::EntityName;
 use crate::models::owner::OwnerAddressTrait;
 use crate::models::position::{Coord, CoordImpl, Direction};
 use crate::models::resource::resource::{
@@ -115,6 +113,7 @@ pub impl iGuardImpl of iGuardTrait {
 
     fn delete(
         ref world: WorldStorage,
+        game_id: u32,
         structure_id: ID,
         ref structure_base: StructureBase,
         ref guards: GuardTroops,
@@ -128,11 +127,11 @@ pub impl iGuardImpl of iGuardTrait {
         troops.stamina.reset();
         // note: mitigate exploits if we decide to change destroy_tick to a different value
         guards.to_slot(slot, troops, troops_destroyed_tick.try_into().unwrap());
-        StructureTroopGuardStoreImpl::store(ref guards, ref world, structure_id);
+        StructureTroopGuardStoreImpl::store(ref guards, ref world, game_id, structure_id);
 
         // reduce structure guard count
         structure_base.troop_guard_count -= 1;
-        StructureBaseStoreImpl::store(ref structure_base, ref world, structure_id);
+        StructureBaseStoreImpl::store(ref structure_base, ref world, game_id, structure_id);
     }
 }
 
@@ -140,6 +139,7 @@ pub impl iGuardImpl of iGuardTrait {
 #[generate_trait]
 pub impl iExplorerImpl of iExplorerTrait {
     fn attempt_move_to_adjacent_tile(ref world: WorldStorage, ref explorer: ExplorerTroops, ref current_tile: Tile) {
+        let game_id = explorer.game_id;
         let adjacent_directions = array![
             Direction::East, Direction::NorthEast, Direction::NorthWest, Direction::West, Direction::SouthWest,
             Direction::SouthEast,
@@ -147,13 +147,16 @@ pub impl iExplorerImpl of iExplorerTrait {
         let current_coord: Coord = current_tile.into();
         for direction in adjacent_directions {
             let adjacent_coord = current_coord.neighbor(direction);
-            let adjacent_tile_opt: TileOpt = world.read_model((adjacent_coord.alt, adjacent_coord.x, adjacent_coord.y));
+            let adjacent_tile_opt: TileOpt = world
+                .read_model((game_id, adjacent_coord.alt, adjacent_coord.x, adjacent_coord.y));
             let mut adjacent_tile: Tile = adjacent_tile_opt.into();
             if adjacent_tile.not_occupied() {
                 if !adjacent_tile.discovered() {
                     let biome_library = biome_library::get_dispatcher(@world);
                     let adjacent_coord_biome: Biome = biome_library
-                        .get_biome(world, adjacent_coord.alt, adjacent_coord.x.into(), adjacent_coord.y.into());
+                        .get_biome(
+                            world, game_id, adjacent_coord.alt, adjacent_coord.x.into(), adjacent_coord.y.into(),
+                        );
                     IMapImpl::explore(ref world, ref adjacent_tile, adjacent_coord_biome);
                 }
 
@@ -178,6 +181,7 @@ pub impl iExplorerImpl of iExplorerTrait {
 
     fn create(
         ref world: WorldStorage,
+        game_id: u32,
         ref tile: Tile,
         explorer_id: ID,
         owner: ID,
@@ -219,17 +223,17 @@ pub impl iExplorerImpl of iExplorerTrait {
                 incr_explore_reward_end_tick: 0,
             },
         };
-        let troop_stamina_config: TroopStaminaConfig = CombatConfigImpl::troop_stamina_config(ref world);
+        let troop_stamina_config: TroopStaminaConfig = CombatConfigImpl::troop_stamina_config(ref world, game_id);
         troops.stamina.refill(ref troops.boosts, troops.category, troops.tier, troop_stamina_config, current_tick);
 
         // set explorer
-        let explorer: ExplorerTroops = ExplorerTroops { explorer_id, coord: tile.into(), troops, owner: owner };
+        let explorer: ExplorerTroops = ExplorerTroops { game_id, explorer_id, coord: tile.into(), troops, owner };
         world.write_model(@explorer);
 
         // initialize explorer resource model
-        ResourceImpl::initialize(ref world, explorer_id);
+        ResourceImpl::initialize(ref world, game_id, explorer_id);
         // increase troop capacity
-        Self::update_capacity(ref world, explorer_id, troop_amount, true);
+        Self::update_capacity(ref world, game_id, explorer_id, troop_amount, true);
         return explorer;
     }
 
@@ -239,20 +243,20 @@ pub impl iExplorerImpl of iExplorerTrait {
 
     fn assert_caller_structure_or_agent_owner(self: ExplorerTroops, ref world: WorldStorage) {
         if self.owner == DAYDREAMS_AGENT_ID {
-            let agent_owner: AgentOwner = world.read_model(self.explorer_id);
+            let agent_owner: AgentOwner = world.read_model((self.game_id, self.explorer_id));
             assert!(agent_owner.address == starknet::get_caller_address(), "caller is not the agent owner");
         } else {
-            StructureOwnerStoreImpl::retrieve(ref world, self.owner).assert_caller_owner();
+            StructureOwnerStoreImpl::retrieve(ref world, self.game_id, self.owner).assert_caller_owner();
         }
     }
 
     fn assert_caller_not_structure_or_agent_owner(ref self: ExplorerTroops, ref world: WorldStorage) {
         if self.owner == DAYDREAMS_AGENT_ID {
-            let agent_owner: AgentOwner = world.read_model(self.explorer_id);
+            let agent_owner: AgentOwner = world.read_model((self.game_id, self.explorer_id));
             assert!(agent_owner.address.is_non_zero(), "agent owner is not set");
             assert!(agent_owner.address != starknet::get_caller_address(), "caller owns the agent but should not");
         } else {
-            StructureOwnerStoreImpl::retrieve(ref world, self.owner).assert_caller_not_owner();
+            StructureOwnerStoreImpl::retrieve(ref world, self.game_id, self.owner).assert_caller_not_owner();
         }
     }
 
@@ -329,52 +333,68 @@ pub impl iExplorerImpl of iExplorerTrait {
 
         // spend wheat resource
         // todo: revisit who should pay food cost
-        let mut explorer_weight: Weight = WeightStoreImpl::retrieve(ref world, explorer.owner);
-        let wheat_weight_grams: u128 = ResourceWeightImpl::grams(ref world, ResourceTypes::WHEAT);
+        let mut explorer_weight: Weight = WeightStoreImpl::retrieve(ref world, explorer.game_id, explorer.owner);
+        let wheat_weight_grams: u128 = ResourceWeightImpl::grams(ref world, explorer.game_id, ResourceTypes::WHEAT);
         let mut wheat_resource = SingleResourceStoreImpl::retrieve(
-            ref world, explorer.owner, ResourceTypes::WHEAT, ref explorer_weight, wheat_weight_grams, true,
+            ref world,
+            explorer.game_id,
+            explorer.owner,
+            ResourceTypes::WHEAT,
+            ref explorer_weight,
+            wheat_weight_grams,
+            true,
         );
         wheat_resource.spend(wheat_burn_amount, ref explorer_weight, wheat_weight_grams);
         wheat_resource.store(ref world);
 
         // spend fish resource
-        let fish_weight_grams: u128 = ResourceWeightImpl::grams(ref world, ResourceTypes::FISH);
+        let fish_weight_grams: u128 = ResourceWeightImpl::grams(ref world, explorer.game_id, ResourceTypes::FISH);
         let mut fish_resource = SingleResourceStoreImpl::retrieve(
-            ref world, explorer.owner, ResourceTypes::FISH, ref explorer_weight, fish_weight_grams, true,
+            ref world,
+            explorer.game_id,
+            explorer.owner,
+            ResourceTypes::FISH,
+            ref explorer_weight,
+            fish_weight_grams,
+            true,
         );
         fish_resource.spend(fish_burn_amount, ref explorer_weight, fish_weight_grams);
         fish_resource.store(ref world);
 
         // update explorer weight
-        explorer_weight.store(ref world, explorer.owner);
+        explorer_weight.store(ref world, explorer.game_id, explorer.owner);
     }
 
-    fn update_capacity(ref world: WorldStorage, explorer_id: ID, troop_amount: u128, add: bool) {
+    fn update_capacity(ref world: WorldStorage, game_id: u32, explorer_id: ID, troop_amount: u128, add: bool) {
         // set structure capacity
-        let capacity_config: CapacityConfig = WorldConfigUtilImpl::get_member(world, selector!("capacity_config"));
+        let capacity_config: CapacityConfig = WorldConfigUtilImpl::get_member(
+            world, game_id, selector!("capacity_config"),
+        );
         let capacity: u128 = capacity_config.troop_capacity.into() * troop_amount;
 
-        let mut troop_weight: Weight = WeightStoreImpl::retrieve(ref world, explorer_id);
+        let mut troop_weight: Weight = WeightStoreImpl::retrieve(ref world, game_id, explorer_id);
         if add {
             troop_weight.add_capacity(capacity);
         } else {
             troop_weight.deduct_capacity(capacity, true);
         }
-        troop_weight.store(ref world, explorer_id);
+        troop_weight.store(ref world, game_id, explorer_id);
     }
 
-    fn ensure_not_overweight(ref world: WorldStorage, explorer_id: ID) {
-        let mut troop_weight: Weight = WeightStoreImpl::retrieve(ref world, explorer_id);
+    fn ensure_not_overweight(ref world: WorldStorage, game_id: u32, explorer_id: ID) {
+        let mut troop_weight: Weight = WeightStoreImpl::retrieve(ref world, game_id, explorer_id);
         assert!(troop_weight.capacity >= troop_weight.weight, "Eternum: army will be overweight after troop transfer");
     }
 
 
     fn explorer_from_agent_delete(ref world: WorldStorage, ref explorer: ExplorerTroops) {
         // decrease agent count
-        AgentCountImpl::decrease(ref world);
+        AgentCountImpl::decrease(ref world, explorer.game_id);
 
         // delete agent owner
-        let agent_owner = AgentOwner { explorer_id: explorer.explorer_id, address: Zero::zero() };
+        let agent_owner = AgentOwner {
+            game_id: explorer.game_id, explorer_id: explorer.explorer_id, address: Zero::zero(),
+        };
         world.erase_model(@agent_owner);
 
         // explorer delete
@@ -399,11 +419,11 @@ pub impl iExplorerImpl of iExplorerTrait {
                 new_explorers.append(explorer_id);
             }
         }
-        StructureTroopExplorerStoreImpl::store(new_explorers.span(), ref world, structure_id);
+        StructureTroopExplorerStoreImpl::store(new_explorers.span(), ref world, explorer.game_id, structure_id);
 
         // update structure base
         structure_base.troop_explorer_count -= 1;
-        StructureBaseStoreImpl::store(ref structure_base, ref world, structure_id);
+        StructureBaseStoreImpl::store(ref structure_base, ref world, explorer.game_id, structure_id);
 
         Self::_explorer_delete(ref world, ref explorer);
     }
@@ -477,12 +497,13 @@ pub impl iExplorerImpl of iExplorerTrait {
         assert!(explorer.troops.count.is_zero(), "explorer unit is alive");
 
         // remove explorer from tile
-        let tile_opt: TileOpt = world.read_model((explorer.coord.alt, explorer.coord.x, explorer.coord.y));
+        let tile_opt: TileOpt = world
+            .read_model((explorer.game_id, explorer.coord.alt, explorer.coord.x, explorer.coord.y));
         let mut tile: Tile = tile_opt.into();
         IMapImpl::occupy(ref world, ref tile, TileOccupier::None, 0);
 
         // erase explorer resource model
-        let resource: Resource = ResourceImpl::key_only(explorer.explorer_id);
+        let resource: Resource = ResourceImpl::key_only(explorer.game_id, explorer.explorer_id);
         world.erase_model(@resource);
 
         // erase explorer model
@@ -524,7 +545,12 @@ pub impl iTroopImpl of iTroopTrait {
     }
 
     fn make_payment(
-        ref world: WorldStorage, from_structure_id: ID, amount: u128, category: TroopType, tier: TroopTier,
+        ref world: WorldStorage,
+        game_id: u32,
+        from_structure_id: ID,
+        amount: u128,
+        category: TroopType,
+        tier: TroopTier,
     ) {
         let resource_type = match tier {
             TroopTier::T1 => {
@@ -555,14 +581,20 @@ pub impl iTroopImpl of iTroopTrait {
         assert!(amount > 0, "amount must be greater than 0");
 
         // burn troop resource to pay for troop
-        let mut structure_weight: Weight = WeightStoreImpl::retrieve(ref world, from_structure_id);
-        let troop_resource_weight_grams: u128 = ResourceWeightImpl::grams(ref world, resource_type);
+        let mut structure_weight: Weight = WeightStoreImpl::retrieve(ref world, game_id, from_structure_id);
+        let troop_resource_weight_grams: u128 = ResourceWeightImpl::grams(ref world, game_id, resource_type);
         let mut structure_troop_resource: SingleResource = SingleResourceStoreImpl::retrieve(
-            ref world, from_structure_id, resource_type, ref structure_weight, troop_resource_weight_grams, true,
+            ref world,
+            game_id,
+            from_structure_id,
+            resource_type,
+            ref structure_weight,
+            troop_resource_weight_grams,
+            true,
         );
         structure_troop_resource.spend(amount, ref structure_weight, troop_resource_weight_grams);
         structure_troop_resource.store(ref world);
-        structure_weight.store(ref world, from_structure_id);
+        structure_weight.store(ref world, game_id, from_structure_id);
     }
 }
 
@@ -571,6 +603,7 @@ pub impl iTroopImpl of iTroopTrait {
 pub impl iMercenariesImpl of iMercenariesTrait {
     fn add(
         ref world: WorldStorage,
+        game_id: u32,
         structure_id: ID,
         mut seed: u256,
         mut slot_tiers: Span<(GuardSlot, TroopTier, TroopType)>,
@@ -578,8 +611,10 @@ pub impl iMercenariesImpl of iMercenariesTrait {
         troop_stamina_config: TroopStaminaConfig,
         tick: TickInterval,
     ) {
-        let mut structure_base: StructureBase = StructureBaseStoreImpl::retrieve(ref world, structure_id);
-        let mut structure_guards: GuardTroops = StructureTroopGuardStoreImpl::retrieve(ref world, structure_id);
+        let mut structure_base: StructureBase = StructureBaseStoreImpl::retrieve(ref world, game_id, structure_id);
+        let mut structure_guards: GuardTroops = StructureTroopGuardStoreImpl::retrieve(
+            ref world, game_id, structure_id,
+        );
         let mut salt: u128 = 1;
 
         loop {
@@ -619,10 +654,10 @@ pub impl iMercenariesImpl of iMercenariesTrait {
         }
 
         // update structure guard store
-        StructureTroopGuardStoreImpl::store(ref structure_guards, ref world, structure_id);
+        StructureTroopGuardStoreImpl::store(ref structure_guards, ref world, game_id, structure_id);
 
         // update structure base
-        StructureBaseStoreImpl::store(ref structure_base, ref world, structure_id);
+        StructureBaseStoreImpl::store(ref structure_base, ref world, game_id, structure_id);
     }
 }
 
@@ -630,6 +665,8 @@ pub impl iMercenariesImpl of iMercenariesTrait {
 #[derive(Copy, Drop, Serde)]
 #[dojo::event(historical: false)]
 struct AgentCreatedEvent {
+    #[key]
+    game_id: u32,
     #[key]
     explorer_id: ID,
     troop_type: TroopType,
@@ -659,6 +696,7 @@ pub impl iAgentDiscoveryImpl of iAgentDiscoveryTrait {
 
     fn create(
         ref world: WorldStorage,
+        game_id: u32,
         ref tile: Tile,
         mut seed: u256,
         troop_limit_config: TroopLimitConfig,
@@ -690,6 +728,7 @@ pub impl iAgentDiscoveryImpl of iAgentDiscoveryTrait {
         let explorer_id: ID = world.dispatcher.uuid();
         let explorer: ExplorerTroops = iExplorerImpl::create(
             ref world,
+            game_id,
             ref tile,
             explorer_id,
             DAYDREAMS_AGENT_ID,
@@ -706,30 +745,36 @@ pub impl iAgentDiscoveryImpl of iAgentDiscoveryTrait {
         let names: Array<felt252> = Self::names();
         let names_index: u128 = rng_library_dispatcher.get_random_in_range(seed, salt, names.len().into());
         let name: felt252 = *names.at(names_index.try_into().unwrap());
-        let name: AddressName = AddressName { address: explorer_id.try_into().unwrap(), name: name };
+        let name: EntityName = EntityName { game_id, entity_id: explorer_id, name };
         world.write_model(@name);
 
         // increase agent count
-        AgentCountImpl::increase(ref world);
+        AgentCountImpl::increase(ref world, game_id);
 
         // set agent ownership
         let mut agent_controller_config: AgentControllerConfig = WorldConfigUtilImpl::get_member(
-            world, selector!("agent_controller_config"),
+            world, game_id, selector!("agent_controller_config"),
         );
-        world.write_model(@AgentOwner { explorer_id, address: agent_controller_config.address });
+        world.write_model(@AgentOwner { game_id, explorer_id, address: agent_controller_config.address });
 
         // get random lords amount to give to the agent
-        let mut agent_config: AgentConfig = world.read_model(WORLD_CONFIG_ID);
+        let mut agent_config: AgentConfig = world.read_model(game_id);
         let lords_difference = agent_config.max_spawn_lords_amount - agent_config.min_spawn_lords_amount;
         let lords_amount = rng_library_dispatcher.get_random_in_range(seed, salt, lords_difference.into() + 1)
             + agent_config.min_spawn_lords_amount.into();
-        AgentLordsMintedImpl::increase(ref world, lords_amount.try_into().unwrap());
+        AgentLordsMintedImpl::increase(ref world, game_id, lords_amount.try_into().unwrap());
 
         // grant random lords amount to the agent
-        let mut explorer_weight: Weight = WeightStoreImpl::retrieve(ref world, explorer.explorer_id);
-        let lords_weight_grams: u128 = ResourceWeightImpl::grams(ref world, ResourceTypes::LORDS);
+        let mut explorer_weight: Weight = WeightStoreImpl::retrieve(ref world, game_id, explorer.explorer_id);
+        let lords_weight_grams: u128 = ResourceWeightImpl::grams(ref world, game_id, ResourceTypes::LORDS);
         let mut lords_resource = SingleResourceStoreImpl::retrieve(
-            ref world, explorer.explorer_id, ResourceTypes::LORDS, ref explorer_weight, lords_weight_grams, false,
+            ref world,
+            game_id,
+            explorer.explorer_id,
+            ResourceTypes::LORDS,
+            ref explorer_weight,
+            lords_weight_grams,
+            false,
         );
         lords_resource.add(lords_amount * RESOURCE_PRECISION, ref explorer_weight, lords_weight_grams);
         lords_resource.store(ref world);
@@ -738,7 +783,12 @@ pub impl iAgentDiscoveryImpl of iAgentDiscoveryTrait {
         world
             .emit_event(
                 @AgentCreatedEvent {
-                    explorer_id, troop_type, troop_tier, troop_amount, timestamp: starknet::get_block_timestamp(),
+                    game_id,
+                    explorer_id,
+                    troop_type,
+                    troop_tier,
+                    troop_amount,
+                    timestamp: starknet::get_block_timestamp(),
                 },
             );
         return explorer;

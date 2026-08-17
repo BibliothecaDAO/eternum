@@ -32,12 +32,6 @@ vi.hoisted(() => {
 
 vi.mock("@/ui/config", () => ({
   FELT_CENTER: () => 0,
-  GRAPHICS_SETTING: "HIGH",
-  GraphicsSettings: {
-    HIGH: "HIGH",
-    LOW: "LOW",
-    MID: "MID",
-  },
   IS_FLAT_MODE: false,
 }));
 
@@ -187,8 +181,8 @@ function expectNonZeroMatrix(mesh: InstancedMesh, slot: number) {
 describe("ArmyModel slot single-source-of-truth on movement start", () => {
   // The reported ghost: a frozen duplicate at a unit's OLD position after it
   // moves. Root cause — the move-start path seeds the model's source-of-truth
-  // slot (instanceData.matrixIndex) from the army-manager's *mirror*
-  // (ArmyData.matrixIndex). When the mirror is stale, startMovement relocates
+  // slot (instanceData.matrixIndex) from a stale caller-supplied slot. When
+  // that slot is stale, startMovement relocates
   // the entity onto the stale slot and leaves the real slot drawn forever
   // (a ghost), until a full chunk reconcile repacks slots.
   //

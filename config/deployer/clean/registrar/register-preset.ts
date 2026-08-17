@@ -1,0 +1,129 @@
+import { Account, RpcProvider } from "starknet";
+import { applyBlitzBalanceProfile, type BlitzBalanceProfileId } from "../../../source/blitz";
+import { loadEnvironmentConfiguration } from "../config/config-loader";
+import { resolveDeploymentEnvironment } from "../environment";
+import { resolveAccountCredentials } from "../shared/credentials";
+import { buildRegisterPresetCalldata, isRegistrarAlreadyRegisteredError, registerPreset } from "./calls";
+import { isPresetRegistered } from "./game-registry";
+import { buildPresetRegistration, summarizePresetSideTables } from "./preset";
+
+interface RegisterPresetOptions {
+  presetId: number;
+  environmentId: "appchain.blitz" | "appchain.eternum";
+  balanceProfile?: BlitzBalanceProfileId;
+  dryRun: boolean;
+}
+
+const BALANCE_PROFILE_IDS: BlitzBalanceProfileId[] = ["official-60", "official-90"];
+
+function readArgument(name: string): string | undefined {
+  const index = process.argv.indexOf(name);
+  return index >= 0 ? process.argv[index + 1] : undefined;
+}
+
+function parseOptions(): RegisterPresetOptions {
+  const presetId = Number(readArgument("--preset-id"));
+  const environmentId = readArgument("--environment") ?? "appchain.blitz";
+  const balanceProfile = readArgument("--balance-profile") as BlitzBalanceProfileId | undefined;
+  if (!Number.isInteger(presetId) || presetId <= 0) {
+    throw new Error(
+      "Usage: bun config/deployer/clean/registrar/register-preset.ts --preset-id <n> [--environment appchain.blitz|appchain.eternum] [--balance-profile official-60|official-90] [--dry-run]",
+    );
+  }
+  if (environmentId !== "appchain.blitz" && environmentId !== "appchain.eternum") {
+    throw new Error("--environment must be appchain.blitz or appchain.eternum");
+  }
+  if (balanceProfile !== undefined) {
+    if (!BALANCE_PROFILE_IDS.includes(balanceProfile)) {
+      throw new Error(`--balance-profile must be one of: ${BALANCE_PROFILE_IDS.join(", ")}`);
+    }
+    if (environmentId !== "appchain.blitz") {
+      throw new Error("--balance-profile only applies to appchain.blitz");
+    }
+  }
+  return { presetId, environmentId, balanceProfile, dryRun: process.argv.includes("--dry-run") };
+}
+
+// The stored environment JSON is the raw base sheet: balance profiles
+// (official-60 "Regular Fast", official-90) are applied at game creation,
+// NOT baked into the stored config. A preset registered without the profile
+// silently ships base balance under a profile-flavored label (preset 4 bug).
+function loadPresetConfiguration(
+  environmentId: "appchain.blitz" | "appchain.eternum",
+  balanceProfile?: BlitzBalanceProfileId,
+) {
+  const config = loadEnvironmentConfiguration(environmentId);
+  return balanceProfile ? applyBlitzBalanceProfile(config, balanceProfile) : config;
+}
+
+function stringify(value: unknown): string {
+  return JSON.stringify(value, (_key, entry) => (typeof entry === "bigint" ? entry.toString() : entry), 2);
+}
+
+export function buildPresetDryRun(
+  presetId: number,
+  environmentId: "appchain.blitz" | "appchain.eternum" = "appchain.blitz",
+  balanceProfile?: BlitzBalanceProfileId,
+) {
+  const config = loadPresetConfiguration(environmentId, balanceProfile);
+  const payload = buildPresetRegistration(config, presetId);
+  const calldata = buildRegisterPresetCalldata(payload);
+  return {
+    presetId,
+    balanceProfile: balanceProfile ?? null,
+    calldataLength: calldata.length,
+    counts: summarizePresetSideTables(payload),
+    calldata,
+  };
+}
+
+export async function registerAppchainPreset(options: RegisterPresetOptions): Promise<void> {
+  const config = loadPresetConfiguration(options.environmentId, options.balanceProfile);
+  const payload = buildPresetRegistration(config, options.presetId);
+  const calldata = buildRegisterPresetCalldata(payload);
+  const summary = {
+    presetId: options.presetId,
+    calldataLength: calldata.length,
+    counts: summarizePresetSideTables(payload),
+    calldata,
+  };
+
+  if (options.dryRun) {
+    console.log(stringify(summary));
+    return;
+  }
+
+  if (await isPresetRegistered(options.presetId).catch(() => false)) {
+    console.log(`Preset ${options.presetId} is already registered; skipping.`);
+    return;
+  }
+
+  const environment = resolveDeploymentEnvironment(options.environmentId);
+  const credentials = resolveAccountCredentials({
+    accountAddress: process.env.DOJO_ACCOUNT_ADDRESS,
+    privateKey: process.env.DOJO_PRIVATE_KEY,
+    context: "appchain preset registration",
+  });
+  const account = new Account({
+    provider: new RpcProvider({ nodeUrl: process.env.RPC_URL || environment.rpcUrl }),
+    address: credentials.accountAddress,
+    signer: credentials.privateKey,
+  });
+
+  try {
+    const result = await registerPreset(account, payload, options.environmentId);
+    console.log(`Registered preset ${options.presetId}: ${result.transactionHash}`);
+  } catch (error) {
+    if (!isRegistrarAlreadyRegisteredError(error)) {
+      throw error;
+    }
+    console.log(`Preset ${options.presetId} is already registered; skipping.`);
+  }
+}
+
+if (import.meta.main) {
+  registerAppchainPreset(parseOptions()).catch((error) => {
+    console.error(error instanceof Error ? error.message : String(error));
+    process.exit(1);
+  });
+}

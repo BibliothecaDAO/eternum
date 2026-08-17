@@ -9,6 +9,10 @@
     ".": {
       "import": "./dist/index.js",
       "types": "./dist/index.d.ts"
+    },
+    "./errors": {
+      "types": "./dist/classify-transaction-error.d.ts",
+      "import": "./dist/classify-transaction-error.js"
     }
   },
   "main": "./dist/index.js",

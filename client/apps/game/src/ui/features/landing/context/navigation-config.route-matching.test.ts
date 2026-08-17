@@ -17,7 +17,7 @@ describe("getActiveSubItem", () => {
 
     expect(profileSection).toBeDefined();
     expect(getActiveSubItem(profileSection!, "/profile", new URLSearchParams("tab=wallet"))).toEqual(
-      profileSection!.subMenu[2],
+      profileSection!.subMenu[1],
     );
   });
 });

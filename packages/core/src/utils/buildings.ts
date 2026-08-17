@@ -1,9 +1,10 @@
 import { BuildingType, ClientComponents, ID, ResourceCost, ResourcesIds } from "@bibliothecadao/types";
 import { getComponentValue } from "@dojoengine/recs";
-import { configManager, getBuildingCount, getEntityIdFromKeys } from "..";
+import { configManager, getBuildingCount } from "..";
+import { gameEntityKey } from "../managers/config-manager";
 
 export const getBuildingQuantity = (entityId: ID, buildingType: BuildingType, components: ClientComponents) => {
-  const structureBuildings = getComponentValue(components.StructureBuildings, getEntityIdFromKeys([BigInt(entityId)]));
+  const structureBuildings = getComponentValue(components.StructureBuildings, gameEntityKey([BigInt(entityId)]));
 
   const buildingCount = getBuildingCount(buildingType, [
     structureBuildings?.packed_counts_1 || 0n,

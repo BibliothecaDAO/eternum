@@ -208,8 +208,8 @@ pub impl CoordDisplay of Display<Coord> {
 
 #[generate_trait]
 pub impl CoordImpl of CoordTrait {
-    fn center(ref world: WorldStorage) -> Coord {
-        let map_center_offset = WorldConfigUtilImpl::get_member(world, selector!("map_center_offset"));
+    fn center(ref world: WorldStorage, game_id: u32) -> Coord {
+        let map_center_offset = WorldConfigUtilImpl::get_member(world, game_id, selector!("map_center_offset"));
         Coord { alt: false, x: CENTER_COL - map_center_offset, y: CENTER_ROW - map_center_offset }
     }
 

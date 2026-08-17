@@ -7,8 +7,10 @@ import {
   Position,
   WorldUpdateListener,
 } from "@bibliothecadao/eternum";
+import { WorldSpatialProjection } from "@bibliothecadao/eternum/game-sync";
 import { DojoResult } from "@bibliothecadao/react";
 import { ActorType, findResourceById, getDirectionBetweenAdjacentHexes } from "@bibliothecadao/types";
+import { getComponentValue } from "@dojoengine/recs";
 import * as THREE from "three";
 import { getMapFromTorii } from "../../../../../app/dojo/queries";
 import { ArmyManager, BiomesManager, ChestManager, StructureManager } from "../../entity-managers";
@@ -34,6 +36,7 @@ export class HexagonMap {
   private dojo: DojoResult;
   private store: Store;
   private systemManager: WorldUpdateListener;
+  private worldSpatialProjection!: WorldSpatialProjection;
   private fxManager: FXManager;
   private resourceFXManager: ResourceFXManager;
 
@@ -75,6 +78,7 @@ export class HexagonMap {
   // === INITIALIZATION STATE ===
   private isInitialized: boolean = false;
   private initializationPromise: Promise<void> | null = null;
+  private unsubscribeArmyRecs?: () => void;
 
   // === CONSTRUCTOR & INITIALIZATION ===
   constructor(
@@ -93,6 +97,7 @@ export class HexagonMap {
     this.raycaster = new THREE.Raycaster();
 
     this.initializeManagers();
+    this.installWorldSpatialProjection();
     this.setupSystemListeners();
     this.initializeGUI();
 
@@ -127,19 +132,33 @@ export class HexagonMap {
     this.selectionManager.registerObjectRenderer("chest", this.chestManager);
   }
 
+  private installWorldSpatialProjection(): void {
+    this.worldSpatialProjection = new WorldSpatialProjection({
+      tileOptComponent: this.dojo.setup.components.TileOpt,
+      explorerTroopsComponent: this.dojo.setup.components.ExplorerTroops,
+    });
+    this.worldSpatialProjection.start();
+    this.structureManager.bindWorldSpatialProjection(this.worldSpatialProjection);
+    this.chestManager.bindWorldSpatialProjection(this.worldSpatialProjection);
+  }
+
   private setupSystemListeners(): void {
     this.systemManager.Tile.onTileUpdate((value) => this.biomesManager.handleTileUpdate(value));
-    this.systemManager.Army.onTileUpdate((update) => this.armyManager.handleSystemUpdate(update));
-    this.systemManager.Army.onExplorerTroopsUpdate((update) => this.armyManager.handleExplorerTroopsUpdate(update));
-    this.systemManager.Army.onDeadArmy((entityId) => this.armyManager.deleteArmy(entityId));
-    this.systemManager.Structure.onTileUpdate((update) => this.structureManager.handleSystemUpdate(update));
-    this.systemManager.Structure.onStructureUpdate((update) => this.structureManager.handleStructureUpdate(update));
-    this.systemManager.Structure.onStructureBuildingsUpdate((update) =>
-      this.structureManager.handleBuildingUpdate(update),
-    );
-    this.systemManager.Chest.onTileUpdate((update) => this.chestManager.handleSystemUpdate(update));
-    this.systemManager.Chest.onDeadChest((entityId) => this.chestManager.deleteChest(entityId));
+    this.installArmyRecsProjection();
     this.systemManager.ExplorerReward.onExplorerRewardEventUpdate((update) => this.handleExplorerRewardEvent(update));
+  }
+
+  private installArmyRecsProjection(): void {
+    const component = this.dojo.setup.components.ExplorerTroops;
+    for (const entity of component.entities()) {
+      this.armyManager.synchronizeExplorerTroops(getComponentValue(component, entity));
+    }
+
+    const subscription = component.update$.subscribe(({ value }) => {
+      const [current, previous] = value;
+      this.armyManager.synchronizeExplorerTroops(current, previous);
+    });
+    this.unsubscribeArmyRecs = () => subscription.unsubscribe();
   }
 
   private initializeGUI(): void {
@@ -735,6 +754,9 @@ export class HexagonMap {
   }
 
   public dispose(): void {
+    this.unsubscribeArmyRecs?.();
+    this.unsubscribeArmyRecs = undefined;
+
     // Clean up resource FX manager
     this.resourceFXManager.destroy();
 
@@ -761,6 +783,7 @@ export class HexagonMap {
     this.structureManager.dispose();
     this.chestManager.dispose();
     this.selectionManager.dispose();
+    this.worldSpatialProjection.dispose();
 
     this.allHexes.clear();
     this.visibleHexes.clear();

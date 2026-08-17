@@ -52,17 +52,16 @@ describe("worldmap terrain cache single write", () => {
     expect(methodSource).toMatch(/this\.cachePreparedTerrainChunk\(preparedTerrain\);/);
   });
 
-  it("does not cache composed terrain meshes after a live tile append", () => {
+  it("routes live tile writes through page rebuilds without writing the chunk cache directly", () => {
     const source = readWorldmapSource();
     const methodSource = extractMethod(
       source,
-      "  public async updateExploredHex(update: TileSystemUpdate) {",
-      "  isColRowInCurrentRenderBounds(",
+      "  private invalidateVisualTerrainPageForLiveTile(",
+      "  private async refreshVisualTerrainWindowForFocus(",
     );
 
-    expect(methodSource).not.toMatch(/terrainVisibleAppendCount[\s\S]*?this\.cacheMatricesForChunk\(/s);
-    expect(methodSource).toMatch(
-      /terrainVisibleAppendCount[\s\S]*?this\.requestChunkRefresh\(true, "terrain_self_heal"\)/s,
-    );
+    expect(methodSource).toContain("this.buildAndApplyVisualTerrainPage");
+    expect(methodSource).not.toContain("this.cacheMatricesForChunk");
+    expect(methodSource).not.toContain("setMatrixAt");
   });
 });

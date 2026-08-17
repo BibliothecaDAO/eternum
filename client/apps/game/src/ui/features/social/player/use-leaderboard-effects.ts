@@ -32,10 +32,10 @@ interface PlayerSnapshot {
   rank: number;
 }
 
-interface PlayerWithStats {
+interface RankedPlayerWithActivity {
   address: bigint;
-  leaderboardRank: number;
-  leaderboardPoints: number;
+  rank: number;
+  points: number;
   tilesExploredPoints: number;
   cratesOpenedPoints: number;
   riftsTakenPoints: number;
@@ -71,7 +71,7 @@ const getRankIntensity = (change: number): EffectIntensity => {
 };
 
 export const useLeaderboardEffects = (
-  players: PlayerWithStats[],
+  players: RankedPlayerWithActivity[],
   mockupMode: boolean = false,
 ): {
   effects: Map<string, PlayerEffect>;
@@ -99,8 +99,8 @@ export const useLeaderboardEffects = (
         riftsTakenPoints: player.riftsTakenPoints,
         hyperstructuresTakenPoints: player.hyperstructuresTakenPoints,
         hyperstructuresHeldPoints: player.hyperstructuresHeldPoints,
-        totalPoints: player.leaderboardPoints,
-        rank: player.leaderboardRank,
+        totalPoints: player.points,
+        rank: player.rank,
       });
     }
 
@@ -188,8 +188,6 @@ export const useLeaderboardEffects = (
     for (const player of selectedPlayers) {
       const address = normalizeAddress(player.address);
       const deltas = createEmptyDeltas();
-
-      // Randomly populate 1-3 categories with point gains
       const categories = [
         "tilesExploredPoints",
         "cratesOpenedPoints",
@@ -197,24 +195,20 @@ export const useLeaderboardEffects = (
         "hyperstructuresTakenPoints",
         "hyperstructuresHeldPoints",
       ] as const;
-
-      const numCategories = 1 + Math.floor(Math.random() * 3);
       const shuffledCategories = categories.toSorted(() => Math.random() - 0.5);
-
+      const numCategories = 1 + Math.floor(Math.random() * 3);
       let totalGain = 0;
-      for (let i = 0; i < numCategories; i++) {
-        const category = shuffledCategories[i];
-        // Vary gains more to show different intensities
+
+      for (let index = 0; index < numCategories; index += 1) {
         const intensityRoll = Math.random();
-        let gain: number;
-        if (intensityRoll > 0.85) {
-          gain = 500 + Math.floor(Math.random() * 500); // large
-        } else if (intensityRoll > 0.5) {
-          gain = 100 + Math.floor(Math.random() * 300); // medium
-        } else {
-          gain = 10 + Math.floor(Math.random() * 80); // small
-        }
-        deltas[category] = gain;
+        const gain =
+          intensityRoll > 0.85
+            ? 500 + Math.floor(Math.random() * 500)
+            : intensityRoll > 0.5
+              ? 100 + Math.floor(Math.random() * 300)
+              : 10 + Math.floor(Math.random() * 80);
+
+        deltas[shuffledCategories[index]] = gain;
         totalGain += gain;
       }
       deltas.totalPoints = totalGain;
@@ -227,8 +221,8 @@ export const useLeaderboardEffects = (
         address,
         pointDeltas: deltas,
         rankChange,
-        previousRank: player.leaderboardRank + rankChange,
-        newRank: player.leaderboardRank,
+        previousRank: player.rank + rankChange,
+        newRank: player.rank,
         timestamp: Date.now(),
         pointIntensity: getPointIntensity(totalGain),
         rankIntensity: getRankIntensity(rankChange),

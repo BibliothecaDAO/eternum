@@ -72,7 +72,7 @@ describe("createWorldFxBackend", () => {
   it("prefers the billboard backend in legacy webgl so icon fx match the webgpu lane", () => {
     const backend = createWorldFxBackend({
       capabilities: resolveRendererFxCapabilities({
-        activeMode: "legacy-webgl",
+        activeMode: "webgl2-fallback",
       }),
       scene: new THREE.Scene(),
     });
@@ -184,7 +184,7 @@ describe("legacy webgl billboard sizing", () => {
     const scene = new THREE.Scene();
     const backend = createWorldFxBackend({
       capabilities: resolveRendererFxCapabilities({
-        activeMode: "legacy-webgl",
+        activeMode: "webgl2-fallback",
       }),
       scene,
     });
@@ -216,7 +216,7 @@ describe("legacy webgl billboard sizing", () => {
 
 describe.each([
   {
-    activeMode: "legacy-webgl" as const,
+    activeMode: "webgl2-fallback" as const,
     expectedKind: "webgpu-billboard",
     expectedObjectType: "Mesh",
   },
@@ -336,7 +336,7 @@ describe("world fx promise teardown", () => {
     const scene = new THREE.Scene();
     const backend = createWorldFxBackend({
       capabilities: resolveRendererFxCapabilities({
-        activeMode: "legacy-webgl",
+        activeMode: "webgl2-fallback",
       }),
       scene,
     });

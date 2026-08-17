@@ -4,6 +4,8 @@ use starknet::ContractAddress;
 #[dojo::model]
 pub struct Liquidity {
     #[key]
+    pub game_id: u32,
+    #[key]
     pub player: ContractAddress,
     #[key]
     pub resource_type: u8,

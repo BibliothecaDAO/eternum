@@ -1,6 +1,8 @@
 import { AudioManager } from "@/audio/core/AudioManager";
 import { getCurrentPlayRouteBootToken, usePlayRouteReadinessStore } from "@/game-entry/play-route-readiness-store";
+import { VERBOSE_LOGS_ENABLED } from "@/utils/dev-mode";
 import { useAccountStore } from "@/hooks/store/use-account-store";
+import { resolveStoredLocalCameraDistance, useCameraZoomStore } from "@/hooks/store/use-camera-zoom-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { isVillageLikeStructureCategory } from "@/lib/structure-type-utils";
 import { resolvePlayRouteTarget } from "@/play/navigation/play-route-target";
@@ -10,6 +12,7 @@ import {
   BUILDINGS_CATEGORIES_TYPES,
   BUILDINGS_GROUPS,
   HEX_SIZE,
+  LOCAL_CAMERA_ZOOM,
   MinesMaterialsParams,
   WONDER_REALM,
   castleLevelToRealmCastle,
@@ -37,19 +40,9 @@ import { LeftView } from "@/types";
 import { BuildingSystemUpdate, Position, StructureProgress, getBlockTimestamp } from "@bibliothecadao/eternum";
 
 import { HexceptionAmbienceSystem } from "@/three/systems/hexception-ambience-system";
-import type { QualityLevel } from "@/three/systems/hexception-ambience-system";
-import { GRAPHICS_SETTING, IS_FLAT_MODE, isLowOrBelow } from "@/ui/config";
-import {
-  HEXCEPTION_GRID_READY_EVENT,
-  clearRememberedHexceptionGridReady,
-  rememberHexceptionGridReady,
-} from "@/ui/layouts/game-loading-overlay.utils";
+import { IS_FLAT_MODE } from "@/ui/config";
 
 import { ProductionModal } from "@/ui/features/settlement";
-import {
-  releaseOccupiedBuildSpot,
-  reserveOccupiedBuildSpot,
-} from "@/ui/features/settlement/construction/build-reservation-store";
 import { resolveConstructionBuildability } from "@/ui/features/settlement/construction/construction-buildability";
 import { SetupResult } from "@bibliothecadao/dojo";
 import {
@@ -100,11 +93,12 @@ import {
   Vector2,
   Vector3,
 } from "three";
-import { CSS2DObject } from "three-stdlib";
+import { CSS2DObject } from "three/addons/renderers/CSS2DRenderer.js";
 import { MapControls } from "three/examples/jsm/controls/MapControls.js";
 import { SceneName } from "../types";
 import { getHexForWorldPosition, getWorldPositionForHex } from "../utils";
 import { HexHoverLabel } from "../utils/labels/hex-hover-label";
+import { gameEntityKey, buildingEntityKey } from "@/dojo/game-scope";
 
 const loader = gltfLoader;
 
@@ -183,6 +177,15 @@ export default class HexceptionScene extends HexagonScene {
   private lastRealmKey?: string;
   // Store Zustand unsubscribe functions to clean up on destroy
   private storeUnsubscribes: (() => void)[] = [];
+  private readonly localZoomPersistDebounceMs = 500;
+  private localZoomPersistTimeout: ReturnType<typeof setTimeout> | null = null;
+  private readonly handleLocalZoomControlsChange = () => {
+    if (this.sceneManager.getCurrentScene() !== SceneName.Hexception) return;
+    // Programmatic camera transitions (scene entry, camera-view resets) must
+    // not overwrite the player's chosen zoom; only interactive zooms persist.
+    if (this.isCameraTransitionInProgress()) return;
+    this.scheduleLocalZoomPersist();
+  };
 
   constructor(
     controls: MapControls,
@@ -194,7 +197,6 @@ export default class HexceptionScene extends HexagonScene {
     super(SceneName.Hexception, controls, dojo, mouse, raycaster, sceneManager);
 
     this.mode = getGameModeConfig();
-    this.buildingPreview = new BuildingPreview(this.scene);
     this.hoverLabelManager = new HexHoverLabel(this.scene);
 
     const pillarGeometry = new ExtrudeGeometry(createHexagonShape(1), { depth: 2, bevelEnabled: false });
@@ -204,8 +206,7 @@ export default class HexceptionScene extends HexagonScene {
     this.pillars.count = 0;
     this.scene.add(this.pillars);
 
-    const quality: QualityLevel = isLowOrBelow(GRAPHICS_SETTING) ? "LOW" : (GRAPHICS_SETTING as QualityLevel) || "HIGH";
-    this.ambienceSystem = new HexceptionAmbienceSystem(this.scene, quality);
+    this.ambienceSystem = new HexceptionAmbienceSystem(this.scene);
 
     this.loadBuildingModels();
     this.loadBiomeModels(900);
@@ -286,9 +287,7 @@ export default class HexceptionScene extends HexagonScene {
       useUIStore.subscribe(
         (state) => state.playerStructures,
         (playerStructures) => {
-          if (playerStructures.length > 0) {
-            this.updatePlayerStructures(playerStructures);
-          }
+          this.updatePlayerStructures(playerStructures);
         },
       ),
     );
@@ -299,7 +298,7 @@ export default class HexceptionScene extends HexagonScene {
         (building) => {
           if (building) {
             this.interactiveHexManager.setAuraVisibility(false);
-            this.buildingPreview?.setPreviewBuilding(building as any);
+            this.getOrCreateBuildingPreview().setPreviewBuilding(building as any);
             this.highlightHexManager.highlightHexes(
               this.highlights.map((hex) => ({
                 hex: { col: hex.col, row: hex.row },
@@ -340,7 +339,7 @@ export default class HexceptionScene extends HexagonScene {
 
           // Only create a new subscription if we have a valid entity ID
           if (structureEntityId && structureEntityId !== 0) {
-            console.log(`Setting up Structure listener for entity ID: ${structureEntityId}`);
+            if (VERBOSE_LOGS_ENABLED) console.log(`Setting up Structure listener for entity ID: ${structureEntityId}`);
 
             this.structureUpdateSubscription = this.worldUpdateListener.StructureEntityListener.onLevelUpdate(
               structureEntityId,
@@ -381,6 +380,96 @@ export default class HexceptionScene extends HexagonScene {
         },
       ),
     );
+
+    // Persist the player's interactive zoom once it settles (debounced).
+    this.controls.addEventListener("change", this.handleLocalZoomControlsChange);
+
+    // Apply zoom-preference changes coming from the settings UI while this scene is active.
+    this.storeUnsubscribes.push(
+      useCameraZoomStore.subscribe(
+        (state) => state.localDistance,
+        () => this.applyLocalZoomPreferenceLive(),
+      ),
+    );
+  }
+
+  private applyPersistedLocalZoom(): void {
+    const persistedDistance = this.resolveStoredLocalZoomDistance();
+    if (persistedDistance === null) {
+      return;
+    }
+
+    this.animateCameraToLocalZoomDistance(persistedDistance);
+  }
+
+  private applyLocalZoomPreferenceLive(): void {
+    if (this.sceneManager.getCurrentScene() !== SceneName.Hexception) {
+      return;
+    }
+
+    const preferredDistance = this.resolveStoredLocalZoomDistance() ?? this.resolveDefaultLocalZoomDistance();
+    const currentDistance = this.controls.object.position.distanceTo(this.controls.target);
+    if (Math.abs(preferredDistance - currentDistance) < 0.1) {
+      return;
+    }
+
+    this.animateCameraToLocalZoomDistance(preferredDistance);
+  }
+
+  private resolveStoredLocalZoomDistance(): number | null {
+    return resolveStoredLocalCameraDistance({
+      min: this.controls.minDistance,
+      max: this.controls.maxDistance,
+    });
+  }
+
+  private resolveDefaultLocalZoomDistance(): number {
+    return Math.min(LOCAL_CAMERA_ZOOM.defaultDistance, this.controls.maxDistance);
+  }
+
+  private animateCameraToLocalZoomDistance(distance: number): void {
+    const target = this.controls.target;
+    const cameraHeight = Math.sin(this.cameraAngle) * distance;
+    const cameraDepth = Math.cos(this.cameraAngle) * distance;
+    const newPosition = new Vector3(target.x, target.y + cameraHeight, target.z + cameraDepth);
+    this.cameraAnimate(newPosition, target.clone(), 0.6);
+  }
+
+  private scheduleLocalZoomPersist(): void {
+    this.cancelPendingLocalZoomPersist();
+    this.localZoomPersistTimeout = setTimeout(() => {
+      this.localZoomPersistTimeout = null;
+      this.persistSettledLocalZoom();
+    }, this.localZoomPersistDebounceMs);
+  }
+
+  private cancelPendingLocalZoomPersist(): void {
+    if (this.localZoomPersistTimeout) {
+      clearTimeout(this.localZoomPersistTimeout);
+      this.localZoomPersistTimeout = null;
+    }
+  }
+
+  private flushPendingLocalZoomPersist(): void {
+    if (!this.localZoomPersistTimeout) {
+      return;
+    }
+
+    this.cancelPendingLocalZoomPersist();
+    this.persistSettledLocalZoom();
+  }
+
+  private persistSettledLocalZoom(): void {
+    if (this.sceneManager.getCurrentScene() !== SceneName.Hexception) return;
+    if (this.isCameraTransitionInProgress()) return;
+
+    const distance = Math.round(this.controls.object.position.distanceTo(this.controls.target) * 100) / 100;
+    const storedDistance = useCameraZoomStore.getState().localDistance;
+    if (storedDistance !== null && Math.abs(storedDistance - distance) < 0.05) {
+      return;
+    }
+
+    useCameraZoomStore.getState().setLocalDistance(distance);
   }
 
   private clearBuildingMode() {
@@ -390,6 +479,7 @@ export default class HexceptionScene extends HexagonScene {
   }
 
   private loadBuildingModels() {
+    const modelLoadsByPath = new Map<string, Promise<{ model: Group; animations: AnimationClip[] }>>();
     for (const category of Object.values(BUILDINGS_GROUPS)) {
       const categoryPaths = this.mode.assets.buildingModelPaths[category];
       if (!this.buildingModels.has(category)) {
@@ -398,39 +488,70 @@ export default class HexceptionScene extends HexagonScene {
       const categoryMap = this.buildingModels.get(category)!;
 
       for (const [building, path] of Object.entries(categoryPaths)) {
-        const loadPromise = new Promise<void>((resolve, reject) => {
-          loader.load(
-            path,
-            (gltf) => {
-              const model = gltf.scene as Group;
-              model.position.set(0, 0, 0);
-              model.rotation.y = Math.PI;
-
-              model.traverse((child) => {
-                if (child instanceof Mesh) {
-                  if (!child.name.includes(SMALL_DETAILS_NAME) && !child.parent?.name.includes(SMALL_DETAILS_NAME)) {
-                    child.castShadow = true;
-                    child.receiveShadow = true;
-                  }
-                }
-              });
-
-              // Store the model and animations in the nested map
-              categoryMap.set(building as BUILDINGS_CATEGORIES_TYPES, { model, animations: gltf.animations });
-              resolve();
-            },
-            undefined,
-            (error) => {
-              console.error(`Error loading ${building} model:`, error);
-              reject(error);
-            },
-          );
+        let sourceLoad = modelLoadsByPath.get(path);
+        if (!sourceLoad) {
+          sourceLoad = this.loadBuildingModel(path, building);
+          modelLoadsByPath.set(path, sourceLoad);
+        }
+        const loadPromise = sourceLoad.then((modelData) => {
+          categoryMap.set(building as BUILDINGS_CATEGORIES_TYPES, modelData);
         });
         this.modelLoadPromises.push(loadPromise);
       }
     }
+  }
 
-    Promise.all(this.modelLoadPromises).then(() => {});
+  private loadBuildingModel(path: string, building: string): Promise<{ model: Group; animations: AnimationClip[] }> {
+    return new Promise((resolve, reject) => {
+      loader.load(
+        path,
+        (gltf) => {
+          const model = gltf.scene as Group;
+          model.position.set(0, 0, 0);
+          model.rotation.y = Math.PI;
+          model.traverse((child) => {
+            if (
+              child instanceof Mesh &&
+              !child.name.includes(SMALL_DETAILS_NAME) &&
+              !child.parent?.name.includes(SMALL_DETAILS_NAME)
+            ) {
+              child.castShadow = true;
+              child.receiveShadow = true;
+            }
+          });
+          resolve({ model, animations: gltf.animations });
+        },
+        undefined,
+        (error) => {
+          console.error(`Error loading ${building} model:`, error);
+          reject(error);
+        },
+      );
+    });
+  }
+
+  private getOrCreateBuildingPreview(): BuildingPreview {
+    if (!this.buildingPreview) {
+      this.buildingPreview = new BuildingPreview(this.scene, (group, building) => {
+        const groupPaths = this.mode.assets.buildingModelPaths[group] as Record<string, string>;
+        const path = groupPaths[building.toString()];
+        if (!path) {
+          return null;
+        }
+
+        return {
+          cacheKey: path,
+          load: async () => {
+            await Promise.allSettled(this.modelLoadPromises);
+            return (
+              this.buildingModels.get(group)?.get(building.toString() as BUILDINGS_CATEGORIES_TYPES)?.model ?? null
+            );
+          },
+        };
+      });
+    }
+
+    return this.buildingPreview;
   }
 
   setup() {
@@ -487,7 +608,7 @@ export default class HexceptionScene extends HexagonScene {
         { col: this.centerColRow[0], row: this.centerColRow[1] },
         (update: BuildingSystemUpdate) => {
           const { innerCol, innerRow, buildingType } = update;
-          if (buildingType === BuildingType.None && innerCol && innerRow) {
+          if (buildingType === BuildingType.None && innerCol !== undefined && innerRow !== undefined) {
             this.removeBuilding(innerCol, innerRow);
           } else if (buildingType !== BuildingType.None) {
             playBuildingSound(buildingType);
@@ -503,13 +624,14 @@ export default class HexceptionScene extends HexagonScene {
     // Setup ambience system at grid center (origin for the main hex)
     this.ambienceSystem?.setup(new Vector3(0, 0, 0), this.hexceptionRadius);
 
-    this.controls.maxDistance = IS_FLAT_MODE ? 36 : 20;
+    this.controls.maxDistance = LOCAL_CAMERA_ZOOM.maxDistance;
     this.controls.enablePan = false;
     this.controls.enableZoom = useUIStore.getState().enableMapZoom;
     this.controls.zoomToCursor = false;
 
     this.moveCameraToURLLocation();
     this.changeCameraView(2);
+    this.applyPersistedLocalZoom();
 
     // Configure thunder bolts for hexception - focused storm effect
     this.getThunderBoltManager().setConfig({
@@ -533,6 +655,9 @@ export default class HexceptionScene extends HexagonScene {
   }
 
   onSwitchOff(_nextSceneName?: SceneName) {
+    // Capture a zoom still waiting on its debounce so quick scene switches keep it.
+    this.flushPendingLocalZoomPersist();
+
     this.labels.forEach((label) => {
       this.scene.remove(label.label);
     });
@@ -544,9 +669,11 @@ export default class HexceptionScene extends HexagonScene {
   }
 
   destroy() {
-    clearRememberedHexceptionGridReady();
     this.clearHoverLabel();
     this.hoverLabelManager.dispose();
+
+    this.controls.removeEventListener("change", this.handleLocalZoomControlsChange);
+    this.cancelPendingLocalZoomPersist();
 
     // Clean up building update subscription
     this.buildingUpdateUnsubscribe?.();
@@ -585,8 +712,13 @@ export default class HexceptionScene extends HexagonScene {
     this.wonderInstances.clear();
 
     // Dispose of loaded building models (geometries and materials)
+    const disposedBuildingModels = new Set<Group>();
     this.buildingModels.forEach((categoryMap) => {
       categoryMap.forEach((data) => {
+        if (disposedBuildingModels.has(data.model)) {
+          return;
+        }
+        disposedBuildingModels.add(data.model);
         data.model.traverse((child: any) => {
           if (child.isMesh) {
             if (child.geometry) {
@@ -643,7 +775,7 @@ export default class HexceptionScene extends HexagonScene {
     if (buildingType) {
       const useSimpleCost = this.state.useSimpleCost;
       const structureEntityId = useUIStore.getState().structureEntityId;
-      const realm = getRealmInfo(getEntityIdFromKeys([BigInt(structureEntityId)]), this.dojo.components);
+      const realm = getRealmInfo(gameEntityKey([BigInt(structureEntityId)]), this.dojo.components);
       const buildability = resolveConstructionBuildability({
         entityId: structureEntityId,
         buildingType: buildingType.type,
@@ -670,7 +802,6 @@ export default class HexceptionScene extends HexagonScene {
       }
 
       this.clearBuildingMode();
-      reserveOccupiedBuildSpot(structureEntityId, normalizedCoords);
       try {
         console.log("Placing building at:", {
           dojo: account!,
@@ -690,10 +821,6 @@ export default class HexceptionScene extends HexagonScene {
         AudioManager.getInstance().play("ui.build_place");
       } catch (error) {
         console.log("catched error so removing building", error);
-        const message = error instanceof Error ? error.message : String(error);
-        if (!message.toLowerCase().includes("space is occupied")) {
-          releaseOccupiedBuildSpot(structureEntityId, normalizedCoords);
-        }
         this.removeBuilding(normalizedCoords.col, normalizedCoords.row);
       }
       this.updateHexceptionGrid(this.hexceptionRadius);
@@ -704,7 +831,7 @@ export default class HexceptionScene extends HexagonScene {
       if (BUILDINGS_CENTER[0] === hexCoords.col && BUILDINGS_CENTER[1] === hexCoords.row) {
         const building = getComponentValue(
           this.dojo.components.Building,
-          getEntityIdFromKeys([BigInt(outerCol), BigInt(outerRow), BigInt(hexCoords.col), BigInt(hexCoords.row)]),
+          buildingEntityKey(outerCol, outerRow, hexCoords.col, hexCoords.row),
         );
 
         // AudioManager handles muted state internally
@@ -720,7 +847,7 @@ export default class HexceptionScene extends HexagonScene {
       } else if (this.tileManager.isHexOccupied(normalizedCoords)) {
         const building = getComponentValue(
           this.dojo.components.Building,
-          getEntityIdFromKeys([BigInt(outerCol), BigInt(outerRow), BigInt(hexCoords.col), BigInt(hexCoords.row)]),
+          buildingEntityKey(outerCol, outerRow, hexCoords.col, hexCoords.row),
         );
 
         // AudioManager handles muted state internally
@@ -905,12 +1032,7 @@ export default class HexceptionScene extends HexagonScene {
 
     const building = getComponentValue(
       this.dojo.components.Building,
-      getEntityIdFromKeys([
-        BigInt(outerCol),
-        BigInt(outerRow),
-        BigInt(normalizedCoords.col),
-        BigInt(normalizedCoords.row),
-      ]),
+      buildingEntityKey(outerCol, outerRow, normalizedCoords.col, normalizedCoords.row),
     );
     if (!building || building.category === BuildingType.None) {
       return;
@@ -1191,19 +1313,13 @@ export default class HexceptionScene extends HexagonScene {
         // Clear the array to prevent accidental reuse of released matrices
         matrices.length = 0;
       }
-      console.log(`🧹 Released ${totalMatricesReleased} matrices back to pool`);
+      if (VERBOSE_LOGS_ENABLED) console.log(`🧹 Released ${totalMatricesReleased} matrices back to pool`);
 
       if (typeof window !== "undefined") {
         usePlayRouteReadinessStore.getState().markHexReady(getCurrentPlayRouteBootToken(), {
           col: this.centerColRow[0],
           row: this.centerColRow[1],
         });
-        rememberHexceptionGridReady({ col: this.centerColRow[0], row: this.centerColRow[1] });
-        window.dispatchEvent(
-          new CustomEvent(HEXCEPTION_GRID_READY_EVENT, {
-            detail: { col: this.centerColRow[0], row: this.centerColRow[1] },
-          }),
-        );
       }
     });
   }

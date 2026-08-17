@@ -29,9 +29,9 @@ describe("createRendererFoundationRuntime", () => {
     const warn = vi.fn();
 
     const runtime = createRendererFoundationRuntime({
-      graphicsSetting: "HIGH" as never,
       isMobileDevice: false,
       onControlsChange: vi.fn(),
+      onInteraction: vi.fn(),
       resolveCurrentSceneName: vi.fn(),
       warn,
     });
@@ -64,9 +64,9 @@ describe("createRendererFoundationRuntime", () => {
     const warn = vi.fn();
 
     createRendererFoundationRuntime({
-      graphicsSetting: "HIGH" as never,
       isMobileDevice: true,
       onControlsChange: vi.fn(),
+      onInteraction: vi.fn(),
       resolveCurrentSceneName: vi.fn(),
       warn,
     });

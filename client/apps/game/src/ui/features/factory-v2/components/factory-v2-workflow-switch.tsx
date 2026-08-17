@@ -47,17 +47,6 @@ export const FactoryV2WorkflowSwitch = ({
           >
             Check game
           </button>
-
-          <button
-            type="button"
-            onClick={() => onSelect("manage")}
-            className={cn(
-              "min-h-11 min-w-0 rounded-[18px] px-3 py-2 text-[13px] font-semibold transition-all duration-200",
-              selectedView === "manage" ? appearance.activeToggleClassName : appearance.inactiveToggleClassName,
-            )}
-          >
-            Manage indexers
-          </button>
         </div>
       </div>
     </section>

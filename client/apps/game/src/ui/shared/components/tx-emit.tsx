@@ -1,4 +1,9 @@
-import { SUBMISSION_TIMEOUT_UNCERTAIN_MESSAGE, TransactionType } from "@bibliothecadao/provider";
+import {
+  classifyTransactionError,
+  SUBMISSION_TIMEOUT_UNCERTAIN_MESSAGE,
+  TransactionType,
+  type ClassifiedTransactionError,
+} from "@bibliothecadao/provider";
 import { useDojo } from "@bibliothecadao/react";
 import { useEffect } from "react";
 import { toast } from "sonner";
@@ -19,6 +24,22 @@ type TransactionFailurePayload = {
   transactionCount?: number;
   transactionHash?: string;
   failureKind?: string;
+  error?: unknown;
+  errorCode?: number;
+  revertReason?: string;
+};
+
+const resolveFailureReason = (payload: TransactionFailurePayload, classified: ClassifiedTransactionError): string => {
+  if (classified.reason) {
+    return classified.reason;
+  }
+  if (payload.revertReason) {
+    const readableRevertReason = extractReadableErrorMessage(payload.revertReason, "");
+    if (readableRevertReason) {
+      return readableRevertReason;
+    }
+  }
+  return extractReadableErrorMessage(payload.message, "Transaction failed.");
 };
 
 export function TransactionNotification() {
@@ -46,16 +67,46 @@ export function TransactionNotification() {
     };
 
     const handleTransactionFailed = (payload: TransactionFailurePayload) => {
-      const message = extractReadableErrorMessage(payload.message, "Transaction failed.");
       const type = typeof payload?.type !== "undefined" ? payload.type : null;
       const transactionCount = typeof payload?.transactionCount === "number" ? payload.transactionCount : null;
-      const action = type ? getTxMessage(type) : "Action failed";
+      const action = type ? getTxMessage(type) : "Action";
       const txCount = transactionCount ? ` (${transactionCount} transactions)` : "";
-      const isNoHashTimeout = payload.failureKind === "submission_timeout_no_hash";
-      const title = isNoHashTimeout ? "⚠️ Transaction status uncertain" : "❌ Transaction failed";
-      const description = `${action}${txCount} - ${isNoHashTimeout ? SUBMISSION_TIMEOUT_UNCERTAIN_MESSAGE : message}`;
-      console.error("Transaction failed:", message);
-      toast(title, { description });
+      const actionLabel = `${action}${txCount}`;
+
+      if (payload.failureKind === "submission_timeout_no_hash") {
+        toast("⚠️ Transaction status uncertain", {
+          description: `${actionLabel} - ${SUBMISSION_TIMEOUT_UNCERTAIN_MESSAGE}`,
+        });
+        AudioManager.getInstance().play("ui.tx_fail");
+        return;
+      }
+
+      // Payloads always carry `error` since the provider attaches it; fall back
+      // to the message string only for payloads emitted without one.
+      const classified = classifyTransactionError("error" in payload ? payload.error : payload.message);
+
+      if (classified.kind === "user_cancelled") {
+        console.info("Transaction cancelled by user:", payload.type);
+        // No failure sound: closing the wallet popup is not an error.
+        toast("Transaction cancelled", { description: actionLabel });
+        return;
+      }
+
+      const reason = resolveFailureReason(payload, classified);
+      console.error("Transaction failed:", reason, payload.error ?? payload.message);
+
+      if (classified.kind === "session_invalid") {
+        toast("⚠️ Session expired", { description: `${actionLabel}: Session expired — reconnect your controller` });
+      } else if (classified.kind === "insufficient_funds") {
+        const fundsDetail = classified.reason ? ` — ${classified.reason}` : "";
+        toast("❌ Insufficient funds", {
+          description: `${actionLabel}: Not enough funds to cover this transaction${fundsDetail}`,
+        });
+      } else if (classified.kind === "reverted") {
+        toast("❌ Transaction failed", { description: `${actionLabel} failed: ${reason}` });
+      } else {
+        toast("❌ Transaction failed", { description: `${actionLabel} - ${reason}` });
+      }
       AudioManager.getInstance().play("ui.tx_fail");
     };
 

@@ -16,7 +16,7 @@ You can run all pre-factory steps in one command:
 pnpm run prefactory:deploy:<network>
 ```
 
-Replace `<network>` with one of: `local`, `slot`, `slottest`, `sepolia`, or `mainnet`.
+Replace `<network>` with one of: `local`, `appchain`, `sepolia`, or `mainnet`.
 
 **What this does:**
 
@@ -40,7 +40,7 @@ Execute the migration command for your target network:
 pnpm run game:migrate:<network>
 ```
 
-Replace `<network>` with one of: `local`, `slot`, `slottest`, `sepolia`, or `mainnet`.
+Replace `<network>` with one of: `local`, `appchain`, `sepolia`, or `mainnet`.
 
 #### Handling Build Errors
 
@@ -115,7 +115,7 @@ Or using the generic command with a network parameter:
 pnpm run manifest:copy-abis <network>
 ```
 
-Replace `<network>` with one of: `slot`, `slottest`, `sepolia`, or `mainnet`.
+Replace `<network>` with one of: `appchain`, `sepolia`, or `mainnet`.
 
 **What this does:**
 

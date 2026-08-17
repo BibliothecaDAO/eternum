@@ -13,7 +13,8 @@ describe("FastTravelScene render resource cleanup", () => {
     const source = readFastTravelSource();
 
     expect(source).toMatch(/createFastTravelRenderAssets/);
-    expect(source).toMatch(/this\.renderAssets\.createHexEdgeMesh\(/);
+    expect(source).toMatch(/this\.renderAssets\.createHexFieldMesh\(/);
+    expect(source).toMatch(/child\.geometry\.dispose\(\)/);
     expect(source).toMatch(/this\.renderAssets\.dispose\(\)/);
   });
 });

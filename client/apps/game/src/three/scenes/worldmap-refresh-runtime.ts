@@ -1,16 +1,16 @@
-interface WorldmapRefreshHydrationResult<TPreparedTerrain, TPresentationRuntime> {
+interface WorldmapRefreshPreparationResult<TPreparedTerrain, TPresentationRuntime> {
   presentationRuntime: TPresentationRuntime;
   preparedTerrain: TPreparedTerrain | null;
-  tileFetchSucceeded: boolean;
+  projectionSyncSucceeded: boolean;
 }
 
 interface RunWorldmapRefreshRuntimeInput<TPreparedTerrain, TPresentationRuntime, TCommitStatus> {
   commitRefresh: (
-    hydrationResult: WorldmapRefreshHydrationResult<TPreparedTerrain, TPresentationRuntime>,
+    preparationResult: WorldmapRefreshPreparationResult<TPreparedTerrain, TPresentationRuntime>,
   ) => Promise<TCommitStatus>;
-  hydrateChunk: () => Promise<WorldmapRefreshHydrationResult<TPreparedTerrain, TPresentationRuntime>>;
+  prepareChunk: () => Promise<WorldmapRefreshPreparationResult<TPreparedTerrain, TPresentationRuntime>>;
   onPreparedTerrainReady: (
-    hydrationResult: WorldmapRefreshHydrationResult<TPreparedTerrain, TPresentationRuntime>,
+    preparationResult: WorldmapRefreshPreparationResult<TPreparedTerrain, TPresentationRuntime>,
   ) => void;
   refreshAreaKey: string;
   suppressedAreaKeys: Set<string>;
@@ -22,13 +22,13 @@ export async function runWorldmapRefreshRuntime<TPreparedTerrain, TPresentationR
   input.suppressedAreaKeys.add(input.refreshAreaKey);
 
   try {
-    const hydrationResult = await input.hydrateChunk();
+    const preparationResult = await input.prepareChunk();
 
-    if (hydrationResult.tileFetchSucceeded && hydrationResult.preparedTerrain) {
-      input.onPreparedTerrainReady(hydrationResult);
+    if (preparationResult.projectionSyncSucceeded && preparationResult.preparedTerrain) {
+      input.onPreparedTerrainReady(preparationResult);
     }
 
-    return await input.commitRefresh(hydrationResult);
+    return await input.commitRefresh(preparationResult);
   } finally {
     input.suppressedAreaKeys.delete(input.refreshAreaKey);
   }

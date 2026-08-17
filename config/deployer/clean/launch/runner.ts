@@ -1,7 +1,7 @@
 import { EternumProvider } from "@bibliothecadao/provider";
 import { getGameManifest, getSeasonAddresses, type Chain } from "@contracts";
 import { setTimeout as sleep } from "node:timers/promises";
-import { Account, shortString } from "starknet";
+import { Account, RpcProvider, shortString } from "starknet";
 import { applyDeploymentConfigOverrides, loadEnvironmentConfiguration } from "../config/config-loader";
 import { executeConfigSteps } from "../config/executor";
 import { resolveFactoryWorldConfigSteps } from "../config/steps";
@@ -13,6 +13,8 @@ import {
 } from "../blitz/hyperstructure-reservation";
 import { resolveBlitzEntryTokenAddress, shouldDeployBlitzEntryToken } from "../blitz/entry-token";
 import {
+  DEFAULT_APPCHAIN_GAME_INDEX_POLL_MS,
+  DEFAULT_APPCHAIN_GAME_INDEX_TIMEOUT_MS,
   DEFAULT_CARTRIDGE_API_BASE,
   DEFAULT_FACTORY_INDEX_POLL_MS,
   DEFAULT_FACTORY_INDEX_TIMEOUT_MS,
@@ -37,13 +39,22 @@ import {
   resolveFactoryWorldProfile,
   waitForFactoryWorldProfile,
 } from "../factory/discovery";
-import { ensureSlotIndexerDeployment, resolveIndexerArtifactState } from "../indexing/slot-torii";
+import { createLaunchIndexer } from "../indexing/launch-indexer";
 import { syncPaymasterPolicy, type PaymasterAction } from "../paymaster";
+import {
+  assertAppchainRegistrarAvailable,
+  createRegistrarGame,
+  resolveAppchainRegistrarEnvironmentId,
+  resolveAppchainWorldAddress,
+} from "../registrar/calls";
+import { findGameRegistryByName, waitForGameRegistryById } from "../registrar/game-registry";
+import { buildCreateGameParams } from "../registrar/preset";
 import { buildLootChestMinterRoleGrantCall, grantRoles, resolveLootChestMinterRoleGrantTarget } from "../role-grants";
 import { resolveAccountCredentials } from "../shared/credentials";
 import type { GameManifestLike } from "../shared/manifest-types";
 import type {
   ConfigExecutionResult,
+  ConfigLogger,
   ConfigStepHooks,
   CreateGameDefaults,
   DeploymentEnvironment,
@@ -119,8 +130,14 @@ function asProviderSigner(account: Account): ProviderSigner {
   return account as unknown as ProviderSigner;
 }
 
-function createAccount(address: string, privateKey: string, chain: Chain, rpcUrl: string, vrfProviderAddress: string) {
-  const baseManifest = getGameManifest(chain);
+function createAccount(
+  address: string,
+  privateKey: string,
+  environment: DeploymentEnvironment,
+  rpcUrl: string,
+  vrfProviderAddress: string,
+) {
+  const baseManifest = getGameManifest(environment.chain as Chain, environment.gameType);
   const provider = new EternumProvider(baseManifest as any, rpcUrl, vrfProviderAddress);
   const account = new Account({
     provider: provider.provider as StarknetAccountOptions["provider"],
@@ -146,6 +163,10 @@ function resolveLaunchFactoryAddress(request: LaunchGameRequest, environment: De
     return factoryAddress;
   }
 
+  if (environment.chain === "appchain") {
+    return "";
+  }
+
   throw new Error(`Factory address is required for ${environment.id}. Set FACTORY_ADDRESS or pass --factory-address.`);
 }
 
@@ -166,7 +187,7 @@ function createLaunchRuntime(request: LaunchGameRequest, progress: LaunchProgres
     rpcUrl: request.rpcUrl || environment.rpcUrl,
     startTime: parseStartTime(request.startTime),
     cartridgeApiBase: request.cartridgeApiBase || DEFAULT_CARTRIDGE_API_BASE,
-    toriiNamespaces: request.toriiNamespaces || DEFAULT_NAMESPACE,
+    toriiNamespaces: request.toriiNamespaces || environment.appchainWorld?.namespace || DEFAULT_NAMESPACE,
     vrfProviderAddress: request.vrfProviderAddress || DEFAULT_VRF_PROVIDER_ADDRESS,
     executionMode: request.executionMode || "batched",
     version: request.version || DEFAULT_VERSION,
@@ -205,10 +226,13 @@ function resolveLaunchConfiguration(
     biomeClimateOverrides: request.biomeClimateOverrides,
     blitzRegistrationOverrides: request.blitzRegistrationOverrides,
   });
-  const configSteps = resolveFactoryWorldConfigSteps({
-    environmentId: runtime.environment.id,
-    config: deploymentConfig,
-  });
+  const configSteps =
+    runtime.environment.chain === "appchain"
+      ? []
+      : resolveFactoryWorldConfigSteps({
+          environmentId: runtime.environment.id,
+          config: deploymentConfig,
+        });
 
   runtime.progress.log(
     `Effective config flags: dev_mode_on=${deploymentConfig.dev?.mode?.on ?? false}, duration_seconds=${
@@ -217,7 +241,11 @@ function resolveLaunchConfiguration(
       deploymentConfig.settlement?.single_realm_mode ?? false
     }, two_player_mode=${deploymentConfig.settlement?.two_player_mode ?? false}`,
   );
-  runtime.progress.log(`Resolved ${configSteps.length} config steps for ${runtime.environment.id}`);
+  runtime.progress.log(
+    runtime.environment.chain === "appchain"
+      ? `Resolved preset ${runtime.version} for ${runtime.environment.id}`
+      : `Resolved ${configSteps.length} config steps for ${runtime.environment.id}`,
+  );
 
   return { deploymentConfig, configSteps };
 }
@@ -312,15 +340,17 @@ function buildDryRunSummary(execution: PreparedLaunchExecution): LaunchGameSumma
     id: step.id,
     description: step.description,
   }));
-  execution.summary.indexerRequest = buildIndexerRequest({
-    env: execution.runtime.environment.toriiEnv,
-    rpcUrl: execution.runtime.rpcUrl,
-    namespaces: execution.runtime.toriiNamespaces,
-    worldName: execution.request.gameName,
-    worldAddress: "<pending>",
-    workflowFile: execution.request.workflowFile,
-    ref: execution.request.ref,
-  });
+  if (execution.runtime.environment.chain === "mainnet") {
+    execution.summary.indexerRequest = buildIndexerRequest({
+      env: execution.runtime.environment.toriiEnv,
+      rpcUrl: execution.runtime.rpcUrl,
+      namespaces: execution.runtime.toriiNamespaces,
+      worldName: execution.request.gameName,
+      worldAddress: "<pending>",
+      workflowFile: execution.request.workflowFile,
+      ref: execution.request.ref,
+    });
+  }
   execution.summary.outputPath = writeLaunchSummary(execution.summary);
   execution.runtime.progress.log(`Dry run summary written to ${execution.summary.outputPath}`);
   return execution.summary;
@@ -337,7 +367,7 @@ function resolveLaunchAccountContext(runtime: LaunchRuntime, request: LaunchGame
   const { account } = createAccount(
     accountAddress,
     privateKey,
-    runtime.environment.chain as Chain,
+    runtime.environment,
     runtime.rpcUrl,
     runtime.vrfProviderAddress,
   );
@@ -567,11 +597,26 @@ async function resolveExistingWorldProfileForCompletedCreateWorld(params: {
     `create_game reported an existing deployment for "${params.request.gameName}". Verifying via factory SQL before continuing`,
   );
 
-  return resolveFactoryWorldProfile(
-    params.runtime.environment.chain,
-    params.request.gameName,
-    params.runtime.cartridgeApiBase,
-  );
+  // Poll rather than read once: the factory emits WorldDeployed in the same
+  // transaction that completes the cursor, so the indexer is usually a beat
+  // behind this check. A single miss here used to abort the whole launch even
+  // though the world was already on chain.
+  try {
+    return await waitForFactoryWorldProfile({
+      chain: params.runtime.environment.chain,
+      worldName: params.request.gameName,
+      cartridgeApiBase: params.runtime.cartridgeApiBase,
+      timeoutMs: params.request.waitForFactoryIndexTimeoutMs ?? DEFAULT_FACTORY_INDEX_TIMEOUT_MS,
+      pollIntervalMs: params.request.waitForFactoryIndexPollMs ?? DEFAULT_FACTORY_INDEX_POLL_MS,
+      onRetry: (attempt, elapsedMs) => {
+        params.runtime.progress.log(
+          `Factory SQL still pending for "${params.request.gameName}" after ${formatDuration(elapsedMs)} (${attempt} polls)`,
+        );
+      },
+    });
+  } catch {
+    return null;
+  }
 }
 
 async function waitForIndexedWorld(runtime: LaunchRuntime, request: LaunchGameRequest): Promise<FactoryWorldProfile> {
@@ -602,7 +647,10 @@ function createConfiguredWorldContext(
   runtime: LaunchRuntime,
   worldProfile: FactoryWorldProfile,
 ): ConfiguredWorldContext {
-  const baseManifest = getGameManifest(runtime.environment.chain as Chain) as GameManifestLike;
+  const baseManifest = getGameManifest(
+    runtime.environment.chain as Chain,
+    runtime.environment.gameType,
+  ) as GameManifestLike;
   const patchedManifest = patchManifestWithFactory(
     baseManifest,
     worldProfile.worldAddress,
@@ -631,7 +679,7 @@ function buildConfigExecutionContext(params: {
   deploymentConfig: LaunchConfig;
   account: Account;
   patchedProvider: EternumProvider;
-  logger?: SilentConfigLogger | typeof console;
+  logger?: ConfigLogger;
 }) {
   return {
     account: params.account,
@@ -1056,31 +1104,24 @@ async function createIndexerIfNeeded(
   });
   const result = await runtime.progress.run(
     "create indexer",
-    async () => ensureSlotIndexerDeployment(indexerRequest, { onProgress: (message) => runtime.progress.log(message) }),
+    async () => createLaunchIndexer(indexerRequest, { onProgress: (message) => runtime.progress.log(message) }),
     {
       start: `Creating indexer for ${shortenHash(worldAddress)}`,
       success: (indexerResult, elapsedMs) => {
-        const liveTier = indexerResult.liveState.currentTier || indexerResult.requestedTier;
-        const liveUrl = indexerResult.liveState.url;
-        const outcome = indexerResult.action === "already-live" ? "Indexer already live" : "Indexer deployed via Slot";
-        return `${outcome} in ${formatDuration(elapsedMs)} (${liveTier}${liveUrl ? `, ${liveUrl}` : ""})`;
+        const runUrl = indexerResult.workflowRun?.htmlUrl;
+        return `Indexer deployed in ${formatDuration(elapsedMs)} (${indexerRequest.tier || "basic"}${
+          runUrl ? `, ${runUrl}` : ""
+        })`;
       },
     },
   );
-  const liveArtifacts = resolveIndexerArtifactState(result.liveState, {
-    fallbackTier: indexerRequest.tier,
-  });
 
   return {
-    indexerCreated: liveArtifacts.indexerCreated,
+    indexerCreated: true,
     indexerMode: result.mode,
-    indexerTier: liveArtifacts.indexerTier,
-    indexerUrl: liveArtifacts.indexerUrl,
-    indexerVersion: liveArtifacts.indexerVersion,
-    indexerBranch: liveArtifacts.indexerBranch,
-    lastIndexerDescribeAt: liveArtifacts.lastIndexerDescribeAt,
+    indexerTier: indexerRequest.tier,
     indexerRequest,
-    indexerWorkflowRun: undefined,
+    indexerWorkflowRun: result.workflowRun,
   };
 }
 
@@ -1088,6 +1129,178 @@ function finalizeLaunchSummary(execution: PreparedLaunchExecution): LaunchGameSu
   execution.summary.outputPath = writeLaunchSummary(execution.summary);
   execution.runtime.progress.log(`Launch summary written to ${execution.summary.outputPath}`);
   return execution.summary;
+}
+
+function resolveAppchainRegistrarEnvironment(execution: PreparedLaunchExecution) {
+  return resolveAppchainRegistrarEnvironmentId(execution.runtime.environment.id);
+}
+
+function resolveAppchainPresetId(version: string): number {
+  const presetId = Number(version);
+  if (!Number.isInteger(presetId) || presetId <= 0 || presetId > 0xffff_ffff) {
+    throw new Error(`Appchain version must be a registered numeric preset id, received "${version}"`);
+  }
+  return presetId;
+}
+
+function resolveAppchainLaunchAccount(execution: PreparedLaunchExecution): Account {
+  const credentials = resolveAccountCredentials({
+    accountAddress: execution.request.accountAddress,
+    privateKey: execution.request.privateKey,
+    context: `environment "${execution.runtime.environment.id}"`,
+  });
+  return new Account({
+    provider: new RpcProvider({ nodeUrl: execution.runtime.rpcUrl }),
+    address: credentials.accountAddress,
+    signer: credentials.privateKey,
+  });
+}
+
+function buildAppchainCreateGameParams(execution: PreparedLaunchExecution) {
+  const config = execution.deploymentConfig;
+  if (execution.request.blitzRegistrationOverrides?.fee_token) {
+    throw new Error("Appchain fee_token is chain-global and cannot be overridden for one game");
+  }
+
+  return buildCreateGameParams(config, {
+    gameName: execution.request.gameName,
+    presetId: resolveAppchainPresetId(execution.runtime.version),
+    seriesName: execution.request.seriesName,
+    seriesGameNumber: execution.request.seriesGameNumber,
+    startMainAt: execution.runtime.startTime,
+    durationSeconds: config.season.durationSeconds,
+    devModeOn: config.dev.mode.on,
+    singleRealmMode: config.settlement.single_realm_mode,
+    twoPlayerMode: config.settlement.two_player_mode ?? false,
+    useMapOverride: Boolean(
+      execution.request.mapConfigOverrides && Object.keys(execution.request.mapConfigOverrides).length > 0,
+    ),
+  });
+}
+
+function applyAppchainGameIdentity(execution: PreparedLaunchExecution, game: { gameId: number }): void {
+  execution.summary.gameId = game.gameId;
+  execution.summary.worldAddress = resolveAppchainWorldAddress(resolveAppchainRegistrarEnvironment(execution));
+}
+
+async function findExistingAppchainGame(execution: PreparedLaunchExecution) {
+  try {
+    return await findGameRegistryByName(execution.request.gameName);
+  } catch (error) {
+    const reason = error instanceof Error ? error.message : String(error);
+    throw new Error(
+      `Cannot verify whether game "${execution.request.gameName}" already exists; refusing to submit create_game: ${reason}`,
+      { cause: error },
+    );
+  }
+}
+
+async function resolveCreatedAppchainGameId(
+  execution: PreparedLaunchExecution,
+  emittedGameId: number | undefined,
+): Promise<number> {
+  if (emittedGameId) {
+    return emittedGameId;
+  }
+
+  const indexedGame = await execution.runtime.progress.run(
+    "resolve created game id",
+    async () => {
+      const startedAt = Date.now();
+      while (Date.now() - startedAt <= 120_000) {
+        const game = await findExistingAppchainGame(execution);
+        if (game) {
+          return game;
+        }
+        await sleep(2_000);
+      }
+      throw new Error(`Timed out resolving game id for "${execution.request.gameName}"`);
+    },
+    {
+      start: `Resolving game id for "${execution.request.gameName}"`,
+      success: (game, elapsedMs) => `Resolved game ${game.gameId} in ${formatDuration(elapsedMs)}`,
+    },
+  );
+  return indexedGame.gameId;
+}
+
+async function runAppchainCreateWorldStep(execution: PreparedLaunchExecution): Promise<void> {
+  const environmentId = resolveAppchainRegistrarEnvironment(execution);
+  assertAppchainRegistrarAvailable(environmentId);
+  const existingGame = await findExistingAppchainGame(execution);
+  if (existingGame) {
+    applyAppchainGameIdentity(execution, existingGame);
+    execution.runtime.progress.log(
+      `Game "${execution.request.gameName}" is already indexed as ${existingGame.gameId}; skipping create_game`,
+    );
+    return;
+  }
+
+  const result = await execution.runtime.progress.run(
+    "create_game",
+    () =>
+      createRegistrarGame(
+        resolveAppchainLaunchAccount(execution),
+        buildAppchainCreateGameParams(execution),
+        environmentId,
+      ),
+    {
+      start: `Creating "${execution.request.gameName}" through the persistent registrar`,
+      success: (created, elapsedMs) =>
+        `create_game confirmed in ${formatDuration(elapsedMs)} (${shortenHash(created.transactionHash)})`,
+    },
+  );
+  execution.summary.createGameTxHash = result.transactionHash;
+  const gameId = await resolveCreatedAppchainGameId(execution, result.gameId);
+  applyAppchainGameIdentity(execution, { gameId });
+}
+
+async function resolveAppchainGameId(execution: PreparedLaunchExecution): Promise<number> {
+  if (execution.summary.gameId) {
+    return execution.summary.gameId;
+  }
+  const existingGame = await findExistingAppchainGame(execution);
+  if (!existingGame) {
+    throw new Error(`No game id is recorded or indexed for "${execution.request.gameName}"`);
+  }
+  applyAppchainGameIdentity(execution, existingGame);
+  return existingGame.gameId;
+}
+
+async function runAppchainWaitForGameStep(execution: PreparedLaunchExecution): Promise<void> {
+  assertAppchainRegistrarAvailable(resolveAppchainRegistrarEnvironment(execution));
+  const gameId = await resolveAppchainGameId(execution);
+  const row = await execution.runtime.progress.run(
+    "wait for game indexing",
+    () =>
+      waitForGameRegistryById({
+        gameId,
+        timeoutMs: execution.request.waitForFactoryIndexTimeoutMs ?? DEFAULT_APPCHAIN_GAME_INDEX_TIMEOUT_MS,
+        pollIntervalMs: execution.request.waitForFactoryIndexPollMs ?? DEFAULT_APPCHAIN_GAME_INDEX_POLL_MS,
+        onRetry: (attempt, elapsedMs) => {
+          execution.runtime.progress.log(
+            `GameRegistry row ${gameId} still pending after ${formatDuration(elapsedMs)} (${attempt} polls)`,
+          );
+        },
+      }),
+    {
+      start: `Waiting for GameRegistry row ${gameId}`,
+      success: (_, elapsedMs) => `GameRegistry row ${gameId} indexed in ${formatDuration(elapsedMs)}`,
+    },
+  );
+  applyAppchainGameIdentity(execution, row);
+}
+
+async function executeAppchainLaunchStep(execution: PreparedLaunchExecution, stepId: LaunchGameStepId): Promise<void> {
+  if (stepId === "create-world") {
+    await runAppchainCreateWorldStep(execution);
+    return;
+  }
+  if (stepId === "wait-for-factory-index") {
+    await runAppchainWaitForGameStep(execution);
+    return;
+  }
+  throw new Error(`Launch step "${stepId}" does not run for persistent appchain games`);
 }
 
 async function runCreateWorldStep(
@@ -1302,7 +1515,11 @@ export async function runLaunchStep(request: LaunchGameStepRequest): Promise<Lau
     return buildDryRunSummary(execution);
   }
 
-  await executeLaunchStep(execution, request.stepId);
+  if (execution.runtime.environment.chain === "appchain") {
+    await executeAppchainLaunchStep(execution, request.stepId);
+  } else {
+    await executeLaunchStep(execution, request.stepId);
+  }
   return finalizeLaunchSummary(execution);
 }
 
@@ -1311,6 +1528,12 @@ export async function launchGame(request: LaunchGameRequest): Promise<LaunchGame
 
   if (request.dryRun) {
     return buildDryRunSummary(execution);
+  }
+
+  if (execution.runtime.environment.chain === "appchain") {
+    await runAppchainCreateWorldStep(execution);
+    await runAppchainWaitForGameStep(execution);
+    return finalizeLaunchSummary(execution);
   }
 
   const accountContext = await runCreateWorldStep(execution);

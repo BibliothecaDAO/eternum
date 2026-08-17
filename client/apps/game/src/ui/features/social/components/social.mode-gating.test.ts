@@ -10,7 +10,9 @@ describe("Social tab mode gating", () => {
     expect(source).toContain('const isBlitzMode = resolvedWorldMode === "blitz";');
     expect(source).toContain('const isEternumMode = resolvedWorldMode === "eternum";');
     expect(source).toContain("if (isEternumMode) {");
-    expect(source).toContain("if (isBlitzMode) {");
+    // The Blitz Prize tab additionally requires real prize infrastructure on
+    // the chain (non-zero ChainConfig fee/entry token addresses).
+    expect(source).toContain("if (isBlitzMode && hasPrizeInfra) {");
     expect(source).toContain("if (isBlitzMode && mmrEnabled) {");
   });
 });

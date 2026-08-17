@@ -20,6 +20,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { ArmyManagementCard } from "./army-management-card";
 import { HelpModal } from "./help-modal";
 import { TroopChip } from "./troop-chip";
+import { gameEntityKey } from "@/dojo/game-scope";
 
 export const NavigateToPositionIcon = ({
   position,
@@ -89,7 +90,7 @@ const ArmyChip = ({
 
   const isOnMap = useMemo(() => location.pathname.includes("/play"), [location.pathname]);
 
-  const resources = useComponentValue(components.Resource, getEntityIdFromKeys([BigInt(army.entityId)]));
+  const resources = useComponentValue(components.Resource, gameEntityKey([BigInt(army.entityId)]));
 
   const storeArmiesTick = useBlockTimestampStore((state) => state.currentArmiesTick);
   const currentArmiesTick = currentArmiesTickProp ?? storeArmiesTick;

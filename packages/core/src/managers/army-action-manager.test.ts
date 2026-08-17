@@ -72,13 +72,9 @@ function buildTileOptData(input: {
 
 function createTestSetup(systemCalls: Record<string, unknown> = {}) {
   const oldFeltStart = { col: TEST_FELT_CENTER, row: TEST_FELT_CENTER };
-  const overrideFeltStart = { col: TEST_FELT_CENTER + 5, row: TEST_FELT_CENTER + 3 };
   const exploredHexes = new Map<number, Map<number, BiomeType>>();
 
-  const allExploredNeighbors = [
-    ...getNeighborHexes(oldFeltStart.col, oldFeltStart.row),
-    ...getNeighborHexes(overrideFeltStart.col, overrideFeltStart.row),
-  ];
+  const allExploredNeighbors = [...getNeighborHexes(oldFeltStart.col, oldFeltStart.row)];
 
   for (const neighbor of allExploredNeighbors) {
     setNestedMapValue(exploredHexes, neighbor.col - TEST_FELT_CENTER, neighbor.row - TEST_FELT_CENTER, 1 as BiomeType);
@@ -114,7 +110,6 @@ function createTestSetup(systemCalls: Record<string, unknown> = {}) {
     manager,
     components,
     oldFeltStart,
-    overrideFeltStart,
     exploredHexes,
     structureHexes: new Map<number, Map<number, HexEntityInfo>>(),
     armyHexes: new Map<number, Map<number, HexEntityInfo>>(),
@@ -203,28 +198,7 @@ describe("ArmyActionManager.findActionPaths origin precedence", () => {
     vi.restoreAllMocks();
   });
 
-  it("anchors first-hop highlights to startPositionOverride when override and ECS coord diverge", () => {
-    const { manager, structureHexes, armyHexes, exploredHexes, chestHexes, overrideFeltStart } = createTestSetup();
-
-    const actionPaths = (manager.findActionPaths as any)(
-      structureHexes,
-      armyHexes,
-      exploredHexes,
-      chestHexes,
-      0,
-      0,
-      0x123n,
-      overrideFeltStart,
-    );
-
-    const highlightedHexes = new Set(
-      actionPaths.getHighlightedHexes().map((action) => `${action.hex.col},${action.hex.row}`),
-    );
-
-    expect(highlightedHexes).toEqual(toNormalizedNeighborSet(overrideFeltStart));
-  });
-
-  it("falls back to ExplorerTroops coord when no override is provided", () => {
+  it("anchors first-hop highlights to the ExplorerTroops coord — the same coord the submit freshness guard checks", () => {
     const { manager, structureHexes, armyHexes, exploredHexes, chestHexes, oldFeltStart } = createTestSetup();
 
     const actionPaths = manager.findActionPaths(
@@ -435,9 +409,32 @@ describe("ArmyActionManager.moveArmy explore position-freshness guard", () => {
 
     expect(systemCalls.explorer_explore).toHaveBeenCalledTimes(1);
   });
+
+  it("rejects explore when an obsolete provisional coord reports the destination", async () => {
+    const systemCalls = {
+      explorer_explore: vi.fn().mockResolvedValue({}),
+      explorer_travel: vi.fn().mockResolvedValue({}),
+      toggle_alternate: vi.fn().mockResolvedValue({}),
+    };
+    const { manager, oldFeltStart } = createTestSetup(systemCalls);
+    // The path starts at a neighbor while ExplorerTroops still reports
+    // oldFeltStart. Destination matching is not freshness evidence: movement
+    // now starts only from the authoritative source coordinate.
+    const neighbor = getNeighborHexes(oldFeltStart.col, oldFeltStart.row)[0];
+
+    const actionPath = [
+      { hex: { col: neighbor.col, row: neighbor.row }, actionType: ActionType.Explore },
+      { hex: { col: oldFeltStart.col, row: oldFeltStart.row }, actionType: ActionType.Explore },
+    ];
+
+    const signer = { address: "0x123" } as any;
+
+    await expect(manager.moveArmy(signer, actionPath as any, false, 0)).rejects.toThrow(/drifted|position/i);
+    expect(systemCalls.explorer_explore).not.toHaveBeenCalled();
+  });
 });
 
-describe("ArmyActionManager.moveArmy resource optimism", () => {
+describe("ArmyActionManager.moveArmy provisional resource writes", () => {
   beforeEach(() => {
     vi.spyOn(configManager, "getResourceWeightKg").mockReturnValue(0);
     vi.spyOn(configManager, "getTravelFoodCostConfig").mockReturnValue({
@@ -452,27 +449,24 @@ describe("ArmyActionManager.moveArmy resource optimism", () => {
     vi.restoreAllMocks();
   });
 
-  it("applies travel wheat and fish debits before submitting the travel transaction", async () => {
-    let components: ReturnType<typeof createTestSetup>["components"];
+  it("routes travel food through the session resource intent owner", async () => {
     const systemCalls = {
-      explorer_travel: vi.fn().mockImplementation(async () => {
-        const resourceManager = new ResourceManager(components, 77);
-        expect(resourceManager.balance(ResourcesIds.Wheat)).toBe(precise(96));
-        expect(resourceManager.balance(ResourcesIds.Fish)).toBe(precise(98));
-        return {};
-      }),
+      explorer_travel: vi.fn().mockResolvedValue({}),
       explorer_explore: vi.fn().mockResolvedValue({}),
       toggle_alternate: vi.fn().mockResolvedValue({}),
     };
     const setup = createTestSetup(systemCalls);
-    components = setup.components;
+    const signer = { address: "0x123" } as any;
+    const submitProvisionalResourceTransaction = vi
+      .spyOn(ResourceManager.prototype, "submitProvisionalResourceTransaction")
+      .mockImplementation(async (_changes, _waiterSource, submit) => submit());
     const firstStep = getNeighborHexes(setup.oldFeltStart.col, setup.oldFeltStart.row)[0];
     const secondStep = getNeighborHexes(firstStep.col, firstStep.row).find(
       (hex) => hex.col !== setup.oldFeltStart.col || hex.row !== setup.oldFeltStart.row,
     )!;
 
     await setup.manager.moveArmy(
-      { address: "0x123" } as any,
+      signer,
       [
         { hex: setup.oldFeltStart, actionType: ActionType.Move },
         { hex: firstStep, actionType: ActionType.Move },
@@ -482,70 +476,49 @@ describe("ArmyActionManager.moveArmy resource optimism", () => {
       0,
     );
 
+    expect(submitProvisionalResourceTransaction).toHaveBeenCalledWith(
+      [
+        { resourceId: ResourcesIds.Wheat, amount: -4 },
+        { resourceId: ResourcesIds.Fish, amount: -2 },
+      ],
+      signer,
+      expect.any(Function),
+    );
     expect(systemCalls.explorer_travel).toHaveBeenCalledTimes(1);
   });
 
-  it("cleans up travel food debits immediately when the submit result has no transaction hash", async () => {
-    let components: ReturnType<typeof createTestSetup>["components"];
+  it("routes exploration food through the same session resource intent owner", async () => {
     const systemCalls = {
       explorer_travel: vi.fn().mockResolvedValue({}),
       explorer_explore: vi.fn().mockResolvedValue({}),
       toggle_alternate: vi.fn().mockResolvedValue({}),
     };
     const setup = createTestSetup(systemCalls);
-    components = setup.components;
-    const firstStep = getNeighborHexes(setup.oldFeltStart.col, setup.oldFeltStart.row)[0];
-    const secondStep = getNeighborHexes(firstStep.col, firstStep.row).find(
-      (hex) => hex.col !== setup.oldFeltStart.col || hex.row !== setup.oldFeltStart.row,
-    )!;
+    const signer = { address: "0x123" } as any;
+    const submitProvisionalResourceTransaction = vi
+      .spyOn(ResourceManager.prototype, "submitProvisionalResourceTransaction")
+      .mockImplementation(async (_changes, _waiterSource, submit) => submit());
+    const target = getNeighborHexes(setup.oldFeltStart.col, setup.oldFeltStart.row)[0];
 
     await setup.manager.moveArmy(
-      { address: "0x123" } as any,
+      signer,
       [
-        { hex: setup.oldFeltStart, actionType: ActionType.Move },
-        { hex: firstStep, actionType: ActionType.Move },
-        { hex: secondStep, actionType: ActionType.Move },
+        { hex: setup.oldFeltStart, actionType: ActionType.Explore },
+        { hex: target, actionType: ActionType.Explore },
       ] as any,
-      true,
+      false,
       0,
     );
 
-    const resourceManager = new ResourceManager(components, 77);
-    expect(resourceManager.balance(ResourcesIds.Wheat)).toBe(precise(100));
-    expect(resourceManager.balance(ResourcesIds.Fish)).toBe(precise(100));
-  });
-
-  it("rolls back explore wheat and fish debits when submission fails", async () => {
-    let components: ReturnType<typeof createTestSetup>["components"];
-    const systemCalls = {
-      explorer_travel: vi.fn().mockResolvedValue({}),
-      explorer_explore: vi.fn().mockImplementation(async () => {
-        const resourceManager = new ResourceManager(components, 77);
-        expect(resourceManager.balance(ResourcesIds.Wheat)).toBe(precise(95));
-        expect(resourceManager.balance(ResourcesIds.Fish)).toBe(precise(98));
-        throw new Error("submit failed");
-      }),
-      toggle_alternate: vi.fn().mockResolvedValue({}),
-    };
-    const setup = createTestSetup(systemCalls);
-    components = setup.components;
-    const target = getNeighborHexes(setup.oldFeltStart.col, setup.oldFeltStart.row)[0];
-
-    await expect(
-      setup.manager.moveArmy(
-        { address: "0x123" } as any,
-        [
-          { hex: setup.oldFeltStart, actionType: ActionType.Explore },
-          { hex: target, actionType: ActionType.Explore },
-        ] as any,
-        false,
-        0,
-      ),
-    ).rejects.toThrow("submit failed");
-
-    const resourceManager = new ResourceManager(components, 77);
-    expect(resourceManager.balance(ResourcesIds.Wheat)).toBe(precise(100));
-    expect(resourceManager.balance(ResourcesIds.Fish)).toBe(precise(100));
+    expect(submitProvisionalResourceTransaction).toHaveBeenCalledWith(
+      [
+        { resourceId: ResourcesIds.Wheat, amount: -5 },
+        { resourceId: ResourcesIds.Fish, amount: -2 },
+      ],
+      signer,
+      expect.any(Function),
+    );
+    expect(systemCalls.explorer_explore).toHaveBeenCalledTimes(1);
   });
 });
 

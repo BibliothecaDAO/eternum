@@ -19,9 +19,9 @@ mod tests {
         ITroopBattleSystemsDispatcher, ITroopBattleSystemsDispatcherTrait,
     };
     use crate::utils::testing::helpers::{
-        MOCK_TROOP_LIMIT_CONFIG, attack_explorer_vs_explorer, attack_explorer_vs_guard, attack_guard_vs_explorer,
-        get_combat_systems, get_explorer, setup_explorer_battle, setup_guard_battle, spawn_combat_world,
-        spawn_world_minimal,
+        MOCK_TROOP_LIMIT_CONFIG, TEST_GAME_ID, attack_explorer_vs_explorer, attack_explorer_vs_guard,
+        attack_guard_vs_explorer, get_combat_systems, get_explorer, setup_explorer_battle, setup_guard_battle,
+        spawn_combat_world, spawn_world_minimal,
     };
 
     // ========================================================================
@@ -41,6 +41,7 @@ mod tests {
         let explorer_id: u32 = 1;
         let owner_id: u32 = 100;
         let explorer = ExplorerTroops {
+            game_id: TEST_GAME_ID,
             explorer_id,
             owner: owner_id,
             coord: Coord { alt: false, x: 10, y: 10 },
@@ -55,7 +56,7 @@ mod tests {
         };
         world.write_model_test(@explorer);
 
-        let read_explorer: ExplorerTroops = world.read_model(explorer_id);
+        let read_explorer: ExplorerTroops = world.read_model((TEST_GAME_ID, explorer_id));
         assert!(read_explorer.owner == owner_id, "Explorer should have correct owner");
         assert!(read_explorer.troops.count == 1000 * RESOURCE_PRECISION, "Explorer should have correct troop count");
     }
@@ -108,11 +109,13 @@ mod tests {
         // If loser died, verify cleanup
         if first.troops.count.is_zero() {
             let explorers_list: Span<u32> = StructureTroopExplorerStoreImpl::retrieve(
-                ref world, first_explorer.realm_id,
+                ref world, TEST_GAME_ID, first_explorer.realm_id,
             );
             assert!(explorers_list.is_empty(), "Dead explorer should be removed from structure");
 
-            let structure_base: StructureBase = StructureBaseStoreImpl::retrieve(ref world, first_explorer.realm_id);
+            let structure_base: StructureBase = StructureBaseStoreImpl::retrieve(
+                ref world, TEST_GAME_ID, first_explorer.realm_id,
+            );
             assert!(structure_base.troop_explorer_count.is_zero(), "Structure explorer count should be 0");
         }
     }
@@ -145,8 +148,8 @@ mod tests {
             TroopType::Knight, TroopTier::T1, TroopType::Crossbowman, TroopTier::T2,
         );
 
-        let first: ExplorerTroops = world.read_model(first_explorer.explorer_id);
-        let mut second: ExplorerTroops = world.read_model(second_explorer.explorer_id);
+        let first: ExplorerTroops = world.read_model((TEST_GAME_ID, first_explorer.explorer_id));
+        let mut second: ExplorerTroops = world.read_model((TEST_GAME_ID, second_explorer.explorer_id));
         let first_troop_count_before_attack = first.troops.count;
         second.coord = first.coord.neighbor(Direction::East).neighbor(Direction::NorthEast);
         world.write_model_test(@second);
@@ -177,7 +180,9 @@ mod tests {
 
         start_cheat_caller_address(systems.troop_battle, unknown_address);
         dispatcher
-            .attack_explorer_vs_explorer(second_explorer.explorer_id, first_explorer.explorer_id, array![].span());
+            .attack_explorer_vs_explorer(
+                TEST_GAME_ID, second_explorer.explorer_id, first_explorer.explorer_id, array![].span(),
+            );
         stop_cheat_caller_address(systems.troop_battle);
     }
 
@@ -189,7 +194,7 @@ mod tests {
         );
 
         // Move second explorer's coord to be non-adjacent to first explorer
-        let mut explorer: ExplorerTroops = world.read_model(second_explorer.explorer_id);
+        let mut explorer: ExplorerTroops = world.read_model((TEST_GAME_ID, second_explorer.explorer_id));
         explorer.coord = explorer.coord.neighbor_after_distance(Direction::NorthEast, 5);
         world.write_model_test(@explorer);
 
@@ -197,7 +202,9 @@ mod tests {
 
         start_cheat_caller_address(systems.troop_battle, second_explorer.owner);
         dispatcher
-            .attack_explorer_vs_explorer(second_explorer.explorer_id, first_explorer.explorer_id, array![].span());
+            .attack_explorer_vs_explorer(
+                TEST_GAME_ID, second_explorer.explorer_id, first_explorer.explorer_id, array![].span(),
+            );
         stop_cheat_caller_address(systems.troop_battle);
     }
 
@@ -208,8 +215,8 @@ mod tests {
             TroopType::Knight, TroopTier::T1, TroopType::Knight, TroopTier::T1,
         );
 
-        let first: ExplorerTroops = world.read_model(first_explorer.explorer_id);
-        let mut second: ExplorerTroops = world.read_model(second_explorer.explorer_id);
+        let first: ExplorerTroops = world.read_model((TEST_GAME_ID, first_explorer.explorer_id));
+        let mut second: ExplorerTroops = world.read_model((TEST_GAME_ID, second_explorer.explorer_id));
         second.coord = first.coord.neighbor(Direction::East).neighbor(Direction::NorthEast);
         world.write_model_test(@second);
 
@@ -224,7 +231,7 @@ mod tests {
         );
 
         // Kill the attacker's troops
-        let mut attacker: ExplorerTroops = world.read_model(second_explorer.explorer_id);
+        let mut attacker: ExplorerTroops = world.read_model((TEST_GAME_ID, second_explorer.explorer_id));
         attacker.troops.count = 0;
         world.write_model_test(@attacker);
 
@@ -240,7 +247,7 @@ mod tests {
         );
 
         // Kill the defender's troops
-        let mut defender: ExplorerTroops = world.read_model(first_explorer.explorer_id);
+        let mut defender: ExplorerTroops = world.read_model((TEST_GAME_ID, first_explorer.explorer_id));
         defender.troops.count = 0;
         world.write_model_test(@defender);
 
@@ -282,7 +289,7 @@ mod tests {
         let dispatcher = ITroopBattleSystemsDispatcher { contract_address: systems.troop_battle };
 
         start_cheat_caller_address(systems.troop_battle, unknown_address);
-        dispatcher.attack_explorer_vs_guard(explorer.explorer_id, realm.entity_id);
+        dispatcher.attack_explorer_vs_guard(TEST_GAME_ID, explorer.explorer_id, realm.entity_id);
         stop_cheat_caller_address(systems.troop_battle);
     }
 
@@ -294,7 +301,7 @@ mod tests {
         );
 
         // Kill the attacker's troops
-        let mut attacker: ExplorerTroops = world.read_model(explorer.explorer_id);
+        let mut attacker: ExplorerTroops = world.read_model((TEST_GAME_ID, explorer.explorer_id));
         attacker.troops.count = 0;
         world.write_model_test(@attacker);
 
@@ -312,7 +319,7 @@ mod tests {
         // Move explorer's coord to be non-adjacent to the structure
         // Structure (realm) is at (80, 80), explorer is at (81, 80)
         // Move explorer to (85, 80) which is NOT adjacent to (80, 80)
-        let mut explorer_troops: ExplorerTroops = world.read_model(explorer.explorer_id);
+        let mut explorer_troops: ExplorerTroops = world.read_model((TEST_GAME_ID, explorer.explorer_id));
         explorer_troops.coord = explorer_troops.coord.neighbor_after_distance(Direction::NorthEast, 5);
         world.write_model_test(@explorer_troops);
 
@@ -325,8 +332,8 @@ mod tests {
             TroopType::Knight, TroopTier::T1, TroopType::Crossbowman, TroopTier::T2,
         );
 
-        let mut explorer_troops: ExplorerTroops = world.read_model(explorer.explorer_id);
-        let structure_base: StructureBase = StructureBaseStoreImpl::retrieve(ref world, realm.entity_id);
+        let mut explorer_troops: ExplorerTroops = world.read_model((TEST_GAME_ID, explorer.explorer_id));
+        let structure_base: StructureBase = StructureBaseStoreImpl::retrieve(ref world, TEST_GAME_ID, realm.entity_id);
         explorer_troops.coord = structure_base.coord().neighbor(Direction::East).neighbor(Direction::NorthEast);
         world.write_model_test(@explorer_troops);
 
@@ -340,15 +347,17 @@ mod tests {
             TroopType::Knight, TroopTier::T1, TroopType::Crossbowman, TroopTier::T2,
         );
 
-        let mut guard_troops = StructureTroopGuardStoreImpl::retrieve(ref world, realm.entity_id);
+        let mut guard_troops = StructureTroopGuardStoreImpl::retrieve(ref world, TEST_GAME_ID, realm.entity_id);
         guard_troops.delta.count = 0;
-        StructureTroopGuardStoreImpl::store(ref guard_troops, ref world, realm.entity_id);
+        StructureTroopGuardStoreImpl::store(ref guard_troops, ref world, TEST_GAME_ID, realm.entity_id);
 
-        let mut structure_base: StructureBase = StructureBaseStoreImpl::retrieve(ref world, realm.entity_id);
+        let mut structure_base: StructureBase = StructureBaseStoreImpl::retrieve(
+            ref world, TEST_GAME_ID, realm.entity_id,
+        );
         structure_base.troop_guard_count = 0;
-        StructureBaseStoreImpl::store(ref structure_base, ref world, realm.entity_id);
+        StructureBaseStoreImpl::store(ref structure_base, ref world, TEST_GAME_ID, realm.entity_id);
 
-        let mut explorer_troops: ExplorerTroops = world.read_model(explorer.explorer_id);
+        let mut explorer_troops: ExplorerTroops = world.read_model((TEST_GAME_ID, explorer.explorer_id));
         explorer_troops.coord = structure_base.coord().neighbor(Direction::East).neighbor(Direction::NorthEast);
         world.write_model_test(@explorer_troops);
 
@@ -361,18 +370,18 @@ mod tests {
             TroopType::Knight, TroopTier::T1, TroopType::Crossbowman, TroopTier::T2,
         );
 
-        let mut guard_troops = StructureTroopGuardStoreImpl::retrieve(ref world, realm.entity_id);
+        let mut guard_troops = StructureTroopGuardStoreImpl::retrieve(ref world, TEST_GAME_ID, realm.entity_id);
         guard_troops.delta.count = 1 * RESOURCE_PRECISION;
-        StructureTroopGuardStoreImpl::store(ref guard_troops, ref world, realm.entity_id);
+        StructureTroopGuardStoreImpl::store(ref guard_troops, ref world, TEST_GAME_ID, realm.entity_id);
 
-        let structure_base: StructureBase = StructureBaseStoreImpl::retrieve(ref world, realm.entity_id);
-        let mut explorer_troops: ExplorerTroops = world.read_model(explorer.explorer_id);
+        let structure_base: StructureBase = StructureBaseStoreImpl::retrieve(ref world, TEST_GAME_ID, realm.entity_id);
+        let mut explorer_troops: ExplorerTroops = world.read_model((TEST_GAME_ID, explorer.explorer_id));
         explorer_troops.coord = structure_base.coord().neighbor(Direction::East).neighbor(Direction::NorthEast);
         world.write_model_test(@explorer_troops);
 
         attack_explorer_vs_guard(ref world, systems, explorer, realm.entity_id);
 
-        let structure_owner = StructureOwnerStoreImpl::retrieve(ref world, realm.entity_id);
+        let structure_owner = StructureOwnerStoreImpl::retrieve(ref world, TEST_GAME_ID, realm.entity_id);
         assert!(structure_owner == realm.owner, "Ranged final-guard kill should not claim structure");
     }
 
@@ -409,7 +418,7 @@ mod tests {
         let dispatcher = ITroopBattleSystemsDispatcher { contract_address: systems.troop_battle };
 
         start_cheat_caller_address(systems.troop_battle, unknown_address);
-        dispatcher.attack_guard_vs_explorer(realm.entity_id, GuardSlot::Delta, explorer.explorer_id);
+        dispatcher.attack_guard_vs_explorer(TEST_GAME_ID, realm.entity_id, GuardSlot::Delta, explorer.explorer_id);
         stop_cheat_caller_address(systems.troop_battle);
     }
 
@@ -432,7 +441,7 @@ mod tests {
         );
 
         // Kill the defender's troops
-        let mut defender: ExplorerTroops = world.read_model(explorer.explorer_id);
+        let mut defender: ExplorerTroops = world.read_model((TEST_GAME_ID, explorer.explorer_id));
         defender.troops.count = 0;
         world.write_model_test(@defender);
 
@@ -450,7 +459,7 @@ mod tests {
         // Move explorer's coord to be non-adjacent to the structure
         // Structure (realm) is at (80, 80), explorer is at (81, 80)
         // Move explorer to (85, 80) which is NOT adjacent to (80, 80)
-        let mut explorer_troops: ExplorerTroops = world.read_model(explorer.explorer_id);
+        let mut explorer_troops: ExplorerTroops = world.read_model((TEST_GAME_ID, explorer.explorer_id));
         explorer_troops.coord = explorer_troops.coord.neighbor_after_distance(Direction::NorthEast, 5);
         world.write_model_test(@explorer_troops);
 
@@ -463,19 +472,19 @@ mod tests {
             TroopType::Crossbowman, TroopTier::T1, TroopType::Knight, TroopTier::T3,
         );
 
-        let structure_base: StructureBase = StructureBaseStoreImpl::retrieve(ref world, realm.entity_id);
-        let mut guard_troops = StructureTroopGuardStoreImpl::retrieve(ref world, realm.entity_id);
+        let structure_base: StructureBase = StructureBaseStoreImpl::retrieve(ref world, TEST_GAME_ID, realm.entity_id);
+        let mut guard_troops = StructureTroopGuardStoreImpl::retrieve(ref world, TEST_GAME_ID, realm.entity_id);
         guard_troops.delta.count = 1 * RESOURCE_PRECISION;
-        StructureTroopGuardStoreImpl::store(ref guard_troops, ref world, realm.entity_id);
+        StructureTroopGuardStoreImpl::store(ref guard_troops, ref world, TEST_GAME_ID, realm.entity_id);
 
-        let mut explorer_troops: ExplorerTroops = world.read_model(explorer.explorer_id);
+        let mut explorer_troops: ExplorerTroops = world.read_model((TEST_GAME_ID, explorer.explorer_id));
         explorer_troops.coord = structure_base.coord().neighbor(Direction::East).neighbor(Direction::NorthEast);
         world.write_model_test(@explorer_troops);
 
         attack_guard_vs_explorer(ref world, systems, realm, GuardSlot::Delta, explorer.explorer_id);
 
-        let structure_owner = StructureOwnerStoreImpl::retrieve(ref world, realm.entity_id);
-        let guard_troops_after = StructureTroopGuardStoreImpl::retrieve(ref world, realm.entity_id);
+        let structure_owner = StructureOwnerStoreImpl::retrieve(ref world, TEST_GAME_ID, realm.entity_id);
+        let guard_troops_after = StructureTroopGuardStoreImpl::retrieve(ref world, TEST_GAME_ID, realm.entity_id);
         assert!(structure_owner == realm.owner, "Ranged guard attack should not remotely hand over structure");
         assert!(
             guard_troops_after.delta.count == 1 * RESOURCE_PRECISION, "Ranged defender should not counter-damage guard",
@@ -489,8 +498,8 @@ mod tests {
             TroopType::Knight, TroopTier::T1, TroopType::Knight, TroopTier::T1,
         );
 
-        let structure_base: StructureBase = StructureBaseStoreImpl::retrieve(ref world, realm.entity_id);
-        let mut explorer_troops: ExplorerTroops = world.read_model(explorer.explorer_id);
+        let structure_base: StructureBase = StructureBaseStoreImpl::retrieve(ref world, TEST_GAME_ID, realm.entity_id);
+        let mut explorer_troops: ExplorerTroops = world.read_model((TEST_GAME_ID, explorer.explorer_id));
         explorer_troops.coord = structure_base.coord().neighbor(Direction::East).neighbor(Direction::NorthEast);
         world.write_model_test(@explorer_troops);
 

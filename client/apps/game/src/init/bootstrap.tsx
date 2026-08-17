@@ -1,6 +1,10 @@
 import { captureSystemError } from "@/posthog";
+import { DEV_MODE_ENABLED } from "@/utils/dev-mode";
+import { captureSpectateIntentFromUrl, isExplicitSpectateSession } from "@/utils/spectator-session";
 import { setup } from "@bibliothecadao/dojo";
-import { configManager, MapDataStore } from "@bibliothecadao/eternum";
+import { configManager } from "@bibliothecadao/eternum";
+import { SupersededGameSyncStartError } from "@bibliothecadao/eternum/game-sync";
+import { setSqlGameScope } from "@bibliothecadao/torii";
 import { world } from "@bibliothecadao/types";
 import { inject } from "@vercel/analytics";
 import { ReactNode } from "react";
@@ -8,8 +12,6 @@ import { ReactNode } from "react";
 import { resolveEntryContextCacheKey, type ResolvedEntryContext } from "@/game-entry/context";
 import {
   applyWorldSelection,
-  buildSharedSlotRpcUrl,
-  isSlotWorldChain,
   patchManifestWithFactory,
   probeWorldToriiAlive,
   type WorldProfile,
@@ -19,8 +21,8 @@ import { Chain, getGameManifest } from "@contracts";
 import { dojoConfig } from "../../dojo-config";
 import { env } from "../../env";
 import { clearSubscriptionQueue } from "../dojo/debounced-queries";
-import { cancelEntityStreamSubscription, initialSync } from "../dojo/sync";
-import { usePlayerStore } from "../hooks/store/use-player-store";
+import { namespaceForChain, setGameScope, type GameNamespace } from "../dojo/game-scope";
+import { disposeGameSyncSession, initialSync } from "../dojo/sync";
 import useSettlementStore from "../hooks/store/use-settlement-store";
 import { useSyncStore } from "../hooks/store/use-sync-store";
 import { useTransactionStore } from "../hooks/store/use-transaction-store";
@@ -42,7 +44,6 @@ export interface BootstrappedEntrySession {
 
 type BootstrapResult = BootstrappedEntrySession;
 const bootstrapSession = createBootstrapSession<BootstrapResult>();
-const cartridgeApiBase = env.VITE_PUBLIC_CARTRIDGE_API_BASE || "https://api.cartridge.gg";
 
 type BootstrapLifecycle = {
   onBootstrapCompleted?: () => void;
@@ -81,14 +82,9 @@ const resolveBootstrapSelection = (context: ResolvedEntryContext): BootstrapSele
   };
 };
 
-const isSpectateModeFromUrl = (): boolean => {
-  if (typeof window === "undefined") return false;
-  return new URLSearchParams(window.location.search).get("spectate") === "true";
-};
-
 const shouldBypassNoAccountModal = (): boolean => {
   const isSpectatingInStore = useUIStore.getState().isSpectating;
-  return isSpectateModeFromUrl() || isSpectatingInStore;
+  return isExplicitSpectateSession() || isSpectatingInStore;
 };
 
 const handleNoAccount = (modalContent: ReactNode) => {
@@ -128,15 +124,26 @@ const runBootstrap = async ({
     profile,
     toriiUrl: resolveBootstrapToriiUrl(context.chain, profile),
   };
+  // World-scoped bootstrap: the profile carries its world's namespace + game
+  // id (world directory); scope config reads and sync clauses to that game
+  // before any setup/sync touches component data. Stale stored profiles
+  // without a namespace fall back to the chain-derived one.
+  const worldNamespace = profile.namespace ?? namespaceForChain(context.chain);
+  configManager.setActiveGame(profile.gameId ?? 0, profile.presetId ?? 0);
+  setGameScope(worldNamespace as GameNamespace, profile.gameId ?? 0);
+  setSqlGameScope(worldNamespace, profile.gameId ?? 0);
   await assertBootstrapToriiIsAvailable(worldContext);
   console.log("[STARTING DOJO SETUP]");
   configureDojoRuntime(worldContext);
-  const setupResult = await runDojoSetup();
+  const setupResult = await runDojoSetup(worldNamespace, profile.gameId ?? 0);
   // When the config fast path resolves in the background after boot, re-run
   // the config snapshot so cost tables don't stay empty for the session.
   const refreshGameSystems = () => configureGameSystems(setupResult, worldContext.chain);
   await runInitialWorldSync(setupResult, stores, refreshGameSystems);
   configureGameSystems(setupResult, worldContext.chain);
+  // From here on an empty keyed config lookup is a bug, not a boot race —
+  // make it loud (guardrail #2, AGENTS.md "No silent defaults").
+  configManager.markConfigSynced();
   await startGameRenderer(setupResult);
   inject();
   return {
@@ -157,6 +164,9 @@ export const bootstrapGameForEntryContext = async (
   context: ResolvedEntryContext,
   lifecycle: BootstrapLifecycle = {},
 ): Promise<BootstrapResult> => {
+  // Latch spectator intent while the entry URL still carries ?spectate —
+  // in-app navigation strips the query string later.
+  captureSpectateIntentFromUrl();
   const cachedSession = getCachedBootstrappedEntrySession(context);
   if (cachedSession) {
     return cachedSession;
@@ -178,6 +188,10 @@ export const bootstrapGameForEntryContext = async (
     markGameEntryMilestone("bootstrap-completed");
     return result;
   } catch (error) {
+    if (error instanceof SupersededGameSyncStartError) {
+      throw error;
+    }
+
     bootstrapSession.clearFailure();
     captureSystemError(error, {
       error_type: "dojo_setup",
@@ -248,10 +262,6 @@ const resolveBootstrapRpcUrl = (chain: Chain, profile: WorldProfile): string => 
     return env.VITE_PUBLIC_NODE_URL;
   }
 
-  if (isSlotWorldChain(chain)) {
-    return buildSharedSlotRpcUrl(cartridgeApiBase);
-  }
-
   return profile.rpcUrl ?? env.VITE_PUBLIC_NODE_URL;
 };
 
@@ -264,13 +274,17 @@ const assertBootstrapToriiIsAvailable = async ({ profile, toriiUrl }: BootstrapW
   throw new Error(`World indexer is not available: ${profile.name}`);
 };
 
-const runDojoSetup = async (): Promise<SetupResult> => {
+const runDojoSetup = async (namespace: string, gameId: number): Promise<SetupResult> => {
   markGameEntryMilestone("setup-started");
   const setupResult = await setup(
     { ...dojoConfig },
     {
       vrfProviderAddress: env.VITE_PUBLIC_VRF_PROVIDER_ADDRESS,
       useBurner: false,
+      // The profile's world namespace; the provider also prepends gameId to
+      // every game-system call's calldata on the appchain worlds.
+      namespace,
+      gameId,
     },
     {
       onNoAccount: () => {
@@ -317,14 +331,14 @@ const startGameRenderer = async (setupResult: SetupResult) => {
   // a stuck initial sync.
   const rendererInitStartedAt = performance.now();
   markGameEntryMilestone("renderer-init-started");
-  const cleanup = await initializeGameRenderer(setupResult, env.VITE_PUBLIC_GRAPHICS_DEV == true);
+  const cleanup = await initializeGameRenderer(setupResult, DEV_MODE_ENABLED);
   markGameEntryMilestone("renderer-init-completed");
   recordGameEntryDuration("renderer-init", performance.now() - rendererInitStartedAt);
   bootstrapSession.replaceRendererCleanup(cleanup);
 };
 
 const cancelActiveBootstrapSubscriptions = () => {
-  cancelEntityStreamSubscription();
+  disposeGameSyncSession();
 };
 
 const clearBootstrapWorldData = () => {
@@ -338,7 +352,6 @@ const clearBootstrapWorldData = () => {
   world.components.length = 0;
   console.log(`[BOOTSTRAP] Cleared ${entities.length} entities and component registry from RECS world`);
 
-  MapDataStore.clearIfExists();
   clearSubscriptionQueue();
   useSyncStore.getState().resetSubscriptions();
 };
@@ -348,22 +361,9 @@ const resetBootstrapUiState = () => {
   uiStore.setStructureEntityId(0, { spectator: false, worldMapPosition: undefined });
   uiStore.setSelectableArmies([]);
 
-  usePlayerStore.getState().clearPlayerData();
   useTransactionStore.getState().clearAllTransactions();
 
-  const settlementState = useSettlementStore.getState();
-  if (settlementState.pollingIntervalId) {
-    clearInterval(settlementState.pollingIntervalId);
-  }
-  if (settlementState.pollingTimeoutId) {
-    clearTimeout(settlementState.pollingTimeoutId);
-  }
-
   useSettlementStore.setState({
-    pollingIntervalId: null,
-    pollingTimeoutId: null,
-    availableLocations: [],
-    settledLocations: [],
     selectedLocation: null,
     selectedCoords: null,
   });

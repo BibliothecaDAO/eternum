@@ -1,5 +1,10 @@
 #!/usr/bin/env bun
-import { DEFAULT_MAINNET_MAX_ACTIONS, DEFAULT_SLOT_MAX_ACTIONS, DEFAULT_VERSION } from "../constants";
+import {
+  DEFAULT_APPCHAIN_MAX_ACTIONS,
+  DEFAULT_APPCHAIN_PRESET_ID,
+  DEFAULT_MAINNET_MAX_ACTIONS,
+  DEFAULT_VERSION,
+} from "../constants";
 import { runLaunchStep } from "../launch/runner";
 import { runLaunchRotationStep } from "../launch/rotation-runner";
 import { runLaunchSeriesStep } from "../launch/series-runner";
@@ -27,7 +32,7 @@ function usage(): void {
     [
       "",
       "Usage:",
-      "  bun config/deployer/clean/cli/launch-step.ts --launch-kind <game|series|rotation> --step <step-id> --environment <slot.blitz|slot.eternum|mainnet.blitz|mainnet.eternum>",
+      "  bun config/deployer/clean/cli/launch-step.ts --launch-kind <game|series|rotation> --step <step-id> --environment <appchain.blitz|appchain.eternum|mainnet.blitz|mainnet.eternum>",
       "  bun config/deployer/clean/cli/launch-step.ts --config-path <path-to-launch.yaml> --step <step-id>",
       "",
       "Game launch:",
@@ -63,8 +68,8 @@ function usage(): void {
       "  --auto-retry-enabled <true|false>",
       "  --auto-retry-interval-minutes <number>",
       "  --mode <batched|sequential>",
-      `  --version <felt>              default: ${DEFAULT_VERSION}`,
-      `  --max-actions <number>        default: slot ${DEFAULT_SLOT_MAX_ACTIONS}, mainnet ${DEFAULT_MAINNET_MAX_ACTIONS}`,
+      `  --version <felt>              default: appchain ${DEFAULT_APPCHAIN_PRESET_ID}, mainnet ${DEFAULT_VERSION}`,
+      `  --max-actions <number>        default: appchain ${DEFAULT_APPCHAIN_MAX_ACTIONS}, mainnet ${DEFAULT_MAINNET_MAX_ACTIONS}`,
       "  --skip-indexer",
       "  --skip-lootchest-role-grant",
       "  --skip-banks",

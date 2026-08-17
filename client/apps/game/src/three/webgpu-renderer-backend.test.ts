@@ -8,6 +8,7 @@ import {
 import { RendererInitTimeoutError } from "./renderer-backend-v2";
 import { resetRendererStartupTimings, snapshotRendererStartupTimings } from "./perf/renderer-startup-telemetry";
 import { createWebGPURendererBackend } from "./webgpu-renderer-backend";
+import { createRenderableOverlayScene } from "./renderer-overlay-passes.test-fixture";
 
 beforeEach(() => {
   vi.stubGlobal("window", {
@@ -49,10 +50,9 @@ describe("createWebGPURendererBackend", () => {
   it("advertises only the renderer capabilities it actually implements", () => {
     const backend = createWebGPURendererBackend(
       {
-        graphicsSetting: "HIGH" as never,
         isMobileDevice: false,
         pixelRatio: 1.5,
-        requestedMode: "experimental-webgpu-auto",
+        requestedMode: "webgpu-auto",
       },
       {
         createRenderer: vi.fn(),
@@ -79,10 +79,9 @@ describe("createWebGPURendererBackend", () => {
     });
     const backend = createWebGPURendererBackend(
       {
-        graphicsSetting: "HIGH" as never,
         isMobileDevice: false,
         pixelRatio: 1,
-        requestedMode: "experimental-webgpu-auto",
+        requestedMode: "webgpu-auto",
       },
       {
         createRenderer: vi.fn(async () => ({
@@ -111,10 +110,9 @@ describe("createWebGPURendererBackend", () => {
     });
     const backend = createWebGPURendererBackend(
       {
-        graphicsSetting: "HIGH" as never,
         isMobileDevice: false,
         pixelRatio: 1,
-        requestedMode: "experimental-webgpu-auto",
+        requestedMode: "webgpu-auto",
       },
       {
         createRenderer: vi.fn(async () => ({
@@ -135,15 +133,14 @@ describe("createWebGPURendererBackend", () => {
     vi.useRealTimers();
   });
 
-  it("times out the whole experimental backend when renderer creation never resolves", async () => {
+  it("times out the WebGPU backend when renderer creation never resolves", async () => {
     vi.useFakeTimers();
     let receivedSignal: AbortSignal | undefined;
     const backend = createWebGPURendererBackend(
       {
-        graphicsSetting: "HIGH" as never,
         isMobileDevice: false,
         pixelRatio: 1,
-        requestedMode: "experimental-webgpu-auto",
+        requestedMode: "webgpu-auto",
       },
       {
         createRenderer: vi.fn(
@@ -175,10 +172,9 @@ describe("createWebGPURendererBackend", () => {
     });
     const backend = createWebGPURendererBackend(
       {
-        graphicsSetting: "HIGH" as never,
         isMobileDevice: false,
         pixelRatio: 1,
-        requestedMode: "experimental-webgpu-auto",
+        requestedMode: "webgpu-auto",
       },
       {
         createRenderer: vi.fn(
@@ -218,11 +214,10 @@ describe("createWebGPURendererBackend", () => {
     });
     const backend = createWebGPURendererBackend(
       {
-        graphicsSetting: "HIGH" as never,
         isMobileDevice: false,
         onDeviceLost,
         pixelRatio: 1,
-        requestedMode: "experimental-webgpu-auto",
+        requestedMode: "webgpu-auto",
       },
       {
         createRenderer: vi.fn(async () => ({
@@ -262,15 +257,14 @@ describe("createWebGPURendererBackend", () => {
     });
   });
 
-  it("boots the experimental auto lane and reports native webgpu", async () => {
+  it("boots the automatic lane and reports native webgpu", async () => {
     const renderer = createRendererSurface();
     const init = vi.fn(async () => {});
     const backend = createWebGPURendererBackend(
       {
-        graphicsSetting: "HIGH" as never,
         isMobileDevice: false,
         pixelRatio: 1.5,
-        requestedMode: "experimental-webgpu-auto",
+        requestedMode: "webgpu-auto",
       },
       {
         createRenderer: vi.fn(async ({ forceWebGL }) => ({
@@ -294,20 +288,19 @@ describe("createWebGPURendererBackend", () => {
     expect(renderer.setSize).toHaveBeenCalledWith(window.innerWidth, window.innerHeight);
     expect(diagnostics).toEqual({
       activeMode: "webgpu",
-      buildMode: "experimental-webgpu-auto",
+      buildMode: "webgpu-auto",
       fallbackReason: null,
       initTimeMs: 24,
-      requestedMode: "experimental-webgpu-auto",
+      requestedMode: "webgpu-auto",
     });
   });
 
   it("uses the forced webgl fallback lane when requested", async () => {
     const backend = createWebGPURendererBackend(
       {
-        graphicsSetting: "HIGH" as never,
         isMobileDevice: false,
         pixelRatio: 1,
-        requestedMode: "experimental-webgpu-force-webgl",
+        requestedMode: "webgpu-force-webgl",
       },
       {
         createRenderer: vi.fn(async ({ forceWebGL }) => ({
@@ -326,17 +319,43 @@ describe("createWebGPURendererBackend", () => {
     const diagnostics = await backend.initialize();
 
     expect(diagnostics.activeMode).toBe("webgl2-fallback");
-    expect(diagnostics.requestedMode).toBe("experimental-webgpu-force-webgl");
+    expect(diagnostics.requestedMode).toBe("webgpu-force-webgl");
+  });
+
+  it("reports when automatic selection uses WebGL2 because WebGPU is unavailable", async () => {
+    const backend = createWebGPURendererBackend(
+      {
+        isMobileDevice: false,
+        pixelRatio: 1,
+        requestedMode: "webgpu-auto",
+      },
+      {
+        createRenderer: vi.fn(async () => ({
+          activeMode: "webgl2-fallback" as const,
+          fallbackReason: "webgpu-unavailable" as const,
+          renderer: Object.assign(createRendererSurface(), {
+            init: vi.fn(async () => {}),
+          }),
+        })),
+        now: vi.fn(() => 50),
+      },
+    );
+
+    await expect(backend.initialize()).resolves.toEqual(
+      expect.objectContaining({
+        activeMode: "webgl2-fallback",
+        fallbackReason: "webgpu-unavailable",
+      }),
+    );
   });
 
   it("applies renderer-supported tone mapping controls directly when the native runtime is disabled", async () => {
     const renderer = createRendererSurface();
     const backend = createWebGPURendererBackend(
       {
-        graphicsSetting: "HIGH" as never,
         isMobileDevice: false,
         pixelRatio: 1,
-        requestedMode: "experimental-webgpu-auto",
+        requestedMode: "webgpu-auto",
       },
       {
         createRenderer: vi.fn(async () => ({
@@ -431,10 +450,9 @@ describe("createWebGPURendererBackend", () => {
     const renderer = createRendererSurface();
     const backend = createWebGPURendererBackend(
       {
-        graphicsSetting: "HIGH" as never,
         isMobileDevice: false,
         pixelRatio: 1,
-        requestedMode: "experimental-webgpu-auto",
+        requestedMode: "webgpu-auto",
       },
       {
         createRenderer: vi.fn(async () => ({
@@ -449,20 +467,21 @@ describe("createWebGPURendererBackend", () => {
 
     await backend.initialize();
 
-    backend.applyQuality?.({
+    backend.applyRenderVisuals?.({
       pixelRatio: 1.5,
       shadows: true,
       width: 640,
       height: 360,
     });
     backend.resize?.(800, 450);
+    const overlayScene = createRenderableOverlayScene("overlay-scene");
     backend.renderFrame?.({
       mainCamera: { id: "main-camera" } as never,
       mainScene: { id: "main-scene" } as never,
       overlayPasses: [
         {
           camera: { id: "overlay-camera" } as never,
-          scene: { id: "overlay-scene" } as never,
+          scene: overlayScene as never,
         },
       ],
     });
@@ -490,10 +509,9 @@ describe("createWebGPURendererBackend", () => {
       .mockImplementation(() => {});
     const backend = createWebGPURendererBackend(
       {
-        graphicsSetting: "HIGH" as never,
         isMobileDevice: false,
         pixelRatio: 1,
-        requestedMode: "experimental-webgpu-auto",
+        requestedMode: "webgpu-auto",
       },
       {
         createRenderer: vi.fn(async () => ({
@@ -523,10 +541,9 @@ describe("createWebGPURendererBackend", () => {
     const renderer = createRendererSurface();
     const backend = createWebGPURendererBackend(
       {
-        graphicsSetting: "HIGH" as never,
         isMobileDevice: false,
         pixelRatio: 1,
-        requestedMode: "experimental-webgpu-auto",
+        requestedMode: "webgpu-auto",
       },
       {
         createRenderer: vi.fn(async () => ({

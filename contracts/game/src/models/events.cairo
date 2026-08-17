@@ -7,6 +7,8 @@ use crate::models::troop::{GuardSlot, TroopTier, TroopType};
 #[dojo::event(historical: false)]
 pub struct StoryEvent {
     #[key]
+    pub game_id: u32,
+    #[key]
     pub id: ID,
     #[key]
     pub owner: Option<ContractAddress>,

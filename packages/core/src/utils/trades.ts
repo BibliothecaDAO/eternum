@@ -10,6 +10,7 @@ import { Entity, getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { shortString } from "starknet";
 import { ResourceManager, getStructureName } from "..";
+import { gameEntityKey } from "../managers/config-manager";
 
 export type TradeResourcesFromViewpoint = {
   resourcesGet: Resource[];
@@ -37,7 +38,7 @@ export const getDetachedResources = (entityId: ID, components: ContractComponent
 };
 
 export const getTradeResources = (tradeId: ID, components: ContractComponents): TradeResources => {
-  let trade = getComponentValue(components.Trade, getEntityIdFromKeys([BigInt(tradeId)]));
+  let trade = getComponentValue(components.Trade, gameEntityKey([BigInt(tradeId)]));
 
   if (!trade) return { takerGets: [], makerGets: [] };
 
@@ -62,7 +63,7 @@ export const getTradeResourcesFromEntityViewpoint = (
   tradeId: ID,
   components: ContractComponents,
 ): TradeResourcesFromViewpoint => {
-  let trade = getComponentValue(components.Trade, getEntityIdFromKeys([BigInt(tradeId)]));
+  let trade = getComponentValue(components.Trade, gameEntityKey([BigInt(tradeId)]));
 
   if (!trade) return { resourcesGet: [], resourcesGive: [] };
 
@@ -111,7 +112,7 @@ export const computeTrades = (
       if (trade) {
         const { takerGets, makerGets } = getTradeResources(trade.trade_id, components);
 
-        const makerStructure = getComponentValue(components.Structure, getEntityIdFromKeys([BigInt(trade.maker_id)]));
+        const makerStructure = getComponentValue(components.Structure, gameEntityKey([BigInt(trade.maker_id)]));
         const makerName = getComponentValue(
           components.AddressName,
           getEntityIdFromKeys([BigInt(trade.maker_id)]),

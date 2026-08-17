@@ -31,11 +31,11 @@ describe("buildDevPreviewWorldKey", () => {
   it("keys preview state by chain, world, and account", () => {
     expect(
       buildDevPreviewWorldKey({
-        chain: "slot",
+        chain: "appchain",
         worldName: "san-juan",
         address: "0xabcDEF",
       }),
-    ).toBe("slot:san-juan:0xabcdef");
+    ).toBe("appchain:san-juan:0xabcdef");
   });
 });
 
@@ -45,7 +45,7 @@ describe("createWorldPreviewEntryController", () => {
     const controller = createWorldPreviewEntryController({
       isDev: false,
       address: "0x123",
-      chain: "slot",
+      chain: "appchain",
       worldName: "alpha",
       previewEntries: previewStore,
     });
@@ -100,7 +100,7 @@ describe("createWorldPreviewEntryController", () => {
     const controller = createWorldPreviewEntryController({
       isDev: true,
       address: "0x123",
-      chain: "slot",
+      chain: "appchain",
       worldName: "alpha",
       previewEntries: previewStore,
       cosmeticsStore,
@@ -108,7 +108,7 @@ describe("createWorldPreviewEntryController", () => {
 
     await controller.enterPreview();
 
-    expect(cosmeticsStore.setPendingBlitzLoadout).toHaveBeenCalledWith("blitz:slot:alpha", "0x123", {
+    expect(cosmeticsStore.setPendingBlitzLoadout).toHaveBeenCalledWith("blitz:appchain:alpha", "0x123", {
       tokenIds: ["0xabc"],
       selectedBySlot: {
         armor: {
@@ -117,6 +117,6 @@ describe("createWorldPreviewEntryController", () => {
         },
       },
     });
-    expect(cosmeticsStore.markAppliedBlitzLoadout).toHaveBeenCalledWith("blitz:slot:alpha", "0x123");
+    expect(cosmeticsStore.markAppliedBlitzLoadout).toHaveBeenCalledWith("blitz:appchain:alpha", "0x123");
   });
 });

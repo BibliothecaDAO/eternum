@@ -1,8 +1,10 @@
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { debouncedGetEntitiesFromTorii } from "@/dojo/debounced-queries";
+import { buildingEntityKey, gameEntityKey, gameModel } from "@/dojo/game-scope";
 import { getStructuresDataFromTorii } from "@/dojo/queries";
 import { useEntityResync } from "@/hooks/helpers/use-entity-resync";
+import { useTileAt } from "@/hooks/helpers/use-tile-at";
 import { isVillageLikeStructureCategory, normalizeStructureCategory } from "@/lib/structure-type-utils";
 import { BuildingThumbs, FELT_CENTER } from "@/ui/config";
 import { LeftView } from "@/types";
@@ -13,7 +15,6 @@ import { OVERLAY_SURFACE_BASE } from "@/ui/design-system/atoms/overlay-surface";
 import Button from "@/ui/design-system/atoms/button";
 import CircleButton from "@/ui/design-system/molecules/circle-button";
 import { MarketModal } from "@/ui/features/economy/trading";
-import { sqlApi } from "@/services/api";
 import {
   configManager,
   divideByPrecision,
@@ -27,10 +28,8 @@ import {
   isTileOccupierQuest,
   isTileOccupierReservedHyperstructure,
   isTileOccupierStructure,
-  Position as PositionInterface,
-  getTileAt,
-  DEFAULT_COORD_ALT,
 } from "@bibliothecadao/eternum";
+import { getActiveGameSyncRuntime } from "@bibliothecadao/eternum/game-sync";
 import { useDojo, useQuery } from "@bibliothecadao/react";
 import {
   BUILDINGS_CENTER,
@@ -42,7 +41,7 @@ import {
   TileOccupier,
   findResourceById,
 } from "@bibliothecadao/types";
-import { Component, getComponentValue, Metadata, Schema } from "@dojoengine/recs";
+import { getComponentValue } from "@dojoengine/recs";
 import { memo, ReactNode, useCallback, useEffect, useMemo, useState } from "react";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { SelectedWorldmapEntity } from "@/ui/features/world/components/actions/selected-worldmap-entity";
@@ -79,12 +78,12 @@ const formatResourceAmount = (value: number): string => {
   return flooredValue.toLocaleString();
 };
 
-const ENTITY_SYNC_MODELS = {
-  explorer: ["s1_eternum-ExplorerTroops"],
-  structure: ["s1_eternum-Structure"],
+const ENTITY_SYNC_MODEL_NAMES = {
+  explorer: ["ExplorerTroops"],
+  structure: ["Structure"],
 } as const;
 
-type SyncableEntityType = keyof typeof ENTITY_SYNC_MODELS;
+type SyncableEntityType = keyof typeof ENTITY_SYNC_MODEL_NAMES;
 
 const ENTITY_TYPE_LABELS: Record<SyncableEntityType, string> = {
   explorer: "Explorer",
@@ -158,19 +157,11 @@ const PanelFrame = ({ title, children, headerAction, className, height }: PanelF
 const MapTilePanel = () => {
   const selectedHex = useUIStore((state) => state.selectedHex);
   const {
-    setup,
-    network: { contractComponents, toriiClient },
+    network: { toriiClient },
   } = useDojo();
   const { syncEntity, isSyncing } = useEntityResync();
 
-  const tile = useMemo(() => {
-    if (!selectedHex) return null;
-    const selectedHexContract = new PositionInterface({
-      x: selectedHex.col,
-      y: selectedHex.row,
-    }).getContract();
-    return getTileAt(setup.components, DEFAULT_COORD_ALT, selectedHexContract.x, selectedHexContract.y);
-  }, [selectedHex, setup.components]);
+  const tile = useTileAt(selectedHex?.col, selectedHex?.row) ?? null;
 
   const hasOccupier = useMemo(() => {
     if (!tile) return false;
@@ -239,7 +230,7 @@ const MapTilePanel = () => {
   const handleResyncCurrentEntity = useCallback(() => {
     if (!syncableEntityType || syncableEntityId === null) return;
 
-    if (!toriiClient || !contractComponents) {
+    if (!toriiClient) {
       toast.error("Unable to sync right now.");
       return;
     }
@@ -261,9 +252,8 @@ const MapTilePanel = () => {
 
           void debouncedGetEntitiesFromTorii(
             toriiClient,
-            contractComponents as unknown as Component<Schema, Metadata, undefined>[],
             [syncableEntityId],
-            [...ENTITY_SYNC_MODELS[syncableEntityType]],
+            ENTITY_SYNC_MODEL_NAMES[syncableEntityType].map(gameModel),
             complete,
           ).catch((error) => {
             if (settled) return;
@@ -272,7 +262,7 @@ const MapTilePanel = () => {
           });
         }),
     });
-  }, [contractComponents, getEntitySyncKey, syncEntity, syncableEntityId, syncableEntityType, toriiClient]);
+  }, [getEntitySyncKey, syncEntity, syncableEntityId, syncableEntityType, toriiClient]);
 
   const headerAction =
     syncableEntityType && syncableEntityId !== null ? (
@@ -306,7 +296,7 @@ const LocalTilePanel = () => {
   const {
     setup,
     account,
-    network: { toriiClient, contractComponents },
+    network: { toriiClient },
   } = useDojo();
   const { syncEntity, isSyncing } = useEntityResync();
   const buildingComponent = setup.components.Building;
@@ -335,7 +325,7 @@ const LocalTilePanel = () => {
 
     let structureEntityKey: ReturnType<typeof getEntityIdFromKeys> | undefined;
     try {
-      structureEntityKey = getEntityIdFromKeys([BigInt(structureEntityId)]);
+      structureEntityKey = gameEntityKey([BigInt(structureEntityId)]);
     } catch {
       structureEntityKey = undefined;
     }
@@ -389,14 +379,18 @@ const LocalTilePanel = () => {
 
   const building = useMemo(() => {
     if (!selectedBuildingHex || !buildingComponent) return null;
-    const entityKeys = [
-      BigInt(selectedBuildingHex.outerCol),
-      BigInt(selectedBuildingHex.outerRow),
-      BigInt(selectedBuildingHex.innerCol),
-      BigInt(selectedBuildingHex.innerRow),
-    ];
-
-    return getComponentValue(buildingComponent, getEntityIdFromKeys(entityKeys));
+    // Building keys on s2 are (game_id, alt, outer_col, outer_row, inner_col,
+    // inner_row) — the dedicated helper inserts the alt key; a plain
+    // gameEntityKey lookup always missed, so every built tile read as empty.
+    return getComponentValue(
+      buildingComponent,
+      buildingEntityKey(
+        selectedBuildingHex.outerCol,
+        selectedBuildingHex.outerRow,
+        selectedBuildingHex.innerCol,
+        selectedBuildingHex.innerRow,
+      ),
+    );
   }, [buildingComponent, selectedBuildingHex]);
 
   const buildingCategory = useMemo(() => {
@@ -521,14 +515,12 @@ const LocalTilePanel = () => {
 
   const handleResyncStructure = useCallback(() => {
     if (!structureSyncTarget) return;
-    if (!toriiClient || !contractComponents) {
+    if (!toriiClient) {
       toast.error("Unable to sync right now.");
       return;
     }
 
     const { entityId, position } = structureSyncTarget;
-    const toriiComponents = contractComponents as unknown as Parameters<typeof getStructuresDataFromTorii>[1];
-
     void syncEntity({
       syncKey: `structure:${String(entityId)}`,
       entityLabel: "Structure",
@@ -543,16 +535,14 @@ const LocalTilePanel = () => {
             resolve();
           };
 
-          void getStructuresDataFromTorii(toriiClient, toriiComponents, [{ entityId, position }], complete).catch(
-            (error) => {
-              if (settled) return;
-              settled = true;
-              reject(error);
-            },
-          );
+          void getStructuresDataFromTorii(toriiClient, [{ entityId, position }], complete).catch((error) => {
+            if (settled) return;
+            settled = true;
+            reject(error);
+          });
         }),
     });
-  }, [contractComponents, structureSyncTarget, syncEntity, toriiClient]);
+  }, [structureSyncTarget, syncEntity, toriiClient]);
 
   const headerAction = structureSyncTarget ? (
     <button
@@ -950,8 +940,7 @@ const LocalTilePanel = () => {
 
 const MinimapPanel = () => {
   const [tiles, setTiles] = useState<MinimapTile[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
   const { isMapView } = useQuery();
   const selectedHex = useUIStore((state) => state.selectedHex);
   const navigationTarget = useUIStore((state) => state.navigationTarget);
@@ -974,44 +963,31 @@ const MinimapPanel = () => {
   const focusSelectedHex = activeRealmHex ?? selectedHex;
 
   useEffect(() => {
-    // MinimapPanel only mounts in map view (parent gating), so fetch unconditionally.
-    let cancelled = false;
-    const loadTiles = async () => {
-      setIsLoading(true);
-      try {
-        const fetched = await sqlApi.fetchAllTiles();
-        if (!cancelled) {
-          setTiles(
-            fetched.map((tile) =>
-              normalizeMinimapTile({
-                col: tile.col,
-                row: tile.row,
-                biome: tile.biome,
-                occupier_id: tile.occupier_id?.toString(),
-                occupier_type: tile.occupier_type,
-                occupier_is_structure: tile.occupier_is_structure,
-              }),
-            ),
-          );
-          setError(null);
-        }
-      } catch (err) {
-        if (!cancelled) {
-          setError(err instanceof Error ? err.message : "Failed to load minimap data");
-        }
-      } finally {
-        if (!cancelled) {
-          setIsLoading(false);
-        }
-      }
+    const projection = getActiveGameSyncRuntime()?.getWorldSpatialProjection();
+    if (!projection) {
+      console.error("[MinimapPanel] WorldSpatialProjection is unavailable for the active game");
+      setIsLoading(false);
+      return;
+    }
+
+    const readTiles = () => {
+      setTiles(
+        projection.getTiles().map((tile) =>
+          normalizeMinimapTile({
+            col: tile.hexCoords.col,
+            row: tile.hexCoords.row,
+            biome: tile.biome,
+            occupier_id: tile.occupierId.toString(),
+            occupier_type: tile.occupierType,
+            occupier_is_structure: tile.occupierIsStructure,
+          }),
+        ),
+      );
+      setIsLoading(false);
     };
 
-    loadTiles();
-    const interval = setInterval(loadTiles, 60_000);
-    return () => {
-      cancelled = true;
-      clearInterval(interval);
-    };
+    readTiles();
+    return projection.subscribeTiles(readTiles);
   }, []);
 
   return (
@@ -1028,9 +1004,6 @@ const MinimapPanel = () => {
             <div className="absolute inset-0 flex items-center justify-center bg-black/30">
               <div className="h-10 w-10 animate-spin rounded-full border-2 border-gold/40 border-t-gold" />
             </div>
-          )}
-          {error && (
-            <div className="absolute bottom-3 right-3 rounded bg-black/70 px-3 py-1 text-xxs text-red-200">{error}</div>
           )}
         </div>
       </div>
@@ -1206,15 +1179,8 @@ const LeftActionsRow = ({ style }: { style?: React.CSSProperties }) => {
           onClick={() => toggleModalAction(<MarketModal />)}
         />
       )}
-      <CircleButton
-        variant="action"
-        size="md"
-        tooltipLocation="top"
-        image={BuildingThumbs.predictionMarket}
-        label="Prediction Market"
-        active={view === LeftView.PredictionMarket}
-        onClick={toggleView(LeftView.PredictionMarket)}
-      />
+      {/* Prediction Market button retired: the PM deployment is gone until
+          W6 — the modal would initialize against a dead host. */}
     </div>
   );
 };

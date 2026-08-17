@@ -5,12 +5,11 @@ import { getContractByName } from "@dojoengine/core";
 
 import { dojoConfig } from "../../../../../dojo-config";
 import { executeObservedClientTransaction } from "@/observability/observed-client-transaction";
+import { gameCallArgs, getGameNamespace } from "@/dojo/game-scope";
 import { useDojo } from "@bibliothecadao/react";
 import { type ID } from "@bibliothecadao/types";
 import { extractReadableErrorMessage } from "@/utils/error-message";
 import { withRealmActionSubmitTimeout } from "./realm-action-submit-timeout";
-
-const ETERNUM_NAMESPACE = "s1_eternum";
 
 /**
  * Realm action firers that take `realmId` as an argument. Decouples the
@@ -23,12 +22,12 @@ export const useRealmActions = () => {
   const [pendingRealmId, setPendingRealmId] = useState<ID | null>(null);
 
   const structureSystemsAddress = useMemo(() => {
-    const contract = getContractByName(dojoConfig.manifest, ETERNUM_NAMESPACE, "structure_systems");
+    const contract = getContractByName(dojoConfig.manifest, getGameNamespace(), "structure_systems");
     return contract?.address ?? null;
   }, []);
 
   const blitzRealmSystemsAddress = useMemo(() => {
-    const contract = getContractByName(dojoConfig.manifest, ETERNUM_NAMESPACE, "blitz_realm_systems");
+    const contract = getContractByName(dojoConfig.manifest, getGameNamespace(), "blitz_realm_systems");
     return contract?.address ?? null;
   }, []);
 
@@ -38,7 +37,7 @@ export const useRealmActions = () => {
       return {
         contractAddress: structureSystemsAddress,
         entrypoint: "level_up",
-        calldata: CallData.compile([realmId]),
+        calldata: CallData.compile([...gameCallArgs(), realmId]),
       };
     },
     [structureSystemsAddress],
@@ -50,7 +49,7 @@ export const useRealmActions = () => {
       return {
         contractAddress: blitzRealmSystemsAddress,
         entrypoint: "provision_realm",
-        calldata: CallData.compile([realmId]),
+        calldata: CallData.compile([...gameCallArgs(), realmId]),
       };
     },
     [blitzRealmSystemsAddress],

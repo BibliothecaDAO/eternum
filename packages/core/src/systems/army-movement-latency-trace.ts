@@ -6,24 +6,14 @@ export type ArmyMovementLatencyPhase =
   | "explore_submit_started"
   | "explore_provider_lock_acquired"
   | "explore_tx_hash_received"
-  | "explore_authoritative_reconcile_complete"
   | "explore_next_safe_unblocked"
   | "tx_submitted"
   | "tx_response_received"
   | "tx_confirmed"
-  | "tileopt_stream_received"
-  | "tileopt_component_received"
-  | "tileopt_component_ready"
-  | "worldmap_tile_update_received"
-  | "army_manager_tile_update_applied"
   | "movement_started"
-  | "movement_completed"
-  | "optimistic_animation_started"
-  | "optimistic_animation_skipped"
-  | "optimistic_animation_reconciled"
-  | "optimistic_animation_rewound";
+  | "movement_completed";
 
-export type ArmyMovementLatencySource = "worldmap" | "torii_sync" | "world_update_listener";
+export type ArmyMovementLatencySource = "worldmap";
 
 export interface ArmyMovementLatencyTraceEntry {
   sequence: number;

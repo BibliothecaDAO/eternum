@@ -26,6 +26,7 @@ import { useDojo } from "@bibliothecadao/react";
 import { ContractAddress, ID, Resources, resources, ResourcesIds, StructureType } from "@bibliothecadao/types";
 import { getComponentValue } from "@dojoengine/recs";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { gameEntityKey } from "@/dojo/game-scope";
 
 export const ResourceSwap = ({ entityId, listResourceId }: { entityId: ID; listResourceId: number }) => {
   const mode = useGameModeConfig();
@@ -88,18 +89,13 @@ export const ResourceSwap = ({ entityId, listResourceId }: { entityId: ID; listR
 
   const onInvert = useCallback(() => setIsBuyResource((prev) => !prev), []);
 
-  const onSwap = useCallback(() => {
+  const onSwap = useCallback(async () => {
     setIsLoading(true);
     const operation = isBuyResource ? systemCalls.buy_resources : systemCalls.sell_resources;
 
     const closestBank = getClosestBank(entityId, components);
 
     if (!closestBank) return;
-    const removeResourceOverrides = new ResourceManager(components, entityId).optimisticResourceUpdate(
-      isBuyResource ? ResourcesIds.Lords : resourceId,
-      -(isBuyResource ? lordsAmount + ownerFee : resourceAmount),
-    );
-
     const performSwap = () => {
       return operation({
         signer: account,
@@ -111,12 +107,22 @@ export const ResourceSwap = ({ entityId, listResourceId }: { entityId: ID; listR
     };
 
     // If no bank protector, just perform swap
-    performSwap().finally(() => {
-      removeResourceOverrides();
-      playTradeExecuteSound();
-      setIsLoading(false);
-      setOpenConfirmation(false);
-    });
+    await new ResourceManager(components, entityId)
+      .submitProvisionalResourceTransaction(
+        [
+          {
+            resourceId: isBuyResource ? ResourcesIds.Lords : resourceId,
+            amount: -(isBuyResource ? lordsAmount + ownerFee : resourceAmount),
+          },
+        ],
+        account,
+        performSwap,
+      )
+      .finally(() => {
+        playTradeExecuteSound();
+        setIsLoading(false);
+        setOpenConfirmation(false);
+      });
   }, [
     isBuyResource,
     account,
@@ -235,8 +241,8 @@ export const ResourceSwap = ({ entityId, listResourceId }: { entityId: ID; listR
     if (!closestBank) return;
 
     const isVillageAndMilitaryResource =
-      getComponentValue(components.Structure, getEntityIdFromKeys([BigInt(entityId)]))?.category ===
-        StructureType.Village && isMilitaryResource(resourceId);
+      getComponentValue(components.Structure, gameEntityKey([BigInt(entityId)]))?.category === StructureType.Village &&
+      isMilitaryResource(resourceId);
 
     return (
       <ConfirmationPopup

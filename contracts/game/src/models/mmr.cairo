@@ -68,7 +68,7 @@ pub impl MMRConfigDefaultImpl of MMRConfigDefaultTrait {
 #[dojo::model]
 pub struct MMRGameMeta {
     #[key]
-    pub world_id: u128,
+    pub game_id: u32,
     /// Total players in the game
     pub game_median: u128,
 }
@@ -78,7 +78,7 @@ pub struct MMRGameMeta {
 #[dojo::model]
 pub struct MMRClaimed {
     #[key]
-    pub world_id: u128,
+    pub game_id: u32,
     pub claimed_at: u64,
 }
 

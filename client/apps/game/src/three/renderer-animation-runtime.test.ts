@@ -1,6 +1,18 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const { runRendererAnimationTick } = await import("./renderer-animation-runtime");
+const { resolveRendererPacedFps, runRendererAnimationTick } = await import("./renderer-animation-runtime");
+
+describe("resolveRendererPacedFps", () => {
+  it("caps every mode at 60fps and drops idle Battery to 30", () => {
+    const quality = { pacing: { idleAfterMs: 2_000, idleFps: null, maxFps: 60 } };
+    const battery = { pacing: { idleAfterMs: 2_000, idleFps: 30, maxFps: 60 } };
+
+    expect(resolveRendererPacedFps({ currentTime: 10_000, lastInteractionTime: 0, profile: quality })).toBe(60);
+    expect(resolveRendererPacedFps({ currentTime: 1_999, lastInteractionTime: 0, profile: battery })).toBe(60);
+    expect(resolveRendererPacedFps({ currentTime: 2_000, lastInteractionTime: 0, profile: battery })).toBe(30);
+    expect(resolveRendererPacedFps({ currentTime: 2_001, lastInteractionTime: 2_000, profile: battery })).toBe(60);
+  });
+});
 
 describe("runRendererAnimationTick", () => {
   beforeEach(() => {

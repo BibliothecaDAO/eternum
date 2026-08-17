@@ -15,4 +15,11 @@ describe("public env startup", () => {
     expect(source).not.toContain("resolveRuntimePublicEnvConsistencyInput");
     expect(source).not.toContain("assertPublicEnvConsistency");
   });
+
+  it("has no legacy bounded spatial rollback flag", () => {
+    const source = readFileSync(resolve(process.cwd(), "env.ts"), "utf8");
+
+    expect(source).not.toContain("VITE_PUBLIC_WORLDMAP_BOUNDED_SPATIAL_SYNC");
+    expect(source).not.toContain("VITE_PUBLIC_WORLDMAP_BOUNDED_SPATIAL_PADDING");
+  });
 });

@@ -7,14 +7,9 @@ const NETWORKS = {
     name: "local",
     rpc_url: process.env.STARKNET_RPC,
   },
-  slot: {
-    explorer_url: "https://slot.voyager.online",
-    name: "slot",
-    rpc_url: process.env.STARKNET_RPC,
-  },
-  slottest: {
-    explorer_url: "https://slot.voyager.online",
-    name: "slottest",
+  appchain: {
+    explorer_url: "",
+    name: "appchain",
     rpc_url: process.env.STARKNET_RPC,
   },
   sepolia: {

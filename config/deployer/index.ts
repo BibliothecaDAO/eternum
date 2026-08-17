@@ -7,7 +7,7 @@ import { type Chain } from "../utils/utils";
 import { GameConfigDeployer, nodeReadConfig } from "./config";
 import { withBatching } from "./tx-batcher";
 
-const VALID_NETWORKS: NetworkType[] = ["local", "mainnet", "sepolia", "slot", "slottest"];
+const VALID_NETWORKS: NetworkType[] = ["local", "mainnet", "sepolia", "appchain"];
 const VALID_GAME_TYPES: GameType[] = ["blitz", "eternum"];
 
 function printDeployerUsage(): void {
@@ -37,8 +37,8 @@ function resolveDeployerTarget(argv: string[]): { gameType: GameType; network: N
   return { gameType, network };
 }
 
-async function createDeployerProvider(network: NetworkType): Promise<EternumProvider> {
-  const manifest = await getGameManifest(network as Chain);
+async function createDeployerProvider(network: NetworkType, gameType: GameType): Promise<EternumProvider> {
+  const manifest = await getGameManifest(network as Chain, gameType);
   return new EternumProvider(manifest, process.env.VITE_PUBLIC_NODE_URL, process.env.VITE_PUBLIC_VRF_PROVIDER_ADDRESS);
 }
 
@@ -71,7 +71,7 @@ async function runConfigDeployment(): Promise<void> {
 
   confirmNonLocalDeployment(network);
 
-  const provider = await createDeployerProvider(network);
+  const provider = await createDeployerProvider(network, gameType);
   const account = createDeployerAccount(provider);
   const configDeployer = await createConfigDeployer(network, gameType);
   const batchMode = resolveBatchMode();

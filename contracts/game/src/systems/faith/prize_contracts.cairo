@@ -49,21 +49,21 @@ use crate::alias::ID;
 /// ### After Season End
 /// ```
 /// // 2. Distribute prizes to winning wonders (call once)
-/// faith_prize_systems.distribute_wonder_prizes();
+/// faith_prize_systems.distribute_wonder_prizes(game_id);
 ///
 /// // 3. Each player claims their share (or anyone can claim for them)
 /// for player in all_players_with_fp:
 ///     for wonder_id in winning_wonders:
-///         faith_prize_systems.claim_player_prize(player, wonder_id);
+///         faith_prize_systems.claim_player_prize(game_id, player, wonder_id);
 /// ```
 ///
 /// ## Data Models
 ///
 /// | Model | Key | Description |
 /// |-------|-----|-------------|
-/// | `WonderFaithPrize` | `wonder_id` | Tracks prize amount won by each wonder |
-/// | `PlayerFaithPrizeClaimed` | `(player, wonder_id)` | Tracks if player claimed their share |
-/// | `WonderFaithWinners` | `WORLD_CONFIG_ID` | List of winning wonder IDs and high score |
+/// | `WonderFaithPrize` | `(game_id, wonder_id)` | Tracks prize amount won by each wonder |
+/// | `PlayerFaithPrizeClaimed` | `(game_id, player, wonder_id)` | Tracks if player claimed their share |
+/// | `WonderFaithWinners` | `game_id` | List of winning wonder IDs and high score |
 ///
 /// ## Security Notes
 ///
@@ -126,7 +126,7 @@ pub trait IFaithPrizeSystems<T> {
     /// let prize: WonderFaithPrize = world.read_model(winning_wonder_id);
     /// assert!(prize.amount_won > 0, "Prize should be set");
     /// ```
-    fn distribute_wonder_prizes(ref self: T);
+    fn distribute_wonder_prizes(ref self: T, game_id: u32);
 
     /// Claim a player's share of a wonder's prize based on their faith points.
     ///
@@ -211,7 +211,7 @@ pub trait IFaithPrizeSystems<T> {
     /// faith_prize_systems.claim_player_prize(player, wonder_a_id);
     /// faith_prize_systems.claim_player_prize(player, wonder_b_id);
     /// ```
-    fn claim_player_prize(ref self: T, player: ContractAddress, wonder_id: ID);
+    fn claim_player_prize(ref self: T, game_id: u32, player: ContractAddress, wonder_id: ID);
 }
 
 #[dojo::contract]
@@ -221,7 +221,7 @@ pub mod faith_prize_systems {
     use dojo::world::{WorldStorage, WorldStorageTrait};
     use starknet::ContractAddress;
     use crate::alias::ID;
-    use crate::constants::{DEFAULT_NS, WORLD_CONFIG_ID};
+    use crate::constants::DEFAULT_NS;
     use crate::models::config::{FaithConfig, SeasonConfigImpl, WorldConfigUtilImpl};
     use crate::models::faith::{
         PlayerFaithPoints, PlayerFaithPrizeClaimed, WonderFaith, WonderFaithPrize, WonderFaithWinners,
@@ -231,22 +231,22 @@ pub mod faith_prize_systems {
 
     #[abi(embed_v0)]
     impl FaithPrizeSystemsImpl of super::IFaithPrizeSystems<ContractState> {
-        fn distribute_wonder_prizes(ref self: ContractState) {
+        fn distribute_wonder_prizes(ref self: ContractState, game_id: u32) {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
-            let season_config = SeasonConfigImpl::get(world);
+            let season_config = SeasonConfigImpl::get(world, game_id);
             season_config.assert_game_ended_and_points_registration_closed();
 
             // Get winners
-            let winners: WonderFaithWinners = world.read_model(WORLD_CONFIG_ID);
+            let winners: WonderFaithWinners = world.read_model(game_id);
             assert!(winners.wonder_ids.len() > 0, "No winners to distribute prizes to");
 
             // Check if prizes already distributed (first winner has amount_won > 0)
             let first_winner_id = *winners.wonder_ids.at(0);
-            let first_prize: WonderFaithPrize = world.read_model(first_winner_id);
+            let first_prize: WonderFaithPrize = world.read_model((game_id, first_winner_id));
             assert!(first_prize.amount_won == 0, "Prizes already distributed");
 
             // Get reward token from faith config
-            let faith_config: FaithConfig = WorldConfigUtilImpl::get_member(world, selector!("faith_config"));
+            let faith_config: FaithConfig = WorldConfigUtilImpl::get_member(world, game_id, selector!("faith_config"));
             assert!(faith_config.reward_token.is_non_zero(), "Reward token not configured");
 
             let reward_token = IERC20Dispatcher { contract_address: faith_config.reward_token };
@@ -265,27 +265,27 @@ pub mod faith_prize_systems {
             // Update each winner's WonderFaith to season end time and record prize
             for wonder_id in winners.wonder_ids.span() {
                 // Call claim_wonder_points to ensure wonder's last_updated_at is at season end
-                faith_systems.claim_wonder_points(*wonder_id);
+                faith_systems.claim_wonder_points(game_id, *wonder_id);
 
                 // Record the prize amount for this wonder
-                let wonder_prize = WonderFaithPrize { wonder_id: *wonder_id, amount_won: prize_per_wonder };
+                let wonder_prize = WonderFaithPrize { game_id, wonder_id: *wonder_id, amount_won: prize_per_wonder };
                 world.write_model(@wonder_prize);
             }
         }
 
-        fn claim_player_prize(ref self: ContractState, player: ContractAddress, wonder_id: ID) {
+        fn claim_player_prize(ref self: ContractState, game_id: u32, player: ContractAddress, wonder_id: ID) {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
-            let season_config = SeasonConfigImpl::get(world);
+            let season_config = SeasonConfigImpl::get(world, game_id);
             season_config.assert_game_ended_and_points_registration_closed();
 
             assert!(player.is_non_zero(), "Invalid player address");
 
             // Check if player already claimed for this wonder
-            let mut player_claimed: PlayerFaithPrizeClaimed = world.read_model((player, wonder_id));
+            let mut player_claimed: PlayerFaithPrizeClaimed = world.read_model((game_id, player, wonder_id));
             assert!(!player_claimed.claimed, "Player already claimed prize for this wonder");
 
             // Check if this wonder has a prize
-            let wonder_prize: WonderFaithPrize = world.read_model(wonder_id);
+            let wonder_prize: WonderFaithPrize = world.read_model((game_id, wonder_id));
             assert!(wonder_prize.amount_won > 0, "No prize for this wonder");
 
             // Get faith systems dispatcher to update player points
@@ -293,10 +293,10 @@ pub mod faith_prize_systems {
             let faith_systems = IFaithSystemsDispatcher { contract_address: faith_systems_addr };
 
             // Call claim_player_points to ensure player's last_updated_at is at season end
-            faith_systems.claim_player_points(player, wonder_id);
+            faith_systems.claim_player_points(game_id, player, wonder_id);
 
             // Re-read player's faith points after update
-            let player_fp: PlayerFaithPoints = world.read_model((player, wonder_id));
+            let player_fp: PlayerFaithPoints = world.read_model((game_id, player, wonder_id));
 
             // Check player has points for this wonder
             if player_fp.points_claimed == 0 {
@@ -304,7 +304,7 @@ pub mod faith_prize_systems {
             }
 
             // Get total points for this wonder
-            let wonder_faith: WonderFaith = world.read_model(wonder_id);
+            let wonder_faith: WonderFaith = world.read_model((game_id, wonder_id));
             assert!(wonder_faith.claimed_points > 0, "Wonder has no claimed points");
 
             // Calculate player's share: (player_points / total_wonder_points) * wonder_prize
@@ -316,7 +316,9 @@ pub mod faith_prize_systems {
                 world.write_model(@player_claimed);
 
                 // Transfer prize to player
-                let faith_config: FaithConfig = WorldConfigUtilImpl::get_member(world, selector!("faith_config"));
+                let faith_config: FaithConfig = WorldConfigUtilImpl::get_member(
+                    world, game_id, selector!("faith_config"),
+                );
                 let reward_token = IERC20Dispatcher { contract_address: faith_config.reward_token };
                 assert!(reward_token.transfer(player, player_share.into()), "Failed to transfer prize");
             }

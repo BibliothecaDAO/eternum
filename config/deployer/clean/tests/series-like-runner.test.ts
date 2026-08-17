@@ -1,7 +1,27 @@
-import { afterEach, describe, expect, test } from "bun:test";
-import { runGroupedSeriesLikeGameStep } from "../launch/series-like-runner";
-import { buildInitialSeriesLaunchSummary } from "../launch/series-summary";
+import { afterEach, describe, expect, mock, test } from "bun:test";
 import type { LaunchSeriesRequest, LaunchSeriesStepId, SeriesLaunchGameSummary } from "../types";
+
+mock.module("../../../../contracts/game/manifest_appchain_blitz.json", () => ({
+  default: {
+    world: { address: "0xsharedworld" },
+    contracts: [
+      {
+        tag: "s2-registrar_systems",
+        address: "0xregistrar",
+        abi: [
+          { type: "function", name: "bootstrap_chain_config" },
+          { type: "function", name: "register_preset" },
+          { type: "function", name: "register_series" },
+          { type: "function", name: "create_game" },
+        ],
+      },
+    ],
+    events: [{ tag: "s2-GameCreated", selector: "0xabc" }],
+  },
+}));
+
+const { runGroupedSeriesLikeGameStep } = await import("../launch/series-like-runner");
+const { buildInitialSeriesLaunchSummary } = await import("../launch/series-summary");
 
 const originalFetch = globalThis.fetch;
 
@@ -80,6 +100,8 @@ describe("grouped series-like runner", () => {
     };
 
     const request = buildSeriesRequest({
+      // appchain has no hosted factory torii, so exercise the SQL wait on mainnet
+      environmentId: "mainnet.blitz",
       waitForFactoryIndexTimeoutMs: 25,
       waitForFactoryIndexPollMs: 1,
     });
@@ -118,7 +140,8 @@ describe("grouped series-like runner", () => {
 function buildSeriesRequest(overrides: Partial<LaunchSeriesRequest> = {}): LaunchSeriesRequest {
   return {
     launchKind: "series",
-    environmentId: "slot.blitz",
+    environmentId: "appchain.blitz",
+    factoryAddress: "0xfactory",
     seriesName: "bltz-knicker",
     games: [
       { gameName: "bltz-knicker-06", startTime: "2099-01-01T06:00:00Z" },

@@ -2,9 +2,7 @@ import { ClientComponents, Direction, ID, SystemCalls, TroopTier, TroopType } fr
 import { Account, AccountInterface } from "starknet";
 import { getTroopResourceId, multiplyByPrecision } from "../utils";
 import { ResourceManager } from "./resource-manager";
-import { scheduleTransactionCleanup } from "./transaction-cleanup";
-
-const OPTIMISTIC_TROOP_SPEND_FALLBACK_TIMEOUT_MS = 180_000;
+import type { ProvisionalIntent } from "../sync/provisional-write-manager";
 
 export class ArmyManager {
   constructor(
@@ -56,16 +54,23 @@ export class ArmyManager {
     troopTier: TroopTier,
     troopCount: number,
     spawnDirection: Direction,
+    onIntent?: (intent: ProvisionalIntent) => void,
   ): Promise<void> {
-    await this.withOptimisticTroopSpend(signer, troopType, troopTier, troopCount, () =>
-      this.systemCalls.explorer_create({
-        signer,
-        for_structure_id: this.realmEntityId,
-        category: Object.keys(TroopType).indexOf(troopType),
-        tier: Object.keys(TroopTier).indexOf(troopTier),
-        amount: multiplyByPrecision(troopCount),
-        spawn_direction: spawnDirection,
-      }),
+    await this.withOptimisticTroopSpend(
+      signer,
+      troopType,
+      troopTier,
+      troopCount,
+      () =>
+        this.systemCalls.explorer_create({
+          signer,
+          for_structure_id: this.realmEntityId,
+          category: Object.keys(TroopType).indexOf(troopType),
+          tier: Object.keys(TroopTier).indexOf(troopTier),
+          amount: multiplyByPrecision(troopCount),
+          spawn_direction: spawnDirection,
+        }),
+      onIntent,
     );
   }
 
@@ -82,37 +87,14 @@ export class ArmyManager {
     troopTier: TroopTier,
     troopCount: number,
     submit: () => Promise<T>,
+    onIntent?: (intent: ProvisionalIntent) => void,
   ): Promise<T> {
-    const removeResourceOverride = this.optimisticTroopSpend(troopType, troopTier, troopCount);
-
-    try {
-      const result = await submit();
-      this.scheduleOptimisticTroopSpendCleanup(signer, result, removeResourceOverride);
-      return result;
-    } catch (error) {
-      removeResourceOverride();
-      throw error;
-    }
-  }
-
-  private optimisticTroopSpend(troopType: TroopType, troopTier: TroopTier, troopCount: number) {
-    if (!Number.isFinite(troopCount) || troopCount <= 0) return () => {};
+    if (!Number.isFinite(troopCount) || troopCount <= 0) return submit();
 
     const resourceId = getTroopResourceId(troopType, troopTier);
     const resourceManager = new ResourceManager(this.components, this.realmEntityId);
-    return resourceManager.optimisticResourceUpdate(resourceId, -troopCount);
-  }
-
-  private scheduleOptimisticTroopSpendCleanup(
-    signer: Account | AccountInterface,
-    result: unknown,
-    cleanup: () => void,
-  ) {
-    scheduleTransactionCleanup({
-      signer,
-      result,
-      cleanup,
-      fallbackTimeoutMs: OPTIMISTIC_TROOP_SPEND_FALLBACK_TIMEOUT_MS,
+    return resourceManager.submitProvisionalResourceTransaction([{ resourceId, amount: -troopCount }], signer, submit, {
+      onIntent,
     });
   }
 }

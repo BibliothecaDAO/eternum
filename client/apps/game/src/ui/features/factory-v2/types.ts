@@ -2,7 +2,7 @@ import type { Chain } from "@contracts";
 import type { FactoryBiomeClimateOverrides } from "@bibliothecadao/types";
 
 export type FactoryGameMode = "eternum" | "blitz";
-export type FactoryLaunchChain = Extract<Chain, "mainnet" | "slot">;
+export type FactoryLaunchChain = Extract<Chain, "mainnet" | "appchain">;
 export type FactoryLaunchTargetKind = "game" | "series" | "rotation";
 export type FactoryRunKind = "game" | "series" | "rotation";
 export type FactoryRunStepId =
@@ -94,6 +94,12 @@ export interface FactoryLaunchPresetDefaults {
   devMode: boolean;
   twoPlayerMode: boolean;
   singleRealmMode: boolean;
+  /**
+   * Registered on-chain preset id the launch runs on (appchain registrar):
+   * "2" = Regular Fast rulebook, "3" = Duel balance. Legacy chains ignore it
+   * and use their factory config version default.
+   */
+  version?: string;
 }
 
 export interface FactoryLaunchPreset {
@@ -224,6 +230,8 @@ export interface FactoryRun {
   summary: string;
   updatedAt: string;
   worldAddress?: string;
+  /** Registrar-assigned game id inside the persistent appchain world. */
+  gameId?: number;
   recovery?: FactoryRunRecovery;
   autoRetry?: FactoryAutoRetryState;
   prizeFunding?: FactoryPrizeFundingState;

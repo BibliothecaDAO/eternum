@@ -2,6 +2,9 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { env } from "../../env";
 
 const REALTIME_SERVER_URL = env.VITE_PUBLIC_REALTIME_URL;
+// Deployments without a realtime-server (e.g. the appchain until M5) leave the
+// URL empty; every avatar query and mutation must stay quiet in that case.
+const AVATAR_SERVICE_ENABLED = Boolean(REALTIME_SERVER_URL);
 const AVATAR_CACHE_STALE_MS = 60 * 60 * 1000;
 const AVATAR_CACHE_GC_MS = 24 * 60 * 60 * 1000;
 
@@ -177,7 +180,7 @@ export function usePlayerAvatar(playerAddress?: string | bigint | number | null)
         return null;
       }
     },
-    enabled: !!normalizedAddress,
+    enabled: AVATAR_SERVICE_ENABLED && !!normalizedAddress,
     staleTime: AVATAR_CACHE_STALE_MS,
     gcTime: AVATAR_CACHE_GC_MS,
     refetchOnWindowFocus: false,
@@ -211,7 +214,7 @@ export function usePlayerAvatarByUsername(username?: string | null) {
         return null;
       }
     },
-    enabled: !!normalizedUsername,
+    enabled: AVATAR_SERVICE_ENABLED && !!normalizedUsername,
     staleTime: AVATAR_CACHE_STALE_MS,
     gcTime: AVATAR_CACHE_GC_MS,
     refetchOnWindowFocus: false,
@@ -247,7 +250,7 @@ export function useMyAvatar(playerId: string, walletAddress: string, displayName
         return null;
       }
     },
-    enabled: Boolean(playerId && displayName),
+    enabled: AVATAR_SERVICE_ENABLED && Boolean(playerId && displayName),
     staleTime: 1000, // Consider data stale after 1 second to allow refetches
     refetchOnMount: true, // Always refetch on mount
     refetchOnWindowFocus: false,
@@ -260,6 +263,10 @@ export function useGenerateAvatar(playerId: string, walletAddress: string, displ
 
   return useMutation({
     mutationFn: async (options: GenerateAvatarOptions): Promise<GenerateAvatarResult> => {
+      if (!AVATAR_SERVICE_ENABLED) {
+        throw new Error("Avatar service is not available on this deployment");
+      }
+
       const response = await fetch(`${REALTIME_SERVER_URL}/api/avatars/generate`, {
         method: "POST",
         headers: {
@@ -296,6 +303,10 @@ export function useDeleteAvatar(playerId: string, walletAddress: string, display
 
   return useMutation({
     mutationFn: async (): Promise<void> => {
+      if (!AVATAR_SERVICE_ENABLED) {
+        throw new Error("Avatar service is not available on this deployment");
+      }
+
       const response = await fetch(`${REALTIME_SERVER_URL}/api/avatars/me`, {
         method: "DELETE",
         headers: {
@@ -325,6 +336,10 @@ export function useSelectAvatar(playerId: string, walletAddress: string, display
 
   return useMutation({
     mutationFn: async (imageUrl: string): Promise<{ avatarUrl: string }> => {
+      if (!AVATAR_SERVICE_ENABLED) {
+        throw new Error("Avatar service is not available on this deployment");
+      }
+
       const response = await fetch(`${REALTIME_SERVER_URL}/api/avatars/me`, {
         method: "PATCH",
         headers: {
@@ -378,7 +393,7 @@ export function useAvatarHistory(playerId: string, walletAddress: string, displa
       const data = await response.json();
       return data.logs ?? [];
     },
-    enabled: Boolean(playerId && displayName),
+    enabled: AVATAR_SERVICE_ENABLED && Boolean(playerId && displayName),
     staleTime: 30 * 1000,
   });
 }
@@ -396,6 +411,7 @@ export function useAvatarGallery(limit = 40) {
       const data = await response.json();
       return data.images ?? [];
     },
+    enabled: AVATAR_SERVICE_ENABLED,
     staleTime: 60 * 1000,
   });
 }
@@ -457,7 +473,7 @@ export function useAvatarProfiles(addresses: Array<string | bigint | number | nu
 
       return profiles;
     },
-    enabled: normalizedAddresses.length > 0 && shouldFetch,
+    enabled: AVATAR_SERVICE_ENABLED && normalizedAddresses.length > 0 && shouldFetch,
     initialData: cachedProfiles.length > 0 ? cachedProfiles : undefined,
     staleTime: AVATAR_CACHE_STALE_MS,
     gcTime: AVATAR_CACHE_GC_MS,
@@ -517,7 +533,7 @@ export function useAvatarProfilesByUsernames(usernames: Array<string | null | un
 
       return profiles;
     },
-    enabled: normalizedUsernames.length > 0 && shouldFetch,
+    enabled: AVATAR_SERVICE_ENABLED && normalizedUsernames.length > 0 && shouldFetch,
     initialData: cachedProfiles.length > 0 ? cachedProfiles : undefined,
     staleTime: AVATAR_CACHE_STALE_MS,
     gcTime: AVATAR_CACHE_GC_MS,

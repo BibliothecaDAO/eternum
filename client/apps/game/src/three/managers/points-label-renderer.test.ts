@@ -15,6 +15,7 @@ describe("PointsLabelRenderer", () => {
     expect(ownedResources.material).toBeInstanceOf(THREE.PointsMaterial);
     expect(ownedResources.material).not.toBeInstanceOf(THREE.ShaderMaterial);
     expect(ownedResources.geometry.getAttribute("color")).toBeInstanceOf(THREE.BufferAttribute);
+    expect(ownedResources.geometry.getAttribute("uv")).toBeInstanceOf(THREE.BufferAttribute);
   });
 
   it("tracks hover brightness through per-point colors", () => {

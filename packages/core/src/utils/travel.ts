@@ -1,7 +1,7 @@
 import { getComponentValue } from "@dojoengine/recs";
-import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { ClientComponents, ID } from "@bibliothecadao/types";
 import { calculateDistance } from "./utils";
+import { gameEntityKey } from "../managers/config-manager";
 
 export const computeTravelTime = (
   fromId: ID,
@@ -10,8 +10,8 @@ export const computeTravelTime = (
   components: ClientComponents,
   pickup?: boolean,
 ) => {
-  const fromPosition = getComponentValue(components.Structure, getEntityIdFromKeys([BigInt(fromId)]));
-  const toPosition = getComponentValue(components.Structure, getEntityIdFromKeys([BigInt(toId)]));
+  const fromPosition = getComponentValue(components.Structure, gameEntityKey([BigInt(fromId)]));
+  const toPosition = getComponentValue(components.Structure, gameEntityKey([BigInt(toId)]));
   if (!fromPosition || !toPosition) return;
   const distanceFromPosition =
     calculateDistance(

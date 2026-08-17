@@ -169,7 +169,8 @@ const STEP_COPY_BY_ID: Record<FactoryRunStepId, FactoryStepCopy> = {
   },
 };
 
-export const getEnvironmentLabel = (environment: string) => (environment.startsWith("mainnet.") ? "Mainnet" : "Slot");
+export const getEnvironmentLabel = (environment: string) =>
+  environment.startsWith("mainnet.") ? "Mainnet" : "Unknown";
 
 export const getRunStatusMeta = (status: FactoryRunStatus) => {
   switch (status) {

@@ -1,0 +1,10 @@
+<svg width="64" height="12" style="opacity: 0.7" viewBox="0 0 64 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path
+        d="M63.8868 6L61 8.88675L58.1132 6L61 3.11325L63.8868 6ZM61 6.5L1.23874 6.50001L1.23874 5.50001L61 5.5L61 6.5Z"
+        fill="#CAB1A6" />
+    <path
+        d="M17.5986 1L22.2782 4L28.5547 6.00003L22.2782 8L17.5986 11L11 6.5C11 6.5 7.41876 8 5.95938 8C4.5 8 0.999649 6.00003 0.999649 6.00003C0.999649 6.00003 4.5 4 5.95938 4C7.41876 4 11 5.5 11 5.5L17.5986 1Z"
+        fill="#CAB1A6" stroke="#CAB1A6" stroke-linejoin="round" />
+    <circle cx="17.5" cy="6" r="1.5" fill="#1B1B1B" />
+    <circle cx="6" cy="6" r="1" fill="#1B1B1B" />
+</svg>

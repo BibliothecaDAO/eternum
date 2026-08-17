@@ -17,6 +17,7 @@ import { Bot, MapPin, Pause, Play, RotateCw, Square, Trash2 } from "lucide-react
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { useShallow } from "zustand/react/shallow";
+import { gameEntityKey } from "@/dojo/game-scope";
 
 const formatRelativeTime = (timestamp?: number | null): string => {
   if (!timestamp) return "never";
@@ -232,7 +233,7 @@ const ExplorationAutomationContent = ({ onNavigate, compact = false }: Explorati
       const explorerId = Number(entry.explorerId);
       if (!Number.isFinite(explorerId) || explorerId <= 0) return;
 
-      const entity = getEntityIdFromKeys([BigInt(explorerId)]);
+      const entity = gameEntityKey([BigInt(explorerId)]);
       const explorer = getComponentValue(components.ExplorerTroops, entity);
       if (explorer?.coord) {
         positions[entry.id] = {

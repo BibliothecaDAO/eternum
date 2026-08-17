@@ -128,9 +128,9 @@ describe("resolveWorldDeploymentFromFactory", () => {
       ),
     );
 
-    await resolveWorldDeploymentFromFactory("https://factory.example/sql", "slot", "bltz-warzone-31");
+    await resolveWorldDeploymentFromFactory("https://factory.example/sql", "appchain", "bltz-warzone-31");
 
-    expect(mockFetch).toHaveBeenCalledWith("https://realtime.example/api/world-deployments/slot/bltz-warzone-31", {
+    expect(mockFetch).toHaveBeenCalledWith("https://realtime.example/api/world-deployments/appchain/bltz-warzone-31", {
       signal: expect.any(AbortSignal),
     });
   });

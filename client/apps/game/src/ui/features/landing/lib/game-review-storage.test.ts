@@ -11,16 +11,16 @@ describe("game-review-storage", () => {
     const { isGameReviewDismissed, setGameReviewDismissed } = await import("./game-review-storage");
     const worldAddress = "0x00123";
 
-    expect(isGameReviewDismissed("slot", worldAddress)).toBe(false);
+    expect(isGameReviewDismissed("appchain", worldAddress)).toBe(false);
 
-    setGameReviewDismissed("slot", worldAddress);
+    setGameReviewDismissed("appchain", worldAddress);
 
-    expect(isGameReviewDismissed("slot", "0x123")).toBe(true);
+    expect(isGameReviewDismissed("appchain", "0x123")).toBe(true);
 
     const persisted = localStorage.getItem("eternum:review:dismissed");
     expect(persisted).not.toBeNull();
     expect(JSON.parse(persisted as string)).toEqual({
-      "slot:0x123": 1,
+      "appchain:0x123": 1,
     });
   });
 
@@ -35,8 +35,8 @@ describe("game-review-storage", () => {
       throw new Error("storage blocked");
     });
 
-    setGameReviewDismissed("slot", worldAddress);
+    setGameReviewDismissed("appchain", worldAddress);
 
-    expect(isGameReviewDismissed("slot", worldAddress)).toBe(true);
+    expect(isGameReviewDismissed("appchain", worldAddress)).toBe(true);
   });
 });

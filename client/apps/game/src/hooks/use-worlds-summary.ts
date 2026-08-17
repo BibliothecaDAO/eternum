@@ -1,29 +1,32 @@
 import type { WorldSummary } from "@bibliothecadao/types";
 import { useQuery } from "@tanstack/react-query";
-import { env } from "../../env";
+
+import { getWorldDirectory } from "@/runtime/world/world-directory";
+import { fetchAppchainWorldsSummary } from "./appchain-worlds-summary";
 import { WORLD_SUMMARY_QUERY_KEY } from "./world-list-queries";
 
-export async function fetchWorldsSummary(realtimeBaseUrl: string): Promise<WorldSummary[]> {
-  const url = `${realtimeBaseUrl.replace(/\/+$/, "")}/api/worlds/summary`;
-  const response = await fetch(url, { signal: AbortSignal.timeout(10_000) });
-  if (!response.ok) {
-    throw new Error(`Worlds summary fetch failed: ${response.status} ${response.statusText}`);
-  }
-  const data = (await response.json()) as WorldSummary[];
-  if (!Array.isArray(data)) {
-    throw new Error("Worlds summary returned non-array payload");
-  }
-  return data;
+/**
+ * The landing games list: the union of every directory world's GameRegistry
+ * summary. One query per world (two at most — blitz + eternum share the MVP
+ * chain); React Query deduplicates across components. A world whose torii is
+ * unreachable contributes nothing rather than failing the whole list.
+ */
+export async function fetchWorldsSummary(): Promise<WorldSummary[]> {
+  const perWorld = await Promise.all(
+    getWorldDirectory().map((world) =>
+      fetchAppchainWorldsSummary(world).catch((error) => {
+        console.error(`[worlds-summary] world "${world.id}" summary failed`, error);
+        return [] as WorldSummary[];
+      }),
+    ),
+  );
+  return perWorld.flat();
 }
 
-/**
- * Single shared query for the whole worlds summary. React Query deduplicates across components.
- * On boot there's one request; subsequent tabs share the cached response for `staleTime`.
- */
 export const useWorldsSummary = () =>
   useQuery({
     queryKey: WORLD_SUMMARY_QUERY_KEY,
-    queryFn: () => fetchWorldsSummary(env.VITE_PUBLIC_REALTIME_URL),
+    queryFn: fetchWorldsSummary,
     staleTime: 25_000,
     refetchInterval: 30_000,
     refetchIntervalInBackground: false,

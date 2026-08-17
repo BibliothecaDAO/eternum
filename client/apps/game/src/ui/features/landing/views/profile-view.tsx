@@ -5,17 +5,15 @@ import { useSearchParams } from "react-router-dom";
 // Lazy load heavy components
 const LandingPlayer = lazy(() => import("../components/player-profile").then((m) => ({ default: m.LandingPlayer })));
 
-const LandingCosmetics = lazy(() =>
-  import("@/ui/features/cosmetics/cosmetics-view").then((m) => ({ default: m.LandingCosmetics })),
-);
-
 const WalletSection = lazy(() => import("../components/wallet-section").then((m) => ({ default: m.WalletSection })));
 
 interface ProfileViewProps {
   className?: string;
 }
 
-type ProfileTab = "profile" | "cosmetics" | "wallet";
+// Cosmetics is retired until a live mainnet marketplace indexer exists (W6):
+// the old one is gone and the flow would submit wrong-chain transactions.
+type ProfileTab = "profile" | "wallet";
 
 const LoadingSpinner = () => (
   <div className="flex h-full min-h-[400px] items-center justify-center">
@@ -35,14 +33,6 @@ export const ProfileView = ({ className }: ProfileViewProps) => {
 
   const renderContent = () => {
     switch (activeTab) {
-      case "cosmetics":
-        return (
-          <Suspense fallback={<LoadingSpinner />}>
-            <div className="h-full">
-              <LandingCosmetics />
-            </div>
-          </Suspense>
-        );
       case "wallet":
         return (
           <Suspense fallback={<LoadingSpinner />}>

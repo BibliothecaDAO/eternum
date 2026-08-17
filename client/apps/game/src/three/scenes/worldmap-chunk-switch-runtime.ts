@@ -10,10 +10,7 @@ interface PrepareWorldmapChunkSwitchRuntimeInput {
   currentChunk?: string;
   force: boolean;
   getSurroundingChunkKeys: (startRow: number, startCol: number) => string[];
-  invalidateTerrainCaches: (
-    chunkKey: string,
-    options: { includeSurroundingChunks: string[]; invalidateFetchAreas: true },
-  ) => void;
+  invalidateTerrainCaches: (chunkKey: string, options: { includeSurroundingChunks: string[] }) => void;
   lastChunkSwitchMovement: ChunkSwitchPosition | null;
   lastChunkSwitchPosition: ChunkSwitchPosition | null;
   pinnedChunkKeys: Set<string>;
@@ -74,7 +71,6 @@ export function prepareWorldmapChunkSwitchRuntime(
   if (reversalRefreshDecision.shouldForceRefresh) {
     input.invalidateTerrainCaches(input.chunkKey, {
       includeSurroundingChunks: surroundingChunks,
-      invalidateFetchAreas: true,
     });
   } else if (effectiveForce) {
     input.removeCachedMatricesForChunk(input.startRow, input.startCol);

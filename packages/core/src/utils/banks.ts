@@ -1,7 +1,8 @@
 import { ClientComponents, EntityType, ID, StructureType } from "@bibliothecadao/types";
 import { Entity, getComponentValue, getComponentValueStrict, HasValue, runQuery } from "@dojoengine/recs";
 import { configManager } from "../managers";
-import { calculateDistance, getEntityIdFromKeys } from "./utils";
+import { calculateDistance } from "./utils";
+import { gameEntityKey } from "../managers/config-manager";
 
 export type ClosestBank = {
   bankId: ID;
@@ -16,7 +17,7 @@ export const getClosestBank = (entityId: ID, components: ClientComponents): Clos
     }),
   ]);
 
-  const playerStructure = getComponentValueStrict(components.Structure, getEntityIdFromKeys([BigInt(entityId)]));
+  const playerStructure = getComponentValueStrict(components.Structure, gameEntityKey([BigInt(entityId)]));
 
   const banksArray = Array.from(banks);
 

@@ -1,6 +1,4 @@
-import { POST_PROCESSING_CONFIG, type PostProcessingConfig } from "@/three/constants";
-import { GraphicsSettings } from "@/ui/config";
-import { ToneMappingMode } from "postprocessing";
+import { POST_PROCESSING_CONFIG, type PostProcessingConfig, type RendererToneMappingMode } from "@/three/constants";
 import {
   replaceRendererDiagnosticDegradations,
   setRendererDiagnosticDegradations,
@@ -11,7 +9,7 @@ import {
 import {
   applyRendererBackendEnvironment,
   applyRendererBackendPostProcessPlan,
-  applyRendererBackendQuality,
+  applyRendererBackendVisuals,
 } from "./renderer-backend-compat";
 import {
   resolveCapabilityAwareRendererEffectPlan,
@@ -21,7 +19,7 @@ import {
 } from "./game-renderer-policy";
 import type { RendererBackendV2, RendererPostProcessController, RendererPostProcessPlan } from "./renderer-backend-v2";
 import type { RendererSurfaceLike } from "./renderer-backend";
-import type { QualityFeatures } from "./utils/quality-controller";
+import type { RenderVisualProfile } from "./render-profile";
 import { resolveWebgpuPostprocessPolicy } from "./webgpu-postprocess-policy";
 
 type TrackableFolderLike = {
@@ -38,32 +36,25 @@ type TrackableFolderLike = {
 
 interface RendererEffectsScenes {
   fastTravelScene?: {
-    applyQualityFeatures(features: QualityFeatures): void;
+    applyRenderVisualProfile(features: RenderVisualProfile): void;
   };
   hexceptionScene: {
-    applyQualityFeatures(features: QualityFeatures): void;
+    applyRenderVisualProfile(features: RenderVisualProfile): void;
   };
   worldmapScene: {
-    applyQualityFeatures(features: QualityFeatures): void;
+    applyRenderVisualProfile(features: RenderVisualProfile): void;
   };
 }
 
 interface CreateRendererEffectsRuntimeInput {
   backend: RendererBackendV2 & { renderer: RendererSurfaceLike; dispose?: () => void };
   createFolder: (name: string) => TrackableFolderLike;
-  graphicsSetting: GraphicsSettings;
   isGraphicsDevEnabled: boolean;
-  isMobileDevice: boolean;
   resolvePixelRatio?: (pixelRatio: number) => number;
   scenes: RendererEffectsScenes;
 }
 
-const DEFAULT_ENVIRONMENT_INTENSITY: Record<GraphicsSettings, number> = {
-  [GraphicsSettings.HIGH]: 0.55,
-  [GraphicsSettings.MID]: 0.45,
-  [GraphicsSettings.LOW]: 0.25,
-  [GraphicsSettings.ULTRA_LOW]: 0.2,
-};
+const DEFAULT_ENVIRONMENT_INTENSITY = 0.55;
 
 const WEATHER_POST_PROCESSING_LIMITS = {
   brightnessReduction: 0.06,
@@ -81,10 +72,10 @@ type WeatherPostProcessingValues = {
 
 export interface RendererEffectsRuntime {
   applyEnvironment(): Promise<void>;
-  applyQualityFeatures(features: QualityFeatures): void;
+  applyRenderVisualProfile(features: RenderVisualProfile): void;
   hasPostProcessing(): boolean;
-  resolveRendererToneMappingMode(mode: ToneMappingMode): RendererPostProcessPlan["toneMapping"]["mode"];
-  setupPostProcessingEffects(features: QualityFeatures): void;
+  resolveRendererToneMappingMode(mode: RendererToneMappingMode): RendererPostProcessPlan["toneMapping"]["mode"];
+  setupPostProcessingEffects(features: RenderVisualProfile): void;
   updateWeatherPostProcessing(weatherState: { intensity: number; stormIntensity: number }): void;
 }
 
@@ -108,7 +99,7 @@ class GameRendererEffectsRuntime implements RendererEffectsRuntime {
 
   constructor(private readonly input: CreateRendererEffectsRuntimeInput) {}
 
-  public setupPostProcessingEffects(features: QualityFeatures): void {
+  public setupPostProcessingEffects(features: RenderVisualProfile): void {
     const effectsConfig = this.getPostProcessingConfig();
     if (!effectsConfig) {
       return;
@@ -126,7 +117,7 @@ class GameRendererEffectsRuntime implements RendererEffectsRuntime {
   public async applyEnvironment(): Promise<void> {
     const environmentPolicy = resolveRendererEnvironmentPolicy({
       capabilities: this.input.backend.capabilities,
-      intensity: DEFAULT_ENVIRONMENT_INTENSITY[this.input.graphicsSetting],
+      intensity: DEFAULT_ENVIRONMENT_INTENSITY,
     });
 
     replaceRendererDiagnosticDegradations(["environmentIbl"], environmentPolicy.degradations);
@@ -142,13 +133,13 @@ class GameRendererEffectsRuntime implements RendererEffectsRuntime {
     });
   }
 
-  public applyQualityFeatures(features: QualityFeatures): void {
+  public applyRenderVisualProfile(features: RenderVisualProfile): void {
     const devicePixelRatio = Math.max(window.devicePixelRatio || 1, 1);
     const resolvedPixelRatio = (this.input.resolvePixelRatio ?? ((value: number) => value))(
       Math.min(devicePixelRatio, features.pixelRatio),
     );
 
-    applyRendererBackendQuality(this.input.backend, {
+    applyRendererBackendVisuals(this.input.backend, {
       height: window.innerHeight,
       pixelRatio: resolvedPixelRatio,
       shadows: features.shadows,
@@ -161,9 +152,9 @@ class GameRendererEffectsRuntime implements RendererEffectsRuntime {
       setRendererDiagnosticDegradations([]);
     }
 
-    this.input.scenes.worldmapScene.applyQualityFeatures(features);
-    this.input.scenes.fastTravelScene?.applyQualityFeatures(features);
-    this.input.scenes.hexceptionScene.applyQualityFeatures(features);
+    this.input.scenes.worldmapScene.applyRenderVisualProfile(features);
+    this.input.scenes.fastTravelScene?.applyRenderVisualProfile(features);
+    this.input.scenes.hexceptionScene.applyRenderVisualProfile(features);
   }
 
   public updateWeatherPostProcessing(weatherState: { intensity: number; stormIntensity: number }): void {
@@ -201,30 +192,15 @@ class GameRendererEffectsRuntime implements RendererEffectsRuntime {
     });
   }
 
-  public resolveRendererToneMappingMode(mode: ToneMappingMode): RendererPostProcessPlan["toneMapping"]["mode"] {
-    switch (mode) {
-      case ToneMappingMode.ACES_FILMIC:
-        return "aces-filmic";
-      case ToneMappingMode.LINEAR:
-        return "linear";
-      case ToneMappingMode.NEUTRAL:
-        return "neutral";
-      case ToneMappingMode.REINHARD:
-        return "reinhard";
-      case ToneMappingMode.CINEON:
-      case ToneMappingMode.OPTIMIZED_CINEON:
-      default:
-        return "cineon";
-    }
+  public resolveRendererToneMappingMode(mode: RendererToneMappingMode): RendererPostProcessPlan["toneMapping"]["mode"] {
+    return mode;
   }
 
   private getPostProcessingConfig(): PostProcessingConfig | null {
-    const effectsConfig = POST_PROCESSING_CONFIG[this.input.graphicsSetting];
+    const effectsConfig = POST_PROCESSING_CONFIG;
     if (
       !shouldEnablePostProcessingConfig({
         hasPostProcessingConfig: effectsConfig !== null,
-        isMobileDevice: this.input.isMobileDevice,
-        isHighGraphicsSetting: this.input.graphicsSetting === GraphicsSettings.HIGH,
       })
     ) {
       return null;
@@ -233,7 +209,7 @@ class GameRendererEffectsRuntime implements RendererEffectsRuntime {
     return effectsConfig;
   }
 
-  private setupGraphicsDevControls(features: QualityFeatures, effectsConfig: PostProcessingConfig): void {
+  private setupGraphicsDevControls(features: RenderVisualProfile, effectsConfig: PostProcessingConfig): void {
     if (!this.input.isGraphicsDevEnabled) {
       return;
     }
@@ -272,11 +248,15 @@ class GameRendererEffectsRuntime implements RendererEffectsRuntime {
     );
   }
 
-  private setupToneMappingGUI(features: QualityFeatures, config: PostProcessingConfig): void {
+  private setupToneMappingGUI(features: RenderVisualProfile, config: PostProcessingConfig): void {
     const folder = this.input.createFolder("Tone Mapping");
     folder
       .add(config.toneMapping, "mode", {
-        ...ToneMappingMode,
+        "ACES Filmic": "aces-filmic",
+        Cineon: "cineon",
+        Linear: "linear",
+        Neutral: "neutral",
+        Reinhard: "reinhard",
       })
       .onChange?.(() => this.rebuildPostProcessing(features));
 
@@ -285,7 +265,7 @@ class GameRendererEffectsRuntime implements RendererEffectsRuntime {
     folder.close?.();
   }
 
-  private setupPostProcessingGUI(features: QualityFeatures, config: PostProcessingConfig): void {
+  private setupPostProcessingGUI(features: RenderVisualProfile, config: PostProcessingConfig): void {
     if (this.postProcessingGUIInitialized) {
       return;
     }
@@ -340,7 +320,7 @@ class GameRendererEffectsRuntime implements RendererEffectsRuntime {
     vignetteFolder.close?.();
   }
 
-  private rebuildPostProcessing(features: QualityFeatures): void {
+  private rebuildPostProcessing(features: RenderVisualProfile): void {
     if (!this.postProcessingConfig) {
       return;
     }
@@ -368,9 +348,9 @@ class GameRendererEffectsRuntime implements RendererEffectsRuntime {
         saturation: this.postProcessingConfig.saturation,
       },
       disabledReasons: {
-        bloom: features.bloom ? undefined : "disabled-by-quality",
-        chromaticAberration: features.chromaticAberration ? undefined : "disabled-by-quality",
-        vignette: features.vignette ? undefined : "disabled-by-quality",
+        bloom: features.bloom ? undefined : "disabled-by-profile",
+        chromaticAberration: features.chromaticAberration ? undefined : "disabled-by-profile",
+        vignette: features.vignette ? undefined : "disabled-by-profile",
       },
       toneMapping: {
         exposure: this.postProcessingConfig.toneMapping.exposure,
@@ -392,7 +372,7 @@ class GameRendererEffectsRuntime implements RendererEffectsRuntime {
     setRendererDiagnosticEffectPlan(rendererPlan.plan);
     setRendererDiagnosticPostprocessPolicy(
       resolveWebgpuPostprocessPolicy({
-        activeMode: snapshotRendererDiagnostics().activeMode ?? "legacy-webgl",
+        activeMode: snapshotRendererDiagnostics().activeMode ?? "webgl2-fallback",
         capabilities: this.input.backend.capabilities,
       }),
     );

@@ -1,11 +1,21 @@
 import { getCurrentPlayRouteBootToken, usePlayRouteReadinessStore } from "@/game-entry/play-route-readiness-store";
 import { resolvePlayRouteWorldPosition } from "@/play/navigation/play-route-target";
-import { FAST_TRAVEL_SCENE_READY_EVENT } from "@/ui/layouts/game-loading-overlay.utils";
 import type { SetupResult } from "@bibliothecadao/dojo";
 import { PathRenderer } from "../managers/path-renderer";
 import { SelectedHexManager } from "../managers/selected-hex-manager";
 import { SelectionPulseManager } from "../managers/selection-pulse-manager";
-import { Color, type Fog, type FogExp2, Group, Mesh, Raycaster, type Texture, Vector2, Vector3 } from "three";
+import {
+  Color,
+  type Fog,
+  type FogExp2,
+  Group,
+  LineSegments,
+  Mesh,
+  Raycaster,
+  type Texture,
+  Vector2,
+  Vector3,
+} from "three";
 import type { MapControls } from "three/examples/jsm/controls/MapControls.js";
 
 import type { SceneManager } from "../scene-manager";
@@ -111,12 +121,6 @@ export default class FastTravelScene extends WarpTravel {
 
   private announceFastTravelSceneReady(): void {
     usePlayRouteReadinessStore.getState().markFastTravelReady(getCurrentPlayRouteBootToken());
-
-    if (typeof window === "undefined") {
-      return;
-    }
-
-    window.dispatchEvent(new Event(FAST_TRAVEL_SCENE_READY_EVENT));
   }
 
   private configureFastTravelSetupStart(): void {
@@ -451,9 +455,13 @@ export default class FastTravelScene extends WarpTravel {
   }
 
   private syncFastTravelSurfaceMeshes(): void {
-    this.currentRenderState?.surface.field.tiles.forEach((tile) => {
-      this.travelSurfaceGroup.add(this.createFastTravelHexMesh(tile.hexCoords));
-    });
+    const tiles = this.currentRenderState?.surface.field.tiles ?? [];
+    if (tiles.length === 0) {
+      return;
+    }
+
+    const positions = tiles.map((tile) => getWorldPositionForHex(tile.hexCoords));
+    this.travelSurfaceGroup.add(this.renderAssets.createHexFieldMesh(positions));
   }
 
   private syncFastTravelInteractiveHexes(): void {
@@ -626,16 +634,13 @@ export default class FastTravelScene extends WarpTravel {
   }
 
   private clearTravelVisualGroups(): void {
+    this.travelSurfaceGroup.children.forEach((child) => {
+      if (child instanceof LineSegments) {
+        child.geometry.dispose();
+      }
+    });
     this.travelSurfaceGroup.clear();
     this.travelContentGroup.clear();
-  }
-
-  private createFastTravelHexMesh(hexCoords: FastTravelHexCoords): Group {
-    const { x, y, z } = getWorldPositionForHex(hexCoords);
-    const group = new Group();
-    group.position.set(x, y, z);
-    group.add(this.renderAssets.createHexEdgeMesh());
-    return group;
   }
 
   private createArmyMarkerMesh(anchor: FastTravelEntityAnchor): Mesh {

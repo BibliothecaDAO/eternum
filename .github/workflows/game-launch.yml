@@ -17,10 +17,10 @@ on:
         required: true
         type: choice
         options:
+          - appchain.blitz
+          - appchain.eternum
           - mainnet.blitz
           - mainnet.eternum
-          - slot.blitz
-          - slot.eternum
       game_name:
         description: "Game/world name"
         required: false
@@ -137,10 +137,11 @@ jobs:
       GAME_LAUNCH_TARGET_GAME_NAMES_JSON: ${{ github.event.inputs.target_game_names_json }}
       GAME_LAUNCH_STEP: ${{ github.event.inputs.launch_step }}
       FACTORY_RUN_STORE_BRANCH: factory-runs
+      # Each GitHub environment selects its world's dedicated Torii endpoint.
+      TORII_URL: ${{ vars.TORII_URL }}
       FACTORY_ADDRESS: ${{ vars.FACTORY_ADDRESS }}
       DOJO_ACCOUNT_ADDRESS: ${{ vars.GAME_LAUNCH_DOJO_ACCOUNT_ADDRESS }}
       DOJO_PRIVATE_KEY: ${{ secrets.GAME_LAUNCH_DOJO_PRIVATE_KEY }}
-      SLOT_AUTH: ${{ secrets.SLOT_AUTH }}
       GITHUB_TOKEN: ${{ github.token }}
     steps:
       - name: Checkout
@@ -167,14 +168,6 @@ jobs:
           set -euo pipefail
           pnpm --dir packages/types build
           pnpm --dir packages/provider build
-
-      - name: Install Slot CLI
-        run: |
-          set -euo pipefail
-          curl -L https://slot.cartridge.sh | bash
-          /home/runner/.config/.slot/bin/slotup
-          echo "/home/runner/.config/.slot/bin" >> $GITHUB_PATH
-          slot --version || true
 
       - name: Prepare launch arguments
         run: |
@@ -765,6 +758,10 @@ jobs:
             local attempt=1
             local exit_code=1
 
+            if [ "${GAME_LAUNCH_NETWORK}" = "appchain" ]; then
+              max_attempts=2
+            fi
+
             record_launch_step_started "${step_id}"
 
             if ! prepare_account_lease_for_step "${step_id}"; then
@@ -856,9 +853,10 @@ jobs:
 
       - name: Configure world
         if:
-          ${{ github.event.inputs.launch_kind == 'game' && (github.event.inputs.launch_step == 'full' ||
-          github.event.inputs.launch_step == 'create-world' || github.event.inputs.launch_step ==
-          'wait-for-factory-index' || github.event.inputs.launch_step == 'configure-world') }}
+          ${{ startsWith(github.event.inputs.environment, 'mainnet.') && github.event.inputs.launch_kind == 'game' &&
+          (github.event.inputs.launch_step == 'full' || github.event.inputs.launch_step == 'create-world' ||
+          github.event.inputs.launch_step == 'wait-for-factory-index' || github.event.inputs.launch_step ==
+          'configure-world') }}
         run: |
           set -euo pipefail
           source .context/game-launch/launch-env.sh
@@ -866,10 +864,11 @@ jobs:
 
       - name: Configure worlds
         if:
-          ${{ (github.event.inputs.launch_kind == 'series' || github.event.inputs.launch_kind == 'rotation') &&
-          (github.event.inputs.launch_step == 'full' || github.event.inputs.launch_step == 'create-series' ||
-          github.event.inputs.launch_step == 'create-worlds' || github.event.inputs.launch_step ==
-          'wait-for-factory-indexes' || github.event.inputs.launch_step == 'configure-worlds') }}
+          ${{ startsWith(github.event.inputs.environment, 'mainnet.') && (github.event.inputs.launch_kind == 'series' ||
+          github.event.inputs.launch_kind == 'rotation') && (github.event.inputs.launch_step == 'full' ||
+          github.event.inputs.launch_step == 'create-series' || github.event.inputs.launch_step == 'create-worlds' ||
+          github.event.inputs.launch_step == 'wait-for-factory-indexes' || github.event.inputs.launch_step ==
+          'configure-worlds') }}
         run: |
           set -euo pipefail
           source .context/game-launch/launch-env.sh
@@ -877,10 +876,11 @@ jobs:
 
       - name: Reserve blitz hyperstructures
         if:
-          ${{ github.event.inputs.launch_kind == 'game' && endsWith(github.event.inputs.environment, '.blitz') &&
-          (github.event.inputs.launch_step == 'full' || github.event.inputs.launch_step == 'create-world' ||
-          github.event.inputs.launch_step == 'wait-for-factory-index' || github.event.inputs.launch_step ==
-          'configure-world' || github.event.inputs.launch_step == 'reserve-blitz-hyperstructures') }}
+          ${{ startsWith(github.event.inputs.environment, 'mainnet.') && github.event.inputs.launch_kind == 'game' &&
+          endsWith(github.event.inputs.environment, '.blitz') && (github.event.inputs.launch_step == 'full' ||
+          github.event.inputs.launch_step == 'create-world' || github.event.inputs.launch_step ==
+          'wait-for-factory-index' || github.event.inputs.launch_step == 'configure-world' ||
+          github.event.inputs.launch_step == 'reserve-blitz-hyperstructures') }}
         run: |
           set -euo pipefail
           source .context/game-launch/launch-env.sh
@@ -888,11 +888,12 @@ jobs:
 
       - name: Reserve blitz hyperstructures for series
         if:
-          ${{ (github.event.inputs.launch_kind == 'series' || github.event.inputs.launch_kind == 'rotation') &&
-          endsWith(github.event.inputs.environment, '.blitz') && (github.event.inputs.launch_step == 'full' ||
-          github.event.inputs.launch_step == 'create-series' || github.event.inputs.launch_step == 'create-worlds' ||
-          github.event.inputs.launch_step == 'wait-for-factory-indexes' || github.event.inputs.launch_step ==
-          'configure-worlds' || github.event.inputs.launch_step == 'reserve-blitz-hyperstructures') }}
+          ${{ startsWith(github.event.inputs.environment, 'mainnet.') && (github.event.inputs.launch_kind == 'series' ||
+          github.event.inputs.launch_kind == 'rotation') && endsWith(github.event.inputs.environment, '.blitz') &&
+          (github.event.inputs.launch_step == 'full' || github.event.inputs.launch_step == 'create-series' ||
+          github.event.inputs.launch_step == 'create-worlds' || github.event.inputs.launch_step ==
+          'wait-for-factory-indexes' || github.event.inputs.launch_step == 'configure-worlds' ||
+          github.event.inputs.launch_step == 'reserve-blitz-hyperstructures') }}
         run: |
           set -euo pipefail
           source .context/game-launch/launch-env.sh
@@ -900,10 +901,10 @@ jobs:
 
       - name: Grant loot chest role
         if:
-          ${{ github.event.inputs.launch_kind == 'game' && (github.event.inputs.launch_step == 'full' ||
-          github.event.inputs.launch_step == 'create-world' || github.event.inputs.launch_step ==
-          'wait-for-factory-index' || github.event.inputs.launch_step == 'configure-world' ||
-          github.event.inputs.launch_step == 'grant-lootchest-role') }}
+          ${{ startsWith(github.event.inputs.environment, 'mainnet.') && github.event.inputs.launch_kind == 'game' &&
+          (github.event.inputs.launch_step == 'full' || github.event.inputs.launch_step == 'create-world' ||
+          github.event.inputs.launch_step == 'wait-for-factory-index' || github.event.inputs.launch_step ==
+          'configure-world' || github.event.inputs.launch_step == 'grant-lootchest-role') }}
         run: |
           set -euo pipefail
           source .context/game-launch/launch-env.sh
@@ -911,11 +912,11 @@ jobs:
 
       - name: Grant loot chest roles
         if:
-          ${{ (github.event.inputs.launch_kind == 'series' || github.event.inputs.launch_kind == 'rotation') &&
-          (github.event.inputs.launch_step == 'full' || github.event.inputs.launch_step == 'create-series' ||
-          github.event.inputs.launch_step == 'create-worlds' || github.event.inputs.launch_step ==
-          'wait-for-factory-indexes' || github.event.inputs.launch_step == 'configure-worlds' ||
-          github.event.inputs.launch_step == 'grant-lootchest-roles') }}
+          ${{ startsWith(github.event.inputs.environment, 'mainnet.') && (github.event.inputs.launch_kind == 'series' ||
+          github.event.inputs.launch_kind == 'rotation') && (github.event.inputs.launch_step == 'full' ||
+          github.event.inputs.launch_step == 'create-series' || github.event.inputs.launch_step == 'create-worlds' ||
+          github.event.inputs.launch_step == 'wait-for-factory-indexes' || github.event.inputs.launch_step ==
+          'configure-worlds' || github.event.inputs.launch_step == 'grant-lootchest-roles') }}
         run: |
           set -euo pipefail
           source .context/game-launch/launch-env.sh
@@ -923,11 +924,12 @@ jobs:
 
       - name: Grant village pass roles
         if:
-          ${{ github.event.inputs.launch_kind == 'game' && endsWith(github.event.inputs.environment, '.eternum') &&
-          (github.event.inputs.launch_step == 'full' || github.event.inputs.launch_step == 'create-world' ||
-          github.event.inputs.launch_step == 'wait-for-factory-index' || github.event.inputs.launch_step ==
-          'configure-world' || github.event.inputs.launch_step == 'grant-lootchest-role' ||
-          github.event.inputs.launch_step == 'grant-village-pass-role') }}
+          ${{ startsWith(github.event.inputs.environment, 'mainnet.') && github.event.inputs.launch_kind == 'game' &&
+          endsWith(github.event.inputs.environment, '.eternum') && (github.event.inputs.launch_step == 'full' ||
+          github.event.inputs.launch_step == 'create-world' || github.event.inputs.launch_step ==
+          'wait-for-factory-index' || github.event.inputs.launch_step == 'configure-world' ||
+          github.event.inputs.launch_step == 'grant-lootchest-role' || github.event.inputs.launch_step ==
+          'grant-village-pass-role') }}
         run: |
           set -euo pipefail
           source .context/game-launch/launch-env.sh
@@ -935,12 +937,13 @@ jobs:
 
       - name: Grant village pass roles for series
         if:
-          ${{ (github.event.inputs.launch_kind == 'series' || github.event.inputs.launch_kind == 'rotation') &&
-          endsWith(github.event.inputs.environment, '.eternum') && (github.event.inputs.launch_step == 'full' ||
-          github.event.inputs.launch_step == 'create-series' || github.event.inputs.launch_step == 'create-worlds' ||
-          github.event.inputs.launch_step == 'wait-for-factory-indexes' || github.event.inputs.launch_step ==
-          'configure-worlds' || github.event.inputs.launch_step == 'grant-lootchest-roles' ||
-          github.event.inputs.launch_step == 'grant-village-pass-roles') }}
+          ${{ startsWith(github.event.inputs.environment, 'mainnet.') && (github.event.inputs.launch_kind == 'series' ||
+          github.event.inputs.launch_kind == 'rotation') && endsWith(github.event.inputs.environment, '.eternum') &&
+          (github.event.inputs.launch_step == 'full' || github.event.inputs.launch_step == 'create-series' ||
+          github.event.inputs.launch_step == 'create-worlds' || github.event.inputs.launch_step ==
+          'wait-for-factory-indexes' || github.event.inputs.launch_step == 'configure-worlds' ||
+          github.event.inputs.launch_step == 'grant-lootchest-roles' || github.event.inputs.launch_step ==
+          'grant-village-pass-roles') }}
         run: |
           set -euo pipefail
           source .context/game-launch/launch-env.sh
@@ -948,12 +951,12 @@ jobs:
 
       - name: Create banks
         if:
-          ${{ endsWith(github.event.inputs.environment, '.eternum') && (github.event.inputs.launch_step == 'full' ||
-          github.event.inputs.launch_step == 'create-world' || github.event.inputs.launch_step ==
-          'wait-for-factory-index' || github.event.inputs.launch_step == 'configure-world' ||
-          github.event.inputs.launch_step == 'grant-lootchest-role' || github.event.inputs.launch_step ==
-          'grant-village-pass-role' || github.event.inputs.launch_step == 'create-series' ||
-          github.event.inputs.launch_step == 'create-worlds' || github.event.inputs.launch_step ==
+          ${{ startsWith(github.event.inputs.environment, 'mainnet.') && endsWith(github.event.inputs.environment,
+          '.eternum') && (github.event.inputs.launch_step == 'full' || github.event.inputs.launch_step == 'create-world'
+          || github.event.inputs.launch_step == 'wait-for-factory-index' || github.event.inputs.launch_step ==
+          'configure-world' || github.event.inputs.launch_step == 'grant-lootchest-role' ||
+          github.event.inputs.launch_step == 'grant-village-pass-role' || github.event.inputs.launch_step ==
+          'create-series' || github.event.inputs.launch_step == 'create-worlds' || github.event.inputs.launch_step ==
           'wait-for-factory-indexes' || github.event.inputs.launch_step == 'configure-worlds' ||
           github.event.inputs.launch_step == 'grant-lootchest-roles' || github.event.inputs.launch_step ==
           'grant-village-pass-roles' || github.event.inputs.launch_step == 'create-banks') }}
@@ -964,12 +967,12 @@ jobs:
 
       - name: Create indexer
         if:
-          ${{ github.event.inputs.launch_kind == 'game' && (github.event.inputs.launch_step == 'full' ||
-          github.event.inputs.launch_step == 'create-world' || github.event.inputs.launch_step ==
-          'wait-for-factory-index' || github.event.inputs.launch_step == 'configure-world' ||
-          github.event.inputs.launch_step == 'grant-lootchest-role' || github.event.inputs.launch_step ==
-          'grant-village-pass-role' || github.event.inputs.launch_step == 'create-banks' ||
-          github.event.inputs.launch_step == 'create-indexer') }}
+          ${{ startsWith(github.event.inputs.environment, 'mainnet.') && github.event.inputs.launch_kind == 'game' &&
+          (github.event.inputs.launch_step == 'full' || github.event.inputs.launch_step == 'create-world' ||
+          github.event.inputs.launch_step == 'wait-for-factory-index' || github.event.inputs.launch_step ==
+          'configure-world' || github.event.inputs.launch_step == 'grant-lootchest-role' ||
+          github.event.inputs.launch_step == 'grant-village-pass-role' || github.event.inputs.launch_step ==
+          'create-banks' || github.event.inputs.launch_step == 'create-indexer') }}
         run: |
           set -euo pipefail
           source .context/game-launch/launch-env.sh
@@ -977,13 +980,13 @@ jobs:
 
       - name: Create indexers
         if:
-          ${{ (github.event.inputs.launch_kind == 'series' || github.event.inputs.launch_kind == 'rotation') &&
-          (github.event.inputs.launch_step == 'full' || github.event.inputs.launch_step == 'create-series' ||
-          github.event.inputs.launch_step == 'create-worlds' || github.event.inputs.launch_step ==
-          'wait-for-factory-indexes' || github.event.inputs.launch_step == 'configure-worlds' ||
-          github.event.inputs.launch_step == 'grant-lootchest-roles' || github.event.inputs.launch_step ==
-          'grant-village-pass-roles' || github.event.inputs.launch_step == 'create-banks' ||
-          github.event.inputs.launch_step == 'create-indexers') }}
+          ${{ startsWith(github.event.inputs.environment, 'mainnet.') && (github.event.inputs.launch_kind == 'series' ||
+          github.event.inputs.launch_kind == 'rotation') && (github.event.inputs.launch_step == 'full' ||
+          github.event.inputs.launch_step == 'create-series' || github.event.inputs.launch_step == 'create-worlds' ||
+          github.event.inputs.launch_step == 'wait-for-factory-indexes' || github.event.inputs.launch_step ==
+          'configure-worlds' || github.event.inputs.launch_step == 'grant-lootchest-roles' ||
+          github.event.inputs.launch_step == 'grant-village-pass-roles' || github.event.inputs.launch_step ==
+          'create-banks' || github.event.inputs.launch_step == 'create-indexers') }}
         run: |
           set -euo pipefail
           source .context/game-launch/launch-env.sh

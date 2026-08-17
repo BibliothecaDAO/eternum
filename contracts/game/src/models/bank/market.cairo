@@ -2,6 +2,8 @@
 #[dojo::model]
 pub struct Market {
     #[key]
+    pub game_id: u32,
+    #[key]
     pub resource_type: u8,
     pub lords_amount: u128,
     pub resource_amount: u128,

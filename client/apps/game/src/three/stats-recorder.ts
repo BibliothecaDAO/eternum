@@ -141,7 +141,7 @@ export class StatsRecorder {
       elapsedMs,
       fps: Math.round(this.lastFps * 10) / 10,
       frameTime: this.lastFps > 0 ? Math.round((1000 / this.lastFps) * 100) / 100 : 0,
-      drawCalls: info.render.calls,
+      drawCalls: info.render.drawCalls ?? info.render.calls,
       triangles: info.render.triangles,
       geometries: info.memory.geometries,
       textures: info.memory.textures,

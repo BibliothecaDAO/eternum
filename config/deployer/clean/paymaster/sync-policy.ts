@@ -67,8 +67,7 @@ function resolveSupportedChain(chain: string): Chain {
     case "local":
     case "mainnet":
     case "sepolia":
-    case "slot":
-    case "slottest":
+    case "appchain":
       return chain;
     default:
       throw new Error(`Unsupported chain "${chain}"`);

@@ -1,34 +1,18 @@
 import { SceneName } from "../types";
 
-interface WorldmapSwitchOffRuntimeStateInput<TEntityId, TTimeout> {
-  pendingArmyRemovals: Map<TEntityId, TTimeout>;
-  pendingArmyRemovalMeta: Map<TEntityId, unknown>;
-  deferredChunkRemovals: Map<TEntityId, unknown>;
-  armyLastTileSyncAt: Map<TEntityId, number>;
-  pendingArmyMovements: Set<TEntityId>;
-  pendingArmyMovementStartedAt: Map<TEntityId, number>;
-  pendingArmyMovementFallbackTimeouts: Map<TEntityId, TTimeout>;
-  pendingArmyMovementTargetKeys: Map<TEntityId, string>;
-  pendingArmyMovementAuthoritativeResolutions: Set<TEntityId>;
-  armyStructureOwners: Map<TEntityId, unknown>;
-  suppressedArmies?: Set<TEntityId>;
-  clearRenderAreaHydrationState: () => void;
+interface WorldmapSwitchOffRuntimeStateInput {
   pinnedChunkKeys: Set<string>;
   pinnedRenderAreas: Set<string>;
   hydratedChunkRefreshes: Set<string>;
   hydratedRefreshSuppressionAreaKeys: Set<string>;
   nextSceneName?: SceneName;
-  clearTimeout: (timeoutId: TTimeout) => void;
-  clearPendingArmyMovement: (entityId: TEntityId) => void;
   clearStreamingWork: () => void;
   clearQueuedPrefetchState: () => void;
   releaseInactiveResources: () => void;
-  invalidatePendingFetches: () => void;
 }
 
 interface WorldmapSwitchOffRuntimeStateResult {
   isSwitchedOff: boolean;
-  toriiLoadingCounter: number;
   currentChunk: string;
   lastControlsCameraDistance: null;
 }
@@ -45,57 +29,18 @@ interface WorldmapSwitchOffTransitionStateResult {
   globalChunkSwitchPromise: null;
 }
 
-interface ShouldApplyWorldmapFetchResultInput {
-  fetchGeneration: number;
-  activeFetchGeneration: number;
-  fetchKey: string;
-  retainedRenderAreas: { has(fetchKey: string): boolean };
-}
-
-export const applyWorldmapSwitchOffRuntimeState = <TEntityId, TTimeout>({
-  pendingArmyRemovals,
-  pendingArmyRemovalMeta,
-  deferredChunkRemovals,
-  armyLastTileSyncAt,
-  pendingArmyMovements,
-  pendingArmyMovementStartedAt,
-  pendingArmyMovementFallbackTimeouts,
-  pendingArmyMovementTargetKeys,
-  pendingArmyMovementAuthoritativeResolutions,
-  armyStructureOwners,
-  suppressedArmies,
-  clearRenderAreaHydrationState,
+export const applyWorldmapSwitchOffRuntimeState = ({
   pinnedChunkKeys,
   pinnedRenderAreas,
   hydratedChunkRefreshes,
   hydratedRefreshSuppressionAreaKeys,
   nextSceneName,
-  clearTimeout,
-  clearPendingArmyMovement,
   clearStreamingWork,
   clearQueuedPrefetchState,
   releaseInactiveResources,
-  invalidatePendingFetches,
-}: WorldmapSwitchOffRuntimeStateInput<TEntityId, TTimeout>): WorldmapSwitchOffRuntimeStateResult => {
-  pendingArmyRemovals.forEach((timeoutId) => clearTimeout(timeoutId));
-  pendingArmyRemovals.clear();
-  pendingArmyRemovalMeta.clear();
-  deferredChunkRemovals.clear();
-  armyLastTileSyncAt.clear();
-  pendingArmyMovements.forEach((entityId) => clearPendingArmyMovement(entityId));
-  pendingArmyMovements.clear();
-  pendingArmyMovementStartedAt.clear();
-  pendingArmyMovementFallbackTimeouts.forEach((timeoutId) => clearTimeout(timeoutId));
-  pendingArmyMovementFallbackTimeouts.clear();
-  pendingArmyMovementTargetKeys.clear();
-  pendingArmyMovementAuthoritativeResolutions.clear();
-  armyStructureOwners.clear();
-  suppressedArmies?.clear();
-
+}: WorldmapSwitchOffRuntimeStateInput): WorldmapSwitchOffRuntimeStateResult => {
   clearStreamingWork();
   clearQueuedPrefetchState();
-  invalidatePendingFetches();
-  clearRenderAreaHydrationState();
   pinnedChunkKeys.clear();
   pinnedRenderAreas.clear();
   hydratedChunkRefreshes.clear();
@@ -107,7 +52,6 @@ export const applyWorldmapSwitchOffRuntimeState = <TEntityId, TTimeout>({
 
   return {
     isSwitchedOff: true,
-    toriiLoadingCounter: 0,
     currentChunk: "null",
     lastControlsCameraDistance: null,
   };
@@ -124,15 +68,4 @@ export const invalidateWorldmapSwitchOffTransitionState = <TChunkSwitchPromise>(
     isChunkTransitioning: false,
     globalChunkSwitchPromise: null,
   };
-};
-
-export const invalidateWorldmapPendingFetchGeneration = (currentGeneration: number): number => currentGeneration + 1;
-
-export const shouldApplyWorldmapFetchResult = ({
-  fetchGeneration,
-  activeFetchGeneration,
-  fetchKey,
-  retainedRenderAreas,
-}: ShouldApplyWorldmapFetchResultInput): boolean => {
-  return fetchGeneration === activeFetchGeneration && retainedRenderAreas.has(fetchKey);
 };

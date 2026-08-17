@@ -112,22 +112,14 @@ describe("resolveConstructionBuildability", () => {
     });
   });
 
-  it("rejects occupied or reserved tiles", () => {
+  it("rejects occupied tiles", () => {
     const occupiedResult = resolveConstructionBuildability(
       buildabilityInput({
         targetSpot: { col: 11, row: 10 },
         tileManager: { isHexOccupied: () => true },
       }),
     );
-    const reservedResult = resolveConstructionBuildability(
-      buildabilityInput({
-        targetSpot: { col: 11, row: 10 },
-        occupiedSpots: new Set(["11,10"]),
-      }),
-    );
-
     expect(occupiedResult).toMatchObject({ canSubmit: false, code: "occupied_tile" });
-    expect(reservedResult).toMatchObject({ canSubmit: false, code: "reserved_tile" });
   });
 
   it("rejects out-of-radius tiles", () => {

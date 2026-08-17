@@ -1,16 +1,16 @@
 import { describe, expect, it } from "vitest";
 import {
   insertPrefetchQueueItem,
-  prunePrefetchQueueByFetchKey,
+  prunePrefetchQueueByAreaKey,
   resolvePrefetchQueueProcessingPlan,
   shouldProcessPrefetchQueueItem,
 } from "./worldmap-prefetch-queue";
 
 interface Item {
   chunkKey: string;
-  fetchKey: string;
+  areaKey: string;
   priority: number;
-  fetchTiles: boolean;
+  syncTiles: boolean;
 }
 
 describe("insertPrefetchQueueItem", () => {
@@ -19,9 +19,9 @@ describe("insertPrefetchQueueItem", () => {
 
     insertPrefetchQueueItem(queue, {
       chunkKey: "0,0",
-      fetchKey: "0,0",
+      areaKey: "0,0",
       priority: 2,
-      fetchTiles: true,
+      syncTiles: true,
     });
 
     expect(queue).toHaveLength(1);
@@ -30,15 +30,15 @@ describe("insertPrefetchQueueItem", () => {
 
   it("keeps ascending priority ordering", () => {
     const queue: Item[] = [
-      { chunkKey: "0,0", fetchKey: "0,0", priority: 0, fetchTiles: true },
-      { chunkKey: "1,0", fetchKey: "1,0", priority: 2, fetchTiles: true },
+      { chunkKey: "0,0", areaKey: "0,0", priority: 0, syncTiles: true },
+      { chunkKey: "1,0", areaKey: "1,0", priority: 2, syncTiles: true },
     ];
 
     insertPrefetchQueueItem(queue, {
       chunkKey: "2,0",
-      fetchKey: "2,0",
+      areaKey: "2,0",
       priority: 1,
-      fetchTiles: true,
+      syncTiles: true,
     });
 
     expect(queue.map((item) => item.priority)).toEqual([0, 1, 2]);
@@ -46,32 +46,32 @@ describe("insertPrefetchQueueItem", () => {
 
   it("preserves FIFO order for equal priorities", () => {
     const queue: Item[] = [
-      { chunkKey: "a", fetchKey: "a", priority: 1, fetchTiles: true },
-      { chunkKey: "b", fetchKey: "b", priority: 1, fetchTiles: true },
+      { chunkKey: "a", areaKey: "a", priority: 1, syncTiles: true },
+      { chunkKey: "b", areaKey: "b", priority: 1, syncTiles: true },
     ];
 
     insertPrefetchQueueItem(queue, {
       chunkKey: "c",
-      fetchKey: "c",
+      areaKey: "c",
       priority: 1,
-      fetchTiles: true,
+      syncTiles: true,
     });
 
     expect(queue.map((item) => item.chunkKey)).toEqual(["a", "b", "c"]);
   });
 });
 
-describe("prunePrefetchQueueByFetchKey", () => {
+describe("prunePrefetchQueueByAreaKey", () => {
   it("drops queue items that are no longer desired", () => {
     const queue: Item[] = [
-      { chunkKey: "a", fetchKey: "area-a", priority: 1, fetchTiles: true },
-      { chunkKey: "b", fetchKey: "area-b", priority: 1, fetchTiles: true },
-      { chunkKey: "c", fetchKey: "area-c", priority: 1, fetchTiles: true },
+      { chunkKey: "a", areaKey: "area-a", priority: 1, syncTiles: true },
+      { chunkKey: "b", areaKey: "area-b", priority: 1, syncTiles: true },
+      { chunkKey: "c", areaKey: "area-c", priority: 1, syncTiles: true },
     ];
 
-    prunePrefetchQueueByFetchKey(queue, new Set(["area-b", "area-c"]));
+    prunePrefetchQueueByAreaKey(queue, new Set(["area-b", "area-c"]));
 
-    expect(queue.map((item) => item.fetchKey)).toEqual(["area-b", "area-c"]);
+    expect(queue.map((item) => item.areaKey)).toEqual(["area-b", "area-c"]);
   });
 });
 
@@ -79,11 +79,9 @@ describe("shouldProcessPrefetchQueueItem", () => {
   it("returns false when worldmap is switched off", () => {
     expect(
       shouldProcessPrefetchQueueItem({
-        item: { chunkKey: "0,0", fetchKey: "area-a", priority: 1, fetchTiles: true },
+        item: { chunkKey: "0,0", areaKey: "area-a", priority: 1, syncTiles: true },
         isSwitchedOff: true,
-        desiredFetchKeys: new Set(["area-a"]),
-        fetchedFetchKeys: new Set(),
-        pendingFetchKeys: new Set(),
+        desiredAreaKeys: new Set(["area-a"]),
         pinnedAreaKeys: new Set(),
       }),
     ).toBe(false);
@@ -92,48 +90,22 @@ describe("shouldProcessPrefetchQueueItem", () => {
   it("returns false when fetch key is no longer desired", () => {
     expect(
       shouldProcessPrefetchQueueItem({
-        item: { chunkKey: "0,0", fetchKey: "area-a", priority: 1, fetchTiles: true },
+        item: { chunkKey: "0,0", areaKey: "area-a", priority: 1, syncTiles: true },
         isSwitchedOff: false,
-        desiredFetchKeys: new Set(["area-b"]),
-        fetchedFetchKeys: new Set(),
-        pendingFetchKeys: new Set(),
+        desiredAreaKeys: new Set(["area-b"]),
         pinnedAreaKeys: new Set(),
       }),
     ).toBe(false);
   });
 
-  it("returns false when area is already pinned/pending/fetched", () => {
-    const item = { chunkKey: "0,0", fetchKey: "area-a", priority: 1, fetchTiles: true };
+  it("returns false when area is already pinned", () => {
+    const item = { chunkKey: "0,0", areaKey: "area-a", priority: 1, syncTiles: true };
 
     expect(
       shouldProcessPrefetchQueueItem({
         item,
         isSwitchedOff: false,
-        desiredFetchKeys: new Set(["area-a"]),
-        fetchedFetchKeys: new Set(["area-a"]),
-        pendingFetchKeys: new Set(),
-        pinnedAreaKeys: new Set(),
-      }),
-    ).toBe(false);
-
-    expect(
-      shouldProcessPrefetchQueueItem({
-        item,
-        isSwitchedOff: false,
-        desiredFetchKeys: new Set(["area-a"]),
-        fetchedFetchKeys: new Set(),
-        pendingFetchKeys: new Set(["area-a"]),
-        pinnedAreaKeys: new Set(),
-      }),
-    ).toBe(false);
-
-    expect(
-      shouldProcessPrefetchQueueItem({
-        item,
-        isSwitchedOff: false,
-        desiredFetchKeys: new Set(["area-a"]),
-        fetchedFetchKeys: new Set(),
-        pendingFetchKeys: new Set(),
+        desiredAreaKeys: new Set(["area-a"]),
         pinnedAreaKeys: new Set(["area-a"]),
       }),
     ).toBe(false);
@@ -142,11 +114,9 @@ describe("shouldProcessPrefetchQueueItem", () => {
   it("returns true for relevant queue items", () => {
     expect(
       shouldProcessPrefetchQueueItem({
-        item: { chunkKey: "0,0", fetchKey: "area-a", priority: 1, fetchTiles: true },
+        item: { chunkKey: "0,0", areaKey: "area-a", priority: 1, syncTiles: true },
         isSwitchedOff: false,
-        desiredFetchKeys: new Set(["area-a"]),
-        fetchedFetchKeys: new Set(),
-        pendingFetchKeys: new Set(),
+        desiredAreaKeys: new Set(["area-a"]),
         pinnedAreaKeys: new Set(),
       }),
     ).toBe(true);

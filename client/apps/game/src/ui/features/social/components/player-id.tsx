@@ -1,27 +1,33 @@
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { ReactComponent as ArrowLeft } from "@/assets/icons/common/arrow-left.svg";
-import { sqlApi } from "@/services/api";
 import { Position as PositionType } from "@bibliothecadao/eternum";
 import { usePlayerAvatar, getAvatarUrl } from "@/hooks/use-player-avatar";
 
 import { Button } from "@/ui/design-system/atoms";
 import { ViewOnMapIcon } from "@/ui/design-system/molecules";
 import { NavigateToPositionIcon } from "@/ui/features/military/components/army-chip";
-import { getRealmCountPerHyperstructure } from "@/ui/utils/utils";
 import {
   configManager,
   getAddressName,
   getRealmNameById,
   LeaderboardManager,
   toHexString,
-  unpackValue,
 } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
-import { PlayerStructure } from "@bibliothecadao/torii";
 import { ContractAddress, StructureType } from "@bibliothecadao/types";
-import { getComponentValue, Has, runQuery } from "@dojoengine/recs";
+import { useEntityQuery } from "@dojoengine/react";
+import { getComponentValue, Has } from "@dojoengine/recs";
 import MapPin from "lucide-react/dist/esm/icons/map-pin";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo } from "react";
+
+interface PlayerStructureView {
+  entity_id: number;
+  coord_x: number;
+  coord_y: number;
+  category: StructureType;
+  realm_id: number;
+  has_wonder: boolean;
+}
 
 export const PlayerId = ({
   selectedPlayer,
@@ -36,10 +42,29 @@ export const PlayerId = ({
     setup: { components },
   } = useDojo();
 
-  const [playerStructures, setPlayerStructures] = useState<PlayerStructure[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const mode = useGameModeConfig();
+  const structureEntities = useEntityQuery([Has(components.Structure)]);
+  const hyperstructureEntities = useEntityQuery([Has(components.Hyperstructure)]);
+
+  const playerStructures = useMemo(
+    () =>
+      structureEntities.flatMap((entity) => {
+        const structure = getComponentValue(components.Structure, entity);
+        if (!structure || structure.owner !== selectedPlayer) return [];
+
+        return [
+          {
+            entity_id: Number(structure.entity_id),
+            coord_x: Number(structure.base.coord_x),
+            coord_y: Number(structure.base.coord_y),
+            category: Number(structure.base.category) as StructureType,
+            realm_id: Number(structure.metadata.realm_id),
+            has_wonder: Boolean(structure.metadata.has_wonder),
+          },
+        ];
+      }),
+    [components.Structure, selectedPlayer, structureEntities],
+  );
 
   const playerName = useMemo(() => {
     if (!selectedPlayer) return;
@@ -49,7 +74,6 @@ export const PlayerId = ({
   }, [selectedPlayer]);
 
   const hyperstructuresPointsGivenPerSecondMap = useMemo(() => {
-    const hyperstructureEntities = runQuery([Has(components.Hyperstructure)]);
     const hyperstructureConfig = configManager.getHyperstructureConfig();
     const hyps: Map<string, number> = new Map();
     hyperstructureEntities.forEach((e) => {
@@ -59,29 +83,7 @@ export const PlayerId = ({
       }
     });
     return hyps;
-  }, [selectedPlayer]);
-
-  // Fetch player structures from API
-  useEffect(() => {
-    if (!selectedPlayer) return;
-
-    const fetchStructures = async () => {
-      setIsLoading(true);
-      setError(null);
-      setPlayerStructures([]); // Reset structures immediately when starting new fetch
-      try {
-        const structures = await sqlApi.fetchPlayerStructures(toHexString(selectedPlayer));
-        setPlayerStructures(structures);
-      } catch (err) {
-        console.error("Failed to fetch player structures:", err);
-        setError("Failed to load player structures");
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchStructures();
-  }, [selectedPlayer]);
+  }, [components.Hyperstructure, hyperstructureEntities]);
 
   // getHyperstructureConfig
   // Count structure types
@@ -111,14 +113,11 @@ export const PlayerId = ({
   // Get hyperstructure shareholder points breakdown
   const unregisteredShareholderPointsBreakdown = useMemo(() => {
     if (!selectedPlayer) return [];
-    return LeaderboardManager.instance(
-      components,
-      getRealmCountPerHyperstructure(),
-    ).getPlayerHyperstructurePointsBreakdown(selectedPlayer);
+    return LeaderboardManager.instance(components).getPlayerHyperstructurePointsBreakdown(selectedPlayer);
   }, [selectedPlayer, components]);
 
   // Helper function to get structure name
-  const getStructureName = (structure: PlayerStructure): string => {
+  const getStructureName = (structure: PlayerStructureView): string => {
     if (structure.category === StructureType.Realm && structure.realm_id) {
       const baseName = getRealmNameById(structure.realm_id);
       return structure.has_wonder ? `WONDER - ${baseName}` : baseName;
@@ -126,14 +125,6 @@ export const PlayerId = ({
 
     // For other structure types, use the type name with entity ID
     return `${mode.structure.getTypeName(structure.category as StructureType) ?? "Structure"} ${structure.entity_id}`;
-  };
-
-  // Helper function to get resources for a specific structure
-  const getStructureResources = (structure: PlayerStructure): number[] => {
-    if (structure.category === StructureType.Realm || structure.category === StructureType.Village) {
-      return unpackValue(BigInt(structure.resources_packed));
-    }
-    return [];
   };
 
   return (
@@ -229,55 +220,38 @@ export const PlayerId = ({
         )}
 
         <div className="flex-1 overflow-y-auto pr-1 scrollbar-thin scrollbar-thumb-gold/20 scrollbar-track-transparent">
-          {isLoading && (
-            <div className="flex items-center justify-center p-8">
-              <div className="text-gold/70">Loading player structures...</div>
-            </div>
-          )}
+          <div className="grid grid-cols-1 gap-3">
+            {playerStructures.map((structure) => {
+              const position = new PositionType({ x: structure.coord_x, y: structure.coord_y });
+              const structureName = getStructureName(structure);
 
-          {error && (
-            <div className="flex items-center justify-center p-8">
-              <div className="text-red-400">{error}</div>
-            </div>
-          )}
-
-          {!isLoading && !error && (
-            <div className="grid grid-cols-1 gap-3">
-              {playerStructures &&
-                playerStructures.map((structure) => {
-                  const position = new PositionType({ x: structure.coord_x, y: structure.coord_y });
-                  const structureName = getStructureName(structure);
-
-                  return (
-                    <div
-                      key={structure.entity_id}
-                      className="flex flex-col gap-2 border border-gold/20 p-3 rounded-md bg-brown/5 hover:bg-brown/10 transition-colors"
-                    >
-                      <div className="flex justify-between items-start">
-                        <h6 className="truncate flex-1">{structureName}</h6>
-                        <div className="flex items-center gap-1">
-                          <NavigateToPositionIcon className="w-5 h-5" position={position} />
-                          <ViewOnMapIcon className="w-4 h-4" position={position} />
-                        </div>
-                      </div>
-
-                      <div className="flex items-center gap-1 text-xs text-gold/70 mb-2">
-                        <MapPin size={12} />
-                        <span>
-                          Position: {position.getNormalized().x}, {position.getNormalized().y}
-                        </span>
-                      </div>
+              return (
+                <div
+                  key={structure.entity_id}
+                  className="flex flex-col gap-2 border border-gold/20 p-3 rounded-md bg-brown/5 hover:bg-brown/10 transition-colors"
+                >
+                  <div className="flex justify-between items-start">
+                    <h6 className="truncate flex-1">{structureName}</h6>
+                    <div className="flex items-center gap-1">
+                      <NavigateToPositionIcon className="w-5 h-5" position={position} />
+                      <ViewOnMapIcon className="w-4 h-4" position={position} />
                     </div>
-                  );
-                })}
+                  </div>
 
-              {(!playerStructures || playerStructures.length === 0) && !isLoading && !error && (
-                <div className="col-span-2 text-center p-4 text-gold/50 italic">
-                  No properties found for this player
+                  <div className="flex items-center gap-1 text-xs text-gold/70 mb-2">
+                    <MapPin size={12} />
+                    <span>
+                      Position: {position.getNormalized().x}, {position.getNormalized().y}
+                    </span>
+                  </div>
                 </div>
-              )}
-            </div>
-          )}
+              );
+            })}
+
+            {playerStructures.length === 0 && (
+              <div className="col-span-2 text-center p-4 text-gold/50 italic">No properties found for this player</div>
+            )}
+          </div>
         </div>
       </div>
     </div>

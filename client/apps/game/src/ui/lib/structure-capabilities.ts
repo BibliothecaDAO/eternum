@@ -3,6 +3,7 @@ import type { GameModeId } from "@/config/game-modes";
 import { ClientComponents, ID, StructureType } from "@bibliothecadao/types";
 import { getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
+import { gameEntityKey } from "@/dojo/game-scope";
 
 type SlotValue = bigint | number | null | undefined;
 
@@ -203,7 +204,7 @@ const getStructureByEntityId = (
   if (!components || !entityId) return null;
 
   try {
-    return getComponentValue(components.Structure, getEntityIdFromKeys([BigInt(entityId)]));
+    return getComponentValue(components.Structure, gameEntityKey([BigInt(entityId)]));
   } catch {
     return null;
   }

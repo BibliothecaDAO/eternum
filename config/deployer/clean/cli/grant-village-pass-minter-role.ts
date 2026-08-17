@@ -7,7 +7,7 @@ function usage(): void {
     [
       "",
       "Usage:",
-      "  bun config/deployer/clean/cli/grant-village-pass-minter-role.ts --chain <slot.eternum|slottest.eternum|sepolia.eternum|mainnet.eternum|local.eternum> --game <world-name>",
+      "  bun config/deployer/clean/cli/grant-village-pass-minter-role.ts --chain <appchain.eternum|sepolia.eternum|mainnet.eternum|local.eternum> --game <world-name>",
       "",
       "This command grants village pass roles for one eternum world:",
       "  MINTER_ROLE -> realm_internal_systems",

@@ -14,6 +14,9 @@ describe("structure visible pass finalizer wiring", () => {
 
     expect(source).toMatch(/this\.finalizeVisibleStructureModelPass\(/);
     expect(source).toMatch(/nextActiveCosmeticStructureModels/);
-    expect(source).toMatch(/private finalizeVisibleStructureModelPass\(/);
+    expect(source).toMatch(/private async finalizeVisibleStructureModelPass\(/);
+    expect(source).toContain("scheduleFrameBudgetWork(this.chunkWorkScheduler, workLane, () => {");
+    expect(source).toContain("modelInstanceCounts,");
+    expect(source).not.toContain("activationLane");
   });
 });

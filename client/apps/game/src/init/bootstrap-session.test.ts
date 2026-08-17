@@ -9,15 +9,21 @@ describe("bootstrap session", () => {
     const session = createBootstrapSession<string>();
     const execute = vi.fn(async () => "ready");
 
-    const pending = session.run({ cacheKey: "slot:alpha", chain: "slot", worldName: "alpha" }, execute);
+    const pending = session.run({ cacheKey: "appchain:alpha", chain: "appchain", worldName: "alpha" }, execute);
 
     expect(session.getCachedResult()).toBeNull();
-    expect(session.getTrackedSelection()).toEqual({ cacheKey: "slot:alpha", chain: "slot", worldName: "alpha" });
-    expect(session.getResetReason({ cacheKey: "slot:beta", chain: "slot", worldName: "beta" })).toBe("world-changed");
+    expect(session.getTrackedSelection()).toEqual({
+      cacheKey: "appchain:alpha",
+      chain: "appchain",
+      worldName: "alpha",
+    });
+    expect(session.getResetReason({ cacheKey: "appchain:beta", chain: "appchain", worldName: "beta" })).toBe(
+      "world-changed",
+    );
     expect(session.getResetReason({ cacheKey: "mainnet:alpha", chain: "mainnet", worldName: "alpha" })).toBe(
       "chain-changed",
     );
-    expect(session.getResetReason({ cacheKey: "slot:alpha", chain: "slot", worldName: "alpha" })).toBeNull();
+    expect(session.getResetReason({ cacheKey: "appchain:alpha", chain: "appchain", worldName: "alpha" })).toBeNull();
 
     await expect(pending).resolves.toBe("ready");
     expect(session.getCachedResult()).toBe("ready");

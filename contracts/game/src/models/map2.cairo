@@ -20,6 +20,8 @@ use crate::models::map::Tile;
 #[dojo::model]
 pub struct TileOpt {
     #[key]
+    pub game_id: u32,
+    #[key]
     pub alt: bool,
     #[key]
     pub col: u32,
@@ -193,7 +195,7 @@ pub impl TileIntoTileOpt of Into<Tile, TileOpt> {
             self.occupier_is_structure,
             self.reward_extracted,
         );
-        TileOpt { alt: self.alt, col: self.col, row: self.row, data }
+        TileOpt { game_id: self.game_id, alt: self.alt, col: self.col, row: self.row, data }
     }
 }
 
@@ -208,6 +210,16 @@ pub impl TileOptIntoTile of Into<TileOpt, Tile> {
         let occupier_is_structure = TileOptDataReadTrait::occupier_is_structure(self.data);
         let reward_extracted = TileOptDataReadTrait::reward_extracted(self.data);
 
-        Tile { alt, col, row, biome, occupier_id, occupier_type, occupier_is_structure, reward_extracted }
+        Tile {
+            game_id: self.game_id,
+            alt,
+            col,
+            row,
+            biome,
+            occupier_id,
+            occupier_type,
+            occupier_is_structure,
+            reward_extracted,
+        }
     }
 }

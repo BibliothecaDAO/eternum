@@ -5,9 +5,9 @@ import { constants, shortString } from "starknet";
 
 const KATANA_CHAIN_ID = shortString.encodeShortString("KATANA");
 
-const SLOT_CHAIN_ID = "0x57505f455445524e554d5f424c49545a5f534c4f545f34";
-const SLOT_TEST_CHAIN_ID = "0x57505f455445524e554d5f424c49545a5f534c4f545f54455354";
-const SLOT_CHAIN_PREFIX = "0x57505f"; // "WP_" in ASCII hex
+// The self-hosted appchain uses a bespoke WP_ id so the keychain can tell it
+// apart from the public networks.
+const APPCHAIN_CHAIN_ID = shortString.encodeShortString("WP_REALMS_DEV");
 
 export interface WalletChainControllerLike {
   switchStarknetChain?: (chainId: string) => Promise<boolean>;
@@ -48,13 +48,8 @@ const SEPOLIA_CHAIN_ALIASES = new Set(
   ].filter((value): value is string => Boolean(value)),
 );
 
-const SLOT_CHAIN_ALIASES = new Set(
-  [normalizeChainId(SLOT_CHAIN_ID), normalizeChainId(SLOT_TEST_CHAIN_ID)].filter((value): value is string =>
-    Boolean(value),
-  ),
-);
-
 const KATANA_CHAIN_ALIAS = normalizeChainId(KATANA_CHAIN_ID);
+const APPCHAIN_CHAIN_ALIAS = normalizeChainId(APPCHAIN_CHAIN_ID);
 
 const resolveConnectedChainFromRpcUrl = (rpcUrl: string | null | undefined): Chain | null => {
   if (!rpcUrl) return null;
@@ -64,11 +59,7 @@ const resolveConnectedChainFromRpcUrl = (rpcUrl: string | null | undefined): Cha
   if (normalized.includes("/starknet/mainnet")) return "mainnet";
   if (normalized.includes("/starknet/sepolia")) return "sepolia";
 
-  if (normalized.includes("/katana")) {
-    if (normalized.includes("slot-test") || normalized.includes("slottest")) return "slottest";
-    if (normalized.includes("localhost") || normalized.includes("127.0.0.1")) return "local";
-    return "slot";
-  }
+  if (normalized.includes("localhost") || normalized.includes("127.0.0.1")) return "local";
 
   return null;
 };
@@ -89,7 +80,7 @@ export const resolveConnectedTxChainFromRuntime = ({
   if (MAINNET_CHAIN_ALIASES.has(normalized)) return "mainnet";
   if (SEPOLIA_CHAIN_ALIASES.has(normalized)) return "sepolia";
   if (KATANA_CHAIN_ALIAS && normalized === KATANA_CHAIN_ALIAS) return "local";
-  if (SLOT_CHAIN_ALIASES.has(normalized) || normalized.startsWith(SLOT_CHAIN_PREFIX)) return "slot";
+  if (APPCHAIN_CHAIN_ALIAS && normalized === APPCHAIN_CHAIN_ALIAS) return "appchain";
 
   return null;
 };
@@ -100,13 +91,11 @@ export const getChainLabel = (chain: Chain): string => {
       return "Mainnet";
     case "sepolia":
       return "Sepolia";
-    case "slottest":
-      return "Slot Test";
     case "local":
       return "Local";
-    case "slot":
+    case "appchain":
     default:
-      return "Slot";
+      return "Appchain";
   }
 };
 
@@ -116,13 +105,11 @@ const getSwitchChainIdForChain = (chain: Chain): string => {
       return constants.StarknetChainId.SN_MAIN;
     case "sepolia":
       return constants.StarknetChainId.SN_SEPOLIA;
-    case "slottest":
-      return SLOT_TEST_CHAIN_ID;
     case "local":
       return KATANA_CHAIN_ID;
-    case "slot":
+    case "appchain":
     default:
-      return SLOT_CHAIN_ID;
+      return APPCHAIN_CHAIN_ID;
   }
 };
 

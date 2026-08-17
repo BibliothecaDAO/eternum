@@ -1,4 +1,4 @@
-import { computeTrades, getEntityIdFromKeys } from "@bibliothecadao/eternum";
+import { computeTrades, gameEntityKey } from "@bibliothecadao/eternum";
 import { ResourcesIds } from "@bibliothecadao/types";
 import { useEntityQuery } from "@dojoengine/react";
 import { HasValue } from "@dojoengine/recs";
@@ -20,7 +20,7 @@ export function useMarket(currentBlockTimestamp: number) {
 
   const userTrades = useMemo(() => {
     return allTrades.filter((trade) =>
-      [...playerRealmsEntities, ...playerVillagesEntities].includes(getEntityIdFromKeys([BigInt(trade.makerId)])),
+      [...playerRealmsEntities, ...playerVillagesEntities].includes(gameEntityKey([BigInt(trade.makerId)])),
     );
   }, [allTrades, playerRealmsEntities, playerVillagesEntities]);
 

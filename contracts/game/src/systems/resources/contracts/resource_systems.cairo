@@ -2,22 +2,28 @@ use crate::alias::ID;
 
 #[starknet::interface]
 pub trait IResourceSystems<T> {
-    fn approve(ref self: T, caller_structure_id: ID, recipient_structure_id: ID, resources: Span<(u8, u128)>);
-    fn send(ref self: T, sender_structure_id: ID, recipient_structure_id: ID, resources: Span<(u8, u128)>);
-    fn pickup(ref self: T, recipient_structure_id: ID, owner_structure_id: ID, resources: Span<(u8, u128)>);
-    fn arrivals_offload(ref self: T, from_structure_id: ID, day: u64, slot: u8, resource_count: u8);
+    fn approve(
+        ref self: T, game_id: u32, caller_structure_id: ID, recipient_structure_id: ID, resources: Span<(u8, u128)>,
+    );
+    fn send(
+        ref self: T, game_id: u32, sender_structure_id: ID, recipient_structure_id: ID, resources: Span<(u8, u128)>,
+    );
+    fn pickup(
+        ref self: T, game_id: u32, recipient_structure_id: ID, owner_structure_id: ID, resources: Span<(u8, u128)>,
+    );
+    fn arrivals_offload(ref self: T, game_id: u32, from_structure_id: ID, day: u64, slot: u8, resource_count: u8);
     fn troop_troop_adjacent_transfer(
-        ref self: T, from_explorer_id: ID, to_explorer_id: ID, resources: Span<(u8, u128)>,
+        ref self: T, game_id: u32, from_explorer_id: ID, to_explorer_id: ID, resources: Span<(u8, u128)>,
     );
     fn troop_structure_adjacent_transfer(
-        ref self: T, from_explorer_id: ID, to_structure_id: ID, resources: Span<(u8, u128)>,
+        ref self: T, game_id: u32, from_explorer_id: ID, to_structure_id: ID, resources: Span<(u8, u128)>,
     );
     fn structure_troop_adjacent_transfer(
-        ref self: T, from_structure_id: ID, to_troop_id: ID, resources: Span<(u8, u128)>,
+        ref self: T, game_id: u32, from_structure_id: ID, to_troop_id: ID, resources: Span<(u8, u128)>,
     );
-    fn troop_burn(ref self: T, explorer_id: ID, resources: Span<(u8, u128)>);
-    fn structure_burn(ref self: T, structure_id: ID, resources: Span<(u8, u128)>);
-    fn structure_regularize_weight(ref self: T, structure_ids: Array<ID>);
+    fn troop_burn(ref self: T, game_id: u32, explorer_id: ID, resources: Span<(u8, u128)>);
+    fn structure_burn(ref self: T, game_id: u32, structure_id: ID, resources: Span<(u8, u128)>);
+    fn structure_regularize_weight(ref self: T, game_id: u32, structure_ids: Array<ID>);
 }
 
 #[dojo::contract]
@@ -50,10 +56,11 @@ pub mod resource_systems {
     use crate::systems::utils::troop::iExplorerImpl;
     use crate::systems::utils::village::iVillageImpl;
 
-
     #[derive(Copy, Drop, Serde)]
     #[dojo::event(historical: false)]
     struct Transfer {
+        #[key]
+        game_id: u32,
         #[key]
         recipient_structure_id: ID,
         #[key]
@@ -66,6 +73,8 @@ pub mod resource_systems {
     #[derive(Copy, Drop, Serde)]
     #[dojo::event(historical: false)]
     pub struct ExplicitResourceBurn {
+        #[key]
+        pub game_id: u32,
         #[key]
         pub entity_id: ID,
         #[key]
@@ -85,24 +94,28 @@ pub mod resource_systems {
         /// * `resources` - The resources to approve.
         ///
         fn approve(
-            ref self: ContractState, caller_structure_id: ID, recipient_structure_id: ID, resources: Span<(u8, u128)>,
+            ref self: ContractState,
+            game_id: u32,
+            caller_structure_id: ID,
+            recipient_structure_id: ID,
+            resources: Span<(u8, u128)>,
         ) {
             let mut world = self.world(DEFAULT_NS());
 
-            SeasonConfigImpl::get(world).assert_main_game_started_and_grace_period_not_elapsed();
+            SeasonConfigImpl::get(world, game_id).assert_main_game_started_and_grace_period_not_elapsed();
 
             assert(caller_structure_id != recipient_structure_id, 'self approval');
             assert(resources.len() != 0, 'no resource to approve');
 
             // ensure caller owns the structure
             let caller_structure_owner: ContractAddress = StructureOwnerStoreImpl::retrieve(
-                ref world, caller_structure_id,
+                ref world, game_id, caller_structure_id,
             );
             caller_structure_owner.assert_caller_owner();
 
             // ensure recipient is a structure
             let recipient_structure_owner: ContractAddress = StructureOwnerStoreImpl::retrieve(
-                ref world, recipient_structure_id,
+                ref world, game_id, recipient_structure_id,
             );
             recipient_structure_owner.assert_non_zero();
 
@@ -116,6 +129,7 @@ pub mod resource_systems {
                         world
                             .write_model(
                                 @ResourceAllowance {
+                                    game_id,
                                     owner_entity_id: caller_structure_id,
                                     approved_entity_id: recipient_structure_id,
                                     resource_type: resource_type,
@@ -143,36 +157,45 @@ pub mod resource_systems {
         ///     the resource chest id
         ///
         fn send(
-            ref self: ContractState, sender_structure_id: ID, recipient_structure_id: ID, resources: Span<(u8, u128)>,
+            ref self: ContractState,
+            game_id: u32,
+            sender_structure_id: ID,
+            recipient_structure_id: ID,
+            resources: Span<(u8, u128)>,
         ) {
             let mut world = self.world(DEFAULT_NS());
-            SeasonConfigImpl::get(world).assert_main_game_started_and_grace_period_not_elapsed();
+            SeasonConfigImpl::get(world, game_id).assert_main_game_started_and_grace_period_not_elapsed();
 
             assert(sender_structure_id != recipient_structure_id, 'transfer to self');
             assert(resources.len() != 0, 'no resource to transfer');
 
             // ensure sender owns the structure
             let sender_structure_owner: ContractAddress = StructureOwnerStoreImpl::retrieve(
-                ref world, sender_structure_id,
+                ref world, game_id, sender_structure_id,
             );
             sender_structure_owner.assert_caller_owner();
 
             // ensure recipient is a structure
             let mut recipient_structure_base: StructureBase = StructureBaseStoreImpl::retrieve(
-                ref world, recipient_structure_id,
+                ref world, game_id, recipient_structure_id,
             );
             recipient_structure_base.assert_exists();
 
-            let mut sender_structure_weight: Weight = WeightStoreImpl::retrieve(ref world, sender_structure_id);
-            let mut sender_structure_base: StructureBase = StructureBaseStoreImpl::retrieve(
-                ref world, sender_structure_id,
+            let mut sender_structure_weight: Weight = WeightStoreImpl::retrieve(
+                ref world, game_id, sender_structure_id,
             );
-            let mut recipient_structure_weight: Weight = WeightStoreImpl::retrieve(ref world, recipient_structure_id);
+            let mut sender_structure_base: StructureBase = StructureBaseStoreImpl::retrieve(
+                ref world, game_id, sender_structure_id,
+            );
+            let mut recipient_structure_weight: Weight = WeightStoreImpl::retrieve(
+                ref world, game_id, recipient_structure_id,
+            );
             let recipient_structure_owner: ContractAddress = StructureOwnerStoreImpl::retrieve(
-                ref world, recipient_structure_id,
+                ref world, game_id, recipient_structure_id,
             );
             iResourceTransferImpl::structure_to_structure_delayed(
                 ref world,
+                game_id,
                 sender_structure_id,
                 sender_structure_owner,
                 sender_structure_base,
@@ -201,22 +224,28 @@ pub mod resource_systems {
         ///    the resource chest id
         ///
         fn pickup(
-            ref self: ContractState, recipient_structure_id: ID, owner_structure_id: ID, resources: Span<(u8, u128)>,
+            ref self: ContractState,
+            game_id: u32,
+            recipient_structure_id: ID,
+            owner_structure_id: ID,
+            resources: Span<(u8, u128)>,
         ) {
             let mut world = self.world(DEFAULT_NS());
-            SeasonConfigImpl::get(world).assert_main_game_started_and_grace_period_not_elapsed();
+            SeasonConfigImpl::get(world, game_id).assert_main_game_started_and_grace_period_not_elapsed();
 
             assert(owner_structure_id != recipient_structure_id, 'transfer to owner');
             assert(resources.len() != 0, 'no resource to transfer');
 
             // ensure recipient (caller ) owns the structure
             let recipient_structure_owner: ContractAddress = StructureOwnerStoreImpl::retrieve(
-                ref world, recipient_structure_id,
+                ref world, game_id, recipient_structure_id,
             );
             recipient_structure_owner.assert_caller_owner();
 
             // ensure owner is a structure
-            let owner_structure_base: StructureBase = StructureBaseStoreImpl::retrieve(ref world, owner_structure_id);
+            let owner_structure_base: StructureBase = StructureBaseStoreImpl::retrieve(
+                ref world, game_id, owner_structure_id,
+            );
             owner_structure_base.assert_exists();
 
             // check and update allowance
@@ -228,7 +257,7 @@ pub mod resource_systems {
                     )) => {
                         let (resource_type, resource_amount) = (*resource_type, *resource_amount);
                         let mut approved_allowance: ResourceAllowance = world
-                            .read_model((owner_structure_id, recipient_structure_id, resource_type));
+                            .read_model((game_id, owner_structure_id, recipient_structure_id, resource_type));
 
                         assert(approved_allowance.amount >= resource_amount, 'insufficient approval');
 
@@ -243,15 +272,18 @@ pub mod resource_systems {
             }
 
             let mut owner_structure_owner: ContractAddress = StructureOwnerStoreImpl::retrieve(
-                ref world, owner_structure_id,
+                ref world, game_id, owner_structure_id,
             );
-            let mut owner_structure_weight: Weight = WeightStoreImpl::retrieve(ref world, owner_structure_id);
+            let mut owner_structure_weight: Weight = WeightStoreImpl::retrieve(ref world, game_id, owner_structure_id);
             let recipient_structure_base: StructureBase = StructureBaseStoreImpl::retrieve(
-                ref world, recipient_structure_id,
+                ref world, game_id, recipient_structure_id,
             );
-            let mut recipient_structure_weight: Weight = WeightStoreImpl::retrieve(ref world, recipient_structure_id);
+            let mut recipient_structure_weight: Weight = WeightStoreImpl::retrieve(
+                ref world, game_id, recipient_structure_id,
+            );
             iResourceTransferImpl::structure_to_structure_delayed(
                 ref world,
+                game_id,
                 owner_structure_id,
                 owner_structure_owner,
                 owner_structure_base,
@@ -267,76 +299,92 @@ pub mod resource_systems {
         }
 
         fn troop_troop_adjacent_transfer(
-            ref self: ContractState, from_explorer_id: ID, to_explorer_id: ID, resources: Span<(u8, u128)>,
+            ref self: ContractState,
+            game_id: u32,
+            from_explorer_id: ID,
+            to_explorer_id: ID,
+            resources: Span<(u8, u128)>,
         ) {
             let mut world = self.world(DEFAULT_NS());
-            SeasonConfigImpl::get(world).assert_main_game_started_and_grace_period_not_elapsed();
+            SeasonConfigImpl::get(world, game_id).assert_main_game_started_and_grace_period_not_elapsed();
 
             assert!(from_explorer_id.is_non_zero(), "from_explorer_id does not exist");
             assert!(to_explorer_id.is_non_zero(), "from_explorer_id does not exist");
 
             // ensure from explorer is owned by caller
-            let from_explorer: ExplorerTroops = world.read_model(from_explorer_id);
+            let from_explorer: ExplorerTroops = world.read_model((game_id, from_explorer_id));
             from_explorer.assert_caller_structure_or_agent_owner(ref world);
 
             // ensure to explorer exists
-            let to_explorer: ExplorerTroops = world.read_model(to_explorer_id);
+            let to_explorer: ExplorerTroops = world.read_model((game_id, to_explorer_id));
             assert!(to_explorer.owner.is_non_zero(), "to_explorer does not exist");
 
             // ensure troop and stucture are adjacent to each other
             assert!(from_explorer.coord.is_adjacent(to_explorer.coord), "troops are not adjacent to each other");
 
-            let mut from_explorer_weight: Weight = WeightStoreImpl::retrieve(ref world, from_explorer_id);
-            let mut to_explorer_weight: Weight = WeightStoreImpl::retrieve(ref world, to_explorer_id);
+            let mut from_explorer_weight: Weight = WeightStoreImpl::retrieve(ref world, game_id, from_explorer_id);
+            let mut to_explorer_weight: Weight = WeightStoreImpl::retrieve(ref world, game_id, to_explorer_id);
             iResourceTransferImpl::troop_to_troop_instant(
-                ref world, from_explorer, ref from_explorer_weight, to_explorer, ref to_explorer_weight, resources,
+                ref world,
+                game_id,
+                from_explorer,
+                ref from_explorer_weight,
+                to_explorer,
+                ref to_explorer_weight,
+                resources,
             );
         }
 
 
         fn troop_structure_adjacent_transfer(
-            ref self: ContractState, from_explorer_id: ID, to_structure_id: ID, resources: Span<(u8, u128)>,
+            ref self: ContractState,
+            game_id: u32,
+            from_explorer_id: ID,
+            to_structure_id: ID,
+            resources: Span<(u8, u128)>,
         ) {
             let mut world = self.world(DEFAULT_NS());
-            SeasonConfigImpl::get(world).assert_main_game_started_and_grace_period_not_elapsed();
+            SeasonConfigImpl::get(world, game_id).assert_main_game_started_and_grace_period_not_elapsed();
 
             assert!(from_explorer_id.is_non_zero(), "from_explorer_id does not exist");
             assert!(to_structure_id.is_non_zero(), "to_structure_id does not exist");
 
             // ensure explorer is owned by caller
-            let explorer: ExplorerTroops = world.read_model(from_explorer_id);
+            let explorer: ExplorerTroops = world.read_model((game_id, from_explorer_id));
             explorer.assert_caller_structure_or_agent_owner(ref world);
 
             // ensure to_structure is a structure
-            let to_structure: StructureBase = StructureBaseStoreImpl::retrieve(ref world, to_structure_id);
+            let to_structure: StructureBase = StructureBaseStoreImpl::retrieve(ref world, game_id, to_structure_id);
             to_structure.assert_exists();
 
             // ensure to_structure is owned by caller
-            // let to_structure_owner: ContractAddress = StructureOwnerStoreImpl::retrieve(ref world, to_structure_id);
+            // let to_structure_owner: ContractAddress = StructureOwnerStoreImpl::retrieve(ref world, game_id,
+            // to_structure_id);
             // to_structure_owner.assert_caller_owner();
 
             // ensure troop and stucture are adjacent to each other
             assert!(explorer.coord.is_adjacent(to_structure.coord()), "troop and structure are not adjacent");
 
-            // if target is a village, ensure no troop resources from non-connected explorers
             if to_structure.category == StructureCategory::Village.into() {
-                let mut i: u32 = 0;
                 let mut has_troop = false;
-                while i < resources.len() && !has_troop {
-                    let (resource_type, _) = *resources.at(i);
-                    has_troop = TroopResourceImpl::is_troop(resource_type);
-                    i += 1;
+                for resource in resources {
+                    let (resource_type, _) = *resource;
+                    if TroopResourceImpl::is_troop(resource_type) {
+                        has_troop = true;
+                        break;
+                    }
                 }
                 if has_troop {
-                    let village_metadata = StructureMetadataStoreImpl::retrieve(ref world, to_structure_id);
-                    iVillageImpl::ensure_associated_with_village(ref world, village_metadata, explorer.owner);
+                    let village_metadata = StructureMetadataStoreImpl::retrieve(ref world, game_id, to_structure_id);
+                    iVillageImpl::ensure_associated_with_village(ref world, game_id, village_metadata, explorer.owner);
                 }
             }
 
-            let mut from_explorer_weight: Weight = WeightStoreImpl::retrieve(ref world, from_explorer_id);
-            let mut to_structure_weight: Weight = WeightStoreImpl::retrieve(ref world, to_structure_id);
+            let mut from_explorer_weight: Weight = WeightStoreImpl::retrieve(ref world, game_id, from_explorer_id);
+            let mut to_structure_weight: Weight = WeightStoreImpl::retrieve(ref world, game_id, to_structure_id);
             iResourceTransferImpl::troop_to_structure_instant(
                 ref world,
+                game_id,
                 from_explorer_id,
                 ref from_explorer_weight,
                 to_structure_id,
@@ -346,51 +394,61 @@ pub mod resource_systems {
         }
 
         fn structure_troop_adjacent_transfer(
-            ref self: ContractState, from_structure_id: ID, to_troop_id: ID, resources: Span<(u8, u128)>,
+            ref self: ContractState, game_id: u32, from_structure_id: ID, to_troop_id: ID, resources: Span<(u8, u128)>,
         ) {
             let mut world = self.world(DEFAULT_NS());
-            SeasonConfigImpl::get(world).assert_main_game_started_and_grace_period_not_elapsed();
+            SeasonConfigImpl::get(world, game_id).assert_main_game_started_and_grace_period_not_elapsed();
 
             assert!(from_structure_id.is_non_zero(), "from_structure_id does not exist");
             assert!(to_troop_id.is_non_zero(), "to_troop_id does not exist");
 
             // ensure from_structure is owned by caller
-            let from_structure_owner: ContractAddress = StructureOwnerStoreImpl::retrieve(ref world, from_structure_id);
+            let from_structure_owner: ContractAddress = StructureOwnerStoreImpl::retrieve(
+                ref world, game_id, from_structure_id,
+            );
             from_structure_owner.assert_caller_owner();
 
             // ensure to_troop is owned by caller
-            // let to_troop_owner: ContractAddress = StructureOwnerStoreImpl::retrieve(ref world, to_troop.owner);
+            // let to_troop_owner: ContractAddress = StructureOwnerStoreImpl::retrieve(ref world, game_id,
+            // to_troop.owner);
             // to_troop_owner.assert_caller_owner();
 
             // ensure from_structure and to_troop are adjacent to each other
-            let to_troop: ExplorerTroops = world.read_model(to_troop_id);
-            let from_structure: StructureBase = StructureBaseStoreImpl::retrieve(ref world, from_structure_id);
+            let to_troop: ExplorerTroops = world.read_model((game_id, to_troop_id));
+            let from_structure: StructureBase = StructureBaseStoreImpl::retrieve(ref world, game_id, from_structure_id);
             assert!(from_structure.coord().is_adjacent(to_troop.coord), "from_structure and to_troop are not adjacent");
 
-            let mut from_structure_weight: Weight = WeightStoreImpl::retrieve(ref world, from_structure_id);
-            let mut to_troop_weight: Weight = WeightStoreImpl::retrieve(ref world, to_troop_id);
+            let mut from_structure_weight: Weight = WeightStoreImpl::retrieve(ref world, game_id, from_structure_id);
+            let mut to_troop_weight: Weight = WeightStoreImpl::retrieve(ref world, game_id, to_troop_id);
             iResourceTransferImpl::structure_to_troop_instant(
-                ref world, from_structure_id, ref from_structure_weight, to_troop_id, ref to_troop_weight, resources,
+                ref world,
+                game_id,
+                from_structure_id,
+                ref from_structure_weight,
+                to_troop_id,
+                ref to_troop_weight,
+                resources,
             );
         }
 
-        fn troop_burn(ref self: ContractState, explorer_id: ID, resources: Span<(u8, u128)>) {
+        fn troop_burn(ref self: ContractState, game_id: u32, explorer_id: ID, resources: Span<(u8, u128)>) {
             let mut world = self.world(DEFAULT_NS());
-            SeasonConfigImpl::get(world).assert_main_game_started_and_grace_period_not_elapsed();
+            SeasonConfigImpl::get(world, game_id).assert_main_game_started_and_grace_period_not_elapsed();
 
             assert!(explorer_id.is_non_zero(), "from_explorer_id does not exist");
 
             // ensure from explorer is owned by caller
-            let explorer: ExplorerTroops = world.read_model(explorer_id);
+            let explorer: ExplorerTroops = world.read_model((game_id, explorer_id));
             explorer.assert_caller_structure_or_agent_owner(ref world);
 
             // burn resources
-            let mut explorer_weight: Weight = WeightStoreImpl::retrieve(ref world, explorer_id);
-            iResourceTransferImpl::troop_burn_instant(ref world, explorer, ref explorer_weight, resources);
+            let mut explorer_weight: Weight = WeightStoreImpl::retrieve(ref world, game_id, explorer_id);
+            iResourceTransferImpl::troop_burn_instant(ref world, game_id, explorer, ref explorer_weight, resources);
 
             world
                 .emit_event(
                     @ExplicitResourceBurn {
+                        game_id,
                         entity_id: explorer_id,
                         entity_owner_id: explorer.owner,
                         resources: resources,
@@ -399,22 +457,25 @@ pub mod resource_systems {
                 );
         }
 
-        fn structure_burn(ref self: ContractState, structure_id: ID, resources: Span<(u8, u128)>) {
+        fn structure_burn(ref self: ContractState, game_id: u32, structure_id: ID, resources: Span<(u8, u128)>) {
             let mut world = self.world(DEFAULT_NS());
-            SeasonConfigImpl::get(world).assert_main_game_started_and_grace_period_not_elapsed();
+            SeasonConfigImpl::get(world, game_id).assert_main_game_started_and_grace_period_not_elapsed();
 
             // ensure structure is owned by caller
             assert!(structure_id.is_non_zero(), "structure_id does not exist");
-            let structure_owner: ContractAddress = StructureOwnerStoreImpl::retrieve(ref world, structure_id);
+            let structure_owner: ContractAddress = StructureOwnerStoreImpl::retrieve(ref world, game_id, structure_id);
             structure_owner.assert_caller_owner();
 
             // burn resources
-            let mut structure_weight: Weight = WeightStoreImpl::retrieve(ref world, structure_id);
-            iResourceTransferImpl::structure_burn_instant(ref world, structure_id, ref structure_weight, resources);
+            let mut structure_weight: Weight = WeightStoreImpl::retrieve(ref world, game_id, structure_id);
+            iResourceTransferImpl::structure_burn_instant(
+                ref world, game_id, structure_id, ref structure_weight, resources,
+            );
 
             world
                 .emit_event(
                     @ExplicitResourceBurn {
+                        game_id,
                         entity_id: structure_id,
                         entity_owner_id: 0,
                         resources: resources,
@@ -423,31 +484,36 @@ pub mod resource_systems {
                 );
         }
 
-        fn structure_regularize_weight(ref self: ContractState, structure_ids: Array<ID>) {
+        fn structure_regularize_weight(ref self: ContractState, game_id: u32, structure_ids: Array<ID>) {
             let mut world = self.world(DEFAULT_NS());
-            SeasonConfigImpl::get(world).assert_settling_started_and_grace_period_not_elapsed();
+            SeasonConfigImpl::get(world, game_id).assert_settling_started_and_grace_period_not_elapsed();
 
             assert!(structure_ids.len() != 0, "structure_ids is empty");
             // regularize weight
-            iResourceTransferImpl::structure_weight_regularize(ref world, structure_ids);
+            iResourceTransferImpl::structure_weight_regularize(ref world, game_id, structure_ids);
         }
 
-        fn arrivals_offload(ref self: ContractState, from_structure_id: ID, day: u64, slot: u8, resource_count: u8) {
+        fn arrivals_offload(
+            ref self: ContractState, game_id: u32, from_structure_id: ID, day: u64, slot: u8, resource_count: u8,
+        ) {
             let mut world = self.world(DEFAULT_NS());
-            SeasonConfigImpl::get(world).assert_main_game_started_and_grace_period_not_elapsed();
+            SeasonConfigImpl::get(world, game_id).assert_main_game_started_and_grace_period_not_elapsed();
 
             assert!(from_structure_id.is_non_zero(), "from_structure_id does not exist");
 
             // ensure from_structure is owned by caller
-            let from_structure_owner: ContractAddress = StructureOwnerStoreImpl::retrieve(ref world, from_structure_id);
+            let from_structure_owner: ContractAddress = StructureOwnerStoreImpl::retrieve(
+                ref world, game_id, from_structure_id,
+            );
             from_structure_owner.assert_caller_owner();
 
-            // block resource claims for cloaked villages (48h spawn immunity)
-            let from_structure_base: StructureBase = StructureBaseStoreImpl::retrieve(ref world, from_structure_id);
+            let from_structure_base: StructureBase = StructureBaseStoreImpl::retrieve(
+                ref world, game_id, from_structure_id,
+            );
             if from_structure_base.category == StructureCategory::Village.into() {
-                let battle_config = BattleConfigImpl::get(ref world);
-                let tick = TickImpl::get_tick_interval(ref world);
-                let season_config = SeasonConfigImpl::get(world);
+                let battle_config = BattleConfigImpl::get(ref world, game_id);
+                let tick = TickImpl::get_tick_interval(ref world, game_id);
+                let season_config = SeasonConfigImpl::get(world, game_id);
                 assert!(
                     from_structure_base.is_not_cloaked(battle_config, tick, season_config),
                     "village cannot claim deposits during spawn immunity",
@@ -455,9 +521,9 @@ pub mod resource_systems {
             }
 
             // move balance from resource arrivals to structure balance
-            let mut from_structure_weight: Weight = WeightStoreImpl::retrieve(ref world, from_structure_id);
+            let mut from_structure_weight: Weight = WeightStoreImpl::retrieve(ref world, game_id, from_structure_id);
             iResourceTransferImpl::deliver_arrivals(
-                ref world, from_structure_id, ref from_structure_weight, day, slot, resource_count,
+                ref world, game_id, from_structure_id, ref from_structure_weight, day, slot, resource_count,
             );
         }
     }

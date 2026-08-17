@@ -15,69 +15,63 @@ function readWorldmapSource(): string {
 describe("enqueueWarpTravelPrefetch", () => {
   it("skips empty chunk keys", () => {
     const queue: PrefetchQueueItem[] = [];
-    const queuedFetchKeys = new Set<string>();
+    const queuedAreaKeys = new Set<string>();
 
     const result = enqueueWarpTravelPrefetch({
       chunkKey: "",
-      fetchKey: "",
+      areaKey: "",
       priority: 2,
       queue,
-      queuedFetchKeys,
-      fetchedFetchKeys: new Set(),
-      pendingFetchKeys: new Set(),
+      queuedAreaKeys,
     });
 
     expect(result).toEqual({ enqueued: false, skipped: true });
     expect(queue).toEqual([]);
-    expect(Array.from(queuedFetchKeys)).toEqual([]);
+    expect(Array.from(queuedAreaKeys)).toEqual([]);
   });
 
-  it("skips chunks whose fetch area is already fetched, pending, or queued", () => {
+  it("skips chunks whose projection-sync area is already queued", () => {
     const queue: PrefetchQueueItem[] = [];
-    const queuedFetchKeys = new Set<string>(["24,24:area"]);
+    const queuedAreaKeys = new Set<string>(["24,24:area"]);
 
     const result = enqueueWarpTravelPrefetch({
       chunkKey: "24,24",
-      fetchKey: "24,24:area",
+      areaKey: "24,24:area",
       priority: 2,
       queue,
-      queuedFetchKeys,
-      fetchedFetchKeys: new Set(["0,0:area"]),
-      pendingFetchKeys: new Set(["12,12:area"]),
+      queuedAreaKeys,
     });
 
     expect(result).toEqual({ enqueued: false, skipped: true });
     expect(queue).toEqual([]);
-    expect(Array.from(queuedFetchKeys)).toEqual(["24,24:area"]);
+    expect(Array.from(queuedAreaKeys)).toEqual(["24,24:area"]);
   });
 
   it("enqueues new fetch areas and tracks their queued fetch key", () => {
     const queue: PrefetchQueueItem[] = [];
-    const queuedFetchKeys = new Set<string>();
+    const queuedAreaKeys = new Set<string>();
 
     const result = enqueueWarpTravelPrefetch({
       chunkKey: "24,24",
-      fetchKey: "24,24:area",
+      areaKey: "24,24:area",
       priority: 2,
       queue,
-      queuedFetchKeys,
-      fetchedFetchKeys: new Set(),
-      pendingFetchKeys: new Set(),
+      queuedAreaKeys,
     });
 
     expect(result).toEqual({ enqueued: true, skipped: false });
     expect(queue).toEqual([
       {
         chunkKey: "24,24",
-        fetchKey: "24,24:area",
+        areaKey: "24,24:area",
         priority: 2,
-        fetchTiles: true,
+        syncTiles: true,
       },
     ]);
-    expect(Array.from(queuedFetchKeys)).toEqual(["24,24:area"]);
+    expect(Array.from(queuedAreaKeys)).toEqual(["24,24:area"]);
   });
 
-  it("uses pending chunk lookups without rebuilding key sets at the worldmap call sites", () => {
+  it("does not rebuild obsolete pending-fetch key sets at worldmap call sites", () => {
     const source = readWorldmapSource();
 
     expect(source).not.toMatch(/new Set\(this\.pendingChunks\.keys\(\)\)/);

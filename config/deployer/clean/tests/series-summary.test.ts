@@ -10,12 +10,12 @@ import { resolveRepoPath } from "../shared/repo";
 import type { LaunchSeriesRequest, SeriesLaunchGameSummary } from "../types";
 
 const originalFetch = globalThis.fetch;
-const summaryPath = resolveRepoPath(resolveSeriesLaunchSummaryRelativePath("slot.blitz", "bltz-weekend-cup"));
+const summaryPath = resolveRepoPath(resolveSeriesLaunchSummaryRelativePath("appchain.blitz", "bltz-weekend-cup"));
 
 function buildSeriesRequest(overrides: Partial<LaunchSeriesRequest> = {}): LaunchSeriesRequest {
   return {
     launchKind: "series",
-    environmentId: "slot.blitz",
+    environmentId: "appchain.blitz",
     seriesName: "bltz-weekend-cup",
     games: [
       {

@@ -1,4 +1,5 @@
-const MAX_U32 = BigInt(2) ** BigInt(32) - BigInt(1);
+import { MAX_U32 } from "./market";
+
 export const WORLD_CONFIG_ID = MAX_U32;
 
 // todo delete everything below

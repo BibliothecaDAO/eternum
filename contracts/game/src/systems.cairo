@@ -5,11 +5,19 @@ pub mod artificer {
     mod tests;
 }
 
-pub mod config {
+pub mod registrar {
     pub mod contracts;
+
     #[cfg(test)]
     mod tests;
 }
+
+// Legacy per-world config replay retired in favor of registrar-owned presets (D2/D12).
+// pub mod config {
+//     pub mod contracts;
+//     #[cfg(test)]
+//     mod tests;
+// }
 
 pub mod village {
     pub mod contracts;
@@ -101,6 +109,7 @@ pub mod season {
 }
 
 pub mod utils {
+    pub mod auth;
     pub mod bitcoin_mine;
     pub mod blitz_exploration;
     pub mod blitz_profile;
@@ -124,10 +133,10 @@ pub mod utils {
     pub mod village;
 }
 
-// pub mod quest {
-//     pub mod constants;
-//     pub mod contracts;
-// }
+pub mod quest {
+    pub mod constants;
+    pub mod contracts;
+}
 
 pub mod prize_distribution {
     pub mod contracts;

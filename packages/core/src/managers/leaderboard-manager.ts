@@ -1,8 +1,7 @@
 import { type ClientComponents, ContractAddress, type ID } from "@bibliothecadao/types";
 import { Has, getComponentValue, runQuery } from "@dojoengine/recs";
-import { getEntityIdFromKeys } from "@dojoengine/utils";
-import { getGuildFromPlayerAddress } from "../utils";
-import { ClientConfigManager } from "./config-manager";
+import { getGuildFromPlayerAddress, getRealmCountPerHyperstructure } from "../utils";
+import { ClientConfigManager, gameEntityKey } from "./config-manager";
 
 interface ContractAddressAndAmount {
   key: false;
@@ -32,6 +31,15 @@ interface PendingSharePointsClaim {
   status: "submitted" | "confirmed";
 }
 
+/**
+ * Legacy leaderboard read-model boundary.
+ *
+ * Registered points remain authoritative in RECS, but this singleton also
+ * materializes rank maps, time-derived shareholder points, and a TTL claim
+ * overlay with several imperative writers. Keep new live facts out of these
+ * maps. Consolidating its ownership and lifecycle is deferred until the
+ * leaderboard itself is changed as a dedicated slice.
+ */
 export class LeaderboardManager {
   private static _instance: LeaderboardManager;
   public pointsPerPlayer: Map<ContractAddress, number> = new Map();
@@ -43,32 +51,21 @@ export class LeaderboardManager {
   private unregisteredShareholderPointsCache: Map<ContractAddress, number> = new Map();
   private lastUnregisteredShareholderPointsUpdate: number = 0;
   private readonly unregisteredShareholderPointsUpdateInterval: number;
-  private readonly realmCountPerHyperstructures: Map<ID, number> = new Map();
   private pendingSharePointsClaims: Map<ContractAddress, PendingSharePointsClaim> = new Map();
   private readonly pendingSharePointsClaimTtlMs: number = 2 * 60 * 1000;
 
   constructor(
     private readonly components: ClientComponents,
     unregisteredShareholderPointsUpdateInterval: number = 10000,
-    realmCountPerHyperstructures: Map<ID, number> = new Map(),
   ) {
     this.unregisteredShareholderPointsUpdateInterval = unregisteredShareholderPointsUpdateInterval;
-    this.realmCountPerHyperstructures = realmCountPerHyperstructures;
     // Start the periodic update for unregistered shareholder points
     this.startUnregisteredShareholderPointsUpdater();
   }
 
-  public static instance(
-    components: ClientComponents,
-    realmCountPerHyperstructures: Map<ID, number>,
-    unregisteredShareholderPointsUpdateInterval?: number,
-  ) {
+  public static instance(components: ClientComponents, unregisteredShareholderPointsUpdateInterval?: number) {
     if (!LeaderboardManager._instance) {
-      LeaderboardManager._instance = new LeaderboardManager(
-        components,
-        unregisteredShareholderPointsUpdateInterval,
-        realmCountPerHyperstructures,
-      );
+      LeaderboardManager._instance = new LeaderboardManager(components, unregisteredShareholderPointsUpdateInterval);
     }
     return LeaderboardManager._instance;
   }
@@ -293,7 +290,7 @@ export class LeaderboardManager {
     | undefined {
     const hyperstructureShareholders = getComponentValue(
       this.components.HyperstructureShareholders,
-      getEntityIdFromKeys([BigInt(hyperstructureEntityId)]),
+      gameEntityKey([BigInt(hyperstructureEntityId)]),
     );
     if (!hyperstructureShareholders) return;
 
@@ -335,6 +332,7 @@ export class LeaderboardManager {
     }> = [];
 
     const allHyperstructuresShareholders = runQuery([Has(this.components.HyperstructureShareholders)]);
+    const realmCountPerHyperstructure = getRealmCountPerHyperstructure(this.components);
 
     for (const hyperstructureShareholdersEntityId of allHyperstructuresShareholders) {
       const hyperstructureShareholders = getComponentValue(
@@ -362,7 +360,7 @@ export class LeaderboardManager {
       const timeElapsed = Math.max(0, currentTimestamp - startTimestamp);
       const playerPointsPerSecond =
         pointsPerSecondPerRealmCount *
-        (this.realmCountPerHyperstructures.get(hyperstructureShareholders.hyperstructure_id) || 0) *
+        (realmCountPerHyperstructure.get(hyperstructureShareholders.hyperstructure_id) || 0) *
         totalShareholderPercentage;
       const totalPoints = Math.floor(playerPointsPerSecond * timeElapsed);
 
@@ -442,7 +440,7 @@ export class LeaderboardManager {
   public getPlayerShares(playerAddress: ContractAddress, hyperstructureEntityId: ID) {
     const hyperstructureShareholders = getComponentValue(
       this.components.HyperstructureShareholders,
-      getEntityIdFromKeys([BigInt(hyperstructureEntityId)]),
+      gameEntityKey([BigInt(hyperstructureEntityId)]),
     );
 
     if (!hyperstructureShareholders) return 0;
@@ -470,6 +468,13 @@ export class LeaderboardManager {
   };
 
   public isSeasonOver = () => {
+    // s2 single world: game end state lives on the registry row; the
+    // SeasonEnded event only exists on legacy worlds.
+    const config = ClientConfigManager.instance();
+    if (config.getActiveGameId() > 0) {
+      return config.isGameOver();
+    }
+
     const seasonEnded = runQuery([Has(this.components.events.SeasonEnded)]);
 
     if (seasonEnded.size > 0) {

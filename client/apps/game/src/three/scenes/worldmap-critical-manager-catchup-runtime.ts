@@ -1,3 +1,5 @@
+import { runWithFrameWorkOwner } from "../frame-work-owner";
+
 export interface WorldmapCriticalManagerCatchUpFailure {
   label: string;
   reason: unknown;
@@ -10,8 +12,15 @@ interface WorldmapCriticalManagerCatchUpTask {
 }
 
 interface RunWorldmapCriticalManagerCatchUpInput {
+  context: {
+    chunkKey: string;
+    transitionToken: number;
+    triggerReason: string;
+  };
+  log?: (message: string) => void;
   managers: WorldmapCriticalManagerCatchUpTask[];
   timeoutMs: number;
+  now?: () => number;
   setTimeoutFn?: (callback: () => void, timeoutMs: number) => ReturnType<typeof setTimeout>;
   clearTimeoutFn?: (handle: ReturnType<typeof setTimeout>) => void;
 }
@@ -68,7 +77,18 @@ async function settleCriticalManagerCatchUp(
   manager: WorldmapCriticalManagerCatchUpTask,
   input: RunWorldmapCriticalManagerCatchUpInput,
 ): Promise<FailedWorldmapCriticalManagerCatchUp | null> {
+  const now = input.now ?? (() => performance.now());
+  const startedAt = now();
   const result = await settleCriticalManagerPromise(manager, input);
+  const durationMs = now() - startedAt;
+  const log = input.log ?? (durationMs > 100 ? console.info : undefined);
+  if (log) {
+    log(
+      `[WorldmapPerf] critical ${manager.label} manager catch-up ` +
+        `chunk=${input.context.chunkKey} transition=${input.context.transitionToken} ` +
+        `trigger=${input.context.triggerReason} converged over ${Math.round(durationMs)}ms of sliced wall time`,
+    );
+  }
   if (result === null) {
     return null;
   }
@@ -117,7 +137,7 @@ async function settleCriticalManagerPromise(
 
 function runCriticalManagerCatchUpTask(manager: WorldmapCriticalManagerCatchUpTask): Promise<void> {
   try {
-    return manager.run();
+    return runWithFrameWorkOwner(`catchup:${manager.label}`, manager.run);
   } catch (error) {
     return Promise.reject(error);
   }

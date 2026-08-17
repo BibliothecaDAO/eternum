@@ -8,20 +8,25 @@ import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 describe("fast-travel render assets", () => {
-  it("reuses shared geometries and materials across repeated mesh creation", () => {
+  it("bakes the visible hex field into one line object", () => {
     const assets = createFastTravelRenderAssets();
     assets.syncPalette(createFastTravelSurfacePalette());
 
-    const firstHexEdge = assets.createHexEdgeMesh();
-    const secondHexEdge = assets.createHexEdgeMesh();
+    const hexField = assets.createHexFieldMesh([
+      { x: 0, y: 0, z: 0 },
+      { x: 2, y: 0, z: 0 },
+    ]);
     const firstArmyMarker = assets.createArmyMarkerMesh();
     const secondArmyMarker = assets.createArmyMarkerMesh();
 
-    expect(firstHexEdge.geometry).toBe(secondHexEdge.geometry);
-    expect(firstHexEdge.material).toBe(secondHexEdge.material);
+    expect(hexField.geometry.getAttribute("position").count).toBe(
+      assets.hexEdgeGeometry.getAttribute("position").count * 2,
+    );
+    expect(hexField.material).toBe(assets.hexEdgeMaterial);
     expect(firstArmyMarker.geometry).toBe(secondArmyMarker.geometry);
     expect(firstArmyMarker.material).toBe(secondArmyMarker.material);
 
+    hexField.geometry.dispose();
     assets.dispose();
   });
 

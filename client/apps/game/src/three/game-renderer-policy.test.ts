@@ -107,35 +107,21 @@ describe("shouldEnablePostProcessingConfig", () => {
     expect(
       shouldEnablePostProcessingConfig({
         hasPostProcessingConfig: false,
-        isMobileDevice: false,
-        isHighGraphicsSetting: true,
       }),
     ).toBe(false);
   });
 
-  it("disables post-processing on mobile when graphics setting is not high", () => {
+  it("enables the same configured post-processing path for every device", () => {
     expect(
       shouldEnablePostProcessingConfig({
         hasPostProcessingConfig: true,
-        isMobileDevice: true,
-        isHighGraphicsSetting: false,
-      }),
-    ).toBe(false);
-  });
-
-  it("enables post-processing on mobile high setting", () => {
-    expect(
-      shouldEnablePostProcessingConfig({
-        hasPostProcessingConfig: true,
-        isMobileDevice: true,
-        isHighGraphicsSetting: true,
       }),
     ).toBe(true);
   });
 });
 
 describe("resolvePostProcessingEffectPlan", () => {
-  it("enables only selected quality effects", () => {
+  it("enables only effects selected by the visual profile", () => {
     expect(
       resolvePostProcessingEffectPlan({
         fxaa: true,
@@ -422,7 +408,7 @@ describe("resolveCapabilityAwareRendererEffectPlan", () => {
           saturation: 0,
         },
         disabledReasons: {
-          bloom: "disabled-by-quality",
+          bloom: "disabled-by-profile",
           chromaticAberration: "disabled-by-user",
         },
         toneMapping: {
@@ -438,7 +424,7 @@ describe("resolveCapabilityAwareRendererEffectPlan", () => {
       }),
     ).toEqual({
       degradations: [
-        { feature: "bloom", reason: "disabled-by-quality" },
+        { feature: "bloom", reason: "disabled-by-profile" },
         { feature: "chromaticAberration", reason: "disabled-by-user" },
       ],
       plan: {

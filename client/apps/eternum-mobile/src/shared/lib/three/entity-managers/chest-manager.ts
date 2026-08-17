@@ -1,4 +1,5 @@
 import { ActionPath, ChestSystemUpdate, Position } from "@bibliothecadao/eternum";
+import type { ChestSpatialRenderable, WorldSpatialProjection } from "@bibliothecadao/eternum/game-sync";
 import { HexEntityInfo } from "@bibliothecadao/types";
 import * as THREE from "three";
 import { CSS2DObject } from "three/examples/jsm/renderers/CSS2DRenderer.js";
@@ -16,10 +17,28 @@ export class ChestManager extends EntityManager<ChestObject> {
 
   // Chest tracking data
   private chestHexes: Map<number, Map<number, HexEntityInfo>> = new Map();
+  private unsubscribeProjection?: () => void;
 
   constructor(scene: THREE.Scene) {
     super(scene);
     this.renderer = new BuildingTileRenderer(scene, true);
+  }
+
+  public bindWorldSpatialProjection(worldSpatialProjection: WorldSpatialProjection): void {
+    worldSpatialProjection.getChests().forEach((chest) => this.synchronizeProjectedChest(chest));
+    this.unsubscribeProjection = worldSpatialProjection.subscribeChests((changes) => {
+      changes.forEach(({ previous, current }) => {
+        if (previous && !current) this.deleteChest(previous.entityId);
+        if (current) this.synchronizeProjectedChest(current);
+      });
+    });
+  }
+
+  private synchronizeProjectedChest(chest: ChestSpatialRenderable): void {
+    this.handleSystemUpdate({
+      occupierId: chest.entityId,
+      hexCoords: chest.hexCoords,
+    });
   }
 
   private createLabel(chest: ChestObject): void {
@@ -293,6 +312,8 @@ export class ChestManager extends EntityManager<ChestObject> {
   }
 
   public dispose(): void {
+    this.unsubscribeProjection?.();
+    this.unsubscribeProjection = undefined;
     this.labels.forEach((label) => {
       if (label.element && label.element.parentNode) {
         label.element.parentNode.removeChild(label.element);

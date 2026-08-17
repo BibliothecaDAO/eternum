@@ -2,6 +2,7 @@ import { usePlayResourceSound } from "@/audio";
 import { AudioManager } from "@/audio/core/AudioManager";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { useUIStore } from "@/hooks/store/use-ui-store";
+import { useProvisionalInputLock } from "@/hooks/use-provisional-input-lock";
 import { LeftView } from "@/types";
 import { BUILDING_IMAGES_PATH } from "@/ui/config";
 import { formatTimeRemaining } from "@/ui/features/economy/resources/entity-resource-table/utils";
@@ -15,15 +16,6 @@ import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { HintSection } from "@/ui/features/progression/hints/hint-modal";
 import { ProductionStatusBadge } from "@/ui/shared";
 import { adjustWonderLordsCost, currencyIntlFormat, getEntityIdFromKeys } from "@/ui/utils/utils";
-import {
-  beginRealmBuildPlacement,
-  completeRealmBuildPlacement,
-  getBuildReservationState,
-  reconcileBuildReservationState,
-  releaseOccupiedBuildSpot,
-  reserveOccupiedBuildSpot,
-  reserveVacatedBuildSpot,
-} from "./build-reservation-store";
 import { resolveConstructionBuildability } from "./construction-buildability";
 import { buildRealmBuilding, resolveRealmHasAvailableBuildingTile } from "./realm-build-actions";
 import {
@@ -69,6 +61,7 @@ import Play from "lucide-react/dist/esm/icons/play";
 import Trash from "lucide-react/dist/esm/icons/trash";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
+import { buildingEntityKey, gameEntityKey } from "@/dojo/game-scope";
 
 type ArmyTypeLabel = (typeof MILITARY_BUILDING_GROUP_ORDER)[number];
 type ArmyGroup = {
@@ -162,13 +155,11 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
   const setSelectedBuildingHex = useUIStore((state) => state.setSelectedBuildingHex);
   const mode = useGameModeConfig();
 
-  const realm = getRealmInfo(getEntityIdFromKeys([BigInt(entityId)]), dojo.setup.components);
-  const structure = useComponentValue(dojo.setup.components.Structure, getEntityIdFromKeys([BigInt(entityId)]));
-  const structureBuildings = useComponentValue(
-    dojo.setup.components.StructureBuildings,
-    getEntityIdFromKeys([BigInt(entityId)]),
-  );
-  const resourceData = useComponentValue(dojo.setup.components.Resource, getEntityIdFromKeys([BigInt(entityId)]));
+  const realmEntity = gameEntityKey([BigInt(entityId)]);
+  const realm = getRealmInfo(realmEntity, dojo.setup.components);
+  const structure = useComponentValue(dojo.setup.components.Structure, realmEntity);
+  const structureBuildings = useComponentValue(dojo.setup.components.StructureBuildings, realmEntity);
+  const resourceData = useComponentValue(dojo.setup.components.Resource, realmEntity);
   const currentTime = useMemo(() => Date.now(), [timerTick]);
   const currentTimeRef = useRef(currentTime);
   currentTimeRef.current = currentTime;
@@ -179,42 +170,28 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
     return () => window.clearInterval(interval);
   }, []);
 
-  const initialReservationState = getBuildReservationState(entityId);
-  const occupiedSpotsRef = useRef<Set<string>>(initialReservationState.occupied);
-  const vacatedSpotsRef = useRef<Set<string>>(initialReservationState.vacated);
-  const [pendingBuilds, setPendingBuilds] = useState<Record<string, boolean>>({});
-  const [pendingDestroys, setPendingDestroys] = useState<Record<string, boolean>>({});
-  const [pendingPauseResume, setPendingPauseResume] = useState<Record<string, boolean>>({});
-
-  useEffect(() => {
-    const reservationState = getBuildReservationState(entityId);
-    occupiedSpotsRef.current = reservationState.occupied;
-    vacatedSpotsRef.current = reservationState.vacated;
-    setPendingBuilds({});
-    setPendingDestroys({});
-    setPendingPauseResume({});
-  }, [entityId]);
-
-  useEffect(() => {
-    if (!realm?.position) return;
-
-    const outerCol = Number(realm.position.x);
-    const outerRow = Number(realm.position.y);
-    const tileManager = new TileManager(dojo.setup.components, dojo.setup.systemCalls, {
-      col: outerCol,
-      row: outerRow,
-    });
-
-    reconcileBuildReservationState(entityId, ({ col, row }) => tileManager.isHexOccupied({ col, row }));
-  }, [
-    dojo.setup.components,
-    dojo.setup.systemCalls,
-    entityId,
-    realm?.position?.x,
-    realm?.position?.y,
-    structure?.base?.level,
-    structureBuildings,
-  ]);
+  const existingBuildings = useMemo(
+    () =>
+      realm?.position
+        ? new TileManager(dojo.setup.components, dojo.setup.systemCalls, {
+            col: Number(realm.position.x),
+            row: Number(realm.position.y),
+          }).existingBuildings()
+        : [],
+    [dojo.setup.components, dojo.setup.systemCalls, realm?.position, structureBuildings],
+  );
+  const buildingEntityIds = useMemo(
+    () =>
+      realm?.position
+        ? existingBuildings.map((building) =>
+            buildingEntityKey(Number(realm.position.x), Number(realm.position.y), building.col, building.row),
+          )
+        : [],
+    [existingBuildings, realm?.position],
+  );
+  const realmEntityIds = useMemo(() => [realmEntity], [realmEntity]);
+  const isBuildLocked = useProvisionalInputLock("StructureBuildings", realmEntityIds);
+  const isProductionLocked = useProvisionalInputLock("Building", buildingEntityIds);
   const hasAvailableBuildingTile = useMemo(() => {
     return resolveRealmHasAvailableBuildingTile({
       entityId,
@@ -223,8 +200,6 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
         components: dojo.setup.components,
         systemCalls: dojo.setup.systemCalls,
       },
-      occupiedSpots: occupiedSpotsRef.current,
-      vacatedSpots: vacatedSpotsRef.current,
     });
   }, [
     dojo.setup.components,
@@ -233,8 +208,7 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
     realm?.position?.x,
     realm?.position?.y,
     structure?.base?.level,
-    pendingBuilds,
-    pendingDestroys,
+    isBuildLocked,
     structureBuildings,
   ]);
   const getBuildingCountFor = useCallback(
@@ -252,43 +226,24 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
 
   const handleAutoBuild = useCallback(
     async (target: { type: BuildingType; resource?: ResourcesIds }) => {
-      const buildingKey = target.type.toString();
-      const placement = beginRealmBuildPlacement(entityId, target.type);
-
-      if (!placement.started) return;
-
-      setPendingBuilds((prev) => ({ ...prev, [buildingKey]: true }));
-
-      try {
-        await buildRealmBuilding({
-          entityId,
-          realmPosition: realm?.position,
-          realm,
-          mode,
-          target,
-          useSimpleCost,
-          world: {
-            account: dojo.account.account,
-            components: dojo.setup.components,
-            systemCalls: dojo.setup.systemCalls,
-          },
-          occupiedSpots: occupiedSpotsRef.current,
-          vacatedSpots: vacatedSpotsRef.current,
-          onReserveSpot: (spotKey) => reserveOccupiedBuildSpot(entityId, spotKey),
-          onReleaseSpot: (spotKey) => releaseOccupiedBuildSpot(entityId, spotKey),
-          onBuildSuccess: (selection) => {
-            setPreviewBuilding(null);
-            setSelectedBuildingHex(selection);
-          },
-        });
-      } finally {
-        setPendingBuilds((prev) => {
-          const next = { ...prev };
-          delete next[buildingKey];
-          return next;
-        });
-        completeRealmBuildPlacement(entityId, target.type);
-      }
+      if (isBuildLocked) return;
+      await buildRealmBuilding({
+        entityId,
+        realmPosition: realm?.position,
+        realm,
+        mode,
+        target,
+        useSimpleCost,
+        world: {
+          account: dojo.account.account,
+          components: dojo.setup.components,
+          systemCalls: dojo.setup.systemCalls,
+        },
+        onBuildSuccess: (selection) => {
+          setPreviewBuilding(null);
+          setSelectedBuildingHex(selection);
+        },
+      });
     },
     [
       dojo.account.account,
@@ -301,6 +256,7 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
       setSelectedBuildingHex,
       useSimpleCost,
       mode,
+      isBuildLocked,
     ],
   );
 
@@ -311,7 +267,7 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
         return;
       }
 
-      const buildingKey = target.type.toString();
+      if (isBuildLocked) return;
       const outerCol = Number(realm.position.x);
       const outerRow = Number(realm.position.y);
       const tileManager = new TileManager(dojo.setup.components, dojo.setup.systemCalls, {
@@ -324,9 +280,6 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
         toast.error("No building of this type found to destroy.");
         return;
       }
-      setPendingDestroys((prev) => ({ ...prev, [buildingKey]: true }));
-      reserveVacatedBuildSpot(entityId, { col: existing.col, row: existing.row });
-
       try {
         await tileManager.destroyBuilding(dojo.account.account, entityId, existing.col, existing.row);
         if (
@@ -338,12 +291,6 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
       } catch (error) {
         console.error("Failed to destroy building", error);
         toast.error("Destroy failed. Please try again.");
-      } finally {
-        setPendingDestroys((prev) => {
-          const next = { ...prev };
-          delete next[buildingKey];
-          return next;
-        });
       }
     },
     [
@@ -351,6 +298,7 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
       dojo.setup.components,
       dojo.setup.systemCalls,
       entityId,
+      isBuildLocked,
       previewBuilding?.resource,
       previewBuilding?.type,
       realm?.position,
@@ -365,7 +313,7 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
         return;
       }
 
-      const buildingKey = target.type.toString();
+      if (isProductionLocked) return;
       const outerCol = Number(realm.position.x);
       const outerRow = Number(realm.position.y);
       const tileManager = new TileManager(dojo.setup.components, dojo.setup.systemCalls, {
@@ -385,8 +333,6 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
       const anyActive = categoryBuildings.some((b) => !b.paused);
       const action = anyActive ? "pause" : "resume";
 
-      setPendingPauseResume((prev) => ({ ...prev, [buildingKey]: true }));
-
       try {
         await Promise.all(
           categoryBuildings.map((building) => {
@@ -401,23 +347,17 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
       } catch (error) {
         console.error(`Failed to ${action} production`, error);
         toast.error(`Failed to ${action} production. Please try again.`);
-      } finally {
-        setPendingPauseResume((prev) => {
-          const next = { ...prev };
-          delete next[buildingKey];
-          return next;
-        });
       }
     },
-    [dojo.account.account, dojo.setup.components, dojo.setup.systemCalls, entityId, realm?.position],
+    [
+      dojo.account.account,
+      dojo.setup.components,
+      dojo.setup.systemCalls,
+      entityId,
+      isProductionLocked,
+      realm?.position,
+    ],
   );
-
-  const existingBuildings = realm?.position
-    ? new TileManager(dojo.setup.components, dojo.setup.systemCalls, {
-        col: Number(realm.position.x),
-        row: Number(realm.position.y),
-      }).existingBuildings()
-    : [];
 
   const pausedByCategory = useMemo(() => {
     const counts = new Map<BuildingType, { total: number; paused: number }>();
@@ -657,7 +597,7 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
       new Map(
         realmBuildingSummary.map((item) => {
           const buildState = getSummaryBuildState(item.buildingId);
-          const isPending = Boolean(pendingBuilds[item.buildingId.toString()]);
+          const isPending = isBuildLocked;
 
           return [
             item.buildingId,
@@ -670,7 +610,7 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
           ] as const;
         }),
       ),
-    [getSummaryBuildState, handleAutoBuild, pendingBuilds, realmBuildingSummary],
+    [getSummaryBuildState, handleAutoBuild, isBuildLocked, realmBuildingSummary],
   );
 
   const tabs = useMemo(
@@ -714,13 +654,12 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
                         const canBuild = buildability.canSubmit;
                         const disabledReason = buildability.reason;
                         const disabled = !canBuild;
-                        const buildKey = building.toString();
-                        const isPending = Boolean(pendingBuilds[buildKey]);
+                        const isPending = isBuildLocked;
                         const count = getBuildingCountFor(building);
-                        const destroyPending = Boolean(pendingDestroys[buildKey]);
+                        const destroyPending = isBuildLocked;
                         const destroyDisabled = count <= 0 || destroyPending;
 
-                        const pauseResumePending = Boolean(pendingPauseResume[buildKey]);
+                        const pauseResumePending = isProductionLocked;
                         const allPausedState = pausedByCategory.get(building);
 
                         return (
@@ -807,12 +746,11 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
                         const canBuild = buildability.canSubmit;
                         const disabledReason = buildability.reason;
                         const disabled = !canBuild;
-                        const buildKey = building.toString();
-                        const isPending = Boolean(pendingBuilds[buildKey]);
+                        const isPending = isBuildLocked;
                         const count = getBuildingCountFor(building);
-                        const destroyPending = Boolean(pendingDestroys[buildKey]);
+                        const destroyPending = isBuildLocked;
                         const destroyDisabled = count <= 0 || destroyPending;
-                        const pauseResumePending = Boolean(pendingPauseResume[buildKey]);
+                        const pauseResumePending = isProductionLocked;
                         const allPausedState = pausedByCategory.get(building);
                         return (
                           <BuildingCard
@@ -911,17 +849,16 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
                 const canBuild = buildability.canSubmit;
                 const disabledReason = buildability.reason;
                 const disabled = !canBuild;
-                const buildKey = building.toString();
-                const isPending = Boolean(pendingBuilds[buildKey]);
+                const isPending = isBuildLocked;
                 const count = getBuildingCountFor(building);
-                const destroyPending = Boolean(pendingDestroys[buildKey]);
+                const destroyPending = isBuildLocked;
                 const destroyDisabled = count <= 0 || destroyPending;
 
                 const isFarm = building === BuildingType.ResourceWheat;
                 const isFishingVillage = building === BuildingType.ResourceFish;
                 const isMarket = building === BuildingType.ResourceDonkey;
 
-                const pauseResumePending = Boolean(pendingPauseResume[buildKey]);
+                const pauseResumePending = isProductionLocked;
                 const allPausedState = pausedByCategory.get(building);
                 const showPauseResume = !isWorkersHut;
 
@@ -1065,13 +1002,12 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
                             });
                             const canBuild = buildability.canSubmit;
                             const disabledReason = buildability.reason;
-                            const buildKey = building.toString();
-                            const isPending = Boolean(pendingBuilds[buildKey]);
+                            const isPending = isBuildLocked;
                             const count = getBuildingCountFor(building);
-                            const destroyPending = Boolean(pendingDestroys[buildKey]);
+                            const destroyPending = isBuildLocked;
                             const destroyDisabled = count <= 0 || destroyPending;
 
-                            const pauseResumePending = Boolean(pendingPauseResume[buildKey]);
+                            const pauseResumePending = isProductionLocked;
                             const allPausedState = pausedByCategory.get(building);
 
                             return (
@@ -1142,9 +1078,8 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
       playResourceSound,
       useSimpleCost,
       armyGroups,
-      pendingBuilds,
-      pendingDestroys,
-      pendingPauseResume,
+      isBuildLocked,
+      isProductionLocked,
       pausedByCategory,
       mode,
       handleAutoBuild,
@@ -1507,14 +1442,14 @@ const ResourceInfo = ({
     ? configManager.simpleSystemResourceInputs[resourceId]
     : configManager.complexSystemResourceInputs[resourceId];
 
-  const structure = getComponentValue(dojo.setup.components.Structure, getEntityIdFromKeys([BigInt(entityId || 0)]));
+  const structure = getComponentValue(dojo.setup.components.Structure, gameEntityKey([BigInt(entityId || 0)]));
   if (resourceId == ResourcesIds.Donkey && structure?.metadata.has_wonder) {
     cost = adjustWonderLordsCost(cost);
   }
 
   const structureBuildings = useComponentValue(
     dojo.setup.components.StructureBuildings,
-    getEntityIdFromKeys([BigInt(entityId || 0)]),
+    gameEntityKey([BigInt(entityId || 0)]),
   );
 
   const buildingCost = useMemo(() => {
@@ -1688,7 +1623,7 @@ const BuildingInfo = ({
     }
   }
 
-  const structure = getComponentValue(dojo.setup.components.Structure, getEntityIdFromKeys([BigInt(entityId || 0)]));
+  const structure = getComponentValue(dojo.setup.components.Structure, gameEntityKey([BigInt(entityId || 0)]));
 
   // Ensure ongoingCost is an array before attempting to use adjustWonderLordsCost
   if (

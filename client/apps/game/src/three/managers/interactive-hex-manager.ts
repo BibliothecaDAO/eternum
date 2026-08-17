@@ -553,9 +553,15 @@ export class InteractiveHexManager {
   private applyInstanceMeshSurfaceVisibility(): void {
     const material = this.instanceMaterial;
     material.transparent = true;
+    // Opacity is a uniform — changing it never requires a rebuild. Only a
+    // real colorWrite/depthWrite flip needs needsUpdate: bumping it
+    // unconditionally forced a full shader+pipeline rebuild on every
+    // capacity growth (a multi-frame stall at zoom boundaries).
     material.opacity = this.surfaceVisible ? interactiveHexMaterial.opacity : 0;
-    material.colorWrite = this.surfaceVisible;
-    material.depthWrite = this.surfaceVisible;
-    material.needsUpdate = true;
+    if (material.colorWrite !== this.surfaceVisible || material.depthWrite !== this.surfaceVisible) {
+      material.colorWrite = this.surfaceVisible;
+      material.depthWrite = this.surfaceVisible;
+      material.needsUpdate = true;
+    }
   }
 }

@@ -1,0 +1,161 @@
+name: Deploy Client
+
+# Ships the game client to play.jcndata.com (S3 website bucket fronted by
+# Cloudflare). Manual dispatch keeps deploys deliberate; the build reads the
+# committed .env.production and stamps the version from the ref.
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version label shown in-app (defaults to the short SHA)"
+        required: false
+
+permissions:
+  id-token: write
+  contents: read
+
+concurrency:
+  group: deploy-client
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile --ignore-scripts
+
+      - name: Build packages
+        run: pnpm run build:packages
+
+      - name: Build client
+        env:
+          VITE_PUBLIC_GAME_VERSION: ${{ github.event.inputs.version || github.sha }}
+          VITE_PUBLIC_SENTRY_DSN: ${{ secrets.CLIENT_SENTRY_DSN }}
+        run: pnpm --dir client/apps/game build
+
+      # Live renderer smokes gate the deploy, not PRs: they exercise the exact
+      # artifact about to ship against the real appchain (torii + katana), so
+      # a broken boot never reaches players and PR CI stays hermetic.
+      - name: Start game client preview server
+        env:
+          ETERNUM_DISABLE_MKCERT: "true"
+        run: |
+          pnpm --dir client/apps/game preview --host 127.0.0.1 --port 4173 > /tmp/eternum-game-preview.log 2>&1 &
+          echo $! > /tmp/eternum-game-preview.pid
+
+      - name: Wait for game client preview server
+        env:
+          GAME_CLIENT_PREVIEW_URL: "http://127.0.0.1:4173"
+        run: |
+          for attempt in $(seq 1 60); do
+            if curl --fail --silent --show-error "$GAME_CLIENT_PREVIEW_URL" >/dev/null; then
+              exit 0
+            fi
+
+            sleep 2
+          done
+
+          echo "Game client preview server did not become ready" >&2
+          cat /tmp/eternum-game-preview.log >&2 || true
+          exit 1
+
+      - name: Run renderer scene smoke
+        env:
+          GAME_CLIENT_PREVIEW_URL: "http://127.0.0.1:4173"
+          TORII_URL: "https://torii.jcndata.com"
+        run: |
+          node ./client/apps/game/scripts/run-renderer-scene-smoke.mjs \
+            --base-url "$GAME_CLIENT_PREVIEW_URL" \
+            --chain appchain \
+            --scenes map,hex \
+            --artifact-dir /tmp/renderer-scene-smoke-artifacts
+
+      - name: Upload renderer scene smoke artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: renderer-scene-smoke-artifacts
+          path: /tmp/renderer-scene-smoke-artifacts
+          if-no-files-found: ignore
+
+      - name: Run renderer debug smoke
+        env:
+          GAME_CLIENT_PREVIEW_URL: "http://127.0.0.1:4173"
+        run: |
+          node ./client/apps/game/scripts/run-renderer-debug-smoke.mjs \
+            --base-url "$GAME_CLIENT_PREVIEW_URL" \
+            --scenarios baseline,stress \
+            --output /tmp/renderer-debug-smoke.json
+
+      - name: Upload renderer debug smoke result
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: renderer-debug-smoke-result
+          path: /tmp/renderer-debug-smoke.json
+
+      - name: Stop game client preview server
+        if: always()
+        run: |
+          if [ -f /tmp/eternum-game-preview.pid ]; then
+            kill "$(cat /tmp/eternum-game-preview.pid)" || true
+          fi
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::061906581174:role/gha-appchain-client
+          aws-region: us-east-1
+
+      - name: Upload to S3
+        working-directory: client/apps/game
+        run: |
+          set -euo pipefail
+          # Never ship sourcemaps publicly.
+          find dist -name "*.js.map" -delete
+          # Three cache tiers. Only Vite's content-hashed assets/ may be
+          # immutable: a stable-path file cached immutable is unfixable in a
+          # browser for a year (the corrupt /basis/ wasm proved it). HTML +
+          # service-worker files revalidate every request — a stale sw.js is
+          # the one file that can pin testers to an old build. Everything else
+          # (public/ passthrough: models, basis, images, sounds) revalidates
+          # after 5 minutes — cheap 304s, and asset updates actually reach
+          # returning testers.
+          aws s3 sync dist "s3://play.jcndata.com" \
+            --exclude "*" --include "assets/*" \
+            --cache-control "public,max-age=31536000,immutable"
+          aws s3 sync dist "s3://play.jcndata.com" \
+            --exclude "*" --include "*.html" --include "sw.js" --include "registerSW.js" --include "manifest.webmanifest" \
+            --cache-control "public,max-age=0,must-revalidate"
+          aws s3 sync dist "s3://play.jcndata.com" \
+            --exclude "assets/*" --exclude "*.html" --exclude "sw.js" --exclude "registerSW.js" --exclude "manifest.webmanifest" \
+            --cache-control "public,max-age=300,must-revalidate"
+          # Remove files from previous builds last, once the new set is live.
+          aws s3 sync dist "s3://play.jcndata.com" --delete
+
+      - name: Purge Cloudflare cache
+        env:
+          CF_ZONE_ID: ${{ secrets.CLOUDFLARE_ZONE_ID }}
+          CF_API_TOKEN: ${{ secrets.CLOUDFLARE_CACHE_PURGE_TOKEN }}
+        run: |
+          if [ -z "${CF_ZONE_ID}" ] || [ -z "${CF_API_TOKEN}" ]; then
+            echo "Cloudflare purge secrets not configured; skipping (stale index.html clears on its must-revalidate TTL)."
+            exit 0
+          fi
+          curl -sf -X POST "https://api.cloudflare.com/client/v4/zones/${CF_ZONE_ID}/purge_cache" \
+            -H "Authorization: Bearer ${CF_API_TOKEN}" \
+            -H "Content-Type: application/json" \
+            --data '{"purge_everything":true}'

@@ -39,6 +39,8 @@ export const buildFactoryCreateRunRequest = ({
   gameName,
   gameStartTime,
   workflowRef,
+  // Registered registrar preset the launch runs on (appchain).
+  version: selectedPreset?.defaults.version,
   devModeOn: selectedPreset?.defaults.devMode ?? false,
   twoPlayerMode: selectedMode === "blitz" ? twoPlayerMode : false,
   singleRealmMode: selectedMode === "blitz" ? singleRealmMode : false,

@@ -17,6 +17,7 @@ import {
 
 afterEach(() => {
   vi.restoreAllMocks();
+  vi.unstubAllEnvs();
 });
 
 describe("glow repro matrix", () => {
@@ -41,16 +42,25 @@ describe("normalizeSceneList", () => {
 });
 
 describe("buildSceneSmokeUrl", () => {
-  it("builds the worldmap spectate url with renderer mode overrides", () => {
+  it("builds the worldmap spectate url on the default appchain chain with renderer mode overrides", () => {
     expect(
       buildSceneSmokeUrl({
         baseUrl: "https://127.0.0.1:4173",
-        rendererMode: "experimental-webgpu-auto",
+        rendererMode: "webgpu-auto",
+        scene: "map",
+        worldName: "blitzplay1",
+      }),
+    ).toBe("https://127.0.0.1:4173/play/appchain/blitzplay1/map?col=0&row=0&spectate=true&rendererMode=webgpu-auto");
+  });
+
+  it("requires a world name instead of guessing a stale default", () => {
+    expect(() =>
+      buildSceneSmokeUrl({
+        baseUrl: "https://127.0.0.1:4173",
+        rendererMode: "webgpu-auto",
         scene: "map",
       }),
-    ).toBe(
-      "https://127.0.0.1:4173/play/slot/eternum-blitz-slot-4/map?col=0&row=0&spectate=true&rendererMode=experimental-webgpu-auto",
-    );
+    ).toThrow(/worldName/);
   });
 
   it("builds the hexception url as a canonical spectator route", () => {
@@ -58,11 +68,13 @@ describe("buildSceneSmokeUrl", () => {
       buildSceneSmokeUrl({
         chain: "mainnet",
         baseUrl: "https://127.0.0.1:4173",
-        rendererMode: "legacy-webgl",
+        rendererMode: "webgpu-force-webgl",
         scene: "hex",
         worldName: "etrn-dawn",
       }),
-    ).toBe("https://127.0.0.1:4173/play/mainnet/etrn-dawn/hex?col=0&row=0&spectate=true&rendererMode=legacy-webgl");
+    ).toBe(
+      "https://127.0.0.1:4173/play/mainnet/etrn-dawn/hex?col=0&row=0&spectate=true&rendererMode=webgpu-force-webgl",
+    );
   });
 });
 
@@ -80,22 +92,24 @@ describe("resolveSceneSmokeWorldName", () => {
 
     await expect(
       resolveSceneSmokeWorldName({
-        chain: "slot",
+        chain: "appchain",
         requestedWorldName: "bltz-manual-101",
       }),
     ).resolves.toBe("bltz-manual-101");
     expect(fetchSpy).not.toHaveBeenCalled();
   });
 
-  it("discovers the first alive factory world for the selected chain", async () => {
+  it("discovers the first alive per-world torii on cartridge chains", async () => {
     vi.spyOn(globalThis, "fetch")
       .mockResolvedValueOnce(
         new Response(
           JSON.stringify([
             {
+              address: "0x0aaa",
               name: "0x0000000000000000000000000000000000000000626c747a2d646561642d393939",
             },
             {
+              address: "0x0bbb",
               name: "0x0000000000000000000000000000000000000000626c747a2d737061726b2d373032",
             },
           ]),
@@ -107,10 +121,66 @@ describe("resolveSceneSmokeWorldName", () => {
 
     await expect(
       resolveSceneSmokeWorldName({
-        chain: "slot",
+        chain: "sepolia",
         requestedWorldName: "",
       }),
     ).resolves.toBe("bltz-spark-702");
+  });
+
+  it("discovers the newest configured game from the appchain GameRegistry", async () => {
+    vi.stubEnv("TORII_URL", "https://torii.example.test");
+
+    const fetchSpy = vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(
+      new Response(
+        JSON.stringify([
+          {
+            name: "0x0000000000000000000000000000000000000000626c747a2d737061726b2d373032",
+          },
+        ]),
+        { status: 200, headers: { "Content-Type": "application/json" } },
+      ),
+    );
+
+    await expect(
+      resolveSceneSmokeWorldName({
+        chain: "appchain",
+        requestedWorldName: "",
+      }),
+    ).resolves.toBe("bltz-spark-702");
+
+    const discoveryUrl = new URL(String(fetchSpy.mock.calls[0][0]));
+    expect(discoveryUrl.host).toBe("torii.example.test");
+    expect(discoveryUrl.searchParams.get("query")).toContain("FROM [s2-GameRegistry]");
+    expect(discoveryUrl.searchParams.get("query")).toContain("INNER JOIN [s2-WorldConfig]");
+  });
+
+  it("fails loudly when the appchain torii location is not configured", async () => {
+    vi.stubEnv("TORII_URL", "");
+    vi.stubEnv("VITE_PUBLIC_TORII", "");
+    const fetchSpy = vi.spyOn(globalThis, "fetch");
+
+    await expect(
+      resolveSceneSmokeWorldName({
+        chain: "appchain",
+        requestedWorldName: "",
+      }),
+    ).rejects.toThrow(/TORII_URL or VITE_PUBLIC_TORII/);
+    expect(fetchSpy).not.toHaveBeenCalled();
+  });
+
+  it("fails loudly instead of falling back to a stale world name when nothing is alive", async () => {
+    vi.stubEnv("TORII_URL", "https://torii.example.test");
+
+    vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(
+      new Response(JSON.stringify([]), { status: 200, headers: { "Content-Type": "application/json" } }),
+    );
+
+    await expect(
+      resolveSceneSmokeWorldName({
+        chain: "appchain",
+        requestedWorldName: "",
+      }),
+    ).rejects.toThrow(/No live world found/);
   });
 });
 
@@ -251,7 +321,7 @@ describe("evaluateRendererParitySummary", () => {
     expect(
       evaluateRendererParitySummary({
         activeMode: "webgpu",
-        buildMode: "experimental-webgpu-auto",
+        buildMode: "webgpu-auto",
         capabilities: {
           supportsBloom: false,
           supportsChromaticAberration: false,
@@ -276,7 +346,7 @@ describe("evaluateRendererParitySummary", () => {
           prewarmStrategy: "compile-async",
           unsupportedFeatures: ["environmentIbl"],
         },
-        requestedMode: "experimental-webgpu-auto",
+        requestedMode: "webgpu-auto",
         sceneName: "worldmap",
       }),
     ).toEqual({

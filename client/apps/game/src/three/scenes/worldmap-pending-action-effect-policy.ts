@@ -1,17 +1,4 @@
-import { Direction, getNeighborHexes, HexPosition, ID } from "@bibliothecadao/types";
-
-interface ShouldClearPendingCreateArmyEffectInput {
-  pendingTargetHex: HexPosition;
-  updateHex: HexPosition;
-  removed: boolean;
-}
-
-interface ShouldClearPendingAttackEffectInput {
-  pendingAttackerId: ID;
-  pendingDefenderId?: ID;
-  battleAttackerId?: ID;
-  battleDefenderId?: ID;
-}
+import { Direction, getNeighborHexes, HexPosition } from "@bibliothecadao/types";
 
 export function resolveCreateArmyEffectTargetHex(
   structureHex: HexPosition | undefined,
@@ -29,28 +16,4 @@ export function resolveCreateArmyEffectTargetHex(
   }
 
   return { col: match.col, row: match.row };
-}
-
-export function shouldClearPendingCreateArmyEffect(input: ShouldClearPendingCreateArmyEffectInput): boolean {
-  if (input.removed) {
-    return false;
-  }
-
-  if (input.updateHex.col !== input.pendingTargetHex.col || input.updateHex.row !== input.pendingTargetHex.row) {
-    return false;
-  }
-
-  return true;
-}
-
-export function shouldClearPendingAttackEffect(input: ShouldClearPendingAttackEffectInput): boolean {
-  if (input.pendingAttackerId !== input.battleAttackerId) {
-    return false;
-  }
-
-  if (input.pendingDefenderId !== undefined && input.pendingDefenderId !== input.battleDefenderId) {
-    return false;
-  }
-
-  return true;
 }

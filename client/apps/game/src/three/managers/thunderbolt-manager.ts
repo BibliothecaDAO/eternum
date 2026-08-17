@@ -1,4 +1,5 @@
 import { type HexPosition, getNeighborHexes } from "@bibliothecadao/types";
+import { DEV_MODE_ENABLED } from "@/utils/dev-mode";
 import * as THREE from "three";
 import { env } from "../../../env";
 import { HEX_SIZE } from "../constants";
@@ -64,7 +65,7 @@ export class ThunderBoltManager {
     count: 5,
     duration: 250,
     persistent: true,
-    debug: env.VITE_PUBLIC_GRAPHICS_DEV === true,
+    debug: DEV_MODE_ENABLED,
   };
 
   // Pooled geometries for impact glow (created once, reused for all thunderbolts)

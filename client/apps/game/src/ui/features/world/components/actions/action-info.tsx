@@ -14,6 +14,7 @@ import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { memo, useCallback, useMemo } from "react";
 
 import { TooltipContent, type ActionFoodCosts } from "./tooltip-content";
+import { gameEntityKey } from "@/dojo/game-scope";
 
 export const ActionInfo = memo(() => {
   const hoveredHex = useUIStore(useCallback((state) => state.entityActions.hoveredHex, []));
@@ -25,7 +26,7 @@ export const ActionInfo = memo(() => {
 
   const selectedEntityTroops = useMemo(() => {
     if (!selectedEntityId) return undefined;
-    return getComponentValue(components.ExplorerTroops, getEntityIdFromKeys([BigInt(selectedEntityId)]));
+    return getComponentValue(components.ExplorerTroops, gameEntityKey([BigInt(selectedEntityId)]));
   }, [components.ExplorerTroops, selectedEntityId]);
 
   const actionPath = useMemo<ActionPath[] | undefined>(() => {

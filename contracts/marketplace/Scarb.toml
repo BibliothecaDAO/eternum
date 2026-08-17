@@ -27,8 +27,6 @@ max-line-length = 120
 
 [profile.local]
 
-[profile.slot]
-
 [profile.sepolia]
 
 [profile.mainnet]

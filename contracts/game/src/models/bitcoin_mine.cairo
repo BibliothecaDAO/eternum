@@ -6,6 +6,8 @@ use crate::models::config::{TickInterval, TickTrait};
 #[dojo::model]
 pub struct BitcoinPhaseLabor {
     #[key]
+    pub game_id: u32,
+    #[key]
     pub phase_id: u64,
     pub prize_pool: u128, // SATOSHI allocated for this phase (base + rollover)
     pub total_labor: u128, // cumulative labor deposited
@@ -18,6 +20,8 @@ pub struct BitcoinPhaseLabor {
 #[derive(IntrospectPacked, Copy, Drop, Serde)]
 #[dojo::model]
 pub struct BitcoinMinePhaseLabor {
+    #[key]
+    pub game_id: u32,
     #[key]
     pub phase_id: u64,
     #[key]

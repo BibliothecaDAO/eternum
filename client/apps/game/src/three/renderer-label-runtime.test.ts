@@ -14,7 +14,7 @@ class MockCSS2DRenderer {
   }
 }
 
-vi.mock("three-stdlib", () => ({
+vi.mock("three/addons/renderers/CSS2DRenderer.js", () => ({
   CSS2DRenderer: MockCSS2DRenderer,
 }));
 
@@ -59,6 +59,29 @@ describe("renderer label runtime", () => {
     expect(rendererInstances).toHaveLength(1);
     expect(rendererInstances[0]?.input.element).toBe(element);
     expect(rendererInstances[0]?.setSize).toHaveBeenCalledWith(window.innerWidth, window.innerHeight);
+  });
+
+  it("invokes browser frame polling through the window receiver", async () => {
+    let poll: FrameRequestCallback | undefined;
+    const requestFrame = vi.spyOn(window, "requestAnimationFrame").mockImplementation(function (
+      this: Window,
+      callback,
+    ) {
+      expect(this).toBe(window);
+      poll = callback;
+      return 1;
+    });
+    const runtime = createRendererLabelRuntime({ isMobileDevice: false });
+    const initialization = runtime.initialize();
+
+    const element = document.createElement("div");
+    element.id = "labelrenderer";
+    document.body.appendChild(element);
+    poll?.(performance.now());
+
+    await initialization;
+    expect(runtime.isReady()).toBe(true);
+    requestFrame.mockRestore();
   });
 
   it("tracks dirty label cadence independently from GameRenderer", async () => {

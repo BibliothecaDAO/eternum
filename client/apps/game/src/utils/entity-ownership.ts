@@ -1,6 +1,6 @@
-import { getEntityIdFromKeys } from "@bibliothecadao/eternum";
 import { ClientComponents } from "@bibliothecadao/types";
 import { getComponentValue } from "@dojoengine/recs";
+import { gameEntityKey } from "@/dojo/game-scope";
 
 const normalizeOwnerValue = (owner: unknown): string | null => {
   if (typeof owner === "string") return owner.trim().toLowerCase();
@@ -16,7 +16,7 @@ export const isEntityOwnedByAccount = (
 ): boolean => {
   if (!components || !entityId || !accountAddress) return false;
   try {
-    const structure = getComponentValue(components.Structure, getEntityIdFromKeys([BigInt(entityId)]));
+    const structure = getComponentValue(components.Structure, gameEntityKey([BigInt(entityId)]));
     const owner = normalizeOwnerValue(structure?.owner);
     const accountOwner = normalizeOwnerValue(accountAddress);
     return Boolean(owner && accountOwner && owner === accountOwner);

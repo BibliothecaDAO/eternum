@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { observeToriiStreamLifecycle } from "./torii-stream-lifecycle-observer";
+import { hasToriiStreamLifecycleSignals, observeToriiStreamLifecycle } from "./torii-stream-lifecycle-observer";
 
 describe("observeToriiStreamLifecycle", () => {
   it("is a no-op for a cancel-only subscription (current torii-wasm shape)", () => {
@@ -7,6 +7,7 @@ describe("observeToriiStreamLifecycle", () => {
     const detach = observeToriiStreamLifecycle({ cancel: () => {} }, onClose);
     detach();
     expect(onClose).not.toHaveBeenCalled();
+    expect(hasToriiStreamLifecycleSignals({ cancel: () => {} })).toBe(false);
   });
 
   it("is a no-op for non-object subscriptions", () => {
@@ -27,6 +28,7 @@ describe("observeToriiStreamLifecycle", () => {
     };
     const onClose = vi.fn();
 
+    expect(hasToriiStreamLifecycleSignals(sub)).toBe(true);
     observeToriiStreamLifecycle(sub, onClose);
     handlers.error?.(new Error("boom"));
     expect(onClose).toHaveBeenCalledWith({ reason: "boom" });

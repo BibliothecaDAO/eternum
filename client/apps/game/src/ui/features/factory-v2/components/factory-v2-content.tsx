@@ -4,7 +4,6 @@ import { factoryModeDefinitions } from "../catalog";
 import { useFactoryV2 } from "../hooks/use-factory-v2";
 import { resolveFactoryModeAppearance } from "../mode-appearance";
 import { FactoryV2DeveloperTools } from "./factory-v2-developer-tools";
-import { FactoryV2ManageIndexersWorkspace } from "./factory-v2-manage-indexers-workspace";
 import { FactoryV2ModeSwitch } from "./factory-v2-mode-switch";
 import { FactoryV2StartWorkspace } from "./factory-v2-start-workspace";
 import { FactoryV2WatchWorkspace } from "./factory-v2-watch-workspace";
@@ -73,7 +72,7 @@ export const FactoryV2Content = () => {
             <FactoryV2StartWorkspace
               mode={factory.selectedMode}
               modeLabel={factory.modeDefinition.label}
-              environmentLabel={factory.selectedEnvironment?.label ?? "Slot"}
+              environmentLabel={factory.selectedEnvironment?.label ?? "Mainnet"}
               isMainnet={factory.selectedEnvironment?.chain === "mainnet"}
               launchTargetKind={factory.selectedLaunchKind}
               presets={factory.presets}
@@ -137,8 +136,8 @@ export const FactoryV2Content = () => {
               onToggleTwoPlayerMode={factory.toggleTwoPlayerMode}
               onToggleSingleRealmMode={factory.toggleSingleRealmMode}
               onFandomizeGameName={factory.fandomizeGameName}
-              deployerChain={factory.selectedEnvironment?.chain ?? "slot"}
-              deployerEnvironmentLabel={factory.selectedEnvironment?.label ?? "Slot"}
+              deployerChain={factory.selectedEnvironment?.chain ?? "mainnet"}
+              deployerEnvironmentLabel={factory.selectedEnvironment?.label ?? "Mainnet"}
               onLaunch={() => {
                 void launchSelectedPreset();
               }}
@@ -147,8 +146,8 @@ export const FactoryV2Content = () => {
 
             <FactoryV2DeveloperTools
               mode={factory.selectedMode}
-              chain={factory.selectedEnvironment?.chain ?? "slot"}
-              environmentLabel={factory.selectedEnvironment?.label ?? "Slot"}
+              chain={factory.selectedEnvironment?.chain ?? "mainnet"}
+              environmentLabel={factory.selectedEnvironment?.label ?? "Mainnet"}
               draftGameName={factory.draftGameName}
               selectedRunName={factory.selectedRun?.name ?? null}
             />
@@ -188,41 +187,9 @@ export const FactoryV2Content = () => {
               }}
               adminSecret={factory.factoryAdminSecret}
               hasAdminSecret={factory.factoryAdminSecret.trim().length > 0}
-              deployerChain={factory.selectedEnvironment?.chain ?? "slot"}
-              deployerEnvironmentLabel={factory.selectedEnvironment?.label ?? "Slot"}
+              deployerChain={factory.selectedEnvironment?.chain ?? "mainnet"}
+              deployerEnvironmentLabel={factory.selectedEnvironment?.label ?? "Mainnet"}
               onFundPrize={(request) => factory.fundSelectedRunPrize(request)}
-            />
-          </div>
-        ) : null}
-
-        {selectedWorkflow === "manage" ? (
-          <div className="px-1 md:px-0">
-            <FactoryV2ManageIndexersWorkspace
-              mode={factory.selectedMode}
-              watcher={factory.watcher}
-              adminSecret={factory.factoryAdminSecret}
-              hasSavedAdminSecret={factory.hasSavedFactoryAdminSecret}
-              environmentLabel={factory.selectedEnvironment?.label ?? "Slot"}
-              liveIndexers={factory.liveIndexers}
-              liveIndexersUpdatedAt={factory.liveIndexersUpdatedAt}
-              hasLoadedLiveIndexersSnapshot={factory.hasLoadedLiveIndexersSnapshot}
-              notice={factory.notice}
-              isBusy={factory.isWatcherBusy}
-              onLoadLiveIndexers={(request) => {
-                void factory.loadLiveIndexers(request);
-              }}
-              onRefreshLiveIndexers={(request) => {
-                void factory.refreshLiveIndexerSnapshot(request);
-              }}
-              onCreateIndexers={(request) => {
-                void factory.createIndexers(request);
-              }}
-              onUpdateIndexerTier={(request) => {
-                void factory.updateIndexerTiers(request);
-              }}
-              onDeleteIndexers={(request) => {
-                return factory.deleteIndexers(request);
-              }}
             />
           </div>
         ) : null}

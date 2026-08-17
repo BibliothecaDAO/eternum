@@ -8,16 +8,24 @@ import type {
 } from "./types";
 
 const FACTORY_ENVIRONMENT_LABELS: Record<string, string> = {
-  "slot.eternum": "Slot",
   "mainnet.eternum": "Mainnet",
-  "slot.blitz": "Slot",
   "mainnet.blitz": "Mainnet",
+  "appchain.eternum": "Appchain",
+  "appchain.blitz": "Appchain",
 };
 
+// Mainnet launching is switched off in this deployment (the Cartridge-hosted
+// factory infrastructure it relied on is gone); the appchain launch service
+// handles launches instead. Uncomment the mainnet entries to restore them —
+// the first entry is the default selection.
 const FACTORY_ENVIRONMENTS_BY_MODE: Record<FactoryGameMode, string[]> = {
-  eternum: ["slot.eternum", "mainnet.eternum"],
-  blitz: ["slot.blitz", "mainnet.blitz"],
+  eternum: [/* "mainnet.eternum", */ "appchain.eternum"],
+  blitz: [/* "mainnet.blitz", */ "appchain.blitz"],
 };
+
+/** `<chain>.<mode>` -> chain, so a new environment only needs a list entry. */
+const resolveFactoryLaunchChain = (environmentId: string): FactoryLaunchChain =>
+  environmentId.startsWith("appchain.") ? "appchain" : "mainnet";
 
 const MINUTES_PER_HOUR = 60;
 const MINUTES_PER_DAY = 24 * MINUTES_PER_HOUR;
@@ -56,56 +64,50 @@ const factoryLaunchPresets: FactoryLaunchPreset[] = [
       singleRealmMode: false,
     },
   },
-  {
-    id: "blitz-open",
-    mode: "blitz",
-    name: "Regular Normal (1h:30m)",
-    description: "A standard 90-minute game.",
-    defaults: {
-      startRule: "next_hour",
-      durationMinutes: 90,
-      devMode: false,
-      twoPlayerMode: false,
-      singleRealmMode: false,
-    },
-  },
+  // Blitz launches run on registered registrar presets: 6 = Regular Fast
+  // (official-60 profile), 7 = Duel (official-90 profile). Presets 2/3 carried
+  // local dev balance and 4/5 missed their balance profiles — all immutable,
+  // retired, not offered.
   {
     id: "blitz-fast",
     mode: "blitz",
     name: "Regular Fast (1h)",
-    description: "A shorter one-hour game.",
+    description: "The standard one-hour game.",
     defaults: {
       startRule: "next_hour",
       durationMinutes: MINUTES_PER_HOUR,
       devMode: false,
       twoPlayerMode: false,
       singleRealmMode: false,
+      version: "6",
     },
   },
   {
     id: "blitz-duel",
     mode: "blitz",
     name: "Duel (2 player)",
-    description: "A standard 90-minute head-to-head game.",
+    description: "A 90-minute head-to-head game on the duel balance.",
     defaults: {
       startRule: "next_hour",
       durationMinutes: 90,
       devMode: false,
       twoPlayerMode: true,
       singleRealmMode: false,
+      version: "7",
     },
   },
   {
     id: "blitz-sandbox",
     mode: "blitz",
     name: "Sandbox",
-    description: "A long test game with dev mode on.",
+    description: "A long test game with dev mode on (Regular Fast rules).",
     defaults: {
       startRule: "next_hour",
       durationMinutes: 5 * MINUTES_PER_DAY,
       devMode: true,
       twoPlayerMode: false,
       singleRealmMode: false,
+      version: "6",
     },
   },
 ];
@@ -126,11 +128,6 @@ const formatDateTimeLocalValue = (date: Date) => {
   );
 };
 
-const resolveFactoryEnvironmentChain = (environment: string): FactoryLaunchChain => {
-  const [chain] = environment.split(".");
-  return chain === "mainnet" ? "mainnet" : "slot";
-};
-
 const resolveFactoryEnvironmentLabel = (environment: string) =>
   FACTORY_ENVIRONMENT_LABELS[environment] ??
   environment.replace(/\..+$/, "").replace(/(^\w|-\w)/g, (value) => value.replace("-", " ").toUpperCase());
@@ -148,7 +145,7 @@ export const getFactoryEnvironmentOptions = (mode: FactoryGameMode): FactoryEnvi
     id: environment,
     label: resolveFactoryEnvironmentLabel(environment),
     mode,
-    chain: resolveFactoryEnvironmentChain(environment),
+    chain: resolveFactoryLaunchChain(environment),
   }));
 
 export const getDefaultEnvironmentIdForMode = (mode: FactoryGameMode) =>

@@ -25,37 +25,31 @@ describe("Worldmap movement latency tracing wiring", () => {
     expect(source).toContain('"movement_completed"');
   });
 
-  it("uses an authoritative world-sync timeout longer than the old 10 second stale cutoff", () => {
+  it("delegates transaction lifetime without a worldmap fallback timer", () => {
     const source = readSource("worldmap.tsx");
 
-    expect(source).toContain("authoritativePendingArmyMovementMs = 30_000");
+    expect(source).toContain("trackProvisionalTransaction");
+    expect(source).not.toContain("authoritativePendingArmyMovementMs");
   });
 
-  it("records raw TileOpt stream delivery from the torii sync layer", () => {
-    const source = readRepoSource("client/apps/game/src/dojo/sync.ts");
+  it("does not treat TileOpt delivery as an army movement phase", () => {
+    const syncSource = readRepoSource("client/apps/game/src/dojo/sync.ts");
+    const listenerSource = readRepoSource("packages/core/src/systems/world-update-listener.ts");
 
-    expect(source).toContain('"tileopt_stream_received"');
+    expect(syncSource).not.toContain("recordTileOptStreamTrace");
+    expect(listenerSource).not.toContain("tileopt_component_received");
   });
 
-  it("records TileOpt processing phases in the world update listener", () => {
-    const source = readRepoSource("packages/core/src/systems/world-update-listener.ts");
-
-    expect(source).toContain('"tileopt_component_received"');
-    expect(source).toContain('"tileopt_component_ready"');
-  });
-
-  it("records explore reconcile and next-safe-unblocked phases when authoritative position catches up", () => {
+  it("records next-safe-unblocked when the movement transaction confirms", () => {
     const source = readSource("worldmap.tsx");
 
-    expect(source).toContain('"explore_authoritative_reconcile_complete"');
     expect(source).toContain('"explore_next_safe_unblocked"');
   });
 
-  it("gates explore-only reconcile tracing behind an explicit explore flag", () => {
+  it("gates explore-only confirmation tracing by action type", () => {
     const source = readSource("worldmap.tsx");
 
-    expect(source).toContain("isExploreAction");
-    expect(source).toContain("if (isExploreAction)");
+    expect(source).toContain("if (actionType === ActionType.Explore)");
   });
 
   it("exposes debug hooks for reading and clearing movement latency traces", () => {

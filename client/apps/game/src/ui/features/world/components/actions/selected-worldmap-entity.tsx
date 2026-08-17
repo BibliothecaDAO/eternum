@@ -1,3 +1,4 @@
+import { useTileAt } from "@/hooks/helpers/use-tile-at";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { useBlitzHyperstructureCreation } from "@/hooks/use-blitz-hyperstructure-creation";
 import { useResolvedWorldGameMode } from "@/config/game-modes/use-game-mode-config";
@@ -26,10 +27,8 @@ import {
   isTileOccupierQuest,
   isTileOccupierReservedHyperstructure,
   isTileOccupierStructure,
-  getTileAt,
-  DEFAULT_COORD_ALT,
 } from "@bibliothecadao/eternum";
-import { useDojo, useQuery } from "@bibliothecadao/react";
+import { useQuery } from "@bibliothecadao/react";
 import { type ReactNode, useCallback, useMemo } from "react";
 import { toast } from "sonner";
 
@@ -73,17 +72,13 @@ const SelectedWorldmapEntityContent = ({
   coordsLabel?: string;
   headerAction?: ReactNode;
 }) => {
-  const { setup } = useDojo();
   const { handleUrlChange } = useQuery();
   const toggleModal = useUIStore((state) => state.toggleModal);
 
   const gridTemplateColumns = "var(--selected-worldmap-entity-grid-cols, 1fr)";
   const gridTemplateRows = "var(--selected-worldmap-entity-grid-rows, auto)";
 
-  const tile = useMemo(() => {
-    if (!selectedHex) return undefined;
-    return getTileAt(setup.components, DEFAULT_COORD_ALT, selectedHex.col, selectedHex.row);
-  }, [selectedHex, setup.components]);
+  const tile = useTileAt(selectedHex.col, selectedHex.row);
 
   const biome = useMemo(() => {
     return configManager.getBiome(selectedHex.col || 0, selectedHex.row || 0);
@@ -306,7 +301,13 @@ const ReservedHyperstructurePanel = ({ selectedHex }: { selectedHex: HexPosition
       await createHyperstructure();
     } catch (error) {
       console.error("[ReservedHyperstructurePanel] Failed to create reserved hyperstructure", error);
-      toast.error(error instanceof Error ? error.message : "Failed to create the hyperstructure.");
+      const raw = error instanceof Error ? error.message : String(error);
+      // A stale tile can still show "reserved" after someone created it —
+      // translate the contract revert instead of dumping the paymaster error.
+      const message = raw.includes("already been created")
+        ? "This hyperstructure was already created — the map is catching up."
+        : raw || "Failed to create the hyperstructure.";
+      toast.error(message);
     }
   }, [createHyperstructure]);
 

@@ -245,7 +245,7 @@ vi.mock("../../env", () => ({
   env: {
     VITE_PUBLIC_ENABLE_MEMORY_MONITORING: false,
     VITE_PUBLIC_GRAPHICS_DEV: false,
-    VITE_PUBLIC_RENDERER_BUILD_MODE: "experimental-webgpu-auto",
+    VITE_PUBLIC_RENDERER_BUILD_MODE: "webgpu-auto",
   },
 }));
 vi.mock("@/three/scenes/hexagon-scene", () => ({
@@ -482,11 +482,9 @@ describe("initScene destruction guard", () => {
     };
     subject.sessionRuntime = sessionRuntime;
     subject.camera = {};
-    subject.graphicsSetting = "HIGH";
     subject.cleanupIntervals = [];
     subject.renderer = {
       domElement: document.createElement("canvas"),
-      compileAsync: vi.fn(),
     };
 
     // Stub out the downstream calls that initScene makes

@@ -34,11 +34,11 @@ import {
 import { generateActions } from "../../src/abi/action-gen";
 import { ETERNUM_OVERLAYS, createHiddenOverlays } from "../../src/abi/domain-overlay";
 
-const manifestPath = resolve(__dirname, "../../../../../contracts/game/manifest_slot.json");
+const manifestPath = resolve(__dirname, "../../../../../contracts/game/manifest_mainnet.json");
 const manifest = JSON.parse(readFileSync(manifestPath, "utf-8"));
 
 const profile = {
-  chain: "slot",
+  chain: "appchain",
   entryTokenAddress: "0x00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff",
   feeTokenAddress: "0x00ffeeddccbbaa99887766554433221100ffeeddccbbaa998877665544332211",
 };

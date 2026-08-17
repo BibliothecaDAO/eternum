@@ -1,6 +1,6 @@
-import { ArrowLeftRight, Bug, Home, Trophy, TrendingUp, User, type LucideIcon } from "lucide-react";
+import { Bug, Home, User, type LucideIcon } from "lucide-react";
 
-type SectionId = "home" | "leaderboard" | "markets" | "amm" | "profile" | "debug";
+type SectionId = "home" | "profile" | "debug";
 
 interface SubMenuItem {
   id: string;
@@ -34,30 +34,10 @@ export const NAVIGATION_SECTIONS: SectionConfig[] = [
       { id: "factory", label: "CREATE GAME", tab: "factory", href: "/factory", primary: true },
     ],
   },
-  {
-    id: "leaderboard",
-    label: "Leaderboard",
-    icon: Trophy,
-    basePath: "/leaderboard",
-    subMenu: [
-      { id: "ranked", label: "RANKED", tab: null, href: "/leaderboard" },
-      { id: "tournaments", label: "TOURNAMENTS", tab: "tournaments", href: "/leaderboard?tab=tournaments" },
-    ],
-  },
-  {
-    id: "markets",
-    label: "Markets",
-    icon: TrendingUp,
-    basePath: "/markets",
-    subMenu: [{ id: "markets", label: "MARKETS", tab: null, href: "/markets" }],
-  },
-  {
-    id: "amm",
-    label: "Agora",
-    icon: ArrowLeftRight,
-    basePath: "/amm",
-    subMenu: [{ id: "amm", label: "AGORA", tab: null, href: "/amm" }],
-  },
+  // Leaderboard, Markets, and Agora are retired from the landing until their
+  // data planes exist on this deployment (mainnet MMR reads land with WS-C;
+  // prediction markets and the standalone AMM wait for W6 infra). Cosmetics is
+  // hidden for the same reason — its marketplace indexer is gone.
   {
     id: "profile",
     label: "Profile",
@@ -65,7 +45,6 @@ export const NAVIGATION_SECTIONS: SectionConfig[] = [
     basePath: "/profile",
     subMenu: [
       { id: "profile", label: "PROFILE", tab: null, href: "/profile" },
-      { id: "cosmetics", label: "COSMETICS", tab: "cosmetics", href: "/profile?tab=cosmetics" },
       { id: "wallet", label: "WALLET", tab: "wallet", href: "/profile?tab=wallet" },
     ],
   },

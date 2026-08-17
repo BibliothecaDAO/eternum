@@ -70,7 +70,7 @@ function hasFaithConfig(config: EternumConfig): boolean {
 
 function hasSupportedVrfConfig(config: EternumConfig): boolean {
   const chain = config.setup?.chain;
-  if (chain !== "mainnet" && chain !== "sepolia" && chain !== "slot") {
+  if (chain !== "mainnet" && chain !== "sepolia") {
     return false;
   }
 

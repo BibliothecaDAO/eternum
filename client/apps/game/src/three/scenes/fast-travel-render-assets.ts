@@ -1,7 +1,9 @@
 import {
+  BufferGeometry,
   ConeGeometry,
   CylinderGeometry,
   EdgesGeometry,
+  Float32BufferAttribute,
   LineBasicMaterial,
   LineSegments,
   Mesh,
@@ -9,6 +11,7 @@ import {
   Shape,
   ShapeGeometry,
   SphereGeometry,
+  type Vector3Like,
 } from "three";
 
 import type { FastTravelSurfacePalette } from "./fast-travel-surface-material";
@@ -25,7 +28,7 @@ export interface FastTravelRenderAssets {
   spireCrownGeometry: ConeGeometry;
   spireCrownMaterial: MeshStandardMaterial;
   syncPalette(palette: FastTravelSurfacePalette): void;
-  createHexEdgeMesh(): LineSegments;
+  createHexFieldMesh(positions: Vector3Like[]): LineSegments;
   createArmyMarkerMesh(): Mesh;
   createSpireColumnMesh(): Mesh;
   createSpireCrownMesh(): Mesh;
@@ -104,10 +107,9 @@ export function createFastTravelRenderAssets(): FastTravelRenderAssets {
       spireCrownMaterial.emissive.set(palette.accentColor);
       spireCrownMaterial.needsUpdate = true;
     },
-    createHexEdgeMesh() {
-      const mesh = new LineSegments(hexEdgeGeometry, hexEdgeMaterial);
-      mesh.rotation.x = -Math.PI / 2;
-      mesh.position.y = 0.03;
+    createHexFieldMesh(positions) {
+      const geometry = createFastTravelHexFieldGeometry(hexEdgeGeometry, positions);
+      const mesh = new LineSegments(geometry, hexEdgeMaterial);
       mesh.renderOrder = 3;
       return mesh;
     },
@@ -131,4 +133,25 @@ export function createFastTravelRenderAssets(): FastTravelRenderAssets {
       spireCrownMaterial.dispose();
     },
   };
+}
+
+function createFastTravelHexFieldGeometry(sourceGeometry: EdgesGeometry, positions: Vector3Like[]): BufferGeometry {
+  const sourcePositions = sourceGeometry.getAttribute("position");
+  const mergedPositions = new Float32Array(sourcePositions.count * positions.length * 3);
+  let targetIndex = 0;
+
+  positions.forEach((worldPosition) => {
+    for (let sourceIndex = 0; sourceIndex < sourcePositions.count; sourceIndex += 1) {
+      mergedPositions[targetIndex] = sourcePositions.getX(sourceIndex) + worldPosition.x;
+      mergedPositions[targetIndex + 1] = worldPosition.y + 0.03;
+      mergedPositions[targetIndex + 2] = worldPosition.z - sourcePositions.getY(sourceIndex);
+      targetIndex += 3;
+    }
+  });
+
+  const geometry = new BufferGeometry();
+  geometry.setAttribute("position", new Float32BufferAttribute(mergedPositions, 3));
+  geometry.computeBoundingBox();
+  geometry.computeBoundingSphere();
+  return geometry;
 }

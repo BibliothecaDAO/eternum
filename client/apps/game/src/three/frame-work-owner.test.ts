@@ -1,0 +1,40 @@
+import { describe, expect, it } from "vitest";
+
+import { consumeDominantFrameWorkOwner, getCurrentFrameWorkOwner, runWithFrameWorkOwner } from "./frame-work-owner";
+
+describe("frame work owner", () => {
+  it("restores nested ownership and reports the dominant completed work", () => {
+    const timestamps = [0, 2, 5, 11];
+
+    runWithFrameWorkOwner(
+      "chunk-work:visible",
+      () => {
+        expect(getCurrentFrameWorkOwner()).toBe("chunk-work:visible");
+        runWithFrameWorkOwner(
+          "catchup:army",
+          () => {
+            expect(getCurrentFrameWorkOwner()).toBe("catchup:army");
+          },
+          () => timestamps.shift() ?? 11,
+        );
+        expect(getCurrentFrameWorkOwner()).toBe("chunk-work:visible");
+      },
+      () => timestamps.shift() ?? 11,
+    );
+
+    expect(getCurrentFrameWorkOwner()).toBeNull();
+    expect(consumeDominantFrameWorkOwner()).toBe("chunk-work:visible");
+    expect(consumeDominantFrameWorkOwner()).toBeNull();
+  });
+
+  it("restores ownership when work throws", () => {
+    expect(() =>
+      runWithFrameWorkOwner("sync:ingest", () => {
+        throw new Error("failed");
+      }),
+    ).toThrow("failed");
+
+    expect(getCurrentFrameWorkOwner()).toBeNull();
+    expect(consumeDominantFrameWorkOwner()).toBe("sync:ingest");
+  });
+});

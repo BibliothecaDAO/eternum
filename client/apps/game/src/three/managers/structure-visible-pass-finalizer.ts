@@ -3,7 +3,9 @@ interface CountUpdatableModel {
 }
 
 interface FinalizeVisibleStructureModelPassInput<TModel extends CountUpdatableModel> {
-  modelInstanceCounts: Map<TModel, number>;
+  modelInstanceCounts: ReadonlyMap<TModel, number>;
+  previouslyActiveStructureModels: Set<TModel>;
+  previouslyActiveCosmeticStructureModels: Set<TModel>;
   nextActiveStructureModels: Set<TModel>;
   nextActiveCosmeticStructureModels: Set<TModel>;
   applyPendingModelBounds: () => void;
@@ -16,9 +18,9 @@ export function finalizeVisibleStructureModelPass<TModel extends CountUpdatableM
   activeStructureModels: Set<TModel>;
   activeCosmeticStructureModels: Set<TModel>;
 } {
-  for (const [model, count] of input.modelInstanceCounts) {
-    model.setCount(count);
-  }
+  applyModelInstanceCounts(input.modelInstanceCounts);
+  hideStaleModels(input.previouslyActiveStructureModels, input.nextActiveStructureModels);
+  hideStaleModels(input.previouslyActiveCosmeticStructureModels, input.nextActiveCosmeticStructureModels);
 
   input.applyPendingModelBounds();
   input.endPointBatches?.();
@@ -27,4 +29,21 @@ export function finalizeVisibleStructureModelPass<TModel extends CountUpdatableM
     activeStructureModels: input.nextActiveStructureModels,
     activeCosmeticStructureModels: input.nextActiveCosmeticStructureModels,
   };
+}
+
+function applyModelInstanceCounts<TModel extends CountUpdatableModel>(
+  modelInstanceCounts: ReadonlyMap<TModel, number>,
+) {
+  modelInstanceCounts.forEach((count, model) => model.setCount(count));
+}
+
+function hideStaleModels<TModel extends CountUpdatableModel>(
+  previouslyActiveModels: Set<TModel>,
+  nextActiveModels: Set<TModel>,
+): void {
+  previouslyActiveModels.forEach((model) => {
+    if (!nextActiveModels.has(model)) {
+      model.setCount(0);
+    }
+  });
 }

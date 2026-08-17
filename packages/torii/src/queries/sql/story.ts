@@ -131,6 +131,7 @@ export const STORY_QUERIES = {
     SELECT
 ${STORY_EVENT_SELECT_FIELDS}
     FROM "s1_eternum-StoryEvent"
+    WHERE {GF}
     ORDER BY timestamp DESC
     LIMIT {limit}
     OFFSET {offset}
@@ -144,7 +145,7 @@ ${STORY_EVENT_SELECT_FIELDS}
     SELECT
 ${STORY_EVENT_SELECT_FIELDS}
     FROM "s1_eternum-StoryEvent"
-    WHERE timestamp > {timestamp}
+    WHERE {GF} AND timestamp > {timestamp}
     ORDER BY timestamp DESC
   `,
 
@@ -156,7 +157,7 @@ ${STORY_EVENT_SELECT_FIELDS}
     SELECT
 ${STORY_EVENT_SELECT_FIELDS}
     FROM "s1_eternum-StoryEvent"
-    WHERE "entity_id.Some" = {entityId}
+    WHERE {GF} AND "entity_id.Some" = {entityId}
     ORDER BY timestamp DESC
     LIMIT {limit}
     OFFSET {offset}
@@ -170,7 +171,7 @@ ${STORY_EVENT_SELECT_FIELDS}
     SELECT
 ${STORY_EVENT_SELECT_FIELDS}
     FROM "s1_eternum-StoryEvent"
-    WHERE "owner.Some" = '{owner}'
+    WHERE {GF} AND "owner.Some" = '{owner}'
     ORDER BY timestamp DESC
     LIMIT {limit}
     OFFSET {offset}
@@ -183,6 +184,7 @@ ${STORY_EVENT_SELECT_FIELDS}
   STORY_EVENTS_COUNT: `
     SELECT COUNT(*) as total_count
     FROM "s1_eternum-StoryEvent"
+    WHERE {GF}
   `,
 
   /**
@@ -192,7 +194,7 @@ ${STORY_EVENT_SELECT_FIELDS}
     SELECT
 ${STORY_EVENT_SELECT_FIELDS}
     FROM "s1_eternum-StoryEvent"
-    WHERE story = '{storyType}'
+    WHERE {GF} AND story = '{storyType}'
     ORDER BY timestamp DESC
     LIMIT {limit}
     OFFSET {offset}

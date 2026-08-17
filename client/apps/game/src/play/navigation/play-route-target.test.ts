@@ -139,7 +139,7 @@ describe("resolvePlayRouteTarget", () => {
 
   it("normalizes contract-space route coordinates into canonical world-map positions", () => {
     const routeWorldPosition = resolvePlayRouteTarget(
-      createLocation("/play/slot/bltz-spark-702/map", "?col=2010831286&row=2010831278"),
+      createLocation("/play/appchain/bltz-spark-702/map", "?col=2010831286&row=2010831278"),
       { fastTravelEnabled: true },
     ).routeWorldPosition;
 

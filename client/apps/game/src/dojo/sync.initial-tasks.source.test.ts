@@ -10,12 +10,14 @@ const readSource = (relativePath: string) => readFileSync(resolve(process.cwd(),
 describe("initial sync required tasks", () => {
   it("awaits required background tasks before reporting initial sync complete", () => {
     const source = readSource("src/dojo/sync.ts");
-    const bankTask = source.indexOf('runTimedTask("bank structures query"');
-    const requiredTaskJoin = source.indexOf("await Promise.all(parallelTasks)");
-    const completion = source.indexOf("updateProgress(100)");
+    const requiredTaskJoin = source.indexOf("await Promise.all([");
+    const bankTask = source.indexOf('label: "bank structures query"');
+    const supportDataSync = source.indexOf("await syncInitialSupportData(");
+    const completion = source.indexOf("reportProgress(100)");
 
-    expect(bankTask).toBeGreaterThan(-1);
-    expect(requiredTaskJoin).toBeGreaterThan(bankTask);
-    expect(requiredTaskJoin).toBeLessThan(completion);
+    expect(requiredTaskJoin).toBeGreaterThan(-1);
+    expect(bankTask).toBeGreaterThan(requiredTaskJoin);
+    expect(supportDataSync).toBeGreaterThan(bankTask);
+    expect(completion).toBeGreaterThan(supportDataSync);
   });
 });

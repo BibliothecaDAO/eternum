@@ -2,7 +2,7 @@ use dojo::world::WorldStorage;
 use crate::utils::map::biomes::Biome;
 #[starknet::interface]
 pub trait IBiomeLibrary<T> {
-    fn get_biome(self: @T, world: WorldStorage, alt: bool, col: u128, row: u128) -> Biome;
+    fn get_biome(self: @T, world: WorldStorage, game_id: u32, alt: bool, col: u128, row: u128) -> Biome;
 }
 
 
@@ -13,8 +13,10 @@ mod biome_library {
 
     #[abi(embed_v0)]
     pub impl BiomeLibraryImpl of super::IBiomeLibrary<ContractState> {
-        fn get_biome(self: @ContractState, world: WorldStorage, alt: bool, col: u128, row: u128) -> Biome {
-            get_biome_from_world(world, alt, col, row)
+        fn get_biome(
+            self: @ContractState, world: WorldStorage, game_id: u32, alt: bool, col: u128, row: u128,
+        ) -> Biome {
+            get_biome_from_world(world, game_id, alt, col, row)
         }
     }
 

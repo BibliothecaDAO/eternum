@@ -23,7 +23,8 @@ describe("Game entry modal auto-settle", () => {
     expect(source).not.toContain('const singleRealmMode = chain === "mainnet";');
     expect(source).toContain('operation: "blitz_realm_systems.settle"');
     expect(source).toContain('setSettleStage("syncing")');
-    expect(source).toContain("waitForSettlementTarget(expectedBlitzSettlementCount, SETTLEMENT_SYNC_TIMEOUT_MS)");
+    expect(source).toContain("waitForSettlementTarget(expectedBlitzSettlementCount)");
+    expect(source).not.toContain("SETTLEMENT_PROGRESS_TIMEOUT_MS");
     expect(source).toContain("finalizeSuccessfulBlitzSettlement();");
     expect(source).toContain(
       'finalizeFailedBlitzSettlement(error instanceof Error ? error : new Error("Settlement failed"));',

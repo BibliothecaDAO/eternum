@@ -20,10 +20,10 @@ describe("renderer-diagnostics", () => {
   it("tracks backend mode, fallback reason, effect plan, scene name, and error counters", () => {
     syncRendererBackendDiagnostics({
       activeMode: "webgl2-fallback",
-      buildMode: "experimental-webgpu-auto",
-      fallbackReason: "experimental-init-error",
+      buildMode: "webgpu-auto",
+      fallbackReason: "webgpu-device-lost",
       initTimeMs: 42,
-      requestedMode: "experimental-webgpu-auto",
+      requestedMode: "webgpu-auto",
     });
     setRendererDiagnosticCapabilities({
       supportsBloom: false,
@@ -42,7 +42,7 @@ describe("renderer-diagnostics", () => {
       },
       {
         feature: "bloom",
-        reason: "disabled-by-quality",
+        reason: "disabled-by-profile",
       },
     ]);
     setRendererDiagnosticEffectPlan({
@@ -69,7 +69,6 @@ describe("renderer-diagnostics", () => {
     setRendererDiagnosticPostprocessPolicy({
       bloomRouting: "deferred",
       mode: "native-webgpu-minimal",
-      prewarmStrategy: "compile-async",
       unsupportedFeatures: ["environmentIbl", "toneMappingControl"],
     });
     setRendererDiagnosticSceneName("worldmap");
@@ -78,7 +77,7 @@ describe("renderer-diagnostics", () => {
 
     expect(snapshotRendererDiagnostics()).toEqual({
       activeMode: "webgl2-fallback",
-      buildMode: "experimental-webgpu-auto",
+      buildMode: "webgpu-auto",
       capabilities: {
         supportsBloom: false,
         supportsChromaticAberration: false,
@@ -96,7 +95,7 @@ describe("renderer-diagnostics", () => {
         },
         {
           feature: "bloom",
-          reason: "disabled-by-quality",
+          reason: "disabled-by-profile",
         },
       ],
       effectPlan: {
@@ -120,7 +119,7 @@ describe("renderer-diagnostics", () => {
           offset: 0.25,
         },
       },
-      fallbackReason: "experimental-init-error",
+      fallbackReason: "webgpu-device-lost",
       gpuTelemetry: {
         activeMode: "webgl2-fallback",
         deviceLossMessage: null,
@@ -139,10 +138,9 @@ describe("renderer-diagnostics", () => {
       postprocessPolicy: {
         bloomRouting: "deferred",
         mode: "native-webgpu-minimal",
-        prewarmStrategy: "compile-async",
         unsupportedFeatures: ["environmentIbl", "toneMappingControl"],
       },
-      requestedMode: "experimental-webgpu-auto",
+      requestedMode: "webgpu-auto",
       sceneName: "worldmap",
       startupTimings: {},
     });
@@ -150,11 +148,11 @@ describe("renderer-diagnostics", () => {
 
   it("mirrors the latest diagnostics snapshot onto the debug window", () => {
     syncRendererBackendDiagnostics({
-      activeMode: "legacy-webgl",
-      buildMode: "experimental-webgpu-force-webgl",
-      fallbackReason: "experimental-init-error",
+      activeMode: "webgl2-fallback",
+      buildMode: "webgpu-force-webgl",
+      fallbackReason: "webgpu-device-lost",
       initTimeMs: 12,
-      requestedMode: "legacy-webgl",
+      requestedMode: "webgpu-force-webgl",
     });
     setRendererDiagnosticCapabilities({
       supportsBloom: true,
@@ -167,8 +165,8 @@ describe("renderer-diagnostics", () => {
     });
 
     expect((window as { __rendererDiagnostics?: unknown }).__rendererDiagnostics).toEqual({
-      activeMode: "legacy-webgl",
-      buildMode: "experimental-webgpu-force-webgl",
+      activeMode: "webgl2-fallback",
+      buildMode: "webgpu-force-webgl",
       capabilities: {
         supportsBloom: true,
         supportsChromaticAberration: true,
@@ -180,10 +178,10 @@ describe("renderer-diagnostics", () => {
       },
       degradations: [],
       effectPlan: null,
-      fallbackReason: "experimental-init-error",
+      fallbackReason: "webgpu-device-lost",
       fallbacks: 0,
       gpuTelemetry: {
-        activeMode: "legacy-webgl",
+        activeMode: "webgl2-fallback",
         deviceLossMessage: null,
         deviceStatus: "unknown",
         gpuFrameTimeMs: null,
@@ -197,7 +195,7 @@ describe("renderer-diagnostics", () => {
       initErrors: 0,
       initTimeMs: 12,
       postprocessPolicy: null,
-      requestedMode: "legacy-webgl",
+      requestedMode: "webgpu-force-webgl",
       sceneName: null,
       startupTimings: {},
     });
@@ -229,9 +227,28 @@ describe("renderer-diagnostics", () => {
 
   it("setRendererDiagnosticDegradations produces a new state object reference", () => {
     const before = snapshotRendererDiagnostics();
-    setRendererDiagnosticDegradations([{ feature: "bloom", reason: "disabled-by-quality" }]);
+    setRendererDiagnosticDegradations([{ feature: "bloom", reason: "disabled-by-profile" }]);
     const after = snapshotRendererDiagnostics();
     expect(after).not.toBe(before);
-    expect(after.degradations).toEqual([{ feature: "bloom", reason: "disabled-by-quality" }]);
+    expect(after.degradations).toEqual([{ feature: "bloom", reason: "disabled-by-profile" }]);
+  });
+
+  // Phase 3.6: setRendererDiagnosticSceneName runs every rendered frame, but the
+  // scene name almost never changes. Skip the deep window snapshot when it is
+  // unchanged instead of re-mirroring ~1000 times/second.
+  it("does not re-mirror the window diagnostics when the scene name is unchanged", () => {
+    setRendererDiagnosticSceneName("worldmap");
+    const firstMirror = (window as { __rendererDiagnostics?: unknown }).__rendererDiagnostics;
+    setRendererDiagnosticSceneName("worldmap");
+    expect((window as { __rendererDiagnostics?: unknown }).__rendererDiagnostics).toBe(firstMirror);
+  });
+
+  it("re-mirrors the window diagnostics when the scene name changes", () => {
+    setRendererDiagnosticSceneName("worldmap");
+    const firstMirror = (window as { __rendererDiagnostics?: unknown }).__rendererDiagnostics;
+    setRendererDiagnosticSceneName("hexception");
+    const secondMirror = (window as { __rendererDiagnostics?: { sceneName?: string } }).__rendererDiagnostics;
+    expect(secondMirror).not.toBe(firstMirror);
+    expect(secondMirror?.sceneName).toBe("hexception");
   });
 });

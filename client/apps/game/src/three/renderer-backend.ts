@@ -1,35 +1,17 @@
-import {
-  ACESFilmicToneMapping,
-  PCFShadowMap,
-  PCFSoftShadowMap,
-  type Camera,
-  type Object3D,
-  type Scene,
-  type Texture,
-  WebGLRenderer,
-  WebGLRenderTarget,
-} from "three";
-import { PMREMGenerator } from "three";
-import { isLowOrBelow, type GraphicsSettings as GraphicsSettingsType } from "@/ui/config";
-import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
-import { RGBELoader } from "three/examples/jsm/loaders/RGBELoader.js";
-import {
-  createRendererBackendCapabilities,
-  createRendererInitDiagnostics,
-  type RendererBackendV2,
-  type RendererFramePipeline,
-  type RendererPostProcessController,
-  type RendererPostProcessPlan,
-  type RendererPostProcessRuntime,
+import type { Camera, Object3D, Texture } from "three";
+import type {
+  RendererBackendV2,
+  RendererFramePipeline,
+  RendererPostProcessController,
+  RendererPostProcessPlan,
 } from "./renderer-backend-v2";
-import { renderRendererOverlayPasses } from "./renderer-overlay-passes";
-import { createWebGLPostProcessRuntime } from "./webgl-postprocess-runtime";
 
 export interface RendererInfoLike {
   autoReset?: boolean;
   reset(): void;
   render: {
     calls: number;
+    drawCalls?: number;
     triangles: number;
   };
   memory: {
@@ -69,242 +51,14 @@ export interface RendererEnvironmentTargets {
   worldmapScene: EnvironmentSceneTarget;
 }
 
-export interface RendererBackend extends RendererBackendV2 {
+interface RendererBackend extends RendererBackendV2 {
   readonly renderer: RendererSurfaceLike;
   applyEnvironment(targets: RendererEnvironmentTargets): Promise<void>;
   applyPostProcessPlan(plan: RendererPostProcessPlan): RendererPostProcessController;
-  applyQuality(input: { pixelRatio: number; shadows: boolean; width: number; height: number }): void;
+  applyRenderVisuals(input: { pixelRatio: number; shadows: boolean; width: number; height: number }): void;
   dispose(): void;
-  initialize(): Promise<ReturnType<typeof createRendererInitDiagnostics>>;
   renderFrame(pipeline: RendererFramePipeline): void;
   resize(width: number, height: number): void;
 }
 
-export type RendererBackendFactory = (options: {
-  graphicsSetting: GraphicsSettingsType;
-  isMobileDevice: boolean;
-  pixelRatio: number;
-}) => RendererBackend;
-
-interface WebGLRendererBackendDependencies {
-  createPostProcessRuntime(input: {
-    isMobileDevice: boolean;
-    renderer: RendererSurfaceLike;
-  }): RendererPostProcessRuntime;
-  createRenderer(input: { isLowGraphics: boolean }): WebGLRenderer;
-}
-
-let cachedHDRTarget: WebGLRenderTarget | null = null;
-let cachedHDRPromise: Promise<WebGLRenderTarget> | null = null;
-
-/** @internal Exposed for testing only — resets the module-level HDR cache. */
-export function _resetHDRCache(): void {
-  cachedHDRTarget = null;
-  cachedHDRPromise = null;
-}
-
-const WEBGL_RENDERER_BACKEND_CAPABILITIES = createRendererBackendCapabilities({
-  supportsBloom: true,
-  supportsChromaticAberration: true,
-  supportsColorGrade: true,
-  supportsEnvironmentIbl: true,
-  supportsToneMappingControl: true,
-  supportsVignette: true,
-  supportsWideLines: false,
-});
-
-class WebGLRendererBackend implements RendererBackend {
-  public readonly renderer: WebGLRenderer;
-  public readonly capabilities = WEBGL_RENDERER_BACKEND_CAPABILITIES;
-  private postProcessRuntime?: RendererPostProcessRuntime;
-  private environmentTarget?: WebGLRenderTarget;
-  private isDisposed = false;
-
-  constructor(
-    private readonly graphicsSetting: GraphicsSettingsType,
-    private readonly isMobileDevice: boolean,
-    pixelRatio: number,
-    private readonly dependencies: WebGLRendererBackendDependencies,
-  ) {
-    const isLowGraphics = isLowOrBelow(this.graphicsSetting);
-    this.renderer = this.dependencies.createRenderer({
-      isLowGraphics,
-    });
-    this.renderer.setPixelRatio(pixelRatio);
-    this.renderer.shadowMap.enabled = !isLowOrBelow(this.graphicsSetting);
-    this.renderer.shadowMap.type = this.isMobileDevice ? PCFShadowMap : PCFSoftShadowMap;
-    this.renderer.setSize(window.innerWidth, window.innerHeight);
-    this.renderer.toneMapping = ACESFilmicToneMapping;
-    this.renderer.toneMappingExposure = 0.8;
-    this.renderer.autoClear = false;
-    this.renderer.info.autoReset = false;
-  }
-
-  async initialize() {
-    return createRendererInitDiagnostics({
-      activeMode: "legacy-webgl",
-      buildMode: "legacy-webgl",
-      requestedMode: "legacy-webgl",
-    });
-  }
-
-  resize(width: number, height: number): void {
-    this.renderer.setSize(width, height);
-    this.postProcessRuntime?.setSize(width, height);
-  }
-
-  applyQuality(input: { pixelRatio: number; shadows: boolean; width: number; height: number }): void {
-    this.renderer.setPixelRatio(input.pixelRatio);
-    this.renderer.shadowMap.enabled = input.shadows;
-    this.postProcessRuntime?.setSize(input.width, input.height);
-  }
-
-  applyPostProcessPlan(plan: RendererPostProcessPlan): RendererPostProcessController {
-    return this.ensurePostProcessRuntime().setPlan(plan);
-  }
-
-  renderFrame(pipeline: RendererFramePipeline): void {
-    if (this.postProcessRuntime) {
-      this.postProcessRuntime.renderFrame(pipeline);
-      return;
-    }
-
-    renderDirectWebGLFrame(this.renderer, pipeline);
-  }
-
-  async applyEnvironment(targets: RendererEnvironmentTargets): Promise<void> {
-    const pmremGenerator = new PMREMGenerator(this.renderer);
-    pmremGenerator.compileEquirectangularShader();
-
-    const fallbackTarget = pmremGenerator.fromScene(new RoomEnvironment());
-    this.setEnvironmentFromTarget(fallbackTarget, targets);
-
-    try {
-      const target = await this.loadCachedEnvironmentMap(pmremGenerator);
-      if (this.isDisposed) {
-        if (target !== cachedHDRTarget) {
-          target.dispose();
-        }
-        return;
-      }
-      this.setEnvironmentFromTarget(target, targets);
-    } catch (error) {
-      // fallbackTarget remains as this.environmentTarget and will be disposed
-      // in dispose() since it is not cachedHDRTarget. No additional cleanup needed here.
-      console.error("Failed to load HDR environment map", error);
-    } finally {
-      pmremGenerator.dispose();
-    }
-  }
-
-  dispose(): void {
-    this.isDisposed = true;
-
-    if (this.environmentTarget) {
-      if (this.environmentTarget === cachedHDRTarget) {
-        // This backend owns the cached HDR target. Dispose and clear the module
-        // cache so a subsequent backend performs a fresh load instead of reusing
-        // a GPU resource bound to a now-disposed WebGL context.
-        cachedHDRTarget.dispose();
-        cachedHDRTarget = null;
-        cachedHDRPromise = null;
-      } else {
-        this.environmentTarget.dispose();
-      }
-    }
-    this.environmentTarget = undefined;
-
-    this.postProcessRuntime?.dispose();
-    this.postProcessRuntime = undefined;
-    this.renderer.dispose();
-  }
-
-  private ensurePostProcessRuntime(): RendererPostProcessRuntime {
-    if (!this.postProcessRuntime) {
-      this.postProcessRuntime = this.dependencies.createPostProcessRuntime({
-        isMobileDevice: this.isMobileDevice,
-        renderer: this.renderer,
-      });
-      this.postProcessRuntime.setSize(window.innerWidth, window.innerHeight);
-    }
-
-    return this.postProcessRuntime;
-  }
-
-  private setEnvironmentFromTarget(renderTarget: WebGLRenderTarget, targets: RendererEnvironmentTargets): void {
-    const envMap = renderTarget.texture;
-    targets.hexceptionScene.setEnvironment(envMap, targets.intensity);
-    targets.worldmapScene.setEnvironment(envMap, targets.intensity);
-    targets.fastTravelScene?.setEnvironment(envMap, targets.intensity);
-
-    if (
-      this.environmentTarget &&
-      this.environmentTarget !== renderTarget &&
-      this.environmentTarget !== cachedHDRTarget
-    ) {
-      this.environmentTarget.dispose();
-    }
-
-    this.environmentTarget = renderTarget;
-  }
-
-  private loadCachedEnvironmentMap(pmremGenerator: PMREMGenerator): Promise<WebGLRenderTarget> {
-    if (cachedHDRTarget) {
-      return Promise.resolve(cachedHDRTarget);
-    }
-
-    if (cachedHDRPromise) {
-      return cachedHDRPromise;
-    }
-
-    const hdriLoader = new RGBELoader();
-    cachedHDRPromise = new Promise<WebGLRenderTarget>((resolve, reject) => {
-      hdriLoader.load(
-        "/textures/environment/models_env.hdr",
-        (texture) => {
-          const envTarget = pmremGenerator.fromEquirectangular(texture);
-          texture.dispose();
-          cachedHDRTarget = envTarget;
-          cachedHDRPromise = null;
-          resolve(envTarget);
-        },
-        undefined,
-        (error) => {
-          cachedHDRPromise = null;
-          reject(error);
-        },
-      );
-    });
-
-    return cachedHDRPromise;
-  }
-}
-
-function renderDirectWebGLFrame(renderer: RendererSurfaceLike, pipeline: RendererFramePipeline): void {
-  renderer.info.reset();
-  renderer.clear();
-  renderer.render(pipeline.mainScene, pipeline.mainCamera);
-  renderRendererOverlayPasses(renderer, pipeline);
-}
-
-const defaultDependencies: WebGLRendererBackendDependencies = {
-  createPostProcessRuntime: createWebGLPostProcessRuntime,
-  createRenderer: ({ isLowGraphics }) =>
-    new WebGLRenderer({
-      powerPreference: "high-performance",
-      antialias: false,
-      stencil: !isLowGraphics,
-      depth: true,
-    }),
-};
-
-export function createWebGLRendererBackend(
-  options: {
-    graphicsSetting: GraphicsSettingsType;
-    isMobileDevice: boolean;
-    pixelRatio: number;
-  },
-  dependencies: WebGLRendererBackendDependencies = defaultDependencies,
-): RendererBackend {
-  return new WebGLRendererBackend(options.graphicsSetting, options.isMobileDevice, options.pixelRatio, dependencies);
-}
+export type RendererBackendFactory = (options: { isMobileDevice: boolean; pixelRatio: number }) => RendererBackend;

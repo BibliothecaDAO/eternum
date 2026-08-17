@@ -6,7 +6,7 @@ export interface FactoryContractRow {
 
 export interface WorldProfile {
   name: string;
-  chain: "sepolia" | "mainnet" | "slot" | "slottest" | "local";
+  chain: "sepolia" | "mainnet" | "local" | "appchain";
   toriiBaseUrl: string;
   rpcUrl?: string;
   worldAddress: string;

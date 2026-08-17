@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from "vitest";
 import { runWorldmapRefreshRuntime } from "./worldmap-refresh-runtime";
 
 describe("runWorldmapRefreshRuntime", () => {
-  it("adds and removes the suppression area around refresh hydration and commit", async () => {
+  it("adds and removes the suppression area around refresh preparation and commit", async () => {
     const suppressed = new Set<string>();
     const events: string[] = [];
 
@@ -12,20 +12,18 @@ describe("runWorldmapRefreshRuntime", () => {
         events.push("commit");
         return "committed";
       }),
-      hydrateChunk: vi.fn(async () => {
+      prepareChunk: vi.fn(async () => {
         events.push("hydrate");
         expect(suppressed.has("24,24:render")).toBe(true);
         return {
           presentationRuntime: {
             phaseDurations: {
               structureAssetPrewarmMs: 1,
-              structureHydrationDrainMs: 2,
               terrainPreparedMs: 3,
-              tileHydrationDrainMs: 4,
             },
           },
           preparedTerrain: { chunkKey: "24,24" },
-          tileFetchSucceeded: true,
+          projectionSyncSucceeded: true,
         };
       }),
       onPreparedTerrainReady: vi.fn(() => {
@@ -40,13 +38,13 @@ describe("runWorldmapRefreshRuntime", () => {
     expect(suppressed.size).toBe(0);
   });
 
-  it("still clears suppression state when hydration throws", async () => {
+  it("still clears suppression state when preparation throws", async () => {
     const suppressed = new Set<string>();
 
     await expect(
       runWorldmapRefreshRuntime({
         commitRefresh: vi.fn(async () => "skipped"),
-        hydrateChunk: vi.fn(async () => {
+        prepareChunk: vi.fn(async () => {
           throw new Error("hydrate failed");
         }),
         onPreparedTerrainReady: vi.fn(),
@@ -58,22 +56,20 @@ describe("runWorldmapRefreshRuntime", () => {
     expect(suppressed.size).toBe(0);
   });
 
-  it("skips the ready callback when tile fetch did not succeed", async () => {
+  it("skips the ready callback when tile sync did not succeed", async () => {
     const onPreparedTerrainReady = vi.fn();
 
     const result = await runWorldmapRefreshRuntime({
       commitRefresh: vi.fn(async () => "skipped"),
-      hydrateChunk: vi.fn(async () => ({
+      prepareChunk: vi.fn(async () => ({
         presentationRuntime: {
           phaseDurations: {
             structureAssetPrewarmMs: 0,
-            structureHydrationDrainMs: 0,
             terrainPreparedMs: 0,
-            tileHydrationDrainMs: 0,
           },
         },
         preparedTerrain: { chunkKey: "72,72" },
-        tileFetchSucceeded: false,
+        projectionSyncSucceeded: false,
       })),
       onPreparedTerrainReady,
       refreshAreaKey: "72,72:render",

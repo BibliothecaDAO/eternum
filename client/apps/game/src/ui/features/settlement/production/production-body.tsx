@@ -7,6 +7,7 @@ import { getProducedResource, RealmInfo as RealmInfoType, RELICS, ResourcesIds }
 import { getComponentValue } from "@dojoengine/recs";
 import { useMemo } from "react";
 import { ProductionWorkflows } from "./production-workflows";
+import { gameEntityKey } from "@/dojo/game-scope";
 
 export const ProductionBody = ({
   realm,
@@ -24,7 +25,7 @@ export const ProductionBody = ({
     },
   } = useDojo();
 
-  const productionBoostBonus = getComponentValue(ProductionBoostBonus, getEntityIdFromKeys([BigInt(realm.entityId)]));
+  const productionBoostBonus = getComponentValue(ProductionBoostBonus, gameEntityKey([BigInt(realm.entityId)]));
 
   const { wonderBonus, hasActivatedWonderBonus } = useMemo(() => {
     const wonderBonusConfig = configManager.getWonderBonusConfig();

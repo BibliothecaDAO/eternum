@@ -1,22 +1,13 @@
 import { AudioCategory, useAudio, useMusicPlayer, ScrollingTrackName } from "@/audio";
-import { GraphicsSettings } from "@/ui/config";
+import { renderProfile, type RenderMode, writeRenderMode } from "@/three/render-profile";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { Maximize2, Minimize2, Monitor, Music, Volume2, VolumeX, X } from "lucide-react";
 import { useEffect, useState } from "react";
 
-const GRAPHICS_OPTIONS: GraphicsSettings[] = [
-  GraphicsSettings.ULTRA_LOW,
-  GraphicsSettings.LOW,
-  GraphicsSettings.MID,
-  GraphicsSettings.HIGH,
+const RENDER_MODE_OPTIONS: { label: string; mode: RenderMode }[] = [
+  { label: "Quality", mode: "quality" },
+  { label: "Battery", mode: "battery" },
 ];
-
-const GRAPHICS_OPTION_LABELS: Record<GraphicsSettings, string> = {
-  [GraphicsSettings.ULTRA_LOW]: "Potato",
-  [GraphicsSettings.LOW]: "LOW",
-  [GraphicsSettings.MID]: "MID",
-  [GraphicsSettings.HIGH]: "HIGH",
-};
 
 interface DocumentWithFullscreen extends HTMLDocument {
   mozFullScreenElement?: Element;
@@ -195,11 +186,9 @@ export const LandingSettings = ({ onClose, className }: LandingSettingsProps) =>
   const isMuted = audioState?.muted ?? false;
   const musicVolume = audioState?.categoryVolumes?.[AudioCategory.MUSIC] ?? 0.08;
   const uiVolume = audioState?.categoryVolumes?.[AudioCategory.UI] ?? 0.2;
-  const graphicsSetting = (localStorage.getItem("GRAPHICS_SETTING") as GraphicsSettings) || GraphicsSettings.HIGH;
-
-  const handleGraphicsSettingChange = (setting: GraphicsSettings) => {
-    if (graphicsSetting === setting) return;
-    localStorage.setItem("GRAPHICS_SETTING", setting);
+  const handleRenderModeChange = (mode: RenderMode) => {
+    if (renderProfile.mode === mode) return;
+    writeRenderMode(localStorage, mode);
     window.location.reload();
   };
 
@@ -294,15 +283,15 @@ export const LandingSettings = ({ onClose, className }: LandingSettingsProps) =>
         </LandingSettingsSection>
 
         <LandingSettingsSection icon={Monitor} title="Graphics">
-          <div className="grid grid-cols-4 gap-2">
-            {GRAPHICS_OPTIONS.map((setting) => {
-              const isActive = graphicsSetting === setting;
+          <div className="grid grid-cols-2 gap-2">
+            {RENDER_MODE_OPTIONS.map(({ label, mode }) => {
+              const isActive = renderProfile.mode === mode;
               return (
                 <button
-                  key={setting}
+                  key={mode}
                   type="button"
                   disabled={isActive}
-                  onClick={() => handleGraphicsSettingChange(setting)}
+                  onClick={() => handleRenderModeChange(mode)}
                   className={cn(
                     SETTINGS_CHOICE_BUTTON_BASE_CLASS,
                     isActive
@@ -310,12 +299,14 @@ export const LandingSettings = ({ onClose, className }: LandingSettingsProps) =>
                       : "border-gold/14 bg-black/35 text-gold/68 hover:border-gold/26 hover:bg-gold/[0.08] hover:text-gold",
                   )}
                 >
-                  {GRAPHICS_OPTION_LABELS[setting]}
+                  {label}
                 </button>
               );
             })}
           </div>
-          <p className="text-xs leading-relaxed text-gold/42">Changing graphics quality reloads the page.</p>
+          <p className="text-xs leading-relaxed text-gold/42">
+            Battery reduces idle work without changing visual detail. Changing mode reloads the page.
+          </p>
         </LandingSettingsSection>
       </div>
 

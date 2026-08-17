@@ -1,221 +1,212 @@
-/**
- * MaterialPool - Shared material management for ThreeJS applications
- *
- * Prevents duplicate materials by sharing based on key properties:
- * - Texture URL
- * - Transparency settings
- * - Material properties (opacity, side, etc.)
- */
+import { Material, MeshBasicMaterial, MeshStandardMaterial, Texture } from "three";
 
-import { Material, MeshBasicMaterial, MeshStandardMaterial, Side } from "three";
-
-interface MaterialKey {
-  textureUrl: string;
-  transparent: boolean;
-  side: Side;
-  opacity: number;
-  alphaTest?: number;
-  depthTest?: boolean;
-  depthWrite?: boolean;
-  materialType: "basic" | "standard";
-  color?: number;
-  emissive?: number;
-  metalness?: number;
-  roughness?: number;
-  vertexColors?: boolean;
-}
+const TEXTURE_SLOTS = [
+  "alphaMap",
+  "aoMap",
+  "bumpMap",
+  "clearcoatMap",
+  "clearcoatNormalMap",
+  "clearcoatRoughnessMap",
+  "displacementMap",
+  "emissiveMap",
+  "envMap",
+  "iridescenceMap",
+  "iridescenceThicknessMap",
+  "lightMap",
+  "map",
+  "metalnessMap",
+  "normalMap",
+  "roughnessMap",
+  "sheenColorMap",
+  "sheenRoughnessMap",
+  "specularColorMap",
+  "specularIntensityMap",
+  "specularMap",
+  "thicknessMap",
+  "transmissionMap",
+] as const;
 
 interface MaterialStats {
   uniqueMaterials: number;
   totalReferences: number;
   memoryEstimateMB: number;
   materialTypes: Record<string, number>;
+  shaderFeatureShapes: number;
 }
 
+interface MaterialOverrides {
+  opacity?: number;
+  color?: number;
+  transparent?: boolean;
+  metalness?: number;
+  roughness?: number;
+}
+
+const resolveTextureContentId = (texture: Texture): string => {
+  const contentHash = texture.userData?.eternumContentHash;
+  if (typeof contentHash === "string" && contentHash.length > 0) return `sha256:${contentHash}`;
+
+  const image = texture.image as { src?: unknown } | undefined;
+  const source = texture.source?.data as { src?: unknown } | undefined;
+  const sourceUrl = image?.src ?? source?.src;
+  if (typeof sourceUrl === "string" && sourceUrl.length > 0) return `url:${sourceUrl}`;
+  return `runtime:${texture.uuid}`;
+};
+
+const textureFingerprint = (texture: Texture | null): unknown => {
+  if (!texture) return null;
+  return {
+    content: resolveTextureContentId(texture),
+    anisotropy: texture.anisotropy,
+    center: texture.center.toArray(),
+    channel: texture.channel,
+    colorSpace: texture.colorSpace,
+    compareFunction: (texture as unknown as { compareFunction?: unknown }).compareFunction,
+    flipY: texture.flipY,
+    format: texture.format,
+    generateMipmaps: texture.generateMipmaps,
+    internalFormat: texture.internalFormat,
+    magFilter: texture.magFilter,
+    mapping: texture.mapping,
+    matrix: texture.matrix.toArray(),
+    matrixAutoUpdate: texture.matrixAutoUpdate,
+    minFilter: texture.minFilter,
+    offset: texture.offset.toArray(),
+    premultiplyAlpha: texture.premultiplyAlpha,
+    repeat: texture.repeat.toArray(),
+    rotation: texture.rotation,
+    type: texture.type,
+    unpackAlignment: texture.unpackAlignment,
+    wrapS: texture.wrapS,
+    wrapT: texture.wrapT,
+  };
+};
+
+const materialFeatureShape = (material: Material): string =>
+  JSON.stringify({
+    alphaTest: material.alphaTest > 0,
+    flatShading: (material as MeshStandardMaterial).flatShading === true,
+    fog: "fog" in material ? material.fog : false,
+    maps: Object.fromEntries(
+      TEXTURE_SLOTS.map((slot) => [slot, Boolean((material as unknown as Record<string, Texture | null>)[slot])]),
+    ),
+    side: material.side,
+    transparent: material.transparent,
+    type: material.type,
+    vertexColors: material.vertexColors,
+  });
+
+const normalizeShaderFeatureFlags = (material: Material): void => {
+  material.alphaTest = Math.max(0, material.alphaTest || 0);
+  material.transparent = material.transparent === true;
+  material.vertexColors = material.vertexColors === true;
+  if (material instanceof MeshStandardMaterial) {
+    material.flatShading = material.flatShading === true;
+  }
+};
+
+const NON_RENDERING_MATERIAL_FIELDS = new Set(["name", "userData", "uuid", "version"]);
+
+const renderValueFingerprint = (value: unknown): unknown => {
+  if (value instanceof Texture) return textureFingerprint(value);
+  if (Array.isArray(value)) return value.map(renderValueFingerprint);
+  if (value && typeof value === "object") {
+    const object = value as Record<string, unknown>;
+    if (typeof object.toArray === "function") {
+      return {
+        type: value.constructor.name,
+        value: renderValueFingerprint((object.toArray as () => unknown[])()),
+      };
+    }
+    return Object.fromEntries(
+      Object.keys(object)
+        .filter((key) => key !== "_listeners" && typeof object[key] !== "function")
+        .sort()
+        .map((key) => [key, renderValueFingerprint(object[key])]),
+    );
+  }
+  return typeof value === "function" ? undefined : value;
+};
+
+const generateMaterialKey = (material: Material, kind: "basic" | "standard"): string => {
+  normalizeShaderFeatureFlags(material);
+  return JSON.stringify({
+    customProgramCacheKey: material.customProgramCacheKey(),
+    kind,
+    parameters: Object.fromEntries(
+      Object.keys(material)
+        .filter((key) => !NON_RENDERING_MATERIAL_FIELDS.has(key))
+        .sort()
+        .map((key) => [key, renderValueFingerprint((material as unknown as Record<string, unknown>)[key])]),
+    ),
+  });
+};
+
+/** Configure every source render property before acquire; pooled materials stay immutable until release. */
 export class MaterialPool {
   private static instance: MaterialPool;
-  private materials: Map<string, Material> = new Map();
-  private referenceCount: Map<string, number> = new Map();
-  private materialKeys: Map<Material, string> = new Map();
+  private readonly materials = new Map<string, Material>();
+  private readonly referenceCount = new Map<string, number>();
+  private readonly materialKeys = new Map<Material, string>();
 
   private constructor() {}
 
   public static getInstance(): MaterialPool {
-    if (!MaterialPool.instance) {
-      MaterialPool.instance = new MaterialPool();
-    }
+    MaterialPool.instance ??= new MaterialPool();
     return MaterialPool.instance;
   }
 
-  /**
-   * Generate a unique key for material properties
-   */
-  private generateMaterialKey(sourceMaterial: Material, overrides?: Partial<MaterialKey>): string {
-    const sourceMap = (sourceMaterial as any).map;
-    const textureUrl =
-      sourceMap?.image?.src || sourceMap?.source?.data?.src || sourceMap?.uuid || sourceMap?.name || "none";
-
-    const key: MaterialKey = {
-      textureUrl,
-      transparent: overrides?.transparent ?? sourceMaterial.transparent,
-      side: sourceMaterial.side,
-      opacity: overrides?.opacity ?? sourceMaterial.opacity,
-      alphaTest: (sourceMaterial as any).alphaTest,
-      depthTest: sourceMaterial.depthTest,
-      depthWrite: sourceMaterial.depthWrite,
-      materialType: overrides?.materialType ?? "basic",
-      color: overrides?.color ?? (sourceMaterial as any).color?.getHex(),
-      emissive: (sourceMaterial as any).emissive?.getHex?.(),
-      metalness: overrides?.metalness ?? (sourceMaterial as any).metalness,
-      roughness: overrides?.roughness ?? (sourceMaterial as any).roughness,
-      vertexColors: (sourceMaterial as any).vertexColors,
-    };
-
-    return JSON.stringify(key);
+  public getBasicMaterial(source: Material, overrides: MaterialOverrides = {}): MeshBasicMaterial {
+    const candidate = this.createBasicCandidate(source, overrides);
+    return this.acquire(candidate, "basic", candidate !== source ? source : undefined) as MeshBasicMaterial;
   }
 
-  /**
-   * Get or create a shared MeshBasicMaterial
-   */
-  public getBasicMaterial(
-    sourceMaterial: Material,
-    overrides?: {
-      opacity?: number;
-      color?: number;
-      transparent?: boolean;
-    },
-  ): MeshBasicMaterial {
-    const materialOverrides = {
-      materialType: "basic" as const,
-      ...overrides,
-    };
-    const key = this.generateMaterialKey(sourceMaterial, materialOverrides);
-
-    if (this.materials.has(key)) {
-      const material = this.materials.get(key) as MeshBasicMaterial;
-      this.referenceCount.set(key, (this.referenceCount.get(key) || 0) + 1);
-      return material;
+  public getStandardMaterial(source: Material, overrides: MaterialOverrides = {}): MeshStandardMaterial {
+    if (!(source instanceof MeshStandardMaterial)) {
+      throw new Error(`Cannot pool ${source.type} as an exact standard material`);
     }
-
-    // Create new shared material
-    const sourceAsStandard = sourceMaterial as MeshStandardMaterial;
-    const newMaterial = new MeshBasicMaterial({
-      map: sourceAsStandard.map,
-      transparent: overrides?.transparent ?? sourceMaterial.transparent,
-      side: sourceMaterial.side,
-      opacity: overrides?.opacity ?? sourceMaterial.opacity,
-      color: overrides?.color ?? sourceAsStandard.color,
-      alphaTest: sourceMaterial.alphaTest,
-      depthTest: sourceMaterial.depthTest,
-      depthWrite: sourceMaterial.depthWrite,
-      vertexColors: sourceAsStandard.vertexColors,
-    });
-
-    // Store references
-    this.materials.set(key, newMaterial);
-    this.referenceCount.set(key, 1);
-    this.materialKeys.set(newMaterial, key);
-
-    return newMaterial;
+    const hasOverrides = Object.keys(overrides).length > 0;
+    const candidate = hasOverrides ? source.clone() : source;
+    this.applyOverrides(candidate, overrides);
+    return this.acquire(candidate, "standard", candidate !== source ? source : undefined) as MeshStandardMaterial;
   }
 
-  /**
-   * Get or create a shared MeshStandardMaterial
-   */
-  public getStandardMaterial(
-    sourceMaterial: Material,
-    overrides?: {
-      opacity?: number;
-      color?: number;
-      metalness?: number;
-      roughness?: number;
-      transparent?: boolean;
-    },
-  ): MeshStandardMaterial {
-    const materialOverrides = {
-      materialType: "standard" as const,
-      ...overrides,
-    };
-    const key = this.generateMaterialKey(sourceMaterial, materialOverrides);
-
-    if (this.materials.has(key)) {
-      const material = this.materials.get(key) as MeshStandardMaterial;
-      this.referenceCount.set(key, (this.referenceCount.get(key) || 0) + 1);
-      return material;
-    }
-
-    // Create new shared material
-    const sourceAsStandard = sourceMaterial as MeshStandardMaterial;
-    const newMaterial = new MeshStandardMaterial({
-      map: sourceAsStandard.map,
-      transparent: overrides?.transparent ?? sourceMaterial.transparent,
-      side: sourceMaterial.side,
-      opacity: overrides?.opacity ?? sourceMaterial.opacity,
-      color: overrides?.color ?? sourceAsStandard.color,
-      emissive: sourceAsStandard.emissive,
-      metalness: overrides?.metalness ?? sourceAsStandard.metalness,
-      roughness: overrides?.roughness ?? sourceAsStandard.roughness,
-      alphaTest: sourceMaterial.alphaTest,
-      depthTest: sourceMaterial.depthTest,
-      depthWrite: sourceMaterial.depthWrite,
-      vertexColors: sourceAsStandard.vertexColors,
-    });
-
-    // Store references
-    this.materials.set(key, newMaterial);
-    this.referenceCount.set(key, 1);
-    this.materialKeys.set(newMaterial, key);
-
-    return newMaterial;
-  }
-
-  /**
-   * Release a material reference (decrements reference count)
-   */
   public releaseMaterial(material: Material): void {
     const key = this.materialKeys.get(material);
-    if (!key) {
-      console.warn("MaterialPool: Attempting to release material not managed by pool");
+    if (!key) return;
+
+    const count = this.referenceCount.get(key) ?? 0;
+    if (count > 1) {
+      this.referenceCount.set(key, count - 1);
       return;
     }
-
-    const count = this.referenceCount.get(key) || 0;
-    if (count <= 1) {
-      // Last reference, dispose and cleanup
-      material.dispose();
-      this.materials.delete(key);
-      this.referenceCount.delete(key);
-      this.materialKeys.delete(material);
-    } else {
-      // Decrement reference count
-      this.referenceCount.set(key, count - 1);
-    }
+    material.dispose();
+    this.materials.delete(key);
+    this.referenceCount.delete(key);
+    this.materialKeys.delete(material);
   }
 
-  /**
-   * Get statistics about material sharing
-   */
+  public isManagedMaterial(material: Material): boolean {
+    return this.materialKeys.has(material);
+  }
+
   public getStats(): MaterialStats {
-    const totalReferences = Array.from(this.referenceCount.values()).reduce((a, b) => a + b, 0);
+    const totalReferences = [...this.referenceCount.values()].reduce((sum, count) => sum + count, 0);
     const materialTypes: Record<string, number> = {};
-
-    // Count by material type
-    this.materials.forEach((material, key) => {
-      const keyObj = JSON.parse(key) as MaterialKey;
-      materialTypes[keyObj.materialType] = (materialTypes[keyObj.materialType] || 0) + 1;
+    const featureShapes = new Set<string>();
+    this.materials.forEach((material) => {
+      materialTypes[material.type] = (materialTypes[material.type] ?? 0) + 1;
+      featureShapes.add(materialFeatureShape(material));
     });
-
     return {
       uniqueMaterials: this.materials.size,
       totalReferences,
-      memoryEstimateMB: Math.round(this.materials.size * 0.005 * 100) / 100, // ~5KB per material
+      memoryEstimateMB: Math.round(this.materials.size * 0.005 * 100) / 100,
       materialTypes,
+      shaderFeatureShapes: featureShapes.size,
     };
   }
 
-  /**
-   * Clear all materials (for cleanup)
-   */
   public dispose(): void {
     this.materials.forEach((material) => material.dispose());
     this.materials.clear();
@@ -223,20 +214,73 @@ export class MaterialPool {
     this.materialKeys.clear();
   }
 
-  /**
-   * Log sharing efficiency for debugging
-   */
   public logSharingStats(): void {
     const stats = this.getStats();
     const sharingRatio = stats.totalReferences / Math.max(stats.uniqueMaterials, 1);
+    console.log(
+      `[MaterialPool] exact=${stats.uniqueMaterials} refs=${stats.totalReferences} sharing=${sharingRatio.toFixed(1)}:1 shaderShapes=${stats.shaderFeatureShapes}`,
+    );
+  }
 
-    console.log(`🎨 MaterialPool Stats:
-      • Unique Materials: ${stats.uniqueMaterials}
-      • Total References: ${stats.totalReferences}
-      • Sharing Ratio: ${sharingRatio.toFixed(1)}:1
-      • Memory Estimate: ${stats.memoryEstimateMB}MB
-      • Types: ${Object.entries(stats.materialTypes)
-        .map(([type, count]) => `${type}:${count}`)
-        .join(", ")}`);
+  private createBasicCandidate(source: Material, overrides: MaterialOverrides): MeshBasicMaterial {
+    if (source instanceof MeshBasicMaterial) {
+      if (Object.keys(overrides).length === 0) return source;
+      const candidate = source.clone();
+      if (overrides.opacity !== undefined) candidate.opacity = overrides.opacity;
+      if (overrides.color !== undefined) candidate.color.setHex(overrides.color);
+      if (overrides.transparent !== undefined) candidate.transparent = overrides.transparent;
+      return candidate;
+    }
+
+    const standard = source as MeshStandardMaterial;
+    return new MeshBasicMaterial({
+      alphaMap: standard.alphaMap,
+      alphaTest: source.alphaTest,
+      aoMap: standard.aoMap,
+      aoMapIntensity: standard.aoMapIntensity,
+      color: overrides.color ?? standard.color,
+      depthTest: source.depthTest,
+      depthWrite: source.depthWrite,
+      envMap: standard.envMap,
+      fog: standard.fog,
+      lightMap: standard.lightMap,
+      lightMapIntensity: standard.lightMapIntensity,
+      map: standard.map,
+      opacity: overrides.opacity ?? source.opacity,
+      side: source.side,
+      toneMapped: source.toneMapped,
+      transparent: overrides.transparent ?? source.transparent,
+      vertexColors: source.vertexColors,
+      wireframe: standard.wireframe,
+    });
+  }
+
+  private applyOverrides(material: MeshStandardMaterial, overrides: MaterialOverrides): void {
+    if (overrides.opacity !== undefined) material.opacity = overrides.opacity;
+    if (overrides.color !== undefined) material.color.setHex(overrides.color);
+    if (overrides.transparent !== undefined) material.transparent = overrides.transparent;
+    if (overrides.metalness !== undefined) material.metalness = overrides.metalness;
+    if (overrides.roughness !== undefined) material.roughness = overrides.roughness;
+  }
+
+  private acquire(candidate: Material, kind: "basic" | "standard", disposableSource?: Material): Material {
+    const key = generateMaterialKey(candidate, kind);
+    const existing = this.materials.get(key);
+    if (existing) {
+      this.referenceCount.set(key, (this.referenceCount.get(key) ?? 0) + 1);
+      if (candidate !== existing) candidate.dispose();
+      this.disposeUnmanagedSource(disposableSource);
+      return existing;
+    }
+
+    this.materials.set(key, candidate);
+    this.referenceCount.set(key, 1);
+    this.materialKeys.set(candidate, key);
+    this.disposeUnmanagedSource(disposableSource);
+    return candidate;
+  }
+
+  private disposeUnmanagedSource(source: Material | undefined): void {
+    if (source && !this.isManagedMaterial(source)) source.dispose();
   }
 }

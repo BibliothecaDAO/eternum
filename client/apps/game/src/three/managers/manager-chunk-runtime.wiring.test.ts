@@ -24,12 +24,12 @@ describe("manager chunk runtime wiring", () => {
     expect(structureManagerSource).toMatch(/runManagerChunkUpdateRuntime\(\{/);
     expect(structureManagerSource).toMatch(/state: this\.resolveChunkUpdateRuntimeState\(\)/);
     expect(structureManagerSource).toMatch(/shouldRunManagerChunkUpdate\(\{/);
-    expect(structureManagerSource).toMatch(/await this\.requestVisibleStructuresRefresh\(\)/);
+    expect(structureManagerSource).toMatch(/await this\.requestVisibleStructuresRefresh\("critical"\)/);
 
     expect(chestManagerSource).toMatch(/runManagerChunkUpdateRuntime\(\{/);
     expect(chestManagerSource).toMatch(/state: this\.resolveChunkUpdateRuntimeState\(\)/);
     expect(chestManagerSource).toMatch(/shouldRunManagerChunkUpdate\(\{/);
-    expect(chestManagerSource).toMatch(/this\.renderVisibleChests\(nextChunkKey\)/);
+    expect(chestManagerSource).toMatch(/this\.requestVisibleChestsRefresh\(nextChunkKey\)/);
   });
 
   it("routes manager stall recovery through the shared runtime", () => {

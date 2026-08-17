@@ -8,7 +8,7 @@ type VisibleArmyStub = { entityId: ID };
 type ModelTypeStub = string;
 
 describe("reconcileVisibleArmySet", () => {
-  it("removes stale armies, adds missing ones, force-refreshes tracked armies, and flushes buffers once", () => {
+  it("removes stale armies, adds missing ones, force-refreshes tracked armies, and marks one presentation flush", () => {
     const currentVisibleOrder: ID[] = [9 as ID, 2 as ID, 1 as ID];
     const visibleArmySlots = new Map<ID, number>([
       [9 as ID, 0],
@@ -40,10 +40,7 @@ describe("reconcileVisibleArmySet", () => {
       trackedLabels.delete(entityId);
     });
     const commitVisibleArmyOrder = vi.fn();
-    const refreshVisibleArmyCollection = vi.fn();
-    const syncVisibleArmyAttachments = vi.fn();
-    const updateArmyAttachmentTransforms = vi.fn();
-    const flushVisibleArmyBuffers = vi.fn();
+    const markVisibleArmyPresentationDirty = vi.fn();
 
     reconcileVisibleArmySet<VisibleArmyStub, ModelTypeStub, ID>({
       desiredVisibleArmies: [{ entityId: 2 as ID }, { entityId: 4 as ID }, { entityId: 1 as ID }],
@@ -63,10 +60,7 @@ describe("reconcileVisibleArmySet", () => {
       refreshVisibleArmy,
       removeEntityIdLabel,
       commitVisibleArmyOrder,
-      refreshVisibleArmyCollection,
-      syncVisibleArmyAttachments,
-      updateArmyAttachmentTransforms,
-      flushVisibleArmyBuffers,
+      markVisibleArmyPresentationDirty,
       sortEntityIds: (entityIds) => entityIds.toSorted((a, b) => Number(a) - Number(b)),
     });
 
@@ -81,13 +75,10 @@ describe("reconcileVisibleArmySet", () => {
     expect(removeEntityIdLabel).toHaveBeenCalledTimes(1);
     expect(removeEntityIdLabel).toHaveBeenCalledWith(7);
     expect(commitVisibleArmyOrder).toHaveBeenCalledWith([2, 4, 1]);
-    expect(refreshVisibleArmyCollection).toHaveBeenCalledTimes(1);
-    expect(syncVisibleArmyAttachments).toHaveBeenCalledTimes(1);
-    expect(updateArmyAttachmentTransforms).toHaveBeenCalledTimes(1);
-    expect(flushVisibleArmyBuffers).toHaveBeenCalledTimes(1);
+    expect(markVisibleArmyPresentationDirty).toHaveBeenCalledWith(true);
   });
 
-  it("preserves presentation updates on no-op passes without flushing buffers", () => {
+  it("preserves attachment updates on no-op passes without marking buffers dirty", () => {
     const currentVisibleOrder: ID[] = [2 as ID, 1 as ID];
     const visibleArmySlots = new Map<ID, number>([
       [2 as ID, 0],
@@ -105,10 +96,7 @@ describe("reconcileVisibleArmySet", () => {
       trackedLabels.delete(entityId);
     });
     const commitVisibleArmyOrder = vi.fn();
-    const refreshVisibleArmyCollection = vi.fn();
-    const syncVisibleArmyAttachments = vi.fn();
-    const updateArmyAttachmentTransforms = vi.fn();
-    const flushVisibleArmyBuffers = vi.fn();
+    const markVisibleArmyPresentationDirty = vi.fn();
 
     reconcileVisibleArmySet<VisibleArmyStub, ModelTypeStub, ID>({
       desiredVisibleArmies: [{ entityId: 2 as ID }, { entityId: 1 as ID }],
@@ -126,10 +114,7 @@ describe("reconcileVisibleArmySet", () => {
       refreshVisibleArmy,
       removeEntityIdLabel,
       commitVisibleArmyOrder,
-      refreshVisibleArmyCollection,
-      syncVisibleArmyAttachments,
-      updateArmyAttachmentTransforms,
-      flushVisibleArmyBuffers,
+      markVisibleArmyPresentationDirty,
       sortEntityIds: (entityIds) => entityIds.toSorted((a, b) => Number(a) - Number(b)),
     });
 
@@ -139,9 +124,6 @@ describe("reconcileVisibleArmySet", () => {
     expect(removeEntityIdLabel).toHaveBeenCalledTimes(1);
     expect(removeEntityIdLabel).toHaveBeenCalledWith(5);
     expect(commitVisibleArmyOrder).toHaveBeenCalledWith([2, 1]);
-    expect(refreshVisibleArmyCollection).toHaveBeenCalledTimes(1);
-    expect(syncVisibleArmyAttachments).toHaveBeenCalledTimes(1);
-    expect(updateArmyAttachmentTransforms).toHaveBeenCalledTimes(1);
-    expect(flushVisibleArmyBuffers).not.toHaveBeenCalled();
+    expect(markVisibleArmyPresentationDirty).toHaveBeenCalledWith(false);
   });
 });

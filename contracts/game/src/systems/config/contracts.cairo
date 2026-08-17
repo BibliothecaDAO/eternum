@@ -282,7 +282,7 @@ pub mod config_systems {
     use core::num::traits::{Bounded, Zero};
     use dojo::model::ModelStorage;
     use dojo::world::{IWorldDispatcherTrait, WorldStorage};
-    use crate::constants::{DEFAULT_NS, WORLD_CONFIG_ID};
+    use crate::constants::{DEFAULT_NS, LEGACY_CONFIG_ID};
     use crate::models::agent::AgentConfig;
     use crate::models::config::{
         AgentControllerConfig, ArtificerConfig, BankConfig, BattleConfig, BiomeClimateConfig, BitcoinMineConfig,
@@ -347,7 +347,7 @@ pub mod config_systems {
 
             // set agent count config
             let agent_config = AgentConfig {
-                id: WORLD_CONFIG_ID,
+                id: LEGACY_CONFIG_ID,
                 max_lifetime_count,
                 max_current_count,
                 min_spawn_lords_amount,
@@ -376,7 +376,7 @@ pub mod config_systems {
             assert!(admin_address.is_non_zero(), "admin address must be non zero");
 
             // ensure admin address is not already set
-            let mut world_config: WorldConfig = world.read_model(WORLD_CONFIG_ID);
+            let mut world_config: WorldConfig = world.read_model(LEGACY_CONFIG_ID);
             if world_config.admin_address.is_non_zero() {
                 assert_caller_is_admin(world);
             }

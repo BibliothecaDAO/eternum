@@ -1,3 +1,4 @@
+import { VERBOSE_LOGS_ENABLED } from "@/utils/dev-mode";
 import Stats from "three/examples/jsm/libs/stats.module.js";
 import type { RendererSurfaceLike } from "./renderer-backend";
 import {
@@ -6,6 +7,7 @@ import {
   type RendererDebugWindow,
 } from "./game-renderer-debug-globals";
 import { StatsRecorder } from "./stats-recorder";
+import { getCompiledRenderPipelineCount } from "./gpu-backend-hot-path-instrumentation";
 import { MaterialPool } from "./utils/material-pool";
 import { MemoryMonitor, MemorySpike } from "./utils/memory-monitor";
 
@@ -144,6 +146,7 @@ class GameRendererMonitoringRuntime implements RendererMonitoringRuntime {
   }
 
   private handleMemorySpike(spike: MemorySpike): void {
+    if (!VERBOSE_LOGS_ENABLED) return;
     console.warn(`🚨 Memory spike in ${spike.context}: +${spike.increaseMB.toFixed(1)}MB`);
     if (spike.increaseMB > 100) {
       console.error("🔥 Large memory spike detected!", spike);
@@ -191,6 +194,7 @@ class GameRendererMonitoringRuntime implements RendererMonitoringRuntime {
   private resolveMemoryDisplayState(): {
     drawCallColor: string;
     drawCalls: number;
+    compiledRenderPipelines: number;
     materialStats: { totalReferences: number; uniqueMaterials: number };
     memoryColor: string;
     sharingRatio: number;
@@ -203,13 +207,16 @@ class GameRendererMonitoringRuntime implements RendererMonitoringRuntime {
     const summary = this.memoryMonitor!.getSummary();
     const materialStats = MaterialPool.getInstance().getStats();
     const sharingRatio = materialStats.totalReferences / Math.max(materialStats.uniqueMaterials, 1);
-    const drawCalls = this.input.renderer.info.render.calls;
+    // WebGPU's Info keeps `calls` cumulative since page load; the per-frame
+    // count lives in `drawCalls` (WebGL keeps the per-frame count in `calls`).
+    const drawCalls = this.input.renderer.info.render.drawCalls ?? this.input.renderer.info.render.calls;
     const triangles = this.input.renderer.info.render.triangles;
-    const drawCallColor = drawCalls > 100 ? "#ff4444" : drawCalls > 50 ? "#ffaa00" : "#00ff00";
+    const drawCallColor = drawCalls > 3000 ? "#ff4444" : drawCalls > 1500 ? "#ffaa00" : "#00ff00";
 
     return {
       drawCallColor,
       drawCalls,
+      compiledRenderPipelines: getCompiledRenderPipelineCount(),
       materialStats,
       memoryColor: resolveMemoryStatsColor(stats),
       sharingRatio,
@@ -222,6 +229,7 @@ class GameRendererMonitoringRuntime implements RendererMonitoringRuntime {
   private buildMemoryStatsMarkup(input: {
     drawCallColor: string;
     drawCalls: number;
+    compiledRenderPipelines: number;
     materialStats: { totalReferences: number; uniqueMaterials: number };
     sharingRatio: number;
     stats: ReturnType<MemoryMonitor["getCurrentStats"]>;
@@ -236,6 +244,7 @@ class GameRendererMonitoringRuntime implements RendererMonitoringRuntime {
       Spikes: ${input.summary.spikeCount} (max: ${input.summary.largestSpikeMB}MB)<br>
       Resources: G:${input.stats.geometries} M:${input.stats.materials} T:${input.stats.textures}<br>
       Materials: ${input.materialStats.uniqueMaterials} shared (${input.sharingRatio.toFixed(1)}:1)<br>
+      Compiled pipelines: ${input.compiledRenderPipelines}<br>
       <span style="color: ${input.drawCallColor};">Draw Calls: ${input.drawCalls} | Triangles: ${(input.triangles / 1000).toFixed(1)}k</span><br>
       ${input.stats.memorySpike ? `<span style="color: #ff4444;">⚠ SPIKE: +${input.stats.spikeIncrease.toFixed(1)}MB</span>` : ""}
     `;

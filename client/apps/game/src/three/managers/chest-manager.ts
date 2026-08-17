@@ -2,8 +2,7 @@ import { ChestModelPath } from "@/three/constants";
 import InstancedModel from "@/three/managers/instanced-model";
 import { FELT_CENTER } from "@/ui/config";
 import { Position } from "@bibliothecadao/eternum";
-
-import { ChestData, ChestSystemUpdate } from "@bibliothecadao/eternum";
+import type { ChestSpatialRenderable, WorldSpatialProjection } from "@bibliothecadao/eternum/game-sync";
 import { ID } from "@bibliothecadao/types";
 import * as THREE from "three";
 import { CSS2DObject } from "three/examples/jsm/renderers/CSS2DRenderer.js";
@@ -33,6 +32,12 @@ import {
 } from "./manager-update-convergence";
 import { resolvePointLabelTextureFlipY } from "./point-label-texture-policy";
 import type { HoverLabelShowResult } from "./hover-label-show-result";
+import {
+  isFrameBudgetWorkQueueDisposedError,
+  scheduleFrameBudgetWork,
+  type FrameBudgetWorkLane,
+  type FrameBudgetWorkScheduler,
+} from "../frame-budget-work-queue";
 
 const MAX_INSTANCES = 1000;
 
@@ -42,8 +47,7 @@ export class ChestManager {
   private renderChunkSize: RenderChunkSize;
   private hexagonScene?: HexagonScene;
   private dummy: THREE.Object3D = new THREE.Object3D();
-  chests: Chests = new Chests();
-  private visibleChests: ChestData[] = [];
+  private visibleChests: readonly ChestSpatialRenderable[] = [];
   private currentChunkKey: string | null = MANAGER_UNCOMMITTED_CHUNK;
   private entityIdLabels: Map<ID, CSS2DObject> = new Map();
   private labelsGroup: THREE.Group;
@@ -53,24 +57,27 @@ export class ChestManager {
   private scale: number = 1;
   private chunkSize: number;
   private currentCameraView: CameraView;
-  chestHexCoords: Map<number, Set<number>> = new Map();
   private animations: Map<number, THREE.AnimationMixer> = new Map();
   private animationClips: THREE.AnimationClip[] = [];
   private chunkSwitchPromise: Promise<void> | null = null; // Track ongoing chunk switches
   private latestTransitionToken = 0;
   private transitionChunkByToken: Map<number, string> = new Map();
   private pointsRenderer?: PointsLabelRenderer; // Points-based icon renderer
-  private chunkToChests: Map<string, Set<ID>> = new Map();
+  private readonly worldSpatialProjection: WorldSpatialProjection;
+  private unsubscribeProjection: () => void;
   private isDestroyed = false;
 
   constructor(
     scene: THREE.Scene,
     renderChunkSize: RenderChunkSize,
+    worldSpatialProjection: WorldSpatialProjection,
     labelsGroup?: THREE.Group,
     hexagonScene?: HexagonScene,
     chunkSize: number = Math.max(1, Math.floor(renderChunkSize.width / 2)),
+    private readonly chunkWorkScheduler?: FrameBudgetWorkScheduler,
   ) {
     this.scene = scene;
+    this.worldSpatialProjection = worldSpatialProjection;
     this.hexagonScene = hexagonScene;
     this.labelsGroup = labelsGroup || new THREE.Group();
     this.renderChunkSize = renderChunkSize;
@@ -78,7 +85,7 @@ export class ChestManager {
     this.currentCameraView = hexagonScene?.getCurrentCameraView() ?? CameraView.Medium;
     this.loadModel().then(() => {
       if (isCommittedManagerChunk(this.currentChunkKey)) {
-        this.renderVisibleChests(this.currentChunkKey);
+        void this.requestVisibleChestsRefresh(this.currentChunkKey);
       }
     });
 
@@ -88,6 +95,12 @@ export class ChestManager {
     if (hexagonScene) {
       hexagonScene.addCameraViewListener(this.handleCameraViewChange);
     }
+
+    this.unsubscribeProjection = worldSpatialProjection.subscribeChests(() => {
+      if (isCommittedManagerChunk(this.currentChunkKey)) {
+        void this.requestVisibleChestsRefresh(this.currentChunkKey);
+      }
+    });
   }
 
   public getVisibleCount(): number {
@@ -95,10 +108,8 @@ export class ChestManager {
   }
 
   private handleCameraViewChange = (view: CameraView) => {
-    const qualityShadowsEnabled = this.hexagonScene?.getShadowsEnabledByQuality() ?? true;
-    const contactShadowsAllowed = this.hexagonScene?.contactShadowsAllowedByQuality() ?? true;
-    // Contact shadows are the fallback for real shadows; gate them off on LOW/below.
-    const enableContactShadows = !(view === CameraView.Close && qualityShadowsEnabled) && contactShadowsAllowed;
+    const shadowsEnabled = this.hexagonScene?.getShadowsEnabled() ?? true;
+    const enableContactShadows = !(view === CameraView.Close && shadowsEnabled);
 
     // Cheap grounding in zoomed-out views (and as a fallback if shadows are disabled).
     if (this.chestModel) {
@@ -150,7 +161,7 @@ export class ChestManager {
 
         // Re-render visible chests to populate points
         if (isCommittedManagerChunk(this.currentChunkKey)) {
-          this.renderVisibleChests(this.currentChunkKey);
+          void this.requestVisibleChestsRefresh(this.currentChunkKey);
         }
       },
       undefined,
@@ -163,6 +174,7 @@ export class ChestManager {
   public destroy() {
     // Guard the async loadModel completion from re-adding resources after teardown.
     this.isDestroyed = true;
+    this.unsubscribeProjection();
 
     // Clean up camera view listener
     if (this.hexagonScene) {
@@ -187,9 +199,6 @@ export class ChestManager {
     this.entityIdLabels.forEach((label) => this.labelsGroup.remove(label));
     this.entityIdLabels.clear();
 
-    // Drop spatial/index maps so despawned chests are not retained.
-    this.chunkToChests.clear();
-    this.chestHexCoords.clear();
     this.entityIdMap.clear();
     this.chestInstanceIndices.clear();
     this.chestInstanceOrder = [];
@@ -227,39 +236,13 @@ export class ChestManager {
         this.chestModel = model;
         this.animationClips = clips;
         this.scene.add(model.group);
-        const qualityShadowsEnabled = this.hexagonScene?.getShadowsEnabledByQuality() ?? true;
-        const contactShadowsAllowed = this.hexagonScene?.contactShadowsAllowedByQuality() ?? true;
-        // Contact shadows are the fallback for real shadows; gate them off on LOW/below.
-        const enableContactShadows =
-          !(this.currentCameraView === CameraView.Close && qualityShadowsEnabled) && contactShadowsAllowed;
+        const shadowsEnabled = this.hexagonScene?.getShadowsEnabled() ?? true;
+        const enableContactShadows = !(this.currentCameraView === CameraView.Close && shadowsEnabled);
         this.chestModel.setContactShadowsEnabled(enableContactShadows);
       })
       .catch((error) => {
         console.error(`Failed to load chest model:`, error);
       });
-  }
-
-  async onUpdate(update: ChestSystemUpdate) {
-    const { occupierId, hexCoords } = update;
-    const normalizedCoord = { col: hexCoords.col - FELT_CENTER(), row: hexCoords.row - FELT_CENTER() };
-    // Add the chest to the map
-    const position = new Position({ x: hexCoords.col, y: hexCoords.row });
-    const previousChest = this.chests.getChest(occupierId);
-
-    if (!this.chestHexCoords.has(normalizedCoord.col)) {
-      this.chestHexCoords.set(normalizedCoord.col, new Set());
-    }
-    if (!this.chestHexCoords.get(normalizedCoord.col)!.has(normalizedCoord.row)) {
-      this.chestHexCoords.get(normalizedCoord.col)!.add(normalizedCoord.row);
-    }
-
-    this.chests.addChest(occupierId, position);
-    this.updateChestSpatialIndex(occupierId, previousChest, this.chests.getChest(occupierId));
-
-    // Re-render if we have a current chunk
-    if (isCommittedManagerChunk(this.currentChunkKey)) {
-      this.renderVisibleChests(this.currentChunkKey);
-    }
   }
 
   async updateChunk(chunkKey: string, options?: ManagerChunkUpdateOptions) {
@@ -277,7 +260,7 @@ export class ChestManager {
           return false;
         }
 
-        this.renderVisibleChests(nextChunkKey);
+        return this.requestVisibleChestsRefresh(nextChunkKey);
       },
       onPreviousUpdateFailed: (error) => {
         console.warn(`Previous chest chunk switch failed:`, error);
@@ -311,71 +294,44 @@ export class ChestManager {
     });
   }
 
-  private getChestWorldPosition = (chestEntityId: ID, hexCoords: Position) => {
-    const { x: hexCoordsX, y: hexCoordsY } = hexCoords.getNormalized();
+  private getChestWorldPosition = (chest: ChestSpatialRenderable) => {
+    const { x: hexCoordsX, y: hexCoordsY } = new Position({
+      x: chest.hexCoords.col,
+      y: chest.hexCoords.row,
+    }).getNormalized();
     const basePosition = getWorldPositionForHex({ col: hexCoordsX, row: hexCoordsY });
     return basePosition;
   };
 
-  private isChestVisible(chest: ChestData, startRow: number, startCol: number) {
-    const { x, y } = chest.hexCoords.getNormalized();
+  private getVisibleChestsForChunk(startRow: number, startCol: number): readonly ChestSpatialRenderable[] {
     const bounds = getRenderBounds(startRow, startCol, this.renderChunkSize, this.chunkSize);
-    const insideChunk = x >= bounds.minCol && x <= bounds.maxCol && y >= bounds.minRow && y <= bounds.maxRow;
-
-    if (!insideChunk) {
-      return false;
-    }
-
-    // Skip frustum culling during chunk updates - bounds check is sufficient.
-    // Frustum culling can fail when the camera is still animating to the new chunk position,
-    // causing chests to not appear until the next frame/click.
-    return true;
+    const center = FELT_CENTER();
+    return this.worldSpatialProjection.getChestsInBounds({
+      minCol: bounds.minCol + center,
+      maxCol: bounds.maxCol + center,
+      minRow: bounds.minRow + center,
+      maxRow: bounds.maxRow + center,
+    });
   }
 
-  private getVisibleChestsForChunk(chests: Map<ID, ChestData>, startRow: number, startCol: number): ChestData[] {
-    const bounds = getRenderBounds(startRow, startCol, this.renderChunkSize, this.chunkSize);
-    const startBucketX = Math.floor(bounds.minCol / this.chunkSize);
-    const endBucketX = Math.floor(bounds.maxCol / this.chunkSize);
-    const startBucketY = Math.floor(bounds.minRow / this.chunkSize);
-    const endBucketY = Math.floor(bounds.maxRow / this.chunkSize);
-    const visibleChests: ChestData[] = [];
-    const seenChestIds = new Set<ID>();
-
-    for (let bx = startBucketX; bx <= endBucketX; bx++) {
-      for (let by = startBucketY; by <= endBucketY; by++) {
-        const chestIds = this.chunkToChests.get(`${bx},${by}`);
-        if (!chestIds) {
-          continue;
+  private requestVisibleChestsRefresh(chunkKey: string, workLane: FrameBudgetWorkLane = "visible"): Promise<void> {
+    return scheduleFrameBudgetWork(this.chunkWorkScheduler, workLane, () => this.renderVisibleChests(chunkKey)).catch(
+      (error) => {
+        if (isFrameBudgetWorkQueueDisposedError(error)) {
+          return;
         }
-
-        for (const chestId of chestIds) {
-          if (seenChestIds.has(chestId)) {
-            continue;
-          }
-          const chest = chests.get(chestId);
-          if (!chest || !this.isChestVisible(chest, startRow, startCol)) {
-            continue;
-          }
-          seenChestIds.add(chestId);
-          visibleChests.push({
-            entityId: chest.entityId,
-            hexCoords: chest.hexCoords,
-          });
-        }
-      }
-    }
-
-    return visibleChests;
+        console.error("[ChestManager] Failed to refresh visible chests", error);
+      },
+    );
   }
 
   private renderVisibleChests(chunkKey: string) {
-    if (!this.chestModel) {
+    if (this.isDestroyed || !this.chestModel) {
       return;
     }
 
-    const allChests = this.chests.getChests();
     const [startRow, startCol] = chunkKey.split(",").map(Number);
-    const visibleChests = this.getVisibleChestsForChunk(allChests, startRow, startCol);
+    const visibleChests = this.getVisibleChestsForChunk(startRow, startCol);
     const visibleChestIds = new Set<ID>(visibleChests.map((chest) => chest.entityId));
 
     this.visibleChests = visibleChests;
@@ -405,7 +361,7 @@ export class ChestManager {
 
     if (this.pointsRenderer) {
       const nextPointConfigs = visibleChests.map((chest) => {
-        const iconPosition = this.getChestWorldPosition(chest.entityId, chest.hexCoords);
+        const iconPosition = this.getChestWorldPosition(chest);
         iconPosition.y += 2;
         return {
           entityId: chest.entityId,
@@ -419,7 +375,7 @@ export class ChestManager {
     }
   }
 
-  private addChestInstance(chest: ChestData) {
+  private addChestInstance(chest: ChestSpatialRenderable) {
     const index = this.chestInstanceOrder.length;
     this.chestInstanceOrder.push(chest.entityId);
     this.chestInstanceIndices.set(chest.entityId, index);
@@ -428,7 +384,7 @@ export class ChestManager {
     this.updateChestLabelPosition(chest);
   }
 
-  private updateChestInstance(chest: ChestData) {
+  private updateChestInstance(chest: ChestSpatialRenderable) {
     const index = this.chestInstanceIndices.get(chest.entityId);
     if (index === undefined) {
       return;
@@ -450,7 +406,7 @@ export class ChestManager {
     if (index !== lastIndex) {
       this.chestInstanceOrder[index] = lastEntityId;
       this.chestInstanceIndices.set(lastEntityId, index);
-      const lastChest = this.chests.getChest(lastEntityId);
+      const lastChest = this.worldSpatialProjection.getChest(lastEntityId);
       if (lastChest) {
         this.writeChestInstance(lastChest, index);
       }
@@ -463,10 +419,10 @@ export class ChestManager {
     this.removeEntityIdLabel(entityId);
   }
 
-  private writeChestInstance(chest: ChestData, index: number) {
-    const position = this.getChestWorldPosition(chest.entityId, chest.hexCoords);
+  private writeChestInstance(chest: ChestSpatialRenderable, index: number) {
+    const position = this.getChestWorldPosition(chest);
     position.y += 0.05;
-    const { x, y } = chest.hexCoords.getContract();
+    const { col: x, row: y } = chest.hexCoords;
 
     this.dummy.position.copy(position);
     const rotationSeed = hashCoordinates(x, y);
@@ -477,12 +433,12 @@ export class ChestManager {
     this.chestModel.setMatrixAt(index, this.dummy.matrix);
   }
 
-  private updateChestLabelPosition(chest: ChestData) {
+  private updateChestLabelPosition(chest: ChestSpatialRenderable) {
     const existingLabel = this.entityIdLabels.get(chest.entityId);
     if (!existingLabel) {
       return;
     }
-    const updatedPosition = this.getChestWorldPosition(chest.entityId, chest.hexCoords);
+    const updatedPosition = this.getChestWorldPosition(chest);
     updatedPosition.y += 1.5;
     existingLabel.position.copy(updatedPosition);
   }
@@ -495,9 +451,15 @@ export class ChestManager {
     }
   }
 
-  private addEntityIdLabel(chest: ChestData, position: THREE.Vector3) {
+  private addEntityIdLabel(chest: ChestSpatialRenderable, position: THREE.Vector3) {
     // Use centralized chest label creation
-    const labelDiv = createChestLabel(chest, this.currentCameraView);
+    const labelDiv = createChestLabel(
+      {
+        entityId: chest.entityId,
+        hexCoords: new Position({ x: chest.hexCoords.col, y: chest.hexCoords.row }),
+      },
+      this.currentCameraView,
+    );
 
     const label = new CSS2DObject(labelDiv);
     label.position.copy(position);
@@ -523,19 +485,19 @@ export class ChestManager {
   }
 
   public showLabel(entityId: ID): HoverLabelShowResult {
-    const chest = this.chests.getChest(entityId);
+    const chest = this.worldSpatialProjection.getChest(entityId);
     if (!chest) {
       return { status: "missing" };
     }
 
-    const position = this.getChestWorldPosition(chest.entityId, chest.hexCoords);
+    const position = this.getChestWorldPosition(chest);
     position.y += 0.05;
 
     const existingLabel = this.entityIdLabels.get(entityId);
     if (existingLabel) {
       const wasDetached = existingLabel.parent !== this.labelsGroup;
       const wasHidden = existingLabel.visible !== true || existingLabel.element.style.display === "none";
-      const updatedPosition = this.getChestWorldPosition(chest.entityId, chest.hexCoords);
+      const updatedPosition = this.getChestWorldPosition(chest);
       updatedPosition.y += 1.5;
       existingLabel.position.copy(updatedPosition);
       if (wasDetached) {
@@ -599,85 +561,10 @@ export class ChestManager {
     });
   }
 
-  public async removeChest(entityId: ID) {
-    const existingChest = this.chests.getChest(entityId);
-    if (!existingChest) {
-      return;
-    }
-
-    // Remove chest from tracking
-    this.chests.removeChest(entityId);
-    this.updateChestSpatialIndex(entityId, existingChest, null);
-
-    this.removeEntityIdLabel(entityId);
-
-    // Re-render visible chests
-    if (isCommittedManagerChunk(this.currentChunkKey)) {
-      this.renderVisibleChests(this.currentChunkKey);
-    }
-  }
-
   public update(deltaTime: number) {
     // Update animations
     this.animations.forEach((mixer) => {
       mixer.update(deltaTime);
     });
-  }
-
-  private getChestSpatialKey(col: number, row: number): string {
-    return `${Math.floor(col / this.chunkSize)},${Math.floor(row / this.chunkSize)}`;
-  }
-
-  private updateChestSpatialIndex(entityId: ID, previousChest: ChestData | null, nextChest: ChestData | null): void {
-    if (previousChest) {
-      const { x, y } = previousChest.hexCoords.getNormalized();
-      const previousKey = this.getChestSpatialKey(x, y);
-      const previousBucket = this.chunkToChests.get(previousKey);
-      previousBucket?.delete(entityId);
-      if (previousBucket && previousBucket.size === 0) {
-        this.chunkToChests.delete(previousKey);
-      }
-    }
-
-    if (!nextChest) {
-      return;
-    }
-
-    const { x, y } = nextChest.hexCoords.getNormalized();
-    const nextKey = this.getChestSpatialKey(x, y);
-    let nextBucket = this.chunkToChests.get(nextKey);
-    if (!nextBucket) {
-      nextBucket = new Set<ID>();
-      this.chunkToChests.set(nextKey, nextBucket);
-    }
-    nextBucket.add(entityId);
-  }
-}
-
-class Chests {
-  private chests: Map<ID, ChestData> = new Map();
-
-  addChest(occupierId: ID, hexCoords: Position) {
-    this.chests.set(occupierId, {
-      entityId: occupierId,
-      hexCoords,
-    });
-  }
-
-  removeChest(entityId: ID): ChestData | null {
-    const chest = this.chests.get(entityId);
-    if (chest) {
-      this.chests.delete(entityId);
-      return chest;
-    }
-    return null;
-  }
-
-  getChest(entityId: ID): ChestData | null {
-    return this.chests.get(entityId) || null;
-  }
-
-  getChests(): Map<ID, ChestData> {
-    return this.chests;
   }
 }

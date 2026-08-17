@@ -196,6 +196,8 @@ function createStructureManagerSubject() {
   const unsubscribeFrustum = vi.fn();
   const unsubscribeAccountStore = vi.fn();
   const unsubscribeVisibility = vi.fn();
+  const unsubscribeProjection = vi.fn();
+  const unsubscribeRecs = vi.fn();
   const removeCameraViewListener = vi.fn();
   const clearAttachmentManager = vi.fn();
   const releaseLabel = vi.fn();
@@ -213,15 +215,15 @@ function createStructureManagerSubject() {
   const cosmeticModelDispose = vi.fn();
   const cosmeticModelParentRemove = vi.fn();
 
-  const structuresMap = new Map([[1, new Map()]]);
-
+  subject.isDestroyed = false;
+  subject.unsubscribeProjection = unsubscribeProjection;
+  subject.recsUnsubscribes = [unsubscribeRecs];
   subject.unsubscribeFrustum = unsubscribeFrustum;
   subject.unsubscribeAccountStore = unsubscribeAccountStore;
   subject.unsubscribeVisibility = unsubscribeVisibility;
   subject.hexagonScene = { removeCameraViewListener };
   subject.handleCameraViewChange = vi.fn();
   subject.timedLabelInterval = setInterval(() => {}, 60_000);
-  subject.pendingLabelUpdates = new Map([[1, { pending: true }]]);
   subject.entityIdLabels = new Map([
     [1, labelA],
     [2, labelB],
@@ -268,11 +270,8 @@ function createStructureManagerSubject() {
   subject.entityIdMaps = new Map([[1, new Map()]]);
   subject.cosmeticEntityIdMaps = new Map([["skinA", new Map()]]);
   subject.wonderEntityIdMaps = new Map([[1, 1001]]);
-  subject.structures = {
-    getStructures: () => structuresMap,
-  };
-  subject.structureHexCoords = new Map([[1, new Set([1])]]);
-  subject.chunkToStructures = new Map([["0,0", new Set([1])]]);
+  subject.incomingTroopArrivalsByStructure = new Map([[1, []]]);
+  subject.battleDirectionsByStructure = new Map([[1, {}]]);
   subject.structuresWithActiveTimedLabels = new Set([1]);
   subject.previousVisibleIds = new Set([1]);
   subject.pointsRenderers = {
@@ -288,6 +287,8 @@ function createStructureManagerSubject() {
     unsubscribeFrustum,
     unsubscribeAccountStore,
     unsubscribeVisibility,
+    unsubscribeProjection,
+    unsubscribeRecs,
     removeCameraViewListener,
     clearAttachmentManager,
     releaseLabel,
@@ -303,79 +304,6 @@ function createStructureManagerSubject() {
     clearIntervalSpy,
   };
 }
-
-function createOnUpdateSubject() {
-  const subject = Object.create(StructureManager.prototype) as any;
-  const structuresById = new Map<number, any>();
-
-  subject.ensureStructureModels = vi.fn().mockResolvedValue([]);
-  subject.dummy = {
-    position: { copy: vi.fn() },
-    updateMatrix: vi.fn(),
-  };
-  subject.structureHexCoords = new Map();
-  subject.updateSpatialIndex = vi.fn();
-  subject.pendingLabelUpdates = new Map();
-  subject.components = undefined;
-  subject.entityIdLabels = new Map();
-  subject.visibleStructurePassFence = createVisibleStructurePassFence();
-  subject.updateTimedLabelTracking = vi.fn();
-  subject.isInCurrentChunk = vi.fn(() => false);
-  subject.updateVisibleStructures = vi.fn().mockResolvedValue(undefined);
-  subject.runVisibleStructuresUpdate = subject.updateVisibleStructures;
-  subject.structures = {
-    getStructureByEntityId: vi.fn((entityId: number) => structuresById.get(entityId)),
-    addStructure: vi.fn(
-      (
-        entityId: number,
-        structureName: string,
-        structureType: unknown,
-        hexCoords: { col: number; row: number },
-        initialized: boolean,
-        stage: number,
-        level: number,
-        owner: { address: bigint; ownerName: string; guildName: string },
-        _hasWonder: boolean,
-        _attachments: unknown,
-        isAlly: boolean,
-        guardArmies: unknown,
-        activeProductions: unknown,
-      ) => {
-        structuresById.set(entityId, {
-          entityId,
-          structureName,
-          structureType,
-          hexCoords,
-          initialized,
-          stage,
-          level,
-          owner,
-          isMine: false,
-          isAlly,
-          guardArmies,
-          activeProductions,
-        });
-      },
-    ),
-  };
-
-  return { subject, structuresById };
-}
-
-const BASE_STRUCTURE_UPDATE = {
-  entityId: 7,
-  structureName: "Camp",
-  hexCoords: { col: 10, row: 15 },
-  structureType: "Village" as any,
-  initialized: true,
-  stage: 0,
-  level: 1,
-  hasWonder: false,
-  isAlly: false,
-  guardArmies: [],
-  activeProductions: [],
-  battleData: {},
-};
 
 function createVisibleStructurePassSubject() {
   const subject = Object.create(StructureManager.prototype) as any;
@@ -417,7 +345,7 @@ function createStructureVisibilitySubject() {
   subject.currentChunk = "0,0";
   subject.renderChunkSize = { width: 48, height: 48 };
   subject.chunkStride = 24;
-  subject.needsSpatialReindex = false;
+  subject.resolveStructureInfo = (renderable: unknown) => renderable;
 
   return subject;
 }
@@ -453,12 +381,16 @@ describe("StructureManager structure visibility", () => {
       ],
     ]);
 
-    subject.chunkToStructures = new Map([
-      ["-1,-1", new Set([196])],
-      ["-2,-1", new Set([197, 198])],
-    ]);
-    subject.structures = {
-      getStructureByEntityId: vi.fn((entityId: number) => structuresById.get(entityId)),
+    subject.worldSpatialProjection = {
+      getStructuresInBounds: vi.fn(({ minCol, maxCol, minRow, maxRow }) =>
+        Array.from(structuresById.values()).filter(
+          (structure) =>
+            structure.hexCoords.col >= minCol &&
+            structure.hexCoords.col <= maxCol &&
+            structure.hexCoords.row >= minRow &&
+            structure.hexCoords.row <= maxRow,
+        ),
+      ),
     };
 
     const visibleStructures = subject.getVisibleStructuresForChunk(0, 0);
@@ -495,10 +427,11 @@ describe("StructureManager destroy lifecycle", () => {
     expect(fixture.unsubscribeFrustum).toHaveBeenCalledTimes(1);
     expect(fixture.unsubscribeAccountStore).toHaveBeenCalledTimes(1);
     expect(fixture.unsubscribeVisibility).toHaveBeenCalledTimes(1);
+    expect(fixture.unsubscribeProjection).toHaveBeenCalledTimes(1);
+    expect(fixture.unsubscribeRecs).toHaveBeenCalledTimes(1);
     expect(fixture.removeCameraViewListener).toHaveBeenCalledTimes(1);
     expect(fixture.clearIntervalSpy).toHaveBeenCalledTimes(1);
     expect(fixture.subject.timedLabelInterval).toBeNull();
-    expect(fixture.subject.pendingLabelUpdates.size).toBe(0);
     expect(fixture.removeLabelFromGroup).toHaveBeenCalledTimes(2);
     expect(fixture.releaseLabel).toHaveBeenCalledTimes(2);
     expect(fixture.subject.entityIdLabels.size).toBe(0);
@@ -516,8 +449,8 @@ describe("StructureManager destroy lifecycle", () => {
     expect(fixture.subject.entityIdMaps.size).toBe(0);
     expect(fixture.subject.cosmeticEntityIdMaps.size).toBe(0);
     expect(fixture.subject.wonderEntityIdMaps.size).toBe(0);
-    expect(fixture.subject.structureHexCoords.size).toBe(0);
-    expect(fixture.subject.chunkToStructures.size).toBe(0);
+    expect(fixture.subject.incomingTroopArrivalsByStructure.size).toBe(0);
+    expect(fixture.subject.battleDirectionsByStructure.size).toBe(0);
     expect(fixture.subject.structuresWithActiveTimedLabels.size).toBe(0);
     expect(fixture.subject.previousVisibleIds.size).toBe(0);
   });
@@ -558,9 +491,6 @@ describe("StructureManager destroy lifecycle", () => {
     subject.activeStructureAttachmentEntities = new Set();
     subject.entityIdLabels = new Map();
     subject.previousVisibleIds = new Set();
-    subject.structures = {
-      getStructureByEntityId: vi.fn(),
-    };
     subject.getVisibleStructuresForChunk = vi.fn(() => [
       {
         entityId: 1,
@@ -736,105 +666,5 @@ describe("StructureManager destroy lifecycle", () => {
 
     expect(invalidate).toHaveBeenCalledTimes(1);
     expect(runVisibleStructuresUpdate).toHaveBeenCalledTimes(1);
-  });
-
-  it("keeps tile owner name when a building-only pending update exists", async () => {
-    const { subject, structuresById } = createOnUpdateSubject();
-
-    subject.updateStructureLabelFromBuildingUpdate({
-      entityId: 7,
-      activeProductions: [{ buildingCount: 2, buildingType: 1 as any }],
-    });
-
-    await subject.onUpdate({
-      ...BASE_STRUCTURE_UPDATE,
-      owner: { address: 0n, ownerName: "The Vanguard", guildName: "" },
-    });
-
-    const updated = structuresById.get(7);
-    expect(updated.owner.ownerName).toBe("The Vanguard");
-  });
-
-  it("keeps tile owner address when a building-only pending update exists", async () => {
-    const { subject, structuresById } = createOnUpdateSubject();
-
-    subject.updateStructureLabelFromBuildingUpdate({
-      entityId: 7,
-      activeProductions: [{ buildingCount: 2, buildingType: 1 as any }],
-    });
-
-    await subject.onUpdate({
-      ...BASE_STRUCTURE_UPDATE,
-      owner: { address: 123n, ownerName: "Alice", guildName: "" },
-    });
-
-    const updated = structuresById.get(7);
-    expect(updated.owner.address).toBe(123n);
-    expect(updated.owner.ownerName).toBe("Alice");
-  });
-
-  it("applies pending structure owner updates even when owner becomes unowned", async () => {
-    const { subject, structuresById } = createOnUpdateSubject();
-
-    subject.updateStructureLabelFromStructureUpdate({
-      entityId: 7,
-      guardArmies: [],
-      owner: { address: 0n, ownerName: "The Vanguard", guildName: "" },
-      battleCooldownEnd: 0,
-    });
-
-    await subject.onUpdate({
-      ...BASE_STRUCTURE_UPDATE,
-      owner: { address: 123n, ownerName: "Alice", guildName: "" },
-    });
-
-    const updated = structuresById.get(7);
-    expect(updated.owner.address).toBe(0n);
-    expect(updated.owner.ownerName).toBe("The Vanguard");
-  });
-
-  it("rebuilds visible structures when an active-chunk onUpdate changes a visible structure", async () => {
-    const { subject } = createOnUpdateSubject();
-    subject.isInCurrentChunk = vi.fn(() => true);
-
-    await subject.onUpdate({
-      ...BASE_STRUCTURE_UPDATE,
-      owner: { address: 123n, ownerName: "Alice", guildName: "" },
-    });
-
-    expect(subject.updateVisibleStructures).toHaveBeenCalledTimes(1);
-  });
-
-  it("skips full visible rebuilds for metadata-only updates to already-visible structures", async () => {
-    const { subject, structuresById } = createOnUpdateSubject();
-    subject.isInCurrentChunk = vi.fn(() => true);
-
-    structuresById.set(7, {
-      entityId: 7,
-      structureName: "Camp",
-      structureType: "Village",
-      hexCoords: { col: 10, row: 15 },
-      initialized: true,
-      stage: 0,
-      level: 1,
-      owner: { address: 5n, ownerName: "Alice", guildName: "" },
-      isMine: false,
-      isAlly: false,
-      guardArmies: [],
-      activeProductions: [],
-      cosmeticId: "default",
-      cosmeticAssetPaths: [],
-      attachments: [],
-      hyperstructureRealmCount: 0,
-    });
-
-    await subject.onUpdate({
-      ...BASE_STRUCTURE_UPDATE,
-      owner: { address: 5n, ownerName: "Alice", guildName: "" },
-      guardArmies: [],
-      activeProductions: [],
-    });
-
-    expect(subject.updateVisibleStructures).not.toHaveBeenCalled();
   });
 });

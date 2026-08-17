@@ -1,13 +1,12 @@
 import { WORLD_CHUNK_CONFIG } from "../constants/world-chunk-config";
+import { renderProfile } from "../render-profile";
 
 interface WorldmapChunkPolicy {
   chunkSize: number;
   renderSize: { width: number; height: number };
   switchPadding: number;
-  toriiFetch: {
+  projectionSync: {
     superAreaStrides: number;
-    explorerTroopsSuperAreaStrides: number;
-    structuresSuperAreaStrides: number;
   };
   toriiSubscription: {
     superAreaStrides: number;
@@ -24,9 +23,6 @@ interface WorldmapChunkPolicy {
     maxAhead: number;
     maxConcurrent: number;
   };
-  recentHydrationCache: {
-    maxAreas: number;
-  };
   visualPresentation: {
     maxCompositeChunks: number;
     rollingWindowEnabled: boolean;
@@ -34,7 +30,6 @@ interface WorldmapChunkPolicy {
     viewportMarginPages: number;
     maxCompositePages: number;
     criticalPageImmediateBudget: number;
-    pageBuildFrameBudgetMs: number;
     retainedPageMs: number;
     cameraSampleThrottleMs: number;
     provisionalShellEnabled: boolean;
@@ -52,10 +47,8 @@ interface WorldChunkPolicyInput {
   renderSize: { width: number; height: number };
   pinRadius: number;
   switchPadding: number;
-  toriiFetch: {
+  projectionSync: {
     superAreaStrides: number;
-    explorerTroopsSuperAreaStrides: number;
-    structuresSuperAreaStrides: number;
   };
   toriiSubscription: {
     superAreaStrides: number;
@@ -67,9 +60,6 @@ interface WorldChunkPolicyInput {
     maxAhead: number;
     maxConcurrent: number;
   };
-  recentHydrationCache: {
-    maxAreas: number;
-  };
   visualPresentation: {
     maxCompositeChunks: number;
     rollingWindowEnabled: boolean;
@@ -77,7 +67,6 @@ interface WorldChunkPolicyInput {
     viewportMarginPages: number;
     maxCompositePages: number;
     criticalPageImmediateBudget: number;
-    pageBuildFrameBudgetMs: number;
     retainedPageMs: number;
     cameraSampleThrottleMs: number;
     provisionalShellEnabled: boolean;
@@ -93,10 +82,8 @@ export function createWorldmapChunkPolicy(config: WorldChunkPolicyInput = WORLD_
     chunkSize: config.stride,
     renderSize: config.renderSize,
     switchPadding: config.switchPadding,
-    toriiFetch: {
-      superAreaStrides: config.toriiFetch.superAreaStrides,
-      explorerTroopsSuperAreaStrides: config.toriiFetch.explorerTroopsSuperAreaStrides,
-      structuresSuperAreaStrides: config.toriiFetch.structuresSuperAreaStrides,
+    projectionSync: {
+      superAreaStrides: config.projectionSync.superAreaStrides,
     },
     toriiSubscription: {
       superAreaStrides: config.toriiSubscription.superAreaStrides,
@@ -107,14 +94,14 @@ export function createWorldmapChunkPolicy(config: WorldChunkPolicyInput = WORLD_
       colsEachSide: config.pinRadius,
     },
     prefetch: {
-      forwardDepthStrides: config.prefetch.forwardDepthStrides,
-      sideRadiusStrides: config.prefetch.sideRadiusStrides,
-      areaBoundaryLookaheadStrides: config.prefetch.areaBoundaryLookaheadStrides,
-      maxAhead: config.prefetch.maxAhead,
-      maxConcurrent: config.prefetch.maxConcurrent,
-    },
-    recentHydrationCache: {
-      maxAreas: config.recentHydrationCache.maxAreas,
+      forwardDepthStrides: Math.min(config.prefetch.forwardDepthStrides, renderProfile.prefetch.forwardDepthLimit),
+      sideRadiusStrides: Math.min(config.prefetch.sideRadiusStrides, renderProfile.prefetch.sideRadiusLimit),
+      areaBoundaryLookaheadStrides: Math.min(
+        config.prefetch.areaBoundaryLookaheadStrides,
+        renderProfile.prefetch.areaBoundaryLookaheadLimit,
+      ),
+      maxAhead: Math.min(config.prefetch.maxAhead, renderProfile.prefetch.maxAheadLimit),
+      maxConcurrent: Math.min(config.prefetch.maxConcurrent, renderProfile.prefetch.maxConcurrentLimit),
     },
     visualPresentation: {
       maxCompositeChunks: config.visualPresentation.maxCompositeChunks,
@@ -123,7 +110,6 @@ export function createWorldmapChunkPolicy(config: WorldChunkPolicyInput = WORLD_
       viewportMarginPages: config.visualPresentation.viewportMarginPages,
       maxCompositePages: config.visualPresentation.maxCompositePages,
       criticalPageImmediateBudget: config.visualPresentation.criticalPageImmediateBudget,
-      pageBuildFrameBudgetMs: config.visualPresentation.pageBuildFrameBudgetMs,
       retainedPageMs: config.visualPresentation.retainedPageMs,
       cameraSampleThrottleMs: config.visualPresentation.cameraSampleThrottleMs,
       provisionalShellEnabled: config.visualPresentation.provisionalShellEnabled,

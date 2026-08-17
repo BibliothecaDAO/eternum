@@ -18,14 +18,14 @@ const waitForAsyncWork = async () => {
 };
 
 const buildProps = (overrides: Record<string, unknown> = {}) => {
-  const draft = createFactoryMoreOptionsDraft("eternum", "slot");
+  const draft = createFactoryMoreOptionsDraft("eternum", "mainnet");
 
   return {
     mode: "eternum" as const,
     isOpen: true,
     sections: getFactoryMoreOptionSections("eternum"),
     draft,
-    errors: validateFactoryMoreOptions("eternum", "slot", draft).errors,
+    errors: validateFactoryMoreOptions("eternum", "mainnet", draft).errors,
     invalidReason: null,
     onToggle: vi.fn(),
     onValueChange: vi.fn(),
@@ -88,7 +88,7 @@ describe("FactoryV2MoreOptions", () => {
   });
 
   it("shows user-friendly minute guidance in blitz relic options", async () => {
-    const draft = createFactoryMoreOptionsDraft("blitz", "slot");
+    const draft = createFactoryMoreOptionsDraft("blitz", "mainnet");
 
     await act(async () => {
       root.render(
@@ -97,7 +97,7 @@ describe("FactoryV2MoreOptions", () => {
             mode: "blitz",
             sections: getFactoryMoreOptionSections("blitz", { twoPlayerMode: false }),
             draft,
-            errors: validateFactoryMoreOptions("blitz", "slot", draft, { twoPlayerMode: false }).errors,
+            errors: validateFactoryMoreOptions("blitz", "mainnet", draft, { twoPlayerMode: false }).errors,
           })}
         />,
       );
@@ -119,7 +119,7 @@ describe("FactoryV2MoreOptions", () => {
   });
 
   it("shows the blitz prize section with token and amount fields", async () => {
-    const draft = createFactoryMoreOptionsDraft("blitz", "slot");
+    const draft = createFactoryMoreOptionsDraft("blitz", "mainnet");
 
     await act(async () => {
       root.render(
@@ -128,7 +128,7 @@ describe("FactoryV2MoreOptions", () => {
             mode: "blitz",
             sections: getFactoryMoreOptionSections("blitz", { twoPlayerMode: false }),
             draft,
-            errors: validateFactoryMoreOptions("blitz", "slot", draft, { twoPlayerMode: false }).errors,
+            errors: validateFactoryMoreOptions("blitz", "mainnet", draft, { twoPlayerMode: false }).errors,
           })}
         />,
       );
@@ -150,16 +150,16 @@ describe("FactoryV2MoreOptions", () => {
   });
 
   it("shows the active Blitz exploration reward table for the selected duration", async () => {
-    const draft = createFactoryMoreOptionsDraft("blitz", "slot", 60);
+    const draft = createFactoryMoreOptionsDraft("blitz", "mainnet", 60);
 
     await act(async () => {
       root.render(
         <FactoryV2MoreOptions
           {...buildProps({
             mode: "blitz",
-            sections: getFactoryMoreOptionSections("blitz", { twoPlayerMode: false }, "slot", 60),
+            sections: getFactoryMoreOptionSections("blitz", { twoPlayerMode: false }, "mainnet", 60),
             draft,
-            errors: validateFactoryMoreOptions("blitz", "slot", draft, { twoPlayerMode: false }, 60).errors,
+            errors: validateFactoryMoreOptions("blitz", "mainnet", draft, { twoPlayerMode: false }, 60).errors,
           })}
         />,
       );
@@ -182,7 +182,7 @@ describe("FactoryV2MoreOptions", () => {
   });
 
   it("keeps Blitz player-cap controls out of the advanced drawer", async () => {
-    const draft = createFactoryMoreOptionsDraft("blitz", "slot");
+    const draft = createFactoryMoreOptionsDraft("blitz", "mainnet");
 
     await act(async () => {
       root.render(
@@ -191,7 +191,7 @@ describe("FactoryV2MoreOptions", () => {
             mode: "blitz",
             sections: getFactoryMoreOptionSections("blitz", { twoPlayerMode: false }),
             draft,
-            errors: validateFactoryMoreOptions("blitz", "slot", draft, { twoPlayerMode: false }).errors,
+            errors: validateFactoryMoreOptions("blitz", "mainnet", draft, { twoPlayerMode: false }).errors,
           })}
         />,
       );
@@ -203,7 +203,7 @@ describe("FactoryV2MoreOptions", () => {
   });
 
   it("keeps an opened section expanded while editing a field", async () => {
-    const draft = createFactoryMoreOptionsDraft("blitz", "slot");
+    const draft = createFactoryMoreOptionsDraft("blitz", "mainnet");
     const sections = getFactoryMoreOptionSections("blitz", { twoPlayerMode: false });
 
     await act(async () => {
@@ -213,7 +213,7 @@ describe("FactoryV2MoreOptions", () => {
             mode: "blitz",
             sections,
             draft,
-            errors: validateFactoryMoreOptions("blitz", "slot", draft, { twoPlayerMode: false }).errors,
+            errors: validateFactoryMoreOptions("blitz", "mainnet", draft, { twoPlayerMode: false }).errors,
           })}
         />,
       );
@@ -243,7 +243,7 @@ describe("FactoryV2MoreOptions", () => {
             mode: "blitz",
             sections: getFactoryMoreOptionSections("blitz", { twoPlayerMode: false }),
             draft: updatedDraft,
-            errors: validateFactoryMoreOptions("blitz", "slot", updatedDraft, { twoPlayerMode: false }).errors,
+            errors: validateFactoryMoreOptions("blitz", "mainnet", updatedDraft, { twoPlayerMode: false }).errors,
           })}
         />,
       );
@@ -254,7 +254,7 @@ describe("FactoryV2MoreOptions", () => {
   });
 
   it("hides advanced sections that no longer have visible fields", async () => {
-    const draft = createFactoryMoreOptionsDraft("blitz", "slot");
+    const draft = createFactoryMoreOptionsDraft("blitz", "mainnet");
 
     await act(async () => {
       root.render(
@@ -263,7 +263,7 @@ describe("FactoryV2MoreOptions", () => {
             mode: "blitz",
             sections: getFactoryMoreOptionSections("blitz", { twoPlayerMode: true }),
             draft,
-            errors: validateFactoryMoreOptions("blitz", "slot", draft, { twoPlayerMode: true }).errors,
+            errors: validateFactoryMoreOptions("blitz", "mainnet", draft, { twoPlayerMode: true }).errors,
           })}
         />,
       );

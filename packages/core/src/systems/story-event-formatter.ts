@@ -10,11 +10,11 @@ import {
   resources,
 } from "@bibliothecadao/types";
 import { getComponentValue } from "@dojoengine/recs";
-import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { getAddressName } from "../utils/entities";
 import { getStructureTypeName } from "../utils/structure";
 import { getIsBlitz } from "../utils/utils";
 import { StoryEventSystemUpdate } from "./types";
+import { gameEntityKey } from "../managers/config-manager";
 
 export type StoryEventIcon =
   | "realm"
@@ -491,7 +491,7 @@ function describeStructureDetails(
   if (entityId === null) return describeFallbackStructure(event, fallbackCategory, fallbackCoord, structureOverride);
 
   try {
-    const structureEntity = getEntityIdFromKeys([entityId]);
+    const structureEntity = gameEntityKey([entityId]);
     const structure = getComponentValue(components.Structure, structureEntity);
     if (!structure) return describeFallbackStructure(event, fallbackCategory, fallbackCoord, structureOverride);
 

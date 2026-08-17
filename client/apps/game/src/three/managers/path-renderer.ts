@@ -2,6 +2,7 @@ import {
   Box3,
   BufferGeometry,
   Color,
+  DynamicDrawUsage,
   Float32BufferAttribute,
   Group,
   LineBasicMaterial,
@@ -25,25 +26,28 @@ import {
   PathRenderConfig,
 } from "../types/path";
 import { resolvePathReadabilityPolicy } from "../scenes/path-readability-policy";
-import { resolvePathBatches } from "./path-batching-policy";
 
 interface PathBatchObject {
   boundingBox: Box3;
+  colorAttribute: Float32BufferAttribute;
   entityIds: Set<number>;
   line: LineSegments;
+  positionAttribute: Float32BufferAttribute;
 }
+
+const PATH_DISPLAY_STATES: PathDisplayState[] = ["selected", "hover", "moving", "preview"];
 
 /**
  * PathRenderer - scene-owned manager for rendering army movement paths
  *
- * Phase 3 simplification: use stock line materials so experimental WebGPU
- * scenes no longer depend on custom path shaders while the higher-fidelity
- * material rewrite is still pending.
+ * Uses stock line materials so both renderer backends share one path without
+ * custom shader maintenance.
  */
 export class PathRenderer {
   private scene: Scene | null = null;
   private mesh: Group | null = null;
   private readonly batchObjects: PathBatchObject[] = [];
+  private readonly batchPool = new Map<PathDisplayState, PathBatchObject>();
   private config: PathRenderConfig;
 
   // Active paths indexed by entity ID
@@ -67,6 +71,7 @@ export class PathRenderer {
 
   constructor(config: Partial<PathRenderConfig> = {}) {
     this.config = { ...DEFAULT_PATH_CONFIG, ...config };
+    this.config.maxSegments = Math.max(1, Math.floor(this.config.maxSegments));
   }
 
   /**
@@ -84,6 +89,7 @@ export class PathRenderer {
     if (!this.mesh) {
       this.mesh = new Group();
       this.mesh.visible = false;
+      this.createPersistentBatchPool();
     }
 
     if (!this.mesh.parent) {
@@ -289,8 +295,8 @@ export class PathRenderer {
     this.clearAll();
 
     // clearAll -> removePath -> markBatchesDirty sets the flag again.
-    // Flush synchronously so geometry/materials are disposed immediately.
     this.flushDirtyBatches();
+    this.disposePersistentBatchPool();
 
     if (this.mesh) {
       this.mesh.parent?.remove(this.mesh);
@@ -379,20 +385,24 @@ export class PathRenderer {
   }
 
   private rebuildPathBatches(): void {
-    this.disposeBatchObjects();
+    this.detachActiveBatches();
     this.culledPaths.clear();
 
     if (!this.mesh) {
       return;
     }
 
-    const batchPlans = resolvePathBatches(Array.from(this.activePaths.values()), this.config.maxSegments);
+    PATH_DISPLAY_STATES.forEach((displayState) => {
+      const batchPaths = Array.from(this.activePaths.values()).filter((path) => path.displayState === displayState);
+      if (batchPaths.length === 0) {
+        return;
+      }
 
-    batchPlans.forEach((batchPlan) => {
-      const batchPaths = batchPlan.entityIds
-        .map((entityId) => this.activePaths.get(entityId))
-        .filter((path): path is ArmyPath => Boolean(path));
-      const batch = this.createBatchObject(batchPaths, batchPlan.displayState);
+      const batch = this.batchPool.get(displayState);
+      if (!batch) {
+        return;
+      }
+      this.writeBatchBuffers(batch, batchPaths);
       this.batchObjects.push(batch);
       this.mesh!.add(batch.line);
     });
@@ -400,25 +410,68 @@ export class PathRenderer {
     this.mesh.visible = this.batchObjects.length > 0;
   }
 
-  private disposeBatchObjects(): void {
+  private detachActiveBatches(): void {
     this.batchObjects.forEach((batch) => {
       batch.line.parent?.remove(batch.line);
-      batch.line.geometry.dispose();
-      (batch.line.material as LineBasicMaterial).dispose();
+      batch.line.visible = false;
     });
     this.batchObjects.length = 0;
   }
 
-  private createBatchObject(paths: ArmyPath[], displayState: PathDisplayState): PathBatchObject {
-    const totalSegments = paths.reduce((sum, path) => sum + path.segmentCount, 0);
-    const positions = new Float32Array(totalSegments * 2 * 3);
-    const colors = new Float32Array(totalSegments * 2 * 3);
-    const boundingBox = new Box3();
+  private createPersistentBatchPool(): void {
+    PATH_DISPLAY_STATES.forEach((displayState) => {
+      this.batchPool.set(displayState, this.createPersistentBatch(displayState));
+    });
+  }
+
+  private createPersistentBatch(displayState: PathDisplayState): PathBatchObject {
+    const positionAttribute = new Float32BufferAttribute(new Float32Array(this.config.maxSegments * 6), 3);
+    const colorAttribute = new Float32BufferAttribute(new Float32Array(this.config.maxSegments * 6), 3);
+    positionAttribute.setUsage(DynamicDrawUsage);
+    colorAttribute.setUsage(DynamicDrawUsage);
+
+    const geometry = new BufferGeometry();
+    geometry.setAttribute("position", positionAttribute);
+    geometry.setAttribute("color", colorAttribute);
+    geometry.setDrawRange(0, 0);
+
+    const material = new LineBasicMaterial({
+      transparent: true,
+      opacity: resolvePathReadabilityPolicy({ displayState, view: "medium" }).opacity,
+      depthWrite: false,
+      vertexColors: true,
+    });
+    const line = new LineSegments(geometry, material);
+    line.frustumCulled = false;
+    line.renderOrder = 10;
+    line.visible = false;
+
+    return {
+      boundingBox: new Box3(),
+      colorAttribute,
+      entityIds: new Set(),
+      line,
+      positionAttribute,
+    };
+  }
+
+  private writeBatchBuffers(batch: PathBatchObject, paths: ArmyPath[]): void {
+    const positions = batch.positionAttribute.array as Float32Array;
+    const colors = batch.colorAttribute.array as Float32Array;
+    batch.boundingBox.makeEmpty();
+    batch.entityIds.clear();
 
     let segmentOffset = 0;
-    paths.forEach((path) => {
-      boundingBox.union(path.boundingBox);
-      path.segments.forEach((segment) => {
+    for (const path of paths) {
+      if (segmentOffset >= this.config.maxSegments) {
+        break;
+      }
+
+      const pathStartOffset = segmentOffset;
+      for (const segment of path.segments) {
+        if (segmentOffset >= this.config.maxSegments) {
+          break;
+        }
         const index = segmentOffset * 6;
 
         positions[index] = segment.start.x;
@@ -436,31 +489,32 @@ export class PathRenderer {
         }
 
         segmentOffset += 1;
-      });
+      }
+
+      if (segmentOffset > pathStartOffset) {
+        batch.boundingBox.union(path.boundingBox);
+        batch.entityIds.add(path.entityId);
+        path.startIndex = pathStartOffset;
+      }
+    }
+
+    const updatedComponentCount = segmentOffset * 6;
+    batch.positionAttribute.clearUpdateRanges();
+    batch.positionAttribute.addUpdateRange(0, updatedComponentCount);
+    batch.positionAttribute.needsUpdate = true;
+    batch.colorAttribute.clearUpdateRanges();
+    batch.colorAttribute.addUpdateRange(0, updatedComponentCount);
+    batch.colorAttribute.needsUpdate = true;
+    batch.line.geometry.setDrawRange(0, segmentOffset * 2);
+    batch.line.visible = segmentOffset > 0;
+  }
+
+  private disposePersistentBatchPool(): void {
+    this.detachActiveBatches();
+    this.batchPool.forEach((batch) => {
+      batch.line.geometry.dispose();
+      (batch.line.material as LineBasicMaterial).dispose();
     });
-
-    const geometry = new BufferGeometry();
-    geometry.setAttribute("position", new Float32BufferAttribute(positions, 3));
-    geometry.setAttribute("color", new Float32BufferAttribute(colors, 3));
-
-    const material = new LineBasicMaterial({
-      transparent: true,
-      opacity: resolvePathReadabilityPolicy({
-        displayState,
-        view: "medium",
-      }).opacity,
-      depthWrite: false,
-      vertexColors: true,
-    });
-
-    const line = new LineSegments(geometry, material);
-    line.frustumCulled = false;
-    line.renderOrder = 10;
-
-    return {
-      boundingBox,
-      entityIds: new Set(paths.map((path) => path.entityId)),
-      line,
-    };
+    this.batchPool.clear();
   }
 }

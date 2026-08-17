@@ -6,9 +6,9 @@ import type {
 } from "@bibliothecadao/types";
 import type { Account } from "starknet";
 
-export type DeploymentChain = "slot" | "mainnet";
+export type DeploymentChain = "appchain" | "mainnet";
 export type DeploymentGameType = "blitz" | "eternum";
-export type DeploymentEnvironmentId = "slot.blitz" | "slot.eternum" | "mainnet.blitz" | "mainnet.eternum";
+export type DeploymentEnvironmentId = "appchain.blitz" | "appchain.eternum" | "mainnet.blitz" | "mainnet.eternum";
 export type ExecutionMode = "batched" | "sequential";
 export type LaunchTargetKind = "game" | "series" | "rotation";
 export type LaunchStepStatus = "pending" | "running" | "succeeded" | "failed";
@@ -35,6 +35,9 @@ export type SeriesLaunchStepId =
   | "create-indexers"
   | "sync-paymaster";
 export type RotationLaunchStepId = SeriesLaunchStepId;
+// Backward-compatible names used by the workflow and run-store modules.
+export type LaunchSeriesStepId = SeriesLaunchStepId;
+export type LaunchRotationStepId = RotationLaunchStepId;
 export type SeriesLaunchChildStepStatus = "pending" | "running" | "succeeded" | "failed";
 
 export interface CreateGameDefaults {
@@ -42,6 +45,12 @@ export interface CreateGameDefaults {
   submissionCount: number;
   retryCount: number;
   retryDelayMs: number;
+}
+
+export interface AppchainWorldDeployment {
+  namespace: string;
+  manifestPath: string;
+  registrarAddress: string;
 }
 
 export interface DeploymentEnvironment {
@@ -54,6 +63,7 @@ export interface DeploymentEnvironment {
   rpcUrl: string;
   accountAddress?: string;
   privateKey?: string;
+  appchainWorld?: AppchainWorldDeployment;
   createGame: CreateGameDefaults;
 }
 
@@ -111,7 +121,7 @@ export interface FactoryWorldProfile {
 export type IndexerTier = "basic" | "pro" | "legendary" | "epic";
 export type IndexerResolutionState = "existing" | "missing" | "indeterminate";
 export type IndexerResolutionSource = "describe" | "describe-not-found" | "list" | "describe-and-list-failed";
-export type IndexerCreationMode = "github-actions" | "slot-direct";
+export type IndexerCreationMode = "github-actions";
 
 export interface IndexerRequest {
   env: string;
@@ -312,6 +322,7 @@ export interface LaunchGameSummary {
   durationSeconds?: number;
   rpcUrl: string;
   factoryAddress: string;
+  gameId?: number;
   worldAddress?: string;
   entryTokenAddress?: string;
   reserveHyperstructuresTxHashes?: string[];
@@ -353,6 +364,7 @@ export interface PrizeFundingState {
 }
 
 export interface SeriesLaunchGameArtifacts {
+  gameId?: number;
   worldAddress?: string;
   entryTokenAddress?: string;
   reserveHyperstructuresTxHashes?: string[];

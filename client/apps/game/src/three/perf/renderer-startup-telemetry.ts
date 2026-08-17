@@ -5,9 +5,6 @@ const RENDERER_STARTUP_TIMING_NAMES = [
   "webgpu-renderer-create",
   "webgpu-renderer-init",
   "webgpu-backend-total",
-  "experimental-backend-total",
-  "legacy-backend-total",
-  "legacy-fallback-total",
 ] as const;
 
 export type RendererStartupTimingName = (typeof RENDERER_STARTUP_TIMING_NAMES)[number];

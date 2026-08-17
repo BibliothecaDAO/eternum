@@ -41,6 +41,7 @@ import { ActiveRelicEffects } from "../../world/components/entities/active-relic
 import { AttackTarget, TargetType } from "./types";
 import { formatTypeAndBonuses } from "./combat-utils";
 import { RaidResult } from "./raid-result";
+import { gameEntityKey } from "@/dojo/game-scope";
 
 enum RaidOutcome {
   Success = "Success",
@@ -175,7 +176,7 @@ export const RaidContainer = ({
 
   const remainingCapacity = useMemo(() => {
     // you can use getcomponentvalue because it's your own entity so synced
-    const resource = getComponentValue(components.Resource, getEntityIdFromKeys([BigInt(attackerEntityId)]));
+    const resource = getComponentValue(components.Resource, gameEntityKey([BigInt(attackerEntityId)]));
     const remainingCapacity = resource ? getRemainingCapacityInKg(resource) : 0;
     const remainingCapacityAfterRaid =
       remainingCapacity -

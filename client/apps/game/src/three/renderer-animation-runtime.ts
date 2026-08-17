@@ -1,3 +1,5 @@
+import type { RenderProfile } from "./render-profile";
+
 interface RunRendererAnimationTickInput {
   getCurrentTime: () => number;
   getCycleProgress: () => number;
@@ -48,6 +50,18 @@ export function runRendererAnimationTick(input: RunRendererAnimationTickInput): 
   return frameState.lastTime;
 }
 
+export function resolveRendererPacedFps(input: {
+  currentTime: number;
+  lastInteractionTime: number;
+  profile: Pick<RenderProfile, "pacing">;
+}): number | null {
+  const { idleFps, idleAfterMs, maxFps } = input.profile.pacing;
+  if (!idleFps || input.currentTime - input.lastInteractionTime < idleAfterMs) {
+    return maxFps;
+  }
+  return Math.min(idleFps, maxFps);
+}
+
 function shouldStopRendererAnimation(input: Pick<RunRendererAnimationTickInput, "isDestroyed">): boolean {
   return input.isDestroyed;
 }
@@ -71,10 +85,15 @@ function resolveRendererAnimationFrameState(
     };
   }
 
+  const frameTime = input.targetFPS ? 1000 / input.targetFPS : 0;
+
   return {
     currentTime,
     deltaTime: (currentTime - baselineTime) / 1000,
-    lastTime: currentTime,
+    // Carry the sub-frame remainder: snapping lastTime to currentTime makes
+    // the cap beat against the display refresh and quantises 60 down to
+    // 30/40/41 fps on 60/120/165 Hz monitors.
+    lastTime: frameTime > 0 ? currentTime - ((currentTime - baselineTime) % frameTime) : currentTime,
     shouldSkipFrame: false,
   };
 }

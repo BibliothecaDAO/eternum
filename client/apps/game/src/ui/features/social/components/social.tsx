@@ -1,8 +1,6 @@
 import { useGameModeConfig, useResolvedWorldGameMode } from "@/config/game-modes/use-game-mode-config";
 import { useSyncLeaderboard } from "@/hooks/helpers/use-sync";
-import { usePlayerStore } from "@/hooks/store/use-player-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import { PlayerDataTransformed } from "@/three/managers/player-data-store";
 import { LEADERBOARD_UPDATE_INTERVAL } from "@/ui/constants";
 import { Tabs } from "@/ui/design-system/atoms/tab";
 import { LoadingAnimation } from "@/ui/design-system/molecules/loading-animation";
@@ -14,10 +12,9 @@ import { Guilds } from "../guilds/guilds";
 import { PlayersPanel } from "../player/players-panel";
 import { leaderboard } from "@/ui/features/world";
 import { CenteredModalShell } from "@/ui/features/world/containers/centered-modal-shell";
-import { getRealmCountPerHyperstructure } from "@/ui/utils/utils";
 import { getPlayerInfo, LeaderboardManager } from "@bibliothecadao/eternum";
 import { useDojo, usePlayers } from "@bibliothecadao/react";
-import { ContractAddress } from "@bibliothecadao/types";
+import { ContractAddress, StructureType } from "@bibliothecadao/types";
 import { useEntityQuery } from "@dojoengine/react";
 import { getComponentValue, Has } from "@dojoengine/recs";
 import { Shapes, Sparkles, TrendingUp, Users } from "lucide-react";
@@ -39,8 +36,6 @@ type PlayerStructureCounts = {
   hyperstructures: number;
   villages: number;
 };
-
-const PLAYER_STRUCTURE_REFRESH_INTERVAL_MS = 60_000;
 
 export const Social = () => {
   const {
@@ -72,28 +67,53 @@ export const Social = () => {
   const players = usePlayers();
 
   // Check if MMR is enabled
-  const worldCfgEntities = useEntityQuery([Has(components.WorldConfig)]);
+  // s2: mmr config lives on the ChainConfig singleton.
+  const chainCfgEntities = useEntityQuery([Has(components.ChainConfig)]);
   const mmrEnabled = useMemo(() => {
-    const worldCfg = worldCfgEntities[0] ? getComponentValue(components.WorldConfig, worldCfgEntities[0]) : undefined;
-    return Boolean(worldCfg?.mmr_config?.enabled);
-  }, [worldCfgEntities, components.WorldConfig]);
+    const chainCfg = chainCfgEntities[0] ? getComponentValue(components.ChainConfig, chainCfgEntities[0]) : undefined;
+    return Boolean(chainCfg?.mmr_config?.enabled);
+  }, [chainCfgEntities, components.ChainConfig]);
 
-  const refreshPlayerData = usePlayerStore((state) => state.refreshPlayerData);
-  const lastPlayerDataRefreshTime = usePlayerStore((state) => state.lastRefreshTime);
+  // The Blitz Prize tab is honest only when the chain actually runs prize
+  // infrastructure: ChainConfig's fee/entry token addresses are zero on chains
+  // without a pot (W6 wires the real appchain prize flow).
+  const hasPrizeInfra = useMemo(() => {
+    const chainCfg = chainCfgEntities[0] ? getComponentValue(components.ChainConfig, chainCfgEntities[0]) : undefined;
+    const feeToken = (chainCfg?.fee_token as unknown as bigint | undefined) ?? 0n;
+    const entryToken = (chainCfg?.entry_token_address as unknown as bigint | undefined) ?? 0n;
+    return feeToken !== 0n || entryToken !== 0n;
+  }, [chainCfgEntities, components.ChainConfig]);
 
-  const [playerStructureCountsMap, setPlayerStructureCountsMap] = useState<Map<bigint, PlayerStructureCounts>>(
-    () => new Map(),
+  const structureEntities = useEntityQuery([Has(components.Structure)]);
+  const playerStructureCountsMap = useMemo(
+    () =>
+      structureEntities.reduce<Map<bigint, PlayerStructureCounts>>((countsByOwner, entity) => {
+        const structure = getComponentValue(components.Structure, entity);
+        if (!structure) return countsByOwner;
+
+        const counts = countsByOwner.get(structure.owner) ?? {
+          banks: 0,
+          mines: 0,
+          realms: 0,
+          hyperstructures: 0,
+          villages: 0,
+        };
+        if (structure.base.category === StructureType.Realm) counts.realms += 1;
+        if (structure.base.category === StructureType.Hyperstructure) counts.hyperstructures += 1;
+        if (structure.base.category === StructureType.Bank) counts.banks += 1;
+        if (structure.base.category === StructureType.FragmentMine) counts.mines += 1;
+        if (structure.base.category === StructureType.Village) counts.villages += 1;
+        countsByOwner.set(structure.owner, counts);
+        return countsByOwner;
+      }, new Map()),
+    [components.Structure, structureEntities],
   );
 
   useEffect(() => {
     if (!isOpen) return;
 
     // update first time - initialize with interval on first call
-    const manager = LeaderboardManager.instance(
-      components,
-      getRealmCountPerHyperstructure(),
-      LEADERBOARD_UPDATE_INTERVAL,
-    );
+    const manager = LeaderboardManager.instance(components, LEADERBOARD_UPDATE_INTERVAL);
     manager.initialize();
     setPlayersByRank(manager.playersByRank);
   }, [components, isOpen, setPlayersByRank]);
@@ -103,61 +123,13 @@ export const Social = () => {
     if (!isOpen) return;
 
     const interval = setInterval(() => {
-      const manager = LeaderboardManager.instance(components, getRealmCountPerHyperstructure());
+      const manager = LeaderboardManager.instance(components);
       manager.updatePoints();
       setPlayersByRank(manager.playersByRank);
     }, LEADERBOARD_UPDATE_INTERVAL);
 
     return () => clearInterval(interval);
   }, [components, isOpen, setPlayersByRank]);
-
-  useEffect(() => {
-    if (!isOpen) return;
-
-    void refreshPlayerData();
-    const intervalId = window.setInterval(() => {
-      void refreshPlayerData();
-    }, PLAYER_STRUCTURE_REFRESH_INTERVAL_MS);
-
-    return () => window.clearInterval(intervalId);
-  }, [isOpen, refreshPlayerData]);
-
-  useEffect(() => {
-    if (!isOpen) return;
-
-    let cancelled = false;
-
-    const loadStructureCounts = async () => {
-      const playerStore = usePlayerStore.getState();
-      const allPlayersData = await playerStore.getAllPlayersData();
-
-      if (cancelled) return;
-
-      const nextCounts = new Map<bigint, PlayerStructureCounts>();
-
-      allPlayersData.forEach((playerData: PlayerDataTransformed) => {
-        try {
-          nextCounts.set(BigInt(playerData.ownerAddress), {
-            banks: playerData.bankCount ?? 0,
-            mines: playerData.mineCount ?? 0,
-            realms: playerData.realmsCount ?? 0,
-            hyperstructures: playerData.hyperstructuresCount ?? 0,
-            villages: playerData.villageCount ?? 0,
-          });
-        } catch {
-          // ignore invalid owner addresses
-        }
-      });
-
-      setPlayerStructureCountsMap(nextCounts);
-    };
-
-    void loadStructureCounts();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [isOpen, lastPlayerDataRefreshTime]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -239,7 +211,7 @@ export const Social = () => {
       });
     }
 
-    if (isBlitzMode) {
+    if (isBlitzMode && hasPrizeInfra) {
       baseTabs.push({
         key: "Blitz Prize",
         label: (
@@ -281,6 +253,7 @@ export const Social = () => {
     showGuildsTab,
     isEternumMode,
     isBlitzMode,
+    hasPrizeInfra,
     selectedGuild,
     selectedPlayer,
     playerInfo,

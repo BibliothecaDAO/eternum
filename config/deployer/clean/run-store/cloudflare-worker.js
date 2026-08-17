@@ -26,7 +26,7 @@ const DEFAULT_INDEXER_TIER_REQUEST_COOLDOWN_MS = 15 * 60_000;
 const DEFAULT_FACTORY_RECENT_RUN_LIST_LIMIT = 50;
 const MAX_FACTORY_RECENT_RUN_LIST_LIMIT = 100;
 const FACTORY_WORKER_ADMIN_SECRET_HEADER = "x-factory-admin-secret";
-const FACTORY_ENVIRONMENTS = ["slot.blitz", "slot.eternum", "mainnet.blitz", "mainnet.eternum"];
+const FACTORY_ENVIRONMENTS = ["appchain.blitz", "appchain.eternum", "mainnet.blitz", "mainnet.eternum"];
 const BIOME_CLIMATE_OVERRIDE_LIMITS = {
   elevationScaleBps: 65_535,
   moistureScaleBps: 65_535,
@@ -1749,8 +1749,8 @@ function hasSucceededSeriesLikeGameStep(steps, stepId) {
 
 function validateEnvironment(environment) {
   if (
-    environment !== "slot.blitz" &&
-    environment !== "slot.eternum" &&
+    environment !== "appchain.blitz" &&
+    environment !== "appchain.eternum" &&
     environment !== "mainnet.blitz" &&
     environment !== "mainnet.eternum"
   ) {

@@ -8,12 +8,12 @@ function readStructureManagerSource(): string {
   return readFileSync(resolve(currentDir, "structure-manager.ts"), "utf8");
 }
 
-describe("StructureManager incremental update wiring", () => {
-  it("uses a patch path for visible single-entity updates before falling back to rebuild", () => {
+describe("StructureManager projection update wiring", () => {
+  it("coalesces projection changes into the visible presentation refresh", () => {
     const source = readStructureManagerSource();
 
-    expect(source).toMatch(/resolveVisibleStructureUpdateMode\(/);
-    expect(source).toMatch(/visibleUpdateMode === "patch" && input\.existingStructure && input\.structureRecord/);
-    expect(source).toMatch(/this\.patchVisibleStructure\(/);
+    expect(source).toMatch(/worldSpatialProjection\.subscribeStructures\(\(changes\) =>/);
+    expect(source).toMatch(/this\.handleStructureProjectionChanges\(changes\)/);
+    expect(source).toMatch(/void this\.requestVisibleStructuresRefresh\(\)/);
   });
 });

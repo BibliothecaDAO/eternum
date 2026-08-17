@@ -28,7 +28,7 @@ describe("transaction failure reporting", () => {
     getActiveWorldMock.mockReset();
     getActiveWorldMock.mockReturnValue({
       name: "alpha-world",
-      chain: "slot",
+      chain: "appchain",
       worldAddress: "0xabc",
       toriiBaseUrl: "https://example.test/torii",
       contractsBySelector: {},
@@ -87,7 +87,7 @@ describe("transaction failure reporting", () => {
       feature: "transactions",
       "tx.surface": "amm",
       "tx.stage": "submit",
-      chain: "slot",
+      chain: "appchain",
       world: "alpha-world",
       has_tx_hash: "true",
     });

@@ -10,10 +10,12 @@ function readChestManagerSource(): string {
 }
 
 describe("ChestManager spatial index", () => {
-  it("uses bucketed chest lookups instead of filtering every chest on each chunk render", () => {
+  it("queries the shared projection instead of owning chest truth", () => {
     const source = readChestManagerSource();
 
-    expect(source).toMatch(/chunkToChests/);
-    expect(source).not.toMatch(/Array\.from\(chests\.values\(\)\)\s*\.filter/);
+    expect(source).toMatch(/worldSpatialProjection\s*\.getChestsInBounds/);
+    expect(source).not.toContain("class Chests");
+    expect(source).not.toContain("chestHexCoords");
+    expect(source).not.toContain("chunkToChests");
   });
 });

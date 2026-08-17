@@ -4,12 +4,15 @@
  * On non-mainnet environments, auto-tops up fee tokens from master account if needed.
  */
 import { getCachedRpcProvider } from "@/utils/cached-rpc-provider";
+import { namespaceForChain } from "@/dojo/game-scope";
 import { executeObservedClientTransaction } from "@/observability/observed-client-transaction";
 import { getFactorySqlBaseUrl } from "@/runtime/world";
 import { resolveWorldContracts } from "@/runtime/world/factory-resolver";
 import { normalizeSelector } from "@/runtime/world/normalize";
+import { resolveAppchainWorldIdForGame } from "@/runtime/world/game-registry";
+import { getDefaultWorld, getWorldById } from "@/runtime/world/world-directory";
 import { buildBlitzSettleCalls } from "@/services/blitz/blitz-settlement-calls";
-import { getRpcUrlForChain } from "@/ui/features/admin/constants";
+import { getRpcUrlForChain } from "@/runtime/chain-rpc";
 import { waitForTransactionConfirmation } from "@/ui/utils/transactions";
 import { getGameManifest, type Chain } from "@contracts";
 import { useAccount } from "@starknet-react/core";
@@ -20,8 +23,6 @@ import { env } from "../../env";
 import { isRegistrationCapacityReached, resolveEffectiveRegistrationCountMax } from "./registration-capacity";
 import { useUsername } from "./use-username";
 import type { WorldConfigMeta } from "./use-world-availability";
-
-const ETERNUM_NAMESPACE = "s1_eternum";
 
 interface SeasonRegistrationParams {
   realmId?: number;
@@ -128,6 +129,57 @@ const waitForWorldEntryTransactionConfirmation = async ({
   });
 };
 
+const ensureFeeTokenBalance = async ({
+  accountAddress,
+  chain,
+  feeAmount,
+  feeTokenAddress,
+  worldName,
+}: {
+  accountAddress: string;
+  chain: Chain;
+  feeAmount: bigint;
+  feeTokenAddress: string;
+  worldName: string;
+}): Promise<void> => {
+  const rpcProvider = getCachedRpcProvider(getRpcUrlForChain(chain));
+  const currentBalance = await fetchTokenBalance(rpcProvider, feeTokenAddress, accountAddress);
+  if (currentBalance >= feeAmount) return;
+
+  const masterAccount = createMasterAccount(rpcProvider);
+  if (!masterAccount) {
+    throw new Error("Fee token balance is insufficient and no development top-up account is configured.");
+  }
+
+  const shortfall = feeAmount - currentBalance;
+  const amount = uint256.bnToUint256(shortfall);
+  await executeObservedClientTransaction({
+    account: masterAccount,
+    calls: {
+      contractAddress: feeTokenAddress,
+      entrypoint: "transfer",
+      calldata: CallData.compile([accountAddress, amount.low, amount.high]),
+    },
+    surface: "registration",
+    operation: "fee_token.transfer_top_up",
+    chain,
+    worldName,
+    confirm: async (txHash, observedAccount) => {
+      await waitForWorldEntryTransactionConfirmation({
+        txHash,
+        chain,
+        label: "fee_token.transfer_top_up",
+        account: observedAccount as Account,
+      });
+    },
+  });
+
+  const confirmedBalance = await fetchTokenBalance(rpcProvider, feeTokenAddress, accountAddress);
+  if (confirmedBalance < feeAmount) {
+    throw new Error("Fee token top-up confirmed, but the required balance is not available.");
+  }
+};
+
 export const useWorldRegistration = ({
   worldName,
   chain,
@@ -179,6 +231,8 @@ export const useWorldRegistration = ({
     !isCheckingFeeBalance &&
     hasSufficientFeeBalance &&
     !isRegistrationFull &&
+    // Appchain settle needs the chosen game's id as its first argument.
+    (chain !== "appchain" || Boolean(config?.gameId)) &&
     canAttemptSettle;
 
   const isSettling = entryStage !== "idle" && entryStage !== "done" && entryStage !== "error";
@@ -228,10 +282,19 @@ export const useWorldRegistration = ({
   }, [enabled, address, chain, config?.feeTokenAddress, feeAmount, needsSettlementFeeBalanceCheck]);
 
   /**
-   * Resolve contract addresses from factory (cached)
+   * Resolve contract addresses: the appchain worlds ship their contract map
+   * in the committed manifest (world directory); legacy chains resolve from
+   * the factory (dormant path, kept until the W7 excision).
    */
   const resolveContracts = useCallback(async (): Promise<Record<string, string>> => {
     if (contractsCacheRef.current) return contractsCacheRef.current;
+
+    if (chain === "appchain") {
+      const worldId = await resolveAppchainWorldIdForGame(worldName);
+      const contracts = (getWorldById(worldId) ?? getDefaultWorld()).contractsBySelector;
+      contractsCacheRef.current = contracts;
+      return contracts;
+    }
 
     const factorySqlBaseUrl = getFactorySqlBaseUrl(chain);
     if (!factorySqlBaseUrl) throw new Error("Factory SQL not available for this chain");
@@ -243,7 +306,9 @@ export const useWorldRegistration = ({
 
   const getWorldSystemAddress = useCallback(
     (contracts: Record<string, string>, systemName: string): string => {
-      const contract = getContractByName(systemManifest, ETERNUM_NAMESPACE, systemName) as { selector?: string };
+      const contract = getContractByName(systemManifest, namespaceForChain(chain), systemName) as {
+        selector?: string;
+      };
       const selector = contract.selector ? normalizeSelector(contract.selector) : null;
       if (!selector) {
         throw new Error(`${systemName} selector not found in manifest`);
@@ -268,6 +333,8 @@ export const useWorldRegistration = ({
         blitzSystemsAddress,
         signerAddress: address!,
         usernameFelt,
+        // Settle targets the chosen game explicitly (meta carries its id).
+        gameId: config?.gameId,
         vrfProviderAddress: env.VITE_PUBLIC_VRF_PROVIDER_ADDRESS,
         entryTokenAddress: config?.entryTokenAddress,
         feeTokenAddress: config?.feeTokenAddress,
@@ -293,74 +360,23 @@ export const useWorldRegistration = ({
         // Cast account to starknet Account for execute
         const starknetAccount = account as unknown as Account;
 
-        // Season mode path (Eternum): realm_systems.create(owner, realm_id, frontend, {side, layer, point})
-        // Placement + realm ID are accepted as params for future UI wiring. Defaults are placeholders.
+        // Eternum seasons settle exclusively through the entry modal's planner
+        // path (placement + realm id are real choices there). A quick-settle
+        // with placeholder placement would collide on the shared world.
         if (config?.mode === "eternum") {
-          const realmSystemsAddress = getWorldSystemAddress(contracts, "realm_systems");
-          const owner = params?.ownerAddress ?? address!;
-          const frontend = params?.frontendAddress ?? address!;
-          const realmId = params?.realmId ?? 0;
-          const side = params?.side ?? 0;
-          const layer = params?.layer ?? 1;
-          const point = params?.point ?? 0;
-
-          setEntryStage("settling");
-          await executeObservedClientTransaction({
-            account: starknetAccount,
-            calls: {
-              contractAddress: realmSystemsAddress,
-              entrypoint: "create",
-              calldata: CallData.compile([owner, realmId, frontend, side, layer, point]),
-            },
-            surface: "registration",
-            operation: "realm_systems.create",
-            chain,
-            worldName,
-            confirm: async (txHash, observedAccount) => {
-              await waitForWorldEntryTransactionConfirmation({
-                txHash,
-                chain,
-                label: "realm_systems.create",
-                account: observedAccount as Account,
-              });
-            },
-          });
-          setEntryStage("done");
-          return;
+          throw new Error("Eternum seasons settle through the entry modal.");
         }
 
         const blitzSystemsAddress = getWorldSystemAddress(contracts, "blitz_realm_systems");
         const isNonMainnet = chain !== "mainnet";
         if (isNonMainnet && feeAmount > 0n && config?.feeTokenAddress) {
-          const rpcUrl = getRpcUrlForChain(chain);
-          const rpcProvider = getCachedRpcProvider(rpcUrl);
-          const currentBalance = await fetchTokenBalance(rpcProvider, config.feeTokenAddress, address!);
-
-          if (currentBalance < feeAmount) {
-            const masterAccount = createMasterAccount(rpcProvider);
-            if (masterAccount) {
-              const shortfall = feeAmount - currentBalance;
-              const amount = uint256.bnToUint256(shortfall);
-              try {
-                await executeObservedClientTransaction({
-                  account: masterAccount,
-                  calls: {
-                    contractAddress: config.feeTokenAddress,
-                    entrypoint: "transfer",
-                    calldata: CallData.compile([address!, amount.low, amount.high]),
-                  },
-                  surface: "registration",
-                  operation: "fee_token.transfer_top_up",
-                  chain,
-                  worldName,
-                  waitForConfirmation: false,
-                });
-                await new Promise((resolve) => setTimeout(resolve, 2000));
-              } catch (topUpError) {
-                console.error("Auto top-up failed:", topUpError);
-              }
-            }
-          }
+          await ensureFeeTokenBalance({
+            accountAddress: address!,
+            chain,
+            feeAmount,
+            feeTokenAddress: config.feeTokenAddress,
+            worldName,
+          });
         }
 
         setEntryStage("settling");

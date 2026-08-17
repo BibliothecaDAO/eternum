@@ -58,10 +58,7 @@ pub impl TroopLimitImpl of TroopLimitTrait {
             1 => self.city_deployment_cap,
             2 => self.kingdom_deployment_cap,
             3 => self.empire_deployment_cap,
-            _ => {
-                panic!("unknown structure level");
-                0
-            },
+            _ => panic!("unknown structure level"),
         };
 
         let (tier_strength, tier_modifier) = match tier {
@@ -258,6 +255,8 @@ pub impl GuardImpl of GuardTrait {
 #[derive(Introspect, Copy, Drop, Serde)]
 #[dojo::model]
 pub struct ExplorerTroops {
+    #[key]
+    pub game_id: u32,
     #[key]
     pub explorer_id: ID,
     pub owner: ID,

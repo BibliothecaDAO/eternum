@@ -1,15 +1,7 @@
 import { z } from "zod";
-import {
-  DEFAULT_STANDALONE_AMMV2_INDEXER_URL,
-  DEFAULT_STANDALONE_AMMV2_LORDS_ADDRESS,
-  DEFAULT_STANDALONE_AMMV2_ROUTER_ADDRESS,
-} from "@bibliothecadao/ammv2-sdk";
+import { resolveRendererBuildMode } from "./src/three/renderer-build-mode";
 
 const _rawEnv = import.meta.env as Record<string, string | undefined>;
-
-function resolveLegacyAmmRouterAddress(rawEnv: Record<string, string | undefined>) {
-  return rawEnv.VITE_PUBLIC_AMM_ROUTER_ADDRESS ?? rawEnv.VITE_PUBLIC_AMM_ADDRESS;
-}
 
 const optionalUrlOrEmpty = z.union([z.string().url(), z.literal("")]).optional();
 
@@ -20,34 +12,16 @@ const envSchema = z.object({
 
   VITE_PUBLIC_ACCOUNT_CLASS_HASH: z.string().startsWith("0x"),
   VITE_PUBLIC_FEE_TOKEN_ADDRESS: z.string().startsWith("0x"),
-  VITE_PUBLIC_ENTRY_TOKEN_ADDRESS: z
-    .string()
-    .startsWith("0x")
-    .optional()
-    .default("0x1e41641859757cd7c00c58456b367aeeb5c11a2e73049e303035969be7a6b0b"),
-
   VITE_PUBLIC_CLIENT_FEE_RECIPIENT: z.string().startsWith("0x"),
 
   // API endpoints
-  VITE_PUBLIC_TORII: z.string().url().optional().default("https://api.cartridge.gg/x/eternum-blitz-slot-4/torii"),
-  VITE_PUBLIC_GLOBAL_TORII: z.string().url().optional().default("https://api.cartridge.gg/x/blitz-slot-global-1/torii"),
-  VITE_PUBLIC_NODE_URL: z
-    .string()
-    .url()
-    .optional()
-    .default("https://api.cartridge.gg/x/eternum-blitz-slot-4/katana/rpc/v0_9"),
-  VITE_PUBLIC_TORII_RELAY: z
-    .string()
-    .optional()
-    .default("/dns4/api.cartridge.gg/tcp/443/x-parity-wss/%2Fx%2Feternum-blitz-slot-test%2Ftorii%2Fwss"),
-  VITE_PUBLIC_SCORE_TO_BEAT_TORII_ENDPOINTS: z.string().optional().default(""),
-  // Optional external endpoints
+  // No implicit defaults: endpoints are chain-specific and must come from the
+  // active `.env.<chain>.<game>` file.
+  VITE_PUBLIC_TORII: optionalUrlOrEmpty.default(""),
+  // Eternum-world torii; empty = the eternum world is absent from the directory.
+  VITE_PUBLIC_TORII_ETERNUM: optionalUrlOrEmpty.default(""),
+  VITE_PUBLIC_NODE_URL: optionalUrlOrEmpty.default(""),
   VITE_PUBLIC_CARTRIDGE_API_BASE: z.string().url().optional().default("https://api.cartridge.gg"),
-  VITE_PUBLIC_TORII_CREATOR_URL: z
-    .string()
-    .url()
-    .optional()
-    .default("https://torii-creator.zerocredence.workers.dev/dispatch/torii"),
   VITE_PUBLIC_FACTORY_WORKER_URL: z
     .string()
     .url()
@@ -55,7 +29,12 @@ const envSchema = z.object({
     .default("https://realms-game-launch.zerocredence.workers.dev"),
   VITE_PUBLIC_EXPLORER_MAINNET: z.string().url().optional().default("https://voyager.online"),
   VITE_PUBLIC_EXPLORER_SEPOLIA: z.string().url().optional().default("https://sepolia.voyager.online"),
-  VITE_PUBLIC_REALTIME_URL: z.string().url().optional().default("http://localhost:8080"),
+  // Empty = no realtime-server for this deployment; consumers skip their
+  // calls instead of hammering a dead endpoint.
+  VITE_PUBLIC_REALTIME_URL: optionalUrlOrEmpty.default(""),
+  // Empty = chat is deliberately unavailable for this environment. Chat has
+  // its own endpoint and must never inherit the deployment/realtime service.
+  VITE_PUBLIC_CHAT_URL: optionalUrlOrEmpty.default(""),
   VITE_PUBLIC_ENABLE_SQL_CACHE: z
     .string()
     .transform((v) => v === "true")
@@ -69,39 +48,15 @@ const envSchema = z.object({
     .optional()
     .default("https://api.cartridge.gg/x/eternum-marketplace-sepolia-1/torii"),
 
-  // AMM
-  VITE_PUBLIC_AMM_ROUTER_ADDRESS: z
-    .union([z.string().startsWith("0x"), z.literal("")])
-    .optional()
-    .default(DEFAULT_STANDALONE_AMMV2_ROUTER_ADDRESS),
-  VITE_PUBLIC_AMM_ADDRESS: z.union([z.string().startsWith("0x"), z.literal("")]).optional(),
-  VITE_PUBLIC_AMM_LORDS_ADDRESS: z
-    .union([z.string().startsWith("0x"), z.literal("")])
-    .optional()
-    .default(DEFAULT_STANDALONE_AMMV2_LORDS_ADDRESS),
-  VITE_PUBLIC_AMM_INDEXER_URL: z
-    .union([z.string().url(), z.literal("")])
-    .optional()
-    .default(DEFAULT_STANDALONE_AMMV2_INDEXER_URL),
-
-  // Action Dispatcher
-  VITE_PUBLIC_ACTION_DISPATCHER_URL: z.string().url().optional(),
-  VITE_PUBLIC_ACTION_DISPATCHER_SECRET: z.string().optional(),
-
   VITE_PUBLIC_GRAPHICS_DEV: z
     .string()
     .transform((v) => v === "true")
     .optional()
     .default("false"),
-  VITE_PUBLIC_RENDERER_BUILD_MODE: z
-    .enum(["legacy-webgl", "experimental-webgpu-auto", "experimental-webgpu-force-webgl"])
-    .optional()
-    .default("experimental-webgpu-auto"),
+  VITE_PUBLIC_RENDERER_BUILD_MODE: z.string().optional().default("webgpu-auto").transform(resolveRendererBuildMode),
   // Version and chain info
   VITE_PUBLIC_GAME_VERSION: z.string().optional().default(""),
-  VITE_PUBLIC_CHAIN: z.enum(["sepolia", "mainnet", "slot", "slottest", "local"]).optional().default("local"), // Add other chains as needed
-  VITE_PUBLIC_GAME_TYPE: z.enum(["blitz", "eternum"]).optional().default("blitz"),
-  // Deprecated for runtime mode selection. Kept for deploy tooling defaults.
+  VITE_PUBLIC_CHAIN: z.enum(["sepolia", "mainnet", "local", "appchain"]).optional().default("local"), // Add other chains as needed
   VITE_PUBLIC_FORCE_GAME_MODE_ID: z.enum(["eternum", "blitz"]).optional(),
   VITE_PUBLIC_FACTORY_DEPLOY_REPEATS: z.string().optional(),
 
@@ -113,38 +68,15 @@ const envSchema = z.object({
   // VRF
   VITE_PUBLIC_VRF_PROVIDER_ADDRESS: z.string().startsWith("0x").optional().default("0x0"),
 
-  VITE_PUBLIC_SLOT: z.string(),
-
   // Social
   VITE_SOCIAL_LINK: optionalUrlOrEmpty.default(""),
 
-  VITE_PUBLIC_MOBILE_VERSION_URL: z.string().url().optional().default("https://m.eternum.realms.world"),
-
-  // timestamp
   VITE_PUBLIC_SEASON_START_TIME: z
     .string()
     .optional()
     .default("0")
     .transform((v) => Number(v)),
 
-  VITE_PUBLIC_SETTLING_START_TIME: z
-    .string()
-    .optional()
-    .default("0")
-    .transform((v) => Number(v)),
-
-  VITE_PUBLIC_SHOW_END_GAME_WARNING: z
-    .string()
-    .transform((v) => v === "true")
-    .optional()
-    .default("false"),
-  VITE_PUBLIC_ENABLE_TOS: z
-    .string()
-    .transform((v) => v === "true")
-    .optional()
-    .default("false"),
-
-  // Chest opening feature flag
   VITE_PUBLIC_CHEST_OPENING_ENABLED: z
     .string()
     .transform((v) => v === "true")
@@ -153,10 +85,17 @@ const envSchema = z.object({
 
   // PostHog
   VITE_PUBLIC_POSTHOG_KEY: z.string().optional(),
-  VITE_PUBLIC_POSTHOG_HOST: z.string().url().optional(),
+  VITE_PUBLIC_POSTHOG_HOST: z
+    .union([z.string().url(), z.literal("")])
+    .optional()
+    .transform((v) => (v === "" ? undefined : v)),
 
-  // Sentry
-  VITE_PUBLIC_SENTRY_DSN: z.string().url().optional(),
+  // Sentry — empty means "off"; CI passes "" when the secret is unset and
+  // that must never white-screen the build.
+  VITE_PUBLIC_SENTRY_DSN: z
+    .union([z.string().url(), z.literal("")])
+    .optional()
+    .transform((v) => (v === "" ? undefined : v)),
   VITE_PUBLIC_SENTRY_ENVIRONMENT: z.string().optional(),
   VITE_PUBLIC_SENTRY_RELEASE: z.string().optional(),
   VITE_PUBLIC_SENTRY_TRACES_SAMPLE_RATE: z
@@ -218,26 +157,17 @@ const envSchema = z.object({
     .optional()
     .default("false"),
   VITE_TRACING_ENDPOINT: z.string().url().optional().default("http://localhost:4318/v1/traces"),
-  VITE_TRACING_SERVICE_NAME: z.string().optional().default("eternum-game"),
   VITE_TRACING_SAMPLE_RATE: z.string().optional().default("0.1"),
   VITE_TRACING_ERROR_SAMPLE_RATE: z.string().optional().default("1.0"),
-  VITE_PERF_MONITORING_ENABLED: z
-    .string()
-    .transform((v) => v === "true")
-    .optional()
-    .default("true"),
   VITE_PUBLIC_ENABLE_MEMORY_MONITORING: z
     .string()
     .transform((v) => v === "true")
     .optional()
     .default("true"),
 
+  // Debug logging must be opt-in — a defaulted-true flag spams every build
+  // that forgets to set it.
   VITE_PUBLIC_TORII_BOUNDS_DEBUG: z
-    .string()
-    .transform((v) => v === "true")
-    .optional()
-    .default("true"),
-  VITE_PUBLIC_TORII_BOUNDS_DEBUG_OVERLAY: z
     .string()
     .transform((v) => v === "true")
     .optional()
@@ -248,6 +178,24 @@ const envSchema = z.object({
     .default("8000")
     .transform((v) => Number(v))
     .refine((value) => Number.isFinite(value) && value >= 0, "VITE_PUBLIC_TORII_SUBSCRIPTION_SETUP_TIMEOUT_MS"),
+  VITE_PUBLIC_TORII_SNAPSHOT_PAGE_TIMEOUT_MS: z
+    .string()
+    .optional()
+    .default("15000")
+    .transform((v) => Number(v))
+    .refine((value) => Number.isFinite(value) && value >= 0, "VITE_PUBLIC_TORII_SNAPSHOT_PAGE_TIMEOUT_MS"),
+  VITE_PUBLIC_TORII_EVENT_REPLAY_PAGE_TIMEOUT_MS: z
+    .string()
+    .optional()
+    .default("10000")
+    .transform((v) => Number(v))
+    .refine((value) => Number.isFinite(value) && value >= 0, "VITE_PUBLIC_TORII_EVENT_REPLAY_PAGE_TIMEOUT_MS"),
+  VITE_PUBLIC_TORII_PAGE_RETRY_COUNT: z
+    .string()
+    .optional()
+    .default("2")
+    .transform((v) => Number(v))
+    .refine((value) => Number.isInteger(value) && value >= 0, "VITE_PUBLIC_TORII_PAGE_RETRY_COUNT"),
   // How long without a Torii indexer heartbeat before a stream is treated as
   // stale. Lower = faster detection of a silently-dropped stream.
   VITE_PUBLIC_TORII_STALE_THRESHOLD_MS: z
@@ -280,8 +228,8 @@ const envSchema = z.object({
     .default("30000")
     .transform((v) => Number(v))
     .refine((value) => Number.isFinite(value) && value >= 0, "VITE_PUBLIC_TORII_RECONNECT_MAX_COOLDOWN_MS"),
-  // Proactively re-subscribe streams after this long with no activity, to dodge
-  // proxy idle / MAX_CONNECTION_AGE reaps in quiet worlds. 0 disables.
+  // Last-resort refresh for cancel-only streams when SubscribeIndexer heartbeat
+  // is unavailable. Healthy heartbeat-backed sessions never use it. 0 disables.
   VITE_PUBLIC_TORII_QUIET_STREAM_REFRESH_MS: z
     .string()
     .optional()
@@ -295,22 +243,6 @@ const envSchema = z.object({
     .transform((v) => v === "true")
     .optional()
     .default("true"),
-  VITE_PUBLIC_TORII_SPATIAL_SUBSCRIPTION_UPDATE_ENABLED: z
-    .string()
-    .transform((v) => v === "true")
-    .optional()
-    .default("true"),
-  VITE_PUBLIC_WORLDMAP_BOUNDED_SPATIAL_SYNC: z
-    .string()
-    .transform((v) => v === "true")
-    .optional()
-    .default("false"),
-  VITE_PUBLIC_WORLDMAP_BOUNDED_SPATIAL_PADDING: z
-    .string()
-    .optional()
-    .default("0")
-    .transform((v) => Number(v))
-    .refine((value) => Number.isFinite(value) && value >= 0, "VITE_PUBLIC_WORLDMAP_BOUNDED_SPATIAL_PADDING"),
   VITE_PUBLIC_WORLDMAP_CHUNK_PHASE_TIMEOUT_MS: z
     .string()
     .optional()
@@ -337,10 +269,6 @@ const envSchema = z.object({
     .transform((v) => v === "true")
     .optional()
     .default("true"),
-  VITE_PERF_FPS_THRESHOLD: z.string().optional().default("30"),
-  VITE_PERF_NETWORK_TIMEOUT: z.string().optional().default("5000"),
-
-  // Tracing Authentication (optional - for cloud providers)
   VITE_TRACING_AUTH_HEADER: z.string().optional(),
   VITE_DATADOG_API_KEY: z.string().optional(),
   VITE_NEW_RELIC_LICENSE_KEY: z.string().optional(),
@@ -351,7 +279,6 @@ type PublicEnv = z.infer<typeof envSchema>;
 const parsePublicEnv = (): PublicEnv => {
   return envSchema.parse({
     ...import.meta.env,
-    VITE_PUBLIC_AMM_ROUTER_ADDRESS: resolveLegacyAmmRouterAddress(_rawEnv),
   });
 };
 

@@ -1,9 +1,5 @@
-import { setSelectedChain, useSelectedRuntimeChain } from "@/runtime/world";
-import {
-  resolveConnectedTxChainFromRuntime,
-  switchWalletToChain,
-  type WalletChainControllerLike,
-} from "@/ui/utils/network-switch";
+import { resolveChain } from "@/runtime/world";
+import { resolveConnectedTxChainFromRuntime, type WalletChainControllerLike } from "@/ui/utils/network-switch";
 import type { Chain } from "@contracts";
 import { useAccount } from "@starknet-react/core";
 import { useCallback, useMemo } from "react";
@@ -25,10 +21,11 @@ interface LandingNetworkControllerState {
   switchToPreferredChain: (chain: LandingNetworkChain) => Promise<boolean>;
 }
 
-const DEFAULT_LANDING_CHAIN: Chain = "mainnet";
-
+// Chain selection is not a user concept on this client (tester-gate D2): the
+// landing always runs on the build's env chain. Wallet chain switching is gone
+// with it — mainnet is a read-only data plane, never a login target.
 export const useLandingNetworkState = (): LandingNetworkControllerState => {
-  const selectedChain = useSelectedRuntimeChain(DEFAULT_LANDING_CHAIN);
+  const selectedChain = resolveChain("appchain");
   const { address, chainId, connector } = useAccount();
   const controller = (connector as { controller?: WalletChainControllerLike } | undefined)?.controller ?? null;
 
@@ -44,29 +41,18 @@ export const useLandingNetworkState = (): LandingNetworkControllerState => {
     [address, connectedChain, selectedChain],
   );
 
-  const selectPreferredChain = useCallback((chain: LandingNetworkChain) => {
-    setSelectedChain(chain);
-  }, []);
+  const preferredChain = resolvePreferredLandingChain(selectedChain);
+
+  const selectPreferredChain = useCallback(() => {}, []);
 
   const switchToPreferredChain = useCallback(
-    async (chain: LandingNetworkChain) => {
-      const switched = await switchWalletToChain({
-        controller,
-        targetChain: chain,
-      });
-
-      if (switched) {
-        setSelectedChain(chain);
-      }
-
-      return switched;
-    },
-    [controller],
+    async (chain: LandingNetworkChain) => chain === preferredChain,
+    [preferredChain],
   );
 
   return {
     ...landingNetworkState,
-    preferredChain: resolvePreferredLandingChain(selectedChain),
+    preferredChain,
     selectPreferredChain,
     switchToPreferredChain,
   };

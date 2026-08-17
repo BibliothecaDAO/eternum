@@ -30,6 +30,7 @@ const PLAYER_LEADERBOARD_BASE = `
             0
           ) AS prize_claimed
         FROM "s1_eternum-PlayerRegisteredPoints"
+        WHERE {GF}
       ),
       decoded AS (
         SELECT
@@ -76,7 +77,7 @@ const PLAYER_LEADERBOARD_BASE = `
           ) AS raw_activity,
           lower(trim(COALESCE("story.PointsRegisteredStory.points", '0'))) AS raw_points
         FROM "s1_eternum-StoryEvent"
-        WHERE story = 'PointsRegisteredStory'
+        WHERE {GF} AND story = 'PointsRegisteredStory'
           AND "story.PointsRegisteredStory.owner_address" IS NOT NULL
       ),
       points_story_normalized AS (
@@ -250,30 +251,45 @@ export const LEADERBOARD_QUERIES = {
     FROM "s1_eternum-PlayerRegisteredPoints"
     LEFT JOIN "s1_eternum-AddressName"
       ON lower(COALESCE("s1_eternum-AddressName"."address", '')) = lower(COALESCE("s1_eternum-PlayerRegisteredPoints"."address", ''))
-    WHERE "s1_eternum-PlayerRegisteredPoints"."address" IS NOT NULL AND trim(COALESCE("s1_eternum-PlayerRegisteredPoints"."address", '')) <> ''
+    WHERE {GF} AND "s1_eternum-PlayerRegisteredPoints"."address" IS NOT NULL AND trim(COALESCE("s1_eternum-PlayerRegisteredPoints"."address", '')) <> ''
     ORDER BY registered_points DESC, player_address
     LIMIT {limit}
     OFFSET {offset};
   `,
+  // Legacy arm only: on s2 the clock lives on GameRegistry and the rulebook on
+  // PresetConfig — use HYPERSTRUCTURE_LEADERBOARD_CONFIG_S2 there.
   HYPERSTRUCTURE_LEADERBOARD_CONFIG: `
+    -- legacy-only: the s2 arm uses HYPERSTRUCTURE_LEADERBOARD_CONFIG_S2
     SELECT
       "victory_points_grant_config.hyp_points_per_second" AS points_per_second,
       "season_config.end_at" AS season_end,
       COALESCE("realm_count_config.count", 0) AS realm_count
     FROM "s1_eternum-WorldConfig";
   `,
+  HYPERSTRUCTURE_LEADERBOARD_CONFIG_S2: `
+    SELECT
+      p."victory_points_grant_config.hyp_points_per_second" AS points_per_second,
+      g.end_at AS season_end,
+      COALESCE(w."realm_count_config.count", 0) AS realm_count
+    FROM "s1_eternum-GameRegistry" g
+    JOIN "s1_eternum-WorldConfig" w ON {GF:w}
+    JOIN "s1_eternum-PresetConfig" p ON p.preset_id = g.preset_id
+    WHERE {GF:g};
+  `,
   HYPERSTRUCTURE_SHAREHOLDERS: `
     SELECT
       hyperstructure_id,
       start_at,
       shareholders
-    FROM "s1_eternum-HyperstructureShareholders";
+    FROM "s1_eternum-HyperstructureShareholders"
+    WHERE {GF};
   `,
   HYPERSTRUCTURES_WITH_MULTIPLIER: `
     SELECT
       hyperstructure_id,
       points_multiplier
-    FROM "s1_eternum-Hyperstructure";
+    FROM "s1_eternum-Hyperstructure"
+    WHERE {GF};
   `,
 } as const;
 

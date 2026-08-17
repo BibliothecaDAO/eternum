@@ -9,11 +9,18 @@ import { blitzVictoryPointConfig } from "./points";
 import { blitzResourceConfig } from "./resources";
 import { blitzTroopConfig } from "./troop";
 
+type BlitzRegistrarConfigPatch = ConfigPatch & {
+  season?: {
+    endGraceSeconds?: number;
+  };
+};
+
 const BLITZ_REGISTRATION_FEE_RECIPIENT = "0x040DB150844Dc372928b3B47e23CB6E240E2c99ddC5381680aFd73d777Cbd6C8";
 const BLITZ_REGISTRATION_FEE_AMOUNT = 10n * 10n ** 18n;
 const BLITZ_REGISTRATION_COUNT_MAX = 24;
 const BLITZ_REGISTRATION_DELAY_SECONDS = 10;
 const BLITZ_REGISTRATION_PERIOD_SECONDS = 60 * 60 * 3;
+const BLITZ_END_GRACE_SECONDS = 60 * 60 * 24;
 const BLITZ_ENTRY_TOKEN_IPFS_CID = "Qm123idkmaybe";
 const BLITZ_COLLECTIBLE_COSMETICS_MAX_ITEMS = 5;
 const BLITZ_DISABLED_BANK_NAME = "Disabled Bank";
@@ -38,6 +45,12 @@ const blitzModeConfig: ConfigPatch = {
       collectibles_lootchest_address: "0x0",
       collectibles_elitenft_address: "0x0",
     },
+  },
+};
+
+const blitzSeasonConfig: BlitzRegistrarConfigPatch = {
+  season: {
+    endGraceSeconds: BLITZ_END_GRACE_SECONDS,
   },
 };
 
@@ -96,6 +109,7 @@ export const blitzBaseConfig: ConfigPatch = mergeConfigPatches(
   blitzRealmLevelConfig,
   blitzVictoryPointConfig,
   blitzModeConfig,
+  blitzSeasonConfig,
   blitzMatchmakingConfig,
   blitzVillageConfig,
   blitzTradeConfig,

@@ -13,11 +13,9 @@ import {
   usePlayerAvatar,
   useSelectAvatar,
 } from "@/hooks/use-player-avatar";
-import { fetchLandingLeaderboardEntryByAddress } from "@/services/leaderboard/landing-leaderboard-service";
 import TextInput from "@/ui/design-system/atoms/text-input";
 
 import { MMR_TOKEN_BY_CHAIN } from "@/config/global-chain";
-import { buildSharedSlotRpcUrl } from "@/runtime/world/normalize";
 import { Button } from "@/ui/design-system/atoms";
 import { Tabs } from "@/ui/design-system/atoms/tab";
 import { AvatarImageGrid } from "@/ui/features/avatars/avatar-image-grid";
@@ -47,23 +45,13 @@ import Trash2 from "lucide-react/dist/esm/icons/trash-2";
 import { toast } from "sonner";
 
 import { hash } from "starknet";
-import { env } from "../../../../../env";
+import { fetchControllerUsername } from "@/services/identity/controller-username";
 
 // MMR fetching utilities
 const GET_PLAYER_MMR_SELECTOR = hash.getSelectorFromName("get_player_mmr");
 
 const RPC_FALLBACK_BY_CHAIN: Partial<Record<Chain, string>> = {
   mainnet: "https://api.cartridge.gg/x/starknet/mainnet",
-};
-
-const cartridgeApiBase = env.VITE_PUBLIC_CARTRIDGE_API_BASE || "https://api.cartridge.gg";
-
-const resolveProfileMmrRpcUrl = (chain: Chain): string | undefined => {
-  if (chain === "slot") {
-    return buildSharedSlotRpcUrl(cartridgeApiBase);
-  }
-
-  return RPC_FALLBACK_BY_CHAIN[chain];
 };
 
 // Map tier color classes to actual hex values for gradients/glows
@@ -187,9 +175,11 @@ export const LandingPlayer = ({ selectedPlayerAddress, selectedPlayerName, varia
   const profileCardRef = useRef<HTMLDivElement>(null);
   const [isCopyingProfileCard, setIsCopyingProfileCard] = useState(false);
 
-  const rpcUrl = useMemo(() => resolveProfileMmrRpcUrl(selectedChain), [selectedChain]);
-
-  const mmrTokenAddress = useMemo(() => MMR_TOKEN_BY_CHAIN[selectedChain], [selectedChain]);
+  // MMR is mainnet identity (tester-gate D1): always read it from mainnet,
+  // regardless of the game chain — coupling it to the landing chain made it
+  // vanish permanently after the first game entry.
+  const rpcUrl = RPC_FALLBACK_BY_CHAIN.mainnet;
+  const mmrTokenAddress = MMR_TOKEN_BY_CHAIN.mainnet;
 
   useEffect(() => {
     if (!viewedPlayerAddress || isOwnProfile || selectedPlayerNameTrimmed) {
@@ -200,9 +190,11 @@ export const LandingPlayer = ({ selectedPlayerAddress, selectedPlayerName, varia
     let cancelled = false;
     const loadPlayerName = async () => {
       try {
-        const entry = await fetchLandingLeaderboardEntryByAddress(viewedPlayerAddress);
+        // Controller username is the canonical identity; the world torii's
+        // controllers table answers arbitrary-address lookups locally.
+        const username = await fetchControllerUsername(viewedPlayerAddress);
         if (cancelled) return;
-        setResolvedPlayerName(entry?.displayName?.trim() || null);
+        setResolvedPlayerName(username);
       } catch {
         if (cancelled) return;
         setResolvedPlayerName(null);

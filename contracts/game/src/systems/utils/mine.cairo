@@ -45,6 +45,7 @@ pub impl iMineDiscoveryImpl of iMineDiscoveryTrait {
 
     fn create(
         ref world: WorldStorage,
+        game_id: u32,
         coord: Coord,
         season_mode_on: bool,
         map_config: MapConfig,
@@ -58,6 +59,7 @@ pub impl iMineDiscoveryImpl of iMineDiscoveryTrait {
         structure_creation_library
             .make_structure(
                 world,
+                game_id,
                 coord,
                 Zero::zero(),
                 structure_id,
@@ -70,9 +72,16 @@ pub impl iMineDiscoveryImpl of iMineDiscoveryTrait {
         // add guards to structure
         // slot must start from delta, to charlie, to beta, to alpha
         let slot_tiers = array![(GuardSlot::Delta, TroopTier::T1, TroopType::Crossbowman)].span();
-        let tick_config: TickInterval = TickImpl::get_tick_interval(ref world);
+        let tick_config: TickInterval = TickImpl::get_tick_interval(ref world, game_id);
         iMercenariesImpl::add(
-            ref world, structure_id, vrf_seed, slot_tiers, troop_limit_config, troop_stamina_config, tick_config,
+            ref world,
+            game_id,
+            structure_id,
+            vrf_seed,
+            slot_tiers,
+            troop_limit_config,
+            troop_stamina_config,
+            tick_config,
         );
 
         // allow fragment mine to produce limited amount of resource
@@ -89,10 +98,16 @@ pub impl iMineDiscoveryImpl of iMineDiscoveryTrait {
             (BuildingCategory::ResourceEssence, ResourceTypes::ESSENCE, Self::_blitz_mode_reward_amount(ref world))
         };
 
-        let mut structure_weight: Weight = WeightStoreImpl::retrieve(ref world, structure_id);
-        let reward_resource_weight_grams: u128 = ResourceWeightImpl::grams(ref world, reward_resource_type);
+        let mut structure_weight: Weight = WeightStoreImpl::retrieve(ref world, game_id, structure_id);
+        let reward_resource_weight_grams: u128 = ResourceWeightImpl::grams(ref world, game_id, reward_resource_type);
         let mut reward_resource_resource = SingleResourceStoreImpl::retrieve(
-            ref world, structure_id, reward_resource_type, ref structure_weight, reward_resource_weight_grams, true,
+            ref world,
+            game_id,
+            structure_id,
+            reward_resource_type,
+            ref structure_weight,
+            reward_resource_weight_grams,
+            true,
         );
         let mut reward_resource_resource_production: Production = reward_resource_resource.production;
         reward_resource_resource_production.increase_output_amout_left(reward_resource_amount);
@@ -100,10 +115,11 @@ pub impl iMineDiscoveryImpl of iMineDiscoveryTrait {
         reward_resource_resource.store(ref world);
 
         // update structure weight
-        structure_weight.store(ref world, structure_id);
+        structure_weight.store(ref world, game_id, structure_id);
         // create reward resource production building
         BuildingImpl::create(
             ref world,
+            game_id,
             Zero::zero(),
             structure_id,
             StructureCategory::FragmentMine.into(),

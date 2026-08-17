@@ -8,6 +8,7 @@
  * - Manager-specific memory usage
  */
 
+import { VERBOSE_LOGS_ENABLED } from "@/utils/dev-mode";
 import type { RendererSurfaceLike } from "../renderer-backend";
 
 interface MemoryStats {
@@ -40,6 +41,12 @@ export interface MemorySpike {
   currentMB: number;
   increaseMB: number;
   context: string;
+}
+
+export interface ScopedMemoryMeasurement {
+  context: string;
+  startedHeapUsedMB: number;
+  spikeThresholdMB: number;
 }
 
 export class MemoryMonitor {
@@ -115,6 +122,35 @@ export class MemoryMonitor {
   }
 
   /**
+   * Start a synchronous attribution scope. Unlike periodic samples, this
+   * baseline belongs to the named operation and cannot include heap growth
+   * accumulated since an unrelated earlier sample.
+   */
+  public beginScopedMeasurement(context: string, spikeThresholdMB: number): ScopedMemoryMeasurement {
+    return {
+      context,
+      startedHeapUsedMB: this.getHeapUsedMB(),
+      spikeThresholdMB,
+    };
+  }
+
+  public finishScopedMeasurement(measurement: ScopedMemoryMeasurement): number {
+    const currentHeapUsedMB = this.getHeapUsedMB();
+    const increaseMB = currentHeapUsedMB - measurement.startedHeapUsedMB;
+    if (increaseMB > measurement.spikeThresholdMB) {
+      this.recordSpike({
+        timestamp: Date.now(),
+        previousMB: measurement.startedHeapUsedMB,
+        currentMB: currentHeapUsedMB,
+        increaseMB,
+        context: measurement.context,
+      });
+    }
+
+    return increaseMB;
+  }
+
+  /**
    * Get memory usage in MB
    */
   private getHeapUsedMB(): number {
@@ -186,8 +222,11 @@ export class MemoryMonitor {
       this.spikes.shift();
     }
 
-    // Log the spike
-    console.warn(`🚨 Memory spike detected: +${spike.increaseMB.toFixed(1)}MB in ${spike.context}`, spike);
+    // Log the spike (opt-in: attribution is fuzzy — it names whatever sampled
+    // last, not the allocator — so it reads as noise in normal sessions)
+    if (VERBOSE_LOGS_ENABLED) {
+      console.warn(`🚨 Memory spike detected: +${spike.increaseMB.toFixed(1)}MB in ${spike.context}`, spike);
+    }
 
     // Call callback if provided
     if (this.onMemorySpike) {

@@ -43,7 +43,7 @@ describe("worldmap terrain presentation wiring", () => {
     );
   });
 
-  it("starts the visual terrain shell before waiting for authoritative chunk hydration", () => {
+  it("starts the visual terrain shell before waiting for authoritative chunk preparation", () => {
     const performChunkSwitch = extractMethod(
       readSource("src/three/scenes/worldmap.tsx"),
       "  private async performChunkSwitch",
@@ -51,11 +51,11 @@ describe("worldmap terrain presentation wiring", () => {
     );
 
     const shellStart = performChunkSwitch.indexOf("startChunkSwitchTerrainShell");
-    const hydrationStart = performChunkSwitch.indexOf("this.hydrateChunkForPresentation");
+    const preparationStart = performChunkSwitch.indexOf("this.prepareChunkPresentation");
 
     expect(shellStart).toBeGreaterThanOrEqual(0);
-    expect(hydrationStart).toBeGreaterThanOrEqual(0);
-    expect(shellStart).toBeLessThan(hydrationStart);
+    expect(preparationStart).toBeGreaterThanOrEqual(0);
+    expect(shellStart).toBeLessThan(preparationStart);
   });
 
   it("keeps provisional shells visual-only without advancing chunk authority or managers", () => {
@@ -89,7 +89,7 @@ describe("worldmap terrain presentation wiring", () => {
     const exactCommit = extractMethod(
       readSource("src/three/scenes/worldmap.tsx"),
       "  private applyPreparedTerrainChunk",
-      "  private removeRetainedHydrationArea",
+      "  private updatePinnedChunks",
     );
 
     expect(exactCommit).toContain("partitionPreparedTerrainIntoVisualPages");

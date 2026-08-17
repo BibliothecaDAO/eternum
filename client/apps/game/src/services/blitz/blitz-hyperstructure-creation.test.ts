@@ -57,7 +57,7 @@ describe("createActiveWorldBlitzHyperstructure", () => {
     mocks.getActiveWorld.mockReset();
     mocks.getActiveWorld.mockReturnValue({
       name: "credence-new-flow-4",
-      chain: "slot",
+      chain: "appchain",
       worldAddress: "0xworld",
     });
     mocks.getFactorySqlBaseUrl.mockReset();
@@ -65,7 +65,8 @@ describe("createActiveWorldBlitzHyperstructure", () => {
     mocks.resolveWorldContracts.mockReset();
     mocks.resolveWorldContracts.mockResolvedValue({ "0xselector": "0xhyper" });
     mocks.getGameManifest.mockReset();
-    mocks.getGameManifest.mockReturnValue({});
+    // The appchain arm resolves the address straight from the committed manifest.
+    mocks.getGameManifest.mockReturnValue({ contracts: [{ selector: "0xselector", address: "0xhyper" }] });
     mocks.getContractByName.mockReset();
     mocks.getContractByName.mockReturnValue({ selector: "0xselector" });
     mocks.normalizeSelector.mockReset();
@@ -81,17 +82,23 @@ describe("createActiveWorldBlitzHyperstructure", () => {
 
     await createActiveWorldBlitzHyperstructure({ account, hexCoords });
 
-    expect(mocks.getFactorySqlBaseUrl).toHaveBeenCalledWith("slot");
-    expect(mocks.getGameManifest).toHaveBeenCalledWith("slot");
-    expect(mocks.getContractByName).toHaveBeenCalledWith({}, "s1_eternum", "hyperstructure_create_systems");
+    // Appchain worlds resolve straight from the committed manifest — no factory round-trip.
+    expect(mocks.getGameManifest).toHaveBeenCalledWith("appchain");
+    // The namespace is the ambient game scope (set at bootstrap; module default here).
+    expect(mocks.getContractByName).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.any(String),
+      "hyperstructure_create_systems",
+    );
     expect(mocks.normalizeSelector).toHaveBeenCalledWith("0xselector");
-    expect(mocks.resolveWorldContracts).toHaveBeenCalledWith("https://factory.sql", "credence-new-flow-4");
+    expect(mocks.getFactorySqlBaseUrl).not.toHaveBeenCalled();
+    expect(mocks.resolveWorldContracts).not.toHaveBeenCalled();
     expect(mocks.executeObservedClientTransaction).toHaveBeenCalledWith(
       expect.objectContaining({
         account,
         surface: "settlement",
         operation: "hyperstructure_create_systems.create_hyperstructure",
-        chain: "slot",
+        chain: "appchain",
         worldName: "credence-new-flow-4",
         worldAddress: "0xworld",
         waitForConfirmation: false,

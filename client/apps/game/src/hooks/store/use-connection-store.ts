@@ -37,7 +37,6 @@ interface ConnectionState {
   recordSpatialHandshake: () => void;
   recordGlobalHandshake: () => void;
   recordToriiHeartbeat: () => void;
-  markToriiHeartbeatAvailable: () => void;
   recordHealthCheck: () => void;
   recordStreamReconnect: () => void;
   recordOnline: () => void;
@@ -146,7 +145,6 @@ export const useConnectionStore = create<ConnectionState>((set) => ({
       const intervalMs = state.toriiHeartbeatAvailable ? now - state.lastToriiHeartbeat : null;
       return { lastToriiHeartbeat: now, toriiHeartbeatAvailable: true, lastHeartbeatIntervalMs: intervalMs };
     }),
-  markToriiHeartbeatAvailable: () => set({ lastToriiHeartbeat: Date.now(), toriiHeartbeatAvailable: true }),
   recordHealthCheck: () => set({ lastHealthCheck: Date.now() }),
   recordStreamReconnect: () => set((state) => ({ streamReconnectVersion: state.streamReconnectVersion + 1 })),
   recordOnline: () => set({ isOnline: true }),

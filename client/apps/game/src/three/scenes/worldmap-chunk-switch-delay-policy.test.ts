@@ -62,7 +62,7 @@ describe("shouldDelayWorldmapChunkSwitch", () => {
     });
     const forcedDelayMs = resolveWorldmapChunkRefreshDebounceMs({
       force: true,
-      reason: "duplicate_tile",
+      reason: "visibility_recovery",
     });
 
     expect(traversalDelayMs).toBeLessThan(forcedDelayMs);

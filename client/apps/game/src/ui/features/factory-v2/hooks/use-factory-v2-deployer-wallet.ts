@@ -1,7 +1,7 @@
 import { getCachedRpcProvider } from "@/utils/cached-rpc-provider";
 import { useEffect, useRef, useState } from "react";
 import { RpcProvider } from "starknet";
-import { getRpcUrlForChain } from "@/ui/features/admin/constants";
+import { getRpcUrlForChain } from "@/runtime/chain-rpc";
 import {
   formatFactoryDeployerTokenBalance,
   resolveFactoryDeployerWallet,

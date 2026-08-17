@@ -62,11 +62,13 @@ describe("worldmap zoom wiring", () => {
     expect(source).not.toMatch(/this\.worldmapScene\.requestChunkRefresh\(/);
   });
 
-  it("snaps the first worldmap entry to the intended medium camera band", () => {
+  it("snaps worldmap entry to the player's persisted camera band, defaulting to medium", () => {
     const source = readSceneSource("worldmap.tsx");
 
     expect(source).toMatch(/if \(!this\.hasInitialized\) \{\s*this\.alignInitialWorldmapCameraView\(\);\s*\}/);
-    expect(source).toMatch(/this\.zoomCoordinator\.syncToBand\(CameraView\.Medium/);
+    expect(source).toMatch(/resolveStoredWorldmapCameraView\(CameraView\.Medium\)/);
+    expect(source).toMatch(/this\.zoomCoordinator\.syncToBand\(view/);
+    expect(source).toMatch(/onResumeStart: \(\) => this\.alignWorldmapCameraToView\(/);
   });
 
   it("uses a worldmap-specific camera transition curve for fixed zoom band changes", () => {
