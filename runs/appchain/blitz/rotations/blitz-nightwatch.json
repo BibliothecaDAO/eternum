@@ -1,0 +1,145 @@
+{
+  "version": 1,
+  "kind": "rotation",
+  "runId": "appchain.blitz:rotation:blitz-nightwatch",
+  "environment": "appchain.blitz",
+  "chain": "appchain",
+  "gameType": "blitz",
+  "rotationName": "blitz-nightwatch",
+  "seriesName": "blitz-nightwatch",
+  "status": "running",
+  "executionMode": "fast_trial",
+  "requestedLaunchStep": "full",
+  "inputPath": "inputs/appchain/blitz/rotations/blitz-nightwatch/32182155538-1.json",
+  "latestLaunchRequestId": "32182155538-1",
+  "currentStepId": "create-series",
+  "createdAt": "2026-08-18T20:26:43.697Z",
+  "updatedAt": "2026-08-18T20:26:43.697Z",
+  "workflow": {
+    "workflowName": "Game Launch",
+    "workflowJob": "launch",
+    "workflowRunId": 32182155538,
+    "workflowRunAttempt": 1,
+    "workflowUrl": "https://github.com/BibliothecaDAO/eternum/actions/runs/32182155538",
+    "ref": "next",
+    "sha": "6cfb79d188d4fd1d174528218361499468a26e66"
+  },
+  "autoRetry": {
+    "enabled": true,
+    "intervalMinutes": 15
+  },
+  "evaluation": {
+    "intervalMinutes": 30,
+    "nextEvaluationAt": "2026-08-18T20:56:43.697Z",
+    "lastEvaluatedAt": "2026-08-18T20:26:43.697Z"
+  },
+  "steps": [
+    {
+      "id": "create-series",
+      "title": "Creating series",
+      "status": "pending",
+      "workflowStepName": "Creating series",
+      "latestEvent": "Waiting to run"
+    },
+    {
+      "id": "create-worlds",
+      "title": "Creating games",
+      "status": "pending",
+      "workflowStepName": "Creating games",
+      "latestEvent": "Waiting to run"
+    },
+    {
+      "id": "wait-for-factory-indexes",
+      "title": "Waiting for games",
+      "status": "pending",
+      "workflowStepName": "Waiting for games",
+      "latestEvent": "Waiting to run"
+    }
+  ],
+  "summary": {
+    "environment": "appchain.blitz",
+    "chain": "appchain",
+    "gameType": "blitz",
+    "rotationName": "blitz-nightwatch",
+    "seriesName": "blitz-nightwatch",
+    "firstGameStartTime": 1787169600,
+    "firstGameStartTimeIso": "2026-08-19T20:00:00.000Z",
+    "gameIntervalMinutes": 0,
+    "maxGames": 365,
+    "advanceWindowGames": 1,
+    "evaluationIntervalMinutes": 30,
+    "weeklyCadence": [
+      {
+        "weekday": "monday",
+        "utcTime": "20:00"
+      },
+      {
+        "weekday": "tuesday",
+        "utcTime": "20:00"
+      },
+      {
+        "weekday": "wednesday",
+        "utcTime": "20:00"
+      },
+      {
+        "weekday": "thursday",
+        "utcTime": "20:00"
+      },
+      {
+        "weekday": "friday",
+        "utcTime": "20:00"
+      },
+      {
+        "weekday": "saturday",
+        "utcTime": "20:00"
+      },
+      {
+        "weekday": "sunday",
+        "utcTime": "20:00"
+      }
+    ],
+    "rpcUrl": "http://52.54.98.119",
+    "factoryAddress": "0x4c50ced3c1fd6f2f4cef779e28adafb234ed9773dda3e0e39918f24f2936350",
+    "autoRetryEnabled": true,
+    "autoRetryIntervalMinutes": 15,
+    "dryRun": false,
+    "configMode": "batched",
+    "seriesCreated": false,
+    "games": [
+      {
+        "gameName": "blitz-nightwatch-0001",
+        "startTime": 1787169600,
+        "startTimeIso": "2026-08-19T20:00:00.000Z",
+        "durationSeconds": 3600,
+        "seriesGameNumber": 1,
+        "currentStepId": null,
+        "latestEvent": "Waiting to run",
+        "status": "pending",
+        "configSteps": [],
+        "steps": [
+          {
+            "id": "create-series",
+            "status": "pending",
+            "latestEvent": "Waiting to run"
+          },
+          {
+            "id": "create-worlds",
+            "status": "pending",
+            "latestEvent": "Waiting to run"
+          },
+          {
+            "id": "wait-for-factory-indexes",
+            "status": "pending",
+            "latestEvent": "Waiting to run"
+          }
+        ],
+        "artifacts": {}
+      }
+    ],
+    "outputPath": "/home/runner/work/eternum/eternum/.context/game-launch/rotation-appchain-blitz-blitz-nightwatch.json"
+  },
+  "artifacts": {
+    "summaryPath": "/home/runner/work/eternum/eternum/.context/game-launch/rotation-appchain-blitz-blitz-nightwatch.json",
+    "seriesCreated": false
+  }
+}
