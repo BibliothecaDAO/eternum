@@ -83,13 +83,6 @@ const envSchema = z.object({
     .optional()
     .default("false"),
 
-  // PostHog
-  VITE_PUBLIC_POSTHOG_KEY: z.string().optional(),
-  VITE_PUBLIC_POSTHOG_HOST: z
-    .union([z.string().url(), z.literal("")])
-    .optional()
-    .transform((v) => (v === "" ? undefined : v)),
-
   // Sentry — empty means "off"; CI passes "" when the secret is unset and
   // that must never white-screen the build.
   VITE_PUBLIC_SENTRY_DSN: z
@@ -150,15 +143,6 @@ const envSchema = z.object({
     .default("50")
     .transform((v) => Number(v)),
 
-  // Tracing Configuration
-  VITE_TRACING_ENABLED: z
-    .string()
-    .transform((v) => v === "true")
-    .optional()
-    .default("false"),
-  VITE_TRACING_ENDPOINT: z.string().url().optional().default("http://localhost:4318/v1/traces"),
-  VITE_TRACING_SAMPLE_RATE: z.string().optional().default("0.1"),
-  VITE_TRACING_ERROR_SAMPLE_RATE: z.string().optional().default("1.0"),
   // Debug monitoring must be opt-in — see the note on TORII_BOUNDS_DEBUG below.
   VITE_PUBLIC_ENABLE_MEMORY_MONITORING: z
     .string()
@@ -270,9 +254,6 @@ const envSchema = z.object({
     .transform((v) => v === "true")
     .optional()
     .default("true"),
-  VITE_TRACING_AUTH_HEADER: z.string().optional(),
-  VITE_DATADOG_API_KEY: z.string().optional(),
-  VITE_NEW_RELIC_LICENSE_KEY: z.string().optional(),
 });
 
 type PublicEnv = z.infer<typeof envSchema>;

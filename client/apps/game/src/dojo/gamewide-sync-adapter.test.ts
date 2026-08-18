@@ -3,14 +3,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { Entity as ToriiEntity } from "@dojoengine/torii-wasm/types";
 
-const {
-  captureClientEventMock,
-  getComponentEntitiesMock,
-  getComponentValueMock,
-  removeComponentMock,
-  setEntitiesMock,
-} = vi.hoisted(() => ({
-  captureClientEventMock: vi.fn(),
+const { getComponentEntitiesMock, getComponentValueMock, removeComponentMock, setEntitiesMock } = vi.hoisted(() => ({
   getComponentEntitiesMock: vi.fn(),
   getComponentValueMock: vi.fn(),
   removeComponentMock: vi.fn(),
@@ -25,7 +18,6 @@ vi.mock("@dojoengine/recs", async (importOriginal) => ({
 }));
 
 vi.mock("@dojoengine/state", () => ({ setEntities: setEntitiesMock }));
-vi.mock("@/posthog", () => ({ captureClientEvent: captureClientEventMock }));
 
 import { createGamewideSyncSession, GAMEWIDE_SNAPSHOT_PAGE_SIZE } from "./gamewide-sync-adapter";
 
@@ -231,21 +223,24 @@ describe("game-wide sync adapter", () => {
     expect(harness.client.getEntities).toHaveBeenCalledTimes(2);
   });
 
-  it("reports stalled provisional intents in production telemetry", () => {
+  it("names the unmatched models in the stalled-intent error message", () => {
     const harness = createHarness();
+    const error = vi.spyOn(console, "error").mockImplementation(() => undefined);
 
-    harness.session.onProvisionalIntentStalled?.({
-      intentId: "intent-1",
-      transactionHash: "0x123",
-      unmatchedWrites: [{ entityId: "army-1", model: "ExplorerTroops", matchPatch: { coord: { x: 2 } } }],
-    });
+    try {
+      harness.session.onProvisionalIntentStalled?.({
+        intentId: "intent-1",
+        transactionHash: "0x123",
+        unmatchedWrites: [{ entityId: "army-1", model: "ExplorerTroops", matchPatch: { coord: { x: 2 } } }],
+      });
 
-    expect(captureClientEventMock).toHaveBeenCalledWith("game_sync_provisional_intent_stalled", {
-      intent_id: "intent-1",
-      has_transaction_hash: true,
-      unmatched_write_count: 1,
-      unmatched_models: ["ExplorerTroops"],
-    });
+      expect(error).toHaveBeenCalledWith(
+        expect.stringContaining("(unmatched: ExplorerTroops)"),
+        expect.objectContaining({ intentId: "intent-1" }),
+      );
+    } finally {
+      error.mockRestore();
+    }
   });
 
   it("applies component removal without deleting siblings and removes event rows immediately", async () => {

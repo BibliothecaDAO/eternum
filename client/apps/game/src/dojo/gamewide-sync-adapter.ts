@@ -14,7 +14,6 @@ import type { Component, Entity, Metadata, OverridableComponent, Schema } from "
 import { getComponentEntities, getComponentValue, removeComponent } from "@dojoengine/recs";
 import { setEntities } from "@dojoengine/state";
 import type { Clause, Entity as ToriiEntity, Query } from "@dojoengine/torii-wasm/types";
-import { captureClientEvent } from "@/posthog";
 import { VERBOSE_LOGS_ENABLED } from "@/utils/dev-mode";
 import { filterEntityToActiveGameScope } from "./game-scope-entity-filter";
 import { observeToriiStreamLifecycle } from "./torii-stream-lifecycle-observer";
@@ -291,27 +290,18 @@ const runPageWithRetries = async <T>({
 };
 
 const reportProvisionalIntentStalled = (info: GameSyncProvisionalIntentStalledInfo): void => {
-  if (import.meta.env.DEV) {
-    console.error("[GameSync] confirmed provisional intent has not reconciled after 30s", info);
-  }
-  captureClientEvent("game_sync_provisional_intent_stalled", {
-    intent_id: info.intentId,
-    has_transaction_hash: Boolean(info.transactionHash),
-    unmatched_write_count: info.unmatchedWrites.length,
-    unmatched_models: [...new Set(info.unmatchedWrites.map(({ model }) => model))].sort(),
-  });
+  if (!import.meta.env.DEV) return;
+  // The unmatched models ride in the message string so pasted console dumps
+  // carry them — the collapsed object loses them in text form.
+  const unmatchedModels = [...new Set(info.unmatchedWrites.map(({ model }) => model))].sort();
+  console.error(
+    `[GameSync] confirmed provisional intent has not reconciled after 30s (unmatched: ${unmatchedModels.join(", ") || "none"})`,
+    info,
+  );
 };
 
 const reportProvisionalIntentPhase = (info: GameSyncProvisionalIntentPhaseInfo): void => {
   if (import.meta.env.DEV && VERBOSE_LOGS_ENABLED) console.info("[GameSync] provisional intent phase", info);
-  captureClientEvent("game_sync_provisional_intent_phase", {
-    phase: info.phase,
-    intent_id: info.intentId,
-    has_transaction_hash: Boolean(info.transactionHash),
-    model: info.model,
-    elapsed_since_created_ms: info.elapsedSinceCreatedMs,
-    elapsed_since_transaction_hash_ms: info.elapsedSinceTransactionHashMs,
-  });
 };
 
 export const createGamewideSyncSession = (input: CreateGamewideSyncSessionInput): GameSyncSessionStart => {

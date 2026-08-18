@@ -1,4 +1,4 @@
-import { captureSystemError } from "@/posthog";
+import * as Sentry from "@sentry/react";
 import { DEV_MODE_ENABLED, verboseLog } from "@/utils/dev-mode";
 import { captureSpectateIntentFromUrl, isExplicitSpectateSession } from "@/utils/spectator-session";
 import { setup } from "@bibliothecadao/dojo";
@@ -193,10 +193,9 @@ export const bootstrapGameForEntryContext = async (
     }
 
     bootstrapSession.clearFailure();
-    captureSystemError(error, {
-      error_type: "dojo_setup",
-      setup_phase: "bootstrap",
-      context: "Unhandled error during Dojo bootstrap",
+    Sentry.captureException(error, {
+      tags: { feature: "bootstrap", error_type: "dojo_setup", setup_phase: "bootstrap" },
+      extra: { context: "Unhandled error during Dojo bootstrap" },
     });
     throw error;
   }
@@ -293,10 +292,9 @@ const runDojoSetup = async (namespace: string, gameId: number): Promise<SetupRes
       onError: (error: unknown) => {
         console.error("System call error:", error);
 
-        captureSystemError(error, {
-          error_type: "dojo_system_call",
-          setup_phase: "post-setup",
-          context: "System call error during post-setup phase",
+        Sentry.captureException(error, {
+          tags: { feature: "bootstrap", error_type: "dojo_system_call", setup_phase: "post-setup" },
+          extra: { context: "System call error during post-setup phase" },
         });
       },
     },

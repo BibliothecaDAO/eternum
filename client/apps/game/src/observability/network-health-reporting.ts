@@ -2,7 +2,6 @@ import * as Sentry from "@sentry/react";
 
 import { env } from "../../env";
 import { getActiveWorld } from "@/runtime/world";
-import { captureClientEvent } from "@/posthog";
 import type { DisconnectClassification, DisconnectSignalSnapshot } from "@/dojo/connection-disconnect-classification";
 import { resolveUserIdentity } from "./wallet-identity";
 
@@ -100,8 +99,6 @@ const sanitizeContextText = (value: string): string => {
   }
   return `${redacted.slice(0, MAX_CONTEXT_TEXT_LENGTH - 3)}...`;
 };
-
-const getActiveWorldName = (): string => getActiveWorld()?.name ?? "unknown-world";
 
 export const setNetworkHealthScopeTags = async ({ toriiBaseUrl, walletAddress }: NetworkScopeTags): Promise<void> => {
   if (!isEnabled()) return;
@@ -207,32 +204,11 @@ export const reportNetworkOutageDeadEnd = (report: OutageReport): void => report
 
 /**
  * Emits the single "is this disconnect LOCAL or REMOTE" verdict at outage start.
- * Mirrored to PostHog (independent of Sentry network-health enablement) so the
- * split is queryable even where Sentry network-health is off; PostHog has no
- * other Torii instrumentation today.
  */
 export const reportDisconnectClassification = (
   classification: DisconnectClassification,
   snapshot: DisconnectSignalSnapshot,
 ): void => {
-  const eventProps = {
-    source: classification.source,
-    confidence: classification.confidence,
-    reason: classification.reason,
-    on_line: snapshot.onLine,
-    ms_since_offline: snapshot.msSinceOffline,
-    visibility_state: snapshot.visibilityState,
-    health_probe_reason: snapshot.healthProbeReason,
-    heartbeat_available: snapshot.heartbeatAvailable,
-    ms_since_heartbeat: snapshot.msSinceHeartbeat,
-    stream_close_observed: snapshot.streamCloseObserved,
-    server_availability: snapshot.serverAvailability,
-    world: getActiveWorldName(),
-  };
-
-  // PostHog mirror — guarded internally by the PostHog key.
-  captureClientEvent("torii_disconnect_classification", eventProps);
-
   if (!isEnabled()) return;
   if (!canEmitMore()) return;
 

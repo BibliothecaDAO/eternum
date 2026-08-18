@@ -1,4 +1,4 @@
-import { captureClientEvent } from "@/posthog";
+import * as Sentry from "@sentry/react";
 import {
   incrementRendererDiagnosticError,
   setRendererDiagnosticCapabilities,
@@ -90,10 +90,12 @@ function completeRendererBackendInitialization(
   syncRendererBackendDiagnostics(diagnostics);
   setRendererDiagnosticCapabilities(backend.capabilities);
   setRendererDiagnosticDegradations([]);
-  captureClientEvent("renderer_backend_initialized", {
-    backend: diagnostics.activeMode,
-    build_mode: diagnostics.buildMode,
-    fallback_reason: diagnostics.fallbackReason,
+  // Resolved backend rides every Sentry report — the webgl2-fallback question
+  // stays answerable from error data now that product analytics is gone.
+  Sentry.getCurrentScope().setTags({
+    renderer_backend: diagnostics.activeMode,
+    renderer_build_mode: diagnostics.buildMode,
+    ...(diagnostics.fallbackReason ? { renderer_fallback_reason: diagnostics.fallbackReason } : {}),
   });
 
   return {
