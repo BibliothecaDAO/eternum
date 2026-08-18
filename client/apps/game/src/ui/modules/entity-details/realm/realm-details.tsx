@@ -18,7 +18,7 @@ import { useDojo } from "@bibliothecadao/react";
 import { ContractAddress, RealmLevels, ResourcesIds, StructureType } from "@bibliothecadao/types";
 import { useMemo } from "react";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
-import { useStructureUpgrade } from "@/ui/modules/entity-details/hooks/use-structure-upgrade";
+import { formatIncomingEta, useStructureUpgrade } from "@/ui/modules/entity-details/hooks/use-structure-upgrade";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { HUD_LABEL } from "@/ui/design-system/atoms/hud-typography";
 import ChevronsUp from "lucide-react/dist/esm/icons/chevrons-up";
@@ -175,15 +175,19 @@ export const RealmUpgradeCompact = () => {
       <SectionRow label={`Upgrade to ${upgradeTargetLabel}`}>
         {requirements.map((req) => {
           const isMet = req.current >= req.amount;
+          const incomingTitle = req.incoming
+            ? ` (+${Math.floor(req.incoming.amount).toLocaleString()} in transit, ${formatIncomingEta(req.incoming.etaSeconds)})`
+            : "";
           return (
             <span
               key={`${req.resource}-${req.amount}`}
               className={CHIP_BASE}
-              title={`${ResourcesIds[req.resource] ?? `Resource ${req.resource}`} — need ${req.amount.toLocaleString()}`}
+              title={`${ResourcesIds[req.resource] ?? `Resource ${req.resource}`} — need ${req.amount.toLocaleString()}${incomingTitle}`}
             >
               <ResourceIcon withTooltip={false} resource={ResourcesIds[req.resource]} size="xs" />
               <span className={isMet ? "text-gold" : "text-red-300"}>{Math.floor(req.current).toLocaleString()}</span>
               <span className={isMet ? "text-gold/55" : "text-red-300/80"}>/ {req.amount.toLocaleString()}</span>
+              {req.incoming && <span className="text-emerald-300/90">↑</span>}
             </span>
           );
         })}
