@@ -19,6 +19,7 @@ describe("GPU backend hot-path instrumentation", () => {
     const timestamps = [0, 100, 104, 1_100, 1_106];
 
     instrumentGpuBackendHotPaths(backend, {
+      emitWindowReports: true,
       now: () => timestamps.shift() ?? 1_106,
       reportIntervalMs: 1_000,
       warn,
@@ -80,7 +81,7 @@ describe("GPU backend hot-path instrumentation", () => {
     startGpuBackendFrame(87, warn);
 
     expect(warn).toHaveBeenCalledWith(
-      "[GpuBackendPerf] spike 87ms: createRenderPipeline=1x/12ms, createAttribute=1x/6.0ms, updateTexture=1x/5.0ms; textures=structure-label(1024x1024)=1x/5.0ms",
+      "[FramePerf] spike 87ms owner=unattributed: createRenderPipeline=1x/12ms, createAttribute=1x/6.0ms, updateTexture=1x/5.0ms; textures=structure-label(1024x1024)=1x/5.0ms",
     );
   });
 
@@ -95,7 +96,24 @@ describe("GPU backend hot-path instrumentation", () => {
     );
     startGpuBackendFrame(62, warn);
 
-    expect(warn).toHaveBeenCalledWith("[GpuBackendPerf] spike 62ms owner=catchup:army: no GPU backend hot paths");
+    expect(warn).toHaveBeenCalledWith("[FramePerf] spike 62ms owner=catchup:army: cpu-bound (zero GPU backend work)");
+  });
+
+  it("summarizes immaterial GPU work as cpu-bound instead of listing calls", () => {
+    const backend = { updateAttribute: vi.fn() };
+    const warn = vi.fn();
+    const timestamps = [0, 1, 3];
+
+    instrumentGpuBackendHotPaths(backend, {
+      now: () => timestamps.shift() ?? 3,
+      reportIntervalMs: 10_000,
+      warn,
+    });
+    startGpuBackendFrame(0, warn);
+    backend.updateAttribute();
+    startGpuBackendFrame(120, warn);
+
+    expect(warn).toHaveBeenCalledWith("[FramePerf] spike 120ms owner=unattributed: cpu-bound (gpu=2.0ms)");
   });
 
   it("reports aggregate compile-on-demand cost over the measurement window", () => {
@@ -141,6 +159,6 @@ describe("GPU backend hot-path instrumentation", () => {
     startGpuBackendFrame(60, warn);
 
     expect(warn).toHaveBeenCalledOnce();
-    expect(warn).toHaveBeenCalledWith("[GpuBackendPerf] spike 40ms: no GPU backend hot paths");
+    expect(warn).toHaveBeenCalledWith("[FramePerf] spike 40ms owner=unattributed: cpu-bound (zero GPU backend work)");
   });
 });

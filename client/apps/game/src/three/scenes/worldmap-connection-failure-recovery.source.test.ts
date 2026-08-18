@@ -20,10 +20,9 @@ const extractClearStalledChunkAreaState = (source: string): string => {
 };
 
 describe("worldmap connection failure recovery", () => {
-  it("clears map loading and invalidates outstanding fetches without scheduling an offline refresh", () => {
+  it("clears transition loading and invalidates outstanding fetches without scheduling an offline refresh", () => {
     const methodSource = extractRecoverAfterConnectionFailure(readSource("src/three/scenes/worldmap.tsx"));
 
-    expect(methodSource).toContain("this.state.setLoading(LoadingStateKey.Map, false)");
     expect(methodSource).toContain("this.state.setLoading(LoadingStateKey.ChunkTransition, false)");
     expect(methodSource).toContain("clearStalledChunkAreaState");
     expect(methodSource).not.toContain("requestChunkRefresh");

@@ -1,5 +1,6 @@
 import { useUIStore, type AppStore } from "@/hooks/store/use-ui-store";
 import { CAMERA_CONFIG, FOG_CONFIG, HEX_SIZE, biomeModelPaths } from "@/three/constants";
+import { runWithFrameWorkOwner } from "@/three/frame-work-owner";
 import { WorldAtmosphereController } from "@/three/effects/world-atmosphere-controller";
 import { type WeatherState } from "@/three/managers/weather-manager";
 import { HighlightHexManager } from "@/three/managers/highlight-hex-manager";
@@ -1567,8 +1568,13 @@ export abstract class HexagonScene {
     }
 
     this.currentCameraView = nextView;
-    this.applyResolvedCameraView(nextView);
-    this.biomeModels.forEach((model) => model.setDistantAnimationSamplingEnabled(nextView !== CameraView.Close));
+    runWithFrameWorkOwner("zoom:camera-view", () => {
+      this.applyResolvedCameraView(nextView);
+      this.biomeModels.forEach((model) => model.setDistantAnimationSamplingEnabled(nextView !== CameraView.Close));
+    });
+    // Listeners carry their own owner markers (the worldmap fan-out splits
+    // into terrain-detail / shadows / overlays) so the band-flip cost is
+    // attributable per surface, not as one blob.
     this.cameraViewListeners.forEach((listener) => listener(nextView));
   }
 

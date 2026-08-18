@@ -5,7 +5,6 @@
 export enum LoadingStateKey {
   Market = "market",
   AllPlayerStructures = "allPlayerStructures",
-  Map = "map",
   Hyperstructure = "hyperstructure",
   MarketHistory = "marketHistory",
   Leaderboard = "leaderboard",
@@ -28,7 +27,6 @@ export const createWorldStoreSlice = (
   loadingStates: {
     [LoadingStateKey.Market]: false,
     [LoadingStateKey.AllPlayerStructures]: false,
-    [LoadingStateKey.Map]: false,
     [LoadingStateKey.Hyperstructure]: false,
     [LoadingStateKey.Leaderboard]: false,
     [LoadingStateKey.MarketHistory]: false,

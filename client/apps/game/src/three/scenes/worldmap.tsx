@@ -1,4 +1,5 @@
 import { playUnitCommandSound, playUnitCommandSoundForWorldmapAction } from "@/audio/unit-command-audio";
+import { runWithFrameWorkOwner } from "@/three/frame-work-owner";
 import { VERBOSE_LOGS_ENABLED, verboseLog } from "@/utils/dev-mode";
 import { toast } from "sonner";
 
@@ -1323,11 +1324,17 @@ export default class WorldmapScene extends WarpTravel {
 
   private bindWorldmapCameraViewLifecycle(): void {
     this.addCameraViewListener((view: CameraView) => {
-      this.hoverLabelManager.updateCameraView(view);
-      this.highlightHexManager.setCameraView(view);
-      this.interactiveHexManager.setCameraView(view);
-      this.biomeModels.forEach((model) => model.setFarDetailEnabled(view === CameraView.Far));
-      this.configureWorldmapShadows();
+      runWithFrameWorkOwner("zoom:interaction-overlays", () => {
+        this.hoverLabelManager.updateCameraView(view);
+        this.highlightHexManager.setCameraView(view);
+        this.interactiveHexManager.setCameraView(view);
+      });
+      runWithFrameWorkOwner("zoom:terrain-detail", () => {
+        this.biomeModels.forEach((model) => model.setFarDetailEnabled(view === CameraView.Far));
+      });
+      runWithFrameWorkOwner("zoom:worldmap-shadows", () => {
+        this.configureWorldmapShadows();
+      });
     });
   }
 
@@ -3980,10 +3987,8 @@ export default class WorldmapScene extends WarpTravel {
       clearTimeout(this.chunkRecoveryTimeout);
       this.chunkRecoveryTimeout = null;
     }
-
-    // Clear map loading state so "Charting Territories" doesn't persist
-    // when switching away during a chunk transition.
-    this.state.setLoading(LoadingStateKey.Map, false);
+    // Clear transition state so the chunk overlay doesn't persist when
+    // switching away mid-transition.
     this.state.setLoading(LoadingStateKey.ChunkTransition, false);
   }
 
@@ -6826,7 +6831,6 @@ export default class WorldmapScene extends WarpTravel {
     }
 
     const areaKey = this.clearStalledChunkAreaState(this.currentChunk);
-    this.state.setLoading(LoadingStateKey.Map, false);
     this.state.setLoading(LoadingStateKey.ChunkTransition, false);
     this.traceChunk("connection_failure_recovery", {
       areaKey,
@@ -6946,8 +6950,6 @@ export default class WorldmapScene extends WarpTravel {
       return;
     }
 
-    this.state.setLoading(LoadingStateKey.Map, false);
-
     this.recoverChunkManagersAfterStall(chunkKey, recoveryDecision.recoveryTransitionToken);
     this.recoverChunkStreamingAfterStall({
       reason: "chunk_transition_hard_timeout",
@@ -6994,7 +6996,6 @@ export default class WorldmapScene extends WarpTravel {
   }
 
   private handleChunkPresentationTimeout(info: WorldmapChunkPresentationTimeoutInfo): void {
-    this.state.setLoading(LoadingStateKey.Map, false);
     const areaKey = this.recoverChunkStreamingAfterStall({
       reason: "chunk_presentation_timeout",
       chunkKey: info.chunkKey,

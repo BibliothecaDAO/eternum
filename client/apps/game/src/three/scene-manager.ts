@@ -1,5 +1,6 @@
 import { TransitionManager } from "@/three/managers/transition-manager";
 import { HexagonScene } from "@/three/scenes/hexagon-scene";
+import { runWithFrameWorkOwner } from "@/three/frame-work-owner";
 import {
   resolvePendingTransitionStart,
   resolveSceneSwitchRequest,
@@ -89,7 +90,11 @@ export class SceneManager {
       if (resolveFinalizePlan().isSuperseded) return;
 
       if (scene.setup) {
-        await scene.setup();
+        // Ownership covers the synchronous portion of setup — for hexception
+        // that IS the cost (the grid build and instance work run sync inside
+        // the fade), which is exactly the first-switch freeze under
+        // investigation.
+        await runWithFrameWorkOwner(`scene:${sceneName}:setup`, () => scene.setup!());
       }
       if (resolveFinalizePlan().isSuperseded) return;
 
