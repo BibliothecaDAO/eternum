@@ -36,7 +36,9 @@ class PerformanceMonitorImpl {
 
   private metrics: Map<string, PerformanceMetric> = new Map();
   private activeMarks: Map<string, number> = new Map();
-  private enabled: boolean = import.meta.env?.DEV ?? false;
+  // Off by default even in dev: the per-frame mark/measure pairs cost real
+  // main-thread time in profiles. The graphics dev GUI checkbox opts in.
+  private enabled: boolean = false;
   private maxSamples: number = 60; // ~1 second at 60fps
   private callbacks: Set<MetricCallback> = new Set();
 
