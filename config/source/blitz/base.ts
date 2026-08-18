@@ -19,7 +19,6 @@ const BLITZ_REGISTRATION_FEE_RECIPIENT = "0x040DB150844Dc372928b3B47e23CB6E240E2
 const BLITZ_REGISTRATION_FEE_AMOUNT = 10n * 10n ** 18n;
 const BLITZ_REGISTRATION_COUNT_MAX = 24;
 const BLITZ_REGISTRATION_DELAY_SECONDS = 10;
-const BLITZ_REGISTRATION_PERIOD_SECONDS = 60 * 60 * 3;
 const BLITZ_END_GRACE_SECONDS = 60 * 60 * 24;
 const BLITZ_ENTRY_TOKEN_IPFS_CID = "Qm123idkmaybe";
 const BLITZ_COLLECTIBLE_COSMETICS_MAX_ITEMS = 5;
@@ -36,7 +35,6 @@ const blitzModeConfig: ConfigPatch = {
       fee_amount: BLITZ_REGISTRATION_FEE_AMOUNT,
       registration_count_max: BLITZ_REGISTRATION_COUNT_MAX,
       registration_delay_seconds: BLITZ_REGISTRATION_DELAY_SECONDS,
-      registration_period_seconds: BLITZ_REGISTRATION_PERIOD_SECONDS,
       entry_token_class_hash: "0x0",
       entry_token_ipfs_cid: BLITZ_ENTRY_TOKEN_IPFS_CID,
       collectible_cosmetics_max_items: BLITZ_COLLECTIBLE_COSMETICS_MAX_ITEMS,

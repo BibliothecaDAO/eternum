@@ -148,15 +148,14 @@ function resolveSeasonTiming(config: NativeConfig) {
 }
 
 function resolveBlitzRegistrationWindow(config: NativeConfig) {
-  const registrationPeriodSeconds = config.blitz.registration.registration_period_seconds;
-  let registrationStartAt = nowSeconds() + config.blitz.registration.registration_delay_seconds;
-  let registrationEndAt = registrationStartAt + registrationPeriodSeconds;
-
-  // When a launch pins startMainAt, registration must close immediately before it.
-  if (config.season.startMainAt && config.season.startMainAt > 0) {
-    registrationEndAt = config.season.startMainAt - 1;
-    registrationStartAt = registrationEndAt - registrationPeriodSeconds;
-  }
+  // Settling and registration open as soon as the world is configured (owner
+  // ruling, Aug 2026); the delay only covers config steps still being applied.
+  // Registration still closes immediately before a pinned startMainAt.
+  const registrationStartAt = nowSeconds() + config.blitz.registration.registration_delay_seconds;
+  const registrationEndAt =
+    config.season.startMainAt && config.season.startMainAt > 0
+      ? config.season.startMainAt - 1
+      : nowSeconds() + config.season.startMainAfterSeconds;
 
   return { registrationStartAt, registrationEndAt };
 }

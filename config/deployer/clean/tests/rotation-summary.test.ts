@@ -56,6 +56,27 @@ describe("rotation launch summary", () => {
     ]);
   });
 
+  test("numbers cadence games from the rotation name when entries carry no prefix", () => {
+    const request = buildWeeklyRotationRequest({
+      rotationName: "blitz-herald",
+      advanceWindowGames: 2,
+      weeklyCadence: [
+        { weekday: "monday", utcTime: "11:00" },
+        { weekday: "tuesday", utcTime: "11:00" },
+      ],
+    });
+    const summary = reconcileRotationLaunchSummary(
+      request,
+      buildInitialRotationLaunchSummary(request),
+      Date.parse("2026-04-20T07:00:00Z"),
+    );
+
+    expect(summary.games.map((game) => [game.gameName, game.startTimeIso])).toEqual([
+      ["blitz-herald-0001", "2026-04-20T11:00:00.000Z"],
+      ["blitz-herald-0002", "2026-04-21T11:00:00.000Z"],
+    ]);
+  });
+
   test("continues a weekly cadence into the next week", () => {
     const request = buildWeeklyRotationRequest({ advanceWindowGames: 1 });
     const initialSummary = reconcileRotationLaunchSummary(

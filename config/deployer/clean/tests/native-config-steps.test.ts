@@ -170,8 +170,8 @@ describe("native config steps", () => {
   test("reuses the same blitz timing across split registration steps", async () => {
     const config = loadEnvironmentConfiguration("appchain.blitz");
     config.season.startMainAt = 0;
+    config.season.startMainAfterSeconds = 100;
     config.blitz.registration.registration_delay_seconds = 10;
-    config.blitz.registration.registration_period_seconds = 100;
 
     const capturedCalls: Array<{ type: string; payload: Record<string, unknown> }> = [];
     const provider = {
@@ -219,8 +219,52 @@ describe("native config steps", () => {
       buildBlitzEntryTokenDeployCalldata(provider.manifest as any),
     );
     expect(seasonPayload.start_settling_at).toBe(registrationStartAt);
-    expect(seasonPayload.start_main_at).toBe(registrationStartAt + 100);
+    expect(seasonPayload.start_main_at).toBe(1_700_000_100);
     expect(seasonPayload.end_at).toBe((seasonPayload.start_main_at as number) + config.season.durationSeconds);
+  });
+
+  test("opens settling immediately while a pinned start still closes registration before it", async () => {
+    const config = loadEnvironmentConfiguration("appchain.blitz");
+    config.season.startMainAt = 1_700_100_000;
+    config.blitz.registration.registration_delay_seconds = 10;
+
+    const capturedCalls: Array<{ type: string; payload: Record<string, unknown> }> = [];
+    const provider = {
+      manifest: getGameManifest("mainnet") as any,
+      set_blitz_registration_config: async (payload: Record<string, unknown>) => {
+        capturedCalls.push({ type: "registration", payload });
+        return { statusReceipt: "ok" };
+      },
+      set_season_config: async (payload: Record<string, unknown>) => {
+        capturedCalls.push({ type: "season", payload });
+        return { statusReceipt: "ok" };
+      },
+    };
+
+    const originalDateNow = Date.now;
+    Date.now = () => 1_700_000_000_000;
+
+    try {
+      await setBlitzRegistrationParametersConfig({
+        account: { address: "0x1" } as any,
+        provider: provider as any,
+        config,
+      });
+      await setSeasonConfig({
+        account: { address: "0x1" } as any,
+        provider: provider as any,
+        config,
+      });
+    } finally {
+      Date.now = originalDateNow;
+    }
+
+    const registrationPayload = capturedCalls[0]!.payload;
+    const seasonPayload = capturedCalls[1]!.payload;
+
+    expect(registrationPayload.registration_start_at).toBe(1_700_000_010);
+    expect(seasonPayload.start_settling_at).toBe(1_700_000_010);
+    expect(seasonPayload.start_main_at).toBe(1_700_099_999);
   });
 
   test("carries inferred blitz profile duration through the season payload", async () => {

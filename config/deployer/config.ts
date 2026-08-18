@@ -1249,17 +1249,14 @@ let blitzRegistrationWindow: { registrationStartAt: number; registrationEndAt: n
 const getBlitzRegistrationWindow = (config: Config) => {
   if (blitzRegistrationWindow) return blitzRegistrationWindow;
 
-  const periodSeconds = config.config.blitz.registration.registration_period_seconds;
-  let registrationStartAt =
-    Math.floor(new Date().getTime() / 1000) + config.config.blitz.registration.registration_delay_seconds;
-  let registrationEndAt = registrationStartAt + periodSeconds;
-
-  // A pinned start time means registration must close immediately before it.
+  // Settling and registration open as soon as the world is configured (owner
+  // ruling, Aug 2026); the delay only covers config steps still being applied.
+  // Registration still closes immediately before a pinned startMainAt.
+  const nowSeconds = Math.floor(new Date().getTime() / 1000);
+  const registrationStartAt = nowSeconds + config.config.blitz.registration.registration_delay_seconds;
   const startMainAt = config.config.season.startMainAt;
-  if (startMainAt && startMainAt > 0) {
-    registrationEndAt = startMainAt - 1;
-    registrationStartAt = registrationEndAt - periodSeconds;
-  }
+  const registrationEndAt =
+    startMainAt && startMainAt > 0 ? startMainAt - 1 : nowSeconds + config.config.season.startMainAfterSeconds;
 
   blitzRegistrationWindow = { registrationStartAt, registrationEndAt };
   return blitzRegistrationWindow;

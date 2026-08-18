@@ -35,7 +35,6 @@ const eternumBlitzModeConfig: ConfigPatch = {
       fee_amount: 0n,
       registration_count_max: 0,
       registration_delay_seconds: 0,
-      registration_period_seconds: 0,
       entry_token_class_hash: "0x0",
       entry_token_ipfs_cid: "",
       collectible_cosmetics_max_items: 0,

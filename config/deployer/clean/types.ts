@@ -305,7 +305,8 @@ export interface LaunchRotationStepRequest extends LaunchRotationRequest {
 }
 
 export interface LaunchRotationWeeklyCadenceEntry {
-  gameNamePrefix: string;
+  // Optional: entries without a prefix fall back to `<rotation-slug>-<number>` names.
+  gameNamePrefix?: string;
   weekday: LaunchRotationWeekday;
   utcTime: string;
   biomeClimateOverrides?: FactoryBiomeClimateOverrides;

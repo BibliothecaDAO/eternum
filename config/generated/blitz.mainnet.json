@@ -218,7 +218,6 @@
       "fee_amount": "100000000000000000000",
       "registration_count_max": 24,
       "registration_delay_seconds": 1,
-      "registration_period_seconds": 10800,
       "entry_token_class_hash": "0x73e111b8157985c994a7d297bb262a30943abb8d8d9556f113b1886a3ab5909",
       "entry_token_ipfs_cid": "Qm123idkmaybe",
       "collectible_cosmetics_max_items": 5,
@@ -1744,7 +1743,7 @@
     "lordsLiquidityPerResource": 0
   },
   "vrf": {
-    "vrfProviderAddress": "0x0"
+    "vrfProviderAddress": "0x051fea4450da9d6aee758bdeba88b2f665bcbf549d2c61421aa724e9ac0ced8f"
   },
   "setup": {
     "chain": "mainnet",

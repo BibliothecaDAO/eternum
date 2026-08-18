@@ -120,7 +120,7 @@ describe("launch request helpers", () => {
     });
 
     expect(blitzRequest).toMatchObject({
-      version: "2",
+      version: "6",
       waitForFactoryIndexTimeoutMs: 120_000,
       waitForFactoryIndexPollMs: 2_000,
     });

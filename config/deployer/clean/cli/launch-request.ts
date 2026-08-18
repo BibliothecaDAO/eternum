@@ -360,7 +360,10 @@ function normalizeWeeklyCadenceEntry(entry: unknown, index: number): LaunchRotat
   }
 
   const record = entry as Record<string, unknown>;
-  const gameNamePrefix = normalizeWeeklyCadenceString(record.gameNamePrefix, "gameNamePrefix", index);
+  const gameNamePrefix =
+    record.gameNamePrefix === undefined
+      ? undefined
+      : normalizeWeeklyCadenceString(record.gameNamePrefix, "gameNamePrefix", index);
   const weekday = normalizeWeeklyCadenceWeekday(record.weekday, index);
   const utcTime = normalizeWeeklyCadenceTime(record.utcTime, index);
   const blitzRegistrationOverrides = normalizeWeeklyCadenceRegistrationOverrides(
@@ -370,7 +373,7 @@ function normalizeWeeklyCadenceEntry(entry: unknown, index: number): LaunchRotat
   const biomeClimateOverrides = normalizeWeeklyCadenceBiomeClimateOverrides(record.biomeClimateOverrides, index);
 
   return {
-    gameNamePrefix,
+    ...(gameNamePrefix !== undefined ? { gameNamePrefix } : {}),
     weekday,
     utcTime,
     ...(biomeClimateOverrides ? { biomeClimateOverrides } : {}),
