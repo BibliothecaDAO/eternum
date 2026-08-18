@@ -53,7 +53,38 @@ describe("ProvisionalWriteManager", () => {
     expect(outcomes).toHaveBeenCalledWith("settled");
   });
 
-  it("counts baseline-delta evidence only after a transaction hash exists", () => {
+  it("matches a baseline-delta echo that raced the transaction hash once it binds", () => {
+    vi.useFakeTimers();
+    const store = createStore({ WOOD_BALANCE: 100n });
+    const phases: string[] = [];
+    const manager = new ProvisionalWriteManager(store, {
+      onIntentPhase: ({ phase }) => phases.push(phase),
+    });
+    const intent = manager.createIntent([
+      {
+        entityId: "0x2",
+        model: "Resource",
+        patch: { WOOD_BALANCE: 90n },
+        baselineDeltaFields: ["WOOD_BALANCE"],
+      },
+    ]);
+    const outcomes = vi.fn();
+    intent.subscribe(outcomes);
+
+    // Torii's preconfirmed echo can land before execute() returns the hash.
+    manager.observeAuthoritativeObservations([
+      { type: "model", entityId: "0x2", model: "Resource", value: { WOOD_BALANCE: 90n } },
+    ]);
+    expect(phases).toContain("baseline_delta_before_hash");
+
+    intent.bindTransaction("0xtx");
+    intent.confirm();
+    vi.advanceTimersByTime(2_500);
+
+    expect(outcomes).toHaveBeenCalledWith("settled");
+  });
+
+  it("does not treat a bound hash alone as baseline-delta evidence", () => {
     vi.useFakeTimers();
     const store = createStore({ WOOD_BALANCE: 100n });
     const manager = new ProvisionalWriteManager(store);
@@ -68,9 +99,6 @@ describe("ProvisionalWriteManager", () => {
     const outcomes = vi.fn();
     intent.subscribe(outcomes);
 
-    manager.observeAuthoritativeObservations([
-      { type: "model", entityId: "0x2", model: "Resource", value: { WOOD_BALANCE: 90n } },
-    ]);
     intent.bindTransaction("0xtx");
     intent.confirm();
     vi.advanceTimersByTime(2_500);

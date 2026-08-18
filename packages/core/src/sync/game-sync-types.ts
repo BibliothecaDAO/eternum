@@ -61,7 +61,7 @@ export interface GameSyncProvisionalIntentStalledInfo {
 }
 
 export interface GameSyncProvisionalIntentPhaseInfo {
-  phase: "created" | "transaction_hash" | "authoritative_echo";
+  phase: "created" | "transaction_hash" | "authoritative_echo" | "baseline_delta_before_hash";
   intentId: string;
   transactionHash?: string;
   model?: string;
