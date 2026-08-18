@@ -6,14 +6,14 @@
   "chain": "appchain",
   "gameType": "blitz",
   "gameName": "bltz-nova-813",
-  "status": "running",
+  "status": "complete",
   "executionMode": "fast_trial",
   "requestedLaunchStep": "full",
   "inputPath": "inputs/appchain/blitz/bltz-nova-813/32085475621-1.json",
   "latestLaunchRequestId": "32085475621-1",
-  "currentStepId": "wait-for-factory-index",
+  "currentStepId": null,
   "createdAt": "2026-08-18T00:42:48.940Z",
-  "updatedAt": "2026-08-18T00:43:26.013Z",
+  "updatedAt": "2026-08-18T00:43:31.618Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -36,10 +36,11 @@
     {
       "id": "wait-for-factory-index",
       "title": "Waiting for game",
-      "status": "running",
+      "status": "succeeded",
       "workflowStepName": "Waiting for game",
-      "latestEvent": "Waiting for game started",
-      "startedAt": "2026-08-18T00:43:26.013Z"
+      "latestEvent": "Waiting for game succeeded",
+      "startedAt": "2026-08-18T00:43:26.013Z",
+      "finishedAt": "2026-08-18T00:43:31.618Z"
     }
   ],
   "artifacts": {
@@ -50,12 +51,5 @@
     "worldAddress": "0x78ff85ac450bb559c97966b64666fd5292f4a98756a607349d9f93f4563bdd2",
     "createGameTxHash": "0x29ece2a7b6a8c8d3a943af60058481d6f2f05273c747e604fbd47e529a51527"
   },
-  "activeLease": {
-    "launchRequestId": "32085475621-1",
-    "workflowRunId": 32085475621,
-    "workflowRunAttempt": 1,
-    "stepId": "wait-for-factory-index",
-    "acquiredAt": "2026-08-18T00:43:26.013Z",
-    "expiresAt": "2026-08-18T01:28:26.013Z"
-  }
+  "completedAt": "2026-08-18T00:43:31.618Z"
 }
