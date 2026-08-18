@@ -136,8 +136,8 @@ function validateWeeklyCadence(weeklyCadence: LaunchRotationWeeklyCadenceEntry[]
 }
 
 function validateWeeklyCadenceEntry(entry: LaunchRotationWeeklyCadenceEntry): void {
-  if (!entry.gameNamePrefix.trim()) {
-    throw new Error("weekly cadence gameNamePrefix must be a non-empty string");
+  if (entry.gameNamePrefix !== undefined && !entry.gameNamePrefix.trim()) {
+    throw new Error("weekly cadence gameNamePrefix must be a non-empty string when provided");
   }
 
   if (!(entry.weekday in WEEKDAY_OFFSET_DAYS)) {
@@ -187,7 +187,7 @@ function buildRotationGameSummary(
 function buildRotationGameName(rotationName: string, seriesGameNumber: number): string {
   const slug = toRotationSlug(rotationName);
 
-  return `${slug || "rotation"}-${String(seriesGameNumber).padStart(2, "0")}`;
+  return `${slug || "rotation"}-${String(seriesGameNumber).padStart(4, "0")}`;
 }
 
 function buildWeeklyCadenceGameName(gameNamePrefix: string, startTime: number): string {
@@ -383,7 +383,8 @@ function resolveSortedWeeklyCadence(summary: LaunchRotationSummary) {
     }))
     .sort(
       (left, right) =>
-        left.offsetSeconds - right.offsetSeconds || left.gameNamePrefix.localeCompare(right.gameNamePrefix),
+        left.offsetSeconds - right.offsetSeconds ||
+        (left.gameNamePrefix ?? "").localeCompare(right.gameNamePrefix ?? ""),
     );
 }
 

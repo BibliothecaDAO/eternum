@@ -36,10 +36,10 @@ describe("appchain registrar preset", () => {
       buildingCategories: 39,
       structureLevels: 3,
       hyperstructureConstruction: 0,
-      resourceLists: 203,
+      resourceLists: 209,
       resourceMinMaxLists: 3,
     });
-    expect(buildRegisterPresetCalldata(payload)).toHaveLength(2_091);
+    expect(buildRegisterPresetCalldata(payload)).toHaveLength(2_121);
     expect(payload.presetConfig.preset_id).toBe(1);
     expect(payload.gameConfig.preset_id).toBe(1);
     expect(buildRegisterPresetCalldata(payload)).toMatchSnapshot();
@@ -77,33 +77,67 @@ describe("appchain registrar preset", () => {
   });
 
   test("keeps launch clocks and mode overrides in CreateGameParams", () => {
-    const params = buildCreateGameParams(config, {
-      gameName: "bltz-a2",
-      presetId: 3,
-      seriesName: "bltz-series",
-      seriesGameNumber: 2,
-      startMainAt: 2_000_000_000,
-      durationSeconds: 7_200,
-      devModeOn: true,
-      singleRealmMode: false,
-      twoPlayerMode: true,
-      useMapOverride: true,
-    });
+    const originalDateNow = Date.now;
+    Date.now = () => 1_999_990_000_000;
 
-    expect(params).toMatchObject({
-      preset_id: 3,
-      game_number_in_series: 2,
-      start_settling_at: 1_999_996_400,
-      start_main_at: 2_000_000_000,
-      duration_seconds: 7_200,
-      registration_start_at: 1_999_996_399,
-      registration_count_max: 2,
-      dev_mode_on: true,
-      two_player_mode: true,
-      use_map_override: true,
-      end_grace_seconds: 86_400,
-    });
-    expect(BigInt(params.seed as string)).not.toBe(0n);
-    expect(buildCreateGameCalldata(params)).toMatchSnapshot();
+    try {
+      const params = buildCreateGameParams(config, {
+        gameName: "bltz-a2",
+        presetId: 3,
+        seriesName: "bltz-series",
+        seriesGameNumber: 2,
+        startMainAt: 2_000_000_000,
+        durationSeconds: 7_200,
+        devModeOn: true,
+        singleRealmMode: false,
+        twoPlayerMode: true,
+        useMapOverride: true,
+      });
+
+      // Settling and registration open at creation time, not at start − window.
+      expect(params).toMatchObject({
+        preset_id: 3,
+        game_number_in_series: 2,
+        start_settling_at: 1_999_990_000,
+        start_main_at: 2_000_000_000,
+        duration_seconds: 7_200,
+        registration_start_at: 1_999_989_999,
+        registration_count_max: 2,
+        dev_mode_on: true,
+        two_player_mode: true,
+        use_map_override: true,
+        end_grace_seconds: 86_400,
+      });
+      expect(BigInt(params.seed as string)).not.toBe(0n);
+      expect(buildCreateGameCalldata(params)).toMatchSnapshot();
+    } finally {
+      Date.now = originalDateNow;
+    }
+  });
+
+  test("clamps settling to the start time when a game is created late", () => {
+    const originalDateNow = Date.now;
+    Date.now = () => 2_000_000_500_000;
+
+    try {
+      const params = buildCreateGameParams(config, {
+        gameName: "bltz-late",
+        presetId: 3,
+        startMainAt: 2_000_000_000,
+        durationSeconds: 3_600,
+        devModeOn: true,
+        singleRealmMode: false,
+        twoPlayerMode: false,
+        useMapOverride: false,
+      });
+
+      expect(params).toMatchObject({
+        start_settling_at: 2_000_000_000,
+        registration_start_at: 1_999_999_999,
+        start_main_at: 2_000_000_000,
+      });
+    } finally {
+      Date.now = originalDateNow;
+    }
   });
 });

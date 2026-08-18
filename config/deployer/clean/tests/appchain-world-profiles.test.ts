@@ -17,7 +17,8 @@ function removeWorldIdentity(profile: string): string {
   return profile
     .replace(/^seed = .*$/m, "seed = <world>")
     .replace(/^name = .*$/m, "name = <world>")
-    .replace(/^description = .*$/m, "description = <world>");
+    .replace(/^description = .*$/m, "description = <world>")
+    .replace(/^world_address = .*$/gm, "world_address = <world>");
 }
 
 async function readManifest(name: "blitz" | "eternum"): Promise<AppchainManifest> {

@@ -92,8 +92,10 @@ function buildLaunchConfig() {
       two_player_mode: false,
     },
     blitz: {
+      mode: {
+        on: true,
+      },
       registration: {
-        registration_period_seconds: 3_600,
         registration_count_max: 24,
         fee_amount: 0n,
       },
@@ -217,6 +219,15 @@ mock.module("../../../../contracts/game/manifest_appchain_blitz.json", () => ({
       },
     ],
     events: [{ tag: "s2-GameCreated", selector: "0xabc" }],
+  },
+}));
+
+// The undeployed-world test needs an eternum manifest with no registrar.
+mock.module("../../../../contracts/game/manifest_appchain_eternum.json", () => ({
+  default: {
+    world: { address: "" },
+    contracts: [],
+    events: [],
   },
 }));
 
@@ -420,6 +431,9 @@ describe("runLaunchStep mainnet launch steps", () => {
   });
 
   test("fails clearly before launching into the undeployed eternum world", async () => {
+    process.env.TORII_URL = "https://torii.example";
+    globalThis.fetch = mock(async (_input: string | URL | Request) => Response.json([])) as unknown as typeof fetch;
+
     await expect(
       runLaunchStep({
         environmentId: "appchain.eternum",

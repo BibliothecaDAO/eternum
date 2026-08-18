@@ -218,7 +218,6 @@
       "fee_amount": "0",
       "registration_count_max": 24,
       "registration_delay_seconds": 20,
-      "registration_period_seconds": 3600,
       "entry_token_class_hash": "0x0",
       "entry_token_ipfs_cid": "Qm123idkmaybe",
       "collectible_cosmetics_max_items": 5,

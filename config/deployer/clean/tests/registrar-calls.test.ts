@@ -75,9 +75,7 @@ describe("registrar receipt parsing", () => {
     );
   });
 
-  test("fails clearly until the eternum world registrar is configured", () => {
-    expect(() => assertAppchainRegistrarAvailable("appchain.eternum")).toThrow(
-      "appchain.eternum world not deployed yet",
-    );
+  test("resolves the eternum world registrar now that both s2 worlds are deployed", () => {
+    expect(() => assertAppchainRegistrarAvailable("appchain.eternum")).not.toThrow();
   });
 });

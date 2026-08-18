@@ -137,7 +137,6 @@ function resolveLocalBlitzRegistrationConfig(context: EnvironmentContext): Confi
     blitz: {
       registration: {
         registration_delay_seconds: 20,
-        registration_period_seconds: 60 * 2,
         fee_token: resolveConfiguredAddress(context.addresses.strk),
       },
     },
@@ -145,11 +144,10 @@ function resolveLocalBlitzRegistrationConfig(context: EnvironmentContext): Confi
 }
 
 function resolveAppchainBlitzRegistrationConfig(context: EnvironmentContext): ConfigPatch {
-  // Dev chain: a short window means the game is unjoinable minutes after a
-  // config deploy, so default to an hour and let a redeploy reopen it.
-  // Override with APPCHAIN_REGISTRATION_DELAY_SECONDS / _PERIOD_SECONDS.
+  // Settling and registration open at game creation (owner ruling, Aug 2026);
+  // the delay only covers config steps still being applied.
+  // Override with APPCHAIN_REGISTRATION_DELAY_SECONDS.
   const delaySeconds = Number(process.env.APPCHAIN_REGISTRATION_DELAY_SECONDS) || 20;
-  const periodSeconds = Number(process.env.APPCHAIN_REGISTRATION_PERIOD_SECONDS) || 60 * 60;
 
   // A 30-day default game can never be observed ending on a dev chain.
   // 1h default matches the on-chain default preset 2 (official-60 / "Regular Fast").
@@ -170,7 +168,6 @@ function resolveAppchainBlitzRegistrationConfig(context: EnvironmentContext): Co
     blitz: {
       registration: {
         registration_delay_seconds: delaySeconds,
-        registration_period_seconds: periodSeconds,
         // free entry on the dev appchain — also short-circuits the entry
         // token / cosmetics / timelock paths, so no peripherals are required
         fee_amount: 0n,

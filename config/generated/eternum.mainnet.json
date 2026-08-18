@@ -2265,7 +2265,6 @@
       "fee_amount": "0",
       "registration_count_max": 0,
       "registration_delay_seconds": 0,
-      "registration_period_seconds": 0,
       "entry_token_class_hash": "0x0",
       "entry_token_ipfs_cid": "",
       "collectible_cosmetics_max_items": 0,
@@ -2326,7 +2325,7 @@
     "research_cost_for_relic": 50000
   },
   "vrf": {
-    "vrfProviderAddress": "0x0"
+    "vrfProviderAddress": "0x051fea4450da9d6aee758bdeba88b2f665bcbf549d2c61421aa724e9ac0ced8f"
   },
   "setup": {
     "chain": "mainnet",

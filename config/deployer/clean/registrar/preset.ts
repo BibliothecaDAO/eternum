@@ -577,13 +577,13 @@ export function buildChainConfig(config: Config, overrides: ChainConfigOverrides
   };
 }
 
-function resolveRegistrationSchedule(config: Config, startMainAt: number) {
-  const startSettlingAt = startMainAt - config.blitz.registration.registration_period_seconds;
-  const registrationStartAt = startSettlingAt - 1;
-  if (registrationStartAt <= 0) {
-    throw new Error("Game start time does not leave enough room for the configured registration period");
-  }
-  return { registrationStartAt, startSettlingAt };
+// Settling and registration open the moment the game row lands on-chain
+// (owner ruling, Aug 2026): a deployed game is a settleable game. The clamp
+// keeps the contract's `registration < settling <= main` ordering assert
+// green when a game is created at or after its scheduled start time.
+function resolveRegistrationSchedule(startMainAt: number) {
+  const startSettlingAt = Math.min(Math.floor(Date.now() / 1000), startMainAt);
+  return { registrationStartAt: startSettlingAt - 1, startSettlingAt };
 }
 
 function resolveRegistrationCountMax(config: Config, twoPlayerMode: boolean): number {
@@ -626,7 +626,7 @@ function deriveGameSeed(input: CreateGamePayloadInput): string {
 }
 
 export function buildCreateGameParams(config: Config, input: CreateGamePayloadInput): Record<string, unknown> {
-  const { registrationStartAt, startSettlingAt } = resolveRegistrationSchedule(config, input.startMainAt);
+  const { registrationStartAt, startSettlingAt } = resolveRegistrationSchedule(input.startMainAt);
   const registrationCountMax = resolveRegistrationCountMax(config, input.twoPlayerMode);
 
   return {
