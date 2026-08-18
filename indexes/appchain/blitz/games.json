@@ -2,7 +2,7 @@
   "version": 1,
   "environment": "appchain.blitz",
   "kind": "game",
-  "updatedAt": "2026-08-18T00:09:31.460Z",
+  "updatedAt": "2026-08-18T00:38:37.724Z",
   "entries": {
     "cfe2e1": {
       "kind": "game",
@@ -273,6 +273,23 @@
       "recoverableFailedStepId": null,
       "recoverablePendingStepId": null,
       "startTime": 1787013420,
+      "durationSeconds": 3600,
+      "artifacts": {}
+    },
+    "bltz-riff-449": {
+      "kind": "game",
+      "environment": "appchain.blitz",
+      "gameName": "bltz-riff-449",
+      "path": "runs/appchain/blitz/bltz-riff-449.json",
+      "inputPath": "inputs/appchain/blitz/bltz-riff-449/32085223400-1.json",
+      "status": "running",
+      "updatedAt": "2026-08-18T00:38:37.724Z",
+      "workflowRef": "feat/single-world-blitz",
+      "currentStepId": "create-world",
+      "hasRunningStep": false,
+      "recoverableFailedStepId": null,
+      "recoverablePendingStepId": "create-world",
+      "startTime": "2026-08-18T00:50:00.000Z",
       "durationSeconds": 3600,
       "artifacts": {}
     }
