@@ -1,7 +1,7 @@
 import { useResolvedWorldGameMode } from "@/config/game-modes/use-game-mode-config";
 import { useCoarseCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import { LEADERBOARD_UPDATE_INTERVAL } from "@/ui/constants";
-import { LeaderboardManager } from "@bibliothecadao/eternum";
+import { belongsToActiveGame, LeaderboardManager } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
 import { type ClientComponents, ContractAddress } from "@bibliothecadao/types";
 import { useEntityQuery } from "@dojoengine/react";
@@ -52,15 +52,17 @@ const buildFinalizedBlitzLeaderboard = (
   components: ClientComponents,
   entities: FinalizedLeaderboardEntities,
 ): InGameLeaderboard | null => {
-  const finalTrial = entities.finalEntities[0]
-    ? getComponentValue(components.PlayersRankFinal, entities.finalEntities[0])
-    : undefined;
+  // Multi-game store: another game's finalized trial or rank rows must never
+  // decide (or feed) THIS game's finalized leaderboard.
+  const finalTrial = entities.finalEntities
+    .map((entity) => getComponentValue(components.PlayersRankFinal, entity))
+    .find((row) => belongsToActiveGame(row));
   if (!finalTrial) return null;
 
   const registeredPointsLookup = buildRegisteredPointsLookup(
     entities.registeredPointsEntities
       .map((entity) => getComponentValue(components.PlayerRegisteredPoints, entity))
-      .filter((row): row is NonNullable<typeof row> => Boolean(row))
+      .filter((row): row is NonNullable<typeof row> => belongsToActiveGame(row))
       .map((row) => ({
         address: row.address as unknown as bigint,
         registeredPoints: row.registered_points as bigint,
@@ -69,7 +71,7 @@ const buildFinalizedBlitzLeaderboard = (
   const finalizedStandings = buildFinalizedBlitzStandingLookup(
     entities.playerRankEntities
       .map((entity) => getComponentValue(components.PlayerRank, entity))
-      .filter((row): row is NonNullable<typeof row> => Boolean(row))
+      .filter((row): row is NonNullable<typeof row> => belongsToActiveGame(row))
       .map((row) => ({
         playerAddress: row.player as unknown as bigint,
         rank: row.rank as bigint | number,

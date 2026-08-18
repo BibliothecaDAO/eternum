@@ -1,3 +1,4 @@
+import { belongsToActiveGame } from "@bibliothecadao/eternum";
 import type { ClientComponents } from "@bibliothecadao/types";
 import { useEntityQuery } from "@dojoengine/react";
 import { type Entity, getComponentValue, Has } from "@dojoengine/recs";
@@ -11,7 +12,7 @@ export const readBlitzSettlementPlayerAddresses = (
 ): bigint[] =>
   blitzSettlementEntities
     .map((entityId) => getComponentValue(components.BlitzSettlement, entityId))
-    .filter((settlement): settlement is NonNullable<typeof settlement> => Boolean(settlement))
+    .filter((settlement): settlement is NonNullable<typeof settlement> => belongsToActiveGame(settlement))
     .map((settlement) => settlement.player as unknown as bigint);
 
 export const useBlitzSettlementPlayerAddresses = (components: BlitzSettlementComponents): bigint[] => {

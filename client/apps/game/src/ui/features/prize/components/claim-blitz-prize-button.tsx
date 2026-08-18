@@ -6,7 +6,7 @@ import { useEntityQuery } from "@dojoengine/react";
 import { Has, getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@bibliothecadao/eternum";
 import { useEffect, useMemo, useState } from "react";
-import { configManager } from "@bibliothecadao/eternum";
+import { belongsToActiveGame, configManager } from "@bibliothecadao/eternum";
 import { shortString } from "starknet";
 import { gameEntityKey } from "@/dojo/game-scope";
 
@@ -61,7 +61,10 @@ export const ClaimBlitzPrizeButton = ({ className }: { className?: string }) => 
   // Read finalized trial (single model)
   const finalEntities = useEntityQuery([Has(components.PlayersRankFinal)]);
   const final = useMemo(
-    () => (finalEntities[0] ? getComponentValue(components.PlayersRankFinal, finalEntities[0]) : undefined),
+    () =>
+      finalEntities
+        .map((entity) => getComponentValue(components.PlayersRankFinal, entity))
+        .find((row) => belongsToActiveGame(row)),
     [finalEntities],
   );
 

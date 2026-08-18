@@ -9,7 +9,7 @@ import {
   runQuery,
 } from "@dojoengine/recs";
 import { getGuildFromPlayerAddress, getRealmCountPerHyperstructure } from "../utils";
-import { ClientConfigManager, gameEntityKey } from "./config-manager";
+import { belongsToActiveGame, ClientConfigManager, gameEntityKey } from "./config-manager";
 
 interface ContractAddressAndAmount {
   key: false;
@@ -86,12 +86,10 @@ export class LeaderboardManager {
   private activeGameRows<S extends Schema>(
     component: Component<S>,
   ): Array<{ entity: Entity; value: ComponentValue<S> }> {
-    const activeGameId = ClientConfigManager.instance().getActiveGameId();
     const rows: Array<{ entity: Entity; value: ComponentValue<S> }> = [];
     for (const entity of runQuery([Has(component)])) {
       const value = getComponentValue(component, entity);
-      if (!value) continue;
-      if (activeGameId > 0 && Number((value as { game_id?: unknown }).game_id ?? 0) !== activeGameId) continue;
+      if (!value || !belongsToActiveGame(value)) continue;
       rows.push({ entity, value });
     }
     return rows;

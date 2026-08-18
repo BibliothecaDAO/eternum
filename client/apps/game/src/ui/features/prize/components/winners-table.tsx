@@ -3,7 +3,7 @@ import { estimateClaimableChests } from "@/services/review/chest-reward-estimate
 import { normalizeNonZeroAddress } from "@/services/review/sql-parse-utils";
 import { displayAddress } from "@/ui/utils/utils";
 import { buildApiUrl, fetchWithErrorHandling } from "@bibliothecadao/torii";
-import { getAddressName, toHexString, configManager } from "@bibliothecadao/eternum";
+import { belongsToActiveGame, getAddressName, toHexString, configManager } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
 import { ContractAddress } from "@bibliothecadao/types";
 import { useEntityQuery } from "@dojoengine/react";
@@ -103,7 +103,10 @@ export const WinnersTable = ({ trialId }: { trialId?: bigint }) => {
   // Get the finalized trial
   const finalEntities = useEntityQuery([Has(components.PlayersRankFinal)]);
   const final = useMemo(
-    () => (finalEntities[0] ? getComponentValue(components.PlayersRankFinal, finalEntities[0]) : undefined),
+    () =>
+      finalEntities
+        .map((entity) => getComponentValue(components.PlayersRankFinal, entity))
+        .find((row) => belongsToActiveGame(row)),
     [finalEntities, components.PlayersRankFinal],
   );
   const finalTrialId = final?.trial_id as bigint | undefined;
@@ -117,7 +120,7 @@ export const WinnersTable = ({ trialId }: { trialId?: bigint }) => {
     const points = new Map<bigint, bigint>();
     playerRegisteredPointsEntities.forEach((eid) => {
       const value = getComponentValue(components.PlayerRegisteredPoints, eid);
-      if (!value) return;
+      if (!value || !belongsToActiveGame(value)) return;
       points.set(value.address as unknown as bigint, value.registered_points as bigint);
     });
     return points;
@@ -231,6 +234,7 @@ export const WinnersTable = ({ trialId }: { trialId?: bigint }) => {
       .filter(
         (r) =>
           r &&
+          belongsToActiveGame(r) &&
           ((r as { trial_id?: bigint }).trial_id === undefined || (r as { trial_id?: bigint }).trial_id === useTrialId),
       )
       .map((r) => {
