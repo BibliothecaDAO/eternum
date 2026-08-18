@@ -9,6 +9,7 @@ import {
   type ProvisionalIntentLockUntil,
 } from "../sync/provisional-write-manager";
 import { divideByPrecision, getBuildingCount, gramToKg, kgToGram, multiplyByPrecision } from "../utils";
+import { getBlockTimestamp } from "../utils/timestamp";
 import { configManager, gameEntityKey } from "./config-manager";
 
 export interface ResourceProductionData {
@@ -89,6 +90,16 @@ const RESOURCE_BALANCE_FIELDS = {
   [ResourcesIds.TroopProductionRelic2]: "RELIC_E18_BALANCE",
   [ResourcesIds.Research]: "RESEARCH_BALANCE",
 } as const satisfies Partial<Record<ResourcesIds, keyof ResourceValue>>;
+
+// Rows indexed from preconfirmed blocks can carry a last_updated_at ahead of the
+// client's chain-time heartbeat; elapsed production floors at zero, never negative.
+const elapsedProductionTicks = (lastUpdatedAt: number, currentTick: number): number => {
+  const elapsed = currentTick - lastUpdatedAt;
+  return Number.isFinite(elapsed) && elapsed > 0 ? Math.floor(elapsed) : 0;
+};
+
+const resourceUnitWeightGrams = (resourceId: ResourcesIds): bigint =>
+  BigInt(kgToGram(configManager.getResourceWeightKg(resourceId) || 0));
 
 // s2 changed production_rate to u64 (schema: number); internal math stays bigint.
 // Absent members (partial RECS rows, test fixtures) normalize to zero production.
@@ -187,7 +198,7 @@ export class ResourceManager {
     const balance = this.balance(resourceId);
     if (!production)
       return { balance: Number(balance), hasReachedMaxCapacity: false, amountProduced: 0n, amountProducedLimited: 0n };
-    const amountProduced = this._amountProduced(production, currentTick, resourceId);
+    const amountProduced = ResourceManager._amountProducedStatic(production, currentTick, resourceId);
     const amountProducedLimited = this._limitProductionByStoreCapacity(amountProduced, resourceId);
     return {
       balance: Number(balance + amountProducedLimited),
@@ -217,18 +228,64 @@ export class ResourceManager {
     const patch: Record<string, unknown> = {};
     let nextWeight = currentWeight.weight;
 
+    // The chain harvests pending production into the balance before any spend or
+    // deposit touches it (SingleResourceStoreImpl::retrieve). The overlay must
+    // predict that post-harvest row: fold the accrual into the pinned balance AND
+    // pin the production clock together — otherwise the authoritative echo resets
+    // last_updated_at underneath the overlay while the stale accrual-blind balance
+    // stays pinned on top, displaying below zero for any spend the UI validated
+    // against the accrual-inclusive balance.
+    const touchedResourceIds = [...new Set(applicableChanges.map(({ resourceId }) => resourceId))];
+    touchedResourceIds.forEach((resourceId) => {
+      const harvest = this.resolveProvisionalHarvest(currentResource, resourceId);
+      if (!harvest) return;
+      const balanceField = RESOURCE_BALANCE_FIELDS[resourceId as keyof typeof RESOURCE_BALANCE_FIELDS];
+      patch[balanceField] = this.balance(resourceId) + harvest.balanceGained;
+      patch[harvest.productionField] = harvest.production;
+      nextWeight += resourceUnitWeightGrams(resourceId) * harvest.balanceGained;
+    });
+
     applicableChanges.forEach(({ resourceId, amount }) => {
       const balanceField = RESOURCE_BALANCE_FIELDS[resourceId as keyof typeof RESOURCE_BALANCE_FIELDS];
       const amountWithPrecision = BigInt(Math.floor(multiplyByPrecision(amount)));
       const patchedBalance = patch[balanceField];
       patch[balanceField] =
         (typeof patchedBalance === "bigint" ? patchedBalance : this.balance(resourceId)) + amountWithPrecision;
-      const resourceWeight = configManager.getResourceWeightKg(resourceId) || 0;
-      nextWeight += BigInt(kgToGram(resourceWeight)) * amountWithPrecision;
+      nextWeight += resourceUnitWeightGrams(resourceId) * amountWithPrecision;
     });
 
     patch.weight = { ...currentWeight, weight: nextWeight };
     return patch as Partial<ResourceValue>;
+  }
+
+  // Mirrors ProductionImpl::harvest + SingleResource::add: accrued production since
+  // last_updated_at, capped by output_amount_left (non-continuous) and by store
+  // capacity, with the production clock reset to the current tick.
+  private resolveProvisionalHarvest(
+    resource: ResourceValue | undefined,
+    resourceId: ResourcesIds,
+  ): { productionField: string; production: Record<string, unknown>; balanceGained: bigint } | null {
+    if (!resource) return null;
+    const balanceField = RESOURCE_BALANCE_FIELDS[resourceId as keyof typeof RESOURCE_BALANCE_FIELDS];
+    if (!balanceField) return null;
+    const productionField = balanceField.replace(/_BALANCE$/, "_PRODUCTION");
+    const storedProduction = (resource as Record<string, unknown>)[productionField];
+    if (typeof storedProduction !== "object" || storedProduction === null) return null;
+
+    const production = ResourceManager.balanceAndProduction(resource, resourceId).production;
+    const currentTick = getBlockTimestamp().currentDefaultTick;
+    const amountProduced = ResourceManager._amountProducedStatic(production, currentTick, resourceId);
+    if (amountProduced <= 0n) return null;
+
+    const balanceGained = this._limitProductionByStoreCapacity(amountProduced, resourceId);
+    const outputAmountLeft = ResourceManager.isContinuousProductionResource(resourceId)
+      ? production.output_amount_left
+      : production.output_amount_left - amountProduced;
+    return {
+      productionField,
+      production: { ...storedProduction, output_amount_left: outputAmountLeft, last_updated_at: currentTick },
+      balanceGained,
+    };
   }
 
   public resolveProvisionalResourceWrite(
@@ -399,40 +456,12 @@ export class ResourceManager {
 
   private _limitProductionByStoreCapacity(amountProduced: bigint, resourceId: ResourcesIds): bigint {
     const { capacityKg, capacityUsedKg } = this.getStoreCapacityKg();
-    const capacityLeft = Math.max(0, capacityKg - capacityUsedKg);
-
-    const maxAmountStorable = multiplyByPrecision(capacityLeft / (configManager.getResourceWeightKg(resourceId) || 1));
-
-    if (amountProduced > maxAmountStorable) {
-      return BigInt(maxAmountStorable);
-    }
-    return amountProduced;
-  }
-
-  private _amountProduced(
-    production: {
-      building_count: number;
-      production_rate: bigint;
-      output_amount_left: bigint;
-      last_updated_at: number;
-    },
-    currentTick: number,
-    resourceId: ResourcesIds,
-  ): bigint {
-    if (!production || production.building_count === 0) return 0n;
-    if (production.production_rate === 0n) return 0n;
-
-    const ticksSinceLastUpdate = currentTick - production.last_updated_at;
-    let totalAmountProduced = BigInt(ticksSinceLastUpdate) * production.production_rate;
-
-    if (
-      !ResourceManager.isContinuousProductionResource(resourceId) &&
-      totalAmountProduced > production.output_amount_left
-    ) {
-      totalAmountProduced = production.output_amount_left;
-    }
-
-    return totalAmountProduced;
+    return ResourceManager._limitProductionByStoreCapacityStatic(
+      amountProduced,
+      configManager.getResourceWeightKg(resourceId) || 0,
+      capacityKg,
+      capacityUsedKg,
+    );
   }
 
   /**
@@ -792,8 +821,8 @@ export class ResourceManager {
     const amountProducedLimited = this._limitProductionByStoreCapacityStatic(
       amountProduced,
       resourceWeightKg,
-      Number(resource?.weight.capacity || 0),
-      Number(resource?.weight.weight || 0),
+      gramToKg(divideByPrecision(Number(resource?.weight.capacity || 0))),
+      gramToKg(divideByPrecision(Number(resource?.weight.weight || 0))),
     );
 
     return {
@@ -815,7 +844,7 @@ export class ResourceManager {
     if (!production || production.building_count === 0) return 0n;
     if (production.production_rate === 0n) return 0n;
 
-    const ticksSinceLastUpdate = currentTick - production.last_updated_at;
+    const ticksSinceLastUpdate = elapsedProductionTicks(production.last_updated_at, currentTick);
     let totalAmountProduced = BigInt(ticksSinceLastUpdate) * production.production_rate;
 
     const isContinuousProductionResource = ResourceManager.isContinuousProductionResource(resourceId);
@@ -832,7 +861,7 @@ export class ResourceManager {
     storeCapacityKg: number,
     storeUsedKg: number,
   ): bigint {
-    const capacityLeft = storeCapacityKg - storeUsedKg;
+    const capacityLeft = Math.max(0, storeCapacityKg - storeUsedKg);
     const maxAmountStorable = multiplyByPrecision(capacityLeft / (resourceWeightKg || 1));
 
     if (amountProduced > maxAmountStorable) {
@@ -948,10 +977,7 @@ export class ResourceManager {
   ): ResourceProductionData {
     const productionPerSecond = divideByPrecision(Number(productionInfo.production.production_rate || 0), false);
 
-    // A pre-config tick or a malformed row must degrade to "no elapsed production", never throw.
-    const rawTicksSinceLastUpdate = currentTick - productionInfo.production.last_updated_at;
-    const ticksSinceLastUpdate =
-      Number.isFinite(rawTicksSinceLastUpdate) && rawTicksSinceLastUpdate > 0 ? Math.floor(rawTicksSinceLastUpdate) : 0;
+    const ticksSinceLastUpdate = elapsedProductionTicks(productionInfo.production.last_updated_at, currentTick);
     const totalAmountProduced = BigInt(ticksSinceLastUpdate) * productionInfo.production.production_rate;
     const isContinuousProductionResource = ResourceManager.isContinuousProductionResource(resourceId);
     const remainingOutput = isContinuousProductionResource

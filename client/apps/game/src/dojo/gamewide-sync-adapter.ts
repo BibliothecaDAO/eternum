@@ -281,7 +281,12 @@ const reportProvisionalIntentStalled = (info: GameSyncProvisionalIntentStalledIn
 };
 
 const reportProvisionalIntentPhase = (info: GameSyncProvisionalIntentPhaseInfo): void => {
-  if (import.meta.env.DEV) console.info("[GameSync] provisional intent phase", info);
+  if (import.meta.env.DEV && info.phase === "baseline_delta_before_hash") {
+    // Convicts the echo-races-execute() case in session logs.
+    console.warn("[GameSync] authoritative echo observed before the transaction hash bound", info);
+  } else if (import.meta.env.DEV) {
+    console.info("[GameSync] provisional intent phase", info);
+  }
   captureClientEvent("game_sync_provisional_intent_phase", {
     phase: info.phase,
     intent_id: info.intentId,
