@@ -195,7 +195,7 @@ export default defineConfig(({ command, mode }: ConfigEnv): UserConfig => {
             utils: ["lodash", "uuid", "platform", "buffer", "wouter"],
 
             // Communication & External APIs
-            external: ["graphql-request", "@vercel/analytics"],
+            external: ["graphql-request"],
           },
           inlineDynamicImports: false,
           sourcemapIgnoreList: (relativeSourcePath) => {
