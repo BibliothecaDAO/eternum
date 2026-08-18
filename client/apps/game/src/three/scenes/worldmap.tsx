@@ -1329,8 +1329,18 @@ export default class WorldmapScene extends WarpTravel {
         this.highlightHexManager.setCameraView(view);
         this.interactiveHexManager.setCameraView(view);
       });
+      // One queue task per biome model: the flip re-copies that model's whole
+      // instance-matrix buffer, and doing every model in the interaction frame
+      // was a convicted multi-second freeze (owner zoom:terrain-detail).
+      // setFarDetailEnabled is idempotent, so staggered application converges.
       runWithFrameWorkOwner("zoom:terrain-detail", () => {
-        this.biomeModels.forEach((model) => model.setFarDetailEnabled(view === CameraView.Far));
+        this.biomeModels.forEach((model) => {
+          void this.chunkWorkQueue
+            .schedule("visible", () => model.setFarDetailEnabled(view === CameraView.Far))
+            .catch((error) => {
+              if (!isFrameBudgetWorkQueueDisposedError(error)) throw error;
+            });
+        });
       });
       runWithFrameWorkOwner("zoom:worldmap-shadows", () => {
         this.configureWorldmapShadows();
