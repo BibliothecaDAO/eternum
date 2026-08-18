@@ -53,9 +53,14 @@ export const getEffectiveHyperstructureRealmCount = (realmCountWithinRadius: num
 };
 
 export const getRealmCountPerHyperstructure = (components: ClientComponents): Map<ID, number> => {
+  // Every game shares the same settlement coordinate space, so an unscoped
+  // Structure sweep would count other games' realms into this game's radii.
+  const activeGameId = configManager.getActiveGameId();
   const structures = [...runQuery([Has(components.Structure)])].flatMap((entity) => {
     const structure = getComponentValue(components.Structure, entity);
-    return structure ? [structure] : [];
+    if (!structure) return [];
+    if (activeGameId > 0 && Number(structure.game_id ?? 0) !== activeGameId) return [];
+    return [structure];
   });
   const realms = structures.filter((structure) => structure.category === StructureType.Realm);
   const radiusSquared = getHyperstructureRealmCheckRadius() ** 2;
