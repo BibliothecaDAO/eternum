@@ -231,6 +231,40 @@ describe("ProvisionalWriteManager", () => {
     expect(manager.isProvisionalOnly("Building", "0x1")).toBe(false);
   });
 
+  it("settles at the tripwire when the intent reconciled but its release was flapped away", () => {
+    vi.useFakeTimers();
+    const store = createStore();
+    const manager = new ProvisionalWriteManager(store);
+    const intent = manager.createIntent([
+      {
+        entityId: "0x2",
+        model: "ExplorerTroops",
+        patch: { coord: { x: 12, y: 9 } },
+        matchPatch: { coord: { x: 12, y: 9 } },
+        sourcePatch: { coord: { x: 11, y: 9 } },
+      },
+    ]);
+    const outcomes = vi.fn();
+    intent.subscribe(outcomes);
+    intent.bindTransaction("0xtx");
+    intent.confirm();
+
+    // Source-coord echo schedules a release, then an unrelated echo flaps
+    // sourceMatched off and cancels it; the destination echo then matches but
+    // the release-window race can leave nothing scheduled. The tripwire must
+    // settle, not force-fail.
+    manager.observeAuthoritativeObservations([
+      { type: "model", entityId: "0x2", model: "ExplorerTroops", value: { coord: { x: 11, y: 9 } } },
+    ]);
+    manager.observeAuthoritativeObservations([
+      { type: "model", entityId: "0x2", model: "ExplorerTroops", value: { coord: { x: 12, y: 9 } } },
+    ]);
+    vi.advanceTimersByTime(30_000);
+
+    expect(outcomes).toHaveBeenCalledWith("settled");
+    expect(outcomes).not.toHaveBeenCalledWith("stalled");
+  });
+
   it("fails independently when a tracked receipt rejects", async () => {
     const store = createStore();
     const manager = new ProvisionalWriteManager(store);

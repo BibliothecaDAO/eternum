@@ -266,6 +266,13 @@ export class ProvisionalWriteManager {
     intent.stalledTimeout = setTimeout(() => {
       intent.stalledTimeout = null;
       if (intent.status !== "confirmed") return;
+      // A sourceMatched flap can cancel a scheduled release without another
+      // observation ever re-scheduling it — re-check before declaring a stall
+      // so a reconciled intent settles instead of being force-failed.
+      if (this.hasReconciledOutcome(intent)) {
+        this.finishIntent(intent, "settled");
+        return;
+      }
       this.onIntentStalled?.(this.describeStalledIntent(intent));
       this.publishOutcome(intent, "stalled");
       this.finishIntent(intent, "failed");
