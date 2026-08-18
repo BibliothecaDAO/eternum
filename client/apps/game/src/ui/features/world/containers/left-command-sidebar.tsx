@@ -21,7 +21,7 @@ import { setEntityNameLocalStorage } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
 import { type ID } from "@bibliothecadao/types";
 import { useComponentValue } from "@dojoengine/react";
-import { getEntityIdFromKeys } from "@dojoengine/utils";
+import { getEntityIdFromKeys } from "@bibliothecadao/eternum";
 import MessageCircle from "lucide-react/dist/esm/icons/message-circle";
 import PackageIcon from "lucide-react/dist/esm/icons/package";
 import Sparkles from "lucide-react/dist/esm/icons/sparkles";
@@ -43,7 +43,7 @@ const useRealtimeChatConfig = () => {
 
   useEffect(() => {
     if (import.meta.env.DEV && !chatBaseUrl) {
-      console.info("[RealtimeChat] disabled: VITE_PUBLIC_CHAT_URL is unset");
+      console.warn("[RealtimeChat] disabled: VITE_PUBLIC_CHAT_URL is unset");
     }
   }, [chatBaseUrl]);
 

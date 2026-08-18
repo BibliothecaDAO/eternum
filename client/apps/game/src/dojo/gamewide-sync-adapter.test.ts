@@ -3,14 +3,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { Entity as ToriiEntity } from "@dojoengine/torii-wasm/types";
 
-const {
-  captureClientEventMock,
-  getComponentEntitiesMock,
-  getComponentValueMock,
-  removeComponentMock,
-  setEntitiesMock,
-} = vi.hoisted(() => ({
-  captureClientEventMock: vi.fn(),
+const { getComponentEntitiesMock, getComponentValueMock, removeComponentMock, setEntitiesMock } = vi.hoisted(() => ({
   getComponentEntitiesMock: vi.fn(),
   getComponentValueMock: vi.fn(),
   removeComponentMock: vi.fn(),
@@ -25,14 +18,18 @@ vi.mock("@dojoengine/recs", async (importOriginal) => ({
 }));
 
 vi.mock("@dojoengine/state", () => ({ setEntities: setEntitiesMock }));
-vi.mock("@/posthog", () => ({ captureClientEvent: captureClientEventMock }));
 
 import { createGamewideSyncSession, GAMEWIDE_SNAPSHOT_PAGE_SIZE } from "./gamewide-sync-adapter";
 
 const createHarness = ({
   onStreamClose,
   pageRetryCount = 0,
-}: { onStreamClose?: (stream: "entity" | "event", reason: string) => void; pageRetryCount?: number } = {}) => {
+  eventModels = ["s2-BattleEvent"],
+}: {
+  onStreamClose?: (stream: "entity" | "event", reason: string) => void;
+  pageRetryCount?: number;
+  eventModels?: string[];
+} = {}) => {
   getComponentValueMock.mockReturnValue({ x: 2 });
   let onEntity: ((entity: unknown) => void) | null = null;
   let onEvent: ((event: unknown) => void) | null = null;
@@ -57,11 +54,13 @@ const createHarness = ({
       async (): Promise<{ items: ToriiEntity[]; next_cursor?: string }> => ({ items: [], next_cursor: undefined }),
     ),
   };
+  // Mirrors the production shape: event components are NESTED under `events`,
+  // never top-level — the adapter must flatten them or event rows are dropped.
   const setup = {
-    components: { Position: positionComponent, BattleEvent: eventComponent },
+    components: { Position: positionComponent, events: { BattleEvent: eventComponent } },
     network: {
       toriiClient: client,
-      contractComponents: { Position: positionComponent, BattleEvent: eventComponent },
+      contractComponents: { Position: positionComponent, events: { BattleEvent: eventComponent } },
       world: { deleteEntity: vi.fn() },
     },
   };
@@ -69,7 +68,7 @@ const createHarness = ({
     setup: setup as never,
     entityClause: { Keys: { keys: ["0xd"], pattern_matching: "VariableLen", models: ["s2-Position"] } },
     eventClause: { Keys: { keys: ["0xd"], pattern_matching: "VariableLen", models: ["s2-BattleEvent"] } },
-    eventModels: ["s2-BattleEvent"],
+    eventModels,
     entityModels: ["s2-Position"],
     logging: false,
     subscriptionSetupTimeoutMs: 0,
@@ -224,21 +223,24 @@ describe("game-wide sync adapter", () => {
     expect(harness.client.getEntities).toHaveBeenCalledTimes(2);
   });
 
-  it("reports stalled provisional intents in production telemetry", () => {
+  it("names the unmatched models in the stalled-intent error message", () => {
     const harness = createHarness();
+    const error = vi.spyOn(console, "error").mockImplementation(() => undefined);
 
-    harness.session.onProvisionalIntentStalled?.({
-      intentId: "intent-1",
-      transactionHash: "0x123",
-      unmatchedWrites: [{ entityId: "army-1", model: "ExplorerTroops", matchPatch: { coord: { x: 2 } } }],
-    });
+    try {
+      harness.session.onProvisionalIntentStalled?.({
+        intentId: "intent-1",
+        transactionHash: "0x123",
+        unmatchedWrites: [{ entityId: "army-1", model: "ExplorerTroops", matchPatch: { coord: { x: 2 } } }],
+      });
 
-    expect(captureClientEventMock).toHaveBeenCalledWith("game_sync_provisional_intent_stalled", {
-      intent_id: "intent-1",
-      has_transaction_hash: true,
-      unmatched_write_count: 1,
-      unmatched_models: ["ExplorerTroops"],
-    });
+      expect(error).toHaveBeenCalledWith(
+        expect.stringContaining("(unmatched: ExplorerTroops)"),
+        expect.objectContaining({ intentId: "intent-1" }),
+      );
+    } finally {
+      error.mockRestore();
+    }
   });
 
   it("applies component removal without deleting siblings and removes event rows immediately", async () => {
@@ -259,5 +261,28 @@ describe("game-wide sync adapter", () => {
     expect(removeComponentMock).toHaveBeenCalledWith(harness.eventComponent, "event");
     expect(harness.setup.network.world.deleteEntity).not.toHaveBeenCalled();
     expect([...harness.session.store.listModelEntityIds("s2-Position")]).toEqual(["entity"]);
+  });
+
+  it("hands event components from the nested contract-components record to setEntities", async () => {
+    const harness = createHarness();
+
+    await harness.session.store.applyEvent({
+      hashed_keys: "event",
+      models: { "s2-BattleEvent": { winner: 1 } },
+    });
+
+    const [, componentsPassedToSetEntities] = setEntitiesMock.mock.calls.at(-1) as [unknown, unknown[]];
+    expect(componentsPassedToSetEntities).toContain(harness.eventComponent);
+    expect(componentsPassedToSetEntities).toContain(harness.positionComponent);
+  });
+
+  it("reports loudly when a sync model has no RECS component", () => {
+    const error = vi.spyOn(console, "error").mockImplementation(() => undefined);
+    try {
+      createHarness({ eventModels: ["s2-UnregisteredEvent"] });
+      expect(error).toHaveBeenCalledWith(expect.stringMatching(/dropped silently.*s2-UnregisteredEvent/));
+    } finally {
+      error.mockRestore();
+    }
   });
 });

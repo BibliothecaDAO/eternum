@@ -172,7 +172,5 @@ export class InputManager {
       window.removeEventListener(listener.event, listener.handler);
     }
     this.listeners = [];
-
-    console.log("InputManager: Destroyed and cleaned up all event listeners");
   }
 }

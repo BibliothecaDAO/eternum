@@ -22,7 +22,11 @@ import {
 } from "@/three/constants";
 import { createHexagonShape } from "@/three/geometry/hexagon-geometry";
 import { BIOME_COLORS } from "@/three/managers/biome-colors";
-import { BuildingPreview } from "@/three/managers/building-preview";
+import {
+  BuildingPreview,
+  applyPendingBuildingMaterials,
+  disposeClonedBuildingMaterials,
+} from "@/three/managers/building-preview";
 import InstancedBiome from "@/three/managers/instanced-biome";
 import { SMALL_DETAILS_NAME } from "@/three/managers/instanced-model";
 import { SceneManager } from "@/three/scene-manager";
@@ -35,6 +39,7 @@ import {
   selectNextStructure as utilSelectNextStructure,
 } from "@/three/utils/navigation";
 import { SceneShortcutManager } from "@/three/utils/shortcuts";
+import { runWithFrameWorkOwner } from "@/three/frame-work-owner";
 import { createPausedLabel, gltfLoader } from "@/three/utils/utils";
 import { LeftView } from "@/types";
 import { BuildingSystemUpdate, Position, StructureProgress, getBlockTimestamp } from "@bibliothecadao/eternum";
@@ -151,6 +156,7 @@ export default class HexceptionScene extends HexagonScene {
     Map<BUILDINGS_CATEGORIES_TYPES, { model: Group; animations: AnimationClip[] }>
   > = new Map();
   private buildingInstances: Map<string, Group> = new Map();
+  private pendingBuildingKeys: Set<string> = new Set();
   private wonderInstances: Map<string, Group> = new Map();
   private buildingMixers: Map<string, AnimationMixer> = new Map();
   private pillars: InstancedMesh | null = null;
@@ -586,8 +592,11 @@ export default class HexceptionScene extends HexagonScene {
       this.tileManager.setTile({ col, row });
 
       // remove all previous building instances
-      this.buildingInstances.forEach((instance) => {
+      this.buildingInstances.forEach((instance, key) => {
         this.scene.remove(instance);
+        if (this.pendingBuildingKeys.delete(key)) {
+          disposeClonedBuildingMaterials(instance);
+        }
       });
       this.buildingInstances.clear();
 
@@ -680,7 +689,6 @@ export default class HexceptionScene extends HexagonScene {
     this.buildingUpdateUnsubscribe = null;
 
     // CRITICAL: Clean up all Zustand store subscriptions to prevent memory leaks
-    console.log("🧹 Cleaning up Zustand subscriptions:", this.storeUnsubscribes.length);
     this.storeUnsubscribes.forEach((unsubscribe) => unsubscribe());
     this.storeUnsubscribes = [];
 
@@ -691,23 +699,24 @@ export default class HexceptionScene extends HexagonScene {
     }
 
     // CRITICAL: Clean up animation mixers to prevent memory leaks
-    console.log("🧹 Disposing animation mixers:", this.buildingMixers.size);
     this.buildingMixers.forEach((mixer, key) => {
       mixer.stopAllAction();
       mixer.uncacheRoot(mixer.getRoot());
-      console.log(`  ✅ Disposed mixer: ${key}`);
     });
     this.buildingMixers.clear();
 
     // Clean up mines materials
-    console.log("🧹 Disposing mines materials:", this.minesMaterials.size);
     this.minesMaterials.forEach((material, resourceId) => {
       material.dispose();
-      console.log(`  ✅ Disposed material for resource: ${resourceId}`);
     });
     this.minesMaterials.clear();
 
     // Clean up building instances
+    this.buildingInstances.forEach((instance, key) => {
+      if (this.pendingBuildingKeys.delete(key)) {
+        disposeClonedBuildingMaterials(instance);
+      }
+    });
     this.buildingInstances.clear();
     this.wonderInstances.clear();
 
@@ -739,7 +748,6 @@ export default class HexceptionScene extends HexagonScene {
     this.buildingModels.clear();
 
     // OPTIMIZED: Release any matrices back to the pool
-    console.log("🧹 Hexception scene cleanup - releasing matrices");
 
     // Dispose of pillars
     if (this.pillars) {
@@ -803,14 +811,6 @@ export default class HexceptionScene extends HexagonScene {
 
       this.clearBuildingMode();
       try {
-        console.log("Placing building at:", {
-          dojo: account!,
-          entityId: structureEntityId,
-          col: normalizedCoords.col,
-          row: normalizedCoords.row,
-          buildingId: buildingType.type,
-        });
-
         await this.tileManager.placeBuilding(
           account!,
           structureEntityId,
@@ -820,7 +820,7 @@ export default class HexceptionScene extends HexagonScene {
         );
         AudioManager.getInstance().play("ui.build_place");
       } catch (error) {
-        console.log("catched error so removing building", error);
+        console.error("[Hexception] building placement failed; removing provisional building", error);
         this.removeBuilding(normalizedCoords.col, normalizedCoords.row);
       }
       this.updateHexceptionGrid(this.hexceptionRadius);
@@ -1097,100 +1097,177 @@ export default class HexceptionScene extends HexagonScene {
       Empty: [],
     };
 
-    Promise.all(this.modelLoadPromises).then(() => {
-      const centers = [
-        [0, 0], //0, 0 (Main hex)
-        [-6, 5], //-1, 1
-        [7, 4], //1, 0
-        [1, 9], //0, 1
-        [-7, -4], //-1, 0
-        [0, -9], //0, -1
-        [7, -5], //1, -1
-      ];
-      const neighbors = getNeighborHexes(this.centerColRow[0], this.centerColRow[1]);
-      this.highlights = [];
+    // The whole grid build runs as one macrotask once models resolve; the
+    // frame-owner marker is what attributes the local-view freeze to it.
+    Promise.all(this.modelLoadPromises).then(() =>
+      runWithFrameWorkOwner("scene:hexception:grid", () => {
+        const centers = [
+          [0, 0], //0, 0 (Main hex)
+          [-6, 5], //-1, 1
+          [7, 4], //1, 0
+          [1, 9], //0, 1
+          [-7, -4], //-1, 0
+          [0, -9], //0, -1
+          [7, -5], //1, -1
+        ];
+        const neighbors = getNeighborHexes(this.centerColRow[0], this.centerColRow[1]);
+        this.highlights = [];
 
-      // compute matrices to update biome models for each of the large hexes
-      for (const center in centers) {
-        const isMainHex = centers[center][0] === 0 && centers[center][1] === 0;
-        if (isMainHex) {
-          this.computeMainHexMatrices(radius, dummy, centers[center], this.tileManager.getHexCoords(), biomeHexes);
-        } else {
-          this.computeNeighborHexMatrices(radius, dummy, centers[center], neighbors[Number(center) - 1], biomeHexes);
-        }
-      }
-
-      // add buildings to the scene in the center hex
-      for (const building of this.buildings) {
-        const key = `${building.col},${building.row}`;
-        if (!this.buildingInstances.has(key)) {
-          let buildingGroup: BUILDINGS_GROUPS;
-          let buildingType: BUILDINGS_CATEGORIES_TYPES;
-
-          if (building.resource && (building.resource < 23 || building.resource === ResourcesIds.AncientFragment)) {
-            buildingGroup = BUILDINGS_GROUPS.RESOURCES_MINING;
-            buildingType = ResourceIdToMiningType[building.resource as ResourcesIds] as ResourceMiningTypes;
+        // compute matrices to update biome models for each of the large hexes
+        for (const center in centers) {
+          const isMainHex = centers[center][0] === 0 && centers[center][1] === 0;
+          if (isMainHex) {
+            this.computeMainHexMatrices(radius, dummy, centers[center], this.tileManager.getHexCoords(), biomeHexes);
           } else {
-            buildingGroup = BUILDINGS_GROUPS.BUILDINGS;
-            buildingType = building.category as BUILDINGS_CATEGORIES_TYPES;
+            this.computeNeighborHexMatrices(radius, dummy, centers[center], neighbors[Number(center) - 1], biomeHexes);
           }
+        }
 
-          if (buildingGroup === BUILDINGS_GROUPS.BUILDINGS && buildingType === BuildingType.ResourceLabor) {
-            buildingType = castleLevelToRealmCastle[this.structureStage];
-            buildingGroup = BUILDINGS_GROUPS.REALMS;
+        // add buildings to the scene in the center hex
+        for (const building of this.buildings) {
+          const key = `${building.col},${building.row}`;
+          const isPending = Boolean(building.pending);
+          if (this.buildingInstances.has(key) && this.pendingBuildingKeys.has(key) !== isPending) {
+            // The pending state flipped (tx confirmed, or the slot re-resolved) —
+            // rebuild the instance so its material treatment matches reality.
+            this.removeBuilding(building.col, building.row);
           }
+          if (!this.buildingInstances.has(key)) {
+            let buildingGroup: BUILDINGS_GROUPS;
+            let buildingType: BUILDINGS_CATEGORIES_TYPES;
 
-          if (isVillageLikeStructureCategory(mainStructureType)) {
-            // Village-like structures use their dedicated center model instead of realm castle stages.
-            if (building.col === BUILDINGS_CENTER[0] && building.row === BUILDINGS_CENTER[1]) {
-              buildingGroup = BUILDINGS_GROUPS.VILLAGE;
-              buildingType = mainStructureType as StructureType.Village | StructureType.Camp;
+            if (building.resource && (building.resource < 23 || building.resource === ResourcesIds.AncientFragment)) {
+              buildingGroup = BUILDINGS_GROUPS.RESOURCES_MINING;
+              buildingType = ResourceIdToMiningType[building.resource as ResourcesIds] as ResourceMiningTypes;
+            } else {
+              buildingGroup = BUILDINGS_GROUPS.BUILDINGS;
+              buildingType = building.category as BUILDINGS_CATEGORIES_TYPES;
             }
-          }
 
-          // Handle hyperstructure type
-          if (building.structureType === StructureType.Hyperstructure) {
-            buildingGroup = BUILDINGS_GROUPS.HYPERSTRUCTURE;
-            buildingType = hyperstructureStageToModel[this.structureStage as StructureProgress];
-          }
+            if (buildingGroup === BUILDINGS_GROUPS.BUILDINGS && buildingType === BuildingType.ResourceLabor) {
+              buildingType = castleLevelToRealmCastle[this.structureStage];
+              buildingGroup = BUILDINGS_GROUPS.REALMS;
+            }
 
-          // Store original building group and type for potential wonder addition
-          const originalBuildingGroup = buildingGroup;
-          const originalBuildingType = buildingType;
+            if (isVillageLikeStructureCategory(mainStructureType)) {
+              // Village-like structures use their dedicated center model instead of realm castle stages.
+              if (building.col === BUILDINGS_CENTER[0] && building.row === BUILDINGS_CENTER[1]) {
+                buildingGroup = BUILDINGS_GROUPS.VILLAGE;
+                buildingType = mainStructureType as StructureType.Village | StructureType.Camp;
+              }
+            }
 
-          // Check if the realm has a wonder
-          const hasWonder = this.tileManager.getWonder(this.state.structureEntityId);
+            // Handle hyperstructure type
+            if (building.structureType === StructureType.Hyperstructure) {
+              buildingGroup = BUILDINGS_GROUPS.HYPERSTRUCTURE;
+              buildingType = hyperstructureStageToModel[this.structureStage as StructureProgress];
+            }
 
-          // If the realm has a wonder and it's not a hyperstructure, we'll add both models
-          // But only for the central building (castle) at BUILDINGS_CENTER coordinates
-          if (
-            hasWonder &&
-            building.structureType !== StructureType.Hyperstructure &&
-            building.col === BUILDINGS_CENTER[0] &&
-            building.row === BUILDINGS_CENTER[1]
-          ) {
-            // First, create the wonder model
-            const wonderGroup = BUILDINGS_GROUPS.WONDER;
-            const wonderType = WONDER_REALM;
+            // Store original building group and type for potential wonder addition
+            const originalBuildingGroup = buildingGroup;
+            const originalBuildingType = buildingType;
 
-            const wonderData = this.buildingModels
-              .get(wonderGroup)
-              ?.get(wonderType.toString() as BUILDINGS_CATEGORIES_TYPES);
+            // Check if the realm has a wonder
+            const hasWonder = this.tileManager.getWonder(this.state.structureEntityId);
 
-            if (wonderData) {
-              const wonderInstance = wonderData.model.clone();
-              wonderInstance.applyMatrix4(building.matrix);
+            // If the realm has a wonder and it's not a hyperstructure, we'll add both models
+            // But only for the central building (castle) at BUILDINGS_CENTER coordinates
+            if (
+              hasWonder &&
+              building.structureType !== StructureType.Hyperstructure &&
+              building.col === BUILDINGS_CENTER[0] &&
+              building.row === BUILDINGS_CENTER[1]
+            ) {
+              // First, create the wonder model
+              const wonderGroup = BUILDINGS_GROUPS.WONDER;
+              const wonderType = WONDER_REALM;
+
+              const wonderData = this.buildingModels
+                .get(wonderGroup)
+                ?.get(wonderType.toString() as BUILDINGS_CATEGORIES_TYPES);
+
+              if (wonderData) {
+                const wonderInstance = wonderData.model.clone();
+                wonderInstance.applyMatrix4(building.matrix);
+
+                // Set initial scale for animation
+                wonderInstance.scale.set(0.01, 0.01, 0.01);
+
+                // Add wonder instance to scene
+                this.scene.add(wonderInstance);
+                // Store the wonder instance for later removal
+                this.wonderInstances.set(`${key}_wonder`, wonderInstance);
+
+                // Animate scale using gsap
+                gsap.to(wonderInstance.scale, {
+                  duration: 0.5,
+                  x: 1,
+                  y: 1,
+                  z: 1,
+                  ease: "power2.out",
+                });
+
+                // Check if the model has animations and start them
+                const wonderAnimations = wonderData.animations;
+                if (wonderAnimations && wonderAnimations.length > 0) {
+                  const wonderMixer = new AnimationMixer(wonderInstance);
+                  wonderAnimations.forEach((clip: AnimationClip) => {
+                    wonderMixer.clipAction(clip).play();
+                  });
+                  // Store the mixer for later use
+                  this.buildingMixers.set(`${key}_wonder`, wonderMixer);
+                }
+              }
+            }
+
+            // Now create the original building model (Realm or other)
+            const buildingData = this.buildingModels
+              .get(originalBuildingGroup)
+              ?.get(originalBuildingType.toString() as BUILDINGS_CATEGORIES_TYPES);
+
+            if (buildingData) {
+              const instance = buildingData.model.clone();
+
+              instance.applyMatrix4(building.matrix);
 
               // Set initial scale for animation
-              wonderInstance.scale.set(0.01, 0.01, 0.01);
+              instance.scale.set(0.01, 0.01, 0.01);
 
-              // Add wonder instance to scene
-              this.scene.add(wonderInstance);
-              // Store the wonder instance for later removal
-              this.wonderInstances.set(`${key}_wonder`, wonderInstance);
+              if (buildingType === ResourceMiningTypes.Forge) {
+                instance.traverse((child) => {
+                  if (child.name === "Grassland003_1" && child instanceof Mesh) {
+                    if (!this.minesMaterials.has(building.resource)) {
+                      const material = new MeshStandardMaterial(MinesMaterialsParams[building.resource]);
+                      this.minesMaterials.set(building.resource, material);
+                    }
+                    child.material = this.minesMaterials.get(building.resource);
+                  }
+                });
+              }
+              if (buildingType === ResourceMiningTypes.Mine) {
+                instance.traverse((child) => {
+                  // @ts-ignore
+                  if (child?.material?.name === "crystal" && child instanceof Mesh) {
+                    if (!this.minesMaterials.has(building.resource)) {
+                      const material = new MeshStandardMaterial(MinesMaterialsParams[building.resource]);
+                      this.minesMaterials.set(building.resource, material);
+                    }
+                    child.material = this.minesMaterials.get(building.resource);
+                  }
+                });
+              }
+
+              if (isPending) {
+                applyPendingBuildingMaterials(instance);
+                this.pendingBuildingKeys.add(key);
+              }
+
+              // Add instance to scene BEFORE starting animation
+              this.scene.add(instance);
+              this.buildingInstances.set(key, instance);
 
               // Animate scale using gsap
-              gsap.to(wonderInstance.scale, {
+              gsap.to(instance.scale, {
                 duration: 0.5,
                 x: 1,
                 y: 1,
@@ -1199,129 +1276,67 @@ export default class HexceptionScene extends HexagonScene {
               });
 
               // Check if the model has animations and start them
-              const wonderAnimations = wonderData.animations;
-              if (wonderAnimations && wonderAnimations.length > 0) {
-                const wonderMixer = new AnimationMixer(wonderInstance);
-                wonderAnimations.forEach((clip: AnimationClip) => {
-                  wonderMixer.clipAction(clip).play();
+              const animations = buildingData.animations;
+              if (animations && animations.length > 0) {
+                const mixer = new AnimationMixer(instance);
+                animations.forEach((clip: AnimationClip) => {
+                  mixer.clipAction(clip).play();
                 });
-                // Store the mixer for later use
-                this.buildingMixers.set(`${key}_wonder`, wonderMixer);
+                // Store the mixer for later use (e.g., updating in the animation loop)
+                this.buildingMixers.set(key, mixer);
               }
             }
           }
-
-          // Now create the original building model (Realm or other)
-          const buildingData = this.buildingModels
-            .get(originalBuildingGroup)
-            ?.get(originalBuildingType.toString() as BUILDINGS_CATEGORIES_TYPES);
-
-          if (buildingData) {
-            const instance = buildingData.model.clone();
-
-            instance.applyMatrix4(building.matrix);
-
-            // Set initial scale for animation
-            instance.scale.set(0.01, 0.01, 0.01);
-
-            if (buildingType === ResourceMiningTypes.Forge) {
-              instance.traverse((child) => {
-                if (child.name === "Grassland003_1" && child instanceof Mesh) {
-                  if (!this.minesMaterials.has(building.resource)) {
-                    const material = new MeshStandardMaterial(MinesMaterialsParams[building.resource]);
-                    this.minesMaterials.set(building.resource, material);
-                  }
-                  child.material = this.minesMaterials.get(building.resource);
-                }
-              });
-            }
-            if (buildingType === ResourceMiningTypes.Mine) {
-              instance.traverse((child) => {
-                // @ts-ignore
-                if (child?.material?.name === "crystal" && child instanceof Mesh) {
-                  if (!this.minesMaterials.has(building.resource)) {
-                    const material = new MeshStandardMaterial(MinesMaterialsParams[building.resource]);
-                    this.minesMaterials.set(building.resource, material);
-                  }
-                  child.material = this.minesMaterials.get(building.resource);
-                }
-              });
-            }
-
-            // Add instance to scene BEFORE starting animation
-            this.scene.add(instance);
-            this.buildingInstances.set(key, instance);
-
-            // Animate scale using gsap
-            gsap.to(instance.scale, {
-              duration: 0.5,
-              x: 1,
-              y: 1,
-              z: 1,
-              ease: "power2.out",
-            });
-
-            // Check if the model has animations and start them
-            const animations = buildingData.animations;
-            if (animations && animations.length > 0) {
-              const mixer = new AnimationMixer(instance);
-              animations.forEach((clip: AnimationClip) => {
-                mixer.clipAction(clip).play();
-              });
-              // Store the mixer for later use (e.g., updating in the animation loop)
-              this.buildingMixers.set(key, mixer);
-            }
+          const needPausedLabel =
+            building.paused &&
+            this.labels.findIndex((label) => label.col === building.col && label.row === building.row) < 0;
+          if (needPausedLabel) {
+            this.addPausedLabelToBuilding(building);
+          } else if (!building.paused) {
+            this.removePausedLabelFromBuilding(building);
           }
         }
-        const needPausedLabel =
-          building.paused &&
-          this.labels.findIndex((label) => label.col === building.col && label.row === building.row) < 0;
-        if (needPausedLabel) {
-          this.addPausedLabelToBuilding(building);
-        } else if (!building.paused) {
-          this.removePausedLabelFromBuilding(building);
+
+        // update neighbor hexes around the center hex
+        let pillarOffset = 0;
+        for (const [biome, matrices] of Object.entries(biomeHexes)) {
+          const hexMesh = this.biomeModels.get(biome as any)!;
+          matrices.forEach((matrix, index) => {
+            hexMesh.setMatrixAt(index, matrix);
+            this.pillars!.setMatrixAt(index + pillarOffset, matrix);
+            // Use base biome type for color lookup (remove 'Alt' suffix if present)
+            const baseBiome = biome.endsWith("Alt") ? biome.slice(0, -3) : biome;
+            this.pillars!.setColorAt(index + pillarOffset, BIOME_COLORS[baseBiome as BiomeType]);
+          });
+          pillarOffset += matrices.length;
+          this.pillars!.position.y = -0.01;
+          this.pillars!.count = pillarOffset;
+          this.pillars!.computeBoundingSphere();
+          hexMesh.setCount(matrices.length);
         }
-      }
+        this.pillars!.instanceMatrix.needsUpdate = true;
+        this.pillars!.instanceColor!.needsUpdate = true;
+        this.interactiveHexManager.renderAllHexes();
 
-      // update neighbor hexes around the center hex
-      let pillarOffset = 0;
-      for (const [biome, matrices] of Object.entries(biomeHexes)) {
-        const hexMesh = this.biomeModels.get(biome as any)!;
-        matrices.forEach((matrix, index) => {
-          hexMesh.setMatrixAt(index, matrix);
-          this.pillars!.setMatrixAt(index + pillarOffset, matrix);
-          // Use base biome type for color lookup (remove 'Alt' suffix if present)
-          const baseBiome = biome.endsWith("Alt") ? biome.slice(0, -3) : biome;
-          this.pillars!.setColorAt(index + pillarOffset, BIOME_COLORS[baseBiome as BiomeType]);
-        });
-        pillarOffset += matrices.length;
-        this.pillars!.position.y = -0.01;
-        this.pillars!.count = pillarOffset;
-        this.pillars!.computeBoundingSphere();
-        hexMesh.setCount(matrices.length);
-      }
-      this.pillars!.instanceMatrix.needsUpdate = true;
-      this.pillars!.instanceColor!.needsUpdate = true;
-      this.interactiveHexManager.renderAllHexes();
+        // CRITICAL: Release all matrices back to the pool to prevent memory leaks
+        const matrixPool = MatrixPool.getInstance();
+        let totalMatricesReleased = 0;
+        for (const [biome, matrices] of Object.entries(biomeHexes)) {
+          matrixPool.releaseAll(matrices);
+          totalMatricesReleased += matrices.length;
+          // Clear the array to prevent accidental reuse of released matrices
+          matrices.length = 0;
+        }
+        if (VERBOSE_LOGS_ENABLED) console.log(`🧹 Released ${totalMatricesReleased} matrices back to pool`);
 
-      // CRITICAL: Release all matrices back to the pool to prevent memory leaks
-      const matrixPool = MatrixPool.getInstance();
-      let totalMatricesReleased = 0;
-      for (const [biome, matrices] of Object.entries(biomeHexes)) {
-        matrixPool.releaseAll(matrices);
-        totalMatricesReleased += matrices.length;
-        // Clear the array to prevent accidental reuse of released matrices
-        matrices.length = 0;
-      }
-      if (VERBOSE_LOGS_ENABLED) console.log(`🧹 Released ${totalMatricesReleased} matrices back to pool`);
-
-      if (typeof window !== "undefined") {
-        usePlayRouteReadinessStore.getState().markHexReady(getCurrentPlayRouteBootToken(), {
-          col: this.centerColRow[0],
-          row: this.centerColRow[1],
-        });
-      }
-    });
+        if (typeof window !== "undefined") {
+          usePlayRouteReadinessStore.getState().markHexReady(getCurrentPlayRouteBootToken(), {
+            col: this.centerColRow[0],
+            row: this.centerColRow[1],
+          });
+        }
+      }),
+    );
   }
 
   addPausedLabelToBuilding(building: { col: number; row: number; matrix: any }) {
@@ -1506,6 +1521,9 @@ export default class HexceptionScene extends HexagonScene {
     const instance = this.buildingInstances.get(key);
     if (instance) {
       this.scene.remove(instance);
+      if (this.pendingBuildingKeys.delete(key)) {
+        disposeClonedBuildingMaterials(instance);
+      }
       this.buildingInstances.delete(key);
     }
 

@@ -2,10 +2,7 @@ import { useUIStore } from "@/hooks/store/use-ui-store";
 import { LoadingStateKey } from "@/hooks/store/use-world-loading";
 
 export const ChunkTransitionIndicator = () => {
-  const isChunkTransitioning = useUIStore((state) => state.loadingStates[LoadingStateKey.ChunkTransition]);
-  const isMapLoading = useUIStore((state) => state.loadingStates[LoadingStateKey.Map]);
-
-  const visible = isChunkTransitioning && !isMapLoading;
+  const visible = useUIStore((state) => state.loadingStates[LoadingStateKey.ChunkTransition]);
 
   return (
     <div

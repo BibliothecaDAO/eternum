@@ -114,8 +114,6 @@ export class Navigator {
   }
 
   public dispose(): void {
-    console.log("🧹 Navigator: Starting disposal");
-
     // Clear navigation target
     this.clearNavigationTarget();
 
@@ -157,7 +155,5 @@ export class Navigator {
 
     // Clear label reference
     this.label = null;
-
-    console.log("🧹 Navigator: Disposed arrow model, label, and DOM elements");
   }
 }

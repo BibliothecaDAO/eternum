@@ -80,8 +80,6 @@ export function useChestContent(
     enabled: !!address && !!cosmeticsAddress && timestamp > 0,
   });
 
-  console.log({ mintedCosmeticsQuery });
-
   useEffect(() => {
     // Debug mode: return all chest assets
     if (debugMode) {
@@ -95,7 +93,6 @@ export function useChestContent(
       // First poll: establish baseline of pre-existing items (don't process them)
       if (baselineLengthRef.current === null) {
         baselineLengthRef.current = currentLength;
-        console.log("Baseline established:", currentLength, "pre-existing items");
         return;
       }
 
@@ -106,8 +103,6 @@ export function useChestContent(
         const newItemCount = currentLength - baselineLength;
         // New items are at the BEGINNING of the array (ordered DESC by executed_at)
         const newTokens = mintedCosmeticsQuery.slice(0, newItemCount);
-
-        console.log("New items detected:", newItemCount, newTokens);
 
         // Group by executed_at timestamp and take only the latest batch
         const groupedByTimestamp = new Map<string, typeof newTokens>();

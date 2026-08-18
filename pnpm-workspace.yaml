@@ -30,7 +30,6 @@ catalog:
   "@starknet-react/chains": 5.0.3
   "@starknet-react/core": 5.0.3
   bignumber.js: ^9.3.0
-  posthog-js: ^1.160.0
   react: ^18
   react-dom: ^18
   starknet: ^8.5.2

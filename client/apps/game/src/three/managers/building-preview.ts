@@ -203,6 +203,38 @@ function clonePreviewMaterial(material: THREE.Material): THREE.Material {
   return clone;
 }
 
+/**
+ * Dim a placed-but-unconfirmed building in place: the instance keeps its
+ * silhouette but reads as disabled until the placement tx echoes back.
+ * Materials are cloned per instance — dispose them via
+ * disposeClonedBuildingMaterials when the instance leaves the scene.
+ */
+export function applyPendingBuildingMaterials(model: THREE.Group): void {
+  model.traverse((child) => {
+    if (!(child instanceof THREE.Mesh)) {
+      return;
+    }
+
+    child.material = Array.isArray(child.material)
+      ? child.material.map((material) => clonePendingMaterial(material))
+      : clonePendingMaterial(child.material);
+  });
+}
+
+export function disposeClonedBuildingMaterials(model: THREE.Group): void {
+  disposePreviewModel(model);
+}
+
+function clonePendingMaterial(material: THREE.Material): THREE.Material {
+  const clone = material.clone();
+  if (clone instanceof THREE.MeshStandardMaterial || clone instanceof THREE.MeshBasicMaterial) {
+    clone.color.multiplyScalar(0.7);
+    clone.opacity = 0.55;
+    clone.transparent = true;
+  }
+  return clone;
+}
+
 function disposePreviewModel(model: THREE.Group): void {
   model.traverse((child) => {
     if (child instanceof THREE.Mesh) {

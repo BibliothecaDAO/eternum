@@ -196,6 +196,103 @@ describe("ProvisionalWriteManager", () => {
     expect(store.removeProvisionalWrites).toHaveBeenCalledWith(createdIntentId(store));
   });
 
+  it("settles a null matchPatch when the authoritative row is deleted", () => {
+    vi.useFakeTimers();
+    const store = createStore();
+    const manager = new ProvisionalWriteManager(store);
+    const intent = manager.createIntent([
+      { entityId: "0x1", model: "Building", patch: { category: 0 }, matchPatch: null },
+    ]);
+    const outcomes = vi.fn();
+    intent.subscribe(outcomes);
+    intent.bindTransaction("0xtx");
+    intent.confirm();
+
+    manager.observeAuthoritativeObservations([
+      { type: "model", entityId: "0x1", model: "Building", value: { category: 7 } },
+    ]);
+    vi.advanceTimersByTime(2_500);
+    expect(outcomes).not.toHaveBeenCalled();
+
+    manager.observeAuthoritativeObservations([{ type: "delete-entity", entityId: "0x1" }]);
+    vi.advanceTimersByTime(2_500);
+
+    expect(outcomes).toHaveBeenCalledWith("settled");
+  });
+
+  it("keeps a matched write settled when a later action's echo diverges from it", () => {
+    vi.useFakeTimers();
+    const store = createStore();
+    const manager = new ProvisionalWriteManager(store);
+    const intent = manager.createIntent([WRITE]);
+    const outcomes = vi.fn();
+    intent.subscribe(outcomes);
+    intent.bindTransaction("0xtx");
+    intent.confirm();
+
+    manager.observeAuthoritativeObservations([
+      { type: "model", entityId: "0x1", model: "Building", value: WRITE.patch },
+    ]);
+    // The next placement bumps the same row past this intent's prediction
+    // before the reconciliation hold releases — the match must stay settled.
+    manager.observeAuthoritativeObservations([
+      { type: "model", entityId: "0x1", model: "Building", value: { category: 9 } },
+    ]);
+    vi.advanceTimersByTime(2_500);
+
+    expect(outcomes).toHaveBeenCalledWith("settled");
+  });
+
+  it("reports provisional-only rows until the chain backs them", () => {
+    const store = createStore();
+    const manager = new ProvisionalWriteManager(store);
+    expect(manager.isProvisionalOnly("Building", "0x1")).toBe(false);
+
+    const intent = manager.createIntent([WRITE]);
+    expect(manager.isProvisionalOnly("Building", "0x1")).toBe(true);
+
+    store.readAuthoritativeModel.mockReturnValue({ category: 7 });
+    expect(manager.isProvisionalOnly("Building", "0x1")).toBe(false);
+
+    store.readAuthoritativeModel.mockReturnValue(null);
+    intent.fail();
+    expect(manager.isProvisionalOnly("Building", "0x1")).toBe(false);
+  });
+
+  it("settles at the tripwire when the intent reconciled but its release was flapped away", () => {
+    vi.useFakeTimers();
+    const store = createStore();
+    const manager = new ProvisionalWriteManager(store);
+    const intent = manager.createIntent([
+      {
+        entityId: "0x2",
+        model: "ExplorerTroops",
+        patch: { coord: { x: 12, y: 9 } },
+        matchPatch: { coord: { x: 12, y: 9 } },
+        sourcePatch: { coord: { x: 11, y: 9 } },
+      },
+    ]);
+    const outcomes = vi.fn();
+    intent.subscribe(outcomes);
+    intent.bindTransaction("0xtx");
+    intent.confirm();
+
+    // Source-coord echo schedules a release, then an unrelated echo flaps
+    // sourceMatched off and cancels it; the destination echo then matches but
+    // the release-window race can leave nothing scheduled. The tripwire must
+    // settle, not force-fail.
+    manager.observeAuthoritativeObservations([
+      { type: "model", entityId: "0x2", model: "ExplorerTroops", value: { coord: { x: 11, y: 9 } } },
+    ]);
+    manager.observeAuthoritativeObservations([
+      { type: "model", entityId: "0x2", model: "ExplorerTroops", value: { coord: { x: 12, y: 9 } } },
+    ]);
+    vi.advanceTimersByTime(30_000);
+
+    expect(outcomes).toHaveBeenCalledWith("settled");
+    expect(outcomes).not.toHaveBeenCalledWith("stalled");
+  });
+
   it("fails independently when a tracked receipt rejects", async () => {
     const store = createStore();
     const manager = new ProvisionalWriteManager(store);

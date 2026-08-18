@@ -755,8 +755,6 @@ export default class InstancedModel {
       this.group.parent.remove(this.group);
     }
     this.group.clear();
-
-    console.log(`InstancedModel "${this.name}": Disposed and cleaned up`);
   }
 
   private shouldAnimate(context?: AnimationVisibilityContext): boolean {

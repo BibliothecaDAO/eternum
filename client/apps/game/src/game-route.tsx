@@ -20,7 +20,6 @@ import { LoadingScreen } from "./ui/modules/loading-screen";
 import { useBootDocumentState } from "./ui/modules/boot-loader";
 import { World } from "./ui/layouts/world";
 import { resolveGameRouteView } from "./game-route.utils";
-import { TRACING_RUNTIME_ENABLED } from "./tracing/runtime-policy";
 
 type ReadyAppProps = {
   backgroundImage: string;
@@ -72,33 +71,6 @@ const ReadyApp = ({ backgroundImage, setupResult, account }: ReadyAppProps) => {
 
 const GameRoute = ({ backgroundImage }: { backgroundImage: string }) => {
   const navigate = useNavigate();
-  useEffect(() => {
-    if (!TRACING_RUNTIME_ENABLED) {
-      return;
-    }
-
-    let cancelled = false;
-    let cleanup: (() => void) | undefined;
-
-    const setupTracing = async () => {
-      const { initializeTracing, cleanupTracing } = await import("./tracing");
-      if (cancelled) return;
-      initializeTracing({ enableMetricsCollection: false });
-      cleanup = () => {
-        void cleanupTracing();
-      };
-    };
-
-    void setupTracing();
-
-    return () => {
-      cancelled = true;
-      if (cleanup) {
-        cleanup();
-      }
-    };
-  }, []);
-
   const state = usePlayRouteBootController();
   const {
     phase,

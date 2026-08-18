@@ -14,7 +14,7 @@ import type { Component, Entity, Metadata, OverridableComponent, Schema } from "
 import { getComponentEntities, getComponentValue, removeComponent } from "@dojoengine/recs";
 import { setEntities } from "@dojoengine/state";
 import type { Clause, Entity as ToriiEntity, Query } from "@dojoengine/torii-wasm/types";
-import { captureClientEvent } from "@/posthog";
+import { VERBOSE_LOGS_ENABLED } from "@/utils/dev-mode";
 import { filterEntityToActiveGameScope } from "./game-scope-entity-filter";
 import { observeToriiStreamLifecycle } from "./torii-stream-lifecycle-observer";
 import { setupToriiSubscriptions, type ToriiSubscriptionSetupTimeoutInfo } from "./torii-subscription-setup";
@@ -77,6 +77,26 @@ const qualifiedComponentName = (component: Component): string | null => {
   return namespace && name ? `${namespace}-${name}` : null;
 };
 
+// Event components live nested under `events`. RECS writes need every component in
+// one flat list — a component missing from the list makes setEntities skip its rows
+// silently, which is how the entire event stream went dark for chest reveals.
+const flattenContractComponents = (
+  contractComponents: SetupResult["network"]["contractComponents"],
+): Component<Schema, Metadata, undefined>[] => {
+  const { events, ...modelComponents } = contractComponents;
+  return [...Object.values(modelComponents), ...Object.values(events ?? {})] as unknown as Component<
+    Schema,
+    Metadata,
+    undefined
+  >[];
+};
+
+const reportUnresolvableSyncModels = (lookup: Map<string, Component>, models: readonly string[]): void => {
+  const unresolved = models.filter((model) => !lookup.has(model));
+  if (unresolved.length === 0) return;
+  console.error(`[GameSync] sync models without a RECS component would be dropped silently: ${unresolved.join(", ")}`);
+};
+
 const createComponentLookup = (components: readonly Component[]): Map<string, Component> => {
   const lookup = new Map<string, Component>();
   components.forEach((component) => {
@@ -88,13 +108,14 @@ const createComponentLookup = (components: readonly Component[]): Map<string, Co
   return lookup;
 };
 
-const createRecsGameSyncStore = (setup: SetupResult, logging: boolean): GameSyncStore => {
-  const authoritativeComponents = Object.values(setup.network.contractComponents) as unknown as Component<
-    Schema,
-    Metadata,
-    undefined
-  >[];
+const createRecsGameSyncStore = (
+  setup: SetupResult,
+  logging: boolean,
+  syncModels: readonly string[],
+): GameSyncStore => {
+  const authoritativeComponents = flattenContractComponents(setup.network.contractComponents);
   const authoritativeComponentLookup = createComponentLookup(authoritativeComponents);
+  reportUnresolvableSyncModels(authoritativeComponentLookup, syncModels);
   // setup.components mixes overridable wrappers with the `events` sub-record;
   // createComponentLookup's metadata guards skip the non-component entries.
   const provisionalComponentLookup = createComponentLookup(
@@ -269,32 +290,24 @@ const runPageWithRetries = async <T>({
 };
 
 const reportProvisionalIntentStalled = (info: GameSyncProvisionalIntentStalledInfo): void => {
-  if (import.meta.env.DEV) {
-    console.error("[GameSync] confirmed provisional intent has not reconciled after 30s", info);
-  }
-  captureClientEvent("game_sync_provisional_intent_stalled", {
-    intent_id: info.intentId,
-    has_transaction_hash: Boolean(info.transactionHash),
-    unmatched_write_count: info.unmatchedWrites.length,
-    unmatched_models: [...new Set(info.unmatchedWrites.map(({ model }) => model))].sort(),
-  });
+  if (!import.meta.env.DEV) return;
+  // The unmatched models ride in the message string so pasted console dumps
+  // carry them — the collapsed object loses them in text form.
+  const unmatchedModels = [...new Set(info.unmatchedWrites.map(({ model }) => model))].sort();
+  console.error(
+    `[GameSync] confirmed provisional intent has not reconciled after 30s (unmatched: ${unmatchedModels.join(", ") || "none"})`,
+    info,
+  );
 };
 
 const reportProvisionalIntentPhase = (info: GameSyncProvisionalIntentPhaseInfo): void => {
-  if (import.meta.env.DEV && info.phase === "baseline_delta_before_hash") {
-    // Convicts the echo-races-execute() case in session logs.
+  if (!import.meta.env.DEV) return;
+  if (info.phase === "baseline_delta_before_hash") {
+    // Convicts the echo-races-execute() case in session logs without verbose mode.
     console.warn("[GameSync] authoritative echo observed before the transaction hash bound", info);
-  } else if (import.meta.env.DEV) {
-    console.info("[GameSync] provisional intent phase", info);
+    return;
   }
-  captureClientEvent("game_sync_provisional_intent_phase", {
-    phase: info.phase,
-    intent_id: info.intentId,
-    has_transaction_hash: Boolean(info.transactionHash),
-    model: info.model,
-    elapsed_since_created_ms: info.elapsedSinceCreatedMs,
-    elapsed_since_transaction_hash_ms: info.elapsedSinceTransactionHashMs,
-  });
+  if (VERBOSE_LOGS_ENABLED) console.info("[GameSync] provisional intent phase", info);
 };
 
 export const createGamewideSyncSession = (input: CreateGamewideSyncSessionInput): GameSyncSessionStart => {
@@ -347,7 +360,7 @@ export const createGamewideSyncSession = (input: CreateGamewideSyncSessionInput)
 
   return {
     snapshotModels: input.entityModels,
-    store: createRecsGameSyncStore(input.setup, input.logging),
+    store: createRecsGameSyncStore(input.setup, input.logging, [...input.entityModels, ...input.eventModels]),
     scheduler: createBrowserScheduler(),
     now: () => performance.now(),
     onSubscriptionActive: input.onSubscriptionActive,
@@ -388,7 +401,7 @@ export const createGamewideSyncSession = (input: CreateGamewideSyncSessionInput)
           if (replayWatermark) {
             const replayedEventCount = await eventGapFill.replaySince(replayWatermark, handlers.onEvent);
             if (replayedEventCount > 0) {
-              console.info(`[Sync] event gap-fill replayed ${replayedEventCount} events`);
+              console.warn(`[Sync] event gap-fill replayed ${replayedEventCount} events`);
               handlers.onEventGapFill(replayedEventCount);
             }
           } else if (hasOpenedEventStream) {

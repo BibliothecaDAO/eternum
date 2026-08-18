@@ -190,8 +190,9 @@ If a required command fails or is unavailable, say so explicitly in the final ha
 - Never run bare `npx vitest` from the repo root: duplicate workspace names under `contracts/*/ext` break it.
 - In `client/apps/game`, use `pnpm test [files]` (the wrapper script).
 - In `packages/core`, use `pnpm exec vitest run` — bare `pnpm test` there is watch mode and never exits.
-- `instanced-model.material-semantics.test.ts` is a known load-sensitive flake in full runs; verify it in isolation
-  before blaming your change.
+- Three load-sensitive files (`instanced-model.material-semantics`, `game-entry-preload`, `play-asset-manifest`) carry a
+  30s `vi.setConfig` test timeout because full-suite contention starves them past the 5s default on green code. If one
+  trips anyway, verify it in isolation before blaming your change.
 
 ### Before Finishing
 

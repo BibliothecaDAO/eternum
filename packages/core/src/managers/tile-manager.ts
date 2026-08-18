@@ -31,6 +31,7 @@ import {
   type ProvisionalIntent,
 } from "../sync";
 import { configManager, buildingEntityKey, gameEntityKey } from "./config-manager";
+import { getGameEntityKeyGameId } from "./game-entity-keys";
 
 const BUILDING_SLOT_COORDINATES = [
   { col: BUILDINGS_CENTER[0], row: BUILDINGS_CENTER[1] },
@@ -89,29 +90,36 @@ export class TileManager {
     // Read every bounded local slot through the overridable component. Indexed
     // HasValue queries can omit override-only entities, while scanning the
     // whole streamed world component makes local redraw cost grow with the map.
-    const buildings = BUILDING_SLOT_COORDINATES.map(({ col, row }) =>
-      getComponentValue(this.components.Building, buildingEntityKey(this.col, this.row, col, row)),
-    )
-      .filter((value): value is NonNullable<typeof value> => value != null)
-      .filter(
-        (value) =>
-          value.outer_col === this.col &&
-          value.outer_row === this.row &&
-          value.entity_id !== 0 &&
-          value.category !== BuildingType.None,
-      )
-      .map((productionModelValue) => {
-        const category = productionModelValue.category;
+    const runtime = getActiveGameSyncRuntime();
+    const buildings = BUILDING_SLOT_COORDINATES.flatMap(({ col, row }) => {
+      const entity = buildingEntityKey(this.col, this.row, col, row);
+      const value = getComponentValue(this.components.Building, entity);
+      if (
+        value == null ||
+        value.outer_col !== this.col ||
+        value.outer_row !== this.row ||
+        value.entity_id === 0 ||
+        value.category === BuildingType.None
+      ) {
+        return [];
+      }
+      const category = value.category;
 
-        return {
-          col: Number(productionModelValue.inner_col),
-          row: Number(productionModelValue.inner_row),
+      return [
+        {
+          col: Number(value.inner_col),
+          row: Number(value.inner_row),
           category,
           resource: getProducedResource(category),
-          paused: productionModelValue.paused,
+          paused: value.paused,
           structureType: null,
-        };
-      });
+          // Row exists only as a provisional overlay — a placement whose tx has
+          // not echoed back yet. Renderers show it disabled; occupancy already
+          // counts it, which is what blocks double-submits on the same slot.
+          pending: runtime?.isProvisionalOnly("Building", entity) ?? false,
+        },
+      ];
+    });
 
     return buildings;
   };
@@ -186,7 +194,13 @@ export class TileManager {
       buildingCount + 1,
     );
     const buildingConfig = configManager.getBuildingCategoryConfig(buildingType);
+    // The patch must carry EVERY schema field (including the key-derived
+    // game_id/alt): RECS returns undefined for an override-only row missing any
+    // non-optional field, which would make the pending building invisible to
+    // every read. entity_id is a placeholder — Cairo assigns a fresh uuid().
     const buildingPatch = {
+      game_id: getGameEntityKeyGameId(),
+      alt: false,
       outer_col: this.col,
       outer_row: this.row,
       inner_col: col,
@@ -202,7 +216,16 @@ export class TileManager {
         entityId: buildingEntity,
         model: "Building",
         patch: buildingPatch,
-        matchPatch: buildingPatch,
+        // Match only what Cairo deterministically echoes: the row identity and
+        // category. entity_id (fresh uuid) and bonus_percent (never written by
+        // the contract) would make the intent permanently unreconcilable.
+        matchPatch: {
+          outer_col: this.col,
+          outer_row: this.row,
+          inner_col: col,
+          inner_row: row,
+          category: buildingType,
+        },
       },
       {
         entityId: realmEntity,
@@ -235,7 +258,9 @@ export class TileManager {
   private createDestroyProvisionalWrites = (entityId: ID, col: number, row: number): GameSyncProvisionalWrite[] => {
     const realmBase = getComponentValue(this.components.Structure, gameEntityKey([BigInt(entityId)]))?.base;
     const { coord_x: outercol, coord_y: outerrow } = realmBase || { coord_x: 0, coord_y: 0 };
-    const entity = gameEntityKey([outercol, outerrow, col, row].map((v) => BigInt(v)));
+    // Building is keyed (game_id, alt, outer, outer, inner, inner) — the plain
+    // gameEntityKey misses the alt key and would target a nonexistent row.
+    const entity = buildingEntityKey(outercol, outerrow, col, row);
     const currentBuilding = getComponentValue(this.components.Building, entity);
     if (!currentBuilding) throw new Error(`Cannot destroy missing building at ${col},${row}`);
     const type = currentBuilding.category as BuildingType;
@@ -259,6 +284,8 @@ export class TileManager {
     );
     const buildingConfig = configManager.getBuildingCategoryConfig(type);
     const buildingPatch = {
+      game_id: getGameEntityKeyGameId(),
+      alt: false,
       outer_col: outercol,
       outer_row: outerrow,
       inner_col: col,
@@ -267,13 +294,15 @@ export class TileManager {
       bonus_percent: 0,
       entity_id: 0,
       outer_entity_id: 0,
+      paused: false,
     };
     return [
       {
         entityId: entity,
         model: "Building",
         patch: buildingPatch,
-        matchPatch: buildingPatch,
+        // Cairo erases the row; the echo is a deletion, which `null` matches.
+        matchPatch: null,
       },
       {
         entityId: realmEntityId,

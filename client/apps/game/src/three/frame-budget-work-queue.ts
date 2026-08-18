@@ -32,6 +32,7 @@ interface FrameBudgetWorkQueueOptions {
 }
 
 interface QueuedWork {
+  owner: string;
   reject: (reason: unknown) => void;
   run: () => Promise<void>;
 }
@@ -40,6 +41,10 @@ const DEFAULT_FRAME_BUDGET_MS = 6;
 const LOADING_FRAME_BUDGET_MS = 24;
 const CRITICAL_BURST_LIMIT = 8;
 const VISIBLE_BURST_LIMIT = 4;
+// A single task is never split, so one oversized task defeats the whole
+// budget. Name it when it happens — the Aug 18 capture had 2.4s tasks hiding
+// behind a 6ms budget with only a lane-level owner.
+const LONG_TASK_REPORT_MS = 33;
 
 export class FrameBudgetWorkQueueDisposedError extends Error {
   constructor() {
@@ -92,6 +97,7 @@ export class FrameBudgetWorkQueue implements FrameBudgetWorkScheduler {
     const owner = getCurrentFrameWorkOwner() ?? `chunk-work:${lane}`;
     const result = new Promise<T>((resolve, reject) => {
       this.queues[lane].push({
+        owner,
         reject,
         run: async () => {
           try {
@@ -150,7 +156,16 @@ export class FrameBudgetWorkQueue implements FrameBudgetWorkScheduler {
           break;
         }
 
+        const taskStartedAt = this.now();
         await work.run();
+        if (import.meta.env.DEV) {
+          const taskMs = this.now() - taskStartedAt;
+          if (taskMs >= LONG_TASK_REPORT_MS) {
+            // Wall time: an async task awaiting IO (model loads) inflates it,
+            // so read this next to the adjacent spike lines before convicting.
+            console.warn(`[FramePerf] queue task ran ${Math.round(taskMs)}ms wall owner=${work.owner}`);
+          }
+        }
         if (this.now() - frameStartedAt >= frameBudgetMs) {
           break;
         }

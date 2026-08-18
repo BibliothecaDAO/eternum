@@ -5,7 +5,7 @@ import { useResolvedWorldGameMode } from "@/config/game-modes/use-game-mode-conf
 import { toast } from "sonner";
 import { getContractByName } from "@dojoengine/core";
 import { useComponentValue } from "@dojoengine/react";
-import { getEntityIdFromKeys } from "@dojoengine/utils";
+import { getEntityIdFromKeys } from "@bibliothecadao/eternum";
 import { CallData } from "starknet";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { getBuildingCount, getRealmInfo } from "@bibliothecadao/eternum";

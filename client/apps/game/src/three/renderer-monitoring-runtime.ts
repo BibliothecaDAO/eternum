@@ -38,6 +38,7 @@ export function createRendererMonitoringRuntime(
 
 class GameRendererMonitoringRuntime implements RendererMonitoringRuntime {
   private stats?: Stats;
+  private statsPanelKeyHandler?: (event: KeyboardEvent) => void;
   private memoryMonitor?: MemoryMonitor;
   private memoryStatsElement?: HTMLDivElement;
   private memoryMonitorTimeoutId?: ReturnType<typeof setTimeout>;
@@ -53,7 +54,9 @@ class GameRendererMonitoringRuntime implements RendererMonitoringRuntime {
       return;
     }
 
-    this.initializeStatsPanel();
+    // The FPS panel is lazy (Ctrl+Shift+F): its per-frame canvas updates cost
+    // real style-recalc time in profiles, so an idle dev session pays nothing.
+    this.registerStatsPanelToggle();
     this.initializeStatsRecorder();
     this.initializeMemoryMonitoring();
     this.isInitialized = true;
@@ -98,21 +101,47 @@ class GameRendererMonitoringRuntime implements RendererMonitoringRuntime {
     }
     this.memoryStatsElement = undefined;
 
-    if (this.statsDomElement?.parentNode) {
-      this.statsDomElement.parentNode.removeChild(this.statsDomElement);
+    this.removeStatsPanel();
+    if (this.statsPanelKeyHandler) {
+      window.removeEventListener("keydown", this.statsPanelKeyHandler);
+      this.statsPanelKeyHandler = undefined;
     }
-    this.statsDomElement = undefined;
 
     this.statsRecorder?.destroy();
     this.statsRecorder = undefined;
     this.memoryMonitor = undefined;
   }
 
-  private initializeStatsPanel(): void {
+  private registerStatsPanelToggle(): void {
+    if (!this.input.isGraphicsDevEnabled || typeof window === "undefined") {
+      return;
+    }
+    this.statsPanelKeyHandler = (event: KeyboardEvent) => {
+      if (event.ctrlKey && event.shiftKey && event.key === "F") {
+        event.preventDefault();
+        this.toggleStatsPanel();
+      }
+    };
+    window.addEventListener("keydown", this.statsPanelKeyHandler);
+  }
+
+  private toggleStatsPanel(): void {
+    if (this.stats) {
+      this.removeStatsPanel();
+      return;
+    }
     const stats = new (Stats as any)();
     this.stats = stats;
     document.body.appendChild(stats.dom);
     this.statsDomElement = stats.dom;
+  }
+
+  private removeStatsPanel(): void {
+    if (this.statsDomElement?.parentNode) {
+      this.statsDomElement.parentNode.removeChild(this.statsDomElement);
+    }
+    this.statsDomElement = undefined;
+    this.stats = undefined;
   }
 
   private initializeStatsRecorder(): void {

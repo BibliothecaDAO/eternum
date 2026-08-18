@@ -10,7 +10,7 @@ import {
 } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
 import { getComponentValue } from "@dojoengine/recs";
-import { getEntityIdFromKeys } from "@dojoengine/utils";
+import { getEntityIdFromKeys } from "@bibliothecadao/eternum";
 import { memo, useCallback, useMemo } from "react";
 
 import { TooltipContent, type ActionFoodCosts } from "./tooltip-content";

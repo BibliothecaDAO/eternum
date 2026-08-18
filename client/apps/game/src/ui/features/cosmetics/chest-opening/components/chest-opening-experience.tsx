@@ -124,7 +124,6 @@ export function ChestOpeningExperience({
   // Handle chest selection and opening
   const handleChestSelect = useCallback(
     (chestId: string, epoch: typeof flowState.selectedChestEpoch) => {
-      console.log("handleChestSelect called with:", { chestId, epoch });
       actions.selectChest(chestId, epoch);
 
       // Reset state for new open
@@ -135,21 +134,16 @@ export function ChestOpeningExperience({
       // Immediately show pending state while transaction processes
       actions.startPending();
 
-      console.log("MOCK_CHEST_OPENING:", MOCK_CHEST_OPENING);
       if (MOCK_CHEST_OPENING) {
         // Mock mode: assets will be generated in the pending effect
-        console.log("Mock mode: pending started");
       } else {
         // Real mode: call blockchain
-        console.log("Real mode: calling openChest with tokenId:", chestId);
         openChest({
           tokenId: BigInt(chestId),
           onSuccess: () => {
-            console.log("openChest onSuccess called");
             // State is already "pending", transaction complete - wait for events
           },
           onError: (error) => {
-            console.log("openChest onError called:", error);
             actions.setError(error);
           },
         });
@@ -222,15 +216,8 @@ export function ChestOpeningExperience({
 
   // On mount: start opening the pre-selected chest directly
   useEffect(() => {
-    console.log("ChestOpeningExperience mount effect:", {
-      flowState: flowState.state,
-      initialChestId,
-      initialEpoch,
-      hasStartedOpening: hasStartedOpening.current,
-    });
     if (flowState.state === "idle" && initialChestId && !hasStartedOpening.current) {
       hasStartedOpening.current = true;
-      console.log("Calling handleChestSelect with:", initialChestId, initialEpoch);
       handleChestSelect(initialChestId, initialEpoch ?? "eternum-rewards-s1");
     }
   }, [flowState.state, initialChestId, initialEpoch, handleChestSelect]);

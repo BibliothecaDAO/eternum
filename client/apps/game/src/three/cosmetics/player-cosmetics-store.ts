@@ -1,6 +1,6 @@
 import type { ClientComponents, ContractAddress } from "@bibliothecadao/types";
 import { getComponentValue } from "@dojoengine/recs";
-import { getEntityIdFromKeys } from "@dojoengine/utils";
+import { getEntityIdFromKeys } from "@bibliothecadao/eternum";
 import { buildSelectionFromCosmeticIds, resolveEligibleCosmeticIds } from "./ownership";
 import { BlitzGameLoadoutDraft, PlayerCosmeticsSnapshot, PlayerCosmeticSelection } from "./types";
 import { gameEntityKey } from "@/dojo/game-scope";

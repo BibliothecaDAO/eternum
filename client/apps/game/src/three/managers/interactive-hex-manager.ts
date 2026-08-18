@@ -546,8 +546,6 @@ export class InteractiveHexManager {
     this.visibleHexCoordsCache = new Int32Array(0);
     this.visibleHexCoordsCount = 0;
     this.visibleHexCoordsCapacity = 0;
-
-    console.log("InteractiveHexManager: Destroyed and cleaned up");
   }
 
   private applyInstanceMeshSurfaceVisibility(): void {

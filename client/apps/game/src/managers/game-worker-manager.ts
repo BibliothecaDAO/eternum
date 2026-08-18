@@ -44,7 +44,6 @@ class GameWorkerManager {
     worker.onerror = (event) =>
       this.handleWorkerFailure(event.error ?? new Error(event.message ?? "Unknown worker error"));
     this.worker = worker;
-    console.log("GameWorkerManager initialized");
     return worker;
   }
 

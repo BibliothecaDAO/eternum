@@ -8,7 +8,7 @@ import { useDojo } from "@bibliothecadao/react";
 import { ContractAddress } from "@bibliothecadao/types";
 import { useEntityQuery } from "@dojoengine/react";
 import { getComponentValue, Has } from "@dojoengine/recs";
-import { getEntityIdFromKeys } from "@dojoengine/utils";
+import { getEntityIdFromKeys } from "@bibliothecadao/eternum";
 import { useEffect, useMemo, useState } from "react";
 import { env } from "../../../../../env";
 import { appchainModel, gameEntityKey } from "@/dojo/game-scope";

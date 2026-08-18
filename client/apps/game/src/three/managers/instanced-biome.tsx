@@ -838,8 +838,6 @@ export default class InstancedModel {
       this.group.parent.remove(this.group);
     }
     this.group.clear();
-
-    console.log(`InstancedBiome: Disposed and cleaned up`);
   }
 
   private shouldAnimate(context?: AnimationVisibilityContext): boolean {

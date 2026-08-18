@@ -27,7 +27,7 @@ import {
   ResourcesIds,
 } from "@bibliothecadao/types";
 import type { ClientComponents } from "@bibliothecadao/types";
-import { getEntityIdFromKeys } from "@dojoengine/utils";
+import { getEntityIdFromKeys } from "@bibliothecadao/eternum";
 import type { ComponentValue } from "@dojoengine/recs";
 import Plus from "lucide-react/dist/esm/icons/plus";
 import { gameEntityKey } from "@/dojo/game-scope";

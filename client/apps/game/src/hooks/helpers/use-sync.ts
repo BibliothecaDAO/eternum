@@ -1,4 +1,5 @@
 import { getMarketFromTorii } from "@/dojo/queries";
+import { verboseLog } from "@/utils/dev-mode";
 import { ToriiClient } from "@dojoengine/torii-wasm";
 import { useCallback } from "react";
 import { Subscription, useSyncStore } from "../store/use-sync-store";
@@ -42,7 +43,7 @@ export const useSyncMarket = () => {
     const start = performance.now();
     await getMarketFromTorii(toriiClient);
     const end = performance.now();
-    console.log("[sync] market query", end - start);
+    verboseLog("[sync] market query", end - start);
   }, []);
 
   const { isSyncing } = useToriiSync({

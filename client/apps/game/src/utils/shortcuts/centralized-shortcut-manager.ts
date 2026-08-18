@@ -73,7 +73,7 @@ export class CentralizedShortcutManager {
    */
   public unregisterShortcut(shortcutId: string): void {
     useShortcutStore.getState().removeShortcut(shortcutId);
-    console.log(`Unregistered shortcut: ${shortcutId}`);
+    if (VERBOSE_LOGS_ENABLED) console.log(`Unregistered shortcut: ${shortcutId}`);
   }
 
   /**
@@ -81,7 +81,7 @@ export class CentralizedShortcutManager {
    */
   public unregisterShortcutsByPrefix(prefix: string): void {
     useShortcutStore.getState().removeShortcutsByPrefix(prefix);
-    console.log(`Unregistered shortcuts with prefix: ${prefix}`);
+    if (VERBOSE_LOGS_ENABLED) console.log(`Unregistered shortcuts with prefix: ${prefix}`);
   }
 
   /**

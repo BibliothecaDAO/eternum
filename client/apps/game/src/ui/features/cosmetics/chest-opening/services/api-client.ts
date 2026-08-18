@@ -17,7 +17,6 @@ const toSqlEndpoint = (baseUrl: string) => (baseUrl.endsWith("/sql") ? baseUrl :
 export async function fetchSQL<T = unknown>(query: string, options?: FetchSQLOptions): Promise<T> {
   const apiBaseUrl = options?.baseUrl ? toSqlEndpoint(options.baseUrl) : MARKETPLACE_API_URL;
   const url = `${apiBaseUrl}?query=${encodeURIComponent(query)}`;
-  console.log({ url });
   const response = await fetch(url);
 
   if (!response.ok) {

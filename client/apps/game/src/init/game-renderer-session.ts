@@ -56,7 +56,6 @@ function createBrowserManagedRendererSession(input: {
 
     try {
       input.renderer.destroy();
-      console.log("GameRenderer cleaned up");
     } catch (error) {
       console.error("Error during GameRenderer cleanup:", error);
     } finally {

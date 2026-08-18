@@ -2,7 +2,7 @@ import { isVillageLikeStructureCategory, normalizeStructureCategory } from "@/li
 import type { GameModeId } from "@/config/game-modes";
 import { ClientComponents, ID, StructureType } from "@bibliothecadao/types";
 import { getComponentValue } from "@dojoengine/recs";
-import { getEntityIdFromKeys } from "@dojoengine/utils";
+import { getEntityIdFromKeys } from "@bibliothecadao/eternum";
 import { gameEntityKey } from "@/dojo/game-scope";
 
 type SlotValue = bigint | number | null | undefined;

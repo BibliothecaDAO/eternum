@@ -61,8 +61,6 @@ export async function fetchTokenBalancesWithMetadata(
     padAddress(contractAddress),
   ).replaceAll("{accountAddress}", padAddress(accountAddress));
 
-  console.log({ query });
-
   const rawData = await fetchSQL<RawTokenBalanceWithMetadata[]>(query, { baseUrl: options?.baseUrl });
 
   return rawData.map((item) => ({

@@ -101,6 +101,29 @@ describe("handleWorldmapCriticalManagerCatchUpFailures", () => {
   });
 
   it("labels slow sliced catch-up as convergence latency rather than blocking time", async () => {
+    const log = vi.fn();
+    const timestamps = [0, 181];
+
+    await runWorldmapCriticalManagerCatchUp({
+      context: { chunkKey: "24,24", transitionToken: 7, triggerReason: "initial_setup" },
+      timeoutMs: 0,
+      now: () => timestamps.shift() ?? 181,
+      log,
+      managers: [
+        {
+          label: "structure",
+          run: async () => undefined,
+          recover: vi.fn(),
+        },
+      ],
+    });
+
+    expect(log).toHaveBeenCalledWith(
+      "[WorldmapPerf] critical structure manager catch-up chunk=24,24 transition=7 trigger=initial_setup converged over 181ms of sliced wall time",
+    );
+  });
+
+  it("stays silent when no console reporter is injected", async () => {
     const info = vi.spyOn(console, "info").mockImplementation(() => undefined);
     const timestamps = [0, 181];
 
@@ -118,9 +141,7 @@ describe("handleWorldmapCriticalManagerCatchUpFailures", () => {
         ],
       });
 
-      expect(info).toHaveBeenCalledWith(
-        "[WorldmapPerf] critical structure manager catch-up chunk=24,24 transition=7 trigger=initial_setup converged over 181ms of sliced wall time",
-      );
+      expect(info).not.toHaveBeenCalled();
     } finally {
       info.mockRestore();
     }

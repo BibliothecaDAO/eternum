@@ -25,6 +25,7 @@ import { resizeInstancedMorphTexture } from "./morph-texture-resize";
 import { writeMorphWeightsIfChanged } from "./morph-texture-dirty-state";
 import { BoundedHexCache } from "../utils/bounded-hex-cache";
 import { env } from "../../../env";
+import { VERBOSE_LOGS_ENABLED } from "@/utils/dev-mode";
 import {
   ANIMATION_STATE_IDLE,
   ANIMATION_STATE_MOVING,
@@ -181,7 +182,9 @@ export class ArmyModel {
       this.memoryMonitor = new MemoryMonitor({
         spikeThresholdMB: 20, // Lower threshold for model operations
         onMemorySpike: (spike) => {
-          console.warn(`🪖  Army Model Memory Spike: +${spike.increaseMB.toFixed(1)}MB in ${spike.context}`);
+          if (VERBOSE_LOGS_ENABLED) {
+            console.warn(`🪖  Army Model Memory Spike: +${spike.increaseMB.toFixed(1)}MB in ${spike.context}`);
+          }
         },
       });
     }
@@ -2671,8 +2674,6 @@ export class ArmyModel {
     this.bucketToIndices.clear();
     this.bucketIndicesBuilt = false;
     this.bucketIndicesMaxCount = 0;
-
-    console.log("ArmyModel: Disposed all resources");
   }
 
   private invokeMovementComplete(entityId: number) {

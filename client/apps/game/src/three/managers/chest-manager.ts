@@ -157,8 +157,6 @@ export class ChestManager {
           false, // sizeAttenuation: false = fixed screen size (avoids WebGPU squish)
         );
 
-        console.log("[ChestManager] Points-based icon renderer initialized");
-
         // Re-render visible chests to populate points
         if (isCommittedManagerChunk(this.currentChunkKey)) {
           void this.requestVisibleChestsRefresh(this.currentChunkKey);

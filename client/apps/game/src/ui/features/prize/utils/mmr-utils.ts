@@ -121,8 +121,6 @@ export async function commitAndClaimMMR(params: CommitClaimMMRParams): Promise<s
 
   const sortedAddresses = sortedPlayers.map((p) => toHexString(p.address));
 
-  console.log("Sorted player addresses for MMR commit & claim:", sortedAddresses, sortedPlayers);
-
   onStatusChange?.(`Committing and claiming MMR for ${sortedAddresses.length} players...`);
 
   // Call commit and claim in single transaction
@@ -130,8 +128,6 @@ export async function commitAndClaimMMR(params: CommitClaimMMRParams): Promise<s
     signer,
     players: sortedAddresses,
   });
-
-  console.log("MMR Commit & Claim transaction submitted.");
 
   return sortedAddresses;
 }

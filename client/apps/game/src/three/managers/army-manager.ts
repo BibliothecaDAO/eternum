@@ -34,7 +34,7 @@ import type {
 } from "@bibliothecadao/eternum/game-sync";
 import { ClientComponents, ContractAddress, HexPosition, ID, TroopTier, TroopType } from "@bibliothecadao/types";
 import { getComponentValue, type ComponentValue } from "@dojoengine/recs";
-import { getEntityIdFromKeys } from "@dojoengine/utils";
+import { getEntityIdFromKeys } from "@bibliothecadao/eternum";
 import { shortString } from "starknet";
 import * as THREE from "three";
 import { Color, Euler, Group, Object3D, Raycaster, Scene, Vector3 } from "three";
@@ -3056,10 +3056,6 @@ ${
     const previousCount = army.troopCount;
     if (previousCount !== troopCount) {
       const diff = troopCount - previousCount;
-      const diffSign = diff > 0 ? "+" : "";
-      console.log(
-        `[TroopCountDiff] Army #${entityId} | Previous: ${previousCount} | Current: ${troopCount} | Diff: ${diffSign}${diff}`,
-      );
 
       // Play floating damage/heal FX at the army's position
       const normalizedHex = army.hexCoords.getNormalized();

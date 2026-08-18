@@ -51,9 +51,6 @@ export class ArmyActionManager {
     const stamina = this.staminaManager.getStamina(currentArmiesTick);
 
     if (Number(stamina.amount) < configManager.getExploreStaminaCost()) {
-      console.log(
-        `[Army ${this.entityId}] Cannot explore: not enough stamina (${stamina.amount}/${configManager.getExploreStaminaCost()})`,
-      );
       return false;
     }
 
@@ -67,15 +64,9 @@ export class ArmyActionManager {
     const { wheat, fish } = this.getFood(currentDefaultTick);
 
     if (fish < exploreFoodCosts.fishPayAmount) {
-      console.log(
-        `[Army ${this.entityId}] Cannot explore: not enough fish (${fish}/${exploreFoodCosts.fishPayAmount})`,
-      );
       return false;
     }
     if (wheat < exploreFoodCosts.wheatPayAmount) {
-      console.log(
-        `[Army ${this.entityId}] Cannot explore: not enough wheat (${wheat}/${exploreFoodCosts.wheatPayAmount})`,
-      );
       return false;
     }
 
@@ -108,15 +99,7 @@ export class ArmyActionManager {
     }
 
     const maxTravelSteps = Math.min(maxTravelWheatSteps, maxTravelFishSteps);
-    const result = Math.min(maxStaminaSteps, maxTravelSteps);
-
-    if (result === 0) {
-      console.log(
-        `[Army ${this.entityId}] Cannot travel: maxStaminaSteps=${maxStaminaSteps}, maxWheatSteps=${maxTravelWheatSteps}, maxFishSteps=${maxTravelFishSteps} (stamina=${stamina.amount}, wheat=${wheat}, fish=${fish})`,
-      );
-    }
-
-    return result;
+    return Math.min(maxStaminaSteps, maxTravelSteps);
   };
 
   private readonly _getCurrentPosition = () => {

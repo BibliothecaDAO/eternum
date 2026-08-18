@@ -26,7 +26,6 @@ import { useVillagePassInventory, type VillagePassInventoryItem } from "@/hooks/
 import { getWorldKey, useWorldsAvailability } from "@/hooks/use-world-availability";
 import { WORLD_AVAILABILITY_QUERY_KEY } from "@/hooks/world-list-queries";
 import { executeObservedClientTransaction } from "@/observability/observed-client-transaction";
-import { captureClientEvent } from "@/posthog";
 import { getFactorySqlBaseUrl } from "@/runtime/world/factory-endpoints";
 import { resolveWorldContracts } from "@/runtime/world/factory-resolver";
 import { normalizeSelector } from "@/runtime/world/normalize";
@@ -46,7 +45,7 @@ import { markGameEntryMilestone } from "@/ui/layouts/game-entry-timeline";
 import type { PlayerStructure, RealmVillageSlot } from "@bibliothecadao/torii";
 import { buildUnscopedApiUrl, fetchWithErrorHandling, formatAddressForQuery } from "@bibliothecadao/torii";
 import { getContractByName } from "@dojoengine/core";
-import { getEntityIdFromKeys } from "@dojoengine/utils";
+import { getEntityIdFromKeys } from "@bibliothecadao/eternum";
 import { Coord, Direction, DirectionName, ResourcesIds, StructureType } from "@bibliothecadao/types";
 import { getGameManifest, getSeasonAddresses, type Chain } from "@contracts";
 import { Account, Call, CallData, RpcProvider, uint256 } from "starknet";
@@ -3212,10 +3211,6 @@ export const GameEntryModal = ({
 
     setSettlementPlannerTarget(null);
     setSettlementPlannerConflict("That location just changed. The planner refreshed and cleared the stale selection.");
-    captureClientEvent("planner_conflict_refreshed", {
-      worldName,
-      chain,
-    });
   }, [unifiedSettlementPlannerEnabled, settlementPlannerTarget, settlementPlannerData, worldName, chain]);
 
   useEffect(() => {
@@ -3563,11 +3558,6 @@ export const GameEntryModal = ({
     }
 
     plannerOpenedRef.current = true;
-    captureClientEvent("planner_opened", {
-      worldName,
-      chain,
-      entryIntent,
-    });
   }, [phase, unifiedSettlementPlannerEnabled, worldName, chain, entryIntent]);
 
   const readSettlementSnapshot = useCallback(async (): Promise<SettlementSnapshot | null> => {
@@ -3629,13 +3619,7 @@ export const GameEntryModal = ({
         isTarget: ({ status }) =>
           status != null && (status.canPlay || status.settledCount >= Math.max(1, targetSettleCount)),
         modelNames: ["BlitzSettlement", "Structure"],
-        onSlow: (elapsedMs) => {
-          captureClientEvent("game_entry_entity_wait_slow", {
-            elapsedMs,
-            fact: "settlement",
-            worldName,
-          });
-        },
+        onSlow: (elapsedMs) => {},
         read: async () => {
           const snapshot = await readSettlementSnapshot();
           return {
@@ -3858,13 +3842,7 @@ export const GameEntryModal = ({
         gameId: worldMeta?.gameId ?? undefined,
         isTarget: (reveal) => reveal != null,
         modelNames: ["Structure"],
-        onSlow: (elapsedMs) => {
-          captureClientEvent("game_entry_entity_wait_slow", {
-            elapsedMs,
-            fact: "village_resource",
-            worldName,
-          });
-        },
+        onSlow: (elapsedMs) => {},
         read: async () => {
           const structures = await selectedWorldSqlApi.fetchPlayerStructures(ownerAddress);
           const newVillage = structures
@@ -4009,13 +3987,6 @@ export const GameEntryModal = ({
         setSelectedVillageRealmEntityId(target.slot.realmEntityId);
         setSelectedVillageDirection(target.slot.direction);
       }
-
-      captureClientEvent("planner_target_selected", {
-        worldName,
-        chain,
-        targetType: target.type,
-        occupiedType: target.type === "occupied_target" ? target.occupiedType : null,
-      });
     },
     [worldName, chain],
   );
@@ -4334,11 +4305,6 @@ export const GameEntryModal = ({
     setSettlementPlannerConflict(null);
 
     if (unifiedSettlementPlannerEnabled && settlementPlannerRealmTarget) {
-      captureClientEvent("planner_submit_clicked", {
-        worldName,
-        chain,
-        targetType: "realm_slot",
-      });
     }
 
     try {
@@ -4466,21 +4432,11 @@ export const GameEntryModal = ({
         ]);
         setSettlementPlannerTarget(null);
         void settlementPlannerData.refetch();
-        captureClientEvent("planner_submit_succeeded", {
-          worldName,
-          chain,
-          targetType: "realm_slot",
-        });
       }
     } catch (error) {
       debugLog(worldName, "Season settlement failed:", error);
       setSeasonSettlementError(mapSeasonSettleError(error));
       if (unifiedSettlementPlannerEnabled) {
-        captureClientEvent("planner_submit_failed", {
-          worldName,
-          chain,
-          targetType: "realm_slot",
-        });
       }
     } finally {
       setIsSubmittingSeasonSettlement(false);
@@ -4567,11 +4523,6 @@ export const GameEntryModal = ({
     setSettlementPlannerConflict(null);
 
     if (unifiedSettlementPlannerEnabled && settlementPlannerVillageTarget) {
-      captureClientEvent("planner_submit_clicked", {
-        worldName,
-        chain,
-        targetType: "village_slot",
-      });
     }
 
     try {
@@ -4609,22 +4560,12 @@ export const GameEntryModal = ({
       void refetchRealmVillageSlots();
       void settlementPlannerData.refetch();
       if (unifiedSettlementPlannerEnabled) {
-        captureClientEvent("planner_submit_succeeded", {
-          worldName,
-          chain,
-          targetType: "village_slot",
-        });
       }
     } catch (error) {
       if (isSelectedWorldEntityWaitAborted(error)) return;
       debugLog(worldName, "Village settlement failed:", error);
       setVillageSettlementError(mapVillageSettleError(error));
       if (unifiedSettlementPlannerEnabled) {
-        captureClientEvent("planner_submit_failed", {
-          worldName,
-          chain,
-          targetType: "village_slot",
-        });
       }
     } finally {
       setIsSubmittingVillageSettlement(false);

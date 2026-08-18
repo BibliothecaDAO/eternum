@@ -9,6 +9,7 @@ import {
   isAutomationResourceBlocked,
 } from "@/hooks/store/use-automation-store";
 import { calculatePresetAllocations } from "@/utils/automation-presets";
+import { verboseLog } from "@/utils/dev-mode";
 import { configManager, divideByPrecision, ResourceManager } from "@bibliothecadao/eternum";
 import { ClientComponents, ResourcesIds } from "@bibliothecadao/types";
 
@@ -635,7 +636,7 @@ export const buildRealmProductionPlan = ({
       const outputPerCycle = laborConfig?.resourceOutputPerInputResources ?? 0;
 
       if (!laborConfig || !inputResources.length || outputPerCycle <= 0) {
-        console.log("[Automation] Missing labor recipe configuration", {
+        verboseLog("[Automation] Missing labor recipe configuration", {
           realmId: realmConfig.realmId,
           realmName: realmConfig.realmName,
           entityType,
@@ -709,7 +710,7 @@ export const buildRealmProductionPlan = ({
         }
 
         if (!Number.isFinite(maxCycles) || maxCycles <= 0) {
-          console.log("[Automation] Labor recipe insufficient inputs", {
+          verboseLog("[Automation] Labor recipe insufficient inputs", {
             realmId: realmConfig.realmId,
             realmName: realmConfig.realmName,
             entityType,
@@ -735,7 +736,7 @@ export const buildRealmProductionPlan = ({
           for (const entry of inputsConsumed) {
             if (!reserveAmount(entry.resourceId, entry.amount)) {
               allocationSucceeded = false;
-              console.log("[Automation] Labor recipe reserve failure", {
+              verboseLog("[Automation] Labor recipe reserve failure", {
                 realmId: realmConfig.realmId,
                 realmName: realmConfig.realmName,
                 entityType,

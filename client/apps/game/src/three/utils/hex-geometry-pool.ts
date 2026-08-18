@@ -102,8 +102,6 @@ export class HexGeometryPool {
       geometry.dispose();
       this.geometries.delete(type);
       this.referenceCount.delete(type);
-
-      console.log(`🗑️  Disposed unused hex geometry: ${type}`);
     }
   }
 
@@ -219,11 +217,8 @@ ${
    * Dispose all geometries (for cleanup)
    */
   public dispose(): void {
-    console.log(`🗑️  Disposing HexGeometryPool with ${this.geometries.size} shared geometries`);
-
-    this.geometries.forEach((geometry, type) => {
+    this.geometries.forEach((geometry) => {
       geometry.dispose();
-      console.log(`  • Disposed ${type} geometry`);
     });
 
     this.geometries.clear();

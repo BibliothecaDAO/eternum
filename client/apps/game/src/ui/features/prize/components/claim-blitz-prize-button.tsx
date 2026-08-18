@@ -4,7 +4,7 @@ import Button from "@/ui/design-system/atoms/button";
 import { useDojo } from "@bibliothecadao/react";
 import { useEntityQuery } from "@dojoengine/react";
 import { Has, getComponentValue } from "@dojoengine/recs";
-import { getEntityIdFromKeys } from "@dojoengine/utils";
+import { getEntityIdFromKeys } from "@bibliothecadao/eternum";
 import { useEffect, useMemo, useState } from "react";
 import { configManager } from "@bibliothecadao/eternum";
 import { shortString } from "starknet";

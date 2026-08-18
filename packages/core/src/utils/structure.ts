@@ -11,7 +11,7 @@ import {
   TickIds,
 } from "@bibliothecadao/types";
 import { ComponentValue, Entity, getComponentValue } from "@dojoengine/recs";
-import { getEntityIdFromKeys } from "@dojoengine/utils";
+import { getEntityIdFromKeys } from "../managers/game-entity-keys";
 import { shortString } from "starknet";
 import { getTileAt, DEFAULT_COORD_ALT } from "./tile";
 import { configManager } from "../managers";

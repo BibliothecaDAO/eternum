@@ -2,6 +2,10 @@
 
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+// Documented load-sensitive file (see instanced-model.material-semantics):
+// full-suite contention pushes setup past the default 5s on green code.
+vi.setConfig({ testTimeout: 30_000 });
+
 const stubBrowserPreloadGlobals = () => {
   vi.stubGlobal(
     "fetch",

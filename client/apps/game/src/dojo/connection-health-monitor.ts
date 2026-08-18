@@ -250,7 +250,7 @@ export class ConnectionHealthMonitor {
   async requestRecovery(request: ConnectionRecoveryRequest): Promise<void> {
     if (this.disposed) return;
 
-    console.info("[ConnectionHealthMonitor] recovery requested", request);
+    console.warn("[ConnectionHealthMonitor] recovery requested", request);
     if (request.kind === "quiet_stream_fallback") {
       await this.silentRefreshStreams();
       return;

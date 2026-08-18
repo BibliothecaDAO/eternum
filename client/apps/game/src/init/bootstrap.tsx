@@ -1,5 +1,5 @@
-import { captureSystemError } from "@/posthog";
-import { DEV_MODE_ENABLED } from "@/utils/dev-mode";
+import * as Sentry from "@sentry/react";
+import { DEV_MODE_ENABLED, verboseLog } from "@/utils/dev-mode";
 import { captureSpectateIntentFromUrl, isExplicitSpectateSession } from "@/utils/spectator-session";
 import { setup } from "@bibliothecadao/dojo";
 import { configManager } from "@bibliothecadao/eternum";
@@ -89,7 +89,7 @@ const shouldBypassNoAccountModal = (): boolean => {
 
 const handleNoAccount = (modalContent: ReactNode) => {
   if (shouldBypassNoAccountModal()) {
-    console.log("[bootstrap] Skipping account modal - spectate mode");
+    verboseLog("[bootstrap] Skipping account modal - spectate mode");
     return;
   }
 
@@ -133,7 +133,7 @@ const runBootstrap = async ({
   setGameScope(worldNamespace as GameNamespace, profile.gameId ?? 0);
   setSqlGameScope(worldNamespace, profile.gameId ?? 0);
   await assertBootstrapToriiIsAvailable(worldContext);
-  console.log("[STARTING DOJO SETUP]");
+  verboseLog("[STARTING DOJO SETUP]");
   configureDojoRuntime(worldContext);
   const setupResult = await runDojoSetup(worldNamespace, profile.gameId ?? 0);
   // When the config fast path resolves in the background after boot, re-run
@@ -153,7 +153,7 @@ const runBootstrap = async ({
   };
 };
 export const resetBootstrap = () => {
-  console.log("[BOOTSTRAP] Resetting bootstrap state");
+  verboseLog("[BOOTSTRAP] Resetting bootstrap state");
   cancelActiveBootstrapSubscriptions();
   bootstrapSession.reset();
   clearBootstrapWorldData();
@@ -193,10 +193,9 @@ export const bootstrapGameForEntryContext = async (
     }
 
     bootstrapSession.clearFailure();
-    captureSystemError(error, {
-      error_type: "dojo_setup",
-      setup_phase: "bootstrap",
-      context: "Unhandled error during Dojo bootstrap",
+    Sentry.captureException(error, {
+      tags: { feature: "bootstrap", error_type: "dojo_setup", setup_phase: "bootstrap" },
+      extra: { context: "Unhandled error during Dojo bootstrap" },
     });
     throw error;
   }
@@ -227,11 +226,11 @@ const resetBootstrapForSelectionChange = (selection: BootstrapSelection) => {
   const previousSelection = bootstrapSession.getTrackedSelection();
 
   if (resetReason === "chain-changed") {
-    console.log(
+    verboseLog(
       `[BOOTSTRAP] Chain changed from "${previousSelection.chain}" to "${selection.chain}", resetting and re-bootstrapping...`,
     );
   } else {
-    console.log(
+    verboseLog(
       `[BOOTSTRAP] World changed from "${previousSelection.worldName}" to "${selection.worldName}", re-bootstrapping...`,
     );
   }
@@ -293,16 +292,15 @@ const runDojoSetup = async (namespace: string, gameId: number): Promise<SetupRes
       onError: (error: unknown) => {
         console.error("System call error:", error);
 
-        captureSystemError(error, {
-          error_type: "dojo_system_call",
-          setup_phase: "post-setup",
-          context: "System call error during post-setup phase",
+        Sentry.captureException(error, {
+          tags: { feature: "bootstrap", error_type: "dojo_system_call", setup_phase: "post-setup" },
+          extra: { context: "System call error during post-setup phase" },
         });
       },
     },
   );
   markGameEntryMilestone("setup-completed");
-  console.log("[DOJO SETUP COMPLETED]");
+  verboseLog("[DOJO SETUP COMPLETED]");
   return setupResult;
 };
 
@@ -316,7 +314,7 @@ const runInitialWorldSync = async (
   await initialSync(setupResult, stores.uiStore, stores.syncingStore.setInitialSyncProgress, { onConfigRefreshed });
   markGameEntryMilestone("initial-sync-completed");
   recordGameEntryDuration("initial-sync", performance.now() - initialSyncStartedAt);
-  console.log("[INITIAL SYNC COMPLETED]");
+  verboseLog("[INITIAL SYNC COMPLETED]");
 };
 
 const configureGameSystems = (setupResult: SetupResult, chain: Chain) => {
@@ -350,7 +348,7 @@ const clearBootstrapWorldData = () => {
   // `world.components` is append-only across contract redefinition, so a re-bootstrap
   // must clear it or new writes can target orphaned component instances.
   world.components.length = 0;
-  console.log(`[BOOTSTRAP] Cleared ${entities.length} entities and component registry from RECS world`);
+  verboseLog(`[BOOTSTRAP] Cleared ${entities.length} entities and component registry from RECS world`);
 
   clearSubscriptionQueue();
   useSyncStore.getState().resetSubscriptions();

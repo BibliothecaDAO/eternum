@@ -7,8 +7,6 @@
 import type { Manifest } from "@bibliothecadao/types";
 import * as SystemProps from "@bibliothecadao/types";
 import { DojoCall, DojoProvider } from "@dojoengine/core";
-import type { Span } from "@opentelemetry/api";
-import { SpanKind, SpanStatusCode, trace } from "@opentelemetry/api";
 import EventEmitter from "eventemitter3";
 import {
   Account,
@@ -329,7 +327,6 @@ export class EternumProvider extends EnhancedDojoProvider {
   private readonly TRANSACTION_CONFIRM_TIMEOUT_MS = 10_000;
   private readonly TRANSACTION_SUBMIT_TIMEOUT_MS = DEFAULT_TRANSACTION_SUBMIT_TIMEOUT_MS;
   private readonly FEE_ESTIMATE_TIMEOUT_MS = DEFAULT_FEE_ESTIMATE_TIMEOUT_MS;
-  private pendingTransactionSpans = new Map<string, Span>();
   private pendingVrfExecutionLocks = new Map<string, VrfExecutionLock>();
   private cachedExploreExecutionDetails = new Map<string, CachedExploreExecutionDetails>();
   private lastEstimateError?: { error: unknown; atMs: number };
@@ -830,81 +827,6 @@ export class EternumProvider extends EnhancedDojoProvider {
     };
   }
 
-  private buildTransactionSpanAttributes(
-    transactionDetails: AllowArray<Call>,
-    transactionMeta: TransactionLifecycleMeta,
-  ): Record<string, string | number | boolean | string[]> {
-    const details = Array.isArray(transactionDetails) ? transactionDetails : [transactionDetails];
-    const entrypoints = this.getTransactionEntrypoints(transactionDetails);
-    const attributes: Record<string, string | number | boolean | string[]> = {
-      "provider.namespace": this.namespace ?? NAMESPACE,
-      "transaction.count": details.length,
-    };
-
-    if (entrypoints.length > 0) {
-      attributes["transaction.entrypoints"] = entrypoints;
-    }
-    if (transactionMeta.type) {
-      attributes["transaction.type"] = transactionMeta.type;
-    }
-
-    const worldAddress = this.manifest?.world?.address;
-    if (worldAddress) {
-      attributes["provider.world.address"] = worldAddress;
-    }
-
-    const nodeUrl = (this.provider as any)?.channel?.nodeUrl;
-    if (nodeUrl) {
-      attributes["provider.node_url"] = nodeUrl;
-    }
-
-    const manifestRpcUrl = (this.manifest as any)?.world?.metadata?.rpc_url;
-    if (manifestRpcUrl) {
-      attributes["provider.manifest_rpc_url"] = manifestRpcUrl;
-    }
-
-    return attributes;
-  }
-
-  private startTransactionSpan(transactionDetails: AllowArray<Call>, transactionMeta: TransactionLifecycleMeta): Span {
-    const tracer = trace.getTracer("eternum-provider");
-    return tracer.startSpan("provider.transaction", {
-      kind: SpanKind.CLIENT,
-      attributes: this.buildTransactionSpanAttributes(transactionDetails, transactionMeta),
-    });
-  }
-
-  private completeTransactionSpan(span: Span, transactionHash: string, receipt: GetTransactionReceiptResponse): void {
-    const receiptAny = receipt as any;
-    const blockNumber =
-      typeof receiptAny?.block_number === "number"
-        ? receiptAny.block_number
-        : typeof receiptAny?.blockNumber === "number"
-          ? receiptAny.blockNumber
-          : undefined;
-
-    span.setAttributes({
-      "transaction.hash": transactionHash,
-      "transaction.status": "confirmed",
-      ...(blockNumber !== undefined ? { "transaction.block_number": blockNumber } : {}),
-    });
-    span.setStatus({ code: SpanStatusCode.OK });
-    span.end();
-  }
-
-  private failTransactionSpan(span: Span, transactionHash: string | undefined, error: unknown): void {
-    const message = extractErrorMessage(error);
-
-    span.recordException(error as Error);
-    span.setAttributes({
-      ...(transactionHash ? { "transaction.hash": transactionHash } : {}),
-      "transaction.status": "failed",
-      "error.message": message,
-    });
-    span.setStatus({ code: SpanStatusCode.ERROR, message });
-    span.end();
-  }
-
   private emitTransactionFailure(payload: TransactionFailedPayload): void {
     this.emit("transactionFailed", payload);
   }
@@ -1055,9 +977,6 @@ export class EternumProvider extends EnhancedDojoProvider {
     const transactionDetails = this.withGameIdCalldata(rawTransactionDetails);
     this.assertSingleVrfRequestRandomCall(transactionDetails);
 
-    if (typeof window !== "undefined") {
-      console.log({ signer, transactionDetails });
-    }
     const isMultipleTransactions = Array.isArray(transactionDetails);
 
     // Get the transaction type based on the entrypoint name
@@ -1107,7 +1026,6 @@ export class EternumProvider extends EnhancedDojoProvider {
       }
     }
 
-    const span = this.startTransactionSpan(transactionDetails, transactionMeta);
     const executionDetails = executionDetailsPromise
       ? await executionDetailsPromise
       : await this.getV3ExecutionDetails(signer, transactionDetails, {
@@ -1141,12 +1059,8 @@ export class EternumProvider extends EnhancedDojoProvider {
         ...submitFailure,
         ...buildFailureDiagnostics(this.resolveSubmitFailureError(error, message)),
       });
-      this.failTransactionSpan(span, undefined, error);
       throw error;
     }
-
-    span.setAttribute("transaction.hash", tx.transaction_hash);
-    span.addEvent("transaction.submitted", { "transaction.hash": tx.transaction_hash });
 
     // Emit immediately so UI can show pending state
     this.emitTransactionSubmitted(tx.transaction_hash, transactionMeta);
@@ -1169,16 +1083,12 @@ export class EternumProvider extends EnhancedDojoProvider {
 
     if (!waitForConfirmation) {
       this.emitTransactionPending(tx.transaction_hash, transactionMeta);
-      span.setAttribute("transaction.status", "pending");
-      span.addEvent("transaction.pending", { "transaction.hash": tx.transaction_hash });
-      this.pendingTransactionSpans.set(tx.transaction_hash, span);
       void waitPromise
         .then((receipt) => {
           this.emit("transactionComplete", {
             details: receipt,
             ...transactionMeta,
           });
-          this.completeTransactionSpan(span, tx.transaction_hash, receipt);
         })
         .catch((error) => {
           console.error(`Error waiting for transaction ${tx.transaction_hash}`, error);
@@ -1188,10 +1098,6 @@ export class EternumProvider extends EnhancedDojoProvider {
             stage: resolveTransactionFailureStage(error, "background_confirmation"),
             ...buildFailureDiagnostics(error),
           });
-          this.failTransactionSpan(span, tx.transaction_hash, error);
-        })
-        .finally(() => {
-          this.pendingTransactionSpans.delete(tx.transaction_hash);
         });
 
       return {
@@ -1210,22 +1116,17 @@ export class EternumProvider extends EnhancedDojoProvider {
         stage: resolveTransactionFailureStage(error, "confirmation"),
         ...buildFailureDiagnostics(error),
       });
-      this.failTransactionSpan(span, tx.transaction_hash, error);
       throw error;
     }
 
     if (waitResult.status === "pending") {
       this.emitTransactionPending(tx.transaction_hash, transactionMeta);
-      span.setAttribute("transaction.status", "pending");
-      span.addEvent("transaction.pending", { "transaction.hash": tx.transaction_hash });
-      this.pendingTransactionSpans.set(tx.transaction_hash, span);
       void waitPromise
         .then((receipt) => {
           this.emit("transactionComplete", {
             details: receipt,
             ...transactionMeta,
           });
-          this.completeTransactionSpan(span, tx.transaction_hash, receipt);
         })
         .catch((error) => {
           console.error(`Error waiting for transaction ${tx.transaction_hash}`, error);
@@ -1235,10 +1136,6 @@ export class EternumProvider extends EnhancedDojoProvider {
             stage: resolveTransactionFailureStage(error, "background_confirmation"),
             ...buildFailureDiagnostics(error),
           });
-          this.failTransactionSpan(span, tx.transaction_hash, error);
-        })
-        .finally(() => {
-          this.pendingTransactionSpans.delete(tx.transaction_hash);
         });
 
       return {
@@ -1252,14 +1149,10 @@ export class EternumProvider extends EnhancedDojoProvider {
       ...transactionMeta,
     });
 
-    this.completeTransactionSpan(span, tx.transaction_hash, waitResult.receipt);
     return waitResult.receipt;
   }
 
   async callAndReturnResult(signer: Account | AccountInterface, transactionDetails: DojoCall | Call) {
-    if (typeof window !== "undefined") {
-      console.log({ signer, transactionDetails });
-    }
     const tx = await this.call(this.namespace ?? NAMESPACE, transactionDetails);
     return tx;
   }
@@ -1515,15 +1408,6 @@ export class EternumProvider extends EnhancedDojoProvider {
     let receipt;
     const nodeUrl = (this.provider as any)?.channel?.nodeUrl;
     const manifestRpcUrl = (this.manifest as any)?.world?.metadata?.rpc_url;
-    console.info("[provider] waitForTransaction start", {
-      transactionHash,
-      retryInterval: TX_WAIT_RETRY_INTERVAL_MS,
-      successStates: TX_WAIT_SUCCESS_STATES,
-      nodeUrl,
-      manifestRpcUrl,
-      worldAddress: this.manifest?.world?.address,
-      transactionType: transactionMeta?.type,
-    });
     try {
       receipt = await this.provider.waitForTransaction(transactionHash, {
         retryInterval: TX_WAIT_RETRY_INTERVAL_MS,
@@ -4776,7 +4660,6 @@ export class EternumProvider extends EnhancedDojoProvider {
   public async accept_marketplace_orders(props: SystemProps.AcceptMarketplaceOrdersProps, approval: Call) {
     const { order_ids, signer } = props;
 
-    console.log("approval", approval);
     const calls = order_ids.map((order_id) => {
       return {
         contractAddress: props.marketplace_address.toString(),
@@ -4784,7 +4667,6 @@ export class EternumProvider extends EnhancedDojoProvider {
         calldata: [order_id.toString()],
       };
     });
-    console.log(calls);
 
     return await this.executeAndCheckTransaction(signer, [approval, ...calls]);
   }

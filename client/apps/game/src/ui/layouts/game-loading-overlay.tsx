@@ -20,7 +20,6 @@ export const GameLoadingOverlay = () => {
   const snapshot = usePlayRouteBootSnapshot();
   const readiness = usePlayRouteReadinessStore();
   const setShowBlankOverlay = useUIStore((state) => state.setShowBlankOverlay);
-  const mapLoading = useUIStore((state) => state.loadingStates[LoadingStateKey.Map]);
   const playerStructures = usePlayerStructures();
   const navigate = useNavigate();
   const location = useLocation();
@@ -53,7 +52,7 @@ export const GameLoadingOverlay = () => {
 
   const isWaitingForWorldmap = snapshot.phase === "wait_worldmap_ready";
   const isHandingOffScene = snapshot.phase === "handoff_scene";
-  const hasWorldmapHydrated = readiness.worldmapReady && !mapLoading;
+  const hasWorldmapHydrated = readiness.worldmapReady;
   const isFinalSceneReady =
     snapshot.resolvedRequest?.resumeScene === "hex"
       ? readiness.hexReady

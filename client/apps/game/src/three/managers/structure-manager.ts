@@ -26,7 +26,7 @@ import type {
 } from "@bibliothecadao/eternum/game-sync";
 import { BuildingType, ClientComponents, GuardSlot, ID, StructureType } from "@bibliothecadao/types";
 import { getComponentValue } from "@dojoengine/recs";
-import { getEntityIdFromKeys } from "@dojoengine/utils";
+import { getEntityIdFromKeys } from "@bibliothecadao/eternum";
 import { shortString } from "starknet";
 import * as THREE from "three";
 import { Box3, Euler, Group, Object3D, Scene, Sphere, Vector3 } from "three";
@@ -606,8 +606,6 @@ export class StructureManager {
               ),
             };
 
-            console.log("[StructureManager] Points-based icon renderers initialized");
-
             if (isCommittedManagerChunk(this.currentChunk)) {
               this.requestVisibleStructuresRefresh();
             }
@@ -752,8 +750,6 @@ export class StructureManager {
       this.unsubscribeVisibility();
       this.unsubscribeVisibility = undefined;
     }
-
-    console.log("StructureManager: Destroyed and cleaned up");
   }
 
   getTotalStructures() {
@@ -1880,10 +1876,6 @@ export class StructureManager {
       }
 
       const diff = newGuard.count - oldGuard.count;
-      const diffSign = diff > 0 ? "+" : "";
-      console.log(
-        `[TroopCountDiff] Structure #${entityId} Guard Slot ${newGuard.slot} | Previous: ${oldGuard.count} | Current: ${newGuard.count} | Diff: ${diffSign}${diff}`,
-      );
 
       const worldPos = getWorldPositionForHex(structure.hexCoords);
       this.fxManager.playTroopDiffFx(diff, worldPos.x, worldPos.y + 3, worldPos.z);

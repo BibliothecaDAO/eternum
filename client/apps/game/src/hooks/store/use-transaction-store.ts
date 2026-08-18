@@ -215,7 +215,7 @@ interface TransactionDebugUtils {
   simulateScenario: (scenario: "happy" | "stuck" | "error" | "mixed") => void;
 }
 
-if (typeof window !== "undefined") {
+if (typeof window !== "undefined" && import.meta.env.DEV) {
   const debugKey = "__eternumTransactionDebug";
   const target = window as typeof window & { [k: string]: unknown };
 

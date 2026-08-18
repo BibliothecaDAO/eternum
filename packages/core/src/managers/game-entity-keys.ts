@@ -1,5 +1,24 @@
 import { WORLD_CONFIG_ID } from "@bibliothecadao/types";
-import { getEntityIdFromKeys } from "@dojoengine/utils";
+import { getEntityIdFromKeys as dojoGetEntityIdFromKeys } from "@dojoengine/utils";
+
+const ENTITY_ID_CACHE_LIMIT = 100_000;
+const entityIdCache = new Map<string, ReturnType<typeof dojoGetEntityIdFromKeys>>();
+
+/**
+ * Memoized drop-in for @dojoengine/utils' getEntityIdFromKeys. The poseidon
+ * hash behind it is pure and deterministic, and recomputing it dominated live
+ * main-thread profiles (~25% of scripting time). Every consumer imports THIS
+ * one — a source test forbids the un-memoized dojo import outside this file.
+ */
+export const getEntityIdFromKeys = (keys: bigint[]): ReturnType<typeof dojoGetEntityIdFromKeys> => {
+  const cacheKey = keys.join(",");
+  const cached = entityIdCache.get(cacheKey);
+  if (cached !== undefined) return cached;
+  if (entityIdCache.size >= ENTITY_ID_CACHE_LIMIT) entityIdCache.clear();
+  const entityId = dojoGetEntityIdFromKeys(keys);
+  entityIdCache.set(cacheKey, entityId);
+  return entityId;
+};
 
 // This module must stay a LEAF (no core-internal imports, no module-scope
 // property access): the client's game-scope re-exports these helpers via a
@@ -14,6 +33,9 @@ let activeKeyGameId = 0;
 export const setGameEntityKeyGameId = (gameId: number) => {
   activeKeyGameId = gameId;
 };
+
+/** The active game id as written into per-game model rows (0 on legacy worlds). */
+export const getGameEntityKeyGameId = () => activeKeyGameId;
 
 /**
  * RECS entity key for a per-game model. On the s2 single world every per-game

@@ -2,14 +2,14 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { createRendererBackendCapabilities, createRendererInitDiagnostics } from "./renderer-backend-v2";
 
-const captureClientEvent = vi.fn();
+const setSentryScopeTags = vi.fn();
 const incrementRendererDiagnosticError = vi.fn();
 const syncRendererBackendDiagnostics = vi.fn();
 const setRendererDiagnosticCapabilities = vi.fn();
 const setRendererDiagnosticDegradations = vi.fn();
 const createWebGPURendererBackend = vi.fn();
 
-vi.mock("@/posthog", () => ({ captureClientEvent }));
+vi.mock("@sentry/react", () => ({ getCurrentScope: () => ({ setTags: setSentryScopeTags }) }));
 vi.mock("./renderer-diagnostics", () => ({
   incrementRendererDiagnosticError,
   syncRendererBackendDiagnostics,
@@ -78,10 +78,9 @@ describe("renderer backend runtime", () => {
       requestedMode: "webgpu-auto",
     });
     expect(localStorage.getItem("RENDERER_MODE")).toBeNull();
-    expect(captureClientEvent).toHaveBeenCalledWith("renderer_backend_initialized", {
-      backend: "webgpu",
-      build_mode: "webgpu-auto",
-      fallback_reason: null,
+    expect(setSentryScopeTags).toHaveBeenCalledWith({
+      renderer_backend: "webgpu",
+      renderer_build_mode: "webgpu-auto",
     });
     expect(result).toEqual({ backend, renderer: backend.renderer });
   });

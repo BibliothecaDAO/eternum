@@ -7,7 +7,7 @@ import {
   ResourcesIds,
 } from "@bibliothecadao/types";
 import { Entity, getComponentValue } from "@dojoengine/recs";
-import { getEntityIdFromKeys } from "@dojoengine/utils";
+import { getEntityIdFromKeys } from "../managers/game-entity-keys";
 import { shortString } from "starknet";
 import { ResourceManager, getStructureName } from "..";
 import { gameEntityKey } from "../managers/config-manager";

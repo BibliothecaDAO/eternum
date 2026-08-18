@@ -15,7 +15,7 @@ import {
   WORLD_CONFIG_ID,
 } from "@bibliothecadao/types";
 import { getComponentValue, Has, runQuery } from "@dojoengine/recs";
-import { getEntityIdFromKeys } from "@dojoengine/utils";
+import { getEntityIdFromKeys } from "./game-entity-keys";
 import { disposeActiveGameSyncRuntime } from "../sync/game-sync-runtime";
 import { Biome, BiomeClimateConfig, NEUTRAL_BIOME_CLIMATE } from "../utils/biome";
 import { setGameEntityKeyGameId } from "./game-entity-keys";

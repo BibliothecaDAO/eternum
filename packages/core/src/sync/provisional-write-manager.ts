@@ -152,6 +152,20 @@ export class ProvisionalWriteManager {
     );
   }
 
+  /**
+   * True while a live intent overlays this row and the chain has no
+   * authoritative value for it yet — i.e. the row exists only optimistically
+   * (a pending creation), as opposed to an overlay on top of a real row.
+   */
+  public isProvisionalOnly(model: string, entityId: string): boolean {
+    const hasLiveWrite = [...this.intents.values()].some((intent) =>
+      intent.writes.some((write) => modelName(write.model) === modelName(model) && write.entityId === entityId),
+    );
+    if (!hasLiveWrite) return false;
+    const authoritative = this.store.readAuthoritativeModel?.(model, entityId);
+    return authoritative === null || authoritative === undefined;
+  }
+
   public dispose(): void {
     [...this.intents.values()].forEach((intent) => this.finishIntent(intent, "failed"));
   }
@@ -212,7 +226,10 @@ export class ProvisionalWriteManager {
     authoritativePatch: Record<string, unknown> | null,
   ): void {
     write.authoritativePatch = authoritativePatch;
-    write.matched = this.matchesAuthoritativeEvidence(intent, write, authoritativePatch);
+    // A match is sticky: once the predicted state has been observed the write
+    // is settled evidence. A later echo diverging from it is another action's
+    // outcome (e.g. the next placement bumping packed counts), not an un-match.
+    write.matched = write.matched || this.matchesAuthoritativeEvidence(intent, write, authoritativePatch);
     write.sourceMatched = write.sourcePatch ? matchesPatch(authoritativePatch, write.sourcePatch) : false;
     if (this.hasMatchedAuthoritativeEvidence(write)) this.reportFirstAuthoritativeEcho(intent, write.model);
     this.cancelScheduledRelease(intent);
@@ -252,6 +269,13 @@ export class ProvisionalWriteManager {
     intent.stalledTimeout = setTimeout(() => {
       intent.stalledTimeout = null;
       if (intent.status !== "confirmed") return;
+      // A sourceMatched flap can cancel a scheduled release without another
+      // observation ever re-scheduling it — re-check before declaring a stall
+      // so a reconciled intent settles instead of being force-failed.
+      if (this.hasReconciledOutcome(intent)) {
+        this.finishIntent(intent, "settled");
+        return;
+      }
       this.onIntentStalled?.(this.describeStalledIntent(intent));
       this.publishOutcome(intent, "stalled");
       this.finishIntent(intent, "failed");

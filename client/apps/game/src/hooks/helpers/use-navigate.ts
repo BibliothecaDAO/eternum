@@ -6,7 +6,7 @@ import { buildPlayHref, parsePlayRoute, type PlayScene } from "@/play/navigation
 import { SetupResult } from "@bibliothecadao/dojo";
 import { useQuery } from "@bibliothecadao/react";
 import { ID } from "@bibliothecadao/types";
-import { getEntityIdFromKeys } from "@dojoengine/utils";
+import { getEntityIdFromKeys } from "@bibliothecadao/eternum";
 import { useUIStore } from "../store/use-ui-store";
 
 type PositionLike = Position | { x?: number; y?: number; col?: number; row?: number };

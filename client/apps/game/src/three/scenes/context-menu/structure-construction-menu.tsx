@@ -13,7 +13,7 @@ import {
   findResourceById,
   getBuildingFromResource,
 } from "@bibliothecadao/types";
-import { getEntityIdFromKeys } from "@dojoengine/utils";
+import { getEntityIdFromKeys } from "@bibliothecadao/eternum";
 import { gameEntityKey } from "@/dojo/game-scope";
 
 type Components = SetupResult["components"];

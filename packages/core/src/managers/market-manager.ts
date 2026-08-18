@@ -133,7 +133,7 @@ export class MarketManager {
     try {
       outputAmount = this.getOutputAmount(lordsAmount, market.lords_amount, market.resource_amount, feeRateNum);
     } catch (e) {
-      console.log(e);
+      console.error("[MarketManager] output amount calculation failed", e);
     }
     return Number(outputAmount);
   };

@@ -16,7 +16,6 @@ export const Controller = ({ className = "" }: ControllerProps) => {
 
   const connectWallet = useCallback(async () => {
     try {
-      console.log("Attempting to connect wallet...");
       const connectorToUse = pickPrimaryConnector(connectors);
       if (!connectorToUse) {
         console.error("No Starknet connectors available for Cartridge login");
@@ -24,7 +23,6 @@ export const Controller = ({ className = "" }: ControllerProps) => {
       }
 
       await connectWithControllerRetry(connectAsync, connectorToUse);
-      console.log("Wallet connected successfully.");
 
       if (connector) {
         connector.controller.username()?.then((name) => setAccountName(name));

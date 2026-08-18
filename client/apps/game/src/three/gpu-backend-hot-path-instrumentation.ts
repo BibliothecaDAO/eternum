@@ -1,3 +1,4 @@
+import { VERBOSE_LOGS_ENABLED } from "@/utils/dev-mode";
 import { consumeDominantFrameWorkOwner } from "./frame-work-owner";
 
 interface InstrumentedTexture {
@@ -35,6 +36,8 @@ interface ActiveGpuBackendFrame {
 
 interface InstrumentGpuBackendHotPathsOptions {
   compileMeasurementWindowMs?: number;
+  /** Rolling 1s window reports are a firehose; they default to ?logs=1 only. */
+  emitWindowReports?: boolean;
   now?: () => number;
   reportIntervalMs?: number;
   warn?: (message: string) => void;
@@ -108,6 +111,7 @@ export function instrumentGpuBackendHotPaths(
 
   const now = options.now ?? (() => performance.now());
   const compileMeasurementWindowMs = options.compileMeasurementWindowMs ?? COMPILE_MEASUREMENT_WINDOW_MS;
+  const emitWindowReports = options.emitWindowReports ?? VERBOSE_LOGS_ENABLED;
   const reportIntervalMs = options.reportIntervalMs ?? 1_000;
   const warn = options.warn ?? ((message: string) => console.warn(message));
   const hotPathStats = new Map<string, HotPathStat>();
@@ -123,7 +127,9 @@ export function instrumentGpuBackendHotPaths(
       return;
     }
 
-    warn(buildGpuBackendReport(windowEndedAt - reportWindowStartedAt, hotPathStats, textureStats));
+    if (emitWindowReports) {
+      warn(buildGpuBackendReport(windowEndedAt - reportWindowStartedAt, hotPathStats, textureStats));
+    }
     hotPathStats.clear();
     textureStats.clear();
     reportWindowStartedAt = windowEndedAt;
@@ -231,30 +237,44 @@ function buildGpuBackendReport(
   return `[GpuBackendPerf] window=${Math.round(windowMs)}ms ${hotPaths}${textureSummary}`;
 }
 
+// Below this share of the frame, GPU backend work does not explain the spike
+// and its call listing is noise — the owner attribution is the report.
+const MATERIAL_GPU_SHARE = 0.2;
+const MATERIAL_GPU_MS = 8;
+
 function buildGpuBackendSpikeReport(
   durationMs: number,
   owner: string | null,
   hotPathStats: ReadonlyMap<string, HotPathStat> | null,
   textureStats: ReadonlyMap<object, TextureHotPathStat> | null,
 ): string {
-  const contributors = hotPathStats
-    ? [...hotPathStats.entries()]
-        .sort(([, left], [, right]) => right.accumulatedMs - left.accumulatedMs)
-        .slice(0, TOP_FRAME_HOT_PATH_LIMIT)
-        .map(([name, stat]) => `${name}=${stat.calls}x/${formatMilliseconds(stat.accumulatedMs)}`)
-        .join(", ")
-    : "no GPU backend hot paths";
-  const topTextures = textureStats
-    ? [...textureStats.values()]
-        .sort((left, right) => right.accumulatedMs - left.accumulatedMs)
-        .slice(0, TOP_TEXTURE_LIMIT)
-        .map((stat) => `${stat.name}(${stat.dimensions})=${stat.calls}x/${formatMilliseconds(stat.accumulatedMs)}`)
-        .join(", ")
-    : "";
-  const textureSummary = topTextures ? `; textures=${topTextures}` : "";
+  const gpuTotalMs = hotPathStats
+    ? [...hotPathStats.values()].reduce((total, stat) => total + stat.accumulatedMs, 0)
+    : 0;
+  const gpuIsMaterial = gpuTotalMs >= MATERIAL_GPU_MS || gpuTotalMs >= durationMs * MATERIAL_GPU_SHARE;
 
-  const ownerSummary = owner ? ` owner=${owner}` : "";
-  return `[GpuBackendPerf] spike ${Math.round(durationMs)}ms${ownerSummary}: ${contributors}${textureSummary}`;
+  let gpuSummary: string;
+  if (!hotPathStats || gpuTotalMs === 0) {
+    gpuSummary = "cpu-bound (zero GPU backend work)";
+  } else if (!gpuIsMaterial) {
+    gpuSummary = `cpu-bound (gpu=${formatMilliseconds(gpuTotalMs)})`;
+  } else {
+    const contributors = [...hotPathStats.entries()]
+      .sort(([, left], [, right]) => right.accumulatedMs - left.accumulatedMs)
+      .slice(0, TOP_FRAME_HOT_PATH_LIMIT)
+      .map(([name, stat]) => `${name}=${stat.calls}x/${formatMilliseconds(stat.accumulatedMs)}`)
+      .join(", ");
+    const topTextures = textureStats
+      ? [...textureStats.values()]
+          .sort((left, right) => right.accumulatedMs - left.accumulatedMs)
+          .slice(0, TOP_TEXTURE_LIMIT)
+          .map((stat) => `${stat.name}(${stat.dimensions})=${stat.calls}x/${formatMilliseconds(stat.accumulatedMs)}`)
+          .join(", ")
+      : "";
+    gpuSummary = topTextures ? `${contributors}; textures=${topTextures}` : contributors;
+  }
+
+  return `[FramePerf] spike ${Math.round(durationMs)}ms owner=${owner ?? "unattributed"}: ${gpuSummary}`;
 }
 
 function buildCompileMeasurementReport(windowMs: number, stats: ReadonlyMap<string, HotPathStat>): string {
