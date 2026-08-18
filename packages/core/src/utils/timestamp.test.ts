@@ -15,11 +15,11 @@ const SOURCE_SECONDS = 1_787_000_000;
 afterEach(() => setBlockTimestampSource(null));
 
 describe("tick buffers", () => {
-  it("holds the automation projection 30s behind the clock — the measured skew class blew through 3s", () => {
+  it("holds the automation projection 5s behind the clock — mirrors the chain-time lead cap", () => {
     setBlockTimestampSource(() => SOURCE_SECONDS);
     const { currentDefaultTick } = getBlockTimestamp();
 
-    expect(getAutomationProjectionTick().currentDefaultTick).toBe(currentDefaultTick - 30);
+    expect(getAutomationProjectionTick().currentDefaultTick).toBe(currentDefaultTick - 5);
   });
 
   it("keeps the UI validation buffer at 1s — only automation gets the deep buffer", () => {
