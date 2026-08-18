@@ -4,16 +4,15 @@
   "accountAddress": "0x54b9b1b06e7110f1ef0b0c3467610438311da4680d3c75d557b52788591741",
   "owner": {
     "environment": "appchain.blitz",
-    "gameName": "bltz-vibe-168",
-    "launchRequestId": "32123365690-1",
+    "gameName": "blitz-herald",
+    "launchRequestId": "32182152424-1",
     "workflowName": "Game Launch",
-    "workflowRunId": 32123365690,
+    "workflowRunId": 32182152424,
     "workflowRunAttempt": 1,
     "stepId": "create-world",
-    "leaseId": "fabd070e-3b36-4616-8198-cd5f61090381"
+    "leaseId": "6654f8e2-a071-473b-ac14-7f63f16afa57"
   },
-  "acquiredAt": "2026-08-18T09:48:08.786Z",
-  "heartbeatAt": "2026-08-18T09:48:25.511Z",
-  "expiresAt": "2026-08-18T09:48:25.511Z",
-  "releasedAt": "2026-08-18T09:48:25.511Z"
+  "acquiredAt": "2026-08-18T20:27:05.957Z",
+  "heartbeatAt": "2026-08-18T20:27:05.957Z",
+  "expiresAt": "2026-08-18T20:37:05.957Z"
 }
