@@ -19,7 +19,13 @@ const seasonPassMethodPolicies = [
   },
 ];
 
-const buildFeeTokenPolicies = (feeTokenAddress: string | null | undefined) =>
+// Cartridge deprecates ERC-20 approve policies without an explicit spender and
+// amount ("will be rejected in future versions"). The spender is the contract
+// the settle flow approves (see buildBlitzSettleCalls); the cap is 2000 STRK —
+// the chain currently charges no fees, so this only bounds session authority.
+const FEE_TOKEN_APPROVE_CAP = "0x6c6b935b8bbd400000";
+
+const buildFeeTokenPolicies = (feeTokenAddress: string | null | undefined, spenderAddress: string) =>
   feeTokenAddress
     ? {
         [feeTokenAddress]: {
@@ -27,6 +33,8 @@ const buildFeeTokenPolicies = (feeTokenAddress: string | null | undefined) =>
             {
               name: "approve",
               entrypoint: "approve",
+              spender: spenderAddress,
+              amount: FEE_TOKEN_APPROVE_CAP,
             },
           ],
         },
@@ -70,20 +78,20 @@ const buildSeasonPassPolicies = (chain: Chain) =>
     ]),
   );
 
-const buildActiveWorldTokenPolicies = () => {
+const buildActiveWorldTokenPolicies = (manifest: unknown) => {
   const activeWorld = getActiveWorld();
   const feeTokenAddress = activeWorld?.feeTokenAddress || env.VITE_PUBLIC_FEE_TOKEN_ADDRESS;
   const entryTokenAddress = activeWorld?.entryTokenAddress || null;
 
   return {
-    feeTokenPolicies: buildFeeTokenPolicies(feeTokenAddress),
+    feeTokenPolicies: buildFeeTokenPolicies(feeTokenAddress, contractAddress(manifest, "blitz_realm_systems")),
     entryTokenPolicies: buildEntryTokenPolicies(entryTokenAddress),
   };
 };
 
 export const buildPolicies = (manifest: any) => {
   const chain = resolvePolicyChain();
-  const { feeTokenPolicies, entryTokenPolicies } = buildActiveWorldTokenPolicies();
+  const { feeTokenPolicies, entryTokenPolicies } = buildActiveWorldTokenPolicies(manifest);
   const seasonPassPolicies = buildSeasonPassPolicies(chain);
   const villagePassAddress = getVillagePassAddress(chain);
 
@@ -93,6 +101,10 @@ export const buildPolicies = (manifest: any) => {
     ...seasonPassPolicies,
     [contractAddress(manifest, "blitz_realm_systems")]: {
       methods: [
+        {
+          name: "obtain_entry_token",
+          entrypoint: "obtain_entry_token",
+        },
         {
           name: "settle",
           entrypoint: "settle",
@@ -487,7 +499,7 @@ export const buildPolicies = (manifest: any) => {
         },
       ],
     },
-    [contractAddress(dojoConfig.manifest, "resource_systems")]: {
+    [contractAddress(dojoConfig.manifest, "resource_bridge_systems")]: {
       methods: [
         {
           name: "deposit",
@@ -510,6 +522,11 @@ export const buildPolicies = (manifest: any) => {
     [contractAddress(dojoConfig.manifest, "resource_systems")]: {
       methods: [
         {
+          // Not an ERC-20 approve — resource transfer authorization
+          // (game_id, caller_structure_id, recipient_structure_id, resources).
+          // Cartridge warns on the name; adding spender/amount would encode an
+          // ApprovalPolicy that fails to authorize the real call. Accepted
+          // noise until an s3 ABI revision renames the entrypoint.
           name: "approve",
           entrypoint: "approve",
         },
