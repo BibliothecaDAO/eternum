@@ -51,7 +51,6 @@
     "@starknet-react/core": "catalog:",
     "@tanstack/react-query": "^5.76.0",
     "@tanstack/react-virtual": "^3.13.23",
-    "@vercel/analytics": "^1.2.2",
     "bignumber.js": "catalog:",
     "buffer": "^6.0.3",
     "graphql-request": "^7.1.2",
