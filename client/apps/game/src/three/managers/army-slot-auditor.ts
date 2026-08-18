@@ -38,6 +38,14 @@ interface DrawnSlotOwner {
   owner: number | undefined;
 }
 
+/** A drawn slot's GPU position paired with the entity's authoritative position. */
+export interface DrawnSlotPositionEntry {
+  entityId: number;
+  slot: number;
+  drawn: { x: number; z: number };
+  expected: { x: number; z: number };
+}
+
 export interface ArmyRenderIntegrityInput {
   /** Slots the GPU is currently drawing, with their recorded owner entity. */
   drawnSlotOwners: DrawnSlotOwner[];
@@ -49,6 +57,13 @@ export interface ArmyRenderIntegrityInput {
    * it owns the chunk/visibility predicates.
    */
   visibleUndrawnEntityIds: Array<number | string>;
+  /**
+   * Drawn matrix positions vs authoritative positions for stationary drawn
+   * armies. The caller excludes moving armies — mid-spline drift is expected.
+   */
+  drawnPositionEntries?: DrawnSlotPositionEntry[];
+  /** Hex-plane drift beyond this is a stale matrix, not float noise. */
+  positionDriftEpsilon?: number;
 }
 
 export type ArmyRenderViolation =
@@ -66,7 +81,26 @@ export type ArmyRenderViolation =
       // label reads instanceData.position, not the slot.
       kind: "visible-not-drawn";
       entityId: number | string;
+    }
+  | {
+      // A live, stationary army whose drawn matrix sits away from its
+      // authoritative position — the model stands on the OLD hex while the
+      // label (reading instanceData.position) stands on the new one. This is
+      // the both-directions desync a stale slot matrix manufactures.
+      kind: "stale-drawn-position";
+      entityId: number;
+      slot: number;
+      driftDistance: number;
+    }
+  | {
+      // One entity recorded as the owner of two or more drawn slots — the
+      // extra slot draws a second, frozen copy of the unit.
+      kind: "duplicate-drawn-owner";
+      owner: number;
+      slots: number[];
     };
+
+const DEFAULT_POSITION_DRIFT_EPSILON = 0.75;
 
 /**
  * Detect the two user-visible ghosting symptoms directly, rather than only the
@@ -76,14 +110,36 @@ export type ArmyRenderViolation =
 export function auditArmyRenderIntegrity(input: ArmyRenderIntegrityInput): ArmyRenderViolation[] {
   const violations: ArmyRenderViolation[] = [];
 
+  const slotsByOwner = new Map<number, number[]>();
   for (const { slot, owner } of input.drawnSlotOwners) {
     if (owner === undefined || !input.liveEntityIds.has(owner)) {
       violations.push({ kind: "orphaned-drawn-slot", slot, owner });
+      continue;
+    }
+    const slots = slotsByOwner.get(owner);
+    if (slots) {
+      slots.push(slot);
+    } else {
+      slotsByOwner.set(owner, [slot]);
+    }
+  }
+
+  for (const [owner, slots] of slotsByOwner) {
+    if (slots.length > 1) {
+      violations.push({ kind: "duplicate-drawn-owner", owner, slots });
     }
   }
 
   for (const entityId of input.visibleUndrawnEntityIds) {
     violations.push({ kind: "visible-not-drawn", entityId });
+  }
+
+  const epsilon = input.positionDriftEpsilon ?? DEFAULT_POSITION_DRIFT_EPSILON;
+  for (const { entityId, slot, drawn, expected } of input.drawnPositionEntries ?? []) {
+    const driftDistance = Math.hypot(drawn.x - expected.x, drawn.z - expected.z);
+    if (driftDistance > epsilon) {
+      violations.push({ kind: "stale-drawn-position", entityId, slot, driftDistance });
+    }
   }
 
   return violations;

@@ -116,4 +116,39 @@ describe("auditArmyRenderIntegrity", () => {
 
     expect(violations).toContainEqual({ kind: "visible-not-drawn", entityId: 7 });
   });
+
+  it("flags a stationary army whose drawn matrix drifted from its authoritative position", () => {
+    const violations = auditArmyRenderIntegrity({
+      drawnSlotOwners: [{ slot: 0, owner: 1 }],
+      liveEntityIds: new Set([1]),
+      visibleUndrawnEntityIds: [],
+      drawnPositionEntries: [{ entityId: 1, slot: 0, drawn: { x: 0, z: 0 }, expected: { x: 3, z: 4 } }],
+    });
+
+    expect(violations).toContainEqual({ kind: "stale-drawn-position", entityId: 1, slot: 0, driftDistance: 5 });
+  });
+
+  it("tolerates sub-epsilon drift on drawn positions (float noise, not a ghost)", () => {
+    const violations = auditArmyRenderIntegrity({
+      drawnSlotOwners: [{ slot: 0, owner: 1 }],
+      liveEntityIds: new Set([1]),
+      visibleUndrawnEntityIds: [],
+      drawnPositionEntries: [{ entityId: 1, slot: 0, drawn: { x: 0.1, z: 0 }, expected: { x: 0, z: 0 } }],
+    });
+
+    expect(violations).toEqual([]);
+  });
+
+  it("flags one entity owning two drawn slots (a frozen duplicate)", () => {
+    const violations = auditArmyRenderIntegrity({
+      drawnSlotOwners: [
+        { slot: 0, owner: 1 },
+        { slot: 5, owner: 1 },
+      ],
+      liveEntityIds: new Set([1]),
+      visibleUndrawnEntityIds: [],
+    });
+
+    expect(violations).toContainEqual({ kind: "duplicate-drawn-owner", owner: 1, slots: [0, 5] });
+  });
 });
