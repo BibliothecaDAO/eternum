@@ -4,16 +4,15 @@
   "accountAddress": "0x54b9b1b06e7110f1ef0b0c3467610438311da4680d3c75d557b52788591741",
   "owner": {
     "environment": "appchain.blitz",
-    "gameName": "bltz-riff-449",
-    "launchRequestId": "32085223400-1",
+    "gameName": "bltz-nova-813",
+    "launchRequestId": "32085475621-1",
     "workflowName": "Game Launch",
-    "workflowRunId": 32085223400,
+    "workflowRunId": 32085475621,
     "workflowRunAttempt": 1,
     "stepId": "create-world",
-    "leaseId": "55489a6c-2a5a-4140-a63c-7cd3c5ace7bb"
+    "leaseId": "d8dffd8a-b787-4620-b18c-812560917cda"
   },
-  "acquiredAt": "2026-08-18T00:38:46.310Z",
-  "heartbeatAt": "2026-08-18T00:38:52.311Z",
-  "expiresAt": "2026-08-18T00:38:52.311Z",
-  "releasedAt": "2026-08-18T00:38:52.311Z"
+  "acquiredAt": "2026-08-18T00:42:57.838Z",
+  "heartbeatAt": "2026-08-18T00:42:57.838Z",
+  "expiresAt": "2026-08-18T00:52:57.838Z"
 }
