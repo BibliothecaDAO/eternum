@@ -4,16 +4,15 @@
   "accountAddress": "0x54b9b1b06e7110f1ef0b0c3467610438311da4680d3c75d557b52788591741",
   "owner": {
     "environment": "appchain.blitz",
-    "gameName": "bltz-nova-813",
-    "launchRequestId": "32085475621-1",
+    "gameName": "bltz-vibe-168",
+    "launchRequestId": "32123365690-1",
     "workflowName": "Game Launch",
-    "workflowRunId": 32085475621,
+    "workflowRunId": 32123365690,
     "workflowRunAttempt": 1,
     "stepId": "create-world",
-    "leaseId": "d8dffd8a-b787-4620-b18c-812560917cda"
+    "leaseId": "fabd070e-3b36-4616-8198-cd5f61090381"
   },
-  "acquiredAt": "2026-08-18T00:42:57.838Z",
-  "heartbeatAt": "2026-08-18T00:43:13.652Z",
-  "expiresAt": "2026-08-18T00:43:13.652Z",
-  "releasedAt": "2026-08-18T00:43:13.652Z"
+  "acquiredAt": "2026-08-18T09:48:08.786Z",
+  "heartbeatAt": "2026-08-18T09:48:08.786Z",
+  "expiresAt": "2026-08-18T09:58:08.786Z"
 }
