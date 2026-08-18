@@ -15,6 +15,12 @@ import {
   Vector3,
 } from "three";
 
+// Documented load-sensitive file: full-suite worker contention starves the
+// three.js setup past the default 5s and trips CI on green code. The generous
+// budget keeps the material-semantics coverage instead of deleting it — the
+// tests finish in ~2s when the machine isn't saturated.
+vi.setConfig({ testTimeout: 30_000 });
+
 vi.mock("../utils/contact-shadow", () => ({
   disposeContactShadowResources: vi.fn(),
   getContactShadowResources: () => ({
