@@ -1056,6 +1056,26 @@ export class ArmyModel {
     return result;
   }
 
+  /**
+   * The translation the GPU is actually drawing for a slot, read from the
+   * instance matrix of the first model holding it. This is deliberately NOT
+   * instanceData.position — comparing the two is how the render-integrity
+   * auditor detects a stale matrix (model on the old hex, label on the new).
+   */
+  public getDrawnSlotPosition(slot: number): Vector3 | undefined {
+    const read = (models: Iterable<ModelData>): Vector3 | undefined => {
+      for (const modelData of models) {
+        if (!modelData.activeInstances.has(slot)) continue;
+        const mesh = modelData.instancedMeshes[0];
+        if (!mesh || slot >= mesh.count) continue;
+        mesh.getMatrixAt(slot, this.dummyMatrix);
+        return new Vector3().setFromMatrixPosition(this.dummyMatrix);
+      }
+      return undefined;
+    };
+    return read(this.models.values()) ?? read(this.cosmeticModels.values());
+  }
+
   /** True when the entity's slot is present and drawn in its active base or cosmetic model. */
   public isEntityDrawn(entityId: number): boolean {
     const slot = this.instanceData.get(entityId)?.matrixIndex;

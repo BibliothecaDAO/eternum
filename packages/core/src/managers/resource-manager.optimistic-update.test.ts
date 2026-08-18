@@ -9,8 +9,8 @@ import {
 } from "@bibliothecadao/types";
 import { Type as RecsType, createWorld, getComponentValue, setComponent, type ComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
-import { afterEach, describe, expect, it } from "vitest";
-import { setBlockTimestampSource } from "../utils/timestamp";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { setBlockTimestampSource, setChainTimestampEvidenceSink } from "../utils/timestamp";
 import { ResourceManager } from "./resource-manager";
 
 type ResourceValue = ComponentValue<ClientComponents["Resource"]["schema"]>;
@@ -112,7 +112,14 @@ describe("ResourceManager provisional writes", () => {
 });
 
 describe("production extrapolation clamps", () => {
+  afterEach(() => {
+    setChainTimestampEvidenceSink(null);
+    vi.restoreAllMocks();
+    vi.useRealTimers();
+  });
+
   it("contributes zero production when last_updated_at is ahead of the current tick", () => {
+    vi.spyOn(console, "warn").mockImplementation(() => {});
     const components = createTestComponents();
     seedResource(components, 1, {
       WHEAT_BALANCE: precise(5),
@@ -125,6 +132,40 @@ describe("production extrapolation clamps", () => {
     expect(new ResourceManager(components, 1).balanceWithProduction(1100, ResourcesIds.Wheat).balance).toBe(
       Number(precise(5)),
     );
+  });
+
+  it("reports a row ahead of the clock as chain-time evidence so the clock can re-anchor", () => {
+    const observed: number[] = [];
+    setChainTimestampEvidenceSink((timestampSeconds) => observed.push(timestampSeconds));
+    const components = createTestComponents();
+    seedResource(components, 1, {
+      WHEAT_BALANCE: precise(5),
+      WHEAT_PRODUCTION: production({ production_rate: RESOURCE_PRECISION, last_updated_at: 1110 }),
+      weight: { capacity: storeCapacityGrams(1000), weight: 0n },
+    });
+
+    ResourceManager.balanceWithProduction(readResource(components, 1), 1100, ResourcesIds.Wheat);
+
+    expect(observed).toContain(1110);
+  });
+
+  it("warns loudly, with throttling, when the floor discards accrual beyond clock jitter", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2030-01-01T00:00:00Z"));
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const components = createTestComponents();
+    seedResource(components, 1, {
+      WHEAT_BALANCE: precise(5),
+      WHEAT_PRODUCTION: production({ production_rate: RESOURCE_PRECISION, last_updated_at: 2000 }),
+      weight: { capacity: storeCapacityGrams(1000), weight: 0n },
+    });
+    const row = readResource(components, 1);
+
+    ResourceManager.balanceWithProduction(row, 1100, ResourcesIds.Wheat);
+    ResourceManager.balanceWithProduction(row, 1100, ResourcesIds.Wheat);
+
+    expect(warn).toHaveBeenCalledTimes(1);
+    expect(warn.mock.calls[0][0]).toContain("900s ahead of the client clock");
   });
 
   it("contributes zero production when the store is over capacity", () => {

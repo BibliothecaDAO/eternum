@@ -2,7 +2,7 @@ import { ClientComponents, type ID, ResourcesIds, StructureType } from "@bibliot
 import { ComponentValue, getComponentValue, Has, runQuery } from "@dojoengine/recs";
 import { configManager } from "../managers";
 import { divideByPrecision } from "./utils";
-import { gameEntityKey } from "../managers/config-manager";
+import { belongsToActiveGame, gameEntityKey } from "../managers/config-manager";
 
 type BlitzMapDistanceProfile = {
   baseDistance: number;
@@ -53,9 +53,11 @@ export const getEffectiveHyperstructureRealmCount = (realmCountWithinRadius: num
 };
 
 export const getRealmCountPerHyperstructure = (components: ClientComponents): Map<ID, number> => {
+  // Every game shares the same settlement coordinate space, so an unscoped
+  // Structure sweep would count other games' realms into this game's radii.
   const structures = [...runQuery([Has(components.Structure)])].flatMap((entity) => {
     const structure = getComponentValue(components.Structure, entity);
-    return structure ? [structure] : [];
+    return structure && belongsToActiveGame(structure) ? [structure] : [];
   });
   const realms = structures.filter((structure) => structure.category === StructureType.Realm);
   const radiusSquared = getHyperstructureRealmCheckRadius() ** 2;

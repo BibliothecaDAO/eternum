@@ -67,7 +67,9 @@ export type WorldmapRenderCounter =
   | "armyRecsSweepSnappedPosition"
   | "armyRecsSweepRestoredAlive"
   | "armyRenderIntegrityHealOrphanSlot"
-  | "armyRenderIntegrityHealVisibleUndrawn";
+  | "armyRenderIntegrityHealVisibleUndrawn"
+  | "armyRenderIntegrityHealStalePosition"
+  | "armyRenderIntegrityHealDuplicateOwner";
 
 export interface WorldmapZoomTelemetrySummary {
   controlsChangeEvents: number;
@@ -188,6 +190,8 @@ const createDiagnosticsState = (): WorldmapRenderDiagnosticsSnapshot => ({
     armyRecsSweepRestoredAlive: 0,
     armyRenderIntegrityHealOrphanSlot: 0,
     armyRenderIntegrityHealVisibleUndrawn: 0,
+    armyRenderIntegrityHealStalePosition: 0,
+    armyRenderIntegrityHealDuplicateOwner: 0,
   },
   forceRefreshReasons: {
     default: 0,

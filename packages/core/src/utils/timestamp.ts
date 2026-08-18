@@ -25,6 +25,22 @@ export const setBlockTimestampSource = (source: TimestampSource | null) => {
   timestampSource = source ? () => Math.floor(source()) : defaultTimestampSource;
 };
 
+// A chain-written timestamp ahead of the local chain-time estimate is proof the
+// chain's clock has reached that moment. Reporting it lets the clock re-anchor
+// instead of silently under-reporting elapsed time (the invariant the display
+// math needs is client-time >= every last_updated_at the client holds).
+type ChainTimestampEvidenceSink = (timestampSeconds: number) => void;
+let chainTimestampEvidenceSink: ChainTimestampEvidenceSink | null = null;
+
+export const setChainTimestampEvidenceSink = (sink: ChainTimestampEvidenceSink | null) => {
+  chainTimestampEvidenceSink = sink;
+};
+
+export const reportObservedChainTimestamp = (timestampSeconds: number) => {
+  if (!Number.isFinite(timestampSeconds) || timestampSeconds <= 0) return;
+  chainTimestampEvidenceSink?.(timestampSeconds);
+};
+
 export const getBlockTimestamp = () => {
   const timestamp = timestampSource();
   const tickConfigArmies = configManager.getTick(TickIds.Armies);

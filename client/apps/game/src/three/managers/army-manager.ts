@@ -100,7 +100,26 @@ import { reconcileVisibleArmySet } from "./army-visible-set-reconciler";
 import { resolvePointLabelTextureFlipY } from "./point-label-texture-policy";
 import { PointsLabelRenderer } from "./points-label-renderer";
 import { resolveArmySlotCompactionPlan } from "./army-slot-compaction";
-import { auditArmyRenderIntegrity, auditArmySlots, type ArmySlotAuditEntry } from "./army-slot-auditor";
+import {
+  auditArmyRenderIntegrity,
+  auditArmySlots,
+  type ArmyRenderViolation,
+  type ArmySlotAuditEntry,
+  type DrawnSlotPositionEntry,
+} from "./army-slot-auditor";
+
+const renderViolationSignature = (violation: ArmyRenderViolation): string => {
+  switch (violation.kind) {
+    case "orphaned-drawn-slot":
+      return `orphan:${violation.slot}:${violation.owner}`;
+    case "visible-not-drawn":
+      return `missing:${violation.entityId}`;
+    case "stale-drawn-position":
+      return `stale:${violation.entityId}:${violation.slot}`;
+    case "duplicate-drawn-owner":
+      return `dup:${violation.owner}:${violation.slots.join(",")}`;
+  }
+};
 import { resolveMovementPath } from "./army-move-path";
 import { shouldUseWorkerPathForArmy } from "./army-movement-path-strategy";
 import { addVisibleArmyOrderEntry, removeVisibleArmyOrderEntry, replaceVisibleArmyOrder } from "./army-visible-order";
@@ -2288,6 +2307,12 @@ export class ArmyManager {
   //   2. visible-not-drawn — a tracked army that should be visible in the
   //      committed chunk but has no drawn model (a spawn that never appeared).
   //      Re-run its render, which is idempotent and self-gating.
+  //   3. stale-drawn-position — a live, stationary army whose drawn matrix sits
+  //      on a different hex than its authoritative position: the model stands
+  //      at the OLD hex while the label follows the entity. Re-render rewrites
+  //      the matrix from the same source the label reads.
+  //   4. duplicate-drawn-owner — one entity owning two drawn slots; purge every
+  //      slot except the model's source-of-truth one.
   // The label path is unaffected because labels read instanceData.position, not
   // the slot — which is exactly why labels keep working while models ghost.
   private reconcileArmyRenderIntegrity(): void {
@@ -2309,6 +2334,7 @@ export class ArmyManager {
       drawnSlotOwners: this.armyModel.collectDrawnSlotOwners(),
       liveEntityIds,
       visibleUndrawnEntityIds,
+      drawnPositionEntries: this.collectStationaryDrawnPositions(liveEntityIds),
     });
 
     if (violations.length === 0) {
@@ -2317,20 +2343,34 @@ export class ArmyManager {
 
     let purgedAny = false;
     for (const violation of violations) {
-      if (violation.kind === "orphaned-drawn-slot") {
-        this.armyModel.purgeDrawnSlot(violation.slot);
-        purgedAny = true;
-        incrementWorldmapRenderCounter("armyRenderIntegrityHealOrphanSlot");
-      } else {
-        void this.renderArmyIntoCurrentChunkIfVisible(this.toNumericId(violation.entityId));
-        incrementWorldmapRenderCounter("armyRenderIntegrityHealVisibleUndrawn");
+      switch (violation.kind) {
+        case "orphaned-drawn-slot":
+          this.armyModel.purgeDrawnSlot(violation.slot);
+          purgedAny = true;
+          incrementWorldmapRenderCounter("armyRenderIntegrityHealOrphanSlot");
+          break;
+        case "duplicate-drawn-owner": {
+          const ssotSlot = this.armyModel.getEntitySlot(violation.owner);
+          for (const slot of violation.slots) {
+            if (slot === ssotSlot) continue;
+            this.armyModel.purgeDrawnSlot(slot);
+            purgedAny = true;
+          }
+          incrementWorldmapRenderCounter("armyRenderIntegrityHealDuplicateOwner");
+          break;
+        }
+        case "stale-drawn-position":
+          void this.renderArmyIntoCurrentChunkIfVisible(violation.entityId);
+          incrementWorldmapRenderCounter("armyRenderIntegrityHealStalePosition");
+          break;
+        default:
+          void this.renderArmyIntoCurrentChunkIfVisible(this.toNumericId(violation.entityId));
+          incrementWorldmapRenderCounter("armyRenderIntegrityHealVisibleUndrawn");
+          break;
       }
 
       if (import.meta.env?.DEV) {
-        const signature =
-          violation.kind === "orphaned-drawn-slot"
-            ? `orphan:${violation.slot}:${violation.owner}`
-            : `missing:${violation.entityId}`;
+        const signature = renderViolationSignature(violation);
         if (!this.loggedSlotViolations.has(signature)) {
           this.loggedSlotViolations.add(signature);
           console.warn("[ArmyManager] render-integrity heal", violation);
@@ -2343,6 +2383,29 @@ export class ArmyManager {
     if (purgedAny) {
       this.markVisibleArmyPresentationDirty();
     }
+  }
+
+  // Drawn matrix vs authoritative position for every live, stationary, drawn
+  // army. Moving armies are excluded — mid-spline the matrix legitimately
+  // trails the entity — and mid-transition renders are queued, not stale.
+  private collectStationaryDrawnPositions(liveEntityIds: Set<number>): DrawnSlotPositionEntry[] {
+    if (this.isArmyChunkTransitioning || !isCommittedManagerChunk(this.currentChunkKey)) return [];
+    const entries: DrawnSlotPositionEntry[] = [];
+    for (const entityId of liveEntityIds) {
+      const instanceData = this.armyModel.getInstanceData(entityId);
+      if (!instanceData || instanceData.isMoving) continue;
+      const slot = instanceData.matrixIndex;
+      if (slot === undefined) continue;
+      const drawn = this.armyModel.getDrawnSlotPosition(slot);
+      if (!drawn) continue;
+      entries.push({
+        entityId,
+        slot,
+        drawn: { x: drawn.x, z: drawn.z },
+        expected: { x: instanceData.position.x, z: instanceData.position.z },
+      });
+    }
+    return entries;
   }
 
   // Reports when the manager's slot mirror (visibleArmyIndices) drifts from the

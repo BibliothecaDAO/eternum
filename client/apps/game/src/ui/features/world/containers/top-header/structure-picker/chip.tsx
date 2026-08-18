@@ -2,7 +2,7 @@ import { useUIStore } from "@/hooks/store/use-ui-store";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { useBlitzRealmProvision } from "@/ui/modules/entity-details/hooks/use-blitz-realm-provision";
 import { useRealmUpgradeAndProvision } from "@/ui/modules/entity-details/hooks/use-realm-upgrade-and-provision";
-import { useStructureUpgrade } from "@/ui/modules/entity-details/hooks/use-structure-upgrade";
+import { formatIncomingEta, useStructureUpgrade } from "@/ui/modules/entity-details/hooks/use-structure-upgrade";
 import {
   formatPopulationStatusLabel,
   formatUsedBuildingTilesLabel,
@@ -136,15 +136,23 @@ export const StructureRealmActions = ({ structureEntityId, className }: Structur
               <div
                 key={`${req.resource}-${req.amount}`}
                 className={clsx(
-                  "flex items-center gap-2 rounded border px-2 py-1",
+                  "rounded border px-2 py-1",
                   isMet ? "border-gold/20 bg-gold/5" : "border-red-400/40 bg-red-500/5",
                 )}
               >
-                <ResourceIcon resource={ResourcesIds[req.resource]} size="xs" withTooltip={false} />
-                <span className="flex-1 text-xs text-gold/80">{ResourcesIds[req.resource]}</span>
-                <span className={clsx("text-xs font-semibold", isMet ? "text-gold" : "text-red-300")}>
-                  {Math.floor(req.current).toLocaleString()} / {req.amount.toLocaleString()}
-                </span>
+                <div className="flex items-center gap-2">
+                  <ResourceIcon resource={ResourcesIds[req.resource]} size="xs" withTooltip={false} />
+                  <span className="flex-1 text-xs text-gold/80">{ResourcesIds[req.resource]}</span>
+                  <span className={clsx("text-xs font-semibold", isMet ? "text-gold" : "text-red-300")}>
+                    {Math.floor(req.current).toLocaleString()} / {req.amount.toLocaleString()}
+                  </span>
+                </div>
+                {req.incoming && (
+                  <div className="pl-6 text-xxs text-emerald-300/90">
+                    +{Math.floor(req.incoming.amount).toLocaleString()} in transit,{" "}
+                    {formatIncomingEta(req.incoming.etaSeconds)}
+                  </div>
+                )}
               </div>
             );
           })}

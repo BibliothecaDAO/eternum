@@ -1,7 +1,7 @@
 import { useBlitzSettlementPlayerAddresses } from "@/services/blitz/blitz-settlement-players";
 import { displayAddress } from "@/ui/utils/utils";
 import { getMMRTierFromRaw, MMR_TOKEN_DECIMALS } from "@/ui/utils/mmr-tiers";
-import { getAddressName, toHexString } from "@bibliothecadao/eternum";
+import { belongsToActiveGame, getAddressName, toHexString } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
 import { ContractAddress } from "@bibliothecadao/types";
 import { useEntityQuery } from "@dojoengine/react";
@@ -63,7 +63,7 @@ export const BlitzMMRTable = () => {
     const points = new Map<bigint, bigint>();
     playerRegisteredPointsEntities.forEach((eid) => {
       const value = getComponentValue(components.PlayerRegisteredPoints, eid);
-      if (!value) return;
+      if (!value || !belongsToActiveGame(value)) return;
       points.set(value.address as unknown as bigint, value.registered_points as bigint);
     });
     return points;

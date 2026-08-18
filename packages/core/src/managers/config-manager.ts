@@ -1365,6 +1365,20 @@ export class ClientConfigManager {
 
 export const configManager = ClientConfigManager.instance();
 
+/**
+ * Per-game rows in a multi-game store: does this row belong to the active
+ * game? Unscoped boots and landing flows can leave other games' rows in RECS,
+ * so any read that aggregates a game-keyed model's VALUES (rather than looking
+ * up by a gameEntityKey, which embeds the game id) must filter through this.
+ * Legacy single-game worlds have no active game id and accept every row.
+ */
+export const belongsToActiveGame = (value: { game_id?: unknown } | undefined | null): boolean => {
+  if (!value) return false;
+  const activeGameId = ClientConfigManager.instance().getActiveGameId();
+  if (!(activeGameId > 0)) return true;
+  return Number(value.game_id ?? 0) === activeGameId;
+};
+
 // The key helpers live in ./game-entity-keys (a leaf module). worldConfigKey
 // is not re-exported here: its only consumers import the subpath entry.
 export { buildingEntityKey, gameEntityKey } from "./game-entity-keys";

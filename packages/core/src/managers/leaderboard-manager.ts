@@ -1,7 +1,15 @@
 import { type ClientComponents, ContractAddress, type ID } from "@bibliothecadao/types";
-import { Has, getComponentValue, runQuery } from "@dojoengine/recs";
+import {
+  type Component,
+  type ComponentValue,
+  type Entity,
+  Has,
+  type Schema,
+  getComponentValue,
+  runQuery,
+} from "@dojoengine/recs";
 import { getGuildFromPlayerAddress, getRealmCountPerHyperstructure } from "../utils";
-import { ClientConfigManager, gameEntityKey } from "./config-manager";
+import { belongsToActiveGame, ClientConfigManager, gameEntityKey } from "./config-manager";
 
 interface ContractAddressAndAmount {
   key: false;
@@ -68,6 +76,23 @@ export class LeaderboardManager {
       LeaderboardManager._instance = new LeaderboardManager(components, unregisteredShareholderPointsUpdateInterval);
     }
     return LeaderboardManager._instance;
+  }
+
+  // Multi-game worlds stream every game's rows into RECS (finished games
+  // included), and every leaderboard fact is per-game: an address-keyed map fed
+  // from unscoped rows lets another game's row win arbitrarily. All reads go
+  // through this chokepoint. Legacy worlds have no active game id and keep
+  // their single-game rows unfiltered.
+  private activeGameRows<S extends Schema>(
+    component: Component<S>,
+  ): Array<{ entity: Entity; value: ComponentValue<S> }> {
+    const rows: Array<{ entity: Entity; value: ComponentValue<S> }> = [];
+    for (const entity of runQuery([Has(component)])) {
+      const value = getComponentValue(component, entity);
+      if (!value || !belongsToActiveGame(value)) continue;
+      rows.push({ entity, value });
+    }
+    return rows;
   }
 
   public initialize() {
@@ -180,16 +205,10 @@ export class LeaderboardManager {
     // Clear previous cache
     this.unregisteredShareholderPointsCache.clear();
 
-    // Get all hyperstructures
-    const allHyperstructuresShareholders = runQuery([Has(this.components.HyperstructureShareholders)]);
-
-    for (const hyperstructureShareholdersEntityId of allHyperstructuresShareholders) {
-      const hyperstructureShareholders = getComponentValue(
-        this.components.HyperstructureShareholders,
-        hyperstructureShareholdersEntityId,
-      );
-      if (!hyperstructureShareholders) continue;
-
+    // Get the active game's hyperstructures
+    for (const { entity: hyperstructureShareholdersEntityId, value: hyperstructureShareholders } of this.activeGameRows(
+      this.components.HyperstructureShareholders,
+    )) {
       const hyperstructure = getComponentValue(this.components.Hyperstructure, hyperstructureShareholdersEntityId);
 
       const pointsPerSecond = hyperstructure ? pointsPerSecondWithoutMultiplier * hyperstructure.points_multiplier : 0;
@@ -267,12 +286,7 @@ export class LeaderboardManager {
    * Get only the registered points for a specific player (without unregistered shareholder points)
    */
   public getPlayerRegisteredPoints(playerAddress: ContractAddress): number {
-    const registeredPoints = runQuery([Has(this.components.PlayerRegisteredPoints)]);
-
-    for (const entityId of registeredPoints) {
-      const playerRegisteredPoints = getComponentValue(this.components.PlayerRegisteredPoints, entityId);
-      if (!playerRegisteredPoints) continue;
-
+    for (const { value: playerRegisteredPoints } of this.activeGameRows(this.components.PlayerRegisteredPoints)) {
       if (ContractAddress(playerRegisteredPoints.address) === playerAddress) {
         const pointsPrecision = 1_000_000n;
         return Number(playerRegisteredPoints.registered_points / pointsPrecision);
@@ -331,16 +345,11 @@ export class LeaderboardManager {
       totalPoints: number;
     }> = [];
 
-    const allHyperstructuresShareholders = runQuery([Has(this.components.HyperstructureShareholders)]);
     const realmCountPerHyperstructure = getRealmCountPerHyperstructure(this.components);
 
-    for (const hyperstructureShareholdersEntityId of allHyperstructuresShareholders) {
-      const hyperstructureShareholders = getComponentValue(
-        this.components.HyperstructureShareholders,
-        hyperstructureShareholdersEntityId,
-      );
-      if (!hyperstructureShareholders) continue;
-
+    for (const { value: hyperstructureShareholders } of this.activeGameRows(
+      this.components.HyperstructureShareholders,
+    )) {
       const shareholders = hyperstructureShareholders.shareholders as unknown as ContractAddressAndAmount[];
       const startTimestamp = Number(hyperstructureShareholders.start_at);
 
@@ -379,13 +388,8 @@ export class LeaderboardManager {
   private getPlayerPoints(): Map<ContractAddress, number> {
     const pointsPerPlayer = new Map<ContractAddress, number>();
 
-    // Get registered points from on-chain data
-    const registredPoints = runQuery([Has(this.components.PlayerRegisteredPoints)]);
-
-    for (const entityId of registredPoints) {
-      const playerRegisteredPoints = getComponentValue(this.components.PlayerRegisteredPoints, entityId);
-      if (!playerRegisteredPoints) continue;
-
+    // Get the active game's registered points from on-chain data
+    for (const { value: playerRegisteredPoints } of this.activeGameRows(this.components.PlayerRegisteredPoints)) {
       const playerAddress = ContractAddress(playerRegisteredPoints.address);
       const pointsPrecision = 1_000_000n;
       const registeredPoints = Number(playerRegisteredPoints.registered_points / pointsPrecision);
@@ -455,11 +459,9 @@ export class LeaderboardManager {
   }
 
   public getHyperstructuresWithSharesFromPlayer = (address: ContractAddress) => {
-    const hyperstructures = runQuery([Has(this.components.Hyperstructure)]);
-    const hyperstructuresWithShares: ID[] = Array.from(hyperstructures)
-      .map((entityId) => {
-        const hyperstructure = getComponentValue(this.components.Hyperstructure, entityId);
-        if (!hyperstructure || !hyperstructure.initialized) return;
+    const hyperstructuresWithShares: ID[] = this.activeGameRows(this.components.Hyperstructure)
+      .map(({ value: hyperstructure }) => {
+        if (!hyperstructure.initialized) return;
         const playerShares = this.getPlayerShares(address, hyperstructure.hyperstructure_id);
         if (playerShares > 0) return hyperstructure.hyperstructure_id;
       })
