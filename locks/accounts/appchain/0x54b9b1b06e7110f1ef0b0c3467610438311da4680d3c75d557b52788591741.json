@@ -4,16 +4,15 @@
   "accountAddress": "0x54b9b1b06e7110f1ef0b0c3467610438311da4680d3c75d557b52788591741",
   "owner": {
     "environment": "appchain.blitz",
-    "gameName": "bltz-blink-3",
-    "launchRequestId": "32022672865-1",
+    "gameName": "bltz-blip-967",
+    "launchRequestId": "32083283204-1",
     "workflowName": "Game Launch",
-    "workflowRunId": 32022672865,
+    "workflowRunId": 32083283204,
     "workflowRunAttempt": 1,
     "stepId": "create-world",
-    "leaseId": "7132dd85-d88e-415c-abd8-3e05bcbff5c4"
+    "leaseId": "e55e5467-f4bf-424d-b216-77ed8ca17aa5"
   },
-  "acquiredAt": "2026-08-17T10:59:42.709Z",
-  "heartbeatAt": "2026-08-17T10:59:58.581Z",
-  "expiresAt": "2026-08-17T10:59:58.581Z",
-  "releasedAt": "2026-08-17T10:59:58.581Z"
+  "acquiredAt": "2026-08-18T00:08:56.162Z",
+  "heartbeatAt": "2026-08-18T00:08:56.162Z",
+  "expiresAt": "2026-08-18T00:18:56.162Z"
 }
