@@ -119,6 +119,8 @@ const isResourceActiveInSnapshot = (snapshot: RealmResourceSnapshot, resourceId:
 
 type AutomationEntityType = RealmAutomationConfig["entityType"];
 
+const warnedDependencyCycles = new Set<string>();
+
 const buildResourceDependencyOrder = (
   resourceIds: ResourcesIds[],
   entityType: AutomationEntityType,
@@ -190,7 +192,14 @@ const buildResourceDependencyOrder = (
 
   if (order.length !== resourceIds.length) {
     const missing = resourceIds.filter((id) => !order.includes(id));
-    console.warn("[Automation] Resource dependency cycle detected; falling back to numeric order", { missing });
+    // The cycle is a property of the production config, so it re-detects on
+    // every evaluation — warn once per distinct cycle, not once per tick
+    // (one session logged the identical line 111 times).
+    const cycleSignature = [...missing].sort((a, b) => a - b).join(",");
+    if (!warnedDependencyCycles.has(cycleSignature)) {
+      warnedDependencyCycles.add(cycleSignature);
+      console.warn("[Automation] Resource dependency cycle detected; falling back to numeric order", { missing });
+    }
     return [...resourceIds].sort(compareAutomationResources);
   }
 

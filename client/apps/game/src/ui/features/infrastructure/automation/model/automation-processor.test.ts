@@ -372,6 +372,24 @@ describe("buildRealmProductionPlan", () => {
         expect.stringContaining("dependency cycle"),
         expect.objectContaining({ missing: expect.any(Array) }),
       );
+
+      // The cycle is a config property re-detected every evaluation — the
+      // warning must not repeat (one session logged it 111 times).
+      buildRealmProductionPlan({
+        realmConfig: makeRealmConfig(
+          { presetId: "custom" },
+          {
+            [ResourcesIds.Wood]: { resourceToResource: 50, laborToResource: 0 },
+            [ResourcesIds.Stone]: { resourceToResource: 50, laborToResource: 0 },
+          },
+        ),
+        snapshot: makeSnapshot([ResourcesIds.Wood, ResourcesIds.Stone], {
+          [ResourcesIds.Wood]: 100,
+          [ResourcesIds.Stone]: 100,
+        }),
+      });
+      const cycleWarnings = warnSpy.mock.calls.filter(([message]) => String(message).includes("dependency cycle"));
+      expect(cycleWarnings).toHaveLength(1);
       expect(plan.evaluatedResourceIds).toContain(ResourcesIds.Wood);
       expect(plan.evaluatedResourceIds).toContain(ResourcesIds.Stone);
     } finally {

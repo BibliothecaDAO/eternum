@@ -6,7 +6,6 @@ import { configManager } from "@bibliothecadao/eternum";
 import { SupersededGameSyncStartError } from "@bibliothecadao/eternum/game-sync";
 import { setSqlGameScope } from "@bibliothecadao/torii";
 import { world } from "@bibliothecadao/types";
-import { inject } from "@vercel/analytics";
 import { ReactNode } from "react";
 
 import { resolveEntryContextCacheKey, type ResolvedEntryContext } from "@/game-entry/context";
@@ -145,7 +144,6 @@ const runBootstrap = async ({
   // make it loud (guardrail #2, AGENTS.md "No silent defaults").
   configManager.markConfigSynced();
   await startGameRenderer(setupResult);
-  inject();
   return {
     context,
     profile,

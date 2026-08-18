@@ -18,8 +18,13 @@ const CONSERVATIVE_TICK_BUFFER = 1;
 // spend up to AUTOMATION_INPUT_BUDGET_PERCENT of a projected balance, so any
 // overshoot in the projection (wall-clock drift, torii lag, tx-queue wait before
 // block inclusion) directly causes on-chain "Insufficient Balance" reverts.
-// Holding the projection further behind chain time widens the safety margin.
-const CONSERVATIVE_TICK_BUFFER_AUTOMATION = 3;
+// The Aug 18 session measured ~16s of projection-vs-estimation skew (planned
+// 568.8 wood against a chain balance of 537 at 2/s) blowing through the old
+// 3s buffer — but that skew predates the row-evidence clock re-anchor, which
+// caps the clock's lead at 5s over the newest chain evidence. 5s mirrors that
+// cap (owner-set ceiling). If reverts persist in session logs, the fix is
+// planning inputs against stored balance, not a deeper buffer.
+const CONSERVATIVE_TICK_BUFFER_AUTOMATION = 5;
 
 export const setBlockTimestampSource = (source: TimestampSource | null) => {
   timestampSource = source ? () => Math.floor(source()) : defaultTimestampSource;

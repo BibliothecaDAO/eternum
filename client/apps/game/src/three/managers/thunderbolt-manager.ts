@@ -1,5 +1,5 @@
 import { type HexPosition, getNeighborHexes } from "@bibliothecadao/types";
-import { DEV_MODE_ENABLED } from "@/utils/dev-mode";
+import { DEV_MODE_ENABLED, verboseLog } from "@/utils/dev-mode";
 import * as THREE from "three";
 import { env } from "../../../env";
 import { HEX_SIZE } from "../constants";
@@ -120,7 +120,7 @@ export class ThunderBoltManager {
     });
 
     if (this.config.debug) {
-      console.log("ThunderBoltManager initialized with pooled geometries and materials");
+      verboseLog("ThunderBoltManager initialized with pooled geometries and materials");
     }
   }
 
@@ -128,7 +128,7 @@ export class ThunderBoltManager {
     this.config = { ...this.config, ...config };
 
     if (this.config.debug) {
-      console.log("ThunderBolt config updated:", this.config);
+      verboseLog("ThunderBolt config updated:", this.config);
     }
   }
 
@@ -430,7 +430,7 @@ export class ThunderBoltManager {
     this.activeThunderBolts.push(thunderBolt);
 
     if (this.config.debug) {
-      console.log(
+      verboseLog(
         `Created thunder bolt at hex (${hexPosition.col}, ${hexPosition.row}) world pos (${worldPos.x.toFixed(2)}, ${worldPos.y.toFixed(2)}, ${worldPos.z.toFixed(2)}), duration: ${duration}ms`,
       );
     }
@@ -469,8 +469,8 @@ export class ThunderBoltManager {
     );
 
     if (this.config.debug) {
-      console.log(`Spawning ${randomHexes.length} thunder bolts around center (${centerHex.col}, ${centerHex.row})`);
-      console.log("Thunder bolt positions:", randomHexes);
+      verboseLog(`Spawning ${randomHexes.length} thunder bolts around center (${centerHex.col}, ${centerHex.row})`);
+      verboseLog("Thunder bolt positions:", randomHexes);
     }
 
     // Calculate spawn timing to ensure all bolts are visible for their full duration
@@ -509,7 +509,7 @@ export class ThunderBoltManager {
         this.activeThunderBolts.splice(i, 1);
 
         if (this.config.debug) {
-          console.log(`Removed thunder bolt at hex (${thunderBolt.hexPosition.col}, ${thunderBolt.hexPosition.row})`);
+          verboseLog(`Removed thunder bolt at hex (${thunderBolt.hexPosition.col}, ${thunderBolt.hexPosition.row})`);
         }
       } else if (!this.config.persistent) {
         const fadeIn = Math.min(1, progress / 0.15);
@@ -560,7 +560,7 @@ export class ThunderBoltManager {
     }
 
     if (this.config.debug && this.activeThunderBolts.length > 0) {
-      console.log(`Active thunder bolts: ${this.activeThunderBolts.length}`);
+      verboseLog(`Active thunder bolts: ${this.activeThunderBolts.length}`);
     }
   }
 
@@ -574,7 +574,7 @@ export class ThunderBoltManager {
     this.activeThunderBolts.length = 0;
 
     if (this.config.debug) {
-      console.log("ThunderBoltManager cleaned up");
+      verboseLog("ThunderBoltManager cleaned up");
     }
   }
 
@@ -584,7 +584,7 @@ export class ThunderBoltManager {
 
   public clearAll(): void {
     if (this.config.debug) {
-      console.log("Clearing all thunder bolts...");
+      verboseLog("Clearing all thunder bolts...");
     }
     this.cleanup();
   }
@@ -610,7 +610,7 @@ export class ThunderBoltManager {
     this.scene.remove(this.thunderBolts);
 
     if (this.config.debug) {
-      console.log("ThunderBoltManager destroyed (pooled geometries and materials disposed)");
+      verboseLog("ThunderBoltManager destroyed (pooled geometries and materials disposed)");
     }
   }
 
@@ -657,7 +657,7 @@ export class ThunderBoltManager {
       .add(
         {
           spawnNow: () => {
-            console.log("Manually spawning thunder bolts...");
+            verboseLog("Manually spawning thunder bolts...");
             this.spawnThunderBolts();
           },
         },
@@ -681,7 +681,7 @@ export class ThunderBoltManager {
         {
           testSingle: () => {
             const centerHex = this.getCenterHexFromCamera();
-            console.log("Creating single thunder bolt at center...");
+            verboseLog("Creating single thunder bolt at center...");
             this.spawnThunderBoltAt(centerHex);
           },
         },

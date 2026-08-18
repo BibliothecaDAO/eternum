@@ -182,6 +182,7 @@ export class ClientConfigManager {
         this.warnConfigMissOnce();
         return defaultValue;
       }
+      this.reportConfigMissResolvedOnce();
       return value;
     } catch (error) {
       console.warn("ClientConfigManager fallback due to error", error);
@@ -204,6 +205,22 @@ export class ClientConfigManager {
     if (this.warnedConfigMissSites.has(site)) return;
     this.warnedConfigMissSites.add(site);
     console.warn(`ClientConfigManager: config lookup returned empty after sync — using default (${site})`);
+  }
+
+  /**
+   * Pairs with warnConfigMissOnce: one line when a previously-missed site
+   * starts resolving, so a session capture can tell a boot-order race (miss
+   * then resolved) from a persistent config miss (miss, never resolved). The
+   * stack capture only runs while a miss is outstanding — the steady-state
+   * hot path pays nothing. setActiveGame clears the set, resetting both
+   * sides for the next game.
+   */
+  private reportConfigMissResolvedOnce() {
+    if (this.warnedConfigMissSites.size === 0) return;
+    const stackFrames = new Error().stack?.split("\n") ?? [];
+    const site = (stackFrames[3] ?? "unknown-config-site").trim();
+    if (!this.warnedConfigMissSites.delete(site)) return;
+    console.warn(`ClientConfigManager: config miss resolved — lookups return real values again (${site})`);
   }
 
   private initializeMapCenter() {

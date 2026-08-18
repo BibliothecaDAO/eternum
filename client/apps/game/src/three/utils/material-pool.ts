@@ -1,4 +1,5 @@
 import { Material, MeshBasicMaterial, MeshStandardMaterial, Texture } from "three";
+import { verboseLog } from "@/utils/dev-mode";
 
 const TEXTURE_SLOTS = [
   "alphaMap",
@@ -217,7 +218,7 @@ export class MaterialPool {
   public logSharingStats(): void {
     const stats = this.getStats();
     const sharingRatio = stats.totalReferences / Math.max(stats.uniqueMaterials, 1);
-    console.log(
+    verboseLog(
       `[MaterialPool] exact=${stats.uniqueMaterials} refs=${stats.totalReferences} sharing=${sharingRatio.toFixed(1)}:1 shaderShapes=${stats.shaderFeatureShapes}`,
     );
   }
