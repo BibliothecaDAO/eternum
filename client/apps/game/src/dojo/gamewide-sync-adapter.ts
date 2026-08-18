@@ -85,19 +85,17 @@ const flattenContractComponents = (
   contractComponents: SetupResult["network"]["contractComponents"],
 ): Component<Schema, Metadata, undefined>[] => {
   const { events, ...modelComponents } = contractComponents;
-  return [...Object.values(modelComponents), ...Object.values(events)] as unknown as Component<
+  return [...Object.values(modelComponents), ...Object.values(events ?? {})] as unknown as Component<
     Schema,
     Metadata,
     undefined
   >[];
 };
 
-const assertSyncModelsResolvable = (lookup: Map<string, Component>, models: readonly string[]): void => {
+const reportUnresolvableSyncModels = (lookup: Map<string, Component>, models: readonly string[]): void => {
   const unresolved = models.filter((model) => !lookup.has(model));
   if (unresolved.length === 0) return;
-  const message = `[GameSync] sync models without a RECS component would be dropped silently: ${unresolved.join(", ")}`;
-  if (import.meta.env.DEV) throw new Error(message);
-  console.error(message);
+  console.error(`[GameSync] sync models without a RECS component would be dropped silently: ${unresolved.join(", ")}`);
 };
 
 const createComponentLookup = (components: readonly Component[]): Map<string, Component> => {
@@ -118,7 +116,7 @@ const createRecsGameSyncStore = (
 ): GameSyncStore => {
   const authoritativeComponents = flattenContractComponents(setup.network.contractComponents);
   const authoritativeComponentLookup = createComponentLookup(authoritativeComponents);
-  assertSyncModelsResolvable(authoritativeComponentLookup, syncModels);
+  reportUnresolvableSyncModels(authoritativeComponentLookup, syncModels);
   // setup.components mixes overridable wrappers with the `events` sub-record;
   // createComponentLookup's metadata guards skip the non-component entries.
   const provisionalComponentLookup = createComponentLookup(

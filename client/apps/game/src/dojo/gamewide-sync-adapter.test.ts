@@ -281,9 +281,13 @@ describe("game-wide sync adapter", () => {
     expect(componentsPassedToSetEntities).toContain(harness.positionComponent);
   });
 
-  it("fails loudly in dev when a sync model has no RECS component", () => {
-    expect(() => createHarness({ eventModels: ["s2-UnregisteredEvent"] })).toThrow(
-      /sync models without a RECS component.*s2-UnregisteredEvent/,
-    );
+  it("reports loudly when a sync model has no RECS component", () => {
+    const error = vi.spyOn(console, "error").mockImplementation(() => undefined);
+    try {
+      createHarness({ eventModels: ["s2-UnregisteredEvent"] });
+      expect(error).toHaveBeenCalledWith(expect.stringMatching(/dropped silently.*s2-UnregisteredEvent/));
+    } finally {
+      error.mockRestore();
+    }
   });
 });
