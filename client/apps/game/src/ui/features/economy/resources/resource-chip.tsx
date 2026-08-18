@@ -27,7 +27,7 @@ import Factory from "lucide-react/dist/esm/icons/factory";
 import FlaskConical from "lucide-react/dist/esm/icons/flask-conical";
 import Sparkles from "lucide-react/dist/esm/icons/sparkles";
 import { getComponentValue } from "@dojoengine/recs";
-import { getEntityIdFromKeys } from "@dojoengine/utils";
+import { getEntityIdFromKeys } from "@bibliothecadao/eternum";
 import type { MouseEvent } from "react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { gameEntityKey } from "@/dojo/game-scope";

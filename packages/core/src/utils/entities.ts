@@ -8,7 +8,7 @@ import {
   StructureType,
 } from "@bibliothecadao/types";
 import { ComponentValue, getComponentValue } from "@dojoengine/recs";
-import { getEntityIdFromKeys } from "@dojoengine/utils";
+import { getEntityIdFromKeys } from "../managers/game-entity-keys";
 import { shortString } from "starknet";
 import knownAddressesJSONData from "../data/known-addresses.json";
 import { configManager } from "../managers/config-manager";

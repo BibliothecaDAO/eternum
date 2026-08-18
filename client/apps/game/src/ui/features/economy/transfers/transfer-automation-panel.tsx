@@ -30,7 +30,7 @@ import {
   StructureType,
 } from "@bibliothecadao/types";
 import { getComponentValue } from "@dojoengine/recs";
-import { getEntityIdFromKeys } from "@dojoengine/utils";
+import { getEntityIdFromKeys } from "@bibliothecadao/eternum";
 import Castle from "lucide-react/dist/esm/icons/castle";
 import Crown from "lucide-react/dist/esm/icons/crown";
 import Pickaxe from "lucide-react/dist/esm/icons/pickaxe";

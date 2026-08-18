@@ -21,7 +21,7 @@ import {
 } from "@bibliothecadao/types";
 import { useEntityQuery } from "@dojoengine/react";
 import { getComponentValue, Has } from "@dojoengine/recs";
-import { getEntityIdFromKeys } from "@dojoengine/utils";
+import { getEntityIdFromKeys } from "@bibliothecadao/eternum";
 import { useMemo } from "react";
 import type { StructureWithMetadata } from "./chip";
 import { gameEntityKey } from "@/dojo/game-scope";

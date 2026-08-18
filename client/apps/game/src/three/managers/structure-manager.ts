@@ -26,7 +26,7 @@ import type {
 } from "@bibliothecadao/eternum/game-sync";
 import { BuildingType, ClientComponents, GuardSlot, ID, StructureType } from "@bibliothecadao/types";
 import { getComponentValue } from "@dojoengine/recs";
-import { getEntityIdFromKeys } from "@dojoengine/utils";
+import { getEntityIdFromKeys } from "@bibliothecadao/eternum";
 import { shortString } from "starknet";
 import * as THREE from "three";
 import { Box3, Euler, Group, Object3D, Scene, Sphere, Vector3 } from "three";

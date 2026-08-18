@@ -34,7 +34,7 @@ import type {
 } from "@bibliothecadao/eternum/game-sync";
 import { ClientComponents, ContractAddress, HexPosition, ID, TroopTier, TroopType } from "@bibliothecadao/types";
 import { getComponentValue, type ComponentValue } from "@dojoengine/recs";
-import { getEntityIdFromKeys } from "@dojoengine/utils";
+import { getEntityIdFromKeys } from "@bibliothecadao/eternum";
 import { shortString } from "starknet";
 import * as THREE from "three";
 import { Color, Euler, Group, Object3D, Raycaster, Scene, Vector3 } from "three";

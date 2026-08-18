@@ -22,7 +22,7 @@ import {
   StructureType,
   TroopType,
 } from "@bibliothecadao/types";
-import { getEntityIdFromKeys } from "@dojoengine/utils";
+import { getEntityIdFromKeys } from "@bibliothecadao/eternum";
 import type { LucideIcon } from "lucide-react";
 import ArrowUpCircle from "lucide-react/dist/esm/icons/arrow-up-circle";
 import Building2 from "lucide-react/dist/esm/icons/building-2";

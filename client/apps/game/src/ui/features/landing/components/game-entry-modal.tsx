@@ -45,7 +45,7 @@ import { markGameEntryMilestone } from "@/ui/layouts/game-entry-timeline";
 import type { PlayerStructure, RealmVillageSlot } from "@bibliothecadao/torii";
 import { buildUnscopedApiUrl, fetchWithErrorHandling, formatAddressForQuery } from "@bibliothecadao/torii";
 import { getContractByName } from "@dojoengine/core";
-import { getEntityIdFromKeys } from "@dojoengine/utils";
+import { getEntityIdFromKeys } from "@bibliothecadao/eternum";
 import { Coord, Direction, DirectionName, ResourcesIds, StructureType } from "@bibliothecadao/types";
 import { getGameManifest, getSeasonAddresses, type Chain } from "@contracts";
 import { Account, Call, CallData, RpcProvider, uint256 } from "starknet";

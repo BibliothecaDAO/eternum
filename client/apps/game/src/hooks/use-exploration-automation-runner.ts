@@ -12,7 +12,7 @@ import type { WorldSpatialProjection } from "@bibliothecadao/eternum/game-sync";
 import { useDojo } from "@bibliothecadao/react";
 import { ContractAddress } from "@bibliothecadao/types";
 import { getComponentValue, getEntityString } from "@dojoengine/recs";
-import { getEntityIdFromKeys } from "@dojoengine/utils";
+import { getEntityIdFromKeys } from "@bibliothecadao/eternum";
 import { useCallback, useEffect, useMemo, useRef } from "react";
 import { toast } from "sonner";
 import type { Account, AccountInterface } from "starknet";

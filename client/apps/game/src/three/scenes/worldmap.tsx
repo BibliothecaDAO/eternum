@@ -97,7 +97,7 @@ import {
   TroopType,
 } from "@bibliothecadao/types";
 import { getComponentValue } from "@dojoengine/recs";
-import { getEntityIdFromKeys } from "@dojoengine/utils";
+import { getEntityIdFromKeys } from "@bibliothecadao/eternum";
 import throttle from "lodash/throttle";
 import { Account, AccountInterface } from "starknet";
 import {

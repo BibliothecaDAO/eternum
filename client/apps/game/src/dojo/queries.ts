@@ -4,7 +4,7 @@ import { HexPosition, ID, StructureType } from "@bibliothecadao/types";
 import { AndComposeClause, MemberClause } from "@dojoengine/sdk";
 import { PatternMatching, ToriiClient } from "@dojoengine/torii-client";
 import { Clause, LogicalOperator } from "@dojoengine/torii-wasm";
-import { getEntityIdFromKeys } from "@dojoengine/utils";
+import { getEntityIdFromKeys } from "@bibliothecadao/eternum";
 import { env } from "../../env";
 import {
   debouncedGetBuildingsFromTorii,

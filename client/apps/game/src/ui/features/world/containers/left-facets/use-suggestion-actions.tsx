@@ -8,7 +8,7 @@ import { useRealmActions } from "@/ui/modules/entity-details/hooks/use-realm-act
 import { getRealmInfo, Position } from "@bibliothecadao/eternum";
 import { useDojo, useQuery } from "@bibliothecadao/react";
 import { type BuildingType, type ID, type ResourcesIds } from "@bibliothecadao/types";
-import { getEntityIdFromKeys } from "@dojoengine/utils";
+import { getEntityIdFromKeys } from "@bibliothecadao/eternum";
 import { useCallback, useRef, useState } from "react";
 import type { EmpireSuggestion } from "./use-empire-suggestions";
 import { gameEntityKey } from "@/dojo/game-scope";
