@@ -2,7 +2,7 @@
   "version": 1,
   "environment": "appchain.blitz",
   "kind": "game",
-  "updatedAt": "2026-08-18T00:43:16.565Z",
+  "updatedAt": "2026-08-18T00:43:26.013Z",
   "entries": {
     "cfe2e1": {
       "kind": "game",
@@ -300,12 +300,13 @@
       "path": "runs/appchain/blitz/bltz-nova-813.json",
       "inputPath": "inputs/appchain/blitz/bltz-nova-813/32085475621-1.json",
       "status": "running",
-      "updatedAt": "2026-08-18T00:43:16.565Z",
+      "updatedAt": "2026-08-18T00:43:26.013Z",
       "workflowRef": "feat/single-world-blitz",
       "currentStepId": "wait-for-factory-index",
-      "hasRunningStep": false,
+      "activeLeaseExpiresAt": "2026-08-18T01:28:26.013Z",
+      "hasRunningStep": true,
       "recoverableFailedStepId": null,
-      "recoverablePendingStepId": "wait-for-factory-index",
+      "recoverablePendingStepId": null,
       "startTime": 1787014500,
       "durationSeconds": 3600,
       "artifacts": {}
