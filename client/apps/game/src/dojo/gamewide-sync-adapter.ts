@@ -301,7 +301,13 @@ const reportProvisionalIntentStalled = (info: GameSyncProvisionalIntentStalledIn
 };
 
 const reportProvisionalIntentPhase = (info: GameSyncProvisionalIntentPhaseInfo): void => {
-  if (import.meta.env.DEV && VERBOSE_LOGS_ENABLED) console.info("[GameSync] provisional intent phase", info);
+  if (!import.meta.env.DEV) return;
+  if (info.phase === "baseline_delta_before_hash") {
+    // Convicts the echo-races-execute() case in session logs without verbose mode.
+    console.warn("[GameSync] authoritative echo observed before the transaction hash bound", info);
+    return;
+  }
+  if (VERBOSE_LOGS_ENABLED) console.info("[GameSync] provisional intent phase", info);
 };
 
 export const createGamewideSyncSession = (input: CreateGamewideSyncSessionInput): GameSyncSessionStart => {

@@ -848,10 +848,11 @@ export class ClientConfigManager {
   }
 
   getTick(tickId: TickIds) {
-    return this.getValueOrDefault(() => {
-      // Fixed 1s tick never reads config — stays silent on a missing row.
-      if (tickId === TickIds.Default) return 1;
+    // Fixed 1s tick never reads config — it must hold before hydration too,
+    // ahead of getValueOrDefault's not-hydrated-yet default.
+    if (tickId === TickIds.Default) return 1;
 
+    return this.getValueOrDefault(() => {
       const rulebook = this.getRulebook();
       if (!rulebook) return undefined;
       const tickConfig = rulebook.tick_config;

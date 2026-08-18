@@ -35,6 +35,7 @@ interface TrackedIntent {
   createdAtMs: number;
   transactionHashAtMs?: number;
   hasReportedAuthoritativeEcho: boolean;
+  hasReportedPreHashEcho: boolean;
   outcomeListeners: Set<(outcome: ProvisionalIntentOutcome) => void>;
 }
 
@@ -121,6 +122,7 @@ export class ProvisionalWriteManager {
       lockUntil: options.lockUntil ?? "transaction-hash",
       createdAtMs: Date.now(),
       hasReportedAuthoritativeEcho: false,
+      hasReportedPreHashEcho: false,
       outcomeListeners: new Set(),
     };
     if (!tracked.writes.some((write) => this.hasAuthoritativeEvidence(write))) {
@@ -175,6 +177,7 @@ export class ProvisionalWriteManager {
         intent.transactionHash = transactionHash;
         intent.transactionHashAtMs = Date.now();
         intent.status = "pending";
+        this.reevaluateObservedWrites(intent);
         this.reportIntentPhase(intent, "transaction_hash");
         this.publishState();
       },
@@ -323,12 +326,32 @@ export class ProvisionalWriteManager {
     authoritativePatch: Record<string, unknown> | null,
   ): boolean {
     if (write.baselineDeltaFields?.length) {
-      if (intent.transactionHashAtMs === undefined) return false;
+      if (intent.transactionHashAtMs === undefined) {
+        this.reportPreHashEcho(intent, write.model);
+        return false;
+      }
       return write.baselineDeltaFields.some(
         (field) => !matchesPatch(authoritativePatch?.[field], write.authoritativeBaseline?.[field]),
       );
     }
     return write.matchPatch === undefined || matchesPatch(authoritativePatch, write.matchPatch);
+  }
+
+  // Baseline-delta evidence observed before the transaction hash binds is rejected,
+  // and a match is otherwise only re-attempted on the next observation of the row —
+  // which an idle structure may not produce inside the stall window. An echo that
+  // raced execute() returning the hash must be re-evaluated the moment it binds.
+  private reevaluateObservedWrites(intent: TrackedIntent): void {
+    intent.writes.forEach((write) => {
+      if (write.matched || write.authoritativePatch === undefined) return;
+      this.updateWriteMatch(intent, write, write.authoritativePatch);
+    });
+  }
+
+  private reportPreHashEcho(intent: TrackedIntent, model: string): void {
+    if (intent.hasReportedPreHashEcho) return;
+    intent.hasReportedPreHashEcho = true;
+    this.reportIntentPhase(intent, "baseline_delta_before_hash", model);
   }
 
   private hasMatchedAuthoritativeEvidence(write: TrackedWrite): boolean {
