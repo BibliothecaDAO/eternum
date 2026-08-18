@@ -9,7 +9,7 @@ import {
   type ProvisionalIntentLockUntil,
 } from "../sync/provisional-write-manager";
 import { divideByPrecision, getBuildingCount, gramToKg, kgToGram, multiplyByPrecision } from "../utils";
-import { getBlockTimestamp } from "../utils/timestamp";
+import { getBlockTimestamp, reportObservedChainTimestamp } from "../utils/timestamp";
 import { configManager, gameEntityKey } from "./config-manager";
 
 export interface ResourceProductionData {
@@ -93,9 +93,31 @@ const RESOURCE_BALANCE_FIELDS = {
 
 // Rows indexed from preconfirmed blocks can carry a last_updated_at ahead of the
 // client's chain-time heartbeat; elapsed production floors at zero, never negative.
+// The floor silently discards real accrual, so a row ahead of the clock is also
+// reported as chain-time evidence (the clock re-anchors and the next read heals)
+// and a large discard — beyond normal block/poll jitter — warns loudly.
+const ELAPSED_FLOOR_WARN_THRESHOLD_SECONDS = 30;
+const ELAPSED_FLOOR_WARN_INTERVAL_MS = 60_000;
+let lastElapsedFloorWarnAtMs = 0;
+
 const elapsedProductionTicks = (lastUpdatedAt: number, currentTick: number): number => {
   const elapsed = currentTick - lastUpdatedAt;
-  return Number.isFinite(elapsed) && elapsed > 0 ? Math.floor(elapsed) : 0;
+  if (!Number.isFinite(elapsed)) return 0;
+  if (elapsed > 0) return Math.floor(elapsed);
+
+  if (elapsed < 0) {
+    reportObservedChainTimestamp(lastUpdatedAt);
+    if (
+      elapsed < -ELAPSED_FLOOR_WARN_THRESHOLD_SECONDS &&
+      Date.now() - lastElapsedFloorWarnAtMs > ELAPSED_FLOOR_WARN_INTERVAL_MS
+    ) {
+      lastElapsedFloorWarnAtMs = Date.now();
+      console.warn(
+        `[ChainTime] production row is ${Math.round(-elapsed)}s ahead of the client clock — accrual display floored to zero (row last_updated_at=${lastUpdatedAt}, client tick=${currentTick})`,
+      );
+    }
+  }
+  return 0;
 };
 
 const resourceUnitWeightGrams = (resourceId: ResourcesIds): bigint =>
