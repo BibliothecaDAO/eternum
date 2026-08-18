@@ -2,7 +2,7 @@
   "version": 1,
   "environment": "appchain.blitz",
   "kind": "game",
-  "updatedAt": "2026-08-18T09:48:04.538Z",
+  "updatedAt": "2026-08-18T09:48:28.906Z",
   "entries": {
     "cfe2e1": {
       "kind": "game",
@@ -317,14 +317,13 @@
       "path": "runs/appchain/blitz/bltz-vibe-168.json",
       "inputPath": "inputs/appchain/blitz/bltz-vibe-168/32123365690-1.json",
       "status": "running",
-      "updatedAt": "2026-08-18T09:48:04.538Z",
+      "updatedAt": "2026-08-18T09:48:28.906Z",
       "workflowRef": "feat/single-world-blitz",
-      "currentStepId": "create-world",
-      "activeLeaseExpiresAt": "2026-08-18T10:33:04.538Z",
-      "hasRunningStep": true,
+      "currentStepId": "wait-for-factory-index",
+      "hasRunningStep": false,
       "recoverableFailedStepId": null,
       "recoverablePendingStepId": "wait-for-factory-index",
-      "startTime": "2026-08-18T11:00:00.000Z",
+      "startTime": 1787050800,
       "durationSeconds": 3600,
       "artifacts": {}
     }
