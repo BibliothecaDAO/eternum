@@ -48,7 +48,11 @@ export {
   getDelayForTransaction,
 } from "./batch-config";
 export type { BatchDelayConfig } from "./batch-config";
-export { classifyTransactionError, extractErrorMessage } from "./classify-transaction-error";
+export {
+  classifyTransactionError,
+  extractErrorMessage,
+  isInsufficientResourceBalanceRevert,
+} from "./classify-transaction-error";
 export type { ClassifiedTransactionError } from "./classify-transaction-error";
 export { PromiseQueue } from "./promise-queue";
 export type { QueueableTransaction } from "./promise-queue";
