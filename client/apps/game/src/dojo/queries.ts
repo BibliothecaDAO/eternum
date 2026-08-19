@@ -12,7 +12,7 @@ import {
   debouncedGetOwnedArmiesFromTorii,
 } from "./debounced-queries";
 import { fetchEntitiesIntoGameSync } from "./gamewide-sync-adapter";
-import { gameIdKey, gameModel, getScopedGameId, isGameScoped } from "./game-scope";
+import { gameIdKey, gameModel, getScopedGameId, hexKey, isGameScoped } from "./game-scope";
 
 const CONFIG_FETCH_CACHE_PREFIX = "eternum:config-fetched";
 
@@ -54,9 +54,12 @@ const clearConfigFetchCache = () => {
   }
 };
 
-const isValidId = (id: unknown): id is ID => typeof id === "number" && Number.isFinite(id);
+// Integer guards double as hexKey's precondition: BigInt() throws on a
+// fractional number, and one bad value must skip its own entity, not abort
+// the whole batched clause.
+const isValidId = (id: unknown): id is ID => typeof id === "number" && Number.isInteger(id) && id > 0;
 const hasValidPosition = (position: HexPosition | undefined): position is HexPosition =>
-  !!position && Number.isFinite(position.col) && Number.isFinite(position.row);
+  !!position && Number.isInteger(position.col) && Number.isInteger(position.row);
 
 export const getStructuresDataFromTorii = async (
   client: ToriiClient,
@@ -144,6 +147,7 @@ export const getConfigFromTorii = async (client: ToriiClient, onBackgroundRefres
       "BlitzSettlement",
       "BlitzEntryTokenRegister",
       "PlayersRankTrial",
+      "PlayersRankFinal",
       "MMRGameMeta",
       "PlayerRank",
       "RankPrize",
@@ -332,8 +336,9 @@ export const getEntitiesFromTorii = async (client: ToriiClient, entityIDs: ID[],
     return;
   }
 
-  // s2 per-game models key entities as (game_id, entity_id, ...).
-  const entityKeys = (id: ID): string[] => (isGameScoped() ? [gameIdKey(), id.toString()] : [id.toString()]);
+  // s2 per-game models key entities as (game_id, entity_id, ...). Keys must be
+  // hex — a decimal id string matches nothing (see hexKey).
+  const entityKeys = (id: ID): string[] => (isGameScoped() ? [gameIdKey(), hexKey(id)] : [hexKey(id)]);
 
   const query =
     validEntityIDs.length === 1
@@ -430,18 +435,24 @@ export const getOwnedArmiesFromTorii = async (client: ToriiClient, owners: numbe
 
 export const getBuildingsFromTorii = async (client: ToriiClient, structurePositions: HexPosition[]) => {
   const buildingModel = gameModel("Building");
+  // One malformed position must not abort the whole batched clause (hexKey
+  // throws on non-integers).
+  const validPositions = structurePositions.filter(hasValidPosition);
+  if (validPositions.length === 0) {
+    return;
+  }
   const query = {
     Composite: {
       operator: "Or" as LogicalOperator,
-      clauses: structurePositions.map((position) => ({
+      clauses: validPositions.map((position) => ({
         Keys: {
           // s2 Building is keyed (game_id, alt, outer_col, outer_row, ...) —
           // structures never sit on the alt plane (Cairo pins alt to false),
           // so match it exactly: a mid-pattern undefined wildcard does not
           // survive the grpc key encoding and matches nothing.
           keys: isGameScoped()
-            ? [gameIdKey(), "0x0", `0x${position.col.toString(16)}`, `0x${position.row.toString(16)}`]
-            : [`0x${position.col.toString(16)}`, `0x${position.row.toString(16)}`],
+            ? [gameIdKey(), hexKey(0), hexKey(position.col), hexKey(position.row)]
+            : [hexKey(position.col), hexKey(position.row)],
           pattern_matching: "VariableLen" as PatternMatching,
           models: [buildingModel],
         },

@@ -3,10 +3,10 @@ import { PatternMatching, Query, ToriiClient } from "@dojoengine/torii-wasm";
 import { getStructureFromToriiEntity } from "../../parser/torii-client";
 import { getProductionBoostFromToriiEntity } from "../../parser/torii-client/production-boost";
 import { getResourcesFromToriiEntity } from "../../parser/torii-client/resources";
-import { getSqlGameScope } from "../../utils/sql";
+import { getSqlGameScope, scopedEntityKeys } from "../../utils/sql";
 
 export const getStructureFromToriiClient = async (toriiClient: ToriiClient, entityId: ID) => {
-  const { namespace, gameId } = getSqlGameScope();
+  const { namespace } = getSqlGameScope();
   const models = [`${namespace}-Structure`, `${namespace}-Resource`, `${namespace}-ProductionBoostBonus`];
   const query: Query = {
     pagination: {
@@ -20,8 +20,8 @@ export const getStructureFromToriiClient = async (toriiClient: ToriiClient, enti
     historical: false,
     clause: {
       Keys: {
-        // s2 per-game models key entities as (game_id, entity_id)
-        keys: gameId > 0 ? [`0x${gameId.toString(16)}`, entityId.toString()] : [entityId.toString()],
+        // s2 per-game models key entities as (game_id, entity_id); keys must be hex.
+        keys: scopedEntityKeys(entityId),
         pattern_matching: "FixedLen" as PatternMatching,
         models,
       },
