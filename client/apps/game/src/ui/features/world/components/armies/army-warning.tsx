@@ -2,110 +2,24 @@ import Route from "lucide-react/dist/esm/icons/route";
 import Telescope from "lucide-react/dist/esm/icons/telescope";
 import Wheat from "lucide-react/dist/esm/icons/wheat";
 import type { ReactNode } from "react";
-import { useMemo } from "react";
 
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
-import { useBlockTimestampStore } from "@/hooks/store/use-block-timestamp-store";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { formatNumber } from "@/ui/utils/utils";
-import { getBlockTimestamp } from "@bibliothecadao/eternum";
 
-import {
-  computeExploreFoodCosts,
-  computeTravelFoodCosts,
-  configManager,
-  divideByPrecision,
-  ResourceManager,
-  StaminaManager,
-} from "@bibliothecadao/eternum";
-import { ClientComponents, getNeighborHexes, ResourcesIds, TroopType } from "@bibliothecadao/types";
-import { ComponentValue } from "@dojoengine/recs";
-import {
-  formatArmyFoodRequirement,
-  getArmyMovementFoodRequirementWarnings,
-  getArmyFoodRequirementLabel,
-  getArmyReadinessTitle,
-  getArmyStaminaRequirementWarnings,
-} from "./army-warning-copy";
+import type { ArmyMovementReadiness } from "./army-movement-readiness";
+import { formatArmyFoodRequirement, getArmyFoodRequirementLabel, getArmyReadinessTitle } from "./army-warning-copy";
 
 interface ArmyWarningProps {
-  army: ComponentValue<ClientComponents["ExplorerTroops"]["schema"]>;
-  explorerResources: ComponentValue<ClientComponents["Resource"]["schema"]>;
-  structureResources: ComponentValue<ClientComponents["Resource"]["schema"]>;
-  currentArmiesTick?: number;
+  readiness: ArmyMovementReadiness;
 }
 
-export const ArmyWarning = ({
-  army,
-  explorerResources,
-  structureResources,
-  currentArmiesTick: currentArmiesTickProp,
-}: ArmyWarningProps) => {
+export const ArmyWarning = ({ readiness }: ArmyWarningProps) => {
   const gameMode = useGameModeConfig();
   const foodRequirementLabel = getArmyFoodRequirementLabel(gameMode.id);
 
-  const food = useMemo(() => {
-    // cannot use instantiated resource manager because it uses recs, which isn't synced for all armies (only yours)
-    const { balance: wheat } = ResourceManager.balanceWithProduction(
-      structureResources,
-      getBlockTimestamp().currentDefaultTick,
-      ResourcesIds.Wheat,
-    );
-    const { balance: fish } = ResourceManager.balanceWithProduction(
-      structureResources,
-      getBlockTimestamp().currentDefaultTick,
-      ResourcesIds.Fish,
-    );
-    return { wheat: divideByPrecision(wheat), fish: divideByPrecision(fish) };
-  }, [structureResources, army.owner]);
-
-  const movementFoodCosts = useMemo(
-    () =>
-      !army?.owner
-        ? {
-            travel: { wheatPayAmount: 0, fishPayAmount: 0 },
-            explore: { wheatPayAmount: 0, fishPayAmount: 0 },
-          }
-        : {
-            travel: computeTravelFoodCosts(army.troops),
-            explore: computeExploreFoodCosts(army.troops),
-          },
-    [army],
-  );
-
-  const foodWarnings = getArmyMovementFoodRequirementWarnings({
-    travelFoodCosts: movementFoodCosts.travel,
-    exploreFoodCosts: movementFoodCosts.explore,
-    food,
-  });
-
-  const storeArmiesTick = useBlockTimestampStore((state) => state.currentArmiesTick);
-  const currentArmiesTick = currentArmiesTickProp ?? storeArmiesTick;
-
-  const stamina = useMemo(() => {
-    return StaminaManager.getStamina(army.troops, currentArmiesTick);
-  }, [army, currentArmiesTick]);
-
-  const minStaminaNeeded = useMemo(() => {
-    const neighbors = getNeighborHexes(army.coord.x, army.coord.y);
-    return neighbors.reduce((min, neighbor) => {
-      const staminaCost = configManager.getTravelStaminaCost(
-        configManager.getBiome(neighbor.col, neighbor.row),
-        army.troops.category as TroopType,
-      );
-      return min === 0 ? staminaCost : Math.min(min, staminaCost);
-    }, 0);
-  }, [army.coord.x, army.coord.y, army.troops.category]);
-
-  const minStaminaNeededExplore = useMemo(() => {
-    return configManager.getExploreStaminaCost();
-  }, []);
-
-  const { hasTravelStaminaWarning, hasExploreStaminaWarning } = getArmyStaminaRequirementWarnings({
-    currentStamina: Number(stamina.amount),
-    minTravelStamina: minStaminaNeeded,
-    minExploreStamina: minStaminaNeededExplore,
-  });
+  const { hasTravelStaminaWarning, hasExploreStaminaWarning, foodWarnings, minTravelStamina, minExploreStamina } =
+    readiness;
 
   const hasTravelFoodWarning = foodWarnings.travel.hasWarning;
   const hasExploreFoodWarning = foodWarnings.explore.hasWarning;
@@ -124,7 +38,7 @@ export const ArmyWarning = ({
     label: "Travel",
     readyLabel: "Travel ready",
     requirements: [
-      hasTravelStaminaWarning ? `${minStaminaNeeded}+ stamina` : null,
+      hasTravelStaminaWarning ? `${minTravelStamina}+ stamina` : null,
       hasTravelFoodWarning ? missingTravelFoodText : null,
     ],
   });
@@ -132,7 +46,7 @@ export const ArmyWarning = ({
     label: "Explore",
     readyLabel: "Explore ready",
     requirements: [
-      hasExploreStaminaWarning ? `${minStaminaNeededExplore}+ stamina` : null,
+      hasExploreStaminaWarning ? `${minExploreStamina}+ stamina` : null,
       hasExploreFoodWarning ? missingExploreFoodText : null,
     ],
   });
