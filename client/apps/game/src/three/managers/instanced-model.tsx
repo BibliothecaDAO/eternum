@@ -19,7 +19,6 @@ import { AnimationVisibilityContext } from "../types/animation";
 import { getContactShadowResources } from "../utils/contact-shadow";
 import { InstancedMatrixAttributePool } from "../utils/instanced-matrix-attribute-pool";
 import { MaterialPool } from "../utils/material-pool";
-import { resizeInstancedMorphTexture } from "./morph-texture-resize";
 import { writeMorphWeightsIfChanged } from "./morph-texture-dirty-state";
 
 const BIG_DETAILS_NAME = "big_details";
@@ -38,7 +37,10 @@ const ANIMATION_INTERVAL_MULTIPLIER_LARGE = 3;
 const instanceMatrix = new Matrix4();
 const rotationMatrix = new Matrix4();
 const zeroMatrix = new Matrix4().makeScale(0, 0, 0);
-const DEFAULT_INITIAL_CAPACITY = 32;
+// Fixed per-instance buffer capacity when the consumer does not size one
+// (single-instance previews and the like). Buffers never grow — see
+// isWithinCapacity — so real fleets (structures, chests) pass their own cap.
+const DEFAULT_INSTANCE_CAPACITY = 32;
 const MORPH_TEXTURE_RENDER_COUNT_FLOOR = 2;
 
 function hasInstancedMorphTexture(mesh: InstancedMesh): boolean {
@@ -101,6 +103,7 @@ export default class InstancedModel {
   private biomeMeshes: Mesh[] = [];
   private count: number = 0;
   private capacity: number;
+  private hasWarnedCapacityOverflow = false;
   private mixer: AnimationMixer | null = null;
   private animation: AnimationClip | null = null;
   private animationActions: Map<number, AnimationAction> = new Map();
@@ -128,7 +131,7 @@ export default class InstancedModel {
 
   constructor(
     gltf: any,
-    initialCapacity: number = DEFAULT_INITIAL_CAPACITY,
+    capacity: number = DEFAULT_INSTANCE_CAPACITY,
     enableRaycast: boolean = false,
     name: string = "",
     private readonly sourceAssetOwnership: "cache" | "consumer" = "consumer",
@@ -136,7 +139,7 @@ export default class InstancedModel {
     this.name = name;
     this.group = new Group();
     this.count = 0;
-    this.capacity = Math.max(initialCapacity, MORPH_TEXTURE_RENDER_COUNT_FLOOR);
+    this.capacity = Math.max(capacity, MORPH_TEXTURE_RENDER_COUNT_FLOOR);
 
     this.timeOffsets = new Float32Array(this.capacity);
     this.animationBuckets = new Uint8Array(this.capacity);
@@ -272,8 +275,9 @@ export default class InstancedModel {
   }
 
   setMatricesAndCount(matrices: InstancedBufferAttribute, count: number) {
-    const required = Math.max(count, matrices.count);
-    this.ensureCapacity(required);
+    // The per-mesh copy below already clamps to each buffer's capacity; the
+    // guard only makes an oversized restore loud.
+    this.isWithinCapacity(Math.max(count, matrices.count));
     let resolvedCount = count;
     this.instancedMeshes.forEach((mesh) => {
       const targetArray = mesh.instanceMatrix.array as Float32Array;
@@ -292,7 +296,9 @@ export default class InstancedModel {
   }
 
   setMatrixAt(index: number, matrix: Matrix4) {
-    this.ensureCapacity(index + 1);
+    if (!this.isWithinCapacity(index + 1)) {
+      return;
+    }
     this.instancedMeshes.forEach((child) => child.setMatrixAt(index, matrix));
 
     if (this.contactShadowMesh) {
@@ -313,7 +319,9 @@ export default class InstancedModel {
   }
 
   setColorAt(index: number, color: Color) {
-    this.ensureCapacity(index + 1);
+    if (!this.isWithinCapacity(index + 1)) {
+      return;
+    }
     this.instancedMeshes.forEach((mesh) => {
       mesh.setColorAt(index, color);
       if (mesh.instanceColor) {
@@ -323,19 +331,18 @@ export default class InstancedModel {
   }
 
   setCount(count: number) {
-    this.ensureCapacity(count);
-    this.count = count;
+    const drawCount = this.isWithinCapacity(count) ? count : this.capacity;
+    this.count = drawCount;
     this.instancedMeshes.forEach((mesh) => {
-      applyRenderedInstanceCount(mesh, count);
+      applyRenderedInstanceCount(mesh, drawCount);
     });
     if (this.contactShadowMesh) {
-      this.contactShadowMesh.count = count;
+      this.contactShadowMesh.count = drawCount;
     }
     this.needsUpdate();
   }
 
   removeInstance(index: number) {
-    this.ensureCapacity(index + 1);
     this.setMatrixAt(index, zeroMatrix);
     this.needsUpdate();
   }
@@ -582,83 +589,23 @@ export default class InstancedModel {
     }
   }
 
-  private ensureCapacity(requiredCount: number) {
+  // Buffers are never grown: the renderer's node pipeline captures
+  // instanceMatrix/instanceColor at the mesh's first draw and uploads from the
+  // captured objects forever (three r184 InstanceNode) — replacing an attribute
+  // to "grow" it permanently freezes the mesh on the GPU while CPU reads stay
+  // correct. Capacity is fixed at construction; an overflow is a sizing bug at
+  // the consumer and must be loud, not a silent resize.
+  private isWithinCapacity(requiredCount: number): boolean {
     if (requiredCount <= this.capacity) {
-      return;
+      return true;
     }
-
-    let newCapacity = this.capacity || 1;
-    while (newCapacity < requiredCount) {
-      newCapacity *= 2;
+    if (!this.hasWarnedCapacityOverflow) {
+      this.hasWarnedCapacityOverflow = true;
+      console.error(
+        `[InstancedModel "${this.name}"] instance count ${requiredCount} exceeds the fixed capacity ${this.capacity}; extra instances are dropped`,
+      );
     }
-
-    this.instancedMeshes.forEach((mesh, meshIndex) => {
-      const matrixArray = mesh.instanceMatrix.array as Float32Array;
-      const resizedMatrixArray = new Float32Array(newCapacity * 16);
-      resizedMatrixArray.set(matrixArray.subarray(0, this.capacity * 16));
-      mesh.instanceMatrix = new InstancedBufferAttribute(resizedMatrixArray, 16);
-      mesh.instanceMatrix.needsUpdate = true;
-
-      if (mesh.instanceColor) {
-        const colorArray = mesh.instanceColor.array as Float32Array;
-        const resizedColorArray = new Float32Array(newCapacity * 3);
-        resizedColorArray.set(colorArray.subarray(0, this.capacity * 3));
-        mesh.instanceColor = new InstancedBufferAttribute(resizedColorArray, 3);
-        mesh.instanceColor.needsUpdate = true;
-      }
-
-      mesh.count = Math.min(mesh.count, newCapacity);
-
-      // Phase 2.3: grow the morph texture before writing rows past the initial
-      // capacity, or setMorphAt indexes out of the fixed Float32Array and throws.
-      resizeInstancedMorphTexture(mesh, newCapacity);
-
-      for (let i = this.capacity; i < newCapacity; i++) {
-        mesh.setMatrixAt(i, zeroMatrix);
-        if (mesh.morphTexture) {
-          mesh.setMorphAt(i, this.biomeMeshes[meshIndex]);
-        }
-      }
-
-      if (mesh.morphTexture) {
-        mesh.morphTexture.needsUpdate = true;
-      }
-    });
-
-    if (this.contactShadowMesh) {
-      const matrixArray = this.contactShadowMesh.instanceMatrix.array as Float32Array;
-      const resizedMatrixArray = new Float32Array(newCapacity * 16);
-      resizedMatrixArray.set(matrixArray.subarray(0, this.capacity * 16));
-      this.contactShadowMesh.instanceMatrix = new InstancedBufferAttribute(resizedMatrixArray, 16);
-      this.contactShadowMesh.instanceMatrix.needsUpdate = true;
-      this.contactShadowMesh.count = Math.min(this.contactShadowMesh.count, newCapacity);
-
-      for (let i = this.capacity; i < newCapacity; i++) {
-        this.contactShadowMesh.setMatrixAt(i, zeroMatrix);
-      }
-    }
-
-    const updatedOffsets = new Float32Array(newCapacity);
-    updatedOffsets.set(this.timeOffsets);
-    for (let i = this.capacity; i < newCapacity; i++) {
-      updatedOffsets[i] = Math.random() * 3;
-    }
-    this.timeOffsets = updatedOffsets;
-
-    // Also resize animation buckets array
-    const updatedBuckets = new Uint8Array(newCapacity);
-    if (this.animationBuckets) {
-      updatedBuckets.set(this.animationBuckets);
-    }
-    for (let i = this.capacity; i < newCapacity; i++) {
-      updatedBuckets[i] = Math.floor((updatedOffsets[i] / 3) * ANIMATION_BUCKETS) % ANIMATION_BUCKETS;
-    }
-    this.animationBuckets = updatedBuckets;
-
-    // Invalidate bucket indices so they get rebuilt on next animation update
-    this.bucketIndicesBuilt = false;
-
-    this.capacity = newCapacity;
+    return false;
   }
 
   private applyWorldBounds(mesh: InstancedMesh) {

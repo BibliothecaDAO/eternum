@@ -102,7 +102,10 @@ import {
   type FrameBudgetWorkScheduler,
 } from "../frame-budget-work-queue";
 
-const INITIAL_STRUCTURE_CAPACITY = 64;
+// Fixed buffer capacity per structure model — buffers never grow (InstancedModel
+// refuses overflow loudly), so this is sized to the worst-case count of one
+// structure type in a render area, not a growth seed.
+const STRUCTURE_INSTANCE_CAPACITY = 512;
 const WONDER_MODEL_INDEX = 4;
 
 interface ChunkBounds {
@@ -843,7 +846,7 @@ export class StructureManager {
           try {
             const instancedModel = new InstancedModel(
               gltf,
-              INITIAL_STRUCTURE_CAPACITY,
+              STRUCTURE_INSTANCE_CAPACITY,
               false,
               modelPath.includes("wonder") ? "wonder" : StructureType[structureType],
             );
@@ -914,7 +917,7 @@ export class StructureManager {
       registryEntry: findCosmeticById(cosmeticId),
     });
 
-    return gltfs.map((gltf) => new InstancedModel(gltf, INITIAL_STRUCTURE_CAPACITY, false, cosmeticId, "cache"));
+    return gltfs.map((gltf) => new InstancedModel(gltf, STRUCTURE_INSTANCE_CAPACITY, false, cosmeticId, "cache"));
   }
 
   private resolveLiveStructureOwnerName(entityId: ID, ownerAddress: bigint, fallbackOwnerName: string): string {

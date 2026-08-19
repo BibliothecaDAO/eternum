@@ -1259,6 +1259,11 @@ export class ArmyManager {
     this.removeEntityIdLabel(entityId);
 
     const numericId = this.toNumericId(entityId);
+    // Chunk reconciliation can evict a mid-move army; freeInstanceSlot below
+    // kills the movement-complete callback that would normally erase the path
+    // line, so the eviction itself must remove it or the line is stranded on
+    // the map forever.
+    this.pathRenderer.removePath(numericId);
     const shouldNotifyMovementVisualCancel =
       options?.notifyMovementVisualCancel === true || this.armyModel.isEntityMoving(numericId);
     this.removeTrackedArmyAttachments(entityId);
