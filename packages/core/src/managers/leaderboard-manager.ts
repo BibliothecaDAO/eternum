@@ -61,9 +61,10 @@ export class LeaderboardManager {
   private readonly unregisteredShareholderPointsUpdateInterval: number;
   private pendingSharePointsClaims: Map<ContractAddress, PendingSharePointsClaim> = new Map();
   private readonly pendingSharePointsClaimTtlMs: number = 2 * 60 * 1000;
+  private readonly warnedMissingHyperstructureEntities: Set<Entity> = new Set();
 
   constructor(
-    private readonly components: ClientComponents,
+    private components: ClientComponents,
     unregisteredShareholderPointsUpdateInterval: number = 10000,
   ) {
     this.unregisteredShareholderPointsUpdateInterval = unregisteredShareholderPointsUpdateInterval;
@@ -74,8 +75,21 @@ export class LeaderboardManager {
   public static instance(components: ClientComponents, unregisteredShareholderPointsUpdateInterval?: number) {
     if (!LeaderboardManager._instance) {
       LeaderboardManager._instance = new LeaderboardManager(components, unregisteredShareholderPointsUpdateInterval);
+    } else if (LeaderboardManager._instance.components !== components) {
+      // The game route rebuilds its RECS world (and components) on every boot
+      // (retry, reconnect, re-entry). A singleton pinned to the first boot's
+      // components reads a dead world forever — every points read returns
+      // empty. Re-bind to the live components and drop caches built on the
+      // old world.
+      LeaderboardManager._instance.rebindComponents(components);
     }
     return LeaderboardManager._instance;
+  }
+
+  private rebindComponents(components: ClientComponents) {
+    this.components = components;
+    this.pendingSharePointsClaims.clear();
+    this.forceRefresh();
   }
 
   // Multi-game worlds stream every game's rows into RECS (finished games
@@ -210,6 +224,15 @@ export class LeaderboardManager {
       this.components.HyperstructureShareholders,
     )) {
       const hyperstructure = getComponentValue(this.components.Hyperstructure, hyperstructureShareholdersEntityId);
+      if (!hyperstructure && !this.warnedMissingHyperstructureEntities.has(hyperstructureShareholdersEntityId)) {
+        // A shareholders row without its Hyperstructure row zeroes every
+        // shareholder's live points via the fallback below — that must be a
+        // loud sync gap, never a silent zero.
+        this.warnedMissingHyperstructureEntities.add(hyperstructureShareholdersEntityId);
+        console.warn(
+          `[LeaderboardManager] Hyperstructure row missing for shareholders entity ${String(hyperstructureShareholdersEntityId)}; shareholder points read as 0`,
+        );
+      }
 
       const pointsPerSecond = hyperstructure ? pointsPerSecondWithoutMultiplier * hyperstructure.points_multiplier : 0;
       const shareholders = hyperstructureShareholders.shareholders as unknown as ContractAddressAndAmount[];
