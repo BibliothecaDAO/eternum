@@ -54,9 +54,12 @@ const clearConfigFetchCache = () => {
   }
 };
 
-const isValidId = (id: unknown): id is ID => typeof id === "number" && Number.isFinite(id);
+// Integer guards double as hexKey's precondition: BigInt() throws on a
+// fractional number, and one bad value must skip its own entity, not abort
+// the whole batched clause.
+const isValidId = (id: unknown): id is ID => typeof id === "number" && Number.isInteger(id) && id > 0;
 const hasValidPosition = (position: HexPosition | undefined): position is HexPosition =>
-  !!position && Number.isFinite(position.col) && Number.isFinite(position.row);
+  !!position && Number.isInteger(position.col) && Number.isInteger(position.row);
 
 export const getStructuresDataFromTorii = async (
   client: ToriiClient,
@@ -432,10 +435,16 @@ export const getOwnedArmiesFromTorii = async (client: ToriiClient, owners: numbe
 
 export const getBuildingsFromTorii = async (client: ToriiClient, structurePositions: HexPosition[]) => {
   const buildingModel = gameModel("Building");
+  // One malformed position must not abort the whole batched clause (hexKey
+  // throws on non-integers).
+  const validPositions = structurePositions.filter(hasValidPosition);
+  if (validPositions.length === 0) {
+    return;
+  }
   const query = {
     Composite: {
       operator: "Or" as LogicalOperator,
-      clauses: structurePositions.map((position) => ({
+      clauses: validPositions.map((position) => ({
         Keys: {
           // s2 Building is keyed (game_id, alt, outer_col, outer_row, ...) —
           // structures never sit on the alt plane (Cairo pins alt to false),

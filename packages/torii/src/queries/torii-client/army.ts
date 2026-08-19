@@ -1,10 +1,10 @@
 import { ID } from "@bibliothecadao/types";
 import { PatternMatching, Query, ToriiClient } from "@dojoengine/torii-wasm";
 import { getExplorerFromToriiEntity, getResourcesFromToriiEntity } from "../../parser/torii-client";
-import { getSqlGameScope } from "../../utils/sql";
+import { getSqlGameScope, scopedEntityKeys } from "../../utils/sql";
 
 export const getExplorerFromToriiClient = async (toriiClient: ToriiClient, entityId: ID) => {
-  const { namespace, gameId } = getSqlGameScope();
+  const { namespace } = getSqlGameScope();
   const models = [`${namespace}-ExplorerTroops`, `${namespace}-Resource`];
   const query: Query = {
     pagination: {
@@ -18,8 +18,8 @@ export const getExplorerFromToriiClient = async (toriiClient: ToriiClient, entit
     historical: false,
     clause: {
       Keys: {
-        // s2 per-game models key entities as (game_id, entity_id)
-        keys: gameId > 0 ? [`0x${gameId.toString(16)}`, entityId.toString()] : [entityId.toString()],
+        // s2 per-game models key entities as (game_id, entity_id); keys must be hex.
+        keys: scopedEntityKeys(entityId),
         pattern_matching: "FixedLen" as PatternMatching,
         models,
       },

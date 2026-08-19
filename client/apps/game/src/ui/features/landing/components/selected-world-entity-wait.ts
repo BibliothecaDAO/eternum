@@ -84,7 +84,8 @@ const resolveEntitySubscriptionTarget = async ({
 };
 
 const buildSelectedWorldEntityClause = (target: EntitySubscriptionTarget, modelNames: readonly string[]): Clause => {
-  const scopedKey = target.gameId && target.gameId > 0 ? hexKey(target.gameId) : undefined;
+  const scopedKey =
+    target.gameId && Number.isInteger(target.gameId) && target.gameId > 0 ? hexKey(target.gameId) : undefined;
   return buildGameSyncModelKeysClause(
     modelNames.map((modelName) => ({
       model: `${target.namespace}-${modelName}`,

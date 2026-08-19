@@ -54,7 +54,8 @@ export const appchainModel = (name: string): string => `${namespaceForChain("app
  * Torii KeysClause slot encoding: keys MUST be unpadded hex. Decimal key
  * strings do not survive the grpc key encoding and match nothing — the Aug 10
  * Building-clause incident, later found again in getEntitiesFromTorii. Every
- * clause key goes through this one encoder.
+ * clause key this app builds goes through this encoder (packages/torii has
+ * its own twin, toriiKey, for the query builders that cannot import the app).
  */
 export const hexKey = (value: number | bigint): string => `0x${BigInt(value).toString(16)}`;
 

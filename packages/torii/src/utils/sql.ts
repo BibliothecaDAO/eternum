@@ -48,6 +48,17 @@ export const getSqlGameScope = (): { namespace: string; gameId: number } => ({
   gameId: sqlGameId,
 });
 
+/**
+ * Torii KeysClause slots MUST be unpadded hex — decimal key strings do not
+ * survive the grpc key encoding and match nothing. This package's one encoder
+ * for gRPC clause keys (the game client has its own in dojo/game-scope.ts).
+ */
+export const toriiKey = (value: number | bigint): string => `0x${BigInt(value).toString(16)}`;
+
+/** (game_id, entity_id) key tuple for a targeted per-entity gRPC clause. */
+export const scopedEntityKeys = (entityId: number): string[] =>
+  sqlGameId > 0 ? [toriiKey(sqlGameId), toriiKey(entityId)] : [toriiKey(entityId)];
+
 const GAME_FILTER_MARKER = /\{GF(?::([A-Za-z_][\w]*))?\}/g;
 
 /** Explicit scope for queries that target a world other than the ambient one
