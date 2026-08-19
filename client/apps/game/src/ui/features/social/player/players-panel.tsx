@@ -21,6 +21,12 @@ import ChevronUp from "lucide-react/dist/esm/icons/chevron-up";
 import Search from "lucide-react/dist/esm/icons/search";
 import { KeyboardEvent, useCallback, useEffect, useMemo, useState } from "react";
 import { gameEntityKey } from "@/dojo/game-scope";
+import { useCoarseCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
+
+// The SQL aggregate feeding POINTS/RANK must keep pace with the RECS-fed HUD
+// rank pill while the panel stays open — a one-shot fetch froze the columns
+// until a manual refresh.
+const ACTIVITY_REFRESH_WINDOW_SECONDS = 30;
 
 const SOCIAL_LEADERBOARD_LIMIT = 1000;
 
@@ -69,9 +75,10 @@ export const PlayersPanel = ({
     }
   }, []);
 
+  const activityRefreshTick = useCoarseCurrentDefaultTick(ACTIVITY_REFRESH_WINDOW_SECONDS);
   useEffect(() => {
     void refreshActivityBreakdowns();
-  }, [refreshActivityBreakdowns]);
+  }, [refreshActivityBreakdowns, activityRefreshTick]);
 
   useEffect(() => {
     const handler = setTimeout(() => {
