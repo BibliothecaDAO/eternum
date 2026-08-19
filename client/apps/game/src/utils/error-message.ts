@@ -7,3 +7,14 @@
 // whole provider into every error-message consumer. The module is stateless,
 // so single-instancing it via the subpath is hygiene, not a correctness fix.
 export { extractErrorMessage as extractReadableErrorMessage } from "@bibliothecadao/provider/errors";
+
+/**
+ * The game's resource assert reverts with "Insufficient Balance: {RESOURCE}
+ * (id: N, balance: N) < N" (contracts models/resource). The trailing colon
+ * distinguishes it from Cartridge fee-token errors (controller codes
+ * 53/54/113), which must never trigger game-state repairs. Lives here — the
+ * client's one error-message chokepoint — so every consumer classifies the
+ * game's revert the same way.
+ */
+export const isInsufficientResourceBalanceRevert = (message: string): boolean =>
+  message.toLowerCase().includes("insufficient balance:");
