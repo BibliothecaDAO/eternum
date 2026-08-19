@@ -2,16 +2,16 @@
   "version": 1,
   "environment": "appchain.blitz",
   "kind": "rotation",
-  "updatedAt": "2026-08-19T12:37:38.180Z",
+  "updatedAt": "2026-08-19T12:37:40.919Z",
   "entries": {
     "blitz-herald": {
       "kind": "rotation",
       "environment": "appchain.blitz",
       "rotationName": "blitz-herald",
       "path": "runs/appchain/blitz/rotations/blitz-herald.json",
-      "inputPath": "inputs/appchain/blitz/rotations/blitz-herald/32249478790-1.json",
+      "inputPath": "inputs/appchain/blitz/rotations/blitz-herald/32253547766-1.json",
       "status": "attention",
-      "updatedAt": "2026-08-19T11:50:49.315Z",
+      "updatedAt": "2026-08-19T12:37:40.919Z",
       "workflowRef": "next",
       "currentStepId": "create-worlds",
       "hasRunningStep": false,
@@ -20,12 +20,12 @@
       "autoRetry": {
         "enabled": true,
         "intervalMinutes": 15,
-        "nextRetryAt": "2026-08-19T12:05:49.315Z"
+        "nextRetryAt": "2026-08-19T12:52:40.919Z"
       },
       "evaluation": {
         "intervalMinutes": 30,
-        "nextEvaluationAt": "2026-08-19T12:20:49.315Z",
-        "lastEvaluatedAt": "2026-08-19T11:50:49.315Z"
+        "nextEvaluationAt": "2026-08-19T13:07:40.919Z",
+        "lastEvaluatedAt": "2026-08-19T12:37:40.919Z"
       },
       "games": [
         {
