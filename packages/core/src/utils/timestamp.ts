@@ -14,17 +14,14 @@ let timestampSource: TimestampSource = defaultTimestampSource;
 // preventing tx failures when client clock is ahead of chain.
 const CONSERVATIVE_TICK_BUFFER = 1;
 
-// Deeper buffer used specifically for automation projections. Automation plans
-// spend up to AUTOMATION_INPUT_BUDGET_PERCENT of a projected balance, so any
-// overshoot in the projection (wall-clock drift, torii lag, tx-queue wait before
-// block inclusion) directly causes on-chain "Insufficient Balance" reverts.
-// The Aug 18 session measured ~16s of projection-vs-estimation skew (planned
-// 568.8 wood against a chain balance of 537 at 2/s) blowing through the old
-// 3s buffer — but that skew predates the row-evidence clock re-anchor, which
-// caps the clock's lead at 5s over the newest chain evidence. 5s mirrors that
-// cap (owner-set ceiling). If reverts persist in session logs, the fix is
-// planning inputs against stored balance, not a deeper buffer.
-const CONSERVATIVE_TICK_BUFFER_AUTOMATION = 5;
+// Small extra buffer for automation projections — clock-jitter insurance only.
+// The Aug 19 playtest proved buffer depth cannot fix automation reverts: with
+// zero player transactions the projection diverged from chain lazy-harvest
+// math and the shortfall GREW over the hour. The real repair is the
+// revert→resync→replan chokepoint in use-automation (refetch the realm's
+// Resource rows on an Insufficient Balance revert so the next plan starts
+// from chain truth). Owner ruling: keep 3s as a belt, never deepen it again.
+const CONSERVATIVE_TICK_BUFFER_AUTOMATION = 3;
 
 export const setBlockTimestampSource = (source: TimestampSource | null) => {
   timestampSource = source ? () => Math.floor(source()) : defaultTimestampSource;
@@ -81,9 +78,11 @@ export const getConservativeBlockTimestamp = () => {
 };
 
 /**
- * Projection tick for automation plan building. Uses a deeper buffer than the
- * default conservative accessor so the projected balance stays behind what the
- * chain will report at tx-inclusion time, preventing Insufficient Balance reverts.
+ * Projection tick for automation plan building. Carries a slightly deeper
+ * jitter belt than the UI accessor, but reverts are NOT prevented here: the
+ * projection can diverge from chain lazy-harvest math regardless of buffer
+ * depth, and automation repairs that with its revert→resync chokepoint
+ * (see CONSERVATIVE_TICK_BUFFER_AUTOMATION).
  */
 export const getAutomationProjectionTick = () => {
   const { currentBlockTimestamp, currentDefaultTick, currentArmiesTick } = getBlockTimestamp();
