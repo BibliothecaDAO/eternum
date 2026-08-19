@@ -134,7 +134,6 @@ type ArmyModelTestAccess = {
   models: Map<ModelType, ReturnType<typeof createModelData>>;
   entityModelMap: Map<number, ModelType>;
   activeBaseModelByEntity: Map<number, ModelType | null>;
-  ensureModelCapacity: (modelData: ReturnType<typeof createModelData>, requiredCount: number) => void;
 };
 
 const accessArmyModel = (subject: ArmyModel) => subject as unknown as ArmyModelTestAccess;
@@ -174,8 +173,6 @@ describe("ArmyModel activeInstances fallback fix (Stage 0)", () => {
 
     activeModelData.activeInstances.add(slot);
     staleModelData.activeInstances.add(slot);
-    (subject as any).ensureModelCapacity(activeModelData, slot + 1);
-    (subject as any).ensureModelCapacity(staleModelData, slot + 1);
 
     const oldPosition = new Matrix4().makeTranslation(5, 0, 5);
     activeModelData.instancedMeshes[0].setMatrixAt(slot, oldPosition);
@@ -204,8 +201,6 @@ describe("ArmyModel activeInstances fallback fix (Stage 0)", () => {
 
     activeModelData.activeInstances.add(slot);
     staleModelData.activeInstances.add(slot);
-    modelAccess.ensureModelCapacity(activeModelData, slot + 1);
-    modelAccess.ensureModelCapacity(staleModelData, slot + 1);
 
     const stalePosition = new Matrix4().makeTranslation(9, 0, 9);
     staleModelData.instancedMeshes[0].setMatrixAt(slot, stalePosition);
@@ -278,7 +273,6 @@ describe("ArmyModel activeInstances fallback fix (Stage 0)", () => {
     modelData.activeInstances.add(slot);
 
     // Ensure capacity so setMatrixAt works
-    (subject as any).ensureModelCapacity(modelData, slot + 1);
 
     // Set a non-zero matrix to verify it gets zeroed
     const nonZeroMatrix = new Matrix4().makeTranslation(5, 5, 5);
@@ -343,7 +337,6 @@ describe("ArmyModel draw-count stays correct on cached model switch (1A)", () =>
     (subject as any).entityModelMap.set(entityId, ModelType.Knight1);
     (subject as any).activeBaseModelByEntity.set(entityId, ModelType.Knight1);
     landModel.activeInstances.add(slot);
-    (subject as any).ensureModelCapacity(landModel, slot + 1);
     landModel.instancedMeshes[0].count = slot + 1;
 
     // Boat is loaded but never drawn (count 0) — this is the bug precondition:
@@ -374,7 +367,6 @@ describe("ArmyModel render-integrity helpers + leaked-slot purge", () => {
     (subject as any).models.set(ModelType.Knight1, model);
     model.activeInstances.add(drawnSlot);
     model.activeInstances.add(undrawnSlot);
-    (subject as any).ensureModelCapacity(model, undrawnSlot + 1);
     // Only the first slot is within the draw count; the second is active but not drawn.
     model.instancedMeshes[0].count = drawnSlot + 1;
 

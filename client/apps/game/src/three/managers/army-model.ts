@@ -21,8 +21,8 @@ import {
   Vector3,
 } from "three";
 import { CSS2DObject } from "three/examples/jsm/renderers/CSS2DRenderer.js";
-import { resizeInstancedMorphTexture } from "./morph-texture-resize";
 import { writeMorphWeightsIfChanged } from "./morph-texture-dirty-state";
+import { incrementWorldmapRenderCounter } from "../perf/worldmap-render-diagnostics";
 import { BoundedHexCache } from "../utils/bounded-hex-cache";
 import { env } from "../../../env";
 import { VERBOSE_LOGS_ENABLED } from "@/utils/dev-mode";
@@ -138,7 +138,13 @@ export class ArmyModel {
   private readonly agentScale = new Vector3(2, 2, 2);
   private readonly zeroInstanceMatrix = new Matrix4().makeScale(0, 0, 0);
   private readonly MODEL_ANIMATION_UPDATE_INTERVAL = 1000 / 20; // 20 FPS per model
-  private readonly INITIAL_INSTANCE_CAPACITY = 64;
+  // Fixed for the mesh's whole life. The renderer's node pipeline captures
+  // instanceMatrix/instanceColor at the mesh's first draw and uploads from the
+  // captured objects forever (three r184 InstanceNode) — replacing an attribute
+  // to "grow" it permanently freezes the mesh on the GPU while CPU reads stay
+  // correct. So capacity is sized to the army cap up front and never resized;
+  // ~76KB per mesh buys the invariant.
+  private readonly ARMY_INSTANCE_CAPACITY = 1024;
 
   // Spline-based movement
   private readonly USE_SPLINE_MOVEMENT = true;
@@ -153,6 +159,7 @@ export class ArmyModel {
 
   // agent
   private isAgent: boolean = false;
+  private hasWarnedInstanceCapacityOverflow = false;
   private contactShadowsEnabled = true;
 
   // Memory monitoring
@@ -372,7 +379,7 @@ export class ArmyModel {
 
     const contactShadowScale = this.computeContactShadowScale(gltf);
     const { geometry, material } = getContactShadowResources();
-    const contactShadowMesh = new InstancedMesh(geometry, material, this.INITIAL_INSTANCE_CAPACITY);
+    const contactShadowMesh = new InstancedMesh(geometry, material, this.ARMY_INSTANCE_CAPACITY);
     contactShadowMesh.frustumCulled = true;
     contactShadowMesh.castShadow = false;
     contactShadowMesh.receiveShadow = false;
@@ -473,7 +480,7 @@ export class ArmyModel {
     const instancedMesh = new InstancedMesh(
       geometry,
       pooledMaterial.material,
-      this.INITIAL_INSTANCE_CAPACITY,
+      this.ARMY_INSTANCE_CAPACITY,
     ) as AnimatedInstancedMesh;
 
     instancedMesh.frustumCulled = true;
@@ -481,10 +488,7 @@ export class ArmyModel {
     instancedMesh.instanceMatrix.needsUpdate = true;
     instancedMesh.renderOrder = 10 + meshIndex;
     if (pooledMaterial.usesInstanceColor) {
-      instancedMesh.instanceColor = new InstancedBufferAttribute(
-        new Float32Array(this.INITIAL_INSTANCE_CAPACITY * 3),
-        3,
-      );
+      instancedMesh.instanceColor = new InstancedBufferAttribute(new Float32Array(this.ARMY_INSTANCE_CAPACITY * 3), 3);
     }
 
     if (animations.length > 0) {
@@ -495,71 +499,21 @@ export class ArmyModel {
     return instancedMesh;
   }
 
-  private ensureModelCapacity(modelData: ModelData, requiredCount: number): void {
-    modelData.instancedMeshes.forEach((mesh, meshIndex) => {
-      const capacity = mesh.instanceMatrix.count;
-      if (requiredCount <= capacity) {
-        return;
-      }
-
-      let newCapacity = capacity || 1;
-      while (newCapacity < requiredCount) {
-        newCapacity *= 2;
-      }
-
-      const matrixArray = mesh.instanceMatrix.array as Float32Array;
-      const resizedMatrixArray = new Float32Array(newCapacity * 16);
-      resizedMatrixArray.set(matrixArray.subarray(0, capacity * 16));
-      mesh.instanceMatrix = new InstancedBufferAttribute(resizedMatrixArray, 16);
-      mesh.instanceMatrix.needsUpdate = true;
-
-      if (mesh.instanceColor) {
-        const colorArray = mesh.instanceColor.array as Float32Array;
-        const resizedColorArray = new Float32Array(newCapacity * 3);
-        resizedColorArray.set(colorArray.subarray(0, capacity * 3));
-        mesh.instanceColor = new InstancedBufferAttribute(resizedColorArray, 3);
-        mesh.instanceColor.needsUpdate = true;
-      }
-
-      // Phase 2.3: the morph texture was sized for the initial capacity (64). Grow
-      // it before writing rows past that capacity, or setMorphAt indexes out of the
-      // fixed Float32Array and throws on the frame path.
-      resizeInstancedMorphTexture(mesh, newCapacity);
-
-      const baseMesh = modelData.baseMeshes[meshIndex];
-      for (let i = capacity; i < newCapacity; i++) {
-        mesh.setMatrixAt(i, this.zeroInstanceMatrix);
-        if (mesh.morphTexture) {
-          mesh.setMorphAt(i, baseMesh as any);
-        }
-      }
-
-      if (mesh.morphTexture) {
-        mesh.morphTexture.needsUpdate = true;
-      }
-    });
-
-    if (modelData.contactShadowMesh) {
-      const mesh = modelData.contactShadowMesh;
-      const capacity = mesh.instanceMatrix.count;
-      if (requiredCount > capacity) {
-        let newCapacity = capacity || 1;
-        while (newCapacity < requiredCount) {
-          newCapacity *= 2;
-        }
-
-        const matrixArray = mesh.instanceMatrix.array as Float32Array;
-        const resizedMatrixArray = new Float32Array(newCapacity * 16);
-        resizedMatrixArray.set(matrixArray.subarray(0, capacity * 16));
-        mesh.instanceMatrix = new InstancedBufferAttribute(resizedMatrixArray, 16);
-        mesh.instanceMatrix.needsUpdate = true;
-        mesh.count = Math.min(mesh.count, newCapacity);
-
-        for (let i = capacity; i < newCapacity; i++) {
-          mesh.setMatrixAt(i, this.zeroInstanceMatrix);
-        }
-      }
+  // Buffers are never grown (see ARMY_INSTANCE_CAPACITY) — an out-of-range slot
+  // is a bug in the slot allocator or an army count past the game cap. Refuse
+  // the write loudly instead of silently truncating into a TypedArray no-op.
+  private guardInstanceCapacity(requiredCount: number): boolean {
+    if (requiredCount <= this.ARMY_INSTANCE_CAPACITY) {
+      return true;
     }
+    incrementWorldmapRenderCounter("armyInstanceCapacityOverflow");
+    if (!this.hasWarnedInstanceCapacityOverflow) {
+      this.hasWarnedInstanceCapacityOverflow = true;
+      console.error(
+        `[ArmyModel] instance slot ${requiredCount - 1} exceeds the fixed capacity ${this.ARMY_INSTANCE_CAPACITY}; refusing the write`,
+      );
+    }
+    return false;
   }
 
   private setupMeshAnimation(instancedMesh: AnimatedInstancedMesh, mesh: Mesh, animations: any[]): void {
@@ -567,7 +521,7 @@ export class ArmyModel {
 
     if (hasAnimation) {
       instancedMesh.animated = true;
-      for (let i = 0; i < this.INITIAL_INSTANCE_CAPACITY; i++) {
+      for (let i = 0; i < this.ARMY_INSTANCE_CAPACITY; i++) {
         instancedMesh.setMorphAt(i, mesh as any);
       }
       instancedMesh.morphTexture!.name = `army-morph:${mesh.name || "mesh"}`;
@@ -656,7 +610,6 @@ export class ArmyModel {
    * Helper to clear a single slot from a model's meshes
    */
   private clearModelSlot(modelData: ModelData, matrixIndex: number): void {
-    this.ensureModelCapacity(modelData, matrixIndex + 1);
     modelData.instancedMeshes.forEach((mesh) => {
       mesh.setMatrixAt(matrixIndex, this.zeroInstanceMatrix);
       mesh.instanceMatrix.needsUpdate = true;
@@ -883,6 +836,9 @@ export class ArmyModel {
     rotation?: Euler,
     color?: Color,
   ): void {
+    if (!this.guardInstanceCapacity(index + 1)) {
+      return;
+    }
     const previousOwner = this.matrixIndexOwners.get(index);
     if (import.meta.env?.DEV && previousOwner !== undefined && previousOwner !== entityId) {
       console.warn(`[ArmyModel] Matrix slot ${index} reassigned from entity ${previousOwner} to ${entityId}.`);
@@ -914,7 +870,6 @@ export class ArmyModel {
         if (prevModelData) {
           // Remove from previous model's active instances
           prevModelData.activeInstances.delete(index);
-          this.ensureModelCapacity(prevModelData, index + 1);
           this.updateInstanceTransform(state.position, this.zeroScale, state.rotation);
           this.updateInstanceMeshes(prevModelData, index, entityId, state.position, state.color);
         }
@@ -928,7 +883,6 @@ export class ArmyModel {
         if (prevCosmeticData) {
           // Remove from previous cosmetic's active instances
           prevCosmeticData.activeInstances.delete(index);
-          this.ensureModelCapacity(prevCosmeticData, index + 1);
           this.updateInstanceTransform(state.position, this.zeroScale, state.rotation);
           this.updateInstanceMeshes(prevCosmeticData, index, entityId, state.position, state.color);
         }
@@ -944,11 +898,10 @@ export class ArmyModel {
         // Add to model's active instances
         modelData.activeInstances.add(index);
         const targetScale = this.getScaleForModelType(activeBaseModel);
-        this.ensureModelCapacity(modelData, index + 1);
         this.updateInstanceTransform(state.position, targetScale, state.rotation);
         this.updateInstanceMeshes(modelData, index, entityId, state.position, state.color);
-        // Bump count after capacity is ensured so the just-added slot draws now,
-        // not only after the next setVisibleSlots (see extendModelDrawCount).
+        // Bump count so the just-added slot draws now, not only after the next
+        // setVisibleSlots (see extendModelDrawCount).
         this.extendModelDrawCount(modelData, index);
       }
     }
@@ -958,7 +911,6 @@ export class ArmyModel {
       if (cosmeticData) {
         // Add to cosmetic's active instances
         cosmeticData.activeInstances.add(index);
-        this.ensureModelCapacity(cosmeticData, index + 1);
         this.updateInstanceTransform(state.position, this.normalScale, state.rotation);
         this.updateInstanceMeshes(cosmeticData, index, entityId, state.position, state.color);
         this.extendModelDrawCount(cosmeticData, index);
@@ -2245,26 +2197,6 @@ export class ArmyModel {
     this.movementCompleteCallbacks.set(entityId, callback);
   }
 
-  /**
-   * Cancel an in-flight tween WITHOUT invoking the complete callback. Used by
-   * optimistic rewinds where the tween should be torn down silently — the
-   * caller owns the visual restore (snap back to source position).
-   */
-  public cancelMovement(entityId: number): void {
-    this.splineMovingInstances.delete(entityId);
-    const instanceData = this.instanceData.get(entityId);
-    const movement = this.movingInstances.get(entityId);
-    if (movement && instanceData?.matrixIndex !== undefined) {
-      this.setAnimationState(instanceData.matrixIndex, false);
-    }
-    this.movingInstances.delete(entityId);
-    if (instanceData) {
-      instanceData.isMoving = false;
-      instanceData.path = undefined;
-    }
-    this.movementCompleteCallbacks.delete(entityId);
-  }
-
   // Keeps a moving entity's animation flag aligned with its CURRENT instance slot
   // after a slot reassignment. The slot itself lives in instanceData.matrixIndex
   // (the single source of truth) and is updated by the caller before this runs;
@@ -2482,12 +2414,11 @@ export class ArmyModel {
     }
 
     this.currentVisibleCount = activeCount;
-    const globalDrawCount = maxIndex >= 0 ? maxIndex + 1 : 0;
+    this.guardInstanceCapacity(maxIndex >= 0 ? maxIndex + 1 : 0);
 
     // Set per-model draw counts based on their active instances
     // Models with no active instances get mesh.count = 0 (skip rendering/raycasting/animation)
     this.models.forEach((modelData) => {
-      this.ensureModelCapacity(modelData, globalDrawCount);
       const modelDrawCount = this.getModelDrawCount(modelData);
       modelData.instancedMeshes.forEach((mesh) => {
         mesh.count = modelDrawCount;
@@ -2499,7 +2430,6 @@ export class ArmyModel {
 
     // Also update cosmetic models with per-model counts
     this.cosmeticModels.forEach((modelData) => {
-      this.ensureModelCapacity(modelData, globalDrawCount);
       const modelDrawCount = this.getModelDrawCount(modelData);
       modelData.instancedMeshes.forEach((mesh) => {
         mesh.count = modelDrawCount;

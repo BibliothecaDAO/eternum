@@ -38,6 +38,24 @@ describe("chunk-eviction ghosting prevention", () => {
   });
 
   describe("removeVisibleArmy cleans up movement source bucket", () => {
+    it("removes the path line before freeing the slot kills the movement-complete callback", () => {
+      const src = readSource("army-manager.ts");
+
+      const methodStart = src.indexOf("private removeVisibleArmy(");
+      expect(methodStart).toBeGreaterThan(-1);
+
+      const methodBody = src.slice(methodStart, methodStart + 2800);
+
+      const removePathPos = methodBody.indexOf("this.pathRenderer.removePath(numericId)");
+      const freeSlotPos = methodBody.indexOf("this.armyModel.freeInstanceSlot(");
+
+      // Eviction is the only teardown that loses the movement-complete callback
+      // (the normal path-line eraser); without this call the line is stranded.
+      expect(removePathPos).toBeGreaterThan(-1);
+      expect(freeSlotPos).toBeGreaterThan(-1);
+      expect(removePathPos).toBeLessThan(freeSlotPos);
+    });
+
     it("calls cleanupMovementSourceBucket before freeInstanceSlot", () => {
       const src = readSource("army-manager.ts");
 

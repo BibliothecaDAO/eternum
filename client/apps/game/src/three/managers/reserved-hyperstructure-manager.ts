@@ -7,7 +7,7 @@ import { Color, Material, Matrix4, Mesh, MeshStandardMaterial, Object3D, Scene }
 import { getWorldPositionForHex } from "../utils";
 import { gltfLoader } from "../utils/utils";
 
-const INITIAL_CAPACITY = 32;
+const RESERVED_HYPERSTRUCTURE_CAPACITY = 128;
 const RESERVED_HYPERSTRUCTURE_COLOR = new Color(0xf3cc5b);
 const RESERVED_HYPERSTRUCTURE_OPACITY = 0.42;
 const RESERVED_HYPERSTRUCTURE_Y_OFFSET = 0.05;
@@ -79,7 +79,12 @@ export class ReservedHyperstructureManager {
       }
 
       applyReservedHyperstructureMaterialStyle(gltf);
-      const reservedHyperstructureModel = new InstancedModel(gltf, INITIAL_CAPACITY, false, "ReservedHyperstructure");
+      const reservedHyperstructureModel = new InstancedModel(
+        gltf,
+        RESERVED_HYPERSTRUCTURE_CAPACITY,
+        false,
+        "ReservedHyperstructure",
+      );
       reservedHyperstructureModel.setContactShadowsEnabled(false);
       this.scene.add(reservedHyperstructureModel.group);
       this.reservedHyperstructureModel = reservedHyperstructureModel;
