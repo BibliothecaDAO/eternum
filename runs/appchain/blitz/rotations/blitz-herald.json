@@ -7,14 +7,14 @@
   "gameType": "blitz",
   "rotationName": "blitz-herald",
   "seriesName": "blitz-herald",
-  "status": "running",
+  "status": "attention",
   "executionMode": "fast_trial",
   "requestedLaunchStep": "full",
   "inputPath": "inputs/appchain/blitz/rotations/blitz-herald/32247076688-1.json",
   "latestLaunchRequestId": "32247076688-1",
   "currentStepId": "create-worlds",
   "createdAt": "2026-08-18T20:26:36.073Z",
-  "updatedAt": "2026-08-19T11:21:40.955Z",
+  "updatedAt": "2026-08-19T11:21:53.900Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -26,12 +26,13 @@
   },
   "autoRetry": {
     "enabled": true,
-    "intervalMinutes": 15
+    "intervalMinutes": 15,
+    "nextRetryAt": "2026-08-19T11:36:53.900Z"
   },
   "evaluation": {
     "intervalMinutes": 30,
-    "nextEvaluationAt": "2026-08-19T11:51:33.361Z",
-    "lastEvaluatedAt": "2026-08-19T11:21:33.361Z"
+    "nextEvaluationAt": "2026-08-19T11:51:53.900Z",
+    "lastEvaluatedAt": "2026-08-19T11:21:53.900Z"
   },
   "steps": [
     {
@@ -46,10 +47,12 @@
     {
       "id": "create-worlds",
       "title": "Creating games",
-      "status": "running",
+      "status": "failed",
       "workflowStepName": "Creating games",
-      "latestEvent": "Creating games started",
-      "startedAt": "2026-08-19T11:21:40.955Z"
+      "latestEvent": "Creating games failed: \u001b[2m[+1ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Preparing launch for \"blitz-herald-0002\" on appchain.blitz\n\u001b[2m[+12ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Effective config flags: dev_mode_on=false, duration_seconds=3600, single_realm_mode=false, two_player_mode=false\n\u001b[2m[+12ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Resolved preset 6 for appchain.blitz\n\u001b[2m[+280ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Creating \"blitz-herald-0002\" through the persistent registrar\n[2026-08-19T11:21:48.298Z] ERROR: Insufficient transaction data: found 3 V3 transactions with tips in 3 blocks (block range: 35564-35566). Required: 10 transactions. Consider reducing minTxsNecessary or increasing maxBlocks.\n\u001b[2m[+2.1s]\u001b[0m \u001b[1m\u001b[31mERR\u001b[0m create_game failed after 1.8s: RPC: starknet_addInvokeTransaction with params {\n  \"invoke_transaction\": {\n    \"type\": \"INVOKE\",\n    \"sender_address\": \"0x54b9b1b06e7110f1ef0b0c3467610438311da4680d3c75d557b52788591741\",\n    \"calldata\": [\n      \"0x1\",\n      \"0x27853c5cafdfb2561e47fc0c250b51bc651cb441a3e3a846c99f29ad752b6f0\",\n      \"0x22a60e345c205785ed47074ec6e6f5dd9399ef5f4b480a5c215eb698af15ac5\",\n      \"0x2a\",\n      \"0x626c69747a2d686572616c642d30303032\",\n      \"0x6\",\n      \"0x626c69747a2d686572616c64\",\n      \"0x2\",\n      \"0x6a8591cb\",\n      \"0x6a86de30\",\n      \"0xe10\",\n      \"0x15180\",\n      \"0x258\",\n      \"0x0\",\n      \"0x0\",\n      \"0x0\",\n      \"0x18\",\n      \"0x6a8591ca\",\n      \"0x0\",\n      \"0x0\",\n      \"0x2710\",\n      \"0x2710\",\n      \"0x2710\",\n      \"0x2710\",\n      \"0x0\",\n      \"0x0\",\n      \"0x0\",\n      \"0x2ee\",\n      \"0x3e8\",\n      \"0xbf68\",\n      \"0x0\",\n      \"0x64\",\n      \"0x5dc\",\n      \"0xbd74\",\n      \"0x0\",\n      \"0x1\",\n      \"0x0\",\n      \"0x1\",\n      \"0x0\",\n      \"0x1\",\n      \"0x265c\",\n      \"0x1\",\n      \"0x12c\",\n      \"0xa\",\n      \"0x3\",\n      \"0x6e36b1c8b61c16c9231ab3c845fe78ed2aadd450c0d9288c25532b28e5e17d6\"\n    ],\n    \"signature\": [\n      \"0x20a64db2ac206019748b556d842260148abe5bf1a5cc3ad93d3c3655c56993b\",\n      \"0x2391fcbe4a70e7b7be28af451f1e35b655c2527b0b2411ec7ad78c5a174ce63\"\n    ],\n    \"nonce\": \"0x2ac3\",\n    \"resource_bounds\": {\n      \"l2_gas\": {\n        \"max_amount\": \"0x2579bb6f\",\n        \"max_price_per_unit\": \"0x6fc23ac00\"\n      },\n      \"l1_gas\": {\n        \"max_amount\": \"0x283de\",\n        \"max_price_per_unit\": \"0x6fc23ac00\"\n      },\n      \"l1_data_gas\": {\n        \"max_amount\": \"0x0\",\n        \"max_price_per_unit\": \"0x16e360\"\n      }\n    },\n    \"tip\": \"0x0\",\n    \"paymaster_data\": [],\n    \"nonce_data_availability_mode\": \"L1\",\n    \"fee_data_availability_mode\": \"L1\",\n    \"account_deployment_data\": [],\n    \"version\": \"0x3\"\n  }\n}\n\n      52: Invalid transaction nonce: \"Invalid transaction nonce of contract at address 0x54b9b1b06e7110f1ef0b0c3467610438311da4680d3c75d557b52788591741. Account nonce: 0x2ac4; got: 0x2ac3.\"\nError: 1 rotation or series game failed during create-worlds\n    at runGroupedSeriesLikeGameStep (/home/runner/work/eternum/eternum/config/deployer/clean/launch/series-like-runner.ts:535:15)\n    at processTicksAndRejections (native:7:39)",
+      "startedAt": "2026-08-19T11:21:40.955Z",
+      "finishedAt": "2026-08-19T11:21:53.900Z",
+      "errorMessage": "\u001b[2m[+1ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Preparing launch for \"blitz-herald-0002\" on appchain.blitz\n\u001b[2m[+12ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Effective config flags: dev_mode_on=false, duration_seconds=3600, single_realm_mode=false, two_player_mode=false\n\u001b[2m[+12ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Resolved preset 6 for appchain.blitz\n\u001b[2m[+280ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Creating \"blitz-herald-0002\" through the persistent registrar\n[2026-08-19T11:21:48.298Z] ERROR: Insufficient transaction data: found 3 V3 transactions with tips in 3 blocks (block range: 35564-35566). Required: 10 transactions. Consider reducing minTxsNecessary or increasing maxBlocks.\n\u001b[2m[+2.1s]\u001b[0m \u001b[1m\u001b[31mERR\u001b[0m create_game failed after 1.8s: RPC: starknet_addInvokeTransaction with params {\n  \"invoke_transaction\": {\n    \"type\": \"INVOKE\",\n    \"sender_address\": \"0x54b9b1b06e7110f1ef0b0c3467610438311da4680d3c75d557b52788591741\",\n    \"calldata\": [\n      \"0x1\",\n      \"0x27853c5cafdfb2561e47fc0c250b51bc651cb441a3e3a846c99f29ad752b6f0\",\n      \"0x22a60e345c205785ed47074ec6e6f5dd9399ef5f4b480a5c215eb698af15ac5\",\n      \"0x2a\",\n      \"0x626c69747a2d686572616c642d30303032\",\n      \"0x6\",\n      \"0x626c69747a2d686572616c64\",\n      \"0x2\",\n      \"0x6a8591cb\",\n      \"0x6a86de30\",\n      \"0xe10\",\n      \"0x15180\",\n      \"0x258\",\n      \"0x0\",\n      \"0x0\",\n      \"0x0\",\n      \"0x18\",\n      \"0x6a8591ca\",\n      \"0x0\",\n      \"0x0\",\n      \"0x2710\",\n      \"0x2710\",\n      \"0x2710\",\n      \"0x2710\",\n      \"0x0\",\n      \"0x0\",\n      \"0x0\",\n      \"0x2ee\",\n      \"0x3e8\",\n      \"0xbf68\",\n      \"0x0\",\n      \"0x64\",\n      \"0x5dc\",\n      \"0xbd74\",\n      \"0x0\",\n      \"0x1\",\n      \"0x0\",\n      \"0x1\",\n      \"0x0\",\n      \"0x1\",\n      \"0x265c\",\n      \"0x1\",\n      \"0x12c\",\n      \"0xa\",\n      \"0x3\",\n      \"0x6e36b1c8b61c16c9231ab3c845fe78ed2aadd450c0d9288c25532b28e5e17d6\"\n    ],\n    \"signature\": [\n      \"0x20a64db2ac206019748b556d842260148abe5bf1a5cc3ad93d3c3655c56993b\",\n      \"0x2391fcbe4a70e7b7be28af451f1e35b655c2527b0b2411ec7ad78c5a174ce63\"\n    ],\n    \"nonce\": \"0x2ac3\",\n    \"resource_bounds\": {\n      \"l2_gas\": {\n        \"max_amount\": \"0x2579bb6f\",\n        \"max_price_per_unit\": \"0x6fc23ac00\"\n      },\n      \"l1_gas\": {\n        \"max_amount\": \"0x283de\",\n        \"max_price_per_unit\": \"0x6fc23ac00\"\n      },\n      \"l1_data_gas\": {\n        \"max_amount\": \"0x0\",\n        \"max_price_per_unit\": \"0x16e360\"\n      }\n    },\n    \"tip\": \"0x0\",\n    \"paymaster_data\": [],\n    \"nonce_data_availability_mode\": \"L1\",\n    \"fee_data_availability_mode\": \"L1\",\n    \"account_deployment_data\": [],\n    \"version\": \"0x3\"\n  }\n}\n\n      52: Invalid transaction nonce: \"Invalid transaction nonce of contract at address 0x54b9b1b06e7110f1ef0b0c3467610438311da4680d3c75d557b52788591741. Account nonce: 0x2ac4; got: 0x2ac3.\"\nError: 1 rotation or series game failed during create-worlds\n    at runGroupedSeriesLikeGameStep (/home/runner/work/eternum/eternum/config/deployer/clean/launch/series-like-runner.ts:535:15)\n    at processTicksAndRejections (native:7:39)"
     },
     {
       "id": "wait-for-factory-indexes",
@@ -150,9 +153,9 @@
         "startTimeIso": "2026-08-20T11:00:00.000Z",
         "durationSeconds": 3600,
         "seriesGameNumber": 2,
-        "currentStepId": null,
-        "latestEvent": "Waiting to run",
-        "status": "pending",
+        "currentStepId": "create-worlds",
+        "latestEvent": "RPC: starknet_addInvokeTransaction with params {\n  \"invoke_transaction\": {\n    \"type\": \"INVOKE\",\n    \"sender_address\": \"0x54b9b1b06e7110f1ef0b0c3467610438311da4680d3c75d557b52788591741\",\n    \"calldata\": [\n      \"0x1\",\n      \"0x27853c5cafdfb2561e47fc0c250b51bc651cb441a3e3a846c99f29ad752b6f0\",\n      \"0x22a60e345c205785ed47074ec6e6f5dd9399ef5f4b480a5c215eb698af15ac5\",\n      \"0x2a\",\n      \"0x626c69747a2d686572616c642d30303032\",\n      \"0x6\",\n      \"0x626c69747a2d686572616c64\",\n      \"0x2\",\n      \"0x6a8591cb\",\n      \"0x6a86de30\",\n      \"0xe10\",\n      \"0x15180\",\n      \"0x258\",\n      \"0x0\",\n      \"0x0\",\n      \"0x0\",\n      \"0x18\",\n      \"0x6a8591ca\",\n      \"0x0\",\n      \"0x0\",\n      \"0x2710\",\n      \"0x2710\",\n      \"0x2710\",\n      \"0x2710\",\n      \"0x0\",\n      \"0x0\",\n      \"0x0\",\n      \"0x2ee\",\n      \"0x3e8\",\n      \"0xbf68\",\n      \"0x0\",\n      \"0x64\",\n      \"0x5dc\",\n      \"0xbd74\",\n      \"0x0\",\n      \"0x1\",\n      \"0x0\",\n      \"0x1\",\n      \"0x0\",\n      \"0x1\",\n      \"0x265c\",\n      \"0x1\",\n      \"0x12c\",\n      \"0xa\",\n      \"0x3\",\n      \"0x6e36b1c8b61c16c9231ab3c845fe78ed2aadd450c0d9288c25532b28e5e17d6\"\n    ],\n    \"signature\": [\n      \"0x20a64db2ac206019748b556d842260148abe5bf1a5cc3ad93d3c3655c56993b\",\n      \"0x2391fcbe4a70e7b7be28af451f1e35b655c2527b0b2411ec7ad78c5a174ce63\"\n    ],\n    \"nonce\": \"0x2ac3\",\n    \"resource_bounds\": {\n      \"l2_gas\": {\n        \"max_amount\": \"0x2579bb6f\",\n        \"max_price_per_unit\": \"0x6fc23ac00\"\n      },\n      \"l1_gas\": {\n        \"max_amount\": \"0x283de\",\n        \"max_price_per_unit\": \"0x6fc23ac00\"\n      },\n      \"l1_data_gas\": {\n        \"max_amount\": \"0x0\",\n        \"max_price_per_unit\": \"0x16e360\"\n      }\n    },\n    \"tip\": \"0x0\",\n    \"paymaster_data\": [],\n    \"nonce_data_availability_mode\": \"L1\",\n    \"fee_data_availability_mode\": \"L1\",\n    \"account_deployment_data\": [],\n    \"version\": \"0x3\"\n  }\n}\n\n      52: Invalid transaction nonce: \"Invalid transaction nonce of contract at address 0x54b9b1b06e7110f1ef0b0c3467610438311da4680d3c75d557b52788591741. Account nonce: 0x2ac4; got: 0x2ac3.\"",
+        "status": "failed",
         "configSteps": [],
         "steps": [
           {
@@ -162,8 +165,10 @@
           },
           {
             "id": "create-worlds",
-            "status": "pending",
-            "latestEvent": "Waiting to run"
+            "status": "failed",
+            "latestEvent": "RPC: starknet_addInvokeTransaction with params {\n  \"invoke_transaction\": {\n    \"type\": \"INVOKE\",\n    \"sender_address\": \"0x54b9b1b06e7110f1ef0b0c3467610438311da4680d3c75d557b52788591741\",\n    \"calldata\": [\n      \"0x1\",\n      \"0x27853c5cafdfb2561e47fc0c250b51bc651cb441a3e3a846c99f29ad752b6f0\",\n      \"0x22a60e345c205785ed47074ec6e6f5dd9399ef5f4b480a5c215eb698af15ac5\",\n      \"0x2a\",\n      \"0x626c69747a2d686572616c642d30303032\",\n      \"0x6\",\n      \"0x626c69747a2d686572616c64\",\n      \"0x2\",\n      \"0x6a8591cb\",\n      \"0x6a86de30\",\n      \"0xe10\",\n      \"0x15180\",\n      \"0x258\",\n      \"0x0\",\n      \"0x0\",\n      \"0x0\",\n      \"0x18\",\n      \"0x6a8591ca\",\n      \"0x0\",\n      \"0x0\",\n      \"0x2710\",\n      \"0x2710\",\n      \"0x2710\",\n      \"0x2710\",\n      \"0x0\",\n      \"0x0\",\n      \"0x0\",\n      \"0x2ee\",\n      \"0x3e8\",\n      \"0xbf68\",\n      \"0x0\",\n      \"0x64\",\n      \"0x5dc\",\n      \"0xbd74\",\n      \"0x0\",\n      \"0x1\",\n      \"0x0\",\n      \"0x1\",\n      \"0x0\",\n      \"0x1\",\n      \"0x265c\",\n      \"0x1\",\n      \"0x12c\",\n      \"0xa\",\n      \"0x3\",\n      \"0x6e36b1c8b61c16c9231ab3c845fe78ed2aadd450c0d9288c25532b28e5e17d6\"\n    ],\n    \"signature\": [\n      \"0x20a64db2ac206019748b556d842260148abe5bf1a5cc3ad93d3c3655c56993b\",\n      \"0x2391fcbe4a70e7b7be28af451f1e35b655c2527b0b2411ec7ad78c5a174ce63\"\n    ],\n    \"nonce\": \"0x2ac3\",\n    \"resource_bounds\": {\n      \"l2_gas\": {\n        \"max_amount\": \"0x2579bb6f\",\n        \"max_price_per_unit\": \"0x6fc23ac00\"\n      },\n      \"l1_gas\": {\n        \"max_amount\": \"0x283de\",\n        \"max_price_per_unit\": \"0x6fc23ac00\"\n      },\n      \"l1_data_gas\": {\n        \"max_amount\": \"0x0\",\n        \"max_price_per_unit\": \"0x16e360\"\n      }\n    },\n    \"tip\": \"0x0\",\n    \"paymaster_data\": [],\n    \"nonce_data_availability_mode\": \"L1\",\n    \"fee_data_availability_mode\": \"L1\",\n    \"account_deployment_data\": [],\n    \"version\": \"0x3\"\n  }\n}\n\n      52: Invalid transaction nonce: \"Invalid transaction nonce of contract at address 0x54b9b1b06e7110f1ef0b0c3467610438311da4680d3c75d557b52788591741. Account nonce: 0x2ac4; got: 0x2ac3.\"",
+            "updatedAt": "2026-08-19T11:21:49.714Z",
+            "errorMessage": "RPC: starknet_addInvokeTransaction with params {\n  \"invoke_transaction\": {\n    \"type\": \"INVOKE\",\n    \"sender_address\": \"0x54b9b1b06e7110f1ef0b0c3467610438311da4680d3c75d557b52788591741\",\n    \"calldata\": [\n      \"0x1\",\n      \"0x27853c5cafdfb2561e47fc0c250b51bc651cb441a3e3a846c99f29ad752b6f0\",\n      \"0x22a60e345c205785ed47074ec6e6f5dd9399ef5f4b480a5c215eb698af15ac5\",\n      \"0x2a\",\n      \"0x626c69747a2d686572616c642d30303032\",\n      \"0x6\",\n      \"0x626c69747a2d686572616c64\",\n      \"0x2\",\n      \"0x6a8591cb\",\n      \"0x6a86de30\",\n      \"0xe10\",\n      \"0x15180\",\n      \"0x258\",\n      \"0x0\",\n      \"0x0\",\n      \"0x0\",\n      \"0x18\",\n      \"0x6a8591ca\",\n      \"0x0\",\n      \"0x0\",\n      \"0x2710\",\n      \"0x2710\",\n      \"0x2710\",\n      \"0x2710\",\n      \"0x0\",\n      \"0x0\",\n      \"0x0\",\n      \"0x2ee\",\n      \"0x3e8\",\n      \"0xbf68\",\n      \"0x0\",\n      \"0x64\",\n      \"0x5dc\",\n      \"0xbd74\",\n      \"0x0\",\n      \"0x1\",\n      \"0x0\",\n      \"0x1\",\n      \"0x0\",\n      \"0x1\",\n      \"0x265c\",\n      \"0x1\",\n      \"0x12c\",\n      \"0xa\",\n      \"0x3\",\n      \"0x6e36b1c8b61c16c9231ab3c845fe78ed2aadd450c0d9288c25532b28e5e17d6\"\n    ],\n    \"signature\": [\n      \"0x20a64db2ac206019748b556d842260148abe5bf1a5cc3ad93d3c3655c56993b\",\n      \"0x2391fcbe4a70e7b7be28af451f1e35b655c2527b0b2411ec7ad78c5a174ce63\"\n    ],\n    \"nonce\": \"0x2ac3\",\n    \"resource_bounds\": {\n      \"l2_gas\": {\n        \"max_amount\": \"0x2579bb6f\",\n        \"max_price_per_unit\": \"0x6fc23ac00\"\n      },\n      \"l1_gas\": {\n        \"max_amount\": \"0x283de\",\n        \"max_price_per_unit\": \"0x6fc23ac00\"\n      },\n      \"l1_data_gas\": {\n        \"max_amount\": \"0x0\",\n        \"max_price_per_unit\": \"0x16e360\"\n      }\n    },\n    \"tip\": \"0x0\",\n    \"paymaster_data\": [],\n    \"nonce_data_availability_mode\": \"L1\",\n    \"fee_data_availability_mode\": \"L1\",\n    \"account_deployment_data\": [],\n    \"version\": \"0x3\"\n  }\n}\n\n      52: Invalid transaction nonce: \"Invalid transaction nonce of contract at address 0x54b9b1b06e7110f1ef0b0c3467610438311da4680d3c75d557b52788591741. Account nonce: 0x2ac4; got: 0x2ac3.\""
           },
           {
             "id": "wait-for-factory-indexes",
@@ -181,13 +186,5 @@
     "summaryPath": "/home/runner/work/eternum/eternum/.context/game-launch/rotation-appchain-blitz-blitz-herald.json",
     "seriesCreated": true,
     "seriesCreatedAt": "2026-08-18T20:26:56.860Z"
-  },
-  "activeLease": {
-    "launchRequestId": "32247076688-1",
-    "workflowRunId": 32247076688,
-    "workflowRunAttempt": 1,
-    "stepId": "create-worlds",
-    "acquiredAt": "2026-08-19T11:21:40.955Z",
-    "expiresAt": "2026-08-19T12:06:40.955Z"
   }
 }
