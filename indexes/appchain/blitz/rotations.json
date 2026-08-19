@@ -2,7 +2,7 @@
   "version": 1,
   "environment": "appchain.blitz",
   "kind": "rotation",
-  "updatedAt": "2026-08-19T08:32:19.736Z",
+  "updatedAt": "2026-08-19T08:32:25.839Z",
   "entries": {
     "blitz-herald": {
       "kind": "rotation",
@@ -42,10 +42,11 @@
       "path": "runs/appchain/blitz/rotations/blitz-nightwatch.json",
       "inputPath": "inputs/appchain/blitz/rotations/blitz-nightwatch/32233003625-1.json",
       "status": "running",
-      "updatedAt": "2026-08-19T08:32:19.736Z",
+      "updatedAt": "2026-08-19T08:32:25.839Z",
       "workflowRef": "next",
-      "currentStepId": null,
-      "hasRunningStep": false,
+      "currentStepId": "create-series",
+      "activeLeaseExpiresAt": "2026-08-19T09:17:25.839Z",
+      "hasRunningStep": true,
       "recoverableFailedStepId": null,
       "recoverablePendingStepId": null,
       "autoRetry": {
