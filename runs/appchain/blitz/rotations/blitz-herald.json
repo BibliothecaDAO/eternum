@@ -10,17 +10,17 @@
   "status": "running",
   "executionMode": "fast_trial",
   "requestedLaunchStep": "full",
-  "inputPath": "inputs/appchain/blitz/rotations/blitz-herald/32243440649-1.json",
-  "latestLaunchRequestId": "32243440649-1",
-  "currentStepId": null,
+  "inputPath": "inputs/appchain/blitz/rotations/blitz-herald/32247076688-1.json",
+  "latestLaunchRequestId": "32247076688-1",
+  "currentStepId": "create-worlds",
   "createdAt": "2026-08-18T20:26:36.073Z",
-  "updatedAt": "2026-08-19T10:37:23.696Z",
+  "updatedAt": "2026-08-19T11:21:17.964Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
-    "workflowRunId": 32243440649,
+    "workflowRunId": 32247076688,
     "workflowRunAttempt": 1,
-    "workflowUrl": "https://github.com/BibliothecaDAO/eternum/actions/runs/32243440649",
+    "workflowUrl": "https://github.com/BibliothecaDAO/eternum/actions/runs/32247076688",
     "ref": "next",
     "sha": "6cfb79d188d4fd1d174528218361499468a26e66"
   },
@@ -30,8 +30,8 @@
   },
   "evaluation": {
     "intervalMinutes": 30,
-    "nextEvaluationAt": "2026-08-19T11:07:23.696Z",
-    "lastEvaluatedAt": "2026-08-19T10:37:23.696Z"
+    "nextEvaluationAt": "2026-08-19T11:51:17.964Z",
+    "lastEvaluatedAt": "2026-08-19T11:21:17.964Z"
   },
   "steps": [
     {
@@ -39,27 +39,21 @@
       "title": "Creating series",
       "status": "succeeded",
       "workflowStepName": "Creating series",
-      "latestEvent": "Series is ready to accept rotation games",
-      "startedAt": "2026-08-19T10:36:47.109Z",
-      "finishedAt": "2026-08-19T10:36:51.554Z"
+      "latestEvent": "Series is ready to accept rotation games"
     },
     {
       "id": "create-worlds",
       "title": "Creating games",
-      "status": "succeeded",
+      "status": "pending",
       "workflowStepName": "Creating games",
-      "latestEvent": "Creating games is complete",
-      "startedAt": "2026-08-19T10:36:59.600Z",
-      "finishedAt": "2026-08-19T10:37:10.637Z"
+      "latestEvent": "Waiting to run"
     },
     {
       "id": "wait-for-factory-indexes",
       "title": "Waiting for games",
-      "status": "succeeded",
+      "status": "pending",
       "workflowStepName": "Waiting for games",
-      "latestEvent": "Waiting for games is complete",
-      "startedAt": "2026-08-19T10:37:19.164Z",
-      "finishedAt": "2026-08-19T10:37:23.696Z"
+      "latestEvent": "Waiting to run"
     }
   ],
   "summary": {
@@ -146,6 +140,35 @@
           "worldAddress": "0x78ff85ac450bb559c97966b64666fd5292f4a98756a607349d9f93f4563bdd2",
           "createGameTxHash": "0x451b1d59ad7321a95fad5a19ba97667c30d62586d9400c215a46fc9ee75c7c9"
         }
+      },
+      {
+        "gameName": "blitz-herald-0002",
+        "startTime": 1787223600,
+        "startTimeIso": "2026-08-20T11:00:00.000Z",
+        "durationSeconds": 3600,
+        "seriesGameNumber": 2,
+        "currentStepId": null,
+        "latestEvent": "Waiting to run",
+        "status": "pending",
+        "configSteps": [],
+        "steps": [
+          {
+            "id": "create-series",
+            "status": "pending",
+            "latestEvent": "Waiting to run"
+          },
+          {
+            "id": "create-worlds",
+            "status": "pending",
+            "latestEvent": "Waiting to run"
+          },
+          {
+            "id": "wait-for-factory-indexes",
+            "status": "pending",
+            "latestEvent": "Waiting to run"
+          }
+        ],
+        "artifacts": {}
       }
     ],
     "outputPath": "/home/runner/work/eternum/eternum/.context/game-launch/rotation-appchain-blitz-blitz-herald.json",
