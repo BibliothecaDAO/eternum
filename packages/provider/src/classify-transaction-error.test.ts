@@ -102,4 +102,52 @@ describe("extractErrorMessage", () => {
     );
     expect(extractErrorMessage({ weird: true }, "fallback")).toBe("fallback");
   });
+
+  // Shapes pinned from the Aug 19 playtest: the controller wraps katana's
+  // submission-time rejection as {code: 41, message: "An error occurred
+  // (TRANSACTION_EXECUTION_ERROR)", data: <Cairo trace>}. The wrapper must
+  // classify as generic or the extractor returns it and the real revert
+  // (which the automation resync predicate keys on) never surfaces.
+  describe("Cartridge 'An error occurred (<CODE>)' wrapper", () => {
+    const WRAPPER = "An error occurred (TRANSACTION_EXECUTION_ERROR)";
+    const REVERT = "Insufficient Balance: COPPER (id: 32230, balance: 210000000000) < 796000000000";
+    // data as the raw JSON text katana returns: \" and \n are escape
+    // sequences inside the string, exactly as they appear on the wire.
+    const RAW_JSON_TRACE =
+      'Transaction execution error: {"execution_error":"Transaction execution has failed:\\n' +
+      "0: Error in the called contract (contract address: 0x015b24, class hash: 0x0743c8, selector: 0x015d40):\\n" +
+      "Execution failed. Failure reason:\\n" +
+      "(0x617267656e742f6d756c746963616c6c2d6661696c6564 ('argent/multicall-failed'), 0x0 (''), " +
+      `\\"${REVERT}\\", 0x454e545259504f494e545f4641494c4544 ('ENTRYPOINT_FAILED')).\\n",` +
+      '"transaction_index":0}';
+
+    it("digs past the wrapper into a raw-JSON trace in data and skips the multicall frame", () => {
+      expect(extractErrorMessage({ code: 41, message: WRAPPER, data: RAW_JSON_TRACE })).toBe(REVERT);
+    });
+
+    it("digs past the wrapper into a parsed execution_error object in data", () => {
+      const parsedTrace = {
+        execution_error:
+          "Transaction execution has failed:\nExecution failed. Failure reason:\n" +
+          `(0x617267656e742f6d756c746963616c6c2d6661696c6564 ('argent/multicall-failed'), 0x0 (''), "${REVERT}", ` +
+          "0x454e545259504f494e545f4641494c4544 ('ENTRYPOINT_FAILED')).",
+      };
+      expect(extractErrorMessage({ code: 41, message: WRAPPER, data: parsedTrace })).toBe(REVERT);
+    });
+
+    it("returns the fallback, never the wrapper, when data carries no trace", () => {
+      expect(extractErrorMessage({ code: 41, message: WRAPPER }, "fallback")).toBe("fallback");
+    });
+
+    it("classifies the wrapped code-41 error as reverted with the real reason", () => {
+      const classified = classifyTransactionError({ code: 41, message: WRAPPER, data: RAW_JSON_TRACE });
+      expect(classified.kind).toBe("reverted");
+      expect(classified.reason).toBe(REVERT);
+    });
+
+    it("extracts the revert from a raw starknet.js estimateFee rejection (preflight abort path)", () => {
+      const estimateError = new Error(`RPC: starknet_estimateFee with params {}\n\n 41: ${RAW_JSON_TRACE}`);
+      expect(extractErrorMessage(estimateError)).toBe(REVERT);
+    });
+  });
 });
