@@ -50,8 +50,16 @@ export const gameModel = (name: string): string => `${activeNamespace}-${name}`;
  */
 export const appchainModel = (name: string): string => `${namespaceForChain("appchain")}-${name}`;
 
+/**
+ * Torii KeysClause slot encoding: keys MUST be unpadded hex. Decimal key
+ * strings do not survive the grpc key encoding and match nothing — the Aug 10
+ * Building-clause incident, later found again in getEntitiesFromTorii. Every
+ * clause key goes through this one encoder.
+ */
+export const hexKey = (value: number | bigint): string => `0x${BigInt(value).toString(16)}`;
+
 /** The active game id as a KeysClause key slot (unpadded hex — D16-pinned encoding). */
-export const gameIdKey = (): string => `0x${activeGameId.toString(16)}`;
+export const gameIdKey = (): string => hexKey(activeGameId);
 
 /**
  * RECS entity keys for per-game models (gameEntityKey, buildingEntityKey) and

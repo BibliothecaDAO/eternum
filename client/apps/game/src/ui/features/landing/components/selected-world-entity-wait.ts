@@ -1,4 +1,4 @@
-import { namespaceForChain } from "@/dojo/game-scope";
+import { hexKey, namespaceForChain } from "@/dojo/game-scope";
 import { resolveAppchainWorldIdForGame } from "@/runtime/world/game-registry";
 import { buildWorldProfile } from "@/runtime/world/profile-builder";
 import { getDefaultWorld, getWorldById } from "@/runtime/world/world-directory";
@@ -84,7 +84,7 @@ const resolveEntitySubscriptionTarget = async ({
 };
 
 const buildSelectedWorldEntityClause = (target: EntitySubscriptionTarget, modelNames: readonly string[]): Clause => {
-  const scopedKey = target.gameId && target.gameId > 0 ? `0x${target.gameId.toString(16)}` : undefined;
+  const scopedKey = target.gameId && target.gameId > 0 ? hexKey(target.gameId) : undefined;
   return buildGameSyncModelKeysClause(
     modelNames.map((modelName) => ({
       model: `${target.namespace}-${modelName}`,

@@ -12,7 +12,7 @@ import {
   debouncedGetOwnedArmiesFromTorii,
 } from "./debounced-queries";
 import { fetchEntitiesIntoGameSync } from "./gamewide-sync-adapter";
-import { gameIdKey, gameModel, getScopedGameId, isGameScoped } from "./game-scope";
+import { gameIdKey, gameModel, getScopedGameId, hexKey, isGameScoped } from "./game-scope";
 
 const CONFIG_FETCH_CACHE_PREFIX = "eternum:config-fetched";
 
@@ -144,6 +144,7 @@ export const getConfigFromTorii = async (client: ToriiClient, onBackgroundRefres
       "BlitzSettlement",
       "BlitzEntryTokenRegister",
       "PlayersRankTrial",
+      "PlayersRankFinal",
       "MMRGameMeta",
       "PlayerRank",
       "RankPrize",
@@ -332,8 +333,9 @@ export const getEntitiesFromTorii = async (client: ToriiClient, entityIDs: ID[],
     return;
   }
 
-  // s2 per-game models key entities as (game_id, entity_id, ...).
-  const entityKeys = (id: ID): string[] => (isGameScoped() ? [gameIdKey(), id.toString()] : [id.toString()]);
+  // s2 per-game models key entities as (game_id, entity_id, ...). Keys must be
+  // hex — a decimal id string matches nothing (see hexKey).
+  const entityKeys = (id: ID): string[] => (isGameScoped() ? [gameIdKey(), hexKey(id)] : [hexKey(id)]);
 
   const query =
     validEntityIDs.length === 1
@@ -440,8 +442,8 @@ export const getBuildingsFromTorii = async (client: ToriiClient, structurePositi
           // so match it exactly: a mid-pattern undefined wildcard does not
           // survive the grpc key encoding and matches nothing.
           keys: isGameScoped()
-            ? [gameIdKey(), "0x0", `0x${position.col.toString(16)}`, `0x${position.row.toString(16)}`]
-            : [`0x${position.col.toString(16)}`, `0x${position.row.toString(16)}`],
+            ? [gameIdKey(), hexKey(0), hexKey(position.col), hexKey(position.row)]
+            : [hexKey(position.col), hexKey(position.row)],
           pattern_matching: "VariableLen" as PatternMatching,
           models: [buildingModel],
         },

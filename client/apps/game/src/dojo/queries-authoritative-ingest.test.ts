@@ -40,7 +40,9 @@ describe("targeted Torii query ingest", () => {
       expect.objectContaining({
         clause: {
           Keys: {
-            keys: ["0xf", "10775"],
+            // Keys must be hex: a decimal id string does not survive the grpc
+            // key encoding and matches nothing (10775 = 0x2a17).
+            keys: ["0xf", "0x2a17"],
             pattern_matching: "VariableLen",
             models: [],
           },
