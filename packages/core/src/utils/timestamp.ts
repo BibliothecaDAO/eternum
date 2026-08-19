@@ -78,9 +78,11 @@ export const getConservativeBlockTimestamp = () => {
 };
 
 /**
- * Projection tick for automation plan building. Uses a deeper buffer than the
- * default conservative accessor so the projected balance stays behind what the
- * chain will report at tx-inclusion time, preventing Insufficient Balance reverts.
+ * Projection tick for automation plan building. Carries a slightly deeper
+ * jitter belt than the UI accessor, but reverts are NOT prevented here: the
+ * projection can diverge from chain lazy-harvest math regardless of buffer
+ * depth, and automation repairs that with its revert→resync chokepoint
+ * (see CONSERVATIVE_TICK_BUFFER_AUTOMATION).
  */
 export const getAutomationProjectionTick = () => {
   const { currentBlockTimestamp, currentDefaultTick, currentArmiesTick } = getBlockTimestamp();

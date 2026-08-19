@@ -129,28 +129,6 @@ export const getStructuresDataFromTorii = async (
   return Promise.all([structuresPromise, armiesPromise, buildingsPromise]);
 };
 
-/**
- * Promise form of getStructuresDataFromTorii: resolves when all three
- * sub-queries (structures, armies, buildings) have landed in RECS.
- */
-export const syncStructuresDataFromTorii = (
-  client: ToriiClient,
-  structures: { entityId: ID; position: HexPosition }[],
-): Promise<void> =>
-  new Promise<void>((resolve, reject) => {
-    let settled = false;
-    const complete = () => {
-      if (settled) return;
-      settled = true;
-      resolve();
-    };
-    void getStructuresDataFromTorii(client, structures, complete).catch((error) => {
-      if (settled) return;
-      settled = true;
-      reject(error);
-    });
-  });
-
 export const getConfigFromTorii = async (client: ToriiClient, onBackgroundRefresh?: () => void) => {
   let configModels: string[];
   let configClauses: Clause[];

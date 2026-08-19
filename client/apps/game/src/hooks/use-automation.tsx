@@ -41,10 +41,10 @@ import { useCallback, useEffect, useRef } from "react";
 import { toast } from "sonner";
 import { isVillageLikeStructureCategory } from "@/ui/lib/structure-capabilities";
 import { extractReadableErrorMessage } from "@/utils/error-message";
-import { syncStructuresDataFromTorii } from "@/dojo/queries";
-import { gameEntityKey } from "@/dojo/game-scope";
-import { getComponentValue } from "@dojoengine/recs";
-import type { ClientComponents, ID } from "@bibliothecadao/types";
+import { isInsufficientResourceBalanceRevert } from "@bibliothecadao/provider/errors";
+import { getEntitiesFromTorii } from "@/dojo/queries";
+import { gameModel } from "@/dojo/game-scope";
+import type { ClientComponents } from "@bibliothecadao/types";
 import type { ToriiClient } from "@dojoengine/torii-client";
 
 const resolveResourceLabel = (resourceId: number): string => {
@@ -52,62 +52,55 @@ const resolveResourceLabel = (resourceId: number): string => {
   return typeof label === "string" ? label : `Resource ${resourceId}`;
 };
 
-const isInsufficientBalanceRevert = (message: string): boolean =>
-  message.toLowerCase().includes("insufficient balance");
-
-// An Insufficient Balance revert proves the local projection overshot the
-// chain (the Aug 19 playtest showed the gap grows over time with no player
-// transactions — no fixed buffer can absorb it). Pull the realm's
-// authoritative rows back into RECS so the next pass plans from chain truth,
-// which resets the projection error to zero, and log the per-input divergence:
-// the delta is the evidence that names whatever rate the projection got wrong.
-async function resyncRealmAfterInsufficientBalanceRevert(input: {
-  toriiClient: ToriiClient | undefined;
-  components: ClientComponents;
-  realmId: ID;
-  realmLabel: string;
-  plan: RealmProductionPlan;
-  preRevertSnapshot: RealmResourceSnapshot;
-}): Promise<void> {
-  const { toriiClient, components, realmId, realmLabel, plan, preRevertSnapshot } = input;
-  if (!toriiClient) return;
-
-  const structure = getComponentValue(components.Structure, gameEntityKey([BigInt(realmId)]));
-  if (!structure) return;
-
-  try {
-    await syncStructuresDataFromTorii(toriiClient, [
-      { entityId: realmId, position: { col: structure.base.coord_x, row: structure.base.coord_y } },
-    ]);
-  } catch (error) {
-    console.warn(`[Automation] Post-revert resync failed for ${realmLabel}`, error);
-    return;
-  }
-
-  const { currentDefaultTick } = getAutomationProjectionTick();
-  const freshSnapshot = buildRealmResourceSnapshot({
-    components,
-    realmId: Number(realmId),
-    currentTick: currentDefaultTick,
-  });
-  const divergence = Object.entries(plan.consumptionByResource).map(([resourceId, plannedSpend]) => {
+const buildProjectionDivergenceReport = (
+  plan: RealmProductionPlan,
+  preRevertSnapshot: RealmResourceSnapshot,
+  freshSnapshot: RealmResourceSnapshot,
+) =>
+  Object.entries(plan.consumptionByResource).map(([resourceId, plannedSpend]) => {
     const id = Number(resourceId);
     const projectedBalance = preRevertSnapshot.get(id)?.balanceHuman;
-    const chainBalance = freshSnapshot.get(id)?.balanceHuman;
+    const resyncedBalance = freshSnapshot.get(id)?.balanceHuman;
     return {
       resource: resolveResourceLabel(id),
       plannedSpend,
       projectedBalance,
-      chainBalance,
+      resyncedBalance,
       projectionOvershoot:
-        typeof projectedBalance === "number" && typeof chainBalance === "number"
-          ? Number((projectedBalance - chainBalance).toFixed(2))
+        typeof projectedBalance === "number" && typeof resyncedBalance === "number"
+          ? Number((projectedBalance - resyncedBalance).toFixed(2))
           : undefined,
     };
   });
+
+// An Insufficient Balance revert proves the local projection overshot the
+// chain (the Aug 19 playtest showed the gap grows over time with no player
+// transactions — no fixed buffer can absorb it). Refetch the realm's Resource
+// rows into RECS so the next pass plans from fresh stored rows, and log the
+// per-input divergence. Reading the report: a large overshoot names the rate
+// the projection got wrong; ~0 overshoot with reverts persisting means the
+// stored rows were already current and the divergence lives in the projection
+// math itself — the next lane to fix.
+async function resyncRealmAfterInsufficientBalanceRevert(input: {
+  toriiClient: ToriiClient;
+  components: ClientComponents;
+  realmLabel: string;
+  plan: RealmProductionPlan;
+  preRevertSnapshot: RealmResourceSnapshot;
+}): Promise<void> {
+  const { toriiClient, components, realmLabel, plan, preRevertSnapshot } = input;
+
+  await getEntitiesFromTorii(toriiClient, [plan.realmId], [gameModel("Resource")]);
+
+  const { currentDefaultTick } = getAutomationProjectionTick();
+  const freshSnapshot = buildRealmResourceSnapshot({
+    components,
+    realmId: Number(plan.realmId),
+    currentTick: currentDefaultTick,
+  });
   console.warn(
-    `[Automation] Insufficient-balance revert for ${realmLabel} — realm resynced from chain, next pass plans from chain truth. Projection overshoot per input:`,
-    divergence,
+    `[Automation] Insufficient-balance revert for ${realmLabel} — Resource rows refetched; next pass plans from the resynced rows. Projection overshoot per input:`,
+    buildProjectionDivergenceReport(plan, preRevertSnapshot, freshSnapshot),
   );
 }
 
@@ -219,11 +212,17 @@ export const useAutomation = () => {
 
   const isGameOver = useCallback(
     (blockTimestampSeconds?: number) => {
+      // The registry status flips to Ended/Settled the moment a season-close
+      // or settle tx lands — including EARLY closes (points win before end_at)
+      // — so it must win over the timestamp check, and it also covers unscoped
+      // boots where the UI store's gameEndAt never hydrated. This closes the
+      // "Season is over" revert loop from automation submitting into an ended
+      // game.
+      if (configManager.isGameOver()) {
+        return true;
+      }
       if (typeof gameEndAt !== "number") {
-        // The UI store's end timestamp can be missing (unscoped boots). The
-        // game-registry status is the authoritative backstop so automation can
-        // never keep submitting into an ended game ("Season is over" reverts).
-        return configManager.isGameOver();
+        return false;
       }
       const timestamp =
         typeof blockTimestampSeconds === "number" ? blockTimestampSeconds : getBlockTimestamp().currentBlockTimestamp;
@@ -628,14 +627,18 @@ export const useAutomation = () => {
             }
           } else {
             toast.error(`Automation failed for ${realmLabel}: ${errorMessage}`);
-            if (isInsufficientBalanceRevert(errorMessage)) {
-              await resyncRealmAfterInsufficientBalanceRevert({
+            if (isInsufficientResourceBalanceRevert(errorMessage)) {
+              // Fire-and-forget: the resync only matters for the NEXT pass, so
+              // it must not block the remaining realms in this pass (or wedge
+              // processingRef on a hung fetch).
+              void resyncRealmAfterInsufficientBalanceRevert({
                 toriiClient,
                 components,
-                realmId: plan.realmId,
                 realmLabel,
                 plan,
                 preRevertSnapshot: snapshot,
+              }).catch((error) => {
+                console.warn(`[Automation] Post-revert resync failed for ${realmLabel}`, error);
               });
             }
           }

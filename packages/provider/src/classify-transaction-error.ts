@@ -312,6 +312,15 @@ export const extractErrorMessage = (error: unknown, fallback = "Unknown error"):
   return fallback;
 };
 
+/**
+ * The game's resource assert reverts with "Insufficient Balance: {RESOURCE}
+ * (id: N, balance: N) < N" (contracts models/resource). The trailing colon
+ * distinguishes it from Cartridge fee-token errors (codes 53/54/113), which
+ * classify as insufficient_funds and must not trigger game-state repairs.
+ */
+export const isInsufficientResourceBalanceRevert = (message: string): boolean =>
+  message.toLowerCase().includes("insufficient balance:");
+
 export type TransactionErrorKind =
   | "user_cancelled"
   | "session_invalid"
