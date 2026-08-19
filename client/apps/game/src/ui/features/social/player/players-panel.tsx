@@ -25,7 +25,7 @@ import { gameEntityKey } from "@/dojo/game-scope";
 const SOCIAL_LEADERBOARD_LIMIT = 1000;
 
 const buildActivityBreakdownLookup = (entries: PlayerLeaderboardActivityEntry[]) =>
-  new Map(entries.map((entry) => [normalizeLeaderboardAddress(entry.address), entry.activityBreakdown]));
+  new Map(entries.map((entry) => [normalizeLeaderboardAddress(entry.address), entry]));
 
 export const PlayersPanel = ({
   players,
@@ -52,7 +52,7 @@ export const PlayersPanel = ({
   const [searchTerm, setSearchTerm] = useState("");
   const [showPointsBreakdown, setShowPointsBreakdown] = useState(false);
   const [activityBreakdownsByAddress, setActivityBreakdownsByAddress] = useState(
-    () => new Map<string, PlayerLeaderboardActivityEntry["activityBreakdown"]>(),
+    () => new Map<string, PlayerLeaderboardActivityEntry>(),
   );
   const [isActivityBreakdownFetching, setIsActivityBreakdownFetching] = useState(false);
   const mode = useGameModeConfig();
@@ -108,9 +108,21 @@ export const PlayersPanel = ({
               ?.whitelisted ?? false;
         }
         const standing = standingsByAddress.get(normalizeLeaderboardAddress(player.address));
-        const rank = standing?.rank ?? (isFinalized ? Number.MAX_SAFE_INTEGER : player.rank);
-        const points = standing?.points ?? (isFinalized ? 0 : player.points);
-        const activityBreakdown = activityBreakdownsByAddress.get(normalizeLeaderboardAddress(player.address)) ?? null;
+        const activityEntry = activityBreakdownsByAddress.get(normalizeLeaderboardAddress(player.address)) ?? null;
+
+        // Finalized games rank by the on-chain final standings. Live games rank
+        // by the SQL leaderboard total — the same source as the breakdown
+        // columns, so POINTS is always the sum of what the row displays (owner
+        // ruling). The RECS standing is only the pre-fetch fallback.
+        const liveRank = activityEntry?.rank ?? standing?.rank ?? player.rank;
+        const livePoints = activityEntry?.totalPoints ?? standing?.points ?? player.points;
+        const rank = isFinalized ? (standing?.rank ?? Number.MAX_SAFE_INTEGER) : liveRank;
+        const points = isFinalized ? (standing?.points ?? 0) : livePoints;
+        const includesLiveShareholderPoints = isFinalized
+          ? false
+          : activityEntry
+            ? activityEntry.activityBreakdown.hyperstructureShare.points > 0
+            : (standing?.includesLiveShareholderPoints ?? false);
 
         return {
           ...player,
@@ -120,8 +132,8 @@ export const PlayersPanel = ({
           rank,
           isInvited,
           guild,
-          activityBreakdown,
-          includesLiveShareholderPoints: standing?.includesLiveShareholderPoints ?? false,
+          activityBreakdown: activityEntry?.activityBreakdown ?? null,
+          includesLiveShareholderPoints,
         };
       });
     return playersWithStructures;

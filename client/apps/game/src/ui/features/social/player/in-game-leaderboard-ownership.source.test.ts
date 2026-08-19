@@ -23,13 +23,19 @@ describe("in-game leaderboard fact ownership", () => {
     expect(rankPillSources[1]).toContain("useInGameLeaderboard");
   });
 
-  it("uses SQL only for the in-session immutable-history activity breakdown", () => {
+  it("feeds the live leaderboard row from the one SQL aggregate; finalized standings stay on RECS", () => {
     const panelSource = readSource("src/ui/features/social/player/players-panel.tsx");
     const playerListSource = readSource("src/ui/features/social/player/player-list.tsx");
     const activityServiceSource = readSource("src/services/leaderboard/player-activity-breakdown-service.ts");
 
+    // Owner ruling (Aug 2026): in a LIVE game, the POINTS/RANK columns display
+    // the same SQL leaderboard aggregate that feeds the breakdown columns, so a
+    // row's total is always the sum of what it shows. Finalized games keep the
+    // RECS-backed final standings, and tx flows (register/claim) stay on RECS.
     expect(panelSource).toContain("useInGameLeaderboard");
     expect(panelSource).toContain("fetchLeaderboardActivityBreakdowns");
+    expect(panelSource).toContain("activityEntry?.totalPoints");
+    expect(panelSource).toContain("isFinalized ? (standing?.points ?? 0)");
     expect(panelSource).not.toContain("setInterval");
     expect(panelSource).not.toContain("useLandingLeaderboardStore");
     expect(panelSource).not.toContain("LandingLeaderboardEntry");
@@ -38,7 +44,7 @@ describe("in-game leaderboard fact ownership", () => {
     expect(playerListSource).not.toContain("leaderboardRankOverride");
     expect(playerListSource).not.toContain("leaderboardPointsOverride");
     expect(activityServiceSource).toContain("row.activityBreakdown");
+    expect(activityServiceSource).toContain("row.totalPoints");
     expect(activityServiceSource).not.toContain("row.registeredPoints");
-    expect(activityServiceSource).not.toContain("row.rank");
   });
 });
