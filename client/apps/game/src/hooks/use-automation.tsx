@@ -41,11 +41,75 @@ import { useCallback, useEffect, useRef } from "react";
 import { toast } from "sonner";
 import { isVillageLikeStructureCategory } from "@/ui/lib/structure-capabilities";
 import { extractReadableErrorMessage } from "@/utils/error-message";
+import { syncStructuresDataFromTorii } from "@/dojo/queries";
+import { gameEntityKey } from "@/dojo/game-scope";
+import { getComponentValue } from "@dojoengine/recs";
+import type { ClientComponents, ID } from "@bibliothecadao/types";
+import type { ToriiClient } from "@dojoengine/torii-client";
 
 const resolveResourceLabel = (resourceId: number): string => {
   const label = ResourcesIds[resourceId as ResourcesIds];
   return typeof label === "string" ? label : `Resource ${resourceId}`;
 };
+
+const isInsufficientBalanceRevert = (message: string): boolean =>
+  message.toLowerCase().includes("insufficient balance");
+
+// An Insufficient Balance revert proves the local projection overshot the
+// chain (the Aug 19 playtest showed the gap grows over time with no player
+// transactions — no fixed buffer can absorb it). Pull the realm's
+// authoritative rows back into RECS so the next pass plans from chain truth,
+// which resets the projection error to zero, and log the per-input divergence:
+// the delta is the evidence that names whatever rate the projection got wrong.
+async function resyncRealmAfterInsufficientBalanceRevert(input: {
+  toriiClient: ToriiClient | undefined;
+  components: ClientComponents;
+  realmId: ID;
+  realmLabel: string;
+  plan: RealmProductionPlan;
+  preRevertSnapshot: RealmResourceSnapshot;
+}): Promise<void> {
+  const { toriiClient, components, realmId, realmLabel, plan, preRevertSnapshot } = input;
+  if (!toriiClient) return;
+
+  const structure = getComponentValue(components.Structure, gameEntityKey([BigInt(realmId)]));
+  if (!structure) return;
+
+  try {
+    await syncStructuresDataFromTorii(toriiClient, [
+      { entityId: realmId, position: { col: structure.base.coord_x, row: structure.base.coord_y } },
+    ]);
+  } catch (error) {
+    console.warn(`[Automation] Post-revert resync failed for ${realmLabel}`, error);
+    return;
+  }
+
+  const { currentDefaultTick } = getAutomationProjectionTick();
+  const freshSnapshot = buildRealmResourceSnapshot({
+    components,
+    realmId: Number(realmId),
+    currentTick: currentDefaultTick,
+  });
+  const divergence = Object.entries(plan.consumptionByResource).map(([resourceId, plannedSpend]) => {
+    const id = Number(resourceId);
+    const projectedBalance = preRevertSnapshot.get(id)?.balanceHuman;
+    const chainBalance = freshSnapshot.get(id)?.balanceHuman;
+    return {
+      resource: resolveResourceLabel(id),
+      plannedSpend,
+      projectedBalance,
+      chainBalance,
+      projectionOvershoot:
+        typeof projectedBalance === "number" && typeof chainBalance === "number"
+          ? Number((projectedBalance - chainBalance).toFixed(2))
+          : undefined,
+    };
+  });
+  console.warn(
+    `[Automation] Insufficient-balance revert for ${realmLabel} — realm resynced from chain, next pass plans from chain truth. Projection overshoot per input:`,
+    divergence,
+  );
+}
 
 const labelResourceRecord = (record: Record<number, number>) =>
   Object.entries(record).map(([resourceId, amount]) => ({
@@ -109,6 +173,7 @@ export const useAutomation = () => {
     setup: {
       systemCalls: { execute_realm_production_plan },
       components,
+      network: { toriiClient },
     },
     account: { account: starknetSignerAccount },
   } = useDojo();
@@ -155,7 +220,10 @@ export const useAutomation = () => {
   const isGameOver = useCallback(
     (blockTimestampSeconds?: number) => {
       if (typeof gameEndAt !== "number") {
-        return false;
+        // The UI store's end timestamp can be missing (unscoped boots). The
+        // game-registry status is the authoritative backstop so automation can
+        // never keep submitting into an ended game ("Season is over" reverts).
+        return configManager.isGameOver();
       }
       const timestamp =
         typeof blockTimestampSeconds === "number" ? blockTimestampSeconds : getBlockTimestamp().currentBlockTimestamp;
@@ -560,6 +628,16 @@ export const useAutomation = () => {
             }
           } else {
             toast.error(`Automation failed for ${realmLabel}: ${errorMessage}`);
+            if (isInsufficientBalanceRevert(errorMessage)) {
+              await resyncRealmAfterInsufficientBalanceRevert({
+                toriiClient,
+                components,
+                realmId: plan.realmId,
+                realmLabel,
+                plan,
+                preRevertSnapshot: snapshot,
+              });
+            }
           }
         }
       }
@@ -582,6 +660,7 @@ export const useAutomation = () => {
     starknetSignerAccount,
     getRealmConfig,
     isGameOver,
+    toriiClient,
   ]);
 
   const runAutomationIfDue = useCallback(async () => {
