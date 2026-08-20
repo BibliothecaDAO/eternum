@@ -16,27 +16,26 @@ describe("worldmap frame-budget work queue wiring", () => {
 
   it("routes terrain, manager catch-up, and prefetch preparation through that queue", () => {
     expect(worldmapSource).toContain("this.schedulePreparedTerrainCommit(request.priority, preparedTerrain");
-    expect(worldmapSource).toContain("this.chunkWorkQueue.schedule(workLane, processWorkUnit)");
+    expect(worldmapSource).toContain("`terrain:${workLane}-page-build`");
+    expect(worldmapSource).toContain("`terrain:${workLane}-commit`");
+    expect(worldmapSource).toContain("`terrain:${workLane}-prepare`");
+    expect(worldmapSource).toContain('"terrain:hex-grid"');
     expect(worldmapSource).toContain(
       'this.prepareTerrainChunk(targetStartRow, targetStartCol, height, width, "prefetch")',
     );
     expect(worldmapSource).not.toContain("requestAnimationFrame(processFrame)");
     expect(worldmapSource.match(/this\.chunkWorkQueue,/g)).toHaveLength(3);
-    expect(armyManagerSource).toContain(
-      'scheduleFrameBudgetWork(this.chunkWorkScheduler, "critical", () => this.ensureArmyPresentation(renderable))',
-    );
+    expect(armyManagerSource).toContain('"manager:army-projection"');
+    expect(armyManagerSource).toContain('"manager:army-visibility"');
+    expect(armyManagerSource).toContain('"manager:army-entering"');
     expect(armyManagerSource.indexOf("await this.preloadMissingProjectedArmyModels(renderables)")).toBeLessThan(
-      armyManagerSource.indexOf(
-        'scheduleFrameBudgetWork(this.chunkWorkScheduler, "critical", () => this.ensureArmyPresentation(renderable))',
-      ),
+      armyManagerSource.indexOf('"manager:army-entering"'),
     );
     expect(
       armyManagerSource.indexOf(".then(() => this.preloadMissingProjectedArmyModelsForEntity(entityId))"),
-    ).toBeLessThan(armyManagerSource.indexOf('scheduleFrameBudgetWork(this.chunkWorkScheduler, "visible"'));
+    ).toBeLessThan(armyManagerSource.indexOf('"manager:army-projection"'));
     expect(structureManagerSource).toMatch(/await this\.requestVisibleStructuresRefresh\(\s*"critical",/);
-    expect(structureManagerSource).toContain("await scheduleFrameBudgetWork(this.chunkWorkScheduler, workLane");
-    expect(chestManagerSource).toContain(
-      "scheduleFrameBudgetWork(this.chunkWorkScheduler, workLane, () => this.renderVisibleChests(chunkKey))",
-    );
+    expect(structureManagerSource).toContain('"manager:structure-visibility"');
+    expect(chestManagerSource).toContain('"manager:chest-visibility"');
   });
 });

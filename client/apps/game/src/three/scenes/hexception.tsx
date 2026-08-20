@@ -40,6 +40,7 @@ import {
 } from "@/three/scenes/hexception-building-reconciliation";
 import { playBuildingSound } from "@/three/sound/utils";
 import { MatrixPool } from "@/three/utils/matrix-pool";
+import { collectObjectTextures } from "@/three/utils/material-textures";
 import { markInstancedAttributeRangeDirty } from "@/three/utils/instanced-attribute-update-range";
 import {
   navigateToStructure,
@@ -103,6 +104,7 @@ import {
   Object3D,
   Raycaster,
   Sphere,
+  type Texture,
   Vector2,
   Vector3,
 } from "three";
@@ -523,6 +525,16 @@ export default class HexceptionScene extends HexagonScene {
         this.modelLoadPromises.push(loadPromise);
       }
     }
+  }
+
+  public async resolveLocalViewTextures(): Promise<Texture[]> {
+    await Promise.allSettled([...this.modelLoadPromises]);
+
+    const textures = collectObjectTextures(this.scene);
+    this.buildingModels.forEach((category) => {
+      category.forEach(({ model }) => collectObjectTextures(model, textures));
+    });
+    return [...textures];
   }
 
   private loadBuildingModel(path: string, building: string): Promise<{ model: Group; animations: AnimationClip[] }> {

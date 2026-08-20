@@ -1174,9 +1174,14 @@ export class StructureManager {
         getEntityId: (structure) => structure.entityId,
         refreshExisting,
       });
-      await scheduleFrameBudgetWork(this.chunkWorkScheduler, workLane, () => {
-        this.commitVisibleStructureDiff(visibleStructurePassSnapshot, visibilityDiff);
-      });
+      await scheduleFrameBudgetWork(
+        this.chunkWorkScheduler,
+        workLane,
+        () => {
+          this.commitVisibleStructureDiff(visibleStructurePassSnapshot, visibilityDiff);
+        },
+        "manager:structure-visibility",
+      );
     } finally {
       recordWorldmapRenderDuration("performVisibleStructuresUpdate", performance.now() - updateStartedAt);
       setWorldmapRenderGauge("visibleStructures", this.visibleStructureCount);

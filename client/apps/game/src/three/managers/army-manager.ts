@@ -1,5 +1,4 @@
 import { useAccountStore } from "@/hooks/store/use-account-store";
-import { useBlockTimestampStore } from "@/hooks/store/use-block-timestamp-store";
 import { useChainTimeStore } from "@/hooks/store/use-chain-time-store";
 import { gameWorkerManager } from "@/managers/game-worker-manager";
 import { resolveArmyOwnerState } from "@/three/managers/army-owner-resolution";
@@ -370,8 +369,11 @@ export class ArmyManager {
       .catch(() => undefined)
       .then(() => this.preloadMissingProjectedArmyModelsForEntity(entityId))
       .then(() =>
-        scheduleFrameBudgetWork(this.chunkWorkScheduler, "visible", () =>
-          this.synchronizeArmyProjectionEntity(entityId),
+        scheduleFrameBudgetWork(
+          this.chunkWorkScheduler,
+          "visible",
+          () => this.synchronizeArmyProjectionEntity(entityId),
+          "manager:army-projection",
         ),
       )
       .catch((error) => {
@@ -520,7 +522,7 @@ export class ArmyManager {
     });
     if (tickRefresh.shouldRecompute) {
       this.lastKnownArmiesTick = tickRefresh.nextTrackedTick;
-      this.recomputeStaminaForAllArmies();
+      this.recomputeStaminaForAllArmies(currentArmiesTick);
     }
     this.recomputeBattleTimersForAllArmies();
   }
@@ -1436,21 +1438,26 @@ export class ArmyManager {
       ({ modelTypesByEntity } = this.collectModelInfo(
         options?.refreshExisting ? sortedVisibleArmies : visibilityDiff.entering,
       ));
-      await scheduleFrameBudgetWork(this.chunkWorkScheduler, "critical", () => {
-        if (
-          !shouldRunManagerChunkUpdate({
-            chunkKey,
-            currentChunk: this.currentChunkKey,
-            transitionToken: options?.transitionToken,
-            latestTransitionToken: this.latestTransitionToken,
-          })
-        ) {
-          return;
-        }
+      await scheduleFrameBudgetWork(
+        this.chunkWorkScheduler,
+        "critical",
+        () => {
+          if (
+            !shouldRunManagerChunkUpdate({
+              chunkKey,
+              currentChunk: this.currentChunkKey,
+              transitionToken: options?.transitionToken,
+              latestTransitionToken: this.latestTransitionToken,
+            })
+          ) {
+            return;
+          }
 
-        this.reconcileVisibleArmies(sortedVisibleArmies, modelTypesByEntity, options?.refreshExisting);
-        this.pruneArmyPresentationsOutsideCurrentChunk();
-      });
+          this.reconcileVisibleArmies(sortedVisibleArmies, modelTypesByEntity, options?.refreshExisting);
+          this.pruneArmyPresentationsOutsideCurrentChunk();
+        },
+        "manager:army-visibility",
+      );
     } finally {
       finalizeArmyChunkTransition({
         isDestroyed: this.isDestroyed,
@@ -1561,7 +1568,12 @@ export class ArmyManager {
     await this.preloadMissingProjectedArmyModels(enteringRenderables);
     await Promise.all(
       enteringRenderables.map((renderable) =>
-        scheduleFrameBudgetWork(this.chunkWorkScheduler, "critical", () => this.ensureArmyPresentation(renderable)),
+        scheduleFrameBudgetWork(
+          this.chunkWorkScheduler,
+          "critical",
+          () => this.ensureArmyPresentation(renderable),
+          "manager:army-entering",
+        ),
       ),
     );
   }
@@ -3013,8 +3025,10 @@ ${
     return getComponentValue(this.components.ExplorerTroops, gameEntityKey([BigInt(entityId)]))?.troops ?? null;
   }
 
-  private resolveArmyStaminaSnapshot(entityId: ID): { current: number; max: number; displayRatio: number } | null {
-    const { currentArmiesTick } = useBlockTimestampStore.getState();
+  private resolveArmyStaminaSnapshot(
+    entityId: ID,
+    currentArmiesTick = getBlockTimestamp().currentArmiesTick,
+  ): { current: number; max: number; displayRatio: number } | null {
     if (!Number.isFinite(currentArmiesTick) || currentArmiesTick <= 0) {
       return null;
     }
@@ -3040,11 +3054,11 @@ ${
   /**
    * Recompute stamina for all armies and update visible labels when armies tick changes
    */
-  private recomputeStaminaForAllArmies(): void {
+  private recomputeStaminaForAllArmies(currentArmiesTick: number): void {
     // Update all army data in cache
     this.armyPresentations.forEach((army, entityId) => {
       try {
-        const staminaSnapshot = this.resolveArmyStaminaSnapshot(entityId);
+        const staminaSnapshot = this.resolveArmyStaminaSnapshot(entityId, currentArmiesTick);
 
         // Update cached army data with new stamina
         army.currentStamina = staminaSnapshot?.current ?? army.currentStamina;

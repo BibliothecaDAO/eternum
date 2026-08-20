@@ -35,6 +35,22 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-08-20",
+    title: "Accurate Army Stamina",
+    description:
+      "Army map labels now use the same current stamina tick as the selected-army panel, keeping both displays in sync.",
+    type: "fix",
+    gameSlug: "world",
+  },
+  {
+    date: "2026-08-20",
+    title: "Faster First Settlement View",
+    description:
+      "Settlement textures now prepare during idle map time on supported desktops, reducing local-view pauses once the background warmup completes.",
+    type: "improvement",
+    gameSlug: "world",
+  },
+  {
+    date: "2026-08-20",
     title: "Current-Game Leaderboard",
     description:
       "Fixed the in-game Blitz leaderboard so it shows only players registered in the current match, including players who have not scored yet.",

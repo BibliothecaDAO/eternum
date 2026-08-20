@@ -4939,17 +4939,21 @@ export default class WorldmapScene extends WarpTravel {
     }
 
     let cpuBuildMs = 0;
-    const preparedTerrain = await this.chunkWorkQueue.schedule(workLane, () => {
-      const buildStartedAt = performance.now();
-      const result = this.buildPreparedTerrainArea(
-        startRow,
-        startCol,
-        WORLDMAP_CHUNK_POLICY.visualPresentation.visualPageSize.height,
-        WORLDMAP_CHUNK_POLICY.visualPresentation.visualPageSize.width,
-      );
-      cpuBuildMs = performance.now() - buildStartedAt;
-      return result;
-    });
+    const preparedTerrain = await this.chunkWorkQueue.schedule(
+      workLane,
+      () => {
+        const buildStartedAt = performance.now();
+        const result = this.buildPreparedTerrainArea(
+          startRow,
+          startCol,
+          WORLDMAP_CHUNK_POLICY.visualPresentation.visualPageSize.height,
+          WORLDMAP_CHUNK_POLICY.visualPresentation.visualPageSize.width,
+        );
+        cpuBuildMs = performance.now() - buildStartedAt;
+        return result;
+      },
+      `terrain:${workLane}-page-build`,
+    );
     const modelWaitStartedAt = performance.now();
     const preparedTerrainWithModels = await this.awaitPreparedTerrainBiomeModels(preparedTerrain);
     return {
@@ -5213,10 +5217,14 @@ export default class WorldmapScene extends WarpTravel {
   ): Promise<TResult> {
     let commitStarted = false;
     try {
-      return await this.chunkWorkQueue.schedule(workLane, () => {
-        commitStarted = true;
-        return commit();
-      });
+      return await this.chunkWorkQueue.schedule(
+        workLane,
+        () => {
+          commitStarted = true;
+          return commit();
+        },
+        `terrain:${workLane}-commit`,
+      );
     } catch (error) {
       if (!commitStarted) {
         this.disposePreparedTerrainChunk(preparedTerrain);
@@ -5929,7 +5937,7 @@ export default class WorldmapScene extends WarpTravel {
       };
 
       const scheduleWorkUnit = () => {
-        void this.chunkWorkQueue.schedule("critical", processWorkUnit).catch((error) => {
+        void this.chunkWorkQueue.schedule("critical", processWorkUnit, "terrain:hex-grid").catch((error) => {
           abortTask();
           if (!isFrameBudgetWorkQueueDisposedError(error)) {
             console.error("[WorldMap] Hex grid work failed:", error);
@@ -6252,7 +6260,7 @@ export default class WorldmapScene extends WarpTravel {
       };
 
       const scheduleWorkUnit = () => {
-        void this.chunkWorkQueue.schedule(workLane, processWorkUnit).catch((error) => {
+        void this.chunkWorkQueue.schedule(workLane, processWorkUnit, `terrain:${workLane}-prepare`).catch((error) => {
           if (settled) {
             return;
           }

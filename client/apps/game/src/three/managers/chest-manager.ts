@@ -313,14 +313,17 @@ export class ChestManager {
   }
 
   private requestVisibleChestsRefresh(chunkKey: string, workLane: FrameBudgetWorkLane = "visible"): Promise<void> {
-    return scheduleFrameBudgetWork(this.chunkWorkScheduler, workLane, () => this.renderVisibleChests(chunkKey)).catch(
-      (error) => {
-        if (isFrameBudgetWorkQueueDisposedError(error)) {
-          return;
-        }
-        console.error("[ChestManager] Failed to refresh visible chests", error);
-      },
-    );
+    return scheduleFrameBudgetWork(
+      this.chunkWorkScheduler,
+      workLane,
+      () => this.renderVisibleChests(chunkKey),
+      "manager:chest-visibility",
+    ).catch((error) => {
+      if (isFrameBudgetWorkQueueDisposedError(error)) {
+        return;
+      }
+      console.error("[ChestManager] Failed to refresh visible chests", error);
+    });
   }
 
   private renderVisibleChests(chunkKey: string) {
