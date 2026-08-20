@@ -27,7 +27,6 @@ export const GameLoadingOverlay = () => {
   const [didSafetyTimeout, setDidSafetyTimeout] = useState(false);
   const startedAt = useRef(0);
   const worldmapReadyMilestoneRef = useRef(false);
-  const worldmapFetchCompletedMilestoneRef = useRef(false);
   const finalReadyMilestoneRef = useRef(false);
   const handoffStartedRef = useRef(false);
   const overlayDismissedRef = useRef(false);
@@ -52,13 +51,14 @@ export const GameLoadingOverlay = () => {
 
   const isWaitingForWorldmap = snapshot.phase === "wait_worldmap_ready";
   const isHandingOffScene = snapshot.phase === "handoff_scene";
-  const hasWorldmapHydrated = readiness.worldmapReady;
+  const hasWorldmapCriticalPass = readiness.worldmapReady;
+  const hasWorldmapConverged = readiness.worldmapConverged;
   const isFinalSceneReady =
     snapshot.resolvedRequest?.resumeScene === "hex"
       ? readiness.hexReady
       : snapshot.resolvedRequest?.resumeScene === "travel"
         ? readiness.fastTravelReady
-        : hasWorldmapHydrated;
+        : hasWorldmapCriticalPass;
   const isReady = snapshot.phase === "ready" || isFinalSceneReady;
 
   useEffect(() => {
@@ -113,19 +113,10 @@ export const GameLoadingOverlay = () => {
   }, [readiness.worldmapReady]);
 
   useEffect(() => {
-    if (!hasWorldmapHydrated || worldmapFetchCompletedMilestoneRef.current) {
-      return;
-    }
-
-    worldmapFetchCompletedMilestoneRef.current = true;
-    markGameEntryMilestone("worldmap-fetch-completed");
-  }, [hasWorldmapHydrated]);
-
-  useEffect(() => {
     if (
       playRoute == null ||
       snapshot.resolvedRequest?.resumeScene == null ||
-      !hasWorldmapHydrated ||
+      !hasWorldmapConverged ||
       handoffStartedRef.current
     ) {
       return;
@@ -147,7 +138,7 @@ export const GameLoadingOverlay = () => {
       { replace: true },
     );
     window.dispatchEvent(new Event("urlChanged"));
-  }, [hasWorldmapHydrated, navigate, playRoute, snapshot.resolvedRequest]);
+  }, [hasWorldmapConverged, navigate, playRoute, snapshot.resolvedRequest]);
 
   const dismissOverlay = useCallback(() => {
     if (overlayDismissedRef.current) {

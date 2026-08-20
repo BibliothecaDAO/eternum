@@ -8,22 +8,31 @@ import { describe, expect, it } from "vitest";
 const readSource = (relativePath: string) => readFileSync(resolve(process.cwd(), relativePath), "utf8");
 
 describe("Worldmap initial terrain convergence", () => {
-  it("awaits terrain convergence after the first visible refresh before scene readiness can be announced", () => {
+  it("delegates critical readiness and later terrain convergence to the entry owner", () => {
     const source = readSource("src/three/scenes/worldmap.tsx");
-    const refreshStart = source.indexOf("private async refreshWarpTravelScene()");
+    const refreshStart = source.indexOf("private async refreshWarpTravelScene(");
     const refreshEnd = source.indexOf("private commitCurrentChunkAuthority(", refreshStart);
 
     expect(refreshStart).toBeGreaterThanOrEqual(0);
     expect(refreshEnd).toBeGreaterThan(refreshStart);
 
     const refreshBody = source.slice(refreshStart, refreshEnd);
-    const interactiveRefreshIndex = refreshBody.indexOf("await completeWorldmapInteractiveRefresh({");
-    const convergenceIndex = refreshBody.indexOf("await this.awaitInitialTerrainConvergence();");
-    const hoverReconcileIndex = refreshBody.indexOf('this.reconcileHoverLabels("initial_refresh");');
+    const readinessIndex = refreshBody.indexOf("await startWorldmapEntryReadiness({");
+    const criticalPassIndex = refreshBody.indexOf("commitCriticalPass:");
+    const ambientRequirementIndex = refreshBody.indexOf("requiresAmbientConvergence,");
+    const convergenceIndex = refreshBody.indexOf("waitForAmbientConvergence:");
+    expect(readinessIndex).toBeGreaterThanOrEqual(0);
+    expect(criticalPassIndex).toBeGreaterThan(readinessIndex);
+    expect(ambientRequirementIndex).toBeGreaterThan(criticalPassIndex);
+    expect(convergenceIndex).toBeGreaterThan(criticalPassIndex);
 
-    expect(interactiveRefreshIndex).toBeGreaterThanOrEqual(0);
-    expect(convergenceIndex).toBeGreaterThan(interactiveRefreshIndex);
-    expect(hoverReconcileIndex).toBeGreaterThan(convergenceIndex);
+    const convergenceOwnerStart = source.indexOf("private announceWorldmapConverged(");
+    const convergenceOwnerEnd = source.indexOf("private prepareWarpTravelInitialSetup(", convergenceOwnerStart);
+    const convergenceOwner = source.slice(convergenceOwnerStart, convergenceOwnerEnd);
+
+    expect(convergenceOwner).toContain("markWorldmapConverged(bootToken)");
+    expect(convergenceOwner).not.toContain("skipNextInitialSetupUrlRefresh");
+    expect(convergenceOwner).toContain('this.reconcileHoverLabels("initial_refresh")');
   });
 
   it("tracks legacy chunk refresh execution so initial convergence waits for the actual refresh", () => {

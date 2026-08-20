@@ -1,5 +1,6 @@
 import * as Sentry from "@sentry/react";
 import { DEV_MODE_ENABLED, verboseLog } from "@/utils/dev-mode";
+import { formatReadableErrorForConsole } from "@/utils/error-message";
 import { captureSpectateIntentFromUrl, isExplicitSpectateSession } from "@/utils/spectator-session";
 import { setup } from "@bibliothecadao/dojo";
 import { configManager } from "@bibliothecadao/eternum";
@@ -288,7 +289,7 @@ const runDojoSetup = async (namespace: string, gameId: number): Promise<SetupRes
         handleNoAccount(<NoAccountModal />);
       },
       onError: (error: unknown) => {
-        console.error("System call error:", error);
+        console.error(`System call error: ${formatReadableErrorForConsole(error)}`);
 
         Sentry.captureException(error, {
           tags: { feature: "bootstrap", error_type: "dojo_system_call", setup_phase: "post-setup" },

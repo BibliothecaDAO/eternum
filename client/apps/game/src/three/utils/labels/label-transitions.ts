@@ -1,5 +1,5 @@
 import { CameraView } from "../../scenes/camera-view";
-import { CSS2DObject } from "three/examples/jsm/renderers/CSS2DRenderer.js";
+import { CSS2DObject } from "three/addons/renderers/CSS2DRenderer.js";
 import { resolveCameraView } from "./label-view";
 
 /**

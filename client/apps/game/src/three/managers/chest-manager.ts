@@ -5,7 +5,7 @@ import { Position } from "@bibliothecadao/eternum";
 import type { ChestSpatialRenderable, WorldSpatialProjection } from "@bibliothecadao/eternum/game-sync";
 import { ID } from "@bibliothecadao/types";
 import * as THREE from "three";
-import { CSS2DObject } from "three/examples/jsm/renderers/CSS2DRenderer.js";
+import { CSS2DObject } from "three/addons/renderers/CSS2DRenderer.js";
 import { CameraView, HexagonScene } from "../scenes/hexagon-scene";
 import { RenderChunkSize } from "../types/common";
 import { getRenderBounds } from "../utils/chunk-geometry";
@@ -313,14 +313,17 @@ export class ChestManager {
   }
 
   private requestVisibleChestsRefresh(chunkKey: string, workLane: FrameBudgetWorkLane = "visible"): Promise<void> {
-    return scheduleFrameBudgetWork(this.chunkWorkScheduler, workLane, () => this.renderVisibleChests(chunkKey)).catch(
-      (error) => {
-        if (isFrameBudgetWorkQueueDisposedError(error)) {
-          return;
-        }
-        console.error("[ChestManager] Failed to refresh visible chests", error);
-      },
-    );
+    return scheduleFrameBudgetWork(
+      this.chunkWorkScheduler,
+      workLane,
+      () => this.renderVisibleChests(chunkKey),
+      "manager:chest-visibility",
+    ).catch((error) => {
+      if (isFrameBudgetWorkQueueDisposedError(error)) {
+        return;
+      }
+      console.error("[ChestManager] Failed to refresh visible chests", error);
+    });
   }
 
   private renderVisibleChests(chunkKey: string) {

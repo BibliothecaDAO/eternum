@@ -1,6 +1,6 @@
 import type { SetupResult } from "@bibliothecadao/dojo";
 import type { Raycaster, Vector2 } from "three";
-import type { MapControls } from "three/examples/jsm/controls/MapControls.js";
+import type { MapControls } from "three/addons/controls/MapControls.js";
 import type { SceneManager } from "@/three/scene-manager";
 import type FastTravelScene from "@/three/scenes/fast-travel";
 import type HexceptionScene from "@/three/scenes/hexception";

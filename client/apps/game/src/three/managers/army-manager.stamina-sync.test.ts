@@ -129,7 +129,7 @@ describe("ArmyManager stamina sync", () => {
       updateArmyLabelData: vi.fn(),
     };
 
-    ArmyManager.prototype["recomputeStaminaForAllArmies"].call(fakeManager);
+    ArmyManager.prototype["recomputeStaminaForAllArmies"].call(fakeManager, 5);
 
     expect(getComponentValueMock).toHaveBeenCalled();
     expect(army.currentStamina).toBe(50);
@@ -189,8 +189,36 @@ describe("ArmyManager stamina sync", () => {
       updateArmyLabelData: vi.fn(),
     };
 
-    ArmyManager.prototype["recomputeStaminaForAllArmies"].call(fakeManager);
+    ArmyManager.prototype["recomputeStaminaForAllArmies"].call(fakeManager, 5);
 
     expect(army.currentStamina).toBe(10);
+  });
+
+  it("projects labels from the tick that triggered the refresh", () => {
+    const army = {
+      entityId: 1,
+      troopCount: 10,
+      category: "Knight",
+      tier: 1,
+      currentStamina: 0,
+    };
+    const resolveArmyStaminaSnapshot = vi.fn((_entityId: number, currentArmiesTick: number) => ({
+      current: currentArmiesTick * 5,
+      max: 120,
+      displayRatio: (currentArmiesTick * 5) / 120,
+    }));
+    const updateArmyLabelData = vi.fn();
+    const fakeManager = {
+      armyPresentations: new Map([[1, army]]),
+      entityIdLabels: new Map([[1, {}]]),
+      resolveArmyStaminaSnapshot,
+      updateArmyLabelData,
+    };
+
+    ArmyManager.prototype["recomputeStaminaForAllArmies"].call(fakeManager, 6);
+
+    expect(resolveArmyStaminaSnapshot).toHaveBeenCalledWith(1, 6);
+    expect(army.currentStamina).toBe(30);
+    expect(updateArmyLabelData).toHaveBeenCalledWith(1, army, {});
   });
 });

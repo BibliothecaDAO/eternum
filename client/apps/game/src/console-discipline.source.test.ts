@@ -65,6 +65,45 @@ const REPO_ROOT = resolve(CLIENT_ROOT, "../../..");
 
 const INFORMATIONAL_CONSOLE = /\bconsole\.(log|info|debug)\s*\(/;
 
+const CAPTURED_WARN_ERROR_SITES = [
+  {
+    path: "src/init/bootstrap.tsx",
+    required: "formatReadableErrorForConsole(error)",
+    forbidden: 'console.error("System call error:", error)',
+  },
+  {
+    path: "src/ui/shared/components/tx-emit.tsx",
+    required: "console.error(`Transaction failed: ${consoleReason}`)",
+    forbidden: 'console.error("Transaction failed:", reason, payload.error ?? payload.message)',
+  },
+  {
+    path: "src/dojo/connection-health-monitor.ts",
+    required: "console.warn(formatConnectionRecoveryRequest(request))",
+    forbidden: 'console.warn("[ConnectionHealthMonitor] recovery requested", request)',
+  },
+  {
+    path: "src/dojo/gamewide-sync-adapter.ts",
+    required: 'appendConsoleFields("[GameSync] authoritative Torii model did not parse into RECS"',
+    forbidden: 'console.error("[GameSync] authoritative Torii model did not parse into RECS", {',
+  },
+  {
+    path: "src/dojo/gamewide-sync-adapter.ts",
+    required: 'appendConsoleFields("[GameSync] authoritative echo observed before the transaction hash bound"',
+    forbidden: 'console.warn("[GameSync] authoritative echo observed before the transaction hash bound", info)',
+  },
+  {
+    path: "src/three/scenes/worldmap.tsx",
+    required: "console.warn(formatWorldmapChunkWarning(event, details))",
+    forbidden: "console.warn(`[WorldmapChunk] ${event}`, details)",
+  },
+  {
+    path: "packages/provider/src/index.ts",
+    required: "formatErrorForConsole(error)",
+    forbidden: 'console.warn("[provider] Failed to estimate invoke fee, using default v3 tx details", error)',
+    fromRepoRoot: true,
+  },
+] as const;
+
 const isSourceFile = (name: string) =>
   (name.endsWith(".ts") || name.endsWith(".tsx")) && !name.endsWith(".test.ts") && !name.endsWith(".test.tsx");
 
@@ -90,6 +129,17 @@ const informationalConsoleLines = (path: string): number[] => {
 };
 
 describe("console discipline", () => {
+  it("keeps the captured warning and error sites on their single-line formatters", () => {
+    for (const site of CAPTURED_WARN_ERROR_SITES) {
+      const root = "fromRepoRoot" in site && site.fromRepoRoot ? REPO_ROOT : CLIENT_ROOT;
+      const source = readFileSync(join(root, site.path), "utf8");
+      expect(source, `${site.path} must keep its focused single-line console formatter`).toContain(site.required);
+      expect(source, `${site.path} must not restore the captured raw-object console call`).not.toContain(
+        site.forbidden,
+      );
+    }
+  });
+
   it("keeps informational console output out of unsanctioned client files", () => {
     const offenders: string[] = [];
     for (const file of walk(join(CLIENT_ROOT, "src"))) {

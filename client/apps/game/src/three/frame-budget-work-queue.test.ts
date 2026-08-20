@@ -142,6 +142,16 @@ describe("FrameBudgetWorkQueue", () => {
     expect(consumeDominantFrameWorkOwner()).toBe("catchup:army");
   });
 
+  it("uses an explicit domain owner instead of the generic lane", async () => {
+    const harness = createHarness();
+    const pending = harness.queue.schedule("visible", () => undefined, "terrain:visible-page-build");
+
+    await harness.flushFrame();
+    await pending;
+
+    expect(consumeDominantFrameWorkOwner()).toBe("terrain:visible-page-build");
+  });
+
   it("rejects queued work when disposed", async () => {
     const harness = createHarness();
     const pending = harness.queue.schedule("visible", () => undefined);

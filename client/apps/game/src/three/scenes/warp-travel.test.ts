@@ -14,6 +14,8 @@ import {
   type WarpTravelLifecycleState,
 } from "./warp-travel-lifecycle";
 
+const CURRENT_SETUP_CONTEXT = { isCurrent: () => true };
+
 let constructorBootstrapCalls = 0;
 
 function createAdapter(overrides: Partial<WarpTravelLifecycleAdapter> = {}): {
@@ -70,7 +72,7 @@ class CountingWarpTravel extends WarpTravel {
       registerStoreSubscriptions: () => this.events.push("subscriptions:register"),
       setupCameraZoomHandler: () => this.events.push("zoom:setup"),
       refreshScene: async () => {
-        this.events.push("scene:refresh");
+        this.events.push(`scene:refresh:${this.isSwitchedOff}`);
       },
       disposeStoreSubscriptions: () => this.events.push("subscriptions:dispose"),
       detachLabelGroupsFromScene: () => this.events.push("labels:groups:detach"),
@@ -170,6 +172,7 @@ describe("runWarpTravelSetupLifecycle", () => {
         isSwitchedOff: true,
       },
       adapter,
+      CURRENT_SETUP_CONTEXT,
     );
 
     expect(events).toEqual([
@@ -200,6 +203,7 @@ describe("runWarpTravelSetupLifecycle", () => {
         isSwitchedOff: true,
       },
       adapter,
+      CURRENT_SETUP_CONTEXT,
     );
 
     expect(events).toEqual([
@@ -220,6 +224,28 @@ describe("runWarpTravelSetupLifecycle", () => {
     });
   });
 
+  it("does not run completion effects after setup ownership is superseded", async () => {
+    let isCurrent = true;
+    const { adapter, events } = createAdapter({
+      refreshScene: async () => {
+        events.push("scene:refresh");
+        isCurrent = false;
+      },
+    });
+
+    await runWarpTravelSetupLifecycle(
+      {
+        hasInitialized: true,
+        initialSetupPromise: null,
+        isSwitchedOff: false,
+      },
+      adapter,
+      { isCurrent: () => isCurrent },
+    );
+
+    expect(events).not.toContain("setup:resume:complete");
+  });
+
   it("fails closed when the initial refresh fails", async () => {
     const refreshError = new Error("refresh failed");
     const reportSetupError = vi.fn();
@@ -238,6 +264,7 @@ describe("runWarpTravelSetupLifecycle", () => {
           isSwitchedOff: true,
         },
         adapter,
+        CURRENT_SETUP_CONTEXT,
       ),
     ).rejects.toThrow(refreshError);
 
@@ -270,6 +297,7 @@ describe("runWarpTravelSetupLifecycle", () => {
         isSwitchedOff: true,
       },
       adapter,
+      CURRENT_SETUP_CONTEXT,
     );
 
     expect(reportSetupError).toHaveBeenCalledWith(refreshError, "resume");
@@ -322,10 +350,14 @@ describe("WarpTravel", () => {
   it("reuses one lifecycle adapter across setup and switch-off cycles", async () => {
     const runtime = createCountingWarpTravel();
 
-    await runtime.setup();
+    await runtime.setup(CURRENT_SETUP_CONTEXT);
     runtime.triggerSwitchOffLifecycle();
-    await runtime.setup();
+    await runtime.setup(CURRENT_SETUP_CONTEXT);
 
     expect(runtime.adapterCreations).toBe(1);
+    expect(runtime.events.filter((event) => event.startsWith("scene:refresh"))).toEqual([
+      "scene:refresh:false",
+      "scene:refresh:false",
+    ]);
   });
 });

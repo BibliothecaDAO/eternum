@@ -21,6 +21,35 @@ function createFakeScene(name: string) {
   };
 }
 
+function createTransitionManagerHarness() {
+  let active = true;
+  const pendingFadeOuts = new Set<(completed: boolean) => void>();
+  const cancelPendingFadeOuts = () => {
+    pendingFadeOuts.forEach((resolve) => resolve(false));
+    pendingFadeOuts.clear();
+  };
+
+  return {
+    fadeOut: vi.fn(() => {
+      if (!active) return Promise.resolve(false);
+
+      return new Promise<boolean>((resolve) => {
+        pendingFadeOuts.add(resolve);
+        queueMicrotask(() => {
+          if (!pendingFadeOuts.delete(resolve)) return;
+          resolve(true);
+        });
+      });
+    }),
+    fadeIn: vi.fn(cancelPendingFadeOuts),
+    isActive: vi.fn(() => active),
+    destroy: vi.fn(() => {
+      active = false;
+      cancelPendingFadeOuts();
+    }),
+  };
+}
+
 export function createGameRendererRuntimeHarness() {
   const backend = {
     renderer: {
@@ -60,13 +89,7 @@ export function createGameRendererRuntimeHarness() {
     dispose: vi.fn(),
   };
 
-  const transitionManager = {
-    fadeOut: vi.fn((callback: () => void | Promise<void>) => {
-      void callback();
-    }),
-    fadeIn: vi.fn(),
-    destroy: vi.fn(),
-  };
+  const transitionManager = createTransitionManagerHarness();
 
   const sceneManager = new SceneManager(transitionManager as never);
   const worldmapScene = createFakeScene("worldmap");

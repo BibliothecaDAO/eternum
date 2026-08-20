@@ -4,9 +4,16 @@ import * as THREE from "three";
 import { SceneName } from "../types";
 
 type ListenerTypes = "click" | "mousemove" | "contextmenu" | "dblclick" | "mousedown";
+type InputCallback = (event: MouseEvent, raycaster: THREE.Raycaster) => void;
+
+interface InputListener {
+  callback: InputCallback;
+  event: ListenerTypes;
+  handler: (event: MouseEvent) => void;
+}
 
 export class InputManager {
-  private listeners: Array<{ event: ListenerTypes; handler: (e: MouseEvent) => void }> = [];
+  private listeners: InputListener[] = [];
   private isDragged = false;
   private currentDragListener: ((e: MouseEvent) => void) | null = null;
   private currentMouseUpListener: ((e: MouseEvent) => void) | null = null;
@@ -14,6 +21,9 @@ export class InputManager {
   private surface: HTMLElement | null = null;
   private isActive = false;
   private isDestroyed = false;
+  private latestMouseMoveEvent: MouseEvent | null = null;
+  private mouseMoveFrameId: number | null = null;
+  private mouseMoveFrameToken = 0;
 
   constructor(
     private sceneName: SceneName,
@@ -60,41 +70,94 @@ export class InputManager {
     this.isActive = false;
   }
 
-  addListener(event: ListenerTypes, callback: (event: MouseEvent, raycaster: THREE.Raycaster) => void): void {
+  addListener(event: ListenerTypes, callback: InputCallback): void {
     const handler = (e: MouseEvent) => {
       if (this.sceneManager.getCurrentScene() !== this.sceneName) {
         return;
       }
 
-      if (event === "contextmenu") {
-        e.preventDefault();
+      if (event === "mousemove") {
+        this.queueMouseMove(e);
+        return;
       }
 
-      const bounds = this.surface?.getBoundingClientRect();
-      const width = bounds?.width || window.innerWidth;
-      const height = bounds?.height || window.innerHeight;
-      const left = bounds?.left || 0;
-      const top = bounds?.top || 0;
-
-      this.mouse.x = ((e.clientX - left) / width) * 2 - 1;
-      this.mouse.y = -((e.clientY - top) / height) * 2 + 1;
-      this.raycaster.setFromCamera(this.mouse, this.camera);
-
-      if (event === "click") {
-        if (this.isDragged) {
-          this.isDragged = false;
-          return;
-        }
-        // Check if a double-click occurred
-        callback(e, this.raycaster);
-      } else {
-        callback(e, this.raycaster);
-      }
+      this.processImmediateEvent(event, e, callback);
     };
-    this.listeners.push({ event, handler });
+    this.listeners.push({ callback, event, handler });
     if (this.isActive && this.surface) {
       this.surface.addEventListener(event, handler);
     }
+  }
+
+  private processImmediateEvent(event: ListenerTypes, mouseEvent: MouseEvent, callback: InputCallback): void {
+    if (event === "contextmenu") {
+      mouseEvent.preventDefault();
+    }
+
+    this.updatePointerRaycaster(mouseEvent);
+
+    if (event === "click" && this.isDragged) {
+      this.isDragged = false;
+      return;
+    }
+
+    callback(mouseEvent, this.raycaster);
+  }
+
+  private queueMouseMove(mouseEvent: MouseEvent): void {
+    this.latestMouseMoveEvent = mouseEvent;
+    if (this.mouseMoveFrameId !== null) {
+      return;
+    }
+
+    const frameToken = ++this.mouseMoveFrameToken;
+    this.mouseMoveFrameId = window.requestAnimationFrame(() => {
+      if (frameToken !== this.mouseMoveFrameToken) {
+        return;
+      }
+      this.mouseMoveFrameId = null;
+      this.processPendingMouseMove();
+    });
+  }
+
+  private processPendingMouseMove(): void {
+    const mouseEvent = this.latestMouseMoveEvent;
+    this.latestMouseMoveEvent = null;
+
+    if (!mouseEvent || !this.isActive || this.isDestroyed) {
+      return;
+    }
+    if (this.sceneManager.getCurrentScene() !== this.sceneName) {
+      return;
+    }
+
+    this.updatePointerRaycaster(mouseEvent);
+    this.listeners.forEach((listener) => {
+      if (listener.event === "mousemove") {
+        listener.callback(mouseEvent, this.raycaster);
+      }
+    });
+  }
+
+  private updatePointerRaycaster(mouseEvent: MouseEvent): void {
+    const bounds = this.surface?.getBoundingClientRect();
+    const width = bounds?.width || window.innerWidth;
+    const height = bounds?.height || window.innerHeight;
+    const left = bounds?.left || 0;
+    const top = bounds?.top || 0;
+
+    this.mouse.x = ((mouseEvent.clientX - left) / width) * 2 - 1;
+    this.mouse.y = -((mouseEvent.clientY - top) / height) * 2 + 1;
+    this.raycaster.setFromCamera(this.mouse, this.camera);
+  }
+
+  private cancelPendingMouseMove(): void {
+    this.mouseMoveFrameToken += 1;
+    if (this.mouseMoveFrameId !== null) {
+      window.cancelAnimationFrame(this.mouseMoveFrameId);
+      this.mouseMoveFrameId = null;
+    }
+    this.latestMouseMoveEvent = null;
   }
 
   restartListeners(): void {
@@ -109,6 +172,7 @@ export class InputManager {
   }
 
   pauseListeners(): void {
+    this.cancelPendingMouseMove();
     if (this.surface) {
       this.surface.removeEventListener("mousedown", this.mouseDownHandler);
     }
@@ -161,16 +225,13 @@ export class InputManager {
     }
     this.isDestroyed = true;
 
-    // Clean up main mousedown handler
-    this.deactivate();
+    this.pauseListeners();
+    this.isActive = false;
 
     // Clean up any active drag listeners
     this.cleanupDragListeners();
 
-    // Clean up all registered listeners
-    for (const listener of this.listeners) {
-      window.removeEventListener(listener.event, listener.handler);
-    }
     this.listeners = [];
+    this.surface = null;
   }
 }

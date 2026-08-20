@@ -21,7 +21,12 @@ import {
   uint256,
   UniversalDetails,
 } from "starknet";
-import { classifyTransactionError, extractErrorMessage, readCartridgeErrorCode } from "./classify-transaction-error";
+import {
+  classifyTransactionError,
+  extractErrorMessage,
+  formatErrorForConsole,
+  readCartridgeErrorCode,
+} from "./classify-transaction-error";
 import { PromiseQueue, QueueableTransaction } from "./promise-queue";
 import { ExecutionOptions } from "./transaction-executor";
 import { withRetry } from "./retry";
@@ -48,7 +53,7 @@ export {
   getDelayForTransaction,
 } from "./batch-config";
 export type { BatchDelayConfig } from "./batch-config";
-export { classifyTransactionError, extractErrorMessage } from "./classify-transaction-error";
+export { classifyTransactionError, extractErrorMessage, formatErrorForConsole } from "./classify-transaction-error";
 export type { ClassifiedTransactionError } from "./classify-transaction-error";
 export { PromiseQueue } from "./promise-queue";
 export type { QueueableTransaction } from "./promise-queue";
@@ -650,10 +655,10 @@ export class EternumProvider extends EnhancedDojoProvider {
     transactionDetails: AllowArray<Call>,
     options?: { cacheKey?: string; forceRefresh?: boolean },
   ): Promise<UniversalDetails> {
-    const details: UniversalDetails = { version: 3 };
+    const details: UniversalDetails = { version: 3, tip: 0 };
     const cached = !options?.forceRefresh ? this.getCachedExploreExecutionDetails(options?.cacheKey) : undefined;
     if (cached) {
-      return cached;
+      return { ...details, ...cached };
     }
 
     const estimateInvokeFee = (signer as any)?.estimateInvokeFee;
@@ -665,6 +670,7 @@ export class EternumProvider extends EnhancedDojoProvider {
       const estimate = (await this.withTimeout(
         estimateInvokeFee.call(signer, transactionDetails, {
           version: 3,
+          tip: 0,
         }),
         this.FEE_ESTIMATE_TIMEOUT_MS,
         () =>
@@ -690,7 +696,9 @@ export class EternumProvider extends EnhancedDojoProvider {
       // Submission proceeds with default v3 details, but the estimate error is
       // the richest failure signal we get — stash it for the failure payload.
       this.lastEstimateError = { error, atMs: Date.now() };
-      console.warn("[provider] Failed to estimate invoke fee, using default v3 tx details", error);
+      console.warn(
+        `[provider] Failed to estimate invoke fee, using default v3 tx details: ${formatErrorForConsole(error)}`,
+      );
       return details;
     }
   }

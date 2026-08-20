@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import { discardGpuBackendFrame, startGpuBackendFrame } from "./gpu-backend-hot-path-instrumentation";
 import { SceneName } from "./types";
 import { createGameRendererRuntimeHarness } from "./game-renderer.runtime-harness";
 
@@ -93,6 +94,20 @@ vi.stubGlobal("GPUShaderStage", {
 const { default: GameRenderer } = await import("./game-renderer");
 
 describe("GameRenderer runtime harness", () => {
+  beforeEach(() => {
+    discardGpuBackendFrame();
+  });
+
+  it("models cancellable fade-out completion", async () => {
+    const harness = createGameRendererRuntimeHarness();
+
+    const fadeOut = harness.transitionManager.fadeOut();
+    harness.transitionManager.destroy();
+
+    await expect(fadeOut).resolves.toBe(false);
+    expect(harness.transitionManager.isActive()).toBe(false);
+  });
+
   it("boots and renders the active scene through the backend", async () => {
     const harness = createGameRendererRuntimeHarness();
     const subject = Object.assign(Object.create(GameRenderer.prototype), harness.createSubject());
@@ -166,5 +181,63 @@ describe("GameRenderer runtime harness", () => {
     expect(harness.worldmapScene.destroy).toHaveBeenCalledTimes(1);
     expect(harness.hexceptionScene.destroy).toHaveBeenCalledTimes(1);
     expect(subject.isDestroyed).toBe(true);
+  });
+
+  it("destroys an in-flight scene candidate without revealing or switching it off afterward", async () => {
+    const harness = createGameRendererRuntimeHarness();
+    const subject = Object.assign(Object.create(GameRenderer.prototype), harness.createSubject());
+    subject.transitionManager = harness.transitionManager;
+
+    harness.sceneManager.switchScene(SceneName.WorldMap);
+    subject.destroy();
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(harness.worldmapScene.setup).toHaveBeenCalledOnce();
+    expect(harness.worldmapScene.destroy).toHaveBeenCalledOnce();
+    expect(harness.worldmapScene.onSwitchOff).not.toHaveBeenCalled();
+    expect(harness.worldmapScene.activateInputSurface).not.toHaveBeenCalled();
+    expect(harness.transitionManager.fadeIn).not.toHaveBeenCalled();
+  });
+
+  it("does not carry a frame sample through teardown or a queued final animation tick", () => {
+    const harness = createGameRendererRuntimeHarness();
+    const subject = Object.assign(Object.create(GameRenderer.prototype), harness.createSubject());
+    const warn = vi.fn();
+    const consoleWarn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const performanceNow = vi.spyOn(performance, "now").mockReturnValue(0);
+    subject.transitionManager = harness.transitionManager;
+
+    startGpuBackendFrame({
+      gpuAttributionEnabled: false,
+      pageVisible: true,
+      rendererMode: "webgpu",
+      startedAt: 0,
+      warn,
+    });
+    subject.destroy();
+    startGpuBackendFrame({
+      gpuAttributionEnabled: false,
+      pageVisible: true,
+      rendererMode: "webgpu",
+      startedAt: 1_000,
+      warn,
+    });
+    subject.animate();
+    startGpuBackendFrame({
+      gpuAttributionEnabled: false,
+      pageVisible: true,
+      rendererMode: "webgpu",
+      startedAt: 1_040,
+      warn,
+    });
+
+    expect(warn).toHaveBeenCalledOnce();
+    expect(warn).toHaveBeenCalledWith(
+      "[FramePerf] spike renderer_mode=webgpu duration_ms=40 frame_owner=unattributed gpu_attribution=disabled",
+    );
+    discardGpuBackendFrame();
+    consoleWarn.mockRestore();
+    performanceNow.mockRestore();
   });
 });

@@ -34,6 +34,126 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 // are surfaced in the What's New popup.
 const allLatestFeatures: LatestFeature[] = [
   {
+    date: "2026-08-20",
+    title: "Accurate Army Stamina",
+    description:
+      "Army map labels now use the same current stamina tick as the selected-army panel, keeping both displays in sync.",
+    type: "fix",
+    gameSlug: "world",
+  },
+  {
+    date: "2026-08-20",
+    title: "Faster First Settlement View",
+    description:
+      "Settlement textures now prepare during idle map time on supported desktops, reducing local-view pauses once the background warmup completes.",
+    type: "improvement",
+    gameSlug: "world",
+  },
+  {
+    date: "2026-08-20",
+    title: "Current-Game Leaderboard",
+    description:
+      "Fixed the in-game Blitz leaderboard so it shows only players registered in the current match, including players who have not scored yet.",
+    type: "fix",
+    gameSlug: "world",
+  },
+  {
+    date: "2026-08-20",
+    title: "Faster World Entry",
+    description:
+      "The entry screen now clears as soon as the critical map terrain and entities are ready, while remaining map detail continues loading in the background.",
+    type: "improvement",
+    gameSlug: "world",
+  },
+  {
+    date: "2026-08-20",
+    title: "Smoother Terrain Travel",
+    description:
+      "Map travel now reuses terrain already being prepared before drawing a temporary fallback, reducing late terrain swaps during fast pans.",
+    type: "improvement",
+    gameSlug: "world",
+  },
+  {
+    date: "2026-08-20",
+    title: "Faster Map Travel",
+    description:
+      "Map travel now updates only the armies and structures entering or leaving view, instead of rebuilding everything already on screen.",
+    type: "improvement",
+    gameSlug: "world",
+  },
+  {
+    date: "2026-08-20",
+    title: "Smoother Map Hover",
+    description:
+      "Map hover effects now update at most once per frame and skip unchanged tiles, reducing cursor-driven frame work without affecting clicks or selections.",
+    type: "improvement",
+    gameSlug: "world",
+  },
+  {
+    date: "2026-08-20",
+    title: "Faster Building Updates",
+    description:
+      "Building placements and removals now update only the affected local tile, keeping settlements responsive without rebuilding surrounding terrain.",
+    type: "improvement",
+    gameSlug: "world",
+  },
+  {
+    date: "2026-08-20",
+    title: "Reliable Terrain Colors",
+    description:
+      "Terrain color buffers now exist from the first frame, preventing late tint updates from being missed or shared across scenes.",
+    type: "fix",
+    gameSlug: "world",
+  },
+  {
+    date: "2026-08-20",
+    title: "Reliable Session Recovery",
+    description:
+      "Slow account restoration now stays in progress, while manual controller reconnects show a bounded attempt, clear errors, and a safe retry.",
+    type: "fix",
+    gameSlug: "world",
+  },
+  {
+    date: "2026-08-20",
+    title: "Faster Scene Changes",
+    description:
+      "World and local view setup now runs during the transition fade, reducing the wait before the next scene appears.",
+    type: "improvement",
+    gameSlug: "world",
+  },
+  {
+    date: "2026-08-20",
+    title: "Uninterrupted Map Travel",
+    description:
+      "Routine zooming and terrain updates no longer dim the world, while genuine terrain recovery stays visible as a compact status.",
+    type: "improvement",
+    gameSlug: "world",
+  },
+  {
+    date: "2026-08-20",
+    title: "Smoother World Updates",
+    description:
+      "Army, terrain, and interaction rendering now uploads only changed instances, reducing frame work during movement and map updates.",
+    type: "improvement",
+    gameSlug: "world",
+  },
+  {
+    date: "2026-08-20",
+    title: "Faster Game Entry",
+    description:
+      "Game code and assets now begin loading as soon as you enter a play route, reducing waits even when account restoration is slow.",
+    type: "improvement",
+    gameSlug: "world",
+  },
+  {
+    date: "2026-08-20",
+    title: "Reliable Game Entry",
+    description:
+      "Game entry now mounts the world once, preventing duplicate startup work and lost readiness while the world loads.",
+    type: "fix",
+    gameSlug: "world",
+  },
+  {
     date: "2026-08-17",
     title: "Live World Facts",
     description:

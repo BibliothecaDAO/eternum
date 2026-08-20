@@ -12,8 +12,10 @@ interface PlayRouteReadinessState {
   hexReady: boolean;
   markFastTravelReady: (token: number) => void;
   markHexReady: (token: number, coords?: SceneCoordinates | null) => void;
+  markWorldmapConverged: (token: number) => void;
   markWorldmapReady: (token: number) => void;
   reset: (token: number) => void;
+  worldmapConverged: boolean;
   worldmapReady: boolean;
 }
 
@@ -53,14 +55,26 @@ export const usePlayRouteReadinessStore = create<PlayRouteReadinessState>((set) 
         worldmapReady: true,
       };
     }),
+  markWorldmapConverged: (token) =>
+    set((state) => {
+      if (token !== state.bootToken) {
+        return state;
+      }
+
+      return {
+        worldmapConverged: true,
+      };
+    }),
   reset: (token) =>
     set({
       bootToken: token,
       fastTravelReady: false,
       hexCoordinates: null,
       hexReady: false,
+      worldmapConverged: false,
       worldmapReady: false,
     }),
+  worldmapConverged: false,
   worldmapReady: false,
 }));
 

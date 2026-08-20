@@ -12,7 +12,10 @@ describe("army visible set reconciler wiring", () => {
   it("routes render reconciliation through a named helper", () => {
     const source = readArmyManagerSource();
 
-    expect(source).toMatch(/this\.reconcileVisibleArmies\(visibleArmies, modelTypesByEntity, options\?\.force\)/);
+    expect(source).toMatch(
+      /this\.reconcileVisibleArmies\(sortedVisibleArmies, modelTypesByEntity, options\?\.refreshExisting\)/,
+    );
     expect(source).toMatch(/private reconcileVisibleArmies\(/);
+    expect(source).toMatch(/reconcileVisibleArmySet\(\{/);
   });
 });

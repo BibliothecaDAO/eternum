@@ -9,10 +9,11 @@ function readSource(relativePath: string): string {
 }
 
 describe("StructureManager reset pass", () => {
-  it("resets only previously active instanced models instead of walking every model on each refresh", () => {
+  it("updates draw counts only for models with entering or leaving slots", () => {
     const source = readSource("./structure-manager.ts");
 
-    expect(source).toMatch(/previouslyActiveStructureModels/);
+    expect(source).toMatch(/private updateVisibleStructureModelCounts\(dirtyModels: Set<InstancedModel>\)/);
+    expect(source).toMatch(/dirtyModels\.forEach\(\(model\) =>/);
     expect(source).not.toMatch(
       /this\.structureModels\.forEach\(\(models\) => \{\s*models\.forEach\(\(model\) => model\.setCount\(0\)\);\s*\}\);/,
     );

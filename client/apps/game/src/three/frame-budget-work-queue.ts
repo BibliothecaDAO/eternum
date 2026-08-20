@@ -3,20 +3,21 @@ import { getCurrentFrameWorkOwner, runWithFrameWorkOwner } from "./frame-work-ow
 export type FrameBudgetWorkLane = "critical" | "visible" | "prefetch";
 
 export interface FrameBudgetWorkScheduler {
-  schedule<T>(lane: FrameBudgetWorkLane, work: () => T | Promise<T>): Promise<T>;
+  schedule<T>(lane: FrameBudgetWorkLane, work: () => T | Promise<T>, owner?: string): Promise<T>;
 }
 
 export function scheduleFrameBudgetWork<T>(
   scheduler: FrameBudgetWorkScheduler | undefined,
   lane: FrameBudgetWorkLane,
   work: () => T | Promise<T>,
+  owner?: string,
 ): Promise<T> {
   if (scheduler) {
-    return scheduler.schedule(lane, work);
+    return scheduler.schedule(lane, work, owner);
   }
 
   try {
-    return Promise.resolve(work());
+    return Promise.resolve(owner ? runWithFrameWorkOwner(owner, work) : work());
   } catch (error) {
     return Promise.reject(error);
   }
@@ -42,8 +43,8 @@ const LOADING_FRAME_BUDGET_MS = 24;
 const CRITICAL_BURST_LIMIT = 8;
 const VISIBLE_BURST_LIMIT = 4;
 // A single task is never split, so one oversized task defeats the whole
-// budget. Name it when it happens — the Aug 18 capture had 2.4s tasks hiding
-// behind a 6ms budget with only a lane-level owner.
+// budget. Production callers name each domain task; the lane label is only a
+// fallback for tests and future callers that have not yet supplied one.
 const LONG_TASK_REPORT_MS = 33;
 
 export class FrameBudgetWorkQueueDisposedError extends Error {
@@ -89,12 +90,12 @@ export class FrameBudgetWorkQueue implements FrameBudgetWorkScheduler {
     this.cancelFrame = options.cancelFrame ?? ((handle) => window.cancelAnimationFrame(handle));
   }
 
-  schedule<T>(lane: FrameBudgetWorkLane, work: () => T | Promise<T>): Promise<T> {
+  schedule<T>(lane: FrameBudgetWorkLane, work: () => T | Promise<T>, requestedOwner?: string): Promise<T> {
     if (this.isDisposed) {
       return Promise.reject(new FrameBudgetWorkQueueDisposedError());
     }
 
-    const owner = getCurrentFrameWorkOwner() ?? `chunk-work:${lane}`;
+    const owner = requestedOwner ?? getCurrentFrameWorkOwner() ?? `chunk-work:${lane}`;
     const result = new Promise<T>((resolve, reject) => {
       this.queues[lane].push({
         owner,

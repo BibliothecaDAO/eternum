@@ -316,6 +316,10 @@ export const extractErrorMessage = (error: unknown, fallback = "Unknown error"):
   return fallback;
 };
 
+/** Formats an extracted error for a single physical console line. */
+export const formatErrorForConsole = (error: unknown, fallback = "Unknown error"): string =>
+  extractErrorMessage(error, fallback).replace(/\s+/g, " ").trim();
+
 export type TransactionErrorKind =
   | "user_cancelled"
   | "session_invalid"

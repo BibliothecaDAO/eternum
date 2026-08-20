@@ -35,22 +35,17 @@ describe("StructureManager deferred bounds", () => {
     );
   });
 
-  it("performVisibleStructuresUpdate applies pending model world bounds after instance rebuild", () => {
+  it("commits dirty slot counts before applying pending model world bounds", () => {
     const managerSource = readSource("./structure-manager.ts");
-    const finalizerSource = readSource("./structure-visible-pass-finalizer.ts");
+    const commitMethod = managerSource.slice(
+      managerSource.indexOf("private commitVisibleStructureDiff("),
+      managerSource.indexOf("private addVisibleStructureInstance("),
+    );
+    const applyCountsIdx = commitMethod.indexOf("this.updateVisibleStructureModelCounts(dirtyModels)");
+    const applyBoundsIdx = commitMethod.indexOf("this.applyPendingModelBounds()");
 
-    const finalizePassIdx = managerSource.indexOf("this.finalizeVisibleStructureModelPass(");
-    const recordDurationIdx = managerSource.indexOf('recordWorldmapRenderDuration("performVisibleStructuresUpdate"');
-    const applyCountsIdx = finalizerSource.indexOf("applyModelInstanceCounts(input.modelInstanceCounts)");
-    const setCountIdx = finalizerSource.indexOf("model.setCount(count)");
-    const applyBoundsIdx = finalizerSource.indexOf("input.applyPendingModelBounds()");
-
-    expect(finalizePassIdx).toBeGreaterThan(-1);
-    expect(recordDurationIdx).toBeGreaterThan(-1);
     expect(applyCountsIdx).toBeGreaterThan(-1);
     expect(applyBoundsIdx).toBeGreaterThan(-1);
-    expect(setCountIdx).toBeGreaterThan(-1);
     expect(applyCountsIdx).toBeLessThan(applyBoundsIdx);
-    expect(finalizePassIdx).toBeLessThan(recordDurationIdx);
   });
 });

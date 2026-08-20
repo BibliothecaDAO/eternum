@@ -12,18 +12,18 @@ describe("runManagerChunkUpdateRuntime", () => {
     ({ chunkKey, knownChunkForToken }) => !knownChunkForToken || knownChunkForToken === chunkKey,
   );
 
-  it("tracks accepted transition ownership and updates the current chunk before running the update", async () => {
+  it("tracks a forced stride crossing without refreshing staying manager entities", async () => {
     const state = createManagerChunkRuntimeState("uncommitted");
     const executeChunkUpdate = vi.fn(async (chunkKey: string, options?: ManagerChunkUpdateOptions) => {
       expect(state.currentChunk).toBe(chunkKey);
-      expect(options).toEqual({ force: true, transitionToken: 3 });
+      expect(options).toEqual({ force: true, refreshExisting: false, transitionToken: 3 });
     });
 
     await runManagerChunkUpdateRuntime({
       chunkKey: "24,24",
       executeChunkUpdate,
       isDestroyed: () => false,
-      options: { force: false, transitionToken: 3 },
+      options: { force: true, transitionToken: 3 },
       shouldAcceptRequest,
       state,
       waitForSettle: vi.fn(async () => undefined),
@@ -119,7 +119,9 @@ describe("runManagerChunkUpdateRuntime", () => {
       transitionToken: 9,
     });
 
-    const executeChunkUpdate = vi.fn(async () => undefined);
+    const executeChunkUpdate = vi.fn(async (_chunkKey: string, options?: ManagerChunkUpdateOptions) => {
+      expect(options?.refreshExisting).toBe(true);
+    });
 
     await runManagerChunkUpdateRuntime({
       chunkKey: "24,24",

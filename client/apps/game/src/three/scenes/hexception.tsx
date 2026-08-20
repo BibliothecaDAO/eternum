@@ -31,8 +31,17 @@ import InstancedBiome from "@/three/managers/instanced-biome";
 import { SMALL_DETAILS_NAME } from "@/three/managers/instanced-model";
 import { SceneManager } from "@/three/scene-manager";
 import { HexagonScene } from "@/three/scenes/hexagon-scene";
+import {
+  buildingKey,
+  reconcileBuildingUpdate,
+  resolveBuildingInstanceAction,
+  runOwnedBuildingWorkAfterModelsLoad,
+  type TargetedBuildingReconciliation,
+} from "@/three/scenes/hexception-building-reconciliation";
 import { playBuildingSound } from "@/three/sound/utils";
 import { MatrixPool } from "@/three/utils/matrix-pool";
+import { collectObjectTextures } from "@/three/utils/material-textures";
+import { markInstancedAttributeRangeDirty } from "@/three/utils/instanced-attribute-update-range";
 import {
   navigateToStructure,
   toggleMapHexView,
@@ -95,17 +104,35 @@ import {
   Object3D,
   Raycaster,
   Sphere,
+  type Texture,
   Vector2,
   Vector3,
 } from "three";
 import { CSS2DObject } from "three/addons/renderers/CSS2DRenderer.js";
-import { MapControls } from "three/examples/jsm/controls/MapControls.js";
+import { MapControls } from "three/addons/controls/MapControls.js";
 import { SceneName } from "../types";
 import { getHexForWorldPosition, getWorldPositionForHex } from "../utils";
 import { HexHoverLabel } from "../utils/labels/hex-hover-label";
 import { gameEntityKey, buildingEntityKey } from "@/dojo/game-scope";
 
 const loader = gltfLoader;
+const BUILDING_RENDER_SIGNATURE = "eternumBuildingRenderSignature";
+
+interface HexceptionBuilding {
+  category: BUILDINGS_CATEGORIES_TYPES;
+  col: number;
+  matrix: Matrix4;
+  paused: boolean;
+  pending?: boolean;
+  resource?: ResourcesIds;
+  row: number;
+  structureType?: StructureType | null;
+}
+
+interface BuildingModelSelection {
+  group: BUILDINGS_GROUPS;
+  type: BUILDINGS_CATEGORIES_TYPES;
+}
 
 const generateHexPositions = (center: HexPosition, radius: number) => {
   const color = new Color("gray");
@@ -160,7 +187,7 @@ export default class HexceptionScene extends HexagonScene {
   private wonderInstances: Map<string, Group> = new Map();
   private buildingMixers: Map<string, AnimationMixer> = new Map();
   private pillars: InstancedMesh | null = null;
-  private buildings: any = [];
+  private buildings: HexceptionBuilding[] = [];
   centerColRow: number[] = [0, 0];
   private highlights: { col: number; row: number }[] = [];
   private buildingPreview: BuildingPreview | null = null;
@@ -181,6 +208,7 @@ export default class HexceptionScene extends HexagonScene {
   private buildingUpdateUnsubscribe: (() => void) | null = null;
   private isInitialized = false;
   private lastRealmKey?: string;
+  private activeRealmGeneration = 0;
   // Store Zustand unsubscribe functions to clean up on destroy
   private storeUnsubscribes: (() => void)[] = [];
   private readonly localZoomPersistDebounceMs = 500;
@@ -208,6 +236,7 @@ export default class HexceptionScene extends HexagonScene {
     const pillarGeometry = new ExtrudeGeometry(createHexagonShape(1), { depth: 2, bevelEnabled: false });
     pillarGeometry.rotateX(Math.PI / 2);
     this.pillars = new InstancedMesh(pillarGeometry, new MeshStandardMaterial(), 1000);
+    markInstancedAttributeRangeDirty(this.pillars.instanceMatrix, 0, this.pillars.instanceMatrix.count);
     this.pillars.position.y = 0.05;
     this.pillars.count = 0;
     this.scene.add(this.pillars);
@@ -305,16 +334,7 @@ export default class HexceptionScene extends HexagonScene {
           if (building) {
             this.interactiveHexManager.setAuraVisibility(false);
             this.getOrCreateBuildingPreview().setPreviewBuilding(building as any);
-            this.highlightHexManager.highlightHexes(
-              this.highlights.map((hex) => ({
-                hex: { col: hex.col, row: hex.row },
-                actionType: ActionType.Build,
-                kind: "destination",
-                isEndpoint: true,
-                isSharedRoute: false,
-                pathDepth: 1,
-              })),
-            );
+            this.renderBuildingPlacementHighlights();
           } else {
             this.interactiveHexManager.setAuraVisibility(true);
             this.clearBuildingMode();
@@ -507,6 +527,16 @@ export default class HexceptionScene extends HexagonScene {
     }
   }
 
+  public async resolveLocalViewTextures(): Promise<Texture[]> {
+    await Promise.allSettled([...this.modelLoadPromises]);
+
+    const textures = collectObjectTextures(this.scene);
+    this.buildingModels.forEach((category) => {
+      category.forEach(({ model }) => collectObjectTextures(model, textures));
+    });
+    return [...textures];
+  }
+
   private loadBuildingModel(path: string, building: string): Promise<{ model: Group; animations: AnimationClip[] }> {
     return new Promise((resolve, reject) => {
       loader.load(
@@ -588,6 +618,7 @@ export default class HexceptionScene extends HexagonScene {
     }
 
     if (realmChanged) {
+      const realmGeneration = this.advanceRealmGeneration();
       this.centerColRow = [contractPosition.col, contractPosition.row];
       this.tileManager.setTile({ col, row });
 
@@ -615,15 +646,7 @@ export default class HexceptionScene extends HexagonScene {
       // subscribe to building updates (create and destroy)
       this.buildingUpdateUnsubscribe = this.worldUpdateListener.Buildings.onBuildingUpdate(
         { col: this.centerColRow[0], row: this.centerColRow[1] },
-        (update: BuildingSystemUpdate) => {
-          const { innerCol, innerRow, buildingType } = update;
-          if (buildingType === BuildingType.None && innerCol !== undefined && innerRow !== undefined) {
-            this.removeBuilding(innerCol, innerRow);
-          } else if (buildingType !== BuildingType.None) {
-            playBuildingSound(buildingType);
-          }
-          this.updateHexceptionGrid(this.hexceptionRadius);
-        },
+        (update: BuildingSystemUpdate) => this.handleBuildingUpdate(update, realmGeneration),
       );
 
       this.removeCastleFromScene();
@@ -678,6 +701,7 @@ export default class HexceptionScene extends HexagonScene {
   }
 
   destroy() {
+    this.advanceRealmGeneration();
     this.clearHoverLabel();
     this.hoverLabelManager.dispose();
 
@@ -822,8 +846,8 @@ export default class HexceptionScene extends HexagonScene {
       } catch (error) {
         console.error("[Hexception] building placement failed; removing provisional building", error);
         this.removeBuilding(normalizedCoords.col, normalizedCoords.row);
+        this.updateBuildingHighlight(normalizedCoords, false);
       }
-      this.updateHexceptionGrid(this.hexceptionRadius);
     } else {
       // if not building mode
       const { col: outerCol, row: outerRow } = this.tileManager.getHexCoords();
@@ -1068,7 +1092,108 @@ export default class HexceptionScene extends HexagonScene {
     }
   }
 
+  private handleBuildingUpdate(update: BuildingSystemUpdate, realmGeneration: number): void {
+    if (!this.ownsRealmGeneration(realmGeneration)) return;
+
+    if (update.buildingType !== BuildingType.None) {
+      playBuildingSound(update.buildingType);
+    }
+
+    reconcileBuildingUpdate({
+      applyFullFallback: () => this.updateHexceptionGrid(this.hexceptionRadius),
+      applyTargeted: (reconciliation) => this.applyTargetedBuildingReconciliation(reconciliation, realmGeneration),
+      buildings: this.buildings,
+      reportMissingIdentity: () => {
+        console.warn("[Hexception] Building update lacked inner coordinates; running full grid reconciliation.");
+      },
+      resolveBuilding: (position) => this.resolveBuildingFromRecs(position),
+      update,
+    });
+  }
+
+  private applyTargetedBuildingReconciliation(
+    reconciliation: TargetedBuildingReconciliation<HexceptionBuilding>,
+    realmGeneration: number,
+  ): void {
+    if (!this.ownsRealmGeneration(realmGeneration)) return;
+
+    this.buildings = reconciliation.buildings;
+
+    const key = buildingKey(reconciliation.position);
+    void runOwnedBuildingWorkAfterModelsLoad({
+      apply: () =>
+        runWithFrameWorkOwner("scene:hexception:building", () => {
+          const latestBuilding = this.buildings.find((building) => buildingKey(building) === key);
+          this.updateBuildingHighlight(reconciliation.position, Boolean(latestBuilding));
+          this.reconcileBuildingInstance(reconciliation.position, latestBuilding, this.tileManager.structureType());
+        }),
+      isOwned: () => this.ownsRealmGeneration(realmGeneration),
+      modelLoadPromises: this.modelLoadPromises,
+    });
+  }
+
+  private advanceRealmGeneration(): number {
+    this.activeRealmGeneration += 1;
+    return this.activeRealmGeneration;
+  }
+
+  private ownsRealmGeneration(realmGeneration: number): boolean {
+    return realmGeneration === this.activeRealmGeneration;
+  }
+
+  private resolveBuildingFromRecs(position: HexPosition): HexceptionBuilding | undefined {
+    const building = this.tileManager
+      .existingBuildings()
+      .find((candidate) => candidate.col === position.col && candidate.row === position.row);
+    if (!building) return;
+
+    return {
+      ...building,
+      category: building.category as BUILDINGS_CATEGORIES_TYPES,
+      matrix: this.createBuildingMatrix(position),
+    };
+  }
+
+  private createBuildingMatrix(position: HexPosition): Matrix4 {
+    const building = new Object3D();
+    const worldPosition = getWorldPositionForHex(position, false);
+    building.position.set(worldPosition.x, 0.05, worldPosition.z);
+    building.scale.set(HEX_SIZE, HEX_SIZE, HEX_SIZE);
+    building.rotation.y = (Math.floor(this.hashCoordinates(position.col, position.row) * 6) * Math.PI) / 3;
+    building.updateMatrix();
+    return building.matrix.clone();
+  }
+
+  private updateBuildingHighlight(position: HexPosition, occupied: boolean): void {
+    const highlightIndex = this.highlights.findIndex(
+      (highlight) => highlight.col === position.col && highlight.row === position.row,
+    );
+    if (occupied && highlightIndex >= 0) {
+      this.highlights.splice(highlightIndex, 1);
+    } else if (!occupied && highlightIndex < 0) {
+      this.highlights.push(position);
+    }
+
+    if (this.buildingPreview?.getPreviewBuilding()) {
+      this.renderBuildingPlacementHighlights();
+    }
+  }
+
+  private renderBuildingPlacementHighlights(): void {
+    this.highlightHexManager.highlightHexes(
+      this.highlights.map((hex) => ({
+        hex: { col: hex.col, row: hex.row },
+        actionType: ActionType.Build,
+        kind: "destination",
+        isEndpoint: true,
+        isSharedRoute: false,
+        pathDepth: 1,
+      })),
+    );
+  }
+
   updateHexceptionGrid(radius: number) {
+    const realmGeneration = this.activeRealmGeneration;
     const dummy = new Object3D();
     const mainStructureType = this.tileManager.structureType();
     this.updateCastleLevel();
@@ -1099,244 +1224,281 @@ export default class HexceptionScene extends HexagonScene {
 
     // The whole grid build runs as one macrotask once models resolve; the
     // frame-owner marker is what attributes the local-view freeze to it.
-    Promise.all(this.modelLoadPromises).then(() =>
-      runWithFrameWorkOwner("scene:hexception:grid", () => {
-        const centers = [
-          [0, 0], //0, 0 (Main hex)
-          [-6, 5], //-1, 1
-          [7, 4], //1, 0
-          [1, 9], //0, 1
-          [-7, -4], //-1, 0
-          [0, -9], //0, -1
-          [7, -5], //1, -1
-        ];
-        const neighbors = getNeighborHexes(this.centerColRow[0], this.centerColRow[1]);
-        this.highlights = [];
+    void runOwnedBuildingWorkAfterModelsLoad({
+      apply: () =>
+        runWithFrameWorkOwner("scene:hexception:grid", () => {
+          const centers = [
+            [0, 0], //0, 0 (Main hex)
+            [-6, 5], //-1, 1
+            [7, 4], //1, 0
+            [1, 9], //0, 1
+            [-7, -4], //-1, 0
+            [0, -9], //0, -1
+            [7, -5], //1, -1
+          ];
+          const neighbors = getNeighborHexes(this.centerColRow[0], this.centerColRow[1]);
+          this.highlights = [];
 
-        // compute matrices to update biome models for each of the large hexes
-        for (const center in centers) {
-          const isMainHex = centers[center][0] === 0 && centers[center][1] === 0;
-          if (isMainHex) {
-            this.computeMainHexMatrices(radius, dummy, centers[center], this.tileManager.getHexCoords(), biomeHexes);
-          } else {
-            this.computeNeighborHexMatrices(radius, dummy, centers[center], neighbors[Number(center) - 1], biomeHexes);
-          }
-        }
-
-        // add buildings to the scene in the center hex
-        for (const building of this.buildings) {
-          const key = `${building.col},${building.row}`;
-          const isPending = Boolean(building.pending);
-          if (this.buildingInstances.has(key) && this.pendingBuildingKeys.has(key) !== isPending) {
-            // The pending state flipped (tx confirmed, or the slot re-resolved) —
-            // rebuild the instance so its material treatment matches reality.
-            this.removeBuilding(building.col, building.row);
-          }
-          if (!this.buildingInstances.has(key)) {
-            let buildingGroup: BUILDINGS_GROUPS;
-            let buildingType: BUILDINGS_CATEGORIES_TYPES;
-
-            if (building.resource && (building.resource < 23 || building.resource === ResourcesIds.AncientFragment)) {
-              buildingGroup = BUILDINGS_GROUPS.RESOURCES_MINING;
-              buildingType = ResourceIdToMiningType[building.resource as ResourcesIds] as ResourceMiningTypes;
+          // compute matrices to update biome models for each of the large hexes
+          for (const center in centers) {
+            const isMainHex = centers[center][0] === 0 && centers[center][1] === 0;
+            if (isMainHex) {
+              this.computeMainHexMatrices(radius, dummy, centers[center], this.tileManager.getHexCoords(), biomeHexes);
             } else {
-              buildingGroup = BUILDINGS_GROUPS.BUILDINGS;
-              buildingType = building.category as BUILDINGS_CATEGORIES_TYPES;
-            }
-
-            if (buildingGroup === BUILDINGS_GROUPS.BUILDINGS && buildingType === BuildingType.ResourceLabor) {
-              buildingType = castleLevelToRealmCastle[this.structureStage];
-              buildingGroup = BUILDINGS_GROUPS.REALMS;
-            }
-
-            if (isVillageLikeStructureCategory(mainStructureType)) {
-              // Village-like structures use their dedicated center model instead of realm castle stages.
-              if (building.col === BUILDINGS_CENTER[0] && building.row === BUILDINGS_CENTER[1]) {
-                buildingGroup = BUILDINGS_GROUPS.VILLAGE;
-                buildingType = mainStructureType as StructureType.Village | StructureType.Camp;
-              }
-            }
-
-            // Handle hyperstructure type
-            if (building.structureType === StructureType.Hyperstructure) {
-              buildingGroup = BUILDINGS_GROUPS.HYPERSTRUCTURE;
-              buildingType = hyperstructureStageToModel[this.structureStage as StructureProgress];
-            }
-
-            // Store original building group and type for potential wonder addition
-            const originalBuildingGroup = buildingGroup;
-            const originalBuildingType = buildingType;
-
-            // Check if the realm has a wonder
-            const hasWonder = this.tileManager.getWonder(this.state.structureEntityId);
-
-            // If the realm has a wonder and it's not a hyperstructure, we'll add both models
-            // But only for the central building (castle) at BUILDINGS_CENTER coordinates
-            if (
-              hasWonder &&
-              building.structureType !== StructureType.Hyperstructure &&
-              building.col === BUILDINGS_CENTER[0] &&
-              building.row === BUILDINGS_CENTER[1]
-            ) {
-              // First, create the wonder model
-              const wonderGroup = BUILDINGS_GROUPS.WONDER;
-              const wonderType = WONDER_REALM;
-
-              const wonderData = this.buildingModels
-                .get(wonderGroup)
-                ?.get(wonderType.toString() as BUILDINGS_CATEGORIES_TYPES);
-
-              if (wonderData) {
-                const wonderInstance = wonderData.model.clone();
-                wonderInstance.applyMatrix4(building.matrix);
-
-                // Set initial scale for animation
-                wonderInstance.scale.set(0.01, 0.01, 0.01);
-
-                // Add wonder instance to scene
-                this.scene.add(wonderInstance);
-                // Store the wonder instance for later removal
-                this.wonderInstances.set(`${key}_wonder`, wonderInstance);
-
-                // Animate scale using gsap
-                gsap.to(wonderInstance.scale, {
-                  duration: 0.5,
-                  x: 1,
-                  y: 1,
-                  z: 1,
-                  ease: "power2.out",
-                });
-
-                // Check if the model has animations and start them
-                const wonderAnimations = wonderData.animations;
-                if (wonderAnimations && wonderAnimations.length > 0) {
-                  const wonderMixer = new AnimationMixer(wonderInstance);
-                  wonderAnimations.forEach((clip: AnimationClip) => {
-                    wonderMixer.clipAction(clip).play();
-                  });
-                  // Store the mixer for later use
-                  this.buildingMixers.set(`${key}_wonder`, wonderMixer);
-                }
-              }
-            }
-
-            // Now create the original building model (Realm or other)
-            const buildingData = this.buildingModels
-              .get(originalBuildingGroup)
-              ?.get(originalBuildingType.toString() as BUILDINGS_CATEGORIES_TYPES);
-
-            if (buildingData) {
-              const instance = buildingData.model.clone();
-
-              instance.applyMatrix4(building.matrix);
-
-              // Set initial scale for animation
-              instance.scale.set(0.01, 0.01, 0.01);
-
-              if (buildingType === ResourceMiningTypes.Forge) {
-                instance.traverse((child) => {
-                  if (child.name === "Grassland003_1" && child instanceof Mesh) {
-                    if (!this.minesMaterials.has(building.resource)) {
-                      const material = new MeshStandardMaterial(MinesMaterialsParams[building.resource]);
-                      this.minesMaterials.set(building.resource, material);
-                    }
-                    child.material = this.minesMaterials.get(building.resource);
-                  }
-                });
-              }
-              if (buildingType === ResourceMiningTypes.Mine) {
-                instance.traverse((child) => {
-                  // @ts-ignore
-                  if (child?.material?.name === "crystal" && child instanceof Mesh) {
-                    if (!this.minesMaterials.has(building.resource)) {
-                      const material = new MeshStandardMaterial(MinesMaterialsParams[building.resource]);
-                      this.minesMaterials.set(building.resource, material);
-                    }
-                    child.material = this.minesMaterials.get(building.resource);
-                  }
-                });
-              }
-
-              if (isPending) {
-                applyPendingBuildingMaterials(instance);
-                this.pendingBuildingKeys.add(key);
-              }
-
-              // Add instance to scene BEFORE starting animation
-              this.scene.add(instance);
-              this.buildingInstances.set(key, instance);
-
-              // Animate scale using gsap
-              gsap.to(instance.scale, {
-                duration: 0.5,
-                x: 1,
-                y: 1,
-                z: 1,
-                ease: "power2.out",
-              });
-
-              // Check if the model has animations and start them
-              const animations = buildingData.animations;
-              if (animations && animations.length > 0) {
-                const mixer = new AnimationMixer(instance);
-                animations.forEach((clip: AnimationClip) => {
-                  mixer.clipAction(clip).play();
-                });
-                // Store the mixer for later use (e.g., updating in the animation loop)
-                this.buildingMixers.set(key, mixer);
-              }
+              this.computeNeighborHexMatrices(
+                radius,
+                dummy,
+                centers[center],
+                neighbors[Number(center) - 1],
+                biomeHexes,
+              );
             }
           }
-          const needPausedLabel =
-            building.paused &&
-            this.labels.findIndex((label) => label.col === building.col && label.row === building.row) < 0;
-          if (needPausedLabel) {
-            this.addPausedLabelToBuilding(building);
-          } else if (!building.paused) {
-            this.removePausedLabelFromBuilding(building);
+
+          this.reconcileAllBuildingInstances(mainStructureType);
+
+          // update neighbor hexes around the center hex
+          let pillarOffset = 0;
+          for (const [biome, matrices] of Object.entries(biomeHexes)) {
+            const hexMesh = this.biomeModels.get(biome as any)!;
+            matrices.forEach((matrix, index) => {
+              hexMesh.setMatrixAt(index, matrix);
+              this.pillars!.setMatrixAt(index + pillarOffset, matrix);
+              // Use base biome type for color lookup (remove 'Alt' suffix if present)
+              const baseBiome = biome.endsWith("Alt") ? biome.slice(0, -3) : biome;
+              this.pillars!.setColorAt(index + pillarOffset, BIOME_COLORS[baseBiome as BiomeType]);
+            });
+            pillarOffset += matrices.length;
+            this.pillars!.position.y = -0.01;
+            this.pillars!.count = pillarOffset;
+            this.pillars!.computeBoundingSphere();
+            hexMesh.setCount(matrices.length);
           }
-        }
+          markInstancedAttributeRangeDirty(this.pillars!.instanceMatrix, 0, this.pillars!.count);
+          if (this.pillars!.instanceColor) {
+            markInstancedAttributeRangeDirty(this.pillars!.instanceColor, 0, this.pillars!.count);
+          }
+          this.interactiveHexManager.renderAllHexes();
 
-        // update neighbor hexes around the center hex
-        let pillarOffset = 0;
-        for (const [biome, matrices] of Object.entries(biomeHexes)) {
-          const hexMesh = this.biomeModels.get(biome as any)!;
-          matrices.forEach((matrix, index) => {
-            hexMesh.setMatrixAt(index, matrix);
-            this.pillars!.setMatrixAt(index + pillarOffset, matrix);
-            // Use base biome type for color lookup (remove 'Alt' suffix if present)
-            const baseBiome = biome.endsWith("Alt") ? biome.slice(0, -3) : biome;
-            this.pillars!.setColorAt(index + pillarOffset, BIOME_COLORS[baseBiome as BiomeType]);
-          });
-          pillarOffset += matrices.length;
-          this.pillars!.position.y = -0.01;
-          this.pillars!.count = pillarOffset;
-          this.pillars!.computeBoundingSphere();
-          hexMesh.setCount(matrices.length);
-        }
-        this.pillars!.instanceMatrix.needsUpdate = true;
-        this.pillars!.instanceColor!.needsUpdate = true;
-        this.interactiveHexManager.renderAllHexes();
+          // CRITICAL: Release all matrices back to the pool to prevent memory leaks
+          const matrixPool = MatrixPool.getInstance();
+          let totalMatricesReleased = 0;
+          for (const [biome, matrices] of Object.entries(biomeHexes)) {
+            matrixPool.releaseAll(matrices);
+            totalMatricesReleased += matrices.length;
+            // Clear the array to prevent accidental reuse of released matrices
+            matrices.length = 0;
+          }
+          if (VERBOSE_LOGS_ENABLED) console.log(`🧹 Released ${totalMatricesReleased} matrices back to pool`);
 
-        // CRITICAL: Release all matrices back to the pool to prevent memory leaks
-        const matrixPool = MatrixPool.getInstance();
-        let totalMatricesReleased = 0;
-        for (const [biome, matrices] of Object.entries(biomeHexes)) {
-          matrixPool.releaseAll(matrices);
-          totalMatricesReleased += matrices.length;
-          // Clear the array to prevent accidental reuse of released matrices
-          matrices.length = 0;
-        }
-        if (VERBOSE_LOGS_ENABLED) console.log(`🧹 Released ${totalMatricesReleased} matrices back to pool`);
+          if (typeof window !== "undefined") {
+            usePlayRouteReadinessStore.getState().markHexReady(getCurrentPlayRouteBootToken(), {
+              col: this.centerColRow[0],
+              row: this.centerColRow[1],
+            });
+          }
+        }),
+      isOwned: () => this.ownsRealmGeneration(realmGeneration),
+      modelLoadPromises: this.modelLoadPromises,
+    });
+  }
 
-        if (typeof window !== "undefined") {
-          usePlayRouteReadinessStore.getState().markHexReady(getCurrentPlayRouteBootToken(), {
-            col: this.centerColRow[0],
-            row: this.centerColRow[1],
-          });
-        }
-      }),
+  private reconcileAllBuildingInstances(mainStructureType: StructureType | undefined): void {
+    const nextKeys = new Set(this.buildings.map((building) => buildingKey(building)));
+    const renderedKeys = new Set([
+      ...this.buildingInstances.keys(),
+      ...[...this.wonderInstances.keys()].map((key) => key.replace(/_wonder$/, "")),
+    ]);
+    renderedKeys.forEach((key) => {
+      if (nextKeys.has(key)) return;
+      const [col, row] = key.split(",").map(Number);
+      this.reconcileBuildingInstance({ col, row }, undefined, mainStructureType);
+    });
+
+    this.buildings.forEach((building) => this.reconcileBuildingInstance(building, building, mainStructureType));
+  }
+
+  private reconcileBuildingInstance(
+    position: HexPosition,
+    building: HexceptionBuilding | undefined,
+    mainStructureType: StructureType | undefined,
+  ): void {
+    const key = buildingKey(position);
+    const selection = building ? this.resolveBuildingModelSelection(building, mainStructureType) : undefined;
+    const signature = building && selection ? this.resolveBuildingRenderSignature(building, selection) : undefined;
+    const currentInstance = this.buildingInstances.get(key);
+    const currentSignature =
+      currentInstance?.userData[BUILDING_RENDER_SIGNATURE] ??
+      (this.wonderInstances.has(`${key}_wonder`) ? "wonder-only" : undefined);
+    const action = resolveBuildingInstanceAction(currentSignature, signature);
+
+    if (action === "remove" || action === "replace") {
+      this.removeBuilding(position.col, position.row);
+    }
+    if (building && selection && signature !== undefined && (action === "create" || action === "replace")) {
+      this.addBuildingInstance(building, selection, signature);
+    }
+
+    if (building) {
+      this.reconcilePausedBuildingLabel(building);
+    }
+  }
+
+  private resolveBuildingModelSelection(
+    building: HexceptionBuilding,
+    mainStructureType: StructureType | undefined,
+  ): BuildingModelSelection {
+    let group: BUILDINGS_GROUPS;
+    let type: BUILDINGS_CATEGORIES_TYPES;
+
+    if (building.resource && (building.resource < 23 || building.resource === ResourcesIds.AncientFragment)) {
+      group = BUILDINGS_GROUPS.RESOURCES_MINING;
+      type = ResourceIdToMiningType[building.resource] as ResourceMiningTypes;
+    } else {
+      group = BUILDINGS_GROUPS.BUILDINGS;
+      type = building.category;
+    }
+
+    if (group === BUILDINGS_GROUPS.BUILDINGS && type === BuildingType.ResourceLabor) {
+      group = BUILDINGS_GROUPS.REALMS;
+      type = castleLevelToRealmCastle[this.structureStage];
+    }
+
+    const isCenterBuilding = building.col === BUILDINGS_CENTER[0] && building.row === BUILDINGS_CENTER[1];
+    if (isCenterBuilding && isVillageLikeStructureCategory(mainStructureType)) {
+      group = BUILDINGS_GROUPS.VILLAGE;
+      type = mainStructureType as StructureType.Village | StructureType.Camp;
+    }
+
+    if (building.structureType === StructureType.Hyperstructure) {
+      group = BUILDINGS_GROUPS.HYPERSTRUCTURE;
+      type = hyperstructureStageToModel[this.structureStage as StructureProgress];
+    }
+
+    return { group, type };
+  }
+
+  private resolveBuildingRenderSignature(building: HexceptionBuilding, selection: BuildingModelSelection): string {
+    return [selection.group, selection.type, building.resource ?? "none", building.pending ? "pending" : "ready"].join(
+      ":",
     );
+  }
+
+  private addBuildingInstance(
+    building: HexceptionBuilding,
+    selection: BuildingModelSelection,
+    signature: string,
+  ): void {
+    const key = buildingKey(building);
+    this.addWonderInstance(building, key);
+
+    const buildingData = this.buildingModels
+      .get(selection.group)
+      ?.get(selection.type.toString() as BUILDINGS_CATEGORIES_TYPES);
+    if (!buildingData) return;
+
+    const instance = buildingData.model.clone();
+    instance.applyMatrix4(building.matrix);
+    instance.scale.set(0.01, 0.01, 0.01);
+    instance.userData[BUILDING_RENDER_SIGNATURE] = signature;
+    this.applyMiningBuildingMaterial(instance, building, selection.type);
+
+    if (building.pending) {
+      applyPendingBuildingMaterials(instance);
+      this.pendingBuildingKeys.add(key);
+    }
+
+    this.scene.add(instance);
+    this.buildingInstances.set(key, instance);
+    this.animateBuildingScale(instance);
+    this.startBuildingAnimations(key, instance, buildingData.animations);
+  }
+
+  private addWonderInstance(building: HexceptionBuilding, key: string): void {
+    const isCenterBuilding = building.col === BUILDINGS_CENTER[0] && building.row === BUILDINGS_CENTER[1];
+    if (
+      !isCenterBuilding ||
+      building.structureType === StructureType.Hyperstructure ||
+      !this.tileManager.getWonder(this.state.structureEntityId)
+    ) {
+      return;
+    }
+
+    const wonderData = this.buildingModels
+      .get(BUILDINGS_GROUPS.WONDER)
+      ?.get(WONDER_REALM.toString() as BUILDINGS_CATEGORIES_TYPES);
+    if (!wonderData) return;
+
+    const wonderKey = `${key}_wonder`;
+    const wonderInstance = wonderData.model.clone();
+    wonderInstance.applyMatrix4(building.matrix);
+    wonderInstance.scale.set(0.01, 0.01, 0.01);
+    this.scene.add(wonderInstance);
+    this.wonderInstances.set(wonderKey, wonderInstance);
+    this.animateBuildingScale(wonderInstance);
+    this.startBuildingAnimations(wonderKey, wonderInstance, wonderData.animations);
+  }
+
+  private applyMiningBuildingMaterial(
+    instance: Group,
+    building: HexceptionBuilding,
+    buildingType: BUILDINGS_CATEGORIES_TYPES,
+  ): void {
+    const resource = building.resource;
+    if (resource === undefined) return;
+
+    if (buildingType === ResourceMiningTypes.Forge) {
+      instance.traverse((child) => {
+        if (child.name === "Grassland003_1" && child instanceof Mesh) {
+          child.material = this.getOrCreateMineMaterial(resource);
+        }
+      });
+    }
+    if (buildingType === ResourceMiningTypes.Mine) {
+      instance.traverse((child) => {
+        if (child instanceof Mesh && !Array.isArray(child.material) && child.material.name === "crystal") {
+          child.material = this.getOrCreateMineMaterial(resource);
+        }
+      });
+    }
+  }
+
+  private getOrCreateMineMaterial(resource: ResourcesIds): MeshStandardMaterial {
+    let material = this.minesMaterials.get(resource);
+    if (!material) {
+      material = new MeshStandardMaterial(MinesMaterialsParams[resource]);
+      this.minesMaterials.set(resource, material);
+    }
+    return material;
+  }
+
+  private animateBuildingScale(instance: Group): void {
+    gsap.to(instance.scale, {
+      duration: 0.5,
+      x: 1,
+      y: 1,
+      z: 1,
+      ease: "power2.out",
+    });
+  }
+
+  private startBuildingAnimations(key: string, instance: Group, animations: AnimationClip[]): void {
+    if (animations.length === 0) return;
+
+    const mixer = new AnimationMixer(instance);
+    animations.forEach((clip) => mixer.clipAction(clip).play());
+    this.buildingMixers.set(key, mixer);
+  }
+
+  private reconcilePausedBuildingLabel(building: HexceptionBuilding): void {
+    const hasPausedLabel = this.labels.some((label) => label.col === building.col && label.row === building.row);
+    if (building.paused && !hasPausedLabel) {
+      this.addPausedLabelToBuilding(building);
+      return;
+    }
+    if (!building.paused) {
+      this.removePausedLabelFromBuilding(building);
+    }
   }
 
   addPausedLabelToBuilding(building: { col: number; row: number; matrix: any }) {
@@ -1434,31 +1596,17 @@ export default class HexceptionScene extends HexagonScene {
 
         this.interactiveHexManager.addHex({ col: position.col, row: position.row });
 
-        let withBuilding = false;
         const building = existingBuildings.find((value) => value.col === position.col && value.row === position.row);
 
         if (building) {
-          withBuilding = true;
-          const buildingObj = dummy.clone();
-          // --- Deterministic Rotation ---
-          const rotationSeed = this.hashCoordinates(position.col, position.row);
-          const rotationIndex = Math.floor(rotationSeed * 6); // Map 0-1 to 0-5
-          const deterministicRotation = (rotationIndex * Math.PI) / 3; // Convert index to radians (0, pi/3, 2pi/3, ...)
-          buildingObj.rotation.y = deterministicRotation;
-          // --- End Deterministic Rotation ---
-
-          buildingObj.updateMatrix();
-          this.buildings.push({ ...building, matrix: buildingObj.matrix.clone() });
-        } else if (isMainHex) {
+          this.buildings.push({ ...building, matrix: this.createBuildingMatrix(position) });
+        } else {
           this.highlights.push(getHexForWorldPosition(dummy.position));
         }
 
-        if (!withBuilding) {
-          // OPTIMIZED: Use matrix pool instead of clone()
-          const tempMatrix = MatrixPool.getInstance().getMatrix();
-          tempMatrix.copy(dummy.matrix);
-          biomeHexes[buildableAreaBiome as BiomeType].push(tempMatrix);
-        }
+        const tempMatrix = MatrixPool.getInstance().getMatrix();
+        tempMatrix.copy(dummy.matrix);
+        biomeHexes[buildableAreaBiome as BiomeType].push(tempMatrix);
       });
     }
 
@@ -1518,6 +1666,7 @@ export default class HexceptionScene extends HexagonScene {
 
   removeBuilding(innerCol: number, innerRow: number) {
     const key = `${innerCol},${innerRow}`;
+    this.removePausedLabelFromBuilding({ col: innerCol, row: innerRow });
     const instance = this.buildingInstances.get(key);
     if (instance) {
       this.scene.remove(instance);

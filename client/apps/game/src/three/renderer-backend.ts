@@ -28,6 +28,7 @@ export interface RendererSurfaceLike {
   domElement: HTMLCanvasElement;
   dispose(): void;
   info: RendererInfoLike;
+  initTexture?(texture: Texture): void;
   outputColorSpace?: string;
   render(scene: Object3D, camera: Camera): void;
   setPixelRatio(pixelRatio: number): void;

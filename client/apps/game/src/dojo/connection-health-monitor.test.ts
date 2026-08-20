@@ -504,6 +504,7 @@ describe("ConnectionHealthMonitor", () => {
   });
 
   it("routes an observed stream close through the shared recovery entry point", async () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => undefined);
     const onReconnectSpatial = vi.fn(() => Promise.resolve());
     const onReconnectGlobal = vi.fn(() => Promise.resolve());
     const monitor = new ConnectionHealthMonitor({
@@ -519,6 +520,9 @@ describe("ConnectionHealthMonitor", () => {
     expect(onReconnectGlobal).toHaveBeenCalledOnce();
     expect(onReconnectSpatial).toHaveBeenCalledOnce();
     expect(useConnectionStore.getState().status).toBe("connected");
+    expect(warn).toHaveBeenCalledWith(
+      '[ConnectionHealthMonitor] recovery requested kind="stream_close" stream="event" reason="HTTP2 stream failed"',
+    );
 
     monitor.dispose();
   });

@@ -1,5 +1,4 @@
 import { useAccountStore } from "@/hooks/store/use-account-store";
-import { useBlockTimestampStore } from "@/hooks/store/use-block-timestamp-store";
 import { useChainTimeStore } from "@/hooks/store/use-chain-time-store";
 import { gameWorkerManager } from "@/managers/game-worker-manager";
 import { resolveArmyOwnerState } from "@/three/managers/army-owner-resolution";
@@ -38,7 +37,7 @@ import { getEntityIdFromKeys } from "@bibliothecadao/eternum";
 import { shortString } from "starknet";
 import * as THREE from "three";
 import { Color, Euler, Group, Object3D, Raycaster, Scene, Vector3 } from "three";
-import { CSS2DObject } from "three/examples/jsm/renderers/CSS2DRenderer.js";
+import { CSS2DObject } from "three/addons/renderers/CSS2DRenderer.js";
 import { env } from "../../../env";
 import type { AttachmentTransform, CosmeticAttachmentTemplate, ResolvedCosmeticSkin } from "../cosmetics";
 import {
@@ -96,30 +95,19 @@ import { CompactEntityLabelRenderer } from "./compact-entity-label-renderer";
 import { resolveArmyCompactEntityLabel, resolveCompactEntityLabelVariant } from "./compact-entity-label-policy";
 import { createArmyRecord } from "./army-record";
 import { resolveArmyStaminaTickRefresh } from "./army-stamina-tick-policy";
+import { finalizeArmyChunkTransition } from "./army-chunk-transition-finalizer";
 import { reconcileVisibleArmySet } from "./army-visible-set-reconciler";
+import { createManagerVisibilityDiff } from "./manager-visibility-diff";
 import { resolvePointLabelTextureFlipY } from "./point-label-texture-policy";
 import { PointsLabelRenderer } from "./points-label-renderer";
 import { resolveArmySlotCompactionPlan } from "./army-slot-compaction";
 import {
   auditArmyRenderIntegrity,
   auditArmySlots,
-  type ArmyRenderViolation,
   type ArmySlotAuditEntry,
   type DrawnSlotPositionEntry,
 } from "./army-slot-auditor";
-
-const renderViolationSignature = (violation: ArmyRenderViolation): string => {
-  switch (violation.kind) {
-    case "orphaned-drawn-slot":
-      return `orphan:${violation.slot}:${violation.owner}`;
-    case "visible-not-drawn":
-      return `missing:${violation.entityId}`;
-    case "stale-drawn-position":
-      return `stale:${violation.entityId}:${violation.slot}`;
-    case "duplicate-drawn-owner":
-      return `dup:${violation.owner}:${violation.slots.join(",")}`;
-  }
-};
+import { reportArmyIntegrityHealOnce } from "./army-integrity-diagnostics";
 import { resolveMovementPath } from "./army-move-path";
 import { shouldUseWorkerPathForArmy } from "./army-movement-path-strategy";
 import { addVisibleArmyOrderEntry, removeVisibleArmyOrderEntry, replaceVisibleArmyOrder } from "./army-visible-order";
@@ -138,7 +126,7 @@ import {
   shouldRunManagerChunkUpdate,
   waitForVisualSettle,
 } from "./manager-update-convergence";
-import { snapshotRendererDiagnostics } from "../renderer-diagnostics";
+import { getRendererDiagnosticActiveMode, snapshotRendererDiagnostics } from "../renderer-diagnostics";
 import {
   isFrameBudgetWorkQueueDisposedError,
   scheduleFrameBudgetWork,
@@ -213,7 +201,7 @@ export class ArmyManager {
   private renderQueuePromise: Promise<void> | null = null;
   private renderQueueActive = false;
   private pendingRenderChunkKey: string | null = null;
-  private pendingRenderOptions: { force?: boolean; transitionToken?: number } | null = null;
+  private pendingRenderOptions: ManagerChunkUpdateOptions | null = null;
   private armyPaths: Map<ID, Position[]> = new Map();
   private entityIdLabels: Map<ID, CSS2DObject> = new Map();
   private labelPool = new LabelPool();
@@ -381,8 +369,11 @@ export class ArmyManager {
       .catch(() => undefined)
       .then(() => this.preloadMissingProjectedArmyModelsForEntity(entityId))
       .then(() =>
-        scheduleFrameBudgetWork(this.chunkWorkScheduler, "visible", () =>
-          this.synchronizeArmyProjectionEntity(entityId),
+        scheduleFrameBudgetWork(
+          this.chunkWorkScheduler,
+          "visible",
+          () => this.synchronizeArmyProjectionEntity(entityId),
+          "manager:army-projection",
         ),
       )
       .catch((error) => {
@@ -531,7 +522,7 @@ export class ArmyManager {
     });
     if (tickRefresh.shouldRecompute) {
       this.lastKnownArmiesTick = tickRefresh.nextTrackedTick;
-      this.recomputeStaminaForAllArmies();
+      this.recomputeStaminaForAllArmies(currentArmiesTick);
     }
     this.recomputeBattleTimersForAllArmies();
   }
@@ -1011,10 +1002,7 @@ export class ArmyManager {
     });
   }
 
-  private renderVisibleArmies(
-    chunkKey: string,
-    options?: { force?: boolean; transitionToken?: number },
-  ): Promise<void> {
+  private renderVisibleArmies(chunkKey: string, options?: ManagerChunkUpdateOptions): Promise<void> {
     if (this.isDestroyed) {
       return Promise.resolve();
     }
@@ -1385,10 +1373,7 @@ export class ArmyManager {
     });
   }
 
-  private async executeRenderForChunk(
-    chunkKey: string,
-    options?: { force?: boolean; transitionToken?: number },
-  ): Promise<void> {
+  private async executeRenderForChunk(chunkKey: string, options?: ManagerChunkUpdateOptions): Promise<void> {
     if (this.isDestroyed) {
       return;
     }
@@ -1412,7 +1397,13 @@ export class ArmyManager {
       const computeVisibleArmies = () => this.getVisibleArmiesForChunk(startRow, startCol);
 
       let visibleArmies = computeVisibleArmies();
-      let { modelTypesByEntity, requiredModelTypes } = this.collectModelInfo(visibleArmies);
+      let visibilityDiff = createManagerVisibilityDiff({
+        currentVisibleIds: this.visibleArmyOrder,
+        nextVisibleEntities: visibleArmies,
+        getEntityId: (army) => army.entityId,
+      });
+      const armiesRequiringModels = options?.refreshExisting ? visibleArmies : visibilityDiff.entering;
+      let { modelTypesByEntity, requiredModelTypes } = this.collectModelInfo(armiesRequiringModels);
 
       // Preload all required models once
       if (requiredModelTypes.size > 0) {
@@ -1439,15 +1430,49 @@ export class ArmyManager {
       const sortedVisibleArmies = visibleArmies.toSorted(
         (a, b) => this.toNumericId(a.entityId) - this.toNumericId(b.entityId),
       );
-      ({ modelTypesByEntity } = this.collectModelInfo(sortedVisibleArmies));
-      await scheduleFrameBudgetWork(this.chunkWorkScheduler, "critical", () => {
-        this.reconcileVisibleArmies(visibleArmies, modelTypesByEntity, options?.force);
-        this.pruneArmyPresentationsOutsideCurrentChunk();
+      visibilityDiff = createManagerVisibilityDiff({
+        currentVisibleIds: this.visibleArmyOrder,
+        nextVisibleEntities: sortedVisibleArmies,
+        getEntityId: (army) => army.entityId,
       });
+      ({ modelTypesByEntity } = this.collectModelInfo(
+        options?.refreshExisting ? sortedVisibleArmies : visibilityDiff.entering,
+      ));
+      await scheduleFrameBudgetWork(
+        this.chunkWorkScheduler,
+        "critical",
+        () => {
+          if (
+            !shouldRunManagerChunkUpdate({
+              chunkKey,
+              currentChunk: this.currentChunkKey,
+              transitionToken: options?.transitionToken,
+              latestTransitionToken: this.latestTransitionToken,
+            })
+          ) {
+            return;
+          }
+
+          this.reconcileVisibleArmies(sortedVisibleArmies, modelTypesByEntity, options?.refreshExisting);
+          this.pruneArmyPresentationsOutsideCurrentChunk();
+        },
+        "manager:army-visibility",
+      );
     } finally {
-      this.isArmyChunkTransitioning = false;
-      this.drainDeferredArmyQueue();
-      this.drainPreCommitArmyQueue();
+      finalizeArmyChunkTransition({
+        isDestroyed: this.isDestroyed,
+        isWinningTransition: shouldRunManagerChunkUpdate({
+          chunkKey,
+          currentChunk: this.currentChunkKey,
+          transitionToken: options?.transitionToken,
+          latestTransitionToken: this.latestTransitionToken,
+        }),
+        setTransitioning: (isTransitioning) => {
+          this.isArmyChunkTransitioning = isTransitioning;
+        },
+        drainDeferredQueue: () => this.drainDeferredArmyQueue(),
+        drainPreCommitQueue: () => this.drainPreCommitArmyQueue(),
+      });
       recordWorldmapRenderDuration("executeRenderForChunk", performance.now() - renderStartedAt);
       setWorldmapRenderGauge("visibleArmies", this.visibleArmyOrder.length);
       setWorldmapRenderGauge("activePaths", this.getActivePathCount());
@@ -1536,11 +1561,19 @@ export class ArmyManager {
   }
 
   private async ensureProjectedArmyPresentationsForChunk(startRow: number, startCol: number): Promise<void> {
-    const renderables = this.getProjectedArmiesForChunk(startRow, startCol);
-    await this.preloadMissingProjectedArmyModels(renderables);
+    const currentVisibleIds = new Set(this.visibleArmyOrder);
+    const enteringRenderables = this.getProjectedArmiesForChunk(startRow, startCol).filter(
+      ({ entityId }) => !currentVisibleIds.has(entityId) || !this.armyPresentations.has(entityId),
+    );
+    await this.preloadMissingProjectedArmyModels(enteringRenderables);
     await Promise.all(
-      renderables.map((renderable) =>
-        scheduleFrameBudgetWork(this.chunkWorkScheduler, "critical", () => this.ensureArmyPresentation(renderable)),
+      enteringRenderables.map((renderable) =>
+        scheduleFrameBudgetWork(
+          this.chunkWorkScheduler,
+          "critical",
+          () => this.ensureArmyPresentation(renderable),
+          "manager:army-entering",
+        ),
       ),
     );
   }
@@ -2374,13 +2407,11 @@ export class ArmyManager {
           break;
       }
 
-      if (import.meta.env?.DEV) {
-        const signature = renderViolationSignature(violation);
-        if (!this.loggedSlotViolations.has(signature)) {
-          this.loggedSlotViolations.add(signature);
-          console.warn("[ArmyManager] render-integrity heal", violation);
-        }
-      }
+      reportArmyIntegrityHealOnce({
+        rendererMode: getRendererDiagnosticActiveMode(),
+        reportedSignatures: this.loggedSlotViolations,
+        violation,
+      });
     }
 
     // Purges mutate activeInstances directly; recompact draw counts so the freed
@@ -2994,8 +3025,10 @@ ${
     return getComponentValue(this.components.ExplorerTroops, gameEntityKey([BigInt(entityId)]))?.troops ?? null;
   }
 
-  private resolveArmyStaminaSnapshot(entityId: ID): { current: number; max: number; displayRatio: number } | null {
-    const { currentArmiesTick } = useBlockTimestampStore.getState();
+  private resolveArmyStaminaSnapshot(
+    entityId: ID,
+    currentArmiesTick = getBlockTimestamp().currentArmiesTick,
+  ): { current: number; max: number; displayRatio: number } | null {
     if (!Number.isFinite(currentArmiesTick) || currentArmiesTick <= 0) {
       return null;
     }
@@ -3021,11 +3054,11 @@ ${
   /**
    * Recompute stamina for all armies and update visible labels when armies tick changes
    */
-  private recomputeStaminaForAllArmies(): void {
+  private recomputeStaminaForAllArmies(currentArmiesTick: number): void {
     // Update all army data in cache
     this.armyPresentations.forEach((army, entityId) => {
       try {
-        const staminaSnapshot = this.resolveArmyStaminaSnapshot(entityId);
+        const staminaSnapshot = this.resolveArmyStaminaSnapshot(entityId, currentArmiesTick);
 
         // Update cached army data with new stamina
         army.currentStamina = staminaSnapshot?.current ?? army.currentStamina;

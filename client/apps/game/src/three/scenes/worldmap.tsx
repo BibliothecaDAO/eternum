@@ -1,6 +1,7 @@
 import { playUnitCommandSound, playUnitCommandSoundForWorldmapAction } from "@/audio/unit-command-audio";
 import { runWithFrameWorkOwner } from "@/three/frame-work-owner";
 import { VERBOSE_LOGS_ENABLED, verboseLog } from "@/utils/dev-mode";
+import { formatReadableErrorForConsole } from "@/utils/error-message";
 import { toast } from "sonner";
 
 import { initializeSyncSimulator } from "@/dojo/sync-simulator";
@@ -36,7 +37,7 @@ import {
 import { SceneManager } from "@/three/scene-manager";
 import { CameraView } from "@/three/scenes/camera-view";
 import { CAMERA_CONFIG } from "@/three/constants";
-import { HexagonScene } from "@/three/scenes/hexagon-scene";
+import { HexagonScene, type SceneSetupContext } from "@/three/scenes/hexagon-scene";
 import type { RenderVisualProfile } from "@/three/render-profile";
 import { WorldmapPerfSimulation } from "@/three/scenes/worldmap-perf-simulation";
 import { playResourceSound } from "@/three/sound/utils";
@@ -63,6 +64,7 @@ import { FELT_CENTER, IS_FLAT_MODE } from "@/ui/config";
 import { ChestModal, HelpModal } from "@/ui/features/military";
 import { QuickAttackPreview } from "@/ui/features/military/battle/quick-attack-preview";
 import { SpireTravelModal } from "@/ui/features/world/components/actions/spire-travel-modal";
+import { markGameEntryMilestone } from "@/ui/layouts/game-entry-timeline";
 import { SetupResult } from "@bibliothecadao/dojo";
 import {
   ActionPath,
@@ -112,13 +114,17 @@ import {
   Vector2,
   Vector3,
 } from "three";
-import { MapControls } from "three/examples/jsm/controls/MapControls.js";
+import { MapControls } from "three/addons/controls/MapControls.js";
 import { env } from "../../../env";
 import { playerCosmeticsStore } from "../cosmetics";
 import { FXManager } from "../managers/fx-manager";
 import { HoverLabelManager, type HoverLabelReconcileResult } from "../managers/hover-label-manager";
 import { resolveWorldmapHoverLabelEntity } from "./worldmap-hover-label-entities";
 import { resolveWorldmapHoverLabelTargets } from "./worldmap-hover-label-targets";
+import {
+  shouldReconcileWorldmapHover,
+  type WorldmapHoverReconciliationSnapshot,
+} from "./worldmap-hover-reconciliation";
 import { ResourceFXManager } from "../managers/resource-fx-manager";
 import { ArrivalGhostManager } from "../managers/arrival-ghost-manager";
 import { resolveHoverVisualPalette, resolveSelectionPulsePalette } from "../managers/worldmap-interaction-palette";
@@ -183,8 +189,13 @@ import {
   scheduleWorldmapPostCommitManagerCatchUpDrain,
 } from "./worldmap-post-commit-manager-catchup-runtime";
 import { prepareWorldmapChunkRuntime } from "./worldmap-chunk-preparation-runtime";
+import {
+  WorldmapExactTerrainPreparationRuntime,
+  type WorldmapExactTerrainPreparation,
+} from "./worldmap-exact-terrain-preparation-runtime";
 import { handleWorldmapChunkFinalizeResult } from "./worldmap-chunk-finalize-runtime";
 import { prepareWorldmapChunkSwitchRuntime } from "./worldmap-chunk-switch-runtime";
+import { commitOwnedWorldmapPreparedTerrain } from "./worldmap-owned-terrain-commit";
 import { catchUpCommittedWorldmapChunkManagers } from "./worldmap-committed-chunk-manager-catchup";
 import {
   recordWorldmapChunkMemoryDelta,
@@ -336,6 +347,7 @@ import { finalizeWarpTravelChunkSwitch } from "./warp-travel-chunk-switch-commit
 import { resolveSameChunkRefreshCommit } from "./worldmap-same-chunk-refresh-commit";
 import { runWarpTravelManagerFanout } from "./warp-travel-manager-fanout";
 import { WarpTravel, type WarpTravelLifecycleAdapter } from "./warp-travel";
+import { startWorldmapEntryReadiness } from "./worldmap-entry-readiness";
 import { completeWorldmapInteractiveRefresh, type WorldmapWarpTravelPhase } from "./worldmap-warp-travel-refresh";
 import { resolveWorldmapChunkHysteresis } from "./worldmap-chunk-hysteresis-policy";
 import {
@@ -364,6 +376,7 @@ import {
 import {
   appendWorldmapChunkTrace,
   createWorldmapChunkTraceBuffer,
+  formatWorldmapChunkWarning,
   snapshotWorldmapChunkTrace,
   type WorldmapChunkTraceEntry,
   type WorldmapChunkTraceEvent,
@@ -410,6 +423,8 @@ interface PreparedTerrainChunk {
   terrainCells: WorldmapTerrainSourceCellRef[];
   biomeEntries: Map<string, CachedMatrixEntry>;
 }
+
+type PreparedWorldmapChunkRuntime = Awaited<ReturnType<typeof prepareWorldmapChunkRuntime<PreparedTerrainChunk>>>;
 
 interface WorldmapLocalBounds {
   minCol: number;
@@ -525,6 +540,9 @@ const MIN_TRAVEL_EFFECT_VISIBLE_MS = 600;
 const MAX_TRAVEL_EFFECT_LIFETIME_MS = 90_000;
 const SHORTCUT_NAVIGATION_DURATION_SECONDS = 0;
 const WORLDMAP_CHUNK_PHASE_TIMEOUT_MS = env.VITE_PUBLIC_WORLDMAP_CHUNK_PHASE_TIMEOUT_MS;
+// Give an exact preparation that is already finishing one render opportunity
+// without adding visible latency before the terrain shell fallback starts.
+const WORLDMAP_EXACT_TERRAIN_JOIN_BUDGET_MS = 16;
 const WORLDMAP_CHUNK_RECOVERY_COOLDOWN_MS = 2_000;
 // Hard timeout wrapping the entire chunk transition (phase timeouts + post-phase work).
 // Catches cases where post-phase awaits (e.g. manager catch-up, finalize rollback)
@@ -601,6 +619,8 @@ export default class WorldmapScene extends WarpTravel {
   private readonly postCommitManagerCatchUpBudgetBytes = 256 * 1024;
   private directionalPresentationChunkKeys: Set<string> = new Set();
   private activeDirectionalPresentationPrewarms: Set<string> = new Set();
+  private readonly exactTerrainPreparations =
+    new WorldmapExactTerrainPreparationRuntime<PreparedWorldmapChunkRuntime>();
   private visualTerrainPresentationState: WorldmapTerrainPresentationState = createWorldmapTerrainPresentationState();
   private visualTerrainRetentionTimeout: number | null = null;
   private visualTerrainGeneration = 0;
@@ -670,7 +690,7 @@ export default class WorldmapScene extends WarpTravel {
   private readonly chunkRowsBehind = WORLDMAP_CHUNK_POLICY.pin.rowsBehind;
   private readonly chunkColsEachSide = WORLDMAP_CHUNK_POLICY.pin.colsEachSide;
   private hydratedRefreshQueueState = createWorldmapHydratedRefreshQueueState();
-  private skipNextUrlRefreshAfterInitialConvergence = false;
+  private skipNextInitialSetupUrlRefresh = false;
   private hydratedRefreshSuppressionAreaKeys: Set<string> = new Set();
   private cameraPositionScratch: Vector3 = new Vector3();
   private cameraDirectionScratch: Vector3 = new Vector3();
@@ -868,6 +888,7 @@ export default class WorldmapScene extends WarpTravel {
   private followCameraTimeout: ReturnType<typeof setTimeout> | null = null;
   private notifiedBattleEvents = new Set<string>();
   private previouslyHoveredHex: HexPosition | null = null;
+  private lastHoverReconciliation: WorldmapHoverReconciliationSnapshot | null = null;
 
   // Performance simulation helper
   private perfSimulation: WorldmapPerfSimulation | null = null;
@@ -1756,18 +1777,6 @@ export default class WorldmapScene extends WarpTravel {
       snapshot.status === "zooming" ? "transitioning" : "idle";
     if (nextTransitionStatus !== this.lastPublishedZoomStatus) {
       this.lastPublishedZoomStatus = nextTransitionStatus;
-      // Show loading indicator during zoom transitions to mask chunk loading lag
-      if (nextTransitionStatus === "transitioning") {
-        this.state.setLoading(LoadingStateKey.ChunkTransition, true);
-      } else {
-        // Delay clearing so the indicator covers the deferred chunk refresh work
-        // that fires immediately after zoom settles
-        setTimeout(() => {
-          if (!this.isChunkTransitioning) {
-            this.state.setLoading(LoadingStateKey.ChunkTransition, false);
-          }
-        }, 300);
-      }
       this.worldmapCameraTransitionListeners.forEach((listener) => listener(nextTransitionStatus));
     }
   }
@@ -1802,12 +1811,12 @@ export default class WorldmapScene extends WarpTravel {
       return false;
     }
 
-    return !this.consumeInitialConvergenceUrlRefreshSkip();
+    return !this.consumeInitialSetupUrlRefreshSkip();
   }
 
-  private consumeInitialConvergenceUrlRefreshSkip(): boolean {
-    const shouldSkipRefresh = this.skipNextUrlRefreshAfterInitialConvergence;
-    this.skipNextUrlRefreshAfterInitialConvergence = false;
+  private consumeInitialSetupUrlRefreshSkip(): boolean {
+    const shouldSkipRefresh = this.skipNextInitialSetupUrlRefresh;
+    this.skipNextInitialSetupUrlRefresh = false;
     return shouldSkipRefresh;
   }
 
@@ -2029,6 +2038,17 @@ export default class WorldmapScene extends WarpTravel {
 
   // methods needed to add worldmap specific behavior to the click events
   protected onHexagonMouseMove(hex: { hexCoords: HexPosition; position: Vector3 } | null): void {
+    const nextHexCoords = hex?.hexCoords ?? null;
+    const hoverPalette = this.resolveContextualHoverPalette(nextHexCoords);
+    const nextHoverReconciliation: WorldmapHoverReconciliationSnapshot = {
+      hex: nextHexCoords ? { col: nextHexCoords.col, row: nextHexCoords.row } : null,
+      palette: hoverPalette,
+    };
+    if (!shouldReconcileWorldmapHover(this.lastHoverReconciliation, nextHoverReconciliation)) {
+      return;
+    }
+    this.lastHoverReconciliation = nextHoverReconciliation;
+
     if (hex === null) {
       if (this.previouslyHoveredHex) {
         this.traceChunk("mouse_chunk_leave", {
@@ -2036,9 +2056,10 @@ export default class WorldmapScene extends WarpTravel {
           previousHoveredChunkKey: this.resolveChunkKeyForHexPosition(this.previouslyHoveredHex),
         });
       }
+      this.previouslyHoveredHex = null;
       this.state.updateEntityActionHoveredHex(null);
       this.state.setHoveredHex(null);
-      this.applyContextualHoverPalette(null);
+      this.interactiveHexManager.applyHoverPalette(hoverPalette);
 
       // Reset cursor when leaving hex
       document.body.style.cursor = "default";
@@ -2057,6 +2078,7 @@ export default class WorldmapScene extends WarpTravel {
         hoveredChunkKey,
       });
     }
+    this.previouslyHoveredHex = hexCoords;
 
     // Handle label expansion on hover
     this.currentHoverLabelHex = hexCoords;
@@ -2066,13 +2088,10 @@ export default class WorldmapScene extends WarpTravel {
     // Entity IDs can be valid falsy values (for example 0), so nullish checks
     // are required to distinguish "no selection" from a real selected entity.
     if (selectedEntityId !== null && selectedEntityId !== undefined && actionPaths.size > 0) {
-      if (this.previouslyHoveredHex?.col !== hexCoords.col || this.previouslyHoveredHex?.row !== hexCoords.row) {
-        this.previouslyHoveredHex = hexCoords;
-      }
       this.state.updateEntityActionHoveredHex(hexCoords);
     }
 
-    this.applyContextualHoverPalette(hexCoords);
+    this.interactiveHexManager.applyHoverPalette(hoverPalette);
   }
 
   // double-click reserved hyperstructure tiles to materialize them; otherwise enter the real structure
@@ -3657,16 +3676,18 @@ export default class WorldmapScene extends WarpTravel {
   }
 
   private applyContextualHoverPalette(hexCoords: HexPosition | null): void {
+    this.interactiveHexManager.applyHoverPalette(this.resolveContextualHoverPalette(hexCoords));
+  }
+
+  private resolveContextualHoverPalette(hexCoords: HexPosition | null) {
     const { selectedEntityId } = getLiveWorldmapEntityActions();
     const hasSelection = selectedEntityId !== null && selectedEntityId !== undefined;
     const actionType = this.getHoveredActionType(hexCoords);
 
-    this.interactiveHexManager.applyHoverPalette(
-      resolveHoverVisualPalette({
-        hasSelection,
-        actionType,
-      }),
-    );
+    return resolveHoverVisualPalette({
+      hasSelection,
+      actionType,
+    });
   }
 
   private getHoveredActionType(hexCoords: HexPosition | null): ActionType | undefined {
@@ -3763,9 +3784,7 @@ export default class WorldmapScene extends WarpTravel {
         this.registerWorldUpdateSubscriptions();
       },
       setupCameraZoomHandler: () => this.setupCameraZoomHandler(),
-      refreshScene: () => this.refreshWarpTravelScene(),
-      onInitialSetupComplete: () => this.announceWorldmapSceneReady(),
-      onResumeComplete: () => this.announceWorldmapSceneReady(),
+      refreshScene: (setupContext) => this.refreshWarpTravelScene(setupContext),
       reportSetupError: (error, phase) => this.reportWarpTravelRefreshError(error, phase),
       disposeStoreSubscriptions: () => this.disposeStoreSubscriptions(),
       onAfterDisposeSubscriptions: () => this.disposeWorldUpdateSubscriptions(),
@@ -3774,9 +3793,18 @@ export default class WorldmapScene extends WarpTravel {
     };
   }
 
-  private announceWorldmapSceneReady(): void {
-    usePlayRouteReadinessStore.getState().markWorldmapReady(getCurrentPlayRouteBootToken());
+  private announceWorldmapSceneReady(bootToken: number, phase: WorldmapWarpTravelPhase): void {
+    usePlayRouteReadinessStore.getState().markWorldmapReady(bootToken);
+    if (phase === "initial") {
+      this.skipNextInitialSetupUrlRefresh = true;
+    }
     this.retryPendingHoverLabelRecovery("scene_ready");
+  }
+
+  private announceWorldmapConverged(bootToken: number): void {
+    usePlayRouteReadinessStore.getState().markWorldmapConverged(bootToken);
+    markGameEntryMilestone("worldmap-fetch-completed");
+    this.reconcileHoverLabels("initial_refresh");
   }
 
   private prepareWarpTravelInitialSetup(): void {
@@ -3807,19 +3835,33 @@ export default class WorldmapScene extends WarpTravel {
     this.chestManager.removeLabelsFromScene();
   }
 
-  private async refreshWarpTravelScene(): Promise<void> {
+  private async refreshWarpTravelScene(setupContext: SceneSetupContext): Promise<void> {
     const phase: WorldmapWarpTravelPhase = this.hasInitialized ? "resume" : "initial";
-    await completeWorldmapInteractiveRefresh({
+    const readiness = usePlayRouteReadinessStore.getState();
+    const bootToken = readiness.bootToken;
+    const requiresAmbientConvergence = !readiness.worldmapConverged;
+
+    await startWorldmapEntryReadiness({
+      bootToken,
+      commitCriticalPass: () => this.commitCriticalWorldmapPass(phase),
+      isCurrent: () => setupContext.isCurrent() && bootToken === getCurrentPlayRouteBootToken(),
+      markCriticalPassReady: (currentBootToken) => this.announceWorldmapSceneReady(currentBootToken, phase),
+      markWorldmapConverged: (currentBootToken) => this.announceWorldmapConverged(currentBootToken),
+      requiresAmbientConvergence,
+      reportAmbientConvergenceError: (error) => this.reportAmbientConvergenceError(error),
+      waitForAmbientConvergence: () => this.awaitInitialTerrainConvergence(),
+    });
+  }
+
+  private reportAmbientConvergenceError(error: unknown): void {
+    console.error(`[WorldMap] Ambient convergence failed: ${formatReadableErrorForConsole(error)}`);
+  }
+
+  private commitCriticalWorldmapPass(phase: WorldmapWarpTravelPhase): Promise<void> {
+    return completeWorldmapInteractiveRefresh({
       phase,
       refresh: () => this.refreshVisibleChunksForWarpTravel(phase),
     });
-
-    if (phase === "initial") {
-      await this.awaitInitialTerrainConvergence();
-      this.skipNextUrlRefreshAfterInitialConvergence = true;
-    }
-
-    this.reconcileHoverLabels("initial_refresh");
   }
 
   private async refreshVisibleChunksForWarpTravel(phase: WorldmapWarpTravelPhase): Promise<boolean> {
@@ -3979,12 +4021,14 @@ export default class WorldmapScene extends WarpTravel {
 
   private invalidateWorldmapSwitchOffTransitions(): void {
     this.isSwitchedOff = true;
+    this.skipNextInitialSetupUrlRefresh = false;
     const switchOffTransitionState = invalidateWorldmapSwitchOffTransitionState({
       chunkTransitionToken: this.chunkTransitionToken,
       isChunkTransitioning: this.isChunkTransitioning,
       globalChunkSwitchPromise: this.globalChunkSwitchPromise,
     });
     this.chunkTransitionToken = switchOffTransitionState.chunkTransitionToken;
+    this.exactTerrainPreparations.clear();
     this.isChunkTransitioning = switchOffTransitionState.isChunkTransitioning;
     this.globalChunkSwitchPromise = switchOffTransitionState.globalChunkSwitchPromise;
   }
@@ -4895,17 +4939,21 @@ export default class WorldmapScene extends WarpTravel {
     }
 
     let cpuBuildMs = 0;
-    const preparedTerrain = await this.chunkWorkQueue.schedule(workLane, () => {
-      const buildStartedAt = performance.now();
-      const result = this.buildPreparedTerrainArea(
-        startRow,
-        startCol,
-        WORLDMAP_CHUNK_POLICY.visualPresentation.visualPageSize.height,
-        WORLDMAP_CHUNK_POLICY.visualPresentation.visualPageSize.width,
-      );
-      cpuBuildMs = performance.now() - buildStartedAt;
-      return result;
-    });
+    const preparedTerrain = await this.chunkWorkQueue.schedule(
+      workLane,
+      () => {
+        const buildStartedAt = performance.now();
+        const result = this.buildPreparedTerrainArea(
+          startRow,
+          startCol,
+          WORLDMAP_CHUNK_POLICY.visualPresentation.visualPageSize.height,
+          WORLDMAP_CHUNK_POLICY.visualPresentation.visualPageSize.width,
+        );
+        cpuBuildMs = performance.now() - buildStartedAt;
+        return result;
+      },
+      `terrain:${workLane}-page-build`,
+    );
     const modelWaitStartedAt = performance.now();
     const preparedTerrainWithModels = await this.awaitPreparedTerrainBiomeModels(preparedTerrain);
     return {
@@ -5162,17 +5210,21 @@ export default class WorldmapScene extends WarpTravel {
     });
   }
 
-  private async schedulePreparedTerrainCommit(
+  private async schedulePreparedTerrainCommit<TResult>(
     workLane: FrameBudgetWorkLane,
     preparedTerrain: PreparedTerrainChunk,
-    commit: () => void,
-  ): Promise<void> {
+    commit: () => TResult,
+  ): Promise<TResult> {
     let commitStarted = false;
     try {
-      await this.chunkWorkQueue.schedule(workLane, () => {
-        commitStarted = true;
-        commit();
-      });
+      return await this.chunkWorkQueue.schedule(
+        workLane,
+        () => {
+          commitStarted = true;
+          return commit();
+        },
+        `terrain:${workLane}-commit`,
+      );
     } catch (error) {
       if (!commitStarted) {
         this.disposePreparedTerrainChunk(preparedTerrain);
@@ -5241,6 +5293,16 @@ export default class WorldmapScene extends WarpTravel {
   }
 
   private async prepareAndApplyChunkSwitchTerrainShell(input: WorldmapChunkSwitchTerrainShellInput): Promise<void> {
+    const exactJoin = await this.exactTerrainPreparations.waitForExact({
+      chunkKey: input.chunkKey,
+      transitionToken: input.transitionToken,
+      timeoutMs: WORLDMAP_EXACT_TERRAIN_JOIN_BUDGET_MS,
+      isExactReady: (result) => result.projectionSyncSucceeded && result.preparedTerrain !== null,
+    });
+    if (exactJoin.status === "exact_ready" || !this.isCurrentChunkSwitchTerrainShell(input)) {
+      return;
+    }
+
     const cachedTerrain = this.createPreparedTerrainChunkFromCache(input.startRow, input.startCol);
     const preparedTerrain =
       cachedTerrain ??
@@ -5254,6 +5316,10 @@ export default class WorldmapScene extends WarpTravel {
     await this.schedulePreparedTerrainCommit("critical", preparedTerrain, () =>
       this.applyChunkSwitchTerrainShell(input, preparedTerrain, kind),
     );
+  }
+
+  private isCurrentChunkSwitchTerrainShell(input: WorldmapChunkSwitchTerrainShellInput): boolean {
+    return !this.isSwitchedOff && input.transitionToken === this.chunkTransitionToken;
   }
 
   private applyChunkSwitchTerrainShell(
@@ -5871,7 +5937,7 @@ export default class WorldmapScene extends WarpTravel {
       };
 
       const scheduleWorkUnit = () => {
-        void this.chunkWorkQueue.schedule("critical", processWorkUnit).catch((error) => {
+        void this.chunkWorkQueue.schedule("critical", processWorkUnit, "terrain:hex-grid").catch((error) => {
           abortTask();
           if (!isFrameBudgetWorkQueueDisposedError(error)) {
             console.error("[WorldMap] Hex grid work failed:", error);
@@ -6194,7 +6260,7 @@ export default class WorldmapScene extends WarpTravel {
       };
 
       const scheduleWorkUnit = () => {
-        void this.chunkWorkQueue.schedule(workLane, processWorkUnit).catch((error) => {
+        void this.chunkWorkQueue.schedule(workLane, processWorkUnit, `terrain:${workLane}-prepare`).catch((error) => {
           if (settled) {
             return;
           }
@@ -6476,7 +6542,7 @@ export default class WorldmapScene extends WarpTravel {
       this.releaseInstancedAttribute(matrices);
       hexMesh.updateMeshVisibility();
       if (landColors) {
-        this.applyCompositeLandColors(hexMesh, cells.length, landColors);
+        hexMesh.setLandColors(landColors, cells.length);
       }
     });
 
@@ -6520,24 +6586,6 @@ export default class WorldmapScene extends WarpTravel {
     });
 
     return landColors;
-  }
-
-  private applyCompositeLandColors(hexMesh: InstancedBiome, count: number, landColors: Float32Array): void {
-    const landMeshes = hexMesh.instancedMeshes.filter((mesh) => mesh.name === LAND_NAME);
-    landMeshes.forEach((mesh) => {
-      if (!mesh.instanceColor || (mesh.instanceColor.array as Float32Array).length < count * 3) {
-        mesh.instanceColor = new InstancedBufferAttribute(new Float32Array(mesh.instanceMatrix.count * 3), 3);
-        mesh.geometry.setAttribute("instanceColor", mesh.instanceColor);
-      }
-      (mesh.instanceColor.array as Float32Array).set(landColors);
-      // Upload only the written region — a bare needsUpdate re-uploads the
-      // full preallocated capacity through writeBuffer inside the render loop.
-      mesh.instanceColor.clearUpdateRanges();
-      if (landColors.length > 0) {
-        mesh.instanceColor.addUpdateRange(0, landColors.length);
-      }
-      mesh.instanceColor.needsUpdate = true;
-    });
   }
 
   private scheduleTerrainPresentationRetentionCleanup(
@@ -6983,6 +7031,7 @@ export default class WorldmapScene extends WarpTravel {
 
     if (decision.shouldInvalidateTimedOutTransition) {
       this.chunkTransitionToken = decision.recoveryTransitionToken;
+      this.exactTerrainPreparations.releaseSuperseded(decision.recoveryTransitionToken);
     }
 
     return decision;
@@ -7020,6 +7069,12 @@ export default class WorldmapScene extends WarpTravel {
       phase: info.phase,
       timeoutMs: info.timeoutMs,
     });
+  }
+
+  private claimNextChunkTransitionToken(): number {
+    const transitionToken = ++this.chunkTransitionToken;
+    this.exactTerrainPreparations.releaseSuperseded(transitionToken);
+    return transitionToken;
   }
 
   private addWorldUpdateSubscription(unsub: unknown) {
@@ -7429,7 +7484,7 @@ export default class WorldmapScene extends WarpTravel {
         hexMesh.updateMeshVisibility(); // Update visibility based on count
 
         if (landColors && count > 0) {
-          this.applyCompositeLandColors(hexMesh, count, landColors);
+          hexMesh.setLandColors(landColors, count);
           const colorUploadBytes = count * Float32Array.BYTES_PER_ELEMENT * 3;
           incrementWorldmapRenderUploadBytes("cachedChunkReplay", colorUploadBytes);
           recordRendererColorUploadBytes(count, "worldmap-cache-replay");
@@ -7794,7 +7849,7 @@ export default class WorldmapScene extends WarpTravel {
         if (chunkKey === null || startCol === null || startRow === null) {
           return false;
         }
-        const transitionToken = ++this.chunkTransitionToken;
+        const transitionToken = this.claimNextChunkTransitionToken();
         const switchStartedAt = performance.now();
         recordChunkDiagnosticsEvent(this.chunkDiagnostics, "transition_started");
         this.state.setLoading(LoadingStateKey.ChunkTransition, true);
@@ -7833,7 +7888,7 @@ export default class WorldmapScene extends WarpTravel {
         if (chunkKey === null || startCol === null || startRow === null) {
           return false;
         }
-        const transitionToken = ++this.chunkTransitionToken;
+        const transitionToken = this.claimNextChunkTransitionToken();
         const liveEntityActions = getLiveWorldmapEntityActions();
         this.actionPathsTransitionToken = resolveEntityActionPathsTransitionTokenForForcedRefresh({
           selectedEntityId: liveEntityActions.selectedEntityId,
@@ -7916,6 +7971,40 @@ export default class WorldmapScene extends WarpTravel {
     });
   }
 
+  private commitOwnedChunkSwitchTerrain(input: {
+    chunkKey: string;
+    chunkSwitchStartedAt: number;
+    preparedTerrain: PreparedTerrainChunk;
+    presentationRuntime: PreparedWorldmapChunkRuntime["presentationRuntime"];
+    transitionToken: number;
+  }): Promise<boolean> {
+    return commitOwnedWorldmapPreparedTerrain({
+      preparedTerrain: input.preparedTerrain,
+      targetChunk: input.chunkKey,
+      transitionToken: input.transitionToken,
+      getCurrentTransitionToken: () => this.chunkTransitionToken,
+      isSwitchedOff: () => this.isSwitchedOff,
+      scheduleCommit: (commit) => this.schedulePreparedTerrainCommit("critical", input.preparedTerrain, commit),
+      disposePreparedTerrain: (preparedTerrain) => this.disposePreparedTerrainChunk(preparedTerrain),
+      commitChunkAuthority: (targetChunkKey) => this.commitCurrentChunkAuthority(targetChunkKey),
+      applyPreparedTerrain: (preparedTerrain) => {
+        commitWorldmapPreparedTerrainPresentation({
+          applyPreparedTerrain: (preparedTerrain) => {
+            this.applyPreparedTerrainChunk(preparedTerrain as PreparedTerrainChunk);
+          },
+          diagnostics: this.chunkDiagnostics,
+          now: () => performance.now(),
+          phaseDurations: input.presentationRuntime.phaseDurations,
+          preparedTerrain,
+          presentationStartedAtMs: input.chunkSwitchStartedAt,
+          recordChunkDiagnosticsEvent,
+          recordWorldmapRenderDuration,
+          incrementWorldmapRenderCounter,
+        });
+      },
+    });
+  }
+
   private scheduleCommittedChunkManagerCatchUp(
     targetChunkKey: string,
     managerOptions: WorldmapManagerCatchUpOptions,
@@ -7940,6 +8029,7 @@ export default class WorldmapScene extends WarpTravel {
     switchPosition?: Vector3,
   ) {
     const chunkSwitchStartedAt = performance.now();
+    let exactTerrainPreparation: WorldmapExactTerrainPreparation<PreparedWorldmapChunkRuntime> | null = null;
     // Track memory usage during chunk switch
     const memoryMonitor = (window as { __gameRenderer?: { memoryMonitor?: MemoryMonitor } }).__gameRenderer
       ?.memoryMonitor;
@@ -8007,6 +8097,18 @@ export default class WorldmapScene extends WarpTravel {
           : null,
       });
 
+      exactTerrainPreparation = this.exactTerrainPreparations.start({
+        chunkKey,
+        transitionToken,
+        prepare: () =>
+          this.prepareChunkPresentation({
+            chunkKey,
+            startCol,
+            startRow,
+            surroundingChunks,
+          }),
+      });
+
       this.startChunkSwitchTerrainShell({
         chunkKey,
         startCol,
@@ -8014,12 +8116,7 @@ export default class WorldmapScene extends WarpTravel {
         transitionToken,
       });
 
-      const { projectionSyncSucceeded, preparedTerrain, presentationRuntime } = await this.prepareChunkPresentation({
-        chunkKey,
-        startCol,
-        startRow,
-        surroundingChunks,
-      });
+      const { projectionSyncSucceeded, preparedTerrain, presentationRuntime } = await exactTerrainPreparation.promise;
 
       this.recordPreparedTerrainReady(chunkSwitchStartedAt, {
         projectionSyncSucceeded,
@@ -8044,27 +8141,16 @@ export default class WorldmapScene extends WarpTravel {
         force: effectiveForce,
         transitionToken,
         preparedTerrain,
-        applyPreparedTerrain: (nextPreparedTerrain) => {
-          const preparedTerrain = nextPreparedTerrain as PreparedTerrainChunk;
-          return this.schedulePreparedTerrainCommit("critical", preparedTerrain, () => {
-            commitWorldmapPreparedTerrainPresentation({
-              applyPreparedTerrain: (preparedTerrain) => {
-                this.applyPreparedTerrainChunk(preparedTerrain as PreparedTerrainChunk);
-              },
-              diagnostics: this.chunkDiagnostics,
-              now: () => performance.now(),
-              phaseDurations: presentationRuntime.phaseDurations,
-              preparedTerrain: nextPreparedTerrain,
-              presentationStartedAtMs: chunkSwitchStartedAt,
-              recordChunkDiagnosticsEvent,
-              recordWorldmapRenderDuration,
-              incrementWorldmapRenderCounter,
-            });
-          });
-        },
+        commitPreparedTerrain: (nextPreparedTerrain) =>
+          this.commitOwnedChunkSwitchTerrain({
+            chunkKey,
+            chunkSwitchStartedAt,
+            preparedTerrain: nextPreparedTerrain as PreparedTerrainChunk,
+            presentationRuntime,
+            transitionToken,
+          }),
         disposePreparedTerrain: (droppedPreparedTerrain) =>
           this.disposePreparedTerrainChunk(droppedPreparedTerrain as PreparedTerrainChunk),
-        setCurrentChunk: (targetChunkKey) => this.commitCurrentChunkAuthority(targetChunkKey),
         updatePinnedChunks: (chunkKeys) => this.updatePinnedChunks(chunkKeys),
         unregisterChunk: (targetChunkKey) => this.unregisterVisibilityChunk(targetChunkKey),
         restorePreviousChunkVisuals: (oldStartRow, oldStartCol) =>
@@ -8128,6 +8214,9 @@ export default class WorldmapScene extends WarpTravel {
       }
       return true;
     } finally {
+      if (exactTerrainPreparation) {
+        this.exactTerrainPreparations.release(exactTerrainPreparation);
+      }
       recordWorldmapRenderDuration("performChunkSwitch", performance.now() - chunkSwitchStartedAt);
     }
   }
@@ -8555,7 +8644,7 @@ export default class WorldmapScene extends WarpTravel {
       event === "chunk_recovery_executed";
 
     if (isErrorEvent) {
-      console.warn(`[WorldmapChunk] ${event}`, details);
+      console.warn(formatWorldmapChunkWarning(event, details));
     }
 
     if (!import.meta.env.DEV) {
@@ -9419,6 +9508,7 @@ export default class WorldmapScene extends WarpTravel {
       }
       this.actionPathsTransitionToken = null;
       this.previouslyHoveredHex = null;
+      this.lastHoverReconciliation = null;
       document.body.style.cursor = "default";
       this.applyContextualHoverPalette(null);
     } finally {

@@ -11,6 +11,7 @@ import {
 } from "three";
 import { CosmeticRegistryEntry } from "./types";
 import { MaterialPool } from "../utils/material-pool";
+import { collectMaterialTextures } from "../utils/material-textures";
 
 const textureLoader = new TextureLoader();
 const materialPool = MaterialPool.getInstance();
@@ -213,13 +214,5 @@ function collectCosmeticPayloadResources(
       const materials = Array.isArray(node.material) ? node.material : [node.material];
       materials.forEach((material) => collectMaterialTextures(material, textures));
     });
-  });
-}
-
-function collectMaterialTextures(material: Material, textures: Set<Texture>): void {
-  Object.values(material).forEach((value) => {
-    if (value instanceof Texture) {
-      textures.add(value);
-    }
   });
 }

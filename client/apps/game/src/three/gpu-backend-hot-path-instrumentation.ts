@@ -1,5 +1,6 @@
 import { VERBOSE_LOGS_ENABLED } from "@/utils/dev-mode";
 import { consumeDominantFrameWorkOwner } from "./frame-work-owner";
+import { getRendererDiagnosticActiveMode } from "./renderer-diagnostics";
 
 interface InstrumentedTexture {
   image?: TextureImage;
@@ -29,9 +30,19 @@ interface TextureHotPathStat extends HotPathStat {
 }
 
 interface ActiveGpuBackendFrame {
+  gpuAttributionEnabled: boolean;
   hotPathStats: Map<string, HotPathStat> | null;
+  rendererMode: string;
   startedAt: number;
   textureStats: Map<object, TextureHotPathStat> | null;
+}
+
+interface StartGpuBackendFrameOptions {
+  gpuAttributionEnabled?: boolean;
+  pageVisible?: boolean;
+  rendererMode?: string | null;
+  startedAt?: number;
+  warn?: (message: string) => void;
 }
 
 interface InstrumentGpuBackendHotPathsOptions {
@@ -62,42 +73,92 @@ const TOP_FRAME_HOT_PATH_LIMIT = 8;
 const TOP_TEXTURE_LIMIT = 8;
 const COMPILE_MEASUREMENT_WINDOW_MS = 60_000;
 const instrumentedBackends = new WeakSet<object>();
-let activeFrame: ActiveGpuBackendFrame | null = null;
+const activeFrame: ActiveGpuBackendFrame = {
+  gpuAttributionEnabled: false,
+  hotPathStats: null,
+  rendererMode: "uninitialized",
+  startedAt: 0,
+  textureStats: null,
+};
+let hasActiveFrame = false;
+let isPageVisibilityListenerInstalled = false;
 let compiledRenderPipelineCount = 0;
+let gpuBackendAttributionEnabled = false;
 
 export function getCompiledRenderPipelineCount(): number {
   return compiledRenderPipelineCount;
 }
 
-export function startGpuBackendFrame(
-  startedAt: number = performance.now(),
-  warn: (message: string) => void = console.warn,
-): void {
+export function startGpuBackendFrame(options?: StartGpuBackendFrameOptions): void {
+  installPageVisibilityListener();
+  const pageVisible = options?.pageVisible ?? getPageVisibility();
+  if (!pageVisible) {
+    discardGpuBackendFrame();
+    return;
+  }
+
+  const startedAt = options?.startedAt ?? performance.now();
+  const warn = options?.warn ?? console.warn;
   reportCompletedGpuBackendFrame(startedAt, warn);
-  activeFrame = {
-    hotPathStats: null,
-    startedAt,
-    textureStats: null,
-  };
+  activeFrame.gpuAttributionEnabled = options?.gpuAttributionEnabled ?? gpuBackendAttributionEnabled;
+  activeFrame.hotPathStats = null;
+  activeFrame.rendererMode = options?.rendererMode ?? getRendererDiagnosticActiveMode() ?? "uninitialized";
+  activeFrame.startedAt = startedAt;
+  activeFrame.textureStats = null;
+  hasActiveFrame = true;
+}
+
+export function discardGpuBackendFrame(): void {
+  hasActiveFrame = false;
+  activeFrame.hotPathStats = null;
+  activeFrame.textureStats = null;
+  consumeDominantFrameWorkOwner();
+}
+
+function installPageVisibilityListener(): void {
+  if (isPageVisibilityListenerInstalled || typeof document === "undefined") {
+    return;
+  }
+
+  document.addEventListener("visibilitychange", discardFrameWhenPageIsHidden);
+  isPageVisibilityListenerInstalled = true;
+}
+
+function discardFrameWhenPageIsHidden(): void {
+  if (!getPageVisibility()) {
+    discardGpuBackendFrame();
+  }
+}
+
+function getPageVisibility(): boolean {
+  return typeof document === "undefined" || document.visibilityState === "visible";
 }
 
 function reportCompletedGpuBackendFrame(
   endedAt: number = performance.now(),
   warn: (message: string) => void = console.warn,
 ): void {
-  const completedFrame = activeFrame;
-  activeFrame = null;
   const owner = consumeDominantFrameWorkOwner();
-  if (!completedFrame) {
+  if (!hasActiveFrame) {
     return;
   }
+  hasActiveFrame = false;
 
-  const durationMs = endedAt - completedFrame.startedAt;
+  const durationMs = endedAt - activeFrame.startedAt;
   if (durationMs <= SPIKE_FRAME_THRESHOLD_MS) {
     return;
   }
 
-  warn(buildGpuBackendSpikeReport(durationMs, owner, completedFrame.hotPathStats, completedFrame.textureStats));
+  warn(
+    buildGpuBackendSpikeReport(
+      durationMs,
+      owner,
+      activeFrame.rendererMode,
+      activeFrame.gpuAttributionEnabled,
+      activeFrame.hotPathStats,
+      activeFrame.textureStats,
+    ),
+  );
 }
 
 export function instrumentGpuBackendHotPaths(
@@ -135,12 +196,14 @@ export function instrumentGpuBackendHotPaths(
     reportWindowStartedAt = windowEndedAt;
   };
 
+  let instrumentedHotPathCount = 0;
   for (const name of HOT_PATH_NAMES) {
     const original = backend[name];
     if (typeof original !== "function") {
       continue;
     }
 
+    instrumentedHotPathCount += 1;
     backend[name] = function (this: unknown, ...args: unknown[]) {
       const startedAt = now();
       const result = (original as (...fnArgs: unknown[]) => unknown).apply(this, args);
@@ -174,10 +237,12 @@ export function instrumentGpuBackendHotPaths(
       return result;
     };
   }
+
+  gpuBackendAttributionEnabled ||= instrumentedHotPathCount > 0;
 }
 
 function addFrameHotPathSample(name: string, elapsedMs: number): void {
-  if (!activeFrame) {
+  if (!hasActiveFrame) {
     return;
   }
 
@@ -186,7 +251,7 @@ function addFrameHotPathSample(name: string, elapsedMs: number): void {
 }
 
 function addFrameTextureSample(candidate: unknown, elapsedMs: number): void {
-  if (!activeFrame) {
+  if (!hasActiveFrame) {
     return;
   }
 
@@ -245,9 +310,18 @@ const MATERIAL_GPU_MS = 8;
 function buildGpuBackendSpikeReport(
   durationMs: number,
   owner: string | null,
+  rendererMode: string,
+  gpuAttributionEnabled: boolean,
   hotPathStats: ReadonlyMap<string, HotPathStat> | null,
   textureStats: ReadonlyMap<object, TextureHotPathStat> | null,
 ): string {
+  const frameSummary = `[FramePerf] spike renderer_mode=${rendererMode} duration_ms=${Math.round(
+    durationMs,
+  )} frame_owner=${owner ?? "unattributed"}`;
+  if (!gpuAttributionEnabled) {
+    return `${frameSummary} gpu_attribution=disabled`;
+  }
+
   const gpuTotalMs = hotPathStats
     ? [...hotPathStats.values()].reduce((total, stat) => total + stat.accumulatedMs, 0)
     : 0;
@@ -255,9 +329,9 @@ function buildGpuBackendSpikeReport(
 
   let gpuSummary: string;
   if (!hotPathStats || gpuTotalMs === 0) {
-    gpuSummary = "cpu-bound (zero GPU backend work)";
+    gpuSummary = "gpu_attribution=enabled gpu_backend_ms=0 attribution=cpu-bound";
   } else if (!gpuIsMaterial) {
-    gpuSummary = `cpu-bound (gpu=${formatMilliseconds(gpuTotalMs)})`;
+    gpuSummary = `gpu_attribution=enabled gpu_backend_ms=${formatMillisecondValue(gpuTotalMs)} attribution=cpu-bound`;
   } else {
     const contributors = [...hotPathStats.entries()]
       .sort(([, left], [, right]) => right.accumulatedMs - left.accumulatedMs)
@@ -271,10 +345,13 @@ function buildGpuBackendSpikeReport(
           .map((stat) => `${stat.name}(${stat.dimensions})=${stat.calls}x/${formatMilliseconds(stat.accumulatedMs)}`)
           .join(", ")
       : "";
-    gpuSummary = topTextures ? `${contributors}; textures=${topTextures}` : contributors;
+    const textureSummary = topTextures ? ` gpu_textures=${topTextures}` : "";
+    gpuSummary = `gpu_attribution=enabled gpu_backend_ms=${formatMillisecondValue(
+      gpuTotalMs,
+    )} attribution=material gpu_contributors=${contributors}${textureSummary}`;
   }
 
-  return `[FramePerf] spike ${Math.round(durationMs)}ms owner=${owner ?? "unattributed"}: ${gpuSummary}`;
+  return `${frameSummary} ${gpuSummary}`;
 }
 
 function buildCompileMeasurementReport(windowMs: number, stats: ReadonlyMap<string, HotPathStat>): string {
@@ -303,5 +380,9 @@ function resolveTextureDimensions(texture: InstrumentedTexture): string {
 }
 
 function formatMilliseconds(value: number): string {
-  return `${value.toFixed(value < 10 ? 1 : 0)}ms`;
+  return `${formatMillisecondValue(value)}ms`;
+}
+
+function formatMillisecondValue(value: number): string {
+  return value.toFixed(value < 10 ? 1 : 0);
 }

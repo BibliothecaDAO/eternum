@@ -75,7 +75,7 @@ vi.mock("@/hooks/store/use-ui-store", () => ({
   },
 }));
 
-vi.mock("three/examples/jsm/controls/MapControls.js", () => ({
+vi.mock("three/addons/controls/MapControls.js", () => ({
   MapControls: MockMapControls,
 }));
 

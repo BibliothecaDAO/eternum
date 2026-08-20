@@ -42,8 +42,10 @@ const readinessState: any = {
   hexReady: false,
   markFastTravelReady: vi.fn(),
   markHexReady: vi.fn(),
+  markWorldmapConverged: vi.fn(),
   markWorldmapReady: vi.fn(),
   reset: vi.fn(),
+  worldmapConverged: false,
   worldmapReady: false,
 };
 
@@ -111,6 +113,7 @@ describe("GameLoadingOverlay", () => {
     usePlayerStructuresMock.mockReset();
     readinessState.fastTravelReady = false;
     readinessState.hexReady = false;
+    readinessState.worldmapConverged = false;
     readinessState.worldmapReady = false;
     snapshotState.phase = "wait_worldmap_ready";
     snapshotState.resolvedRequest = {
@@ -143,7 +146,6 @@ describe("GameLoadingOverlay", () => {
 
   it("dismisses once the shared worldmap readiness state is set", async () => {
     readinessState.worldmapReady = true;
-    snapshotState.phase = "ready";
 
     await act(async () => {
       root.render(<GameLoadingOverlay />);
@@ -153,7 +155,7 @@ describe("GameLoadingOverlay", () => {
     expect(setShowBlankOverlayMock).toHaveBeenCalledWith(false);
   });
 
-  it("hands off from canonical map-first boot routes into the requested scene", async () => {
+  it("keeps map-first handoff behind ambient worldmap convergence", async () => {
     readinessState.worldmapReady = true;
     snapshotState.phase = "handoff_scene";
     snapshotState.resolvedRequest = {
@@ -173,10 +175,19 @@ describe("GameLoadingOverlay", () => {
       root.render(<GameLoadingOverlay />);
     });
 
+    expect(navigateMock).not.toHaveBeenCalled();
+    expect(setShowBlankOverlayMock).not.toHaveBeenCalledWith(false);
+
+    readinessState.worldmapConverged = true;
+    await act(async () => {
+      root.render(<GameLoadingOverlay />);
+    });
+
     expect(navigateMock).toHaveBeenCalledWith(
       "/play/sepolia/aurora-blitz/hex?col=12&row=34&boot=map-first&resumeScene=hex",
       { replace: true },
     );
+    expect(setShowBlankOverlayMock).not.toHaveBeenCalledWith(false);
   });
 
   it("repairs map-first routes without coordinates from synced player structures", async () => {

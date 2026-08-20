@@ -6,6 +6,7 @@ import { interactiveHexMaterial } from "@/three/shaders/border-hex-material";
 import { hexGeometryDebugger } from "@/three/utils/hex-geometry-debug";
 import { HexGeometryPool } from "@/three/utils/hex-geometry-pool";
 import { PerformanceMonitor } from "@/three/utils/performance-monitor";
+import { markInstancedAttributeRangeDirty } from "@/three/utils/instanced-attribute-update-range";
 import * as THREE from "three";
 import { getHexForWorldPosition, getWorldPositionForHex, getWorldPositionForHexCoordsInto } from "../utils/utils";
 import { type HoverVisualPalette } from "./worldmap-interaction-palette";
@@ -207,6 +208,7 @@ export class InteractiveHexManager {
 
     const mesh = new THREE.InstancedMesh(hexagonGeometry, this.instanceMaterial, requiredCapacity);
     mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+    markInstancedAttributeRangeDirty(mesh.instanceMatrix, 0, mesh.instanceMatrix.count);
     mesh.count = 0;
 
     this.instanceMesh = mesh;
@@ -343,7 +345,6 @@ export class InteractiveHexManager {
 
     if (this.instanceMesh) {
       this.instanceMesh.count = 0;
-      this.instanceMesh.instanceMatrix.needsUpdate = true;
     }
   }
 
@@ -365,7 +366,6 @@ export class InteractiveHexManager {
     mesh.count = instanceCount;
 
     if (instanceCount === 0) {
-      mesh.instanceMatrix.needsUpdate = true;
       mesh.boundingBox = null;
       mesh.boundingSphere = null;
       PerformanceMonitor.end("renderAllHexes");
@@ -402,7 +402,7 @@ export class InteractiveHexManager {
     }
     PerformanceMonitor.end("renderAllHexes.setMatrices");
 
-    mesh.instanceMatrix.needsUpdate = true;
+    markInstancedAttributeRangeDirty(mesh.instanceMatrix, 0, instanceCount);
 
     // Only recompute bounds if count changed (Phase 1 optimization)
     if (previousCount !== instanceCount) {
@@ -428,7 +428,6 @@ export class InteractiveHexManager {
     mesh.count = instanceCount;
 
     if (instanceCount === 0) {
-      mesh.instanceMatrix.needsUpdate = true;
       mesh.boundingBox = null;
       mesh.boundingSphere = null;
       PerformanceMonitor.end("renderHexes");
@@ -447,7 +446,7 @@ export class InteractiveHexManager {
     }
     PerformanceMonitor.end("renderHexes.setMatrices");
 
-    mesh.instanceMatrix.needsUpdate = true;
+    markInstancedAttributeRangeDirty(mesh.instanceMatrix, 0, instanceCount);
 
     // Only recompute bounds if count changed (Phase 1 optimization)
     if (previousCount !== instanceCount) {

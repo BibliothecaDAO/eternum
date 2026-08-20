@@ -23,6 +23,7 @@ const threeMocks = vi.hoisted(() => {
   }
 
   class MockTexture {
+    isTexture = true;
     dispose = vi.fn();
   }
 

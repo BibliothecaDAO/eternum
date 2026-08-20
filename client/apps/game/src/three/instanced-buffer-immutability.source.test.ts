@@ -17,17 +17,25 @@ import { describe, expect, it } from "vitest";
 const currentDir = dirname(fileURLToPath(import.meta.url));
 const threeRoot = resolve(currentDir);
 
-// Every assignment must be inside one of these files' creation paths. Adding a
-// file here requires proving the mesh cannot have rendered before the write.
-const ALLOWED_ASSIGNMENT_FILES = new Set([
-  // Mesh factory: assigns instanceColor right after `new InstancedMesh(...)`.
-  "managers/army-model.ts",
-  // Fixed-capacity attribute created immediately after mesh construction.
-  "managers/highlight-hex-manager.ts",
-  // Composite biome meshes are built fresh per chunk composite and only then
-  // added to the scene; the (re)assignment happens before their first draw.
-  "scenes/worldmap.tsx",
-]);
+// Every assignment must be inside the function that creates and returns the
+// mesh. File-wide exceptions would also permit unsafe writes after first draw.
+const CREATION_ASSIGNMENT_SCOPES = [
+  {
+    file: "managers/army-model.ts",
+    start: "private createInstancedMesh(",
+    end: "// Buffers are never grown",
+  },
+  {
+    file: "managers/highlight-hex-manager.ts",
+    start: "const createMesh = (",
+    end: "export class HighlightHexManager",
+  },
+  {
+    file: "managers/instanced-biome.tsx",
+    start: "private createBiomeInstancedMesh(",
+    end: "private createNeutralLandColorAttribute(",
+  },
+] as const;
 
 const FORBIDDEN_ASSIGNMENT = /\.(instanceMatrix|instanceColor|morphTexture)\s*=(?!=)/;
 
@@ -46,19 +54,37 @@ function collectSourceFiles(dir: string, files: string[] = []): string[] {
   return files;
 }
 
+function isInsideCreationAssignmentScope(relativePath: string, source: string, offset: number): boolean {
+  return CREATION_ASSIGNMENT_SCOPES.some((scope) => {
+    if (scope.file !== relativePath) {
+      return false;
+    }
+    const start = source.indexOf(scope.start);
+    const end = source.indexOf(scope.end, start);
+    return start >= 0 && end > start && offset >= start && offset < end;
+  });
+}
+
 describe("instanced GPU buffer immutability", () => {
-  it("never reassigns instanceMatrix/instanceColor/morphTexture outside allowlisted creation paths", () => {
+  it("never reassigns instanceMatrix/instanceColor/morphTexture outside mesh creation scopes", () => {
     const violations: string[] = [];
 
     for (const filePath of collectSourceFiles(threeRoot)) {
       const relativePath = relative(threeRoot, filePath).replaceAll("\\", "/");
-      const lines = readFileSync(filePath, "utf8").split("\n");
+      const source = readFileSync(filePath, "utf8");
+      const lines = source.split("\n");
+      let offset = 0;
 
       lines.forEach((line, index) => {
-        if (!FORBIDDEN_ASSIGNMENT.test(line)) return;
-        if (line.trimStart().startsWith("//") || line.trimStart().startsWith("*")) return;
-        if (ALLOWED_ASSIGNMENT_FILES.has(relativePath)) return;
-        violations.push(`${relativePath}:${index + 1}: ${line.trim()}`);
+        if (
+          FORBIDDEN_ASSIGNMENT.test(line) &&
+          !line.trimStart().startsWith("//") &&
+          !line.trimStart().startsWith("*") &&
+          !isInsideCreationAssignmentScope(relativePath, source, offset)
+        ) {
+          violations.push(`${relativePath}:${index + 1}: ${line.trim()}`);
+        }
+        offset += line.length + 1;
       });
     }
 

@@ -10,7 +10,7 @@ import { toast } from "sonner";
 import { AudioManager } from "@/audio/core/AudioManager";
 import { getTxMessage as getBaseMessage, getTxIcon } from "@/ui/components/transaction-center/types";
 import { verboseLog } from "@/utils/dev-mode";
-import { extractReadableErrorMessage } from "@/utils/error-message";
+import { extractReadableErrorMessage, formatReadableErrorForConsole } from "@/utils/error-message";
 
 const getTxMessage = (type: TransactionType): string => {
   const icon = getTxIcon(type);
@@ -94,7 +94,8 @@ export function TransactionNotification() {
       }
 
       const reason = resolveFailureReason(payload, classified);
-      console.error("Transaction failed:", reason, payload.error ?? payload.message);
+      const consoleReason = formatReadableErrorForConsole(payload.error ?? payload.message, reason);
+      console.error(`Transaction failed: ${consoleReason}`);
 
       if (classified.kind === "session_invalid") {
         toast("⚠️ Session expired", { description: `${actionLabel}: Session expired — reconnect your controller` });

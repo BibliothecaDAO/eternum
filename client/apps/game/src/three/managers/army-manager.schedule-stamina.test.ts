@@ -20,6 +20,8 @@ describe("ArmyManager chain-time updates", () => {
     const source = readFileSync(resolve(process.cwd(), "src/three/managers/army-manager.ts"), "utf8");
 
     expect(source).toContain("useChainTimeStore.subscribe");
+    expect(source).toContain("this.recomputeStaminaForAllArmies(currentArmiesTick)");
+    expect(source).not.toContain("useBlockTimestampStore");
     expect(source).toContain("this.unsubscribeChainTime?.()");
     expect(source).not.toContain("scheduleTickCheck");
     expect(source).not.toContain("tickCheckTimeout");

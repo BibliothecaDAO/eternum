@@ -1,6 +1,10 @@
 import { useGameModeConfig, useResolvedWorldGameMode } from "@/config/game-modes/use-game-mode-config";
 import { useSyncLeaderboard } from "@/hooks/helpers/use-sync";
 import { useUIStore } from "@/hooks/store/use-ui-store";
+import {
+  filterPlayersByBlitzSettlement,
+  useBlitzSettlementPlayerAddresses,
+} from "@/services/blitz/blitz-settlement-players";
 import { LEADERBOARD_UPDATE_INTERVAL } from "@/ui/constants";
 import { Tabs } from "@/ui/design-system/atoms/tab";
 import { LoadingAnimation } from "@/ui/design-system/molecules/loading-animation";
@@ -12,7 +16,7 @@ import { Guilds } from "../guilds/guilds";
 import { PlayersPanel } from "../player/players-panel";
 import { leaderboard } from "@/ui/features/world";
 import { CenteredModalShell } from "@/ui/features/world/containers/centered-modal-shell";
-import { getPlayerInfo, LeaderboardManager } from "@bibliothecadao/eternum";
+import { belongsToActiveGame, getPlayerInfo, LeaderboardManager } from "@bibliothecadao/eternum";
 import { useDojo, usePlayers } from "@bibliothecadao/react";
 import { ContractAddress, StructureType } from "@bibliothecadao/types";
 import { useEntityQuery } from "@dojoengine/react";
@@ -64,7 +68,12 @@ export const Social = () => {
   const isEternumMode = resolvedWorldMode === "eternum";
   const showGuildsTab = isEternumMode && mode.ui.showGuildsTab;
 
-  const players = usePlayers();
+  const allPlayers = usePlayers();
+  const blitzSettlementPlayerAddresses = useBlitzSettlementPlayerAddresses(components);
+  const players = useMemo(
+    () => (isBlitzMode ? filterPlayersByBlitzSettlement(allPlayers, blitzSettlementPlayerAddresses) : allPlayers),
+    [allPlayers, blitzSettlementPlayerAddresses, isBlitzMode],
+  );
 
   // Check if MMR is enabled
   // s2: mmr config lives on the ChainConfig singleton.
@@ -89,7 +98,7 @@ export const Social = () => {
     () =>
       structureEntities.reduce<Map<bigint, PlayerStructureCounts>>((countsByOwner, entity) => {
         const structure = getComponentValue(components.Structure, entity);
-        if (!structure) return countsByOwner;
+        if (!structure || !belongsToActiveGame(structure)) return countsByOwner;
 
         const counts = countsByOwner.get(structure.owner) ?? {
           banks: 0,

@@ -69,6 +69,7 @@ describe("TransactionNotification", () => {
     });
     provider.removeAllListeners();
     container.remove();
+    vi.restoreAllMocks();
     (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = false;
   });
 
@@ -158,6 +159,7 @@ describe("TransactionNotification", () => {
   });
 
   it("surfaces the classified Cairo reason on reverts", async () => {
+    const consoleError = vi.spyOn(console, "error").mockImplementation(() => undefined);
     await act(async () => {
       root.render(<TransactionNotification />);
     });
@@ -182,6 +184,7 @@ describe("TransactionNotification", () => {
     expect(toastMock).toHaveBeenCalledWith("❌ Transaction failed", {
       description: expect.stringContaining("failed: not enough stamina"),
     });
+    expect(consoleError).toHaveBeenCalledWith("Transaction failed: not enough stamina");
     expect(playMock).toHaveBeenCalledWith("ui.tx_fail");
   });
 

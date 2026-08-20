@@ -5,6 +5,7 @@ import {
   NeutralToneMapping,
   ReinhardToneMapping,
 } from "three";
+import { VERBOSE_LOGS_ENABLED } from "@/utils/dev-mode";
 
 import type { RendererSurfaceLike } from "./renderer-backend";
 import {
@@ -108,7 +109,7 @@ async function createDefaultWebGPURenderer(input: {
   }
   recordRendererStartupTiming("webgpu-renderer-create", performance.now() - rendererCreateStartedAt);
 
-  if (import.meta.env.DEV) {
+  if (import.meta.env.DEV || VERBOSE_LOGS_ENABLED) {
     instrumentWebGpuBackendHotPaths(renderer);
   }
 
@@ -121,8 +122,8 @@ async function createDefaultWebGPURenderer(input: {
   };
 }
 
-// Dev-only rolling attribution for pipeline, buffer, binding, and texture work.
-// This keeps future render regressions attributable without player overhead.
+// Method-level attribution remains an explicit debug/logging opt-in so the
+// production frame tracker does not add wrapper overhead for ordinary players.
 function instrumentWebGpuBackendHotPaths(renderer: WebGPURendererSurface): void {
   const backend = (renderer as unknown as { backend?: Record<string, unknown> }).backend;
   if (backend) {

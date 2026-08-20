@@ -14,12 +14,14 @@ describe("worldmap critical terrain phase attribution", () => {
     const prepareStart = source.indexOf("private async prepareVisualTerrainPage(");
     const prepareEnd = source.indexOf("private async awaitPreparedTerrainBiomeModels(", prepareStart);
     const prepareMethod = source.slice(prepareStart, prepareEnd);
+    const queuedBuildStart = prepareMethod.indexOf("this.chunkWorkQueue.schedule(");
     const buildStart = prepareMethod.indexOf("const buildStartedAt = performance.now()");
     const modelWaitStart = prepareMethod.indexOf("const modelWaitStartedAt = performance.now()");
 
-    expect(prepareMethod).toContain("this.chunkWorkQueue.schedule(workLane");
-    expect(buildStart).toBeGreaterThan(prepareMethod.indexOf("this.chunkWorkQueue.schedule(workLane"));
-    expect(modelWaitStart).toBeGreaterThan(prepareMethod.indexOf("await this.chunkWorkQueue.schedule"));
+    expect(queuedBuildStart).toBeGreaterThanOrEqual(0);
+    expect(buildStart).toBeGreaterThan(queuedBuildStart);
+    expect(modelWaitStart).toBeGreaterThan(queuedBuildStart);
+    expect(prepareMethod).toContain("`terrain:${workLane}-page-build`");
     expect(prepareMethod).toContain("modelWaitMs: performance.now() - modelWaitStartedAt");
 
     const buildAndApplyStart = source.indexOf("private async buildAndApplyVisualTerrainPage(");

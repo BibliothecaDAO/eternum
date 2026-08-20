@@ -3,7 +3,7 @@ import { lazy, Suspense, useEffect, useState, type ReactNode } from "react";
 import { Navigate, Route, Routes, useLocation } from "react-router-dom";
 
 import { env } from "../env";
-import { preloadGameRouteModule } from "./game-entry-preload";
+import { loadGameRouteForPlayEntry } from "./game-entry-preload";
 import { StarknetProvider } from "./hooks/context/starknet-provider";
 import { useUIStore } from "./hooks/store/use-ui-store";
 import { normalizeLegacyPlayLocation } from "./play/navigation/play-route";
@@ -15,7 +15,7 @@ import { ConstructionGate } from "./ui/modules/construction-gate";
 import { LoadingScreen } from "./ui/modules/loading-screen";
 import { getRandomBackgroundImage } from "./ui/utils/utils";
 
-const LazyGameRoute = lazy(preloadGameRouteModule);
+const LazyGameRoute = lazy(loadGameRouteForPlayEntry);
 
 const LandingLayout = lazy(() =>
   import("./ui/features/landing/landing-layout").then((module) => ({ default: module.LandingLayout })),

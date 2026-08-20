@@ -58,7 +58,7 @@ describe("ArmyManager pre-commit army queue", () => {
     expect(clearIdx).toBeLessThan(forOfIdx);
   });
 
-  it("executeRenderForChunk drains preCommitArmyQueue in its finally block", () => {
+  it("routes winning transition cleanup through the shared finalizer", () => {
     const source = readSource("./army-manager.ts");
 
     // Find the executeRenderForChunk method definition (private async)
@@ -69,12 +69,13 @@ describe("ArmyManager pre-commit army queue", () => {
     const finallyIdx = methodBody.indexOf("} finally {");
     expect(finallyIdx).toBeGreaterThan(-1);
 
-    const finallyBlock = methodBody.substring(finallyIdx, finallyIdx + 500);
+    const finallyBlock = methodBody.substring(finallyIdx, finallyIdx + 900);
 
-    expect(finallyBlock).toContain("this.drainPreCommitArmyQueue()");
+    expect(finallyBlock).toContain("finalizeArmyChunkTransition({");
+    expect(finallyBlock).toContain("drainPreCommitQueue: () => this.drainPreCommitArmyQueue()");
   });
 
-  it("drainPreCommitArmyQueue is called after drainDeferredArmyQueue in executeRenderForChunk finally block", () => {
+  it("passes deferred then pre-commit drains to the shared finalizer", () => {
     const source = readSource("./army-manager.ts");
 
     const methodStart = source.indexOf("private async executeRenderForChunk(");
@@ -84,15 +85,15 @@ describe("ArmyManager pre-commit army queue", () => {
     const finallyIdx = methodBody.indexOf("} finally {");
     expect(finallyIdx).toBeGreaterThan(-1);
 
-    const finallyBlock = methodBody.substring(finallyIdx, finallyIdx + 500);
+    const finallyBlock = methodBody.substring(finallyIdx, finallyIdx + 900);
 
-    const deferredDrainIdx = finallyBlock.indexOf("this.drainDeferredArmyQueue()");
-    const preCommitDrainIdx = finallyBlock.indexOf("this.drainPreCommitArmyQueue()");
+    const deferredDrainIdx = finallyBlock.indexOf("drainDeferredQueue: () => this.drainDeferredArmyQueue()");
+    const preCommitDrainIdx = finallyBlock.indexOf("drainPreCommitQueue: () => this.drainPreCommitArmyQueue()");
 
     expect(deferredDrainIdx).toBeGreaterThan(-1);
     expect(preCommitDrainIdx).toBeGreaterThan(-1);
 
-    // preCommitArmyQueue drain must come after deferredArmyQueue drain
+    // The finalizer executes these callbacks in this declared order.
     expect(preCommitDrainIdx).toBeGreaterThan(deferredDrainIdx);
   });
 

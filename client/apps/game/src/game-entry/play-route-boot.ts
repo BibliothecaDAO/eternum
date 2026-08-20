@@ -4,9 +4,13 @@ import { type BootstrapTask, useGameEntryBootstrapController } from "@/game-entr
 import { getGameModeId } from "@/config/game-modes";
 import { resolveEntryContextFromPlayRoute, type ResolvedEntryContext } from "@/game-entry/context";
 import { useControllerAccount } from "@/hooks/context/use-controller-account";
-import { connectWithControllerRetry, pickPrimaryConnector } from "@/hooks/context/controller-connect";
+import {
+  createOwnedControllerReconnect,
+  IDLE_CONTROLLER_RECONNECT_STATE,
+  type ControllerReconnectState,
+} from "@/hooks/context/controller-connect";
 import { useCartridgeUsername } from "@/hooks/use-cartridge-username";
-import { parsePlayRoute, type PlayScene } from "@/play/navigation/play-route";
+import type { PlayScene } from "@/play/navigation/play-route";
 import type { SetupResult } from "@/init/bootstrap";
 import { useAccount, useConnect } from "@starknet-react/core";
 import { Account } from "starknet";
@@ -23,6 +27,31 @@ const NULL_ACCOUNT = {
   address: "0x0",
   privateKey: "0x0",
 } as const;
+
+type CanonicalPlayEntry = Pick<ResolvedEntryContext, "chain" | "intent" | "worldName">;
+
+const resolveCanonicalPlayEntry = (entryContext: ResolvedEntryContext | null): CanonicalPlayEntry | null => {
+  if (!entryContext) {
+    return null;
+  }
+
+  return {
+    chain: entryContext.chain,
+    intent: entryContext.intent,
+    worldName: entryContext.worldName,
+  };
+};
+
+const matchesCanonicalPlayEntry = (
+  previousEntry: CanonicalPlayEntry | null,
+  currentEntry: CanonicalPlayEntry | null,
+): boolean => {
+  return (
+    previousEntry?.chain === currentEntry?.chain &&
+    previousEntry?.intent === currentEntry?.intent &&
+    previousEntry?.worldName === currentEntry?.worldName
+  );
+};
 
 const resolveBootstrapContext = ({
   entryContext,
@@ -56,6 +85,8 @@ export type PlayRouteBootPhase =
   | "reconnect_required"
   | "error";
 
+export type PlayRouteReconnectStatus = "idle" | "restoring" | "connecting" | "failed" | "connected";
+
 interface PlayRouteBootSnapshot {
   account: Account | AccountInterface | null;
   bootToken: number;
@@ -63,6 +94,8 @@ interface PlayRouteBootSnapshot {
   error: Error | null;
   phase: PlayRouteBootPhase;
   progress: number;
+  reconnectError: string | null;
+  reconnectStatus: PlayRouteReconnectStatus;
   resolvedRequest: ResolvedPlayBootRequest | null;
   setupResult: SetupResult | null;
   tasks: BootstrapTask[];
@@ -121,6 +154,8 @@ const usePlayRouteBootStore = create<PlayRouteBootSnapshot>(() => ({
   error: null,
   phase: "normalize_route",
   progress: 0,
+  reconnectError: null,
+  reconnectStatus: "idle",
   resolvedRequest: null,
   setupResult: null,
   tasks: createPendingTasks(),
@@ -200,6 +235,42 @@ const resolveBootProgress = ({
   return bootstrapProgress;
 };
 
+const resolveReconnectStatus = ({
+  hasResolvedAccount,
+  isConnecting,
+  manualReconnect,
+}: {
+  hasResolvedAccount: boolean;
+  isConnecting: boolean;
+  manualReconnect: ControllerReconnectState;
+}): PlayRouteReconnectStatus => {
+  if (hasResolvedAccount) {
+    return "connected";
+  }
+
+  if (manualReconnect.status !== "idle") {
+    return manualReconnect.status;
+  }
+
+  return isConnecting ? "restoring" : "idle";
+};
+
+const resolveAccountTask = (reconnectStatus: PlayRouteReconnectStatus): BootstrapTask => {
+  if (reconnectStatus === "failed") {
+    return { id: "account", label: "Controller reconnect failed", status: "error" };
+  }
+
+  if (reconnectStatus === "connecting") {
+    return { id: "account", label: "Connecting controller session", status: "running" };
+  }
+
+  if (reconnectStatus === "restoring") {
+    return { id: "account", label: "Restoring controller session", status: "running" };
+  }
+
+  return { id: "account", label: "Resolving account session", status: "running" };
+};
+
 export const usePlayRouteBootSnapshot = () => usePlayRouteBootStore();
 
 export const usePlayRouteBootController = (): PlayRouteBootControllerState => {
@@ -209,9 +280,9 @@ export const usePlayRouteBootController = (): PlayRouteBootControllerState => {
   const controllerAccount = useControllerAccount();
   const setAccountName = useAccountStore((state) => state.setAccountName);
   const setShowBlankOverlay = useUIStore((state) => state.setShowBlankOverlay);
-  const showBlankOverlay = useUIStore((state) => state.showBlankOverlay);
   const { username: cartridgeUsername } = useCartridgeUsername();
   const entryContext = useMemo(() => resolveEntryContextFromPlayRoute(location), [location.pathname, location.search]);
+  const canonicalEntry = useMemo(() => resolveCanonicalPlayEntry(entryContext), [entryContext]);
   const hasControllerAccount = controllerAccount !== null;
   const bootstrapContext = useMemo(
     () => resolveBootstrapContext({ entryContext, hasControllerAccount }),
@@ -221,7 +292,6 @@ export const usePlayRouteBootController = (): PlayRouteBootControllerState => {
     context: bootstrapContext,
     enabled: bootstrapContext !== null,
   });
-  const playRoute = useMemo(() => parsePlayRoute(location), [location.pathname, location.search]);
   const fastTravelEnabled = useMemo(
     () => (bootstrap.setupResult ? getGameModeId() !== "blitz" : true),
     [bootstrap.setupResult],
@@ -233,9 +303,17 @@ export const usePlayRouteBootController = (): PlayRouteBootControllerState => {
   const [placeholderAccount, setPlaceholderAccount] = useState<Account | null>(null);
   const [bootToken, setBootToken] = useState(0);
   const [hasReconnectGraceElapsed, setHasReconnectGraceElapsed] = useState(false);
+  const [manualReconnect, setManualReconnect] = useState<ControllerReconnectState>(IDLE_CONTROLLER_RECONNECT_STATE);
   const readiness = usePlayRouteReadinessStore();
+  const reconnectControllerRef = useRef<ReturnType<typeof createOwnedControllerReconnect> | null>(null);
   const nextBootTokenRef = useRef(0);
-  const previousRouteRef = useRef<typeof playRoute>(null);
+  const previousEntryRef = useRef<CanonicalPlayEntry | null>(null);
+
+  if (!reconnectControllerRef.current) {
+    reconnectControllerRef.current = createOwnedControllerReconnect({
+      onStateChange: setManualReconnect,
+    });
+  }
 
   useEffect(() => {
     if (cartridgeUsername) {
@@ -273,31 +351,17 @@ export const usePlayRouteBootController = (): PlayRouteBootControllerState => {
   }, [setShowBlankOverlay]);
 
   useEffect(() => {
-    const previousRoute = previousRouteRef.current;
-    previousRouteRef.current = playRoute;
-
-    if (!playRoute) {
+    if (matchesCanonicalPlayEntry(previousEntryRef.current, canonicalEntry)) {
       return;
     }
 
-    const isSceneHandoffRouteChange =
-      previousRoute?.bootMode === "map-first" &&
-      previousRoute.chain === playRoute.chain &&
-      previousRoute.worldName === playRoute.worldName &&
-      previousRoute.resumeScene === playRoute.scene;
-
-    const shouldStartEntryBoot =
-      playRoute.bootMode === "map-first" ||
-      showBlankOverlay ||
-      bootstrap.setupResult === null ||
-      previousRoute === null;
-
-    if (!shouldStartEntryBoot || isSceneHandoffRouteChange) {
+    previousEntryRef.current = canonicalEntry;
+    if (!canonicalEntry) {
       return;
     }
 
     startPlayRouteBoot();
-  }, [bootstrap.setupResult, playRoute, showBlankOverlay, startPlayRouteBoot]);
+  }, [canonicalEntry, startPlayRouteBoot]);
 
   const resolvedAccount = useMemo(() => {
     if (resolvedRequest?.entryMode === "spectator") {
@@ -307,14 +371,26 @@ export const usePlayRouteBootController = (): PlayRouteBootControllerState => {
     return controllerAccount ?? null;
   }, [controllerAccount, placeholderAccount, resolvedRequest?.entryMode]);
 
-  const shouldTrackReconnectGrace = resolvedRequest?.entryMode === "player" && !resolvedAccount;
+  const reconnectStatus = resolveReconnectStatus({
+    hasResolvedAccount: resolvedAccount !== null,
+    isConnecting: Boolean(isConnecting),
+    manualReconnect,
+  });
+  const reconnectError = manualReconnect.status === "failed" ? manualReconnect.error : null;
+  const isAutomaticRestorePending = reconnectStatus === "restoring";
+
+  const shouldTrackReconnectGrace =
+    resolvedRequest?.entryMode === "player" && !resolvedAccount && !isAutomaticRestorePending;
   useEffect(() => {
     if (!shouldTrackReconnectGrace) {
       setHasReconnectGraceElapsed(false);
       return;
     }
 
-    setHasReconnectGraceElapsed(false);
+    if (hasReconnectGraceElapsed) {
+      return;
+    }
+
     const timeoutId = window.setTimeout(() => {
       setHasReconnectGraceElapsed(true);
     }, PLAY_ROUTE_RECONNECT_GRACE_MS);
@@ -322,29 +398,33 @@ export const usePlayRouteBootController = (): PlayRouteBootControllerState => {
     return () => {
       window.clearTimeout(timeoutId);
     };
-  }, [shouldTrackReconnectGrace, location.pathname, location.search]);
+  }, [hasReconnectGraceElapsed, shouldTrackReconnectGrace, location.pathname, location.search]);
 
   const connectWallet = useCallback(() => {
-    if (isConnecting) {
-      return;
-    }
-
     if (isConnected && resolvedAccount) {
       return;
     }
 
-    const primaryConnector = pickPrimaryConnector(connectors);
-    if (!primaryConnector) {
-      console.error("Unable to connect wallet: no connectors available");
+    reconnectControllerRef.current?.start({ connectAsync, connectors });
+  }, [connectAsync, connectors, isConnected, resolvedAccount]);
+
+  useEffect(() => {
+    if (!resolvedAccount) {
       return;
     }
 
-    void connectWithControllerRetry(connectAsync, primaryConnector).catch((error) => {
-      console.error("Unable to connect wallet:", error);
-    });
-  }, [connectAsync, connectors, isConnected, isConnecting, resolvedAccount]);
+    reconnectControllerRef.current?.retire();
+    setManualReconnect(IDLE_CONTROLLER_RECONNECT_STATE);
+  }, [resolvedAccount]);
 
-  const isReconnectRequired = shouldTrackReconnectGrace && hasReconnectGraceElapsed;
+  useEffect(() => {
+    return () => {
+      reconnectControllerRef.current?.retire();
+    };
+  }, []);
+
+  const hasManualReconnectAttempt = manualReconnect.status !== "idle";
+  const isReconnectRequired = shouldTrackReconnectGrace && (hasReconnectGraceElapsed || hasManualReconnectAttempt);
   const phase = resolveBootPhase({
     bootstrapError: bootstrap.error,
     bootstrapStatus: bootstrap.status,
@@ -368,11 +448,11 @@ export const usePlayRouteBootController = (): PlayRouteBootControllerState => {
     }
 
     if (phase === "await_account" || phase === "reconnect_required") {
-      return [{ id: "account", label: "Resolving account session", status: "running" as const }];
+      return [resolveAccountTask(reconnectStatus)];
     }
 
     return createPendingTasks();
-  }, [bootstrap.status, bootstrap.tasks, phase, resolvedRequest?.resumeScene]);
+  }, [bootstrap.status, bootstrap.tasks, phase, reconnectStatus, resolvedRequest?.resumeScene]);
 
   const snapshot = useMemo<PlayRouteBootSnapshot>(
     () => ({
@@ -385,6 +465,8 @@ export const usePlayRouteBootController = (): PlayRouteBootControllerState => {
         bootstrapProgress: bootstrap.progress,
         phase,
       }),
+      reconnectError,
+      reconnectStatus,
       resolvedRequest,
       setupResult: bootstrap.setupResult,
       tasks,
@@ -396,6 +478,8 @@ export const usePlayRouteBootController = (): PlayRouteBootControllerState => {
       bootstrap.progress,
       bootstrap.setupResult,
       phase,
+      reconnectError,
+      reconnectStatus,
       resolvedAccount,
       resolvedRequest,
       tasks,

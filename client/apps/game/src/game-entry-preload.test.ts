@@ -127,6 +127,60 @@ describe("createGameEntryPrimer", () => {
   });
 });
 
+describe("createPlayRouteEntryLoader", () => {
+  it("schedules entry priming before loading the route module and does both once per page", async () => {
+    const { createPlayRouteEntryLoader } = await import("./game-entry-preload");
+    const callOrder: string[] = [];
+    const routeModule = { route: "game" };
+    const preloadGameRouteModule = vi.fn(async () => {
+      callOrder.push("load-route");
+      return routeModule;
+    });
+    const loader = createPlayRouteEntryLoader({
+      markPrefetchScheduled: () => callOrder.push("mark-prefetch"),
+      preloadGameRouteModule,
+      primeEntry: () => callOrder.push("prime-entry"),
+    });
+
+    const firstLoad = loader();
+    const secondLoad = loader();
+
+    expect(callOrder).toEqual(["mark-prefetch", "prime-entry", "load-route"]);
+    expect(secondLoad).toBe(firstLoad);
+    expect(preloadGameRouteModule).toHaveBeenCalledTimes(1);
+    await expect(firstLoad).resolves.toBe(routeModule);
+  });
+
+  it("starts entry priming before slow or failed account restoration can run", async () => {
+    const { createPlayRouteEntryLoader } = await import("./game-entry-preload");
+    const callOrder: string[] = [];
+    const accountFailure = new Error("account restore failed");
+    let rejectAccountRestoration: (error: Error) => void = () => {};
+    const accountRestoration = new Promise<void>((_resolve, reject) => {
+      rejectAccountRestoration = reject;
+    });
+    const restoreAccount = vi.fn(() => {
+      callOrder.push("restore-account");
+      return accountRestoration;
+    });
+    const loader = createPlayRouteEntryLoader({
+      markPrefetchScheduled: () => callOrder.push("mark-prefetch"),
+      preloadGameRouteModule: async () => ({ restoreAccount }),
+      primeEntry: () => callOrder.push("prime-entry"),
+    });
+
+    const routeModule = await loader();
+    expect(callOrder).toEqual(["mark-prefetch", "prime-entry"]);
+
+    const restoration = routeModule.restoreAccount();
+    expect(callOrder).toEqual(["mark-prefetch", "prime-entry", "restore-account"]);
+    expect(callOrder.indexOf("prime-entry")).toBeLessThan(callOrder.indexOf("restore-account"));
+
+    rejectAccountRestoration(accountFailure);
+    await expect(restoration).rejects.toBe(accountFailure);
+  });
+});
+
 describe("createRendererReadyPlayAssetPrimer", () => {
   it("runs play asset prefetch once when renderer initialization completes", async () => {
     const { createRendererReadyPlayAssetPrimer } = await import("./game-entry-preload");

@@ -71,7 +71,7 @@ vi.mock("./game-renderer-debug-globals", () => ({
   registerGameRendererDebugGlobals: registerGlobalsMock,
 }));
 
-vi.mock("three/examples/jsm/libs/stats.module.js", () => ({
+vi.mock("three/addons/libs/stats.module.js", () => ({
   default: class MockStats {
     public readonly dom = document.createElement("div");
     public readonly update = vi.fn();
