@@ -1,12 +1,15 @@
 import { TransitionManager } from "@/three/managers/transition-manager";
 import { HexagonScene } from "@/three/scenes/hexagon-scene";
 import { runWithFrameWorkOwner } from "@/three/frame-work-owner";
+import { formatReadableErrorForConsole } from "@/utils/error-message";
 import {
   resolvePendingTransitionStart,
   resolveSceneSwitchRequest,
   resolveTransitionFinalizePlan,
 } from "./scene-manager-transition-policy";
 import { SceneName } from "./types";
+
+type SceneSetupResult = { succeeded: true } | { error: unknown; succeeded: false };
 
 export class SceneManager {
   private currentScene: SceneName | undefined = undefined;
@@ -71,51 +74,88 @@ export class SceneManager {
     previousScene?.onSwitchOff(sceneNameToTransition);
 
     this.transitionInProgress = true;
-    this.transitionManager.fadeOut(async () => {
-      await this.completeTransition(sceneNameToTransition, pendingScene, transitionToken);
-    });
+    const fadeOutCompletion = this.transitionManager.fadeOut();
+    const sceneSetupCompletion = this.setupScene(sceneNameToTransition, pendingScene);
+    void this.completeTransition(
+      sceneNameToTransition,
+      pendingScene,
+      transitionToken,
+      fadeOutCompletion,
+      sceneSetupCompletion,
+    );
   }
 
-  private async completeTransition(sceneName: SceneName, scene: HexagonScene, transitionToken: number) {
-    const previousSceneName = this.currentScene;
-    let setupSucceeded = false;
-    const resolveFinalizePlan = () =>
-      resolveTransitionFinalizePlan({
-        transitionToken,
-        latestTransitionRequestToken: this.transitionRequestToken,
-        hasPendingScene: Boolean(this.pendingSceneName),
-      });
-
+  private async setupScene(sceneName: SceneName, scene: HexagonScene): Promise<SceneSetupResult> {
     try {
-      if (resolveFinalizePlan().isSuperseded) return;
-
       if (scene.setup) {
-        // Ownership covers the synchronous portion of setup — for hexception
-        // that IS the cost (the grid build and instance work run sync inside
-        // the fade), which is exactly the first-switch freeze under
-        // investigation.
         await runWithFrameWorkOwner(`scene:${sceneName}:setup`, () => scene.setup!());
       }
-      if (resolveFinalizePlan().isSuperseded) return;
+      return { succeeded: true };
+    } catch (error) {
+      return { error, succeeded: false };
+    }
+  }
+
+  private async completeTransition(
+    sceneName: SceneName,
+    scene: HexagonScene,
+    transitionToken: number,
+    fadeOutCompletion: Promise<boolean>,
+    sceneSetupCompletion: Promise<SceneSetupResult>,
+  ) {
+    const previousSceneName = this.currentScene;
+    let setupSucceeded = false;
+    let shouldFinalize = false;
+
+    try {
+      const [fadeOutCompleted, setupResult] = await Promise.all([fadeOutCompletion, sceneSetupCompletion]);
+      if (!fadeOutCompleted || !this.transitionManager.isActive()) return;
+      shouldFinalize = true;
+
+      if (this.getTransitionFinalizePlan(transitionToken).isSuperseded) return;
+      if (!setupResult.succeeded) {
+        console.error(
+          `[SceneManager] Failed to set up scene ${sceneName}: ${formatReadableErrorForConsole(setupResult.error)}`,
+        );
+        return;
+      }
 
       this._updateCurrentScene(sceneName);
       scene.activateInputSurface?.();
       setupSucceeded = true;
     } catch (error) {
-      console.error(`[SceneManager] Failed to set up scene ${sceneName}`, error);
+      console.error(`[SceneManager] Failed to set up scene ${sceneName}: ${formatReadableErrorForConsole(error)}`);
     } finally {
-      const finalizePlan = resolveFinalizePlan();
-      if (finalizePlan.shouldRunPostSetupEffects && (setupSucceeded || previousSceneName !== undefined)) {
-        this.moveCameraForScene();
-        this.transitionManager.fadeIn();
-      }
-
-      this.transitionInProgress = false;
-
-      if (finalizePlan.shouldStartPendingTransition) {
-        this.startPendingTransition();
+      if (shouldFinalize) {
+        this.finalizeTransition(transitionToken, setupSucceeded, previousSceneName);
       }
     }
+  }
+
+  private finalizeTransition(
+    transitionToken: number,
+    setupSucceeded: boolean,
+    previousSceneName: SceneName | undefined,
+  ) {
+    const finalizePlan = this.getTransitionFinalizePlan(transitionToken);
+    if (finalizePlan.shouldRunPostSetupEffects && (setupSucceeded || previousSceneName !== undefined)) {
+      this.moveCameraForScene();
+      this.transitionManager.fadeIn();
+    }
+
+    this.transitionInProgress = false;
+
+    if (finalizePlan.shouldStartPendingTransition) {
+      this.startPendingTransition();
+    }
+  }
+
+  private getTransitionFinalizePlan(transitionToken: number) {
+    return resolveTransitionFinalizePlan({
+      transitionToken,
+      latestTransitionRequestToken: this.transitionRequestToken,
+      hasPendingScene: Boolean(this.pendingSceneName),
+    });
   }
 
   moveCameraForScene() {

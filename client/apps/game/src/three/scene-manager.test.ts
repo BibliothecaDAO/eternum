@@ -4,228 +4,217 @@ import { SceneManager } from "./scene-manager";
 import { HexagonScene } from "./scenes/hexagon-scene";
 import { SceneName } from "./types";
 
-describe("SceneManager transition baseline", () => {
-  it("makes a successfully set up scene current and restores visibility", async () => {
-    const fadeOutCallbacks: Array<() => void | Promise<void>> = [];
-    const transitionManager = {
-      fadeOut: vi.fn((callback: () => void | Promise<void>) => fadeOutCallbacks.push(callback)),
-      fadeIn: vi.fn(),
-    };
-    const sceneManager = new SceneManager(transitionManager as unknown as TransitionManager);
-    sceneManager.addScene(SceneName.WorldMap, {
-      setup: vi.fn(async () => {}),
-      onSwitchOff: vi.fn(),
-      moveCameraToURLLocation: vi.fn(),
-    } as unknown as HexagonScene);
+interface Deferred<T> {
+  promise: Promise<T>;
+  resolve(value: T): void;
+}
+
+function createDeferred<T>(): Deferred<T> {
+  let resolve!: (value: T) => void;
+  const promise = new Promise<T>((resolvePromise) => {
+    resolve = resolvePromise;
+  });
+  return { promise, resolve };
+}
+
+function createTransitionHarness(events?: string[]) {
+  const fadeOuts: Array<Deferred<boolean>> = [];
+  const transitionManager = {
+    fadeIn: vi.fn(),
+    fadeOut: vi.fn(() => {
+      events?.push("fade-out");
+      const fadeOut = createDeferred<boolean>();
+      fadeOuts.push(fadeOut);
+      return fadeOut.promise;
+    }),
+    isActive: vi.fn(() => true),
+  };
+
+  return {
+    fadeOuts,
+    sceneManager: new SceneManager(transitionManager as unknown as TransitionManager),
+    transitionManager,
+  };
+}
+
+async function flushTransitionWork() {
+  await Promise.resolve();
+  await Promise.resolve();
+  await Promise.resolve();
+}
+
+async function completeFade(fadeOut: Deferred<boolean>) {
+  fadeOut.resolve(true);
+  await flushTransitionWork();
+}
+
+function createScene(overrides: Partial<HexagonScene> = {}) {
+  return {
+    setup: vi.fn(async () => {}),
+    onSwitchOff: vi.fn(),
+    moveCameraToURLLocation: vi.fn(),
+    ...overrides,
+  } as unknown as HexagonScene;
+}
+
+describe("SceneManager transitions", () => {
+  it("starts setup with fade-out and waits for the fade when setup is faster", async () => {
+    const events: string[] = [];
+    const { fadeOuts, sceneManager, transitionManager } = createTransitionHarness(events);
+    const worldMap = createScene({
+      setup: vi.fn(async () => {
+        events.push("setup");
+      }),
+    });
+    sceneManager.addScene(SceneName.WorldMap, worldMap);
 
     sceneManager.switchScene(SceneName.WorldMap);
-    const transition = fadeOutCallbacks[0]();
-    await transition;
+    await flushTransitionWork();
+
+    expect(events).toEqual(["fade-out", "setup"]);
+    expect(sceneManager.getCurrentScene()).toBeUndefined();
+    expect(transitionManager.fadeIn).not.toHaveBeenCalled();
+
+    await completeFade(fadeOuts[0]);
 
     expect(sceneManager.getCurrentScene()).toBe(SceneName.WorldMap);
     expect(transitionManager.fadeIn).toHaveBeenCalledOnce();
   });
 
-  it("does not start a second transition while a fade-out callback is still pending", () => {
-    const fadeOutCallbacks: Array<() => void | Promise<void>> = [];
-    const transitionManager = {
-      fadeOut: vi.fn((callback: () => void | Promise<void>) => {
-        fadeOutCallbacks.push(callback);
-      }),
-      fadeIn: vi.fn(),
-    };
-
-    const sceneManager = new SceneManager(transitionManager as unknown as TransitionManager);
-
-    sceneManager.addScene(SceneName.WorldMap, {
-      setup: vi.fn(async () => {}),
-      onSwitchOff: vi.fn(),
-      moveCameraToURLLocation: vi.fn(),
-    } as unknown as HexagonScene);
-
-    sceneManager.addScene(SceneName.Hexception, {
-      setup: vi.fn(async () => {}),
-      onSwitchOff: vi.fn(),
-      moveCameraToURLLocation: vi.fn(),
-    } as unknown as HexagonScene);
+  it("keeps the previous scene hidden until slower setup finishes", async () => {
+    const setup = createDeferred<void>();
+    const { fadeOuts, sceneManager, transitionManager } = createTransitionHarness();
+    const worldMap = createScene({ setup: vi.fn(() => setup.promise) });
+    sceneManager.addScene(SceneName.WorldMap, worldMap);
 
     sceneManager.switchScene(SceneName.WorldMap);
-    sceneManager.switchScene(SceneName.Hexception);
+    await completeFade(fadeOuts[0]);
 
-    expect(transitionManager.fadeOut).toHaveBeenCalledTimes(1);
-    expect(fadeOutCallbacks).toHaveLength(1);
-  });
-
-  it("drops superseded in-flight transition setup and applies only the latest requested scene", async () => {
-    const fadeOutCallbacks: Array<() => void | Promise<void>> = [];
-    const transitionManager = {
-      fadeOut: vi.fn((callback: () => void | Promise<void>) => {
-        fadeOutCallbacks.push(callback);
-      }),
-      fadeIn: vi.fn(),
-    };
-
-    const sceneManager = new SceneManager(transitionManager as unknown as TransitionManager);
-    const worldMapSetup = vi.fn(async () => {});
-    const hexSetup = vi.fn(async () => {});
-
-    sceneManager.addScene(SceneName.WorldMap, {
-      setup: worldMapSetup,
-      onSwitchOff: vi.fn(),
-      moveCameraToURLLocation: vi.fn(),
-    } as unknown as HexagonScene);
-
-    sceneManager.addScene(SceneName.Hexception, {
-      setup: hexSetup,
-      onSwitchOff: vi.fn(),
-      moveCameraToURLLocation: vi.fn(),
-    } as unknown as HexagonScene);
-
-    sceneManager.switchScene(SceneName.WorldMap);
-    sceneManager.switchScene(SceneName.Hexception);
-
-    expect(transitionManager.fadeOut).toHaveBeenCalledTimes(1);
-    await fadeOutCallbacks[0]();
-
-    expect(worldMapSetup).not.toHaveBeenCalled();
+    expect(worldMap.setup).toHaveBeenCalledOnce();
     expect(sceneManager.getCurrentScene()).toBeUndefined();
     expect(transitionManager.fadeIn).not.toHaveBeenCalled();
-    expect(transitionManager.fadeOut).toHaveBeenCalledTimes(2);
-    expect(fadeOutCallbacks).toHaveLength(2);
 
-    await fadeOutCallbacks[1]();
+    setup.resolve();
+    await flushTransitionWork();
 
-    expect(hexSetup).toHaveBeenCalledTimes(1);
-    expect(sceneManager.getCurrentScene()).toBe(SceneName.Hexception);
-    expect(transitionManager.fadeIn).toHaveBeenCalledTimes(1);
+    expect(sceneManager.getCurrentScene()).toBe(SceneName.WorldMap);
+    expect(transitionManager.fadeIn).toHaveBeenCalledOnce();
   });
 
-  it("coalesces multiple rapid scene toggles to the latest pending scene", async () => {
-    const fadeOutCallbacks: Array<() => void | Promise<void>> = [];
-    const transitionManager = {
-      fadeOut: vi.fn((callback: () => void | Promise<void>) => {
-        fadeOutCallbacks.push(callback);
-      }),
-      fadeIn: vi.fn(),
-    };
+  it("queues a superseding request and promotes only its scene", async () => {
+    const firstSetup = createDeferred<void>();
+    const { fadeOuts, sceneManager, transitionManager } = createTransitionHarness();
+    const activateWorldMapInput = vi.fn();
+    const worldMap = createScene({
+      activateInputSurface: activateWorldMapInput,
+      setup: vi.fn(() => firstSetup.promise),
+    });
+    const activateHexInput = vi.fn();
+    const hexception = createScene({ activateInputSurface: activateHexInput });
+    sceneManager.addScene(SceneName.WorldMap, worldMap);
+    sceneManager.addScene(SceneName.Hexception, hexception);
 
-    const sceneManager = new SceneManager(transitionManager as unknown as TransitionManager);
-    const worldMapSetup = vi.fn(async () => {});
-    const hexSetup = vi.fn(async () => {});
+    sceneManager.switchScene(SceneName.WorldMap);
+    sceneManager.switchScene(SceneName.Hexception);
 
-    sceneManager.addScene(SceneName.WorldMap, {
-      setup: worldMapSetup,
-      onSwitchOff: vi.fn(),
-      moveCameraToURLLocation: vi.fn(),
-    } as unknown as HexagonScene);
+    expect(transitionManager.fadeOut).toHaveBeenCalledTimes(1);
+    expect(worldMap.setup).toHaveBeenCalledOnce();
+    expect(hexception.setup).not.toHaveBeenCalled();
 
-    sceneManager.addScene(SceneName.Hexception, {
-      setup: hexSetup,
-      onSwitchOff: vi.fn(),
-      moveCameraToURLLocation: vi.fn(),
-    } as unknown as HexagonScene);
+    await completeFade(fadeOuts[0]);
+    firstSetup.resolve();
+    await flushTransitionWork();
+
+    expect(sceneManager.getCurrentScene()).toBeUndefined();
+    expect(transitionManager.fadeIn).not.toHaveBeenCalled();
+    expect(activateWorldMapInput).not.toHaveBeenCalled();
+    expect(worldMap.moveCameraToURLLocation).not.toHaveBeenCalled();
+    expect(transitionManager.fadeOut).toHaveBeenCalledTimes(2);
+    expect(hexception.setup).toHaveBeenCalledOnce();
+
+    await completeFade(fadeOuts[1]);
+
+    expect(sceneManager.getCurrentScene()).toBe(SceneName.Hexception);
+    expect(transitionManager.fadeIn).toHaveBeenCalledOnce();
+    expect(activateWorldMapInput).not.toHaveBeenCalled();
+    expect(activateHexInput).toHaveBeenCalledOnce();
+    expect(worldMap.moveCameraToURLLocation).not.toHaveBeenCalled();
+    expect(hexception.moveCameraToURLLocation).toHaveBeenCalledOnce();
+  });
+
+  it("coalesces rapid requests to the latest pending scene", async () => {
+    const firstSetup = createDeferred<void>();
+    const { fadeOuts, sceneManager } = createTransitionHarness();
+    const worldMapSetup = vi.fn<() => Promise<void>>();
+    worldMapSetup.mockImplementationOnce(() => firstSetup.promise).mockResolvedValueOnce();
+    const worldMap = createScene({ setup: worldMapSetup });
+    const hexception = createScene();
+    sceneManager.addScene(SceneName.WorldMap, worldMap);
+    sceneManager.addScene(SceneName.Hexception, hexception);
 
     sceneManager.switchScene(SceneName.WorldMap);
     sceneManager.switchScene(SceneName.Hexception);
     sceneManager.switchScene(SceneName.WorldMap);
 
-    expect(transitionManager.fadeOut).toHaveBeenCalledTimes(1);
-    await fadeOutCallbacks[0]();
+    await completeFade(fadeOuts[0]);
+    firstSetup.resolve();
+    await flushTransitionWork();
+    await completeFade(fadeOuts[1]);
 
-    expect(transitionManager.fadeOut).toHaveBeenCalledTimes(2);
-    expect(fadeOutCallbacks).toHaveLength(2);
-    expect(worldMapSetup).not.toHaveBeenCalled();
-    expect(hexSetup).not.toHaveBeenCalled();
-
-    await fadeOutCallbacks[1]();
-
-    expect(worldMapSetup).toHaveBeenCalledTimes(1);
-    expect(hexSetup).not.toHaveBeenCalled();
+    expect(worldMap.setup).toHaveBeenCalledTimes(2);
+    expect(hexception.setup).not.toHaveBeenCalled();
     expect(sceneManager.getCurrentScene()).toBe(SceneName.WorldMap);
   });
 
-  it("does not promote a scene when setup fails", async () => {
-    const fadeOutCallbacks: Array<() => void | Promise<void>> = [];
-    const transitionManager = {
-      fadeOut: vi.fn((callback: () => void | Promise<void>) => {
-        fadeOutCallbacks.push(callback);
-      }),
-      fadeIn: vi.fn(),
-    };
-
-    const sceneManager = new SceneManager(transitionManager as unknown as TransitionManager);
-    const worldMapSetup = vi.fn(async () => {});
+  it("keeps the previous scene current and restores visibility when setup fails", async () => {
+    const { fadeOuts, sceneManager, transitionManager } = createTransitionHarness();
+    const worldMap = createScene();
     const brokenSetupError = new Error("setup failed");
     const brokenSetup = vi.fn(async () => {
       throw brokenSetupError;
     });
-
-    sceneManager.addScene(SceneName.WorldMap, {
-      setup: worldMapSetup,
-      onSwitchOff: vi.fn(),
-      moveCameraToURLLocation: vi.fn(),
-    } as unknown as HexagonScene);
-
-    sceneManager.addScene(SceneName.Hexception, {
-      setup: brokenSetup,
-      onSwitchOff: vi.fn(),
-      moveCameraToURLLocation: vi.fn(),
-    } as unknown as HexagonScene);
+    const hexception = createScene({ setup: brokenSetup });
+    sceneManager.addScene(SceneName.WorldMap, worldMap);
+    sceneManager.addScene(SceneName.Hexception, hexception);
 
     sceneManager.switchScene(SceneName.WorldMap);
-    await fadeOutCallbacks[0]();
-    expect(sceneManager.getCurrentScene()).toBe(SceneName.WorldMap);
-
+    await completeFade(fadeOuts[0]);
     const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
 
     sceneManager.switchScene(SceneName.Hexception);
-    await fadeOutCallbacks[1]();
+    await completeFade(fadeOuts[1]);
 
-    expect(brokenSetup).toHaveBeenCalledTimes(1);
+    expect(brokenSetup).toHaveBeenCalledOnce();
     expect(sceneManager.getCurrentScene()).toBe(SceneName.WorldMap);
     expect(transitionManager.fadeIn).toHaveBeenCalledTimes(2);
-    expect(errorSpy).toHaveBeenCalledWith("[SceneManager] Failed to set up scene hex", brokenSetupError);
+    expect(worldMap.moveCameraToURLLocation).toHaveBeenCalledTimes(2);
+    expect(hexception.moveCameraToURLLocation).not.toHaveBeenCalled();
+    expect(errorSpy).toHaveBeenCalledWith("[SceneManager] Failed to set up scene hex: setup failed");
   });
 
-  it("activates input on the current scene and deactivates it on switch-off", async () => {
-    const fadeOutCallbacks: Array<() => void | Promise<void>> = [];
-    const transitionManager = {
-      fadeOut: vi.fn((callback: () => void | Promise<void>) => {
-        fadeOutCallbacks.push(callback);
-      }),
-      fadeIn: vi.fn(),
-    };
-
-    const sceneManager = new SceneManager(transitionManager as unknown as TransitionManager);
+  it("activates input on reveal and deactivates it when the next transition begins", async () => {
+    const { fadeOuts, sceneManager } = createTransitionHarness();
     const activateWorldMapInput = vi.fn();
     const deactivateWorldMapInput = vi.fn();
     const activateHexInput = vi.fn();
-    const deactivateHexInput = vi.fn();
-
-    sceneManager.addScene(SceneName.WorldMap, {
-      setup: vi.fn(async () => {}),
-      onSwitchOff: vi.fn(),
-      moveCameraToURLLocation: vi.fn(),
+    const worldMap = createScene({
       activateInputSurface: activateWorldMapInput,
       deactivateInputSurface: deactivateWorldMapInput,
-    } as unknown as HexagonScene);
-
-    sceneManager.addScene(SceneName.Hexception, {
-      setup: vi.fn(async () => {}),
-      onSwitchOff: vi.fn(),
-      moveCameraToURLLocation: vi.fn(),
-      activateInputSurface: activateHexInput,
-      deactivateInputSurface: deactivateHexInput,
-    } as unknown as HexagonScene);
+    });
+    const hexception = createScene({ activateInputSurface: activateHexInput });
+    sceneManager.addScene(SceneName.WorldMap, worldMap);
+    sceneManager.addScene(SceneName.Hexception, hexception);
 
     sceneManager.switchScene(SceneName.WorldMap);
-    await fadeOutCallbacks[0]();
+    await completeFade(fadeOuts[0]);
     sceneManager.switchScene(SceneName.Hexception);
-    await fadeOutCallbacks[1]();
 
-    expect(activateWorldMapInput).toHaveBeenCalledTimes(1);
-    expect(deactivateWorldMapInput).toHaveBeenCalledTimes(1);
-    expect(activateHexInput).toHaveBeenCalledTimes(1);
-    expect(deactivateHexInput).not.toHaveBeenCalled();
+    expect(deactivateWorldMapInput).toHaveBeenCalledOnce();
+    expect(activateHexInput).not.toHaveBeenCalled();
+
+    await completeFade(fadeOuts[1]);
+
+    expect(activateWorldMapInput).toHaveBeenCalledOnce();
+    expect(activateHexInput).toHaveBeenCalledOnce();
   });
 });

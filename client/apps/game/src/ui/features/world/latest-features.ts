@@ -35,6 +35,14 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-08-20",
+    title: "Faster Scene Changes",
+    description:
+      "World and local view setup now runs during the transition fade, reducing the wait before the next scene appears.",
+    type: "improvement",
+    gameSlug: "world",
+  },
+  {
+    date: "2026-08-20",
     title: "Uninterrupted Map Travel",
     description:
       "Routine zooming and terrain updates no longer dim the world, while genuine terrain recovery stays visible as a compact status.",

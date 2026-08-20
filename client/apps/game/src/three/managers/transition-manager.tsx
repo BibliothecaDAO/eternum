@@ -4,44 +4,55 @@ const FADE_DURATION = 300;
 
 export class TransitionManager {
   private fadeTimeoutId: ReturnType<typeof setTimeout> | null = null;
-  private isDestroyed = false;
+  private resolveFadeOut: ((completed: boolean) => void) | null = null;
+  private destroyed = false;
 
-  fadeOut(onComplete: () => void) {
-    if (this.isDestroyed) {
-      return;
+  fadeOut(): Promise<boolean> {
+    if (this.destroyed) {
+      return Promise.resolve(false);
     }
 
-    if (this.fadeTimeoutId) {
-      clearTimeout(this.fadeTimeoutId);
-      this.fadeTimeoutId = null;
-    }
+    this.cancelPendingFadeOut();
 
     const { setIsLoadingScreenEnabled } = useUIStore.getState();
     setIsLoadingScreenEnabled(true);
-    this.fadeTimeoutId = setTimeout(() => {
-      this.fadeTimeoutId = null;
-      if (this.isDestroyed) {
-        return;
-      }
-      onComplete();
-    }, FADE_DURATION);
+    return new Promise((resolve) => {
+      this.resolveFadeOut = resolve;
+      this.fadeTimeoutId = setTimeout(() => this.completeFadeOut(), FADE_DURATION);
+    });
   }
 
   fadeIn() {
-    if (this.fadeTimeoutId) {
-      clearTimeout(this.fadeTimeoutId);
-      this.fadeTimeoutId = null;
-    }
+    this.cancelPendingFadeOut();
     const { setIsLoadingScreenEnabled, setTooltip } = useUIStore.getState();
     setIsLoadingScreenEnabled(false);
     setTooltip(null);
   }
 
+  isActive() {
+    return !this.destroyed;
+  }
+
   destroy() {
+    this.destroyed = true;
+    this.cancelPendingFadeOut();
+  }
+
+  private completeFadeOut() {
+    const resolve = this.resolveFadeOut;
+    this.fadeTimeoutId = null;
+    this.resolveFadeOut = null;
+    resolve?.(true);
+  }
+
+  private cancelPendingFadeOut() {
     if (this.fadeTimeoutId) {
       clearTimeout(this.fadeTimeoutId);
       this.fadeTimeoutId = null;
     }
-    this.isDestroyed = true;
+
+    const resolve = this.resolveFadeOut;
+    this.resolveFadeOut = null;
+    resolve?.(false);
   }
 }
