@@ -4,7 +4,7 @@ import type { MapControls } from "three/addons/controls/MapControls.js";
 
 import type { SceneManager } from "../scene-manager";
 import { SceneName } from "../types";
-import { HexagonScene } from "./hexagon-scene";
+import { HexagonScene, type SceneSetupContext } from "./hexagon-scene";
 import {
   runWarpTravelSetupLifecycle,
   runWarpTravelSwitchOffLifecycle,
@@ -32,11 +32,17 @@ export abstract class WarpTravel extends HexagonScene {
     this.bootstrapSceneOwnership();
   }
 
-  public async setup(): Promise<void> {
+  public async setup(setupContext?: SceneSetupContext): Promise<void> {
+    if (!setupContext) {
+      throw new Error("WarpTravel setup requires SceneManager ownership context.");
+    }
+
     this.bootstrapSceneOwnership();
+    this.isSwitchedOff = false;
     const nextState = await runWarpTravelSetupLifecycle(
       this.getWarpTravelLifecycleState(),
       this.resolveWarpTravelLifecycleAdapter(),
+      setupContext,
     );
     this.applyWarpTravelLifecycleState(nextState);
   }

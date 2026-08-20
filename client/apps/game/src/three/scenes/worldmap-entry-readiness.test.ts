@@ -1,27 +1,29 @@
 import { describe, expect, it, vi } from "vitest";
 
 import { createControlledAsyncCall, flushMicrotasks } from "./worldmap-test-harness";
-import { completeWorldmapEntryReadiness } from "./worldmap-entry-readiness";
+import { startWorldmapEntryReadiness } from "./worldmap-entry-readiness";
 
-describe("completeWorldmapEntryReadiness", () => {
-  it("publishes critical readiness once while ambient convergence remains open", async () => {
+describe("startWorldmapEntryReadiness", () => {
+  it("resolves setup after critical readiness while ambient convergence remains open", async () => {
     const criticalPass = createControlledAsyncCall<[], void>();
     const ambientConvergence = createControlledAsyncCall<[], void>();
     const markCriticalPassReady = vi.fn();
     const markWorldmapConverged = vi.fn();
+    const reportAmbientConvergenceError = vi.fn();
 
-    const completion = completeWorldmapEntryReadiness({
+    const setup = startWorldmapEntryReadiness({
       bootToken: 7,
       commitCriticalPass: criticalPass.fn,
-      isCurrentBootToken: (bootToken) => bootToken === 7,
+      isCurrent: () => true,
       markCriticalPassReady,
       markWorldmapConverged,
-      phase: "initial",
+      requiresAmbientConvergence: true,
+      reportAmbientConvergenceError,
       waitForAmbientConvergence: ambientConvergence.fn,
     });
 
     criticalPass.resolveNext();
-    await flushMicrotasks(2);
+    await setup;
 
     expect(markCriticalPassReady).toHaveBeenCalledOnce();
     expect(markCriticalPassReady).toHaveBeenCalledWith(7);
@@ -29,89 +31,199 @@ describe("completeWorldmapEntryReadiness", () => {
     expect(ambientConvergence.pendingCount()).toBe(1);
 
     ambientConvergence.resolveNext();
-    await completion;
+    await flushMicrotasks(2);
 
     expect(markCriticalPassReady).toHaveBeenCalledOnce();
     expect(markWorldmapConverged).toHaveBeenCalledOnce();
     expect(markWorldmapConverged).toHaveBeenCalledWith(7);
+    expect(reportAmbientConvergenceError).not.toHaveBeenCalled();
   });
 
-  it("continues ambient convergence without publishing a superseded critical pass", async () => {
+  it("does not start ambient convergence for a superseded critical pass", async () => {
     const criticalPass = createControlledAsyncCall<[], void>();
     const ambientConvergence = createControlledAsyncCall<[], void>();
     const markCriticalPassReady = vi.fn();
     const markWorldmapConverged = vi.fn();
-    let currentBootToken = 11;
+    let isCurrent = true;
 
-    const completion = completeWorldmapEntryReadiness({
+    const setup = startWorldmapEntryReadiness({
       bootToken: 11,
       commitCriticalPass: criticalPass.fn,
-      isCurrentBootToken: (bootToken) => bootToken === currentBootToken,
+      isCurrent: () => isCurrent,
       markCriticalPassReady,
       markWorldmapConverged,
-      phase: "initial",
+      requiresAmbientConvergence: true,
+      reportAmbientConvergenceError: vi.fn(),
       waitForAmbientConvergence: ambientConvergence.fn,
     });
 
-    currentBootToken = 12;
+    isCurrent = false;
     criticalPass.resolveNext();
-    await flushMicrotasks(2);
+    await setup;
 
     expect(markCriticalPassReady).not.toHaveBeenCalled();
-    expect(ambientConvergence.pendingCount()).toBe(1);
-
-    ambientConvergence.resolveNext();
-    await completion;
-
+    expect(ambientConvergence.pendingCount()).toBe(0);
     expect(markWorldmapConverged).not.toHaveBeenCalled();
   });
 
-  it("does not publish convergence when the boot is superseded after critical readiness", async () => {
+  it("does not publish convergence when scene ownership is superseded after critical readiness", async () => {
     const criticalPass = createControlledAsyncCall<[], void>();
     const ambientConvergence = createControlledAsyncCall<[], void>();
     const markCriticalPassReady = vi.fn();
     const markWorldmapConverged = vi.fn();
-    let currentBootToken = 15;
+    let isCurrent = true;
 
-    const completion = completeWorldmapEntryReadiness({
+    const setup = startWorldmapEntryReadiness({
       bootToken: 15,
       commitCriticalPass: criticalPass.fn,
-      isCurrentBootToken: (bootToken) => bootToken === currentBootToken,
+      isCurrent: () => isCurrent,
       markCriticalPassReady,
       markWorldmapConverged,
-      phase: "initial",
+      requiresAmbientConvergence: true,
+      reportAmbientConvergenceError: vi.fn(),
       waitForAmbientConvergence: ambientConvergence.fn,
     });
 
     criticalPass.resolveNext();
-    await flushMicrotasks(2);
+    await setup;
     expect(markCriticalPassReady).toHaveBeenCalledOnce();
 
-    currentBootToken = 16;
+    isCurrent = false;
     ambientConvergence.resolveNext();
-    await completion;
+    await flushMicrotasks(2);
 
     expect(markCriticalPassReady).toHaveBeenCalledOnce();
     expect(markWorldmapConverged).not.toHaveBeenCalled();
   });
 
-  it("publishes resume convergence with the winning critical pass", async () => {
+  it("requires the resumed setup to finish ambient convergence after the initial owner is superseded", async () => {
+    const firstAmbientConvergence = createControlledAsyncCall<[], void>();
+    const resumedAmbientConvergence = createControlledAsyncCall<[], void>();
+    const markWorldmapConverged = vi.fn();
+    let firstOwnerIsCurrent = true;
+
+    await startWorldmapEntryReadiness({
+      bootToken: 16,
+      commitCriticalPass: async () => {},
+      isCurrent: () => firstOwnerIsCurrent,
+      markCriticalPassReady: vi.fn(),
+      markWorldmapConverged,
+      requiresAmbientConvergence: true,
+      reportAmbientConvergenceError: vi.fn(),
+      waitForAmbientConvergence: firstAmbientConvergence.fn,
+    });
+
+    firstOwnerIsCurrent = false;
+    await startWorldmapEntryReadiness({
+      bootToken: 16,
+      commitCriticalPass: async () => {},
+      isCurrent: () => true,
+      markCriticalPassReady: vi.fn(),
+      markWorldmapConverged,
+      requiresAmbientConvergence: true,
+      reportAmbientConvergenceError: vi.fn(),
+      waitForAmbientConvergence: resumedAmbientConvergence.fn,
+    });
+
+    expect(firstAmbientConvergence.pendingCount()).toBe(1);
+    expect(resumedAmbientConvergence.pendingCount()).toBe(1);
+    expect(markWorldmapConverged).not.toHaveBeenCalled();
+
+    firstAmbientConvergence.resolveNext();
+    await flushMicrotasks(2);
+    expect(markWorldmapConverged).not.toHaveBeenCalled();
+
+    resumedAmbientConvergence.resolveNext();
+    await flushMicrotasks(2);
+    expect(markWorldmapConverged).toHaveBeenCalledWith(16);
+  });
+
+  it("reports an owned ambient convergence failure without rejecting setup", async () => {
+    const ambientError = new Error("ambient failed");
+    const reportAmbientConvergenceError = vi.fn();
+
+    await startWorldmapEntryReadiness({
+      bootToken: 17,
+      commitCriticalPass: async () => {},
+      isCurrent: () => true,
+      markCriticalPassReady: vi.fn(),
+      markWorldmapConverged: vi.fn(),
+      requiresAmbientConvergence: true,
+      reportAmbientConvergenceError,
+      waitForAmbientConvergence: async () => {
+        throw ambientError;
+      },
+    });
+    await flushMicrotasks(2);
+
+    expect(reportAmbientConvergenceError).toHaveBeenCalledWith(ambientError);
+  });
+
+  it("does not report an ambient failure after setup ownership is superseded", async () => {
+    const ambientConvergence = createControlledAsyncCall<[], void>();
+    const reportAmbientConvergenceError = vi.fn();
+    let isCurrent = true;
+
+    await startWorldmapEntryReadiness({
+      bootToken: 18,
+      commitCriticalPass: async () => {},
+      isCurrent: () => isCurrent,
+      markCriticalPassReady: vi.fn(),
+      markWorldmapConverged: vi.fn(),
+      requiresAmbientConvergence: true,
+      reportAmbientConvergenceError,
+      waitForAmbientConvergence: ambientConvergence.fn,
+    });
+
+    isCurrent = false;
+    ambientConvergence.rejectNext(new Error("stale ambient failure"));
+    await flushMicrotasks(2);
+
+    expect(reportAmbientConvergenceError).not.toHaveBeenCalled();
+  });
+
+  it("reports a detached convergence callback failure", async () => {
+    const ambientConvergence = createControlledAsyncCall<[], void>();
+    const callbackError = new Error("convergence callback failed");
+    const reportAmbientConvergenceError = vi.fn();
+
+    await startWorldmapEntryReadiness({
+      bootToken: 19,
+      commitCriticalPass: async () => {},
+      isCurrent: () => true,
+      markCriticalPassReady: vi.fn(),
+      markWorldmapConverged: () => {
+        throw callbackError;
+      },
+      requiresAmbientConvergence: true,
+      reportAmbientConvergenceError,
+      waitForAmbientConvergence: ambientConvergence.fn,
+    });
+
+    ambientConvergence.resolveNext();
+    await flushMicrotasks(2);
+
+    expect(reportAmbientConvergenceError).toHaveBeenCalledWith(callbackError);
+  });
+
+  it("publishes already-complete convergence without another ambient wait", async () => {
     const waitForAmbientConvergence = vi.fn();
     const markCriticalPassReady = vi.fn();
     const markWorldmapConverged = vi.fn();
 
-    await completeWorldmapEntryReadiness({
-      bootToken: 19,
+    await startWorldmapEntryReadiness({
+      bootToken: 20,
       commitCriticalPass: async () => {},
-      isCurrentBootToken: () => true,
+      isCurrent: () => true,
       markCriticalPassReady,
       markWorldmapConverged,
-      phase: "resume",
+      requiresAmbientConvergence: false,
+      reportAmbientConvergenceError: vi.fn(),
       waitForAmbientConvergence,
     });
 
     expect(waitForAmbientConvergence).not.toHaveBeenCalled();
-    expect(markCriticalPassReady).toHaveBeenCalledWith(19);
-    expect(markWorldmapConverged).toHaveBeenCalledWith(19);
+    expect(markCriticalPassReady).toHaveBeenCalledWith(20);
+    expect(markWorldmapConverged).toHaveBeenCalledWith(20);
   });
 });

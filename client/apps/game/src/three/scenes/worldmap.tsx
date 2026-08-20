@@ -1,6 +1,7 @@
 import { playUnitCommandSound, playUnitCommandSoundForWorldmapAction } from "@/audio/unit-command-audio";
 import { runWithFrameWorkOwner } from "@/three/frame-work-owner";
 import { VERBOSE_LOGS_ENABLED, verboseLog } from "@/utils/dev-mode";
+import { formatReadableErrorForConsole } from "@/utils/error-message";
 import { toast } from "sonner";
 
 import { initializeSyncSimulator } from "@/dojo/sync-simulator";
@@ -36,7 +37,7 @@ import {
 import { SceneManager } from "@/three/scene-manager";
 import { CameraView } from "@/three/scenes/camera-view";
 import { CAMERA_CONFIG } from "@/three/constants";
-import { HexagonScene } from "@/three/scenes/hexagon-scene";
+import { HexagonScene, type SceneSetupContext } from "@/three/scenes/hexagon-scene";
 import type { RenderVisualProfile } from "@/three/render-profile";
 import { WorldmapPerfSimulation } from "@/three/scenes/worldmap-perf-simulation";
 import { playResourceSound } from "@/three/sound/utils";
@@ -346,7 +347,7 @@ import { finalizeWarpTravelChunkSwitch } from "./warp-travel-chunk-switch-commit
 import { resolveSameChunkRefreshCommit } from "./worldmap-same-chunk-refresh-commit";
 import { runWarpTravelManagerFanout } from "./warp-travel-manager-fanout";
 import { WarpTravel, type WarpTravelLifecycleAdapter } from "./warp-travel";
-import { completeWorldmapEntryReadiness } from "./worldmap-entry-readiness";
+import { startWorldmapEntryReadiness } from "./worldmap-entry-readiness";
 import { completeWorldmapInteractiveRefresh, type WorldmapWarpTravelPhase } from "./worldmap-warp-travel-refresh";
 import { resolveWorldmapChunkHysteresis } from "./worldmap-chunk-hysteresis-policy";
 import {
@@ -689,7 +690,7 @@ export default class WorldmapScene extends WarpTravel {
   private readonly chunkRowsBehind = WORLDMAP_CHUNK_POLICY.pin.rowsBehind;
   private readonly chunkColsEachSide = WORLDMAP_CHUNK_POLICY.pin.colsEachSide;
   private hydratedRefreshQueueState = createWorldmapHydratedRefreshQueueState();
-  private skipNextUrlRefreshAfterInitialConvergence = false;
+  private skipNextInitialSetupUrlRefresh = false;
   private hydratedRefreshSuppressionAreaKeys: Set<string> = new Set();
   private cameraPositionScratch: Vector3 = new Vector3();
   private cameraDirectionScratch: Vector3 = new Vector3();
@@ -1810,12 +1811,12 @@ export default class WorldmapScene extends WarpTravel {
       return false;
     }
 
-    return !this.consumeInitialConvergenceUrlRefreshSkip();
+    return !this.consumeInitialSetupUrlRefreshSkip();
   }
 
-  private consumeInitialConvergenceUrlRefreshSkip(): boolean {
-    const shouldSkipRefresh = this.skipNextUrlRefreshAfterInitialConvergence;
-    this.skipNextUrlRefreshAfterInitialConvergence = false;
+  private consumeInitialSetupUrlRefreshSkip(): boolean {
+    const shouldSkipRefresh = this.skipNextInitialSetupUrlRefresh;
+    this.skipNextInitialSetupUrlRefresh = false;
     return shouldSkipRefresh;
   }
 
@@ -3783,7 +3784,7 @@ export default class WorldmapScene extends WarpTravel {
         this.registerWorldUpdateSubscriptions();
       },
       setupCameraZoomHandler: () => this.setupCameraZoomHandler(),
-      refreshScene: () => this.refreshWarpTravelScene(),
+      refreshScene: (setupContext) => this.refreshWarpTravelScene(setupContext),
       reportSetupError: (error, phase) => this.reportWarpTravelRefreshError(error, phase),
       disposeStoreSubscriptions: () => this.disposeStoreSubscriptions(),
       onAfterDisposeSubscriptions: () => this.disposeWorldUpdateSubscriptions(),
@@ -3792,17 +3793,17 @@ export default class WorldmapScene extends WarpTravel {
     };
   }
 
-  private announceWorldmapSceneReady(bootToken: number): void {
+  private announceWorldmapSceneReady(bootToken: number, phase: WorldmapWarpTravelPhase): void {
     usePlayRouteReadinessStore.getState().markWorldmapReady(bootToken);
+    if (phase === "initial") {
+      this.skipNextInitialSetupUrlRefresh = true;
+    }
     this.retryPendingHoverLabelRecovery("scene_ready");
   }
 
-  private announceWorldmapConverged(bootToken: number, phase: WorldmapWarpTravelPhase): void {
+  private announceWorldmapConverged(bootToken: number): void {
     usePlayRouteReadinessStore.getState().markWorldmapConverged(bootToken);
     markGameEntryMilestone("worldmap-fetch-completed");
-    if (phase === "initial") {
-      this.skipNextUrlRefreshAfterInitialConvergence = true;
-    }
     this.reconcileHoverLabels("initial_refresh");
   }
 
@@ -3834,19 +3835,26 @@ export default class WorldmapScene extends WarpTravel {
     this.chestManager.removeLabelsFromScene();
   }
 
-  private async refreshWarpTravelScene(): Promise<void> {
+  private async refreshWarpTravelScene(setupContext: SceneSetupContext): Promise<void> {
     const phase: WorldmapWarpTravelPhase = this.hasInitialized ? "resume" : "initial";
-    const bootToken = getCurrentPlayRouteBootToken();
+    const readiness = usePlayRouteReadinessStore.getState();
+    const bootToken = readiness.bootToken;
+    const requiresAmbientConvergence = !readiness.worldmapConverged;
 
-    await completeWorldmapEntryReadiness({
+    await startWorldmapEntryReadiness({
       bootToken,
       commitCriticalPass: () => this.commitCriticalWorldmapPass(phase),
-      isCurrentBootToken: (candidateToken) => candidateToken === getCurrentPlayRouteBootToken(),
-      markCriticalPassReady: (currentBootToken) => this.announceWorldmapSceneReady(currentBootToken),
-      markWorldmapConverged: (currentBootToken) => this.announceWorldmapConverged(currentBootToken, phase),
-      phase,
+      isCurrent: () => setupContext.isCurrent() && bootToken === getCurrentPlayRouteBootToken(),
+      markCriticalPassReady: (currentBootToken) => this.announceWorldmapSceneReady(currentBootToken, phase),
+      markWorldmapConverged: (currentBootToken) => this.announceWorldmapConverged(currentBootToken),
+      requiresAmbientConvergence,
+      reportAmbientConvergenceError: (error) => this.reportAmbientConvergenceError(error),
       waitForAmbientConvergence: () => this.awaitInitialTerrainConvergence(),
     });
+  }
+
+  private reportAmbientConvergenceError(error: unknown): void {
+    console.error(`[WorldMap] Ambient convergence failed: ${formatReadableErrorForConsole(error)}`);
   }
 
   private commitCriticalWorldmapPass(phase: WorldmapWarpTravelPhase): Promise<void> {
@@ -4013,6 +4021,7 @@ export default class WorldmapScene extends WarpTravel {
 
   private invalidateWorldmapSwitchOffTransitions(): void {
     this.isSwitchedOff = true;
+    this.skipNextInitialSetupUrlRefresh = false;
     const switchOffTransitionState = invalidateWorldmapSwitchOffTransitionState({
       chunkTransitionToken: this.chunkTransitionToken,
       isChunkTransitioning: this.isChunkTransitioning,

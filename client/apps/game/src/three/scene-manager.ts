@@ -1,5 +1,5 @@
 import { TransitionManager } from "@/three/managers/transition-manager";
-import { HexagonScene } from "@/three/scenes/hexagon-scene";
+import { HexagonScene, type SceneSetupContext } from "@/three/scenes/hexagon-scene";
 import { runWithFrameWorkOwner } from "@/three/frame-work-owner";
 import { formatReadableErrorForConsole } from "@/utils/error-message";
 import {
@@ -10,6 +10,11 @@ import {
 import { SceneName } from "./types";
 
 type SceneSetupResult = { succeeded: true } | { error: unknown; succeeded: false };
+
+interface SceneSetupOwnership {
+  context: SceneSetupContext;
+  release: () => void;
+}
 
 export class SceneManager {
   private currentScene: SceneName | undefined = undefined;
@@ -75,20 +80,40 @@ export class SceneManager {
 
     this.transitionInProgress = true;
     const fadeOutCompletion = this.transitionManager.fadeOut();
-    const sceneSetupCompletion = this.setupScene(sceneNameToTransition, pendingScene);
+    const setupOwnership = this.createSetupOwnership(transitionToken);
+    const sceneSetupCompletion = this.setupScene(sceneNameToTransition, pendingScene, setupOwnership.context);
     void this.completeTransition(
       sceneNameToTransition,
       pendingScene,
       transitionToken,
+      setupOwnership,
       fadeOutCompletion,
       sceneSetupCompletion,
     );
   }
 
-  private async setupScene(sceneName: SceneName, scene: HexagonScene): Promise<SceneSetupResult> {
+  private createSetupOwnership(transitionToken: number): SceneSetupOwnership {
+    let released = false;
+
+    return {
+      context: {
+        isCurrent: () =>
+          !released && this.transitionManager.isActive() && transitionToken === this.transitionRequestToken,
+      },
+      release: () => {
+        released = true;
+      },
+    };
+  }
+
+  private async setupScene(
+    sceneName: SceneName,
+    scene: HexagonScene,
+    setupContext: SceneSetupContext,
+  ): Promise<SceneSetupResult> {
     try {
       if (scene.setup) {
-        await runWithFrameWorkOwner(`scene:${sceneName}:setup`, () => scene.setup!());
+        await runWithFrameWorkOwner(`scene:${sceneName}:setup`, () => scene.setup!(setupContext));
       }
       return { succeeded: true };
     } catch (error) {
@@ -100,6 +125,7 @@ export class SceneManager {
     sceneName: SceneName,
     scene: HexagonScene,
     transitionToken: number,
+    setupOwnership: SceneSetupOwnership,
     fadeOutCompletion: Promise<boolean>,
     sceneSetupCompletion: Promise<SceneSetupResult>,
   ) {
@@ -139,6 +165,9 @@ export class SceneManager {
     } catch (error) {
       console.error(`[SceneManager] Failed to set up scene ${sceneName}: ${formatReadableErrorForConsole(error)}`);
     } finally {
+      if (!setupSucceeded) {
+        setupOwnership.release();
+      }
       if (shouldFinalize) {
         this.finalizeTransition(transitionToken, setupSucceeded, previousSceneName);
       }

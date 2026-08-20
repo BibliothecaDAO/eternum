@@ -12,8 +12,11 @@ describe("Worldmap ready signal", () => {
     const source = readSource("src/three/scenes/worldmap.tsx");
 
     expect(source).toContain("markWorldmapReady");
-    expect(source).toContain("completeWorldmapEntryReadiness");
-    expect(source).toContain("const bootToken = getCurrentPlayRouteBootToken();");
+    expect(source).toContain("startWorldmapEntryReadiness");
+    expect(source).toContain("const readiness = usePlayRouteReadinessStore.getState();");
+    expect(source).toContain("const bootToken = readiness.bootToken;");
+    expect(source).toContain("const requiresAmbientConvergence = !readiness.worldmapConverged;");
+    expect(source).toContain("setupContext.isCurrent() && bootToken === getCurrentPlayRouteBootToken()");
     expect(source).not.toContain("onInitialSetupComplete: () => this.announceWorldmapSceneReady");
     expect(source).not.toContain("onResumeComplete: () => this.announceWorldmapSceneReady");
     expect(source).not.toContain("WORLDMAP_SCENE_READY_EVENT");
@@ -24,6 +27,7 @@ describe("Worldmap ready signal", () => {
 
     expect(source).toContain("markWorldmapConverged");
     expect(source).toContain('markGameEntryMilestone("worldmap-fetch-completed")');
+    expect(source).toContain("reportAmbientConvergenceError");
   });
 
   it("does not defer readiness behind speculative pipeline or cosmetic work", () => {

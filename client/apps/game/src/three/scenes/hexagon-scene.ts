@@ -72,6 +72,10 @@ import { resolveWorldmapZoomBand } from "./worldmap-zoom/worldmap-zoom-band-poli
 export { CameraView } from "./camera-view";
 type CameraTransitionStatus = "idle" | "transitioning";
 
+export interface SceneSetupContext {
+  isCurrent: () => boolean;
+}
+
 export abstract class HexagonScene {
   protected scene!: Scene;
   protected interactionOverlayScene!: Scene;
@@ -1401,7 +1405,7 @@ export abstract class HexagonScene {
   protected tryArmyRaycastFallback(_raycaster: Raycaster): HexPosition | null {
     return null;
   }
-  public abstract setup(): void | Promise<void>;
+  public abstract setup(context?: SceneSetupContext): void | Promise<void>;
   public abstract moveCameraToURLLocation(): void;
   public abstract onSwitchOff(nextSceneName?: SceneName): void;
 

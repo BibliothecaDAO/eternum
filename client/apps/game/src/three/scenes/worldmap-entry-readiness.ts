@@ -1,31 +1,39 @@
-import type { WorldmapWarpTravelPhase } from "./worldmap-warp-travel-refresh";
-
-interface CompleteWorldmapEntryReadinessInput {
+interface StartWorldmapEntryReadinessInput {
   bootToken: number;
   commitCriticalPass: () => Promise<void>;
-  isCurrentBootToken: (bootToken: number) => boolean;
+  isCurrent: () => boolean;
   markCriticalPassReady: (bootToken: number) => void;
   markWorldmapConverged: (bootToken: number) => void;
-  phase: WorldmapWarpTravelPhase;
+  requiresAmbientConvergence: boolean;
+  reportAmbientConvergenceError: (error: unknown) => void;
   waitForAmbientConvergence: () => Promise<void>;
 }
 
-export async function completeWorldmapEntryReadiness(input: CompleteWorldmapEntryReadinessInput): Promise<void> {
+export async function startWorldmapEntryReadiness(input: StartWorldmapEntryReadinessInput): Promise<void> {
   await input.commitCriticalPass();
-  publishForCurrentBoot(input, input.markCriticalPassReady);
-
-  if (input.phase === "initial") {
-    await input.waitForAmbientConvergence();
+  if (!input.isCurrent()) {
+    return;
   }
 
-  publishForCurrentBoot(input, input.markWorldmapConverged);
+  input.markCriticalPassReady(input.bootToken);
+
+  if (!input.requiresAmbientConvergence) {
+    input.markWorldmapConverged(input.bootToken);
+    return;
+  }
+
+  void completeAmbientConvergence(input);
 }
 
-function publishForCurrentBoot(
-  input: Pick<CompleteWorldmapEntryReadinessInput, "bootToken" | "isCurrentBootToken">,
-  publish: (bootToken: number) => void,
-): void {
-  if (input.isCurrentBootToken(input.bootToken)) {
-    publish(input.bootToken);
+async function completeAmbientConvergence(input: StartWorldmapEntryReadinessInput): Promise<void> {
+  try {
+    await input.waitForAmbientConvergence();
+    if (input.isCurrent()) {
+      input.markWorldmapConverged(input.bootToken);
+    }
+  } catch (error) {
+    if (input.isCurrent()) {
+      input.reportAmbientConvergenceError(error);
+    }
   }
 }

@@ -10,18 +10,20 @@ const readSource = (relativePath: string) => readFileSync(resolve(process.cwd(),
 describe("Worldmap initial terrain convergence", () => {
   it("delegates critical readiness and later terrain convergence to the entry owner", () => {
     const source = readSource("src/three/scenes/worldmap.tsx");
-    const refreshStart = source.indexOf("private async refreshWarpTravelScene()");
+    const refreshStart = source.indexOf("private async refreshWarpTravelScene(");
     const refreshEnd = source.indexOf("private commitCurrentChunkAuthority(", refreshStart);
 
     expect(refreshStart).toBeGreaterThanOrEqual(0);
     expect(refreshEnd).toBeGreaterThan(refreshStart);
 
     const refreshBody = source.slice(refreshStart, refreshEnd);
-    const readinessIndex = refreshBody.indexOf("await completeWorldmapEntryReadiness({");
+    const readinessIndex = refreshBody.indexOf("await startWorldmapEntryReadiness({");
     const criticalPassIndex = refreshBody.indexOf("commitCriticalPass:");
+    const ambientRequirementIndex = refreshBody.indexOf("requiresAmbientConvergence,");
     const convergenceIndex = refreshBody.indexOf("waitForAmbientConvergence:");
     expect(readinessIndex).toBeGreaterThanOrEqual(0);
     expect(criticalPassIndex).toBeGreaterThan(readinessIndex);
+    expect(ambientRequirementIndex).toBeGreaterThan(criticalPassIndex);
     expect(convergenceIndex).toBeGreaterThan(criticalPassIndex);
 
     const convergenceOwnerStart = source.indexOf("private announceWorldmapConverged(");
@@ -29,7 +31,7 @@ describe("Worldmap initial terrain convergence", () => {
     const convergenceOwner = source.slice(convergenceOwnerStart, convergenceOwnerEnd);
 
     expect(convergenceOwner).toContain("markWorldmapConverged(bootToken)");
-    expect(convergenceOwner).toContain("this.skipNextUrlRefreshAfterInitialConvergence = true");
+    expect(convergenceOwner).not.toContain("skipNextInitialSetupUrlRefresh");
     expect(convergenceOwner).toContain('this.reconcileHoverLabels("initial_refresh")');
   });
 

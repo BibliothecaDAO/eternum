@@ -1,3 +1,5 @@
+import type { SceneSetupContext } from "./hexagon-scene";
+
 export interface WarpTravelLifecycleState {
   hasInitialized: boolean;
   initialSetupPromise: Promise<void> | null;
@@ -13,7 +15,7 @@ export interface WarpTravelLifecycleAdapter {
   attachManagerLabels: () => void;
   registerStoreSubscriptions: () => void;
   setupCameraZoomHandler: () => void;
-  refreshScene: () => Promise<void>;
+  refreshScene: (setupContext: SceneSetupContext) => Promise<void>;
   onInitialSetupComplete?: () => void | Promise<void>;
   onResumeComplete?: () => void | Promise<void>;
   reportSetupError?: (error: unknown, phase: "initial" | "resume") => void;
@@ -28,6 +30,7 @@ export interface WarpTravelLifecycleAdapter {
 async function activateWarpTravelLifecycle(
   adapter: WarpTravelLifecycleAdapter,
   phase: "initial" | "resume",
+  setupContext: SceneSetupContext,
 ): Promise<void> {
   adapter.moveCameraToSceneLocation();
   adapter.attachLabelGroupsToScene();
@@ -36,12 +39,18 @@ async function activateWarpTravelLifecycle(
   adapter.setupCameraZoomHandler();
 
   try {
-    await adapter.refreshScene();
+    await adapter.refreshScene(setupContext);
   } catch (error) {
-    adapter.reportSetupError?.(error, phase);
+    if (setupContext.isCurrent()) {
+      adapter.reportSetupError?.(error, phase);
+    }
     if (phase === "initial") {
       throw error;
     }
+  }
+
+  if (!setupContext.isCurrent()) {
+    return;
   }
 
   if (phase === "initial") {
@@ -55,6 +64,7 @@ async function activateWarpTravelLifecycle(
 export async function runWarpTravelSetupLifecycle(
   state: WarpTravelLifecycleState,
   adapter: WarpTravelLifecycleAdapter,
+  setupContext: SceneSetupContext,
 ): Promise<WarpTravelLifecycleState> {
   const nextState: WarpTravelLifecycleState = {
     ...state,
@@ -66,7 +76,7 @@ export async function runWarpTravelSetupLifecycle(
   if (!nextState.hasInitialized) {
     adapter.onInitialSetupStart?.();
     if (!nextState.initialSetupPromise) {
-      nextState.initialSetupPromise = activateWarpTravelLifecycle(adapter, "initial");
+      nextState.initialSetupPromise = activateWarpTravelLifecycle(adapter, "initial", setupContext);
     }
 
     try {
@@ -80,7 +90,7 @@ export async function runWarpTravelSetupLifecycle(
   }
 
   adapter.onResumeStart?.();
-  await activateWarpTravelLifecycle(adapter, "resume");
+  await activateWarpTravelLifecycle(adapter, "resume", setupContext);
   return nextState;
 }
 

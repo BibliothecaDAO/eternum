@@ -28,4 +28,25 @@ describe("Worldmap URL-location refresh wiring", () => {
     expect(methodBody).toContain("requestRefresh");
     expect(lifecycleBody).toContain("this.moveCameraToURLLocation({ requestRefresh: false })");
   });
+
+  it("owns the one-time URL refresh skip at critical setup and clears it on switch-off", () => {
+    const source = readSource("src/three/scenes/worldmap.tsx");
+    const criticalReadiness = source.slice(
+      source.indexOf("private announceWorldmapSceneReady("),
+      source.indexOf("private announceWorldmapConverged("),
+    );
+    const ambientConvergence = source.slice(
+      source.indexOf("private announceWorldmapConverged("),
+      source.indexOf("private prepareWarpTravelInitialSetup("),
+    );
+    const switchOff = source.slice(
+      source.indexOf("private invalidateWorldmapSwitchOffTransitions("),
+      source.indexOf("private clearWorldmapLoadingStateForSwitchOff("),
+    );
+
+    expect(criticalReadiness).toContain('phase === "initial"');
+    expect(criticalReadiness).toContain("this.skipNextInitialSetupUrlRefresh = true");
+    expect(ambientConvergence).not.toContain("skipNextInitialSetupUrlRefresh");
+    expect(switchOff).toContain("this.skipNextInitialSetupUrlRefresh = false");
+  });
 });

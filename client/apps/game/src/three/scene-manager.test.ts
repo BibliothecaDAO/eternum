@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { TransitionManager } from "./managers/transition-manager";
 import { SceneManager } from "./scene-manager";
-import { HexagonScene } from "./scenes/hexagon-scene";
+import { HexagonScene, type SceneSetupContext } from "./scenes/hexagon-scene";
 import { SceneName } from "./types";
 
 interface Deferred<T> {
@@ -151,6 +151,55 @@ describe("SceneManager transitions", () => {
     expect(activateHexInput).toHaveBeenCalledOnce();
     expect(worldMap.moveCameraToURLLocation).not.toHaveBeenCalled();
     expect(hexception.moveCameraToURLLocation).toHaveBeenCalledOnce();
+  });
+
+  it("invalidates the candidate setup context as soon as a newer scene request wins", async () => {
+    const setup = createDeferred<void>();
+    const { fadeOuts, sceneManager } = createTransitionHarness();
+    let setupContext: SceneSetupContext | undefined;
+    const worldMap = createScene({
+      setup: vi.fn((context?: SceneSetupContext) => {
+        setupContext = context;
+        return setup.promise;
+      }),
+    });
+    const hexception = createScene();
+    sceneManager.addScene(SceneName.WorldMap, worldMap);
+    sceneManager.addScene(SceneName.Hexception, hexception);
+
+    sceneManager.switchScene(SceneName.WorldMap);
+    expect(setupContext?.isCurrent()).toBe(true);
+
+    sceneManager.switchScene(SceneName.Hexception);
+    expect(setupContext?.isCurrent()).toBe(false);
+
+    await completeFade(fadeOuts[0]);
+    setup.resolve();
+    await flushTransitionWork();
+    await completeFade(fadeOuts[1]);
+  });
+
+  it("invalidates the candidate setup context when the transition manager becomes inactive", async () => {
+    const setup = createDeferred<void>();
+    const { fadeOuts, sceneManager, transitionManager } = createTransitionHarness();
+    let setupContext: SceneSetupContext | undefined;
+    const worldMap = createScene({
+      setup: vi.fn((context?: SceneSetupContext) => {
+        setupContext = context;
+        return setup.promise;
+      }),
+    });
+    sceneManager.addScene(SceneName.WorldMap, worldMap);
+
+    sceneManager.switchScene(SceneName.WorldMap);
+    expect(setupContext?.isCurrent()).toBe(true);
+
+    transitionManager.isActive.mockReturnValue(false);
+    expect(setupContext?.isCurrent()).toBe(false);
+
+    fadeOuts[0].resolve(false);
+    setup.resolve();
+    await flushTransitionWork();
   });
 
   it("coalesces rapid requests to the latest pending scene", async () => {

@@ -126,7 +126,7 @@ describe("worldmap hover label wiring", () => {
     const detachWorldmapManagerLabels = extractSourceBetween(
       source,
       "private detachWorldmapManagerLabels()",
-      "private async refreshWarpTravelScene()",
+      "private async refreshWarpTravelScene(",
     );
 
     expect(detachWorldmapManagerLabels).toContain("this.hoverLabelManager.onHexLeave()");
