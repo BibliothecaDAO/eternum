@@ -84,9 +84,10 @@ const GameRoute = ({ backgroundImage }: { backgroundImage: string }) => {
     tasks,
     bootToken,
   } = state;
+  const hasActiveBoot = bootToken > 0;
   const routeView = resolveGameRouteView({
     phase,
-    hasSetupResult: setupResult !== null,
+    hasSetupResult: hasActiveBoot && setupResult !== null,
     hasAccount: account !== null,
     isReconnectRequired,
   });

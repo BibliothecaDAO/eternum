@@ -6,7 +6,7 @@ import { resolveEntryContextFromPlayRoute, type ResolvedEntryContext } from "@/g
 import { useControllerAccount } from "@/hooks/context/use-controller-account";
 import { connectWithControllerRetry, pickPrimaryConnector } from "@/hooks/context/controller-connect";
 import { useCartridgeUsername } from "@/hooks/use-cartridge-username";
-import { parsePlayRoute, type PlayScene } from "@/play/navigation/play-route";
+import type { PlayScene } from "@/play/navigation/play-route";
 import type { SetupResult } from "@/init/bootstrap";
 import { useAccount, useConnect } from "@starknet-react/core";
 import { Account } from "starknet";
@@ -23,6 +23,31 @@ const NULL_ACCOUNT = {
   address: "0x0",
   privateKey: "0x0",
 } as const;
+
+type CanonicalPlayEntry = Pick<ResolvedEntryContext, "chain" | "intent" | "worldName">;
+
+const resolveCanonicalPlayEntry = (entryContext: ResolvedEntryContext | null): CanonicalPlayEntry | null => {
+  if (!entryContext) {
+    return null;
+  }
+
+  return {
+    chain: entryContext.chain,
+    intent: entryContext.intent,
+    worldName: entryContext.worldName,
+  };
+};
+
+const matchesCanonicalPlayEntry = (
+  previousEntry: CanonicalPlayEntry | null,
+  currentEntry: CanonicalPlayEntry | null,
+): boolean => {
+  return (
+    previousEntry?.chain === currentEntry?.chain &&
+    previousEntry?.intent === currentEntry?.intent &&
+    previousEntry?.worldName === currentEntry?.worldName
+  );
+};
 
 const resolveBootstrapContext = ({
   entryContext,
@@ -209,9 +234,9 @@ export const usePlayRouteBootController = (): PlayRouteBootControllerState => {
   const controllerAccount = useControllerAccount();
   const setAccountName = useAccountStore((state) => state.setAccountName);
   const setShowBlankOverlay = useUIStore((state) => state.setShowBlankOverlay);
-  const showBlankOverlay = useUIStore((state) => state.showBlankOverlay);
   const { username: cartridgeUsername } = useCartridgeUsername();
   const entryContext = useMemo(() => resolveEntryContextFromPlayRoute(location), [location.pathname, location.search]);
+  const canonicalEntry = useMemo(() => resolveCanonicalPlayEntry(entryContext), [entryContext]);
   const hasControllerAccount = controllerAccount !== null;
   const bootstrapContext = useMemo(
     () => resolveBootstrapContext({ entryContext, hasControllerAccount }),
@@ -221,7 +246,6 @@ export const usePlayRouteBootController = (): PlayRouteBootControllerState => {
     context: bootstrapContext,
     enabled: bootstrapContext !== null,
   });
-  const playRoute = useMemo(() => parsePlayRoute(location), [location.pathname, location.search]);
   const fastTravelEnabled = useMemo(
     () => (bootstrap.setupResult ? getGameModeId() !== "blitz" : true),
     [bootstrap.setupResult],
@@ -235,7 +259,7 @@ export const usePlayRouteBootController = (): PlayRouteBootControllerState => {
   const [hasReconnectGraceElapsed, setHasReconnectGraceElapsed] = useState(false);
   const readiness = usePlayRouteReadinessStore();
   const nextBootTokenRef = useRef(0);
-  const previousRouteRef = useRef<typeof playRoute>(null);
+  const previousEntryRef = useRef<CanonicalPlayEntry | null>(null);
 
   useEffect(() => {
     if (cartridgeUsername) {
@@ -273,31 +297,17 @@ export const usePlayRouteBootController = (): PlayRouteBootControllerState => {
   }, [setShowBlankOverlay]);
 
   useEffect(() => {
-    const previousRoute = previousRouteRef.current;
-    previousRouteRef.current = playRoute;
-
-    if (!playRoute) {
+    if (matchesCanonicalPlayEntry(previousEntryRef.current, canonicalEntry)) {
       return;
     }
 
-    const isSceneHandoffRouteChange =
-      previousRoute?.bootMode === "map-first" &&
-      previousRoute.chain === playRoute.chain &&
-      previousRoute.worldName === playRoute.worldName &&
-      previousRoute.resumeScene === playRoute.scene;
-
-    const shouldStartEntryBoot =
-      playRoute.bootMode === "map-first" ||
-      showBlankOverlay ||
-      bootstrap.setupResult === null ||
-      previousRoute === null;
-
-    if (!shouldStartEntryBoot || isSceneHandoffRouteChange) {
+    previousEntryRef.current = canonicalEntry;
+    if (!canonicalEntry) {
       return;
     }
 
     startPlayRouteBoot();
-  }, [bootstrap.setupResult, playRoute, showBlankOverlay, startPlayRouteBoot]);
+  }, [canonicalEntry, startPlayRouteBoot]);
 
   const resolvedAccount = useMemo(() => {
     if (resolvedRequest?.entryMode === "spectator") {

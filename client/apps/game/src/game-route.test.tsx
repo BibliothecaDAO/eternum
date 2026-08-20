@@ -1,11 +1,12 @@
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
-import { act } from "react";
+import { act, useEffect } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const usePlayRouteBootControllerMock = vi.fn();
+const worldMountedMock = vi.hoisted(() => vi.fn());
 
 vi.mock("./game-entry/play-route-boot", () => ({
   usePlayRouteBootController: (...args: unknown[]) => usePlayRouteBootControllerMock(...args),
@@ -32,6 +33,7 @@ vi.mock("./hooks/use-transaction-listener", () => ({
 }));
 
 vi.mock("./ui/shared", () => ({
+  ChunkTransitionIndicator: () => <div>ChunkTransitionIndicator</div>,
   ErrorBoundary: ({ children }: { children: React.ReactNode }) => <>{children}</>,
   Toaster: () => <div>Toaster</div>,
   TransactionNotification: () => <div>TransactionNotification</div>,
@@ -67,7 +69,13 @@ vi.mock("./ui/modules/boot-loader", () => ({
 }));
 
 vi.mock("./ui/layouts/world", () => ({
-  World: () => <div>World</div>,
+  World: () => {
+    useEffect(() => {
+      worldMountedMock();
+    }, []);
+
+    return <div>World</div>;
+  },
 }));
 
 vi.mock("../env", () => ({
@@ -88,6 +96,7 @@ describe("GameRoute", () => {
     document.body.appendChild(container);
     root = createRoot(container);
     usePlayRouteBootControllerMock.mockReset();
+    worldMountedMock.mockReset();
   });
 
   afterEach(async () => {
@@ -148,5 +157,52 @@ describe("GameRoute", () => {
 
     expect(source).toContain("bootToken");
     expect(source).toContain("<ReadyApp key={bootToken}");
+  });
+
+  it("mounts the ready world once after the first readiness generation starts", async () => {
+    const transactionProvider = {
+      setTransactionSubmitGuard: vi.fn(),
+    };
+    let controllerState = {
+      phase: "wait_worldmap_ready",
+      progress: 92,
+      setupResult: {
+        network: {
+          provider: transactionProvider,
+        },
+      } as { network: { provider: typeof transactionProvider } } | null,
+      account: { address: "0x123" } as { address: string } | null,
+      connectWallet: vi.fn(),
+      retry: vi.fn(),
+      isReconnectRequired: false,
+      currentTask: "dojo",
+      tasks: [],
+      bootToken: 0,
+    };
+    usePlayRouteBootControllerMock.mockImplementation(() => controllerState);
+
+    const renderRoute = () => (
+      <MemoryRouter initialEntries={["/play/mainnet/iron-age/map"]}>
+        <GameRoute backgroundImage="bg.png" />
+      </MemoryRouter>
+    );
+    await act(async () => {
+      root.render(renderRoute());
+    });
+    expect(worldMountedMock).not.toHaveBeenCalled();
+
+    controllerState = {
+      ...controllerState,
+      bootToken: 1,
+    };
+    await act(async () => {
+      root.render(renderRoute());
+    });
+    await act(async () => {
+      root.render(renderRoute());
+    });
+
+    expect(container.textContent).toContain("World");
+    expect(worldMountedMock).toHaveBeenCalledTimes(1);
   });
 });

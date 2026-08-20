@@ -34,6 +34,14 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 // are surfaced in the What's New popup.
 const allLatestFeatures: LatestFeature[] = [
   {
+    date: "2026-08-20",
+    title: "Reliable Game Entry",
+    description:
+      "Game entry now mounts the world once, preventing duplicate startup work and lost readiness while the world loads.",
+    type: "fix",
+    gameSlug: "world",
+  },
+  {
     date: "2026-08-17",
     title: "Live World Facts",
     description:
