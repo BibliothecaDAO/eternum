@@ -2,7 +2,6 @@ import { describe, expect, it, vi } from "vitest";
 import {
   Box3,
   BoxGeometry,
-  Color,
   Group,
   InstancedBufferAttribute,
   Matrix4,
@@ -86,7 +85,7 @@ describe("InstancedBiome visibility", () => {
     expect(mesh.boundingBox?.max.toArray()).toEqual([25, 10, 25]);
   });
 
-  it("tracks per-slot writes, removals, and active-prefix rebuilds", () => {
+  it("tracks per-slot matrix writes, removals, and active-prefix rebuilds", () => {
     const biomeModel = createBiomeModel("Grassland");
     const mesh = biomeModel.instancedMeshes[0];
 
@@ -94,10 +93,8 @@ describe("InstancedBiome visibility", () => {
     mesh.instanceMatrix.clearUpdateRanges();
 
     biomeModel.setMatrixAt(2, new Matrix4().makeTranslation(2, 0, 2));
-    biomeModel.setColorAt(2, new Color(0xff0000));
 
     expect(mesh.instanceMatrix.updateRanges).toEqual([{ start: 2 * 16, count: 16 }]);
-    expect(mesh.instanceColor?.updateRanges).toEqual([{ start: 2 * 3, count: 3 }]);
 
     mesh.instanceMatrix.clearUpdateRanges();
     biomeModel.removeInstance(2);

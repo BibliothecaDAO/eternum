@@ -6465,7 +6465,7 @@ export default class WorldmapScene extends WarpTravel {
       this.releaseInstancedAttribute(matrices);
       hexMesh.updateMeshVisibility();
       if (landColors) {
-        this.applyCompositeLandColors(hexMesh, cells.length, landColors);
+        hexMesh.setLandColors(landColors, cells.length);
       }
     });
 
@@ -6509,24 +6509,6 @@ export default class WorldmapScene extends WarpTravel {
     });
 
     return landColors;
-  }
-
-  private applyCompositeLandColors(hexMesh: InstancedBiome, count: number, landColors: Float32Array): void {
-    const landMeshes = hexMesh.instancedMeshes.filter((mesh) => mesh.name === LAND_NAME);
-    landMeshes.forEach((mesh) => {
-      if (!mesh.instanceColor || (mesh.instanceColor.array as Float32Array).length < count * 3) {
-        mesh.instanceColor = new InstancedBufferAttribute(new Float32Array(mesh.instanceMatrix.count * 3), 3);
-        mesh.geometry.setAttribute("instanceColor", mesh.instanceColor);
-      }
-      (mesh.instanceColor.array as Float32Array).set(landColors);
-      // Upload only the written region — a bare needsUpdate re-uploads the
-      // full preallocated capacity through writeBuffer inside the render loop.
-      mesh.instanceColor.clearUpdateRanges();
-      if (landColors.length > 0) {
-        mesh.instanceColor.addUpdateRange(0, landColors.length);
-      }
-      mesh.instanceColor.needsUpdate = true;
-    });
   }
 
   private scheduleTerrainPresentationRetentionCleanup(
@@ -7418,7 +7400,7 @@ export default class WorldmapScene extends WarpTravel {
         hexMesh.updateMeshVisibility(); // Update visibility based on count
 
         if (landColors && count > 0) {
-          this.applyCompositeLandColors(hexMesh, count, landColors);
+          hexMesh.setLandColors(landColors, count);
           const colorUploadBytes = count * Float32Array.BYTES_PER_ELEMENT * 3;
           incrementWorldmapRenderUploadBytes("cachedChunkReplay", colorUploadBytes);
           recordRendererColorUploadBytes(count, "worldmap-cache-replay");

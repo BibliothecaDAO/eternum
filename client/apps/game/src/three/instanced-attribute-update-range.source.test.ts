@@ -15,12 +15,6 @@ const DOCUMENTED_DIRECT_UPLOADS = new Map([
       "if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;",
     ]),
   ],
-  [
-    "three/scenes/worldmap.tsx",
-    // FL-08 owns replacing this lazy land-color allocation. The current site
-    // already installs one active-prefix update range before setting the flag.
-    new Set(["mesh.instanceColor.needsUpdate = true;"]),
-  ],
 ]);
 
 const BARE_INSTANCED_ATTRIBUTE_UPLOAD = /\.instance(?:Matrix|Color)!?\.needsUpdate\s*=\s*true/;
