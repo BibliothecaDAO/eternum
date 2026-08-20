@@ -49,10 +49,19 @@ vi.mock("./ui/features/story-events", () => ({
 }));
 
 vi.mock("./ui/modules/loading-screen", () => ({
-  LoadingScreen: ({ title, subtitle }: { title?: string; subtitle?: string }) => (
+  LoadingScreen: ({
+    currentTaskLabel,
+    title,
+    subtitle,
+  }: {
+    currentTaskLabel?: string | null;
+    title?: string;
+    subtitle?: string;
+  }) => (
     <div>
       <div>{title}</div>
       <div>{subtitle}</div>
+      <div>{currentTaskLabel}</div>
     </div>
   ),
 }));
@@ -116,6 +125,11 @@ describe("GameRoute", () => {
       connectWallet: vi.fn(),
       retry: vi.fn(),
       isReconnectRequired: false,
+      currentTask: null,
+      tasks: [{ id: "account", label: "Resolving account session", status: "running" }],
+      bootToken: 1,
+      reconnectError: null,
+      reconnectStatus: "idle",
     });
 
     await act(async () => {
@@ -139,6 +153,11 @@ describe("GameRoute", () => {
       connectWallet: vi.fn(),
       retry: vi.fn(),
       isReconnectRequired: true,
+      currentTask: null,
+      tasks: [{ id: "account", label: "Resolving account session", status: "running" }],
+      bootToken: 1,
+      reconnectError: null,
+      reconnectStatus: "idle",
     });
 
     await act(async () => {
@@ -150,6 +169,34 @@ describe("GameRoute", () => {
     });
 
     expect(container.textContent).toContain("Reconnect to Continue");
+  });
+
+  it("shows an automatic controller restoration as restoring", async () => {
+    usePlayRouteBootControllerMock.mockReturnValue({
+      phase: "await_account",
+      progress: 0,
+      setupResult: null,
+      account: null,
+      connectWallet: vi.fn(),
+      retry: vi.fn(),
+      isReconnectRequired: false,
+      currentTask: null,
+      tasks: [{ id: "account", label: "Restoring controller session", status: "running" }],
+      bootToken: 1,
+      reconnectError: null,
+      reconnectStatus: "restoring",
+    });
+
+    await act(async () => {
+      root.render(
+        <MemoryRouter initialEntries={["/play/mainnet/iron-age/map"]}>
+          <GameRoute backgroundImage="bg.png" />
+        </MemoryRouter>,
+      );
+    });
+
+    expect(container.textContent).toContain("Restoring controller session");
+    expect(container.textContent).not.toContain("Reconnect to Continue");
   });
 
   it("keys the ready app by the active boot token so route rebootstrap remounts DojoProvider", () => {
@@ -178,6 +225,8 @@ describe("GameRoute", () => {
       currentTask: "dojo",
       tasks: [],
       bootToken: 0,
+      reconnectError: null,
+      reconnectStatus: "connected",
     };
     usePlayRouteBootControllerMock.mockImplementation(() => controllerState);
 

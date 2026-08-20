@@ -20,6 +20,7 @@ import { LoadingScreen } from "./ui/modules/loading-screen";
 import { useBootDocumentState } from "./ui/modules/boot-loader";
 import { World } from "./ui/layouts/world";
 import { resolveGameRouteView } from "./game-route.utils";
+import type { BootstrapTask } from "./game-entry/bootstrap-controller";
 
 type ReadyAppProps = {
   backgroundImage: string;
@@ -69,6 +70,21 @@ const ReadyApp = ({ backgroundImage, setupResult, account }: ReadyAppProps) => {
   );
 };
 
+const resolveCurrentTaskLabel = ({
+  currentTask,
+  phase,
+  tasks,
+}: {
+  currentTask: string | null;
+  phase: string;
+  tasks: BootstrapTask[];
+}): string => {
+  const activeTask = currentTask
+    ? tasks.find((task) => task.id === currentTask)
+    : tasks.find((task) => task.status === "running");
+  return activeTask?.label ?? currentTask ?? phase;
+};
+
 const GameRoute = ({ backgroundImage }: { backgroundImage: string }) => {
   const navigate = useNavigate();
   const state = usePlayRouteBootController();
@@ -83,6 +99,8 @@ const GameRoute = ({ backgroundImage }: { backgroundImage: string }) => {
     currentTask,
     tasks,
     bootToken,
+    reconnectError,
+    reconnectStatus,
   } = state;
   const hasActiveBoot = bootToken > 0;
   const routeView = resolveGameRouteView({
@@ -96,9 +114,7 @@ const GameRoute = ({ backgroundImage }: { backgroundImage: string }) => {
     routeView === "ready" ? "boot_world_visible" : routeView === "loading" ? "boot_react_loader_visible" : undefined,
   );
 
-  // Resolve a human-readable label for the active task so the boot debug
-  // panel can show "Connecting to world" rather than "dojo".
-  const currentTaskLabel = currentTask ? (tasks.find((task) => task.id === currentTask)?.label ?? currentTask) : phase;
+  const currentTaskLabel = resolveCurrentTaskLabel({ currentTask, phase, tasks });
 
   if (routeView === "redirect") {
     return <Navigate to="/" replace />;
@@ -110,6 +126,8 @@ const GameRoute = ({ backgroundImage }: { backgroundImage: string }) => {
         onReconnect={connectWallet}
         onRetry={retry}
         onReturnToDashboard={() => navigate("/")}
+        reconnectError={reconnectError}
+        reconnectStatus={reconnectStatus}
         showRetry={phase === "error"}
       />
     );

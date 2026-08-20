@@ -132,6 +132,22 @@ describe("usePlayRouteBootController", () => {
   let root: Root;
   let consoleErrorMock: ReturnType<typeof vi.spyOn>;
 
+  const renderPlayerRoute = async () => {
+    await act(async () => {
+      root.render(
+        <MemoryRouter initialEntries={["/play/mainnet/iron-age/map"]}>
+          <BootControllerHarness />
+        </MemoryRouter>,
+      );
+    });
+  };
+
+  const advanceTimers = async (milliseconds: number) => {
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(milliseconds);
+    });
+  };
+
   beforeEach(() => {
     (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
     container = document.createElement("div");
@@ -165,6 +181,7 @@ describe("usePlayRouteBootController", () => {
     container.remove();
     consoleErrorMock.mockRestore();
     (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = false;
+    vi.useRealTimers();
   });
 
   it("resets play-route readiness without updating the store during render", async () => {
@@ -339,7 +356,7 @@ describe("usePlayRouteBootController", () => {
   });
 
   it("retries controller connection when Starknet is connected without a resolved controller account", async () => {
-    const connector = { id: "controller" };
+    const connector = { id: "controller", isReady: () => true };
     starknetReactState.connectors = [connector];
     starknetReactState.isConnected = true;
     connectAsyncMock.mockResolvedValue(undefined);
@@ -352,8 +369,8 @@ describe("usePlayRouteBootController", () => {
       );
     });
 
-    latestBootController?.connectWallet();
     await act(async () => {
+      latestBootController?.connectWallet();
       await Promise.resolve();
     });
 
@@ -376,5 +393,27 @@ describe("usePlayRouteBootController", () => {
     latestBootController?.connectWallet();
 
     expect(connectAsyncMock).not.toHaveBeenCalled();
+  });
+
+  it("keeps a slow automatic account restoration in the restoring state", async () => {
+    vi.useFakeTimers();
+    starknetReactState.isConnecting = true;
+
+    await renderPlayerRoute();
+    await advanceTimers(10_000);
+
+    expect(latestBootController).toMatchObject({
+      isReconnectRequired: false,
+      phase: "await_account",
+      reconnectError: null,
+      reconnectStatus: "restoring",
+    });
+
+    starknetReactState.controllerAccount = { address: "0x123" };
+    starknetReactState.isConnecting = false;
+    await renderPlayerRoute();
+
+    expect(latestBootController?.reconnectStatus).toBe("connected");
+    expect(getLatestBootstrapControllerInput()).toMatchObject({ enabled: true });
   });
 });
