@@ -2,7 +2,7 @@
   "version": 1,
   "environment": "appchain.blitz",
   "kind": "rotation",
-  "updatedAt": "2026-08-20T16:01:49.910Z",
+  "updatedAt": "2026-08-20T16:01:52.429Z",
   "entries": {
     "blitz-herald": {
       "kind": "rotation",
@@ -11,10 +11,11 @@
       "path": "runs/appchain/blitz/rotations/blitz-herald.json",
       "inputPath": "inputs/appchain/blitz/rotations/blitz-herald/32389466017-1.json",
       "status": "running",
-      "updatedAt": "2026-08-20T16:01:41.799Z",
+      "updatedAt": "2026-08-20T16:01:52.429Z",
       "workflowRef": "next",
-      "currentStepId": null,
-      "hasRunningStep": false,
+      "currentStepId": "wait-for-factory-indexes",
+      "activeLeaseExpiresAt": "2026-08-20T16:46:52.429Z",
+      "hasRunningStep": true,
       "recoverableFailedStepId": null,
       "recoverablePendingStepId": null,
       "autoRetry": {
