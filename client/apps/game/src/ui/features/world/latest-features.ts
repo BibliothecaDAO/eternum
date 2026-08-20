@@ -35,6 +35,14 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-08-20",
+    title: "Uninterrupted Map Travel",
+    description:
+      "Routine zooming and terrain updates no longer dim the world, while genuine terrain recovery stays visible as a compact status.",
+    type: "improvement",
+    gameSlug: "world",
+  },
+  {
+    date: "2026-08-20",
     title: "Smoother World Updates",
     description:
       "Army, terrain, and interaction rendering now uploads only changed instances, reducing frame work during movement and map updates.",

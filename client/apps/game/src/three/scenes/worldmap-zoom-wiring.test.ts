@@ -77,4 +77,31 @@ describe("worldmap zoom wiring", () => {
     expect(source).toMatch(/resolveCameraViewTransitionDuration\(/);
     expect(source).toMatch(/resolveCameraTransitionEase\(/);
   });
+
+  it("publishes camera zoom state without presenting chunk loading UI", () => {
+    const source = readSceneSource("worldmap.tsx");
+    const publishZoomSnapshotSource = source.slice(
+      source.indexOf("private publishWorldmapZoomSnapshot("),
+      source.indexOf("public moveCameraToURLLocation("),
+    );
+
+    expect(publishZoomSnapshotSource).toMatch(/worldmapCameraTransitionListeners/);
+    expect(publishZoomSnapshotSource).not.toMatch(/LoadingStateKey\.ChunkTransition/);
+    expect(publishZoomSnapshotSource).not.toMatch(/setLoading\(/);
+  });
+
+  it("keeps the passive chunk status wired to real terrain transitions and their finalizers", () => {
+    const source = readSceneSource("worldmap.tsx");
+    const visibleChunkUpdateSource = source.slice(
+      source.indexOf("async updateVisibleChunks("),
+      source.indexOf("private prepareChunkPresentation("),
+    );
+
+    expect(visibleChunkUpdateSource).toMatch(
+      /chunkDecision\.action === "switch_chunk"[\s\S]*setLoading\(LoadingStateKey\.ChunkTransition, true\)[\s\S]*onFinally:[\s\S]*setLoading\(LoadingStateKey\.ChunkTransition, false\)/,
+    );
+    expect(visibleChunkUpdateSource).toMatch(
+      /chunkDecision\.action === "refresh_current_chunk"[\s\S]*setLoading\(LoadingStateKey\.ChunkTransition, true\)[\s\S]*onFinally:[\s\S]*setLoading\(LoadingStateKey\.ChunkTransition, false\)/,
+    );
+  });
 });
