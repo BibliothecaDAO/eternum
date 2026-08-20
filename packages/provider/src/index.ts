@@ -650,10 +650,10 @@ export class EternumProvider extends EnhancedDojoProvider {
     transactionDetails: AllowArray<Call>,
     options?: { cacheKey?: string; forceRefresh?: boolean },
   ): Promise<UniversalDetails> {
-    const details: UniversalDetails = { version: 3 };
+    const details: UniversalDetails = { version: 3, tip: 0 };
     const cached = !options?.forceRefresh ? this.getCachedExploreExecutionDetails(options?.cacheKey) : undefined;
     if (cached) {
-      return cached;
+      return { ...details, ...cached };
     }
 
     const estimateInvokeFee = (signer as any)?.estimateInvokeFee;
@@ -665,6 +665,7 @@ export class EternumProvider extends EnhancedDojoProvider {
       const estimate = (await this.withTimeout(
         estimateInvokeFee.call(signer, transactionDetails, {
           version: 3,
+          tip: 0,
         }),
         this.FEE_ESTIMATE_TIMEOUT_MS,
         () =>
