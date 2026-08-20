@@ -14,14 +14,13 @@ interface FinalizeWarpTravelChunkSwitchInput {
   force: boolean;
   transitionToken: number;
   preparedTerrain: unknown;
-  applyPreparedTerrain: (preparedTerrain: unknown) => void | Promise<void>;
+  commitPreparedTerrain: (preparedTerrain: unknown) => boolean | Promise<boolean>;
   /**
    * Phase 2.2: release the pooled attributes held by prepared terrain that is
    * dropped (rollback / stale) instead of applied. Without this the pooled
    * InstancedBufferAttributes leak for the lifetime of the renderer.
    */
   disposePreparedTerrain?: (preparedTerrain: unknown) => void;
-  setCurrentChunk: (chunkKey: string) => void;
   updatePinnedChunks: (chunkKeys: string[]) => void;
   unregisterChunk: (chunkKey: string) => void;
   restorePreviousChunkVisuals: (
@@ -92,9 +91,15 @@ export async function finalizeWarpTravelChunkSwitch(
     };
   }
 
-  input.setCurrentChunk(input.targetChunk);
-  if (input.preparedTerrain !== null && input.preparedTerrain !== undefined) {
-    await input.applyPreparedTerrain(input.preparedTerrain);
+  if (input.preparedTerrain === null || input.preparedTerrain === undefined) {
+    throw new Error(`Chunk ${input.targetChunk} synchronized without prepared terrain`);
+  }
+
+  const terrainCommitted = await input.commitPreparedTerrain(input.preparedTerrain);
+  if (!terrainCommitted) {
+    return {
+      status: "stale_dropped",
+    };
   }
   input.updateCurrentChunkBounds(input.startRow, input.startCol);
   input.forceVisibilityUpdate();

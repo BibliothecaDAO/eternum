@@ -194,6 +194,7 @@ import {
 } from "./worldmap-exact-terrain-preparation-runtime";
 import { handleWorldmapChunkFinalizeResult } from "./worldmap-chunk-finalize-runtime";
 import { prepareWorldmapChunkSwitchRuntime } from "./worldmap-chunk-switch-runtime";
+import { commitOwnedWorldmapPreparedTerrain } from "./worldmap-owned-terrain-commit";
 import { catchUpCommittedWorldmapChunkManagers } from "./worldmap-committed-chunk-manager-catchup";
 import {
   recordWorldmapChunkMemoryDelta,
@@ -5196,16 +5197,16 @@ export default class WorldmapScene extends WarpTravel {
     });
   }
 
-  private async schedulePreparedTerrainCommit(
+  private async schedulePreparedTerrainCommit<TResult>(
     workLane: FrameBudgetWorkLane,
     preparedTerrain: PreparedTerrainChunk,
-    commit: () => void,
-  ): Promise<void> {
+    commit: () => TResult,
+  ): Promise<TResult> {
     let commitStarted = false;
     try {
-      await this.chunkWorkQueue.schedule(workLane, () => {
+      return await this.chunkWorkQueue.schedule(workLane, () => {
         commitStarted = true;
-        commit();
+        return commit();
       });
     } catch (error) {
       if (!commitStarted) {
@@ -7953,6 +7954,40 @@ export default class WorldmapScene extends WarpTravel {
     });
   }
 
+  private commitOwnedChunkSwitchTerrain(input: {
+    chunkKey: string;
+    chunkSwitchStartedAt: number;
+    preparedTerrain: PreparedTerrainChunk;
+    presentationRuntime: PreparedWorldmapChunkRuntime["presentationRuntime"];
+    transitionToken: number;
+  }): Promise<boolean> {
+    return commitOwnedWorldmapPreparedTerrain({
+      preparedTerrain: input.preparedTerrain,
+      targetChunk: input.chunkKey,
+      transitionToken: input.transitionToken,
+      getCurrentTransitionToken: () => this.chunkTransitionToken,
+      isSwitchedOff: () => this.isSwitchedOff,
+      scheduleCommit: (commit) => this.schedulePreparedTerrainCommit("critical", input.preparedTerrain, commit),
+      disposePreparedTerrain: (preparedTerrain) => this.disposePreparedTerrainChunk(preparedTerrain),
+      commitChunkAuthority: (targetChunkKey) => this.commitCurrentChunkAuthority(targetChunkKey),
+      applyPreparedTerrain: (preparedTerrain) => {
+        commitWorldmapPreparedTerrainPresentation({
+          applyPreparedTerrain: (preparedTerrain) => {
+            this.applyPreparedTerrainChunk(preparedTerrain as PreparedTerrainChunk);
+          },
+          diagnostics: this.chunkDiagnostics,
+          now: () => performance.now(),
+          phaseDurations: input.presentationRuntime.phaseDurations,
+          preparedTerrain,
+          presentationStartedAtMs: input.chunkSwitchStartedAt,
+          recordChunkDiagnosticsEvent,
+          recordWorldmapRenderDuration,
+          incrementWorldmapRenderCounter,
+        });
+      },
+    });
+  }
+
   private scheduleCommittedChunkManagerCatchUp(
     targetChunkKey: string,
     managerOptions: WorldmapManagerCatchUpOptions,
@@ -8089,27 +8124,16 @@ export default class WorldmapScene extends WarpTravel {
         force: effectiveForce,
         transitionToken,
         preparedTerrain,
-        applyPreparedTerrain: (nextPreparedTerrain) => {
-          const preparedTerrain = nextPreparedTerrain as PreparedTerrainChunk;
-          return this.schedulePreparedTerrainCommit("critical", preparedTerrain, () => {
-            commitWorldmapPreparedTerrainPresentation({
-              applyPreparedTerrain: (preparedTerrain) => {
-                this.applyPreparedTerrainChunk(preparedTerrain as PreparedTerrainChunk);
-              },
-              diagnostics: this.chunkDiagnostics,
-              now: () => performance.now(),
-              phaseDurations: presentationRuntime.phaseDurations,
-              preparedTerrain: nextPreparedTerrain,
-              presentationStartedAtMs: chunkSwitchStartedAt,
-              recordChunkDiagnosticsEvent,
-              recordWorldmapRenderDuration,
-              incrementWorldmapRenderCounter,
-            });
-          });
-        },
+        commitPreparedTerrain: (nextPreparedTerrain) =>
+          this.commitOwnedChunkSwitchTerrain({
+            chunkKey,
+            chunkSwitchStartedAt,
+            preparedTerrain: nextPreparedTerrain as PreparedTerrainChunk,
+            presentationRuntime,
+            transitionToken,
+          }),
         disposePreparedTerrain: (droppedPreparedTerrain) =>
           this.disposePreparedTerrainChunk(droppedPreparedTerrain as PreparedTerrainChunk),
-        setCurrentChunk: (targetChunkKey) => this.commitCurrentChunkAuthority(targetChunkKey),
         updatePinnedChunks: (chunkKeys) => this.updatePinnedChunks(chunkKeys),
         unregisterChunk: (targetChunkKey) => this.unregisterVisibilityChunk(targetChunkKey),
         restorePreviousChunkVisuals: (oldStartRow, oldStartCol) =>

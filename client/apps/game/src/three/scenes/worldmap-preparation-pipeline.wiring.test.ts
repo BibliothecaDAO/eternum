@@ -29,7 +29,10 @@ describe("worldmap preparation pipeline wiring", () => {
     );
 
     expect(source).toMatch(/private prepareChunkPresentation\(/);
-    expect(performChunkSwitchSource).toMatch(/await this\.prepareChunkPresentation\(\{/);
+    expect(performChunkSwitchSource).toMatch(
+      /exactTerrainPreparations\.start\(\{[\s\S]*?prepare: \(\) =>\s*this\.prepareChunkPresentation\(\{/,
+    );
+    expect(performChunkSwitchSource).toContain("await exactTerrainPreparation.promise");
     expect(refreshCurrentChunkSource).toMatch(/prepareChunk: \(\) =>\s*this\.prepareChunkPresentation\(\{/);
   });
 

@@ -33,7 +33,7 @@ describe("worldmap frame-budget work queue wiring", () => {
     expect(
       armyManagerSource.indexOf(".then(() => this.preloadMissingProjectedArmyModelsForEntity(entityId))"),
     ).toBeLessThan(armyManagerSource.indexOf('scheduleFrameBudgetWork(this.chunkWorkScheduler, "visible"'));
-    expect(structureManagerSource).toContain('this.requestVisibleStructuresRefresh("critical")');
+    expect(structureManagerSource).toMatch(/await this\.requestVisibleStructuresRefresh\(\s*"critical",/);
     expect(structureManagerSource).toContain("await scheduleFrameBudgetWork(this.chunkWorkScheduler, workLane");
     expect(chestManagerSource).toContain(
       "scheduleFrameBudgetWork(this.chunkWorkScheduler, workLane, () => this.renderVisibleChests(chunkKey))",
