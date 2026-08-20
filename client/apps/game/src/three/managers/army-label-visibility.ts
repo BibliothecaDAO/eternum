@@ -1,4 +1,4 @@
-import type { CSS2DObject } from "three/examples/jsm/renderers/CSS2DRenderer.js";
+import type { CSS2DObject } from "three/addons/renderers/CSS2DRenderer.js";
 
 interface SyncArmyLabelVisibilityInput<TEntityId> {
   labels: Iterable<CSS2DObject>;

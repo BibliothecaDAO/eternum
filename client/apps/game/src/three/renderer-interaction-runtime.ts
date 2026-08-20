@@ -1,7 +1,7 @@
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { CAMERA_CONFIG, CAMERA_FAR_PLANE, CONTROL_CONFIG } from "@/three/constants";
 import { PerspectiveCamera, Raycaster, Vector2 } from "three";
-import { MapControls } from "three/examples/jsm/controls/MapControls.js";
+import { MapControls } from "three/addons/controls/MapControls.js";
 import { SceneName } from "./types";
 
 export interface RendererInteractionRuntime {

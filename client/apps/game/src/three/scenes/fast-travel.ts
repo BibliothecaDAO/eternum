@@ -16,7 +16,7 @@ import {
   Vector2,
   Vector3,
 } from "three";
-import type { MapControls } from "three/examples/jsm/controls/MapControls.js";
+import type { MapControls } from "three/addons/controls/MapControls.js";
 
 import type { SceneManager } from "../scene-manager";
 import { SceneName } from "../types";

@@ -8,7 +8,7 @@ import { AmbientParticleSystem } from "@/three/systems/ambient-particle-system";
 import { GRAPHICS_DEV_GUI_ENABLED, createGuiFolder } from "@/three/utils/gui-manager";
 import { clampCycleProgress } from "@/utils/cycle-progress";
 import { AmbientLight, HemisphereLight, OrthographicCamera, Scene, Vector3 } from "three";
-import { MapControls } from "three/examples/jsm/controls/MapControls.js";
+import { MapControls } from "three/addons/controls/MapControls.js";
 
 type GUIController = {
   updateDisplay?: () => void;

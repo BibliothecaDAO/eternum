@@ -1,5 +1,5 @@
 import * as THREE from "three";
-import { MapControls } from "three/examples/jsm/controls/MapControls.js";
+import { MapControls } from "three/addons/controls/MapControls.js";
 
 import {
   buildDebugChunkFixture,

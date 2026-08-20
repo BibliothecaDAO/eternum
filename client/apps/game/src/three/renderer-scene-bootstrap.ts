@@ -5,7 +5,7 @@ import HexceptionScene from "@/three/scenes/hexception";
 import WorldmapScene from "@/three/scenes/worldmap";
 import type { SetupResult } from "@bibliothecadao/dojo";
 import type { Raycaster, Vector2 } from "three";
-import type { MapControls } from "three/examples/jsm/controls/MapControls.js";
+import type { MapControls } from "three/addons/controls/MapControls.js";
 import { SceneName } from "./types";
 
 interface SceneInputSurfaceOwner {

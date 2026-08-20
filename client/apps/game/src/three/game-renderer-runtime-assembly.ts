@@ -1,5 +1,5 @@
 import HUDScene from "@/three/scenes/hud-scene";
-import type { MapControls } from "three/examples/jsm/controls/MapControls.js";
+import type { MapControls } from "three/addons/controls/MapControls.js";
 import { createRendererControlBridgeRuntime } from "./renderer-control-bridge-runtime";
 import { createRendererEffectsBridgeRuntime } from "./renderer-effects-bridge-runtime";
 import { createRendererEffectsRuntime } from "./renderer-effects-runtime";

@@ -20,7 +20,7 @@ import {
   Scene,
   Vector3,
 } from "three";
-import { CSS2DObject } from "three/examples/jsm/renderers/CSS2DRenderer.js";
+import { CSS2DObject } from "three/addons/renderers/CSS2DRenderer.js";
 import { writeMorphWeightsIfChanged } from "./morph-texture-dirty-state";
 import { incrementWorldmapRenderCounter } from "../perf/worldmap-render-diagnostics";
 import { BoundedHexCache } from "../utils/bounded-hex-cache";

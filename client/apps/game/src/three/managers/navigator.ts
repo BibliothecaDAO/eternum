@@ -4,7 +4,7 @@ import { type HexPosition } from "@bibliothecadao/types";
 import throttle from "lodash/throttle";
 import * as THREE from "three";
 import { CSS2DObject } from "three/addons/renderers/CSS2DRenderer.js";
-import { type MapControls } from "three/examples/jsm/controls/MapControls.js";
+import { type MapControls } from "three/addons/controls/MapControls.js";
 import { calculateDistanceInHexes, getWorldPositionForHex } from "../utils";
 
 const dummyObject = new THREE.Object3D();

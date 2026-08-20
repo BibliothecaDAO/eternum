@@ -106,7 +106,7 @@ import {
   Vector3,
 } from "three";
 import { CSS2DObject } from "three/addons/renderers/CSS2DRenderer.js";
-import { MapControls } from "three/examples/jsm/controls/MapControls.js";
+import { MapControls } from "three/addons/controls/MapControls.js";
 import { SceneName } from "../types";
 import { getHexForWorldPosition, getWorldPositionForHex } from "../utils";
 import { HexHoverLabel } from "../utils/labels/hex-hover-label";

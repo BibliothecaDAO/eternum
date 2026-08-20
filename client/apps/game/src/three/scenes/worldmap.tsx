@@ -112,7 +112,7 @@ import {
   Vector2,
   Vector3,
 } from "three";
-import { MapControls } from "three/examples/jsm/controls/MapControls.js";
+import { MapControls } from "three/addons/controls/MapControls.js";
 import { env } from "../../../env";
 import { playerCosmeticsStore } from "../cosmetics";
 import { FXManager } from "../managers/fx-manager";

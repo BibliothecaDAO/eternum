@@ -1,5 +1,5 @@
 import { Box3, Frustum, Matrix4, PerspectiveCamera, Sphere, Vector3 } from "three";
-import type { MapControls } from "three/examples/jsm/controls/MapControls.js";
+import type { MapControls } from "three/addons/controls/MapControls.js";
 
 type FrustumListener = () => void;
 
