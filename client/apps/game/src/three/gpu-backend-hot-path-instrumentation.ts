@@ -81,6 +81,7 @@ const activeFrame: ActiveGpuBackendFrame = {
   textureStats: null,
 };
 let hasActiveFrame = false;
+let isPageVisibilityListenerInstalled = false;
 let compiledRenderPipelineCount = 0;
 let gpuBackendAttributionEnabled = false;
 
@@ -89,9 +90,10 @@ export function getCompiledRenderPipelineCount(): number {
 }
 
 export function startGpuBackendFrame(options?: StartGpuBackendFrameOptions): void {
+  installPageVisibilityListener();
   const pageVisible = options?.pageVisible ?? getPageVisibility();
   if (!pageVisible) {
-    discardActiveFrame();
+    discardGpuBackendFrame();
     return;
   }
 
@@ -106,11 +108,26 @@ export function startGpuBackendFrame(options?: StartGpuBackendFrameOptions): voi
   hasActiveFrame = true;
 }
 
-function discardActiveFrame(): void {
+export function discardGpuBackendFrame(): void {
   hasActiveFrame = false;
   activeFrame.hotPathStats = null;
   activeFrame.textureStats = null;
   consumeDominantFrameWorkOwner();
+}
+
+function installPageVisibilityListener(): void {
+  if (isPageVisibilityListenerInstalled || typeof document === "undefined") {
+    return;
+  }
+
+  document.addEventListener("visibilitychange", discardFrameWhenPageIsHidden);
+  isPageVisibilityListenerInstalled = true;
+}
+
+function discardFrameWhenPageIsHidden(): void {
+  if (!getPageVisibility()) {
+    discardGpuBackendFrame();
+  }
 }
 
 function getPageVisibility(): boolean {

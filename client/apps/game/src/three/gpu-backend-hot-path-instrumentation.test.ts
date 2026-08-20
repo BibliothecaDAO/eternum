@@ -1,5 +1,7 @@
+// @vitest-environment jsdom
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
+  discardGpuBackendFrame,
   getCompiledRenderPipelineCount,
   instrumentGpuBackendHotPaths,
   startGpuBackendFrame,
@@ -200,5 +202,39 @@ describe("GPU backend hot-path instrumentation", () => {
     startFrame(2_000, warn, false);
 
     expect(warn).not.toHaveBeenCalled();
+  });
+
+  it("discards an active sample as soon as the page becomes hidden", () => {
+    const warn = vi.fn();
+    const visibilityState = vi.spyOn(document, "visibilityState", "get");
+    visibilityState.mockReturnValue("visible");
+    startFrame(0, warn, false);
+
+    visibilityState.mockReturnValue("hidden");
+    document.dispatchEvent(new Event("visibilitychange"));
+
+    visibilityState.mockReturnValue("visible");
+    startFrame(2_000, warn, false);
+    startFrame(2_040, warn, false);
+
+    expect(warn).toHaveBeenCalledOnce();
+    expect(warn).toHaveBeenCalledWith(
+      "[FramePerf] spike renderer_mode=webgpu duration_ms=40 frame_owner=unattributed gpu_attribution=disabled",
+    );
+    visibilityState.mockRestore();
+  });
+
+  it("discards an active sample without changing ordinary frame reporting", () => {
+    const warn = vi.fn();
+
+    startFrame(0, warn, false);
+    discardGpuBackendFrame();
+    startFrame(1_000, warn, false);
+    startFrame(1_040, warn, false);
+
+    expect(warn).toHaveBeenCalledOnce();
+    expect(warn).toHaveBeenCalledWith(
+      "[FramePerf] spike renderer_mode=webgpu duration_ms=40 frame_owner=unattributed gpu_attribution=disabled",
+    );
   });
 });

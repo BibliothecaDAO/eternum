@@ -23,7 +23,7 @@ import {
 } from "./renderer-backend-runtime";
 import { createRendererFoundationRuntime } from "./renderer-foundation-runtime";
 import { runRendererFrame } from "./renderer-frame-runtime";
-import { startGpuBackendFrame } from "./gpu-backend-hot-path-instrumentation";
+import { discardGpuBackendFrame, startGpuBackendFrame } from "./gpu-backend-hot-path-instrumentation";
 import type { RendererInteractionRuntime } from "./renderer-interaction-runtime";
 import type { RendererLabelRuntime } from "./renderer-label-runtime";
 import { renderProfile } from "./render-profile";
@@ -197,6 +197,7 @@ export default class GameRenderer {
   private beginDeviceLossFallback(): void {
     this.isRecoveringFromDeviceLoss = true;
     this.isRendererRecoveryPaused = true;
+    discardGpuBackendFrame();
   }
 
   private async initializeDeviceLossFallbackBackend(): Promise<{
@@ -475,12 +476,15 @@ export default class GameRenderer {
   }
 
   animate() {
-    startGpuBackendFrame();
+    const shouldStopAnimationLoop = this.shouldStopAnimationLoop();
+    if (!shouldStopAnimationLoop) {
+      startGpuBackendFrame();
+    }
 
     this.lastTime = runRendererAnimationTick({
       getCurrentTime: () => performance.now(),
       getCycleProgress: () => useUIStore.getState().cycleProgress || 0,
-      isDestroyed: this.shouldStopAnimationLoop(),
+      isDestroyed: shouldStopAnimationLoop,
       isLabelRuntimeReady: this.labelRuntime?.isReady() ?? false,
       lastTime: this.lastTime,
       logDestroyed: (message) => {
@@ -533,6 +537,7 @@ export default class GameRenderer {
     }
 
     this.isDestroyed = true;
+    discardGpuBackendFrame();
 
     destroyRendererRuntime({
       backend: this.backend,
