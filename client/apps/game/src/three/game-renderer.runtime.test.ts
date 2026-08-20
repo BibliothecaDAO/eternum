@@ -177,4 +177,21 @@ describe("GameRenderer runtime harness", () => {
     expect(harness.hexceptionScene.destroy).toHaveBeenCalledTimes(1);
     expect(subject.isDestroyed).toBe(true);
   });
+
+  it("destroys an in-flight scene candidate without revealing or switching it off afterward", async () => {
+    const harness = createGameRendererRuntimeHarness();
+    const subject = Object.assign(Object.create(GameRenderer.prototype), harness.createSubject());
+    subject.transitionManager = harness.transitionManager;
+
+    harness.sceneManager.switchScene(SceneName.WorldMap);
+    subject.destroy();
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(harness.worldmapScene.setup).toHaveBeenCalledOnce();
+    expect(harness.worldmapScene.destroy).toHaveBeenCalledOnce();
+    expect(harness.worldmapScene.onSwitchOff).not.toHaveBeenCalled();
+    expect(harness.worldmapScene.activateInputSurface).not.toHaveBeenCalled();
+    expect(harness.transitionManager.fadeIn).not.toHaveBeenCalled();
+  });
 });

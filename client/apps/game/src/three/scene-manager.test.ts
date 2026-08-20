@@ -105,9 +105,16 @@ describe("SceneManager transitions", () => {
     const firstSetup = createDeferred<void>();
     const { fadeOuts, sceneManager, transitionManager } = createTransitionHarness();
     const activateWorldMapInput = vi.fn();
+    let worldMapIsSubscribed = false;
     const worldMap = createScene({
       activateInputSurface: activateWorldMapInput,
-      setup: vi.fn(() => firstSetup.promise),
+      setup: vi.fn(() => {
+        worldMapIsSubscribed = true;
+        return firstSetup.promise;
+      }),
+      onSwitchOff: vi.fn(() => {
+        worldMapIsSubscribed = false;
+      }),
     });
     const activateHexInput = vi.fn();
     const hexception = createScene({ activateInputSurface: activateHexInput });
@@ -128,6 +135,9 @@ describe("SceneManager transitions", () => {
     expect(sceneManager.getCurrentScene()).toBeUndefined();
     expect(transitionManager.fadeIn).not.toHaveBeenCalled();
     expect(activateWorldMapInput).not.toHaveBeenCalled();
+    expect(worldMapIsSubscribed).toBe(false);
+    expect(worldMap.onSwitchOff).toHaveBeenCalledOnce();
+    expect(worldMap.onSwitchOff).toHaveBeenCalledWith(SceneName.Hexception);
     expect(worldMap.moveCameraToURLLocation).not.toHaveBeenCalled();
     expect(transitionManager.fadeOut).toHaveBeenCalledTimes(2);
     expect(hexception.setup).toHaveBeenCalledOnce();
@@ -137,6 +147,7 @@ describe("SceneManager transitions", () => {
     expect(sceneManager.getCurrentScene()).toBe(SceneName.Hexception);
     expect(transitionManager.fadeIn).toHaveBeenCalledOnce();
     expect(activateWorldMapInput).not.toHaveBeenCalled();
+    expect(worldMap.onSwitchOff).toHaveBeenCalledOnce();
     expect(activateHexInput).toHaveBeenCalledOnce();
     expect(worldMap.moveCameraToURLLocation).not.toHaveBeenCalled();
     expect(hexception.moveCameraToURLLocation).toHaveBeenCalledOnce();
@@ -170,10 +181,17 @@ describe("SceneManager transitions", () => {
     const { fadeOuts, sceneManager, transitionManager } = createTransitionHarness();
     const worldMap = createScene();
     const brokenSetupError = new Error("setup failed");
+    let brokenSceneIsSubscribed = false;
     const brokenSetup = vi.fn(async () => {
+      brokenSceneIsSubscribed = true;
       throw brokenSetupError;
     });
-    const hexception = createScene({ setup: brokenSetup });
+    const hexception = createScene({
+      setup: brokenSetup,
+      onSwitchOff: vi.fn(() => {
+        brokenSceneIsSubscribed = false;
+      }),
+    });
     sceneManager.addScene(SceneName.WorldMap, worldMap);
     sceneManager.addScene(SceneName.Hexception, hexception);
 
@@ -188,8 +206,46 @@ describe("SceneManager transitions", () => {
     expect(sceneManager.getCurrentScene()).toBe(SceneName.WorldMap);
     expect(transitionManager.fadeIn).toHaveBeenCalledTimes(2);
     expect(worldMap.moveCameraToURLLocation).toHaveBeenCalledTimes(2);
+    expect(brokenSceneIsSubscribed).toBe(false);
+    expect(hexception.onSwitchOff).toHaveBeenCalledOnce();
+    expect(hexception.onSwitchOff).toHaveBeenCalledWith(SceneName.WorldMap);
     expect(hexception.moveCameraToURLLocation).not.toHaveBeenCalled();
     expect(errorSpy).toHaveBeenCalledWith("[SceneManager] Failed to set up scene hex: setup failed");
+  });
+
+  it("cleans a candidate and starts the pending request when fade-out is canceled", async () => {
+    const { fadeOuts, sceneManager, transitionManager } = createTransitionHarness();
+    let worldMapIsSubscribed = false;
+    const worldMap = createScene({
+      setup: vi.fn(async () => {
+        worldMapIsSubscribed = true;
+      }),
+      onSwitchOff: vi.fn(() => {
+        worldMapIsSubscribed = false;
+      }),
+    });
+    const activateHexInput = vi.fn();
+    const hexception = createScene({ activateInputSurface: activateHexInput });
+    sceneManager.addScene(SceneName.WorldMap, worldMap);
+    sceneManager.addScene(SceneName.Hexception, hexception);
+
+    sceneManager.switchScene(SceneName.WorldMap);
+    sceneManager.switchScene(SceneName.Hexception);
+    fadeOuts[0].resolve(false);
+    await flushTransitionWork();
+
+    expect(worldMapIsSubscribed).toBe(false);
+    expect(worldMap.onSwitchOff).toHaveBeenCalledOnce();
+    expect(worldMap.onSwitchOff).toHaveBeenCalledWith(SceneName.Hexception);
+    expect(sceneManager.getCurrentScene()).toBeUndefined();
+    expect(transitionManager.fadeIn).not.toHaveBeenCalled();
+    expect(transitionManager.fadeOut).toHaveBeenCalledTimes(2);
+    expect(hexception.setup).toHaveBeenCalledOnce();
+
+    await completeFade(fadeOuts[1]);
+
+    expect(sceneManager.getCurrentScene()).toBe(SceneName.Hexception);
+    expect(activateHexInput).toHaveBeenCalledOnce();
   });
 
   it("activates input on reveal and deactivates it when the next transition begins", async () => {

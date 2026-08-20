@@ -109,11 +109,24 @@ export class SceneManager {
 
     try {
       const [fadeOutCompleted, setupResult] = await Promise.all([fadeOutCompletion, sceneSetupCompletion]);
-      if (!fadeOutCompleted || !this.transitionManager.isActive()) return;
+      if (!fadeOutCompleted) {
+        if (this.transitionManager.isActive()) {
+          this.switchOffUnownedScene(scene, this.pendingSceneName ?? previousSceneName);
+          this.finishCanceledTransition();
+        }
+        return;
+      }
+      // Renderer teardown destroys scenes before it deactivates transitions.
+      // Do not run reusable-scene lifecycle hooks after that destruction boundary.
+      if (!this.transitionManager.isActive()) return;
       shouldFinalize = true;
 
-      if (this.getTransitionFinalizePlan(transitionToken).isSuperseded) return;
+      if (this.getTransitionFinalizePlan(transitionToken).isSuperseded) {
+        this.switchOffUnownedScene(scene, this.pendingSceneName ?? previousSceneName);
+        return;
+      }
       if (!setupResult.succeeded) {
+        this.switchOffUnownedScene(scene, previousSceneName);
         console.error(
           `[SceneManager] Failed to set up scene ${sceneName}: ${formatReadableErrorForConsole(setupResult.error)}`,
         );
@@ -129,6 +142,17 @@ export class SceneManager {
       if (shouldFinalize) {
         this.finalizeTransition(transitionToken, setupSucceeded, previousSceneName);
       }
+    }
+  }
+
+  private switchOffUnownedScene(scene: HexagonScene, nextSceneName: SceneName | undefined) {
+    scene.onSwitchOff(nextSceneName);
+  }
+
+  private finishCanceledTransition() {
+    this.transitionInProgress = false;
+    if (this.pendingSceneName) {
+      this.startPendingTransition();
     }
   }
 
