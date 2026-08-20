@@ -43,7 +43,7 @@ describe("worldmap terrain presentation wiring", () => {
     );
   });
 
-  it("starts the visual terrain shell before waiting for authoritative chunk preparation", () => {
+  it("owns authoritative chunk preparation before starting its observer-only terrain shell", () => {
     const performChunkSwitch = extractMethod(
       readSource("src/three/scenes/worldmap.tsx"),
       "  private async performChunkSwitch",
@@ -51,11 +51,12 @@ describe("worldmap terrain presentation wiring", () => {
     );
 
     const shellStart = performChunkSwitch.indexOf("startChunkSwitchTerrainShell");
-    const preparationStart = performChunkSwitch.indexOf("this.prepareChunkPresentation");
+    const preparationOwnerStart = performChunkSwitch.indexOf("exactTerrainPreparations.start");
 
     expect(shellStart).toBeGreaterThanOrEqual(0);
-    expect(preparationStart).toBeGreaterThanOrEqual(0);
-    expect(shellStart).toBeLessThan(preparationStart);
+    expect(preparationOwnerStart).toBeGreaterThanOrEqual(0);
+    expect(preparationOwnerStart).toBeLessThan(shellStart);
+    expect(performChunkSwitch).toContain("await exactTerrainPreparation.promise");
   });
 
   it("keeps provisional shells visual-only without advancing chunk authority or managers", () => {
@@ -67,6 +68,14 @@ describe("worldmap terrain presentation wiring", () => {
 
     expect(shellMethod).toContain("terrain_shell_started");
     expect(shellMethod).toContain("terrain_shell_committed");
+    expect(shellMethod).toContain("exactTerrainPreparations.waitForExact");
+    expect(shellMethod).toContain("WORLDMAP_EXACT_TERRAIN_JOIN_BUDGET_MS");
+    expect(shellMethod.indexOf('exactJoin.status === "exact_ready"')).toBeLessThan(
+      shellMethod.indexOf("createPreparedTerrainChunkFromCache"),
+    );
+    expect(shellMethod.indexOf('exactJoin.status === "exact_ready"')).toBeLessThan(
+      shellMethod.indexOf("await this.prepareTerrainChunk"),
+    );
     expect(shellMethod).toContain("applyWorldmapVisualTerrainPage");
     expect(shellMethod).not.toContain("commitCurrentChunkAuthority");
     expect(shellMethod).not.toContain("updateManagersForChunk");
@@ -83,6 +92,16 @@ describe("worldmap terrain presentation wiring", () => {
     expect(shellWorker).toContain("try {");
     expect(shellWorker).toContain("catch (error)");
     expect(shellWorker).toContain("Failed to build chunk switch terrain shell");
+  });
+
+  it("releases exact preparation ownership when the worldmap switches off", () => {
+    const switchOffInvalidation = extractMethod(
+      readSource("src/three/scenes/worldmap.tsx"),
+      "  private invalidateWorldmapSwitchOffTransitions",
+      "  private clearWorldmapLoadingStateForSwitchOff",
+    );
+
+    expect(switchOffInvalidation).toContain("exactTerrainPreparations.clear()");
   });
 
   it("routes exact terrain commits through visual page replacement", () => {

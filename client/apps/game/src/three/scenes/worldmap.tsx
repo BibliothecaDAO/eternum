@@ -187,6 +187,10 @@ import {
   scheduleWorldmapPostCommitManagerCatchUpDrain,
 } from "./worldmap-post-commit-manager-catchup-runtime";
 import { prepareWorldmapChunkRuntime } from "./worldmap-chunk-preparation-runtime";
+import {
+  WorldmapExactTerrainPreparationRuntime,
+  type WorldmapExactTerrainPreparation,
+} from "./worldmap-exact-terrain-preparation-runtime";
 import { handleWorldmapChunkFinalizeResult } from "./worldmap-chunk-finalize-runtime";
 import { prepareWorldmapChunkSwitchRuntime } from "./worldmap-chunk-switch-runtime";
 import { catchUpCommittedWorldmapChunkManagers } from "./worldmap-committed-chunk-manager-catchup";
@@ -416,6 +420,8 @@ interface PreparedTerrainChunk {
   biomeEntries: Map<string, CachedMatrixEntry>;
 }
 
+type PreparedWorldmapChunkRuntime = Awaited<ReturnType<typeof prepareWorldmapChunkRuntime<PreparedTerrainChunk>>>;
+
 interface WorldmapLocalBounds {
   minCol: number;
   maxCol: number;
@@ -530,6 +536,9 @@ const MIN_TRAVEL_EFFECT_VISIBLE_MS = 600;
 const MAX_TRAVEL_EFFECT_LIFETIME_MS = 90_000;
 const SHORTCUT_NAVIGATION_DURATION_SECONDS = 0;
 const WORLDMAP_CHUNK_PHASE_TIMEOUT_MS = env.VITE_PUBLIC_WORLDMAP_CHUNK_PHASE_TIMEOUT_MS;
+// Give an exact preparation that is already finishing one render opportunity
+// without adding visible latency before the terrain shell fallback starts.
+const WORLDMAP_EXACT_TERRAIN_JOIN_BUDGET_MS = 16;
 const WORLDMAP_CHUNK_RECOVERY_COOLDOWN_MS = 2_000;
 // Hard timeout wrapping the entire chunk transition (phase timeouts + post-phase work).
 // Catches cases where post-phase awaits (e.g. manager catch-up, finalize rollback)
@@ -606,6 +615,8 @@ export default class WorldmapScene extends WarpTravel {
   private readonly postCommitManagerCatchUpBudgetBytes = 256 * 1024;
   private directionalPresentationChunkKeys: Set<string> = new Set();
   private activeDirectionalPresentationPrewarms: Set<string> = new Set();
+  private readonly exactTerrainPreparations =
+    new WorldmapExactTerrainPreparationRuntime<PreparedWorldmapChunkRuntime>();
   private visualTerrainPresentationState: WorldmapTerrainPresentationState = createWorldmapTerrainPresentationState();
   private visualTerrainRetentionTimeout: number | null = null;
   private visualTerrainGeneration = 0;
@@ -3991,6 +4002,7 @@ export default class WorldmapScene extends WarpTravel {
       globalChunkSwitchPromise: this.globalChunkSwitchPromise,
     });
     this.chunkTransitionToken = switchOffTransitionState.chunkTransitionToken;
+    this.exactTerrainPreparations.clear();
     this.isChunkTransitioning = switchOffTransitionState.isChunkTransitioning;
     this.globalChunkSwitchPromise = switchOffTransitionState.globalChunkSwitchPromise;
   }
@@ -5247,6 +5259,16 @@ export default class WorldmapScene extends WarpTravel {
   }
 
   private async prepareAndApplyChunkSwitchTerrainShell(input: WorldmapChunkSwitchTerrainShellInput): Promise<void> {
+    const exactJoin = await this.exactTerrainPreparations.waitForExact({
+      chunkKey: input.chunkKey,
+      transitionToken: input.transitionToken,
+      timeoutMs: WORLDMAP_EXACT_TERRAIN_JOIN_BUDGET_MS,
+      isExactReady: (result) => result.projectionSyncSucceeded && result.preparedTerrain !== null,
+    });
+    if (exactJoin.status === "exact_ready" || !this.isCurrentChunkSwitchTerrainShell(input)) {
+      return;
+    }
+
     const cachedTerrain = this.createPreparedTerrainChunkFromCache(input.startRow, input.startCol);
     const preparedTerrain =
       cachedTerrain ??
@@ -5260,6 +5282,10 @@ export default class WorldmapScene extends WarpTravel {
     await this.schedulePreparedTerrainCommit("critical", preparedTerrain, () =>
       this.applyChunkSwitchTerrainShell(input, preparedTerrain, kind),
     );
+  }
+
+  private isCurrentChunkSwitchTerrainShell(input: WorldmapChunkSwitchTerrainShellInput): boolean {
+    return !this.isSwitchedOff && input.transitionToken === this.chunkTransitionToken;
   }
 
   private applyChunkSwitchTerrainShell(
@@ -6971,6 +6997,7 @@ export default class WorldmapScene extends WarpTravel {
 
     if (decision.shouldInvalidateTimedOutTransition) {
       this.chunkTransitionToken = decision.recoveryTransitionToken;
+      this.exactTerrainPreparations.releaseSuperseded(decision.recoveryTransitionToken);
     }
 
     return decision;
@@ -7008,6 +7035,12 @@ export default class WorldmapScene extends WarpTravel {
       phase: info.phase,
       timeoutMs: info.timeoutMs,
     });
+  }
+
+  private claimNextChunkTransitionToken(): number {
+    const transitionToken = ++this.chunkTransitionToken;
+    this.exactTerrainPreparations.releaseSuperseded(transitionToken);
+    return transitionToken;
   }
 
   private addWorldUpdateSubscription(unsub: unknown) {
@@ -7782,7 +7815,7 @@ export default class WorldmapScene extends WarpTravel {
         if (chunkKey === null || startCol === null || startRow === null) {
           return false;
         }
-        const transitionToken = ++this.chunkTransitionToken;
+        const transitionToken = this.claimNextChunkTransitionToken();
         const switchStartedAt = performance.now();
         recordChunkDiagnosticsEvent(this.chunkDiagnostics, "transition_started");
         this.state.setLoading(LoadingStateKey.ChunkTransition, true);
@@ -7821,7 +7854,7 @@ export default class WorldmapScene extends WarpTravel {
         if (chunkKey === null || startCol === null || startRow === null) {
           return false;
         }
-        const transitionToken = ++this.chunkTransitionToken;
+        const transitionToken = this.claimNextChunkTransitionToken();
         const liveEntityActions = getLiveWorldmapEntityActions();
         this.actionPathsTransitionToken = resolveEntityActionPathsTransitionTokenForForcedRefresh({
           selectedEntityId: liveEntityActions.selectedEntityId,
@@ -7928,6 +7961,7 @@ export default class WorldmapScene extends WarpTravel {
     switchPosition?: Vector3,
   ) {
     const chunkSwitchStartedAt = performance.now();
+    let exactTerrainPreparation: WorldmapExactTerrainPreparation<PreparedWorldmapChunkRuntime> | null = null;
     // Track memory usage during chunk switch
     const memoryMonitor = (window as { __gameRenderer?: { memoryMonitor?: MemoryMonitor } }).__gameRenderer
       ?.memoryMonitor;
@@ -7995,6 +8029,18 @@ export default class WorldmapScene extends WarpTravel {
           : null,
       });
 
+      exactTerrainPreparation = this.exactTerrainPreparations.start({
+        chunkKey,
+        transitionToken,
+        prepare: () =>
+          this.prepareChunkPresentation({
+            chunkKey,
+            startCol,
+            startRow,
+            surroundingChunks,
+          }),
+      });
+
       this.startChunkSwitchTerrainShell({
         chunkKey,
         startCol,
@@ -8002,12 +8048,7 @@ export default class WorldmapScene extends WarpTravel {
         transitionToken,
       });
 
-      const { projectionSyncSucceeded, preparedTerrain, presentationRuntime } = await this.prepareChunkPresentation({
-        chunkKey,
-        startCol,
-        startRow,
-        surroundingChunks,
-      });
+      const { projectionSyncSucceeded, preparedTerrain, presentationRuntime } = await exactTerrainPreparation.promise;
 
       this.recordPreparedTerrainReady(chunkSwitchStartedAt, {
         projectionSyncSucceeded,
@@ -8116,6 +8157,9 @@ export default class WorldmapScene extends WarpTravel {
       }
       return true;
     } finally {
+      if (exactTerrainPreparation) {
+        this.exactTerrainPreparations.release(exactTerrainPreparation);
+      }
       recordWorldmapRenderDuration("performChunkSwitch", performance.now() - chunkSwitchStartedAt);
     }
   }

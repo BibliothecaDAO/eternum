@@ -35,6 +35,14 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-08-20",
+    title: "Smoother Terrain Travel",
+    description:
+      "Map travel now reuses terrain already being prepared before drawing a temporary fallback, reducing late terrain swaps during fast pans.",
+    type: "improvement",
+    gameSlug: "world",
+  },
+  {
+    date: "2026-08-20",
     title: "Faster Map Travel",
     description:
       "Map travel now updates only the armies and structures entering or leaving view, instead of rebuilding everything already on screen.",
