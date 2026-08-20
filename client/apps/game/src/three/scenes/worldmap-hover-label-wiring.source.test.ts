@@ -70,20 +70,20 @@ describe("worldmap hover label wiring", () => {
     expect(attachWorldmapManagerLabels).not.toContain("showLabels()");
   });
 
-  it("reconciles current hover after initial chunk refresh hydrates managers", () => {
+  it("reconciles current hover after initial chunk refresh convergence", () => {
     const source = readWorldmapSource();
-    const refreshWarpTravelScene = extractSourceBetween(
+    const convergenceOwner = extractSourceBetween(
       source,
-      "private async refreshWarpTravelScene()",
-      "private commitCurrentChunkAuthority(",
+      "private announceWorldmapConverged(",
+      "private prepareWarpTravelInitialSetup()",
     );
 
-    const refreshPos = refreshWarpTravelScene.indexOf("await completeWorldmapInteractiveRefresh({");
-    const reconcilePos = refreshWarpTravelScene.indexOf('this.reconcileHoverLabels("initial_refresh")');
+    const convergencePos = convergenceOwner.indexOf("markWorldmapConverged(bootToken)");
+    const reconcilePos = convergenceOwner.indexOf('this.reconcileHoverLabels("initial_refresh")');
 
-    expect(refreshPos).toBeGreaterThan(-1);
+    expect(convergencePos).toBeGreaterThan(-1);
     expect(reconcilePos).toBeGreaterThan(-1);
-    expect(reconcilePos).toBeGreaterThan(refreshPos);
+    expect(reconcilePos).toBeGreaterThan(convergencePos);
   });
 
   it("routes hover reconciliation through pending recovery state", () => {
@@ -103,7 +103,7 @@ describe("worldmap hover label wiring", () => {
     const source = readWorldmapSource();
 
     expect(
-      extractSourceBetween(source, "private announceWorldmapSceneReady()", "private prepareWarpTravelInitialSetup()"),
+      extractSourceBetween(source, "private announceWorldmapSceneReady(", "private announceWorldmapConverged("),
     ).toContain("this.retryPendingHoverLabelRecovery");
     expect(
       extractSourceBetween(

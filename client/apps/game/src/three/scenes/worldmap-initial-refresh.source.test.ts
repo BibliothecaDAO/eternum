@@ -11,7 +11,8 @@ describe("Worldmap interactive refresh", () => {
   it("joins active transitions and delegates phase-aware retry and failure handling", () => {
     const source = readSource("src/three/scenes/worldmap.tsx");
 
-    expect(source).toContain("await completeWorldmapInteractiveRefresh({");
+    expect(source).toContain("commitCriticalPass: () => this.commitCriticalWorldmapPass(phase)");
+    expect(source).toContain("return completeWorldmapInteractiveRefresh({");
     expect(source).toContain('const phase: WorldmapWarpTravelPhase = this.hasInitialized ? "resume" : "initial";');
     expect(source).toMatch(
       /private async refreshVisibleChunksForWarpTravel\(phase: WorldmapWarpTravelPhase\): Promise<boolean> \{[\s\S]*waitForChunkTransitionToSettle/,

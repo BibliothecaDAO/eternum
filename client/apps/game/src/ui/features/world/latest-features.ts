@@ -35,6 +35,14 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-08-20",
+    title: "Faster World Entry",
+    description:
+      "The entry screen now clears as soon as the critical map terrain and entities are ready, while remaining map detail continues loading in the background.",
+    type: "improvement",
+    gameSlug: "world",
+  },
+  {
+    date: "2026-08-20",
     title: "Smoother Terrain Travel",
     description:
       "Map travel now reuses terrain already being prepared before drawing a temporary fallback, reducing late terrain swaps during fast pans.",

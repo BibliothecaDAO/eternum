@@ -27,9 +27,11 @@ describe("GameLoadingOverlay source", () => {
     const source = readSource("src/ui/layouts/game-loading-overlay.tsx");
 
     expect(source).toContain("readiness.worldmapReady");
+    expect(source).toContain("readiness.worldmapConverged");
     expect(source).toContain("buildPlayHref");
     expect(source).toContain('markGameEntryMilestone("renderer-scene-ready")');
     expect(source).toContain('markGameEntryMilestone("overlay-dismissed")');
     expect(source).toContain('markGameEntryMilestone("world-interactive")');
+    expect(source).not.toContain('markGameEntryMilestone("worldmap-fetch-completed")');
   });
 });

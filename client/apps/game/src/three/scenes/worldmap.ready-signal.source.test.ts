@@ -8,14 +8,22 @@ import { describe, expect, it } from "vitest";
 const readSource = (relativePath: string) => readFileSync(resolve(process.cwd(), relativePath), "utf8");
 
 describe("Worldmap ready signal", () => {
-  it("publishes readiness through the route-owned store after setup completes", () => {
+  it("publishes critical readiness through a token-owned entry pass", () => {
     const source = readSource("src/three/scenes/worldmap.tsx");
 
     expect(source).toContain("markWorldmapReady");
-    expect(source).toContain("onInitialSetupComplete");
-    expect(source).toContain("onResumeComplete");
+    expect(source).toContain("completeWorldmapEntryReadiness");
+    expect(source).toContain("const bootToken = getCurrentPlayRouteBootToken();");
+    expect(source).not.toContain("onInitialSetupComplete: () => this.announceWorldmapSceneReady");
+    expect(source).not.toContain("onResumeComplete: () => this.announceWorldmapSceneReady");
     expect(source).not.toContain("WORLDMAP_SCENE_READY_EVENT");
-    expect(source).toContain("onInitialSetupComplete: () => this.announceWorldmapSceneReady()");
+  });
+
+  it("records ambient convergence separately from critical readiness", () => {
+    const source = readSource("src/three/scenes/worldmap.tsx");
+
+    expect(source).toContain("markWorldmapConverged");
+    expect(source).toContain('markGameEntryMilestone("worldmap-fetch-completed")');
   });
 
   it("does not defer readiness behind speculative pipeline or cosmetic work", () => {

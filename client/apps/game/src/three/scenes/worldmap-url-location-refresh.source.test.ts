@@ -13,7 +13,7 @@ describe("Worldmap URL-location refresh wiring", () => {
     const methodStart = source.indexOf("public moveCameraToURLLocation(");
     const alignStart = source.indexOf("private alignInitialWorldmapCameraView()");
     const lifecycleStart = source.indexOf("protected getWarpTravelLifecycleAdapter()");
-    const lifecycleEnd = source.indexOf("private announceWorldmapSceneReady()", lifecycleStart);
+    const lifecycleEnd = source.indexOf("private announceWorldmapSceneReady(", lifecycleStart);
 
     expect(methodStart).toBeGreaterThanOrEqual(0);
     expect(alignStart).toBeGreaterThan(methodStart);

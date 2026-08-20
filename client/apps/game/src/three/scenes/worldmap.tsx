@@ -63,6 +63,7 @@ import { FELT_CENTER, IS_FLAT_MODE } from "@/ui/config";
 import { ChestModal, HelpModal } from "@/ui/features/military";
 import { QuickAttackPreview } from "@/ui/features/military/battle/quick-attack-preview";
 import { SpireTravelModal } from "@/ui/features/world/components/actions/spire-travel-modal";
+import { markGameEntryMilestone } from "@/ui/layouts/game-entry-timeline";
 import { SetupResult } from "@bibliothecadao/dojo";
 import {
   ActionPath,
@@ -344,6 +345,7 @@ import { finalizeWarpTravelChunkSwitch } from "./warp-travel-chunk-switch-commit
 import { resolveSameChunkRefreshCommit } from "./worldmap-same-chunk-refresh-commit";
 import { runWarpTravelManagerFanout } from "./warp-travel-manager-fanout";
 import { WarpTravel, type WarpTravelLifecycleAdapter } from "./warp-travel";
+import { completeWorldmapEntryReadiness } from "./worldmap-entry-readiness";
 import { completeWorldmapInteractiveRefresh, type WorldmapWarpTravelPhase } from "./worldmap-warp-travel-refresh";
 import { resolveWorldmapChunkHysteresis } from "./worldmap-chunk-hysteresis-policy";
 import {
@@ -3781,8 +3783,6 @@ export default class WorldmapScene extends WarpTravel {
       },
       setupCameraZoomHandler: () => this.setupCameraZoomHandler(),
       refreshScene: () => this.refreshWarpTravelScene(),
-      onInitialSetupComplete: () => this.announceWorldmapSceneReady(),
-      onResumeComplete: () => this.announceWorldmapSceneReady(),
       reportSetupError: (error, phase) => this.reportWarpTravelRefreshError(error, phase),
       disposeStoreSubscriptions: () => this.disposeStoreSubscriptions(),
       onAfterDisposeSubscriptions: () => this.disposeWorldUpdateSubscriptions(),
@@ -3791,9 +3791,18 @@ export default class WorldmapScene extends WarpTravel {
     };
   }
 
-  private announceWorldmapSceneReady(): void {
-    usePlayRouteReadinessStore.getState().markWorldmapReady(getCurrentPlayRouteBootToken());
+  private announceWorldmapSceneReady(bootToken: number): void {
+    usePlayRouteReadinessStore.getState().markWorldmapReady(bootToken);
     this.retryPendingHoverLabelRecovery("scene_ready");
+  }
+
+  private announceWorldmapConverged(bootToken: number, phase: WorldmapWarpTravelPhase): void {
+    usePlayRouteReadinessStore.getState().markWorldmapConverged(bootToken);
+    markGameEntryMilestone("worldmap-fetch-completed");
+    if (phase === "initial") {
+      this.skipNextUrlRefreshAfterInitialConvergence = true;
+    }
+    this.reconcileHoverLabels("initial_refresh");
   }
 
   private prepareWarpTravelInitialSetup(): void {
@@ -3826,17 +3835,24 @@ export default class WorldmapScene extends WarpTravel {
 
   private async refreshWarpTravelScene(): Promise<void> {
     const phase: WorldmapWarpTravelPhase = this.hasInitialized ? "resume" : "initial";
-    await completeWorldmapInteractiveRefresh({
+    const bootToken = getCurrentPlayRouteBootToken();
+
+    await completeWorldmapEntryReadiness({
+      bootToken,
+      commitCriticalPass: () => this.commitCriticalWorldmapPass(phase),
+      isCurrentBootToken: (candidateToken) => candidateToken === getCurrentPlayRouteBootToken(),
+      markCriticalPassReady: (currentBootToken) => this.announceWorldmapSceneReady(currentBootToken),
+      markWorldmapConverged: (currentBootToken) => this.announceWorldmapConverged(currentBootToken, phase),
+      phase,
+      waitForAmbientConvergence: () => this.awaitInitialTerrainConvergence(),
+    });
+  }
+
+  private commitCriticalWorldmapPass(phase: WorldmapWarpTravelPhase): Promise<void> {
+    return completeWorldmapInteractiveRefresh({
       phase,
       refresh: () => this.refreshVisibleChunksForWarpTravel(phase),
     });
-
-    if (phase === "initial") {
-      await this.awaitInitialTerrainConvergence();
-      this.skipNextUrlRefreshAfterInitialConvergence = true;
-    }
-
-    this.reconcileHoverLabels("initial_refresh");
   }
 
   private async refreshVisibleChunksForWarpTravel(phase: WorldmapWarpTravelPhase): Promise<boolean> {
