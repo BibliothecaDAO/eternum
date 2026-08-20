@@ -27,6 +27,20 @@ interface ReconcileBuildingUpdateInput<TBuilding extends PositionedBuilding> {
   update: BuildingUpdateIdentity;
 }
 
+interface RunOwnedBuildingWorkAfterModelsLoadInput {
+  apply(): void;
+  isOwned(): boolean;
+  modelLoadPromises: readonly Promise<unknown>[];
+}
+
+export async function runOwnedBuildingWorkAfterModelsLoad(
+  input: RunOwnedBuildingWorkAfterModelsLoadInput,
+): Promise<void> {
+  await Promise.all(input.modelLoadPromises);
+  if (!input.isOwned()) return;
+  input.apply();
+}
+
 export function reconcileBuildingUpdate<TBuilding extends PositionedBuilding>(
   input: ReconcileBuildingUpdateInput<TBuilding>,
 ): void {

@@ -5,11 +5,24 @@ const source = readFileSync(new URL("./hexception.tsx", import.meta.url), "utf8"
 
 describe("HexceptionScene building reconciliation wiring", () => {
   it("routes subscribed building updates through the targeted reconciler", () => {
-    expect(source).toContain("(update: BuildingSystemUpdate) => this.handleBuildingUpdate(update)");
-    expect(source).toContain(
-      "applyTargeted: (reconciliation) => this.applyTargetedBuildingReconciliation(reconciliation)",
-    );
+    expect(source).toContain("(update: BuildingSystemUpdate) => this.handleBuildingUpdate(update, realmGeneration)");
+    expect(source).toContain("this.applyTargetedBuildingReconciliation(reconciliation, realmGeneration)");
     expect(source).toContain("applyFullFallback: () => this.updateHexceptionGrid(this.hexceptionRadius)");
+  });
+
+  it("owns delayed building work by the active realm generation", () => {
+    const targetedStart = source.indexOf("private applyTargetedBuildingReconciliation");
+    const targetedEnd = source.indexOf("private advanceRealmGeneration", targetedStart);
+    const targetedSource = source.slice(targetedStart, targetedEnd);
+    const gridStart = source.indexOf("updateHexceptionGrid(radius: number)");
+    const gridEnd = source.indexOf("private reconcileAllBuildingInstances", gridStart);
+    const gridSource = source.slice(gridStart, gridEnd);
+
+    expect(source).toContain("const realmGeneration = this.advanceRealmGeneration()");
+    expect(source.match(/this\.advanceRealmGeneration\(\)/g)).toHaveLength(2);
+    expect(targetedSource).toContain("isOwned: () => this.ownsRealmGeneration(realmGeneration)");
+    expect(targetedSource).toContain("this.updateBuildingHighlight(reconciliation.position, Boolean(latestBuilding))");
+    expect(gridSource).toContain("isOwned: () => this.ownsRealmGeneration(realmGeneration)");
   });
 
   it("keeps buildable terrain independent of occupancy in clean grid builds", () => {

@@ -35,6 +35,7 @@ import {
   buildingKey,
   reconcileBuildingUpdate,
   resolveBuildingInstanceAction,
+  runOwnedBuildingWorkAfterModelsLoad,
   type TargetedBuildingReconciliation,
 } from "@/three/scenes/hexception-building-reconciliation";
 import { playBuildingSound } from "@/three/sound/utils";
@@ -205,6 +206,7 @@ export default class HexceptionScene extends HexagonScene {
   private buildingUpdateUnsubscribe: (() => void) | null = null;
   private isInitialized = false;
   private lastRealmKey?: string;
+  private activeRealmGeneration = 0;
   // Store Zustand unsubscribe functions to clean up on destroy
   private storeUnsubscribes: (() => void)[] = [];
   private readonly localZoomPersistDebounceMs = 500;
@@ -604,6 +606,7 @@ export default class HexceptionScene extends HexagonScene {
     }
 
     if (realmChanged) {
+      const realmGeneration = this.advanceRealmGeneration();
       this.centerColRow = [contractPosition.col, contractPosition.row];
       this.tileManager.setTile({ col, row });
 
@@ -631,7 +634,7 @@ export default class HexceptionScene extends HexagonScene {
       // subscribe to building updates (create and destroy)
       this.buildingUpdateUnsubscribe = this.worldUpdateListener.Buildings.onBuildingUpdate(
         { col: this.centerColRow[0], row: this.centerColRow[1] },
-        (update: BuildingSystemUpdate) => this.handleBuildingUpdate(update),
+        (update: BuildingSystemUpdate) => this.handleBuildingUpdate(update, realmGeneration),
       );
 
       this.removeCastleFromScene();
@@ -686,6 +689,7 @@ export default class HexceptionScene extends HexagonScene {
   }
 
   destroy() {
+    this.advanceRealmGeneration();
     this.clearHoverLabel();
     this.hoverLabelManager.dispose();
 
@@ -1076,14 +1080,16 @@ export default class HexceptionScene extends HexagonScene {
     }
   }
 
-  private handleBuildingUpdate(update: BuildingSystemUpdate): void {
+  private handleBuildingUpdate(update: BuildingSystemUpdate, realmGeneration: number): void {
+    if (!this.ownsRealmGeneration(realmGeneration)) return;
+
     if (update.buildingType !== BuildingType.None) {
       playBuildingSound(update.buildingType);
     }
 
     reconcileBuildingUpdate({
       applyFullFallback: () => this.updateHexceptionGrid(this.hexceptionRadius),
-      applyTargeted: (reconciliation) => this.applyTargetedBuildingReconciliation(reconciliation),
+      applyTargeted: (reconciliation) => this.applyTargetedBuildingReconciliation(reconciliation, realmGeneration),
       buildings: this.buildings,
       reportMissingIdentity: () => {
         console.warn("[Hexception] Building update lacked inner coordinates; running full grid reconciliation.");
@@ -1095,17 +1101,32 @@ export default class HexceptionScene extends HexagonScene {
 
   private applyTargetedBuildingReconciliation(
     reconciliation: TargetedBuildingReconciliation<HexceptionBuilding>,
+    realmGeneration: number,
   ): void {
+    if (!this.ownsRealmGeneration(realmGeneration)) return;
+
     this.buildings = reconciliation.buildings;
-    this.updateBuildingHighlight(reconciliation.position, Boolean(reconciliation.nextBuilding));
 
     const key = buildingKey(reconciliation.position);
-    void Promise.all(this.modelLoadPromises).then(() =>
-      runWithFrameWorkOwner("scene:hexception:building", () => {
-        const latestBuilding = this.buildings.find((building) => buildingKey(building) === key);
-        this.reconcileBuildingInstance(reconciliation.position, latestBuilding, this.tileManager.structureType());
-      }),
-    );
+    void runOwnedBuildingWorkAfterModelsLoad({
+      apply: () =>
+        runWithFrameWorkOwner("scene:hexception:building", () => {
+          const latestBuilding = this.buildings.find((building) => buildingKey(building) === key);
+          this.updateBuildingHighlight(reconciliation.position, Boolean(latestBuilding));
+          this.reconcileBuildingInstance(reconciliation.position, latestBuilding, this.tileManager.structureType());
+        }),
+      isOwned: () => this.ownsRealmGeneration(realmGeneration),
+      modelLoadPromises: this.modelLoadPromises,
+    });
+  }
+
+  private advanceRealmGeneration(): number {
+    this.activeRealmGeneration += 1;
+    return this.activeRealmGeneration;
+  }
+
+  private ownsRealmGeneration(realmGeneration: number): boolean {
+    return realmGeneration === this.activeRealmGeneration;
   }
 
   private resolveBuildingFromRecs(position: HexPosition): HexceptionBuilding | undefined {
@@ -1160,6 +1181,7 @@ export default class HexceptionScene extends HexagonScene {
   }
 
   updateHexceptionGrid(radius: number) {
+    const realmGeneration = this.activeRealmGeneration;
     const dummy = new Object3D();
     const mainStructureType = this.tileManager.structureType();
     this.updateCastleLevel();
@@ -1190,74 +1212,83 @@ export default class HexceptionScene extends HexagonScene {
 
     // The whole grid build runs as one macrotask once models resolve; the
     // frame-owner marker is what attributes the local-view freeze to it.
-    Promise.all(this.modelLoadPromises).then(() =>
-      runWithFrameWorkOwner("scene:hexception:grid", () => {
-        const centers = [
-          [0, 0], //0, 0 (Main hex)
-          [-6, 5], //-1, 1
-          [7, 4], //1, 0
-          [1, 9], //0, 1
-          [-7, -4], //-1, 0
-          [0, -9], //0, -1
-          [7, -5], //1, -1
-        ];
-        const neighbors = getNeighborHexes(this.centerColRow[0], this.centerColRow[1]);
-        this.highlights = [];
+    void runOwnedBuildingWorkAfterModelsLoad({
+      apply: () =>
+        runWithFrameWorkOwner("scene:hexception:grid", () => {
+          const centers = [
+            [0, 0], //0, 0 (Main hex)
+            [-6, 5], //-1, 1
+            [7, 4], //1, 0
+            [1, 9], //0, 1
+            [-7, -4], //-1, 0
+            [0, -9], //0, -1
+            [7, -5], //1, -1
+          ];
+          const neighbors = getNeighborHexes(this.centerColRow[0], this.centerColRow[1]);
+          this.highlights = [];
 
-        // compute matrices to update biome models for each of the large hexes
-        for (const center in centers) {
-          const isMainHex = centers[center][0] === 0 && centers[center][1] === 0;
-          if (isMainHex) {
-            this.computeMainHexMatrices(radius, dummy, centers[center], this.tileManager.getHexCoords(), biomeHexes);
-          } else {
-            this.computeNeighborHexMatrices(radius, dummy, centers[center], neighbors[Number(center) - 1], biomeHexes);
+          // compute matrices to update biome models for each of the large hexes
+          for (const center in centers) {
+            const isMainHex = centers[center][0] === 0 && centers[center][1] === 0;
+            if (isMainHex) {
+              this.computeMainHexMatrices(radius, dummy, centers[center], this.tileManager.getHexCoords(), biomeHexes);
+            } else {
+              this.computeNeighborHexMatrices(
+                radius,
+                dummy,
+                centers[center],
+                neighbors[Number(center) - 1],
+                biomeHexes,
+              );
+            }
           }
-        }
 
-        this.reconcileAllBuildingInstances(mainStructureType);
+          this.reconcileAllBuildingInstances(mainStructureType);
 
-        // update neighbor hexes around the center hex
-        let pillarOffset = 0;
-        for (const [biome, matrices] of Object.entries(biomeHexes)) {
-          const hexMesh = this.biomeModels.get(biome as any)!;
-          matrices.forEach((matrix, index) => {
-            hexMesh.setMatrixAt(index, matrix);
-            this.pillars!.setMatrixAt(index + pillarOffset, matrix);
-            // Use base biome type for color lookup (remove 'Alt' suffix if present)
-            const baseBiome = biome.endsWith("Alt") ? biome.slice(0, -3) : biome;
-            this.pillars!.setColorAt(index + pillarOffset, BIOME_COLORS[baseBiome as BiomeType]);
-          });
-          pillarOffset += matrices.length;
-          this.pillars!.position.y = -0.01;
-          this.pillars!.count = pillarOffset;
-          this.pillars!.computeBoundingSphere();
-          hexMesh.setCount(matrices.length);
-        }
-        markInstancedAttributeRangeDirty(this.pillars!.instanceMatrix, 0, this.pillars!.count);
-        if (this.pillars!.instanceColor) {
-          markInstancedAttributeRangeDirty(this.pillars!.instanceColor, 0, this.pillars!.count);
-        }
-        this.interactiveHexManager.renderAllHexes();
+          // update neighbor hexes around the center hex
+          let pillarOffset = 0;
+          for (const [biome, matrices] of Object.entries(biomeHexes)) {
+            const hexMesh = this.biomeModels.get(biome as any)!;
+            matrices.forEach((matrix, index) => {
+              hexMesh.setMatrixAt(index, matrix);
+              this.pillars!.setMatrixAt(index + pillarOffset, matrix);
+              // Use base biome type for color lookup (remove 'Alt' suffix if present)
+              const baseBiome = biome.endsWith("Alt") ? biome.slice(0, -3) : biome;
+              this.pillars!.setColorAt(index + pillarOffset, BIOME_COLORS[baseBiome as BiomeType]);
+            });
+            pillarOffset += matrices.length;
+            this.pillars!.position.y = -0.01;
+            this.pillars!.count = pillarOffset;
+            this.pillars!.computeBoundingSphere();
+            hexMesh.setCount(matrices.length);
+          }
+          markInstancedAttributeRangeDirty(this.pillars!.instanceMatrix, 0, this.pillars!.count);
+          if (this.pillars!.instanceColor) {
+            markInstancedAttributeRangeDirty(this.pillars!.instanceColor, 0, this.pillars!.count);
+          }
+          this.interactiveHexManager.renderAllHexes();
 
-        // CRITICAL: Release all matrices back to the pool to prevent memory leaks
-        const matrixPool = MatrixPool.getInstance();
-        let totalMatricesReleased = 0;
-        for (const [biome, matrices] of Object.entries(biomeHexes)) {
-          matrixPool.releaseAll(matrices);
-          totalMatricesReleased += matrices.length;
-          // Clear the array to prevent accidental reuse of released matrices
-          matrices.length = 0;
-        }
-        if (VERBOSE_LOGS_ENABLED) console.log(`🧹 Released ${totalMatricesReleased} matrices back to pool`);
+          // CRITICAL: Release all matrices back to the pool to prevent memory leaks
+          const matrixPool = MatrixPool.getInstance();
+          let totalMatricesReleased = 0;
+          for (const [biome, matrices] of Object.entries(biomeHexes)) {
+            matrixPool.releaseAll(matrices);
+            totalMatricesReleased += matrices.length;
+            // Clear the array to prevent accidental reuse of released matrices
+            matrices.length = 0;
+          }
+          if (VERBOSE_LOGS_ENABLED) console.log(`🧹 Released ${totalMatricesReleased} matrices back to pool`);
 
-        if (typeof window !== "undefined") {
-          usePlayRouteReadinessStore.getState().markHexReady(getCurrentPlayRouteBootToken(), {
-            col: this.centerColRow[0],
-            row: this.centerColRow[1],
-          });
-        }
-      }),
-    );
+          if (typeof window !== "undefined") {
+            usePlayRouteReadinessStore.getState().markHexReady(getCurrentPlayRouteBootToken(), {
+              col: this.centerColRow[0],
+              row: this.centerColRow[1],
+            });
+          }
+        }),
+      isOwned: () => this.ownsRealmGeneration(realmGeneration),
+      modelLoadPromises: this.modelLoadPromises,
+    });
   }
 
   private reconcileAllBuildingInstances(mainStructureType: StructureType | undefined): void {

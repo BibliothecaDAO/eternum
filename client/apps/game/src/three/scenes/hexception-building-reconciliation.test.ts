@@ -3,11 +3,51 @@ import {
   buildingKey,
   reconcileBuildingUpdate,
   resolveBuildingInstanceAction,
+  runOwnedBuildingWorkAfterModelsLoad,
   type PositionedBuilding,
 } from "./hexception-building-reconciliation";
 
 interface TestBuilding extends PositionedBuilding {
   category: number;
+}
+
+interface Deferred<T> {
+  promise: Promise<T>;
+  resolve(value: T): void;
+}
+
+function createDeferred<T>(): Deferred<T> {
+  let resolve!: (value: T) => void;
+  const promise = new Promise<T>((resolvePromise) => {
+    resolve = resolvePromise;
+  });
+  return { promise, resolve };
+}
+
+function createOwnedBuildingWorkHarness() {
+  let activeRealmGeneration = 1;
+  const modelsLoaded = createDeferred<void>();
+  const apply = vi.fn();
+  const capturedRealmGeneration = activeRealmGeneration;
+  const completion = runOwnedBuildingWorkAfterModelsLoad({
+    apply,
+    isOwned: () => capturedRealmGeneration === activeRealmGeneration,
+    modelLoadPromises: [modelsLoaded.promise],
+  });
+
+  return {
+    apply,
+    completion,
+    destroyScene() {
+      activeRealmGeneration += 1;
+    },
+    finishLoadingModels() {
+      modelsLoaded.resolve();
+    },
+    switchRealm() {
+      activeRealmGeneration += 1;
+    },
+  };
 }
 
 function createHarness(initialBuildings: TestBuilding[] = []) {
@@ -140,5 +180,36 @@ describe("resolveBuildingInstanceAction", () => {
     { current: "farm:ready", expected: "keep", next: "farm:ready" },
   ] as const)("resolves $expected for the current and next render signatures", ({ current, expected, next }) => {
     expect(resolveBuildingInstanceAction(current, next)).toBe(expected);
+  });
+});
+
+describe("owned building work after model loading", () => {
+  it("applies delayed work when the originating realm still owns it", async () => {
+    const harness = createOwnedBuildingWorkHarness();
+
+    harness.finishLoadingModels();
+    await harness.completion;
+
+    expect(harness.apply).toHaveBeenCalledOnce();
+  });
+
+  it("drops delayed work after switching realms", async () => {
+    const harness = createOwnedBuildingWorkHarness();
+
+    harness.switchRealm();
+    harness.finishLoadingModels();
+    await harness.completion;
+
+    expect(harness.apply).not.toHaveBeenCalled();
+  });
+
+  it("drops delayed work after scene destruction", async () => {
+    const harness = createOwnedBuildingWorkHarness();
+
+    harness.destroyScene();
+    harness.finishLoadingModels();
+    await harness.completion;
+
+    expect(harness.apply).not.toHaveBeenCalled();
   });
 });
