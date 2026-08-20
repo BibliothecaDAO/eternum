@@ -25,8 +25,8 @@ describe("Three.js typing policy", () => {
       runtime: packageJson.dependencies?.three,
       types: packageJson.devDependencies?.["@types/three"],
     }).toEqual({
-      runtime: "^0.184.0",
-      types: "^0.184.0",
+      runtime: "^0.185.1",
+      types: "^0.185.4",
     });
   });
 
