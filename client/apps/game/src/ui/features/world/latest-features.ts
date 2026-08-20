@@ -35,6 +35,14 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-08-20",
+    title: "Faster Building Updates",
+    description:
+      "Building placements and removals now update only the affected local tile, keeping settlements responsive without rebuilding surrounding terrain.",
+    type: "improvement",
+    gameSlug: "world",
+  },
+  {
+    date: "2026-08-20",
     title: "Reliable Terrain Colors",
     description:
       "Terrain color buffers now exist from the first frame, preventing late tint updates from being missed or shared across scenes.",

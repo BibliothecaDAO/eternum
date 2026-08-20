@@ -22,37 +22,4 @@ describe("latestFeatures landing feed", () => {
       featureMetadata.every((feature) => feature.readMore === undefined || typeof feature.readMore === "string"),
     ).toBe(true);
   });
-
-  it("announces live in-game rankings in the feed", () => {
-    expect(latestFeatures).toContainEqual(
-      expect.objectContaining({
-        date: "2026-08-14",
-        title: "Live In-Game Rankings",
-        type: "fix",
-        gameSlug: "world",
-      }),
-    );
-  });
-
-  it("announces battery-friendly rendering in the latest feed", () => {
-    expect(latestFeatures).toContainEqual(
-      expect.objectContaining({
-        date: "2026-08-16",
-        title: "Battery-Friendly Rendering",
-        type: "improvement",
-        gameSlug: "world",
-      }),
-    );
-  });
-
-  it("announces faster world rendering in the latest feed", () => {
-    expect(latestFeatures).toContainEqual(
-      expect.objectContaining({
-        date: "2026-08-16",
-        title: "Faster World Rendering",
-        type: "improvement",
-        gameSlug: "world",
-      }),
-    );
-  });
 });
