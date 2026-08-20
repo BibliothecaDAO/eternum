@@ -93,6 +93,16 @@ vi.stubGlobal("GPUShaderStage", {
 const { default: GameRenderer } = await import("./game-renderer");
 
 describe("GameRenderer runtime harness", () => {
+  it("models cancellable fade-out completion", async () => {
+    const harness = createGameRendererRuntimeHarness();
+
+    const fadeOut = harness.transitionManager.fadeOut();
+    harness.transitionManager.destroy();
+
+    await expect(fadeOut).resolves.toBe(false);
+    expect(harness.transitionManager.isActive()).toBe(false);
+  });
+
   it("boots and renders the active scene through the backend", async () => {
     const harness = createGameRendererRuntimeHarness();
     const subject = Object.assign(Object.create(GameRenderer.prototype), harness.createSubject());
