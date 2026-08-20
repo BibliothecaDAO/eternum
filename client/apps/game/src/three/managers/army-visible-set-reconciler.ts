@@ -1,3 +1,5 @@
+import { createManagerVisibilityDiff } from "./manager-visibility-diff";
+
 interface ReconcileVisibleArmySetInput<TArmy extends { entityId: TEntityId }, TModelType, TEntityId> {
   desiredVisibleArmies: TArmy[];
   modelTypesByEntity: Map<TEntityId, TModelType>;
@@ -18,10 +20,12 @@ export function reconcileVisibleArmySet<TArmy extends { entityId: TEntityId }, T
   input: ReconcileVisibleArmySetInput<TArmy, TModelType, TEntityId>,
 ): void {
   const desiredOrder = input.desiredVisibleArmies.map((army) => army.entityId);
-  const desiredIds = new Set(desiredOrder);
-  const staleVisibleArmies = input.sortEntityIds(
-    input.currentVisibleOrder.filter((entityId) => !desiredIds.has(entityId)),
-  );
+  const visibilityDiff = createManagerVisibilityDiff({
+    currentVisibleIds: input.currentVisibleOrder,
+    nextVisibleEntities: input.desiredVisibleArmies,
+    getEntityId: (army) => army.entityId,
+  });
+  const staleVisibleArmies = input.sortEntityIds(visibilityDiff.leaving);
   let buffersDirty = false;
 
   staleVisibleArmies.forEach((entityId) => {
@@ -30,17 +34,15 @@ export function reconcileVisibleArmySet<TArmy extends { entityId: TEntityId }, T
     }
   });
 
-  input.desiredVisibleArmies
-    .filter((army) => input.getVisibleArmySlot(army.entityId) === undefined)
-    .forEach((army) => {
-      const modelType = input.modelTypesByEntity.get(army.entityId);
-      if (!modelType) {
-        return;
-      }
+  visibilityDiff.entering.forEach((army) => {
+    const modelType = input.modelTypesByEntity.get(army.entityId);
+    if (!modelType) {
+      return;
+    }
 
-      input.addVisibleArmy(army, modelType);
-      buffersDirty = true;
-    });
+    input.addVisibleArmy(army, modelType);
+    buffersDirty = true;
+  });
 
   if (input.forceRefresh) {
     input.desiredVisibleArmies.forEach((army) => {

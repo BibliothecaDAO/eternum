@@ -12,7 +12,7 @@ describe("structure visible pass cleanup wiring", () => {
   it("routes post-pass cleanup through a named finalizer", () => {
     const source = readStructureManagerSource();
 
-    expect(source).toMatch(/this\.finalizeVisibleStructurePass\(visibleStructureIds, attachmentRetain\)/);
+    expect(source).toMatch(/this\.finalizeVisibleStructurePass\(new Set\(visibleIds\), attachmentRetain\)/);
     expect(source).toMatch(/private finalizeVisibleStructurePass\(/);
   });
 });

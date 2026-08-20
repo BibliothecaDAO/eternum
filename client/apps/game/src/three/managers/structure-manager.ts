@@ -78,14 +78,14 @@ import {
   resolveStructureCompactEntityLabel,
   type CompactEntityLabelVariant,
 } from "./compact-entity-label-policy";
-import {
-  recordVisibleCosmeticStructureModelInstance,
-  recordVisibleStructureModelInstance,
-} from "./structure-visible-instance-binding";
 import { cleanupVisibleStructurePass } from "./structure-visible-pass-cleanup";
-import { finalizeVisibleStructureModelPass } from "./structure-visible-pass-finalizer";
 import { applyVisibleStructurePresentation } from "./structure-visible-presentation";
-import { buildVisibleStructureRenderPlan, type VisibleStructureRenderPlan } from "./structure-visible-render-plan";
+import {
+  commitManagerVisibilityDiff,
+  createManagerVisibilityDiff,
+  type ManagerVisibilityDiff,
+} from "./manager-visibility-diff";
+import { buildStructureModelPreloadPlan, type StructureModelPreloadPlan } from "./structure-model-preload-plan";
 import {
   buildStructureLabelDataKey,
   resolveStructureIncomingTroopArrivals,
@@ -133,12 +133,13 @@ interface VisibleStructurePassSnapshot {
   passFenceSnapshot: {
     version: number;
   };
+  transitionToken?: number;
 }
 
 interface StructureInstanceBinding {
-  modelIndex: number;
+  entityIdsByInstance: Map<number, ID>;
   instanceIndex: number;
-  wonderInstanceIndex?: number;
+  model: InstancedModel;
 }
 
 export class StructureManager {
@@ -154,8 +155,9 @@ export class StructureManager {
   private entityIdMaps: Map<StructureType, Map<number, ID>> = new Map();
   // Cosmetic entity ID maps keyed by cosmeticId
   private cosmeticEntityIdMaps: Map<string, Map<number, ID>> = new Map();
-  private structureInstanceBindings: Map<StructureType, Map<ID, StructureInstanceBinding>> = new Map();
-  private structureInstanceOrders: Map<StructureType, Map<number, ID[]>> = new Map();
+  private structureInstanceBindings: Map<ID, StructureInstanceBinding[]> = new Map();
+  private structureInstanceSlots: Map<InstancedModel, Array<ID | undefined>> = new Map();
+  private structureModelDrawCounts: Map<InstancedModel, number> = new Map();
   private wonderEntityIdMaps: Map<number, ID> = new Map();
   private entityIdLabels: Map<ID, CSS2DObject> = new Map();
   private labelPool = new LabelPool();
@@ -221,9 +223,9 @@ export class StructureManager {
   private visibleStructureCount = 0;
   private readonly visibleStructurePassFence = createAsyncPassFence();
   private pendingVisibleStructureWorkLane: FrameBudgetWorkLane = "visible";
-  private previousVisibleIds: Set<ID> = new Set(); // Track visible structures for diff-based point cleanup
-  private previouslyActiveStructureModels: Set<InstancedModel> = new Set();
-  private previouslyActiveCosmeticStructureModels: Set<InstancedModel> = new Set();
+  private shouldRefreshExistingStructures = false;
+  private pendingVisibleStructureTransitionToken?: number;
+  private previousVisibleIds: Set<ID> = new Set(); // Committed visible ownership; also drives point cleanup.
   private isDestroyed = false;
 
   private readonly worldSpatialProjection: WorldSpatialProjection;
@@ -246,9 +248,13 @@ export class StructureManager {
     this.runVisibleStructuresUpdate = createCoalescedAsyncUpdateRunner(async () => {
       this.isUpdatingVisibleStructures = true;
       const workLane = this.pendingVisibleStructureWorkLane;
+      const refreshExisting = this.shouldRefreshExistingStructures;
+      const transitionToken = this.pendingVisibleStructureTransitionToken;
       this.pendingVisibleStructureWorkLane = "visible";
+      this.shouldRefreshExistingStructures = false;
+      this.pendingVisibleStructureTransitionToken = undefined;
       try {
-        await this.performVisibleStructuresUpdate(workLane);
+        await this.performVisibleStructuresUpdate(workLane, refreshExisting, transitionToken);
       } finally {
         this.isUpdatingVisibleStructures = false;
       }
@@ -738,6 +744,9 @@ export class StructureManager {
     this.entityIdMaps.clear();
     this.cosmeticEntityIdMaps.clear();
     this.wonderEntityIdMaps.clear();
+    this.structureInstanceBindings.clear();
+    this.structureInstanceSlots.clear();
+    this.structureModelDrawCounts.clear();
     this.incomingTroopArrivalsByStructure.clear();
     this.battleDirectionsByStructure.clear();
     this.structuresWithActiveTimedLabels.clear();
@@ -994,7 +1003,11 @@ export class StructureManager {
           return false;
         }
 
-        await this.requestVisibleStructuresRefresh("critical");
+        await this.requestVisibleStructuresRefresh(
+          "critical",
+          nextOptions?.refreshExisting ?? false,
+          nextOptions?.transitionToken,
+        );
       },
       isDestroyed: () => this.isDestroyed,
       onPreviousUpdateFailed: (error) => {
@@ -1058,7 +1071,11 @@ export class StructureManager {
     if (hasMatchingStructure) void this.requestVisibleStructuresRefresh();
   }
 
-  private requestVisibleStructuresRefresh(workLane: FrameBudgetWorkLane = "visible"): Promise<void> {
+  private requestVisibleStructuresRefresh(
+    workLane: FrameBudgetWorkLane = "visible",
+    refreshExisting = true,
+    transitionToken?: number,
+  ): Promise<void> {
     this.visibleStructurePassFence.invalidate();
 
     if (this.isDestroyed) {
@@ -1071,6 +1088,13 @@ export class StructureManager {
 
     if (workLane === "critical") {
       this.pendingVisibleStructureWorkLane = "critical";
+    }
+    this.shouldRefreshExistingStructures ||= refreshExisting;
+    if (transitionToken !== undefined) {
+      this.pendingVisibleStructureTransitionToken = Math.max(
+        transitionToken,
+        this.pendingVisibleStructureTransitionToken ?? transitionToken,
+      );
     }
 
     return this.runVisibleStructuresUpdate().catch((error) => {
@@ -1116,7 +1140,11 @@ export class StructureManager {
     return models[structure.stage];
   }
 
-  private async performVisibleStructuresUpdate(workLane: FrameBudgetWorkLane = "visible"): Promise<void> {
+  private async performVisibleStructuresUpdate(
+    workLane: FrameBudgetWorkLane = "visible",
+    refreshExisting = false,
+    transitionToken?: number,
+  ): Promise<void> {
     if (this.isDestroyed) {
       return;
     }
@@ -1128,96 +1156,26 @@ export class StructureManager {
       return;
     }
     try {
-      const visibleStructurePassSnapshot = this.captureVisibleStructurePassSnapshot();
-      const visibleStructureIds = new Set<ID>();
-      const attachmentRetain = new Set<number>();
+      const visibleStructurePassSnapshot = this.captureVisibleStructurePassSnapshot(transitionToken);
 
-      // Get visible structures from spatial index
       const [startRow, startCol] = visibleStructurePassSnapshot.chunkKey.split(",").map(Number);
       const visibleStructures = this.getVisibleStructuresForChunk(startRow, startCol);
-      const renderPlan = this.createVisibleStructureRenderPlan(visibleStructures);
-      await this.preloadVisibleStructureRenderPlan(renderPlan);
+      const preloadPlan = this.createStructureModelPreloadPlan(visibleStructures);
+      await this.preloadStructureModels(preloadPlan);
 
       if (this.shouldDiscardVisibleStructurePass(visibleStructurePassSnapshot)) {
         return;
       }
 
-      await scheduleFrameBudgetWork(this.chunkWorkScheduler, workLane, () => {
-        this.visibleStructureCount = visibleStructures.length;
-        this.wonderEntityIdMaps.clear();
-        this.entityIdMaps.clear();
-        this.cosmeticEntityIdMaps.clear();
+      const renderableStructures = visibleStructures.filter((structure) => this.getModelForStructure(structure));
+      const visibilityDiff = createManagerVisibilityDiff({
+        currentVisibleIds: this.previousVisibleIds,
+        nextVisibleEntities: renderableStructures,
+        getEntityId: (structure) => structure.entityId,
+        refreshExisting,
       });
-
-      // Track instance counts per model to batch setCount calls (avoids N calls to computeBoundingSphere)
-      const modelInstanceCounts = new Map<InstancedModel, number>();
-      const nextActiveStructureModels = new Set<InstancedModel>();
-      const nextActiveCosmeticStructureModels = new Set<InstancedModel>();
-
-      // Begin batch mode for all point renderers (avoids computeBoundingSphere per setPoint)
-      if (this.pointsRenderers) {
-        Object.values(this.pointsRenderers).forEach((renderer) => renderer.beginBatch());
-      }
-
-      for (const [structureType, structures] of renderPlan.structuresByType) {
-        const models = this.structureModels.get(structureType);
-
-        if (!models || models.length === 0) {
-          continue;
-        }
-
-        for (const structure of structures) {
-          await scheduleFrameBudgetWork(this.chunkWorkScheduler, workLane, () => {
-            visibleStructureIds.add(structure.entityId);
-            const rotationY = this.resolveVisibleStructureRotationY(structure);
-            this.syncVisibleStructurePresentation(undefined, structure, rotationY, attachmentRetain);
-            this.bindVisibleStructureInstance(
-              structureType,
-              structure,
-              models,
-              modelInstanceCounts,
-              nextActiveStructureModels,
-            );
-          });
-        }
-
-        // Note: setCount will be called once per model after all structures are processed
-      }
-
-      // Render structures with cosmetic skins
-      for (const [cosmeticId, structures] of renderPlan.structuresByCosmeticId) {
-        const models = this.cosmeticStructureModels.get(cosmeticId);
-
-        if (!models || models.length === 0) {
-          continue;
-        }
-
-        for (const structure of structures) {
-          await scheduleFrameBudgetWork(this.chunkWorkScheduler, workLane, () => {
-            visibleStructureIds.add(structure.entityId);
-            const rotationY = this.resolveVisibleStructureRotationY(structure);
-            this.syncVisibleStructurePresentation(undefined, structure, rotationY, attachmentRetain);
-            this.bindVisibleCosmeticStructureInstance(
-              cosmeticId,
-              structure,
-              models,
-              modelInstanceCounts,
-              nextActiveCosmeticStructureModels,
-            );
-          });
-        }
-
-        // Note: setCount will be called once per model after all structures are processed
-      }
-
-      await this.finalizeVisibleStructureModelPass(
-        modelInstanceCounts,
-        nextActiveStructureModels,
-        nextActiveCosmeticStructureModels,
-        workLane,
-      );
       await scheduleFrameBudgetWork(this.chunkWorkScheduler, workLane, () => {
-        this.finalizeVisibleStructurePass(visibleStructureIds, attachmentRetain);
+        this.commitVisibleStructureDiff(visibleStructurePassSnapshot, visibilityDiff);
       });
     } finally {
       recordWorldmapRenderDuration("performVisibleStructuresUpdate", performance.now() - updateStartedAt);
@@ -1225,10 +1183,10 @@ export class StructureManager {
     }
   }
 
-  private createVisibleStructureRenderPlan(
+  private createStructureModelPreloadPlan(
     visibleStructures: StructureInfo[],
-  ): VisibleStructureRenderPlan<StructureInfo, StructureType> {
-    return buildVisibleStructureRenderPlan<StructureInfo, StructureType>({
+  ): StructureModelPreloadPlan<StructureType> {
+    return buildStructureModelPreloadPlan<StructureInfo, StructureType>({
       visibleStructures,
       hasCosmeticSkin: (structure) => this.hasCosmeticSkin(structure),
       hasStructureModel: (structureType) => this.structureModels.has(structureType),
@@ -1236,10 +1194,11 @@ export class StructureManager {
     });
   }
 
-  private captureVisibleStructurePassSnapshot(): VisibleStructurePassSnapshot {
+  private captureVisibleStructurePassSnapshot(transitionToken?: number): VisibleStructurePassSnapshot {
     return {
       chunkKey: this.currentChunk,
       passFenceSnapshot: this.visibleStructurePassFence.capture(),
+      transitionToken,
     };
   }
 
@@ -1247,16 +1206,15 @@ export class StructureManager {
     return (
       this.isDestroyed ||
       this.currentChunk !== snapshot.chunkKey ||
+      (snapshot.transitionToken !== undefined && snapshot.transitionToken !== this.latestTransitionToken) ||
       !this.visibleStructurePassFence.isCurrent(snapshot.passFenceSnapshot)
     );
   }
 
-  private async preloadVisibleStructureRenderPlan(
-    renderPlan: VisibleStructureRenderPlan<StructureInfo, StructureType>,
-  ): Promise<void> {
+  private async preloadStructureModels(preloadPlan: StructureModelPreloadPlan<StructureType>): Promise<void> {
     const preloadPromises: Promise<unknown>[] = [
-      ...renderPlan.missingStructureModels.map((structureType) => this.ensureStructureModels(structureType)),
-      ...renderPlan.missingCosmeticModels.map(({ cosmeticId, assetPaths }) =>
+      ...preloadPlan.missingStructureModels.map((structureType) => this.ensureStructureModels(structureType)),
+      ...preloadPlan.missingCosmeticModels.map(({ cosmeticId, assetPaths }) =>
         this.ensureCosmeticStructureModels(cosmeticId, assetPaths),
       ),
     ];
@@ -1321,43 +1279,187 @@ export class StructureManager {
     });
   }
 
-  private bindVisibleStructureInstance(
-    structureType: StructureType,
-    structure: StructureInfo,
-    models: InstancedModel[],
-    modelInstanceCounts: Map<InstancedModel, number>,
-    nextActiveStructureModels: Set<InstancedModel>,
+  private commitVisibleStructureDiff(
+    snapshot: VisibleStructurePassSnapshot,
+    visibilityDiff: ManagerVisibilityDiff<StructureInfo, ID>,
   ): void {
-    recordVisibleStructureModelInstance({
-      structure,
-      structureType,
-      isRealmStructure: structureType === StructureType.Realm,
-      models,
-      wonderModelIndex: WONDER_MODEL_INDEX,
-      matrix: this.dummy.matrix,
-      modelInstanceCounts,
-      activeModels: nextActiveStructureModels,
-      entityIdMaps: this.entityIdMaps,
-      wonderEntityIdMap: this.wonderEntityIdMaps,
+    if (this.shouldDiscardVisibleStructurePass(snapshot)) {
+      return;
+    }
+
+    const dirtyModels = new Set<InstancedModel>();
+    const visibleNumericIds = new Set(visibilityDiff.visibleIds.map(Number));
+    const attachmentRetain = new Set<number>();
+    this.activeStructureAttachmentEntities.forEach((entityId) => {
+      if (visibleNumericIds.has(entityId)) {
+        attachmentRetain.add(entityId);
+      }
+    });
+
+    if (this.pointsRenderers) {
+      Object.values(this.pointsRenderers).forEach((renderer) => renderer.beginBatch());
+    }
+
+    try {
+      commitManagerVisibilityDiff({
+        diff: visibilityDiff,
+        isCurrent: () => !this.shouldDiscardVisibleStructurePass(snapshot),
+        remove: (entityId) => this.removeVisibleStructureInstance(entityId, dirtyModels),
+        add: (structure) => this.addVisibleStructureInstance(structure, attachmentRetain, dirtyModels),
+        commitVisibleIds: (visibleIds) => {
+          this.updateVisibleStructureModelCounts(dirtyModels);
+          this.applyPendingModelBounds();
+          this.visibleStructureCount = visibleIds.length;
+          this.finalizeVisibleStructurePass(new Set(visibleIds), attachmentRetain);
+        },
+      });
+    } finally {
+      if (this.pointsRenderers) {
+        Object.values(this.pointsRenderers).forEach((renderer) => renderer.endBatch());
+      }
+    }
+  }
+
+  private addVisibleStructureInstance(
+    structure: StructureInfo,
+    attachmentRetain: Set<number>,
+    dirtyModels: Set<InstancedModel>,
+  ): void {
+    const rotationY = this.resolveVisibleStructureRotationY(structure);
+    this.syncVisibleStructurePresentation(undefined, structure, rotationY, attachmentRetain);
+
+    const bindings = this.hasCosmeticSkin(structure)
+      ? this.addVisibleCosmeticStructureInstances(structure, dirtyModels)
+      : this.addVisibleBaseStructureInstances(structure, dirtyModels);
+    if (bindings.length > 0) {
+      this.structureInstanceBindings.set(structure.entityId, bindings);
+    }
+  }
+
+  private addVisibleBaseStructureInstances(
+    structure: StructureInfo,
+    dirtyModels: Set<InstancedModel>,
+  ): StructureInstanceBinding[] {
+    const models = this.structureModels.get(structure.structureType);
+    if (!models) {
+      return [];
+    }
+
+    const modelIndex = structure.structureType === StructureType.Realm ? structure.level : structure.stage;
+    const model = models[modelIndex];
+    if (!model) {
+      return [];
+    }
+
+    const entityIdsByInstance = this.getOrCreateStructureEntityIdMap(structure.structureType);
+    const bindings = [this.bindStructureInstance(model, structure.entityId, entityIdsByInstance, dirtyModels)];
+    if (structure.structureType === StructureType.Realm && structure.hasWonder) {
+      const wonderModel = models[WONDER_MODEL_INDEX];
+      if (wonderModel) {
+        bindings.push(
+          this.bindStructureInstance(wonderModel, structure.entityId, this.wonderEntityIdMaps, dirtyModels),
+        );
+      }
+    }
+
+    return bindings;
+  }
+
+  private addVisibleCosmeticStructureInstances(
+    structure: StructureInfo,
+    dirtyModels: Set<InstancedModel>,
+  ): StructureInstanceBinding[] {
+    const cosmeticId = structure.cosmeticId ?? "";
+    const model = this.cosmeticStructureModels.get(cosmeticId)?.[0];
+    if (!model) {
+      return [];
+    }
+
+    const entityIdsByInstance = this.getOrCreateCosmeticEntityIdMap(cosmeticId);
+    return [this.bindStructureInstance(model, structure.entityId, entityIdsByInstance, dirtyModels)];
+  }
+
+  private bindStructureInstance(
+    model: InstancedModel,
+    entityId: ID,
+    entityIdsByInstance: Map<number, ID>,
+    dirtyModels: Set<InstancedModel>,
+  ): StructureInstanceBinding {
+    const slots = this.structureInstanceSlots.get(model) ?? [];
+    let instanceIndex = slots.findIndex((slotEntityId) => slotEntityId === undefined);
+    if (instanceIndex === -1) {
+      instanceIndex = slots.length;
+    }
+    if (instanceIndex >= STRUCTURE_INSTANCE_CAPACITY) {
+      throw new Error(`Structure instance capacity exceeded for entity ${entityId}`);
+    }
+
+    slots[instanceIndex] = entityId;
+    this.structureInstanceSlots.set(model, slots);
+    entityIdsByInstance.set(instanceIndex, entityId);
+    model.setMatrixAt(instanceIndex, this.dummy.matrix);
+    dirtyModels.add(model);
+
+    return { entityIdsByInstance, instanceIndex, model };
+  }
+
+  private removeVisibleStructureInstance(entityId: ID, dirtyModels: Set<InstancedModel>): void {
+    const bindings = this.structureInstanceBindings.get(entityId);
+    if (!bindings) {
+      return;
+    }
+
+    bindings.forEach(({ entityIdsByInstance, instanceIndex, model }) => {
+      model.removeInstance(instanceIndex);
+      const slots = this.structureInstanceSlots.get(model);
+      if (slots) {
+        slots[instanceIndex] = undefined;
+      }
+      if (entityIdsByInstance.get(instanceIndex) === entityId) {
+        entityIdsByInstance.delete(instanceIndex);
+      }
+      dirtyModels.add(model);
+    });
+    this.structureInstanceBindings.delete(entityId);
+  }
+
+  private updateVisibleStructureModelCounts(dirtyModels: Set<InstancedModel>): void {
+    dirtyModels.forEach((model) => {
+      const slots = this.structureInstanceSlots.get(model) ?? [];
+      while (slots.at(-1) === undefined) {
+        slots.pop();
+      }
+      if (this.structureModelDrawCounts.get(model) !== slots.length) {
+        model.setCount(slots.length);
+        this.structureModelDrawCounts.set(model, slots.length);
+      }
+      if (slots.length === 0) {
+        this.structureInstanceSlots.delete(model);
+        this.structureModelDrawCounts.delete(model);
+      }
     });
   }
 
-  private bindVisibleCosmeticStructureInstance(
-    cosmeticId: string,
-    structure: StructureInfo,
-    models: InstancedModel[],
-    modelInstanceCounts: Map<InstancedModel, number>,
-    nextActiveCosmeticStructureModels: Set<InstancedModel>,
-  ): void {
-    recordVisibleCosmeticStructureModelInstance({
-      cosmeticId,
-      entityId: structure.entityId,
-      models,
-      matrix: this.dummy.matrix,
-      modelInstanceCounts,
-      activeModels: nextActiveCosmeticStructureModels,
-      cosmeticEntityIdMaps: this.cosmeticEntityIdMaps,
-    });
+  private getOrCreateStructureEntityIdMap(structureType: StructureType): Map<number, ID> {
+    const existing = this.entityIdMaps.get(structureType);
+    if (existing) {
+      return existing;
+    }
+
+    const created = new Map<number, ID>();
+    this.entityIdMaps.set(structureType, created);
+    return created;
+  }
+
+  private getOrCreateCosmeticEntityIdMap(cosmeticId: string): Map<number, ID> {
+    const existing = this.cosmeticEntityIdMaps.get(cosmeticId);
+    if (existing) {
+      return existing;
+    }
+
+    const created = new Map<number, ID>();
+    this.cosmeticEntityIdMaps.set(cosmeticId, created);
+    return created;
   }
 
   private finalizeVisibleStructurePass(visibleStructureIds: Set<ID>, attachmentRetain: Set<number>): void {
@@ -1378,32 +1480,6 @@ export class StructureManager {
       },
     });
     this.frustumVisibilityDirty = true;
-  }
-
-  private async finalizeVisibleStructureModelPass(
-    modelInstanceCounts: Map<InstancedModel, number>,
-    nextActiveStructureModels: Set<InstancedModel>,
-    nextActiveCosmeticStructureModels: Set<InstancedModel>,
-    workLane: FrameBudgetWorkLane = "visible",
-  ): Promise<void> {
-    await scheduleFrameBudgetWork(this.chunkWorkScheduler, workLane, () => {
-      const finalizedModelSets = finalizeVisibleStructureModelPass({
-        modelInstanceCounts,
-        previouslyActiveStructureModels: this.previouslyActiveStructureModels,
-        previouslyActiveCosmeticStructureModels: this.previouslyActiveCosmeticStructureModels,
-        nextActiveStructureModels,
-        nextActiveCosmeticStructureModels,
-        applyPendingModelBounds: () => this.applyPendingModelBounds(),
-        endPointBatches: this.pointsRenderers
-          ? () => {
-              Object.values(this.pointsRenderers!).forEach((renderer) => renderer.endBatch());
-            }
-          : undefined,
-      });
-
-      this.previouslyActiveStructureModels = finalizedModelSets.activeStructureModels;
-      this.previouslyActiveCosmeticStructureModels = finalizedModelSets.activeCosmeticStructureModels;
-    });
   }
 
   private getRendererForStructure(structure: StructureInfo): PointsLabelRenderer | null {

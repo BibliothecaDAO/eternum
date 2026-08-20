@@ -22,34 +22,26 @@ describe("ArmyManager chunk-transition guard", () => {
     expect(transitionTrueIdx).toBeLessThan(startRowIdx);
   });
 
-  it("isArmyChunkTransitioning is reset to false in finally block", () => {
+  it("routes finally cleanup through the winning-transition finalizer", () => {
     const source = readSource("./army-manager.ts");
 
-    // Find the finally block in executeRenderForChunk
     const finallyIdx = source.indexOf("} finally {", source.indexOf("executeRenderForChunk"));
     expect(finallyIdx).toBeGreaterThan(-1);
 
-    const resetIdx = source.indexOf("this.isArmyChunkTransitioning = false", finallyIdx);
-    expect(resetIdx).toBeGreaterThan(-1);
-
-    // The reset must be inside the finally block (close to it)
-    expect(resetIdx).toBeGreaterThan(finallyIdx);
+    const finalizerIdx = source.indexOf("finalizeArmyChunkTransition({", finallyIdx);
+    expect(finalizerIdx).toBeGreaterThan(finallyIdx);
+    expect(source.slice(finalizerIdx)).toMatch(/isWinningTransition: shouldRunManagerChunkUpdate\(\{/);
   });
 
-  it("drainDeferredArmyQueue is called after transition flag reset", () => {
+  it("hands both owned queues to the transition finalizer", () => {
     const source = readSource("./army-manager.ts");
 
     const finallyIdx = source.indexOf("} finally {", source.indexOf("executeRenderForChunk"));
     expect(finallyIdx).toBeGreaterThan(-1);
 
-    const resetIdx = source.indexOf("this.isArmyChunkTransitioning = false", finallyIdx);
-    const drainIdx = source.indexOf("this.drainDeferredArmyQueue()", finallyIdx);
-
-    expect(resetIdx).toBeGreaterThan(-1);
-    expect(drainIdx).toBeGreaterThan(-1);
-
-    // drain must come after the flag reset
-    expect(drainIdx).toBeGreaterThan(resetIdx);
+    const finalizerBlock = source.slice(finallyIdx, source.indexOf("recordWorldmapRenderDuration", finallyIdx));
+    expect(finalizerBlock).toMatch(/drainDeferredQueue: \(\) => this\.drainDeferredArmyQueue\(\)/);
+    expect(finalizerBlock).toMatch(/drainPreCommitQueue: \(\) => this\.drainPreCommitArmyQueue\(\)/);
   });
 
   it("renderArmyIntoCurrentChunkIfVisible guards against chunk transition", () => {

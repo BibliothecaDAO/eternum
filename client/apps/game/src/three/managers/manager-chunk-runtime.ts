@@ -1,5 +1,6 @@
 export interface ManagerChunkUpdateOptions {
   force?: boolean;
+  refreshExisting?: boolean;
   transitionToken?: number;
 }
 
@@ -237,8 +238,10 @@ function resolveChunkUpdateOptions(
   chunkKey: string,
   options: ManagerChunkUpdateOptions | undefined,
 ): ManagerChunkUpdateOptions {
+  const chunkChanged = currentChunk !== chunkKey;
   return {
-    force: options?.force || currentChunk !== chunkKey,
+    force: options?.force || chunkChanged,
+    refreshExisting: Boolean(options?.force && !chunkChanged),
     transitionToken: options?.transitionToken,
   };
 }

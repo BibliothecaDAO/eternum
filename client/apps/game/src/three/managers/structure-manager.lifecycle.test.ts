@@ -270,6 +270,9 @@ function createStructureManagerSubject() {
   subject.entityIdMaps = new Map([[1, new Map()]]);
   subject.cosmeticEntityIdMaps = new Map([["skinA", new Map()]]);
   subject.wonderEntityIdMaps = new Map([[1, 1001]]);
+  subject.structureInstanceBindings = new Map([[1, []]]);
+  subject.structureInstanceSlots = new Map([[{}, [1]]]);
+  subject.structureModelDrawCounts = new Map([[{}, 1]]);
   subject.incomingTroopArrivalsByStructure = new Map([[1, []]]);
   subject.battleDirectionsByStructure = new Map([[1, {}]]);
   subject.structuresWithActiveTimedLabels = new Set([1]);
@@ -311,6 +314,7 @@ function createVisibleStructurePassSubject() {
 
   subject.isDestroyed = false;
   subject.currentChunk = "24,24";
+  subject.latestTransitionToken = 0;
   subject.visibleStructureCount = 0;
   subject.currentChunkBounds = undefined;
   subject.hasPendingModelBounds = false;
@@ -320,18 +324,19 @@ function createVisibleStructurePassSubject() {
   subject.entityIdMaps = new Map();
   subject.cosmeticEntityIdMaps = new Map();
   subject.wonderEntityIdMaps = new Map();
+  subject.structureInstanceBindings = new Map();
+  subject.structureInstanceSlots = new Map();
+  subject.structureModelDrawCounts = new Map();
+  subject.dummy = { matrix: {} };
   subject.pointsRenderers = undefined;
   subject.activeStructureAttachmentEntities = new Set();
+  subject.structureAttachmentSignatures = new Map();
   subject.entityIdLabels = new Map();
   subject.previousVisibleIds = new Set();
-  subject.previouslyActiveStructureModels = new Set();
-  subject.previouslyActiveCosmeticStructureModels = new Set();
   subject.finalizeVisibleStructurePass = vi.fn();
   subject.syncVisibleStructurePresentation = vi.fn();
   subject.resolveVisibleStructureRotationY = vi.fn(() => 0);
-  subject.createVisibleStructureRenderPlan = vi.fn((visibleStructures: any[]) => ({
-    structuresByType: new Map([["Village", visibleStructures]]),
-    structuresByCosmeticId: new Map(),
+  subject.createStructureModelPreloadPlan = vi.fn(() => ({
     missingStructureModels: [],
     missingCosmeticModels: [],
   }));
@@ -449,6 +454,9 @@ describe("StructureManager destroy lifecycle", () => {
     expect(fixture.subject.entityIdMaps.size).toBe(0);
     expect(fixture.subject.cosmeticEntityIdMaps.size).toBe(0);
     expect(fixture.subject.wonderEntityIdMaps.size).toBe(0);
+    expect(fixture.subject.structureInstanceBindings.size).toBe(0);
+    expect(fixture.subject.structureInstanceSlots.size).toBe(0);
+    expect(fixture.subject.structureModelDrawCounts.size).toBe(0);
     expect(fixture.subject.incomingTroopArrivalsByStructure.size).toBe(0);
     expect(fixture.subject.battleDirectionsByStructure.size).toBe(0);
     expect(fixture.subject.structuresWithActiveTimedLabels.size).toBe(0);
@@ -536,38 +544,20 @@ describe("StructureManager destroy lifecycle", () => {
         plannedCount: 1,
       },
     ]);
-    subject.preloadVisibleStructureRenderPlan = vi.fn(
+    subject.preloadStructureModels = vi.fn(
       () =>
         new Promise<void>((resolve) => {
           resolvePreload = resolve;
         }),
     );
-    subject.bindVisibleStructureInstance = vi.fn(
-      (
-        _structureType: string,
-        structure: { plannedCount: number },
-        models: Array<{ setCount: (count: number) => void }>,
-        modelInstanceCounts: Map<unknown, number>,
-        nextActiveStructureModels: Set<unknown>,
-      ) => {
-        modelInstanceCounts.set(models[0], structure.plannedCount);
-        nextActiveStructureModels.add(models[0]);
-      },
-    );
-    subject.finalizeVisibleStructureModelPass = vi.fn(
-      (modelInstanceCounts: Map<{ setCount: (count: number) => void }, number>) => {
-        for (const [model, count] of modelInstanceCounts) {
-          model.setCount(count);
-        }
-      },
-    );
+    subject.commitVisibleStructureDiff = vi.fn();
 
     const updatePromise = subject.performVisibleStructuresUpdate();
     subject.setChunkBounds({ box: {} as never, sphere: {} as never });
     resolvePreload?.();
     await updatePromise;
 
-    expect(subject.finalizeVisibleStructureModelPass).not.toHaveBeenCalled();
+    expect(subject.commitVisibleStructureDiff).not.toHaveBeenCalled();
     expect(subject.finalizeVisibleStructurePass).not.toHaveBeenCalled();
     expect(setCount).not.toHaveBeenCalled();
   });
@@ -575,8 +565,7 @@ describe("StructureManager destroy lifecycle", () => {
   it("discards an older visible refresh when a newer pass supersedes it", async () => {
     const { subject, visibleStructurePassFence } = createVisibleStructurePassSubject();
     const structureType = "Village";
-    const setCount = vi.fn();
-    const commitCounts: number[] = [];
+    const committedEntityIds: number[] = [];
     let resolveFirstPreload: (() => void) | undefined;
     let resolveSecondPreload: (() => void) | undefined;
     let visibleStructures = [
@@ -588,9 +577,11 @@ describe("StructureManager destroy lifecycle", () => {
       },
     ];
 
-    subject.structureModels.set(structureType, [{ setCount }]);
+    const model = {};
+    subject.structureModels.set(structureType, [model]);
+    subject.getModelForStructure = vi.fn(() => model);
     subject.getVisibleStructuresForChunk = vi.fn(() => visibleStructures);
-    subject.preloadVisibleStructureRenderPlan = vi
+    subject.preloadStructureModels = vi
       .fn()
       .mockImplementationOnce(
         () =>
@@ -604,26 +595,9 @@ describe("StructureManager destroy lifecycle", () => {
             resolveSecondPreload = resolve;
           }),
       );
-    subject.bindVisibleStructureInstance = vi.fn(
-      (
-        _structureType: string,
-        structure: { plannedCount: number },
-        models: Array<{ setCount: (count: number) => void }>,
-        modelInstanceCounts: Map<unknown, number>,
-        nextActiveStructureModels: Set<unknown>,
-      ) => {
-        modelInstanceCounts.set(models[0], structure.plannedCount);
-        nextActiveStructureModels.add(models[0]);
-      },
-    );
-    subject.finalizeVisibleStructureModelPass = vi.fn(
-      (modelInstanceCounts: Map<{ setCount: (count: number) => void }, number>) => {
-        for (const [model, count] of modelInstanceCounts) {
-          commitCounts.push(count);
-          model.setCount(count);
-        }
-      },
-    );
+    subject.commitVisibleStructureDiff = vi.fn((_snapshot: unknown, diff: { visibleIds: number[] }) => {
+      committedEntityIds.push(...diff.visibleIds);
+    });
 
     const firstUpdatePromise = subject.performVisibleStructuresUpdate();
     visibleStructurePassFence.invalidate();
@@ -642,8 +616,103 @@ describe("StructureManager destroy lifecycle", () => {
     resolveSecondPreload?.();
     await Promise.all([firstUpdatePromise, secondUpdatePromise]);
 
-    expect(commitCounts).toEqual([2]);
-    expect(setCount).toHaveBeenCalledTimes(1);
+    expect(committedEntityIds).toEqual([2]);
+  });
+
+  it("rejects an old structure pass when a newer manager token arrives during preload", async () => {
+    const { subject } = createVisibleStructurePassSubject();
+    const commitVisibleStructureDiff = vi.fn();
+    let resolvePreload: (() => void) | undefined;
+
+    subject.latestTransitionToken = 4;
+    subject.getVisibleStructuresForChunk = vi.fn(() => []);
+    subject.preloadStructureModels = vi.fn(
+      () =>
+        new Promise<void>((resolve) => {
+          resolvePreload = resolve;
+        }),
+    );
+    subject.commitVisibleStructureDiff = commitVisibleStructureDiff;
+
+    const oldPass = subject.performVisibleStructuresUpdate("critical", false, 4);
+    subject.latestTransitionToken = 5;
+    resolvePreload?.();
+    await oldPass;
+
+    expect(commitVisibleStructureDiff).not.toHaveBeenCalled();
+  });
+
+  it("mutates only entering and leaving structure slots and ignores a superseded commit", () => {
+    const { subject, visibleStructurePassFence } = createVisibleStructurePassSubject();
+    const setMatrixAt = vi.fn();
+    const removeInstance = vi.fn();
+    const setCount = vi.fn();
+    const model = { removeInstance, setCount, setMatrixAt };
+    const structure = (entityId: number) => ({
+      entityId,
+      hasWonder: false,
+      hexCoords: { col: entityId, row: 0 },
+      stage: 0,
+      structureType: "Village",
+    });
+
+    subject.structureModels.set("Village", [model]);
+    subject.hasCosmeticSkin = vi.fn(() => false);
+
+    subject.commitVisibleStructureDiff(subject.captureVisibleStructurePassSnapshot(), {
+      entering: [structure(1), structure(2)],
+      leaving: [],
+      staying: [],
+      visibleIds: [1, 2],
+    });
+
+    const stayingBinding = subject.structureInstanceBindings.get(2)[0];
+    expect(setMatrixAt).toHaveBeenCalledTimes(2);
+    expect(removeInstance).not.toHaveBeenCalled();
+    expect(subject.structureInstanceSlots.get(model)).toEqual([1, 2]);
+
+    setMatrixAt.mockClear();
+    setCount.mockClear();
+    subject.commitVisibleStructureDiff(subject.captureVisibleStructurePassSnapshot(), {
+      entering: [structure(3)],
+      leaving: [1],
+      staying: [2],
+      visibleIds: [2, 3],
+    });
+
+    expect(removeInstance).toHaveBeenCalledTimes(1);
+    expect(removeInstance).toHaveBeenCalledWith(0);
+    expect(setMatrixAt).toHaveBeenCalledTimes(1);
+    expect(subject.structureInstanceBindings.get(2)[0]).toBe(stayingBinding);
+    expect(subject.structureInstanceSlots.get(model)).toEqual([3, 2]);
+    expect(setCount).not.toHaveBeenCalled();
+
+    removeInstance.mockClear();
+    setMatrixAt.mockClear();
+    subject.commitVisibleStructureDiff(subject.captureVisibleStructurePassSnapshot(), {
+      entering: [structure(2), structure(3)],
+      leaving: [2, 3],
+      staying: [],
+      visibleIds: [2, 3],
+    });
+
+    expect(removeInstance).toHaveBeenCalledTimes(2);
+    expect(setMatrixAt).toHaveBeenCalledTimes(2);
+
+    const staleSnapshot = subject.captureVisibleStructurePassSnapshot();
+    visibleStructurePassFence.invalidate();
+    removeInstance.mockClear();
+    setMatrixAt.mockClear();
+    subject.commitVisibleStructureDiff(staleSnapshot, {
+      entering: [structure(4)],
+      leaving: [3],
+      staying: [2],
+      visibleIds: [2, 4],
+    });
+
+    expect(removeInstance).not.toHaveBeenCalled();
+    expect(setMatrixAt).not.toHaveBeenCalled();
+    expect([...subject.structureInstanceBindings.keys()].toSorted()).toEqual([2, 3]);
   });
 
   it("invalidates the visible pass fence before queueing a refresh request", async () => {

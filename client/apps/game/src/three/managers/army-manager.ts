@@ -96,7 +96,9 @@ import { CompactEntityLabelRenderer } from "./compact-entity-label-renderer";
 import { resolveArmyCompactEntityLabel, resolveCompactEntityLabelVariant } from "./compact-entity-label-policy";
 import { createArmyRecord } from "./army-record";
 import { resolveArmyStaminaTickRefresh } from "./army-stamina-tick-policy";
+import { finalizeArmyChunkTransition } from "./army-chunk-transition-finalizer";
 import { reconcileVisibleArmySet } from "./army-visible-set-reconciler";
+import { createManagerVisibilityDiff } from "./manager-visibility-diff";
 import { resolvePointLabelTextureFlipY } from "./point-label-texture-policy";
 import { PointsLabelRenderer } from "./points-label-renderer";
 import { resolveArmySlotCompactionPlan } from "./army-slot-compaction";
@@ -200,7 +202,7 @@ export class ArmyManager {
   private renderQueuePromise: Promise<void> | null = null;
   private renderQueueActive = false;
   private pendingRenderChunkKey: string | null = null;
-  private pendingRenderOptions: { force?: boolean; transitionToken?: number } | null = null;
+  private pendingRenderOptions: ManagerChunkUpdateOptions | null = null;
   private armyPaths: Map<ID, Position[]> = new Map();
   private entityIdLabels: Map<ID, CSS2DObject> = new Map();
   private labelPool = new LabelPool();
@@ -998,10 +1000,7 @@ export class ArmyManager {
     });
   }
 
-  private renderVisibleArmies(
-    chunkKey: string,
-    options?: { force?: boolean; transitionToken?: number },
-  ): Promise<void> {
+  private renderVisibleArmies(chunkKey: string, options?: ManagerChunkUpdateOptions): Promise<void> {
     if (this.isDestroyed) {
       return Promise.resolve();
     }
@@ -1372,10 +1371,7 @@ export class ArmyManager {
     });
   }
 
-  private async executeRenderForChunk(
-    chunkKey: string,
-    options?: { force?: boolean; transitionToken?: number },
-  ): Promise<void> {
+  private async executeRenderForChunk(chunkKey: string, options?: ManagerChunkUpdateOptions): Promise<void> {
     if (this.isDestroyed) {
       return;
     }
@@ -1399,7 +1395,13 @@ export class ArmyManager {
       const computeVisibleArmies = () => this.getVisibleArmiesForChunk(startRow, startCol);
 
       let visibleArmies = computeVisibleArmies();
-      let { modelTypesByEntity, requiredModelTypes } = this.collectModelInfo(visibleArmies);
+      let visibilityDiff = createManagerVisibilityDiff({
+        currentVisibleIds: this.visibleArmyOrder,
+        nextVisibleEntities: visibleArmies,
+        getEntityId: (army) => army.entityId,
+      });
+      const armiesRequiringModels = options?.refreshExisting ? visibleArmies : visibilityDiff.entering;
+      let { modelTypesByEntity, requiredModelTypes } = this.collectModelInfo(armiesRequiringModels);
 
       // Preload all required models once
       if (requiredModelTypes.size > 0) {
@@ -1426,15 +1428,44 @@ export class ArmyManager {
       const sortedVisibleArmies = visibleArmies.toSorted(
         (a, b) => this.toNumericId(a.entityId) - this.toNumericId(b.entityId),
       );
-      ({ modelTypesByEntity } = this.collectModelInfo(sortedVisibleArmies));
+      visibilityDiff = createManagerVisibilityDiff({
+        currentVisibleIds: this.visibleArmyOrder,
+        nextVisibleEntities: sortedVisibleArmies,
+        getEntityId: (army) => army.entityId,
+      });
+      ({ modelTypesByEntity } = this.collectModelInfo(
+        options?.refreshExisting ? sortedVisibleArmies : visibilityDiff.entering,
+      ));
       await scheduleFrameBudgetWork(this.chunkWorkScheduler, "critical", () => {
-        this.reconcileVisibleArmies(visibleArmies, modelTypesByEntity, options?.force);
+        if (
+          !shouldRunManagerChunkUpdate({
+            chunkKey,
+            currentChunk: this.currentChunkKey,
+            transitionToken: options?.transitionToken,
+            latestTransitionToken: this.latestTransitionToken,
+          })
+        ) {
+          return;
+        }
+
+        this.reconcileVisibleArmies(sortedVisibleArmies, modelTypesByEntity, options?.refreshExisting);
         this.pruneArmyPresentationsOutsideCurrentChunk();
       });
     } finally {
-      this.isArmyChunkTransitioning = false;
-      this.drainDeferredArmyQueue();
-      this.drainPreCommitArmyQueue();
+      finalizeArmyChunkTransition({
+        isDestroyed: this.isDestroyed,
+        isWinningTransition: shouldRunManagerChunkUpdate({
+          chunkKey,
+          currentChunk: this.currentChunkKey,
+          transitionToken: options?.transitionToken,
+          latestTransitionToken: this.latestTransitionToken,
+        }),
+        setTransitioning: (isTransitioning) => {
+          this.isArmyChunkTransitioning = isTransitioning;
+        },
+        drainDeferredQueue: () => this.drainDeferredArmyQueue(),
+        drainPreCommitQueue: () => this.drainPreCommitArmyQueue(),
+      });
       recordWorldmapRenderDuration("executeRenderForChunk", performance.now() - renderStartedAt);
       setWorldmapRenderGauge("visibleArmies", this.visibleArmyOrder.length);
       setWorldmapRenderGauge("activePaths", this.getActivePathCount());
@@ -1523,10 +1554,13 @@ export class ArmyManager {
   }
 
   private async ensureProjectedArmyPresentationsForChunk(startRow: number, startCol: number): Promise<void> {
-    const renderables = this.getProjectedArmiesForChunk(startRow, startCol);
-    await this.preloadMissingProjectedArmyModels(renderables);
+    const currentVisibleIds = new Set(this.visibleArmyOrder);
+    const enteringRenderables = this.getProjectedArmiesForChunk(startRow, startCol).filter(
+      ({ entityId }) => !currentVisibleIds.has(entityId) || !this.armyPresentations.has(entityId),
+    );
+    await this.preloadMissingProjectedArmyModels(enteringRenderables);
     await Promise.all(
-      renderables.map((renderable) =>
+      enteringRenderables.map((renderable) =>
         scheduleFrameBudgetWork(this.chunkWorkScheduler, "critical", () => this.ensureArmyPresentation(renderable)),
       ),
     );
