@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { classifyTransactionError, extractErrorMessage } from "./classify-transaction-error";
+import { classifyTransactionError, extractErrorMessage, formatErrorForConsole } from "./classify-transaction-error";
 
 describe("classifyTransactionError", () => {
   describe("user cancels", () => {
@@ -149,5 +149,34 @@ describe("extractErrorMessage", () => {
       const estimateError = new Error(`RPC: starknet_estimateFee with params {}\n\n 41: ${RAW_JSON_TRACE}`);
       expect(extractErrorMessage(estimateError)).toBe(REVERT);
     });
+  });
+});
+
+describe("formatErrorForConsole", () => {
+  it("formats Error instances as one physical line", () => {
+    expect(formatErrorForConsole(new Error("first line\nsecond line"))).toBe("first line second line");
+  });
+
+  it("formats string errors as one physical line", () => {
+    expect(formatErrorForConsole("request failed\r\nretry exhausted")).toBe("request failed retry exhausted");
+  });
+
+  it("retains a decoded reason from a nested Starknet error", () => {
+    expect(
+      formatErrorForConsole({
+        code: 41,
+        message: "Transaction execution error",
+        data: {
+          execution_error:
+            "Execution failed. Failure reason: 0x6e6f7420656e6f756768207374616d696e61 ('not enough stamina').",
+        },
+      }),
+    ).toBe("not enough stamina");
+  });
+
+  it("uses a useful fallback for unknown objects", () => {
+    expect(formatErrorForConsole({ unexpected: true }, "unrecognized provider error")).toBe(
+      "unrecognized provider error",
+    );
   });
 });

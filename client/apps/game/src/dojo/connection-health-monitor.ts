@@ -1,5 +1,6 @@
 import { useConnectionStore, type ConnectionStatus } from "@/hooks/store/use-connection-store";
 import { addToriiStreamBreadcrumb, reportToriiSubscriptionLifecycle } from "@/observability/network-health-reporting";
+import { appendConsoleFields } from "@/utils/console-message";
 import {
   classifyDisconnect,
   type DisconnectClassification,
@@ -60,6 +61,13 @@ export type ConnectionRecoveryRequest =
   | { kind: "quiet_stream_fallback" }
   | { kind: "health_probe_failure"; reason: ToriiHealthUnreachableReason }
   | { kind: "stream_close"; stream: "entity" | "event"; reason: string };
+
+const formatConnectionRecoveryRequest = (request: ConnectionRecoveryRequest): string =>
+  appendConsoleFields("[ConnectionHealthMonitor] recovery requested", {
+    kind: request.kind,
+    stream: request.kind === "stream_close" ? request.stream : undefined,
+    reason: request.kind === "stream_close" || request.kind === "health_probe_failure" ? request.reason : undefined,
+  });
 
 interface ConnectionHealthToriiInput {
   activeWorld?: { toriiBaseUrl?: string | null } | null;
@@ -250,7 +258,7 @@ export class ConnectionHealthMonitor {
   async requestRecovery(request: ConnectionRecoveryRequest): Promise<void> {
     if (this.disposed) return;
 
-    console.warn("[ConnectionHealthMonitor] recovery requested", request);
+    console.warn(formatConnectionRecoveryRequest(request));
     if (request.kind === "quiet_stream_fallback") {
       await this.silentRefreshStreams();
       return;

@@ -364,6 +364,7 @@ import {
 import {
   appendWorldmapChunkTrace,
   createWorldmapChunkTraceBuffer,
+  formatWorldmapChunkWarning,
   snapshotWorldmapChunkTrace,
   type WorldmapChunkTraceEntry,
   type WorldmapChunkTraceEvent,
@@ -8555,7 +8556,7 @@ export default class WorldmapScene extends WarpTravel {
       event === "chunk_recovery_executed";
 
     if (isErrorEvent) {
-      console.warn(`[WorldmapChunk] ${event}`, details);
+      console.warn(formatWorldmapChunkWarning(event, details));
     }
 
     if (!import.meta.env.DEV) {

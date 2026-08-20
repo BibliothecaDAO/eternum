@@ -47,6 +47,7 @@ const findTransactionFailedPayload = (
 describe("EternumProvider.executeAndCheckTransaction gas bounds", () => {
   afterEach(() => {
     vi.useRealTimers();
+    vi.restoreAllMocks();
   });
 
   it("sets a zero tip on fee estimation and submission", async () => {
@@ -464,6 +465,7 @@ describe("EternumProvider.executeAndCheckTransaction gas bounds", () => {
   it("keeps the default-details fallback for VRF multicalls whose estimate reverts", async () => {
     const provider = makeProvider();
     provider.VRF_PROVIDER_ADDRESS = "0x999";
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => undefined);
     const estimateError = {
       code: 41,
       message: "An error occurred (TRANSACTION_EXECUTION_ERROR)",
@@ -498,6 +500,10 @@ describe("EternumProvider.executeAndCheckTransaction gas bounds", () => {
     expect(result).toMatchObject({ statusReceipt: "PENDING", transaction_hash: "0xabc" });
     expect(signer.estimateInvokeFee).toHaveBeenCalledWith(calls, { version: 3, tip: 0 });
     expect(provider.execute.mock.calls[0][3]).toEqual({ version: 3, tip: 0 });
+    expect(warn).toHaveBeenCalledWith(
+      "[provider] Failed to estimate invoke fee, using default v3 tx details: Randomness not fulfilled",
+    );
+    expect(provider.lastEstimateError.error).toBe(estimateError);
   });
 
   it("prefers a recent fee-estimate error when the submit error is uninformative", async () => {

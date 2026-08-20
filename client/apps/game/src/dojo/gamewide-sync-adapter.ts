@@ -15,6 +15,7 @@ import { getComponentEntities, getComponentValue, removeComponent } from "@dojoe
 import { setEntities } from "@dojoengine/state";
 import type { Clause, Entity as ToriiEntity, Query } from "@dojoengine/torii-wasm/types";
 import { VERBOSE_LOGS_ENABLED } from "@/utils/dev-mode";
+import { appendConsoleFields } from "@/utils/console-message";
 import { filterEntityToActiveGameScope } from "./game-scope-entity-filter";
 import { observeToriiStreamLifecycle } from "./torii-stream-lifecycle-observer";
 import { setupToriiSubscriptions, type ToriiSubscriptionSetupTimeoutInfo } from "./torii-subscription-setup";
@@ -137,10 +138,12 @@ const createRecsGameSyncStore = (
               | undefined;
             if (!value) {
               if (import.meta.env.DEV) {
-                console.error("[GameSync] authoritative Torii model did not parse into RECS", {
-                  entityId: entity.hashed_keys,
-                  model,
-                });
+                console.error(
+                  appendConsoleFields("[GameSync] authoritative Torii model did not parse into RECS", {
+                    entity_id: entity.hashed_keys,
+                    model,
+                  }),
+                );
               }
               return;
             }
@@ -304,7 +307,13 @@ const reportProvisionalIntentPhase = (info: GameSyncProvisionalIntentPhaseInfo):
   if (!import.meta.env.DEV) return;
   if (info.phase === "baseline_delta_before_hash") {
     // Convicts the echo-races-execute() case in session logs without verbose mode.
-    console.warn("[GameSync] authoritative echo observed before the transaction hash bound", info);
+    console.warn(
+      appendConsoleFields("[GameSync] authoritative echo observed before the transaction hash bound", {
+        intent_id: info.intentId,
+        model: info.model,
+        elapsed_ms: Math.round(info.elapsedSinceCreatedMs),
+      }),
+    );
     return;
   }
   if (VERBOSE_LOGS_ENABLED) console.info("[GameSync] provisional intent phase", info);

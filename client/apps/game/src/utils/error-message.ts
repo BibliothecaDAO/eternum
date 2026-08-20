@@ -6,7 +6,10 @@
 // breaks tests that partially mock @dojoengine/core and needlessly drags the
 // whole provider into every error-message consumer. The module is stateless,
 // so single-instancing it via the subpath is hygiene, not a correctness fix.
-export { extractErrorMessage as extractReadableErrorMessage } from "@bibliothecadao/provider/errors";
+export {
+  extractErrorMessage as extractReadableErrorMessage,
+  formatErrorForConsole as formatReadableErrorForConsole,
+} from "@bibliothecadao/provider/errors";
 
 /**
  * The game's resource assert reverts with "Insufficient Balance: {RESOURCE}

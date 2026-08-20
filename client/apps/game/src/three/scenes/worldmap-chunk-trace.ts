@@ -1,3 +1,5 @@
+import { appendConsoleFields } from "@/utils/console-message";
+
 export type WorldmapChunkTraceEvent =
   | "scene_created"
   | "chunk_activated"
@@ -49,6 +51,27 @@ interface WorldmapChunkTraceBuffer {
 }
 
 const DEFAULT_WORLD_CHUNK_TRACE_LIMIT = 256;
+
+const readConsoleField = (value: unknown): string | number | boolean | bigint | null | undefined => {
+  if (
+    value === null ||
+    typeof value === "string" ||
+    typeof value === "number" ||
+    typeof value === "boolean" ||
+    typeof value === "bigint"
+  ) {
+    return value;
+  }
+  return undefined;
+};
+
+export function formatWorldmapChunkWarning(
+  event: WorldmapChunkTraceEvent,
+  details: Readonly<Record<string, unknown>>,
+): string {
+  const fields = Object.fromEntries(Object.entries(details).map(([name, value]) => [name, readConsoleField(value)]));
+  return appendConsoleFields(`[WorldmapChunk] ${event}`, fields);
+}
 
 export function createWorldmapChunkTraceBuffer(
   maxEntries: number = DEFAULT_WORLD_CHUNK_TRACE_LIMIT,

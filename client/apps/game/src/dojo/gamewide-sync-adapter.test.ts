@@ -276,6 +276,44 @@ describe("game-wide sync adapter", () => {
     expect(componentsPassedToSetEntities).toContain(harness.positionComponent);
   });
 
+  it("reports an unparsed authoritative model as one line with its identity", async () => {
+    const harness = createHarness();
+    const error = vi.spyOn(console, "error").mockImplementation(() => undefined);
+    getComponentValueMock.mockReturnValue(undefined);
+
+    try {
+      await harness.session.store.applyEntityOperations([
+        { type: "upsert", entities: [{ hashed_keys: "entity-1", models: { "s2-Position": { x: 2 } } }] },
+      ]);
+
+      expect(error).toHaveBeenCalledWith(
+        '[GameSync] authoritative Torii model did not parse into RECS entity_id="entity-1" model="s2-Position"',
+      );
+    } finally {
+      error.mockRestore();
+    }
+  });
+
+  it("reports an early authoritative echo as one line with reconciliation identity", () => {
+    const harness = createHarness();
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => undefined);
+
+    try {
+      harness.session.onProvisionalIntentPhase?.({
+        phase: "baseline_delta_before_hash",
+        intentId: "intent-1",
+        model: "ExplorerTroops",
+        elapsedSinceCreatedMs: 12.6,
+      });
+
+      expect(warn).toHaveBeenCalledWith(
+        '[GameSync] authoritative echo observed before the transaction hash bound intent_id="intent-1" model="ExplorerTroops" elapsed_ms=13',
+      );
+    } finally {
+      warn.mockRestore();
+    }
+  });
+
   it("reports loudly when a sync model has no RECS component", () => {
     const error = vi.spyOn(console, "error").mockImplementation(() => undefined);
     try {
