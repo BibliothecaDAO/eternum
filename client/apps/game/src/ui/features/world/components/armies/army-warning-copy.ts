@@ -114,3 +114,29 @@ export const getArmyReadinessTitle = ({
 
   return "Ready to travel or explore";
 };
+
+/** Tooltip for a movement-blocked stamina bar; null when travel is possible. */
+export const formatTravelBlockedSummary = ({
+  staminaBlocked,
+  minTravelStamina,
+  missingWheat,
+  missingFish,
+  wheatLabel,
+  formatAmount,
+}: {
+  staminaBlocked: boolean;
+  minTravelStamina: number;
+  missingWheat: number;
+  missingFish: number;
+  wheatLabel: string;
+  formatAmount: (amount: number) => string;
+}): string | null => {
+  const requirements = [
+    staminaBlocked ? `${minTravelStamina}+ stamina` : null,
+    formatArmyFoodRequirement({ missingWheat, missingFish, wheatLabel, formatAmount }) || null,
+  ].filter(Boolean);
+
+  if (requirements.length === 0) return null;
+
+  return `Cannot travel — needs ${requirements.join(" and ")}`;
+};

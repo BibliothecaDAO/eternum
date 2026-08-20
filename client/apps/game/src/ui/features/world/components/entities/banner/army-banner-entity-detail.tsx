@@ -17,10 +17,12 @@ import {
   STAMINA_RECHARGING_TRACK_CLASS,
 } from "@/ui/shared/lib/stamina-visuals";
 import { resolveStaminaDisplay } from "@/ui/shared/lib/stamina-display";
-import { configManager } from "@bibliothecadao/eternum";
-import { BiomeType, EntityType, ID, RelicRecipientType, TroopType } from "@bibliothecadao/types";
+import { formatNumber } from "@/ui/utils/utils";
+import { EntityType, ID, RelicRecipientType } from "@bibliothecadao/types";
 import { ActiveRelicEffects } from "../active-relic-effects";
+import { useArmyMovementReadiness } from "../../armies/army-movement-readiness";
 import { ArmyWarning } from "../../armies/army-warning";
+import { formatTravelBlockedSummary, getArmyFoodRequirementLabel } from "../../armies/army-warning-copy";
 import { buildDisplayItems, CompactEntityInventory, countDisplayItems } from "../compact-entity-inventory";
 import { useArmyEntityDetail } from "../hooks/use-army-entity-detail";
 import { EntityDetailLayoutVariant } from "../layout";
@@ -67,6 +69,7 @@ const ArmyBannerEntityDetailContent = memo(
     );
     const inventoryCounts = useMemo(() => countDisplayItems(inventoryItems), [inventoryItems]);
     const resolvedWorldMode = useResolvedWorldGameMode();
+    const movementReadiness = useArmyMovementReadiness(explorer, structureResources);
     const ownerUsername = derivedData?.addressName ?? null;
     const { data: ownerProfileByUsername } = usePlayerAvatarByUsername(ownerUsername);
     const ownerAvatarUrl = ownerProfileByUsername?.avatarUrl ?? null;
@@ -98,6 +101,17 @@ const ArmyBannerEntityDetailContent = memo(
       : "border-red-400/40 bg-red-400/15 text-red-200";
     const currentStamina = derivedData.staminaDisplay?.displayCurrent ?? Number(derivedData.stamina.amount);
     const maxStamina = derivedData.maxStamina;
+    const travelBlocked = movementReadiness ? !movementReadiness.canTravel : false;
+    const travelBlockedTitle = movementReadiness
+      ? formatTravelBlockedSummary({
+          staminaBlocked: movementReadiness.hasTravelStaminaWarning,
+          minTravelStamina: movementReadiness.minTravelStamina,
+          missingWheat: movementReadiness.foodWarnings.travel.missingWheat,
+          missingFish: movementReadiness.foodWarnings.travel.missingFish,
+          wheatLabel: getArmyFoodRequirementLabel(resolvedWorldMode),
+          formatAmount: (amount) => formatNumber(amount, 0),
+        })
+      : null;
     const showResourceInventoryInline = shouldShowArmyResourceInventoryTab(
       resolvedWorldMode,
       inventoryCounts.resources,
@@ -167,15 +181,9 @@ const ArmyBannerEntityDetailContent = memo(
               currentStamina={currentStamina}
               maxStamina={maxStamina}
               isRecharging={derivedData.staminaDisplay?.isRecharging}
-              rightAccessory={
-                hasWarnings && explorerResources && structureResources ? (
-                  <ArmyWarning
-                    army={explorer}
-                    explorerResources={explorerResources}
-                    structureResources={structureResources}
-                  />
-                ) : null
-              }
+              travelBlocked={travelBlocked}
+              travelBlockedTitle={travelBlockedTitle}
+              rightAccessory={hasWarnings && movementReadiness ? <ArmyWarning readiness={movementReadiness} /> : null}
             />
           ) : null}
           {showRelicsInline && (
@@ -253,11 +261,15 @@ const InlineStaminaBar = ({
   currentStamina,
   maxStamina,
   isRecharging,
+  travelBlocked,
+  travelBlockedTitle,
   rightAccessory,
 }: {
   currentStamina: number;
   maxStamina: number;
   isRecharging?: boolean | null;
+  travelBlocked?: boolean;
+  travelBlockedTitle?: string | null;
   rightAccessory?: ReactNode;
 }) => {
   if (maxStamina === 0) return null;
@@ -265,21 +277,22 @@ const InlineStaminaBar = ({
     current: currentStamina,
     max: maxStamina,
   });
-  const minTravelCost = configManager.getTravelStaminaCost(BiomeType.Ocean, TroopType.Crossbowman);
   const recharging = isRecharging ?? isStaminaRecharging(displayedCurrent, maxStamina);
 
-  let fillClass = "bg-progress-bar-danger";
-  if (displayedCurrent >= minTravelCost) {
-    fillClass =
-      displayPercentage > 66
-        ? "bg-progress-bar-good"
-        : displayPercentage > 33
-          ? "bg-progress-bar-medium"
-          : "bg-progress-bar-danger";
-  }
+  // Red exclusively means "this army cannot take its cheapest move right now"
+  // (stamina- or food-blocked); low-but-movable stamina renders amber so the
+  // blocked signal stays unambiguous. The readiness icons say why.
+  const fillClass = travelBlocked
+    ? "bg-progress-bar-danger"
+    : displayPercentage > 66
+      ? "bg-progress-bar-good"
+      : "bg-progress-bar-medium";
 
   return (
-    <div className="flex items-center gap-2 text-xxs text-gold/80">
+    <div
+      className="flex items-center gap-2 text-xxs text-gold/80"
+      title={travelBlocked ? (travelBlockedTitle ?? undefined) : undefined}
+    >
       <Lightning className={cn("h-3 w-3 fill-order-power", recharging && STAMINA_RECHARGING_TEXT_CLASS)} />
       <div
         className={cn(

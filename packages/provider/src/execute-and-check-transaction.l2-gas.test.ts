@@ -406,8 +406,79 @@ describe("EternumProvider.executeAndCheckTransaction gas bounds", () => {
     expect(payload?.error).toBeUndefined();
   });
 
+  it("aborts the submit when the fee estimate proves a deterministic revert", async () => {
+    const provider = makeProvider();
+    const estimateError = {
+      code: 41,
+      message: "An error occurred (TRANSACTION_EXECUTION_ERROR)",
+      data: {
+        execution_error:
+          "Execution failed. Failure reason: 0x506f70756c6174696f6e2065786365656473206361706163697479 ('Population exceeds capacity').",
+      },
+    };
+
+    const signer = {
+      estimateInvokeFee: vi.fn().mockRejectedValue(estimateError),
+    };
+    const call: Call = {
+      contractAddress: "0x1",
+      entrypoint: "settle_realms",
+      calldata: [],
+    };
+
+    await expect(provider.executeAndCheckTransaction(signer, call)).rejects.toBe(estimateError);
+
+    // The estimate already executed the calls and proved they revert — the
+    // doomed transaction must never reach the paymaster.
+    expect(provider.execute).not.toHaveBeenCalled();
+    expect(findTransactionFailedPayload(provider)).toMatchObject({
+      message: "Transaction failed to submit: Population exceeds capacity",
+      stage: "submit",
+      errorCode: 41,
+    });
+  });
+
+  it("keeps the default-details fallback for VRF multicalls whose estimate reverts", async () => {
+    const provider = makeProvider();
+    provider.VRF_PROVIDER_ADDRESS = "0x999";
+    const estimateError = {
+      code: 41,
+      message: "An error occurred (TRANSACTION_EXECUTION_ERROR)",
+      data: {
+        execution_error: "Execution failed. Failure reason: 0x0 ('Randomness not fulfilled').",
+      },
+    };
+
+    const signer = {
+      address: "0xabc",
+      estimateInvokeFee: vi.fn().mockRejectedValue(estimateError),
+    };
+    const calls: Call[] = [
+      {
+        contractAddress: "0x999",
+        entrypoint: "request_random",
+        calldata: ["0x123", 0, "0xabc"],
+      },
+      {
+        contractAddress: "0x123",
+        entrypoint: "open_chest",
+        calldata: [],
+      },
+    ];
+
+    // consume_random can revert at estimate time (no submit_random yet) and
+    // still succeed at execution once the VRF server front-runs it.
+    const result = await provider.executeAndCheckTransaction(signer, calls, undefined, {
+      waitForConfirmation: false,
+    });
+
+    expect(result).toMatchObject({ statusReceipt: "PENDING", transaction_hash: "0xabc" });
+    expect(provider.execute.mock.calls[0][3]).toEqual({ version: 3 });
+  });
+
   it("prefers a recent fee-estimate error when the submit error is uninformative", async () => {
     const provider = makeProvider();
+    provider.VRF_PROVIDER_ADDRESS = "0x999";
     const estimateError = {
       code: 41,
       message: "Transaction execution error",
@@ -419,17 +490,27 @@ describe("EternumProvider.executeAndCheckTransaction gas bounds", () => {
     provider.execute = vi.fn().mockRejectedValue({});
 
     const signer = {
+      address: "0xabc",
       estimateInvokeFee: vi.fn().mockRejectedValue(estimateError),
     };
-    const call: Call = {
-      contractAddress: "0x1",
-      entrypoint: "settle_realms",
-      calldata: [],
-    };
+    const calls: Call[] = [
+      {
+        contractAddress: "0x999",
+        entrypoint: "request_random",
+        calldata: ["0x123", 0, "0xabc"],
+      },
+      {
+        contractAddress: "0x123",
+        entrypoint: "open_chest",
+        calldata: [],
+      },
+    ];
 
-    await expect(provider.executeAndCheckTransaction(signer, call)).rejects.toBeDefined();
+    // The estimate error is thrown to callers, not only stashed in the
+    // payload: downstream revert classifiers key on its trace.
+    await expect(provider.executeAndCheckTransaction(signer, calls)).rejects.toBe(estimateError);
 
-    // Estimate failure must not block submission — execute still ran.
+    // VRF exemption: estimate failure must not block submission — execute ran.
     expect(provider.execute).toHaveBeenCalledTimes(1);
     expect(findTransactionFailedPayload(provider)).toMatchObject({
       message: "Transaction failed to submit: Unknown error",

@@ -684,12 +684,30 @@ export class EternumProvider extends EnhancedDojoProvider {
         resourceBounds,
       };
     } catch (error) {
+      if (this.shouldAbortSubmitAfterEstimateRevert(error, transactionDetails)) {
+        throw error;
+      }
       // Submission proceeds with default v3 details, but the estimate error is
       // the richest failure signal we get — stash it for the failure payload.
       this.lastEstimateError = { error, atMs: Date.now() };
       console.warn("[provider] Failed to estimate invoke fee, using default v3 tx details", error);
       return details;
     }
+  }
+
+  /**
+   * A fee estimate that failed with an execution revert has already run the
+   * calls and proven they fail deterministically — submitting anyway only
+   * lands a doomed transaction on the paymaster and buries the revert reason
+   * under the controller's generic wrapper. VRF multicalls are the one
+   * exception: their consume_random can revert at estimate time (no
+   * submit_random on chain yet) and still succeed at execution once the VRF
+   * server front-runs it. A marginal tx that would pass one block later is
+   * rejected too; callers retry (automation next tick, players re-click).
+   */
+  private shouldAbortSubmitAfterEstimateRevert(error: unknown, transactionDetails: AllowArray<Call>): boolean {
+    if (classifyTransactionError(error).kind !== "reverted") return false;
+    return this.getVrfRequestRandomCalls(transactionDetails).length === 0;
   }
 
   private takeRecentEstimateError(): unknown {
@@ -1009,6 +1027,10 @@ export class EternumProvider extends EnhancedDojoProvider {
             cacheKey: executionDetailsCacheKey,
           })
         : undefined;
+    // The prefetch can reject (preflight abort) before the guard/lock awaits
+    // below reach it; park a handler so the window never surfaces as an
+    // unhandled rejection. The await inside the try still observes the error.
+    executionDetailsPromise?.catch(() => {});
 
     await this.runTransactionSubmitGuard(signer, transactionMeta);
 
@@ -1026,15 +1048,17 @@ export class EternumProvider extends EnhancedDojoProvider {
       }
     }
 
-    const executionDetails = executionDetailsPromise
-      ? await executionDetailsPromise
-      : await this.getV3ExecutionDetails(signer, transactionDetails, {
-          cacheKey: executionDetailsCacheKey,
-        });
-
     let tx;
     let submitPromise: Promise<{ transaction_hash: string }> | undefined;
     try {
+      // Resolved inside the try so a preflight abort (the estimate proved a
+      // deterministic revert) rides the same failure emission and VRF-lock
+      // release as a submit failure.
+      const executionDetails = executionDetailsPromise
+        ? await executionDetailsPromise
+        : await this.getV3ExecutionDetails(signer, transactionDetails, {
+            cacheKey: executionDetailsCacheKey,
+          });
       submitPromise = this.submitTransaction(signer, transactionDetails, executionDetails, {
         executionDetailsCacheKey,
       });
@@ -1052,14 +1076,18 @@ export class EternumProvider extends EnhancedDojoProvider {
         releaseVrfExecutionLock?.();
         releaseVrfExecutionLock = undefined;
       }
+      // Throw the resolved error too: when the submit error decoded to
+      // nothing actionable, callers (automation's revert classifier, toasts)
+      // need the stashed estimate trace as much as the diagnostics do.
+      const resolvedError = this.resolveSubmitFailureError(error, message);
       this.emitTransactionFailure({
         ...transactionMeta,
         message: `Transaction failed to submit: ${message}`,
         stage: "submit",
         ...submitFailure,
-        ...buildFailureDiagnostics(this.resolveSubmitFailureError(error, message)),
+        ...buildFailureDiagnostics(resolvedError),
       });
-      throw error;
+      throw resolvedError;
     }
 
     // Emit immediately so UI can show pending state

@@ -25,6 +25,10 @@ const GENERIC_ERROR_MESSAGES = new Set([
   "reason",
 ]);
 const GENERIC_ERROR_PREFIXES = ["transaction execution error:", "rpc error:", "rpc:"];
+// Cartridge controller wraps failures as "An error occurred (<ERROR_CODE>)"
+// with the actual Cairo trace in `data`. The wrapper must classify as generic
+// or the extractor returns it and never descends into the trace.
+const CARTRIDGE_WRAPPER_PATTERN = /^an error occurred \([a-z0-9_ ]+\)$/;
 const WRAPPED_ERROR_PREFIXES = [
   "Transaction failed to submit:",
   "Transaction failed while waiting for confirmation:",
@@ -74,8 +78,7 @@ const asReasonCandidate = (value: string): string | null => {
     return null;
   }
 
-  const normalized = normalizeErrorKey(reason);
-  if (GENERIC_ERROR_MESSAGES.has(normalized) || isWrappedGenericErrorMessage(reason) || isProtocolErrorCode(reason)) {
+  if (isGenericErrorMessage(reason)) {
     return null;
   }
 
@@ -185,6 +188,7 @@ const isGenericErrorMessage = (message: string): boolean => {
   if (
     GENERIC_ERROR_MESSAGES.has(normalized) ||
     GENERIC_ERROR_PREFIXES.some((prefix) => normalized.startsWith(prefix)) ||
+    CARTRIDGE_WRAPPER_PATTERN.test(normalized) ||
     isProtocolErrorCode(message)
   ) {
     return true;
