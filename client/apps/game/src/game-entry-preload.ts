@@ -1,6 +1,7 @@
 import {
   GAME_ENTRY_TIMELINE_EVENT_NAME,
   getGameEntryTimelineSnapshot,
+  markGameEntryMilestone,
   type GameEntryTimelineSnapshot,
 } from "@/ui/layouts/game-entry-timeline";
 import { prefetchDashboardPlayAssets, prefetchPlayEntryAssets } from "@/ui/utils/prefetch-play-assets";
@@ -177,9 +178,32 @@ export const createGameEntryPrimer = ({
   };
 };
 
+export const createPlayRouteEntryLoader = <Module>({
+  markPrefetchScheduled,
+  preloadGameRouteModule,
+  primeEntry,
+}: {
+  markPrefetchScheduled: () => void;
+  preloadGameRouteModule: () => Promise<Module>;
+  primeEntry: () => void;
+}): (() => Promise<Module>) => {
+  let loadPromise: Promise<Module> | null = null;
+
+  return () => {
+    if (loadPromise) {
+      return loadPromise;
+    }
+
+    markPrefetchScheduled();
+    primeEntry();
+    loadPromise = preloadGameRouteModule();
+    return loadPromise;
+  };
+};
+
 let gameRoutePreloadPromise: Promise<GameRouteModule> | null = null;
 
-export const preloadGameRouteModule = (): Promise<GameRouteModule> => {
+const preloadGameRouteModule = (): Promise<GameRouteModule> => {
   if (!gameRoutePreloadPromise) {
     gameRoutePreloadPromise = import("./game-route").catch((error) => {
       gameRoutePreloadPromise = null;
@@ -212,4 +236,10 @@ export const primeGameEntry = createGameEntryPrimer({
   primeRendererReadyPlayAssets,
   primePlayEntryRoute,
   primeWebGpuRendererModules,
+});
+
+export const loadGameRouteForPlayEntry = createPlayRouteEntryLoader({
+  markPrefetchScheduled: () => markGameEntryMilestone("asset-prefetch-scheduled"),
+  preloadGameRouteModule,
+  primeEntry: () => primeGameEntry("entry"),
 });

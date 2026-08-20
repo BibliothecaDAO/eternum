@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
-import { primeGameEntry } from "@/game-entry-preload";
 import { refreshSessionPolicies } from "@/hooks/context/session-policy-refresh";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useConnectionStore } from "@/hooks/store/use-connection-store";
@@ -285,10 +284,6 @@ export const useGameEntryBootstrapController = ({
         onWorldSelectionCompleted: () => {
           setTaskStatus("world", "complete");
           setTaskStatus("manifest", "running");
-        },
-        onBootstrapStarted: () => {
-          markGameEntryMilestone("asset-prefetch-scheduled");
-          primeGameEntry("entry");
         },
       });
 

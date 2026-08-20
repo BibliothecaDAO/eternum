@@ -35,6 +35,14 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-08-20",
+    title: "Faster Game Entry",
+    description:
+      "Game code and assets now begin loading as soon as you enter a play route, reducing waits even when account restoration is slow.",
+    type: "improvement",
+    gameSlug: "world",
+  },
+  {
+    date: "2026-08-20",
     title: "Reliable Game Entry",
     description:
       "Game entry now mounts the world once, preventing duplicate startup work and lost readiness while the world loads.",
