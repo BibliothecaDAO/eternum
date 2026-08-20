@@ -35,6 +35,14 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-08-20",
+    title: "Smoother Map Hover",
+    description:
+      "Map hover effects now update at most once per frame and skip unchanged tiles, reducing cursor-driven frame work without affecting clicks or selections.",
+    type: "improvement",
+    gameSlug: "world",
+  },
+  {
+    date: "2026-08-20",
     title: "Faster Building Updates",
     description:
       "Building placements and removals now update only the affected local tile, keeping settlements responsive without rebuilding surrounding terrain.",

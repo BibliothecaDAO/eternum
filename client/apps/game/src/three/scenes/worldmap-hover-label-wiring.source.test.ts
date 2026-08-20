@@ -135,6 +135,21 @@ describe("worldmap hover label wiring", () => {
     );
   });
 
+  it("skips stationary hex reconciliation while the hover mode is unchanged", () => {
+    const onHexagonMouseMove = extractSourceBetween(
+      readWorldmapSource(),
+      "protected onHexagonMouseMove(",
+      "protected onHexagonDoubleClick(",
+    );
+
+    const stableHoverGuard = onHexagonMouseMove.indexOf("shouldReconcileWorldmapHover(");
+    expect(stableHoverGuard).toBeGreaterThan(-1);
+    expect(stableHoverGuard).toBeLessThan(onHexagonMouseMove.indexOf('this.reconcileHoverLabels("hover")'));
+    expect(onHexagonMouseMove.indexOf("this.previouslyHoveredHex = hexCoords")).toBeLessThan(
+      onHexagonMouseMove.indexOf("const { selectedEntityId, actionPaths }"),
+    );
+  });
+
   it("clears pending hover recovery when hover or scene lifecycle ends", () => {
     const source = readWorldmapSource();
     const onHexagonMouseMove = extractSourceBetween(

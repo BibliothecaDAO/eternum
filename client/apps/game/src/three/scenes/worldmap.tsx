@@ -119,6 +119,10 @@ import { FXManager } from "../managers/fx-manager";
 import { HoverLabelManager, type HoverLabelReconcileResult } from "../managers/hover-label-manager";
 import { resolveWorldmapHoverLabelEntity } from "./worldmap-hover-label-entities";
 import { resolveWorldmapHoverLabelTargets } from "./worldmap-hover-label-targets";
+import {
+  shouldReconcileWorldmapHover,
+  type WorldmapHoverReconciliationSnapshot,
+} from "./worldmap-hover-reconciliation";
 import { ResourceFXManager } from "../managers/resource-fx-manager";
 import { ArrivalGhostManager } from "../managers/arrival-ghost-manager";
 import { resolveHoverVisualPalette, resolveSelectionPulsePalette } from "../managers/worldmap-interaction-palette";
@@ -869,6 +873,7 @@ export default class WorldmapScene extends WarpTravel {
   private followCameraTimeout: ReturnType<typeof setTimeout> | null = null;
   private notifiedBattleEvents = new Set<string>();
   private previouslyHoveredHex: HexPosition | null = null;
+  private lastHoverReconciliation: WorldmapHoverReconciliationSnapshot | null = null;
 
   // Performance simulation helper
   private perfSimulation: WorldmapPerfSimulation | null = null;
@@ -2018,6 +2023,17 @@ export default class WorldmapScene extends WarpTravel {
 
   // methods needed to add worldmap specific behavior to the click events
   protected onHexagonMouseMove(hex: { hexCoords: HexPosition; position: Vector3 } | null): void {
+    const nextHexCoords = hex?.hexCoords ?? null;
+    const hoverPalette = this.resolveContextualHoverPalette(nextHexCoords);
+    const nextHoverReconciliation: WorldmapHoverReconciliationSnapshot = {
+      hex: nextHexCoords ? { col: nextHexCoords.col, row: nextHexCoords.row } : null,
+      palette: hoverPalette,
+    };
+    if (!shouldReconcileWorldmapHover(this.lastHoverReconciliation, nextHoverReconciliation)) {
+      return;
+    }
+    this.lastHoverReconciliation = nextHoverReconciliation;
+
     if (hex === null) {
       if (this.previouslyHoveredHex) {
         this.traceChunk("mouse_chunk_leave", {
@@ -2025,9 +2041,10 @@ export default class WorldmapScene extends WarpTravel {
           previousHoveredChunkKey: this.resolveChunkKeyForHexPosition(this.previouslyHoveredHex),
         });
       }
+      this.previouslyHoveredHex = null;
       this.state.updateEntityActionHoveredHex(null);
       this.state.setHoveredHex(null);
-      this.applyContextualHoverPalette(null);
+      this.interactiveHexManager.applyHoverPalette(hoverPalette);
 
       // Reset cursor when leaving hex
       document.body.style.cursor = "default";
@@ -2046,6 +2063,7 @@ export default class WorldmapScene extends WarpTravel {
         hoveredChunkKey,
       });
     }
+    this.previouslyHoveredHex = hexCoords;
 
     // Handle label expansion on hover
     this.currentHoverLabelHex = hexCoords;
@@ -2055,13 +2073,10 @@ export default class WorldmapScene extends WarpTravel {
     // Entity IDs can be valid falsy values (for example 0), so nullish checks
     // are required to distinguish "no selection" from a real selected entity.
     if (selectedEntityId !== null && selectedEntityId !== undefined && actionPaths.size > 0) {
-      if (this.previouslyHoveredHex?.col !== hexCoords.col || this.previouslyHoveredHex?.row !== hexCoords.row) {
-        this.previouslyHoveredHex = hexCoords;
-      }
       this.state.updateEntityActionHoveredHex(hexCoords);
     }
 
-    this.applyContextualHoverPalette(hexCoords);
+    this.interactiveHexManager.applyHoverPalette(hoverPalette);
   }
 
   // double-click reserved hyperstructure tiles to materialize them; otherwise enter the real structure
@@ -3646,16 +3661,18 @@ export default class WorldmapScene extends WarpTravel {
   }
 
   private applyContextualHoverPalette(hexCoords: HexPosition | null): void {
+    this.interactiveHexManager.applyHoverPalette(this.resolveContextualHoverPalette(hexCoords));
+  }
+
+  private resolveContextualHoverPalette(hexCoords: HexPosition | null) {
     const { selectedEntityId } = getLiveWorldmapEntityActions();
     const hasSelection = selectedEntityId !== null && selectedEntityId !== undefined;
     const actionType = this.getHoveredActionType(hexCoords);
 
-    this.interactiveHexManager.applyHoverPalette(
-      resolveHoverVisualPalette({
-        hasSelection,
-        actionType,
-      }),
-    );
+    return resolveHoverVisualPalette({
+      hasSelection,
+      actionType,
+    });
   }
 
   private getHoveredActionType(hexCoords: HexPosition | null): ActionType | undefined {
@@ -9390,6 +9407,7 @@ export default class WorldmapScene extends WarpTravel {
       }
       this.actionPathsTransitionToken = null;
       this.previouslyHoveredHex = null;
+      this.lastHoverReconciliation = null;
       document.body.style.cursor = "default";
       this.applyContextualHoverPalette(null);
     } finally {
