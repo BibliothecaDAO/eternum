@@ -57,6 +57,7 @@ export function createIndexer<
     plugins: [
       drizzleStorage({
         db: database,
+        schema: { velords_lords_locked, velords_rewards_received },
         idColumn: "_id",
         persistState: true,
         indexerName: "starknet-realms-lords-claims",

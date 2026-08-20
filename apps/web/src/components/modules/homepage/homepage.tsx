@@ -8,6 +8,7 @@ import LordsIcon from "@/components/icons/lords.svg?react";
 import StarknetIcon from "@/components/icons/starknet.svg?react";
 import { DelegateCard } from "@/components/modules/governance/delegate-card";
 import { DelegateCardSkeleton } from "@/components/modules/governance/delegate-card-skeleton";
+import { OwnershipStatusAlert } from "@/components/modules/realms/ownership-status-alert";
 import { RealmCard } from "@/components/modules/realms/realm-card";
 import { Button } from "@/components/ui/button";
 import {
@@ -34,7 +35,7 @@ import {
   useReadContract,
   useSendTransaction,
 } from "@starknet-start/react";
-import { useQuery, useSuspenseQueries } from "@tanstack/react-query";
+import { useQuery, useSuspenseQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { Gavel, Plus } from "lucide-react";
 import { num } from "starknet";
@@ -62,21 +63,22 @@ function StatValue({ children }: { children: React.ReactNode }) {
 export function Homepage({ address }: { address: `0x${string}` }) {
   const { address: l1Address } = useL1Account();
 
-  const [l1UsersRealmsQuery, accountTokensQuery] = useSuspenseQueries({
-    queries: [
-      getL1UsersRealmsQueryOptions({
-        address: l1Address,
-      }),
-      getAccountTokensQueryOptions({
-        address: address,
-        collectionAddress: CollectionAddresses.realms[
-          SUPPORTED_L2_CHAIN_ID
-        ] as string,
-      }),
-    ],
-  });
+  const l1UsersRealmsQuery = useSuspenseQuery(
+    getL1UsersRealmsQueryOptions({
+      address: l1Address,
+    }),
+  );
+  const accountTokensQuery = useQuery(
+    getAccountTokensQueryOptions({
+      address: address,
+      collectionAddress: CollectionAddresses.realms[
+        SUPPORTED_L2_CHAIN_ID
+      ] as string,
+    }),
+  );
   const l1UsersRealms = l1UsersRealmsQuery.data;
-  const accountTokens = accountTokensQuery.data;
+  const accountInventory = accountTokensQuery.data;
+  const accountTokens = accountInventory?.tokens ?? [];
   const l1RealmCount = l1UsersRealms?.collections[0]?.ownership.tokenCount ?? 0;
 
   const { data } = useCurrentDelegate();
@@ -149,7 +151,14 @@ export function Homepage({ address }: { address: `0x${string}` }) {
               </div>
               <div className="flex items-center justify-between">
                 <div>
-                  <StatValue>{accountTokens?.length ?? 0}</StatValue>
+                  <StatValue>
+                    {accountTokensQuery.isPending
+                      ? "…"
+                      : accountTokensQuery.isError ||
+                          accountInventory?.status !== "ready"
+                        ? "—"
+                        : accountTokens.length}
+                  </StatValue>
                   <div className="text-muted-foreground flex items-center gap-2 text-sm">
                     <StarknetIcon className="h-4 w-4" />
                     Starknet
@@ -376,7 +385,28 @@ export function Homepage({ address }: { address: `0x${string}` }) {
 
         {/* Realms Grid */}
         <div>
-          {accountTokens?.length > 0 ? (
+          {accountTokensQuery.isPending ? (
+            <Card>
+              <CardHeader className="pb-4">
+                <CardTitle>Your Realms</CardTitle>
+              </CardHeader>
+              <CardContent>Loading Realm inventory...</CardContent>
+            </Card>
+          ) : accountTokensQuery.isError ||
+            accountInventory?.status !== "ready" ? (
+            <Card>
+              <CardHeader className="pb-4">
+                <CardTitle>Your Realms</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <OwnershipStatusAlert
+                  status={accountInventory?.status}
+                  isError={accountTokensQuery.isError}
+                  onRetry={() => void accountTokensQuery.refetch()}
+                />
+              </CardContent>
+            </Card>
+          ) : accountTokens.length > 0 ? (
             <Card>
               <CardHeader className="flex flex-row items-center justify-between pb-4">
                 <CardTitle>Your Realms</CardTitle>
@@ -408,7 +438,10 @@ export function Homepage({ address }: { address: `0x${string}` }) {
                         <div className="text-center">
                           <Plus className="text-muted-foreground mx-auto h-8 w-8" />
                           <div className="text-muted-foreground mt-2 text-sm">
-                            +{accountTokens.length - HOMEPAGE_REALMS_PREVIEW_COUNT} more
+                            +
+                            {accountTokens.length -
+                              HOMEPAGE_REALMS_PREVIEW_COUNT}{" "}
+                            more
                           </div>
                         </div>
                       </Link>

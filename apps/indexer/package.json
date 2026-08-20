@@ -13,6 +13,7 @@
     "lint": "eslint",
     "lint:fix": "pnpm lint --write",
     "test": "vitest",
+    "ownership:smoke": "pnpm with-env node scripts/check-realm-ownership-indexer.mjs",
     "drizzle:generate": "drizzle-kit generate",
     "drizzle:migrate": "drizzle-kit migrate",
     "drizzle:push": "drizzle-kit push",

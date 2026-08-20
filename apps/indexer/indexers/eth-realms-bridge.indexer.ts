@@ -104,6 +104,7 @@ export default function (_runtimeConfig: ApibaraRuntimeConfig) {
     plugins: [
       drizzleStorage({
         db: db,
+        schema: { realmsBridgeEvents, realmsBridgeRequests },
         persistState: true,
         idColumn: "_id",
         indexerName: "eth-realms-bridge",

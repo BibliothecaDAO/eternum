@@ -13,6 +13,11 @@ import {
   realmsBridgeRequestsRelations,
   realmsLordsClaims,
 } from "./schema/bridge";
+import {
+  starknetRealmMetadata,
+  starknetRealmOwnership,
+  starknetRealmOwnershipStatus,
+} from "./schema/realm-ownership";
 
 neonConfig.webSocketConstructor = ws;
 
@@ -34,6 +39,9 @@ const schema = {
   realmsBridgeEvents,
   realmsLordsClaims,
   bridgeEventTypeEnum,
+  starknetRealmOwnership,
+  starknetRealmMetadata,
+  starknetRealmOwnershipStatus,
   // Include relations
   realmsBridgeRequestsRelations,
   realmsBridgeEventsRelations,

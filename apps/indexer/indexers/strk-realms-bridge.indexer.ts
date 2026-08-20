@@ -151,6 +151,7 @@ export function createIndexer<
     plugins: [
       drizzleStorage({
         db: database,
+        schema: { realmsBridgeEvents, realmsBridgeRequests },
         idColumn: "_id",
         persistState: true,
         indexerName: "starknet-realms-bridge",

@@ -52,6 +52,7 @@ import { toDecimalAmount } from "./amount-utils";
       plugins: [
         drizzleStorage({
           db: database,
+          schema: { velords_burner_transfers },
           idColumn: "_id",
           persistState: true,
           indexerName: "starknet-realms-lords-claims",

@@ -49,6 +49,7 @@ export function createIndexer<
     plugins: [
       drizzleStorage({
         db: database,
+        schema: { realmsLordsClaims },
         idColumn: "_id",
         persistState: true,
         indexerName: "starknet-realms-lords-claims",

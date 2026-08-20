@@ -10,6 +10,11 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
 import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import {
   Sidebar,
   SidebarContent,
   SidebarGroup,
@@ -18,7 +23,6 @@ import {
   SidebarHeader,
   SidebarSeparator,
 } from "@/components/ui/sidebar";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useBridgeL2Realms } from "@/hooks/bridge/useBridgeL2Realms";
 import {
   isStarknetAccountDeployed,
@@ -35,12 +39,14 @@ import BridgeTransactionItems from "./bridge-tx-items";
 import BridgeTransactionHistorySkeleton from "./bridge-tx-skeleton";
 
 interface BridgeSidebarProps {
+  disabled: boolean;
   selectedRows: Row<BridgeRealm>[];
   selectedAsset: string;
   setRowSelection: (rowSelection: RowSelectionState) => void;
 }
 
 const BridgeSidebar: React.FC<BridgeSidebarProps> = ({
+  disabled,
   selectedRows,
   selectedAsset,
   setRowSelection,
@@ -187,6 +193,7 @@ const BridgeSidebar: React.FC<BridgeSidebarProps> = ({
           ) : (
             <Button
               disabled={
+                disabled ||
                 !selectedRows.length ||
                 isDepositPending ||
                 isWithdrawPending ||

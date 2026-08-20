@@ -1,0 +1,55 @@
+import pg from "pg";
+
+const { Pool } = pg;
+const databaseUrl = process.env.DATABASE_URL;
+if (!databaseUrl) {
+  throw new Error("DATABASE_URL is required");
+}
+
+const pool = new Pool({ connectionString: databaseUrl, max: 1 });
+
+try {
+  const statusResult = await pool.query(`
+    SELECT latest_block_number, latest_block_timestamp, has_reached_head
+    FROM starknet_realm_ownership_status
+    WHERE _id = 'starknet-realms-ownership'
+    LIMIT 1
+  `);
+  const status = statusResult.rows[0];
+  if (!status) throw new Error("Realm ownership indexer has no checkpoint");
+  if (!status.has_reached_head) {
+    throw new Error(
+      "Realm ownership indexer is still performing its initial sync",
+    );
+  }
+
+  const checkpointAgeMs =
+    Date.now() - new Date(status.latest_block_timestamp).getTime();
+  if (checkpointAgeMs > 10 * 60 * 1_000) {
+    throw new Error("Realm ownership indexer checkpoint is stale");
+  }
+
+  const wallet = process.env.REALM_OWNERSHIP_SMOKE_ADDRESS;
+  const expectedCount = process.env.REALM_OWNERSHIP_SMOKE_EXPECTED_COUNT;
+  let ownershipMessage = "";
+  if (wallet) {
+    const owner = `0x${BigInt(wallet).toString(16)}`;
+    const countResult = await pool.query(
+      "SELECT COUNT(*)::integer AS count FROM starknet_realm_ownership WHERE owner = $1",
+      [owner],
+    );
+    const count = countResult.rows[0]?.count ?? 0;
+    if (expectedCount?.trim() && count !== Number(expectedCount)) {
+      throw new Error(
+        `Expected ${expectedCount} Realms for ${owner}, indexed ${count}`,
+      );
+    }
+    ownershipMessage = `; ${owner} owns ${count} indexed Realms`;
+  }
+
+  console.log(
+    `Realm ownership indexer healthy at block ${status.latest_block_number}${ownershipMessage}`,
+  );
+} finally {
+  await pool.end();
+}

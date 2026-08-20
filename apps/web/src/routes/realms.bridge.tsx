@@ -1,3 +1,4 @@
+import type { BridgeRealm, TokenMetadataAttribute } from "@/types/ark";
 import type { RowSelectionState } from "@tanstack/react-table";
 import { Suspense, useEffect, useMemo, useState } from "react";
 import EthereumIcon from "@/components/icons/ethereum.svg?react";
@@ -5,6 +6,7 @@ import StarknetIcon from "@/components/icons/starknet.svg?react";
 import { PageHeader } from "@/components/layout/page-header";
 import BridgeSidebar from "@/components/modules/realms/bridge-sidebar";
 import { BridgeTable, columns } from "@/components/modules/realms/bridge-table";
+import { OwnershipStatusAlert } from "@/components/modules/realms/ownership-status-alert";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
@@ -29,6 +31,36 @@ export const Route = createFileRoute("/realms/bridge")({
   component: RouteComponent,
 });
 
+function isMetadataAttribute(value: unknown): value is TokenMetadataAttribute {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function parseRealmMetadata(
+  metadata: string | undefined,
+): Pick<BridgeRealm, "name" | "attributes"> {
+  if (!metadata) return {};
+
+  try {
+    const parsed: unknown = JSON.parse(metadata);
+    if (
+      typeof parsed !== "object" ||
+      parsed === null ||
+      Array.isArray(parsed)
+    ) {
+      return {};
+    }
+    const fields = parsed as Record<string, unknown>;
+    return {
+      name: typeof fields.name === "string" ? fields.name : undefined,
+      attributes: Array.isArray(fields.attributes)
+        ? fields.attributes.filter(isMetadataAttribute)
+        : undefined,
+    };
+  } catch {
+    return {};
+  }
+}
+
 function RouteComponent() {
   const { address: l1Address } = useL1Account();
   const { address: l2Address } = useAccount();
@@ -45,7 +77,8 @@ function RouteComponent() {
       ] as string,
     }),
   );
-  const l2Realms = l2RealmsQuery.data;
+  const l2Inventory = l2RealmsQuery.data;
+  const l2Realms = l2Inventory?.tokens;
 
   const [selectedAsset, setSelectedAsset] = useState<"Ethereum" | "Starknet">(
     "Ethereum",
@@ -65,21 +98,18 @@ function RouteComponent() {
         })) ?? []
       );
     } else if (selectedAsset === "Starknet") {
-      return l2Realms?.map((realm: any) => {
-        let parsedMetadata: any = null;
-        try {
-          parsedMetadata = realm.metadata ? JSON.parse(realm.metadata) : null;
-        } catch {
-          parsedMetadata = null;
-        }
-        const { attributes, name } = parsedMetadata ?? {};
-        return {
-          token_id: realm.token_id,
-          name: name,
-          attributes: attributes,
-        };
-      });
+      return (
+        l2Realms?.map((realm) => {
+          const { attributes, name } = parseRealmMetadata(realm.metadata);
+          return {
+            token_id: realm.token_id,
+            name,
+            attributes,
+          };
+        }) ?? []
+      );
     }
+    return [];
   }, [selectedAsset, l2Realms, l1Realms]);
 
   const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
@@ -95,9 +125,15 @@ function RouteComponent() {
     },
   });
 
+  const starknetInventoryReady =
+    !!l2Address &&
+    !l2RealmsQuery.isPending &&
+    !l2RealmsQuery.isError &&
+    l2Inventory?.status === "ready";
+
   useEffect(() => {
     setRowSelection({});
-  }, [selectedAsset]);
+  }, [selectedAsset, l1Address, l2Address, starknetInventoryReady]);
 
   const swapAssets = () => {
     setSelectedAsset((prev) => (prev === "Ethereum" ? "Starknet" : "Ethereum"));
@@ -106,6 +142,9 @@ function RouteComponent() {
   const { openStarknetKitModal } = useStarknetWallet();
 
   const selectedRows = table.getFilteredSelectedRowModel().rows;
+  const canShowInventory =
+    selectedAsset !== "Starknet" || starknetInventoryReady;
+  const bridgeDisabled = selectedAsset === "Starknet" && !canShowInventory;
 
   return (
     <SidebarProvider
@@ -134,7 +173,12 @@ function RouteComponent() {
               </>
             )}
           </div>
-          <Button size="icon" variant="outline" onClick={swapAssets} className="rounded-full">
+          <Button
+            size="icon"
+            variant="outline"
+            onClick={swapAssets}
+            className="rounded-full"
+          >
             <ArrowLeftRight className="h-4 w-4" />
           </Button>
           <div className="realm-subtle-panel flex items-center gap-2 rounded-lg px-4 py-2.5">
@@ -159,7 +203,8 @@ function RouteComponent() {
               Your Ethereum wallet is not connected
             </AlertTitle>
             <AlertDescription>
-              Connect your Ethereum wallet using the sidebar to view and bridge your Realms
+              Connect your Ethereum wallet using the sidebar to view and bridge
+              your Realms
             </AlertDescription>
           </Alert>
         )}
@@ -176,17 +221,32 @@ function RouteComponent() {
                 onClick={() => openStarknetKitModal()}
               >
                 Connect your Starknet wallet
-              </Button>
-              {" "}to view and bridge your Realms
+              </Button>{" "}
+              to view and bridge your Realms
             </AlertDescription>
           </Alert>
         )}
-        <Suspense fallback={<div>Loading...</div>}>
-          <BridgeTable table={table} />
-        </Suspense>
+        {selectedAsset === "Starknet" &&
+          l2Address &&
+          (l2RealmsQuery.isPending ? (
+            <div className="mb-4">Loading Realm inventory...</div>
+          ) : (
+            <OwnershipStatusAlert
+              className="mb-4"
+              status={l2Inventory?.status}
+              isError={l2RealmsQuery.isError}
+              onRetry={() => void l2RealmsQuery.refetch()}
+            />
+          ))}
+        {canShowInventory && (
+          <Suspense fallback={<div>Loading...</div>}>
+            <BridgeTable table={table} />
+          </Suspense>
+        )}
       </SidebarInset>
       <BridgeSidebar
-        selectedRows={selectedRows}
+        disabled={bridgeDisabled}
+        selectedRows={bridgeDisabled ? [] : selectedRows}
         setRowSelection={setRowSelection}
         selectedAsset={selectedAsset}
       />
