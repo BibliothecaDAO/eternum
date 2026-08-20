@@ -47,4 +47,12 @@ describe("in-game leaderboard fact ownership", () => {
     expect(activityServiceSource).toContain("row.totalPoints");
     expect(activityServiceSource).not.toContain("row.registeredPoints");
   });
+
+  it("builds the Blitz player list from the active game's settlement membership", () => {
+    const socialSource = readSource("src/ui/features/social/components/social.tsx");
+
+    expect(socialSource).toContain("useBlitzSettlementPlayerAddresses(components)");
+    expect(socialSource).toContain("filterPlayersByBlitzSettlement(allPlayers, blitzSettlementPlayerAddresses)");
+    expect(socialSource).toContain("belongsToActiveGame(structure)");
+  });
 });

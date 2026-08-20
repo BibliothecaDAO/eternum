@@ -6,6 +6,14 @@ import { useMemo } from "react";
 
 type BlitzSettlementComponents = Pick<ClientComponents, "BlitzSettlement">;
 
+export const filterPlayersByBlitzSettlement = <Player extends { address: bigint }>(
+  players: readonly Player[],
+  settledPlayerAddresses: readonly bigint[],
+): Player[] => {
+  const settledPlayers = new Set(settledPlayerAddresses);
+  return players.filter((player) => settledPlayers.has(player.address));
+};
+
 export const readBlitzSettlementPlayerAddresses = (
   components: BlitzSettlementComponents,
   blitzSettlementEntities: Entity[],

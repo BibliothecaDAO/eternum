@@ -35,6 +35,14 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-08-20",
+    title: "Current-Game Leaderboard",
+    description:
+      "Fixed the in-game Blitz leaderboard so it shows only players registered in the current match, including players who have not scored yet.",
+    type: "fix",
+    gameSlug: "world",
+  },
+  {
+    date: "2026-08-20",
     title: "Faster World Entry",
     description:
       "The entry screen now clears as soon as the critical map terrain and entities are ready, while remaining map detail continues loading in the background.",
