@@ -475,9 +475,7 @@ export default class GameRenderer {
   }
 
   animate() {
-    if (import.meta.env.DEV) {
-      startGpuBackendFrame();
-    }
+    startGpuBackendFrame();
 
     this.lastTime = runRendererAnimationTick({
       getCurrentTime: () => performance.now(),

@@ -1,4 +1,5 @@
 import type {
+  RendererActiveMode,
   RendererBackendCapabilities,
   RendererCapabilityFeature,
   RendererFeatureDegradation,
@@ -208,6 +209,10 @@ export function snapshotRendererDiagnostics(): RendererDiagnosticsSnapshot {
         }
       : null,
   };
+}
+
+export function getRendererDiagnosticActiveMode(): RendererActiveMode | null {
+  return rendererDiagnosticsState.activeMode;
 }
 
 export function resetRendererDiagnostics(): void {

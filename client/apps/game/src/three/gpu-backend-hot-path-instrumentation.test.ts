@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
   getCompiledRenderPipelineCount,
   instrumentGpuBackendHotPaths,
@@ -6,7 +6,18 @@ import {
 } from "./gpu-backend-hot-path-instrumentation";
 import { runWithFrameWorkOwner } from "./frame-work-owner";
 
+const startFrame = (
+  startedAt: number,
+  warn: (message: string) => void,
+  gpuAttributionEnabled: boolean = true,
+  rendererMode: string = "webgpu",
+) => startGpuBackendFrame({ gpuAttributionEnabled, pageVisible: true, rendererMode, startedAt, warn });
+
 describe("GPU backend hot-path instrumentation", () => {
+  beforeEach(() => {
+    startGpuBackendFrame({ pageVisible: false });
+  });
+
   it("attributes texture upload time by texture identity and dimensions per report window", () => {
     const texture = {
       image: { width: 512, height: 256 },
@@ -73,30 +84,32 @@ describe("GPU backend hot-path instrumentation", () => {
       reportIntervalMs: 10_000,
       warn,
     });
-    startGpuBackendFrame(0, warn);
+    startFrame(0, warn);
 
     backend.createRenderPipeline();
     backend.createAttribute();
     backend.updateTexture(texture);
-    startGpuBackendFrame(87, warn);
+    startFrame(87, warn);
 
     expect(warn).toHaveBeenCalledWith(
-      "[FramePerf] spike 87ms owner=unattributed: createRenderPipeline=1x/12ms, createAttribute=1x/6.0ms, updateTexture=1x/5.0ms; textures=structure-label(1024x1024)=1x/5.0ms",
+      "[FramePerf] spike renderer_mode=webgpu duration_ms=87 frame_owner=unattributed gpu_attribution=enabled gpu_backend_ms=23 attribution=material gpu_contributors=createRenderPipeline=1x/12ms, createAttribute=1x/6.0ms, updateTexture=1x/5.0ms gpu_textures=structure-label(1024x1024)=1x/5.0ms",
     );
   });
 
   it("names the dominant ambient owner on a spike frame", () => {
     const warn = vi.fn();
 
-    startGpuBackendFrame(0, warn);
+    startFrame(0, warn);
     runWithFrameWorkOwner(
       "catchup:army",
       () => undefined,
       () => 1,
     );
-    startGpuBackendFrame(62, warn);
+    startFrame(62, warn);
 
-    expect(warn).toHaveBeenCalledWith("[FramePerf] spike 62ms owner=catchup:army: cpu-bound (zero GPU backend work)");
+    expect(warn).toHaveBeenCalledWith(
+      "[FramePerf] spike renderer_mode=webgpu duration_ms=62 frame_owner=catchup:army gpu_attribution=enabled gpu_backend_ms=0 attribution=cpu-bound",
+    );
   });
 
   it("summarizes immaterial GPU work as cpu-bound instead of listing calls", () => {
@@ -109,11 +122,13 @@ describe("GPU backend hot-path instrumentation", () => {
       reportIntervalMs: 10_000,
       warn,
     });
-    startGpuBackendFrame(0, warn);
+    startFrame(0, warn);
     backend.updateAttribute();
-    startGpuBackendFrame(120, warn);
+    startFrame(120, warn);
 
-    expect(warn).toHaveBeenCalledWith("[FramePerf] spike 120ms owner=unattributed: cpu-bound (gpu=2.0ms)");
+    expect(warn).toHaveBeenCalledWith(
+      "[FramePerf] spike renderer_mode=webgpu duration_ms=120 frame_owner=unattributed gpu_attribution=enabled gpu_backend_ms=2.0 attribution=cpu-bound",
+    );
   });
 
   it("reports aggregate compile-on-demand cost over the measurement window", () => {
@@ -152,13 +167,38 @@ describe("GPU backend hot-path instrumentation", () => {
       reportIntervalMs: 10_000,
       warn,
     });
-    startGpuBackendFrame(0, warn);
+    startFrame(0, warn);
     backend.createBindings();
 
-    startGpuBackendFrame(20, warn);
-    startGpuBackendFrame(60, warn);
+    startFrame(20, warn);
+    startFrame(60, warn);
 
     expect(warn).toHaveBeenCalledOnce();
-    expect(warn).toHaveBeenCalledWith("[FramePerf] spike 40ms owner=unattributed: cpu-bound (zero GPU backend work)");
+    expect(warn).toHaveBeenCalledWith(
+      "[FramePerf] spike renderer_mode=webgpu duration_ms=40 frame_owner=unattributed gpu_attribution=enabled gpu_backend_ms=0 attribution=cpu-bound",
+    );
+  });
+
+  it("reports a production spike without claiming CPU attribution when backend instrumentation is disabled", () => {
+    const warn = vi.fn();
+
+    startFrame(0, warn, false, "webgl2-fallback");
+    startFrame(80, warn, false, "webgl2-fallback");
+
+    expect(warn).toHaveBeenCalledOnce();
+    expect(warn).toHaveBeenCalledWith(
+      "[FramePerf] spike renderer_mode=webgl2-fallback duration_ms=80 frame_owner=unattributed gpu_attribution=disabled",
+    );
+    expect(warn.mock.calls[0][0]).not.toContain("cpu-bound");
+  });
+
+  it("discards expected animation throttling while the page is hidden", () => {
+    const warn = vi.fn();
+
+    startFrame(0, warn, false);
+    startGpuBackendFrame({ pageVisible: false, startedAt: 1_000, warn });
+    startFrame(2_000, warn, false);
+
+    expect(warn).not.toHaveBeenCalled();
   });
 });

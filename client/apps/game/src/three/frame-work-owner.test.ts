@@ -37,4 +37,19 @@ describe("frame work owner", () => {
     expect(getCurrentFrameWorkOwner()).toBeNull();
     expect(consumeDominantFrameWorkOwner()).toBe("sync:ingest");
   });
+
+  it("resets reused owner totals between frames", () => {
+    runWithFrameWorkOwner("catchup:army", () => undefined, createNowSequence([0, 10]));
+    expect(consumeDominantFrameWorkOwner()).toBe("catchup:army");
+
+    runWithFrameWorkOwner("catchup:army", () => undefined, createNowSequence([10, 11]));
+    runWithFrameWorkOwner("sync:ingest", () => undefined, createNowSequence([11, 13]));
+
+    expect(consumeDominantFrameWorkOwner()).toBe("sync:ingest");
+    expect(consumeDominantFrameWorkOwner()).toBeNull();
+  });
 });
+
+function createNowSequence(timestamps: number[]): () => number {
+  return () => timestamps.shift() ?? 0;
+}

@@ -103,23 +103,10 @@ import { resolveArmySlotCompactionPlan } from "./army-slot-compaction";
 import {
   auditArmyRenderIntegrity,
   auditArmySlots,
-  type ArmyRenderViolation,
   type ArmySlotAuditEntry,
   type DrawnSlotPositionEntry,
 } from "./army-slot-auditor";
-
-const renderViolationSignature = (violation: ArmyRenderViolation): string => {
-  switch (violation.kind) {
-    case "orphaned-drawn-slot":
-      return `orphan:${violation.slot}:${violation.owner}`;
-    case "visible-not-drawn":
-      return `missing:${violation.entityId}`;
-    case "stale-drawn-position":
-      return `stale:${violation.entityId}:${violation.slot}`;
-    case "duplicate-drawn-owner":
-      return `dup:${violation.owner}:${violation.slots.join(",")}`;
-  }
-};
+import { reportArmyIntegrityHealOnce } from "./army-integrity-diagnostics";
 import { resolveMovementPath } from "./army-move-path";
 import { shouldUseWorkerPathForArmy } from "./army-movement-path-strategy";
 import { addVisibleArmyOrderEntry, removeVisibleArmyOrderEntry, replaceVisibleArmyOrder } from "./army-visible-order";
@@ -138,7 +125,7 @@ import {
   shouldRunManagerChunkUpdate,
   waitForVisualSettle,
 } from "./manager-update-convergence";
-import { snapshotRendererDiagnostics } from "../renderer-diagnostics";
+import { getRendererDiagnosticActiveMode, snapshotRendererDiagnostics } from "../renderer-diagnostics";
 import {
   isFrameBudgetWorkQueueDisposedError,
   scheduleFrameBudgetWork,
@@ -2374,13 +2361,11 @@ export class ArmyManager {
           break;
       }
 
-      if (import.meta.env?.DEV) {
-        const signature = renderViolationSignature(violation);
-        if (!this.loggedSlotViolations.has(signature)) {
-          this.loggedSlotViolations.add(signature);
-          console.warn("[ArmyManager] render-integrity heal", violation);
-        }
-      }
+      reportArmyIntegrityHealOnce({
+        rendererMode: getRendererDiagnosticActiveMode(),
+        reportedSignatures: this.loggedSlotViolations,
+        violation,
+      });
     }
 
     // Purges mutate activeInstances directly; recompact draw counts so the freed

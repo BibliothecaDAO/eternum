@@ -1,23 +1,23 @@
 interface FrameWorkOwnerStat {
   durationMs: number;
+  frameGeneration: number;
   lastSequence: number;
 }
 
 // Ownership is deliberately synchronous: queued work captures the marker when
 // scheduled, while overlapping promises must never share ambient ownership.
 let currentOwner: string | null = null;
+let frameGeneration = 0;
 let ownerSequence = 0;
+// Callers use bounded, stable labels. Retaining one stat per label avoids a new
+// object for every frame while the generation keeps prior-frame totals inert.
 const frameOwnerStats = new Map<string, FrameWorkOwnerStat>();
 
 export function getCurrentFrameWorkOwner(): string | null {
-  return import.meta.env.DEV ? currentOwner : null;
+  return currentOwner;
 }
 
 export function runWithFrameWorkOwner<T>(owner: string, work: () => T, now: () => number = defaultNow): T {
-  if (!import.meta.env.DEV) {
-    return work();
-  }
-
   const previousOwner = currentOwner;
   const startedAt = now();
   currentOwner = owner;
@@ -31,14 +31,14 @@ export function runWithFrameWorkOwner<T>(owner: string, work: () => T, now: () =
 }
 
 export function consumeDominantFrameWorkOwner(): string | null {
-  if (!import.meta.env.DEV) {
-    return null;
-  }
-
   let dominantOwner: string | null = null;
   let dominantStat: FrameWorkOwnerStat | null = null;
 
   frameOwnerStats.forEach((stat, owner) => {
+    if (stat.frameGeneration !== frameGeneration) {
+      return;
+    }
+
     if (
       dominantStat === null ||
       stat.durationMs > dominantStat.durationMs ||
@@ -48,12 +48,20 @@ export function consumeDominantFrameWorkOwner(): string | null {
       dominantStat = stat;
     }
   });
-  frameOwnerStats.clear();
+  frameGeneration += 1;
   return dominantOwner;
 }
 
 function recordFrameWorkOwner(owner: string, durationMs: number): void {
-  const stat = frameOwnerStats.get(owner) ?? { durationMs: 0, lastSequence: 0 };
+  const stat = frameOwnerStats.get(owner) ?? {
+    durationMs: 0,
+    frameGeneration,
+    lastSequence: 0,
+  };
+  if (stat.frameGeneration !== frameGeneration) {
+    stat.durationMs = 0;
+    stat.frameGeneration = frameGeneration;
+  }
   stat.durationMs += durationMs;
   stat.lastSequence = ++ownerSequence;
   frameOwnerStats.set(owner, stat);
