@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import {
   Box3,
   BoxGeometry,
+  Color,
   Group,
   InstancedBufferAttribute,
   Matrix4,
@@ -83,6 +84,33 @@ describe("InstancedBiome visibility", () => {
     expect(mesh.boundingSphere?.radius).toBe(35);
     expect(mesh.boundingBox?.min.toArray()).toEqual([-25, -5, -25]);
     expect(mesh.boundingBox?.max.toArray()).toEqual([25, 10, 25]);
+  });
+
+  it("tracks per-slot writes, removals, and active-prefix rebuilds", () => {
+    const biomeModel = createBiomeModel("Grassland");
+    const mesh = biomeModel.instancedMeshes[0];
+
+    expect(mesh.instanceMatrix.updateRanges).toEqual([{ start: 0, count: 4 * 16 }]);
+    mesh.instanceMatrix.clearUpdateRanges();
+
+    biomeModel.setMatrixAt(2, new Matrix4().makeTranslation(2, 0, 2));
+    biomeModel.setColorAt(2, new Color(0xff0000));
+
+    expect(mesh.instanceMatrix.updateRanges).toEqual([{ start: 2 * 16, count: 16 }]);
+    expect(mesh.instanceColor?.updateRanges).toEqual([{ start: 2 * 3, count: 3 }]);
+
+    mesh.instanceMatrix.clearUpdateRanges();
+    biomeModel.removeInstance(2);
+    expect(mesh.instanceMatrix.updateRanges).toEqual([{ start: 2 * 16, count: 16 }]);
+
+    mesh.instanceMatrix.clearUpdateRanges();
+    biomeModel.setCount(3);
+    expect(mesh.instanceMatrix.updateRanges).toEqual([{ start: 0, count: 3 * 16 }]);
+
+    mesh.instanceMatrix.clearUpdateRanges();
+    const source = new Float32Array(2 * 16);
+    biomeModel.setMatricesAndCount(new InstancedBufferAttribute(source, 16), 2);
+    expect(mesh.instanceMatrix.updateRanges).toEqual([{ start: 0, count: 2 * 16 }]);
   });
 
   it("thins only decorative geometry at far view and restores the exact full matrices", () => {

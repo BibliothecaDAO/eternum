@@ -4,6 +4,7 @@ import { renderProfile } from "@/three/render-profile";
 import * as THREE from "three";
 import { AnimationClip, AnimationMixer } from "three";
 import { AnimationVisibilityContext } from "../types/animation";
+import { markInstancedAttributeRangeDirty } from "../utils/instanced-attribute-update-range";
 import { InstancedMatrixAttributePool } from "../utils/instanced-matrix-attribute-pool";
 import { MaterialPool } from "../utils/material-pool";
 import { resolveBiomeMeshRenderOrder } from "./instanced-biome-render-order";
@@ -182,6 +183,7 @@ export default class InstancedModel {
     const isLand = this.isLandMesh(sourceMesh);
     const material = this.poolBiomeMaterial(part.material);
     const instancedMesh = new THREE.InstancedMesh(part.geometry, material, capacity);
+    markInstancedAttributeRangeDirty(instancedMesh.instanceMatrix, 0, instancedMesh.instanceMatrix.count);
     this.configureBiomeMorphTargets(instancedMesh, sourceMesh, capacity, biomeName, isAnimated);
     this.configureBiomeMeshAppearance(instancedMesh, isLand, biomeName, renderOrder);
     return instancedMesh;
@@ -465,12 +467,14 @@ export default class InstancedModel {
     this.instancedMeshes.forEach((mesh) => {
       if (!this.farDetailEnabled || !this.farDetailMeshes.has(mesh)) {
         mesh.setMatrixAt(index, matrix);
+        markInstancedAttributeRangeDirty(mesh.instanceMatrix, index, 1);
         return;
       }
 
       const detailIndex = this.resolveFarDetailIndex(index);
       if (detailIndex !== null) {
         mesh.setMatrixAt(detailIndex, matrix);
+        markInstancedAttributeRangeDirty(mesh.instanceMatrix, detailIndex, 1);
       }
     });
   }
@@ -479,6 +483,9 @@ export default class InstancedModel {
     this.group.children.forEach((child) => {
       if (child instanceof THREE.InstancedMesh) {
         child.setColorAt(index, color);
+        if (child.instanceColor) {
+          markInstancedAttributeRangeDirty(child.instanceColor, index, 1);
+        }
       }
     });
   }
@@ -503,9 +510,7 @@ export default class InstancedModel {
       }
 
       mesh.setMatrixAt(renderedIndex, zeroScaledMatrix);
-      const itemSize = mesh.instanceMatrix.itemSize;
-      mesh.instanceMatrix.addUpdateRange(renderedIndex * itemSize, itemSize);
-      mesh.instanceMatrix.needsUpdate = true;
+      markInstancedAttributeRangeDirty(mesh.instanceMatrix, renderedIndex, 1);
     });
   }
 
@@ -536,10 +541,7 @@ export default class InstancedModel {
           : this.copyFullDetailMatrices(mesh.instanceMatrix.array as Float32Array);
       mesh.count = renderedCount;
       mesh.instanceMatrix.clearUpdateRanges();
-      if (renderedCount > 0) {
-        mesh.instanceMatrix.addUpdateRange(0, renderedCount * mesh.instanceMatrix.itemSize);
-      }
-      mesh.instanceMatrix.needsUpdate = true;
+      markInstancedAttributeRangeDirty(mesh.instanceMatrix, 0, renderedCount);
       if (this.worldBounds) {
         this.applyWorldBounds(mesh);
       } else {
@@ -583,7 +585,7 @@ export default class InstancedModel {
   needsUpdate() {
     this.group.children.forEach((child) => {
       if (child instanceof THREE.InstancedMesh) {
-        child.instanceMatrix.needsUpdate = true;
+        markInstancedAttributeRangeDirty(child.instanceMatrix, 0, child.count);
         if (this.worldBounds) {
           this.applyWorldBounds(child);
           return;

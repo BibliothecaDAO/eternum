@@ -15,6 +15,7 @@ import {
   Vector3,
 } from "three";
 import { getWorldPositionForHex } from "../utils";
+import { markInstancedAttributeRangeDirty } from "../utils/instanced-attribute-update-range";
 import { resolveHighlightLayerPalette } from "./worldmap-interaction-palette";
 import { resolveHighlightViewTuning } from "./worldmap-highlight-view-policy";
 
@@ -58,6 +59,8 @@ const createMesh = (
   mesh.frustumCulled = true;
   mesh.renderOrder = renderOrder;
   mesh.instanceColor = new InstancedBufferAttribute(new Float32Array(MAX_HIGHLIGHTS * 3), 3);
+  markInstancedAttributeRangeDirty(mesh.instanceMatrix, 0, mesh.instanceMatrix.count);
+  markInstancedAttributeRangeDirty(mesh.instanceColor, 0, mesh.instanceColor.count);
   mesh.raycast = () => {};
   return mesh;
 };
@@ -263,9 +266,8 @@ export class HighlightHexManager {
       }
     }
 
-    layer.mesh.instanceMatrix.needsUpdate = true;
     if (layer.mesh.instanceColor) {
-      layer.mesh.instanceColor.needsUpdate = true;
+      markInstancedAttributeRangeDirty(layer.mesh.instanceColor, 0, count);
     }
     layer.mesh.computeBoundingSphere();
   }
@@ -285,17 +287,13 @@ export class HighlightHexManager {
 
   private resetLayer(layer: HighlightRenderLayer): void {
     layer.mesh.count = 0;
-    layer.mesh.instanceMatrix.needsUpdate = true;
-    if (layer.mesh.instanceColor) {
-      layer.mesh.instanceColor.needsUpdate = true;
-    }
   }
 
   private updateInstanceMatrix(mesh: InstancedMesh, index: number, position: Vector3, scale: number) {
     tempScale.set(scale, scale, scale);
     tempMatrix.compose(position, HIGHLIGHT_ROTATION, tempScale);
     mesh.setMatrixAt(index, tempMatrix);
-    mesh.instanceMatrix.needsUpdate = true;
+    markInstancedAttributeRangeDirty(mesh.instanceMatrix, index, 1);
   }
 
   updateHighlightPulse(pulseFactor: number) {

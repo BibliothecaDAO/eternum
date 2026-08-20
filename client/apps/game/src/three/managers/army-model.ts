@@ -45,6 +45,7 @@ import type { AnimationVisibilityContext } from "../types/animation";
 import { getHexForWorldPosition } from "../utils";
 import { applyEasing, EasingType } from "../utils/easing";
 import { getContactShadowResources } from "../utils/contact-shadow";
+import { markInstancedAttributeRangeDirty } from "../utils/instanced-attribute-update-range";
 import { MaterialPool } from "../utils/material-pool";
 import { MemoryMonitor } from "../utils/memory-monitor";
 import { createPooledInstancedMaterial, releasePooledInstancedMaterial } from "./army-model-materials";
@@ -74,6 +75,19 @@ import { findAnimationByName } from "./animation-clip-matcher";
 
 const MEMORY_MONITORING_ENABLED = env.VITE_PUBLIC_ENABLE_MEMORY_MONITORING;
 const CONTACT_SHADOW_Y_OFFSET = 0.02;
+
+const markArmyModelActivePrefixDirty = (modelData: ModelData): void => {
+  modelData.instancedMeshes.forEach((mesh) => {
+    markInstancedAttributeRangeDirty(mesh.instanceMatrix, 0, mesh.count);
+    if (mesh.instanceColor) {
+      markInstancedAttributeRangeDirty(mesh.instanceColor, 0, mesh.count);
+    }
+  });
+
+  if (modelData.contactShadowMesh) {
+    markInstancedAttributeRangeDirty(modelData.contactShadowMesh.instanceMatrix, 0, modelData.contactShadowMesh.count);
+  }
+};
 
 export class ArmyModel {
   // Core properties
@@ -387,6 +401,7 @@ export class ArmyModel {
     contactShadowMesh.count = 0;
     contactShadowMesh.raycast = () => {};
     contactShadowMesh.visible = this.contactShadowsEnabled;
+    markInstancedAttributeRangeDirty(contactShadowMesh.instanceMatrix, 0, contactShadowMesh.instanceMatrix.count);
     group.add(contactShadowMesh);
 
     this.scene.add(group);
@@ -485,10 +500,11 @@ export class ArmyModel {
 
     instancedMesh.frustumCulled = true;
     instancedMesh.castShadow = true;
-    instancedMesh.instanceMatrix.needsUpdate = true;
+    markInstancedAttributeRangeDirty(instancedMesh.instanceMatrix, 0, instancedMesh.instanceMatrix.count);
     instancedMesh.renderOrder = 10 + meshIndex;
     if (pooledMaterial.usesInstanceColor) {
       instancedMesh.instanceColor = new InstancedBufferAttribute(new Float32Array(this.ARMY_INSTANCE_CAPACITY * 3), 3);
+      markInstancedAttributeRangeDirty(instancedMesh.instanceColor, 0, instancedMesh.instanceColor.count);
     }
 
     if (animations.length > 0) {
@@ -612,12 +628,12 @@ export class ArmyModel {
   private clearModelSlot(modelData: ModelData, matrixIndex: number): void {
     modelData.instancedMeshes.forEach((mesh) => {
       mesh.setMatrixAt(matrixIndex, this.zeroInstanceMatrix);
-      mesh.instanceMatrix.needsUpdate = true;
+      markInstancedAttributeRangeDirty(mesh.instanceMatrix, matrixIndex, 1);
       mesh.userData.entityIdMap?.delete(matrixIndex);
     });
     if (modelData.contactShadowMesh) {
       modelData.contactShadowMesh.setMatrixAt(matrixIndex, this.zeroInstanceMatrix);
-      modelData.contactShadowMesh.instanceMatrix.needsUpdate = true;
+      markInstancedAttributeRangeDirty(modelData.contactShadowMesh.instanceMatrix, matrixIndex, 1);
     }
   }
 
@@ -1109,11 +1125,11 @@ export class ArmyModel {
   ): void {
     modelData.instancedMeshes.forEach((mesh) => {
       mesh.setMatrixAt(index, this.dummyObject.matrix);
-      mesh.instanceMatrix.needsUpdate = true;
+      markInstancedAttributeRangeDirty(mesh.instanceMatrix, index, 1);
 
       if (color && mesh.instanceColor) {
         mesh.setColorAt(index, color);
-        mesh.instanceColor.needsUpdate = true;
+        markInstancedAttributeRangeDirty(mesh.instanceColor, index, 1);
       }
 
       mesh.userData.entityIdMap = mesh.userData.entityIdMap || new Map<number, number>();
@@ -1138,7 +1154,7 @@ export class ArmyModel {
         this.contactShadowMatrix.setPosition(position.x, baseY + CONTACT_SHADOW_Y_OFFSET, position.z);
         modelData.contactShadowMesh.setMatrixAt(index, this.contactShadowMatrix);
       }
-      modelData.contactShadowMesh.instanceMatrix.needsUpdate = true;
+      markInstancedAttributeRangeDirty(modelData.contactShadowMesh.instanceMatrix, index, 1);
     }
   }
 
@@ -2375,30 +2391,8 @@ export class ArmyModel {
   }
 
   public updateAllInstances(): void {
-    this.models.forEach((modelData) => {
-      modelData.instancedMeshes.forEach((mesh) => {
-        mesh.instanceMatrix.needsUpdate = true;
-        if (mesh.instanceColor) {
-          mesh.instanceColor.needsUpdate = true;
-        }
-      });
-      if (modelData.contactShadowMesh) {
-        modelData.contactShadowMesh.instanceMatrix.needsUpdate = true;
-      }
-    });
-
-    // Also update cosmetic models
-    this.cosmeticModels.forEach((modelData) => {
-      modelData.instancedMeshes.forEach((mesh) => {
-        mesh.instanceMatrix.needsUpdate = true;
-        if (mesh.instanceColor) {
-          mesh.instanceColor.needsUpdate = true;
-        }
-      });
-      if (modelData.contactShadowMesh) {
-        modelData.contactShadowMesh.instanceMatrix.needsUpdate = true;
-      }
-    });
+    this.models.forEach(markArmyModelActivePrefixDirty);
+    this.cosmeticModels.forEach(markArmyModelActivePrefixDirty);
   }
 
   public setVisibleSlots(slots: Iterable<number>): void {
