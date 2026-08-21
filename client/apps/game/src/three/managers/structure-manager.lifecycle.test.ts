@@ -715,6 +715,45 @@ describe("StructureManager destroy lifecycle", () => {
     expect([...subject.structureInstanceBindings.keys()].toSorted()).toEqual([2, 3]);
   });
 
+  it("clears an instanced model bucket after its last visible structure leaves", () => {
+    const { subject } = createVisibleStructurePassSubject();
+    const model = {
+      removeInstance: vi.fn(),
+      setCount: vi.fn(),
+      setMatrixAt: vi.fn(),
+    };
+    const visibleStructure = {
+      entityId: 1,
+      hasWonder: false,
+      hexCoords: { col: 1, row: 0 },
+      stage: 0,
+      structureType: "Village",
+    };
+
+    subject.structureModels.set("Village", [model]);
+    subject.hasCosmeticSkin = vi.fn(() => false);
+
+    subject.commitVisibleStructureDiff(subject.captureVisibleStructurePassSnapshot(), {
+      entering: [visibleStructure],
+      leaving: [],
+      staying: [],
+      visibleIds: [1],
+    });
+    model.setCount.mockClear();
+
+    subject.commitVisibleStructureDiff(subject.captureVisibleStructurePassSnapshot(), {
+      entering: [],
+      leaving: [1],
+      staying: [],
+      visibleIds: [],
+    });
+
+    expect(model.removeInstance).toHaveBeenCalledWith(0);
+    expect(model.setCount).toHaveBeenCalledWith(0);
+    expect(subject.structureInstanceSlots.has(model)).toBe(false);
+    expect(subject.structureModelDrawCounts.has(model)).toBe(false);
+  });
+
   it("invalidates the visible pass fence before queueing a refresh request", async () => {
     const subject = Object.create(StructureManager.prototype) as any;
     const invalidate = vi.fn();

@@ -1431,7 +1431,7 @@ export class StructureManager {
   private updateVisibleStructureModelCounts(dirtyModels: Set<InstancedModel>): void {
     dirtyModels.forEach((model) => {
       const slots = this.structureInstanceSlots.get(model) ?? [];
-      while (slots.at(-1) === undefined) {
+      while (slots.length > 0 && slots.at(-1) === undefined) {
         slots.pop();
       }
       if (this.structureModelDrawCounts.get(model) !== slots.length) {
