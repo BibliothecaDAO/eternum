@@ -5,6 +5,7 @@ import type {
 import type { PgDatabase, PgQueryResultHKT } from "drizzle-orm/pg-core";
 import { asc, eq } from "drizzle-orm";
 
+import { REALM_OWNERSHIP_FRESHNESS_WINDOW_MS } from "./realm-ownership-policy.mjs";
 import {
   REALM_OWNERSHIP_INDEXER_ID,
   starknetRealmMetadata,
@@ -12,9 +13,11 @@ import {
   starknetRealmOwnershipStatus,
 } from "./schema/realm-ownership";
 
-const STALE_AFTER_MS = 10 * 60 * 1_000;
-
-export type RealmOwnershipInventoryStatus = "ready" | "syncing" | "stale";
+export type RealmOwnershipInventoryStatus =
+  | "ready"
+  | "syncing"
+  | "stale"
+  | "unavailable";
 
 export interface RealmOwnershipToken {
   token_id: string;
@@ -64,7 +67,7 @@ export async function getRealmOwnershipInventory<
   const checkpointRow = checkpointRows.at(0);
 
   if (!checkpointRow) {
-    return { status: "syncing", tokens: [], checkpoint: null };
+    return { status: "unavailable", tokens: [], checkpoint: null };
   }
 
   const checkpoint = {
@@ -78,7 +81,7 @@ export async function getRealmOwnershipInventory<
 
   if (
     now.getTime() - checkpointRow.latest_block_timestamp.getTime() >
-    STALE_AFTER_MS
+    REALM_OWNERSHIP_FRESHNESS_WINDOW_MS
   ) {
     return { status: "stale", tokens: [], checkpoint };
   }

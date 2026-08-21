@@ -1,5 +1,11 @@
 import pg from "pg";
 
+import { REALM_OWNERSHIP_FRESHNESS_WINDOW_MS } from "../../db/src/realm-ownership-policy.mjs";
+import {
+  assertIndexedOwnership,
+  parseOwnershipAssertion,
+} from "./realm-ownership-smoke.mjs";
+
 const { Pool } = pg;
 const databaseUrl = process.env.DATABASE_URL;
 if (!databaseUrl) {
@@ -7,6 +13,10 @@ if (!databaseUrl) {
 }
 
 const pool = new Pool({ connectionString: databaseUrl, max: 1 });
+const assertion = parseOwnershipAssertion(
+  process.env.REALM_OWNERSHIP_SMOKE_ADDRESS,
+  process.env.REALM_OWNERSHIP_SMOKE_EXPECTED_COUNT,
+);
 
 try {
   const statusResult = await pool.query(`
@@ -29,30 +39,19 @@ try {
 
   const checkpointAgeMs =
     Date.now() - new Date(status.latest_block_timestamp).getTime();
-  if (checkpointAgeMs > 10 * 60 * 1_000) {
+  if (checkpointAgeMs > REALM_OWNERSHIP_FRESHNESS_WINDOW_MS) {
     throw new Error("Realm ownership indexer checkpoint is stale");
   }
 
-  const wallet = process.env.REALM_OWNERSHIP_SMOKE_ADDRESS;
-  const expectedCount = process.env.REALM_OWNERSHIP_SMOKE_EXPECTED_COUNT;
-  let ownershipMessage = "";
-  if (wallet) {
-    const owner = `0x${BigInt(wallet).toString(16)}`;
-    const countResult = await pool.query(
-      "SELECT COUNT(*)::integer AS count FROM starknet_realm_ownership WHERE owner = $1",
-      [owner],
-    );
-    const count = countResult.rows[0]?.count ?? 0;
-    if (expectedCount?.trim() && count !== Number(expectedCount)) {
-      throw new Error(
-        `Expected ${expectedCount} Realms for ${owner}, indexed ${count}`,
-      );
-    }
-    ownershipMessage = `; ${owner} owns ${count} indexed Realms`;
-  }
+  const countResult = await pool.query(
+    "SELECT COUNT(*)::integer AS count FROM starknet_realm_ownership WHERE owner = $1",
+    [assertion.owner],
+  );
+  const walletCount = countResult.rows[0]?.count ?? 0;
+  assertIndexedOwnership(indexedCount, walletCount, assertion.expectedCount);
 
   console.log(
-    `Realm ownership indexer healthy at block ${status.latest_block_number}; ${indexedCount} current ownership records indexed${ownershipMessage}`,
+    `Realm ownership indexer healthy at block ${status.latest_block_number}; ${indexedCount} current ownership records indexed; ${assertion.owner} owns ${walletCount} indexed Realms`,
   );
 } finally {
   await pool.end();

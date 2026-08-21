@@ -6,6 +6,7 @@
     "dev": "pnpm with-env vite dev",
     "build": "pnpm with-env vite build",
     "lint": "eslint",
+    "test": "vitest run --config vitest.config.ts",
     "start": "pnpm with-env vite start",
     "with-env": "dotenv -e ../../.env --"
   },
@@ -92,6 +93,7 @@
     "vite": "^7.3.1",
     "vite-plugin-svgr": "^4.5.0",
     "vite-tsconfig-paths": "^5.1.4",
+    "vitest": "^1.6.1",
     "wagmi": "^3.5.0",
     "zod": "catalog:"
   }

@@ -5,27 +5,29 @@ import EthereumIcon from "@/components/icons/ethereum.svg?react";
 import StarknetIcon from "@/components/icons/starknet.svg?react";
 import { PageHeader } from "@/components/layout/page-header";
 import BridgeSidebar from "@/components/modules/realms/bridge-sidebar";
-import { BridgeTable, columns } from "@/components/modules/realms/bridge-table";
+import { BridgeTable } from "@/components/modules/realms/bridge-table";
 import { OwnershipStatusAlert } from "@/components/modules/realms/ownership-status-alert";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { useStarknetWallet } from "@/hooks/use-starknet-wallet";
-import { getAccountTokensQueryOptions } from "@/lib/eternum/getPortfolioCollections";
 import { getL1RealmsQueryOptions } from "@/lib/getL1Realms";
-import { SUPPORTED_L2_CHAIN_ID } from "@/utils/utils";
+import { getRealmInventoryQueryOptions } from "@/lib/realms/get-realm-inventory";
+import {
+  getRealmInventoryViewState,
+  parseRealmTokenId,
+} from "@/lib/realms/inventory-ui";
 import { useAccount } from "@starknet-start/react";
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
-import {
-  getCoreRowModel,
-  getPaginationRowModel,
-  useReactTable,
-} from "@tanstack/react-table";
+import { useReactTable } from "@tanstack/react-table";
 import { ArrowLeftRight, TriangleAlert } from "lucide-react";
 import { useAccount as useL1Account } from "wagmi";
 
-import { CollectionAddresses } from "@realms-world/constants";
+import {
+  getRealmBridgeTableOptions,
+  reconcileRealmBridgeSelection,
+} from "./-realms.bridge-table";
 
 export const Route = createFileRoute("/realms/bridge")({
   component: RouteComponent,
@@ -74,15 +76,17 @@ function RouteComponent() {
   );
   const l1Realms = l1RealmsQuery.data;
   const l2RealmsQuery = useQuery(
-    getAccountTokensQueryOptions({
+    getRealmInventoryQueryOptions({
       address: l2Address,
-      collectionAddress: CollectionAddresses.realms[
-        SUPPORTED_L2_CHAIN_ID
-      ] as string,
     }),
   );
   const l2Inventory = l2RealmsQuery.data;
   const l2Realms = l2Inventory?.tokens;
+  const l2InventoryViewState = getRealmInventoryViewState({
+    isPending: l2RealmsQuery.isPending,
+    isError: l2RealmsQuery.isError,
+    status: l2Inventory?.status,
+  });
 
   const [selectedAsset, setSelectedAsset] = useState<"Ethereum" | "Starknet">(
     "Ethereum",
@@ -91,17 +95,24 @@ function RouteComponent() {
   const mappedRealms = useMemo(() => {
     if (selectedAsset === "Ethereum") {
       return (
-        l1Realms?.tokens?.map((realm) => ({
-          token_id: parseInt(realm.token?.tokenId),
-          name: realm.token?.name,
-          attributes:
-            realm.token?.attributes
-              ?.filter(isMetadataAttribute)
-              .map((attribute) => ({
-                ...attribute,
-                trait_type: attribute.key ?? attribute.trait_type,
-              })) ?? [],
-        })) ?? []
+        l1Realms?.tokens?.flatMap((realm) => {
+          const tokenId = parseRealmTokenId(realm.token?.tokenId);
+          if (tokenId === undefined) return [];
+
+          return [
+            {
+              token_id: tokenId,
+              name: realm.token?.name,
+              attributes:
+                realm.token?.attributes
+                  ?.filter(isMetadataAttribute)
+                  .map((attribute) => ({
+                    ...attribute,
+                    trait_type: attribute.key ?? attribute.trait_type,
+                  })) ?? [],
+            },
+          ];
+        }) ?? []
       );
     } else if (selectedAsset === "Starknet") {
       return (
@@ -120,26 +131,26 @@ function RouteComponent() {
 
   const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
 
-  const table = useReactTable({
-    data: mappedRealms,
-    columns,
-    getCoreRowModel: getCoreRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
-    onRowSelectionChange: setRowSelection,
-    state: {
+  const table = useReactTable(
+    getRealmBridgeTableOptions({
+      data: mappedRealms,
+      onRowSelectionChange: setRowSelection,
       rowSelection,
-    },
-  });
+    }),
+  );
 
   const starknetInventoryReady =
-    !!l2Address &&
-    !l2RealmsQuery.isPending &&
-    !l2RealmsQuery.isError &&
-    l2Inventory?.status === "ready";
+    !!l2Address && l2InventoryViewState === "ready";
 
   useEffect(() => {
     setRowSelection({});
   }, [selectedAsset, l1Address, l2Address, starknetInventoryReady]);
+
+  useEffect(() => {
+    setRowSelection((current) =>
+      reconcileRealmBridgeSelection(current, mappedRealms),
+    );
+  }, [mappedRealms]);
 
   const swapAssets = () => {
     setSelectedAsset((prev) => (prev === "Ethereum" ? "Starknet" : "Ethereum"));
@@ -234,13 +245,13 @@ function RouteComponent() {
         )}
         {selectedAsset === "Starknet" &&
           l2Address &&
-          (l2RealmsQuery.isPending ? (
+          (l2InventoryViewState === "loading" ? (
             <div className="mb-4">Loading Realm inventory...</div>
           ) : (
             <OwnershipStatusAlert
               className="mb-4"
               status={l2Inventory?.status}
-              isError={l2RealmsQuery.isError}
+              isError={l2InventoryViewState === "error"}
               onRetry={() => void l2RealmsQuery.refetch()}
             />
           ))}

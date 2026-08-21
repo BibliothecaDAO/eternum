@@ -1,4 +1,4 @@
-import type { RawTokenBalanceWithMetadata } from "@/lib/eternum/getPortfolioCollections";
+import type { RealmInventoryToken } from "@/lib/realms/get-realm-inventory";
 import type { Address } from "@starknet-start/react";
 import { Suspense } from "react";
 import { VeLords } from "@/abi/L2/VeLords";
@@ -21,9 +21,10 @@ import {
 import { useCurrentDelegate } from "@/hooks/governance/use-current-delegate";
 import { useL2RealmsClaims } from "@/hooks/use-l2-realms-claims";
 import useVeLordsClaims from "@/hooks/use-velords-claims";
-import { getAccountTokensQueryOptions } from "@/lib/eternum/getPortfolioCollections";
 import { getDelegateByIDQueryOptions } from "@/lib/getDelegates";
 import { getL1UsersRealmsQueryOptions } from "@/lib/getL1Realms";
+import { getRealmInventoryQueryOptions } from "@/lib/realms/get-realm-inventory";
+import { getRealmInventoryViewState } from "@/lib/realms/inventory-ui";
 import {
   formatAddress,
   formatNumber,
@@ -42,11 +43,7 @@ import { num } from "starknet";
 import { formatEther } from "viem";
 import { useAccount as useL1Account, useBalance as useL1Balance } from "wagmi";
 
-import {
-  CollectionAddresses,
-  LORDS,
-  StakingAddresses,
-} from "@realms-world/constants";
+import { LORDS, StakingAddresses } from "@realms-world/constants";
 
 import { ProposalList } from "../governance/proposal-list";
 
@@ -69,16 +66,18 @@ export function Homepage({ address }: { address: `0x${string}` }) {
     }),
   );
   const accountTokensQuery = useQuery(
-    getAccountTokensQueryOptions({
+    getRealmInventoryQueryOptions({
       address: address,
-      collectionAddress: CollectionAddresses.realms[
-        SUPPORTED_L2_CHAIN_ID
-      ] as string,
     }),
   );
   const l1UsersRealms = l1UsersRealmsQuery.data;
   const accountInventory = accountTokensQuery.data;
   const accountTokens = accountInventory?.tokens ?? [];
+  const accountInventoryViewState = getRealmInventoryViewState({
+    isPending: accountTokensQuery.isPending,
+    isError: accountTokensQuery.isError,
+    status: accountInventory?.status,
+  });
   const l1RealmCount = l1UsersRealms?.collections[0]?.ownership.tokenCount ?? 0;
 
   const { data } = useCurrentDelegate();
@@ -152,10 +151,9 @@ export function Homepage({ address }: { address: `0x${string}` }) {
               <div className="flex items-center justify-between">
                 <div>
                   <StatValue>
-                    {accountTokensQuery.isPending
+                    {accountInventoryViewState === "loading"
                       ? "…"
-                      : accountTokensQuery.isError ||
-                          accountInventory?.status !== "ready"
+                      : accountInventoryViewState !== "ready"
                         ? "—"
                         : accountTokens.length}
                   </StatValue>
@@ -385,15 +383,14 @@ export function Homepage({ address }: { address: `0x${string}` }) {
 
         {/* Realms Grid */}
         <div>
-          {accountTokensQuery.isPending ? (
+          {accountInventoryViewState === "loading" ? (
             <Card>
               <CardHeader className="pb-4">
                 <CardTitle>Your Realms</CardTitle>
               </CardHeader>
               <CardContent>Loading Realm inventory...</CardContent>
             </Card>
-          ) : accountTokensQuery.isError ||
-            accountInventory?.status !== "ready" ? (
+          ) : accountInventoryViewState !== "ready" ? (
             <Card>
               <CardHeader className="pb-4">
                 <CardTitle>Your Realms</CardTitle>
@@ -401,7 +398,7 @@ export function Homepage({ address }: { address: `0x${string}` }) {
               <CardContent>
                 <OwnershipStatusAlert
                   status={accountInventory?.status}
-                  isError={accountTokensQuery.isError}
+                  isError={accountInventoryViewState === "error"}
                   onRetry={() => void accountTokensQuery.refetch()}
                 />
               </CardContent>
@@ -422,7 +419,7 @@ export function Homepage({ address }: { address: `0x${string}` }) {
                 <div className="grid gap-4 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6">
                   {accountTokens
                     .slice(0, HOMEPAGE_REALMS_PREVIEW_COUNT)
-                    .map((realm: RawTokenBalanceWithMetadata) => (
+                    .map((realm: RealmInventoryToken) => (
                       <RealmCard
                         key={realm.token_id}
                         token={realm}

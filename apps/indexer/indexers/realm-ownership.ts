@@ -5,6 +5,7 @@ import type {
 import type { PgDatabase, PgQueryResultHKT } from "drizzle-orm/pg-core";
 import { eq, sql } from "drizzle-orm";
 
+import { REALM_OWNERSHIP_FRESHNESS_WINDOW_MS } from "@realms-world/db";
 import {
   REALM_OWNERSHIP_INDEXER_ID,
   starknetRealmOwnership,
@@ -14,7 +15,6 @@ import {
 import { toDecimalAmount } from "./amount-utils";
 
 export { REALM_OWNERSHIP_INDEXER_ID } from "@realms-world/db/schema";
-const HEAD_FRESHNESS_WINDOW_MS = 10 * 60 * 1_000;
 
 type NumericValue = bigint | number | string;
 
@@ -165,7 +165,7 @@ export async function recordOwnershipProgress<
   const processedAt = update.processedAt ?? new Date();
   const hasReachedHead =
     Math.abs(processedAt.getTime() - update.blockTimestamp.getTime()) <=
-    HEAD_FRESHNESS_WINDOW_MS;
+    REALM_OWNERSHIP_FRESHNESS_WINDOW_MS;
 
   await database
     .insert(starknetRealmOwnershipStatus)

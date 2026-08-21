@@ -20,6 +20,7 @@ import type {
   } from "@realms-world/db/schema";
   
   import { env } from "../env";
+  import { getStarknetStreamUrl } from "../streams";
 import { toDecimalAmount } from "./amount-utils";
   
   export default function (/*runtimeConfig: ApibaraRuntimeConfig*/) {
@@ -35,10 +36,7 @@ import { toDecimalAmount } from "./amount-utils";
       TablesRelationalConfig = ExtractTablesWithRelations<TFullSchema>,
   >({ database }: { database: PgDatabase<TQueryResult, TFullSchema, TSchema> }) {
     return defineIndexer(StarknetStream)({
-      streamUrl:
-        env.VITE_PUBLIC_CHAIN === "sepolia"
-          ? "https://starknet-sepolia.preview.apibara.org"
-          : "https://starknet.preview.apibara.org",
+      streamUrl: getStarknetStreamUrl(env.VITE_PUBLIC_CHAIN),
   
       finality: "pending",
       startingCursor: {

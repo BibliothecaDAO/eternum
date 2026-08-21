@@ -55,10 +55,10 @@ describe("getRealmOwnershipInventory", () => {
   });
 
   it(
-    "reports syncing instead of an empty wallet before the initial replay completes",
+    "reports the indexer as unavailable before it creates a checkpoint",
     async () => {
       expect(await getRealmOwnershipInventory(database, "0xa", NOW)).toEqual({
-        status: "syncing",
+        status: "unavailable",
         tokens: [],
         checkpoint: null,
       });

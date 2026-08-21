@@ -22,6 +22,7 @@ interface MediaProps {
   height?: number;
   //priority?: boolean;
   className?: string;
+  unavailable?: boolean;
 }
 
 function getMediaSrc(
@@ -172,10 +173,13 @@ export default function Media({
   thumbnailKey,
   alt,
   className,
+  unavailable = false,
   src,
   width = 600,
   height = 600,
 }: MediaProps) {
+  if (unavailable) return <MediaErrorPlaceholder className={className} />;
+
   const mediaSrc = getMediaSrc(src, mediaKey, thumbnailKey, width, height);
   if (!mediaSrc) return <MediaPlaceholder className={className} />;
 

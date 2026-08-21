@@ -50,6 +50,28 @@ export function OwnershipStatusAlert({
     );
   }
 
+  if (status === "unavailable") {
+    return (
+      <Alert variant="destructive" className={className}>
+        <TriangleAlert className="h-5 w-5" />
+        <AlertTitle>Realm inventory indexer is unavailable</AlertTitle>
+        <AlertDescription>
+          No ownership checkpoint is available. Your on-chain Realms are safe;
+          try again after the indexer has been started.
+          {onRetry && (
+            <Button
+              variant="link"
+              className="h-auto px-1 py-0"
+              onClick={onRetry}
+            >
+              Try again
+            </Button>
+          )}
+        </AlertDescription>
+      </Alert>
+    );
+  }
+
   if (status === "stale") {
     return (
       <Alert variant="warning" className={className}>

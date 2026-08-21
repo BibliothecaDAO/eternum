@@ -18,6 +18,7 @@ import { db } from "@realms-world/db/poolClient";
 import { realmsLordsClaims } from "@realms-world/db/schema";
 
 import { env } from "../env";
+import { getStarknetStreamUrl } from "../streams";
 
 export default function (/*runtimeConfig: ApibaraRuntimeConfig*/) {
   return createIndexer({ database: db });
@@ -28,14 +29,11 @@ const l2ChainId =
 export function createIndexer<
   TQueryResult extends PgQueryResultHKT,
   TFullSchema extends Record<string, unknown> = Record<string, never>,
-  TSchema extends
-    TablesRelationalConfig = ExtractTablesWithRelations<TFullSchema>,
+  TSchema extends TablesRelationalConfig =
+    ExtractTablesWithRelations<TFullSchema>,
 >({ database }: { database: PgDatabase<TQueryResult, TFullSchema, TSchema> }) {
   return defineIndexer(StarknetStream)({
-    streamUrl:
-      env.VITE_PUBLIC_CHAIN === "sepolia"
-        ? "https://starknet-sepolia.preview.apibara.org"
-        : "https://starknet.preview.apibara.org",
+    streamUrl: getStarknetStreamUrl(env.VITE_PUBLIC_CHAIN),
 
     finality: "pending",
     startingCursor: {

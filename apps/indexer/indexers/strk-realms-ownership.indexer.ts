@@ -15,6 +15,7 @@ import { ChainId, CollectionAddresses } from "@realms-world/constants";
 import { db } from "@realms-world/db/poolClient";
 
 import { env } from "../env";
+import { getStarknetStreamUrl } from "../streams";
 import {
   applyRealmTransfer,
   REALM_OWNERSHIP_INDEXER_ID,
@@ -58,10 +59,7 @@ export function createIndexer<
     env.VITE_PUBLIC_CHAIN === "sepolia" ? ChainId.SN_SEPOLIA : ChainId.SN_MAIN;
 
   return defineIndexer(StarknetStream)({
-    streamUrl:
-      env.VITE_PUBLIC_CHAIN === "sepolia"
-        ? "https://sepolia.starknet.a5a.ch"
-        : "https://mainnet.starknet.a5a.ch",
+    streamUrl: getStarknetStreamUrl(env.VITE_PUBLIC_CHAIN),
     finality: "pending",
     startingCursor: {
       orderKey:
