@@ -41,7 +41,6 @@ import {
 import { playBuildingSound } from "@/three/sound/utils";
 import { MatrixPool } from "@/three/utils/matrix-pool";
 import { collectObjectTextures } from "@/three/utils/material-textures";
-import { markInstancedAttributeRangeDirty } from "@/three/utils/instanced-attribute-update-range";
 import {
   navigateToStructure,
   toggleMapHexView,
@@ -236,7 +235,7 @@ export default class HexceptionScene extends HexagonScene {
     const pillarGeometry = new ExtrudeGeometry(createHexagonShape(1), { depth: 2, bevelEnabled: false });
     pillarGeometry.rotateX(Math.PI / 2);
     this.pillars = new InstancedMesh(pillarGeometry, new MeshStandardMaterial(), 1000);
-    markInstancedAttributeRangeDirty(this.pillars.instanceMatrix, 0, this.pillars.instanceMatrix.count);
+    this.pillars.instanceMatrix.needsUpdate = true;
     this.pillars.position.y = 0.05;
     this.pillars.count = 0;
     this.scene.add(this.pillars);
@@ -1274,9 +1273,9 @@ export default class HexceptionScene extends HexagonScene {
             this.pillars!.computeBoundingSphere();
             hexMesh.setCount(matrices.length);
           }
-          markInstancedAttributeRangeDirty(this.pillars!.instanceMatrix, 0, this.pillars!.count);
+          this.pillars!.instanceMatrix.needsUpdate = true;
           if (this.pillars!.instanceColor) {
-            markInstancedAttributeRangeDirty(this.pillars!.instanceColor, 0, this.pillars!.count);
+            this.pillars!.instanceColor.needsUpdate = true;
           }
           this.interactiveHexManager.renderAllHexes();
 

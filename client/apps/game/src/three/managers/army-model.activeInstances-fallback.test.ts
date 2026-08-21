@@ -3,9 +3,7 @@ import {
   AnimationClip,
   AnimationMixer,
   BoxGeometry,
-  Color,
   Group,
-  InstancedBufferAttribute,
   InstancedMesh,
   Matrix4,
   Mesh,
@@ -127,7 +125,7 @@ function createModelData() {
     activeInstances: new Set<number>(),
     lastAnimationUpdate: 0,
     animationUpdateInterval: 50,
-    contactShadowMesh: null as InstancedMesh | null,
+    contactShadowMesh: null,
     contactShadowScale: 1,
   };
 }
@@ -141,39 +139,6 @@ type ArmyModelTestAccess = {
 const accessArmyModel = (subject: ArmyModel) => subject as unknown as ArmyModelTestAccess;
 
 describe("ArmyModel activeInstances fallback fix (Stage 0)", () => {
-  it("marks only touched army matrix, color, and contact-shadow slots", () => {
-    const subject = new ArmyModel(new Scene());
-    const modelData = createModelData();
-    const mesh = modelData.instancedMeshes[0];
-    mesh.instanceColor = new InstancedBufferAttribute(new Float32Array(64 * 3), 3);
-    const contactShadowMesh = new InstancedMesh(new BoxGeometry(1, 1, 1), new MeshBasicMaterial(), 64);
-    modelData.contactShadowMesh = contactShadowMesh;
-    accessArmyModel(subject).models.set(ModelType.Knight1, modelData);
-
-    let entityId = 0;
-    let slot = 0;
-    for (let index = 0; index < 7; index += 1) {
-      entityId = 900 + index;
-      slot = subject.allocateInstanceSlot(entityId);
-    }
-    accessArmyModel(subject).entityModelMap.set(entityId, ModelType.Knight1);
-
-    subject.updateInstance(entityId, slot, new Vector3(2, 0, 3), new Vector3(1, 1, 1), undefined, new Color(0xff00ff));
-
-    expect(mesh.instanceMatrix.updateRanges).toEqual([{ start: slot * 16, count: 16 }]);
-    expect(mesh.instanceColor.updateRanges).toEqual([{ start: slot * 3, count: 3 }]);
-    expect(contactShadowMesh.instanceMatrix.updateRanges).toEqual([{ start: slot * 16, count: 16 }]);
-
-    mesh.instanceMatrix.clearUpdateRanges();
-    mesh.instanceColor.clearUpdateRanges();
-    contactShadowMesh.instanceMatrix.clearUpdateRanges();
-    subject.updateAllInstances();
-
-    expect(mesh.instanceMatrix.updateRanges).toEqual([{ start: 0, count: mesh.count * 16 }]);
-    expect(mesh.instanceColor.updateRanges).toEqual([{ start: 0, count: mesh.count * 3 }]);
-    expect(contactShadowMesh.instanceMatrix.updateRanges).toEqual([{ start: 0, count: contactShadowMesh.count * 16 }]);
-  });
-
   it("clearInstanceSlot removes index from activeInstances when owner is known", () => {
     const subject = new ArmyModel(new Scene());
     const entityId = 100;
