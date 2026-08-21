@@ -29,8 +29,8 @@ const FIRST_MAINNET_REALMS_EVENT_BLOCK = 664_162n;
 function getOwnershipStorageSchema<TSchema extends TablesRelationalConfig>(
   schema: TSchema | undefined,
 ): TablesRelationalConfig {
-  const ownership = schema?.["starknetRealmOwnership"];
-  const status = schema?.["starknetRealmOwnershipStatus"];
+  const ownership = schema?.starknetRealmOwnership;
+  const status = schema?.starknetRealmOwnershipStatus;
 
   if (!ownership || !status) {
     throw new Error(
