@@ -30,6 +30,7 @@ function createTerrainCommitFixture() {
   const applyPreparedTerrain = vi.fn();
   const disposePreparedTerrain = vi.fn();
   let currentTransitionToken = 4;
+  let recoveryTransitionToken: number | null = null;
   let switchedOff = false;
 
   const commit = () =>
@@ -38,6 +39,7 @@ function createTerrainCommitFixture() {
       targetChunk: "24,24",
       transitionToken: 4,
       getCurrentTransitionToken: () => currentTransitionToken,
+      getRecoveryTransitionToken: () => recoveryTransitionToken,
       isSwitchedOff: () => switchedOff,
       scheduleCommit: queue.scheduleCommit,
       disposePreparedTerrain,
@@ -55,6 +57,10 @@ function createTerrainCommitFixture() {
     supersede: () => {
       currentTransitionToken += 1;
     },
+    recoverTimedOutTransition: () => {
+      currentTransitionToken += 1;
+      recoveryTransitionToken = currentTransitionToken;
+    },
     switchOff: () => {
       switchedOff = true;
     },
@@ -66,20 +72,33 @@ describe("commitOwnedWorldmapPreparedTerrain", () => {
     const fixture = createTerrainCommitFixture();
     const result = fixture.commit();
 
-    fixture.supersede();
+    fixture.recoverTimedOutTransition();
     fixture.queue.runPendingCommit();
 
-    await expect(result).resolves.toBe(5);
+    await expect(result).resolves.toBe(4);
     expect(fixture.disposePreparedTerrain).not.toHaveBeenCalled();
     expect(fixture.commitChunkAuthority).toHaveBeenCalledWith("24,24");
     expect(fixture.applyPreparedTerrain).toHaveBeenCalledWith(fixture.preparedTerrain);
   });
 
-  it("drops prepared terrain once a newer transition owns the scene", async () => {
+  it("drops prepared terrain when an ordinary successor transition owns the scene", async () => {
     const fixture = createTerrainCommitFixture();
     const result = fixture.commit();
 
     fixture.supersede();
+    fixture.queue.runPendingCommit();
+
+    await expect(result).resolves.toBeNull();
+    expect(fixture.disposePreparedTerrain).toHaveBeenCalledWith(fixture.preparedTerrain);
+    expect(fixture.commitChunkAuthority).not.toHaveBeenCalled();
+    expect(fixture.applyPreparedTerrain).not.toHaveBeenCalled();
+  });
+
+  it("drops recovered terrain after authority advances beyond the recorded recovery", async () => {
+    const fixture = createTerrainCommitFixture();
+    const result = fixture.commit();
+
+    fixture.recoverTimedOutTransition();
     fixture.supersede();
     fixture.queue.runPendingCommit();
 

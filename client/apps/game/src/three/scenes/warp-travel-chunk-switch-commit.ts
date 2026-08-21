@@ -105,7 +105,7 @@ export async function finalizeWarpTravelChunkSwitch(
   input.forceVisibilityUpdate();
   input.scheduleManagerCatchUp(input.targetChunk, {
     force: input.force,
-    transitionToken: typeof terrainCommitResult === "number" ? terrainCommitResult : input.transitionToken,
+    transitionToken: input.transitionToken,
   });
 
   if (chunkSwitchActions.shouldUnregisterPreviousChunk && input.previousChunk) {

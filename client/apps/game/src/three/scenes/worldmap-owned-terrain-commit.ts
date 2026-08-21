@@ -3,6 +3,7 @@ interface CommitOwnedWorldmapPreparedTerrainInput<TPreparedTerrain> {
   targetChunk: string;
   transitionToken: number;
   getCurrentTransitionToken: () => number;
+  getRecoveryTransitionToken: (timedOutTransitionToken: number) => number | null;
   isSwitchedOff: () => boolean;
   scheduleCommit: (commit: () => number | null) => Promise<number | null>;
   disposePreparedTerrain: (preparedTerrain: TPreparedTerrain) => void;
@@ -15,19 +16,28 @@ export function commitOwnedWorldmapPreparedTerrain<TPreparedTerrain>(
 ): Promise<number | null> {
   return input.scheduleCommit(() => {
     const currentTransitionToken = input.getCurrentTransitionToken();
-    if (input.isSwitchedOff() || !canCommitPreparedTerrain(input.transitionToken, currentTransitionToken)) {
+    const recoveryTransitionToken = input.getRecoveryTransitionToken(input.transitionToken);
+    if (
+      input.isSwitchedOff() ||
+      !canCommitPreparedTerrain(input.transitionToken, currentTransitionToken, recoveryTransitionToken)
+    ) {
       input.disposePreparedTerrain(input.preparedTerrain);
       return null;
     }
 
     input.commitChunkAuthority(input.targetChunk);
     input.applyPreparedTerrain(input.preparedTerrain);
-    return currentTransitionToken;
+    return input.transitionToken;
   });
 }
 
-function canCommitPreparedTerrain(preparedTransitionToken: number, currentTransitionToken: number): boolean {
-  // Hard-timeout recovery advances authority exactly once. Let the prepared
-  // target close that stalled transition; any later token belongs to newer work.
-  return currentTransitionToken === preparedTransitionToken || currentTransitionToken === preparedTransitionToken + 1;
+function canCommitPreparedTerrain(
+  preparedTransitionToken: number,
+  currentTransitionToken: number,
+  recoveryTransitionToken: number | null,
+): boolean {
+  return (
+    currentTransitionToken === preparedTransitionToken ||
+    (recoveryTransitionToken !== null && currentTransitionToken === recoveryTransitionToken)
+  );
 }

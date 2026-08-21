@@ -1,7 +1,5 @@
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import { usePlayRouteReadinessStore } from "@/game-entry/play-route-readiness-store";
 import { DEV_MODE_ENABLED } from "@/utils/dev-mode";
-import { formatReadableErrorForConsole } from "@/utils/error-message";
 import { getGameModeId } from "@/config/game-modes";
 import { GRAPHICS_DEV_GUI_ENABLED, createGuiFolder } from "@/three/utils/gui-manager";
 import { IS_MOBILE } from "@/ui/config";
@@ -42,27 +40,18 @@ import type { RendererSessionRuntime } from "./renderer-session-runtime";
 import type { RendererSupportRuntimeRegistry } from "./renderer-support-runtime-registry";
 import type { RendererBackendV2, RendererDeviceLostEvent } from "./renderer-backend-v2";
 import { createGameRendererRuntimeAssembly, type GameRendererRuntimeState } from "./game-renderer-runtime-assembly";
-import { runWithFrameWorkOwner } from "./frame-work-owner";
 import { getRendererDiagnosticActiveMode } from "./renderer-diagnostics";
 import {
   reportRendererDeviceLoss,
   reportRendererFrameFailure,
   reportRendererRecoveryFailure,
 } from "./renderer-failure-reporting";
-import {
-  LOCAL_TEXTURE_PREWARM_INTERACTION_IDLE_MS,
-  createBrowserIdleScheduler,
-  createLocalViewTexturePrewarm,
-  formatLocalTexturePrewarmReport,
-  type LocalViewTexturePrewarmController,
-} from "./local-view-texture-prewarm";
 import type { SceneManager } from "@/three/scene-manager";
 import type HUDScene from "@/three/scenes/hud-scene";
 import type FastTravelScene from "@/three/scenes/fast-travel";
 import type HexceptionScene from "@/three/scenes/hexception";
 import type WorldmapScene from "@/three/scenes/worldmap";
 import type { TransitionManager } from "@/three/managers/transition-manager";
-import type { Texture } from "three";
 
 const MEMORY_MONITORING_ENABLED = env.VITE_PUBLIC_ENABLE_MEMORY_MONITORING;
 const GRAPHICS_DEV_ENABLED = DEV_MODE_ENABLED;
@@ -96,6 +85,8 @@ export default class GameRenderer {
   private hudScene!: HUDScene;
 
   private lastTime: number = 0;
+  private animationFrameHandle: number | null = null;
+  private isAnimationLoopRunning = false;
   private lastInteractionTime = performance.now();
   private dojo: SetupResult;
   private sceneManager!: SceneManager;
@@ -103,27 +94,11 @@ export default class GameRenderer {
   private guiFolders: TrackableGuiFolder[] = [];
   private readonly isMobileDevice = IS_MOBILE;
   private backendInitializationPromise?: Promise<void>;
-  private hasRendererDeviceLossOccurred = false;
   private hasRecoveredFromDeviceLoss = false;
   private isRecoveringFromDeviceLoss = false;
   private isRendererRecoveryPaused = false;
   private rendererFrameFailureCircuit?: RendererFrameFailureCircuit;
-  private localViewTexturePrewarm?: LocalViewTexturePrewarmController;
-  private localViewTexturePrewarmReadinessUnsubscribe?: () => void;
-  private shouldArmLocalViewTexturePrewarmWhenVisible = false;
   private readonly handleWindowResize = () => this.onWindowResize();
-  private readonly handleLocalViewTexturePrewarmVisibilityChange = () => {
-    if (document.visibilityState !== "visible") {
-      this.shouldArmLocalViewTexturePrewarmWhenVisible = this.localViewTexturePrewarm !== undefined;
-      this.cancelLocalViewTexturePrewarm("page_hidden");
-      return;
-    }
-
-    if (this.shouldArmLocalViewTexturePrewarmWhenVisible) {
-      this.shouldArmLocalViewTexturePrewarmWhenVisible = false;
-      this.armLocalViewTexturePrewarm();
-    }
-  };
 
   constructor(dojoContext: SetupResult) {
     this.dojo = dojoContext;
@@ -145,7 +120,6 @@ export default class GameRenderer {
     this.sessionRuntime = runtimeAssembly.sessionRuntime;
     this.backendInitializationPromise = this.initializeRendererBackend();
     this.initializeFoundationRuntime();
-    document.addEventListener("visibilitychange", this.handleLocalViewTexturePrewarmVisibilityChange);
   }
 
   private resolveRuntimeState(): GameRendererRuntimeState {
@@ -204,8 +178,6 @@ export default class GameRenderer {
     reportRendererDeviceLoss(event, {
       recoveryAttempted: this.shouldStartDeviceLossFallback(),
     });
-    this.hasRendererDeviceLossOccurred = true;
-    this.shouldArmLocalViewTexturePrewarmWhenVisible = false;
     void this.recoverFromRendererDeviceLoss(event);
   }
 
@@ -240,7 +212,6 @@ export default class GameRenderer {
   }
 
   private beginDeviceLossFallback(): void {
-    this.cancelLocalViewTexturePrewarm("renderer_destroyed");
     this.isRecoveringFromDeviceLoss = true;
     this.isRendererRecoveryPaused = true;
     discardGpuBackendFrame();
@@ -461,86 +432,6 @@ export default class GameRenderer {
       renderVisuals: renderProfile.visuals,
       raycaster: this.raycaster,
     });
-    this.armLocalViewTexturePrewarm();
-  }
-
-  private armLocalViewTexturePrewarm(): void {
-    if (
-      this.localViewTexturePrewarm ||
-      this.isDestroyed ||
-      this.hasRendererDeviceLossOccurred ||
-      !this.hasPreparedRendererScenes()
-    ) {
-      return;
-    }
-    if (document.visibilityState !== "visible") {
-      this.shouldArmLocalViewTexturePrewarmWhenVisible = true;
-      return;
-    }
-
-    this.shouldArmLocalViewTexturePrewarmWhenVisible = false;
-    this.localViewTexturePrewarm = this.createLocalViewTexturePrewarmController();
-
-    if (usePlayRouteReadinessStore.getState().worldmapConverged) {
-      this.startLocalViewTexturePrewarm();
-      return;
-    }
-
-    this.localViewTexturePrewarmReadinessUnsubscribe = usePlayRouteReadinessStore.subscribe((state, previousState) => {
-      if (!previousState.worldmapConverged && state.worldmapConverged) {
-        this.startLocalViewTexturePrewarm();
-      }
-    });
-  }
-
-  private createLocalViewTexturePrewarmController(): LocalViewTexturePrewarmController {
-    return createLocalViewTexturePrewarm({
-      deviceMemoryGb: (navigator as Navigator & { deviceMemory?: number }).deviceMemory,
-      getRendererInfo: () => this.renderer.info,
-      hasRecentInteraction: () => this.hasRecentRendererInteraction(),
-      isMobileDevice: this.isMobileDevice,
-      isOwnerActive: () => !this.isDestroyed && document.visibilityState === "visible",
-      isWorldmapActive: () => this.sceneManager.getCurrentScene() === SceneName.WorldMap,
-      onError: (error) => {
-        console.warn(`[LocalTexturePrewarm] status=failed error=${formatReadableErrorForConsole(error)}`);
-      },
-      onReport: (report) => {
-        console.info(formatLocalTexturePrewarmReport(report));
-        this.releaseLocalViewTexturePrewarm();
-      },
-      renderMode: renderProfile.mode,
-      resolveTextures: () => this.hexceptionScene.resolveLocalViewTextures(),
-      scheduler: createBrowserIdleScheduler(),
-      uploadTexture: this.renderer.initTexture ? (texture) => this.uploadLocalViewTexture(texture) : undefined,
-    });
-  }
-
-  private hasRecentRendererInteraction(): boolean {
-    return performance.now() - this.lastInteractionTime < LOCAL_TEXTURE_PREWARM_INTERACTION_IDLE_MS;
-  }
-
-  private uploadLocalViewTexture(texture: Texture): void {
-    runWithFrameWorkOwner("scene:hexception:texture-prewarm", () => {
-      this.renderer.initTexture!(texture);
-    });
-  }
-
-  private startLocalViewTexturePrewarm(): void {
-    this.localViewTexturePrewarmReadinessUnsubscribe?.();
-    this.localViewTexturePrewarmReadinessUnsubscribe = undefined;
-    this.localViewTexturePrewarm?.start();
-  }
-
-  private cancelLocalViewTexturePrewarm(reason: "page_hidden" | "renderer_destroyed"): void {
-    const controller = this.localViewTexturePrewarm;
-    this.releaseLocalViewTexturePrewarm();
-    controller?.cancel(reason);
-  }
-
-  private releaseLocalViewTexturePrewarm(): void {
-    this.localViewTexturePrewarmReadinessUnsubscribe?.();
-    this.localViewTexturePrewarmReadinessUnsubscribe = undefined;
-    this.localViewTexturePrewarm = undefined;
   }
 
   private assignRendererSceneRegistry(input: {
@@ -608,6 +499,15 @@ export default class GameRenderer {
   }
 
   animate() {
+    if (this.isAnimationLoopRunning) {
+      return;
+    }
+
+    this.isAnimationLoopRunning = true;
+    this.runAnimationFrame();
+  }
+
+  private runAnimationFrame(): void {
     const shouldStopAnimationLoop = this.shouldStopAnimationLoop();
     if (!shouldStopAnimationLoop) {
       startGpuBackendFrame();
@@ -645,16 +545,38 @@ export default class GameRenderer {
 
         return rendered;
       },
-      requestNextFrame: () =>
-        requestAnimationFrame(() => {
-          this.animate();
-        }),
+      requestNextFrame: () => this.scheduleNextAnimationFrame(),
       targetFPS: this.getTargetFps(),
       updateControls: () => {
         this.controls?.update();
       },
       updateStatsPanel: () => this.sessionRuntime.updateStatsPanel(),
     });
+
+    if (shouldStopAnimationLoop) {
+      this.stopAnimationLoop();
+    }
+  }
+
+  private scheduleNextAnimationFrame(): void {
+    if (!this.isAnimationLoopRunning || typeof this.animationFrameHandle === "number") {
+      return;
+    }
+
+    this.animationFrameHandle = requestAnimationFrame(() => {
+      this.animationFrameHandle = null;
+      if (this.isAnimationLoopRunning) {
+        this.runAnimationFrame();
+      }
+    });
+  }
+
+  private stopAnimationLoop(): void {
+    if (typeof this.animationFrameHandle === "number") {
+      cancelAnimationFrame(this.animationFrameHandle);
+      this.animationFrameHandle = null;
+    }
+    this.isAnimationLoopRunning = false;
   }
 
   private handleRendererFrameError(error: unknown): void {
@@ -690,9 +612,7 @@ export default class GameRenderer {
     }
 
     this.isDestroyed = true;
-    this.shouldArmLocalViewTexturePrewarmWhenVisible = false;
-    this.cancelLocalViewTexturePrewarm("renderer_destroyed");
-    document.removeEventListener("visibilitychange", this.handleLocalViewTexturePrewarmVisibilityChange);
+    this.stopAnimationLoop();
     discardGpuBackendFrame();
 
     destroyRendererRuntime({

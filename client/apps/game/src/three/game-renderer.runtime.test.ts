@@ -158,7 +158,10 @@ describe("GameRenderer runtime harness", () => {
     const harness = createGameRendererRuntimeHarness();
     const subject = Object.assign(Object.create(GameRenderer.prototype), harness.createSubject());
     const frameError = new RangeError("writeBuffer range is invalid");
-    const requestAnimationFrameSpy = vi.spyOn(window, "requestAnimationFrame").mockImplementation(() => 1);
+    const pendingFrames: FrameRequestCallback[] = [];
+    const requestAnimationFrameSpy = vi
+      .spyOn(window, "requestAnimationFrame")
+      .mockImplementation((callback) => pendingFrames.push(callback));
     vi.spyOn(console, "error").mockImplementation(() => {});
     subject.getTargetFps = vi.fn(() => null);
     harness.backend.renderFrame.mockImplementation(() => {
@@ -176,9 +179,9 @@ describe("GameRenderer runtime harness", () => {
     await vi.waitFor(() => expect(harness.worldmapScene.activateInputSurface).toHaveBeenCalledTimes(1));
     requestAnimationFrameSpy.mockClear();
     subject.animate();
-    subject.animate();
-    subject.animate();
-    subject.animate();
+    pendingFrames.shift()?.(0);
+    pendingFrames.shift()?.(16);
+    pendingFrames.shift()?.(32);
 
     expect(harness.backend.renderFrame).toHaveBeenCalledTimes(4);
     expect(requestAnimationFrameSpy).toHaveBeenCalledTimes(4);
@@ -214,7 +217,6 @@ describe("GameRenderer runtime harness", () => {
 
     expect(sentry.captureException).toHaveBeenCalledTimes(3);
     expect(recoverFromRendererDeviceLoss).toHaveBeenCalledTimes(3);
-    expect(subject.hasRendererDeviceLossOccurred).toBe(true);
     expect(
       sentry.captureException.mock.calls.map(([, context]) => context.tags["renderer.recovery_attempted"]),
     ).toEqual(["yes", "no", "no"]);
@@ -245,6 +247,32 @@ describe("GameRenderer runtime harness", () => {
         },
       }),
     );
+  });
+
+  it("keeps one animation-frame chain when a fast fallback failure resumes rendering", async () => {
+    const harness = createGameRendererRuntimeHarness();
+    const subject = Object.assign(Object.create(GameRenderer.prototype), harness.createSubject());
+    const pendingFrames: FrameRequestCallback[] = [];
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    vi.spyOn(window, "requestAnimationFrame").mockImplementation((callback) => pendingFrames.push(callback));
+    subject.getTargetFps = vi.fn(() => null);
+
+    harness.sceneManager.switchScene(SceneName.WorldMap);
+    await vi.waitFor(() => expect(harness.worldmapScene.activateInputSurface).toHaveBeenCalledOnce());
+    subject.animate();
+    expect(harness.backend.renderFrame).toHaveBeenCalledOnce();
+    expect(pendingFrames).toHaveLength(1);
+
+    subject.isRecoveringFromDeviceLoss = true;
+    subject.isRendererRecoveryPaused = true;
+    subject.handleDeviceLossFallbackFailure(new Error("fallback init failed"), "webgpu");
+
+    expect(pendingFrames).toHaveLength(1);
+    expect(harness.backend.renderFrame).toHaveBeenCalledOnce();
+
+    pendingFrames.shift()?.(16);
+    expect(harness.backend.renderFrame).toHaveBeenCalledTimes(2);
+    expect(pendingFrames).toHaveLength(1);
   });
 
   it("switches scenes through the shared scene manager", async () => {

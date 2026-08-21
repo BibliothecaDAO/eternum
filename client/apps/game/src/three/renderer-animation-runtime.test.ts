@@ -83,11 +83,12 @@ describe("runRendererAnimationTick", () => {
     expect(requestNextFrame).toHaveBeenCalledTimes(1);
   });
 
-  it("updates the panel, controls, and frame render before scheduling the next tick", () => {
+  it("does not clear the failure circuit when a frame declines to render", () => {
     const requestNextFrame = vi.fn();
     const updateStatsPanel = vi.fn();
     const updateControls = vi.fn();
     const renderFrame = vi.fn(() => false);
+    const onFrameSuccess = vi.fn();
 
     const lastTime = runRendererAnimationTick({
       getCurrentTime: () => 116,
@@ -95,6 +96,7 @@ describe("runRendererAnimationTick", () => {
       isDestroyed: false,
       isLabelRuntimeReady: true,
       lastTime: 100,
+      onFrameSuccess,
       renderFrame,
       requestNextFrame,
       targetFPS: null,
@@ -111,6 +113,7 @@ describe("runRendererAnimationTick", () => {
       deltaTime: 0.016,
     });
     expect(requestNextFrame).toHaveBeenCalledTimes(1);
+    expect(onFrameSuccess).not.toHaveBeenCalled();
   });
 
   it("reports a thrown frame and always schedules the next tick", () => {
@@ -140,6 +143,31 @@ describe("runRendererAnimationTick", () => {
     expect(requestNextFrame).toHaveBeenCalledTimes(1);
   });
 
+  it("preserves frame time and scheduling when the error reporter itself throws", () => {
+    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    const requestNextFrame = vi.fn();
+
+    const lastTime = runRendererAnimationTick({
+      getCurrentTime: () => 116,
+      getCycleProgress: () => 0.75,
+      isDestroyed: false,
+      isLabelRuntimeReady: true,
+      lastTime: 100,
+      onFrameError: () => {
+        throw new Error("reporter failed");
+      },
+      renderFrame: () => {
+        throw new Error("frame failed");
+      },
+      requestNextFrame,
+      targetFPS: null,
+    });
+
+    expect(lastTime).toBe(116);
+    expect(requestNextFrame).toHaveBeenCalledOnce();
+    expect(errorSpy).toHaveBeenCalledWith("[GameRenderer] Failed to report renderer frame error", expect.any(Error));
+  });
+
   it("throttles repeated-frame-error reports without stopping frame attempts", () => {
     const circuit = createRendererFrameFailureCircuit();
     const frameError = new Error("writeBuffer range is invalid");
@@ -150,7 +178,23 @@ describe("runRendererAnimationTick", () => {
     }
     expect(circuit.recordFailure(frameError)).toEqual({ repeatCount: 60, shouldReport: true });
 
+    for (let repeatCount = 61; repeatCount < 120; repeatCount += 1) {
+      expect(circuit.recordFailure(frameError)).toEqual({ repeatCount, shouldReport: false });
+    }
+    expect(circuit.recordFailure(frameError)).toEqual({ repeatCount: 120, shouldReport: true });
+
     circuit.recordSuccess();
     expect(circuit.recordFailure(frameError)).toEqual({ repeatCount: 0, shouldReport: true });
+  });
+
+  it("retains independent backoff state for alternating failure fingerprints", () => {
+    const circuit = createRendererFrameFailureCircuit();
+    const uploadError = new Error("upload failed");
+    const renderError = new Error("render failed");
+
+    expect(circuit.recordFailure(uploadError)).toEqual({ repeatCount: 0, shouldReport: true });
+    expect(circuit.recordFailure(renderError)).toEqual({ repeatCount: 0, shouldReport: true });
+    expect(circuit.recordFailure(uploadError)).toEqual({ repeatCount: 1, shouldReport: false });
+    expect(circuit.recordFailure(renderError)).toEqual({ repeatCount: 1, shouldReport: false });
   });
 });

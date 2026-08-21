@@ -32,6 +32,7 @@ export interface RendererFrameFailureCircuit {
 }
 
 export const RENDERER_FRAME_FAILURE_REPORT_INTERVAL = 60;
+const RENDERER_FRAME_FAILURE_MAX_REPORT_INTERVAL = 3_600;
 
 export function runRendererAnimationTick(input: RunRendererAnimationTickInput): number {
   if (shouldStopRendererAnimation(input)) {
@@ -55,17 +56,23 @@ export function runRendererAnimationTick(input: RunRendererAnimationTickInput): 
 
     input.updateStatsPanel?.();
     input.updateControls?.();
-    input.renderFrame({
+    const rendered = input.renderFrame({
       currentTime: frameState.currentTime,
       cycleProgress: input.getCycleProgress(),
       deltaTime: frameState.deltaTime,
     });
-    input.onFrameSuccess?.();
+    if (rendered) {
+      input.onFrameSuccess?.();
+    }
   } catch (error) {
     if (!input.onFrameError) {
       throw error;
     }
-    input.onFrameError(error);
+    try {
+      input.onFrameError(error);
+    } catch (reportingError) {
+      console.error("[GameRenderer] Failed to report renderer frame error", reportingError);
+    }
   } finally {
     input.requestNextFrame();
   }
@@ -74,29 +81,42 @@ export function runRendererAnimationTick(input: RunRendererAnimationTickInput): 
 }
 
 export function createRendererFrameFailureCircuit(): RendererFrameFailureCircuit {
-  let repeatCount = 0;
-  let lastFailureFingerprint: string | null = null;
+  const failures = new Map<
+    string,
+    {
+      nextReportRepeat: number;
+      repeatCount: number;
+    }
+  >();
 
   return {
     recordFailure: (error) => {
       const fingerprint = createRendererFrameFailureFingerprint(error);
-      const isNewFailure = fingerprint !== lastFailureFingerprint;
+      const existing = failures.get(fingerprint);
+      if (!existing) {
+        failures.set(fingerprint, {
+          nextReportRepeat: RENDERER_FRAME_FAILURE_REPORT_INTERVAL,
+          repeatCount: 0,
+        });
+        return { repeatCount: 0, shouldReport: true };
+      }
 
-      if (isNewFailure) {
-        repeatCount = 0;
-        lastFailureFingerprint = fingerprint;
-      } else {
-        repeatCount += 1;
+      existing.repeatCount += 1;
+      const shouldReport = existing.repeatCount === existing.nextReportRepeat;
+      if (shouldReport) {
+        existing.nextReportRepeat =
+          existing.nextReportRepeat < RENDERER_FRAME_FAILURE_MAX_REPORT_INTERVAL
+            ? Math.min(existing.nextReportRepeat * 2, RENDERER_FRAME_FAILURE_MAX_REPORT_INTERVAL)
+            : existing.repeatCount + RENDERER_FRAME_FAILURE_MAX_REPORT_INTERVAL;
       }
 
       return {
-        repeatCount,
-        shouldReport: isNewFailure || repeatCount % RENDERER_FRAME_FAILURE_REPORT_INTERVAL === 0,
+        repeatCount: existing.repeatCount,
+        shouldReport,
       };
     },
     recordSuccess: () => {
-      repeatCount = 0;
-      lastFailureFingerprint = null;
+      failures.clear();
     },
   };
 }

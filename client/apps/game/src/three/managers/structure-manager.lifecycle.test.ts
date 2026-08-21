@@ -151,7 +151,7 @@ vi.mock("./manager-update-convergence", () => ({
     invalidate: vi.fn(),
     isCurrent: vi.fn(() => true),
   })),
-  createCoalescedAsyncUpdateRunner: (fn: () => Promise<void>) => fn,
+  createCoalescedAsyncUpdateRunner: (fn: () => Promise<boolean>) => fn,
   isCommittedManagerChunk: vi.fn(() => true),
   MANAGER_UNCOMMITTED_CHUNK: "uncommitted",
   shouldAcceptManagerChunkRequest: vi.fn(() => true),
@@ -166,6 +166,9 @@ vi.mock("./points-label-renderer", () => ({
 }));
 
 const { StructureManager } = await import("./structure-manager");
+const { isCommittedManagerChunk } = await import("./manager-update-convergence");
+const { createCoalescedAsyncUpdateRunner: createActualCoalescedAsyncUpdateRunner } =
+  await vi.importActual<typeof import("./manager-update-convergence")>("./manager-update-convergence");
 const { getRenderBounds } = await import("../utils/chunk-geometry");
 const actualChunkGeometry = await vi.importActual<typeof import("../utils/chunk-geometry")>("../utils/chunk-geometry");
 
@@ -176,7 +179,18 @@ function mockCanonicalRenderBounds() {
 afterEach(() => {
   vi.mocked(getRenderBounds).mockReset();
   vi.mocked(getRenderBounds).mockReturnValue({ minCol: 0, minRow: 0, maxCol: 0, maxRow: 0 });
+  vi.mocked(isCommittedManagerChunk).mockReturnValue(true);
 });
+
+function initializePendingVisibleStructureRefresh(subject: any): void {
+  subject.pendingVisibleStructureWorkLane = "visible";
+  subject.shouldRefreshExistingStructures = false;
+  subject.pendingVisibleStructureRefreshIds = new Set();
+  subject.pendingVisibleStructureTransitionToken = undefined;
+  subject.runVisibleStructuresUpdate = createActualCoalescedAsyncUpdateRunner(() =>
+    subject.flushPendingVisibleStructureRefresh(),
+  );
+}
 
 function createVisibleStructurePassFence() {
   let fenceVersion = 0;
@@ -698,6 +712,19 @@ describe("StructureManager destroy lifecycle", () => {
     expect(subject.requestVisibleStructuresRefresh).toHaveBeenCalledWith({ refreshEntityIds: [7] });
   });
 
+  it("prunes a tracked label when an address-name update finds that its structure vanished", () => {
+    const subject = Object.create(StructureManager.prototype) as any;
+
+    subject.resolveStructureInfoByEntityId = vi.fn(() => undefined);
+    subject.removeStructurePresentation = vi.fn();
+    subject.refreshTrackedStructureLabelState = vi.fn();
+
+    subject.refreshTrackedStructureLabelOrPrune(7);
+
+    expect(subject.removeStructurePresentation).toHaveBeenCalledWith(7);
+    expect(subject.refreshTrackedStructureLabelState).not.toHaveBeenCalled();
+  });
+
   it("mutates only entering and leaving structure slots and ignores a superseded commit", () => {
     const { subject, visibleStructurePassFence } = createVisibleStructurePassSubject();
     const setMatrixAt = vi.fn();
@@ -808,6 +835,137 @@ describe("StructureManager destroy lifecycle", () => {
     expect(model.setCount).toHaveBeenCalledWith(0);
     expect(subject.structureInstanceSlots.has(model)).toBe(false);
     expect(subject.structureModelDrawCounts.has(model)).toBe(false);
+  });
+
+  it.each([0, 3])("ignores an invalid free-slot hint at index %s without scanning the slot array", (freeSlot) => {
+    const subject = Object.create(StructureManager.prototype) as any;
+    const model = {};
+    const slots = [1, 2];
+
+    subject.structureInstanceFreeSlots = new Map([[model, freeSlot]]);
+
+    expect(subject.takeFreeStructureInstanceSlot(model, slots)).toBe(2);
+    expect(subject.structureInstanceFreeSlots.has(model)).toBe(false);
+  });
+
+  it("resolves a committed targeted refresh while a sustained follow-up burst is still pending", async () => {
+    const { subject } = createVisibleStructurePassSubject();
+    const preloadReleases: Array<() => void> = [];
+    const model = {
+      removeInstance: vi.fn(),
+      setCount: vi.fn(),
+      setMatrixAt: vi.fn(),
+    };
+    const visibleStructure = {
+      entityId: 7,
+      hasWonder: false,
+      hexCoords: { col: 0, row: 0 },
+      stage: 0,
+      structureType: "Village",
+    };
+
+    subject.structureModels.set("Village", [model]);
+    subject.hasCosmeticSkin = vi.fn(() => false);
+    subject.getModelForStructure = vi.fn(() => model);
+    subject.getVisibleStructuresForChunk = vi.fn(() => [visibleStructure]);
+    subject.preloadStructureModels = vi.fn(
+      () =>
+        new Promise<void>((resolve) => {
+          preloadReleases.push(resolve);
+        }),
+    );
+    subject.finalizeVisibleStructurePass = vi.fn((visibleIds: Set<number>) => {
+      subject.previousVisibleIds = new Set(visibleIds);
+    });
+    initializePendingVisibleStructureRefresh(subject);
+
+    const firstRequest = subject.requestVisibleStructuresRefresh({ refreshEntityIds: [7] });
+    await vi.waitFor(() => expect(preloadReleases).toHaveLength(1));
+    const burstRequests = Array.from({ length: 100 }, () =>
+      subject.requestVisibleStructuresRefresh({ refreshEntityIds: [7] }),
+    );
+
+    preloadReleases.shift()?.();
+    await expect(firstRequest).resolves.toBeUndefined();
+    await vi.waitFor(() => expect(preloadReleases).toHaveLength(1));
+
+    expect(subject.structureInstanceBindings.has(7)).toBe(true);
+    expect(model.setMatrixAt).toHaveBeenCalledTimes(1);
+
+    preloadReleases.shift()?.();
+    await Promise.all(burstRequests);
+  });
+
+  it("re-queues targeted deltas after a non-committing pass", async () => {
+    const subject = Object.create(StructureManager.prototype) as any;
+    const passOptions: Array<{ refreshEntityIds: Set<number> }> = [];
+
+    subject.isDestroyed = false;
+    subject.currentChunk = "24,24";
+    subject.performVisibleStructuresUpdate = vi.fn(async (options) => {
+      passOptions.push({ ...options, refreshEntityIds: new Set(options.refreshEntityIds) });
+      return passOptions.length > 1;
+    });
+    initializePendingVisibleStructureRefresh(subject);
+
+    const firstRequest = subject.requestVisibleStructuresRefresh({ refreshEntityIds: [7] });
+    await vi.waitFor(() => expect(subject.pendingVisibleStructureRefreshIds).toEqual(new Set([7])));
+    const retryRequest = subject.requestVisibleStructuresRefresh({ refreshEntityIds: [8] });
+
+    await Promise.all([firstRequest, retryRequest]);
+    expect(passOptions.map((options) => options.refreshEntityIds)).toEqual([new Set([7]), new Set([7, 8])]);
+  });
+
+  it("records deltas received while chunk authority is uncommitted", async () => {
+    const subject = Object.create(StructureManager.prototype) as any;
+
+    subject.isDestroyed = false;
+    subject.currentChunk = "uncommitted";
+    subject.pendingVisibleStructureWorkLane = "visible";
+    subject.shouldRefreshExistingStructures = false;
+    subject.pendingVisibleStructureRefreshIds = new Set();
+    subject.pendingVisibleStructureTransitionToken = undefined;
+    subject.runVisibleStructuresUpdate = vi.fn().mockResolvedValue(undefined);
+    vi.mocked(isCommittedManagerChunk).mockImplementation((chunkKey) => chunkKey !== "uncommitted");
+
+    await subject.requestVisibleStructuresRefresh({ refreshEntityIds: [7] });
+    expect(subject.runVisibleStructuresUpdate).not.toHaveBeenCalled();
+    expect(subject.pendingVisibleStructureRefreshIds).toEqual(new Set([7]));
+
+    subject.currentChunk = "24,24";
+    await subject.requestVisibleStructuresRefresh({ refreshEntityIds: [8] });
+    expect(subject.runVisibleStructuresUpdate).toHaveBeenCalledOnce();
+    expect(subject.pendingVisibleStructureRefreshIds).toEqual(new Set([7, 8]));
+  });
+
+  it("upgrades a partially failed delta to a full refresh before retrying", async () => {
+    const subject = Object.create(StructureManager.prototype) as any;
+    const passOptions: Array<{ refreshEntityIds: Set<number>; refreshExisting?: boolean }> = [];
+    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+
+    subject.isDestroyed = false;
+    subject.currentChunk = "24,24";
+    subject.performVisibleStructuresUpdate = vi
+      .fn()
+      .mockImplementationOnce(async (options) => {
+        passOptions.push({ ...options, refreshEntityIds: new Set(options.refreshEntityIds) });
+        throw new Error("partial commit");
+      })
+      .mockImplementationOnce(async (options) => {
+        passOptions.push({ ...options, refreshEntityIds: new Set(options.refreshEntityIds) });
+        return true;
+      });
+    initializePendingVisibleStructureRefresh(subject);
+
+    await subject.requestVisibleStructuresRefresh({ refreshEntityIds: [7] });
+    expect(subject.shouldRefreshExistingStructures).toBe(true);
+
+    await subject.requestVisibleStructuresRefresh({ refreshEntityIds: [8] });
+    expect(passOptions[1]).toMatchObject({
+      refreshEntityIds: new Set([7, 8]),
+      refreshExisting: true,
+    });
+    expect(errorSpy).toHaveBeenCalledWith("Failed to update visible structures", expect.any(Error));
   });
 
   it("queues targeted refreshes without invalidating the in-flight pass", async () => {

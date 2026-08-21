@@ -8,11 +8,7 @@ import {
 import { VERBOSE_LOGS_ENABLED } from "@/utils/dev-mode";
 
 import type { RendererSurfaceLike } from "./renderer-backend";
-import {
-  markRendererDiagnosticDeviceLost,
-  markRendererDiagnosticDeviceReady,
-  recordRendererDiagnosticUncapturedError,
-} from "./renderer-diagnostics";
+import { markRendererDiagnosticDeviceLost, recordRendererDiagnosticUncapturedError } from "./renderer-diagnostics";
 import {
   createRendererBackendCapabilities,
   createRendererInitDiagnostics,
@@ -493,13 +489,10 @@ export function createWebGPURendererBackend(
           });
         }
 
-        if (initializedRenderer.activeMode === "webgpu" && initializedDevice) {
-          markRendererDiagnosticDeviceReady();
-        }
-
         return createRendererInitDiagnostics({
           activeMode: initializedRenderer.activeMode,
           buildMode: options.requestedMode,
+          deviceStatus: initializedRenderer.activeMode === "webgpu" && initializedDevice ? "ready" : undefined,
           fallbackReason: initializedRenderer.fallbackReason,
           initTimeMs: resolvedDependencies.now() - startTime,
           requestedMode: options.requestedMode,

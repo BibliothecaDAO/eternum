@@ -220,7 +220,7 @@ describe("finalizeWarpTravelChunkSwitch", () => {
     expect(result).toEqual({ status: "committed" });
     expect(commitPreparedTerrain).toHaveBeenCalledWith(preparedTerrain);
     expect(disposePreparedTerrain).not.toHaveBeenCalled();
-    expect(scheduleManagerCatchUp).toHaveBeenCalledWith("24,24", { force: false, transitionToken: 36 });
+    expect(scheduleManagerCatchUp).toHaveBeenCalledWith("24,24", { force: false, transitionToken: 35 });
   });
 
   it("skips every post-commit effect when the queued terrain commit loses ownership", async () => {

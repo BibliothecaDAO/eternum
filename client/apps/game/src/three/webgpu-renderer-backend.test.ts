@@ -241,6 +241,7 @@ describe("createWebGPURendererBackend", () => {
 
     syncRendererBackendDiagnostics(await backend.initialize());
     expect(snapshotRendererDiagnostics().activeMode).toBe("webgpu");
+    expect(snapshotRendererDiagnostics().gpuTelemetry.deviceStatus).toBe("ready");
 
     const uncapturedError = new Event("uncapturederror");
     Object.defineProperty(uncapturedError, "error", { value: { message: "validation failed" } });

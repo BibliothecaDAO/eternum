@@ -344,6 +344,7 @@ export class InteractiveHexManager {
 
     if (this.instanceMesh) {
       this.instanceMesh.count = 0;
+      this.instanceMesh.instanceMatrix.needsUpdate = true;
     }
   }
 
@@ -365,6 +366,7 @@ export class InteractiveHexManager {
     mesh.count = instanceCount;
 
     if (instanceCount === 0) {
+      mesh.instanceMatrix.needsUpdate = true;
       mesh.boundingBox = null;
       mesh.boundingSphere = null;
       PerformanceMonitor.end("renderAllHexes");
@@ -427,6 +429,7 @@ export class InteractiveHexManager {
     mesh.count = instanceCount;
 
     if (instanceCount === 0) {
+      mesh.instanceMatrix.needsUpdate = true;
       mesh.boundingBox = null;
       mesh.boundingSphere = null;
       PerformanceMonitor.end("renderHexes");

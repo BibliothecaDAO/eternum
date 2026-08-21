@@ -34,6 +34,7 @@ export interface RendererFeatureDegradation {
 export interface RendererInitDiagnostics {
   activeMode: RendererActiveMode;
   buildMode: RendererBuildMode;
+  deviceStatus?: "ready";
   fallbackReason: RendererFallbackReason;
   initTimeMs: number;
   requestedMode: RendererBuildMode;
@@ -133,11 +134,12 @@ export class RendererInitTimeoutError extends Error {
 
 export function createRendererInitDiagnostics(
   input: Pick<RendererInitDiagnostics, "activeMode" | "buildMode" | "requestedMode"> &
-    Partial<Pick<RendererInitDiagnostics, "fallbackReason" | "initTimeMs">>,
+    Partial<Pick<RendererInitDiagnostics, "deviceStatus" | "fallbackReason" | "initTimeMs">>,
 ): RendererInitDiagnostics {
   return {
     activeMode: input.activeMode,
     buildMode: input.buildMode,
+    ...(input.deviceStatus ? { deviceStatus: input.deviceStatus } : {}),
     fallbackReason: input.fallbackReason ?? null,
     initTimeMs: input.initTimeMs ?? 0,
     requestedMode: input.requestedMode,

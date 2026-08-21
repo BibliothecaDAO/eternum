@@ -78,34 +78,80 @@ export function shouldRunManagerChunkUpdate(input: {
   });
 }
 
-export function createCoalescedAsyncUpdateRunner(task: () => Promise<void>): () => Promise<void> {
-  let updateInFlight: Promise<void> | null = null;
+interface CoalescedUpdateWaiter {
+  reject: (reason: unknown) => void;
+  resolve: () => void;
+  version: number;
+}
+
+export function createCoalescedAsyncUpdateRunner(task: () => Promise<boolean>): () => Promise<void> {
+  let isUpdateInFlight = false;
+  let shouldRestartAfterCurrentPass = false;
   let requestedVersion = 0;
   let processedVersion = 0;
+  const waiters: CoalescedUpdateWaiter[] = [];
 
-  const run = async (): Promise<void> => {
-    requestedVersion += 1;
-
-    if (updateInFlight) {
-      await updateInFlight;
-      return;
-    }
-
-    updateInFlight = (async () => {
-      while (processedVersion < requestedVersion) {
-        processedVersion = requestedVersion;
-        await task();
+  const settleWaitersThrough = (
+    version: number,
+    outcome: { status: "resolved" } | { reason: unknown; status: "rejected" },
+  ): void => {
+    for (let index = waiters.length - 1; index >= 0; index -= 1) {
+      const waiter = waiters[index];
+      if (waiter.version > version) {
+        continue;
       }
-    })();
-
-    try {
-      await updateInFlight;
-    } finally {
-      updateInFlight = null;
+      waiters.splice(index, 1);
+      if (outcome.status === "resolved") {
+        waiter.resolve();
+      } else {
+        waiter.reject(outcome.reason);
+      }
     }
   };
 
-  return run;
+  const drain = async (): Promise<void> => {
+    isUpdateInFlight = true;
+    shouldRestartAfterCurrentPass = false;
+
+    try {
+      while (processedVersion < requestedVersion) {
+        const passVersion = requestedVersion;
+        shouldRestartAfterCurrentPass = false;
+        try {
+          if (!(await task())) {
+            return;
+          }
+        } catch (error) {
+          processedVersion = passVersion;
+          settleWaitersThrough(processedVersion, { reason: error, status: "rejected" });
+          return;
+        }
+
+        processedVersion = passVersion;
+        settleWaitersThrough(processedVersion, { status: "resolved" });
+      }
+    } finally {
+      isUpdateInFlight = false;
+      if (processedVersion < requestedVersion && shouldRestartAfterCurrentPass) {
+        void drain();
+      }
+    }
+  };
+
+  return (): Promise<void> => {
+    const requestVersion = ++requestedVersion;
+    const completed = new Promise<void>((resolve, reject) => {
+      waiters.push({ reject, resolve, version: requestVersion });
+    });
+
+    if (isUpdateInFlight) {
+      shouldRestartAfterCurrentPass = true;
+    } else {
+      void drain();
+    }
+
+    return completed;
+  };
 }
 
 export function waitForVisualSettle(

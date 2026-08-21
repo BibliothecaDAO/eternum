@@ -329,7 +329,6 @@ describe("GameRenderer backend seam", () => {
       backend: fallbackBackend,
       renderer: fallbackBackend.renderer,
     }));
-    subject.armLocalViewTexturePrewarm = vi.fn();
     subject.animate = vi.fn();
     subject.camera = { aspect: 0, updateProjectionMatrix: vi.fn() };
     subject.labelRuntime = { markDirty: vi.fn(), resize: vi.fn() };
@@ -375,7 +374,6 @@ describe("GameRenderer backend seam", () => {
     expect(effectsBridge.updateWeatherPostProcessing).toHaveBeenCalledTimes(1);
     expect(previousBackend.dispose).toHaveBeenCalledTimes(1);
     expect(fallbackBackend.resize).toHaveBeenCalledTimes(1);
-    expect(subject.armLocalViewTexturePrewarm).not.toHaveBeenCalled();
     expect(subject.animate).toHaveBeenCalledTimes(1);
   });
 });
