@@ -7,8 +7,8 @@ function createControlledCommitQueue() {
 
   return {
     scheduleCommit: vi.fn(
-      (commit: () => boolean) =>
-        new Promise<boolean>((resolve) => {
+      (commit: () => number | null) =>
+        new Promise<number | null>((resolve) => {
           runPendingCommit = () => resolve(commit());
         }),
     ),
@@ -62,15 +62,28 @@ function createTerrainCommitFixture() {
 }
 
 describe("commitOwnedWorldmapPreparedTerrain", () => {
-  it("drops a superseded prepared chunk while its critical commit is queued", async () => {
+  it("commits through the immediate timeout-recovery token instead of retrying the same chunk", async () => {
     const fixture = createTerrainCommitFixture();
     const result = fixture.commit();
 
     fixture.supersede();
     fixture.queue.runPendingCommit();
 
-    await expect(result).resolves.toBe(false);
-    expect(fixture.disposePreparedTerrain).toHaveBeenCalledOnce();
+    await expect(result).resolves.toBe(5);
+    expect(fixture.disposePreparedTerrain).not.toHaveBeenCalled();
+    expect(fixture.commitChunkAuthority).toHaveBeenCalledWith("24,24");
+    expect(fixture.applyPreparedTerrain).toHaveBeenCalledWith(fixture.preparedTerrain);
+  });
+
+  it("drops prepared terrain once a newer transition owns the scene", async () => {
+    const fixture = createTerrainCommitFixture();
+    const result = fixture.commit();
+
+    fixture.supersede();
+    fixture.supersede();
+    fixture.queue.runPendingCommit();
+
+    await expect(result).resolves.toBeNull();
     expect(fixture.disposePreparedTerrain).toHaveBeenCalledWith(fixture.preparedTerrain);
     expect(fixture.commitChunkAuthority).not.toHaveBeenCalled();
     expect(fixture.applyPreparedTerrain).not.toHaveBeenCalled();
@@ -83,7 +96,7 @@ describe("commitOwnedWorldmapPreparedTerrain", () => {
     fixture.switchOff();
     fixture.queue.runPendingCommit();
 
-    await expect(result).resolves.toBe(false);
+    await expect(result).resolves.toBeNull();
     expect(fixture.disposePreparedTerrain).toHaveBeenCalledOnce();
     expect(fixture.commitChunkAuthority).not.toHaveBeenCalled();
     expect(fixture.applyPreparedTerrain).not.toHaveBeenCalled();
@@ -95,7 +108,7 @@ describe("commitOwnedWorldmapPreparedTerrain", () => {
 
     fixture.queue.runPendingCommit();
 
-    await expect(result).resolves.toBe(true);
+    await expect(result).resolves.toBe(4);
     expect(fixture.commitChunkAuthority).toHaveBeenCalledOnce();
     expect(fixture.commitChunkAuthority).toHaveBeenCalledWith("24,24");
     expect(fixture.applyPreparedTerrain).toHaveBeenCalledOnce();

@@ -186,8 +186,9 @@ describe("finalizeWarpTravelChunkSwitch", () => {
   });
 
   it("applies (does not dispose) prepared terrain on a committed switch", async () => {
-    const commitPreparedTerrain = vi.fn(() => true);
+    const commitPreparedTerrain = vi.fn(() => 36);
     const disposePreparedTerrain = vi.fn();
+    const scheduleManagerCatchUp = vi.fn();
     const preparedTerrain = { chunkKey: "24,24" };
 
     const result = await finalizeWarpTravelChunkSwitch({
@@ -212,13 +213,14 @@ describe("finalizeWarpTravelChunkSwitch", () => {
       clearSceneChunkBounds: vi.fn(),
       forceVisibilityUpdate: vi.fn(),
       updateCurrentChunkBounds: vi.fn(),
-      scheduleManagerCatchUp: vi.fn(),
+      scheduleManagerCatchUp,
       unregisterPreviousChunkOnNextFrame: vi.fn(),
     });
 
     expect(result).toEqual({ status: "committed" });
     expect(commitPreparedTerrain).toHaveBeenCalledWith(preparedTerrain);
     expect(disposePreparedTerrain).not.toHaveBeenCalled();
+    expect(scheduleManagerCatchUp).toHaveBeenCalledWith("24,24", { force: false, transitionToken: 36 });
   });
 
   it("skips every post-commit effect when the queued terrain commit loses ownership", async () => {

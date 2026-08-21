@@ -7977,7 +7977,7 @@ export default class WorldmapScene extends WarpTravel {
     preparedTerrain: PreparedTerrainChunk;
     presentationRuntime: PreparedWorldmapChunkRuntime["presentationRuntime"];
     transitionToken: number;
-  }): Promise<boolean> {
+  }): Promise<number | null> {
     return commitOwnedWorldmapPreparedTerrain({
       preparedTerrain: input.preparedTerrain,
       targetChunk: input.chunkKey,

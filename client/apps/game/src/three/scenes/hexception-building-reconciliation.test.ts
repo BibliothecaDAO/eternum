@@ -13,15 +13,18 @@ interface TestBuilding extends PositionedBuilding {
 
 interface Deferred<T> {
   promise: Promise<T>;
+  reject(reason: unknown): void;
   resolve(value: T): void;
 }
 
 function createDeferred<T>(): Deferred<T> {
   let resolve!: (value: T) => void;
-  const promise = new Promise<T>((resolvePromise) => {
+  let reject!: (reason: unknown) => void;
+  const promise = new Promise<T>((resolvePromise, rejectPromise) => {
     resolve = resolvePromise;
+    reject = rejectPromise;
   });
-  return { promise, resolve };
+  return { promise, reject, resolve };
 }
 
 function createOwnedBuildingWorkHarness() {
@@ -43,6 +46,9 @@ function createOwnedBuildingWorkHarness() {
     },
     finishLoadingModels() {
       modelsLoaded.resolve();
+    },
+    failLoadingModels() {
+      modelsLoaded.reject(new Error("model load failed"));
     },
     switchRealm() {
       activeRealmGeneration += 1;
@@ -211,5 +217,14 @@ describe("owned building work after model loading", () => {
     await harness.completion;
 
     expect(harness.apply).not.toHaveBeenCalled();
+  });
+
+  it("reconciles after a failed model load instead of poisoning later work", async () => {
+    const harness = createOwnedBuildingWorkHarness();
+
+    harness.failLoadingModels();
+    await harness.completion;
+
+    expect(harness.apply).toHaveBeenCalledOnce();
   });
 });

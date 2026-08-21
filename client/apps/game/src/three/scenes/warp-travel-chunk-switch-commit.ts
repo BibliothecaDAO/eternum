@@ -14,7 +14,7 @@ interface FinalizeWarpTravelChunkSwitchInput {
   force: boolean;
   transitionToken: number;
   preparedTerrain: unknown;
-  commitPreparedTerrain: (preparedTerrain: unknown) => boolean | Promise<boolean>;
+  commitPreparedTerrain: (preparedTerrain: unknown) => boolean | number | null | Promise<boolean | number | null>;
   /**
    * Phase 2.2: release the pooled attributes held by prepared terrain that is
    * dropped (rollback / stale) instead of applied. Without this the pooled
@@ -95,8 +95,8 @@ export async function finalizeWarpTravelChunkSwitch(
     throw new Error(`Chunk ${input.targetChunk} synchronized without prepared terrain`);
   }
 
-  const terrainCommitted = await input.commitPreparedTerrain(input.preparedTerrain);
-  if (!terrainCommitted) {
+  const terrainCommitResult = await input.commitPreparedTerrain(input.preparedTerrain);
+  if (terrainCommitResult === false || terrainCommitResult === null) {
     return {
       status: "stale_dropped",
     };
@@ -105,7 +105,7 @@ export async function finalizeWarpTravelChunkSwitch(
   input.forceVisibilityUpdate();
   input.scheduleManagerCatchUp(input.targetChunk, {
     force: input.force,
-    transitionToken: input.transitionToken,
+    transitionToken: typeof terrainCommitResult === "number" ? terrainCommitResult : input.transitionToken,
   });
 
   if (chunkSwitchActions.shouldUnregisterPreviousChunk && input.previousChunk) {

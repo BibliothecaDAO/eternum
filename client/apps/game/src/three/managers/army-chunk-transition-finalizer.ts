@@ -7,8 +7,9 @@ interface FinalizeArmyChunkTransitionInput {
 }
 
 export function finalizeArmyChunkTransition(input: FinalizeArmyChunkTransitionInput): boolean {
+  input.setTransitioning(false);
+
   if (input.isDestroyed) {
-    input.setTransitioning(false);
     return false;
   }
 
@@ -16,7 +17,6 @@ export function finalizeArmyChunkTransition(input: FinalizeArmyChunkTransitionIn
     return false;
   }
 
-  input.setTransitioning(false);
   input.drainDeferredQueue();
   input.drainPreCommitQueue();
   return true;
