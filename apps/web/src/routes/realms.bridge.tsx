@@ -31,7 +31,11 @@ export const Route = createFileRoute("/realms/bridge")({
   component: RouteComponent,
 });
 
-function isMetadataAttribute(value: unknown): value is TokenMetadataAttribute {
+interface L1MetadataAttribute extends TokenMetadataAttribute {
+  key?: string;
+}
+
+function isMetadataAttribute(value: unknown): value is L1MetadataAttribute {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
@@ -87,14 +91,16 @@ function RouteComponent() {
   const mappedRealms = useMemo(() => {
     if (selectedAsset === "Ethereum") {
       return (
-        l1Realms?.tokens?.map((realm: any) => ({
+        l1Realms?.tokens?.map((realm) => ({
           token_id: parseInt(realm.token?.tokenId),
           name: realm.token?.name,
           attributes:
-            realm.token?.attributes?.map((attribute: any) => ({
-              ...attribute,
-              trait_type: attribute.key,
-            })) ?? [],
+            realm.token?.attributes
+              ?.filter(isMetadataAttribute)
+              .map((attribute) => ({
+                ...attribute,
+                trait_type: attribute.key ?? attribute.trait_type,
+              })) ?? [],
         })) ?? []
       );
     } else if (selectedAsset === "Starknet") {

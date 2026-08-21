@@ -13,10 +13,6 @@ import { decodeEvent, getSelector, StarknetStream } from "@apibara/starknet";
 
 import { ChainId, CollectionAddresses } from "@realms-world/constants";
 import { db } from "@realms-world/db/poolClient";
-import {
-  starknetRealmOwnership,
-  starknetRealmOwnershipStatus,
-} from "@realms-world/db/schema";
 
 import { env } from "../env";
 import {
@@ -29,6 +25,24 @@ import { REALMS_TRANSFER_ABI } from "./realms-transfer-abi";
 
 const TRANSFER_SELECTOR = getSelector("Transfer");
 const FIRST_MAINNET_REALMS_EVENT_BLOCK = 664_162n;
+
+function getOwnershipStorageSchema<TSchema extends TablesRelationalConfig>(
+  schema: TSchema | undefined,
+): TablesRelationalConfig {
+  const ownership = schema?.["starknetRealmOwnership"];
+  const status = schema?.["starknetRealmOwnershipStatus"];
+
+  if (!ownership || !status) {
+    throw new Error(
+      "Realm ownership tables are missing from the database schema",
+    );
+  }
+
+  return {
+    starknetRealmOwnership: ownership,
+    starknetRealmOwnershipStatus: status,
+  };
+}
 
 export default function () {
   return createIndexer({ database: db });
@@ -67,10 +81,7 @@ export function createIndexer<
     plugins: [
       drizzleStorage({
         db: database,
-        schema: {
-          starknetRealmOwnership,
-          starknetRealmOwnershipStatus,
-        },
+        schema: getOwnershipStorageSchema(database._.schema),
         idColumn: "_id",
         persistState: true,
         indexerName: REALM_OWNERSHIP_INDEXER_ID,

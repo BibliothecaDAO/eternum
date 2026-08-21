@@ -6,8 +6,11 @@ import type {
 import type { PgDatabase, PgQueryResultHKT } from "drizzle-orm/pg-core";
 import type { Abi } from "starknet";
 import { defineIndexer } from "@apibara/indexer";
-import { useLogger } from "@apibara/indexer/plugins";
-import { drizzleStorage, useDrizzleStorage } from "@apibara/plugin-drizzle";
+import { useLogger as getLogger } from "@apibara/indexer/plugins";
+import {
+  drizzleStorage,
+  useDrizzleStorage as getDrizzleStorage,
+} from "@apibara/plugin-drizzle";
 import { decodeEvent, getSelector, StarknetStream } from "@apibara/starknet";
 import { uint256 } from "starknet";
 import { numberToHex } from "viem";
@@ -158,8 +161,8 @@ export function createIndexer<
       }),
     ],
     async transform({ endCursor, block, finality }) {
-      const logger = useLogger();
-      const { db } = useDrizzleStorage();
+      const logger = getLogger();
+      const { db } = getDrizzleStorage();
       const { events } = block;
 
       logger.info(
