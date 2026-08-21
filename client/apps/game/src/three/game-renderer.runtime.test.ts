@@ -214,6 +214,7 @@ describe("GameRenderer runtime harness", () => {
 
     expect(sentry.captureException).toHaveBeenCalledTimes(3);
     expect(recoverFromRendererDeviceLoss).toHaveBeenCalledTimes(3);
+    expect(subject.hasRendererDeviceLossOccurred).toBe(true);
     expect(
       sentry.captureException.mock.calls.map(([, context]) => context.tags["renderer.recovery_attempted"]),
     ).toEqual(["yes", "no", "no"]);

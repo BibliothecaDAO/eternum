@@ -103,16 +103,25 @@ export default class GameRenderer {
   private guiFolders: TrackableGuiFolder[] = [];
   private readonly isMobileDevice = IS_MOBILE;
   private backendInitializationPromise?: Promise<void>;
+  private hasRendererDeviceLossOccurred = false;
   private hasRecoveredFromDeviceLoss = false;
   private isRecoveringFromDeviceLoss = false;
   private isRendererRecoveryPaused = false;
   private rendererFrameFailureCircuit?: RendererFrameFailureCircuit;
   private localViewTexturePrewarm?: LocalViewTexturePrewarmController;
   private localViewTexturePrewarmReadinessUnsubscribe?: () => void;
+  private shouldArmLocalViewTexturePrewarmWhenVisible = false;
   private readonly handleWindowResize = () => this.onWindowResize();
   private readonly handleLocalViewTexturePrewarmVisibilityChange = () => {
     if (document.visibilityState !== "visible") {
+      this.shouldArmLocalViewTexturePrewarmWhenVisible = this.localViewTexturePrewarm !== undefined;
       this.cancelLocalViewTexturePrewarm("page_hidden");
+      return;
+    }
+
+    if (this.shouldArmLocalViewTexturePrewarmWhenVisible) {
+      this.shouldArmLocalViewTexturePrewarmWhenVisible = false;
+      this.armLocalViewTexturePrewarm();
     }
   };
 
@@ -136,6 +145,7 @@ export default class GameRenderer {
     this.sessionRuntime = runtimeAssembly.sessionRuntime;
     this.backendInitializationPromise = this.initializeRendererBackend();
     this.initializeFoundationRuntime();
+    document.addEventListener("visibilitychange", this.handleLocalViewTexturePrewarmVisibilityChange);
   }
 
   private resolveRuntimeState(): GameRendererRuntimeState {
@@ -194,6 +204,8 @@ export default class GameRenderer {
     reportRendererDeviceLoss(event, {
       recoveryAttempted: this.shouldStartDeviceLossFallback(),
     });
+    this.hasRendererDeviceLossOccurred = true;
+    this.shouldArmLocalViewTexturePrewarmWhenVisible = false;
     void this.recoverFromRendererDeviceLoss(event);
   }
 
@@ -334,7 +346,6 @@ export default class GameRenderer {
     this.lastTime = 0;
 
     if (this.hasPreparedRendererScenes()) {
-      this.armLocalViewTexturePrewarm();
       this.animate();
     }
   }
@@ -454,13 +465,21 @@ export default class GameRenderer {
   }
 
   private armLocalViewTexturePrewarm(): void {
-    this.cancelLocalViewTexturePrewarm("renderer_destroyed");
+    if (
+      this.localViewTexturePrewarm ||
+      this.isDestroyed ||
+      this.hasRendererDeviceLossOccurred ||
+      !this.hasPreparedRendererScenes()
+    ) {
+      return;
+    }
     if (document.visibilityState !== "visible") {
+      this.shouldArmLocalViewTexturePrewarmWhenVisible = true;
       return;
     }
 
+    this.shouldArmLocalViewTexturePrewarmWhenVisible = false;
     this.localViewTexturePrewarm = this.createLocalViewTexturePrewarmController();
-    document.addEventListener("visibilitychange", this.handleLocalViewTexturePrewarmVisibilityChange);
 
     if (usePlayRouteReadinessStore.getState().worldmapConverged) {
       this.startLocalViewTexturePrewarm();
@@ -521,7 +540,6 @@ export default class GameRenderer {
   private releaseLocalViewTexturePrewarm(): void {
     this.localViewTexturePrewarmReadinessUnsubscribe?.();
     this.localViewTexturePrewarmReadinessUnsubscribe = undefined;
-    document.removeEventListener("visibilitychange", this.handleLocalViewTexturePrewarmVisibilityChange);
     this.localViewTexturePrewarm = undefined;
   }
 
@@ -672,7 +690,9 @@ export default class GameRenderer {
     }
 
     this.isDestroyed = true;
+    this.shouldArmLocalViewTexturePrewarmWhenVisible = false;
     this.cancelLocalViewTexturePrewarm("renderer_destroyed");
+    document.removeEventListener("visibilitychange", this.handleLocalViewTexturePrewarmVisibilityChange);
     discardGpuBackendFrame();
 
     destroyRendererRuntime({

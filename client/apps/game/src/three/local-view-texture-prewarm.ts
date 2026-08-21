@@ -3,8 +3,12 @@ import type { RendererInfoLike } from "./renderer-backend";
 import type { Texture } from "three";
 
 const LOCAL_TEXTURE_PREWARM_MIN_DEVICE_MEMORY_GB = 8;
-export const LOCAL_TEXTURE_PREWARM_MAX_ESTIMATED_BYTES = 512 * 1024 * 1024;
+// Keep speculative local-view uploads at one eighth of the former 512 MiB
+// allowance and out of renderer sessions that are already texture-heavy.
+export const LOCAL_TEXTURE_PREWARM_MAX_ESTIMATED_BYTES = 64 * 1024 * 1024;
+export const LOCAL_TEXTURE_PREWARM_MAX_RESIDENT_TEXTURES = 256;
 export const LOCAL_TEXTURE_PREWARM_INTERACTION_IDLE_MS = 2_000;
+export const LOCAL_TEXTURE_PREWARM_INTERACTION_DEADLINE_MS = 10_000;
 
 type LocalTexturePrewarmSkipReason =
   | "battery_mode"
@@ -12,9 +16,14 @@ type LocalTexturePrewarmSkipReason =
   | "low_device_memory"
   | "memory_budget_exceeded"
   | "mobile_device"
+  | "resident_texture_budget_exceeded"
   | "texture_upload_unsupported";
 
-type LocalTexturePrewarmCancelReason = "page_hidden" | "renderer_destroyed" | "scene_changed";
+type LocalTexturePrewarmCancelReason =
+  | "interaction_deadline_exceeded"
+  | "page_hidden"
+  | "renderer_destroyed"
+  | "scene_changed";
 
 export interface LocalTexturePrewarmReport {
   elapsedMs: number;
@@ -36,6 +45,7 @@ interface LocalTexturePrewarmPolicyInput {
   estimatedBytes: number;
   hasIdleScheduler: boolean;
   isMobileDevice: boolean;
+  residentTextureCount: number;
   renderMode: RenderMode;
   supportsTextureUpload: boolean;
 }
@@ -86,6 +96,9 @@ export function resolveLocalTexturePrewarmPolicy(
   if (input.deviceMemoryGb !== undefined && input.deviceMemoryGb < LOCAL_TEXTURE_PREWARM_MIN_DEVICE_MEMORY_GB) {
     return { allowed: false, reason: "low_device_memory" };
   }
+  if (input.residentTextureCount >= LOCAL_TEXTURE_PREWARM_MAX_RESIDENT_TEXTURES) {
+    return { allowed: false, reason: "resident_texture_budget_exceeded" };
+  }
   if (input.estimatedBytes > LOCAL_TEXTURE_PREWARM_MAX_ESTIMATED_BYTES) {
     return { allowed: false, reason: "memory_budget_exceeded" };
   }
@@ -102,9 +115,18 @@ export function createLocalViewTexturePrewarm(
   let nextTextureIndex = 0;
   let uploadMs = 0;
   let startedAt: number | null = null;
-  let textureCountBefore = 0;
+  let interactionDeadlineAt = 0;
+  let textureCountBefore: number | null = null;
   let estimatedBytes = 0;
   const hasFinished = () => state === "terminal";
+  const getGpuTextureDelta = () => {
+    if (textureCountBefore === null) return 0;
+    try {
+      return input.getRendererInfo().memory.textures - textureCountBefore;
+    } catch {
+      return 0;
+    }
+  };
 
   const finish = (
     report: Omit<
@@ -122,7 +144,7 @@ export function createLocalViewTexturePrewarm(
       ...report,
       elapsedMs: startedAt === null ? 0 : now() - startedAt,
       estimatedBytes,
-      gpuTextureDelta: input.getRendererInfo().memory.textures - textureCountBefore,
+      gpuTextureDelta: getGpuTextureDelta(),
       textureCount: textures.length,
       uploadMs,
     });
@@ -135,77 +157,85 @@ export function createLocalViewTexturePrewarm(
 
   const uploadNextTexture = () => {
     idleHandle = null;
-    if (!input.isOwnerActive()) {
-      finish({ status: "cancelled", reason: "renderer_destroyed" });
-      return;
-    }
-    if (!input.isWorldmapActive()) {
-      finish({ status: "cancelled", reason: "scene_changed" });
-      return;
-    }
-    if (input.hasRecentInteraction()) {
-      scheduleNextTexture();
-      return;
-    }
-
-    const texture = textures[nextTextureIndex];
-    if (!texture) {
-      finish({ status: "completed" });
-      return;
-    }
-
-    const uploadStartedAt = now();
     try {
+      if (!input.isOwnerActive()) {
+        finish({ status: "cancelled", reason: "renderer_destroyed" });
+        return;
+      }
+      if (!input.isWorldmapActive()) {
+        finish({ status: "cancelled", reason: "scene_changed" });
+        return;
+      }
+      if (input.getRendererInfo().memory.textures >= LOCAL_TEXTURE_PREWARM_MAX_RESIDENT_TEXTURES) {
+        finish({ status: "cancelled", reason: "resident_texture_budget_exceeded" });
+        return;
+      }
+      if (input.hasRecentInteraction()) {
+        if (now() >= interactionDeadlineAt) {
+          finish({ status: "cancelled", reason: "interaction_deadline_exceeded" });
+          return;
+        }
+        scheduleNextTexture();
+        return;
+      }
+
+      const texture = textures[nextTextureIndex];
+      if (!texture) {
+        finish({ status: "completed" });
+        return;
+      }
+
+      const uploadStartedAt = now();
       input.uploadTexture!(texture);
+      uploadMs += now() - uploadStartedAt;
+      nextTextureIndex += 1;
+      if (nextTextureIndex >= textures.length) {
+        finish({ status: "completed" });
+        return;
+      }
+      scheduleNextTexture();
     } catch (error) {
       input.onError(error);
       finish({ status: "failed" });
-      return;
     }
-    uploadMs += now() - uploadStartedAt;
-    nextTextureIndex += 1;
-    if (nextTextureIndex >= textures.length) {
-      finish({ status: "completed" });
-      return;
-    }
-    scheduleNextTexture();
   };
 
   const start = async () => {
     if (state !== "idle") return;
     state = "loading";
     startedAt = now();
-    textureCountBefore = input.getRendererInfo().memory.textures;
 
     try {
+      textureCountBefore = input.getRendererInfo().memory.textures;
       textures = [...new Set(await input.resolveTextures())];
+      if (hasFinished()) return;
+
+      estimatedBytes = textures.reduce((total, texture) => total + estimateTextureUploadBytes(texture), 0);
+      const policy = resolveLocalTexturePrewarmPolicy({
+        deviceMemoryGb: input.deviceMemoryGb,
+        estimatedBytes,
+        hasIdleScheduler: input.scheduler !== null,
+        isMobileDevice: input.isMobileDevice,
+        residentTextureCount: input.getRendererInfo().memory.textures,
+        renderMode: input.renderMode,
+        supportsTextureUpload: input.uploadTexture !== undefined,
+      });
+      if (!policy.allowed) {
+        finish({ status: "skipped", reason: policy.reason });
+        return;
+      }
+      state = "running";
+      interactionDeadlineAt = now() + LOCAL_TEXTURE_PREWARM_INTERACTION_DEADLINE_MS;
+      if (textures.length === 0) {
+        finish({ status: "completed" });
+        return;
+      }
+      scheduleNextTexture();
     } catch (error) {
       if (hasFinished()) return;
       input.onError(error);
       finish({ status: "failed" });
-      return;
     }
-    if (hasFinished()) return;
-
-    estimatedBytes = textures.reduce((total, texture) => total + estimateTextureUploadBytes(texture), 0);
-    const policy = resolveLocalTexturePrewarmPolicy({
-      deviceMemoryGb: input.deviceMemoryGb,
-      estimatedBytes,
-      hasIdleScheduler: input.scheduler !== null,
-      isMobileDevice: input.isMobileDevice,
-      renderMode: input.renderMode,
-      supportsTextureUpload: input.uploadTexture !== undefined,
-    });
-    if (!policy.allowed) {
-      finish({ status: "skipped", reason: policy.reason });
-      return;
-    }
-    state = "running";
-    if (textures.length === 0) {
-      finish({ status: "completed" });
-      return;
-    }
-    scheduleNextTexture();
   };
 
   return {

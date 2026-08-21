@@ -2,7 +2,9 @@ import { DataTexture, RGBAFormat, Texture, UnsignedByteType } from "three";
 import { describe, expect, it, vi } from "vitest";
 
 import {
+  LOCAL_TEXTURE_PREWARM_INTERACTION_DEADLINE_MS,
   LOCAL_TEXTURE_PREWARM_MAX_ESTIMATED_BYTES,
+  LOCAL_TEXTURE_PREWARM_MAX_RESIDENT_TEXTURES,
   createLocalViewTexturePrewarm,
   estimateTextureUploadBytes,
   formatLocalTexturePrewarmReport,
@@ -15,6 +17,7 @@ describe("local-view texture prewarm policy", () => {
     [{ isMobileDevice: true }, "mobile_device"],
     [{ renderMode: "battery" as const }, "battery_mode"],
     [{ deviceMemoryGb: 4 }, "low_device_memory"],
+    [{ residentTextureCount: LOCAL_TEXTURE_PREWARM_MAX_RESIDENT_TEXTURES }, "resident_texture_budget_exceeded"],
     [{ estimatedBytes: LOCAL_TEXTURE_PREWARM_MAX_ESTIMATED_BYTES + 1 }, "memory_budget_exceeded"],
     [{ hasIdleScheduler: false }, "idle_scheduler_unavailable"],
     [{ supportsTextureUpload: false }, "texture_upload_unsupported"],
@@ -25,6 +28,7 @@ describe("local-view texture prewarm policy", () => {
         estimatedBytes: 1024,
         hasIdleScheduler: true,
         isMobileDevice: false,
+        residentTextureCount: 0,
         renderMode: "quality",
         supportsTextureUpload: true,
         ...override,
@@ -33,12 +37,14 @@ describe("local-view texture prewarm policy", () => {
   });
 
   it("allows a bounded desktop quality-mode upload", () => {
+    expect(LOCAL_TEXTURE_PREWARM_MAX_ESTIMATED_BYTES).toBe(64 * 1024 * 1024);
     expect(
       resolveLocalTexturePrewarmPolicy({
         deviceMemoryGb: 16,
         estimatedBytes: 1024,
         hasIdleScheduler: true,
         isMobileDevice: false,
+        residentTextureCount: 0,
         renderMode: "quality",
         supportsTextureUpload: true,
       }),
@@ -117,6 +123,71 @@ describe("local-view texture prewarm runtime", () => {
     interacting = false;
     scheduler.runNext();
     expect(uploadTexture).toHaveBeenCalledOnce();
+  });
+
+  it("stops deferring when interaction consumes the prewarm deadline", async () => {
+    const scheduler = createIdleSchedulerHarness();
+    const reports: LocalTexturePrewarmReport[] = [];
+    let clock = 0;
+    const uploadTexture = vi.fn();
+    const controller = createLocalViewTexturePrewarm({
+      getRendererInfo: createRendererInfo,
+      hasRecentInteraction: () => true,
+      isMobileDevice: false,
+      isOwnerActive: () => true,
+      isWorldmapActive: () => true,
+      now: () => clock,
+      onError: vi.fn(),
+      onReport: (report) => reports.push(report),
+      renderMode: "quality",
+      resolveTextures: async () => [createImageTexture(8, 8)],
+      scheduler,
+      uploadTexture,
+    });
+
+    controller.start();
+    await Promise.resolve();
+    scheduler.runNext();
+    expect(scheduler.pendingCount()).toBe(1);
+
+    clock = LOCAL_TEXTURE_PREWARM_INTERACTION_DEADLINE_MS;
+    scheduler.runNext();
+
+    expect(uploadTexture).not.toHaveBeenCalled();
+    expect(scheduler.pendingCount()).toBe(0);
+    expect(reports).toEqual([
+      expect.objectContaining({ reason: "interaction_deadline_exceeded", status: "cancelled" }),
+    ]);
+  });
+
+  it("stops when the renderer reaches the resident texture budget", async () => {
+    const scheduler = createIdleSchedulerHarness();
+    const reports: LocalTexturePrewarmReport[] = [];
+    const rendererInfo = createRendererInfo();
+    const uploadTexture = vi.fn();
+    const controller = createLocalViewTexturePrewarm({
+      getRendererInfo: () => rendererInfo,
+      hasRecentInteraction: () => false,
+      isMobileDevice: false,
+      isOwnerActive: () => true,
+      isWorldmapActive: () => true,
+      onError: vi.fn(),
+      onReport: (report) => reports.push(report),
+      renderMode: "quality",
+      resolveTextures: async () => [createImageTexture(8, 8)],
+      scheduler,
+      uploadTexture,
+    });
+
+    controller.start();
+    await Promise.resolve();
+    rendererInfo.memory.textures = LOCAL_TEXTURE_PREWARM_MAX_RESIDENT_TEXTURES;
+    scheduler.runNext();
+
+    expect(uploadTexture).not.toHaveBeenCalled();
+    expect(reports).toEqual([
+      expect.objectContaining({ reason: "resident_texture_budget_exceeded", status: "cancelled" }),
+    ]);
   });
 
   it("cancels a pending model wait before an idle upload can be scheduled", async () => {
@@ -201,6 +272,36 @@ describe("local-view texture prewarm runtime", () => {
     scheduler.runNext();
 
     expect(reports).toEqual([expect.objectContaining({ reason: "scene_changed", status: "cancelled" })]);
+  });
+
+  it("reports a throwing worldmap guard without stranding the controller", async () => {
+    const scheduler = createIdleSchedulerHarness();
+    const reports: LocalTexturePrewarmReport[] = [];
+    const guardError = new Error("scene lookup failed");
+    const onError = vi.fn();
+    const controller = createLocalViewTexturePrewarm({
+      getRendererInfo: createRendererInfo,
+      hasRecentInteraction: () => false,
+      isMobileDevice: false,
+      isOwnerActive: () => true,
+      isWorldmapActive: () => {
+        throw guardError;
+      },
+      onError,
+      onReport: (report) => reports.push(report),
+      renderMode: "quality",
+      resolveTextures: async () => [createImageTexture(8, 8)],
+      scheduler,
+      uploadTexture: vi.fn(),
+    });
+
+    controller.start();
+    await Promise.resolve();
+    scheduler.runNext();
+
+    expect(onError).toHaveBeenCalledWith(guardError);
+    expect(scheduler.pendingCount()).toBe(0);
+    expect(reports).toEqual([expect.objectContaining({ status: "failed" })]);
   });
 });
 

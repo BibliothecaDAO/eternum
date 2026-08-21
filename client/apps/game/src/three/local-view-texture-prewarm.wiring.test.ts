@@ -16,12 +16,19 @@ describe("local-view texture prewarm wiring", () => {
     expect(source).toContain("this.renderer.initTexture!(texture)");
   });
 
-  it("cancels on page hiding, renderer loss, and renderer teardown", () => {
+  it("re-arms after a hidden page returns without re-arming after renderer loss", () => {
     const source = readSource("src/three/game-renderer.ts");
+    const recoveryResume = source.slice(
+      source.indexOf("private resumeRendererAfterDeviceLossFallback"),
+      source.indexOf("private handleDeviceLossFallbackFailure"),
+    );
 
     expect(source).toContain('document.addEventListener("visibilitychange"');
     expect(source).toContain('this.cancelLocalViewTexturePrewarm("page_hidden")');
-    expect(source.match(/this\.cancelLocalViewTexturePrewarm\("renderer_destroyed"\)/g)).toHaveLength(3);
+    expect(source).toContain("this.shouldArmLocalViewTexturePrewarmWhenVisible = true");
+    expect(source).toContain("this.hasRendererDeviceLossOccurred = true");
+    expect(source.match(/this\.cancelLocalViewTexturePrewarm\("renderer_destroyed"\)/g)).toHaveLength(2);
+    expect(recoveryResume).not.toContain("this.armLocalViewTexturePrewarm()");
   });
 
   it("waits for local models and discovers their unique textures without attaching them to the map", () => {
