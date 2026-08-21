@@ -272,7 +272,9 @@ function createStructureManagerSubject() {
   subject.wonderEntityIdMaps = new Map([[1, 1001]]);
   subject.structureInstanceBindings = new Map([[1, []]]);
   subject.structureInstanceSlots = new Map([[{}, [1]]]);
+  subject.structureInstanceFreeSlots = new Map();
   subject.structureModelDrawCounts = new Map([[{}, 1]]);
+  subject.pendingVisibleStructureRefreshIds = new Set();
   subject.incomingTroopArrivalsByStructure = new Map([[1, []]]);
   subject.battleDirectionsByStructure = new Map([[1, {}]]);
   subject.structuresWithActiveTimedLabels = new Set([1]);
@@ -326,6 +328,7 @@ function createVisibleStructurePassSubject() {
   subject.wonderEntityIdMaps = new Map();
   subject.structureInstanceBindings = new Map();
   subject.structureInstanceSlots = new Map();
+  subject.structureInstanceFreeSlots = new Map();
   subject.structureModelDrawCounts = new Map();
   subject.dummy = { matrix: {} };
   subject.pointsRenderers = undefined;
@@ -456,7 +459,9 @@ describe("StructureManager destroy lifecycle", () => {
     expect(fixture.subject.wonderEntityIdMaps.size).toBe(0);
     expect(fixture.subject.structureInstanceBindings.size).toBe(0);
     expect(fixture.subject.structureInstanceSlots.size).toBe(0);
+    expect(fixture.subject.structureInstanceFreeSlots.size).toBe(0);
     expect(fixture.subject.structureModelDrawCounts.size).toBe(0);
+    expect(fixture.subject.pendingVisibleStructureRefreshIds.size).toBe(0);
     expect(fixture.subject.incomingTroopArrivalsByStructure.size).toBe(0);
     expect(fixture.subject.battleDirectionsByStructure.size).toBe(0);
     expect(fixture.subject.structuresWithActiveTimedLabels.size).toBe(0);
@@ -634,12 +639,63 @@ describe("StructureManager destroy lifecycle", () => {
     );
     subject.commitVisibleStructureDiff = commitVisibleStructureDiff;
 
-    const oldPass = subject.performVisibleStructuresUpdate("critical", false, 4);
+    const oldPass = subject.performVisibleStructuresUpdate({
+      refreshExisting: false,
+      transitionToken: 4,
+      workLane: "critical",
+    });
     subject.latestTransitionToken = 5;
     resolvePreload?.();
     await oldPass;
 
     expect(commitVisibleStructureDiff).not.toHaveBeenCalled();
+  });
+
+  it("owns an ordinary entity update as a targeted diff rather than a full rebuild", async () => {
+    const { subject } = createVisibleStructurePassSubject();
+    const model = {};
+    const structures = [
+      { entityId: 1, hexCoords: { col: 0, row: 0 }, structureType: "Village" },
+      { entityId: 2, hexCoords: { col: 1, row: 0 }, structureType: "Village" },
+    ];
+    const scheduledOwners: string[] = [];
+
+    subject.previousVisibleIds = new Set([1, 2]);
+    subject.getVisibleStructuresForChunk = vi.fn(() => structures);
+    subject.getModelForStructure = vi.fn(() => model);
+    subject.preloadStructureModels = vi.fn(async () => undefined);
+    subject.commitVisibleStructureDiff = vi.fn();
+    subject.chunkWorkScheduler = {
+      schedule: vi.fn(async (_lane: string, work: () => void, owner: string) => {
+        scheduledOwners.push(owner);
+        work();
+      }),
+    };
+
+    await subject.performVisibleStructuresUpdate({ refreshEntityIds: [1] });
+
+    expect(subject.commitVisibleStructureDiff).toHaveBeenCalledWith(expect.anything(), {
+      entering: [structures[0]],
+      leaving: [1],
+      staying: [2],
+      visibleIds: [1, 2],
+    });
+    expect(scheduledOwners).toEqual(["manager:structure-targeted-refresh"]);
+    expect(scheduledOwners).not.toContain("manager:structure-full-refresh");
+  });
+
+  it("routes a structure component refresh to only that entity", () => {
+    const subject = Object.create(StructureManager.prototype) as any;
+    const structure = { entityId: 7 };
+
+    subject.resolveStructureInfoByEntityId = vi.fn(() => structure);
+    subject.refreshTrackedStructureLabelState = vi.fn();
+    subject.requestVisibleStructuresRefresh = vi.fn();
+
+    subject.refreshStructurePresentation(7);
+
+    expect(subject.refreshTrackedStructureLabelState).toHaveBeenCalledWith(7, structure);
+    expect(subject.requestVisibleStructuresRefresh).toHaveBeenCalledWith({ refreshEntityIds: [7] });
   });
 
   it("mutates only entering and leaving structure slots and ignores a superseded commit", () => {
@@ -754,14 +810,18 @@ describe("StructureManager destroy lifecycle", () => {
     expect(subject.structureModelDrawCounts.has(model)).toBe(false);
   });
 
-  it("invalidates the visible pass fence before queueing a refresh request", async () => {
+  it("queues targeted refreshes without invalidating the in-flight pass", async () => {
     const subject = Object.create(StructureManager.prototype) as any;
-    const invalidate = vi.fn();
+    const visibleStructurePassFence = createVisibleStructurePassFence();
+    const inFlightSnapshot = visibleStructurePassFence.capture();
     const runVisibleStructuresUpdate = vi.fn().mockResolvedValue(undefined);
 
-    subject.visibleStructurePassFence = {
-      invalidate,
-    };
+    subject.isDestroyed = false;
+    subject.currentChunk = "24,24";
+    subject.pendingVisibleStructureWorkLane = "visible";
+    subject.shouldRefreshExistingStructures = false;
+    subject.pendingVisibleStructureRefreshIds = new Set();
+    subject.visibleStructurePassFence = visibleStructurePassFence;
     subject.runVisibleStructuresUpdate = runVisibleStructuresUpdate;
 
     expect(typeof subject.requestVisibleStructuresRefresh).toBe("function");
@@ -770,9 +830,11 @@ describe("StructureManager destroy lifecycle", () => {
       return;
     }
 
-    await subject.requestVisibleStructuresRefresh();
+    await subject.requestVisibleStructuresRefresh({ refreshEntityIds: [7] });
 
-    expect(invalidate).toHaveBeenCalledTimes(1);
+    expect(visibleStructurePassFence.invalidate).not.toHaveBeenCalled();
+    expect(visibleStructurePassFence.isCurrent(inFlightSnapshot)).toBe(true);
+    expect(subject.pendingVisibleStructureRefreshIds).toEqual(new Set([7]));
     expect(runVisibleStructuresUpdate).toHaveBeenCalledTimes(1);
   });
 });

@@ -14,6 +14,6 @@ describe("StructureManager projection update wiring", () => {
 
     expect(source).toMatch(/worldSpatialProjection\.subscribeStructures\(\(changes\) =>/);
     expect(source).toMatch(/this\.handleStructureProjectionChanges\(changes\)/);
-    expect(source).toMatch(/void this\.requestVisibleStructuresRefresh\(\)/);
+    expect(source).toMatch(/void this\.requestVisibleStructuresRefresh\(\{ refreshEntityIds \}\)/);
   });
 });

@@ -37,6 +37,37 @@ describe("createCoalescedAsyncUpdateRunner", () => {
     await triggerDuringRun();
     expect(calls.filter((entry) => entry === "drain").length).toBe(2);
   });
+
+  it("commits an active pass and one coalesced follow-up under a sustained request burst", async () => {
+    const fence = createAsyncPassFence();
+    const committedPasses: number[] = [];
+    let pass = 0;
+    let releaseFirstPass!: () => void;
+
+    const runner = createCoalescedAsyncUpdateRunner(async () => {
+      pass += 1;
+      const activePass = pass;
+      const snapshot = fence.capture();
+      if (activePass === 1) {
+        await new Promise<void>((resolve) => {
+          releaseFirstPass = resolve;
+        });
+      }
+      if (fence.isCurrent(snapshot)) {
+        committedPasses.push(activePass);
+      }
+    });
+
+    const firstRequest = runner();
+    await vi.waitFor(() => expect(releaseFirstPass).toBeTypeOf("function"));
+    const burstRequests = Array.from({ length: 100 }, () => runner());
+    releaseFirstPass();
+    await Promise.all([firstRequest, ...burstRequests]);
+
+    expect(committedPasses).toEqual([1, 2]);
+    expect(pass).toBe(2);
+    expect(fence.capture()).toEqual({ version: 0 });
+  });
 });
 
 describe("createAsyncPassFence", () => {

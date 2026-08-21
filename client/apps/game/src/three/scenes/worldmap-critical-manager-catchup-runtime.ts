@@ -30,6 +30,8 @@ interface FailedWorldmapCriticalManagerCatchUp {
   recover: () => void;
 }
 
+type CriticalManagerCatchUpResult = { status: "converged" } | { status: "failed" | "timed_out"; reason: unknown };
+
 interface HandleWorldmapCriticalManagerCatchUpFailuresInput {
   chunkKey: string;
   failures: WorldmapCriticalManagerCatchUpFailure[];
@@ -88,17 +90,17 @@ async function settleCriticalManagerCatchUp(
     log(
       `[WorldmapPerf] critical ${manager.label} manager catch-up ` +
         `chunk=${input.context.chunkKey} transition=${input.context.transitionToken} ` +
-        `trigger=${input.context.triggerReason} converged over ${Math.round(durationMs)}ms of sliced wall time`,
+        `trigger=${input.context.triggerReason} ${result.status} after ${Math.round(durationMs)}ms of sliced wall time`,
     );
   }
-  if (result === null) {
+  if (result.status === "converged") {
     return null;
   }
 
   return {
     failure: {
       label: manager.label,
-      reason: result,
+      reason: result.reason,
     },
     recover: manager.recover,
   };
@@ -107,23 +109,27 @@ async function settleCriticalManagerCatchUp(
 async function settleCriticalManagerPromise(
   manager: WorldmapCriticalManagerCatchUpTask,
   input: RunWorldmapCriticalManagerCatchUpInput,
-): Promise<unknown | null> {
+): Promise<CriticalManagerCatchUpResult> {
   const setTimeoutFn = input.setTimeoutFn ?? ((callback, timeoutMs) => setTimeout(callback, timeoutMs));
   const clearTimeoutFn = input.clearTimeoutFn ?? ((handle) => clearTimeout(handle));
   let timeoutHandle: ReturnType<typeof setTimeout> | null = null;
 
   const settled = runCriticalManagerCatchUpTask(manager).then(
-    () => null,
-    (error) => error,
+    (): CriticalManagerCatchUpResult => ({ status: "converged" }),
+    (reason): CriticalManagerCatchUpResult => ({ status: "failed", reason }),
   );
   settled.catch(() => undefined);
   if (input.timeoutMs <= 0) {
     return await settled;
   }
 
-  const timeout = new Promise<Error>((resolve) => {
+  const timeout = new Promise<CriticalManagerCatchUpResult>((resolve) => {
     timeoutHandle = setTimeoutFn(
-      () => resolve(new Error(`Critical ${manager.label} manager catch-up timed out after ${input.timeoutMs}ms`)),
+      () =>
+        resolve({
+          status: "timed_out",
+          reason: new Error(`Critical ${manager.label} manager catch-up timed out after ${input.timeoutMs}ms`),
+        }),
       input.timeoutMs,
     );
   });

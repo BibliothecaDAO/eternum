@@ -119,8 +119,38 @@ describe("handleWorldmapCriticalManagerCatchUpFailures", () => {
     });
 
     expect(log).toHaveBeenCalledWith(
-      "[WorldmapPerf] critical structure manager catch-up chunk=24,24 transition=7 trigger=initial_setup converged over 181ms of sliced wall time",
+      "[WorldmapPerf] critical structure manager catch-up chunk=24,24 transition=7 trigger=initial_setup converged after 181ms of sliced wall time",
     );
+  });
+
+  it("labels a timed-out catch-up honestly", async () => {
+    vi.useFakeTimers();
+    try {
+      const log = vi.fn();
+      const timestamps = [0, 25];
+      const catchUpPromise = runWorldmapCriticalManagerCatchUp({
+        context: { chunkKey: "24,24", transitionToken: 7, triggerReason: "initial_setup" },
+        timeoutMs: 25,
+        now: () => timestamps.shift() ?? 25,
+        log,
+        managers: [
+          {
+            label: "structure",
+            run: () => new Promise<void>(() => undefined),
+            recover: vi.fn(),
+          },
+        ],
+      });
+
+      await vi.advanceTimersByTimeAsync(25);
+      await catchUpPromise;
+
+      expect(log).toHaveBeenCalledWith(
+        "[WorldmapPerf] critical structure manager catch-up chunk=24,24 transition=7 trigger=initial_setup timed_out after 25ms of sliced wall time",
+      );
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it("stays silent when no console reporter is injected", async () => {
