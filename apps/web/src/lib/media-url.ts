@@ -15,7 +15,7 @@ export function resolveIpfsMediaUrl(
 
   try {
     const url = new URL(src);
-    const ipfsPath = url.pathname.match(/^\/ipfs\/(.+)/)?.[1];
+    const ipfsPath = /^\/ipfs\/(.+)/.exec(url.pathname)?.[1];
     if (ipfsPath) {
       return `${joinIpfsGateway(ipfsGateway, ipfsPath)}${url.search}${url.hash}`;
     }
