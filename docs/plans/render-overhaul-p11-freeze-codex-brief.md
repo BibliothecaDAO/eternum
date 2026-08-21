@@ -77,6 +77,34 @@ must emit telemetry even where recovery is not attempted.
 diagnostics and rendering continues; the Sentry event exists. State plainly in the PR what failure modes remain
 unrecovered (e.g. second loss) — visibility is the P0 here, full recovery is not.
 
+**Implementation notes (reviewer read-through, Aug 21):**
+
+- A second dead consumer of the null device: `markRendererDiagnosticDeviceReady()` is gated on
+  `initializedRenderer.device` (`webgpu-renderer-backend.ts:498`), so `deviceStatus` never reads "ready" today either.
+  The fix must revive both the loss path and the ready mark.
+- Delete the `device` field from `CreatedWebGPURenderer` and from the factory result entirely (wired-or-deleted — it is
+  the channel the lying fixture used). Resolve the device once, via
+  `resolveWebGpuRendererDevice(createdRenderer.renderer)`, after `waitForRendererInitialization` succeeds inside
+  `initialize()` (`:469`), attach diagnostics there, and keep the existing `releaseDeviceDiagnostics` disposal wiring
+  (`:440-445`, `:489-490`) intact.
+- Reshape the fixture honestly: the mock renderer's `init()` populates `renderer.backend.device` — the r185 timing — so
+  the test can only pass if production code reads the device post-init. Removing the field from the type makes
+  TypeScript flag every fixture that still passes `device:` directly (currently
+  `webgpu-renderer-backend.test.ts:223-231`). This reshaped test is the red→green evidence for the slice.
+- The frame guard lives in `runRendererAnimationTick` (`renderer-animation-runtime.ts:41-48`): wrap
+  `updateStatsPanel`/`updateControls`/`renderFrame` in `try/catch` with `finally { requestNextFrame() }`, surface the
+  error through a new `onFrameError` input so the runtime stays pure, and keep the return value correct on the error
+  path. The circuit breaker throttles _reporting_ (report the first occurrence with a diagnostics line + Sentry-visible
+  `console.error`, then a summary every N repeats) — it does **not** stop the loop; rendering may self-heal when scene
+  state re-dirties (three.js #34053 behaves exactly that way). Existing test homes:
+  `renderer-animation-runtime.test.ts`, `renderer-frame-runtime.test.ts`.
+- In `game-renderer.ts`: clear `isRendererRecoveryPaused` in `handleDeviceLossFallbackFailure` (`:327-330`), and when
+  `shouldStartDeviceLossFallback()` declines because the one-shot latch is spent, record telemetry before returning
+  instead of dropping the event silently.
+- Scope fence: the prewarm re-arm at `game-renderer.ts:322` belongs to P11F — do not touch it in this slice. Remaining
+  gaps to _state in the PR body, not fix_: the one-shot recovery latch, a loss during scene prep (the
+  `hasPreparedRendererScenes()` gate at `:321`), and no context-loss handling after a WebGL fallback.
+
 ## P11C — reconcile must converge under sustained update load (P1)
 
 **Evidence:** `requestVisibleStructuresRefresh` defaults `refreshExisting: true` (`structure-manager.ts:1074-1077`), and
@@ -172,10 +200,15 @@ Both are follow-up candidates, not P11.
 
 ## Order and rules
 
-P11A alone first, in its own slice — it is the incident root cause and the bisect must stay clean. P11B second; A+B
-together are the redeploy gate for `next`. Then C and D (separate slices), then E and F. Production stays on
-`37ada08e7a` until the operator deploys a tip carrying A+B. Every PR: real commit bodies and a census of what the slice
-deletes — subject-only commits do not merge.
+**Ratified (operator decision, Aug 21): the whole brief ships in one PR.** All remaining slices land on
+`fix/p11a-structure-slot-drain` and merge together as PR #4902 — P11A is already on it (`844010df75`). Implement in
+order B → C → D → E → F, **one commit per slice**, each commit self-contained with its tests and a real body, so the PR
+history stays bisectable even though the merge is atomic. If a later slice forces a change inside an earlier slice's
+files, it goes in the later slice's commit with a sentence of justification — never amend a landed slice.
+
+Update the PR body as slices land: per-slice evidence (red→green where a slice has a regression test), the E decision
+(rework vs revert) with its justification, and the P11B list of remaining unrecovered failure modes. Production stays on
+`37ada08e7a` until this PR merges and the operator deploys. Subject-only commits do not merge.
 
 ## Validation
 
