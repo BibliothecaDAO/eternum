@@ -11,7 +11,12 @@ import { recordGameEntryDuration } from "@/ui/layouts/game-entry-timeline";
 import { SceneName } from "./types";
 import { configureGltfTextureSupport, transitionDB } from "./utils/";
 import { trackGuiFolder, type TrackableGuiFolder } from "./utils/gui-folder-lifecycle";
-import { resolveRendererPacedFps, runRendererAnimationTick } from "./renderer-animation-runtime";
+import {
+  createRendererFrameFailureCircuit,
+  resolveRendererPacedFps,
+  runRendererAnimationTick,
+  type RendererFrameFailureCircuit,
+} from "./renderer-animation-runtime";
 import {
   resolveRendererPixelRatioCap,
   resolveRendererTargetPixelRatio,
@@ -38,6 +43,12 @@ import type { RendererSupportRuntimeRegistry } from "./renderer-support-runtime-
 import type { RendererBackendV2, RendererDeviceLostEvent } from "./renderer-backend-v2";
 import { createGameRendererRuntimeAssembly, type GameRendererRuntimeState } from "./game-renderer-runtime-assembly";
 import { runWithFrameWorkOwner } from "./frame-work-owner";
+import { getRendererDiagnosticActiveMode } from "./renderer-diagnostics";
+import {
+  reportRendererDeviceLoss,
+  reportRendererFrameFailure,
+  reportRendererRecoveryFailure,
+} from "./renderer-failure-reporting";
 import {
   LOCAL_TEXTURE_PREWARM_INTERACTION_IDLE_MS,
   createBrowserIdleScheduler,
@@ -95,6 +106,7 @@ export default class GameRenderer {
   private hasRecoveredFromDeviceLoss = false;
   private isRecoveringFromDeviceLoss = false;
   private isRendererRecoveryPaused = false;
+  private rendererFrameFailureCircuit?: RendererFrameFailureCircuit;
   private localViewTexturePrewarm?: LocalViewTexturePrewarmController;
   private localViewTexturePrewarmReadinessUnsubscribe?: () => void;
   private readonly handleWindowResize = () => this.onWindowResize();
@@ -179,10 +191,13 @@ export default class GameRenderer {
   }
 
   private handleRendererDeviceLost(event: RendererDeviceLostEvent): void {
+    reportRendererDeviceLoss(event, {
+      recoveryAttempted: this.shouldStartDeviceLossFallback(),
+    });
     void this.recoverFromRendererDeviceLoss(event);
   }
 
-  private async recoverFromRendererDeviceLoss(_event: RendererDeviceLostEvent): Promise<void> {
+  private async recoverFromRendererDeviceLoss(event: RendererDeviceLostEvent): Promise<void> {
     if (!this.shouldStartDeviceLossFallback()) {
       return;
     }
@@ -204,7 +219,7 @@ export default class GameRenderer {
       });
       this.resumeRendererAfterDeviceLossFallback();
     } catch (error) {
-      this.handleDeviceLossFallbackFailure(error);
+      this.handleDeviceLossFallbackFailure(error, event.activeMode);
     }
   }
 
@@ -324,9 +339,15 @@ export default class GameRenderer {
     }
   }
 
-  private handleDeviceLossFallbackFailure(error: unknown): void {
+  private handleDeviceLossFallbackFailure(error: unknown, lostMode: RendererDeviceLostEvent["activeMode"]): void {
     this.isRecoveringFromDeviceLoss = false;
-    console.error("[GameRenderer] Failed to recover from WebGPU device loss", error);
+    this.isRendererRecoveryPaused = false;
+    this.lastTime = 0;
+    reportRendererRecoveryFailure(error, lostMode);
+
+    if (!this.isDestroyed && this.hasPreparedRendererScenes()) {
+      this.animate();
+    }
   }
 
   private hasPreparedRendererScenes(): boolean {
@@ -585,6 +606,8 @@ export default class GameRenderer {
           console.warn(message);
         }
       },
+      onFrameError: (error) => this.handleRendererFrameError(error),
+      onFrameSuccess: () => this.getRendererFrameFailureCircuit().recordSuccess(),
       renderFrame: ({ currentTime, cycleProgress, deltaTime }) => {
         const rendered = runRendererFrame({
           backend: this.backend,
@@ -614,6 +637,25 @@ export default class GameRenderer {
       },
       updateStatsPanel: () => this.sessionRuntime.updateStatsPanel(),
     });
+  }
+
+  private handleRendererFrameError(error: unknown): void {
+    discardGpuBackendFrame();
+    const failure = this.getRendererFrameFailureCircuit().recordFailure(error);
+    if (!failure.shouldReport) {
+      return;
+    }
+
+    reportRendererFrameFailure(error, {
+      activeMode: getRendererDiagnosticActiveMode(),
+      repeatCount: failure.repeatCount,
+      sceneName: this.sceneManager?.getCurrentScene(),
+    });
+  }
+
+  private getRendererFrameFailureCircuit(): RendererFrameFailureCircuit {
+    this.rendererFrameFailureCircuit ??= createRendererFrameFailureCircuit();
+    return this.rendererFrameFailureCircuit;
   }
 
   private isDestroyed = false;

@@ -16,7 +16,7 @@ beforeEach(() => {
     innerWidth: 1280,
   });
   vi.stubGlobal("document", {
-    createElement: vi.fn(() => ({ nodeName: "CANVAS" })),
+    createElement: vi.fn(() => Object.assign(new EventTarget(), { nodeName: "CANVAS" })),
   });
   resetRendererDiagnostics();
   resetRendererStartupTimings();
@@ -206,11 +206,19 @@ describe("createWebGPURendererBackend", () => {
     vi.useRealTimers();
   });
 
-  it("marks the diagnostics as degraded when the gpu device is lost", async () => {
+  it("attaches device-loss diagnostics to the real device created during renderer initialization", async () => {
     let resolveLost: ((value: { message: string }) => void) | undefined;
     const onDeviceLost = vi.fn();
+    const device = Object.assign(new EventTarget(), {
+      lost: new Promise<{ message: string }>((resolve) => {
+        resolveLost = resolve;
+      }),
+    });
     const renderer = Object.assign(createRendererSurface(), {
-      init: vi.fn(async () => {}),
+      backend: { device: undefined as typeof device | undefined },
+      init: vi.fn(async () => {
+        renderer.backend.device = device;
+      }),
     });
     const backend = createWebGPURendererBackend(
       {
@@ -222,11 +230,6 @@ describe("createWebGPURendererBackend", () => {
       {
         createRenderer: vi.fn(async () => ({
           activeMode: "webgpu" as const,
-          device: {
-            lost: new Promise<{ message: string }>((resolve) => {
-              resolveLost = resolve;
-            }),
-          },
           renderer,
         })),
         now: vi
@@ -238,6 +241,14 @@ describe("createWebGPURendererBackend", () => {
 
     syncRendererBackendDiagnostics(await backend.initialize());
     expect(snapshotRendererDiagnostics().activeMode).toBe("webgpu");
+
+    const uncapturedError = new Event("uncapturederror");
+    Object.defineProperty(uncapturedError, "error", { value: { message: "validation failed" } });
+    device.dispatchEvent(uncapturedError);
+    expect(snapshotRendererDiagnostics().gpuTelemetry).toMatchObject({
+      lastUncapturedErrorMessage: "validation failed",
+      uncapturedErrorCount: 1,
+    });
 
     resolveLost?.({ message: "device lost during frame" });
     await Promise.resolve();

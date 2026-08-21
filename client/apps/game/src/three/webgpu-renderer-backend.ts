@@ -39,7 +39,6 @@ interface WebGPURendererSurface extends RendererSurfaceLike {
 
 interface CreatedWebGPURenderer {
   activeMode: RendererActiveMode;
-  device?: WebGPURendererDevice;
   fallbackReason?: RendererFallbackReason;
   renderer: WebGPURendererSurface;
 }
@@ -116,7 +115,6 @@ async function createDefaultWebGPURenderer(input: {
   const webGpuAvailable = WebGPU.isAvailable();
   return {
     activeMode: input.forceWebGL || !webGpuAvailable ? "webgl2-fallback" : "webgpu",
-    device: resolveWebGpuRendererDevice(renderer),
     fallbackReason: !input.forceWebGL && !webGpuAvailable ? "webgpu-unavailable" : null,
     renderer,
   };
@@ -213,11 +211,10 @@ function resolveWebGpuRendererDevice(renderer: WebGPURendererSurface): WebGPURen
 }
 
 function attachWebGpuDeviceDiagnostics(input: {
-  activeMode: RendererActiveMode;
   device?: WebGPURendererDevice;
   onDeviceLost?: (event: RendererDeviceLostEvent) => void;
 }): () => void {
-  if (input.activeMode !== "webgpu" || !input.device) {
+  if (!input.device) {
     return () => {};
   }
 
@@ -238,7 +235,7 @@ function attachWebGpuDeviceDiagnostics(input: {
 
     markRendererDiagnosticDeviceLost(info.message);
     input.onDeviceLost?.({
-      activeMode: input.activeMode,
+      activeMode: "webgpu",
       message: info.message,
     });
   });
@@ -436,6 +433,7 @@ export function createWebGPURendererBackend(
       const startTime = resolvedDependencies.now();
       const abortController = new AbortController();
       let createdRenderer: CreatedWebGPURenderer | undefined;
+      let initializedDevice: WebGPURendererDevice | undefined;
       let releaseDeviceDiagnostics: (() => void) | undefined;
       const disposeCreatedRenderer = () => {
         releaseDeviceDiagnostics?.();
@@ -456,12 +454,6 @@ export function createWebGPURendererBackend(
             disposeCreatedRenderer();
             throw createWebGpuStartupTimeoutError(WEBGPU_BACKEND_STARTUP_TIMEOUT_MS);
           }
-          releaseDeviceDiagnostics = attachWebGpuDeviceDiagnostics({
-            activeMode: createdRenderer.activeMode,
-            device: createdRenderer.device,
-            onDeviceLost: options.onDeviceLost,
-          });
-
           try {
             createdRenderer.renderer.setPixelRatio(options.pixelRatio);
             createdRenderer.renderer.setSize(window.innerWidth, window.innerHeight);
@@ -471,6 +463,12 @@ export function createWebGPURendererBackend(
               throw createWebGpuStartupTimeoutError(WEBGPU_BACKEND_STARTUP_TIMEOUT_MS);
             }
             recordRendererStartupTiming("webgpu-renderer-init", resolvedDependencies.now() - rendererInitStartedAt);
+
+            initializedDevice = resolveWebGpuRendererDevice(createdRenderer.renderer);
+            releaseDeviceDiagnostics = attachWebGpuDeviceDiagnostics({
+              device: initializedDevice,
+              onDeviceLost: options.onDeviceLost,
+            });
           } catch (error) {
             disposeCreatedRenderer();
             throw error;
@@ -495,7 +493,7 @@ export function createWebGPURendererBackend(
           });
         }
 
-        if (initializedRenderer.activeMode === "webgpu" && initializedRenderer.device) {
+        if (initializedRenderer.activeMode === "webgpu" && initializedDevice) {
           markRendererDiagnosticDeviceReady();
         }
 

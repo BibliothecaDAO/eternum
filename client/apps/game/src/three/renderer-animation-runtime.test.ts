@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const { resolveRendererPacedFps, runRendererAnimationTick } = await import("./renderer-animation-runtime");
+const { createRendererFrameFailureCircuit, resolveRendererPacedFps, runRendererAnimationTick } =
+  await import("./renderer-animation-runtime");
 
 describe("resolveRendererPacedFps", () => {
   it("caps every mode at 60fps and drops idle Battery to 30", () => {
@@ -110,5 +111,46 @@ describe("runRendererAnimationTick", () => {
       deltaTime: 0.016,
     });
     expect(requestNextFrame).toHaveBeenCalledTimes(1);
+  });
+
+  it("reports a thrown frame and always schedules the next tick", () => {
+    const frameError = new Error("writeBuffer range is invalid");
+    const onFrameError = vi.fn();
+    const onFrameSuccess = vi.fn();
+    const requestNextFrame = vi.fn();
+
+    const lastTime = runRendererAnimationTick({
+      getCurrentTime: () => 116,
+      getCycleProgress: () => 0.75,
+      isDestroyed: false,
+      isLabelRuntimeReady: true,
+      lastTime: 100,
+      onFrameError,
+      onFrameSuccess,
+      renderFrame: vi.fn(() => {
+        throw frameError;
+      }),
+      requestNextFrame,
+      targetFPS: null,
+    });
+
+    expect(lastTime).toBe(116);
+    expect(onFrameError).toHaveBeenCalledWith(frameError);
+    expect(onFrameSuccess).not.toHaveBeenCalled();
+    expect(requestNextFrame).toHaveBeenCalledTimes(1);
+  });
+
+  it("throttles repeated-frame-error reports without stopping frame attempts", () => {
+    const circuit = createRendererFrameFailureCircuit();
+    const frameError = new Error("writeBuffer range is invalid");
+
+    expect(circuit.recordFailure(frameError)).toEqual({ repeatCount: 0, shouldReport: true });
+    for (let repeatCount = 1; repeatCount < 60; repeatCount += 1) {
+      expect(circuit.recordFailure(frameError)).toEqual({ repeatCount, shouldReport: false });
+    }
+    expect(circuit.recordFailure(frameError)).toEqual({ repeatCount: 60, shouldReport: true });
+
+    circuit.recordSuccess();
+    expect(circuit.recordFailure(frameError)).toEqual({ repeatCount: 0, shouldReport: true });
   });
 });

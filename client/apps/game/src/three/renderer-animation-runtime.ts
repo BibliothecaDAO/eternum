@@ -7,6 +7,8 @@ interface RunRendererAnimationTickInput {
   isLabelRuntimeReady: boolean;
   lastTime: number;
   logDestroyed?: (message: string) => void;
+  onFrameError?: (error: unknown) => void;
+  onFrameSuccess?: () => void;
   renderFrame: (input: { currentTime: number; cycleProgress: number; deltaTime: number }) => boolean;
   requestNextFrame: () => void;
   targetFPS: number | null;
@@ -21,6 +23,16 @@ interface RendererAnimationFrameState {
   shouldSkipFrame: boolean;
 }
 
+export interface RendererFrameFailureCircuit {
+  recordFailure(error: unknown): {
+    repeatCount: number;
+    shouldReport: boolean;
+  };
+  recordSuccess(): void;
+}
+
+export const RENDERER_FRAME_FAILURE_REPORT_INTERVAL = 60;
+
 export function runRendererAnimationTick(input: RunRendererAnimationTickInput): number {
   if (shouldStopRendererAnimation(input)) {
     input.logDestroyed?.("GameRenderer destroyed, stopping animation loop");
@@ -32,22 +44,69 @@ export function runRendererAnimationTick(input: RunRendererAnimationTickInput): 
     return input.lastTime;
   }
 
-  const frameState = resolveRendererAnimationFrameState(input);
-  if (frameState.shouldSkipFrame) {
+  let nextLastTime = input.lastTime;
+
+  try {
+    const frameState = resolveRendererAnimationFrameState(input);
+    nextLastTime = frameState.lastTime;
+    if (frameState.shouldSkipFrame) {
+      return nextLastTime;
+    }
+
+    input.updateStatsPanel?.();
+    input.updateControls?.();
+    input.renderFrame({
+      currentTime: frameState.currentTime,
+      cycleProgress: input.getCycleProgress(),
+      deltaTime: frameState.deltaTime,
+    });
+    input.onFrameSuccess?.();
+  } catch (error) {
+    if (!input.onFrameError) {
+      throw error;
+    }
+    input.onFrameError(error);
+  } finally {
     input.requestNextFrame();
-    return frameState.lastTime;
   }
 
-  input.updateStatsPanel?.();
-  input.updateControls?.();
-  input.renderFrame({
-    currentTime: frameState.currentTime,
-    cycleProgress: input.getCycleProgress(),
-    deltaTime: frameState.deltaTime,
-  });
-  input.requestNextFrame();
+  return nextLastTime;
+}
 
-  return frameState.lastTime;
+export function createRendererFrameFailureCircuit(): RendererFrameFailureCircuit {
+  let repeatCount = 0;
+  let lastFailureFingerprint: string | null = null;
+
+  return {
+    recordFailure: (error) => {
+      const fingerprint = createRendererFrameFailureFingerprint(error);
+      const isNewFailure = fingerprint !== lastFailureFingerprint;
+
+      if (isNewFailure) {
+        repeatCount = 0;
+        lastFailureFingerprint = fingerprint;
+      } else {
+        repeatCount += 1;
+      }
+
+      return {
+        repeatCount,
+        shouldReport: isNewFailure || repeatCount % RENDERER_FRAME_FAILURE_REPORT_INTERVAL === 0,
+      };
+    },
+    recordSuccess: () => {
+      repeatCount = 0;
+      lastFailureFingerprint = null;
+    },
+  };
+}
+
+function createRendererFrameFailureFingerprint(error: unknown): string {
+  if (error instanceof Error) {
+    return `${error.name}:${error.message}`;
+  }
+
+  return `${typeof error}:${String(error)}`;
 }
 
 export function resolveRendererPacedFps(input: {
