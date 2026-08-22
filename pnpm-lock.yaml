@@ -561,6 +561,9 @@ importers:
       html-to-image:
         specifier: ^1.11.13
         version: 1.11.13
+      jolt-physics:
+        specifier: 1.1.0
+        version: 1.1.0
       lightweight-charts:
         specifier: ^5.1.0
         version: 5.1.0
@@ -9341,6 +9344,9 @@ packages:
   jiti@2.6.1:
     resolution: {integrity: sha512-ekilCSN1jwRvIbgeg/57YFh8qQDNbwDb9xT/qu2DAHbFFZUicIl4ygVaAvzveMhMVr3LnpSKTNnwt8PoOfmKhQ==}
     hasBin: true
+
+  jolt-physics@1.1.0:
+    resolution: {integrity: sha512-Erl+X0yK2f9/8Wrl55Nb2y9FYS5xDx375EabnHq+TbSDYEuPZBLvpaLV4nbc1M5gyA5Llbug81wSj1zSMRUr7Q==}
 
   jose@6.1.3:
     resolution: {integrity: sha512-0TpaTfihd4QMNwrz/ob2Bp7X04yuxJkjRGi4aKmOqwhov54i6u79oCv7T+C7lo70MKH6BesI3vscD1yb/yzKXQ==}
@@ -24253,6 +24259,8 @@ snapshots:
   jiti@1.21.7: {}
 
   jiti@2.6.1: {}
+
+  jolt-physics@1.1.0: {}
 
   jose@6.1.3: {}
 

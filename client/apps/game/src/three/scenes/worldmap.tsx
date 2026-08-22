@@ -21,6 +21,7 @@ import {
 } from "@/services/blitz/blitz-hyperstructure-creation";
 import { getBiomeVariant, HEX_SIZE, WORLD_CHUNK_CONFIG } from "@/three/constants";
 import { ArmyManager } from "@/three/managers/army-manager";
+import { CombatPresentationCoordinator } from "@/three/combat/combat-presentation-coordinator";
 import { BattleDirectionManager } from "@/three/managers/battle-direction-manager";
 import { ChestManager } from "@/three/managers/chest-manager";
 import InstancedBiome from "@/three/managers/instanced-biome";
@@ -948,6 +949,7 @@ export default class WorldmapScene extends WarpTravel {
   private fxManager!: FXManager;
   private arrivalGhostManager!: ArrivalGhostManager;
   private resourceFXManager!: ResourceFXManager;
+  private combatPresentation?: CombatPresentationCoordinator;
   private armyIndex: number = 0;
   private selectableArmies: SelectableArmy[] = [];
   private structureIndex: number = 0;
@@ -1104,6 +1106,7 @@ export default class WorldmapScene extends WarpTravel {
       this.chunkSize,
       this.chunkWorkQueue,
     );
+    this.combatPresentation = new CombatPresentationCoordinator(this.scene);
     this.arrivalGhostManager = new ArrivalGhostManager(this.scene, {
       chunkStride: this.chunkSize,
       renderChunkSize: this.renderChunkSize,
@@ -1113,6 +1116,7 @@ export default class WorldmapScene extends WarpTravel {
     });
 
     installWorldmapDebugHooks(window, {
+      getProceduralArmyProductionStats: () => this.armyManager.getProceduralArmyProductionStats(),
       testMaterialSharing: () => this.armyManager.logMaterialSharingStats(),
       testTroopDiffFx: (diff?: number) => {
         const targetHex = this.getCameraTargetHex();
@@ -1382,6 +1386,7 @@ export default class WorldmapScene extends WarpTravel {
   private registerBattleWorldUpdateSubscriptions(): void {
     this.addWorldUpdateSubscription(
       this.worldUpdateListener.BattleEvent.onBattleUpdate((update: BattleEventSystemUpdate) => {
+        this.replayIndexedCombat(update);
         const { attackerId, defenderId } = update.battleData;
         if (attackerId && defenderId) {
           this.addCombatRelationship(attackerId, defenderId);
@@ -3114,6 +3119,56 @@ export default class WorldmapScene extends WarpTravel {
     return false;
   }
 
+  private startProvisionalCombat(
+    spec: Extract<WorldmapProvisionalFxSpec, { kind: "attack" }>,
+    intent: ProvisionalIntent,
+    attackerHex: { x: number; y: number },
+    targetHex: { x: number; y: number },
+  ): void {
+    if (
+      spec.attackerId === undefined ||
+      spec.targetId === undefined ||
+      spec.troopType === undefined ||
+      spec.troopTier === undefined
+    ) {
+      return;
+    }
+    const origin = getWorldPositionForHex({ col: attackerHex.x, row: attackerHex.y });
+    const target = getWorldPositionForHex({ col: targetHex.x, row: targetHex.y });
+    const started = this.combatPresentation?.startProvisional(
+      {
+        attackerId: spec.attackerId,
+        defenderId: spec.targetId,
+        origin,
+        target,
+        tier: spec.troopTier,
+        troopType: spec.troopType,
+      },
+      intent,
+    );
+    if (started) void this.armyManager.playProceduralAttack(spec.attackerId, target);
+  }
+
+  private replayIndexedCombat(update: BattleEventSystemUpdate): void {
+    const { attackerId, defenderId } = update.battleData;
+    const attacker = this.armyManager.getArmy(attackerId);
+    if (!attacker) return;
+    const attackerHex = this.getArmyDisplayPosition(attackerId);
+    const defenderHex = this.getArmyDisplayPosition(defenderId) ?? this.getStructureHexPosition(defenderId);
+    if (!attackerHex || !defenderHex) return;
+    const origin = getWorldPositionForHex(attackerHex);
+    const target = getWorldPositionForHex(defenderHex);
+    const replayed = this.combatPresentation?.replayIndexed({
+      attackerId,
+      defenderId,
+      origin,
+      target,
+      tier: attacker.tier,
+      troopType: attacker.category,
+    });
+    if (replayed) void this.armyManager.playProceduralAttack(attackerId, target);
+  }
+
   private startWorldmapProvisionalFx(spec: WorldmapProvisionalFxSpec, intent: ProvisionalIntent): void {
     if (this.sceneManager.getCurrentScene() !== SceneName.WorldMap) return;
     if (spec.kind === "create-army") {
@@ -3123,6 +3178,7 @@ export default class WorldmapScene extends WarpTravel {
 
     const attackerNormalized = new Position({ x: spec.attackerHex.col, y: spec.attackerHex.row }).getNormalized();
     const targetNormalized = new Position({ x: spec.targetHex.col, y: spec.targetHex.row }).getNormalized();
+    this.startProvisionalCombat(spec, intent, attackerNormalized, targetNormalized);
     const attackCleanup = this.playPendingFxAtHex({
       type: "attack",
       hex: { col: attackerNormalized.x, row: attackerNormalized.y },
@@ -8546,6 +8602,7 @@ export default class WorldmapScene extends WarpTravel {
     this.syncWorldmapZoomSnapshot(deltaTime);
     super.update(deltaTime);
     this.armyManager.update(deltaTime, animationContext);
+    this.combatPresentation?.update(deltaTime);
     this.syncArrivalGhostChunkVisibility();
     this.arrivalGhostManager.update(deltaTime);
     this.fxManager.update(deltaTime);
@@ -9012,6 +9069,8 @@ export default class WorldmapScene extends WarpTravel {
     this.onSwitchOff();
     this.unregisterWorldmapProvisionalFxRenderer?.();
     this.unregisterWorldmapProvisionalFxRenderer = null;
+    this.combatPresentation?.dispose();
+    this.combatPresentation = undefined;
     this.syncUrlChangedListenerLifecycle("destroy");
     this.resetZoomHardeningRuntimeState();
     this.removeChunkDiagnosticsDebugHooks();

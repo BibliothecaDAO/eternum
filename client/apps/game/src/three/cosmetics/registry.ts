@@ -177,6 +177,54 @@ const DEFAULT_ATTACHMENT_ENTRIES: CosmeticRegistryEntry[] = [
     ownershipKeys: ["0x206010a01"],
   },
   {
+    id: "attachment:knight:winter-primary",
+    category: "attachment",
+    appliesTo: [formatArmyCosmeticFamily(TroopType.Knight)],
+    assetPaths: [lowResPath("0x105021201")], // Winter Trooper's Broadaxe
+    attachments: [
+      {
+        id: "winter-knight-primary",
+        assetPath: lowResPath("0x105021201"),
+        mountPoint: "weapon_r",
+        slot: "weapon",
+        persistent: true,
+      },
+    ],
+    attachmentSlot: "weapon",
+    metadata: {
+      lod: {
+        high: lowResPath("0x105021201"),
+        low: lowResPath("0x105021201"),
+      },
+      trait: CosmeticTraitType.TroopPrimary,
+    },
+    ownershipKeys: ["0x105021201"],
+  },
+  {
+    id: "attachment:knight:winter-secondary",
+    category: "attachment",
+    appliesTo: [formatArmyCosmeticFamily(TroopType.Knight)],
+    assetPaths: [lowResPath("0x106021301")], // Winter Trooper's Targe
+    attachments: [
+      {
+        id: "winter-knight-secondary",
+        assetPath: lowResPath("0x106021301"),
+        mountPoint: "weapon_l",
+        slot: "offhand",
+        persistent: true,
+      },
+    ],
+    attachmentSlot: "offhand",
+    metadata: {
+      lod: {
+        high: lowResPath("0x106021301"),
+        low: lowResPath("0x106021301"),
+      },
+      trait: CosmeticTraitType.TroopSecondary,
+    },
+    ownershipKeys: ["0x106021301"],
+  },
+  {
     id: "attachment:paladin:winter-primary",
     category: "attachment",
     appliesTo: [formatArmyCosmeticFamily(TroopType.Paladin)],
@@ -223,6 +271,30 @@ const DEFAULT_ATTACHMENT_ENTRIES: CosmeticRegistryEntry[] = [
       trait: CosmeticTraitType.TroopSecondary,
     },
     ownershipKeys: ["0x306020801"],
+  },
+  {
+    id: "attachment:paladin:light-secondary",
+    category: "attachment",
+    appliesTo: [formatArmyCosmeticFamily(TroopType.Paladin)],
+    assetPaths: [lowResPath("0x306011601")], // Light Cavalry Shield
+    attachments: [
+      {
+        id: "light-paladin-secondary",
+        assetPath: lowResPath("0x306011601"),
+        mountPoint: "weapon_l",
+        slot: "offhand",
+        persistent: true,
+      },
+    ],
+    attachmentSlot: "offhand",
+    metadata: {
+      lod: {
+        high: lowResPath("0x306011601"),
+        low: lowResPath("0x306011601"),
+      },
+      trait: CosmeticTraitType.TroopSecondary,
+    },
+    ownershipKeys: ["0x306011601"],
   },
   {
     id: "attachment:army:aura-legacy",

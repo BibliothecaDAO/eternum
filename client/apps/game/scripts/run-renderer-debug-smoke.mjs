@@ -146,17 +146,24 @@ function readFiniteNumberOption(args, name, fallback) {
   return value;
 }
 
-function runAgentBrowser(session, commandArgs, { headed = false } = {}) {
-  const baseArgs = ["-y", "agent-browser", "--session", session];
+export function runAgentBrowser(session, commandArgs, { headed = false, timeoutMs = 30_000 } = {}) {
+  const configuredExecutable = process.env.AGENT_BROWSER_BIN;
+  const executable = configuredExecutable || "npx";
+  const baseArgs = configuredExecutable ? ["--session", session] : ["-y", "agent-browser", "--session", session];
   if (headed) {
     baseArgs.push("--headed");
   }
 
-  const result = spawnSync("npx", [...baseArgs, ...commandArgs], {
+  const result = spawnSync(executable, [...baseArgs, ...commandArgs], {
     cwd: resolveAgentBrowserWorkingDirectory(),
     encoding: "utf8",
     stdio: ["ignore", "pipe", "pipe"],
+    timeout: timeoutMs,
   });
+
+  if (result.error) {
+    throw result.error;
+  }
 
   if (result.status !== 0) {
     throw new Error(result.stderr.trim() || result.stdout.trim() || `agent-browser failed for session ${session}`);

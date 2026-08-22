@@ -465,8 +465,12 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
       startWorldmapProvisionalFx(
         {
           kind: "attack",
+          attackerId: attacker.id,
           attackerHex: { col: selectedHex.col, row: selectedHex.row },
+          targetId: resolvedTarget.id,
           targetHex: { col: target.hex.x, row: target.hex.y },
+          troopTier: attackerArmyData?.troops.tier as TroopTier | undefined,
+          troopType: attackerArmyData?.troops.category as TroopType | undefined,
         },
         intent,
       );

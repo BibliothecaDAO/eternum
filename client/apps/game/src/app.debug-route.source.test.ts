@@ -12,8 +12,14 @@ describe("App debug route wiring", () => {
     const source = readSource("src/app.tsx");
 
     expect(source).toContain("DebugThreeChunkView");
+    expect(source).toContain("DebugProceduralCharacterGymView");
+    expect(source).toContain("DebugProceduralCharacterBenchmarkView");
     expect(source).toContain('path="/debug/three-chunks"');
-    expect(source).toContain('<Route path="/debug/three-chunks" element={<DebugRouteShell />} />');
+    expect(source).toContain('path="/debug/procedural-characters"');
+    expect(source).toContain('path="/debug/procedural-character-benchmark"');
+    expect(source).toContain("<DebugThreeChunkView />");
+    expect(source).toContain("<DebugProceduralCharacterGymView />");
+    expect(source).toContain("<DebugProceduralCharacterBenchmarkView />");
     expect(source).toContain('<Route path="*" element={<GameClientRouteShell />} />');
     expect(source).not.toContain("<StarknetProvider>");
     expect(source).not.toContain("../env");
@@ -24,7 +30,15 @@ describe("App debug route wiring", () => {
     expect(mainSource).not.toContain("../env");
 
     const debugViewSource = readSource("src/ui/features/debug/three-chunk-debug-view.tsx");
+    const characterGymSource = readSource("src/ui/features/debug/procedural-character-gym-view.tsx");
+    const characterBenchmarkSource = readSource("src/ui/features/debug/procedural-character-benchmark-view.tsx");
 
     expect(debugViewSource).toContain('useBootDocumentState("app-ready", "three_chunk_debug_ready")');
+    expect(characterGymSource).toContain('useBootDocumentState("app-ready", "procedural_character_gym_ready")');
+    expect(characterGymSource).toContain('data-debug-route="procedural-characters"');
+    expect(characterBenchmarkSource).toContain(
+      'useBootDocumentState("app-ready", "procedural_character_benchmark_ready")',
+    );
+    expect(characterBenchmarkSource).toContain('data-debug-route="procedural-character-benchmark"');
   });
 });

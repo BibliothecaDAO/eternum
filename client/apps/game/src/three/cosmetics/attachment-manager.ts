@@ -94,6 +94,19 @@ export class CosmeticAttachmentManager {
     this.attachments.delete(entityId);
   }
 
+  public setAttachmentsVisible(entityId: number, visible: boolean): void {
+    this.attachments.get(entityId)?.forEach(({ object }) => {
+      object.visible = visible;
+    });
+  }
+
+  /** Toggle only prop slots owned by another presentation layer, preserving auras and unrelated cosmetics. */
+  public setAttachmentSlotsVisible(entityId: number, slots: ReadonlySet<string>, visible: boolean): void {
+    this.attachments.get(entityId)?.forEach(({ object, template }) => {
+      if (template.slot && slots.has(template.slot)) object.visible = visible;
+    });
+  }
+
   clear() {
     this.attachments.forEach((handles) => {
       handles.forEach((handle) => this.releaseHandle(handle));

@@ -12,8 +12,12 @@ export type WorldmapProvisionalFxSpec =
     }
   | {
       kind: "attack";
+      attackerId?: ID;
       attackerHex: HexPosition;
+      targetId?: ID;
       targetHex: HexPosition;
+      troopTier?: TroopTier;
+      troopType?: TroopType;
     };
 
 export interface WorldmapProvisionalFxRenderer {

@@ -6,6 +6,11 @@ declare module "*.svg" {
   export default ReactComponent;
 }
 
+declare module "jolt-physics/jolt-physics.wasm.wasm?url" {
+  const wasmUrl: string;
+  export default wasmUrl;
+}
+
 declare module "three/webgpu" {
   export * from "three";
 

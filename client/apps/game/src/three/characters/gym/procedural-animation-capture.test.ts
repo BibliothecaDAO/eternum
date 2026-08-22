@@ -1,0 +1,97 @@
+import { describe, expect, it } from "vitest";
+
+import { applyProceduralUnitConfigPatch, createDefaultProceduralUnitConfig } from "@/three/characters";
+
+import {
+  createProceduralAnimationCapturePlan,
+  resolveAnimationCapturePhase,
+  resolveDefaultAnimationCaptureSequence,
+} from "./procedural-animation-capture";
+
+describe("procedural animation capture plan", () => {
+  it("samples every archer phase deterministically", () => {
+    const config = applyProceduralUnitConfigPatch(createDefaultProceduralUnitConfig(), { kind: "archer" });
+    const first = createProceduralAnimationCapturePlan(config, "key-phases");
+    const second = createProceduralAnimationCapturePlan(config, "key-phases");
+
+    expect(first).toEqual(second);
+    expect(first.sequence).toBe("archer-shot");
+    expect(first.phases.map(({ id }) => id)).toEqual([
+      "track",
+      "nock",
+      "raise",
+      "draw",
+      "anchor",
+      "aim",
+      "release",
+      "followThrough",
+      "recover",
+    ]);
+    expect(new Set(first.sampleFrames.map((frame) => resolveAnimationCapturePhase(first, frame)?.id))).toEqual(
+      new Set(first.phases.map(({ id }) => id)),
+    );
+  });
+
+  it("can capture every melee simulation frame", () => {
+    const config = applyProceduralUnitConfigPatch(createDefaultProceduralUnitConfig(), { kind: "knight" });
+    const plan = createProceduralAnimationCapturePlan(config, "all-frames");
+
+    expect(plan.sequence).toBe("melee-attack");
+    expect(plan.sampleFrames[0]).toBe(0);
+    expect(plan.sampleFrames.at(-1)).toBe(plan.totalFrames - 1);
+    expect(plan.sampleFrames.length).toBe(plan.totalFrames);
+    expect(plan.truncated).toBe(false);
+    expect(plan.views.map(({ id }) => id)).toEqual(["front-three-quarter"]);
+  });
+
+  it("adds two grip-detail views to the five-angle body atlas", () => {
+    const config = applyProceduralUnitConfigPatch(createDefaultProceduralUnitConfig(), { kind: "archer" });
+    const plan = createProceduralAnimationCapturePlan(config, "phase-atlas");
+
+    expect(plan.sampleFrames).toHaveLength(plan.phases.length);
+    expect(plan.sampleFrames).toHaveLength(9);
+    expect(plan.sampleFrames.map((frame) => resolveAnimationCapturePhase(plan, frame)?.id)).toEqual(
+      plan.phases.map(({ id }) => id),
+    );
+    expect(plan.views.map(({ id }) => id)).toEqual([
+      "front",
+      "right-profile",
+      "rear",
+      "left-profile",
+      "elevated-three-quarter",
+      "right-grip-detail",
+      "left-grip-detail",
+    ]);
+    expect(plan.views.map(({ azimuthDegrees }) => azimuthDegrees).slice(0, 4)).toEqual([0, 90, 180, 270]);
+    expect(plan.views[4]?.elevationDegrees).toBeGreaterThan(plan.views[0].elevationDegrees);
+    expect(plan.sampleFrames.length * plan.views.length).toBe(63);
+    expect(plan.overlay).toBe("diagnostic");
+  });
+
+  it("routes non-combat units to one locomotion cycle", () => {
+    expect(resolveDefaultAnimationCaptureSequence("horse")).toBe("locomotion-cycle");
+    expect(resolveDefaultAnimationCaptureSequence("crossbowman")).toBe("locomotion-cycle");
+  });
+
+  it("samples all four locomotion quarters across the five-view atlas", () => {
+    const config = applyProceduralUnitConfigPatch(createDefaultProceduralUnitConfig(), { kind: "horse" });
+    const plan = createProceduralAnimationCapturePlan(config, "phase-atlas");
+
+    expect(plan.sampleFrames).toEqual([
+      0,
+      Math.floor(plan.totalFrames * 0.25),
+      Math.floor(plan.totalFrames * 0.5),
+      Math.floor(plan.totalFrames * 0.75),
+    ]);
+    expect(plan.sampleFrames.length * plan.views.length).toBe(20);
+  });
+
+  it("keeps full temporal captures clean unless diagnostics are explicitly requested", () => {
+    const config = applyProceduralUnitConfigPatch(createDefaultProceduralUnitConfig(), { kind: "archer" });
+
+    expect(createProceduralAnimationCapturePlan(config, "all-frames").overlay).toBe("clean");
+    expect(createProceduralAnimationCapturePlan(config, "all-frames", "archer-shot", "diagnostic").overlay).toBe(
+      "diagnostic",
+    );
+  });
+});

@@ -34,6 +34,62 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 // are surfaced in the What's New popup.
 const allLatestFeatures: LatestFeature[] = [
   {
+    date: "2026-08-23",
+    title: "Procedural Armies",
+    description:
+      "Replaced land-army board models with generated Knights, Archers, Crossbowmen, and mounted Paladins that share the new locomotion, weapon, attack, cosmetic, and ragdoll pipeline.",
+    type: "feature",
+    gameSlug: "world",
+  },
+  {
+    date: "2026-08-22",
+    title: "Believable Weapon Grips",
+    description:
+      "Fixed weapon, shield, bow, and crossbow holds with palm-aware sockets, role-specific finger poses, shield clearance, and close-up grip diagnostics for more convincing combat animation.",
+    type: "fix",
+    gameSlug: "world",
+  },
+  {
+    date: "2026-08-22",
+    title: "Animation Frame Inspector",
+    description:
+      "Added deterministic frame capture, five-angle phase atlases, numbered joint and angle overlays, pose diagnostics, contact sheets, and exact timeline scrubbing for validating characters and mounts before live battles.",
+    type: "improvement",
+    gameSlug: "world",
+  },
+  {
+    date: "2026-08-22",
+    title: "Procedural Melee Combat",
+    description:
+      "Added grounded and mounted weapon attacks with swappable sword, hammer, axe, and shield cosmetics, target-contact feedback, and the same Jolt ragdoll handoff used by live armies.",
+    type: "feature",
+    gameSlug: "world",
+  },
+  {
+    date: "2026-08-22",
+    title: "Procedural Archery",
+    description:
+      "Added organic longbow draw and release motion, visible arrow volleys, moving-target practice controls, and pooled projectile impacts that preserve authoritative combat outcomes.",
+    type: "feature",
+    gameSlug: "world",
+  },
+  {
+    date: "2026-08-22",
+    title: "Organic Procedural Locomotion",
+    description:
+      "Improved soldiers, horses, and mounted riders with planted contacts, anatomically correct horse footfalls, terrain-aware balance, natural follow-through, and subtle per-unit gait variation.",
+    type: "improvement",
+    gameSlug: "world",
+  },
+  {
+    date: "2026-08-21",
+    title: "Procedural Mounted Armies",
+    description:
+      "Added procedural horses and mounted Paladins with speed-driven gaits, terrain-aware hooves, visible upgrade pieces, composed riders, and shared Jolt ragdolls, plus mixed 100-unit gym benchmarks before promotion into live battles.",
+    type: "improvement",
+    gameSlug: "world",
+  },
+  {
     date: "2026-08-20",
     title: "Accurate Army Stamina",
     description:

@@ -14,15 +14,45 @@ describe("debug navigation entry", () => {
     const debugSection = NAVIGATION_SECTIONS.find((section) => section.id === "debug");
 
     expect(debugSection).toBeDefined();
-    expect(debugSection?.basePath).toBe("/debug/three-chunks");
+    expect(debugSection?.basePath).toBe("/debug");
     expect(debugSection?.subMenu).toEqual([
       {
         id: "three-chunks",
-        label: "DEBUG",
+        label: "CHUNKS",
         tab: null,
         href: "/debug/three-chunks",
       },
+      {
+        id: "procedural-characters",
+        label: "CHARACTERS",
+        tab: null,
+        href: "/debug/procedural-characters",
+      },
+      {
+        id: "procedural-character-benchmark",
+        label: "BENCHMARK",
+        tab: null,
+        href: "/debug/procedural-character-benchmark",
+      },
     ]);
+  });
+
+  it("selects the procedural crowd benchmark by route path", () => {
+    const debugSection = getSectionFromPath("/debug/procedural-character-benchmark");
+
+    expect(debugSection.id).toBe("debug");
+    expect(getActiveSubItem(debugSection, "/debug/procedural-character-benchmark", new URLSearchParams())).toEqual(
+      debugSection.subMenu[2],
+    );
+  });
+
+  it("selects the procedural character gym by route path", () => {
+    const debugSection = getSectionFromPath("/debug/procedural-characters");
+
+    expect(debugSection.id).toBe("debug");
+    expect(getActiveSubItem(debugSection, "/debug/procedural-characters", new URLSearchParams())).toEqual(
+      debugSection.subMenu[1],
+    );
   });
 
   it("keeps the debug route active without relying on auth or play-route params", () => {

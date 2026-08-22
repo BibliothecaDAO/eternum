@@ -260,8 +260,12 @@ export const BattleLab = ({
       startWorldmapProvisionalFx(
         {
           kind: "attack",
+          attackerId: attackerEntityId,
           attackerHex: { col: selectedHex.col, row: selectedHex.row },
+          targetId: target.id,
           targetHex: { col: target.hex.x, row: target.hex.y },
+          troopTier: state.attacker.tier,
+          troopType: state.attacker.troopType,
         },
         intent,
       );

@@ -1,6 +1,16 @@
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useChainTimeStore } from "@/hooks/store/use-chain-time-store";
 import { gameWorkerManager } from "@/managers/game-worker-manager";
+import {
+  ProceduralArmyCharacterLayer,
+  type ProceduralArmyCharacterLayerStats,
+  type ProceduralArmyCharacterPresentation,
+} from "@/three/characters/procedural-army-character-layer";
+import {
+  PROCEDURAL_CHARACTER_ATTACHMENT_SLOTS,
+  reconcileProceduralArmyRepresentations,
+  shouldPresentArmyProcedurally,
+} from "@/three/characters/procedural-army-representation";
 import { resolveArmyOwnerState } from "@/three/managers/army-owner-resolution";
 import { ArmyModel } from "@/three/managers/army-model";
 import {
@@ -11,6 +21,7 @@ import {
 import { CameraView, HexagonScene } from "@/three/scenes/hexagon-scene";
 import { playerColorManager, PlayerColorProfile } from "@/three/systems/player-colors";
 import type { AnimationVisibilityContext } from "@/three/types/animation";
+import { isAnimationPositionVisible } from "@/three/utils/animation-visibility";
 import { ModelType } from "@/three/types/army";
 import { FrustumManager } from "@/three/utils/frustum-manager";
 import { GRAPHICS_DEV_GUI_ENABLED, createGuiFolder } from "@/three/utils/gui-manager";
@@ -158,6 +169,12 @@ export interface PendingCreationGhostSource {
   sourceScene: Object3D;
 }
 
+export interface ProceduralArmyProductionStats extends ProceduralArmyCharacterLayerStats {
+  activeRepresentationCount: number;
+  fallbackRepresentationCount: number;
+  visibleLandArmyCount: number;
+}
+
 interface AddArmyParams {
   entityId: ID;
   hexCoords: Position;
@@ -244,6 +261,13 @@ export class ArmyManager {
   private unsubscribeExplorerTroopsPresentation?: () => void;
   private readonly armyProjectionSyncs = new Map<ID, Promise<void>>();
   private attachmentManager: CosmeticAttachmentManager;
+  private readonly proceduralArmyCharacterLayer: ProceduralArmyCharacterLayer;
+  private readonly activeProceduralArmyEntityIds = new Set<number>();
+  private readonly desiredProceduralArmyEntityIds = new Set<number>();
+  private readonly readyProceduralArmyEntityIds = new Set<number>();
+  private readonly proceduralArmyPresentations = new Map<number, ProceduralArmyCharacterPresentation>();
+  private readonly proceduralArmyPresentationBuffer: ProceduralArmyCharacterPresentation[] = [];
+  private proceduralCharacterPreviewEntityId: ID | null = null;
   private armyAttachmentSignatures: Map<number, string> = new Map();
   private activeArmyAttachmentEntities: Set<number> = new Set();
   private armyAttachmentTransformScratch = new Map<string, AttachmentTransform>();
@@ -267,6 +291,10 @@ export class ArmyManager {
   private readonly tempCosmeticPosition: Vector3 = new Vector3();
   private readonly tempIconPosition: Vector3 = new Vector3();
   private readonly tempWorldPosition: Vector3 = new Vector3();
+  private readonly setProceduralFallbackAttachmentVisibility = (entityId: number, visible: boolean) =>
+    this.attachmentManager.setAttachmentSlotsVisible(entityId, PROCEDURAL_CHARACTER_ATTACHMENT_SLOTS, visible);
+  private readonly setProceduralFallbackModelVisibility = (entityId: number, visible: boolean) =>
+    this.armyModel.setEntityRepresentationVisible(entityId, visible);
 
   constructor(
     scene: Scene,
@@ -284,6 +312,10 @@ export class ArmyManager {
     this.worldSpatialProjection = worldSpatialProjection;
     this.currentCameraView = hexagonScene?.getCurrentCameraView() ?? CameraView.Medium;
     this.armyModel = new ArmyModel(scene, labelsGroup, this.currentCameraView);
+    this.proceduralArmyCharacterLayer = new ProceduralArmyCharacterLayer(scene);
+    this.proceduralArmyCharacterLayer.setShadowsEnabled(
+      this.currentCameraView === CameraView.Close && (hexagonScene?.getShadowsEnabled() ?? true),
+    );
     // Warm boat model up to avoid first shoreline transition rendering as a ghost while GLTF loads.
     void this.armyModel.preloadModels([ModelType.Boat]);
     this.scale = new Vector3(0.3, 0.3, 0.3);
@@ -539,6 +571,23 @@ export class ArmyManager {
     this.setupDebugArmyCreationControls();
     this.setupDebugArmyDeletionControls();
     this.setupDebugArmySpawner();
+    this.setupProceduralCharacterPreviewControls();
+  }
+
+  private setupProceduralCharacterPreviewControls(): void {
+    const folder = trackGuiFolder(this.guiFolders, createGuiFolder("Procedural Army Character"));
+    const state = { enabled: false, entityId: 0 };
+    const applyTarget = () => {
+      const requestedEntityId = state.entityId > 0 ? state.entityId : (this.visibleArmyOrder[0] ?? null);
+      this.setProceduralCharacterPreview(state.enabled ? requestedEntityId : null);
+    };
+
+    folder.add(state, "enabled").name("Enabled").onChange(applyTarget);
+    folder.add(state, "entityId", 0, Number.MAX_SAFE_INTEGER, 1).name("Army entity ID").onFinishChange(applyTarget);
+    folder.add({ ragdoll: () => void this.startProceduralCharacterRagdoll() }, "ragdoll").name("Start ragdoll");
+    folder.add({ impact: () => void this.applyProceduralCharacterImpulse() }, "impact").name("Apply impact");
+    folder.add({ reset: () => this.resetProceduralCharacter() }, "reset").name("Reset actor");
+    folder.close();
   }
 
   private setupDebugArmyCreationControls(): void {
@@ -772,27 +821,22 @@ export class ArmyManager {
   }
 
   public onMouseMove(raycaster: Raycaster) {
-    const nearestHit = this.armyModel.raycastNearest(raycaster);
-    if (nearestHit) {
-      const { instanceId, mesh } = nearestHit;
-      if (instanceId !== undefined && mesh.userData.entityIdMap) {
-        return mesh.userData.entityIdMap.get(instanceId);
-      }
-    }
-    return undefined;
+    return this.raycastNearestArmyEntityId(raycaster);
   }
 
   public onRightClick(raycaster: Raycaster) {
-    const nearestHit = this.armyModel.raycastNearest(raycaster);
-    if (!nearestHit) return;
+    const entityId = this.raycastNearestArmyEntityId(raycaster) as ID | undefined;
+    return entityId !== undefined && this.armyPresentations.get(entityId)?.isMine ? entityId : undefined;
+  }
 
-    const { instanceId, mesh } = nearestHit;
-    if (instanceId === undefined || !mesh.userData.entityIdMap) return;
-
-    const entityId = mesh.userData.entityIdMap.get(instanceId);
-    if (entityId && this.armyPresentations.get(entityId)?.isMine) {
-      return entityId;
+  private raycastNearestArmyEntityId(raycaster: Raycaster): number | undefined {
+    const proceduralHit = this.proceduralArmyCharacterLayer.raycastNearest(raycaster);
+    const legacyHit = this.armyModel.raycastNearest(raycaster);
+    if (proceduralHit && (!legacyHit || proceduralHit.distance <= legacyHit.distance)) {
+      return proceduralHit.entityId;
     }
+    if (legacyHit?.instanceId === undefined || !legacyHit.mesh.userData.entityIdMap) return undefined;
+    return legacyHit.mesh.userData.entityIdMap.get(legacyHit.instanceId);
   }
 
   private resolveOwnerName(address: bigint, preferredName?: string, fallbackName?: string): string {
@@ -1327,7 +1371,7 @@ export class ArmyManager {
       armyAttachmentSignatures: this.armyAttachmentSignatures,
       toNumericId: (entityId) => this.toNumericId(entityId),
       getAttachmentSignature: (templates) => this.getAttachmentSignature(templates),
-      spawnAttachments: (entityId, templates) => this.attachmentManager.spawnAttachments(entityId, templates),
+      spawnAttachments: (entityId, templates) => this.spawnArmyAttachments(entityId, templates),
       removeAttachments: (entityId) => this.attachmentManager.removeAttachments(entityId),
     });
   }
@@ -1371,6 +1415,13 @@ export class ArmyManager {
       armyAttachmentSignatures: this.armyAttachmentSignatures,
       removeAttachments: (trackedEntityId) => this.attachmentManager.removeAttachments(trackedEntityId),
     });
+  }
+
+  private spawnArmyAttachments(entityId: number, templates: CosmeticAttachmentTemplate[]): void {
+    this.attachmentManager.spawnAttachments(entityId, templates);
+    if (this.activeProceduralArmyEntityIds.has(entityId)) {
+      this.attachmentManager.setAttachmentSlotsVisible(entityId, PROCEDURAL_CHARACTER_ATTACHMENT_SLOTS, false);
+    }
   }
 
   private async executeRenderForChunk(chunkKey: string, options?: ManagerChunkUpdateOptions): Promise<void> {
@@ -1894,7 +1945,14 @@ export class ArmyManager {
 
     if (!this.armyPresentations.has(entityId)) return;
 
+    if (this.proceduralCharacterPreviewEntityId === entityId) {
+      this.setProceduralCharacterPreview(null);
+    }
+
     const numericEntityId = this.toNumericId(entityId);
+    if (playDefeatFx && this.proceduralArmyCharacterLayer.playDefeat(numericEntityId)) {
+      this.activeProceduralArmyEntityIds.delete(numericEntityId);
+    }
     this.removeTrackedArmyAttachments(entityId);
 
     // Monitor memory usage before removing army
@@ -2152,6 +2210,44 @@ export class ArmyManager {
     return this.selectedArmyForPath;
   }
 
+  /** Select one production procedural actor for the graphics-dev ragdoll controls. */
+  public setProceduralCharacterPreview(entityId: ID | null): void {
+    this.proceduralCharacterPreviewEntityId = entityId;
+  }
+
+  public getProceduralArmyProductionStats(): ProceduralArmyProductionStats {
+    const layer = this.proceduralArmyCharacterLayer.getStats();
+    const visibleLandArmyCount = this.proceduralArmyPresentationBuffer.length;
+    return {
+      ...layer,
+      activeRepresentationCount: this.activeProceduralArmyEntityIds.size,
+      fallbackRepresentationCount: Math.max(0, visibleLandArmyCount - this.activeProceduralArmyEntityIds.size),
+      visibleLandArmyCount,
+    };
+  }
+
+  public async startProceduralCharacterRagdoll(): Promise<void> {
+    const entityId = this.proceduralCharacterPreviewEntityId;
+    if (entityId === null) return;
+    await this.proceduralArmyCharacterLayer.startRagdoll(this.toNumericId(entityId));
+  }
+
+  public async applyProceduralCharacterImpulse(): Promise<void> {
+    const entityId = this.proceduralCharacterPreviewEntityId;
+    if (entityId === null) return;
+    await this.proceduralArmyCharacterLayer.applyImpulse(this.toNumericId(entityId));
+  }
+
+  public resetProceduralCharacter(): void {
+    const entityId = this.proceduralCharacterPreviewEntityId;
+    if (entityId === null) return;
+    this.proceduralArmyCharacterLayer.reset(this.toNumericId(entityId));
+  }
+
+  public async playProceduralAttack(entityId: ID, targetWorld: Readonly<Vector3>): Promise<boolean> {
+    return this.proceduralArmyCharacterLayer.playAttack(this.toNumericId(entityId), targetWorld);
+  }
+
   public onMovementStart(entityId: ID, callback: () => void): () => void {
     const numericEntityId = this.toNumericId(entityId);
     let listeners = this.movementStartListeners.get(numericEntityId);
@@ -2291,6 +2387,7 @@ export class ArmyManager {
     this.armyModel.updateMovements(deltaTime);
     this.requestMovingArmyShadowRefresh();
     this.armyModel.updateAnimations(deltaTime, animationContext);
+    this.updateProceduralArmyCharacters(deltaTime, animationContext);
     this.updateCompactLabelCamera();
 
     // Update FX
@@ -2337,6 +2434,77 @@ export class ArmyManager {
         this.auditArmySlotsForGhosts();
       }
     }
+  }
+
+  private updateProceduralArmyCharacters(
+    deltaTime: number,
+    animationContext: AnimationVisibilityContext | undefined,
+  ): void {
+    this.proceduralArmyPresentationBuffer.length = 0;
+    this.desiredProceduralArmyEntityIds.clear();
+
+    this.visibleArmies.forEach((army) => this.collectProceduralArmyPresentation(army, animationContext));
+    this.proceduralArmyCharacterLayer.sync(this.proceduralArmyPresentationBuffer, deltaTime);
+    this.syncProceduralArmyRepresentationVisibility();
+    this.pruneProceduralArmyPresentationCache();
+  }
+
+  private collectProceduralArmyPresentation(
+    army: ArmyData,
+    animationContext: AnimationVisibilityContext | undefined,
+  ): void {
+    const entityId = this.toNumericId(army.entityId);
+    const instance = this.armyModel.getInstanceData(entityId);
+    const modelType = this.armyModel.getAssignedModelType(entityId);
+    if (
+      !instance ||
+      !shouldPresentArmyProcedurally(modelType) ||
+      !isAnimationPositionVisible(instance.position, animationContext)
+    ) {
+      return;
+    }
+
+    let presentation = this.proceduralArmyPresentations.get(entityId);
+    if (!presentation) {
+      presentation = {
+        category: army.category,
+        entityId,
+        isMoving: false,
+        position: instance.position,
+        primaryColor: army.color,
+        tier: army.tier,
+      };
+      this.proceduralArmyPresentations.set(entityId, presentation);
+    }
+
+    presentation.attachments = army.attachments;
+    presentation.category = army.category;
+    presentation.isMoving = this.armyModel.isEntityMoving(entityId);
+    presentation.position = instance.position;
+    presentation.primaryColor = army.color;
+    presentation.rotation = instance.rotation;
+    presentation.tier = army.tier;
+    this.desiredProceduralArmyEntityIds.add(entityId);
+    this.proceduralArmyPresentationBuffer.push(presentation);
+  }
+
+  private syncProceduralArmyRepresentationVisibility(): void {
+    this.readyProceduralArmyEntityIds.clear();
+    this.proceduralArmyPresentationBuffer.forEach(({ entityId }) => {
+      if (this.proceduralArmyCharacterLayer.hasActor(entityId)) this.readyProceduralArmyEntityIds.add(entityId);
+    });
+    reconcileProceduralArmyRepresentations({
+      activeEntityIds: this.activeProceduralArmyEntityIds,
+      readyEntityIds: this.readyProceduralArmyEntityIds,
+      setLegacyAttachmentsVisible: this.setProceduralFallbackAttachmentVisibility,
+      setLegacyModelVisible: this.setProceduralFallbackModelVisibility,
+    });
+  }
+
+  private pruneProceduralArmyPresentationCache(): void {
+    this.proceduralArmyPresentations.forEach((_presentation, entityId) => {
+      if (!this.desiredProceduralArmyEntityIds.has(entityId)) this.proceduralArmyPresentations.delete(entityId);
+    });
   }
 
   // Self-healing reconciliation for the two reported ghosting symptoms:
@@ -2945,6 +3113,7 @@ export class ArmyManager {
     // Keep shadow flags in sync when the scene reapplies its visual profile.
     this.armyModel.setShadowsEnabled(enableRealShadows);
     this.armyModel.setContactShadowsEnabled(enableContactShadows);
+    this.proceduralArmyCharacterLayer.setShadowsEnabled(enableRealShadows);
 
     if (this.currentCameraView === view) {
       return;
@@ -3270,6 +3439,11 @@ ${
       guiFolders: this.guiFolders,
     });
     this.selectedArmyForPath = null;
+
+    this.proceduralArmyPresentationBuffer.length = 0;
+    this.syncProceduralArmyRepresentationVisibility();
+    this.proceduralArmyCharacterLayer.dispose();
+    this.proceduralArmyPresentations.clear();
 
     // Dispose army model resources including shared materials
     this.armyModel.dispose();

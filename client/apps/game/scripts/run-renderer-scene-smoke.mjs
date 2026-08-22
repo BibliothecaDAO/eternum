@@ -310,12 +310,14 @@ function sleep(ms) {
 }
 
 function invokeAgentBrowser(session, commandArgs, { headed = false } = {}) {
-  const baseArgs = ["-y", "agent-browser", "--session", session];
+  const configuredExecutable = process.env.AGENT_BROWSER_BIN;
+  const executable = configuredExecutable || "npx";
+  const baseArgs = configuredExecutable ? ["--session", session] : ["-y", "agent-browser", "--session", session];
   if (headed) {
     baseArgs.push("--headed");
   }
 
-  return spawnSync("npx", [...baseArgs, ...commandArgs], {
+  return spawnSync(executable, [...baseArgs, ...commandArgs], {
     cwd: resolveAgentBrowserWorkingDirectory(),
     encoding: "utf8",
     stdio: ["ignore", "pipe", "pipe"],

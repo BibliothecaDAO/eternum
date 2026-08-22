@@ -1,0 +1,711 @@
+import { Activity, Dices, Gauge, Pause, Play, RotateCcw, Skull, StepForward, Users } from "lucide-react";
+import { useCallback, useEffect, useRef, useState, type MutableRefObject, type ReactNode, type RefObject } from "react";
+import { Link } from "react-router-dom";
+
+import {
+  applyProceduralCharacterBenchmarkConfigPatch,
+  createDefaultProceduralCharacterBenchmarkConfig,
+  type ProceduralCharacterBenchmarkConfig,
+} from "@/three/characters/benchmark/procedural-character-benchmark-config";
+import {
+  mountProceduralCharacterBenchmarkRenderer,
+  type ProceduralCharacterBenchmarkRendererHandle,
+  type ProceduralCharacterBenchmarkStats,
+} from "@/three/characters/benchmark/procedural-character-benchmark-renderer";
+import { cn } from "@/ui/design-system/atoms/lib/utils";
+import { useBootDocumentState } from "@/ui/modules/boot-loader";
+
+const INITIAL_STATS: ProceduralCharacterBenchmarkStats = {
+  actorCount: 0,
+  averageFrameMs: 0,
+  drawCalls: 0,
+  fps: 0,
+  geometryCount: 0,
+  hexCount: 100,
+  loadingActors: true,
+  meleeActiveImpactCount: 0,
+  meleeContactCount: 0,
+  meleeDroppedCount: 0,
+  p95FrameMs: 0,
+  physicsBodyCount: 0,
+  physicsConstraintCount: 0,
+  physicsFailures: [],
+  projectileActiveCount: 0,
+  projectileDroppedCount: 0,
+  projectileHitCount: 0,
+  projectileStuckCount: 0,
+  ragdollCount: 0,
+  rendererMode: "initializing",
+  resetCount: 0,
+  respawnCount: 0,
+  runningCount: 0,
+  simulationElapsedSeconds: 0,
+  simulationSteps: 0,
+  textureCount: 0,
+  totalDeaths: 0,
+  triangles: 0,
+  visibleHexCount: 0,
+  wasmHeapMiB: 0,
+};
+const integerFormatter = new Intl.NumberFormat("en-US");
+const compactIntegerFormatter = new Intl.NumberFormat("en-US", { notation: "compact" });
+
+interface ProceduralCharacterBenchmarkDebugBridge {
+  getConfig(): ProceduralCharacterBenchmarkConfig;
+  getStats(): ProceduralCharacterBenchmarkStats;
+  killBurst(): void;
+  reset(): void;
+}
+
+declare global {
+  interface Window {
+    __proceduralCharacterBenchmark?: ProceduralCharacterBenchmarkDebugBridge;
+  }
+}
+
+export const ProceduralCharacterBenchmarkView = () => {
+  useBootDocumentState("app-ready", "procedural_character_benchmark_ready");
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const rendererRef = useRef<ProceduralCharacterBenchmarkRendererHandle | null>(null);
+  const [config, setConfig] = useState(createDefaultProceduralCharacterBenchmarkConfig);
+  const configRef = useRef(config);
+  const statsRef = useRef(INITIAL_STATS);
+  const [stats, setStats] = useState(INITIAL_STATS);
+  const [paused, setPaused] = useState(false);
+  const [ready, setReady] = useState(false);
+  const [rendererError, setRendererError] = useState<string | null>(null);
+
+  useEffect(
+    () => mountBenchmarkRenderer(containerRef, rendererRef, configRef, statsRef, setReady, setStats, setRendererError),
+    [],
+  );
+
+  useEffect(() => {
+    configRef.current = config;
+    const update = rendererRef.current?.updateConfig(config);
+    if (update) void update.catch((error) => setRendererError(resolveRendererErrorMessage(error)));
+  }, [config]);
+
+  const patchConfig = useCallback((patch: Partial<ProceduralCharacterBenchmarkConfig>) => {
+    setConfig((current) => applyProceduralCharacterBenchmarkConfigPatch(current, patch));
+  }, []);
+
+  const reset = useCallback(() => {
+    setRendererError(null);
+    setPaused(false);
+    rendererRef.current?.setPaused(false);
+    rendererRef.current?.reset();
+  }, []);
+
+  const killBurst = useCallback(() => {
+    setRendererError(null);
+    rendererRef.current?.killBurst();
+  }, []);
+
+  useEffect(() => exposeBenchmarkDebugBridge(configRef, statsRef, reset, killBurst), [killBurst, reset]);
+
+  const togglePaused = useCallback(() => {
+    setPaused((current) => {
+      rendererRef.current?.setPaused(!current);
+      return !current;
+    });
+  }, []);
+
+  return (
+    <section
+      className="flex min-h-screen flex-col overflow-hidden bg-[#070b12] text-slate-100 lg:h-screen"
+      data-actor-count={stats.actorCount}
+      data-benchmark-ready={ready && !stats.loadingActors ? "true" : "false"}
+      data-debug-route="procedural-character-benchmark"
+      data-simulation-paused={paused ? "true" : "false"}
+      data-total-deaths={stats.totalDeaths}
+      data-projectile-count={stats.projectileActiveCount}
+    >
+      <BenchmarkHeader
+        paused={paused}
+        ready={ready}
+        stats={stats}
+        onKillBurst={killBurst}
+        onReset={reset}
+        onStep={() => rendererRef.current?.stepOnce()}
+        onTogglePaused={togglePaused}
+      />
+      <div className="flex min-h-0 flex-1 flex-col lg:grid lg:grid-cols-[330px_minmax(0,1fr)]">
+        <BenchmarkControls
+          config={config}
+          onPatchConfig={patchConfig}
+          onResetCamera={() => rendererRef.current?.resetCamera()}
+        />
+        <BenchmarkViewport
+          config={config}
+          containerRef={containerRef}
+          ready={ready}
+          rendererError={rendererError}
+          stats={stats}
+        />
+      </div>
+    </section>
+  );
+};
+
+function mountBenchmarkRenderer(
+  containerRef: RefObject<HTMLDivElement>,
+  rendererRef: MutableRefObject<ProceduralCharacterBenchmarkRendererHandle | null>,
+  configRef: MutableRefObject<ProceduralCharacterBenchmarkConfig>,
+  statsRef: MutableRefObject<ProceduralCharacterBenchmarkStats>,
+  setReady: (ready: boolean) => void,
+  setStats: (stats: ProceduralCharacterBenchmarkStats) => void,
+  setRendererError: (message: string) => void,
+): () => void {
+  const container = containerRef.current;
+  if (!container) return () => undefined;
+  let cancelled = false;
+
+  void mountProceduralCharacterBenchmarkRenderer({
+    config: configRef.current,
+    container,
+    onStats: (nextStats) => {
+      statsRef.current = nextStats;
+      setStats(nextStats);
+    },
+  })
+    .then((handle) => {
+      if (cancelled) {
+        handle.dispose();
+        return;
+      }
+      rendererRef.current = handle;
+      setReady(true);
+    })
+    .catch((error) => {
+      if (!cancelled) setRendererError(resolveRendererErrorMessage(error));
+    });
+
+  return () => {
+    cancelled = true;
+    rendererRef.current?.dispose();
+    rendererRef.current = null;
+    window.__proceduralCharacterBenchmark = undefined;
+  };
+}
+
+function exposeBenchmarkDebugBridge(
+  configRef: MutableRefObject<ProceduralCharacterBenchmarkConfig>,
+  statsRef: MutableRefObject<ProceduralCharacterBenchmarkStats>,
+  reset: () => void,
+  killBurst: () => void,
+): () => void {
+  window.__proceduralCharacterBenchmark = {
+    getConfig: () => ({ ...configRef.current }),
+    getStats: () => ({ ...statsRef.current, physicsFailures: [...statsRef.current.physicsFailures] }),
+    killBurst,
+    reset,
+  };
+  return () => {
+    window.__proceduralCharacterBenchmark = undefined;
+  };
+}
+
+const BenchmarkHeader = ({
+  paused,
+  ready,
+  stats,
+  onKillBurst,
+  onReset,
+  onStep,
+  onTogglePaused,
+}: {
+  paused: boolean;
+  ready: boolean;
+  stats: ProceduralCharacterBenchmarkStats;
+  onKillBurst(): void;
+  onReset(): void;
+  onStep(): void;
+  onTogglePaused(): void;
+}) => (
+  <header className="flex flex-wrap items-center justify-between gap-3 border-b border-white/10 bg-[#0a1019]/95 px-4 py-3 backdrop-blur-xl lg:px-6">
+    <div className="flex min-w-0 items-center gap-3">
+      <div className="grid h-10 w-10 shrink-0 place-items-center border border-cyan-300/30 bg-cyan-400/10 text-cyan-200">
+        <Gauge className="h-5 w-5" />
+      </div>
+      <div className="min-w-0">
+        <p className="text-[0.65rem] font-semibold uppercase tracking-[0.24em] text-cyan-200/60">Crowd laboratory</p>
+        <h1 className="truncate text-lg font-semibold text-white sm:text-xl">Procedural Character Benchmark</h1>
+      </div>
+      <BenchmarkBadge label={stats.rendererMode} tone="cyan" />
+      <BenchmarkBadge label={`${stats.actorCount}/100 actors`} tone={stats.actorCount === 100 ? "emerald" : "amber"} />
+      <BenchmarkBadge label={`${stats.ragdollCount} ragdolls`} tone="violet" />
+    </div>
+    <div className="flex flex-wrap items-center gap-2">
+      <BenchmarkAction icon={<Skull />} label="Kill burst" onClick={onKillBurst} disabled={!ready} primary />
+      <BenchmarkAction
+        icon={paused ? <Play /> : <Pause />}
+        label={paused ? "Resume" : "Pause"}
+        onClick={onTogglePaused}
+        disabled={!ready}
+      />
+      <BenchmarkAction icon={<StepForward />} label="Step" onClick={onStep} disabled={!ready || !paused} />
+      <BenchmarkAction icon={<RotateCcw />} label="Reset" onClick={onReset} disabled={!ready} />
+      <Link
+        to="/debug/procedural-characters"
+        className="grid h-9 place-items-center border border-white/10 px-3 text-xs font-semibold uppercase tracking-wider text-slate-300 transition hover:border-white/25 hover:bg-white/[0.06] hover:text-white"
+      >
+        Gym
+      </Link>
+      <Link
+        to="/"
+        className="grid h-9 place-items-center border border-white/10 px-3 text-xs font-semibold uppercase tracking-wider text-slate-300 transition hover:border-white/25 hover:bg-white/[0.06] hover:text-white"
+      >
+        Exit
+      </Link>
+    </div>
+  </header>
+);
+
+const BenchmarkControls = ({
+  config,
+  onPatchConfig,
+  onResetCamera,
+}: {
+  config: ProceduralCharacterBenchmarkConfig;
+  onPatchConfig(patch: Partial<ProceduralCharacterBenchmarkConfig>): void;
+  onResetCamera(): void;
+}) => (
+  <aside className="order-2 max-h-[48vh] overflow-y-auto border-t border-white/10 bg-[#0b111b] lg:order-1 lg:max-h-none lg:border-t-0 lg:border-r">
+    <div className="space-y-3 p-4">
+      <div className="border border-cyan-300/15 bg-cyan-300/[0.045] p-3 text-xs leading-relaxed text-slate-300">
+        The production runtime now mixes Archers, Knights, Crossbowmen, horses, and mounted Paladins. One pooled arrow
+        owner and one shared Jolt world keep volleys, gait, rider, crowd, and death costs comparable.
+      </div>
+      <ControlSection title="Population" icon={<Users />} defaultOpen>
+        <ToggleControl
+          label="Archer volleys"
+          checked={config.archerVolleys}
+          onChange={(archerVolleys) => onPatchConfig({ archerVolleys })}
+        />
+        <ToggleControl
+          label="Melee attacks"
+          checked={config.meleeAttacks}
+          onChange={(meleeAttacks) => onPatchConfig({ meleeAttacks })}
+        />
+        <SegmentedControl
+          label="Actors"
+          columns={4}
+          value={String(config.actorCount)}
+          options={[25, 50, 75, 100].map((value) => ({ label: String(value), value: String(value) }))}
+          onChange={(value) => onPatchConfig({ actorCount: Number(value) })}
+        />
+        <SegmentedControl
+          label="Unit mix"
+          columns={3}
+          value={config.unitMix}
+          options={[
+            { value: "balanced", label: "All" },
+            { value: "archers", label: "Bows" },
+            { value: "foot", label: "Foot" },
+            { value: "melee", label: "Melee" },
+            { value: "horses", label: "Horse" },
+            { value: "mounted", label: "Mount" },
+          ]}
+          onChange={(unitMix) => onPatchConfig({ unitMix: unitMix as ProceduralCharacterBenchmarkConfig["unitMix"] })}
+        />
+        <RangeControl
+          label="Character scale"
+          value={config.characterScale}
+          min={0.2}
+          max={0.8}
+          step={0.01}
+          onChange={(characterScale) => onPatchConfig({ characterScale })}
+        />
+        <NumberControl
+          label="Deterministic seed"
+          value={config.seed}
+          min={0}
+          max={2_147_483_647}
+          step={1}
+          onChange={(seed) => onPatchConfig({ seed })}
+        />
+        <button
+          type="button"
+          onClick={() => onPatchConfig({ seed: Math.floor(Math.random() * 2_147_483_647) })}
+          className="flex h-9 w-full items-center justify-center gap-2 border border-white/10 bg-white/[0.035] text-xs font-semibold uppercase tracking-wider text-slate-300 transition hover:bg-white/[0.08] hover:text-white"
+        >
+          <Dices className="h-3.5 w-3.5" /> New seed
+        </button>
+      </ControlSection>
+      <ControlSection title="Motion" icon={<Activity />} defaultOpen>
+        <RangeControl
+          label="Simulation speed"
+          value={config.simulationSpeed}
+          min={0.1}
+          max={3}
+          step={0.05}
+          onChange={(simulationSpeed) => onPatchConfig({ simulationSpeed })}
+        />
+        <RangeControl
+          label="Travel speed"
+          value={config.movementSpeed}
+          min={0.1}
+          max={3}
+          step={0.05}
+          onChange={(movementSpeed) => onPatchConfig({ movementSpeed })}
+        />
+        <RangeControl
+          label="Animation speed"
+          value={config.animationSpeed}
+          min={0}
+          max={3}
+          step={0.05}
+          onChange={(animationSpeed) => onPatchConfig({ animationSpeed })}
+        />
+        <RangeControl
+          label="Stride"
+          value={config.stride}
+          min={0}
+          max={1.4}
+          step={0.02}
+          onChange={(stride) => onPatchConfig({ stride })}
+        />
+        <RangeControl
+          label="Step height"
+          value={config.stepHeight}
+          min={0}
+          max={0.8}
+          step={0.02}
+          onChange={(stepHeight) => onPatchConfig({ stepHeight })}
+        />
+      </ControlSection>
+      <ControlSection title="Death cycle" icon={<Skull />} defaultOpen>
+        <RangeControl
+          label="Deaths / second"
+          value={config.deathsPerSecond}
+          min={0}
+          max={10}
+          step={0.25}
+          onChange={(deathsPerSecond) => onPatchConfig({ deathsPerSecond })}
+        />
+        <RangeControl
+          label="Max Jolt ragdolls"
+          value={config.maxActiveRagdolls}
+          min={0}
+          max={20}
+          step={1}
+          onChange={(maxActiveRagdolls) => onPatchConfig({ maxActiveRagdolls })}
+        />
+        <RangeControl
+          label="Corpse lifetime"
+          value={config.corpseSeconds}
+          min={0.5}
+          max={12}
+          step={0.25}
+          suffix="s"
+          onChange={(corpseSeconds) => onPatchConfig({ corpseSeconds })}
+        />
+      </ControlSection>
+      <ControlSection title="Render" icon={<Gauge />}>
+        <ToggleControl
+          label="Auto orbit"
+          checked={config.autoRotate}
+          onChange={(autoRotate) => onPatchConfig({ autoRotate })}
+        />
+        <ToggleControl
+          label="Real shadows"
+          checked={config.shadows}
+          onChange={(shadows) => onPatchConfig({ shadows })}
+        />
+        <button
+          type="button"
+          onClick={onResetCamera}
+          className="flex h-9 w-full items-center justify-center gap-2 border border-white/10 bg-white/[0.035] text-xs font-semibold uppercase tracking-wider text-slate-300 transition hover:bg-white/[0.08] hover:text-white"
+        >
+          <RotateCcw className="h-3.5 w-3.5" /> Reset camera
+        </button>
+      </ControlSection>
+    </div>
+  </aside>
+);
+
+const BenchmarkViewport = ({
+  config,
+  containerRef,
+  ready,
+  rendererError,
+  stats,
+}: {
+  config: ProceduralCharacterBenchmarkConfig;
+  containerRef: RefObject<HTMLDivElement>;
+  ready: boolean;
+  rendererError: string | null;
+  stats: ProceduralCharacterBenchmarkStats;
+}) => (
+  <main className="relative order-1 min-h-[52vh] overflow-hidden lg:order-2 lg:min-h-0">
+    <div ref={containerRef} className="absolute inset-0" />
+    {(!ready || stats.loadingActors) && !rendererError && (
+      <div className="pointer-events-none absolute inset-0 z-30 grid place-items-center bg-[#070b12]/88 backdrop-blur-sm">
+        <div className="flex flex-col items-center gap-3 text-center">
+          <div className="h-8 w-8 animate-spin rounded-full border-2 border-cyan-300/20 border-t-cyan-200" />
+          <div>
+            <p className="text-sm font-semibold text-white">Building articulated crowd</p>
+            <p className="mt-1 font-mono text-xs text-slate-400">
+              {stats.actorCount} / {config.actorCount} actors
+            </p>
+          </div>
+        </div>
+      </div>
+    )}
+    {rendererError && (
+      <div className="absolute inset-x-4 bottom-4 z-30 border border-red-300/35 bg-red-950/90 p-4 text-sm text-red-100 backdrop-blur">
+        <p className="font-semibold">Unable to start the character benchmark.</p>
+        <p className="mt-1 text-red-200/75">{rendererError}</p>
+      </div>
+    )}
+    <div className="pointer-events-none absolute top-4 right-4 left-4 z-20 flex flex-wrap items-start justify-between gap-3">
+      <div className="border border-white/10 bg-[#090e17]/82 px-3 py-2 backdrop-blur-md">
+        <p className="text-[0.62rem] font-semibold uppercase tracking-[0.22em] text-slate-500">Simulation</p>
+        <p className="mt-1 text-sm text-white">
+          {stats.visibleHexCount}/{stats.hexCount} hexes visible · {stats.runningCount} running · {stats.ragdollCount}{" "}
+          ragdolls · seed {config.seed}
+          {stats.projectileActiveCount > 0
+            ? ` · ${stats.projectileActiveCount} arrows · ${stats.projectileHitCount} hits`
+            : ""}
+          {stats.meleeContactCount > 0
+            ? ` · ${stats.meleeActiveImpactCount} melee FX · ${stats.meleeContactCount} contacts`
+            : ""}
+        </p>
+      </div>
+      {stats.physicsFailures.length > 0 && (
+        <div className="max-w-sm border border-red-300/30 bg-red-950/80 px-3 py-2 text-xs text-red-100 backdrop-blur-md">
+          {stats.physicsFailures.join(" · ")}
+        </div>
+      )}
+    </div>
+    <BenchmarkMetrics stats={stats} />
+  </main>
+);
+
+const BenchmarkMetrics = ({ stats }: { stats: ProceduralCharacterBenchmarkStats }) => (
+  <div className="pointer-events-none absolute right-4 bottom-4 left-4 z-20 grid grid-cols-4 gap-2 min-[380px]:grid-cols-6 xl:left-auto xl:w-[1040px] xl:grid-cols-[repeat(16,minmax(0,1fr))]">
+    <Metric label="FPS" value={stats.fps || "--"} />
+    <Metric label="Avg" value={stats.averageFrameMs ? `${stats.averageFrameMs}ms` : "--"} />
+    <Metric label="P95" value={stats.p95FrameMs ? `${stats.p95FrameMs}ms` : "--"} />
+    <Metric label="Calls" value={formatInteger(stats.drawCalls)} />
+    <Metric label="Tris" value={formatInteger(stats.triangles)} />
+    <Metric label="Actors" value={stats.actorCount} />
+    <Metric label="Deaths" value={stats.totalDeaths} />
+    <Metric label="Respawns" value={stats.respawnCount} />
+    <Metric label="Bodies" value={stats.physicsBodyCount} />
+    <Metric label="Joints" value={stats.physicsConstraintCount} />
+    <Metric label="Arrows" value={stats.projectileActiveCount} />
+    <Metric label="Hits" value={stats.projectileHitCount} />
+    <Metric label="Melee" value={stats.meleeActiveImpactCount} />
+    <Metric label="Contacts" value={stats.meleeContactCount} />
+    <Metric label="GPU" value={`${stats.geometryCount}/${stats.textureCount}`} />
+    <Metric label="Heap" value={stats.wasmHeapMiB ? `${stats.wasmHeapMiB}MB` : "--"} />
+  </div>
+);
+
+const ControlSection = ({
+  title,
+  icon,
+  children,
+  defaultOpen = false,
+}: {
+  title: string;
+  icon: ReactNode;
+  children: ReactNode;
+  defaultOpen?: boolean;
+}) => (
+  <details open={defaultOpen} className="border border-white/10 bg-black/20">
+    <summary className="flex cursor-pointer list-none items-center gap-2 px-3 py-2.5 text-xs font-semibold uppercase tracking-[0.16em] text-slate-300 [&_svg]:h-3.5 [&_svg]:w-3.5 [&_svg]:text-cyan-300">
+      {icon}
+      {title}
+    </summary>
+    <div className="space-y-3 border-t border-white/[0.07] p-3">{children}</div>
+  </details>
+);
+
+const RangeControl = ({
+  label,
+  value,
+  min,
+  max,
+  step,
+  suffix = "",
+  onChange,
+}: {
+  label: string;
+  value: number;
+  min: number;
+  max: number;
+  step: number;
+  suffix?: string;
+  onChange(value: number): void;
+}) => (
+  <label className="block">
+    <span className="mb-1.5 flex items-center justify-between gap-3 text-[0.68rem] font-medium uppercase tracking-wider text-slate-400">
+      {label}
+      <span className="font-mono text-slate-200">
+        {formatControlValue(value, step)}
+        {suffix}
+      </span>
+    </span>
+    <input
+      type="range"
+      value={value}
+      min={min}
+      max={max}
+      step={step}
+      onChange={(event) => onChange(Number(event.target.value))}
+      className="h-1.5 w-full cursor-pointer accent-cyan-400"
+    />
+  </label>
+);
+
+const NumberControl = ({
+  label,
+  value,
+  min,
+  max,
+  step,
+  onChange,
+}: {
+  label: string;
+  value: number;
+  min: number;
+  max: number;
+  step: number;
+  onChange(value: number): void;
+}) => (
+  <label className="block">
+    <span className="mb-1.5 block text-[0.68rem] font-medium uppercase tracking-wider text-slate-400">{label}</span>
+    <input
+      type="number"
+      value={value}
+      min={min}
+      max={max}
+      step={step}
+      onChange={(event) => onChange(Number(event.target.value))}
+      className="h-9 w-full border border-white/10 bg-[#080d15] px-2 font-mono text-xs text-slate-200 outline-none focus:border-cyan-300/60"
+    />
+  </label>
+);
+
+const SegmentedControl = ({
+  label,
+  value,
+  options,
+  columns,
+  onChange,
+}: {
+  columns: 3 | 4;
+  label: string;
+  value: string;
+  options: ReadonlyArray<{ value: string; label: string }>;
+  onChange(value: string): void;
+}) => (
+  <fieldset>
+    <legend className="mb-1.5 text-[0.68rem] font-medium uppercase tracking-wider text-slate-400">{label}</legend>
+    <div className={cn("grid gap-1", columns === 4 ? "grid-cols-4" : "grid-cols-3")}>
+      {options.map((option) => (
+        <button
+          key={option.value}
+          type="button"
+          onClick={() => onChange(option.value)}
+          className={cn(
+            "h-8 border text-xs font-semibold transition",
+            value === option.value
+              ? "border-cyan-300/60 bg-cyan-400/15 text-cyan-100"
+              : "border-white/10 bg-white/[0.025] text-slate-400 hover:bg-white/[0.06] hover:text-white",
+          )}
+        >
+          {option.label}
+        </button>
+      ))}
+    </div>
+  </fieldset>
+);
+
+const ToggleControl = ({
+  label,
+  checked,
+  onChange,
+}: {
+  label: string;
+  checked: boolean;
+  onChange(value: boolean): void;
+}) => (
+  <label className="flex cursor-pointer items-center justify-between gap-3 py-0.5">
+    <span className="text-[0.68rem] font-medium uppercase tracking-wider text-slate-400">{label}</span>
+    <input
+      type="checkbox"
+      checked={checked}
+      onChange={(event) => onChange(event.target.checked)}
+      className="h-4 w-4 accent-cyan-400"
+    />
+  </label>
+);
+
+const BenchmarkAction = ({
+  icon,
+  label,
+  onClick,
+  disabled = false,
+  primary = false,
+}: {
+  icon: ReactNode;
+  label: string;
+  onClick(): void;
+  disabled?: boolean;
+  primary?: boolean;
+}) => (
+  <button
+    type="button"
+    onClick={onClick}
+    disabled={disabled}
+    className={cn(
+      "flex h-9 items-center gap-2 border px-3 text-xs font-semibold uppercase tracking-wider transition [&_svg]:h-3.5 [&_svg]:w-3.5",
+      primary
+        ? "border-red-300/45 bg-red-400/15 text-red-100 hover:bg-red-400/25"
+        : "border-white/10 bg-white/[0.025] text-slate-300 hover:bg-white/[0.08] hover:text-white",
+      disabled && "cursor-not-allowed opacity-35",
+    )}
+  >
+    {icon}
+    {label}
+  </button>
+);
+
+const BenchmarkBadge = ({ label, tone }: { label: string; tone: "amber" | "cyan" | "emerald" | "violet" }) => {
+  const tones = {
+    amber: "border-amber-300/25 bg-amber-300/[0.08] text-amber-200",
+    cyan: "border-cyan-300/25 bg-cyan-300/[0.08] text-cyan-200",
+    emerald: "border-emerald-300/25 bg-emerald-300/[0.08] text-emerald-200",
+    violet: "border-violet-300/25 bg-violet-300/[0.08] text-violet-200",
+  };
+  return (
+    <span className={cn("hidden border px-2 py-1 font-mono text-[0.62rem] uppercase sm:inline", tones[tone])}>
+      {label}
+    </span>
+  );
+};
+
+const Metric = ({ label, value }: { label: string; value: ReactNode }) => (
+  <div className="border border-white/10 bg-[#090e17]/82 px-2 py-1.5 text-right backdrop-blur-md">
+    <p className="text-[0.56rem] font-semibold uppercase tracking-wider text-slate-500">{label}</p>
+    <p className="mt-0.5 font-mono text-xs text-slate-100">{value}</p>
+  </div>
+);
+
+function formatControlValue(value: number, step: number): number {
+  if (step >= 1) return Math.round(value);
+  const precision = Math.max(0, Math.ceil(-Math.log10(step)));
+  return Number(value.toFixed(precision));
+}
+
+function formatInteger(value: number): string {
+  return (value >= 1_000_000 ? compactIntegerFormatter : integerFormatter).format(value);
+}
+
+function resolveRendererErrorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : "Unknown benchmark renderer error.";
+}

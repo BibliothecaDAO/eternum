@@ -1,0 +1,29 @@
+Quaternius character assets — provenance and license
+
+Creators: Quaternius (@Quaternius)
+Downloaded: 2026-08-21
+
+Original packs:
+- Universal Base Characters [Standard]
+  https://quaternius.itch.io/universal-base-characters
+  Archive SHA-256: fdbf1804c90dfc1ea03e992bff7da2dfd1a79318e13270a660180f9308455f40
+- Modular Character Outfits - Fantasy [Standard]
+  https://quaternius.itch.io/modular-character-outfits-fantasy
+  Archive SHA-256: c3468b18871cc8c8f05ab14df7712baf22cb9f389cbd870babf130e595187f70
+
+Runtime derivation:
+- base-male.glb derives from Superhero_Male_FullBody.gltf.
+- peasant-male.glb derives from Male_Peasant.gltf.
+- ranger-male.glb derives from Male_Ranger.gltf.
+- Geometry was welded without quantization so every skinned outfit preserves its authored scale.
+- Textures were resized to a maximum of 1024 px, converted to WebP, and embedded.
+- No authored animation clips were added. Bone names and the 65-joint skin were preserved.
+
+License supplied with both Standard archives:
+
+CC0 1.0 Universal (CC0 1.0)
+Public Domain Dedication
+https://creativecommons.org/publicdomain/zero/1.0/
+
+Models by @Quaternius
+https://www.patreon.com/quaternius

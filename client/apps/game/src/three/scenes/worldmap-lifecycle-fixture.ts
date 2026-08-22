@@ -1,6 +1,7 @@
 import { resolveUrlChangedListenerLifecycle } from "./worldmap-lifecycle-policy";
 import { installWorldmapDebugHooks, uninstallWorldmapDebugHooks } from "./worldmap-debug-hooks";
 import { destroyWorldmapOwnedManagers } from "./worldmap-ownership-lifecycle";
+import type { ProceduralArmyProductionStats } from "../managers/army-manager";
 
 interface ListenerBinding {
   event: string;
@@ -11,6 +12,7 @@ interface WorldmapLifecycleFixture {
   debugWindow: {
     testMaterialSharing?: () => void;
     testTroopDiffFx?: (diff?: number) => void;
+    getProceduralArmyProductionStats?: () => ProceduralArmyProductionStats;
   };
   listenerAdds: ListenerBinding[];
   listenerRemoves: ListenerBinding[];
@@ -39,6 +41,7 @@ export function createWorldmapLifecycleFixture(): WorldmapLifecycleFixture {
   const debugWindow: {
     testMaterialSharing?: () => void;
     testTroopDiffFx?: (diff?: number) => void;
+    getProceduralArmyProductionStats?: () => ProceduralArmyProductionStats;
   } = {};
 
   let isSwitchedOff = false;
@@ -92,6 +95,16 @@ export function createWorldmapLifecycleFixture(): WorldmapLifecycleFixture {
     setup() {
       isSwitchedOff = false;
       installWorldmapDebugHooks(debugWindow, {
+        getProceduralArmyProductionStats: () => ({
+          activeRepresentationCount: 0,
+          actorCount: 0,
+          defeatedActorCount: 0,
+          fallbackRepresentationCount: 0,
+          hitTargetCount: 0,
+          loadState: "idle",
+          ragdollCount: 0,
+          visibleLandArmyCount: 0,
+        }),
         testMaterialSharing: () => {},
         testTroopDiffFx: () => {},
       });

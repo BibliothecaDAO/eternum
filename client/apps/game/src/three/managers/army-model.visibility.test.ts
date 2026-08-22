@@ -5,6 +5,7 @@ import {
   BoxGeometry,
   Group,
   InstancedMesh,
+  Matrix4,
   Mesh,
   MeshBasicMaterial,
   Scene,
@@ -160,4 +161,52 @@ describe("ArmyModel visibility after async model load", () => {
     expect(modelData.activeInstances.has(slot)).toBe(true);
     expect(mesh.count).toBe(1);
   });
+
+  it("preserves a promoted entity's live transform while its instanced representation is hidden", () => {
+    const subject = new ArmyModel(new Scene());
+    const geometry = new BoxGeometry(1, 1, 1);
+    const material = new MeshBasicMaterial();
+    const mesh = new InstancedMesh(geometry, material, 1);
+    const modelData = {
+      group: new Group(),
+      instancedMeshes: [mesh],
+      baseMeshes: [new Mesh(geometry, material)],
+      mixer: new AnimationMixer(new Group()),
+      animations: {
+        idle: new AnimationClip("idle", 1, []),
+        moving: new AnimationClip("moving", 1, []),
+      },
+      animationActions: new Map(),
+      activeInstances: new Set<number>(),
+      lastAnimationUpdate: 0,
+      animationUpdateInterval: 50,
+      contactShadowMesh: null,
+      contactShadowScale: 1,
+    };
+    const entityId = 73;
+    const slot = subject.allocateInstanceSlot(entityId);
+    (subject as any).models.set(ModelType.Knight1, modelData);
+    subject.assignModelToEntity(entityId, ModelType.Knight1);
+    subject.updateInstance(entityId, slot, new Vector3(1, 0, 1), new Vector3(1, 1, 1));
+
+    expect(readInstanceScale(mesh, slot).length()).toBeGreaterThan(0);
+
+    subject.setEntityRepresentationVisible(entityId, false);
+    subject.updateInstance(entityId, slot, new Vector3(4, 0, 5), new Vector3(1, 1, 1));
+
+    expect(readInstanceScale(mesh, slot).toArray()).toEqual([0, 0, 0]);
+    expect(subject.getEntityWorldPosition(entityId)?.toArray()).toEqual([4, 0, 5]);
+    expect(subject.getEntitySlot(entityId)).toBe(slot);
+
+    subject.setEntityRepresentationVisible(entityId, true);
+
+    expect(readInstanceScale(mesh, slot).toArray()).toEqual([1, 1, 1]);
+    expect(subject.getEntityWorldPosition(entityId)?.toArray()).toEqual([4, 0, 5]);
+  });
 });
+
+function readInstanceScale(mesh: InstancedMesh, slot: number): Vector3 {
+  const matrix = new Matrix4();
+  mesh.getMatrixAt(slot, matrix);
+  return new Vector3().setFromMatrixScale(matrix);
+}
