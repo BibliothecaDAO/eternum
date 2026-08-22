@@ -74,6 +74,9 @@ export function syncRendererBackendDiagnostics(input: RendererInitDiagnostics): 
     activeMode: input.activeMode,
     initTimeMs: input.initTimeMs,
   });
+  if (input.deviceStatus === "ready") {
+    markRendererGpuDeviceReady();
+  }
   rendererDiagnosticsState = {
     ...rendererDiagnosticsState,
     activeMode: input.activeMode,
@@ -82,16 +85,6 @@ export function syncRendererBackendDiagnostics(input: RendererInitDiagnostics): 
     initTimeMs: input.initTimeMs,
     gpuTelemetry: snapshotRendererGpuTelemetry(),
     requestedMode: input.requestedMode,
-    startupTimings: snapshotRendererStartupTimings(),
-  };
-  syncRendererDiagnosticsWindow();
-}
-
-export function markRendererDiagnosticDeviceReady(): void {
-  markRendererGpuDeviceReady();
-  rendererDiagnosticsState = {
-    ...rendererDiagnosticsState,
-    gpuTelemetry: snapshotRendererGpuTelemetry(),
     startupTimings: snapshotRendererStartupTimings(),
   };
   syncRendererDiagnosticsWindow();

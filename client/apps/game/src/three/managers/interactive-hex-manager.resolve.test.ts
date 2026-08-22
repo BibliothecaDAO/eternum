@@ -171,3 +171,43 @@ describe("InteractiveHexManager resolveHexFromPoint", () => {
     expect(resolved.position.z).toBeCloseTo(-1.5, 5);
   });
 });
+
+describe("InteractiveHexManager empty instance buffers", () => {
+  it("marks the instance matrix dirty when clearHexes empties the mesh", () => {
+    const subject = Object.create(InteractiveHexManager.prototype) as any;
+    const instanceMatrix = { needsUpdate: false };
+
+    subject.allHexes = new Set(["0,0"]);
+    subject.visibleHexes = new Set(["0,0"]);
+    subject.visibleHexCoordsCount = 1;
+    subject.hexBuckets = new Map([["0,0", new Set(["0,0"])]]);
+    subject.hexCoordsCount = 1;
+    subject.hexKeyToIndex = new Map([["0,0", 0]]);
+    subject.instanceMesh = { count: 1, instanceMatrix };
+
+    subject.clearHexes();
+
+    expect(subject.instanceMesh.count).toBe(0);
+    expect(instanceMatrix.needsUpdate).toBe(true);
+  });
+
+  it.each(["renderAllHexes", "renderHexes"] as const)("marks the instance matrix dirty in %s", (method) => {
+    const subject = Object.create(InteractiveHexManager.prototype) as any;
+    const instanceMatrix = { needsUpdate: false };
+
+    subject.allHexes = new Set();
+    subject.visibleHexCoordsCount = 0;
+    subject.instanceMesh = {
+      boundingBox: {},
+      boundingSphere: {},
+      count: 1,
+      instanceMatrix,
+    };
+    subject.ensureInstanceMeshCapacity = vi.fn();
+
+    subject[method]();
+
+    expect(subject.instanceMesh.count).toBe(0);
+    expect(instanceMatrix.needsUpdate).toBe(true);
+  });
+});

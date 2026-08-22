@@ -13,11 +13,13 @@ describe("structure manager visibility diff wiring", () => {
     const source = readStructureManagerSource();
 
     expect(source).toMatch(/currentVisibleIds: this\.previousVisibleIds/);
+    expect(source).toMatch(/refreshEntityIds: options\.refreshEntityIds/);
     expect(source).toMatch(/commitManagerVisibilityDiff\(\{/);
     expect(source).toMatch(/remove: \(entityId\) => this\.removeVisibleStructureInstance/);
     expect(source).toMatch(/add: \(structure\) => this\.addVisibleStructureInstance/);
     expect(source).toMatch(/this\.structureInstanceBindings\.set\(structure\.entityId, bindings\)/);
     expect(source).toMatch(/slots\[instanceIndex\] = undefined/);
+    expect(source).not.toMatch(/slots\.findIndex/);
   });
 
   it("checks pass authority inside the scheduled commit before touching slots", () => {
@@ -34,7 +36,7 @@ describe("structure manager visibility diff wiring", () => {
   it("includes transition-token ownership in async structure pass snapshots", () => {
     const source = readStructureManagerSource();
 
-    expect(source).toMatch(/this\.captureVisibleStructurePassSnapshot\(transitionToken\)/);
+    expect(source).toMatch(/this\.captureVisibleStructurePassSnapshot\(options\.transitionToken\)/);
     expect(source).toMatch(
       /snapshot\.transitionToken !== undefined && snapshot\.transitionToken !== this\.latestTransitionToken/,
     );

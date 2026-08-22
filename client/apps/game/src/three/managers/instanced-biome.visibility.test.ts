@@ -85,31 +85,6 @@ describe("InstancedBiome visibility", () => {
     expect(mesh.boundingBox?.max.toArray()).toEqual([25, 10, 25]);
   });
 
-  it("tracks per-slot matrix writes, removals, and active-prefix rebuilds", () => {
-    const biomeModel = createBiomeModel("Grassland");
-    const mesh = biomeModel.instancedMeshes[0];
-
-    expect(mesh.instanceMatrix.updateRanges).toEqual([{ start: 0, count: 4 * 16 }]);
-    mesh.instanceMatrix.clearUpdateRanges();
-
-    biomeModel.setMatrixAt(2, new Matrix4().makeTranslation(2, 0, 2));
-
-    expect(mesh.instanceMatrix.updateRanges).toEqual([{ start: 2 * 16, count: 16 }]);
-
-    mesh.instanceMatrix.clearUpdateRanges();
-    biomeModel.removeInstance(2);
-    expect(mesh.instanceMatrix.updateRanges).toEqual([{ start: 2 * 16, count: 16 }]);
-
-    mesh.instanceMatrix.clearUpdateRanges();
-    biomeModel.setCount(3);
-    expect(mesh.instanceMatrix.updateRanges).toEqual([{ start: 0, count: 3 * 16 }]);
-
-    mesh.instanceMatrix.clearUpdateRanges();
-    const source = new Float32Array(2 * 16);
-    biomeModel.setMatricesAndCount(new InstancedBufferAttribute(source, 16), 2);
-    expect(mesh.instanceMatrix.updateRanges).toEqual([{ start: 0, count: 2 * 16 }]);
-  });
-
   it("thins only decorative geometry at far view and restores the exact full matrices", () => {
     const biomeModel = createGroupedBiomeModel();
     const source = new Float32Array(8 * 16);

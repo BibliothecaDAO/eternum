@@ -201,6 +201,23 @@ describe("renderer-diagnostics", () => {
     });
   });
 
+  it("publishes device readiness atomically with initialized WebGPU diagnostics", () => {
+    syncRendererBackendDiagnostics({
+      activeMode: "webgpu",
+      buildMode: "webgpu-auto",
+      deviceStatus: "ready",
+      fallbackReason: null,
+      initTimeMs: 12,
+      requestedMode: "webgpu-auto",
+    });
+
+    expect(snapshotRendererDiagnostics().gpuTelemetry).toMatchObject({
+      activeMode: "webgpu",
+      deviceStatus: "ready",
+      initTimeMs: 12,
+    });
+  });
+
   it("setRendererDiagnosticCapabilities produces a new state object reference", () => {
     const before = snapshotRendererDiagnostics();
     setRendererDiagnosticCapabilities({

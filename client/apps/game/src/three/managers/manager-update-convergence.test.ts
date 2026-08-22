@@ -19,6 +19,7 @@ describe("createCoalescedAsyncUpdateRunner", () => {
         firstRun = false;
         await Promise.resolve();
       }
+      return true;
     });
 
     const [a, b] = await Promise.all([runner(), runner()]);
@@ -32,10 +33,76 @@ describe("createCoalescedAsyncUpdateRunner", () => {
         void triggerDuringRun();
         await Promise.resolve();
       }
+      return true;
     });
 
     await triggerDuringRun();
     expect(calls.filter((entry) => entry === "drain").length).toBe(2);
+  });
+
+  it("resolves a committed caller without waiting for a sustained burst to drain", async () => {
+    const releases: Array<() => void> = [];
+    let pass = 0;
+    const runner = createCoalescedAsyncUpdateRunner(async () => {
+      pass += 1;
+      await new Promise<void>((resolve) => releases.push(resolve));
+      return true;
+    });
+
+    const firstRequest = runner();
+    await vi.waitFor(() => expect(releases).toHaveLength(1));
+    const burstRequests = Array.from({ length: 100 }, () => runner());
+    releases.shift()?.();
+
+    await expect(firstRequest).resolves.toBeUndefined();
+    await vi.waitFor(() => expect(releases).toHaveLength(1));
+    expect(pass).toBe(2);
+
+    releases.shift()?.();
+    await Promise.all(burstRequests);
+
+    expect(pass).toBe(2);
+  });
+
+  it("preserves an uncommitted request until a later request retries it", async () => {
+    const task = vi.fn().mockResolvedValueOnce(false).mockResolvedValueOnce(true);
+    const runner = createCoalescedAsyncUpdateRunner(task);
+
+    let firstSettled = false;
+    const firstRequest = runner().then(() => {
+      firstSettled = true;
+    });
+    await vi.waitFor(() => expect(task).toHaveBeenCalledTimes(1));
+    await Promise.resolve();
+    expect(firstSettled).toBe(false);
+
+    const retryRequest = runner();
+    await Promise.all([firstRequest, retryRequest]);
+
+    expect(task).toHaveBeenCalledTimes(2);
+  });
+
+  it("continues with requests that arrive while an earlier pass is failing", async () => {
+    let rejectFirstPass!: (reason: unknown) => void;
+    const task = vi
+      .fn()
+      .mockImplementationOnce(
+        () =>
+          new Promise<boolean>((_resolve, reject) => {
+            rejectFirstPass = reject;
+          }),
+      )
+      .mockResolvedValueOnce(true);
+    const runner = createCoalescedAsyncUpdateRunner(task);
+
+    const firstRequest = runner();
+    await vi.waitFor(() => expect(rejectFirstPass).toBeTypeOf("function"));
+    const nextRequest = runner();
+    rejectFirstPass(new Error("first pass failed"));
+
+    await expect(firstRequest).rejects.toThrow("first pass failed");
+    await expect(nextRequest).resolves.toBeUndefined();
+    expect(task).toHaveBeenCalledTimes(2);
   });
 });
 

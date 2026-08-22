@@ -164,6 +164,8 @@ export function createGameRendererRuntimeHarness() {
         sceneManager,
         captureStatsSample: vi.fn(),
         lastTime: performance.now() - 16,
+        animationFrameHandle: null,
+        isAnimationLoopRunning: false,
         getTargetFPS: vi.fn(() => null),
         updateWeatherPostProcessing: vi.fn(),
         isDestroyed: false,

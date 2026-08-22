@@ -36,7 +36,7 @@ interface RunOwnedBuildingWorkAfterModelsLoadInput {
 export async function runOwnedBuildingWorkAfterModelsLoad(
   input: RunOwnedBuildingWorkAfterModelsLoadInput,
 ): Promise<void> {
-  await Promise.all(input.modelLoadPromises);
+  await Promise.allSettled(input.modelLoadPromises);
   if (!input.isOwned()) return;
   input.apply();
 }

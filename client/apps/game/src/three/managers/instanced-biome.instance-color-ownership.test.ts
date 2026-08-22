@@ -33,14 +33,14 @@ describe("InstancedBiome land color ownership", () => {
     expect(firstDrawColorAttribute).toBeDefined();
     expect(Array.from(firstDrawColorAttribute!.array)).toEqual(new Array(12).fill(1));
 
-    firstDrawColorAttribute!.clearUpdateRanges();
+    const previousUploadVersion = firstDrawColorAttribute!.version;
     biome.setLandColors(new Float32Array([0.25, 0.5, 0.75, 0.9, 0.8, 0.7]), 2);
 
     expect(mesh.instanceColor).toBe(firstDrawColorAttribute);
     expect(Array.from(firstDrawColorAttribute!.array)).toEqual(
       Array.from(new Float32Array([0.25, 0.5, 0.75, 0.9, 0.8, 0.7, 1, 1, 1, 1, 1, 1])),
     );
-    expect(firstDrawColorAttribute!.updateRanges).toEqual([{ start: 0, count: 6 }]);
+    expect(firstDrawColorAttribute!.version).toBe(previousUploadVersion + 1);
   });
 
   it("owns colors per scene while retaining shared biome geometry", () => {

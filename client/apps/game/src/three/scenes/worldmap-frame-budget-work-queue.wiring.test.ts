@@ -34,8 +34,10 @@ describe("worldmap frame-budget work queue wiring", () => {
     expect(
       armyManagerSource.indexOf(".then(() => this.preloadMissingProjectedArmyModelsForEntity(entityId))"),
     ).toBeLessThan(armyManagerSource.indexOf('"manager:army-projection"'));
-    expect(structureManagerSource).toMatch(/await this\.requestVisibleStructuresRefresh\(\s*"critical",/);
-    expect(structureManagerSource).toContain('"manager:structure-visibility"');
+    expect(structureManagerSource).toMatch(
+      /await this\.requestVisibleStructuresRefresh\(\{\s*refreshExisting:.*\s*transitionToken:.*\s*workLane: "critical",\s*\}\);/,
+    );
+    expect(structureManagerSource).toContain('"manager:structure-visibility-diff"');
     expect(chestManagerSource).toContain('"manager:chest-visibility"');
   });
 });

@@ -1,8 +1,19 @@
 // @vitest-environment jsdom
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { discardGpuBackendFrame, startGpuBackendFrame } from "./gpu-backend-hot-path-instrumentation";
+import { syncRendererBackendDiagnostics } from "./renderer-diagnostics";
 import { SceneName } from "./types";
 import { createGameRendererRuntimeHarness } from "./game-renderer.runtime-harness";
+
+const sentry = vi.hoisted(() => ({
+  captureException: vi.fn(),
+  setTags: vi.fn(),
+}));
+
+vi.mock("@sentry/react", () => ({
+  captureException: sentry.captureException,
+  getCurrentScope: () => ({ setTags: sentry.setTags }),
+}));
 
 vi.mock("@bibliothecadao/eternum", () => {
   const scalar = new Proxy(
@@ -96,6 +107,12 @@ const { default: GameRenderer } = await import("./game-renderer");
 describe("GameRenderer runtime harness", () => {
   beforeEach(() => {
     discardGpuBackendFrame();
+    sentry.captureException.mockReset();
+    sentry.setTags.mockReset();
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
   });
 
   it("models cancellable fade-out completion", async () => {
@@ -111,6 +128,7 @@ describe("GameRenderer runtime harness", () => {
   it("boots and renders the active scene through the backend", async () => {
     const harness = createGameRendererRuntimeHarness();
     const subject = Object.assign(Object.create(GameRenderer.prototype), harness.createSubject());
+    vi.spyOn(window, "requestAnimationFrame").mockImplementation(() => 1);
 
     harness.sceneManager.switchScene(SceneName.WorldMap);
     await vi.waitFor(() => expect(harness.worldmapScene.activateInputSurface).toHaveBeenCalledTimes(1));
@@ -134,6 +152,127 @@ describe("GameRenderer runtime harness", () => {
       ],
       sceneName: SceneName.WorldMap,
     });
+  });
+
+  it("reports a repeated frame failure once while rendering and scheduling continue", async () => {
+    const harness = createGameRendererRuntimeHarness();
+    const subject = Object.assign(Object.create(GameRenderer.prototype), harness.createSubject());
+    const frameError = new RangeError("writeBuffer range is invalid");
+    const pendingFrames: FrameRequestCallback[] = [];
+    const requestAnimationFrameSpy = vi
+      .spyOn(window, "requestAnimationFrame")
+      .mockImplementation((callback) => pendingFrames.push(callback));
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    subject.getTargetFps = vi.fn(() => null);
+    harness.backend.renderFrame.mockImplementation(() => {
+      throw frameError;
+    });
+    syncRendererBackendDiagnostics({
+      activeMode: "webgpu",
+      buildMode: "webgpu-auto",
+      fallbackReason: null,
+      initTimeMs: 0,
+      requestedMode: "webgpu-auto",
+    });
+
+    harness.sceneManager.switchScene(SceneName.WorldMap);
+    await vi.waitFor(() => expect(harness.worldmapScene.activateInputSurface).toHaveBeenCalledTimes(1));
+    requestAnimationFrameSpy.mockClear();
+    subject.animate();
+    pendingFrames.shift()?.(0);
+    pendingFrames.shift()?.(16);
+    pendingFrames.shift()?.(32);
+
+    expect(harness.backend.renderFrame).toHaveBeenCalledTimes(4);
+    expect(requestAnimationFrameSpy).toHaveBeenCalledTimes(4);
+    expect(console.error).toHaveBeenCalledTimes(1);
+    expect(sentry.captureException).toHaveBeenCalledTimes(1);
+    expect(sentry.captureException).toHaveBeenCalledWith(
+      frameError,
+      expect.objectContaining({
+        tags: {
+          "renderer.backend": "webgpu",
+          "renderer.failure_kind": "frame_error",
+          "renderer.scene": SceneName.WorldMap,
+        },
+      }),
+    );
+  });
+
+  it("reports first, repeated, and post-fallback device losses before recovery eligibility is applied", () => {
+    const harness = createGameRendererRuntimeHarness();
+    const subject = Object.assign(Object.create(GameRenderer.prototype), harness.createSubject());
+    const recoverFromRendererDeviceLoss = vi.fn();
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    subject.recoverFromRendererDeviceLoss = recoverFromRendererDeviceLoss;
+    subject.hasRecoveredFromDeviceLoss = false;
+    subject.isRecoveringFromDeviceLoss = false;
+
+    subject.handleRendererDeviceLost({ activeMode: "webgpu", message: "first loss" });
+    subject.isRecoveringFromDeviceLoss = true;
+    subject.handleRendererDeviceLost({ activeMode: "webgpu", message: "repeated loss" });
+    subject.isRecoveringFromDeviceLoss = false;
+    subject.hasRecoveredFromDeviceLoss = true;
+    subject.handleRendererDeviceLost({ activeMode: "webgl2-fallback", message: "fallback context lost" });
+
+    expect(sentry.captureException).toHaveBeenCalledTimes(3);
+    expect(recoverFromRendererDeviceLoss).toHaveBeenCalledTimes(3);
+    expect(
+      sentry.captureException.mock.calls.map(([, context]) => context.tags["renderer.recovery_attempted"]),
+    ).toEqual(["yes", "no", "no"]);
+  });
+
+  it("unpauses and restarts the animation loop when fallback initialization fails", () => {
+    const harness = createGameRendererRuntimeHarness();
+    const subject = Object.assign(Object.create(GameRenderer.prototype), harness.createSubject());
+    const animate = vi.fn();
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    subject.animate = animate;
+    subject.isRecoveringFromDeviceLoss = true;
+    subject.isRendererRecoveryPaused = true;
+    subject.lastTime = 100;
+
+    subject.handleDeviceLossFallbackFailure(new Error("fallback init failed"), "webgpu");
+
+    expect(subject.isRecoveringFromDeviceLoss).toBe(false);
+    expect(subject.isRendererRecoveryPaused).toBe(false);
+    expect(subject.lastTime).toBe(0);
+    expect(animate).toHaveBeenCalledTimes(1);
+    expect(sentry.captureException).toHaveBeenCalledWith(
+      expect.any(Error),
+      expect.objectContaining({
+        tags: {
+          "renderer.backend": "webgpu",
+          "renderer.failure_kind": "recovery_failed",
+        },
+      }),
+    );
+  });
+
+  it("keeps one animation-frame chain when a fast fallback failure resumes rendering", async () => {
+    const harness = createGameRendererRuntimeHarness();
+    const subject = Object.assign(Object.create(GameRenderer.prototype), harness.createSubject());
+    const pendingFrames: FrameRequestCallback[] = [];
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    vi.spyOn(window, "requestAnimationFrame").mockImplementation((callback) => pendingFrames.push(callback));
+    subject.getTargetFps = vi.fn(() => null);
+
+    harness.sceneManager.switchScene(SceneName.WorldMap);
+    await vi.waitFor(() => expect(harness.worldmapScene.activateInputSurface).toHaveBeenCalledOnce());
+    subject.animate();
+    expect(harness.backend.renderFrame).toHaveBeenCalledOnce();
+    expect(pendingFrames).toHaveLength(1);
+
+    subject.isRecoveringFromDeviceLoss = true;
+    subject.isRendererRecoveryPaused = true;
+    subject.handleDeviceLossFallbackFailure(new Error("fallback init failed"), "webgpu");
+
+    expect(pendingFrames).toHaveLength(1);
+    expect(harness.backend.renderFrame).toHaveBeenCalledOnce();
+
+    pendingFrames.shift()?.(16);
+    expect(harness.backend.renderFrame).toHaveBeenCalledTimes(2);
+    expect(pendingFrames).toHaveLength(1);
   });
 
   it("switches scenes through the shared scene manager", async () => {
