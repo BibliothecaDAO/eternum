@@ -4,16 +4,15 @@
   "accountAddress": "0x54b9b1b06e7110f1ef0b0c3467610438311da4680d3c75d557b52788591741",
   "owner": {
     "environment": "appchain.blitz",
-    "gameName": "bltz-sandbox",
-    "launchRequestId": "32557925493-1",
+    "gameName": "blitz-herald",
+    "launchRequestId": "32559619899-1",
     "workflowName": "Game Launch",
-    "workflowRunId": 32557925493,
+    "workflowRunId": 32559619899,
     "workflowRunAttempt": 1,
     "stepId": "create-world",
-    "leaseId": "bd0509c6-d7a3-419b-970e-7ee9e156fa97"
+    "leaseId": "0a1e198b-5790-4a85-bd41-7fa6c685d346"
   },
-  "acquiredAt": "2026-08-22T06:49:54.261Z",
-  "heartbeatAt": "2026-08-22T06:50:09.309Z",
-  "expiresAt": "2026-08-22T06:50:09.309Z",
-  "releasedAt": "2026-08-22T06:50:09.309Z"
+  "acquiredAt": "2026-08-22T07:28:25.937Z",
+  "heartbeatAt": "2026-08-22T07:28:25.937Z",
+  "expiresAt": "2026-08-22T07:38:25.937Z"
 }
