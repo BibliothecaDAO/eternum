@@ -12,9 +12,9 @@
   "requestedLaunchStep": "full",
   "inputPath": "inputs/appchain/blitz/rotations/blitz-herald/32545773321-1.json",
   "latestLaunchRequestId": "32545773321-1",
-  "currentStepId": "wait-for-factory-indexes",
+  "currentStepId": null,
   "createdAt": "2026-08-18T20:26:36.073Z",
-  "updatedAt": "2026-08-22T02:17:44.171Z",
+  "updatedAt": "2026-08-22T02:17:49.006Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -30,8 +30,8 @@
   },
   "evaluation": {
     "intervalMinutes": 30,
-    "nextEvaluationAt": "2026-08-22T02:47:34.525Z",
-    "lastEvaluatedAt": "2026-08-22T02:17:34.525Z"
+    "nextEvaluationAt": "2026-08-22T02:47:49.006Z",
+    "lastEvaluatedAt": "2026-08-22T02:17:49.006Z"
   },
   "steps": [
     {
@@ -55,10 +55,11 @@
     {
       "id": "wait-for-factory-indexes",
       "title": "Waiting for games",
-      "status": "running",
+      "status": "succeeded",
       "workflowStepName": "Waiting for games",
-      "latestEvent": "Waiting for games started",
-      "startedAt": "2026-08-22T02:17:44.171Z"
+      "latestEvent": "Waiting for games is complete",
+      "startedAt": "2026-08-22T02:17:44.171Z",
+      "finishedAt": "2026-08-22T02:17:49.006Z"
     }
   ],
   "summary": {
@@ -259,13 +260,5 @@
     "summaryPath": "/home/runner/work/eternum/eternum/.context/game-launch/rotation-appchain-blitz-blitz-herald.json",
     "seriesCreated": true,
     "seriesCreatedAt": "2026-08-18T20:26:56.860Z"
-  },
-  "activeLease": {
-    "launchRequestId": "32545773321-1",
-    "workflowRunId": 32545773321,
-    "workflowRunAttempt": 1,
-    "stepId": "wait-for-factory-indexes",
-    "acquiredAt": "2026-08-22T02:17:44.171Z",
-    "expiresAt": "2026-08-22T03:02:44.171Z"
   }
 }
