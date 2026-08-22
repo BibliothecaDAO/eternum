@@ -2,7 +2,7 @@
   "version": 1,
   "environment": "appchain.blitz",
   "kind": "rotation",
-  "updatedAt": "2026-08-22T03:15:59.577Z",
+  "updatedAt": "2026-08-22T03:16:04.989Z",
   "entries": {
     "blitz-herald": {
       "kind": "rotation",
@@ -60,11 +60,10 @@
       "path": "runs/appchain/blitz/rotations/blitz-nightwatch.json",
       "inputPath": "inputs/appchain/blitz/rotations/blitz-nightwatch/32548420630-1.json",
       "status": "running",
-      "updatedAt": "2026-08-22T03:15:59.577Z",
+      "updatedAt": "2026-08-22T03:16:04.989Z",
       "workflowRef": "next",
-      "currentStepId": "wait-for-factory-indexes",
-      "activeLeaseExpiresAt": "2026-08-22T04:00:59.577Z",
-      "hasRunningStep": true,
+      "currentStepId": null,
+      "hasRunningStep": false,
       "recoverableFailedStepId": null,
       "recoverablePendingStepId": null,
       "autoRetry": {
@@ -73,8 +72,8 @@
       },
       "evaluation": {
         "intervalMinutes": 30,
-        "nextEvaluationAt": "2026-08-22T03:45:50.401Z",
-        "lastEvaluatedAt": "2026-08-22T03:15:50.401Z"
+        "nextEvaluationAt": "2026-08-22T03:46:04.989Z",
+        "lastEvaluatedAt": "2026-08-22T03:16:04.989Z"
       },
       "games": [
         {
