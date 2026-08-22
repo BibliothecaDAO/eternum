@@ -10,29 +10,29 @@
   "status": "attention",
   "executionMode": "fast_trial",
   "requestedLaunchStep": "full",
-  "inputPath": "inputs/appchain/blitz/rotations/blitz-herald/32569833835-1.json",
-  "latestLaunchRequestId": "32569833835-1",
+  "inputPath": "inputs/appchain/blitz/rotations/blitz-herald/32571073004-1.json",
+  "latestLaunchRequestId": "32571073004-1",
   "currentStepId": "create-worlds",
   "createdAt": "2026-08-18T20:26:36.073Z",
-  "updatedAt": "2026-08-22T11:17:48.573Z",
+  "updatedAt": "2026-08-22T11:44:53.650Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
-    "workflowRunId": 32569833835,
+    "workflowRunId": 32571073004,
     "workflowRunAttempt": 1,
-    "workflowUrl": "https://github.com/BibliothecaDAO/eternum/actions/runs/32569833835",
+    "workflowUrl": "https://github.com/BibliothecaDAO/eternum/actions/runs/32571073004",
     "ref": "next",
     "sha": "67fc2ecc1dd6773393564139861d09018faf5acd"
   },
   "autoRetry": {
     "enabled": true,
     "intervalMinutes": 15,
-    "nextRetryAt": "2026-08-22T11:32:48.573Z"
+    "nextRetryAt": "2026-08-22T11:59:53.650Z"
   },
   "evaluation": {
     "intervalMinutes": 30,
-    "nextEvaluationAt": "2026-08-22T11:47:48.573Z",
-    "lastEvaluatedAt": "2026-08-22T11:17:48.573Z"
+    "nextEvaluationAt": "2026-08-22T12:14:53.650Z",
+    "lastEvaluatedAt": "2026-08-22T11:44:53.650Z"
   },
   "steps": [
     {
@@ -40,19 +40,14 @@
       "title": "Creating series",
       "status": "succeeded",
       "workflowStepName": "Creating series",
-      "latestEvent": "Series is ready to accept rotation games",
-      "startedAt": "2026-08-22T11:17:24.171Z",
-      "finishedAt": "2026-08-22T11:17:31.634Z"
+      "latestEvent": "Series is ready to accept rotation games"
     },
     {
       "id": "create-worlds",
       "title": "Creating games",
       "status": "failed",
       "workflowStepName": "Creating games",
-      "latestEvent": "Creating games failed: \u001b[2m[+0ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Preparing launch for \"blitz-herald-0005\" on appchain.blitz\n\u001b[2m[+12ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Effective config flags: dev_mode_on=false, duration_seconds=3600, single_realm_mode=false, two_player_mode=false\n\u001b[2m[+12ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Resolved preset 6 for appchain.blitz\n\u001b[2m[+53ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Creating \"blitz-herald-0005\" through the persistent registrar\n[2026-08-22T11:17:43.790Z] ERROR: Insufficient transaction data: found 3 V3 transactions with tips in 3 blocks (block range: 48189-48191). Required: 10 transactions. Consider reducing minTxsNecessary or increasing maxBlocks.\n\u001b[2m[+1.3s]\u001b[0m \u001b[1m\u001b[31mERR\u001b[0m create_game failed after 1.2s: RPC: starknet_addInvokeTransaction with params {\n  \"invoke_transaction\": {\n    \"type\": \"INVOKE\",\n    \"sender_address\": \"0x54b9b1b06e7110f1ef0b0c3467610438311da4680d3c75d557b52788591741\",\n    \"calldata\": [\n      \"0x1\",\n      \"0x27853c5cafdfb2561e47fc0c250b51bc651cb441a3e3a846c99f29ad752b6f0\",\n      \"0x22a60e345c205785ed47074ec6e6f5dd9399ef5f4b480a5c215eb698af15ac5\",\n      \"0x2a\",\n      \"0x626c69747a2d686572616c642d30303035\",\n      \"0x6\",\n      \"0x626c69747a2d686572616c64\",\n      \"0x5\",\n      \"0x6a898557\",\n      \"0x6a8ad2b0\",\n      \"0xe10\",\n      \"0x15180\",\n      \"0x258\",\n      \"0x0\",\n      \"0x0\",\n      \"0x0\",\n      \"0x18\",\n      \"0x6a898556\",\n      \"0x0\",\n      \"0x0\",\n      \"0x2710\",\n      \"0x2710\",\n      \"0x2710\",\n      \"0x2710\",\n      \"0x0\",\n      \"0x0\",\n      \"0x0\",\n      \"0x2ee\",\n      \"0x3e8\",\n      \"0xbf68\",\n      \"0x0\",\n      \"0x64\",\n      \"0x5dc\",\n      \"0xbd74\",\n      \"0x0\",\n      \"0x1\",\n      \"0x0\",\n      \"0x1\",\n      \"0x0\",\n      \"0x1\",\n      \"0x265c\",\n      \"0x1\",\n      \"0x12c\",\n      \"0xa\",\n      \"0x3\",\n      \"0x7a9713a5b4e5b711f726ede4a6d86503d80357ab8ac944c0b0c7ff89a31c9c5\"\n    ],\n    \"signature\": [\n      \"0x4f96640c148943804a0f6c6832ee8fea30dc011efeb43aacc8fb8ba3ac064be\",\n      \"0xfe47cb35a4d60eb98644c7f5a02fe010f22ee0985c869889edb124d3f15f75\"\n    ],\n    \"nonce\": \"0x3b30\",\n    \"resource_bounds\": {\n      \"l2_gas\": {\n        \"max_amount\": \"0x2579b377\",\n        \"max_price_per_unit\": \"0x6fc23ac00\"\n      },\n      \"l1_gas\": {\n        \"max_amount\": \"0x283de\",\n        \"max_price_per_unit\": \"0x6fc23ac00\"\n      },\n      \"l1_data_gas\": {\n        \"max_amount\": \"0x0\",\n        \"max_price_per_unit\": \"0x16e360\"\n      }\n    },\n    \"tip\": \"0x0\",\n    \"paymaster_data\": [],\n    \"nonce_data_availability_mode\": \"L1\",\n    \"fee_data_availability_mode\": \"L1\",\n    \"account_deployment_data\": [],\n    \"version\": \"0x3\"\n  }\n}\n\n      52: Invalid transaction nonce: \"Invalid transaction nonce of contract at address 0x54b9b1b06e7110f1ef0b0c3467610438311da4680d3c75d557b52788591741. Account nonce: 0x3b31; got: 0x3b30.\"\nError: 1 rotation or series game failed during create-worlds\n    at runGroupedSeriesLikeGameStep (/home/runner/work/eternum/eternum/config/deployer/clean/launch/series-like-runner.ts:535:15)",
-      "startedAt": "2026-08-22T11:17:35.176Z",
-      "finishedAt": "2026-08-22T11:17:48.573Z",
-      "errorMessage": "\u001b[2m[+0ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Preparing launch for \"blitz-herald-0005\" on appchain.blitz\n\u001b[2m[+12ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Effective config flags: dev_mode_on=false, duration_seconds=3600, single_realm_mode=false, two_player_mode=false\n\u001b[2m[+12ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Resolved preset 6 for appchain.blitz\n\u001b[2m[+53ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Creating \"blitz-herald-0005\" through the persistent registrar\n[2026-08-22T11:17:43.790Z] ERROR: Insufficient transaction data: found 3 V3 transactions with tips in 3 blocks (block range: 48189-48191). Required: 10 transactions. Consider reducing minTxsNecessary or increasing maxBlocks.\n\u001b[2m[+1.3s]\u001b[0m \u001b[1m\u001b[31mERR\u001b[0m create_game failed after 1.2s: RPC: starknet_addInvokeTransaction with params {\n  \"invoke_transaction\": {\n    \"type\": \"INVOKE\",\n    \"sender_address\": \"0x54b9b1b06e7110f1ef0b0c3467610438311da4680d3c75d557b52788591741\",\n    \"calldata\": [\n      \"0x1\",\n      \"0x27853c5cafdfb2561e47fc0c250b51bc651cb441a3e3a846c99f29ad752b6f0\",\n      \"0x22a60e345c205785ed47074ec6e6f5dd9399ef5f4b480a5c215eb698af15ac5\",\n      \"0x2a\",\n      \"0x626c69747a2d686572616c642d30303035\",\n      \"0x6\",\n      \"0x626c69747a2d686572616c64\",\n      \"0x5\",\n      \"0x6a898557\",\n      \"0x6a8ad2b0\",\n      \"0xe10\",\n      \"0x15180\",\n      \"0x258\",\n      \"0x0\",\n      \"0x0\",\n      \"0x0\",\n      \"0x18\",\n      \"0x6a898556\",\n      \"0x0\",\n      \"0x0\",\n      \"0x2710\",\n      \"0x2710\",\n      \"0x2710\",\n      \"0x2710\",\n      \"0x0\",\n      \"0x0\",\n      \"0x0\",\n      \"0x2ee\",\n      \"0x3e8\",\n      \"0xbf68\",\n      \"0x0\",\n      \"0x64\",\n      \"0x5dc\",\n      \"0xbd74\",\n      \"0x0\",\n      \"0x1\",\n      \"0x0\",\n      \"0x1\",\n      \"0x0\",\n      \"0x1\",\n      \"0x265c\",\n      \"0x1\",\n      \"0x12c\",\n      \"0xa\",\n      \"0x3\",\n      \"0x7a9713a5b4e5b711f726ede4a6d86503d80357ab8ac944c0b0c7ff89a31c9c5\"\n    ],\n    \"signature\": [\n      \"0x4f96640c148943804a0f6c6832ee8fea30dc011efeb43aacc8fb8ba3ac064be\",\n      \"0xfe47cb35a4d60eb98644c7f5a02fe010f22ee0985c869889edb124d3f15f75\"\n    ],\n    \"nonce\": \"0x3b30\",\n    \"resource_bounds\": {\n      \"l2_gas\": {\n        \"max_amount\": \"0x2579b377\",\n        \"max_price_per_unit\": \"0x6fc23ac00\"\n      },\n      \"l1_gas\": {\n        \"max_amount\": \"0x283de\",\n        \"max_price_per_unit\": \"0x6fc23ac00\"\n      },\n      \"l1_data_gas\": {\n        \"max_amount\": \"0x0\",\n        \"max_price_per_unit\": \"0x16e360\"\n      }\n    },\n    \"tip\": \"0x0\",\n    \"paymaster_data\": [],\n    \"nonce_data_availability_mode\": \"L1\",\n    \"fee_data_availability_mode\": \"L1\",\n    \"account_deployment_data\": [],\n    \"version\": \"0x3\"\n  }\n}\n\n      52: Invalid transaction nonce: \"Invalid transaction nonce of contract at address 0x54b9b1b06e7110f1ef0b0c3467610438311da4680d3c75d557b52788591741. Account nonce: 0x3b31; got: 0x3b30.\"\nError: 1 rotation or series game failed during create-worlds\n    at runGroupedSeriesLikeGameStep (/home/runner/work/eternum/eternum/config/deployer/clean/launch/series-like-runner.ts:535:15)"
+      "latestEvent": "Creating games needs attention"
     },
     {
       "id": "wait-for-factory-indexes",
