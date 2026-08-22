@@ -23,3 +23,6 @@ client/apps/bot/.env
 # launcher run-store artifacts (config/deployer/clean/launch/*-io.ts)
 .context/
 .playwright-mcp/
+
+# Local animation captures and benchmark reports
+/output/
