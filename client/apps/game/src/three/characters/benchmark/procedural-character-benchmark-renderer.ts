@@ -10,7 +10,6 @@ import {
 import { TroopTier } from "@bibliothecadao/types";
 import type { RendererSurfaceLike } from "@/three/renderer-backend";
 import { getRendererDiagnosticActiveMode } from "@/three/renderer-diagnostics";
-import { markInstancedAttributeRangeDirty } from "@/three/utils/instanced-attribute-update-range";
 import { ArrowProjectileSystem } from "@/three/projectiles/arrow-projectile-system";
 import { MeleeImpactSystem } from "@/three/combat/melee-impact-system";
 import {
@@ -682,8 +681,8 @@ function createHexArena(): InstancedMesh {
     if ((cell.column + cell.row) % 5 === 0) color.lerp(new Color(0x40305f), 0.28);
     mesh.setColorAt(cell.index, color);
   });
-  markInstancedAttributeRangeDirty(mesh.instanceMatrix, 0, BENCHMARK_HEX_CELLS.length);
-  if (mesh.instanceColor) markInstancedAttributeRangeDirty(mesh.instanceColor, 0, BENCHMARK_HEX_CELLS.length);
+  mesh.instanceMatrix.needsUpdate = true;
+  if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
   mesh.name = "procedural-character-benchmark-hexes";
   mesh.receiveShadow = true;
   mesh.castShadow = false;

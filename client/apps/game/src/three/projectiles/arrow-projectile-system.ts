@@ -1,4 +1,3 @@
-import { markInstancedAttributeRangeDirty } from "@/three/utils/instanced-attribute-update-range";
 import {
   BoxGeometry,
   BufferGeometry,
@@ -278,7 +277,7 @@ export class ArrowProjectileSystem {
     this.ages[slot] = 0;
     this.states[slot] = STATE_FLYING;
     this.mesh.setColorAt(slot, this.scratchColor.set(input.color));
-    if (this.mesh.instanceColor) markInstancedAttributeRangeDirty(this.mesh.instanceColor, slot, 1);
+    if (this.mesh.instanceColor) this.mesh.instanceColor.needsUpdate = true;
     this.activeCount += 1;
     this.flyingCount += 1;
     this.spawnedCount += 1;
@@ -408,7 +407,7 @@ export class ArrowProjectileSystem {
       this.scratchMatrix.compose(this.scratchPosition, this.scratchQuaternion, this.visualScale);
       this.mesh.setMatrixAt(slot, this.scratchMatrix);
     }
-    markInstancedAttributeRangeDirty(this.mesh.instanceMatrix, 0, this.config.capacity);
+    this.mesh.instanceMatrix.needsUpdate = true;
     this.matricesDirty = false;
   }
 
@@ -416,7 +415,7 @@ export class ArrowProjectileSystem {
     this.scratchMatrix.compose(this.scratchPosition.set(0, -10_000, 0), this.scratchQuaternion.identity(), ZERO_SCALE);
     for (let slot = 0; slot < this.config.capacity; slot += 1) this.mesh.setMatrixAt(slot, this.scratchMatrix);
     this.mesh.count = 0;
-    markInstancedAttributeRangeDirty(this.mesh.instanceMatrix, 0, this.config.capacity);
+    this.mesh.instanceMatrix.needsUpdate = true;
     this.matricesDirty = false;
   }
 }
