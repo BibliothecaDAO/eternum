@@ -123,4 +123,23 @@ describe("character benchmark smoke contract", () => {
     expect(evaluation.reasons).toContain("death cycle produced no respawn");
     expect(evaluation.reasons.at(-1)).toBe("browser reported 1 runtime error(s): runtime failure");
   });
+
+  it("rejects renderer regressions beyond the measured 100-character budgets", () => {
+    const overBudget = { ...PASSING_STATS, averageFrameMs: 66, drawCalls: 1_501, p95FrameMs: 81 };
+    const evaluation = evaluateCharacterBenchmarkSmokeResult({
+      activeSnapshot: snapshot(),
+      browserErrors: [],
+      pausedSnapshot: { ...snapshot(), paused: true },
+      readySnapshot: snapshot({ ...overBudget, ragdollCount: 0, runningCount: 100, totalDeaths: 0 }),
+      reducedPopulationSnapshot: snapshot({ ...PASSING_STATS, actorCount: 25, ragdollCount: 0, runningCount: 25 }),
+      resetSnapshot: snapshot({ ...PASSING_STATS, ragdollCount: 0, resetCount: 5, runningCount: 100 }),
+      respawnSnapshot: snapshot(),
+      restoredPopulationSnapshot: snapshot(),
+      steppedSnapshot: snapshot({ ...PASSING_STATS, simulationElapsedSeconds: 5.1 }),
+    });
+
+    expect(evaluation.reasons).toContain("ready draw calls were 1501, budget is 1500");
+    expect(evaluation.reasons).toContain("average frame time was 66ms, budget is 65ms");
+    expect(evaluation.reasons).toContain("p95 frame time was 81ms, budget is 80ms");
+  });
 });

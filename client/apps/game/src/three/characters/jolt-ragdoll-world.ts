@@ -1,6 +1,6 @@
 import initJolt from "jolt-physics/wasm";
 import joltWasmUrl from "jolt-physics/jolt-physics.wasm.wasm?url";
-import { Quaternion, Vector3 } from "three";
+import { type Object3D, Quaternion, Vector3 } from "three";
 
 export type JoltRagdollJoint =
   | { kind: "hinge"; maximum: number; minimum: number }
@@ -81,6 +81,7 @@ const MOVING_LAYER = 1;
 const OBJECT_LAYER_COUNT = 2;
 const BROAD_PHASE_LAYER_COUNT = 2;
 const MAX_SIMULATION_STEPS = 4;
+export const JOLT_RAGDOLL_GROUND_HALF_EXTENT = 1_024;
 
 let joltModulePromise: Promise<JoltApi> | undefined;
 
@@ -182,7 +183,7 @@ export class JoltRagdollWorld {
   }
 
   private createGround(): JoltBodyRecord {
-    const halfExtents = new this.Jolt.Vec3(80, 0.12, 80);
+    const halfExtents = new this.Jolt.Vec3(JOLT_RAGDOLL_GROUND_HALF_EXTENT, 0.12, JOLT_RAGDOLL_GROUND_HALF_EXTENT);
     const shape = new this.Jolt.BoxShape(halfExtents, 0.04);
     const position = new this.Jolt.RVec3(0, -0.12, 0);
     const rotation = new this.Jolt.Quat(0, 0, 0, 1);
@@ -214,6 +215,14 @@ export class JoltRagdollWorld {
     if (this.bodyInterface.IsAdded(bodyId)) this.bodyInterface.RemoveBody(bodyId);
     this.bodyInterface.DestroyBody(bodyId);
   }
+}
+
+/** Collider dimensions use the largest axis when a parent applies non-uniform scale. */
+export function resolveJoltColliderScale(coordinateSpace?: Object3D): number {
+  if (!coordinateSpace) return 1;
+  coordinateSpace.updateWorldMatrix(true, false);
+  const scale = coordinateSpace.getWorldScale(new Vector3());
+  return Math.max(Math.abs(scale.x), Math.abs(scale.y), Math.abs(scale.z));
 }
 
 export class JoltRagdollInstance<PartId extends string> {

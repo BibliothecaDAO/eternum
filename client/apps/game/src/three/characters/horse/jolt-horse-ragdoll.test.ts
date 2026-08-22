@@ -20,10 +20,24 @@ describe("horse ragdoll profile", () => {
       if (part.parentId) expect(profile.definition.parts[part.parentId]).toBeDefined();
     }
   });
+
+  it("keeps visual segment lengths local while scaling physics shapes into world space", () => {
+    const pose = resolveProceduralHorsePose(TEST_RIG, createDefaultProceduralHorseConfig(), 0.2, 0.2);
+    const coordinateSpace = new Group();
+    coordinateSpace.scale.setScalar(0.5);
+    coordinateSpace.updateWorldMatrix(true, false);
+    const profile = createHorseRagdollProfile(TEST_RIG, pose, coordinateSpace);
+    const segmentId = TEST_RIG.legs.frontLeft.segmentIds[0];
+
+    expect(profile.definition.parts.horseBody.halfExtents).toEqual([0.21, 0.19, 0.36]);
+    expect(profile.definition.parts[segmentId].length).toBeCloseTo(profile.segmentLengths[segmentId] * 0.5);
+    expect(profile.definition.parts[segmentId].radius).toBeCloseTo(0.105 * 0.5);
+  });
 });
 
 const TEST_RIG: ResolvedHorseRig = {
   bodyCenter: [0, 1.7, 0],
+  chestPosition: [0, 2.2, 0.45],
   groundY: 0,
   headPosition: [0, 2.7, 1.5],
   rootBindPosition: [0, 0.5, 0],

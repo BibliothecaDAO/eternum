@@ -55,6 +55,10 @@ describe("ProceduralArmyCharacterLayer", () => {
       updateActorConfig: characterMocks.updateRuntimeActorConfig,
     });
     const layer = new ProceduralArmyCharacterLayer(scene);
+    const onRangedRelease = vi.fn();
+    const onMeleeContact = vi.fn();
+    layer.onRangedRelease(onRangedRelease);
+    layer.onMeleeContact(onMeleeContact);
     const presentation = {
       attachments: [
         { id: "winter-paladin-primary", slot: "weapon" },
@@ -97,6 +101,26 @@ describe("ProceduralArmyCharacterLayer", () => {
     );
     expect(actor.object.position.toArray()).toEqual([4, 0.5, 8]);
     expect(characterMocks.updateRuntime).toHaveBeenLastCalledWith(0.02);
+
+    const rangedEvent = {
+      direction: new Vector3(0, 0, 1),
+      origin: new Vector3(4, 1, 8),
+      seed: 42,
+      shotGeneration: 1,
+      target: new Vector3(5, 1, 8),
+    };
+    const meleeEvent = {
+      attackGeneration: 1,
+      direction: new Vector3(1, 0, 0),
+      impactStrength: 1,
+      origin: new Vector3(4, 1, 8),
+      target: new Vector3(5, 1, 8),
+      weaponId: "iron-longsword" as const,
+    };
+    actor.emitRangedRelease(rangedEvent);
+    actor.emitMeleeContact(meleeEvent);
+    expect(onRangedRelease).toHaveBeenCalledWith(42, rangedEvent);
+    expect(onMeleeContact).toHaveBeenCalledWith(42, meleeEvent);
 
     await layer.startRagdoll(42);
     await layer.applyImpulse(42);
@@ -275,10 +299,81 @@ describe("ProceduralArmyCharacterLayer", () => {
     expect(layer.getStats().actorCount).toBe(6);
     layer.dispose();
   });
+
+  it("leaves the legacy fallback active when the shared runtime fails to load", async () => {
+    const loadError = new Error("runtime unavailable");
+    const consoleError = vi.spyOn(console, "error").mockImplementation(() => undefined);
+    characterMocks.createRuntime.mockRejectedValue(loadError);
+    const layer = new ProceduralArmyCharacterLayer(new Scene());
+
+    layer.sync(
+      [
+        {
+          category: TroopType.Knight,
+          entityId: 301,
+          isMoving: false,
+          position: new Vector3(),
+          primaryColor: "#315f86",
+          tier: TroopTier.T1,
+        },
+      ],
+      0,
+    );
+
+    await vi.waitFor(() => expect(layer.getStats().loadState).toBe("failed"));
+    expect(layer.hasActor(301)).toBe(false);
+    expect(consoleError).toHaveBeenCalledWith(
+      "[ProceduralArmyCharacterLayer] Failed to load the articulated character runtime",
+      loadError,
+    );
+    consoleError.mockRestore();
+    layer.dispose();
+  });
+
+  it("disposes a runtime that finishes loading after its scene layer was destroyed", async () => {
+    let resolveRuntime!: (runtime: {
+      createActor: typeof characterMocks.createActor;
+      dispose: typeof characterMocks.disposeRuntime;
+      update: typeof characterMocks.updateRuntime;
+      updateActorConfig: typeof characterMocks.updateRuntimeActorConfig;
+    }) => void;
+    characterMocks.createRuntime.mockReturnValue(
+      new Promise((resolve) => {
+        resolveRuntime = resolve;
+      }),
+    );
+    const layer = new ProceduralArmyCharacterLayer(new Scene());
+    layer.sync(
+      [
+        {
+          category: TroopType.Knight,
+          entityId: 302,
+          isMoving: false,
+          position: new Vector3(),
+          primaryColor: "#315f86",
+          tier: TroopTier.T1,
+        },
+      ],
+      0,
+    );
+
+    layer.dispose();
+    resolveRuntime({
+      createActor: characterMocks.createActor,
+      dispose: characterMocks.disposeRuntime,
+      update: characterMocks.updateRuntime,
+      updateActorConfig: characterMocks.updateRuntimeActorConfig,
+    });
+
+    await vi.waitFor(() => expect(characterMocks.disposeRuntime).toHaveBeenCalledOnce());
+    expect(characterMocks.createActor).not.toHaveBeenCalled();
+  });
 });
 
 function createActorMock(kind: "archer" | "crossbowman" | "knight" | "paladin") {
   const object = new Group();
+  const meleeListeners = new Set<(event: unknown) => void>();
+  const rangedListeners = new Set<(event: unknown) => void>();
   return {
     kind,
     object,
@@ -289,6 +384,16 @@ function createActorMock(kind: "archer" | "crossbowman" | "knight" | "paladin") 
     getStats: vi.fn(),
     hasFiniteState: vi.fn(() => true),
     mode: "animated" as const,
+    emitMeleeContact: (event: unknown) => meleeListeners.forEach((listener) => listener(event)),
+    emitRangedRelease: (event: unknown) => rangedListeners.forEach((listener) => listener(event)),
+    onMeleeContact: vi.fn((listener: (event: unknown) => void) => {
+      meleeListeners.add(listener);
+      return () => meleeListeners.delete(listener);
+    }),
+    onRangedRelease: vi.fn((listener: (event: unknown) => void) => {
+      rangedListeners.add(listener);
+      return () => rangedListeners.delete(listener);
+    }),
     reset: vi.fn(),
     startRagdoll: vi.fn(async () => undefined),
     stepOnce: vi.fn(),

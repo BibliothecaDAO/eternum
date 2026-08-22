@@ -266,6 +266,10 @@ class RuntimeProceduralHorseActor implements ProceduralHorseActor {
     const segments = {} as Record<HorseLegSegmentId, ProceduralHorsePhysicsPose["segments"][HorseLegSegmentId]>;
     let bodyPosition: readonly [number, number, number] = this.avatar.rig.bodyCenter;
     let bodyQuaternion: readonly [number, number, number, number] = [0, 0, 0, 1];
+    let chestPosition: readonly [number, number, number] = this.avatar.rig.chestPosition;
+    let chestQuaternion: readonly [number, number, number, number] = [0, 0, 0, 1];
+    let headPosition: readonly [number, number, number] = this.avatar.rig.headPosition;
+    let headQuaternion: readonly [number, number, number, number] = [0, 0, 0, 1];
     ragdoll.writePartTransforms((partId, x, y, z, qx, qy, qz, qw) => {
       this.scratchWorldPosition.set(x, y, z);
       this.scratchLocalPosition.copy(this.scratchWorldPosition);
@@ -282,12 +286,30 @@ class RuntimeProceduralHorseActor implements ProceduralHorseActor {
         bodyQuaternion = quaternion;
         return;
       }
+      if (partId === "horseChest") {
+        chestPosition = position;
+        chestQuaternion = quaternion;
+        return;
+      }
+      if (partId === "horseHead") {
+        headPosition = position;
+        headQuaternion = quaternion;
+        return;
+      }
       if (isHorseLegSegmentId(partId)) {
         segments[partId] = { length: ragdoll.profile.segmentLengths[partId], position, quaternion };
       }
     });
     if (HORSE_LEG_SEGMENT_IDS.some((segmentId) => !segments[segmentId])) return;
-    this.avatar.applyPhysicsPose({ bodyPosition, bodyQuaternion, segments });
+    this.avatar.applyPhysicsPose({
+      bodyPosition,
+      bodyQuaternion,
+      chestPosition,
+      chestQuaternion,
+      headPosition,
+      headQuaternion,
+      segments,
+    });
   }
 }
 

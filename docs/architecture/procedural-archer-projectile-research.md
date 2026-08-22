@@ -1,7 +1,9 @@
 # Procedural longbow archer and projectile pipeline
 
-Status: research and implementation proposal  
-Date: 2026-08-22  
+Status: research and implementation proposal
+
+Date: 2026-08-22
+
 Scope: Three.js procedural animation, Jolt WASM collision/reaction, world-map presentation, gym tooling, and the
 existing Dojo/RECS authority model. No production code is changed by this document.
 

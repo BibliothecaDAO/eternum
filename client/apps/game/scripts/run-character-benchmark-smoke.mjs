@@ -7,6 +7,9 @@ const BENCHMARK_PATH = "/debug/procedural-character-benchmark";
 const DEFAULT_BASE_URL = "https://127.0.0.1:4173";
 const DEFAULT_TIMEOUT_MS = 60_000;
 const POLL_INTERVAL_MS = 250;
+const MAX_READY_AVERAGE_FRAME_MS = 65;
+const MAX_READY_DRAW_CALLS = 1_500;
+const MAX_READY_P95_FRAME_MS = 80;
 const VALID_REQUESTED_RENDERER_MODES = new Set(["webgpu-auto", "webgpu-force-webgl"]);
 const VALID_RENDERER_MODES = new Set(["webgl2-fallback", "webgpu"]);
 
@@ -63,10 +66,18 @@ export function evaluateCharacterBenchmarkSmokeResult({
     reasons.push(`renderer mode was ${readyStats.rendererMode}, expected webgpu or webgl2-fallback`);
   }
   if (readyStats && readyStats.drawCalls <= 0) reasons.push("renderer reported no draw calls");
+  if (readyStats && readyStats.drawCalls > MAX_READY_DRAW_CALLS) {
+    reasons.push(`ready draw calls were ${readyStats.drawCalls}, budget is ${MAX_READY_DRAW_CALLS}`);
+  }
   if (readyStats && readyStats.triangles <= 0) reasons.push("renderer reported no triangles");
   if (readyStats && readyStats.averageFrameMs <= 0) reasons.push("average frame time was not measured");
+  if (readyStats && readyStats.averageFrameMs > MAX_READY_AVERAGE_FRAME_MS) {
+    reasons.push(`average frame time was ${readyStats.averageFrameMs}ms, budget is ${MAX_READY_AVERAGE_FRAME_MS}ms`);
+  }
   if (readyStats && readyStats.p95FrameMs <= 0) reasons.push("p95 frame time was not measured");
-  if (readyStats && readyStats.p95FrameMs >= 1_000) reasons.push(`p95 frame time was ${readyStats.p95FrameMs}ms`);
+  if (readyStats && readyStats.p95FrameMs > MAX_READY_P95_FRAME_MS) {
+    reasons.push(`p95 frame time was ${readyStats.p95FrameMs}ms, budget is ${MAX_READY_P95_FRAME_MS}ms`);
+  }
   if (readyStats && readyStats.projectileHitCount < 1) reasons.push("archer benchmark produced no projectile hits");
   if (readyStats && readyStats.projectileActiveCount > 512) {
     reasons.push(`projectile pool exceeded capacity (${readyStats.projectileActiveCount}/512)`);

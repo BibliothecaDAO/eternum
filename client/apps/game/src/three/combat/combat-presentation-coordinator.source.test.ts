@@ -15,6 +15,11 @@ describe("combat presentation wiring", () => {
     expect(worldmap).toContain("this.combatPresentation?.update(deltaTime)");
     expect(worldmap).toContain("this.combatPresentation?.dispose()");
     expect(worldmap).toContain("this.replayIndexedCombat(update)");
+    expect(worldmap).toContain("deferEffects: proceduralAttackStarted");
+    expect(worldmap).toContain("this.armyManager.onProceduralRangedRelease");
+    expect(worldmap).toContain("this.armyManager.onProceduralMeleeContact");
+    expect(coordinator).toContain("presentRangedRelease");
+    expect(coordinator).toContain("presentMeleeContact");
   });
 
   it("passes combatant identity through both live attack entry points", () => {

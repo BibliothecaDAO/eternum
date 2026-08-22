@@ -1,10 +1,13 @@
 # Procedural fantasy characters, animation, and ragdolls in Three.js
 
-**Research date:** 2026-08-21  
-**Repository baseline:** `client/apps/game` on this workspace, Three.js `0.185.1`  
+**Research date:** 2026-08-21
+
+**Repository baseline:** `client/apps/game` on this workspace, Three.js `0.185.1`
+
 **Scope:** replace the current monolithic tier-specific unit GLBs with a procedurally assembled character system;
 support visible upgrades, high-fidelity movement, runtime ragdolls, crowd-scale rendering, and a standalone animation
-gym.  
+gym.
+
 **Evidence policy:** external claims below use official documentation, specifications, project source, or maintainer
 release artifacts. Each design section separates those facts from recommendations and inferences.
 

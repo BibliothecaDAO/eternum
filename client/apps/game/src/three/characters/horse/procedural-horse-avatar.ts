@@ -58,6 +58,10 @@ export interface ProceduralHorseAvatarStats {
 export interface ProceduralHorsePhysicsPose {
   bodyPosition: readonly [number, number, number];
   bodyQuaternion: readonly [number, number, number, number];
+  chestPosition: readonly [number, number, number];
+  chestQuaternion: readonly [number, number, number, number];
+  headPosition: readonly [number, number, number];
+  headQuaternion: readonly [number, number, number, number];
   segments: Readonly<
     Record<
       HorseLegSegmentId,
@@ -75,7 +79,6 @@ const NECK_BONE_NAMES = [
   QUATERNIUS_HORSE_BONES.neck1,
   QUATERNIUS_HORSE_BONES.neck2,
   QUATERNIUS_HORSE_BONES.neck3,
-  QUATERNIUS_HORSE_BONES.head,
 ] as const;
 const TAIL_BONE_NAMES = [
   QUATERNIUS_HORSE_BONES.tail1,
@@ -97,7 +100,11 @@ export class ProceduralHorseAvatar {
   private readonly materials = new Set<Material>();
   private readonly materialBindings: HorseMaterialBinding[] = [];
   private readonly segmentBindings: Readonly<Record<HorseLegSegmentId, SegmentBoneBinding>>;
+  private readonly chestPhysicsBinding: SegmentBoneBinding;
+  private readonly headPhysicsBinding: SegmentBoneBinding;
+  private readonly neckPhysicsBindings: readonly SegmentBoneBinding[];
   private readonly rootTransform: LocalBoneTransform;
+  private readonly headTransform: LocalBoneTransform;
   private readonly neckTransforms: LocalBoneTransform[];
   private readonly tailTransforms: LocalBoneTransform[];
   private readonly targetBones: Readonly<Record<HorseHoofId, Bone>>;
@@ -111,6 +118,7 @@ export class ProceduralHorseAvatar {
   private readonly scratchParentQuaternion = new Quaternion();
   private readonly scratchGroupQuaternion = new Quaternion();
   private readonly scratchTargetQuaternion = new Quaternion();
+  private readonly scratchPhysicsQuaternion = new Quaternion();
   private readonly scratchWorldPosition = new Vector3();
   private readonly scratchLocalPosition = new Vector3();
   private config: ProceduralHorseConfig;
@@ -129,10 +137,20 @@ export class ProceduralHorseAvatar {
     this.alignHoovesToGround();
     this.rig = resolveQuaterniusHorseRig(this.group, this.scene);
     this.segmentBindings = this.createSegmentBindings();
+    this.chestPhysicsBinding = createSegmentBoneBinding(
+      this.scene,
+      QUATERNIUS_HORSE_BONES.chest,
+      QUATERNIUS_HORSE_BONES.withers,
+    );
+    this.neckPhysicsBindings = NECK_BONE_NAMES.map((name, index) =>
+      createSegmentBoneBinding(this.scene, name, NECK_BONE_NAMES[index + 1] ?? QUATERNIUS_HORSE_BONES.head),
+    );
+    this.headPhysicsBinding = createSegmentBoneBinding(this.scene, QUATERNIUS_HORSE_BONES.head);
     this.rootTransform = captureLocalTransform(requireQuaterniusHorseBone(this.scene, QUATERNIUS_HORSE_BONES.root));
     this.neckTransforms = NECK_BONE_NAMES.map((name) =>
       captureLocalTransform(requireQuaterniusHorseBone(this.scene, name)),
     );
+    this.headTransform = captureLocalTransform(requireQuaterniusHorseBone(this.scene, QUATERNIUS_HORSE_BONES.head));
     this.tailTransforms = TAIL_BONE_NAMES.map((name) =>
       captureLocalTransform(requireQuaterniusHorseBone(this.scene, name)),
     );
@@ -180,6 +198,7 @@ export class ProceduralHorseAvatar {
       .copy(this.rootTransform.quaternion)
       .multiply(new Quaternion(...pose.bodyQuaternion));
     this.scene.updateWorldMatrix(true, true);
+    this.applyPhysicsUpperBodyPose(pose);
     HORSE_LEG_SEGMENT_IDS.forEach((segmentId) => {
       applySegmentBoneRotation(
         this.segmentBindings[segmentId],
@@ -221,8 +240,14 @@ export class ProceduralHorseAvatar {
   }
 
   public hasFiniteTransforms(): boolean {
-    return HORSE_LEG_SEGMENT_IDS.every((segmentId) => {
-      const bone = this.segmentBindings[segmentId].bone;
+    const bones = [
+      this.rootTransform.bone,
+      this.chestPhysicsBinding.bone,
+      ...this.neckPhysicsBindings.map(({ bone }) => bone),
+      this.headPhysicsBinding.bone,
+      ...HORSE_LEG_SEGMENT_IDS.map((segmentId) => this.segmentBindings[segmentId].bone),
+    ];
+    return bones.every((bone) => {
       return [...bone.position.toArray(), ...bone.quaternion.toArray()].every(Number.isFinite);
     });
   }
@@ -339,9 +364,58 @@ export class ProceduralHorseAvatar {
     this.neckTransforms.forEach((transform, index) => {
       transform.bone.quaternion.copy(transform.quaternion).multiply(new Quaternion(...pose.neckRotations[index]));
     });
+    this.headTransform.bone.quaternion
+      .copy(this.headTransform.quaternion)
+      .multiply(new Quaternion(...pose.neckRotations.at(-1)!));
     this.tailTransforms.forEach((transform, index) => {
       transform.bone.quaternion.copy(transform.quaternion).multiply(new Quaternion(...pose.tailRotations[index]));
     });
+    this.scene.updateWorldMatrix(true, true);
+  }
+
+  private applyPhysicsUpperBodyPose(pose: ProceduralHorsePhysicsPose): void {
+    const chestQuaternion = new Quaternion(...pose.chestQuaternion);
+    const headQuaternion = new Quaternion(...pose.headQuaternion);
+    applySegmentBoneRotation(
+      this.chestPhysicsBinding,
+      this.group,
+      chestQuaternion,
+      this.scratchGroupQuaternion,
+      this.scratchParentQuaternion,
+      this.scratchTargetQuaternion,
+    );
+    this.neckPhysicsBindings.forEach((binding, index) => {
+      const weight = (index + 1) / (this.neckPhysicsBindings.length + 1);
+      this.scratchPhysicsQuaternion.copy(chestQuaternion).slerp(headQuaternion, weight);
+      applySegmentBoneRotation(
+        binding,
+        this.group,
+        this.scratchPhysicsQuaternion,
+        this.scratchGroupQuaternion,
+        this.scratchParentQuaternion,
+        this.scratchTargetQuaternion,
+      );
+    });
+    applySegmentBoneRotation(
+      this.headPhysicsBinding,
+      this.group,
+      headQuaternion,
+      this.scratchGroupQuaternion,
+      this.scratchParentQuaternion,
+      this.scratchTargetQuaternion,
+    );
+    setBonePositionInCoordinateSpace(
+      this.chestPhysicsBinding.bone,
+      this.group,
+      this.scratchLocalPosition.fromArray(pose.chestPosition),
+      this.scratchWorldPosition,
+    );
+    setBonePositionInCoordinateSpace(
+      this.headPhysicsBinding.bone,
+      this.group,
+      this.scratchLocalPosition.fromArray(pose.headPosition),
+      this.scratchWorldPosition,
+    );
     this.scene.updateWorldMatrix(true, true);
   }
 

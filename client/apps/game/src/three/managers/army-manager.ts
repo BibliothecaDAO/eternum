@@ -1,6 +1,7 @@
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useChainTimeStore } from "@/hooks/store/use-chain-time-store";
 import { gameWorkerManager } from "@/managers/game-worker-manager";
+import type { ProceduralMeleeContactEvent, ProceduralRangedReleaseEvent } from "@/three/characters";
 import {
   ProceduralArmyCharacterLayer,
   type ProceduralArmyCharacterLayerStats,
@@ -2244,8 +2245,20 @@ export class ArmyManager {
     this.proceduralArmyCharacterLayer.reset(this.toNumericId(entityId));
   }
 
-  public async playProceduralAttack(entityId: ID, targetWorld: Readonly<Vector3>): Promise<boolean> {
+  public playProceduralAttack(entityId: ID, targetWorld: Readonly<Vector3>): boolean {
     return this.proceduralArmyCharacterLayer.playAttack(this.toNumericId(entityId), targetWorld);
+  }
+
+  public onProceduralMeleeContact(
+    listener: (entityId: number, event: ProceduralMeleeContactEvent) => void,
+  ): () => void {
+    return this.proceduralArmyCharacterLayer.onMeleeContact(listener);
+  }
+
+  public onProceduralRangedRelease(
+    listener: (entityId: number, event: ProceduralRangedReleaseEvent) => void,
+  ): () => void {
+    return this.proceduralArmyCharacterLayer.onRangedRelease(listener);
   }
 
   public onMovementStart(entityId: ID, callback: () => void): () => void {
@@ -2531,7 +2544,10 @@ export class ArmyManager {
     if (!this.isArmyChunkTransitioning && isCommittedManagerChunk(this.currentChunkKey)) {
       this.armyPresentations.forEach((army, entityId) => {
         if (!this.isArmyVisibleInCurrentChunk(army)) return;
-        if (this.armyModel.isEntityDrawn(this.toNumericId(entityId))) return;
+        const numericEntityId = this.toNumericId(entityId);
+        if (this.activeProceduralArmyEntityIds.has(numericEntityId) || this.armyModel.isEntityDrawn(numericEntityId)) {
+          return;
+        }
         visibleUndrawnEntityIds.push(entityId);
       });
     }

@@ -54,6 +54,7 @@ describe("procedural horse pose", () => {
 
 const TEST_RIG: ResolvedHorseRig = {
   bodyCenter: [0, 1.7, 0],
+  chestPosition: [0, 2.2, 0.45],
   groundY: 0,
   headPosition: [0, 2.7, 1.5],
   rootBindPosition: [0, 0.5, 0],

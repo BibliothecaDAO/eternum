@@ -1,4 +1,10 @@
-import type { ProceduralUnitActor, ProceduralUnitConfig, ProceduralUnitRuntime } from "@/three/characters";
+import type {
+  ProceduralMeleeContactEvent,
+  ProceduralRangedReleaseEvent,
+  ProceduralUnitActor,
+  ProceduralUnitConfig,
+  ProceduralUnitRuntime,
+} from "@/three/characters";
 import type { CosmeticAttachmentTemplate } from "@/three/cosmetics/types";
 import { TroopTier, TroopType } from "@bibliothecadao/types";
 import {
@@ -29,6 +35,7 @@ interface ProceduralArmyActorRecord {
   actor: ProceduralUnitActor;
   configSignature: string;
   hitTarget: Mesh;
+  unsubscribeActionEvents: () => void;
 }
 
 interface DefeatedProceduralArmyActor {
@@ -62,6 +69,8 @@ const DEFEAT_LIFETIME_SECONDS = 2.6;
 export class ProceduralArmyCharacterLayer {
   private readonly actors = new Map<number, ProceduralArmyActorRecord>();
   private readonly defeatedActors: DefeatedProceduralArmyActor[] = [];
+  private readonly meleeContactListeners = new Set<(entityId: number, event: ProceduralMeleeContactEvent) => void>();
+  private readonly rangedReleaseListeners = new Set<(entityId: number, event: ProceduralRangedReleaseEvent) => void>();
   private readonly desiredEntityIds = new Set<number>();
   private readonly hitTargetGeometry = new BoxGeometry(1, 1, 1);
   private readonly hitTargetMaterial = new MeshBasicMaterial({ colorWrite: false, depthWrite: false });
@@ -106,9 +115,18 @@ export class ProceduralArmyCharacterLayer {
     await actor?.applyImpulse();
   }
 
-  public async playAttack(entityId: number, targetWorld: Readonly<Vector3>): Promise<boolean> {
-    const actor = await this.requireActor(entityId);
-    return actor?.attack(targetWorld) ?? false;
+  public playAttack(entityId: number, targetWorld: Readonly<Vector3>): boolean {
+    return this.actors.get(entityId)?.actor.attack(targetWorld) ?? false;
+  }
+
+  public onMeleeContact(listener: (entityId: number, event: ProceduralMeleeContactEvent) => void): () => void {
+    this.meleeContactListeners.add(listener);
+    return () => this.meleeContactListeners.delete(listener);
+  }
+
+  public onRangedRelease(listener: (entityId: number, event: ProceduralRangedReleaseEvent) => void): () => void {
+    this.rangedReleaseListeners.add(listener);
+    return () => this.rangedReleaseListeners.delete(listener);
   }
 
   /** Detach a defeated actor from live army state and let Jolt own its final pose briefly. */
@@ -117,6 +135,7 @@ export class ProceduralArmyCharacterLayer {
     if (!record) return false;
 
     this.actors.delete(entityId);
+    record.unsubscribeActionEvents();
     record.hitTarget.removeFromParent();
     this.makeRoomForDefeatedActor();
     this.defeatedActors.push({ actor: record.actor, remainingSeconds: DEFEAT_LIFETIME_SECONDS });
@@ -174,6 +193,8 @@ export class ProceduralArmyCharacterLayer {
     this.latestPresentations = [];
     this.clearActors();
     this.clearDefeatedActors();
+    this.meleeContactListeners.clear();
+    this.rangedReleaseListeners.clear();
     this.runtime?.dispose();
     this.runtime = undefined;
     this.characterModule = undefined;
@@ -212,7 +233,7 @@ export class ProceduralArmyCharacterLayer {
     presentations.forEach(({ entityId }) => this.desiredEntityIds.add(entityId));
     this.actors.forEach((record, entityId) => {
       if (this.desiredEntityIds.has(entityId)) return;
-      record.actor.dispose();
+      this.disposeActorRecord(record);
       this.actors.delete(entityId);
     });
     let remainingCreations = MAX_ACTOR_CREATIONS_PER_SYNC;
@@ -220,7 +241,7 @@ export class ProceduralArmyCharacterLayer {
       const desiredKind = resolveUnitKind(presentation.category, presentation.tier);
       const record = this.actors.get(presentation.entityId);
       if (record && requiresActorRecreation(record.actor.kind, desiredKind)) {
-        record.actor.dispose();
+        this.disposeActorRecord(record);
         this.actors.delete(presentation.entityId);
       }
       if (!this.actors.has(presentation.entityId)) {
@@ -255,9 +276,23 @@ export class ProceduralArmyCharacterLayer {
       actor.object.name = `procedural-army-character:${presentation.entityId}`;
       const hitTarget = this.createHitTarget(presentation);
       actor.object.add(hitTarget);
+      const unsubscribeRanged = actor.onRangedRelease((event) => {
+        this.rangedReleaseListeners.forEach((listener) => listener(presentation.entityId, event));
+      });
+      const unsubscribeMelee = actor.onMeleeContact((event) => {
+        this.meleeContactListeners.forEach((listener) => listener(presentation.entityId, event));
+      });
       this.applyActorShadowState(actor);
       this.scene.add(actor.object);
-      record = { actor, configSignature, hitTarget };
+      record = {
+        actor,
+        configSignature,
+        hitTarget,
+        unsubscribeActionEvents: () => {
+          unsubscribeRanged();
+          unsubscribeMelee();
+        },
+      };
       this.actors.set(presentation.entityId, record);
     } else if (record.configSignature !== configSignature) {
       runtime.updateActorConfig(record.actor, resolveUnitConfig(characterModule, presentation));
@@ -282,8 +317,13 @@ export class ProceduralArmyCharacterLayer {
   }
 
   private clearActors(): void {
-    this.actors.forEach(({ actor }) => actor.dispose());
+    this.actors.forEach((record) => this.disposeActorRecord(record));
     this.actors.clear();
+  }
+
+  private disposeActorRecord(record: ProceduralArmyActorRecord): void {
+    record.unsubscribeActionEvents();
+    record.actor.dispose();
   }
 
   private clearDefeatedActors(): void {

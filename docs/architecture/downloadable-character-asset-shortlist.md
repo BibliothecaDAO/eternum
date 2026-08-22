@@ -1,6 +1,7 @@
 # Downloadable character asset shortlist
 
-**Research date:** 2026-08-21  
+**Research date:** 2026-08-21
+
 **Decision:** use the **Quaternius Universal Base Characters and Modular Fantasy Outfits** as the first real skinned
 characters in the procedural character gym. They are the closest match to Eternum's needs: a shared humanoid rig,
 editable fantasy equipment, direct glTF/FBX delivery, and an unambiguous CC0 license. The animation library is optional

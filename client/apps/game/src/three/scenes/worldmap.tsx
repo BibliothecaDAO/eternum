@@ -20,6 +20,7 @@ import {
   submitActiveWorldBlitzHyperstructureCreation,
 } from "@/services/blitz/blitz-hyperstructure-creation";
 import { getBiomeVariant, HEX_SIZE, WORLD_CHUNK_CONFIG } from "@/three/constants";
+import type { ProceduralMeleeContactEvent, ProceduralRangedReleaseEvent } from "@/three/characters";
 import { ArmyManager } from "@/three/managers/army-manager";
 import { CombatPresentationCoordinator } from "@/three/combat/combat-presentation-coordinator";
 import { BattleDirectionManager } from "@/three/managers/battle-direction-manager";
@@ -954,6 +955,8 @@ export default class WorldmapScene extends WarpTravel {
   private arrivalGhostManager!: ArrivalGhostManager;
   private resourceFXManager!: ResourceFXManager;
   private combatPresentation?: CombatPresentationCoordinator;
+  private unsubscribeProceduralMeleeContact?: () => void;
+  private unsubscribeProceduralRangedRelease?: () => void;
   private armyIndex: number = 0;
   private selectableArmies: SelectableArmy[] = [];
   private structureIndex: number = 0;
@@ -1111,6 +1114,7 @@ export default class WorldmapScene extends WarpTravel {
       this.chunkWorkQueue,
     );
     this.combatPresentation = new CombatPresentationCoordinator(this.scene);
+    this.bindProceduralCombatPresentation();
     this.arrivalGhostManager = new ArrivalGhostManager(this.scene, {
       chunkStride: this.chunkSize,
       renderChunkSize: this.renderChunkSize,
@@ -3139,7 +3143,8 @@ export default class WorldmapScene extends WarpTravel {
     }
     const origin = getWorldPositionForHex({ col: attackerHex.x, row: attackerHex.y });
     const target = getWorldPositionForHex({ col: targetHex.x, row: targetHex.y });
-    const started = this.combatPresentation?.startProvisional(
+    const proceduralAttackStarted = this.armyManager.playProceduralAttack(spec.attackerId, target);
+    this.combatPresentation?.startProvisional(
       {
         attackerId: spec.attackerId,
         defenderId: spec.targetId,
@@ -3149,8 +3154,8 @@ export default class WorldmapScene extends WarpTravel {
         troopType: spec.troopType,
       },
       intent,
+      { deferEffects: proceduralAttackStarted },
     );
-    if (started) void this.armyManager.playProceduralAttack(spec.attackerId, target);
   }
 
   private replayIndexedCombat(update: BattleEventSystemUpdate): void {
@@ -3162,15 +3167,49 @@ export default class WorldmapScene extends WarpTravel {
     if (!attackerHex || !defenderHex) return;
     const origin = getWorldPositionForHex(attackerHex);
     const target = getWorldPositionForHex(defenderHex);
-    const replayed = this.combatPresentation?.replayIndexed({
+    const presentation = {
       attackerId,
       defenderId,
       origin,
       target,
       tier: attacker.tier,
       troopType: attacker.category,
+    };
+    const replayed = this.combatPresentation?.replayIndexed(presentation, { deferEffects: true });
+    if (!replayed) return;
+    if (!this.armyManager.playProceduralAttack(attackerId, target)) {
+      this.combatPresentation?.presentImmediate(presentation);
+    }
+  }
+
+  private bindProceduralCombatPresentation(): void {
+    this.unsubscribeProceduralRangedRelease = this.armyManager.onProceduralRangedRelease((entityId, event) => {
+      this.presentProceduralRangedRelease(entityId, event);
     });
-    if (replayed) void this.armyManager.playProceduralAttack(attackerId, target);
+    this.unsubscribeProceduralMeleeContact = this.armyManager.onProceduralMeleeContact((entityId, event) => {
+      this.presentProceduralMeleeContact(entityId, event);
+    });
+  }
+
+  private presentProceduralRangedRelease(entityId: number, event: ProceduralRangedReleaseEvent): void {
+    const army = this.armyManager.getArmy(entityId);
+    if (!army) return;
+    this.combatPresentation?.presentRangedRelease({
+      origin: event.origin,
+      seed: event.seed,
+      target: event.target,
+      tier: army.tier,
+    });
+  }
+
+  private presentProceduralMeleeContact(entityId: number, event: ProceduralMeleeContactEvent): void {
+    const army = this.armyManager.getArmy(entityId);
+    if (!army) return;
+    this.combatPresentation?.presentMeleeContact({
+      direction: event.direction,
+      target: event.target,
+      tier: army.tier,
+    });
   }
 
   private startWorldmapProvisionalFx(spec: WorldmapProvisionalFxSpec, intent: ProvisionalIntent): void {
@@ -9085,6 +9124,10 @@ export default class WorldmapScene extends WarpTravel {
     this.onSwitchOff();
     this.unregisterWorldmapProvisionalFxRenderer?.();
     this.unregisterWorldmapProvisionalFxRenderer = null;
+    this.unsubscribeProceduralMeleeContact?.();
+    this.unsubscribeProceduralMeleeContact = undefined;
+    this.unsubscribeProceduralRangedRelease?.();
+    this.unsubscribeProceduralRangedRelease = undefined;
     this.combatPresentation?.dispose();
     this.combatPresentation = undefined;
     this.syncUrlChangedListenerLifecycle("destroy");

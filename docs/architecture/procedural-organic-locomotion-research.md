@@ -1,7 +1,9 @@
 # Organic procedural locomotion for humanoids, horses, and mounted units
 
-**Research date:** 2026-08-22  
-**Runtime scope:** `client/apps/game/src/three/characters`  
+**Research date:** 2026-08-22
+
+**Runtime scope:** `client/apps/game/src/three/characters`
+
 **Evidence policy:** biomechanical claims below come from peer-reviewed experimental or modelling papers; animation
 claims come from peer-reviewed graphics papers or official conference material; engine claims come from official
 Three.js and Jolt documentation. Proposed tuning values are labelled as implementation starting points rather than

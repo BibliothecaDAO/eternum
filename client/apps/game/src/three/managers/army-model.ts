@@ -912,30 +912,39 @@ export class ArmyModel {
     if (activeBaseModel) {
       const modelData = this.models.get(activeBaseModel);
       if (modelData) {
-        // Add to model's active instances
-        modelData.activeInstances.add(index);
-        const targetScale = this.hiddenEntityRepresentations.has(entityId)
-          ? this.zeroScale
-          : this.getScaleForModelType(activeBaseModel);
-        this.updateInstanceTransform(state.position, targetScale, state.rotation);
-        this.updateInstanceMeshes(modelData, index, entityId, state.position, state.color);
-        // Bump count so the just-added slot draws now, not only after the next
-        // setVisibleSlots (see extendModelDrawCount).
-        this.extendModelDrawCount(modelData, index);
+        this.syncRenderableInstance(modelData, state, index, entityId, this.getScaleForModelType(activeBaseModel));
       }
     }
 
     if (activeCosmetic) {
       const cosmeticData = this.cosmeticModels.get(activeCosmetic);
       if (cosmeticData) {
-        // Add to cosmetic's active instances
-        cosmeticData.activeInstances.add(index);
-        const targetScale = this.hiddenEntityRepresentations.has(entityId) ? this.zeroScale : this.normalScale;
-        this.updateInstanceTransform(state.position, targetScale, state.rotation);
-        this.updateInstanceMeshes(cosmeticData, index, entityId, state.position, state.color);
-        this.extendModelDrawCount(cosmeticData, index);
+        this.syncRenderableInstance(cosmeticData, state, index, entityId, this.normalScale);
       }
     }
+  }
+
+  private syncRenderableInstance(
+    modelData: ModelData,
+    state: ArmyInstanceData,
+    index: number,
+    entityId: number,
+    visibleScale: Vector3,
+  ): void {
+    if (this.hiddenEntityRepresentations.has(entityId)) {
+      if (modelData.activeInstances.delete(index)) {
+        this.clearModelSlot(modelData, index);
+        this.syncModelDrawCount(modelData);
+      }
+      return;
+    }
+
+    modelData.activeInstances.add(index);
+    this.updateInstanceTransform(state.position, visibleScale, state.rotation);
+    this.updateInstanceMeshes(modelData, index, entityId, state.position, state.color);
+    // Bump count so the just-added slot draws now, not only after the next
+    // setVisibleSlots (see extendModelDrawCount).
+    this.extendModelDrawCount(modelData, index);
   }
 
   private clearInactiveRenderableSlotMemberships(

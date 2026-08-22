@@ -19,6 +19,23 @@ export interface CombatPresentationStats {
   melee: ReturnType<MeleeImpactSystem["getStats"]>;
 }
 
+interface CombatPresentationOptions {
+  deferEffects?: boolean;
+}
+
+export interface ProceduralRangedPresentation {
+  origin: Readonly<Vector3>;
+  seed: number;
+  target: Readonly<Vector3>;
+  tier: TroopTier;
+}
+
+export interface ProceduralMeleePresentation {
+  direction: Readonly<Vector3>;
+  target: Readonly<Vector3>;
+  tier: TroopTier;
+}
+
 interface RecentProvisionalPresentation {
   createdAtSeconds: number;
   unsubscribe: () => void;
@@ -42,7 +59,7 @@ export class CombatPresentationCoordinator {
     visualScale: 0.55,
   });
   private readonly meleeImpacts = new MeleeImpactSystem();
-  private readonly recentProvisional = new Map<string, RecentProvisionalPresentation>();
+  private readonly recentProvisional = new Map<string, RecentProvisionalPresentation[]>();
   private elapsedSeconds = 0;
   private presentationSequence = 0;
   private disposed = false;
@@ -51,32 +68,67 @@ export class CombatPresentationCoordinator {
     scene.add(this.projectiles.group, this.meleeImpacts.group);
   }
 
-  public startProvisional(presentation: CombatPresentation, intent: ProvisionalIntent): boolean {
+  public startProvisional(
+    presentation: CombatPresentation,
+    intent: ProvisionalIntent,
+    options: CombatPresentationOptions = {},
+  ): boolean {
     if (this.disposed || !supportsPresentation(presentation.troopType)) return false;
-    this.spawnPresentation(presentation, `local:${++this.presentationSequence}`);
+    const presentationId = `local:${++this.presentationSequence}`;
+    if (!options.deferEffects) this.spawnPresentation(presentation, presentationId);
     const key = resolveCombatKey(presentation.attackerId, presentation.defenderId);
-    this.recentProvisional.get(key)?.unsubscribe();
-    let unsubscribe: () => void = () => undefined;
-    unsubscribe = intent.subscribe((outcome) => {
+    const entry: RecentProvisionalPresentation = {
+      createdAtSeconds: this.elapsedSeconds,
+      unsubscribe: () => undefined,
+    };
+    const queue = this.recentProvisional.get(key) ?? [];
+    queue.push(entry);
+    this.recentProvisional.set(key, queue);
+    entry.unsubscribe = intent.subscribe((outcome) => {
       if (outcome !== "failed") return;
-      unsubscribe();
-      this.recentProvisional.delete(key);
+      entry.unsubscribe();
+      this.removeRecentProvisional(key, entry);
     });
-    this.recentProvisional.set(key, { createdAtSeconds: this.elapsedSeconds, unsubscribe });
     return true;
   }
 
-  public replayIndexed(presentation: CombatPresentation): boolean {
+  public replayIndexed(presentation: CombatPresentation, options: CombatPresentationOptions = {}): boolean {
     if (this.disposed || !supportsPresentation(presentation.troopType)) return false;
     const key = resolveCombatKey(presentation.attackerId, presentation.defenderId);
-    const provisional = this.recentProvisional.get(key);
+    const queue = this.recentProvisional.get(key);
+    const provisional = queue?.shift();
     if (provisional) {
       provisional.unsubscribe();
-      this.recentProvisional.delete(key);
+      if (queue?.length === 0) this.recentProvisional.delete(key);
       return false;
     }
-    this.spawnPresentation(presentation, `indexed:${++this.presentationSequence}`);
+    const presentationId = `indexed:${++this.presentationSequence}`;
+    if (!options.deferEffects) this.spawnPresentation(presentation, presentationId);
     return true;
+  }
+
+  public presentImmediate(presentation: CombatPresentation): void {
+    if (this.disposed || !supportsPresentation(presentation.troopType)) return;
+    this.spawnPresentation(presentation, `fallback:${++this.presentationSequence}`);
+  }
+
+  public presentRangedRelease(presentation: ProceduralRangedPresentation): void {
+    if (this.disposed) return;
+    this.projectiles.spawnVolley({
+      color: resolveTierColor(presentation.tier),
+      count: resolveTierVolleyCount(presentation.tier),
+      flightSeconds: 0.56 + presentation.origin.distanceTo(presentation.target) * 0.035,
+      origin: presentation.origin,
+      seed: presentation.seed,
+      spreadDegrees: presentation.tier === TroopTier.T3 ? 1.2 : 0.8,
+      target: presentation.target,
+      targetRadius: 0.48,
+    });
+  }
+
+  public presentMeleeContact(presentation: ProceduralMeleePresentation): void {
+    if (this.disposed) return;
+    this.meleeImpacts.spawn(presentation);
   }
 
   public update(deltaSeconds: number): void {
@@ -95,7 +147,7 @@ export class CombatPresentationCoordinator {
   public dispose(): void {
     if (this.disposed) return;
     this.disposed = true;
-    this.recentProvisional.forEach(({ unsubscribe }) => unsubscribe());
+    this.recentProvisional.forEach((entries) => entries.forEach(({ unsubscribe }) => unsubscribe()));
     this.recentProvisional.clear();
     this.projectiles.dispose();
     this.meleeImpacts.dispose();
@@ -128,11 +180,23 @@ export class CombatPresentationCoordinator {
   }
 
   private pruneRecentProvisional(): void {
-    this.recentProvisional.forEach((entry, key) => {
-      if (this.elapsedSeconds - entry.createdAtSeconds <= RECENT_PROVISIONAL_SECONDS) return;
-      entry.unsubscribe();
-      this.recentProvisional.delete(key);
+    this.recentProvisional.forEach((entries, key) => {
+      const retained = entries.filter((entry) => {
+        if (this.elapsedSeconds - entry.createdAtSeconds <= RECENT_PROVISIONAL_SECONDS) return true;
+        entry.unsubscribe();
+        return false;
+      });
+      if (retained.length === 0) this.recentProvisional.delete(key);
+      else if (retained.length !== entries.length) this.recentProvisional.set(key, retained);
     });
+  }
+
+  private removeRecentProvisional(key: string, target: RecentProvisionalPresentation): void {
+    const entries = this.recentProvisional.get(key);
+    if (!entries) return;
+    const index = entries.indexOf(target);
+    if (index !== -1) entries.splice(index, 1);
+    if (entries.length === 0) this.recentProvisional.delete(key);
   }
 }
 

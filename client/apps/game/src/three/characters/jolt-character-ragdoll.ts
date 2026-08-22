@@ -6,6 +6,7 @@ import {
   JoltRagdollInstance,
   JoltRagdollWorld,
   preloadJoltCharacterPhysics,
+  resolveJoltColliderScale,
   type JoltRagdollBodyConfig,
   type JoltRagdollDefinition,
   type JoltRagdollPartDefinition,
@@ -87,23 +88,24 @@ export class JoltCharacterRagdoll {
   }
 }
 
-function createCharacterRagdollDefinition(
+export function createCharacterRagdollDefinition(
   rig: ResolvedCharacterRig,
   pose: ProceduralCharacterPose,
   config: ProceduralCharacterConfig,
   coordinateSpace?: Object3D,
 ): JoltRagdollDefinition<CharacterPartId> {
+  const colliderScale = resolveJoltColliderScale(coordinateSpace);
   const parts = Object.fromEntries(
     CHARACTER_PART_IDS.map((partId) => {
       const source = rig.parts[partId];
       const definition: JoltRagdollPartDefinition<CharacterPartId> = {
-        halfExtents: source.halfExtents,
+        halfExtents: source.halfExtents && scaleVectorTuple(source.halfExtents, colliderScale),
         id: source.id,
         joint: resolveJoint(partId, source.jointKind, config),
-        length: source.length,
+        length: source.length === undefined ? undefined : source.length * colliderScale,
         mass: source.mass,
         parentId: source.parentId,
-        radius: source.radius,
+        radius: source.radius === undefined ? undefined : source.radius * colliderScale,
         shape: source.shape,
       };
       return [partId, definition];
@@ -113,6 +115,10 @@ function createCharacterRagdollDefinition(
     CHARACTER_PART_IDS.map((partId) => [partId, transformPoseToWorld(pose.parts[partId], coordinateSpace)]),
   ) as Record<CharacterPartId, ProceduralCharacterPose["parts"][CharacterPartId]>;
   return { partIds: CHARACTER_PART_IDS, parts, pose: worldPose };
+}
+
+function scaleVectorTuple(value: readonly [number, number, number], scale: number): readonly [number, number, number] {
+  return [value[0] * scale, value[1] * scale, value[2] * scale];
 }
 
 export function resolveJoltWorldConfig(config: ProceduralCharacterConfig) {

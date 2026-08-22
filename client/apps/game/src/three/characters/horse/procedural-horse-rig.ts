@@ -35,6 +35,7 @@ export interface ResolvedHorseLegRig {
 
 export interface ResolvedHorseRig {
   bodyCenter: HorseVector3Tuple;
+  chestPosition: HorseVector3Tuple;
   groundY: number;
   headPosition: HorseVector3Tuple;
   legs: Readonly<Record<HorseHoofId, ResolvedHorseLegRig>>;
@@ -111,6 +112,7 @@ export function resolveQuaterniusHorseRig(coordinateSpace: Group, scene: Group):
 
   return {
     bodyCenter: toTuple(bodyCenter),
+    chestPosition: toTuple(chest),
     groundY,
     headPosition: toTuple(readBonePosition(coordinateSpace, scene, QUATERNIUS_HORSE_BONES.head)),
     legs,

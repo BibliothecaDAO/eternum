@@ -9,6 +9,7 @@ import {
   type JoltRagdollPartPose,
   type JoltRagdollStats,
   JoltRagdollWorld,
+  resolveJoltColliderScale,
 } from "../jolt-ragdoll-world";
 import type { ProceduralHorsePose } from "./procedural-horse-pose";
 import { HORSE_LEG_SEGMENT_IDS, type HorseLegSegmentId, type ResolvedHorseRig } from "./procedural-horse-rig";
@@ -91,14 +92,12 @@ export function createHorseRagdollProfile(
   coordinateSpace: Object3D,
 ): ResolvedHorseRagdollProfile {
   coordinateSpace.updateWorldMatrix(true, false);
+  const colliderScale = resolveJoltColliderScale(coordinateSpace);
   const bodyQuaternion = new Quaternion(...pose.bodyRotation);
   const bodyPosition = new Vector3(...rig.bodyCenter).add(new Vector3(...pose.rootOffset));
   const saddle = new Vector3(...pose.saddlePosition);
   const head = new Vector3(...pose.headPosition);
-  const chestPosition = saddle
-    .clone()
-    .lerp(head, 0.22)
-    .add(new Vector3(0, -0.34, 0.05));
+  const chestPosition = new Vector3(...rig.chestPosition);
   const bodyPose = createWorldPose(bodyPosition, bodyQuaternion, bodyPosition, coordinateSpace);
   const chestPose = createWorldPose(
     chestPosition,
@@ -113,11 +112,19 @@ export function createHorseRagdollProfile(
     ["horseHead", headPose],
   ];
   const definitionEntries: Array<[HorseRagdollPartId, JoltRagdollPartDefinition<HorseRagdollPartId>]> = [
-    ["horseBody", { halfExtents: [0.42, 0.38, 0.72], id: "horseBody", mass: 9.5, shape: "box" }],
+    [
+      "horseBody",
+      {
+        halfExtents: scaleVectorTuple([0.42, 0.38, 0.72], colliderScale),
+        id: "horseBody",
+        mass: 9.5,
+        shape: "box",
+      },
+    ],
     [
       "horseChest",
       {
-        halfExtents: [0.44, 0.4, 0.68],
+        halfExtents: scaleVectorTuple([0.44, 0.4, 0.68], colliderScale),
         id: "horseChest",
         joint: { kind: "swing-twist", swing: degreesToRadians(28), twist: degreesToRadians(18) },
         mass: 8,
@@ -132,7 +139,7 @@ export function createHorseRagdollProfile(
         joint: { kind: "swing-twist", swing: degreesToRadians(58), twist: degreesToRadians(35) },
         mass: 2.4,
         parentId: "horseChest",
-        radius: 0.29,
+        radius: 0.29 * colliderScale,
         shape: "sphere",
       },
     ],
@@ -155,10 +162,10 @@ export function createHorseRagdollProfile(
             index === 0
               ? { kind: "swing-twist", swing: degreesToRadians(55), twist: degreesToRadians(24) }
               : { kind: "hinge", maximum: degreesToRadians(150), minimum: degreesToRadians(-150) },
-          length,
+          length: length * colliderScale,
           mass: Math.max(0.8, length * (segmentId.startsWith("hind") ? 2.1 : 1.65)),
           parentId,
-          radius,
+          radius: radius * colliderScale,
           shape: "capsule",
         },
       ]);
@@ -181,6 +188,10 @@ export function createHorseRagdollProfile(
     },
     segmentLengths,
   };
+}
+
+function scaleVectorTuple(value: readonly [number, number, number], scale: number): readonly [number, number, number] {
+  return [value[0] * scale, value[1] * scale, value[2] * scale];
 }
 
 function resolveLegRootParent(segmentId: HorseLegSegmentId): "horseBody" | "horseChest" {

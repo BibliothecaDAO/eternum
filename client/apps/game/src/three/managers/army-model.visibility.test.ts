@@ -195,12 +195,16 @@ describe("ArmyModel visibility after async model load", () => {
     subject.updateInstance(entityId, slot, new Vector3(4, 0, 5), new Vector3(1, 1, 1));
 
     expect(readInstanceScale(mesh, slot).toArray()).toEqual([0, 0, 0]);
+    expect(modelData.activeInstances.has(slot)).toBe(false);
+    expect(mesh.count).toBe(0);
     expect(subject.getEntityWorldPosition(entityId)?.toArray()).toEqual([4, 0, 5]);
     expect(subject.getEntitySlot(entityId)).toBe(slot);
 
     subject.setEntityRepresentationVisible(entityId, true);
 
     expect(readInstanceScale(mesh, slot).toArray()).toEqual([1, 1, 1]);
+    expect(modelData.activeInstances.has(slot)).toBe(true);
+    expect(mesh.count).toBe(1);
     expect(subject.getEntityWorldPosition(entityId)?.toArray()).toEqual([4, 0, 5]);
   });
 });

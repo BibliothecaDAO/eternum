@@ -27,6 +27,40 @@ describe("combat presentation coordinator", () => {
     expect(coordinator.replayIndexed(presentation)).toBe(false);
     coordinator.dispose();
   });
+
+  it("deduplicates rapid same-pair attacks in FIFO order", () => {
+    const coordinator = new CombatPresentationCoordinator(new Scene());
+    const presentation = createPresentation(TroopType.Crossbowman, TroopTier.T1);
+
+    expect(coordinator.startProvisional(presentation, createIntent())).toBe(true);
+    expect(coordinator.startProvisional(presentation, createIntent())).toBe(true);
+    expect(coordinator.getStats().arrows.spawnedCount).toBe(6);
+
+    expect(coordinator.replayIndexed(presentation)).toBe(false);
+    expect(coordinator.replayIndexed(presentation)).toBe(false);
+    expect(coordinator.getStats().arrows.spawnedCount).toBe(6);
+
+    expect(coordinator.replayIndexed(presentation)).toBe(true);
+    expect(coordinator.getStats().arrows.spawnedCount).toBe(9);
+    coordinator.dispose();
+  });
+
+  it("defers a predicted volley until the procedural release marker", () => {
+    const coordinator = new CombatPresentationCoordinator(new Scene());
+    const presentation = createPresentation(TroopType.Crossbowman, TroopTier.T2);
+
+    expect(coordinator.startProvisional(presentation, createIntent(), { deferEffects: true })).toBe(true);
+    expect(coordinator.getStats().arrows.spawnedCount).toBe(0);
+
+    coordinator.presentRangedRelease({
+      origin: new Vector3(0, 1, 0),
+      seed: 77,
+      target: new Vector3(0, 1, 4),
+      tier: TroopTier.T2,
+    });
+    expect(coordinator.getStats().arrows.spawnedCount).toBe(5);
+    coordinator.dispose();
+  });
 });
 
 function createPresentation(troopType: TroopType, tier: TroopTier) {

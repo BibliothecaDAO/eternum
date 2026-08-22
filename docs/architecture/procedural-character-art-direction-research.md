@@ -1,9 +1,12 @@
 # Procedural character art direction: from physics proxy to high-fidelity fantasy miniatures
 
-**Research date:** 2026-08-21  
-**Repository baseline:** Three.js `0.185.1`, `WebGPURenderer` with native WebGPU and forced WebGL2 backends  
+**Research date:** 2026-08-21
+
+**Repository baseline:** Three.js `0.185.1`, `WebGPURenderer` with native WebGPU and forced WebGL2 backends
+
 **Related implementation:** `/debug/procedural-characters` and
-[`procedural-character-animation-research.md`](./procedural-character-animation-research.md)  
+[`procedural-character-animation-research.md`](./procedural-character-animation-research.md)
+
 **Evidence policy:** technical claims use official documentation, project source, first-party developer material, or
 original talks. Recommendations and proposed budgets are explicitly identified as Eternum decisions rather than facts
 from those sources.
