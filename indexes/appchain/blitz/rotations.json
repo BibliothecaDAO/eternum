@@ -2,7 +2,7 @@
   "version": 1,
   "environment": "appchain.blitz",
   "kind": "rotation",
-  "updatedAt": "2026-08-22T23:45:08.520Z",
+  "updatedAt": "2026-08-22T23:45:07.146Z",
   "entries": {
     "blitz-herald": {
       "kind": "rotation",
@@ -65,9 +65,9 @@
       "environment": "appchain.blitz",
       "rotationName": "blitz-nightwatch",
       "path": "runs/appchain/blitz/rotations/blitz-nightwatch.json",
-      "inputPath": "inputs/appchain/blitz/rotations/blitz-nightwatch/32604752985-1.json",
+      "inputPath": "inputs/appchain/blitz/rotations/blitz-nightwatch/32606011078-1.json",
       "status": "running",
-      "updatedAt": "2026-08-22T23:18:03.172Z",
+      "updatedAt": "2026-08-22T23:45:07.146Z",
       "workflowRef": "next",
       "currentStepId": null,
       "hasRunningStep": false,
@@ -79,8 +79,8 @@
       },
       "evaluation": {
         "intervalMinutes": 30,
-        "nextEvaluationAt": "2026-08-22T23:48:03.172Z",
-        "lastEvaluatedAt": "2026-08-22T23:18:03.172Z"
+        "nextEvaluationAt": "2026-08-23T00:15:07.146Z",
+        "lastEvaluatedAt": "2026-08-22T23:45:07.146Z"
       },
       "games": [
         {
