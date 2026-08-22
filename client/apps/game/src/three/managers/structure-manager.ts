@@ -142,6 +142,13 @@ interface StructureInstanceBinding {
   model: InstancedModel;
 }
 
+interface VisibleStructureRefreshOptions {
+  refreshEntityIds?: Iterable<ID>;
+  refreshExisting?: boolean;
+  transitionToken?: number;
+  workLane?: FrameBudgetWorkLane;
+}
+
 export class StructureManager {
   private scene: Scene;
   private structureModels: Map<StructureType, InstancedModel[]> = new Map();
@@ -157,6 +164,7 @@ export class StructureManager {
   private cosmeticEntityIdMaps: Map<string, Map<number, ID>> = new Map();
   private structureInstanceBindings: Map<ID, StructureInstanceBinding[]> = new Map();
   private structureInstanceSlots: Map<InstancedModel, Array<ID | undefined>> = new Map();
+  private structureInstanceFreeSlots: Map<InstancedModel, number> = new Map();
   private structureModelDrawCounts: Map<InstancedModel, number> = new Map();
   private wonderEntityIdMaps: Map<number, ID> = new Map();
   private entityIdLabels: Map<ID, CSS2DObject> = new Map();
@@ -224,6 +232,7 @@ export class StructureManager {
   private readonly visibleStructurePassFence = createAsyncPassFence();
   private pendingVisibleStructureWorkLane: FrameBudgetWorkLane = "visible";
   private shouldRefreshExistingStructures = false;
+  private pendingVisibleStructureRefreshIds = new Set<ID>();
   private pendingVisibleStructureTransitionToken?: number;
   private previousVisibleIds: Set<ID> = new Set(); // Committed visible ownership; also drives point cleanup.
   private isDestroyed = false;
@@ -245,20 +254,9 @@ export class StructureManager {
   ) {
     this.scene = scene;
     this.worldSpatialProjection = worldSpatialProjection;
-    this.runVisibleStructuresUpdate = createCoalescedAsyncUpdateRunner(async () => {
-      this.isUpdatingVisibleStructures = true;
-      const workLane = this.pendingVisibleStructureWorkLane;
-      const refreshExisting = this.shouldRefreshExistingStructures;
-      const transitionToken = this.pendingVisibleStructureTransitionToken;
-      this.pendingVisibleStructureWorkLane = "visible";
-      this.shouldRefreshExistingStructures = false;
-      this.pendingVisibleStructureTransitionToken = undefined;
-      try {
-        await this.performVisibleStructuresUpdate(workLane, refreshExisting, transitionToken);
-      } finally {
-        this.isUpdatingVisibleStructures = false;
-      }
-    });
+    this.runVisibleStructuresUpdate = createCoalescedAsyncUpdateRunner(() =>
+      this.flushPendingVisibleStructureRefresh(),
+    );
     this.renderChunkSize = renderChunkSize;
     this.labelsGroup = labelsGroup || new Group();
     this.hexagonScene = hexagonScene;
@@ -295,7 +293,7 @@ export class StructureManager {
     }
 
     this.unsubscribeAccountStore = useAccountStore.subscribe(() => {
-      this.requestVisibleStructuresRefresh();
+      this.requestVisibleStructuresRefresh({ refreshExisting: true });
     });
 
     // Initialize points-based icon renderers
@@ -320,12 +318,21 @@ export class StructureManager {
   }
 
   private handleStructureProjectionChanges(changes: readonly StructureSpatialProjectionChange[]): void {
+    const refreshEntityIds = new Set<ID>();
     changes.forEach(({ previous, current }) => {
+      const previousEntityId = normalizeEntityId(previous?.entityId);
+      const currentEntityId = normalizeEntityId(current?.entityId);
+      if (previousEntityId !== undefined) {
+        refreshEntityIds.add(previousEntityId);
+      }
+      if (currentEntityId !== undefined) {
+        refreshEntityIds.add(currentEntityId);
+      }
       if (previous && !previous.reserved && !current) {
         this.removeStructurePresentation(previous.entityId);
       }
     });
-    void this.requestVisibleStructuresRefresh();
+    void this.requestVisibleStructuresRefresh({ refreshEntityIds });
   }
 
   private subscribeToStructurePresentationComponents(): void {
@@ -358,8 +365,9 @@ export class StructureManager {
     if (hyperstructureSubscription) this.recsUnsubscribes.push(() => hyperstructureSubscription.unsubscribe());
 
     const addressNameSubscription = this.components?.AddressName?.update$.subscribe(() => {
-      void this.requestVisibleStructuresRefresh();
-      this.entityIdLabels.forEach((_label, entityId) => this.refreshStructurePresentation(entityId));
+      this.entityIdLabels.forEach((_label, entityId) => {
+        this.refreshTrackedStructureLabelOrPrune(entityId);
+      });
     });
     if (addressNameSubscription) this.recsUnsubscribes.push(() => addressNameSubscription.unsubscribe());
   }
@@ -368,12 +376,12 @@ export class StructureManager {
     const structure = this.resolveStructureInfoByEntityId(entityId);
     if (!structure) {
       this.removeStructurePresentation(entityId);
-      void this.requestVisibleStructuresRefresh();
+      void this.requestVisibleStructuresRefresh({ refreshEntityIds: [entityId] });
       return;
     }
 
     this.refreshTrackedStructureLabelState(entityId, structure);
-    void this.requestVisibleStructuresRefresh();
+    void this.requestVisibleStructuresRefresh({ refreshEntityIds: [entityId] });
   }
 
   private resolveStructureInfoByEntityId(entityId: ID): StructureInfo | undefined {
@@ -616,7 +624,7 @@ export class StructureManager {
             };
 
             if (isCommittedManagerChunk(this.currentChunk)) {
-              this.requestVisibleStructuresRefresh();
+              this.requestVisibleStructuresRefresh({ refreshExisting: true });
             }
           }
         },
@@ -746,7 +754,9 @@ export class StructureManager {
     this.wonderEntityIdMaps.clear();
     this.structureInstanceBindings.clear();
     this.structureInstanceSlots.clear();
+    this.structureInstanceFreeSlots.clear();
     this.structureModelDrawCounts.clear();
+    this.pendingVisibleStructureRefreshIds.clear();
     this.incomingTroopArrivalsByStructure.clear();
     this.battleDirectionsByStructure.clear();
     this.structuresWithActiveTimedLabels.clear();
@@ -980,6 +990,16 @@ export class StructureManager {
     }
   }
 
+  private refreshTrackedStructureLabelOrPrune(entityId: ID): void {
+    const structure = this.resolveStructureInfoByEntityId(entityId);
+    if (!structure) {
+      this.removeStructurePresentation(entityId);
+      return;
+    }
+
+    this.refreshTrackedStructureLabelState(entityId, structure);
+  }
+
   private getStructurePresentationBounds(startRow: number, startCol: number) {
     const renderBounds = getRenderBounds(startRow, startCol, this.renderChunkSize, this.chunkStride);
     return expandBoundsForStructurePresentation(renderBounds, this.chunkStride);
@@ -1003,11 +1023,11 @@ export class StructureManager {
           return false;
         }
 
-        await this.requestVisibleStructuresRefresh(
-          "critical",
-          nextOptions?.refreshExisting ?? false,
-          nextOptions?.transitionToken,
-        );
+        await this.requestVisibleStructuresRefresh({
+          refreshExisting: nextOptions?.refreshExisting ?? false,
+          transitionToken: nextOptions?.transitionToken,
+          workLane: "critical",
+        });
       },
       isDestroyed: () => this.isDestroyed,
       onPreviousUpdateFailed: (error) => {
@@ -1061,40 +1081,27 @@ export class StructureManager {
 
   public refreshCosmeticsForOwner(owner: string | bigint): void {
     const normalizedOwner = BigInt(owner);
-    const hasMatchingStructure = this.worldSpatialProjection.getStructures().some((renderable) => {
-      if (renderable.reserved || !this.components?.Structure) return false;
-      return (
+    const refreshEntityIds = this.worldSpatialProjection.getStructures().flatMap((renderable) => {
+      if (renderable.reserved || !this.components?.Structure) return [];
+      const matchesOwner =
         getComponentValue(this.components.Structure, gameEntityKey([BigInt(renderable.entityId)]))?.owner ===
-        normalizedOwner
-      );
+        normalizedOwner;
+      return matchesOwner ? [renderable.entityId] : [];
     });
-    if (hasMatchingStructure) void this.requestVisibleStructuresRefresh();
+    if (refreshEntityIds.length > 0) {
+      void this.requestVisibleStructuresRefresh({ refreshEntityIds });
+    }
   }
 
-  private requestVisibleStructuresRefresh(
-    workLane: FrameBudgetWorkLane = "visible",
-    refreshExisting = true,
-    transitionToken?: number,
-  ): Promise<void> {
-    this.visibleStructurePassFence.invalidate();
-
+  private requestVisibleStructuresRefresh(options: VisibleStructureRefreshOptions = {}): Promise<void> {
     if (this.isDestroyed) {
       return Promise.resolve();
     }
 
+    this.recordPendingVisibleStructureRefresh(options);
+
     if (!isCommittedManagerChunk(this.currentChunk)) {
       return Promise.resolve();
-    }
-
-    if (workLane === "critical") {
-      this.pendingVisibleStructureWorkLane = "critical";
-    }
-    this.shouldRefreshExistingStructures ||= refreshExisting;
-    if (transitionToken !== undefined) {
-      this.pendingVisibleStructureTransitionToken = Math.max(
-        transitionToken,
-        this.pendingVisibleStructureTransitionToken ?? transitionToken,
-      );
     }
 
     return this.runVisibleStructuresUpdate().catch((error) => {
@@ -1105,8 +1112,53 @@ export class StructureManager {
     });
   }
 
-  private updateVisibleStructures(): Promise<void> {
-    return this.requestVisibleStructuresRefresh();
+  private async flushPendingVisibleStructureRefresh(): Promise<boolean> {
+    const options = this.takePendingVisibleStructureRefresh();
+    this.isUpdatingVisibleStructures = true;
+    try {
+      const committed = await this.performVisibleStructuresUpdate(options);
+      if (!committed && !this.isDestroyed) {
+        this.recordPendingVisibleStructureRefresh(options);
+      }
+      return committed || this.isDestroyed;
+    } catch (error) {
+      if (!this.isDestroyed) {
+        this.recordPendingVisibleStructureRefresh({ ...options, refreshExisting: true });
+      }
+      throw error;
+    } finally {
+      this.isUpdatingVisibleStructures = false;
+    }
+  }
+
+  private takePendingVisibleStructureRefresh(): VisibleStructureRefreshOptions {
+    const options = {
+      refreshEntityIds: this.pendingVisibleStructureRefreshIds,
+      refreshExisting: this.shouldRefreshExistingStructures,
+      transitionToken: this.pendingVisibleStructureTransitionToken,
+      workLane: this.pendingVisibleStructureWorkLane,
+    };
+    this.pendingVisibleStructureWorkLane = "visible";
+    this.shouldRefreshExistingStructures = false;
+    this.pendingVisibleStructureRefreshIds = new Set();
+    this.pendingVisibleStructureTransitionToken = undefined;
+    return options;
+  }
+
+  private recordPendingVisibleStructureRefresh(options: VisibleStructureRefreshOptions): void {
+    if (options.workLane === "critical") {
+      this.pendingVisibleStructureWorkLane = "critical";
+    }
+    this.shouldRefreshExistingStructures ||= options.refreshExisting ?? false;
+    for (const entityId of options.refreshEntityIds ?? []) {
+      this.pendingVisibleStructureRefreshIds.add(entityId);
+    }
+    if (options.transitionToken !== undefined) {
+      this.pendingVisibleStructureTransitionToken = Math.max(
+        options.transitionToken,
+        this.pendingVisibleStructureTransitionToken ?? options.transitionToken,
+      );
+    }
   }
 
   private resolveStructureAttachmentsForRender(structure: StructureInfo): CosmeticAttachmentTemplate[] {
@@ -1140,23 +1192,19 @@ export class StructureManager {
     return models[structure.stage];
   }
 
-  private async performVisibleStructuresUpdate(
-    workLane: FrameBudgetWorkLane = "visible",
-    refreshExisting = false,
-    transitionToken?: number,
-  ): Promise<void> {
+  private async performVisibleStructuresUpdate(options: VisibleStructureRefreshOptions = {}): Promise<boolean> {
     if (this.isDestroyed) {
-      return;
+      return false;
     }
 
     const updateStartedAt = performance.now();
     if (!isCommittedManagerChunk(this.currentChunk)) {
       this.visibleStructureCount = 0;
       setWorldmapRenderGauge("visibleStructures", 0);
-      return;
+      return false;
     }
     try {
-      const visibleStructurePassSnapshot = this.captureVisibleStructurePassSnapshot(transitionToken);
+      const visibleStructurePassSnapshot = this.captureVisibleStructurePassSnapshot(options.transitionToken);
 
       const [startRow, startCol] = visibleStructurePassSnapshot.chunkKey.split(",").map(Number);
       const visibleStructures = this.getVisibleStructuresForChunk(startRow, startCol);
@@ -1164,7 +1212,7 @@ export class StructureManager {
       await this.preloadStructureModels(preloadPlan);
 
       if (this.shouldDiscardVisibleStructurePass(visibleStructurePassSnapshot)) {
-        return;
+        return false;
       }
 
       const renderableStructures = visibleStructures.filter((structure) => this.getModelForStructure(structure));
@@ -1172,20 +1220,29 @@ export class StructureManager {
         currentVisibleIds: this.previousVisibleIds,
         nextVisibleEntities: renderableStructures,
         getEntityId: (structure) => structure.entityId,
-        refreshExisting,
+        refreshEntityIds: options.refreshEntityIds,
+        refreshExisting: options.refreshExisting,
       });
-      await scheduleFrameBudgetWork(
+      return await scheduleFrameBudgetWork(
         this.chunkWorkScheduler,
-        workLane,
-        () => {
-          this.commitVisibleStructureDiff(visibleStructurePassSnapshot, visibilityDiff);
-        },
-        "manager:structure-visibility",
+        options.workLane ?? "visible",
+        () => this.commitVisibleStructureDiff(visibleStructurePassSnapshot, visibilityDiff),
+        this.resolveVisibleStructureCommitOwner(options),
       );
     } finally {
       recordWorldmapRenderDuration("performVisibleStructuresUpdate", performance.now() - updateStartedAt);
       setWorldmapRenderGauge("visibleStructures", this.visibleStructureCount);
     }
+  }
+
+  private resolveVisibleStructureCommitOwner(options: VisibleStructureRefreshOptions): string {
+    if (options.refreshExisting) {
+      return "manager:structure-full-refresh";
+    }
+    if (options.refreshEntityIds && [...options.refreshEntityIds].length > 0) {
+      return "manager:structure-targeted-refresh";
+    }
+    return "manager:structure-visibility-diff";
   }
 
   private createStructureModelPreloadPlan(
@@ -1287,9 +1344,9 @@ export class StructureManager {
   private commitVisibleStructureDiff(
     snapshot: VisibleStructurePassSnapshot,
     visibilityDiff: ManagerVisibilityDiff<StructureInfo, ID>,
-  ): void {
+  ): boolean {
     if (this.shouldDiscardVisibleStructurePass(snapshot)) {
-      return;
+      return false;
     }
 
     const dirtyModels = new Set<InstancedModel>();
@@ -1306,7 +1363,7 @@ export class StructureManager {
     }
 
     try {
-      commitManagerVisibilityDiff({
+      return commitManagerVisibilityDiff({
         diff: visibilityDiff,
         isCurrent: () => !this.shouldDiscardVisibleStructurePass(snapshot),
         remove: (entityId) => this.removeVisibleStructureInstance(entityId, dirtyModels),
@@ -1391,10 +1448,7 @@ export class StructureManager {
     dirtyModels: Set<InstancedModel>,
   ): StructureInstanceBinding {
     const slots = this.structureInstanceSlots.get(model) ?? [];
-    let instanceIndex = slots.findIndex((slotEntityId) => slotEntityId === undefined);
-    if (instanceIndex === -1) {
-      instanceIndex = slots.length;
-    }
+    const instanceIndex = this.takeFreeStructureInstanceSlot(model, slots);
     if (instanceIndex >= STRUCTURE_INSTANCE_CAPACITY) {
       throw new Error(`Structure instance capacity exceeded for entity ${entityId}`);
     }
@@ -1408,6 +1462,22 @@ export class StructureManager {
     return { entityIdsByInstance, instanceIndex, model };
   }
 
+  private takeFreeStructureInstanceSlot(model: InstancedModel, slots: Array<ID | undefined>): number {
+    const freeSlot = this.structureInstanceFreeSlots.get(model);
+    if (freeSlot === undefined || freeSlot < 0 || freeSlot >= slots.length || slots[freeSlot] !== undefined) {
+      this.structureInstanceFreeSlots.delete(model);
+      return slots.length;
+    }
+
+    const nextFreeSlot = slots.indexOf(undefined, freeSlot + 1);
+    if (nextFreeSlot === -1) {
+      this.structureInstanceFreeSlots.delete(model);
+    } else {
+      this.structureInstanceFreeSlots.set(model, nextFreeSlot);
+    }
+    return freeSlot;
+  }
+
   private removeVisibleStructureInstance(entityId: ID, dirtyModels: Set<InstancedModel>): void {
     const bindings = this.structureInstanceBindings.get(entityId);
     if (!bindings) {
@@ -1419,6 +1489,10 @@ export class StructureManager {
       const slots = this.structureInstanceSlots.get(model);
       if (slots) {
         slots[instanceIndex] = undefined;
+        const firstFreeSlot = this.structureInstanceFreeSlots.get(model);
+        if (firstFreeSlot === undefined || instanceIndex < firstFreeSlot) {
+          this.structureInstanceFreeSlots.set(model, instanceIndex);
+        }
       }
       if (entityIdsByInstance.get(instanceIndex) === entityId) {
         entityIdsByInstance.delete(instanceIndex);
@@ -1431,8 +1505,12 @@ export class StructureManager {
   private updateVisibleStructureModelCounts(dirtyModels: Set<InstancedModel>): void {
     dirtyModels.forEach((model) => {
       const slots = this.structureInstanceSlots.get(model) ?? [];
-      while (slots.at(-1) === undefined) {
+      while (slots.length > 0 && slots.at(-1) === undefined) {
         slots.pop();
+      }
+      const firstFreeSlot = this.structureInstanceFreeSlots.get(model);
+      if (firstFreeSlot !== undefined && firstFreeSlot >= slots.length) {
+        this.structureInstanceFreeSlots.delete(model);
       }
       if (this.structureModelDrawCounts.get(model) !== slots.length) {
         model.setCount(slots.length);
@@ -1440,6 +1518,7 @@ export class StructureManager {
       }
       if (slots.length === 0) {
         this.structureInstanceSlots.delete(model);
+        this.structureInstanceFreeSlots.delete(model);
         this.structureModelDrawCounts.delete(model);
       }
     });

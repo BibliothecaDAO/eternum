@@ -187,14 +187,6 @@ const allLatestFeatures: LatestFeature[] = [
   },
   {
     date: "2026-08-20",
-    title: "Smoother World Updates",
-    description:
-      "Army, terrain, and interaction rendering now uploads only changed instances, reducing frame work during movement and map updates.",
-    type: "improvement",
-    gameSlug: "world",
-  },
-  {
-    date: "2026-08-20",
     title: "Faster Game Entry",
     description:
       "Game code and assets now begin loading as soon as you enter a play route, reducing waits even when account restoration is slow.",

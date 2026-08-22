@@ -67,6 +67,19 @@ describe("manager visibility diff", () => {
     expect(diff.staying).toEqual([]);
   });
 
+  it("rebuilds only explicitly targeted staying entities", () => {
+    const diff = createManagerVisibilityDiff({
+      currentVisibleIds: [1, 2, 3],
+      nextVisibleEntities: [{ id: 1 }, { id: 2 }, { id: 3 }, { id: 4 }],
+      getEntityId: (entity: Entity) => entity.id,
+      refreshEntityIds: [2],
+    });
+
+    expect(diff.entering.map(({ id }) => id)).toEqual([2, 4]);
+    expect(diff.leaving).toEqual([2]);
+    expect(diff.staying).toEqual([1, 3]);
+  });
+
   it("keeps exact rendered ownership through ten overlapping crossings without scheduling staying IDs", () => {
     let renderedIds = new Set<number>();
     const scheduledAdds: number[] = [];

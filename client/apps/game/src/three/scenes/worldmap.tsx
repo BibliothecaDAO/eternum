@@ -924,6 +924,10 @@ export default class WorldmapScene extends WarpTravel {
 
   // Global chunk switching coordination
   private chunkTransitionToken = 0;
+  private terrainTimeoutRecoveryAuthority: {
+    timedOutTransitionToken: number;
+    recoveryTransitionToken: number;
+  } | null = null;
   private actionPathsTransitionToken: number | null = null;
   private isApplyingLocalActionPathUpdate = false;
   private isSceneExitInteractionResetInProgress = false;
@@ -4084,6 +4088,7 @@ export default class WorldmapScene extends WarpTravel {
       globalChunkSwitchPromise: this.globalChunkSwitchPromise,
     });
     this.chunkTransitionToken = switchOffTransitionState.chunkTransitionToken;
+    this.terrainTimeoutRecoveryAuthority = null;
     this.exactTerrainPreparations.clear();
     this.isChunkTransitioning = switchOffTransitionState.isChunkTransitioning;
     this.globalChunkSwitchPromise = switchOffTransitionState.globalChunkSwitchPromise;
@@ -7087,6 +7092,10 @@ export default class WorldmapScene extends WarpTravel {
 
     if (decision.shouldInvalidateTimedOutTransition) {
       this.chunkTransitionToken = decision.recoveryTransitionToken;
+      this.terrainTimeoutRecoveryAuthority = {
+        timedOutTransitionToken: staleTransitionToken,
+        recoveryTransitionToken: decision.recoveryTransitionToken,
+      };
       this.exactTerrainPreparations.releaseSuperseded(decision.recoveryTransitionToken);
     }
 
@@ -7129,6 +7138,7 @@ export default class WorldmapScene extends WarpTravel {
 
   private claimNextChunkTransitionToken(): number {
     const transitionToken = ++this.chunkTransitionToken;
+    this.terrainTimeoutRecoveryAuthority = null;
     this.exactTerrainPreparations.releaseSuperseded(transitionToken);
     return transitionToken;
   }
@@ -8033,12 +8043,18 @@ export default class WorldmapScene extends WarpTravel {
     preparedTerrain: PreparedTerrainChunk;
     presentationRuntime: PreparedWorldmapChunkRuntime["presentationRuntime"];
     transitionToken: number;
-  }): Promise<boolean> {
+  }): Promise<number | null> {
     return commitOwnedWorldmapPreparedTerrain({
       preparedTerrain: input.preparedTerrain,
       targetChunk: input.chunkKey,
       transitionToken: input.transitionToken,
       getCurrentTransitionToken: () => this.chunkTransitionToken,
+      getRecoveryTransitionToken: (timedOutTransitionToken) => {
+        const recoveryAuthority = this.terrainTimeoutRecoveryAuthority;
+        return recoveryAuthority?.timedOutTransitionToken === timedOutTransitionToken
+          ? recoveryAuthority.recoveryTransitionToken
+          : null;
+      },
       isSwitchedOff: () => this.isSwitchedOff,
       scheduleCommit: (commit) => this.schedulePreparedTerrainCommit("critical", input.preparedTerrain, commit),
       disposePreparedTerrain: (preparedTerrain) => this.disposePreparedTerrainChunk(preparedTerrain),

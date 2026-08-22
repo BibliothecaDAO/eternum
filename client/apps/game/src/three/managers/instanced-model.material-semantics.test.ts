@@ -3,9 +3,7 @@ import {
   AnimationClip,
   Box3,
   BoxGeometry,
-  Color,
   Group,
-  InstancedMesh,
   Matrix4,
   Mesh,
   MeshBasicMaterial,
@@ -115,42 +113,6 @@ describe("InstancedModel material semantics", () => {
     expect(mesh.boundingSphere?.radius).toBe(18);
     expect(mesh.boundingBox?.min.toArray()).toEqual([-10, -2, -12]);
     expect(mesh.boundingBox?.max.toArray()).toEqual([10, 8, 12]);
-  });
-
-  it("tracks per-slot uploads and active-prefix count rebuilds", async () => {
-    const { default: InstancedModel } = await import("./instanced-model");
-    const model = new InstancedModel(createInstancedModelTestGltf(new MeshStandardMaterial()), 8, false, "Chest");
-    const mesh = model.instancedMeshes[0];
-    const contactShadowMesh = model.group.children.find(
-      (child): child is InstancedMesh => child instanceof InstancedMesh && child !== mesh,
-    );
-
-    expect(contactShadowMesh).toBeDefined();
-    expect(mesh.instanceMatrix.updateRanges).toEqual([{ start: 0, count: 8 * 16 }]);
-    expect(contactShadowMesh!.instanceMatrix.updateRanges).toEqual([{ start: 0, count: 8 * 16 }]);
-
-    mesh.instanceMatrix.clearUpdateRanges();
-    contactShadowMesh!.instanceMatrix.clearUpdateRanges();
-    model.setMatrixAt(3, new Matrix4().makeTranslation(2, 0, 4));
-    model.setColorAt(3, new Color(0x00ff00));
-
-    expect(mesh.instanceMatrix.updateRanges).toEqual([{ start: 3 * 16, count: 16 }]);
-    expect(mesh.instanceColor?.updateRanges).toEqual([{ start: 3 * 3, count: 3 }]);
-    expect(contactShadowMesh!.instanceMatrix.updateRanges).toEqual([{ start: 3 * 16, count: 16 }]);
-
-    mesh.instanceMatrix.clearUpdateRanges();
-    contactShadowMesh!.instanceMatrix.clearUpdateRanges();
-    model.removeInstance(6);
-
-    expect(mesh.instanceMatrix.updateRanges).toEqual([{ start: 6 * 16, count: 16 }]);
-    expect(contactShadowMesh!.instanceMatrix.updateRanges).toEqual([{ start: 6 * 16, count: 16 }]);
-
-    mesh.instanceMatrix.clearUpdateRanges();
-    contactShadowMesh!.instanceMatrix.clearUpdateRanges();
-    model.setCount(4);
-
-    expect(mesh.instanceMatrix.updateRanges).toEqual([{ start: 0, count: 4 * 16 }]);
-    expect(contactShadowMesh!.instanceMatrix.updateRanges).toEqual([{ start: 0, count: 4 * 16 }]);
   });
 
   it("keeps animated morph instances on the WebGPU-safe morph texture path", async () => {

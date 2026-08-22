@@ -7,6 +7,8 @@ interface RunRendererAnimationTickInput {
   isLabelRuntimeReady: boolean;
   lastTime: number;
   logDestroyed?: (message: string) => void;
+  onFrameError?: (error: unknown) => void;
+  onFrameSuccess?: () => void;
   renderFrame: (input: { currentTime: number; cycleProgress: number; deltaTime: number }) => boolean;
   requestNextFrame: () => void;
   targetFPS: number | null;
@@ -21,6 +23,17 @@ interface RendererAnimationFrameState {
   shouldSkipFrame: boolean;
 }
 
+export interface RendererFrameFailureCircuit {
+  recordFailure(error: unknown): {
+    repeatCount: number;
+    shouldReport: boolean;
+  };
+  recordSuccess(): void;
+}
+
+export const RENDERER_FRAME_FAILURE_REPORT_INTERVAL = 60;
+const RENDERER_FRAME_FAILURE_MAX_REPORT_INTERVAL = 3_600;
+
 export function runRendererAnimationTick(input: RunRendererAnimationTickInput): number {
   if (shouldStopRendererAnimation(input)) {
     input.logDestroyed?.("GameRenderer destroyed, stopping animation loop");
@@ -32,22 +45,88 @@ export function runRendererAnimationTick(input: RunRendererAnimationTickInput): 
     return input.lastTime;
   }
 
-  const frameState = resolveRendererAnimationFrameState(input);
-  if (frameState.shouldSkipFrame) {
+  let nextLastTime = input.lastTime;
+
+  try {
+    const frameState = resolveRendererAnimationFrameState(input);
+    nextLastTime = frameState.lastTime;
+    if (frameState.shouldSkipFrame) {
+      return nextLastTime;
+    }
+
+    input.updateStatsPanel?.();
+    input.updateControls?.();
+    const rendered = input.renderFrame({
+      currentTime: frameState.currentTime,
+      cycleProgress: input.getCycleProgress(),
+      deltaTime: frameState.deltaTime,
+    });
+    if (rendered) {
+      input.onFrameSuccess?.();
+    }
+  } catch (error) {
+    if (!input.onFrameError) {
+      throw error;
+    }
+    try {
+      input.onFrameError(error);
+    } catch (reportingError) {
+      console.error("[GameRenderer] Failed to report renderer frame error", reportingError);
+    }
+  } finally {
     input.requestNextFrame();
-    return frameState.lastTime;
   }
 
-  input.updateStatsPanel?.();
-  input.updateControls?.();
-  input.renderFrame({
-    currentTime: frameState.currentTime,
-    cycleProgress: input.getCycleProgress(),
-    deltaTime: frameState.deltaTime,
-  });
-  input.requestNextFrame();
+  return nextLastTime;
+}
 
-  return frameState.lastTime;
+export function createRendererFrameFailureCircuit(): RendererFrameFailureCircuit {
+  const failures = new Map<
+    string,
+    {
+      nextReportRepeat: number;
+      repeatCount: number;
+    }
+  >();
+
+  return {
+    recordFailure: (error) => {
+      const fingerprint = createRendererFrameFailureFingerprint(error);
+      const existing = failures.get(fingerprint);
+      if (!existing) {
+        failures.set(fingerprint, {
+          nextReportRepeat: RENDERER_FRAME_FAILURE_REPORT_INTERVAL,
+          repeatCount: 0,
+        });
+        return { repeatCount: 0, shouldReport: true };
+      }
+
+      existing.repeatCount += 1;
+      const shouldReport = existing.repeatCount === existing.nextReportRepeat;
+      if (shouldReport) {
+        existing.nextReportRepeat =
+          existing.nextReportRepeat < RENDERER_FRAME_FAILURE_MAX_REPORT_INTERVAL
+            ? Math.min(existing.nextReportRepeat * 2, RENDERER_FRAME_FAILURE_MAX_REPORT_INTERVAL)
+            : existing.repeatCount + RENDERER_FRAME_FAILURE_MAX_REPORT_INTERVAL;
+      }
+
+      return {
+        repeatCount: existing.repeatCount,
+        shouldReport,
+      };
+    },
+    recordSuccess: () => {
+      failures.clear();
+    },
+  };
+}
+
+function createRendererFrameFailureFingerprint(error: unknown): string {
+  if (error instanceof Error) {
+    return `${error.name}:${error.message}`;
+  }
+
+  return `${typeof error}:${String(error)}`;
 }
 
 export function resolveRendererPacedFps(input: {

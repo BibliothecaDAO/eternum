@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from "vitest";
 import { finalizeArmyChunkTransition } from "./army-chunk-transition-finalizer";
 
 describe("finalizeArmyChunkTransition", () => {
-  it("keeps deferred work fenced when a newer transition supersedes the current preload", () => {
+  it("releases the transition fence without draining when a newer transition wins", () => {
     const setTransitioning = vi.fn();
     const drainDeferredQueue = vi.fn();
     const drainPreCommitQueue = vi.fn();
@@ -17,7 +17,7 @@ describe("finalizeArmyChunkTransition", () => {
     });
 
     expect(finalized).toBe(false);
-    expect(setTransitioning).not.toHaveBeenCalled();
+    expect(setTransitioning).toHaveBeenCalledWith(false);
     expect(drainDeferredQueue).not.toHaveBeenCalled();
     expect(drainPreCommitQueue).not.toHaveBeenCalled();
   });

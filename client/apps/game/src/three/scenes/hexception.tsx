@@ -40,8 +40,6 @@ import {
 } from "@/three/scenes/hexception-building-reconciliation";
 import { playBuildingSound } from "@/three/sound/utils";
 import { MatrixPool } from "@/three/utils/matrix-pool";
-import { collectObjectTextures } from "@/three/utils/material-textures";
-import { markInstancedAttributeRangeDirty } from "@/three/utils/instanced-attribute-update-range";
 import {
   navigateToStructure,
   toggleMapHexView,
@@ -104,7 +102,6 @@ import {
   Object3D,
   Raycaster,
   Sphere,
-  type Texture,
   Vector2,
   Vector3,
 } from "three";
@@ -236,7 +233,7 @@ export default class HexceptionScene extends HexagonScene {
     const pillarGeometry = new ExtrudeGeometry(createHexagonShape(1), { depth: 2, bevelEnabled: false });
     pillarGeometry.rotateX(Math.PI / 2);
     this.pillars = new InstancedMesh(pillarGeometry, new MeshStandardMaterial(), 1000);
-    markInstancedAttributeRangeDirty(this.pillars.instanceMatrix, 0, this.pillars.instanceMatrix.count);
+    this.pillars.instanceMatrix.needsUpdate = true;
     this.pillars.position.y = 0.05;
     this.pillars.count = 0;
     this.scene.add(this.pillars);
@@ -525,16 +522,6 @@ export default class HexceptionScene extends HexagonScene {
         this.modelLoadPromises.push(loadPromise);
       }
     }
-  }
-
-  public async resolveLocalViewTextures(): Promise<Texture[]> {
-    await Promise.allSettled([...this.modelLoadPromises]);
-
-    const textures = collectObjectTextures(this.scene);
-    this.buildingModels.forEach((category) => {
-      category.forEach(({ model }) => collectObjectTextures(model, textures));
-    });
-    return [...textures];
   }
 
   private loadBuildingModel(path: string, building: string): Promise<{ model: Group; animations: AnimationClip[] }> {
@@ -1274,9 +1261,9 @@ export default class HexceptionScene extends HexagonScene {
             this.pillars!.computeBoundingSphere();
             hexMesh.setCount(matrices.length);
           }
-          markInstancedAttributeRangeDirty(this.pillars!.instanceMatrix, 0, this.pillars!.count);
+          this.pillars!.instanceMatrix.needsUpdate = true;
           if (this.pillars!.instanceColor) {
-            markInstancedAttributeRangeDirty(this.pillars!.instanceColor, 0, this.pillars!.count);
+            this.pillars!.instanceColor.needsUpdate = true;
           }
           this.interactiveHexManager.renderAllHexes();
 

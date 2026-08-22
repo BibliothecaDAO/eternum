@@ -9,6 +9,7 @@ interface CreateManagerVisibilityDiffInput<TEntity, TEntityId> {
   currentVisibleIds: Iterable<TEntityId>;
   nextVisibleEntities: readonly TEntity[];
   getEntityId: (entity: TEntity) => TEntityId;
+  refreshEntityIds?: Iterable<TEntityId>;
   refreshExisting?: boolean;
 }
 
@@ -27,6 +28,7 @@ export function createManagerVisibilityDiff<TEntity, TEntityId>(
   const currentVisibleSet = new Set(currentVisibleIds);
   const visibleIds = input.nextVisibleEntities.map(input.getEntityId);
   const nextVisibleSet = new Set(visibleIds);
+  const refreshEntityIds = new Set(input.refreshEntityIds);
 
   if (input.refreshExisting) {
     return {
@@ -38,9 +40,12 @@ export function createManagerVisibilityDiff<TEntity, TEntityId>(
   }
 
   return {
-    entering: input.nextVisibleEntities.filter((entity) => !currentVisibleSet.has(input.getEntityId(entity))),
-    leaving: currentVisibleIds.filter((entityId) => !nextVisibleSet.has(entityId)),
-    staying: visibleIds.filter((entityId) => currentVisibleSet.has(entityId)),
+    entering: input.nextVisibleEntities.filter((entity) => {
+      const entityId = input.getEntityId(entity);
+      return !currentVisibleSet.has(entityId) || refreshEntityIds.has(entityId);
+    }),
+    leaving: currentVisibleIds.filter((entityId) => !nextVisibleSet.has(entityId) || refreshEntityIds.has(entityId)),
+    staying: visibleIds.filter((entityId) => currentVisibleSet.has(entityId) && !refreshEntityIds.has(entityId)),
     visibleIds,
   };
 }

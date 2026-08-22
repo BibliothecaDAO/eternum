@@ -17,7 +17,6 @@ import {
 } from "three";
 import { AnimationVisibilityContext } from "../types/animation";
 import { getContactShadowResources } from "../utils/contact-shadow";
-import { markInstancedAttributeRangeDirty } from "../utils/instanced-attribute-update-range";
 import { InstancedMatrixAttributePool } from "../utils/instanced-matrix-attribute-pool";
 import { MaterialPool } from "../utils/material-pool";
 import { writeMorphWeightsIfChanged } from "./morph-texture-dirty-state";
@@ -92,7 +91,7 @@ function createAnimatedInstancedMesh(geometry: Mesh["geometry"], material: MeshS
   const mesh = Object.assign(new InstancedMesh(geometry, material, capacity), {
     animated: false,
   }) as AnimatedInstancedMesh;
-  markInstancedAttributeRangeDirty(mesh.instanceMatrix, 0, mesh.instanceMatrix.count);
+  mesh.instanceMatrix.needsUpdate = true;
   return mesh;
 }
 
@@ -230,11 +229,7 @@ export default class InstancedModel {
     this.contactShadowMesh.receiveShadow = false;
     this.contactShadowMesh.count = 0;
     this.contactShadowMesh.raycast = () => {};
-    markInstancedAttributeRangeDirty(
-      this.contactShadowMesh.instanceMatrix,
-      0,
-      this.contactShadowMesh.instanceMatrix.count,
-    );
+    this.contactShadowMesh.instanceMatrix.needsUpdate = true;
     this.group.add(this.contactShadowMesh);
     this.applyWorldBounds(this.contactShadowMesh);
 
@@ -297,8 +292,7 @@ export default class InstancedModel {
         targetArray.set(sourceArray.subarray(0, floatsToCopy));
       }
       applyRenderedInstanceCount(mesh, finalCount);
-      mesh.instanceMatrix.clearUpdateRanges();
-      markInstancedAttributeRangeDirty(mesh.instanceMatrix, 0, mesh.count);
+      mesh.instanceMatrix.needsUpdate = true;
       resolvedCount = Math.min(resolvedCount, finalCount);
     });
     this.count = resolvedCount;
@@ -310,7 +304,7 @@ export default class InstancedModel {
     }
     this.instancedMeshes.forEach((child) => {
       child.setMatrixAt(index, matrix);
-      markInstancedAttributeRangeDirty(child.instanceMatrix, index, 1);
+      child.instanceMatrix.needsUpdate = true;
     });
 
     if (this.contactShadowMesh) {
@@ -326,7 +320,7 @@ export default class InstancedModel {
         );
         this.contactShadowMesh.setMatrixAt(index, this.contactShadowMatrix);
       }
-      markInstancedAttributeRangeDirty(this.contactShadowMesh.instanceMatrix, index, 1);
+      this.contactShadowMesh.instanceMatrix.needsUpdate = true;
     }
   }
 
@@ -337,7 +331,7 @@ export default class InstancedModel {
     this.instancedMeshes.forEach((mesh) => {
       mesh.setColorAt(index, color);
       if (mesh.instanceColor) {
-        markInstancedAttributeRangeDirty(mesh.instanceColor, index, 1);
+        mesh.instanceColor.needsUpdate = true;
       }
     });
   }
@@ -361,11 +355,11 @@ export default class InstancedModel {
 
   needsUpdate() {
     this.instancedMeshes.forEach((mesh) => {
-      markInstancedAttributeRangeDirty(mesh.instanceMatrix, 0, mesh.count);
+      mesh.instanceMatrix.needsUpdate = true;
     });
 
     if (this.contactShadowMesh) {
-      markInstancedAttributeRangeDirty(this.contactShadowMesh.instanceMatrix, 0, this.contactShadowMesh.count);
+      this.contactShadowMesh.instanceMatrix.needsUpdate = true;
     }
 
     this.refreshBounds();
@@ -603,7 +597,7 @@ export default class InstancedModel {
           mesh.setMatrixAt(i, instanceMatrix);
         }
 
-        markInstancedAttributeRangeDirty(mesh.instanceMatrix, 0, mesh.count);
+        mesh.instanceMatrix.needsUpdate = true;
       });
 
       this.lastWonderUpdate = now;

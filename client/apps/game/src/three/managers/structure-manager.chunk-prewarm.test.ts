@@ -135,7 +135,7 @@ vi.mock("./fx-manager", () => ({
 }));
 
 vi.mock("./manager-update-convergence", () => ({
-  createCoalescedAsyncUpdateRunner: (fn: () => Promise<void>) => fn,
+  createCoalescedAsyncUpdateRunner: (fn: () => Promise<boolean>) => fn,
   isCommittedManagerChunk: vi.fn(() => true),
   MANAGER_UNCOMMITTED_CHUNK: "uncommitted",
   shouldAcceptManagerChunkRequest: vi.fn(() => true),
