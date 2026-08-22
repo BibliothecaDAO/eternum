@@ -5,15 +5,14 @@
   "owner": {
     "environment": "appchain.blitz",
     "gameName": "blitz-herald",
-    "launchRequestId": "32584274970-1",
+    "launchRequestId": "32585828942-1",
     "workflowName": "Game Launch",
-    "workflowRunId": 32584274970,
+    "workflowRunId": 32585828942,
     "workflowRunAttempt": 1,
     "stepId": "create-world",
-    "leaseId": "4070a188-84f8-4ec0-9f40-f88cc1769492"
+    "leaseId": "b834dad3-753d-4048-876d-7aac4b8ab65f"
   },
-  "acquiredAt": "2026-08-22T16:19:25.215Z",
-  "heartbeatAt": "2026-08-22T16:19:29.376Z",
-  "expiresAt": "2026-08-22T16:19:29.376Z",
-  "releasedAt": "2026-08-22T16:19:29.376Z"
+  "acquiredAt": "2026-08-22T16:50:10.297Z",
+  "heartbeatAt": "2026-08-22T16:50:10.297Z",
+  "expiresAt": "2026-08-22T17:00:10.297Z"
 }
