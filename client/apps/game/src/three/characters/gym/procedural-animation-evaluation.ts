@@ -1,4 +1,10 @@
+import { resolveQuaternionAngularDistanceDegrees } from "../procedural-character-diagnostics";
 import type { ProceduralAnimationCaptureResult, ProceduralAnimationFrameCapture } from "./procedural-animation-capture";
+
+const MAX_FOOT_ANGULAR_STEP_DEGREES = 20;
+const MAX_FOOT_ANGULAR_TRAVEL_DEGREES = 180;
+const MAX_RUN_STANCE_FOOT_STEP_DEGREES = 12;
+const MAX_WALK_STANCE_FOOT_STEP_DEGREES = 6;
 
 export interface ProceduralAnimationObjectiveEvaluation {
   blankViewCount: number;
@@ -11,6 +17,8 @@ export interface ProceduralAnimationObjectiveEvaluation {
     elbowDegrees: { maximum: number | null; minimum: number | null };
     kneeDegrees: { maximum: number | null; minimum: number | null };
     maximumJointStep: number | null;
+    maximumFootAngularStepDegrees: number | null;
+    maximumStableStanceFootAngularStepDegrees: number | null;
     maximumSocketDivergence: number | null;
     maximumStanceContactDrift: number | null;
     locomotion: ProceduralLocomotionEvaluation | null;
@@ -26,15 +34,28 @@ interface ProceduralLocomotionEvaluation {
   contactFraction: Readonly<Record<"left" | "right", number>>;
   doubleSupportFraction: number;
   flightFraction: number;
+  footAngularStepPeak: ProceduralFootAngularStepEvent | null;
+  footAngularTravelDegrees: Readonly<Record<"left" | "right", number | null>>;
   headToPelvisVerticalExcursionRatio: number | null;
   headVerticalExcursion: number;
   maximumStableStanceDrift: number | null;
+  maximumFootAngularStepDegrees: number | null;
+  maximumStableStanceFootAngularStepDegrees: number | null;
   pelvisLateralExcursion: number;
   pelvisVerticalExcursion: number;
   rootTravelDistance: number;
   swingApexProgress: Readonly<Record<"left" | "right", number | null>>;
   swingClearance: Readonly<Record<"left" | "right", number | null>>;
   swingClearanceAsymmetry: number | null;
+  stableStanceFootAngularStepPeak: ProceduralFootAngularStepEvent | null;
+}
+
+interface ProceduralFootAngularStepEvent {
+  angleDegrees: number;
+  contact: "stance" | "swing";
+  frameIndex: number;
+  progress: number;
+  side: "left" | "right";
 }
 
 export function evaluateProceduralAnimationCapture(
@@ -67,6 +88,12 @@ export function evaluateProceduralAnimationCapture(
         resolveHumanoidValues(result.frames, ({ legs }) => [legs.left.kneeDegrees, legs.right.kneeDegrees]),
       ),
       maximumJointStep: temporalCoverage ? maximum(resolveConsecutiveJointSteps(result.frames)) : null,
+      maximumFootAngularStepDegrees: temporalCoverage
+        ? maximum(resolveConsecutiveFootAngularSteps(result.frames))
+        : null,
+      maximumStableStanceFootAngularStepDegrees: temporalCoverage
+        ? maximum(resolveConsecutiveFootAngularSteps(result.frames, true))
+        : null,
       maximumSocketDivergence: maximum(
         resolveHumanoidValues(result.frames, ({ arms }) => [arms.left.solverSocketError, arms.right.solverSocketError]),
       ),
@@ -98,6 +125,7 @@ function resolveLocomotionHardGateFailures(
   rootMotionSpeed: number,
 ): string[] {
   const failures: string[] = [];
+  const walking = (locomotion.contactFraction.left + locomotion.contactFraction.right) * 0.5 > 0.5;
   if (rootMotionSpeed <= 0) failures.push("moving-root-capture-required");
   if (locomotion.capturedCycleCount < 0.9 || locomotion.capturedCycleCount > 1.1) {
     failures.push("incomplete-gait-cycle");
@@ -112,11 +140,30 @@ function resolveLocomotionHardGateFailures(
   if (locomotion.swingClearanceAsymmetry === null || locomotion.swingClearanceAsymmetry > 0.02) {
     failures.push("swing-clearance-asymmetry");
   }
+  if (
+    locomotion.maximumFootAngularStepDegrees === null ||
+    locomotion.maximumFootAngularStepDegrees > MAX_FOOT_ANGULAR_STEP_DEGREES
+  ) {
+    failures.push("foot-angular-pop");
+  }
+  if (
+    locomotion.maximumStableStanceFootAngularStepDegrees === null ||
+    locomotion.maximumStableStanceFootAngularStepDegrees >
+      (walking ? MAX_WALK_STANCE_FOOT_STEP_DEGREES : MAX_RUN_STANCE_FOOT_STEP_DEGREES)
+  ) {
+    failures.push("stance-foot-rotation");
+  }
+  if (
+    Object.values(locomotion.footAngularTravelDegrees).some(
+      (value) => value === null || value > MAX_FOOT_ANGULAR_TRAVEL_DEGREES,
+    )
+  ) {
+    failures.push("foot-spin");
+  }
   const apexProgress = Object.values(locomotion.swingApexProgress);
   if (apexProgress.some((value) => value === null || value < 0.3 || value > 0.55)) {
     failures.push("swing-apex-timing");
   }
-  const walking = (locomotion.contactFraction.left + locomotion.contactFraction.right) * 0.5 > 0.5;
   if (walking && (locomotion.doubleSupportFraction < 0.08 || locomotion.flightFraction > 0.02)) {
     failures.push("walk-support-pattern");
   }
@@ -146,6 +193,8 @@ function evaluateLocomotion(frames: readonly ProceduralAnimationFrameCapture[]):
     left: resolveSwingClearance(humanoidFrames, "left"),
     right: resolveSwingClearance(humanoidFrames, "right"),
   } as const;
+  const footAngularSteps = resolveFootAngularStepEvents(humanoidFrames);
+  const stableStanceFootAngularSteps = resolveFootAngularStepEvents(humanoidFrames, true);
   return {
     capturedCycleCount: round(resolveCapturedCycles(humanoidFrames)),
     contactFraction: {
@@ -154,10 +203,19 @@ function evaluateLocomotion(frames: readonly ProceduralAnimationFrameCapture[]):
     },
     doubleSupportFraction: round(supportCounts.filter((count) => count === 2).length / frameCount),
     flightFraction: round(supportCounts.filter((count) => count === 0).length / frameCount),
+    footAngularStepPeak: maximumFootAngularStepEvent(footAngularSteps),
+    footAngularTravelDegrees: {
+      left: resolveFootAngularTravel(humanoidFrames, "left"),
+      right: resolveFootAngularTravel(humanoidFrames, "right"),
+    },
     headToPelvisVerticalExcursionRatio:
       pelvisVerticalExcursion > 1e-6 ? round(headVerticalExcursion / pelvisVerticalExcursion) : null,
     headVerticalExcursion: round(headVerticalExcursion),
     maximumStableStanceDrift: maximum(resolveStanceContactDrifts(humanoidFrames, true)),
+    maximumFootAngularStepDegrees: maximum(footAngularSteps.map(({ angleDegrees }) => angleDegrees)),
+    maximumStableStanceFootAngularStepDegrees: maximum(
+      stableStanceFootAngularSteps.map(({ angleDegrees }) => angleDegrees),
+    ),
     pelvisLateralExcursion: round(pointAxisExcursion(humanoidFrames, "pelvis", 0, true)),
     pelvisVerticalExcursion: round(pelvisVerticalExcursion),
     rootTravelDistance: round(resolveRootTravelDistance(humanoidFrames)),
@@ -170,6 +228,7 @@ function evaluateLocomotion(frames: readonly ProceduralAnimationFrameCapture[]):
       swingClearance.left === null || swingClearance.right === null
         ? null
         : round(Math.abs(swingClearance.left - swingClearance.right)),
+    stableStanceFootAngularStepPeak: maximumFootAngularStepEvent(stableStanceFootAngularSteps),
   };
 }
 
@@ -263,6 +322,68 @@ function resolveConsecutiveJointSteps(frames: readonly ProceduralAnimationFrameC
         : [];
     return [...humanSteps, ...horseSteps];
   });
+}
+
+function resolveConsecutiveFootAngularSteps(
+  frames: readonly ProceduralAnimationFrameCapture[],
+  stableStanceOnly = false,
+): number[] {
+  const humanoidFrames = frames.filter((frame): frame is HumanoidCaptureFrame => Boolean(frame.diagnostics.humanoid));
+  return resolveFootAngularStepEvents(humanoidFrames, stableStanceOnly).map(({ angleDegrees }) => angleDegrees);
+}
+
+function resolveFootAngularStepEvents(
+  frames: readonly HumanoidCaptureFrame[],
+  stableStanceOnly = false,
+): ProceduralFootAngularStepEvent[] {
+  return frames.slice(1).flatMap((frame, index) => {
+    const previous = frames[index];
+    return (["left", "right"] as const).flatMap((side) => {
+      const currentFoot = frame.diagnostics.humanoid.feet[side];
+      const previousFoot = previous.diagnostics.humanoid.feet[side];
+      if (!currentFoot.rotation || !previousFoot.rotation) return [];
+      if (
+        stableStanceOnly &&
+        (currentFoot.contact !== "stance" ||
+          previousFoot.contact !== "stance" ||
+          !isStableContact(currentFoot.progress) ||
+          !isStableContact(previousFoot.progress))
+      ) {
+        return [];
+      }
+      return [
+        {
+          angleDegrees: round(resolveQuaternionAngularDistanceDegrees(currentFoot.rotation, previousFoot.rotation)),
+          contact: currentFoot.contact,
+          frameIndex: frame.frameIndex,
+          progress: currentFoot.progress,
+          side,
+        },
+      ];
+    });
+  });
+}
+
+function maximumFootAngularStepEvent(
+  events: readonly ProceduralFootAngularStepEvent[],
+): ProceduralFootAngularStepEvent | null {
+  return events.reduce<ProceduralFootAngularStepEvent | null>(
+    (maximumEvent, event) => (!maximumEvent || event.angleDegrees > maximumEvent.angleDegrees ? event : maximumEvent),
+    null,
+  );
+}
+
+function resolveFootAngularTravel(frames: readonly HumanoidCaptureFrame[], side: "left" | "right"): number | null {
+  const rotations = frames.flatMap(({ diagnostics }) => {
+    const rotation = diagnostics.humanoid.feet[side].rotation;
+    return rotation ? [rotation] : [];
+  });
+  if (rotations.length < 2) return null;
+  return round(
+    rotations.slice(1).reduce((travel, rotation, index) => {
+      return travel + resolveQuaternionAngularDistanceDegrees(rotation, rotations[index]);
+    }, 0),
+  );
 }
 
 function resolveStanceContactDrifts(

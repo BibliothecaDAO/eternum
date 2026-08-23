@@ -33,6 +33,7 @@ import {
   applySegmentBoneRotation,
   createSegmentBoneBinding,
   requireSkinnedBone,
+  resolveStableSegmentQuaternion,
   type SegmentBoneBinding,
 } from "./skinned-pose-binding";
 
@@ -96,6 +97,7 @@ export interface ProceduralCharacterAvatarStats {
 
 const Y_AXIS = new Vector3(0, 1, 0);
 const X_AXIS = new Vector3(1, 0, 0);
+const Z_AXIS = new Vector3(0, 0, 1);
 const HEAD_NECK_RANGE = 0.42;
 const MIN_HEAD_SKIN_WEIGHT = 0.5;
 const MAX_LIMB_BEND_PLANE_STEP = Math.PI / 8;
@@ -287,6 +289,17 @@ export class ProceduralCharacterAvatar implements ProceduralCharacterSocketReade
     ) as unknown as Record<ProceduralHumanoidJointId, Vector3Tuple>;
   }
 
+  public readWorldDiagnosticFootRotations(): Readonly<Record<"left" | "right", QuaternionTuple>> {
+    this.activeModel.scene.updateWorldMatrix(true, true);
+    return Object.fromEntries(
+      (["left", "right"] as const).map((side) => {
+        const bone = requireBone(this.activeModel.scene, side === "left" ? "foot_l" : "foot_r");
+        bone.getWorldQuaternion(this.scratchTargetQuaternion);
+        return [side, toQuaternionTuple(this.scratchTargetQuaternion)];
+      }),
+    ) as unknown as Record<"left" | "right", QuaternionTuple>;
+  }
+
   public measureActiveLimbLengths(): {
     forearmLength: number;
     shinLength: number;
@@ -307,10 +320,14 @@ export class ProceduralCharacterAvatar implements ProceduralCharacterSocketReade
   }
 
   public hasFiniteTransforms(): boolean {
-    return CHARACTER_PART_IDS.every((partId) => {
-      const bone = this.activeModel.bindings[partId].bone;
-      return [...bone.position.toArray(), ...bone.quaternion.toArray()].every(Number.isFinite);
+    const partTransformsFinite = CHARACTER_PART_IDS.every((partId) => {
+      return hasFiniteBoneTransform(this.activeModel.bindings[partId].bone);
     });
+    return (
+      partTransformsFinite &&
+      hasFiniteBoneTransform(requireBone(this.activeModel.scene, "foot_l")) &&
+      hasFiniteBoneTransform(requireBone(this.activeModel.scene, "foot_r"))
+    );
   }
 
   public dispose(): void {
@@ -450,13 +467,26 @@ export class ProceduralCharacterAvatar implements ProceduralCharacterSocketReade
       .sub(this.scratchIkPole.fromArray(shinPose.jointAnchor));
     this.solveTwoBoneTarget(thighLength, shinLength);
 
-    this.applySolvedLimbSegment(thighBinding, this.scratchIkRoot, this.scratchIkSolvedJoint);
-    this.applySolvedLimbSegment(shinBinding, this.scratchIkSolvedJoint, this.scratchIkSolvedEnd);
+    this.applySolvedLegSegment(thighBinding, this.scratchIkRoot, this.scratchIkSolvedJoint);
+    this.applySolvedLegSegment(shinBinding, this.scratchIkSolvedJoint, this.scratchIkSolvedEnd);
   }
 
   private applySolvedLimbSegment(binding: SegmentBoneBinding, start: Vector3, end: Vector3): void {
     this.scratchIkDirection.copy(end).sub(start).normalize();
     this.scratchIkSegmentQuaternion.setFromUnitVectors(Y_AXIS, this.scratchIkDirection);
+    applySegmentBoneRotation(
+      binding,
+      this.group,
+      this.scratchIkSegmentQuaternion,
+      this.scratchGroupQuaternion,
+      this.scratchParentQuaternion,
+      this.scratchTargetQuaternion,
+    );
+  }
+
+  private applySolvedLegSegment(binding: SegmentBoneBinding, start: Vector3, end: Vector3): void {
+    this.scratchIkDirection.copy(end).sub(start).normalize();
+    resolveStableSegmentQuaternion(this.scratchIkDirection, Z_AXIS, X_AXIS, this.scratchIkSegmentQuaternion);
     applySegmentBoneRotation(
       binding,
       this.group,
@@ -596,6 +626,14 @@ function hasFiniteVector(value: Readonly<Vector3>): boolean {
 
 function hasFiniteQuaternion(value: Readonly<Quaternion>): boolean {
   return Number.isFinite(value.x) && Number.isFinite(value.y) && Number.isFinite(value.z) && Number.isFinite(value.w);
+}
+
+function hasFiniteBoneTransform(bone: Readonly<Bone>): boolean {
+  return [...bone.position.toArray(), ...bone.quaternion.toArray()].every(Number.isFinite);
+}
+
+function toQuaternionTuple(quaternion: Readonly<Quaternion>): QuaternionTuple {
+  return [quaternion.x, quaternion.y, quaternion.z, quaternion.w];
 }
 
 function composeBaseHeadOntoOutfits(assets: LoadedQuaterniusCharacterAsset[]): void {

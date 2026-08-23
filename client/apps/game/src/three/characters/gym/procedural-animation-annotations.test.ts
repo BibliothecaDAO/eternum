@@ -122,8 +122,8 @@ function createArcherDiagnostics(): ProceduralUnitPoseDiagnostics {
       },
       finite: true,
       feet: {
-        left: { contact: "stance", position: joints.ankleLeft, progress: 0.5 },
-        right: { contact: "stance", position: joints.ankleRight, progress: 0.5 },
+        left: { contact: "stance", position: joints.ankleLeft, progress: 0.5, rotation: [0, 0, 0, 1] },
+        right: { contact: "stance", position: joints.ankleRight, progress: 0.5, rotation: [0, 0, 0, 1] },
       },
       headRadius: 0.17,
       issues: [],

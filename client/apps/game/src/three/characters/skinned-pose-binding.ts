@@ -1,4 +1,4 @@
-import { Bone, type Object3D, Quaternion, Vector3 } from "three";
+import { Bone, Matrix4, type Object3D, Quaternion, Vector3 } from "three";
 
 export interface SegmentBoneBinding {
   bone: Bone;
@@ -6,6 +6,10 @@ export interface SegmentBoneBinding {
 }
 
 const DEFAULT_SEGMENT_AXIS = new Vector3(0, 1, 0);
+const stableSegmentDirection = new Vector3();
+const stableSegmentForward = new Vector3();
+const stableSegmentRight = new Vector3();
+const stableSegmentMatrix = new Matrix4();
 
 export function createSegmentBoneBinding(
   scene: Object3D,
@@ -46,6 +50,32 @@ export function applySegmentBoneRotation(
     parent.getWorldQuaternion(scratchParentQuaternion);
     binding.bone.quaternion.copy(scratchParentQuaternion.invert()).multiply(scratchTargetQuaternion).normalize();
   }
+}
+
+/** Aligns a segment while preserving a reference-facing axis near the 180° antipodal case. */
+export function resolveStableSegmentQuaternion(
+  direction: Readonly<Vector3>,
+  referenceForward: Readonly<Vector3>,
+  fallbackForward: Readonly<Vector3>,
+  out: Quaternion,
+): Quaternion {
+  stableSegmentDirection.copy(direction);
+  if (stableSegmentDirection.lengthSq() < 1e-8) return out.identity();
+  stableSegmentDirection.normalize();
+  stableSegmentForward
+    .copy(referenceForward)
+    .addScaledVector(stableSegmentDirection, -referenceForward.dot(stableSegmentDirection));
+  if (stableSegmentForward.lengthSq() < 1e-8) {
+    stableSegmentForward
+      .copy(fallbackForward)
+      .addScaledVector(stableSegmentDirection, -fallbackForward.dot(stableSegmentDirection));
+  }
+  if (stableSegmentForward.lengthSq() < 1e-8) return out.identity();
+  stableSegmentForward.normalize();
+  stableSegmentRight.crossVectors(stableSegmentDirection, stableSegmentForward).normalize();
+  stableSegmentForward.crossVectors(stableSegmentRight, stableSegmentDirection).normalize();
+  stableSegmentMatrix.makeBasis(stableSegmentRight, stableSegmentDirection, stableSegmentForward);
+  return out.setFromRotationMatrix(stableSegmentMatrix).normalize();
 }
 
 function resolveSegmentOrientationOffset(bone: Bone, childBone: Bone, segmentAxis: Vector3): Quaternion {

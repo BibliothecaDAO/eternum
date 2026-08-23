@@ -22,6 +22,7 @@ import {
   type ProceduralAnimationViewCapture,
 } from "@/three/characters/gym/procedural-animation-capture";
 import { evaluateProceduralAnimationCapture } from "@/three/characters/gym/procedural-animation-evaluation";
+import { resolveQuaternionAngularDistanceDegrees } from "@/three/characters/procedural-character-diagnostics";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 
 interface ProceduralAnimationInspectorProps {
@@ -157,7 +158,7 @@ export const ProceduralAnimationInspector = ({
       </div>
 
       {selectedFrame.views.length > 1 && <FrameViewCoverage frame={selectedFrame} />}
-      <FrameDiagnostics frame={selectedFrame} />
+      <FrameDiagnostics frame={selectedFrame} previousFrame={previous} />
     </section>
   );
 };
@@ -188,6 +189,15 @@ const LocomotionDiagnostics = ({
       value={`${formatPercent(locomotion.swingApexProgress.left)} / ${formatPercent(locomotion.swingApexProgress.right)}`}
     />
     <DiagnosticMetric label="Plant drift" value={formatDistance(locomotion.maximumStableStanceDrift)} />
+    <DiagnosticMetric label="Foot step" value={formatFootAngularPeak(locomotion.footAngularStepPeak)} />
+    <DiagnosticMetric
+      label="Stance foot step"
+      value={formatFootAngularPeak(locomotion.stableStanceFootAngularStepPeak)}
+    />
+    <DiagnosticMetric
+      label="Foot travel L/R"
+      value={`${formatDegrees(locomotion.footAngularTravelDegrees.left)} / ${formatDegrees(locomotion.footAngularTravelDegrees.right)}`}
+    />
   </div>
 );
 
@@ -276,11 +286,17 @@ const FrameViewCoverage = ({ frame }: { frame: ProceduralAnimationFrameCapture }
   </div>
 );
 
-const FrameDiagnostics = ({ frame }: { frame: ProceduralAnimationFrameCapture }) => {
+const FrameDiagnostics = ({
+  frame,
+  previousFrame,
+}: {
+  frame: ProceduralAnimationFrameCapture;
+  previousFrame: ProceduralAnimationFrameCapture;
+}) => {
   const humanoid = frame.diagnostics.humanoid;
   const bow = frame.diagnostics.bow;
   return (
-    <div className="grid grid-cols-2 gap-2 px-3 py-2 md:grid-cols-[auto_repeat(6,minmax(0,1fr))]">
+    <div className="grid grid-cols-2 gap-2 px-3 py-2 md:grid-cols-[auto_repeat(8,minmax(0,1fr))]">
       <div className="col-span-2 min-w-32 md:col-span-1">
         <p className="font-mono text-xs font-semibold text-white">
           F{frame.frameIndex} · {frame.elapsedSeconds.toFixed(3)}s
@@ -295,7 +311,9 @@ const FrameDiagnostics = ({ frame }: { frame: ProceduralAnimationFrameCapture })
       <DiagnosticMetric label="R head gap" value={formatDistance(humanoid?.arms.right.handHeadClearance)} />
       <DiagnosticMetric label="Arrow gap" value={formatDistance(bow?.arrowHeadClearance)} />
       <DiagnosticMetric label="Nock / jaw" value={formatDistance(bow?.nockJawDistance)} />
-      <div className="col-span-2 md:col-span-7">
+      <DiagnosticMetric label="L foot Δ" value={formatDegrees(resolveFootStep(frame, previousFrame, "left"))} />
+      <DiagnosticMetric label="R foot Δ" value={formatDegrees(resolveFootStep(frame, previousFrame, "right"))} />
+      <div className="col-span-2 md:col-span-9">
         {frame.issues.length > 0 ? (
           <p className="flex items-center gap-1.5 text-[0.62rem] text-amber-200">
             <AlertTriangle className="h-3.5 w-3.5 shrink-0" /> {frame.issues.join(" · ")}
@@ -309,6 +327,25 @@ const FrameDiagnostics = ({ frame }: { frame: ProceduralAnimationFrameCapture })
     </div>
   );
 };
+
+function resolveFootStep(
+  frame: ProceduralAnimationFrameCapture,
+  previousFrame: ProceduralAnimationFrameCapture,
+  side: "left" | "right",
+): number | null {
+  const current = frame.diagnostics.humanoid?.feet[side].rotation;
+  const previous = previousFrame.diagnostics.humanoid?.feet[side].rotation;
+  if (!current || !previous || frame.frameIndex === previousFrame.frameIndex) return null;
+  return resolveQuaternionAngularDistanceDegrees(current, previous);
+}
+
+function formatFootAngularPeak(
+  peak: NonNullable<
+    ReturnType<typeof evaluateProceduralAnimationCapture>["measurements"]["locomotion"]
+  >["footAngularStepPeak"],
+): string {
+  return peak ? `${formatDegrees(peak.angleDegrees)} · ${peak.side[0].toUpperCase()} F${peak.frameIndex}` : "--";
+}
 
 const DiagnosticMetric = ({ label, value }: { label: string; value: string }) => (
   <div className="border border-white/[0.07] bg-white/[0.025] px-2 py-1">

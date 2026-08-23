@@ -37,6 +37,19 @@ describe("procedural animation objective evaluation", () => {
     expect(evaluation.automatedHardGatePassed).toBe(false);
     expect(evaluation.locomotionHardGateFailures).toContain("moving-root-capture-required");
   });
+
+  it("measures and rejects a one-frame planted-foot rotation", () => {
+    const result = createEvaluationResult();
+    result.plan.sequence = "locomotion-cycle";
+    result.plan.rootMotionSpeed = 0.72;
+    result.frames[1].diagnostics.humanoid!.feet.left.rotation = [0, 0, 1, 0];
+
+    const evaluation = evaluateProceduralAnimationCapture(result);
+
+    expect(evaluation.measurements.maximumFootAngularStepDegrees).toBe(180);
+    expect(evaluation.locomotionHardGateFailures).toContain("foot-angular-pop");
+    expect(evaluation.locomotionHardGateFailures).toContain("stance-foot-rotation");
+  });
 });
 
 function createEvaluationResult(): ProceduralAnimationCaptureResult & {
@@ -67,8 +80,8 @@ function createEvaluationResult(): ProceduralAnimationCaptureResult & {
           },
         },
         feet: {
-          left: { contact: "stance", position: [frameIndex * 0.01, 0, 0], progress: 0.5 },
-          right: { contact: "stance", position: [0, 0, 0], progress: 0.5 },
+          left: { contact: "stance", position: [frameIndex * 0.01, 0, 0], progress: 0.5, rotation: [0, 0, 0, 1] },
+          right: { contact: "stance", position: [0, 0, 0], progress: 0.5, rotation: [0, 0, 0, 1] },
         },
         finite: true,
         headRadius: 0.17,

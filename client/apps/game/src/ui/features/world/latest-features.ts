@@ -34,6 +34,14 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 // are surfaced in the What's New popup.
 const allLatestFeatures: LatestFeature[] = [
   {
+    date: "2026-08-24",
+    title: "Stable Character Footwork",
+    description:
+      "Fixed feet and lower legs twisting as walking characters crossed near-vertical poses, keeping planted steps stable and swing transitions smooth.",
+    type: "fix",
+    gameSlug: "world",
+  },
+  {
     date: "2026-08-23",
     title: "Physical Army Reactions",
     description:

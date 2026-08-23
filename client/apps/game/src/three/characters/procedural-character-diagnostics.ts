@@ -38,6 +38,7 @@ export interface ProceduralFootPoseDiagnostics {
   contact: "stance" | "swing";
   position: Vector3Tuple;
   progress: number;
+  rotation: QuaternionTuple | null;
 }
 
 export interface ProceduralCharacterPoseDiagnostics {
@@ -67,6 +68,7 @@ export interface ProceduralCharacterDiagnosticSockets {
   handLeft?: Readonly<Vector3>;
   handRight?: Readonly<Vector3>;
   jawAnchor?: Readonly<Vector3>;
+  footRotations?: Readonly<Record<"left" | "right", QuaternionTuple>>;
   joints?: Partial<Readonly<Record<ProceduralHumanoidJointId, Vector3Tuple>>>;
 }
 
@@ -101,7 +103,10 @@ export function resolveProceduralCharacterPoseDiagnostics(input: {
     left: resolveLegDiagnostics(joints, "left"),
     right: resolveLegDiagnostics(joints, "right"),
   } as const;
-  const finite = Object.values(joints).every((joint) => joint.every(Number.isFinite));
+  const footRotations = input.sockets?.footRotations;
+  const finite =
+    Object.values(joints).every((joint) => joint.every(Number.isFinite)) &&
+    Object.values(footRotations ?? {}).every((rotation) => rotation.every(Number.isFinite));
   const issues = resolvePoseIssues({ arms, finite, scale });
   const rootPosition = new Vector3();
   input.root.getWorldPosition(rootPosition);
@@ -113,11 +118,13 @@ export function resolveProceduralCharacterPoseDiagnostics(input: {
         contact: input.pose.feet.left.cycle.contact,
         position: solverJoints.ankleLeft,
         progress: round(input.pose.feet.left.cycle.progress),
+        rotation: footRotations?.left ?? null,
       },
       right: {
         contact: input.pose.feet.right.cycle.contact,
         position: solverJoints.ankleRight,
         progress: round(input.pose.feet.right.cycle.progress),
+        rotation: footRotations?.right ?? null,
       },
     },
     headRadius: round(headRadius),
@@ -142,6 +149,14 @@ export function resolveProceduralCharacterPoseDiagnostics(input: {
     socketGrips,
     socketHands,
   };
+}
+
+export function resolveQuaternionAngularDistanceDegrees(left: QuaternionTuple, right: QuaternionTuple): number {
+  const leftLength = Math.hypot(...left);
+  const rightLength = Math.hypot(...right);
+  if (leftLength <= 1e-8 || rightLength <= 1e-8) return 0;
+  const dot = Math.abs(left.reduce((sum, value, index) => sum + value * right[index], 0) / (leftLength * rightLength));
+  return (2 * Math.acos(Math.min(1, Math.max(-1, dot))) * 180) / Math.PI;
 }
 
 function resolveLegDiagnostics(

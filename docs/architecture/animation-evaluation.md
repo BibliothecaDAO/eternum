@@ -143,6 +143,29 @@ fantasy art direction. Those remain visual judgements, but the judgement must be
 
 ## Current evaluation
 
+### Humanoid foot-orientation pass
+
+Evaluation date: 2026-08-24. A seeded moving-root Knight walk reproduced the reported spinning at the rendered skeleton,
+even though ankle position planting remained healthy. The failing 61-frame capture measured a 55.93° one-frame foot
+rotation, 12.51° during stable stance, and 425.21° / 469.34° total left/right rotation over one cycle. The largest jumps
+clustered around late swing and heel strike, where the lower leg approached vertical.
+
+The leg IK converted the authored +Y segment axis to a nearly downward direction with `setFromUnitVectors`. Near that
+180° antipodal case, tiny direction changes selected very different axial rotation planes. The foot bone inherited the
+result from its shin parent, making the boot and lower leg appear to spin even though the ankle target stayed planted.
+Leg segments now construct a complete orthonormal frame: Y follows the solved bone direction while projected character
+forward supplies a stable Z axis. Arm IK remains unchanged.
+
+The exact rerun peaks at 4.82° per frame, 1.56° during stable stance, and 82.13° / 83.18° total rotation, with 0.00243
+maximum stance drift. The 61-frame Archer and Crossbowman walk captures also pass, as does the 39-frame Knight run.
+Five-angle visual review across 28 labelled atlas images shows stable boots and lower legs from both profiles, rear,
+front, and elevated views without removing the existing swing arc.
+
+Foot orientation is now a promotion gate rather than an informal visual check. Every temporal humanoid gait records the
+rendered left/right foot world quaternion, identifies the peak frame and side, and fails for a greater than 20°
+single-frame jump, more than 180° travel per cycle, or excessive stable-stance rotation. The inspector exposes those
+cycle metrics plus each selected frame's left/right angular delta.
+
 ### Collision response and projectile handoff
 
 Evaluation date: 2026-08-23. Walking characters now use a deterministic, fixed-step XZ presentation solver with a

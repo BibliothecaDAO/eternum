@@ -89,8 +89,8 @@ function createHumanoidDiagnostics(): ProceduralCharacterPoseDiagnostics {
     },
     finite: true,
     feet: {
-      left: { contact: "stance", position: [0, 0, 0], progress: 0.5 },
-      right: { contact: "stance", position: [0, 0, 0], progress: 0.5 },
+      left: { contact: "stance", position: [0, 0, 0], progress: 0.5, rotation: [0, 0, 0, 1] },
+      right: { contact: "stance", position: [0, 0, 0], progress: 0.5, rotation: [0, 0, 0, 1] },
     },
     headRadius: 0.17,
     issues: [],
