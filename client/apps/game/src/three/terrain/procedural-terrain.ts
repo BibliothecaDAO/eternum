@@ -12,6 +12,7 @@ import {
 } from "three";
 
 import { TerrainField } from "./terrain-field";
+import type { TerrainFogMask } from "./terrain-fog-mask";
 import { acquireTerrainGroundTextures, type TerrainGroundTextureHandle } from "./terrain-ground-textures";
 import { createTerrainGroundMaterial, createTerrainMaterials, type TerrainMaterials } from "./terrain-material";
 import { prepareTerrainPage } from "./terrain-page-builder";
@@ -19,7 +20,7 @@ import { TerrainPageWorkerClient } from "./terrain-page-worker-client";
 import { TerrainPropPools, type TerrainPropPoolStats } from "./terrain-prop-pools";
 import type { TerrainPropLod } from "./terrain-prop-catalog";
 import { TERRAIN_QUALITY_PROFILES, type TerrainQualityTier } from "./terrain-quality";
-import { TerrainShroudPools, type TerrainShroudPoolStats } from "./terrain-shroud-pools";
+import { TerrainFogField, type TerrainFogFieldStats } from "./terrain-fog-field";
 import type {
   PreparedTerrainPage,
   TerrainGeometryBuffers,
@@ -36,6 +37,7 @@ interface PresentedTerrainPage {
 }
 
 export interface TerrainPresentationDiagnostics {
+  frontierPreviewCells: number;
   geometryBytes: number;
   pages: number;
   propInstances: number;
@@ -66,14 +68,14 @@ export class ProceduralTerrain {
   private propPools: TerrainPropPools | null = null;
   private propPoolsPromise: Promise<TerrainPropPools> | null = null;
   private pageWorker: TerrainPageWorkerClient | null = null;
-  private readonly shroudPools = new TerrainShroudPools();
+  private readonly fogField = new TerrainFogField();
   private disposed = false;
 
   constructor() {
     this.object3d.name = "procedural-terrain";
     this.presentationGroup.name = "procedural-terrain-pages";
     this.object3d.add(this.presentationGroup);
-    this.object3d.add(this.shroudPools.object3d);
+    this.object3d.add(this.fogField.object3d);
     this.materials = createTerrainMaterials();
   }
 
@@ -86,6 +88,13 @@ export class ProceduralTerrain {
     this.requireActive();
     this.pageWorker ??= new TerrainPageWorkerClient();
     return this.pageWorker.prepare(request);
+  }
+
+  prepareFogMaskAsync(preparedPages: readonly PreparedTerrainPage[]): Promise<TerrainFogMask | null> {
+    this.requireActive();
+    this.pageWorker ??= new TerrainPageWorkerClient();
+    const incoming = preparedPages.flatMap((page) => page.shroudInstances);
+    return this.pageWorker.prepareFogMask(this.fogField.resolveIncomingFogCells(incoming));
   }
 
   async loadProps(): Promise<void> {
@@ -136,7 +145,7 @@ export class ProceduralTerrain {
     this.setPropLod(profile.propLod);
     this.setGroundTextureDetailEnabled(profile.groundTextureDetail);
     this.propPools?.setWindStrength(profile.windStrength);
-    this.shroudPools.setQuality(profile.shroudMotionStrength, profile.shroudMistStrength);
+    this.fogField.setQuality(profile.fogMotionStrength, profile.fogMistStrength);
     this.materials.waterMotion.value = profile.waterMotion;
   }
 
@@ -160,19 +169,22 @@ export class ProceduralTerrain {
     };
   }
 
-  getShroudStats(): TerrainShroudPoolStats {
-    return this.shroudPools.getStats();
+  getShroudStats(): TerrainFogFieldStats {
+    return this.fogField.getStats();
   }
 
   queueShroudReveal(col: number, row: number): void {
-    this.shroudPools.queueReveal(col, row);
+    this.fogField.queueReveal(col, row);
   }
 
   update(deltaSeconds: number): void {
-    this.shroudPools.updateAnimation(deltaSeconds);
+    this.fogField.updateAnimation(deltaSeconds);
   }
 
-  present(preparedPages: readonly PreparedTerrainPage[]): TerrainPresentationDiagnostics {
+  present(
+    preparedPages: readonly PreparedTerrainPage[],
+    preparedFogMask?: TerrainFogMask | null,
+  ): TerrainPresentationDiagnostics {
     this.requireActive();
     requireUniquePageKeys(preparedPages);
     const nextPages = new Map<string, PresentedTerrainPage>();
@@ -189,7 +201,7 @@ export class ProceduralTerrain {
 
     this.commitPresentation(nextGroup, nextPages);
     this.refreshPropPools();
-    this.refreshShroudPools();
+    this.refreshFogField(preparedFogMask);
     return summarizePresentation(preparedPages, this.getPropStats(), this.getShroudStats());
   }
 
@@ -213,7 +225,7 @@ export class ProceduralTerrain {
     this.pageWorker = null;
     this.propPools?.dispose();
     this.propPools = null;
-    this.shroudPools.dispose();
+    this.fogField.dispose();
     new Set(
       [this.materials.flatLand, this.materials.land, this.materials.water, this.groundTextureMaterial].filter(Boolean),
     ).forEach((material) => material!.dispose());
@@ -275,8 +287,11 @@ export class ProceduralTerrain {
     this.propPools.update(Array.from(this.pages.values()).flatMap((page) => page.propInstances));
   }
 
-  private refreshShroudPools(): void {
-    this.shroudPools.update(Array.from(this.pages.values()).flatMap((page) => page.shroudInstances));
+  private refreshFogField(preparedMask?: TerrainFogMask | null): void {
+    this.fogField.update(
+      Array.from(this.pages.values()).flatMap((page) => page.shroudInstances),
+      preparedMask,
+    );
   }
 
   private requireActive(): void {
@@ -339,18 +354,19 @@ function requireUniquePageKeys(pages: readonly PreparedTerrainPage[]): void {
 function summarizePresentation(
   pages: readonly PreparedTerrainPage[],
   propStats: TerrainPropPoolStats,
-  shroudStats: TerrainShroudPoolStats,
+  shroudStats: TerrainFogFieldStats,
 ): TerrainPresentationDiagnostics {
   const terrain = pages.reduce<
     Omit<TerrainPresentationDiagnostics, "propInstances" | "propTriangles" | "shroudInstances" | "shroudTriangles">
   >(
     (summary, page) => ({
+      frontierPreviewCells: summary.frontierPreviewCells + page.diagnostics.frontierPreviewCells,
       geometryBytes: summary.geometryBytes + page.diagnostics.geometryBytes,
       pages: summary.pages + 1,
       triangles: summary.triangles + page.diagnostics.triangles,
       vertices: summary.vertices + page.diagnostics.vertices,
     }),
-    { geometryBytes: 0, pages: 0, triangles: 0, vertices: 0 },
+    { frontierPreviewCells: 0, geometryBytes: 0, pages: 0, triangles: 0, vertices: 0 },
   );
   return {
     ...terrain,

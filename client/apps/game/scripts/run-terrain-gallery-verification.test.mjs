@@ -60,6 +60,47 @@ describe("terrain gallery verification", () => {
     ).toMatchObject({ ok: true, performanceDeltas: [], reasons: [] });
   });
 
+  it("requires fog preview geometry to match the one-ring frontier", () => {
+    const fog = result("webgpu-auto", "webgpu", "textured");
+    fog.sceneId = "fog-frontier";
+    fog.snapshot.sceneId = "fog-frontier";
+    fog.snapshot.biomeCount = 10;
+    fog.snapshot.fogMaskBytes = 4_096;
+    fog.snapshot.fogMaskResolution = 64;
+    fog.snapshot.frontierPreviewCells = 6;
+    fog.snapshot.shroudFrontierInstances = 6;
+    fog.snapshot.shroudInstances = 24;
+
+    expect(
+      evaluateTerrainGalleryResults([fog], {
+        groundModes: ["textured"],
+        rendererModes: ["webgpu-auto"],
+        sceneIds: ["fog-frontier"],
+      }),
+    ).toMatchObject({ ok: true, reasons: [] });
+
+    fog.snapshot.frontierPreviewCells = 5;
+    fog.snapshot.shroudActiveReveals = 1;
+    expect(
+      evaluateTerrainGalleryResults([fog], {
+        groundModes: ["textured"],
+        rendererModes: ["webgpu-auto"],
+        sceneIds: ["fog-frontier"],
+      }),
+    ).toMatchObject({ ok: true, reasons: [] });
+
+    fog.snapshot.frontierPreviewCells = 4;
+    expect(
+      evaluateTerrainGalleryResults([fog], {
+        groundModes: ["textured"],
+        rendererModes: ["webgpu-auto"],
+        sceneIds: ["fog-frontier"],
+      }).reasons,
+    ).toContain(
+      "fog-frontier/webgpu-auto/textured: frontier preview geometry did not match the committed one-ring fog frontier",
+    );
+  });
+
   it("keeps structural gates while treating software-renderer timings as informational", () => {
     const results = healthyResults();
     results.forEach((entry) => {
@@ -108,6 +149,9 @@ function result(rendererMode, activeMode, groundMode) {
       drawCalls: 22,
       fingerprint: "terrain-v1",
       firstRenderMs: 20,
+      fogMaskBytes: 0,
+      fogMaskResolution: 0,
+      frontierPreviewCells: 0,
       frameP50Ms: 16.6,
       frameP95Ms: 16.7,
       frameWorstMs: 18,

@@ -87,7 +87,7 @@ describe("ProceduralTerrain", () => {
 
 function request(biome: BiomeType, occupied: boolean) {
   return {
-    cells: [{ biome, col: 0, explored: true, occupied, row: 0 }],
+    cells: [{ biome, col: 0, explored: true, occupied, previewBiome: biome, row: 0 }],
     climate: NEUTRAL_BIOME_CLIMATE,
     generation: 1,
     halo: [],
@@ -100,6 +100,6 @@ function request(biome: BiomeType, occupied: boolean) {
 function unknownRequest() {
   return {
     ...request(BiomeType.None, false),
-    cells: [{ biome: null, col: 0, explored: false, occupied: false, row: 0 }],
+    cells: [{ biome: null, col: 0, explored: false, occupied: false, previewBiome: BiomeType.Grassland, row: 0 }],
   };
 }

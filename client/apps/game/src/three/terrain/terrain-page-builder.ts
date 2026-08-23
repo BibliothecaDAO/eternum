@@ -42,12 +42,20 @@ export function prepareTerrainPage(request: TerrainPageRequest): PreparedTerrain
   const land = createGeometryAccumulator();
   const water = createGeometryAccumulator();
   let frontierEdges = 0;
+  let frontierPreviewCells = 0;
 
   for (const cell of canonicalCells(request.cells)) {
-    if (!cell.explored || !cell.biome) continue;
+    if (cell.explored && cell.biome) {
+      appendCellPatch(land, field, cell, subdivisions);
+      if (isTerrainWaterBiome(cell.biome)) appendWaterCellPatch(water, field, cell, subdivisions);
+      frontierEdges += appendFrontierSkirts(land, field, cell);
+      continue;
+    }
+    if (!field.isFrontierCell(cell.col, cell.row)) continue;
     appendCellPatch(land, field, cell, subdivisions);
-    if (isTerrainWaterBiome(cell.biome)) appendWaterCellPatch(water, field, cell, subdivisions);
-    frontierEdges += appendFrontierSkirts(land, field, cell);
+    const previewBiome = field.getFrontierPreviewBiome(cell.col, cell.row);
+    if (previewBiome && isTerrainWaterBiome(previewBiome)) appendWaterCellPatch(water, field, cell, subdivisions);
+    frontierPreviewCells += 1;
   }
 
   const buffers = finalizeGeometry(land);
@@ -63,6 +71,7 @@ export function prepareTerrainPage(request: TerrainPageRequest): PreparedTerrain
     diagnostics: {
       biomeMismatchCount: field.getBiomeMismatchCount(),
       frontierEdges,
+      frontierPreviewCells,
       geometryBytes,
       prepareMs,
       shroudInstances: shroudInstances.length,
@@ -87,7 +96,7 @@ function appendWaterCellPatch(
   const corners = terrainHexCorners(cell.col, cell.row);
   for (let wedge = 0; wedge < 6; wedge += 1) {
     appendSubdividedTriangle(target, center, corners[wedge], corners[(wedge + 1) % 6], subdivisions, (point) => ({
-      ...field.sampleVertex(point.x, point.z, cell),
+      ...sampleCellVertex(field, cell, point),
       height: TERRAIN_WATER_LEVEL,
       normal: [0, 1, 0],
       roughness: 0.24,
@@ -106,9 +115,19 @@ function appendCellPatch(
   const corners = terrainHexCorners(cell.col, cell.row);
   for (let wedge = 0; wedge < 6; wedge += 1) {
     appendSubdividedTriangle(target, center, corners[wedge], corners[(wedge + 1) % 6], subdivisions, (point) =>
-      field.sampleVertex(point.x, point.z),
+      sampleCellVertex(field, cell, point),
     );
   }
+}
+
+function sampleCellVertex(
+  field: TerrainField,
+  cell: TerrainCellInput,
+  point: TerrainWorldCoordinate,
+): TerrainVisualSample {
+  return cell.explored
+    ? field.sampleVertex(point.x, point.z, cell)
+    : field.sampleFrontierPreviewVertex(point.x, point.z, cell);
 }
 
 function appendSubdividedTriangle(
@@ -154,7 +173,7 @@ function appendFrontierSkirts(target: GeometryAccumulator, field: TerrainField, 
   let edgeCount = 0;
 
   neighbors.forEach((neighbor, direction) => {
-    if (field.getCell(neighbor.col, neighbor.row)?.explored) return;
+    if (field.getCell(neighbor.col, neighbor.row)?.explored || field.isFrontierCell(neighbor.col, neighbor.row)) return;
     const start = corners[(direction + 5) % 6];
     const end = corners[direction];
     const startSample = field.sampleVertex(start.x, start.z);

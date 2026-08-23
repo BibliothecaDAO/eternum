@@ -13,7 +13,7 @@ import {
   TERRAIN_REVEAL_TARGET,
   type TerrainVerificationSceneId,
 } from "@/three/terrain/verification/terrain-verification-fixtures";
-import { TERRAIN_SHROUD_REVEAL_DURATION_SECONDS } from "@/three/terrain/terrain-shroud-pools";
+import { TERRAIN_FOG_REVEAL_DURATION_SECONDS } from "@/three/terrain/terrain-fog-field";
 import { configureGltfTextureSupport } from "@/three/utils/utils";
 
 export interface ProceduralTerrainDebugStats {
@@ -24,6 +24,9 @@ export interface ProceduralTerrainDebugStats {
   drawCalls: number;
   fingerprint: string;
   firstRenderMs: number;
+  fogMaskBytes: number;
+  fogMaskResolution: number;
+  frontierPreviewCells: number;
   frameP50Ms: number;
   frameP95Ms: number;
   frameWorstMs: number;
@@ -145,15 +148,16 @@ export async function mountProceduralTerrainDebugRenderer(
 async function createRuntime(input: MountProceduralTerrainDebugRendererInput): Promise<TerrainDebugRuntime> {
   const Renderer = WebGPURenderer as unknown as TerrainDebugRendererConstructor;
   const renderer = new Renderer({ canvas: input.canvas, antialias: true, forceWebGL: input.forceWebGL });
+  const background = new Color(input.sceneId.startsWith("fog-") ? "#101416" : "#d8d0ba");
   renderer.outputColorSpace = "srgb";
   renderer.setPixelRatio(1);
-  renderer.setClearColor(new Color("#d8d0ba"), 1);
+  renderer.setClearColor(background, 1);
   renderer.shadowMap.enabled = true;
   await renderer.init();
   configureGltfTextureSupport(renderer as Parameters<typeof configureGltfTextureSupport>[0]);
 
   const scene = new Scene();
-  scene.background = new Color("#d8d0ba");
+  scene.background = background;
   let request = createTerrainVerificationRequest(input.sceneId);
   const camera = new PerspectiveCamera(36, 1, 0.1, 300);
   const controls = new MapControls(camera, input.canvas);
@@ -167,16 +171,18 @@ async function createRuntime(input: MountProceduralTerrainDebugRendererInput): P
   await Promise.all([terrain.loadProps(), terrain.loadGroundTextures()]);
   terrain.setQualityTier(input.qualityTier);
   let prepared = await terrain.preparePageAsync(request);
+  let fogMask = await terrain.prepareFogMaskAsync([prepared]);
   let commitStartedAt = performance.now();
-  terrain.present([prepared]);
+  terrain.present([prepared], fogMask);
   let commitMs = performance.now() - commitStartedAt;
   if (input.sceneId === "fog-reveal" && input.revealProgress > 0) {
     terrain.queueShroudReveal(TERRAIN_REVEAL_TARGET.col, TERRAIN_REVEAL_TARGET.row);
     request = createTerrainRevealVerificationRequest(true);
     prepared = await terrain.preparePageAsync(request);
+    fogMask = await terrain.prepareFogMaskAsync([prepared]);
     commitStartedAt = performance.now();
-    terrain.present([prepared]);
-    commitMs += performance.now() - commitStartedAt;
+    terrain.present([prepared], fogMask);
+    commitMs = Math.max(commitMs, performance.now() - commitStartedAt);
     advanceRevealToProgress(terrain, input.revealProgress);
   }
   const propStats = terrain.getPropStats();
@@ -187,6 +193,9 @@ async function createRuntime(input: MountProceduralTerrainDebugRendererInput): P
     cellCount: prepared.request.cells.length,
     commitMs,
     fingerprint: prepared.fingerprint,
+    frontierPreviewCells: prepared.diagnostics.frontierPreviewCells,
+    fogMaskBytes: shroudStats.maskBytes,
+    fogMaskResolution: shroudStats.maskResolution,
     groundTextureBytes: groundTextureStats.bytes,
     groundTextureLayers: groundTextureStats.layerCount,
     prepareMs: prepared.diagnostics.prepareMs,
@@ -223,7 +232,7 @@ async function createRuntime(input: MountProceduralTerrainDebugRendererInput): P
 }
 
 function advanceRevealToProgress(terrain: ProceduralTerrain, progress: number): void {
-  const targetSeconds = Math.min(1, Math.max(0, progress)) * TERRAIN_SHROUD_REVEAL_DURATION_SECONDS;
+  const targetSeconds = Math.min(1, Math.max(0, progress)) * TERRAIN_FOG_REVEAL_DURATION_SECONDS;
   const steps = Math.ceil(targetSeconds / 0.05);
   for (let step = 0; step < steps; step += 1) terrain.update(Math.min(0.05, targetSeconds - step * 0.05));
 }

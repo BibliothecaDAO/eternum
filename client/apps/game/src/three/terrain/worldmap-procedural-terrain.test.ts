@@ -19,6 +19,7 @@ describe("WorldmapProceduralTerrain", () => {
     expect(requests.map(({ pageKey }) => pageKey)).toEqual(["0,-1", "0,0", "0,1"]);
     expect(requests[1].halo.map(({ col }) => col)).toEqual([-1, 1]);
     expect(requests[2].cells[0].biome).toBeNull();
+    expect(requests[2].cells[0].previewBiome).toBeNull();
   });
 
   it("propagates the explicit prop density into every prepared page", () => {

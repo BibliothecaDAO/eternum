@@ -34,6 +34,14 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 // are surfaced in the What's New popup.
 const allLatestFeatures: LatestFeature[] = [
   {
+    date: "2026-08-24",
+    title: "Living Fog Frontier",
+    description:
+      "Undiscovered territory now settles beneath one softly moving mist field, with a natural one-tile glimpse of the biome where the fog meets explored land.",
+    type: "improvement",
+    gameSlug: "world",
+  },
+  {
     date: "2026-08-23",
     title: "Exploration Shroud",
     description:

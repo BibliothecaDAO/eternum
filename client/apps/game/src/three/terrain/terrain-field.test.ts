@@ -109,6 +109,22 @@ describe("TerrainField", () => {
     expect(field.sampleSurface(20, 20).biome).toBeNull();
   });
 
+  it("builds a presentation-only preview for exactly one unexplored frontier ring", () => {
+    const frontier = unknownCell(1, 0, BiomeType.Snow);
+    const deep = unknownCell(2, 0, BiomeType.Scorched);
+    const field = new TerrainField(createRequest([cell(0, 0, BiomeType.Grassland), frontier, deep]));
+    const frontierCenter = terrainHexToWorld(frontier.col, frontier.row);
+    const deepCenter = terrainHexToWorld(deep.col, deep.row);
+
+    expect(field.isFrontierCell(frontier.col, frontier.row)).toBe(true);
+    expect(field.sampleFrontierPreviewVertex(frontierCenter.x, frontierCenter.z, frontier)).toMatchObject({
+      biome: BiomeType.Snow,
+      explored: 0,
+    });
+    expect(field.isFrontierCell(deep.col, deep.row)).toBe(false);
+    expect(field.sampleFrontierPreviewVertex(deepCenter.x, deepCenter.z, deep).biome).toBeNull();
+  });
+
   it("can make projected/environment mismatches fatal at the explicit production seam", () => {
     expect(() => new TerrainField({ ...createRequest([cell(0, 0, BiomeType.Snow)]), strictBiomeParity: true })).toThrow(
       "fixture has 1 projected biome/environment mismatch(es)",
@@ -127,7 +143,11 @@ describe("TerrainField", () => {
 });
 
 function cell(col: number, row: number, biome: BiomeType, occupied = false): TerrainCellInput {
-  return { biome, col, explored: true, occupied, row };
+  return { biome, col, explored: true, occupied, previewBiome: biome, row };
+}
+
+function unknownCell(col: number, row: number, previewBiome: BiomeType): TerrainCellInput {
+  return { biome: null, col, explored: false, occupied: false, previewBiome, row };
 }
 
 function createRequest(

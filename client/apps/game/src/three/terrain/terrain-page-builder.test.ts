@@ -47,7 +47,12 @@ describe("prepareTerrainPage", () => {
     const frontier = prepareTerrainPage({ ...createRequest([owned]), halo: [exploredNeighbor] });
 
     expect(hidden.shroudInstances[0].frontier).toBe(false);
+    expect(hidden.diagnostics.frontierPreviewCells).toBe(0);
+    expect(hidden.buffers.positions).toHaveLength(0);
     expect(frontier.shroudInstances[0].frontier).toBe(true);
+    expect(frontier.diagnostics.frontierPreviewCells).toBe(1);
+    expect(frontier.buffers.positions.length).toBeGreaterThan(0);
+    expect(Array.from(frontier.buffers.explored).every((value) => value === 0)).toBe(true);
     expect(frontier.fingerprint).not.toBe(hidden.fingerprint);
   });
 
@@ -135,11 +140,11 @@ function readAttribute(buffer: Float32Array | Uint8Array, vertex: number, itemSi
 }
 
 function cell(col: number, row: number, biome: BiomeType): TerrainCellInput {
-  return { biome, col, explored: true, occupied: false, row };
+  return { biome, col, explored: true, occupied: false, previewBiome: biome, row };
 }
 
-function unknownCell(col: number, row: number): TerrainCellInput {
-  return { biome: null, col, explored: false, occupied: false, row };
+function unknownCell(col: number, row: number, previewBiome = BiomeType.Grassland): TerrainCellInput {
+  return { biome: null, col, explored: false, occupied: false, previewBiome, row };
 }
 
 function createRequest(cells: TerrainCellInput[]): TerrainPageRequest {

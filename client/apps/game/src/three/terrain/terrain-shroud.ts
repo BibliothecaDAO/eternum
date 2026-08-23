@@ -5,9 +5,9 @@ import { TERRAIN_BIOME_ART_DIRECTIONS } from "./terrain-biome-art-direction";
 import { terrainHexToWorld, terrainNeighborCoordinates } from "./terrain-coordinates";
 import type { TerrainField } from "./terrain-field";
 import { hashTerrainCoordinates, terrainHashToUnitFloat } from "./terrain-hash";
-import type { TerrainPageRequest, TerrainShroudInstance } from "./terrain-types";
+import type { TerrainCellInput, TerrainPageRequest, TerrainShroudInstance } from "./terrain-types";
 
-const DEEP_SHROUD_COLOR = new Color("#2b4050");
+const DEEP_SHROUD_COLOR = new Color("#15191c");
 const SHROUD_SURFACE_OFFSET = 0.065;
 
 export function prepareTerrainShroudInstances(
@@ -25,16 +25,17 @@ function prepareTerrainShroudInstance(
   col: number,
   row: number,
 ): TerrainShroudInstance {
-  const exploredNeighborBiomes = terrainNeighborCoordinates(col, row)
+  const exploredNeighbors = terrainNeighborCoordinates(col, row)
     .map((neighbor) => field.getCell(neighbor.col, neighbor.row))
     .filter((neighbor): neighbor is NonNullable<typeof neighbor> & { biome: BiomeType } =>
       Boolean(neighbor?.explored && neighbor.biome),
-    )
-    .map(({ biome }) => biome);
+    );
   const center = terrainHexToWorld(col, row);
+  const frontier = exploredNeighbors.length > 0;
   return {
     col,
-    frontier: exploredNeighborBiomes.length > 0,
+    frontier,
+    frontierDirection: resolveFrontierDirection(center, exploredNeighbors),
     pageKey: request.pageKey,
     row,
     seed: terrainHashToUnitFloat(
@@ -46,11 +47,37 @@ function prepareTerrainShroudInstance(
         salt: "terrain-exploration-shroud-v1",
       }),
     ),
-    tint: resolveShroudTint(exploredNeighborBiomes),
+    tint: resolveShroudTint(exploredNeighbors.map(({ biome }) => biome)),
     worldX: center.x,
-    worldY: field.sampleVisual(center.x, center.z, { col, row }).height + SHROUD_SURFACE_OFFSET,
+    worldY:
+      (frontier
+        ? field.sampleFrontierPreviewVertex(center.x, center.z, { col, row })
+        : field.sampleVisual(center.x, center.z, { col, row })
+      ).height + SHROUD_SURFACE_OFFSET,
     worldZ: center.z,
   };
+}
+
+function resolveFrontierDirection(
+  center: { x: number; z: number },
+  exploredNeighbors: readonly TerrainCellInput[],
+): readonly [number, number] {
+  if (exploredNeighbors.length === 0) return [0, 0];
+  let directionX = 0;
+  let directionZ = 0;
+  exploredNeighbors.forEach((neighbor) => {
+    const neighborCenter = terrainHexToWorld(neighbor.col, neighbor.row);
+    directionX += neighborCenter.x - center.x;
+    directionZ += neighborCenter.z - center.z;
+  });
+  let length = Math.hypot(directionX, directionZ);
+  if (length < 0.0001) {
+    const fallback = terrainHexToWorld(exploredNeighbors[0].col, exploredNeighbors[0].row);
+    directionX = fallback.x - center.x;
+    directionZ = fallback.z - center.z;
+    length = Math.hypot(directionX, directionZ);
+  }
+  return [directionX / length, directionZ / length];
 }
 
 function resolveShroudTint(exploredNeighborBiomes: readonly BiomeType[]): readonly [number, number, number] {

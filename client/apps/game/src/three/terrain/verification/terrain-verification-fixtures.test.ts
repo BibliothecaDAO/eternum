@@ -52,6 +52,7 @@ describe("game-scale all-biomes fixture", () => {
         new Set(first.cells.filter(({ explored }) => explored).map(({ biome }) => biome)).size,
       ).toBeGreaterThanOrEqual(3);
       expect(first.cells.filter(({ explored, biome }) => !explored && biome !== null)).toHaveLength(0);
+      expect(first.cells.filter(({ explored, previewBiome }) => !explored && !previewBiome)).toHaveLength(0);
     });
   });
 });

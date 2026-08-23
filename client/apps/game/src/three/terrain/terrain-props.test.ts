@@ -114,7 +114,7 @@ describe("terrain prop placement", () => {
 });
 
 function cell(col: number, row: number, biome: BiomeType, occupied = false): TerrainCellInput {
-  return { biome, col, explored: true, occupied, row };
+  return { biome, col, explored: true, occupied, previewBiome: biome, row };
 }
 
 function request(cells: TerrainCellInput[], pageKey = "props", halo: TerrainCellInput[] = []): TerrainPageRequest {

@@ -73,6 +73,8 @@ export class TerrainField {
   private readonly cellByKey = new Map<string, TerrainCellInput>();
   private readonly sampleByKey = new Map<string, CellFieldSample>();
   private readonly candidatesByKey = new Map<string, CellFieldSample[]>();
+  private readonly previewSampleByKey = new Map<string, CellFieldSample>();
+  private readonly previewCandidatesByKey = new Map<string, CellFieldSample[]>();
   private readonly elevationSeed: number;
   private readonly moistureSeed: number;
   private biomeMismatchCount: number | null = null;
@@ -101,6 +103,33 @@ export class TerrainField {
     return this.cellByKey.get(terrainCellKey(col, row));
   }
 
+  isFrontierCell(col: number, row: number): boolean {
+    const cell = this.getCell(col, row);
+    return Boolean(
+      cell &&
+      !cell.explored &&
+      terrainNeighborCoordinates(col, row).some((neighbor) => this.getCell(neighbor.col, neighbor.row)?.explored),
+    );
+  }
+
+  getFrontierPreviewBiome(col: number, row: number): BiomeType | null {
+    return this.resolvePreviewCellSample(col, row)?.biome ?? null;
+  }
+
+  sampleFrontierPreviewVertex(
+    worldX: number,
+    worldZ: number,
+    owner: Pick<TerrainCellInput, "col" | "row">,
+  ): TerrainVisualSample {
+    if (!this.isFrontierCell(owner.col, owner.row)) return createUnknownSample();
+    return this.sampleVertexFromCandidates(
+      worldX,
+      worldZ,
+      this.resolveFrontierPreviewCandidates(owner.col, owner.row),
+      0,
+    );
+  }
+
   sampleVisual(worldX: number, worldZ: number, owner?: Pick<TerrainCellInput, "col" | "row">): TerrainVisualSample {
     const ownerCoordinate = owner ?? findNearestTerrainHex(worldX, worldZ);
     const candidates = this.resolveExploredCandidates(ownerCoordinate.col, ownerCoordinate.row);
@@ -111,6 +140,7 @@ export class TerrainField {
     worldX: number,
     worldZ: number,
     candidates: readonly CellFieldSample[],
+    explored = 1,
   ): TerrainVisualSample {
     if (candidates.length === 0) return createUnknownSample();
 
@@ -182,7 +212,7 @@ export class TerrainField {
         green * inverseWeight * albedoFactor,
         blue * inverseWeight * albedoFactor,
       ],
-      explored: 1,
+      explored,
       groundWeights: paddedGroundWeights,
       height: paddedHeight,
       normal: [0, 1, 0],
@@ -251,8 +281,9 @@ export class TerrainField {
     worldX: number,
     worldZ: number,
     candidates: readonly CellFieldSample[],
+    explored = 1,
   ): TerrainVisualSample {
-    const center = this.sampleVisualFromCandidates(worldX, worldZ, candidates);
+    const center = this.sampleVisualFromCandidates(worldX, worldZ, candidates, explored);
     if (center.biome === null) return center;
     const normal = this.sampleNormalFromCandidates(worldX, worldZ, candidates);
     return { ...center, groundWeights: applyTerrainGroundSlope(center.groundWeights, normal[1]), normal };
@@ -335,25 +366,31 @@ export class TerrainField {
     const ownerKey = terrainCellKey(col, row);
     const cached = this.candidatesByKey.get(ownerKey);
     if (cached) return cached;
-    const oneRing = terrainNeighborCoordinates(col, row);
-    const coordinates = [
-      { col, row },
-      ...oneRing,
-      ...oneRing.flatMap((cell) => terrainNeighborCoordinates(cell.col, cell.row)),
-    ];
-    const seen = new Set<string>();
-    const candidates = coordinates
-      .filter((coordinate) => {
-        const key = terrainCellKey(coordinate.col, coordinate.row);
-        if (seen.has(key)) return false;
-        seen.add(key);
-        return true;
-      })
+    const candidates = resolveTerrainCandidateCoordinates(col, row)
       .map((coordinate) => this.resolveCellSample(coordinate.col, coordinate.row))
       .filter((sample): sample is CellFieldSample => sample !== null)
       .toSorted((left, right) => left.row - right.row || left.col - right.col);
     this.candidatesByKey.set(ownerKey, candidates);
     return candidates;
+  }
+
+  private resolveFrontierPreviewCandidates(col: number, row: number): CellFieldSample[] {
+    const ownerKey = terrainCellKey(col, row);
+    const cached = this.previewCandidatesByKey.get(ownerKey);
+    if (cached) return cached;
+    const candidates = resolveTerrainCandidateCoordinates(col, row)
+      .map((coordinate) => this.resolvePresentationCellSample(coordinate.col, coordinate.row))
+      .filter((sample): sample is CellFieldSample => sample !== null)
+      .toSorted((left, right) => left.row - right.row || left.col - right.col);
+    this.previewCandidatesByKey.set(ownerKey, candidates);
+    return candidates;
+  }
+
+  private resolvePresentationCellSample(col: number, row: number): CellFieldSample | null {
+    const cell = this.getCell(col, row);
+    if (!cell) return null;
+    if (cell.explored) return this.resolveCellSample(col, row);
+    return this.isFrontierCell(col, row) ? this.resolvePreviewCellSample(col, row) : null;
   }
 
   private resolveCellSample(col: number, row: number): CellFieldSample | null {
@@ -362,13 +399,32 @@ export class TerrainField {
     if (cached) return cached;
     const cell = this.cellByKey.get(key);
     if (!cell?.explored || !cell.biome) return null;
+    return this.createCellSample(col, row, cell.biome, this.sampleByKey);
+  }
+
+  private resolvePreviewCellSample(col: number, row: number): CellFieldSample | null {
+    const key = terrainCellKey(col, row);
+    const cached = this.previewSampleByKey.get(key);
+    if (cached) return cached;
+    const cell = this.cellByKey.get(key);
+    if (!cell || cell.explored || !this.isFrontierCell(col, row)) return null;
+    return this.createCellSample(col, row, cell.previewBiome, this.previewSampleByKey);
+  }
+
+  private createCellSample(
+    col: number,
+    row: number,
+    previewBiome: BiomeType | null,
+    cache: Map<string, CellFieldSample>,
+  ): CellFieldSample {
     const environment = Biome.sampleEnvironment(
       col + this.request.mapCenter,
       row + this.request.mapCenter,
       this.request.climate,
     );
-    const descriptor = TERRAIN_BIOME_DESCRIPTORS[cell.biome];
-    const direction = TERRAIN_BIOME_ART_DIRECTIONS[cell.biome];
+    const biome = previewBiome ?? environment.biome;
+    const descriptor = TERRAIN_BIOME_DESCRIPTORS[biome];
+    const direction = TERRAIN_BIOME_ART_DIRECTIONS[biome];
     const center = terrainHexToWorld(col, row);
     const primary = new Color(descriptor.primary);
     const secondary = new Color(descriptor.secondary);
@@ -377,22 +433,22 @@ export class TerrainField {
         descriptor.baseHeight +
         (environment.elevation - 0.5) * descriptor.elevationScale +
         this.resolveMacroLandformOffset(center.x, center.z, direction),
-      biome: cell.biome,
-      biomeId: BiomeTypeToId[cell.biome],
+      biome,
+      biomeId: BiomeTypeToId[biome],
       centerX: center.x,
       centerZ: center.z,
       col,
       descriptor,
       direction,
       elevation: environment.elevation,
-      groundWeights: resolveTerrainGroundRecipe(cell.biome, environment),
+      groundWeights: resolveTerrainGroundRecipe(biome, environment),
       moisture: environment.moisture,
       primary: [primary.r, primary.g, primary.b] as const,
       row,
       sampledBiome: environment.biome,
       secondary: [secondary.r, secondary.g, secondary.b] as const,
     };
-    this.sampleByKey.set(key, sample);
+    cache.set(terrainCellKey(col, row), sample);
     return sample;
   }
 
@@ -472,10 +528,35 @@ export class TerrainField {
 }
 
 function requireConsistentTerrainCellExploration(cell: TerrainCellInput): void {
-  if (cell.explored === (cell.biome !== null)) return;
-  throw new Error(
-    `Terrain cell ${cell.col},${cell.row} has inconsistent exploration and biome state: explored=${String(cell.explored)} biome=${String(cell.biome)}`,
-  );
+  if (cell.explored !== (cell.biome !== null)) {
+    throw new Error(
+      `Terrain cell ${cell.col},${cell.row} has inconsistent exploration and biome state: explored=${String(cell.explored)} biome=${String(cell.biome)}`,
+    );
+  }
+  if (cell.previewBiome === BiomeType.None) {
+    throw new Error(`Terrain cell ${cell.col},${cell.row} requires a concrete preview biome`);
+  }
+  if (cell.explored && cell.previewBiome !== cell.biome) {
+    throw new Error(
+      `Terrain cell ${cell.col},${cell.row} preview biome must match its explored biome: preview=${cell.previewBiome} biome=${String(cell.biome)}`,
+    );
+  }
+}
+
+function resolveTerrainCandidateCoordinates(col: number, row: number): Array<{ col: number; row: number }> {
+  const oneRing = terrainNeighborCoordinates(col, row);
+  const coordinates = [
+    { col, row },
+    ...oneRing,
+    ...oneRing.flatMap((cell) => terrainNeighborCoordinates(cell.col, cell.row)),
+  ];
+  const seen = new Set<string>();
+  return coordinates.filter((coordinate) => {
+    const key = terrainCellKey(coordinate.col, coordinate.row);
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
 }
 
 function resolveSeed(value: number | undefined): number {

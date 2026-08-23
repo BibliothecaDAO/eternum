@@ -3,11 +3,12 @@ import { BiomeType, getNeighborHexes } from "@bibliothecadao/types";
 import type { Group } from "three";
 
 import { ProceduralTerrain, type TerrainPresentationDiagnostics } from "./procedural-terrain";
+import type { TerrainFogMask } from "./terrain-fog-mask";
 import { terrainCellKey } from "./terrain-coordinates";
 import type { PreparedTerrainPage, TerrainCellInput, TerrainPageRequest, TerrainSurfaceSample } from "./terrain-types";
 import type { TerrainPropLod } from "./terrain-prop-catalog";
 import type { TerrainQualityTier } from "./terrain-quality";
-import type { TerrainShroudPoolStats } from "./terrain-shroud-pools";
+import type { TerrainFogFieldStats } from "./terrain-fog-field";
 
 interface WorldmapProceduralCell {
   biomeKey: string;
@@ -99,7 +100,9 @@ export class WorldmapProceduralTerrain {
     if (revision !== this.presentationRevision) return null;
     const nextCache = new Map<string, CachedPreparedPage>(preparedEntries);
     const preparedPages = preparedEntries.map(([, entry]) => entry.prepared);
-    return this.commitPreparedPages(input, preparedPages, nextCache, builtPages, reusedPages);
+    const fogMask = await this.terrain.prepareFogMaskAsync(preparedPages);
+    if (revision !== this.presentationRevision) return null;
+    return this.commitPreparedPages(input, preparedPages, nextCache, builtPages, reusedPages, fogMask);
   }
 
   loadProps(): Promise<void> {
@@ -130,7 +133,7 @@ export class WorldmapProceduralTerrain {
     this.terrain.update(deltaSeconds);
   }
 
-  getShroudStats(): TerrainShroudPoolStats {
+  getShroudStats(): TerrainFogFieldStats {
     return this.terrain.getShroudStats();
   }
 
@@ -162,9 +165,10 @@ export class WorldmapProceduralTerrain {
     nextCache: Map<string, CachedPreparedPage>,
     builtPages: number,
     reusedPages: number,
+    preparedFogMask?: TerrainFogMask | null,
   ): WorldmapProceduralPresentationDiagnostics {
     const commitStartedAt = performance.now();
-    const presentation = this.terrain.present(preparedPages);
+    const presentation = this.terrain.present(preparedPages, preparedFogMask);
     const commitMs = performance.now() - commitStartedAt;
     this.preparedByPage.clear();
     nextCache.forEach((page, pageKey) => this.preparedByPage.set(pageKey, page));
@@ -188,6 +192,7 @@ export class WorldmapProceduralTerrain {
 export function buildWorldmapTerrainPageRequests(input: WorldmapProceduralPresentationInput): TerrainPageRequest[] {
   requirePageSize(input.pageWidth, "width");
   requirePageSize(input.pageHeight, "height");
+  const climate = input.climate ?? NEUTRAL_BIOME_CLIMATE;
   const cells = canonicalTerrainCells(input.cells.map(toTerrainCell));
   const cellsByKey = new Map(cells.map((cell) => [terrainCellKey(cell.col, cell.row), cell]));
   const cellsByPage = new Map<string, TerrainCellInput[]>();
@@ -203,7 +208,7 @@ export function buildWorldmapTerrainPageRequests(input: WorldmapProceduralPresen
     .toSorted(([left], [right]) => left.localeCompare(right, "en", { numeric: true }))
     .map(([pageKey, pageCells]) => ({
       cells: canonicalTerrainCells(pageCells),
-      climate: input.climate ?? NEUTRAL_BIOME_CLIMATE,
+      climate,
       generation: input.generation,
       halo: resolvePageHalo(pageCells, cellsByKey),
       mapCenter: input.mapCenter,
@@ -237,6 +242,7 @@ function toTerrainCell(cell: WorldmapProceduralCell): TerrainCellInput {
     col: cell.col,
     explored: biome !== null,
     occupied: cell.occupied,
+    previewBiome: biome,
     row: cell.row,
   };
 }

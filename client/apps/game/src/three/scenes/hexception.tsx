@@ -1326,6 +1326,7 @@ export default class HexceptionScene extends HexagonScene {
           col: coordinate.col,
           explored: true,
           occupied: biomeKey === "Empty",
+          previewBiome: biome,
           row: coordinate.row,
         });
       });

@@ -93,6 +93,7 @@ export function createTerrainRevealVerificationRequest(revealed: boolean): Terra
             ...cell,
             biome: resolveAnchorBiome("temperate-grove", cell.col, cell.row),
             explored: true,
+            previewBiome: resolveAnchorBiome("temperate-grove", cell.col, cell.row),
           }
         : cell,
     ),
@@ -135,19 +136,21 @@ function isFogCellExplored(
   return dx * dx + dy * dy + Math.sin(col * 0.8 + row * 0.33) * 0.12 < 1;
 }
 
-function concealCell<TCell extends { col: number; occupied: boolean; row: number }>(cell: TCell) {
-  return { ...cell, biome: null, explored: false, occupied: false };
+function concealCell<TCell extends { biome: BiomeType; col: number; occupied: boolean; row: number }>(cell: TCell) {
+  return { ...cell, biome: null, explored: false, occupied: false, previewBiome: cell.biome };
 }
 
 function createShowcaseCells() {
   return Array.from({ length: ALL_BIOMES_COLUMNS * ALL_BIOMES_ROWS }, (_, index) => {
     const col = index % ALL_BIOMES_COLUMNS;
     const row = Math.floor(index / ALL_BIOMES_COLUMNS);
+    const biome = resolveShowcaseBiome(col, row);
     return {
-      biome: resolveShowcaseBiome(col, row),
+      biome,
       col,
       explored: true,
       occupied: false,
+      previewBiome: biome,
       row,
     };
   });
@@ -165,11 +168,13 @@ function createAnchorCells(sceneId: TerrainBiomeAnchorSceneId) {
   return Array.from({ length: TERRAIN_ANCHOR_COLUMNS * TERRAIN_ANCHOR_ROWS }, (_, index) => {
     const col = index % TERRAIN_ANCHOR_COLUMNS;
     const row = Math.floor(index / TERRAIN_ANCHOR_COLUMNS);
+    const biome = resolveAnchorBiome(sceneId, col, row);
     return {
-      biome: resolveAnchorBiome(sceneId, col, row),
+      biome,
       col,
       explored: true,
       occupied: col === Math.floor(TERRAIN_ANCHOR_COLUMNS * 0.58) && row === Math.floor(TERRAIN_ANCHOR_ROWS * 0.52),
+      previewBiome: biome,
       row,
     };
   });

@@ -2,6 +2,7 @@ import { NEUTRAL_BIOME_CLIMATE } from "@bibliothecadao/eternum";
 import { BiomeType } from "@bibliothecadao/types";
 import { describe, expect, it } from "vitest";
 
+import { terrainHexToWorld } from "./terrain-coordinates";
 import { TerrainField } from "./terrain-field";
 import { prepareTerrainShroudInstances } from "./terrain-shroud";
 import type { TerrainCellInput, TerrainPageRequest } from "./terrain-types";
@@ -21,9 +22,16 @@ describe("terrain exploration shroud", () => {
     ]);
     expect(first[0].frontier).toBe(true);
     expect(first[1].frontier).toBe(false);
+    expect(first[1].frontierDirection).toEqual([0, 0]);
+    const frontierCenter = terrainHexToWorld(1, 0);
+    const exploredCenter = terrainHexToWorld(0, 0);
+    const towardExplored = [exploredCenter.x - frontierCenter.x, exploredCenter.z - frontierCenter.z];
+    expect(
+      first[0].frontierDirection[0] * towardExplored[0] + first[0].frontierDirection[1] * towardExplored[1],
+    ).toBeGreaterThan(0);
   });
 
-  it("tints only from explored neighbors and never requires a hidden biome", () => {
+  it("tints only from explored neighbors while the preview surface follows its explicit biome", () => {
     const coldRequest = fixture([explored(0, 0, BiomeType.Snow), unknown(1, 0)]);
     const aridRequest = fixture([explored(0, 0, BiomeType.SubtropicalDesert), unknown(1, 0)]);
     const cold = prepareTerrainShroudInstances(coldRequest, new TerrainField(coldRequest))[0];
@@ -35,7 +43,16 @@ describe("terrain exploration shroud", () => {
   });
 
   it("rejects contradictory exploration and biome state loudly", () => {
-    const request = fixture([{ biome: BiomeType.Grassland, col: 0, explored: false, occupied: false, row: 0 }]);
+    const request = fixture([
+      {
+        biome: BiomeType.Grassland,
+        col: 0,
+        explored: false,
+        occupied: false,
+        previewBiome: BiomeType.Grassland,
+        row: 0,
+      },
+    ]);
 
     expect(() => new TerrainField(request)).toThrow(/inconsistent exploration and biome state/);
   });
@@ -49,11 +66,11 @@ describe("terrain exploration shroud", () => {
 });
 
 function explored(col: number, row: number, biome: BiomeType): TerrainCellInput {
-  return { biome, col, explored: true, occupied: false, row };
+  return { biome, col, explored: true, occupied: false, previewBiome: biome, row };
 }
 
-function unknown(col: number, row: number): TerrainCellInput {
-  return { biome: null, col, explored: false, occupied: false, row };
+function unknown(col: number, row: number, previewBiome = BiomeType.Grassland): TerrainCellInput {
+  return { biome: null, col, explored: false, occupied: false, previewBiome, row };
 }
 
 function fixture(cells: TerrainCellInput[]): TerrainPageRequest {

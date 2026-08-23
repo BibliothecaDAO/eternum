@@ -25,4 +25,11 @@ describe("exploration shroud production wiring", () => {
 
     expect(adapter).toContain("explored: biome !== null");
   });
+
+  it("defers hidden biome classification to frontier work in the terrain worker", () => {
+    const adapter = source("src/three/terrain/worldmap-procedural-terrain.ts");
+
+    expect(adapter).toContain("previewBiome: biome");
+    expect(adapter).not.toContain("Biome.getBiome");
+  });
 });

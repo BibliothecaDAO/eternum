@@ -100,12 +100,29 @@ export function evaluateTerrainGalleryResults(results, options = {}) {
       reasons.push(`${label}: renderer texture count exceeded policy or was unavailable`);
     }
     if (!(result.snapshot?.propInstances > 0)) reasons.push(`${label}: expected deterministic prop instances`);
-    const expectsShroud = result.sceneId.startsWith("fog-");
-    if (expectsShroud && !(result.snapshot?.shroudInstances > 0)) {
-      reasons.push(`${label}: expected deterministic exploration shroud instances`);
+    const expectsFog = result.sceneId.startsWith("fog-");
+    if (expectsFog && !(result.snapshot?.shroudInstances > 0)) {
+      reasons.push(`${label}: expected deterministic exploration fog cells`);
     }
-    if (!expectsShroud && result.snapshot?.shroudInstances !== 0) {
-      reasons.push(`${label}: fully explored scene unexpectedly rendered exploration shroud instances`);
+    if (expectsFog && (result.snapshot?.fogMaskResolution !== 64 || result.snapshot?.fogMaskBytes !== 4_096)) {
+      reasons.push(`${label}: expected one bounded 64-square fog mask`);
+    }
+    if (
+      expectsFog &&
+      (!(result.snapshot?.frontierPreviewCells > 0) ||
+        result.snapshot.frontierPreviewCells + result.snapshot.shroudActiveReveals !==
+          result.snapshot.shroudFrontierInstances)
+    ) {
+      reasons.push(`${label}: frontier preview geometry did not match the committed one-ring fog frontier`);
+    }
+    if (!expectsFog && result.snapshot?.shroudInstances !== 0) {
+      reasons.push(`${label}: fully explored scene unexpectedly rendered exploration fog cells`);
+    }
+    if (!expectsFog && result.snapshot?.frontierPreviewCells !== 0) {
+      reasons.push(`${label}: fully explored scene unexpectedly rendered frontier preview geometry`);
+    }
+    if (!expectsFog && (result.snapshot?.fogMaskResolution !== 0 || result.snapshot?.fogMaskBytes !== 0)) {
+      reasons.push(`${label}: fully explored scene unexpectedly allocated a fog mask`);
     }
     if (
       result.sceneId === "fog-reveal" &&
@@ -116,7 +133,7 @@ export function evaluateTerrainGalleryResults(results, options = {}) {
       reasons.push(`${label}: expected one active commit-gated terrain reveal`);
     }
     if (result.sceneId === "fog-reveal" && result.revealProgress === 1 && result.snapshot?.shroudActiveReveals !== 0) {
-      reasons.push(`${label}: completed terrain reveal retained active shroud state`);
+      reasons.push(`${label}: completed terrain reveal retained active fog state`);
     }
     if (!(result.snapshot?.triangles > 0 && result.snapshot.triangles <= 3_000_000)) {
       reasons.push(`${label}: triangle count exceeded policy or was unavailable`);
@@ -153,11 +170,12 @@ export function evaluateTerrainGalleryResults(results, options = {}) {
       if (
         metric.biomeCount !== reference.biomeCount ||
         metric.cellCount !== reference.cellCount ||
+        metric.frontierPreviewCells !== reference.frontierPreviewCells ||
         metric.groundTextureBytes !== reference.groundTextureBytes ||
         metric.groundTextureLayers !== reference.groundTextureLayers ||
         metric.propInstances !== reference.propInstances
       ) {
-        reasons.push(`${sceneId}: renderer backends produced different biome, cell, texture, or prop counts`);
+        reasons.push(`${sceneId}: renderer backends produced different terrain presentation counts`);
       }
     }
   }

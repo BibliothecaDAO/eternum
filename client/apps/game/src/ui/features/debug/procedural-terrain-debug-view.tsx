@@ -24,6 +24,9 @@ const EMPTY_STATS: ProceduralTerrainDebugStats = {
   drawCalls: 0,
   fingerprint: "--------",
   firstRenderMs: 0,
+  fogMaskBytes: 0,
+  fogMaskResolution: 0,
+  frontierPreviewCells: 0,
   frameP50Ms: 0,
   frameP95Ms: 0,
   frameWorstMs: 0,
@@ -253,8 +256,11 @@ export const ProceduralTerrainDebugView = () => {
             <DebugMetric label="Hexes" value={stats.cellCount.toLocaleString()} />
             <DebugMetric label="Calls" value={String(stats.drawCalls || "--")} />
             <DebugMetric label="Props" value={stats.propInstances.toLocaleString()} />
-            <DebugMetric label="Shroud" value={stats.shroudInstances.toLocaleString()} />
+            <DebugMetric label="Fog cells" value={stats.shroudInstances.toLocaleString()} />
             <DebugMetric label="Frontier" value={stats.shroudFrontierInstances.toLocaleString()} />
+            <DebugMetric label="Preview" value={stats.frontierPreviewCells.toLocaleString()} />
+            <DebugMetric label="Fog mask" value={stats.fogMaskResolution ? `${stats.fogMaskResolution}²` : "--"} />
+            <DebugMetric label="Fog KB" value={Math.round(stats.fogMaskBytes / 1024).toLocaleString()} />
             <DebugMetric label="Active reveal" value={stats.shroudActiveReveals.toLocaleString()} />
             <DebugMetric label="Ground" value={`${stats.groundTextureLayers || "--"} layers`} />
             <DebugMetric label="Ground KB" value={Math.round(stats.groundTextureBytes / 1024).toLocaleString()} />
