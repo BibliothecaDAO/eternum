@@ -14,6 +14,7 @@ import type {
   TerrainPageRequest,
 } from "./terrain-types";
 import { PROCEDURAL_TERRAIN_STYLE_VERSION, getTerrainGeometryBufferViews } from "./terrain-types";
+import { isTerrainWaterBiome, TERRAIN_WATER_LEVEL } from "./terrain-water";
 
 interface GeometryAccumulator {
   biomeIds: number[];
@@ -38,18 +39,20 @@ export function prepareTerrainPage(request: TerrainPageRequest): PreparedTerrain
   const subdivisions = resolveSubdivisions(request.subdivisions);
   const field = new TerrainField(request);
   const land = createGeometryAccumulator();
+  const water = createGeometryAccumulator();
   let frontierEdges = 0;
 
   for (const cell of canonicalCells(request.cells)) {
     if (!cell.biome) continue;
     appendCellPatch(land, field, cell, subdivisions);
+    if (isTerrainWaterBiome(cell.biome)) appendWaterCellPatch(water, field, cell, subdivisions);
     frontierEdges += appendFrontierSkirts(land, field, cell);
   }
 
   const buffers = finalizeGeometry(land);
-  const waterBuffers = null;
+  const waterBuffers = water.positions.length > 0 ? finalizeGeometry(water) : null;
   const propInstances = prepareTerrainPropInstances(request, field);
-  const geometryBytes = countGeometryBytes(buffers);
+  const geometryBytes = countGeometryBytes(buffers) + (waterBuffers ? countGeometryBytes(waterBuffers) : 0);
   const prepareMs = performance.now() - startedAt;
   const fingerprint = fingerprintPreparedPage(request, buffers, waterBuffers, propInstances);
 
@@ -60,14 +63,33 @@ export function prepareTerrainPage(request: TerrainPageRequest): PreparedTerrain
       frontierEdges,
       geometryBytes,
       prepareMs,
-      triangles: buffers.indices.length / 3,
-      vertices: buffers.positions.length / 3,
+      triangles: (buffers.indices.length + (waterBuffers?.indices.length ?? 0)) / 3,
+      vertices: (buffers.positions.length + (waterBuffers?.positions.length ?? 0)) / 3,
     },
     fingerprint,
     propInstances,
     request,
     waterBuffers,
   };
+}
+
+function appendWaterCellPatch(
+  target: GeometryAccumulator,
+  field: TerrainField,
+  cell: TerrainCellInput,
+  subdivisions: number,
+): void {
+  const center = terrainHexToWorld(cell.col, cell.row);
+  const corners = terrainHexCorners(cell.col, cell.row);
+  for (let wedge = 0; wedge < 6; wedge += 1) {
+    appendSubdividedTriangle(target, center, corners[wedge], corners[(wedge + 1) % 6], subdivisions, (point) => ({
+      ...field.sampleVertex(point.x, point.z, cell),
+      height: TERRAIN_WATER_LEVEL,
+      normal: [0, 1, 0],
+      roughness: 0.24,
+      uvOffset: [0, 0],
+    }));
+  }
 }
 
 function appendCellPatch(

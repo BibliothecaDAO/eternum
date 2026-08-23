@@ -15,8 +15,8 @@ describe("prepareTerrainPage", () => {
     expect(first.fingerprint).toBe(second.fingerprint);
     expect(first.buffers.positions).toEqual(second.buffers.positions);
     expect(first.diagnostics.frontierEdges).toBe(6);
-    expect(first.diagnostics.triangles).toBe(66);
-    expect(first.waterBuffers).toBeNull();
+    expect(first.diagnostics.triangles).toBe(120);
+    expect(first.waterBuffers?.indices).toHaveLength(162);
   });
 
   it("does not create frontier skirts between explored neighbors", () => {

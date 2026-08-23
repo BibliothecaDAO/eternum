@@ -203,6 +203,9 @@ export class ProceduralTerrain {
     const group = new Group();
     group.name = `terrain-page:${preparedPage.request.pageKey}`;
     group.add(createTerrainMesh(preparedPage.buffers, this.materials.land, "land"));
+    if (preparedPage.waterBuffers) {
+      group.add(createTerrainMesh(preparedPage.waterBuffers, this.materials.water, "water"));
+    }
     return {
       field: new TerrainField(preparedPage.request),
       fingerprint: preparedPage.fingerprint,

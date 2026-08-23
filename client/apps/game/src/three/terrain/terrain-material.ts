@@ -1,6 +1,23 @@
 import { NormalRGPacking } from "three";
 import type Node from "three/src/nodes/core/Node.js";
-import { Fn, If, attribute, float, int, mix, normalMap, smoothstep, texture, uv, vec2, vec4 } from "three/tsl";
+import {
+  Fn,
+  If,
+  attribute,
+  color,
+  float,
+  int,
+  mix,
+  normalMap,
+  positionLocal,
+  smoothstep,
+  texture,
+  time,
+  uv,
+  vec2,
+  vec3,
+  vec4,
+} from "three/tsl";
 import { MeshStandardNodeMaterial } from "three/webgpu";
 
 import type { TerrainGroundTextures } from "./terrain-ground-textures";
@@ -8,6 +25,7 @@ import type { TerrainGroundTextures } from "./terrain-ground-textures";
 export interface TerrainMaterials {
   flatLand: MeshStandardNodeMaterial;
   land: MeshStandardNodeMaterial;
+  water: MeshStandardNodeMaterial;
 }
 
 export function createTerrainMaterials(): TerrainMaterials {
@@ -15,7 +33,21 @@ export function createTerrainMaterials(): TerrainMaterials {
   return {
     flatLand,
     land: flatLand,
+    water: createTerrainWaterMaterial(),
   };
+}
+
+function createTerrainWaterMaterial(): MeshStandardNodeMaterial {
+  const material = new MeshStandardNodeMaterial({ metalness: 0.08, roughness: 0.24 });
+  material.name = "terrain-water";
+  const shore = attribute<"float">("terrainShore", "float");
+  material.colorNode = mix(color("#12384a"), color("#2f7a82"), shore.mul(0.72));
+  material.roughnessNode = mix(0.2, 0.42, shore);
+  const phase = time.mul(0.68).add(positionLocal.x.mul(0.54)).add(positionLocal.z.mul(0.39));
+  const crossPhase = time.mul(0.43).add(positionLocal.x.mul(-0.31)).add(positionLocal.z.mul(0.47));
+  const wave = phase.sin().mul(0.0045).add(crossPhase.sin().mul(0.0025));
+  material.positionNode = positionLocal.add(vec3(0, wave, 0));
+  return material;
 }
 
 export function createTerrainGroundMaterial(textures: TerrainGroundTextures): MeshStandardNodeMaterial {

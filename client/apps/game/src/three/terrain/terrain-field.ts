@@ -20,6 +20,7 @@ import {
   terrainNeighborCoordinates,
 } from "./terrain-coordinates";
 import type { TerrainCellInput, TerrainPageRequest, TerrainSurfaceSample } from "./terrain-types";
+import { isTerrainWaterBiome } from "./terrain-water";
 
 interface CellFieldSample {
   baseHeight: number;
@@ -438,7 +439,7 @@ export class TerrainField {
     let nearestWater = Number.POSITIVE_INFINITY;
     for (const candidate of candidates) {
       const distance = Math.hypot(candidate.centerX - worldX, candidate.centerZ - worldZ);
-      if (isWaterBiome(candidate.biome)) nearestWater = Math.min(nearestWater, distance);
+      if (isTerrainWaterBiome(candidate.biome)) nearestWater = Math.min(nearestWater, distance);
       else nearestLand = Math.min(nearestLand, distance);
     }
     if (!Number.isFinite(nearestLand) || !Number.isFinite(nearestWater)) return 0;
@@ -518,8 +519,4 @@ function createUnknownSample(): TerrainVisualSample {
     shore: 0,
     uvOffset: [0, 0],
   };
-}
-
-function isWaterBiome(biome: BiomeType): boolean {
-  return biome === BiomeType.DeepOcean || biome === BiomeType.Ocean;
 }
