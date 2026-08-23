@@ -73,6 +73,7 @@ export interface ProceduralCharacterGymStats {
   meleePhase: string;
   meleeWeaponId: string;
   meleeWeaponSource: string;
+  maximumHorseBoneStretchRatio: number;
   mode: "animated" | "ragdoll";
   physicsSteps: number;
   previewArrowVisible: boolean;
@@ -554,6 +555,7 @@ class ProceduralCharacterGymRuntime {
       meleePhase: character.meleePhase,
       meleeWeaponId: character.meleeWeaponId,
       meleeWeaponSource: character.meleeWeaponSource,
+      maximumHorseBoneStretchRatio: character.maximumHorseBoneStretchRatio,
       mode: character.mode,
       physicsSteps: character.physicsSteps,
       previewArrowVisible: character.previewArrowVisible,

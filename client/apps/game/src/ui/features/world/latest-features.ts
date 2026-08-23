@@ -35,6 +35,14 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-08-23",
+    title: "Stable Mounted Ragdolls",
+    description:
+      "Fixed horses stretching across the map when mounted units entered Jolt ragdoll or reset, preserving anatomical bone lengths through repeated deaths and respawns.",
+    type: "fix",
+    gameSlug: "world",
+  },
+  {
+    date: "2026-08-23",
     title: "More Natural Unit Gaits",
     description:
       "Improved walking and running with planted-foot transitions, support-driven weight shifts, distinct run compression and flight, earlier leg recovery, calmer walking clearance, and more natural arm carriage.",

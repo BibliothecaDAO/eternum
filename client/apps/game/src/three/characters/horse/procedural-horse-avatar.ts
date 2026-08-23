@@ -40,6 +40,11 @@ interface LocalBoneTransform {
   quaternion: Quaternion;
 }
 
+interface BoneLengthBinding {
+  bindLength: number;
+  bone: Bone;
+}
+
 interface HorseMaterialBinding {
   baseColor: Color;
   material: MeshStandardMaterial;
@@ -50,6 +55,7 @@ export interface ProceduralHorseAvatarStats {
   assetLabel: string;
   authoredClipCount: number;
   boneCount: number;
+  maximumBoneStretchRatio: number;
   minimumBendAlignment: number;
   skinnedMeshCount: number;
   stanceHoofCount: number;
@@ -58,9 +64,7 @@ export interface ProceduralHorseAvatarStats {
 export interface ProceduralHorsePhysicsPose {
   bodyPosition: readonly [number, number, number];
   bodyQuaternion: readonly [number, number, number, number];
-  chestPosition: readonly [number, number, number];
   chestQuaternion: readonly [number, number, number, number];
-  headPosition: readonly [number, number, number];
   headQuaternion: readonly [number, number, number, number];
   segments: Readonly<
     Record<
@@ -104,6 +108,7 @@ export class ProceduralHorseAvatar {
   private readonly headPhysicsBinding: SegmentBoneBinding;
   private readonly neckPhysicsBindings: readonly SegmentBoneBinding[];
   private readonly rootTransform: LocalBoneTransform;
+  private readonly boneLengthBindings: readonly BoneLengthBinding[];
   private readonly headTransform: LocalBoneTransform;
   private readonly neckTransforms: LocalBoneTransform[];
   private readonly tailTransforms: LocalBoneTransform[];
@@ -135,6 +140,7 @@ export class ProceduralHorseAvatar {
     this.group.add(this.scene);
     this.prepareScene();
     this.alignHoovesToGround();
+    this.boneLengthBindings = captureBoneLengthBindings(this.skeletons);
     this.rig = resolveQuaterniusHorseRig(this.group, this.scene);
     this.segmentBindings = this.createSegmentBindings();
     this.chestPhysicsBinding = createSegmentBoneBinding(
@@ -231,12 +237,21 @@ export class ProceduralHorseAvatar {
       assetLabel: "Quaternius horse",
       authoredClipCount: this.authoredClipCount,
       boneCount: new Set([...this.skeletons].flatMap(({ bones }) => bones)).size,
+      maximumBoneStretchRatio: this.resolveMaximumBoneStretchRatio(),
       minimumBendAlignment: pose ? Math.min(...Object.values(pose.legs).map(({ bendAlignment }) => bendAlignment)) : 1,
       skinnedMeshCount: this.skinnedMeshCount,
       stanceHoofCount: pose
         ? Object.values(pose.legs).filter(({ cycle }) => cycle.contact === "stance").length
         : HORSE_HOOF_IDS.length,
     };
+  }
+
+  private resolveMaximumBoneStretchRatio(): number {
+    const maximumRatio = this.boneLengthBindings.reduce(
+      (maximum, { bindLength, bone }) => Math.max(maximum, bone.position.length() / bindLength),
+      1,
+    );
+    return Number(maximumRatio.toFixed(4));
   }
 
   public hasFiniteTransforms(): boolean {
@@ -404,18 +419,6 @@ export class ProceduralHorseAvatar {
       this.scratchParentQuaternion,
       this.scratchTargetQuaternion,
     );
-    setBonePositionInCoordinateSpace(
-      this.chestPhysicsBinding.bone,
-      this.group,
-      this.scratchLocalPosition.fromArray(pose.chestPosition),
-      this.scratchWorldPosition,
-    );
-    setBonePositionInCoordinateSpace(
-      this.headPhysicsBinding.bone,
-      this.group,
-      this.scratchLocalPosition.fromArray(pose.headPosition),
-      this.scratchWorldPosition,
-    );
     this.scene.updateWorldMatrix(true, true);
   }
 
@@ -466,6 +469,15 @@ function setBonePositionInCoordinateSpace(
 
 function captureLocalTransform(bone: Bone): LocalBoneTransform {
   return { bone, quaternion: bone.quaternion.clone() };
+}
+
+function captureBoneLengthBindings(skeletons: ReadonlySet<Skeleton>): BoneLengthBinding[] {
+  const bones = new Set([...skeletons].flatMap(({ bones: skeletonBones }) => skeletonBones));
+  return [...bones].flatMap((bone) => {
+    if (!(bone.parent instanceof Bone)) return [];
+    const bindLength = bone.position.length();
+    return bindLength > 1e-4 ? [{ bindLength, bone }] : [];
+  });
 }
 
 function createHorseMaterialBinding(material: MeshStandardMaterial): HorseMaterialBinding {

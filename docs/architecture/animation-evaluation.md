@@ -143,6 +143,24 @@ fantasy art direction. Those remain visual judgements, but the judgement must be
 
 ## Current evaluation
 
+### Mounted ragdoll skeleton stability
+
+Evaluation date: 2026-08-23. The mixed benchmark exposed map-wide horse polygons after Jolt handoff. A render-skeleton
+diagnostic now measures each horse bone's current parent offset against its bind offset; whole-ragdoll translation does
+not affect the ratio. Healthy animated and ragdoll skeletons remain at `1.00×`.
+
+The failing one-Paladin reproduction measured `1.00×` while animated, `4.70×` immediately after Drop, and `4.71×` after
+Reset. The 100-unit benchmark reached `16.33×` during ragdoll and could leave an animated mount at `16.38×` after reset.
+Jolt body centres were being written into the local positions of hierarchical `Head` and `Torso2` bones even though
+their parents already carried the articulated transform. Removing those child translations preserves the skeleton's
+authored lengths; Jolt now supplies root-body translation and articulated rotations only, matching the leg mapping and
+normal skinned-animation practice.
+
+The exact single-Paladin Drop/Reset reproduction is `1.00×` in all three states after the fix. The original mixed
+100-unit death/respawn/reset smoke passes with zero stretch or browser errors. An accelerated 100-unit run completed 118
+deaths and 113 respawns with animated and ragdoll maxima both at `1.00×`; close-range and full-map visual inspection
+confirms attached horse heads/chests and no elongated skin triangles.
+
 ### Humanoid locomotion pass
 
 Evaluation date: 2026-08-23. Configuration: tier 3 Knight, seed 1337, WebGPU, 60 Hz fixed step. Walk and run each use a

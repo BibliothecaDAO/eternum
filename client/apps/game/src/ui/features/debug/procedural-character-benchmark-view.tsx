@@ -29,6 +29,8 @@ const INITIAL_STATS: ProceduralCharacterBenchmarkStats = {
   meleeActiveImpactCount: 0,
   meleeContactCount: 0,
   meleeDroppedCount: 0,
+  maximumAnimatedMountBoneStretchRatio: 1,
+  maximumRagdollMountBoneStretchRatio: 1,
   p95FrameMs: 0,
   physicsBodyCount: 0,
   physicsConstraintCount: 0,
@@ -576,6 +578,8 @@ const BenchmarkMetrics = ({ stats }: { stats: ProceduralCharacterBenchmarkStats 
     <Metric label="Hits" value={stats.projectileHitCount} />
     <Metric label="Melee" value={stats.meleeActiveImpactCount} />
     <Metric label="Contacts" value={stats.meleeContactCount} />
+    <Metric label="Mount stretch" value={`${stats.maximumAnimatedMountBoneStretchRatio}×`} />
+    <Metric label="Ragdoll stretch" value={`${stats.maximumRagdollMountBoneStretchRatio}×`} />
     <Metric label="GPU" value={`${stats.geometryCount}/${stats.textureCount}`} />
     <Metric label="Heap" value={stats.wasmHeapMiB ? `${stats.wasmHeapMiB}MB` : "--"} />
   </div>

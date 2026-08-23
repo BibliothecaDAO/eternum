@@ -11,6 +11,8 @@ const POLL_INTERVAL_MS = 250;
 const MAX_READY_AVERAGE_FRAME_MS = 65;
 const MAX_READY_DRAW_CALLS = 1_500;
 const MAX_READY_P95_FRAME_MS = 80;
+const MAX_ANIMATED_MOUNT_BONE_STRETCH = 1.1;
+const MAX_RAGDOLL_MOUNT_BONE_STRETCH = 1.5;
 const VALID_REQUESTED_RENDERER_MODES = new Set(["webgpu-auto", "webgpu-force-webgl"]);
 const VALID_RENDERER_MODES = new Set(["webgl2-fallback", "webgpu"]);
 const REPOSITORY_ROOT = fileURLToPath(new URL("../../../../", import.meta.url));
@@ -108,17 +110,20 @@ export function evaluateCharacterBenchmarkSmokeResult({
   if (!activeStats || activeStats.physicsBodyCount < 12) reasons.push("Jolt created no articulated death bodies");
   if (!activeStats || activeStats.physicsConstraintCount < 10) reasons.push("Jolt created no death constraints");
   if (!activeStats || activeStats.wasmHeapMiB <= 0) reasons.push("Jolt WASM reported no allocated heap");
+  appendMountStretchFailures(reasons, "active", activeStats);
   if (!pausedSnapshot.paused) reasons.push("visible pause control did not pause the simulation");
   if ((steppedSnapshot.stats?.simulationElapsedSeconds ?? 0) <= (pausedSnapshot.stats?.simulationElapsedSeconds ?? 0)) {
     reasons.push("visible step control did not advance the paused simulation");
   }
   if (!respawnStats || respawnStats.respawnCount < 1) reasons.push("death cycle produced no respawn");
+  appendMountStretchFailures(reasons, "respawn", respawnStats);
   if (respawnStats && respawnStats.runningCount + respawnStats.ragdollCount !== 100) {
     reasons.push("post-respawn population was not conserved");
   }
   if (!resetStats || resetStats.actorCount !== 100 || resetStats.resetCount < 5) {
     reasons.push("five reset cycles did not restore the initial population");
   }
+  appendMountStretchFailures(reasons, "reset", resetStats);
   if (readyStats && resetStats && readyStats.geometryCount !== resetStats.geometryCount) {
     reasons.push(`geometry count changed across resets (${readyStats.geometryCount} -> ${resetStats.geometryCount})`);
   }
@@ -135,6 +140,20 @@ export function evaluateCharacterBenchmarkSmokeResult({
   }
 
   return { ok: reasons.length === 0, reasons };
+}
+
+function appendMountStretchFailures(reasons, phase, stats) {
+  if (!stats) return;
+  if (stats.maximumAnimatedMountBoneStretchRatio > MAX_ANIMATED_MOUNT_BONE_STRETCH) {
+    reasons.push(
+      `${phase} animated mount bone stretch was ${stats.maximumAnimatedMountBoneStretchRatio}x; budget is ${MAX_ANIMATED_MOUNT_BONE_STRETCH}x`,
+    );
+  }
+  if (stats.maximumRagdollMountBoneStretchRatio > MAX_RAGDOLL_MOUNT_BONE_STRETCH) {
+    reasons.push(
+      `${phase} ragdoll mount bone stretch was ${stats.maximumRagdollMountBoneStretchRatio}x; budget is ${MAX_RAGDOLL_MOUNT_BONE_STRETCH}x`,
+    );
+  }
 }
 
 function readOption(args, name, fallback) {

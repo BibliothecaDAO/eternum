@@ -266,9 +266,7 @@ class RuntimeProceduralHorseActor implements ProceduralHorseActor {
     const segments = {} as Record<HorseLegSegmentId, ProceduralHorsePhysicsPose["segments"][HorseLegSegmentId]>;
     let bodyPosition: readonly [number, number, number] = this.avatar.rig.bodyCenter;
     let bodyQuaternion: readonly [number, number, number, number] = [0, 0, 0, 1];
-    let chestPosition: readonly [number, number, number] = this.avatar.rig.chestPosition;
     let chestQuaternion: readonly [number, number, number, number] = [0, 0, 0, 1];
-    let headPosition: readonly [number, number, number] = this.avatar.rig.headPosition;
     let headQuaternion: readonly [number, number, number, number] = [0, 0, 0, 1];
     ragdoll.writePartTransforms((partId, x, y, z, qx, qy, qz, qw) => {
       this.scratchWorldPosition.set(x, y, z);
@@ -287,12 +285,10 @@ class RuntimeProceduralHorseActor implements ProceduralHorseActor {
         return;
       }
       if (partId === "horseChest") {
-        chestPosition = position;
         chestQuaternion = quaternion;
         return;
       }
       if (partId === "horseHead") {
-        headPosition = position;
         headQuaternion = quaternion;
         return;
       }
@@ -304,9 +300,7 @@ class RuntimeProceduralHorseActor implements ProceduralHorseActor {
     this.avatar.applyPhysicsPose({
       bodyPosition,
       bodyQuaternion,
-      chestPosition,
       chestQuaternion,
-      headPosition,
       headQuaternion,
       segments,
     });

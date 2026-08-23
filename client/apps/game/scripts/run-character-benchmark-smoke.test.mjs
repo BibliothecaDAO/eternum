@@ -13,6 +13,8 @@ const PASSING_STATS = {
   drawCalls: 1_301,
   geometryCount: 18,
   hexCount: 100,
+  maximumAnimatedMountBoneStretchRatio: 1,
+  maximumRagdollMountBoneStretchRatio: 1,
   p95FrameMs: 28,
   physicsBodyCount: 96,
   physicsConstraintCount: 80,
@@ -141,5 +143,27 @@ describe("character benchmark smoke contract", () => {
     expect(evaluation.reasons).toContain("ready draw calls were 1501, budget is 1500");
     expect(evaluation.reasons).toContain("average frame time was 66ms, budget is 65ms");
     expect(evaluation.reasons).toContain("p95 frame time was 81ms, budget is 80ms");
+  });
+
+  it("rejects stretched animated and ragdoll mount skeletons", () => {
+    const stretched = {
+      ...PASSING_STATS,
+      maximumAnimatedMountBoneStretchRatio: 3.2,
+      maximumRagdollMountBoneStretchRatio: 14.8,
+    };
+    const evaluation = evaluateCharacterBenchmarkSmokeResult({
+      activeSnapshot: snapshot(stretched),
+      browserErrors: [],
+      pausedSnapshot: { ...snapshot(), paused: true },
+      readySnapshot: snapshot({ ...PASSING_STATS, ragdollCount: 0, runningCount: 100, totalDeaths: 0 }),
+      reducedPopulationSnapshot: snapshot({ ...PASSING_STATS, actorCount: 25, ragdollCount: 0, runningCount: 25 }),
+      resetSnapshot: snapshot({ ...PASSING_STATS, ragdollCount: 0, resetCount: 5, runningCount: 100 }),
+      respawnSnapshot: snapshot(),
+      restoredPopulationSnapshot: snapshot(),
+      steppedSnapshot: snapshot({ ...PASSING_STATS, simulationElapsedSeconds: 5.1 }),
+    });
+
+    expect(evaluation.reasons).toContain("active animated mount bone stretch was 3.2x; budget is 1.1x");
+    expect(evaluation.reasons).toContain("active ragdoll mount bone stretch was 14.8x; budget is 1.5x");
   });
 });

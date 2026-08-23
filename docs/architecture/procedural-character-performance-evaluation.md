@@ -79,6 +79,11 @@ pnpm --dir client/apps/game smoke:character-benchmark -- \
   --headed
 ```
 
+The mixed smoke also enforces the mount-skeleton envelope. It compares every horse bone's parent-relative offset with
+its bind offset during animation, active Jolt ragdoll, respawn, and five resets. Animated mounts must remain at or below
+`1.10×`; ragdolls must remain at or below `1.50×`. This catches finite but visually catastrophic skin stretching that
+ordinary physics-body, constraint, and resource counts cannot detect.
+
 ## Current reference result
 
 The pre-optimization walking baseline was 33.7 ms average, 40.7 ms p95, 1,068 draw calls, and 2.19 million triangles

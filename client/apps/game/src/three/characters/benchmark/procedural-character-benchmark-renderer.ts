@@ -64,6 +64,8 @@ export interface ProceduralCharacterBenchmarkStats {
   meleeActiveImpactCount: number;
   meleeContactCount: number;
   meleeDroppedCount: number;
+  maximumAnimatedMountBoneStretchRatio: number;
+  maximumRagdollMountBoneStretchRatio: number;
   p95FrameMs: number;
   physicsBodyCount: number;
   physicsConstraintCount: number;
@@ -568,6 +570,7 @@ class ProceduralCharacterBenchmarkRuntime {
     const performanceEvaluation = this.performanceEvaluator.getSnapshot();
     const render = this.renderer.info.render;
     const crowdAnimation = this.unitRuntime.getCrowdAnimationStats();
+    const mountBoneStretch = this.resolveMountBoneStretch();
     this.onStats({
       actorCount: this.actors.size,
       animationUpdateLaneCount: crowdAnimation.laneCount,
@@ -580,6 +583,8 @@ class ProceduralCharacterBenchmarkRuntime {
       meleeActiveImpactCount: melee.activeCount,
       meleeContactCount: melee.spawnedCount,
       meleeDroppedCount: melee.droppedCount,
+      maximumAnimatedMountBoneStretchRatio: mountBoneStretch.animated,
+      maximumRagdollMountBoneStretchRatio: mountBoneStretch.ragdoll,
       p95FrameMs: performanceEvaluation.frameMs.p95,
       performance: performanceEvaluation,
       physicsBodyCount: physics.bodyCount,
@@ -603,6 +608,24 @@ class ProceduralCharacterBenchmarkRuntime {
       visibleHexCount: resolveVisibleHexCount(this.camera),
       wasmHeapMiB: Number((physics.wasmHeapBytes / 1024 / 1024).toFixed(2)),
     });
+  }
+
+  private resolveMountBoneStretch(): {
+    animated: number;
+    ragdoll: number;
+  } {
+    if (this.config.unitMix === "foot" || this.config.unitMix === "archers" || this.config.unitMix === "melee") {
+      return { animated: 1, ragdoll: 1 };
+    }
+    let animated = 1;
+    let ragdoll = 1;
+    this.actors.forEach(({ actor }) => {
+      if (actor.kind !== "horse" && actor.kind !== "paladin") return;
+      const stretch = actor.getStats().maximumHorseBoneStretchRatio;
+      if (actor.mode === "ragdoll") ragdoll = Math.max(ragdoll, stretch);
+      else animated = Math.max(animated, stretch);
+    });
+    return { animated, ragdoll };
   }
 
   private resolvePhysicsStats(): { bodyCount: number; constraintCount: number; wasmHeapBytes: number } {

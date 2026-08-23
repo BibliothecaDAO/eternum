@@ -37,6 +37,7 @@ import { resolveHorseGaitCadence } from "./horse/procedural-horse-gait";
 
 interface ProceduralUnitActorStats extends ProceduralCharacterActorStats {
   kind: ProceduralUnitKind;
+  maximumHorseBoneStretchRatio: number;
   minimumBendAlignment: number;
   meleeContactCount: number;
   meleeOffhandId: ProceduralMeleeOffhandId;
@@ -374,6 +375,7 @@ class HumanoidUnitActor implements ProceduralUnitActor {
     return {
       ...this.actor.getStats(),
       kind: this.kind,
+      maximumHorseBoneStretchRatio: 1,
       minimumBendAlignment: 1,
       meleeContactCount: melee.contactCount,
       meleeOffhandId: meleeEquipment.offhandId,
@@ -588,6 +590,7 @@ class HorseUnitActor implements ProceduralUnitActor {
       authoredClipCount: horse.authoredClipCount,
       boneCount: horse.boneCount,
       kind: this.kind,
+      maximumHorseBoneStretchRatio: horse.maximumBoneStretchRatio,
       minimumBendAlignment: horse.minimumBendAlignment,
       skinnedMeshCount: horse.skinnedMeshCount,
       stanceHoofCount: horse.stanceHoofCount,
@@ -754,6 +757,7 @@ class MountedUnitActor implements ProceduralUnitActor {
       bodyCount: horsePhysics.bodyCount + rider.bodyCount,
       constraintCount: horsePhysics.constraintCount + rider.constraintCount,
       kind: "paladin",
+      maximumHorseBoneStretchRatio: horse.maximumBoneStretchRatio,
       minimumBendAlignment: horse.minimumBendAlignment,
       meleeContactCount: melee.contactCount,
       meleeOffhandId: meleeEquipment.offhandId,
@@ -899,6 +903,7 @@ const EMPTY_UNIT_STATS: ProceduralUnitActorStats = {
   kind: "horse",
   leftGripProfile: "open",
   leftPalmInwardDot: 1,
+  maximumHorseBoneStretchRatio: 1,
   minimumBendAlignment: 1,
   meleeContactCount: 0,
   meleeOffhandId: "round-shield",

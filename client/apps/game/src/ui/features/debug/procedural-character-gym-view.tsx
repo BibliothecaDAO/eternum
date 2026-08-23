@@ -64,6 +64,7 @@ const INITIAL_STATS: ProceduralCharacterGymStats = {
   meleePhase: "idle",
   meleeWeaponId: "iron-longsword",
   meleeWeaponSource: "procedural",
+  maximumHorseBoneStretchRatio: 1,
   mode: "animated",
   physicsSteps: 0,
   previewArrowVisible: false,
@@ -668,6 +669,7 @@ const CharacterGymMetrics = ({
       label="Contacts"
       value={stats.meleeContactCount || stats.stanceHoofCount || stats.stanceFootCount || "--"}
     />
+    <Metric label="Mount stretch" value={`${stats.maximumHorseBoneStretchRatio}×`} />
     <Metric label="Arrows" value={`${stats.projectileActiveCount}/${stats.projectileCapacity || "--"}`} />
     <Metric label="Hits" value={stats.projectileHitCount || "--"} />
     <Metric label="GPU" value={`${stats.geometryCount}/${stats.textureCount}`} />
