@@ -3,6 +3,7 @@ export const TERRAIN_BENCHMARK_CONTRACT_VERSION = 1;
 export const TERRAIN_BENCHMARK_VARIANTS = Object.freeze(["geometry", "material", "props", "production"] as const);
 export type TerrainBenchmarkVariant = (typeof TERRAIN_BENCHMARK_VARIANTS)[number];
 export type TerrainBenchmarkRunMode = "full" | "quick";
+export type TerrainBenchmarkTraceMode = "performance" | "structural";
 export type TerrainBenchmarkPhase = "idle" | "lifecycle" | "motion" | "static";
 
 export interface TerrainBenchmarkFrameStats {

@@ -11,6 +11,7 @@ import {
   TERRAIN_BENCHMARK_VARIANTS,
   type TerrainBenchmarkRunMode,
   type TerrainBenchmarkSnapshot,
+  type TerrainBenchmarkTraceMode,
   type TerrainBenchmarkVariant,
 } from "@/three/terrain/verification/terrain-benchmark-contract";
 import {
@@ -48,6 +49,7 @@ export const ProceduralTerrainBenchmarkView = () => {
   const densityMultiplier = resolveDensityMultiplier(searchParams.get("density"));
   const forceWebGL = searchParams.get("rendererMode") === "webgpu-force-webgl";
   const runMode = resolveRunMode(searchParams.get("runMode"));
+  const traceMode = resolveTraceMode(searchParams.get("traceMode"));
   const variant = resolveVariant(searchParams.get("variant"));
   const configError = useMemo(() => resolveConfigError(searchParams), [searchParams]);
   const [snapshot, setSnapshot] = useState(() => createEmptySnapshot(runMode, variant, densityMultiplier));
@@ -73,6 +75,7 @@ export const ProceduralTerrainBenchmarkView = () => {
           setMounted(true);
         },
         runMode,
+        traceMode,
         variant,
       })
         .then((renderer) => {
@@ -96,7 +99,7 @@ export const ProceduralTerrainBenchmarkView = () => {
       rendererRef.current?.dispose();
       rendererRef.current = null;
     };
-  }, [autoRun, capture, configError, densityMultiplier, forceWebGL, runMode, variant]);
+  }, [autoRun, capture, configError, densityMultiplier, forceWebGL, runMode, traceMode, variant]);
 
   const setOption = (name: string, value: string) => {
     const next = new URLSearchParams(searchParams);
@@ -288,6 +291,10 @@ function resolveRunMode(value: string | null): TerrainBenchmarkRunMode {
   return value === "full" ? "full" : "quick";
 }
 
+function resolveTraceMode(value: string | null): TerrainBenchmarkTraceMode {
+  return value === "structural" ? "structural" : "performance";
+}
+
 function resolveDensityMultiplier(value: string | null): number {
   return value === null ? PRODUCTION_TERRAIN_PROP_DENSITY_MULTIPLIER : Number(value);
 }
@@ -299,6 +306,10 @@ function resolveConfigError(searchParams: URLSearchParams): string | null {
   }
   const runMode = searchParams.get("runMode");
   if (runMode && runMode !== "quick" && runMode !== "full") return `Unknown terrain benchmark run mode: ${runMode}`;
+  const traceMode = searchParams.get("traceMode");
+  if (traceMode && traceMode !== "performance" && traceMode !== "structural") {
+    return `Unknown terrain benchmark trace mode: ${traceMode}`;
+  }
   const densityMultiplier = resolveDensityMultiplier(searchParams.get("density"));
   if (!Number.isFinite(densityMultiplier) || densityMultiplier < 0.25 || densityMultiplier > 3) {
     return `Terrain benchmark density must be from 0.25 to 3, received ${searchParams.get("density")}`;

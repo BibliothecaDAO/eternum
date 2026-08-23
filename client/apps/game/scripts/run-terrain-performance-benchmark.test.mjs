@@ -21,6 +21,17 @@ describe("terrain performance benchmark", () => {
     );
   });
 
+  it("uses a bounded structural trace when timings are informational", () => {
+    expect(
+      buildTerrainPerformanceUrl("http://localhost:4173", {
+        rendererMode: "webgpu-force-webgl",
+        runMode: "quick",
+        timingPolicy: "informational",
+        variant: "production",
+      }),
+    ).toContain("traceMode=structural");
+  });
+
   it("passes a complete healthy ablation matrix", () => {
     const results = TERRAIN_BENCHMARK_RENDERERS.flatMap((renderer) =>
       TERRAIN_BENCHMARK_VARIANTS.map((variant) => passingResult(renderer, variant)),

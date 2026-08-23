@@ -25,6 +25,7 @@ export function buildTerrainPerformanceUrl(baseUrl, scenario) {
   url.searchParams.set("variant", scenario.variant);
   url.searchParams.set("density", String(scenario.densityMultiplier ?? DEFAULT_DENSITY_MULTIPLIER));
   url.searchParams.set("rendererMode", scenario.rendererMode);
+  if (scenario.timingPolicy === "informational") url.searchParams.set("traceMode", "structural");
   return url.toString();
 }
 
@@ -35,11 +36,18 @@ function runBenchmarkScenario({
   headed,
   rendererMode,
   runMode,
+  timingPolicy,
   timeoutMs,
   variant,
 }) {
   const session = `terrain-performance-${rendererMode}-${variant}-${Date.now().toString(36)}`;
-  const url = buildTerrainPerformanceUrl(baseUrl, { densityMultiplier, rendererMode, runMode, variant });
+  const url = buildTerrainPerformanceUrl(baseUrl, {
+    densityMultiplier,
+    rendererMode,
+    runMode,
+    timingPolicy,
+    variant,
+  });
   try {
     runAgentBrowser(session, ["open", url, "--ignore-https-errors"], headed);
     runAgentBrowser(session, ["set", "viewport", "1440", "900"], headed);
@@ -174,6 +182,7 @@ function main(args) {
         headed,
         rendererMode,
         runMode,
+        timingPolicy,
         timeoutMs,
         variant,
       }),

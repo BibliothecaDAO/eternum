@@ -22,6 +22,7 @@ import {
   type TerrainBenchmarkPhase,
   type TerrainBenchmarkRunMode,
   type TerrainBenchmarkSnapshot,
+  type TerrainBenchmarkTraceMode,
   type TerrainBenchmarkVariant,
 } from "@/three/terrain/verification/terrain-benchmark-contract";
 import {
@@ -62,6 +63,7 @@ interface MountProceduralTerrainBenchmarkRendererInput {
   forceWebGL: boolean;
   onReady(snapshot: TerrainBenchmarkSnapshot): void;
   runMode: TerrainBenchmarkRunMode;
+  traceMode: TerrainBenchmarkTraceMode;
   variant: TerrainBenchmarkVariant;
 }
 
@@ -113,6 +115,7 @@ interface TerrainBenchmarkRuntime {
   scene: Scene;
   status: TerrainBenchmarkSnapshot["status"];
   terrain: WorldmapProceduralTerrain;
+  traceMode: TerrainBenchmarkTraceMode;
   variant: TerrainBenchmarkVariant;
 }
 
@@ -191,6 +194,7 @@ async function createBenchmarkRuntime(
     scene,
     status: "ready",
     terrain,
+    traceMode: input.traceMode,
     variant: input.variant,
   };
 
@@ -294,21 +298,22 @@ async function runBenchmark(runtime: TerrainBenchmarkRuntime): Promise<TerrainBe
 }
 
 async function runStableFrameTrace(runtime: TerrainBenchmarkRuntime): Promise<void> {
-  await waitForFrames(runtime, runtime.runMode === "full" ? 120 : 60);
+  const frameCounts = resolveStableTraceFrameCounts(runtime);
+  await waitForFrames(runtime, frameCounts.warmup);
   setBenchmarkPhase(runtime, "static");
-  await waitForFrames(runtime, runtime.runMode === "full" ? 240 : 120);
+  await waitForFrames(runtime, frameCounts.measured);
 }
 
 async function runMotionTrace(runtime: TerrainBenchmarkRuntime): Promise<void> {
   setBenchmarkPhase(runtime, "motion");
   const waypoints = createTerrainBenchmarkMotionWaypoints();
   positionCamera(runtime, waypoints[0], CAMERA_DISTANCE.medium);
-  await presentBenchmarkWindow(runtime, waypoints[0]);
-  const segmentDurationMs = runtime.runMode === "full" ? 600 : 280;
+  await presentMotionWindow(runtime, waypoints[0]);
+  const segmentDurationMs = resolveMotionSegmentDuration(runtime);
 
   for (const waypoint of waypoints.slice(1)) {
     await Promise.all([
-      presentBenchmarkWindow(runtime, waypoint),
+      presentMotionWindow(runtime, waypoint),
       animateCamera(runtime, waypoint, runtime.cameraDistance, segmentDurationMs),
     ]);
   }
@@ -318,6 +323,20 @@ async function runMotionTrace(runtime: TerrainBenchmarkRuntime): Promise<void> {
     runtime.terrain.setPropLod(distance === CAMERA_DISTANCE.close ? "near" : "far");
     recordCoverage(runtime);
   }
+}
+
+function resolveStableTraceFrameCounts(runtime: TerrainBenchmarkRuntime): { measured: number; warmup: number } {
+  if (runtime.traceMode === "structural") return { measured: 2, warmup: 1 };
+  return runtime.runMode === "full" ? { measured: 240, warmup: 120 } : { measured: 120, warmup: 60 };
+}
+
+function resolveMotionSegmentDuration(runtime: TerrainBenchmarkRuntime): number {
+  if (runtime.traceMode === "structural") return 1;
+  return runtime.runMode === "full" ? 600 : 280;
+}
+
+function presentMotionWindow(runtime: TerrainBenchmarkRuntime, focus: TerrainBenchmarkPageCoordinate): Promise<void> {
+  return presentBenchmarkWindow(runtime, focus, { settleFrames: runtime.traceMode !== "structural" });
 }
 
 async function runLifecycleTrace(runtime: TerrainBenchmarkRuntime): Promise<void> {
