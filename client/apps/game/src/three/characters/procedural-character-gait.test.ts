@@ -6,7 +6,10 @@ import {
 } from "./procedural-character-config";
 import {
   advanceProceduralCharacterGaitPhase,
+  resolveProceduralCharacterGaitProfile,
   resolveProceduralCharacterGaitSignals,
+  resolveProceduralCharacterStanceTravel,
+  resolveProceduralCharacterStrideLength,
 } from "./procedural-character-gait";
 
 describe("procedural character gait", () => {
@@ -60,6 +63,25 @@ describe("procedural character gait", () => {
     expect(inPlace).toBeCloseTo(0.1);
     expect(moving).toBeGreaterThan(inPlace);
     expect(moving).toBeLessThan(0.2);
+  });
+
+  it("gives running a longer, earlier-recovering stride than walking", () => {
+    const base = createDefaultProceduralCharacterConfig();
+    const walk = applyProceduralCharacterConfigPatch(base, { animationMode: "walk" });
+    const run = applyProceduralCharacterConfigPatch(base, { animationMode: "run" });
+
+    expect(resolveProceduralCharacterStrideLength(run, 1)).toBeGreaterThan(
+      resolveProceduralCharacterStrideLength(walk, 1),
+    );
+    expect(
+      resolveProceduralCharacterStrideLength(walk, 1) * resolveProceduralCharacterGaitProfile(walk).dutyFactor,
+    ).toBeCloseTo(resolveProceduralCharacterStanceTravel(walk, 1));
+    expect(resolveProceduralCharacterGaitProfile(run).swingApex).toBeLessThan(
+      resolveProceduralCharacterGaitProfile(walk).swingApex,
+    );
+    expect(resolveProceduralCharacterGaitProfile(walk).clearanceScale).toBeLessThan(
+      resolveProceduralCharacterGaitProfile(run).clearanceScale,
+    );
   });
 });
 

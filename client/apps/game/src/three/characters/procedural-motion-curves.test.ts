@@ -27,6 +27,14 @@ describe("procedural motion curves", () => {
     expect(swingApex.lift).toBeCloseTo(0.3, 6);
   });
 
+  it("recovers a running limb early and eases it into landing", () => {
+    const symmetric = resolveOrganicLimbTrajectory({ contact: "swing", progress: 0.4 }, 1, 0.3, 1, 0.39);
+    const recoveryLed = resolveOrganicLimbTrajectory({ contact: "swing", progress: 0.4 }, 1, 0.3, 1, 0.39, 0.78);
+
+    expect(recoveryLed.forward).toBeGreaterThan(symmetric.forward);
+    expect(resolveOrganicLimbTrajectory({ contact: "swing", progress: 1 }, 1, 0.3, 1, 0.39, 0.78).forward).toBe(0.5);
+  });
+
   it("provides deterministic bounded variation and phase wrapping", () => {
     expect(resolveSeededMotionValue(1337, 4)).toBe(resolveSeededMotionValue(1337, 4));
     expect(resolveSeededMotionValue(1337, 4)).toBeGreaterThanOrEqual(-1);

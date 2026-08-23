@@ -16,6 +16,7 @@ interface PlantState {
 }
 
 const CONTACT_BLEND_FRACTION = 0.06;
+const SWING_RELEASE_BLEND_FRACTION = 0.12;
 const ROOT_MOTION_THRESHOLD = 1e-4;
 
 /** Keeps renderer-local contact anchors stable while a scene actor translates. */
@@ -64,9 +65,14 @@ export class ProceduralPlantController<FootId extends string> {
     }
 
     if (cycle.contact === "swing") {
-      plant.active = false;
       plant.contact = "swing";
-      return localTarget;
+      if (!plant.active) return localTarget;
+      const releaseProgress = smootherStep(cycle.progress / SWING_RELEASE_BLEND_FRACTION);
+      const releaseWeight = (1 - releaseProgress) * clamp(planting, 0, 1);
+      this.targetWorld.copy(this.candidateWorld).lerp(plant.worldAnchor, releaseWeight);
+      if (cycle.progress >= SWING_RELEASE_BLEND_FRACTION) plant.active = false;
+      coordinateSpace.worldToLocal(this.targetWorld);
+      return [this.targetWorld.x, this.targetWorld.y, this.targetWorld.z];
     }
 
     if (plant.contact !== "stance") plant.worldAnchor.copy(this.candidateWorld);
@@ -93,8 +99,7 @@ export class ProceduralPlantController<FootId extends string> {
 }
 
 function resolveContactBlend(progress: number): number {
-  const edgeDistance = Math.min(progress, 1 - progress);
-  return smootherStep(edgeDistance / CONTACT_BLEND_FRACTION);
+  return smootherStep(progress / CONTACT_BLEND_FRACTION);
 }
 
 function clamp(value: number, min: number, max: number): number {

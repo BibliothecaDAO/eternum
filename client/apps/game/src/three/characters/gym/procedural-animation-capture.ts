@@ -9,6 +9,11 @@ import {
 } from "../archer/procedural-archer-shot-cycle";
 import { resolveHorseGaitCadence } from "../horse/procedural-horse-gait";
 import {
+  resolveProceduralCharacterCadence,
+  resolveProceduralCharacterStrideLength,
+} from "../procedural-character-gait";
+import { resolveCharacterRig } from "../procedural-character-rig";
+import {
   advanceProceduralMeleeAttack,
   createIdleProceduralMeleeAttackState,
   startProceduralMeleeAttack,
@@ -43,6 +48,12 @@ export interface ProceduralAnimationCapturePhase {
   startFrame: number;
 }
 
+export interface ProceduralAnimationCaptureOptions {
+  overlay?: ProceduralAnimationCaptureOverlay;
+  rootMotionSpeed?: number;
+  sequence?: ProceduralAnimationCaptureSequence;
+}
+
 export interface ProceduralAnimationCapturePlan {
   fixedStepSeconds: number;
   overlay: ProceduralAnimationCaptureOverlay;
@@ -50,6 +61,7 @@ export interface ProceduralAnimationCapturePlan {
   sampleFrames: readonly number[];
   sampling: ProceduralAnimationCaptureSampling;
   sequence: ProceduralAnimationCaptureSequence;
+  rootMotionSpeed: number;
   totalFrames: number;
   totalSeconds: number;
   truncated: boolean;
@@ -154,11 +166,13 @@ function resolveDefaultAnimationCaptureOverlay(
 export function createProceduralAnimationCapturePlan(
   config: ProceduralUnitConfig,
   sampling: ProceduralAnimationCaptureSampling,
-  sequence = resolveDefaultAnimationCaptureSequence(config.kind),
-  overlay = resolveDefaultAnimationCaptureOverlay(sampling),
+  options: ProceduralAnimationCaptureOptions = {},
 ): ProceduralAnimationCapturePlan {
+  const sequence = options.sequence ?? resolveDefaultAnimationCaptureSequence(config.kind);
+  const overlay = options.overlay ?? resolveDefaultAnimationCaptureOverlay(sampling);
+  const rootMotionSpeed = resolveCaptureRootMotionSpeed(config, sequence, options.rootMotionSpeed);
   const fixedStepSeconds = config.humanoid.fixedStep;
-  const durations = resolveCapturePhaseDurations(config, sequence);
+  const durations = resolveCapturePhaseDurations(config, sequence, rootMotionSpeed);
   const totalSeconds = durations.reduce((sum, phase) => sum + phase.durationSeconds, 0);
   const actionPhases = resolveActionCapturePhases(config, sequence, fixedStepSeconds);
   const totalFrames = actionPhases?.at(-1)?.endFrame ?? Math.max(2, Math.floor(totalSeconds / fixedStepSeconds) + 1);
@@ -168,6 +182,7 @@ export function createProceduralAnimationCapturePlan(
     fixedStepSeconds,
     overlay,
     phases,
+    rootMotionSpeed,
     sampleFrames,
     sampling,
     sequence,
@@ -283,6 +298,7 @@ export function resolveAnimationFrameIssues(input: {
 function resolveCapturePhaseDurations(
   config: ProceduralUnitConfig,
   sequence: ProceduralAnimationCaptureSequence,
+  rootMotionSpeed: number,
 ): CapturePhaseDuration[] {
   if (sequence === "archer-shot") {
     return [
@@ -311,8 +327,38 @@ function resolveCapturePhaseDurations(
   const cadence =
     config.kind === "horse" || config.kind === "paladin"
       ? resolveHorseGaitCadence(config.horse)
-      : Math.max(0.1, config.humanoid.animationSpeed);
+      : resolveHumanoidCapturePhaseRate(config, rootMotionSpeed);
   return [phase("gait", "Gait cycle", 1 / Math.max(0.1, cadence))];
+}
+
+function resolveCaptureRootMotionSpeed(
+  config: ProceduralUnitConfig,
+  sequence: ProceduralAnimationCaptureSequence,
+  requestedSpeed: number | undefined,
+): number {
+  if (
+    sequence !== "locomotion-cycle" ||
+    config.kind === "horse" ||
+    config.kind === "paladin" ||
+    (config.humanoid.animationMode !== "walk" && config.humanoid.animationMode !== "run")
+  ) {
+    return 0;
+  }
+  if (requestedSpeed !== undefined) return Number.isFinite(requestedSpeed) ? Math.max(0, requestedSpeed) : 0;
+  const rig = resolveCharacterRig(config.humanoid);
+  return (
+    resolveProceduralCharacterCadence(config.humanoid) *
+    resolveProceduralCharacterStrideLength(config.humanoid, rig.morphology.scale)
+  );
+}
+
+function resolveHumanoidCapturePhaseRate(config: ProceduralUnitConfig, rootMotionSpeed: number): number {
+  const cadence = resolveProceduralCharacterCadence(config.humanoid);
+  if (rootMotionSpeed <= 0) return cadence;
+  const rig = resolveCharacterRig(config.humanoid);
+  const strideLength = resolveProceduralCharacterStrideLength(config.humanoid, rig.morphology.scale);
+  const travelDrivenRate = Math.min(rootMotionSpeed / strideLength, cadence * 2.5 + 0.02 / config.humanoid.fixedStep);
+  return cadence * 0.35 + travelDrivenRate * 0.65;
 }
 
 function phase(id: string, label: string, durationSeconds: number): CapturePhaseDuration {

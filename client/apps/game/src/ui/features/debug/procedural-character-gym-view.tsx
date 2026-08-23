@@ -2,6 +2,7 @@ import {
   Camera,
   Check,
   FlaskConical,
+  Footprints,
   Pause,
   Play,
   RotateCcw,
@@ -31,6 +32,7 @@ import {
 import {
   createProceduralAnimationCaptureReport,
   type ProceduralAnimationCaptureOverlay,
+  type ProceduralAnimationCaptureOptions,
   type ProceduralAnimationCaptureResult,
   type ProceduralAnimationCaptureSampling,
   type ProceduralAnimationCaptureSequence,
@@ -93,6 +95,7 @@ interface CharacterGymDebugBridge {
   captureFrames(
     sampling?: ProceduralAnimationCaptureSampling,
     overlay?: ProceduralAnimationCaptureOverlay,
+    options?: Omit<ProceduralAnimationCaptureOptions, "overlay">,
   ): Promise<ProceduralAnimationCaptureResult>;
   getConfig(): ProceduralUnitConfig;
   getAimStats(): ProceduralCharacterGymStats | null;
@@ -104,6 +107,7 @@ interface CharacterGymDebugBridge {
   seekFrame(
     frameIndex: number,
     sequence?: ProceduralAnimationCaptureSequence,
+    rootMotionSpeed?: number,
   ): Promise<ProceduralAnimationFrameCapture>;
   updateConfig(patch: ProceduralUnitConfigPatch): void;
 }
@@ -183,6 +187,7 @@ export const ProceduralCharacterGymView = () => {
     async (
       sampling: ProceduralAnimationCaptureSampling = "phase-atlas",
       overlay?: ProceduralAnimationCaptureOverlay,
+      options?: Omit<ProceduralAnimationCaptureOptions, "overlay">,
     ) => {
       const renderer = rendererRef.current;
       if (!renderer) throw new Error("Animation renderer is not ready");
@@ -191,7 +196,7 @@ export const ProceduralCharacterGymView = () => {
       setPaused(true);
       renderer.setPaused(true);
       try {
-        const result = await renderer.captureAnimationFrames(sampling, overlay);
+        const result = await renderer.captureAnimationFrames(sampling, { ...options, overlay });
         const selected = selectDefaultCaptureFrame(result);
         captureResultRef.current = result;
         setCaptureResult(result);
@@ -206,22 +211,29 @@ export const ProceduralCharacterGymView = () => {
     },
     [],
   );
-  const seekFrame = useCallback(async (frameIndex: number, sequence?: ProceduralAnimationCaptureSequence) => {
-    const renderer = rendererRef.current;
-    const resolvedSequence = sequence ?? captureResultRef.current?.plan.sequence;
-    if (!renderer || !resolvedSequence) throw new Error("No animation capture is available to scrub");
-    setCaptureBusy(true);
-    setPaused(true);
-    renderer.setPaused(true);
-    try {
-      const frame = await renderer.seekAnimationFrame(frameIndex, resolvedSequence);
-      const capturedFrame = captureResultRef.current?.frames.find((candidate) => candidate.frameIndex === frameIndex);
-      setSelectedCaptureFrame(capturedFrame ?? frame);
-      return frame;
-    } finally {
-      setCaptureBusy(false);
-    }
-  }, []);
+  const seekFrame = useCallback(
+    async (frameIndex: number, sequence?: ProceduralAnimationCaptureSequence, rootMotionSpeed?: number) => {
+      const renderer = rendererRef.current;
+      const resolvedSequence = sequence ?? captureResultRef.current?.plan.sequence;
+      if (!renderer || !resolvedSequence) throw new Error("No animation capture is available to scrub");
+      setCaptureBusy(true);
+      setPaused(true);
+      renderer.setPaused(true);
+      try {
+        const frame = await renderer.seekAnimationFrame(
+          frameIndex,
+          resolvedSequence,
+          rootMotionSpeed ?? captureResultRef.current?.plan.rootMotionSpeed,
+        );
+        const capturedFrame = captureResultRef.current?.frames.find((candidate) => candidate.frameIndex === frameIndex);
+        setSelectedCaptureFrame(capturedFrame ?? frame);
+        return frame;
+      } finally {
+        setCaptureBusy(false);
+      }
+    },
+    [],
+  );
   const closeCapture = useCallback(() => {
     captureResultRef.current = null;
     setCaptureResult(null);
@@ -309,6 +321,11 @@ export const ProceduralCharacterGymView = () => {
       <CharacterGymHeader
         stats={stats}
         archer={config.kind === "archer"}
+        locomotion={
+          config.kind !== "horse" &&
+          config.kind !== "paladin" &&
+          (config.humanoid.animationMode === "walk" || config.humanoid.animationMode === "run")
+        }
         melee={config.kind === "knight" || config.kind === "paladin"}
         paused={paused}
         ready={ready}
@@ -319,6 +336,7 @@ export const ProceduralCharacterGymView = () => {
         onFireArrow={fireArrow}
         onMeleeAttack={attackMelee}
         onCaptureFrames={() => void captureFrames("phase-atlas", "diagnostic")}
+        onCaptureGait={() => void captureFrames("phase-atlas", "diagnostic", { sequence: "locomotion-cycle" })}
         onReset={reset}
         onRunSmoke={runSmoke}
         onStep={() => rendererRef.current?.stepOnce()}
@@ -344,7 +362,7 @@ export const ProceduralCharacterGymView = () => {
           rendererError={rendererError}
           stats={stats}
           selectedCaptureFrame={selectedCaptureFrame}
-          onCapture={(sampling, overlay) => void captureFrames(sampling, overlay)}
+          onCapture={(sampling, overlay, options) => void captureFrames(sampling, overlay, options)}
           onCloseCapture={closeCapture}
           onSelectCaptureFrame={(frameIndex) => void seekFrame(frameIndex)}
         />
@@ -408,10 +426,12 @@ function exposeCharacterGymDebugBridge(
   captureFrames: (
     sampling?: ProceduralAnimationCaptureSampling,
     overlay?: ProceduralAnimationCaptureOverlay,
+    options?: Omit<ProceduralAnimationCaptureOptions, "overlay">,
   ) => Promise<ProceduralAnimationCaptureResult>,
   seekFrame: (
     frameIndex: number,
     sequence?: ProceduralAnimationCaptureSequence,
+    rootMotionSpeed?: number,
   ) => Promise<ProceduralAnimationFrameCapture>,
   captureResultRef: MutableRefObject<ProceduralAnimationCaptureResult | null>,
   updateConfig: (patch: ProceduralUnitConfigPatch) => void,
@@ -444,6 +464,7 @@ function exposeCharacterGymDebugBridge(
 interface CharacterGymHeaderProps {
   archer: boolean;
   captureBusy: boolean;
+  locomotion: boolean;
   melee: boolean;
   stats: ProceduralCharacterGymStats;
   paused: boolean;
@@ -452,6 +473,7 @@ interface CharacterGymHeaderProps {
   onCancelArrow(): void;
   onCancelMelee(): void;
   onCaptureFrames(): void;
+  onCaptureGait(): void;
   onFireArrow(): boolean;
   onMeleeAttack(): boolean;
   onReset(): void;
@@ -464,6 +486,7 @@ interface CharacterGymHeaderProps {
 const CharacterGymHeader = ({
   archer,
   captureBusy,
+  locomotion,
   melee,
   stats,
   paused,
@@ -472,6 +495,7 @@ const CharacterGymHeader = ({
   onCancelArrow,
   onCancelMelee,
   onCaptureFrames,
+  onCaptureGait,
   onFireArrow,
   onMeleeAttack,
   onReset,
@@ -506,6 +530,14 @@ const CharacterGymHeader = ({
         onClick={onCaptureFrames}
         disabled={!ready || captureBusy || stats.mode === "ragdoll"}
       />
+      {locomotion && (
+        <ActionButton
+          icon={<Footprints />}
+          label="Gait"
+          onClick={onCaptureGait}
+          disabled={!ready || captureBusy || stats.mode === "ragdoll"}
+        />
+      )}
       <ActionButton icon={<FlaskConical />} label="Run smoke" onClick={onRunSmoke} primary disabled={!ready} />
       <ActionButton icon={<Shield />} label="Drop" onClick={onDrop} disabled={!ready || stats.mode === "ragdoll"} />
       <ActionButton icon={<Zap />} label="Strike" onClick={onStrike} disabled={!ready} />
@@ -544,7 +576,11 @@ const CharacterGymViewport = ({
   captureBusy: boolean;
   captureResult: ProceduralAnimationCaptureResult | null;
   containerRef: RefObject<HTMLDivElement>;
-  onCapture(sampling: ProceduralAnimationCaptureSampling, overlay?: ProceduralAnimationCaptureOverlay): void;
+  onCapture(
+    sampling: ProceduralAnimationCaptureSampling,
+    overlay?: ProceduralAnimationCaptureOverlay,
+    options?: Omit<ProceduralAnimationCaptureOptions, "overlay">,
+  ): void;
   onCloseCapture(): void;
   onSelectCaptureFrame(frameIndex: number): void;
   ready: boolean;

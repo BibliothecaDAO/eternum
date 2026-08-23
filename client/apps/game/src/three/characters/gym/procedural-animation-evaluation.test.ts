@@ -9,6 +9,7 @@ describe("procedural animation objective evaluation", () => {
     const evaluation = evaluateProceduralAnimationCapture(result);
 
     expect(evaluation.automatedHardGatePassed).toBe(true);
+    expect(evaluation.locomotionHardGatePassed).toBeNull();
     expect(evaluation.temporalCoverage).toBe(true);
     expect(evaluation.measurements.maximumStanceContactDrift).toBeCloseTo(0.01, 4);
     expect(evaluation.measurements.maximumSocketDivergence).toBe(0.02);
@@ -24,6 +25,17 @@ describe("procedural animation objective evaluation", () => {
     expect(evaluation.automatedHardGatePassed).toBe(false);
     expect(evaluation.blankViewCount).toBe(1);
     expect(evaluation.issueFrameCount).toBe(1);
+  });
+
+  it("requires translating temporal evidence before a humanoid gait can pass", () => {
+    const result = createEvaluationResult();
+    result.plan.sequence = "locomotion-cycle";
+    result.plan.rootMotionSpeed = 0;
+
+    const evaluation = evaluateProceduralAnimationCapture(result);
+    expect(evaluation.locomotionHardGatePassed).toBe(false);
+    expect(evaluation.automatedHardGatePassed).toBe(false);
+    expect(evaluation.locomotionHardGateFailures).toContain("moving-root-capture-required");
   });
 });
 
@@ -55,8 +67,8 @@ function createEvaluationResult(): ProceduralAnimationCaptureResult & {
           },
         },
         feet: {
-          left: { contact: "stance", position: [frameIndex * 0.01, 0, 0] },
-          right: { contact: "stance", position: [0, 0, 0] },
+          left: { contact: "stance", position: [frameIndex * 0.01, 0, 0], progress: 0.5 },
+          right: { contact: "stance", position: [0, 0, 0], progress: 0.5 },
         },
         finite: true,
         headRadius: 0.17,
@@ -84,6 +96,13 @@ function createEvaluationResult(): ProceduralAnimationCaptureResult & {
           right: { kneeDegrees: 125, lowerLegLength: 0.4, upperLegLength: 0.4 },
         },
         palmInwardDot: { left: 1, right: 1 },
+        phase: frameIndex * 0.1,
+        rootPosition: [0, 0, frameIndex * 0.01],
+        rotations: {
+          chest: [0, 0, 0, 1],
+          head: [0, 0, 0, 1],
+          pelvis: [0, 0, 0, 1],
+        },
         scale: 1,
         socketDrawGripRight: [0, 1, 0],
         socketGrips: { left: [0, 1, 0], right: [0, 1, 0] },
@@ -106,6 +125,6 @@ function createEvaluationResult(): ProceduralAnimationCaptureResult & {
   return {
     config: {} as ProceduralAnimationCaptureResult["config"],
     frames,
-    plan: { sampling: "all-frames" } as ProceduralAnimationCaptureResult["plan"],
+    plan: { sampling: "all-frames", sequence: "melee-attack" } as ProceduralAnimationCaptureResult["plan"],
   } as unknown as ReturnType<typeof createEvaluationResult>;
 }

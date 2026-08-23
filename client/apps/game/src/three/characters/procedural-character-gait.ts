@@ -16,16 +16,48 @@ export interface ProceduralCharacterGaitSignals {
   phaseRadians: number;
 }
 
-interface CharacterGaitDefinition {
+export interface ProceduralCharacterGaitProfile {
   cadenceScale: number;
+  clearanceScale: number;
   dutyFactor: number;
+  strideScale: number;
+  swingApex: number;
+  swingTimingExponent: number;
 }
 
-const CHARACTER_GAITS: Readonly<Record<ProceduralCharacterMotionMode, CharacterGaitDefinition>> = {
-  idle: { cadenceScale: 0.16, dutyFactor: 0.88 },
-  walk: { cadenceScale: 1, dutyFactor: 0.62 },
-  run: { cadenceScale: 1.55, dutyFactor: 0.4 },
-  mounted: { cadenceScale: 1, dutyFactor: 0.88 },
+const CHARACTER_GAITS: Readonly<Record<ProceduralCharacterMotionMode, ProceduralCharacterGaitProfile>> = {
+  idle: {
+    cadenceScale: 0.16,
+    clearanceScale: 0,
+    dutyFactor: 0.88,
+    strideScale: 0,
+    swingApex: 0.43,
+    swingTimingExponent: 1,
+  },
+  walk: {
+    cadenceScale: 1,
+    clearanceScale: 0.52,
+    dutyFactor: 0.62,
+    strideScale: 0.66,
+    swingApex: 0.42,
+    swingTimingExponent: 0.88,
+  },
+  run: {
+    cadenceScale: 1.55,
+    clearanceScale: 0.9,
+    dutyFactor: 0.42,
+    strideScale: 0.96,
+    swingApex: 0.39,
+    swingTimingExponent: 0.78,
+  },
+  mounted: {
+    cadenceScale: 1,
+    clearanceScale: 0,
+    dutyFactor: 0.88,
+    strideScale: 0,
+    swingApex: 0.43,
+    swingTimingExponent: 1,
+  },
 };
 
 export function resolveProceduralCharacterGaitSignals(
@@ -83,10 +115,36 @@ export function resolveInitialProceduralCharacterPhase(seed: number): number {
   return wrapUnitPhase((resolveSeededMotionValue(seed, 3) + 1) * 0.5);
 }
 
-function resolveProceduralCharacterCadence(config: ProceduralCharacterConfig): number {
+export function resolveProceduralCharacterCadence(config: ProceduralCharacterConfig): number {
   const definition = CHARACTER_GAITS[config.animationMode];
   const cadenceBias = 1 + resolveSeededMotionValue(config.seed, 19) * config.motionVariation * 0.035;
   return config.animationSpeed * definition.cadenceScale * cadenceBias;
+}
+
+export function resolveProceduralCharacterStrideLength(
+  config: ProceduralCharacterConfig,
+  morphologyScale: number,
+): number {
+  const stanceTravel = resolveProceduralCharacterStanceTravel(config, morphologyScale);
+  const dutyFactor = clamp(
+    resolveProceduralCharacterGaitProfile(config).dutyFactor + config.dutyFactorOffset,
+    0.25,
+    0.8,
+  );
+  return Math.max(0.05, stanceTravel / dutyFactor);
+}
+
+export function resolveProceduralCharacterStanceTravel(
+  config: ProceduralCharacterConfig,
+  morphologyScale: number,
+): number {
+  return config.stride * Math.max(0.05, morphologyScale) * resolveProceduralCharacterGaitProfile(config).strideScale;
+}
+
+export function resolveProceduralCharacterGaitProfile(
+  config: Pick<ProceduralCharacterConfig, "animationMode">,
+): ProceduralCharacterGaitProfile {
+  return CHARACTER_GAITS[config.animationMode];
 }
 
 function clamp(value: number, min: number, max: number): number {

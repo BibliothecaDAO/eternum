@@ -27,6 +27,11 @@ describe("procedural character pose diagnostics", () => {
     expect(diagnostics.arms.right.elbowDegrees).toBeLessThan(174);
     expect(diagnostics.legs.left.kneeDegrees).toBeGreaterThan(0);
     expect(diagnostics.legs.right.lowerLegLength).toBeGreaterThan(0);
+    expect(diagnostics.phase).toBeGreaterThanOrEqual(0);
+    expect(diagnostics.phase).toBeLessThan(1);
+    diagnostics.feet.left.position.forEach((value, index) =>
+      expect(value).toBeCloseTo(pose.feet.left.target[index], 3),
+    );
     expect(diagnostics.issues).toEqual([]);
   });
 });

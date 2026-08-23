@@ -32,6 +32,7 @@ export function resolveOrganicLimbTrajectory(
   clearance: number,
   planting: number,
   swingApex: number,
+  swingTimingExponent = 1,
 ): ProceduralLimbTrajectory {
   if (cycle.contact === "stance") {
     const easedProgress = smootherStep(cycle.progress);
@@ -39,7 +40,7 @@ export function resolveOrganicLimbTrajectory(
     return { forward: stride * (0.5 - plantedProgress), lift: 0 };
   }
 
-  const progress = smootherStep(cycle.progress);
+  const progress = smootherStep(Math.pow(cycle.progress, clamp(swingTimingExponent, 0.65, 1.2)));
   const apex = clamp(swingApex, 0.25, 0.75);
   const liftProgress =
     cycle.progress < apex ? smootherStep(cycle.progress / apex) : smootherStep((1 - cycle.progress) / (1 - apex));

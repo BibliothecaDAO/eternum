@@ -1,6 +1,6 @@
 import { Group, Vector3 } from "three";
 
-import type { ProceduralCharacterPose, Vector3Tuple } from "./procedural-character-pose";
+import type { ProceduralCharacterPose, QuaternionTuple, Vector3Tuple } from "./procedural-character-pose";
 import type { ResolvedCharacterRig } from "./procedural-character-rig";
 
 export type ProceduralHumanoidJointId =
@@ -37,6 +37,7 @@ export interface ProceduralLegPoseDiagnostics {
 export interface ProceduralFootPoseDiagnostics {
   contact: "stance" | "swing";
   position: Vector3Tuple;
+  progress: number;
 }
 
 export interface ProceduralCharacterPoseDiagnostics {
@@ -49,6 +50,9 @@ export interface ProceduralCharacterPoseDiagnostics {
   jawAnchor: Vector3Tuple | null;
   legs: Readonly<Record<"left" | "right", ProceduralLegPoseDiagnostics>>;
   palmInwardDot: Readonly<Record<"left" | "right", number>>;
+  phase: number;
+  rootPosition: Vector3Tuple;
+  rotations: Readonly<Record<"chest" | "head" | "pelvis", QuaternionTuple>>;
   scale: number;
   socketDrawGripRight: Vector3Tuple | null;
   solverWristTargets: Readonly<Record<"left" | "right", Vector3Tuple>>;
@@ -99,12 +103,22 @@ export function resolveProceduralCharacterPoseDiagnostics(input: {
   } as const;
   const finite = Object.values(joints).every((joint) => joint.every(Number.isFinite));
   const issues = resolvePoseIssues({ arms, finite, scale });
+  const rootPosition = new Vector3();
+  input.root.getWorldPosition(rootPosition);
   return {
     arms,
     finite,
     feet: {
-      left: { contact: input.pose.feet.left.cycle.contact, position: joints.ankleLeft },
-      right: { contact: input.pose.feet.right.cycle.contact, position: joints.ankleRight },
+      left: {
+        contact: input.pose.feet.left.cycle.contact,
+        position: solverJoints.ankleLeft,
+        progress: round(input.pose.feet.left.cycle.progress),
+      },
+      right: {
+        contact: input.pose.feet.right.cycle.contact,
+        position: solverJoints.ankleRight,
+        progress: round(input.pose.feet.right.cycle.progress),
+      },
     },
     headRadius: round(headRadius),
     issues,
@@ -114,6 +128,13 @@ export function resolveProceduralCharacterPoseDiagnostics(input: {
     palmInwardDot: {
       left: round(input.leftPalmInwardDot),
       right: round(input.rightPalmInwardDot),
+    },
+    phase: round(input.pose.phase),
+    rootPosition: toTuple(rootPosition),
+    rotations: {
+      chest: input.pose.parts.chest.quaternion,
+      head: input.pose.parts.head.quaternion,
+      pelvis: input.pose.parts.pelvis.quaternion,
     },
     scale: round(scale),
     socketDrawGripRight: input.sockets?.drawRight ? toTuple(input.sockets.drawRight) : null,

@@ -5,8 +5,12 @@ import {
   buildCharacterAnimationCaptureUrl,
   evaluateCharacterAnimationCapture,
   normalizeCaptureKind,
+  normalizeCaptureMotionMode,
   normalizeCaptureOverlay,
   normalizeCaptureSampling,
+  normalizeCaptureSequence,
+  normalizeRootMotionSpeed,
+  resolveCaptureMotionMode,
 } from "./run-character-animation-capture.mjs";
 
 describe("character animation capture script", () => {
@@ -24,8 +28,15 @@ describe("character animation capture script", () => {
     expect(normalizeCaptureKind("horse")).toBe("horse");
     expect(normalizeCaptureSampling("phase-atlas")).toBe("phase-atlas");
     expect(normalizeCaptureOverlay("diagnostic")).toBe("diagnostic");
+    expect(normalizeCaptureSequence("locomotion-cycle")).toBe("locomotion-cycle");
+    expect(normalizeCaptureMotionMode("run")).toBe("run");
+    expect(resolveCaptureMotionMode("paladin", "")).toBe("mounted");
+    expect(resolveCaptureMotionMode("crossbowman", "")).toBe("walk");
+    expect(normalizeRootMotionSpeed("0.72")).toBe(0.72);
     expect(() => normalizeCaptureKind("dragon")).toThrow("Unsupported capture kind");
     expect(() => normalizeCaptureOverlay("labels-everywhere")).toThrow("Unsupported capture overlay");
+    expect(() => resolveCaptureMotionMode("paladin", "run")).toThrow("does not support motion mode");
+    expect(() => normalizeRootMotionSpeed("backwards")).toThrow("Invalid root motion speed");
   });
 
   it("rejects blank or anatomically invalid captures", () => {
@@ -68,5 +79,20 @@ describe("character animation capture script", () => {
         },
       }),
     ).toEqual({ ok: true, reasons: [] });
+  });
+
+  it("rejects a report that fails moving-root locomotion gates", () => {
+    expect(
+      evaluateCharacterAnimationCapture({
+        browserErrors: [],
+        report: {
+          evaluation: {
+            locomotionHardGateFailures: ["stance-contact-drift"],
+            locomotionHardGatePassed: false,
+          },
+          frames: [{ frameIndex: 2, imageNonBlank: true, issues: [], views: [] }],
+        },
+      }),
+    ).toEqual({ ok: false, reasons: ["locomotion hard gate: stance-contact-drift"] });
   });
 });

@@ -7,6 +7,7 @@ import type { ProceduralCharacterUpperBodyAction } from "./procedural-character-
 import {
   advanceProceduralCharacterGaitPhase,
   resolveInitialProceduralCharacterPhase,
+  resolveProceduralCharacterStrideLength,
   type CharacterFootId,
 } from "./procedural-character-gait";
 import { ProceduralCharacterAvatar, type ProceduralCharacterAvatarStats } from "./procedural-character-avatar";
@@ -361,7 +362,7 @@ class RuntimeProceduralCharacterActor implements ProceduralCharacterActor {
           this.config,
           deltaSeconds,
           this.plantController.getFrameTravelDistance(),
-          resolveCharacterStrideLength(this.rig, this.config),
+          resolveProceduralCharacterStrideLength(this.config, this.rig.morphology.scale),
         );
     this.applyAnimatedPose(false, deltaSeconds);
   }
@@ -415,11 +416,6 @@ class RuntimeProceduralCharacterActor implements ProceduralCharacterActor {
       );
     });
   }
-}
-
-function resolveCharacterStrideLength(rig: ResolvedCharacterRig, config: ProceduralCharacterConfig): number {
-  const modeScale = config.animationMode === "run" ? 0.82 : config.animationMode === "walk" ? 0.66 : 1;
-  return Math.max(0.05, config.stride * rig.morphology.scale * modeScale);
 }
 
 const EMPTY_RAGDOLL_STATS: JoltRagdollStats = {

@@ -6,7 +6,9 @@ import type { ProceduralMeleeUpperBodyPose } from "./melee/procedural-melee-pose
 import type { ProceduralCharacterUpperBodyAction } from "./procedural-character-action";
 import type { ProceduralCharacterConfig } from "./procedural-character-config";
 import {
+  resolveProceduralCharacterGaitProfile,
   resolveProceduralCharacterGaitSignals,
+  resolveProceduralCharacterStanceTravel,
   type CharacterFootId,
   type ProceduralCharacterGaitSignals,
 } from "./procedural-character-gait";
@@ -525,21 +527,37 @@ function resolveGroundedPelvis(
 ): Vector3 {
   const morphology = rig.morphology;
   const locomotionWeight = config.animationMode === "idle" ? 0 : 1;
-  const breathing = Math.sin(elapsedSeconds * 2.2 + resolveSeededMotionValue(config.seed, 43)) * config.breathing;
-  const verticalStep = (0.5 - 0.5 * Math.cos(gait.phaseRadians * 2)) * config.bob * locomotionWeight;
+  const verticalStep = resolvePelvisVerticalStep(config, gait) * locomotionWeight;
   const leftSupport = resolveSupportWeight(gait.feet.left);
   const rightSupport = resolveSupportWeight(gait.feet.right);
   const supportBalance = (leftSupport - rightSupport) / Math.max(0.25, leftSupport + rightSupport);
+  const anticipatedBalance = Math.sin(gait.phaseRadians - 0.22);
+  const balancedWeightShift = supportBalance * 0.74 + anticipatedBalance * 0.26;
+  const lateralScale = config.animationMode === "run" ? 0.42 : 0.7;
   const lateralVariation =
     Math.sin(elapsedSeconds * 0.72 + resolveSeededMotionValue(config.seed, 47) * Math.PI) *
     config.motionVariation *
     0.008;
   const baseHeight = CHARACTER_GROUND_Y + morphology.thighLength + morphology.shinLength - morphology.scale * 0.055;
   return new Vector3(
-    supportBalance * config.hipSway * locomotionWeight + lateralVariation,
-    baseHeight + verticalStep + breathing,
-    Math.sin(gait.phaseRadians * 2 - 0.35) * config.bob * 0.1 * locomotionWeight,
+    balancedWeightShift * config.hipSway * lateralScale * locomotionWeight + lateralVariation,
+    baseHeight + verticalStep,
+    Math.sin(gait.phaseRadians * 2 - 0.48) * config.bob * 0.12 * locomotionWeight,
   );
+}
+
+function resolvePelvisVerticalStep(config: ProceduralCharacterConfig, gait: ProceduralCharacterGaitSignals): number {
+  if (config.animationMode !== "run") {
+    const midStanceRise = 0.5 - 0.5 * Math.cos(gait.phaseRadians * 2);
+    const loadingResponse = Math.sin(gait.phaseRadians * 2 - 0.3) * 0.045;
+    return config.bob * (midStanceRise * 0.78 + loadingResponse);
+  }
+
+  const leftSupport = resolveSupportWeight(gait.feet.left);
+  const rightSupport = resolveSupportWeight(gait.feet.right);
+  const stanceCompression = Math.max(leftSupport, rightSupport);
+  const airborneExtension = (1 - leftSupport) * (1 - rightSupport);
+  return config.bob * (airborneExtension * 1.15 - stanceCompression * 0.22);
 }
 
 function resolveGroundedLeg(
@@ -556,18 +574,20 @@ function resolveGroundedLeg(
   const signedHipWidth = morphology.hipWidth * sideSign;
   const hip = pelvis.clone().add(new Vector3(signedHipWidth * 0.5, -0.08, 0));
   const locomotionWeight = config.animationMode === "idle" ? 0 : 1;
+  const gaitProfile = resolveProceduralCharacterGaitProfile(config);
   const strideVariation =
     1 + resolveSeededMotionValue(config.seed, side === "left" ? 53 : 59) * config.motionVariation * 0.045;
   const liftVariation =
     1 + resolveSeededMotionValue(config.seed, side === "left" ? 61 : 67) * config.motionVariation * 0.04;
-  const stride = config.stride * morphology.scale * (config.animationMode === "run" ? 0.82 : 0.66) * strideVariation;
-  const clearance = config.stepHeight * morphology.scale * (config.animationMode === "run" ? 1 : 0.84) * liftVariation;
+  const stride = resolveProceduralCharacterStanceTravel(config, morphology.scale) * strideVariation;
+  const clearance = config.stepHeight * morphology.scale * gaitProfile.clearanceScale * liftVariation;
   const trajectory = resolveOrganicLimbTrajectory(
     gait.feet[side],
     stride * locomotionWeight,
     clearance * locomotionWeight,
     config.footPlant,
-    config.animationMode === "run" ? 0.48 : 0.43,
+    gaitProfile.swingApex,
+    gaitProfile.swingTimingExponent,
   );
   const ankleTarget = new Vector3(
     targetPelvis.x + signedHipWidth * 0.54,
@@ -610,11 +630,12 @@ function resolvePelvisRotation(config: ProceduralCharacterConfig, gait: Procedur
   const leftSupport = resolveSupportWeight(gait.feet.left);
   const rightSupport = resolveSupportWeight(gait.feet.right);
   const supportBalance = (leftSupport - rightSupport) / Math.max(0.25, leftSupport + rightSupport);
+  const runWeight = config.animationMode === "run" ? 1 : 0;
   return new Quaternion().setFromEuler(
     new Euler(
-      config.lean * 0.42 * locomotionWeight,
-      Math.sin(gait.phaseRadians) * config.torsoTwist * 0.3 * locomotionWeight,
-      -supportBalance * config.hipSway * 0.9 * locomotionWeight,
+      config.lean * (0.28 + runWeight * 0.62) * locomotionWeight,
+      Math.sin(gait.phaseRadians - 0.12) * config.torsoTwist * (0.28 + runWeight * 0.08) * locomotionWeight,
+      -supportBalance * config.hipSway * (0.68 - runWeight * 0.18) * locomotionWeight,
     ),
   );
 }
@@ -632,15 +653,23 @@ function resolveGroundedTorso(
   const pelvisHalfHeight = rig.parts.pelvis.halfExtents?.[1] ?? 0.16;
   const chestHalfHeight = rig.parts.chest.halfExtents?.[1] ?? morphology.torsoLength * 0.46;
   const spineAnchor = pelvis.clone().add(new Vector3(0, pelvisHalfHeight, 0).applyQuaternion(pelvisRotation));
-  const chest = spineAnchor.clone().add(new Vector3(0, chestHalfHeight * 0.9, 0).applyQuaternion(pelvisRotation));
+  const breathing =
+    Math.sin(elapsedSeconds * 2.2 + resolveSeededMotionValue(config.seed, 43)) * config.breathing * 0.35;
+  const chest = spineAnchor
+    .clone()
+    .add(new Vector3(0, chestHalfHeight * 0.9, 0).applyQuaternion(pelvisRotation))
+    .add(new Vector3(0, breathing, 0));
   const overlapLag = config.secondaryMotion * 0.18;
   const torsoTwist =
     -Math.sin(gait.phaseRadians - overlapLag) * config.torsoTwist * locomotionWeight +
     Math.sin(elapsedSeconds * 0.48 + resolveSeededMotionValue(config.seed, 73) * Math.PI) *
       config.motionVariation *
       0.012;
-  const torsoRoll = Math.sin(gait.phaseRadians - overlapLag) * config.hipSway * 0.7 * locomotionWeight;
-  const chestRotation = new Quaternion().setFromEuler(new Euler(config.lean * locomotionWeight, torsoTwist, torsoRoll));
+  const runWeight = config.animationMode === "run" ? 1 : 0;
+  const torsoRoll =
+    Math.sin(gait.phaseRadians - overlapLag) * config.hipSway * (0.5 - runWeight * 0.16) * locomotionWeight;
+  const chestLean = config.lean * (0.5 + runWeight) * locomotionWeight;
+  const chestRotation = new Quaternion().setFromEuler(new Euler(chestLean, torsoTwist, torsoRoll));
   const neckAnchor = chest.clone().add(new Vector3(0, chestHalfHeight, 0).applyQuaternion(chestRotation));
   const head = neckAnchor.clone().add(new Vector3(0, morphology.headRadius * 0.95, 0));
   const headNod =
@@ -666,7 +695,7 @@ function resolveGroundedArm(
   elapsedSeconds: number,
 ): CharacterArmJoints {
   const sideSign = side === "left" ? 1 : -1;
-  const locomotionWeight = config.animationMode === "idle" ? 0 : config.animationMode === "run" ? 1 : 0.76;
+  const locomotionWeight = config.animationMode === "idle" ? 0 : config.animationMode === "run" ? 0.92 : 0.68;
   const sidePhase = gait.phaseRadians + (side === "left" ? 0 : Math.PI);
   const lag = config.secondaryMotion * 0.16;
   const amplitudeVariation =
@@ -677,8 +706,8 @@ function resolveGroundedArm(
     0.018;
   const harmonicSwing = Math.cos(sidePhase - lag) + Math.sin(sidePhase * 2 - lag * 1.6) * 0.12;
   const swing = harmonicSwing * config.armSwing * locomotionWeight * amplitudeVariation + idleDrift;
-  const runBend = config.animationMode === "run" ? 0.58 : 0;
-  const elbowBend = 0.16 + runBend + Math.max(0, -Math.cos(sidePhase)) * 0.18 * locomotionWeight;
+  const runBend = config.animationMode === "run" ? 0.95 : 0;
+  const elbowBend = 0.16 + runBend + Math.max(0, -Math.cos(sidePhase)) * 0.14 * locomotionWeight;
   const upperDirection = new Vector3(sideSign * 0.035, -rig.morphology.upperArmLength, 0).applyAxisAngle(X_AXIS, swing);
   const elbow = shoulder.clone().add(upperDirection);
   const followThrough = Math.sin(sidePhase - lag * 2.1) * config.secondaryMotion * 0.055 * locomotionWeight;
@@ -846,7 +875,7 @@ function assembleCharacterPose(input: {
       left: { cycle: input.leftLeg.cycle, target: toVectorTuple(input.leftLeg.ankle) },
       right: { cycle: input.rightLeg.cycle, target: toVectorTuple(input.rightLeg.ankle) },
     },
-    phase: input.gait.phaseRadians,
+    phase: input.gait.phase,
     parts,
     joints: [
       toVectorTuple(input.spineAnchor),

@@ -9,6 +9,13 @@ claims come from peer-reviewed graphics papers or official conference material; 
 Three.js and Jolt documentation. Proposed tuning values are labelled as implementation starting points rather than
 measured biological constants.
 
+**Implementation status (2026-08-23):** humanoid walk/run now use distance-coupled phase, explicit contact cycles,
+world-space plant anchors with an early-swing release, asymmetric swing timing, support-driven mode-specific pelvis
+motion, layered torso/arm filtering, and moving-root gym evaluation. The original observations below preserve the
+baseline that motivated the work. Horse/mounted moving-root proof, articulated humanoid foot roll, and additional
+secondary layers remain open. Current measurements and promotion scores live in
+[Animation evaluation](./animation-evaluation.md).
+
 ## Executive answer
 
 The current robotic quality is **not mainly a bad-parameter problem**. It is a signal-design problem.

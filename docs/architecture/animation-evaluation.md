@@ -143,6 +143,73 @@ fantasy art direction. Those remain visual judgements, but the judgement must be
 
 ## Current evaluation
 
+### Humanoid locomotion pass
+
+Evaluation date: 2026-08-23. Configuration: tier 3 Knight, seed 1337, WebGPU, 60 Hz fixed step. Walk and run each use a
+moving root at their natural distance-per-cycle speed. The temporal proof covers 61 walk frames and 39 run frames; each
+spatial proof covers four quarter-cycle poses from front, right profile, rear, left profile, and elevated three-quarter,
+plus both equipment-grip views.
+
+The reviewed runtime lifecycle is:
+
+1. the scene writes the actor's root transform;
+2. the plant controller measures root travel before pose construction;
+3. desired cadence and measured distance advance one deterministic gait phase;
+4. left/right contact cycles produce stance and asymmetric swing targets;
+5. support state drives pelvis translation and pelvis/chest counter-rotation;
+6. two-bone IK solves the legs and arms, while the pose filter affects only non-contact rotations;
+7. the active Quaternius skeleton and cosmetic sockets receive the pose;
+8. diagnostics sample that rendered state, and Jolt can take over the same pose on a ragdoll edge.
+
+The pass separated parameters that had previously shared one waveform. Walking now rises over mid-stance with restrained
+clearance and an anticipatory support shift. Running compresses during stance, extends into flight, uses a longer
+stride, recovers the swing leg before mid-swing, leans farther into travel, narrows lateral sway, and carries the arms
+with more elbow flex. Breathing moved from the pelvis to a low-amplitude chest layer. A full stride is now explicitly
+distinct from stance-foot travel, and the plant controller releases its world anchor during early swing instead of
+sliding it at the end of stance.
+
+| Moving-root metric                 | Original walk | Final walk | Original run | Final run |
+| ---------------------------------- | ------------: | ---------: | -----------: | --------: |
+| Natural root speed                 |       0.48000 |    0.72720 |      0.92000 |   2.42021 |
+| Pelvis lateral excursion           |       0.11000 |    0.07694 |      0.11002 |   0.04614 |
+| Pelvis vertical excursion          |       0.06565 |    0.04455 |      0.06828 |   0.07534 |
+| Maximum swing clearance            |       0.24619 |    0.15860 |      0.28930 |   0.27450 |
+| Swing apex                         |        42–43% |     41–42% |       49–50% |    38–39% |
+| Maximum stance-contact drift       |            -- |    0.00243 |           -- |   0.00000 |
+| Maximum consecutive joint movement |       0.11568 |    0.06876 |      0.32284 |   0.15488 |
+| Double-support / flight fraction   |      24% / 0% |   23% / 0% |     0% / 21% |  0% / 15% |
+
+Original contact drift is omitted because the old report sampled the visible ankle bone while the corrected report
+samples the actual IK contact target; original and final clearance values use those same respective seams and therefore
+show the change in visible gait scale rather than a strict contact-target delta. In the first like-for-like moving-root
+capture, before toe-off repair, maximum contact drift was 0.11750 for walk and 0.15472 for run; the final values are
+0.00243 and 0.00000. Final left/right duty fractions remain within 2.6 percentage points, clearance asymmetry is at or
+below 0.001, captured cycle coverage is 0.98–1.00, all 100 temporal frames and all 56 atlas images are nonblank, and no
+semantic pose issue fired.
+
+| Sequence | Anatomy | Weight | Timing | Intent | Coupling | Secondary | Stability | Weighted | Decision             |
+| -------- | ------: | -----: | -----: | -----: | -------: | --------: | --------: | -------: | -------------------- |
+| Walk     |     4.1 |    4.3 |    4.1 |    4.0 |      4.1 |       3.7 |       4.5 |     4.11 | promote for gameplay |
+| Run      |     4.1 |    4.2 |    4.2 |    4.2 |      4.0 |       3.8 |       4.4 |     4.13 | promote for gameplay |
+
+These are internal visual-review scores against the rubric above, not biomechanical ground truth. The five-angle atlas
+shows clean forward knee bend, readable flight and support poses, stable equipment grips, no limb crossover, and a
+clearer difference between walking and running effort. The remaining hero-quality gap is articulated foot roll/toe-off,
+cloth or cape overlap, and weapon-specific sprint carriage; those do not block the normal strategy camera.
+
+The unchanged 100-foot-unit benchmark also passes after this gait pass: 88.65 observed FPS, 12.4 ms total CPU p95, 3.1
+ms animation CPU p95, 404 draw calls, and 1,794,426 triangles at the fixed 1440×900 reference viewport. Separate
+61-frame moving-root walk captures for the Archer and Crossbowman also pass with no pose, grip, contact, or browser
+errors; visual quarter-cycle review confirms that the free bow carry and constrained two-hand crossbow carry retain
+distinct upper-body silhouettes over the same grounded leg controller.
+
+The locomotion hard gate is now executable rather than prose. A full temporal gait fails promotion if it lacks moving
+root evidence, does not cover approximately one cycle, travels too little, exceeds 0.01 stance drift, has left/right
+contact or clearance asymmetry outside tolerance, peaks swing outside 30–55%, or lacks the expected walk double-support
+or run flight pattern.
+
+### Combat and mounted baseline
+
 Evaluation date: 2026-08-22. Configuration: tier 3, seed 1337, WebGL2 fallback, fixed-step capture. Archer, knight, and
 paladin use their complete action sequence. Horse and crossbowman use one walk cycle; the crossbowman evaluation covers
 locomotion and carry only because a firing sequence does not yet exist.
@@ -224,12 +291,12 @@ too abrupt for a score above 3.3/3.2 in timing.
 ### Remaining priorities
 
 1. Build a complete crossbow acquire, raise, aim, release, recoil, and reload sequence.
-2. Add a moving-root locomotion capture so foot and hoof planting can be judged in production motion rather than an
-   in-place preview.
+2. Extend moving-root contact proof to horse gaits and mounted units.
 3. Smooth the acceleration profile around the knight and paladin strike peaks without reducing contact readability.
 4. Give the mounted attack more visible horse response and delayed rider recovery.
 5. Add finger collision volumes and cosmetic-authored grip metadata where future hero-grade props need sub-centimetre
    contact beyond the current shared palm model.
+6. Add articulated foot roll/toe-off and weapon-specific sprint carriage for hero-distance humanoid shots.
 
 Final reproducible evidence is under `output/animation-evaluation/`: each unit has a diagnostic atlas JSON, annotated
 PNG contact sheet, and all-frame temporal JSON. Do not replace those reports with a subjective score table; keep both.

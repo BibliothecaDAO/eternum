@@ -90,8 +90,48 @@ describe("procedural animation capture plan", () => {
     const config = applyProceduralUnitConfigPatch(createDefaultProceduralUnitConfig(), { kind: "archer" });
 
     expect(createProceduralAnimationCapturePlan(config, "all-frames").overlay).toBe("clean");
-    expect(createProceduralAnimationCapturePlan(config, "all-frames", "archer-shot", "diagnostic").overlay).toBe(
-      "diagnostic",
-    );
+    expect(
+      createProceduralAnimationCapturePlan(config, "all-frames", {
+        overlay: "diagnostic",
+        sequence: "archer-shot",
+      }).overlay,
+    ).toBe("diagnostic");
+  });
+
+  it("measures one moving-root gait cycle at the travel-coupled phase rate", () => {
+    const config = applyProceduralUnitConfigPatch(createDefaultProceduralUnitConfig(), {
+      kind: "knight",
+      humanoid: { animationMode: "walk", animationSpeed: 1, motionVariation: 0 },
+    });
+    const treadmill = createProceduralAnimationCapturePlan(config, "all-frames", {
+      rootMotionSpeed: 0,
+      sequence: "locomotion-cycle",
+    });
+    const natural = createProceduralAnimationCapturePlan(config, "all-frames", {
+      sequence: "locomotion-cycle",
+    });
+    const travelling = createProceduralAnimationCapturePlan(config, "all-frames", {
+      rootMotionSpeed: 1.2,
+      sequence: "locomotion-cycle",
+    });
+
+    expect(treadmill.rootMotionSpeed).toBe(0);
+    expect(natural.rootMotionSpeed).toBeGreaterThan(0);
+    expect(travelling.rootMotionSpeed).toBe(1.2);
+    expect(travelling.totalSeconds).toBeLessThan(treadmill.totalSeconds);
+    expect(travelling.sampleFrames.length).toBe(travelling.totalFrames);
+  });
+
+  it("matches the runtime phase-speed clamp for extreme preview travel", () => {
+    const config = applyProceduralUnitConfigPatch(createDefaultProceduralUnitConfig(), {
+      kind: "knight",
+      humanoid: { animationMode: "run", animationSpeed: 1, motionVariation: 0 },
+    });
+    const plan = createProceduralAnimationCapturePlan(config, "all-frames", {
+      rootMotionSpeed: 100,
+      sequence: "locomotion-cycle",
+    });
+
+    expect(plan.totalSeconds).toBeGreaterThan(0.2);
   });
 });

@@ -11,6 +11,8 @@ const POLL_INTERVAL_MS = 250;
 const VALID_KINDS = new Set(["archer", "crossbowman", "horse", "knight", "paladin"]);
 const VALID_OVERLAYS = new Set(["clean", "diagnostic"]);
 const VALID_SAMPLING = new Set(["all-frames", "key-phases", "phase-atlas"]);
+const VALID_SEQUENCES = new Set(["archer-shot", "locomotion-cycle", "melee-attack"]);
+const VALID_MOTION_MODES = new Set(["idle", "walk", "run", "mounted"]);
 const ASSET_WEAPON_IDS = new Set(["winter-broadaxe", "winter-rider-battleaxe"]);
 const ASSET_OFFHAND_IDS = new Set(["light-cavalry-shield", "winter-rider-shield", "winter-targe"]);
 const CRITICAL_ISSUES = [
@@ -51,6 +53,32 @@ export function normalizeCaptureOverlay(value) {
   return value;
 }
 
+export function normalizeCaptureSequence(value) {
+  if (!VALID_SEQUENCES.has(value)) throw new Error(`Unsupported capture sequence "${value}"`);
+  return value;
+}
+
+export function normalizeCaptureMotionMode(value) {
+  if (!VALID_MOTION_MODES.has(value)) throw new Error(`Unsupported capture motion mode "${value}"`);
+  return value;
+}
+
+export function resolveCaptureMotionMode(kind, requestedMode) {
+  if (kind === "paladin") {
+    if (requestedMode && requestedMode !== "mounted") {
+      throw new Error(`Mounted Paladin capture does not support motion mode "${requestedMode}"`);
+    }
+    return "mounted";
+  }
+  return normalizeCaptureMotionMode(requestedMode || (kind === "crossbowman" ? "walk" : "idle"));
+}
+
+export function normalizeRootMotionSpeed(value) {
+  const speed = Number(value);
+  if (!Number.isFinite(speed) || speed < 0) throw new Error(`Invalid root motion speed "${value}"`);
+  return speed;
+}
+
 export function evaluateCharacterAnimationCapture({ browserErrors, report }) {
   const reasons = [];
   if (!report?.frames?.length) reasons.push("capture produced no frames");
@@ -66,6 +94,9 @@ export function evaluateCharacterAnimationCapture({ browserErrors, report }) {
       .map((issue) => `F${frameIndex}:${issue}`),
   );
   if (criticalIssues.length > 0) reasons.push(`critical pose issues: ${criticalIssues.join(", ")}`);
+  if (report?.evaluation?.locomotionHardGatePassed === false) {
+    reasons.push(`locomotion hard gate: ${report.evaluation.locomotionHardGateFailures.join(", ")}`);
+  }
   if (browserErrors.length > 0) reasons.push(`browser reported ${browserErrors.length} error(s): ${browserErrors[0]}`);
   return { ok: reasons.length === 0, reasons };
 }
@@ -115,7 +146,7 @@ function waitForGym({ headed, session, timeoutMs, until }) {
   return snapshot;
 }
 
-function configureCaptureUnit(session, headed, kind, weaponId, offhandId) {
+function configureCaptureUnit(session, headed, kind, motionMode, weaponId, offhandId) {
   runAgentBrowser(
     session,
     [
@@ -124,7 +155,7 @@ function configureCaptureUnit(session, headed, kind, weaponId, offhandId) {
         window.__proceduralCharacterGym.updateConfig({
           kind: ${JSON.stringify(kind)},
           archer: { autoFire: false },
-          humanoid: { animationMode: ${JSON.stringify(kind === "crossbowman" ? "walk" : "idle")}, autoRotate: false },
+          humanoid: { animationMode: ${JSON.stringify(motionMode)}, autoRotate: false },
           melee: {
             autoAttack: false,
             ...(${JSON.stringify(weaponId)} && { weaponId: ${JSON.stringify(weaponId)} }),
@@ -138,13 +169,17 @@ function configureCaptureUnit(session, headed, kind, weaponId, offhandId) {
   );
 }
 
-function captureReport(session, headed, sampling, overlay) {
+function captureReport(session, headed, sampling, overlay, sequence, rootMotionSpeed) {
   const raw = runAgentBrowser(
     session,
     [
       "eval",
       `(async () => {
-        await window.__proceduralCharacterGym.captureFrames(${JSON.stringify(sampling)}, ${JSON.stringify(overlay)});
+        await window.__proceduralCharacterGym.captureFrames(
+          ${JSON.stringify(sampling)},
+          ${JSON.stringify(overlay)},
+          ${JSON.stringify({ sequence, rootMotionSpeed })}
+        );
         return JSON.stringify(window.__proceduralCharacterGym.getFrameCaptureReport());
       })()`,
     ],
@@ -180,11 +215,14 @@ function runCapture({
   baseUrl,
   headed,
   kind,
+  motionMode,
   offhandId,
   outputDir,
   overlay,
   rendererMode,
+  rootMotionSpeed,
   sampling,
+  sequence,
   timeoutMs,
   weaponId,
 }) {
@@ -198,19 +236,20 @@ function runCapture({
       timeoutMs,
       until: ({ ready, rendererMode: activeMode }) => ready && activeMode !== "initializing",
     });
-    configureCaptureUnit(session, headed, kind, weaponId, offhandId);
+    configureCaptureUnit(session, headed, kind, motionMode, weaponId, offhandId);
     const configuredSnapshot = waitForGym({
       headed,
       session,
       timeoutMs,
       until: ({ config, stats }) =>
         config?.kind === kind &&
+        config?.humanoid?.animationMode === motionMode &&
         (!weaponId || config?.melee?.weaponId === weaponId) &&
         (!offhandId || config?.melee?.offhandId === offhandId) &&
         (!ASSET_WEAPON_IDS.has(weaponId) || stats?.meleeWeaponSource === "asset") &&
         (!ASSET_OFFHAND_IDS.has(offhandId) || stats?.meleeOffhandSource === "asset"),
     });
-    const report = captureReport(session, headed, sampling, overlay);
+    const report = captureReport(session, headed, sampling, overlay, sequence, rootMotionSpeed);
     writeCaptureArtifacts(session, headed, report, outputDir);
     const browserErrors = parseErrorLines(runAgentBrowser(session, ["errors"], { headed }));
     const evaluation = evaluateCharacterAnimationCapture({ browserErrors, report });
@@ -222,11 +261,14 @@ function runCapture({
       capturedImageCount: report.frames.reduce((count, frame) => count + Math.max(1, frame.views?.length ?? 0), 0),
       issueCount: report.frames.reduce((count, frame) => count + frame.issues.length, 0),
       kind,
+      motionMode,
       offhandId: configuredSnapshot.config?.melee?.offhandId,
       offhandSource: configuredSnapshot.stats?.meleeOffhandSource,
       outputDir,
       overlay,
+      rootMotionSpeed: report.plan.rootMotionSpeed,
       sampling,
+      sequence: report.plan.sequence,
       totalFrameCount: report.plan.totalFrames,
       url,
       weaponId: configuredSnapshot.config?.melee?.weaponId,
@@ -241,14 +283,24 @@ function main(argv) {
   const baseUrl = readOption(argv, "--base-url", DEFAULT_BASE_URL);
   const headed = readFlag(argv, "--headed");
   const kind = normalizeCaptureKind(readOption(argv, "--kind", "archer"));
+  const requestedMotionMode = readOption(argv, "--motion-mode", "");
+  const motionMode = resolveCaptureMotionMode(kind, requestedMotionMode);
   const offhandId = readOption(argv, "--offhand-id", "");
   const rendererMode = readOption(argv, "--renderer-mode", "");
   const sampling = normalizeCaptureSampling(readOption(argv, "--sampling", "phase-atlas"));
+  const requestedSequence = readOption(argv, "--sequence", "");
+  const sequence = requestedSequence
+    ? normalizeCaptureSequence(requestedSequence)
+    : requestedMotionMode
+      ? "locomotion-cycle"
+      : undefined;
   const weaponId = readOption(argv, "--weapon-id", "");
   const overlay = normalizeCaptureOverlay(
     readOption(argv, "--overlay", sampling === "phase-atlas" ? "diagnostic" : "clean"),
   );
   const timeoutMs = Number(readOption(argv, "--timeout-ms", String(DEFAULT_TIMEOUT_MS)));
+  const requestedRootMotionSpeed = readOption(argv, "--root-motion-speed", "");
+  const rootMotionSpeed = requestedRootMotionSpeed ? normalizeRootMotionSpeed(requestedRootMotionSpeed) : undefined;
   const outputDir = resolve(
     readOption(argv, "--output-dir", resolve(process.cwd(), "../../../output/animation-capture", kind)),
   );
@@ -256,11 +308,14 @@ function main(argv) {
     baseUrl,
     headed,
     kind,
+    motionMode,
     offhandId,
     outputDir,
     overlay,
     rendererMode,
+    rootMotionSpeed,
     sampling,
+    sequence,
     timeoutMs,
     weaponId,
   });

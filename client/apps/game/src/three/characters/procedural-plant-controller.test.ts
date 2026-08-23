@@ -29,4 +29,38 @@ describe("procedural plant controller", () => {
       0, 0.3, -0.1,
     ]);
   });
+
+  it("eases a moving root away from its plant during early swing", () => {
+    const root = new Group();
+    const controller = new ProceduralPlantController<"left">();
+
+    controller.beginFrame(root);
+    controller.resolveTarget("left", { contact: "stance", progress: 0.5 }, [0, 0, 0], 1);
+    root.position.x = 1;
+    controller.beginFrame(root);
+    controller.resolveTarget("left", { contact: "stance", progress: 0.95 }, [0, 0, 0], 1);
+    root.position.x = 1.1;
+    controller.beginFrame(root);
+    const toeOffTarget = controller.resolveTarget("left", { contact: "swing", progress: 0 }, [0, 0.2, 0], 1);
+    const toeOffWorld = root.localToWorld(new Vector3(...toeOffTarget));
+    const releasedTarget = controller.resolveTarget("left", { contact: "swing", progress: 0.12 }, [0, 0.2, 0], 1);
+    const releasedWorld = root.localToWorld(new Vector3(...releasedTarget));
+
+    expect(toeOffWorld.toArray()).toEqual([0, 0, 0]);
+    expect(releasedWorld.toArray()).toEqual([1.1, 0.2, 0]);
+  });
+
+  it("does not introduce a swing anchor when planting is disabled", () => {
+    const root = new Group();
+    const controller = new ProceduralPlantController<"left">();
+
+    controller.beginFrame(root);
+    controller.resolveTarget("left", { contact: "stance", progress: 0.5 }, [0, 0, 0], 0);
+    root.position.x = 1;
+    controller.beginFrame(root);
+    controller.resolveTarget("left", { contact: "stance", progress: 0.95 }, [0, 0, 0], 0);
+    const target = controller.resolveTarget("left", { contact: "swing", progress: 0 }, [0, 0.2, 0], 0);
+
+    expect(target).toEqual([0, 0.2, 0]);
+  });
 });

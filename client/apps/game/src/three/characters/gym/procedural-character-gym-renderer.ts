@@ -37,7 +37,7 @@ import {
   resolveAnimationCapturePhase,
   resolveAnimationFrameIssues,
   type ProceduralAnimationCaptureResult,
-  type ProceduralAnimationCaptureOverlay,
+  type ProceduralAnimationCaptureOptions,
   type ProceduralAnimationCaptureSampling,
   type ProceduralAnimationCaptureSequence,
   type ProceduralAnimationCaptureView,
@@ -101,7 +101,7 @@ export interface ProceduralCharacterGymRendererHandle {
   attackMelee(): boolean;
   captureAnimationFrames(
     sampling: ProceduralAnimationCaptureSampling,
-    overlay?: ProceduralAnimationCaptureOverlay,
+    options?: ProceduralAnimationCaptureOptions,
   ): Promise<ProceduralAnimationCaptureResult>;
   cancelArrow(): void;
   cancelMelee(): void;
@@ -114,6 +114,7 @@ export interface ProceduralCharacterGymRendererHandle {
   seekAnimationFrame(
     frameIndex: number,
     sequence: ProceduralAnimationCaptureSequence,
+    rootMotionSpeed?: number,
   ): Promise<ProceduralAnimationFrameCapture>;
   startRagdoll(): Promise<void>;
   stepOnce(): void;
@@ -225,7 +226,7 @@ class ProceduralCharacterGymRuntime {
     return {
       applyImpulse: () => this.applyImpulse(),
       attackMelee: () => this.attackMelee(),
-      captureAnimationFrames: (sampling, overlay) => this.captureAnimationFrames(sampling, overlay),
+      captureAnimationFrames: (sampling, options) => this.captureAnimationFrames(sampling, options),
       cancelArrow: () => this.character.cancelRangedAttack(),
       cancelMelee: () => this.character.cancelMeleeAttack(),
       dispose: () => this.dispose(),
@@ -234,7 +235,8 @@ class ProceduralCharacterGymRuntime {
       resetCamera: () => this.resetCamera(),
       runSmoke: () => this.runSmoke(),
       setPaused: (paused) => this.setPaused(paused),
-      seekAnimationFrame: (frameIndex, sequence) => this.seekAnimationFrame(frameIndex, sequence),
+      seekAnimationFrame: (frameIndex, sequence, rootMotionSpeed) =>
+        this.seekAnimationFrame(frameIndex, sequence, rootMotionSpeed),
       startRagdoll: () => this.startRagdoll(),
       stepOnce: () => this.stepOnce(),
       updateConfig: (config) => this.updateConfig(config),
@@ -331,9 +333,9 @@ class ProceduralCharacterGymRuntime {
 
   private async captureAnimationFrames(
     sampling: ProceduralAnimationCaptureSampling,
-    overlay?: ProceduralAnimationCaptureOverlay,
+    options?: ProceduralAnimationCaptureOptions,
   ): Promise<ProceduralAnimationCaptureResult> {
-    const plan = createProceduralAnimationCapturePlan(this.config, sampling, undefined, overlay);
+    const plan = createProceduralAnimationCapturePlan(this.config, sampling, options);
     const generation = ++this.captureGeneration;
     this.prepareAnimationCapture(plan.sequence);
     const frames: ProceduralAnimationFrameCapture[] = [];
@@ -341,7 +343,7 @@ class ProceduralCharacterGymRuntime {
     for (const sampleFrame of plan.sampleFrames) {
       this.assertCaptureGeneration(generation);
       while (currentFrame < sampleFrame) {
-        this.advanceInspectionFrame();
+        this.advanceInspectionFrame(plan.rootMotionSpeed);
         currentFrame += 1;
       }
       frames.push(await this.captureInspectionFrame(plan, sampleFrame, generation));
@@ -352,13 +354,18 @@ class ProceduralCharacterGymRuntime {
   private async seekAnimationFrame(
     frameIndex: number,
     sequence: ProceduralAnimationCaptureSequence,
+    rootMotionSpeed?: number,
   ): Promise<ProceduralAnimationFrameCapture> {
-    const plan = createProceduralAnimationCapturePlan(this.config, "key-phases", sequence, "clean");
+    const plan = createProceduralAnimationCapturePlan(this.config, "key-phases", {
+      overlay: "clean",
+      rootMotionSpeed,
+      sequence,
+    });
     const targetFrame = clampFrameIndex(frameIndex, plan.totalFrames);
     const generation = ++this.captureGeneration;
     this.prepareAnimationCapture(sequence);
     for (let currentFrame = 0; currentFrame < targetFrame; currentFrame += 1) {
-      this.advanceInspectionFrame();
+      this.advanceInspectionFrame(plan.rootMotionSpeed);
     }
     return this.captureInspectionFrame(plan, targetFrame, generation);
   }
@@ -367,6 +374,7 @@ class ProceduralCharacterGymRuntime {
     assertCaptureSequenceMatchesKind(sequence, this.config.kind);
     this.setPaused(true);
     this.controls.autoRotate = false;
+    this.character.object.position.set(0, 0, 0);
     this.resetRuntimeState();
     this.inspectionFill.intensity = 2.2;
     this.focusAnimationInspectionCamera();
@@ -378,11 +386,12 @@ class ProceduralCharacterGymRuntime {
     this.unitRuntime.update(0);
   }
 
-  private advanceInspectionFrame(): void {
+  private advanceInspectionFrame(rootMotionSpeed = 0): void {
     const fixedStep = this.config.humanoid.fixedStep;
     this.archerStage.update(fixedStep);
     this.meleeStage.update(fixedStep);
     this.syncActionTargets();
+    this.character.object.position.z += rootMotionSpeed * fixedStep;
     this.unitRuntime.stepOnce();
     this.projectiles.stepOnce();
   }
@@ -598,7 +607,8 @@ class ProceduralCharacterGymRuntime {
     const targetTuple = detailTarget
       ? diagnostics?.humanoid?.socketGrips[detailTarget === "gripLeft" ? "left" : "right"]
       : null;
-    const target = targetTuple ? new Vector3(...targetTuple) : new Vector3(0, targetHeight, 0);
+    const rootPosition = this.character.object.getWorldPosition(new Vector3());
+    const target = targetTuple ? new Vector3(...targetTuple) : rootPosition.add(new Vector3(0, targetHeight, 0));
     const azimuth = (view.azimuthDegrees * Math.PI) / 180;
     const elevation = (view.elevationDegrees * Math.PI) / 180;
     const horizontalDistance = Math.cos(elevation) * distance;

@@ -14,6 +14,7 @@ import type { ReactNode } from "react";
 
 import {
   createProceduralAnimationCaptureReport,
+  type ProceduralAnimationCaptureOptions,
   type ProceduralAnimationCaptureResult,
   type ProceduralAnimationCaptureOverlay,
   type ProceduralAnimationCaptureSampling,
@@ -27,7 +28,11 @@ interface ProceduralAnimationInspectorProps {
   busy: boolean;
   result: ProceduralAnimationCaptureResult;
   selectedFrame: ProceduralAnimationFrameCapture;
-  onCapture(sampling: ProceduralAnimationCaptureSampling, overlay?: ProceduralAnimationCaptureOverlay): void;
+  onCapture(
+    sampling: ProceduralAnimationCaptureSampling,
+    overlay?: ProceduralAnimationCaptureOverlay,
+    options?: Omit<ProceduralAnimationCaptureOptions, "overlay">,
+  ): void;
   onClose(): void;
   onSelectFrame(frameIndex: number): void;
 }
@@ -45,6 +50,10 @@ export const ProceduralAnimationInspector = ({
   const next = result.frames[Math.min(result.frames.length - 1, selectedPosition + 1)];
   const imageCount = result.frames.reduce((count, frame) => count + frame.views.length, 0);
   const evaluation = evaluateProceduralAnimationCapture(result);
+  const repeatCaptureOptions = {
+    rootMotionSpeed: result.plan.rootMotionSpeed,
+    sequence: result.plan.sequence,
+  } as const;
   return (
     <section
       className="pointer-events-auto absolute right-3 bottom-3 left-3 z-30 border border-violet-300/25 bg-[#080d16]/95 shadow-2xl backdrop-blur-xl"
@@ -64,6 +73,7 @@ export const ProceduralAnimationInspector = ({
             <p className="text-xs font-semibold text-white">
               {result.plan.sequence} · {result.frames.length} poses · {imageCount} views · {result.plan.overlay} ·{" "}
               {evaluation.automatedHardGatePassed ? "objective pass" : "objective fail"}
+              {result.plan.rootMotionSpeed > 0 ? ` · root ${result.plan.rootMotionSpeed.toFixed(2)} u/s` : ""}
               {result.plan.truncated ? " · capped" : ""}
             </p>
           </div>
@@ -73,13 +83,13 @@ export const ProceduralAnimationInspector = ({
             icon={<Layers3 />}
             label="5-view atlas"
             disabled={busy}
-            onClick={() => onCapture("phase-atlas", "diagnostic")}
+            onClick={() => onCapture("phase-atlas", "diagnostic", repeatCaptureOptions)}
           />
           <InspectorButton
             icon={<RefreshCw />}
             label="Every frame"
             disabled={busy}
-            onClick={() => onCapture("all-frames", "clean")}
+            onClick={() => onCapture("all-frames", "clean", repeatCaptureOptions)}
           />
           <InspectorButton
             active={result.plan.overlay === "diagnostic"}
@@ -87,7 +97,11 @@ export const ProceduralAnimationInspector = ({
             label={result.plan.overlay === "diagnostic" ? "Labels on" : "Labels off"}
             disabled={busy}
             onClick={() =>
-              onCapture(result.plan.sampling, result.plan.overlay === "diagnostic" ? "clean" : "diagnostic")
+              onCapture(
+                result.plan.sampling,
+                result.plan.overlay === "diagnostic" ? "clean" : "diagnostic",
+                repeatCaptureOptions,
+              )
             }
           />
           <InspectorButton icon={<Download />} label="JSON" onClick={() => downloadCaptureReport(result)} />
@@ -107,6 +121,8 @@ export const ProceduralAnimationInspector = ({
           </button>
         </div>
       </header>
+
+      {evaluation.measurements.locomotion && <LocomotionDiagnostics locomotion={evaluation.measurements.locomotion} />}
 
       <div className="flex items-stretch border-b border-white/10">
         <button
@@ -145,6 +161,35 @@ export const ProceduralAnimationInspector = ({
     </section>
   );
 };
+
+const LocomotionDiagnostics = ({
+  locomotion,
+}: {
+  locomotion: NonNullable<ReturnType<typeof evaluateProceduralAnimationCapture>["measurements"]["locomotion"]>;
+}) => (
+  <div
+    className="grid grid-cols-4 gap-px border-b border-white/10 bg-white/10 px-px sm:grid-cols-8"
+    data-locomotion-evaluation="true"
+  >
+    <DiagnosticMetric label="Cycles" value={locomotion.capturedCycleCount.toFixed(2)} />
+    <DiagnosticMetric label="Root travel" value={formatDistance(locomotion.rootTravelDistance)} />
+    <DiagnosticMetric
+      label="Contact L/R"
+      value={`${formatPercent(locomotion.contactFraction.left)} / ${formatPercent(locomotion.contactFraction.right)}`}
+    />
+    <DiagnosticMetric label="Double support" value={formatPercent(locomotion.doubleSupportFraction)} />
+    <DiagnosticMetric label="Flight" value={formatPercent(locomotion.flightFraction)} />
+    <DiagnosticMetric
+      label="Swing clearance"
+      value={`${formatDistance(locomotion.swingClearance.left)} / ${formatDistance(locomotion.swingClearance.right)}`}
+    />
+    <DiagnosticMetric
+      label="Swing apex"
+      value={`${formatPercent(locomotion.swingApexProgress.left)} / ${formatPercent(locomotion.swingApexProgress.right)}`}
+    />
+    <DiagnosticMetric label="Plant drift" value={formatDistance(locomotion.maximumStableStanceDrift)} />
+  </div>
+);
 
 const FrameThumbnail = ({
   frame,
@@ -306,6 +351,10 @@ function formatDegrees(value: number | null | undefined): string {
 
 function formatDistance(value: number | null | undefined): string {
   return value === null || value === undefined ? "--" : value.toFixed(3);
+}
+
+function formatPercent(value: number | null | undefined): string {
+  return value === null || value === undefined ? "--" : `${Math.round(value * 100)}%`;
 }
 
 function downloadCaptureReport(result: ProceduralAnimationCaptureResult): void {
