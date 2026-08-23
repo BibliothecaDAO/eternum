@@ -46,7 +46,7 @@ jobs:
         run: |
           pnpm --dir client/apps/game dev --host 127.0.0.1 --port 4173 --mode appchain.blitz > terrain-vite.log 2>&1 &
           for attempt in $(seq 1 60); do
-            curl --fail --insecure --silent https://127.0.0.1:4173/debug/procedural-terrain && exit 0
+            curl --fail --silent http://127.0.0.1:4173/debug/procedural-terrain && exit 0
             sleep 1
           done
           cat terrain-vite.log
@@ -54,12 +54,12 @@ jobs:
 
       - name: Verify both renderer backends
         run: >-
-          pnpm --dir client/apps/game verify:terrain:gallery --base-url https://127.0.0.1:4173 --artifact-dir
+          pnpm --dir client/apps/game verify:terrain:gallery --base-url http://127.0.0.1:4173 --artifact-dir
           terrain-artifacts
 
       - name: Verify full-screen chunk performance
         run: >-
-          pnpm --dir client/apps/game benchmark:terrain -- --base-url https://127.0.0.1:4173 --artifact-dir
+          pnpm --dir client/apps/game benchmark:terrain -- --base-url http://127.0.0.1:4173 --artifact-dir
           terrain-performance-artifacts --renderers webgpu-force-webgl --variants production --run-mode quick
 
       - name: Build backend contact sheet
