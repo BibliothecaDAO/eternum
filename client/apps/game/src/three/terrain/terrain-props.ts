@@ -4,7 +4,7 @@ import { findNearestTerrainHex, terrainCellKey, terrainHexToWorld } from "./terr
 import { TERRAIN_BIOME_ART_DIRECTIONS } from "./terrain-biome-art-direction";
 import { TerrainField, type TerrainPropDensityContext } from "./terrain-field";
 import { hashTerrainCoordinates, terrainHashToUnitFloat } from "./terrain-hash";
-import type { TerrainPropArchetypeId } from "./terrain-prop-catalog";
+import { getTerrainPropRole, type TerrainPropArchetypeId } from "./terrain-prop-catalog";
 import type { TerrainCellInput, TerrainPageRequest, TerrainPropInstance } from "./terrain-types";
 
 interface WeightedArchetype {
@@ -28,15 +28,6 @@ interface TerrainPropPreparationContext {
 
 const CANDIDATE_SPACING = 1;
 export const PRODUCTION_TERRAIN_PROP_DENSITY_MULTIPLIER = 1.75;
-const CANOPY_ARCHETYPES = new Set<TerrainPropArchetypeId>([
-  "broadleaf",
-  "birch",
-  "willow",
-  "conifer",
-  "palm",
-  "dead-tree",
-]);
-const UNDERSTORY_ARCHETYPES = new Set<TerrainPropArchetypeId>(["shrub", "cactus"]);
 const BIOME_PROP_PROFILES: Readonly<Record<BiomeType, BiomePropProfile>> = {
   [BiomeType.None]: profile(0),
   [BiomeType.DeepOcean]: profile(0),
@@ -154,23 +145,27 @@ function resolveEcologicalWeights(biome: BiomeType, weights: readonly WeightedAr
     ...entry,
     weight:
       entry.weight *
-      (UNDERSTORY_ARCHETYPES.has(entry.archetype)
+      (getTerrainPropRole(entry.archetype) === "understory"
         ? 0.72 + undergrowth * 0.72
-        : CANOPY_ARCHETYPES.has(entry.archetype)
+        : getTerrainPropRole(entry.archetype) === "canopy"
           ? 1.08 - undergrowth * 0.18
           : 0.86 + undergrowth * 0.28),
   }));
 }
 
 function resolveTerrainPropScale(archetype: TerrainPropArchetypeId, value: number): number {
-  if (CANOPY_ARCHETYPES.has(archetype)) return 0.76 + value * 0.48;
-  if (UNDERSTORY_ARCHETYPES.has(archetype)) return 0.54 + value * 0.42;
+  if (getTerrainPropRole(archetype) === "canopy") return 0.76 + value * 0.48;
+  if (getTerrainPropRole(archetype) === "understory") return 0.54 + value * 0.42;
   return 0.68 + value * 0.44;
 }
 
 function resolveTerrainPropTint(archetype: TerrainPropArchetypeId, value: number): readonly [number, number, number] {
-  if (CANOPY_ARCHETYPES.has(archetype)) return [0.9 + value * 0.08, 0.94 + value * 0.06, 0.88 + value * 0.1];
-  if (UNDERSTORY_ARCHETYPES.has(archetype)) return [0.91 + value * 0.07, 0.95 + value * 0.05, 0.89 + value * 0.08];
+  if (getTerrainPropRole(archetype) === "canopy") {
+    return [0.9 + value * 0.08, 0.94 + value * 0.06, 0.88 + value * 0.1];
+  }
+  if (getTerrainPropRole(archetype) === "understory") {
+    return [0.91 + value * 0.07, 0.95 + value * 0.05, 0.89 + value * 0.08];
+  }
   const neutral = 0.9 + value * 0.1;
   return [neutral, neutral, neutral];
 }

@@ -1,9 +1,11 @@
 import { Box3, Color, DynamicDrawUsage, Group, InstancedMesh, Matrix4, Mesh, Quaternion, Sphere, Vector3 } from "three";
 import { MeshStandardNodeMaterial } from "three/webgpu";
+import { positionGeometry, positionLocal, smoothstep, time, uniform, vec3 } from "three/tsl";
 
 import { loadTerrainPropCatalog } from "./terrain-prop-asset-cache";
 import {
   TERRAIN_PROP_ARCHETYPE_IDS,
+  getTerrainPropRole,
   getTerrainPropMeshName,
   type TerrainPropArchetypeId,
   type TerrainPropLod,
@@ -20,7 +22,9 @@ export interface TerrainPropPoolStats {
 export class TerrainPropPools {
   readonly object3d = new Group();
   private readonly meshes = new Map<TerrainPropArchetypeId, InstancedMesh>();
-  private readonly material = new MeshStandardNodeMaterial({ metalness: 0, roughness: 1, vertexColors: true });
+  private readonly rigidMaterial = createTerrainPropMaterial(false);
+  private readonly windStrength = uniform(1);
+  private readonly windMaterial = createTerrainPropMaterial(true, this.windStrength);
   private readonly matrix = new Matrix4();
   private readonly tint = new Color();
   private readonly position = new Vector3();
@@ -31,7 +35,8 @@ export class TerrainPropPools {
 
   private constructor(private readonly catalogScene: Group) {
     this.object3d.name = "terrain-prop-pools";
-    this.material.name = "terrain-props";
+    this.rigidMaterial.name = "terrain-props-rigid";
+    this.windMaterial.name = "terrain-props-wind";
     TERRAIN_PROP_ARCHETYPE_IDS.forEach((archetype) => this.createPool(archetype));
   }
 
@@ -85,6 +90,7 @@ export class TerrainPropPools {
   setLod(lod: TerrainPropLod): void {
     if (lod === this.lod) return;
     this.lod = lod;
+    this.windStrength.value = lod === "near" ? 1 : 0.35;
     for (const archetype of TERRAIN_PROP_ARCHETYPE_IDS) {
       this.requirePool(archetype).geometry = this.requireCatalogMesh(archetype, lod).geometry;
     }
@@ -105,12 +111,14 @@ export class TerrainPropPools {
     this.meshes.forEach((mesh) => mesh.dispose());
     this.meshes.clear();
     this.object3d.clear();
-    this.material.dispose();
+    this.rigidMaterial.dispose();
+    this.windMaterial.dispose();
   }
 
   private createPool(archetype: TerrainPropArchetypeId): void {
     const source = this.requireCatalogMesh(archetype, this.lod);
-    const mesh = new InstancedMesh(source.geometry, this.material, TERRAIN_PROP_POOL_CAPACITY);
+    const material = getTerrainPropRole(archetype) === "rigid" ? this.rigidMaterial : this.windMaterial;
+    const mesh = new InstancedMesh(source.geometry, material, TERRAIN_PROP_POOL_CAPACITY);
     mesh.name = `terrain-prop-pool:${archetype}`;
     mesh.count = 0;
     // A full-screen forest otherwise submits every prop geometry again to the
@@ -142,6 +150,19 @@ export class TerrainPropPools {
       resolveCatalogMeshRadius(this.requireCatalogMesh(archetype, "far")),
     );
   }
+}
+
+function createTerrainPropMaterial(animated: boolean, windStrength = uniform(0)): MeshStandardNodeMaterial {
+  const material = new MeshStandardNodeMaterial({ metalness: 0, roughness: 1, vertexColors: true });
+  if (!animated) return material;
+
+  const heightMask = smoothstep(0.08, 1.1, positionGeometry.y);
+  const phase = time.mul(0.72).add(positionLocal.x.mul(0.41)).add(positionLocal.z.mul(0.57));
+  const mainSway = phase.sin().mul(0.018);
+  const detailSway = phase.mul(1.73).add(positionGeometry.y.mul(2.4)).sin().mul(0.009);
+  const displacement = heightMask.mul(windStrength);
+  material.positionNode = positionLocal.add(vec3(mainSway.mul(displacement), 0, detailSway.mul(displacement)));
+  return material;
 }
 
 function resolveCatalogMeshRadius(source: Mesh): number {

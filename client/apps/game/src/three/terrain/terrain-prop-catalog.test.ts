@@ -5,6 +5,7 @@ import { requireCompleteTerrainPropCatalog } from "./terrain-prop-asset-cache";
 import {
   TERRAIN_PROP_ARCHETYPE_IDS,
   getRequiredTerrainPropMeshNames,
+  getTerrainPropRole,
   getTerrainPropMeshName,
 } from "./terrain-prop-catalog";
 
@@ -28,5 +29,12 @@ describe("terrain prop catalog", () => {
     expect(() => requireCompleteTerrainPropCatalog({ scene })).toThrow(
       "Terrain prop catalog is missing required meshes: willow-far",
     );
+  });
+
+  it("keeps flexible vegetation separate from rigid fixtures", () => {
+    expect(getTerrainPropRole("broadleaf")).toBe("canopy");
+    expect(getTerrainPropRole("shrub")).toBe("understory");
+    expect(getTerrainPropRole("boulder")).toBe("rigid");
+    expect(getTerrainPropRole("cactus")).toBe("rigid");
   });
 });
