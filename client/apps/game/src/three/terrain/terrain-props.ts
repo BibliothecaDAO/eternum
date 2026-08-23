@@ -1,6 +1,7 @@
 import { BiomeType } from "@bibliothecadao/types";
 
 import { findNearestTerrainHex, terrainCellKey, terrainHexToWorld } from "./terrain-coordinates";
+import { TERRAIN_BIOME_ART_DIRECTIONS } from "./terrain-biome-art-direction";
 import { TerrainField, type TerrainPropDensityContext } from "./terrain-field";
 import { hashTerrainCoordinates, terrainHashToUnitFloat } from "./terrain-hash";
 import type { TerrainPropArchetypeId } from "./terrain-prop-catalog";
@@ -27,6 +28,15 @@ interface TerrainPropPreparationContext {
 
 const CANDIDATE_SPACING = 1;
 export const PRODUCTION_TERRAIN_PROP_DENSITY_MULTIPLIER = 1.75;
+const CANOPY_ARCHETYPES = new Set<TerrainPropArchetypeId>([
+  "broadleaf",
+  "birch",
+  "willow",
+  "conifer",
+  "palm",
+  "dead-tree",
+]);
+const UNDERSTORY_ARCHETYPES = new Set<TerrainPropArchetypeId>(["shrub", "cactus"]);
 const BIOME_PROP_PROFILES: Readonly<Record<BiomeType, BiomePropProfile>> = {
   [BiomeType.None]: profile(0),
   [BiomeType.DeepOcean]: profile(0),
@@ -118,21 +128,51 @@ function prepareTerrainPropCandidate(
   if (acceptance >= effectiveDensity) return null;
 
   const archetype = chooseArchetype(
-    propProfile.weights,
+    resolveEcologicalWeights(owner.biome, propProfile.weights),
     hashUnit(latticeX, latticeZ, context.elevationSeed, context.moistureSeed, "prop-archetype-v1"),
   );
   if (!archetype) return null;
+  const scaleValue = hashUnit(latticeX, latticeZ, context.elevationSeed, context.moistureSeed, "prop-scale-v1");
+  const tintValue = hashUnit(latticeX, latticeZ, context.elevationSeed, context.moistureSeed, "prop-tint-v1");
   return {
     archetype,
     ownerCol: owner.col,
     ownerRow: owner.row,
     pageKey: context.pageKey,
-    scale: 0.82 + hashUnit(latticeX, latticeZ, context.elevationSeed, context.moistureSeed, "prop-scale-v1") * 0.34,
+    scale: resolveTerrainPropScale(archetype, scaleValue),
+    tint: resolveTerrainPropTint(archetype, tintValue),
     worldX,
     worldY: surface.height,
     worldZ,
     yaw: hashUnit(latticeX, latticeZ, context.elevationSeed, context.moistureSeed, "prop-yaw-v1") * Math.PI * 2,
   };
+}
+
+function resolveEcologicalWeights(biome: BiomeType, weights: readonly WeightedArchetype[]): WeightedArchetype[] {
+  const undergrowth = TERRAIN_BIOME_ART_DIRECTIONS[biome].ecology.undergrowth;
+  return weights.map((entry) => ({
+    ...entry,
+    weight:
+      entry.weight *
+      (UNDERSTORY_ARCHETYPES.has(entry.archetype)
+        ? 0.72 + undergrowth * 0.72
+        : CANOPY_ARCHETYPES.has(entry.archetype)
+          ? 1.08 - undergrowth * 0.18
+          : 0.86 + undergrowth * 0.28),
+  }));
+}
+
+function resolveTerrainPropScale(archetype: TerrainPropArchetypeId, value: number): number {
+  if (CANOPY_ARCHETYPES.has(archetype)) return 0.76 + value * 0.48;
+  if (UNDERSTORY_ARCHETYPES.has(archetype)) return 0.54 + value * 0.42;
+  return 0.68 + value * 0.44;
+}
+
+function resolveTerrainPropTint(archetype: TerrainPropArchetypeId, value: number): readonly [number, number, number] {
+  if (CANOPY_ARCHETYPES.has(archetype)) return [0.9 + value * 0.08, 0.94 + value * 0.06, 0.88 + value * 0.1];
+  if (UNDERSTORY_ARCHETYPES.has(archetype)) return [0.91 + value * 0.07, 0.95 + value * 0.05, 0.89 + value * 0.08];
+  const neutral = 0.9 + value * 0.1;
+  return [neutral, neutral, neutral];
 }
 
 export function resolveEffectiveTerrainPropDensity(

@@ -95,6 +95,7 @@ export interface TerrainPropInstance {
   ownerRow: number;
   pageKey: string;
   scale: number;
+  tint: readonly [number, number, number];
   worldX: number;
   worldY: number;
   worldZ: number;

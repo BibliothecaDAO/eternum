@@ -1,4 +1,4 @@
-import { Box3, DynamicDrawUsage, Group, InstancedMesh, Matrix4, Mesh, Quaternion, Sphere, Vector3 } from "three";
+import { Box3, Color, DynamicDrawUsage, Group, InstancedMesh, Matrix4, Mesh, Quaternion, Sphere, Vector3 } from "three";
 import { MeshStandardNodeMaterial } from "three/webgpu";
 
 import { loadTerrainPropCatalog } from "./terrain-prop-asset-cache";
@@ -22,6 +22,7 @@ export class TerrainPropPools {
   private readonly meshes = new Map<TerrainPropArchetypeId, InstancedMesh>();
   private readonly material = new MeshStandardNodeMaterial({ metalness: 0, roughness: 1, vertexColors: true });
   private readonly matrix = new Matrix4();
+  private readonly tint = new Color();
   private readonly position = new Vector3();
   private readonly quaternion = new Quaternion();
   private readonly scale = new Vector3();
@@ -66,10 +67,13 @@ export class TerrainPropPools {
         this.matrix.compose(this.position, this.quaternion, this.scale);
         this.matrix.multiply(source.matrix);
         mesh.setMatrixAt(index, this.matrix);
+        this.tint.setRGB(...instance.tint);
+        mesh.setColorAt(index, this.tint);
         maximumInstanceRadius = Math.max(maximumInstanceRadius, catalogRadius * instance.scale);
       });
       mesh.count = entries.length;
       mesh.instanceMatrix.needsUpdate = entries.length > 0;
+      if (mesh.instanceColor) mesh.instanceColor.needsUpdate = entries.length > 0;
       mesh.visible = entries.length > 0;
       if (entries.length > 0) {
         mesh.boundingSphere = bounds.getBoundingSphere(new Sphere());

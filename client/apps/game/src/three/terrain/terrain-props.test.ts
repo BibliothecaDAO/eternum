@@ -95,6 +95,22 @@ describe("terrain prop placement", () => {
       "Terrain prop density multiplier must be from 0.25 to 3",
     );
   });
+
+  it("builds canopy, understory, and debris layers with bounded variation", () => {
+    const cells = Array.from({ length: 100 }, (_, index) =>
+      cell(index % 10, Math.floor(index / 10), BiomeType.TemperateRainForest),
+    );
+    const page = request(cells, "ecology");
+    const instances = prepareTerrainPropInstances(page, new TerrainField(page));
+    const archetypes = new Set(instances.map(({ archetype }) => archetype));
+
+    expect([...archetypes].some((archetype) => ["willow", "broadleaf", "birch"].includes(archetype))).toBe(true);
+    expect(archetypes.has("shrub")).toBe(true);
+    expect(archetypes.has("fallen-log")).toBe(true);
+    expect(Math.min(...instances.map(({ scale }) => scale))).toBeGreaterThanOrEqual(0.54);
+    expect(Math.max(...instances.map(({ scale }) => scale))).toBeLessThanOrEqual(1.24);
+    expect(instances.every(({ tint }) => tint.every((channel) => channel >= 0.88 && channel <= 1))).toBe(true);
+  });
 });
 
 function cell(col: number, row: number, biome: BiomeType, occupied = false): TerrainCellInput {

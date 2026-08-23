@@ -198,15 +198,25 @@ export class TerrainField {
   ): TerrainPropDensityContext {
     const candidates = this.resolveExploredCandidates(owner.col, owner.row);
     const weightedEnvironment = this.sampleWeightedEnvironment(worldX, worldZ, candidates);
+    const ecology = weightedEnvironment.biomeInfluences.reduce(
+      (summary, influence) => {
+        const profile = TERRAIN_BIOME_ART_DIRECTIONS[influence.biome].ecology;
+        summary.clearingStrength += profile.clearingStrength * influence.weight;
+        summary.clusterScale += profile.clusterScale * influence.weight;
+        return summary;
+      },
+      { clearingStrength: 0, clusterScale: 0 },
+    );
+    const clusterNoise = terrainValueNoise(
+      worldX * (ecology.clusterScale || 0.2),
+      worldZ * (ecology.clusterScale || 0.2),
+      this.elevationSeed,
+      this.moistureSeed,
+      "terrain-prop-density-v2",
+    );
     return {
       ...weightedEnvironment,
-      patchiness: terrainValueNoise(
-        worldX * 0.33,
-        worldZ * 0.33,
-        this.elevationSeed,
-        this.moistureSeed,
-        "terrain-prop-density-v1",
-      ),
+      patchiness: clampUnit(0.5 + (clusterNoise - 0.5) * (1 + ecology.clearingStrength * 0.9)),
     };
   }
 

@@ -143,8 +143,9 @@ async function runGalleryScenario({ artifactDirectory, baseUrl, groundMode, head
   const session = `terrain-gallery-${sceneId}-${rendererMode}-${groundMode}-${Date.now().toString(36)}`;
   const url = buildTerrainGalleryUrl(baseUrl, rendererMode, groundMode, sceneId);
   try {
-    runAgentBrowser(session, ["open", url, "--ignore-https-errors"], headed);
+    runAgentBrowser(session, ["open", "about:blank"], headed);
     runAgentBrowser(session, ["set", "viewport", "1440", "900"], headed);
+    runAgentBrowser(session, ["open", url, "--ignore-https-errors"], headed);
     let state = waitForReady(session, headed);
     if (!state.routeMounted) {
       runAgentBrowser(session, ["open", url, "--ignore-https-errors"], headed);
