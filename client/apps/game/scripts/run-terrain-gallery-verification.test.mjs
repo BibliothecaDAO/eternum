@@ -37,6 +37,18 @@ describe("terrain gallery verification", () => {
       ]),
     });
   });
+
+  it("accepts a focused scene/backend/material evaluation slice", () => {
+    const focused = [result("webgpu-force-webgl", "webgl2-fallback", "textured")];
+
+    expect(
+      evaluateTerrainGalleryResults(focused, {
+        groundModes: ["textured"],
+        rendererModes: ["webgpu-force-webgl"],
+        sceneIds: ["all-biomes"],
+      }),
+    ).toMatchObject({ ok: true, performanceDeltas: [], reasons: [] });
+  });
 });
 
 function healthyResults() {

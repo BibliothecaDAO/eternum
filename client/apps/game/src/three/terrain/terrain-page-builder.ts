@@ -26,6 +26,7 @@ interface GeometryAccumulator {
   normals: number[];
   positions: number[];
   roughness: number[];
+  shore: number[];
   uvs: number[];
 }
 
@@ -171,6 +172,7 @@ function appendVertex(target: GeometryAccumulator, point: TerrainWorldCoordinate
   target.normals.push(...sample.normal);
   target.colors.push(...sample.color);
   target.roughness.push(sample.roughness);
+  target.shore.push(sample.shore);
   target.biomeIds.push(sample.biomeId);
   target.explored.push(sample.explored);
   const groundWeights = quantizeGroundWeights(sample.groundWeights);
@@ -192,6 +194,7 @@ function createGeometryAccumulator(): GeometryAccumulator {
     normals: [],
     positions: [],
     roughness: [],
+    shore: [],
     uvs: [],
   };
 }
@@ -210,6 +213,7 @@ function finalizeGeometry(source: GeometryAccumulator): TerrainGeometryBuffers {
     normals: new Float32Array(source.normals),
     positions,
     roughness: new Float32Array(source.roughness),
+    shore: new Float32Array(source.shore),
     uvs: new Float32Array(source.uvs),
   };
 }

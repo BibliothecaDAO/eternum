@@ -3,6 +3,7 @@ import { BiomeType, BiomeTypeToId } from "@bibliothecadao/types";
 import { Color } from "three";
 
 import { hashTerrainCoordinates, terrainHashToUnitFloat } from "./terrain-hash";
+import { TERRAIN_BIOME_ART_DIRECTIONS, type TerrainBiomeArtDirection } from "./terrain-biome-art-direction";
 import {
   applyTerrainGroundSlope,
   applyTerrainGroundStructurePad,
@@ -56,6 +57,7 @@ export interface TerrainVisualSample extends TerrainSurfaceSample {
   explored: number;
   groundWeights: TerrainGroundWeights;
   roughness: number;
+  shore: number;
 }
 
 const NORMAL_SAMPLE_DISTANCE = 0.035;
@@ -143,14 +145,8 @@ export class TerrainField {
     }
 
     const inverseWeight = 1 / totalWeight;
-    const baseHeight = height * inverseWeight;
-    const detail =
-      (terrainValueNoise(worldX * 0.7, worldZ * 0.7, this.elevationSeed, this.moistureSeed, "terrain-relief-v1") -
-        0.5) *
-      2 *
-      relief *
-      inverseWeight;
-    const paddedHeight = this.applyStructurePad(worldX, worldZ, baseHeight + detail, candidates);
+    const shapedHeight = this.resolveDetailedHeight(worldX, worldZ, height * inverseWeight, relief * inverseWeight);
+    const paddedHeight = this.applyStructurePad(worldX, worldZ, shapedHeight, candidates);
     const paddedGroundWeights = applyTerrainGroundStructurePad(
       normalizeTerrainGroundWeights(groundWeights),
       this.resolveStructurePadWeight(worldX, worldZ, candidates),
@@ -165,6 +161,7 @@ export class TerrainField {
       height: paddedHeight,
       normal: [0, 1, 0],
       roughness: roughness * inverseWeight,
+      shore: this.sampleShoreProximity(worldX, worldZ, candidates),
     };
   }
 
@@ -254,13 +251,8 @@ export class TerrainField {
     }
     if (totalWeight === 0) return TERRAIN_BIOME_DESCRIPTORS[BiomeType.None].baseHeight;
     const inverseWeight = 1 / totalWeight;
-    const detail =
-      (terrainValueNoise(worldX * 0.7, worldZ * 0.7, this.elevationSeed, this.moistureSeed, "terrain-relief-v1") -
-        0.5) *
-      2 *
-      relief *
-      inverseWeight;
-    return this.applyStructurePad(worldX, worldZ, height * inverseWeight + detail, candidates);
+    const shapedHeight = this.resolveDetailedHeight(worldX, worldZ, height * inverseWeight, relief * inverseWeight);
+    return this.applyStructurePad(worldX, worldZ, shapedHeight, candidates);
   }
 
   private sampleWeightedEnvironment(
@@ -339,11 +331,15 @@ export class TerrainField {
       this.request.climate,
     );
     const descriptor = TERRAIN_BIOME_DESCRIPTORS[cell.biome];
+    const direction = TERRAIN_BIOME_ART_DIRECTIONS[cell.biome];
     const center = terrainHexToWorld(col, row);
     const primary = new Color(descriptor.primary);
     const secondary = new Color(descriptor.secondary);
     const sample = {
-      baseHeight: descriptor.baseHeight + (environment.elevation - 0.5) * descriptor.elevationScale,
+      baseHeight:
+        descriptor.baseHeight +
+        (environment.elevation - 0.5) * descriptor.elevationScale +
+        this.resolveMacroLandformOffset(center.x, center.z, direction),
       biome: cell.biome,
       biomeId: BiomeTypeToId[cell.biome],
       centerX: center.x,
@@ -377,6 +373,43 @@ export class TerrainField {
       result += (candidate.baseHeight - result) * padWeight;
     }
     return result;
+  }
+
+  private resolveDetailedHeight(worldX: number, worldZ: number, baseHeight: number, relief: number): number {
+    const detail =
+      (terrainValueNoise(worldX * 0.7, worldZ * 0.7, this.elevationSeed, this.moistureSeed, "terrain-relief-v1") -
+        0.5) *
+      2 *
+      relief;
+    return baseHeight + detail;
+  }
+
+  private resolveMacroLandformOffset(worldX: number, worldZ: number, direction: TerrainBiomeArtDirection): number {
+    const { basinStrength, macroAmplitude, macroFrequency, ridgeStrength } = direction.landform;
+    const macroNoise = terrainValueNoise(
+      worldX * macroFrequency,
+      worldZ * macroFrequency,
+      this.elevationSeed,
+      this.moistureSeed,
+      "terrain-landform-v1",
+    );
+    const signedMacro = macroNoise * 2 - 1;
+    const ridge = 1 - Math.abs(signedMacro);
+    const basin = 1 - smoothstep(0.18, 0.72, macroNoise);
+    const macroShape = signedMacro * 0.58 + (ridge - 0.5) * ridgeStrength * 0.72 - basin * basinStrength * 0.28;
+    return macroShape * macroAmplitude;
+  }
+
+  private sampleShoreProximity(worldX: number, worldZ: number, candidates: readonly CellFieldSample[]): number {
+    let nearestLand = Number.POSITIVE_INFINITY;
+    let nearestWater = Number.POSITIVE_INFINITY;
+    for (const candidate of candidates) {
+      const distance = Math.hypot(candidate.centerX - worldX, candidate.centerZ - worldZ);
+      if (isWaterBiome(candidate.biome)) nearestWater = Math.min(nearestWater, distance);
+      else nearestLand = Math.min(nearestLand, distance);
+    }
+    if (!Number.isFinite(nearestLand) || !Number.isFinite(nearestWater)) return 0;
+    return 1 - smoothstep(0.05, 1.8, Math.abs(nearestWater - nearestLand));
   }
 
   private resolveStructurePadWeight(worldX: number, worldZ: number, candidates: readonly CellFieldSample[]): number {
@@ -445,5 +478,10 @@ function createUnknownSample(): TerrainVisualSample {
     height: descriptor.baseHeight,
     normal: [0, 1, 0],
     roughness: descriptor.roughness,
+    shore: 0,
   };
+}
+
+function isWaterBiome(biome: BiomeType): boolean {
+  return biome === BiomeType.DeepOcean || biome === BiomeType.Ocean;
 }

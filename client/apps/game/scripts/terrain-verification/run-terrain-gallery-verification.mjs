@@ -25,10 +25,12 @@ export function buildTerrainGalleryUrl(baseUrl, rendererMode, groundMode = "text
 
 export function evaluateTerrainGalleryResults(results, options = {}) {
   const sceneIds = options.sceneIds ?? ["all-biomes"];
+  const rendererModes = options.rendererModes ?? RENDERER_MODES;
+  const groundModes = options.groundModes ?? GROUND_MODES;
   const reasons = [];
   for (const sceneId of sceneIds) {
-    for (const rendererMode of RENDERER_MODES) {
-      for (const groundMode of GROUND_MODES) {
+    for (const rendererMode of rendererModes) {
+      for (const groundMode of groundModes) {
         if (
           !results.some(
             (result) =>
@@ -77,7 +79,7 @@ export function evaluateTerrainGalleryResults(results, options = {}) {
     }
   }
 
-  const performanceDeltas = createPerformanceDeltas(results, sceneIds);
+  const performanceDeltas = createPerformanceDeltas(results, sceneIds, rendererModes, groundModes);
   for (const delta of performanceDeltas) {
     const p95BudgetMs = delta.rendererMode === "webgpu-auto" ? 1.5 : 2.5;
     if (delta.frameP95Ms > p95BudgetMs) {
@@ -109,9 +111,10 @@ export function evaluateTerrainGalleryResults(results, options = {}) {
   return { ok: reasons.length === 0, performanceDeltas, reasons };
 }
 
-function createPerformanceDeltas(results, sceneIds) {
+function createPerformanceDeltas(results, sceneIds, rendererModes, groundModes) {
+  if (!groundModes.includes("flat") || !groundModes.includes("textured")) return [];
   return sceneIds.flatMap((sceneId) =>
-    RENDERER_MODES.flatMap((rendererMode) => {
+    rendererModes.flatMap((rendererMode) => {
       const flat = results.find(
         (result) => result.sceneId === sceneId && result.rendererMode === rendererMode && result.groundMode === "flat",
       )?.snapshot;
@@ -250,19 +253,27 @@ function main(args) {
   const baseUrl = readOption(args, "--base-url", DEFAULT_BASE_URL);
   const artifactDirectory = resolve(readOption(args, "--artifact-dir", DEFAULT_ARTIFACT_DIRECTORY));
   const headed = args.includes("--headed");
+  const rendererModes = readListOption(args, "--renderers", RENDERER_MODES);
+  const groundModes = readListOption(args, "--ground-modes", GROUND_MODES);
   const sceneIds = readListOption(args, "--scenes", ["all-biomes"]);
+  const unknownRenderers = rendererModes.filter((rendererMode) => !RENDERER_MODES.includes(rendererMode));
+  const unknownGroundModes = groundModes.filter((groundMode) => !GROUND_MODES.includes(groundMode));
   const unknownSceneIds = sceneIds.filter((sceneId) => !SCENE_IDS.includes(sceneId));
+  if (unknownRenderers.length > 0) throw new Error(`Unknown terrain gallery renderers: ${unknownRenderers.join(", ")}`);
+  if (unknownGroundModes.length > 0) {
+    throw new Error(`Unknown terrain gallery ground modes: ${unknownGroundModes.join(", ")}`);
+  }
   if (unknownSceneIds.length > 0) throw new Error(`Unknown terrain gallery scenes: ${unknownSceneIds.join(", ")}`);
   mkdirSync(artifactDirectory, { recursive: true });
   const results = sceneIds.flatMap((sceneId) =>
-    RENDERER_MODES.flatMap((rendererMode) =>
-      GROUND_MODES.map((groundMode) =>
+    rendererModes.flatMap((rendererMode) =>
+      groundModes.map((groundMode) =>
         runGalleryScenario({ artifactDirectory, baseUrl, groundMode, headed, rendererMode, sceneId }),
       ),
     ),
   );
-  const evaluation = evaluateTerrainGalleryResults(results, { sceneIds });
-  const summary = { ...evaluation, results, sceneIds };
+  const evaluation = evaluateTerrainGalleryResults(results, { groundModes, rendererModes, sceneIds });
+  const summary = { ...evaluation, groundModes, rendererModes, results, sceneIds };
   writeFileSync(join(artifactDirectory, "terrain-gallery-verification.json"), `${JSON.stringify(summary, null, 2)}\n`);
   console.log(JSON.stringify(summary, null, 2));
   if (!summary.ok) process.exitCode = 1;

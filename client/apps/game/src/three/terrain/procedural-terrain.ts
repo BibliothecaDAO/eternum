@@ -252,6 +252,7 @@ function createTerrainMesh(
   geometry.setAttribute("uv", new BufferAttribute(buffers.uvs, 2));
   geometry.setAttribute("terrainColor", new BufferAttribute(buffers.colors, 3));
   geometry.setAttribute("terrainRoughness", new BufferAttribute(buffers.roughness, 1));
+  geometry.setAttribute("terrainShore", new BufferAttribute(buffers.shore, 1));
   geometry.setAttribute("terrainBiomeId", new BufferAttribute(buffers.biomeIds, 1));
   geometry.setAttribute("terrainExplored", new BufferAttribute(buffers.explored, 1));
   geometry.setAttribute("terrainGroundWeights0", new BufferAttribute(buffers.groundWeights0, 4, true));

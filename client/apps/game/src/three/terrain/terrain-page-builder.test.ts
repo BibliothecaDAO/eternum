@@ -59,6 +59,7 @@ describe("prepareTerrainPage", () => {
         ...readAttribute(page.buffers.uvs, vertex, 2),
         ...readAttribute(page.buffers.groundWeights0, vertex, 4),
         ...readAttribute(page.buffers.groundWeights1, vertex, 4),
+        ...readAttribute(page.buffers.shore, vertex, 1),
       ];
       const existing = attributesByPosition.get(key);
       if (existing) {

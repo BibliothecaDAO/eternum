@@ -66,6 +66,39 @@ describe("TerrainField", () => {
     expect(openGround.clearance).toBe(1);
   });
 
+  it("adds deterministic macro landforms without breaking biome ownership", () => {
+    const cells = Array.from({ length: 8 }, (_, col) => cell(col, 0, BiomeType.Scorched));
+    const first = new TerrainField(createRequest(cells));
+    const second = new TerrainField(createRequest(cells));
+    const heights = cells.map(({ col, row }) => {
+      const center = terrainHexToWorld(col, row);
+      const sample = first.sampleSurface(center.x, center.z);
+      expect(sample).toEqual(second.sampleSurface(center.x, center.z));
+      expect(sample.biome).toBe(BiomeType.Scorched);
+      return sample.height;
+    });
+
+    expect(Math.max(...heights) - Math.min(...heights)).toBeGreaterThan(0.08);
+  });
+
+  it("exposes a continuous shoreline signal only where land meets water", () => {
+    const cells = [
+      cell(0, 0, BiomeType.Ocean),
+      cell(1, 0, BiomeType.Beach),
+      cell(2, 0, BiomeType.Grassland),
+      cell(3, 0, BiomeType.Grassland),
+      cell(4, 0, BiomeType.Grassland),
+    ];
+    const field = new TerrainField(createRequest(cells));
+    const ocean = terrainHexToWorld(0, 0);
+    const beach = terrainHexToWorld(1, 0);
+    const coast = { x: (ocean.x + beach.x) / 2, z: (ocean.z + beach.z) / 2 };
+    const inland = terrainHexToWorld(4, 0);
+
+    expect(field.sampleVertex(coast.x, coast.z).shore).toBeGreaterThan(0.4);
+    expect(field.sampleVertex(inland.x, inland.z).shore).toBe(0);
+  });
+
   it("flattens an occupied center and keeps unknown space neutral", () => {
     const occupied = cell(0, 0, BiomeType.Bare, true);
     const field = new TerrainField(createRequest([occupied]));
