@@ -67,6 +67,33 @@ describe("terrain performance benchmark", () => {
       }),
     ).toMatchObject({ ok: true, reasons: [] });
   });
+
+  it("keeps structural gates while treating software-renderer timings as informational", () => {
+    const result = passingResult("webgpu-force-webgl", "production");
+    result.snapshot.chunks.commitP95Ms = 80;
+    result.snapshot.frames.motion = frameStats({ p95Ms: 500, sampleCount: 5 });
+    result.snapshot.frames.static = frameStats({ p95Ms: 500, sampleCount: 5 });
+    result.snapshot.longTasks.maxMs = 500;
+    result.snapshot.render.firstRenderMs = 2_000;
+
+    expect(
+      evaluateTerrainPerformanceResults([result], {
+        renderers: ["webgpu-force-webgl"],
+        runMode: "quick",
+        timingPolicy: "informational",
+        variants: ["production"],
+      }),
+    ).toMatchObject({ ok: true, reasons: [] });
+    result.snapshot.coverage.missingSamples = 1;
+    expect(
+      evaluateTerrainPerformanceResults([result], {
+        renderers: ["webgpu-force-webgl"],
+        runMode: "quick",
+        timingPolicy: "informational",
+        variants: ["production"],
+      }).reasons,
+    ).toContain("webgpu-force-webgl/production: terrain did not cover every sampled screen position");
+  });
 });
 
 function passingResult(rendererMode, variant) {
@@ -119,7 +146,7 @@ function passingResult(rendererMode, variant) {
   };
 }
 
-function frameStats() {
+function frameStats(overrides = {}) {
   return {
     above16Ms: 0,
     above33Ms: 0,
@@ -131,5 +158,6 @@ function frameStats() {
     p95Ms: 9,
     p99Ms: 10,
     sampleCount: 240,
+    ...overrides,
   };
 }

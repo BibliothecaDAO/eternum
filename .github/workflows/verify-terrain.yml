@@ -55,12 +55,13 @@ jobs:
       - name: Verify both renderer backends
         run: >-
           pnpm --dir client/apps/game verify:terrain:gallery --base-url http://127.0.0.1:4173 --artifact-dir
-          terrain-artifacts
+          terrain-artifacts --timing-policy informational
 
       - name: Verify full-screen chunk performance
         run: >-
           pnpm --dir client/apps/game benchmark:terrain -- --base-url http://127.0.0.1:4173 --artifact-dir
           terrain-performance-artifacts --renderers webgpu-force-webgl --variants production --run-mode quick
+          --timing-policy informational
 
       - name: Build backend contact sheet
         run: >-

@@ -151,6 +151,7 @@ function main(args) {
   const densityMultiplier = Number(readOption(args, "--density-multiplier", String(DEFAULT_DENSITY_MULTIPLIER)));
   const renderers = readListOption(args, "--renderers", TERRAIN_BENCHMARK_RENDERERS);
   const runMode = readOption(args, "--run-mode", "quick");
+  const timingPolicy = readOption(args, "--timing-policy", "enforced");
   const timeoutMs = Number(readOption(args, "--timeout-ms", runMode === "full" ? "600000" : "120000"));
   const variants = readListOption(args, "--variants", TERRAIN_BENCHMARK_VARIANTS);
   requireKnownValues(renderers, TERRAIN_BENCHMARK_RENDERERS, "renderers");
@@ -159,6 +160,9 @@ function main(args) {
     throw new Error(`Terrain benchmark density multiplier must be from 0.25 to 3, received ${densityMultiplier}`);
   }
   if (runMode !== "quick" && runMode !== "full") throw new Error(`Unknown terrain benchmark run mode: ${runMode}`);
+  if (timingPolicy !== "enforced" && timingPolicy !== "informational") {
+    throw new Error(`Unknown terrain benchmark timing policy: ${timingPolicy}`);
+  }
 
   mkdirSync(artifactDirectory, { recursive: true });
   const results = renderers.flatMap((rendererMode) =>
@@ -175,8 +179,8 @@ function main(args) {
       }),
     ),
   );
-  const evaluation = evaluateTerrainPerformanceResults(results, { renderers, runMode, variants });
-  const summary = { ...evaluation, results, runMode };
+  const evaluation = evaluateTerrainPerformanceResults(results, { renderers, runMode, timingPolicy, variants });
+  const summary = { ...evaluation, results, runMode, timingPolicy };
   writeFileSync(join(artifactDirectory, "terrain-performance-benchmark.json"), `${JSON.stringify(summary, null, 2)}\n`);
   console.log(JSON.stringify(summary, null, 2));
   if (!summary.ok) process.exitCode = 1;

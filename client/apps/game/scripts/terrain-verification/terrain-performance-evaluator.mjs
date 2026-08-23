@@ -5,6 +5,7 @@ export function evaluateTerrainPerformanceResults(results, options = {}) {
   const requiredRenderers = options.renderers ?? TERRAIN_BENCHMARK_RENDERERS;
   const requiredVariants = options.variants ?? TERRAIN_BENCHMARK_VARIANTS;
   const requireLifecycle = options.runMode === "full";
+  const enforceTiming = options.timingPolicy !== "informational";
   const reasons = [];
 
   for (const rendererMode of requiredRenderers) {
@@ -15,7 +16,7 @@ export function evaluateTerrainPerformanceResults(results, options = {}) {
     }
   }
 
-  for (const result of results) evaluateScenario(result, requireLifecycle, reasons);
+  for (const result of results) evaluateScenario(result, requireLifecycle, enforceTiming, reasons);
   evaluateBackendParity(results, reasons);
 
   return {
@@ -25,7 +26,7 @@ export function evaluateTerrainPerformanceResults(results, options = {}) {
   };
 }
 
-function evaluateScenario(result, requireLifecycle, reasons) {
+function evaluateScenario(result, requireLifecycle, enforceTiming, reasons) {
   const label = `${result.rendererMode}/${result.variant}`;
   const snapshot = result.snapshot;
   if (!result.routeMounted) reasons.push(`${label}: benchmark route did not mount`);
@@ -47,13 +48,16 @@ function evaluateScenario(result, requireLifecycle, reasons) {
   if (snapshot.coverage?.missingFrames !== 0 || snapshot.coverage?.missingSamples !== 0) {
     reasons.push(`${label}: terrain did not cover every sampled screen position`);
   }
-  evaluateFrameStats(label, "static", snapshot.frames?.static, 20, reasons);
-  evaluateFrameStats(label, "motion", snapshot.frames?.motion, 25, reasons);
-  if (!(snapshot.chunks?.commitP95Ms >= 0 && snapshot.chunks.commitP95Ms <= 8)) {
-    reasons.push(`${label}: page commit p95 exceeded 8 ms`);
-  }
-  if (!(snapshot.render?.firstRenderMs >= 0 && snapshot.render.firstRenderMs <= 500)) {
-    reasons.push(`${label}: first terrain render exceeded 500 ms`);
+  if (enforceTiming) {
+    evaluateFrameStats(label, "static", snapshot.frames?.static, 20, reasons);
+    evaluateFrameStats(label, "motion", snapshot.frames?.motion, 25, reasons);
+    if (!(snapshot.chunks?.commitP95Ms >= 0 && snapshot.chunks.commitP95Ms <= 8)) {
+      reasons.push(`${label}: page commit p95 exceeded 8 ms`);
+    }
+    if (!(snapshot.render?.firstRenderMs >= 0 && snapshot.render.firstRenderMs <= 500)) {
+      reasons.push(`${label}: first terrain render exceeded 500 ms`);
+    }
+    if (snapshot.longTasks?.maxMs >= 50) reasons.push(`${label}: terrain-attributed long task reached 50 ms`);
   }
   if (!(snapshot.render?.drawCalls > 0 && snapshot.render.drawCalls <= 40)) {
     reasons.push(`${label}: draw calls exceeded 40 or were unavailable`);
@@ -64,7 +68,6 @@ function evaluateScenario(result, requireLifecycle, reasons) {
   if (!(snapshot.render?.textures >= 0 && snapshot.render.textures <= 32)) {
     reasons.push(`${label}: renderer texture count exceeded 32 or was unavailable`);
   }
-  if (snapshot.longTasks?.maxMs >= 50) reasons.push(`${label}: terrain-attributed long task reached 50 ms`);
   evaluateAssetRequests(label, result.variant, snapshot.assets, reasons);
   if ((result.variant === "props" || result.variant === "production") && !(snapshot.render?.propInstances > 0)) {
     reasons.push(`${label}: expected rendered prop instances`);

@@ -51,6 +51,25 @@ describe("terrain gallery verification", () => {
       }),
     ).toMatchObject({ ok: true, performanceDeltas: [], reasons: [] });
   });
+
+  it("keeps structural gates while treating software-renderer timings as informational", () => {
+    const results = healthyResults();
+    results.forEach((entry) => {
+      entry.snapshot.commitMs = 80;
+      entry.snapshot.firstRenderMs = 2_000;
+      entry.snapshot.frameP95Ms = 500;
+      entry.snapshot.frameSampleCount = 5;
+    });
+
+    expect(evaluateTerrainGalleryResults(results, { timingPolicy: "informational" })).toMatchObject({
+      ok: true,
+      reasons: [],
+    });
+    results[0].imageCoverage = 0;
+    expect(evaluateTerrainGalleryResults(results, { timingPolicy: "informational" }).reasons).toContain(
+      "all-biomes/webgpu-auto/flat: screenshot terrain coverage was below 12%",
+    );
+  });
 });
 
 function healthyResults() {

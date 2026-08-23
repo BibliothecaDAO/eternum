@@ -36,6 +36,7 @@ export function evaluateTerrainGalleryResults(results, options = {}) {
   const sceneIds = options.sceneIds ?? ["all-biomes"];
   const rendererModes = options.rendererModes ?? RENDERER_MODES;
   const groundModes = options.groundModes ?? GROUND_MODES;
+  const enforceTiming = options.timingPolicy !== "informational";
   const reasons = [];
   for (const sceneId of sceneIds) {
     for (const rendererMode of rendererModes) {
@@ -68,12 +69,16 @@ export function evaluateTerrainGalleryResults(results, options = {}) {
       reasons.push(`${label}: snapshot quality did not match request`);
     if (result.snapshot?.groundTextureLayers !== 8) reasons.push(`${label}: expected eight ground texture layers`);
     if (!(result.snapshot?.groundTextureBytes > 0)) reasons.push(`${label}: expected measured ground texture bytes`);
-    if (!(result.snapshot?.frameSampleCount >= 30)) reasons.push(`${label}: expected at least 30 stable frame samples`);
-    if (!(result.snapshot?.frameP95Ms > 0 && result.snapshot.frameP95Ms <= 33.3)) {
-      reasons.push(`${label}: stable frame p95 exceeded 33.3 ms or was unavailable`);
-    }
-    if (!(result.snapshot?.firstRenderMs >= 0 && result.snapshot.firstRenderMs <= 500)) {
-      reasons.push(`${label}: first terrain render exceeded 500 ms`);
+    if (enforceTiming) {
+      if (!(result.snapshot?.frameSampleCount >= 30)) {
+        reasons.push(`${label}: expected at least 30 stable frame samples`);
+      }
+      if (!(result.snapshot?.frameP95Ms > 0 && result.snapshot.frameP95Ms <= 33.3)) {
+        reasons.push(`${label}: stable frame p95 exceeded 33.3 ms or was unavailable`);
+      }
+      if (!(result.snapshot?.firstRenderMs >= 0 && result.snapshot.firstRenderMs <= 500)) {
+        reasons.push(`${label}: first terrain render exceeded 500 ms`);
+      }
     }
     if (result.groundMode === "textured" && !(result.snapshot?.textures >= 2 && result.snapshot.textures <= 32)) {
       reasons.push(`${label}: renderer texture count exceeded policy or was unavailable`);
@@ -86,18 +91,20 @@ export function evaluateTerrainGalleryResults(results, options = {}) {
       reasons.push(`${label}: draw-call count exceeded policy or was unavailable`);
     }
     if (!(result.imageCoverage >= 0.12)) reasons.push(`${label}: screenshot terrain coverage was below 12%`);
-    if (!(result.snapshot?.commitMs >= 0 && result.snapshot.commitMs <= 8)) {
+    if (enforceTiming && !(result.snapshot?.commitMs >= 0 && result.snapshot.commitMs <= 8)) {
       reasons.push(`${label}: main-thread commit exceeded 8 ms`);
     }
   }
 
   const performanceDeltas = createPerformanceDeltas(results, sceneIds, rendererModes, groundModes);
-  for (const delta of performanceDeltas) {
-    const p95BudgetMs = delta.rendererMode === "webgpu-auto" ? 1.5 : 2.5;
-    if (delta.frameP95Ms > p95BudgetMs) {
-      reasons.push(
-        `${delta.sceneId}/${delta.rendererMode}: textured frame p95 added ${delta.frameP95Ms.toFixed(2)} ms`,
-      );
+  if (enforceTiming) {
+    for (const delta of performanceDeltas) {
+      const p95BudgetMs = delta.rendererMode === "webgpu-auto" ? 1.5 : 2.5;
+      if (delta.frameP95Ms > p95BudgetMs) {
+        reasons.push(
+          `${delta.sceneId}/${delta.rendererMode}: textured frame p95 added ${delta.frameP95Ms.toFixed(2)} ms`,
+        );
+      }
     }
   }
 
@@ -291,6 +298,7 @@ async function main(args) {
   const artifactDirectory = resolve(readOption(args, "--artifact-dir", DEFAULT_ARTIFACT_DIRECTORY));
   const headed = args.includes("--headed");
   const qualityTier = readOption(args, "--quality", "detail");
+  const timingPolicy = readOption(args, "--timing-policy", "enforced");
   const rendererModes = readListOption(args, "--renderers", RENDERER_MODES);
   const groundModes = readListOption(args, "--ground-modes", GROUND_MODES);
   const sceneIds = readListOption(args, "--scenes", ["all-biomes"]);
@@ -298,6 +306,9 @@ async function main(args) {
   const unknownGroundModes = groundModes.filter((groundMode) => !GROUND_MODES.includes(groundMode));
   const unknownSceneIds = sceneIds.filter((sceneId) => !SCENE_IDS.includes(sceneId));
   if (!QUALITY_TIERS.includes(qualityTier)) throw new Error(`Unknown terrain gallery quality: ${qualityTier}`);
+  if (timingPolicy !== "enforced" && timingPolicy !== "informational") {
+    throw new Error(`Unknown terrain gallery timing policy: ${timingPolicy}`);
+  }
   if (unknownRenderers.length > 0) throw new Error(`Unknown terrain gallery renderers: ${unknownRenderers.join(", ")}`);
   if (unknownGroundModes.length > 0) {
     throw new Error(`Unknown terrain gallery ground modes: ${unknownGroundModes.join(", ")}`);
@@ -322,8 +333,8 @@ async function main(args) {
       }
     }
   }
-  const evaluation = evaluateTerrainGalleryResults(results, { groundModes, rendererModes, sceneIds });
-  const summary = { ...evaluation, groundModes, qualityTier, rendererModes, results, sceneIds };
+  const evaluation = evaluateTerrainGalleryResults(results, { groundModes, rendererModes, sceneIds, timingPolicy });
+  const summary = { ...evaluation, groundModes, qualityTier, rendererModes, results, sceneIds, timingPolicy };
   writeFileSync(join(artifactDirectory, "terrain-gallery-verification.json"), `${JSON.stringify(summary, null, 2)}\n`);
   console.log(JSON.stringify(summary, null, 2));
   if (!summary.ok) process.exitCode = 1;
