@@ -21,7 +21,8 @@ export function createTerrainMaterials(): TerrainMaterials {
 export function createTerrainGroundMaterial(textures: TerrainGroundTextures): MeshStandardNodeMaterial {
   const material = new MeshStandardNodeMaterial({ metalness: 0, roughness: 0.95 });
   material.name = "terrain-land-ground-textured";
-  const worldUv = uv().mul(0.34);
+  const absoluteWorldUv = uv();
+  const worldUv = absoluteWorldUv.mul(0.34);
   const groundWeights0 = attribute<"vec4">("terrainGroundWeights0", "vec4");
   const groundWeights1 = attribute<"vec4">("terrainGroundWeights1", "vec4");
   const pair = selectStrongestGroundPair(groundWeights0, groundWeights1);

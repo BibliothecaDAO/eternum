@@ -82,6 +82,19 @@ describe("prepareTerrainPage", () => {
     }
   });
 
+  it("warps absolute ground coordinates continuously to break visible material repetition", () => {
+    const { positions, uvs } = prepareTerrainPage(createAllBiomesTerrainRequest()).buffers;
+    let maximumOffset = 0;
+
+    for (let vertex = 0; vertex < positions.length / 3; vertex += 1) {
+      const [x, , z] = readAttribute(positions, vertex, 3);
+      const [u, v] = readAttribute(uvs, vertex, 2);
+      maximumOffset = Math.max(maximumOffset, Math.hypot(u - x, v - z));
+    }
+
+    expect(maximumOffset).toBeGreaterThan(0.01);
+  });
+
   it("precomputes exact geometry bounds before the page reaches the main thread", () => {
     const { bounds, positions } = prepareTerrainPage(createAllBiomesTerrainRequest()).buffers;
     const [centerX, centerY, centerZ] = bounds.sphereCenter;

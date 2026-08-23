@@ -3,6 +3,7 @@ import { mkdirSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import sharp from "sharp";
 
 const DEFAULT_BASE_URL = "https://127.0.0.1:4173";
 const DEFAULT_ARTIFACT_DIRECTORY = ".context/verification/procedural-terrain/gallery";
@@ -74,6 +75,7 @@ export function evaluateTerrainGalleryResults(results, options = {}) {
     if (!(result.snapshot?.drawCalls > 0 && result.snapshot.drawCalls <= 40)) {
       reasons.push(`${label}: draw-call count exceeded policy or was unavailable`);
     }
+    if (!(result.imageCoverage >= 0.12)) reasons.push(`${label}: screenshot terrain coverage was below 12%`);
     if (!(result.snapshot?.commitMs >= 0 && result.snapshot.commitMs <= 8)) {
       reasons.push(`${label}: main-thread commit exceeded 8 ms`);
     }
@@ -137,7 +139,7 @@ function createPerformanceDeltas(results, sceneIds, rendererModes, groundModes) 
   );
 }
 
-function runGalleryScenario({ artifactDirectory, baseUrl, groundMode, headed, rendererMode, sceneId }) {
+async function runGalleryScenario({ artifactDirectory, baseUrl, groundMode, headed, rendererMode, sceneId }) {
   const session = `terrain-gallery-${sceneId}-${rendererMode}-${groundMode}-${Date.now().toString(36)}`;
   const url = buildTerrainGalleryUrl(baseUrl, rendererMode, groundMode, sceneId);
   try {
@@ -156,9 +158,11 @@ function runGalleryScenario({ artifactDirectory, baseUrl, groundMode, headed, re
     const errors = parseErrorLines(runAgentBrowser(session, ["errors"], headed));
     const screenshotPath = join(artifactDirectory, `${sceneId}-${rendererMode}-${groundMode}.png`);
     runAgentBrowser(session, ["screenshot", screenshotPath], headed);
+    const imageCoverage = await measureScreenshotCoverage(screenshotPath);
     return {
       errors,
       groundMode,
+      imageCoverage,
       ready: state.status === "ready" && state.dataReady,
       rendererMode,
       routeMounted: state.routeMounted,
@@ -170,6 +174,18 @@ function runGalleryScenario({ artifactDirectory, baseUrl, groundMode, headed, re
   } finally {
     tryRunAgentBrowser(session, ["close"], headed);
   }
+}
+
+async function measureScreenshotCoverage(screenshotPath) {
+  const { data, info } = await sharp(screenshotPath).removeAlpha().raw().toBuffer({ resolveWithObject: true });
+  let contentPixels = 0;
+  for (let offset = 0; offset < data.length; offset += info.channels) {
+    const red = data[offset] - 216;
+    const green = data[offset + 1] - 208;
+    const blue = data[offset + 2] - 186;
+    if (red * red + green * green + blue * blue > 900) contentPixels += 1;
+  }
+  return contentPixels / (info.width * info.height);
 }
 
 function waitForReady(session, headed) {
@@ -249,7 +265,7 @@ function readListOption(args, name, fallback) {
     .filter(Boolean);
 }
 
-function main(args) {
+async function main(args) {
   const baseUrl = readOption(args, "--base-url", DEFAULT_BASE_URL);
   const artifactDirectory = resolve(readOption(args, "--artifact-dir", DEFAULT_ARTIFACT_DIRECTORY));
   const headed = args.includes("--headed");
@@ -265,13 +281,16 @@ function main(args) {
   }
   if (unknownSceneIds.length > 0) throw new Error(`Unknown terrain gallery scenes: ${unknownSceneIds.join(", ")}`);
   mkdirSync(artifactDirectory, { recursive: true });
-  const results = sceneIds.flatMap((sceneId) =>
-    rendererModes.flatMap((rendererMode) =>
-      groundModes.map((groundMode) =>
-        runGalleryScenario({ artifactDirectory, baseUrl, groundMode, headed, rendererMode, sceneId }),
-      ),
-    ),
-  );
+  const results = [];
+  for (const sceneId of sceneIds) {
+    for (const rendererMode of rendererModes) {
+      for (const groundMode of groundModes) {
+        results.push(
+          await runGalleryScenario({ artifactDirectory, baseUrl, groundMode, headed, rendererMode, sceneId }),
+        );
+      }
+    }
+  }
   const evaluation = evaluateTerrainGalleryResults(results, { groundModes, rendererModes, sceneIds });
   const summary = { ...evaluation, groundModes, rendererModes, results, sceneIds };
   writeFileSync(join(artifactDirectory, "terrain-gallery-verification.json"), `${JSON.stringify(summary, null, 2)}\n`);
@@ -280,4 +299,4 @@ function main(args) {
 }
 
 const isMainModule = process.argv[1] === fileURLToPath(import.meta.url);
-if (isMainModule) main(process.argv.slice(2));
+if (isMainModule) await main(process.argv.slice(2));

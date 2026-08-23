@@ -29,6 +29,7 @@ interface CellFieldSample {
   centerZ: number;
   col: number;
   descriptor: TerrainBiomeDescriptor;
+  direction: TerrainBiomeArtDirection;
   elevation: number;
   groundWeights: TerrainGroundWeights;
   moisture: number;
@@ -58,6 +59,7 @@ export interface TerrainVisualSample extends TerrainSurfaceSample {
   groundWeights: TerrainGroundWeights;
   roughness: number;
   shore: number;
+  uvOffset: readonly [number, number];
 }
 
 const NORMAL_SAMPLE_DISTANCE = 0.035;
@@ -116,13 +118,20 @@ export class TerrainField {
     let green = 0;
     let blue = 0;
     let relief = 0;
+    let macroTintStrength = 0;
+    let shoreWetness = 0;
     const groundWeights = Array.from({ length: 8 }, () => 0);
     let strongestWeight = -1;
     let strongestBiome = candidates[0].biome;
     let strongestBiomeId = candidates[0].biomeId;
-    const colorMix =
-      0.18 +
-      terrainValueNoise(worldX * 0.42, worldZ * 0.42, this.elevationSeed, this.moistureSeed, "terrain-color-v1") * 0.28;
+    const macroMaterial = terrainValueNoise(
+      worldX * 0.42,
+      worldZ * 0.42,
+      this.elevationSeed,
+      this.moistureSeed,
+      "terrain-color-v1",
+    );
+    const colorMix = 0.18 + macroMaterial * 0.28;
 
     for (const candidate of candidates) {
       const distanceSquared = (candidate.centerX - worldX) ** 2 + (candidate.centerZ - worldZ) ** 2;
@@ -132,6 +141,8 @@ export class TerrainField {
       height += candidate.baseHeight * weight;
       roughness += candidate.descriptor.roughness * weight;
       relief += candidate.descriptor.relief * weight;
+      macroTintStrength += candidate.direction.material.macroTintStrength * weight;
+      shoreWetness += candidate.direction.material.shoreWetness * weight;
       blendTerrainGroundWeights(groundWeights, candidate.groundWeights, weight);
       red += (candidate.primary[0] + (candidate.secondary[0] - candidate.primary[0]) * colorMix) * weight;
       green += (candidate.primary[1] + (candidate.secondary[1] - candidate.primary[1]) * colorMix) * weight;
@@ -152,16 +163,27 @@ export class TerrainField {
       this.resolveStructurePadWeight(worldX, worldZ, candidates),
     );
 
+    const shore = this.sampleShoreProximity(worldX, worldZ, candidates);
+    const macroStrength = macroTintStrength * inverseWeight;
+    const wetness = shore * shoreWetness * inverseWeight;
+    const macroFactor = 1 + (macroMaterial * 2 - 1) * macroStrength;
+    const albedoFactor = macroFactor * (1 - wetness * 0.16);
+
     return {
       biome: strongestBiome,
       biomeId: strongestBiomeId,
-      color: [red * inverseWeight, green * inverseWeight, blue * inverseWeight],
+      color: [
+        red * inverseWeight * albedoFactor,
+        green * inverseWeight * albedoFactor,
+        blue * inverseWeight * albedoFactor,
+      ],
       explored: 1,
       groundWeights: paddedGroundWeights,
       height: paddedHeight,
       normal: [0, 1, 0],
-      roughness: roughness * inverseWeight,
-      shore: this.sampleShoreProximity(worldX, worldZ, candidates),
+      roughness: clampUnit(roughness * inverseWeight + (macroMaterial - 0.5) * 0.08 - wetness * 0.18),
+      shore,
+      uvOffset: [(macroMaterial - 0.5) * macroStrength * 0.42, (0.5 - macroMaterial) * macroStrength * 0.27],
     };
   }
 
@@ -346,6 +368,7 @@ export class TerrainField {
       centerZ: center.z,
       col,
       descriptor,
+      direction,
       elevation: environment.elevation,
       groundWeights: resolveTerrainGroundRecipe(cell.biome, environment),
       moisture: environment.moisture,
@@ -438,8 +461,12 @@ function resolveSeed(value: number | undefined): number {
 }
 
 function smoothstep(edge0: number, edge1: number, value: number): number {
-  const normalized = Math.min(1, Math.max(0, (value - edge0) / (edge1 - edge0)));
+  const normalized = clampUnit((value - edge0) / (edge1 - edge0));
   return normalized * normalized * (3 - 2 * normalized);
+}
+
+function clampUnit(value: number): number {
+  return Math.min(1, Math.max(0, value));
 }
 
 function terrainBlendWeight(distanceSquared: number): number {
@@ -479,6 +506,7 @@ function createUnknownSample(): TerrainVisualSample {
     normal: [0, 1, 0],
     roughness: descriptor.roughness,
     shore: 0,
+    uvOffset: [0, 0],
   };
 }
 

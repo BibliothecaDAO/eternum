@@ -27,12 +27,14 @@ describe("terrain gallery verification", () => {
     fallback.snapshot.fingerprint = "different";
     fallback.snapshot.commitMs = 9;
     fallback.errors = ["device lost"];
+    fallback.imageCoverage = 0.04;
 
     expect(evaluateTerrainGalleryResults(results)).toMatchObject({
       ok: false,
       reasons: expect.arrayContaining([
         "all-biomes/webgpu-force-webgl/textured: browser reported device lost",
         "all-biomes/webgpu-force-webgl/textured: main-thread commit exceeded 8 ms",
+        "all-biomes/webgpu-force-webgl/textured: screenshot terrain coverage was below 12%",
         "all-biomes: renderer backends produced different terrain fingerprints",
       ]),
     });
@@ -64,6 +66,7 @@ function result(rendererMode, activeMode, groundMode) {
   return {
     errors: [],
     groundMode,
+    imageCoverage: 0.42,
     ready: true,
     rendererMode,
     routeMounted: true,

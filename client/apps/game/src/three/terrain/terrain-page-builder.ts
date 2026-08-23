@@ -168,7 +168,7 @@ function appendFrontierVertex(
 function appendVertex(target: GeometryAccumulator, point: TerrainWorldCoordinate, sample: TerrainVisualSample): number {
   const index = target.positions.length / 3;
   target.positions.push(point.x, sample.height, point.z);
-  target.uvs.push(point.x, point.z);
+  target.uvs.push(point.x + sample.uvOffset[0], point.z + sample.uvOffset[1]);
   target.normals.push(...sample.normal);
   target.colors.push(...sample.color);
   target.roughness.push(sample.roughness);
