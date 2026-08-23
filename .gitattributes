@@ -127,6 +127,7 @@ Procfile          text
 *.gif             binary
 *.gifv            binary
 *.glb             binary
+*.ktx2            binary
 *.ico             binary
 *.jng             binary
 *.jp2             binary
