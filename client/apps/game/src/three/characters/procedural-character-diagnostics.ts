@@ -1,4 +1,4 @@
-import { Group, Vector3 } from "three";
+import { Group, Quaternion, Vector3 } from "three";
 
 import type { ProceduralCharacterPose, QuaternionTuple, Vector3Tuple } from "./procedural-character-pose";
 import type { ResolvedCharacterRig } from "./procedural-character-rig";
@@ -29,6 +29,8 @@ export interface ProceduralArmPoseDiagnostics {
 }
 
 export interface ProceduralLegPoseDiagnostics {
+  bendDistance: number;
+  bendForwardDot: number | null;
   kneeDegrees: number;
   lowerLegLength: number;
   upperLegLength: number;
@@ -36,9 +38,11 @@ export interface ProceduralLegPoseDiagnostics {
 
 export interface ProceduralFootPoseDiagnostics {
   contact: "stance" | "swing";
+  forwardDot: number | null;
   position: Vector3Tuple;
   progress: number;
   rotation: QuaternionTuple | null;
+  toePosition: Vector3Tuple | null;
 }
 
 export interface ProceduralCharacterPoseDiagnostics {
@@ -68,11 +72,18 @@ export interface ProceduralCharacterDiagnosticSockets {
   handLeft?: Readonly<Vector3>;
   handRight?: Readonly<Vector3>;
   jawAnchor?: Readonly<Vector3>;
+  footFacing?: Readonly<Record<"left" | "right", { forwardDot: number; toePosition: Vector3Tuple }>>;
   footRotations?: Readonly<Record<"left" | "right", QuaternionTuple>>;
   joints?: Partial<Readonly<Record<ProceduralHumanoidJointId, Vector3Tuple>>>;
 }
 
 const scratchWorldScale = new Vector3();
+const scratchRootQuaternion = new Quaternion();
+const scratchRootForward = new Vector3();
+const LOCAL_FORWARD = new Vector3(0, 0, 1);
+const MINIMUM_FORWARD_BEND_DISTANCE = 0.025;
+const MINIMUM_FOOT_FORWARD_DOT = 0.25;
+const MINIMUM_KNEE_FORWARD_DOT = -0.1;
 
 export function resolveProceduralCharacterPoseDiagnostics(input: {
   leftPalmInwardDot: number;
@@ -95,19 +106,27 @@ export function resolveProceduralCharacterPoseDiagnostics(input: {
     right: input.sockets?.gripRight ? toTuple(input.sockets.gripRight) : null,
   } as const;
   const headRadius = input.rig.morphology.headRadius * scale;
+  const rootForward = scratchRootForward
+    .copy(LOCAL_FORWARD)
+    .applyQuaternion(input.root.getWorldQuaternion(scratchRootQuaternion))
+    .normalize();
   const arms = {
     left: resolveArmDiagnostics(joints, "left", socketHands.left, solverJoints.wristLeft, headRadius),
     right: resolveArmDiagnostics(joints, "right", socketHands.right, solverJoints.wristRight, headRadius),
   } as const;
   const legs = {
-    left: resolveLegDiagnostics(joints, "left"),
-    right: resolveLegDiagnostics(joints, "right"),
+    left: resolveLegDiagnostics(joints, "left", rootForward),
+    right: resolveLegDiagnostics(joints, "right", rootForward),
   } as const;
+  const footFacing = input.sockets?.footFacing;
   const footRotations = input.sockets?.footRotations;
   const finite =
     Object.values(joints).every((joint) => joint.every(Number.isFinite)) &&
+    Object.values(footFacing ?? {}).every(
+      ({ forwardDot, toePosition }) => Number.isFinite(forwardDot) && toePosition.every(Number.isFinite),
+    ) &&
     Object.values(footRotations ?? {}).every((rotation) => rotation.every(Number.isFinite));
-  const issues = resolvePoseIssues({ arms, finite, scale });
+  const issues = resolvePoseIssues({ arms, feet: footFacing, finite, legs, scale });
   const rootPosition = new Vector3();
   input.root.getWorldPosition(rootPosition);
   return {
@@ -116,15 +135,19 @@ export function resolveProceduralCharacterPoseDiagnostics(input: {
     feet: {
       left: {
         contact: input.pose.feet.left.cycle.contact,
+        forwardDot: footFacing ? round(footFacing.left.forwardDot) : null,
         position: solverJoints.ankleLeft,
         progress: round(input.pose.feet.left.cycle.progress),
         rotation: footRotations?.left ?? null,
+        toePosition: footFacing?.left.toePosition ?? null,
       },
       right: {
         contact: input.pose.feet.right.cycle.contact,
+        forwardDot: footFacing ? round(footFacing.right.forwardDot) : null,
         position: solverJoints.ankleRight,
         progress: round(input.pose.feet.right.cycle.progress),
         rotation: footRotations?.right ?? null,
+        toePosition: footFacing?.right.toePosition ?? null,
       },
     },
     headRadius: round(headRadius),
@@ -162,12 +185,22 @@ export function resolveQuaternionAngularDistanceDegrees(left: QuaternionTuple, r
 function resolveLegDiagnostics(
   joints: Readonly<Record<ProceduralHumanoidJointId, Vector3Tuple>>,
   side: "left" | "right",
+  rootForward: Readonly<Vector3>,
 ): ProceduralLegPoseDiagnostics {
   const suffix = side === "left" ? "Left" : "Right";
   const hip = fromTuple(joints[`hip${suffix}`]);
   const knee = fromTuple(joints[`knee${suffix}`]);
   const ankle = fromTuple(joints[`ankle${suffix}`]);
+  const hipToAnkle = ankle.clone().sub(hip);
+  const projection = Math.min(
+    1,
+    Math.max(0, knee.clone().sub(hip).dot(hipToAnkle) / Math.max(hipToAnkle.lengthSq(), 1e-8)),
+  );
+  const bend = knee.clone().sub(hip.clone().addScaledVector(hipToAnkle, projection));
+  const bendDistance = bend.length();
   return {
+    bendDistance: round(bendDistance),
+    bendForwardDot: bendDistance > 1e-5 ? round(bend.normalize().dot(rootForward)) : null,
     kneeDegrees: round(resolveJointAngleDegrees(hip, knee, ankle)),
     lowerLegLength: round(knee.distanceTo(ankle)),
     upperLegLength: round(hip.distanceTo(knee)),
@@ -223,7 +256,9 @@ function resolveArmDiagnostics(
 
 function resolvePoseIssues(input: {
   arms: Readonly<Record<"left" | "right", ProceduralArmPoseDiagnostics>>;
+  feet?: Readonly<Record<"left" | "right", { forwardDot: number }>>;
   finite: boolean;
+  legs: Readonly<Record<"left" | "right", ProceduralLegPoseDiagnostics>>;
   scale: number;
 }): string[] {
   const issues: string[] = [];
@@ -237,6 +272,17 @@ function resolvePoseIssues(input: {
     }
     if (arm.solverSocketError !== null && arm.solverSocketError > 0.3 * input.scale) {
       issues.push(`${side}-solver-socket-diverged`);
+    }
+    const leg = input.legs[side];
+    if (
+      leg.bendDistance > MINIMUM_FORWARD_BEND_DISTANCE * input.scale &&
+      leg.bendForwardDot !== null &&
+      leg.bendForwardDot < MINIMUM_KNEE_FORWARD_DOT
+    ) {
+      issues.push(`${side}-knee-backward`);
+    }
+    if (input.feet && input.feet[side].forwardDot < MINIMUM_FOOT_FORWARD_DOT) {
+      issues.push(`${side}-foot-backward`);
     }
   });
   return issues;

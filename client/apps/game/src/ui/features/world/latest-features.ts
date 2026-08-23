@@ -37,7 +37,7 @@ const allLatestFeatures: LatestFeature[] = [
     date: "2026-08-24",
     title: "Stable Character Footwork",
     description:
-      "Fixed feet and lower legs twisting as walking characters crossed near-vertical poses, keeping planted steps stable and swing transitions smooth.",
+      "Fixed boots twisting or facing backward during procedural movement, keeping toes aligned with travel while planted steps and swing transitions remain stable.",
     type: "fix",
     gameSlug: "world",
   },

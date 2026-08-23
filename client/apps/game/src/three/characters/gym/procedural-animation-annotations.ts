@@ -95,6 +95,8 @@ function createHumanoidAnnotationFragment(diagnostics: ProceduralUnitPoseDiagnos
       marker(10, "L ankle", joints.ankleLeft, humanoid.feet.left.contact, humanoid.feet.left.contact.toUpperCase()),
       marker(11, "R knee", joints.kneeRight, "right", degrees(humanoid.legs.right.kneeDegrees)),
       marker(12, "R ankle", joints.ankleRight, humanoid.feet.right.contact, humanoid.feet.right.contact.toUpperCase()),
+      ...(humanoid.feet.left.toePosition ? [marker(16, "L toe", humanoid.feet.left.toePosition, "left")] : []),
+      ...(humanoid.feet.right.toePosition ? [marker(17, "R toe", humanoid.feet.right.toePosition, "right")] : []),
       ...solverMarkers.markers,
     ],
     metrics: [
@@ -102,6 +104,10 @@ function createHumanoidAnnotationFragment(diagnostics: ProceduralUnitPoseDiagnos
       metric("R elbow", degrees(humanoid.arms.right.elbowDegrees)),
       metric("L knee", degrees(humanoid.legs.left.kneeDegrees)),
       metric("R knee", degrees(humanoid.legs.right.kneeDegrees)),
+      metric("L knee fwd", signedNullable(humanoid.legs.left.bendForwardDot)),
+      metric("R knee fwd", signedNullable(humanoid.legs.right.bendForwardDot)),
+      metric("L foot fwd", signedNullable(humanoid.feet.left.forwardDot)),
+      metric("R foot fwd", signedNullable(humanoid.feet.right.forwardDot)),
       metric("L palm", signed(humanoid.palmInwardDot.left)),
       metric("R palm", signed(humanoid.palmInwardDot.right)),
       metric("L socket Δ", distance(humanoid.arms.left.solverSocketError)),
@@ -117,6 +123,12 @@ function createHumanoidAnnotationFragment(diagnostics: ProceduralUnitPoseDiagnos
       ...chainSegments([joints.shoulderRight, joints.elbowRight, joints.wristRight], "right"),
       ...chainSegments([joints.hipLeft, joints.kneeLeft, joints.ankleLeft], "left"),
       ...chainSegments([joints.hipRight, joints.kneeRight, joints.ankleRight], "right"),
+      ...(humanoid.feet.left.toePosition
+        ? chainSegments([joints.ankleLeft, humanoid.feet.left.toePosition], "left")
+        : []),
+      ...(humanoid.feet.right.toePosition
+        ? chainSegments([joints.ankleRight, humanoid.feet.right.toePosition], "right")
+        : []),
       ...solverMarkers.segments,
     ],
   };
@@ -133,7 +145,7 @@ function createSolverTargetMarkers(
     const wrist = side === "left" ? humanoid.joints.wristLeft : humanoid.joints.wristRight;
     const target = humanoid.solverWristTargets[side];
     const tone = side;
-    markers.push(marker(16 + index, `${side[0].toUpperCase()} solver target`, target, tone, distance(error)));
+    markers.push(marker(18 + index, `${side[0].toUpperCase()} solver target`, target, tone, distance(error)));
     segments.push(...chainSegments([wrist, target], tone));
   });
   return { markers, segments };
@@ -302,4 +314,8 @@ function distance(value: number | null | undefined): string {
 
 function signed(value: number): string {
   return `${value >= 0 ? "+" : ""}${value.toFixed(2)}`;
+}
+
+function signedNullable(value: number | null): string {
+  return value === null ? "--" : signed(value);
 }

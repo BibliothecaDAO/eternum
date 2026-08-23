@@ -372,6 +372,7 @@ class RuntimeProceduralCharacterActor implements ProceduralCharacterActor {
         this.diagnosticJawAnchor,
         this.diagnosticSocketQuaternion,
       ) && { jawAnchor: this.diagnosticJawAnchor }),
+      footFacing: this.avatar.readWorldDiagnosticFootFacing(),
       footRotations: this.avatar.readWorldDiagnosticFootRotations(),
       joints: this.avatar.readWorldDiagnosticJoints(),
     };

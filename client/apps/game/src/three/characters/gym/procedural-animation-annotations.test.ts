@@ -16,7 +16,9 @@ describe("procedural animation frame annotations", () => {
     });
 
     expect(annotations.header).toBe("ARCHER · F087 · FRONT");
-    expect(annotations.markers.map(({ id }) => id)).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]);
+    expect(annotations.markers.map(({ id }) => id)).toEqual([
+      1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 16, 17, 13, 14, 15,
+    ]);
     expect(annotations.markers.find(({ id }) => id === 4)?.value).toBe("83.3°");
     expect(annotations.metrics).toContainEqual({ label: "arrow/head", value: "0.049" });
     expect(annotations.segments.length).toBeGreaterThan(8);
@@ -122,16 +124,30 @@ function createArcherDiagnostics(): ProceduralUnitPoseDiagnostics {
       },
       finite: true,
       feet: {
-        left: { contact: "stance", position: joints.ankleLeft, progress: 0.5, rotation: [0, 0, 0, 1] },
-        right: { contact: "stance", position: joints.ankleRight, progress: 0.5, rotation: [0, 0, 0, 1] },
+        left: {
+          contact: "stance",
+          forwardDot: 1,
+          position: joints.ankleLeft,
+          progress: 0.5,
+          rotation: [0, 0, 0, 1],
+          toePosition: [-0.2, 0, 0.2],
+        },
+        right: {
+          contact: "stance",
+          forwardDot: 1,
+          position: joints.ankleRight,
+          progress: 0.5,
+          rotation: [0, 0, 0, 1],
+          toePosition: [0.2, 0, 0.2],
+        },
       },
       headRadius: 0.17,
       issues: [],
       jawAnchor: [0, 1.55, 0],
       joints,
       legs: {
-        left: { kneeDegrees: 171, lowerLegLength: 0.45, upperLegLength: 0.45 },
-        right: { kneeDegrees: 169, lowerLegLength: 0.45, upperLegLength: 0.45 },
+        left: { bendDistance: 0.05, bendForwardDot: 1, kneeDegrees: 171, lowerLegLength: 0.45, upperLegLength: 0.45 },
+        right: { bendDistance: 0.05, bendForwardDot: 1, kneeDegrees: 169, lowerLegLength: 0.45, upperLegLength: 0.45 },
       },
       palmInwardDot: { left: 0.8, right: 0.7 },
       phase: 0.25,

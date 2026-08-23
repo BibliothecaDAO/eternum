@@ -24,6 +24,28 @@ export function createSegmentBoneBinding(
   return { bone, orientationOffset };
 }
 
+/** Creates a bind offset in the same axial frame used to pose a stable segment. */
+export function createStableSegmentBoneBinding(
+  scene: Object3D,
+  boneName: string,
+  childBoneName: string,
+  referenceForward: Readonly<Vector3>,
+  fallbackForward: Readonly<Vector3>,
+): SegmentBoneBinding {
+  const bone = requireSkinnedBone(scene, boneName);
+  const childBone = requireSkinnedBone(scene, childBoneName);
+  const bonePosition = bone.getWorldPosition(new Vector3());
+  const bindDirection = childBone.getWorldPosition(new Vector3()).sub(bonePosition).normalize();
+  const alignedQuaternion = resolveStableSegmentQuaternion(
+    bindDirection,
+    referenceForward,
+    fallbackForward,
+    new Quaternion(),
+  );
+  const bindWorldQuaternion = bone.getWorldQuaternion(new Quaternion());
+  return { bone, orientationOffset: alignedQuaternion.invert().multiply(bindWorldQuaternion).normalize() };
+}
+
 export function requireSkinnedBone(scene: Object3D, name: string): Bone {
   const object = scene.getObjectByName(name);
   if (!(object instanceof Bone)) throw new Error(`Skinned asset bone ${name} was not found`);

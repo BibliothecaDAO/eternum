@@ -32,6 +32,7 @@ import { QUATERNIUS_BONE_NAMES, type LoadedQuaterniusCharacterAsset } from "./qu
 import {
   applySegmentBoneRotation,
   createSegmentBoneBinding,
+  createStableSegmentBoneBinding,
   requireSkinnedBone,
   resolveStableSegmentQuaternion,
   type SegmentBoneBinding,
@@ -95,6 +96,11 @@ export interface ProceduralCharacterAvatarStats {
   skinnedMeshCount: number;
 }
 
+interface ProceduralFootFacingDiagnostics {
+  forwardDot: number;
+  toePosition: Vector3Tuple;
+}
+
 const Y_AXIS = new Vector3(0, 1, 0);
 const X_AXIS = new Vector3(1, 0, 0);
 const Z_AXIS = new Vector3(0, 0, 1);
@@ -136,6 +142,7 @@ const CHARACTER_IK_PART_IDS = new Set<CharacterPartId>([
   "thighRight",
   "shinRight",
 ]);
+const STABLE_LEG_PART_IDS = new Set<CharacterPartId>(["thighLeft", "shinLeft", "thighRight", "shinRight"]);
 const DIAGNOSTIC_JOINT_BONE_NAMES: Readonly<Record<ProceduralHumanoidJointId, string>> = {
   ankleLeft: "foot_l",
   ankleRight: "foot_r",
@@ -298,6 +305,24 @@ export class ProceduralCharacterAvatar implements ProceduralCharacterSocketReade
         return [side, toQuaternionTuple(this.scratchTargetQuaternion)];
       }),
     ) as unknown as Record<"left" | "right", QuaternionTuple>;
+  }
+
+  public readWorldDiagnosticFootFacing(): Readonly<Record<"left" | "right", ProceduralFootFacingDiagnostics>> {
+    this.group.updateWorldMatrix(true, true);
+    const rootQuaternion = this.group.getWorldQuaternion(new Quaternion());
+    const rootForward = new Vector3(0, 0, 1).applyQuaternion(rootQuaternion);
+    const rootUp = new Vector3(0, 1, 0).applyQuaternion(rootQuaternion);
+    return Object.fromEntries(
+      (["left", "right"] as const).map((side) => {
+        const suffix = side === "left" ? "l" : "r";
+        const ankle = requireBone(this.activeModel.scene, `foot_${suffix}`).getWorldPosition(new Vector3());
+        const toePosition = requireBone(this.activeModel.scene, `ball_${suffix}`).getWorldPosition(new Vector3());
+        const toeDirection = toePosition.clone().sub(ankle);
+        toeDirection.addScaledVector(rootUp, -toeDirection.dot(rootUp));
+        const forwardDot = toeDirection.lengthSq() > 1e-8 ? toeDirection.normalize().dot(rootForward) : 0;
+        return [side, { forwardDot, toePosition: toVectorTuple(toePosition) }];
+      }),
+    ) as unknown as Record<"left" | "right", ProceduralFootFacingDiagnostics>;
   }
 
   public measureActiveLimbLengths(): {
@@ -636,6 +661,10 @@ function toQuaternionTuple(quaternion: Readonly<Quaternion>): QuaternionTuple {
   return [quaternion.x, quaternion.y, quaternion.z, quaternion.w];
 }
 
+function toVectorTuple(vector: Readonly<Vector3>): Vector3Tuple {
+  return [vector.x, vector.y, vector.z];
+}
+
 function composeBaseHeadOntoOutfits(assets: LoadedQuaterniusCharacterAsset[]): void {
   const baseAsset = assets.find((asset) => asset.id === "base");
   if (!baseAsset) throw new Error("Quaternius Universal base asset was not loaded");
@@ -930,11 +959,17 @@ function resolvePalmGripOffset(scene: Group, side: keyof typeof HAND_BONE_NAMES)
 
 function createCharacterBoneBindings(scene: Group): Record<CharacterPartId, SegmentBoneBinding> {
   return Object.fromEntries(
-    CHARACTER_PART_IDS.map((partId) => {
-      const childBoneName = SEGMENT_CHILD_BONE_NAMES[partId];
-      return [partId, createSegmentBoneBinding(scene, QUATERNIUS_BONE_NAMES[partId], childBoneName)];
-    }),
+    CHARACTER_PART_IDS.map((partId) => [partId, createCharacterBoneBinding(scene, partId)]),
   ) as Record<CharacterPartId, SegmentBoneBinding>;
+}
+
+function createCharacterBoneBinding(scene: Group, partId: CharacterPartId): SegmentBoneBinding {
+  const boneName = QUATERNIUS_BONE_NAMES[partId];
+  const childBoneName = SEGMENT_CHILD_BONE_NAMES[partId];
+  if (childBoneName && STABLE_LEG_PART_IDS.has(partId)) {
+    return createStableSegmentBoneBinding(scene, boneName, childBoneName, Z_AXIS, X_AXIS);
+  }
+  return createSegmentBoneBinding(scene, boneName, childBoneName);
 }
 
 function requireBone(scene: Group, name: string): Bone {

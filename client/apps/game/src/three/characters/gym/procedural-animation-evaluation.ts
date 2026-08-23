@@ -16,6 +16,8 @@ export interface ProceduralAnimationObjectiveEvaluation {
   measurements: {
     elbowDegrees: { maximum: number | null; minimum: number | null };
     kneeDegrees: { maximum: number | null; minimum: number | null };
+    minimumFootForwardDot: number | null;
+    minimumKneeForwardDot: number | null;
     maximumJointStep: number | null;
     maximumFootAngularStepDegrees: number | null;
     maximumStableStanceFootAngularStepDegrees: number | null;
@@ -86,6 +88,12 @@ export function evaluateProceduralAnimationCapture(
       ),
       kneeDegrees: range(
         resolveHumanoidValues(result.frames, ({ legs }) => [legs.left.kneeDegrees, legs.right.kneeDegrees]),
+      ),
+      minimumFootForwardDot: minimum(
+        resolveHumanoidValues(result.frames, ({ feet }) => [feet.left.forwardDot, feet.right.forwardDot]),
+      ),
+      minimumKneeForwardDot: minimum(
+        resolveHumanoidValues(result.frames, ({ legs }) => [legs.left.bendForwardDot, legs.right.bendForwardDot]),
       ),
       maximumJointStep: temporalCoverage ? maximum(resolveConsecutiveJointSteps(result.frames)) : null,
       maximumFootAngularStepDegrees: temporalCoverage

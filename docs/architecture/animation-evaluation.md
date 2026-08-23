@@ -166,6 +166,19 @@ rendered left/right foot world quaternion, identifies the peak frame and side, a
 single-frame jump, more than 180° travel per cycle, or excessive stable-stance rotation. The inspector exposes those
 cycle metrics plus each selected frame's left/right angular delta.
 
+A subsequent gameplay-scale review found a separate axial-facing regression hidden by those angular-delta gates: both
+boots were stable but pointed exactly backward. The knee chains were not inverted. Rendered ankle-to-toe direction was
+`-1.000` against actor forward across all four sampled phases, while knee bend-plane alignment remained
+`+0.9547…+0.9800`. The stable leg frame had been combined with a bind offset calculated in the old shortest-arc frame,
+leaving a 180° twist around the solved segment axis. Leg bind offsets now use the same stable frame as runtime posing.
+
+The corrected 61-frame moving-root walk measures minimum foot-forward alignment `+0.9936` and minimum knee-forward
+alignment `+0.9525`, while preserving the anti-spin result: `4.82°` maximum one-frame rotation, `1.56°` stable-stance
+rotation, `82.13° / 83.18°` cycle travel, and `0.00243` stance drift. The inspector now labels both toe vectors and
+left/right knee- and foot-forward dots; negative foot or materially bent knee directions are hard failures. Knight walk
+and run, Knight melee, Archer shot, Crossbowman walk, mounted Paladin melee, the five-angle atlas, and the
+seven-scenario collision/Jolt smoke all pass with no browser errors.
+
 ### Collision response and projectile handoff
 
 Evaluation date: 2026-08-23. Walking characters now use a deterministic, fixed-step XZ presentation solver with a
