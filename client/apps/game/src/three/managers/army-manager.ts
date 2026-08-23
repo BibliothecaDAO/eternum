@@ -2,6 +2,11 @@ import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useChainTimeStore } from "@/hooks/store/use-chain-time-store";
 import { gameWorkerManager } from "@/managers/game-worker-manager";
 import type { ProceduralMeleeContactEvent, ProceduralRangedReleaseEvent } from "@/three/characters";
+import type { ArrowImpactEvent } from "@/three/projectiles/arrow-projectile-system";
+import type { ProceduralImpactAuthority } from "@/three/characters/collision/procedural-impact";
+import { createProceduralCollisionBudget } from "@/three/characters/collision/procedural-collision-profile";
+import type { RenderMode } from "@/three/render-profile";
+import type { ProjectileSweepHit, ProjectileSweepRequest } from "@/three/projectiles/projectile-hit-query";
 import {
   ProceduralArmyCharacterLayer,
   type ProceduralArmyCharacterLayerStats,
@@ -2227,6 +2232,10 @@ export class ArmyManager {
     };
   }
 
+  public setProceduralCollisionMode(mode: RenderMode): void {
+    this.proceduralArmyCharacterLayer.setCollisionBudget(createProceduralCollisionBudget(mode));
+  }
+
   public async startProceduralCharacterRagdoll(): Promise<void> {
     const entityId = this.proceduralCharacterPreviewEntityId;
     if (entityId === null) return;
@@ -2245,18 +2254,50 @@ export class ArmyManager {
     this.proceduralArmyCharacterLayer.reset(this.toNumericId(entityId));
   }
 
-  public playProceduralAttack(entityId: ID, targetWorld: Readonly<Vector3>): boolean {
-    return this.proceduralArmyCharacterLayer.playAttack(this.toNumericId(entityId), targetWorld);
+  public playProceduralAttack(
+    entityId: ID,
+    targetWorld: Readonly<Vector3>,
+    targetEntityId?: ID,
+    authority: ProceduralImpactAuthority = "provisional",
+  ): boolean {
+    return this.proceduralArmyCharacterLayer.playAttack(
+      this.toNumericId(entityId),
+      targetWorld,
+      targetEntityId === undefined ? undefined : this.toNumericId(targetEntityId),
+      authority,
+    );
+  }
+
+  public sweepProceduralProjectile(request: ProjectileSweepRequest): ProjectileSweepHit | undefined {
+    return this.proceduralArmyCharacterLayer.sweepProjectile(request);
+  }
+
+  public hasProceduralProjectileTarget(entityId: number): boolean {
+    return this.proceduralArmyCharacterLayer.hasProjectileTarget(entityId);
+  }
+
+  public presentProceduralProjectileImpact(event: ArrowImpactEvent): boolean {
+    return this.proceduralArmyCharacterLayer.presentProjectileImpact(event);
   }
 
   public onProceduralMeleeContact(
-    listener: (entityId: number, event: ProceduralMeleeContactEvent) => void,
+    listener: (
+      entityId: number,
+      event: ProceduralMeleeContactEvent,
+      targetEntityId: number | undefined,
+      authority: ProceduralImpactAuthority,
+    ) => void,
   ): () => void {
     return this.proceduralArmyCharacterLayer.onMeleeContact(listener);
   }
 
   public onProceduralRangedRelease(
-    listener: (entityId: number, event: ProceduralRangedReleaseEvent) => void,
+    listener: (
+      entityId: number,
+      event: ProceduralRangedReleaseEvent,
+      targetEntityId: number | undefined,
+      authority: ProceduralImpactAuthority,
+    ) => void,
   ): () => void {
     return this.proceduralArmyCharacterLayer.onRangedRelease(listener);
   }
@@ -2481,8 +2522,10 @@ export class ArmyManager {
     if (!presentation) {
       presentation = {
         category: army.category,
+        distanceToViewCenterSquared: animationContext?.cameraPosition?.distanceToSquared(instance.position),
         entityId,
         isMoving: false,
+        isSelected: this.selectedArmyForPath === army.entityId,
         position: instance.position,
         primaryColor: army.color,
         tier: army.tier,
@@ -2492,7 +2535,9 @@ export class ArmyManager {
 
     presentation.attachments = army.attachments;
     presentation.category = army.category;
+    presentation.distanceToViewCenterSquared = animationContext?.cameraPosition?.distanceToSquared(instance.position);
     presentation.isMoving = this.armyModel.isEntityMoving(entityId);
+    presentation.isSelected = this.selectedArmyForPath === army.entityId;
     presentation.position = instance.position;
     presentation.primaryColor = army.color;
     presentation.rotation = instance.rotation;

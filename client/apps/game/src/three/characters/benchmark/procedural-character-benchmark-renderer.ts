@@ -31,6 +31,14 @@ import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 
 import { initializeProceduralCharacterRendererRuntime } from "../procedural-character-renderer-runtime";
 import {
+  createProceduralCollisionBudget,
+  createProceduralCollisionProfile,
+} from "../collision/procedural-collision-profile";
+import {
+  ProceduralSeparationSimulation,
+  type ProceduralSeparationInput,
+} from "../collision/procedural-separation-simulation";
+import {
   applyProceduralCharacterBenchmarkConfigPatch,
   type ProceduralCharacterBenchmarkConfig,
 } from "./procedural-character-benchmark-config";
@@ -56,6 +64,11 @@ export interface ProceduralCharacterBenchmarkStats {
   actorCount: number;
   animationUpdateLaneCount: number;
   averageFrameMs: number;
+  collisionBodyCount: number;
+  collisionCandidatePairCount: number;
+  collisionDroppedPairCount: number;
+  collisionMaximumOffset: number;
+  collisionResolvedPairCount: number;
   drawCalls: number;
   fps: number;
   geometryCount: number;
@@ -114,6 +127,8 @@ interface AnimationLoopRenderer extends RendererSurfaceLike {
 
 interface BenchmarkActorRecord {
   actor: ProceduralUnitActor;
+  collisionInput: ProceduralSeparationInput;
+  contactActive: boolean;
   physicsGeneration: number;
   unsubscribeMeleeContact: () => void;
 }
@@ -127,6 +142,7 @@ const BENCHMARK_ARROW_CAPACITY = 512;
 const BENCHMARK_ARCHER_VOLLEYS_PER_SECOND = 12;
 const BENCHMARK_MELEE_ATTACKS_PER_SECOND = 10;
 const CHARACTER_PALETTE = ["#4ade80", "#60a5fa", "#f97316", "#c084fc", "#facc15", "#fb7185"] as const;
+const BENCHMARK_COLLISION_BUDGET = createProceduralCollisionBudget("benchmark");
 
 export async function mountProceduralCharacterBenchmarkRenderer(
   input: MountProceduralCharacterBenchmarkRendererInput,
@@ -157,6 +173,10 @@ class ProceduralCharacterBenchmarkRuntime {
   });
   private readonly meleeImpacts = new MeleeImpactSystem(256);
   private readonly actors = new Map<number, BenchmarkActorRecord>();
+  private readonly collisionInputs: ProceduralSeparationInput[] = [];
+  private readonly separation = new ProceduralSeparationSimulation({
+    maxPairResolutions: BENCHMARK_COLLISION_BUDGET.maxPairResolutions,
+  });
   private readonly performanceEvaluator = new ProceduralCharacterPerformanceEvaluator();
   private readonly gpuTimer: ProceduralCharacterGpuTimer;
   private readonly positionScratch = new Vector3();
@@ -172,6 +192,8 @@ class ProceduralCharacterBenchmarkRuntime {
   private meleeAttackAccumulator = 0;
   private meleeAttackCursor = 0;
   private resetCount = 0;
+  private collisionCpuMs = 0;
+  private maximumCollisionDroppedPairCount = 0;
   private physicsFailures: string[] = [];
   private loadingActors = true;
   private paused = false;
@@ -194,6 +216,7 @@ class ProceduralCharacterBenchmarkRuntime {
     this.gpuTimer = new ProceduralCharacterGpuTimer(this.renderer);
     this.performanceEvaluator.setGpuTimerSupported(this.gpuTimer.supported);
     this.unitRuntime = unitRuntime;
+    this.unitRuntime.updatePhysicsConfig(createDefaultProceduralUnitConfig().humanoid);
     this.unitRuntime.setCrowdAnimationLaneCount(this.config.animationUpdateLanes);
     this.simulation = createProceduralCharacterBenchmarkSimulation(this.config);
     this.scene = createBenchmarkScene(this.stage);
@@ -272,6 +295,7 @@ class ProceduralCharacterBenchmarkRuntime {
     if (!this.paused && !this.loadingActors) {
       this.performanceEvaluator.recordFrame({
         animationCpuMs,
+        collisionCpuMs: this.collisionCpuMs,
         frameMs: rawDeltaSeconds * 1_000,
         renderCpuMs,
         totalCpuMs: performance.now() - frameWorkStart,
@@ -299,14 +323,26 @@ class ProceduralCharacterBenchmarkRuntime {
   }
 
   private updateActorPresentation(deltaSeconds: number): void {
+    this.prepareActorPresentation();
+    this.resolveActorCollisions(deltaSeconds);
+    this.applyActorTransforms();
+    this.unitRuntime.update(deltaSeconds);
+    this.scheduleArcherVolleys(deltaSeconds);
+    this.scheduleMeleeAttacks(deltaSeconds);
+    this.projectiles.update(deltaSeconds);
+    this.meleeImpacts.update(deltaSeconds);
+  }
+
+  private prepareActorPresentation(): void {
+    this.collisionInputs.length = 0;
     this.simulation.agents.forEach((agent) => {
       const record = this.actors.get(agent.id);
       if (!record) return;
       writeBenchmarkAgentPosition(agent, this.positionScratch);
-      record.actor.object.position.set(this.positionScratch.x, ACTOR_GROUND_Y, this.positionScratch.z);
       if (agent.phase !== "running") {
         record.actor.setRangedTarget(undefined);
         record.actor.setMeleeTarget(undefined);
+        record.contactActive = false;
         return;
       }
       if (record.actor.kind === "archer") {
@@ -324,12 +360,51 @@ class ProceduralCharacterBenchmarkRuntime {
         record.actor.setMeleeTarget(undefined);
         orientActorAlongRoute(record.actor, agent);
       }
+      record.collisionInput.anchorX = this.positionScratch.x;
+      record.collisionInput.anchorZ = this.positionScratch.z;
+      record.collisionInput.yaw = record.actor.object.rotation.y;
+      if (this.config.collisions) this.collisionInputs.push(record.collisionInput);
     });
-    this.unitRuntime.update(deltaSeconds);
-    this.scheduleArcherVolleys(deltaSeconds);
-    this.scheduleMeleeAttacks(deltaSeconds);
-    this.projectiles.update(deltaSeconds);
-    this.meleeImpacts.update(deltaSeconds);
+  }
+
+  private resolveActorCollisions(deltaSeconds: number): void {
+    if (!this.config.collisions) {
+      this.collisionCpuMs = 0;
+      return;
+    }
+    const startedAt = performance.now();
+    this.separation.update(this.collisionInputs, deltaSeconds);
+    this.maximumCollisionDroppedPairCount = Math.max(
+      this.maximumCollisionDroppedPairCount,
+      this.separation.getStats().droppedPairCount,
+    );
+    this.collisionCpuMs = performance.now() - startedAt;
+  }
+
+  private applyActorTransforms(): void {
+    this.simulation.agents.forEach((agent) => {
+      const record = this.actors.get(agent.id);
+      if (!record) return;
+      writeBenchmarkAgentPosition(agent, this.positionScratch);
+      const collision =
+        this.config.collisions && agent.phase === "running" ? this.separation.getBodySnapshot(agent.id) : undefined;
+      record.actor.object.position.set(
+        collision?.positionX ?? this.positionScratch.x,
+        ACTOR_GROUND_Y,
+        collision?.positionZ ?? this.positionScratch.z,
+      );
+      const inContact = Boolean(collision?.contactCount);
+      if (inContact && !record.contactActive && collision) {
+        record.actor.applyReaction({
+          directionX: collision.reactionX,
+          directionY: 0,
+          directionZ: collision.reactionZ,
+          source: "body-contact",
+          strength: collision.reactionStrength,
+        });
+      }
+      record.contactActive = inContact;
+    });
   }
 
   private applySimulationEvents(events: readonly ProceduralCharacterBenchmarkEvent[]): void {
@@ -359,6 +434,9 @@ class ProceduralCharacterBenchmarkRuntime {
     this.simulation = createProceduralCharacterBenchmarkSimulation(this.config);
     this.simulationAccumulator = 0;
     this.simulationSteps = 0;
+    this.separation.reset();
+    this.collisionCpuMs = 0;
+    this.maximumCollisionDroppedPairCount = 0;
     this.archerVolleyAccumulator = 0;
     this.archerVolleyCursor = 0;
     this.meleeAttackAccumulator = 0;
@@ -395,11 +473,14 @@ class ProceduralCharacterBenchmarkRuntime {
   private async updateConfig(config: ProceduralCharacterBenchmarkConfig): Promise<void> {
     if (this.disposed) return;
     const normalized = applyProceduralCharacterBenchmarkConfigPatch(this.config, config);
+    const collisionModelChanged =
+      normalized.characterScale !== this.config.characterScale || normalized.collisions !== this.config.collisions;
     const rebuildPopulation =
       normalized.actorCount !== this.config.actorCount ||
       normalized.seed !== this.config.seed ||
       normalized.unitMix !== this.config.unitMix;
     this.config = normalized;
+    if (collisionModelChanged) this.separation.reset();
     if (!normalized.archerVolleys) this.projectiles.reset();
     if (!normalized.meleeAttacks) this.meleeImpacts.reset();
     this.controls.autoRotate = normalized.autoRotate;
@@ -410,9 +491,12 @@ class ProceduralCharacterBenchmarkRuntime {
       await this.rebuildPopulation();
       return;
     }
-    this.actors.forEach(({ actor }, id) => {
+    this.actors.forEach((record, id) => {
+      const { actor } = record;
       actor.object.scale.setScalar(normalized.characterScale);
       this.unitRuntime.updateActorConfig(actor, resolveBenchmarkActorConfig(normalized, id));
+      record.collisionInput.profile = createProceduralCollisionProfile(actor.kind, normalized.characterScale);
+      record.contactActive = false;
     });
     this.resetPerformanceEvaluation();
   }
@@ -422,6 +506,9 @@ class ProceduralCharacterBenchmarkRuntime {
     this.loadingActors = true;
     this.simulation = createProceduralCharacterBenchmarkSimulation(this.config);
     this.simulationAccumulator = 0;
+    this.separation.reset();
+    this.collisionCpuMs = 0;
+    this.maximumCollisionDroppedPairCount = 0;
     this.physicsFailures = [];
     this.projectiles.reset();
     this.meleeImpacts.reset();
@@ -549,7 +636,19 @@ class ProceduralCharacterBenchmarkRuntime {
         tier: resolveActorTroopTier(agent.id),
       });
     });
-    this.actors.set(agent.id, { actor, physicsGeneration: 0, unsubscribeMeleeContact });
+    this.actors.set(agent.id, {
+      actor,
+      collisionInput: {
+        anchorX: 0,
+        anchorZ: 0,
+        entityId: agent.id,
+        profile: createProceduralCollisionProfile(actor.kind, this.config.characterScale),
+        yaw: 0,
+      },
+      contactActive: false,
+      physicsGeneration: 0,
+      unsubscribeMeleeContact,
+    });
   }
 
   private renderFrame(): void {
@@ -568,6 +667,7 @@ class ProceduralCharacterBenchmarkRuntime {
     const projectiles = this.projectiles.getStats();
     const melee = this.meleeImpacts.getStats();
     const performanceEvaluation = this.performanceEvaluator.getSnapshot();
+    const collision = this.separation.getStats();
     const render = this.renderer.info.render;
     const crowdAnimation = this.unitRuntime.getCrowdAnimationStats();
     const mountBoneStretch = this.resolveMountBoneStretch();
@@ -575,6 +675,11 @@ class ProceduralCharacterBenchmarkRuntime {
       actorCount: this.actors.size,
       animationUpdateLaneCount: crowdAnimation.laneCount,
       averageFrameMs: performanceEvaluation.frameMs.average,
+      collisionBodyCount: collision.bodyCount,
+      collisionCandidatePairCount: collision.candidatePairCount,
+      collisionDroppedPairCount: this.maximumCollisionDroppedPairCount,
+      collisionMaximumOffset: Number(collision.maximumOffset.toFixed(3)),
+      collisionResolvedPairCount: collision.resolvedPairCount,
       drawCalls: render.drawCalls ?? render.calls,
       fps: Math.round(performanceEvaluation.observedFps),
       geometryCount: this.renderer.info.memory.geometries,
@@ -673,6 +778,7 @@ class ProceduralCharacterBenchmarkRuntime {
   private resetPerformanceEvaluation(): void {
     this.gpuTimer.reset();
     this.performanceEvaluator.reset();
+    this.maximumCollisionDroppedPairCount = 0;
   }
 
   private resetCamera(): void {

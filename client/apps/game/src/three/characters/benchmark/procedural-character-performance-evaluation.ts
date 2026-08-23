@@ -16,6 +16,7 @@ export interface ProceduralCharacterPerformanceDistribution {
 
 export interface ProceduralCharacterPerformanceEvaluation {
   animationCpuMs: ProceduralCharacterPerformanceDistribution;
+  collisionCpuMs: ProceduralCharacterPerformanceDistribution;
   displayRefreshFps: number | null;
   frameBudgetHitRate: number;
   frameMs: ProceduralCharacterPerformanceDistribution;
@@ -40,6 +41,7 @@ export interface ProceduralCharacterPerformanceEvaluation {
 
 export interface ProceduralCharacterPerformanceFrameSample {
   animationCpuMs: number;
+  collisionCpuMs: number;
   frameMs: number;
   renderCpuMs: number;
   totalCpuMs: number;
@@ -47,6 +49,7 @@ export interface ProceduralCharacterPerformanceFrameSample {
 
 interface ResolvedPerformanceMeasurements {
   animationCpuMs: ProceduralCharacterPerformanceDistribution;
+  collisionCpuMs: ProceduralCharacterPerformanceDistribution;
   frameBudgetHitRate: number;
   frameMs: ProceduralCharacterPerformanceDistribution;
   gpuFrameMs: ProceduralCharacterPerformanceDistribution | null;
@@ -71,6 +74,7 @@ const PRESENTATION_FRAME_TOLERANCE_MS = 0.5;
 
 export class ProceduralCharacterPerformanceEvaluator {
   private readonly animationCpuSamples: number[] = [];
+  private readonly collisionCpuSamples: number[] = [];
   private readonly frameSamples: number[] = [];
   private readonly gpuSamples: number[] = [];
   private readonly renderCpuSamples: number[] = [];
@@ -86,6 +90,7 @@ export class ProceduralCharacterPerformanceEvaluator {
 
   public reset(): void {
     this.animationCpuSamples.length = 0;
+    this.collisionCpuSamples.length = 0;
     this.frameSamples.length = 0;
     this.gpuSamples.length = 0;
     this.renderCpuSamples.length = 0;
@@ -109,6 +114,7 @@ export class ProceduralCharacterPerformanceEvaluator {
     }
     this.frameSamples.push(sample.frameMs);
     this.animationCpuSamples.push(sample.animationCpuMs);
+    this.collisionCpuSamples.push(sample.collisionCpuMs);
     this.renderCpuSamples.push(sample.renderCpuMs);
     this.totalCpuSamples.push(sample.totalCpuMs);
   }
@@ -127,6 +133,7 @@ export class ProceduralCharacterPerformanceEvaluator {
   public getSnapshot(): ProceduralCharacterPerformanceEvaluation {
     const measurements = resolvePerformanceMeasurements({
       animationCpuSamples: this.animationCpuSamples,
+      collisionCpuSamples: this.collisionCpuSamples,
       frameSamples: this.frameSamples,
       gpuSamples: this.gpuSamples,
       renderCpuSamples: this.renderCpuSamples,
@@ -143,6 +150,7 @@ export class ProceduralCharacterPerformanceEvaluator {
 
     return {
       animationCpuMs: measurements.animationCpuMs,
+      collisionCpuMs: measurements.collisionCpuMs,
       displayRefreshFps: roundMetric(this.displayRefreshFps),
       frameBudgetHitRate: roundMetric(measurements.frameBudgetHitRate) ?? 0,
       frameMs: measurements.frameMs,
@@ -169,6 +177,7 @@ export class ProceduralCharacterPerformanceEvaluator {
 
 function resolvePerformanceMeasurements(input: {
   animationCpuSamples: readonly number[];
+  collisionCpuSamples: readonly number[];
   frameSamples: readonly number[];
   gpuSamples: readonly number[];
   renderCpuSamples: readonly number[];
@@ -177,6 +186,7 @@ function resolvePerformanceMeasurements(input: {
   const frameMs = resolveDistribution(input.frameSamples);
   return {
     animationCpuMs: resolveDistribution(input.animationCpuSamples),
+    collisionCpuMs: resolveDistribution(input.collisionCpuSamples),
     frameBudgetHitRate: resolveFrameBudgetHitRate(input.frameSamples),
     frameMs,
     gpuFrameMs: input.gpuSamples.length > 0 ? resolveDistribution(input.gpuSamples) : null,
@@ -308,6 +318,7 @@ function isFiniteFrameSample(sample: ProceduralCharacterPerformanceFrameSample):
   return (
     normalizePositiveMetric(sample.frameMs) !== null &&
     isFiniteNonNegativeMetric(sample.animationCpuMs) &&
+    isFiniteNonNegativeMetric(sample.collisionCpuMs) &&
     isFiniteNonNegativeMetric(sample.renderCpuMs) &&
     isFiniteNonNegativeMetric(sample.totalCpuMs)
   );

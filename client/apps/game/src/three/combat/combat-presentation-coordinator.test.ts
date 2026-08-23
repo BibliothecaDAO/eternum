@@ -53,12 +53,51 @@ describe("combat presentation coordinator", () => {
     expect(coordinator.getStats().arrows.spawnedCount).toBe(0);
 
     coordinator.presentRangedRelease({
+      ownerEntityId: 1,
       origin: new Vector3(0, 1, 0),
       seed: 77,
       target: new Vector3(0, 1, 4),
+      targetEntityId: 2,
       tier: TroopTier.T2,
     });
     expect(coordinator.getStats().arrows.spawnedCount).toBe(5);
+    coordinator.dispose();
+  });
+
+  it("routes target-aware swept projectile impacts through one presentation listener", () => {
+    const coordinator = new CombatPresentationCoordinator(new Scene(), {
+      projectileHitQuery: {
+        sweepSphere: ({ from, intendedTargetEntityId, to }) => ({
+          fraction: 0.5,
+          material: "metal",
+          normal: new Vector3(0, 0, -1),
+          point: new Vector3().copy(from).lerp(to, 0.5),
+          targetEntityId: intendedTargetEntityId,
+        }),
+      },
+    });
+    const listener = vi.fn();
+    coordinator.onProjectileImpact(listener);
+    coordinator.presentRangedRelease({
+      authority: "indexed-replay",
+      ownerEntityId: 1,
+      origin: new Vector3(0, 1, 0),
+      presentationId: "battle:1",
+      seed: 77,
+      target: new Vector3(0, 1, 4),
+      targetEntityId: 2,
+      tier: TroopTier.T1,
+    });
+
+    coordinator.update(1 / 30);
+
+    expect(listener).toHaveBeenCalled();
+    expect(listener.mock.calls[0][0]).toMatchObject({
+      authority: "indexed-replay",
+      ownerEntityId: 1,
+      targetEntityId: 2,
+      targetHit: true,
+    });
     coordinator.dispose();
   });
 });

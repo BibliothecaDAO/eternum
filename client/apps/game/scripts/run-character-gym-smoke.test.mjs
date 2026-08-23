@@ -151,4 +151,16 @@ describe("evaluateCharacterGymSmokeResult", () => {
       "browser reported 1 runtime error(s): runtime exploded",
     ]);
   });
+
+  it("includes failed collision scenarios in the promotion gate", () => {
+    const result = evaluateCharacterGymSmokeResult({
+      aimStats: PASSING_SNAPSHOT.stats,
+      animatedStats: PASSING_SNAPSHOT.stats,
+      browserErrors: [],
+      collisionScenarios: [{ reasons: ["no contact"], scenario: "head-on", status: "fail" }],
+      snapshot: PASSING_SNAPSHOT,
+    });
+
+    expect(result.reasons).toContain("head-on collision scenario was fail: no contact");
+  });
 });

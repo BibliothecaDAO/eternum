@@ -14,10 +14,12 @@ The **60 FPS walking profile** fixes the variables that materially affect compar
 - WebGL2 production fallback unless another renderer is explicitly requested;
 - 100 visible foot units across all three upgrade tiers;
 - every unit moving with the same deterministic seed, gait, and route simulation;
+- deterministic presentation collisions enabled for all 100 units, using the production spatial hash and bounded
+  separation profiles;
 - three staggered animation lanes, producing 20 Hz bone poses at a 60 Hz render rate while root movement remains
   render-rate;
 - device pixel ratio capped at 1;
-- no arrows, melee impacts, deaths, Jolt bodies, real shadows, or camera orbit;
+- no arrows, melee impacts, deaths, active Jolt bodies, real shadows, or camera orbit;
 - all 100 map hexes visible.
 
 The benchmark calibrates the browser window's refresh rate, discards 60 warm-up frames, and records the next 240 frames.
@@ -34,6 +36,7 @@ rendering.
 | Draw calls        | At most 800                                                                              |
 | Triangles         | At most 2,000,000                                                                        |
 | Population        | 100 actors, 100 running, 0 ragdolls                                                      |
+| Collision load    | 100 presentation bodies, no dropped pairs; collision CPU remains inside total CPU p95    |
 | Framing           | 100 of 100 hexes visible at 1440 × 900                                                   |
 | Runtime health    | No browser errors or horizontal overflow                                                 |
 
@@ -68,7 +71,8 @@ pnpm --dir client/apps/game benchmark:procedural-characters -- \
 
 For real-time tuning, open `/debug/procedural-character-benchmark`, choose **60 FPS walking profile**, adjust animation
 lanes, pixel ratio, gait, and population controls, then select **Measure**. The HUD reports the calibrated state, sample
-progress, presentation FPS, one-percent-low FPS, CPU/GPU p95, draw calls, triangles, and active LOD settings.
+progress, presentation FPS, one-percent-low FPS, total/animation/collision CPU p95, GPU p95, draw calls, triangles,
+collision pairs, dropped pairs, and active LOD settings.
 
 Run the mixed lifecycle proof separately:
 
@@ -87,14 +91,18 @@ ordinary physics-body, constraint, and resource counts cannot detect.
 ## Current reference result
 
 The pre-optimization walking baseline was 33.7 ms average, 40.7 ms p95, 1,068 draw calls, and 2.19 million triangles
-(about 30 FPS). The optimized uncapped reference run is 11.29 ms average, 12.2 ms p95, 88.57 FPS, a 74.63 FPS
-one-percent low, 11.8 ms CPU p95, 4.14 ms GPU p95, 404 draw calls, and 1.79 million triangles.
+(about 30 FPS). After adding production collision separation, the final fixed WebGL2 reference run is 12.01 ms average,
+17.10 ms presentation p95, 83.26 observed FPS, 55.25 FPS one-percent low, 13.10 ms total CPU p95, 4.06 ms GPU p95, 404
+draw calls, and 1.79 million triangles. The spatial hash carried 100 bodies, considered 411 nearby pairs, resolved 21
+contacts, dropped zero pairs, peaked at 0.083 m visual offset, and cost 0.20 ms CPU p95.
 
-The gains come from four reusable production policies:
+The gains come from five reusable production policies:
 
 1. inactive tier skeletons stay detached from the live scene graph;
 2. bone and socket matrices update once per pose instead of recursively per limb;
 3. large crowds stagger bone poses across three deterministic lanes while preserving render-rate root movement and
    every-frame ragdoll synchronization;
 4. crowd-only micro detail is culled and compatible outfit/equipment meshes are consolidated without changing the hero
-   gym assets, textures, sockets, cosmetics, or ragdoll rig.
+   gym assets, textures, sockets, cosmetics, or ragdoll rig;
+5. walking collisions use bounded presentation proxies and a spatial hash, while Jolt bodies are created only for the
+   small authoritative ragdoll budget.

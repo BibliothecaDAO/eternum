@@ -24,6 +24,8 @@ const createSnapshot = (performance = PASSING_PERFORMANCE) => ({
   stats: {
     actorCount: 100,
     animationUpdateLaneCount: 3,
+    collisionBodyCount: 100,
+    collisionDroppedPairCount: 0,
     drawCalls: 736,
     performance,
     rendererMode: "webgl2-fallback",

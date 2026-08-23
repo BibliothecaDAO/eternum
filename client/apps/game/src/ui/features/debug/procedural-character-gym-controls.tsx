@@ -35,6 +35,11 @@ import {
   type ProceduralUnitConfigPatch,
   type ProceduralUnitKind,
 } from "@/three/characters";
+import {
+  PROCEDURAL_COLLISION_GYM_SCENARIOS,
+  type ProceduralCollisionGymConfig,
+  type ProceduralCollisionGymScenario,
+} from "@/three/characters/gym/procedural-collision-gym-config";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 
 type NumericConfigKey = {
@@ -62,11 +67,13 @@ interface HorseNumericField {
 }
 
 interface CharacterGymControlsProps {
+  collisionConfig: ProceduralCollisionGymConfig;
   config: ProceduralUnitConfig;
   copied: boolean;
   selectedPreset: ProceduralCharacterPresetId | "custom";
   onApplyPreset(presetId: ProceduralCharacterPresetId): void;
   onCopyConfig(): void;
+  onPatchCollisionConfig(patch: Partial<ProceduralCollisionGymConfig>): void;
   onPatchConfig(patch: ProceduralUnitConfigPatch): void;
   onResetCamera(): void;
 }
@@ -247,6 +254,7 @@ export const CharacterGymControls = (props: CharacterGymControlsProps) => (
         Tune archers, melee knights, the procedural horse, or a mounted Paladin. Projectile releases, weapon contacts,
         swappable cosmetics, rider sockets, and the exact Jolt handoff share one production runtime.
       </div>
+      <CollisionGymControls {...props} />
       <CharacterControls {...props} />
       {props.config.kind === "archer" && <ArcherControls {...props} />}
       {isMeleeKind(props.config.kind) && <MeleeControls {...props} />}
@@ -285,6 +293,57 @@ export const CharacterGymControls = (props: CharacterGymControlsProps) => (
       </Link>
     </div>
   </aside>
+);
+
+const CollisionGymControls = ({ collisionConfig, onPatchCollisionConfig }: CharacterGymControlsProps) => (
+  <ControlSection title="Collision bench" icon={<FlaskConical />} defaultOpen>
+    <ToggleControl
+      label="Multi-actor simulation"
+      checked={collisionConfig.enabled}
+      onChange={(enabled) => onPatchCollisionConfig({ enabled })}
+    />
+    {collisionConfig.enabled && (
+      <>
+        <SelectControl
+          label="Scenario"
+          value={collisionConfig.scenario}
+          options={PROCEDURAL_COLLISION_GYM_SCENARIOS.map(({ id, label }) => ({ value: id, label }))}
+          onChange={(scenario) => onPatchCollisionConfig({ scenario: scenario as ProceduralCollisionGymScenario })}
+        />
+        {(collisionConfig.scenario === "crossflow" || collisionConfig.scenario === "crowd") && (
+          <RangeControl
+            label="Actors"
+            value={collisionConfig.actorCount}
+            min={2}
+            max={100}
+            step={1}
+            onChange={(actorCount) => onPatchCollisionConfig({ actorCount })}
+          />
+        )}
+        <RangeControl
+          label="Travel speed"
+          value={collisionConfig.speed}
+          min={0.1}
+          max={4}
+          step={0.05}
+          onChange={(speed) => onPatchCollisionConfig({ speed })}
+        />
+        <NumberControl
+          label="Scenario seed"
+          value={collisionConfig.seed}
+          min={0}
+          max={2_147_483_647}
+          step={1}
+          onChange={(seed) => onPatchCollisionConfig({ seed })}
+        />
+        <ToggleControl
+          label="Collider diagnostics"
+          checked={collisionConfig.showDebug}
+          onChange={(showDebug) => onPatchCollisionConfig({ showDebug })}
+        />
+      </>
+    )}
+  </ControlSection>
 );
 
 const MeleeControls = ({ config, onPatchConfig }: CharacterGymControlsProps) => (

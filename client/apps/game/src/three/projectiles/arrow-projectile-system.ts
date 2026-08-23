@@ -15,6 +15,13 @@ import {
 import { mergeGeometries } from "three/addons/utils/BufferGeometryUtils.js";
 
 import { resolveBallisticLaunchVelocity } from "./arrow-ballistics";
+import {
+  createGroundPlaneHit,
+  selectEarlierProjectileHit,
+  type ProjectileHitQuery,
+  type ProjectileSweepHit,
+} from "./projectile-hit-query";
+import type { ProceduralImpactAuthority } from "../characters/collision/procedural-impact";
 
 export interface ArrowProjectileSystemConfig {
   capacity: number;
@@ -27,13 +34,17 @@ export interface ArrowProjectileSystemConfig {
 }
 
 export interface ArrowVolleySpawnRequest {
+  authority?: ProceduralImpactAuthority;
   color: Color | string | number;
   count: number;
   flightSeconds: number;
   origin: Readonly<Vector3>;
+  ownerEntityId?: number;
+  presentationId?: string;
   seed: number;
   spreadDegrees: number;
   target: Readonly<Vector3>;
+  targetEntityId?: number;
   targetRadius: number;
   targetVelocity?: Readonly<Vector3>;
 }
@@ -50,7 +61,14 @@ export interface ArrowProjectileSystemStats {
 }
 
 export interface ArrowImpactEvent {
+  authority: ProceduralImpactAuthority;
+  impactId: string;
+  material: "flesh" | "ground" | "metal" | "wood";
+  normal: Vector3;
+  ownerEntityId?: number;
+  partId?: string;
   position: Vector3;
+  targetEntityId?: number;
   targetHit: boolean;
   velocity: Vector3;
 }
@@ -78,12 +96,19 @@ export class ArrowProjectileSystem {
   private readonly velocities: Float32Array;
   private readonly targetCenters: Float32Array;
   private readonly targetRadii: Float32Array;
+  private readonly ownerEntityIds: Float64Array;
+  private readonly targetEntityIds: Float64Array;
+  private readonly generations: Uint32Array;
+  private readonly authorities: ProceduralImpactAuthority[];
+  private readonly presentationIds: string[];
   private readonly ages: Float32Array;
   private readonly freeSlots: number[] = [];
   private readonly impactListeners = new Set<(event: ArrowImpactEvent) => void>();
   private readonly scratchOrigin = new Vector3();
   private readonly scratchTarget = new Vector3();
   private readonly scratchImpactTarget = new Vector3();
+  private readonly scratchFrom = new Vector3();
+  private readonly scratchTo = new Vector3();
   private readonly scratchTargetVelocity = new Vector3();
   private readonly scratchGravity = new Vector3();
   private readonly scratchVelocity = new Vector3();
@@ -105,7 +130,10 @@ export class ArrowProjectileSystem {
   private matricesDirty = false;
   private disposed = false;
 
-  public constructor(config: ArrowProjectileSystemConfig) {
+  public constructor(
+    config: ArrowProjectileSystemConfig,
+    private readonly hitQuery?: ProjectileHitQuery,
+  ) {
     this.config = normalizeConfig(config);
     this.visualScale.setScalar(this.config.visualScale);
     this.group.name = "arrow-projectile-system";
@@ -120,6 +148,11 @@ export class ArrowProjectileSystem {
     this.velocities = new Float32Array(this.config.capacity * 3);
     this.targetCenters = new Float32Array(this.config.capacity * 3);
     this.targetRadii = new Float32Array(this.config.capacity);
+    this.ownerEntityIds = new Float64Array(this.config.capacity);
+    this.targetEntityIds = new Float64Array(this.config.capacity);
+    this.generations = new Uint32Array(this.config.capacity);
+    this.authorities = Array.from({ length: this.config.capacity }, () => "debug");
+    this.presentationIds = Array.from({ length: this.config.capacity }, () => "");
     this.ages = new Float32Array(this.config.capacity);
     for (let slot = this.config.capacity - 1; slot >= 0; slot -= 1) this.freeSlots.push(slot);
     this.hideAllInstances();
@@ -146,11 +179,15 @@ export class ArrowProjectileSystem {
       if (
         this.spawnArrow({
           color: request.color,
+          authority: request.authority ?? "debug",
           flightSeconds: request.flightSeconds,
           origin: request.origin,
+          ownerEntityId: request.ownerEntityId,
+          presentationId: request.presentationId,
           target: this.scratchTarget,
           targetCenter: this.scratchImpactTarget,
           targetRadius: request.targetRadius,
+          targetEntityId: request.targetEntityId,
           targetVelocity,
         })
       ) {
@@ -222,7 +259,11 @@ export class ArrowProjectileSystem {
     this.velocities.fill(0);
     this.targetCenters.fill(0);
     this.targetRadii.fill(0);
+    this.ownerEntityIds.fill(Number.NaN);
+    this.targetEntityIds.fill(Number.NaN);
     this.ages.fill(0);
+    this.authorities.fill("debug");
+    this.presentationIds.fill("");
     this.freeSlots.length = 0;
     for (let slot = this.config.capacity - 1; slot >= 0; slot -= 1) this.freeSlots.push(slot);
     this.accumulator = 0;
@@ -248,12 +289,16 @@ export class ArrowProjectileSystem {
   }
 
   private spawnArrow(input: {
+    authority: ProceduralImpactAuthority;
     color: Color | string | number;
     flightSeconds: number;
     origin: Readonly<Vector3>;
+    ownerEntityId?: number;
+    presentationId?: string;
     target: Readonly<Vector3>;
     targetCenter: Readonly<Vector3>;
     targetRadius: number;
+    targetEntityId?: number;
     targetVelocity: Readonly<Vector3>;
   }): boolean {
     const slot = this.acquireSlot();
@@ -263,6 +308,11 @@ export class ArrowProjectileSystem {
     this.previousPositions.set([input.origin.x, input.origin.y, input.origin.z], offset);
     this.targetCenters.set([input.targetCenter.x, input.targetCenter.y, input.targetCenter.z], offset);
     this.targetRadii[slot] = Math.max(0, input.targetRadius);
+    this.ownerEntityIds[slot] = input.ownerEntityId ?? Number.NaN;
+    this.targetEntityIds[slot] = input.targetEntityId ?? Number.NaN;
+    this.generations[slot] = (this.generations[slot] + 1) >>> 0 || 1;
+    this.authorities[slot] = input.authority;
+    this.presentationIds[slot] = input.presentationId ?? "";
     this.scratchOrigin.copy(input.origin);
     this.scratchGravity.set(0, this.config.gravity, 0);
     resolveBallisticLaunchVelocity(
@@ -340,7 +390,7 @@ export class ArrowProjectileSystem {
     this.positions[offset + 2] = nextZ;
     this.velocities[offset + 1] = velocityY + this.config.gravity * deltaSeconds;
 
-    const targetFraction = resolveSegmentSphereFraction(
+    const fallbackTargetFraction = resolveSegmentSphereFraction(
       previousX,
       previousY,
       previousZ,
@@ -352,32 +402,72 @@ export class ArrowProjectileSystem {
       this.targetCenters[offset + 2],
       this.targetRadii[slot] + this.config.sweepRadius,
     );
-    const groundFraction = previousY > 0 && nextY <= 0 ? previousY / Math.max(1e-6, previousY - nextY) : undefined;
-    const hitTarget =
-      targetFraction !== undefined && (groundFraction === undefined || targetFraction <= groundFraction);
-    const hitFraction = hitTarget ? targetFraction : groundFraction;
-    if (hitFraction === undefined) return;
+    this.scratchFrom.set(previousX, previousY, previousZ);
+    this.scratchTo.set(nextX, nextY, nextZ);
+    const intendedTargetEntityId = finiteEntityId(this.targetEntityIds[slot]);
+    const queryOwnsTarget =
+      this.hitQuery !== undefined &&
+      intendedTargetEntityId !== undefined &&
+      (this.hitQuery.hasTarget?.(intendedTargetEntityId) ?? true);
+    const queriedHit = queryOwnsTarget
+      ? this.hitQuery?.sweepSphere({
+          from: this.scratchFrom,
+          intendedTargetEntityId,
+          ownerEntityId: finiteEntityId(this.ownerEntityIds[slot]),
+          radius: this.config.sweepRadius,
+          to: this.scratchTo,
+        })
+      : undefined;
+    const fallbackHit =
+      queryOwnsTarget || queriedHit || fallbackTargetFraction === undefined
+        ? undefined
+        : createFallbackTargetHit(
+            this.scratchFrom,
+            this.scratchTo,
+            fallbackTargetFraction,
+            this.targetCenters,
+            offset,
+            intendedTargetEntityId,
+          );
+    const hit = selectEarlierProjectileHit(
+      queriedHit ?? fallbackHit,
+      createGroundPlaneHit(this.scratchFrom, this.scratchTo),
+    );
+    if (!hit) return;
 
-    this.positions[offset] = previousX + (nextX - previousX) * hitFraction;
-    this.positions[offset + 1] = previousY + (nextY - previousY) * hitFraction;
-    this.positions[offset + 2] = previousZ + (nextZ - previousZ) * hitFraction;
+    this.positions[offset] = hit.point.x;
+    this.positions[offset + 1] = hit.point.y;
+    this.positions[offset + 2] = hit.point.z;
     this.states[slot] = STATE_STUCK;
     this.ages[slot] = 0;
     this.flyingCount -= 1;
     this.stuckCount += 1;
+    const hitTarget = hit.targetEntityId !== undefined || hit.material !== "ground";
     this.hitCount += Number(hitTarget);
-    this.emitImpact(slot, hitTarget);
+    this.emitImpact(slot, hitTarget, hit);
   }
 
-  private emitImpact(slot: number, targetHit: boolean): void {
+  private emitImpact(slot: number, targetHit: boolean, hit: ProjectileSweepHit): void {
     if (this.impactListeners.size === 0) return;
     const offset = slot * 3;
     const event: ArrowImpactEvent = {
+      authority: this.authorities[slot],
+      impactId: this.resolveImpactId(slot),
+      material: hit.material,
+      normal: hit.normal.clone(),
+      ownerEntityId: finiteEntityId(this.ownerEntityIds[slot]),
+      partId: hit.partId,
       position: new Vector3(this.positions[offset], this.positions[offset + 1], this.positions[offset + 2]),
+      targetEntityId: hit.targetEntityId,
       targetHit,
       velocity: new Vector3(this.velocities[offset], this.velocities[offset + 1], this.velocities[offset + 2]),
     };
     this.impactListeners.forEach((listener) => listener(event));
+  }
+
+  private resolveImpactId(slot: number): string {
+    const presentationId = this.presentationIds[slot];
+    return `${presentationId || "arrow"}:${slot}:${this.generations[slot]}`;
   }
 
   private releaseSlot(slot: number): void {
@@ -388,6 +478,10 @@ export class ArrowProjectileSystem {
     this.activeCount -= 1;
     this.states[slot] = STATE_FREE;
     this.ages[slot] = 0;
+    this.ownerEntityIds[slot] = Number.NaN;
+    this.targetEntityIds[slot] = Number.NaN;
+    this.authorities[slot] = "debug";
+    this.presentationIds[slot] = "";
     this.freeSlots.push(slot);
     this.scratchMatrix.compose(this.scratchPosition.set(0, -10_000, 0), this.scratchQuaternion.identity(), ZERO_SCALE);
     this.mesh.setMatrixAt(slot, this.scratchMatrix);
@@ -482,6 +576,27 @@ function resolveSegmentSphereFraction(
   if (discriminant < 0) return undefined;
   const fraction = (-b - Math.sqrt(discriminant)) / (2 * a);
   return fraction >= 0 && fraction <= 1 ? fraction : undefined;
+}
+
+function createFallbackTargetHit(
+  from: Readonly<Vector3>,
+  to: Readonly<Vector3>,
+  fraction: number,
+  targetCenters: Float32Array,
+  offset: number,
+  targetEntityId: number | undefined,
+): ProjectileSweepHit {
+  const point = new Vector3().copy(from).lerp(to, fraction);
+  const normal = point
+    .clone()
+    .sub(new Vector3(targetCenters[offset], targetCenters[offset + 1], targetCenters[offset + 2]));
+  if (normal.lengthSq() <= 1e-8) normal.copy(to).sub(from).normalize().multiplyScalar(-1);
+  else normal.normalize();
+  return { fraction, material: "flesh", normal, point, targetEntityId };
+}
+
+function finiteEntityId(value: number): number | undefined {
+  return Number.isFinite(value) ? value : undefined;
 }
 
 function nextRandomState(state: number): number {

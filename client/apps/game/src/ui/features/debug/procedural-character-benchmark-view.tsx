@@ -21,6 +21,11 @@ const INITIAL_STATS: ProceduralCharacterBenchmarkStats = {
   actorCount: 0,
   animationUpdateLaneCount: 1,
   averageFrameMs: 0,
+  collisionBodyCount: 0,
+  collisionCandidatePairCount: 0,
+  collisionDroppedPairCount: 0,
+  collisionMaximumOffset: 0,
+  collisionResolvedPairCount: 0,
   drawCalls: 0,
   fps: 0,
   geometryCount: 0,
@@ -146,6 +151,7 @@ export const ProceduralCharacterBenchmarkView = () => {
     <section
       className="flex min-h-screen flex-col overflow-hidden bg-[#070b12] text-slate-100 lg:h-screen"
       data-actor-count={stats.actorCount}
+      data-collision-body-count={stats.collisionBodyCount}
       data-benchmark-ready={ready && !stats.loadingActors ? "true" : "false"}
       data-performance-status={stats.performance.status}
       data-debug-route="procedural-character-benchmark"
@@ -334,6 +340,11 @@ const BenchmarkControls = ({
         >
           <Gauge className="h-3.5 w-3.5" /> 60 FPS walking profile
         </button>
+        <ToggleControl
+          label="Presentation collisions"
+          checked={config.collisions}
+          onChange={(collisions) => onPatchConfig({ collisions })}
+        />
         <ToggleControl
           label="Archer volleys"
           checked={config.archerVolleys}
@@ -543,6 +554,9 @@ const BenchmarkViewport = ({
           {stats.meleeContactCount > 0
             ? ` · ${stats.meleeActiveImpactCount} melee FX · ${stats.meleeContactCount} contacts`
             : ""}
+          {config.collisions
+            ? ` · ${stats.collisionResolvedPairCount} body contacts · ${stats.collisionMaximumOffset}m max offset`
+            : " · collisions off"}
           {` · ${stats.performance.sampleCount}/${stats.performance.sampleTarget} perf frames · ${stats.performance.status}`}
         </p>
       </div>
@@ -563,6 +577,7 @@ const BenchmarkMetrics = ({ stats }: { stats: ProceduralCharacterBenchmarkStats 
     <Metric label="P95" value={stats.p95FrameMs ? `${stats.p95FrameMs}ms` : "--"} />
     <Metric label="1% low" value={stats.performance.onePercentLowFps || "--"} />
     <Metric label="CPU P95" value={formatMilliseconds(stats.performance.totalCpuMs.p95)} />
+    <Metric label="Coll P95" value={formatMilliseconds(stats.performance.collisionCpuMs.p95)} />
     <Metric label="GPU P95" value={formatMilliseconds(stats.performance.gpuFrameMs?.p95)} />
     <Metric label="60Hz work" value={stats.performance.headroomPass ? "PASS" : "--"} />
     <Metric label="Calls" value={formatInteger(stats.drawCalls)} />
@@ -578,6 +593,9 @@ const BenchmarkMetrics = ({ stats }: { stats: ProceduralCharacterBenchmarkStats 
     <Metric label="Hits" value={stats.projectileHitCount} />
     <Metric label="Melee" value={stats.meleeActiveImpactCount} />
     <Metric label="Contacts" value={stats.meleeContactCount} />
+    <Metric label="Coll bodies" value={stats.collisionBodyCount} />
+    <Metric label="Body pairs" value={stats.collisionResolvedPairCount} />
+    <Metric label="Dropped" value={stats.collisionDroppedPairCount} />
     <Metric label="Mount stretch" value={`${stats.maximumAnimatedMountBoneStretchRatio}×`} />
     <Metric label="Ragdoll stretch" value={`${stats.maximumRagdollMountBoneStretchRatio}×`} />
     <Metric label="GPU" value={`${stats.geometryCount}/${stats.textureCount}`} />

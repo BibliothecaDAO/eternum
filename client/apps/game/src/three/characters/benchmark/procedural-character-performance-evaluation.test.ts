@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import { ProceduralCharacterPerformanceEvaluator } from "./procedural-character-performance-evaluation";
 
-const SAMPLE_60_FPS = { animationCpuMs: 4, frameMs: 16.5, renderCpuMs: 2, totalCpuMs: 7 };
+const SAMPLE_60_FPS = { animationCpuMs: 4, collisionCpuMs: 0.4, frameMs: 16.5, renderCpuMs: 2, totalCpuMs: 7 };
 
 describe("ProceduralCharacterPerformanceEvaluator", () => {
   it("warms up, captures a fixed sample, and passes a 60 FPS workload", () => {
@@ -43,7 +43,7 @@ describe("ProceduralCharacterPerformanceEvaluator", () => {
     const evaluator = new ProceduralCharacterPerformanceEvaluator(0, 4);
     evaluator.setDisplayRefreshFps(60);
     for (let index = 0; index < 4; index += 1) {
-      evaluator.recordFrame({ animationCpuMs: 18, frameMs: 25, renderCpuMs: 3, totalCpuMs: 22 });
+      evaluator.recordFrame({ animationCpuMs: 18, collisionCpuMs: 3, frameMs: 25, renderCpuMs: 3, totalCpuMs: 22 });
     }
 
     const result = evaluator.getSnapshot();

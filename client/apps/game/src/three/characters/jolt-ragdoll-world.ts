@@ -263,12 +263,35 @@ export class JoltRagdollInstance<PartId extends string> {
   }
 
   public applyImpulse(partId: PartId, impulse: readonly [number, number, number]): void {
+    this.applyImpulseAtPoint(partId, impulse);
+  }
+
+  public applyImpulseAtPoint(
+    partId: PartId,
+    impulse: readonly [number, number, number],
+    worldPoint?: readonly [number, number, number],
+  ): void {
     const record = this.bodies.get(partId);
     if (!record) return;
     const vector = new this.Jolt.Vec3(...impulse);
-    this.bodyInterface.AddImpulse(record.body.GetID(), vector);
+    if (worldPoint) {
+      const point = new this.Jolt.RVec3(...worldPoint);
+      this.bodyInterface.AddImpulse(record.body.GetID(), vector, point);
+      this.Jolt.destroy(point);
+    } else {
+      this.bodyInterface.AddImpulse(record.body.GetID(), vector);
+    }
     this.Jolt.destroy(vector);
     this.bodyInterface.ActivateBody(record.body.GetID());
+  }
+
+  public setLinearVelocity(velocity: readonly [number, number, number]): void {
+    const vector = new this.Jolt.Vec3(...velocity);
+    this.bodies.forEach(({ body }) => {
+      this.bodyInterface.SetLinearVelocity(body.GetID(), vector);
+      this.bodyInterface.ActivateBody(body.GetID());
+    });
+    this.Jolt.destroy(vector);
   }
 
   public writePartTransforms(

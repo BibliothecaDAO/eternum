@@ -6,6 +6,7 @@ export interface ProceduralCharacterBenchmarkConfig {
   meleeAttacks: boolean;
   autoRotate: boolean;
   characterScale: number;
+  collisions: boolean;
   corpseSeconds: number;
   deathsPerSecond: number;
   maxActiveRagdolls: number;
@@ -27,6 +28,7 @@ const DEFAULT_CONFIG: ProceduralCharacterBenchmarkConfig = {
   meleeAttacks: true,
   autoRotate: false,
   characterScale: 0.46,
+  collisions: true,
   corpseSeconds: 4,
   deathsPerSecond: 2,
   maxActiveRagdolls: 8,
@@ -73,6 +75,7 @@ export function createProceduralCharacterWalkingPerformanceConfig(): ProceduralC
     animationUpdateLanes: 3,
     archerVolleys: false,
     autoRotate: false,
+    collisions: true,
     deathsPerSecond: 0,
     maxActiveRagdolls: 0,
     meleeAttacks: false,

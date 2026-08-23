@@ -44,6 +44,7 @@ describe("procedural character benchmark simulation", () => {
       animationUpdateLanes: 3,
       archerVolleys: false,
       autoRotate: false,
+      collisions: true,
       deathsPerSecond: 0,
       maxActiveRagdolls: 0,
       meleeAttacks: false,

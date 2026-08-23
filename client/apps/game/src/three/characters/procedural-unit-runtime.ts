@@ -1,6 +1,7 @@
 import { Group, Quaternion, Vector3 } from "three";
 
 import { ProceduralArcherController } from "./archer/procedural-archer-controller";
+import type { ProceduralUnitImpact, ProceduralUnitReactionInput } from "./collision/procedural-impact";
 import type { ProceduralArcherUpperBodyPose } from "./archer/procedural-archer-pose";
 import type { ProceduralArcherShotPhase } from "./archer/procedural-archer-shot-cycle";
 import { resolveProceduralCrossbowCarryPose } from "./crossbow/procedural-crossbow-pose";
@@ -74,6 +75,8 @@ export interface ProceduralUnitActor {
   readonly mode: ProceduralCharacterMode;
   readonly object: Group;
 
+  applyReaction(reaction: ProceduralUnitReactionInput): void;
+  applyImpact(impact: ProceduralUnitImpact): Promise<void>;
   applyImpulse(partId?: CharacterPartId): Promise<void>;
   attack(targetWorld: Readonly<Vector3>): boolean;
   cancelMeleeAttack(): void;
@@ -136,7 +139,6 @@ export class ProceduralUnitRuntime {
   public createActor(config: ProceduralUnitConfig): ProceduralUnitActor {
     if (this.disposed) throw new Error("Cannot create a unit from a disposed procedural unit runtime");
     const normalized = applyProceduralUnitConfigPatch(config, {});
-    this.physicsWorld.updateConfig(resolveJoltWorldConfig(normalized.humanoid));
     const release = (actor: ProceduralUnitActor) => {
       this.animationScheduler.delete(actor);
       this.actors.delete(actor);
@@ -168,8 +170,12 @@ export class ProceduralUnitRuntime {
   public updateActorConfig(actor: ProceduralUnitActor, config: ProceduralUnitConfig): void {
     if (this.disposed || !this.actors.has(actor)) return;
     const normalized = applyProceduralUnitConfigPatch(config, {});
-    this.physicsWorld.updateConfig(resolveJoltWorldConfig(normalized.humanoid));
     actor.updateConfig(normalized);
+  }
+
+  public updatePhysicsConfig(config: ProceduralCharacterConfig): void {
+    if (this.disposed) return;
+    this.physicsWorld.updateConfig(resolveJoltWorldConfig(config));
   }
 
   public stepOnce(): void {
@@ -300,6 +306,14 @@ class HumanoidUnitActor implements ProceduralUnitActor {
   public startRagdoll(): Promise<void> {
     this.clearActionsForRagdoll();
     return this.actor.startRagdoll();
+  }
+
+  public applyReaction(reaction: ProceduralUnitReactionInput): void {
+    this.actor.applyReaction(reaction);
+  }
+
+  public applyImpact(impact: ProceduralUnitImpact): Promise<void> {
+    return this.actor.applyImpact(impact);
   }
 
   public applyImpulse(partId?: CharacterPartId): Promise<void> {
@@ -540,6 +554,14 @@ class HorseUnitActor implements ProceduralUnitActor {
     return this.horse.startRagdoll();
   }
 
+  public applyReaction(reaction: ProceduralUnitReactionInput): void {
+    this.horse.applyReaction(reaction);
+  }
+
+  public applyImpact(impact: ProceduralUnitImpact): Promise<void> {
+    return this.horse.applyImpact({ ...impact, target: "mount" });
+  }
+
   public applyImpulse(): Promise<void> {
     return this.horse.applyImpulse();
   }
@@ -689,6 +711,20 @@ class MountedUnitActor implements ProceduralUnitActor {
     this.meleePose = undefined;
     this.rider.setUpperBodyAction(undefined);
     await Promise.all([this.horse.startRagdoll(), this.rider.startRagdoll()]);
+  }
+
+  public applyReaction(reaction: ProceduralUnitReactionInput): void {
+    this.horse.applyReaction(reaction);
+    this.rider.applyReaction(reaction);
+  }
+
+  public async applyImpact(impact: ProceduralUnitImpact): Promise<void> {
+    const passiveImpact = { ...impact, strength: 0 };
+    if (impact.target === "mount") {
+      await Promise.all([this.horse.applyImpact(impact), this.rider.applyImpact(passiveImpact)]);
+      return;
+    }
+    await Promise.all([this.horse.applyImpact(passiveImpact), this.rider.applyImpact(impact)]);
   }
 
   public async applyImpulse(partId?: CharacterPartId): Promise<void> {

@@ -4,6 +4,7 @@ import type { ProceduralArcherUpperBodyPose } from "./archer/procedural-archer-p
 import type { ProceduralCrossbowUpperBodyPose } from "./crossbow/procedural-crossbow-pose";
 import type { ProceduralMeleeUpperBodyPose } from "./melee/procedural-melee-pose";
 import type { ProceduralCharacterUpperBodyAction } from "./procedural-character-action";
+import type { ProceduralContactReactionPose } from "./collision/procedural-contact-reaction";
 import type { ProceduralCharacterConfig } from "./procedural-character-config";
 import {
   resolveProceduralCharacterGaitProfile,
@@ -76,18 +77,20 @@ export function resolveProceduralCharacterPose(
   resolvePlantTarget?: ProceduralPlantTargetResolver<CharacterFootId>,
   phaseOverride?: number,
   upperBodyAction?: ProceduralCharacterUpperBodyAction,
+  reaction?: ProceduralContactReactionPose,
 ): ProceduralCharacterPose {
   if (config.animationMode === "mounted")
-    return resolveMountedCharacterPose(rig, config, elapsedSeconds, phaseOverride, upperBodyAction);
+    return resolveMountedCharacterPose(rig, config, elapsedSeconds, phaseOverride, upperBodyAction, reaction);
 
   const gait = resolveProceduralCharacterGaitSignals(config, elapsedSeconds, phaseOverride);
   const basePelvis = resolveGroundedPelvis(rig, config, gait, elapsedSeconds);
   const basePelvisRotation = resolvePelvisRotation(config, gait);
-  const { pelvis, pelvisRotation } = resolveActionPelvis(rig, basePelvis, basePelvisRotation, upperBodyAction);
+  const actionPelvis = resolveActionPelvis(rig, basePelvis, basePelvisRotation, upperBodyAction);
+  const { pelvis, pelvisRotation } = applyCharacterReactionPelvis(rig, actionPelvis, reaction);
   const leftLeg = resolveGroundedLeg(rig, config, gait, pelvis, "left", resolvePlantTarget, basePelvis);
   const rightLeg = resolveGroundedLeg(rig, config, gait, pelvis, "right", resolvePlantTarget, basePelvis);
   const baseTorso = resolveGroundedTorso(rig, config, gait, pelvis, pelvisRotation, elapsedSeconds);
-  const torso = resolveActionTorso(rig, baseTorso, upperBodyAction);
+  const torso = resolveActionTorso(rig, applyCharacterReactionTorso(rig, baseTorso, reaction), upperBodyAction);
   const baseLeftArm = resolveGroundedArm(rig, config, gait, torso.leftShoulder, "left", elapsedSeconds);
   const baseRightArm = resolveGroundedArm(rig, config, gait, torso.rightShoulder, "right", elapsedSeconds);
   const { leftArm, rightArm } = resolveActionArms(rig, torso, baseLeftArm, baseRightArm, upperBodyAction);
@@ -107,6 +110,58 @@ export function resolveProceduralCharacterPose(
     chest: torso.chest,
     chestRotation: torso.chestRotation,
   });
+}
+
+function applyCharacterReactionPelvis(
+  rig: ResolvedCharacterRig,
+  pelvis: { pelvis: Vector3; pelvisRotation: Quaternion },
+  reaction?: ProceduralContactReactionPose,
+): { pelvis: Vector3; pelvisRotation: Quaternion } {
+  if (!reaction || reaction.weight <= 1e-4) return pelvis;
+  const scale = rig.morphology.scale * reaction.weight;
+  const offset = new Vector3(
+    reaction.localDirectionX * 0.055 * scale,
+    -Math.abs(reaction.localDirectionX) * 0.012 * scale,
+    reaction.localDirectionZ * 0.03 * scale,
+  );
+  const rotation = new Quaternion().setFromEuler(
+    new Euler(
+      -reaction.localDirectionZ * 0.055 * reaction.weight,
+      -reaction.localDirectionX * 0.04 * reaction.weight,
+      reaction.localDirectionX * 0.085 * reaction.weight,
+    ),
+  );
+  return {
+    pelvis: pelvis.pelvis.clone().add(offset),
+    pelvisRotation: pelvis.pelvisRotation.clone().multiply(rotation).normalize(),
+  };
+}
+
+function applyCharacterReactionTorso(
+  rig: ResolvedCharacterRig,
+  torso: CharacterTorsoJoints,
+  reaction?: ProceduralContactReactionPose,
+): CharacterTorsoJoints {
+  if (!reaction || reaction.weight <= 1e-4) return torso;
+  const scale = rig.morphology.scale * reaction.weight;
+  const offset = new Vector3(reaction.localDirectionX * 0.035 * scale, 0, reaction.localDirectionZ * 0.02 * scale);
+  const rotation = new Quaternion().setFromEuler(
+    new Euler(
+      -reaction.localDirectionZ * 0.09 * reaction.weight,
+      -reaction.localDirectionX * 0.06 * reaction.weight,
+      reaction.localDirectionX * 0.11 * reaction.weight,
+    ),
+  );
+  return {
+    ...torso,
+    chest: torso.chest.clone().add(offset),
+    chestRotation: torso.chestRotation.clone().multiply(rotation).normalize(),
+    head: torso.head.clone().add(offset),
+    headRotation: torso.headRotation.clone().multiply(rotation).normalize(),
+    leftShoulder: torso.leftShoulder.clone().add(offset),
+    neckAnchor: torso.neckAnchor.clone().add(offset),
+    rightShoulder: torso.rightShoulder.clone().add(offset),
+  };
 }
 
 function resolveActionTorso(
@@ -724,15 +779,21 @@ function resolveMountedCharacterPose(
   elapsedSeconds: number,
   phaseOverride?: number,
   upperBodyAction?: ProceduralCharacterUpperBodyAction,
+  reaction?: ProceduralContactReactionPose,
 ): ProceduralCharacterPose {
   const morphology = rig.morphology;
   const gait = resolveProceduralCharacterGaitSignals(config, elapsedSeconds, phaseOverride);
   const breathing = Math.sin(elapsedSeconds * 2.2 + resolveSeededMotionValue(config.seed, 101)) * config.breathing;
   const rideWave = Math.sin(gait.phaseRadians * 2);
   const rideRoll = Math.sin(gait.phaseRadians - config.secondaryMotion * 0.14) * config.hipSway * 0.42;
-  const pelvis = new Vector3(0, 1.12 + breathing + rideWave * config.bob * 0.22, -0.04);
-  const pelvisRotation = new Quaternion().setFromEuler(
+  const mountedPelvis = new Vector3(0, 1.12 + breathing + rideWave * config.bob * 0.22, -0.04);
+  const mountedPelvisRotation = new Quaternion().setFromEuler(
     new Euler(-0.08 + config.lean * 0.35 + rideWave * config.bob * 0.24, 0, rideRoll),
+  );
+  const { pelvis, pelvisRotation } = applyCharacterReactionPelvis(
+    rig,
+    { pelvis: mountedPelvis, pelvisRotation: mountedPelvisRotation },
+    reaction,
   );
   const pelvisHalfHeight = rig.parts.pelvis.halfExtents?.[1] ?? 0.16;
   const chestHalfHeight = rig.parts.chest.halfExtents?.[1] ?? morphology.torsoLength * 0.46;
@@ -772,7 +833,7 @@ function resolveMountedCharacterPose(
     rightShoulder: chest.clone().add(new Vector3(-shoulderOffset, shoulderHeight, 0).applyQuaternion(chestRotation)),
     spineAnchor,
   };
-  const torso = resolveActionTorso(rig, baseTorso, upperBodyAction);
+  const torso = resolveActionTorso(rig, applyCharacterReactionTorso(rig, baseTorso, reaction), upperBodyAction);
   const baseLeftArm = resolveMountedArm(
     torso.leftShoulder,
     morphology.upperArmLength,

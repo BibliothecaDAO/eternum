@@ -21,6 +21,7 @@ import {
 } from "@/services/blitz/blitz-hyperstructure-creation";
 import { getBiomeVariant, HEX_SIZE, WORLD_CHUNK_CONFIG } from "@/three/constants";
 import type { ProceduralMeleeContactEvent, ProceduralRangedReleaseEvent } from "@/three/characters";
+import type { ProceduralImpactAuthority } from "@/three/characters/collision/procedural-impact";
 import { ArmyManager } from "@/three/managers/army-manager";
 import { CombatPresentationCoordinator } from "@/three/combat/combat-presentation-coordinator";
 import { BattleDirectionManager } from "@/three/managers/battle-direction-manager";
@@ -40,7 +41,7 @@ import { SceneManager } from "@/three/scene-manager";
 import { CameraView } from "@/three/scenes/camera-view";
 import { CAMERA_CONFIG } from "@/three/constants";
 import { HexagonScene, type SceneSetupContext } from "@/three/scenes/hexagon-scene";
-import type { RenderVisualProfile } from "@/three/render-profile";
+import { renderProfile, type RenderVisualProfile } from "@/three/render-profile";
 import { WorldmapPerfSimulation } from "@/three/scenes/worldmap-perf-simulation";
 import { playResourceSound } from "@/three/sound/utils";
 import { LeftView } from "@/types";
@@ -955,6 +956,7 @@ export default class WorldmapScene extends WarpTravel {
   private arrivalGhostManager!: ArrivalGhostManager;
   private resourceFXManager!: ResourceFXManager;
   private combatPresentation?: CombatPresentationCoordinator;
+  private unsubscribeProceduralProjectileImpact?: () => void;
   private unsubscribeProceduralMeleeContact?: () => void;
   private unsubscribeProceduralRangedRelease?: () => void;
   private armyIndex: number = 0;
@@ -1113,7 +1115,13 @@ export default class WorldmapScene extends WarpTravel {
       this.chunkSize,
       this.chunkWorkQueue,
     );
-    this.combatPresentation = new CombatPresentationCoordinator(this.scene);
+    this.armyManager.setProceduralCollisionMode(renderProfile.mode);
+    this.combatPresentation = new CombatPresentationCoordinator(this.scene, {
+      projectileHitQuery: {
+        hasTarget: (entityId) => this.armyManager.hasProceduralProjectileTarget(entityId),
+        sweepSphere: (request) => this.armyManager.sweepProceduralProjectile(request),
+      },
+    });
     this.bindProceduralCombatPresentation();
     this.arrivalGhostManager = new ArrivalGhostManager(this.scene, {
       chunkStride: this.chunkSize,
@@ -3143,7 +3151,12 @@ export default class WorldmapScene extends WarpTravel {
     }
     const origin = getWorldPositionForHex({ col: attackerHex.x, row: attackerHex.y });
     const target = getWorldPositionForHex({ col: targetHex.x, row: targetHex.y });
-    const proceduralAttackStarted = this.armyManager.playProceduralAttack(spec.attackerId, target);
+    const proceduralAttackStarted = this.armyManager.playProceduralAttack(
+      spec.attackerId,
+      target,
+      spec.targetId,
+      "provisional",
+    );
     this.combatPresentation?.startProvisional(
       {
         attackerId: spec.attackerId,
@@ -3177,32 +3190,52 @@ export default class WorldmapScene extends WarpTravel {
     };
     const replayed = this.combatPresentation?.replayIndexed(presentation, { deferEffects: true });
     if (!replayed) return;
-    if (!this.armyManager.playProceduralAttack(attackerId, target)) {
+    if (!this.armyManager.playProceduralAttack(attackerId, target, defenderId, "indexed-replay")) {
       this.combatPresentation?.presentImmediate(presentation);
     }
   }
 
   private bindProceduralCombatPresentation(): void {
-    this.unsubscribeProceduralRangedRelease = this.armyManager.onProceduralRangedRelease((entityId, event) => {
-      this.presentProceduralRangedRelease(entityId, event);
-    });
-    this.unsubscribeProceduralMeleeContact = this.armyManager.onProceduralMeleeContact((entityId, event) => {
-      this.presentProceduralMeleeContact(entityId, event);
+    this.unsubscribeProceduralRangedRelease = this.armyManager.onProceduralRangedRelease(
+      (entityId, event, targetEntityId, authority) => {
+        this.presentProceduralRangedRelease(entityId, event, targetEntityId, authority);
+      },
+    );
+    this.unsubscribeProceduralMeleeContact = this.armyManager.onProceduralMeleeContact(
+      (entityId, event, targetEntityId) => {
+        this.presentProceduralMeleeContact(entityId, event, targetEntityId);
+      },
+    );
+    this.unsubscribeProceduralProjectileImpact = this.combatPresentation?.onProjectileImpact((event) => {
+      this.armyManager.presentProceduralProjectileImpact(event);
     });
   }
 
-  private presentProceduralRangedRelease(entityId: number, event: ProceduralRangedReleaseEvent): void {
+  private presentProceduralRangedRelease(
+    entityId: number,
+    event: ProceduralRangedReleaseEvent,
+    targetEntityId?: number,
+    authority: ProceduralImpactAuthority = "provisional",
+  ): void {
     const army = this.armyManager.getArmy(entityId);
-    if (!army) return;
+    if (!army || targetEntityId === undefined) return;
     this.combatPresentation?.presentRangedRelease({
+      authority,
+      ownerEntityId: entityId,
       origin: event.origin,
+      presentationId: `procedural:${entityId}:${event.shotGeneration}`,
       seed: event.seed,
       target: event.target,
+      targetEntityId,
       tier: army.tier,
     });
   }
 
-  private presentProceduralMeleeContact(entityId: number, event: ProceduralMeleeContactEvent): void {
+  private presentProceduralMeleeContact(
+    entityId: number,
+    event: ProceduralMeleeContactEvent,
+    _targetEntityId?: number,
+  ): void {
     const army = this.armyManager.getArmy(entityId);
     if (!army) return;
     this.combatPresentation?.presentMeleeContact({
@@ -9128,6 +9161,8 @@ export default class WorldmapScene extends WarpTravel {
     this.unsubscribeProceduralMeleeContact = undefined;
     this.unsubscribeProceduralRangedRelease?.();
     this.unsubscribeProceduralRangedRelease = undefined;
+    this.unsubscribeProceduralProjectileImpact?.();
+    this.unsubscribeProceduralProjectileImpact = undefined;
     this.combatPresentation?.dispose();
     this.combatPresentation = undefined;
     this.syncUrlChangedListenerLifecycle("destroy");

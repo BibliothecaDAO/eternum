@@ -1,6 +1,7 @@
 import { Euler, Quaternion, Vector3 } from "three";
 
 import type { ProceduralHorseConfig } from "./procedural-horse-config";
+import type { ProceduralContactReactionPose } from "../collision/procedural-contact-reaction";
 import { resolveOrganicLimbTrajectory, resolveSeededMotionValue } from "../procedural-motion-curves";
 import type { ProceduralPlantTargetResolver } from "../procedural-plant-controller";
 import {
@@ -67,6 +68,7 @@ export function resolveProceduralHorsePose(
   elapsedSeconds: number,
   sampleGround: HorseGroundSampler = (x, z) => sampleProceduralHorseTerrain(config, x, z),
   resolvePlantTarget?: ProceduralPlantTargetResolver<HorseHoofId>,
+  reaction?: ProceduralContactReactionPose,
 ): ProceduralHorsePose {
   const gaitWeight = config.gait === "idle" ? 0 : 1;
   const gaitAngle = phase * Math.PI * 2;
@@ -81,21 +83,23 @@ export function resolveProceduralHorsePose(
         (0.006 + config.motionVariation * 0.012)
       : 0;
   const rootOffset = new Vector3(
-    bodyMotion.lateral,
+    bodyMotion.lateral + (reaction?.localDirectionX ?? 0) * (reaction?.weight ?? 0) * 0.065,
     bodyMotion.vertical * gaitWeight + idleBreath,
-    bodyMotion.longitudinal,
+    bodyMotion.longitudinal + (reaction?.localDirectionZ ?? 0) * (reaction?.weight ?? 0) * 0.035,
   );
   const bodyRotation = new Quaternion().setFromEuler(
     new Euler(
       config.bodyPitch +
         bodyMotion.pitch * gaitWeight +
         terrainAttitude.pitch * config.terrainResponse +
-        idleBreath * 0.35,
-      config.turnRate * 0.08,
+        idleBreath * 0.35 -
+        (reaction?.localDirectionZ ?? 0) * (reaction?.weight ?? 0) * 0.08,
+      config.turnRate * 0.08 - (reaction?.localDirectionX ?? 0) * (reaction?.weight ?? 0) * 0.035,
       config.bodyRoll +
         bodyMotion.roll * gaitWeight +
         terrainAttitude.roll * config.terrainResponse -
-        config.turnRate * Math.min(config.speed, 5) * 0.018,
+        config.turnRate * Math.min(config.speed, 5) * 0.018 +
+        (reaction?.localDirectionX ?? 0) * (reaction?.weight ?? 0) * 0.1,
     ),
   );
   const bodyCenter = new Vector3(...rig.bodyCenter);

@@ -143,6 +143,33 @@ fantasy art direction. Those remain visual judgements, but the judgement must be
 
 ## Current evaluation
 
+### Collision response and projectile handoff
+
+Evaluation date: 2026-08-23. Walking characters now use a deterministic, fixed-step XZ presentation solver with a
+spatial hash. Foot units use one circular proxy; horses and mounted Paladins use two proxies along the body axis. Mass,
+restitution, tangent damping, return half-life, maximum visual offset, neighbor count, and resolved-pair count are
+bounded profiles rather than Jolt bodies. ArmyModel and RECS continue to own authoritative position and death state; the
+solver may offset the rendered root by at most 0.18–0.20 character-scale metres and springs that offset back to the
+authoritative anchor.
+
+A contact edge adds a short pelvis/chest or horse-barrel response. It never starts a ragdoll and never changes gameplay
+state. Jolt remains dormant until an authoritative defeat. Arrows remain pooled and body-free while flying, use a
+target-aware swept query against the intended entity, and record the hit point, part, velocity, target, and presentation
+authority. If authoritative removal arrives before an expected arrow, the visual target remains queryable for a bounded
+2.4 seconds; the exact arrow impact then initializes Jolt with inherited presentation velocity and a point impulse.
+Unrelated deaths take the immediate fallback impulse path.
+
+The gym collision bench covers equal head-on, glancing, foot-vs-mounted, four-direction crossflow, 100-body crowd,
+nonlethal arrow, and arrow-defeat scenarios. Each seeded scenario evaluates actor population, finite/bounded offset,
+pair-budget pressure, contact edges, impacts, and ragdoll state. The promotion smoke runs all seven scenarios in one
+browser session and rejects stale scenario results by matching the published scenario generation.
+
+The final WebGL2 browser pass reported no runtime errors and passed every scenario. Head-on peaked at 0.1404 m with four
+contact edges; foot-vs-mounted peaked at 0.1560 m with two contact edges; crossflow produced 34 contact edges without a
+dropped pair. The nonlethal arrow produced one impact and zero ragdolls. The defeat arrow produced one impact and one
+Jolt ragdoll, with visual inspection confirming travel in the incoming arrow direction. Collider diagnostics render
+every proxy, including both horse body circles, so asymmetric mounted contacts can be inspected directly.
+
 ### Mounted ragdoll skeleton stability
 
 Evaluation date: 2026-08-23. The mixed benchmark exposed map-wide horse polygons after Jolt handoff. A render-skeleton

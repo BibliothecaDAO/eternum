@@ -8,6 +8,7 @@ const characterMocks = vi.hoisted(() => ({
   createActor: vi.fn(),
   createRuntime: vi.fn(),
   disposeRuntime: vi.fn(),
+  updatePhysicsConfig: vi.fn(),
   updateRuntime: vi.fn(),
   updateRuntimeActorConfig: vi.fn(),
 }));
@@ -40,6 +41,7 @@ describe("ProceduralArmyCharacterLayer", () => {
     characterMocks.createActor.mockReset();
     characterMocks.createRuntime.mockReset();
     characterMocks.disposeRuntime.mockReset();
+    characterMocks.updatePhysicsConfig.mockReset();
     characterMocks.updateRuntime.mockReset();
     characterMocks.updateRuntimeActorConfig.mockReset();
   });
@@ -48,12 +50,7 @@ describe("ProceduralArmyCharacterLayer", () => {
     const scene = new Scene();
     const actor = createActorMock("paladin");
     characterMocks.createActor.mockReturnValue(actor);
-    characterMocks.createRuntime.mockResolvedValue({
-      createActor: characterMocks.createActor,
-      dispose: characterMocks.disposeRuntime,
-      update: characterMocks.updateRuntime,
-      updateActorConfig: characterMocks.updateRuntimeActorConfig,
-    });
+    characterMocks.createRuntime.mockResolvedValue(createRuntimeMock());
     const layer = new ProceduralArmyCharacterLayer(scene);
     const onRangedRelease = vi.fn();
     const onMeleeContact = vi.fn();
@@ -119,8 +116,8 @@ describe("ProceduralArmyCharacterLayer", () => {
     };
     actor.emitRangedRelease(rangedEvent);
     actor.emitMeleeContact(meleeEvent);
-    expect(onRangedRelease).toHaveBeenCalledWith(42, rangedEvent);
-    expect(onMeleeContact).toHaveBeenCalledWith(42, meleeEvent);
+    expect(onRangedRelease).toHaveBeenCalledWith(42, rangedEvent, undefined, "provisional");
+    expect(onMeleeContact).toHaveBeenCalledWith(42, meleeEvent, undefined, "provisional");
 
     await layer.startRagdoll(42);
     await layer.applyImpulse(42);
@@ -143,12 +140,7 @@ describe("ProceduralArmyCharacterLayer", () => {
   it("keeps hidden interaction proxies selectable after the legacy mesh is replaced", async () => {
     const actor = createActorMock("knight");
     characterMocks.createActor.mockReturnValue(actor);
-    characterMocks.createRuntime.mockResolvedValue({
-      createActor: characterMocks.createActor,
-      dispose: characterMocks.disposeRuntime,
-      update: characterMocks.updateRuntime,
-      updateActorConfig: characterMocks.updateRuntimeActorConfig,
-    });
+    characterMocks.createRuntime.mockResolvedValue(createRuntimeMock());
     const layer = new ProceduralArmyCharacterLayer(new Scene());
 
     layer.sync(
@@ -174,15 +166,49 @@ describe("ProceduralArmyCharacterLayer", () => {
     layer.dispose();
   });
 
+  it("applies bounded presentation separation and emits contact reactions without moving authoritative anchors", async () => {
+    const left = createActorMock("knight");
+    const right = createActorMock("knight");
+    characterMocks.createActor.mockReturnValueOnce(left).mockReturnValueOnce(right);
+    characterMocks.createRuntime.mockResolvedValue(createRuntimeMock());
+    const layer = new ProceduralArmyCharacterLayer(new Scene());
+    const presentations = [
+      {
+        category: TroopType.Knight,
+        entityId: 1,
+        isMoving: true,
+        position: new Vector3(-0.1, 0.5, 0),
+        primaryColor: "#315f86",
+        tier: TroopTier.T1,
+      },
+      {
+        category: TroopType.Knight,
+        entityId: 2,
+        isMoving: true,
+        position: new Vector3(0.1, 0.5, 0),
+        primaryColor: "#315f86",
+        tier: TroopTier.T1,
+      },
+    ];
+
+    layer.sync(presentations, 0);
+    await vi.waitFor(() => expect(layer.getStats().actorCount).toBe(2));
+    layer.sync(presentations, 1 / 60);
+
+    expect(left.object.position.x).toBeLessThan(presentations[0].position.x);
+    expect(right.object.position.x).toBeGreaterThan(presentations[1].position.x);
+    expect(left.object.position.y).toBe(0.5);
+    expect(right.object.position.y).toBe(0.5);
+    expect(left.applyReaction).toHaveBeenCalledWith(expect.objectContaining({ source: "body-contact" }));
+    expect(right.applyReaction).toHaveBeenCalledWith(expect.objectContaining({ source: "body-contact" }));
+    expect(layer.getStats()).toMatchObject({ collisionBodyCount: 2, collisionPairCount: expect.any(Number) });
+    layer.dispose();
+  });
+
   it("hands defeated actors to a bounded-lived ragdoll presentation", async () => {
     const actor = createActorMock("knight");
     characterMocks.createActor.mockReturnValue(actor);
-    characterMocks.createRuntime.mockResolvedValue({
-      createActor: characterMocks.createActor,
-      dispose: characterMocks.disposeRuntime,
-      update: characterMocks.updateRuntime,
-      updateActorConfig: characterMocks.updateRuntimeActorConfig,
-    });
+    characterMocks.createRuntime.mockResolvedValue(createRuntimeMock());
     const layer = new ProceduralArmyCharacterLayer(new Scene());
     const presentation = {
       category: TroopType.Knight,
@@ -210,15 +236,127 @@ describe("ProceduralArmyCharacterLayer", () => {
     layer.dispose();
   });
 
+  it("queries the intended actor and consumes its latest arrow impact for directional defeat", async () => {
+    const actor = createActorMock("knight");
+    characterMocks.createActor.mockReturnValue(actor);
+    characterMocks.createRuntime.mockResolvedValue(createRuntimeMock());
+    const layer = new ProceduralArmyCharacterLayer(new Scene());
+    layer.sync(
+      [
+        {
+          category: TroopType.Knight,
+          entityId: 55,
+          isMoving: false,
+          position: new Vector3(),
+          primaryColor: "#315f86",
+          tier: TroopTier.T1,
+        },
+      ],
+      0,
+    );
+    await vi.waitFor(() => expect(layer.hasActor(55)).toBe(true));
+
+    const hit = layer.sweepProjectile({
+      from: new Vector3(0, 0.8, 4),
+      intendedTargetEntityId: 55,
+      ownerEntityId: 9,
+      radius: 0.04,
+      to: new Vector3(0, 0.8, -4),
+    });
+    expect(hit).toMatchObject({ material: "metal", partId: "chest", targetEntityId: 55 });
+
+    expect(
+      layer.presentProjectileImpact({
+        authority: "indexed-replay",
+        impactId: "arrow:55",
+        material: "metal",
+        normal: new Vector3(0, 0, 1),
+        ownerEntityId: 9,
+        partId: "chest",
+        position: hit!.point,
+        targetEntityId: 55,
+        targetHit: true,
+        velocity: new Vector3(0, 0, -12),
+      }),
+    ).toBe(true);
+    expect(actor.applyReaction).toHaveBeenCalledWith(
+      expect.objectContaining({ source: "arrow", strength: expect.closeTo(9.6, 5) }),
+    );
+
+    expect(layer.playDefeat(55)).toBe(true);
+    expect(actor.applyImpact).toHaveBeenCalledWith(
+      expect.objectContaining({ directionZ: -1, impactId: "arrow:55", targetEntityId: 55 }),
+    );
+    expect(actor.applyImpulse).not.toHaveBeenCalled();
+    layer.dispose();
+  });
+
+  it("keeps an expected ranged target hittable until its authoritative defeat receives the arrow", async () => {
+    const archer = createActorMock("archer");
+    const target = createActorMock("knight");
+    characterMocks.createActor.mockReturnValueOnce(archer).mockReturnValueOnce(target);
+    characterMocks.createRuntime.mockResolvedValue(createRuntimeMock());
+    const layer = new ProceduralArmyCharacterLayer(new Scene());
+    layer.sync(
+      [
+        {
+          category: TroopType.Crossbowman,
+          entityId: 9,
+          isMoving: false,
+          position: new Vector3(0, 0, 3),
+          primaryColor: "#315f86",
+          tier: TroopTier.T1,
+        },
+        {
+          category: TroopType.Knight,
+          entityId: 55,
+          isMoving: false,
+          position: new Vector3(),
+          primaryColor: "#315f86",
+          tier: TroopTier.T1,
+        },
+      ],
+      0,
+    );
+    await vi.waitFor(() => expect(layer.getStats().actorCount).toBe(2));
+
+    expect(layer.playAttack(9, new Vector3(), 55, "indexed-replay")).toBe(true);
+    expect(layer.playDefeat(55)).toBe(true);
+    expect(target.applyImpulse).not.toHaveBeenCalled();
+
+    const hit = layer.sweepProjectile({
+      from: new Vector3(0, 0.8, 4),
+      intendedTargetEntityId: 55,
+      ownerEntityId: 9,
+      radius: 0.04,
+      to: new Vector3(0, 0.8, -4),
+    });
+    expect(hit).toMatchObject({ targetEntityId: 55 });
+    expect(
+      layer.presentProjectileImpact({
+        authority: "indexed-replay",
+        impactId: "delayed-arrow:55",
+        material: "metal",
+        normal: new Vector3(0, 0, 1),
+        ownerEntityId: 9,
+        partId: "chest",
+        position: hit!.point,
+        targetEntityId: 55,
+        targetHit: true,
+        velocity: new Vector3(0, 0, -12),
+      }),
+    ).toBe(true);
+    expect(target.applyImpact).toHaveBeenCalledWith(
+      expect.objectContaining({ directionZ: -1, impactId: "delayed-arrow:55" }),
+    );
+    expect(target.applyImpulse).not.toHaveBeenCalled();
+    layer.dispose();
+  });
+
   it("presents the ranged family as a longbow archer outside its crossbow tier", async () => {
     const actor = createActorMock("archer");
     characterMocks.createActor.mockReturnValue(actor);
-    characterMocks.createRuntime.mockResolvedValue({
-      createActor: characterMocks.createActor,
-      dispose: characterMocks.disposeRuntime,
-      update: characterMocks.updateRuntime,
-      updateActorConfig: characterMocks.updateRuntimeActorConfig,
-    });
+    characterMocks.createRuntime.mockResolvedValue(createRuntimeMock());
     const layer = new ProceduralArmyCharacterLayer(new Scene());
     const presentation = {
       category: TroopType.Crossbowman,
@@ -245,12 +383,7 @@ describe("ProceduralArmyCharacterLayer", () => {
     const mounted = createActorMock("paladin");
     const foot = createActorMock("knight");
     characterMocks.createActor.mockReturnValueOnce(mounted).mockReturnValueOnce(foot);
-    characterMocks.createRuntime.mockResolvedValue({
-      createActor: characterMocks.createActor,
-      dispose: characterMocks.disposeRuntime,
-      update: characterMocks.updateRuntime,
-      updateActorConfig: characterMocks.updateRuntimeActorConfig,
-    });
+    characterMocks.createRuntime.mockResolvedValue(createRuntimeMock());
     const scene = new Scene();
     const layer = new ProceduralArmyCharacterLayer(scene);
     const presentation = {
@@ -274,12 +407,7 @@ describe("ProceduralArmyCharacterLayer", () => {
 
   it("spreads ambient actor creation across frames while fallbacks remain available", async () => {
     characterMocks.createActor.mockImplementation((config: { kind: "knight" }) => createActorMock(config.kind));
-    characterMocks.createRuntime.mockResolvedValue({
-      createActor: characterMocks.createActor,
-      dispose: characterMocks.disposeRuntime,
-      update: characterMocks.updateRuntime,
-      updateActorConfig: characterMocks.updateRuntimeActorConfig,
-    });
+    characterMocks.createRuntime.mockResolvedValue(createRuntimeMock());
     const layer = new ProceduralArmyCharacterLayer(new Scene());
     const presentations = Array.from({ length: 6 }, (_, index) => ({
       category: TroopType.Knight,
@@ -331,12 +459,7 @@ describe("ProceduralArmyCharacterLayer", () => {
   });
 
   it("disposes a runtime that finishes loading after its scene layer was destroyed", async () => {
-    let resolveRuntime!: (runtime: {
-      createActor: typeof characterMocks.createActor;
-      dispose: typeof characterMocks.disposeRuntime;
-      update: typeof characterMocks.updateRuntime;
-      updateActorConfig: typeof characterMocks.updateRuntimeActorConfig;
-    }) => void;
+    let resolveRuntime!: (runtime: ReturnType<typeof createRuntimeMock>) => void;
     characterMocks.createRuntime.mockReturnValue(
       new Promise((resolve) => {
         resolveRuntime = resolve;
@@ -358,17 +481,22 @@ describe("ProceduralArmyCharacterLayer", () => {
     );
 
     layer.dispose();
-    resolveRuntime({
-      createActor: characterMocks.createActor,
-      dispose: characterMocks.disposeRuntime,
-      update: characterMocks.updateRuntime,
-      updateActorConfig: characterMocks.updateRuntimeActorConfig,
-    });
+    resolveRuntime(createRuntimeMock());
 
     await vi.waitFor(() => expect(characterMocks.disposeRuntime).toHaveBeenCalledOnce());
     expect(characterMocks.createActor).not.toHaveBeenCalled();
   });
 });
+
+function createRuntimeMock() {
+  return {
+    createActor: characterMocks.createActor,
+    dispose: characterMocks.disposeRuntime,
+    update: characterMocks.updateRuntime,
+    updateActorConfig: characterMocks.updateRuntimeActorConfig,
+    updatePhysicsConfig: characterMocks.updatePhysicsConfig,
+  };
+}
 
 function createActorMock(kind: "archer" | "crossbowman" | "knight" | "paladin") {
   const object = new Group();
@@ -377,7 +505,9 @@ function createActorMock(kind: "archer" | "crossbowman" | "knight" | "paladin") 
   return {
     kind,
     object,
+    applyImpact: vi.fn(async () => undefined),
     applyImpulse: vi.fn(async () => undefined),
+    applyReaction: vi.fn(),
     attack: vi.fn(() => true),
     dispose: vi.fn(() => object.removeFromParent()),
     fireRangedAttack: vi.fn(() => false),

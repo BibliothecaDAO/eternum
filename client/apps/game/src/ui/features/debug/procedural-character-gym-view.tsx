@@ -39,6 +39,11 @@ import {
   type ProceduralAnimationCaptureViewId,
   type ProceduralAnimationFrameCapture,
 } from "@/three/characters/gym/procedural-animation-capture";
+import {
+  applyProceduralCollisionGymConfigPatch,
+  createDefaultProceduralCollisionGymConfig,
+  type ProceduralCollisionGymConfig,
+} from "@/three/characters/gym/procedural-collision-gym-config";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { useBootDocumentState } from "@/ui/modules/boot-loader";
 
@@ -52,6 +57,15 @@ const INITIAL_STATS: ProceduralCharacterGymStats = {
   boneCount: 0,
   bodyCount: 0,
   constraintCount: 0,
+  collisionActorCount: 0,
+  collisionContactCount: 0,
+  collisionDroppedPairCount: 0,
+  collisionEvaluationReasons: [],
+  collisionEvaluationStatus: "disabled",
+  collisionImpactCount: 0,
+  collisionMaximumOffset: 0,
+  collisionRagdollCount: 0,
+  collisionScenario: "head-on",
   drawCalls: 0,
   fps: 0,
   frameMs: 0,
@@ -99,6 +113,7 @@ interface CharacterGymDebugBridge {
     options?: Omit<ProceduralAnimationCaptureOptions, "overlay">,
   ): Promise<ProceduralAnimationCaptureResult>;
   getConfig(): ProceduralUnitConfig;
+  getCollisionConfig(): ProceduralCollisionGymConfig;
   getAimStats(): ProceduralCharacterGymStats | null;
   getStats(): ProceduralCharacterGymStats;
   getFrameCaptureReport(): unknown;
@@ -111,6 +126,7 @@ interface CharacterGymDebugBridge {
     rootMotionSpeed?: number,
   ): Promise<ProceduralAnimationFrameCapture>;
   updateConfig(patch: ProceduralUnitConfigPatch): void;
+  updateCollisionConfig(patch: Partial<ProceduralCollisionGymConfig>): void;
 }
 
 declare global {
@@ -125,6 +141,8 @@ export const ProceduralCharacterGymView = () => {
   const rendererRef = useRef<ProceduralCharacterGymRendererHandle | null>(null);
   const [config, setConfig] = useState(createInitialGymConfig);
   const configRef = useRef<ProceduralUnitConfig>(config);
+  const [collisionConfig, setCollisionConfig] = useState(createDefaultProceduralCollisionGymConfig);
+  const collisionConfigRef = useRef<ProceduralCollisionGymConfig>(collisionConfig);
   const statsRef = useRef<ProceduralCharacterGymStats>(INITIAL_STATS);
   const aimStatsRef = useRef<ProceduralCharacterGymStats | null>(null);
   const [stats, setStats] = useState(INITIAL_STATS);
@@ -144,6 +162,7 @@ export const ProceduralCharacterGymView = () => {
         containerRef,
         rendererRef,
         configRef,
+        collisionConfigRef,
         statsRef,
         aimStatsRef,
         setReady,
@@ -157,6 +176,11 @@ export const ProceduralCharacterGymView = () => {
     configRef.current = config;
     rendererRef.current?.updateConfig(config);
   }, [config]);
+
+  useEffect(() => {
+    collisionConfigRef.current = collisionConfig;
+    rendererRef.current?.updateCollisionConfig(collisionConfig);
+  }, [collisionConfig]);
 
   const reset = useCallback(() => {
     aimStatsRef.current = null;
@@ -180,7 +204,13 @@ export const ProceduralCharacterGymView = () => {
     setSelectedCaptureFrame(null);
   }, []);
 
-  const fireArrow = useCallback(() => rendererRef.current?.fireArrow() ?? false, []);
+  const fireArrow = useCallback(
+    () =>
+      collisionConfigRef.current.enabled
+        ? (rendererRef.current?.fireCollisionArrow() ?? false)
+        : (rendererRef.current?.fireArrow() ?? false),
+    [],
+  );
   const cancelArrow = useCallback(() => rendererRef.current?.cancelArrow(), []);
   const attackMelee = useCallback(() => rendererRef.current?.attackMelee() ?? false, []);
   const cancelMelee = useCallback(() => rendererRef.current?.cancelMelee(), []);
@@ -247,11 +277,18 @@ export const ProceduralCharacterGymView = () => {
     setCaptureResult(null);
     setSelectedCaptureFrame(null);
   }, []);
+  const patchCollisionConfig = useCallback((patch: Partial<ProceduralCollisionGymConfig>) => {
+    setCollisionConfig((current) => applyProceduralCollisionGymConfigPatch(current, patch));
+    captureResultRef.current = null;
+    setCaptureResult(null);
+    setSelectedCaptureFrame(null);
+  }, []);
 
   useEffect(
     () =>
       exposeCharacterGymDebugBridge(
         configRef,
+        collisionConfigRef,
         statsRef,
         aimStatsRef,
         reset,
@@ -264,8 +301,20 @@ export const ProceduralCharacterGymView = () => {
         seekFrame,
         captureResultRef,
         patchConfig,
+        patchCollisionConfig,
       ),
-    [attackMelee, cancelArrow, cancelMelee, captureFrames, fireArrow, patchConfig, reset, runSmoke, seekFrame],
+    [
+      attackMelee,
+      cancelArrow,
+      cancelMelee,
+      captureFrames,
+      fireArrow,
+      patchCollisionConfig,
+      patchConfig,
+      reset,
+      runSmoke,
+      seekFrame,
+    ],
   );
 
   const applyPreset = useCallback((presetId: ProceduralCharacterPresetId) => {
@@ -318,16 +367,23 @@ export const ProceduralCharacterGymView = () => {
       data-capture-image-count={captureResult?.frames.reduce((count, frame) => count + frame.views.length, 0) ?? 0}
       data-capture-overlay={captureResult?.plan.overlay ?? "none"}
       data-capture-view-count={captureResult?.plan.views.length ?? 0}
+      data-collision-evaluation={stats.collisionEvaluationStatus}
     >
       <CharacterGymHeader
         stats={stats}
-        archer={config.kind === "archer"}
+        archer={
+          collisionConfig.enabled
+            ? collisionConfig.scenario === "arrow-defeat" || collisionConfig.scenario === "arrow-nonlethal"
+            : config.kind === "archer"
+        }
+        collisionEnabled={collisionConfig.enabled}
         locomotion={
           config.kind !== "horse" &&
           config.kind !== "paladin" &&
+          !collisionConfig.enabled &&
           (config.humanoid.animationMode === "walk" || config.humanoid.animationMode === "run")
         }
-        melee={config.kind === "knight" || config.kind === "paladin"}
+        melee={!collisionConfig.enabled && (config.kind === "knight" || config.kind === "paladin")}
         paused={paused}
         ready={ready}
         captureBusy={captureBusy}
@@ -346,15 +402,18 @@ export const ProceduralCharacterGymView = () => {
       />
       <div className="flex min-h-0 flex-1 flex-col lg:grid lg:grid-cols-[370px_minmax(0,1fr)]">
         <CharacterGymControls
+          collisionConfig={collisionConfig}
           config={config}
           copied={copied}
           selectedPreset={selectedPreset}
           onApplyPreset={applyPreset}
           onCopyConfig={copyConfig}
+          onPatchCollisionConfig={patchCollisionConfig}
           onPatchConfig={patchConfig}
           onResetCamera={() => rendererRef.current?.resetCamera()}
         />
         <CharacterGymViewport
+          collisionConfig={collisionConfig}
           config={config}
           captureBusy={captureBusy}
           captureResult={captureResult}
@@ -376,6 +435,7 @@ function mountGymRenderer(
   containerRef: RefObject<HTMLDivElement>,
   rendererRef: MutableRefObject<ProceduralCharacterGymRendererHandle | null>,
   configRef: MutableRefObject<ProceduralUnitConfig>,
+  collisionConfigRef: MutableRefObject<ProceduralCollisionGymConfig>,
   statsRef: MutableRefObject<ProceduralCharacterGymStats>,
   aimStatsRef: MutableRefObject<ProceduralCharacterGymStats | null>,
   setReady: (ready: boolean) => void,
@@ -387,6 +447,7 @@ function mountGymRenderer(
   let cancelled = false;
 
   void mountProceduralCharacterGymRenderer({
+    collisionConfig: collisionConfigRef.current,
     config: configRef.current,
     container,
     onStats: (nextStats) => {
@@ -416,6 +477,7 @@ function mountGymRenderer(
 
 function exposeCharacterGymDebugBridge(
   configRef: MutableRefObject<ProceduralUnitConfig>,
+  collisionConfigRef: MutableRefObject<ProceduralCollisionGymConfig>,
   statsRef: MutableRefObject<ProceduralCharacterGymStats>,
   aimStatsRef: MutableRefObject<ProceduralCharacterGymStats | null>,
   reset: () => void,
@@ -436,6 +498,7 @@ function exposeCharacterGymDebugBridge(
   ) => Promise<ProceduralAnimationFrameCapture>,
   captureResultRef: MutableRefObject<ProceduralAnimationCaptureResult | null>,
   updateConfig: (patch: ProceduralUnitConfigPatch) => void,
+  updateCollisionConfig: (patch: Partial<ProceduralCollisionGymConfig>) => void,
 ): () => void {
   window.__proceduralCharacterGym = {
     attackMelee,
@@ -444,6 +507,7 @@ function exposeCharacterGymDebugBridge(
     cancelMelee,
     fireArrow,
     getConfig: () => ({ ...configRef.current }),
+    getCollisionConfig: () => ({ ...collisionConfigRef.current }),
     getAimStats: () => (aimStatsRef.current ? { ...aimStatsRef.current } : null),
     getFrameCaptureReport: () => createProceduralAnimationCaptureReport(captureResultRef.current),
     getCapturedFrameImage: (frameIndex, viewId) => {
@@ -451,11 +515,16 @@ function exposeCharacterGymDebugBridge(
       if (!frame || !viewId) return frame?.imageDataUrl ?? null;
       return frame.views.find((view) => view.id === viewId)?.imageDataUrl ?? null;
     },
-    getStats: () => ({ ...statsRef.current, smokeFailures: [...statsRef.current.smokeFailures] }),
+    getStats: () => ({
+      ...statsRef.current,
+      collisionEvaluationReasons: [...statsRef.current.collisionEvaluationReasons],
+      smokeFailures: [...statsRef.current.smokeFailures],
+    }),
     reset,
     runSmoke,
     seekFrame,
     updateConfig,
+    updateCollisionConfig,
   };
   return () => {
     window.__proceduralCharacterGym = undefined;
@@ -465,6 +534,7 @@ function exposeCharacterGymDebugBridge(
 interface CharacterGymHeaderProps {
   archer: boolean;
   captureBusy: boolean;
+  collisionEnabled: boolean;
   locomotion: boolean;
   melee: boolean;
   stats: ProceduralCharacterGymStats;
@@ -487,6 +557,7 @@ interface CharacterGymHeaderProps {
 const CharacterGymHeader = ({
   archer,
   captureBusy,
+  collisionEnabled,
   locomotion,
   melee,
   stats,
@@ -519,6 +590,12 @@ const CharacterGymHeader = ({
       <RuntimeBadge label={stats.rendererMode} tone={stats.rendererMode === "webgpu" ? "cyan" : "amber"} />
       <RuntimeBadge label={stats.assetLabel} tone="cyan" />
       <RuntimeBadge label={`Jolt ${stats.mode}`} tone={stats.mode === "ragdoll" ? "violet" : "slate"} />
+      {stats.collisionEvaluationStatus !== "disabled" && (
+        <RuntimeBadge
+          label={`Collision ${stats.collisionEvaluationStatus}`}
+          tone={stats.collisionEvaluationStatus === "pass" ? "cyan" : "amber"}
+        />
+      )}
     </div>
     <div className="flex flex-wrap items-center gap-2">
       {archer && <ActionButton icon={<Target />} label="Fire" onClick={onFireArrow} primary disabled={!ready} />}
@@ -529,7 +606,7 @@ const CharacterGymHeader = ({
         icon={<Camera />}
         label={captureBusy ? "Capturing" : "Frames"}
         onClick={onCaptureFrames}
-        disabled={!ready || captureBusy || stats.mode === "ragdoll"}
+        disabled={!ready || captureBusy || collisionEnabled || stats.mode === "ragdoll"}
       />
       {locomotion && (
         <ActionButton
@@ -539,9 +616,20 @@ const CharacterGymHeader = ({
           disabled={!ready || captureBusy || stats.mode === "ragdoll"}
         />
       )}
-      <ActionButton icon={<FlaskConical />} label="Run smoke" onClick={onRunSmoke} primary disabled={!ready} />
-      <ActionButton icon={<Shield />} label="Drop" onClick={onDrop} disabled={!ready || stats.mode === "ragdoll"} />
-      <ActionButton icon={<Zap />} label="Strike" onClick={onStrike} disabled={!ready} />
+      <ActionButton
+        icon={<FlaskConical />}
+        label="Run smoke"
+        onClick={onRunSmoke}
+        primary
+        disabled={!ready || collisionEnabled}
+      />
+      <ActionButton
+        icon={<Shield />}
+        label="Drop"
+        onClick={onDrop}
+        disabled={!ready || collisionEnabled || stats.mode === "ragdoll"}
+      />
+      <ActionButton icon={<Zap />} label="Strike" onClick={onStrike} disabled={!ready || collisionEnabled} />
       <ActionButton
         icon={paused ? <Play /> : <Pause />}
         label={paused ? "Resume" : "Pause"}
@@ -561,6 +649,7 @@ const CharacterGymHeader = ({
 );
 
 const CharacterGymViewport = ({
+  collisionConfig,
   config,
   captureBusy,
   captureResult,
@@ -573,6 +662,7 @@ const CharacterGymViewport = ({
   onCloseCapture,
   onSelectCaptureFrame,
 }: {
+  collisionConfig: ProceduralCollisionGymConfig;
   config: ProceduralUnitConfig;
   captureBusy: boolean;
   captureResult: ProceduralAnimationCaptureResult | null;
@@ -602,15 +692,29 @@ const CharacterGymViewport = ({
       <div className="border border-white/10 bg-[#090e17]/80 px-3 py-2 backdrop-blur-md">
         <p className="text-[0.62rem] font-semibold uppercase tracking-[0.22em] text-slate-500">Live scenario</p>
         <p className="mt-1 text-sm text-white">
-          {stats.assetLabel} · {config.kind} · T{config.humanoid.tier} · seed {config.humanoid.seed} ·{" "}
-          {config.kind === "horse" || config.kind === "paladin" ? config.horse.gait : config.humanoid.animationMode}
-          {config.kind === "archer" ? ` · ${stats.rangedPhase}` : ""}
-          {config.kind === "knight" || config.kind === "paladin"
-            ? ` · ${stats.meleeWeaponId} (${stats.meleeWeaponSource}) · ${stats.meleePhase}`
-            : ""}
+          {collisionConfig.enabled ? (
+            <>
+              {collisionConfig.scenario} · {stats.collisionActorCount} actors · seed {collisionConfig.seed} · max offset{" "}
+              {stats.collisionMaximumOffset.toFixed(2)}m
+            </>
+          ) : (
+            <>
+              {stats.assetLabel} · {config.kind} · T{config.humanoid.tier} · seed {config.humanoid.seed} ·{" "}
+              {config.kind === "horse" || config.kind === "paladin" ? config.horse.gait : config.humanoid.animationMode}
+              {config.kind === "archer" ? ` · ${stats.rangedPhase}` : ""}
+              {config.kind === "knight" || config.kind === "paladin"
+                ? ` · ${stats.meleeWeaponId} (${stats.meleeWeaponSource}) · ${stats.meleePhase}`
+                : ""}
+            </>
+          )}
         </p>
       </div>
       <SmokeStatus stats={stats} />
+      {stats.collisionEvaluationReasons.length > 0 && (
+        <div className="max-w-sm border border-red-300/30 bg-red-950/80 px-3 py-2 text-xs text-red-100 backdrop-blur-md">
+          {stats.collisionEvaluationReasons.join(" · ")}
+        </div>
+      )}
     </div>
     {captureResult && selectedCaptureFrame && (
       <ProceduralAnimationInspector
@@ -672,6 +776,9 @@ const CharacterGymMetrics = ({
     <Metric label="Mount stretch" value={`${stats.maximumHorseBoneStretchRatio}×`} />
     <Metric label="Arrows" value={`${stats.projectileActiveCount}/${stats.projectileCapacity || "--"}`} />
     <Metric label="Hits" value={stats.projectileHitCount || "--"} />
+    <Metric label="Actors" value={stats.collisionActorCount || "--"} />
+    <Metric label="Body contacts" value={stats.collisionContactCount || "--"} />
+    <Metric label="Impact/RD" value={`${stats.collisionImpactCount}/${stats.collisionRagdollCount}`} />
     <Metric label="GPU" value={`${stats.geometryCount}/${stats.textureCount}`} />
     <Metric label="Heap" value={stats.wasmHeapMiB ? `${stats.wasmHeapMiB}MB` : "--"} />
   </div>

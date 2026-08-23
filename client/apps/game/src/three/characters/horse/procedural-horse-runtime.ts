@@ -1,6 +1,12 @@
 import { type Group, Quaternion, Vector3 } from "three";
 
 import type { ProceduralCharacterConfig } from "../procedural-character-config";
+import {
+  ProceduralContactReactionController,
+  type ProceduralContactReactionPose,
+} from "../collision/procedural-contact-reaction";
+import type { ProceduralUnitReactionInput } from "../collision/procedural-impact";
+import { normalizeProceduralImpact, type ProceduralUnitImpact } from "../collision/procedural-impact";
 import type { JoltRagdollStats } from "../jolt-ragdoll-world";
 import type { JoltRagdollWorld } from "../jolt-ragdoll-world";
 import { ProceduralPlantController } from "../procedural-plant-controller";
@@ -23,13 +29,20 @@ import {
 } from "./procedural-horse-pose";
 import { ProceduralHorsePoseFilter } from "./procedural-horse-pose-filter";
 import { QuaterniusHorseLibrary } from "./quaternius-horse-assets";
-import { HORSE_RAGDOLL_BODY_IDS, JoltHorseRagdoll, type HorseRagdollPartId } from "./jolt-horse-ragdoll";
+import {
+  HORSE_RAGDOLL_BODY_IDS,
+  HORSE_RAGDOLL_PART_IDS,
+  JoltHorseRagdoll,
+  type HorseRagdollPartId,
+} from "./jolt-horse-ragdoll";
 import { HORSE_LEG_SEGMENT_IDS, type HorseLegSegmentId } from "./procedural-horse-rig";
 
 export interface ProceduralHorseActor {
   readonly mode: "animated" | "ragdoll";
   readonly object: Group;
 
+  applyReaction(reaction: ProceduralUnitReactionInput): void;
+  applyImpact(impact: ProceduralUnitImpact): Promise<void>;
   applyImpulse(): Promise<void>;
   dispose(): void;
   getPhysicsStats(): JoltRagdollStats;
@@ -95,11 +108,14 @@ class RuntimeProceduralHorseActor implements ProceduralHorseActor {
   private sampleGround?: HorseGroundSampler;
   private readonly plantController = new ProceduralPlantController<HorseHoofId>();
   private readonly poseFilter = new ProceduralHorsePoseFilter();
+  private readonly reactionController = new ProceduralContactReactionController();
   private readonly scratchWorldPosition = new Vector3();
   private readonly scratchLocalPosition = new Vector3();
   private readonly scratchWorldQuaternion = new Quaternion();
   private readonly scratchLocalQuaternion = new Quaternion();
   private readonly scratchInverseWorldQuaternion = new Quaternion();
+  private readonly scratchReactionDirection = new Vector3();
+  private reactionPose?: ProceduralContactReactionPose;
   private disposed = false;
 
   public constructor(
@@ -142,6 +158,7 @@ class RuntimeProceduralHorseActor implements ProceduralHorseActor {
     }
     const elapsed = resolveDeltaSeconds(deltaSeconds);
     this.elapsedSeconds += elapsed;
+    this.reactionPose = this.reactionController.update(elapsed);
     this.plantController.beginFrame(this.object);
     this.phase = advanceHorseGaitPhase(this.phase, this.config, elapsed, this.plantController.getFrameTravelDistance());
     this.applyPose(false, elapsed);
@@ -175,6 +192,8 @@ class RuntimeProceduralHorseActor implements ProceduralHorseActor {
     this.sampleGround = sampleGround;
     this.plantController.reset();
     this.poseFilter.reset();
+    this.reactionController.reset();
+    this.reactionPose = undefined;
     this.applyPose();
   }
 
@@ -184,6 +203,8 @@ class RuntimeProceduralHorseActor implements ProceduralHorseActor {
     this.ragdoll = undefined;
     this.plantController.reset();
     this.poseFilter.reset();
+    this.reactionController.reset();
+    this.reactionPose = undefined;
     this.phase = resolveInitialHorseGaitPhase(this.config.seed);
     this.elapsedSeconds = 0;
     this.applyPose();
@@ -208,6 +229,8 @@ class RuntimeProceduralHorseActor implements ProceduralHorseActor {
   public async startRagdoll(): Promise<void> {
     if (this.disposed || this.ragdoll) return;
     if (!this.physicsWorld) throw new Error("Horse ragdoll requires a shared Jolt physics world");
+    this.reactionController.reset();
+    this.reactionPose = undefined;
     this.ragdoll = JoltHorseRagdoll.create(
       this.physicsWorld,
       this.avatar.rig,
@@ -221,6 +244,29 @@ class RuntimeProceduralHorseActor implements ProceduralHorseActor {
   public async applyImpulse(): Promise<void> {
     await this.startRagdoll();
     this.ragdoll?.applyConfiguredImpulse();
+  }
+
+  public async applyImpact(impact: ProceduralUnitImpact): Promise<void> {
+    const normalized = normalizeProceduralImpact(impact);
+    await this.startRagdoll();
+    this.ragdoll?.applyImpact(normalized, resolveHorseImpactPartId(normalized.partId));
+  }
+
+  public applyReaction(reaction: ProceduralUnitReactionInput): void {
+    if (this.disposed || this.ragdoll) return;
+    this.object.updateWorldMatrix(true, false);
+    this.object.getWorldQuaternion(this.scratchInverseWorldQuaternion).invert();
+    this.scratchReactionDirection
+      .set(reaction.directionX, reaction.directionY, reaction.directionZ)
+      .applyQuaternion(this.scratchInverseWorldQuaternion);
+    this.reactionController.trigger({
+      localDirectionX: this.scratchReactionDirection.x,
+      localDirectionY: this.scratchReactionDirection.y,
+      localDirectionZ: this.scratchReactionDirection.z,
+      source: reaction.source,
+      strength: reaction.strength,
+    });
+    this.reactionPose = this.reactionController.getPose();
   }
 
   public hasFiniteState(): boolean {
@@ -251,6 +297,7 @@ class RuntimeProceduralHorseActor implements ProceduralHorseActor {
         this.elapsedSeconds,
         this.sampleGround,
         this.plantController.resolveTarget,
+        this.reactionPose,
       ),
       deltaSeconds,
       this.config.secondaryMotion,
@@ -316,6 +363,12 @@ const EMPTY_RAGDOLL_STATS: JoltRagdollStats = {
 
 function isHorseLegSegmentId(partId: HorseRagdollPartId): partId is HorseLegSegmentId {
   return (HORSE_LEG_SEGMENT_IDS as readonly string[]).includes(partId);
+}
+
+function resolveHorseImpactPartId(partId: string | undefined): HorseRagdollPartId {
+  return partId && (HORSE_RAGDOLL_PART_IDS as readonly string[]).includes(partId)
+    ? (partId as HorseRagdollPartId)
+    : "horseChest";
 }
 
 function toVectorTuple(vector: Vector3): readonly [number, number, number] {

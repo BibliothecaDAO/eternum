@@ -35,6 +35,14 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-08-23",
+    title: "Physical Army Reactions",
+    description:
+      "Armies now separate and react when they meet, while targeted arrows preserve their incoming direction through authoritative Jolt ragdoll handoff. A seven-scenario collision gym and the 100-unit performance lab guard the behavior.",
+    type: "improvement",
+    gameSlug: "world",
+  },
+  {
+    date: "2026-08-23",
     title: "Stable Mounted Ragdolls",
     description:
       "Fixed horses stretching across the map when mounted units entered Jolt ragdoll or reset, preserving anatomical bone lengths through repeated deaths and respawns.",

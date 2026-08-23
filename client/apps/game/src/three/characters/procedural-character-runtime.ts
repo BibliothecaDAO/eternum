@@ -2,6 +2,12 @@ import { type Group, Quaternion, Vector3 } from "three";
 
 import type { JoltCharacterRagdoll, JoltRagdollStats } from "./jolt-character-ragdoll";
 import type { JoltRagdollWorld } from "./jolt-ragdoll-world";
+import {
+  ProceduralContactReactionController,
+  type ProceduralContactReactionPose,
+} from "./collision/procedural-contact-reaction";
+import type { ProceduralUnitReactionInput } from "./collision/procedural-impact";
+import { normalizeProceduralImpact, type ProceduralUnitImpact } from "./collision/procedural-impact";
 import { applyProceduralCharacterConfigPatch, type ProceduralCharacterConfig } from "./procedural-character-config";
 import type { ProceduralCharacterUpperBodyAction } from "./procedural-character-action";
 import {
@@ -22,6 +28,7 @@ import {
 } from "./procedural-character-pose";
 import { ProceduralCharacterPoseFilter } from "./procedural-character-pose-filter";
 import {
+  CHARACTER_PART_IDS,
   applyCharacterRigLimbLengths,
   resolveCharacterRig,
   type CharacterPartId,
@@ -53,6 +60,8 @@ export interface ProceduralCharacterActor extends ProceduralCharacterSocketReade
   readonly mode: ProceduralCharacterMode;
   readonly object: Group;
 
+  applyReaction(reaction: ProceduralUnitReactionInput): void;
+  applyImpact(impact: ProceduralUnitImpact): Promise<void>;
   applyImpulse(partId?: CharacterPartId): Promise<void>;
   dispose(): void;
   getPoseDiagnostics(): ProceduralCharacterPoseDiagnostics;
@@ -126,10 +135,12 @@ class RuntimeProceduralCharacterActor implements ProceduralCharacterActor {
   private config: ProceduralCharacterConfig;
   private readonly plantController = new ProceduralPlantController<CharacterFootId>();
   private readonly poseFilter = new ProceduralCharacterPoseFilter();
+  private readonly reactionController = new ProceduralContactReactionController();
   private gaitPhase: number;
   private readonly scratchRagdollPosition = new Vector3();
   private readonly scratchRagdollQuaternion = new Quaternion();
   private readonly scratchInverseWorldQuaternion = new Quaternion();
+  private readonly scratchReactionDirection = new Vector3();
   private readonly diagnosticHandLeft = new Vector3();
   private readonly diagnosticHandRight = new Vector3();
   private readonly diagnosticGripLeft = new Vector3();
@@ -139,6 +150,7 @@ class RuntimeProceduralCharacterActor implements ProceduralCharacterActor {
   private readonly diagnosticSocketQuaternion = new Quaternion();
   private elapsedSeconds = 0;
   private upperBodyAction?: ProceduralCharacterUpperBodyAction;
+  private reactionPose?: ProceduralContactReactionPose;
   private physicsSteps = 0;
   private disposed = false;
 
@@ -238,6 +250,8 @@ class RuntimeProceduralCharacterActor implements ProceduralCharacterActor {
     if (this.ragdollStartPromise) return this.ragdollStartPromise;
 
     const generation = this.ragdollGeneration;
+    this.reactionController.reset();
+    this.reactionPose = undefined;
     this.ragdollStartPromise = createProceduralCharacterRagdoll(
       this.rig,
       this.pose,
@@ -265,6 +279,29 @@ class RuntimeProceduralCharacterActor implements ProceduralCharacterActor {
     this.ragdoll?.applyConfiguredImpulse(partId);
   }
 
+  public async applyImpact(impact: ProceduralUnitImpact): Promise<void> {
+    const normalized = normalizeProceduralImpact(impact);
+    await this.startRagdoll();
+    this.ragdoll?.applyImpact(normalized, resolveImpactPartId(normalized.partId));
+  }
+
+  public applyReaction(reaction: ProceduralUnitReactionInput): void {
+    if (this.disposed || this.ragdoll) return;
+    this.object.updateWorldMatrix(true, false);
+    this.object.getWorldQuaternion(this.scratchInverseWorldQuaternion).invert();
+    this.scratchReactionDirection
+      .set(reaction.directionX, reaction.directionY, reaction.directionZ)
+      .applyQuaternion(this.scratchInverseWorldQuaternion);
+    this.reactionController.trigger({
+      localDirectionX: this.scratchReactionDirection.x,
+      localDirectionY: this.scratchReactionDirection.y,
+      localDirectionZ: this.scratchReactionDirection.z,
+      source: reaction.source,
+      strength: reaction.strength,
+    });
+    this.reactionPose = this.reactionController.getPose();
+  }
+
   public reset(): void {
     if (this.disposed) return;
     this.resetRagdoll();
@@ -273,6 +310,8 @@ class RuntimeProceduralCharacterActor implements ProceduralCharacterActor {
     this.gaitPhase = resolveInitialProceduralCharacterPhase(this.config.seed);
     this.elapsedSeconds = 0;
     this.upperBodyAction = undefined;
+    this.reactionController.reset();
+    this.reactionPose = undefined;
     this.avatar.setUpperBodyAction(undefined);
     this.applyAnimatedPose();
   }
@@ -355,6 +394,7 @@ class RuntimeProceduralCharacterActor implements ProceduralCharacterActor {
 
   private advanceAnimatedPose(deltaSeconds: number, phaseOverride?: number): void {
     this.plantController.beginFrame(this.object);
+    this.reactionPose = this.reactionController.update(deltaSeconds);
     this.gaitPhase = Number.isFinite(phaseOverride)
       ? wrapUnitPhase(phaseOverride ?? 0)
       : advanceProceduralCharacterGaitPhase(
@@ -382,6 +422,7 @@ class RuntimeProceduralCharacterActor implements ProceduralCharacterActor {
         this.plantController.resolveTarget,
         this.gaitPhase,
         this.upperBodyAction,
+        this.reactionPose,
       ),
       deltaSeconds,
       this.config.secondaryMotion,
@@ -443,4 +484,8 @@ async function createProceduralCharacterRagdoll(
 ): Promise<JoltCharacterRagdoll> {
   const { JoltCharacterRagdoll } = await import("./jolt-character-ragdoll");
   return JoltCharacterRagdoll.create(rig, pose, config, physicsWorld, coordinateSpace);
+}
+
+function resolveImpactPartId(partId: string | undefined): CharacterPartId {
+  return partId && (CHARACTER_PART_IDS as readonly string[]).includes(partId) ? (partId as CharacterPartId) : "chest";
 }

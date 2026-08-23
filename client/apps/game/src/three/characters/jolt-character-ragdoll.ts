@@ -2,6 +2,7 @@ import { type Object3D, Quaternion, Vector3 } from "three";
 
 import type { ProceduralCharacterConfig } from "./procedural-character-config";
 import type { ProceduralCharacterPose } from "./procedural-character-pose";
+import type { ProceduralUnitImpact } from "./collision/procedural-impact";
 import {
   JoltRagdollInstance,
   JoltRagdollWorld,
@@ -56,6 +57,15 @@ export class JoltCharacterRagdoll {
 
   public applyConfiguredImpulse(partId: CharacterPartId = "chest"): void {
     this.instance.applyImpulse(partId, [this.config.impulseX, this.config.impulseY, this.config.impulseZ]);
+  }
+
+  public applyImpact(impact: ProceduralUnitImpact, partId: CharacterPartId = "chest"): void {
+    this.instance.setLinearVelocity([impact.inheritedVelocityX, impact.inheritedVelocityY, impact.inheritedVelocityZ]);
+    this.instance.applyImpulseAtPoint(
+      partId,
+      [impact.directionX * impact.strength, impact.directionY * impact.strength, impact.directionZ * impact.strength],
+      [impact.pointX, impact.pointY, impact.pointZ],
+    );
   }
 
   public writePartTransforms(

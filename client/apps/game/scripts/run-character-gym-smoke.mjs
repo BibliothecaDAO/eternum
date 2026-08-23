@@ -5,7 +5,7 @@ import { parseAgentBrowserJson, runAgentBrowser } from "./run-renderer-debug-smo
 
 const CHARACTER_GYM_PATH = "/debug/procedural-characters";
 const DEFAULT_BASE_URL = "https://127.0.0.1:4173";
-const DEFAULT_TIMEOUT_MS = 15_000;
+const DEFAULT_TIMEOUT_MS = 120_000;
 const POLL_INTERVAL_MS = 250;
 const VALID_REQUESTED_RENDERER_MODES = new Set(["webgpu-auto", "webgpu-force-webgl"]);
 const VALID_RENDERER_MODES = new Set(["webgl2-fallback", "webgpu"]);
@@ -26,7 +26,13 @@ export function normalizeRequestedRendererMode(value) {
   return value;
 }
 
-export function evaluateCharacterGymSmokeResult({ aimStats, animatedStats, browserErrors, snapshot }) {
+export function evaluateCharacterGymSmokeResult({
+  aimStats,
+  animatedStats,
+  browserErrors,
+  collisionScenarios = [],
+  snapshot,
+}) {
   const reasons = [];
   const stats = snapshot.stats;
 
@@ -84,6 +90,9 @@ export function evaluateCharacterGymSmokeResult({ aimStats, animatedStats, brows
   if (stats && stats.wasmHeapMiB <= 0) reasons.push("Jolt WASM reported no allocated heap");
   if (browserErrors.length > 0)
     reasons.push(`browser reported ${browserErrors.length} runtime error(s): ${browserErrors[0]}`);
+  collisionScenarios.forEach(({ reasons: collisionReasons, scenario, status }) => {
+    if (status !== "pass") reasons.push(`${scenario} collision scenario was ${status}: ${collisionReasons.join("; ")}`);
+  });
 
   return { ok: reasons.length === 0, reasons };
 }
@@ -113,7 +122,7 @@ function parseErrorLines(raw) {
     .filter(Boolean);
 }
 
-function readCharacterGymSnapshot(session, headed) {
+function readCharacterGymSnapshot(session, headed, timeoutMs = DEFAULT_TIMEOUT_MS) {
   const rawSnapshot = runAgentBrowser(
     session,
     [
@@ -128,21 +137,22 @@ function readCharacterGymSnapshot(session, headed) {
           horizontalOverflow: document.documentElement.scrollWidth > window.innerWidth,
           ready: root?.getAttribute("data-gym-ready") === "true",
           routeMounted: Boolean(root),
+          collisionConfig: bridge?.getCollisionConfig() ?? null,
           stats: bridge?.getStats() ?? null,
         };
       })())`,
     ],
-    { headed },
+    { headed, timeoutMs },
   );
   return parseAgentBrowserJson(rawSnapshot);
 }
 
 function waitForSnapshot({ description, headed, session, timeoutMs, until }) {
   const startTime = Date.now();
-  let snapshot = readCharacterGymSnapshot(session, headed);
+  let snapshot = readCharacterGymSnapshot(session, headed, timeoutMs);
   while (!until(snapshot) && Date.now() - startTime < timeoutMs) {
     runAgentBrowser(session, ["wait", String(POLL_INTERVAL_MS)], { headed });
-    snapshot = readCharacterGymSnapshot(session, headed);
+    snapshot = readCharacterGymSnapshot(session, headed, timeoutMs);
   }
   if (!until(snapshot)) {
     throw new Error(`Timed out waiting for ${description}; last snapshot: ${JSON.stringify(snapshot)}`);
@@ -185,11 +195,13 @@ function runCharacterGymScenario({ headed, session, timeoutMs, url }) {
     timeoutMs,
     until: (value) => value.canvasPresent && ["failed", "passed"].includes(value.stats?.smokePhase),
   });
+  const collisionScenarios = runCollisionGymScenarios({ headed, session, timeoutMs });
   const browserErrors = parseErrorLines(runAgentBrowser(session, ["errors"], { headed }));
   const evaluation = evaluateCharacterGymSmokeResult({
     aimStats: snapshot.aimStats,
     animatedStats: readySnapshot.stats,
     browserErrors,
+    collisionScenarios,
     snapshot,
   });
   return {
@@ -197,9 +209,40 @@ function runCharacterGymScenario({ headed, session, timeoutMs, url }) {
     aimStats: snapshot.aimStats,
     animatedStats: readySnapshot.stats,
     browserErrors,
+    collisionScenarios,
     snapshot,
     url,
   };
+}
+
+function runCollisionGymScenarios({ headed, session, timeoutMs }) {
+  return ["head-on", "glancing", "foot-vs-mounted", "crossflow", "crowd", "arrow-nonlethal", "arrow-defeat"].map(
+    (scenario) => {
+      const config = { actorCount: scenario === "crowd" ? 100 : 12, enabled: true, scenario };
+      runAgentBrowser(
+        session,
+        ["eval", `window.__proceduralCharacterGym.updateCollisionConfig(${JSON.stringify(config)}); "applied"`],
+        { headed, timeoutMs },
+      );
+      const snapshot = waitForSnapshot({
+        description: `${scenario} collision evaluation`,
+        headed,
+        session,
+        timeoutMs,
+        until: (candidate) =>
+          candidate.collisionConfig?.enabled === true &&
+          candidate.collisionConfig?.scenario === scenario &&
+          candidate.stats?.collisionScenario === scenario &&
+          ["fail", "pass"].includes(candidate.stats?.collisionEvaluationStatus),
+      });
+      return {
+        reasons: snapshot.stats?.collisionEvaluationReasons ?? ["collision evaluation did not publish reasons"],
+        scenario,
+        stats: snapshot.stats,
+        status: snapshot.stats?.collisionEvaluationStatus ?? "missing",
+      };
+    },
+  );
 }
 
 function writeOutput(outputPath, summary) {

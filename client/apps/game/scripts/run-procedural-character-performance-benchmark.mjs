@@ -46,6 +46,12 @@ export function evaluateProceduralCharacterPerformanceResult({ browserErrors, sn
     reasons.push(`animation lane count was ${stats.animationUpdateLaneCount}, expected 3`);
   }
   if (stats && stats.runningCount !== 100) reasons.push(`running count was ${stats.runningCount}, expected 100`);
+  if (stats && stats.collisionBodyCount !== 100) {
+    reasons.push(`collision body count was ${stats.collisionBodyCount}, expected 100`);
+  }
+  if (stats && stats.collisionDroppedPairCount > 0) {
+    reasons.push(`collision solver dropped ${stats.collisionDroppedPairCount} pair(s)`);
+  }
   if (stats && stats.visibleHexCount !== 100) {
     reasons.push(`visible hex count was ${stats.visibleHexCount}, expected 100 at 1440x900`);
   }
@@ -128,6 +134,7 @@ function readBenchmarkSnapshot(session, headed) {
             config.animationUpdateLanes === 3 &&
             config.archerVolleys === false &&
             config.autoRotate === false &&
+            config.collisions === true &&
             config.deathsPerSecond === 0 &&
             config.maxActiveRagdolls === 0 &&
             config.meleeAttacks === false &&

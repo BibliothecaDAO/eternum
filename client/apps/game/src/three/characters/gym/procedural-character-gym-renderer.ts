@@ -31,6 +31,12 @@ import { initializeProceduralCharacterRendererRuntime } from "../procedural-char
 import { sampleProceduralHorseTerrain } from "../horse/procedural-horse-pose";
 import { ProceduralArcherGymStage } from "./procedural-archer-gym-stage";
 import { ProceduralMeleeGymStage } from "./procedural-melee-gym-stage";
+import type { ProceduralCollisionGymConfig } from "./procedural-collision-gym-config";
+import {
+  evaluateProceduralCollisionGym,
+  type ProceduralCollisionGymEvaluationStatus,
+} from "./procedural-collision-gym-evaluation";
+import { ProceduralCollisionGymStage } from "./procedural-collision-gym-stage";
 import {
   clampFrameIndex,
   createProceduralAnimationCapturePlan,
@@ -61,6 +67,15 @@ export interface ProceduralCharacterGymStats {
   boneCount: number;
   bodyCount: number;
   constraintCount: number;
+  collisionActorCount: number;
+  collisionContactCount: number;
+  collisionDroppedPairCount: number;
+  collisionEvaluationReasons: readonly string[];
+  collisionEvaluationStatus: ProceduralCollisionGymEvaluationStatus;
+  collisionImpactCount: number;
+  collisionMaximumOffset: number;
+  collisionRagdollCount: number;
+  collisionScenario: ProceduralCollisionGymConfig["scenario"];
   drawCalls: number;
   fps: number;
   frameMs: number;
@@ -108,6 +123,7 @@ export interface ProceduralCharacterGymRendererHandle {
   cancelMelee(): void;
   dispose(): void;
   fireArrow(): boolean;
+  fireCollisionArrow(): boolean;
   reset(): void;
   resetCamera(): void;
   runSmoke(): void;
@@ -120,9 +136,11 @@ export interface ProceduralCharacterGymRendererHandle {
   startRagdoll(): Promise<void>;
   stepOnce(): void;
   updateConfig(config: ProceduralUnitConfig): void;
+  updateCollisionConfig(config: ProceduralCollisionGymConfig): void;
 }
 
 interface MountProceduralCharacterGymRendererInput {
+  collisionConfig: ProceduralCollisionGymConfig;
   config: ProceduralUnitConfig;
   container: HTMLElement;
   onStats?: (stats: ProceduralCharacterGymStats) => void;
@@ -156,9 +174,11 @@ class ProceduralCharacterGymRuntime {
   private readonly unitRuntime: ProceduralUnitRuntime;
   private readonly archerStage: ProceduralArcherGymStage;
   private readonly meleeStage: ProceduralMeleeGymStage;
+  private readonly collisionStage: ProceduralCollisionGymStage;
   private projectiles: ArrowProjectileSystem;
   private character: ProceduralUnitActor;
   private config: ProceduralUnitConfig;
+  private collisionConfig: ProceduralCollisionGymConfig;
   private smoke = createIdleCharacterGymSmokeState();
   private paused = false;
   private disposed = false;
@@ -178,6 +198,7 @@ class ProceduralCharacterGymRuntime {
     unitRuntime: ProceduralUnitRuntime,
   ) {
     this.config = input.config;
+    this.collisionConfig = input.collisionConfig;
     this.onStats = input.onStats;
     this.backend = initialized.backend;
     this.renderer = initialized.renderer as AnimationLoopRenderer;
@@ -186,12 +207,14 @@ class ProceduralCharacterGymRuntime {
     this.camera = createGymCamera();
     this.controls = createGymControls(this.camera, this.renderer.domElement);
     this.unitRuntime = unitRuntime;
+    this.unitRuntime.updatePhysicsConfig(this.config.humanoid);
     this.character = unitRuntime.createActor(this.config);
     this.stage.add(this.character.object);
     this.archerStage = new ProceduralArcherGymStage(this.config.archer);
     this.meleeStage = new ProceduralMeleeGymStage(this.config.melee);
     this.projectiles = createArrowProjectileSystem(this.config);
-    this.stage.add(this.archerStage.group, this.meleeStage.group, this.projectiles.group);
+    this.collisionStage = new ProceduralCollisionGymStage(this.unitRuntime, this.config, this.collisionConfig);
+    this.stage.add(this.archerStage.group, this.meleeStage.group, this.projectiles.group, this.collisionStage.group);
     this.connectCharacterRangedRelease();
     this.connectCharacterMeleeContact();
     this.connectProjectileImpact();
@@ -232,6 +255,7 @@ class ProceduralCharacterGymRuntime {
       cancelMelee: () => this.character.cancelMeleeAttack(),
       dispose: () => this.dispose(),
       fireArrow: () => this.fireArrow(),
+      fireCollisionArrow: () => this.collisionStage.fireArrow(),
       reset: () => this.reset(),
       resetCamera: () => this.resetCamera(),
       runSmoke: () => this.runSmoke(),
@@ -241,6 +265,7 @@ class ProceduralCharacterGymRuntime {
       startRagdoll: () => this.startRagdoll(),
       stepOnce: () => this.stepOnce(),
       updateConfig: (config) => this.updateConfig(config),
+      updateCollisionConfig: (config) => this.updateCollisionConfig(config),
     };
   }
 
@@ -256,6 +281,12 @@ class ProceduralCharacterGymRuntime {
   }
 
   private advance(deltaSeconds: number): void {
+    if (this.collisionConfig.enabled) {
+      this.collisionStage.update(deltaSeconds);
+      this.unitRuntime.update(deltaSeconds);
+      this.collisionStage.updateProjectiles(deltaSeconds);
+      return;
+    }
     this.archerStage.update(deltaSeconds);
     this.meleeStage.update(deltaSeconds);
     this.syncActionTargets();
@@ -480,6 +511,7 @@ class ProceduralCharacterGymRuntime {
     const kindChanged = normalized.kind !== this.config.kind;
     const projectileCapacityChanged = normalized.archer.projectileCapacity !== this.config.archer.projectileCapacity;
     this.config = normalized;
+    this.unitRuntime.updatePhysicsConfig(normalized.humanoid);
     updateGymTerrain(this.stage, normalized);
     this.controls.autoRotate = normalized.humanoid.autoRotate;
     this.archerStage.updateConfig(normalized.archer);
@@ -489,8 +521,18 @@ class ProceduralCharacterGymRuntime {
     this.updateActionStageVisibility();
     if (kindChanged) this.replaceCharacter();
     else this.unitRuntime.updateActorConfig(this.character, normalized);
+    this.collisionStage.updateUnitConfig(normalized);
     this.syncActionTargets();
     if (kindChanged) this.resetCamera();
+  }
+
+  private updateCollisionConfig(config: ProceduralCollisionGymConfig): void {
+    if (this.disposed) return;
+    this.collisionConfig = config;
+    this.captureGeneration += 1;
+    this.collisionStage.updateConfig(config);
+    this.updateActionStageVisibility();
+    this.resetCamera();
   }
 
   private setPaused(paused: boolean): void {
@@ -506,6 +548,11 @@ class ProceduralCharacterGymRuntime {
   private stepOnce(): void {
     if (!this.paused) return;
     this.captureGeneration += 1;
+    if (this.collisionConfig.enabled) {
+      this.collisionStage.stepOnce();
+      this.unitRuntime.stepOnce();
+      return;
+    }
     this.advanceInspectionFrame();
   }
 
@@ -522,6 +569,7 @@ class ProceduralCharacterGymRuntime {
   }
 
   private resetRuntimeState(): void {
+    if (this.collisionConfig.enabled) this.collisionStage.reset();
     this.character.reset();
     this.projectiles.reset();
     this.archerStage.reset();
@@ -536,6 +584,8 @@ class ProceduralCharacterGymRuntime {
     const character = this.character.getStats();
     const render = this.renderer.info.render;
     const projectiles = this.projectiles.getStats();
+    const collision = this.collisionStage.getStats();
+    const collisionEvaluation = evaluateProceduralCollisionGym(this.collisionConfig, collision);
     this.onStats({
       activeBodies: character.activeBodyCount,
       assetLabel: character.assetLabel,
@@ -543,6 +593,15 @@ class ProceduralCharacterGymRuntime {
       boneCount: character.boneCount,
       bodyCount: character.bodyCount,
       constraintCount: character.constraintCount,
+      collisionActorCount: collision.actorCount,
+      collisionContactCount: collision.contactCount,
+      collisionDroppedPairCount: collision.droppedPairCount,
+      collisionEvaluationReasons: collisionEvaluation.reasons,
+      collisionEvaluationStatus: collisionEvaluation.status,
+      collisionImpactCount: collision.impactCount,
+      collisionMaximumOffset: collision.maximumOffset,
+      collisionRagdollCount: collision.ragdollCount,
+      collisionScenario: collision.scenario,
       drawCalls: render.drawCalls ?? render.calls,
       fps: Math.round(1 / Math.max(deltaSeconds, 1 / 240)),
       frameMs: Number((deltaSeconds * 1000).toFixed(1)),
@@ -556,7 +615,7 @@ class ProceduralCharacterGymRuntime {
       meleeWeaponId: character.meleeWeaponId,
       meleeWeaponSource: character.meleeWeaponSource,
       maximumHorseBoneStretchRatio: character.maximumHorseBoneStretchRatio,
-      mode: character.mode,
+      mode: this.collisionConfig.enabled ? (collision.ragdollCount > 0 ? "ragdoll" : "animated") : character.mode,
       physicsSteps: character.physicsSteps,
       previewArrowVisible: character.previewArrowVisible,
       projectileActiveCount: projectiles.activeCount,
@@ -650,6 +709,7 @@ class ProceduralCharacterGymRuntime {
     this.unsubscribeMeleeContact();
     this.unsubscribeImpact();
     this.projectiles.dispose();
+    this.collisionStage.dispose();
     this.archerStage.dispose();
     this.meleeStage.dispose();
     this.unitRuntime.dispose();
@@ -730,10 +790,13 @@ class ProceduralCharacterGymRuntime {
   }
 
   private updateActionStageVisibility(): void {
+    const collisionVisible = this.collisionConfig.enabled;
+    this.character.object.visible = !collisionVisible;
     const archerVisible = this.config.kind === "archer";
-    this.archerStage.group.visible = archerVisible;
-    this.projectiles.group.visible = archerVisible;
-    this.meleeStage.group.visible = isMeleeKind(this.config.kind);
+    this.archerStage.group.visible = !collisionVisible && archerVisible;
+    this.projectiles.group.visible = !collisionVisible && archerVisible;
+    this.meleeStage.group.visible = !collisionVisible && isMeleeKind(this.config.kind);
+    this.collisionStage.group.visible = collisionVisible;
     if (!archerVisible) this.projectiles.reset();
   }
 }
