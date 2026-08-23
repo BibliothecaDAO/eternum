@@ -11,7 +11,9 @@ describe("combat presentation wiring", () => {
 
     expect(coordinator).toContain("Cairo/RECS remains the only gameplay authority");
     expect(coordinator).not.toMatch(/setComponent|updateComponent|systemCalls|attack_explorer/);
-    expect(worldmap).toContain("new CombatPresentationCoordinator(this.scene)");
+    expect(worldmap).toContain("new CombatPresentationCoordinator(this.scene, {");
+    expect(worldmap).toContain("hasTarget: (entityId) => this.armyManager.hasProceduralProjectileTarget(entityId)");
+    expect(worldmap).toContain("sweepSphere: (request) => this.armyManager.sweepProceduralProjectile(request)");
     expect(worldmap).toContain("this.combatPresentation?.update(deltaTime)");
     expect(worldmap).toContain("this.combatPresentation?.dispose()");
     expect(worldmap).toContain("this.replayIndexedCombat(update)");
