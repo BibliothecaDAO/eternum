@@ -6,7 +6,10 @@ import { WebGPURenderer } from "three/webgpu";
 import type { RendererSurfaceLike } from "@/three/renderer-backend";
 import { ProceduralTerrain } from "@/three/terrain/procedural-terrain";
 import { terrainHexToWorld } from "@/three/terrain/terrain-coordinates";
-import { createAllBiomesTerrainRequest } from "@/three/terrain/verification/terrain-verification-fixtures";
+import {
+  createTerrainVerificationRequest,
+  type TerrainVerificationSceneId,
+} from "@/three/terrain/verification/terrain-verification-fixtures";
 import { configureGltfTextureSupport } from "@/three/utils/utils";
 
 export interface ProceduralTerrainDebugStats {
@@ -25,6 +28,7 @@ export interface ProceduralTerrainDebugStats {
   groundTextureLayers: number;
   prepareMs: number;
   propInstances: number;
+  sceneId: TerrainVerificationSceneId;
   shadingMode: "flat" | "textured";
   triangles: number;
   textures: number;
@@ -41,6 +45,7 @@ interface MountProceduralTerrainDebugRendererInput {
   canvas: HTMLCanvasElement;
   captureMode: boolean;
   forceWebGL: boolean;
+  sceneId: TerrainVerificationSceneId;
   texturedGround: boolean;
   onReady(stats: ProceduralTerrainDebugStats): void;
 }
@@ -137,7 +142,7 @@ async function createRuntime(input: MountProceduralTerrainDebugRendererInput): P
 
   const scene = new Scene();
   scene.background = new Color("#d8d0ba");
-  const request = createAllBiomesTerrainRequest();
+  const request = createTerrainVerificationRequest(input.sceneId);
   const camera = new PerspectiveCamera(36, 1, 0.1, 300);
   const controls = new MapControls(camera, input.canvas);
   controls.enableDamping = false;
@@ -163,6 +168,7 @@ async function createRuntime(input: MountProceduralTerrainDebugRendererInput): P
     groundTextureLayers: groundTextureStats.layerCount,
     prepareMs: prepared.diagnostics.prepareMs,
     propInstances: propStats.instances,
+    sceneId: input.sceneId,
     triangles: prepared.diagnostics.triangles + propStats.triangles,
     vertices: prepared.diagnostics.vertices,
   } satisfies Omit<

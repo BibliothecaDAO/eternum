@@ -8,6 +8,10 @@ import {
   type ProceduralTerrainDebugStats,
 } from "@/three/debug/procedural-terrain-debug-renderer";
 import { TERRAIN_BIOME_DESCRIPTORS, TERRAIN_BIOME_ORDER } from "@/three/terrain/terrain-palette";
+import {
+  TERRAIN_VERIFICATION_SCENE_IDS,
+  type TerrainVerificationSceneId,
+} from "@/three/terrain/verification/terrain-verification-fixtures";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { useBootDocumentState } from "@/ui/modules/boot-loader";
 
@@ -27,6 +31,7 @@ const EMPTY_STATS: ProceduralTerrainDebugStats = {
   groundTextureLayers: 0,
   prepareMs: 0,
   propInstances: 0,
+  sceneId: "all-biomes",
   shadingMode: "textured",
   triangles: 0,
   textures: 0,
@@ -40,6 +45,7 @@ export const ProceduralTerrainDebugView = () => {
   const capture = searchParams.get("capture") === "1";
   const forceWebGL = searchParams.get("rendererMode") === "webgpu-force-webgl";
   const texturedGround = searchParams.get("groundMode") !== "flat";
+  const sceneId = resolveSceneId(searchParams.get("scene"));
   const [stats, setStats] = useState(EMPTY_STATS);
   const [error, setError] = useState<string | null>(null);
   const [ready, setReady] = useState(false);
@@ -55,6 +61,7 @@ export const ProceduralTerrainDebugView = () => {
         canvas,
         captureMode: capture,
         forceWebGL,
+        sceneId,
         texturedGround,
         onReady: (nextStats) => {
           if (!active) return;
@@ -83,7 +90,7 @@ export const ProceduralTerrainDebugView = () => {
       rendererRef.current?.dispose();
       rendererRef.current = null;
     };
-  }, [capture, forceWebGL, texturedGround]);
+  }, [capture, forceWebGL, sceneId, texturedGround]);
 
   const setRendererMode = (value: string) => {
     const next = new URLSearchParams(searchParams);
@@ -94,6 +101,12 @@ export const ProceduralTerrainDebugView = () => {
   const setGroundMode = (value: string) => {
     const next = new URLSearchParams(searchParams);
     next.set("groundMode", value);
+    window.location.search = next.toString();
+  };
+
+  const setSceneId = (value: string) => {
+    const next = new URLSearchParams(searchParams);
+    next.set("scene", value);
     window.location.search = next.toString();
   };
 
@@ -140,6 +153,21 @@ export const ProceduralTerrainDebugView = () => {
           </div>
 
           <label className="flex flex-col gap-2 text-xs font-semibold uppercase text-stone-300">
+            Anchor scene
+            <select
+              value={sceneId}
+              onChange={(event) => setSceneId(event.target.value)}
+              className="h-10 border border-white/15 bg-stone-950 px-3 text-sm font-medium normal-case text-white"
+            >
+              {TERRAIN_VERIFICATION_SCENE_IDS.map((value) => (
+                <option key={value} value={value}>
+                  {formatSceneLabel(value)}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          <label className="flex flex-col gap-2 text-xs font-semibold uppercase text-stone-300">
             Renderer
             <select
               value={forceWebGL ? "webgpu-force-webgl" : "webgpu-auto"}
@@ -165,6 +193,7 @@ export const ProceduralTerrainDebugView = () => {
 
           <dl className="grid grid-cols-3 gap-2 text-sm">
             <DebugMetric label="Backend" value={stats.activeMode === "webgpu" ? "WebGPU" : "WebGL2"} />
+            <DebugMetric label="Scene" value={formatSceneLabel(stats.sceneId)} />
             <DebugMetric label="Biomes" value={String(stats.biomeCount || "--")} />
             <DebugMetric label="Hexes" value={stats.cellCount.toLocaleString()} />
             <DebugMetric label="Calls" value={String(stats.drawCalls || "--")} />
@@ -220,3 +249,16 @@ const DebugMetric = ({ label, value }: { label: string; value: string }) => (
     <dd className="mt-1 truncate font-mono text-xs text-white">{value}</dd>
   </div>
 );
+
+function resolveSceneId(value: string | null): TerrainVerificationSceneId {
+  return TERRAIN_VERIFICATION_SCENE_IDS.includes(value as TerrainVerificationSceneId)
+    ? (value as TerrainVerificationSceneId)
+    : "all-biomes";
+}
+
+function formatSceneLabel(value: TerrainVerificationSceneId): string {
+  return value
+    .split("-")
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(" ");
+}

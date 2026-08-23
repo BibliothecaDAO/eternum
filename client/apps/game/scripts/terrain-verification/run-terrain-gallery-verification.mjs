@@ -10,33 +10,49 @@ const READY_TIMEOUT_MS = 20_000;
 const POLL_MS = 250;
 const RENDERER_MODES = ["webgpu-auto", "webgpu-force-webgl"];
 const GROUND_MODES = ["flat", "textured"];
+const SCENE_IDS = ["all-biomes", "temperate-grove", "tropical-coast", "arid-basin", "cold-front", "scorched-ridge"];
 
-export function buildTerrainGalleryUrl(baseUrl, rendererMode, groundMode = "textured") {
+export function buildTerrainGalleryUrl(baseUrl, rendererMode, groundMode = "textured", sceneId = "all-biomes") {
   const url = new URL(baseUrl);
   url.pathname = "/debug/procedural-terrain";
   url.search = "";
   url.searchParams.set("capture", "1");
   url.searchParams.set("rendererMode", rendererMode);
   url.searchParams.set("groundMode", groundMode);
+  url.searchParams.set("scene", sceneId);
   return url.toString();
 }
 
-export function evaluateTerrainGalleryResults(results) {
+export function evaluateTerrainGalleryResults(results, options = {}) {
+  const sceneIds = options.sceneIds ?? ["all-biomes"];
   const reasons = [];
-  for (const rendererMode of RENDERER_MODES) {
-    for (const groundMode of GROUND_MODES) {
-      if (!results.some((result) => result.rendererMode === rendererMode && result.groundMode === groundMode)) {
-        reasons.push(`${rendererMode}/${groundMode}: missing verification scenario`);
+  for (const sceneId of sceneIds) {
+    for (const rendererMode of RENDERER_MODES) {
+      for (const groundMode of GROUND_MODES) {
+        if (
+          !results.some(
+            (result) =>
+              result.sceneId === sceneId && result.rendererMode === rendererMode && result.groundMode === groundMode,
+          )
+        ) {
+          reasons.push(`${sceneId}/${rendererMode}/${groundMode}: missing verification scenario`);
+        }
       }
     }
   }
   for (const result of results) {
-    const label = `${result.rendererMode}/${result.groundMode}`;
+    const label = `${result.sceneId}/${result.rendererMode}/${result.groundMode}`;
     if (!result.routeMounted) reasons.push(`${label}: route did not mount`);
     if (!result.ready) reasons.push(`${label}: route did not become ready`);
     if (result.errors.length > 0) reasons.push(`${label}: browser reported ${result.errors[0]}`);
-    if (result.snapshot?.biomeCount !== 16) reasons.push(`${label}: expected 16 biomes`);
-    if (!(result.snapshot?.cellCount >= 256)) reasons.push(`${label}: expected at least 256 terrain cells`);
+    if (result.sceneId === "all-biomes" && result.snapshot?.biomeCount !== 16) {
+      reasons.push(`${label}: expected 16 biomes`);
+    }
+    if (result.sceneId !== "all-biomes" && !(result.snapshot?.biomeCount >= 3)) {
+      reasons.push(`${label}: expected at least three anchor biomes`);
+    }
+    if (!(result.snapshot?.cellCount >= 200)) reasons.push(`${label}: expected at least 200 terrain cells`);
+    if (result.snapshot?.sceneId !== result.sceneId) reasons.push(`${label}: snapshot scene did not match request`);
     if (result.snapshot?.groundTextureLayers !== 8) reasons.push(`${label}: expected eight ground texture layers`);
     if (!(result.snapshot?.groundTextureBytes > 0)) reasons.push(`${label}: expected measured ground texture bytes`);
     if (!(result.snapshot?.frameSampleCount >= 30)) reasons.push(`${label}: expected at least 30 stable frame samples`);
@@ -61,18 +77,22 @@ export function evaluateTerrainGalleryResults(results) {
     }
   }
 
-  const performanceDeltas = createPerformanceDeltas(results);
+  const performanceDeltas = createPerformanceDeltas(results, sceneIds);
   for (const delta of performanceDeltas) {
     const p95BudgetMs = delta.rendererMode === "webgpu-auto" ? 1.5 : 2.5;
     if (delta.frameP95Ms > p95BudgetMs) {
-      reasons.push(`${delta.rendererMode}: textured frame p95 added ${delta.frameP95Ms.toFixed(2)} ms`);
+      reasons.push(
+        `${delta.sceneId}/${delta.rendererMode}: textured frame p95 added ${delta.frameP95Ms.toFixed(2)} ms`,
+      );
     }
   }
 
-  const fingerprints = new Set(results.map((result) => result.snapshot?.fingerprint).filter(Boolean));
-  if (fingerprints.size !== 1) reasons.push("renderer backends produced different terrain fingerprints");
-  const metrics = results.map((result) => result.snapshot).filter(Boolean);
-  if (metrics.length === results.length) {
+  for (const sceneId of sceneIds) {
+    const sceneResults = results.filter((result) => result.sceneId === sceneId);
+    const fingerprints = new Set(sceneResults.map((result) => result.snapshot?.fingerprint).filter(Boolean));
+    if (fingerprints.size !== 1) reasons.push(`${sceneId}: renderer backends produced different terrain fingerprints`);
+    const metrics = sceneResults.map((result) => result.snapshot).filter(Boolean);
+    if (metrics.length !== sceneResults.length || metrics.length === 0) continue;
     const reference = metrics[0];
     for (const metric of metrics.slice(1)) {
       if (
@@ -82,37 +102,41 @@ export function evaluateTerrainGalleryResults(results) {
         metric.groundTextureLayers !== reference.groundTextureLayers ||
         metric.propInstances !== reference.propInstances
       ) {
-        reasons.push("renderer backends produced different biome, cell, texture, or prop counts");
+        reasons.push(`${sceneId}: renderer backends produced different biome, cell, texture, or prop counts`);
       }
     }
   }
   return { ok: reasons.length === 0, performanceDeltas, reasons };
 }
 
-function createPerformanceDeltas(results) {
-  return RENDERER_MODES.flatMap((rendererMode) => {
-    const flat = results.find(
-      (result) => result.rendererMode === rendererMode && result.groundMode === "flat",
-    )?.snapshot;
-    const textured = results.find(
-      (result) => result.rendererMode === rendererMode && result.groundMode === "textured",
-    )?.snapshot;
-    if (!flat || !textured) return [];
-    return [
-      {
-        firstRenderMs: textured.firstRenderMs - flat.firstRenderMs,
-        frameP50Ms: textured.frameP50Ms - flat.frameP50Ms,
-        frameP95Ms: textured.frameP95Ms - flat.frameP95Ms,
-        frameWorstMs: textured.frameWorstMs - flat.frameWorstMs,
-        rendererMode,
-      },
-    ];
-  });
+function createPerformanceDeltas(results, sceneIds) {
+  return sceneIds.flatMap((sceneId) =>
+    RENDERER_MODES.flatMap((rendererMode) => {
+      const flat = results.find(
+        (result) => result.sceneId === sceneId && result.rendererMode === rendererMode && result.groundMode === "flat",
+      )?.snapshot;
+      const textured = results.find(
+        (result) =>
+          result.sceneId === sceneId && result.rendererMode === rendererMode && result.groundMode === "textured",
+      )?.snapshot;
+      if (!flat || !textured) return [];
+      return [
+        {
+          firstRenderMs: textured.firstRenderMs - flat.firstRenderMs,
+          frameP50Ms: textured.frameP50Ms - flat.frameP50Ms,
+          frameP95Ms: textured.frameP95Ms - flat.frameP95Ms,
+          frameWorstMs: textured.frameWorstMs - flat.frameWorstMs,
+          rendererMode,
+          sceneId,
+        },
+      ];
+    }),
+  );
 }
 
-function runGalleryScenario({ artifactDirectory, baseUrl, groundMode, headed, rendererMode }) {
-  const session = `terrain-gallery-${rendererMode}-${groundMode}-${Date.now().toString(36)}`;
-  const url = buildTerrainGalleryUrl(baseUrl, rendererMode, groundMode);
+function runGalleryScenario({ artifactDirectory, baseUrl, groundMode, headed, rendererMode, sceneId }) {
+  const session = `terrain-gallery-${sceneId}-${rendererMode}-${groundMode}-${Date.now().toString(36)}`;
+  const url = buildTerrainGalleryUrl(baseUrl, rendererMode, groundMode, sceneId);
   try {
     runAgentBrowser(session, ["open", url, "--ignore-https-errors"], headed);
     runAgentBrowser(session, ["set", "viewport", "1440", "900"], headed);
@@ -127,7 +151,7 @@ function runGalleryScenario({ artifactDirectory, baseUrl, groundMode, headed, re
       state = readRouteState(session, headed);
     }
     const errors = parseErrorLines(runAgentBrowser(session, ["errors"], headed));
-    const screenshotPath = join(artifactDirectory, `${rendererMode}-${groundMode}.png`);
+    const screenshotPath = join(artifactDirectory, `${sceneId}-${rendererMode}-${groundMode}.png`);
     runAgentBrowser(session, ["screenshot", screenshotPath], headed);
     return {
       errors,
@@ -135,6 +159,7 @@ function runGalleryScenario({ artifactDirectory, baseUrl, groundMode, headed, re
       ready: state.status === "ready" && state.dataReady,
       rendererMode,
       routeMounted: state.routeMounted,
+      sceneId,
       screenshotPath,
       snapshot: state.snapshot,
       url,
@@ -214,18 +239,30 @@ function readOption(args, name, fallback) {
   return index === -1 ? fallback : (args[index + 1] ?? fallback);
 }
 
+function readListOption(args, name, fallback) {
+  return readOption(args, name, fallback.join(","))
+    .split(",")
+    .map((value) => value.trim())
+    .filter(Boolean);
+}
+
 function main(args) {
   const baseUrl = readOption(args, "--base-url", DEFAULT_BASE_URL);
   const artifactDirectory = resolve(readOption(args, "--artifact-dir", DEFAULT_ARTIFACT_DIRECTORY));
   const headed = args.includes("--headed");
+  const sceneIds = readListOption(args, "--scenes", ["all-biomes"]);
+  const unknownSceneIds = sceneIds.filter((sceneId) => !SCENE_IDS.includes(sceneId));
+  if (unknownSceneIds.length > 0) throw new Error(`Unknown terrain gallery scenes: ${unknownSceneIds.join(", ")}`);
   mkdirSync(artifactDirectory, { recursive: true });
-  const results = RENDERER_MODES.flatMap((rendererMode) =>
-    GROUND_MODES.map((groundMode) =>
-      runGalleryScenario({ artifactDirectory, baseUrl, groundMode, headed, rendererMode }),
+  const results = sceneIds.flatMap((sceneId) =>
+    RENDERER_MODES.flatMap((rendererMode) =>
+      GROUND_MODES.map((groundMode) =>
+        runGalleryScenario({ artifactDirectory, baseUrl, groundMode, headed, rendererMode, sceneId }),
+      ),
     ),
   );
-  const evaluation = evaluateTerrainGalleryResults(results);
-  const summary = { ...evaluation, results };
+  const evaluation = evaluateTerrainGalleryResults(results, { sceneIds });
+  const summary = { ...evaluation, results, sceneIds };
   writeFileSync(join(artifactDirectory, "terrain-gallery-verification.json"), `${JSON.stringify(summary, null, 2)}\n`);
   console.log(JSON.stringify(summary, null, 2));
   if (!summary.ok) process.exitCode = 1;

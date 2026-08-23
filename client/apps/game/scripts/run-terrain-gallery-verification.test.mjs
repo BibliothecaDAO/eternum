@@ -9,7 +9,7 @@ import {
 describe("terrain gallery verification", () => {
   it("builds the auth-free fixed capture URL", () => {
     expect(buildTerrainGalleryUrl("https://localhost:4173/play/anything", "webgpu-force-webgl")).toBe(
-      "https://localhost:4173/debug/procedural-terrain?capture=1&rendererMode=webgpu-force-webgl&groundMode=textured",
+      "https://localhost:4173/debug/procedural-terrain?capture=1&rendererMode=webgpu-force-webgl&groundMode=textured&scene=all-biomes",
     );
   });
 
@@ -31,9 +31,9 @@ describe("terrain gallery verification", () => {
     expect(evaluateTerrainGalleryResults(results)).toMatchObject({
       ok: false,
       reasons: expect.arrayContaining([
-        "webgpu-force-webgl/textured: browser reported device lost",
-        "webgpu-force-webgl/textured: main-thread commit exceeded 8 ms",
-        "renderer backends produced different terrain fingerprints",
+        "all-biomes/webgpu-force-webgl/textured: browser reported device lost",
+        "all-biomes/webgpu-force-webgl/textured: main-thread commit exceeded 8 ms",
+        "all-biomes: renderer backends produced different terrain fingerprints",
       ]),
     });
   });
@@ -55,6 +55,7 @@ function result(rendererMode, activeMode, groundMode) {
     ready: true,
     rendererMode,
     routeMounted: true,
+    sceneId: "all-biomes",
     snapshot: {
       activeMode,
       biomeCount: 16,
@@ -71,6 +72,7 @@ function result(rendererMode, activeMode, groundMode) {
       groundTextureLayers: 8,
       prepareMs: 20,
       propInstances: 39,
+      sceneId: "all-biomes",
       triangles: 18_300,
       textures: 4,
     },
