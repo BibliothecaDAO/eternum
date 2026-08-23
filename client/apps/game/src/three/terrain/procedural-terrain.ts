@@ -18,6 +18,7 @@ import { prepareTerrainPage } from "./terrain-page-builder";
 import { TerrainPageWorkerClient } from "./terrain-page-worker-client";
 import { TerrainPropPools, type TerrainPropPoolStats } from "./terrain-prop-pools";
 import type { TerrainPropLod } from "./terrain-prop-catalog";
+import { TERRAIN_QUALITY_PROFILES, type TerrainQualityTier } from "./terrain-quality";
 import type {
   PreparedTerrainPage,
   TerrainGeometryBuffers,
@@ -57,6 +58,7 @@ export class ProceduralTerrain {
   private groundTexturesPromise: Promise<TerrainGroundTextureHandle> | null = null;
   private presentationGroup = new Group();
   private propLod: TerrainPropLod = "near";
+  private qualityTier: TerrainQualityTier = "detail";
   private propPools: TerrainPropPools | null = null;
   private propPoolsPromise: Promise<TerrainPropPools> | null = null;
   private pageWorker: TerrainPageWorkerClient | null = null;
@@ -93,6 +95,7 @@ export class ProceduralTerrain {
       this.object3d.add(pools.object3d);
     }
     pools.setLod(this.propLod);
+    pools.setWindStrength(TERRAIN_QUALITY_PROFILES[this.qualityTier].windStrength);
     this.refreshPropPools();
   }
 
@@ -119,6 +122,19 @@ export class ProceduralTerrain {
     if (enabled === this.groundTextureDetailEnabled) return;
     this.groundTextureDetailEnabled = enabled;
     this.refreshGroundMaterial();
+  }
+
+  setQualityTier(tier: TerrainQualityTier): void {
+    const profile = TERRAIN_QUALITY_PROFILES[tier];
+    this.qualityTier = tier;
+    this.setPropLod(profile.propLod);
+    this.setGroundTextureDetailEnabled(profile.groundTextureDetail);
+    this.propPools?.setWindStrength(profile.windStrength);
+    this.materials.waterMotion.value = profile.waterMotion;
+  }
+
+  getQualityTier(): TerrainQualityTier {
+    return this.qualityTier;
   }
 
   isGroundTextureDetailEnabled(): boolean {
@@ -177,9 +193,9 @@ export class ProceduralTerrain {
     this.pageWorker = null;
     this.propPools?.dispose();
     this.propPools = null;
-    new Set([...Object.values(this.materials), this.groundTextureMaterial].filter(Boolean)).forEach((material) =>
-      material!.dispose(),
-    );
+    new Set(
+      [this.materials.flatLand, this.materials.land, this.materials.water, this.groundTextureMaterial].filter(Boolean),
+    ).forEach((material) => material!.dispose());
     this.groundTextureHandle?.release();
     this.groundTextureHandle = null;
     this.groundTextureMaterial = null;

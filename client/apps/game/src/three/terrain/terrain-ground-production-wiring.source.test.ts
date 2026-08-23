@@ -17,15 +17,16 @@ describe("procedural ground texture production wiring", () => {
     expect(hexception).toContain("retaining flat terrain");
   });
 
-  it("retains the flat material as the far-camera terrain LOD", () => {
+  it("routes camera bands through one terrain quality policy", () => {
     const worldmap = source("src/three/scenes/worldmap.tsx");
 
-    expect(worldmap).toContain("setGroundTextureDetailEnabled(view !== CameraView.Far)");
+    expect(worldmap).toContain("setQualityTier(resolveTerrainQualityTier(resolveTerrainCameraBand(view)))");
+    expect(worldmap).not.toContain('setPropLod(view === CameraView.Close ? "near" : "far")');
   });
 
-  it("reserves near prop geometry for the close camera view", () => {
-    const worldmap = source("src/three/scenes/worldmap.tsx");
+  it("benchmarks the normal-play balanced terrain tier", () => {
+    const benchmark = source("src/three/debug/procedural-terrain-benchmark-renderer.ts");
 
-    expect(worldmap).toContain('setPropLod(view === CameraView.Close ? "near" : "far")');
+    expect(benchmark).toContain('runtime.terrain.setQualityTier("balanced")');
   });
 });

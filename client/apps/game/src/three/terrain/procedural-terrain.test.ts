@@ -49,21 +49,24 @@ describe("ProceduralTerrain", () => {
     terrain.dispose();
   });
 
-  it("retains a requested prop LOD while the catalog loads", async () => {
+  it("retains a requested quality tier while the catalog loads", async () => {
     const pools = {
       dispose: vi.fn(),
       getStats: vi.fn(() => ({ instances: 0, triangles: 0 })),
       object3d: new Group(),
       setLod: vi.fn(),
+      setWindStrength: vi.fn(),
       update: vi.fn(),
     };
     const load = vi.spyOn(TerrainPropPools, "load").mockResolvedValue(pools as unknown as TerrainPropPools);
     const terrain = new ProceduralTerrain();
 
-    terrain.setPropLod("far");
+    terrain.setQualityTier("overview");
     await terrain.loadProps();
 
     expect(pools.setLod).toHaveBeenCalledWith("far");
+    expect(pools.setWindStrength).toHaveBeenCalledWith(0.12);
+    expect(terrain.getQualityTier()).toBe("overview");
     terrain.dispose();
     load.mockRestore();
   });

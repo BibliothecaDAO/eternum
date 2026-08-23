@@ -8,6 +8,7 @@ import {
   type ProceduralTerrainDebugStats,
 } from "@/three/debug/procedural-terrain-debug-renderer";
 import { TERRAIN_BIOME_DESCRIPTORS, TERRAIN_BIOME_ORDER } from "@/three/terrain/terrain-palette";
+import { TERRAIN_QUALITY_TIERS, type TerrainQualityTier } from "@/three/terrain/terrain-quality";
 import {
   TERRAIN_VERIFICATION_SCENE_IDS,
   type TerrainVerificationSceneId,
@@ -31,6 +32,7 @@ const EMPTY_STATS: ProceduralTerrainDebugStats = {
   groundTextureLayers: 0,
   prepareMs: 0,
   propInstances: 0,
+  qualityTier: "detail",
   sceneId: "all-biomes",
   shadingMode: "textured",
   triangles: 0,
@@ -46,6 +48,7 @@ export const ProceduralTerrainDebugView = () => {
   const forceWebGL = searchParams.get("rendererMode") === "webgpu-force-webgl";
   const texturedGround = searchParams.get("groundMode") !== "flat";
   const sceneId = resolveSceneId(searchParams.get("scene"));
+  const qualityTier = resolveQualityTier(searchParams.get("quality"));
   const [stats, setStats] = useState(EMPTY_STATS);
   const [error, setError] = useState<string | null>(null);
   const [ready, setReady] = useState(false);
@@ -61,6 +64,7 @@ export const ProceduralTerrainDebugView = () => {
         canvas,
         captureMode: capture,
         forceWebGL,
+        qualityTier,
         sceneId,
         texturedGround,
         onReady: (nextStats) => {
@@ -90,7 +94,7 @@ export const ProceduralTerrainDebugView = () => {
       rendererRef.current?.dispose();
       rendererRef.current = null;
     };
-  }, [capture, forceWebGL, sceneId, texturedGround]);
+  }, [capture, forceWebGL, qualityTier, sceneId, texturedGround]);
 
   const setRendererMode = (value: string) => {
     const next = new URLSearchParams(searchParams);
@@ -107,6 +111,12 @@ export const ProceduralTerrainDebugView = () => {
   const setSceneId = (value: string) => {
     const next = new URLSearchParams(searchParams);
     next.set("scene", value);
+    window.location.search = next.toString();
+  };
+
+  const setQualityTier = (value: string) => {
+    const next = new URLSearchParams(searchParams);
+    next.set("quality", value);
     window.location.search = next.toString();
   };
 
@@ -153,6 +163,21 @@ export const ProceduralTerrainDebugView = () => {
           </div>
 
           <label className="flex flex-col gap-2 text-xs font-semibold uppercase text-stone-300">
+            Terrain quality
+            <select
+              value={qualityTier}
+              onChange={(event) => setQualityTier(event.target.value)}
+              className="h-10 border border-white/15 bg-stone-950 px-3 text-sm font-medium normal-case text-white"
+            >
+              {TERRAIN_QUALITY_TIERS.map((value) => (
+                <option key={value} value={value}>
+                  {formatSceneLabel(value)}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          <label className="flex flex-col gap-2 text-xs font-semibold uppercase text-stone-300">
             Anchor scene
             <select
               value={sceneId}
@@ -194,6 +219,7 @@ export const ProceduralTerrainDebugView = () => {
           <dl className="grid grid-cols-3 gap-2 text-sm">
             <DebugMetric label="Backend" value={stats.activeMode === "webgpu" ? "WebGPU" : "WebGL2"} />
             <DebugMetric label="Scene" value={formatSceneLabel(stats.sceneId)} />
+            <DebugMetric label="Quality" value={formatSceneLabel(stats.qualityTier)} />
             <DebugMetric label="Biomes" value={String(stats.biomeCount || "--")} />
             <DebugMetric label="Hexes" value={stats.cellCount.toLocaleString()} />
             <DebugMetric label="Calls" value={String(stats.drawCalls || "--")} />
@@ -256,7 +282,11 @@ function resolveSceneId(value: string | null): TerrainVerificationSceneId {
     : "all-biomes";
 }
 
-function formatSceneLabel(value: TerrainVerificationSceneId): string {
+function resolveQualityTier(value: string | null): TerrainQualityTier {
+  return TERRAIN_QUALITY_TIERS.includes(value as TerrainQualityTier) ? (value as TerrainQualityTier) : "detail";
+}
+
+function formatSceneLabel(value: TerrainQualityTier | TerrainVerificationSceneId): string {
   return value
     .split("-")
     .map((word) => word.charAt(0).toUpperCase() + word.slice(1))

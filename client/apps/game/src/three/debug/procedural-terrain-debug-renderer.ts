@@ -6,6 +6,7 @@ import { WebGPURenderer } from "three/webgpu";
 import type { RendererSurfaceLike } from "@/three/renderer-backend";
 import { ProceduralTerrain } from "@/three/terrain/procedural-terrain";
 import { terrainHexToWorld } from "@/three/terrain/terrain-coordinates";
+import type { TerrainQualityTier } from "@/three/terrain/terrain-quality";
 import {
   createTerrainVerificationRequest,
   type TerrainVerificationSceneId,
@@ -28,6 +29,7 @@ export interface ProceduralTerrainDebugStats {
   groundTextureLayers: number;
   prepareMs: number;
   propInstances: number;
+  qualityTier: TerrainQualityTier;
   sceneId: TerrainVerificationSceneId;
   shadingMode: "flat" | "textured";
   triangles: number;
@@ -45,6 +47,7 @@ interface MountProceduralTerrainDebugRendererInput {
   canvas: HTMLCanvasElement;
   captureMode: boolean;
   forceWebGL: boolean;
+  qualityTier: TerrainQualityTier;
   sceneId: TerrainVerificationSceneId;
   texturedGround: boolean;
   onReady(stats: ProceduralTerrainDebugStats): void;
@@ -153,6 +156,7 @@ async function createRuntime(input: MountProceduralTerrainDebugRendererInput): P
 
   const terrain = new ProceduralTerrain();
   await Promise.all([terrain.loadProps(), terrain.loadGroundTextures()]);
+  terrain.setQualityTier(input.qualityTier);
   const prepared = await terrain.preparePageAsync(request);
   const commitStartedAt = performance.now();
   terrain.present([prepared]);
@@ -168,6 +172,7 @@ async function createRuntime(input: MountProceduralTerrainDebugRendererInput): P
     groundTextureLayers: groundTextureStats.layerCount,
     prepareMs: prepared.diagnostics.prepareMs,
     propInstances: propStats.instances,
+    qualityTier: input.qualityTier,
     sceneId: input.sceneId,
     triangles: prepared.diagnostics.triangles + propStats.triangles,
     vertices: prepared.diagnostics.vertices,

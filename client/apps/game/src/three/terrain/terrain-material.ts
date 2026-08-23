@@ -1,5 +1,6 @@
 import { NormalRGPacking } from "three";
 import type Node from "three/src/nodes/core/Node.js";
+import type UniformNode from "three/src/nodes/core/UniformNode.js";
 import {
   Fn,
   If,
@@ -13,6 +14,7 @@ import {
   smoothstep,
   texture,
   time,
+  uniform,
   uv,
   vec2,
   vec3,
@@ -26,18 +28,21 @@ export interface TerrainMaterials {
   flatLand: MeshStandardNodeMaterial;
   land: MeshStandardNodeMaterial;
   water: MeshStandardNodeMaterial;
+  waterMotion: UniformNode<"float", number>;
 }
 
 export function createTerrainMaterials(): TerrainMaterials {
   const flatLand = createVertexColorMaterial("terrain-land-flat", 0.95);
+  const waterMotion = uniform(1, "float");
   return {
     flatLand,
     land: flatLand,
-    water: createTerrainWaterMaterial(),
+    water: createTerrainWaterMaterial(waterMotion),
+    waterMotion,
   };
 }
 
-function createTerrainWaterMaterial(): MeshStandardNodeMaterial {
+function createTerrainWaterMaterial(waterMotion: UniformNode<"float", number>): MeshStandardNodeMaterial {
   const material = new MeshStandardNodeMaterial({ metalness: 0.08, roughness: 0.24 });
   material.name = "terrain-water";
   const shore = attribute<"float">("terrainShore", "float");
@@ -45,7 +50,7 @@ function createTerrainWaterMaterial(): MeshStandardNodeMaterial {
   material.roughnessNode = mix(0.2, 0.42, shore);
   const phase = time.mul(0.68).add(positionLocal.x.mul(0.54)).add(positionLocal.z.mul(0.39));
   const crossPhase = time.mul(0.43).add(positionLocal.x.mul(-0.31)).add(positionLocal.z.mul(0.47));
-  const wave = phase.sin().mul(0.0045).add(crossPhase.sin().mul(0.0025));
+  const wave = phase.sin().mul(0.0045).add(crossPhase.sin().mul(0.0025)).mul(waterMotion);
   material.positionNode = positionLocal.add(vec3(0, wave, 0));
   return material;
 }

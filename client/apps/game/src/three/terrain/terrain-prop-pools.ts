@@ -1,6 +1,7 @@
 import { Box3, Color, DynamicDrawUsage, Group, InstancedMesh, Matrix4, Mesh, Quaternion, Sphere, Vector3 } from "three";
 import { MeshStandardNodeMaterial } from "three/webgpu";
 import { positionGeometry, positionLocal, smoothstep, time, uniform, vec3 } from "three/tsl";
+import type UniformNode from "three/src/nodes/core/UniformNode.js";
 
 import { loadTerrainPropCatalog } from "./terrain-prop-asset-cache";
 import {
@@ -23,7 +24,7 @@ export class TerrainPropPools {
   readonly object3d = new Group();
   private readonly meshes = new Map<TerrainPropArchetypeId, InstancedMesh>();
   private readonly rigidMaterial = createTerrainPropMaterial(false);
-  private readonly windStrength = uniform(1);
+  private readonly windStrength = uniform(1, "float");
   private readonly windMaterial = createTerrainPropMaterial(true, this.windStrength);
   private readonly matrix = new Matrix4();
   private readonly tint = new Color();
@@ -96,6 +97,10 @@ export class TerrainPropPools {
     }
   }
 
+  setWindStrength(strength: number): void {
+    this.windStrength.value = Math.min(1, Math.max(0, strength));
+  }
+
   getStats(): TerrainPropPoolStats {
     let instances = 0;
     let triangles = 0;
@@ -152,7 +157,10 @@ export class TerrainPropPools {
   }
 }
 
-function createTerrainPropMaterial(animated: boolean, windStrength = uniform(0)): MeshStandardNodeMaterial {
+function createTerrainPropMaterial(
+  animated: boolean,
+  windStrength: UniformNode<"float", number> = uniform(0, "float"),
+): MeshStandardNodeMaterial {
   const material = new MeshStandardNodeMaterial({ metalness: 0, roughness: 1, vertexColors: true });
   if (!animated) return material;
 

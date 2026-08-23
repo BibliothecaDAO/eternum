@@ -9,7 +9,7 @@ import {
 describe("terrain gallery verification", () => {
   it("builds the auth-free fixed capture URL", () => {
     expect(buildTerrainGalleryUrl("https://localhost:4173/play/anything", "webgpu-force-webgl")).toBe(
-      "https://localhost:4173/debug/procedural-terrain?capture=1&rendererMode=webgpu-force-webgl&groundMode=textured&scene=all-biomes",
+      "https://localhost:4173/debug/procedural-terrain?capture=1&rendererMode=webgpu-force-webgl&groundMode=textured&scene=all-biomes&quality=detail",
     );
   });
 
@@ -67,6 +67,7 @@ function result(rendererMode, activeMode, groundMode) {
     errors: [],
     groundMode,
     imageCoverage: 0.42,
+    qualityTier: "detail",
     ready: true,
     rendererMode,
     routeMounted: true,
@@ -87,6 +88,7 @@ function result(rendererMode, activeMode, groundMode) {
       groundTextureLayers: 8,
       prepareMs: 20,
       propInstances: 39,
+      qualityTier: "detail",
       sceneId: "all-biomes",
       triangles: 18_300,
       textures: 4,

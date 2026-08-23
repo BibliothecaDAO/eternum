@@ -12,8 +12,15 @@ const POLL_MS = 250;
 const RENDERER_MODES = ["webgpu-auto", "webgpu-force-webgl"];
 const GROUND_MODES = ["flat", "textured"];
 const SCENE_IDS = ["all-biomes", "temperate-grove", "tropical-coast", "arid-basin", "cold-front", "scorched-ridge"];
+const QUALITY_TIERS = ["overview", "balanced", "detail"];
 
-export function buildTerrainGalleryUrl(baseUrl, rendererMode, groundMode = "textured", sceneId = "all-biomes") {
+export function buildTerrainGalleryUrl(
+  baseUrl,
+  rendererMode,
+  groundMode = "textured",
+  sceneId = "all-biomes",
+  qualityTier = "detail",
+) {
   const url = new URL(baseUrl);
   url.pathname = "/debug/procedural-terrain";
   url.search = "";
@@ -21,6 +28,7 @@ export function buildTerrainGalleryUrl(baseUrl, rendererMode, groundMode = "text
   url.searchParams.set("rendererMode", rendererMode);
   url.searchParams.set("groundMode", groundMode);
   url.searchParams.set("scene", sceneId);
+  url.searchParams.set("quality", qualityTier);
   return url.toString();
 }
 
@@ -56,6 +64,8 @@ export function evaluateTerrainGalleryResults(results, options = {}) {
     }
     if (!(result.snapshot?.cellCount >= 200)) reasons.push(`${label}: expected at least 200 terrain cells`);
     if (result.snapshot?.sceneId !== result.sceneId) reasons.push(`${label}: snapshot scene did not match request`);
+    if (result.snapshot?.qualityTier !== result.qualityTier)
+      reasons.push(`${label}: snapshot quality did not match request`);
     if (result.snapshot?.groundTextureLayers !== 8) reasons.push(`${label}: expected eight ground texture layers`);
     if (!(result.snapshot?.groundTextureBytes > 0)) reasons.push(`${label}: expected measured ground texture bytes`);
     if (!(result.snapshot?.frameSampleCount >= 30)) reasons.push(`${label}: expected at least 30 stable frame samples`);
@@ -139,9 +149,18 @@ function createPerformanceDeltas(results, sceneIds, rendererModes, groundModes) 
   );
 }
 
-async function runGalleryScenario({ artifactDirectory, baseUrl, groundMode, headed, rendererMode, sceneId }) {
-  const session = `terrain-gallery-${sceneId}-${rendererMode}-${groundMode}-${Date.now().toString(36)}`;
-  const url = buildTerrainGalleryUrl(baseUrl, rendererMode, groundMode, sceneId);
+async function runGalleryScenario({
+  artifactDirectory,
+  baseUrl,
+  groundMode,
+  headed,
+  qualityTier,
+  rendererMode,
+  sceneId,
+}) {
+  const rendererKey = rendererMode === "webgpu-auto" ? "wg" : "gl";
+  const session = `tg-${sceneId.slice(0, 8)}-${qualityTier[0]}-${rendererKey}-${groundMode[0]}-${Date.now().toString(36)}`;
+  const url = buildTerrainGalleryUrl(baseUrl, rendererMode, groundMode, sceneId, qualityTier);
   try {
     runAgentBrowser(session, ["open", "about:blank"], headed);
     runAgentBrowser(session, ["set", "viewport", "1440", "900"], headed);
@@ -164,6 +183,7 @@ async function runGalleryScenario({ artifactDirectory, baseUrl, groundMode, head
       errors,
       groundMode,
       imageCoverage,
+      qualityTier,
       ready: state.status === "ready" && state.dataReady,
       rendererMode,
       routeMounted: state.routeMounted,
@@ -270,12 +290,14 @@ async function main(args) {
   const baseUrl = readOption(args, "--base-url", DEFAULT_BASE_URL);
   const artifactDirectory = resolve(readOption(args, "--artifact-dir", DEFAULT_ARTIFACT_DIRECTORY));
   const headed = args.includes("--headed");
+  const qualityTier = readOption(args, "--quality", "detail");
   const rendererModes = readListOption(args, "--renderers", RENDERER_MODES);
   const groundModes = readListOption(args, "--ground-modes", GROUND_MODES);
   const sceneIds = readListOption(args, "--scenes", ["all-biomes"]);
   const unknownRenderers = rendererModes.filter((rendererMode) => !RENDERER_MODES.includes(rendererMode));
   const unknownGroundModes = groundModes.filter((groundMode) => !GROUND_MODES.includes(groundMode));
   const unknownSceneIds = sceneIds.filter((sceneId) => !SCENE_IDS.includes(sceneId));
+  if (!QUALITY_TIERS.includes(qualityTier)) throw new Error(`Unknown terrain gallery quality: ${qualityTier}`);
   if (unknownRenderers.length > 0) throw new Error(`Unknown terrain gallery renderers: ${unknownRenderers.join(", ")}`);
   if (unknownGroundModes.length > 0) {
     throw new Error(`Unknown terrain gallery ground modes: ${unknownGroundModes.join(", ")}`);
@@ -287,13 +309,21 @@ async function main(args) {
     for (const rendererMode of rendererModes) {
       for (const groundMode of groundModes) {
         results.push(
-          await runGalleryScenario({ artifactDirectory, baseUrl, groundMode, headed, rendererMode, sceneId }),
+          await runGalleryScenario({
+            artifactDirectory,
+            baseUrl,
+            groundMode,
+            headed,
+            qualityTier,
+            rendererMode,
+            sceneId,
+          }),
         );
       }
     }
   }
   const evaluation = evaluateTerrainGalleryResults(results, { groundModes, rendererModes, sceneIds });
-  const summary = { ...evaluation, groundModes, rendererModes, results, sceneIds };
+  const summary = { ...evaluation, groundModes, qualityTier, rendererModes, results, sceneIds };
   writeFileSync(join(artifactDirectory, "terrain-gallery-verification.json"), `${JSON.stringify(summary, null, 2)}\n`);
   console.log(JSON.stringify(summary, null, 2));
   if (!summary.ok) process.exitCode = 1;

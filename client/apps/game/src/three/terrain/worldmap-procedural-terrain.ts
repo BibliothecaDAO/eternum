@@ -6,6 +6,7 @@ import { ProceduralTerrain, type TerrainPresentationDiagnostics } from "./proced
 import { terrainCellKey } from "./terrain-coordinates";
 import type { PreparedTerrainPage, TerrainCellInput, TerrainPageRequest, TerrainSurfaceSample } from "./terrain-types";
 import type { TerrainPropLod } from "./terrain-prop-catalog";
+import type { TerrainQualityTier } from "./terrain-quality";
 
 interface WorldmapProceduralCell {
   biomeKey: string;
@@ -114,6 +115,10 @@ export class WorldmapProceduralTerrain {
 
   setGroundTextureDetailEnabled(enabled: boolean): void {
     this.terrain.setGroundTextureDetailEnabled(enabled);
+  }
+
+  setQualityTier(tier: TerrainQualityTier): void {
+    this.terrain.setQualityTier(tier);
   }
 
   sampleSurface(worldX: number, worldZ: number): TerrainSurfaceSample {

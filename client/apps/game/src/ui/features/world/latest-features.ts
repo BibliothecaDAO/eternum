@@ -35,6 +35,14 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-08-23",
+    title: "Living Terrain Detail",
+    description:
+      "Improved every biome with broader landforms, richer forest layers, moving vegetation, animated coastal water, and terrain detail that adapts smoothly as you zoom.",
+    type: "improvement",
+    gameSlug: "world",
+  },
+  {
+    date: "2026-08-23",
     title: "Textured Living Biomes",
     description:
       "Added seamless ground materials across every biome, with natural grass, sand, soil, forest litter, stone, snow, and scorched-earth detail that follows climate and terrain shape.",

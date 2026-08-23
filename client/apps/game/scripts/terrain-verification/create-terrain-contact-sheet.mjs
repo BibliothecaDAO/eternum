@@ -1,5 +1,5 @@
-import { mkdirSync } from "node:fs";
-import { dirname, join, resolve } from "node:path";
+import { mkdirSync, readdirSync } from "node:fs";
+import { basename, dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 import sharp from "sharp";
@@ -9,23 +9,48 @@ const PANEL_HEIGHT = 450;
 const LABEL_HEIGHT = 44;
 
 export async function createTerrainContactSheet({ inputDirectory, outputPath }) {
-  const panels = await Promise.all([
-    createPanel(join(inputDirectory, "webgpu-auto.png"), "Native WebGPU"),
-    createPanel(join(inputDirectory, "webgpu-force-webgl.png"), "Forced WebGL2 fallback"),
-  ]);
+  const filenames = orderTerrainContactSheetFilenames(readdirSync(inputDirectory), basename(outputPath));
+  if (filenames.length === 0) throw new Error(`No terrain gallery PNG captures found in ${inputDirectory}`);
+  const panels = await Promise.all(
+    filenames.map((filename) => createPanel(join(inputDirectory, filename), formatCaptureLabel(filename))),
+  );
+  const columns = Math.min(4, panels.length);
+  const rows = Math.ceil(panels.length / columns);
   mkdirSync(dirname(outputPath), { recursive: true });
   await sharp({
     create: {
       background: "#0c0c0b",
       channels: 4,
-      height: PANEL_HEIGHT + LABEL_HEIGHT,
-      width: PANEL_WIDTH * panels.length,
+      height: (PANEL_HEIGHT + LABEL_HEIGHT) * rows,
+      width: PANEL_WIDTH * columns,
     },
   })
-    .composite(panels.map((input, index) => ({ input, left: index * PANEL_WIDTH, top: 0 })))
+    .composite(
+      panels.map((input, index) => ({
+        input,
+        left: (index % columns) * PANEL_WIDTH,
+        top: Math.floor(index / columns) * (PANEL_HEIGHT + LABEL_HEIGHT),
+      })),
+    )
     .png()
     .toFile(outputPath);
   return outputPath;
+}
+
+export function orderTerrainContactSheetFilenames(filenames, outputFilename) {
+  return filenames
+    .filter((filename) => filename.endsWith(".png") && filename !== outputFilename)
+    .toSorted((left, right) => left.localeCompare(right, "en", { numeric: true }));
+}
+
+function formatCaptureLabel(filename) {
+  return filename
+    .replace(/\.png$/u, "")
+    .replaceAll("webgpu-force-webgl", "WebGL2")
+    .replaceAll("webgpu-auto", "WebGPU")
+    .split("-")
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(" ");
 }
 
 async function createPanel(path, label) {

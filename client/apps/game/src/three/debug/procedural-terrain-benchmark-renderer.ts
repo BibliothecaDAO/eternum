@@ -251,6 +251,7 @@ async function loadBenchmarkAssets(runtime: TerrainBenchmarkRuntime): Promise<vo
   if (config.texturedGround) loads.push(runtime.terrain.loadGroundTextures());
   if (config.props) loads.push(runtime.terrain.loadProps());
   await Promise.all(loads);
+  runtime.terrain.setQualityTier("balanced");
   runtime.terrain.setGroundTextureDetailEnabled(config.texturedGround);
   runtime.terrain.setPropLod("far");
 }
