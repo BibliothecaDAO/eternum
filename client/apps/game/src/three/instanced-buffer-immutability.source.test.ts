@@ -30,11 +30,6 @@ const CREATION_ASSIGNMENT_SCOPES = [
     start: "const createMesh = (",
     end: "export class HighlightHexManager",
   },
-  {
-    file: "managers/instanced-biome.tsx",
-    start: "private createBiomeInstancedMesh(",
-    end: "private createNeutralLandColorAttribute(",
-  },
 ] as const;
 
 const FORBIDDEN_ASSIGNMENT = /\.(instanceMatrix|instanceColor|morphTexture)\s*=(?!=)/;

@@ -1,11 +1,10 @@
 import { useUIStore, type AppStore } from "@/hooks/store/use-ui-store";
-import { CAMERA_CONFIG, FOG_CONFIG, HEX_SIZE, biomeModelPaths } from "@/three/constants";
+import { CAMERA_CONFIG, FOG_CONFIG, HEX_SIZE } from "@/three/constants";
 import { runWithFrameWorkOwner } from "@/three/frame-work-owner";
 import { WorldAtmosphereController } from "@/three/effects/world-atmosphere-controller";
 import { type WeatherState } from "@/three/managers/weather-manager";
 import { HighlightHexManager } from "@/three/managers/highlight-hex-manager";
 import { InputManager } from "@/three/managers/input-manager";
-import InstancedBiome from "@/three/managers/instanced-biome";
 import { InteractiveHexManager } from "@/three/managers/interactive-hex-manager";
 import { ThunderBoltManager } from "@/three/managers/thunderbolt-manager";
 import { type SceneManager } from "@/three/scene-manager";
@@ -16,16 +15,14 @@ import { FrustumManager } from "@/three/utils/frustum-manager";
 import { LocationManager } from "@/three/utils/location-manager";
 import { MatrixPool } from "@/three/utils/matrix-pool";
 import { PerformanceMonitor } from "@/three/utils/performance-monitor";
-import { gltfLoader } from "@/three/utils/utils";
-import { loadBiomeGltf } from "@/three/utils/biome-gltf-cache";
-import type { GLTF } from "three/addons/loaders/GLTFLoader.js";
 import { renderProfile, type RenderVisualProfile } from "@/three/render-profile";
 import { ShadowRefreshPolicy } from "@/three/shadow-refresh-policy";
+import { FLAT_TERRAIN_SURFACE, type TerrainSurface } from "@/three/terrain/terrain-surface";
 import { LeftView } from "@/types";
 import { IS_FLAT_MODE } from "@/ui/config";
 import { type SetupResult } from "@bibliothecadao/dojo";
 import { WorldUpdateListener } from "@bibliothecadao/eternum";
-import { BiomeType, type HexPosition } from "@bibliothecadao/types";
+import { type HexPosition } from "@bibliothecadao/types";
 import gsap from "gsap";
 import type GUI from "lil-gui";
 import throttle from "lodash/throttle";
@@ -36,7 +33,6 @@ import {
   DirectionalLightHelper,
   DoubleSide,
   Fog,
-  Group,
   HemisphereLight,
   InstancedMesh,
   Mesh,
@@ -91,8 +87,6 @@ export abstract class HexagonScene {
   protected thunderBoltManager!: ThunderBoltManager;
   protected worldAtmosphereController!: WorldAtmosphereController;
   protected GUIFolder!: any;
-  protected biomeModels = new Map<BiomeType, InstancedBiome>();
-  protected biomeModelLoadPromises = new Map<string, Promise<void>>();
   protected modelLoadPromises: Array<Promise<void>> = [];
   protected state!: AppStore;
   protected fog!: Fog;
@@ -138,8 +132,6 @@ export abstract class HexagonScene {
   private fogEnabledByUser = true;
 
   // Performance tuning options (optimized defaults for better FPS)
-  protected biomeShadowsEnabled = false;
-  protected biomeAnimationsEnabled = false;
   protected animationDistanceThreshold = 80; // Distance beyond which animations are skipped
 
   constructor(
@@ -189,7 +181,6 @@ export abstract class HexagonScene {
         const distance = this.controls.object.position.distanceTo(this.controls.target);
         this.updateCameraClipPlanesForDistance(distance);
         this.updateFogForDistance(distance);
-        this.updateOutlineOpacityForDistance(distance);
         this.syncResolvedCameraViewFromDistance(distance);
       },
       emitFallbackChange: () => {
@@ -586,20 +577,6 @@ export abstract class HexagonScene {
     const optimizeFolder = perfFolder.addFolder("Optimizations");
 
     optimizeFolder
-      .add(this, "biomeShadowsEnabled")
-      .name("Biome Shadows")
-      .onChange((value: boolean) => {
-        this.setBiomeShadowsEnabled(value);
-      });
-
-    optimizeFolder
-      .add(this, "biomeAnimationsEnabled")
-      .name("Biome Animations")
-      .onChange((value: boolean) => {
-        console.log(`[Performance] Biome animations: ${value}`);
-      });
-
-    optimizeFolder
       .add(this, "animationDistanceThreshold", 20, 200, 10)
       .name("Anim Distance")
       .onChange((value: number) => {
@@ -624,43 +601,13 @@ export abstract class HexagonScene {
   protected logRenderStats(): void {
     let totalMeshes = 0;
     let totalInstances = 0;
-    let activeBiomes = 0;
-
-    console.group("Render Stats");
-
-    this.biomeModels.forEach((biome, biomeType) => {
-      const meshCount = biome.instancedMeshes.length;
-      let biomeInstances = 0;
-
-      biome.instancedMeshes.forEach((mesh) => {
-        biomeInstances += mesh.count;
-      });
-
-      if (biomeInstances > 0) {
-        activeBiomes++;
-        console.log(`${biomeType}: ${meshCount} meshes, ${biomeInstances} instances`);
-      }
-
-      totalMeshes += meshCount;
-      totalInstances += biomeInstances;
+    this.scene.traverse((object) => {
+      if (!(object instanceof Mesh) && !(object instanceof InstancedMesh)) return;
+      totalMeshes += 1;
+      totalInstances += object instanceof InstancedMesh ? object.count : 1;
     });
 
-    console.log("---");
-    console.log(`Total: ${activeBiomes} active biomes, ${totalMeshes} meshes, ${totalInstances} instances`);
-    console.log(`Estimated draw calls: ${totalMeshes} (each InstancedMesh = 1 draw call)`);
-    console.groupEnd();
-  }
-
-  /**
-   * Enable or disable shadow casting on all biome meshes.
-   * Disabling shadows can improve GPU performance by ~30-50%.
-   */
-  protected setBiomeShadowsEnabled(enabled: boolean): void {
-    console.log(`[Performance] Biome shadows: ${enabled}`);
-    this.biomeShadowsEnabled = enabled;
-    this.biomeModels.forEach((biome) => {
-      biome.setShadowsEnabled(enabled);
-    });
+    console.info("[RenderStats]", { totalInstances, totalMeshes });
   }
 
   /**
@@ -777,6 +724,10 @@ export abstract class HexagonScene {
     return this.camera;
   }
 
+  public getTerrainSurface(): TerrainSurface {
+    return FLAT_TERRAIN_SURFACE;
+  }
+
   public getThunderBoltManager(): ThunderBoltManager {
     return this.thunderBoltManager;
   }
@@ -813,12 +764,6 @@ export abstract class HexagonScene {
       if (this.shadowMapSize > 0) {
         this.mainDirectionalLight.shadow.mapSize.set(this.shadowMapSize, this.shadowMapSize);
       }
-    }
-
-    if (features.animationFps > 0) {
-      this.biomeModels.forEach((model) => {
-        model.setAnimationFPS?.(features.animationFps);
-      });
     }
 
     if (shadowsEnabledChanged) {
@@ -996,44 +941,6 @@ export abstract class HexagonScene {
     return getHexForWorldPosition(this.controls.target);
   }
 
-  loadBiomeModels(maxInstances: number) {
-    const loader = gltfLoader;
-
-    for (const [biome, path] of Object.entries(biomeModelPaths)) {
-      // Phase 5.1: parse each biome GLB once (shared across scenes) via the module
-      // cache, then build this scene's own InstancedBiome from the shared gltf. The
-      // InstancedBiome references the gltf's geometry/material (shared) and keeps only
-      // its instance buffers + morph texture per-scene; biome models are disposed only
-      // at full teardown, so the shared resources are never freed mid-session.
-      const loadPromise = loadBiomeGltf<GLTF>(
-        path,
-        (assetPath) =>
-          new Promise<GLTF>((resolve, reject) => {
-            loader.load(assetPath, (gltf) => resolve(gltf), undefined, reject);
-          }),
-      )
-        .then((gltf) => {
-          const model = gltf.scene as Group;
-          if (biome === "Outline") {
-            ((model.children[0] as Mesh).material as MeshStandardMaterial).transparent = true;
-            ((model.children[0] as Mesh).material as MeshStandardMaterial).opacity = 0.3;
-          }
-          const tmp = new InstancedBiome(gltf, maxInstances, false, biome);
-          this.biomeModels.set(biome as BiomeType, tmp);
-          this.onBiomeModelLoaded(tmp);
-          this.scene.add(tmp.group);
-        })
-        .catch((error) => {
-          // Preserve the prior reject-on-failure behaviour (log + propagate) so the
-          // change here is purely the shared parse cache and nothing about error flow.
-          console.error(`Error loading ${biome} model:`, error);
-          throw error;
-        });
-      this.modelLoadPromises.push(loadPromise);
-      this.biomeModelLoadPromises.set(biome, loadPromise);
-    }
-  }
-
   private createGroundMesh() {
     const metalness = 0;
     const roughness = 0.66;
@@ -1058,15 +965,6 @@ export abstract class HexagonScene {
     this.groundMesh = mesh;
     this.groundMeshTexture = null;
     this.setupGroundMeshGUI();
-  }
-
-  protected shouldUpdateBiomeAnimations(): boolean {
-    return this.biomeAnimationsEnabled;
-  }
-
-  protected onBiomeModelLoaded(_model: InstancedBiome): void {
-    _model.setAnimationFPS(renderProfile.visuals.animationFps);
-    _model.setDistantAnimationSamplingEnabled(this.currentCameraView !== CameraView.Close);
   }
 
   private updateShadowRefresh(deltaTime: number): void {
@@ -1108,41 +1006,7 @@ export abstract class HexagonScene {
 
     this.updateShadowRefresh(deltaTime);
 
-    if (this.shouldUpdateBiomeAnimations()) {
-      PerformanceMonitor.begin("biomeAnimations.total");
-      const animationContext = this.getAnimationVisibilityContext();
-      this.biomeModels.forEach((biome, biomeType) => {
-        try {
-          PerformanceMonitor.begin(`biome.${biomeType}`);
-          biome.updateAnimations(deltaTime, animationContext);
-          PerformanceMonitor.end(`biome.${biomeType}`);
-        } catch (error) {
-          console.error(`Error updating biome animations:`, error);
-        }
-      });
-      PerformanceMonitor.end("biomeAnimations.total");
-    }
-
     PerformanceMonitor.end("scene.update");
-  }
-
-  protected updateOutlineOpacityForDistance(distance: number): void {
-    const outlineKey = "Outline" as unknown as BiomeType;
-    const outlineModel = this.biomeModels.get(outlineKey);
-    if (!outlineModel) {
-      return;
-    }
-
-    const minDistance = 10;
-    const maxDistance = 60;
-    const t = Math.min(1, Math.max(0, (distance - minDistance) / (maxDistance - minDistance)));
-    const opacity = 0.04 + t * 0.06;
-
-    outlineModel.instancedMeshes.forEach((mesh) => {
-      const material = mesh.material as MeshStandardMaterial;
-      material.transparent = true;
-      material.opacity = opacity;
-    });
   }
 
   public setWeatherAtmosphereState(
@@ -1289,12 +1153,6 @@ export abstract class HexagonScene {
     this.cleanupLightning();
     this.disposeStateSyncSubscription();
 
-    // Dispose of biome models
-    this.biomeModels.forEach((biome) => {
-      biome.dispose();
-    });
-    this.biomeModels.clear();
-
     // Dispose of ground mesh
     if (this.groundMesh) {
       this.scene.remove(this.groundMesh);
@@ -1381,7 +1239,6 @@ export abstract class HexagonScene {
 
     // Clean up any pending promises or model loading
     this.modelLoadPromises = [];
-    this.biomeModelLoadPromises.clear();
 
     // Finally, clear the scene
     this.scene.clear();
@@ -1403,6 +1260,7 @@ export abstract class HexagonScene {
    * Override in subclasses to try direct army model raycasting.
    */
   protected tryArmyRaycastFallback(_raycaster: Raycaster): HexPosition | null {
+    void _raycaster;
     return null;
   }
   public abstract setup(context?: SceneSetupContext): void | Promise<void>;
@@ -1574,7 +1432,6 @@ export abstract class HexagonScene {
     this.currentCameraView = nextView;
     runWithFrameWorkOwner("zoom:camera-view", () => {
       this.applyResolvedCameraView(nextView);
-      this.biomeModels.forEach((model) => model.setDistantAnimationSamplingEnabled(nextView !== CameraView.Close));
     });
     // Listeners carry their own owner markers (the worldmap fan-out splits
     // into terrain-detail / shadows / overlays) so the band-flip cost is

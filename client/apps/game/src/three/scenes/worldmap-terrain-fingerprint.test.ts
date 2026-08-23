@@ -65,6 +65,13 @@ describe("createWorldmapTerrainFingerprint", () => {
     expect(single).not.toBe(withExtra);
   });
 
+  it("changes when terrain occupancy adds or removes a structure pad", () => {
+    const open = createWorldmapTerrainFingerprint([{ hexKey: "1,1", biomeKey: "Grassland", occupied: false }]);
+    const occupied = createWorldmapTerrainFingerprint([{ hexKey: "1,1", biomeKey: "Grassland", occupied: true }]);
+
+    expect(open).not.toBe(occupied);
+  });
+
   it("returns a stable digest for empty input", () => {
     expect(createWorldmapTerrainFingerprint([])).toBe(createWorldmapTerrainFingerprint([]));
   });

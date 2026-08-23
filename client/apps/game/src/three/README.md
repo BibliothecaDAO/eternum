@@ -70,13 +70,14 @@ Quality and Battery use the same visible area. Battery only narrows work prepare
 ## Resource ownership
 
 The cosmetic catalog and FX caches own their source geometry and textures. Consumers own the materials they clone or
-tint and their own instance buffers. The biome cache deduplicates GLTF parsing while scenes retain the shared render
-resources. Renderer teardown clears scene-owned resources first, then the shared parse, cosmetic, environment, and
-material caches.
+tint and their own instance buffers. `ProceduralTerrain` owns page geometry, TSL materials, frontier surfaces, and
+global prop instance pools; the shared terrain-prop loader owns the single optimized Ultimate Nature GLB. Renderer
+teardown clears scene-owned terrain first, then cosmetic, environment, and material caches.
 
 Important shared owners include:
 
-- `utils/biome-gltf-cache.ts` for deduplicated biome GLTF parsing;
+- `terrain/procedural-terrain.ts` for page presentation, surface sampling, and resource disposal;
+- `terrain/terrain-prop-asset-cache.ts` for the provenance-pinned prop catalog;
 - `cosmetics/asset-cache.ts` for cosmetic GLTFs and textures;
 - `managers/fx-manager.ts` for ref-counted built-in FX textures;
 - `utils/material-pool.ts` and the instanced attribute/matrix pools.
@@ -85,7 +86,8 @@ Do not dispose cosmetic- or FX-cache-owned geometry or textures from a scene man
 
 ## Performance and diagnostics
 
-- `frame-budget-work-queue.ts` slices heavy presentation commits across frames.
+- `terrain/terrain-page-worker.ts` prepares deterministic transferable buffers away from the render thread;
+- `frame-budget-work-queue.ts` schedules atomic presentation and surrounding scene work.
 - `shadow-refresh-policy.ts` refreshes shadows only for sun, content, or camera-cell changes.
 - `perf/renderer-gpu-telemetry.ts`, `stats-recorder.ts`, and world-map diagnostics provide DEV-only measurement.
 - `compact-entity-label-renderer.ts`, the fast-travel grid, and `PathRenderer` share or retain GPU resources to avoid

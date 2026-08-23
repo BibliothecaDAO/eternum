@@ -34,6 +34,38 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 // are surfaced in the What's New popup.
 const allLatestFeatures: LatestFeature[] = [
   {
+    date: "2026-08-23",
+    title: "Textured Living Biomes",
+    description:
+      "Added seamless ground materials across every biome, with natural grass, sand, soil, forest litter, stone, snow, and scorched-earth detail that follows climate and terrain shape.",
+    type: "improvement",
+    gameSlug: "world",
+  },
+  {
+    date: "2026-08-23",
+    title: "Full-Scale Biome Testing",
+    description:
+      "Expanded procedural terrain verification to a full-screen, 100-page traversal and increased forest abundance while keeping large biome views smooth across both renderers.",
+    type: "improvement",
+    gameSlug: "world",
+  },
+  {
+    date: "2026-08-23",
+    title: "Organic Biome Density",
+    description:
+      "Forests, rocks, and ground cover now gather in natural seeded clusters, blend across biome edges, thin on steep ground, and leave breathing room around structures.",
+    type: "improvement",
+    gameSlug: "world",
+  },
+  {
+    date: "2026-08-22",
+    title: "Living Procedural Biomes",
+    description:
+      "The world map now flows as continuous terrain with organic forests, coastlines, relief, and structure pads while preserving exact hex interactions.",
+    type: "feature",
+    gameSlug: "world",
+  },
+  {
     date: "2026-08-20",
     title: "Accurate Army Stamina",
     description:

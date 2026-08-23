@@ -14,6 +14,7 @@ import {
 } from "three";
 import { getRenderBounds } from "../utils/chunk-geometry";
 import { getWorldPositionForHex, hashCoordinates } from "../utils/utils";
+import { FLAT_TERRAIN_SURFACE, placePositionOnTerrain, type TerrainSurface } from "../terrain/terrain-surface";
 import { MANAGER_UNCOMMITTED_CHUNK, isCommittedManagerChunk } from "./manager-update-convergence";
 import type { ArrivalGhostClearReason, ArrivalGhostVisualStyle } from "./arrival-ghost-policy";
 
@@ -66,6 +67,7 @@ interface ArrivalGhostState extends ArrivalGhostSpec {
 interface ArrivalGhostManagerOptions {
   chunkStride: number;
   renderChunkSize: { width: number; height: number };
+  terrainSurface?: TerrainSurface;
 }
 
 export interface ArrivalGhostDiagnosticsSnapshot {
@@ -214,6 +216,7 @@ export class ArrivalGhostManager {
   private buildGhostContainer(input: ArrivalGhostSpec): Group {
     const container = new Group();
     const worldPosition = getWorldPositionForHex(input.hexCoords);
+    placePositionOnTerrain(worldPosition, this.options.terrainSurface ?? FLAT_TERRAIN_SURFACE);
     const rotationSeed = hashCoordinates(input.hexCoords.col, input.hexCoords.row);
     const rotationIndex = Math.floor(rotationSeed * 6);
     const rotationY = (rotationIndex * Math.PI) / 3;

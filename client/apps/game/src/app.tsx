@@ -6,6 +6,15 @@ import "./index.css";
 const DebugThreeChunkView = lazy(() =>
   import("./ui/features/debug").then((module) => ({ default: module.ThreeChunkDebugView })),
 );
+const DebugTerrainPropView = lazy(() =>
+  import("./ui/features/debug").then((module) => ({ default: module.TerrainPropDebugView })),
+);
+const DebugProceduralTerrainView = lazy(() =>
+  import("./ui/features/debug").then((module) => ({ default: module.ProceduralTerrainDebugView })),
+);
+const DebugProceduralTerrainBenchmarkView = lazy(() =>
+  import("./ui/features/debug").then((module) => ({ default: module.ProceduralTerrainBenchmarkView })),
+);
 const GameClientApp = lazy(() => import("./game-client-app").then((module) => ({ default: module.GameClientApp })));
 
 const AppFallback = () => <div className="min-h-screen bg-black" />;
@@ -13,6 +22,24 @@ const AppFallback = () => <div className="min-h-screen bg-black" />;
 const DebugRouteShell = () => (
   <Suspense fallback={<AppFallback />}>
     <DebugThreeChunkView />
+  </Suspense>
+);
+
+const DebugTerrainPropRouteShell = () => (
+  <Suspense fallback={<AppFallback />}>
+    <DebugTerrainPropView />
+  </Suspense>
+);
+
+const DebugProceduralTerrainRouteShell = () => (
+  <Suspense fallback={<AppFallback />}>
+    <DebugProceduralTerrainView />
+  </Suspense>
+);
+
+const DebugProceduralTerrainBenchmarkRouteShell = () => (
+  <Suspense fallback={<AppFallback />}>
+    <DebugProceduralTerrainBenchmarkView />
   </Suspense>
 );
 
@@ -27,6 +54,9 @@ function App() {
     <BrowserRouter>
       <Routes>
         <Route path="/debug/three-chunks" element={<DebugRouteShell />} />
+        <Route path="/debug/terrain-props" element={<DebugTerrainPropRouteShell />} />
+        <Route path="/debug/procedural-terrain" element={<DebugProceduralTerrainRouteShell />} />
+        <Route path="/debug/procedural-terrain-benchmark" element={<DebugProceduralTerrainBenchmarkRouteShell />} />
         <Route path="*" element={<GameClientRouteShell />} />
       </Routes>
     </BrowserRouter>

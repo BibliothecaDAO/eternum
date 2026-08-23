@@ -33,17 +33,24 @@ describe("play-asset-manifest", () => {
     expect(DASHBOARD_SHARED_PLAY_FETCH_ASSETS).toContain("/textures/environment/models_env.hdr");
   });
 
-  it("includes all shared army, biome, building, and chest models in the dashboard model set", async () => {
+  it("prefetches the procedural ground arrays and their provenance manifest", async () => {
+    const { DASHBOARD_SHARED_PLAY_FETCH_ASSETS } = await import("./play-asset-manifest");
+    const { TERRAIN_GROUND_MANIFEST_PATH, TERRAIN_GROUND_TEXTURE_PATHS } =
+      await import("@/three/terrain/terrain-ground-catalog");
+
+    TERRAIN_GROUND_TEXTURE_PATHS.forEach((assetPath) => {
+      expect(DASHBOARD_SHARED_PLAY_FETCH_ASSETS).toContain(assetPath);
+    });
+    expect(DASHBOARD_SHARED_PLAY_FETCH_ASSETS).toContain(TERRAIN_GROUND_MANIFEST_PATH);
+  });
+
+  it("includes shared gameplay models and the single procedural terrain prop catalog", async () => {
     const { DASHBOARD_SHARED_PLAY_MODEL_ASSETS } = await import("./play-asset-manifest");
     const { SHARED_ARMY_MODEL_PATHS } = await import("@/three/constants/army-constants");
-    const { SHARED_BIOME_MODEL_PATHS, SHARED_BUILDING_MODEL_PATHS, SHARED_CHEST_MODEL_PATHS } =
-      await import("@/three/constants/scene-constants");
+    const { SHARED_BUILDING_MODEL_PATHS, SHARED_CHEST_MODEL_PATHS } = await import("@/three/constants/scene-constants");
+    const { TERRAIN_PROP_CATALOG_PATH } = await import("@/three/terrain/terrain-prop-catalog");
 
     SHARED_ARMY_MODEL_PATHS.forEach((assetPath) => {
-      expect(DASHBOARD_SHARED_PLAY_MODEL_ASSETS).toContain(assetPath);
-    });
-
-    SHARED_BIOME_MODEL_PATHS.forEach((assetPath) => {
       expect(DASHBOARD_SHARED_PLAY_MODEL_ASSETS).toContain(assetPath);
     });
 
@@ -54,6 +61,10 @@ describe("play-asset-manifest", () => {
     SHARED_CHEST_MODEL_PATHS.forEach((assetPath) => {
       expect(DASHBOARD_SHARED_PLAY_MODEL_ASSETS).toContain(assetPath);
     });
+    expect(DASHBOARD_SHARED_PLAY_MODEL_ASSETS).toContain(TERRAIN_PROP_CATALOG_PATH);
+    expect(DASHBOARD_SHARED_PLAY_MODEL_ASSETS.some((assetPath) => /biomes|bare_2|deepOcean/.test(assetPath))).toBe(
+      false,
+    );
   });
 
   it("excludes audio, videos, cosmetics, and landing-only promo art from dashboard preloads", async () => {
@@ -83,18 +94,13 @@ describe("play-asset-manifest", () => {
   it("keeps the entry-only manifest free of dashboard-critical shared models", async () => {
     const { ENTRY_ONLY_PLAY_ASSETS } = await import("./play-asset-manifest");
     const { SHARED_ARMY_MODEL_PATHS } = await import("@/three/constants/army-constants");
-    const { SHARED_BIOME_MODEL_PATHS, SHARED_BUILDING_MODEL_PATHS, SHARED_CHEST_MODEL_PATHS } =
-      await import("@/three/constants/scene-constants");
+    const { SHARED_BUILDING_MODEL_PATHS, SHARED_CHEST_MODEL_PATHS } = await import("@/three/constants/scene-constants");
 
     SHARED_ARMY_MODEL_PATHS.forEach((assetPath) => {
       expect(ENTRY_ONLY_PLAY_ASSETS).not.toContain(assetPath);
     });
 
     SHARED_BUILDING_MODEL_PATHS.forEach((assetPath) => {
-      expect(ENTRY_ONLY_PLAY_ASSETS).not.toContain(assetPath);
-    });
-
-    SHARED_BIOME_MODEL_PATHS.forEach((assetPath) => {
       expect(ENTRY_ONLY_PLAY_ASSETS).not.toContain(assetPath);
     });
 

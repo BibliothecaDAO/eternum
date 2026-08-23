@@ -1,0 +1,78 @@
+name: Verify procedural terrain
+
+on:
+  pull_request:
+    paths:
+      - "client/apps/game/src/three/terrain/**"
+      - "client/apps/game/src/three/scenes/worldmap.tsx"
+      - "client/apps/game/src/three/scenes/hexception.tsx"
+      - "client/apps/game/src/three/managers/**"
+      - "client/apps/game/src/ui/features/debug/**"
+      - "client/apps/game/scripts/terrain-*/**"
+      - "client/public/models/procedural-terrain/**"
+      - "client/public/textures/procedural-terrain/**"
+      - "packages/core/src/utils/biome/**"
+      - "client/apps/game/package.json"
+      - "pnpm-lock.yaml"
+      - ".github/workflows/verify-terrain.yml"
+
+jobs:
+  gallery:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.25.0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.23.1
+          cache: pnpm
+
+      - name: Install workspace
+        run: pnpm install --frozen-lockfile
+
+      - name: Build shared packages
+        run: pnpm run build:packages
+
+      - name: Verify terrain contracts
+        run: pnpm --dir client/apps/game test src/three/terrain scripts
+
+      - name: Start auth-free terrain host
+        run: |
+          pnpm --dir client/apps/game dev --host 127.0.0.1 --port 4173 --mode appchain.blitz > terrain-vite.log 2>&1 &
+          for attempt in $(seq 1 60); do
+            curl --fail --insecure --silent https://127.0.0.1:4173/debug/procedural-terrain && exit 0
+            sleep 1
+          done
+          cat terrain-vite.log
+          exit 1
+
+      - name: Verify both renderer backends
+        run: >-
+          pnpm --dir client/apps/game verify:terrain:gallery --base-url https://127.0.0.1:4173 --artifact-dir
+          terrain-artifacts
+
+      - name: Verify full-screen chunk performance
+        run: >-
+          pnpm --dir client/apps/game benchmark:terrain -- --base-url https://127.0.0.1:4173 --artifact-dir
+          terrain-performance-artifacts --renderers webgpu-force-webgl --variants production --run-mode quick
+
+      - name: Build backend contact sheet
+        run: >-
+          pnpm --dir client/apps/game verify:terrain:contact-sheet --input-dir terrain-artifacts --output
+          terrain-artifacts/backend-contact-sheet.png
+
+      - name: Upload terrain evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: procedural-terrain-verification
+          path: |
+            client/apps/game/terrain-artifacts
+            client/apps/game/terrain-performance-artifacts
+            terrain-vite.log

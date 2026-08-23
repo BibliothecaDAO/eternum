@@ -13,6 +13,12 @@ describe("App debug route wiring", () => {
 
     expect(source).toContain("DebugThreeChunkView");
     expect(source).toContain('path="/debug/three-chunks"');
+    expect(source).toContain('path="/debug/terrain-props"');
+    expect(source).toContain('path="/debug/procedural-terrain"');
+    expect(source).toContain('path="/debug/procedural-terrain-benchmark"');
+    expect(source).toContain("DebugTerrainPropView");
+    expect(source).toContain("DebugProceduralTerrainView");
+    expect(source).toContain('<Route path="/debug/terrain-props" element={<DebugTerrainPropRouteShell />} />');
     expect(source).toContain('<Route path="/debug/three-chunks" element={<DebugRouteShell />} />');
     expect(source).toContain('<Route path="*" element={<GameClientRouteShell />} />');
     expect(source).not.toContain("<StarknetProvider>");

@@ -6,6 +6,7 @@ import { type HexPosition } from "@bibliothecadao/types";
 import { Color, Material, Matrix4, Mesh, MeshStandardMaterial, Object3D, Scene } from "three";
 import { getWorldPositionForHex } from "../utils";
 import { gltfLoader } from "../utils/utils";
+import { FLAT_TERRAIN_SURFACE, placePositionOnTerrain, type TerrainSurface } from "../terrain/terrain-surface";
 
 const RESERVED_HYPERSTRUCTURE_CAPACITY = 128;
 const RESERVED_HYPERSTRUCTURE_COLOR = new Color(0xf3cc5b);
@@ -50,6 +51,7 @@ export class ReservedHyperstructureManager {
   constructor(
     private readonly scene: Scene,
     private readonly worldSpatialProjection: WorldSpatialProjection,
+    private readonly terrainSurface: TerrainSurface = FLAT_TERRAIN_SURFACE,
   ) {
     this.unsubscribeProjection = worldSpatialProjection.subscribeStructures(() => {
       this.renderReservedHyperstructures();
@@ -126,6 +128,7 @@ export class ReservedHyperstructureManager {
 
   private resolveInstanceMatrix(hexCoords: HexPosition): Matrix4 {
     const position = getWorldPositionForHex(hexCoords);
+    placePositionOnTerrain(position, this.terrainSurface);
     this.dummy.position.set(position.x, position.y + RESERVED_HYPERSTRUCTURE_Y_OFFSET, position.z);
     this.dummy.updateMatrix();
     return this.dummy.matrix;

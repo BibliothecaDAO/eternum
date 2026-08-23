@@ -19,7 +19,8 @@ describe("worldmap frame-budget work queue wiring", () => {
     expect(worldmapSource).toContain("`terrain:${workLane}-page-build`");
     expect(worldmapSource).toContain("`terrain:${workLane}-commit`");
     expect(worldmapSource).toContain("`terrain:${workLane}-prepare`");
-    expect(worldmapSource).toContain('"terrain:hex-grid"');
+    expect(worldmapSource).not.toContain('"terrain:hex-grid"');
+    expect(worldmapSource).toMatch(/this\.proceduralTerrain\s*\.presentAsync\(/);
     expect(worldmapSource).toContain(
       'this.prepareTerrainChunk(targetStartRow, targetStartCol, height, width, "prefetch")',
     );
