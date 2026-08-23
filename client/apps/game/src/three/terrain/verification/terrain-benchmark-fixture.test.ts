@@ -45,9 +45,12 @@ describe("terrain benchmark fixture", () => {
 
   it("crosses twelve boundaries and traverses every source page once", () => {
     const motion = createTerrainBenchmarkMotionWaypoints();
+    const structuralMotion = createTerrainBenchmarkMotionWaypoints("structural");
     const lifecycle = createTerrainBenchmarkLifecycleWaypoints();
 
     expect(motion).toHaveLength(13);
+    expect(structuralMotion).toEqual(motion.filter((_, index) => index % 2 === 0));
+    expect(structuralMotion).toHaveLength(7);
     expect(lifecycle).toHaveLength(100);
     expect(new Set(lifecycle.map(({ col, row }) => `${row},${col}`))).toHaveLength(100);
   });

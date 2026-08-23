@@ -306,7 +306,7 @@ async function runStableFrameTrace(runtime: TerrainBenchmarkRuntime): Promise<vo
 
 async function runMotionTrace(runtime: TerrainBenchmarkRuntime): Promise<void> {
   setBenchmarkPhase(runtime, "motion");
-  const waypoints = createTerrainBenchmarkMotionWaypoints();
+  const waypoints = createTerrainBenchmarkMotionWaypoints(runtime.traceMode);
   positionCamera(runtime, waypoints[0], CAMERA_DISTANCE.medium);
   await presentMotionWindow(runtime, waypoints[0]);
   const segmentDurationMs = resolveMotionSegmentDuration(runtime);

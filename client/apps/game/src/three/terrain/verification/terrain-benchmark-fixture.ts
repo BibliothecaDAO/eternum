@@ -3,6 +3,7 @@ import { BiomeType } from "@bibliothecadao/types";
 
 import { hashTerrainCoordinates, terrainHashToUnitFloat } from "../terrain-hash";
 import type { WorldmapProceduralPresentationInput } from "../worldmap-procedural-terrain";
+import type { TerrainBenchmarkTraceMode } from "./terrain-benchmark-contract";
 
 export const TERRAIN_BENCHMARK_FIXTURE_ID = "fullscreen-balanced-v2";
 export const TERRAIN_BENCHMARK_PAGE_SIZE = 24;
@@ -103,8 +104,10 @@ export function createTerrainBenchmarkWindowInput(
   };
 }
 
-export function createTerrainBenchmarkMotionWaypoints(): TerrainBenchmarkPageCoordinate[] {
-  return [
+export function createTerrainBenchmarkMotionWaypoints(
+  traceMode: TerrainBenchmarkTraceMode = "performance",
+): TerrainBenchmarkPageCoordinate[] {
+  const waypoints = [
     { col: -3, row: -2 },
     { col: -2, row: -2 },
     { col: -1, row: -2 },
@@ -119,6 +122,7 @@ export function createTerrainBenchmarkMotionWaypoints(): TerrainBenchmarkPageCoo
     { col: -2, row: 2 },
     { col: -3, row: 1 },
   ];
+  return traceMode === "structural" ? waypoints.filter((_, index) => index % 2 === 0) : waypoints;
 }
 
 export function createTerrainBenchmarkLifecycleWaypoints(): TerrainBenchmarkPageCoordinate[] {
