@@ -35,6 +35,14 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-08-23",
+    title: "Exploration Shroud",
+    description:
+      "Unknown territory now forms a continuous atmospheric shroud that inherits subtle color from discovered biomes and recedes organically when your armies reveal new land.",
+    type: "improvement",
+    gameSlug: "world",
+  },
+  {
+    date: "2026-08-23",
     title: "Living Terrain Detail",
     description:
       "Improved every biome with broader landforms, richer forest layers, moving vegetation, animated coastal water, and terrain detail that adapts smoothly as you zoom.",

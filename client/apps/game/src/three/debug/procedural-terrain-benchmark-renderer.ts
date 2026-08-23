@@ -350,6 +350,9 @@ function presentMotionWindow(runtime: TerrainBenchmarkRuntime, focus: TerrainBen
 
 async function runLifecycleTrace(runtime: TerrainBenchmarkRuntime): Promise<void> {
   setBenchmarkPhase(runtime, "lifecycle");
+  await presentBenchmarkWindow(runtime, INITIAL_FOCUS, { settleFrames: false, verifyCoverage: false });
+  positionCamera(runtime, INITIAL_FOCUS, CAMERA_DISTANCE.medium);
+  await waitForFrames(runtime, 3);
   const baseline = readRendererMemory(runtime.renderer);
   for (const waypoint of createTerrainBenchmarkLifecycleWaypoints()) {
     await presentBenchmarkWindow(runtime, waypoint, {
