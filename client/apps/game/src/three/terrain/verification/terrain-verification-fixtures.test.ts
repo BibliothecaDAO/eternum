@@ -27,14 +27,31 @@ describe("game-scale all-biomes fixture", () => {
   });
 
   it("creates deterministic multi-biome anchor scenes with a structure pad", () => {
-    TERRAIN_VERIFICATION_SCENE_IDS.filter((sceneId) => sceneId !== "all-biomes").forEach((sceneId) => {
+    TERRAIN_VERIFICATION_SCENE_IDS.filter((sceneId) => sceneId !== "all-biomes" && !sceneId.startsWith("fog-")).forEach(
+      (sceneId) => {
+        const first = createTerrainVerificationRequest(sceneId);
+        const second = createTerrainVerificationRequest(sceneId);
+
+        expect(second).toEqual(first);
+        expect(first.cells).toHaveLength(TERRAIN_ANCHOR_COLUMNS * TERRAIN_ANCHOR_ROWS);
+        expect(new Set(first.cells.map(({ biome }) => biome)).size).toBeGreaterThanOrEqual(3);
+        expect(first.cells.filter(({ occupied }) => occupied)).toHaveLength(1);
+      },
+    );
+  });
+
+  it("creates deterministic fog scenarios with both explored and unknown coverage", () => {
+    TERRAIN_VERIFICATION_SCENE_IDS.filter((sceneId) => sceneId.startsWith("fog-")).forEach((sceneId) => {
       const first = createTerrainVerificationRequest(sceneId);
       const second = createTerrainVerificationRequest(sceneId);
 
       expect(second).toEqual(first);
-      expect(first.cells).toHaveLength(TERRAIN_ANCHOR_COLUMNS * TERRAIN_ANCHOR_ROWS);
-      expect(new Set(first.cells.map(({ biome }) => biome)).size).toBeGreaterThanOrEqual(3);
-      expect(first.cells.filter(({ occupied }) => occupied)).toHaveLength(1);
+      expect(first.cells.some(({ explored }) => explored)).toBe(true);
+      expect(first.cells.some(({ explored }) => !explored)).toBe(true);
+      expect(
+        new Set(first.cells.filter(({ explored }) => explored).map(({ biome }) => biome)).size,
+      ).toBeGreaterThanOrEqual(3);
+      expect(first.cells.filter(({ explored, biome }) => !explored && biome !== null)).toHaveLength(0);
     });
   });
 });

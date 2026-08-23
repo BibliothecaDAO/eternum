@@ -7,6 +7,7 @@ import { terrainCellKey } from "./terrain-coordinates";
 import type { PreparedTerrainPage, TerrainCellInput, TerrainPageRequest, TerrainSurfaceSample } from "./terrain-types";
 import type { TerrainPropLod } from "./terrain-prop-catalog";
 import type { TerrainQualityTier } from "./terrain-quality";
+import type { TerrainShroudPoolStats } from "./terrain-shroud-pools";
 
 interface WorldmapProceduralCell {
   biomeKey: string;
@@ -121,6 +122,18 @@ export class WorldmapProceduralTerrain {
     this.terrain.setQualityTier(tier);
   }
 
+  queueShroudReveal(col: number, row: number): void {
+    this.terrain.queueShroudReveal(col, row);
+  }
+
+  update(deltaSeconds: number): void {
+    this.terrain.update(deltaSeconds);
+  }
+
+  getShroudStats(): TerrainShroudPoolStats {
+    return this.terrain.getShroudStats();
+  }
+
   sampleSurface(worldX: number, worldZ: number): TerrainSurfaceSample {
     return this.terrain.sampleSurface(worldX, worldZ);
   }
@@ -218,9 +231,11 @@ function resolvePageHalo(
 }
 
 function toTerrainCell(cell: WorldmapProceduralCell): TerrainCellInput {
+  const biome = resolveBiomeKey(cell.biomeKey);
   return {
-    biome: resolveBiomeKey(cell.biomeKey),
+    biome,
     col: cell.col,
+    explored: biome !== null,
     occupied: cell.occupied,
     row: cell.row,
   };

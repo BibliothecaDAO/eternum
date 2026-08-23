@@ -4,6 +4,7 @@ import { BiomeType } from "@bibliothecadao/types";
 import { hashTerrainCoordinates, terrainHashToUnitFloat } from "../terrain-hash";
 import type { WorldmapProceduralPresentationInput } from "../worldmap-procedural-terrain";
 import type { TerrainBenchmarkTraceMode } from "./terrain-benchmark-contract";
+import type { TerrainBenchmarkExplorationMode } from "./terrain-benchmark-contract";
 
 export const TERRAIN_BENCHMARK_FIXTURE_ID = "fullscreen-balanced-v2";
 export const TERRAIN_BENCHMARK_PAGE_SIZE = 24;
@@ -38,6 +39,7 @@ export interface TerrainBenchmarkFixture {
 
 interface TerrainBenchmarkWindowOptions {
   densityMultiplier?: number;
+  explorationMode?: TerrainBenchmarkExplorationMode;
 }
 
 const CLIMATE = Object.freeze({ ...NEUTRAL_BIOME_CLIMATE, elevation_seed: 137, moisture_seed: 991 });
@@ -92,7 +94,7 @@ export function createTerrainBenchmarkWindowInput(
     cells: pageWindow.flatMap(({ col, row }) => {
       const cells = fixture.pages.get(terrainBenchmarkPageKey(col, row));
       if (!cells) throw new Error(`Terrain benchmark fixture is missing page ${col},${row}`);
-      return cells;
+      return cells.map((cell) => applyBenchmarkExploration(cell, options.explorationMode ?? "explored"));
     }),
     climate: fixture.climate,
     generation: 1,
@@ -102,6 +104,19 @@ export function createTerrainBenchmarkWindowInput(
     propDensityMultiplier: options.densityMultiplier,
     subdivisions: 2,
   };
+}
+
+function applyBenchmarkExploration(
+  cell: TerrainBenchmarkCell,
+  explorationMode: TerrainBenchmarkExplorationMode,
+): TerrainBenchmarkCell {
+  if (explorationMode === "explored" || isBenchmarkFrontierExplored(cell.col, cell.row)) return cell;
+  return { ...cell, biomeKey: "Outline", occupied: false };
+}
+
+function isBenchmarkFrontierExplored(col: number, row: number): boolean {
+  const boundary = Math.sin(row * 0.055) * 22 + Math.sin(row * 0.017 + 1.4) * 11;
+  return col < boundary;
 }
 
 export function createTerrainBenchmarkMotionWaypoints(

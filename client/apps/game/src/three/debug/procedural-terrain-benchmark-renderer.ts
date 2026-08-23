@@ -19,6 +19,7 @@ import { findNearestTerrainHex, terrainCellKey, terrainHexToWorld } from "@/thre
 import {
   TERRAIN_BENCHMARK_CONTRACT_VERSION,
   resolveTerrainBenchmarkVariant,
+  type TerrainBenchmarkExplorationMode,
   type TerrainBenchmarkPhase,
   type TerrainBenchmarkRunMode,
   type TerrainBenchmarkSnapshot,
@@ -60,6 +61,7 @@ interface MountProceduralTerrainBenchmarkRendererInput {
   canvas: HTMLCanvasElement;
   captureMode: boolean;
   densityMultiplier: number;
+  explorationMode: TerrainBenchmarkExplorationMode;
   forceWebGL: boolean;
   onReady(snapshot: TerrainBenchmarkSnapshot): void;
   runMode: TerrainBenchmarkRunMode;
@@ -99,6 +101,7 @@ interface TerrainBenchmarkRuntime {
   controls: MapControls;
   disposed: boolean;
   densityMultiplier: number;
+  explorationMode: TerrainBenchmarkExplorationMode;
   error: string | null;
   firstRenderMs: number;
   fixture: TerrainBenchmarkFixture;
@@ -178,6 +181,7 @@ async function createBenchmarkRuntime(
     controls,
     disposed: false,
     densityMultiplier: input.densityMultiplier,
+    explorationMode: input.explorationMode,
     error: null,
     firstRenderMs: 0,
     fixture,
@@ -309,6 +313,7 @@ async function runMotionTrace(runtime: TerrainBenchmarkRuntime): Promise<void> {
   const waypoints = createTerrainBenchmarkMotionWaypoints(runtime.traceMode);
   positionCamera(runtime, waypoints[0], CAMERA_DISTANCE.medium);
   await presentMotionWindow(runtime, waypoints[0]);
+  recordCoverage(runtime);
   const segmentDurationMs = resolveMotionSegmentDuration(runtime);
 
   for (const waypoint of waypoints.slice(1)) {
@@ -316,6 +321,7 @@ async function runMotionTrace(runtime: TerrainBenchmarkRuntime): Promise<void> {
       presentMotionWindow(runtime, waypoint),
       animateCamera(runtime, waypoint, runtime.cameraDistance, segmentDurationMs),
     ]);
+    recordCoverage(runtime);
   }
 
   for (const distance of [CAMERA_DISTANCE.close, CAMERA_DISTANCE.far, CAMERA_DISTANCE.medium]) {
@@ -336,7 +342,10 @@ function resolveMotionSegmentDuration(runtime: TerrainBenchmarkRuntime): number 
 }
 
 function presentMotionWindow(runtime: TerrainBenchmarkRuntime, focus: TerrainBenchmarkPageCoordinate): Promise<void> {
-  return presentBenchmarkWindow(runtime, focus, { settleFrames: runtime.traceMode !== "structural" });
+  return presentBenchmarkWindow(runtime, focus, {
+    settleFrames: runtime.traceMode !== "structural",
+    verifyCoverage: false,
+  });
 }
 
 async function runLifecycleTrace(runtime: TerrainBenchmarkRuntime): Promise<void> {
@@ -370,6 +379,7 @@ async function presentBenchmarkWindow(
 ): Promise<void> {
   const input = createTerrainBenchmarkWindowInput(runtime.fixture, focus, {
     densityMultiplier: runtime.densityMultiplier,
+    explorationMode: runtime.explorationMode,
   });
   runtime.recorder.recordWindowRequest();
   if (options.lifecycleVisit) runtime.recorder.recordLifecyclePageVisit();
@@ -544,6 +554,7 @@ function readBenchmarkSnapshot(runtime: TerrainBenchmarkRuntime): TerrainBenchma
     coverage: recorder.coverage,
     fixture: {
       cellCount: TERRAIN_BENCHMARK_CELL_COLUMNS * TERRAIN_BENCHMARK_CELL_ROWS,
+      explorationMode: runtime.explorationMode,
       fingerprint: runtime.fixture.fingerprint,
       pageCount: TERRAIN_BENCHMARK_PAGE_COLUMNS * TERRAIN_BENCHMARK_PAGE_ROWS,
       visiblePageCount: TERRAIN_BENCHMARK_WINDOW_COLUMNS * TERRAIN_BENCHMARK_WINDOW_ROWS,
@@ -557,6 +568,7 @@ function readBenchmarkSnapshot(runtime: TerrainBenchmarkRuntime): TerrainBenchma
       geometries: memory.geometries,
       pixelRatio: runtime.renderer.getPixelRatio(),
       propInstances,
+      shroudInstances: runtime.terrain.getShroudStats().instances,
       textures: memory.textures,
       triangles: runtime.maxTriangles || runtime.renderer.info.render.triangles,
     },

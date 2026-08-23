@@ -54,4 +54,17 @@ describe("terrain benchmark fixture", () => {
     expect(lifecycle).toHaveLength(100);
     expect(new Set(lifecycle.map(({ col, row }) => `${row},${col}`))).toHaveLength(100);
   });
+
+  it("creates a stable mixed exploration frontier without changing window coverage", () => {
+    const fixture = createTerrainBenchmarkFixture();
+    const explored = createTerrainBenchmarkWindowInput(fixture, { col: 0, row: 0 }, { explorationMode: "explored" });
+    const frontier = createTerrainBenchmarkWindowInput(fixture, { col: 0, row: 0 }, { explorationMode: "frontier" });
+
+    expect(frontier.cells).toHaveLength(explored.cells.length);
+    expect(frontier.cells.some(({ biomeKey }) => biomeKey === "Outline")).toBe(true);
+    expect(frontier.cells.some(({ biomeKey }) => biomeKey !== "Outline")).toBe(true);
+    expect(createTerrainBenchmarkWindowInput(fixture, { col: 0, row: 0 }, { explorationMode: "frontier" })).toEqual(
+      frontier,
+    );
+  });
 });

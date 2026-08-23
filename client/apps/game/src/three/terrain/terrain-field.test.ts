@@ -127,7 +127,7 @@ describe("TerrainField", () => {
 });
 
 function cell(col: number, row: number, biome: BiomeType, occupied = false): TerrainCellInput {
-  return { biome, col, occupied, row };
+  return { biome, col, explored: true, occupied, row };
 }
 
 function createRequest(

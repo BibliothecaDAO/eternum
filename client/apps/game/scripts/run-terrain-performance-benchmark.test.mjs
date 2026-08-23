@@ -17,7 +17,7 @@ describe("terrain performance benchmark", () => {
         variant: "production",
       }),
     ).toBe(
-      "https://localhost:4173/debug/procedural-terrain-benchmark?capture=1&autorun=1&runMode=quick&variant=production&density=1.75&rendererMode=webgpu-force-webgl",
+      "https://localhost:4173/debug/procedural-terrain-benchmark?capture=1&autorun=1&runMode=quick&variant=production&density=1.75&rendererMode=webgpu-force-webgl&explorationMode=explored",
     );
   });
 
@@ -113,6 +113,7 @@ function passingResult(rendererMode, variant) {
   return {
     complete: true,
     errors: [],
+    explorationMode: "explored",
     rendererMode,
     routeMounted: true,
     variant,
@@ -134,7 +135,13 @@ function passingResult(rendererMode, variant) {
       contractVersion: 1,
       densityMultiplier: 1.75,
       coverage: { checks: 17, missingFrames: 0, missingSamples: 0, samples: 425 },
-      fixture: { cellCount: 82_944, fingerprint: "fullscreen-balanced-v2", pageCount: 144, visiblePageCount: 12 },
+      fixture: {
+        cellCount: 82_944,
+        explorationMode: "explored",
+        fingerprint: "fullscreen-balanced-v2",
+        pageCount: 144,
+        visiblePageCount: 12,
+      },
       frames: {
         motion: frameStats(),
         static: frameStats(),
@@ -147,6 +154,7 @@ function passingResult(rendererMode, variant) {
         geometries: 20,
         pixelRatio: 1,
         propInstances: props ? 4_000 : 0,
+        shroudInstances: 0,
         textures: textured ? 7 : 5,
         triangles: props ? 2_500_000 : 100_000,
       },

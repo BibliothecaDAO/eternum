@@ -1324,6 +1324,7 @@ export default class HexceptionScene extends HexagonScene {
         cellsByKey.set(key, {
           biome,
           col: coordinate.col,
+          explored: true,
           occupied: biomeKey === "Empty",
           row: coordinate.row,
         });

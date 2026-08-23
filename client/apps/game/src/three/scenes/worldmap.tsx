@@ -1259,6 +1259,8 @@ export default class WorldmapScene extends WarpTravel {
       return;
     }
 
+    const wasExplored = this.exploredTiles.get(normalized.x)?.has(normalized.y) ?? false;
+    if (current && !wasExplored) this.proceduralTerrain.queueShroudReveal(normalized.x, normalized.y);
     this.applyProjectedExploredTileChange(normalized.x, normalized.y, current);
     this.invalidateVisualTerrainPageForLiveTile(normalized.x, normalized.y);
   }
@@ -7527,6 +7529,7 @@ export default class WorldmapScene extends WarpTravel {
     const animationContext = this.getAnimationVisibilityContext();
     this.syncWorldmapZoomSnapshot(deltaTime);
     super.update(deltaTime);
+    this.proceduralTerrain.update(deltaTime);
     this.armyManager.update(deltaTime, animationContext);
     this.syncArrivalGhostChunkVisibility();
     this.arrivalGhostManager.update(deltaTime);

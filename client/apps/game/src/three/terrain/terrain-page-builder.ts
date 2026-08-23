@@ -7,6 +7,7 @@ import {
 } from "./terrain-coordinates";
 import { TerrainField, type TerrainVisualSample } from "./terrain-field";
 import { PRODUCTION_TERRAIN_PROP_DENSITY_MULTIPLIER, prepareTerrainPropInstances } from "./terrain-props";
+import { prepareTerrainShroudInstances } from "./terrain-shroud";
 import type {
   PreparedTerrainPage,
   TerrainCellInput,
@@ -43,7 +44,7 @@ export function prepareTerrainPage(request: TerrainPageRequest): PreparedTerrain
   let frontierEdges = 0;
 
   for (const cell of canonicalCells(request.cells)) {
-    if (!cell.biome) continue;
+    if (!cell.explored || !cell.biome) continue;
     appendCellPatch(land, field, cell, subdivisions);
     if (isTerrainWaterBiome(cell.biome)) appendWaterCellPatch(water, field, cell, subdivisions);
     frontierEdges += appendFrontierSkirts(land, field, cell);
@@ -52,9 +53,10 @@ export function prepareTerrainPage(request: TerrainPageRequest): PreparedTerrain
   const buffers = finalizeGeometry(land);
   const waterBuffers = water.positions.length > 0 ? finalizeGeometry(water) : null;
   const propInstances = prepareTerrainPropInstances(request, field);
+  const shroudInstances = prepareTerrainShroudInstances(request, field);
   const geometryBytes = countGeometryBytes(buffers) + (waterBuffers ? countGeometryBytes(waterBuffers) : 0);
   const prepareMs = performance.now() - startedAt;
-  const fingerprint = fingerprintPreparedPage(request, buffers, waterBuffers, propInstances);
+  const fingerprint = fingerprintPreparedPage(request, buffers, waterBuffers, propInstances, shroudInstances);
 
   return {
     buffers,
@@ -63,12 +65,14 @@ export function prepareTerrainPage(request: TerrainPageRequest): PreparedTerrain
       frontierEdges,
       geometryBytes,
       prepareMs,
+      shroudInstances: shroudInstances.length,
       triangles: (buffers.indices.length + (waterBuffers?.indices.length ?? 0)) / 3,
       vertices: (buffers.positions.length + (waterBuffers?.positions.length ?? 0)) / 3,
     },
     fingerprint,
     propInstances,
     request,
+    shroudInstances,
     waterBuffers,
   };
 }
@@ -150,7 +154,7 @@ function appendFrontierSkirts(target: GeometryAccumulator, field: TerrainField, 
   let edgeCount = 0;
 
   neighbors.forEach((neighbor, direction) => {
-    if (field.getCell(neighbor.col, neighbor.row)?.biome) return;
+    if (field.getCell(neighbor.col, neighbor.row)?.explored) return;
     const start = corners[(direction + 5) % 6];
     const end = corners[direction];
     const startSample = field.sampleVertex(start.x, start.z);
@@ -310,16 +314,19 @@ function fingerprintPreparedPage(
   land: TerrainGeometryBuffers,
   water: TerrainGeometryBuffers | null,
   props: PreparedTerrainPage["propInstances"],
+  shroud: PreparedTerrainPage["shroudInstances"],
 ): string {
   let hash = hashString(
     JSON.stringify({
       cells: canonicalCells(request.cells),
       climate: request.climate,
       generation: request.generation,
+      halo: canonicalCells(request.halo),
       mapCenter: request.mapCenter,
       pageKey: request.pageKey,
       props,
       propDensityMultiplier: request.propDensityMultiplier ?? PRODUCTION_TERRAIN_PROP_DENSITY_MULTIPLIER,
+      shroud,
       subdivisions: request.subdivisions ?? DEFAULT_SUBDIVISIONS,
       styleVersion: PROCEDURAL_TERRAIN_STYLE_VERSION,
     }),

@@ -78,6 +78,8 @@ export class TerrainField {
   private biomeMismatchCount: number | null = null;
 
   constructor(private readonly request: TerrainPageRequest) {
+    request.halo.forEach(requireConsistentTerrainCellExploration);
+    request.cells.forEach(requireConsistentTerrainCellExploration);
     request.halo.forEach((cell) => this.cellByKey.set(terrainCellKey(cell.col, cell.row), cell));
     request.cells.forEach((cell) => this.cellByKey.set(terrainCellKey(cell.col, cell.row), cell));
     this.elevationSeed = resolveSeed(request.climate.elevation_seed);
@@ -155,6 +157,8 @@ export class TerrainField {
         strongestBiomeId = candidate.biomeId;
       }
     }
+
+    if (totalWeight === 0) return createUnknownSample();
 
     const inverseWeight = 1 / totalWeight;
     const shapedHeight = this.resolveDetailedHeight(worldX, worldZ, height * inverseWeight, relief * inverseWeight);
@@ -357,7 +361,7 @@ export class TerrainField {
     const cached = this.sampleByKey.get(key);
     if (cached) return cached;
     const cell = this.cellByKey.get(key);
-    if (!cell?.biome) return null;
+    if (!cell?.explored || !cell.biome) return null;
     const environment = Biome.sampleEnvironment(
       col + this.request.mapCenter,
       row + this.request.mapCenter,
@@ -465,6 +469,13 @@ export class TerrainField {
       return count + (sampled?.sampledBiome === cell.biome ? 0 : 1);
     }, 0);
   }
+}
+
+function requireConsistentTerrainCellExploration(cell: TerrainCellInput): void {
+  if (cell.explored === (cell.biome !== null)) return;
+  throw new Error(
+    `Terrain cell ${cell.col},${cell.row} has inconsistent exploration and biome state: explored=${String(cell.explored)} biome=${String(cell.biome)}`,
+  );
 }
 
 function resolveSeed(value: number | undefined): number {

@@ -2,11 +2,12 @@ import type { BiomeClimateConfig } from "@bibliothecadao/eternum";
 import type { BiomeType } from "@bibliothecadao/types";
 import type { TerrainPropArchetypeId } from "./terrain-prop-catalog";
 
-export const PROCEDURAL_TERRAIN_STYLE_VERSION = 6;
+export const PROCEDURAL_TERRAIN_STYLE_VERSION = 7;
 
 export interface TerrainCellInput {
   biome: BiomeType | null;
   col: number;
+  explored: boolean;
   occupied: boolean;
   row: number;
 }
@@ -76,6 +77,7 @@ export interface TerrainPageDiagnostics {
   frontierEdges: number;
   geometryBytes: number;
   prepareMs: number;
+  shroudInstances: number;
   triangles: number;
   vertices: number;
 }
@@ -85,8 +87,21 @@ export interface PreparedTerrainPage {
   diagnostics: TerrainPageDiagnostics;
   fingerprint: string;
   request: TerrainPageRequest;
+  shroudInstances: readonly TerrainShroudInstance[];
   propInstances: readonly TerrainPropInstance[];
   waterBuffers: TerrainGeometryBuffers | null;
+}
+
+export interface TerrainShroudInstance {
+  col: number;
+  frontier: boolean;
+  pageKey: string;
+  row: number;
+  seed: number;
+  tint: readonly [number, number, number];
+  worldX: number;
+  worldY: number;
+  worldZ: number;
 }
 
 export interface TerrainPropInstance {

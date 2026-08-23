@@ -64,7 +64,7 @@ const BIOME_PROP_PROFILES: Readonly<Record<BiomeType, BiomePropProfile>> = {
 
 export function prepareTerrainPropInstances(request: TerrainPageRequest, field: TerrainField): TerrainPropInstance[] {
   const ownedCells = request.cells.filter(
-    (cell): cell is TerrainCellInput & { biome: BiomeType } => cell.biome !== null,
+    (cell): cell is TerrainCellInput & { biome: BiomeType } => cell.explored && cell.biome !== null,
   );
   if (ownedCells.length === 0) return [];
   const ownedByKey = new Map(ownedCells.map((cell) => [terrainCellKey(cell.col, cell.row), cell]));

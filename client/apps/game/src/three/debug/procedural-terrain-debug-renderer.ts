@@ -8,9 +8,12 @@ import { ProceduralTerrain } from "@/three/terrain/procedural-terrain";
 import { terrainHexToWorld } from "@/three/terrain/terrain-coordinates";
 import type { TerrainQualityTier } from "@/three/terrain/terrain-quality";
 import {
+  createTerrainRevealVerificationRequest,
   createTerrainVerificationRequest,
+  TERRAIN_REVEAL_TARGET,
   type TerrainVerificationSceneId,
 } from "@/three/terrain/verification/terrain-verification-fixtures";
+import { TERRAIN_SHROUD_REVEAL_DURATION_SECONDS } from "@/three/terrain/terrain-shroud-pools";
 import { configureGltfTextureSupport } from "@/three/utils/utils";
 
 export interface ProceduralTerrainDebugStats {
@@ -30,7 +33,12 @@ export interface ProceduralTerrainDebugStats {
   prepareMs: number;
   propInstances: number;
   qualityTier: TerrainQualityTier;
+  revealProgress: number;
   sceneId: TerrainVerificationSceneId;
+  shroudActiveReveals: number;
+  shroudFrontierInstances: number;
+  shroudInstances: number;
+  shroudTriangles: number;
   shadingMode: "flat" | "textured";
   triangles: number;
   textures: number;
@@ -48,6 +56,7 @@ interface MountProceduralTerrainDebugRendererInput {
   captureMode: boolean;
   forceWebGL: boolean;
   qualityTier: TerrainQualityTier;
+  revealProgress: number;
   sceneId: TerrainVerificationSceneId;
   texturedGround: boolean;
   onReady(stats: ProceduralTerrainDebugStats): void;
@@ -145,7 +154,7 @@ async function createRuntime(input: MountProceduralTerrainDebugRendererInput): P
 
   const scene = new Scene();
   scene.background = new Color("#d8d0ba");
-  const request = createTerrainVerificationRequest(input.sceneId);
+  let request = createTerrainVerificationRequest(input.sceneId);
   const camera = new PerspectiveCamera(36, 1, 0.1, 300);
   const controls = new MapControls(camera, input.canvas);
   controls.enableDamping = false;
@@ -157,11 +166,21 @@ async function createRuntime(input: MountProceduralTerrainDebugRendererInput): P
   const terrain = new ProceduralTerrain();
   await Promise.all([terrain.loadProps(), terrain.loadGroundTextures()]);
   terrain.setQualityTier(input.qualityTier);
-  const prepared = await terrain.preparePageAsync(request);
-  const commitStartedAt = performance.now();
+  let prepared = await terrain.preparePageAsync(request);
+  let commitStartedAt = performance.now();
   terrain.present([prepared]);
-  const commitMs = performance.now() - commitStartedAt;
+  let commitMs = performance.now() - commitStartedAt;
+  if (input.sceneId === "fog-reveal" && input.revealProgress > 0) {
+    terrain.queueShroudReveal(TERRAIN_REVEAL_TARGET.col, TERRAIN_REVEAL_TARGET.row);
+    request = createTerrainRevealVerificationRequest(true);
+    prepared = await terrain.preparePageAsync(request);
+    commitStartedAt = performance.now();
+    terrain.present([prepared]);
+    commitMs += performance.now() - commitStartedAt;
+    advanceRevealToProgress(terrain, input.revealProgress);
+  }
   const propStats = terrain.getPropStats();
+  const shroudStats = terrain.getShroudStats();
   const groundTextureStats = terrain.getGroundTextureStats();
   terrain.object3d.userData.verification = {
     biomeCount: new Set(prepared.request.cells.map(({ biome }) => biome).filter(Boolean)).size,
@@ -173,8 +192,13 @@ async function createRuntime(input: MountProceduralTerrainDebugRendererInput): P
     prepareMs: prepared.diagnostics.prepareMs,
     propInstances: propStats.instances,
     qualityTier: input.qualityTier,
+    revealProgress: input.revealProgress,
     sceneId: input.sceneId,
-    triangles: prepared.diagnostics.triangles + propStats.triangles,
+    shroudActiveReveals: shroudStats.activeReveals,
+    shroudFrontierInstances: shroudStats.frontierInstances,
+    shroudInstances: shroudStats.instances,
+    shroudTriangles: shroudStats.triangles,
+    triangles: prepared.diagnostics.triangles + propStats.triangles + shroudStats.triangles,
     vertices: prepared.diagnostics.vertices,
   } satisfies Omit<
     ProceduralTerrainDebugStats,
@@ -196,6 +220,12 @@ async function createRuntime(input: MountProceduralTerrainDebugRendererInput): P
   const firstRenderMs = performance.now() - firstRenderStartedAt;
 
   return { camera, cameraFrame, controls, frameSamplesMs: [], renderer, scene, terrain, firstRenderMs };
+}
+
+function advanceRevealToProgress(terrain: ProceduralTerrain, progress: number): void {
+  const targetSeconds = Math.min(1, Math.max(0, progress)) * TERRAIN_SHROUD_REVEAL_DURATION_SECONDS;
+  const steps = Math.ceil(targetSeconds / 0.05);
+  for (let step = 0; step < steps; step += 1) terrain.update(Math.min(0.05, targetSeconds - step * 0.05));
 }
 
 function createLights(): Group {
@@ -255,6 +285,7 @@ function startAnimation(runtime: TerrainDebugRuntime): () => void {
       if (runtime.frameSamplesMs.length > 240) runtime.frameSamplesMs.shift();
     }
     previousFrameTime = time;
+    runtime.terrain.update(Math.min(0.05, Math.max(0, (runtime.frameSamplesMs.at(-1) ?? 0) / 1_000)));
     runtime.controls.update();
     runtime.renderer.render(runtime.scene, runtime.camera);
   });

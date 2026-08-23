@@ -1,6 +1,8 @@
 export const TERRAIN_BENCHMARK_CONTRACT_VERSION = 1;
 
 export const TERRAIN_BENCHMARK_VARIANTS = Object.freeze(["geometry", "material", "props", "production"] as const);
+export const TERRAIN_BENCHMARK_EXPLORATION_MODES = Object.freeze(["explored", "frontier"] as const);
+export type TerrainBenchmarkExplorationMode = (typeof TERRAIN_BENCHMARK_EXPLORATION_MODES)[number];
 export type TerrainBenchmarkVariant = (typeof TERRAIN_BENCHMARK_VARIANTS)[number];
 export type TerrainBenchmarkRunMode = "full" | "quick";
 export type TerrainBenchmarkTraceMode = "performance" | "structural";
@@ -53,6 +55,7 @@ export interface TerrainBenchmarkSnapshot {
   };
   fixture: {
     cellCount: number;
+    explorationMode: TerrainBenchmarkExplorationMode;
     fingerprint: string;
     pageCount: number;
     visiblePageCount: number;
@@ -75,6 +78,7 @@ export interface TerrainBenchmarkSnapshot {
     geometries: number;
     pixelRatio: number;
     propInstances: number;
+    shroudInstances: number;
     textures: number;
     triangles: number;
   };

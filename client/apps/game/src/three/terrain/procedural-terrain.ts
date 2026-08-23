@@ -19,6 +19,7 @@ import { TerrainPageWorkerClient } from "./terrain-page-worker-client";
 import { TerrainPropPools, type TerrainPropPoolStats } from "./terrain-prop-pools";
 import type { TerrainPropLod } from "./terrain-prop-catalog";
 import { TERRAIN_QUALITY_PROFILES, type TerrainQualityTier } from "./terrain-quality";
+import { TerrainShroudPools, type TerrainShroudPoolStats } from "./terrain-shroud-pools";
 import type {
   PreparedTerrainPage,
   TerrainGeometryBuffers,
@@ -31,6 +32,7 @@ interface PresentedTerrainPage {
   fingerprint: string;
   group: Group;
   propInstances: PreparedTerrainPage["propInstances"];
+  shroudInstances: PreparedTerrainPage["shroudInstances"];
 }
 
 export interface TerrainPresentationDiagnostics {
@@ -38,6 +40,8 @@ export interface TerrainPresentationDiagnostics {
   pages: number;
   propInstances: number;
   propTriangles: number;
+  shroudInstances: number;
+  shroudTriangles: number;
   triangles: number;
   vertices: number;
 }
@@ -62,12 +66,14 @@ export class ProceduralTerrain {
   private propPools: TerrainPropPools | null = null;
   private propPoolsPromise: Promise<TerrainPropPools> | null = null;
   private pageWorker: TerrainPageWorkerClient | null = null;
+  private readonly shroudPools = new TerrainShroudPools();
   private disposed = false;
 
   constructor() {
     this.object3d.name = "procedural-terrain";
     this.presentationGroup.name = "procedural-terrain-pages";
     this.object3d.add(this.presentationGroup);
+    this.object3d.add(this.shroudPools.object3d);
     this.materials = createTerrainMaterials();
   }
 
@@ -130,6 +136,7 @@ export class ProceduralTerrain {
     this.setPropLod(profile.propLod);
     this.setGroundTextureDetailEnabled(profile.groundTextureDetail);
     this.propPools?.setWindStrength(profile.windStrength);
+    this.shroudPools.setQuality(profile.shroudMotionStrength, profile.shroudMistStrength);
     this.materials.waterMotion.value = profile.waterMotion;
   }
 
@@ -153,6 +160,18 @@ export class ProceduralTerrain {
     };
   }
 
+  getShroudStats(): TerrainShroudPoolStats {
+    return this.shroudPools.getStats();
+  }
+
+  queueShroudReveal(col: number, row: number): void {
+    this.shroudPools.queueReveal(col, row);
+  }
+
+  update(deltaSeconds: number): void {
+    this.shroudPools.updateAnimation(deltaSeconds);
+  }
+
   present(preparedPages: readonly PreparedTerrainPage[]): TerrainPresentationDiagnostics {
     this.requireActive();
     requireUniquePageKeys(preparedPages);
@@ -170,7 +189,8 @@ export class ProceduralTerrain {
 
     this.commitPresentation(nextGroup, nextPages);
     this.refreshPropPools();
-    return summarizePresentation(preparedPages, this.getPropStats());
+    this.refreshShroudPools();
+    return summarizePresentation(preparedPages, this.getPropStats(), this.getShroudStats());
   }
 
   sampleSurface(worldX: number, worldZ: number): TerrainSurfaceSample {
@@ -193,6 +213,7 @@ export class ProceduralTerrain {
     this.pageWorker = null;
     this.propPools?.dispose();
     this.propPools = null;
+    this.shroudPools.dispose();
     new Set(
       [this.materials.flatLand, this.materials.land, this.materials.water, this.groundTextureMaterial].filter(Boolean),
     ).forEach((material) => material!.dispose());
@@ -227,6 +248,7 @@ export class ProceduralTerrain {
       fingerprint: preparedPage.fingerprint,
       group,
       propInstances: preparedPage.propInstances,
+      shroudInstances: preparedPage.shroudInstances,
     };
   }
 
@@ -251,6 +273,10 @@ export class ProceduralTerrain {
   private refreshPropPools(): void {
     if (!this.propPools) return;
     this.propPools.update(Array.from(this.pages.values()).flatMap((page) => page.propInstances));
+  }
+
+  private refreshShroudPools(): void {
+    this.shroudPools.update(Array.from(this.pages.values()).flatMap((page) => page.shroudInstances));
   }
 
   private requireActive(): void {
@@ -313,8 +339,11 @@ function requireUniquePageKeys(pages: readonly PreparedTerrainPage[]): void {
 function summarizePresentation(
   pages: readonly PreparedTerrainPage[],
   propStats: TerrainPropPoolStats,
+  shroudStats: TerrainShroudPoolStats,
 ): TerrainPresentationDiagnostics {
-  const terrain = pages.reduce<Omit<TerrainPresentationDiagnostics, "propInstances" | "propTriangles">>(
+  const terrain = pages.reduce<
+    Omit<TerrainPresentationDiagnostics, "propInstances" | "propTriangles" | "shroudInstances" | "shroudTriangles">
+  >(
     (summary, page) => ({
       geometryBytes: summary.geometryBytes + page.diagnostics.geometryBytes,
       pages: summary.pages + 1,
@@ -323,5 +352,11 @@ function summarizePresentation(
     }),
     { geometryBytes: 0, pages: 0, triangles: 0, vertices: 0 },
   );
-  return { ...terrain, propInstances: propStats.instances, propTriangles: propStats.triangles };
+  return {
+    ...terrain,
+    propInstances: propStats.instances,
+    propTriangles: propStats.triangles,
+    shroudInstances: shroudStats.instances,
+    shroudTriangles: shroudStats.triangles,
+  };
 }

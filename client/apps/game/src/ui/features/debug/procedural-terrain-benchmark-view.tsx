@@ -8,7 +8,9 @@ import {
 } from "@/three/debug/procedural-terrain-benchmark-renderer";
 import {
   TERRAIN_BENCHMARK_CONTRACT_VERSION,
+  TERRAIN_BENCHMARK_EXPLORATION_MODES,
   TERRAIN_BENCHMARK_VARIANTS,
+  type TerrainBenchmarkExplorationMode,
   type TerrainBenchmarkRunMode,
   type TerrainBenchmarkSnapshot,
   type TerrainBenchmarkTraceMode,
@@ -47,12 +49,15 @@ export const ProceduralTerrainBenchmarkView = () => {
   const capture = searchParams.get("capture") === "1";
   const autoRun = searchParams.get("autorun") === "1";
   const densityMultiplier = resolveDensityMultiplier(searchParams.get("density"));
+  const explorationMode = resolveExplorationMode(searchParams.get("explorationMode"));
   const forceWebGL = searchParams.get("rendererMode") === "webgpu-force-webgl";
   const runMode = resolveRunMode(searchParams.get("runMode"));
   const traceMode = resolveTraceMode(searchParams.get("traceMode"));
   const variant = resolveVariant(searchParams.get("variant"));
   const configError = useMemo(() => resolveConfigError(searchParams), [searchParams]);
-  const [snapshot, setSnapshot] = useState(() => createEmptySnapshot(runMode, variant, densityMultiplier));
+  const [snapshot, setSnapshot] = useState(() =>
+    createEmptySnapshot(runMode, variant, densityMultiplier, explorationMode),
+  );
   const [error, setError] = useState<string | null>(configError);
   const [mounted, setMounted] = useState(false);
   useBootDocumentState(mounted ? "app-ready" : "app-loading", mounted ? "terrain_benchmark_ready" : undefined);
@@ -68,6 +73,7 @@ export const ProceduralTerrainBenchmarkView = () => {
         canvas,
         captureMode: capture,
         densityMultiplier,
+        explorationMode,
         forceWebGL,
         onReady: (nextSnapshot) => {
           if (!active) return;
@@ -99,7 +105,7 @@ export const ProceduralTerrainBenchmarkView = () => {
       rendererRef.current?.dispose();
       rendererRef.current = null;
     };
-  }, [autoRun, capture, configError, densityMultiplier, forceWebGL, runMode, traceMode, variant]);
+  }, [autoRun, capture, configError, densityMultiplier, explorationMode, forceWebGL, runMode, traceMode, variant]);
 
   const setOption = (name: string, value: string) => {
     const next = new URLSearchParams(searchParams);
@@ -178,6 +184,16 @@ export const ProceduralTerrainBenchmarkView = () => {
           />
 
           <BenchmarkSelect
+            label="Exploration"
+            value={explorationMode}
+            onChange={(value) => setOption("explorationMode", value)}
+            options={[
+              ["explored", "Fully explored"],
+              ["frontier", "Mixed fog frontier"],
+            ]}
+          />
+
+          <BenchmarkSelect
             label="Prop density"
             value={String(densityMultiplier)}
             onChange={(value) => setOption("density", value)}
@@ -195,6 +211,7 @@ export const ProceduralTerrainBenchmarkView = () => {
             <BenchmarkMetric label="Status" value={snapshot.status} />
             <BenchmarkMetric label="Backend" value={snapshot.activeMode === "webgpu" ? "WebGPU" : "WebGL2"} />
             <BenchmarkMetric label="Pages" value={String(snapshot.fixture.visiblePageCount)} />
+            <BenchmarkMetric label="Exploration" value={snapshot.fixture.explorationMode} />
             <BenchmarkMetric label="Density" value={`${snapshot.densityMultiplier.toFixed(1)}×`} />
             <BenchmarkMetric label="Static p95" value={`${snapshot.frames.static.p95Ms.toFixed(1)} ms`} />
             <BenchmarkMetric label="Motion p95" value={`${snapshot.frames.motion.p95Ms.toFixed(1)} ms`} />
@@ -202,6 +219,7 @@ export const ProceduralTerrainBenchmarkView = () => {
             <BenchmarkMetric label="Calls" value={String(snapshot.render.drawCalls)} />
             <BenchmarkMetric label="Triangles" value={snapshot.render.triangles.toLocaleString()} />
             <BenchmarkMetric label="Props" value={snapshot.render.propInstances.toLocaleString()} />
+            <BenchmarkMetric label="Shroud" value={snapshot.render.shroudInstances.toLocaleString()} />
             <BenchmarkMetric label="Built" value={String(snapshot.chunks.builtPages)} />
             <BenchmarkMetric label="Commit p95" value={`${snapshot.chunks.commitP95Ms.toFixed(1)} ms`} />
             <BenchmarkMetric label="Coverage" value={`${snapshot.coverage.missingFrames} miss`} />
@@ -287,6 +305,12 @@ function resolveVariant(value: string | null): TerrainBenchmarkVariant {
     : "production";
 }
 
+function resolveExplorationMode(value: string | null): TerrainBenchmarkExplorationMode {
+  return TERRAIN_BENCHMARK_EXPLORATION_MODES.includes(value as TerrainBenchmarkExplorationMode)
+    ? (value as TerrainBenchmarkExplorationMode)
+    : "explored";
+}
+
 function resolveRunMode(value: string | null): TerrainBenchmarkRunMode {
   return value === "full" ? "full" : "quick";
 }
@@ -303,6 +327,13 @@ function resolveConfigError(searchParams: URLSearchParams): string | null {
   const variant = searchParams.get("variant");
   if (variant && !TERRAIN_BENCHMARK_VARIANTS.includes(variant as TerrainBenchmarkVariant)) {
     return `Unknown terrain benchmark variant: ${variant}`;
+  }
+  const explorationMode = searchParams.get("explorationMode");
+  if (
+    explorationMode &&
+    !TERRAIN_BENCHMARK_EXPLORATION_MODES.includes(explorationMode as TerrainBenchmarkExplorationMode)
+  ) {
+    return `Unknown terrain benchmark exploration mode: ${explorationMode}`;
   }
   const runMode = searchParams.get("runMode");
   if (runMode && runMode !== "quick" && runMode !== "full") return `Unknown terrain benchmark run mode: ${runMode}`;
@@ -321,6 +352,7 @@ function createEmptySnapshot(
   runMode: TerrainBenchmarkRunMode,
   variant: TerrainBenchmarkVariant,
   densityMultiplier: number,
+  explorationMode: TerrainBenchmarkExplorationMode,
 ): TerrainBenchmarkSnapshot {
   return {
     activeMode: "webgpu",
@@ -342,6 +374,7 @@ function createEmptySnapshot(
     coverage: { checks: 0, missingFrames: 0, missingSamples: 0, samples: 0 },
     fixture: {
       cellCount: TERRAIN_BENCHMARK_CELL_COLUMNS * TERRAIN_BENCHMARK_CELL_ROWS,
+      explorationMode,
       fingerprint: TERRAIN_BENCHMARK_FIXTURE_ID,
       pageCount: TERRAIN_BENCHMARK_PAGE_COLUMNS * TERRAIN_BENCHMARK_PAGE_ROWS,
       visiblePageCount: TERRAIN_BENCHMARK_WINDOW_COLUMNS * TERRAIN_BENCHMARK_WINDOW_ROWS,
@@ -355,6 +388,7 @@ function createEmptySnapshot(
       geometries: 0,
       pixelRatio: 1,
       propInstances: 0,
+      shroudInstances: 0,
       textures: 0,
       triangles: 0,
     },

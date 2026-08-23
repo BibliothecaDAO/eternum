@@ -39,6 +39,18 @@ describe("prepareTerrainPage", () => {
     expect(occupied.fingerprint).not.toBe(forward.fingerprint);
   });
 
+  it("changes identity when halo exploration changes frontier shroud presentation", () => {
+    const owned = unknownCell(0, 0);
+    const hiddenNeighbor = unknownCell(1, 0);
+    const exploredNeighbor = cell(1, 0, BiomeType.Grassland);
+    const hidden = prepareTerrainPage({ ...createRequest([owned]), halo: [hiddenNeighbor] });
+    const frontier = prepareTerrainPage({ ...createRequest([owned]), halo: [exploredNeighbor] });
+
+    expect(hidden.shroudInstances[0].frontier).toBe(false);
+    expect(frontier.shroudInstances[0].frontier).toBe(true);
+    expect(frontier.fingerprint).not.toBe(hidden.fingerprint);
+  });
+
   it("rejects invalid topology instead of silently changing geometry density", () => {
     expect(() => prepareTerrainPage({ ...createRequest([cell(0, 0, BiomeType.Bare)]), subdivisions: 0 })).toThrow(
       "Terrain subdivisions must be an integer from 1 to 4",
@@ -123,7 +135,11 @@ function readAttribute(buffer: Float32Array | Uint8Array, vertex: number, itemSi
 }
 
 function cell(col: number, row: number, biome: BiomeType): TerrainCellInput {
-  return { biome, col, occupied: false, row };
+  return { biome, col, explored: true, occupied: false, row };
+}
+
+function unknownCell(col: number, row: number): TerrainCellInput {
+  return { biome: null, col, explored: false, occupied: false, row };
 }
 
 function createRequest(cells: TerrainCellInput[]): TerrainPageRequest {

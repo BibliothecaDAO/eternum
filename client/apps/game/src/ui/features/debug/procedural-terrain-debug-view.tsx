@@ -33,7 +33,12 @@ const EMPTY_STATS: ProceduralTerrainDebugStats = {
   prepareMs: 0,
   propInstances: 0,
   qualityTier: "detail",
+  revealProgress: 0,
   sceneId: "all-biomes",
+  shroudActiveReveals: 0,
+  shroudFrontierInstances: 0,
+  shroudInstances: 0,
+  shroudTriangles: 0,
   shadingMode: "textured",
   triangles: 0,
   textures: 0,
@@ -49,6 +54,7 @@ export const ProceduralTerrainDebugView = () => {
   const texturedGround = searchParams.get("groundMode") !== "flat";
   const sceneId = resolveSceneId(searchParams.get("scene"));
   const qualityTier = resolveQualityTier(searchParams.get("quality"));
+  const revealProgress = resolveRevealProgress(searchParams.get("reveal"));
   const [stats, setStats] = useState(EMPTY_STATS);
   const [error, setError] = useState<string | null>(null);
   const [ready, setReady] = useState(false);
@@ -65,6 +71,7 @@ export const ProceduralTerrainDebugView = () => {
         captureMode: capture,
         forceWebGL,
         qualityTier,
+        revealProgress,
         sceneId,
         texturedGround,
         onReady: (nextStats) => {
@@ -94,7 +101,7 @@ export const ProceduralTerrainDebugView = () => {
       rendererRef.current?.dispose();
       rendererRef.current = null;
     };
-  }, [capture, forceWebGL, qualityTier, sceneId, texturedGround]);
+  }, [capture, forceWebGL, qualityTier, revealProgress, sceneId, texturedGround]);
 
   const setRendererMode = (value: string) => {
     const next = new URLSearchParams(searchParams);
@@ -117,6 +124,12 @@ export const ProceduralTerrainDebugView = () => {
   const setQualityTier = (value: string) => {
     const next = new URLSearchParams(searchParams);
     next.set("quality", value);
+    window.location.search = next.toString();
+  };
+
+  const setRevealProgress = (value: string) => {
+    const next = new URLSearchParams(searchParams);
+    next.set("reveal", value);
     window.location.search = next.toString();
   };
 
@@ -178,6 +191,21 @@ export const ProceduralTerrainDebugView = () => {
           </label>
 
           <label className="flex flex-col gap-2 text-xs font-semibold uppercase text-stone-300">
+            Reveal proof
+            <select
+              value={String(revealProgress)}
+              onChange={(event) => setRevealProgress(event.target.value)}
+              className="h-10 border border-white/15 bg-stone-950 px-3 text-sm font-medium normal-case text-white"
+            >
+              <option value="0">Covered</option>
+              <option value="0.25">25%</option>
+              <option value="0.5">50%</option>
+              <option value="0.75">75%</option>
+              <option value="1">Revealed</option>
+            </select>
+          </label>
+
+          <label className="flex flex-col gap-2 text-xs font-semibold uppercase text-stone-300">
             Anchor scene
             <select
               value={sceneId}
@@ -220,10 +248,14 @@ export const ProceduralTerrainDebugView = () => {
             <DebugMetric label="Backend" value={stats.activeMode === "webgpu" ? "WebGPU" : "WebGL2"} />
             <DebugMetric label="Scene" value={formatSceneLabel(stats.sceneId)} />
             <DebugMetric label="Quality" value={formatSceneLabel(stats.qualityTier)} />
+            <DebugMetric label="Reveal" value={`${Math.round(stats.revealProgress * 100)}%`} />
             <DebugMetric label="Biomes" value={String(stats.biomeCount || "--")} />
             <DebugMetric label="Hexes" value={stats.cellCount.toLocaleString()} />
             <DebugMetric label="Calls" value={String(stats.drawCalls || "--")} />
             <DebugMetric label="Props" value={stats.propInstances.toLocaleString()} />
+            <DebugMetric label="Shroud" value={stats.shroudInstances.toLocaleString()} />
+            <DebugMetric label="Frontier" value={stats.shroudFrontierInstances.toLocaleString()} />
+            <DebugMetric label="Active reveal" value={stats.shroudActiveReveals.toLocaleString()} />
             <DebugMetric label="Ground" value={`${stats.groundTextureLayers || "--"} layers`} />
             <DebugMetric label="Ground KB" value={Math.round(stats.groundTextureBytes / 1024).toLocaleString()} />
             <DebugMetric label="Frame p50" value={`${stats.frameP50Ms.toFixed(1)} ms`} />
@@ -284,6 +316,11 @@ function resolveSceneId(value: string | null): TerrainVerificationSceneId {
 
 function resolveQualityTier(value: string | null): TerrainQualityTier {
   return TERRAIN_QUALITY_TIERS.includes(value as TerrainQualityTier) ? (value as TerrainQualityTier) : "detail";
+}
+
+function resolveRevealProgress(value: string | null): number {
+  const progress = value === null ? 0 : Number(value);
+  return Number.isFinite(progress) ? Math.min(1, Math.max(0, progress)) : 0;
 }
 
 function formatSceneLabel(value: TerrainQualityTier | TerrainVerificationSceneId): string {

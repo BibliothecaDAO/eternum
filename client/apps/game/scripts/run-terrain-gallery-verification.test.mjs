@@ -13,6 +13,14 @@ describe("terrain gallery verification", () => {
     );
   });
 
+  it("builds a deterministic reveal-progress capture URL", () => {
+    expect(
+      buildTerrainGalleryUrl("https://localhost:4173", "webgpu-auto", "textured", "fog-reveal", "detail", 0.5),
+    ).toBe(
+      "https://localhost:4173/debug/procedural-terrain?capture=1&rendererMode=webgpu-auto&groundMode=textured&scene=fog-reveal&quality=detail&reveal=0.5",
+    );
+  });
+
   it("passes matching healthy backend evidence", () => {
     const results = healthyResults();
     expect(evaluateTerrainGalleryResults(results)).toMatchObject({ ok: true, reasons: [] });
@@ -87,6 +95,7 @@ function result(rendererMode, activeMode, groundMode) {
     groundMode,
     imageCoverage: 0.42,
     qualityTier: "detail",
+    revealProgress: 0,
     ready: true,
     rendererMode,
     routeMounted: true,
@@ -108,7 +117,12 @@ function result(rendererMode, activeMode, groundMode) {
       prepareMs: 20,
       propInstances: 39,
       qualityTier: "detail",
+      revealProgress: 0,
       sceneId: "all-biomes",
+      shroudActiveReveals: 0,
+      shroudFrontierInstances: 0,
+      shroudInstances: 0,
+      shroudTriangles: 0,
       triangles: 18_300,
       textures: 4,
     },

@@ -49,6 +49,19 @@ describe("ProceduralTerrain", () => {
     terrain.dispose();
   });
 
+  it("keeps newly explored terrain covered until commit and finishes the reveal without retained state", () => {
+    const terrain = new ProceduralTerrain();
+    terrain.present([terrain.preparePage(unknownRequest())]);
+    expect(terrain.getShroudStats()).toMatchObject({ activeReveals: 0, instances: 1 });
+
+    terrain.queueShroudReveal(0, 0);
+    terrain.present([terrain.preparePage(request(BiomeType.Grassland, false))]);
+    expect(terrain.getShroudStats()).toMatchObject({ activeReveals: 1, instances: 1 });
+    for (let frame = 0; frame < 20; frame += 1) terrain.update(0.05);
+    expect(terrain.getShroudStats()).toMatchObject({ activeReveals: 0, instances: 0 });
+    terrain.dispose();
+  });
+
   it("retains a requested quality tier while the catalog loads", async () => {
     const pools = {
       dispose: vi.fn(),
@@ -74,12 +87,19 @@ describe("ProceduralTerrain", () => {
 
 function request(biome: BiomeType, occupied: boolean) {
   return {
-    cells: [{ biome, col: 0, occupied, row: 0 }],
+    cells: [{ biome, col: 0, explored: true, occupied, row: 0 }],
     climate: NEUTRAL_BIOME_CLIMATE,
     generation: 1,
     halo: [],
     mapCenter: 0,
     pageKey: "page",
     subdivisions: 2,
+  };
+}
+
+function unknownRequest() {
+  return {
+    ...request(BiomeType.None, false),
+    cells: [{ biome: null, col: 0, explored: false, occupied: false, row: 0 }],
   };
 }

@@ -11,7 +11,18 @@ const READY_TIMEOUT_MS = 20_000;
 const POLL_MS = 250;
 const RENDERER_MODES = ["webgpu-auto", "webgpu-force-webgl"];
 const GROUND_MODES = ["flat", "textured"];
-const SCENE_IDS = ["all-biomes", "temperate-grove", "tropical-coast", "arid-basin", "cold-front", "scorched-ridge"];
+const SCENE_IDS = [
+  "all-biomes",
+  "temperate-grove",
+  "tropical-coast",
+  "arid-basin",
+  "cold-front",
+  "scorched-ridge",
+  "fog-island",
+  "fog-coast",
+  "fog-frontier",
+  "fog-reveal",
+];
 const QUALITY_TIERS = ["overview", "balanced", "detail"];
 
 export function buildTerrainGalleryUrl(
@@ -20,6 +31,7 @@ export function buildTerrainGalleryUrl(
   groundMode = "textured",
   sceneId = "all-biomes",
   qualityTier = "detail",
+  revealProgress = 0,
 ) {
   const url = new URL(baseUrl);
   url.pathname = "/debug/procedural-terrain";
@@ -29,6 +41,7 @@ export function buildTerrainGalleryUrl(
   url.searchParams.set("groundMode", groundMode);
   url.searchParams.set("scene", sceneId);
   url.searchParams.set("quality", qualityTier);
+  if (revealProgress > 0) url.searchParams.set("reveal", String(revealProgress));
   return url.toString();
 }
 
@@ -67,6 +80,9 @@ export function evaluateTerrainGalleryResults(results, options = {}) {
     if (result.snapshot?.sceneId !== result.sceneId) reasons.push(`${label}: snapshot scene did not match request`);
     if (result.snapshot?.qualityTier !== result.qualityTier)
       reasons.push(`${label}: snapshot quality did not match request`);
+    if (result.snapshot?.revealProgress !== result.revealProgress) {
+      reasons.push(`${label}: snapshot reveal progress did not match request`);
+    }
     if (result.snapshot?.groundTextureLayers !== 8) reasons.push(`${label}: expected eight ground texture layers`);
     if (!(result.snapshot?.groundTextureBytes > 0)) reasons.push(`${label}: expected measured ground texture bytes`);
     if (enforceTiming) {
@@ -84,6 +100,24 @@ export function evaluateTerrainGalleryResults(results, options = {}) {
       reasons.push(`${label}: renderer texture count exceeded policy or was unavailable`);
     }
     if (!(result.snapshot?.propInstances > 0)) reasons.push(`${label}: expected deterministic prop instances`);
+    const expectsShroud = result.sceneId.startsWith("fog-");
+    if (expectsShroud && !(result.snapshot?.shroudInstances > 0)) {
+      reasons.push(`${label}: expected deterministic exploration shroud instances`);
+    }
+    if (!expectsShroud && result.snapshot?.shroudInstances !== 0) {
+      reasons.push(`${label}: fully explored scene unexpectedly rendered exploration shroud instances`);
+    }
+    if (
+      result.sceneId === "fog-reveal" &&
+      result.revealProgress > 0 &&
+      result.revealProgress < 1 &&
+      result.snapshot?.shroudActiveReveals !== 1
+    ) {
+      reasons.push(`${label}: expected one active commit-gated terrain reveal`);
+    }
+    if (result.sceneId === "fog-reveal" && result.revealProgress === 1 && result.snapshot?.shroudActiveReveals !== 0) {
+      reasons.push(`${label}: completed terrain reveal retained active shroud state`);
+    }
     if (!(result.snapshot?.triangles > 0 && result.snapshot.triangles <= 3_000_000)) {
       reasons.push(`${label}: triangle count exceeded policy or was unavailable`);
     }
@@ -162,12 +196,13 @@ async function runGalleryScenario({
   groundMode,
   headed,
   qualityTier,
+  revealProgress,
   rendererMode,
   sceneId,
 }) {
   const rendererKey = rendererMode === "webgpu-auto" ? "wg" : "gl";
   const session = `tg-${sceneId.slice(0, 8)}-${qualityTier[0]}-${rendererKey}-${groundMode[0]}-${Date.now().toString(36)}`;
-  const url = buildTerrainGalleryUrl(baseUrl, rendererMode, groundMode, sceneId, qualityTier);
+  const url = buildTerrainGalleryUrl(baseUrl, rendererMode, groundMode, sceneId, qualityTier, revealProgress);
   try {
     runAgentBrowser(session, ["open", "about:blank"], headed);
     runAgentBrowser(session, ["set", "viewport", "1440", "900"], headed);
@@ -191,6 +226,7 @@ async function runGalleryScenario({
       groundMode,
       imageCoverage,
       qualityTier,
+      revealProgress,
       ready: state.status === "ready" && state.dataReady,
       rendererMode,
       routeMounted: state.routeMounted,
@@ -298,6 +334,7 @@ async function main(args) {
   const artifactDirectory = resolve(readOption(args, "--artifact-dir", DEFAULT_ARTIFACT_DIRECTORY));
   const headed = args.includes("--headed");
   const qualityTier = readOption(args, "--quality", "detail");
+  const revealProgress = Number(readOption(args, "--reveal-progress", "0"));
   const timingPolicy = readOption(args, "--timing-policy", "enforced");
   const rendererModes = readListOption(args, "--renderers", RENDERER_MODES);
   const groundModes = readListOption(args, "--ground-modes", GROUND_MODES);
@@ -306,6 +343,9 @@ async function main(args) {
   const unknownGroundModes = groundModes.filter((groundMode) => !GROUND_MODES.includes(groundMode));
   const unknownSceneIds = sceneIds.filter((sceneId) => !SCENE_IDS.includes(sceneId));
   if (!QUALITY_TIERS.includes(qualityTier)) throw new Error(`Unknown terrain gallery quality: ${qualityTier}`);
+  if (!Number.isFinite(revealProgress) || revealProgress < 0 || revealProgress > 1) {
+    throw new Error(`Terrain gallery reveal progress must be from 0 to 1, received ${String(revealProgress)}`);
+  }
   if (timingPolicy !== "enforced" && timingPolicy !== "informational") {
     throw new Error(`Unknown terrain gallery timing policy: ${timingPolicy}`);
   }
@@ -326,6 +366,7 @@ async function main(args) {
             groundMode,
             headed,
             qualityTier,
+            revealProgress,
             rendererMode,
             sceneId,
           }),
@@ -334,7 +375,16 @@ async function main(args) {
     }
   }
   const evaluation = evaluateTerrainGalleryResults(results, { groundModes, rendererModes, sceneIds, timingPolicy });
-  const summary = { ...evaluation, groundModes, qualityTier, rendererModes, results, sceneIds, timingPolicy };
+  const summary = {
+    ...evaluation,
+    groundModes,
+    qualityTier,
+    rendererModes,
+    results,
+    revealProgress,
+    sceneIds,
+    timingPolicy,
+  };
   writeFileSync(join(artifactDirectory, "terrain-gallery-verification.json"), `${JSON.stringify(summary, null, 2)}\n`);
   console.log(JSON.stringify(summary, null, 2));
   if (!summary.ok) process.exitCode = 1;

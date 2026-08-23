@@ -21,7 +21,7 @@ describe("terrain prop placement", () => {
     const cells = [
       cell(0, 0, BiomeType.TropicalRainForest, true),
       cell(1, 0, BiomeType.Ocean),
-      { ...cell(2, 0, BiomeType.Grassland), biome: null },
+      { ...cell(2, 0, BiomeType.Grassland), biome: null, explored: false },
     ];
     const page = request(cells);
 
@@ -114,7 +114,7 @@ describe("terrain prop placement", () => {
 });
 
 function cell(col: number, row: number, biome: BiomeType, occupied = false): TerrainCellInput {
-  return { biome, col, occupied, row };
+  return { biome, col, explored: true, occupied, row };
 }
 
 function request(cells: TerrainCellInput[], pageKey = "props", halo: TerrainCellInput[] = []): TerrainPageRequest {

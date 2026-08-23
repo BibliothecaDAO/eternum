@@ -44,6 +44,9 @@ function evaluateScenario(result, requireLifecycle, enforceTiming, reasons) {
     reasons.push(`${label}: expected 144 pages including the coverage guard band`);
   if (snapshot.fixture?.visiblePageCount !== 12) reasons.push(`${label}: expected twelve visible pages`);
   if (snapshot.fixture?.cellCount !== 82_944) reasons.push(`${label}: expected 82,944 fixture cells`);
+  if (snapshot.fixture?.explorationMode !== result.explorationMode) {
+    reasons.push(`${label}: fixture exploration mode did not match request`);
+  }
   if (!(snapshot.coverage?.checks >= 10)) reasons.push(`${label}: insufficient full-screen coverage checks`);
   if (snapshot.coverage?.missingFrames !== 0 || snapshot.coverage?.missingSamples !== 0) {
     reasons.push(`${label}: terrain did not cover every sampled screen position`);
@@ -71,6 +74,12 @@ function evaluateScenario(result, requireLifecycle, enforceTiming, reasons) {
   evaluateAssetRequests(label, result.variant, snapshot.assets, reasons);
   if ((result.variant === "props" || result.variant === "production") && !(snapshot.render?.propInstances > 0)) {
     reasons.push(`${label}: expected rendered prop instances`);
+  }
+  if (result.explorationMode === "frontier" && !(snapshot.render?.shroudInstances > 0)) {
+    reasons.push(`${label}: expected rendered exploration shroud instances`);
+  }
+  if (result.explorationMode === "explored" && snapshot.render?.shroudInstances !== 0) {
+    reasons.push(`${label}: fully explored benchmark unexpectedly rendered exploration shroud instances`);
   }
   if (requireLifecycle) {
     if (snapshot.chunks?.lifecyclePagesVisited !== 100) reasons.push(`${label}: lifecycle did not visit 100 pages`);

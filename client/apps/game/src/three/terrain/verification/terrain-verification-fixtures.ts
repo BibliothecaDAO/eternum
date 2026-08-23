@@ -16,9 +16,15 @@ export const TERRAIN_VERIFICATION_SCENE_IDS = Object.freeze([
   "arid-basin",
   "cold-front",
   "scorched-ridge",
+  "fog-island",
+  "fog-coast",
+  "fog-frontier",
+  "fog-reveal",
 ] as const);
 
 export type TerrainVerificationSceneId = (typeof TERRAIN_VERIFICATION_SCENE_IDS)[number];
+type TerrainBiomeAnchorSceneId = Exclude<TerrainVerificationSceneId, "all-biomes" | `fog-${string}`>;
+export const TERRAIN_REVEAL_TARGET = Object.freeze({ col: 2, row: 4 });
 
 const BIOME_REGION_COLUMNS = 4;
 const BIOME_REGION_WIDTH = ALL_BIOMES_COLUMNS / BIOME_REGION_COLUMNS;
@@ -57,6 +63,7 @@ export function createAllBiomesTerrainRequest(): TerrainPageRequest {
 
 export function createTerrainVerificationRequest(sceneId: TerrainVerificationSceneId): TerrainPageRequest {
   if (sceneId === "all-biomes") return createAllBiomesTerrainRequest();
+  if (isFogVerificationScene(sceneId)) return createFogVerificationRequest(sceneId);
   return {
     cells: createAnchorCells(sceneId),
     climate: { ...NEUTRAL_BIOME_CLIMATE, elevation_seed: 137, moisture_seed: 991 },
@@ -69,6 +76,69 @@ export function createTerrainVerificationRequest(sceneId: TerrainVerificationSce
   };
 }
 
+function isFogVerificationScene(
+  sceneId: TerrainVerificationSceneId,
+): sceneId is Extract<TerrainVerificationSceneId, `fog-${string}`> {
+  return sceneId === "fog-island" || sceneId === "fog-coast" || sceneId === "fog-frontier" || sceneId === "fog-reveal";
+}
+
+export function createTerrainRevealVerificationRequest(revealed: boolean): TerrainPageRequest {
+  const request = createFogVerificationRequest("fog-reveal");
+  if (!revealed) return request;
+  return {
+    ...request,
+    cells: request.cells.map((cell) =>
+      cell.col === TERRAIN_REVEAL_TARGET.col && cell.row === TERRAIN_REVEAL_TARGET.row
+        ? {
+            ...cell,
+            biome: resolveAnchorBiome("temperate-grove", cell.col, cell.row),
+            explored: true,
+          }
+        : cell,
+    ),
+  };
+}
+
+function createFogVerificationRequest(
+  sceneId: Extract<TerrainVerificationSceneId, `fog-${string}`>,
+): TerrainPageRequest {
+  const source =
+    sceneId === "fog-frontier"
+      ? createShowcaseCells()
+      : createAnchorCells(sceneId === "fog-coast" ? "tropical-coast" : "temperate-grove");
+  return {
+    cells: source.map((cell) => (isFogCellExplored(sceneId, cell.col, cell.row) ? cell : concealCell(cell))),
+    climate: { ...NEUTRAL_BIOME_CLIMATE, elevation_seed: 137, moisture_seed: 991 },
+    generation: 1,
+    halo: [],
+    mapCenter: 0,
+    pageKey: `terrain-anchor:${sceneId}`,
+    strictBiomeParity: false,
+    subdivisions: 3,
+  };
+}
+
+function isFogCellExplored(
+  sceneId: Extract<TerrainVerificationSceneId, `fog-${string}`>,
+  col: number,
+  row: number,
+): boolean {
+  if (sceneId === "fog-frontier") return col < 8 + Math.sin(row * 0.72) * 2.2;
+  if (sceneId === "fog-coast") return col > 3 + Math.sin(row * 0.65) * 1.6 && row < 10;
+  if (sceneId === "fog-reveal" && col === TERRAIN_REVEAL_TARGET.col && row === TERRAIN_REVEAL_TARGET.row) {
+    return false;
+  }
+  const centerCol = TERRAIN_ANCHOR_COLUMNS * 0.48;
+  const centerRow = TERRAIN_ANCHOR_ROWS * 0.5;
+  const dx = (col - centerCol) / 6.2;
+  const dy = (row - centerRow) / 4.1;
+  return dx * dx + dy * dy + Math.sin(col * 0.8 + row * 0.33) * 0.12 < 1;
+}
+
+function concealCell<TCell extends { col: number; occupied: boolean; row: number }>(cell: TCell) {
+  return { ...cell, biome: null, explored: false, occupied: false };
+}
+
 function createShowcaseCells() {
   return Array.from({ length: ALL_BIOMES_COLUMNS * ALL_BIOMES_ROWS }, (_, index) => {
     const col = index % ALL_BIOMES_COLUMNS;
@@ -76,6 +146,7 @@ function createShowcaseCells() {
     return {
       biome: resolveShowcaseBiome(col, row),
       col,
+      explored: true,
       occupied: false,
       row,
     };
@@ -90,24 +161,21 @@ function resolveShowcaseBiome(col: number, row: number): BiomeType {
   return SHOWCASE_BIOME_GRID[regionRow * BIOME_REGION_COLUMNS + regionCol];
 }
 
-function createAnchorCells(sceneId: Exclude<TerrainVerificationSceneId, "all-biomes">) {
+function createAnchorCells(sceneId: TerrainBiomeAnchorSceneId) {
   return Array.from({ length: TERRAIN_ANCHOR_COLUMNS * TERRAIN_ANCHOR_ROWS }, (_, index) => {
     const col = index % TERRAIN_ANCHOR_COLUMNS;
     const row = Math.floor(index / TERRAIN_ANCHOR_COLUMNS);
     return {
       biome: resolveAnchorBiome(sceneId, col, row),
       col,
+      explored: true,
       occupied: col === Math.floor(TERRAIN_ANCHOR_COLUMNS * 0.58) && row === Math.floor(TERRAIN_ANCHOR_ROWS * 0.52),
       row,
     };
   });
 }
 
-function resolveAnchorBiome(
-  sceneId: Exclude<TerrainVerificationSceneId, "all-biomes">,
-  col: number,
-  row: number,
-): BiomeType {
+function resolveAnchorBiome(sceneId: TerrainBiomeAnchorSceneId, col: number, row: number): BiomeType {
   const x = col / (TERRAIN_ANCHOR_COLUMNS - 1);
   const y = row / (TERRAIN_ANCHOR_ROWS - 1);
   const warp = Math.sin(row * 0.82 + col * 0.21) * 0.045 + Math.sin(col * 0.47) * 0.035;

@@ -25,6 +25,7 @@ export function buildTerrainPerformanceUrl(baseUrl, scenario) {
   url.searchParams.set("variant", scenario.variant);
   url.searchParams.set("density", String(scenario.densityMultiplier ?? DEFAULT_DENSITY_MULTIPLIER));
   url.searchParams.set("rendererMode", scenario.rendererMode);
+  url.searchParams.set("explorationMode", scenario.explorationMode ?? "explored");
   if (scenario.timingPolicy === "informational") url.searchParams.set("traceMode", "structural");
   return url.toString();
 }
@@ -33,6 +34,7 @@ function runBenchmarkScenario({
   artifactDirectory,
   baseUrl,
   densityMultiplier,
+  explorationMode,
   headed,
   rendererMode,
   runMode,
@@ -43,6 +45,7 @@ function runBenchmarkScenario({
   const session = `terrain-performance-${rendererMode}-${variant}-${Date.now().toString(36)}`;
   const url = buildTerrainPerformanceUrl(baseUrl, {
     densityMultiplier,
+    explorationMode,
     rendererMode,
     runMode,
     timingPolicy,
@@ -59,6 +62,7 @@ function runBenchmarkScenario({
       complete: state.status === "complete",
       densityMultiplier,
       errors,
+      explorationMode,
       rendererMode,
       routeMounted: state.routeMounted,
       screenshotPath,
@@ -157,6 +161,7 @@ function main(args) {
   const artifactDirectory = resolve(readOption(args, "--artifact-dir", DEFAULT_ARTIFACT_DIRECTORY));
   const headed = args.includes("--headed");
   const densityMultiplier = Number(readOption(args, "--density-multiplier", String(DEFAULT_DENSITY_MULTIPLIER)));
+  const explorationMode = readOption(args, "--exploration-mode", "explored");
   const renderers = readListOption(args, "--renderers", TERRAIN_BENCHMARK_RENDERERS);
   const runMode = readOption(args, "--run-mode", "quick");
   const timingPolicy = readOption(args, "--timing-policy", "enforced");
@@ -164,6 +169,7 @@ function main(args) {
   const variants = readListOption(args, "--variants", TERRAIN_BENCHMARK_VARIANTS);
   requireKnownValues(renderers, TERRAIN_BENCHMARK_RENDERERS, "renderers");
   requireKnownValues(variants, TERRAIN_BENCHMARK_VARIANTS, "variants");
+  requireKnownValues([explorationMode], ["explored", "frontier"], "exploration modes");
   if (!Number.isFinite(densityMultiplier) || densityMultiplier < 0.25 || densityMultiplier > 3) {
     throw new Error(`Terrain benchmark density multiplier must be from 0.25 to 3, received ${densityMultiplier}`);
   }
@@ -179,6 +185,7 @@ function main(args) {
         artifactDirectory,
         baseUrl,
         densityMultiplier,
+        explorationMode,
         headed,
         rendererMode,
         runMode,
@@ -189,7 +196,7 @@ function main(args) {
     ),
   );
   const evaluation = evaluateTerrainPerformanceResults(results, { renderers, runMode, timingPolicy, variants });
-  const summary = { ...evaluation, results, runMode, timingPolicy };
+  const summary = { ...evaluation, explorationMode, results, runMode, timingPolicy };
   writeFileSync(join(artifactDirectory, "terrain-performance-benchmark.json"), `${JSON.stringify(summary, null, 2)}\n`);
   console.log(JSON.stringify(summary, null, 2));
   if (!summary.ok) process.exitCode = 1;
