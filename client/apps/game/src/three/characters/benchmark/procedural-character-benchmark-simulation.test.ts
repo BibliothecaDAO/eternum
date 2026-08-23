@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   applyProceduralCharacterBenchmarkConfigPatch,
   createDefaultProceduralCharacterBenchmarkConfig,
+  createProceduralCharacterWalkingPerformanceConfig,
 } from "./procedural-character-benchmark-config";
 import {
   advanceProceduralCharacterBenchmarkSimulation,
@@ -18,18 +19,37 @@ describe("procedural character benchmark simulation", () => {
   it("normalizes unsafe live-control edits at the benchmark boundary", () => {
     const config = applyProceduralCharacterBenchmarkConfigPatch(createDefaultProceduralCharacterBenchmarkConfig(), {
       actorCount: 500,
+      animationUpdateLanes: 10,
       corpseSeconds: -1,
       deathsPerSecond: 50,
       maxActiveRagdolls: 100,
+      pixelRatio: 4,
       simulationSpeed: Number.NaN,
     });
 
     expect(config).toMatchObject({
       actorCount: 100,
+      animationUpdateLanes: 4,
       corpseSeconds: 0.5,
       deathsPerSecond: 10,
       maxActiveRagdolls: 20,
+      pixelRatio: 1.5,
       simulationSpeed: 0.1,
+    });
+  });
+
+  it("defines one deterministic 100-unit walking performance profile", () => {
+    expect(createProceduralCharacterWalkingPerformanceConfig()).toMatchObject({
+      actorCount: 100,
+      animationUpdateLanes: 3,
+      archerVolleys: false,
+      autoRotate: false,
+      deathsPerSecond: 0,
+      maxActiveRagdolls: 0,
+      meleeAttacks: false,
+      pixelRatio: 1,
+      shadows: false,
+      unitMix: "foot",
     });
   });
 

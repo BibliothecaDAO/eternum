@@ -11,6 +11,7 @@ import type { ProceduralMeleeEquipmentSource } from "./melee/procedural-melee-we
 import { ProceduralMeleeWeaponLibrary } from "./melee/procedural-melee-weapon-library";
 import type { ProceduralMeleeOffhandId, ProceduralMeleeWeaponId } from "./melee/procedural-melee-weapon-catalog";
 import type { CharacterPartId } from "./procedural-character-rig";
+import { ProceduralCrowdUpdateScheduler } from "./procedural-crowd-update-scheduler";
 import { createDefaultProceduralCharacterConfig, type ProceduralCharacterConfig } from "./procedural-character-config";
 import { resolveJoltWorldConfig } from "./jolt-character-ragdoll";
 import { JoltRagdollWorld } from "./jolt-ragdoll-world";
@@ -95,6 +96,7 @@ export interface ProceduralUnitActor {
 
 export class ProceduralUnitRuntime {
   private readonly actors = new Set<ProceduralUnitActor>();
+  private readonly animationScheduler = new ProceduralCrowdUpdateScheduler<ProceduralUnitActor>();
   private disposed = false;
 
   private constructor(
@@ -134,16 +136,32 @@ export class ProceduralUnitRuntime {
     if (this.disposed) throw new Error("Cannot create a unit from a disposed procedural unit runtime");
     const normalized = applyProceduralUnitConfigPatch(config, {});
     this.physicsWorld.updateConfig(resolveJoltWorldConfig(normalized.humanoid));
-    const release = (actor: ProceduralUnitActor) => this.actors.delete(actor);
+    const release = (actor: ProceduralUnitActor) => {
+      this.animationScheduler.delete(actor);
+      this.actors.delete(actor);
+    };
     const actor = createUnitActor(this.characterRuntime, this.horseRuntime, this.meleeLibrary, normalized, release);
     this.actors.add(actor);
+    this.animationScheduler.add(actor);
     return actor;
   }
 
   public update(deltaSeconds: number): void {
     if (this.disposed) return;
     this.physicsWorld.update(deltaSeconds);
-    this.actors.forEach((actor) => actor.update(deltaSeconds));
+    this.animationScheduler.update(
+      deltaSeconds,
+      (actor) => actor.mode === "ragdoll",
+      (actor, elapsedSeconds) => actor.update(elapsedSeconds),
+    );
+  }
+
+  public setCrowdAnimationLaneCount(laneCount: number): void {
+    this.animationScheduler.setLaneCount(laneCount);
+  }
+
+  public getCrowdAnimationStats() {
+    return this.animationScheduler.getStats();
   }
 
   public updateActorConfig(actor: ProceduralUnitActor, config: ProceduralUnitConfig): void {
@@ -168,6 +186,7 @@ export class ProceduralUnitRuntime {
     this.disposed = true;
     [...this.actors].forEach((actor) => actor.dispose());
     this.actors.clear();
+    this.animationScheduler.clear();
     this.characterRuntime.dispose();
     this.horseRuntime.dispose();
     this.physicsWorld.dispose();

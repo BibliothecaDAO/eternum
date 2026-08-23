@@ -1,11 +1,13 @@
 export type ProceduralCharacterMotionMode = "idle" | "walk" | "run" | "mounted";
 export type ProceduralCharacterPresetId = "balanced" | "heavy" | "mythic";
+export type ProceduralCharacterRenderDetail = "crowd" | "hero";
 export type ProceduralCharacterTier = 1 | 2 | 3;
 
 export interface ProceduralCharacterConfig {
   tier: ProceduralCharacterTier;
   seed: number;
   primaryColor: string;
+  renderDetail: ProceduralCharacterRenderDetail;
   metalness: number;
   roughness: number;
   runeGlow: number;
@@ -54,6 +56,7 @@ const DEFAULT_CONFIG: ProceduralCharacterConfig = {
   tier: 3,
   seed: 1337,
   primaryColor: "#315f86",
+  renderDetail: "hero",
   metalness: 0.72,
   roughness: 0.34,
   runeGlow: 0.38,
@@ -172,6 +175,7 @@ function normalizeProceduralCharacterConfig(input: ProceduralCharacterConfig): P
     tier: clampInteger(input.tier, 1, 3) as ProceduralCharacterTier,
     seed: clampInteger(input.seed, 0, 2_147_483_647),
     primaryColor: normalizeColor(input.primaryColor),
+    renderDetail: input.renderDetail === "crowd" ? "crowd" : "hero",
     metalness: clamp(input.metalness, 0, 1),
     roughness: clamp(input.roughness, 0.04, 1),
     runeGlow: clamp(input.runeGlow, 0, 2),

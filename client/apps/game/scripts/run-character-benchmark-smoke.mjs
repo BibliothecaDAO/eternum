@@ -1,4 +1,5 @@
-import { writeFileSync } from "node:fs";
+import { mkdirSync, writeFileSync } from "node:fs";
+import { dirname, isAbsolute, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { parseAgentBrowserJson, runAgentBrowser } from "./run-renderer-debug-smoke.mjs";
@@ -12,6 +13,7 @@ const MAX_READY_DRAW_CALLS = 1_500;
 const MAX_READY_P95_FRAME_MS = 80;
 const VALID_REQUESTED_RENDERER_MODES = new Set(["webgpu-auto", "webgpu-force-webgl"]);
 const VALID_RENDERER_MODES = new Set(["webgl2-fallback", "webgpu"]);
+const REPOSITORY_ROOT = fileURLToPath(new URL("../../../../", import.meta.url));
 
 export function buildCharacterBenchmarkSmokeUrl({ baseUrl, rendererMode }) {
   const url = new URL(baseUrl);
@@ -335,11 +337,19 @@ function runCharacterBenchmarkScenario({ headed, session, timeoutMs, url }) {
 function main(argv) {
   const baseUrl = readOption(argv, "--base-url", DEFAULT_BASE_URL);
   const headed = readFlag(argv, "--headed");
-  const outputPath = readOption(argv, "--output", "");
+  const requestedOutputPath = readOption(argv, "--output", "");
+  const outputPath = requestedOutputPath
+    ? isAbsolute(requestedOutputPath)
+      ? requestedOutputPath
+      : resolve(REPOSITORY_ROOT, requestedOutputPath)
+    : "";
   const rendererMode = normalizeRequestedBenchmarkRendererMode(readOption(argv, "--renderer-mode", ""));
   const timeoutMs = readPositiveNumberOption(argv, "--timeout-ms", DEFAULT_TIMEOUT_MS);
   const summary = runCharacterBenchmarkSmoke({ baseUrl, headed, rendererMode, timeoutMs });
-  if (outputPath) writeFileSync(outputPath, `${JSON.stringify(summary, null, 2)}\n`);
+  if (outputPath) {
+    mkdirSync(dirname(outputPath), { recursive: true });
+    writeFileSync(outputPath, `${JSON.stringify(summary, null, 2)}\n`);
+  }
   console.log(JSON.stringify(summary, null, 2));
   if (!summary.ok) process.exitCode = 1;
 }

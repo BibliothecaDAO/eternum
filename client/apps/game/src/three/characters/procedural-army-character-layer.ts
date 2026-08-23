@@ -393,10 +393,12 @@ function resolveUnitConfig(
       animationMode: kind === "paladin" ? "mounted" : presentation.isMoving ? "walk" : "idle",
       autoRotate: false,
       primaryColor: presentation.primaryColor,
+      renderDetail: "crowd",
       seed: resolveCharacterSeed(presentation.entityId),
       tier,
     },
-    melee: resolveMeleeLoadout(presentation.attachments),
+    archer: { detailedEquipment: false },
+    melee: { detailedEquipment: false, ...resolveMeleeLoadout(presentation.attachments) },
   });
 }
 

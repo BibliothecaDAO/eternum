@@ -56,8 +56,8 @@ export function evaluateCharacterGymSmokeResult({ aimStats, animatedStats, brows
   if (stats && stats.smokePhase !== "passed") reasons.push(`smoke phase was ${stats.smokePhase}, expected passed`);
   if (stats && stats.smokeFailures.length > 0) reasons.push(`smoke reported: ${stats.smokeFailures.join("; ")}`);
   if (stats && stats.boneCount !== 65) reasons.push(`bone count was ${stats.boneCount}, expected 65`);
-  if (stats && stats.skinnedMeshCount < 13) {
-    reasons.push(`skinned mesh count was ${stats.skinnedMeshCount}, expected the Ranger archer`);
+  if (stats && stats.skinnedMeshCount !== 10) {
+    reasons.push(`skinned mesh count was ${stats.skinnedMeshCount}, expected the optimized Ranger archer`);
   }
   if (stats && stats.authoredClipCount !== 0) {
     reasons.push(`authored clip count was ${stats.authoredClipCount}, expected fully procedural motion`);
@@ -171,7 +171,7 @@ function runCharacterGymScenario({ headed, session, timeoutMs, url }) {
     until: (snapshot) =>
       snapshot.ready &&
       snapshot.stats?.boneCount === 65 &&
-      snapshot.stats?.skinnedMeshCount >= 13 &&
+      snapshot.stats?.skinnedMeshCount === 10 &&
       VALID_RENDERER_MODES.has(snapshot.stats?.rendererMode),
   });
   if (readySnapshot.ready) {
@@ -183,7 +183,7 @@ function runCharacterGymScenario({ headed, session, timeoutMs, url }) {
     headed,
     session,
     timeoutMs,
-    until: (value) => ["failed", "passed"].includes(value.stats?.smokePhase),
+    until: (value) => value.canvasPresent && ["failed", "passed"].includes(value.stats?.smokePhase),
   });
   const browserErrors = parseErrorLines(runAgentBrowser(session, ["errors"], { headed }));
   const evaluation = evaluateCharacterGymSmokeResult({

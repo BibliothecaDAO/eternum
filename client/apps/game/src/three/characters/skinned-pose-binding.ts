@@ -46,7 +46,6 @@ export function applySegmentBoneRotation(
     parent.getWorldQuaternion(scratchParentQuaternion);
     binding.bone.quaternion.copy(scratchParentQuaternion.invert()).multiply(scratchTargetQuaternion).normalize();
   }
-  binding.bone.updateWorldMatrix(false, true);
 }
 
 function resolveSegmentOrientationOffset(bone: Bone, childBone: Bone, segmentAxis: Vector3): Quaternion {

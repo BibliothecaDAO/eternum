@@ -26,3 +26,4 @@ client/apps/bot/.env
 
 # Local animation captures and benchmark reports
 /output/
+.gstack/

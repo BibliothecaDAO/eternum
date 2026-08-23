@@ -46,9 +46,15 @@ import {
   type ProceduralCharacterBenchmarkEvent,
   type ProceduralCharacterBenchmarkSimulationState,
 } from "./procedural-character-benchmark-simulation";
+import { ProceduralCharacterGpuTimer } from "./procedural-character-gpu-timer";
+import {
+  ProceduralCharacterPerformanceEvaluator,
+  type ProceduralCharacterPerformanceEvaluation,
+} from "./procedural-character-performance-evaluation";
 
 export interface ProceduralCharacterBenchmarkStats {
   actorCount: number;
+  animationUpdateLaneCount: number;
   averageFrameMs: number;
   drawCalls: number;
   fps: number;
@@ -62,6 +68,8 @@ export interface ProceduralCharacterBenchmarkStats {
   physicsBodyCount: number;
   physicsConstraintCount: number;
   physicsFailures: readonly string[];
+  pixelRatio: number;
+  performance: ProceduralCharacterPerformanceEvaluation;
   projectileActiveCount: number;
   projectileDroppedCount: number;
   projectileHitCount: number;
@@ -86,6 +94,7 @@ export interface ProceduralCharacterBenchmarkRendererHandle {
   reset(): void;
   resetCamera(): void;
   setPaused(paused: boolean): void;
+  startPerformanceEvaluation(): Promise<void>;
   stepOnce(): void;
   updateConfig(config: ProceduralCharacterBenchmarkConfig): Promise<void>;
 }
@@ -97,6 +106,7 @@ interface MountProceduralCharacterBenchmarkRendererInput {
 }
 
 interface AnimationLoopRenderer extends RendererSurfaceLike {
+  getContext?(): WebGLRenderingContext;
   setAnimationLoop(callback: ((time: number) => void) | null): void;
 }
 
@@ -110,7 +120,6 @@ const HEX_RADIUS = 1;
 const ACTOR_GROUND_Y = 0.08;
 const MAX_SIMULATION_STEPS = 4;
 const STATS_INTERVAL_MS = 250;
-const FRAME_HISTORY_SIZE = 180;
 const ACTOR_BUILD_BATCH_SIZE = 5;
 const BENCHMARK_ARROW_CAPACITY = 512;
 const BENCHMARK_ARCHER_VOLLEYS_PER_SECOND = 12;
@@ -146,7 +155,8 @@ class ProceduralCharacterBenchmarkRuntime {
   });
   private readonly meleeImpacts = new MeleeImpactSystem(256);
   private readonly actors = new Map<number, BenchmarkActorRecord>();
-  private readonly frameTimes: number[] = [];
+  private readonly performanceEvaluator = new ProceduralCharacterPerformanceEvaluator();
+  private readonly gpuTimer: ProceduralCharacterGpuTimer;
   private readonly positionScratch = new Vector3();
   private readonly targetScratch = new Vector3();
   private readonly onStats?: (stats: ProceduralCharacterBenchmarkStats) => void;
@@ -168,6 +178,7 @@ class ProceduralCharacterBenchmarkRuntime {
   private viewportHeight = 1;
   private lastFrameTime = performance.now();
   private lastStatsTime = this.lastFrameTime;
+  private performanceEvaluationPromise?: Promise<void>;
 
   private constructor(
     input: MountProceduralCharacterBenchmarkRendererInput,
@@ -178,7 +189,10 @@ class ProceduralCharacterBenchmarkRuntime {
     this.onStats = input.onStats;
     this.backend = initialized.backend;
     this.renderer = initialized.renderer as AnimationLoopRenderer;
+    this.gpuTimer = new ProceduralCharacterGpuTimer(this.renderer);
+    this.performanceEvaluator.setGpuTimerSupported(this.gpuTimer.supported);
     this.unitRuntime = unitRuntime;
+    this.unitRuntime.setCrowdAnimationLaneCount(this.config.animationUpdateLanes);
     this.simulation = createProceduralCharacterBenchmarkSimulation(this.config);
     this.scene = createBenchmarkScene(this.stage);
     this.stage.add(this.projectiles.group, this.meleeImpacts.group);
@@ -198,7 +212,7 @@ class ProceduralCharacterBenchmarkRuntime {
     input: MountProceduralCharacterBenchmarkRendererInput,
   ): Promise<ProceduralCharacterBenchmarkRuntime> {
     const { rendererRuntime, unitRuntime } = await initializeProceduralCharacterRendererRuntime({
-      pixelRatioCap: 1.5,
+      pixelRatioCap: input.config.pixelRatio,
       preloadPhysics: true,
     });
     let benchmark: ProceduralCharacterBenchmarkRuntime | undefined;
@@ -225,6 +239,7 @@ class ProceduralCharacterBenchmarkRuntime {
       reset: () => this.reset(),
       resetCamera: () => this.resetCamera(),
       setPaused: (paused) => this.setPaused(paused),
+      startPerformanceEvaluation: () => this.startPerformanceEvaluation(),
       stepOnce: () => this.stepOnce(),
       updateConfig: (config) => this.updateConfig(config),
     };
@@ -237,14 +252,29 @@ class ProceduralCharacterBenchmarkRuntime {
 
   private update(time: number): void {
     if (this.disposed) return;
+    const frameWorkStart = performance.now();
     const rawDeltaSeconds = Math.max(0, (time - this.lastFrameTime) / 1000);
     const deltaSeconds = Math.min(rawDeltaSeconds, 0.1);
     this.lastFrameTime = time;
-    this.recordFrameTime(rawDeltaSeconds * 1000);
 
+    const animationStart = performance.now();
     if (!this.paused && !this.loadingActors) this.advanceSimulation(deltaSeconds);
+    const animationCpuMs = performance.now() - animationStart;
     this.controls.update(deltaSeconds);
+    const renderStart = performance.now();
+    this.gpuTimer.readAvailable().forEach((frameMs) => this.performanceEvaluator.recordGpuFrame(frameMs));
+    if (!this.paused && !this.loadingActors) this.gpuTimer.begin();
     this.renderFrame();
+    this.gpuTimer.end();
+    const renderCpuMs = performance.now() - renderStart;
+    if (!this.paused && !this.loadingActors) {
+      this.performanceEvaluator.recordFrame({
+        animationCpuMs,
+        frameMs: rawDeltaSeconds * 1_000,
+        renderCpuMs,
+        totalCpuMs: performance.now() - frameWorkStart,
+      });
+    }
     this.publishStats(time);
     this.renderer.info.reset();
   }
@@ -371,6 +401,7 @@ class ProceduralCharacterBenchmarkRuntime {
     if (!normalized.archerVolleys) this.projectiles.reset();
     if (!normalized.meleeAttacks) this.meleeImpacts.reset();
     this.controls.autoRotate = normalized.autoRotate;
+    this.unitRuntime.setCrowdAnimationLaneCount(normalized.animationUpdateLanes);
     this.applyRenderVisuals();
 
     if (rebuildPopulation) {
@@ -381,6 +412,7 @@ class ProceduralCharacterBenchmarkRuntime {
       actor.object.scale.setScalar(normalized.characterScale);
       this.unitRuntime.updateActorConfig(actor, resolveBenchmarkActorConfig(normalized, id));
     });
+    this.resetPerformanceEvaluation();
   }
 
   private async rebuildPopulation(): Promise<void> {
@@ -417,6 +449,7 @@ class ProceduralCharacterBenchmarkRuntime {
     if (this.disposed || generation !== this.populationGeneration) return;
     this.loadingActors = false;
     this.updateActorPresentation(0);
+    this.resetPerformanceEvaluation();
     this.publishStats(performance.now(), true);
   }
 
@@ -532,23 +565,27 @@ class ProceduralCharacterBenchmarkRuntime {
     const physics = this.resolvePhysicsStats();
     const projectiles = this.projectiles.getStats();
     const melee = this.meleeImpacts.getStats();
-    const frame = resolveFrameTimeStats(this.frameTimes);
+    const performanceEvaluation = this.performanceEvaluator.getSnapshot();
     const render = this.renderer.info.render;
+    const crowdAnimation = this.unitRuntime.getCrowdAnimationStats();
     this.onStats({
       actorCount: this.actors.size,
-      averageFrameMs: frame.average,
+      animationUpdateLaneCount: crowdAnimation.laneCount,
+      averageFrameMs: performanceEvaluation.frameMs.average,
       drawCalls: render.drawCalls ?? render.calls,
-      fps: frame.average > 0 ? Math.round(1000 / frame.average) : 0,
+      fps: Math.round(performanceEvaluation.observedFps),
       geometryCount: this.renderer.info.memory.geometries,
       hexCount: BENCHMARK_HEX_CELLS.length,
       loadingActors: this.loadingActors,
       meleeActiveImpactCount: melee.activeCount,
       meleeContactCount: melee.spawnedCount,
       meleeDroppedCount: melee.droppedCount,
-      p95FrameMs: frame.p95,
+      p95FrameMs: performanceEvaluation.frameMs.p95,
+      performance: performanceEvaluation,
       physicsBodyCount: physics.bodyCount,
       physicsConstraintCount: physics.constraintCount,
       physicsFailures: this.physicsFailures,
+      pixelRatio: this.config.pixelRatio,
       projectileActiveCount: projectiles.activeCount,
       projectileDroppedCount: projectiles.droppedCount,
       projectileHitCount: projectiles.hitCount,
@@ -583,10 +620,36 @@ class ProceduralCharacterBenchmarkRuntime {
     return { bodyCount, constraintCount, wasmHeapBytes };
   }
 
-  private recordFrameTime(frameMs: number): void {
-    if (!Number.isFinite(frameMs) || frameMs <= 0 || frameMs > 2_000) return;
-    this.frameTimes.push(frameMs);
-    if (this.frameTimes.length > FRAME_HISTORY_SIZE) this.frameTimes.shift();
+  private startPerformanceEvaluation(): Promise<void> {
+    if (this.performanceEvaluationPromise) return this.performanceEvaluationPromise;
+    this.performanceEvaluationPromise = this.calibrateDisplayRefresh()
+      .then((fps) => this.performanceEvaluator.setDisplayRefreshFps(fps))
+      .finally(() => {
+        this.resetPerformanceEvaluation();
+        this.performanceEvaluationPromise = undefined;
+      });
+    return this.performanceEvaluationPromise;
+  }
+
+  private async calibrateDisplayRefresh(): Promise<number> {
+    const wasPaused = this.paused;
+    const wasStageVisible = this.stage.visible;
+    this.paused = true;
+    this.stage.visible = false;
+    try {
+      const intervals = await sampleAnimationFrameIntervals(60);
+      const average = intervals.reduce((sum, interval) => sum + interval, 0) / Math.max(1, intervals.length);
+      return average > 0 ? 1_000 / average : 0;
+    } finally {
+      this.stage.visible = wasStageVisible;
+      this.paused = wasPaused;
+      this.lastFrameTime = performance.now();
+    }
+  }
+
+  private resetPerformanceEvaluation(): void {
+    this.gpuTimer.reset();
+    this.performanceEvaluator.reset();
   }
 
   private resetCamera(): void {
@@ -618,7 +681,7 @@ class ProceduralCharacterBenchmarkRuntime {
   private applyRenderVisuals(width = this.viewportWidth, height = this.viewportHeight): void {
     this.backend.applyRenderVisuals?.({
       height: Math.max(1, height),
-      pixelRatio: Math.min(window.devicePixelRatio || 1, 1.5),
+      pixelRatio: Math.min(window.devicePixelRatio || 1, this.config.pixelRatio),
       shadows: this.config.shadows,
       width: Math.max(1, width),
     });
@@ -636,6 +699,7 @@ class ProceduralCharacterBenchmarkRuntime {
     this.actors.clear();
     this.projectiles.dispose();
     this.meleeImpacts.dispose();
+    this.gpuTimer.dispose();
     disposeBenchmarkStage(this.stage);
     this.backend.dispose?.();
     this.renderer.domElement.remove();
@@ -725,6 +789,7 @@ function resolveBenchmarkActorConfig(
     impulseY: 3.2,
     impulseZ: Math.sin(angle) * 6,
     primaryColor,
+    renderDetail: "crowd",
     seed: resolveActorSeed(benchmark.seed, actorId),
     showJoints: false,
     stepHeight: benchmark.stepHeight,
@@ -822,14 +887,6 @@ function orientActorTowardTarget(
   actor.object.rotation.y = Math.atan2(target.x - source.x, target.z - source.z);
 }
 
-function resolveFrameTimeStats(frameTimes: readonly number[]): { average: number; p95: number } {
-  if (frameTimes.length === 0) return { average: 0, p95: 0 };
-  const average = frameTimes.reduce((sum, value) => sum + value, 0) / frameTimes.length;
-  const sorted = frameTimes.toSorted((left, right) => left - right);
-  const p95 = sorted[Math.min(sorted.length - 1, Math.floor(sorted.length * 0.95))];
-  return { average: Number(average.toFixed(1)), p95: Number(p95.toFixed(1)) };
-}
-
 function resolveVisibleHexCount(camera: OrthographicCamera): number {
   camera.updateWorldMatrix(true, false);
   const projected = new Vector3();
@@ -853,6 +910,22 @@ function disposeBenchmarkStage(stage: Group): void {
 
 function nextAnimationFrame(): Promise<void> {
   return new Promise((resolve) => requestAnimationFrame(() => resolve()));
+}
+
+async function sampleAnimationFrameIntervals(sampleCount: number): Promise<number[]> {
+  const intervals: number[] = [];
+  let previousTime = await nextAnimationFrameTime();
+  while (intervals.length < sampleCount) {
+    const time = await nextAnimationFrameTime();
+    const interval = time - previousTime;
+    if (Number.isFinite(interval) && interval > 0 && interval < 1_000) intervals.push(interval);
+    previousTime = time;
+  }
+  return intervals;
+}
+
+function nextAnimationFrameTime(): Promise<number> {
+  return new Promise((resolve) => requestAnimationFrame(resolve));
 }
 
 function resolveErrorMessage(error: unknown): string {

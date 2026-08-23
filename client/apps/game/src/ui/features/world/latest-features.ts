@@ -35,6 +35,14 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-08-23",
+    title: "100-Unit Performance Lab",
+    description:
+      "Added a repeatable 60 FPS walking benchmark with live CPU, GPU, frame-pacing, draw-call, triangle, animation-lane, and display-refresh diagnostics for tuning large procedural armies.",
+    type: "improvement",
+    gameSlug: "world",
+  },
+  {
+    date: "2026-08-23",
     title: "Procedural Armies",
     description:
       "Replaced land-army board models with generated Knights, Archers, Crossbowmen, and mounted Paladins that share the new locomotion, weapon, attack, cosmetic, and ragdoll pipeline.",

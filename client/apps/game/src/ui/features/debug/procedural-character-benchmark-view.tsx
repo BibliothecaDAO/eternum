@@ -5,6 +5,7 @@ import { Link } from "react-router-dom";
 import {
   applyProceduralCharacterBenchmarkConfigPatch,
   createDefaultProceduralCharacterBenchmarkConfig,
+  createProceduralCharacterWalkingPerformanceConfig,
   type ProceduralCharacterBenchmarkConfig,
 } from "@/three/characters/benchmark/procedural-character-benchmark-config";
 import {
@@ -12,11 +13,13 @@ import {
   type ProceduralCharacterBenchmarkRendererHandle,
   type ProceduralCharacterBenchmarkStats,
 } from "@/three/characters/benchmark/procedural-character-benchmark-renderer";
+import { ProceduralCharacterPerformanceEvaluator } from "@/three/characters/benchmark/procedural-character-performance-evaluation";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { useBootDocumentState } from "@/ui/modules/boot-loader";
 
 const INITIAL_STATS: ProceduralCharacterBenchmarkStats = {
   actorCount: 0,
+  animationUpdateLaneCount: 1,
   averageFrameMs: 0,
   drawCalls: 0,
   fps: 0,
@@ -30,6 +33,8 @@ const INITIAL_STATS: ProceduralCharacterBenchmarkStats = {
   physicsBodyCount: 0,
   physicsConstraintCount: 0,
   physicsFailures: [],
+  pixelRatio: 1,
+  performance: new ProceduralCharacterPerformanceEvaluator().getSnapshot(),
   projectileActiveCount: 0,
   projectileDroppedCount: 0,
   projectileHitCount: 0,
@@ -53,8 +58,11 @@ const compactIntegerFormatter = new Intl.NumberFormat("en-US", { notation: "comp
 interface ProceduralCharacterBenchmarkDebugBridge {
   getConfig(): ProceduralCharacterBenchmarkConfig;
   getStats(): ProceduralCharacterBenchmarkStats;
+  applyConfigPatch(patch: Partial<ProceduralCharacterBenchmarkConfig>): void;
+  applyWalkingPerformanceProfile(): void;
   killBurst(): void;
   reset(): void;
+  startPerformanceEvaluation(): Promise<void>;
 }
 
 declare global {
@@ -102,7 +110,28 @@ export const ProceduralCharacterBenchmarkView = () => {
     rendererRef.current?.killBurst();
   }, []);
 
-  useEffect(() => exposeBenchmarkDebugBridge(configRef, statsRef, reset, killBurst), [killBurst, reset]);
+  const applyWalkingPerformanceProfile = useCallback(() => {
+    setConfig(createProceduralCharacterWalkingPerformanceConfig());
+  }, []);
+
+  const startPerformanceEvaluation = useCallback(
+    () => rendererRef.current?.startPerformanceEvaluation() ?? Promise.resolve(),
+    [],
+  );
+
+  useEffect(
+    () =>
+      exposeBenchmarkDebugBridge(
+        configRef,
+        statsRef,
+        patchConfig,
+        applyWalkingPerformanceProfile,
+        startPerformanceEvaluation,
+        reset,
+        killBurst,
+      ),
+    [applyWalkingPerformanceProfile, killBurst, patchConfig, reset, startPerformanceEvaluation],
+  );
 
   const togglePaused = useCallback(() => {
     setPaused((current) => {
@@ -116,6 +145,7 @@ export const ProceduralCharacterBenchmarkView = () => {
       className="flex min-h-screen flex-col overflow-hidden bg-[#070b12] text-slate-100 lg:h-screen"
       data-actor-count={stats.actorCount}
       data-benchmark-ready={ready && !stats.loadingActors ? "true" : "false"}
+      data-performance-status={stats.performance.status}
       data-debug-route="procedural-character-benchmark"
       data-simulation-paused={paused ? "true" : "false"}
       data-total-deaths={stats.totalDeaths}
@@ -126,6 +156,7 @@ export const ProceduralCharacterBenchmarkView = () => {
         ready={ready}
         stats={stats}
         onKillBurst={killBurst}
+        onMeasure={() => void startPerformanceEvaluation()}
         onReset={reset}
         onStep={() => rendererRef.current?.stepOnce()}
         onTogglePaused={togglePaused}
@@ -133,6 +164,7 @@ export const ProceduralCharacterBenchmarkView = () => {
       <div className="flex min-h-0 flex-1 flex-col lg:grid lg:grid-cols-[330px_minmax(0,1fr)]">
         <BenchmarkControls
           config={config}
+          onApplyWalkingPerformanceProfile={applyWalkingPerformanceProfile}
           onPatchConfig={patchConfig}
           onResetCamera={() => rendererRef.current?.resetCamera()}
         />
@@ -192,14 +224,20 @@ function mountBenchmarkRenderer(
 function exposeBenchmarkDebugBridge(
   configRef: MutableRefObject<ProceduralCharacterBenchmarkConfig>,
   statsRef: MutableRefObject<ProceduralCharacterBenchmarkStats>,
+  patchConfig: (patch: Partial<ProceduralCharacterBenchmarkConfig>) => void,
+  applyWalkingPerformanceProfile: () => void,
+  startPerformanceEvaluation: () => Promise<void>,
   reset: () => void,
   killBurst: () => void,
 ): () => void {
   window.__proceduralCharacterBenchmark = {
+    applyConfigPatch: patchConfig,
+    applyWalkingPerformanceProfile,
     getConfig: () => ({ ...configRef.current }),
     getStats: () => ({ ...statsRef.current, physicsFailures: [...statsRef.current.physicsFailures] }),
     killBurst,
     reset,
+    startPerformanceEvaluation,
   };
   return () => {
     window.__proceduralCharacterBenchmark = undefined;
@@ -211,6 +249,7 @@ const BenchmarkHeader = ({
   ready,
   stats,
   onKillBurst,
+  onMeasure,
   onReset,
   onStep,
   onTogglePaused,
@@ -219,6 +258,7 @@ const BenchmarkHeader = ({
   ready: boolean;
   stats: ProceduralCharacterBenchmarkStats;
   onKillBurst(): void;
+  onMeasure(): void;
   onReset(): void;
   onStep(): void;
   onTogglePaused(): void;
@@ -235,9 +275,14 @@ const BenchmarkHeader = ({
       <BenchmarkBadge label={stats.rendererMode} tone="cyan" />
       <BenchmarkBadge label={`${stats.actorCount}/100 actors`} tone={stats.actorCount === 100 ? "emerald" : "amber"} />
       <BenchmarkBadge label={`${stats.ragdollCount} ragdolls`} tone="violet" />
+      <BenchmarkBadge
+        label={`60 FPS ${stats.performance.status}`}
+        tone={stats.performance.status === "pass" ? "emerald" : stats.performance.status === "fail" ? "amber" : "cyan"}
+      />
     </div>
     <div className="flex flex-wrap items-center gap-2">
       <BenchmarkAction icon={<Skull />} label="Kill burst" onClick={onKillBurst} disabled={!ready} primary />
+      <BenchmarkAction icon={<Gauge />} label="Measure" onClick={onMeasure} disabled={!ready} />
       <BenchmarkAction
         icon={paused ? <Play /> : <Pause />}
         label={paused ? "Resume" : "Pause"}
@@ -264,10 +309,12 @@ const BenchmarkHeader = ({
 
 const BenchmarkControls = ({
   config,
+  onApplyWalkingPerformanceProfile,
   onPatchConfig,
   onResetCamera,
 }: {
   config: ProceduralCharacterBenchmarkConfig;
+  onApplyWalkingPerformanceProfile(): void;
   onPatchConfig(patch: Partial<ProceduralCharacterBenchmarkConfig>): void;
   onResetCamera(): void;
 }) => (
@@ -278,6 +325,13 @@ const BenchmarkControls = ({
         owner and one shared Jolt world keep volleys, gait, rider, crowd, and death costs comparable.
       </div>
       <ControlSection title="Population" icon={<Users />} defaultOpen>
+        <button
+          type="button"
+          onClick={onApplyWalkingPerformanceProfile}
+          className="flex h-9 w-full items-center justify-center gap-2 border border-emerald-300/30 bg-emerald-300/[0.08] text-xs font-semibold uppercase tracking-wider text-emerald-100 transition hover:bg-emerald-300/[0.14]"
+        >
+          <Gauge className="h-3.5 w-3.5" /> 60 FPS walking profile
+        </button>
         <ToggleControl
           label="Archer volleys"
           checked={config.archerVolleys}
@@ -334,6 +388,14 @@ const BenchmarkControls = ({
         </button>
       </ControlSection>
       <ControlSection title="Motion" icon={<Activity />} defaultOpen>
+        <RangeControl
+          label="Animation update lanes"
+          value={config.animationUpdateLanes}
+          min={1}
+          max={4}
+          step={1}
+          onChange={(animationUpdateLanes) => onPatchConfig({ animationUpdateLanes })}
+        />
         <RangeControl
           label="Simulation speed"
           value={config.simulationSpeed}
@@ -403,6 +465,14 @@ const BenchmarkControls = ({
         />
       </ControlSection>
       <ControlSection title="Render" icon={<Gauge />}>
+        <RangeControl
+          label="Pixel ratio"
+          value={config.pixelRatio}
+          min={0.75}
+          max={1.5}
+          step={0.05}
+          onChange={(pixelRatio) => onPatchConfig({ pixelRatio })}
+        />
         <ToggleControl
           label="Auto orbit"
           checked={config.autoRotate}
@@ -471,6 +541,7 @@ const BenchmarkViewport = ({
           {stats.meleeContactCount > 0
             ? ` · ${stats.meleeActiveImpactCount} melee FX · ${stats.meleeContactCount} contacts`
             : ""}
+          {` · ${stats.performance.sampleCount}/${stats.performance.sampleTarget} perf frames · ${stats.performance.status}`}
         </p>
       </div>
       {stats.physicsFailures.length > 0 && (
@@ -484,13 +555,19 @@ const BenchmarkViewport = ({
 );
 
 const BenchmarkMetrics = ({ stats }: { stats: ProceduralCharacterBenchmarkStats }) => (
-  <div className="pointer-events-none absolute right-4 bottom-4 left-4 z-20 grid grid-cols-4 gap-2 min-[380px]:grid-cols-6 xl:left-auto xl:w-[1040px] xl:grid-cols-[repeat(16,minmax(0,1fr))]">
+  <div className="pointer-events-none absolute right-4 bottom-4 left-4 z-20 grid grid-cols-4 gap-2 min-[380px]:grid-cols-6 xl:left-auto xl:w-[900px] xl:grid-cols-[repeat(10,minmax(0,1fr))]">
     <Metric label="FPS" value={stats.fps || "--"} />
     <Metric label="Avg" value={stats.averageFrameMs ? `${stats.averageFrameMs}ms` : "--"} />
     <Metric label="P95" value={stats.p95FrameMs ? `${stats.p95FrameMs}ms` : "--"} />
+    <Metric label="1% low" value={stats.performance.onePercentLowFps || "--"} />
+    <Metric label="CPU P95" value={formatMilliseconds(stats.performance.totalCpuMs.p95)} />
+    <Metric label="GPU P95" value={formatMilliseconds(stats.performance.gpuFrameMs?.p95)} />
+    <Metric label="60Hz work" value={stats.performance.headroomPass ? "PASS" : "--"} />
     <Metric label="Calls" value={formatInteger(stats.drawCalls)} />
     <Metric label="Tris" value={formatInteger(stats.triangles)} />
     <Metric label="Actors" value={stats.actorCount} />
+    <Metric label="Lanes" value={stats.animationUpdateLaneCount} />
+    <Metric label="DPR" value={stats.pixelRatio} />
     <Metric label="Deaths" value={stats.totalDeaths} />
     <Metric label="Respawns" value={stats.respawnCount} />
     <Metric label="Bodies" value={stats.physicsBodyCount} />
@@ -704,6 +781,10 @@ function formatControlValue(value: number, step: number): number {
 
 function formatInteger(value: number): string {
   return (value >= 1_000_000 ? compactIntegerFormatter : integerFormatter).format(value);
+}
+
+function formatMilliseconds(value: number | undefined): string {
+  return value && value > 0 ? `${value}ms` : "--";
 }
 
 function resolveRendererErrorMessage(error: unknown): string {

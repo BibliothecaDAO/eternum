@@ -1,9 +1,11 @@
 import {
   AxesHelper,
   BoxGeometry,
+  BufferGeometry,
   CylinderGeometry,
   Euler,
   Group,
+  Matrix4,
   Mesh,
   MeshStandardMaterial,
   Quaternion,
@@ -15,6 +17,7 @@ import type { ProceduralCharacterSocketReader } from "../procedural-character-so
 import type { ProceduralUnitKind } from "../procedural-unit-config";
 import type { ProceduralMeleeConfig } from "./procedural-melee-config";
 import type { ProceduralMeleeUpperBodyPose } from "./procedural-melee-pose";
+import { mergeStaticEquipmentGeometry } from "../merge-static-equipment-geometry";
 import {
   resolveProceduralMeleeOffhand,
   resolveProceduralMeleeWeapon,
@@ -249,7 +252,9 @@ export class ProceduralMeleeEquipment {
 
 interface MeleeEquipmentResources {
   axeHead: BoxGeometry;
+  axeWeapon: BufferGeometry;
   hammerHead: BoxGeometry;
+  hammerWeapon: BufferGeometry;
   handle: CylinderGeometry;
   pommel: CylinderGeometry;
   shield: CylinderGeometry;
@@ -257,6 +262,7 @@ interface MeleeEquipmentResources {
   swordBlade: BoxGeometry;
   swordGuard: BoxGeometry;
   swordHandle: CylinderGeometry;
+  swordWeapon: BufferGeometry;
 }
 
 let sharedResources: MeleeEquipmentResources | undefined;
@@ -264,7 +270,8 @@ let sharedReferenceCount = 0;
 
 function acquireMeleeEquipmentResources(): MeleeEquipmentResources {
   sharedReferenceCount += 1;
-  sharedResources ??= {
+  if (sharedResources) return sharedResources;
+  const resources = {
     axeHead: new BoxGeometry(0.3, 0.2, 0.07),
     hammerHead: new BoxGeometry(0.3, 0.18, 0.2),
     handle: new CylinderGeometry(0.025, 0.032, 0.78, 7),
@@ -274,6 +281,23 @@ function acquireMeleeEquipmentResources(): MeleeEquipmentResources {
     swordBlade: new BoxGeometry(0.055, 0.72, 0.035),
     swordGuard: new BoxGeometry(0.27, 0.035, 0.055),
     swordHandle: new CylinderGeometry(0.026, 0.03, 0.22, 7),
+  };
+  sharedResources = {
+    ...resources,
+    axeWeapon: mergeStaticEquipmentGeometry([
+      { geometry: resources.handle, transform: new Matrix4().makeTranslation(0, 0.3, 0) },
+      { geometry: resources.axeHead, transform: new Matrix4().makeTranslation(0, 0.73, 0) },
+    ]),
+    hammerWeapon: mergeStaticEquipmentGeometry([
+      { geometry: resources.handle, transform: new Matrix4().makeTranslation(0, 0.3, 0) },
+      { geometry: resources.hammerHead, transform: new Matrix4().makeTranslation(0, 0.73, 0) },
+    ]),
+    swordWeapon: mergeStaticEquipmentGeometry([
+      { geometry: resources.swordBlade, transform: new Matrix4().makeTranslation(0, 0.49, 0) },
+      { geometry: resources.swordGuard, transform: new Matrix4().makeTranslation(0, 0.12, 0) },
+      { geometry: resources.swordHandle, transform: new Matrix4() },
+      { geometry: resources.pommel, transform: new Matrix4().makeTranslation(0, -0.15, 0) },
+    ]),
   };
   return sharedResources;
 }
@@ -291,28 +315,15 @@ function createProceduralWeapon(
   attackStyle: "chop" | "slash" | "smash",
 ): Group {
   const group = new Group();
-  if (attackStyle === "slash") {
-    const blade = new Mesh(resources.swordBlade, material);
-    const guard = new Mesh(resources.swordGuard, material);
-    const handle = new Mesh(resources.swordHandle, material);
-    const pommel = new Mesh(resources.pommel, material);
-    blade.position.y = 0.49;
-    guard.position.y = 0.12;
-    pommel.position.y = -0.15;
-    blade.castShadow = true;
-    guard.castShadow = true;
-    handle.castShadow = true;
-    pommel.castShadow = true;
-    group.add(blade, guard, handle, pommel);
-  } else {
-    const handle = new Mesh(resources.handle, material);
-    const head = new Mesh(attackStyle === "smash" ? resources.hammerHead : resources.axeHead, material);
-    handle.position.y = 0.3;
-    head.position.y = 0.73;
-    handle.castShadow = true;
-    head.castShadow = true;
-    group.add(handle, head);
-  }
+  const geometry =
+    attackStyle === "slash"
+      ? resources.swordWeapon
+      : attackStyle === "smash"
+        ? resources.hammerWeapon
+        : resources.axeWeapon;
+  const weapon = new Mesh(geometry, material);
+  weapon.castShadow = true;
+  group.add(weapon);
   group.rotation.x = Math.PI * 0.1;
   return group;
 }

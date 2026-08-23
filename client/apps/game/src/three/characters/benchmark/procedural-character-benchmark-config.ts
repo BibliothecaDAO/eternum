@@ -1,5 +1,6 @@
 export interface ProceduralCharacterBenchmarkConfig {
   actorCount: number;
+  animationUpdateLanes: number;
   animationSpeed: number;
   archerVolleys: boolean;
   meleeAttacks: boolean;
@@ -9,6 +10,7 @@ export interface ProceduralCharacterBenchmarkConfig {
   deathsPerSecond: number;
   maxActiveRagdolls: number;
   movementSpeed: number;
+  pixelRatio: number;
   seed: number;
   shadows: boolean;
   simulationSpeed: number;
@@ -19,6 +21,7 @@ export interface ProceduralCharacterBenchmarkConfig {
 
 const DEFAULT_CONFIG: ProceduralCharacterBenchmarkConfig = {
   actorCount: 100,
+  animationUpdateLanes: 3,
   animationSpeed: 1.15,
   archerVolleys: true,
   meleeAttacks: true,
@@ -28,6 +31,7 @@ const DEFAULT_CONFIG: ProceduralCharacterBenchmarkConfig = {
   deathsPerSecond: 2,
   maxActiveRagdolls: 8,
   movementSpeed: 0.72,
+  pixelRatio: 1,
   seed: 424_242,
   shadows: false,
   simulationSpeed: 1,
@@ -48,17 +52,34 @@ export function applyProceduralCharacterBenchmarkConfigPatch(
   return {
     ...input,
     actorCount: clampInteger(input.actorCount, 1, 100),
+    animationUpdateLanes: clampInteger(input.animationUpdateLanes, 1, 4),
     animationSpeed: clamp(input.animationSpeed, 0, 3),
     characterScale: clamp(input.characterScale, 0.2, 0.8),
     corpseSeconds: clamp(input.corpseSeconds, 0.5, 12),
     deathsPerSecond: clamp(input.deathsPerSecond, 0, 10),
     maxActiveRagdolls: clampInteger(input.maxActiveRagdolls, 0, 20),
     movementSpeed: clamp(input.movementSpeed, 0.1, 3),
+    pixelRatio: clamp(input.pixelRatio, 0.75, 1.5),
     seed: clampInteger(input.seed, 0, 2_147_483_647),
     simulationSpeed: clamp(input.simulationSpeed, 0.1, 3),
     stepHeight: clamp(input.stepHeight, 0, 0.8),
     stride: clamp(input.stride, 0, 1.4),
   };
+}
+
+export function createProceduralCharacterWalkingPerformanceConfig(): ProceduralCharacterBenchmarkConfig {
+  return applyProceduralCharacterBenchmarkConfigPatch(createDefaultProceduralCharacterBenchmarkConfig(), {
+    actorCount: 100,
+    animationUpdateLanes: 3,
+    archerVolleys: false,
+    autoRotate: false,
+    deathsPerSecond: 0,
+    maxActiveRagdolls: 0,
+    meleeAttacks: false,
+    pixelRatio: 1,
+    shadows: false,
+    unitMix: "foot",
+  });
 }
 
 function clamp(value: number, min: number, max: number): number {

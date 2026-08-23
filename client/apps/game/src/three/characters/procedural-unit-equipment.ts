@@ -1,5 +1,6 @@
 import {
   BoxGeometry,
+  BufferGeometry,
   Color,
   CylinderGeometry,
   Group,
@@ -28,6 +29,7 @@ import {
 } from "./melee/procedural-melee-equipment";
 import type { ProceduralMeleeWeaponLibrary } from "./melee/procedural-melee-weapon-library";
 import type { ProceduralUnitKind } from "./procedural-unit-config";
+import { mergeStaticEquipmentGeometry } from "./merge-static-equipment-geometry";
 
 const LOCAL_Z = new Vector3(0, 0, 1);
 const CROSSBOW_LEFT_GRIP = new Vector3(0.2, 0, 0);
@@ -50,7 +52,7 @@ export class ProceduralUnitEquipment {
   private readonly resources = acquireEquipmentResources();
   private readonly metalMaterial = new MeshStandardMaterial({ color: 0xaab2c1, metalness: 0.82, roughness: 0.28 });
   private readonly accentMaterial = new MeshStandardMaterial({ color: 0x315f86, metalness: 0.25, roughness: 0.58 });
-  private readonly crossbow = createCrossbow(this.resources, this.metalMaterial, this.accentMaterial);
+  private readonly crossbow: Group;
   private readonly bow: ProceduralBowEquipment;
   private readonly melee: ProceduralMeleeEquipment;
   private readonly scratchColor = new Color();
@@ -77,6 +79,12 @@ export class ProceduralUnitEquipment {
     meleeLibrary: ProceduralMeleeWeaponLibrary,
   ) {
     this.group.name = "procedural-unit-equipment";
+    this.crossbow = createCrossbow(
+      this.resources,
+      this.metalMaterial,
+      this.accentMaterial,
+      config.renderDetail === "crowd",
+    );
     this.bow = new ProceduralBowEquipment(actorRoot, sockets);
     this.melee = new ProceduralMeleeEquipment(actorRoot, sockets, meleeLibrary);
     this.group.add(this.crossbow, this.bow.group);
@@ -196,6 +204,7 @@ export class ProceduralUnitEquipment {
 
 interface EquipmentResources {
   crossLimb: BoxGeometry;
+  crowdCrossbow: BufferGeometry;
   crossbowGrip: CylinderGeometry;
   stock: BoxGeometry;
 }
@@ -205,10 +214,29 @@ let sharedReferenceCount = 0;
 
 function acquireEquipmentResources(): EquipmentResources {
   sharedReferenceCount += 1;
-  sharedResources ??= {
+  if (sharedResources) return sharedResources;
+  const resources = {
     crossLimb: new BoxGeometry(0.72, 0.045, 0.055),
     crossbowGrip: new CylinderGeometry(0.018, 0.024, 0.14, 7),
     stock: new BoxGeometry(0.055, 0.72, 0.035),
+  };
+  sharedResources = {
+    ...resources,
+    crowdCrossbow: mergeStaticEquipmentGeometry([
+      {
+        geometry: resources.stock,
+        transform: new Matrix4().makeRotationX(Math.PI / 2).scale(new Vector3(0.8, 0.65, 1.25)),
+      },
+      { geometry: resources.crossLimb, transform: new Matrix4().makeTranslation(0, 0, 0.2) },
+      {
+        geometry: resources.crossbowGrip,
+        transform: new Matrix4().makeTranslation(CROSSBOW_LEFT_GRIP.x, CROSSBOW_LEFT_GRIP.y, CROSSBOW_LEFT_GRIP.z),
+      },
+      {
+        geometry: resources.crossbowGrip,
+        transform: new Matrix4().makeTranslation(CROSSBOW_RIGHT_GRIP.x, CROSSBOW_RIGHT_GRIP.y, CROSSBOW_RIGHT_GRIP.z),
+      },
+    ]),
   };
   return sharedResources;
 }
@@ -224,8 +252,15 @@ function createCrossbow(
   resources: EquipmentResources,
   metalMaterial: MeshStandardMaterial,
   accentMaterial: MeshStandardMaterial,
+  crowdDetail: boolean,
 ): Group {
   const group = new Group();
+  if (crowdDetail) {
+    const crossbow = new Mesh(resources.crowdCrossbow, accentMaterial);
+    crossbow.castShadow = true;
+    group.add(crossbow);
+    return group;
+  }
   const stock = new Mesh(resources.stock, accentMaterial);
   const limb = new Mesh(resources.crossLimb, metalMaterial);
   const leftGrip = new Mesh(resources.crossbowGrip, accentMaterial);
