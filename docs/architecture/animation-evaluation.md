@@ -224,6 +224,24 @@ The exact single-Paladin Drop/Reset reproduction is `1.00×` in all three states
 deaths and 113 respawns with animated and ragdoll maxima both at `1.00×`; close-range and full-map visual inspection
 confirms attached horse heads/chests and no elongated skin triangles.
 
+### Mount load continuity
+
+Evaluation date: 2026-08-24. The mixed benchmark reproduced a separate mount rubber-band during population loading even
+though its parent-relative bone-length diagnostic stayed at `1.00×`. Horse and humanoid constructors generated their
+first planted pose while the actor root was still at staging origin. The population or world-map layer then placed the
+actor on its map position; the next pose correctly preserved the stale world-space contacts and therefore pulled hoof
+targets back across the map. FABRIK kept segment lengths finite, so the existing stretch gate could not see the defect.
+
+The benchmark now records maximum saddle-to-hoof reach throughout incremental actor construction, normalized by
+character scale. The exact failing 100-unit load measured `23.027×` against a `3.0×` gate. Initial bind poses now avoid
+creating contact anchors, and zero-time presentation moves clear any provisional anchors before the next pose. The same
+run now peaks at `2.414×`, while animated and ragdoll bone stretch remain `1.00×`.
+
+The final 47-frame Horse walk and five-angle atlas contain no pose issues. The full WebGL2 mixed lifecycle also passes
+100-actor load, population reduction/restoration, continuous movement, five resets, death, Jolt ragdoll, and respawn
+without browser errors. Continuous root movement still preserves stance contacts; only discontinuous zero-time placement
+rebases them.
+
 ### Humanoid locomotion pass
 
 Evaluation date: 2026-08-23. Configuration: tier 3 Knight, seed 1337, WebGPU, 60 Hz fixed step. Walk and run each use a

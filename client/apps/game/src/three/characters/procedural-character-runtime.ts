@@ -166,9 +166,8 @@ class RuntimeProceduralCharacterActor implements ProceduralCharacterActor {
     this.avatar = new ProceduralCharacterAvatar(assets, this.rig, this.config);
     this.calibrateRigToActiveAvatar();
     this.object = this.avatar.group;
-    this.plantController.beginFrame(this.object);
     this.pose = this.poseFilter.apply(
-      resolveProceduralCharacterPose(this.rig, this.config, 0, this.plantController.resolveTarget, this.gaitPhase),
+      resolveProceduralCharacterPose(this.rig, this.config, 0, undefined, this.gaitPhase),
       0,
       this.config.secondaryMotion,
     );
@@ -395,7 +394,7 @@ class RuntimeProceduralCharacterActor implements ProceduralCharacterActor {
   }
 
   private advanceAnimatedPose(deltaSeconds: number, phaseOverride?: number): void {
-    this.plantController.beginFrame(this.object);
+    this.plantController.beginFrame(this.object, deltaSeconds);
     this.reactionPose = this.reactionController.update(deltaSeconds);
     this.gaitPhase = Number.isFinite(phaseOverride)
       ? wrapUnitPhase(phaseOverride ?? 0)
@@ -415,7 +414,7 @@ class RuntimeProceduralCharacterActor implements ProceduralCharacterActor {
   }
 
   private applyAnimatedPose(beginPlantFrame = true, deltaSeconds = this.config.fixedStep): void {
-    if (beginPlantFrame) this.plantController.beginFrame(this.object);
+    if (beginPlantFrame) this.plantController.beginFrame(this.object, deltaSeconds);
     this.pose = this.poseFilter.apply(
       resolveProceduralCharacterPose(
         this.rig,

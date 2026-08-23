@@ -51,9 +51,9 @@ const allLatestFeatures: LatestFeature[] = [
   },
   {
     date: "2026-08-23",
-    title: "Stable Mounted Ragdolls",
+    title: "Stable Mounted Characters",
     description:
-      "Fixed horses stretching across the map when mounted units entered Jolt ragdoll or reset, preserving anatomical bone lengths through repeated deaths and respawns.",
+      "Fixed horses rubber-banding toward their staging origin while loading and stretching during Jolt ragdolls or resets, preserving stable legs through spawn, movement, death, and respawn.",
     type: "fix",
     gameSlug: "world",
   },

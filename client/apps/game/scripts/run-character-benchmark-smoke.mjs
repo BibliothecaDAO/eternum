@@ -12,6 +12,7 @@ const MAX_READY_AVERAGE_FRAME_MS = 65;
 const MAX_READY_DRAW_CALLS = 1_500;
 const MAX_READY_P95_FRAME_MS = 80;
 const MAX_ANIMATED_MOUNT_BONE_STRETCH = 1.1;
+const MAX_LOADING_MOUNT_HOOF_REACH = 3;
 const MAX_RAGDOLL_MOUNT_BONE_STRETCH = 1.5;
 const VALID_REQUESTED_RENDERER_MODES = new Set(["webgpu-auto", "webgpu-force-webgl"]);
 const VALID_RENDERER_MODES = new Set(["webgl2-fallback", "webgpu"]);
@@ -88,6 +89,11 @@ export function evaluateCharacterBenchmarkSmokeResult({
   }
   if (readyStats && readyStats.projectileDroppedCount > 0) {
     reasons.push(`projectile pool dropped ${readyStats.projectileDroppedCount} arrows`);
+  }
+  if (readyStats && readyStats.maximumLoadingMountHoofReach > MAX_LOADING_MOUNT_HOOF_REACH) {
+    reasons.push(
+      `loading mount hoof reach was ${readyStats.maximumLoadingMountHoofReach}x character scale; budget is ${MAX_LOADING_MOUNT_HOOF_REACH}x`,
+    );
   }
   if (!reducedPopulationStats || reducedPopulationStats.actorCount !== 25) {
     reasons.push("population control did not rebuild the benchmark at 25 actors");

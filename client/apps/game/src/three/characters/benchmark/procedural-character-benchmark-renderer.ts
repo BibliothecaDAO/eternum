@@ -78,6 +78,7 @@ export interface ProceduralCharacterBenchmarkStats {
   meleeContactCount: number;
   meleeDroppedCount: number;
   maximumAnimatedMountBoneStretchRatio: number;
+  maximumLoadingMountHoofReach: number;
   maximumRagdollMountBoneStretchRatio: number;
   p95FrameMs: number;
   physicsBodyCount: number;
@@ -196,6 +197,7 @@ class ProceduralCharacterBenchmarkRuntime {
   private maximumCollisionDroppedPairCount = 0;
   private physicsFailures: string[] = [];
   private loadingActors = true;
+  private maximumLoadingMountHoofReach = 0;
   private paused = false;
   private disposed = false;
   private viewportWidth = 1;
@@ -509,6 +511,7 @@ class ProceduralCharacterBenchmarkRuntime {
     this.separation.reset();
     this.collisionCpuMs = 0;
     this.maximumCollisionDroppedPairCount = 0;
+    this.maximumLoadingMountHoofReach = 0;
     this.physicsFailures = [];
     this.projectiles.reset();
     this.meleeImpacts.reset();
@@ -671,6 +674,12 @@ class ProceduralCharacterBenchmarkRuntime {
     const render = this.renderer.info.render;
     const crowdAnimation = this.unitRuntime.getCrowdAnimationStats();
     const mountBoneStretch = this.resolveMountBoneStretch();
+    if (this.loadingActors) {
+      this.maximumLoadingMountHoofReach = Math.max(
+        this.maximumLoadingMountHoofReach,
+        this.resolveMaximumMountHoofReach(),
+      );
+    }
     this.onStats({
       actorCount: this.actors.size,
       animationUpdateLaneCount: crowdAnimation.laneCount,
@@ -689,6 +698,7 @@ class ProceduralCharacterBenchmarkRuntime {
       meleeContactCount: melee.spawnedCount,
       meleeDroppedCount: melee.droppedCount,
       maximumAnimatedMountBoneStretchRatio: mountBoneStretch.animated,
+      maximumLoadingMountHoofReach: this.maximumLoadingMountHoofReach,
       maximumRagdollMountBoneStretchRatio: mountBoneStretch.ragdoll,
       p95FrameMs: performanceEvaluation.frameMs.p95,
       performance: performanceEvaluation,
@@ -731,6 +741,21 @@ class ProceduralCharacterBenchmarkRuntime {
       else animated = Math.max(animated, stretch);
     });
     return { animated, ragdoll };
+  }
+
+  private resolveMaximumMountHoofReach(): number {
+    let maximum = 0;
+    this.actors.forEach(({ actor }) => {
+      if (actor.kind !== "horse" && actor.kind !== "paladin") return;
+      const horse = actor.getPoseDiagnostics().horse;
+      if (!horse) return;
+      this.positionScratch.fromArray(horse.saddleWorld);
+      Object.values(horse.legs).forEach(({ hoofWorld }) => {
+        this.targetScratch.fromArray(hoofWorld);
+        maximum = Math.max(maximum, this.positionScratch.distanceTo(this.targetScratch) / this.config.characterScale);
+      });
+    });
+    return Number(maximum.toFixed(3));
   }
 
   private resolvePhysicsStats(): { bodyCount: number; constraintCount: number; wasmHeapBytes: number } {

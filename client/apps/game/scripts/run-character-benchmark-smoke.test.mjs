@@ -14,6 +14,7 @@ const PASSING_STATS = {
   geometryCount: 18,
   hexCount: 100,
   maximumAnimatedMountBoneStretchRatio: 1,
+  maximumLoadingMountHoofReach: 1.8,
   maximumRagdollMountBoneStretchRatio: 1,
   p95FrameMs: 28,
   physicsBodyCount: 96,
@@ -165,5 +166,27 @@ describe("character benchmark smoke contract", () => {
 
     expect(evaluation.reasons).toContain("active animated mount bone stretch was 3.2x; budget is 1.1x");
     expect(evaluation.reasons).toContain("active ragdoll mount bone stretch was 14.8x; budget is 1.5x");
+  });
+
+  it("rejects mount hoof targets that retain their staging anchors during load", () => {
+    const evaluation = evaluateCharacterBenchmarkSmokeResult({
+      activeSnapshot: snapshot(),
+      browserErrors: [],
+      pausedSnapshot: { ...snapshot(), paused: true },
+      readySnapshot: snapshot({
+        ...PASSING_STATS,
+        maximumLoadingMountHoofReach: 42,
+        ragdollCount: 0,
+        runningCount: 100,
+        totalDeaths: 0,
+      }),
+      reducedPopulationSnapshot: snapshot({ ...PASSING_STATS, actorCount: 25, ragdollCount: 0, runningCount: 25 }),
+      resetSnapshot: snapshot({ ...PASSING_STATS, ragdollCount: 0, resetCount: 5, runningCount: 100 }),
+      respawnSnapshot: snapshot(),
+      restoredPopulationSnapshot: snapshot(),
+      steppedSnapshot: snapshot({ ...PASSING_STATS, simulationElapsedSeconds: 5.1 }),
+    });
+
+    expect(evaluation.reasons).toContain("loading mount hoof reach was 42x character scale; budget is 3x");
   });
 });

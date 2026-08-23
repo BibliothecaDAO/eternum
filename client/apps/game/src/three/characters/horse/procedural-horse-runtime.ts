@@ -130,7 +130,6 @@ class RuntimeProceduralHorseActor implements ProceduralHorseActor {
     this.physicsConfig = physicsConfig;
     this.avatar = new ProceduralHorseAvatar(asset, this.config);
     this.object = this.avatar.group;
-    this.plantController.beginFrame(this.object);
     this.pose = this.poseFilter.apply(
       resolveProceduralHorsePose(
         this.avatar.rig,
@@ -138,7 +137,7 @@ class RuntimeProceduralHorseActor implements ProceduralHorseActor {
         this.phase,
         this.elapsedSeconds,
         this.sampleGround,
-        this.plantController.resolveTarget,
+        undefined,
       ),
       0,
       this.config.secondaryMotion,
@@ -159,7 +158,7 @@ class RuntimeProceduralHorseActor implements ProceduralHorseActor {
     const elapsed = resolveDeltaSeconds(deltaSeconds);
     this.elapsedSeconds += elapsed;
     this.reactionPose = this.reactionController.update(elapsed);
-    this.plantController.beginFrame(this.object);
+    this.plantController.beginFrame(this.object, elapsed);
     this.phase = advanceHorseGaitPhase(this.phase, this.config, elapsed, this.plantController.getFrameTravelDistance());
     this.applyPose(false, elapsed);
   }
@@ -288,7 +287,7 @@ class RuntimeProceduralHorseActor implements ProceduralHorseActor {
 
   private applyPose(beginPlantFrame = true, deltaSeconds = 1 / 60): void {
     if (this.ragdoll) return;
-    if (beginPlantFrame) this.plantController.beginFrame(this.object);
+    if (beginPlantFrame) this.plantController.beginFrame(this.object, deltaSeconds);
     this.pose = this.poseFilter.apply(
       resolveProceduralHorsePose(
         this.avatar.rig,

@@ -19,6 +19,23 @@ describe("procedural plant controller", () => {
     expect(worldTarget.toArray()).toEqual([0, 0, 0]);
   });
 
+  it("rebases staged contacts when an actor is placed at zero simulation time", () => {
+    const root = new Group();
+    const controller = new ProceduralPlantController<"left">();
+    const stance = { contact: "stance" as const, progress: 0.5 };
+
+    controller.beginFrame(root);
+    controller.resolveTarget("left", stance, [0, 0, 0.2], 1);
+    root.position.set(24, 0, -18);
+    controller.beginFrame(root, 0);
+    const localTarget = controller.resolveTarget("left", stance, [0, 0, 0.2], 1);
+    const worldTarget = root.localToWorld(new Vector3(...localTarget));
+
+    expect(localTarget).toEqual([0, 0, 0.2]);
+    expect(worldTarget.toArray()).toEqual([24, 0, -17.8]);
+    expect(controller.getFrameTravelDistance()).toBe(0);
+  });
+
   it("leaves in-place preview trajectories unlocked and releases plants during swing", () => {
     const root = new Group();
     const controller = new ProceduralPlantController<"left">();

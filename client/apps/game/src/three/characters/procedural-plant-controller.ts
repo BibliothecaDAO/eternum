@@ -33,16 +33,21 @@ export class ProceduralPlantController<FootId extends string> {
   private rootMoved = false;
   private initialized = false;
 
-  public beginFrame(coordinateSpace: Object3D): void {
+  public beginFrame(coordinateSpace: Object3D, deltaSeconds?: number): void {
     this.coordinateSpace = coordinateSpace;
     coordinateSpace.updateWorldMatrix(true, false);
     coordinateSpace.getWorldPosition(this.rootPosition);
     coordinateSpace.getWorldQuaternion(this.rootQuaternion);
-    this.frameTravelDistance = this.initialized ? this.rootPosition.distanceTo(this.previousRootPosition) : 0;
-    this.rootMoved =
+    const translationChanged =
       this.initialized &&
-      (this.rootPosition.distanceToSquared(this.previousRootPosition) > ROOT_MOTION_THRESHOLD * ROOT_MOTION_THRESHOLD ||
-        this.rootQuaternion.angleTo(this.previousRootQuaternion) > ROOT_MOTION_THRESHOLD);
+      this.rootPosition.distanceToSquared(this.previousRootPosition) > ROOT_MOTION_THRESHOLD * ROOT_MOTION_THRESHOLD;
+    const rotationChanged =
+      this.initialized && this.rootQuaternion.angleTo(this.previousRootQuaternion) > ROOT_MOTION_THRESHOLD;
+    const shouldRebase = deltaSeconds === 0 && (translationChanged || rotationChanged);
+    if (shouldRebase) this.plants.clear();
+    this.frameTravelDistance =
+      this.initialized && !shouldRebase ? this.rootPosition.distanceTo(this.previousRootPosition) : 0;
+    this.rootMoved = this.initialized && !shouldRebase && (translationChanged || rotationChanged);
     this.previousRootPosition.copy(this.rootPosition);
     this.previousRootQuaternion.copy(this.rootQuaternion);
     this.initialized = true;
