@@ -11,7 +11,7 @@ describe("terrain fog mask", () => {
 
     expect(first).toEqual(second);
     expect(sampleMask(first, 0.866, 0)).toBeGreaterThan(230);
-    expect(Math.max(...first.data)).toBe(250);
+    expect(Math.max(...first.data)).toBe(255);
   });
 
   it("fades across only a frontier cell toward fully opaque deep fog", () => {
@@ -24,7 +24,13 @@ describe("terrain fog mask", () => {
     expect(towardExplored).toBeGreaterThan(0);
     expect(towardExplored).toBeLessThan(towardDeepFog);
     expect(towardDeepFog).toBeGreaterThan(180);
-    expect(sampleMask(mask, deep.worldX, deep.worldZ)).toBeGreaterThan(245);
+    expect(sampleMask(mask, deep.worldX, deep.worldZ)).toBe(255);
+  });
+
+  it("overscans deep fog beyond concealed terrain so its perimeter cannot leak through", () => {
+    const mask = buildTerrainFogMask([fogCell(0, 0, false)], 128)!;
+
+    expect(sampleMask(mask, 1.18, 0)).toBe(255);
   });
 
   it("clears an organic center-out reveal without mutating the base mask", () => {

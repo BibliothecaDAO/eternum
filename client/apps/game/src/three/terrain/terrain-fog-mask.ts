@@ -20,8 +20,8 @@ export interface TerrainFogRevealMask {
   progress: number;
 }
 
-const CELL_SPLAT_RADIUS = 1.04;
-const MASK_MARGIN = 1.35;
+const FOG_COVERAGE_RADIUS = 1.42;
+const MASK_MARGIN = 1.7;
 
 export function buildTerrainFogMask(
   instances: readonly TerrainShroudInstance[],
@@ -72,7 +72,7 @@ function rasterizeFogCell(
   bounds: TerrainFogMaskBounds,
   instance: TerrainShroudInstance,
 ): void {
-  const pixelBounds = resolvePixelBounds(bounds, resolution, instance.worldX, instance.worldZ, CELL_SPLAT_RADIUS);
+  const pixelBounds = resolvePixelBounds(bounds, resolution, instance.worldX, instance.worldZ, FOG_COVERAGE_RADIUS);
   for (let pixelZ = pixelBounds.minZ; pixelZ <= pixelBounds.maxZ; pixelZ += 1) {
     for (let pixelX = pixelBounds.minX; pixelX <= pixelBounds.maxX; pixelX += 1) {
       const world = fogMaskPixelToWorld(bounds, resolution, pixelX, pixelZ);
@@ -90,14 +90,15 @@ function isInsideFogHex(localX: number, localZ: number): boolean {
   const absoluteX = Math.abs(localX);
   const absoluteZ = Math.abs(localZ);
   return (
-    absoluteX <= CELL_SPLAT_RADIUS * Math.cos(Math.PI / 6) && absoluteZ + absoluteX / Math.sqrt(3) <= CELL_SPLAT_RADIUS
+    absoluteX <= FOG_COVERAGE_RADIUS * Math.cos(Math.PI / 6) &&
+    absoluteZ + absoluteX / Math.sqrt(3) <= FOG_COVERAGE_RADIUS
   );
 }
 
 function isFrontierSeed(instance: TerrainShroudInstance, localX: number, localZ: number): boolean {
   if (!instance.frontier) return false;
   const towardExplored =
-    (localX * instance.frontierDirection[0] + localZ * instance.frontierDirection[1]) / CELL_SPLAT_RADIUS;
+    (localX * instance.frontierDirection[0] + localZ * instance.frontierDirection[1]) / FOG_COVERAGE_RADIUS;
   return towardExplored >= 0.58;
 }
 
@@ -145,7 +146,7 @@ function encodeFogDistanceMask(coverage: Uint8Array, distance: Float32Array): Ui
   for (let index = 0; index < coverage.length; index += 1) {
     if (coverage[index] === 0) continue;
     const depth = Number.isFinite(distance[index]) ? smoothstep(0, 1.5, distance[index]) : 1;
-    data[index] = Math.round((0.18 + depth * 0.8) * 255);
+    data[index] = Math.round((0.18 + depth * 0.82) * 255);
   }
   return data;
 }

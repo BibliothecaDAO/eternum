@@ -14,6 +14,7 @@ import {
   type TerrainVerificationSceneId,
 } from "@/three/terrain/verification/terrain-verification-fixtures";
 import { TERRAIN_FOG_REVEAL_DURATION_SECONDS } from "@/three/terrain/terrain-fog-field";
+import { TERRAIN_DEEP_FOG_COLOR, TERRAIN_DEEP_FOG_OPACITY } from "@/three/terrain/terrain-fog-style";
 import { configureGltfTextureSupport } from "@/three/utils/utils";
 
 export interface ProceduralTerrainDebugStats {
@@ -26,6 +27,8 @@ export interface ProceduralTerrainDebugStats {
   firstRenderMs: number;
   fogMaskBytes: number;
   fogMaskResolution: number;
+  fogOpacity: number;
+  fogTerrainCells: number;
   frontierPreviewCells: number;
   frameP50Ms: number;
   frameP95Ms: number;
@@ -148,7 +151,7 @@ export async function mountProceduralTerrainDebugRenderer(
 async function createRuntime(input: MountProceduralTerrainDebugRendererInput): Promise<TerrainDebugRuntime> {
   const Renderer = WebGPURenderer as unknown as TerrainDebugRendererConstructor;
   const renderer = new Renderer({ canvas: input.canvas, antialias: true, forceWebGL: input.forceWebGL });
-  const background = new Color(input.sceneId.startsWith("fog-") ? "#101416" : "#d8d0ba");
+  const background = new Color(input.sceneId.startsWith("fog-") ? TERRAIN_DEEP_FOG_COLOR : "#d8d0ba");
   renderer.outputColorSpace = "srgb";
   renderer.setPixelRatio(1);
   renderer.setClearColor(background, 1);
@@ -193,6 +196,8 @@ async function createRuntime(input: MountProceduralTerrainDebugRendererInput): P
     cellCount: prepared.request.cells.length,
     commitMs,
     fingerprint: prepared.fingerprint,
+    fogOpacity: TERRAIN_DEEP_FOG_OPACITY,
+    fogTerrainCells: prepared.diagnostics.fogTerrainCells,
     frontierPreviewCells: prepared.diagnostics.frontierPreviewCells,
     fogMaskBytes: shroudStats.maskBytes,
     fogMaskResolution: shroudStats.maskResolution,

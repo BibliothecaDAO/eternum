@@ -109,20 +109,29 @@ describe("TerrainField", () => {
     expect(field.sampleSurface(20, 20).biome).toBeNull();
   });
 
-  it("builds a presentation-only preview for exactly one unexplored frontier ring", () => {
+  it("samples deterministic biome terrain beneath every fog-covered cell", () => {
     const frontier = unknownCell(1, 0, BiomeType.Snow);
-    const deep = unknownCell(2, 0, BiomeType.Scorched);
-    const field = new TerrainField(createRequest([cell(0, 0, BiomeType.Grassland), frontier, deep]));
+    const underFog = unknownCell(2, 0, BiomeType.Scorched);
+    const deep = unknownCell(3, 0, BiomeType.Bare);
+    const field = new TerrainField(createRequest([cell(0, 0, BiomeType.Grassland), frontier, underFog, deep]));
     const frontierCenter = terrainHexToWorld(frontier.col, frontier.row);
+    const underFogCenter = terrainHexToWorld(underFog.col, underFog.row);
     const deepCenter = terrainHexToWorld(deep.col, deep.row);
 
     expect(field.isFrontierCell(frontier.col, frontier.row)).toBe(true);
-    expect(field.sampleFrontierPreviewVertex(frontierCenter.x, frontierCenter.z, frontier)).toMatchObject({
+    expect(field.sampleFogPreviewVertex(frontierCenter.x, frontierCenter.z, frontier)).toMatchObject({
       biome: BiomeType.Snow,
       explored: 0,
     });
+    expect(field.sampleFogPreviewVertex(underFogCenter.x, underFogCenter.z, underFog)).toMatchObject({
+      biome: BiomeType.Scorched,
+      explored: 0,
+    });
     expect(field.isFrontierCell(deep.col, deep.row)).toBe(false);
-    expect(field.sampleFrontierPreviewVertex(deepCenter.x, deepCenter.z, deep).biome).toBeNull();
+    expect(field.sampleFogPreviewVertex(deepCenter.x, deepCenter.z, deep)).toMatchObject({
+      biome: BiomeType.Bare,
+      explored: 0,
+    });
   });
 
   it("can make projected/environment mismatches fatal at the explicit production seam", () => {

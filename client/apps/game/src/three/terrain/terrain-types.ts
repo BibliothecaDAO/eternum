@@ -2,7 +2,7 @@ import type { BiomeClimateConfig } from "@bibliothecadao/eternum";
 import type { BiomeType } from "@bibliothecadao/types";
 import type { TerrainPropArchetypeId } from "./terrain-prop-catalog";
 
-export const PROCEDURAL_TERRAIN_STYLE_VERSION = 9;
+export const PROCEDURAL_TERRAIN_STYLE_VERSION = 11;
 
 export interface TerrainCellInput {
   biome: BiomeType | null;
@@ -75,6 +75,7 @@ export function getTerrainGeometryBufferViews(
 
 export interface TerrainPageDiagnostics {
   biomeMismatchCount: number;
+  fogTerrainCells: number;
   frontierEdges: number;
   frontierPreviewCells: number;
   geometryBytes: number;

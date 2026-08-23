@@ -37,7 +37,7 @@ const allLatestFeatures: LatestFeature[] = [
     date: "2026-08-24",
     title: "Living Fog Frontier",
     description:
-      "Undiscovered territory now settles beneath one softly moving mist field, with a natural one-tile glimpse of the biome where the fog meets explored land.",
+      "Undiscovered territory now settles beneath softly moving mist, keeping biome ground faintly readable below it with a clearer one-tile frontier near explored land.",
     type: "improvement",
     gameSlug: "world",
   },

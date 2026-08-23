@@ -20,6 +20,7 @@ import {
   TERRAIN_FOG_MASK_RESOLUTION,
   type TerrainFogMask,
 } from "./terrain-fog-mask";
+import { TERRAIN_DEEP_FOG_COLOR, TERRAIN_DEEP_FOG_OPACITY } from "./terrain-fog-style";
 import type { TerrainShroudInstance } from "./terrain-types";
 
 export const TERRAIN_FOG_CELL_CAPACITY = 12_288;
@@ -228,13 +229,16 @@ function createFogMaterial(maskTexture: DataTexture): FogMaterialSet {
     .add(time.mul(0.011).mul(motionStrength));
   const mistNoise = primaryFlow.sin().mul(0.2).add(crossFlow.sin().mul(0.2)).add(detailFlow.sin().mul(0.1)).add(0.5);
   const maskWarp = vec2(primaryFlow.sin(), crossFlow.sin()).mul(mistStrength).mul(0.012);
+  const baseMask = texture(maskTexture, uv()).r;
   const mask = texture(maskTexture, uv().add(maskWarp)).r;
   const edgeBand = smoothstep(0.08, 0.54, mask).mul(float(1).sub(smoothstep(0.58, 0.96, mask)));
   const cloudVeil = smoothstep(0.25, 0.76, mistNoise).mul(mistStrength).mul(0.2);
   const edgeLight = edgeBand.mul(mistStrength).mul(0.16).add(cloudVeil);
-  material.colorNode = mix(color("#161d1e"), color("#7d8882"), edgeLight.clamp(0, 0.36));
+  material.colorNode = mix(color(TERRAIN_DEEP_FOG_COLOR), color("#7d8882"), edgeLight.clamp(0, 0.36));
   const opacityMotion = mistNoise.sub(0.5).mul(mistStrength).mul(0.1).add(0.94);
-  material.opacityNode = mask.mul(opacityMotion).clamp(0, 0.97);
+  const frontierOpacity = mask.mul(opacityMotion).clamp(0, TERRAIN_DEEP_FOG_OPACITY);
+  const deepFog = smoothstep(0.9, 0.985, baseMask);
+  material.opacityNode = mix(frontierOpacity, float(TERRAIN_DEEP_FOG_OPACITY), deepFog);
   return { material, mistStrength, motionStrength };
 }
 

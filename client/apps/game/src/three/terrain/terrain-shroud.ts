@@ -4,10 +4,11 @@ import { Color } from "three";
 import { TERRAIN_BIOME_ART_DIRECTIONS } from "./terrain-biome-art-direction";
 import { terrainHexToWorld, terrainNeighborCoordinates } from "./terrain-coordinates";
 import type { TerrainField } from "./terrain-field";
+import { TERRAIN_DEEP_FOG_COLOR } from "./terrain-fog-style";
 import { hashTerrainCoordinates, terrainHashToUnitFloat } from "./terrain-hash";
 import type { TerrainCellInput, TerrainPageRequest, TerrainShroudInstance } from "./terrain-types";
 
-const DEEP_SHROUD_COLOR = new Color("#15191c");
+const DEEP_SHROUD_COLOR = new Color(TERRAIN_DEEP_FOG_COLOR);
 const SHROUD_SURFACE_OFFSET = 0.065;
 
 export function prepareTerrainShroudInstances(
@@ -49,11 +50,7 @@ function prepareTerrainShroudInstance(
     ),
     tint: resolveShroudTint(exploredNeighbors.map(({ biome }) => biome)),
     worldX: center.x,
-    worldY:
-      (frontier
-        ? field.sampleFrontierPreviewVertex(center.x, center.z, { col, row })
-        : field.sampleVisual(center.x, center.z, { col, row })
-      ).height + SHROUD_SURFACE_OFFSET,
+    worldY: field.sampleFogPreviewVertex(center.x, center.z, { col, row }).height + SHROUD_SURFACE_OFFSET,
     worldZ: center.z,
   };
 }

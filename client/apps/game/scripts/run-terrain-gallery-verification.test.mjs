@@ -67,6 +67,7 @@ describe("terrain gallery verification", () => {
     fog.snapshot.biomeCount = 10;
     fog.snapshot.fogMaskBytes = 4_096;
     fog.snapshot.fogMaskResolution = 64;
+    fog.snapshot.fogTerrainCells = 24;
     fog.snapshot.frontierPreviewCells = 6;
     fog.snapshot.shroudFrontierInstances = 6;
     fog.snapshot.shroudInstances = 24;
@@ -80,6 +81,7 @@ describe("terrain gallery verification", () => {
     ).toMatchObject({ ok: true, reasons: [] });
 
     fog.snapshot.frontierPreviewCells = 5;
+    fog.snapshot.fogTerrainCells = 23;
     fog.snapshot.shroudActiveReveals = 1;
     expect(
       evaluateTerrainGalleryResults([fog], {
@@ -151,6 +153,8 @@ function result(rendererMode, activeMode, groundMode) {
       firstRenderMs: 20,
       fogMaskBytes: 0,
       fogMaskResolution: 0,
+      fogOpacity: 0.84,
+      fogTerrainCells: 0,
       frontierPreviewCells: 0,
       frameP50Ms: 16.6,
       frameP95Ms: 16.7,

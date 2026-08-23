@@ -73,6 +73,7 @@ export class TerrainField {
   private readonly cellByKey = new Map<string, TerrainCellInput>();
   private readonly sampleByKey = new Map<string, CellFieldSample>();
   private readonly candidatesByKey = new Map<string, CellFieldSample[]>();
+  private readonly frontierByKey = new Map<string, boolean>();
   private readonly previewSampleByKey = new Map<string, CellFieldSample>();
   private readonly previewCandidatesByKey = new Map<string, CellFieldSample[]>();
   private readonly elevationSeed: number;
@@ -104,30 +105,30 @@ export class TerrainField {
   }
 
   isFrontierCell(col: number, row: number): boolean {
+    const key = terrainCellKey(col, row);
+    const cached = this.frontierByKey.get(key);
+    if (cached !== undefined) return cached;
     const cell = this.getCell(col, row);
-    return Boolean(
+    const frontier = Boolean(
       cell &&
       !cell.explored &&
       terrainNeighborCoordinates(col, row).some((neighbor) => this.getCell(neighbor.col, neighbor.row)?.explored),
     );
+    this.frontierByKey.set(key, frontier);
+    return frontier;
   }
 
-  getFrontierPreviewBiome(col: number, row: number): BiomeType | null {
+  getFogPreviewBiome(col: number, row: number): BiomeType | null {
     return this.resolvePreviewCellSample(col, row)?.biome ?? null;
   }
 
-  sampleFrontierPreviewVertex(
+  sampleFogPreviewVertex(
     worldX: number,
     worldZ: number,
     owner: Pick<TerrainCellInput, "col" | "row">,
   ): TerrainVisualSample {
-    if (!this.isFrontierCell(owner.col, owner.row)) return createUnknownSample();
-    return this.sampleVertexFromCandidates(
-      worldX,
-      worldZ,
-      this.resolveFrontierPreviewCandidates(owner.col, owner.row),
-      0,
-    );
+    if (this.getCell(owner.col, owner.row)?.explored !== false) return createUnknownSample();
+    return this.sampleVertexFromCandidates(worldX, worldZ, this.resolveFogPreviewCandidates(owner.col, owner.row), 0);
   }
 
   sampleVisual(worldX: number, worldZ: number, owner?: Pick<TerrainCellInput, "col" | "row">): TerrainVisualSample {
@@ -374,7 +375,7 @@ export class TerrainField {
     return candidates;
   }
 
-  private resolveFrontierPreviewCandidates(col: number, row: number): CellFieldSample[] {
+  private resolveFogPreviewCandidates(col: number, row: number): CellFieldSample[] {
     const ownerKey = terrainCellKey(col, row);
     const cached = this.previewCandidatesByKey.get(ownerKey);
     if (cached) return cached;
@@ -390,7 +391,7 @@ export class TerrainField {
     const cell = this.getCell(col, row);
     if (!cell) return null;
     if (cell.explored) return this.resolveCellSample(col, row);
-    return this.isFrontierCell(col, row) ? this.resolvePreviewCellSample(col, row) : null;
+    return this.resolvePreviewCellSample(col, row);
   }
 
   private resolveCellSample(col: number, row: number): CellFieldSample | null {
@@ -407,7 +408,7 @@ export class TerrainField {
     const cached = this.previewSampleByKey.get(key);
     if (cached) return cached;
     const cell = this.cellByKey.get(key);
-    if (!cell || cell.explored || !this.isFrontierCell(col, row)) return null;
+    if (!cell || cell.explored) return null;
     return this.createCellSample(col, row, cell.previewBiome, this.previewSampleByKey);
   }
 

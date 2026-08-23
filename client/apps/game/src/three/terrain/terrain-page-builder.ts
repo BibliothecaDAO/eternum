@@ -41,6 +41,7 @@ export function prepareTerrainPage(request: TerrainPageRequest): PreparedTerrain
   const field = new TerrainField(request);
   const land = createGeometryAccumulator();
   const water = createGeometryAccumulator();
+  let fogTerrainCells = 0;
   let frontierEdges = 0;
   let frontierPreviewCells = 0;
 
@@ -51,11 +52,11 @@ export function prepareTerrainPage(request: TerrainPageRequest): PreparedTerrain
       frontierEdges += appendFrontierSkirts(land, field, cell);
       continue;
     }
-    if (!field.isFrontierCell(cell.col, cell.row)) continue;
     appendCellPatch(land, field, cell, subdivisions);
-    const previewBiome = field.getFrontierPreviewBiome(cell.col, cell.row);
+    const previewBiome = field.getFogPreviewBiome(cell.col, cell.row);
     if (previewBiome && isTerrainWaterBiome(previewBiome)) appendWaterCellPatch(water, field, cell, subdivisions);
-    frontierPreviewCells += 1;
+    fogTerrainCells += 1;
+    if (field.isFrontierCell(cell.col, cell.row)) frontierPreviewCells += 1;
   }
 
   const buffers = finalizeGeometry(land);
@@ -70,6 +71,7 @@ export function prepareTerrainPage(request: TerrainPageRequest): PreparedTerrain
     buffers,
     diagnostics: {
       biomeMismatchCount: field.getBiomeMismatchCount(),
+      fogTerrainCells,
       frontierEdges,
       frontierPreviewCells,
       geometryBytes,
@@ -127,7 +129,7 @@ function sampleCellVertex(
 ): TerrainVisualSample {
   return cell.explored
     ? field.sampleVertex(point.x, point.z, cell)
-    : field.sampleFrontierPreviewVertex(point.x, point.z, cell);
+    : field.sampleFogPreviewVertex(point.x, point.z, cell);
 }
 
 function appendSubdividedTriangle(

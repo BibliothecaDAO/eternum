@@ -37,6 +37,7 @@ interface PresentedTerrainPage {
 }
 
 export interface TerrainPresentationDiagnostics {
+  fogTerrainCells: number;
   frontierPreviewCells: number;
   geometryBytes: number;
   pages: number;
@@ -360,13 +361,14 @@ function summarizePresentation(
     Omit<TerrainPresentationDiagnostics, "propInstances" | "propTriangles" | "shroudInstances" | "shroudTriangles">
   >(
     (summary, page) => ({
+      fogTerrainCells: summary.fogTerrainCells + page.diagnostics.fogTerrainCells,
       frontierPreviewCells: summary.frontierPreviewCells + page.diagnostics.frontierPreviewCells,
       geometryBytes: summary.geometryBytes + page.diagnostics.geometryBytes,
       pages: summary.pages + 1,
       triangles: summary.triangles + page.diagnostics.triangles,
       vertices: summary.vertices + page.diagnostics.vertices,
     }),
-    { frontierPreviewCells: 0, geometryBytes: 0, pages: 0, triangles: 0, vertices: 0 },
+    { fogTerrainCells: 0, frontierPreviewCells: 0, geometryBytes: 0, pages: 0, triangles: 0, vertices: 0 },
   );
   return {
     ...terrain,

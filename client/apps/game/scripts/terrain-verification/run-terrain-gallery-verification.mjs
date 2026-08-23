@@ -107,6 +107,15 @@ export function evaluateTerrainGalleryResults(results, options = {}) {
     if (expectsFog && (result.snapshot?.fogMaskResolution !== 64 || result.snapshot?.fogMaskBytes !== 4_096)) {
       reasons.push(`${label}: expected one bounded 64-square fog mask`);
     }
+    if (result.snapshot?.fogOpacity !== 0.84) {
+      reasons.push(`${label}: expected the configured 84-percent deep fog opacity`);
+    }
+    if (
+      expectsFog &&
+      result.snapshot?.fogTerrainCells + result.snapshot?.shroudActiveReveals !== result.snapshot?.shroudInstances
+    ) {
+      reasons.push(`${label}: fog-covered terrain did not match the committed exploration fog cells`);
+    }
     if (
       expectsFog &&
       (!(result.snapshot?.frontierPreviewCells > 0) ||
@@ -120,6 +129,9 @@ export function evaluateTerrainGalleryResults(results, options = {}) {
     }
     if (!expectsFog && result.snapshot?.frontierPreviewCells !== 0) {
       reasons.push(`${label}: fully explored scene unexpectedly rendered frontier preview geometry`);
+    }
+    if (!expectsFog && result.snapshot?.fogTerrainCells !== 0) {
+      reasons.push(`${label}: fully explored scene unexpectedly rendered fog-covered terrain`);
     }
     if (!expectsFog && (result.snapshot?.fogMaskResolution !== 0 || result.snapshot?.fogMaskBytes !== 0)) {
       reasons.push(`${label}: fully explored scene unexpectedly allocated a fog mask`);
@@ -170,6 +182,8 @@ export function evaluateTerrainGalleryResults(results, options = {}) {
       if (
         metric.biomeCount !== reference.biomeCount ||
         metric.cellCount !== reference.cellCount ||
+        metric.fogOpacity !== reference.fogOpacity ||
+        metric.fogTerrainCells !== reference.fogTerrainCells ||
         metric.frontierPreviewCells !== reference.frontierPreviewCells ||
         metric.groundTextureBytes !== reference.groundTextureBytes ||
         metric.groundTextureLayers !== reference.groundTextureLayers ||

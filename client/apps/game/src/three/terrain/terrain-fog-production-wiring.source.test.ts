@@ -10,6 +10,7 @@ describe("continuous exploration fog production wiring", () => {
 
     expect(fogField).toContain("new PlaneGeometry(1, 1, 1, 1)");
     expect(fogField).toContain("buildTerrainFogMask(ordered)");
+    expect(fogField).toContain("mix(frontierOpacity, float(TERRAIN_DEEP_FOG_OPACITY), deepFog)");
     expect(fogField).not.toContain("InstancedMesh");
     expect(fogField).not.toContain("terrain-exploration-shroud-frontier");
   });
@@ -21,6 +22,17 @@ describe("continuous exploration fog production wiring", () => {
     expect(fogField).toContain("applyTerrainFogReveals(this.mask, reveals, this.textureData)");
     expect(terrain).toContain("this.fogField.queueReveal(col, row)");
     expect(terrain).toContain("this.fogField.updateAnimation(deltaSeconds)");
+  });
+
+  it("shares one deep-fog color across the mist and debug background", () => {
+    const debugRenderer = source("src/three/debug/procedural-terrain-debug-renderer.ts");
+    const fogField = source("src/three/terrain/terrain-fog-field.ts");
+    const style = source("src/three/terrain/terrain-fog-style.ts");
+
+    expect(debugRenderer).toContain("TERRAIN_DEEP_FOG_COLOR");
+    expect(fogField).toContain("TERRAIN_DEEP_FOG_COLOR");
+    expect(style).toContain('TERRAIN_DEEP_FOG_COLOR = "#101416"');
+    expect(style).toContain("TERRAIN_DEEP_FOG_OPACITY = 0.84");
   });
 
   it("reports the worst reveal commit instead of summing separate presentation frames", () => {
