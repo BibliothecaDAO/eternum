@@ -19,7 +19,9 @@ import {
   realmsBridgeRequests,
 } from "@realms-world/db/schema";
 
+import { getRelationalSchema } from "../drizzle-schema";
 import { env } from "../env";
+import { getEthereumStreamUrl } from "../streams";
 
 const abi = parseAbi([
   "event LogMessageToL2(address indexed fromAddress, uint256 indexed toAddress,uint256 indexed selector,uint256[] payload,uint256 nonce,uint256 fee)",
@@ -34,17 +36,10 @@ const l2ChainId =
   env.VITE_PUBLIC_CHAIN === "sepolia" ? ChainId.SN_SEPOLIA : ChainId.SN_MAIN;
 
 export default function () {
-  console.log("eth indexer started");
-  console.log(env.VITE_PUBLIC_CHAIN);
-  console.log("messaging ", STARKNET_MESSAGING[chainId]);
-  console.log("from ", REALMS_BRIDGE_ADDRESS[chainId]);
-  console.log("to " + BigInt(REALMS_BRIDGE_ADDRESS[l2ChainId]));
-
   return defineIndexer(EvmStream)({
     streamUrl:
-      env.VITE_PUBLIC_CHAIN === "sepolia"
-        ? "https://ethereum-sepolia.preview.apibara.org"
-        : "https://ethereum.preview.apibara.org",
+      env.APIBARA_ETHEREUM_STREAM_URL ??
+      getEthereumStreamUrl(env.VITE_PUBLIC_CHAIN),
     finality: "accepted",
     startingBlock:
       env.VITE_PUBLIC_CHAIN === "sepolia" ? 6_180_467n : 204_33_152n,
@@ -104,7 +99,10 @@ export default function () {
     plugins: [
       drizzleStorage({
         db: db,
-        schema: { realmsBridgeEvents, realmsBridgeRequests },
+        schema: getRelationalSchema({
+          realmsBridgeEvents,
+          realmsBridgeRequests,
+        }),
         persistState: true,
         idColumn: "_id",
         indexerName: "eth-realms-bridge",

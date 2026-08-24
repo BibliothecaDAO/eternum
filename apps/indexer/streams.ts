@@ -16,3 +16,16 @@ export function getStarknetStreamUrl(chain: StarknetStreamNetwork) {
       return unsupportedNetwork(chain);
   }
 }
+
+export function getEthereumStreamUrl(chain: StarknetStreamNetwork) {
+  switch (chain) {
+    case "mainnet":
+      return "https://mainnet.ethereum.a5a.ch";
+    case "sepolia":
+      throw new Error(
+        "No default Ethereum Sepolia DNA stream is available. Set APIBARA_ETHEREUM_STREAM_URL to a provisioned endpoint.",
+      );
+    default:
+      return unsupportedNetwork(chain);
+  }
+}

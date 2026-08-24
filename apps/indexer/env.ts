@@ -5,6 +5,10 @@ import { STARKNET_STREAM_NETWORKS } from "./streams";
 const envSchema = z.object({
   // Version and chain info
   VITE_PUBLIC_CHAIN: z.enum(STARKNET_STREAM_NETWORKS),
+  APIBARA_ETHEREUM_STREAM_URL: z.preprocess(
+    (value) => (value === "" ? undefined : value),
+    z.string().url().optional(),
+  ),
 });
 
 let env: z.infer<typeof envSchema>;
