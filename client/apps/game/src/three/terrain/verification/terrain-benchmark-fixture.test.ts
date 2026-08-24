@@ -4,6 +4,7 @@ import {
   TERRAIN_BENCHMARK_CELL_COLUMNS,
   TERRAIN_BENCHMARK_CELL_ROWS,
   TERRAIN_BENCHMARK_PAGE_COLUMNS,
+  TERRAIN_BENCHMARK_PAGE_ORIGIN,
   TERRAIN_BENCHMARK_PAGE_ROWS,
   TERRAIN_BENCHMARK_PAGE_SIZE,
   TERRAIN_BENCHMARK_WINDOW_COLUMNS,
@@ -14,6 +15,7 @@ import {
   createTerrainBenchmarkWindowInput,
   resolveTerrainBenchmarkPageWindow,
 } from "./terrain-benchmark-fixture";
+import { buildWorldmapTerrainPageRequests } from "../worldmap-procedural-terrain";
 
 describe("terrain benchmark fixture", () => {
   it("creates a deterministic traversal world with a one-page coverage guard band", () => {
@@ -41,6 +43,21 @@ describe("terrain benchmark fixture", () => {
       expect(createTerrainBenchmarkWindowInput(fixture, focus).cells).toHaveLength(expectedCells);
       expect(createTerrainBenchmarkWindowInput(fixture, focus, { densityMultiplier: 2 }).propDensityMultiplier).toBe(2);
     }
+  });
+
+  it("uses the same origin-aware keys for fixture and procedural pages", () => {
+    const fixture = createTerrainBenchmarkFixture();
+    const focus = { col: 0, row: 0 };
+    const input = createTerrainBenchmarkWindowInput(fixture, focus);
+    const fixtureKeys = resolveTerrainBenchmarkPageWindow(focus).map(({ col, row }) => {
+      const startCol = TERRAIN_BENCHMARK_PAGE_ORIGIN.col + col * TERRAIN_BENCHMARK_PAGE_SIZE;
+      const startRow = TERRAIN_BENCHMARK_PAGE_ORIGIN.row + row * TERRAIN_BENCHMARK_PAGE_SIZE;
+      return `${startRow},${startCol}`;
+    });
+
+    expect(new Set(buildWorldmapTerrainPageRequests(input).map(({ pageKey }) => pageKey))).toEqual(
+      new Set(fixtureKeys),
+    );
   });
 
   it("crosses twelve boundaries and traverses every source page once", () => {

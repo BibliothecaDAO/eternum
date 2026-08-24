@@ -1,6 +1,6 @@
 import type { TerrainShroudInstance } from "./terrain-types";
 
-export const TERRAIN_FOG_MASK_RESOLUTION = 64;
+export const TERRAIN_FOG_MASK_TEXELS_PER_HEX_WIDTH = 4;
 
 export interface TerrainFogMaskBounds {
   maxX: number;
@@ -12,7 +12,8 @@ export interface TerrainFogMaskBounds {
 export interface TerrainFogMask {
   bounds: TerrainFogMaskBounds;
   data: Uint8Array;
-  resolution: number;
+  height: number;
+  width: number;
 }
 
 export interface TerrainFogRevealMask {
@@ -21,21 +22,23 @@ export interface TerrainFogRevealMask {
 }
 
 const FOG_COVERAGE_RADIUS = 1.42;
+const FRONTIER_FOG_COVERAGE_RADIUS = 1;
 const MASK_MARGIN = 1.7;
+const TERRAIN_HEX_WIDTH = Math.sqrt(3);
+const TERRAIN_FOG_MASK_MIN_RESOLUTION = 32;
+const TERRAIN_FOG_MASK_MAX_RESOLUTION = 1024;
+const TERRAIN_FOG_MASK_TEXEL_DENSITY = TERRAIN_FOG_MASK_TEXELS_PER_HEX_WIDTH / TERRAIN_HEX_WIDTH;
 
-export function buildTerrainFogMask(
-  instances: readonly TerrainShroudInstance[],
-  resolution = TERRAIN_FOG_MASK_RESOLUTION,
-): TerrainFogMask | null {
+export function buildTerrainFogMask(instances: readonly TerrainShroudInstance[]): TerrainFogMask | null {
   if (instances.length === 0) return null;
-  requireMaskResolution(resolution);
   const bounds = resolveFogMaskBounds(instances);
-  const coverage = new Uint8Array(resolution * resolution);
+  const { height, width } = resolveFogMaskDimensions(bounds);
+  const coverage = new Uint8Array(width * height);
   const distance = new Float32Array(coverage.length);
   distance.fill(Number.POSITIVE_INFINITY);
-  instances.forEach((instance) => rasterizeFogCell(coverage, distance, resolution, bounds, instance));
-  propagateFogDistance(distance, resolution, bounds);
-  return { bounds, data: encodeFogDistanceMask(coverage, distance), resolution };
+  instances.forEach((instance) => rasterizeFogCell(coverage, distance, width, height, bounds, instance));
+  propagateFogDistance(distance, width, height, bounds);
+  return { bounds, data: encodeFogDistanceMask(coverage, distance), height, width };
 }
 
 export function applyTerrainFogReveals(
@@ -65,68 +68,90 @@ function resolveFogMaskBounds(instances: readonly TerrainShroudInstance[]): Terr
   return { maxX, maxZ, minX, minZ };
 }
 
+function resolveFogMaskDimensions(bounds: TerrainFogMaskBounds): { height: number; width: number } {
+  return {
+    height: resolveBoundedMaskResolution(bounds.maxZ - bounds.minZ),
+    width: resolveBoundedMaskResolution(bounds.maxX - bounds.minX),
+  };
+}
+
+function resolveBoundedMaskResolution(worldSpan: number): number {
+  const resolution = Math.ceil(worldSpan * TERRAIN_FOG_MASK_TEXEL_DENSITY) + 1;
+  return Math.min(TERRAIN_FOG_MASK_MAX_RESOLUTION, Math.max(TERRAIN_FOG_MASK_MIN_RESOLUTION, resolution));
+}
+
 function rasterizeFogCell(
   coverage: Uint8Array,
   distance: Float32Array,
-  resolution: number,
+  width: number,
+  height: number,
   bounds: TerrainFogMaskBounds,
   instance: TerrainShroudInstance,
 ): void {
-  const pixelBounds = resolvePixelBounds(bounds, resolution, instance.worldX, instance.worldZ, FOG_COVERAGE_RADIUS);
+  const coverageRadius = instance.frontier ? FRONTIER_FOG_COVERAGE_RADIUS : FOG_COVERAGE_RADIUS;
+  const pixelBounds = resolvePixelBounds(bounds, width, height, instance.worldX, instance.worldZ, coverageRadius);
   for (let pixelZ = pixelBounds.minZ; pixelZ <= pixelBounds.maxZ; pixelZ += 1) {
     for (let pixelX = pixelBounds.minX; pixelX <= pixelBounds.maxX; pixelX += 1) {
-      const world = fogMaskPixelToWorld(bounds, resolution, pixelX, pixelZ);
+      const world = fogMaskPixelToWorld(bounds, width, height, pixelX, pixelZ);
       const localX = world.x - instance.worldX;
       const localZ = world.z - instance.worldZ;
-      if (!isInsideFogHex(localX, localZ)) continue;
-      const index = pixelZ * resolution + pixelX;
+      if (!isInsideFogHex(localX, localZ, coverageRadius)) continue;
+      const index = pixelZ * width + pixelX;
       coverage[index] = 255;
-      if (isFrontierSeed(instance, localX, localZ)) distance[index] = 0;
+      if (isFrontierSeed(instance, localX, localZ, coverageRadius)) distance[index] = 0;
     }
   }
 }
 
-function isInsideFogHex(localX: number, localZ: number): boolean {
+function isInsideFogHex(localX: number, localZ: number, coverageRadius: number): boolean {
   const absoluteX = Math.abs(localX);
   const absoluteZ = Math.abs(localZ);
-  return (
-    absoluteX <= FOG_COVERAGE_RADIUS * Math.cos(Math.PI / 6) &&
-    absoluteZ + absoluteX / Math.sqrt(3) <= FOG_COVERAGE_RADIUS
-  );
+  return absoluteX <= coverageRadius * Math.cos(Math.PI / 6) && absoluteZ + absoluteX / Math.sqrt(3) <= coverageRadius;
 }
 
-function isFrontierSeed(instance: TerrainShroudInstance, localX: number, localZ: number): boolean {
+function isFrontierSeed(
+  instance: TerrainShroudInstance,
+  localX: number,
+  localZ: number,
+  coverageRadius: number,
+): boolean {
   if (!instance.frontier) return false;
   const towardExplored =
-    (localX * instance.frontierDirection[0] + localZ * instance.frontierDirection[1]) / FOG_COVERAGE_RADIUS;
+    (localX * instance.frontierDirection[0] + localZ * instance.frontierDirection[1]) / coverageRadius;
   return towardExplored >= 0.58;
 }
 
-function propagateFogDistance(distance: Float32Array, resolution: number, bounds: TerrainFogMaskBounds): void {
-  const stepX = (bounds.maxX - bounds.minX) / (resolution - 1);
-  const stepZ = (bounds.maxZ - bounds.minZ) / (resolution - 1);
+function propagateFogDistance(
+  distance: Float32Array,
+  width: number,
+  height: number,
+  bounds: TerrainFogMaskBounds,
+): void {
+  const stepX = (bounds.maxX - bounds.minX) / (width - 1);
+  const stepZ = (bounds.maxZ - bounds.minZ) / (height - 1);
   const diagonal = Math.hypot(stepX, stepZ);
-  for (let z = 0; z < resolution; z += 1) {
-    for (let x = 0; x < resolution; x += 1) {
-      relaxFogDistance(distance, resolution, x, z, -1, 0, stepX);
-      relaxFogDistance(distance, resolution, x, z, 0, -1, stepZ);
-      relaxFogDistance(distance, resolution, x, z, -1, -1, diagonal);
-      relaxFogDistance(distance, resolution, x, z, 1, -1, diagonal);
+  for (let z = 0; z < height; z += 1) {
+    for (let x = 0; x < width; x += 1) {
+      relaxFogDistance(distance, width, height, x, z, -1, 0, stepX);
+      relaxFogDistance(distance, width, height, x, z, 0, -1, stepZ);
+      relaxFogDistance(distance, width, height, x, z, -1, -1, diagonal);
+      relaxFogDistance(distance, width, height, x, z, 1, -1, diagonal);
     }
   }
-  for (let z = resolution - 1; z >= 0; z -= 1) {
-    for (let x = resolution - 1; x >= 0; x -= 1) {
-      relaxFogDistance(distance, resolution, x, z, 1, 0, stepX);
-      relaxFogDistance(distance, resolution, x, z, 0, 1, stepZ);
-      relaxFogDistance(distance, resolution, x, z, 1, 1, diagonal);
-      relaxFogDistance(distance, resolution, x, z, -1, 1, diagonal);
+  for (let z = height - 1; z >= 0; z -= 1) {
+    for (let x = width - 1; x >= 0; x -= 1) {
+      relaxFogDistance(distance, width, height, x, z, 1, 0, stepX);
+      relaxFogDistance(distance, width, height, x, z, 0, 1, stepZ);
+      relaxFogDistance(distance, width, height, x, z, 1, 1, diagonal);
+      relaxFogDistance(distance, width, height, x, z, -1, 1, diagonal);
     }
   }
 }
 
 function relaxFogDistance(
   distance: Float32Array,
-  resolution: number,
+  width: number,
+  height: number,
   x: number,
   z: number,
   offsetX: number,
@@ -135,9 +160,9 @@ function relaxFogDistance(
 ): void {
   const neighborX = x + offsetX;
   const neighborZ = z + offsetZ;
-  if (neighborX < 0 || neighborZ < 0 || neighborX >= resolution || neighborZ >= resolution) return;
-  const index = z * resolution + x;
-  const neighbor = distance[neighborZ * resolution + neighborX] + step;
+  if (neighborX < 0 || neighborZ < 0 || neighborX >= width || neighborZ >= height) return;
+  const index = z * width + x;
+  const neighbor = distance[neighborZ * width + neighborX] + step;
   if (neighbor < distance[index]) distance[index] = neighbor;
 }
 
@@ -157,20 +182,21 @@ function clearFogReveal(data: Uint8Array, mask: TerrainFogMask, reveal: TerrainF
   const edgeWidth = 0.18 + progress * 0.12;
   const pixelBounds = resolvePixelBounds(
     mask.bounds,
-    mask.resolution,
+    mask.width,
+    mask.height,
     reveal.instance.worldX,
     reveal.instance.worldZ,
     clearRadius + edgeWidth,
   );
   for (let pixelZ = pixelBounds.minZ; pixelZ <= pixelBounds.maxZ; pixelZ += 1) {
     for (let pixelX = pixelBounds.minX; pixelX <= pixelBounds.maxX; pixelX += 1) {
-      const world = fogMaskPixelToWorld(mask.bounds, mask.resolution, pixelX, pixelZ);
+      const world = fogMaskPixelToWorld(mask.bounds, mask.width, mask.height, pixelX, pixelZ);
       const localX = world.x - reveal.instance.worldX;
       const localZ = world.z - reveal.instance.worldZ;
       const variation = revealEdgeVariation(localX, localZ, reveal.instance.seed);
       const distance = Math.hypot(localX, localZ) + variation * 0.13;
       const retained = smoothstep(clearRadius - edgeWidth, clearRadius + edgeWidth, distance);
-      const index = pixelZ * mask.resolution + pixelX;
+      const index = pixelZ * mask.width + pixelX;
       data[index] = Math.round(data[index] * retained);
     }
   }
@@ -182,28 +208,30 @@ function revealEdgeVariation(localX: number, localZ: number, seed: number): numb
 
 function resolvePixelBounds(
   bounds: TerrainFogMaskBounds,
-  resolution: number,
+  width: number,
+  height: number,
   worldX: number,
   worldZ: number,
   radius: number,
 ): { maxX: number; maxZ: number; minX: number; minZ: number } {
   return {
-    maxX: clampPixel(worldToFogMaskPixel(worldX + radius, bounds.minX, bounds.maxX, resolution), resolution),
-    maxZ: clampPixel(worldToFogMaskPixel(worldZ + radius, bounds.minZ, bounds.maxZ, resolution), resolution),
-    minX: clampPixel(worldToFogMaskPixel(worldX - radius, bounds.minX, bounds.maxX, resolution), resolution),
-    minZ: clampPixel(worldToFogMaskPixel(worldZ - radius, bounds.minZ, bounds.maxZ, resolution), resolution),
+    maxX: clampPixel(worldToFogMaskPixel(worldX + radius, bounds.minX, bounds.maxX, width), width),
+    maxZ: clampPixel(worldToFogMaskPixel(worldZ + radius, bounds.minZ, bounds.maxZ, height), height),
+    minX: clampPixel(worldToFogMaskPixel(worldX - radius, bounds.minX, bounds.maxX, width), width),
+    minZ: clampPixel(worldToFogMaskPixel(worldZ - radius, bounds.minZ, bounds.maxZ, height), height),
   };
 }
 
 function fogMaskPixelToWorld(
   bounds: TerrainFogMaskBounds,
-  resolution: number,
+  width: number,
+  height: number,
   pixelX: number,
   pixelZ: number,
 ): { x: number; z: number } {
   return {
-    x: bounds.minX + (pixelX / (resolution - 1)) * (bounds.maxX - bounds.minX),
-    z: bounds.minZ + (pixelZ / (resolution - 1)) * (bounds.maxZ - bounds.minZ),
+    x: bounds.minX + (pixelX / (width - 1)) * (bounds.maxX - bounds.minX),
+    z: bounds.minZ + (pixelZ / (height - 1)) * (bounds.maxZ - bounds.minZ),
   };
 }
 
@@ -213,12 +241,6 @@ function worldToFogMaskPixel(value: number, minimum: number, maximum: number, re
 
 function clampPixel(value: number, resolution: number): number {
   return Math.min(resolution - 1, Math.max(0, value));
-}
-
-function requireMaskResolution(resolution: number): void {
-  if (!Number.isInteger(resolution) || resolution < 32 || resolution > 1024) {
-    throw new Error(`Terrain fog mask resolution must be an integer from 32 to 1024, received ${resolution}`);
-  }
 }
 
 function smoothstep(edge0: number, edge1: number, value: number): number {

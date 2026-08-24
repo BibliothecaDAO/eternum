@@ -78,6 +78,7 @@ export class ProceduralTerrain {
     this.object3d.add(this.presentationGroup);
     this.object3d.add(this.fogField.object3d);
     this.materials = createTerrainMaterials();
+    this.setQualityTier(this.qualityTier);
   }
 
   preparePage(request: TerrainPageRequest): PreparedTerrainPage {

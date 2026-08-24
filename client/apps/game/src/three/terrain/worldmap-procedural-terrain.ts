@@ -20,9 +20,9 @@ interface WorldmapProceduralCell {
 export interface WorldmapProceduralPresentationInput {
   cells: readonly WorldmapProceduralCell[];
   climate?: BiomeClimateConfig;
-  generation: number;
   mapCenter: number;
   pageHeight: number;
+  pageOrigin: { col: number; row: number };
   pageWidth: number;
   propDensityMultiplier?: number;
   subdivisions?: number;
@@ -32,12 +32,13 @@ export interface WorldmapProceduralPresentationDiagnostics extends TerrainPresen
   biomeMismatchCount: number;
   builtPages: number;
   commitMs: number;
+  preparedCachePages: number;
   prepareMs: number;
   reusedPages: number;
 }
 
-interface CachedPreparedPage {
-  prepared: PreparedTerrainPage;
+interface TerrainPagePreparation {
+  request: TerrainPageRequest;
   signature: string;
 }
 
@@ -46,7 +47,10 @@ const BIOME_VALUES = new Set<string>(Object.values(BiomeType));
 export class WorldmapProceduralTerrain {
   readonly object3d: Group;
   private readonly terrain = new ProceduralTerrain();
-  private readonly preparedByPage = new Map<string, CachedPreparedPage>();
+  private readonly preparedBySignature = new Map<string, PreparedTerrainPage>();
+  private readonly pendingBySignature = new Map<string, Promise<PreparedTerrainPage>>();
+  private currentRequestSignatures = new Set<string>();
+  private previousRequestSignatures = new Set<string>();
   private presentationRevision = 0;
   private visibleCellCount = 0;
 
@@ -57,23 +61,20 @@ export class WorldmapProceduralTerrain {
 
   present(input: WorldmapProceduralPresentationInput): WorldmapProceduralPresentationDiagnostics {
     this.presentationRevision += 1;
-    const requests = buildWorldmapTerrainPageRequests(input);
-    const nextCache = new Map<string, CachedPreparedPage>();
+    const preparations = this.beginRequest(buildWorldmapTerrainPageRequests(input));
     const preparedPages: PreparedTerrainPage[] = [];
     let builtPages = 0;
     let reusedPages = 0;
 
-    for (const request of requests) {
-      const signature = createRequestSignature(request);
-      const retained = this.preparedByPage.get(request.pageKey);
-      const prepared = retained?.signature === signature ? retained.prepared : this.terrain.preparePage(request);
-      if (prepared === retained?.prepared) reusedPages += 1;
+    for (const preparation of preparations) {
+      const cached = this.preparedBySignature.get(preparation.signature);
+      const prepared = cached ?? this.preparePage(preparation);
+      if (cached) reusedPages += 1;
       else builtPages += 1;
-      nextCache.set(request.pageKey, { prepared, signature });
       preparedPages.push(prepared);
     }
 
-    return this.commitPreparedPages(input, preparedPages, nextCache, builtPages, reusedPages);
+    return this.commitPreparedPages(input, preparedPages, builtPages, reusedPages);
   }
 
   async presentAsync(
@@ -81,28 +82,29 @@ export class WorldmapProceduralTerrain {
   ): Promise<WorldmapProceduralPresentationDiagnostics | null> {
     const revision = this.presentationRevision + 1;
     this.presentationRevision = revision;
-    const requests = buildWorldmapTerrainPageRequests(input);
+    const preparations = this.beginRequest(buildWorldmapTerrainPageRequests(input));
     let builtPages = 0;
     let reusedPages = 0;
-    const preparedEntries = await Promise.all(
-      requests.map(async (request) => {
-        const signature = createRequestSignature(request);
-        const retained = this.preparedByPage.get(request.pageKey);
-        if (retained?.signature === signature) {
+    const preparedPages = await Promise.all(
+      preparations.map((preparation) => {
+        const cached = this.preparedBySignature.get(preparation.signature);
+        if (cached) {
           reusedPages += 1;
-          return [request.pageKey, retained] as const;
+          return cached;
+        }
+        const pending = this.pendingBySignature.get(preparation.signature);
+        if (pending) {
+          reusedPages += 1;
+          return pending;
         }
         builtPages += 1;
-        const prepared = await this.terrain.preparePageAsync(request);
-        return [request.pageKey, { prepared, signature }] as const;
+        return this.preparePageAsync(preparation);
       }),
     );
     if (revision !== this.presentationRevision) return null;
-    const nextCache = new Map<string, CachedPreparedPage>(preparedEntries);
-    const preparedPages = preparedEntries.map(([, entry]) => entry.prepared);
     const fogMask = await this.terrain.prepareFogMaskAsync(preparedPages);
     if (revision !== this.presentationRevision) return null;
-    return this.commitPreparedPages(input, preparedPages, nextCache, builtPages, reusedPages, fogMask);
+    return this.commitPreparedPages(input, preparedPages, builtPages, reusedPages, fogMask);
   }
 
   loadProps(): Promise<void> {
@@ -148,13 +150,13 @@ export class WorldmapProceduralTerrain {
   clear(): void {
     this.presentationRevision += 1;
     this.terrain.present([]);
-    this.preparedByPage.clear();
+    this.clearPreparedWork();
     this.visibleCellCount = 0;
   }
 
   dispose(): void {
     this.presentationRevision += 1;
-    this.preparedByPage.clear();
+    this.clearPreparedWork();
     this.visibleCellCount = 0;
     this.terrain.dispose();
   }
@@ -162,7 +164,6 @@ export class WorldmapProceduralTerrain {
   private commitPreparedPages(
     input: WorldmapProceduralPresentationInput,
     preparedPages: PreparedTerrainPage[],
-    nextCache: Map<string, CachedPreparedPage>,
     builtPages: number,
     reusedPages: number,
     preparedFogMask?: TerrainFogMask | null,
@@ -170,8 +171,6 @@ export class WorldmapProceduralTerrain {
     const commitStartedAt = performance.now();
     const presentation = this.terrain.present(preparedPages, preparedFogMask);
     const commitMs = performance.now() - commitStartedAt;
-    this.preparedByPage.clear();
-    nextCache.forEach((page, pageKey) => this.preparedByPage.set(pageKey, page));
     this.visibleCellCount = input.cells.filter((cell) => resolveBiomeKey(cell.biomeKey) !== null).length;
     const diagnostics = preparedPages.reduce(
       (summary, page) => ({
@@ -185,20 +184,79 @@ export class WorldmapProceduralTerrain {
         count: diagnostics.biomeMismatchCount,
       });
     }
-    return { ...presentation, ...diagnostics, builtPages, commitMs, reusedPages };
+    return {
+      ...presentation,
+      ...diagnostics,
+      builtPages,
+      commitMs,
+      preparedCachePages: this.preparedBySignature.size,
+      reusedPages,
+    };
+  }
+
+  private beginRequest(requests: readonly TerrainPageRequest[]): TerrainPagePreparation[] {
+    const preparations = requests.map((request) => ({ request, signature: createRequestSignature(request) }));
+    this.previousRequestSignatures = this.currentRequestSignatures;
+    this.currentRequestSignatures = new Set(preparations.map(({ signature }) => signature));
+    this.prunePreparedCache();
+    return preparations;
+  }
+
+  private preparePage(preparation: TerrainPagePreparation): PreparedTerrainPage {
+    const prepared = this.terrain.preparePage(preparation.request);
+    this.retainPreparedPage(preparation.signature, prepared);
+    return prepared;
+  }
+
+  private preparePageAsync(preparation: TerrainPagePreparation): Promise<PreparedTerrainPage> {
+    const pending = this.terrain
+      .preparePageAsync(preparation.request)
+      .then((prepared) => {
+        this.retainPreparedPage(preparation.signature, prepared);
+        return prepared;
+      })
+      .finally(() => {
+        if (this.pendingBySignature.get(preparation.signature) === pending) {
+          this.pendingBySignature.delete(preparation.signature);
+        }
+      });
+    this.pendingBySignature.set(preparation.signature, pending);
+    return pending;
+  }
+
+  private retainPreparedPage(signature: string, prepared: PreparedTerrainPage): void {
+    if (this.isRetainedRequest(signature)) this.preparedBySignature.set(signature, prepared);
+  }
+
+  private prunePreparedCache(): void {
+    for (const signature of this.preparedBySignature.keys()) {
+      if (!this.isRetainedRequest(signature)) this.preparedBySignature.delete(signature);
+    }
+  }
+
+  private isRetainedRequest(signature: string): boolean {
+    return this.currentRequestSignatures.has(signature) || this.previousRequestSignatures.has(signature);
+  }
+
+  private clearPreparedWork(): void {
+    this.preparedBySignature.clear();
+    this.pendingBySignature.clear();
+    this.currentRequestSignatures.clear();
+    this.previousRequestSignatures.clear();
   }
 }
 
 export function buildWorldmapTerrainPageRequests(input: WorldmapProceduralPresentationInput): TerrainPageRequest[] {
   requirePageSize(input.pageWidth, "width");
   requirePageSize(input.pageHeight, "height");
+  requirePageOrigin(input.pageOrigin);
   const climate = input.climate ?? NEUTRAL_BIOME_CLIMATE;
   const cells = canonicalTerrainCells(input.cells.map(toTerrainCell));
   const cellsByKey = new Map(cells.map((cell) => [terrainCellKey(cell.col, cell.row), cell]));
   const cellsByPage = new Map<string, TerrainCellInput[]>();
 
   for (const cell of cells) {
-    const pageKey = resolvePageKey(cell.col, cell.row, input.pageWidth, input.pageHeight);
+    const pageKey = resolvePageKey(cell.col, cell.row, input.pageWidth, input.pageHeight, input.pageOrigin);
     const pageCells = cellsByPage.get(pageKey) ?? [];
     pageCells.push(cell);
     cellsByPage.set(pageKey, pageCells);
@@ -209,7 +267,6 @@ export function buildWorldmapTerrainPageRequests(input: WorldmapProceduralPresen
     .map(([pageKey, pageCells]) => ({
       cells: canonicalTerrainCells(pageCells),
       climate,
-      generation: input.generation,
       halo: resolvePageHalo(pageCells, cellsByKey),
       mapCenter: input.mapCenter,
       pageKey,
@@ -253,9 +310,15 @@ function resolveBiomeKey(biomeKey: string): BiomeType | null {
   return BIOME_VALUES.has(normalized) && normalized !== BiomeType.None ? (normalized as BiomeType) : null;
 }
 
-function resolvePageKey(col: number, row: number, pageWidth: number, pageHeight: number): string {
-  const startCol = Math.floor(col / pageWidth) * pageWidth;
-  const startRow = Math.floor(row / pageHeight) * pageHeight;
+function resolvePageKey(
+  col: number,
+  row: number,
+  pageWidth: number,
+  pageHeight: number,
+  pageOrigin: WorldmapProceduralPresentationInput["pageOrigin"],
+): string {
+  const startCol = Math.floor((col - pageOrigin.col) / pageWidth) * pageWidth + pageOrigin.col;
+  const startRow = Math.floor((row - pageOrigin.row) / pageHeight) * pageHeight + pageOrigin.row;
   return `${startRow},${startCol}`;
 }
 
@@ -267,12 +330,19 @@ function createRequestSignature(request: TerrainPageRequest): string {
   return JSON.stringify({
     cells: request.cells,
     climate: request.climate,
-    generation: request.generation,
+    // A newly landed neighbour legitimately rebuilds the pages whose edge blending halo changed.
     halo: request.halo,
     mapCenter: request.mapCenter,
+    pageKey: request.pageKey,
     propDensityMultiplier: request.propDensityMultiplier,
     subdivisions: request.subdivisions,
   });
+}
+
+function requirePageOrigin(origin: WorldmapProceduralPresentationInput["pageOrigin"]): void {
+  if (!Number.isInteger(origin.col) || !Number.isInteger(origin.row)) {
+    throw new Error("Worldmap procedural terrain page origin must use integer coordinates");
+  }
 }
 
 function requirePageSize(value: number, axis: string): void {

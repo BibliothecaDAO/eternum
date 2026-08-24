@@ -8,6 +8,7 @@ import type { TerrainBenchmarkExplorationMode } from "./terrain-benchmark-contra
 
 export const TERRAIN_BENCHMARK_FIXTURE_ID = "fullscreen-balanced-v2";
 export const TERRAIN_BENCHMARK_PAGE_SIZE = 24;
+export const TERRAIN_BENCHMARK_PAGE_ORIGIN = Object.freeze({ col: -12, row: -12 });
 export const TERRAIN_BENCHMARK_PAGE_COLUMNS = 12;
 export const TERRAIN_BENCHMARK_PAGE_ROWS = 12;
 const TERRAIN_BENCHMARK_TRAVERSAL_COLUMNS = 10;
@@ -97,9 +98,9 @@ export function createTerrainBenchmarkWindowInput(
       return cells.map((cell) => applyBenchmarkExploration(cell, options.explorationMode ?? "explored"));
     }),
     climate: fixture.climate,
-    generation: 1,
     mapCenter: 0,
     pageHeight: TERRAIN_BENCHMARK_PAGE_SIZE,
+    pageOrigin: TERRAIN_BENCHMARK_PAGE_ORIGIN,
     pageWidth: TERRAIN_BENCHMARK_PAGE_SIZE,
     propDensityMultiplier: options.densityMultiplier,
     subdivisions: 2,
@@ -164,12 +165,14 @@ export function resolveTerrainBenchmarkPageWindow(
 }
 
 function terrainBenchmarkPageKey(col: number, row: number): string {
-  return `${row},${col}`;
+  const startCol = TERRAIN_BENCHMARK_PAGE_ORIGIN.col + col * TERRAIN_BENCHMARK_PAGE_SIZE;
+  const startRow = TERRAIN_BENCHMARK_PAGE_ORIGIN.row + row * TERRAIN_BENCHMARK_PAGE_SIZE;
+  return `${startRow},${startCol}`;
 }
 
 function createPageCells(pageCol: number, pageRow: number): TerrainBenchmarkCell[] {
-  const startCol = pageCol * TERRAIN_BENCHMARK_PAGE_SIZE;
-  const startRow = pageRow * TERRAIN_BENCHMARK_PAGE_SIZE;
+  const startCol = TERRAIN_BENCHMARK_PAGE_ORIGIN.col + pageCol * TERRAIN_BENCHMARK_PAGE_SIZE;
+  const startRow = TERRAIN_BENCHMARK_PAGE_ORIGIN.row + pageRow * TERRAIN_BENCHMARK_PAGE_SIZE;
   return Array.from({ length: TERRAIN_BENCHMARK_PAGE_SIZE ** 2 }, (_, index) => {
     const col = startCol + (index % TERRAIN_BENCHMARK_PAGE_SIZE);
     const row = startRow + Math.floor(index / TERRAIN_BENCHMARK_PAGE_SIZE);

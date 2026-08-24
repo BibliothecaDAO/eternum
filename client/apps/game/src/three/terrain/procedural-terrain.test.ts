@@ -16,7 +16,9 @@ describe("ProceduralTerrain", () => {
     const dispose = vi.spyOn(firstMesh.geometry, "dispose");
 
     expect(firstSummary.pages).toBe(1);
-    terrain.present([first]);
+    const sameContent = terrain.preparePage(request(BiomeType.Grassland, false));
+    expect(sameContent.fingerprint).toBe(first.fingerprint);
+    terrain.present([sameContent]);
     expect(dispose).not.toHaveBeenCalled();
 
     const replacement = terrain.preparePage(request(BiomeType.Grassland, true));
@@ -89,7 +91,6 @@ function request(biome: BiomeType, occupied: boolean) {
   return {
     cells: [{ biome, col: 0, explored: true, occupied, previewBiome: biome, row: 0 }],
     climate: NEUTRAL_BIOME_CLIMATE,
-    generation: 1,
     halo: [],
     mapCenter: 0,
     pageKey: "page",

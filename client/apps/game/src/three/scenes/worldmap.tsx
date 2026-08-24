@@ -105,7 +105,6 @@ import { Account, AccountInterface } from "starknet";
 import { Box3, Color, Group, Raycaster, Sphere, Vector2, Vector3 } from "three";
 import { MapControls } from "three/addons/controls/MapControls.js";
 import { WorldmapProceduralTerrain } from "@/three/terrain/worldmap-procedural-terrain";
-import { resolveTerrainQualityTier, type TerrainCameraBand } from "@/three/terrain/terrain-quality";
 import type { TerrainSurface } from "@/three/terrain/terrain-surface";
 import { env } from "../../../env";
 import { playerCosmeticsStore } from "../cosmetics";
@@ -1370,10 +1369,6 @@ export default class WorldmapScene extends WarpTravel {
         this.hoverLabelManager.updateCameraView(view);
         this.highlightHexManager.setCameraView(view);
         this.interactiveHexManager.setCameraView(view);
-      });
-      // Full-screen evidence reserves the heavier prop geometry for close inspection.
-      runWithFrameWorkOwner("zoom:terrain-detail", () => {
-        this.proceduralTerrain.setQualityTier(resolveTerrainQualityTier(resolveTerrainCameraBand(view)));
       });
       runWithFrameWorkOwner("zoom:worldmap-shadows", () => {
         this.configureWorldmapShadows();
@@ -5876,9 +5871,9 @@ export default class WorldmapScene extends WarpTravel {
           };
         }),
         climate: configManager.getBiomeClimateConfig() ?? NEUTRAL_BIOME_CLIMATE,
-        generation: this.visualTerrainGeneration,
         mapCenter: configManager.getMapCenter(),
         pageHeight: WORLDMAP_CHUNK_POLICY.visualPresentation.visualPageSize.height,
+        pageOrigin: this.getVisualTerrainPageOrigin(),
         pageWidth: WORLDMAP_CHUNK_POLICY.visualPresentation.visualPageSize.width,
         subdivisions: 2,
       })
@@ -5890,7 +5885,9 @@ export default class WorldmapScene extends WarpTravel {
           cellCount: composite.cells.length,
           droppedCellCount: composite.droppedCellCount,
           proceduralBuiltPages: terrainDiagnostics.builtPages,
+          proceduralPreparedCachePages: terrainDiagnostics.preparedCachePages,
           proceduralPrepareMs: terrainDiagnostics.prepareMs,
+          proceduralReusedPages: terrainDiagnostics.reusedPages,
           proceduralTriangles: terrainDiagnostics.triangles + terrainDiagnostics.propTriangles,
           proceduralVertices: terrainDiagnostics.vertices,
           presentationChunkKeys: composite.presentationChunkKeys,
@@ -8785,10 +8782,4 @@ export default class WorldmapScene extends WarpTravel {
   private recalculateArrowsForEntitiesRelatedTo(entityId: ID) {
     this.battleDirectionManager.recalculateArrowsForEntitiesRelatedTo(entityId);
   }
-}
-
-function resolveTerrainCameraBand(view: CameraView): TerrainCameraBand {
-  if (view === CameraView.Close) return "close";
-  if (view === CameraView.Far) return "far";
-  return "medium";
 }

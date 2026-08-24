@@ -1,33 +1,62 @@
 import { NEUTRAL_BIOME_CLIMATE } from "@bibliothecadao/eternum";
 import { BiomeType } from "@bibliothecadao/types";
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
+import { ProceduralTerrain, type TerrainPresentationDiagnostics } from "./procedural-terrain";
+import { prepareTerrainPage } from "./terrain-page-builder";
+import type { PreparedTerrainPage } from "./terrain-types";
 import { WorldmapProceduralTerrain, buildWorldmapTerrainPageRequests } from "./worldmap-procedural-terrain";
 
 describe("WorldmapProceduralTerrain", () => {
-  it("partitions signed coordinates into pages with exact one-ring halos", () => {
+  afterEach(() => vi.restoreAllMocks());
+
+  it("partitions signed coordinates relative to the visual origin with exact one-ring halos", () => {
     const requests = buildWorldmapTerrainPageRequests({
       cells: [worldCell(-1, 0, BiomeType.Grassland), worldCell(0, 0, BiomeType.Taiga), worldCell(1, 0, "Outline")],
       climate: NEUTRAL_BIOME_CLIMATE,
-      generation: 1,
       mapCenter: 0,
       pageHeight: 2,
-      pageWidth: 1,
+      pageOrigin: { col: -1, row: 0 },
+      pageWidth: 2,
       subdivisions: 1,
     });
 
-    expect(requests.map(({ pageKey }) => pageKey)).toEqual(["0,-1", "0,0", "0,1"]);
-    expect(requests[1].halo.map(({ col }) => col)).toEqual([-1, 1]);
-    expect(requests[2].cells[0].biome).toBeNull();
-    expect(requests[2].cells[0].previewBiome).toBeNull();
+    expect(requests.map(({ pageKey }) => pageKey)).toEqual(["0,-1", "0,1"]);
+    expect(requests[0].halo.map(({ col }) => col)).toEqual([1]);
+    expect(requests[1].halo.map(({ col }) => col)).toEqual([0]);
+    expect(requests[1].cells[0].biome).toBeNull();
+    expect(requests[1].cells[0].previewBiome).toBeNull();
+  });
+
+  it("maps a complete four-by-four visual window to the same sixteen page keys", () => {
+    const pageOrigin = { col: -12, row: -12 };
+    const pageStarts = [-36, -12, 12, 36];
+    const cells = pageStarts.flatMap((startRow) =>
+      pageStarts.flatMap((startCol) =>
+        Array.from({ length: 24 * 24 }, (_, index) =>
+          worldCell(startCol + (index % 24), startRow + Math.floor(index / 24), BiomeType.Grassland),
+        ),
+      ),
+    );
+    const requests = buildWorldmapTerrainPageRequests({
+      cells,
+      mapCenter: 0,
+      pageHeight: 24,
+      pageOrigin,
+      pageWidth: 24,
+    });
+    const visualPageKeys = pageStarts.flatMap((row) => pageStarts.map((col) => `${row},${col}`));
+
+    expect(requests).toHaveLength(16);
+    expect(new Set(requests.map(({ pageKey }) => pageKey))).toEqual(new Set(visualPageKeys));
   });
 
   it("propagates the explicit prop density into every prepared page", () => {
     const requests = buildWorldmapTerrainPageRequests({
       cells: [worldCell(0, 0, BiomeType.Grassland), worldCell(2, 0, BiomeType.Taiga)],
-      generation: 1,
       mapCenter: 0,
       pageHeight: 1,
+      pageOrigin: { col: 0, row: 0 },
       pageWidth: 1,
       propDensityMultiplier: 1.5,
     });
@@ -40,9 +69,9 @@ describe("WorldmapProceduralTerrain", () => {
     const input = {
       cells: [worldCell(0, 0, BiomeType.Beach)],
       climate: NEUTRAL_BIOME_CLIMATE,
-      generation: 1,
       mapCenter: 0,
       pageHeight: 2,
+      pageOrigin: { col: 0, row: 0 },
       pageWidth: 2,
       subdivisions: 1,
     };
@@ -55,7 +84,65 @@ describe("WorldmapProceduralTerrain", () => {
     });
     terrain.dispose();
   });
+
+  it("shares identical in-flight builds and caches their result before the latest commit", async () => {
+    const input = singlePageInput(0);
+    const request = buildWorldmapTerrainPageRequests(input)[0];
+    let resolvePage: (page: PreparedTerrainPage) => void = () => undefined;
+    const pendingPage = new Promise<PreparedTerrainPage>((resolve) => {
+      resolvePage = resolve;
+    });
+    const preparePageAsync = vi.spyOn(ProceduralTerrain.prototype, "preparePageAsync").mockReturnValue(pendingPage);
+    vi.spyOn(ProceduralTerrain.prototype, "prepareFogMaskAsync").mockResolvedValue(null);
+    vi.spyOn(ProceduralTerrain.prototype, "present").mockReturnValue(emptyPresentationDiagnostics());
+    const terrain = new WorldmapProceduralTerrain();
+
+    const superseded = terrain.presentAsync(input);
+    const latest = terrain.presentAsync(input);
+    expect(preparePageAsync).toHaveBeenCalledTimes(1);
+
+    resolvePage(prepareTerrainPage(request));
+    await expect(superseded).resolves.toBeNull();
+    await expect(latest).resolves.toMatchObject({ builtPages: 0, preparedCachePages: 1, reusedPages: 1 });
+    terrain.dispose();
+  });
+
+  it("bounds prepared pages to the current and previous request sets", () => {
+    const terrain = new WorldmapProceduralTerrain();
+
+    expect(terrain.present(singlePageInput(0)).preparedCachePages).toBe(1);
+    expect(terrain.present(singlePageInput(10)).preparedCachePages).toBe(2);
+    expect(terrain.present(singlePageInput(20)).preparedCachePages).toBe(2);
+    terrain.dispose();
+  });
 });
+
+function singlePageInput(col: number) {
+  return {
+    cells: [worldCell(col, 0, "Outline")],
+    climate: NEUTRAL_BIOME_CLIMATE,
+    mapCenter: 0,
+    pageHeight: 2,
+    pageOrigin: { col: 0, row: 0 },
+    pageWidth: 2,
+    subdivisions: 1,
+  };
+}
+
+function emptyPresentationDiagnostics(): TerrainPresentationDiagnostics {
+  return {
+    fogTerrainCells: 0,
+    frontierPreviewCells: 0,
+    geometryBytes: 0,
+    pages: 0,
+    propInstances: 0,
+    propTriangles: 0,
+    shroudInstances: 0,
+    shroudTriangles: 0,
+    triangles: 0,
+    vertices: 0,
+  };
+}
 
 function worldCell(col: number, row: number, biomeKey: string) {
   return { biomeKey, col, occupied: false, row };

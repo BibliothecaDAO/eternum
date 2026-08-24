@@ -35,6 +35,14 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-08-24",
+    title: "Responsive Terrain Exploration",
+    description:
+      "Fixed delayed biome streaming and misplaced exploration fog so terrain appears as the map moves and mist stays aligned with unexplored hexes.",
+    type: "fix",
+    gameSlug: "world",
+  },
+  {
+    date: "2026-08-24",
     title: "Procedural Naval Combat",
     description:
       "Added fantasy ships that take over when armies enter water, with synchronized wave motion, team pennants, wakes, cannonball broadsides, and impact-driven sinking—all tunable in the animation Gym.",

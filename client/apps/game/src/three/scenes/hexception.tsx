@@ -1335,7 +1335,6 @@ export default class HexceptionScene extends HexagonScene {
     const prepared = this.proceduralTerrain.preparePage({
       cells: Array.from(cellsByKey.values()).toSorted((left, right) => left.row - right.row || left.col - right.col),
       climate: configManager.getBiomeClimateConfig() ?? NEUTRAL_BIOME_CLIMATE,
-      generation: this.activeRealmGeneration,
       halo: [],
       mapCenter: 0,
       pageKey: `hexception:${this.centerColRow[0]},${this.centerColRow[1]}`,

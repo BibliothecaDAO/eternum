@@ -26,7 +26,8 @@ export interface ProceduralTerrainDebugStats {
   fingerprint: string;
   firstRenderMs: number;
   fogMaskBytes: number;
-  fogMaskResolution: number;
+  fogMaskHeight: number;
+  fogMaskWidth: number;
   fogOpacity: number;
   fogTerrainCells: number;
   frontierPreviewCells: number;
@@ -200,7 +201,8 @@ async function createRuntime(input: MountProceduralTerrainDebugRendererInput): P
     fogTerrainCells: prepared.diagnostics.fogTerrainCells,
     frontierPreviewCells: prepared.diagnostics.frontierPreviewCells,
     fogMaskBytes: shroudStats.maskBytes,
-    fogMaskResolution: shroudStats.maskResolution,
+    fogMaskHeight: shroudStats.maskHeight,
+    fogMaskWidth: shroudStats.maskWidth,
     groundTextureBytes: groundTextureStats.bytes,
     groundTextureLayers: groundTextureStats.layerCount,
     prepareMs: prepared.diagnostics.prepareMs,

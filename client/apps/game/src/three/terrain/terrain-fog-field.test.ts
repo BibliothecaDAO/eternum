@@ -1,10 +1,12 @@
-import { Mesh } from "three";
-import { describe, expect, it } from "vitest";
+import { DataTexture, Mesh } from "three";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { TERRAIN_FOG_CELL_CAPACITY, TERRAIN_FOG_REVEAL_DURATION_SECONDS, TerrainFogField } from "./terrain-fog-field";
 import type { TerrainShroudInstance } from "./terrain-types";
 
 describe("TerrainFogField", () => {
+  afterEach(() => vi.restoreAllMocks());
+
   it("renders every unexplored cell through one continuous bounded mist sheet", () => {
     const fog = new TerrainFogField();
     fog.update([instance(0, 0, true), instance(1, 0, false)]);
@@ -13,8 +15,9 @@ describe("TerrainFogField", () => {
       activeReveals: 0,
       frontierInstances: 1,
       instances: 2,
-      maskBytes: 4_096,
-      maskResolution: 64,
+      maskBytes: 1_024,
+      maskHeight: 32,
+      maskWidth: 32,
       triangles: 2,
     });
     const meshes = fog.object3d.children.filter((child): child is Mesh => child instanceof Mesh);
@@ -38,7 +41,26 @@ describe("TerrainFogField", () => {
     for (let frame = 0; frame < 20; frame += 1) fog.updateAnimation(0.05);
     expect(fog.getStats()).toMatchObject({ activeReveals: 0, instances: 1, triangles: 2 });
     fog.update([]);
-    expect(fog.getStats()).toMatchObject({ instances: 0, maskBytes: 0, maskResolution: 0, triangles: 0 });
+    expect(fog.getStats()).toMatchObject({ instances: 0, maskBytes: 0, maskHeight: 0, maskWidth: 0, triangles: 0 });
+    fog.dispose();
+  });
+
+  it("replaces and disposes the texture only when adaptive mask dimensions change", () => {
+    const disposeTexture = vi.spyOn(DataTexture.prototype, "dispose");
+    const fog = new TerrainFogField();
+    fog.update([instance(0, 0, false)]);
+    disposeTexture.mockClear();
+
+    const wideFog = [instance(0, 0, false), instance(80, 0, false)];
+    fog.update(wideFog);
+    const wideStats = fog.getStats();
+
+    expect(wideStats.maskWidth).toBeGreaterThan(wideStats.maskHeight);
+    expect(wideStats.maskBytes).toBe(wideStats.maskWidth * wideStats.maskHeight);
+    expect(disposeTexture).toHaveBeenCalledTimes(1);
+    fog.update(wideFog);
+    expect(disposeTexture).toHaveBeenCalledTimes(1);
+
     fog.dispose();
   });
 

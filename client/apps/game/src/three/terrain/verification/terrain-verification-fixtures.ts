@@ -52,7 +52,6 @@ export function createAllBiomesTerrainRequest(): TerrainPageRequest {
   return {
     cells: createShowcaseCells(),
     climate: { ...NEUTRAL_BIOME_CLIMATE, elevation_seed: 137, moisture_seed: 991 },
-    generation: 1,
     halo: [],
     mapCenter: 0,
     pageKey: ALL_BIOMES_FIXTURE_ID,
@@ -67,7 +66,6 @@ export function createTerrainVerificationRequest(sceneId: TerrainVerificationSce
   return {
     cells: createAnchorCells(sceneId),
     climate: { ...NEUTRAL_BIOME_CLIMATE, elevation_seed: 137, moisture_seed: 991 },
-    generation: 1,
     halo: [],
     mapCenter: 0,
     pageKey: `terrain-anchor:${sceneId}`,
@@ -110,7 +108,6 @@ function createFogVerificationRequest(
   return {
     cells: source.map((cell) => (isFogCellExplored(sceneId, cell.col, cell.row) ? cell : concealCell(cell))),
     climate: { ...NEUTRAL_BIOME_CLIMATE, elevation_seed: 137, moisture_seed: 991 },
-    generation: 1,
     halo: [],
     mapCenter: 0,
     pageKey: `terrain-anchor:${sceneId}`,

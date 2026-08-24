@@ -16,7 +16,6 @@ export interface TerrainCellInput {
 export interface TerrainPageRequest {
   cells: readonly TerrainCellInput[];
   climate: BiomeClimateConfig;
-  generation: number;
   halo: readonly TerrainCellInput[];
   mapCenter: number;
   pageKey: string;

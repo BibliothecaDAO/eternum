@@ -9,17 +9,13 @@ import {
   UnsignedByteType,
 } from "three";
 import type MeshBasicNodeMaterial from "three/src/materials/nodes/MeshBasicNodeMaterial.js";
+import type TextureNode from "three/src/nodes/accessors/TextureNode.js";
 import type UniformNode from "three/src/nodes/core/UniformNode.js";
 import * as ThreeWebGPU from "three/webgpu";
-import { color, float, mix, positionWorld, smoothstep, texture, time, uniform, uv, vec2 } from "three/tsl";
+import { color, float, mix, positionWorld, smoothstep, texture, time, uniform, uv } from "three/tsl";
 
 import { terrainCellKey } from "./terrain-coordinates";
-import {
-  applyTerrainFogReveals,
-  buildTerrainFogMask,
-  TERRAIN_FOG_MASK_RESOLUTION,
-  type TerrainFogMask,
-} from "./terrain-fog-mask";
+import { applyTerrainFogReveals, buildTerrainFogMask, type TerrainFogMask } from "./terrain-fog-mask";
 import { TERRAIN_DEEP_FOG_COLOR, TERRAIN_DEEP_FOG_OPACITY } from "./terrain-fog-style";
 import type { TerrainShroudInstance } from "./terrain-types";
 
@@ -31,7 +27,8 @@ export interface TerrainFogFieldStats {
   frontierInstances: number;
   instances: number;
   maskBytes: number;
-  maskResolution: number;
+  maskHeight: number;
+  maskWidth: number;
   triangles: number;
 }
 
@@ -42,6 +39,7 @@ interface ActiveReveal {
 
 interface FogMaterialSet {
   material: MeshBasicNodeMaterial;
+  maskTexture: TextureNode;
   mistStrength: UniformNode<"float", number>;
   motionStrength: UniformNode<"float", number>;
 }
@@ -54,8 +52,10 @@ const MeshBasicNodeMaterialConstructor = (
 
 export class TerrainFogField {
   readonly object3d = new Group();
-  private readonly textureData = new Uint8Array(TERRAIN_FOG_MASK_RESOLUTION * TERRAIN_FOG_MASK_RESOLUTION);
-  private readonly maskTexture = createFogMaskTexture(this.textureData);
+  private textureData = new Uint8Array(1);
+  private maskTexture = createFogMaskTexture(this.textureData, 1, 1);
+  private maskTextureHeight = 1;
+  private maskTextureWidth = 1;
   private readonly materials = createFogMaterial(this.maskTexture);
   private readonly fogMesh = createFogMesh(this.materials.material);
   private readonly activeReveals = new Map<string, ActiveReveal>();
@@ -118,7 +118,8 @@ export class TerrainFogField {
       frontierInstances: this.frontierInstances,
       instances: this.renderedInstances.size,
       maskBytes: this.mask ? this.textureData.byteLength : 0,
-      maskResolution: this.mask?.resolution ?? 0,
+      maskHeight: this.mask?.height ?? 0,
+      maskWidth: this.mask?.width ?? 0,
       triangles: this.fogMesh.visible ? 2 : 0,
     };
   }
@@ -178,6 +179,7 @@ export class TerrainFogField {
 
   private uploadFogMask(): void {
     if (!this.mask) return;
+    this.resizeFogMaskTexture(this.mask.width, this.mask.height);
     const reveals = Array.from(this.activeReveals.values(), ({ elapsedSeconds, instance }) => ({
       instance,
       progress: clampUnit(elapsedSeconds / TERRAIN_FOG_REVEAL_DURATION_SECONDS),
@@ -185,16 +187,21 @@ export class TerrainFogField {
     applyTerrainFogReveals(this.mask, reveals, this.textureData);
     this.maskTexture.needsUpdate = true;
   }
+
+  private resizeFogMaskTexture(width: number, height: number): void {
+    if (this.maskTextureWidth === width && this.maskTextureHeight === height) return;
+    const previousTexture = this.maskTexture;
+    this.textureData = new Uint8Array(width * height);
+    this.maskTexture = createFogMaskTexture(this.textureData, width, height);
+    this.maskTextureWidth = width;
+    this.maskTextureHeight = height;
+    this.materials.maskTexture.value = this.maskTexture;
+    previousTexture.dispose();
+  }
 }
 
-function createFogMaskTexture(data: Uint8Array): DataTexture {
-  const mask = new DataTexture(
-    data,
-    TERRAIN_FOG_MASK_RESOLUTION,
-    TERRAIN_FOG_MASK_RESOLUTION,
-    RedFormat,
-    UnsignedByteType,
-  );
+function createFogMaskTexture(data: Uint8Array, width: number, height: number): DataTexture {
+  const mask = new DataTexture(data, width, height, RedFormat, UnsignedByteType);
   mask.name = "terrain-exploration-fog-mask";
   mask.minFilter = LinearFilter;
   mask.magFilter = LinearFilter;
@@ -228,18 +235,22 @@ function createFogMaterial(maskTexture: DataTexture): FogMaterialSet {
     .add(positionWorld.z.mul(-0.157))
     .add(time.mul(0.011).mul(motionStrength));
   const mistNoise = primaryFlow.sin().mul(0.2).add(crossFlow.sin().mul(0.2)).add(detailFlow.sin().mul(0.1)).add(0.5);
-  const maskWarp = vec2(primaryFlow.sin(), crossFlow.sin()).mul(mistStrength).mul(0.012);
-  const baseMask = texture(maskTexture, uv()).r;
-  const mask = texture(maskTexture, uv().add(maskWarp)).r;
+  const maskTextureNode = texture(maskTexture, uv());
+  const mask = maskTextureNode.r;
   const edgeBand = smoothstep(0.08, 0.54, mask).mul(float(1).sub(smoothstep(0.58, 0.96, mask)));
   const cloudVeil = smoothstep(0.25, 0.76, mistNoise).mul(mistStrength).mul(0.2);
   const edgeLight = edgeBand.mul(mistStrength).mul(0.16).add(cloudVeil);
   material.colorNode = mix(color(TERRAIN_DEEP_FOG_COLOR), color("#7d8882"), edgeLight.clamp(0, 0.36));
   const opacityMotion = mistNoise.sub(0.5).mul(mistStrength).mul(0.1).add(0.94);
   const frontierOpacity = mask.mul(opacityMotion).clamp(0, TERRAIN_DEEP_FOG_OPACITY);
-  const deepFog = smoothstep(0.9, 0.985, baseMask);
+  const deepFog = smoothstep(0.9, 0.985, mask);
   material.opacityNode = mix(frontierOpacity, float(TERRAIN_DEEP_FOG_OPACITY), deepFog);
-  return { material, mistStrength, motionStrength };
+  return {
+    material,
+    maskTexture: maskTextureNode,
+    mistStrength,
+    motionStrength,
+  };
 }
 
 function createFogMesh(material: MeshBasicNodeMaterial): Mesh<PlaneGeometry, MeshBasicNodeMaterial> {

@@ -1,12 +1,9 @@
 import { describe, expect, it } from "vitest";
 
-import { resolveTerrainQualityTier, TERRAIN_QUALITY_PROFILES, TERRAIN_QUALITY_TIERS } from "./terrain-quality";
+import { TERRAIN_QUALITY_PROFILES, TERRAIN_QUALITY_TIERS } from "./terrain-quality";
 
 describe("terrain quality tiers", () => {
-  it("maps camera bands to one bounded fidelity policy", () => {
-    expect(resolveTerrainQualityTier("close")).toBe("detail");
-    expect(resolveTerrainQualityTier("medium")).toBe("balanced");
-    expect(resolveTerrainQualityTier("far")).toBe("overview");
+  it("defines the bounded fidelity profiles used by terrain presentations", () => {
     expect(TERRAIN_QUALITY_TIERS).toHaveLength(3);
     expect(TERRAIN_QUALITY_PROFILES.detail.windStrength).toBe(1);
     expect(TERRAIN_QUALITY_PROFILES.overview.windStrength).toBeLessThan(TERRAIN_QUALITY_PROFILES.balanced.windStrength);

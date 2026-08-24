@@ -77,7 +77,6 @@ function fixture(cells: TerrainCellInput[]): TerrainPageRequest {
   return {
     cells,
     climate: NEUTRAL_BIOME_CLIMATE,
-    generation: 1,
     halo: [],
     mapCenter: 0,
     pageKey: "shroud-fixture",

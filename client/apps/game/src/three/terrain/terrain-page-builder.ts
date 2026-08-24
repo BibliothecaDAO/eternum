@@ -341,7 +341,6 @@ function fingerprintPreparedPage(
     JSON.stringify({
       cells: canonicalCells(request.cells),
       climate: request.climate,
-      generation: request.generation,
       halo: canonicalCells(request.halo),
       mapCenter: request.mapCenter,
       pageKey: request.pageKey,

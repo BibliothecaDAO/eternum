@@ -25,7 +25,8 @@ const EMPTY_STATS: ProceduralTerrainDebugStats = {
   fingerprint: "--------",
   firstRenderMs: 0,
   fogMaskBytes: 0,
-  fogMaskResolution: 0,
+  fogMaskHeight: 0,
+  fogMaskWidth: 0,
   fogOpacity: 0,
   fogTerrainCells: 0,
   frontierPreviewCells: 0,
@@ -262,7 +263,10 @@ export const ProceduralTerrainDebugView = () => {
             <DebugMetric label="Frontier" value={stats.shroudFrontierInstances.toLocaleString()} />
             <DebugMetric label="Preview" value={stats.frontierPreviewCells.toLocaleString()} />
             <DebugMetric label="Fog terrain" value={stats.fogTerrainCells.toLocaleString()} />
-            <DebugMetric label="Fog mask" value={stats.fogMaskResolution ? `${stats.fogMaskResolution}²` : "--"} />
+            <DebugMetric
+              label="Fog mask"
+              value={stats.fogMaskWidth ? `${stats.fogMaskWidth}×${stats.fogMaskHeight}` : "--"}
+            />
             <DebugMetric label="Fog KB" value={Math.round(stats.fogMaskBytes / 1024).toLocaleString()} />
             <DebugMetric label="Fog opacity" value={`${Math.round(stats.fogOpacity * 100)}%`} />
             <DebugMetric label="Active reveal" value={stats.shroudActiveReveals.toLocaleString()} />
