@@ -22,6 +22,7 @@ import {
   realmsBridgeRequests,
 } from "@realms-world/db/schema";
 
+import { getRelationalSchema } from "../drizzle-schema";
 import { env } from "../env";
 import { getStarknetStreamUrl } from "../streams";
 
@@ -157,7 +158,10 @@ export function createIndexer<
     plugins: [
       drizzleStorage({
         db: database,
-        schema: { realmsBridgeEvents, realmsBridgeRequests },
+        schema: getRelationalSchema({
+          realmsBridgeEvents,
+          realmsBridgeRequests,
+        }),
         idColumn: "_id",
         persistState: true,
         indexerName: "starknet-realms-bridge",

@@ -20,6 +20,7 @@ import {
   velords_rewards_received,
 } from "@realms-world/db/schema";
 
+import { getRelationalSchema } from "../drizzle-schema";
 import { env } from "../env";
 import { getStarknetStreamUrl } from "../streams";
 import { toDecimalAmount } from "./amount-utils";
@@ -58,10 +59,16 @@ export function createIndexer<
     plugins: [
       drizzleStorage({
         db: database,
-        schema: { velords_lords_locked, velords_rewards_received },
-        idColumn: "_id",
+        schema: getRelationalSchema({
+          velords_lords_locked,
+          velords_rewards_received,
+        }),
+        idColumn: {
+          velords_lords_locked: "transaction_hash",
+          velords_rewards_received: "transaction_hash",
+        },
         persistState: true,
-        indexerName: "starknet-realms-lords-claims",
+        indexerName: "starknet-velords",
       }),
     ],
     async transform({ endCursor, block, finality }) {
