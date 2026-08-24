@@ -214,7 +214,7 @@ export interface Filters {
   traits: Record<string, string[]>;
 }
 export interface BridgeRealm {
-  token_id?: number;
+  token_id: number;
   name?: string;
   attributes?: TokenMetadataAttribute[];
 }

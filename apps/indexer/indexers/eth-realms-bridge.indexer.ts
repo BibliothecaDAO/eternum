@@ -1,10 +1,10 @@
-//import type { ApibaraRuntimeConfig } from "apibara/types";
-import type { ApibaraRuntimeConfig } from "apibara/types";
-
 import { EvmStream } from "@apibara/evm";
 import { defineIndexer } from "@apibara/indexer";
-import { useLogger } from "@apibara/indexer/plugins";
-import { drizzleStorage, useDrizzleStorage } from "@apibara/plugin-drizzle";
+import { useLogger as getLogger } from "@apibara/indexer/plugins";
+import {
+  drizzleStorage,
+  useDrizzleStorage as getDrizzleStorage,
+} from "@apibara/plugin-drizzle";
 import { uint256 } from "starknet";
 import { decodeEventLog, encodeEventTopics, numberToHex, parseAbi } from "viem";
 
@@ -33,7 +33,7 @@ const chainId =
 const l2ChainId =
   env.VITE_PUBLIC_CHAIN === "sepolia" ? ChainId.SN_SEPOLIA : ChainId.SN_MAIN;
 
-export default function (_runtimeConfig: ApibaraRuntimeConfig) {
+export default function () {
   console.log("eth indexer started");
   console.log(env.VITE_PUBLIC_CHAIN);
   console.log("messaging ", STARKNET_MESSAGING[chainId]);
@@ -104,14 +104,15 @@ export default function (_runtimeConfig: ApibaraRuntimeConfig) {
     plugins: [
       drizzleStorage({
         db: db,
+        schema: { realmsBridgeEvents, realmsBridgeRequests },
         persistState: true,
         idColumn: "_id",
         indexerName: "eth-realms-bridge",
       }),
     ],
     async transform({ endCursor, block, finality }) {
-      const logger = useLogger();
-      const { db } = useDrizzleStorage();
+      const logger = getLogger();
+      const { db } = getDrizzleStorage();
       const { logs, header } = block;
 
       logger.info(

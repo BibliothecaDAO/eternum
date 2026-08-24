@@ -6,8 +6,11 @@ import type {
 import type { PgDatabase, PgQueryResultHKT } from "drizzle-orm/pg-core";
 import type { Abi } from "starknet";
 import { defineIndexer } from "@apibara/indexer";
-import { useLogger } from "@apibara/indexer/plugins";
-import { drizzleStorage, useDrizzleStorage } from "@apibara/plugin-drizzle";
+import { useLogger as getLogger } from "@apibara/indexer/plugins";
+import {
+  drizzleStorage,
+  useDrizzleStorage as getDrizzleStorage,
+} from "@apibara/plugin-drizzle";
 import { decodeEvent, getSelector, StarknetStream } from "@apibara/starknet";
 import { uint256 } from "starknet";
 import { numberToHex } from "viem";
@@ -20,6 +23,7 @@ import {
 } from "@realms-world/db/schema";
 
 import { env } from "../env";
+import { getStarknetStreamUrl } from "../streams";
 
 export default function (/*runtimeConfig: ApibaraRuntimeConfig*/) {
   return createIndexer({ database: db });
@@ -28,7 +32,9 @@ const chainId =
   env.VITE_PUBLIC_CHAIN === "sepolia" ? ChainId.SEPOLIA : ChainId.MAINNET;
 const l2ChainId =
   env.VITE_PUBLIC_CHAIN === "sepolia" ? ChainId.SN_SEPOLIA : ChainId.SN_MAIN;
-const withdrawRequestCompletedSelector = getSelector("WithdrawRequestCompleted");
+const withdrawRequestCompletedSelector = getSelector(
+  "WithdrawRequestCompleted",
+);
 const depositRequestInitiatedSelector = getSelector("DepositRequestInitiated");
 
 interface ParsedRequestContent {
@@ -97,7 +103,10 @@ function parseBridgeEvent(decoded: unknown): ParsedBridgeEvent {
         ownerL1.address,
         "args.req_content.owner_l1.address",
       ),
-      ownerL2: parseBigIntValue(reqContent.owner_l2, "args.req_content.owner_l2"),
+      ownerL2: parseBigIntValue(
+        reqContent.owner_l2,
+        "args.req_content.owner_l2",
+      ),
       ids,
     },
   };
@@ -123,14 +132,11 @@ function buildRequestId(reqContent: ParsedRequestContent): string {
 export function createIndexer<
   TQueryResult extends PgQueryResultHKT,
   TFullSchema extends Record<string, unknown> = Record<string, never>,
-  TSchema extends
-    TablesRelationalConfig = ExtractTablesWithRelations<TFullSchema>,
+  TSchema extends TablesRelationalConfig =
+    ExtractTablesWithRelations<TFullSchema>,
 >({ database }: { database: PgDatabase<TQueryResult, TFullSchema, TSchema> }) {
   return defineIndexer(StarknetStream)({
-    streamUrl:
-      env.VITE_PUBLIC_CHAIN === "sepolia"
-        ? "https://starknet-sepolia.preview.apibara.org"
-        : "https://starknet.preview.apibara.org",
+    streamUrl: getStarknetStreamUrl(env.VITE_PUBLIC_CHAIN),
 
     finality: "pending",
     startingCursor: {
@@ -151,14 +157,15 @@ export function createIndexer<
     plugins: [
       drizzleStorage({
         db: database,
+        schema: { realmsBridgeEvents, realmsBridgeRequests },
         idColumn: "_id",
         persistState: true,
         indexerName: "starknet-realms-bridge",
       }),
     ],
     async transform({ endCursor, block, finality }) {
-      const logger = useLogger();
-      const { db } = useDrizzleStorage();
+      const logger = getLogger();
+      const { db } = getDrizzleStorage();
       const { events } = block;
 
       logger.info(

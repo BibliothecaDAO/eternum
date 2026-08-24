@@ -1,4 +1,4 @@
-import type { RawTokenBalanceWithMetadata } from "@/lib/eternum/getPortfolioCollections";
+import type { RealmInventoryToken } from "@/lib/realms/get-realm-inventory";
 import type { Address } from "@starknet-start/react";
 import { Suspense } from "react";
 import { VeLords } from "@/abi/L2/VeLords";
@@ -8,6 +8,7 @@ import LordsIcon from "@/components/icons/lords.svg?react";
 import StarknetIcon from "@/components/icons/starknet.svg?react";
 import { DelegateCard } from "@/components/modules/governance/delegate-card";
 import { DelegateCardSkeleton } from "@/components/modules/governance/delegate-card-skeleton";
+import { OwnershipStatusAlert } from "@/components/modules/realms/ownership-status-alert";
 import { RealmCard } from "@/components/modules/realms/realm-card";
 import { Button } from "@/components/ui/button";
 import {
@@ -20,9 +21,10 @@ import {
 import { useCurrentDelegate } from "@/hooks/governance/use-current-delegate";
 import { useL2RealmsClaims } from "@/hooks/use-l2-realms-claims";
 import useVeLordsClaims from "@/hooks/use-velords-claims";
-import { getAccountTokensQueryOptions } from "@/lib/eternum/getPortfolioCollections";
 import { getDelegateByIDQueryOptions } from "@/lib/getDelegates";
 import { getL1UsersRealmsQueryOptions } from "@/lib/getL1Realms";
+import { getRealmInventoryQueryOptions } from "@/lib/realms/get-realm-inventory";
+import { getRealmInventoryViewState } from "@/lib/realms/inventory-ui";
 import {
   formatAddress,
   formatNumber,
@@ -34,18 +36,14 @@ import {
   useReadContract,
   useSendTransaction,
 } from "@starknet-start/react";
-import { useQuery, useSuspenseQueries } from "@tanstack/react-query";
+import { useQuery, useSuspenseQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { Gavel, Plus } from "lucide-react";
 import { num } from "starknet";
 import { formatEther } from "viem";
 import { useAccount as useL1Account, useBalance as useL1Balance } from "wagmi";
 
-import {
-  CollectionAddresses,
-  LORDS,
-  StakingAddresses,
-} from "@realms-world/constants";
+import { LORDS, StakingAddresses } from "@realms-world/constants";
 
 import { ProposalList } from "../governance/proposal-list";
 
@@ -62,21 +60,24 @@ function StatValue({ children }: { children: React.ReactNode }) {
 export function Homepage({ address }: { address: `0x${string}` }) {
   const { address: l1Address } = useL1Account();
 
-  const [l1UsersRealmsQuery, accountTokensQuery] = useSuspenseQueries({
-    queries: [
-      getL1UsersRealmsQueryOptions({
-        address: l1Address,
-      }),
-      getAccountTokensQueryOptions({
-        address: address,
-        collectionAddress: CollectionAddresses.realms[
-          SUPPORTED_L2_CHAIN_ID
-        ] as string,
-      }),
-    ],
-  });
+  const l1UsersRealmsQuery = useSuspenseQuery(
+    getL1UsersRealmsQueryOptions({
+      address: l1Address,
+    }),
+  );
+  const accountTokensQuery = useQuery(
+    getRealmInventoryQueryOptions({
+      address: address,
+    }),
+  );
   const l1UsersRealms = l1UsersRealmsQuery.data;
-  const accountTokens = accountTokensQuery.data;
+  const accountInventory = accountTokensQuery.data;
+  const accountTokens = accountInventory?.tokens ?? [];
+  const accountInventoryViewState = getRealmInventoryViewState({
+    isPending: accountTokensQuery.isPending,
+    isError: accountTokensQuery.isError,
+    status: accountInventory?.status,
+  });
   const l1RealmCount = l1UsersRealms?.collections[0]?.ownership.tokenCount ?? 0;
 
   const { data } = useCurrentDelegate();
@@ -149,7 +150,13 @@ export function Homepage({ address }: { address: `0x${string}` }) {
               </div>
               <div className="flex items-center justify-between">
                 <div>
-                  <StatValue>{accountTokens?.length ?? 0}</StatValue>
+                  <StatValue>
+                    {accountInventoryViewState === "loading"
+                      ? "…"
+                      : accountInventoryViewState !== "ready"
+                        ? "—"
+                        : accountTokens.length}
+                  </StatValue>
                   <div className="text-muted-foreground flex items-center gap-2 text-sm">
                     <StarknetIcon className="h-4 w-4" />
                     Starknet
@@ -376,7 +383,27 @@ export function Homepage({ address }: { address: `0x${string}` }) {
 
         {/* Realms Grid */}
         <div>
-          {accountTokens?.length > 0 ? (
+          {accountInventoryViewState === "loading" ? (
+            <Card>
+              <CardHeader className="pb-4">
+                <CardTitle>Your Realms</CardTitle>
+              </CardHeader>
+              <CardContent>Loading Realm inventory...</CardContent>
+            </Card>
+          ) : accountInventoryViewState !== "ready" ? (
+            <Card>
+              <CardHeader className="pb-4">
+                <CardTitle>Your Realms</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <OwnershipStatusAlert
+                  status={accountInventory?.status}
+                  isError={accountInventoryViewState === "error"}
+                  onRetry={() => void accountTokensQuery.refetch()}
+                />
+              </CardContent>
+            </Card>
+          ) : accountTokens.length > 0 ? (
             <Card>
               <CardHeader className="flex flex-row items-center justify-between pb-4">
                 <CardTitle>Your Realms</CardTitle>
@@ -392,7 +419,7 @@ export function Homepage({ address }: { address: `0x${string}` }) {
                 <div className="grid gap-4 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6">
                   {accountTokens
                     .slice(0, HOMEPAGE_REALMS_PREVIEW_COUNT)
-                    .map((realm: RawTokenBalanceWithMetadata) => (
+                    .map((realm: RealmInventoryToken) => (
                       <RealmCard
                         key={realm.token_id}
                         token={realm}
@@ -408,7 +435,10 @@ export function Homepage({ address }: { address: `0x${string}` }) {
                         <div className="text-center">
                           <Plus className="text-muted-foreground mx-auto h-8 w-8" />
                           <div className="text-muted-foreground mt-2 text-sm">
-                            +{accountTokens.length - HOMEPAGE_REALMS_PREVIEW_COUNT} more
+                            +
+                            {accountTokens.length -
+                              HOMEPAGE_REALMS_PREVIEW_COUNT}{" "}
+                            more
                           </div>
                         </div>
                       </Link>

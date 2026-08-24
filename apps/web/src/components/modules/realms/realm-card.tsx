@@ -1,4 +1,4 @@
-import type { RawTokenBalanceWithMetadata } from "@/lib/eternum/getPortfolioCollections";
+import type { RealmInventoryToken } from "@/lib/realms/get-realm-inventory";
 import { AnimatedMap } from "@/components/icons/AnimatedMap";
 import { Card, CardContent } from "@/components/ui/card";
 
@@ -17,13 +17,15 @@ export interface RealmMetadata {
 
 const GridDetails = ({
   token,
+  tokenId,
 }: {
   token: RealmMetadata | null;
+  tokenId: number;
   address?: string;
 }) => (
   <div className="flex h-full w-full flex-col justify-between">
     <div className="pb-2">
-      <span className="truncate">{token?.name}</span>
+      <span className="truncate">{token?.name ?? `Realm #${tokenId}`}</span>
     </div>
     <div className="h-[48px]">
       <RealmResources traits={token?.attributes ?? []} />
@@ -35,10 +37,10 @@ export const RealmCard = ({
   token,
   isGrid,
 }: {
-  token: RawTokenBalanceWithMetadata;
+  token: RealmInventoryToken;
   isGrid?: boolean;
 }) => {
-  const { metadata } = token;
+  const { metadata, metadata_status: metadataStatus } = token;
   const parsedMetadata = metadata
     ? (JSON.parse(metadata) as RealmMetadata)
     : null;
@@ -47,11 +49,12 @@ export const RealmCard = ({
   return (
     <Card className="relative overflow-hidden">
       <div className="relative">
-        {image ? (
+        {image || metadataStatus === "unavailable" ? (
           <Media
             src={image}
             alt={name ?? ""}
             mediaKey={""}
+            unavailable={metadataStatus === "unavailable"}
           />
         ) : (
           <div className="w-full max-w-sm">
@@ -59,13 +62,13 @@ export const RealmCard = ({
           </div>
         )}
         {isGrid && (
-          <span className="absolute bottom-1 right-1 bg-foreground text-background px-1 py-1 text-xs">
+          <span className="bg-foreground text-background absolute right-1 bottom-1 px-1 py-1 text-xs">
             #{Number(token.token_id)}
           </span>
         )}
       </div>
       <CardContent className="p-4">
-        <GridDetails token={parsedMetadata} />
+        <GridDetails token={parsedMetadata} tokenId={token.token_id} />
       </CardContent>
     </Card>
   );

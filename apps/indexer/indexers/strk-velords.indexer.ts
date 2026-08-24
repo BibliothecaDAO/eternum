@@ -6,8 +6,11 @@ import type {
 import type { PgDatabase, PgQueryResultHKT } from "drizzle-orm/pg-core";
 import type { Abi } from "starknet";
 import { defineIndexer } from "@apibara/indexer";
-import { useLogger } from "@apibara/indexer/plugins";
-import { drizzleStorage, useDrizzleStorage } from "@apibara/plugin-drizzle";
+import { useLogger as getLogger } from "@apibara/indexer/plugins";
+import {
+  drizzleStorage,
+  useDrizzleStorage as getDrizzleStorage,
+} from "@apibara/plugin-drizzle";
 import { decodeEvent, getSelector, StarknetStream } from "@apibara/starknet";
 
 import { ChainId, StakingAddresses } from "@realms-world/constants";
@@ -18,6 +21,7 @@ import {
 } from "@realms-world/db/schema";
 
 import { env } from "../env";
+import { getStarknetStreamUrl } from "../streams";
 import { toDecimalAmount } from "./amount-utils";
 
 export default function (/*runtimeConfig: ApibaraRuntimeConfig*/) {
@@ -29,14 +33,11 @@ const l2ChainId =
 export function createIndexer<
   TQueryResult extends PgQueryResultHKT,
   TFullSchema extends Record<string, unknown> = Record<string, never>,
-  TSchema extends
-    TablesRelationalConfig = ExtractTablesWithRelations<TFullSchema>,
+  TSchema extends TablesRelationalConfig =
+    ExtractTablesWithRelations<TFullSchema>,
 >({ database }: { database: PgDatabase<TQueryResult, TFullSchema, TSchema> }) {
   return defineIndexer(StarknetStream)({
-    streamUrl:
-      env.VITE_PUBLIC_CHAIN === "sepolia"
-        ? "https://starknet-sepolia.preview.apibara.org"
-        : "https://starknet.preview.apibara.org",
+    streamUrl: getStarknetStreamUrl(env.VITE_PUBLIC_CHAIN),
 
     finality: "pending",
     startingCursor: {
@@ -57,14 +58,15 @@ export function createIndexer<
     plugins: [
       drizzleStorage({
         db: database,
+        schema: { velords_lords_locked, velords_rewards_received },
         idColumn: "_id",
         persistState: true,
         indexerName: "starknet-realms-lords-claims",
       }),
     ],
     async transform({ endCursor, block, finality }) {
-      const logger = useLogger();
-      const { db } = useDrizzleStorage();
+      const logger = getLogger();
+      const { db } = getDrizzleStorage();
       const { events } = block;
 
       logger.info(
