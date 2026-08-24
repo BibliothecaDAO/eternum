@@ -2,25 +2,8 @@
   "version": 1,
   "environment": "appchain.blitz",
   "kind": "game",
-  "updatedAt": "2026-08-23T05:53:02.781Z",
+  "updatedAt": "2026-08-24T06:01:42.783Z",
   "entries": {
-    "bltz-whiz-504": {
-      "kind": "game",
-      "environment": "appchain.blitz",
-      "gameName": "bltz-whiz-504",
-      "path": "runs/appchain/blitz/bltz-whiz-504.json",
-      "inputPath": "inputs/appchain/blitz/bltz-whiz-504/31958732229-1.json",
-      "status": "complete",
-      "updatedAt": "2026-08-16T16:30:37.556Z",
-      "workflowRef": "feat/single-world-blitz",
-      "currentStepId": null,
-      "hasRunningStep": false,
-      "recoverableFailedStepId": null,
-      "recoverablePendingStepId": null,
-      "startTime": 1786898400,
-      "durationSeconds": 432000,
-      "artifacts": {}
-    },
     "bltz-whiz-505": {
       "kind": "game",
       "environment": "appchain.blitz",
