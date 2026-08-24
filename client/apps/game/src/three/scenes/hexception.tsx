@@ -16,7 +16,6 @@ import {
   MinesMaterialsParams,
   WONDER_REALM,
   castleLevelToRealmCastle,
-  getBiomeVariant,
   hyperstructureStageToModel,
   structureTypeToBuildingType,
 } from "@/three/constants";
@@ -27,10 +26,12 @@ import {
   applyPendingBuildingMaterials,
   disposeClonedBuildingMaterials,
 } from "@/three/managers/building-preview";
-import InstancedBiome from "@/three/managers/instanced-biome";
 import { SMALL_DETAILS_NAME } from "@/three/managers/instanced-model";
 import { SceneManager } from "@/three/scene-manager";
 import { HexagonScene } from "@/three/scenes/hexagon-scene";
+import { ProceduralTerrain } from "@/three/terrain/procedural-terrain";
+import type { TerrainSurface } from "@/three/terrain/terrain-surface";
+import type { TerrainCellInput } from "@/three/terrain/terrain-types";
 import {
   buildingKey,
   reconcileBuildingUpdate,
@@ -49,7 +50,12 @@ import { SceneShortcutManager } from "@/three/utils/shortcuts";
 import { runWithFrameWorkOwner } from "@/three/frame-work-owner";
 import { createPausedLabel, gltfLoader } from "@/three/utils/utils";
 import { LeftView } from "@/types";
-import { BuildingSystemUpdate, Position, StructureProgress, getBlockTimestamp } from "@bibliothecadao/eternum";
+import {
+  BuildingSystemUpdate,
+  NEUTRAL_BIOME_CLIMATE,
+  StructureProgress,
+  getBlockTimestamp,
+} from "@bibliothecadao/eternum";
 
 import { HexceptionAmbienceSystem } from "@/three/systems/hexception-ambience-system";
 import { IS_FLAT_MODE } from "@/ui/config";
@@ -66,7 +72,6 @@ import {
   divideByPrecision,
   getBalance,
   getBuildingCosts,
-  getEntityIdFromKeys,
   getRealmInfo,
   getStructureStage,
 } from "@bibliothecadao/eternum";
@@ -91,7 +96,6 @@ import { toast } from "sonner";
 import {
   AnimationClip,
   AnimationMixer,
-  Box3,
   Color,
   ExtrudeGeometry,
   Group,
@@ -101,7 +105,6 @@ import {
   MeshStandardMaterial,
   Object3D,
   Raycaster,
-  Sphere,
   Vector2,
   Vector3,
 } from "three";
@@ -201,6 +204,7 @@ export default class HexceptionScene extends HexagonScene {
   private playerStructures: Structure[] = [];
   private mode: GameModeConfig;
   private ambienceSystem: HexceptionAmbienceSystem | null = null;
+  private readonly proceduralTerrain: ProceduralTerrain;
   private structureUpdateSubscription: any | null = null;
   private buildingUpdateUnsubscribe: (() => void) | null = null;
   private isInitialized = false;
@@ -227,6 +231,14 @@ export default class HexceptionScene extends HexagonScene {
   ) {
     super(SceneName.Hexception, controls, dojo, mouse, raycaster, sceneManager);
 
+    this.proceduralTerrain = new ProceduralTerrain();
+    this.scene.add(this.proceduralTerrain.object3d);
+    void this.proceduralTerrain.loadProps().catch((error) => {
+      console.warn("[Hexception] Optional procedural terrain props failed to load", error);
+    });
+    void this.proceduralTerrain.loadGroundTextures().catch((error) => {
+      console.warn("[Hexception] Procedural ground textures failed; retaining flat terrain", error);
+    });
     this.mode = getGameModeConfig();
     this.hoverLabelManager = new HexHoverLabel(this.scene);
 
@@ -241,7 +253,6 @@ export default class HexceptionScene extends HexagonScene {
     this.ambienceSystem = new HexceptionAmbienceSystem(this.scene);
 
     this.loadBuildingModels();
-    this.loadBiomeModels(900);
 
     this.tileManager = new TileManager(this.dojo.components, this.dojo.systemCalls, { col: 0, row: 0 });
 
@@ -414,6 +425,10 @@ export default class HexceptionScene extends HexagonScene {
         () => this.applyLocalZoomPreferenceLive(),
       ),
     );
+  }
+
+  public override getTerrainSurface(): TerrainSurface {
+    return this.proceduralTerrain;
   }
 
   private applyPersistedLocalZoom(): void {
@@ -779,6 +794,7 @@ export default class HexceptionScene extends HexagonScene {
     // Dispose ambience system
     this.ambienceSystem?.dispose();
     this.ambienceSystem = null;
+    this.proceduralTerrain.dispose();
 
     super.destroy();
   }
@@ -1185,7 +1201,7 @@ export default class HexceptionScene extends HexagonScene {
     const mainStructureType = this.tileManager.structureType();
     this.updateCastleLevel();
 
-    const biomeHexes: Record<BiomeType | "Empty" | string, Matrix4[]> = {
+    const pillarMatricesByBiome: Record<BiomeType | "Empty" | string, Matrix4[]> = {
       None: [],
       Ocean: [],
       DeepOcean: [],
@@ -1230,26 +1246,31 @@ export default class HexceptionScene extends HexagonScene {
           for (const center in centers) {
             const isMainHex = centers[center][0] === 0 && centers[center][1] === 0;
             if (isMainHex) {
-              this.computeMainHexMatrices(radius, dummy, centers[center], this.tileManager.getHexCoords(), biomeHexes);
+              this.computeMainHexMatrices(
+                radius,
+                dummy,
+                centers[center],
+                this.tileManager.getHexCoords(),
+                pillarMatricesByBiome,
+              );
             } else {
               this.computeNeighborHexMatrices(
                 radius,
                 dummy,
                 centers[center],
                 neighbors[Number(center) - 1],
-                biomeHexes,
+                pillarMatricesByBiome,
               );
             }
           }
 
+          this.presentProceduralTerrain(pillarMatricesByBiome);
           this.reconcileAllBuildingInstances(mainStructureType);
 
           // update neighbor hexes around the center hex
           let pillarOffset = 0;
-          for (const [biome, matrices] of Object.entries(biomeHexes)) {
-            const hexMesh = this.biomeModels.get(biome as any)!;
+          for (const [biome, matrices] of Object.entries(pillarMatricesByBiome)) {
             matrices.forEach((matrix, index) => {
-              hexMesh.setMatrixAt(index, matrix);
               this.pillars!.setMatrixAt(index + pillarOffset, matrix);
               // Use base biome type for color lookup (remove 'Alt' suffix if present)
               const baseBiome = biome.endsWith("Alt") ? biome.slice(0, -3) : biome;
@@ -1259,7 +1280,6 @@ export default class HexceptionScene extends HexagonScene {
             this.pillars!.position.y = -0.01;
             this.pillars!.count = pillarOffset;
             this.pillars!.computeBoundingSphere();
-            hexMesh.setCount(matrices.length);
           }
           this.pillars!.instanceMatrix.needsUpdate = true;
           if (this.pillars!.instanceColor) {
@@ -1270,7 +1290,7 @@ export default class HexceptionScene extends HexagonScene {
           // CRITICAL: Release all matrices back to the pool to prevent memory leaks
           const matrixPool = MatrixPool.getInstance();
           let totalMatricesReleased = 0;
-          for (const [biome, matrices] of Object.entries(biomeHexes)) {
+          for (const matrices of Object.values(pillarMatricesByBiome)) {
             matrixPool.releaseAll(matrices);
             totalMatricesReleased += matrices.length;
             // Clear the array to prevent accidental reuse of released matrices
@@ -1287,6 +1307,46 @@ export default class HexceptionScene extends HexagonScene {
         }),
       isOwned: () => this.ownsRealmGeneration(realmGeneration),
       modelLoadPromises: this.modelLoadPromises,
+    });
+  }
+
+  private presentProceduralTerrain(pillarMatricesByBiome: Record<BiomeType | "Empty" | string, Matrix4[]>): void {
+    const fallbackBiome = configManager.getBiome(this.centerColRow[0], this.centerColRow[1]);
+    const cellsByKey = new Map<string, TerrainCellInput>();
+    const worldPosition = new Vector3();
+
+    Object.entries(pillarMatricesByBiome).forEach(([biomeKey, matrices]) => {
+      const biome = resolveHexceptionBiome(biomeKey, fallbackBiome);
+      matrices.forEach((matrix) => {
+        worldPosition.setFromMatrixPosition(matrix);
+        const coordinate = getHexForWorldPosition(worldPosition);
+        const key = `${coordinate.col}:${coordinate.row}`;
+        cellsByKey.set(key, {
+          biome,
+          col: coordinate.col,
+          explored: true,
+          occupied: biomeKey === "Empty",
+          previewBiome: biome,
+          row: coordinate.row,
+        });
+      });
+    });
+
+    const prepared = this.proceduralTerrain.preparePage({
+      cells: Array.from(cellsByKey.values()).toSorted((left, right) => left.row - right.row || left.col - right.col),
+      climate: configManager.getBiomeClimateConfig() ?? NEUTRAL_BIOME_CLIMATE,
+      generation: this.activeRealmGeneration,
+      halo: [],
+      mapCenter: 0,
+      pageKey: `hexception:${this.centerColRow[0]},${this.centerColRow[1]}`,
+      strictBiomeParity: false,
+      subdivisions: 2,
+    });
+    this.proceduralTerrain.present([prepared]);
+    this.buildings.forEach((building) => {
+      worldPosition.setFromMatrixPosition(building.matrix);
+      worldPosition.y = this.proceduralTerrain.sampleSurface(worldPosition.x, worldPosition.z).height;
+      building.matrix.setPosition(worldPosition);
     });
   }
 
@@ -1544,10 +1604,10 @@ export default class HexceptionScene extends HexagonScene {
     targetHex: HexPosition,
     isMainHex: boolean,
     existingBuildings: any[],
-    biomeHexes: Record<BiomeType | "Empty" | string, Matrix4[]>,
+    pillarMatricesByBiome: Record<BiomeType | "Empty" | string, Matrix4[]>,
   ) => {
     const biome = configManager.getBiome(targetHex.col, targetHex.row);
-    const biomeVariant = getBiomeVariant(biome, targetHex.col, targetHex.row);
+    const biomeVariant = biome;
     const buildableAreaBiome = "Empty";
     const isFlat = biome === "Ocean" || biome === "DeepOcean" || isMainHex;
 
@@ -1593,7 +1653,7 @@ export default class HexceptionScene extends HexagonScene {
 
         const tempMatrix = MatrixPool.getInstance().getMatrix();
         tempMatrix.copy(dummy.matrix);
-        biomeHexes[buildableAreaBiome as BiomeType].push(tempMatrix);
+        pillarMatricesByBiome[buildableAreaBiome as BiomeType].push(tempMatrix);
       });
     }
 
@@ -1614,7 +1674,7 @@ export default class HexceptionScene extends HexagonScene {
       // OPTIMIZED: Use matrix pool instead of clone()
       const tempMatrix = MatrixPool.getInstance().getMatrix();
       tempMatrix.copy(dummy.matrix);
-      biomeHexes[biomeVariant].push(tempMatrix);
+      pillarMatricesByBiome[biomeVariant].push(tempMatrix);
     });
   };
 
@@ -1623,7 +1683,7 @@ export default class HexceptionScene extends HexagonScene {
     dummy: Object3D,
     center: number[],
     targetHex: HexPosition,
-    biomeHexes: Record<BiomeType | "Empty" | string, Matrix4[]>,
+    pillarMatricesByBiome: Record<BiomeType | "Empty" | string, Matrix4[]>,
   ) => {
     const existingBuildings: any[] = this.tileManager.existingBuildings();
     const structureType = this.tileManager.structureType();
@@ -1638,7 +1698,7 @@ export default class HexceptionScene extends HexagonScene {
         paused: false,
       });
     }
-    this.computeHexMatrices(radius, dummy, center, targetHex, true, existingBuildings, biomeHexes);
+    this.computeHexMatrices(radius, dummy, center, targetHex, true, existingBuildings, pillarMatricesByBiome);
   };
 
   computeNeighborHexMatrices = (
@@ -1646,9 +1706,9 @@ export default class HexceptionScene extends HexagonScene {
     dummy: Object3D,
     center: number[],
     targetHex: HexPosition,
-    biomeHexes: Record<BiomeType | "Empty" | string, Matrix4[]>,
+    pillarMatricesByBiome: Record<BiomeType | "Empty" | string, Matrix4[]>,
   ) => {
-    this.computeHexMatrices(radius, dummy, center, targetHex, false, [], biomeHexes);
+    this.computeHexMatrices(radius, dummy, center, targetHex, false, [], pillarMatricesByBiome);
   };
 
   removeBuilding(innerCol: number, innerRow: number) {
@@ -1738,30 +1798,10 @@ export default class HexceptionScene extends HexagonScene {
   public hasActiveLabelAnimations(): boolean {
     return this.hoverLabelManager.hasActiveLabel();
   }
+}
 
-  /**
-   * Override to set world bounds for Hexception biome models.
-   * This enables visibility-based animation culling (Phase 1 optimization).
-   *
-   * The Hexception scene is a local view with ~750 hexes arranged in 7 large hex rings.
-   * We set bounds based on the maximum extent of the scene.
-   */
-  protected override onBiomeModelLoaded(model: InstancedBiome): void {
-    // Hexception scene spans approximately:
-    // - 7 large hexes arranged in a hex pattern
-    // - Each large hex has radius 4 (hexceptionRadius)
-    // - World coordinates span roughly -20 to +20 in x and z
-    const hexceptionBounds = {
-      box: new Box3(
-        new Vector3(-25, -5, -25), // min
-        new Vector3(25, 10, 25), // max
-      ),
-      sphere: new Sphere(
-        new Vector3(0, 0, 0), // center
-        35, // radius (covers the entire hex grid)
-      ),
-    };
-
-    model.setWorldBounds(hexceptionBounds);
-  }
+function resolveHexceptionBiome(biomeKey: string, fallback: BiomeType): BiomeType {
+  if (biomeKey === "Empty" || biomeKey === BiomeType.None) return fallback;
+  const normalized = biomeKey.endsWith("Alt") ? biomeKey.slice(0, -3) : biomeKey;
+  return Object.values(BiomeType).includes(normalized as BiomeType) ? (normalized as BiomeType) : fallback;
 }

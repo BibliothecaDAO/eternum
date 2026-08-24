@@ -13,6 +13,7 @@ declare module "jolt-physics/jolt-physics.wasm.wasm?url" {
 
 declare module "three/webgpu" {
   export * from "three";
+  export { default as MeshStandardNodeMaterial } from "three/src/materials/nodes/MeshStandardNodeMaterial.js";
 
   import { Renderer } from "three";
   import type { RendererParameters } from "three/addons/renderers/common/Renderer.js";

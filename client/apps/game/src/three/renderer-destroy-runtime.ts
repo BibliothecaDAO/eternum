@@ -7,7 +7,6 @@ import type { RendererMonitoringRuntime } from "./renderer-monitoring-runtime";
 import type { RendererEffectsBridgeRuntime } from "./renderer-effects-bridge-runtime";
 import type { RendererRouteRuntime } from "./renderer-route-runtime";
 import { disposeContactShadowResources } from "./utils/contact-shadow";
-import { clearBiomeGltfCache } from "./utils/biome-gltf-cache";
 import { clearCosmeticAssetCache } from "./cosmetics/asset-cache";
 import { destroyTrackedGuiFolders, type TrackableGuiFolder } from "./utils/gui-folder-lifecycle";
 
@@ -42,10 +41,6 @@ export function destroyRendererRuntime(input: DestroyRendererRuntimeInput): void
   detachRendererSurface(input.renderer);
   disposeRendererResources(input.backend);
   destroyRendererScenes(input.scenes);
-  // Phase 5.1: the scene destroys above disposed the shared biome geometry/material;
-  // clear the parse cache so a re-created renderer re-parses fresh assets rather than
-  // reusing the now-disposed GLTFs.
-  clearBiomeGltfCache();
   clearCosmeticAssetCache();
   disposeRendererInteraction(input.interactionRuntime, input.controls);
   destroyRendererTransitionManager(input.transitionManager);

@@ -6,6 +6,7 @@ import { isVillageLikeStructureCategory } from "@/lib/structure-type-utils";
 import InstancedModel, { LAND_NAME } from "@/three/managers/instanced-model";
 import { recordWorldmapRenderDuration, setWorldmapRenderGauge } from "@/three/perf/worldmap-render-diagnostics";
 import { CameraView, HexagonScene } from "@/three/scenes/hexagon-scene";
+import { FLAT_TERRAIN_SURFACE, placePositionOnTerrain } from "@/three/terrain/terrain-surface";
 import { gltfLoader, isAddressEqualToAccount } from "@/three/utils/utils";
 import { FELT_CENTER } from "@/ui/config";
 import type { SetupResult } from "@bibliothecadao/dojo";
@@ -1318,7 +1319,10 @@ export class StructureManager {
       scratchIconPosition: this.scratchIconPosition,
       tempCosmeticPosition: this.tempCosmeticPosition,
       tempCosmeticRotation: this.tempCosmeticRotation,
-      getWorldPositionForHexCoordsInto,
+      getWorldPositionForHexCoordsInto: (col, row, out) => {
+        getWorldPositionForHexCoordsInto(col, row, out);
+        return placePositionOnTerrain(out, this.hexagonScene?.getTerrainSurface() ?? FLAT_TERRAIN_SURFACE);
+      },
       getLabel: (entityId) => this.entityIdLabels.get(Number(entityId) as ID),
       updateLabel: (structure, label) => this.updateStructureLabelData(structure, label),
       syncCompactLabel: (structure, position) => this.updateStructureCompactLabel(structure, position),
@@ -1958,8 +1962,7 @@ export class StructureManager {
 
   private resolveStructureLabelPosition(structure: StructureInfo): Vector3 {
     const position = getWorldPositionForHex(structure.hexCoords);
-    position.y += 0.05;
-    return position;
+    return placePositionOnTerrain(position, this.hexagonScene?.getTerrainSurface() ?? FLAT_TERRAIN_SURFACE, 0.05);
   }
 
   private refreshExistingStructureLabel(structure: StructureInfo, label: CSS2DObject) {
@@ -2041,6 +2044,7 @@ export class StructureManager {
       const diff = newGuard.count - oldGuard.count;
 
       const worldPos = getWorldPositionForHex(structure.hexCoords);
+      placePositionOnTerrain(worldPos, this.hexagonScene?.getTerrainSurface() ?? FLAT_TERRAIN_SURFACE);
       this.fxManager.playTroopDiffFx(diff, worldPos.x, worldPos.y + 3, worldPos.z);
     }
   }

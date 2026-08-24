@@ -7,6 +7,7 @@ import { ID } from "@bibliothecadao/types";
 import * as THREE from "three";
 import { CSS2DObject } from "three/addons/renderers/CSS2DRenderer.js";
 import { CameraView, HexagonScene } from "../scenes/hexagon-scene";
+import { FLAT_TERRAIN_SURFACE, placePositionOnTerrain } from "../terrain/terrain-surface";
 import { RenderChunkSize } from "../types/common";
 import { getRenderBounds } from "../utils/chunk-geometry";
 import { getWorldPositionForHex, hashCoordinates } from "../utils";
@@ -298,7 +299,7 @@ export class ChestManager {
       y: chest.hexCoords.row,
     }).getNormalized();
     const basePosition = getWorldPositionForHex({ col: hexCoordsX, row: hexCoordsY });
-    return basePosition;
+    return placePositionOnTerrain(basePosition, this.hexagonScene?.getTerrainSurface() ?? FLAT_TERRAIN_SURFACE, 0.03);
   };
 
   private getVisibleChestsForChunk(startRow: number, startCol: number): readonly ChestSpatialRenderable[] {

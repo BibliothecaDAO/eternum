@@ -1,7 +1,5 @@
-import { IS_FLAT_MODE } from "@/ui/config";
 import { StructureProgress } from "@bibliothecadao/eternum";
 import {
-  BiomeType,
   BuildingType,
   RealmLevelNames,
   RealmLevels,
@@ -17,37 +15,9 @@ export const HEX_SIZE = 1;
 export const PREVIEW_BUILD_COLOR_VALID = 0x00a300;
 export const PREVIEW_BUILD_COLOR_INVALID = 0xff0000;
 
-const BIOMES_BASE_PATH = "/models/new-biomes-opt/";
-const BIOMES_FLAT_PATH = "/models/biomes-flat/";
-const BIOMES_MODELS_PATH = IS_FLAT_MODE ? BIOMES_FLAT_PATH : BIOMES_BASE_PATH;
-
 const BUILDINGS_MODELS_PATH = "/models/new-buildings-opt/";
 
 const buildUniqueAssetPaths = (assetPaths: readonly string[]) => Object.freeze(Array.from(new Set(assetPaths)));
-
-enum BiomeFilenames {
-  Bare = "bare_2_0_baked.glb",
-  Beach = "beach.glb",
-  TemperateDeciduousForest = "deciduousForest_alt.glb",
-  TemperateDeciduousForestAlt = "deciduousForest.glb",
-  DeepOcean = "deepOcean.glb",
-  Grassland = "grassland_alt.glb",
-  GrasslandAlt = "grassland.glb",
-  Ocean = "ocean.glb",
-  Outline = "outline.glb",
-  Scorched = "scorched_2_0_baked.glb",
-  Tundra = "tundra_2_0_no_light_baked.glb",
-  TemperateDesert = "temperate_desert_2_0_baked.glb",
-  Shrubland = "shrubland_alt.glb",
-  ShrublandAlt = "shrubland.glb",
-  Snow = "snow.glb",
-  Taiga = "taiga.glb",
-  TemperateRainForest = "temperate_rainforest_2_0.glb",
-  SubtropicalDesert = "subtropicalDesert.glb",
-  TropicalRainForest = "tropicalRainforest.glb",
-  TropicalSeasonalForest = "tropical_seasonal_forest_2_0_no_light_baked.glb",
-  Empty = "empty.glb",
-}
 
 enum BuildingFilenames {
   Bank = "bank.glb",
@@ -86,11 +56,6 @@ enum ChestFilenames {
 
 export const ChestModelPath = "/models/new-buildings-opt/" + ChestFilenames.Chest;
 export const ReservedHyperstructureModelPath = "/models/new-buildings-opt/" + BuildingFilenames.HyperstructureInit;
-
-export const SHARED_BIOME_MODEL_PATHS = buildUniqueAssetPaths([
-  ...Object.values(BiomeFilenames).map((fileName) => `${BIOMES_MODELS_PATH}${fileName}`),
-  `${BIOMES_BASE_PATH}${BiomeFilenames.Outline}`,
-]);
 
 export const SHARED_BUILDING_MODEL_PATHS = buildUniqueAssetPaths(
   Object.values(BuildingFilenames).map((fileName) => `${BUILDINGS_MODELS_PATH}${fileName}`),
@@ -195,38 +160,6 @@ export const buildingModelPaths = (isBlitz: boolean) => {
       [WONDER_REALM]: BUILDINGS_MODELS_PATH + BuildingFilenames.Wonder,
     },
   };
-};
-
-export function getBiomeVariant(biome: BiomeType | "Outline" | "Empty", col: number, row: number): string {
-  // Preserve a stable biome surface and avoid per-tile lighting variance from alt biome meshes.
-  void col;
-  void row;
-  return biome as string;
-}
-
-export const biomeModelPaths: Record<string, string> = {
-  None: BIOMES_MODELS_PATH + BiomeFilenames.Bare,
-  Bare: BIOMES_MODELS_PATH + BiomeFilenames.Bare,
-  Beach: BIOMES_MODELS_PATH + BiomeFilenames.Beach,
-  TemperateDeciduousForest: BIOMES_MODELS_PATH + BiomeFilenames.TemperateDeciduousForest,
-  TemperateDeciduousForestAlt: BIOMES_MODELS_PATH + BiomeFilenames.TemperateDeciduousForestAlt,
-  DeepOcean: BIOMES_MODELS_PATH + BiomeFilenames.DeepOcean,
-  Grassland: BIOMES_MODELS_PATH + BiomeFilenames.Grassland,
-  GrasslandAlt: BIOMES_MODELS_PATH + BiomeFilenames.GrasslandAlt,
-  Ocean: BIOMES_MODELS_PATH + BiomeFilenames.Ocean,
-  Outline: BIOMES_BASE_PATH + BiomeFilenames.Outline,
-  Scorched: BIOMES_MODELS_PATH + BiomeFilenames.Scorched,
-  Tundra: BIOMES_MODELS_PATH + BiomeFilenames.Tundra,
-  TemperateDesert: BIOMES_MODELS_PATH + BiomeFilenames.TemperateDesert,
-  Shrubland: BIOMES_MODELS_PATH + BiomeFilenames.Shrubland,
-  ShrublandAlt: BIOMES_MODELS_PATH + BiomeFilenames.ShrublandAlt,
-  Snow: BIOMES_MODELS_PATH + BiomeFilenames.Snow,
-  Taiga: BIOMES_MODELS_PATH + BiomeFilenames.Taiga,
-  TemperateRainForest: BIOMES_MODELS_PATH + BiomeFilenames.TemperateRainForest,
-  SubtropicalDesert: BIOMES_MODELS_PATH + BiomeFilenames.SubtropicalDesert,
-  TropicalRainForest: BIOMES_MODELS_PATH + BiomeFilenames.TropicalRainForest,
-  TropicalSeasonalForest: BIOMES_MODELS_PATH + BiomeFilenames.TropicalSeasonalForest,
-  Empty: BIOMES_MODELS_PATH + BiomeFilenames.Empty,
 };
 
 const PROGRESS_HALF_THRESHOLD = 50;

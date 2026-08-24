@@ -26,6 +26,7 @@ import {
 } from "@/three/perf/worldmap-render-diagnostics";
 import { CameraView, HexagonScene } from "@/three/scenes/hexagon-scene";
 import { playerColorManager, PlayerColorProfile } from "@/three/systems/player-colors";
+import { FLAT_TERRAIN_SURFACE, placePositionOnTerrain } from "@/three/terrain/terrain-surface";
 import type { AnimationVisibilityContext } from "@/three/types/animation";
 import { isAnimationPositionVisible } from "@/three/utils/animation-visibility";
 import { ModelType } from "@/three/types/army";
@@ -2847,7 +2848,8 @@ export class ArmyManager {
 
   private getArmyWorldPositionInto(out: Vector3, hexCoords: Position): Vector3 {
     const { x: hexCoordsX, y: hexCoordsY } = hexCoords.getNormalized();
-    return getWorldPositionForHexCoordsInto(hexCoordsX, hexCoordsY, out);
+    getWorldPositionForHexCoordsInto(hexCoordsX, hexCoordsY, out);
+    return placePositionOnTerrain(out, this.hexagonScene?.getTerrainSurface() ?? FLAT_TERRAIN_SURFACE, 0.03);
   }
 
   private getArmyWorldPosition = (_armyEntityId: ID, hexCoords: Position) => {

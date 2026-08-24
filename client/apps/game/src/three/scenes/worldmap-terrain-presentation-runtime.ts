@@ -21,6 +21,7 @@ export interface WorldmapTerrainSourceCellRef {
   hexKey: string;
   biomeKey: string;
   instanceIndex: number;
+  occupied?: boolean;
 }
 
 export interface WorldmapTerrainCellRef extends WorldmapTerrainSourceCellRef {

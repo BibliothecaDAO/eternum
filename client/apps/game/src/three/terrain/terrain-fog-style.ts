@@ -1,0 +1,2 @@
+export const TERRAIN_DEEP_FOG_COLOR = "#101416";
+export const TERRAIN_DEEP_FOG_OPACITY = 0.84;

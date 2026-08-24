@@ -16,6 +16,19 @@ const DebugProceduralCharacterBenchmarkView = lazy(() =>
     default: module.ProceduralCharacterBenchmarkView,
   })),
 );
+const DebugTerrainPropView = lazy(() =>
+  import("./ui/features/debug/terrain-prop-debug-view").then((module) => ({ default: module.TerrainPropDebugView })),
+);
+const DebugProceduralTerrainView = lazy(() =>
+  import("./ui/features/debug/procedural-terrain-debug-view").then((module) => ({
+    default: module.ProceduralTerrainDebugView,
+  })),
+);
+const DebugProceduralTerrainBenchmarkView = lazy(() =>
+  import("./ui/features/debug/procedural-terrain-benchmark-view").then((module) => ({
+    default: module.ProceduralTerrainBenchmarkView,
+  })),
+);
 const GameClientApp = lazy(() => import("./game-client-app").then((module) => ({ default: module.GameClientApp })));
 
 const AppFallback = () => <div className="min-h-screen bg-black" />;
@@ -55,6 +68,30 @@ function App() {
           element={
             <DebugRouteShell>
               <DebugProceduralCharacterBenchmarkView />
+            </DebugRouteShell>
+          }
+        />
+        <Route
+          path="/debug/terrain-props"
+          element={
+            <DebugRouteShell>
+              <DebugTerrainPropView />
+            </DebugRouteShell>
+          }
+        />
+        <Route
+          path="/debug/procedural-terrain"
+          element={
+            <DebugRouteShell>
+              <DebugProceduralTerrainView />
+            </DebugRouteShell>
+          }
+        />
+        <Route
+          path="/debug/procedural-terrain-benchmark"
+          element={
+            <DebugRouteShell>
+              <DebugProceduralTerrainBenchmarkView />
             </DebugRouteShell>
           }
         />
