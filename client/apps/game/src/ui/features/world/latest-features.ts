@@ -35,6 +35,14 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-08-24",
+    title: "Swappable Character Rigs",
+    description:
+      "Added explicit appearance and skeleton adapters so procedural movement, equipment, diagnostics, and ragdolls can drive different compatible fantasy character models without duplicating animation code.",
+    type: "improvement",
+    gameSlug: "world",
+  },
+  {
+    date: "2026-08-24",
     title: "Natural Human Footing",
     description:
       "Improved procedural walking and running with human-proportioned step width, forward-tracking knees, and new gait diagnostics that prevent bow-legged movement from reaching battles.",

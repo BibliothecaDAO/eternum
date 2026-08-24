@@ -52,6 +52,9 @@ import { ProceduralAnimationInspector } from "./procedural-animation-inspector";
 
 const INITIAL_STATS: ProceduralCharacterGymStats = {
   activeBodies: 0,
+  appearanceId: "loading",
+  appearanceLabel: "Loading appearance",
+  assetId: "loading",
   assetLabel: "Loading asset",
   authoredClipCount: 0,
   boneCount: 0,
@@ -91,6 +94,7 @@ const INITIAL_STATS: ProceduralCharacterGymStats = {
   rangedReleaseCount: 0,
   rendererMode: "initializing",
   rightPalmInwardDot: 0,
+  rigAdapterId: "loading",
   smokeFailures: [],
   smokePhase: "idle",
   skinnedMeshCount: 0,
@@ -319,9 +323,12 @@ export const ProceduralCharacterGymView = () => {
 
   const applyPreset = useCallback((presetId: ProceduralCharacterPresetId) => {
     setSelectedPreset(presetId);
-    setConfig((current) =>
-      applyProceduralUnitConfigPatch(current, { humanoid: resolveProceduralCharacterPreset(presetId) }),
-    );
+    setConfig((current) => {
+      const preset = resolveProceduralCharacterPreset(presetId);
+      return applyProceduralUnitConfigPatch(current, {
+        humanoid: { ...preset, appearanceId: current.humanoid.appearanceId },
+      });
+    });
     rendererRef.current?.reset();
     captureResultRef.current = null;
     setCaptureResult(null);
@@ -699,7 +706,8 @@ const CharacterGymViewport = ({
             </>
           ) : (
             <>
-              {stats.assetLabel} · {config.kind} · T{config.humanoid.tier} · seed {config.humanoid.seed} ·{" "}
+              {stats.appearanceLabel} / {stats.assetLabel} · {config.kind} · T{config.humanoid.tier} · seed{" "}
+              {config.humanoid.seed} ·{" "}
               {config.kind === "horse" || config.kind === "paladin" ? config.horse.gait : config.humanoid.animationMode}
               {config.kind === "archer" ? ` · ${stats.rangedPhase}` : ""}
               {config.kind === "knight" || config.kind === "paladin"

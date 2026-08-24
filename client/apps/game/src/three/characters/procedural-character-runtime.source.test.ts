@@ -71,6 +71,17 @@ describe("procedural character runtime ownership", () => {
     }
   });
 
+  it("keeps appearance selection and skeleton conventions behind runtime adapters", () => {
+    const avatar = readSource("src/three/characters/procedural-character-avatar.ts");
+    const runtime = readSource("src/three/characters/procedural-character-runtime.ts");
+
+    expect(avatar).toContain("HumanoidRigAdapter");
+    expect(avatar).not.toContain("QUATERNIUS_BONE_NAMES");
+    expect(avatar).not.toContain('from "./quaternius-character-assets"');
+    expect(runtime).toContain("ProceduralCharacterLibrary");
+    expect(runtime).toContain("normalized.appearanceId !== this.config.appearanceId");
+  });
+
   it("owns one shared Jolt world above humanoid, horse, and mounted ragdoll instances", () => {
     const unitRuntime = readSource("src/three/characters/procedural-unit-runtime.ts");
     const world = readSource("src/three/characters/jolt-ragdoll-world.ts");

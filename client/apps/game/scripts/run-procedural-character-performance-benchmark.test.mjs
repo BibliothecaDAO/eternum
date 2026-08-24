@@ -4,6 +4,7 @@ import { describe, expect, it } from "vitest";
 import {
   buildProceduralCharacterPerformanceUrl,
   evaluateProceduralCharacterPerformanceResult,
+  normalizePerformanceAppearanceId,
 } from "./run-procedural-character-performance-benchmark.mjs";
 
 const PASSING_PERFORMANCE = {
@@ -45,6 +46,11 @@ describe("procedural character performance benchmark", () => {
         rendererMode: "webgpu-force-webgl",
       }),
     ).toBe("https://127.0.0.1:4174/debug/procedural-character-benchmark?rendererMode=webgpu-force-webgl");
+  });
+
+  it("accepts only registered benchmark appearances", () => {
+    expect(normalizePerformanceAppearanceId("universal-base")).toBe("universal-base");
+    expect(() => normalizePerformanceAppearanceId("missing-model")).toThrow("Unsupported benchmark appearance");
   });
 
   it("passes a measured 60 FPS sample", () => {

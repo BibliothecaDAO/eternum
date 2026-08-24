@@ -13,6 +13,7 @@ const VALID_OVERLAYS = new Set(["clean", "diagnostic"]);
 const VALID_SAMPLING = new Set(["all-frames", "key-phases", "phase-atlas"]);
 const VALID_SEQUENCES = new Set(["archer-shot", "locomotion-cycle", "melee-attack"]);
 const VALID_MOTION_MODES = new Set(["idle", "walk", "run", "mounted"]);
+const VALID_APPEARANCE_IDS = new Set(["modular-fantasy", "universal-base"]);
 const ASSET_WEAPON_IDS = new Set(["winter-broadaxe", "winter-rider-battleaxe"]);
 const ASSET_OFFHAND_IDS = new Set(["light-cavalry-shield", "winter-rider-shield", "winter-targe"]);
 const CRITICAL_ISSUES = [
@@ -43,6 +44,22 @@ export function buildCharacterAnimationCaptureUrl({ baseUrl, rendererMode }) {
 export function normalizeCaptureKind(value) {
   if (!VALID_KINDS.has(value)) throw new Error(`Unsupported capture kind "${value}"`);
   return value;
+}
+
+export function normalizeCaptureAppearanceId(value) {
+  if (!VALID_APPEARANCE_IDS.has(value)) throw new Error(`Unsupported capture appearance "${value}"`);
+  return value;
+}
+
+export function normalizeCaptureTier(value) {
+  const tier = Number(value);
+  if (!Number.isInteger(tier) || tier < 1 || tier > 3) throw new Error(`Unsupported capture tier "${value}"`);
+  return tier;
+}
+
+export function resolveCaptureAssetId(appearanceId, tier) {
+  if (appearanceId === "universal-base") return "base";
+  return tier === 1 ? "base" : tier === 2 ? "peasant" : "ranger";
 }
 
 export function normalizeCaptureSampling(value) {
@@ -148,7 +165,7 @@ function waitForGym({ headed, session, timeoutMs, until }) {
   return snapshot;
 }
 
-function configureCaptureUnit(session, headed, kind, motionMode, weaponId, offhandId) {
+function configureCaptureUnit(session, headed, appearanceId, tier, kind, motionMode, weaponId, offhandId) {
   runAgentBrowser(
     session,
     [
@@ -157,7 +174,12 @@ function configureCaptureUnit(session, headed, kind, motionMode, weaponId, offha
         window.__proceduralCharacterGym.updateConfig({
           kind: ${JSON.stringify(kind)},
           archer: { autoFire: false },
-          humanoid: { animationMode: ${JSON.stringify(motionMode)}, autoRotate: false },
+          humanoid: {
+            animationMode: ${JSON.stringify(motionMode)},
+            appearanceId: ${JSON.stringify(appearanceId)},
+            autoRotate: false,
+            tier: ${JSON.stringify(tier)},
+          },
           melee: {
             autoAttack: false,
             ...(${JSON.stringify(weaponId)} && { weaponId: ${JSON.stringify(weaponId)} }),
@@ -215,6 +237,7 @@ function decodeDataUrl(dataUrl) {
 
 function runCapture({
   baseUrl,
+  appearanceId,
   headed,
   kind,
   motionMode,
@@ -225,6 +248,7 @@ function runCapture({
   rootMotionSpeed,
   sampling,
   sequence,
+  tier,
   timeoutMs,
   weaponId,
 }) {
@@ -238,14 +262,19 @@ function runCapture({
       timeoutMs,
       until: ({ ready, rendererMode: activeMode }) => ready && activeMode !== "initializing",
     });
-    configureCaptureUnit(session, headed, kind, motionMode, weaponId, offhandId);
+    configureCaptureUnit(session, headed, appearanceId, tier, kind, motionMode, weaponId, offhandId);
+    const expectedAssetId = resolveCaptureAssetId(appearanceId, tier);
     const configuredSnapshot = waitForGym({
       headed,
       session,
       timeoutMs,
       until: ({ config, stats }) =>
         config?.kind === kind &&
+        config?.humanoid?.appearanceId === appearanceId &&
+        config?.humanoid?.tier === tier &&
         config?.humanoid?.animationMode === motionMode &&
+        stats?.appearanceId === appearanceId &&
+        stats?.assetId === expectedAssetId &&
         (!weaponId || config?.melee?.weaponId === weaponId) &&
         (!offhandId || config?.melee?.offhandId === offhandId) &&
         (!ASSET_WEAPON_IDS.has(weaponId) || stats?.meleeWeaponSource === "asset") &&
@@ -258,6 +287,8 @@ function runCapture({
     return {
       ...evaluation,
       activeRendererMode: readySnapshot.rendererMode,
+      appearanceId,
+      assetId: configuredSnapshot.stats?.assetId,
       browserErrors,
       capturedFrameCount: report.frames.length,
       capturedImageCount: report.frames.reduce((count, frame) => count + Math.max(1, frame.views?.length ?? 0), 0),
@@ -272,6 +303,7 @@ function runCapture({
       sampling,
       sequence: report.plan.sequence,
       totalFrameCount: report.plan.totalFrames,
+      tier,
       url,
       weaponId: configuredSnapshot.config?.melee?.weaponId,
       weaponSource: configuredSnapshot.stats?.meleeWeaponSource,
@@ -283,6 +315,8 @@ function runCapture({
 
 function main(argv) {
   const baseUrl = readOption(argv, "--base-url", DEFAULT_BASE_URL);
+  const appearanceId = normalizeCaptureAppearanceId(readOption(argv, "--appearance-id", "modular-fantasy"));
+  const tier = normalizeCaptureTier(readOption(argv, "--tier", "3"));
   const headed = readFlag(argv, "--headed");
   const kind = normalizeCaptureKind(readOption(argv, "--kind", "archer"));
   const requestedMotionMode = readOption(argv, "--motion-mode", "");
@@ -308,6 +342,7 @@ function main(argv) {
   );
   const summary = runCapture({
     baseUrl,
+    appearanceId,
     headed,
     kind,
     motionMode,
@@ -318,6 +353,7 @@ function main(argv) {
     rootMotionSpeed,
     sampling,
     sequence,
+    tier,
     timeoutMs,
     weaponId,
   });

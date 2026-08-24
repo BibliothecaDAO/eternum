@@ -2,6 +2,8 @@ import { Activity, Dices, Gauge, Pause, Play, RotateCcw, Skull, StepForward, Use
 import { useCallback, useEffect, useRef, useState, type MutableRefObject, type ReactNode, type RefObject } from "react";
 import { Link } from "react-router-dom";
 
+import { PROCEDURAL_CHARACTER_APPEARANCES } from "@/three/characters";
+
 import {
   applyProceduralCharacterBenchmarkConfigPatch,
   createDefaultProceduralCharacterBenchmarkConfig,
@@ -431,6 +433,17 @@ const BenchmarkControls = ({
           value={String(config.actorCount)}
           options={[25, 50, 75, 100].map((value) => ({ label: String(value), value: String(value) }))}
           onChange={(value) => onPatchConfig({ actorCount: Number(value) })}
+        />
+        <SegmentedControl
+          label="Appearance"
+          columns={2}
+          value={config.appearanceId}
+          options={PROCEDURAL_CHARACTER_APPEARANCES.map(({ id, label }) => ({ value: id, label }))}
+          onChange={(appearanceId) =>
+            onPatchConfig({
+              appearanceId: appearanceId as ProceduralCharacterBenchmarkConfig["appearanceId"],
+            })
+          }
         />
         <SegmentedControl
           label="Unit mix"

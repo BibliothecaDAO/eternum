@@ -29,8 +29,11 @@ export function normalizeRequestedRendererMode(value) {
 export function evaluateCharacterGymSmokeResult({
   aimStats,
   animatedStats,
+  appearanceSwaps,
   browserErrors,
   collisionScenarios = [],
+  ragdollAppearanceSwaps,
+  ragdollBaselineStats,
   snapshot,
 }) {
   const reasons = [];
@@ -43,6 +46,52 @@ export function evaluateCharacterGymSmokeResult({
   if (!stats) reasons.push("character gym diagnostics bridge was missing");
   if (!animatedStats) reasons.push("animated character diagnostics were missing");
   if (!aimStats) reasons.push("full-draw archer diagnostics were missing");
+  const [universalAppearance, restoredAppearance, repeatedUniversal, repeatedRestored] = appearanceSwaps ?? [];
+  if (universalAppearance?.appearanceId !== "universal-base" || universalAppearance?.assetId !== "base") {
+    reasons.push("appearance swap sequence did not activate Universal Base");
+  }
+  if (restoredAppearance?.appearanceId !== "modular-fantasy" || restoredAppearance?.assetId !== "ranger") {
+    reasons.push("appearance swap sequence did not restore Modular Fantasy");
+  }
+  if (
+    universalAppearance?.rigAdapterId !== "quaternius-universal" ||
+    restoredAppearance?.rigAdapterId !== "quaternius-universal"
+  ) {
+    reasons.push("appearance swap sequence changed rig adapter unexpectedly");
+  }
+  if (
+    repeatedUniversal?.appearanceId !== "universal-base" ||
+    repeatedUniversal?.assetId !== "base" ||
+    repeatedRestored?.appearanceId !== "modular-fantasy" ||
+    repeatedRestored?.assetId !== "ranger"
+  ) {
+    reasons.push("appearance swap sequence did not complete its repeated warm cycle");
+  }
+  if (
+    restoredAppearance &&
+    (repeatedRestored?.geometryCount !== restoredAppearance.geometryCount ||
+      repeatedRestored?.textureCount !== restoredAppearance.textureCount)
+  ) {
+    reasons.push("appearance swap renderer resources did not plateau after warm-up");
+  }
+  const [ragdollUniversal, ragdollRestored] = ragdollAppearanceSwaps ?? [];
+  if (
+    ragdollUniversal?.appearanceId !== "universal-base" ||
+    ragdollUniversal?.assetId !== "base" ||
+    ragdollUniversal?.mode !== "animated" ||
+    ragdollRestored?.appearanceId !== "modular-fantasy" ||
+    ragdollRestored?.assetId !== "ranger" ||
+    ragdollRestored?.mode !== "animated"
+  ) {
+    reasons.push("ragdoll appearance swap did not rebuild a finite animated model");
+  }
+  if (
+    ragdollBaselineStats &&
+    (ragdollRestored?.geometryCount !== ragdollBaselineStats.geometryCount ||
+      ragdollRestored?.textureCount !== ragdollBaselineStats.textureCount)
+  ) {
+    reasons.push("ragdoll appearance swap leaked or lost renderer resources");
+  }
   if (animatedStats && animatedStats.leftPalmInwardDot <= 0) {
     reasons.push(`left palm faced outward (${animatedStats.leftPalmInwardDot})`);
   }
@@ -138,6 +187,7 @@ function readCharacterGymSnapshot(session, headed, timeoutMs = DEFAULT_TIMEOUT_M
           ready: root?.getAttribute("data-gym-ready") === "true",
           routeMounted: Boolean(root),
           collisionConfig: bridge?.getCollisionConfig() ?? null,
+          config: bridge?.getConfig() ?? null,
           stats: bridge?.getStats() ?? null,
         };
       })())`,
@@ -184,6 +234,7 @@ function runCharacterGymScenario({ headed, session, timeoutMs, url }) {
       snapshot.stats?.skinnedMeshCount === 10 &&
       VALID_RENDERER_MODES.has(snapshot.stats?.rendererMode),
   });
+  const appearanceSwaps = runAppearanceSwapScenario({ cycles: 2, headed, session, timeoutMs });
   if (readySnapshot.ready) {
     runAgentBrowser(session, ["eval", 'window.__proceduralCharacterGym.runSmoke(); "started"'], { headed });
   }
@@ -195,23 +246,81 @@ function runCharacterGymScenario({ headed, session, timeoutMs, url }) {
     timeoutMs,
     until: (value) => value.canvasPresent && ["failed", "passed"].includes(value.stats?.smokePhase),
   });
+  const ragdollAppearanceSwaps = runAppearanceSwapScenario({ headed, session, timeoutMs, requireAnimated: true });
   const collisionScenarios = runCollisionGymScenarios({ headed, session, timeoutMs });
   const browserErrors = parseErrorLines(runAgentBrowser(session, ["errors"], { headed }));
   const evaluation = evaluateCharacterGymSmokeResult({
     aimStats: snapshot.aimStats,
     animatedStats: readySnapshot.stats,
+    appearanceSwaps,
     browserErrors,
     collisionScenarios,
+    ragdollAppearanceSwaps,
+    ragdollBaselineStats: snapshot.stats,
     snapshot,
   });
   return {
     ...evaluation,
     aimStats: snapshot.aimStats,
     animatedStats: readySnapshot.stats,
+    appearanceSwaps,
     browserErrors,
     collisionScenarios,
+    ragdollAppearanceSwaps,
+    ragdollBaselineStats: snapshot.stats,
     snapshot,
     url,
+  };
+}
+
+function runAppearanceSwapScenario({ cycles = 1, headed, session, timeoutMs, requireAnimated = false }) {
+  return Array.from({ length: cycles }).flatMap(() => [
+    applyAppearanceAndWait({
+      appearanceId: "universal-base",
+      assetId: "base",
+      headed,
+      requireAnimated,
+      session,
+      timeoutMs,
+    }),
+    applyAppearanceAndWait({
+      appearanceId: "modular-fantasy",
+      assetId: "ranger",
+      headed,
+      requireAnimated,
+      session,
+      timeoutMs,
+    }),
+  ]);
+}
+
+function applyAppearanceAndWait({ appearanceId, assetId, headed, requireAnimated, session, timeoutMs }) {
+  runAgentBrowser(
+    session,
+    [
+      "eval",
+      `window.__proceduralCharacterGym.updateConfig({ humanoid: { appearanceId: ${JSON.stringify(appearanceId)} } }); "applied"`,
+    ],
+    { headed, timeoutMs },
+  );
+  const snapshot = waitForSnapshot({
+    description: `${appearanceId} appearance`,
+    headed,
+    session,
+    timeoutMs,
+    until: (candidate) =>
+      candidate.config?.humanoid?.appearanceId === appearanceId &&
+      candidate.stats?.appearanceId === appearanceId &&
+      candidate.stats?.assetId === assetId &&
+      (!requireAnimated || candidate.stats?.mode === "animated"),
+  });
+  return {
+    appearanceId: snapshot.stats.appearanceId,
+    assetId: snapshot.stats.assetId,
+    geometryCount: snapshot.stats.geometryCount,
+    rigAdapterId: snapshot.stats.rigAdapterId,
+    mode: snapshot.stats.mode,
+    textureCount: snapshot.stats.textureCount,
   };
 }
 

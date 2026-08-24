@@ -33,7 +33,8 @@ Three identifiers have different jobs:
 
 - `kind` selects behavior: archer, knight, crossbowman, horse, or mounted Paladin;
 - `tier` selects the T1/T2/T3 upgrade appearance;
-- a future `appearanceId` selects a coexisting body/art family. It must remain independent of behavior and tier.
+- `appearanceId` selects a coexisting body/art family;
+- `rigAdapterId` selects the skeleton convention that translates canonical joints into model bones.
 
 Do not add a new `kind` for a visual-only variation or a fourth `tier` for an alternate art family.
 
@@ -41,7 +42,9 @@ Do not add a new `kind` for a visual-only variation or a fourth `tier` for an al
 
 | Concern                                                    | Source of truth                                                                                                                                                                                                                                       |
 | ---------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| GLB URLs, load/clone/dispose, asset validation             | [`quaternius-character-assets.ts`](../../client/apps/game/src/three/characters/quaternius-character-assets.ts)                                                                                                                                        |
+| Appearance/tier model and material selection               | [`procedural-character-appearance.ts`](../../client/apps/game/src/three/characters/procedural-character-appearance.ts)                                                                                                                                |
+| Shared template loading and actor-local model replacement  | [`procedural-character-assets.ts`](../../client/apps/game/src/three/characters/procedural-character-assets.ts), [`quaternius-character-assets.ts`](../../client/apps/game/src/three/characters/quaternius-character-assets.ts)                        |
+| Canonical skeleton contract and adapters                   | [`humanoid-rig-adapter.ts`](../../client/apps/game/src/three/characters/humanoid-rig-adapter.ts), [`quaternius-humanoid-rig-adapter.ts`](../../client/apps/game/src/three/characters/quaternius-humanoid-rig-adapter.ts)                              |
 | Procedural morphology and Jolt part definitions            | [`procedural-character-rig.ts`](../../client/apps/game/src/three/characters/procedural-character-rig.ts)                                                                                                                                              |
 | Gait timing and contact cycles                             | [`procedural-character-gait.ts`](../../client/apps/game/src/three/characters/procedural-character-gait.ts)                                                                                                                                            |
 | Joint targets and upper-body composition                   | [`procedural-character-pose.ts`](../../client/apps/game/src/three/characters/procedural-character-pose.ts)                                                                                                                                            |
@@ -61,22 +64,26 @@ asset bind pose by distorting every animation.
 ## Asset contract
 
 The fastest onboarding path is to export the new mesh on the existing humanoid skeleton. A generic T-pose is not enough:
-the current avatar is a Quaternius-specific adapter.
+it must be skinned and satisfy one registered `HumanoidRigAdapter`. The avatar itself is skeleton-agnostic.
 
 The runtime GLB must have:
 
 - a skinned mesh with valid inverse bind matrices and normalized weights;
 - an upright T-pose, `+Y` up, `+Z` procedural forward, pelvis above both ankles, and applied object scale;
 - no authored animation clips;
-- `root`, `pelvis`, `spine_01..03`, `neck_01`, `Head`, `upperarm_*`, `lowerarm_*`, `hand_*`, `thigh_*`, `calf_*`, and
-  `foot_*` bones, where `*` is `l` or `r`;
-- `thumb`, `index`, `middle`, `ring`, and `pinky` chains numbered `01..03` on both hands, for example `index_02_l`;
+- every bone mapped by its registered adapter. For `quaternius-universal`, that means `root`, `pelvis`, `spine_01..03`,
+  `neck_01`, `Head`, `upperarm_*`, `lowerarm_*`, `hand_*`, `thigh_*`, `calf_*`, `foot_*`, and `ball_*`, where `*` is `l`
+  or `r`;
+- the adapter's complete thumb, index, middle, ring, and pinky chains. `quaternius-universal` uses `01..03` on both
+  hands, for example `index_02_l`;
 - embedded runtime textures in WebP and license/provenance beside the model.
 
-Current outfit assembly also expects base meshes named `Eyebrows`, `Eyes`, and `SuperHero_Male`, an `Armature` object on
-outfits, identical skeleton name/order across tiers, Quaternius hand-roll/finger axes, and recognizable material names
-for heraldry. Rest-segment orientation itself is derived from each parent-to-child bind direction, so local bone axes
-need not be copied blindly.
+The current `quaternius-universal` adapter owns the bone names, parent-to-child segment bindings, diagnostic joints,
+palm planes, finger chains/axes, feet, semantic sockets, hand-roll correction, and rest-frame axes. Appearance
+definitions independently own material roles, merge eligibility, and crowd mesh policy, so models sharing a skeleton do
+not need identical material names. The Quaternius asset pack separately owns its base-head composition: `Eyebrows`,
+`Eyes`, and `SuperHero_Male` are attached to outfit templates under `Armature`. Rest-segment orientation is derived from
+bind directions, so local axes need not be copied blindly.
 
 Inspect an export before wiring it:
 
@@ -94,29 +101,26 @@ runtime-required bone resolves without an alias or silent fallback.
 Use this for a new T1/T2/T3 outfit on the existing body:
 
 1. Add the optimized GLB and provenance under `client/public/models/characters/<family>/`.
-2. Change the relevant entry in `QUATERNIUS_CHARACTER_ASSETS`.
-3. Extend `quaternius-character-assets.test.ts` for the file, skin, clips, textures, bones, and license.
-4. Keep tier semantics intact: T1, T2, and T3 remain visible upgrade stages.
+2. Add it to `QUATERNIUS_CHARACTER_ASSETS` and map the appropriate tier in `PROCEDURAL_CHARACTER_APPEARANCES`.
+3. Extend `quaternius-character-assets.test.ts` for the file, skin, clips, textures, adapter bones, and license.
+4. Keep `appearanceId` independent from tier: T1/T2/T3 remain upgrade stages within a family.
 
-No gait, pose, gym renderer, or game renderer should be copied. Selection by `config.humanoid.tier` makes the
-replacement flow through both callers.
+No gait, pose, gym renderer, or game renderer should be copied. Selection by `appearanceId + tier` flows through the
+shared library and replaces only the actor-local model; decoded geometry and textures remain shared.
 
-### New coexisting character family
+### New coexisting character family or skeleton
 
-The current config has no family dimension and the avatar is Quaternius-specific. Add the seam before adding the art:
+1. Add the asset templates and provenance to the central library.
+2. If the bones match an existing convention, reuse its `rigAdapterId`. Otherwise add one adapter containing every
+   canonical part, segment child, diagnostic joint, palm/finger definition, foot/toe, semantic socket, and axis
+   correction; register it in `humanoid-rig-adapters.ts`.
+3. Add an `appearanceId` and tier-to-asset mapping in `procedural-character-appearance.ts`.
+4. Extend adapter, asset, config-normalization, and appearance-resolution tests. Missing mappings or bones must fail at
+   load rather than silently falling back.
+5. Select it in the gym and capture it with `--appearance-id` and `--tier`.
 
-1. Add an `appearanceId` to `ProceduralCharacterConfig`, normalize it, and key loaded models by `appearanceId + tier`
-   instead of tier alone.
-2. Extract the hard-coded bone map, segment children, hand/finger axes, socket offsets, material roles, and optional
-   head composition into one humanoid asset adapter. Keep one adapter per skeleton convention.
-3. Make asset validation use that adapter. Replace hard-coded smoke expectations such as Ranger mesh count with the
-   selected asset's declared contract.
-4. Add an appearance selector to the gym controls and pass it through the existing config update path.
-5. Add `--appearance-id` and `--tier` to the capture/smoke scripts so every new variant is reproducible without
-   clicking. The current capture script otherwise starts on tier 3.
-
-Completion criterion: both families can alternate in one gym session without reloading assets, leaking GPU resources,
-changing behavior, or introducing family-specific branches in gait and action code.
+Completion criterion: both families alternate before and after Jolt ragdoll without reloading decoded assets, leaking
+actor-local skeleton/material resources, changing behavior, or introducing family branches in gait/action code.
 
 Add a new `ProceduralUnitKind` only when the unit has different behavior. In that case, also wire its controller and
 equipment in `ProceduralUnitRuntime`, its control in `PROCEDURAL_UNIT_KINDS`, and its deterministic capture sequence.
@@ -138,12 +142,14 @@ Capture spatial and temporal evidence with the same seed and config:
 ```bash
 pnpm --dir client/apps/game capture:character-animation -- \
   --base-url https://127.0.0.1:4174 \
+  --appearance-id <family> --tier 3 \
   --kind knight --motion-mode walk --sequence locomotion-cycle \
   --sampling phase-atlas --overlay diagnostic \
   --output-dir ../../../output/animation-evaluation/<family>-knight-walk-atlas
 
 pnpm --dir client/apps/game capture:character-animation -- \
   --base-url https://127.0.0.1:4174 \
+  --appearance-id <family> --tier 3 \
   --kind knight --motion-mode walk --sequence locomotion-cycle \
   --sampling all-frames --overlay clean \
   --output-dir ../../../output/animation-evaluation/<family>-knight-walk-temporal
@@ -193,6 +199,7 @@ Then run the production crowd gate:
 ```bash
 pnpm --dir client/apps/game benchmark:procedural-characters -- \
   --base-url https://127.0.0.1:4174 \
+  --appearance-id <family> \
   --renderer-mode webgpu-force-webgl --headed \
   --output output/procedural-character-performance.json
 
@@ -208,6 +215,8 @@ passes, browser errors are empty, and the legacy fallback still covers loading o
 
 ```bash
 pnpm --dir client/apps/game test \
+  src/three/characters/humanoid-rig-adapter.test.ts \
+  src/three/characters/procedural-character-appearance.test.ts \
   src/three/characters/quaternius-character-assets.test.ts \
   src/three/characters/procedural-character-rig.test.ts \
   src/three/characters/procedural-army-character-layer.test.ts \

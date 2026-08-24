@@ -942,6 +942,8 @@ function isMeleeUnitKind(kind: ProceduralUnitKind): kind is "knight" | "paladin"
 
 const EMPTY_UNIT_STATS: ProceduralUnitActorStats = {
   activeBodyCount: 0,
+  appearanceId: "horse",
+  appearanceLabel: "Horse",
   assetId: "base",
   assetLabel: "",
   authoredClipCount: 0,
@@ -966,6 +968,7 @@ const EMPTY_UNIT_STATS: ProceduralUnitActorStats = {
   rangedReleaseCount: 0,
   rightGripProfile: "open",
   rightPalmInwardDot: 1,
+  rigAdapterId: "quaternius-horse",
   skinnedMeshCount: 0,
   stanceFootCount: 0,
   stanceHoofCount: 0,

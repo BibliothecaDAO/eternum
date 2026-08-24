@@ -62,6 +62,9 @@ import {
 
 export interface ProceduralCharacterGymStats {
   activeBodies: number;
+  appearanceId: string;
+  appearanceLabel: string;
+  assetId: string;
   assetLabel: string;
   authoredClipCount: number;
   boneCount: number;
@@ -101,6 +104,7 @@ export interface ProceduralCharacterGymStats {
   rangedReleaseCount: number;
   rendererMode: string;
   rightPalmInwardDot: number;
+  rigAdapterId: string;
   smokeFailures: readonly string[];
   smokePhase: CharacterGymSmokeState["phase"];
   skinnedMeshCount: number;
@@ -588,6 +592,9 @@ class ProceduralCharacterGymRuntime {
     const collisionEvaluation = evaluateProceduralCollisionGym(this.collisionConfig, collision);
     this.onStats({
       activeBodies: character.activeBodyCount,
+      appearanceId: character.appearanceId,
+      appearanceLabel: character.appearanceLabel,
+      assetId: character.assetId,
       assetLabel: character.assetLabel,
       authoredClipCount: character.authoredClipCount,
       boneCount: character.boneCount,
@@ -627,6 +634,7 @@ class ProceduralCharacterGymRuntime {
       rangedReleaseCount: character.rangedReleaseCount,
       rendererMode: getRendererDiagnosticActiveMode() ?? "initializing",
       rightPalmInwardDot: Number(character.rightPalmInwardDot.toFixed(3)),
+      rigAdapterId: character.rigAdapterId,
       smokeFailures: this.smoke.failures,
       smokePhase: this.smoke.phase,
       skinnedMeshCount: character.skinnedMeshCount,

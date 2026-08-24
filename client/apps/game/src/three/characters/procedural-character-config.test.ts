@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import {
   applyProceduralCharacterConfigPatch,
@@ -10,7 +10,9 @@ import { resolveCharacterRig } from "./procedural-character-rig";
 
 describe("procedural character configuration", () => {
   it("normalizes unsafe parameter edits at the configuration seam", () => {
+    const warning = vi.spyOn(console, "warn").mockImplementation(() => undefined);
     const config = applyProceduralCharacterConfigPatch(createDefaultProceduralCharacterConfig(), {
+      appearanceId: "unknown-family" as "modular-fantasy",
       tier: 99 as 1,
       seed: -4,
       primaryColor: "not-a-color",
@@ -27,6 +29,7 @@ describe("procedural character configuration", () => {
     });
 
     expect(config.tier).toBe(3);
+    expect(config.appearanceId).toBe("modular-fantasy");
     expect(config.seed).toBe(0);
     expect(config.primaryColor).toBe("#315f86");
     expect(config.fixedStep).toBeCloseTo(1 / 30);
@@ -38,6 +41,7 @@ describe("procedural character configuration", () => {
     expect(config.motionVariation).toBe(0.3);
     expect(config.secondaryMotion).toBe(1.5);
     expect(config.stepWidthRatio).toBe(0.3);
+    warning.mockRestore();
   });
 
   it("resolves deterministic morphology and finite poses", () => {

@@ -9,6 +9,7 @@ import {
 import type { ProceduralUnitReactionInput } from "./collision/procedural-impact";
 import { normalizeProceduralImpact, type ProceduralUnitImpact } from "./collision/procedural-impact";
 import { applyProceduralCharacterConfigPatch, type ProceduralCharacterConfig } from "./procedural-character-config";
+import { loadProceduralCharacterLibrary, ProceduralCharacterLibrary } from "./procedural-character-assets";
 import type { ProceduralCharacterUpperBodyAction } from "./procedural-character-action";
 import {
   advanceProceduralCharacterGaitPhase,
@@ -37,7 +38,6 @@ import {
 import { ProceduralPlantController } from "./procedural-plant-controller";
 import type { CharacterSocketId, ProceduralCharacterSocketReader } from "./procedural-character-sockets";
 import { wrapUnitPhase } from "./procedural-motion-curves";
-import { loadQuaterniusCharacterLibrary, QuaterniusCharacterLibrary } from "./quaternius-character-assets";
 
 export type ProceduralCharacterMode = "animated" | "ragdoll";
 
@@ -85,12 +85,12 @@ export class ProceduralCharacterRuntime {
   private disposed = false;
 
   private constructor(
-    private readonly library: QuaterniusCharacterLibrary,
+    private readonly library: ProceduralCharacterLibrary,
     private readonly physicsWorld?: JoltRagdollWorld,
   ) {}
 
   public static async create(options: ProceduralCharacterRuntimeOptions = {}): Promise<ProceduralCharacterRuntime> {
-    const library = await loadQuaterniusCharacterLibrary();
+    const library = await loadProceduralCharacterLibrary();
     try {
       if (options.preloadPhysics) await preloadProceduralCharacterPhysics();
       return new ProceduralCharacterRuntime(library, options.physicsWorld);
@@ -102,14 +102,9 @@ export class ProceduralCharacterRuntime {
 
   public createActor(config: ProceduralCharacterConfig): ProceduralCharacterActor {
     if (this.disposed) throw new Error("Cannot create an actor from a disposed procedural character runtime");
-    const actor = new RuntimeProceduralCharacterActor(
-      this.library.instantiate(),
-      config,
-      this.physicsWorld,
-      (disposedActor) => {
-        this.actors.delete(disposedActor);
-      },
-    );
+    const actor = new RuntimeProceduralCharacterActor(this.library, config, this.physicsWorld, (disposedActor) => {
+      this.actors.delete(disposedActor);
+    });
     this.actors.add(actor);
     return actor;
   }
@@ -155,7 +150,7 @@ class RuntimeProceduralCharacterActor implements ProceduralCharacterActor {
   private disposed = false;
 
   public constructor(
-    assets: ConstructorParameters<typeof ProceduralCharacterAvatar>[0],
+    private readonly library: ProceduralCharacterLibrary,
     config: ProceduralCharacterConfig,
     private readonly physicsWorld: JoltRagdollWorld | undefined,
     private readonly release: (actor: RuntimeProceduralCharacterActor) => void,
@@ -163,7 +158,11 @@ class RuntimeProceduralCharacterActor implements ProceduralCharacterActor {
     this.config = applyProceduralCharacterConfigPatch(config, {});
     this.rig = resolveCharacterRig(this.config);
     this.gaitPhase = resolveInitialProceduralCharacterPhase(this.config.seed);
-    this.avatar = new ProceduralCharacterAvatar(assets, this.rig, this.config);
+    this.avatar = new ProceduralCharacterAvatar(
+      library.instantiate(this.config.appearanceId, this.config.tier),
+      this.rig,
+      this.config,
+    );
     this.calibrateRigToActiveAvatar();
     this.object = this.avatar.group;
     this.pose = this.poseFilter.apply(
@@ -208,7 +207,9 @@ class RuntimeProceduralCharacterActor implements ProceduralCharacterActor {
   public updateConfig(config: ProceduralCharacterConfig): void {
     if (this.disposed) return;
     const normalized = applyProceduralCharacterConfigPatch(this.config, config);
-    const requiresRigRebuild = normalized.seed !== this.config.seed || normalized.tier !== this.config.tier;
+    const requiresModelSwap =
+      normalized.appearanceId !== this.config.appearanceId || normalized.tier !== this.config.tier;
+    const requiresRigRebuild = normalized.seed !== this.config.seed || requiresModelSwap;
     const requiresPlantReset = requiresRigRebuild || normalized.animationMode !== this.config.animationMode;
     this.config = normalized;
     if (requiresPlantReset) {
@@ -220,7 +221,10 @@ class RuntimeProceduralCharacterActor implements ProceduralCharacterActor {
     if (requiresRigRebuild) {
       this.resetRagdoll();
       this.rig = resolveCharacterRig(normalized);
-      this.avatar.rebuild(this.rig, normalized);
+      const replacement = requiresModelSwap
+        ? this.library.instantiate(normalized.appearanceId, normalized.tier)
+        : undefined;
+      this.avatar.rebuild(this.rig, normalized, replacement);
       this.calibrateRigToActiveAvatar();
       this.applyAnimatedPose();
       return;

@@ -16,10 +16,13 @@ import type { GLTF } from "three/addons/loaders/GLTFLoader.js";
 import { describe, expect, it, vi } from "vitest";
 
 import {
+  ProceduralCharacterLibrary,
+  type LoadedProceduralCharacterAssetTemplate,
+  type LoadedProceduralCharacterAsset,
+} from "./procedural-character-assets";
+import {
   QUATERNIUS_CHARACTER_ASSETS,
   QUATERNIUS_REQUIRED_BONE_NAMES,
-  QuaterniusCharacterLibrary,
-  type LoadedQuaterniusCharacterAsset,
   resolveQuaterniusCharacterAsset,
 } from "./quaternius-character-assets";
 
@@ -32,9 +35,9 @@ interface GlbJson {
 
 describe("Quaternius procedural character assets", () => {
   it("maps each visible upgrade tier to a distinct CC0 character", () => {
-    expect(resolveQuaterniusCharacterAsset(1).id).toBe("base");
-    expect(resolveQuaterniusCharacterAsset(2).id).toBe("peasant");
-    expect(resolveQuaterniusCharacterAsset(3).id).toBe("ranger");
+    expect(resolveQuaterniusCharacterAsset("base").url).toContain("base-male.glb");
+    expect(resolveQuaterniusCharacterAsset("peasant").url).toContain("peasant-male.glb");
+    expect(resolveQuaterniusCharacterAsset("ranger").url).toContain("ranger-male.glb");
   });
 
   it.each(Object.values(QUATERNIUS_CHARACTER_ASSETS))("ships $label as a skinned, clip-free runtime GLB", (asset) => {
@@ -59,9 +62,9 @@ describe("Quaternius procedural character assets", () => {
 
   it("shares immutable GPU assets while isolating each actor's skeleton and materials", () => {
     const template = createSkinnedAssetTemplate();
-    const library = new QuaterniusCharacterLibrary([template.asset]);
-    const first = requireSkinnedMesh(library.instantiate()[0].gltf.scene);
-    const second = requireSkinnedMesh(library.instantiate()[0].gltf.scene);
+    const library = new ProceduralCharacterLibrary([template.asset]);
+    const first = requireSkinnedMesh(library.instantiate("universal-base", 1).gltf.scene);
+    const second = requireSkinnedMesh(library.instantiate("universal-base", 3).gltf.scene);
 
     expect(first.geometry).toBe(template.mesh.geometry);
     expect(second.geometry).toBe(template.mesh.geometry);
@@ -78,7 +81,7 @@ describe("Quaternius procedural character assets", () => {
 
   it("disposes its templates once and rejects late actor creation", () => {
     const template = createSkinnedAssetTemplate();
-    const library = new QuaterniusCharacterLibrary([template.asset]);
+    const library = new ProceduralCharacterLibrary([template.asset]);
     const geometryDispose = vi.spyOn(template.mesh.geometry, "dispose");
     const materialDispose = vi.spyOn(template.mesh.material as MeshStandardMaterial, "dispose");
     const skeletonDispose = vi.spyOn(template.mesh.skeleton, "dispose");
@@ -91,7 +94,32 @@ describe("Quaternius procedural character assets", () => {
     expect(materialDispose).toHaveBeenCalledTimes(1);
     expect(skeletonDispose).toHaveBeenCalledTimes(1);
     expect(textureDispose).toHaveBeenCalledTimes(1);
-    expect(() => library.instantiate()).toThrow("disposed Quaternius character library");
+    expect(() => library.instantiate("universal-base", 1)).toThrow("disposed procedural character library");
+  });
+
+  it("selects appearance independently from tier while reusing one rig adapter", () => {
+    const base = createSkinnedAssetTemplate("base");
+    const ranger = createSkinnedAssetTemplate("ranger");
+    const library = new ProceduralCharacterLibrary([base.asset, ranger.asset]);
+
+    const fantasy = library.instantiate("modular-fantasy", 3);
+    const universal = library.instantiate("universal-base", 3);
+
+    expect(fantasy.id).toBe("ranger");
+    expect(universal.id).toBe("base");
+    expect(fantasy.adapter).toBe(universal.adapter);
+    expect(fantasy.appearanceId).toBe("modular-fantasy");
+    expect(universal.appearanceId).toBe("universal-base");
+
+    disposeCharacterInstance(fantasy);
+    disposeCharacterInstance(universal);
+    library.dispose();
+  });
+
+  it("rejects ambiguous duplicate asset ids", () => {
+    const base = createSkinnedAssetTemplate("base");
+
+    expect(() => new ProceduralCharacterLibrary([base.asset, base.asset])).toThrow("asset ids must be unique");
   });
 });
 
@@ -107,8 +135,8 @@ function publicRoot(): string {
   return resolve(process.cwd(), "../../public");
 }
 
-function createSkinnedAssetTemplate(): {
-  asset: LoadedQuaterniusCharacterAsset;
+function createSkinnedAssetTemplate(id: "base" | "ranger" = "base"): {
+  asset: LoadedProceduralCharacterAssetTemplate;
   mesh: SkinnedMesh;
   texture: Texture;
 } {
@@ -133,10 +161,10 @@ function createSkinnedAssetTemplate(): {
 
   return {
     asset: {
-      id: "base",
-      label: "Test base",
-      tier: 1,
-      url: "/test-base.glb",
+      adapterId: "quaternius-universal",
+      id,
+      label: `Test ${id}`,
+      url: `/test-${id}.glb`,
       gltf: {
         animations: [],
         cameras: [],
@@ -147,6 +175,15 @@ function createSkinnedAssetTemplate(): {
     mesh,
     texture,
   };
+}
+
+function disposeCharacterInstance(asset: LoadedProceduralCharacterAsset): void {
+  asset.gltf.scene.traverse((object) => {
+    if (!(object instanceof SkinnedMesh)) return;
+    object.skeleton.dispose();
+    const materials = Array.isArray(object.material) ? object.material : [object.material];
+    materials.forEach((material) => material.dispose());
+  });
 }
 
 function requireSkinnedMesh(scene: Group): SkinnedMesh {

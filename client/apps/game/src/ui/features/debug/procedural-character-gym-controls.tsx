@@ -16,11 +16,13 @@ import type { ReactNode } from "react";
 import { Link } from "react-router-dom";
 
 import {
+  PROCEDURAL_CHARACTER_APPEARANCES,
   PROCEDURAL_CHARACTER_PRESETS,
   PROCEDURAL_MELEE_OFFHANDS,
   PROCEDURAL_MELEE_WEAPONS,
   PROCEDURAL_UNIT_KINDS,
   type ProceduralCharacterConfig,
+  type ProceduralCharacterAppearanceId,
   type ProceduralCharacterMotionMode,
   type ProceduralCharacterPresetId,
   type ProceduralArcherConfig,
@@ -452,6 +454,16 @@ const CharacterControls = ({ config, selectedPreset, onApplyPreset, onPatchConfi
       options={PROCEDURAL_UNIT_KINDS.map(({ id, label }) => ({ value: id, label }))}
       onChange={(kind) => onPatchConfig({ kind: kind as ProceduralUnitKind })}
     />
+    {config.kind !== "horse" && (
+      <SelectControl
+        label="Appearance"
+        value={config.humanoid.appearanceId}
+        options={PROCEDURAL_CHARACTER_APPEARANCES.map(({ id, label }) => ({ value: id, label }))}
+        onChange={(appearanceId) =>
+          onPatchConfig({ humanoid: { appearanceId: appearanceId as ProceduralCharacterAppearanceId } })
+        }
+      />
+    )}
     <SelectControl
       label="Preset"
       value={selectedPreset}

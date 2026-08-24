@@ -4,12 +4,15 @@ import { describe, expect, it } from "vitest";
 import {
   buildCharacterAnimationCaptureUrl,
   evaluateCharacterAnimationCapture,
+  normalizeCaptureAppearanceId,
   normalizeCaptureKind,
   normalizeCaptureMotionMode,
   normalizeCaptureOverlay,
   normalizeCaptureSampling,
   normalizeCaptureSequence,
+  normalizeCaptureTier,
   normalizeRootMotionSpeed,
+  resolveCaptureAssetId,
   resolveCaptureMotionMode,
 } from "./run-character-animation-capture.mjs";
 
@@ -25,15 +28,21 @@ describe("character animation capture script", () => {
 
   it("validates supported capture inputs", () => {
     expect(normalizeCaptureKind("paladin")).toBe("paladin");
+    expect(normalizeCaptureAppearanceId("universal-base")).toBe("universal-base");
     expect(normalizeCaptureKind("horse")).toBe("horse");
     expect(normalizeCaptureSampling("phase-atlas")).toBe("phase-atlas");
     expect(normalizeCaptureOverlay("diagnostic")).toBe("diagnostic");
     expect(normalizeCaptureSequence("locomotion-cycle")).toBe("locomotion-cycle");
     expect(normalizeCaptureMotionMode("run")).toBe("run");
+    expect(normalizeCaptureTier("2")).toBe(2);
+    expect(resolveCaptureAssetId("modular-fantasy", 2)).toBe("peasant");
+    expect(resolveCaptureAssetId("universal-base", 3)).toBe("base");
     expect(resolveCaptureMotionMode("paladin", "")).toBe("mounted");
     expect(resolveCaptureMotionMode("crossbowman", "")).toBe("walk");
     expect(normalizeRootMotionSpeed("0.72")).toBe(0.72);
     expect(() => normalizeCaptureKind("dragon")).toThrow("Unsupported capture kind");
+    expect(() => normalizeCaptureAppearanceId("unknown-model")).toThrow("Unsupported capture appearance");
+    expect(() => normalizeCaptureTier("4")).toThrow("Unsupported capture tier");
     expect(() => normalizeCaptureOverlay("labels-everywhere")).toThrow("Unsupported capture overlay");
     expect(() => resolveCaptureMotionMode("paladin", "run")).toThrow("does not support motion mode");
     expect(() => normalizeRootMotionSpeed("backwards")).toThrow("Invalid root motion speed");

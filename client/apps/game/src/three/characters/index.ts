@@ -7,6 +7,10 @@ export {
   type ProceduralCharacterPresetId,
 } from "./procedural-character-config";
 export {
+  PROCEDURAL_CHARACTER_APPEARANCES,
+  type ProceduralCharacterAppearanceId,
+} from "./procedural-character-appearance";
+export {
   applyProceduralUnitConfigPatch,
   createDefaultProceduralUnitConfig,
   PROCEDURAL_UNIT_KINDS,

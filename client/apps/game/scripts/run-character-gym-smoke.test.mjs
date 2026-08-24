@@ -38,6 +38,40 @@ const PASSING_SNAPSHOT = {
     wasmHeapMiB: 128,
   },
 };
+const PASSING_APPEARANCE_SWAPS = [
+  {
+    appearanceId: "universal-base",
+    assetId: "base",
+    geometryCount: 12,
+    rigAdapterId: "quaternius-universal",
+    textureCount: 18,
+  },
+  {
+    appearanceId: "modular-fantasy",
+    assetId: "ranger",
+    geometryCount: 18,
+    rigAdapterId: "quaternius-universal",
+    textureCount: 18,
+  },
+  {
+    appearanceId: "universal-base",
+    assetId: "base",
+    geometryCount: 18,
+    rigAdapterId: "quaternius-universal",
+    textureCount: 18,
+  },
+  {
+    appearanceId: "modular-fantasy",
+    assetId: "ranger",
+    geometryCount: 18,
+    rigAdapterId: "quaternius-universal",
+    textureCount: 18,
+  },
+];
+const PASSING_RAGDOLL_APPEARANCE_SWAPS = PASSING_APPEARANCE_SWAPS.slice(0, 2).map((entry) => ({
+  ...entry,
+  mode: "animated",
+}));
 
 describe("buildCharacterGymSmokeUrl", () => {
   it("builds the auth-free procedural character route", () => {
@@ -69,7 +103,10 @@ describe("evaluateCharacterGymSmokeResult", () => {
       evaluateCharacterGymSmokeResult({
         aimStats: PASSING_SNAPSHOT.stats,
         animatedStats: PASSING_SNAPSHOT.stats,
+        appearanceSwaps: PASSING_APPEARANCE_SWAPS,
         browserErrors: [],
+        ragdollAppearanceSwaps: PASSING_RAGDOLL_APPEARANCE_SWAPS,
+        ragdollBaselineStats: PASSING_SNAPSHOT.stats,
         snapshot: PASSING_SNAPSHOT,
       }),
     ).toEqual({
@@ -120,8 +157,15 @@ describe("evaluateCharacterGymSmokeResult", () => {
     };
 
     expect(
-      evaluateCharacterGymSmokeResult({ aimStats, animatedStats, browserErrors: ["runtime exploded"], snapshot })
-        .reasons,
+      evaluateCharacterGymSmokeResult({
+        aimStats,
+        animatedStats,
+        appearanceSwaps: PASSING_APPEARANCE_SWAPS,
+        browserErrors: ["runtime exploded"],
+        ragdollAppearanceSwaps: PASSING_RAGDOLL_APPEARANCE_SWAPS,
+        ragdollBaselineStats: PASSING_SNAPSHOT.stats,
+        snapshot,
+      }).reasons,
     ).toEqual([
       "character gym canvas was missing",
       "character gym had horizontal overflow",
@@ -156,11 +200,28 @@ describe("evaluateCharacterGymSmokeResult", () => {
     const result = evaluateCharacterGymSmokeResult({
       aimStats: PASSING_SNAPSHOT.stats,
       animatedStats: PASSING_SNAPSHOT.stats,
+      appearanceSwaps: PASSING_APPEARANCE_SWAPS,
       browserErrors: [],
+      ragdollAppearanceSwaps: PASSING_RAGDOLL_APPEARANCE_SWAPS,
+      ragdollBaselineStats: PASSING_SNAPSHOT.stats,
       collisionScenarios: [{ reasons: ["no contact"], scenario: "head-on", status: "fail" }],
       snapshot: PASSING_SNAPSHOT,
     });
 
     expect(result.reasons).toContain("head-on collision scenario was fail: no contact");
+  });
+
+  it("rejects a smoke run that did not restore the selected appearance", () => {
+    const result = evaluateCharacterGymSmokeResult({
+      aimStats: PASSING_SNAPSHOT.stats,
+      animatedStats: PASSING_SNAPSHOT.stats,
+      appearanceSwaps: [PASSING_APPEARANCE_SWAPS[0]],
+      browserErrors: [],
+      ragdollAppearanceSwaps: PASSING_RAGDOLL_APPEARANCE_SWAPS,
+      ragdollBaselineStats: PASSING_SNAPSHOT.stats,
+      snapshot: PASSING_SNAPSHOT,
+    });
+
+    expect(result.reasons).toContain("appearance swap sequence did not restore Modular Fantasy");
   });
 });

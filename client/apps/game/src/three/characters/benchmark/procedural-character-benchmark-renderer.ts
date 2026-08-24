@@ -1020,6 +1020,7 @@ function resolveBenchmarkActorConfig(
   const tier = resolveActorTier(actorId);
   const primaryColor = CHARACTER_PALETTE[actorId % CHARACTER_PALETTE.length];
   const humanoid = applyProceduralCharacterConfigPatch(createDefaultProceduralUnitConfig().humanoid, {
+    appearanceId: benchmark.appearanceId,
     animationMode: kind === "paladin" ? "mounted" : benchmark.locomotionMode,
     animationSpeed: benchmark.animationSpeed,
     autoRotate: false,

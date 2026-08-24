@@ -1,6 +1,5 @@
 import {
   Bone,
-  BufferAttribute,
   BufferGeometry,
   Color,
   Group,
@@ -18,6 +17,7 @@ import { mergeGeometries } from "three/addons/utils/BufferGeometryUtils.js";
 import type { ProceduralCharacterConfig } from "./procedural-character-config";
 import type { ProceduralHumanoidJointId } from "./procedural-character-diagnostics";
 import type { ProceduralCharacterUpperBodyAction } from "./procedural-character-action";
+import type { HumanoidRigAdapter, HumanoidSide } from "./humanoid-rig-adapter";
 import {
   PROCEDURAL_HAND_DIGIT_IDS,
   resolveProceduralCharacterHandPose,
@@ -26,9 +26,9 @@ import {
   type ProceduralHandPose,
 } from "./procedural-character-hand-pose";
 import type { ProceduralCharacterPose, QuaternionTuple, Vector3Tuple } from "./procedural-character-pose";
+import type { LoadedProceduralCharacterAsset } from "./procedural-character-assets";
 import { CHARACTER_PART_IDS, type CharacterPartId, type ResolvedCharacterRig } from "./procedural-character-rig";
 import { type CharacterSocketId, type ProceduralCharacterSocketReader } from "./procedural-character-sockets";
-import { QUATERNIUS_BONE_NAMES, type LoadedQuaterniusCharacterAsset } from "./quaternius-character-assets";
 import {
   applySegmentBoneRotation,
   createSegmentBoneBinding,
@@ -47,6 +47,9 @@ interface CharacterHandBinding {
   bindQuaternion: Quaternion;
   bone: Bone;
   digits: Readonly<Record<ProceduralHandDigitId, readonly CharacterFingerBoneBinding[]>>;
+  fingerCurlAxis: Vector3;
+  palm: { index: Bone; middle: Bone; normalSign: -1 | 1; pinky: Bone };
+  rollCorrection: Quaternion;
 }
 
 interface CharacterFingerBoneBinding {
@@ -69,11 +72,14 @@ interface StyledCharacterMaterial {
 }
 
 interface PreparedCharacterModel {
-  asset: LoadedQuaterniusCharacterAsset;
+  adapter: HumanoidRigAdapter;
+  asset: LoadedProceduralCharacterAsset;
   authoredPelvisToAnkle: number;
   bindings: Readonly<Record<CharacterPartId, SegmentBoneBinding>>;
   crowdHiddenMeshes: ReadonlyArray<{ heroVisible: boolean; mesh: Mesh }>;
-  hands: Readonly<Record<keyof typeof HAND_BONE_NAMES, CharacterHandBinding>>;
+  diagnosticBones: Readonly<Record<ProceduralHumanoidJointId, Bone>>;
+  feet: Readonly<Record<HumanoidSide, { ankle: Bone; toe: Bone }>>;
+  hands: Readonly<Record<HumanoidSide, CharacterHandBinding>>;
   helper: SkeletonHelper;
   materials: Set<Material>;
   ownedGeometries: Set<BufferGeometry>;
@@ -85,7 +91,9 @@ interface PreparedCharacterModel {
 }
 
 export interface ProceduralCharacterAvatarStats {
-  assetId: LoadedQuaterniusCharacterAsset["id"];
+  appearanceId: string;
+  appearanceLabel: string;
+  assetId: string;
   assetLabel: string;
   authoredClipCount: number;
   boneCount: number;
@@ -93,6 +101,7 @@ export interface ProceduralCharacterAvatarStats {
   leftGripProfile: ProceduralHandGripProfile;
   rightPalmInwardDot: number;
   rightGripProfile: ProceduralHandGripProfile;
+  rigAdapterId: string;
   skinnedMeshCount: number;
 }
 
@@ -104,34 +113,10 @@ interface ProceduralFootFacingDiagnostics {
 const Y_AXIS = new Vector3(0, 1, 0);
 const X_AXIS = new Vector3(1, 0, 0);
 const Z_AXIS = new Vector3(0, 0, 1);
-const HEAD_NECK_RANGE = 0.42;
-const MIN_HEAD_SKIN_WEIGHT = 0.5;
 const MAX_LIMB_BEND_PLANE_STEP = Math.PI / 8;
-const HAND_ROLL_CORRECTION = new Quaternion().setFromAxisAngle(Y_AXIS, Math.PI);
 const IDENTITY_QUATERNION = new Quaternion();
-const HAND_BONE_NAMES = {
-  left: { hand: "hand_l", index: "index_01_l", middle: "middle_01_l", pinky: "pinky_01_l" },
-  right: { hand: "hand_r", index: "index_01_r", middle: "middle_01_r", pinky: "pinky_01_r" },
-} as const;
-const HAND_DIGIT_BONE_NAMES: Readonly<Record<ProceduralHandDigitId, readonly string[]>> = {
-  index: ["index_01", "index_02", "index_03"],
-  middle: ["middle_01", "middle_02", "middle_03"],
-  pinky: ["pinky_01", "pinky_02", "pinky_03"],
-  ring: ["ring_01", "ring_02", "ring_03"],
-  thumb: ["thumb_01", "thumb_02", "thumb_03"],
-};
 const FINGER_CURL_RADIANS = [Math.PI * 0.4, Math.PI * 0.5, Math.PI * 0.34] as const;
 const THUMB_CURL_RADIANS = [Math.PI * 0.18, Math.PI * 0.3, Math.PI * 0.2] as const;
-const SEGMENT_CHILD_BONE_NAMES: Partial<Record<CharacterPartId, string>> = {
-  upperArmLeft: "lowerarm_l",
-  forearmLeft: "hand_l",
-  upperArmRight: "lowerarm_r",
-  forearmRight: "hand_r",
-  thighLeft: "calf_l",
-  shinLeft: "foot_l",
-  thighRight: "calf_r",
-  shinRight: "foot_r",
-};
 const CHARACTER_IK_PART_IDS = new Set<CharacterPartId>([
   "upperArmLeft",
   "forearmLeft",
@@ -142,29 +127,10 @@ const CHARACTER_IK_PART_IDS = new Set<CharacterPartId>([
   "thighRight",
   "shinRight",
 ]);
-const STABLE_LEG_PART_IDS = new Set<CharacterPartId>(["thighLeft", "shinLeft", "thighRight", "shinRight"]);
-const DIAGNOSTIC_JOINT_BONE_NAMES: Readonly<Record<ProceduralHumanoidJointId, string>> = {
-  ankleLeft: "foot_l",
-  ankleRight: "foot_r",
-  chest: "spine_03",
-  elbowLeft: "lowerarm_l",
-  elbowRight: "lowerarm_r",
-  head: "Head",
-  hipLeft: "thigh_l",
-  hipRight: "thigh_r",
-  kneeLeft: "calf_l",
-  kneeRight: "calf_r",
-  pelvis: "pelvis",
-  shoulderLeft: "upperarm_l",
-  shoulderRight: "upperarm_r",
-  wristLeft: "hand_l",
-  wristRight: "hand_r",
-};
 
 export class ProceduralCharacterAvatar implements ProceduralCharacterSocketReader {
   public readonly group = new Group();
 
-  private readonly models = new Map<LoadedQuaterniusCharacterAsset["tier"], PreparedCharacterModel>();
   private readonly partTransforms = createCharacterPartTransforms();
   private readonly scratchParentQuaternion = new Quaternion();
   private readonly scratchGroupQuaternion = new Quaternion();
@@ -189,6 +155,8 @@ export class ProceduralCharacterAvatar implements ProceduralCharacterSocketReade
   private readonly scratchFootCross = new Vector3();
   private readonly scratchFootDirection = new Vector3();
   private readonly scratchFootDesiredDirection = new Vector3();
+  private readonly scratchFootPosition = new Vector3();
+  private readonly scratchToePosition = new Vector3();
   private readonly scratchRootForward = new Vector3();
   private readonly scratchRootLateral = new Vector3();
   private readonly scratchRootUp = new Vector3();
@@ -200,28 +168,32 @@ export class ProceduralCharacterAvatar implements ProceduralCharacterSocketReade
   private readonly scratchHandCorrection = new Quaternion();
   private readonly scratchFingerCurl = new Quaternion();
 
-  constructor(assets: LoadedQuaterniusCharacterAsset[], rig: ResolvedCharacterRig, config: ProceduralCharacterConfig) {
+  constructor(asset: LoadedProceduralCharacterAsset, rig: ResolvedCharacterRig, config: ProceduralCharacterConfig) {
     this.rig = rig;
     this.config = config;
     this.group.name = "procedural-character-avatar";
-    composeBaseHeadOntoOutfits(assets);
-    assets.forEach((asset) => this.addCharacterModel(asset));
-    this.activeModel = this.requireModel(config.tier);
-    this.activateModel(config.tier);
+    this.activeModel = prepareCharacterModel(asset);
+    this.group.add(this.activeModel.scene, this.activeModel.helper);
+    resetCharacterModelPose(this.activeModel, rig);
     this.updateConfig(config);
   }
 
-  public rebuild(rig: ResolvedCharacterRig, config: ProceduralCharacterConfig): void {
+  public rebuild(
+    rig: ResolvedCharacterRig,
+    config: ProceduralCharacterConfig,
+    replacement?: LoadedProceduralCharacterAsset,
+  ): void {
+    if (replacement) this.replaceActiveModel(replacement);
     this.rig = rig;
     this.config = config;
-    this.activateModel(config.tier);
+    resetCharacterModelPose(this.activeModel, rig);
     this.updateConfig(config);
     if (this.lastPose) this.applyPose(this.lastPose);
   }
 
   public updateConfig(config: ProceduralCharacterConfig): void {
     this.config = config;
-    this.models.forEach((model) => updateCharacterModelStyle(model, config));
+    updateCharacterModelStyle(this.activeModel, config);
     this.updateDebugVisibility();
   }
 
@@ -268,14 +240,17 @@ export class ProceduralCharacterAvatar implements ProceduralCharacterSocketReade
     this.activeModel.skeletons.forEach((skeleton) => skeleton.bones.forEach((bone) => bones.add(bone)));
     const handPose = resolveProceduralCharacterHandPose(this.upperBodyAction);
     return {
+      appearanceId: this.activeModel.asset.appearanceId,
+      appearanceLabel: this.activeModel.asset.appearanceLabel,
       assetId: this.activeModel.asset.id,
       assetLabel: this.activeModel.asset.label,
       authoredClipCount: this.activeModel.asset.gltf.animations.length,
       boneCount: bones.size,
-      leftPalmInwardDot: resolvePalmInwardDot(this.activeModel.scene, "left"),
+      leftPalmInwardDot: resolvePalmInwardDot(this.activeModel, "left"),
       leftGripProfile: handPose.left.profile,
-      rightPalmInwardDot: resolvePalmInwardDot(this.activeModel.scene, "right"),
+      rightPalmInwardDot: resolvePalmInwardDot(this.activeModel, "right"),
       rightGripProfile: handPose.right.profile,
+      rigAdapterId: this.activeModel.adapter.id,
       skinnedMeshCount: this.activeModel.skinnedMeshCount,
     };
   }
@@ -296,8 +271,8 @@ export class ProceduralCharacterAvatar implements ProceduralCharacterSocketReade
   public readWorldDiagnosticJoints(): Readonly<Record<ProceduralHumanoidJointId, Vector3Tuple>> {
     this.activeModel.scene.updateWorldMatrix(true, true);
     return Object.fromEntries(
-      Object.entries(DIAGNOSTIC_JOINT_BONE_NAMES).map(([jointId, boneName]) => {
-        const position = requireBone(this.activeModel.scene, boneName).getWorldPosition(new Vector3());
+      Object.entries(this.activeModel.diagnosticBones).map(([jointId, bone]) => {
+        const position = bone.getWorldPosition(new Vector3());
         return [jointId, [position.x, position.y, position.z] as Vector3Tuple];
       }),
     ) as unknown as Record<ProceduralHumanoidJointId, Vector3Tuple>;
@@ -307,8 +282,7 @@ export class ProceduralCharacterAvatar implements ProceduralCharacterSocketReade
     this.activeModel.scene.updateWorldMatrix(true, true);
     return Object.fromEntries(
       (["left", "right"] as const).map((side) => {
-        const bone = requireBone(this.activeModel.scene, side === "left" ? "foot_l" : "foot_r");
-        bone.getWorldQuaternion(this.scratchTargetQuaternion);
+        this.activeModel.feet[side].ankle.getWorldQuaternion(this.scratchTargetQuaternion);
         return [side, toQuaternionTuple(this.scratchTargetQuaternion)];
       }),
     ) as unknown as Record<"left" | "right", QuaternionTuple>;
@@ -321,9 +295,8 @@ export class ProceduralCharacterAvatar implements ProceduralCharacterSocketReade
     const rootUp = new Vector3(0, 1, 0).applyQuaternion(rootQuaternion);
     return Object.fromEntries(
       (["left", "right"] as const).map((side) => {
-        const suffix = side === "left" ? "l" : "r";
-        const ankle = requireBone(this.activeModel.scene, `foot_${suffix}`).getWorldPosition(new Vector3());
-        const toePosition = requireBone(this.activeModel.scene, `ball_${suffix}`).getWorldPosition(new Vector3());
+        const ankle = this.activeModel.feet[side].ankle.getWorldPosition(new Vector3());
+        const toePosition = this.activeModel.feet[side].toe.getWorldPosition(new Vector3());
         const toeDirection = toePosition.clone().sub(ankle);
         toeDirection.addScaledVector(rootUp, -toeDirection.dot(rootUp));
         const forwardDot = toeDirection.lengthSq() > 1e-8 ? toeDirection.normalize().dot(rootForward) : 0;
@@ -356,54 +329,26 @@ export class ProceduralCharacterAvatar implements ProceduralCharacterSocketReade
       return hasFiniteBoneTransform(this.activeModel.bindings[partId].bone);
     });
     return (
-      partTransformsFinite &&
-      hasFiniteBoneTransform(requireBone(this.activeModel.scene, "foot_l")) &&
-      hasFiniteBoneTransform(requireBone(this.activeModel.scene, "foot_r"))
+      partTransformsFinite && Object.values(this.activeModel.feet).every(({ ankle }) => hasFiniteBoneTransform(ankle))
     );
   }
 
   public dispose(): void {
-    this.models.forEach(disposeCharacterModel);
-    this.models.clear();
+    disposeCharacterModel(this.activeModel);
     this.group.clear();
     this.group.removeFromParent();
   }
 
-  private addCharacterModel(asset: LoadedQuaterniusCharacterAsset): void {
-    const model = prepareCharacterModel(asset);
-    model.scene.visible = false;
-    model.helper.visible = false;
-    this.models.set(asset.tier, model);
-  }
-
-  private activateModel(tier: LoadedQuaterniusCharacterAsset["tier"]): void {
-    const activeModel = this.requireModel(tier);
-    this.models.forEach((model) => {
-      const active = model === activeModel;
-      model.scene.visible = active;
-      model.helper.visible = false;
-      if (active) {
-        this.group.add(model.scene, model.helper);
-      } else {
-        model.scene.removeFromParent();
-        model.helper.removeFromParent();
-      }
-    });
-    this.activeModel = activeModel;
-    resetCharacterModelPose(this.activeModel, this.rig);
-    this.updateDebugVisibility();
-  }
-
-  private requireModel(tier: LoadedQuaterniusCharacterAsset["tier"]): PreparedCharacterModel {
-    const model = this.models.get(tier);
-    if (!model) throw new Error(`No Quaternius character asset is configured for tier ${tier}`);
-    return model;
+  private replaceActiveModel(asset: LoadedProceduralCharacterAsset): void {
+    const replacement = prepareCharacterModel(asset);
+    const previous = this.activeModel;
+    this.activeModel = replacement;
+    this.group.add(replacement.scene, replacement.helper);
+    disposeCharacterModel(previous);
   }
 
   private updateDebugVisibility(): void {
-    this.models.forEach((model) => {
-      model.helper.visible = model === this.activeModel && this.config.showJoints;
-    });
+    this.activeModel.helper.visible = this.config.showJoints;
   }
 
   private applyCurrentTransforms(): void {
@@ -455,7 +400,7 @@ export class ProceduralCharacterAvatar implements ProceduralCharacterSocketReade
     );
   }
 
-  private applyArmIk(side: keyof typeof HAND_BONE_NAMES): void {
+  private applyArmIk(side: HumanoidSide): void {
     const pose = this.lastPose;
     if (!pose) return;
     const suffix = side === "left" ? "Left" : "Right";
@@ -481,7 +426,7 @@ export class ProceduralCharacterAvatar implements ProceduralCharacterSocketReade
     this.applySolvedLimbSegment(forearmBinding, this.scratchIkSolvedJoint, this.scratchIkSolvedEnd);
   }
 
-  private applyLegIk(side: keyof typeof HAND_BONE_NAMES): void {
+  private applyLegIk(side: HumanoidSide): void {
     const pose = this.lastPose;
     if (!pose) return;
     const suffix = side === "left" ? "Left" : "Right";
@@ -489,7 +434,7 @@ export class ProceduralCharacterAvatar implements ProceduralCharacterSocketReade
     const shinPartId = `shin${suffix}` as const;
     const thighBinding = this.activeModel.bindings[thighPartId];
     const shinBinding = this.activeModel.bindings[shinPartId];
-    const footBone = requireBone(this.activeModel.scene, side === "left" ? "foot_l" : "foot_r");
+    const footBone = this.activeModel.feet[side].ankle;
 
     this.readBonePositionInCharacterSpace(thighBinding.bone, this.scratchIkRoot);
     this.readBonePositionInCharacterSpace(shinBinding.bone, this.scratchIkCurrentJoint);
@@ -538,17 +483,17 @@ export class ProceduralCharacterAvatar implements ProceduralCharacterSocketReade
   }
 
   private alignFootProgression(side: "left" | "right"): void {
-    const suffix = side === "left" ? "l" : "r";
-    const foot = requireBone(this.activeModel.scene, `foot_${suffix}`);
-    const toe = requireBone(this.activeModel.scene, `ball_${suffix}`);
-    if (!foot.parent || toe.parent !== foot) return;
+    const { ankle: foot, toe } = this.activeModel.feet[side];
+    if (!foot.parent) return;
 
     this.group.getWorldQuaternion(this.scratchGroupQuaternion);
     foot.getWorldQuaternion(this.scratchTargetQuaternion);
     this.scratchRootForward.copy(Z_AXIS).applyQuaternion(this.scratchGroupQuaternion).normalize();
     this.scratchRootLateral.copy(X_AXIS).applyQuaternion(this.scratchGroupQuaternion).normalize();
     this.scratchRootUp.copy(Y_AXIS).applyQuaternion(this.scratchGroupQuaternion).normalize();
-    this.scratchFootDirection.copy(toe.position).applyQuaternion(this.scratchTargetQuaternion);
+    foot.getWorldPosition(this.scratchFootPosition);
+    toe.getWorldPosition(this.scratchToePosition);
+    this.scratchFootDirection.copy(this.scratchToePosition).sub(this.scratchFootPosition);
     this.scratchFootDirection.addScaledVector(this.scratchRootUp, -this.scratchFootDirection.dot(this.scratchRootUp));
     if (this.scratchFootDirection.lengthSq() < 1e-8) return;
     this.scratchFootDirection.normalize();
@@ -626,7 +571,7 @@ export class ProceduralCharacterAvatar implements ProceduralCharacterSocketReade
     this.group.worldToLocal(target);
   }
 
-  private measureArmLengths(side: keyof typeof HAND_BONE_NAMES): {
+  private measureArmLengths(side: HumanoidSide): {
     forearmLength: number;
     upperArmLength: number;
   } {
@@ -643,14 +588,11 @@ export class ProceduralCharacterAvatar implements ProceduralCharacterSocketReade
     };
   }
 
-  private measureLegLengths(side: keyof typeof HAND_BONE_NAMES): { shinLength: number; thighLength: number } {
+  private measureLegLengths(side: HumanoidSide): { shinLength: number; thighLength: number } {
     const suffix = side === "left" ? "Left" : "Right";
     this.readBonePositionInCharacterSpace(this.activeModel.bindings[`thigh${suffix}`].bone, this.scratchIkRoot);
     this.readBonePositionInCharacterSpace(this.activeModel.bindings[`shin${suffix}`].bone, this.scratchIkCurrentJoint);
-    this.readBonePositionInCharacterSpace(
-      requireBone(this.activeModel.scene, side === "left" ? "foot_l" : "foot_r"),
-      this.scratchIkCurrentEnd,
-    );
+    this.readBonePositionInCharacterSpace(this.activeModel.feet[side].ankle, this.scratchIkCurrentEnd);
     return {
       shinLength: this.scratchIkCurrentJoint.distanceTo(this.scratchIkCurrentEnd),
       thighLength: this.scratchIkRoot.distanceTo(this.scratchIkCurrentJoint),
@@ -663,15 +605,15 @@ export class ProceduralCharacterAvatar implements ProceduralCharacterSocketReade
     this.applyFingerCurls();
   }
 
-  private applyHandRoll(side: keyof typeof HAND_BONE_NAMES): void {
+  private applyHandRoll(side: HumanoidSide): void {
     const binding = this.activeModel.hands[side];
     binding.bone.quaternion.copy(binding.bindQuaternion);
     if (side === "left") {
-      binding.bone.quaternion.multiply(HAND_ROLL_CORRECTION);
+      binding.bone.quaternion.multiply(binding.rollCorrection);
     } else {
       const archerWeight = this.upperBodyAction?.kind === "archer" ? this.upperBodyAction.actionWeight : 0;
       this.scratchHandCorrection
-        .copy(HAND_ROLL_CORRECTION)
+        .copy(binding.rollCorrection)
         .slerp(IDENTITY_QUATERNION, Math.min(1, Math.max(0, archerWeight)));
       binding.bone.quaternion.multiply(this.scratchHandCorrection);
     }
@@ -683,7 +625,7 @@ export class ProceduralCharacterAvatar implements ProceduralCharacterSocketReade
     this.applyFingerCurl("right", handPose.right);
   }
 
-  private applyFingerCurl(side: keyof typeof HAND_BONE_NAMES, pose: ProceduralHandPose): void {
+  private applyFingerCurl(side: HumanoidSide, pose: ProceduralHandPose): void {
     const binding = this.activeModel.hands[side];
     PROCEDURAL_HAND_DIGIT_IDS.forEach((digitId) => {
       const bones = binding.digits[digitId];
@@ -691,7 +633,9 @@ export class ProceduralCharacterAvatar implements ProceduralCharacterSocketReade
       bones.forEach((finger, index) => {
         finger.bone.quaternion
           .copy(finger.bindQuaternion)
-          .multiply(this.scratchFingerCurl.setFromAxisAngle(X_AXIS, curlAngles[index] * pose.curls[digitId]));
+          .multiply(
+            this.scratchFingerCurl.setFromAxisAngle(binding.fingerCurlAxis, curlAngles[index] * pose.curls[digitId]),
+          );
       });
     });
   }
@@ -717,111 +661,7 @@ function toVectorTuple(vector: Readonly<Vector3>): Vector3Tuple {
   return [vector.x, vector.y, vector.z];
 }
 
-function composeBaseHeadOntoOutfits(assets: LoadedQuaterniusCharacterAsset[]): void {
-  const baseAsset = assets.find((asset) => asset.id === "base");
-  if (!baseAsset) throw new Error("Quaternius Universal base asset was not loaded");
-  const headSources = ["Eyebrows", "Eyes", "SuperHero_Male"].map((name) =>
-    requireSkinnedMesh(baseAsset.gltf.scene, name),
-  );
-
-  assets.filter((asset) => asset.id !== "base").forEach((asset) => attachHeadToOutfit(asset, headSources));
-}
-
-function attachHeadToOutfit(asset: LoadedQuaterniusCharacterAsset, headSources: SkinnedMesh[]): void {
-  const targetMesh = findFirstSkinnedMesh(asset.gltf.scene);
-  const armature = asset.gltf.scene.getObjectByName("Armature");
-  if (!targetMesh || !armature) throw new Error(`${asset.label} cannot accept the Universal base head`);
-  validateCompatibleSkeletons(headSources[0].skeleton, targetMesh.skeleton, asset.label);
-
-  headSources.forEach((source) => {
-    const geometry = source.name === "SuperHero_Male" ? extractHeadGeometry(source) : source.geometry.clone();
-    const material = Array.isArray(source.material)
-      ? source.material.map((entry) => entry.clone())
-      : source.material.clone();
-    const headPiece = new SkinnedMesh(geometry, material);
-    headPiece.name = `UniversalHead_${source.name}`;
-    headPiece.position.copy(source.position);
-    headPiece.quaternion.copy(source.quaternion);
-    headPiece.scale.copy(source.scale);
-    headPiece.bindMode = source.bindMode;
-    headPiece.bind(targetMesh.skeleton, source.bindMatrix);
-    headPiece.userData.proceduralCharacterOwnsGeometry = true;
-    armature.add(headPiece);
-  });
-}
-
-function extractHeadGeometry(source: SkinnedMesh): BufferGeometry {
-  const geometry = source.geometry.clone();
-  geometry.computeBoundingBox();
-  const position = geometry.getAttribute("position");
-  const skinIndex = geometry.getAttribute("skinIndex");
-  const skinWeight = geometry.getAttribute("skinWeight");
-  const sourceIndex = geometry.index;
-  const maxY = geometry.boundingBox?.max.y;
-  if (!sourceIndex || !skinIndex || !skinWeight || maxY === undefined) {
-    throw new Error("Universal base body cannot be separated into a head mesh");
-  }
-  const headBoneIndices = new Set(
-    source.skeleton.bones
-      .map((bone, index) => ({ index, name: bone.name }))
-      .filter(({ name }) => name === "Head" || name === "neck_01")
-      .map(({ index }) => index),
-  );
-  const neckCutY = maxY - HEAD_NECK_RANGE;
-  const retainedIndices: number[] = [];
-
-  for (let index = 0; index < sourceIndex.count; index += 3) {
-    const a = sourceIndex.getX(index);
-    const b = sourceIndex.getX(index + 1);
-    const c = sourceIndex.getX(index + 2);
-    const centroidY = (position.getY(a) + position.getY(b) + position.getY(c)) / 3;
-    const headWeight = (resolveHeadWeight(a) + resolveHeadWeight(b) + resolveHeadWeight(c)) / 3;
-    if (centroidY >= neckCutY && headWeight >= MIN_HEAD_SKIN_WEIGHT) retainedIndices.push(a, b, c);
-  }
-  if (retainedIndices.length === 0) throw new Error("Universal base head extraction retained no triangles");
-
-  const IndexArray = position.count > 65_535 ? Uint32Array : Uint16Array;
-  geometry.setIndex(new BufferAttribute(new IndexArray(retainedIndices), 1));
-  geometry.clearGroups();
-  geometry.addGroup(0, retainedIndices.length, 0);
-  geometry.computeBoundingBox();
-  geometry.computeBoundingSphere();
-  return geometry;
-
-  function resolveHeadWeight(vertexIndex: number): number {
-    let weight = 0;
-    for (let item = 0; item < 4; item += 1) {
-      if (headBoneIndices.has(skinIndex.getComponent(vertexIndex, item))) {
-        weight += skinWeight.getComponent(vertexIndex, item);
-      }
-    }
-    return weight;
-  }
-}
-
-function requireSkinnedMesh(scene: Group, name: string): SkinnedMesh {
-  const object = scene.getObjectByName(name);
-  if (!(object instanceof SkinnedMesh)) throw new Error(`Universal base mesh ${name} was not found`);
-  return object;
-}
-
-function findFirstSkinnedMesh(scene: Group): SkinnedMesh | undefined {
-  let result: SkinnedMesh | undefined;
-  scene.traverse((object) => {
-    if (!result && object instanceof SkinnedMesh) result = object;
-  });
-  return result;
-}
-
-function validateCompatibleSkeletons(source: Skeleton, target: Skeleton, assetLabel: string): void {
-  const sourceNames = source.bones.map((bone) => bone.name);
-  const targetNames = target.bones.map((bone) => bone.name);
-  if (sourceNames.length !== targetNames.length || sourceNames.some((name, index) => name !== targetNames[index])) {
-    throw new Error(`${assetLabel} does not share the Universal base skeleton order`);
-  }
-}
-
-function prepareCharacterModel(asset: LoadedQuaterniusCharacterAsset): PreparedCharacterModel {
+function prepareCharacterModel(asset: LoadedProceduralCharacterAsset): PreparedCharacterModel {
   const crowdHiddenMeshes: Array<{ heroVisible: boolean; mesh: Mesh }> = [];
   const scene = asset.gltf.scene;
   const ownedGeometries = new Set<BufferGeometry>();
@@ -830,22 +670,22 @@ function prepareCharacterModel(asset: LoadedQuaterniusCharacterAsset): PreparedC
   const styledMaterials: StyledCharacterMaterial[] = [];
   let skinnedMeshCount = 0;
 
-  scene.name = `quaternius-character:${asset.id}`;
-  mergeCompatibleOutfitMeshes(scene, ownedGeometries);
+  scene.name = `procedural-character:${asset.appearanceId}:${asset.id}`;
+  scene.quaternion.premultiply(new Quaternion().fromArray(asset.adapter.sceneRotation));
+  mergeCompatibleOutfitMeshes(scene, asset.materials, ownedGeometries);
   scene.traverse((object) => {
     if (!(object instanceof Mesh)) return;
     object.castShadow = true;
     object.receiveShadow = false;
     object.frustumCulled = false;
-    if (isCrowdHiddenCharacterMesh(object.name)) {
+    if (asset.materials.crowdHiddenMesh.test(object.name)) {
       crowdHiddenMeshes.push({ heroVisible: object.visible, mesh: object });
     }
-    if (object.userData.proceduralCharacterOwnsGeometry === true) ownedGeometries.add(object.geometry);
     const meshMaterials = Array.isArray(object.material) ? object.material : [object.material];
     meshMaterials.forEach((material) => {
       materials.add(material);
       if (material instanceof MeshStandardMaterial && !styledMaterials.some((entry) => entry.material === material)) {
-        styledMaterials.push(createStyledMaterial(material));
+        styledMaterials.push(createStyledMaterial(material, asset.materials));
       }
     });
     if (object instanceof SkinnedMesh) {
@@ -854,9 +694,12 @@ function prepareCharacterModel(asset: LoadedQuaterniusCharacterAsset): PreparedC
     }
   });
   scene.updateWorldMatrix(true, true);
+  const bindings = createCharacterBoneBindings(scene, asset.adapter);
+  const diagnosticBones = createDiagnosticBoneBindings(scene, asset.adapter);
+  const feet = createFootBoneBindings(scene, asset.adapter);
 
   const helper = new SkeletonHelper(scene);
-  helper.name = `quaternius-skeleton:${asset.id}`;
+  helper.name = `procedural-character-skeleton:${asset.adapter.id}:${asset.id}`;
   helper.frustumCulled = false;
   forEachMaterial(helper.material, (material) => {
     material.depthTest = false;
@@ -865,27 +708,36 @@ function prepareCharacterModel(asset: LoadedQuaterniusCharacterAsset): PreparedC
   });
 
   return {
+    adapter: asset.adapter,
     asset,
-    authoredPelvisToAnkle: resolveAuthoredPelvisToAnkle(scene),
-    bindings: createCharacterBoneBindings(scene),
+    authoredPelvisToAnkle: resolveAuthoredPelvisToAnkle(bindings.pelvis.bone, feet.left.ankle, asset.adapter),
+    bindings,
     crowdHiddenMeshes,
-    hands: createCharacterHandBindings(scene),
+    diagnosticBones,
+    feet,
+    hands: createCharacterHandBindings(scene, asset.adapter),
     helper,
     materials,
     ownedGeometries,
     scene,
-    sockets: createCharacterSocketBindings(scene),
+    sockets: createCharacterSocketBindings(scene, asset.adapter),
     skeletons,
     skinnedMeshCount,
     styledMaterials,
   };
 }
 
-function mergeCompatibleOutfitMeshes(scene: Group, ownedGeometries: Set<BufferGeometry>): void {
+function mergeCompatibleOutfitMeshes(
+  scene: Group,
+  materials: LoadedProceduralCharacterAsset["materials"],
+  ownedGeometries: Set<BufferGeometry>,
+): void {
   const candidates = new Map<string, SkinnedMesh[]>();
   scene.traverse((object) => {
     if (!(object instanceof SkinnedMesh) || Array.isArray(object.material) || !object.parent) return;
-    if (!/^MI_(?:Peasant|Ranger)$/i.test(object.material.name) || isCrowdHiddenCharacterMesh(object.name)) return;
+    if (!materials.mergeableOutfit.test(object.material.name) || materials.crowdHiddenMesh.test(object.name)) {
+      return;
+    }
     if (!hasIdentityLocalTransform(object)) return;
     const key = `${object.parent.uuid}:${object.material.name}`;
     const group = candidates.get(key) ?? [];
@@ -950,86 +802,146 @@ function hasIdentityLocalTransform(mesh: SkinnedMesh): boolean {
   );
 }
 
-function createCharacterSocketBindings(scene: Group): Record<CharacterSocketId, CharacterSocketBinding> {
-  const handLeft = requireBone(scene, HAND_BONE_NAMES.left.hand);
-  const handRight = requireBone(scene, HAND_BONE_NAMES.right.hand);
+function createCharacterSocketBindings(
+  scene: Group,
+  adapter: HumanoidRigAdapter,
+): Record<CharacterSocketId, CharacterSocketBinding> {
+  return Object.fromEntries(
+    Object.entries(adapter.sockets).map(([socketId, definition]) => {
+      const bone = requireRigBone(scene, adapter, definition.bone);
+      const offset =
+        definition.offset.kind === "fixed"
+          ? new Vector3().fromArray(definition.offset.value)
+          : resolveKnuckleCenterOffset(scene, adapter, bone, definition.offset.bones, definition.offset.scale);
+      return [socketId, { bone, offset }];
+    }),
+  ) as Record<CharacterSocketId, CharacterSocketBinding>;
+}
+
+function createCharacterHandBindings(
+  scene: Group,
+  adapter: HumanoidRigAdapter,
+): Record<HumanoidSide, CharacterHandBinding> {
   return {
-    drawRight: { bone: requireBone(scene, "middle_01_r"), offset: new Vector3(0, 0.015, 0) },
-    gripLeft: { bone: handLeft, offset: resolvePalmGripOffset(scene, "left") },
-    gripRight: { bone: handRight, offset: resolvePalmGripOffset(scene, "right") },
-    handLeft: { bone: handLeft, offset: new Vector3() },
-    handRight: { bone: handRight, offset: new Vector3() },
-    jawAnchor: { bone: requireBone(scene, "Head"), offset: new Vector3(-0.025, -0.015, 0.035) },
-    projectileOrigin: { bone: handLeft, offset: new Vector3(0, 0, 0.035) },
-    quiver: { bone: requireBone(scene, "spine_03"), offset: new Vector3(0.22, 0.08, -0.16) },
+    left: createCharacterHandBinding(scene, adapter, "left"),
+    right: createCharacterHandBinding(scene, adapter, "right"),
   };
 }
 
-function createCharacterHandBindings(scene: Group): Record<keyof typeof HAND_BONE_NAMES, CharacterHandBinding> {
-  return {
-    left: createCharacterHandBinding(scene, "left"),
-    right: createCharacterHandBinding(scene, "right"),
-  };
-}
-
-function createCharacterHandBinding(scene: Group, side: keyof typeof HAND_BONE_NAMES): CharacterHandBinding {
-  const bone = requireBone(scene, HAND_BONE_NAMES[side].hand);
+function createCharacterHandBinding(
+  scene: Group,
+  adapter: HumanoidRigAdapter,
+  side: HumanoidSide,
+): CharacterHandBinding {
+  const definition = adapter.hands[side];
+  const bone = requireRigBone(scene, adapter, definition.hand);
   return {
     bindQuaternion: bone.quaternion.clone(),
     bone,
-    digits: createCharacterFingerBindings(scene, side),
+    digits: createCharacterFingerBindings(scene, adapter, side),
+    fingerCurlAxis: new Vector3().fromArray(definition.fingerCurlAxis).normalize(),
+    palm: {
+      index: requireRigBone(scene, adapter, definition.palm.index),
+      middle: requireRigBone(scene, adapter, definition.palm.middle),
+      normalSign: definition.palm.normalSign,
+      pinky: requireRigBone(scene, adapter, definition.palm.pinky),
+    },
+    rollCorrection: new Quaternion().fromArray(definition.rollCorrection).normalize(),
   };
 }
 
 function createCharacterFingerBindings(
   scene: Group,
-  side: keyof typeof HAND_BONE_NAMES,
+  adapter: HumanoidRigAdapter,
+  side: HumanoidSide,
 ): Record<ProceduralHandDigitId, CharacterFingerBoneBinding[]> {
-  const suffix = side === "left" ? "l" : "r";
   return Object.fromEntries(
-    Object.entries(HAND_DIGIT_BONE_NAMES).map(([digitId, names]) => [
+    Object.entries(adapter.hands[side].digits).map(([digitId, names]) => [
       digitId,
       names.map((name) => {
-        const bone = requireBone(scene, `${name}_${suffix}`);
+        const bone = requireRigBone(scene, adapter, name);
         return { bindQuaternion: bone.quaternion.clone(), bone };
       }),
     ]),
   ) as Record<ProceduralHandDigitId, CharacterFingerBoneBinding[]>;
 }
 
-function resolvePalmGripOffset(scene: Group, side: keyof typeof HAND_BONE_NAMES): Vector3 {
-  const hand = requireBone(scene, HAND_BONE_NAMES[side].hand);
+function resolveKnuckleCenterOffset(
+  scene: Group,
+  adapter: HumanoidRigAdapter,
+  hand: Bone,
+  knuckleNames: readonly string[],
+  scale: number,
+): Vector3 {
   const knuckleCenter = new Vector3();
-  const suffix = side === "left" ? "l" : "r";
-  const knuckleNames = ["index_01", "middle_01", "ring_01", "pinky_01"];
   knuckleNames.forEach((name) => {
-    const knuckle = requireBone(scene, `${name}_${suffix}`).getWorldPosition(new Vector3());
+    const knuckle = requireRigBone(scene, adapter, name).getWorldPosition(new Vector3());
     knuckleCenter.add(hand.worldToLocal(knuckle));
   });
-  return knuckleCenter.multiplyScalar(0.82 / knuckleNames.length);
+  return knuckleCenter.multiplyScalar(scale / knuckleNames.length);
 }
 
-function createCharacterBoneBindings(scene: Group): Record<CharacterPartId, SegmentBoneBinding> {
+function createCharacterBoneBindings(
+  scene: Group,
+  adapter: HumanoidRigAdapter,
+): Record<CharacterPartId, SegmentBoneBinding> {
   return Object.fromEntries(
-    CHARACTER_PART_IDS.map((partId) => [partId, createCharacterBoneBinding(scene, partId)]),
+    CHARACTER_PART_IDS.map((partId) => [partId, createCharacterBoneBinding(scene, adapter, partId)]),
   ) as Record<CharacterPartId, SegmentBoneBinding>;
 }
 
-function createCharacterBoneBinding(scene: Group, partId: CharacterPartId): SegmentBoneBinding {
-  const boneName = QUATERNIUS_BONE_NAMES[partId];
-  const childBoneName = SEGMENT_CHILD_BONE_NAMES[partId];
-  if (childBoneName && STABLE_LEG_PART_IDS.has(partId)) {
-    return createStableSegmentBoneBinding(scene, boneName, childBoneName, Z_AXIS, X_AXIS);
+function createCharacterBoneBinding(
+  scene: Group,
+  adapter: HumanoidRigAdapter,
+  partId: CharacterPartId,
+): SegmentBoneBinding {
+  const definition = adapter.partBindings[partId];
+  if (definition.childBone && definition.stable) {
+    return createStableSegmentBoneBinding(
+      scene,
+      definition.bone,
+      definition.childBone,
+      new Vector3().fromArray(adapter.stableSegmentAxes.referenceForward),
+      new Vector3().fromArray(adapter.stableSegmentAxes.fallbackForward),
+    );
   }
-  return createSegmentBoneBinding(scene, boneName, childBoneName);
+  return createSegmentBoneBinding(scene, definition.bone, definition.childBone);
 }
 
-function requireBone(scene: Group, name: string): Bone {
+function requireRigBone(scene: Group, adapter: HumanoidRigAdapter, name: string): Bone {
   try {
     return requireSkinnedBone(scene, name);
   } catch {
-    throw new Error(`Quaternius character bone ${name} was not found`);
+    throw new Error(`${adapter.label} bone ${name} was not found`);
   }
+}
+
+function createDiagnosticBoneBindings(
+  scene: Group,
+  adapter: HumanoidRigAdapter,
+): Record<ProceduralHumanoidJointId, Bone> {
+  return Object.fromEntries(
+    Object.entries(adapter.diagnosticBones).map(([jointId, boneName]) => [
+      jointId,
+      requireRigBone(scene, adapter, boneName),
+    ]),
+  ) as Record<ProceduralHumanoidJointId, Bone>;
+}
+
+function createFootBoneBindings(
+  scene: Group,
+  adapter: HumanoidRigAdapter,
+): Record<HumanoidSide, { ankle: Bone; toe: Bone }> {
+  return {
+    left: {
+      ankle: requireRigBone(scene, adapter, adapter.feet.left.ankle),
+      toe: requireRigBone(scene, adapter, adapter.feet.left.toe),
+    },
+    right: {
+      ankle: requireRigBone(scene, adapter, adapter.feet.right.ankle),
+      toe: requireRigBone(scene, adapter, adapter.feet.right.toe),
+    },
+  };
 }
 
 function createCharacterPartTransforms(): Record<CharacterPartId, CharacterPartTransform> {
@@ -1046,26 +958,22 @@ function resetCharacterModelPose(model: PreparedCharacterModel, rig: ResolvedCha
   model.scene.updateWorldMatrix(true, true);
 }
 
-function resolveAuthoredPelvisToAnkle(scene: Group): number {
-  const pelvisY = requireBone(scene, "pelvis").getWorldPosition(new Vector3()).y;
-  const ankleY = requireBone(scene, "foot_l").getWorldPosition(new Vector3()).y;
-  const distance = pelvisY - ankleY;
-  if (distance <= 0) throw new Error("Quaternius character has an invalid authored leg length");
+function resolveAuthoredPelvisToAnkle(pelvisBone: Bone, ankleBone: Bone, adapter: HumanoidRigAdapter): number {
+  const distance = pelvisBone.getWorldPosition(new Vector3()).distanceTo(ankleBone.getWorldPosition(new Vector3()));
+  if (distance <= 0) throw new Error(`${adapter.label} has an invalid authored leg length`);
   return distance;
 }
 
-function resolvePalmInwardDot(scene: Group, side: keyof typeof HAND_BONE_NAMES): number {
-  const names = HAND_BONE_NAMES[side];
-  const hand = requireBone(scene, names.hand).getWorldPosition(new Vector3());
-  const index = requireBone(scene, names.index).getWorldPosition(new Vector3());
-  const middle = requireBone(scene, names.middle).getWorldPosition(new Vector3());
-  const pinky = requireBone(scene, names.pinky).getWorldPosition(new Vector3());
-  const pelvis = requireBone(scene, "pelvis").getWorldPosition(new Vector3());
+function resolvePalmInwardDot(model: PreparedCharacterModel, side: HumanoidSide): number {
+  const binding = model.hands[side];
+  const hand = binding.bone.getWorldPosition(new Vector3());
+  const index = binding.palm.index.getWorldPosition(new Vector3());
+  const middle = binding.palm.middle.getWorldPosition(new Vector3());
+  const pinky = binding.palm.pinky.getWorldPosition(new Vector3());
+  const pelvis = model.bindings.pelvis.bone.getWorldPosition(new Vector3());
   const forward = middle.sub(hand).normalize();
   const across = side === "left" ? index.sub(pinky).normalize() : pinky.sub(index).normalize();
-  // The finger-plane cross product points through the back of the hand in the
-  // Quaternius bind pose; the anatomical palm normal is the opposite vector.
-  const palmNormal = across.cross(forward).normalize().negate();
+  const palmNormal = across.cross(forward).normalize().multiplyScalar(binding.palm.normalSign);
   const inward = pelvis.sub(hand).setY(0).normalize();
   return palmNormal.dot(inward);
 }
@@ -1085,20 +993,26 @@ function positionCharacterModelAtPelvis(
   model.scene.updateWorldMatrix(true, true);
 }
 
-function createStyledMaterial(material: MeshStandardMaterial): StyledCharacterMaterial {
+function createStyledMaterial(
+  material: MeshStandardMaterial,
+  materials: LoadedProceduralCharacterAsset["materials"],
+): StyledCharacterMaterial {
   return {
     baseColor: material.color.clone(),
     baseMetalness: material.metalness,
     baseNormalMap: material.normalMap,
     baseRoughness: material.roughness,
     material,
-    role: resolveMaterialRole(material.name),
+    role: resolveMaterialRole(materials, material.name),
   };
 }
 
-function resolveMaterialRole(materialName: string): StyledCharacterMaterial["role"] {
-  if (/ranger|peasant/i.test(materialName)) return "outfit";
-  if (/regular|eyes|hair/i.test(materialName)) return "body";
+function resolveMaterialRole(
+  materials: LoadedProceduralCharacterAsset["materials"],
+  materialName: string,
+): StyledCharacterMaterial["role"] {
+  if (materials.outfit.test(materialName)) return "outfit";
+  if (materials.body.test(materialName)) return "body";
   return "other";
 }
 
@@ -1126,10 +1040,6 @@ function updateCharacterModelStyle(model: PreparedCharacterModel, config: Proced
     material.wireframe = config.wireframe;
     material.needsUpdate = true;
   });
-}
-
-function isCrowdHiddenCharacterMesh(name: string): boolean {
-  return /(?:^|_)(?:Eyebrows|Eyes)(?:$|_)|Acc_Pauldron|Arms_Bracer|Body_Belt/i.test(name);
 }
 
 function disposeCharacterModel(model: PreparedCharacterModel): void {

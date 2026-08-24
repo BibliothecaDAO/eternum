@@ -144,6 +144,30 @@ fantasy art direction. Those remain visual judgements, but the judgement must be
 
 ## Current evaluation
 
+### Rig-adapter and appearance-swap pass
+
+Evaluation date: 2026-08-24. The avatar no longer imports a model-family bone map. `HumanoidRigAdapter` now owns every
+canonical part binding, segment child, diagnostic joint, palm plane, finger chain/axis, foot/toe, semantic equipment
+socket, roll correction, and rest-frame axis. `appearanceId` independently maps T1/T2/T3 onto asset templates and owns
+material/crowd policy. The shared library keeps decoded geometry/textures while each actor retains only its current
+skeleton and materials; appearance and tier changes synchronously replace that actor-local model.
+
+The gym exercises two shipped appearances using the same `quaternius-universal` adapter: Modular Fantasy
+(`base/peasant/ranger` by tier) and Universal Base (`base` at every tier). Repeated Base -> Fantasy swaps stabilize at
+`30/31/30/31` live geometries with 18 textures, proving the expected one-time shared-template GPU warm-up does not grow
+on another cycle. The same swap after Jolt ragdoll returns to animated mode and the already-warmed 33-geometry baseline.
+
+Universal Base passed the 61-frame walk and 39-frame run temporal gates with zero issues: `0.1276L / 0.0893L` step
+width, `0.0000L` P90 outward knee deviation, and approximately `6.2° / 6.1°` planted toe-out. Its 28-image locomotion,
+42-image melee, and 63-image archer atlases also pass, including palm, grip, head-clearance, socket, foot-facing, and
+phase assertions. The full gym smoke then restored Modular Fantasy, completed projectile impact and Jolt ragdoll, and
+passed all seven collision scenarios without browser errors.
+
+The standardized 100-walker WebGL2 benchmark passes both appearances. Modular Fantasy measured 95.69 observed FPS,
+`2.71 ms` average animation CPU, and 122 live geometries; Universal Base measured 120.05 FPS, `2.37 ms`, and 56
+geometries. The previous all-tier-per-actor implementation retained 186 live geometries in the same Fantasy workload;
+single-active-model ownership therefore reduces retained geometry without changing draw calls, triangles, or behavior.
+
 ### Human-proportioned gait pass
 
 Evaluation date: 2026-08-24. The evidence and chosen engineering envelopes are documented in

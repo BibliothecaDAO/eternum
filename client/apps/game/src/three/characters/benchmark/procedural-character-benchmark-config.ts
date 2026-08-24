@@ -1,5 +1,12 @@
+import {
+  DEFAULT_PROCEDURAL_CHARACTER_APPEARANCE_ID,
+  normalizeProceduralCharacterAppearanceId,
+  type ProceduralCharacterAppearanceId,
+} from "../procedural-character-appearance";
+
 export interface ProceduralCharacterBenchmarkConfig {
   actorCount: number;
+  appearanceId: ProceduralCharacterAppearanceId;
   animationUpdateLanes: number;
   animationSpeed: number;
   archerVolleys: boolean;
@@ -23,6 +30,7 @@ export interface ProceduralCharacterBenchmarkConfig {
 
 const DEFAULT_CONFIG: ProceduralCharacterBenchmarkConfig = {
   actorCount: 100,
+  appearanceId: DEFAULT_PROCEDURAL_CHARACTER_APPEARANCE_ID,
   animationUpdateLanes: 3,
   animationSpeed: 1.15,
   archerVolleys: true,
@@ -56,6 +64,7 @@ export function applyProceduralCharacterBenchmarkConfigPatch(
   return {
     ...input,
     actorCount: clampInteger(input.actorCount, 1, 100),
+    appearanceId: normalizeProceduralCharacterAppearanceId(input.appearanceId),
     animationUpdateLanes: clampInteger(input.animationUpdateLanes, 1, 4),
     animationSpeed: clamp(input.animationSpeed, 0, 3),
     characterScale: clamp(input.characterScale, 0.2, 0.8),

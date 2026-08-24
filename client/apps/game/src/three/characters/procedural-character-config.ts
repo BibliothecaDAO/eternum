@@ -1,9 +1,16 @@
+import {
+  DEFAULT_PROCEDURAL_CHARACTER_APPEARANCE_ID,
+  normalizeProceduralCharacterAppearanceId,
+  type ProceduralCharacterAppearanceId,
+} from "./procedural-character-appearance";
+
 export type ProceduralCharacterMotionMode = "idle" | "walk" | "run" | "mounted";
 export type ProceduralCharacterPresetId = "balanced" | "heavy" | "mythic";
 export type ProceduralCharacterRenderDetail = "crowd" | "hero";
 export type ProceduralCharacterTier = 1 | 2 | 3;
 
 export interface ProceduralCharacterConfig {
+  appearanceId: ProceduralCharacterAppearanceId;
   tier: ProceduralCharacterTier;
   seed: number;
   primaryColor: string;
@@ -55,6 +62,7 @@ export interface ProceduralCharacterConfig {
 }
 
 const DEFAULT_CONFIG: ProceduralCharacterConfig = {
+  appearanceId: DEFAULT_PROCEDURAL_CHARACTER_APPEARANCE_ID,
   tier: 3,
   seed: 1337,
   primaryColor: "#315f86",
@@ -176,6 +184,7 @@ function normalizeProceduralCharacterConfig(input: ProceduralCharacterConfig): P
 
   return {
     ...input,
+    appearanceId: normalizeProceduralCharacterAppearanceId(input.appearanceId),
     tier: clampInteger(input.tier, 1, 3) as ProceduralCharacterTier,
     seed: clampInteger(input.seed, 0, 2_147_483_647),
     primaryColor: normalizeColor(input.primaryColor),

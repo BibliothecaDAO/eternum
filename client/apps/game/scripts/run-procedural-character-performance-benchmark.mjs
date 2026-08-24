@@ -13,6 +13,7 @@ const MAX_WALKING_DRAW_CALLS = 800;
 const MAX_WALKING_TRIANGLES = 2_000_000;
 const VALID_REQUESTED_RENDERER_MODES = new Set(["webgpu-auto", "webgpu-force-webgl"]);
 const VALID_RENDERER_MODES = new Set(["webgl2-fallback", "webgpu"]);
+const VALID_APPEARANCE_IDS = new Set(["modular-fantasy", "universal-base"]);
 const REPOSITORY_ROOT = fileURLToPath(new URL("../../../../", import.meta.url));
 
 export function buildProceduralCharacterPerformanceUrl({ baseUrl, rendererMode }) {
@@ -21,6 +22,11 @@ export function buildProceduralCharacterPerformanceUrl({ baseUrl, rendererMode }
   url.search = "";
   if (rendererMode) url.searchParams.set("rendererMode", rendererMode);
   return url.toString();
+}
+
+export function normalizePerformanceAppearanceId(value) {
+  if (!VALID_APPEARANCE_IDS.has(value)) throw new Error(`Unsupported benchmark appearance "${value}"`);
+  return value;
 }
 
 export function evaluateProceduralCharacterPerformanceResult({ browserErrors, snapshot }) {
@@ -163,7 +169,7 @@ function waitForSnapshot({ description, headed, session, timeoutMs, until }) {
   return snapshot;
 }
 
-function runPerformanceBenchmark({ baseUrl, headed, rendererMode, timeoutMs }) {
+function runPerformanceBenchmark({ appearanceId, baseUrl, headed, rendererMode, timeoutMs }) {
   const session = `procedural-character-performance-${process.pid}`;
   const url = buildProceduralCharacterPerformanceUrl({ baseUrl, rendererMode });
   runAgentBrowser(session, ["open", url, "--ignore-https-errors"], { headed, timeoutMs });
@@ -189,7 +195,10 @@ function runPerformanceBenchmark({ baseUrl, headed, rendererMode, timeoutMs }) {
     });
     runAgentBrowser(
       session,
-      ["eval", 'window.__proceduralCharacterBenchmark.applyWalkingPerformanceProfile(); "applied"'],
+      [
+        "eval",
+        `window.__proceduralCharacterBenchmark.applyWalkingPerformanceProfile(); window.__proceduralCharacterBenchmark.applyConfigPatch({ appearanceId: ${JSON.stringify(appearanceId)} }); "applied"`,
+      ],
       { headed },
     );
     waitForSnapshot({
@@ -197,7 +206,11 @@ function runPerformanceBenchmark({ baseUrl, headed, rendererMode, timeoutMs }) {
       headed,
       session,
       timeoutMs,
-      until: (snapshot) => snapshot.ready && snapshot.walkingProfileActive && snapshot.stats?.runningCount === 100,
+      until: (snapshot) =>
+        snapshot.ready &&
+        snapshot.config?.appearanceId === appearanceId &&
+        snapshot.walkingProfileActive &&
+        snapshot.stats?.runningCount === 100,
     });
     runAgentBrowser(
       session,
@@ -214,6 +227,7 @@ function runPerformanceBenchmark({ baseUrl, headed, rendererMode, timeoutMs }) {
     const browserErrors = parseErrorLines(runAgentBrowser(session, ["errors"], { headed }));
     return {
       ...evaluateProceduralCharacterPerformanceResult({ browserErrors, snapshot }),
+      appearanceId,
       browserErrors,
       snapshot,
       url,
@@ -236,12 +250,13 @@ function resolveOutputPath(outputPath) {
 }
 
 function main(argv) {
+  const appearanceId = normalizePerformanceAppearanceId(readOption(argv, "--appearance-id", "modular-fantasy"));
   const baseUrl = readOption(argv, "--base-url", DEFAULT_BASE_URL);
   const headed = readFlag(argv, "--headed");
   const outputPath = resolveOutputPath(readOption(argv, "--output", ""));
   const rendererMode = normalizeRendererMode(readOption(argv, "--renderer-mode", ""));
   const timeoutMs = readPositiveNumberOption(argv, "--timeout-ms", DEFAULT_TIMEOUT_MS);
-  const summary = runPerformanceBenchmark({ baseUrl, headed, rendererMode, timeoutMs });
+  const summary = runPerformanceBenchmark({ appearanceId, baseUrl, headed, rendererMode, timeoutMs });
   if (outputPath) {
     mkdirSync(dirname(outputPath), { recursive: true });
     writeFileSync(outputPath, `${JSON.stringify(summary, null, 2)}\n`);
