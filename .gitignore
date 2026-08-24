@@ -23,3 +23,6 @@ client/apps/bot/.env
 # launcher run-store artifacts (config/deployer/clean/launch/*-io.ts)
 .context/
 .playwright-mcp/
+
+# Madara lab generated state (world address, rendered torii config, run manifests)
+deploy/madara-lab/.lab/

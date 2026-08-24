@@ -63,3 +63,6 @@ max-line-length = 120
 [profile.appchain-blitz]
 
 [profile.appchain-eternum]
+
+# Madara lab (deploy/madara-lab); dojo_madara.toml targets the local Madara devnet.
+[profile.madara]

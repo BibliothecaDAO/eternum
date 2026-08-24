@@ -1,0 +1,27 @@
+# Torii compatibility canary against the Madara lab chain. Rendered to .lab/torii.toml by scripts/deploy-world.sh.
+# Stock torii v1.8.16, one world — no multi-world patch needed here.
+rpc = "http://madara:9944/rpc/v0_9_0"
+db_dir = "/data/torii-db-v1"
+
+[indexing]
+events_chunk_size = 100
+blocks_chunk_size = 10240
+pending = true
+polling_interval = 100
+controllers = false
+pre_confirmed = true
+max_concurrent_tasks = 100
+transactions = true
+
+contracts = [
+  "WORLD:{WORLD_ADDRESS}",
+]
+
+namespaces = ["s2"]
+world_block = 0
+
+[erc]
+max_metadata_tasks = 10
+
+[events]
+raw = true

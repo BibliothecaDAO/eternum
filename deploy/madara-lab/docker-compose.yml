@@ -1,0 +1,78 @@
+# Madara lab: a single pinned Madara sequencer running the Realms game world locally.
+#
+#   docker compose up -d                 # madara only
+#   scripts/deploy-world.sh              # sozo build + migrate the s2 world (writes world address to .lab/)
+#   docker compose --profile torii up -d # torii compatibility canary, after the world exists
+#
+# Everything here is deliberately fee-free, single-node, L1-sync-disabled devnet mode: the point of the
+# lab is execution, block production, receipt latency, and indexer behaviour — not settlement. The
+# settlement-layer (L3) mode is a separate profile once the game runs here (see README).
+#
+# Pin discipline: never `latest`. Bump MADARA_TAG in .env and record the digest in README.
+services:
+  madara:
+    image: ghcr.io/madara-alliance/madara:${MADARA_TAG:-v0.11.0-alpha.9}
+    container_name: madara-lab
+    command:
+      - --name=realms-madara-lab
+      - --devnet
+      - --base-path=/data
+      - --chain-config-path=/config/chain-config.yaml
+      - --rpc-external
+      - --rpc-cors=all
+      - --rpc-port=9944
+      - --rpc-admin
+      - --rpc-admin-external
+      - --no-charge-fee
+      - --l1-sync-disabled
+      - --feeder-gateway-enable
+      - --gateway-enable
+      - --gateway-external
+      - --gateway-port=8080
+      - --enable-native-execution=${MADARA_NATIVE:-false}
+      - --native-compilation-mode=async
+    environment:
+      RUST_LOG: ${MADARA_LOG:-info}
+    volumes:
+      - ./chain-config.yaml:/config/chain-config.yaml:ro
+      - madara-data:/data
+    ports:
+      - "127.0.0.1:5060:9944"   # Starknet JSON-RPC (v0.10.2 default; /rpc/v0_10_0 etc. versioned)
+      - "127.0.0.1:5061:9943"   # admin RPC (madara_* methods) — never expose beyond localhost
+      - "127.0.0.1:5062:8080"   # feeder gateway / gateway
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - >-
+          curl -sf -m 3 -X POST -H 'content-type: application/json'
+          -d '{"jsonrpc":"2.0","id":1,"method":"starknet_blockNumber","params":[]}'
+          http://127.0.0.1:9944 >/dev/null
+      interval: 5s
+      timeout: 5s
+      retries: 12
+    restart: unless-stopped
+
+  # Torii against Madara: a compatibility canary only. Torii is EOL and not a destination
+  # dependency; this exists to keep the current client playable while the owned data plane is built.
+  torii:
+    image: ${TORII_IMAGE:-ghcr.io/dojoengine/torii:v1.8.16}
+    container_name: madara-lab-torii
+    profiles: ["torii"]
+    depends_on:
+      madara:
+        condition: service_healthy
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - >-
+        exec torii --config /config/torii.toml
+        --http.addr 0.0.0.0 --http.port 8080
+        --http.cors_origins "*"
+    volumes:
+      - ./.lab/torii.toml:/config/torii.toml:ro
+      - torii-data:/data
+    ports:
+      - "127.0.0.1:8090:8080"
+
+volumes:
+  madara-data:
+  torii-data:
