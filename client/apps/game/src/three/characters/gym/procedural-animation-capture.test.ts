@@ -73,6 +73,23 @@ describe("procedural animation capture plan", () => {
     expect(resolveDefaultAnimationCaptureSequence("crossbowman")).toBe("locomotion-cycle");
   });
 
+  it("captures every naval broadside phase from five minimum coverage angles", () => {
+    const config = applyProceduralUnitConfigPatch(createDefaultProceduralUnitConfig(), { kind: "boat" });
+    const plan = createProceduralAnimationCapturePlan(config, "phase-atlas");
+
+    expect(resolveDefaultAnimationCaptureSequence("boat")).toBe("boat-broadside");
+    expect(plan.sequence).toBe("boat-broadside");
+    expect(plan.phases.map(({ id }) => id)).toEqual(["acquire", "brace", "fire", "recoil", "recover"]);
+    expect(plan.views.map(({ id }) => id)).toEqual([
+      "front",
+      "right-profile",
+      "rear",
+      "left-profile",
+      "elevated-three-quarter",
+    ]);
+    expect(plan.sampleFrames).toHaveLength(5);
+  });
+
   it("samples all four locomotion quarters across the five-view atlas", () => {
     const config = applyProceduralUnitConfigPatch(createDefaultProceduralUnitConfig(), { kind: "horse" });
     const plan = createProceduralAnimationCapturePlan(config, "phase-atlas");

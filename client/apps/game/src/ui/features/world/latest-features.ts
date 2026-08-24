@@ -35,6 +35,14 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-08-24",
+    title: "Procedural Naval Combat",
+    description:
+      "Added fantasy ships that take over when armies enter water, with synchronized wave motion, team pennants, wakes, cannonball broadsides, and impact-driven sinking—all tunable in the animation Gym.",
+    type: "feature",
+    gameSlug: "world",
+  },
+  {
+    date: "2026-08-24",
     title: "Swappable Character Rigs",
     description:
       "Added explicit appearance and skeleton adapters so procedural movement, equipment, diagnostics, and ragdolls can drive different compatible fantasy character models without duplicating animation code.",

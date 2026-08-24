@@ -19,11 +19,17 @@ import {
   createDefaultProceduralMeleeConfig,
   type ProceduralMeleeConfig,
 } from "./melee/procedural-melee-config";
+import {
+  applyProceduralBoatConfigPatch,
+  createDefaultProceduralBoatConfig,
+  type ProceduralBoatConfig,
+} from "./boat/procedural-boat-config";
 
-export type ProceduralUnitKind = "archer" | "knight" | "crossbowman" | "horse" | "paladin";
+export type ProceduralUnitKind = "archer" | "boat" | "knight" | "crossbowman" | "horse" | "paladin";
 
 export interface ProceduralUnitConfig {
   archer: ProceduralArcherConfig;
+  boat: ProceduralBoatConfig;
   kind: ProceduralUnitKind;
   humanoid: ProceduralCharacterConfig;
   horse: ProceduralHorseConfig;
@@ -32,6 +38,7 @@ export interface ProceduralUnitConfig {
 
 export interface ProceduralUnitConfigPatch {
   archer?: Partial<ProceduralArcherConfig>;
+  boat?: Partial<ProceduralBoatConfig>;
   kind?: ProceduralUnitKind;
   humanoid?: Partial<ProceduralCharacterConfig>;
   horse?: Partial<ProceduralHorseConfig>;
@@ -44,15 +51,18 @@ export const PROCEDURAL_UNIT_KINDS: ReadonlyArray<{ id: ProceduralUnitKind; labe
   { id: "crossbowman", label: "Crossbowman" },
   { id: "horse", label: "Horse" },
   { id: "paladin", label: "Mounted Paladin" },
+  { id: "boat", label: "Naval Ship" },
 ];
 
 export function createDefaultProceduralUnitConfig(): ProceduralUnitConfig {
   const archer = createDefaultProceduralArcherConfig();
+  const boat = createDefaultProceduralBoatConfig();
   const humanoid = createDefaultProceduralCharacterConfig();
   const horse = createDefaultProceduralHorseConfig();
   const melee = createDefaultProceduralMeleeConfig("paladin");
   return {
     archer,
+    boat,
     kind: "paladin",
     humanoid: applyProceduralCharacterConfigPatch(humanoid, { animationMode: "mounted" }),
     horse: applyProceduralHorseConfigPatch(horse, { seed: humanoid.seed }),
@@ -71,9 +81,12 @@ export function applyProceduralUnitConfigPatch(
   const humanoid = applyProceduralCharacterConfigPatch(current.humanoid, humanoidPatch);
   const horsePatch = { ...patch.horse };
   if (patch.humanoid?.seed !== undefined && patch.horse?.seed === undefined) horsePatch.seed = humanoid.seed;
+  const boatPatch = { ...patch.boat };
+  if (patch.humanoid?.seed !== undefined && patch.boat?.seed === undefined) boatPatch.seed = humanoid.seed;
   const meleeBase = kind === current.kind ? current.melee : applyDefaultMeleeLoadoutForKind(current.melee, kind);
   return {
     archer: applyProceduralArcherConfigPatch(current.archer, patch.archer ?? {}),
+    boat: applyProceduralBoatConfigPatch(current.boat, boatPatch),
     kind,
     humanoid,
     horse: applyProceduralHorseConfigPatch(current.horse, horsePatch),

@@ -58,6 +58,11 @@ const INITIAL_STATS: ProceduralCharacterGymStats = {
   assetLabel: "Loading asset",
   authoredClipCount: 0,
   boneCount: 0,
+  boatHeave: 0,
+  boatPitchDegrees: 0,
+  boatRollDegrees: 0,
+  boatSinkProgress: 0,
+  boatWakeStrength: 0,
   bodyCount: 0,
   constraintCount: 0,
   collisionActorCount: 0,
@@ -276,6 +281,7 @@ export const ProceduralCharacterGymView = () => {
   }, []);
   const patchConfig = useCallback((patch: ProceduralUnitConfigPatch) => {
     setSelectedPreset("custom");
+    if (patch.kind === "boat") setCollisionConfig((current) => ({ ...current, enabled: false }));
     setConfig((current) => applyProceduralUnitConfigPatch(current, patch));
     captureResultRef.current = null;
     setCaptureResult(null);
@@ -368,6 +374,8 @@ export const ProceduralCharacterGymView = () => {
       data-ranged-phase={stats.rangedPhase}
       data-melee-contacts={stats.meleeContactCount}
       data-melee-phase={stats.meleePhase}
+      data-boat-sink-progress={stats.boatSinkProgress}
+      data-boat-wake-strength={stats.boatWakeStrength}
       data-capture-busy={captureBusy ? "true" : "false"}
       data-capture-count={captureResult?.frames.length ?? 0}
       data-capture-frame={selectedCaptureFrame?.frameIndex ?? -1}
@@ -381,8 +389,9 @@ export const ProceduralCharacterGymView = () => {
         archer={
           collisionConfig.enabled
             ? collisionConfig.scenario === "arrow-defeat" || collisionConfig.scenario === "arrow-nonlethal"
-            : config.kind === "archer"
+            : config.kind === "archer" || config.kind === "boat"
         }
+        naval={config.kind === "boat"}
         collisionEnabled={collisionConfig.enabled}
         locomotion={
           config.kind !== "horse" &&
@@ -544,6 +553,7 @@ interface CharacterGymHeaderProps {
   collisionEnabled: boolean;
   locomotion: boolean;
   melee: boolean;
+  naval: boolean;
   stats: ProceduralCharacterGymStats;
   paused: boolean;
   ready: boolean;
@@ -567,6 +577,7 @@ const CharacterGymHeader = ({
   collisionEnabled,
   locomotion,
   melee,
+  naval,
   stats,
   paused,
   ready,
@@ -596,7 +607,7 @@ const CharacterGymHeader = ({
       </div>
       <RuntimeBadge label={stats.rendererMode} tone={stats.rendererMode === "webgpu" ? "cyan" : "amber"} />
       <RuntimeBadge label={stats.assetLabel} tone="cyan" />
-      <RuntimeBadge label={`Jolt ${stats.mode}`} tone={stats.mode === "ragdoll" ? "violet" : "slate"} />
+      <RuntimeBadge label={`Runtime ${stats.mode}`} tone={stats.mode !== "animated" ? "violet" : "slate"} />
       {stats.collisionEvaluationStatus !== "disabled" && (
         <RuntimeBadge
           label={`Collision ${stats.collisionEvaluationStatus}`}
@@ -605,22 +616,37 @@ const CharacterGymHeader = ({
       )}
     </div>
     <div className="flex flex-wrap items-center gap-2">
-      {archer && <ActionButton icon={<Target />} label="Fire" onClick={onFireArrow} primary disabled={!ready} />}
-      {archer && <ActionButton icon={<X />} label="Cancel draw" onClick={onCancelArrow} disabled={!ready} />}
+      {archer && (
+        <ActionButton
+          icon={<Target />}
+          label={naval ? "Broadside" : "Fire"}
+          onClick={onFireArrow}
+          primary
+          disabled={!ready}
+        />
+      )}
+      {archer && (
+        <ActionButton
+          icon={<X />}
+          label={naval ? "Cancel guns" : "Cancel draw"}
+          onClick={onCancelArrow}
+          disabled={!ready}
+        />
+      )}
       {melee && <ActionButton icon={<Swords />} label="Attack" onClick={onMeleeAttack} primary disabled={!ready} />}
       {melee && <ActionButton icon={<X />} label="Cancel attack" onClick={onCancelMelee} disabled={!ready} />}
       <ActionButton
         icon={<Camera />}
         label={captureBusy ? "Capturing" : "Frames"}
         onClick={onCaptureFrames}
-        disabled={!ready || captureBusy || collisionEnabled || stats.mode === "ragdoll"}
+        disabled={!ready || captureBusy || collisionEnabled || stats.mode !== "animated"}
       />
       {locomotion && (
         <ActionButton
           icon={<Footprints />}
           label="Gait"
           onClick={onCaptureGait}
-          disabled={!ready || captureBusy || stats.mode === "ragdoll"}
+          disabled={!ready || captureBusy || stats.mode !== "animated"}
         />
       )}
       <ActionButton
@@ -632,9 +658,9 @@ const CharacterGymHeader = ({
       />
       <ActionButton
         icon={<Shield />}
-        label="Drop"
+        label={naval ? "Sink" : "Drop"}
         onClick={onDrop}
-        disabled={!ready || collisionEnabled || stats.mode === "ragdoll"}
+        disabled={!ready || collisionEnabled || stats.mode !== "animated"}
       />
       <ActionButton icon={<Zap />} label="Strike" onClick={onStrike} disabled={!ready || collisionEnabled} />
       <ActionButton
@@ -706,10 +732,15 @@ const CharacterGymViewport = ({
             </>
           ) : (
             <>
-              {stats.appearanceLabel} / {stats.assetLabel} · {config.kind} · T{config.humanoid.tier} · seed{" "}
-              {config.humanoid.seed} ·{" "}
-              {config.kind === "horse" || config.kind === "paladin" ? config.horse.gait : config.humanoid.animationMode}
-              {config.kind === "archer" ? ` · ${stats.rangedPhase}` : ""}
+              {stats.appearanceLabel} / {stats.assetLabel} · {config.kind} · T
+              {config.kind === "boat" ? config.boat.tier : config.humanoid.tier} · seed{" "}
+              {config.kind === "boat" ? config.boat.seed : config.humanoid.seed} ·{" "}
+              {config.kind === "boat"
+                ? config.boat.motionMode
+                : config.kind === "horse" || config.kind === "paladin"
+                  ? config.horse.gait
+                  : config.humanoid.animationMode}
+              {config.kind === "archer" || config.kind === "boat" ? ` · ${stats.rangedPhase}` : ""}
               {config.kind === "knight" || config.kind === "paladin"
                 ? ` · ${stats.meleeWeaponId} (${stats.meleeWeaponSource}) · ${stats.meleePhase}`
                 : ""}
@@ -782,7 +813,9 @@ const CharacterGymMetrics = ({
       value={stats.meleeContactCount || stats.stanceHoofCount || stats.stanceFootCount || "--"}
     />
     <Metric label="Mount stretch" value={`${stats.maximumHorseBoneStretchRatio}×`} />
-    <Metric label="Arrows" value={`${stats.projectileActiveCount}/${stats.projectileCapacity || "--"}`} />
+    <Metric label="Boat pitch/roll" value={`${stats.boatPitchDegrees}°/${stats.boatRollDegrees}°`} />
+    <Metric label="Sink/wake" value={`${stats.boatSinkProgress}/${stats.boatWakeStrength}`} />
+    <Metric label="Projectiles" value={`${stats.projectileActiveCount}/${stats.projectileCapacity || "--"}`} />
     <Metric label="Hits" value={stats.projectileHitCount || "--"} />
     <Metric label="Actors" value={stats.collisionActorCount || "--"} />
     <Metric label="Body contacts" value={stats.collisionContactCount || "--"} />
@@ -878,7 +911,13 @@ function selectDefaultCaptureFrame(
   const issue = result.frames.find(({ issues }) => issues.length > 0);
   if (issue) return issue;
   const preferredPhase =
-    result.plan.sequence === "archer-shot" ? "aim" : result.plan.sequence === "melee-attack" ? "contact" : "gait";
+    result.plan.sequence === "archer-shot"
+      ? "aim"
+      : result.plan.sequence === "boat-broadside"
+        ? "fire"
+        : result.plan.sequence === "melee-attack"
+          ? "contact"
+          : "gait";
   const preferredFrames = result.frames.filter(({ runtimePhase }) => runtimePhase === preferredPhase);
   return preferredFrames[Math.floor(preferredFrames.length / 2)] ?? result.frames.at(-1);
 }

@@ -21,11 +21,24 @@ describe("procedural unit configuration", () => {
     expect(config.humanoid.animationMode).toBe("walk");
   });
 
-  it("keeps the horse variation seed synchronized with the humanoid identity", () => {
+  it("keeps mounted and naval variation seeds synchronized with the unit identity", () => {
     const config = applyProceduralUnitConfigPatch(createDefaultProceduralUnitConfig(), {
       humanoid: { seed: 9_001 },
     });
     expect(config.horse.seed).toBe(9_001);
+    expect(config.boat.seed).toBe(9_001);
+  });
+
+  it("adds the normalized naval runtime without changing the character defaults", () => {
+    const config = applyProceduralUnitConfigPatch(createDefaultProceduralUnitConfig(), {
+      boat: { broadsideCannons: 20, speed: 2.4 },
+      kind: "boat",
+    });
+
+    expect(config.kind).toBe("boat");
+    expect(config.boat.broadsideCannons).toBe(6);
+    expect(config.boat.speed).toBe(2.4);
+    expect(config.humanoid.animationMode).toBe("walk");
   });
 
   it("adds a normalized archer presentation without changing the shared humanoid config", () => {

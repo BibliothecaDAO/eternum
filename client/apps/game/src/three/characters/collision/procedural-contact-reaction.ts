@@ -25,12 +25,14 @@ interface ActiveReaction extends ProceduralLocalReactionInput {
 const REACTION_DURATION_SECONDS: Readonly<Record<ProceduralImpactSource, number>> = {
   arrow: 0.46,
   "body-contact": 0.32,
+  cannonball: 0.58,
   melee: 0.4,
 };
 
 const REACTION_STRENGTH_SCALE: Readonly<Record<ProceduralImpactSource, number>> = {
   arrow: 8,
   "body-contact": 0.25,
+  cannonball: 14,
   melee: 10,
 };
 

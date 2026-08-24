@@ -31,6 +31,7 @@ import { initializeProceduralCharacterRendererRuntime } from "../procedural-char
 import { sampleProceduralHorseTerrain } from "../horse/procedural-horse-pose";
 import { ProceduralArcherGymStage } from "./procedural-archer-gym-stage";
 import { ProceduralMeleeGymStage } from "./procedural-melee-gym-stage";
+import { ProceduralBoatGymStage } from "./procedural-boat-gym-stage";
 import type { ProceduralCollisionGymConfig } from "./procedural-collision-gym-config";
 import {
   evaluateProceduralCollisionGym,
@@ -68,6 +69,11 @@ export interface ProceduralCharacterGymStats {
   assetLabel: string;
   authoredClipCount: number;
   boneCount: number;
+  boatHeave: number;
+  boatPitchDegrees: number;
+  boatRollDegrees: number;
+  boatSinkProgress: number;
+  boatWakeStrength: number;
   bodyCount: number;
   constraintCount: number;
   collisionActorCount: number;
@@ -92,7 +98,7 @@ export interface ProceduralCharacterGymStats {
   meleeWeaponId: string;
   meleeWeaponSource: string;
   maximumHorseBoneStretchRatio: number;
-  mode: "animated" | "ragdoll";
+  mode: "animated" | "ragdoll" | "sinking";
   physicsSteps: number;
   previewArrowVisible: boolean;
   projectileActiveCount: number;
@@ -177,6 +183,7 @@ class ProceduralCharacterGymRuntime {
   private readonly onStats?: (stats: ProceduralCharacterGymStats) => void;
   private readonly unitRuntime: ProceduralUnitRuntime;
   private readonly archerStage: ProceduralArcherGymStage;
+  private readonly boatStage: ProceduralBoatGymStage;
   private readonly meleeStage: ProceduralMeleeGymStage;
   private readonly collisionStage: ProceduralCollisionGymStage;
   private projectiles: ArrowProjectileSystem;
@@ -215,10 +222,17 @@ class ProceduralCharacterGymRuntime {
     this.character = unitRuntime.createActor(this.config);
     this.stage.add(this.character.object);
     this.archerStage = new ProceduralArcherGymStage(this.config.archer);
+    this.boatStage = new ProceduralBoatGymStage(this.config.boat);
     this.meleeStage = new ProceduralMeleeGymStage(this.config.melee);
     this.projectiles = createArrowProjectileSystem(this.config);
     this.collisionStage = new ProceduralCollisionGymStage(this.unitRuntime, this.config, this.collisionConfig);
-    this.stage.add(this.archerStage.group, this.meleeStage.group, this.projectiles.group, this.collisionStage.group);
+    this.stage.add(
+      this.archerStage.group,
+      this.boatStage.group,
+      this.meleeStage.group,
+      this.projectiles.group,
+      this.collisionStage.group,
+    );
     this.connectCharacterRangedRelease();
     this.connectCharacterMeleeContact();
     this.connectProjectileImpact();
@@ -292,6 +306,7 @@ class ProceduralCharacterGymRuntime {
       return;
     }
     this.archerStage.update(deltaSeconds);
+    this.boatStage.update(deltaSeconds);
     this.meleeStage.update(deltaSeconds);
     this.syncActionTargets();
     this.unitRuntime.update(deltaSeconds);
@@ -319,16 +334,18 @@ class ProceduralCharacterGymRuntime {
     const failures: string[] = [];
     const stats = this.character.getStats();
     if (!this.character.hasFiniteState()) failures.push("character pose contains a non-finite value");
+    if (this.config.kind === "boat") failures.push(...this.character.getPoseDiagnostics().issues);
     const expectedReferenceClips = this.config.kind === "horse" || this.config.kind === "paladin";
     if (!expectedReferenceClips && stats.authoredClipCount !== 0) failures.push("authored animation clips were loaded");
     if (expectedReferenceClips && stats.authoredClipCount < 13) failures.push("horse reference clips were not loaded");
     if (expectedReferenceClips && stats.minimumBendAlignment < 0) failures.push("a horse leg crossed its bend pole");
-    if (stats.mode !== "ragdoll") failures.push("ragdoll did not initialize");
-    if (this.config.kind === "archer") {
+    const expectedTerminalMode = this.config.kind === "boat" ? "sinking" : "ragdoll";
+    if (stats.mode !== expectedTerminalMode) failures.push(`${expectedTerminalMode} did not initialize`);
+    if (this.config.kind === "archer" || this.config.kind === "boat") {
       const projectiles = this.projectiles.getStats();
-      if (stats.rangedReleaseCount < 1) failures.push("archer did not emit a release edge");
-      if (projectiles.spawnedCount < 1) failures.push("archer release did not spawn a pooled arrow");
-      if (projectiles.hitCount < 1) failures.push("pooled arrow did not sweep-hit the target");
+      if (stats.rangedReleaseCount < 1) failures.push("ranged unit did not emit a release edge");
+      if (projectiles.spawnedCount < 1) failures.push("release did not spawn a pooled projectile");
+      if (projectiles.hitCount < 1) failures.push("pooled projectile did not sweep-hit the target");
     }
     if (isMeleeKind(this.config.kind) && this.meleeStage.getContactCount() !== 1) {
       failures.push("melee attack did not emit exactly one cosmetic contact edge");
@@ -356,7 +373,7 @@ class ProceduralCharacterGymRuntime {
   }
 
   private fireArrow(): boolean {
-    if (this.disposed || this.config.kind !== "archer") return false;
+    if (this.disposed || (this.config.kind !== "archer" && this.config.kind !== "boat")) return false;
     this.syncActionTargets();
     return this.character.fireRangedAttack(this.targetPosition);
   }
@@ -416,8 +433,10 @@ class ProceduralCharacterGymRuntime {
     this.focusAnimationInspectionCamera();
     this.archerStage.group.visible = false;
     this.meleeStage.group.visible = false;
+    this.boatStage.setTargetVisible(false);
     this.projectiles.group.visible = false;
     if (sequence === "archer-shot") this.fireArrow();
+    if (sequence === "boat-broadside") this.fireArrow();
     if (sequence === "melee-attack") this.attackMelee();
     this.unitRuntime.update(0);
   }
@@ -425,6 +444,7 @@ class ProceduralCharacterGymRuntime {
   private advanceInspectionFrame(rootMotionSpeed = 0): void {
     const fixedStep = this.config.humanoid.fixedStep;
     this.archerStage.update(fixedStep);
+    this.boatStage.update(fixedStep);
     this.meleeStage.update(fixedStep);
     this.syncActionTargets();
     this.character.object.position.z += rootMotionSpeed * fixedStep;
@@ -519,6 +539,7 @@ class ProceduralCharacterGymRuntime {
     updateGymTerrain(this.stage, normalized);
     this.controls.autoRotate = normalized.humanoid.autoRotate;
     this.archerStage.updateConfig(normalized.archer);
+    this.boatStage.updateConfig(normalized.boat);
     this.meleeStage.updateConfig(normalized.melee);
     if (projectileCapacityChanged) this.replaceProjectileSystem();
     else this.projectiles.updateConfig(resolveArrowProjectileSystemConfig(normalized));
@@ -563,7 +584,7 @@ class ProceduralCharacterGymRuntime {
   private runSmoke(): void {
     this.reset();
     this.smoke = startCharacterGymSmoke();
-    if (this.config.kind === "archer") this.fireArrow();
+    if (this.config.kind === "archer" || this.config.kind === "boat") this.fireArrow();
     if (isMeleeKind(this.config.kind)) this.attackMelee();
   }
 
@@ -577,6 +598,7 @@ class ProceduralCharacterGymRuntime {
     this.character.reset();
     this.projectiles.reset();
     this.archerStage.reset();
+    this.boatStage.reset();
     this.meleeStage.reset();
     this.syncActionTargets();
     this.smoke = createIdleCharacterGymSmokeState();
@@ -598,6 +620,11 @@ class ProceduralCharacterGymRuntime {
       assetLabel: character.assetLabel,
       authoredClipCount: character.authoredClipCount,
       boneCount: character.boneCount,
+      boatHeave: character.boatHeave,
+      boatPitchDegrees: character.boatPitchDegrees,
+      boatRollDegrees: character.boatRollDegrees,
+      boatSinkProgress: character.boatSinkProgress,
+      boatWakeStrength: character.boatWakeStrength,
       bodyCount: character.bodyCount,
       constraintCount: character.constraintCount,
       collisionActorCount: collision.actorCount,
@@ -648,6 +675,12 @@ class ProceduralCharacterGymRuntime {
   }
 
   private resetCamera(): void {
+    if (this.config.kind === "boat") {
+      this.camera.position.set(6.8, 4.2, 7.8);
+      this.controls.target.set(0, 0.9, 0);
+      this.controls.update();
+      return;
+    }
     if (isMeleeKind(this.config.kind)) {
       this.camera.position.set(4.8, 2.8, 6.4);
       this.controls.target.set(-0.12, 1.08, 0.62);
@@ -668,10 +701,11 @@ class ProceduralCharacterGymRuntime {
     diagnostics?: ProceduralAnimationFrameCapture["diagnostics"],
   ): void {
     const mounted = this.config.kind === "paladin" || this.config.kind === "horse";
+    const naval = this.config.kind === "boat";
     const aspectFitScale = Math.max(1, 1.15 / Math.max(0.5, this.camera.aspect));
     const distanceScale = view.distanceScale ?? 1;
-    const distance = (mounted ? 6.3 : 4.7) * (view.detailTarget ? 1 : aspectFitScale) * distanceScale;
-    const targetHeight = mounted ? 1.55 : 1.4;
+    const distance = (naval ? 6.8 : mounted ? 6.3 : 4.7) * (view.detailTarget ? 1 : aspectFitScale) * distanceScale;
+    const targetHeight = naval ? 0.95 : mounted ? 1.55 : 1.4;
     const detailTarget = view.detailTarget;
     const targetTuple = detailTarget
       ? diagnostics?.humanoid?.socketGrips[detailTarget === "gripLeft" ? "left" : "right"]
@@ -719,6 +753,7 @@ class ProceduralCharacterGymRuntime {
     this.projectiles.dispose();
     this.collisionStage.dispose();
     this.archerStage.dispose();
+    this.boatStage.dispose();
     this.meleeStage.dispose();
     this.unitRuntime.dispose();
     disposeStage(this.stage);
@@ -749,18 +784,23 @@ class ProceduralCharacterGymRuntime {
 
   private connectCharacterRangedRelease(): void {
     this.unsubscribeRangedRelease = this.character.onRangedRelease((event) => {
-      this.archerStage.writeTargetVelocity(this.targetVelocity);
-      this.projectiles.spawnVolley({
-        color: this.config.humanoid.primaryColor,
-        count: this.config.archer.volleyCount,
-        flightSeconds: this.config.archer.projectileFlightSeconds,
-        origin: event.origin,
-        seed: event.seed,
-        spreadDegrees: this.config.archer.volleySpreadDegrees,
-        target: event.target,
-        targetRadius: this.config.archer.targetRadius,
-        targetVelocity: this.targetVelocity,
-      });
+      if (this.config.kind === "boat") this.boatStage.writeTargetVelocity(this.targetVelocity);
+      else this.archerStage.writeTargetVelocity(this.targetVelocity);
+      const origins = event.origins.length > 0 ? event.origins : [event.origin];
+      for (let index = 0; index < event.projectile.count; index += 1) {
+        this.projectiles.spawnVolley({
+          color: event.projectile.kind === "cannonball" ? 0x25272b : this.config.humanoid.primaryColor,
+          count: 1,
+          flightSeconds: event.projectile.flightSeconds,
+          kind: event.projectile.kind,
+          origin: origins[index % origins.length],
+          seed: (event.seed + Math.imul(index + 1, 0x9e3779b1)) >>> 0,
+          spreadDegrees: event.projectile.spreadDegrees,
+          target: event.target,
+          targetRadius: event.projectile.targetRadius,
+          targetVelocity: this.targetVelocity,
+        });
+      }
     });
   }
 
@@ -769,7 +809,10 @@ class ProceduralCharacterGymRuntime {
   }
 
   private connectProjectileImpact(): void {
-    this.unsubscribeImpact = this.projectiles.onImpact(({ targetHit }) => this.archerStage.registerImpact(targetHit));
+    this.unsubscribeImpact = this.projectiles.onImpact(({ targetHit }) => {
+      this.archerStage.registerImpact(targetHit);
+      this.boatStage.registerImpact(targetHit);
+    });
   }
 
   private replaceProjectileSystem(): void {
@@ -781,6 +824,12 @@ class ProceduralCharacterGymRuntime {
   }
 
   private syncActionTargets(): void {
+    if (this.config.kind === "boat") {
+      this.boatStage.writeTargetPosition(this.targetPosition);
+      this.character.setRangedTarget(this.targetPosition);
+      this.character.setMeleeTarget(undefined);
+      return;
+    }
     if (this.config.kind === "archer") {
       this.archerStage.writeTargetPosition(this.targetPosition);
       this.character.setRangedTarget(this.targetPosition);
@@ -801,11 +850,15 @@ class ProceduralCharacterGymRuntime {
     const collisionVisible = this.collisionConfig.enabled;
     this.character.object.visible = !collisionVisible;
     const archerVisible = this.config.kind === "archer";
+    const boatVisible = this.config.kind === "boat";
     this.archerStage.group.visible = !collisionVisible && archerVisible;
-    this.projectiles.group.visible = !collisionVisible && archerVisible;
+    this.boatStage.group.visible = !collisionVisible && boatVisible;
+    this.boatStage.setTargetVisible(!collisionVisible && boatVisible);
+    this.projectiles.group.visible = !collisionVisible && (archerVisible || boatVisible);
     this.meleeStage.group.visible = !collisionVisible && isMeleeKind(this.config.kind);
     this.collisionStage.group.visible = collisionVisible;
-    if (!archerVisible) this.projectiles.reset();
+    setLandStageVisible(this.stage, !collisionVisible && !boatVisible);
+    if (!archerVisible && !boatVisible) this.projectiles.reset();
   }
 }
 
@@ -865,10 +918,13 @@ function createGymScene(stage: Group): Scene {
   stage.add(ring);
 
   const grid = new GridHelper(13.6, 34, 0x685a88, 0x26303c);
+  grid.name = "character-gym-grid";
   grid.position.y = 0.012;
   grid.material.transparent = true;
   grid.material.opacity = 0.32;
-  stage.add(grid, new AxesHelper(0.7));
+  const axes = new AxesHelper(0.7);
+  axes.name = "character-gym-axes";
+  stage.add(grid, axes);
   return scene;
 }
 
@@ -920,7 +976,15 @@ function updateGymTerrain(stage: Group, config: ProceduralUnitConfig): void {
   if (ring) ring.position.y = sampleProceduralHorseTerrain(config.horse, 0, 0).height + 0.01;
 }
 
+function setLandStageVisible(stage: Group, visible: boolean): void {
+  ["character-gym-floor", "character-gym-ring", "character-gym-grid", "character-gym-axes"].forEach((name) => {
+    const object = stage.getObjectByName(name);
+    if (object) object.visible = visible;
+  });
+}
+
 function resolveExpectedPhysicsCounts(kind: ProceduralUnitConfig["kind"]): { bodies: number; constraints: number } {
+  if (kind === "boat") return { bodies: 0, constraints: 0 };
   if (kind === "horse") return { bodies: 17, constraints: 16 };
   if (kind === "paladin") return { bodies: 28, constraints: 26 };
   return { bodies: 11, constraints: 10 };
@@ -937,6 +1001,9 @@ function assertCaptureSequenceMatchesKind(
   if (sequence === "archer-shot" && kind !== "archer") {
     throw new Error(`Cannot capture an archer shot for ${kind}`);
   }
+  if (sequence === "boat-broadside" && kind !== "boat") {
+    throw new Error(`Cannot capture a boat broadside for ${kind}`);
+  }
   if (sequence === "melee-attack" && !isMeleeKind(kind)) {
     throw new Error(`Cannot capture a melee attack for ${kind}`);
   }
@@ -948,7 +1015,7 @@ function resolveRuntimeCapturePhase(
 ): string {
   if (sequence === "locomotion-cycle") return "gait";
   const stats = character.getStats();
-  return sequence === "archer-shot" ? stats.rangedPhase : stats.meleePhase;
+  return sequence === "archer-shot" || sequence === "boat-broadside" ? stats.rangedPhase : stats.meleePhase;
 }
 
 function captureCanvasThumbnail(

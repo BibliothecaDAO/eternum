@@ -63,6 +63,7 @@ describe("ProceduralArmyCharacterLayer", () => {
       ],
       category: TroopType.Paladin,
       entityId: 42,
+      isNaval: false,
       isMoving: false,
       position: new Vector3(3, 0.5, 7),
       primaryColor: "#ff6600",
@@ -148,6 +149,7 @@ describe("ProceduralArmyCharacterLayer", () => {
         {
           category: TroopType.Knight,
           entityId: 91,
+          isNaval: false,
           isMoving: false,
           position: new Vector3(),
           primaryColor: "#315f86",
@@ -176,6 +178,7 @@ describe("ProceduralArmyCharacterLayer", () => {
       {
         category: TroopType.Knight,
         entityId: 1,
+        isNaval: false,
         isMoving: true,
         position: new Vector3(-0.1, 0.5, 0),
         primaryColor: "#315f86",
@@ -184,6 +187,7 @@ describe("ProceduralArmyCharacterLayer", () => {
       {
         category: TroopType.Knight,
         entityId: 2,
+        isNaval: false,
         isMoving: true,
         position: new Vector3(0.1, 0.5, 0),
         primaryColor: "#315f86",
@@ -213,6 +217,7 @@ describe("ProceduralArmyCharacterLayer", () => {
     const presentation = {
       category: TroopType.Knight,
       entityId: 92,
+      isNaval: false,
       isMoving: false,
       position: new Vector3(),
       primaryColor: "#315f86",
@@ -246,6 +251,7 @@ describe("ProceduralArmyCharacterLayer", () => {
         {
           category: TroopType.Knight,
           entityId: 55,
+          isNaval: false,
           isMoving: false,
           position: new Vector3(),
           primaryColor: "#315f86",
@@ -269,6 +275,7 @@ describe("ProceduralArmyCharacterLayer", () => {
       layer.presentProjectileImpact({
         authority: "indexed-replay",
         impactId: "arrow:55",
+        kind: "arrow",
         material: "metal",
         normal: new Vector3(0, 0, 1),
         ownerEntityId: 9,
@@ -302,6 +309,7 @@ describe("ProceduralArmyCharacterLayer", () => {
         {
           category: TroopType.Crossbowman,
           entityId: 9,
+          isNaval: false,
           isMoving: false,
           position: new Vector3(0, 0, 3),
           primaryColor: "#315f86",
@@ -310,6 +318,7 @@ describe("ProceduralArmyCharacterLayer", () => {
         {
           category: TroopType.Knight,
           entityId: 55,
+          isNaval: false,
           isMoving: false,
           position: new Vector3(),
           primaryColor: "#315f86",
@@ -336,6 +345,7 @@ describe("ProceduralArmyCharacterLayer", () => {
       layer.presentProjectileImpact({
         authority: "indexed-replay",
         impactId: "delayed-arrow:55",
+        kind: "arrow",
         material: "metal",
         normal: new Vector3(0, 0, 1),
         ownerEntityId: 9,
@@ -361,6 +371,7 @@ describe("ProceduralArmyCharacterLayer", () => {
     const presentation = {
       category: TroopType.Crossbowman,
       entityId: 81,
+      isNaval: false,
       isMoving: false,
       position: new Vector3(),
       primaryColor: "#315f86",
@@ -389,6 +400,7 @@ describe("ProceduralArmyCharacterLayer", () => {
     const presentation = {
       category: TroopType.Paladin,
       entityId: 101,
+      isNaval: false,
       isMoving: false,
       position: new Vector3(),
       primaryColor: "#315f86",
@@ -405,6 +417,47 @@ describe("ProceduralArmyCharacterLayer", () => {
     layer.dispose();
   });
 
+  it("promotes water movement to a procedural combat ship and restores the land actor at shore", async () => {
+    const boat = createActorMock("boat");
+    const knight = createActorMock("knight");
+    characterMocks.createActor.mockReturnValueOnce(boat).mockReturnValueOnce(knight);
+    characterMocks.createRuntime.mockResolvedValue(createRuntimeMock());
+    const layer = new ProceduralArmyCharacterLayer(new Scene());
+    const presentation = {
+      category: TroopType.Knight,
+      entityId: 151,
+      isMoving: true,
+      isNaval: true,
+      position: new Vector3(),
+      primaryColor: "#a86435",
+      tier: TroopTier.T2,
+    };
+
+    layer.sync([presentation], 0);
+    await vi.waitFor(() => expect(layer.hasActor(151)).toBe(true));
+    expect(characterMocks.createActor).toHaveBeenCalledWith(
+      expect.objectContaining({
+        boat: expect.objectContaining({ broadsideCannons: 4, motionMode: "sail", tier: 2 }),
+        kind: "boat",
+      }),
+    );
+    expect(
+      layer.sweepProjectile({
+        from: new Vector3(0, 0.8, 4),
+        intendedTargetEntityId: 151,
+        ownerEntityId: 9,
+        radius: 0.04,
+        to: new Vector3(0, 0.8, -4),
+      }),
+    ).toMatchObject({ material: "wood", targetEntityId: 151 });
+
+    layer.sync([{ ...presentation, isNaval: false }], 0);
+    expect(boat.dispose).toHaveBeenCalledOnce();
+    expect(characterMocks.createActor).toHaveBeenCalledTimes(2);
+    expect(characterMocks.createActor).toHaveBeenLastCalledWith(expect.objectContaining({ kind: "knight" }));
+    layer.dispose();
+  });
+
   it("spreads ambient actor creation across frames while fallbacks remain available", async () => {
     characterMocks.createActor.mockImplementation((config: { kind: "knight" }) => createActorMock(config.kind));
     characterMocks.createRuntime.mockResolvedValue(createRuntimeMock());
@@ -412,6 +465,7 @@ describe("ProceduralArmyCharacterLayer", () => {
     const presentations = Array.from({ length: 6 }, (_, index) => ({
       category: TroopType.Knight,
       entityId: 200 + index,
+      isNaval: false,
       isMoving: false,
       position: new Vector3(index, 0, 0),
       primaryColor: "#315f86",
@@ -439,6 +493,7 @@ describe("ProceduralArmyCharacterLayer", () => {
         {
           category: TroopType.Knight,
           entityId: 301,
+          isNaval: false,
           isMoving: false,
           position: new Vector3(),
           primaryColor: "#315f86",
@@ -451,7 +506,7 @@ describe("ProceduralArmyCharacterLayer", () => {
     await vi.waitFor(() => expect(layer.getStats().loadState).toBe("failed"));
     expect(layer.hasActor(301)).toBe(false);
     expect(consoleError).toHaveBeenCalledWith(
-      "[ProceduralArmyCharacterLayer] Failed to load the articulated character runtime",
+      "[ProceduralArmyCharacterLayer] Failed to load the procedural unit runtime",
       loadError,
     );
     consoleError.mockRestore();
@@ -471,6 +526,7 @@ describe("ProceduralArmyCharacterLayer", () => {
         {
           category: TroopType.Knight,
           entityId: 302,
+          isNaval: false,
           isMoving: false,
           position: new Vector3(),
           primaryColor: "#315f86",
@@ -498,7 +554,7 @@ function createRuntimeMock() {
   };
 }
 
-function createActorMock(kind: "archer" | "crossbowman" | "knight" | "paladin") {
+function createActorMock(kind: "archer" | "boat" | "crossbowman" | "knight" | "paladin") {
   const object = new Group();
   const meleeListeners = new Set<(event: unknown) => void>();
   const rangedListeners = new Set<(event: unknown) => void>();

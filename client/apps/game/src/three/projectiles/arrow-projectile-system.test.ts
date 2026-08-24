@@ -137,6 +137,29 @@ describe("arrow projectile system", () => {
     expect(impacts[0]).toMatchObject({ targetEntityId: 9, targetHit: true });
     system.dispose();
   });
+
+  it("shares the ballistic pool with cannonballs but recycles them immediately on impact", () => {
+    const system = createSystem(4);
+    const impacts: Array<Parameters<Parameters<typeof system.onImpact>[0]>[0]> = [];
+    system.onImpact((event) => impacts.push(event));
+    system.spawnVolley({
+      color: 0x222222,
+      count: 1,
+      flightSeconds: 0.5,
+      kind: "cannonball",
+      origin: new Vector3(0, 1, 0),
+      seed: 5,
+      spreadDegrees: 0,
+      target: new Vector3(0, 1, 4),
+      targetRadius: 0.2,
+    });
+
+    for (let step = 0; step < 60 && impacts.length === 0; step += 1) system.stepOnce();
+
+    expect(impacts[0]).toMatchObject({ kind: "cannonball", targetHit: true });
+    expect(system.getStats()).toMatchObject({ activeCount: 0, flyingCount: 0, hitCount: 1, stuckCount: 0 });
+    system.dispose();
+  });
 });
 
 function createSystem(capacity: number, hitQuery?: ProjectileHitQuery): ArrowProjectileSystem {

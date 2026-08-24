@@ -41,6 +41,7 @@ export interface ProceduralArmyCharacterPresentation {
   attachments?: readonly CosmeticAttachmentTemplate[];
   entityId: number;
   distanceToViewCenterSquared?: number;
+  isNaval: boolean;
   isMoving: boolean;
   isSelected?: boolean;
   position: Vector3;
@@ -82,6 +83,7 @@ export interface ProceduralArmyCharacterLayerStats {
   loadState: "failed" | "idle" | "loading" | "ready";
   pendingImpactCount: number;
   ragdollCount: number;
+  sinkingCount: number;
 }
 
 export interface ProceduralArmyRaycastHit {
@@ -92,10 +94,11 @@ export interface ProceduralArmyRaycastHit {
 const WORLD_CHARACTER_SCALE = 0.72;
 const MAX_ACTOR_CREATIONS_PER_SYNC = 4;
 const DEFEAT_LIFETIME_SECONDS = 2.6;
+const NAVAL_DEFEAT_LIFETIME_SECONDS = 5.2;
 const PROJECTILE_IMPACT_WAIT_SECONDS = 2.4;
 
 /**
- * Production character presentation for visible land armies. ArmyModel keeps
+ * Production unit presentation for visible land and naval armies. ArmyModel keeps
  * authoritative movement and slots; this layer mirrors those transforms into
  * articulated actors after its shared runtime is ready.
  */
@@ -211,7 +214,7 @@ export class ProceduralArmyCharacterLayer {
     else normal.normalize();
     return {
       fraction: hit.fraction,
-      material: isArmoredKind(actor.kind) ? "metal" : "flesh",
+      material: actor.kind === "boat" ? "wood" : isArmoredKind(actor.kind) ? "metal" : "flesh",
       normal,
       partId: "chest",
       point: hit.point.clone(),
@@ -282,7 +285,7 @@ export class ProceduralArmyCharacterLayer {
       inheritedVelocityX: presentationVelocity?.velocityX ?? 0,
       inheritedVelocityZ: presentationVelocity?.velocityZ ?? 0,
       ragdollStarted: false,
-      remainingSeconds: DEFEAT_LIFETIME_SECONDS,
+      remainingSeconds: record.actor.kind === "boat" ? NAVAL_DEFEAT_LIFETIME_SECONDS : DEFEAT_LIFETIME_SECONDS,
     };
     this.defeatedActors.push(defeated);
     const impact = this.impactRegistry.consume(entityId, this.elapsedSeconds);
@@ -324,6 +327,9 @@ export class ProceduralArmyCharacterLayer {
       ragdollCount:
         [...this.actors.values()].filter(({ actor }) => actor.mode === "ragdoll").length +
         this.defeatedActors.filter(({ actor }) => actor.mode === "ragdoll").length,
+      sinkingCount:
+        [...this.actors.values()].filter(({ actor }) => actor.mode === "sinking").length +
+        this.defeatedActors.filter(({ actor }) => actor.mode === "sinking").length,
     };
   }
 
@@ -399,7 +405,7 @@ export class ProceduralArmyCharacterLayer {
       })
       .catch((error: unknown) => {
         this.loadError = error;
-        console.error("[ProceduralArmyCharacterLayer] Failed to load the articulated character runtime", error);
+        console.error("[ProceduralArmyCharacterLayer] Failed to load the procedural unit runtime", error);
       })
       .finally(() => {
         this.runtimePromise = undefined;
@@ -418,7 +424,7 @@ export class ProceduralArmyCharacterLayer {
     });
     let remainingCreations = MAX_ACTOR_CREATIONS_PER_SYNC;
     presentations.forEach((presentation) => {
-      const desiredKind = resolveUnitKind(presentation.category, presentation.tier);
+      const desiredKind = resolveUnitKind(presentation);
       const record = this.actors.get(presentation.entityId);
       if (record && requiresActorRecreation(record.actor.kind, desiredKind)) {
         this.disposeActorRecord(record);
@@ -540,7 +546,7 @@ export class ProceduralArmyCharacterLayer {
 
     const configSignature = resolveConfigSignature(presentation);
     let record = this.actors.get(presentation.entityId);
-    const desiredKind = resolveUnitKind(presentation.category, presentation.tier);
+    const desiredKind = resolveUnitKind(presentation);
     if (!record) {
       const actor = runtime.createActor(resolveUnitConfig(characterModule, presentation));
       actor.object.name = `procedural-army-character:${presentation.entityId}`;
@@ -576,7 +582,7 @@ export class ProceduralArmyCharacterLayer {
         attackTargetEntityId: undefined,
         collisionProfile: createProceduralCollisionProfile(
           desiredKind,
-          resolveWorldCharacterScale(presentation.category),
+          resolveWorldCharacterScale(presentation.category, presentation.isNaval),
         ),
         configSignature,
         hitTarget,
@@ -592,14 +598,14 @@ export class ProceduralArmyCharacterLayer {
       runtime.updateActorConfig(record.actor, resolveUnitConfig(characterModule, presentation));
       record.collisionProfile = createProceduralCollisionProfile(
         desiredKind,
-        resolveWorldCharacterScale(presentation.category),
+        resolveWorldCharacterScale(presentation.category, presentation.isNaval),
       );
       record.configSignature = configSignature;
     }
 
-    configureHitTarget(record.hitTarget, presentation.category);
+    configureHitTarget(record.hitTarget, presentation.category, presentation.isNaval);
     if (record.actor.mode === "animated") {
-      record.actor.object.scale.setScalar(resolveWorldCharacterScale(presentation.category));
+      record.actor.object.scale.setScalar(resolveWorldCharacterScale(presentation.category, presentation.isNaval));
     }
   }
 
@@ -677,8 +683,9 @@ export class ProceduralArmyCharacterLayer {
       pointX: event.position.x,
       pointY: event.position.y,
       pointZ: event.position.z,
-      source: "arrow",
-      strength: Math.min(18, Math.max(4, speed * 0.8)),
+      source: event.kind,
+      strength:
+        event.kind === "cannonball" ? Math.min(28, Math.max(10, speed * 1.15)) : Math.min(18, Math.max(4, speed * 0.8)),
       target: resolveImpactTarget(actor, event.position.y),
     };
   }
@@ -701,7 +708,7 @@ export class ProceduralArmyCharacterLayer {
     target.name = `procedural-army-hit-target:${presentation.entityId}`;
     target.visible = false;
     target.userData.entityId = presentation.entityId;
-    configureHitTarget(target, presentation.category);
+    configureHitTarget(target, presentation.category, presentation.isNaval);
     return target;
   }
 
@@ -738,6 +745,7 @@ function compareCollisionPriority(
 }
 
 function resolveProjectileTargetRadius(kind: ProceduralUnitActor["kind"]): number {
+  if (kind === "boat") return 1.35;
   if (kind === "paladin") return 0.62;
   if (kind === "horse") return 0.55;
   return 0.4;
@@ -748,7 +756,7 @@ function isArmoredKind(kind: ProceduralUnitActor["kind"]): boolean {
 }
 
 function isRangedKind(kind: ProceduralUnitActor["kind"]): boolean {
-  return kind === "archer" || kind === "crossbowman";
+  return kind === "archer" || kind === "boat" || kind === "crossbowman";
 }
 
 function resolveImpactTarget(actor: ProceduralUnitActor, impactY: number): "mount" | "rider" | "unit" {
@@ -756,7 +764,12 @@ function resolveImpactTarget(actor: ProceduralUnitActor, impactY: number): "moun
   return impactY - actor.object.position.y < 0.72 ? "mount" : "rider";
 }
 
-function configureHitTarget(target: Mesh, category: TroopType): void {
+function configureHitTarget(target: Mesh, category: TroopType, isNaval: boolean): void {
+  if (isNaval) {
+    target.position.set(0, 0.88, 0);
+    target.scale.set(1.35, 2.15, 3.3);
+    return;
+  }
   if (category === TroopType.Paladin) {
     target.position.set(0, 1.25, 0);
     target.scale.set(1.5, 2.3, 2.7);
@@ -771,9 +784,19 @@ function resolveUnitConfig(
   presentation: ProceduralArmyCharacterPresentation,
 ): ProceduralUnitConfig {
   const tier = resolveCharacterTier(presentation.tier);
-  const kind = resolveUnitKind(presentation.category, presentation.tier);
+  const kind = resolveUnitKind(presentation);
   return characterModule.applyProceduralUnitConfigPatch(characterModule.createDefaultProceduralUnitConfig(), {
     kind,
+    boat: {
+      broadsideCannons: tier + 2,
+      motionMode: presentation.isMoving ? "sail" : "idle",
+      primaryColor: presentation.primaryColor,
+      seed: resolveCharacterSeed(presentation.entityId),
+      showSockets: false,
+      showWake: presentation.isMoving,
+      speed: presentation.isMoving ? 1.6 : 0,
+      tier,
+    },
     horse: {
       gait: presentation.isMoving ? "walk" : "idle",
       primaryColor: presentation.primaryColor,
@@ -791,7 +814,11 @@ function resolveUnitConfig(
       seed: resolveCharacterSeed(presentation.entityId),
       tier,
     },
-    archer: { detailedEquipment: false },
+    archer: {
+      detailedEquipment: false,
+      volleyCount: tier === 3 ? 7 : tier === 2 ? 5 : 3,
+      volleySpreadDegrees: tier === 3 ? 1.2 : 0.8,
+    },
     melee: { detailedEquipment: false, ...resolveMeleeLoadout(presentation.attachments) },
   });
 }
@@ -800,6 +827,7 @@ function resolveConfigSignature(presentation: ProceduralArmyCharacterPresentatio
   return [
     presentation.category,
     presentation.tier,
+    presentation.isNaval ? "naval" : "land",
     presentation.primaryColor,
     presentation.isMoving ? "moving" : "idle",
     resolveAttachmentSignature(presentation.attachments),
@@ -845,9 +873,14 @@ function resolveCharacterSeed(entityId: number): number {
   return Math.abs(Math.trunc(entityId)) % 2_147_483_647;
 }
 
-function resolveUnitKind(category: TroopType, tier: TroopTier): "archer" | "crossbowman" | "knight" | "paladin" {
-  if (category === TroopType.Crossbowman) return tier === TroopTier.T2 ? "crossbowman" : "archer";
-  if (category === TroopType.Paladin) return "paladin";
+function resolveUnitKind(
+  presentation: Pick<ProceduralArmyCharacterPresentation, "category" | "isNaval" | "tier">,
+): "archer" | "boat" | "crossbowman" | "knight" | "paladin" {
+  if (presentation.isNaval) return "boat";
+  if (presentation.category === TroopType.Crossbowman) {
+    return presentation.tier === TroopTier.T2 ? "crossbowman" : "archer";
+  }
+  if (presentation.category === TroopType.Paladin) return "paladin";
   return "knight";
 }
 
@@ -855,9 +888,12 @@ function requiresActorRecreation(
   currentKind: ProceduralUnitActor["kind"],
   desiredKind: ReturnType<typeof resolveUnitKind>,
 ): boolean {
-  return (currentKind === "paladin") !== (desiredKind === "paladin");
+  return (
+    (currentKind === "boat") !== (desiredKind === "boat") || (currentKind === "paladin") !== (desiredKind === "paladin")
+  );
 }
 
-function resolveWorldCharacterScale(category: TroopType): number {
+function resolveWorldCharacterScale(category: TroopType, isNaval: boolean): number {
+  if (isNaval) return 0.92;
   return category === TroopType.Paladin ? WORLD_CHARACTER_SCALE * 0.74 : WORLD_CHARACTER_SCALE;
 }

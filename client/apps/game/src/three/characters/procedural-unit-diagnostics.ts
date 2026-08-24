@@ -7,6 +7,20 @@ import type { ProceduralMeleePoseDiagnostics } from "./melee/procedural-melee-eq
 import { resolveProceduralMeleeOffhand } from "./melee/procedural-melee-weapon-catalog";
 import type { ProceduralUnitKind } from "./procedural-unit-config";
 import type { ProceduralCrossbowPoseDiagnostics } from "./procedural-unit-equipment";
+import type { ProceduralBoatBroadsidePhase } from "./boat/procedural-boat-broadside-cycle";
+
+export interface ProceduralBoatPoseDiagnostics {
+  broadsidePhase: ProceduralBoatBroadsidePhase;
+  heave: number;
+  maximumHeave: number;
+  maximumPitchDegrees: number;
+  maximumRollDegrees: number;
+  muzzleCount: number;
+  pitchDegrees: number;
+  rollDegrees: number;
+  sinkProgress: number;
+  wakeStrength: number;
+}
 
 export interface ProceduralBowAlignmentDiagnostics extends ProceduralBowPoseDiagnostics {
   arrowHeadClearance: number;
@@ -30,6 +44,7 @@ export interface ProceduralMeleeAlignmentDiagnostics extends ProceduralMeleePose
 }
 
 export interface ProceduralUnitPoseDiagnostics {
+  boat: ProceduralBoatPoseDiagnostics | null;
   bow: ProceduralBowAlignmentDiagnostics | null;
   crossbow: ProceduralCrossbowAlignmentDiagnostics | null;
   horse: ProceduralHorsePoseDiagnostics | null;
@@ -40,6 +55,7 @@ export interface ProceduralUnitPoseDiagnostics {
 }
 
 export function resolveProceduralUnitPoseDiagnostics(input: {
+  boat?: ProceduralBoatPoseDiagnostics;
   bow?: ProceduralBowPoseDiagnostics;
   crossbow?: ProceduralCrossbowPoseDiagnostics | null;
   horse?: ProceduralHorsePoseDiagnostics;
@@ -51,6 +67,7 @@ export function resolveProceduralUnitPoseDiagnostics(input: {
   const crossbow = input.crossbow ? resolveCrossbowAlignment(input.crossbow, input.humanoid) : null;
   const melee = input.melee ? resolveMeleeAlignment(input.melee, input.humanoid) : null;
   const issues = [...(input.humanoid?.issues ?? []), ...(input.horse?.issues ?? [])];
+  if (input.boat) issues.push(...resolveBoatIssues(input.boat));
   if (melee && melee.weaponHeadClearance !== null && melee.weaponHeadClearance < -0.01) {
     issues.push("weapon-intersects-head");
   }
@@ -77,6 +94,7 @@ export function resolveProceduralUnitPoseDiagnostics(input: {
     issues.push("offhand-grip-detached");
   }
   return {
+    boat: input.boat ?? null,
     bow,
     crossbow,
     horse: input.horse ?? null,
@@ -85,6 +103,29 @@ export function resolveProceduralUnitPoseDiagnostics(input: {
     kind: input.kind,
     melee,
   };
+}
+
+function resolveBoatIssues(boat: ProceduralBoatPoseDiagnostics): string[] {
+  const issues: string[] = [];
+  const values = [
+    boat.heave,
+    boat.maximumHeave,
+    boat.maximumPitchDegrees,
+    boat.maximumRollDegrees,
+    boat.muzzleCount,
+    boat.pitchDegrees,
+    boat.rollDegrees,
+    boat.sinkProgress,
+    boat.wakeStrength,
+  ];
+  if (!values.every(Number.isFinite)) issues.push("boat-non-finite-state");
+  if (Math.abs(boat.heave) > boat.maximumHeave + 0.001) issues.push("boat-heave-out-of-range");
+  if (Math.abs(boat.pitchDegrees) > boat.maximumPitchDegrees + 0.1) issues.push("boat-pitch-out-of-range");
+  if (Math.abs(boat.rollDegrees) > boat.maximumRollDegrees + 0.1) issues.push("boat-roll-out-of-range");
+  if (boat.sinkProgress < 0 || boat.sinkProgress > 1) issues.push("boat-sink-progress-out-of-range");
+  if (boat.wakeStrength < 0 || boat.wakeStrength > 1) issues.push("boat-wake-out-of-range");
+  if (boat.muzzleCount < 1 || boat.muzzleCount > 6) issues.push("boat-muzzle-count-out-of-range");
+  return issues;
 }
 
 function resolveMeleeAlignment(

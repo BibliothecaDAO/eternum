@@ -9,9 +9,9 @@ interface ReconcileProceduralArmyRepresentationsInput {
   setLegacyModelVisible(entityId: number, visible: boolean): void;
 }
 
-/** Land units use articulated actors; boats keep their dedicated instanced model. */
+/** Every assigned army model hands off to the shared procedural presentation runtime. */
 export function shouldPresentArmyProcedurally(modelType: ModelType | undefined): boolean {
-  return modelType !== undefined && modelType !== ModelType.Boat;
+  return modelType !== undefined;
 }
 
 /**

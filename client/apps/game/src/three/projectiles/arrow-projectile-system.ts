@@ -6,6 +6,7 @@ import {
   CylinderGeometry,
   DynamicDrawUsage,
   Group,
+  IcosahedronGeometry,
   InstancedMesh,
   Matrix4,
   MeshStandardMaterial,
@@ -23,6 +24,8 @@ import {
 } from "./projectile-hit-query";
 import type { ProceduralImpactAuthority } from "../characters/collision/procedural-impact";
 
+export type BallisticProjectileKind = "arrow" | "cannonball";
+
 export interface ArrowProjectileSystemConfig {
   capacity: number;
   fixedStep: number;
@@ -38,6 +41,7 @@ export interface ArrowVolleySpawnRequest {
   color: Color | string | number;
   count: number;
   flightSeconds: number;
+  kind?: BallisticProjectileKind;
   origin: Readonly<Vector3>;
   ownerEntityId?: number;
   presentationId?: string;
@@ -63,6 +67,7 @@ export interface ArrowProjectileSystemStats {
 export interface ArrowImpactEvent {
   authority: ProceduralImpactAuthority;
   impactId: string;
+  kind: BallisticProjectileKind;
   material: "flesh" | "ground" | "metal" | "wood";
   normal: Vector3;
   ownerEntityId?: number;
@@ -80,17 +85,26 @@ const ARROW_FORWARD = new Vector3(0, 0, 1);
 const ZERO_SCALE = new Vector3(0, 0, 0);
 const MAX_FLIGHT_SECONDS = 4;
 
+/** Shared pooled ballistic simulation; the historical class name remains for import compatibility. */
 export class ArrowProjectileSystem {
   public readonly group = new Group();
 
-  private readonly geometry = createArrowGeometry();
-  private readonly material = new MeshStandardMaterial({
+  private readonly arrowGeometry = createArrowGeometry();
+  private readonly cannonballGeometry = new IcosahedronGeometry(0.115, 1);
+  private readonly arrowMaterial = new MeshStandardMaterial({
     color: 0xffffff,
     metalness: 0.24,
     roughness: 0.56,
   });
-  private readonly mesh: InstancedMesh;
+  private readonly cannonballMaterial = new MeshStandardMaterial({
+    color: 0xffffff,
+    metalness: 0.58,
+    roughness: 0.42,
+  });
+  private readonly arrowMesh: InstancedMesh;
+  private readonly cannonballMesh: InstancedMesh;
   private readonly states: Uint8Array;
+  private readonly visualKinds: Uint8Array;
   private readonly positions: Float32Array;
   private readonly previousPositions: Float32Array;
   private readonly velocities: Float32Array;
@@ -117,7 +131,8 @@ export class ArrowProjectileSystem {
   private readonly scratchQuaternion = new Quaternion();
   private readonly scratchMatrix = new Matrix4();
   private readonly scratchColor = new Color();
-  private readonly visualScale = new Vector3(1, 1, 1);
+  private readonly arrowVisualScale = new Vector3(1, 1, 1);
+  private readonly cannonballVisualScale = new Vector3(1, 1, 1);
   private config: ArrowProjectileSystemConfig;
   private accumulator = 0;
   private activeCount = 0;
@@ -135,14 +150,22 @@ export class ArrowProjectileSystem {
     private readonly hitQuery?: ProjectileHitQuery,
   ) {
     this.config = normalizeConfig(config);
-    this.visualScale.setScalar(this.config.visualScale);
+    this.updateVisualScales();
     this.group.name = "arrow-projectile-system";
-    this.mesh = new InstancedMesh(this.geometry, this.material, this.config.capacity);
-    this.mesh.name = "arrow-projectile-instances";
-    this.mesh.instanceMatrix.setUsage(DynamicDrawUsage);
-    this.mesh.frustumCulled = false;
-    this.mesh.castShadow = true;
+    this.arrowMesh = createProjectileMesh(
+      this.arrowGeometry,
+      this.arrowMaterial,
+      this.config.capacity,
+      "arrow-projectile-instances",
+    );
+    this.cannonballMesh = createProjectileMesh(
+      this.cannonballGeometry,
+      this.cannonballMaterial,
+      this.config.capacity,
+      "cannonball-projectile-instances",
+    );
     this.states = new Uint8Array(this.config.capacity);
+    this.visualKinds = new Uint8Array(this.config.capacity);
     this.positions = new Float32Array(this.config.capacity * 3);
     this.previousPositions = new Float32Array(this.config.capacity * 3);
     this.velocities = new Float32Array(this.config.capacity * 3);
@@ -156,7 +179,7 @@ export class ArrowProjectileSystem {
     this.ages = new Float32Array(this.config.capacity);
     for (let slot = this.config.capacity - 1; slot >= 0; slot -= 1) this.freeSlots.push(slot);
     this.hideAllInstances();
-    this.group.add(this.mesh);
+    this.group.add(this.arrowMesh, this.cannonballMesh);
   }
 
   public spawnVolley(request: ArrowVolleySpawnRequest): number {
@@ -181,6 +204,7 @@ export class ArrowProjectileSystem {
           color: request.color,
           authority: request.authority ?? "debug",
           flightSeconds: request.flightSeconds,
+          kind: request.kind ?? "arrow",
           origin: request.origin,
           ownerEntityId: request.ownerEntityId,
           presentationId: request.presentationId,
@@ -230,7 +254,7 @@ export class ArrowProjectileSystem {
 
   public updateConfig(config: Omit<ArrowProjectileSystemConfig, "capacity">): void {
     this.config = normalizeConfig({ ...config, capacity: this.config.capacity });
-    this.visualScale.setScalar(this.config.visualScale);
+    this.updateVisualScales();
   }
 
   public onImpact(listener: (event: ArrowImpactEvent) => void): () => void {
@@ -254,6 +278,7 @@ export class ArrowProjectileSystem {
   public reset(): void {
     if (this.disposed) return;
     this.states.fill(STATE_FREE);
+    this.visualKinds.fill(VISUAL_ARROW);
     this.positions.fill(0);
     this.previousPositions.fill(0);
     this.velocities.fill(0);
@@ -281,9 +306,12 @@ export class ArrowProjectileSystem {
     if (this.disposed) return;
     this.disposed = true;
     this.impactListeners.clear();
-    this.mesh.dispose();
-    this.geometry.dispose();
-    this.material.dispose();
+    this.arrowMesh.dispose();
+    this.cannonballMesh.dispose();
+    this.arrowGeometry.dispose();
+    this.cannonballGeometry.dispose();
+    this.arrowMaterial.dispose();
+    this.cannonballMaterial.dispose();
     this.group.clear();
     this.group.removeFromParent();
   }
@@ -292,6 +320,7 @@ export class ArrowProjectileSystem {
     authority: ProceduralImpactAuthority;
     color: Color | string | number;
     flightSeconds: number;
+    kind: BallisticProjectileKind;
     origin: Readonly<Vector3>;
     ownerEntityId?: number;
     presentationId?: string;
@@ -311,6 +340,7 @@ export class ArrowProjectileSystem {
     this.ownerEntityIds[slot] = input.ownerEntityId ?? Number.NaN;
     this.targetEntityIds[slot] = input.targetEntityId ?? Number.NaN;
     this.generations[slot] = (this.generations[slot] + 1) >>> 0 || 1;
+    this.visualKinds[slot] = input.kind === "cannonball" ? VISUAL_CANNONBALL : VISUAL_ARROW;
     this.authorities[slot] = input.authority;
     this.presentationIds[slot] = input.presentationId ?? "";
     this.scratchOrigin.copy(input.origin);
@@ -326,12 +356,14 @@ export class ArrowProjectileSystem {
     this.velocities.set(this.scratchVelocity.toArray(), offset);
     this.ages[slot] = 0;
     this.states[slot] = STATE_FLYING;
-    this.mesh.setColorAt(slot, this.scratchColor.set(input.color));
-    if (this.mesh.instanceColor) this.mesh.instanceColor.needsUpdate = true;
+    const mesh = this.resolveProjectileMesh(slot);
+    mesh.setColorAt(slot, this.scratchColor.set(input.color));
+    if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
     this.activeCount += 1;
     this.flyingCount += 1;
     this.spawnedCount += 1;
-    this.mesh.count = this.config.capacity;
+    this.arrowMesh.count = this.config.capacity;
+    this.cannonballMesh.count = this.config.capacity;
     this.matricesDirty = true;
     return true;
   }
@@ -438,13 +470,17 @@ export class ArrowProjectileSystem {
     this.positions[offset] = hit.point.x;
     this.positions[offset + 1] = hit.point.y;
     this.positions[offset + 2] = hit.point.z;
+    const hitTarget = hit.targetEntityId !== undefined || hit.material !== "ground";
+    this.hitCount += Number(hitTarget);
+    this.emitImpact(slot, hitTarget, hit);
+    if (this.visualKinds[slot] === VISUAL_CANNONBALL) {
+      this.releaseSlot(slot);
+      return;
+    }
     this.states[slot] = STATE_STUCK;
     this.ages[slot] = 0;
     this.flyingCount -= 1;
     this.stuckCount += 1;
-    const hitTarget = hit.targetEntityId !== undefined || hit.material !== "ground";
-    this.hitCount += Number(hitTarget);
-    this.emitImpact(slot, hitTarget, hit);
   }
 
   private emitImpact(slot: number, targetHit: boolean, hit: ProjectileSweepHit): void {
@@ -453,6 +489,7 @@ export class ArrowProjectileSystem {
     const event: ArrowImpactEvent = {
       authority: this.authorities[slot],
       impactId: this.resolveImpactId(slot),
+      kind: this.visualKinds[slot] === VISUAL_CANNONBALL ? "cannonball" : "arrow",
       material: hit.material,
       normal: hit.normal.clone(),
       ownerEntityId: finiteEntityId(this.ownerEntityIds[slot]),
@@ -467,7 +504,8 @@ export class ArrowProjectileSystem {
 
   private resolveImpactId(slot: number): string {
     const presentationId = this.presentationIds[slot];
-    return `${presentationId || "arrow"}:${slot}:${this.generations[slot]}`;
+    const kind = this.visualKinds[slot] === VISUAL_CANNONBALL ? "cannonball" : "arrow";
+    return `${presentationId || kind}:${slot}:${this.generations[slot]}`;
   }
 
   private releaseSlot(slot: number): void {
@@ -477,6 +515,7 @@ export class ArrowProjectileSystem {
     if (state === STATE_STUCK) this.stuckCount -= 1;
     this.activeCount -= 1;
     this.states[slot] = STATE_FREE;
+    this.visualKinds[slot] = VISUAL_ARROW;
     this.ages[slot] = 0;
     this.ownerEntityIds[slot] = Number.NaN;
     this.targetEntityIds[slot] = Number.NaN;
@@ -484,8 +523,12 @@ export class ArrowProjectileSystem {
     this.presentationIds[slot] = "";
     this.freeSlots.push(slot);
     this.scratchMatrix.compose(this.scratchPosition.set(0, -10_000, 0), this.scratchQuaternion.identity(), ZERO_SCALE);
-    this.mesh.setMatrixAt(slot, this.scratchMatrix);
-    if (this.activeCount === 0) this.mesh.count = 0;
+    this.arrowMesh.setMatrixAt(slot, this.scratchMatrix);
+    this.cannonballMesh.setMatrixAt(slot, this.scratchMatrix);
+    if (this.activeCount === 0) {
+      this.arrowMesh.count = 0;
+      this.cannonballMesh.count = 0;
+    }
     this.matricesDirty = true;
   }
 
@@ -494,28 +537,61 @@ export class ArrowProjectileSystem {
       if (this.states[slot] === STATE_FREE) continue;
       const offset = slot * 3;
       this.scratchPosition.set(this.positions[offset], this.positions[offset + 1], this.positions[offset + 2]);
-      this.scratchDirection
-        .set(this.velocities[offset], this.velocities[offset + 1], this.velocities[offset + 2])
-        .normalize();
-      this.scratchQuaternion.setFromUnitVectors(ARROW_FORWARD, this.scratchDirection);
-      this.scratchMatrix.compose(this.scratchPosition, this.scratchQuaternion, this.visualScale);
-      this.mesh.setMatrixAt(slot, this.scratchMatrix);
+      const cannonball = this.visualKinds[slot] === VISUAL_CANNONBALL;
+      if (cannonball) this.scratchQuaternion.identity();
+      else {
+        this.scratchDirection
+          .set(this.velocities[offset], this.velocities[offset + 1], this.velocities[offset + 2])
+          .normalize();
+        this.scratchQuaternion.setFromUnitVectors(ARROW_FORWARD, this.scratchDirection);
+      }
+      this.scratchMatrix.compose(
+        this.scratchPosition,
+        this.scratchQuaternion,
+        cannonball ? this.cannonballVisualScale : this.arrowVisualScale,
+      );
+      const activeMesh = cannonball ? this.cannonballMesh : this.arrowMesh;
+      const inactiveMesh = cannonball ? this.arrowMesh : this.cannonballMesh;
+      activeMesh.setMatrixAt(slot, this.scratchMatrix);
+      this.scratchMatrix.compose(
+        this.scratchPosition.set(0, -10_000, 0),
+        this.scratchQuaternion.identity(),
+        ZERO_SCALE,
+      );
+      inactiveMesh.setMatrixAt(slot, this.scratchMatrix);
     }
-    this.mesh.instanceMatrix.needsUpdate = true;
+    this.arrowMesh.instanceMatrix.needsUpdate = true;
+    this.cannonballMesh.instanceMatrix.needsUpdate = true;
     this.matricesDirty = false;
   }
 
   private hideAllInstances(): void {
     this.scratchMatrix.compose(this.scratchPosition.set(0, -10_000, 0), this.scratchQuaternion.identity(), ZERO_SCALE);
-    for (let slot = 0; slot < this.config.capacity; slot += 1) this.mesh.setMatrixAt(slot, this.scratchMatrix);
-    this.mesh.count = 0;
-    this.mesh.instanceMatrix.needsUpdate = true;
+    for (let slot = 0; slot < this.config.capacity; slot += 1) {
+      this.arrowMesh.setMatrixAt(slot, this.scratchMatrix);
+      this.cannonballMesh.setMatrixAt(slot, this.scratchMatrix);
+    }
+    this.arrowMesh.count = 0;
+    this.cannonballMesh.count = 0;
+    this.arrowMesh.instanceMatrix.needsUpdate = true;
+    this.cannonballMesh.instanceMatrix.needsUpdate = true;
     this.matricesDirty = false;
+  }
+
+  private resolveProjectileMesh(slot: number): InstancedMesh {
+    return this.visualKinds[slot] === VISUAL_CANNONBALL ? this.cannonballMesh : this.arrowMesh;
+  }
+
+  private updateVisualScales(): void {
+    this.arrowVisualScale.setScalar(this.config.visualScale);
+    this.cannonballVisualScale.setScalar(this.config.visualScale * 1.15);
   }
 }
 
 const WORLD_RIGHT = new Vector3(1, 0, 0);
 const WORLD_UP = new Vector3(0, 1, 0);
+const VISUAL_ARROW = 0;
+const VISUAL_CANNONBALL = 1;
 
 function normalizeConfig(config: ArrowProjectileSystemConfig): ArrowProjectileSystemConfig {
   return {
@@ -547,6 +623,20 @@ function createArrowGeometry(): BufferGeometry {
   if (!geometry) throw new Error("Unable to create the shared arrow projectile geometry");
   geometry.computeBoundingSphere();
   return geometry;
+}
+
+function createProjectileMesh(
+  geometry: BufferGeometry,
+  material: MeshStandardMaterial,
+  capacity: number,
+  name: string,
+): InstancedMesh {
+  const mesh = new InstancedMesh(geometry, material, capacity);
+  mesh.name = name;
+  mesh.instanceMatrix.setUsage(DynamicDrawUsage);
+  mesh.frustumCulled = false;
+  mesh.castShadow = true;
+  return mesh;
 }
 
 function resolveSegmentSphereFraction(

@@ -31,6 +31,17 @@ const FOOT_PROFILES: Readonly<
 
 export function createProceduralCollisionProfile(kind: ProceduralUnitKind, worldScale = 1): ProceduralCollisionProfile {
   const scale = normalizeScale(worldScale);
+  if (kind === "boat") {
+    return {
+      ...createBodyProfile(12, 0.16, 0.015, 0.32, 0.16),
+      maxVisualOffset: 0.16 * scale,
+      proxies: [
+        { forwardOffset: -0.78 * scale, lateralOffset: 0, radius: 0.48 * scale },
+        { forwardOffset: 0, lateralOffset: 0, radius: 0.54 * scale },
+        { forwardOffset: 0.78 * scale, lateralOffset: 0, radius: 0.48 * scale },
+      ],
+    };
+  }
   if (kind === "horse") {
     return {
       ...createBodyProfile(4.5, 0.2, 0.02, 0.24, 0.2),

@@ -71,6 +71,45 @@ describe("procedural animation frame annotations", () => {
     expect(annotations.angles).toHaveLength(8);
     expect(annotations.metrics).toContainEqual({ label: "stance", value: "2/4" });
   });
+
+  it("labels naval motion, broadside, wake, and sink metrics", () => {
+    const diagnostics = createArcherDiagnostics();
+    diagnostics.kind = "boat";
+    diagnostics.bow = null;
+    diagnostics.humanoid = null;
+    diagnostics.boat = {
+      broadsidePhase: "fire",
+      heave: 0.04,
+      maximumHeave: 0.08,
+      maximumPitchDegrees: 40,
+      maximumRollDegrees: 48,
+      muzzleCount: 4,
+      pitchDegrees: 2.4,
+      rollDegrees: -3.8,
+      sinkProgress: 0,
+      wakeStrength: 0.45,
+    };
+
+    const annotations = createProceduralAnimationFrameAnnotations({
+      diagnostics,
+      elapsedSeconds: 0.45,
+      expectedPhase: "fire",
+      frameIndex: 27,
+      issues: [],
+      runtimePhase: "fire",
+      view: { azimuthDegrees: 90, elevationDegrees: 7, id: "right-profile", label: "Right profile" },
+    });
+
+    expect(annotations.metrics).toEqual([
+      { label: "broadside", value: "fire" },
+      { label: "muzzles", value: "4" },
+      { label: "heave", value: "0.040m" },
+      { label: "pitch", value: "2.4°" },
+      { label: "roll", value: "-3.8°" },
+      { label: "sink", value: "0%" },
+      { label: "wake", value: "45%" },
+    ]);
+  });
 });
 
 function createArcherDiagnostics(): ProceduralUnitPoseDiagnostics {
@@ -92,6 +131,7 @@ function createArcherDiagnostics(): ProceduralUnitPoseDiagnostics {
     wristRight: [0.7, 1.4, 0],
   } as const;
   return {
+    boat: null,
     bow: {
       arrowDirectionWorld: [0, 0, 1],
       arrowHeadClearance: 0.049,

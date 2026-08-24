@@ -18,8 +18,13 @@ import {
   createIdleProceduralMeleeAttackState,
   startProceduralMeleeAttack,
 } from "../melee/procedural-melee-attack-cycle";
+import {
+  advanceProceduralBoatBroadside,
+  createIdleProceduralBoatBroadsideState,
+  startProceduralBoatBroadside,
+} from "../boat/procedural-boat-broadside-cycle";
 
-export type ProceduralAnimationCaptureSequence = "archer-shot" | "locomotion-cycle" | "melee-attack";
+export type ProceduralAnimationCaptureSequence = "archer-shot" | "boat-broadside" | "locomotion-cycle" | "melee-attack";
 export type ProceduralAnimationCaptureSampling = "all-frames" | "key-phases" | "phase-atlas";
 export type ProceduralAnimationCaptureOverlay = "clean" | "diagnostic";
 export type ProceduralAnimationCaptureViewId =
@@ -153,6 +158,7 @@ const PHASE_ATLAS_GRIP_VIEWS: readonly ProceduralAnimationCaptureView[] = [
 
 export function resolveDefaultAnimationCaptureSequence(kind: ProceduralUnitKind): ProceduralAnimationCaptureSequence {
   if (kind === "archer") return "archer-shot";
+  if (kind === "boat") return "boat-broadside";
   if (kind === "knight" || kind === "paladin") return "melee-attack";
   return "locomotion-cycle";
 }
@@ -191,7 +197,7 @@ export function createProceduralAnimationCapturePlan(
     truncated,
     views:
       sampling === "phase-atlas"
-        ? config.kind === "horse"
+        ? config.kind === "horse" || config.kind === "boat"
           ? PHASE_ATLAS_BODY_VIEWS
           : [...PHASE_ATLAS_BODY_VIEWS, ...PHASE_ATLAS_GRIP_VIEWS]
         : [TIMELINE_CAPTURE_VIEW],
@@ -215,6 +221,13 @@ function resolveActionCapturePhases(
       startProceduralMeleeAttack(createIdleProceduralMeleeAttackState()),
       (state) => advanceProceduralMeleeAttack(state, config.melee, fixedStepSeconds, false).state,
       "Melee",
+    );
+  }
+  if (sequence === "boat-broadside") {
+    return traceActionCapturePhases(
+      startProceduralBoatBroadside(createIdleProceduralBoatBroadsideState(), "starboard"),
+      (state) => advanceProceduralBoatBroadside(state, config.boat, fixedStepSeconds).state,
+      "Boat broadside",
     );
   }
   return undefined;
@@ -321,6 +334,15 @@ function resolveCapturePhaseDurations(
       phase("contact", "Contact", config.melee.contactSeconds),
       phase("followThrough", "Follow-through", config.melee.followThroughSeconds),
       phase("recover", "Recover", config.melee.recoverSeconds),
+    ];
+  }
+  if (sequence === "boat-broadside") {
+    return [
+      phase("acquire", "Acquire", config.boat.acquireSeconds),
+      phase("brace", "Brace", config.boat.braceSeconds),
+      phase("fire", "Fire", config.boat.fireSeconds),
+      phase("recoil", "Recoil", config.boat.recoilSeconds),
+      phase("recover", "Recover", config.boat.recoverSeconds),
     ];
   }
 

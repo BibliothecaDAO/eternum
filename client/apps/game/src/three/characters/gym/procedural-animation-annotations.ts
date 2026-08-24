@@ -63,15 +63,35 @@ export function createProceduralAnimationFrameAnnotations(
 ): ProceduralAnimationFrameAnnotations {
   const humanoid = input.diagnostics.humanoid ? createHumanoidAnnotationFragment(input.diagnostics) : EMPTY_FRAGMENT;
   const horse = input.diagnostics.horse ? createHorseAnnotationFragment(input.diagnostics) : EMPTY_FRAGMENT;
+  const boat = input.diagnostics.boat ? createBoatAnnotationFragment(input.diagnostics) : EMPTY_FRAGMENT;
   const equipment = createEquipmentAnnotationFragment(input.diagnostics);
   return {
-    angles: [...humanoid.angles, ...horse.angles, ...equipment.angles],
+    angles: [...humanoid.angles, ...horse.angles, ...boat.angles, ...equipment.angles],
     header: `${input.diagnostics.kind.toUpperCase()} · F${String(input.frameIndex).padStart(3, "0")} · ${input.view.label.toUpperCase()}`,
     issues: input.issues,
-    markers: [...humanoid.markers, ...horse.markers, ...equipment.markers],
-    metrics: [...humanoid.metrics, ...horse.metrics, ...equipment.metrics],
-    segments: [...humanoid.segments, ...horse.segments, ...equipment.segments],
+    markers: [...humanoid.markers, ...horse.markers, ...boat.markers, ...equipment.markers],
+    metrics: [...humanoid.metrics, ...horse.metrics, ...boat.metrics, ...equipment.metrics],
+    segments: [...humanoid.segments, ...horse.segments, ...boat.segments, ...equipment.segments],
     subheader: `${input.elapsedSeconds.toFixed(3)}s · expected ${input.expectedPhase} · runtime ${input.runtimePhase}`,
+  };
+}
+
+function createBoatAnnotationFragment(diagnostics: ProceduralUnitPoseDiagnostics): AnnotationFragment {
+  const boat = diagnostics.boat;
+  if (!boat) return EMPTY_FRAGMENT;
+  return {
+    angles: [],
+    markers: [],
+    metrics: [
+      metric("broadside", boat.broadsidePhase),
+      metric("muzzles", String(boat.muzzleCount)),
+      metric("heave", `${boat.heave.toFixed(3)}m`),
+      metric("pitch", degrees(boat.pitchDegrees)),
+      metric("roll", degrees(boat.rollDegrees)),
+      metric("sink", `${Math.round(boat.sinkProgress * 100)}%`),
+      metric("wake", `${Math.round(boat.wakeStrength * 100)}%`),
+    ],
+    segments: [],
   };
 }
 

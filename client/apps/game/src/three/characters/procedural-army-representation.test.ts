@@ -11,7 +11,7 @@ describe("procedural army representation", () => {
     expect(shouldPresentArmyProcedurally(ModelType.Knight1)).toBe(true);
     expect(shouldPresentArmyProcedurally(ModelType.Crossbowman2)).toBe(true);
     expect(shouldPresentArmyProcedurally(ModelType.Paladin3)).toBe(true);
-    expect(shouldPresentArmyProcedurally(ModelType.Boat)).toBe(false);
+    expect(shouldPresentArmyProcedurally(ModelType.Boat)).toBe(true);
     expect(shouldPresentArmyProcedurally(undefined)).toBe(false);
   });
 

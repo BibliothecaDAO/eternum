@@ -19,6 +19,7 @@ export {
   type ProceduralUnitKind,
 } from "./procedural-unit-config";
 export type { ProceduralArcherConfig } from "./archer/procedural-archer-config";
+export { type ProceduralBoatConfig, type ProceduralBoatMotionMode } from "./boat/procedural-boat-config";
 export {
   PROCEDURAL_MELEE_OFFHANDS,
   PROCEDURAL_MELEE_WEAPONS,

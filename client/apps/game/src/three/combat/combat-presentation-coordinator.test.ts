@@ -55,6 +55,7 @@ describe("combat presentation coordinator", () => {
     coordinator.presentRangedRelease({
       ownerEntityId: 1,
       origin: new Vector3(0, 1, 0),
+      projectile: { count: 5, flightSeconds: 0.7, kind: "arrow", spreadDegrees: 0.8, targetRadius: 0.48 },
       seed: 77,
       target: new Vector3(0, 1, 4),
       targetEntityId: 2,
@@ -83,6 +84,7 @@ describe("combat presentation coordinator", () => {
       ownerEntityId: 1,
       origin: new Vector3(0, 1, 0),
       presentationId: "battle:1",
+      projectile: { count: 3, flightSeconds: 0.7, kind: "arrow", spreadDegrees: 0.8, targetRadius: 0.48 },
       seed: 77,
       target: new Vector3(0, 1, 4),
       targetEntityId: 2,
@@ -98,6 +100,25 @@ describe("combat presentation coordinator", () => {
       targetEntityId: 2,
       targetHit: true,
     });
+    coordinator.dispose();
+  });
+
+  it("spawns one pooled cannonball from each deterministic broadside muzzle", () => {
+    const coordinator = new CombatPresentationCoordinator(new Scene());
+    const origins = [new Vector3(0.5, 0.4, -0.4), new Vector3(0.5, 0.4, 0.4)];
+
+    coordinator.presentRangedRelease({
+      origin: origins[0],
+      origins,
+      ownerEntityId: 3,
+      projectile: { count: 2, flightSeconds: 0.82, kind: "cannonball", spreadDegrees: 1.5, targetRadius: 0.8 },
+      seed: 91,
+      target: new Vector3(5, 0.5, 0),
+      targetEntityId: 4,
+      tier: TroopTier.T2,
+    });
+
+    expect(coordinator.getStats().arrows.spawnedCount).toBe(2);
     coordinator.dispose();
   });
 });

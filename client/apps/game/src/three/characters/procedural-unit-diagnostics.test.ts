@@ -47,6 +47,33 @@ describe("procedural unit pose diagnostics", () => {
     expect(diagnostics.melee?.weaponOffhandClearance).toBeLessThan(0);
     expect(diagnostics.issues).toContain("weapon-intersects-offhand");
   });
+
+  it("rejects non-finite or out-of-contract naval motion", () => {
+    const diagnostics = resolveProceduralUnitPoseDiagnostics({
+      boat: {
+        broadsidePhase: "fire",
+        heave: 0.4,
+        maximumHeave: 0.1,
+        maximumPitchDegrees: 40,
+        maximumRollDegrees: 45,
+        muzzleCount: 7,
+        pitchDegrees: Number.NaN,
+        rollDegrees: 60,
+        sinkProgress: 1.2,
+        wakeStrength: -0.2,
+      },
+      kind: "boat",
+    });
+
+    expect(diagnostics.issues).toEqual([
+      "boat-non-finite-state",
+      "boat-heave-out-of-range",
+      "boat-roll-out-of-range",
+      "boat-sink-progress-out-of-range",
+      "boat-wake-out-of-range",
+      "boat-muzzle-count-out-of-range",
+    ]);
+  });
 });
 
 function createHumanoidDiagnostics(): ProceduralCharacterPoseDiagnostics {

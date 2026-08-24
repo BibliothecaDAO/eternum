@@ -1,5 +1,5 @@
 export type ProceduralImpactAuthority = "debug" | "indexed-replay" | "provisional";
-export type ProceduralImpactSource = "arrow" | "body-contact" | "melee";
+export type ProceduralImpactSource = "arrow" | "body-contact" | "cannonball" | "melee";
 export type ProceduralImpactTarget = "mount" | "rider" | "unit";
 
 export interface ProceduralUnitReactionInput {

@@ -179,7 +179,7 @@ export interface PendingCreationGhostSource {
 export interface ProceduralArmyProductionStats extends ProceduralArmyCharacterLayerStats {
   activeRepresentationCount: number;
   fallbackRepresentationCount: number;
-  visibleLandArmyCount: number;
+  visibleArmyCount: number;
 }
 
 interface AddArmyParams {
@@ -2224,12 +2224,12 @@ export class ArmyManager {
 
   public getProceduralArmyProductionStats(): ProceduralArmyProductionStats {
     const layer = this.proceduralArmyCharacterLayer.getStats();
-    const visibleLandArmyCount = this.proceduralArmyPresentationBuffer.length;
+    const visibleArmyCount = this.proceduralArmyPresentationBuffer.length;
     return {
       ...layer,
       activeRepresentationCount: this.activeProceduralArmyEntityIds.size,
-      fallbackRepresentationCount: Math.max(0, visibleLandArmyCount - this.activeProceduralArmyEntityIds.size),
-      visibleLandArmyCount,
+      fallbackRepresentationCount: Math.max(0, visibleArmyCount - this.activeProceduralArmyEntityIds.size),
+      visibleArmyCount,
     };
   }
 
@@ -2525,6 +2525,7 @@ export class ArmyManager {
         category: army.category,
         distanceToViewCenterSquared: animationContext?.cameraPosition?.distanceToSquared(instance.position),
         entityId,
+        isNaval: modelType === ModelType.Boat,
         isMoving: false,
         isSelected: this.selectedArmyForPath === army.entityId,
         position: instance.position,
@@ -2537,6 +2538,7 @@ export class ArmyManager {
     presentation.attachments = army.attachments;
     presentation.category = army.category;
     presentation.distanceToViewCenterSquared = animationContext?.cameraPosition?.distanceToSquared(instance.position);
+    presentation.isNaval = modelType === ModelType.Boat;
     presentation.isMoving = this.armyModel.isEntityMoving(entityId);
     presentation.isSelected = this.selectedArmyForPath === army.entityId;
     presentation.position = instance.position;

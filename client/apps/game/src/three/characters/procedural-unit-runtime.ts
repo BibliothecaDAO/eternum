@@ -36,8 +36,16 @@ import {
 import { ProceduralHorseRuntime, type ProceduralHorseActor } from "./horse/procedural-horse-runtime";
 import { resolveHorseGaitCadence } from "./horse/procedural-horse-gait";
 import type { HorseGroundSampler } from "./horse/procedural-horse-pose";
+import { ProceduralBoatRuntime, type ProceduralBoatActor } from "./boat/procedural-boat-runtime";
+import type { ProceduralBoatBroadsidePhase } from "./boat/procedural-boat-broadside-cycle";
+import type { BallisticProjectileKind } from "../projectiles/arrow-projectile-system";
 
-interface ProceduralUnitActorStats extends ProceduralCharacterActorStats {
+interface ProceduralUnitActorStats extends Omit<ProceduralCharacterActorStats, "mode"> {
+  boatHeave: number;
+  boatPitchDegrees: number;
+  boatRollDegrees: number;
+  boatSinkProgress: number;
+  boatWakeStrength: number;
   kind: ProceduralUnitKind;
   maximumHorseBoneStretchRatio: number;
   minimumBendAlignment: number;
@@ -48,15 +56,27 @@ interface ProceduralUnitActorStats extends ProceduralCharacterActorStats {
   meleeWeaponId: ProceduralMeleeWeaponId;
   meleeWeaponSource: ProceduralMeleeEquipmentSource;
   stanceHoofCount: number;
-  rangedPhase: ProceduralArcherShotPhase;
+  mode: ProceduralUnitMode;
+  rangedPhase: ProceduralArcherShotPhase | ProceduralBoatBroadsidePhase;
   rangedReleaseCount: number;
   previewArrowVisible: boolean;
   stringContinuityError: number;
 }
 
+export type ProceduralUnitMode = ProceduralCharacterMode | "sinking";
+export interface ProceduralProjectileReleaseSpec {
+  count: number;
+  flightSeconds: number;
+  kind: BallisticProjectileKind;
+  spreadDegrees: number;
+  targetRadius: number;
+}
+
 export interface ProceduralRangedReleaseEvent {
   direction: Vector3;
   origin: Vector3;
+  origins: readonly Vector3[];
+  projectile: ProceduralProjectileReleaseSpec;
   seed: number;
   shotGeneration: number;
   target: Vector3;
@@ -73,7 +93,7 @@ export interface ProceduralMeleeContactEvent {
 
 export interface ProceduralUnitActor {
   readonly kind: ProceduralUnitKind;
-  readonly mode: ProceduralCharacterMode;
+  readonly mode: ProceduralUnitMode;
   readonly object: Group;
 
   applyReaction(reaction: ProceduralUnitReactionInput): void;
@@ -108,6 +128,7 @@ export class ProceduralUnitRuntime {
   private constructor(
     private readonly characterRuntime: ProceduralCharacterRuntime,
     private readonly horseRuntime: ProceduralHorseRuntime,
+    private readonly boatRuntime: ProceduralBoatRuntime,
     private readonly physicsWorld: JoltRagdollWorld,
     private readonly meleeLibrary: ProceduralMeleeWeaponLibrary,
   ) {}
@@ -119,23 +140,33 @@ export class ProceduralUnitRuntime {
     const results = await Promise.allSettled([
       ProceduralCharacterRuntime.create({ ...options, physicsWorld }),
       ProceduralHorseRuntime.create(physicsWorld),
+      ProceduralBoatRuntime.create(),
       ProceduralMeleeWeaponLibrary.create(),
     ] as const);
-    const [characterResult, horseResult, meleeResult] = results;
+    const [characterResult, horseResult, boatResult, meleeResult] = results;
     if (
       characterResult.status === "rejected" ||
       horseResult.status === "rejected" ||
+      boatResult.status === "rejected" ||
       meleeResult.status === "rejected"
     ) {
       if (characterResult.status === "fulfilled") characterResult.value.dispose();
       if (horseResult.status === "fulfilled") horseResult.value.dispose();
+      if (boatResult.status === "fulfilled") boatResult.value.dispose();
       physicsWorld.dispose();
       if (characterResult.status === "rejected") throw characterResult.reason;
       if (horseResult.status === "rejected") throw horseResult.reason;
+      if (boatResult.status === "rejected") throw boatResult.reason;
       if (meleeResult.status === "rejected") throw meleeResult.reason;
       throw new Error("Procedural unit runtime initialization failed");
     }
-    return new ProceduralUnitRuntime(characterResult.value, horseResult.value, physicsWorld, meleeResult.value);
+    return new ProceduralUnitRuntime(
+      characterResult.value,
+      horseResult.value,
+      boatResult.value,
+      physicsWorld,
+      meleeResult.value,
+    );
   }
 
   public createActor(config: ProceduralUnitConfig): ProceduralUnitActor {
@@ -145,7 +176,14 @@ export class ProceduralUnitRuntime {
       this.animationScheduler.delete(actor);
       this.actors.delete(actor);
     };
-    const actor = createUnitActor(this.characterRuntime, this.horseRuntime, this.meleeLibrary, normalized, release);
+    const actor = createUnitActor(
+      this.characterRuntime,
+      this.horseRuntime,
+      this.boatRuntime,
+      this.meleeLibrary,
+      normalized,
+      release,
+    );
     this.actors.add(actor);
     this.animationScheduler.add(actor);
     return actor;
@@ -156,7 +194,7 @@ export class ProceduralUnitRuntime {
     this.physicsWorld.update(deltaSeconds);
     this.animationScheduler.update(
       deltaSeconds,
-      (actor) => actor.mode === "ragdoll",
+      (actor) => actor.mode !== "animated",
       (actor, elapsedSeconds) => actor.update(elapsedSeconds),
     );
   }
@@ -198,6 +236,7 @@ export class ProceduralUnitRuntime {
     this.animationScheduler.clear();
     this.characterRuntime.dispose();
     this.horseRuntime.dispose();
+    this.boatRuntime.dispose();
     this.physicsWorld.dispose();
   }
 }
@@ -205,10 +244,14 @@ export class ProceduralUnitRuntime {
 function createUnitActor(
   characterRuntime: ProceduralCharacterRuntime,
   horseRuntime: ProceduralHorseRuntime,
+  boatRuntime: ProceduralBoatRuntime,
   meleeLibrary: ProceduralMeleeWeaponLibrary,
   config: ProceduralUnitConfig,
   release: (actor: ProceduralUnitActor) => void,
 ): ProceduralUnitActor {
+  if (config.kind === "boat") {
+    return new BoatUnitActor(boatRuntime.createActor(config.boat), config, release);
+  }
   if (config.kind === "horse") {
     return new HorseUnitActor(horseRuntime.createActor(config.horse, config.humanoid), config, release);
   }
@@ -391,6 +434,7 @@ class HumanoidUnitActor implements ProceduralUnitActor {
     const melee = this.melee.getStats();
     const meleeEquipment = this.equipment.getMeleeStats();
     return {
+      ...EMPTY_BOAT_STATS,
       ...this.actor.getStats(),
       kind: this.kind,
       maximumHorseBoneStretchRatio: 1,
@@ -496,6 +540,14 @@ class HumanoidUnitActor implements ProceduralUnitActor {
         const event: ProceduralRangedReleaseEvent = {
           direction: this.releaseDirection.clone(),
           origin: this.releaseOrigin.clone(),
+          origins: [this.releaseOrigin.clone()],
+          projectile: {
+            count: this.config.archer.volleyCount,
+            flightSeconds: this.config.archer.projectileFlightSeconds,
+            kind: "arrow",
+            spreadDegrees: this.config.archer.volleySpreadDegrees,
+            targetRadius: this.config.archer.targetRadius,
+          },
           seed: (this.config.humanoid.seed ^ generation) >>> 0,
           shotGeneration: generation,
           target: this.releaseTarget.clone(),
@@ -516,6 +568,177 @@ class HumanoidUnitActor implements ProceduralUnitActor {
       origin: this.meleeContactOrigin,
       target: this.meleeTarget,
     });
+  }
+}
+
+class BoatUnitActor implements ProceduralUnitActor {
+  public readonly object: Group;
+  private readonly rangedReleaseListeners = new Set<(event: ProceduralRangedReleaseEvent) => void>();
+  private readonly releaseDirection = new Vector3();
+  private config: ProceduralUnitConfig;
+  private readonly unsubscribeRelease: () => void;
+  private disposed = false;
+
+  public constructor(
+    private readonly boat: ProceduralBoatActor,
+    config: ProceduralUnitConfig,
+    private readonly release: (actor: ProceduralUnitActor) => void,
+  ) {
+    this.config = config;
+    this.object = boat.object;
+    this.unsubscribeRelease = boat.onRelease((event) => {
+      const origin = event.origins[0] ?? this.object.getWorldPosition(new Vector3());
+      this.releaseDirection.copy(event.target).sub(origin);
+      if (this.releaseDirection.lengthSq() < 1e-8) this.releaseDirection.set(event.side === "port" ? -1 : 1, 0, 0);
+      else this.releaseDirection.normalize();
+      const releaseEvent: ProceduralRangedReleaseEvent = {
+        direction: this.releaseDirection.clone(),
+        origin: origin.clone(),
+        origins: event.origins.map((muzzle) => muzzle.clone()),
+        projectile: {
+          count: event.origins.length,
+          flightSeconds: this.config.boat.projectileFlightSeconds,
+          kind: "cannonball",
+          spreadDegrees: this.config.boat.projectileSpreadDegrees,
+          targetRadius: this.config.boat.projectileTargetRadius,
+        },
+        seed: event.seed,
+        shotGeneration: event.generation,
+        target: event.target.clone(),
+      };
+      this.rangedReleaseListeners.forEach((listener) => listener(releaseEvent));
+    });
+  }
+
+  public get kind(): ProceduralUnitKind {
+    return "boat";
+  }
+
+  public get mode(): ProceduralUnitMode {
+    return this.boat.mode;
+  }
+
+  public update(deltaSeconds: number): void {
+    this.boat.update(deltaSeconds);
+  }
+
+  public stepOnce(): void {
+    this.boat.stepOnce();
+  }
+
+  public updateConfig(config: ProceduralUnitConfig): void {
+    this.config = config;
+    this.boat.updateConfig(config.boat);
+  }
+
+  public startRagdoll(): Promise<void> {
+    return this.boat.startSinking();
+  }
+
+  public applyReaction(reaction: ProceduralUnitReactionInput): void {
+    this.boat.applyReaction(reaction);
+  }
+
+  public applyImpact(impact: ProceduralUnitImpact): Promise<void> {
+    return this.boat.applyImpact(impact);
+  }
+
+  public applyImpulse(): Promise<void> {
+    return this.boat.applyImpulse();
+  }
+
+  public attack(targetWorld: Readonly<Vector3>): boolean {
+    return this.fireRangedAttack(targetWorld);
+  }
+
+  public fireRangedAttack(targetWorld: Readonly<Vector3>): boolean {
+    return this.mode === "animated" && this.boat.attack(targetWorld);
+  }
+
+  public fireMeleeAttack(): boolean {
+    return false;
+  }
+
+  public setRangedTarget(targetWorld?: Readonly<Vector3>): void {
+    this.boat.setTarget(targetWorld);
+  }
+
+  public cancelRangedAttack(): void {
+    this.boat.cancelAttack();
+  }
+
+  public setMeleeTarget(): void {}
+
+  public setGroundSampler(): void {}
+
+  public cancelMeleeAttack(): void {}
+
+  public onRangedRelease(listener: (event: ProceduralRangedReleaseEvent) => void): () => void {
+    this.rangedReleaseListeners.add(listener);
+    return () => this.rangedReleaseListeners.delete(listener);
+  }
+
+  public onMeleeContact(): () => void {
+    return () => undefined;
+  }
+
+  public reset(): void {
+    this.boat.reset();
+  }
+
+  public hasFiniteState(): boolean {
+    return this.boat.hasFiniteState();
+  }
+
+  public getStats(): ProceduralUnitActorStats {
+    const boat = this.boat.getStats();
+    return {
+      ...EMPTY_UNIT_STATS,
+      appearanceId: "quaternius-pirate",
+      appearanceLabel: "Quaternius Pirate Ship",
+      assetId: boat.assetId,
+      assetLabel: boat.assetLabel,
+      authoredClipCount: boat.authoredClipCount,
+      boatHeave: boat.heave,
+      boatPitchDegrees: boat.pitchDegrees,
+      boatRollDegrees: boat.rollDegrees,
+      boatSinkProgress: boat.sinkProgress,
+      boatWakeStrength: boat.wakeStrength,
+      kind: "boat",
+      mode: this.mode,
+      rangedPhase: boat.broadsidePhase,
+      rangedReleaseCount: boat.releaseCount,
+      rigAdapterId: "quaternius-pirate-ship",
+      skinnedMeshCount: 0,
+    };
+  }
+
+  public getPoseDiagnostics(): ProceduralUnitPoseDiagnostics {
+    const boat = this.boat.getStats();
+    return resolveProceduralUnitPoseDiagnostics({
+      boat: {
+        broadsidePhase: boat.broadsidePhase,
+        heave: boat.heave,
+        maximumHeave: this.config.boat.heaveAmplitude,
+        maximumPitchDegrees: this.config.boat.pitchDegrees + this.config.boat.sinkPitchDegrees + 1.7,
+        maximumRollDegrees: this.config.boat.rollDegrees + this.config.boat.sinkRollDegrees + 15,
+        muzzleCount: this.config.boat.broadsideCannons,
+        pitchDegrees: boat.pitchDegrees,
+        rollDegrees: boat.rollDegrees,
+        sinkProgress: boat.sinkProgress,
+        wakeStrength: boat.wakeStrength,
+      },
+      kind: "boat",
+    });
+  }
+
+  public dispose(): void {
+    if (this.disposed) return;
+    this.disposed = true;
+    this.unsubscribeRelease();
+    this.rangedReleaseListeners.clear();
+    this.boat.dispose();
+    this.release(this);
   }
 }
 
@@ -797,6 +1020,7 @@ class MountedUnitActor implements ProceduralUnitActor {
     const melee = this.melee.getStats();
     const meleeEquipment = this.equipment.getMeleeStats();
     return {
+      ...EMPTY_BOAT_STATS,
       ...rider,
       activeBodyCount: horsePhysics.activeBodyCount + rider.activeBodyCount,
       assetLabel: `${horse.assetLabel} + ${rider.assetLabel}`,
@@ -949,6 +1173,11 @@ const EMPTY_UNIT_STATS: ProceduralUnitActorStats = {
   authoredClipCount: 0,
   bodyCount: 0,
   boneCount: 0,
+  boatHeave: 0,
+  boatPitchDegrees: 0,
+  boatRollDegrees: 0,
+  boatSinkProgress: 0,
+  boatWakeStrength: 0,
   constraintCount: 0,
   kind: "horse",
   leftGripProfile: "open",
@@ -975,3 +1204,11 @@ const EMPTY_UNIT_STATS: ProceduralUnitActorStats = {
   stringContinuityError: 0,
   wasmHeapBytes: 0,
 };
+
+const EMPTY_BOAT_STATS = {
+  boatHeave: 0,
+  boatPitchDegrees: 0,
+  boatRollDegrees: 0,
+  boatSinkProgress: 0,
+  boatWakeStrength: 0,
+} as const;
