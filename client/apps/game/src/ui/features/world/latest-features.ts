@@ -35,6 +35,14 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-08-24",
+    title: "Integrated World Gym",
+    description:
+      "Added a shared biome-and-army test map where 100 procedural units walk across generated terrain with live grounding, collision, renderer, and performance diagnostics.",
+    type: "feature",
+    gameSlug: "world",
+  },
+  {
+    date: "2026-08-24",
     title: "Stable Character Footwork",
     description:
       "Fixed boots twisting or facing backward during procedural movement, keeping toes aligned with travel while planted steps and swing transitions remain stable.",

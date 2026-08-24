@@ -16,6 +16,11 @@ const DebugProceduralCharacterBenchmarkView = lazy(() =>
     default: module.ProceduralCharacterBenchmarkView,
   })),
 );
+const DebugProceduralWorldGymView = lazy(() =>
+  import("./ui/features/debug/procedural-character-benchmark-view").then((module) => ({
+    default: module.ProceduralWorldGymView,
+  })),
+);
 const DebugTerrainPropView = lazy(() =>
   import("./ui/features/debug/terrain-prop-debug-view").then((module) => ({ default: module.TerrainPropDebugView })),
 );
@@ -68,6 +73,14 @@ function App() {
           element={
             <DebugRouteShell>
               <DebugProceduralCharacterBenchmarkView />
+            </DebugRouteShell>
+          }
+        />
+        <Route
+          path="/debug/procedural-world-gym"
+          element={
+            <DebugRouteShell>
+              <DebugProceduralWorldGymView />
             </DebugRouteShell>
           }
         />

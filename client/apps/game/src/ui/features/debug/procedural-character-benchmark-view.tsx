@@ -6,10 +6,12 @@ import {
   applyProceduralCharacterBenchmarkConfigPatch,
   createDefaultProceduralCharacterBenchmarkConfig,
   createProceduralCharacterWalkingPerformanceConfig,
+  createProceduralWorldGymConfig,
   type ProceduralCharacterBenchmarkConfig,
 } from "@/three/characters/benchmark/procedural-character-benchmark-config";
 import {
   mountProceduralCharacterBenchmarkRenderer,
+  type ProceduralCharacterBenchmarkEnvironment,
   type ProceduralCharacterBenchmarkRendererHandle,
   type ProceduralCharacterBenchmarkStats,
 } from "@/three/characters/benchmark/procedural-character-benchmark-renderer";
@@ -27,6 +29,7 @@ const INITIAL_STATS: ProceduralCharacterBenchmarkStats = {
   collisionMaximumOffset: 0,
   collisionResolvedPairCount: 0,
   drawCalls: 0,
+  environmentMode: "hex",
   fps: 0,
   geometryCount: 0,
   hexCount: 100,
@@ -55,6 +58,13 @@ const INITIAL_STATS: ProceduralCharacterBenchmarkStats = {
   simulationElapsedSeconds: 0,
   simulationSteps: 0,
   textureCount: 0,
+  terrainBiomeCount: 0,
+  terrainCellCount: 0,
+  terrainGroundedActorCount: 0,
+  terrainMaximumRootError: 0,
+  terrainPropCount: 0,
+  terrainSurfaceMissCount: 0,
+  terrainTriangles: 0,
   totalDeaths: 0,
   triangles: 0,
   visibleHexCount: 0,
@@ -76,14 +86,24 @@ interface ProceduralCharacterBenchmarkDebugBridge {
 declare global {
   interface Window {
     __proceduralCharacterBenchmark?: ProceduralCharacterBenchmarkDebugBridge;
+    __proceduralWorldGym?: ProceduralCharacterBenchmarkDebugBridge;
   }
 }
 
-export const ProceduralCharacterBenchmarkView = () => {
-  useBootDocumentState("app-ready", "procedural_character_benchmark_ready");
+type BenchmarkExperienceMode = "characters" | "world";
+
+export const ProceduralCharacterBenchmarkView = () => <ProceduralCharacterBenchmarkExperience mode="characters" />;
+
+export const ProceduralWorldGymView = () => <ProceduralCharacterBenchmarkExperience mode="world" />;
+
+const ProceduralCharacterBenchmarkExperience = ({ mode }: { mode: BenchmarkExperienceMode }) => {
+  const worldGym = mode === "world";
+  useBootDocumentState("app-ready", worldGym ? "procedural_world_gym_ready" : "procedural_character_benchmark_ready");
   const containerRef = useRef<HTMLDivElement | null>(null);
   const rendererRef = useRef<ProceduralCharacterBenchmarkRendererHandle | null>(null);
-  const [config, setConfig] = useState(createDefaultProceduralCharacterBenchmarkConfig);
+  const [config, setConfig] = useState(
+    worldGym ? createProceduralWorldGymConfig : createDefaultProceduralCharacterBenchmarkConfig,
+  );
   const configRef = useRef(config);
   const statsRef = useRef(INITIAL_STATS);
   const [stats, setStats] = useState(INITIAL_STATS);
@@ -92,8 +112,18 @@ export const ProceduralCharacterBenchmarkView = () => {
   const [rendererError, setRendererError] = useState<string | null>(null);
 
   useEffect(
-    () => mountBenchmarkRenderer(containerRef, rendererRef, configRef, statsRef, setReady, setStats, setRendererError),
-    [],
+    () =>
+      mountBenchmarkRenderer(
+        containerRef,
+        rendererRef,
+        configRef,
+        statsRef,
+        worldGym ? "procedural-biomes" : "hex",
+        setReady,
+        setStats,
+        setRendererError,
+      ),
+    [worldGym],
   );
 
   useEffect(() => {
@@ -137,8 +167,9 @@ export const ProceduralCharacterBenchmarkView = () => {
         startPerformanceEvaluation,
         reset,
         killBurst,
+        worldGym,
       ),
-    [applyWalkingPerformanceProfile, killBurst, patchConfig, reset, startPerformanceEvaluation],
+    [applyWalkingPerformanceProfile, killBurst, patchConfig, reset, startPerformanceEvaluation, worldGym],
   );
 
   const togglePaused = useCallback(() => {
@@ -155,12 +186,16 @@ export const ProceduralCharacterBenchmarkView = () => {
       data-collision-body-count={stats.collisionBodyCount}
       data-benchmark-ready={ready && !stats.loadingActors ? "true" : "false"}
       data-performance-status={stats.performance.status}
-      data-debug-route="procedural-character-benchmark"
+      data-debug-route={worldGym ? "procedural-world-gym" : "procedural-character-benchmark"}
+      data-terrain-biome-count={stats.terrainBiomeCount}
+      data-terrain-grounded-actors={stats.terrainGroundedActorCount}
+      data-terrain-ready={worldGym && stats.terrainCellCount > 0 ? "true" : "false"}
       data-simulation-paused={paused ? "true" : "false"}
       data-total-deaths={stats.totalDeaths}
       data-projectile-count={stats.projectileActiveCount}
     >
       <BenchmarkHeader
+        canKill={config.maxActiveRagdolls > 0}
         paused={paused}
         ready={ready}
         stats={stats}
@@ -169,6 +204,7 @@ export const ProceduralCharacterBenchmarkView = () => {
         onReset={reset}
         onStep={() => rendererRef.current?.stepOnce()}
         onTogglePaused={togglePaused}
+        worldGym={worldGym}
       />
       <div className="flex min-h-0 flex-1 flex-col lg:grid lg:grid-cols-[330px_minmax(0,1fr)]">
         <BenchmarkControls
@@ -176,6 +212,7 @@ export const ProceduralCharacterBenchmarkView = () => {
           onApplyWalkingPerformanceProfile={applyWalkingPerformanceProfile}
           onPatchConfig={patchConfig}
           onResetCamera={() => rendererRef.current?.resetCamera()}
+          worldGym={worldGym}
         />
         <BenchmarkViewport
           config={config}
@@ -183,6 +220,7 @@ export const ProceduralCharacterBenchmarkView = () => {
           ready={ready}
           rendererError={rendererError}
           stats={stats}
+          worldGym={worldGym}
         />
       </div>
     </section>
@@ -194,6 +232,7 @@ function mountBenchmarkRenderer(
   rendererRef: MutableRefObject<ProceduralCharacterBenchmarkRendererHandle | null>,
   configRef: MutableRefObject<ProceduralCharacterBenchmarkConfig>,
   statsRef: MutableRefObject<ProceduralCharacterBenchmarkStats>,
+  environment: ProceduralCharacterBenchmarkEnvironment,
   setReady: (ready: boolean) => void,
   setStats: (stats: ProceduralCharacterBenchmarkStats) => void,
   setRendererError: (message: string) => void,
@@ -205,6 +244,7 @@ function mountBenchmarkRenderer(
   void mountProceduralCharacterBenchmarkRenderer({
     config: configRef.current,
     container,
+    environment,
     onStats: (nextStats) => {
       statsRef.current = nextStats;
       setStats(nextStats);
@@ -227,6 +267,7 @@ function mountBenchmarkRenderer(
     rendererRef.current?.dispose();
     rendererRef.current = null;
     window.__proceduralCharacterBenchmark = undefined;
+    window.__proceduralWorldGym = undefined;
   };
 }
 
@@ -238,8 +279,9 @@ function exposeBenchmarkDebugBridge(
   startPerformanceEvaluation: () => Promise<void>,
   reset: () => void,
   killBurst: () => void,
+  worldGym: boolean,
 ): () => void {
-  window.__proceduralCharacterBenchmark = {
+  const bridge: ProceduralCharacterBenchmarkDebugBridge = {
     applyConfigPatch: patchConfig,
     applyWalkingPerformanceProfile,
     getConfig: () => ({ ...configRef.current }),
@@ -248,12 +290,16 @@ function exposeBenchmarkDebugBridge(
     reset,
     startPerformanceEvaluation,
   };
+  if (worldGym) window.__proceduralWorldGym = bridge;
+  else window.__proceduralCharacterBenchmark = bridge;
   return () => {
-    window.__proceduralCharacterBenchmark = undefined;
+    if (worldGym) window.__proceduralWorldGym = undefined;
+    else window.__proceduralCharacterBenchmark = undefined;
   };
 }
 
 const BenchmarkHeader = ({
+  canKill,
   paused,
   ready,
   stats,
@@ -262,7 +308,9 @@ const BenchmarkHeader = ({
   onReset,
   onStep,
   onTogglePaused,
+  worldGym,
 }: {
+  canKill: boolean;
   paused: boolean;
   ready: boolean;
   stats: ProceduralCharacterBenchmarkStats;
@@ -271,6 +319,7 @@ const BenchmarkHeader = ({
   onReset(): void;
   onStep(): void;
   onTogglePaused(): void;
+  worldGym: boolean;
 }) => (
   <header className="flex flex-wrap items-center justify-between gap-3 border-b border-white/10 bg-[#0a1019]/95 px-4 py-3 backdrop-blur-xl lg:px-6">
     <div className="flex min-w-0 items-center gap-3">
@@ -278,11 +327,16 @@ const BenchmarkHeader = ({
         <Gauge className="h-5 w-5" />
       </div>
       <div className="min-w-0">
-        <p className="text-[0.65rem] font-semibold uppercase tracking-[0.24em] text-cyan-200/60">Crowd laboratory</p>
-        <h1 className="truncate text-lg font-semibold text-white sm:text-xl">Procedural Character Benchmark</h1>
+        <p className="text-[0.65rem] font-semibold uppercase tracking-[0.24em] text-cyan-200/60">
+          {worldGym ? "Integrated world laboratory" : "Crowd laboratory"}
+        </p>
+        <h1 className="truncate text-lg font-semibold text-white sm:text-xl">
+          {worldGym ? "Procedural World Gym" : "Procedural Character Benchmark"}
+        </h1>
       </div>
       <BenchmarkBadge label={stats.rendererMode} tone="cyan" />
       <BenchmarkBadge label={`${stats.actorCount}/100 actors`} tone={stats.actorCount === 100 ? "emerald" : "amber"} />
+      {worldGym && <BenchmarkBadge label={`${stats.terrainBiomeCount} biomes`} tone="emerald" />}
       <BenchmarkBadge label={`${stats.ragdollCount} ragdolls`} tone="violet" />
       <BenchmarkBadge
         label={`60 FPS ${stats.performance.status}`}
@@ -290,7 +344,13 @@ const BenchmarkHeader = ({
       />
     </div>
     <div className="flex flex-wrap items-center gap-2">
-      <BenchmarkAction icon={<Skull />} label="Kill burst" onClick={onKillBurst} disabled={!ready} primary />
+      <BenchmarkAction
+        icon={<Skull />}
+        label="Kill burst"
+        onClick={onKillBurst}
+        disabled={!ready || !canKill}
+        primary
+      />
       <BenchmarkAction icon={<Gauge />} label="Measure" onClick={onMeasure} disabled={!ready} />
       <BenchmarkAction
         icon={paused ? <Play /> : <Pause />}
@@ -301,10 +361,16 @@ const BenchmarkHeader = ({
       <BenchmarkAction icon={<StepForward />} label="Step" onClick={onStep} disabled={!ready || !paused} />
       <BenchmarkAction icon={<RotateCcw />} label="Reset" onClick={onReset} disabled={!ready} />
       <Link
+        to={worldGym ? "/debug/procedural-character-benchmark" : "/debug/procedural-world-gym"}
+        className="grid h-9 place-items-center border border-white/10 px-3 text-xs font-semibold uppercase tracking-wider text-slate-300 transition hover:border-white/25 hover:bg-white/[0.06] hover:text-white"
+      >
+        {worldGym ? "Hex lab" : "World gym"}
+      </Link>
+      <Link
         to="/debug/procedural-characters"
         className="grid h-9 place-items-center border border-white/10 px-3 text-xs font-semibold uppercase tracking-wider text-slate-300 transition hover:border-white/25 hover:bg-white/[0.06] hover:text-white"
       >
-        Gym
+        Animation
       </Link>
       <Link
         to="/"
@@ -321,17 +387,20 @@ const BenchmarkControls = ({
   onApplyWalkingPerformanceProfile,
   onPatchConfig,
   onResetCamera,
+  worldGym,
 }: {
   config: ProceduralCharacterBenchmarkConfig;
   onApplyWalkingPerformanceProfile(): void;
   onPatchConfig(patch: Partial<ProceduralCharacterBenchmarkConfig>): void;
   onResetCamera(): void;
+  worldGym: boolean;
 }) => (
   <aside className="order-2 max-h-[48vh] overflow-y-auto border-t border-white/10 bg-[#0b111b] lg:order-1 lg:max-h-none lg:border-t-0 lg:border-r">
     <div className="space-y-3 p-4">
       <div className="border border-cyan-300/15 bg-cyan-300/[0.045] p-3 text-xs leading-relaxed text-slate-300">
-        The production runtime now mixes Archers, Knights, Crossbowmen, horses, and mounted Paladins. One pooled arrow
-        owner and one shared Jolt world keep volleys, gait, rider, crowd, and death costs comparable.
+        {worldGym
+          ? "The production terrain and army runtimes now share one renderer and lifecycle. One hundred mixed units walk across sixteen generated biomes while grounding, props, frame cost, collisions, and GPU resources remain observable."
+          : "The production runtime now mixes Archers, Knights, Crossbowmen, horses, and mounted Paladins. One pooled arrow owner and one shared Jolt world keep volleys, gait, rider, crowd, and death costs comparable."}
       </div>
       <ControlSection title="Population" icon={<Users />} defaultOpen>
         <button
@@ -402,6 +471,18 @@ const BenchmarkControls = ({
         </button>
       </ControlSection>
       <ControlSection title="Motion" icon={<Activity />} defaultOpen>
+        <SegmentedControl
+          label="Locomotion"
+          columns={2}
+          value={config.locomotionMode}
+          options={[
+            { value: "walk", label: "Walk" },
+            { value: "run", label: "Run" },
+          ]}
+          onChange={(locomotionMode) =>
+            onPatchConfig({ locomotionMode: locomotionMode as ProceduralCharacterBenchmarkConfig["locomotionMode"] })
+          }
+        />
         <RangeControl
           label="Animation update lanes"
           value={config.animationUpdateLanes}
@@ -515,12 +596,14 @@ const BenchmarkViewport = ({
   ready,
   rendererError,
   stats,
+  worldGym,
 }: {
   config: ProceduralCharacterBenchmarkConfig;
   containerRef: RefObject<HTMLDivElement>;
   ready: boolean;
   rendererError: string | null;
   stats: ProceduralCharacterBenchmarkStats;
+  worldGym: boolean;
 }) => (
   <main className="relative order-1 min-h-[52vh] overflow-hidden lg:order-2 lg:min-h-0">
     <div ref={containerRef} className="absolute inset-0" />
@@ -529,7 +612,9 @@ const BenchmarkViewport = ({
         <div className="flex flex-col items-center gap-3 text-center">
           <div className="h-8 w-8 animate-spin rounded-full border-2 border-cyan-300/20 border-t-cyan-200" />
           <div>
-            <p className="text-sm font-semibold text-white">Building articulated crowd</p>
+            <p className="text-sm font-semibold text-white">
+              {worldGym ? "Growing biomes and articulated crowd" : "Building articulated crowd"}
+            </p>
             <p className="mt-1 font-mono text-xs text-slate-400">
               {stats.actorCount} / {config.actorCount} actors
             </p>
@@ -539,7 +624,9 @@ const BenchmarkViewport = ({
     )}
     {rendererError && (
       <div className="absolute inset-x-4 bottom-4 z-30 border border-red-300/35 bg-red-950/90 p-4 text-sm text-red-100 backdrop-blur">
-        <p className="font-semibold">Unable to start the character benchmark.</p>
+        <p className="font-semibold">
+          {worldGym ? "Unable to start the procedural world gym." : "Unable to start the character benchmark."}
+        </p>
         <p className="mt-1 text-red-200/75">{rendererError}</p>
       </div>
     )}
@@ -547,6 +634,9 @@ const BenchmarkViewport = ({
       <div className="border border-white/10 bg-[#090e17]/82 px-3 py-2 backdrop-blur-md">
         <p className="text-[0.62rem] font-semibold uppercase tracking-[0.22em] text-slate-500">Simulation</p>
         <p className="mt-1 text-sm text-white">
+          {worldGym
+            ? `${stats.terrainBiomeCount} biomes · ${stats.terrainCellCount} terrain cells · ${stats.terrainPropCount} props · ${stats.terrainGroundedActorCount}/${stats.runningCount} grounded · `
+            : ""}
           {stats.visibleHexCount}/{stats.hexCount} hexes visible · {stats.runningCount} running · {stats.ragdollCount}{" "}
           ragdolls · seed {config.seed}
           {stats.projectileActiveCount > 0
@@ -567,12 +657,12 @@ const BenchmarkViewport = ({
         </div>
       )}
     </div>
-    <BenchmarkMetrics stats={stats} />
+    <BenchmarkMetrics stats={stats} worldGym={worldGym} />
   </main>
 );
 
-const BenchmarkMetrics = ({ stats }: { stats: ProceduralCharacterBenchmarkStats }) => (
-  <div className="pointer-events-none absolute right-4 bottom-4 left-4 z-20 grid grid-cols-4 gap-2 min-[380px]:grid-cols-6 xl:left-auto xl:w-[900px] xl:grid-cols-[repeat(10,minmax(0,1fr))]">
+const BenchmarkMetrics = ({ stats, worldGym }: { stats: ProceduralCharacterBenchmarkStats; worldGym: boolean }) => (
+  <div className="pointer-events-none absolute right-4 bottom-4 left-4 z-20 grid max-h-28 grid-cols-4 gap-2 overflow-hidden min-[380px]:grid-cols-6 sm:max-h-none xl:left-auto xl:w-[900px] xl:grid-cols-[repeat(10,minmax(0,1fr))]">
     <Metric label="FPS" value={stats.fps || "--"} />
     <Metric label="Avg" value={stats.averageFrameMs ? `${stats.averageFrameMs}ms` : "--"} />
     <Metric label="P95" value={stats.p95FrameMs ? `${stats.p95FrameMs}ms` : "--"} />
@@ -583,6 +673,12 @@ const BenchmarkMetrics = ({ stats }: { stats: ProceduralCharacterBenchmarkStats 
     <Metric label="60Hz work" value={stats.performance.headroomPass ? "PASS" : "--"} />
     <Metric label="Calls" value={formatInteger(stats.drawCalls)} />
     <Metric label="Tris" value={formatInteger(stats.triangles)} />
+    {worldGym && <Metric label="Biomes" value={stats.terrainBiomeCount} />}
+    {worldGym && <Metric label="Terrain" value={stats.terrainCellCount} />}
+    {worldGym && <Metric label="Props" value={formatInteger(stats.terrainPropCount)} />}
+    {worldGym && <Metric label="Grounded" value={`${stats.terrainGroundedActorCount}/${stats.runningCount}`} />}
+    {worldGym && <Metric label="Ground err" value={`${stats.terrainMaximumRootError}m`} />}
+    {worldGym && <Metric label="Surface miss" value={stats.terrainSurfaceMissCount} />}
     <Metric label="Actors" value={stats.actorCount} />
     <Metric label="Lanes" value={stats.animationUpdateLaneCount} />
     <Metric label="DPR" value={stats.pixelRatio} />
@@ -698,7 +794,7 @@ const SegmentedControl = ({
   columns,
   onChange,
 }: {
-  columns: 3 | 4;
+  columns: 2 | 3 | 4;
   label: string;
   value: string;
   options: ReadonlyArray<{ value: string; label: string }>;
@@ -706,7 +802,7 @@ const SegmentedControl = ({
 }) => (
   <fieldset>
     <legend className="mb-1.5 text-[0.68rem] font-medium uppercase tracking-wider text-slate-400">{label}</legend>
-    <div className={cn("grid gap-1", columns === 4 ? "grid-cols-4" : "grid-cols-3")}>
+    <div className={cn("grid gap-1", columns === 4 ? "grid-cols-4" : columns === 3 ? "grid-cols-3" : "grid-cols-2")}>
       {options.map((option) => (
         <button
           key={option.value}

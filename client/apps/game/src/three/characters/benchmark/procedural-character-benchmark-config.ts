@@ -10,6 +10,7 @@ export interface ProceduralCharacterBenchmarkConfig {
   corpseSeconds: number;
   deathsPerSecond: number;
   maxActiveRagdolls: number;
+  locomotionMode: "run" | "walk";
   movementSpeed: number;
   pixelRatio: number;
   seed: number;
@@ -32,6 +33,7 @@ const DEFAULT_CONFIG: ProceduralCharacterBenchmarkConfig = {
   corpseSeconds: 4,
   deathsPerSecond: 2,
   maxActiveRagdolls: 8,
+  locomotionMode: "run",
   movementSpeed: 0.72,
   pixelRatio: 1,
   seed: 424_242,
@@ -60,6 +62,7 @@ export function applyProceduralCharacterBenchmarkConfigPatch(
     corpseSeconds: clamp(input.corpseSeconds, 0.5, 12),
     deathsPerSecond: clamp(input.deathsPerSecond, 0, 10),
     maxActiveRagdolls: clampInteger(input.maxActiveRagdolls, 0, 20),
+    locomotionMode: input.locomotionMode === "walk" ? "walk" : "run",
     movementSpeed: clamp(input.movementSpeed, 0.1, 3),
     pixelRatio: clamp(input.pixelRatio, 0.75, 1.5),
     seed: clampInteger(input.seed, 0, 2_147_483_647),
@@ -78,10 +81,23 @@ export function createProceduralCharacterWalkingPerformanceConfig(): ProceduralC
     collisions: true,
     deathsPerSecond: 0,
     maxActiveRagdolls: 0,
+    locomotionMode: "walk",
     meleeAttacks: false,
     pixelRatio: 1,
     shadows: false,
     unitMix: "foot",
+  });
+}
+
+export function createProceduralWorldGymConfig(): ProceduralCharacterBenchmarkConfig {
+  return applyProceduralCharacterBenchmarkConfigPatch(createDefaultProceduralCharacterBenchmarkConfig(), {
+    actorCount: 100,
+    archerVolleys: false,
+    deathsPerSecond: 0,
+    locomotionMode: "walk",
+    maxActiveRagdolls: 0,
+    meleeAttacks: false,
+    unitMix: "balanced",
   });
 }
 

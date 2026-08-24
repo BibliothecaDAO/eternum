@@ -14,18 +14,21 @@ describe("App debug route wiring", () => {
     expect(source).toContain("DebugThreeChunkView");
     expect(source).toContain("DebugProceduralCharacterGymView");
     expect(source).toContain("DebugProceduralCharacterBenchmarkView");
+    expect(source).toContain("DebugProceduralWorldGymView");
     expect(source).toContain("DebugTerrainPropView");
     expect(source).toContain("DebugProceduralTerrainView");
     expect(source).toContain("DebugProceduralTerrainBenchmarkView");
     expect(source).toContain('path="/debug/three-chunks"');
     expect(source).toContain('path="/debug/procedural-characters"');
     expect(source).toContain('path="/debug/procedural-character-benchmark"');
+    expect(source).toContain('path="/debug/procedural-world-gym"');
     expect(source).toContain('path="/debug/terrain-props"');
     expect(source).toContain('path="/debug/procedural-terrain"');
     expect(source).toContain('path="/debug/procedural-terrain-benchmark"');
     expect(source).toContain("<DebugThreeChunkView />");
     expect(source).toContain("<DebugProceduralCharacterGymView />");
     expect(source).toContain("<DebugProceduralCharacterBenchmarkView />");
+    expect(source).toContain("<DebugProceduralWorldGymView />");
     expect(source).toContain("<DebugTerrainPropView />");
     expect(source).toContain("<DebugProceduralTerrainView />");
     expect(source).toContain("<DebugProceduralTerrainBenchmarkView />");
@@ -45,9 +48,9 @@ describe("App debug route wiring", () => {
     expect(debugViewSource).toContain('useBootDocumentState("app-ready", "three_chunk_debug_ready")');
     expect(characterGymSource).toContain('useBootDocumentState("app-ready", "procedural_character_gym_ready")');
     expect(characterGymSource).toContain('data-debug-route="procedural-characters"');
-    expect(characterBenchmarkSource).toContain(
-      'useBootDocumentState("app-ready", "procedural_character_benchmark_ready")',
-    );
-    expect(characterBenchmarkSource).toContain('data-debug-route="procedural-character-benchmark"');
+    expect(characterBenchmarkSource).toContain('"procedural_character_benchmark_ready"');
+    expect(characterBenchmarkSource).toContain('"procedural-character-benchmark"');
+    expect(characterBenchmarkSource).toContain('data-debug-route={worldGym ? "procedural-world-gym"');
+    expect(characterBenchmarkSource).toContain('"procedural_world_gym_ready"');
   });
 });

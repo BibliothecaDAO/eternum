@@ -4,6 +4,7 @@ import {
   applyProceduralCharacterBenchmarkConfigPatch,
   createDefaultProceduralCharacterBenchmarkConfig,
   createProceduralCharacterWalkingPerformanceConfig,
+  createProceduralWorldGymConfig,
 } from "./procedural-character-benchmark-config";
 import {
   advanceProceduralCharacterBenchmarkSimulation,
@@ -47,10 +48,23 @@ describe("procedural character benchmark simulation", () => {
       collisions: true,
       deathsPerSecond: 0,
       maxActiveRagdolls: 0,
+      locomotionMode: "walk",
       meleeAttacks: false,
       pixelRatio: 1,
       shadows: false,
       unitMix: "foot",
+    });
+  });
+
+  it("defines a mixed 100-unit walking profile for the procedural world gym", () => {
+    expect(createProceduralWorldGymConfig()).toMatchObject({
+      actorCount: 100,
+      archerVolleys: false,
+      deathsPerSecond: 0,
+      locomotionMode: "walk",
+      maxActiveRagdolls: 0,
+      meleeAttacks: false,
+      unitMix: "balanced",
     });
   });
 

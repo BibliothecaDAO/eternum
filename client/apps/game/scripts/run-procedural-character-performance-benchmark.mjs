@@ -136,6 +136,7 @@ function readBenchmarkSnapshot(session, headed) {
             config.autoRotate === false &&
             config.collisions === true &&
             config.deathsPerSecond === 0 &&
+            config.locomotionMode === "walk" &&
             config.maxActiveRagdolls === 0 &&
             config.meleeAttacks === false &&
             config.pixelRatio === 1 &&

@@ -31,6 +31,7 @@
     "preview": "vite preview",
     "smoke:character-gym": "node ./scripts/run-character-gym-smoke.mjs",
     "smoke:character-benchmark": "node ./scripts/run-character-benchmark-smoke.mjs",
+    "smoke:procedural-world-gym": "node ./scripts/run-procedural-world-gym-smoke.mjs",
     "smoke:renderer-debug": "node ./scripts/run-renderer-debug-smoke.mjs",
     "smoke:renderer-scenes": "node ./scripts/run-renderer-scene-smoke.mjs",
     "smoke:game-sync-headless": "node ./scripts/run-game-sync-headless-smoke.mjs",

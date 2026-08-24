@@ -12,6 +12,7 @@ import type { RendererSurfaceLike } from "@/three/renderer-backend";
 import { getRendererDiagnosticActiveMode } from "@/three/renderer-diagnostics";
 import { ArrowProjectileSystem } from "@/three/projectiles/arrow-projectile-system";
 import { MeleeImpactSystem } from "@/three/combat/melee-impact-system";
+import { configureGltfTextureSupport } from "@/three/utils/utils";
 import {
   Color,
   CylinderGeometry,
@@ -59,6 +60,9 @@ import {
   ProceduralCharacterPerformanceEvaluator,
   type ProceduralCharacterPerformanceEvaluation,
 } from "./procedural-character-performance-evaluation";
+import { ProceduralWorldGymEnvironment } from "./procedural-world-gym-environment";
+
+export type ProceduralCharacterBenchmarkEnvironment = "hex" | "procedural-biomes";
 
 export interface ProceduralCharacterBenchmarkStats {
   actorCount: number;
@@ -70,6 +74,7 @@ export interface ProceduralCharacterBenchmarkStats {
   collisionMaximumOffset: number;
   collisionResolvedPairCount: number;
   drawCalls: number;
+  environmentMode: ProceduralCharacterBenchmarkEnvironment;
   fps: number;
   geometryCount: number;
   hexCount: number;
@@ -98,6 +103,13 @@ export interface ProceduralCharacterBenchmarkStats {
   simulationElapsedSeconds: number;
   simulationSteps: number;
   textureCount: number;
+  terrainBiomeCount: number;
+  terrainCellCount: number;
+  terrainGroundedActorCount: number;
+  terrainMaximumRootError: number;
+  terrainPropCount: number;
+  terrainSurfaceMissCount: number;
+  terrainTriangles: number;
   totalDeaths: number;
   triangles: number;
   visibleHexCount: number;
@@ -118,6 +130,7 @@ export interface ProceduralCharacterBenchmarkRendererHandle {
 interface MountProceduralCharacterBenchmarkRendererInput {
   config: ProceduralCharacterBenchmarkConfig;
   container: HTMLElement;
+  environment?: ProceduralCharacterBenchmarkEnvironment;
   onStats?: (stats: ProceduralCharacterBenchmarkStats) => void;
 }
 
@@ -160,9 +173,11 @@ class ProceduralCharacterBenchmarkRuntime {
   private readonly scene: Scene;
   private readonly camera: OrthographicCamera;
   private readonly controls: OrbitControls;
+  private readonly environmentMode: ProceduralCharacterBenchmarkEnvironment;
   private readonly stage = new Group();
   private readonly resizeObserver: ResizeObserver;
   private readonly unitRuntime: ProceduralUnitRuntime;
+  private readonly worldGymEnvironment?: ProceduralWorldGymEnvironment;
   private readonly projectiles = new ArrowProjectileSystem({
     capacity: BENCHMARK_ARROW_CAPACITY,
     fixedStep: 1 / 60,
@@ -210,6 +225,7 @@ class ProceduralCharacterBenchmarkRuntime {
     input: MountProceduralCharacterBenchmarkRendererInput,
     initialized: Awaited<ReturnType<typeof initializeProceduralCharacterRendererRuntime>>["rendererRuntime"],
     unitRuntime: ProceduralUnitRuntime,
+    worldGymEnvironment?: ProceduralWorldGymEnvironment,
   ) {
     this.config = input.config;
     this.onStats = input.onStats;
@@ -218,16 +234,26 @@ class ProceduralCharacterBenchmarkRuntime {
     this.gpuTimer = new ProceduralCharacterGpuTimer(this.renderer);
     this.performanceEvaluator.setGpuTimerSupported(this.gpuTimer.supported);
     this.unitRuntime = unitRuntime;
+    this.environmentMode = input.environment ?? "hex";
+    this.worldGymEnvironment = worldGymEnvironment;
     this.unitRuntime.updatePhysicsConfig(createDefaultProceduralUnitConfig().humanoid);
     this.unitRuntime.setCrowdAnimationLaneCount(this.config.animationUpdateLanes);
     this.simulation = createProceduralCharacterBenchmarkSimulation(this.config);
-    this.scene = createBenchmarkScene(this.stage);
+    this.scene = createBenchmarkScene(this.stage, this.worldGymEnvironment);
     this.stage.add(this.projectiles.group, this.meleeImpacts.group);
     this.camera = createBenchmarkCamera();
     this.controls = createBenchmarkControls(this.camera, this.renderer.domElement);
     this.controls.autoRotate = this.config.autoRotate;
-    this.renderer.domElement.id = "procedural-character-benchmark-canvas";
-    this.renderer.domElement.setAttribute("aria-label", "One hundred procedural characters on a complete hex map");
+    this.renderer.domElement.id =
+      this.environmentMode === "procedural-biomes"
+        ? "procedural-world-gym-canvas"
+        : "procedural-character-benchmark-canvas";
+    this.renderer.domElement.setAttribute(
+      "aria-label",
+      this.environmentMode === "procedural-biomes"
+        ? "One hundred procedural characters walking across generated fantasy biomes"
+        : "One hundred procedural characters on a complete hex map",
+    );
     this.renderer.domElement.className = "h-full w-full touch-none";
     input.container.replaceChildren(this.renderer.domElement);
     this.resizeObserver = new ResizeObserver(() => this.resize(input.container));
@@ -243,8 +269,13 @@ class ProceduralCharacterBenchmarkRuntime {
       preloadPhysics: true,
     });
     let benchmark: ProceduralCharacterBenchmarkRuntime | undefined;
+    let worldGymEnvironment: ProceduralWorldGymEnvironment | undefined;
     try {
-      benchmark = new ProceduralCharacterBenchmarkRuntime(input, rendererRuntime, unitRuntime);
+      if (input.environment === "procedural-biomes") {
+        configureGltfTextureSupport(rendererRuntime.renderer as Parameters<typeof configureGltfTextureSupport>[0]);
+        worldGymEnvironment = await ProceduralWorldGymEnvironment.create();
+      }
+      benchmark = new ProceduralCharacterBenchmarkRuntime(input, rendererRuntime, unitRuntime, worldGymEnvironment);
       await benchmark.rebuildPopulation();
       benchmark.startAnimationLoop();
       return benchmark;
@@ -252,6 +283,7 @@ class ProceduralCharacterBenchmarkRuntime {
       if (benchmark) {
         benchmark.dispose();
       } else {
+        worldGymEnvironment?.dispose();
         unitRuntime.dispose();
         rendererRuntime.backend.dispose?.();
       }
@@ -286,6 +318,7 @@ class ProceduralCharacterBenchmarkRuntime {
 
     const animationStart = performance.now();
     if (!this.paused && !this.loadingActors) this.advanceSimulation(deltaSeconds);
+    if (!this.paused) this.worldGymEnvironment?.update(deltaSeconds);
     const animationCpuMs = performance.now() - animationStart;
     this.controls.update(deltaSeconds);
     const renderStart = performance.now();
@@ -390,11 +423,9 @@ class ProceduralCharacterBenchmarkRuntime {
       writeBenchmarkAgentPosition(agent, this.positionScratch);
       const collision =
         this.config.collisions && agent.phase === "running" ? this.separation.getBodySnapshot(agent.id) : undefined;
-      record.actor.object.position.set(
-        collision?.positionX ?? this.positionScratch.x,
-        ACTOR_GROUND_Y,
-        collision?.positionZ ?? this.positionScratch.z,
-      );
+      const positionX = collision?.positionX ?? this.positionScratch.x;
+      const positionZ = collision?.positionZ ?? this.positionScratch.z;
+      record.actor.object.position.set(positionX, this.resolveActorGroundY(positionX, positionZ), positionZ);
       const inContact = Boolean(collision?.contactCount);
       if (inContact && !record.contactActive && collision) {
         record.actor.applyReaction({
@@ -407,6 +438,12 @@ class ProceduralCharacterBenchmarkRuntime {
       }
       record.contactActive = inContact;
     });
+  }
+
+  private resolveActorGroundY(worldX: number, worldZ: number): number {
+    if (!this.worldGymEnvironment) return ACTOR_GROUND_Y;
+    const surface = this.worldGymEnvironment.sampleWorldSurface(worldX, worldZ);
+    return surface.biome === null ? ACTOR_GROUND_Y : surface.height + ACTOR_GROUND_Y;
   }
 
   private applySimulationEvents(events: readonly ProceduralCharacterBenchmarkEvent[]): void {
@@ -631,6 +668,10 @@ class ProceduralCharacterBenchmarkRuntime {
     const actor = this.unitRuntime.createActor(resolveBenchmarkActorConfig(this.config, agent.id));
     actor.object.name = `benchmark-character:${agent.id}`;
     actor.object.scale.setScalar(this.config.characterScale);
+    const worldGymEnvironment = this.worldGymEnvironment;
+    if (worldGymEnvironment) {
+      actor.setGroundSampler((x, z) => worldGymEnvironment.sampleActorGround(actor.object, x, z, ACTOR_GROUND_Y));
+    }
     this.stage.add(actor.object);
     const unsubscribeMeleeContact = actor.onMeleeContact((event) => {
       this.meleeImpacts.spawn({
@@ -658,7 +699,8 @@ class ProceduralCharacterBenchmarkRuntime {
     this.backend.renderFrame?.({
       mainCamera: this.camera,
       mainScene: this.scene,
-      sceneName: "procedural-character-benchmark",
+      sceneName:
+        this.environmentMode === "procedural-biomes" ? "procedural-world-gym" : "procedural-character-benchmark",
     });
   }
 
@@ -674,6 +716,8 @@ class ProceduralCharacterBenchmarkRuntime {
     const render = this.renderer.info.render;
     const crowdAnimation = this.unitRuntime.getCrowdAnimationStats();
     const mountBoneStretch = this.resolveMountBoneStretch();
+    const terrain = this.worldGymEnvironment?.getStats();
+    const terrainGrounding = this.resolveTerrainGrounding();
     if (this.loadingActors) {
       this.maximumLoadingMountHoofReach = Math.max(
         this.maximumLoadingMountHoofReach,
@@ -690,6 +734,7 @@ class ProceduralCharacterBenchmarkRuntime {
       collisionMaximumOffset: Number(collision.maximumOffset.toFixed(3)),
       collisionResolvedPairCount: collision.resolvedPairCount,
       drawCalls: render.drawCalls ?? render.calls,
+      environmentMode: this.environmentMode,
       fps: Math.round(performanceEvaluation.observedFps),
       geometryCount: this.renderer.info.memory.geometries,
       hexCount: BENCHMARK_HEX_CELLS.length,
@@ -718,6 +763,13 @@ class ProceduralCharacterBenchmarkRuntime {
       simulationElapsedSeconds: Number(simulation.elapsedSeconds.toFixed(2)),
       simulationSteps: this.simulationSteps,
       textureCount: this.renderer.info.memory.textures,
+      terrainBiomeCount: terrain?.biomeCount ?? 0,
+      terrainCellCount: terrain?.cellCount ?? 0,
+      terrainGroundedActorCount: terrainGrounding.groundedActorCount,
+      terrainMaximumRootError: terrainGrounding.maximumRootError,
+      terrainPropCount: terrain?.propInstances ?? 0,
+      terrainSurfaceMissCount: terrainGrounding.surfaceMissCount,
+      terrainTriangles: terrain?.triangles ?? 0,
       totalDeaths: simulation.totalDeaths,
       triangles: render.triangles,
       visibleHexCount: resolveVisibleHexCount(this.camera),
@@ -756,6 +808,36 @@ class ProceduralCharacterBenchmarkRuntime {
       });
     });
     return Number(maximum.toFixed(3));
+  }
+
+  private resolveTerrainGrounding(): {
+    groundedActorCount: number;
+    maximumRootError: number;
+    surfaceMissCount: number;
+  } {
+    const environment = this.worldGymEnvironment;
+    if (!environment) return { groundedActorCount: 0, maximumRootError: 0, surfaceMissCount: 0 };
+    let groundedActorCount = 0;
+    let maximumRootError = 0;
+    let surfaceMissCount = 0;
+    this.simulation.agents.forEach((agent) => {
+      if (agent.phase !== "running") return;
+      const actor = this.actors.get(agent.id)?.actor;
+      if (!actor) return;
+      const surface = environment.sampleWorldSurface(actor.object.position.x, actor.object.position.z);
+      if (surface.biome === null) {
+        surfaceMissCount += 1;
+        return;
+      }
+      const rootError = Math.abs(actor.object.position.y - (surface.height + ACTOR_GROUND_Y));
+      maximumRootError = Math.max(maximumRootError, rootError);
+      if (rootError <= 0.025) groundedActorCount += 1;
+    });
+    return {
+      groundedActorCount,
+      maximumRootError: Number(maximumRootError.toFixed(3)),
+      surfaceMissCount,
+    };
   }
 
   private resolvePhysicsStats(): { bodyCount: number; constraintCount: number; wasmHeapBytes: number } {
@@ -821,7 +903,7 @@ class ProceduralCharacterBenchmarkRuntime {
     this.viewportWidth = width;
     this.viewportHeight = height;
     const aspect = width / height;
-    const requiredWidth = 23;
+    const requiredWidth = this.worldGymEnvironment ? 28 : 23;
     const requiredHeight = 24;
     const viewHeight = Math.max(requiredHeight, requiredWidth / aspect);
     this.camera.left = (-viewHeight * aspect) / 2;
@@ -854,16 +936,18 @@ class ProceduralCharacterBenchmarkRuntime {
     this.projectiles.dispose();
     this.meleeImpacts.dispose();
     this.gpuTimer.dispose();
+    this.worldGymEnvironment?.dispose();
     disposeBenchmarkStage(this.stage);
     this.backend.dispose?.();
     this.renderer.domElement.remove();
   }
 }
 
-function createBenchmarkScene(stage: Group): Scene {
+function createBenchmarkScene(stage: Group, worldGymEnvironment?: ProceduralWorldGymEnvironment): Scene {
   const scene = new Scene();
-  scene.background = new Color(0x070b12);
-  scene.fog = new Fog(0x070b12, 32, 58);
+  const background = worldGymEnvironment ? 0xaab9b2 : 0x070b12;
+  scene.background = new Color(background);
+  scene.fog = new Fog(background, worldGymEnvironment ? 36 : 32, worldGymEnvironment ? 68 : 58);
   scene.add(stage);
 
   const hemisphere = new HemisphereLight(0xbdd8ff, 0x17121c, 2.1);
@@ -876,7 +960,7 @@ function createBenchmarkScene(stage: Group): Scene {
   key.shadow.camera.top = 14;
   key.shadow.camera.bottom = -14;
   scene.add(hemisphere, key);
-  stage.add(createHexArena());
+  stage.add(worldGymEnvironment?.object3d ?? createHexArena());
   return scene;
 }
 
@@ -936,7 +1020,7 @@ function resolveBenchmarkActorConfig(
   const tier = resolveActorTier(actorId);
   const primaryColor = CHARACTER_PALETTE[actorId % CHARACTER_PALETTE.length];
   const humanoid = applyProceduralCharacterConfigPatch(createDefaultProceduralUnitConfig().humanoid, {
-    animationMode: kind === "paladin" ? "mounted" : "run",
+    animationMode: kind === "paladin" ? "mounted" : benchmark.locomotionMode,
     animationSpeed: benchmark.animationSpeed,
     autoRotate: false,
     impulseX: Math.cos(angle) * 6,
@@ -963,7 +1047,7 @@ function resolveBenchmarkActorConfig(
     },
     kind,
     horse: {
-      gait: benchmark.movementSpeed > 1.5 ? "gallop" : benchmark.movementSpeed > 0.8 ? "trot" : "walk",
+      gait: resolveBenchmarkHorseGait(benchmark),
       primaryColor,
       showBones: false,
       showHoofTargets: false,
@@ -993,6 +1077,15 @@ function resolveBenchmarkUnitKind(
   if (mix === "horses") return "horse";
   if (mix === "mounted") return "paladin";
   return (["knight", "archer", "crossbowman", "paladin"] as const)[actorId % 4];
+}
+
+function resolveBenchmarkHorseGait(
+  benchmark: ProceduralCharacterBenchmarkConfig,
+): ProceduralUnitConfig["horse"]["gait"] {
+  if (benchmark.locomotionMode === "walk") return "walk";
+  if (benchmark.movementSpeed > 1.5) return "gallop";
+  if (benchmark.movementSpeed > 0.8) return "trot";
+  return "walk";
 }
 
 function resolveActorTier(actorId: number): 1 | 2 | 3 {

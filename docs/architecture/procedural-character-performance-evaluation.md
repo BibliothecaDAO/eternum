@@ -74,6 +74,24 @@ lanes, pixel ratio, gait, and population controls, then select **Measure**. The 
 progress, presentation FPS, one-percent-low FPS, total/animation/collision CPU p95, GPU p95, draw calls, triangles,
 collision pairs, dropped pairs, and active LOD settings.
 
+## Integrated world gym
+
+Open `/debug/procedural-world-gym` to exercise the character and terrain pipelines in one renderer and animation loop.
+Its default profile places 100 mixed Knights, Archers, Crossbowmen, horses, and mounted Paladins in explicit walk mode
+over a centered 196-cell field containing all 16 biomes. The production terrain runtime owns geometry, textured ground,
+water, vegetation, and surface sampling; the character benchmark continues to own deterministic routes, collisions,
+animation lanes, and lifecycle controls.
+
+The HUD adds biome, terrain-cell, prop, grounded-actor, surface-miss, and maximum root-error counters. The browser smoke
+requires all 100 walkers to remain on valid terrain with at most 0.025 m root error:
+
+```bash
+pnpm --dir client/apps/game smoke:procedural-world-gym -- \
+  --base-url https://127.0.0.1:4174 \
+  --renderer-mode webgpu-force-webgl \
+  --headed
+```
+
 Run the mixed lifecycle proof separately:
 
 ```bash

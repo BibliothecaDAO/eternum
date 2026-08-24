@@ -35,6 +35,7 @@ import {
 } from "./procedural-unit-diagnostics";
 import { ProceduralHorseRuntime, type ProceduralHorseActor } from "./horse/procedural-horse-runtime";
 import { resolveHorseGaitCadence } from "./horse/procedural-horse-gait";
+import type { HorseGroundSampler } from "./horse/procedural-horse-pose";
 
 interface ProceduralUnitActorStats extends ProceduralCharacterActorStats {
   kind: ProceduralUnitKind;
@@ -93,6 +94,7 @@ export interface ProceduralUnitActor {
   startRagdoll(): Promise<void>;
   setRangedTarget(targetWorld?: Readonly<Vector3>): void;
   setMeleeTarget(targetWorld?: Readonly<Vector3>): void;
+  setGroundSampler(sampleGround?: HorseGroundSampler): void;
   stepOnce(): void;
   update(deltaSeconds: number): void;
   updateConfig(config: ProceduralUnitConfig): void;
@@ -363,6 +365,8 @@ class HumanoidUnitActor implements ProceduralUnitActor {
     this.melee.setTarget(targetWorld);
   }
 
+  public setGroundSampler(): void {}
+
   public cancelMeleeAttack(): void {
     this.melee.cancel();
   }
@@ -584,6 +588,10 @@ class HorseUnitActor implements ProceduralUnitActor {
 
   public setMeleeTarget(): void {}
 
+  public setGroundSampler(sampleGround?: HorseGroundSampler): void {
+    this.horse.setGroundSampler(sampleGround);
+  }
+
   public cancelMeleeAttack(): void {}
 
   public onRangedRelease(): () => void {
@@ -750,6 +758,10 @@ class MountedUnitActor implements ProceduralUnitActor {
 
   public setMeleeTarget(targetWorld?: Readonly<Vector3>): void {
     this.melee.setTarget(targetWorld);
+  }
+
+  public setGroundSampler(sampleGround?: HorseGroundSampler): void {
+    this.horse.setGroundSampler(sampleGround);
   }
 
   public cancelMeleeAttack(): void {
