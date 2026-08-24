@@ -92,6 +92,7 @@ function createHumanoidDiagnostics(): ProceduralCharacterPoseDiagnostics {
       left: {
         contact: "stance",
         forwardDot: 1,
+        outwardProgressionDegrees: 0,
         position: [0, 0, 0],
         progress: 0.5,
         rotation: [0, 0, 0, 1],
@@ -100,6 +101,7 @@ function createHumanoidDiagnostics(): ProceduralCharacterPoseDiagnostics {
       right: {
         contact: "stance",
         forwardDot: 1,
+        outwardProgressionDegrees: 0,
         position: [0, 0, 0],
         progress: 0.5,
         rotation: [0, 0, 0, 1],
@@ -111,8 +113,24 @@ function createHumanoidDiagnostics(): ProceduralCharacterPoseDiagnostics {
     jawAnchor: [0, 1.5, 0],
     joints,
     legs: {
-      left: { bendDistance: 0.05, bendForwardDot: 1, kneeDegrees: 170, lowerLegLength: 0.5, upperLegLength: 0.5 },
-      right: { bendDistance: 0.05, bendForwardDot: 1, kneeDegrees: 170, lowerLegLength: 0.5, upperLegLength: 0.5 },
+      left: {
+        bendDistance: 0.05,
+        bendForwardDot: 1,
+        frontalDeviationDegrees: 0,
+        kneeDegrees: 170,
+        lowerLegLength: 0.5,
+        outwardDeviationRatio: 0,
+        upperLegLength: 0.5,
+      },
+      right: {
+        bendDistance: 0.05,
+        bendForwardDot: 1,
+        frontalDeviationDegrees: 0,
+        kneeDegrees: 170,
+        lowerLegLength: 0.5,
+        outwardDeviationRatio: 0,
+        upperLegLength: 0.5,
+      },
     },
     palmInwardDot: { left: 1, right: 1 },
     phase: 0.25,

@@ -2,8 +2,9 @@
 
 Use this guide when replacing a humanoid GLB, adding a rigged character family, changing procedural motion, or promoting
 a gym character into the world map. The detailed visual rubric is in [Animation evaluation](./animation-evaluation.md);
-the capture controls are in [Procedural animation frame inspector](./procedural-animation-frame-inspector.md); the
-100-unit gate is in [Procedural character performance evaluation](./procedural-character-performance-evaluation.md).
+the numeric walk/run targets are in [Adult human gait targets](./procedural-human-gait-parameter-research.md); the
+capture controls are in [Procedural animation frame inspector](./procedural-animation-frame-inspector.md); the 100-unit
+gate is in [Procedural character performance evaluation](./procedural-character-performance-evaluation.md).
 
 ## Mental model
 

@@ -9,6 +9,7 @@ import type { ProceduralCharacterConfig } from "./procedural-character-config";
 import {
   resolveProceduralCharacterGaitProfile,
   resolveProceduralCharacterGaitSignals,
+  resolveProceduralCharacterStepWidth,
   resolveProceduralCharacterStanceTravel,
   type CharacterFootId,
   type ProceduralCharacterGaitSignals,
@@ -68,6 +69,7 @@ interface CharacterTorsoJoints {
 
 const Y_AXIS = new Vector3(0, 1, 0);
 const X_AXIS = new Vector3(1, 0, 0);
+const Z_AXIS = new Vector3(0, 0, 1);
 const CHARACTER_GROUND_Y = 0.12;
 
 export function resolveProceduralCharacterPose(
@@ -635,6 +637,7 @@ function resolveGroundedLeg(
   const liftVariation =
     1 + resolveSeededMotionValue(config.seed, side === "left" ? 61 : 67) * config.motionVariation * 0.04;
   const stride = resolveProceduralCharacterStanceTravel(config, morphology.scale) * strideVariation;
+  const stepWidth = resolveProceduralCharacterStepWidth(config, morphology.thighLength + morphology.shinLength);
   const clearance = config.stepHeight * morphology.scale * gaitProfile.clearanceScale * liftVariation;
   const trajectory = resolveOrganicLimbTrajectory(
     gait.feet[side],
@@ -645,14 +648,14 @@ function resolveGroundedLeg(
     gaitProfile.swingTimingExponent,
   );
   const ankleTarget = new Vector3(
-    targetPelvis.x + signedHipWidth * 0.54,
+    sideSign * stepWidth * 0.5,
     CHARACTER_GROUND_Y + trajectory.lift,
     targetPelvis.z + trajectory.forward - (1 - locomotionWeight) * morphology.scale * 0.055,
   );
   if (resolvePlantTarget) {
     ankleTarget.fromArray(resolvePlantTarget(side, gait.feet[side], toVectorTuple(ankleTarget), config.footPlant));
   }
-  const solved = solveTwoBoneLeg(hip, ankleTarget, morphology.thighLength, morphology.shinLength, sideSign);
+  const solved = solveTwoBoneLeg(hip, ankleTarget, morphology.thighLength, morphology.shinLength);
   return { ...solved, cycle: gait.feet[side], hip };
 }
 
@@ -661,7 +664,6 @@ function solveTwoBoneLeg(
   target: Vector3,
   thighLength: number,
   shinLength: number,
-  sideSign: number,
 ): Pick<CharacterLegJoints, "ankle" | "knee"> {
   const offset = target.clone().sub(hip);
   const rawDistance = Math.max(offset.length(), 1e-5);
@@ -670,10 +672,7 @@ function solveTwoBoneLeg(
   const ankle = hip.clone().addScaledVector(direction, distance);
   const along = (thighLength * thighLength - shinLength * shinLength + distance * distance) / (2 * distance);
   const bendDistance = Math.sqrt(Math.max(0, thighLength * thighLength - along * along));
-  const bendDirection = new Vector3(sideSign * 0.035, 0, 1).addScaledVector(
-    direction,
-    -new Vector3(sideSign * 0.035, 0, 1).dot(direction),
-  );
+  const bendDirection = Z_AXIS.clone().addScaledVector(direction, -Z_AXIS.dot(direction));
   if (bendDirection.lengthSq() < 1e-8) bendDirection.set(0, 1, 0);
   bendDirection.normalize();
   const knee = hip.clone().addScaledVector(direction, along).addScaledVector(bendDirection, bendDistance);

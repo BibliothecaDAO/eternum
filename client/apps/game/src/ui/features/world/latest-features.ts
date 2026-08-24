@@ -35,6 +35,14 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-08-24",
+    title: "Natural Human Footing",
+    description:
+      "Improved procedural walking and running with human-proportioned step width, forward-tracking knees, and new gait diagnostics that prevent bow-legged movement from reaching battles.",
+    type: "improvement",
+    gameSlug: "world",
+  },
+  {
+    date: "2026-08-24",
     title: "Integrated World Gym",
     description:
       "Added a shared biome-and-army test map where 100 procedural units walk across generated terrain with live grounding, collision, renderer, and performance diagnostics.",

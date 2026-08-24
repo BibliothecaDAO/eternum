@@ -21,6 +21,7 @@ export interface ProceduralCharacterGaitProfile {
   clearanceScale: number;
   dutyFactor: number;
   strideScale: number;
+  stepWidthScale: number;
   swingApex: number;
   swingTimingExponent: number;
 }
@@ -31,6 +32,7 @@ const CHARACTER_GAITS: Readonly<Record<ProceduralCharacterMotionMode, Procedural
     clearanceScale: 0,
     dutyFactor: 0.88,
     strideScale: 0,
+    stepWidthScale: 1.45,
     swingApex: 0.43,
     swingTimingExponent: 1,
   },
@@ -39,6 +41,7 @@ const CHARACTER_GAITS: Readonly<Record<ProceduralCharacterMotionMode, Procedural
     clearanceScale: 0.52,
     dutyFactor: 0.62,
     strideScale: 0.66,
+    stepWidthScale: 1,
     swingApex: 0.42,
     swingTimingExponent: 0.88,
   },
@@ -47,6 +50,7 @@ const CHARACTER_GAITS: Readonly<Record<ProceduralCharacterMotionMode, Procedural
     clearanceScale: 0.9,
     dutyFactor: 0.42,
     strideScale: 0.96,
+    stepWidthScale: 0.7,
     swingApex: 0.39,
     swingTimingExponent: 0.78,
   },
@@ -55,6 +59,7 @@ const CHARACTER_GAITS: Readonly<Record<ProceduralCharacterMotionMode, Procedural
     clearanceScale: 0,
     dutyFactor: 0.88,
     strideScale: 0,
+    stepWidthScale: 1,
     swingApex: 0.43,
     swingTimingExponent: 1,
   },
@@ -139,6 +144,12 @@ export function resolveProceduralCharacterStanceTravel(
   morphologyScale: number,
 ): number {
   return config.stride * Math.max(0.05, morphologyScale) * resolveProceduralCharacterGaitProfile(config).strideScale;
+}
+
+export function resolveProceduralCharacterStepWidth(config: ProceduralCharacterConfig, legLength: number): number {
+  return (
+    config.stepWidthRatio * Math.max(0.05, legLength) * resolveProceduralCharacterGaitProfile(config).stepWidthScale
+  );
 }
 
 export function resolveProceduralCharacterGaitProfile(

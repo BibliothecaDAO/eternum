@@ -15,6 +15,7 @@ export interface ProceduralCharacterConfig {
   animationSpeed: number;
   stride: number;
   stepHeight: number;
+  stepWidthRatio: number;
   armSwing: number;
   hipSway: number;
   torsoTwist: number;
@@ -23,6 +24,7 @@ export interface ProceduralCharacterConfig {
   breathing: number;
   dutyFactorOffset: number;
   footPlant: number;
+  footProgressionDegrees: number;
   motionVariation: number;
   secondaryMotion: number;
   gravity: number;
@@ -64,6 +66,7 @@ const DEFAULT_CONFIG: ProceduralCharacterConfig = {
   animationSpeed: 1,
   stride: 0.72,
   stepHeight: 0.32,
+  stepWidthRatio: 0.13,
   armSwing: 0.62,
   hipSway: 0.055,
   torsoTwist: 0.16,
@@ -72,6 +75,7 @@ const DEFAULT_CONFIG: ProceduralCharacterConfig = {
   breathing: 0.025,
   dutyFactorOffset: 0,
   footPlant: 1,
+  footProgressionDegrees: 6,
   motionVariation: 0.1,
   secondaryMotion: 0.72,
   gravity: -9.81,
@@ -182,6 +186,7 @@ function normalizeProceduralCharacterConfig(input: ProceduralCharacterConfig): P
     animationSpeed: clamp(input.animationSpeed, 0, 3),
     stride: clamp(input.stride, 0, 1.4),
     stepHeight: clamp(input.stepHeight, 0, 0.8),
+    stepWidthRatio: clamp(input.stepWidthRatio, 0.04, 0.3),
     armSwing: clamp(input.armSwing, 0, 1.5),
     hipSway: clamp(input.hipSway, 0, 0.2),
     torsoTwist: clamp(input.torsoTwist, 0, 0.6),
@@ -190,6 +195,7 @@ function normalizeProceduralCharacterConfig(input: ProceduralCharacterConfig): P
     breathing: clamp(input.breathing, 0, 0.08),
     dutyFactorOffset: clamp(input.dutyFactorOffset, -0.16, 0.16),
     footPlant: clamp(input.footPlant, 0, 1),
+    footProgressionDegrees: clamp(input.footProgressionDegrees, -10, 25),
     motionVariation: clamp(input.motionVariation, 0, 0.3),
     secondaryMotion: clamp(input.secondaryMotion, 0, 1.5),
     gravity: clamp(input.gravity, -30, 0),

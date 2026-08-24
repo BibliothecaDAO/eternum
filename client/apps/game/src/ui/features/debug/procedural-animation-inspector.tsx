@@ -189,6 +189,13 @@ const LocomotionDiagnostics = ({
       value={`${formatPercent(locomotion.swingApexProgress.left)} / ${formatPercent(locomotion.swingApexProgress.right)}`}
     />
     <DiagnosticMetric label="Plant drift" value={formatDistance(locomotion.maximumStableStanceDrift)} />
+    <DiagnosticMetric label="Step width / leg" value={formatRatio(locomotion.stepWidthRatio)} />
+    <DiagnosticMetric label="Knee frontal P90" value={formatDegrees(locomotion.stanceKneeFrontalDeviationP90Degrees)} />
+    <DiagnosticMetric label="Knee outward P90" value={formatRatio(locomotion.stanceKneeOutwardDeviationP90Ratio)} />
+    <DiagnosticMetric
+      label="Toe out L/R"
+      value={`${formatDegrees(locomotion.stanceFootProgressionDegrees.left)} / ${formatDegrees(locomotion.stanceFootProgressionDegrees.right)}`}
+    />
     <DiagnosticMetric label="Foot step" value={formatFootAngularPeak(locomotion.footAngularStepPeak)} />
     <DiagnosticMetric
       label="Stance foot step"
@@ -392,6 +399,10 @@ function formatDistance(value: number | null | undefined): string {
 
 function formatPercent(value: number | null | undefined): string {
   return value === null || value === undefined ? "--" : `${Math.round(value * 100)}%`;
+}
+
+function formatRatio(value: number | null | undefined): string {
+  return value === null || value === undefined ? "--" : value.toFixed(3);
 }
 
 function downloadCaptureReport(result: ProceduralAnimationCaptureResult): void {

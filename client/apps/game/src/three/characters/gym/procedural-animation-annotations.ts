@@ -106,8 +106,20 @@ function createHumanoidAnnotationFragment(diagnostics: ProceduralUnitPoseDiagnos
       metric("R knee", degrees(humanoid.legs.right.kneeDegrees)),
       metric("L knee fwd", signedNullable(humanoid.legs.left.bendForwardDot)),
       metric("R knee fwd", signedNullable(humanoid.legs.right.bendForwardDot)),
+      metric(
+        "knee frontal L/R",
+        `${degreesNullable(humanoid.legs.left.frontalDeviationDegrees)} / ${degreesNullable(humanoid.legs.right.frontalDeviationDegrees)}`,
+      ),
+      metric(
+        "knee out/L L/R",
+        `${signed(humanoid.legs.left.outwardDeviationRatio)} / ${signed(humanoid.legs.right.outwardDeviationRatio)}`,
+      ),
       metric("L foot fwd", signedNullable(humanoid.feet.left.forwardDot)),
       metric("R foot fwd", signedNullable(humanoid.feet.right.forwardDot)),
+      metric(
+        "toe out L/R",
+        `${degreesNullable(humanoid.feet.left.outwardProgressionDegrees)} / ${degreesNullable(humanoid.feet.right.outwardProgressionDegrees)}`,
+      ),
       metric("L palm", signed(humanoid.palmInwardDot.left)),
       metric("R palm", signed(humanoid.palmInwardDot.right)),
       metric("L socket Δ", distance(humanoid.arms.left.solverSocketError)),
@@ -306,6 +318,10 @@ function minimumHorseBend(diagnostics: ProceduralUnitPoseDiagnostics): number {
 
 function degrees(value: number): string {
   return `${value.toFixed(1)}°`;
+}
+
+function degreesNullable(value: number | null): string {
+  return value === null ? "--" : degrees(value);
 }
 
 function distance(value: number | null | undefined): string {

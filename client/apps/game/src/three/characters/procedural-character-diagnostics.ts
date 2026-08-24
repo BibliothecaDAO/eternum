@@ -31,14 +31,17 @@ export interface ProceduralArmPoseDiagnostics {
 export interface ProceduralLegPoseDiagnostics {
   bendDistance: number;
   bendForwardDot: number | null;
+  frontalDeviationDegrees: number | null;
   kneeDegrees: number;
   lowerLegLength: number;
+  outwardDeviationRatio: number;
   upperLegLength: number;
 }
 
 export interface ProceduralFootPoseDiagnostics {
   contact: "stance" | "swing";
   forwardDot: number | null;
+  outwardProgressionDegrees: number | null;
   position: Vector3Tuple;
   progress: number;
   rotation: QuaternionTuple | null;
@@ -80,7 +83,9 @@ export interface ProceduralCharacterDiagnosticSockets {
 const scratchWorldScale = new Vector3();
 const scratchRootQuaternion = new Quaternion();
 const scratchRootForward = new Vector3();
+const scratchRootLateral = new Vector3();
 const LOCAL_FORWARD = new Vector3(0, 0, 1);
+const LOCAL_LATERAL = new Vector3(1, 0, 0);
 const MINIMUM_FORWARD_BEND_DISTANCE = 0.025;
 const MINIMUM_FOOT_FORWARD_DOT = 0.25;
 const MINIMUM_KNEE_FORWARD_DOT = -0.1;
@@ -106,17 +111,16 @@ export function resolveProceduralCharacterPoseDiagnostics(input: {
     right: input.sockets?.gripRight ? toTuple(input.sockets.gripRight) : null,
   } as const;
   const headRadius = input.rig.morphology.headRadius * scale;
-  const rootForward = scratchRootForward
-    .copy(LOCAL_FORWARD)
-    .applyQuaternion(input.root.getWorldQuaternion(scratchRootQuaternion))
-    .normalize();
+  const rootQuaternion = input.root.getWorldQuaternion(scratchRootQuaternion);
+  const rootForward = scratchRootForward.copy(LOCAL_FORWARD).applyQuaternion(rootQuaternion).normalize();
+  const rootLateral = scratchRootLateral.copy(LOCAL_LATERAL).applyQuaternion(rootQuaternion).normalize();
   const arms = {
     left: resolveArmDiagnostics(joints, "left", socketHands.left, solverJoints.wristLeft, headRadius),
     right: resolveArmDiagnostics(joints, "right", socketHands.right, solverJoints.wristRight, headRadius),
   } as const;
   const legs = {
-    left: resolveLegDiagnostics(joints, "left", rootForward),
-    right: resolveLegDiagnostics(joints, "right", rootForward),
+    left: resolveLegDiagnostics(joints, "left", rootForward, rootLateral),
+    right: resolveLegDiagnostics(joints, "right", rootForward, rootLateral),
   } as const;
   const footFacing = input.sockets?.footFacing;
   const footRotations = input.sockets?.footRotations;
@@ -133,22 +137,24 @@ export function resolveProceduralCharacterPoseDiagnostics(input: {
     arms,
     finite,
     feet: {
-      left: {
-        contact: input.pose.feet.left.cycle.contact,
-        forwardDot: footFacing ? round(footFacing.left.forwardDot) : null,
-        position: solverJoints.ankleLeft,
-        progress: round(input.pose.feet.left.cycle.progress),
-        rotation: footRotations?.left ?? null,
-        toePosition: footFacing?.left.toePosition ?? null,
-      },
-      right: {
-        contact: input.pose.feet.right.cycle.contact,
-        forwardDot: footFacing ? round(footFacing.right.forwardDot) : null,
-        position: solverJoints.ankleRight,
-        progress: round(input.pose.feet.right.cycle.progress),
-        rotation: footRotations?.right ?? null,
-        toePosition: footFacing?.right.toePosition ?? null,
-      },
+      left: resolveFootDiagnostics(
+        "left",
+        input.pose,
+        solverJoints.ankleLeft,
+        footFacing?.left,
+        footRotations?.left,
+        rootForward,
+        rootLateral,
+      ),
+      right: resolveFootDiagnostics(
+        "right",
+        input.pose,
+        solverJoints.ankleRight,
+        footFacing?.right,
+        footRotations?.right,
+        rootForward,
+        rootLateral,
+      ),
     },
     headRadius: round(headRadius),
     issues,
@@ -186,6 +192,7 @@ function resolveLegDiagnostics(
   joints: Readonly<Record<ProceduralHumanoidJointId, Vector3Tuple>>,
   side: "left" | "right",
   rootForward: Readonly<Vector3>,
+  rootLateral: Readonly<Vector3>,
 ): ProceduralLegPoseDiagnostics {
   const suffix = side === "left" ? "Left" : "Right";
   const hip = fromTuple(joints[`hip${suffix}`]);
@@ -198,13 +205,96 @@ function resolveLegDiagnostics(
   );
   const bend = knee.clone().sub(hip.clone().addScaledVector(hipToAnkle, projection));
   const bendDistance = bend.length();
+  const lowerLegLength = knee.distanceTo(ankle);
+  const upperLegLength = hip.distanceTo(knee);
   return {
     bendDistance: round(bendDistance),
     bendForwardDot: bendDistance > 1e-5 ? round(bend.normalize().dot(rootForward)) : null,
+    frontalDeviationDegrees: resolveFrontalKneeDeviationDegrees(hip, knee, ankle, rootForward),
     kneeDegrees: round(resolveJointAngleDegrees(hip, knee, ankle)),
-    lowerLegLength: round(knee.distanceTo(ankle)),
-    upperLegLength: round(hip.distanceTo(knee)),
+    lowerLegLength: round(lowerLegLength),
+    outwardDeviationRatio: resolveKneeOutwardDeviationRatio(
+      side,
+      hip,
+      knee,
+      ankle,
+      rootForward,
+      rootLateral,
+      upperLegLength + lowerLegLength,
+    ),
+    upperLegLength: round(upperLegLength),
   };
+}
+
+function resolveKneeOutwardDeviationRatio(
+  side: "left" | "right",
+  hip: Readonly<Vector3>,
+  knee: Readonly<Vector3>,
+  ankle: Readonly<Vector3>,
+  rootForward: Readonly<Vector3>,
+  rootLateral: Readonly<Vector3>,
+  legLength: number,
+): number {
+  const hipToAnkle = new Vector3().subVectors(ankle, hip);
+  const hipToKnee = new Vector3().subVectors(knee, hip);
+  hipToAnkle.addScaledVector(rootForward, -hipToAnkle.dot(rootForward));
+  hipToKnee.addScaledVector(rootForward, -hipToKnee.dot(rootForward));
+  const projection = Math.min(1, Math.max(0, hipToKnee.dot(hipToAnkle) / Math.max(hipToAnkle.lengthSq(), 1e-8)));
+  const deviation = hipToKnee.addScaledVector(hipToAnkle, -projection);
+  const sideSign = side === "left" ? 1 : -1;
+  return round((deviation.dot(rootLateral) * sideSign) / Math.max(legLength, 1e-8));
+}
+
+function resolveFootDiagnostics(
+  side: "left" | "right",
+  pose: ProceduralCharacterPose,
+  ankle: Vector3Tuple,
+  facing: { forwardDot: number; toePosition: Vector3Tuple } | undefined,
+  rotation: QuaternionTuple | undefined,
+  rootForward: Readonly<Vector3>,
+  rootLateral: Readonly<Vector3>,
+): ProceduralFootPoseDiagnostics {
+  const cycle = pose.feet[side].cycle;
+  return {
+    contact: cycle.contact,
+    forwardDot: facing ? round(facing.forwardDot) : null,
+    outwardProgressionDegrees: facing
+      ? resolveOutwardFootProgressionDegrees(side, ankle, facing.toePosition, rootForward, rootLateral)
+      : null,
+    position: ankle,
+    progress: round(cycle.progress),
+    rotation: rotation ?? null,
+    toePosition: facing?.toePosition ?? null,
+  };
+}
+
+function resolveOutwardFootProgressionDegrees(
+  side: "left" | "right",
+  ankle: Vector3Tuple,
+  toe: Vector3Tuple,
+  rootForward: Readonly<Vector3>,
+  rootLateral: Readonly<Vector3>,
+): number | null {
+  const direction = fromTuple(toe).sub(fromTuple(ankle));
+  const forward = direction.dot(rootForward);
+  const outward = direction.dot(rootLateral) * (side === "left" ? 1 : -1);
+  if (Math.hypot(forward, outward) < 1e-8) return null;
+  return round((Math.atan2(outward, forward) * 180) / Math.PI);
+}
+
+function resolveFrontalKneeDeviationDegrees(
+  hip: Readonly<Vector3>,
+  knee: Readonly<Vector3>,
+  ankle: Readonly<Vector3>,
+  rootForward: Readonly<Vector3>,
+): number | null {
+  const toHip = new Vector3().subVectors(hip, knee);
+  const toAnkle = new Vector3().subVectors(ankle, knee);
+  toHip.addScaledVector(rootForward, -toHip.dot(rootForward));
+  toAnkle.addScaledVector(rootForward, -toAnkle.dot(rootForward));
+  if (toHip.lengthSq() < 1e-8 || toAnkle.lengthSq() < 1e-8) return null;
+  const dot = Math.min(1, Math.max(-1, toHip.normalize().dot(toAnkle.normalize())));
+  return round(Math.abs(180 - (Math.acos(dot) * 180) / Math.PI));
 }
 
 function resolveWorldJoints(

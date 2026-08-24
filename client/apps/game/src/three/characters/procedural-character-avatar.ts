@@ -185,6 +185,13 @@ export class ProceduralCharacterAvatar implements ProceduralCharacterSocketReade
   private readonly scratchIkAlternateJoint = new Vector3();
   private readonly scratchIkSolvedEnd = new Vector3();
   private readonly scratchIkSegmentQuaternion = new Quaternion();
+  private readonly scratchFootCorrection = new Quaternion();
+  private readonly scratchFootCross = new Vector3();
+  private readonly scratchFootDirection = new Vector3();
+  private readonly scratchFootDesiredDirection = new Vector3();
+  private readonly scratchRootForward = new Vector3();
+  private readonly scratchRootLateral = new Vector3();
+  private readonly scratchRootUp = new Vector3();
   private activeModel: PreparedCharacterModel;
   private rig: ResolvedCharacterRig;
   private config: ProceduralCharacterConfig;
@@ -414,6 +421,10 @@ export class ProceduralCharacterAvatar implements ProceduralCharacterSocketReade
     this.applyArmIk("right");
     this.applyLegIk("left");
     this.applyLegIk("right");
+    if (this.config.animationMode !== "mounted") {
+      this.alignFootProgression("left");
+      this.alignFootProgression("right");
+    }
     this.applyHandRollCorrections();
     this.activeModel.scene.updateWorldMatrix(true, true);
   }
@@ -490,7 +501,11 @@ export class ProceduralCharacterAvatar implements ProceduralCharacterSocketReade
       .fromArray(shinPose.position)
       .multiplyScalar(2)
       .sub(this.scratchIkPole.fromArray(shinPose.jointAnchor));
-    this.solveTwoBoneTarget(thighLength, shinLength);
+    const grounded = this.config.animationMode !== "mounted";
+    if (grounded) this.scratchIkPole.copy(this.scratchIkRoot).add(Z_AXIS);
+    // Grounded legs use the skinned rig's true hip as the forward pole origin. Reusing
+    // an absolute solver-rig knee introduces lateral bias when the two hip sockets differ.
+    this.solveTwoBoneTarget(thighLength, shinLength, !grounded);
 
     this.applySolvedLegSegment(thighBinding, this.scratchIkRoot, this.scratchIkSolvedJoint);
     this.applySolvedLegSegment(shinBinding, this.scratchIkSolvedJoint, this.scratchIkSolvedEnd);
@@ -522,7 +537,42 @@ export class ProceduralCharacterAvatar implements ProceduralCharacterSocketReade
     );
   }
 
-  private solveTwoBoneTarget(firstLength: number, secondLength: number): void {
+  private alignFootProgression(side: "left" | "right"): void {
+    const suffix = side === "left" ? "l" : "r";
+    const foot = requireBone(this.activeModel.scene, `foot_${suffix}`);
+    const toe = requireBone(this.activeModel.scene, `ball_${suffix}`);
+    if (!foot.parent || toe.parent !== foot) return;
+
+    this.group.getWorldQuaternion(this.scratchGroupQuaternion);
+    foot.getWorldQuaternion(this.scratchTargetQuaternion);
+    this.scratchRootForward.copy(Z_AXIS).applyQuaternion(this.scratchGroupQuaternion).normalize();
+    this.scratchRootLateral.copy(X_AXIS).applyQuaternion(this.scratchGroupQuaternion).normalize();
+    this.scratchRootUp.copy(Y_AXIS).applyQuaternion(this.scratchGroupQuaternion).normalize();
+    this.scratchFootDirection.copy(toe.position).applyQuaternion(this.scratchTargetQuaternion);
+    this.scratchFootDirection.addScaledVector(this.scratchRootUp, -this.scratchFootDirection.dot(this.scratchRootUp));
+    if (this.scratchFootDirection.lengthSq() < 1e-8) return;
+    this.scratchFootDirection.normalize();
+
+    const progressionRadians = (this.config.footProgressionDegrees * Math.PI) / 180;
+    const sideSign = side === "left" ? 1 : -1;
+    this.scratchFootDesiredDirection
+      .copy(this.scratchRootForward)
+      .multiplyScalar(Math.cos(progressionRadians))
+      .addScaledVector(this.scratchRootLateral, sideSign * Math.sin(progressionRadians))
+      .normalize();
+    const correctionRadians = Math.atan2(
+      this.scratchFootCross
+        .crossVectors(this.scratchFootDirection, this.scratchFootDesiredDirection)
+        .dot(this.scratchRootUp),
+      this.scratchFootDirection.dot(this.scratchFootDesiredDirection),
+    );
+    this.scratchFootCorrection.setFromAxisAngle(this.scratchRootUp, correctionRadians);
+    this.scratchTargetQuaternion.premultiply(this.scratchFootCorrection).normalize();
+    foot.parent.getWorldQuaternion(this.scratchParentQuaternion);
+    foot.quaternion.copy(this.scratchParentQuaternion.invert()).multiply(this.scratchTargetQuaternion).normalize();
+  }
+
+  private solveTwoBoneTarget(firstLength: number, secondLength: number, preserveCurrentBendPlane = true): void {
     this.scratchIkOffset.copy(this.scratchIkTarget).sub(this.scratchIkRoot);
     const rawDistance = Math.max(this.scratchIkOffset.length(), 1e-6);
     const distance = Math.min(
@@ -537,20 +587,22 @@ export class ProceduralCharacterAvatar implements ProceduralCharacterSocketReade
     this.scratchIkPoleDirection.addScaledVector(this.scratchIkDirection, -poleProjection);
     if (this.scratchIkPoleDirection.lengthSq() < 1e-8) this.scratchIkPoleDirection.set(0, -1, 0);
     this.scratchIkPoleDirection.normalize();
-    this.stabilizeLimbBendPlane();
+    if (preserveCurrentBendPlane) this.stabilizeLimbBendPlane();
     this.scratchIkSolvedJoint
       .copy(this.scratchIkRoot)
       .addScaledVector(this.scratchIkDirection, along)
       .addScaledVector(this.scratchIkPoleDirection, bendDistance);
-    this.scratchIkAlternateJoint
-      .copy(this.scratchIkRoot)
-      .addScaledVector(this.scratchIkDirection, along)
-      .addScaledVector(this.scratchIkPoleDirection, -bendDistance);
-    if (
-      this.scratchIkAlternateJoint.distanceToSquared(this.scratchIkCurrentJoint) <
-      this.scratchIkSolvedJoint.distanceToSquared(this.scratchIkCurrentJoint)
-    ) {
-      this.scratchIkSolvedJoint.copy(this.scratchIkAlternateJoint);
+    if (preserveCurrentBendPlane) {
+      this.scratchIkAlternateJoint
+        .copy(this.scratchIkRoot)
+        .addScaledVector(this.scratchIkDirection, along)
+        .addScaledVector(this.scratchIkPoleDirection, -bendDistance);
+      if (
+        this.scratchIkAlternateJoint.distanceToSquared(this.scratchIkCurrentJoint) <
+        this.scratchIkSolvedJoint.distanceToSquared(this.scratchIkCurrentJoint)
+      ) {
+        this.scratchIkSolvedJoint.copy(this.scratchIkAlternateJoint);
+      }
     }
     this.scratchIkSolvedEnd.copy(this.scratchIkRoot).addScaledVector(this.scratchIkDirection, distance);
   }

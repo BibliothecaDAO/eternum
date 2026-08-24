@@ -5,6 +5,14 @@ const MAX_FOOT_ANGULAR_STEP_DEGREES = 20;
 const MAX_FOOT_ANGULAR_TRAVEL_DEGREES = 180;
 const MAX_RUN_STANCE_FOOT_STEP_DEGREES = 12;
 const MAX_WALK_STANCE_FOOT_STEP_DEGREES = 6;
+const MAX_STANCE_FOOT_PROGRESSION_DEGREES = 18;
+const MIN_STANCE_FOOT_PROGRESSION_DEGREES = -6;
+const MAX_RUN_STANCE_KNEE_FRONTAL_DEVIATION_DEGREES = 10;
+const MAX_WALK_STANCE_KNEE_FRONTAL_DEVIATION_DEGREES = 8;
+const MAX_RUN_STANCE_KNEE_OUTWARD_DEVIATION_RATIO = 0.044;
+const MAX_WALK_STANCE_KNEE_OUTWARD_DEVIATION_RATIO = 0.035;
+const RUN_STEP_WIDTH_RATIO_RANGE = { maximum: 0.16, minimum: 0.04 };
+const WALK_STEP_WIDTH_RATIO_RANGE = { maximum: 0.2, minimum: 0.06 };
 
 export interface ProceduralAnimationObjectiveEvaluation {
   blankViewCount: number;
@@ -43,13 +51,19 @@ interface ProceduralLocomotionEvaluation {
   maximumStableStanceDrift: number | null;
   maximumFootAngularStepDegrees: number | null;
   maximumStableStanceFootAngularStepDegrees: number | null;
+  maximumStableStanceKneeFrontalDeviationDegrees: number | null;
+  maximumStableStanceKneeOutwardDeviationRatio: number | null;
   pelvisLateralExcursion: number;
   pelvisVerticalExcursion: number;
   rootTravelDistance: number;
   swingApexProgress: Readonly<Record<"left" | "right", number | null>>;
   swingClearance: Readonly<Record<"left" | "right", number | null>>;
   swingClearanceAsymmetry: number | null;
+  stanceFootProgressionDegrees: Readonly<Record<"left" | "right", number | null>>;
+  stanceKneeFrontalDeviationP90Degrees: number | null;
+  stanceKneeOutwardDeviationP90Ratio: number | null;
   stableStanceFootAngularStepPeak: ProceduralFootAngularStepEvent | null;
+  stepWidthRatio: number | null;
 }
 
 interface ProceduralFootAngularStepEvent {
@@ -168,6 +182,36 @@ function resolveLocomotionHardGateFailures(
   ) {
     failures.push("foot-spin");
   }
+  const stepWidthRange = walking ? WALK_STEP_WIDTH_RATIO_RANGE : RUN_STEP_WIDTH_RATIO_RANGE;
+  if (
+    locomotion.stepWidthRatio === null ||
+    locomotion.stepWidthRatio < stepWidthRange.minimum ||
+    locomotion.stepWidthRatio > stepWidthRange.maximum
+  ) {
+    failures.push("step-width-out-of-range");
+  }
+  if (
+    locomotion.stanceKneeFrontalDeviationP90Degrees === null ||
+    locomotion.stanceKneeFrontalDeviationP90Degrees >
+      (walking ? MAX_WALK_STANCE_KNEE_FRONTAL_DEVIATION_DEGREES : MAX_RUN_STANCE_KNEE_FRONTAL_DEVIATION_DEGREES)
+  ) {
+    failures.push("stance-knee-frontal-deviation");
+  }
+  if (
+    locomotion.stanceKneeOutwardDeviationP90Ratio === null ||
+    locomotion.stanceKneeOutwardDeviationP90Ratio >
+      (walking ? MAX_WALK_STANCE_KNEE_OUTWARD_DEVIATION_RATIO : MAX_RUN_STANCE_KNEE_OUTWARD_DEVIATION_RATIO)
+  ) {
+    failures.push("stance-knee-outward-deviation");
+  }
+  if (
+    Object.values(locomotion.stanceFootProgressionDegrees).some(
+      (value) =>
+        value === null || value < MIN_STANCE_FOOT_PROGRESSION_DEGREES || value > MAX_STANCE_FOOT_PROGRESSION_DEGREES,
+    )
+  ) {
+    failures.push("stance-foot-progression");
+  }
   const apexProgress = Object.values(locomotion.swingApexProgress);
   if (apexProgress.some((value) => value === null || value < 0.3 || value > 0.55)) {
     failures.push("swing-apex-timing");
@@ -203,6 +247,14 @@ function evaluateLocomotion(frames: readonly ProceduralAnimationFrameCapture[]):
   } as const;
   const footAngularSteps = resolveFootAngularStepEvents(humanoidFrames);
   const stableStanceFootAngularSteps = resolveFootAngularStepEvents(humanoidFrames, true);
+  const stanceKneeFrontalDeviations = resolveStableStanceLegValues(
+    humanoidFrames,
+    ({ frontalDeviationDegrees }) => frontalDeviationDegrees,
+  );
+  const stanceKneeOutwardDeviations = resolveStableStanceLegValues(
+    humanoidFrames,
+    ({ outwardDeviationRatio }) => outwardDeviationRatio,
+  );
   return {
     capturedCycleCount: round(resolveCapturedCycles(humanoidFrames)),
     contactFraction: {
@@ -224,6 +276,8 @@ function evaluateLocomotion(frames: readonly ProceduralAnimationFrameCapture[]):
     maximumStableStanceFootAngularStepDegrees: maximum(
       stableStanceFootAngularSteps.map(({ angleDegrees }) => angleDegrees),
     ),
+    maximumStableStanceKneeFrontalDeviationDegrees: maximum(stanceKneeFrontalDeviations),
+    maximumStableStanceKneeOutwardDeviationRatio: maximum(stanceKneeOutwardDeviations),
     pelvisLateralExcursion: round(pointAxisExcursion(humanoidFrames, "pelvis", 0, true)),
     pelvisVerticalExcursion: round(pelvisVerticalExcursion),
     rootTravelDistance: round(resolveRootTravelDistance(humanoidFrames)),
@@ -236,8 +290,83 @@ function evaluateLocomotion(frames: readonly ProceduralAnimationFrameCapture[]):
       swingClearance.left === null || swingClearance.right === null
         ? null
         : round(Math.abs(swingClearance.left - swingClearance.right)),
+    stanceFootProgressionDegrees: {
+      left: resolveStableStanceFootProgression(humanoidFrames, "left"),
+      right: resolveStableStanceFootProgression(humanoidFrames, "right"),
+    },
+    stanceKneeFrontalDeviationP90Degrees: percentile(stanceKneeFrontalDeviations, 0.9),
+    stanceKneeOutwardDeviationP90Ratio: percentile(stanceKneeOutwardDeviations, 0.9),
     stableStanceFootAngularStepPeak: maximumFootAngularStepEvent(stableStanceFootAngularSteps),
+    stepWidthRatio: resolveStepWidthRatio(humanoidFrames),
   };
+}
+
+function resolveStepWidthRatio(frames: readonly HumanoidCaptureFrame[]): number | null {
+  const lateralAxis = resolveTravelLateralAxis(frames);
+  if (!lateralAxis) return null;
+  const leftPlacement = resolveMeanStableStanceLateralPlacement(frames, "left", lateralAxis);
+  const rightPlacement = resolveMeanStableStanceLateralPlacement(frames, "right", lateralAxis);
+  const legLength = resolveMeanLegLength(frames);
+  if (leftPlacement === null || rightPlacement === null || legLength <= 1e-8) return null;
+  return round(Math.abs(leftPlacement - rightPlacement) / legLength);
+}
+
+function resolveTravelLateralAxis(frames: readonly HumanoidCaptureFrame[]): readonly [number, number, number] | null {
+  const first = frames[0].diagnostics.humanoid.rootPosition;
+  const last = frames.at(-1)?.diagnostics.humanoid.rootPosition;
+  if (!last) return null;
+  const travelX = last[0] - first[0];
+  const travelZ = last[2] - first[2];
+  const travelLength = Math.hypot(travelX, travelZ);
+  return travelLength > 1e-8 ? [travelZ / travelLength, 0, -travelX / travelLength] : null;
+}
+
+function resolveMeanStableStanceLateralPlacement(
+  frames: readonly HumanoidCaptureFrame[],
+  side: "left" | "right",
+  lateralAxis: readonly [number, number, number],
+): number | null {
+  const placements = frames.flatMap(({ diagnostics }) => {
+    const foot = diagnostics.humanoid.feet[side];
+    if (foot.contact !== "stance" || !isStableContact(foot.progress)) return [];
+    return [foot.position[0] * lateralAxis[0] + foot.position[2] * lateralAxis[2]];
+  });
+  return placements.length > 0 ? average(placements) : null;
+}
+
+function resolveMeanLegLength(frames: readonly HumanoidCaptureFrame[]): number {
+  return average(
+    frames.flatMap(({ diagnostics }) =>
+      Object.values(diagnostics.humanoid.legs).map(({ lowerLegLength, upperLegLength }) => {
+        return lowerLegLength + upperLegLength;
+      }),
+    ),
+  );
+}
+
+function resolveStableStanceLegValues(
+  frames: readonly HumanoidCaptureFrame[],
+  select: (leg: HumanoidCaptureFrame["diagnostics"]["humanoid"]["legs"]["left"]) => number | null,
+): number[] {
+  return frames.flatMap(({ diagnostics }) =>
+    (["left", "right"] as const).flatMap((side) => {
+      const foot = diagnostics.humanoid.feet[side];
+      return foot.contact === "stance" && isStableContact(foot.progress)
+        ? finite(select(diagnostics.humanoid.legs[side]))
+        : [];
+    }),
+  );
+}
+
+function resolveStableStanceFootProgression(
+  frames: readonly HumanoidCaptureFrame[],
+  side: "left" | "right",
+): number | null {
+  const values = frames.flatMap(({ diagnostics }) => {
+    const foot = diagnostics.humanoid.feet[side];
+    return foot.contact === "stance" && isStableContact(foot.progress) ? finite(foot.outwardProgressionDegrees) : [];
+  });
+  return values.length > 0 ? round(average(values)) : null;
 }
 
 function resolveCapturedCycles(frames: readonly HumanoidCaptureFrame[]): number {
@@ -452,4 +581,11 @@ function round(value: number): number {
 
 function average(values: readonly number[]): number {
   return values.reduce((sum, value) => sum + value, 0) / Math.max(1, values.length);
+}
+
+function percentile(values: readonly number[], quantile: number): number | null {
+  const finiteValues = values.flatMap(finite).toSorted((left, right) => left - right);
+  if (finiteValues.length === 0) return null;
+  const index = Math.max(0, Math.ceil(Math.min(1, Math.max(0, quantile)) * finiteValues.length) - 1);
+  return round(finiteValues[index]);
 }

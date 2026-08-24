@@ -20,8 +20,10 @@ describe("procedural character configuration", () => {
       elbowMaxDegrees: 20,
       dutyFactorOffset: 1,
       footPlant: -2,
+      footProgressionDegrees: 100,
       motionVariation: 10,
       secondaryMotion: 10,
+      stepWidthRatio: 10,
     });
 
     expect(config.tier).toBe(3);
@@ -32,8 +34,10 @@ describe("procedural character configuration", () => {
     expect(config.elbowMaxDegrees).toBe(81);
     expect(config.dutyFactorOffset).toBe(0.16);
     expect(config.footPlant).toBe(0);
+    expect(config.footProgressionDegrees).toBe(25);
     expect(config.motionVariation).toBe(0.3);
     expect(config.secondaryMotion).toBe(1.5);
+    expect(config.stepWidthRatio).toBe(0.3);
   });
 
   it("resolves deterministic morphology and finite poses", () => {
@@ -66,6 +70,21 @@ describe("procedural character configuration", () => {
 
     expect(stanceFeet.every((foot) => Math.abs(foot.target[1] - 0.12) < 1e-5)).toBe(true);
     expect(swingFeet.some((foot) => foot.target[1] > 0.2)).toBe(true);
+  });
+
+  it("places walking feet at the configured width relative to leg length", () => {
+    const config = applyProceduralCharacterConfigPatch(createDefaultProceduralCharacterConfig(), {
+      animationMode: "walk",
+      hipSway: 0,
+      motionVariation: 0,
+      stepWidthRatio: 0.13,
+    });
+    const rig = resolveCharacterRig(config);
+    const pose = resolveProceduralCharacterPose(rig, config, 0);
+    const footSeparation = Math.abs(pose.feet.left.target[0] - pose.feet.right.target[0]);
+    const legLength = rig.morphology.thighLength + rig.morphology.shinLength;
+
+    expect(footSeparation / legLength).toBeCloseTo(0.13, 4);
   });
 
   it("bends knees and elbows toward the character's authored +Z facing direction", () => {

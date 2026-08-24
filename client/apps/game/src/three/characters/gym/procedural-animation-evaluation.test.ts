@@ -50,6 +50,34 @@ describe("procedural animation objective evaluation", () => {
     expect(evaluation.locomotionHardGateFailures).toContain("foot-angular-pop");
     expect(evaluation.locomotionHardGateFailures).toContain("stance-foot-rotation");
   });
+
+  it("rejects a bow-legged footprint and excessive frontal knee deviation", () => {
+    const result = createEvaluationResult();
+    result.plan.sequence = "locomotion-cycle";
+    result.plan.rootMotionSpeed = 0.72;
+    result.frames.forEach((frame, frameIndex) => {
+      const humanoid = frame.diagnostics.humanoid!;
+      humanoid.rootPosition = [0, 0, frameIndex * 0.1];
+      humanoid.feet.left.position = [0.3, 0, frameIndex * 0.1];
+      humanoid.feet.right.position = [-0.3, 0, frameIndex * 0.1];
+      humanoid.feet.left.outwardProgressionDegrees = 24;
+      humanoid.feet.right.outwardProgressionDegrees = 24;
+      humanoid.legs.left.frontalDeviationDegrees = 12;
+      humanoid.legs.right.frontalDeviationDegrees = 11;
+      humanoid.legs.left.outwardDeviationRatio = 0.05;
+      humanoid.legs.right.outwardDeviationRatio = 0.045;
+    });
+
+    const evaluation = evaluateProceduralAnimationCapture(result);
+
+    expect(evaluation.measurements.locomotion?.stepWidthRatio).toBeCloseTo(0.75);
+    expect(evaluation.measurements.locomotion?.maximumStableStanceKneeFrontalDeviationDegrees).toBe(12);
+    expect(evaluation.measurements.locomotion?.stanceKneeOutwardDeviationP90Ratio).toBeCloseTo(0.05);
+    expect(evaluation.locomotionHardGateFailures).toContain("step-width-out-of-range");
+    expect(evaluation.locomotionHardGateFailures).toContain("stance-knee-frontal-deviation");
+    expect(evaluation.locomotionHardGateFailures).toContain("stance-knee-outward-deviation");
+    expect(evaluation.locomotionHardGateFailures).toContain("stance-foot-progression");
+  });
 });
 
 function createEvaluationResult(): ProceduralAnimationCaptureResult & {
@@ -83,6 +111,7 @@ function createEvaluationResult(): ProceduralAnimationCaptureResult & {
           left: {
             contact: "stance",
             forwardDot: 1,
+            outwardProgressionDegrees: 0,
             position: [frameIndex * 0.01, 0, 0],
             progress: 0.5,
             rotation: [0, 0, 0, 1],
@@ -91,6 +120,7 @@ function createEvaluationResult(): ProceduralAnimationCaptureResult & {
           right: {
             contact: "stance",
             forwardDot: 1,
+            outwardProgressionDegrees: 0,
             position: [0, 0, 0],
             progress: 0.5,
             rotation: [0, 0, 0, 1],
@@ -119,8 +149,24 @@ function createEvaluationResult(): ProceduralAnimationCaptureResult & {
           wristRight: [0, 1, 0],
         },
         legs: {
-          left: { bendDistance: 0.1, bendForwardDot: 1, kneeDegrees: 120, lowerLegLength: 0.4, upperLegLength: 0.4 },
-          right: { bendDistance: 0.1, bendForwardDot: 1, kneeDegrees: 125, lowerLegLength: 0.4, upperLegLength: 0.4 },
+          left: {
+            bendDistance: 0.1,
+            bendForwardDot: 1,
+            frontalDeviationDegrees: 0,
+            kneeDegrees: 120,
+            lowerLegLength: 0.4,
+            outwardDeviationRatio: 0,
+            upperLegLength: 0.4,
+          },
+          right: {
+            bendDistance: 0.1,
+            bendForwardDot: 1,
+            frontalDeviationDegrees: 0,
+            kneeDegrees: 125,
+            lowerLegLength: 0.4,
+            outwardDeviationRatio: 0,
+            upperLegLength: 0.4,
+          },
         },
         palmInwardDot: { left: 1, right: 1 },
         phase: frameIndex * 0.1,

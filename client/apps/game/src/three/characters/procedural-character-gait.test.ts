@@ -8,6 +8,7 @@ import {
   advanceProceduralCharacterGaitPhase,
   resolveProceduralCharacterGaitProfile,
   resolveProceduralCharacterGaitSignals,
+  resolveProceduralCharacterStepWidth,
   resolveProceduralCharacterStanceTravel,
   resolveProceduralCharacterStrideLength,
 } from "./procedural-character-gait";
@@ -82,6 +83,15 @@ describe("procedural character gait", () => {
     expect(resolveProceduralCharacterGaitProfile(walk).clearanceScale).toBeLessThan(
       resolveProceduralCharacterGaitProfile(run).clearanceScale,
     );
+  });
+
+  it("narrows running foot placement from the preferred walking step width", () => {
+    const base = createDefaultProceduralCharacterConfig();
+    const walk = applyProceduralCharacterConfigPatch(base, { animationMode: "walk", stepWidthRatio: 0.13 });
+    const run = applyProceduralCharacterConfigPatch(base, { animationMode: "run", stepWidthRatio: 0.13 });
+
+    expect(resolveProceduralCharacterStepWidth(walk, 1)).toBeCloseTo(0.13);
+    expect(resolveProceduralCharacterStepWidth(run, 1)).toBeCloseTo(0.091);
   });
 });
 

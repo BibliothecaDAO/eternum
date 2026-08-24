@@ -118,6 +118,7 @@ Diagnostic images should include:
 - frame number, elapsed time, expected/runtime phase, unit kind, and camera view;
 - numbered head, pelvis/saddle, shoulders, elbows, wrists, knees, ankles, and hooves;
 - left/right limb chains and elbow/knee or horse-chain angles;
+- normalized step width, mirrored knee-outward offset, frontal knee deviation, and left/right toe-out for locomotion;
 - stance/swing state for each hoof;
 - palm orientation, hand/head clearance, socket error, bow/arrow clearance, and weapon-tip data when applicable;
 - hand-to-grip distance for the bow, draw hand, crossbow handles, melee weapon, and shield handle;
@@ -142,6 +143,35 @@ pose has appealing line of action, whether anticipation feels courageous or timi
 fantasy art direction. Those remain visual judgements, but the judgement must be made against stable, labelled evidence.
 
 ## Current evaluation
+
+### Human-proportioned gait pass
+
+Evaluation date: 2026-08-24. The evidence and chosen engineering envelopes are documented in
+[Adult human gait targets](./procedural-human-gait-parameter-research.md). The previous Knight walk placed rendered
+ankles `0.386L` apart while still passing every existing gate; preferred healthy walking is approximately `0.13L`. The
+evaluator therefore had no objective signal for the reported bow-legged silhouette.
+
+`stepWidthRatio` now controls footprint midline separation using functional leg length rather than pelvis mesh width.
+Walk defaults to `0.13L`; the run profile narrows it to `0.091L`. The actual foot segment is aligned to a configurable
+`6°` toe-out after leg IK. Grounded skinned IK uses the rendered rig's true hip socket and an explicit forward knee
+pole, so differences between solver morphology and skinned hip placement cannot add a lateral bow or select the opposite
+knee branch from historical pose state.
+
+The full moving-root rerun passes with no pose issues or hard-gate failures:
+
+| Metric                                    | Walk            | Run             |
+| ----------------------------------------- | --------------- | --------------- |
+| Frames / captured cycles                  | 61 / 1.00       | 39 / 0.98       |
+| `stepWidth / L`                           | `0.1264`        | `0.0884`        |
+| Stable-stance knee frontal deviation, P90 | `0.0°`          | `0.0°`          |
+| Stable-stance mirrored knee outward, P90  | `0.0000L`       | `0.0000L`       |
+| Mean planted-foot toe-out, left / right   | `6.01° / 6.02°` | `6.05° / 6.03°` |
+| Minimum forward knee-bend alignment       | `+0.974`        | `+0.952`        |
+
+Promotion now measures footprint width from stable contacts and travel direction, reports both maximum and P90 frontal
+knee deviation, reports P90 normalized outward knee offset, and averages rendered toe progression during stable stance.
+Walk/run have separate research-derived width and knee tolerances. The gym exposes step width and toe-out as parameters,
+while the overlay and inspector show the measurements that decide promotion.
 
 ### Humanoid foot-orientation pass
 

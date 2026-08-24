@@ -20,6 +20,8 @@ describe("procedural animation frame annotations", () => {
       1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 16, 17, 13, 14, 15,
     ]);
     expect(annotations.markers.find(({ id }) => id === 4)?.value).toBe("83.3°");
+    expect(annotations.metrics).toContainEqual({ label: "knee out/L L/R", value: "+0.00 / +0.00" });
+    expect(annotations.metrics).toContainEqual({ label: "toe out L/R", value: "5.0° / 5.0°" });
     expect(annotations.metrics).toContainEqual({ label: "arrow/head", value: "0.049" });
     expect(annotations.segments.length).toBeGreaterThan(8);
   });
@@ -127,6 +129,7 @@ function createArcherDiagnostics(): ProceduralUnitPoseDiagnostics {
         left: {
           contact: "stance",
           forwardDot: 1,
+          outwardProgressionDegrees: 5,
           position: joints.ankleLeft,
           progress: 0.5,
           rotation: [0, 0, 0, 1],
@@ -135,6 +138,7 @@ function createArcherDiagnostics(): ProceduralUnitPoseDiagnostics {
         right: {
           contact: "stance",
           forwardDot: 1,
+          outwardProgressionDegrees: 5,
           position: joints.ankleRight,
           progress: 0.5,
           rotation: [0, 0, 0, 1],
@@ -146,8 +150,24 @@ function createArcherDiagnostics(): ProceduralUnitPoseDiagnostics {
       jawAnchor: [0, 1.55, 0],
       joints,
       legs: {
-        left: { bendDistance: 0.05, bendForwardDot: 1, kneeDegrees: 171, lowerLegLength: 0.45, upperLegLength: 0.45 },
-        right: { bendDistance: 0.05, bendForwardDot: 1, kneeDegrees: 169, lowerLegLength: 0.45, upperLegLength: 0.45 },
+        left: {
+          bendDistance: 0.05,
+          bendForwardDot: 1,
+          frontalDeviationDegrees: 0.5,
+          kneeDegrees: 171,
+          lowerLegLength: 0.45,
+          outwardDeviationRatio: 0.001,
+          upperLegLength: 0.45,
+        },
+        right: {
+          bendDistance: 0.05,
+          bendForwardDot: 1,
+          frontalDeviationDegrees: 0.4,
+          kneeDegrees: 169,
+          lowerLegLength: 0.45,
+          outwardDeviationRatio: 0.001,
+          upperLegLength: 0.45,
+        },
       },
       palmInwardDot: { left: 0.8, right: 0.7 },
       phase: 0.25,
