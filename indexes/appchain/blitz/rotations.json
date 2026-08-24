@@ -2,16 +2,16 @@
   "version": 1,
   "environment": "appchain.blitz",
   "kind": "rotation",
-  "updatedAt": "2026-08-24T19:26:16.949Z",
+  "updatedAt": "2026-08-24T19:26:21.588Z",
   "entries": {
     "blitz-herald": {
       "kind": "rotation",
       "environment": "appchain.blitz",
       "rotationName": "blitz-herald",
       "path": "runs/appchain/blitz/rotations/blitz-herald.json",
-      "inputPath": "inputs/appchain/blitz/rotations/blitz-herald/32763932368-1.json",
+      "inputPath": "inputs/appchain/blitz/rotations/blitz-herald/32767989365-1.json",
       "status": "running",
-      "updatedAt": "2026-08-24T18:46:20.268Z",
+      "updatedAt": "2026-08-24T19:26:21.588Z",
       "workflowRef": "next",
       "currentStepId": null,
       "hasRunningStep": false,
@@ -23,8 +23,8 @@
       },
       "evaluation": {
         "intervalMinutes": 30,
-        "nextEvaluationAt": "2026-08-24T19:16:20.268Z",
-        "lastEvaluatedAt": "2026-08-24T18:46:20.268Z"
+        "nextEvaluationAt": "2026-08-24T19:56:21.588Z",
+        "lastEvaluatedAt": "2026-08-24T19:26:21.588Z"
       },
       "games": [
         {
