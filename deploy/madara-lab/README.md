@@ -11,16 +11,19 @@ Branch: `feat/madara-lab`. Brief: `docs/plans/realms-phase-1-brief.md`. Directio
 
 - Docker with Compose v2 (`docker compose`), ~2 GB free for images and the chain volume.
 - `sozo 1.8.7` through asdf (`ASDF_SOZO_VERSION=1.8.7`; the repo's `.tool-versions` pins 1.8.0, which does not
-  speak this chain's RPC), `scarb 2.13.1`, `jq`, `bun`.
+  speak this chain's RPC), `scarb 2.13.1`, `jq`, `bun`, `mkcert`.
+- The lab hosts in `/etc/hosts` (once, with sudo):
+  `127.0.0.1 realms.test play.realms.test rpc.realms.test torii.realms.test identity-rpc.realms.test`.
 - Nothing from Cartridge: no Slot, no Controller, no paymaster, no hosted VRF.
 
 ## Bring the chain up
 
 ```bash
 cd deploy/madara-lab
-docker compose up -d --wait madara
+scripts/issue-certs.sh                      # once: wildcard *.realms.test certificate into .lab/certs/
+docker compose up -d --wait                 # madara + caddy
 curl -s -X POST -H 'content-type: application/json' \
-  -d '{"jsonrpc":"2.0","id":1,"method":"starknet_chainId","params":[]}' http://127.0.0.1:5060
+  -d '{"jsonrpc":"2.0","id":1,"method":"starknet_chainId","params":[]}' https://rpc.realms.test
 # {"result":"0x57505f5245414c4d535f4d41444152415f4c4142"}  == WP_REALMS_MADARA_LAB
 ```
 
@@ -28,10 +31,37 @@ Endpoints (all bound to localhost only):
 
 | Port | What                                                                                   |
 | ---- | -------------------------------------------------------------------------------------- |
+| 443  | Caddy: TLS for every browser-facing `*.realms.test` host (see below)                    |
 | 5060 | Starknet JSON-RPC. `/` is v0.10.2; `/rpc/v0_9_0`, `/rpc/v0_8_1`, `/rpc/v0_10_0` are pinned routes |
 | 5061 | Madara admin RPC (`madara_*`). Never expose.                                            |
 | 5062 | Feeder gateway + gateway                                                               |
 | 8090 | Torii canary (profile `torii`, see below)                                              |
+| 5432 | Postgres for `apps/web` (profile `web`, see below)                                     |
+
+### HTTPS: Caddy in front of everything a browser touches
+
+Browsers are the only TLS clients. `sozo`, the deployer, the harness and the probe stay on plain HTTP to
+`127.0.0.1:5060` / `:8090`. Caddy (`Caddyfile`) terminates TLS on `127.0.0.1:443` with one wildcard certificate:
+
+| Host                        | Upstream                                                           |
+| --------------------------- | ------------------------------------------------------------------ |
+| `realms.test`               | `apps/web` dev server on the host, `http://localhost:3000`         |
+| `play.realms.test`          | `apps/game` dev server on the host, `https://localhost:5173`       |
+| `rpc.realms.test`           | `madara:9944` (paths pass through: `/rpc/v0_9_0` works)            |
+| `torii.realms.test`         | `torii:8080` over h2c, so native gRPC and gRPC-web both pass       |
+| `identity-rpc.realms.test`  | `IDENTITY_RPC_UPSTREAM` (default `https://rpc.starknet.lava.build`, a public Starknet mainnet node) |
+
+The certificate is issued by `scripts/issue-certs.sh` from the mkcert root the game's Vite plugin keeps in
+`~/.vite-plugin-mkcert`, so the lab has one CA. That root is trusted by the system store and, through Fedora's
+p11-kit NSS bridge, by Brave/Chrome; if a browser still warns, run `CAROOT=~/.vite-plugin-mkcert mkcert -install`
+once. Certificates live in `.lab/certs/` (gitignored) and are valid for 27 months.
+
+Because the dev servers sit behind the proxy, each Vite config needs `server.allowedHosts` with its `*.realms.test`
+name and `server.hmr.clientPort: 443` — otherwise Vite refuses the Host header and its HMR socket dials the raw port.
+
+Server-side code (the SIWS verifier in `apps/web`) must call the public mainnet node directly, not
+`https://identity-rpc.realms.test`: Bun ships its own root store and would not trust the lab certificate. The Caddy
+host exists for the browser.
 
 Genesis is deterministic: the devnet predeploys 10 funded OpenZeppelin accounts and the Universal Deployer at the
 standard address. Account #1 — used by `dojo_madara.toml` — is
@@ -75,6 +105,48 @@ sozo's declare → wait-for-receipt → next-class cycle (~8 s per class). The l
 the pre-confirmed block every 250 ms so that wait is as short as it can be; on the upstream devnet preset (20–30 s
 blocks) the same migration takes over an hour.
 
+## Gameplay accounts
+
+Fees are off (`--no-charge-fee`), so a player's browser key deploys its own `deploy_account` transaction without
+any funding step — no faucet, no master account. `scripts/probe-deploy-account.ts` proves it and times it:
+
+```bash
+pnpm lab:probe-account                                             # lab, OpenZeppelin devnet class
+RPC_URL=https://katana.jcndata.com \
+ACCOUNT_CLASS_HASH=0x5e1c8befefc43017195b550332ba536ca4571a1a108e1c0b4a2f746913d40 pnpm lab:probe-account
+```
+
+Measured 2026-08-25, fresh random key, zero balance, default fee estimate, `tip: 0`:
+
+| Chain            | submit | pre-confirmed | accepted on L2 |
+| ---------------- | ------ | ------------- | -------------- |
+| lab (this laptop)| 22 ms  | 74 ms         | 0.8–1.9 s (next 2 s block) |
+| Katana AWS       | 964 ms | 1.7 s         | 1.8 s          |
+
+Katana AWS declares the Katana dev account class `0x5e1c…`, not the `0x07dc78…` that `.env.appchain.blitz` names —
+that value is wrong and the probe fails loudly with it.
+
+The binding authority (the key that rotates gameplay-account keys and writes the `PlayerRegistry`) is devnet
+account #2, public devnet material that exists only on this chain — put it in `apps/web/.env`:
+
+```
+BINDING_AUTHORITY_ADDRESS=0x008a1719e7ca19f3d91e8ef50a48fc456575f645497a1d55f30e3781f786afe4
+BINDING_AUTHORITY_PRIVATE_KEY=0x0514977443078cf1e0c36bc88b89ada9a46061a5cf728f40274caea21d76f174
+```
+
+`GAMEPLAY_ACCOUNT_CLASS_HASH` and `PLAYER_REGISTRY_ADDRESS` are filled once `contracts/player-account` is declared
+and deployed here (brief C.3).
+
+## Session store for `apps/web`
+
+```bash
+docker compose --profile web up -d --wait postgres
+# apps/web/.env
+DATABASE_URL=postgres://realms:realms@127.0.0.1:5432/realms
+```
+
+State lives in the `postgres-data` volume; `down -v` wipes sessions along with the chain.
+
 ## Torii compatibility canary
 
 Torii is end-of-life and not a destination dependency. It runs here only so the current client stays playable on the
@@ -82,7 +154,7 @@ lab chain while the owned data plane is built. Stock `ghcr.io/dojoengine/torii:v
 
 ```bash
 docker compose --profile torii up -d          # after deploy-world.sh; reads .lab/torii.toml
-curl -s 'http://127.0.0.1:8090/sql?query=SELECT%20count(*)%20FROM%20entities'
+curl -s 'https://torii.realms.test/sql?query=SELECT%20count(*)%20FROM%20entities'
 ```
 
 Findings so far (2026-08-24, torii v1.8.16 against alpha.9):
@@ -128,6 +200,8 @@ reading numbers, and compare against a VM run on the same block-stats window.
 | Chain config | `chain-config.yaml`, copied in full from the alpha.9 `devnet` preset with only `chain_name`, `chain_id`, `block_time`, `pending_block_update_time` changed | Madara rejects partial configs; a silent default would be a silent variable in every measurement |
 | Torii     | `ghcr.io/dojoengine/torii:v1.8.16`                               | last known-good with this client                            |
 | sozo      | 1.8.7                                                            | speaks RPC 0.9/0.10, has the blake2s flag                   |
+| Caddy     | `caddy:2-alpine` (2.11.4, `sha256:5f5c8640…`)                    | TLS front; `CADDY_IMAGE` in `.env` to bump                  |
+| Postgres  | `postgres:17-alpine` (17.11, `sha256:18cfe3ef…`)                 | session store; `POSTGRES_IMAGE` in `.env` to bump           |
 
 Bump `MADARA_TAG` in a `.env` next to the compose file to test another build, and record the digest here.
 
@@ -135,8 +209,8 @@ Bump `MADARA_TAG` in a `.env` next to the compose file to test another build, an
 
 - **No WebSocket subscriptions.** Every `starknet_subscribe*` method returns `UnimplementedMethod`. The client's
   live path stays on Torii (canary) until the owned stream exists; do not plan on subscribing to Madara directly.
-- **No `dev_predeployedAccounts`.** The client's local-account connector depends on that Katana RPC. Accounts on the
-  lab come from the deterministic genesis list (brief item C2).
+- **No `dev_predeployedAccounts`.** Player accounts do not need it: each key deploys its own account fee-free
+  ("Gameplay accounts" above). The deployer and the binding authority use the deterministic genesis accounts.
 - **No embedded VRF, paymaster, or Controller.** The contracts fall back to transaction-hash randomness when the VRF
   provider address is `0x0` and the chain is not mainnet/sepolia (`contracts/game/src/utils/random.cairo:15-18`) —
   fine for the lab, never for a prized game. Fees are disabled with `--no-charge-fee`, so no paymaster is needed.
@@ -166,13 +240,16 @@ not a fact.
 
 ```
 deploy/madara-lab/
-  docker-compose.yml       madara (+ torii canary profile), pinned image, localhost ports
+  docker-compose.yml       madara + caddy (+ torii canary and web/postgres profiles), pinned images, localhost ports
+  Caddyfile                TLS front: *.realms.test → dev servers, madara, torii, identity RPC upstream
   chain-config.yaml        full chain config (see Pinning)
   torii.toml.template      rendered to .lab/torii.toml by deploy-world.sh
+  scripts/issue-certs.sh   wildcard certificate from the shared mkcert root into .lab/certs/
   scripts/deploy-world.sh  sozo build + migrate with the Madara-specific flags
+  scripts/probe-deploy-account.ts  fee-free deploy_account proof + timings, lab or Katana AWS
   scripts/block-stats.sh   aggregates Madara's per-block JSON log
   scripts/block-stats.py   the aggregation
-  .lab/                    generated: world-address, torii.toml, runs/ (gitignored)
+  .lab/                    generated: world-address, torii.toml, certs/, runs/ (gitignored)
 contracts/game/dojo_madara.toml   sozo profile for this chain
 contracts/game/Scarb.toml         [profile.madara]
 ```

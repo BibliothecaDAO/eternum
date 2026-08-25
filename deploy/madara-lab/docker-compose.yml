@@ -3,6 +3,10 @@
 #   docker compose up -d                 # madara only
 #   scripts/deploy-world.sh              # sozo build + migrate the s2 world (writes world address to .lab/)
 #   docker compose --profile torii up -d # torii compatibility canary, after the world exists
+#   docker compose --profile web up -d   # postgres for apps/web's session store
+#
+# caddy terminates TLS for every *.realms.test host on 127.0.0.1:443 (see Caddyfile); run
+# scripts/issue-certs.sh once before the first `up`, and map the hosts in /etc/hosts (README "Bring the chain up").
 #
 # Everything here is deliberately fee-free, single-node, L1-sync-disabled devnet mode: the point of the
 # lab is execution, block production, receipt latency, and indexer behaviour — not settlement. The
@@ -73,6 +77,41 @@ services:
     ports:
       - "127.0.0.1:8090:8080"
 
+  caddy:
+    image: ${CADDY_IMAGE:-caddy:2-alpine}
+    container_name: madara-lab-caddy
+    environment:
+      IDENTITY_RPC_UPSTREAM: ${IDENTITY_RPC_UPSTREAM:-https://rpc.starknet.lava.build}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - ./.lab/certs:/certs:ro
+    extra_hosts:
+      - "host.docker.internal:host-gateway"   # the web and game dev servers run on the host
+    ports:
+      - "127.0.0.1:443:443"
+    restart: unless-stopped
+
+  # Session store for apps/web (better-auth over Drizzle). DATABASE_URL in README.
+  postgres:
+    image: ${POSTGRES_IMAGE:-postgres:17-alpine}
+    container_name: madara-lab-postgres
+    profiles: ["web"]
+    environment:
+      POSTGRES_USER: realms
+      POSTGRES_PASSWORD: realms
+      POSTGRES_DB: realms
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    ports:
+      - "127.0.0.1:5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U realms -d realms"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+    restart: unless-stopped
+
 volumes:
   madara-data:
   torii-data:
+  postgres-data:

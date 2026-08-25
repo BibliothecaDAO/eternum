@@ -1,0 +1,53 @@
+# TLS front for every browser-facing host of the lab. Browsers are the only TLS clients; sozo, the deployer,
+# the harness and the probes talk plain HTTP to 127.0.0.1:5060 / :8090 directly (README "Bring the chain up").
+#
+# One wildcard certificate, issued by scripts/issue-certs.sh from the mkcert root that the game's Vite plugin
+# already installed in the system trust store — one CA for the whole lab.
+{
+	auto_https off
+	admin off
+}
+
+(lab_tls) {
+	tls /certs/realms.test.pem /certs/realms.test-key.pem
+}
+
+# apps/web dev server (plain HTTP on the host)
+realms.test {
+	import lab_tls
+	reverse_proxy host.docker.internal:3000
+}
+
+# apps/game dev server (Vite mkcert plugin serves HTTPS on the host; the hop is loopback, so its cert is not checked)
+play.realms.test {
+	import lab_tls
+	reverse_proxy https://host.docker.internal:5173 {
+		transport http {
+			tls_insecure_skip_verify
+		}
+	}
+}
+
+rpc.realms.test {
+	import lab_tls
+	reverse_proxy madara:9944
+}
+
+# Torii serves h2c; proxying over it keeps native gRPC (HTTP/2 only) working end to end, not just gRPC-web.
+torii.realms.test {
+	import lab_tls
+	reverse_proxy torii:8080 {
+		transport http {
+			versions h2c
+		}
+	}
+}
+
+# Public Starknet mainnet node for Sign-In-With-Starknet verification from the browser (paths pass through, so
+# /rpc/v0_9 selects the spec version on the upstream). Server-side verification calls the upstream directly.
+identity-rpc.realms.test {
+	import lab_tls
+	reverse_proxy {$IDENTITY_RPC_UPSTREAM} {
+		header_up Host {upstream_hostport}
+	}
+}

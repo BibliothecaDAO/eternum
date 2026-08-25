@@ -151,6 +151,7 @@
     "lint:fix": "pnpm --recursive run lint:fix",
     "typecheck": "pnpm --dir ./apps/game typecheck && pnpm --dir ./apps/realtime-server typecheck",
     "test": "pnpm --recursive run test",
+    "lab:probe-account": "bun deploy/madara-lab/scripts/probe-deploy-account.ts",
     "summary:weekly": "node scripts/generate-weekly-summary.js",
     "summary:monthly": "DAYS_TO_ANALYZE=30 OUTPUT_PATH=monthly-summary.md node scripts/generate-weekly-summary.js",
     "realm-names:generate": "node scripts/generate-realm-names.mjs",
