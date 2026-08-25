@@ -14,7 +14,7 @@
   "latestLaunchRequestId": "32848703741-1",
   "currentStepId": "wait-for-factory-indexes",
   "createdAt": "2026-08-18T20:26:36.073Z",
-  "updatedAt": "2026-08-25T12:40:04.785Z",
+  "updatedAt": "2026-08-25T12:40:13.308Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -55,9 +55,10 @@
     {
       "id": "wait-for-factory-indexes",
       "title": "Waiting for games",
-      "status": "pending",
+      "status": "running",
       "workflowStepName": "Waiting for games",
-      "latestEvent": "Waiting to run"
+      "latestEvent": "Waiting for games started",
+      "startedAt": "2026-08-25T12:40:13.308Z"
     }
   ],
   "summary": {
@@ -397,5 +398,13 @@
     "summaryPath": "/home/runner/work/eternum/eternum/.context/game-launch/rotation-appchain-blitz-blitz-herald.json",
     "seriesCreated": true,
     "seriesCreatedAt": "2026-08-18T20:26:56.860Z"
+  },
+  "activeLease": {
+    "launchRequestId": "32848703741-1",
+    "workflowRunId": 32848703741,
+    "workflowRunAttempt": 1,
+    "stepId": "wait-for-factory-indexes",
+    "acquiredAt": "2026-08-25T12:40:13.308Z",
+    "expiresAt": "2026-08-25T13:25:13.308Z"
   }
 }
