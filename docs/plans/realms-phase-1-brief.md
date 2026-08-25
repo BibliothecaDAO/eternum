@@ -252,10 +252,13 @@ source of truth).
 
 ### D.1 Chain kinds: `local` becomes `madara`, `sepolia`/`mainnet` go — one rename, every site
 
-The `Chain` union (`packages/types`, re-exported as `@contracts`) is `"sepolia" | "mainnet" | "local" | "appchain"`
-today; after this step it is `"madara" | "appchain"`. `local` is not deleted and re-added: it is **renamed** to `madara`
-with its semantics fixed — the RPC comes from `VITE_PUBLIC_NODE_URL`, never a hardcoded `http://localhost:5050`; the
-chain id is `WP_REALMS_MADARA_LAB`. Every site that switches on the kind changes in the same commit:
+The chain kind exists three times today: `Chain` in `contracts/utils/utils.ts:49` (the `@contracts` export the client
+uses), a duplicate `Chain` in `config/source/common/types.ts:1`, and `NetworkType` in `config/utils/environment.ts:1` —
+all `"sepolia" | "mainnet" | "local" | "appchain"`. After this step there is one: `GameChain = "madara" | "appchain"` in
+`packages/chain`, and the three copies are deleted with every consumer importing it. `local` is not deleted and
+re-added: it is **renamed** to `madara` with its semantics fixed — the RPC comes from `VITE_PUBLIC_NODE_URL`, never a
+hardcoded `http://localhost:5050`; the chain id is `WP_REALMS_MADARA_LAB`. Every site that switches on the kind changes
+in the same commit:
 
 - Client: `env.ts:59` (enum + default `madara`), `runtime/world/store.ts:20` (`CHAIN_VALUES`),
   `hooks/context/starknet-chain-config.ts` (`chainKind` union; the `KATANA_*` constants and the Cartridge RPC builders
@@ -268,24 +271,25 @@ chain id is `WP_REALMS_MADARA_LAB`. Every site that switches on the kind changes
   `VITE_PUBLIC_NODE_URL=https://rpc.realms.test`, `VITE_PUBLIC_TORII=https://torii.realms.test`,
   `VITE_PUBLIC_VRF_PROVIDER_ADDRESS=0x0` (tx-hash randomness fallback, `utils/random.cairo:15-18` — right for the lab),
   `VITE_PUBLIC_MASTER_*` = devnet account #1. `.env.sepolia.*` and `.env.mainnet.*` are deleted.
-- Deployer/config: `config/package.json` scripts `local:blitz`/`local:eternum`/`sync:local*` become
-  `madara:blitz`/`madara:eternum`/`sync:madara*`; `sepolia:*` and `mainnet:*` scripts are deleted.
+- Deployer/config: `config/package.json` script `local:blitz` becomes `madara:blitz` and `sync:local:blitz` becomes
+  `sync:madara:blitz`; `local:eternum`, `sync:local`, `sepolia:*` and `mainnet:*` scripts are deleted — phase 1
+  exercises Blitz only, and an eternum environment would need its own preset, manifest and gate.
   `config/deployer/clean/constants.ts:53` (`local: DEFAULT_LOCAL_RPC_URL`) becomes `madara` reading `RPC_URL`;
   `config/source/{blitz,eternum}/chains.ts`, `config/scripts/run-sync.ts`, `config/utils/confirmation.ts` follow;
   `config/deployer/clean/paymaster/sync-policy.ts` is deleted with the paymaster. **The deployer's legacy `local`
-  environment does not survive**; `madara.blitz` (D.2) is its replacement, and `madara.eternum` is the same mechanism
-  with the eternum preset — no extra work, so it stays.
+  environment does not survive**; `madara.blitz` (D.2) is its only replacement.
 - Hosts: every fallback that resolves `api.cartridge.gg` (`world-torii.ts:14-19`, `factory-endpoints.ts:7`,
   `chain-rpc.ts:4`, `global-chain.ts:4`, `profile-builder.ts:15`, `normalize.ts:36,56`,
   `landing-leaderboard-service.ts:87-90`) is deleted, not guarded — `packages/chain` is the only place a host comes
   from, and `check:forbidden-hosts` keeps it that way.
 - Live path stays Torii's subscriptions against the canary; no Madara WebSocket path exists, do not add one.
 
-**Owner:** Codex. **Gate:**
-`grep -rn '"local"\|"sepolia"\|"mainnet"' apps/game/src packages/*/src config --include='*.ts' --include='*.tsx'`
-returns no chain-kind hit (identity-side `SN_MAIN` in `packages/identity` is the one legitimate mainnet reference);
-`pnpm typecheck`; tests updated, not skipped; `pnpm dev` with `.env.madara.blitz` shows the lab world; the C.3 gate runs
-on it.
+**Owner:** Codex. **Gate:** `GameChain` is defined once, in `packages/chain`, and
+`grep -rn "type Chain\b\|type NetworkType\b" contracts config apps packages --include='*.ts'` finds no other union;
+`pnpm typecheck` passes with the three old types deleted (every consumer had to move); no `.env.local.*`,
+`.env.sepolia.*`, `.env.mainnet.*` file and no `local:`/`sepolia:`/`mainnet:` script remains under `apps/game` and
+`config`; `packages/chain/src/endpoints.ts` lists exactly `madara` and `appchain`; tests updated, not skipped;
+`pnpm dev` with `.env.madara.blitz` shows the lab world; the C.3 gate runs on it.
 
 ### D.2 Deployer: `madara.blitz` environment and chain bootstrap
 
