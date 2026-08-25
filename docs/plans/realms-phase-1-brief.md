@@ -157,20 +157,23 @@ connectors — Ready/Argent, Braavos on `SN_MAIN`, no Controller).
   `torii.realms.test` to `127.0.0.1`. The lab compose gains a `caddy` service that terminates TLS for
   `rpc.realms.test → madara:9944` and `torii.realms.test → torii:8080` (HTTP/2, gRPC-web and WebSocket pass through)
   using certificates `mkcert` issues into `deploy/madara-lab/.lab/certs/` (gitignored; the mkcert root CA is installed
-  once with `mkcert -install`, which also makes `sozo`, `bun` and `curl` trust it). Web runs on `https://realms.test`,
-  the game on `https://play.realms.test` (Vite mkcert plugin, `hosts` option). No browser-facing value on the branch is
-  `http://` — every `VITE_PUBLIC_*` value, env sample, world profile and `packages/chain` endpoint; Docker-internal
-  links (`torii → madara:9944`), health checks, tests and CLI tooling may stay plain HTTP because no browser touches
-  them. `check:forbidden-hosts` enforces exactly that split. Gate: a session created on web is readable on play; an
-  origin outside the list is refused; zero mixed-content errors during a full world load.
+  once with `mkcert -install`, which covers the system store and Brave's NSS db; Bun ships its own Mozilla roots, so the
+  harness and every bun script run with `NODE_EXTRA_CA_CERTS="$(mkcert -CAROOT)/rootCA.pem"` set in the lab `.env`;
+  `sozo` is CLI configuration, not browser-facing, and stays on loopback HTTP `http://127.0.0.1:5060/rpc/v0_9_0` in
+  `dojo_madara.toml`). Web runs on `https://realms.test`, the game on `https://play.realms.test` (Vite mkcert plugin,
+  `hosts` option). No browser-facing value on the branch is `http://` — every `VITE_PUBLIC_*` value, env sample, world
+  profile and `packages/chain` endpoint; Docker-internal links (`torii → madara:9944`), health checks, tests and CLI
+  tooling may stay plain HTTP because no browser touches them. `check:forbidden-hosts` enforces exactly that split.
+  Gate: a session created on web is readable on play; an origin outside the list is refused; zero mixed-content errors
+  during a full world load.
 
 In the game: delete the Cartridge surface listed in the facts; `StarknetProvider` becomes identity-only through
 `packages/identity`; `useAccount()` consumers are reclassified by one rule — **signs or reads game ownership → gameplay
 account; shows who the player is → identity**; the landing keeps game selection and entry and loses
 profile/wallet/player-profile (they are `realms.world/account`). Remove `@cartridge/connector`, `@cartridge/controller`,
-`@dojoengine/predeployed-connector`, `VITE_PUBLIC_CARTRIDGE_API_BASE`, and the legacy `mainnet`/`sepolia` chain kinds,
-world entries, Cartridge RPC builders and `s1_eternum` signing domain. In the portal: `packages/identity` replaces its
-Controller login.
+`@dojoengine/predeployed-connector`, `VITE_PUBLIC_CARTRIDGE_API_BASE`, and the legacy `mainnet`/`sepolia`/`local` chain
+kinds, world entries, Cartridge RPC builders and `s1_eternum` signing domain. In the portal: `packages/identity`
+replaces its Controller login.
 
 Residue, each with a decision: `realtime-server` — `avatars`/`profiles` routes and tables are deleted (web owns the
 profile; `cartridge_username` goes with them), and the remaining services take `TORII_SQL_URL` and
@@ -180,12 +183,16 @@ profile; `cartridge_username` goes with them), and the remaining services take `
 **Executable gate, not a grep by hand:** `pnpm check:forbidden-hosts` — fails on (a) any dependency in the `@cartridge/`
 scope in any `package.json` or lockfile, (b) any `cartridge.gg` host literal in any file outside `docs/` — TypeScript,
 JSON, TOML, YAML, shell, env samples, compose and deploy templates included — and (c) any `http://` URL in
-browser-facing configuration only: `VITE_PUBLIC_*` values in `.env*` files, world profiles, and the `packages/chain`
-endpoint table (234 files legitimately use plain HTTP internally today; they are not the target). The word itself is not
-the rule, so the script and this brief do not trip it. At runtime, `packages/chain`'s single endpoint resolver — through
-which every RPC, Torii, SQL and identity URL is read — throws on a forbidden host, and on a plain-HTTP scheme when the
-consumer is a browser; no per-variable assertions. Runs in CI from this step on. Plus: web and game log in with the same
-session on the `.test` subdomains.
+browser-facing configuration only — by path, not by guess: `VITE_PUBLIC_*` values in `apps/game/.env*`, `VITE_*` values
+in `apps/web/.env*`, `packages/chain/src/endpoints.ts`, and the world profiles under `apps/game/src/runtime/world/`.
+Dojo profiles (`contracts/game/dojo_*.toml`), compose files, health checks, tests and scripts are CLI/internal
+configuration and are not scanned (234 files legitimately use plain HTTP internally today). There is no loopback
+exception because there is no HTTP page left: the `local` (Katana) chain kind and its `.env.local.blitz.sample` are
+deleted in this step — Katana is Cartridge, and the local chain is `madara` behind Caddy. The word itself is not the
+rule, so the script and this brief do not trip it. At runtime, `packages/chain`'s single endpoint resolver — through
+which every RPC, Torii, SQL and identity URL is read — throws on a forbidden host, and on a plain-HTTP endpoint whenever
+`window.location.protocol === "https:"` (the mixed-content rule, made loud instead of silent); no per-variable
+assertions. Runs in CI from this step on. Plus: web and game log in with the same session on the `.test` subdomains.
 
 **Owner:** Codex.
 
@@ -219,9 +226,9 @@ ERC721 held by the account — every attempt must revert.
 - **`packages/core/src/account/gameplay-account.ts`** (starknet.js only, shared with the harness): derive the address
   from `(owner, publicKey, authority)` with `calculateContractAddressFromHash`, deploy once (skip when `getClassHashAt`
   succeeds), return an `Account`. Client key store: one `localStorage` record per `(chainId, owner)`; `owner = 0x0` is
-  guest, allowed on `local`/`madara`, refused on `appchain`. `useAccountStore` holds the gameplay `Account` and `owner`;
-  its `connector` field is deleted; it is written from one place, `GameplayAccountSync`. The class hash lives in the
-  world profile and is verified with `starknet_getClass` at boot — loud in dev.
+  guest, allowed on `madara`, refused on `appchain`. `useAccountStore` holds the gameplay `Account` and `owner`; its
+  `connector` field is deleted; it is written from one place, `GameplayAccountSync`. The class hash lives in the world
+  profile and is verified with `starknet_getClass` at boot — loud in dev.
 - **Two server functions in `apps/web`**, authenticated by the SIWS session (session = verified owner):
   `bind(gameplayAddress, publicKey)` checks on the game chain that the class is `RealmsPlayerAccount` and
   `owner() == session owner`, then `registry.bind`; a second account for the same owner is refused. `rotate(publicKey)`
@@ -273,7 +280,8 @@ never silently skip.
 
 - Cairo: `BLITZ_REGISTRATION_COUNT_CAP: u16 = 96` in one constants module, asserted in `validate_registration_capacity`
   (`registrar/contracts.cairo:330`) **and** in `set_blitz_registration_config` (`config/contracts.cairo:920-942`).
-- TypeScript: `BLITZ_REGISTRATION_COUNT_CAP = 96` in `packages/chain`, used by `resolveRegistrationCountMax`
+- TypeScript: `BLITZ_REGISTRATION_COUNT_CAP = 96` in `config/deployer/clean/constants.ts` (the deployer is its only
+  consumer; `packages/chain` stays ids, endpoints and addresses), used by `resolveRegistrationCountMax`
   (`preset.ts:598`) — the literal 24 goes; `config/source/blitz/base.ts:18` stays 24 for the appchain preset, the madara
   preset says 96.
 - Settlement pool: `target_open_settlement_count` (`realm/blitz/contracts.cairo:412-433`) tiers 6 → 9 → remaining; at 96
@@ -322,11 +330,11 @@ numbers recorded in the README. That is phase 1 done.
 Removed: three lockfiles, three CI setups, three Vercel projects' config, three wallet-connection layers, two
 chain-constant tables, the game's duplicated profile/wallet UI, ~900 lines of Controller/session/paymaster mechanics,
 three dependencies, one env value, the Katana Cartridge flags, `onchain-agent`, `heavy-load`, the controller spike,
-realtime-server's profile/avatar routes, the `client/` directory, the legacy S1 chain kinds, every hardcoded Cartridge
-host. Added: `packages/identity`, `packages/chain`, `contracts/player-account` (~150 lines), `gameplay-account.ts`
-(~100), key store + sync (~80), two server functions (~100), SIWS hardening (~60), `check:forbidden-hosts` (~30), a
-`caddy` block and certs in the lab compose, a `postgres` block in the lab compose, two named catalogs, `tooling/`. Net
-deletion in code; one more service in the lab.
+realtime-server's profile/avatar routes, the `client/` directory, the legacy S1 and `local` (Katana) chain kinds, every
+hardcoded Cartridge host. Added: `packages/identity`, `packages/chain`, `contracts/player-account` (~150 lines),
+`gameplay-account.ts` (~100), key store + sync (~80), two server functions (~100), SIWS hardening (~60),
+`check:forbidden-hosts` (~30), a `caddy` block and certs in the lab compose, a `postgres` block in the lab compose, two
+named catalogs, `tooling/`. Net deletion in code; one more service in the lab.
 
 ## Out of phase 1 (deliberately)
 
@@ -343,7 +351,8 @@ yourself writing one of them here, stop.
   reverses the 2026-08-25 "React 19 is fine" call on the evidence in the facts table.
 - The gameplay account is an operator-custodied burner that must never hold value; the protections that make it safe for
   value are named and gated for phase 2.
-- Guest play only on `local`/`madara`; production entry requires an identity.
+- Guest play only on `madara`; production entry requires an identity.
+- The `local` (Katana) chain kind is deleted with Cartridge; the local chain is `madara`.
 - Binding ships with the login; the hardened SIWS is the verifier, the registry is the truth.
 - Subdomains + parent-domain cookie, not path routing. Game subdomain: keep `blitz.realms.world`.
 - Marketplace is ported in phase 2, not imported.
