@@ -292,9 +292,8 @@ ERC721 held by the account — every attempt must revert.
   `appchain` top-up still works.
 
 **Owner:** Codex (contracts, core module, client store/sync, server functions). Claude (declare the class and registry
-on the lab and on Katana AWS; authority key = devnet account #2 in the lab `.env`, documented; `postgres` under a `web`
-profile in the lab compose for the session store; drop `--cartridge.controllers --paymaster --cartridge.paymaster` from
-the Katana AWS command at the next deploy). **Gate:** on the lab, connect Braavos or Ready → Play →
+on the lab; authority key = devnet account #2 in the lab `.env`, documented; `postgres` under a `web` profile in the lab
+compose for the session store). **Gate:** on the lab, connect Braavos or Ready → Play →
 `starknet_getClassHashAt(gameplay)` is `RealmsPlayerAccount` within one block → create game / `settle` /
 `provision_realm` / move (zero fee: no `obtain_entry_token`, no entry token, no faucet transaction — asserted by the D.2
 gate); every `sender_address` is the gameplay account; `AddressName` shows the settle name; reload keeps the address; a

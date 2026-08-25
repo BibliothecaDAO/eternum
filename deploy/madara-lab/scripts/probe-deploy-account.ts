@@ -2,8 +2,7 @@
 // Proves that a fresh, unfunded key can deploy its own account on a fee-free chain, and measures how long
 // the deployment takes to become pre-confirmed, accepted on L2, and visible through getClassHashAt.
 //
-//   pnpm lab:probe-account                                                  # lab defaults below
-//   RPC_URL=https://katana.jcndata.com ACCOUNT_CLASS_HASH=0x5e1c... pnpm lab:probe-account
+//   pnpm lab:probe-account
 //
 // Prints one JSON line; exit code 1 on any failure. CLI tool: plain HTTP to loopback (see Caddyfile).
 import { Account, CallData, ec, hash, logger, RpcProvider, stark } from "starknet";
@@ -11,13 +10,10 @@ import { Account, CallData, ec, hash, logger, RpcProvider, stark } from "starkne
 // starknet.js logs its tip estimator and default paymaster at INFO/ERROR; failures here surface as exceptions.
 logger.setLogLevel("FATAL");
 
-const LAB_RPC_URL = "http://127.0.0.1:5060/rpc/v0_9_0";
+const rpcUrl = "http://127.0.0.1:5060/rpc/v0_9_0";
 // OpenZeppelin account class the Madara devnet genesis predeploys (class of devnet account #1).
-const LAB_ACCOUNT_CLASS_HASH = "0xe2eb8f5672af4e6a4e8a8f1b44989685e668489b0a25437733756c5a34a1d6";
+const classHash = "0xe2eb8f5672af4e6a4e8a8f1b44989685e668489b0a25437733756c5a34a1d6";
 const POLL_MS = 50;
-
-const rpcUrl = process.env.RPC_URL ?? LAB_RPC_URL;
-const classHash = process.env.ACCOUNT_CLASS_HASH ?? LAB_ACCOUNT_CLASS_HASH;
 
 async function main() {
   const provider = new RpcProvider({ nodeUrl: rpcUrl });

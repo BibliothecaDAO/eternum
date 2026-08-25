@@ -111,20 +111,11 @@ Fees are off (`--no-charge-fee`), so a player's browser key deploys its own `dep
 any funding step — no faucet, no master account. `scripts/probe-deploy-account.ts` proves it and times it:
 
 ```bash
-pnpm lab:probe-account                                             # lab, OpenZeppelin devnet class
-RPC_URL=https://katana.jcndata.com \
-ACCOUNT_CLASS_HASH=0x5e1c8befefc43017195b550332ba536ca4571a1a108e1c0b4a2f746913d40 pnpm lab:probe-account
+pnpm lab:probe-account      # OpenZeppelin devnet account class, one JSON line
 ```
 
-Measured 2026-08-25, fresh random key, zero balance, default fee estimate, `tip: 0`:
-
-| Chain            | submit | pre-confirmed | accepted on L2 |
-| ---------------- | ------ | ------------- | -------------- |
-| lab (this laptop)| 22 ms  | 74 ms         | 0.8–1.9 s (next 2 s block) |
-| Katana AWS       | 964 ms | 1.7 s         | 1.8 s          |
-
-Katana AWS declares the Katana dev account class `0x5e1c…`, not the `0x07dc78…` that `.env.appchain.blitz` names —
-that value is wrong and the probe fails loudly with it.
+Measured 2026-08-25 on this laptop, fresh random key, zero balance, default fee estimate, `tip: 0`: submit 22 ms,
+pre-confirmed 74 ms, accepted on L2 0.8–1.9 s (the next 2 s block).
 
 The binding authority (the key that rotates gameplay-account keys and writes the `PlayerRegistry`) is devnet
 account #2, public devnet material that exists only on this chain — put it in `apps/web/.env`:
@@ -246,7 +237,7 @@ deploy/madara-lab/
   torii.toml.template      rendered to .lab/torii.toml by deploy-world.sh
   scripts/issue-certs.sh   wildcard certificate from the shared mkcert root into .lab/certs/
   scripts/deploy-world.sh  sozo build + migrate with the Madara-specific flags
-  scripts/probe-deploy-account.ts  fee-free deploy_account proof + timings, lab or Katana AWS
+  scripts/probe-deploy-account.ts  fee-free deploy_account proof + timings
   scripts/block-stats.sh   aggregates Madara's per-block JSON log
   scripts/block-stats.py   the aggregation
   .lab/                    generated: world-address, torii.toml, certs/, runs/ (gitignored)
