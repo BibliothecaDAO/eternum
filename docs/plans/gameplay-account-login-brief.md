@@ -91,14 +91,31 @@ Anything that **signs or reads game ownership** (structures, armies, registratio
 uses `useAccountStore.account.address`. Anything that **shows who the player is** (profile, avatar, balances, name
 default) uses the identity wallet. A consumer that needs both takes both explicitly; none derives one from the other.
 
-### Binding, rotation and payouts — stage 2, not in this brief
+### Binding and rotation — without settlement
 
-Today the binding `(owner → gameplay account)` exists only in the browser. That is enough while prizes and fees are
-game-chain ERC20 on dev chains. When value moves to mainnet (with settlement), the direction doc's owned auth service
-verifies a SNIP-12 message from the identity wallet against mainnet, writes an `owner ↔ gameplay` registry on the game
-chain, and can rotate a lost key; alternatively an L2→L3 message through the Piltover core contract does the same
-without a service once settlement is live. Cost named now, built then. **Consequence accepted for the lab:** clearing
-browser storage loses the gameplay account and its in-game position. Exporting the key is a feature; it is not added.
+`account-portal` already runs Sign-In-With-Starknet on better-auth
+(`apps/account-portal/src/utils/auth/auth-siws-plugin.ts`: nonce → wallet signs SNIP-12 → server verifies with
+`verifyMessageInStarknet` against a mainnet RPC → session cookie). That is the off-chain proof binding needs. Everything
+else is on the game chain:
+
+- **`contracts/player-account/`** (pure Cairo, no Dojo): `RealmsPlayerAccount` = OpenZeppelin `AccountComponent` +
+  `owner: ContractAddress` set in the constructor and never changed + `rotate_public_key(new_key)` callable only by the
+  `binding_authority` address given at construction. `PlayerRegistry`: `bind(owner, account)` by the authority only, one
+  account per owner forever, `account_of(owner)`, `owner_of(account)`.
+- **Two server functions in the web app** (session = verified owner): `bind(gameplayAddress, publicKey)` — checks on the
+  game chain that the class is `RealmsPlayerAccount` and `owner() == session owner`, then `registry.bind`; a second
+  account for the same owner is refused. `rotate(publicKey)` — `registry.account_of(owner)` → `rotate_public_key` with
+  the authority key.
+- **Client flow.** Play: wallet connect → SIWS session → local key → deploy `RealmsPlayerAccount(owner, key, authority)`
+  → `bind`. Recovery on a fresh browser: session → registry has an account → no local key → generate → `rotate` → same
+  gameplay address, same in-game position. Guest (`owner = 0x0`) skips bind and is unrecoverable by design.
+- **Trust.** The authority key can rotate any player's gameplay key, so the operator can play as anyone; it cannot move
+  value — `owner` is immutable and payouts (when they move to mainnet) go to `owner_of(account)`. That is the trust
+  already placed in whoever runs the sequencer. Log every rotation.
+- **Cost.** One Cairo package (~150 lines + tests, written with the `cairo-contract` TDD skill), two server functions
+  (~100 lines), the constructor calldata of `gameplay-account.ts` becomes `(owner, publicKey, authority)`, and the lab
+  compose gains a `postgres` service under a `web` profile because the session store needs it. Removes the "clearing
+  browser storage loses the account" caveat and the whole stage-2 placeholder. Settlement is not involved.
 
 ## Work split
 
@@ -121,6 +138,12 @@ records are isolated per `(chainId, owner)`; guest key is stable across reloads)
 `runtime/account/gameplay-account-store.ts`, `GameplayAccountSync`, `useAccountStore` change, `accountClassHash` in the
 world profile with the boot check.
 
+**L2b — player account contracts.** `contracts/player-account/` with `scarb fmt` and tests: owner immutable, rotation
+only by authority, registry one-per-owner. Publish the class hash into the world profile.
+
+**L2c — bind/rotate server functions** in the web app (see `realms-monorepo-consolidation-brief.md`; until that lands,
+in `apps/account-portal` upstream), authenticated by the SIWS session; integration test against the lab chain.
+
 **L3 — chain target.** The rest of C2 as written: `madara` in `VITE_PUBLIC_CHAIN`, `.env.madara.blitz.sample` (no
 `cartridge.gg` host, `VITE_PUBLIC_MASTER_*` = devnet account #1), world-directory entry from `manifest_madara.json`,
 loud Torii/RPC fallbacks.
@@ -128,9 +151,11 @@ loud Torii/RPC fallbacks.
 ### Claude
 
 - Prove `deploy_account` on both chains before L2 starts: a bun probe in `deploy/madara-lab/scripts/` that derives,
-  deploys and calls `get_public_key` for a fresh key on the lab (class `0xe2eb…`) and on Katana AWS (class `0x5e1c…`);
-  record the two class hashes in the world profiles. If Katana refuses deploy_account fee-free, declare the OZ class
-  there and note it in `deploy/appchain`.
+  deploys and calls `get_public_key` for a fresh key on the lab (stock OZ class `0xe2eb…` until L2b declares
+  `RealmsPlayerAccount`) and on Katana AWS. If Katana refuses deploy_account fee-free, declare the class there and note
+  it in `deploy/appchain`.
+- Declare `RealmsPlayerAccount` + `PlayerRegistry` on the lab and on Katana AWS; hold the authority key in the lab
+  `.env` (devnet account #2) and document it in the runbook.
 - Drop `--cartridge.controllers --paymaster --cartridge.paymaster` from the Katana AWS command at the next deploy and
   remove `VITE_PUBLIC_ACCOUNT_CLASS_HASH` from `.env.appchain.blitz`.
 - Make the C3 harness use `packages/core` `gameplay-account` for its 96 accounts instead of a second key path.
@@ -156,8 +181,7 @@ identity-name hook (≈120). Net deletion; the only new state is one localStorag
 
 ## Decisions taken in this brief
 
-- **Legacy S1 worlds (`mainnet`, `sepolia`) lose Controller play in this client.** They were only reachable through
-  Cartridge sessions, which are EOL. They remain spectatable. Reverting this means keeping the whole deleted list alive
-  for a dying dependency; if that is wanted, it is a separate, explicit decision.
-- **Guest play only on `local`/`madara`.** Production entry requires an identity so the stage-2 binding has an owner to
-  bind.
+- **Legacy S1 worlds (`mainnet`, `sepolia`) are deleted from this client** — chain kinds, world-directory entries, the
+  Cartridge RPC builders and the `s1_eternum` signing domain go with the Controller. Owner-confirmed 2026-08-25.
+- **Guest play only on `local`/`madara`.** Production entry requires an identity so the registry has an owner to bind.
+- **Binding ships with the login, not after settlement.** The portal's SIWS is the verifier; the registry is the truth.
