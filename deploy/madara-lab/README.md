@@ -4,7 +4,7 @@ The Realms game world running on a pinned, self-run [Madara](https://github.com/
 one machine. This is the measurement bench for the platform migration: execution, block production, receipt latency,
 indexer behaviour, and the 96-player Blitz target — with the **current** Dojo contracts, unchanged.
 
-Branch: `feat/madara-lab`. Companion brief: `docs/plans/madara-lab-codex-brief.md`. Direction:
+Branch: `feat/madara-lab`. Brief: `docs/plans/realms-phase-1-brief.md`. Direction:
 `docs/reports/eternum-game-stack-direction-2026-08-21.html`.
 
 ## Prerequisites
