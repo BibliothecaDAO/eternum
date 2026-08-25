@@ -76,7 +76,6 @@ packages/
   identity/         NEW — stack-neutral SIWS client + session contract; no React/starknet peers
   chain/            NEW — plain data: chain ids, endpoints, addresses (the portal's constants + this repo's config
                     chain tables + packages/types addresses) and the one endpoint resolver that rejects forbidden hosts
-                    chain tables + packages/types addresses)
   db/               the portal's Drizzle schema and client
   ui/               shared shadcn/Tailwind 4 primitives for web
   core, provider, dojo, react, types, client, amm-sdk …   as today
@@ -147,9 +146,11 @@ connectors — Ready/Argent, Braavos on `SN_MAIN`, no Controller).
 
 - Verification RPC from `IDENTITY_RPC_URL` (required, no default), resolved through `packages/chain`'s endpoint resolver
   like every other host (forbidden-host gate below); the lab points it at a public Starknet mainnet node.
-- Nonces from `crypto.randomBytes(32)`, consumed **atomically before** session creation: one conditional statement
-  (`DELETE … WHERE id = ? AND expires_at > now() RETURNING id`) whose empty result is a 401. Tests: sequential replay
-  (second call 401) and **two concurrent verifications of the same message → exactly one 200**.
+- Nonces from `crypto.randomBytes(32)`, in this order and no other: **verify the signature → atomically consume the
+  nonce → create the session.** The consume is one conditional statement
+  (`DELETE … WHERE id = ? AND expires_at > now() RETURNING id`) whose empty result is a 401; verifying first means an
+  invalid request cannot burn a valid nonce. Tests: invalid signature leaves the nonce usable; sequential replay (second
+  call 401); **two concurrent verifications of the same message → exactly one 200**.
 - better-auth `advanced.crossSubDomainCookies` on the parent domain, `trustedOrigins` = the web and game origins,
   `secure` cookies.
 - **Full HTTPS, everywhere, including the lab.** `/etc/hosts` maps `realms.test`, `play.realms.test`, `rpc.realms.test`,
@@ -157,8 +158,10 @@ connectors — Ready/Argent, Braavos on `SN_MAIN`, no Controller).
   `rpc.realms.test → madara:9944` and `torii.realms.test → torii:8080` (HTTP/2, gRPC-web and WebSocket pass through)
   using certificates `mkcert` issues into `deploy/madara-lab/.lab/certs/` (gitignored; the mkcert root CA is installed
   once with `mkcert -install`, which also makes `sozo`, `bun` and `curl` trust it). Web runs on `https://realms.test`,
-  the game on `https://play.realms.test` (Vite mkcert plugin, `hosts` option). No env file on the branch contains an
-  `http://` URL; `check:forbidden-hosts` enforces that too. Gate: a session created on web is readable on play; an
+  the game on `https://play.realms.test` (Vite mkcert plugin, `hosts` option). No browser-facing value on the branch is
+  `http://` — every `VITE_PUBLIC_*` value, env sample, world profile and `packages/chain` endpoint; Docker-internal
+  links (`torii → madara:9944`), health checks, tests and CLI tooling may stay plain HTTP because no browser touches
+  them. `check:forbidden-hosts` enforces exactly that split. Gate: a session created on web is readable on play; an
   origin outside the list is refused; zero mixed-content errors during a full world load.
 
 In the game: delete the Cartridge surface listed in the facts; `StarknetProvider` becomes identity-only through
@@ -175,12 +178,14 @@ profile; `cartridge_username` goes with them), and the remaining services take `
 `packages/identity` or are deleted, same rule as the game.
 
 **Executable gate, not a grep by hand:** `pnpm check:forbidden-hosts` — fails on (a) any dependency in the `@cartridge/`
-scope in any `package.json` or lockfile, (b) any `cartridge.gg` host literal, and (c) any `http://` URL, in any file
-outside `docs/` — TypeScript, JSON, TOML, YAML, shell, env samples, compose and deploy templates included. The word
-itself is not the rule, so the script and this brief do not trip it. At runtime, `packages/chain`'s single endpoint
-resolver — through which every RPC, Torii, SQL and identity URL is read — throws on a forbidden host or scheme; no
-per-variable assertions. Runs in CI from this step on. Plus: web and game log in with the same session on the `.test`
-subdomains.
+scope in any `package.json` or lockfile, (b) any `cartridge.gg` host literal in any file outside `docs/` — TypeScript,
+JSON, TOML, YAML, shell, env samples, compose and deploy templates included — and (c) any `http://` URL in
+browser-facing configuration only: `VITE_PUBLIC_*` values in `.env*` files, world profiles, and the `packages/chain`
+endpoint table (234 files legitimately use plain HTTP internally today; they are not the target). The word itself is not
+the rule, so the script and this brief do not trip it. At runtime, `packages/chain`'s single endpoint resolver — through
+which every RPC, Torii, SQL and identity URL is read — throws on a forbidden host, and on a plain-HTTP scheme when the
+consumer is a browser; no per-variable assertions. Runs in CI from this step on. Plus: web and game log in with the same
+session on the `.test` subdomains.
 
 **Owner:** Codex.
 
@@ -230,10 +235,11 @@ ERC721 held by the account — every attempt must revert.
 on the lab and on Katana AWS; authority key = devnet account #2 in the lab `.env`, documented; `postgres` under a `web`
 profile in the lab compose for the session store; drop `--cartridge.controllers --paymaster --cartridge.paymaster` from
 the Katana AWS command at the next deploy). **Gate:** on the lab, connect Braavos or Ready → Play →
-`starknet_getClassHashAt(gameplay)` is `RealmsPlayerAccount` within one block → create game / register / settle / move;
-every `sender_address` is the gameplay account; `AddressName` shows the settle name; reload keeps the address; a second
-wallet gets another; guest a third; **clear site data → same wallet → key rotates → same address plays on**.
-`?spectate=true` shows no ownership chrome (`utils/spectator-session.ts` stays the source of truth).
+`starknet_getClassHashAt(gameplay)` is `RealmsPlayerAccount` within one block → create game / `obtain_entry_token` /
+`settle` / `provision_realm` / move; every `sender_address` is the gameplay account; `AddressName` shows the settle
+name; reload keeps the address; a second wallet gets another; guest a third; **clear site data → same wallet → key
+rotates → same address plays on**. `?spectate=true` shows no ownership chrome (`utils/spectator-session.ts` stays the
+source of truth).
 
 ## D. Playing on Madara
 
@@ -305,8 +311,9 @@ documents the command and the numbers.
 On a clean machine with Docker, asdf `sozo 1.8.7`, `bun`: `deploy/madara-lab/README.md` top to bottom → chain up → world
 migrated → `madara.blitz` bootstrapped → `apps/web` on `https://realms.test` and `apps/game` on
 `https://play.realms.test` against `https://rpc.realms.test` / `https://torii.realms.test` → log in on web with Braavos
-→ open the game → gameplay account deployed and bound → play a Blitz game with 95 harness bots meeting D.4's bar →
-`check:forbidden-hosts` green → `block-stats.sh` numbers recorded in the README. That is phase 1 done.
+→ open the game → gameplay account deployed and bound → **after** D.4's 96-bot benchmark has met its bar, a separate
+integration game: one human plus 95 harness bots, played to a result → `check:forbidden-hosts` green → `block-stats.sh`
+numbers recorded in the README. That is phase 1 done.
 
 ---
 
