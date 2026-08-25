@@ -12,9 +12,9 @@
   "requestedLaunchStep": "full",
   "inputPath": "inputs/appchain/blitz/rotations/blitz-nightwatch/32895205141-1.json",
   "latestLaunchRequestId": "32895205141-1",
-  "currentStepId": "wait-for-factory-indexes",
+  "currentStepId": null,
   "createdAt": "2026-08-18T20:26:43.697Z",
-  "updatedAt": "2026-08-25T20:28:28.497Z",
+  "updatedAt": "2026-08-25T20:28:33.549Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -30,8 +30,8 @@
   },
   "evaluation": {
     "intervalMinutes": 30,
-    "nextEvaluationAt": "2026-08-25T20:58:20.082Z",
-    "lastEvaluatedAt": "2026-08-25T20:28:20.082Z"
+    "nextEvaluationAt": "2026-08-25T20:58:33.549Z",
+    "lastEvaluatedAt": "2026-08-25T20:28:33.549Z"
   },
   "steps": [
     {
@@ -55,10 +55,11 @@
     {
       "id": "wait-for-factory-indexes",
       "title": "Waiting for games",
-      "status": "running",
+      "status": "succeeded",
       "workflowStepName": "Waiting for games",
-      "latestEvent": "Waiting for games started",
-      "startedAt": "2026-08-25T20:28:28.497Z"
+      "latestEvent": "Waiting for games is complete",
+      "startedAt": "2026-08-25T20:28:28.497Z",
+      "finishedAt": "2026-08-25T20:28:33.549Z"
     }
   ],
   "summary": {
@@ -363,7 +364,7 @@
         "durationSeconds": 3600,
         "seriesGameNumber": 8,
         "currentStepId": null,
-        "latestEvent": "Completed create-worlds",
+        "latestEvent": "Completed wait-for-factory-indexes",
         "status": "succeeded",
         "configSteps": [],
         "steps": [
@@ -380,8 +381,9 @@
           },
           {
             "id": "wait-for-factory-indexes",
-            "status": "pending",
-            "latestEvent": "Waiting to run"
+            "status": "succeeded",
+            "latestEvent": "Completed wait-for-factory-indexes",
+            "updatedAt": "2026-08-25T20:28:32.301Z"
           }
         ],
         "artifacts": {
@@ -398,13 +400,5 @@
     "summaryPath": "/home/runner/work/eternum/eternum/.context/game-launch/rotation-appchain-blitz-blitz-nightwatch.json",
     "seriesCreated": true,
     "seriesCreatedAt": "2026-08-18T20:27:04.214Z"
-  },
-  "activeLease": {
-    "launchRequestId": "32895205141-1",
-    "workflowRunId": 32895205141,
-    "workflowRunAttempt": 1,
-    "stepId": "wait-for-factory-indexes",
-    "acquiredAt": "2026-08-25T20:28:28.497Z",
-    "expiresAt": "2026-08-25T21:13:28.497Z"
   }
 }
