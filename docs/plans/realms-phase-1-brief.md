@@ -33,41 +33,49 @@ Verified 2026-08-24/25; the source of each fact follows it in italics.
   (`realm/blitz/contracts.cairo:93`) → `provision_realm` (`:218`), preceded by `obtain_entry_token` (`:64`) only when
   `fee_amount > 0` (`:67`, `:331`) — on the zero-fee Madara preset it begins at `settle`; the entry fee is
   `transfer_from(caller, …)` and prizes are `transfer(registered_player, …)` on the game chain (`:285-299`,
-  `prize_distribution/contracts.cairo:173-175,249`) source `settle(game_id, name, …)` writes `AddressName`; the
-  Controller username was only a client default source The Blitz cap of 24 is enforced in **four** places: Cairo
-  `registrar/contracts.cairo:330`, the admin setter `config/contracts.cairo:920-942` (no cap at all), the TypeScript
-  deployer `config/deployer/clean/registrar/preset.ts:598`, and the base config `config/source/blitz/base.ts:18`;
-  `fill_open_settlement_pool` (`realm/blitz/contracts.cairo:451-466`) is unbounded per call source Madara devnet OZ
-  account class `0xe2eb8f56…a1d6` has `__validate_deploy__`, `set_public_key`; Katana AWS
-  `VITE_PUBLIC_ACCOUNT_CLASS_HASH=0x07dc78…` is **not declared** there `starknet_getClass` Peer dependencies pin the
-  game to React 18 / starknet 8: `@starknet-react/core@5.0.3` (`react ^18.0`, `starknet ^8.1.2`, `pnpm-lock.yaml:5594`),
-  `@dojoengine/react` and `@dojoengine/sdk` (`react ^18`, `starknet ^8.1.2`, `:2196,2210`). React 19 for the game is
-  part of the dojo.js-exit bundle (`client-legacy-purge-p7-codex-brief.md:161`) lockfile The game's Cartridge surface: 7
-  files import `@cartridge/*`; Controller-only mechanics: `policies.ts`, `signing-policy.ts`,
-  `session-policy-refresh(-state).ts`, `transaction-submit-guard.ts`, `controller-connect.ts`,
+  `prize_distribution/contracts.cairo:173-175,249`) — _source_
+- `settle(game_id, name, …)` writes `AddressName`; the Controller username was only a client default — _source_
+- The Blitz cap of 24 is enforced in **four** places: Cairo `registrar/contracts.cairo:330`, the admin setter
+  `config/contracts.cairo:920-942` (no cap at all), the TypeScript deployer
+  `config/deployer/clean/registrar/preset.ts:598`, and the base config `config/source/blitz/base.ts:18`;
+  `fill_open_settlement_pool` (`realm/blitz/contracts.cairo:451-466`) is unbounded per call — _source_
+- Madara devnet OZ account class `0xe2eb8f56…a1d6` has `__validate_deploy__`, `set_public_key`; Katana AWS
+  `VITE_PUBLIC_ACCOUNT_CLASS_HASH=0x07dc78…` is **not declared** there — _`starknet_getClass`_
+- Peer dependencies pin the game to React 18 / starknet 8: `@starknet-react/core@5.0.3` (`react ^18.0`,
+  `starknet ^8.1.2`, `pnpm-lock.yaml:5594`), `@dojoengine/react` and `@dojoengine/sdk` (`react ^18`, `starknet ^8.1.2`,
+  `:2196,2210`). React 19 for the game is part of the dojo.js-exit bundle (`client-legacy-purge-p7-codex-brief.md:161`)
+  — _lockfile_
+- `@starknet-start/react@1.0.0` (the portal's connector layer) peers on `react >=19`, `starknet >=9`; no
+  wallet-connector library spans both stacks — _`npm view`_
+- The game's Cartridge surface: 7 files import `@cartridge/*`; Controller-only mechanics: `policies.ts`,
+  `signing-policy.ts`, `session-policy-refresh(-state).ts`, `transaction-submit-guard.ts`, `controller-connect.ts`,
   `use-controller-account.ts`, `use-cartridge-username.tsx`, `use-username.ts`, `ui/modules/controller/controller.tsx`,
-  `paymasterRpcProvider` + `usePredeployedAccounts` in `starknet-provider.tsx`; `useAccount()` read in 17 files grep —
-  _Cartridge residue outside the game: `client/apps/onchain-agent` ("Axis", `@cartridge/controller` + `controller-wasm`,
+  `paymasterRpcProvider` + `usePredeployedAccounts` in `starknet-provider.tsx`; `useAccount()` read in 17 files — _grep_
+- Cartridge residue outside the game: `client/apps/onchain-agent` ("Axis", `@cartridge/controller` + `controller-wasm`,
   `package.json:22-23`); `deploy/appchain/spike/controller-test` (own lockfile); `client/apps/realtime-server` defaults
   `CARTRIDGE_API_BASE`/`MAINNET_RPC_URL` to `api.cartridge.gg` and keys profiles by `cartridge_username`
   (`db/schema/profiles.ts:7`); `eternum-mobile` has 6 source files naming Cartridge; `heavy-load` and `amm-indexerv2`
-  none_
-- grep `client/public` is 518 MB; the game serves it via `publicDir: "../../public"` (`vite.config.ts:214`). The realm
+  none — _grep_
+- The chain kind exists three times: `Chain` in `contracts/utils/utils.ts:49`, `Chain` in
+  `config/source/common/types.ts:1`, `NetworkType` in `config/utils/environment.ts:1` — _source_
+- `client/public` is 518 MB; the game serves it via `publicDir: "../../public"` (`vite.config.ts:214`). The realm
   dataset exists twice in different shapes: `packages/core/src/data/realms.json` and `client/public/jsons/realms.json`
   (6.5 MB, fetched at runtime by `packages/core/src/utils/realm.ts:19`, which `getOffchainRealm` depends on);
-  `packages/core/src/data/realm-names.ts` imports `client/public/jsons/{realms,realm-names}.json` by relative path
-  source `@starknet-start/react@1.0.0` (the portal's connector layer) peers on `react >=19`, `starknet >=9`;
-  `@starknet-react/core` 5.0.3 peers on React 18 / starknet 8 — no wallet-connector library spans both stacks `npm view`
-  The lab chain and Torii listen on plain HTTP (`127.0.0.1:5060`, `:8090`); an HTTPS page cannot call them (mixed
-  content) compose `account-portal` = pnpm monorepo: TanStack Start/Router, React 19, Vite 7, Tailwind 4, shadcn,
-  better-auth **Sign-In-With-Starknet**, Drizzle/Postgres, apibara indexer; routes
-  bridge/claims/velords/delegates/proposals; still imports `@cartridge/*` for login GitHub That SIWS plugin
-  (`auth-siws-plugin.ts` @ `3bdc16f`) verifies against `https://api.cartridge.gg/x/starknet/{mainnet,sepolia}`
-  (`:68-72`), makes nonces with `Math.random` (`:19-27`), and never deletes a used nonce — the deletion is commented out
-  (`:198-202`); no cross-subdomain cookie or trusted-origin config GitHub `realms-world-site` = same stack minus Start
-  (routes index/blitz/eternum/games/scroll/terms/privacy, keystatic, one OG function); `eternum-stats` = 90 KB React +
-  chart.js; `marketplace` = Next 16 on `@cartridge/arcade` (31 files), serves `empire.realms.world/trade` GitHub
-  Domains: `realms.world` (portal), `blitz.realms.world` (game), `empire.realms.world/trade`, `docs.realms.world` —
+  `packages/core/src/data/realm-names.ts` imports `client/public/jsons/{realms,realm-names}.json` by relative path —
+  _source_
+- The lab chain and Torii listen on plain HTTP (`127.0.0.1:5060`, `:8090`); an HTTPS page cannot call them (mixed
+  content) — _compose_
+- `account-portal` = pnpm monorepo: TanStack Start/Router, React 19, Vite 7, Tailwind 4, shadcn, better-auth
+  **Sign-In-With-Starknet**, Drizzle/Postgres, apibara indexer; routes bridge/claims/velords/delegates/proposals; still
+  imports `@cartridge/*` for login — _GitHub_
+- That SIWS plugin (`auth-siws-plugin.ts` @ `3bdc16f`) verifies against
+  `https://api.cartridge.gg/x/starknet/{mainnet,sepolia}` (`:68-72`), makes nonces with `Math.random` (`:19-27`), and
+  never deletes a used nonce — the deletion is commented out (`:198-202`); no cross-subdomain cookie or trusted-origin
+  config — _GitHub_
+- `realms-world-site` = same stack minus Start (routes index/blitz/eternum/games/scroll/terms/privacy, keystatic, one OG
+  function); `eternum-stats` = 90 KB React + chart.js; `marketplace` = Next 16 on `@cartridge/arcade` (31 files), serves
+  `empire.realms.world/trade` — _GitHub_
+- Domains: `realms.world` (portal), `blitz.realms.world` (game), `empire.realms.world/trade`, `docs.realms.world` —
   _grep_
 
 ---
