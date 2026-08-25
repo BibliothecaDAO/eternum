@@ -245,17 +245,22 @@ ERC721 held by the account — every attempt must revert.
   account, session id.
 - **Flows.** Play: connect → SIWS → local key → deploy → `bind`. Recovery on a fresh browser: session → registry has an
   account → no local key → generate → `rotate` → same gameplay address, same in-game position. No settlement involved.
-- **Master account** (`VITE_PUBLIC_MASTER_*`) stays as the dev fee-token faucet on dev chains; nothing else.
+- **Master account** (`VITE_PUBLIC_MASTER_*`) exists only for `appchain`, as its dev fee-token faucet. On `madara` the
+  fee is zero (D.2), so the credentials are absent from `.env.madara.blitz`: the `env.ts` schema makes them optional,
+  the required-env throw in `hooks/context/dojo-context.tsx:18-28` goes, `createMasterAccount` returns `null` when they
+  are unset (the top-up in `use-world-registration.ts:150` already handles that with a clear error), and the landing
+  provider's fall-back-to-master signer (`landing-dojo-provider.tsx:120`) is deleted — a gameplay account is always
+  present now.
 
 **Owner:** Codex (contracts, core module, client store/sync, server functions). Claude (declare the class and registry
 on the lab and on Katana AWS; authority key = devnet account #2 in the lab `.env`, documented; `postgres` under a `web`
 profile in the lab compose for the session store; drop `--cartridge.controllers --paymaster --cartridge.paymaster` from
 the Katana AWS command at the next deploy). **Gate:** on the lab, connect Braavos or Ready → Play →
-`starknet_getClassHashAt(gameplay)` is `RealmsPlayerAccount` within one block → create game / `obtain_entry_token` /
-`settle` / `provision_realm` / move; every `sender_address` is the gameplay account; `AddressName` shows the settle
-name; reload keeps the address; a second wallet gets another; guest a third; **clear site data → same wallet → key
-rotates → same address plays on**. `?spectate=true` shows no ownership chrome (`utils/spectator-session.ts` stays the
-source of truth).
+`starknet_getClassHashAt(gameplay)` is `RealmsPlayerAccount` within one block → create game / `settle` /
+`provision_realm` / move (zero fee: no `obtain_entry_token`, no entry token, no faucet transaction — asserted by the D.2
+gate); every `sender_address` is the gameplay account; `AddressName` shows the settle name; reload keeps the address; a
+second wallet gets another; guest a third; **clear site data → same wallet → key rotates → same address plays on**.
+`?spectate=true` shows no ownership chrome (`utils/spectator-session.ts` stays the source of truth).
 
 ## D. Playing on Madara
 
@@ -279,7 +284,7 @@ in the same commit:
 - Env: `.env.madara.blitz.sample` replaces `.env.local.blitz.sample` with
   `VITE_PUBLIC_NODE_URL=https://rpc.realms.test`, `VITE_PUBLIC_TORII=https://torii.realms.test`,
   `VITE_PUBLIC_VRF_PROVIDER_ADDRESS=0x0` (tx-hash randomness fallback, `utils/random.cairo:15-18` — right for the lab),
-  `VITE_PUBLIC_MASTER_*` = devnet account #1. `.env.sepolia.*` and `.env.mainnet.*` are deleted.
+  and **no `VITE_PUBLIC_MASTER_*`** (zero fee, see C.3/D.2). `.env.sepolia.*` and `.env.mainnet.*` are deleted.
 - Deployer/config: `config/package.json` script `local:blitz` becomes `madara:blitz` and `sync:local:blitz` becomes
   `sync:madara:blitz`; `local:eternum`, `sync:local`, `sepolia:*` and `mainnet:*` scripts are deleted — phase 1
   exercises Blitz only, and an eternum environment would need its own preset, manifest and gate.
@@ -331,6 +336,9 @@ is stubbed, and the master-account fee top-up is never exercised on `madara`. En
 value in phase 2.
 
 **Owner:** Codex. **Gate:** the script is idempotent (second run reports "already initialized");
+`config/generated/blitz.madara.json` has `fee_amount = 0` and every collectible address `0x0` (a test on the generated
+file); after bootstrap `BlitzRegistrationConfig.entry_token_address == 0x0` on chain and the chain's transaction log
+contains no entry-token declare/deploy and no fee-token `transfer` from the master account;
 `config/deployer/clean/launch-step.ts` creates a 96-player game on the lab chain.
 
 ### D.3 Blitz cap 96 — every choke point, one constant per language
@@ -354,9 +362,9 @@ value in phase 2.
 ### D.4 96-player headless harness — with an acceptance bar
 
 `deploy/madara-lab/harness/` in bun — one file each for driver, account factory (`gameplay-account.ts` from C.3, guest
-owners), report. Drives `deploy account → obtain_entry_token → settle → provision_realm → action loop` using the call
-builders in `apps/game/src/services/blitz/*` and `packages/provider`; records per action: submit, `PRE_CONFIRMED`,
-`ACCEPTED_ON_L2`, Torii-indexed times — indexing is correlated **by transaction hash** against Torii's
+owners), report. Drives `deploy account → settle → provision_realm → action loop` (zero fee; `obtain_entry_token` is not
+called) using the call builders in `apps/game/src/services/blitz/*` and `packages/provider`; records per action: submit,
+`PRE_CONFIRMED`, `ACCEPTED_ON_L2`, Torii-indexed times — indexing is correlated **by transaction hash** against Torii's
 `transactions`/`events` tables (both enabled in `torii.toml.template`), never by a mutable model row, which a later
 action can overwrite; writes `.lab/runs/<timestamp>.json` with chain id, image tag, git rev, bot count, interval, mix,
 percentiles, and the `block-stats.sh` output before and after.
@@ -387,12 +395,12 @@ numbers recorded in the README. That is phase 1 done.
 Removed: three lockfiles, three CI setups, three Vercel projects' config, three wallet-connection layers, two
 chain-constant tables, the game's duplicated profile/wallet UI, ~900 lines of Controller/session/paymaster mechanics,
 three dependencies, one env value, the Katana Cartridge flags, `onchain-agent`, `heavy-load`, `eternum-mobile`, the
-controller spike, the root `*:local`/`sepolia`/`mainnet` wrappers, realtime-server's profile/avatar routes, the
-`client/` directory, the S1 chain kinds and the deployer's `local`/`sepolia`/`mainnet` environments, every hardcoded
-Cartridge host. Added: `packages/identity`, `packages/chain`, `contracts/player-account` (~150 lines),
-`gameplay-account.ts` (~100), key store + sync (~80), two server functions (~100), SIWS hardening (~60),
-`check:forbidden-hosts` (~30), a `caddy` block and certs in the lab compose, a `postgres` block in the lab compose, two
-named catalogs, `tooling/`. Net deletion in code; one more service in the lab.
+controller spike, the retired game-environment root wrappers, realtime-server's profile/avatar routes, the `client/`
+directory, the S1 chain kinds and the deployer's `local`/`sepolia`/`mainnet` environments, every hardcoded Cartridge
+host. Added: `packages/identity`, `packages/chain`, `contracts/player-account` (~150 lines), `gameplay-account.ts`
+(~100), key store + sync (~80), two server functions (~100), SIWS hardening (~60), `check:forbidden-hosts` (~30), a
+`caddy` block and certs in the lab compose, a `postgres` block in the lab compose, two named catalogs, `tooling/`. Net
+deletion in code; one more service in the lab.
 
 ## Out of phase 1 (deliberately)
 
