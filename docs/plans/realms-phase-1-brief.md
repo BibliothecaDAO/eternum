@@ -20,26 +20,52 @@ gate that proves all of it.
 
 Verified 2026-08-24/25.
 
-| Fact                                                                                                                                                                                                                                                                                                                                                                                                                                                                        | Evidence                      |
-| --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------- |
-| Cartridge (Katana, Torii, Slot, Controller, paymaster, VRF, Arcade) is end-of-life; announcement expected early September 2026                                                                                                                                                                                                                                                                                                                                              | owner input                   |
-| Madara `v0.11.0-alpha.9` (digest `sha256:98e02d4b…`) runs the current Dojo world; `sozo 1.8.7` needs `--use-blake2s-casm-class-hash` and `/rpc/v0_9_0`; migration 22 m 40 s; block close p50 2.2 ms; lab config `block_time: 2s`, `pending_block_update_time: 250ms`, `--no-charge-fee`                                                                                                                                                                                     | `deploy/madara-lab/README.md` |
-| Madara has no `starknet_subscribe*` and no `dev_predeployedAccounts`; Torii v1.8.16 follows it with `events_chunk_size = 100`                                                                                                                                                                                                                                                                                                                                               | README, canary                |
-| Both game chains are fee-free: Katana AWS `no_fee = true` (`deploy/appchain/config/katana.toml:11`), lab `--no-charge-fee`                                                                                                                                                                                                                                                                                                                                                  | config                        |
-| Contracts identify the player by `get_caller_address()` only; the Blitz flow is `obtain_entry_token` (`realm/blitz/contracts.cairo:64`) → `settle` (`:93`) → `provision_realm` (`:218`); the entry fee is `transfer_from(caller, …)` and prizes are `transfer(registered_player, …)` on the game chain (`:285-299`, `prize_distribution/contracts.cairo:173-175,249`)                                                                                                       | source                        |
-| `settle(game_id, name, …)` writes `AddressName`; the Controller username was only a client default                                                                                                                                                                                                                                                                                                                                                                          | source                        |
-| The Blitz cap of 24 is enforced in **four** places: Cairo `registrar/contracts.cairo:330`, the admin setter `config/contracts.cairo:920-942` (no cap at all), the TypeScript deployer `config/deployer/clean/registrar/preset.ts:598`, and the base config `config/source/blitz/base.ts:18`; `fill_open_settlement_pool` (`realm/blitz/contracts.cairo:451-466`) is unbounded per call                                                                                      | source                        |
-| Madara devnet OZ account class `0xe2eb8f56…a1d6` has `__validate_deploy__`, `set_public_key`; Katana AWS `VITE_PUBLIC_ACCOUNT_CLASS_HASH=0x07dc78…` is **not declared** there                                                                                                                                                                                                                                                                                               | `starknet_getClass`           |
-| Peer dependencies pin the game to React 18 / starknet 8: `@starknet-react/core@5.0.3` (`react ^18.0`, `starknet ^8.1.2`, `pnpm-lock.yaml:5594`), `@dojoengine/react` and `@dojoengine/sdk` (`react ^18`, `starknet ^8.1.2`, `:2196,2210`). React 19 for the game is part of the dojo.js-exit bundle (`client-legacy-purge-p7-codex-brief.md:161`)                                                                                                                           | lockfile                      |
-| The game's Cartridge surface: 7 files import `@cartridge/*`; Controller-only mechanics: `policies.ts`, `signing-policy.ts`, `session-policy-refresh(-state).ts`, `transaction-submit-guard.ts`, `controller-connect.ts`, `use-controller-account.ts`, `use-cartridge-username.tsx`, `use-username.ts`, `ui/modules/controller/controller.tsx`, `paymasterRpcProvider` + `usePredeployedAccounts` in `starknet-provider.tsx`; `useAccount()` read in 17 files                | grep                          |
-| Cartridge residue outside the game: `client/apps/onchain-agent` ("Axis", `@cartridge/controller` + `controller-wasm`, `package.json:22-23`); `deploy/appchain/spike/controller-test` (own lockfile); `client/apps/realtime-server` defaults `CARTRIDGE_API_BASE`/`MAINNET_RPC_URL` to `api.cartridge.gg` and keys profiles by `cartridge_username` (`db/schema/profiles.ts:7`); `eternum-mobile` has 6 source files naming Cartridge; `heavy-load` and `amm-indexerv2` none | grep                          |
-| `client/public` is 518 MB; the game serves it via `publicDir: "../../public"` (`vite.config.ts:214`). The realm dataset exists twice in different shapes: `packages/core/src/data/realms.json` and `client/public/jsons/realms.json` (6.5 MB, fetched at runtime by `packages/core/src/utils/realm.ts:19`, which `getOffchainRealm` depends on); `packages/core/src/data/realm-names.ts` imports `client/public/jsons/{realms,realm-names}.json` by relative path           | source                        |
-| `@starknet-start/react@1.0.0` (the portal's connector layer) peers on `react >=19`, `starknet >=9`; `@starknet-react/core` 5.0.3 peers on React 18 / starknet 8 — no wallet-connector library spans both stacks                                                                                                                                                                                                                                                             | `npm view`                    |
-| The lab chain and Torii listen on plain HTTP (`127.0.0.1:5060`, `:8090`); an HTTPS page cannot call them (mixed content)                                                                                                                                                                                                                                                                                                                                                    | compose                       |
-| `account-portal` = pnpm monorepo: TanStack Start/Router, React 19, Vite 7, Tailwind 4, shadcn, better-auth **Sign-In-With-Starknet**, Drizzle/Postgres, apibara indexer; routes bridge/claims/velords/delegates/proposals; still imports `@cartridge/*` for login                                                                                                                                                                                                           | GitHub                        |
-| That SIWS plugin (`auth-siws-plugin.ts` @ `3bdc16f`) verifies against `https://api.cartridge.gg/x/starknet/{mainnet,sepolia}` (`:68-72`), makes nonces with `Math.random` (`:19-27`), and never deletes a used nonce — the deletion is commented out (`:198-202`); no cross-subdomain cookie or trusted-origin config                                                                                                                                                       | GitHub                        |
-| `realms-world-site` = same stack minus Start (routes index/blitz/eternum/games/scroll/terms/privacy, keystatic, one OG function); `eternum-stats` = 90 KB React + chart.js; `marketplace` = Next 16 on `@cartridge/arcade` (31 files), serves `empire.realms.world/trade`                                                                                                                                                                                                   | GitHub                        |
-| Domains: `realms.world` (portal), `blitz.realms.world` (game), `empire.realms.world/trade`, `docs.realms.world`                                                                                                                                                                                                                                                                                                                                                             | grep                          |
+| Fact                                                                                                                                                                                                                                                                                    | Evidence                      |
+| --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------- |
+| Cartridge (Katana, Torii, Slot, Controller, paymaster, VRF, Arcade) is end-of-life; announcement expected early September 2026                                                                                                                                                          | owner input                   |
+| Madara `v0.11.0-alpha.9` (digest `sha256:98e02d4b…`) runs the current Dojo world; `sozo 1.8.7` needs `--use-blake2s-casm-class-hash` and `/rpc/v0_9_0`; migration 22 m 40 s; block close p50 2.2 ms; lab config `block_time: 2s`, `pending_block_update_time: 250ms`, `--no-charge-fee` | `deploy/madara-lab/README.md` |
+| Madara has no `starknet_subscribe*` and no `dev_predeployedAccounts`; Torii v1.8.16 follows it with `events_chunk_size = 100`                                                                                                                                                           | README, canary                |
+| Both game chains are fee-free: Katana AWS `no_fee = true` (`deploy/appchain/config/katana.toml:11`), lab `--no-charge-fee`                                                                                                                                                              | config                        |
+
+| Contracts identify the player by `get_caller_address()` only; the Blitz flow is `settle`
+(`realm/blitz/contracts.cairo:93`) → `provision_realm` (`:218`), preceded by `obtain_entry_token` (`:64`) only when
+`fee_amount > 0` (`:67`, `:331`) — on the zero-fee Madara preset it begins at `settle`; the entry fee is
+`transfer_from(caller, …)` and prizes are `transfer(registered_player, …)` on the game chain (`:285-299`,
+`prize_distribution/contracts.cairo:173-175,249`) | source | | `settle(game_id, name, …)` writes `AddressName`; the
+Controller username was only a client default | source | | The Blitz cap of 24 is enforced in **four** places: Cairo
+`registrar/contracts.cairo:330`, the admin setter `config/contracts.cairo:920-942` (no cap at all), the TypeScript
+deployer `config/deployer/clean/registrar/preset.ts:598`, and the base config `config/source/blitz/base.ts:18`;
+`fill_open_settlement_pool` (`realm/blitz/contracts.cairo:451-466`) is unbounded per call | source | | Madara devnet OZ
+account class `0xe2eb8f56…a1d6` has `__validate_deploy__`, `set_public_key`; Katana AWS
+`VITE_PUBLIC_ACCOUNT_CLASS_HASH=0x07dc78…` is **not declared** there | `starknet_getClass` | | Peer dependencies pin the
+game to React 18 / starknet 8: `@starknet-react/core@5.0.3` (`react ^18.0`, `starknet ^8.1.2`, `pnpm-lock.yaml:5594`),
+`@dojoengine/react` and `@dojoengine/sdk` (`react ^18`, `starknet ^8.1.2`, `:2196,2210`). React 19 for the game is part
+of the dojo.js-exit bundle (`client-legacy-purge-p7-codex-brief.md:161`) | lockfile | | The game's Cartridge surface: 7
+files import `@cartridge/*`; Controller-only mechanics: `policies.ts`, `signing-policy.ts`,
+`session-policy-refresh(-state).ts`, `transaction-submit-guard.ts`, `controller-connect.ts`,
+`use-controller-account.ts`, `use-cartridge-username.tsx`, `use-username.ts`, `ui/modules/controller/controller.tsx`,
+`paymasterRpcProvider` + `usePredeployedAccounts` in `starknet-provider.tsx`; `useAccount()` read in 17 files | grep | |
+Cartridge residue outside the game: `client/apps/onchain-agent` ("Axis", `@cartridge/controller` + `controller-wasm`,
+`package.json:22-23`); `deploy/appchain/spike/controller-test` (own lockfile); `client/apps/realtime-server` defaults
+`CARTRIDGE_API_BASE`/`MAINNET_RPC_URL` to `api.cartridge.gg` and keys profiles by `cartridge_username`
+(`db/schema/profiles.ts:7`); `eternum-mobile` has 6 source files naming Cartridge; `heavy-load` and `amm-indexerv2` none
+| grep | | `client/public` is 518 MB; the game serves it via `publicDir: "../../public"` (`vite.config.ts:214`). The
+realm dataset exists twice in different shapes: `packages/core/src/data/realms.json` and
+`client/public/jsons/realms.json` (6.5 MB, fetched at runtime by `packages/core/src/utils/realm.ts:19`, which
+`getOffchainRealm` depends on); `packages/core/src/data/realm-names.ts` imports
+`client/public/jsons/{realms,realm-names}.json` by relative path | source | | `@starknet-start/react@1.0.0` (the
+portal's connector layer) peers on `react >=19`, `starknet >=9`; `@starknet-react/core` 5.0.3 peers on React 18 /
+starknet 8 — no wallet-connector library spans both stacks | `npm view` | | The lab chain and Torii listen on plain HTTP
+(`127.0.0.1:5060`, `:8090`); an HTTPS page cannot call them (mixed content) | compose | | `account-portal` = pnpm
+monorepo: TanStack Start/Router, React 19, Vite 7, Tailwind 4, shadcn, better-auth **Sign-In-With-Starknet**,
+Drizzle/Postgres, apibara indexer; routes bridge/claims/velords/delegates/proposals; still imports `@cartridge/*` for
+login | GitHub | | That SIWS plugin (`auth-siws-plugin.ts` @ `3bdc16f`) verifies against
+`https://api.cartridge.gg/x/starknet/{mainnet,sepolia}` (`:68-72`), makes nonces with `Math.random` (`:19-27`), and
+never deletes a used nonce — the deletion is commented out (`:198-202`); no cross-subdomain cookie or trusted-origin
+config | GitHub | | `realms-world-site` = same stack minus Start (routes index/blitz/eternum/games/scroll/terms/privacy,
+keystatic, one OG function); `eternum-stats` = 90 KB React + chart.js; `marketplace` = Next 16 on `@cartridge/arcade`
+(31 files), serves `empire.realms.world/trade` | GitHub | | Domains: `realms.world` (portal), `blitz.realms.world`
+(game), `empire.realms.world/trade`, `docs.realms.world` | grep |
 
 ---
 
@@ -245,12 +271,15 @@ ERC721 held by the account — every attempt must revert.
   account, session id.
 - **Flows.** Play: connect → SIWS → local key → deploy → `bind`. Recovery on a fresh browser: session → registry has an
   account → no local key → generate → `rotate` → same gameplay address, same in-game position. No settlement involved.
-- **Master account** (`VITE_PUBLIC_MASTER_*`) exists only for `appchain`, as its dev fee-token faucet. On `madara` the
-  fee is zero (D.2), so the credentials are absent from `.env.madara.blitz`: the `env.ts` schema makes them optional,
-  the required-env throw in `hooks/context/dojo-context.tsx:18-28` goes, `createMasterAccount` returns `null` when they
-  are unset (the top-up in `use-world-registration.ts:150` already handles that with a clear error), and the landing
-  provider's fall-back-to-master signer (`landing-dojo-provider.tsx:120`) is deleted — a gameplay account is always
-  present now.
+- **Master account** (`VITE_PUBLIC_MASTER_*`) exists only for `appchain`, as its dev fee-token faucet, and it leaves the
+  shared context: `masterAccount` is deleted from `DojoContextType`
+  (`packages/react/src/hooks/context/dojo-context.ts:10`) and from the game's `DojoProvider`
+  (`hooks/context/dojo-context.tsx`) — no gameplay consumer reads it once the landing provider's fall-back-to-master
+  signer (`landing-dojo-provider.tsx:120`) is deleted, and a gameplay account is always present now. The faucet account
+  is constructed only inside `use-world-registration.ts` (the top-up). The credentials are required configuration, not
+  an action-time surprise: bootstrap requires both when `GameChain === "appchain"` and refuses both on `madara`
+  (`.env.madara.blitz` has none). Tests: `madara` boots without them; `appchain` fails immediately without them; the
+  `appchain` top-up still works.
 
 **Owner:** Codex (contracts, core module, client store/sync, server functions). Claude (declare the class and registry
 on the lab and on Katana AWS; authority key = devnet account #2 in the lab `.env`, documented; `postgres` under a `web`
