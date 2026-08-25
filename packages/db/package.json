@@ -1,0 +1,52 @@
+{
+  "name": "@realms-world/db",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./src/index.ts"
+    },
+    "./client": {
+      "types": "./dist/client.d.ts",
+      "default": "./src/client.ts"
+    },
+    "./poolClient": {
+      "types": "./dist/poolClient.d.ts",
+      "default": "./src/poolClient.ts"
+    },
+    "./schema": {
+      "types": "./dist/schema.d.ts",
+      "default": "./src/schema/index.ts"
+    }
+  },
+  "license": "MIT",
+  "scripts": {
+    "build": "tsc  --noEmit",
+    "dev": "tsc --watch",
+    "clean": "git clean -xdf .cache .turbo dist node_modules",
+    "lint": "eslint",
+    "format": "prettier --check \"**/*.{mjs,ts,md,json}\"",
+    "push": "pnpm with-env drizzle-kit push",
+    "studio": "pnpm with-env drizzle-kit studio",
+    "with-env": "dotenv -e ../../.env --"
+  },
+  "dependencies": {
+    "@neondatabase/serverless": "1.0.2",
+    "drizzle-orm": "catalog:",
+    "drizzle-zod": "^0.8.3",
+    "ws": "^8.19.0",
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@types/node": "^22.19.11",
+    "@types/ws": "^8.18.1",
+    "dotenv-cli": "catalog:",
+    "drizzle-kit": "catalog:",
+    "pg": "^8.18.0",
+    "prettier": "catalog:",
+    "postgres-range": "^1.1.4",
+    "typescript": "catalog:"
+  }
+}

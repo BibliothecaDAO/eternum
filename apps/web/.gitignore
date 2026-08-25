@@ -1,0 +1,15 @@
+node_modules
+package-lock.json
+yarn.lock
+
+!.env
+.DS_Store
+.cache
+.vercel
+.output
+.tanstack
+.nitro
+/build/
+/api/
+/server/build
+/public/build

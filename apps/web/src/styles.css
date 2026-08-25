@@ -1,0 +1,433 @@
+@import url("https://fonts.googleapis.com/css2?family=Cinzel:wght@400..900&family=MedievalSharp&family=Rajdhani:wght@400;500;600;700&family=Source+Code+Pro:ital,wght@0,200..900;1,200..900&display=swap");
+
+@import "tailwindcss";
+
+@plugin "tailwindcss-animate";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
+
+  --font-sans: var(--font-sans);
+  --font-mono: var(--font-mono);
+  --font-serif: var(--font-serif);
+  --font-display: var(--font-display);
+
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+
+  --shadow-2xs: var(--shadow-2xs);
+  --shadow-xs: var(--shadow-xs);
+  --shadow-sm: var(--shadow-sm);
+  --shadow: var(--shadow);
+  --shadow-md: var(--shadow-md);
+  --shadow-lg: var(--shadow-lg);
+  --shadow-xl: var(--shadow-xl);
+  --shadow-2xl: var(--shadow-2xl);
+
+  --animate-accordion-down: accordion-down 0.2s ease-out;
+  --animate-accordion-up: accordion-up 0.2s ease-out;
+
+  @keyframes accordion-down {
+    from {
+      height: 0;
+    }
+    to {
+      height: var(--radix-accordion-content-height);
+    }
+  }
+
+  @keyframes accordion-up {
+    from {
+      height: var(--radix-accordion-content-height);
+    }
+    to {
+      height: 0;
+    }
+  }
+}
+
+@layer base {
+  *,
+  ::after,
+  ::before,
+  ::backdrop,
+  ::file-selector-button {
+    border-color: var(--border);
+  }
+}
+
+@layer base {
+  :root {
+    --background: oklch(0.98 0 0);
+    --foreground: oklch(0.24 0 0);
+    --card: oklch(0.99 0 0);
+    --card-foreground: oklch(0.24 0 0);
+    --popover: oklch(0.99 0 0);
+    --popover-foreground: oklch(0.24 0 0);
+    --primary: oklch(0.43 0.04 41.99);
+    --primary-foreground: oklch(1 0 0);
+    --secondary: oklch(0.92 0.07 74.37);
+    --secondary-foreground: oklch(0.35 0.07 40.83);
+    --muted: oklch(0.95 0 0);
+    --muted-foreground: oklch(0.5 0 0);
+    --accent: oklch(0.93 0 0);
+    --accent-foreground: oklch(0.24 0 0);
+    --destructive: oklch(0.63 0.19 33.34);
+    --destructive-foreground: oklch(1 0 0);
+    --border: oklch(0.52 0.04 75);
+    --input: oklch(0.44 0.03 80);
+    --ring: oklch(0.43 0.04 41.99);
+    --success: oklch(0.56 0.15 145);
+    --success-foreground: oklch(0.98 0.02 140);
+    --warning: oklch(0.72 0.12 85);
+    --warning-foreground: oklch(0.28 0.05 55);
+    --chart-1: oklch(0.43 0.04 41.99);
+    --chart-2: oklch(0.92 0.07 74.37);
+    --chart-3: oklch(0.93 0 0);
+    --chart-4: oklch(0.94 0.05 75.5);
+    --chart-5: oklch(0.43 0.04 41.67);
+    --sidebar: oklch(0.99 0 0);
+    --sidebar-foreground: oklch(0.26 0 0);
+    --sidebar-primary: oklch(0.43 0.04 41.99);
+    --sidebar-primary-foreground: oklch(0.99 0 0);
+    --sidebar-accent: oklch(0.98 0 0);
+    --sidebar-accent-foreground: oklch(0.33 0 0);
+    --sidebar-border: oklch(0.52 0.04 75);
+    --sidebar-ring: oklch(0.77 0 0);
+    --realm-bg-void: oklch(0.22 0.012 260);
+    --realm-bg-smoke: oklch(0.3 0.018 245);
+    --realm-surface-iron: oklch(0.3 0.01 80);
+    --realm-surface-slate: oklch(0.35 0.012 260);
+    --realm-accent-ember: oklch(0.66 0.12 55);
+    --realm-accent-brass: oklch(0.72 0.1 85);
+    --realm-accent-arcane: oklch(0.62 0.08 260);
+    --realm-border-etched: oklch(0.52 0.04 75);
+    --realm-border-strong: oklch(0.44 0.03 80);
+    --realm-glow-soft: color-mix(in oklab, var(--primary) 30%, transparent);
+    --realm-vignette: none;
+    --font-sans: Rajdhani, sans-serif;
+    --font-serif: MedievalSharp, serif;
+    --font-mono: Source Code Pro, monospace;
+    --font-display: Cinzel, serif;
+    --tracking-base: 0.08em;
+    --tracking-page: 0.16em;
+    --tracking-card: 0.14em;
+    --tracking-eyebrow: 0.18em;
+    --tracking-ui: 0.08em;
+    --radius: 0.75rem;
+    --shadow-2xs: 0 1px 3px 0 hsl(0 0% 0% / 0.05);
+    --shadow-xs: 0 1px 3px 0 hsl(0 0% 0% / 0.05);
+    --shadow-sm:
+      0 1px 3px 0 hsl(0 0% 0% / 0.1), 0 1px 2px -1px hsl(0 0% 0% / 0.1);
+    --shadow: 0 1px 3px 0 hsl(0 0% 0% / 0.1), 0 1px 2px -1px hsl(0 0% 0% / 0.1);
+    --shadow-md:
+      0 1px 3px 0 hsl(0 0% 0% / 0.1), 0 2px 4px -1px hsl(0 0% 0% / 0.1);
+    --shadow-lg:
+      0 1px 3px 0 hsl(0 0% 0% / 0.1), 0 4px 6px -1px hsl(0 0% 0% / 0.1);
+    --shadow-xl:
+      0 1px 3px 0 hsl(0 0% 0% / 0.1), 0 8px 10px -1px hsl(0 0% 0% / 0.1);
+    --shadow-2xl: 0 1px 3px 0 hsl(0 0% 0% / 0.25);
+  }
+
+  .dark {
+    --background: oklch(0.18 0 0);
+    --foreground: oklch(0.95 0 0);
+    --card: oklch(0.16 0.006 260);
+    --card-foreground: oklch(0.95 0 0);
+    --popover: oklch(0.16 0.006 260);
+    --popover-foreground: oklch(0.95 0 0);
+    --primary: oklch(0.92 0.05 66.17);
+    --primary-foreground: oklch(0.2 0.02 200.2);
+    --secondary: oklch(0.32 0.02 63.7);
+    --secondary-foreground: oklch(0.92 0.05 66.17);
+    --muted: oklch(0.25 0 0);
+    --muted-foreground: oklch(0.77 0 0);
+    --accent: oklch(0.29 0 0);
+    --accent-foreground: oklch(0.95 0 0);
+    --destructive: oklch(0.63 0.19 33.34);
+    --destructive-foreground: oklch(1 0 0);
+    --border: oklch(0.38 0.04 75);
+    --input: oklch(0.46 0.04 82);
+    --ring: oklch(0.92 0.05 66.17);
+    --success: oklch(0.55 0.15 145);
+    --success-foreground: oklch(0.95 0.02 140);
+    --warning: oklch(0.65 0.12 85);
+    --warning-foreground: oklch(0.95 0.02 80);
+    --chart-1: oklch(0.92 0.05 66.17);
+    --chart-2: oklch(0.32 0.02 63.7);
+    --chart-3: oklch(0.29 0 0);
+    --chart-4: oklch(0.35 0.02 67);
+    --chart-5: oklch(0.92 0.05 67.09);
+    --sidebar: oklch(0.16 0.006 260);
+    --sidebar-foreground: oklch(0.97 0 286.38);
+    --sidebar-primary: oklch(0.92 0.05 66.17);
+    --sidebar-primary-foreground: oklch(0.12 0.012 260);
+    --sidebar-accent: oklch(0.27 0.01 286.03);
+    --sidebar-accent-foreground: oklch(0.97 0 286.38);
+    --sidebar-border: oklch(0.38 0.04 75);
+    --sidebar-ring: oklch(0.87 0.01 286.29);
+    --realm-bg-void: oklch(0.12 0.012 260);
+    --realm-bg-smoke: oklch(0.17 0.016 250);
+    --realm-surface-iron: oklch(0.23 0.01 80);
+    --realm-surface-slate: oklch(0.27 0.012 260);
+    --realm-accent-ember: oklch(0.72 0.14 55);
+    --realm-accent-brass: oklch(0.78 0.1 85);
+    --realm-accent-arcane: oklch(0.65 0.08 260);
+    --realm-border-etched: oklch(0.38 0.04 75);
+    --realm-border-strong: oklch(0.46 0.04 82);
+    --realm-glow-soft: color-mix(in oklab, var(--primary) 32%, transparent);
+    --realm-vignette: none;
+    --font-sans: Rajdhani, sans-serif;
+    --font-serif: MedievalSharp, serif;
+    --font-mono: Source Code Pro, monospace;
+    --font-display: Cinzel, serif;
+    --tracking-base: 0.08em;
+    --tracking-page: 0.16em;
+    --tracking-card: 0.14em;
+    --tracking-eyebrow: 0.18em;
+    --tracking-ui: 0.08em;
+    --radius: 0.75rem;
+    --shadow-2xs: 0 1px 3px 0 hsl(0 0% 0% / 0.05);
+    --shadow-xs: 0 1px 3px 0 hsl(0 0% 0% / 0.05);
+    --shadow-sm:
+      0 1px 3px 0 hsl(0 0% 0% / 0.1), 0 1px 2px -1px hsl(0 0% 0% / 0.1);
+    --shadow: 0 1px 3px 0 hsl(0 0% 0% / 0.1), 0 1px 2px -1px hsl(0 0% 0% / 0.1);
+    --shadow-md:
+      0 1px 3px 0 hsl(0 0% 0% / 0.1), 0 2px 4px -1px hsl(0 0% 0% / 0.1);
+    --shadow-lg:
+      0 1px 3px 0 hsl(0 0% 0% / 0.1), 0 4px 6px -1px hsl(0 0% 0% / 0.1);
+    --shadow-xl:
+      0 1px 3px 0 hsl(0 0% 0% / 0.1), 0 8px 10px -1px hsl(0 0% 0% / 0.1);
+    --shadow-2xl: 0 1px 3px 0 hsl(0 0% 0% / 0.25);
+  }
+
+  html {
+    background: var(--realm-bg-void);
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-family: var(--font-sans);
+    background: var(--background);
+  }
+
+  body::before {
+    content: none;
+  }
+
+  /* Scope the app's stacking context to real content children only.
+     Overlay web components that AppKit/Reown append directly to <body>
+     (e.g. <w3m-modal>) set their own `position: fixed` on the host element,
+     which a blanket `body > *` rule would clobber — parking the wallet modal
+     off-screen. Exclude them so their fixed positioning survives. */
+  body > *:not(w3m-modal):not(wcm-modal):not(appkit-modal) {
+    position: relative;
+    z-index: 1;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4 {
+    font-family: var(--font-display);
+    letter-spacing: var(--tracking-base);
+  }
+
+  button:not(:disabled),
+  [role="button"]:not(:disabled) {
+    cursor: pointer;
+  }
+
+  ::selection {
+    background: color-mix(in oklab, var(--realm-accent-brass) 55%, transparent);
+    color: var(--foreground);
+  }
+}
+
+@layer components {
+  .realm-shell {
+    background: transparent;
+  }
+
+  .realm-panel {
+    border: 1px solid var(--realm-border-etched);
+    background: color-mix(
+      in oklab,
+      var(--card) 92%,
+      var(--realm-surface-slate)
+    );
+    box-shadow:
+      inset 0 1px 0
+        color-mix(in oklab, var(--realm-accent-brass) 24%, transparent),
+      0 16px 40px color-mix(in oklab, black 45%, transparent);
+  }
+
+  .realm-subtle-panel {
+    border: 1px solid
+      color-mix(in oklab, var(--realm-border-etched) 72%, transparent);
+    background: color-mix(in oklab, var(--accent) 72%, transparent);
+    box-shadow: inset 0 1px 0
+      color-mix(in oklab, var(--realm-accent-brass) 18%, transparent);
+  }
+
+  .realm-page-title {
+    font-family: var(--font-display);
+    letter-spacing: var(--tracking-page);
+    text-transform: uppercase;
+  }
+
+  .realm-card-title {
+    color: var(--foreground);
+    font-family: var(--font-display);
+    font-size: 1.125rem;
+    font-weight: 600;
+    letter-spacing: var(--tracking-card);
+    line-height: 1.1;
+    text-transform: uppercase;
+  }
+
+  .realm-eyebrow {
+    color: color-mix(in oklab, var(--primary) 82%, white 18%);
+    font-family: var(--font-serif);
+    font-size: 0.8rem;
+    letter-spacing: var(--tracking-eyebrow);
+    text-transform: uppercase;
+  }
+
+  .realm-prose-h1 {
+    margin: 1.5rem 0 1rem;
+    scroll-margin-top: 5rem;
+    color: var(--foreground);
+    font-family: var(--font-display);
+    font-size: 1.875rem;
+    font-weight: 700;
+    letter-spacing: var(--tracking-card);
+    text-transform: uppercase;
+  }
+
+  .realm-prose-h2 {
+    margin: 1.5rem 0 1rem;
+    scroll-margin-top: 5rem;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 0.5rem;
+    color: var(--primary);
+    font-family: var(--font-display);
+    font-size: 1.5rem;
+    font-weight: 600;
+    letter-spacing: var(--tracking-card);
+    text-transform: uppercase;
+  }
+
+  .realm-prose-h3 {
+    margin: 1.5rem 0 1rem;
+    scroll-margin-top: 5rem;
+    color: var(--foreground);
+    font-family: var(--font-display);
+    font-size: 1.25rem;
+    font-weight: 600;
+    letter-spacing: var(--tracking-base);
+    text-transform: uppercase;
+  }
+
+  .realm-prose-h4 {
+    margin: 1.5rem 0 1rem;
+    scroll-margin-top: 5rem;
+    color: var(--foreground);
+    font-family: var(--font-display);
+    font-size: 1.125rem;
+    font-weight: 600;
+    letter-spacing: var(--tracking-base);
+    text-transform: uppercase;
+  }
+
+  .realm-stat {
+    font-family: var(--font-display);
+    letter-spacing: 0.06em;
+  }
+
+  .realm-interactive-row {
+    border: 1px solid
+      color-mix(in oklab, var(--realm-border-etched) 76%, transparent);
+    background: color-mix(in oklab, var(--card) 88%, var(--accent));
+    box-shadow: inset 0 1px 0
+      color-mix(in oklab, var(--realm-accent-brass) 18%, transparent);
+  }
+}
+
+@layer utilities {
+  .border-realm-etched {
+    border-color: var(--realm-border-etched);
+  }
+}
+
+::-webkit-scrollbar,
+.table-scroll::-webkit-scrollbar {
+  width: 0.3em;
+  height: 0.3em;
+}
+
+::-webkit-scrollbar-track,
+.table-scroll::-webkit-scrollbar-track {
+  box-shadow: inset 0 0 6px rgba(187, 182, 182, 0.3);
+}
+
+::-webkit-scrollbar-thumb,
+.table-scroll::-webkit-scrollbar-thumb {
+  @apply bg-foreground/50;
+  border-radius: 0.15em;
+}
+
+::-webkit-scrollbar:horizontal,
+.table-scroll::-webkit-scrollbar:horizontal {
+  height: 0.3em;
+}
+
+::-webkit-scrollbar-track:horizontal,
+.table-scroll::-webkit-scrollbar-track:horizontal {
+  box-shadow: inset 0 0 6px rgba(187, 182, 182, 0.3);
+}
+
+::-webkit-scrollbar-thumb:horizontal,
+.table-scroll::-webkit-scrollbar-thumb:horizontal {
+  @apply bg-foreground/50;
+  border-radius: 0.15em;
+}
