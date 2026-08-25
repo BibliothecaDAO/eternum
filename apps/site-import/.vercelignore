@@ -1,0 +1,13 @@
+# Don't ignore TypeScript config files
+!tsconfig.json
+!tsconfig.*.json
+!api/tsconfig.json
+
+# Ignore source files that aren't needed for deployment
+.git
+.gitignore
+README.md
+.env.example
+.env.local
+node_modules
+.DS_Store 
