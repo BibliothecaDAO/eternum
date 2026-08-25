@@ -1,0 +1,83 @@
+{
+  "version": 1,
+  "kind": "rotation",
+  "runId": "appchain.blitz:rotation:blitz-nightwatch",
+  "launchRequestId": "32811359973-1",
+  "environment": "appchain.blitz",
+  "chain": "appchain",
+  "gameType": "blitz",
+  "rotationName": "blitz-nightwatch",
+  "executionMode": "fast_trial",
+  "requestedLaunchStep": "full",
+  "createdAt": "2026-08-25T05:04:50.025Z",
+  "workflow": {
+    "workflowName": "Game Launch",
+    "workflowJob": "launch",
+    "workflowRunId": 32811359973,
+    "workflowRunAttempt": 1,
+    "workflowUrl": "https://github.com/BibliothecaDAO/eternum/actions/runs/32811359973",
+    "ref": "next",
+    "sha": "67fc2ecc1dd6773393564139861d09018faf5acd"
+  },
+  "request": {
+    "launchKind": "rotation",
+    "environmentId": "appchain.blitz",
+    "rotationName": "blitz-nightwatch",
+    "firstGameStartTime": 1787169600,
+    "gameIntervalMinutes": 0,
+    "maxGames": 365,
+    "advanceWindowGames": 1,
+    "weeklyCadence": [
+      {
+        "weekday": "monday",
+        "utcTime": "20:00"
+      },
+      {
+        "weekday": "tuesday",
+        "utcTime": "20:00"
+      },
+      {
+        "weekday": "wednesday",
+        "utcTime": "20:00"
+      },
+      {
+        "weekday": "thursday",
+        "utcTime": "20:00"
+      },
+      {
+        "weekday": "friday",
+        "utcTime": "20:00"
+      },
+      {
+        "weekday": "saturday",
+        "utcTime": "20:00"
+      },
+      {
+        "weekday": "sunday",
+        "utcTime": "20:00"
+      }
+    ],
+    "evaluationIntervalMinutes": 30,
+    "rpcUrl": "http://52.54.98.119",
+    "factoryAddress": "0x4c50ced3c1fd6f2f4cef779e28adafb234ed9773dda3e0e39918f24f2936350",
+    "devModeOn": false,
+    "singleRealmMode": false,
+    "twoPlayerMode": false,
+    "durationSeconds": 3600,
+    "cartridgeApiBase": "https://api.cartridge.gg",
+    "toriiNamespaces": "s1_eternum",
+    "vrfProviderAddress": "0x0",
+    "executionMode": "batched",
+    "verboseConfigLogs": false,
+    "version": "6",
+    "waitForFactoryIndexTimeoutMs": 120000,
+    "waitForFactoryIndexPollMs": 2000,
+    "skipIndexer": false,
+    "skipLootChestRoleGrant": false,
+    "skipBanks": false,
+    "dryRun": false,
+    "maxActions": 20,
+    "autoRetryEnabled": true,
+    "autoRetryIntervalMinutes": 15
+  }
+}
