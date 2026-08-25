@@ -20,7 +20,7 @@
     "test": "vitest"
   },
   "dependencies": {
-    "@dojoengine/sdk": "catalog:",
+    "@dojoengine/sdk": "catalog:game",
     "@bibliothecadao/types": "workspace:*"
   },
   "devDependencies": {

@@ -81,14 +81,7 @@ Reset everything: `docker-compose --profile torii down -v`
 
 ### C. Controller / session — ✅ passed 2026-08-03 (automated via playwright)
 
-The eternum client hardwires local → predeployed-accounts connector, so test
-Controller with the standalone page in `controller-test/`:
-
-```sh
-cd controller-test && pnpm install --ignore-workspace && pnpm dev
-# --ignore-workspace matters: the repo root declares npm+pnpm workspaces and
-# plain installs walk up into them (npm even errors on a duplicate package name)
-```
+The Controller check used a standalone fixture that was removed after this spike passed.
 
 **Local testing requires an https tunnel for the RPC** — the hosted keychain
 iframe (`https://x.cartridge.gg`) cannot fetch `http://localhost` under

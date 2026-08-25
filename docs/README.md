@@ -4,7 +4,7 @@ This page is a **map of the documentation inside this repository**.
 
 ## I’m a player / community member
 
-- The “official” docs site lives in: [`client/apps/game-docs`](../client/apps/game-docs)
+- The “official” docs site lives in: [`apps/game-docs`](../apps/game-docs)
   - If you’re looking for gameplay and player-facing docs, start there.
 
 ## I’m a developer
@@ -33,7 +33,7 @@ This page is a **map of the documentation inside this repository**.
 
 ## Running the docs site locally
 
-The docs site lives at [`client/apps/game-docs`](../client/apps/game-docs) and is built with **Vocs**.
+The docs site lives at [`apps/game-docs`](../apps/game-docs) and is built with **Vocs**.
 
 ### Recommended (from repo root)
 
@@ -45,12 +45,12 @@ pnpm dev:docs
 ### Alternative (run from the docs app folder)
 
 ```bash
-cd client/apps/game-docs
+cd apps/game-docs
 pnpm install
 pnpm run dev
 ```
 
-If the above doesn’t work on your machine, follow the repo root `readme.md` and `client/apps/game-docs/README.md`.
+If the above doesn’t work on your machine, follow the repo root `readme.md` and `apps/game-docs/README.md`.
 
 ---
 

@@ -44,7 +44,7 @@ jobs:
         env:
           VITE_PUBLIC_GAME_VERSION: ${{ github.event.inputs.version || github.sha }}
           VITE_PUBLIC_SENTRY_DSN: ${{ secrets.CLIENT_SENTRY_DSN }}
-        run: pnpm --dir client/apps/game build
+        run: pnpm --dir apps/game build
 
       # Live renderer smokes gate the deploy, not PRs: they exercise the exact
       # artifact about to ship against the real appchain (torii + katana), so
@@ -53,7 +53,7 @@ jobs:
         env:
           ETERNUM_DISABLE_MKCERT: "true"
         run: |
-          pnpm --dir client/apps/game preview --host 127.0.0.1 --port 4173 > /tmp/eternum-game-preview.log 2>&1 &
+          pnpm --dir apps/game preview --host 127.0.0.1 --port 4173 > /tmp/eternum-game-preview.log 2>&1 &
           echo $! > /tmp/eternum-game-preview.pid
 
       - name: Wait for game client preview server
@@ -77,7 +77,7 @@ jobs:
           GAME_CLIENT_PREVIEW_URL: "http://127.0.0.1:4173"
           TORII_URL: "https://torii.jcndata.com"
         run: |
-          node ./client/apps/game/scripts/run-renderer-scene-smoke.mjs \
+          node ./apps/game/scripts/run-renderer-scene-smoke.mjs \
             --base-url "$GAME_CLIENT_PREVIEW_URL" \
             --chain appchain \
             --scenes map,hex \
@@ -95,7 +95,7 @@ jobs:
         env:
           GAME_CLIENT_PREVIEW_URL: "http://127.0.0.1:4173"
         run: |
-          node ./client/apps/game/scripts/run-renderer-debug-smoke.mjs \
+          node ./apps/game/scripts/run-renderer-debug-smoke.mjs \
             --base-url "$GAME_CLIENT_PREVIEW_URL" \
             --scenarios baseline,stress \
             --output /tmp/renderer-debug-smoke.json
@@ -121,7 +121,7 @@ jobs:
           aws-region: us-east-1
 
       - name: Upload to S3
-        working-directory: client/apps/game
+        working-directory: apps/game
         run: |
           set -euo pipefail
           # Never ship sourcemaps publicly.

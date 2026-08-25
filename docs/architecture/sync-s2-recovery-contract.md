@@ -70,7 +70,7 @@ map.
 
 ## Headless and measurement
 
-`pnpm --dir client/apps/game smoke:game-sync-headless -- --help` documents the repeatable live smoke. It instantiates
+`pnpm --dir apps/game smoke:game-sync-headless -- --help` documents the repeatable live smoke. It instantiates
 the same `GameSyncRuntime`, a RECS world, the session-owned `WorldSpatialProjection`, and a Torii provider in Node. It
 hydrates every page and prints decoded occupancy, projected chest occupancy, and runtime metrics without DOM, React, or
 Three.js.

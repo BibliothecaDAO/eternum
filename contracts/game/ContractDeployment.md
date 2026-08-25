@@ -153,5 +153,5 @@ This command generates the JSON configuration from the TypeScript config file wi
 ## Additional Resources
 
 - See [package.json](package.json) for all available deployment commands
-- Environment files are located in `client/apps/game/.env.<network>`
+- Environment files are located in `apps/game/.env.<network>`
 - Contract TOML files are in `contracts/game/dojo_<network>.toml`

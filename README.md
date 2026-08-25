@@ -138,7 +138,7 @@ Key entry points for developers:
 
 - **Contracts** → [`contracts/`](./contracts) — Cairo game logic
 - **SDK** → [`packages/`](./packages) — shared libraries ([package docs](./packages/README.md))
-- **Game Client** → [`client/apps/game/`](./client/apps/game) — React/Three.js frontend
+- **Game Client** → [`apps/game/`](./apps/game) — React/Three.js frontend
 - **Architecture** → [`docs/`](./docs) — internal design notes
 
 ## Links

@@ -1,4 +1,0 @@
-{
-  "outputDirectory": "dist",
-  "routes": [{ "src": "/[^.]+", "dest": "/", "status": 200 }]
-}

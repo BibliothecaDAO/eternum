@@ -17,6 +17,6 @@
   "dependencies": {
     "colors": "^1.4.0",
     "dotenv": "^16.4.7",
-    "starknet": "catalog:"
+    "starknet": "catalog:game"
   }
 }

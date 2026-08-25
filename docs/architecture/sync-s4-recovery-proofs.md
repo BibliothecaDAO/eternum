@@ -18,4 +18,4 @@ store.
 
 The three live acceptance behaviors remain owner-attested playtest gates: mutate an offscreen entity and pan to it, kill
 the connection for 30 seconds and restore it, and hard-reload during active play. The repeatable headless smoke remains
-`pnpm --dir client/apps/game smoke:game-sync-headless`.
+`pnpm --dir apps/game smoke:game-sync-headless`.

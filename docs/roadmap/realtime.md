@@ -11,5 +11,5 @@
 4. Implement server handlers for HTTP history endpoints and realtime rooms (world, zone, location, direct) with username
    auth and rate limits.
 5. Ship `packages/realtime-client` to wrap the Socket.IO transport with reconnection, buffering, and typed events.
-6. Wire new feature slices in `client/apps/game` for notes, world chat, and DMs, including UI panels and map overlays.
+6. Wire new feature slices in `apps/game` for notes, world chat, and DMs, including UI panels and map overlays.
 7. Add moderation tooling, automated tests, and deployment docs/observability before opening the feature for QA.

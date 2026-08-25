@@ -11,7 +11,7 @@
  * game manifest's class hashes — the same payload the client's factory
  * developer UI submits, via the shared builder so the two cannot drift.
  */
-import { buildFactoryConfigCalldataParts } from "../../../client/apps/game/src/ui/features/factory/shared/factory-config-calldata";
+import { buildFactoryConfigCalldataParts } from "../../../apps/game/src/ui/features/factory/shared/factory-config-calldata";
 import { resolveAccountCredentials } from "../../../config/deployer/clean/shared/credentials";
 import gameManifest from "../../../contracts/game/manifest_appchain_blitz.json";
 import factoryManifest from "../../../contracts/factory/manifest_appchain.json";

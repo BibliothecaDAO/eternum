@@ -24,7 +24,7 @@ inside a world (GameRegistry), not separate deployments:
 
 ## Common operations
 
-**Deploy the client** (builds from the committed `client/apps/game/.env.production`):
+**Deploy the client** (builds from the committed `apps/game/.env.production`):
 
 ```bash
 gh workflow run deploy-client.yml --ref <branch> -f version=<label>

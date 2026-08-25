@@ -1,8 +1,8 @@
 import fs from "node:fs";
 import path from "node:path";
 
-const sourcePath = path.resolve("client/public/jsons/realms.json");
-const targetPath = path.resolve("client/public/jsons/realm-names.json");
+const sourcePath = path.resolve("apps/game/public/jsons/realms.json");
+const targetPath = path.resolve("apps/game/public/jsons/realm-names.json");
 
 const realms = JSON.parse(fs.readFileSync(sourcePath, "utf8"));
 const realmNames = Object.fromEntries(

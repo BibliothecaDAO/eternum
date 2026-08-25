@@ -19,8 +19,8 @@ try {
 }
 
 // Configuration
-const CLIENT_PUBLIC_DIR = join(__dirname, "../client/public");
-const BACKUP_DIR = join(__dirname, "../client/public-backup");
+const CLIENT_PUBLIC_DIR = join(__dirname, "../apps/game/public");
+const BACKUP_DIR = join(__dirname, "../apps/game/public-backup");
 const SUPPORTED_EXTENSIONS = [".png", ".jpg", ".jpeg"];
 const EXCLUDE_DIRS = ["draco", "models"]; // Skip 3D models and draco files
 const EXCLUDE_FILES = ["favicon.ico"]; // Skip specific files
@@ -220,7 +220,7 @@ class ImageCompressor {
       console.log("🔍 DRY RUN MODE - No files will be modified\n");
     }
 
-    // Check if client/public directory exists
+    // Check if apps/game/public directory exists
     try {
       await stat(CLIENT_PUBLIC_DIR);
     } catch (error) {

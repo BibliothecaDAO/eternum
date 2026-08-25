@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "capturedAt": "2026-08-13T20:49:00+02:00",
-  "command": "pnpm --dir client/apps/game smoke:game-sync-headless",
+  "command": "pnpm --dir apps/game smoke:game-sync-headless",
   "target": {
     "toriiUrl": "https://torii.jcndata.com",
     "worldAddress": "0x78ff85ac450bb559c97966b64666fd5292f4a98756a607349d9f93f4563bdd2",

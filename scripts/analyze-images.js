@@ -8,7 +8,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 // Configuration
-const CLIENT_PUBLIC_DIR = join(__dirname, "../client/public");
+const CLIENT_PUBLIC_DIR = join(__dirname, "../apps/game/public");
 const SUPPORTED_EXTENSIONS = [".png", ".jpg", ".jpeg", ".gif", ".svg", ".webp"];
 const EXCLUDE_DIRS = ["draco"]; // Skip 3D models and draco files
 
@@ -178,7 +178,7 @@ class ImageAnalyzer {
   }
 
   async run() {
-    // Check if client/public directory exists
+    // Check if apps/game/public directory exists
     try {
       await stat(CLIENT_PUBLIC_DIR);
     } catch (error) {

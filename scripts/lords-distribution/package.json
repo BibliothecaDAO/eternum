@@ -14,7 +14,7 @@
   "dependencies": {
     "csv-parse": "^5.5.6",
     "dotenv": "^16.4.5",
-    "starknet": "catalog:"
+    "starknet": "catalog:game"
   },
   "devDependencies": {
     "vitest": "^2.1.8"

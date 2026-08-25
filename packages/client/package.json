@@ -23,7 +23,7 @@
     "@bibliothecadao/torii": "workspace:*",
     "@bibliothecadao/types": "workspace:*",
     "eventemitter3": "^5.0.1",
-    "starknet": "catalog:"
+    "starknet": "catalog:game"
   },
   "devDependencies": {
     "@types/node": "^20.11.10",

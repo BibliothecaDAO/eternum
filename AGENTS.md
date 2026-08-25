@@ -19,7 +19,7 @@ subscriptions for transient notifications, SQL for immutable history) → the cl
 RECS, the single authoritative store → three.js scenes (`WorldmapScene`, `HexceptionScene`) and the React UI render from
 it. Player actions apply optimistically, then reconcile against the indexed echo.
 
-Key directories: `client/apps/game` (the game client — has its own `AGENTS.md`), `packages/core` (game logic and sync
+Key directories: `apps/game` (the game client — has its own `AGENTS.md`), `packages/core` (game logic and sync
 runtime), `packages/*` (Dojo/RECS bindings, shared types), `contracts/*` (Cairo), `deploy/appchain` (self-hosted chain
 infra — read its README before touching it), `docs/plans` (implementation briefs: each item states its evidence, the
 fix, and a verifiable gate).
@@ -32,7 +32,7 @@ fix, and a verifiable gate).
    instance. If the same root cause can bite elsewhere (a signal derived ad-hoc in several places, a guard every call
    site must remember, an unbounded cache pattern), fix the root: create the single source of truth, move the guard to
    the chokepoint, and migrate the existing copies onto it. A fix that leaves siblings of the same bug alive is
-   incomplete. Example: spectator intent lives in `client/apps/game/src/utils/spectator-session.ts` — consumers import
+   incomplete. Example: spectator intent lives in `apps/game/src/utils/spectator-session.ts` — consumers import
    it; nobody re-derives it from the URL or account heuristics.
 3. **Success of systemic work is deletion.** When a layer becomes trustworthy, the bespoke fallbacks, holds, TTLs, and
    timers stacked above it should disappear. A systemic "fix" that only adds code is suspect.
@@ -54,7 +54,7 @@ When changing workflows, deployer code, shared runtime packages, or observabilit
 ## Client State & Sync Guardrails
 
 Every client bug class in the Aug 2026 playtests traced to a violation of one of these rules. They apply to
-`client/apps/game` and `packages/*`.
+`apps/game` and `packages/*`.
 
 1. **One truth, per fact.** Current authoritative game facts live in RECS only: anything fetched from torii that
    represents current entity state is written into RECS — never held in a side store, react-query cache, or scene-local
@@ -188,7 +188,7 @@ If a required command fails or is unavailable, say so explicitly in the final ha
 ### Running Tests
 
 - Never run bare `npx vitest` from the repo root: duplicate workspace names under `contracts/*/ext` break it.
-- In `client/apps/game`, use `pnpm test [files]` (the wrapper script).
+- In `apps/game`, use `pnpm test [files]` (the wrapper script).
 - In `packages/core`, use `pnpm exec vitest run` — bare `pnpm test` there is watch mode and never exits.
 - Three load-sensitive files (`instanced-model.material-semantics`, `game-entry-preload`, `play-asset-manifest`) carry a
   30s `vi.setConfig` test timeout because full-suite contention starves them past the 5s default on green code. If one

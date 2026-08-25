@@ -66,7 +66,7 @@ function resolveBunExecutable(): string {
 }
 
 function resolveEnvFilePath(configDirectory: string, network: NetworkType, gameType: GameType): string {
-  const envFilePath = path.resolve(configDirectory, `../client/apps/game/.env.${network}.${gameType}`);
+  const envFilePath = path.resolve(configDirectory, `../apps/game/.env.${network}.${gameType}`);
   if (fs.existsSync(envFilePath)) {
     return envFilePath;
   }

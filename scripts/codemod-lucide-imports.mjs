@@ -6,7 +6,7 @@
  *
  * Examples:
  *   node scripts/codemod-lucide-imports.mjs --dry-run
- *   node scripts/codemod-lucide-imports.mjs --path "client/apps/game/src"
+ *   node scripts/codemod-lucide-imports.mjs --path "apps/game/src"
  */
 
 import fs from "node:fs";

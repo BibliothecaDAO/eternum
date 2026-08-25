@@ -907,7 +907,7 @@ process.on("SIGINT", async () => {
 
 ### Full Example (with Action Definitions, Runtime Config, Heartbeat)
 
-See `client/apps/onchain-agent/src/index.ts` for complete production integration:
+The retired Axis app demonstrated a complete production integration with:
 
 1. **Action Registry**: Define all game actions with parameter schemas
 2. **Runtime Config Manager**: Enable live config updates
@@ -931,58 +931,6 @@ See `client/apps/onchain-agent/src/index.ts` for complete production integration
 
 - **`yaml`** (^2.3.0) YAML parsing for HEARTBEAT.md and frontmatter
 
-### Integration Example: Eternum
-
-The `onchain-agent` app (`client/apps/onchain-agent`) integrates game-agent with Eternum:
-
-**Key Files:**
-
-- **`src/adapter/eternum-adapter.ts`** — Implements `GameAdapter<EternumWorldState>`
-- **`src/adapter/world-state.ts`** — Builds EternumWorldState from client queries
-- **`src/adapter/action-registry.ts`** — Defines all Eternum actions (pillage, attack, transfer, explore, etc.)
-- **`src/adapter/simulation.ts`** — Dry-run simulation for actions
-- **`src/index.ts`** — Main entry point, creates agent with runtime config manager
-
-**EternumGameAdapter:**
-
-```typescript
-class EternumGameAdapter implements GameAdapter<EternumWorldState> {
-  constructor(
-    private client: EternumClient,
-    private signer: Account,
-    private accountAddress: string,
-  ) {}
-
-  async getWorldState(): Promise<EternumWorldState> {
-    return buildWorldState(this.client, this.accountAddress);
-  }
-
-  async executeAction(action: GameAction): Promise<ActionResult> {
-    return executeAction(this.client, this.signer, action);
-  }
-
-  async simulateAction(action: GameAction): Promise<SimulationResult> {
-    return simulateAction(action);
-  }
-}
-```
-
-**Action Definitions Example:**
-
-```typescript
-const actionDefs: ActionDefinition[] = [
-  {
-    type: "pillage",
-    description: "Pillage a structure to steal resources",
-    params: [
-      { name: "armyEntityId", type: "bigint", description: "Army entity ID" },
-      { name: "structureEntityId", type: "bigint", description: "Target structure ID" },
-    ],
-  },
-  // ... more actions
-];
-```
-
 ---
 
 ## Summary
@@ -999,4 +947,3 @@ The `game-agent` package provides a complete framework for autonomous game-playi
 For implementation examples, see:
 
 - **Package tests**: `packages/game-agent/test/game-agent.test.ts`
-- **Eternum integration**: `client/apps/onchain-agent/src/`

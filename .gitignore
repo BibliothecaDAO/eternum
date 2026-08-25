@@ -9,16 +9,14 @@ docs/dist
 ADW/
 unoptimized-*/
 CLAUDE.local.md
-client/apps/eternum-mobile/dist
 .env.local
 venv/
 __pycache__/
-client/apps/game/minimap
+apps/game/minimap
 .claude/ralph-loop.local.md
 .claude/tsc-cache/
 **/.claude/tsc-cache/
 thoughts/
-client/apps/bot/.env
 
 # launcher run-store artifacts (config/deployer/clean/launch/*-io.ts)
 .context/
