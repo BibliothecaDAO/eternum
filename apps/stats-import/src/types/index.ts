@@ -1,0 +1,149 @@
+export interface RevenueData {
+  category: string;
+  description: string;
+  amount: number;
+  percentage: number;
+  address: string;
+  source: string;
+  breakdown: string;
+}
+
+export interface PriceHeaderProps {
+  lordsPrice: number;
+  priceChange: number | null;
+  lastUpdated: Date | null;
+  loading: boolean;
+  error: string | null;
+  priceNote?: string;
+  totalLords: number;
+}
+
+export interface RevenueChartProps {
+  revenueData: RevenueData[];
+  lordsPrice: number;
+  totalLords: number;
+}
+
+export interface FeeTableProps {
+  revenueData: RevenueData[];
+  lordsPrice: number;
+}
+
+export interface ColorScheme {
+  background: string;
+  border: string;
+  hover: string;
+}
+
+// Rewards types
+export interface PlayerRewards {
+  lords: number;
+  strk: number;
+  ownerBonus: number;
+  ownerBonusStrk: number;
+  memberShare: number;
+  memberShareStrk: number;
+}
+
+export interface Player {
+  address: string;
+  name: string;
+  isOwner: boolean;
+  points: number;
+  pointsShare: number;
+  realms: number;
+  mines: number;
+  hyperstructures: number;
+  villages: number;
+  banks: number;
+  totalLordsReward: number;
+  totalStrkReward: number;
+  rewards: PlayerRewards;
+}
+
+export interface TribeOwner {
+  address: string;
+  name: string;
+}
+
+export interface TribePrize {
+  lords: number;
+  strk: number;
+}
+
+export interface Tribe {
+  entityId: string;
+  name: string;
+  rank: number;
+  isPublic: boolean;
+  totalPoints: number;
+  totalRealms: number;
+  totalMines: number;
+  totalHyperstructures: number;
+  memberCount: number;
+  prize: TribePrize;
+  owner: TribeOwner;
+  members: Player[];
+}
+
+export interface GameInfo {
+  totalPlayers: number;
+  totalTribes: number;
+}
+
+export interface EternumSocialData {
+  timestamp: string;
+  gameInfo: GameInfo;
+  tribes: Tribe[];
+}
+
+export interface RewardsProps {
+  lordsPrice: number;
+  strkPrice: number;
+  initialTab?: 'victory' | 'cartridge' | 'daydreams' | 'chests';
+}
+
+// Achievement types
+export interface AchievementPlayer {
+  address: string;
+  earnings: number;
+  timestamp: number;
+  completeds: string[];
+}
+
+export interface CartridgeReward {
+  address: string;
+  earnings: number;
+  lordsReward: number;
+  percentage: number;
+}
+
+export interface DaydreamsReward {
+  address: string;
+  strkReward: number;
+}
+
+// Known addresses mapping type
+export interface KnownAddresses {
+  [key: string]: string;
+}
+
+// Chest reward type
+export interface ChestReward {
+  traits: string;
+  toAddress: string;
+  count: number;
+}
+
+// Chest brackets type
+export interface ChestBracket {
+  min: number;
+  max: number;
+  chests: number;
+}
+
+// Chest rewards data structure
+export interface ChestRewardsData {
+  brackets: ChestBracket[];
+  rewards: ChestReward[];
+} 

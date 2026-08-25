@@ -1,0 +1,4212 @@
+@import url("https://fonts.googleapis.com/css2?family=Exo+2:wght@400;500;600;700&family=IM+Fell+English+SC&display=swap");
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+    margin: 0;
+    padding: 20px;
+    background: linear-gradient(135deg, #2a1810 0%, #1a0e08 100%);
+    min-height: 100vh;
+    color: #f9fafb;
+    -webkit-text-size-adjust: 100%;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+}
+
+/* Tab Navigation Styles */
+.tab-navigation {
+    max-width: 1400px;
+    margin: 0 auto 2rem auto;
+    display: flex;
+    gap: 0.25rem;
+    background: linear-gradient(145deg, rgba(50, 35, 25, 0.8), rgba(35, 25, 15, 0.9));
+    border-radius: 1rem;
+    padding: 0.75rem 2rem;
+    border: 1px solid rgba(240, 176, 96, 0.3);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(240, 176, 96, 0.1);
+    backdrop-filter: blur(10px);
+    position: relative;
+}
+
+.tab-navigation::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(135deg, rgba(240, 176, 96, 0.05), transparent);
+    border-radius: 1rem;
+    pointer-events: none;
+}
+
+.tab-button {
+    flex: 1;
+    padding: 1.25rem 2rem;
+    border: none;
+    border-radius: 0.75rem;
+    background: transparent;
+    color: #dfc296;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    z-index: 1;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.tab-button::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(135deg, rgba(240, 176, 96, 0.15), rgba(240, 176, 96, 0.08));
+    opacity: 0;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    border-radius: 0.75rem;
+    transform: scale(0.95);
+}
+
+.tab-button::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    background: radial-gradient(circle, rgba(240, 176, 96, 0.3) 0%, transparent 70%);
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+    pointer-events: none;
+}
+
+.tab-button:hover::before {
+    opacity: 1;
+    transform: scale(1);
+}
+
+.tab-button:hover::after {
+    width: 120px;
+    height: 120px;
+}
+
+.tab-button:hover {
+    color: #f0b060;
+    transform: translateY(-2px) scale(1.02);
+    box-shadow: 0 8px 20px rgba(240, 176, 96, 0.2);
+}
+
+.tab-button.active {
+    background: linear-gradient(135deg, rgba(240, 176, 96, 0.25), rgba(240, 176, 96, 0.15));
+    color: #f0b060;
+    border: 1px solid rgba(240, 176, 96, 0.4);
+    box-shadow: 0 6px 20px rgba(240, 176, 96, 0.15), inset 0 1px 0 rgba(240, 176, 96, 0.3);
+    transform: translateY(-1px);
+}
+
+.tab-button.active::before {
+    opacity: 0;
+}
+
+.tab-button.active::after {
+    width: 100px;
+    height: 100px;
+    background: radial-gradient(circle, rgba(240, 176, 96, 0.1) 0%, transparent 70%);
+}
+
+.tab-icon {
+    font-size: 1.2rem;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+}
+
+.tab-button:hover .tab-icon {
+    transform: scale(1.1) rotate(5deg);
+    filter: drop-shadow(0 4px 8px rgba(240, 176, 96, 0.3));
+}
+
+.tab-button.active .tab-icon {
+    transform: scale(1.05);
+    filter: drop-shadow(0 3px 6px rgba(240, 176, 96, 0.4));
+}
+
+.tab-text {
+    font-weight: 600;
+    letter-spacing: 0.025em;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.tab-button:focus {
+    outline: 2px solid rgba(240, 176, 96, 0.5);
+    outline-offset: 2px;
+}
+
+.tab-button:focus:not(:focus-visible) {
+    outline: none;
+}
+
+.tab-content {
+    width: 100%;
+}
+
+.rewards-content {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 4rem 2rem;
+    border-radius: 0.75rem;
+    background-color: rgba(40, 30, 20, 0.5);
+    border: 1px solid #4d3923;
+    text-align: center;
+}
+
+.rewards-content h2 {
+    font-size: 2rem;
+    font-weight: bold;
+    color: #f0b060;
+    margin-bottom: 1rem;
+    border: none;
+    padding: 0;
+}
+
+.rewards-content p {
+    font-size: 1.1rem;
+    color: #dfc296;
+    opacity: 0.8;
+}
+
+/* Mobile-first responsive padding */
+@media (max-width: 480px) {
+    body {
+        padding: 10px;
+    }
+    
+    .tab-navigation {
+        margin: 0 auto 1rem auto;
+        padding: 0.5rem 0.75rem;
+        gap: 0.125rem;
+    }
+    
+    .tab-button {
+        padding: 1rem 0.75rem;
+        font-size: 0.9rem;
+        gap: 0.5rem;
+        flex-direction: column;
+    }
+    
+    .tab-icon {
+        font-size: 1rem;
+    }
+    
+    .tab-text {
+        font-size: 0.8rem;
+    }
+}
+
+.App {
+    width: 100%;
+}
+
+.price-header {
+    max-width: 1400px;
+    margin: 0 auto 2rem auto;
+    padding: 1.5rem 2rem;
+    border-radius: 0.75rem;
+    background: linear-gradient(135deg, rgba(240, 176, 96, 0.2), rgba(240, 176, 96, 0.1));
+    border: 1px solid rgba(240, 176, 96, 0.3);
+    box-shadow: 0 8px 20px rgba(240, 176, 96, 0.1);
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: center;
+    gap: 2rem;
+}
+
+.header-left {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.eternum-logo {
+    width: 48px;
+    height: 48px;
+    color: #f0b060;
+    flex-shrink: 0;
+}
+
+.brand-info {
+    display: flex;
+    flex-direction: column;
+}
+
+.brand-title {
+    font-size: 1.2rem;
+    font-weight: bold;
+    color: #f9fafb;
+    margin-bottom: 0.25rem;
+}
+
+.brand-subtitle {
+    font-size: 0.9rem;
+    color: #dfc296;
+    opacity: 0.9;
+}
+
+.price-info {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    justify-self: center;
+}
+
+.lords-logo {
+    width: 64px;
+    height: 64px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.price-details {
+    display: flex;
+    flex-direction: column;
+}
+
+.token-name {
+    font-size: 1.1rem;
+    font-weight: bold;
+    color: #f0b060;
+    margin-bottom: 0.25rem;
+}
+
+.price-value {
+    font-size: 2rem;
+    font-weight: bold;
+    color: #f9fafb;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.price-change {
+    font-size: 0.9rem;
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.25rem;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.price-change.positive {
+    background-color: rgba(34, 197, 94, 0.2);
+    color: #22c55e;
+}
+
+.price-change.negative {
+    background-color: rgba(239, 68, 68, 0.2);
+    color: #ef4444;
+}
+
+.price-meta {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 0.5rem;
+    text-align: right;
+    justify-self: end;
+}
+
+.last-updated {
+    font-size: 0.8rem;
+    color: #dfc296;
+    opacity: 0.8;
+    white-space: nowrap;
+}
+
+.loading {
+    color: #f0b060;
+    font-style: italic;
+}
+
+.error {
+    color: #ef4444;
+    font-size: 0.9rem;
+}
+
+.total-revenue {
+    font-size: 0.8rem;
+    color: #dfc296;
+    opacity: 0.8;
+    white-space: nowrap;
+}
+
+.container {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 2rem;
+    border-radius: 0.75rem;
+    background-color: rgba(40, 30, 20, 0.5);
+    border-bottom: 1px solid #4d3923;
+    border-left: 1px solid #4d3923;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+h1 {
+    font-weight: bold;
+    font-size: 1.25rem;
+    margin-bottom: 1.5rem;
+    color: #f0b060;
+    border-left: 3px solid #f0b060;
+    padding-left: 0.75rem;
+}
+
+.chart-container {
+    display: grid;
+    grid-template-columns: 1.2fr 0.8fr;
+    gap: 4rem;
+    align-items: center;
+    margin: 2rem 0;
+}
+
+.chart-wrapper {
+    position: relative;
+    background: linear-gradient(145deg, rgba(50, 35, 25, 0.4), rgba(35, 25, 15, 0.6));
+    border-radius: 1.5rem;
+    padding: 3rem;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(240, 176, 96, 0.1);
+    aspect-ratio: 1;
+    max-width: 500px;
+    width: 100%;
+}
+
+.chart-wrapper::before {
+    content: '';
+    position: absolute;
+    top: -10px;
+    left: -10px;
+    right: -10px;
+    bottom: -10px;
+    background: linear-gradient(45deg, #f0b060, #dfc296, #f0b060);
+    border-radius: 1.5rem;
+    z-index: -1;
+    opacity: 0.1;
+}
+
+.chart-canvas-wrapper {
+    position: relative;
+    width: 100%;
+    height: 100%;
+}
+
+.center-text {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+    pointer-events: none;
+    z-index: 10;
+}
+
+.center-text .total-amount {
+    font-size: 2.5rem;
+    font-weight: bold;
+    color: #f0b060;
+    margin-bottom: 0.25rem;
+}
+
+.center-text .total-label {
+    font-size: 0.9rem;
+    color: #dfc296;
+    margin-bottom: 0.5rem;
+}
+
+.center-text .total-usd {
+    font-size: 1rem;
+    color: #f9fafb;
+    opacity: 0.8;
+}
+
+.legend-container {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.legend-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1rem;
+    border-radius: 0.5rem;
+    background: linear-gradient(135deg, rgba(50, 35, 25, 0.6), rgba(35, 25, 15, 0.4));
+    border: 1px solid rgba(240, 176, 96, 0.2);
+    cursor: pointer;
+    transition: all 0.3s ease;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+    min-height: 44px; /* Minimum touch target size for accessibility */
+}
+
+.legend-item:nth-child(1) {
+    border-left: 4px solid #f0b060;
+}
+
+.legend-item:nth-child(2) {
+    border-left: 4px solid #dfc296;
+}
+
+.legend-item:nth-child(3) {
+    border-left: 4px solid #5a729e;
+}
+
+.legend-item:nth-child(4) {
+    border-left: 4px solid #c0c0c0;
+}
+
+.legend-item:nth-child(5) {
+    border-left: 4px solid #a67c00;
+}
+
+.legend-item:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(240, 176, 96, 0.2);
+}
+
+.legend-item-left {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    flex: 1;
+}
+
+.legend-color {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+.legend-color.color-0 {
+    background-color: #f0b060;
+}
+
+.legend-color.color-1 {
+    background-color: #dfc296;
+}
+
+.legend-color.color-2 {
+    background-color: #5a729e;
+}
+
+.legend-color.color-3 {
+    background-color: #c0c0c0;
+}
+
+.legend-color.color-4 {
+    background-color: #a67c00;
+}
+
+.legend-info .legend-title {
+    font-weight: bold;
+    color: #f9fafb;
+    font-size: 0.95rem;
+}
+
+.legend-info .legend-subtitle {
+    color: #dfc296;
+    font-size: 0.8rem;
+}
+
+.legend-item-right {
+    text-align: right;
+}
+
+.legend-amount {
+    font-weight: bold;
+    font-size: 1.1rem;
+    color: #f0b060;
+}
+
+.legend-lords {
+    font-size: 0.8rem;
+    color: #dfc296;
+    margin-top: 0.25rem;
+    font-weight: normal;
+}
+
+.legend-usd {
+    font-size: 0.8rem;
+    color: #f9fafb;
+    opacity: 0.7;
+    margin-top: 0.25rem;
+}
+
+.table-wrapper {
+    overflow-x: auto;
+    border-radius: 0.5rem;
+    border: 1px solid #4d3923;
+    background-color: rgba(20, 15, 10, 0.3);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    border-bottom: 1px solid #4d3923;
+    border-left: 1px solid #4d3923;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.85rem;
+    min-width: 800px; /* Ensures table doesn't get too cramped on mobile */
+}
+
+/* Fee Table Column Widths */
+.table-wrapper table th:nth-child(1),
+.table-wrapper table td:nth-child(1) {
+    width: 20%;
+}
+
+.table-wrapper table th:nth-child(2),
+.table-wrapper table td:nth-child(2) {
+    width: 25%;
+}
+
+.table-wrapper table th:nth-child(3),
+.table-wrapper table td:nth-child(3) {
+    width: 20%;
+}
+
+.table-wrapper table th:nth-child(4),
+.table-wrapper table td:nth-child(4) {
+    width: 35%;
+}
+
+thead {
+    background-color: rgba(40, 30, 20, 0.7);
+}
+
+th {
+    padding: 0.5rem;
+    background-color: rgba(60, 40, 20, 0.5);
+    color: #f0b060;
+    font-weight: bold;
+    text-align: left;
+    border-bottom: 1px solid #6d4923;
+    white-space: nowrap;
+}
+
+td {
+    padding: 0.5rem;
+    border-bottom: 1px solid #4d3923;
+    background-color: rgba(30, 20, 10, 0.3);
+    vertical-align: middle;
+}
+
+tr {
+    transition: background-color 0.2s;
+}
+
+tr:hover {
+    background-color: rgba(40, 30, 20, 0.5);
+}
+
+.fee-category {
+    font-weight: bold;
+    color: #f9fafb;
+    font-size: 0.9rem;
+}
+
+.fee-description {
+    font-size: 0.75rem;
+    color: #dfc296;
+    opacity: 0.85;
+    margin-top: 0.25rem;
+    font-style: italic;
+}
+
+.address {
+    font-family: 'Monaco', 'Menlo', monospace;
+    font-size: 0.75rem;
+    color: #dfc296;
+    word-break: break-all;
+    background-color: rgba(30, 20, 10, 0.4);
+    padding: 0.5rem;
+    border-radius: 0.25rem;
+    border: 1px solid #4d3923;
+}
+
+.address.no-address {
+    text-align: center;
+    font-style: italic;
+    color: #f0b060;
+}
+
+.address-link {
+    color: #f0b060 !important;
+    text-decoration: none;
+    font-family: 'Monaco', 'Menlo', monospace;
+    font-size: 0.75rem;
+    background: rgba(240, 176, 96, 0.1);
+    padding: 0.5rem;
+    border-radius: 0.25rem;
+    border: 1px solid rgba(240, 176, 96, 0.2);
+    transition: all 0.3s ease;
+    display: inline-block;
+    max-width: 200px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.address-link:hover {
+    background: rgba(240, 176, 96, 0.2);
+    border-color: rgba(240, 176, 96, 0.3);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(240, 176, 96, 0.15);
+}
+
+.address-link:focus {
+    outline: 2px solid rgba(240, 176, 96, 0.5);
+    outline-offset: 2px;
+}
+
+.amount {
+    font-weight: bold;
+    font-size: 1rem;
+    color: #dfc296;
+}
+
+.amount-usd {
+    font-size: 0.8rem;
+    color: #f0b060;
+    opacity: 0.9;
+    margin-top: 0.25rem;
+    font-weight: normal;
+}
+
+.lords-badge {
+    display: inline-block;
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.25rem;
+    font-size: 0.8rem;
+    font-weight: bold;
+    background-color: rgba(240, 176, 96, 0.1);
+    color: #f0b060;
+    margin-left: 0.5rem;
+}
+
+.source {
+    color: #dfc296;
+    font-size: 0.85rem;
+    line-height: 1.4;
+}
+
+.source-breakdown {
+    font-size: 0.75rem;
+    color: #f9fafb;
+    opacity: 0.85;
+    margin-top: 0.25rem;
+    white-space: pre-line;
+}
+
+/* Enhanced Mobile Responsive Styles */
+
+/* Tablet styles */
+@media (max-width: 1024px) {
+    .price-header {
+        grid-template-columns: 1fr;
+        gap: 1.5rem;
+        text-align: center;
+        padding: 1.25rem 1.5rem;
+    }
+    
+    .header-left {
+        justify-content: center;
+    }
+    
+    .price-info {
+        justify-self: center;
+    }
+    
+    .price-meta {
+        justify-self: center;
+        align-items: center;
+        text-align: center;
+    }
+    
+    .chart-container {
+        grid-template-columns: 1fr !important;
+        gap: 2rem !important;
+        justify-items: center;
+    }
+    
+    .chart-wrapper {
+        max-width: 400px !important;
+        padding: 2rem !important;
+    }
+
+    .center-text .total-amount {
+        font-size: 2rem;
+    }
+
+    .legend-container {
+        max-width: 400px;
+        width: 100%;
+    }
+}
+
+/* Mobile styles */
+@media (max-width: 768px) {
+    .tab-navigation {
+        padding: 0.625rem 1rem;
+        gap: 0.2rem;
+    }
+    
+    .tab-button {
+        padding: 1rem 1.5rem;
+        gap: 0.5rem;
+    }
+    
+    .tab-icon {
+        font-size: 1.1rem;
+    }
+    
+    .price-header {
+        padding: 1rem;
+        margin: 0.5rem auto 1.5rem auto;
+        grid-template-columns: 1fr;
+        gap: 1rem;
+        text-align: center;
+    }
+    
+    .header-left {
+        flex-direction: column;
+        text-align: center;
+        gap: 0.75rem;
+    }
+
+    .eternum-logo {
+        width: 40px;
+        height: 40px;
+    }
+    
+    .brand-title {
+        font-size: 1rem;
+    }
+    
+    .brand-subtitle {
+        font-size: 0.8rem;
+    }
+    
+    .price-info {
+        flex-direction: column;
+        text-align: center;
+        gap: 0.5rem;
+        justify-self: center;
+    }
+
+    .lords-logo {
+        width: 48px;
+        height: 48px;
+    }
+    
+    .price-meta {
+        align-items: center;
+        text-align: center;
+        justify-self: center;
+    }
+    
+    .price-value {
+        font-size: 1.5rem;
+        justify-content: center;
+    }
+    
+    .container {
+        padding: 1rem;
+        margin: 0.5rem;
+    }
+    
+    h1 {
+        font-size: 1.1rem;
+    }
+
+    .chart-wrapper {
+        padding: 1.5rem !important;
+        max-width: 300px !important;
+    }
+
+    .center-text .total-amount {
+        font-size: 1.5rem;
+    }
+
+    .center-text .total-label {
+        font-size: 0.8rem;
+    }
+
+    .center-text .total-usd {
+        font-size: 0.9rem;
+    }
+
+    .legend-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.75rem;
+        padding: 0.875rem;
+    }
+
+    .legend-item-left {
+        width: 100%;
+    }
+
+    .legend-item-right {
+        align-self: flex-end;
+        text-align: right;
+    }
+    
+    th, td {
+        padding: 0.375rem 0.25rem;
+        font-size: 0.8rem;
+    }
+    
+    .address {
+        font-size: 0.65rem;
+        padding: 0.375rem;
+    }
+
+    .fee-category {
+        font-size: 0.85rem;
+    }
+
+    .fee-description {
+        font-size: 0.7rem;
+    }
+
+    .amount {
+        font-size: 0.9rem;
+    }
+
+    .lords-badge {
+        font-size: 0.7rem;
+        padding: 0.2rem 0.4rem;
+    }
+
+    .source {
+        font-size: 0.8rem;
+    }
+
+    .source-breakdown {
+        font-size: 0.7rem;
+    }
+}
+
+/* Extra small mobile styles */
+@media (max-width: 480px) {
+    .price-header {
+        padding: 0.75rem;
+        margin: 0.25rem auto 1rem auto;
+    }
+
+    .price-value {
+        font-size: 1.25rem;
+        flex-direction: column;
+        gap: 0.25rem;
+    }
+
+    .price-change {
+        font-size: 0.8rem;
+    }
+
+    .container {
+        padding: 0.75rem;
+        margin: 0.25rem;
+    }
+
+    .chart-container {
+        gap: 1.5rem !important;
+    }
+
+    .chart-wrapper {
+        padding: 1rem !important;
+        max-width: 250px !important;
+    }
+
+    .center-text .total-amount {
+        font-size: 1.25rem;
+    }
+
+    .center-text .total-label {
+        font-size: 0.75rem;
+    }
+
+    .center-text .total-usd {
+        font-size: 0.8rem;
+    }
+
+    .legend-item {
+        padding: 0.75rem;
+    }
+
+    .legend-info .legend-title {
+        font-size: 0.9rem;
+    }
+
+    .legend-info .legend-subtitle {
+        font-size: 0.75rem;
+    }
+
+    .legend-amount {
+        font-size: 1rem;
+    }
+
+    table {
+        min-width: 600px;
+    }
+
+    th, td {
+        padding: 0.3rem 0.2rem;
+        font-size: 0.75rem;
+    }
+
+    .last-updated {
+        font-size: 0.7rem;
+    }
+}
+
+/* Landscape mobile orientation */
+@media (max-width: 768px) and (orientation: landscape) {
+    .price-header {
+        grid-template-columns: 1fr auto 1fr;
+        gap: 1rem;
+    }
+    
+    .header-left {
+        flex-direction: row;
+        justify-content: flex-start;
+    }
+    
+    .price-info {
+        flex-direction: row;
+        justify-self: center;
+    }
+    
+    .price-meta {
+        justify-self: end;
+        align-items: flex-end;
+        text-align: right;
+    }
+
+    .chart-container {
+        grid-template-columns: 1fr 1fr !important;
+        gap: 1.5rem !important;
+    }
+
+    .chart-wrapper {
+        max-width: 350px !important;
+    }
+
+    .legend-item {
+        flex-direction: row;
+        align-items: center;
+    }
+
+    .legend-item-right {
+        align-self: center;
+    }
+}
+
+/* Rewards Styles */
+.rewards-container {
+    max-width: 1400px;
+    margin: 0 auto;
+}
+
+.rewards-nav {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 2rem;
+    justify-content: center;
+}
+
+.reward-type-btn {
+    padding: 0.75rem 1.5rem;
+    border: none;
+    border-radius: 0.5rem;
+    background: rgba(40, 30, 20, 0.5);
+    color: #dfc296;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    border: 1px solid rgba(240, 176, 96, 0.2);
+}
+
+.reward-type-btn:hover {
+    background: rgba(240, 176, 96, 0.1);
+    color: #f0b060;
+    transform: translateY(-1px);
+}
+
+.reward-type-btn.active {
+    background: linear-gradient(135deg, rgba(240, 176, 96, 0.2), rgba(240, 176, 96, 0.1));
+    color: #f0b060;
+    border: 1px solid rgba(240, 176, 96, 0.3);
+    box-shadow: 0 4px 12px rgba(240, 176, 96, 0.1);
+}
+
+.rewards-placeholder {
+    text-align: center;
+    padding: 4rem 2rem;
+    background: rgba(40, 30, 20, 0.5);
+    border-radius: 0.75rem;
+    border: 1px solid #4d3923;
+}
+
+.rewards-placeholder h3 {
+    font-size: 2rem;
+    color: #f0b060;
+    margin-bottom: 1rem;
+}
+
+.rewards-placeholder p {
+    color: #dfc296;
+    opacity: 0.8;
+}
+
+/* Victory Prizes Styles */
+.victory-prizes {
+    background: rgba(40, 30, 20, 0.5);
+    border-radius: 0.75rem;
+    border: 1px solid #4d3923;
+    overflow: hidden;
+}
+
+.victory-header {
+    padding: 2rem;
+    border-bottom: 1px solid #4d3923;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 2rem;
+}
+
+.victory-title h3 {
+    font-size: 1.5rem;
+    color: #f0b060;
+    margin-bottom: 0.5rem;
+}
+
+.victory-subtitle {
+    color: #dfc296;
+    opacity: 0.8;
+    font-size: 0.9rem;
+}
+
+.victory-summary {
+    display: flex;
+    gap: 1rem;
+}
+
+.summary-card {
+    background: linear-gradient(135deg, rgba(240, 176, 96, 0.1), rgba(240, 176, 96, 0.05));
+    border: 1px solid rgba(240, 176, 96, 0.2);
+    border-radius: 0.5rem;
+    padding: 1rem;
+    min-width: 140px;
+}
+
+.summary-label {
+    font-size: 0.8rem;
+    color: #dfc296;
+    opacity: 0.8;
+    margin-bottom: 0.25rem;
+}
+
+.summary-value {
+    font-size: 1.2rem;
+    font-weight: bold;
+    color: #f0b060;
+    margin-bottom: 0.25rem;
+}
+
+.summary-usd {
+    font-size: 0.8rem;
+    color: #dfc296;
+    opacity: 0.7;
+}
+
+.victory-controls {
+    padding: 1.5rem 2rem;
+    border-bottom: 1px solid #4d3923;
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+}
+
+.search-container {
+    flex: 1;
+}
+
+.search-input {
+    width: 100%;
+    padding: 0.75rem;
+    border: 1px solid rgba(240, 176, 96, 0.2);
+    border-radius: 0.5rem;
+    background: rgba(50, 35, 25, 0.5);
+    color: #f9fafb;
+    font-size: 0.9rem;
+}
+
+.search-input::placeholder {
+    color: #dfc296;
+    opacity: 0.6;
+}
+
+.search-input:focus {
+    outline: none;
+    border-color: rgba(240, 176, 96, 0.4);
+    box-shadow: 0 0 0 2px rgba(240, 176, 96, 0.1);
+}
+
+.sort-controls {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+}
+
+.sort-select {
+    padding: 0.75rem;
+    border: 1px solid rgba(240, 176, 96, 0.2);
+    border-radius: 0.5rem;
+    background: rgba(50, 35, 25, 0.5);
+    color: #f9fafb;
+    font-size: 0.9rem;
+    cursor: pointer;
+}
+
+.sort-order-btn {
+    padding: 0.75rem;
+    border: 1px solid rgba(240, 176, 96, 0.2);
+    border-radius: 0.5rem;
+    background: rgba(50, 35, 25, 0.5);
+    color: #f0b060;
+    font-size: 1rem;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    min-width: 40px;
+}
+
+.sort-order-btn:hover {
+    background: rgba(240, 176, 96, 0.1);
+}
+
+.players-table {
+    max-height: 600px;
+    overflow-y: auto;
+}
+
+.table-header {
+    display: grid;
+    grid-template-columns: 1.5fr 1.5fr 1fr 1.5fr;
+    gap: 1rem;
+    padding: 1rem 2rem;
+    background: rgba(50, 35, 25, 0.5);
+    border-bottom: 1px solid #4d3923;
+    font-weight: bold;
+    color: #f0b060;
+    font-size: 0.9rem;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+.table-body {
+    display: flex;
+    flex-direction: column;
+}
+
+.player-row {
+    display: grid;
+    grid-template-columns: 1.5fr 1.5fr 1fr 1.5fr;
+    gap: 1rem;
+    padding: 1.5rem 2rem;
+    border-bottom: 1px solid rgba(77, 57, 35, 0.5);
+    transition: background-color 0.3s ease;
+}
+
+.player-row:hover {
+    background: rgba(50, 35, 25, 0.3);
+}
+
+.player-info {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.player-name {
+    font-weight: bold;
+    color: #f9fafb;
+    font-size: 1rem;
+}
+
+.player-address {
+    font-family: monospace;
+    color: #dfc296;
+    opacity: 0.7;
+    font-size: 0.8rem;
+}
+
+.player-stats {
+    color: #dfc296;
+    opacity: 0.6;
+    font-size: 0.8rem;
+}
+
+.tribe-info {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+.tribe-name {
+    font-weight: bold;
+    color: #f9fafb;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.owner-badge {
+    font-size: 0.8rem;
+}
+
+.tribe-rank {
+    color: #f0b060;
+    font-size: 0.9rem;
+    font-weight: 600;
+}
+
+.tribe-prize {
+    color: #dfc296;
+    opacity: 0.7;
+    font-size: 0.8rem;
+}
+
+.player-rewards {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.reward-item {
+    display: flex;
+    flex-direction: column;
+    gap: 0.1rem;
+}
+
+.reward-amount {
+    font-weight: bold;
+    color: #f0b060;
+    font-size: 0.9rem;
+}
+
+.reward-usd {
+    color: #dfc296;
+    opacity: 0.7;
+    font-size: 0.8rem;
+}
+
+.reward-breakdown {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.breakdown-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.8rem;
+}
+
+.breakdown-label {
+    color: #dfc296;
+    opacity: 0.8;
+}
+
+.breakdown-value {
+    color: #f9fafb;
+    font-weight: 500;
+}
+
+.breakdown-item.owner-bonus {
+    background: rgba(240, 176, 96, 0.1);
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.25rem;
+    margin: 0.1rem 0;
+}
+
+.loading-state, .error-state {
+    text-align: center;
+    padding: 4rem 2rem;
+}
+
+.loading-spinner {
+    width: 40px;
+    height: 40px;
+    border: 3px solid rgba(240, 176, 96, 0.2);
+    border-top: 3px solid #f0b060;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin: 0 auto 1rem;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.error-message {
+    color: #ef4444;
+}
+
+/* Responsive Design for Rewards */
+@media (max-width: 1024px) {
+    .victory-header {
+        flex-direction: column;
+        gap: 1rem;
+    }
+    
+    .victory-summary {
+        align-self: stretch;
+    }
+    
+    .table-header,
+    .player-row {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+    }
+    
+    .player-row {
+        padding: 1rem;
+        border: 1px solid rgba(77, 57, 35, 0.5);
+        border-radius: 0.5rem;
+        margin-bottom: 0.5rem;
+        background: rgba(50, 35, 25, 0.3);
+    }
+    
+    .table-header {
+        display: none;
+    }
+}
+
+@media (max-width: 768px) {
+    .rewards-nav {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+    
+    .reward-type-btn {
+        padding: 0.75rem;
+        font-size: 0.8rem;
+    }
+    
+    .victory-controls {
+        flex-direction: column;
+        gap: 1rem;
+        align-items: stretch;
+    }
+    
+    .sort-controls {
+        justify-content: center;
+    }
+    
+    .victory-summary {
+        flex-direction: column;
+    }
+}
+
+/* Calculation Explanation Styles */
+.calculation-explanation {
+    margin: 2rem 0;
+    border-radius: 0.75rem;
+    overflow: hidden;
+    border: 1px solid rgba(240, 176, 96, 0.2);
+    background: linear-gradient(135deg, rgba(50, 35, 25, 0.8), rgba(35, 25, 15, 0.9));
+}
+
+.calculation-header {
+    border-bottom: 1px solid rgba(240, 176, 96, 0.2);
+}
+
+.calculation-toggle {
+    width: 100%;
+    padding: 1.5rem 2rem;
+    background: transparent;
+    border: none;
+    color: #f9fafb;
+    font-size: 1.1rem;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    transition: all 0.3s ease;
+    text-align: left;
+}
+
+.calculation-toggle:hover {
+    background: rgba(240, 176, 96, 0.1);
+    color: #f0b060;
+}
+
+.calculation-icon {
+    font-size: 1.5rem;
+    transition: transform 0.3s ease;
+}
+
+.calculation-toggle:hover .calculation-icon {
+    transform: scale(1.1);
+}
+
+.calculation-title {
+    flex: 1;
+    font-weight: 600;
+    letter-spacing: 0.025em;
+}
+
+.calculation-arrow {
+    font-size: 1rem;
+    color: #f0b060;
+    transition: transform 0.3s ease;
+    transform-origin: center;
+}
+
+.calculation-toggle[aria-expanded="true"] .calculation-arrow {
+    transform: rotate(90deg);
+}
+
+.calculation-content {
+    padding: 2rem;
+    animation: slideDown 0.3s ease-out;
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.calculation-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.calculation-card {
+    background: linear-gradient(135deg, rgba(240, 176, 96, 0.1), rgba(240, 176, 96, 0.05));
+    border: 1px solid rgba(240, 176, 96, 0.2);
+    border-radius: 0.75rem;
+    padding: 1.5rem;
+    transition: all 0.3s ease;
+}
+
+.calculation-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(240, 176, 96, 0.15);
+    border-color: rgba(240, 176, 96, 0.3);
+}
+
+.calc-card-header {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid rgba(240, 176, 96, 0.15);
+}
+
+.calc-icon {
+    font-size: 1.5rem;
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+}
+
+.calc-card-header h4 {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #f0b060;
+    margin: 0;
+}
+
+.calc-card-content p {
+    color: #dfc296;
+    margin-bottom: 1rem;
+    line-height: 1.5;
+}
+
+.calc-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.calc-list li {
+    color: #dfc296;
+    margin-bottom: 0.5rem;
+    padding-left: 1rem;
+    position: relative;
+}
+
+.calc-list li::before {
+    content: '▸';
+    color: #f0b060;
+    font-weight: bold;
+    position: absolute;
+    left: 0;
+}
+
+.calc-formula {
+    background: rgba(20, 15, 10, 0.5);
+    border-radius: 0.5rem;
+    padding: 1rem;
+    margin: 1rem 0;
+    border-left: 3px solid #f0b060;
+}
+
+.formula-line {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.formula-line:last-child {
+    margin-bottom: 0;
+}
+
+.formula-label {
+    color: #f0b060;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.formula-value {
+    color: #f9fafb;
+    background: rgba(240, 176, 96, 0.1);
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.25rem;
+    font-family: 'SF Mono', Monaco, Consolas, monospace;
+    font-size: 0.9rem;
+}
+
+.calc-note {
+    color: #dfc296;
+    font-style: italic;
+    font-size: 0.9rem;
+    opacity: 0.8;
+    margin-top: 1rem;
+    margin-bottom: 0;
+}
+
+/* Example Calculation Section */
+.calculation-example {
+    background: linear-gradient(135deg, rgba(240, 176, 96, 0.15), rgba(240, 176, 96, 0.08));
+    border: 1px solid rgba(240, 176, 96, 0.25);
+    border-radius: 0.75rem;
+    padding: 1.5rem;
+    margin-top: 1rem;
+}
+
+.example-header {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 1.5rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid rgba(240, 176, 96, 0.2);
+}
+
+.example-icon {
+    font-size: 1.5rem;
+}
+
+.example-header h4 {
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: #f0b060;
+    margin: 0;
+}
+
+.example-content {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.example-scenario p {
+    color: #f9fafb;
+    font-weight: 500;
+    margin-bottom: 1rem;
+}
+
+.example-data {
+    background: rgba(20, 15, 10, 0.3);
+    border-radius: 0.5rem;
+    padding: 1rem;
+    margin-bottom: 1rem;
+}
+
+.data-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.5rem;
+    padding: 0.25rem 0;
+}
+
+.data-row:last-child {
+    margin-bottom: 0;
+    padding-bottom: 0;
+}
+
+.data-label {
+    color: #dfc296;
+    font-weight: 500;
+}
+
+.data-value {
+    color: #f9fafb;
+    font-weight: 600;
+    text-align: right;
+}
+
+.example-calculation {
+    background: rgba(240, 176, 96, 0.1);
+    border-radius: 0.5rem;
+    padding: 1rem;
+    border-left: 3px solid #f0b060;
+}
+
+.calc-step {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.75rem;
+    padding: 0.5rem;
+    border-radius: 0.25rem;
+    transition: background-color 0.2s ease;
+}
+
+.calc-step:last-child {
+    margin-bottom: 0;
+}
+
+.calc-step.highlight {
+    background: rgba(240, 176, 96, 0.2);
+    border: 1px solid rgba(240, 176, 96, 0.3);
+    font-weight: 600;
+}
+
+.step-label {
+    color: #dfc296;
+    font-weight: 500;
+}
+
+.step-value {
+    color: #f9fafb;
+    font-weight: 600;
+    text-align: right;
+}
+
+.calc-step.highlight .step-label,
+.calc-step.highlight .step-value {
+    color: #f0b060;
+}
+
+/* Responsive Design for Calculations */
+@media (max-width: 1024px) {
+    .calculation-grid {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+    }
+    
+    .calculation-content {
+        padding: 1.5rem;
+    }
+    
+    .example-content {
+        gap: 1rem;
+    }
+}
+
+@media (max-width: 768px) {
+    .calculation-toggle {
+        padding: 1rem 1.5rem;
+        font-size: 1rem;
+    }
+    
+    .calculation-content {
+        padding: 1rem;
+    }
+    
+    .calculation-card {
+        padding: 1rem;
+    }
+    
+    .formula-line {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.25rem;
+    }
+    
+    .data-row {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.25rem;
+    }
+    
+    .data-value {
+        text-align: left;
+    }
+    
+    .calc-step {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.25rem;
+    }
+    
+    .step-value {
+        text-align: left;
+    }
+}
+
+@media (max-width: 480px) {
+    .calculation-toggle {
+        padding: 0.75rem 1rem;
+        font-size: 0.9rem;
+    }
+    
+    .calculation-icon {
+        font-size: 1.2rem;
+    }
+    
+    .calc-icon {
+        font-size: 1.2rem;
+    }
+    
+    .example-icon {
+        font-size: 1.2rem;
+    }
+}
+
+/* Enhanced Cartridge, Daydreams, and Chest Styles */
+.cartridge-prizes,
+.daydreams-prizes,
+.chest-prizes {
+    padding: 2rem 0;
+}
+
+.cartridge-header,
+.daydreams-header,
+.chest-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 2rem;
+    gap: 2rem;
+}
+
+.cartridge-title,
+.daydreams-title,
+.chest-title {
+    flex: 1;
+}
+
+.cartridge-title h3,
+.daydreams-title h3,
+.chest-title h3 {
+    color: #f0b060;
+    font-size: 1.8rem;
+    margin-bottom: 0.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.cartridge-subtitle,
+.daydreams-subtitle,
+.chest-subtitle {
+    color: #dfc296;
+    opacity: 0.8;
+    line-height: 1.5;
+    text-align: left;
+}
+
+.cartridge-summary,
+.daydreams-summary,
+.chest-summary {
+    display: flex;
+    gap: 1rem;
+    flex-shrink: 0;
+}
+
+.cartridge-controls,
+.daydreams-controls,
+.chest-controls {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+    gap: 1rem;
+}
+
+/* Enhanced table styles for cartridge, daydreams, and chest */
+.cartridge-table,
+.daydreams-table,
+.chest-table {
+    background: rgba(77, 57, 35, 0.1);
+    border-radius: 1rem;
+    overflow: hidden;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+}
+
+.cartridge-table .table-header,
+.daydreams-table .table-header,
+.chest-table .table-header {
+    display: grid;
+    padding: 1.5rem 2rem;
+    background: rgba(77, 57, 35, 0.3);
+    border-bottom: 2px solid rgba(240, 176, 96, 0.2);
+    font-weight: 600;
+    color: #f0b060;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-size: 0.9rem;
+}
+
+/* Cartridge table grid */
+.cartridge-table .table-header {
+    grid-template-columns: 2fr 1.2fr 1fr 1.5fr;
+}
+
+.cartridge-table .player-row {
+    grid-template-columns: 2fr 1.2fr 1fr 1.5fr;
+}
+
+/* Daydreams table grid */
+.daydreams-table .table-header {
+    grid-template-columns: 2fr 1.5fr 1.5fr;
+}
+
+.daydreams-table .player-row {
+    grid-template-columns: 2fr 1.5fr 1.5fr;
+}
+
+/* Chest table grid */
+.chest-table .table-header {
+    grid-template-columns: 2fr 1.5fr 1.5fr;
+}
+
+.chest-table .player-row {
+    grid-template-columns: 2fr 1.5fr 1.5fr;
+}
+
+/* Chest Distribution Explanation */
+.chest-distribution-explanation {
+    background: rgba(77, 57, 35, 0.1);
+    border-radius: 0.75rem;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+    border: 1px solid rgba(240, 176, 96, 0.2);
+}
+
+.distribution-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 0.75rem;
+    max-width: 100%;
+}
+
+.distribution-item {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.5rem 0.75rem;
+    background: rgba(50, 35, 25, 0.3);
+    border-radius: 0.5rem;
+    border-left: 3px solid #f0b060;
+    min-height: 60px;
+}
+
+.distribution-chest-count {
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: #f0b060;
+    min-width: 35px;
+    text-align: center;
+    flex-shrink: 0;
+}
+
+.distribution-details {
+    flex: 1;
+}
+
+.distribution-range {
+    font-size: 0.85rem;
+    color: #f9fafb;
+    font-weight: 600;
+    margin-bottom: 0.1rem;
+    line-height: 1.2;
+}
+
+.distribution-players {
+    font-size: 0.75rem;
+    color: #dfc296;
+    opacity: 0.8;
+    line-height: 1.2;
+}
+
+/* Player points display */
+.player-points {
+    color: #f0b060;
+    font-size: 0.75rem;
+    opacity: 0.8;
+    margin-top: 0.2rem;
+}
+
+/* Responsive design for distribution */
+@media (max-width: 768px) {
+    .distribution-grid {
+        grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+        gap: 0.5rem;
+    }
+    
+    .distribution-item {
+        padding: 0.4rem 0.6rem;
+        gap: 0.5rem;
+        min-height: 50px;
+    }
+    
+    .distribution-chest-count {
+        font-size: 1.3rem;
+        min-width: 30px;
+    }
+    
+    .distribution-range {
+        font-size: 0.8rem;
+    }
+    
+    .distribution-players {
+        font-size: 0.7rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .distribution-grid {
+        grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+        gap: 0.4rem;
+    }
+    
+    .distribution-item {
+        padding: 0.3rem 0.5rem;
+        gap: 0.4rem;
+        min-height: 45px;
+    }
+    
+    .distribution-chest-count {
+        font-size: 1.2rem;
+        min-width: 25px;
+    }
+    
+    .distribution-range {
+        font-size: 0.75rem;
+    }
+    
+    .distribution-players {
+        font-size: 0.65rem;
+    }
+}
+
+/* Enhanced player info styles */
+.player-info {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+    min-width: 0; /* Prevent overflow */
+}
+
+.player-name {
+    font-weight: bold;
+    color: #f0b060;
+    font-size: 1.1rem;
+    word-break: break-word;
+}
+
+.player-address {
+    font-family: 'Courier New', monospace;
+    color: #dfc296;
+    opacity: 0.7;
+    font-size: 0.85rem;
+    word-break: break-all;
+    line-height: 1.3;
+}
+
+.player-address-only {
+    font-family: 'Courier New', monospace;
+    color: #f9fafb;
+    font-size: 0.95rem;
+    word-break: break-all;
+    line-height: 1.3;
+    font-weight: 500;
+}
+
+/* Points info styles */
+.points-info {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.2rem;
+}
+
+.points-value {
+    font-weight: bold;
+    color: #f9fafb;
+    font-size: 1rem;
+}
+
+.points-label {
+    color: #dfc296;
+    opacity: 0.6;
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* Percentage info styles */
+.percentage-info {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.percentage-value {
+    font-weight: bold;
+    color: #f0b060;
+    font-size: 1rem;
+}
+
+/* Achievement info styles */
+.achievement-info {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.3rem;
+}
+
+.achievement-name {
+    font-weight: bold;
+    color: #f0b060;
+    font-size: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+}
+
+.achievement-description {
+    color: #dfc296;
+    opacity: 0.8;
+    font-size: 0.85rem;
+    text-align: center;
+}
+
+/* Enhanced reward info styles */
+.reward-info {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+    align-items: flex-end;
+}
+
+.reward-amount {
+    font-weight: bold;
+    color: #f0b060;
+    font-size: 1rem;
+    text-align: right;
+}
+
+.reward-usd {
+    color: #dfc296;
+    opacity: 0.7;
+    font-size: 0.85rem;
+    text-align: right;
+}
+
+/* Hover effects */
+.cartridge-table .player-row:hover,
+.daydreams-table .player-row:hover {
+    background: rgba(240, 176, 96, 0.1);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 10px rgba(240, 176, 96, 0.2);
+}
+
+/* Responsive design for new tables */
+@media (max-width: 1024px) {
+    .cartridge-header,
+    .daydreams-header {
+        flex-direction: column;
+        gap: 1rem;
+    }
+    
+    .cartridge-summary,
+    .daydreams-summary {
+        align-self: stretch;
+        justify-content: center;
+    }
+    
+    .cartridge-table .table-header,
+    .cartridge-table .player-row {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+    }
+    
+    .daydreams-table .table-header,
+    .daydreams-table .player-row {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+    }
+    
+    .cartridge-table .player-row,
+    .daydreams-table .player-row {
+        padding: 1.5rem;
+        border: 1px solid rgba(77, 57, 35, 0.5);
+        border-radius: 0.75rem;
+        margin-bottom: 1rem;
+        background: rgba(50, 35, 25, 0.4);
+    }
+    
+    .cartridge-table .table-header,
+    .daydreams-table .table-header {
+        display: none;
+    }
+    
+    .reward-info {
+        align-items: flex-start;
+    }
+    
+    .points-info,
+    .percentage-info,
+    .achievement-info {
+        align-items: flex-start;
+    }
+}
+
+@media (max-width: 768px) {
+    .cartridge-controls,
+    .daydreams-controls {
+        flex-direction: column;
+        gap: 1rem;
+    }
+    
+    .cartridge-title h3,
+    .daydreams-title h3 {
+        font-size: 1.5rem;
+    }
+    
+    .player-name {
+        font-size: 1rem;
+    }
+    
+    .player-address,
+    .player-address-only {
+        font-size: 0.8rem;
+    }
+}
+
+/* Season Pass Value Analysis Styles */
+.season-pass-analysis {
+    margin-top: 1.5rem;
+}
+
+.analysis-header {
+    margin-bottom: 2rem;
+}
+
+.header-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.stat-card {
+    background: rgba(40, 30, 20, 0.7);
+    border: 1px solid #4d3923;
+    border-radius: 0.75rem;
+    padding: 1.5rem;
+    text-align: center;
+    transition: all 0.3s ease;
+}
+
+.stat-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+    border-color: #f0b060;
+}
+
+.stat-card.primary {
+    background: rgba(240, 176, 96, 0.1);
+    border-color: #f0b060;
+}
+
+.stat-card.secondary {
+    background: rgba(223, 194, 150, 0.1);
+    border-color: #dfc296;
+}
+
+.stat-label {
+    font-size: 0.9rem;
+    color: #dfc296;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.stat-value {
+    font-size: 2rem;
+    font-weight: bold;
+    color: #f0b060;
+    margin-bottom: 0.5rem;
+}
+
+.stat-subtitle {
+    font-size: 0.8rem;
+    color: #f9fafb;
+    opacity: 0.8;
+}
+
+.marketplace-summary {
+    margin-bottom: 3rem;
+}
+
+.analysis-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+    gap: 2rem;
+    margin-bottom: 2rem;
+}
+
+.analysis-card {
+    background: rgba(30, 20, 10, 0.8);
+    border: 1px solid #4d3923;
+    border-radius: 0.75rem;
+    overflow: hidden;
+    transition: all 0.3s ease;
+}
+
+.analysis-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+}
+
+.analysis-card.highlight {
+    border-color: #f0b060;
+    background: rgba(240, 176, 96, 0.05);
+}
+
+.card-header {
+    background: rgba(40, 30, 20, 0.9);
+    padding: 1rem 1.5rem;
+    border-bottom: 1px solid #4d3923;
+}
+
+.card-header h3 {
+    margin: 0;
+    color: #f0b060;
+    font-size: 1.1rem;
+    font-weight: 600;
+}
+
+.card-content {
+    padding: 1.5rem;
+}
+
+.metric-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 1rem;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.metric-row.major {
+    padding: 0.5rem 0;
+    border-bottom: 1px solid rgba(240, 176, 96, 0.2);
+    margin-bottom: 1.5rem;
+}
+
+.metric-label {
+    color: #dfc296;
+    font-weight: 500;
+    flex: 1;
+    min-width: 120px;
+}
+
+.metric-value {
+    color: #f9fafb;
+    font-weight: 600;
+    text-align: right;
+    flex: 1;
+    min-width: 150px;
+}
+
+.metric-usd {
+    display: block;
+    font-size: 0.85rem;
+    color: #f0b060;
+    font-weight: 400;
+    margin-top: 0.25rem;
+}
+
+.value-explanation {
+    margin-top: 1.5rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid rgba(223, 194, 150, 0.2);
+}
+
+.value-explanation p {
+    color: #dfc296;
+    line-height: 1.6;
+    margin-bottom: 1rem;
+}
+
+.value-highlight {
+    background: rgba(240, 176, 96, 0.1);
+    padding: 1rem;
+    border-radius: 0.5rem;
+    border-left: 3px solid #f0b060;
+    font-weight: 600;
+    color: #f9fafb !important;
+}
+
+.breakdown {
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid rgba(223, 194, 150, 0.1);
+}
+
+.breakdown-item {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 0.5rem;
+    color: #dfc296;
+    font-size: 0.9rem;
+}
+
+.breakdown-item span:last-child {
+    color: #f0b060;
+    font-weight: 600;
+}
+
+.methodology {
+    background: rgba(20, 15, 10, 0.8);
+    border: 1px solid #4d3923;
+    border-radius: 0.75rem;
+    padding: 1.5rem;
+    margin-top: 2rem;
+}
+
+.methodology h4 {
+    color: #f0b060;
+    margin-bottom: 1rem;
+    font-size: 1.1rem;
+}
+
+.methodology ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.methodology li {
+    color: #dfc296;
+    margin-bottom: 0.75rem;
+    padding-left: 1.5rem;
+    position: relative;
+    line-height: 1.5;
+}
+
+.methodology li::before {
+    content: "•";
+    color: #f0b060;
+    position: absolute;
+    left: 0;
+}
+
+.methodology strong {
+    color: #f9fafb;
+}
+
+/* Scenarios Section */
+.scenarios-section {
+    margin-bottom: 3rem;
+}
+
+.scenarios-section h3 {
+    color: #f0b060;
+    margin-bottom: 1rem;
+    font-size: 1.3rem;
+    border-left: 3px solid #f0b060;
+    padding-left: 0.75rem;
+}
+
+.scenarios-intro {
+    color: #dfc296;
+    margin-bottom: 2rem;
+    font-size: 1.1rem;
+    line-height: 1.6;
+}
+
+.scenarios-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 1.5rem;
+}
+
+.scenario-card {
+    background: rgba(30, 20, 10, 0.8);
+    border: 1px solid #4d3923;
+    border-radius: 0.75rem;
+    overflow: hidden;
+    transition: all 0.3s ease;
+}
+
+.scenario-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+}
+
+.scenario-card.highlight {
+    border-color: #f0b060;
+    background: rgba(240, 176, 96, 0.05);
+}
+
+.scenario-header {
+    background: rgba(40, 30, 20, 0.9);
+    padding: 1rem 1.5rem;
+    border-bottom: 1px solid #4d3923;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.scenario-header h4 {
+    margin: 0;
+    color: #f0b060;
+    font-size: 1rem;
+    font-weight: 600;
+}
+
+.scenario-count {
+    background: rgba(240, 176, 96, 0.2);
+    color: #f0b060;
+    padding: 0.25rem 0.75rem;
+    border-radius: 1rem;
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+
+.scenario-content {
+    padding: 1.5rem;
+}
+
+.scenario-value {
+    text-align: center;
+    margin-bottom: 1rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid rgba(223, 194, 150, 0.2);
+}
+
+.value-lords {
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: #f9fafb;
+    margin-bottom: 0.5rem;
+}
+
+.value-usd {
+    font-size: 1.1rem;
+    color: #f0b060;
+    font-weight: 600;
+}
+
+.scenario-description {
+    color: #dfc296;
+    font-weight: 500;
+    margin-bottom: 0.75rem;
+    line-height: 1.4;
+}
+
+.scenario-explanation {
+    color: #f9fafb;
+    font-size: 0.9rem;
+    opacity: 0.8;
+    line-height: 1.5;
+}
+
+/* Key Insights Section */
+.key-insights {
+    margin-bottom: 3rem;
+}
+
+.insight-item {
+    color: #dfc296;
+    margin-bottom: 1rem;
+    padding: 0.75rem 0;
+    border-bottom: 1px solid rgba(223, 194, 150, 0.1);
+    line-height: 1.5;
+}
+
+.insight-item:last-child {
+    border-bottom: none;
+}
+
+.insight-item strong {
+    color: #f0b060;
+}
+
+/* Responsive Design for Season Pass Analysis */
+@media (max-width: 1024px) {
+    .header-stats {
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        gap: 1rem;
+    }
+    
+    .analysis-grid {
+        grid-template-columns: 1fr;
+        gap: 1.5rem;
+    }
+    
+    .scenarios-grid {
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    }
+    
+    .stat-value {
+        font-size: 1.5rem;
+    }
+}
+
+@media (max-width: 768px) {
+    .header-stats {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    
+    .scenarios-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .stat-card {
+        padding: 1rem;
+    }
+    
+    .stat-value {
+        font-size: 1.25rem;
+    }
+    
+    .card-content {
+        padding: 1rem;
+    }
+    
+    .metric-row {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    
+    .metric-value {
+        text-align: left;
+        margin-top: 0.5rem;
+    }
+    
+    .scenario-header {
+        flex-direction: column;
+        gap: 0.5rem;
+        text-align: center;
+    }
+    
+    .value-lords {
+        font-size: 1.3rem;
+    }
+    
+    .methodology {
+        padding: 1rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .season-pass-analysis {
+        margin-top: 1rem;
+    }
+    
+    .analysis-header {
+        margin-bottom: 1.5rem;
+    }
+    
+    .header-stats {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+    }
+    
+    .stat-card {
+        padding: 0.75rem;
+    }
+    
+    .stat-label {
+        font-size: 0.8rem;
+    }
+    
+    .stat-value {
+        font-size: 1.1rem;
+    }
+    
+    .card-header {
+        padding: 0.75rem 1rem;
+    }
+    
+    .card-header h3 {
+        font-size: 1rem;
+    }
+    
+    .scenario-content {
+        padding: 1rem;
+    }
+    
+    .scenarios-section h3 {
+        font-size: 1.1rem;
+    }
+    
+    .scenarios-intro {
+        font-size: 1rem;
+    }
+}
+
+/* Season Totals Banner Styles */
+.season-totals-banner {
+    max-width: 1200px;
+    margin: 0 auto 2rem auto;
+    background: linear-gradient(135deg, rgba(240, 176, 96, 0.15), rgba(240, 176, 96, 0.08));
+    border: 1px solid rgba(240, 176, 96, 0.3);
+    border-radius: 1rem;
+    overflow: hidden;
+    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(240, 176, 96, 0.2);
+    position: relative;
+}
+
+.season-totals-banner::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(135deg, rgba(240, 176, 96, 0.05), transparent);
+    pointer-events: none;
+}
+
+.season-totals-content {
+    padding: 1.5rem 2rem;
+    position: relative;
+    z-index: 1;
+}
+
+.season-totals-header {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+    text-align: center;
+    justify-content: center;
+}
+
+.season-icon {
+    font-size: 2rem;
+    filter: drop-shadow(0 2px 4px rgba(240, 176, 96, 0.3));
+    animation: glow 3s ease-in-out infinite alternate;
+}
+
+@keyframes glow {
+    from {
+        filter: drop-shadow(0 4px 8px rgba(240, 176, 96, 0.3));
+    }
+    to {
+        filter: drop-shadow(0 6px 12px rgba(240, 176, 96, 0.5));
+    }
+}
+
+.season-title h2 {
+    font-size: 1.8rem;
+    font-weight: bold;
+    color: #f0b060;
+    margin: 0 0 0.25rem 0;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+    letter-spacing: -0.02em;
+}
+
+.season-subtitle {
+    color: #dfc296;
+    font-size: 0.95rem;
+    margin: 0;
+    opacity: 0.9;
+    font-weight: 500;
+}
+
+.season-totals-grid {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1.5rem;
+    margin-bottom: 1.5rem;
+}
+
+.total-card {
+    background: linear-gradient(135deg, rgba(50, 35, 25, 0.8), rgba(35, 25, 15, 0.9));
+    border: 1px solid rgba(240, 176, 96, 0.3);
+    border-radius: 0.75rem;
+    padding: 1.25rem 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    min-width: 240px;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: hidden;
+}
+
+.total-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(135deg, rgba(240, 176, 96, 0.1), transparent);
+    opacity: 0;
+    transition: opacity 0.4s ease;
+}
+
+.total-card:hover {
+    transform: translateY(-4px) scale(1.02);
+    box-shadow: 0 15px 35px rgba(240, 176, 96, 0.25);
+    border-color: rgba(240, 176, 96, 0.5);
+}
+
+.total-card:hover::before {
+    opacity: 1;
+}
+
+.lords-card {
+    border-color: rgba(240, 176, 96, 0.4);
+}
+
+.strk-card {
+    border-color: rgba(90, 114, 158, 0.4);
+}
+
+.total-icon {
+    font-size: 2.5rem;
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+    transition: transform 0.4s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.lords-icon {
+    width: 3rem;
+    height: 3rem;
+    object-fit: contain;
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+    transition: all 0.4s ease;
+}
+
+.strk-icon {
+    width: 2rem;
+    height: 2rem;
+    object-fit: contain;
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+    transition: all 0.4s ease;
+}
+
+.total-card:hover .total-icon {
+    transform: scale(1.1) rotate(5deg);
+}
+
+.total-info {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    flex: 1;
+}
+
+.total-amount {
+    font-size: 1.6rem;
+    font-weight: bold;
+    color: #f9fafb;
+    line-height: 1;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.total-token {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #f0b060;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+}
+
+.total-usd {
+    font-size: 0.85rem;
+    color: #dfc296;
+    opacity: 0.8;
+    font-weight: 500;
+}
+
+.total-divider {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin: 0 1rem;
+}
+
+.divider-line {
+    height: 2px;
+    width: 30px;
+    background: linear-gradient(90deg, transparent, rgba(240, 176, 96, 0.5), transparent);
+}
+
+.divider-text {
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: #f0b060;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.season-breakdown {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid rgba(240, 176, 96, 0.2);
+}
+
+.season-breakdown .breakdown-item {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    padding: 0.75rem;
+    background: rgba(30, 20, 10, 0.4);
+    border-radius: 0.5rem;
+    border: 1px solid rgba(240, 176, 96, 0.15);
+    transition: all 0.3s ease;
+}
+
+.season-breakdown .breakdown-item:hover {
+    transform: translateY(-2px);
+    border-color: rgba(240, 176, 96, 0.3);
+    background: rgba(30, 20, 10, 0.6);
+}
+
+.breakdown-category {
+    font-weight: 600;
+    color: #f0b060;
+    font-size: 0.9rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.breakdown-description {
+    color: #dfc296;
+    font-size: 0.8rem;
+    line-height: 1.4;
+    opacity: 0.9;
+}
+
+/* Responsive Design for Season Totals Banner */
+@media (max-width: 1024px) {
+    .season-totals-content {
+        padding: 1.25rem 1.5rem;
+    }
+    
+    .season-totals-header {
+        flex-direction: column;
+        gap: 0.75rem;
+        text-align: center;
+        margin-bottom: 1.25rem;
+    }
+    
+    .season-title h2 {
+        font-size: 1.6rem;
+    }
+    
+    .season-totals-grid {
+        flex-direction: column;
+        gap: 1rem;
+        margin-bottom: 1.25rem;
+    }
+    
+    .total-card {
+        min-width: auto;
+        width: 100%;
+        max-width: 350px;
+        padding: 1rem 1.25rem;
+    }
+    
+    .total-divider {
+        transform: rotate(90deg);
+        margin: 0;
+    }
+    
+    .season-breakdown {
+        grid-template-columns: 1fr;
+        gap: 0.75rem;
+        padding-top: 0.75rem;
+    }
+}
+
+@media (max-width: 768px) {
+    .season-totals-banner {
+        margin: 0 auto 1.5rem auto;
+    }
+    
+    .season-totals-content {
+        padding: 1rem 1.25rem;
+    }
+    
+    .season-icon {
+        font-size: 1.75rem;
+    }
+    
+    .season-title h2 {
+        font-size: 1.4rem;
+    }
+    
+    .season-subtitle {
+        font-size: 0.85rem;
+    }
+    
+    .total-card {
+        padding: 0.875rem 1rem;
+        min-width: auto;
+    }
+    
+    .total-amount {
+        font-size: 1.4rem;
+    }
+    
+    .lords-icon {
+        width: 2.25rem;
+        height: 2.25rem;
+    }
+    
+    .strk-icon {
+        width: 1.75rem;
+        height: 1.75rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .season-totals-content {
+        padding: 0.75rem 1rem;
+    }
+    
+    .season-icon {
+        font-size: 1.5rem;
+    }
+    
+    .season-title h2 {
+        font-size: 1.25rem;
+    }
+    
+    .season-subtitle {
+        font-size: 0.8rem;
+    }
+    
+    .total-card {
+        padding: 0.75rem;
+        flex-direction: column;
+        text-align: center;
+        gap: 0.75rem;
+    }
+    
+    .total-amount {
+        font-size: 1.25rem;
+    }
+    
+    .lords-icon {
+        width: 2rem;
+        height: 2rem;
+    }
+    
+    .strk-icon {
+        width: 1.5rem;
+        height: 1.5rem;
+    }
+    
+    .season-breakdown .breakdown-item {
+        padding: 0.5rem;
+    }
+    
+    .breakdown-category {
+        font-size: 0.8rem;
+    }
+    
+    .breakdown-description {
+        font-size: 0.75rem;
+    }
+}
+
+/* Realms ecosystem alignment pass */
+:root {
+    --realm-bg-void: #050709;
+    --realm-bg-smoke: #070b0d;
+    --realm-surface-iron: #101417;
+    --realm-surface-slate: #161b20;
+    --realm-surface-panel: rgba(16, 20, 23, 0.94);
+    --realm-accent-ember: #c4874a;
+    --realm-accent-brass: #e7cf88;
+    --realm-accent-arcane: #8d98c8;
+    --realm-border-etched: rgba(231, 207, 136, 0.22);
+    --realm-border-strong: rgba(231, 207, 136, 0.38);
+    --realm-text: #e8dcc2;
+    --realm-text-muted: #d8c8a8;
+    --realm-title: #f5ead0;
+    --realm-danger: #ef6a58;
+    --realm-success: #7fc68b;
+    --realm-radius: 8px;
+}
+
+* {
+    box-sizing: border-box;
+    letter-spacing: 0 !important;
+}
+
+body {
+    font-family: "Exo 2", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    padding: clamp(0.75rem, 2vw, 1.5rem);
+    background:
+        linear-gradient(180deg, rgba(231, 207, 136, 0.045), transparent 18rem),
+        linear-gradient(135deg, var(--realm-bg-void), var(--realm-bg-smoke) 48%, var(--realm-bg-void));
+    background-attachment: fixed;
+    color: var(--realm-text);
+}
+
+.App {
+    width: 100%;
+}
+
+.price-header,
+.tab-navigation,
+.container,
+.rewards-content,
+.rewards-placeholder,
+.victory-prizes,
+.calculation-explanation,
+.season-pass-analysis .analysis-card,
+.scenario-card,
+.cartridge-table,
+.daydreams-table,
+.chest-table,
+.chest-distribution-explanation,
+.season-pass-analysis .stat-card,
+.summary-card,
+.distribution-item {
+    border: 1px solid var(--realm-border-etched) !important;
+    border-radius: var(--realm-radius) !important;
+    background: linear-gradient(160deg, rgba(16, 20, 23, 0.96), rgba(5, 7, 9, 0.92)) !important;
+    box-shadow: 0 1px 0 rgba(255, 255, 255, 0.03), 0 18px 42px rgba(0, 0, 0, 0.22) !important;
+}
+
+.price-header,
+.tab-navigation,
+.container {
+    max-width: 1400px;
+}
+
+.price-header {
+    margin-bottom: 1rem;
+    padding: clamp(1rem, 2vw, 1.35rem) clamp(1rem, 2vw, 1.75rem);
+}
+
+.tab-navigation {
+    margin-bottom: 1.25rem;
+    padding: 0.5rem;
+    gap: 0.5rem;
+    backdrop-filter: blur(12px);
+}
+
+.tab-navigation::before,
+.chart-wrapper::before {
+    display: none !important;
+}
+
+.tab-button,
+.reward-type-btn,
+.calculation-toggle,
+.sort-order-btn {
+    border-radius: 6px !important;
+    color: var(--realm-text-muted) !important;
+    transform: none !important;
+    box-shadow: none !important;
+}
+
+.tab-button {
+    min-height: 3rem;
+    padding: 0.9rem 1rem;
+    border: 1px solid transparent;
+}
+
+.tab-button::before {
+    border-radius: 6px !important;
+    background: rgba(231, 207, 136, 0.08) !important;
+}
+
+.tab-button::after {
+    display: none;
+}
+
+.tab-button:hover,
+.tab-button.active,
+.reward-type-btn:hover,
+.reward-type-btn.active,
+.calculation-toggle:hover,
+.sort-order-btn:hover {
+    border-color: var(--realm-border-strong) !important;
+    background: rgba(231, 207, 136, 0.1) !important;
+    color: var(--realm-title) !important;
+    transform: none !important;
+}
+
+.tab-button.active {
+    background: linear-gradient(180deg, rgba(231, 207, 136, 0.16), rgba(16, 20, 23, 0.82)) !important;
+}
+
+.tab-icon {
+    filter: none !important;
+    transform: none !important;
+}
+
+.container,
+.rewards-content {
+    padding: clamp(1rem, 2.5vw, 1.75rem);
+    margin-bottom: 1.25rem;
+    border-left: 1px solid var(--realm-border-etched) !important;
+    border-bottom: 1px solid var(--realm-border-etched) !important;
+}
+
+.brand-title,
+h1,
+.rewards-content h2,
+.rewards-placeholder h3,
+.victory-title h3,
+.cartridge-title h3,
+.daydreams-title h3,
+.chest-title h3,
+.calc-card-header h4,
+.example-header h4,
+.scenarios-section h3,
+.card-header h3,
+.token-name {
+    font-family: "IM Fell English SC", Cinzel, Georgia, serif !important;
+    text-transform: uppercase;
+    font-weight: 400 !important;
+    color: var(--realm-title) !important;
+}
+
+h1 {
+    display: inline-flex;
+    align-items: center;
+    min-height: 2.25rem;
+    margin: 0 0 1.25rem;
+    padding: 0.45rem 0.75rem;
+    border: 1px solid var(--realm-border-etched) !important;
+    border-radius: 6px;
+    background: rgba(231, 207, 136, 0.08);
+    font-size: clamp(1.1rem, 2vw, 1.45rem);
+    line-height: 1.1;
+}
+
+.brand-title {
+    font-size: clamp(1.1rem, 2vw, 1.35rem);
+}
+
+.brand-subtitle,
+.last-updated,
+.total-revenue,
+.rewards-content p,
+.victory-subtitle,
+.cartridge-subtitle,
+.daydreams-subtitle,
+.chest-subtitle,
+.summary-label,
+.summary-usd,
+.fee-description,
+.legend-info .legend-subtitle,
+.legend-lords,
+.source,
+.source-breakdown,
+.calc-card-content p,
+.calc-list li,
+.calc-note,
+.data-label,
+.step-label,
+.metric-label,
+.scenarios-intro,
+.scenario-description,
+.scenario-explanation,
+.stat-label,
+.stat-subtitle,
+.player-address,
+.player-stats,
+.reward-usd,
+.breakdown-label,
+.points-label,
+.achievement-description,
+.distribution-players {
+    color: var(--realm-text-muted) !important;
+}
+
+.price-value,
+.center-text .total-usd,
+.legend-info .legend-title,
+.fee-category,
+.source-breakdown,
+.formula-value,
+.data-value,
+.step-value,
+.player-name,
+.tribe-name,
+.breakdown-value,
+.points-value,
+.player-address-only,
+.distribution-range,
+.metric-value,
+.scenario-value,
+.stat-value {
+    color: var(--realm-text) !important;
+}
+
+.eternum-logo,
+.token-name,
+.center-text .total-amount,
+.legend-amount,
+.amount-usd,
+.lords-badge,
+.address.no-address,
+.address-link,
+.summary-value,
+.reward-amount,
+.tribe-rank,
+.player-points,
+.percentage-value,
+.achievement-name,
+.distribution-chest-count,
+.formula-label,
+.calculation-arrow,
+.calc-step.highlight .step-label,
+.calc-step.highlight .step-value {
+    color: var(--realm-accent-brass) !important;
+}
+
+.chart-wrapper,
+.legend-item,
+.table-wrapper,
+.search-input,
+.sort-select,
+.sort-order-btn,
+.reward-type-btn,
+.address,
+.address-link,
+.calc-formula,
+.example-data,
+.example-calculation,
+.players-table,
+.player-row,
+.metric-row,
+.scenario-card,
+.analysis-card,
+.stat-card {
+    border: 1px solid var(--realm-border-etched) !important;
+    border-radius: var(--realm-radius) !important;
+    background: rgba(7, 10, 12, 0.74) !important;
+    box-shadow: none !important;
+}
+
+.chart-wrapper {
+    padding: clamp(1.5rem, 4vw, 2.5rem);
+}
+
+.legend-item {
+    border-left-width: 4px !important;
+    min-height: 4.75rem;
+}
+
+.legend-item:hover,
+.calculation-card:hover,
+.cartridge-table .player-row:hover,
+.daydreams-table .player-row:hover,
+.scenario-card:hover,
+.stat-card:hover,
+.address-link:hover {
+    transform: none !important;
+    border-color: var(--realm-border-strong) !important;
+    background: rgba(231, 207, 136, 0.075) !important;
+    box-shadow: 0 0 18px rgba(231, 207, 136, 0.08) !important;
+}
+
+.legend-color,
+.loading-spinner {
+    border-radius: 999px !important;
+}
+
+.table-wrapper {
+    overflow: auto;
+}
+
+table {
+    border-collapse: collapse;
+    color: var(--realm-text);
+}
+
+thead,
+th,
+.table-header,
+.cartridge-table .table-header,
+.daydreams-table .table-header,
+.chest-table .table-header,
+.analysis-card .card-header,
+.card-header {
+    background: rgba(16, 20, 23, 0.96) !important;
+    border-color: var(--realm-border-etched) !important;
+    color: var(--realm-accent-brass) !important;
+}
+
+th,
+td,
+.table-header,
+.player-row,
+.victory-header,
+.victory-controls,
+.calc-card-header,
+.example-header,
+.metric-row {
+    border-color: rgba(231, 207, 136, 0.16) !important;
+}
+
+td {
+    background: rgba(5, 7, 9, 0.42) !important;
+}
+
+tr:hover,
+.player-row:hover {
+    background: rgba(231, 207, 136, 0.055) !important;
+}
+
+.address,
+.address-link,
+.formula-value,
+.player-address,
+.player-address-only,
+.metric-value {
+    font-family: "SF Mono", Monaco, Consolas, "Liberation Mono", monospace !important;
+}
+
+.address-link,
+.lords-badge,
+.calc-step.highlight,
+.metric-usd {
+    background: rgba(231, 207, 136, 0.1) !important;
+    border-color: var(--realm-border-etched) !important;
+}
+
+.search-input,
+.sort-select {
+    color: var(--realm-text) !important;
+}
+
+.search-input::placeholder {
+    color: rgba(216, 200, 168, 0.68) !important;
+}
+
+.search-input:focus,
+.sort-select:focus,
+.tab-button:focus,
+.reward-type-btn:focus,
+.sort-order-btn:focus,
+.address-link:focus {
+    outline: 2px solid rgba(231, 207, 136, 0.34) !important;
+    outline-offset: 2px;
+    border-color: var(--realm-border-strong) !important;
+    box-shadow: none !important;
+}
+
+.price-change.positive {
+    background-color: rgba(127, 198, 139, 0.14) !important;
+    color: var(--realm-success) !important;
+}
+
+.price-change.negative,
+.error,
+.error-message {
+    background-color: rgba(239, 106, 88, 0.12) !important;
+    color: var(--realm-danger) !important;
+}
+
+.calculation-card,
+.calculation-example,
+.summary-card,
+.stat-card,
+.scenario-card {
+    padding: 1rem;
+}
+
+.calc-list li::before {
+    color: var(--realm-accent-brass) !important;
+}
+
+.loading-spinner {
+    border-color: rgba(231, 207, 136, 0.2) !important;
+    border-top-color: var(--realm-accent-brass) !important;
+}
+
+
+
+.season-totals-banner,
+.total-card,
+.season-breakdown .breakdown-item,
+.methodology,
+.key-insights,
+.insight-item {
+    border: 1px solid var(--realm-border-etched) !important;
+    border-radius: var(--realm-radius) !important;
+    background: linear-gradient(160deg, rgba(16, 20, 23, 0.96), rgba(5, 7, 9, 0.9)) !important;
+    box-shadow: none !important;
+}
+
+.season-totals-banner::before,
+.total-card::before {
+    display: none !important;
+}
+
+.season-title h2,
+.total-token,
+.breakdown-category {
+    font-family: "IM Fell English SC", Cinzel, Georgia, serif !important;
+    text-transform: uppercase;
+    font-weight: 400 !important;
+    color: var(--realm-accent-brass) !important;
+    text-shadow: none !important;
+}
+
+.season-subtitle,
+.total-usd,
+.breakdown-description,
+.insight-item {
+    color: var(--realm-text-muted) !important;
+}
+
+.total-amount,
+.insight-item strong {
+    color: var(--realm-title) !important;
+    text-shadow: none !important;
+}
+
+.total-card:hover,
+.season-breakdown .breakdown-item:hover,
+.total-card:hover .total-icon {
+    transform: none !important;
+    border-color: var(--realm-border-strong) !important;
+    background: rgba(231, 207, 136, 0.075) !important;
+    box-shadow: 0 0 18px rgba(231, 207, 136, 0.08) !important;
+}
+
+.season-icon,
+.total-icon,
+.lords-icon,
+.strk-icon {
+    animation: none !important;
+    filter: none !important;
+}
+
+.divider-line {
+    background: var(--realm-border-etched) !important;
+}
+
+.divider-text {
+    color: var(--realm-accent-brass) !important;
+    text-shadow: none !important;
+}
+
+@media (max-width: 768px) {
+    body {
+        padding: 0.75rem;
+    }
+
+    .tab-navigation {
+        gap: 0.35rem;
+    }
+
+    .tab-button {
+        min-height: 3.25rem;
+        padding: 0.75rem 0.5rem;
+    }
+
+    h1 {
+        width: 100%;
+        justify-content: center;
+        text-align: center;
+    }
+}
+
+
+/* Final statistics alignment pass */
+body {
+    font-family: "Exo 2", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    background: radial-gradient(circle at 18% 0%, rgba(196, 135, 74, 0.12), transparent 34%), #090b0d;
+}
+
+.App,
+.container,
+.rewards-container {
+    color: #efe5d1;
+}
+
+.price-header,
+.tab-navigation,
+.container,
+.rewards-content,
+.season-totals-banner,
+.victory-prizes,
+.cartridge-table,
+.daydreams-table,
+.chest-table,
+.marketplace-summary-compact,
+.scenario-card,
+.stat-card {
+    background: linear-gradient(145deg, rgba(17, 18, 20, 0.94), rgba(8, 9, 11, 0.98));
+    border: 1px solid rgba(231, 207, 136, 0.24);
+    box-shadow: inset 0 1px 0 rgba(231, 207, 136, 0.08), 0 18px 36px rgba(0, 0, 0, 0.28);
+}
+
+.price-header {
+    grid-template-columns: minmax(0, 1fr) minmax(220px, auto);
+    background: linear-gradient(145deg, rgba(19, 20, 22, 0.96), rgba(7, 8, 10, 0.98));
+}
+
+.price-info {
+    grid-column: 2;
+    justify-self: end;
+    text-align: right;
+}
+
+.price-details {
+    align-items: flex-end;
+}
+
+.brand-title,
+h1,
+.season-title h2,
+.victory-title h3,
+.cartridge-title h3,
+.daydreams-title h3,
+.chest-title h3,
+.marketplace-summary-heading,
+.scenarios-section h3 {
+    font-family: "IM Fell English SC", Georgia, serif;
+    text-transform: uppercase;
+    letter-spacing: 0 !important;
+    color: #e7cf88;
+}
+
+.brand-title {
+    font-size: clamp(1.28rem, 2vw, 1.55rem);
+    line-height: 1.05;
+}
+
+.brand-subtitle,
+.token-name,
+.tab-text,
+.summary-label,
+.stat-label,
+.total-token {
+    font-family: "IM Fell English SC", Georgia, serif;
+    text-transform: uppercase;
+    letter-spacing: 0 !important;
+}
+
+.token-name {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.45rem;
+    color: #e7cf88;
+    font-size: 1rem;
+    line-height: 1.2;
+}
+
+.token-note {
+    color: #b9a989;
+    font-family: "Exo 2", sans-serif;
+    font-size: 0.82rem;
+    text-transform: none;
+    white-space: nowrap;
+}
+
+.price-value {
+    color: #f5ead0;
+    justify-content: flex-end;
+}
+
+.tab-button,
+.tab-button:hover,
+.tab-button:focus {
+    text-decoration: none !important;
+}
+
+.tab-button {
+    min-height: 3.25rem;
+}
+
+.tab-text {
+    font-size: clamp(0.95rem, 1.15vw, 1.08rem);
+}
+
+.tab-button:hover {
+    transform: translateY(-1px);
+}
+
+h1 {
+    border-left: 0;
+    padding-left: 0;
+    font-size: clamp(1.34rem, 2vw, 1.58rem);
+    text-align: center;
+}
+
+.chart-container {
+    grid-template-columns: minmax(0, 1.35fr) minmax(320px, 0.82fr);
+    align-items: stretch;
+    gap: clamp(2.25rem, 4vw, 3.5rem);
+}
+
+.chart-wrapper {
+    max-width: 575px;
+    justify-self: center;
+    align-self: stretch;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: clamp(2.75rem, 4vw, 3.55rem);
+    background: linear-gradient(145deg, rgba(13, 14, 16, 0.96), rgba(5, 6, 8, 0.98));
+    border: 1px solid rgba(231, 207, 136, 0.2);
+}
+
+.legend-container {
+    justify-content: space-between;
+}
+
+.legend-item,
+.summary-card,
+.total-card,
+.distribution-item,
+.search-input,
+.sort-select,
+.sort-order-btn,
+.reward-type-btn {
+    background: rgba(8, 9, 11, 0.72);
+    border-color: rgba(231, 207, 136, 0.22);
+}
+
+.marketplace-summary-compact {
+    padding: clamp(1.25rem, 2vw, 1.75rem);
+    margin-bottom: 2.25rem;
+}
+
+.marketplace-summary-heading {
+    margin-bottom: 1rem;
+    font-size: clamp(1.15rem, 1.6vw, 1.35rem);
+    text-align: center;
+}
+
+.marketplace-metrics {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.85rem;
+}
+
+.marketplace-metric {
+    min-height: 6.25rem;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 0.45rem;
+    padding: 1rem;
+    border-radius: 0.5rem;
+    border: 1px solid rgba(231, 207, 136, 0.18);
+    background: rgba(5, 6, 8, 0.54);
+    text-align: center;
+}
+
+.marketplace-metric .metric-value {
+    min-width: 0;
+    text-align: center;
+}
+
+.victory-prizes {
+    background: transparent;
+    border: 0;
+    box-shadow: none;
+    overflow: visible;
+}
+
+.victory-header,
+.cartridge-header,
+.daydreams-header,
+.chest-header {
+    align-items: flex-start;
+    border-bottom-color: rgba(231, 207, 136, 0.16);
+    padding-top: 0;
+}
+
+.victory-title h3,
+.cartridge-title h3,
+.daydreams-title h3,
+.chest-title h3 {
+    margin-top: 0;
+    line-height: 1.08;
+}
+
+.victory-summary,
+.cartridge-summary,
+.daydreams-summary,
+.chest-summary {
+    align-items: flex-start;
+    padding-top: 0.18rem;
+}
+
+.victory-controls,
+.cartridge-controls,
+.daydreams-controls,
+.chest-controls {
+    border-color: rgba(231, 207, 136, 0.16);
+}
+
+.players-table {
+    border-radius: 0.75rem;
+    border: 1px solid rgba(231, 207, 136, 0.18);
+    background: rgba(5, 6, 8, 0.52);
+    scrollbar-width: thin;
+    scrollbar-color: rgba(231, 207, 136, 0.55) rgba(8, 9, 11, 0.85);
+}
+
+.players-table::-webkit-scrollbar,
+.table-wrapper::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+}
+
+.players-table::-webkit-scrollbar-track,
+.table-wrapper::-webkit-scrollbar-track {
+    background: rgba(8, 9, 11, 0.9);
+    border-radius: 999px;
+}
+
+.players-table::-webkit-scrollbar-thumb,
+.table-wrapper::-webkit-scrollbar-thumb {
+    background: linear-gradient(180deg, rgba(231, 207, 136, 0.72), rgba(196, 135, 74, 0.76));
+    border: 2px solid rgba(8, 9, 11, 0.92);
+    border-radius: 999px;
+}
+
+.strk-price-note {
+    margin: -0.55rem 0 1.1rem;
+    color: #b9a989;
+    font-size: 0.82rem;
+    text-align: center;
+}
+
+.reward-usd,
+.total-usd,
+.summary-usd,
+.tribe-prize {
+    color: #b9a989;
+}
+
+.season-breakdown .breakdown-item,
+.chest-distribution-explanation {
+    background: rgba(5, 6, 8, 0.54);
+    border-color: rgba(231, 207, 136, 0.18);
+}
+
+@media (max-width: 1024px) {
+    .price-header {
+        grid-template-columns: 1fr;
+    }
+
+    .price-info,
+    .price-details {
+        justify-self: center;
+        align-items: center;
+        text-align: center;
+    }
+
+    .token-name,
+    .price-value {
+        justify-content: center;
+    }
+
+    .chart-wrapper {
+        max-width: 460px;
+        align-self: auto;
+    }
+
+    .marketplace-metrics {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 768px) {
+    .brand-title {
+        font-size: 1.2rem;
+    }
+
+    .victory-summary,
+    .cartridge-summary,
+    .daydreams-summary,
+    .chest-summary {
+        width: 100%;
+        flex-direction: column;
+    }
+}
+
+
+/* Final dashboard detail pass */
+.brand-subtitle {
+    max-width: min(60vw, 720px);
+    line-height: 1.25;
+}
+
+.price-header {
+    grid-template-columns: minmax(0, 1fr) minmax(190px, auto);
+}
+
+.price-info {
+    gap: 0;
+}
+
+.token-name {
+    font-size: clamp(0.96rem, 1.2vw, 1.08rem);
+}
+
+.tab-text {
+    font-weight: 400 !important;
+}
+
+.container > h1 {
+    display: block !important;
+    width: 100% !important;
+    margin: 0 0 clamp(1rem, 2vw, 1.35rem) !important;
+    padding: 0 !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    text-align: center !important;
+    box-shadow: none !important;
+}
+
+.chart-container {
+    width: min(100%, 1080px) !important;
+    margin: 1.25rem auto 0 !important;
+    padding: clamp(1.25rem, 2.8vw, 2rem) !important;
+    grid-template-columns: minmax(300px, 0.9fr) minmax(320px, 1fr) !important;
+    gap: clamp(1.25rem, 3vw, 2rem) !important;
+    align-items: center !important;
+    justify-content: center !important;
+    border: 1px solid rgba(231, 207, 136, 0.24) !important;
+    border-radius: 8px !important;
+    background: linear-gradient(145deg, rgba(13, 14, 16, 0.96), rgba(5, 6, 8, 0.98)) !important;
+    box-shadow: inset 0 1px 0 rgba(231, 207, 136, 0.08), 0 18px 36px rgba(0, 0, 0, 0.28) !important;
+}
+
+.chart-wrapper {
+    max-width: 455px !important;
+    width: 100% !important;
+    justify-self: center !important;
+    padding: clamp(0.5rem, 2vw, 1rem) !important;
+    border: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+}
+
+.legend-container {
+    width: 100% !important;
+    justify-content: center !important;
+    gap: 0.78rem !important;
+}
+
+.legend-item {
+    cursor: default !important;
+    min-height: 4.4rem !important;
+    border-left-width: 0 !important;
+}
+
+.legend-item:hover {
+    background: rgba(8, 9, 11, 0.72) !important;
+    border-color: rgba(231, 207, 136, 0.22) !important;
+    box-shadow: none !important;
+}
+
+.legend-color {
+    width: 21px !important;
+    height: 21px !important;
+    min-width: 21px !important;
+    border: 1px solid rgba(245, 234, 208, 0.42);
+}
+
+.victory-prizes {
+    padding: 2rem 0 !important;
+}
+
+.victory-header {
+    padding: 0 !important;
+    margin-bottom: 2rem !important;
+    border-bottom: 0 !important;
+}
+
+.victory-controls {
+    padding: 0 !important;
+    margin-bottom: 2rem !important;
+    border-bottom: 0 !important;
+}
+
+.players-table {
+    margin-top: 0 !important;
+    overflow: hidden !important;
+}
+
+@media (max-width: 1024px) {
+    .chart-container {
+        grid-template-columns: 1fr !important;
+        max-width: 620px !important;
+    }
+
+    .brand-subtitle {
+        max-width: none;
+    }
+}
+
+@media (max-width: 768px) {
+    .price-header {
+        grid-template-columns: 1fr;
+    }
+}
+
+
+/* Victory table and S1 price note corrections */
+.price-value {
+    gap: 0.08rem !important;
+}
+
+.price-asterisk {
+    align-self: flex-start;
+    margin-left: 0.05rem;
+    color: var(--realm-accent-brass, #e7cf88);
+    font-size: 0.95rem;
+    line-height: 1;
+}
+
+.price-footnote {
+    margin-top: 0.16rem;
+    color: var(--realm-text-muted, #b9a989);
+    font-size: 0.75rem;
+    line-height: 1.15;
+    text-align: right;
+}
+
+.chart-canvas-wrapper canvas {
+    display: block !important;
+    transform: translateY(10px);
+}
+
+.victory-prizes {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 0 !important;
+    background: transparent !important;
+    border: 0 !important;
+    box-shadow: none !important;
+}
+
+.victory-header,
+.victory-controls {
+    background: transparent !important;
+    border: 0 !important;
+    box-shadow: none !important;
+}
+
+.victory-header {
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: flex-start !important;
+    gap: 2rem !important;
+}
+
+.victory-title {
+    flex: 1 1 auto !important;
+}
+
+.victory-summary {
+    flex: 0 0 auto !important;
+}
+
+.victory-controls {
+    display: flex !important;
+    align-items: center !important;
+    gap: 1rem !important;
+}
+
+.victory-table {
+    max-height: 600px !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    border: 1px solid rgba(231, 207, 136, 0.18) !important;
+    border-radius: 0.75rem !important;
+    background: rgba(5, 6, 8, 0.52) !important;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(231, 207, 136, 0.55) rgba(8, 9, 11, 0.85);
+}
+
+.victory-table .table-header {
+    position: sticky !important;
+    top: 0 !important;
+    z-index: 3 !important;
+}
+
+.victory-table::-webkit-scrollbar {
+    width: 10px;
+}
+
+.victory-table::-webkit-scrollbar-track {
+    background: rgba(8, 9, 11, 0.9);
+    border-radius: 999px;
+}
+
+.victory-table::-webkit-scrollbar-thumb {
+    background: linear-gradient(180deg, rgba(231, 207, 136, 0.72), rgba(196, 135, 74, 0.76));
+    border: 2px solid rgba(8, 9, 11, 0.92);
+    border-radius: 999px;
+}
+
+@media (max-width: 1024px) {
+    .victory-header,
+    .victory-controls {
+        flex-direction: column !important;
+        align-items: stretch !important;
+    }
+
+    .victory-summary {
+        width: 100% !important;
+    }
+}
+
+@media (max-width: 768px) {
+    .price-footnote {
+        text-align: center;
+    }
+}
+
+
+/* Final victory tab alignment pass */
+.chart-canvas-wrapper canvas {
+    transform: translateY(50px) !important;
+}
+
+.victory-title h3 {
+    justify-content: flex-start !important;
+    text-align: left !important;
+    font-size: 1.8rem !important;
+    margin: 0 0 0.5rem !important;
+    line-height: 1.08 !important;
+}
+
+.victory-subtitle {
+    text-align: left !important;
+    font-size: 0.9rem !important;
+    line-height: 1.5 !important;
+    margin: 0 !important;
+    opacity: 0.8 !important;
+}
+
+.victory-header {
+    margin-bottom: 2rem !important;
+}
+
+.victory-table {
+    border-radius: 1rem !important;
+    background: rgba(7, 10, 12, 0.74) !important;
+}
+
+.victory-table .table-header {
+    display: grid !important;
+    grid-template-columns: 1.5fr 1.5fr 1fr 1.5fr !important;
+    gap: 1rem !important;
+    padding: 1.5rem 2rem !important;
+    background: rgba(16, 20, 23, 0.96) !important;
+    border-bottom: 2px solid rgba(231, 207, 136, 0.18) !important;
+    color: var(--realm-accent-brass, #e7cf88) !important;
+    font-size: 0.9rem !important;
+    font-weight: 600 !important;
+    letter-spacing: 0 !important;
+    text-transform: uppercase !important;
+}
+
+@media (max-width: 1024px) {
+    .victory-table .table-header {
+        display: none !important;
+    }
+}
+
+
+/* Final chart and season-pass title corrections */
+.chart-canvas-wrapper canvas {
+    transform: translateY(40px) !important;
+}
+
+.victory-subtitle {
+    font-size: 1.1rem !important;
+    line-height: 1.5 !important;
+}
+
+.scenarios-section h3 {
+    border-left: 0 !important;
+    padding-left: 0 !important;
+    text-align: center !important;
+}
