@@ -2,7 +2,7 @@
   "version": 1,
   "environment": "appchain.blitz",
   "kind": "game",
-  "updatedAt": "2026-08-24T06:01:42.783Z",
+  "updatedAt": "2026-08-25T05:56:25.442Z",
   "entries": {
     "bltz-whiz-505": {
       "kind": "game",
@@ -21,40 +21,6 @@
       "durationSeconds": 432000,
       "artifacts": {}
     },
-    "bltz-blink-3": {
-      "kind": "game",
-      "environment": "appchain.blitz",
-      "gameName": "bltz-blink-3",
-      "path": "runs/appchain/blitz/bltz-blink-3.json",
-      "inputPath": "inputs/appchain/blitz/bltz-blink-3/32022672865-1.json",
-      "status": "complete",
-      "updatedAt": "2026-08-17T11:00:17.016Z",
-      "workflowRef": "feat/single-world-blitz",
-      "currentStepId": null,
-      "hasRunningStep": false,
-      "recoverableFailedStepId": null,
-      "recoverablePendingStepId": null,
-      "startTime": 1786965300,
-      "durationSeconds": 3600,
-      "artifacts": {}
-    },
-    "bltz-blip-967": {
-      "kind": "game",
-      "environment": "appchain.blitz",
-      "gameName": "bltz-blip-967",
-      "path": "runs/appchain/blitz/bltz-blip-967.json",
-      "inputPath": "inputs/appchain/blitz/bltz-blip-967/32083283204-1.json",
-      "status": "complete",
-      "updatedAt": "2026-08-18T00:09:31.460Z",
-      "workflowRef": "feat/single-world-blitz",
-      "currentStepId": null,
-      "hasRunningStep": false,
-      "recoverableFailedStepId": null,
-      "recoverablePendingStepId": null,
-      "startTime": 1787013420,
-      "durationSeconds": 3600,
-      "artifacts": {}
-    },
     "bltz-riff-449": {
       "kind": "game",
       "environment": "appchain.blitz",
@@ -69,23 +35,6 @@
       "recoverableFailedStepId": "create-world",
       "recoverablePendingStepId": "wait-for-factory-index",
       "startTime": "2026-08-18T00:50:00.000Z",
-      "durationSeconds": 3600,
-      "artifacts": {}
-    },
-    "bltz-nova-813": {
-      "kind": "game",
-      "environment": "appchain.blitz",
-      "gameName": "bltz-nova-813",
-      "path": "runs/appchain/blitz/bltz-nova-813.json",
-      "inputPath": "inputs/appchain/blitz/bltz-nova-813/32085475621-1.json",
-      "status": "complete",
-      "updatedAt": "2026-08-18T00:43:31.618Z",
-      "workflowRef": "feat/single-world-blitz",
-      "currentStepId": null,
-      "hasRunningStep": false,
-      "recoverableFailedStepId": null,
-      "recoverablePendingStepId": null,
-      "startTime": 1787014500,
       "durationSeconds": 3600,
       "artifacts": {}
     },
