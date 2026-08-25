@@ -153,19 +153,19 @@ connectors — Ready/Argent, Braavos on `SN_MAIN`, no Controller).
   call 401); **two concurrent verifications of the same message → exactly one 200**.
 - better-auth `advanced.crossSubDomainCookies` on the parent domain, `trustedOrigins` = the web and game origins,
   `secure` cookies.
-- **Full HTTPS, everywhere, including the lab.** `/etc/hosts` maps `realms.test`, `play.realms.test`, `rpc.realms.test`,
-  `torii.realms.test` to `127.0.0.1`. The lab compose gains a `caddy` service that terminates TLS for
+- **HTTPS for all browser traffic, including the lab.** `/etc/hosts` maps `realms.test`, `play.realms.test`,
+  `rpc.realms.test`, `torii.realms.test` to `127.0.0.1`. The lab compose gains a `caddy` service that terminates TLS for
   `rpc.realms.test → madara:9944` and `torii.realms.test → torii:8080` (HTTP/2, gRPC-web and WebSocket pass through)
   using certificates `mkcert` issues into `deploy/madara-lab/.lab/certs/` (gitignored; the mkcert root CA is installed
-  once with `mkcert -install`, which covers the system store and Brave's NSS db; Bun ships its own Mozilla roots, so the
-  harness and every bun script run with `NODE_EXTRA_CA_CERTS="$(mkcert -CAROOT)/rootCA.pem"` set in the lab `.env`;
-  `sozo` is CLI configuration, not browser-facing, and stays on loopback HTTP `http://127.0.0.1:5060/rpc/v0_9_0` in
-  `dojo_madara.toml`). Web runs on `https://realms.test`, the game on `https://play.realms.test` (Vite mkcert plugin,
-  `hosts` option). No browser-facing value on the branch is `http://` — every `VITE_PUBLIC_*` value, env sample, world
-  profile and `packages/chain` endpoint; Docker-internal links (`torii → madara:9944`), health checks, tests and CLI
-  tooling may stay plain HTTP because no browser touches them. `check:forbidden-hosts` enforces exactly that split.
-  Gate: a session created on web is readable on play; an origin outside the list is refused; zero mixed-content errors
-  during a full world load.
+  once with `mkcert -install`, which covers the system store and Brave's NSS db). Browsers are the only TLS clients:
+  `sozo`, the deployer, the harness and the `deploy_account` probe are CLI tools and stay on loopback HTTP
+  (`http://127.0.0.1:5060`, `:8090`) — Bun ships its own Mozilla roots and would need extra CA plumbing for nothing. Web
+  runs on `https://realms.test`, the game on `https://play.realms.test` (Vite mkcert plugin, `hosts` option). No
+  browser-facing value on the branch is `http://` — every `VITE_PUBLIC_*` value, env sample, world profile and
+  `packages/chain` endpoint; Docker-internal links (`torii → madara:9944`), health checks, tests and CLI tooling stay
+  plain HTTP because no browser touches them. `check:forbidden-hosts` enforces exactly that split. Gate: a session
+  created on web is readable on play; an origin outside the list is refused; zero mixed-content errors during a full
+  world load.
 
 In the game: delete the Cartridge surface listed in the facts; `StarknetProvider` becomes identity-only through
 `packages/identity`; `useAccount()` consumers are reclassified by one rule — **signs or reads game ownership → gameplay
@@ -187,12 +187,12 @@ browser-facing configuration only — by path, not by guess: `VITE_PUBLIC_*` val
 in `apps/web/.env*`, `packages/chain/src/endpoints.ts`, and the world profiles under `apps/game/src/runtime/world/`.
 Dojo profiles (`contracts/game/dojo_*.toml`), compose files, health checks, tests and scripts are CLI/internal
 configuration and are not scanned (234 files legitimately use plain HTTP internally today). There is no loopback
-exception because there is no HTTP page left: the `local` (Katana) chain kind and its `.env.local.blitz.sample` are
-deleted in this step — Katana is Cartridge, and the local chain is `madara` behind Caddy. The word itself is not the
-rule, so the script and this brief do not trip it. At runtime, `packages/chain`'s single endpoint resolver — through
-which every RPC, Torii, SQL and identity URL is read — throws on a forbidden host, and on a plain-HTTP endpoint whenever
-`window.location.protocol === "https:"` (the mixed-content rule, made loud instead of silent); no per-variable
-assertions. Runs in CI from this step on. Plus: web and game log in with the same session on the `.test` subdomains.
+exception because there is no HTTP page left: the `local` (Katana) chain kind becomes `madara` in D.1 — Katana is
+Cartridge, and the local chain is Madara behind Caddy. The word itself is not the rule, so the script and this brief do
+not trip it. At runtime, `packages/chain`'s single endpoint resolver — through which every RPC, Torii, SQL and identity
+URL is read — throws on a forbidden host, and on a plain-HTTP endpoint whenever `window.location.protocol === "https:"`
+(the mixed-content rule, made loud instead of silent); no per-variable assertions. Runs in CI from this step on. Plus:
+web and game log in with the same session on the `.test` subdomains.
 
 **Owner:** Codex.
 
@@ -250,19 +250,42 @@ source of truth).
 
 ## D. Playing on Madara
 
-### D.1 Client chain target `madara`
+### D.1 Chain kinds: `local` becomes `madara`, `sepolia`/`mainnet` go — one rename, every site
 
-`madara` in `VITE_PUBLIC_CHAIN` (`env.ts:59`); `.env.madara.blitz.sample` with
-`VITE_PUBLIC_NODE_URL=https://rpc.realms.test`, `VITE_PUBLIC_TORII=https://torii.realms.test` (the Caddy endpoints from
-C.2), `VITE_PUBLIC_VRF_PROVIDER_ADDRESS=0x0` (tx-hash randomness fallback, `utils/random.cairo:15-18` — right for the
-lab), `VITE_PUBLIC_MASTER_*` = devnet account #1. World directory entry from `contracts/game/manifest_madara.json`
-(`runtime/world/world-directory.ts:31-58`). Torii/RPC fallbacks that resolve `api.cartridge.gg` (`world-torii.ts:14-19`,
-`factory-endpoints.ts:7`, `chain-rpc.ts:4`, `global-chain.ts:4`, `profile-builder.ts:15`, `normalize.ts:36,56`,
-`landing-leaderboard-service.ts:87-90`) are deleted, not guarded — `packages/chain` is the only place a host comes from,
-and `check:forbidden-hosts` keeps it that way. Live path stays Torii's subscriptions against the canary; no Madara
-WebSocket path exists, do not add one.
+The `Chain` union (`packages/types`, re-exported as `@contracts`) is `"sepolia" | "mainnet" | "local" | "appchain"`
+today; after this step it is `"madara" | "appchain"`. `local` is not deleted and re-added: it is **renamed** to `madara`
+with its semantics fixed — the RPC comes from `VITE_PUBLIC_NODE_URL`, never a hardcoded `http://localhost:5050`; the
+chain id is `WP_REALMS_MADARA_LAB`. Every site that switches on the kind changes in the same commit:
 
-**Owner:** Codex. **Gate:** `pnpm dev` with `.env.madara.blitz` shows the lab world; the C.3 gate runs on it.
+- Client: `env.ts:59` (enum + default `madara`), `runtime/world/store.ts:20` (`CHAIN_VALUES`),
+  `hooks/context/starknet-chain-config.ts` (`chainKind` union; the `KATANA_*` constants and the Cartridge RPC builders
+  are deleted), `starknet-provider.tsx`, `signing-policy.ts` (deleted with C.2), `init/bootstrap.tsx`,
+  `services/api.ts`, `ui/features/landing/components/{selected-world-entity-wait,game-entry-modal}.ts(x)`,
+  `ui/utils/network-switch.ts`, `utils/torii-setting.ts`, and the world directory
+  (`runtime/world/world-directory.ts:31-58`) which gains the `madara` entry from `contracts/game/manifest_madara.json`
+  and loses `sepolia`/`mainnet`.
+- Env: `.env.madara.blitz.sample` replaces `.env.local.blitz.sample` with
+  `VITE_PUBLIC_NODE_URL=https://rpc.realms.test`, `VITE_PUBLIC_TORII=https://torii.realms.test`,
+  `VITE_PUBLIC_VRF_PROVIDER_ADDRESS=0x0` (tx-hash randomness fallback, `utils/random.cairo:15-18` — right for the lab),
+  `VITE_PUBLIC_MASTER_*` = devnet account #1. `.env.sepolia.*` and `.env.mainnet.*` are deleted.
+- Deployer/config: `config/package.json` scripts `local:blitz`/`local:eternum`/`sync:local*` become
+  `madara:blitz`/`madara:eternum`/`sync:madara*`; `sepolia:*` and `mainnet:*` scripts are deleted.
+  `config/deployer/clean/constants.ts:53` (`local: DEFAULT_LOCAL_RPC_URL`) becomes `madara` reading `RPC_URL`;
+  `config/source/{blitz,eternum}/chains.ts`, `config/scripts/run-sync.ts`, `config/utils/confirmation.ts` follow;
+  `config/deployer/clean/paymaster/sync-policy.ts` is deleted with the paymaster. **The deployer's legacy `local`
+  environment does not survive**; `madara.blitz` (D.2) is its replacement, and `madara.eternum` is the same mechanism
+  with the eternum preset — no extra work, so it stays.
+- Hosts: every fallback that resolves `api.cartridge.gg` (`world-torii.ts:14-19`, `factory-endpoints.ts:7`,
+  `chain-rpc.ts:4`, `global-chain.ts:4`, `profile-builder.ts:15`, `normalize.ts:36,56`,
+  `landing-leaderboard-service.ts:87-90`) is deleted, not guarded — `packages/chain` is the only place a host comes
+  from, and `check:forbidden-hosts` keeps it that way.
+- Live path stays Torii's subscriptions against the canary; no Madara WebSocket path exists, do not add one.
+
+**Owner:** Codex. **Gate:**
+`grep -rn '"local"\|"sepolia"\|"mainnet"' apps/game/src packages/*/src config --include='*.ts' --include='*.tsx'`
+returns no chain-kind hit (identity-side `SN_MAIN` in `packages/identity` is the one legitimate mainnet reference);
+`pnpm typecheck`; tests updated, not skipped; `pnpm dev` with `.env.madara.blitz` shows the lab world; the C.3 gate runs
+on it.
 
 ### D.2 Deployer: `madara.blitz` environment and chain bootstrap
 
@@ -330,11 +353,11 @@ numbers recorded in the README. That is phase 1 done.
 Removed: three lockfiles, three CI setups, three Vercel projects' config, three wallet-connection layers, two
 chain-constant tables, the game's duplicated profile/wallet UI, ~900 lines of Controller/session/paymaster mechanics,
 three dependencies, one env value, the Katana Cartridge flags, `onchain-agent`, `heavy-load`, the controller spike,
-realtime-server's profile/avatar routes, the `client/` directory, the legacy S1 and `local` (Katana) chain kinds, every
-hardcoded Cartridge host. Added: `packages/identity`, `packages/chain`, `contracts/player-account` (~150 lines),
-`gameplay-account.ts` (~100), key store + sync (~80), two server functions (~100), SIWS hardening (~60),
-`check:forbidden-hosts` (~30), a `caddy` block and certs in the lab compose, a `postgres` block in the lab compose, two
-named catalogs, `tooling/`. Net deletion in code; one more service in the lab.
+realtime-server's profile/avatar routes, the `client/` directory, the S1 chain kinds and the deployer's
+`local`/`sepolia`/`mainnet` environments, every hardcoded Cartridge host. Added: `packages/identity`, `packages/chain`,
+`contracts/player-account` (~150 lines), `gameplay-account.ts` (~100), key store + sync (~80), two server functions
+(~100), SIWS hardening (~60), `check:forbidden-hosts` (~30), a `caddy` block and certs in the lab compose, a `postgres`
+block in the lab compose, two named catalogs, `tooling/`. Net deletion in code; one more service in the lab.
 
 ## Out of phase 1 (deliberately)
 
@@ -352,7 +375,7 @@ yourself writing one of them here, stop.
 - The gameplay account is an operator-custodied burner that must never hold value; the protections that make it safe for
   value are named and gated for phase 2.
 - Guest play only on `madara`; production entry requires an identity.
-- The `local` (Katana) chain kind is deleted with Cartridge; the local chain is `madara`.
+- The `local` (Katana) chain kind is renamed to `madara` with its RPC from env; `sepolia`/`mainnet` are deleted.
 - Binding ships with the login; the hardened SIWS is the verifier, the registry is the truth.
 - Subdomains + parent-domain cookie, not path routing. Game subdomain: keep `blitz.realms.world`.
 - Marketplace is ported in phase 2, not imported.
