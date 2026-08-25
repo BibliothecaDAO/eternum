@@ -26,14 +26,16 @@ Verified 2026-08-24/25.
 | Madara `v0.11.0-alpha.9` (digest `sha256:98e02d4b…`) runs the current Dojo world; `sozo 1.8.7` needs `--use-blake2s-casm-class-hash` and `/rpc/v0_9_0`; migration 22 m 40 s; block close p50 2.2 ms; lab config `block_time: 2s`, `pending_block_update_time: 250ms`, `--no-charge-fee`                                                                                                                                                                                     | `deploy/madara-lab/README.md` |
 | Madara has no `starknet_subscribe*` and no `dev_predeployedAccounts`; Torii v1.8.16 follows it with `events_chunk_size = 100`                                                                                                                                                                                                                                                                                                                                               | README, canary                |
 | Both game chains are fee-free: Katana AWS `no_fee = true` (`deploy/appchain/config/katana.toml:11`), lab `--no-charge-fee`                                                                                                                                                                                                                                                                                                                                                  | config                        |
-| Contracts identify the player by `get_caller_address()` only; the entry fee is `transfer_from(caller, …)` and prizes are `transfer(registered_player, …)` on the game chain (`realm/blitz/contracts.cairo:82,102,285-299`, `prize_distribution/contracts.cairo:173-175,249`)                                                                                                                                                                                                | source                        |
+| Contracts identify the player by `get_caller_address()` only; the Blitz flow is `obtain_entry_token` (`realm/blitz/contracts.cairo:64`) → `settle` (`:93`) → `provision_realm` (`:218`); the entry fee is `transfer_from(caller, …)` and prizes are `transfer(registered_player, …)` on the game chain (`:285-299`, `prize_distribution/contracts.cairo:173-175,249`)                                                                                                       | source                        |
 | `settle(game_id, name, …)` writes `AddressName`; the Controller username was only a client default                                                                                                                                                                                                                                                                                                                                                                          | source                        |
 | The Blitz cap of 24 is enforced in **four** places: Cairo `registrar/contracts.cairo:330`, the admin setter `config/contracts.cairo:920-942` (no cap at all), the TypeScript deployer `config/deployer/clean/registrar/preset.ts:598`, and the base config `config/source/blitz/base.ts:18`; `fill_open_settlement_pool` (`realm/blitz/contracts.cairo:451-466`) is unbounded per call                                                                                      | source                        |
 | Madara devnet OZ account class `0xe2eb8f56…a1d6` has `__validate_deploy__`, `set_public_key`; Katana AWS `VITE_PUBLIC_ACCOUNT_CLASS_HASH=0x07dc78…` is **not declared** there                                                                                                                                                                                                                                                                                               | `starknet_getClass`           |
 | Peer dependencies pin the game to React 18 / starknet 8: `@starknet-react/core@5.0.3` (`react ^18.0`, `starknet ^8.1.2`, `pnpm-lock.yaml:5594`), `@dojoengine/react` and `@dojoengine/sdk` (`react ^18`, `starknet ^8.1.2`, `:2196,2210`). React 19 for the game is part of the dojo.js-exit bundle (`client-legacy-purge-p7-codex-brief.md:161`)                                                                                                                           | lockfile                      |
 | The game's Cartridge surface: 7 files import `@cartridge/*`; Controller-only mechanics: `policies.ts`, `signing-policy.ts`, `session-policy-refresh(-state).ts`, `transaction-submit-guard.ts`, `controller-connect.ts`, `use-controller-account.ts`, `use-cartridge-username.tsx`, `use-username.ts`, `ui/modules/controller/controller.tsx`, `paymasterRpcProvider` + `usePredeployedAccounts` in `starknet-provider.tsx`; `useAccount()` read in 17 files                | grep                          |
 | Cartridge residue outside the game: `client/apps/onchain-agent` ("Axis", `@cartridge/controller` + `controller-wasm`, `package.json:22-23`); `deploy/appchain/spike/controller-test` (own lockfile); `client/apps/realtime-server` defaults `CARTRIDGE_API_BASE`/`MAINNET_RPC_URL` to `api.cartridge.gg` and keys profiles by `cartridge_username` (`db/schema/profiles.ts:7`); `eternum-mobile` has 6 source files naming Cartridge; `heavy-load` and `amm-indexerv2` none | grep                          |
-| `client/public` is 518 MB; the game serves it via `publicDir: "../../public"` (`vite.config.ts:214`); `packages/core/src/data/realm-names.ts` imports `client/public/jsons/{realms,realm-names}.json`                                                                                                                                                                                                                                                                       | source                        |
+| `client/public` is 518 MB; the game serves it via `publicDir: "../../public"` (`vite.config.ts:214`). The realm dataset exists twice in different shapes: `packages/core/src/data/realms.json` and `client/public/jsons/realms.json` (6.5 MB, fetched at runtime by `packages/core/src/utils/realm.ts:19`, which `getOffchainRealm` depends on); `packages/core/src/data/realm-names.ts` imports `client/public/jsons/{realms,realm-names}.json` by relative path           | source                        |
+| `@starknet-start/react@1.0.0` (the portal's connector layer) peers on `react >=19`, `starknet >=9`; `@starknet-react/core` 5.0.3 peers on React 18 / starknet 8 — no wallet-connector library spans both stacks                                                                                                                                                                                                                                                             | `npm view`                    |
+| The lab chain and Torii listen on plain HTTP (`127.0.0.1:5060`, `:8090`); an HTTPS page cannot call them (mixed content)                                                                                                                                                                                                                                                                                                                                                    | compose                       |
 | `account-portal` = pnpm monorepo: TanStack Start/Router, React 19, Vite 7, Tailwind 4, shadcn, better-auth **Sign-In-With-Starknet**, Drizzle/Postgres, apibara indexer; routes bridge/claims/velords/delegates/proposals; still imports `@cartridge/*` for login                                                                                                                                                                                                           | GitHub                        |
 | That SIWS plugin (`auth-siws-plugin.ts` @ `3bdc16f`) verifies against `https://api.cartridge.gg/x/starknet/{mainnet,sepolia}` (`:68-72`), makes nonces with `Math.random` (`:19-27`), and never deletes a used nonce — the deletion is commented out (`:198-202`); no cross-subdomain cookie or trusted-origin config                                                                                                                                                       | GitHub                        |
 | `realms-world-site` = same stack minus Start (routes index/blitz/eternum/games/scroll/terms/privacy, keystatic, one OG function); `eternum-stats` = 90 KB React + chart.js; `marketplace` = Next 16 on `@cartridge/arcade` (31 files), serves `empire.realms.world/trade`                                                                                                                                                                                                   | GitHub                        |
@@ -49,8 +51,11 @@ The game cannot move to React 19 / starknet 9 without dropping `@dojoengine/reac
 - `pnpm-workspace.yaml` gets two named catalogs: `catalog:game` (React `^18`, `starknet ^8.5`, `@starknet-react/core`
   5.0.3, `@dojoengine/*` as today) for `apps/game`, `packages/{core,provider,dojo,react,types,client}` and the harness;
   `catalog:web` (React 19, `starknet ^9`, Vite 7, Tailwind 4) for `apps/web`, `apps/indexer`, `packages/{db,ui}`.
-- `packages/identity` and `packages/chain` are consumed by both, so they declare `peerDependencies`
-  `react: "^18 || ^19"`, `starknet: "^8 || ^9"` and are tested against both catalogs.
+- `packages/identity` and `packages/chain` are consumed by both stacks, so they carry **no React and no starknet peer**:
+  `chain` is plain data; `identity` is stack-neutral TypeScript — the SIWS typed-data builder, the
+  `/siws/{nonce,verify}` client, the `Session` type, and a `signTypedData` callback each app supplies from its own
+  connector layer. Wallet connectors stay in the apps: `@starknet-start/react` in web, `@starknet-react/core` 5.x
+  injected connectors (`argent()`, `braavos()`) in the game.
 - Install gate: `pnpm i --strict-peer-dependencies` in CI and locally; a peer mismatch is a red build, not a warning.
 
 **Owner:** Codex. **Gate:** strict install passes; `pnpm typecheck`; `pnpm test` in the game; `pnpm exec vitest run` in
@@ -68,8 +73,9 @@ apps/
   mobile/           client/apps/eternum-mobile, moved, must build
   amm-indexer/      client/apps/amm-indexerv2, moved, must build
 packages/
-  identity/         NEW — wallet connectors + SIWS client + session hook; used by web and game
-  chain/            NEW — one table of chain ids, RPC urls, addresses (the portal's constants + this repo's config
+  identity/         NEW — stack-neutral SIWS client + session contract; no React/starknet peers
+  chain/            NEW — plain data: chain ids, endpoints, addresses (the portal's constants + this repo's config
+                    chain tables + packages/types addresses) and the one endpoint resolver that rejects forbidden hosts
                     chain tables + packages/types addresses)
   db/               the portal's Drizzle schema and client
   ui/               shared shadcn/Tailwind 4 primitives for web
@@ -83,17 +89,21 @@ deploy/, docs/, config/
 Deleted in this step, not "audited": `client/apps/onchain-agent` (Controller-authenticated; rebuilt on gameplay accounts
 later if wanted), `client/apps/heavy-load` (superseded by D.4), `deploy/appchain/spike/controller-test`.
 
-Assets: `client/public` → `apps/game/public` (`git mv`; `publicDir` becomes Vite's default). The two JSON files
-`packages/core` imports from it move into `packages/core/src/data/` — they are package data, not web assets — and the
-game reads them through `@bibliothecadao/core`. No history rewrite of this repo; the 518 MB stays where it is.
+Assets: `client/public` → `apps/game/public` (`git mv`; `publicDir` becomes Vite's default). The realm data becomes one
+bundled truth: `client/public/jsons/realms.json` moves to `packages/core/src/data/full-realms.json` (the name avoids the
+existing, differently shaped `realms.json`) and `realm-names.json` beside it; `utils/realm.ts:19` replaces its runtime
+`fetch("/jsons/realms.json")` with a dynamic `import()` of that file (a lazy 6.5 MB chunk, loaded when it was fetched
+before), `realm-names.ts` imports locally, and the public copy is deleted. Whether `data/realms.json` and
+`full-realms.json` then collapse into one is a phase-2 question, asked with a diff. No history rewrite of this repo; the
+518 MB stays where it is.
 
 Everything else moves with `git mv` in one commit so history follows. `client/` ceases to exist; workspace globs become
 `apps/*`, `packages/*`, `tooling/*`.
 
 **Owner:** Codex (moves, globs, path aliases, CI paths); Claude (`deploy/*` scripts and runbooks referencing
 `client/apps/game`). **Gate:** every remaining app builds from the root; `pnpm run knip` clean; the game boots on the
-Katana AWS env with every asset loading (Playwright: no 404 on `/images`, `/models`, `/jsons`, `/textures` during a full
-world load).
+Katana AWS env with every asset loading (Playwright: no 404 on `/images`, `/models`, `/textures` during a full world
+load; `getOffchainRealm` returns a realm without a network request).
 
 ## C. Bring it in
 
@@ -128,19 +138,28 @@ Then fold: site routes and keystatic content into `apps/web`; the two stats fetc
 
 ### C.2 One identity, one login — `packages/identity`, and the Cartridge purge
 
-Extract the portal's SIWS client and its `@starknet-start` connectors into `packages/identity`: `connectWallet()`
-(Ready/Argent, Braavos — injected connectors on `SN_MAIN`, no Controller), `signIn()` (SIWS), `useSession()`.
+Extract the portal's SIWS client into `packages/identity` (stack-neutral, see A): `buildSiwsMessage()`,
+`signIn({ signTypedData })`, `getSession()`, the `Session` type. Each app keeps its own connector layer and hands the
+package a `signTypedData` from its wallet (web: `@starknet-start/react`; game: `@starknet-react/core` 5.x injected
+connectors — Ready/Argent, Braavos on `SN_MAIN`, no Controller).
 
 **Harden the SIWS server before it becomes the trust root** (all in `apps/web`):
 
-- Verification RPC from `IDENTITY_RPC_URL` (required, no default); the lab points it at a public Starknet mainnet node
-  that is not Cartridge's. A startup assertion refuses any URL containing `cartridge`.
-- Nonces from `crypto.randomBytes(32)`, single use: deleted in the verify handler on success, and the replay test (same
-  signed message twice → second call 401) is part of the suite.
+- Verification RPC from `IDENTITY_RPC_URL` (required, no default), resolved through `packages/chain`'s endpoint resolver
+  like every other host (forbidden-host gate below); the lab points it at a public Starknet mainnet node.
+- Nonces from `crypto.randomBytes(32)`, consumed **atomically before** session creation: one conditional statement
+  (`DELETE … WHERE id = ? AND expires_at > now() RETURNING id`) whose empty result is a 401. Tests: sequential replay
+  (second call 401) and **two concurrent verifications of the same message → exactly one 200**.
 - better-auth `advanced.crossSubDomainCookies` on the parent domain, `trustedOrigins` = the web and game origins,
-  `secure` cookies. Local subdomain staging: `/etc/hosts` entries `realms.test` and `play.realms.test`, mkcert
-  certificates for both (the Vite mkcert plugin's `hosts` option), web on `https://realms.test`, game on
-  `https://play.realms.test`. Gate: a session created on web is readable on play; an origin outside the list is refused.
+  `secure` cookies.
+- **Full HTTPS, everywhere, including the lab.** `/etc/hosts` maps `realms.test`, `play.realms.test`, `rpc.realms.test`,
+  `torii.realms.test` to `127.0.0.1`. The lab compose gains a `caddy` service that terminates TLS for
+  `rpc.realms.test → madara:9944` and `torii.realms.test → torii:8080` (HTTP/2, gRPC-web and WebSocket pass through)
+  using certificates `mkcert` issues into `deploy/madara-lab/.lab/certs/` (gitignored; the mkcert root CA is installed
+  once with `mkcert -install`, which also makes `sozo`, `bun` and `curl` trust it). Web runs on `https://realms.test`,
+  the game on `https://play.realms.test` (Vite mkcert plugin, `hosts` option). No env file on the branch contains an
+  `http://` URL; `check:forbidden-hosts` enforces that too. Gate: a session created on web is readable on play; an
+  origin outside the list is refused; zero mixed-content errors during a full world load.
 
 In the game: delete the Cartridge surface listed in the facts; `StarknetProvider` becomes identity-only through
 `packages/identity`; `useAccount()` consumers are reclassified by one rule — **signs or reads game ownership → gameplay
@@ -155,9 +174,13 @@ profile; `cartridge_username` goes with them), and the remaining services take `
 `STARKNET_MAINNET_RPC_URL` as required env with no default; `mobile` — the 6 files naming Cartridge move to
 `packages/identity` or are deleted, same rule as the game.
 
-**Executable gate, not a grep by hand:** `pnpm check:no-cartridge` — a script that fails if `cartridge` appears in any
-`package.json`, lockfile, `.env*` sample, or source file outside `docs/`. It runs in CI from this step on. Plus: web and
-game log in with the same session on the `.test` subdomains.
+**Executable gate, not a grep by hand:** `pnpm check:forbidden-hosts` — fails on (a) any dependency in the `@cartridge/`
+scope in any `package.json` or lockfile, (b) any `cartridge.gg` host literal, and (c) any `http://` URL, in any file
+outside `docs/` — TypeScript, JSON, TOML, YAML, shell, env samples, compose and deploy templates included. The word
+itself is not the rule, so the script and this brief do not trip it. At runtime, `packages/chain`'s single endpoint
+resolver — through which every RPC, Torii, SQL and identity URL is read — throws on a forbidden host or scheme; no
+per-variable assertions. Runs in CI from this step on. Plus: web and game log in with the same session on the `.test`
+subdomains.
 
 **Owner:** Codex.
 
@@ -217,13 +240,13 @@ wallet gets another; guest a third; **clear site data → same wallet → key ro
 ### D.1 Client chain target `madara`
 
 `madara` in `VITE_PUBLIC_CHAIN` (`env.ts:59`); `.env.madara.blitz.sample` with
-`VITE_PUBLIC_NODE_URL=http://127.0.0.1:5060`, `VITE_PUBLIC_TORII=http://127.0.0.1:8090`,
-`VITE_PUBLIC_VRF_PROVIDER_ADDRESS=0x0` (tx-hash randomness fallback, `utils/random.cairo:15-18` — right for the lab),
-`VITE_PUBLIC_MASTER_*` = devnet account #1. World directory entry from `contracts/game/manifest_madara.json`
+`VITE_PUBLIC_NODE_URL=https://rpc.realms.test`, `VITE_PUBLIC_TORII=https://torii.realms.test` (the Caddy endpoints from
+C.2), `VITE_PUBLIC_VRF_PROVIDER_ADDRESS=0x0` (tx-hash randomness fallback, `utils/random.cairo:15-18` — right for the
+lab), `VITE_PUBLIC_MASTER_*` = devnet account #1. World directory entry from `contracts/game/manifest_madara.json`
 (`runtime/world/world-directory.ts:31-58`). Torii/RPC fallbacks that resolve `api.cartridge.gg` (`world-torii.ts:14-19`,
 `factory-endpoints.ts:7`, `chain-rpc.ts:4`, `global-chain.ts:4`, `profile-builder.ts:15`, `normalize.ts:36,56`,
 `landing-leaderboard-service.ts:87-90`) are deleted, not guarded — `packages/chain` is the only place a host comes from,
-and `check:no-cartridge` keeps it that way. Live path stays Torii's subscriptions against the canary; no Madara
+and `check:forbidden-hosts` keeps it that way. Live path stays Torii's subscriptions against the canary; no Madara
 WebSocket path exists, do not add one.
 
 **Owner:** Codex. **Gate:** `pnpm dev` with `.env.madara.blitz` shows the lab world; the C.3 gate runs on it.
@@ -255,21 +278,23 @@ never silently skip.
 
 **Owner:** Codex. **Gate:** Cairo tests: 96 accepted, 97 rejected on both paths; for every settled count 0..95 no
 `fill_open_settlement_pool` call writes more than 12 positions. TypeScript test: the deployer accepts 96 and rejects 97.
-`scarb fmt`. Redeploy on the lab; D.4 registers 96 accounts with 0 reverts.
+`scarb fmt`. Redeploy on the lab; D.4 settles 96 accounts with 0 reverts.
 
 ### D.4 96-player headless harness — with an acceptance bar
 
 `deploy/madara-lab/harness/` in bun — one file each for driver, account factory (`gameplay-account.ts` from C.3, guest
-owners), report. Drives `register → settle → provision → action loop` using the call builders in
-`apps/game/src/services/blitz/*` and `packages/provider`; records per action: submit, `PRE_CONFIRMED`, `ACCEPTED_ON_L2`,
-Torii-indexed (model row visible via SQL) times; writes `.lab/runs/<timestamp>.json` with chain id, image tag, git rev,
-bot count, interval, mix, percentiles, and the `block-stats.sh` output before and after.
+owners), report. Drives `deploy account → obtain_entry_token → settle → provision_realm → action loop` using the call
+builders in `apps/game/src/services/blitz/*` and `packages/provider`; records per action: submit, `PRE_CONFIRMED`,
+`ACCEPTED_ON_L2`, Torii-indexed times — indexing is correlated **by transaction hash** against Torii's
+`transactions`/`events` tables (both enabled in `torii.toml.template`), never by a mutable model row, which a later
+action can overwrite; writes `.lab/runs/<timestamp>.json` with chain id, image tag, git rev, bot count, interval, mix,
+percentiles, and the `block-stats.sh` output before and after.
 
 **Workload:** 96 bots, one action per bot every 15 s (384 actions/min), mix 50 % move / 30 % explore / 20 % produce, 10
 minutes → at least 3,500 completed actions per run. **Thresholds, derived from the lab chain config (2 s blocks, 250 ms
 pending updates):** 0 reverts; p95 submit→`PRE_CONFIRMED` ≤ 1 s; p95 submit→`ACCEPTED_ON_L2` ≤ 4 s; p95 submit→indexed ≤
-6 s; indexing loss 0 (every action's model row visible within 30 s). A miss is a finding recorded in the README, not a
-reason to loosen the bar.
+6 s; indexing loss 0 (every action's transaction hash appears in Torii within 30 s). A miss is a finding recorded in the
+README, not a reason to loosen the bar.
 
 **Owner:** Codex (harness); Claude (thresholds review, `block-stats.sh` attachment). **Gate:**
 `bun deploy/madara-lab/harness/run.ts --bots 96 --minutes 10` meets the bar and produces the run manifest; the README
@@ -279,9 +304,9 @@ documents the command and the numbers.
 
 On a clean machine with Docker, asdf `sozo 1.8.7`, `bun`: `deploy/madara-lab/README.md` top to bottom → chain up → world
 migrated → `madara.blitz` bootstrapped → `apps/web` on `https://realms.test` and `apps/game` on
-`https://play.realms.test` against the lab env → log in on web with Braavos → open the game → gameplay account deployed
-and bound → play a Blitz game with 95 harness bots meeting D.4's bar → `check:no-cartridge` green → `block-stats.sh`
-numbers recorded in the README. That is phase 1 done.
+`https://play.realms.test` against `https://rpc.realms.test` / `https://torii.realms.test` → log in on web with Braavos
+→ open the game → gameplay account deployed and bound → play a Blitz game with 95 harness bots meeting D.4's bar →
+`check:forbidden-hosts` green → `block-stats.sh` numbers recorded in the README. That is phase 1 done.
 
 ---
 
@@ -292,8 +317,9 @@ chain-constant tables, the game's duplicated profile/wallet UI, ~900 lines of Co
 three dependencies, one env value, the Katana Cartridge flags, `onchain-agent`, `heavy-load`, the controller spike,
 realtime-server's profile/avatar routes, the `client/` directory, the legacy S1 chain kinds, every hardcoded Cartridge
 host. Added: `packages/identity`, `packages/chain`, `contracts/player-account` (~150 lines), `gameplay-account.ts`
-(~100), key store + sync (~80), two server functions (~100), SIWS hardening (~60), `check:no-cartridge` (~30), a
-`postgres` block in the lab compose, two named catalogs, `tooling/`. Net deletion in code; one more service in the lab.
+(~100), key store + sync (~80), two server functions (~100), SIWS hardening (~60), `check:forbidden-hosts` (~30), a
+`caddy` block and certs in the lab compose, a `postgres` block in the lab compose, two named catalogs, `tooling/`. Net
+deletion in code; one more service in the lab.
 
 ## Out of phase 1 (deliberately)
 
@@ -319,6 +345,6 @@ yourself writing one of them here, stop.
 
 - Cairo: `scarb fmt`, `sozo test` for touched systems, `cairo-contract` TDD for `player-account`.
 - TypeScript: focused tests, `pnpm i --strict-peer-dependencies`, `pnpm run format`, `pnpm run knip`,
-  `pnpm check:no-cartridge`.
+  `pnpm check:forbidden-hosts`.
 - Live: the gates above, on the running lab chain; D.4's run manifest attached to the PR.
 - Every command a reviewer needs goes into `deploy/madara-lab/README.md`; it must run top to bottom on a clean machine.
