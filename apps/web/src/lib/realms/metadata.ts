@@ -1,15 +1,9 @@
 const BASE64_JSON_PREFIX = "data:application/json;base64,";
 const JSON_PREFIX = "data:application/json,";
 
-type ContractCall = (
-  entrypoint: string,
-  calldata: string[],
-) => Promise<unknown>;
+type ContractCall = (entrypoint: string, calldata: string[]) => Promise<unknown>;
 
-export async function readRealmMetadata(
-  call: ContractCall,
-  tokenId: string,
-): Promise<string> {
+export async function readRealmMetadata(call: ContractCall, tokenId: string): Promise<string> {
   const result = await call("get_decoded_metadata", [tokenId]);
   if (typeof result !== "string") {
     throw new TypeError("Realm metadata contract returned invalid data");
@@ -22,9 +16,7 @@ export function decodeRealmMetadata(value: string): string {
 
   if (value.startsWith(BASE64_JSON_PREFIX)) {
     const encoded = value.slice(BASE64_JSON_PREFIX.length);
-    const bytes = Uint8Array.from(atob(encoded), (character) =>
-      character.charCodeAt(0),
-    );
+    const bytes = Uint8Array.from(atob(encoded), (character) => character.charCodeAt(0));
     json = new TextDecoder().decode(bytes);
   } else if (value.startsWith(JSON_PREFIX)) {
     json = decodeURIComponent(value.slice(JSON_PREFIX.length));

@@ -1,13 +1,9 @@
 import EthereumIcon from "@/components/icons/ethereum.svg?react";
 import StarknetIcon from "@/components/icons/starknet.svg?react";
-import { ChainId } from "@realms-world/constants";
+import { ChainId } from "@realms-world/chain";
 import { ArrowRight } from "lucide-react";
-export const TransactionChains: React.FC<{ fromChain: string | number }> = ({
-  fromChain,
-}) => {
-  const isFromEthereum = [ChainId.MAINNET, ChainId.SEPOLIA].includes(
-    Number(fromChain) as ChainId
-  );
+export const TransactionChains: React.FC<{ fromChain: string | number }> = ({ fromChain }) => {
+  const isFromEthereum = [ChainId.MAINNET, ChainId.SEPOLIA].includes(Number(fromChain) as ChainId);
 
   const sourceChain = isFromEthereum
     ? { icon: <EthereumIcon className="w-4 h-4" />, label: "Ethereum" }

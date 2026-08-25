@@ -1,10 +1,7 @@
 import type { Call } from "starknet";
 import { useMemo } from "react";
 import { ERC721 } from "@/abi/L2/ERC721";
-import {
-  useContract,
-  useSendTransaction as useL2ContractWrite,
-} from "@starknet-start/react";
+import { useContract, useSendTransaction as useL2ContractWrite } from "@starknet-start/react";
 import { useAccount as useL1Account } from "wagmi";
 
 export const useERC721Approval = ({
@@ -25,12 +22,7 @@ export const useERC721Approval = ({
 
   const calls: Call[] = useMemo(() => {
     if (!contractAddress || !operator || !addressL1 || !contract) return [];
-    return [
-      contract.populate("set_approval_for_all", [
-        operator,
-        removeApproval ? false : true,
-      ]),
-    ];
+    return [contract.populate("set_approval_for_all", [operator, removeApproval ? false : true])];
   }, [contractAddress, operator, addressL1, contract, removeApproval]);
 
   const { sendAsync, ...writeReturn } = useL2ContractWrite({ calls });

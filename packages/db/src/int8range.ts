@@ -1,9 +1,6 @@
 import type { Range } from "postgres-range";
 import { customType } from "drizzle-orm/pg-core";
-import {
-  parse as rangeParse,
-  serialize as rangeSerialize,
-} from "postgres-range";
+import { parse as rangeParse, serialize as rangeSerialize } from "postgres-range";
 
 type Comparable = string | number;
 

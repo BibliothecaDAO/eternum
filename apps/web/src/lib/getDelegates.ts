@@ -6,14 +6,8 @@ import { createServerFn } from "@tanstack/react-start";
 import { getRequest } from "@tanstack/react-start/server";
 import { z } from "zod";
 
-import {
-  and,
-  desc,
-  eq,
-  like,
-  sql,
-} from "@realms-world/db";
-import {db} from "@realms-world/db/client"
+import { and, desc, eq, like, sql } from "@realms-world/db";
+import { db } from "@realms-world/db/client";
 import { CreateDelegateProfileSchema, delegateProfiles, delegates } from "@realms-world/db/schema";
 /* -------------------------------------------------------------------------- */
 /*                          getDelegates (all) Endpoint                       */
@@ -40,8 +34,7 @@ export const getDelegates = createServerFn({ method: "GET" })
     const items = await db.query.delegates.findMany({
       limit: actualLimit + 1,
       where: and(...whereFilter, sql`upper_inf(block_range)`),
-      orderBy:
-        orderBy === "desc" ? desc(delegates.delegatedVotes) : sql`RANDOM()`,
+      orderBy: orderBy === "desc" ? desc(delegates.delegatedVotes) : sql`RANDOM()`,
       with: {
         delegateProfile: true,
       },
@@ -59,17 +52,9 @@ export const getDelegates = createServerFn({ method: "GET" })
     return { items: items, nextCursor };
   });
 
-export const getDelegatesQueryOptions = (
-  input: z.infer<typeof GetDelegatesInput>,
-) =>
+export const getDelegatesQueryOptions = (input: z.infer<typeof GetDelegatesInput>) =>
   queryOptions({
-    queryKey: [
-      "getDelegates",
-      input.limit,
-      input.cursor,
-      input.orderBy,
-      input.search,
-    ],
+    queryKey: ["getDelegates", input.limit, input.cursor, input.orderBy, input.search],
     queryFn: () => getDelegates({ data: input }),
   });
 
@@ -86,10 +71,7 @@ export const getDelegateByID = createServerFn({ method: "GET" })
   .handler(async (ctx) => {
     if (ctx.data.address) {
       const res = await db.query.delegates.findFirst({
-        where: and(
-          eq(delegates.user, ctx.data.address),
-          sql`upper_inf(block_range)`,
-        ),
+        where: and(eq(delegates.user, ctx.data.address), sql`upper_inf(block_range)`),
         with: { delegateProfile: true },
         columns: {
           block_range: false,
@@ -100,9 +82,7 @@ export const getDelegateByID = createServerFn({ method: "GET" })
     return null;
   });
 
-export const getDelegateByIDQueryOptions = (
-  input: z.infer<typeof GetDelegateByIDInput>,
-) =>
+export const getDelegateByIDQueryOptions = (input: z.infer<typeof GetDelegateByIDInput>) =>
   queryOptions({
     queryKey: ["getDelegateByID", input.address],
     queryFn: () => (input.address ? getDelegateByID({ data: input }) : null),
@@ -139,9 +119,7 @@ export const createDelegateProfile = createServerFn({ method: "POST" })
     return { success: true as const };
   });
 
-export const createDelegateProfileMutationOptions = (
-  input: z.infer<typeof CreateDelegateProfileSchema>,
-) =>
+export const createDelegateProfileMutationOptions = (input: z.infer<typeof CreateDelegateProfileSchema>) =>
   queryOptions({
     queryKey: ["createDelegateProfile", input],
     queryFn: () => createDelegateProfile({ data: input }),

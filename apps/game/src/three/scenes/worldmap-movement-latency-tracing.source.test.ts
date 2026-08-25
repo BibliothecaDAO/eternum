@@ -7,9 +7,9 @@ import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 
 const currentDir = dirname(fileURLToPath(import.meta.url));
+const repositoryRoot = resolve(process.cwd(), "../..");
 const readSource = (relativePath: string) => readFileSync(resolve(currentDir, relativePath), "utf8");
-const readRepoSource = (relativePath: string) =>
-  readFileSync(resolve(currentDir, "..", "..", "..", "..", "..", "..", relativePath), "utf8");
+const readRepoSource = (relativePath: string) => readFileSync(resolve(repositoryRoot, relativePath), "utf8");
 
 describe("Worldmap movement latency tracing wiring", () => {
   it("records tx, visual movement, and completion phases from worldmap", () => {

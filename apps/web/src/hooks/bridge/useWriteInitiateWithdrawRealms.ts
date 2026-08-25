@@ -4,14 +4,10 @@ import { RealmsBridge } from "@/abi/L2/RealmsBridge";
 import { useContract, useSendTransaction } from "@starknet-start/react";
 import { useAccount as useL1Account } from "wagmi";
 
-import { REALMS_BRIDGE_ADDRESS } from "@realms-world/constants";
+import { REALMS_BRIDGE_ADDRESS } from "@realms-world/chain";
 import { SUPPORTED_L2_CHAIN_ID } from "@/utils/utils";
 
-export const useWriteInitiateWithdrawRealms = ({
-  selectedTokenIds,
-}: {
-  selectedTokenIds: string[];
-}) => {
+export const useWriteInitiateWithdrawRealms = ({ selectedTokenIds }: { selectedTokenIds: string[] }) => {
   const { address: addressL1 } = useL1Account();
 
   const { contract } = useContract({
@@ -23,11 +19,7 @@ export const useWriteInitiateWithdrawRealms = ({
     if (!selectedTokenIds.length || !addressL1 || !contract) return [];
 
     return [
-      contract.populate("deposit_tokens", [
-        Date.now(),
-        addressL1,
-        selectedTokenIds.map((tokenId) => BigInt(tokenId)),
-      ]),
+      contract.populate("deposit_tokens", [Date.now(), addressL1, selectedTokenIds.map((tokenId) => BigInt(tokenId))]),
     ];
   }, [selectedTokenIds, addressL1, contract]);
 

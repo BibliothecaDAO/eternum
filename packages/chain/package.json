@@ -1,5 +1,5 @@
 {
-  "name": "@realms-world/constants",
+  "name": "@realms-world/chain",
   "version": "0.1.0",
   "types": "./src/index.ts",
   "license": "MIT",
@@ -18,7 +18,10 @@
     "dotenv": "^16.6.1"
   },
   "devDependencies": {
-    "prettier": "catalog:"
+    "@realms-world/eslint-config": "workspace:*",
+    "@realms-world/prettier-config": "workspace:*",
+    "eslint": "catalog:web",
+    "prettier": "catalog:web"
   },
   "prettier": "@realms-world/prettier-config"
 }

@@ -61,7 +61,7 @@ const PACKAGE_SOURCE_ROOTS = [
 ];
 
 const CLIENT_ROOT = process.cwd();
-const REPO_ROOT = resolve(CLIENT_ROOT, "../../..");
+const REPO_ROOT = resolve(CLIENT_ROOT, "../..");
 
 const INFORMATIONAL_CONSOLE = /\bconsole\.(log|info|debug)\s*\(/;
 

@@ -6,7 +6,7 @@ import {
   aggregateRewardsByWeek,
   getPeriodRange,
   sumRewardsInLastNDays,
-} from "../../../apps/account-portal/src/lib/velords-analytics";
+} from "../../web/src/lib/velords-analytics";
 
 describe("getPeriodRange", () => {
   it("returns the expected start date for 3m", () => {

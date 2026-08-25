@@ -16,13 +16,7 @@ const METADATA = {
   icons: ["https://assets.reown.com/reown-profile-pic.png"],
 };
 
-export function AppKitProvider({
-  children,
-  queryClient,
-}: {
-  children: React.ReactNode;
-  queryClient: QueryClient;
-}) {
+export function AppKitProvider({ children, queryClient }: { children: React.ReactNode; queryClient: QueryClient }) {
   const initializedRef = useRef(false);
   const wagmiAdapter = useMemo(
     () =>

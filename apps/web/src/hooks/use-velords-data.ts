@@ -2,17 +2,12 @@ import { L2_C1ERC20 } from "@/abi/L2/C1ERC20";
 import { VeLords } from "@/abi/L2/VeLords";
 import { TIME_CONSTANTS } from "@/lib/constants";
 import { getLordsInfo } from "@/lib/getLordsPrice";
-import {
-  calculateSharePercent,
-  computeTvlUsd,
-  formatTokenAmountDisplay,
-  toBigInt,
-} from "@/lib/velords-utils";
+import { calculateSharePercent, computeTvlUsd, formatTokenAmountDisplay, toBigInt } from "@/lib/velords-utils";
 import { SUPPORTED_L2_CHAIN_ID } from "@/utils/utils";
 import { useAccount, useNetwork, useReadContract } from "@starknet-start/react";
 import { useQuery } from "@tanstack/react-query";
 
-import { LORDS, StakingAddresses } from "@realms-world/constants";
+import { LORDS, StakingAddresses } from "@realms-world/chain";
 
 // Helper function to get the current week timestamp (floored to week)
 const floorToWeek = (timestamp: number): number => {
@@ -67,10 +62,8 @@ export const useVelordsData = () => {
   });
 
   const totalSupplyRaw = totalSupply !== undefined ? toBigInt(totalSupply) : undefined;
-  const lordsLockedRaw =
-    lordsInVelords !== undefined ? toBigInt(lordsInVelords) : undefined;
-  const userBalanceRaw =
-    userBalance !== undefined ? toBigInt(userBalance) : undefined;
+  const lordsLockedRaw = lordsInVelords !== undefined ? toBigInt(lordsInVelords) : undefined;
+  const userBalanceRaw = userBalance !== undefined ? toBigInt(userBalance) : undefined;
   const userLockedData = userLocked as
     | {
         amount?: unknown;
@@ -95,13 +88,9 @@ export const useVelordsData = () => {
     totalSupplyRaw,
     lordsLockedRaw,
     totalSupply:
-      totalSupplyRaw !== undefined
-        ? formatTokenAmountDisplay(totalSupplyRaw, { maximumFractionDigits: 0 })
-        : undefined,
+      totalSupplyRaw !== undefined ? formatTokenAmountDisplay(totalSupplyRaw, { maximumFractionDigits: 0 }) : undefined,
     lordsLocked:
-      lordsLockedRaw !== undefined
-        ? formatTokenAmountDisplay(lordsLockedRaw, { maximumFractionDigits: 0 })
-        : undefined,
+      lordsLockedRaw !== undefined ? formatTokenAmountDisplay(lordsLockedRaw, { maximumFractionDigits: 0 }) : undefined,
 
     // TVL data
     tvl,
@@ -111,9 +100,7 @@ export const useVelordsData = () => {
     // User data
     userBalanceRaw,
     userBalance:
-      userBalanceRaw !== undefined
-        ? formatTokenAmountDisplay(userBalanceRaw, { maximumFractionDigits: 2 })
-        : undefined,
+      userBalanceRaw !== undefined ? formatTokenAmountDisplay(userBalanceRaw, { maximumFractionDigits: 2 }) : undefined,
     userSharePercent:
       userBalanceRaw !== undefined && totalSupplyRaw !== undefined
         ? calculateSharePercent(userBalanceRaw, totalSupplyRaw)

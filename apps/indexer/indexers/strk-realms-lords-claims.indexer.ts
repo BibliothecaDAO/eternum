@@ -1,19 +1,13 @@
 //import type { ApibaraRuntimeConfig } from "apibara/types";
-import type {
-  ExtractTablesWithRelations,
-  TablesRelationalConfig,
-} from "drizzle-orm";
+import type { ExtractTablesWithRelations, TablesRelationalConfig } from "drizzle-orm";
 import type { PgDatabase, PgQueryResultHKT } from "drizzle-orm/pg-core";
 import type { Abi } from "starknet";
 import { defineIndexer } from "@apibara/indexer";
 import { useLogger as getLogger } from "@apibara/indexer/plugins";
-import {
-  drizzleStorage,
-  useDrizzleStorage as getDrizzleStorage,
-} from "@apibara/plugin-drizzle";
+import { drizzleStorage, useDrizzleStorage as getDrizzleStorage } from "@apibara/plugin-drizzle";
 import { decodeEvent, getSelector, StarknetStream } from "@apibara/starknet";
 
-import { ChainId, CollectionAddresses } from "@realms-world/constants";
+import { ChainId, CollectionAddresses } from "@realms-world/chain";
 import { db } from "@realms-world/db/poolClient";
 import { realmsLordsClaims } from "@realms-world/db/schema";
 
@@ -23,14 +17,12 @@ import { getStarknetStreamUrl } from "../streams";
 export default function (/*runtimeConfig: ApibaraRuntimeConfig*/) {
   return createIndexer({ database: db });
 }
-const l2ChainId =
-  env.VITE_PUBLIC_CHAIN === "sepolia" ? ChainId.SN_SEPOLIA : ChainId.SN_MAIN;
+const l2ChainId = env.VITE_PUBLIC_CHAIN === "sepolia" ? ChainId.SN_SEPOLIA : ChainId.SN_MAIN;
 
 export function createIndexer<
   TQueryResult extends PgQueryResultHKT,
   TFullSchema extends Record<string, unknown> = Record<string, never>,
-  TSchema extends TablesRelationalConfig =
-    ExtractTablesWithRelations<TFullSchema>,
+  TSchema extends TablesRelationalConfig = ExtractTablesWithRelations<TFullSchema>,
 >({ database }: { database: PgDatabase<TQueryResult, TFullSchema, TSchema> }) {
   return defineIndexer(StarknetStream)({
     streamUrl: getStarknetStreamUrl(env.VITE_PUBLIC_CHAIN),
@@ -61,18 +53,12 @@ export function createIndexer<
       const { db } = getDrizzleStorage();
       const { events } = block;
 
-      logger.info(
-        "Transforming block | orderKey: ",
-        endCursor?.orderKey,
-        " | finality: ",
-        finality,
-      );
+      logger.info("Transforming block | orderKey: ", endCursor?.orderKey, " | finality: ", finality);
 
       for (const event of events) {
         const { args, transactionHash } = decodeEvent({
           abi: REALMS_ABI,
-          eventName:
-            "strealm::components::strealm::StRealmComponent::RewardClaimed",
+          eventName: "strealm::components::strealm::StRealmComponent::RewardClaimed",
           event,
         });
 
@@ -176,8 +162,7 @@ export const REALMS_ABI = [
   {
     name: "ERC721MetadataCamelOnly",
     type: "impl",
-    interface_name:
-      "openzeppelin::token::erc721::interface::IERC721MetadataCamelOnly",
+    interface_name: "openzeppelin::token::erc721::interface::IERC721MetadataCamelOnly",
   },
   {
     name: "openzeppelin::token::erc721::interface::IERC721MetadataCamelOnly",
@@ -204,8 +189,7 @@ export const REALMS_ABI = [
   {
     name: "RealmMetadataEncoded",
     type: "impl",
-    interface_name:
-      "strealm::contracts::metadata::metadata::IRealmMetadataEncoded",
+    interface_name: "strealm::contracts::metadata::metadata::IRealmMetadataEncoded",
   },
   {
     name: "strealm::contracts::metadata::metadata::IRealmMetadataEncoded",
@@ -358,8 +342,7 @@ export const REALMS_ABI = [
   {
     name: "ERC721VotesComponentImpl",
     type: "impl",
-    interface_name:
-      "openzeppelin::governance::utils::interfaces::votes::IVotes",
+    interface_name: "openzeppelin::governance::utils::interfaces::votes::IVotes",
   },
   {
     name: "openzeppelin::governance::utils::interfaces::votes::IVotes",
@@ -1002,8 +985,7 @@ export const REALMS_ABI = [
   {
     name: "AccessControlImpl",
     type: "impl",
-    interface_name:
-      "openzeppelin::access::accesscontrol::interface::IAccessControl",
+    interface_name: "openzeppelin::access::accesscontrol::interface::IAccessControl",
   },
   {
     name: "openzeppelin::access::accesscontrol::interface::IAccessControl",

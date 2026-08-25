@@ -3,16 +3,9 @@ import { PGlite } from "@electric-sql/pglite";
 import { drizzle } from "drizzle-orm/pglite";
 import { afterEach, describe, expect, it } from "vitest";
 
-import {
-  starknetRealmOwnership,
-  starknetRealmOwnershipStatus,
-} from "@realms-world/db/schema";
+import { starknetRealmOwnership, starknetRealmOwnershipStatus } from "@realms-world/db/schema";
 
-import {
-  applyRealmTransfer,
-  recordOwnershipProgress,
-  toRealmTransfer,
-} from "./realm-ownership";
+import { applyRealmTransfer, recordOwnershipProgress, toRealmTransfer } from "./realm-ownership";
 import { REALMS_TRANSFER_ABI } from "./realms-transfer-abi";
 
 const TEST_TIMEOUT_MS = 15_000;
@@ -62,8 +55,7 @@ describe("Realm ownership transfers", () => {
   it("decodes the raw Cairo ERC-721 Transfer key layout", () => {
     const decoded = decodeEvent({
       abi: REALMS_TRANSFER_ABI,
-      eventName:
-        "openzeppelin::token::erc721::erc721::ERC721Component::Transfer",
+      eventName: "openzeppelin::token::erc721::erc721::ERC721Component::Transfer",
       event: {
         keys: [getSelector("Transfer"), "0x0", "0xa", "0x2a", "0x0"],
         data: [],
@@ -71,9 +63,11 @@ describe("Realm ownership transfers", () => {
       } as never,
     });
 
-    expect(
-      toRealmTransfer(decoded, { blockNumber: 664_162n, eventIndex: 0 }),
-    ).toMatchObject({ tokenId: "42", owner: "0xa", burned: false });
+    expect(toRealmTransfer(decoded, { blockNumber: 664_162n, eventIndex: 0 })).toMatchObject({
+      tokenId: "42",
+      owner: "0xa",
+      burned: false,
+    });
   });
 
   it(
@@ -163,9 +157,7 @@ describe("Realm ownership transfers", () => {
         processedAt: now,
       });
 
-      expect(
-        await database.select().from(starknetRealmOwnershipStatus),
-      ).toEqual([
+      expect(await database.select().from(starknetRealmOwnershipStatus)).toEqual([
         expect.objectContaining({
           latest_block_number: "664162",
           has_reached_head: false,
@@ -178,9 +170,7 @@ describe("Realm ownership transfers", () => {
         processedAt: now,
       });
 
-      expect(
-        await database.select().from(starknetRealmOwnershipStatus),
-      ).toEqual([
+      expect(await database.select().from(starknetRealmOwnershipStatus)).toEqual([
         expect.objectContaining({
           latest_block_number: "2500000",
           has_reached_head: true,

@@ -1,12 +1,8 @@
-import type { Proposal } from "@/gql/graphql";
+import type { Proposal } from "@/gql/snapshot/graphql";
 import type { Choice } from "@/types/snapshot";
 import { useCallback, useState } from "react";
 import { StarkTxAuthenticator } from "@/abi/L2/StarkTxAuthenticator";
-import {
-  useAccount,
-  useContract,
-  useSendTransaction,
-} from "@starknet-start/react";
+import { useAccount, useContract, useSendTransaction } from "@starknet-start/react";
 import { CairoCustomEnum, shortString } from "starknet";
 
 import { useIPFSPin } from "../use-ipfs-pin";
@@ -18,10 +14,7 @@ export function getChoiceEnum(choice: 0 | 1 | 2) {
     Abstain: choice === 2 ? 2 : undefined,
   });
 }
-export function getUserAddressEnum(
-  type: "ETHEREUM" | "STARKNET" | "CUSTOM",
-  address: string,
-) {
+export function getUserAddressEnum(type: "ETHEREUM" | "STARKNET" | "CUSTOM", address: string) {
   return new CairoCustomEnum({
     Starknet: type === "STARKNET" ? address : undefined,
     Ethereum: type === "ETHEREUM" ? address : undefined,
@@ -65,15 +58,7 @@ export function useVoteProposal(proposal: Proposal) {
         return null;
       }
     },
-    [
-      contract,
-      selectedChoice,
-      pinToIPFS,
-      sendAsync,
-      proposal.space.id,
-      proposal.proposal_id,
-      address,
-    ],
+    [contract, selectedChoice, pinToIPFS, sendAsync, proposal.space.id, proposal.proposal_id, address],
   );
 
   return {

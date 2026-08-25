@@ -1,4 +1,4 @@
-import type { Proposal } from "@/gql/graphql";
+import type { Proposal } from "@/gql/snapshot/graphql";
 import { Progress } from "@/components/ui/progress";
 import { useStarkDisplayName } from "@/hooks/use-stark-name";
 import { shortenAddress } from "@/utils/utils";
@@ -8,13 +8,7 @@ import { CheckCircle2, XCircle } from "lucide-react";
 
 import { ProposalVoteAction } from "./proposal-vote-action";
 
-export const ProposalListItem = ({
-  proposal,
-  voteChoice,
-}: {
-  proposal: Proposal;
-  voteChoice: number;
-}) => {
+export const ProposalListItem = ({ proposal, voteChoice }: { proposal: Proposal; voteChoice: number }) => {
   const name = useStarkDisplayName(proposal.author.id as `0x${string}`);
 
   function getProposalId(proposal: Proposal) {
@@ -34,24 +28,16 @@ export const ProposalListItem = ({
   const isActive = proposal.max_end * 1000 > Date.now();
   const scoresTotal = Number(proposal.scores_total);
   const scoresFor = Number(proposal.scores_1);
-  const progressValue =
-    scoresTotal > 0 ? (scoresFor / scoresTotal) * 100 : 0;
+  const progressValue = scoresTotal > 0 ? (scoresFor / scoresTotal) * 100 : 0;
 
   return (
     <div className="flex flex-col gap-3 border-b py-4 last:border-b-0 sm:flex-row sm:items-center sm:gap-4">
-      <Link
-        to={`/proposal/$id`}
-        params={{ id: proposal.proposal_id.toString() }}
-        className="min-w-0 flex-1"
-      >
+      <Link to={`/proposal/$id`} params={{ id: proposal.proposal_id.toString() }} className="min-w-0 flex-1">
         <div className="flex flex-col gap-2">
           <div className="flex flex-col gap-1">
-            <h4 className="realm-card-title line-clamp-2">
-              {proposal.metadata?.title ?? `Proposal #${proposal.id}`}
-            </h4>
+            <h4 className="realm-card-title line-clamp-2">{proposal.metadata?.title ?? `Proposal #${proposal.id}`}</h4>
             <div className="text-muted-foreground text-sm">
-              {getProposalId(proposal)} by{" "}
-              {name || shortenAddress(proposal.author.id)}
+              {getProposalId(proposal)} by {name || shortenAddress(proposal.author.id)}
             </div>
           </div>
 
@@ -59,8 +45,7 @@ export const ProposalListItem = ({
             <span>{proposal.vote_count} voters</span>
             <span>{proposal.scores_total} votes</span>
             <span>
-              {formatDistanceToNow(proposal.max_end * 1000)}{" "}
-              {isActive ? "left" : "ago"}
+              {formatDistanceToNow(proposal.max_end * 1000)} {isActive ? "left" : "ago"}
             </span>
           </div>
         </div>
@@ -72,11 +57,7 @@ export const ProposalListItem = ({
         </div>
       ) : (
         <div className="flex flex-shrink-0 flex-col items-end gap-2">
-          <Progress
-            value={progressValue}
-            className="w-full bg-destructive/60 sm:w-32"
-            indicatorColor="bg-success"
-          />
+          <Progress value={progressValue} className="w-full bg-destructive/60 sm:w-32" indicatorColor="bg-success" />
 
           <div className="text-muted-foreground text-sm">
             <div className="flex items-center gap-2">

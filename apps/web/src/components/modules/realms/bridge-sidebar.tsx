@@ -4,16 +4,8 @@ import { Suspense, useMemo } from "react";
 import { EthereumConnect } from "@/components/layout/ethereum-connect";
 import { StarknetWalletButton } from "@/components/layout/starknet-wallet-button";
 import { Button } from "@/components/ui/button";
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "@/components/ui/collapsible";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import {
   Sidebar,
   SidebarContent,
@@ -24,10 +16,7 @@ import {
   SidebarSeparator,
 } from "@/components/ui/sidebar";
 import { useBridgeL2Realms } from "@/hooks/bridge/useBridgeL2Realms";
-import {
-  isStarknetAccountDeployed,
-  useWriteDepositRealms,
-} from "@/hooks/bridge/useWriteDepositRealms";
+import { isStarknetAccountDeployed, useWriteDepositRealms } from "@/hooks/bridge/useWriteDepositRealms";
 import useERC721Approval from "@/hooks/token/L1/useERC721Approval";
 import { useToast } from "@/hooks/use-toast";
 import { useAccount } from "@starknet-start/react";
@@ -45,30 +34,21 @@ interface BridgeSidebarProps {
   setRowSelection: (rowSelection: RowSelectionState) => void;
 }
 
-const BridgeSidebar: React.FC<BridgeSidebarProps> = ({
-  disabled,
-  selectedRows,
-  selectedAsset,
-  setRowSelection,
-}) => {
+const BridgeSidebar: React.FC<BridgeSidebarProps> = ({ disabled, selectedRows, selectedAsset, setRowSelection }) => {
   const { address: l1Address } = useL1Account();
   const { address: l2Address } = useAccount();
   const { toast } = useToast();
 
-  const { writeAsync: depositRealms, isPending: isDepositPending } =
-    useWriteDepositRealms({
-      onSuccess: () => {
-        toast({
-          title: "Initating Realms Bridge to Starknet",
-          description: `Realms will appear in your L2 wallet in a few minutes`,
-        });
-      },
-    });
+  const { writeAsync: depositRealms, isPending: isDepositPending } = useWriteDepositRealms({
+    onSuccess: () => {
+      toast({
+        title: "Initating Realms Bridge to Starknet",
+        description: `Realms will appear in your L2 wallet in a few minutes`,
+      });
+    },
+  });
 
-  const tokenIds: string[] = useMemo(
-    () => selectedRows.map((row) => row.getValue("token_id")),
-    [selectedRows],
-  );
+  const tokenIds: string[] = useMemo(() => selectedRows.map((row) => row.getValue("token_id")), [selectedRows]);
 
   const {
     isApprovedForAll,
@@ -87,8 +67,7 @@ const BridgeSidebar: React.FC<BridgeSidebarProps> = ({
     error: l2AccountDeploymentError,
   } = useQuery({
     queryKey: ["starknet-account-deployed", l2Address],
-    queryFn: async () =>
-      l2Address ? isStarknetAccountDeployed(l2Address) : false,
+    queryFn: async () => (l2Address ? isStarknetAccountDeployed(l2Address) : false),
     enabled: selectedAsset === "Ethereum" && !!l2Address,
     staleTime: 30_000,
     refetchOnWindowFocus: false,
@@ -96,11 +75,8 @@ const BridgeSidebar: React.FC<BridgeSidebarProps> = ({
 
   const shouldBlockL1ToL2Bridge =
     selectedAsset === "Ethereum" &&
-    (!!l2AccountDeploymentError ||
-      isL2AccountDeploymentLoading ||
-      isL2AccountDeployed === false);
-  const showDeployHelp =
-    selectedAsset === "Ethereum" && isL2AccountDeployed === false;
+    (!!l2AccountDeploymentError || isL2AccountDeploymentLoading || isL2AccountDeployed === false);
+  const showDeployHelp = selectedAsset === "Ethereum" && isL2AccountDeployed === false;
 
   const onBridge = async () => {
     try {
@@ -130,18 +106,13 @@ const BridgeSidebar: React.FC<BridgeSidebarProps> = ({
     } catch (error) {
       toast({
         variant: "destructive",
-        description:
-          error instanceof Error ? error.message : "Unable to bridge Realms.",
+        description: error instanceof Error ? error.message : "Unable to bridge Realms.",
       });
     }
   };
 
   return (
-    <Sidebar
-      side="right"
-      variant="inset"
-      className="top-(--header-height) h-[calc(100svh-var(--header-height))]!"
-    >
+    <Sidebar side="right" variant="inset" className="top-(--header-height) h-[calc(100svh-var(--header-height))]!">
       <SidebarHeader className="space-y-3">
         <div className="flex items-center justify-between">
           <span className="text-muted-foreground text-sm">Ethereum Wallet</span>
@@ -155,10 +126,7 @@ const BridgeSidebar: React.FC<BridgeSidebarProps> = ({
         <SidebarGroup>
           <div className="mb-4 flex flex-wrap gap-2">
             {selectedRows.map((row) => (
-              <span
-                className="rounded border p-1 text-sm"
-                key={row.getValue("token_id")}
-              >
+              <span className="rounded border p-1 text-sm" key={row.getValue("token_id")}>
                 #{row.getValue("token_id")}
               </span>
             ))}
@@ -166,17 +134,10 @@ const BridgeSidebar: React.FC<BridgeSidebarProps> = ({
           {!l1Address ? (
             <EthereumConnect label="Connect Ethereum To Bridge" />
           ) : !l2Address ? (
-            <StarknetWalletButton
-              label="Connect Starknet To Bridge"
-              variant="reference"
-            />
+            <StarknetWalletButton label="Connect Starknet To Bridge" variant="reference" />
           ) : selectedAsset === "Ethereum" && !isApprovedForAll ? (
             <Button
-              disabled={
-                approveForAllLoading ||
-                isApproveForAllPending ||
-                shouldBlockL1ToL2Bridge
-              }
+              disabled={approveForAllLoading || isApproveForAllPending || shouldBlockL1ToL2Bridge}
               className="w-full"
               onClick={onBridge}
             >
@@ -193,11 +154,7 @@ const BridgeSidebar: React.FC<BridgeSidebarProps> = ({
           ) : (
             <Button
               disabled={
-                disabled ||
-                !selectedRows.length ||
-                isDepositPending ||
-                isWithdrawPending ||
-                shouldBlockL1ToL2Bridge
+                disabled || !selectedRows.length || isDepositPending || isWithdrawPending || shouldBlockL1ToL2Bridge
               }
               className="w-full"
               onClick={onBridge}
@@ -224,19 +181,13 @@ const BridgeSidebar: React.FC<BridgeSidebarProps> = ({
                 </PopoverTrigger>
                 <PopoverContent align="start" className="w-80 space-y-2">
                   <p>
-                    Starknet wallets are smart contracts and must be deployed
-                    onchain before L1 to L2 bridging can complete.
+                    Starknet wallets are smart contracts and must be deployed onchain before L1 to L2 bridging can
+                    complete.
                   </p>
                   <ol className="list-decimal space-y-1 pl-4">
                     <li>Fund your wallet with ETH or STRK for gas.</li>
-                    <li>
-                      Send your first Starknet transaction to trigger account
-                      deployment.
-                    </li>
-                    <li>
-                      If you use Argent X, you can also deploy manually in
-                      Settings via Deploy account.
-                    </li>
+                    <li>Send your first Starknet transaction to trigger account deployment.</li>
+                    <li>If you use Argent X, you can also deploy manually in Settings via Deploy account.</li>
                   </ol>
                   <p>Deployment can take up to around 20 minutes.</p>
                   <a

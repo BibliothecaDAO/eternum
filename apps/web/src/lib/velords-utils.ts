@@ -19,10 +19,7 @@ export function toBigInt(value: unknown): bigint {
   return 0n;
 }
 
-function formatDecimalString(
-  value: string,
-  maximumFractionDigits: number,
-): string {
+function formatDecimalString(value: string, maximumFractionDigits: number): string {
   const [integerPartRaw, fractionPartRaw = ""] = value.split(".");
   const integerPart = integerPartRaw.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
 
@@ -37,22 +34,12 @@ function formatDecimalString(
 
 export function formatTokenAmountDisplay(
   amount: unknown,
-  {
-    decimals = 18,
-    maximumFractionDigits = 0,
-  }: { decimals?: number; maximumFractionDigits?: number } = {},
+  { decimals = 18, maximumFractionDigits = 0 }: { decimals?: number; maximumFractionDigits?: number } = {},
 ): string {
-  return formatDecimalString(
-    formatUnits(toBigInt(amount), decimals),
-    maximumFractionDigits,
-  );
+  return formatDecimalString(formatUnits(toBigInt(amount), decimals), maximumFractionDigits);
 }
 
-export function calculateSharePercent(
-  userBalance: unknown,
-  totalSupply: unknown,
-  fractionDigits = 2,
-): string {
+export function calculateSharePercent(userBalance: unknown, totalSupply: unknown, fractionDigits = 2): string {
   const user = toBigInt(userBalance);
   const total = toBigInt(totalSupply);
 
@@ -63,17 +50,12 @@ export function calculateSharePercent(
   const scale = 10n ** BigInt(fractionDigits);
   const scaledPercent = (user * 100n * scale) / total;
   const integerPart = scaledPercent / scale;
-  const fractionPart = (scaledPercent % scale)
-    .toString()
-    .padStart(fractionDigits, "0");
+  const fractionPart = (scaledPercent % scale).toString().padStart(fractionDigits, "0");
 
   return `${integerPart}.${fractionPart}`;
 }
 
-export function computeTvlUsd(
-  lordsInVelords: unknown,
-  lordsPriceRate: unknown,
-): number | undefined {
+export function computeTvlUsd(lordsInVelords: unknown, lordsPriceRate: unknown): number | undefined {
   if (lordsInVelords === undefined || lordsInVelords === null) {
     return undefined;
   }
@@ -81,8 +63,7 @@ export function computeTvlUsd(
     return undefined;
   }
 
-  const parsedRate =
-    typeof lordsPriceRate === "string" ? Number(lordsPriceRate) : lordsPriceRate;
+  const parsedRate = typeof lordsPriceRate === "string" ? Number(lordsPriceRate) : lordsPriceRate;
 
   if (typeof parsedRate !== "number" || Number.isNaN(parsedRate)) {
     return undefined;

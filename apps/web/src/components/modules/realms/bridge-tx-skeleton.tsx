@@ -1,10 +1,5 @@
 import React from "react";
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from "@/components/ui/accordion";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/utils/utils";
@@ -28,16 +23,9 @@ const BridgeTransactionHistorySkeleton: React.FC = () => {
               <div className="flex flex-col items-end justify-end">
                 <div className="flex gap-1">
                   {[...Array(3)].map((_, idx) => (
-                    <Badge
-                      variant="outline"
-                      className="h-4 w-8 animate-pulse bg-muted"
-                      key={idx}
-                    />
+                    <Badge variant="outline" className="h-4 w-8 animate-pulse bg-muted" key={idx} />
                   ))}
-                  <Badge
-                    key="more"
-                    className="h-4 w-8 animate-pulse bg-muted"
-                  />
+                  <Badge key="more" className="h-4 w-8 animate-pulse bg-muted" />
                 </div>
                 <span className="text-muted-foreground">
                   <div className="h-4 w-20 animate-pulse rounded bg-muted" />
@@ -57,11 +45,7 @@ const BridgeTransactionHistorySkeleton: React.FC = () => {
               </div>
               <div className="mt-2 flex items-center gap-2">
                 {[...Array(2)].map((_, idx) => (
-                  <Button
-                    variant="outline"
-                    className="h-8 w-24 animate-pulse bg-muted"
-                    key={idx}
-                  />
+                  <Button variant="outline" className="h-8 w-24 animate-pulse bg-muted" key={idx} />
                 ))}
               </div>
             </div>

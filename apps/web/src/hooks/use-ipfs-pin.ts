@@ -11,11 +11,7 @@ export interface PinResult {
 
 export type PinFunction = (payload: IPFSPayload) => Promise<PinResult>;
 
-async function pinWithIpfsClient(
-  payload: IPFSPayload,
-  name: string,
-  url: string,
-): Promise<PinResult> {
+async function pinWithIpfsClient(payload: IPFSPayload, name: string, url: string): Promise<PinResult> {
   if (typeof window === "undefined") {
     throw new Error("IPFS pinning is only available in the browser");
   }
@@ -30,8 +26,7 @@ async function pinWithIpfsClient(
   };
 }
 
-const pinGraph: PinFunction = (payload) =>
-  pinWithIpfsClient(payload, "graph", "https://api.thegraph.com/ipfs/api/v0");
+const pinGraph: PinFunction = (payload) => pinWithIpfsClient(payload, "graph", "https://api.thegraph.com/ipfs/api/v0");
 
 const pinMantle: PinFunction = (payload) =>
   pinWithIpfsClient(payload, "mantle", "https://subgraph-api.mantle.xyz/ipfs");
@@ -57,10 +52,7 @@ export function useIPFSPin() {
   const [result, setResult] = useState<PinResult | null>(null);
 
   const pinToIPFS = useCallback(
-    async (
-      payload: IPFSPayload,
-      provider: PinProvider = "pineapple",
-    ): Promise<PinResult | null> => {
+    async (payload: IPFSPayload, provider: PinProvider = "pineapple"): Promise<PinResult | null> => {
       setIsLoading(true);
       setError(null);
       try {
@@ -82,10 +74,7 @@ export function useIPFSPin() {
         setResult(pinResult);
         return pinResult;
       } catch (err) {
-        const error =
-          err instanceof Error
-            ? err
-            : new Error("Unknown error while pinning to IPFS");
+        const error = err instanceof Error ? err : new Error("Unknown error while pinning to IPFS");
         setError(error);
         return null;
       } finally {

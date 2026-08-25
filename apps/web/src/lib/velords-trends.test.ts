@@ -109,13 +109,7 @@ describe("buildCumulativeRewardsData", () => {
   it("accumulates weekly rewards over time", () => {
     const points = buildCumulativeRewardsData(weekRows);
 
-    expect(points.map((point) => point.cumulativeRewards)).toEqual([
-      1,
-      3,
-      6,
-      10,
-      15,
-    ]);
+    expect(points.map((point) => point.cumulativeRewards)).toEqual([1, 3, 6, 10, 15]);
   });
 });
 

@@ -3,10 +3,7 @@ import { motion } from "framer-motion";
 export const AnimatedMap = () => {
   return (
     <div className="example h-min-content stroke-primary/30 w-full">
-      <motion.svg
-        viewBox="768.5 953.5 332 329"
-        xmlns="http://www.w3.org/2000/svg"
-      >
+      <motion.svg viewBox="768.5 953.5 332 329" xmlns="http://www.w3.org/2000/svg">
         <motion.path
           initial={{ pathLength: 0 }}
           animate={{ pathLength: 1 }}

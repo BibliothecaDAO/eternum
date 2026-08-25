@@ -1,12 +1,5 @@
 import { Button } from "@/components/ui/button";
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
@@ -64,10 +57,7 @@ const interests = [
   { value: "governance", label: "Governance" },
   { value: "finance", label: "Finance" },
 ];
-export function DelegateProfileForm({
-  delegate,
-  onSubmit,
-}: EditProfileFormProps) {
+export function DelegateProfileForm({ delegate, onSubmit }: EditProfileFormProps) {
   const form = useForm<EditProfileValues>({
     resolver: zodResolver(editProfileSchema),
     defaultValues: {
@@ -87,10 +77,7 @@ export function DelegateProfileForm({
 
   return (
     <Form {...form}>
-      <form
-        onSubmit={form.handleSubmit(handleFormSubmit)}
-        className="space-y-8"
-      >
+      <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-8">
         <FormField
           disabled={!session}
           control={form.control}
@@ -123,11 +110,7 @@ export function DelegateProfileForm({
                   className="grid grid-cols-2 justify-start sm:grid-cols-4 lg:grid-cols-6"
                 >
                   {interests.map(({ value, label }) => (
-                    <ToggleGroupItem
-                      className="leading-none"
-                      key={value}
-                      value={value}
-                    >
+                    <ToggleGroupItem className="leading-none" key={value} value={value}>
                       {label}
                     </ToggleGroupItem>
                   ))}

@@ -13,18 +13,14 @@ export interface DelegateListActionsProps {
   onSortChange?: (sortMethod: "desc" | "random") => void;
 }
 
-export function DelegateListActions({
-  onSortChange,
-}: DelegateListActionsProps) {
+export function DelegateListActions({ onSortChange }: DelegateListActionsProps) {
   const { address } = useAccount();
   const { sendAsync: delegateRealms } = useDelegateRealms({
     delegatee: address,
   });
   const { data: currentDelegate } = useCurrentDelegate();
 
-  const name = useStarkDisplayName(
-    num.toHex(currentDelegate ?? "") as `0x${string}`,
-  );
+  const name = useStarkDisplayName(num.toHex(currentDelegate ?? "") as `0x${string}`);
 
   // New state for sort/filter method
   const [sortMethod, setSortMethod] = useState<"desc" | "random">("random");
@@ -50,9 +46,7 @@ export function DelegateListActions({
           </Badge>
         </>
       ) : (
-        address && (
-          <Button onClick={() => delegateRealms()}>Delegate to self</Button>
-        )
+        address && <Button onClick={() => delegateRealms()}>Delegate to self</Button>
       )}
       <Button variant="outline" onClick={toggleSortMethod}>
         {sortMethod === "desc" ? (

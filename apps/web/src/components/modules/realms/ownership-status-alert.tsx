@@ -10,12 +10,7 @@ interface OwnershipStatusAlertProps {
   className?: string;
 }
 
-export function OwnershipStatusAlert({
-  status,
-  isError = false,
-  onRetry,
-  className,
-}: OwnershipStatusAlertProps) {
+export function OwnershipStatusAlert({ status, isError = false, onRetry, className }: OwnershipStatusAlertProps) {
   if (isError) {
     return (
       <Alert variant="destructive" className={className}>
@@ -24,11 +19,7 @@ export function OwnershipStatusAlert({
         <AlertDescription>
           Ownership data could not be loaded. Your on-chain Realms are safe.
           {onRetry && (
-            <Button
-              variant="link"
-              className="h-auto px-1 py-0"
-              onClick={onRetry}
-            >
+            <Button variant="link" className="h-auto px-1 py-0" onClick={onRetry}>
               Try again
             </Button>
           )}
@@ -43,8 +34,8 @@ export function OwnershipStatusAlert({
         <LoaderCircle className="h-5 w-5 animate-spin" />
         <AlertTitle>Realm inventory is syncing</AlertTitle>
         <AlertDescription>
-          Historical ownership is still being indexed. Your Realms will appear
-          here when the initial sync reaches the current block.
+          Historical ownership is still being indexed. Your Realms will appear here when the initial sync reaches the
+          current block.
         </AlertDescription>
       </Alert>
     );
@@ -56,14 +47,10 @@ export function OwnershipStatusAlert({
         <TriangleAlert className="h-5 w-5" />
         <AlertTitle>Realm inventory indexer is unavailable</AlertTitle>
         <AlertDescription>
-          No ownership checkpoint is available. Your on-chain Realms are safe;
-          try again after the indexer has been started.
+          No ownership checkpoint is available. Your on-chain Realms are safe; try again after the indexer has been
+          started.
           {onRetry && (
-            <Button
-              variant="link"
-              className="h-auto px-1 py-0"
-              onClick={onRetry}
-            >
+            <Button variant="link" className="h-auto px-1 py-0" onClick={onRetry}>
               Try again
             </Button>
           )}
@@ -78,8 +65,7 @@ export function OwnershipStatusAlert({
         <TriangleAlert className="h-5 w-5" />
         <AlertTitle>Realm inventory updates are delayed</AlertTitle>
         <AlertDescription>
-          The latest indexed block is out of date, so ownership is hidden until
-          indexing resumes.
+          The latest indexed block is out of date, so ownership is hidden until indexing resumes.
         </AlertDescription>
       </Alert>
     );

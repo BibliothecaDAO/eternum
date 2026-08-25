@@ -28,14 +28,9 @@ export const getRealmsLordsClaims = createServerFn({ method: "GET" })
     });
   });
 
-export const getRealmsLordsClaimsQueryOptions = (
-  input: z.infer<typeof GetRealmsLordsClaimsInput>,
-) =>
+export const getRealmsLordsClaimsQueryOptions = (input: z.infer<typeof GetRealmsLordsClaimsInput>) =>
   queryOptions({
     queryKey: ["getRealmsLordsClaims", input.address],
-    queryFn: () =>
-      input.address
-        ? getRealmsLordsClaims({ data: input })
-        : Promise.resolve([]),
+    queryFn: () => (input.address ? getRealmsLordsClaims({ data: input }) : Promise.resolve([])),
     enabled: !!input.address,
   });

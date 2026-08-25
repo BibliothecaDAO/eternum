@@ -8,18 +8,12 @@ import { StarknetConfig } from "@starknet-start/react";
 import { env } from "env";
 import { constants } from "starknet";
 
-export function StarknetProvider({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export function StarknetProvider({ children }: { children: React.ReactNode }) {
   const cartridgeControllerWallet = React.useMemo(() => {
     const controller = new Controller({
       slot: env.VITE_PUBLIC_SLOT,
       defaultChainId:
-        env.VITE_PUBLIC_CHAIN === "sepolia"
-          ? constants.StarknetChainId.SN_SEPOLIA
-          : constants.StarknetChainId.SN_MAIN,
+        env.VITE_PUBLIC_CHAIN === "sepolia" ? constants.StarknetChainId.SN_SEPOLIA : constants.StarknetChainId.SN_MAIN,
       chains: [
         { rpcUrl: "https://api.cartridge.gg/x/starknet/sepolia/rpc/v0_9" },
         { rpcUrl: "https://api.cartridge.gg/x/starknet/mainnet/rpc/v0_9" },

@@ -48,16 +48,11 @@ export const getBridgeTransactions = createServerFn({ method: "GET" })
     });
   });
 
-export const getBridgeTransactionsQueryOptions = (
-  input?: z.infer<typeof GetBridgeTransactionsInput>,
-) =>
+export const getBridgeTransactionsQueryOptions = (input?: z.infer<typeof GetBridgeTransactionsInput>) =>
   queryOptions({
     queryKey: ["getBridgeTransactions", input],
-    queryFn: () =>
-      hasBridgeAccount(input) ? getBridgeTransactions({ data: input }) : null,
+    queryFn: () => (hasBridgeAccount(input) ? getBridgeTransactions({ data: input }) : null),
     enabled: hasBridgeAccount(input),
-    refetchInterval: hasBridgeAccount(input)
-      ? BRIDGE_TRANSACTIONS_POLL_INTERVAL_MS
-      : false,
+    refetchInterval: hasBridgeAccount(input) ? BRIDGE_TRANSACTIONS_POLL_INTERVAL_MS : false,
     refetchIntervalInBackground: false,
   });

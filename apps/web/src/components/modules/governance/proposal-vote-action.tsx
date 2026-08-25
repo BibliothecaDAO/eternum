@@ -1,4 +1,4 @@
-import type { Proposal } from "@/gql/graphql";
+import type { Proposal } from "@/gql/snapshot/graphql";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
@@ -22,9 +22,7 @@ export const ProposalVoteAction = ({ proposal }: { proposal: Proposal }) => {
   const { vote, selectedChoice, setSelectedChoice } = useVoteProposal(proposal);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [voteReason, setVoteReason] = useState("");
-  const proposalTitle =
-    ((proposal as { metadata?: { title?: string } }).metadata?.title ??
-      "this proposal");
+  const proposalTitle = (proposal as { metadata?: { title?: string } }).metadata?.title ?? "this proposal";
   const { address } = useAccount();
   const { openStarknetKitModal } = useStarknetWallet();
 
@@ -92,29 +90,18 @@ export const ProposalVoteAction = ({ proposal }: { proposal: Proposal }) => {
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
             <DialogTitle>Confirm Your Vote</DialogTitle>
-            <DialogDescription>
-              You are voting on: {proposalTitle}
-            </DialogDescription>
+            <DialogDescription>You are voting on: {proposalTitle}</DialogDescription>
           </DialogHeader>
 
           <div className="grid gap-4 py-4">
             <RadioGroup
               value={selectedChoice?.toString()}
-              onValueChange={(value) =>
-                setSelectedChoice(Number(value) as Choice)
-              }
+              onValueChange={(value) => setSelectedChoice(Number(value) as Choice)}
               className="grid grid-cols-3 gap-4"
             >
               <div className="flex items-center space-x-2">
-                <RadioGroupItem
-                  value={Choice.For.toString()}
-                  id="vote-for"
-                  className="border-success"
-                />
-                <Label
-                  htmlFor="vote-for"
-                  className="flex items-center text-success"
-                >
+                <RadioGroupItem value={Choice.For.toString()} id="vote-for" className="border-success" />
+                <Label htmlFor="vote-for" className="flex items-center text-success">
                   <Check className="mr-1 h-4 w-4" /> For
                 </Label>
               </div>
@@ -125,24 +112,14 @@ export const ProposalVoteAction = ({ proposal }: { proposal: Proposal }) => {
                   id="vote-abstain"
                   className="border-muted-foreground"
                 />
-                <Label
-                  htmlFor="vote-abstain"
-                  className="flex items-center text-muted-foreground"
-                >
+                <Label htmlFor="vote-abstain" className="flex items-center text-muted-foreground">
                   <Minus className="mr-1 h-4 w-4" /> Abstain
                 </Label>
               </div>
 
               <div className="flex items-center space-x-2">
-                <RadioGroupItem
-                  value={Choice.Against.toString()}
-                  id="vote-against"
-                  className="border-destructive"
-                />
-                <Label
-                  htmlFor="vote-against"
-                  className="flex items-center text-destructive"
-                >
+                <RadioGroupItem value={Choice.Against.toString()} id="vote-against" className="border-destructive" />
+                <Label htmlFor="vote-against" className="flex items-center text-destructive">
                   <X className="mr-1 h-4 w-4" /> Against
                 </Label>
               </div>

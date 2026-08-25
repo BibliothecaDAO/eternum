@@ -19,7 +19,7 @@ import { useQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { num } from "starknet";
 
-import { SnapshotSpaceAddresses } from "@realms-world/constants";
+import { SnapshotSpaceAddresses } from "@realms-world/chain";
 
 export const Route = createFileRoute("/proposal/list")({
   loader: async ({ context }) => {
@@ -38,10 +38,7 @@ export const Route = createFileRoute("/proposal/list")({
 
 function RouteComponent() {
   const { data } = useCurrentDelegate();
-  const delegateAddress =
-    data && BigInt(data) !== 0n
-      ? formatAddress(num.toHex(BigInt(data)))
-      : undefined;
+  const delegateAddress = data && BigInt(data) !== 0n ? formatAddress(num.toHex(BigInt(data))) : undefined;
 
   const currentDelegateQuery = useQuery(
     getDelegateByIDQueryOptions({
@@ -66,11 +63,7 @@ function RouteComponent() {
           </Suspense>
         </div>
       </SidebarInset>
-      <Sidebar
-        side="right"
-        variant="inset"
-        className="top-(--header-height) h-[calc(100svh-var(--header-height))]!"
-      >
+      <Sidebar side="right" variant="inset" className="top-(--header-height) h-[calc(100svh-var(--header-height))]!">
         <SidebarContent>
           <SidebarGroup>
             <SidebarGroupLabel>View On</SidebarGroupLabel>
@@ -79,10 +72,7 @@ function RouteComponent() {
               rel="noopener noreferrer"
               href="https://snapshot.box/#/sn:0x07bd3419669f9f0cc8f19e9e2457089cdd4804a4c41a5729ee9c7fd02ab8ab62"
             >
-              <Badge
-                variant="outline"
-                className="rounded-xl bg-gray-300 hover:bg-gray-100"
-              >
+              <Badge variant="outline" className="rounded-xl bg-gray-300 hover:bg-gray-100">
                 <SnapshotLogo className="h-10 w-36" />
               </Badge>
             </a>

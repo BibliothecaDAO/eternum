@@ -51,7 +51,7 @@ export default defineConfig({
     include: ["@realms-world/db", "starknet", "@starknet-start/react", "zod"],
   },
   ssr: {
-    noExternal: ["@realms-world/db", "@realms-world/constants", "zod"],
+    noExternal: ["@realms-world/db", "@realms-world/chain", "zod"],
     external: ["@walletconnect/time"],
   },
 });

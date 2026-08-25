@@ -63,14 +63,9 @@ export function UnlockDialog({
 
     const currentTime = Math.floor(Date.now() / 1000);
     if (lockInfo.end > currentTime) {
-      const timeLeft = BigInt(
-        Math.min(lockInfo.end - currentTime, MAX_LOCK_DURATION),
-      );
+      const timeLeft = BigInt(Math.min(lockInfo.end - currentTime, MAX_LOCK_DURATION));
       const penaltyRatio = BigInt(
-        Math.min(
-          Number((timeLeft * SCALE) / BigInt(MAX_LOCK_DURATION)),
-          Number(MAX_PENALTY_RATIO),
-        ),
+        Math.min(Number((timeLeft * SCALE) / BigInt(MAX_LOCK_DURATION)), Number(MAX_PENALTY_RATIO)),
       );
       return (lockInfo.amount * penaltyRatio) / SCALE;
     }
@@ -92,8 +87,7 @@ export function UnlockDialog({
     } catch (error) {
       toast({
         variant: "destructive",
-        description:
-          error instanceof Error ? error.message : "Unable to withdraw lock.",
+        description: error instanceof Error ? error.message : "Unable to withdraw lock.",
       });
     } finally {
       setIsWithdrawing(false);
@@ -126,9 +120,7 @@ export function UnlockDialog({
                   {ownerLordsLock?.amount ? (
                     <div className="flex items-center gap-2">
                       <LordsIcon className="h-4 w-4" />{" "}
-                      {formatNumber(
-                        Number(formatEther(BigInt(ownerLordsLock.amount))),
-                      )}
+                      {formatNumber(Number(formatEther(BigInt(ownerLordsLock.amount))))}
                     </div>
                   ) : (
                     "-"
@@ -140,23 +132,16 @@ export function UnlockDialog({
                   <CardTitle className="text-sm">Unlock Date</CardTitle>
                 </CardHeader>
                 <CardContent className="text-sm">
-                  {ownerLordsLock?.end_time
-                    ? formatLockEndTime(Number(ownerLordsLock.end_time))
-                    : "N/A"}
+                  {ownerLordsLock?.end_time ? formatLockEndTime(Number(ownerLordsLock.end_time)) : "N/A"}
                 </CardContent>
               </Card>
             </div>
           </div>
           <div className="mb-4 flex flex-col gap-4">
             {isLockExpired ? (
-              <p className="">
-                Your lock has expired. You can withdraw your Lords without penalty.
-              </p>
+              <p className="">Your lock has expired. You can withdraw your Lords without penalty.</p>
             ) : (
-              <p className="">
-                Pay a penalty determined by lock duration to withdraw your locked
-                Lords early
-              </p>
+              <p className="">Pay a penalty determined by lock duration to withdraw your locked Lords early</p>
             )}
             <div className="flex">
               <Card className="w-auto">
@@ -170,21 +155,12 @@ export function UnlockDialog({
                     <div className="flex flex-col gap-2">
                       <div className="flex items-center gap-2">
                         <LordsIcon className="h-4 w-4" />
-                        {formatNumber(
-                          Number(
-                            formatEther(
-                              BigInt(ownerLordsLock.amount) - BigInt(penalty),
-                            ),
-                          ),
-                        )}
+                        {formatNumber(Number(formatEther(BigInt(ownerLordsLock.amount) - BigInt(penalty))))}
                       </div>
                       {!isLockExpired && (
                         <div className="text-xs text-destructive">
                           Penalty: {formatEther(BigInt(penalty))} LORDS (
-                          {(
-                            (Number(penalty) / Number(ownerLordsLock.amount)) *
-                            100
-                          ).toFixed(2)}
+                          {((Number(penalty) / Number(ownerLordsLock.amount)) * 100).toFixed(2)}
                           %)
                         </div>
                       )}
@@ -198,11 +174,7 @@ export function UnlockDialog({
           </div>
 
           <DialogFooter>
-            <Button
-              onClick={() => handleWithdraw()}
-              className="w-full"
-              disabled={isWithdrawing}
-            >
+            <Button onClick={() => handleWithdraw()} className="w-full" disabled={isWithdrawing}>
               {isWithdrawing ? "Withdrawing..." : "Withdraw Lords"}
             </Button>
           </DialogFooter>

@@ -49,9 +49,7 @@ describe("getRealmOwnershipInventory", () => {
 
   it("canonicalizes padded wallet addresses for indexed owner lookups", () => {
     expect(normalizeRealmOwnerAddress("0x000A")).toBe("0xa");
-    expect(() => normalizeRealmOwnerAddress("0x0")).toThrow(
-      "Invalid Starknet wallet address",
-    );
+    expect(() => normalizeRealmOwnerAddress("0x0")).toThrow("Invalid Starknet wallet address");
   });
 
   it(
@@ -118,9 +116,7 @@ describe("getRealmOwnershipInventory", () => {
         has_reached_head: true,
       });
 
-      expect(
-        await getRealmOwnershipInventory(database, "0xa", NOW),
-      ).toMatchObject({ status: "stale", tokens: [] });
+      expect(await getRealmOwnershipInventory(database, "0xa", NOW)).toMatchObject({ status: "stale", tokens: [] });
     },
     TEST_TIMEOUT_MS,
   );

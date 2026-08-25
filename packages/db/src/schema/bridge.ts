@@ -1,13 +1,5 @@
 import { relations } from "drizzle-orm";
-import {
-  integer,
-  numeric,
-  pgEnum,
-  pgTable,
-  primaryKey,
-  text,
-  timestamp,
-} from "drizzle-orm/pg-core";
+import { integer, numeric, pgEnum, pgTable, primaryKey, text, timestamp } from "drizzle-orm/pg-core";
 
 export const bridgeEventTypeEnum = pgEnum("BridgeEventType", [
   "deposit_initiated_l1",
@@ -28,12 +20,9 @@ export const realmsBridgeRequests = pgTable("realms_bridge_requests", {
   req_hash: numeric("req_hash").notNull(),
 });
 
-export const realmsBridgeRequestsRelations = relations(
-  realmsBridgeRequests,
-  ({ many }) => ({
-    events: many(realmsBridgeEvents),
-  }),
-);
+export const realmsBridgeRequestsRelations = relations(realmsBridgeRequests, ({ many }) => ({
+  events: many(realmsBridgeEvents),
+}));
 export const realmsBridgeEvents = pgTable(
   "realms_bridge_events",
   {
@@ -44,15 +33,12 @@ export const realmsBridgeEvents = pgTable(
   },
   (t) => [primaryKey({ columns: [t._id, t.type] })],
 );
-export const realmsBridgeEventsRelations = relations(
-  realmsBridgeEvents,
-  ({ one }) => ({
-    request: one(realmsBridgeRequests, {
-      fields: [realmsBridgeEvents._id],
-      references: [realmsBridgeRequests._id],
-    }),
+export const realmsBridgeEventsRelations = relations(realmsBridgeEvents, ({ one }) => ({
+  request: one(realmsBridgeRequests, {
+    fields: [realmsBridgeEvents._id],
+    references: [realmsBridgeRequests._id],
   }),
-);
+}));
 
 export const realmsLordsClaims = pgTable(
   "realms_lords_claims",

@@ -23,9 +23,7 @@ export const getVelordsBurns = createServerFn({ method: "GET" })
     const { sender, startTimestamp, endTimestamp } = ctx.data;
     const whereFilter: SQL[] = [];
     if (sender) {
-      whereFilter.push(
-        eq(velords_rewards_received.sender, sender.toLowerCase()),
-      );
+      whereFilter.push(eq(velords_rewards_received.sender, sender.toLowerCase()));
     }
     if (startTimestamp) {
       whereFilter.push(gte(velords_rewards_received.timestamp, startTimestamp));
@@ -38,9 +36,7 @@ export const getVelordsBurns = createServerFn({ method: "GET" })
     });
   });
 
-export const getVelordsBurnsQueryOptions = (
-  input?: z.infer<typeof GetVelordsBurnsInput>,
-) =>
+export const getVelordsBurnsQueryOptions = (input?: z.infer<typeof GetVelordsBurnsInput>) =>
   queryOptions({
     queryKey: ["getVelordsBurns", input],
     queryFn: () => getVelordsBurns({ data: input ?? {} }),

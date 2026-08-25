@@ -2,25 +2,18 @@ import type { BlockNumber, Call } from "starknet";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { RealmsABI } from "@/abi/L2/Realms";
 import { SUPPORTED_L2_CHAIN_ID } from "@/utils/utils";
-import {
-  useAccount,
-  useContract,
-  useReadContract,
-  useSendTransaction,
-} from "@starknet-start/react";
+import { useAccount, useContract, useReadContract, useSendTransaction } from "@starknet-start/react";
 import { BlockTag } from "starknet";
 import { formatEther } from "viem";
 
-import { CollectionAddresses } from "@realms-world/constants";
+import { CollectionAddresses } from "@realms-world/chain";
 
 import { useToast } from "./use-toast";
 
 export const useL2RealmsClaims = () => {
   const { toast } = useToast();
   const { address: l2Address } = useAccount();
-  const l2RealmsAddress = CollectionAddresses.realms[
-    SUPPORTED_L2_CHAIN_ID
-  ] as `0x${string}`;
+  const l2RealmsAddress = CollectionAddresses.realms[SUPPORTED_L2_CHAIN_ID] as `0x${string}`;
 
   const [previousBalance, setPreviousBalance] = useState<bigint | null>(null);
   const [easedBalance, setEasedBalance] = useState<bigint | null>(null);
@@ -72,11 +65,7 @@ export const useL2RealmsClaims = () => {
     return [contract.populate("reward_claim", [])];
   }, [l2Address, contract]);
 
-  const {
-    sendAsync,
-    data: claimHash,
-    isPending: isSubmitting,
-  } = useSendTransaction({ calls });
+  const { sendAsync, data: claimHash, isPending: isSubmitting } = useSendTransaction({ calls });
 
   const claimRewards = useCallback(async () => {
     const tx = await sendAsync();

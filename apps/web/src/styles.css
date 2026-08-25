@@ -156,15 +156,11 @@
     --radius: 0.75rem;
     --shadow-2xs: 0 1px 3px 0 hsl(0 0% 0% / 0.05);
     --shadow-xs: 0 1px 3px 0 hsl(0 0% 0% / 0.05);
-    --shadow-sm:
-      0 1px 3px 0 hsl(0 0% 0% / 0.1), 0 1px 2px -1px hsl(0 0% 0% / 0.1);
+    --shadow-sm: 0 1px 3px 0 hsl(0 0% 0% / 0.1), 0 1px 2px -1px hsl(0 0% 0% / 0.1);
     --shadow: 0 1px 3px 0 hsl(0 0% 0% / 0.1), 0 1px 2px -1px hsl(0 0% 0% / 0.1);
-    --shadow-md:
-      0 1px 3px 0 hsl(0 0% 0% / 0.1), 0 2px 4px -1px hsl(0 0% 0% / 0.1);
-    --shadow-lg:
-      0 1px 3px 0 hsl(0 0% 0% / 0.1), 0 4px 6px -1px hsl(0 0% 0% / 0.1);
-    --shadow-xl:
-      0 1px 3px 0 hsl(0 0% 0% / 0.1), 0 8px 10px -1px hsl(0 0% 0% / 0.1);
+    --shadow-md: 0 1px 3px 0 hsl(0 0% 0% / 0.1), 0 2px 4px -1px hsl(0 0% 0% / 0.1);
+    --shadow-lg: 0 1px 3px 0 hsl(0 0% 0% / 0.1), 0 4px 6px -1px hsl(0 0% 0% / 0.1);
+    --shadow-xl: 0 1px 3px 0 hsl(0 0% 0% / 0.1), 0 8px 10px -1px hsl(0 0% 0% / 0.1);
     --shadow-2xl: 0 1px 3px 0 hsl(0 0% 0% / 0.25);
   }
 
@@ -228,15 +224,11 @@
     --radius: 0.75rem;
     --shadow-2xs: 0 1px 3px 0 hsl(0 0% 0% / 0.05);
     --shadow-xs: 0 1px 3px 0 hsl(0 0% 0% / 0.05);
-    --shadow-sm:
-      0 1px 3px 0 hsl(0 0% 0% / 0.1), 0 1px 2px -1px hsl(0 0% 0% / 0.1);
+    --shadow-sm: 0 1px 3px 0 hsl(0 0% 0% / 0.1), 0 1px 2px -1px hsl(0 0% 0% / 0.1);
     --shadow: 0 1px 3px 0 hsl(0 0% 0% / 0.1), 0 1px 2px -1px hsl(0 0% 0% / 0.1);
-    --shadow-md:
-      0 1px 3px 0 hsl(0 0% 0% / 0.1), 0 2px 4px -1px hsl(0 0% 0% / 0.1);
-    --shadow-lg:
-      0 1px 3px 0 hsl(0 0% 0% / 0.1), 0 4px 6px -1px hsl(0 0% 0% / 0.1);
-    --shadow-xl:
-      0 1px 3px 0 hsl(0 0% 0% / 0.1), 0 8px 10px -1px hsl(0 0% 0% / 0.1);
+    --shadow-md: 0 1px 3px 0 hsl(0 0% 0% / 0.1), 0 2px 4px -1px hsl(0 0% 0% / 0.1);
+    --shadow-lg: 0 1px 3px 0 hsl(0 0% 0% / 0.1), 0 4px 6px -1px hsl(0 0% 0% / 0.1);
+    --shadow-xl: 0 1px 3px 0 hsl(0 0% 0% / 0.1), 0 8px 10px -1px hsl(0 0% 0% / 0.1);
     --shadow-2xl: 0 1px 3px 0 hsl(0 0% 0% / 0.25);
   }
 
@@ -290,23 +282,16 @@
 
   .realm-panel {
     border: 1px solid var(--realm-border-etched);
-    background: color-mix(
-      in oklab,
-      var(--card) 92%,
-      var(--realm-surface-slate)
-    );
+    background: color-mix(in oklab, var(--card) 92%, var(--realm-surface-slate));
     box-shadow:
-      inset 0 1px 0
-        color-mix(in oklab, var(--realm-accent-brass) 24%, transparent),
+      inset 0 1px 0 color-mix(in oklab, var(--realm-accent-brass) 24%, transparent),
       0 16px 40px color-mix(in oklab, black 45%, transparent);
   }
 
   .realm-subtle-panel {
-    border: 1px solid
-      color-mix(in oklab, var(--realm-border-etched) 72%, transparent);
+    border: 1px solid color-mix(in oklab, var(--realm-border-etched) 72%, transparent);
     background: color-mix(in oklab, var(--accent) 72%, transparent);
-    box-shadow: inset 0 1px 0
-      color-mix(in oklab, var(--realm-accent-brass) 18%, transparent);
+    box-shadow: inset 0 1px 0 color-mix(in oklab, var(--realm-accent-brass) 18%, transparent);
   }
 
   .realm-page-title {
@@ -385,11 +370,9 @@
   }
 
   .realm-interactive-row {
-    border: 1px solid
-      color-mix(in oklab, var(--realm-border-etched) 76%, transparent);
+    border: 1px solid color-mix(in oklab, var(--realm-border-etched) 76%, transparent);
     background: color-mix(in oklab, var(--card) 88%, var(--accent));
-    box-shadow: inset 0 1px 0
-      color-mix(in oklab, var(--realm-accent-brass) 18%, transparent);
+    box-shadow: inset 0 1px 0 color-mix(in oklab, var(--realm-accent-brass) 18%, transparent);
   }
 }
 

@@ -35,12 +35,7 @@ export const VoteFieldsFragment = graphql(`
   }
 `);
 const USER_VOTES_QUERY = graphql(`
-  query UserVotes(
-    $first: Int
-    $skip: Int
-    $spaceIds: [String]
-    $voter: String
-  ) {
+  query UserVotes($first: Int, $skip: Int, $spaceIds: [String], $voter: String) {
     votes(
       first: $first
       skip: $skip
@@ -92,17 +87,9 @@ export const getUserVotes = createServerFn({ method: "POST" })
 /*                   React Query Options for loadUserVotes                  */
 /* -------------------------------------------------------------------------- */
 
-export const getUserVotesQueryOptions = (
-  input: z.infer<typeof LoadUserVotesInput>,
-) =>
+export const getUserVotesQueryOptions = (input: z.infer<typeof LoadUserVotesInput>) =>
   queryOptions({
-    queryKey: [
-      "loadUserVotes",
-      input.spaceIds,
-      input.voter,
-      input.limit,
-      input.skip,
-    ],
+    queryKey: ["loadUserVotes", input.spaceIds, input.voter, input.limit, input.skip],
     queryFn: () => getUserVotes({ data: input }),
     enabled: !!input.voter,
     staleTime: USER_VOTES_STALE_TIME_MS,

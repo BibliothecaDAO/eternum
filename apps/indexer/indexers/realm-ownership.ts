@@ -1,7 +1,4 @@
-import type {
-  ExtractTablesWithRelations,
-  TablesRelationalConfig,
-} from "drizzle-orm";
+import type { ExtractTablesWithRelations, TablesRelationalConfig } from "drizzle-orm";
 import type { PgDatabase, PgQueryResultHKT } from "drizzle-orm/pg-core";
 import { eq, sql } from "drizzle-orm";
 
@@ -47,11 +44,7 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 }
 
 function parseNumericValue(value: unknown, field: string): bigint {
-  if (
-    typeof value !== "bigint" &&
-    typeof value !== "number" &&
-    typeof value !== "string"
-  ) {
+  if (typeof value !== "bigint" && typeof value !== "number" && typeof value !== "string") {
     throw new TypeError(`Invalid ${field}`);
   }
 
@@ -62,7 +55,7 @@ function parseNumericValue(value: unknown, field: string): bigint {
   }
 }
 
-export function normalizeStarknetAddress(value: unknown): string {
+function normalizeStarknetAddress(value: unknown): string {
   const address = parseNumericValue(value, "Starknet address");
   if (address < 0n || address >= 2n ** 251n - 256n) {
     throw new RangeError(`Invalid Starknet address: ${String(value)}`);
@@ -75,12 +68,7 @@ function parseDecodedTransfer(value: unknown): DecodedTransfer {
     throw new TypeError("Invalid decoded Transfer event");
   }
   const args = value.args;
-  if (
-    !isRecord(args) ||
-    !("from" in args) ||
-    !("to" in args) ||
-    !("token_id" in args)
-  ) {
+  if (!isRecord(args) || !("from" in args) || !("to" in args) || !("token_id" in args)) {
     throw new TypeError("Invalid decoded Transfer event args");
   }
   return {
@@ -113,16 +101,10 @@ export function toRealmTransfer(
 export async function applyRealmTransfer<
   TQueryResult extends PgQueryResultHKT,
   TFullSchema extends Record<string, unknown> = Record<string, never>,
-  TSchema extends TablesRelationalConfig =
-    ExtractTablesWithRelations<TFullSchema>,
->(
-  database: PgDatabase<TQueryResult, TFullSchema, TSchema>,
-  transfer: RealmTransfer,
-) {
+  TSchema extends TablesRelationalConfig = ExtractTablesWithRelations<TFullSchema>,
+>(database: PgDatabase<TQueryResult, TFullSchema, TSchema>, transfer: RealmTransfer) {
   if (transfer.burned) {
-    await database
-      .delete(starknetRealmOwnership)
-      .where(eq(starknetRealmOwnership._id, transfer.tokenId));
+    await database.delete(starknetRealmOwnership).where(eq(starknetRealmOwnership._id, transfer.tokenId));
     return;
   }
 
@@ -156,16 +138,11 @@ export async function applyRealmTransfer<
 export async function recordOwnershipProgress<
   TQueryResult extends PgQueryResultHKT,
   TFullSchema extends Record<string, unknown> = Record<string, never>,
-  TSchema extends TablesRelationalConfig =
-    ExtractTablesWithRelations<TFullSchema>,
->(
-  database: PgDatabase<TQueryResult, TFullSchema, TSchema>,
-  update: ProgressUpdate,
-) {
+  TSchema extends TablesRelationalConfig = ExtractTablesWithRelations<TFullSchema>,
+>(database: PgDatabase<TQueryResult, TFullSchema, TSchema>, update: ProgressUpdate) {
   const processedAt = update.processedAt ?? new Date();
   const hasReachedHead =
-    Math.abs(processedAt.getTime() - update.blockTimestamp.getTime()) <=
-    REALM_OWNERSHIP_FRESHNESS_WINDOW_MS;
+    Math.abs(processedAt.getTime() - update.blockTimestamp.getTime()) <= REALM_OWNERSHIP_FRESHNESS_WINDOW_MS;
 
   await database
     .insert(starknetRealmOwnershipStatus)

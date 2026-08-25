@@ -1,7 +1,4 @@
-import type {
-  ExtractTablesWithRelations,
-  TablesRelationalConfig,
-} from "drizzle-orm";
+import type { ExtractTablesWithRelations, TablesRelationalConfig } from "drizzle-orm";
 import type { PgDatabase, PgQueryResultHKT } from "drizzle-orm/pg-core";
 import { asc, eq } from "drizzle-orm";
 
@@ -13,11 +10,7 @@ import {
   starknetRealmOwnershipStatus,
 } from "./schema/realm-ownership";
 
-export type RealmOwnershipInventoryStatus =
-  | "ready"
-  | "syncing"
-  | "stale"
-  | "unavailable";
+export type RealmOwnershipInventoryStatus = "ready" | "syncing" | "stale" | "unavailable";
 
 export interface RealmOwnershipToken {
   token_id: string;
@@ -52,8 +45,7 @@ export function normalizeRealmOwnerAddress(address: string): string {
 export async function getRealmOwnershipInventory<
   TQueryResult extends PgQueryResultHKT,
   TFullSchema extends Record<string, unknown> = Record<string, never>,
-  TSchema extends TablesRelationalConfig =
-    ExtractTablesWithRelations<TFullSchema>,
+  TSchema extends TablesRelationalConfig = ExtractTablesWithRelations<TFullSchema>,
 >(
   database: PgDatabase<TQueryResult, TFullSchema, TSchema>,
   owner: string,
@@ -79,10 +71,7 @@ export async function getRealmOwnershipInventory<
     return { status: "syncing", tokens: [], checkpoint };
   }
 
-  if (
-    now.getTime() - checkpointRow.latest_block_timestamp.getTime() >
-    REALM_OWNERSHIP_FRESHNESS_WINDOW_MS
-  ) {
+  if (now.getTime() - checkpointRow.latest_block_timestamp.getTime() > REALM_OWNERSHIP_FRESHNESS_WINDOW_MS) {
     return { status: "stale", tokens: [], checkpoint };
   }
 
@@ -93,10 +82,7 @@ export async function getRealmOwnershipInventory<
       metadata: starknetRealmMetadata.metadata,
     })
     .from(starknetRealmOwnership)
-    .leftJoin(
-      starknetRealmMetadata,
-      eq(starknetRealmMetadata._id, starknetRealmOwnership._id),
-    )
+    .leftJoin(starknetRealmMetadata, eq(starknetRealmMetadata._id, starknetRealmOwnership._id))
     .where(eq(starknetRealmOwnership.owner, owner))
     .orderBy(asc(starknetRealmOwnership.token_id));
 

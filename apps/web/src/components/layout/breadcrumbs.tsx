@@ -4,9 +4,7 @@ export const Breadcrumbs = () => {
   const matches = useMatches();
   if (matches.some((match) => match.status === "pending")) return null;
 
-  const matchesWithCrumbs = matches.filter((match) =>
-    isMatch(match, "loaderData.crumb")
-  );
+  const matchesWithCrumbs = matches.filter((match) => isMatch(match, "loaderData.crumb"));
 
   return (
     <nav>
@@ -16,9 +14,7 @@ export const Breadcrumbs = () => {
             <Link className="text-primary" from={match.fullPath}>
               {match.loaderData?.crumb}
             </Link>
-            {i + 1 < matchesWithCrumbs.length ? (
-              <span className="">{">"}</span>
-            ) : null}
+            {i + 1 < matchesWithCrumbs.length ? <span className="">{">"}</span> : null}
           </li>
         ))}
       </ul>

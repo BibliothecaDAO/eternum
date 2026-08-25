@@ -1,5 +1,5 @@
 {
-  "extends": "@realms-world/tsconfig/base.json",
+  "extends": "../../packages/tsconfig.base.json",
   "include": ["."],
   "exclude": ["node_modules"]
 }

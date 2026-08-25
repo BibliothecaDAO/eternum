@@ -1,11 +1,4 @@
-import {
-  integer,
-  numeric,
-  pgTable,
-  primaryKey,
-  text,
-  timestamp,
-} from "drizzle-orm/pg-core";
+import { integer, numeric, pgTable, primaryKey, text, timestamp } from "drizzle-orm/pg-core";
 
 export const velords_rewards_received = pgTable(
   "velords_rewards_received",

@@ -6,32 +6,17 @@ import { describe, expect, it } from "vitest";
 const currentDir = dirname(fileURLToPath(import.meta.url));
 const stylesPath = resolve(currentDir, "../styles.css");
 const buttonPath = resolve(currentDir, "../components/ui/button.tsx");
-const homepagePath = resolve(
-  currentDir,
-  "../components/modules/homepage/homepage.tsx",
-);
-const indexRoutePath = resolve(currentDir, "../routes/index.tsx");
+const homepagePath = resolve(currentDir, "../components/modules/homepage/homepage.tsx");
+const indexRoutePath = resolve(currentDir, "../routes/account.index.tsx");
 const proposalListPath = resolve(currentDir, "../routes/proposal.list.tsx");
-const delegateProfilePath = resolve(
-  currentDir,
-  "../routes/delegate.profile.tsx",
-);
+const delegateProfilePath = resolve(currentDir, "../routes/delegate.profile.tsx");
 const proposalDetailPath = resolve(currentDir, "../routes/proposal.$id.tsx");
 const velordsIndexPath = resolve(currentDir, "../routes/velords.index.tsx");
-const claimsPath = resolve(
-  currentDir,
-  "../components/modules/realms/claims.tsx",
-);
-const appSidebarPath = resolve(
-  currentDir,
-  "../components/layout/app-sidebar.tsx",
-);
+const claimsPath = resolve(currentDir, "../components/modules/realms/claims.tsx");
+const appSidebarPath = resolve(currentDir, "../components/layout/app-sidebar.tsx");
 const delegateListPath = resolve(currentDir, "../routes/delegate.list.tsx");
 const comingSoonPath = resolve(currentDir, "../routes/coming-soon.index.tsx");
-const markdownRendererPath = resolve(
-  currentDir,
-  "../components/ui/markdown-renderer.tsx",
-);
+const markdownRendererPath = resolve(currentDir, "../components/ui/markdown-renderer.tsx");
 const styles = readFileSync(stylesPath, "utf8");
 const buttonSource = readFileSync(buttonPath, "utf8");
 const homepageSource = readFileSync(homepagePath, "utf8");
@@ -67,9 +52,7 @@ describe("account portal theme", () => {
   it("gives outline buttons an etched panel treatment", () => {
     expect(buttonSource).toContain("border-realm-etched");
     expect(buttonSource).toContain("bg-card/80");
-    expect(buttonSource).toContain(
-      "hover:border-[color:var(--realm-accent-brass)]",
-    );
+    expect(buttonSource).toContain("hover:border-[color:var(--realm-accent-brass)]");
   });
 
   it("uses brass accents instead of white edge highlights", () => {
@@ -104,9 +87,7 @@ describe("account portal theme", () => {
   it("keeps homepage spacing tight and consistent", () => {
     expect(homepageSource).not.toContain('className="space-y-8"');
     expect(homepageSource).not.toContain('className="grid grid-cols-1 gap-8');
-    expect(homepageSource).not.toContain(
-      'CardContent className="p-12 text-center"',
-    );
+    expect(homepageSource).not.toContain('CardContent className="p-12 text-center"');
     expect(homepageSource).toContain('className="space-y-6"');
   });
 

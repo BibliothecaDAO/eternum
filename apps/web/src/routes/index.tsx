@@ -1,50 +1,125 @@
-import { Suspense } from "react";
-import { EthereumConnect } from "@/components/layout/ethereum-connect";
-import { LoginCard } from "@/components/layout/login-card";
-import { Homepage } from "@/components/modules/homepage/homepage";
-import { HomepageSkeleton } from "@/components/modules/homepage/homepage-skeleteon";
-import { getProposalsQueryOptions } from "@/lib/snapshot/getProposals";
-import { SUPPORTED_L2_CHAIN_ID } from "@/utils/utils";
-import { useAccount } from "@starknet-start/react";
 import { createFileRoute } from "@tanstack/react-router";
+import { ReactNode, Suspense, lazy, useEffect, useRef, useState } from "react";
+import { IntroSection } from "@/site/components/sections/IntroSection";
+import { generateMetaTags } from "@/site/lib/og-image";
 
-import { SnapshotSpaceAddresses } from "@realms-world/constants";
+const HexExplorerSection = lazy(() =>
+  import("@/site/components/hex-explorer/HexExplorerSection").then((module) => ({
+    default: module.HexExplorerSection,
+  })),
+);
+const AgentNativeSection = lazy(() =>
+  import("@/site/components/sections/AgentNativeSection").then((module) => ({
+    default: module.AgentNativeSection,
+  })),
+);
+const EcosystemAtlasSection = lazy(() =>
+  import("@/site/components/sections/EcosystemAtlasSection").then((module) => ({
+    default: module.EcosystemAtlasSection,
+  })),
+);
+const EconomicsSection = lazy(() =>
+  import("@/site/components/sections/EconomicsSection").then((module) => ({
+    default: module.EconomicsSection,
+  })),
+);
+const PartnersSection = lazy(() =>
+  import("@/site/components/sections/PartnersSection").then((module) => ({
+    default: module.PartnersSection,
+  })),
+);
+
+function SectionFallback() {
+  return <div className="min-h-[220px] rounded-lg border border-border/40 bg-muted/20 animate-pulse" />;
+}
+
+function DeferredSection({ children, eager = false }: { children: ReactNode; eager?: boolean }) {
+  const [isVisible, setIsVisible] = useState(eager);
+  const sectionRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    if (isVisible) return;
+
+    const node = sectionRef.current;
+    if (!node) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((entry) => entry.isIntersecting)) {
+          setIsVisible(true);
+          observer.disconnect();
+        }
+      },
+      { rootMargin: "400px 0px" },
+    );
+
+    observer.observe(node);
+
+    return () => observer.disconnect();
+  }, [isVisible]);
+
+  return (
+    <div ref={sectionRef}>
+      {isVisible ? <Suspense fallback={<SectionFallback />}>{children}</Suspense> : <SectionFallback />}
+    </div>
+  );
+}
 
 export const Route = createFileRoute("/")({
-  loader: async ({ context }) => {
-    await context.queryClient.ensureQueryData(
-      getProposalsQueryOptions({
-        spaceIds: [SnapshotSpaceAddresses[SUPPORTED_L2_CHAIN_ID] as string],
-        limit: 5,
-        skip: 0,
-        current: 1,
-        searchQuery: "",
-      }),
-    );
-  },
-  component: IndexComponent,
+  component: HomePage,
+  head: () => ({
+    meta: generateMetaTags({
+      title: "Realms World - Onchain Games for Humans and Agents",
+      description:
+        "Explore onchain strategy games where humans and AI agents compete through verifiable rules and $LORDS-powered economies.",
+      path: "/",
+    }),
+  }),
 });
 
-function IndexComponent() {
-  const { address } = useAccount();
-  if (!address) {
-    return <LoginCard />;
-  }
+function SectionDivider() {
   return (
-    <div className="realm-shell flex flex-col gap-4 px-4 py-6 sm:px-6 sm:py-8">
-      {/* Dashboard Statistics */}
-      <div>
-        <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
-          <div className="space-y-1">
-            <p className="realm-eyebrow">Account Portal</p>
-            <h1 className="realm-page-title text-3xl sm:text-4xl">Dashboard</h1>
-          </div>
-          <EthereumConnect />
-        </div>
-        <Suspense fallback={<HomepageSkeleton />}>
-          <Homepage address={address} />
-        </Suspense>
-      </div>
+    <div className="relative h-px mx-auto max-w-5xl">
+      <div className="absolute inset-0 bg-gradient-to-r from-transparent via-primary/25 to-transparent" />
     </div>
+  );
+}
+
+function HomePage() {
+  return (
+    <>
+      <div id="hero">
+        <IntroSection />
+      </div>
+      <div id="hex-explorer">
+        <DeferredSection eager>
+          <HexExplorerSection />
+        </DeferredSection>
+      </div>
+      <SectionDivider />
+      <div id="agent-native">
+        <DeferredSection eager>
+          <AgentNativeSection />
+        </DeferredSection>
+      </div>
+      <SectionDivider />
+      <div id="games">
+        <DeferredSection eager>
+          <EcosystemAtlasSection />
+        </DeferredSection>
+      </div>
+      <SectionDivider />
+      <div id="economics">
+        <DeferredSection>
+          <EconomicsSection />
+        </DeferredSection>
+      </div>
+      <SectionDivider />
+      <div id="partners">
+        <DeferredSection>
+          <PartnersSection />
+        </DeferredSection>
+      </div>
+    </>
   );
 }

@@ -15,9 +15,7 @@ if (!env.VERCEL_ENV) {
   neonConfig.pipelineConnect = false;
 }
 
-export const neonSql = neon(
-  config.dbCredentials.url,
-) satisfies NeonQueryFunction<boolean, boolean>;
+export const neonSql = neon(config.dbCredentials.url) satisfies NeonQueryFunction<boolean, boolean>;
 
 export const db = drizzle(neonSql, { schema: { ...schema } });
 

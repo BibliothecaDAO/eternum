@@ -7,9 +7,7 @@ function toSafeInteger(value: string): number | null {
   return Number.isSafeInteger(parsed) ? parsed : null;
 }
 
-export function normalizeProposalId(
-  proposalId: string | number | null | undefined,
-): number | null {
+export function normalizeProposalId(proposalId: string | number | null | undefined): number | null {
   if (typeof proposalId === "number") {
     return Number.isSafeInteger(proposalId) ? proposalId : null;
   }
@@ -39,11 +37,7 @@ export function isMatchingProposalVote(
   const normalizedVoteId = normalizeProposalId(voteProposalId);
   const normalizedProposalId = normalizeProposalId(proposalId);
 
-  return (
-    normalizedVoteId !== null &&
-    normalizedProposalId !== null &&
-    normalizedVoteId === normalizedProposalId
-  );
+  return normalizedVoteId !== null && normalizedProposalId !== null && normalizedVoteId === normalizedProposalId;
 }
 
 export function formatSnapshotProposalReference(

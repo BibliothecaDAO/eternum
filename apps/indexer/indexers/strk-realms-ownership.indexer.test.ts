@@ -3,10 +3,7 @@ import { PGlite } from "@electric-sql/pglite";
 import { drizzle } from "drizzle-orm/pglite";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import {
-  starknetRealmOwnership,
-  starknetRealmOwnershipStatus,
-} from "@realms-world/db/schema";
+import { starknetRealmOwnership, starknetRealmOwnershipStatus } from "@realms-world/db/schema";
 
 describe("Starknet Realm ownership indexer", () => {
   let client: PGlite | undefined;
@@ -17,10 +14,7 @@ describe("Starknet Realm ownership indexer", () => {
   });
 
   it("constructs its Drizzle storage plugin from the database schema", async () => {
-    vi.stubEnv(
-      "DATABASE_URL",
-      "postgresql://test:test@localhost:5432/realms_test",
-    );
+    vi.stubEnv("DATABASE_URL", "postgresql://test:test@localhost:5432/realms_test");
     vi.stubEnv("VITE_PUBLIC_CHAIN", "mainnet");
     const { createIndexer } = await import("./strk-realms-ownership.indexer");
 

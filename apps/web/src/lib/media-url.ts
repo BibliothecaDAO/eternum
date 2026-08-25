@@ -5,10 +5,7 @@ function joinIpfsGateway(ipfsGateway: string, path: string) {
   return `${ipfsGateway.replace(/\/+$/, "")}/${path.replace(/^\/+/, "")}`;
 }
 
-export function resolveIpfsMediaUrl(
-  src: string,
-  ipfsGateway = DEFAULT_IPFS_GATEWAY,
-) {
+export function resolveIpfsMediaUrl(src: string, ipfsGateway = DEFAULT_IPFS_GATEWAY) {
   if (src.startsWith("ipfs://")) {
     return joinIpfsGateway(ipfsGateway, src.slice("ipfs://".length));
   }

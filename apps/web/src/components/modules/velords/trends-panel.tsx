@@ -103,10 +103,7 @@ export function VelordsTrendsPanel({
   isRewardsLoading?: boolean;
   isLocksLoading?: boolean;
 }) {
-  const rewardsMomentum = useMemo(
-    () => buildRewardsMomentumData(rewardsWeekly),
-    [rewardsWeekly],
-  );
+  const rewardsMomentum = useMemo(() => buildRewardsMomentumData(rewardsWeekly), [rewardsWeekly]);
 
   const sourceShareData = useMemo(() => {
     const { points, sourceKeys } = buildSourceShareData(rewardsWeekly, 5);
@@ -116,8 +113,7 @@ export function VelordsTrendsPanel({
       return {
         rawKey,
         key,
-        label:
-          rawKey === "other" ? "Other" : getVelordsSourceLabel(rawKey),
+        label: rawKey === "other" ? "Other" : getVelordsSourceLabel(rawKey),
         color: sourcePalette[index % sourcePalette.length],
       };
     });
@@ -153,31 +149,17 @@ export function VelordsTrendsPanel({
     return dynamicConfig;
   }, [sourceShareData.sourceSeries]);
 
-  const concentrationPoints = useMemo(
-    () => buildSourceConcentrationData(rewardsWeekly),
-    [rewardsWeekly],
-  );
+  const concentrationPoints = useMemo(() => buildSourceConcentrationData(rewardsWeekly), [rewardsWeekly]);
 
-  const lockParticipationPoints = useMemo(
-    () => buildLockParticipationData(lockWeekly),
-    [lockWeekly],
-  );
+  const lockParticipationPoints = useMemo(() => buildLockParticipationData(lockWeekly), [lockWeekly]);
 
-  const cumulativePoints = useMemo(
-    () => buildCumulativeRewardsData(rewardsWeekly),
-    [rewardsWeekly],
-  );
+  const cumulativePoints = useMemo(() => buildCumulativeRewardsData(rewardsWeekly), [rewardsWeekly]);
 
-  const projectedPeriodTotal = useMemo(
-    () => calculateProjectedPeriodTotal(rewardsWeekly),
-    [rewardsWeekly],
-  );
+  const projectedPeriodTotal = useMemo(() => calculateProjectedPeriodTotal(rewardsWeekly), [rewardsWeekly]);
 
   const latestUpdatesPerWallet = lockParticipationPoints.at(-1)?.updatesPerWallet ?? 0;
 
-  const isLoading = Boolean(
-    (isRewardsLoading ?? false) || (isLocksLoading ?? false),
-  );
+  const isLoading = Boolean((isRewardsLoading ?? false) || (isLocksLoading ?? false));
 
   if (isLoading) {
     return (
@@ -185,9 +167,7 @@ export function VelordsTrendsPanel({
         <CardHeader>
           <CardTitle>Trends</CardTitle>
         </CardHeader>
-        <CardContent className="text-muted-foreground text-sm">
-          Loading trends...
-        </CardContent>
+        <CardContent className="text-muted-foreground text-sm">Loading trends...</CardContent>
       </Card>
     );
   }
@@ -198,9 +178,7 @@ export function VelordsTrendsPanel({
         <CardHeader>
           <CardTitle>Trends</CardTitle>
         </CardHeader>
-        <CardContent className="text-muted-foreground text-sm">
-          No trend data is available for this period.
-        </CardContent>
+        <CardContent className="text-muted-foreground text-sm">No trend data is available for this period.</CardContent>
       </Card>
     );
   }
@@ -212,21 +190,14 @@ export function VelordsTrendsPanel({
           <CardTitle>Rewards Momentum</CardTitle>
         </CardHeader>
         <CardContent>
-          <ChartContainer
-            config={baseChartConfig}
-            className="h-[320px] w-full !aspect-auto"
-          >
+          <ChartContainer config={baseChartConfig} className="h-[320px] w-full !aspect-auto">
             <ComposedChart data={rewardsMomentum}>
               <CartesianGrid strokeDasharray="3 3" vertical={false} />
               <XAxis dataKey="week" tickLine={false} axisLine={false} minTickGap={28} />
               <YAxis />
               <ChartTooltip content={<ChartTooltipContent />} />
               <ChartLegend content={<ChartLegendContent />} />
-              <Bar
-                dataKey="totalRewards"
-                fill="var(--color-totalRewards)"
-                radius={[4, 4, 0, 0]}
-              />
+              <Bar dataKey="totalRewards" fill="var(--color-totalRewards)" radius={[4, 4, 0, 0]} />
               <Line
                 dataKey="movingAvg4w"
                 type="monotone"
@@ -244,10 +215,7 @@ export function VelordsTrendsPanel({
           <CardTitle>Source Share Over Time</CardTitle>
         </CardHeader>
         <CardContent>
-          <ChartContainer
-            config={sourceShareConfig}
-            className="h-[320px] w-full !aspect-auto"
-          >
+          <ChartContainer config={sourceShareConfig} className="h-[320px] w-full !aspect-auto">
             <AreaChart data={sourceShareData.points}>
               <CartesianGrid strokeDasharray="3 3" vertical={false} />
               <XAxis dataKey="week" tickLine={false} axisLine={false} minTickGap={28} />
@@ -276,10 +244,7 @@ export function VelordsTrendsPanel({
           <CardTitle>Source Concentration</CardTitle>
         </CardHeader>
         <CardContent>
-          <ChartContainer
-            config={baseChartConfig}
-            className="h-[320px] w-full !aspect-auto"
-          >
+          <ChartContainer config={baseChartConfig} className="h-[320px] w-full !aspect-auto">
             <ComposedChart data={concentrationPoints}>
               <CartesianGrid strokeDasharray="3 3" vertical={false} />
               <XAxis dataKey="week" tickLine={false} axisLine={false} minTickGap={28} />
@@ -287,26 +252,9 @@ export function VelordsTrendsPanel({
               <YAxis yAxisId="count" orientation="right" allowDecimals={false} />
               <ChartTooltip content={<ChartTooltipContent />} />
               <ChartLegend content={<ChartLegendContent />} />
-              <Line
-                dataKey="top1Share"
-                yAxisId="share"
-                stroke="var(--color-top1Share)"
-                strokeWidth={2.5}
-                dot={false}
-              />
-              <Line
-                dataKey="top3Share"
-                yAxisId="share"
-                stroke="var(--color-top3Share)"
-                strokeWidth={2.5}
-                dot={false}
-              />
-              <Bar
-                dataKey="activeSources"
-                yAxisId="count"
-                fill="var(--color-activeSources)"
-                opacity={0.3}
-              />
+              <Line dataKey="top1Share" yAxisId="share" stroke="var(--color-top1Share)" strokeWidth={2.5} dot={false} />
+              <Line dataKey="top3Share" yAxisId="share" stroke="var(--color-top3Share)" strokeWidth={2.5} dot={false} />
+              <Bar dataKey="activeSources" yAxisId="count" fill="var(--color-activeSources)" opacity={0.3} />
             </ComposedChart>
           </ChartContainer>
         </CardContent>
@@ -320,10 +268,7 @@ export function VelordsTrendsPanel({
           <div className="mb-3 text-sm text-muted-foreground">
             Latest updates per active wallet: {formatNumber(latestUpdatesPerWallet, 2)}
           </div>
-          <ChartContainer
-            config={baseChartConfig}
-            className="h-[320px] w-full !aspect-auto"
-          >
+          <ChartContainer config={baseChartConfig} className="h-[320px] w-full !aspect-auto">
             <ComposedChart data={lockParticipationPoints}>
               <CartesianGrid strokeDasharray="3 3" vertical={false} />
               <XAxis dataKey="week" tickLine={false} axisLine={false} minTickGap={28} />
@@ -331,13 +276,7 @@ export function VelordsTrendsPanel({
               <YAxis yAxisId="ratio" orientation="right" />
               <ChartTooltip content={<ChartTooltipContent />} />
               <ChartLegend content={<ChartLegendContent />} />
-              <Line
-                dataKey="updates"
-                yAxisId="count"
-                stroke="var(--color-updates)"
-                strokeWidth={2.5}
-                dot={false}
-              />
+              <Line dataKey="updates" yAxisId="count" stroke="var(--color-updates)" strokeWidth={2.5} dot={false} />
               <Line
                 dataKey="uniqueWallets"
                 yAxisId="count"
@@ -365,27 +304,15 @@ export function VelordsTrendsPanel({
           <div className="mb-3 text-sm text-muted-foreground">
             Projected period total: {formatNumber(projectedPeriodTotal, 2)} LORDS
           </div>
-          <ChartContainer
-            config={baseChartConfig}
-            className="h-[320px] w-full !aspect-auto"
-          >
+          <ChartContainer config={baseChartConfig} className="h-[320px] w-full !aspect-auto">
             <LineChart data={cumulativePoints}>
               <CartesianGrid strokeDasharray="3 3" vertical={false} />
               <XAxis dataKey="week" tickLine={false} axisLine={false} minTickGap={28} />
               <YAxis />
               <ChartTooltip content={<ChartTooltipContent />} />
               <ChartLegend content={<ChartLegendContent />} />
-              <ReferenceLine
-                y={projectedPeriodTotal}
-                stroke="var(--color-top3Share)"
-                strokeDasharray="4 4"
-              />
-              <Line
-                dataKey="cumulativeRewards"
-                stroke="var(--color-cumulativeRewards)"
-                strokeWidth={2.5}
-                dot={false}
-              />
+              <ReferenceLine y={projectedPeriodTotal} stroke="var(--color-top3Share)" strokeDasharray="4 4" />
+              <Line dataKey="cumulativeRewards" stroke="var(--color-cumulativeRewards)" strokeWidth={2.5} dot={false} />
             </LineChart>
           </ChartContainer>
         </CardContent>

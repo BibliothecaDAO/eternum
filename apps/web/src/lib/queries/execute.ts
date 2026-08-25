@@ -1,4 +1,4 @@
-import type { TypedDocumentString } from "@/gql/graphql";
+import type { TypedDocumentString } from "@/gql/snapshot/graphql";
 
 export async function execute<TResult, TVariables>(
   query: TypedDocumentString<TResult, TVariables>,

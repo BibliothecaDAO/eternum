@@ -29,11 +29,7 @@ function resolveSiwsChainId(chainId?: bigint) {
   return env.VITE_PUBLIC_CHAIN == "sepolia" ? "SN_SEPOLIA" : "SN_MAIN";
 }
 
-async function createSiwsData(
-  statement: string,
-  address: string,
-  chainId?: bigint,
-) {
+async function createSiwsData(statement: string, address: string, chainId?: bigint) {
   const nonce = await authClient.siws.nonce({ address });
   const domain = getAuthHost();
   const origin = window.location.origin;
@@ -65,11 +61,7 @@ export function Login() {
     setIsDataPending(true);
     if (address) {
       const loginString = "Login to Realms.World with your Starknet Wallet";
-      const siwsData = await createSiwsData(
-        loginString,
-        formatAddress(address),
-        chainId,
-      );
+      const siwsData = await createSiwsData(loginString, formatAddress(address), chainId);
       setIsDataPending(false);
       return siwsData;
     }

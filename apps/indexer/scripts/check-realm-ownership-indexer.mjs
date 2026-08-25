@@ -1,10 +1,7 @@
 import pg from "pg";
 
-import { REALM_OWNERSHIP_FRESHNESS_WINDOW_MS } from "../../db/src/realm-ownership-policy.mjs";
-import {
-  assertIndexedOwnership,
-  parseOwnershipAssertion,
-} from "./realm-ownership-smoke.mjs";
+import { REALM_OWNERSHIP_FRESHNESS_WINDOW_MS } from "../../../packages/db/src/realm-ownership-policy.mjs";
+import { assertIndexedOwnership, parseOwnershipAssertion } from "./realm-ownership-smoke.mjs";
 
 const { Pool } = pg;
 const databaseUrl = process.env.DATABASE_URL;
@@ -27,9 +24,7 @@ try {
   `);
   const status = statusResult.rows[0];
   if (!status) throw new Error("Realm ownership indexer has no checkpoint");
-  const inventoryResult = await pool.query(
-    "SELECT COUNT(*)::integer AS count FROM starknet_realm_ownership",
-  );
+  const inventoryResult = await pool.query("SELECT COUNT(*)::integer AS count FROM starknet_realm_ownership");
   const indexedCount = inventoryResult.rows[0]?.count ?? 0;
   if (!status.has_reached_head) {
     throw new Error(
@@ -37,8 +32,7 @@ try {
     );
   }
 
-  const checkpointAgeMs =
-    Date.now() - new Date(status.latest_block_timestamp).getTime();
+  const checkpointAgeMs = Date.now() - new Date(status.latest_block_timestamp).getTime();
   if (checkpointAgeMs > REALM_OWNERSHIP_FRESHNESS_WINDOW_MS) {
     throw new Error("Realm ownership indexer checkpoint is stale");
   }

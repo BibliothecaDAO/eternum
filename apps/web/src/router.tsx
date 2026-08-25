@@ -29,9 +29,6 @@ export function getRouter() {
   );
 }
 
-// Backward-compatible alias for older local imports.
-export const createRouter = getRouter;
-
 declare module "@tanstack/react-router" {
   interface Register {
     router: ReturnType<typeof getRouter>;

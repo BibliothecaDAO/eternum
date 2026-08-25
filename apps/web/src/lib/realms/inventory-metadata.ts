@@ -17,19 +17,10 @@ export async function hydrateRealmMetadata<T extends RealmMetadataRecord>(
   tokens: T[],
   dependencies: RealmMetadataDependencies,
 ): Promise<(T & { metadata_status: RealmMetadataStatus })[]> {
-  const missing = tokens
-    .filter((token) => !token.metadata)
-    .slice(0, DEFAULT_MAX_READS);
-  const outcomes = new Map<
-    string,
-    { metadata: string | null; status: RealmMetadataStatus }
-  >();
+  const missing = tokens.filter((token) => !token.metadata).slice(0, DEFAULT_MAX_READS);
+  const outcomes = new Map<string, { metadata: string | null; status: RealmMetadataStatus }>();
 
-  for (
-    let offset = 0;
-    offset < missing.length;
-    offset += DEFAULT_READ_CONCURRENCY
-  ) {
+  for (let offset = 0; offset < missing.length; offset += DEFAULT_READ_CONCURRENCY) {
     const batch = missing.slice(offset, offset + DEFAULT_READ_CONCURRENCY);
     const results = await Promise.allSettled(
       batch.map(async (token) => {

@@ -9,7 +9,7 @@
 // import { drizzleStorage, useDrizzleStorage } from "@apibara/plugin-drizzle";
 // import { decodeEvent, getSelector, StarknetStream } from "@apibara/starknet";
 
-// import { ChainId, CollectionAddresses } from "@realms-world/constants";
+// import { ChainId, CollectionAddresses } from "@realms-world/chain";
 // import { db } from "@realms-world/db/poolClient";
 
 // import { env } from "../env";

@@ -4,7 +4,7 @@ import {
   formatSnapshotProposalReference,
   isMatchingProposalVote,
   normalizeProposalId,
-} from "../../../apps/account-portal/src/lib/snapshot/proposal-id";
+} from "../../web/src/lib/snapshot/proposal-id";
 
 describe("normalizeProposalId", () => {
   it("parses plain numeric ids", () => {
@@ -39,17 +39,11 @@ describe("isMatchingProposalVote", () => {
 
 describe("formatSnapshotProposalReference", () => {
   it("formats a route id into snapshot proposal reference", () => {
-    expect(formatSnapshotProposalReference("sn:space", "123")).toBe(
-      "sn:space/123",
-    );
+    expect(formatSnapshotProposalReference("sn:space", "123")).toBe("sn:space/123");
   });
 
   it("normalizes full references and plain ids", () => {
-    expect(
-      formatSnapshotProposalReference("sn:space", "sn:space/123"),
-    ).toBe("sn:space/123");
-    expect(formatSnapshotProposalReference("sn:space", "  00123 ")).toBe(
-      "sn:space/123",
-    );
+    expect(formatSnapshotProposalReference("sn:space", "sn:space/123")).toBe("sn:space/123");
+    expect(formatSnapshotProposalReference("sn:space", "  00123 ")).toBe("sn:space/123");
   });
 });

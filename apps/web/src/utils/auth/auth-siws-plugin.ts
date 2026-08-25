@@ -124,10 +124,9 @@ export const siws = (options: SIWSPluginOptions) =>
           const siwsMessage = SiwsTypedData.fromJson(message);
           try {
             // Find stored nonce to check it's validity
-            const verification =
-              await ctx.context.internalAdapter.findVerificationValue(
-                `siws_${address.toLowerCase()}`,
-              );
+            const verification = await ctx.context.internalAdapter.findVerificationValue(
+              `siws_${address.toLowerCase()}`,
+            );
             // Ensure nonce is valid and not expired
             if (!verification || new Date() > verification.expiresAt) {
               throw new APIError("UNAUTHORIZED", {
@@ -141,9 +140,7 @@ export const siws = (options: SIWSPluginOptions) =>
               });
             }
 
-            if (
-              siwsMessage.message.address.toLowerCase() !== address.toLowerCase()
-            ) {
+            if (siwsMessage.message.address.toLowerCase() !== address.toLowerCase()) {
               throw new APIError("UNAUTHORIZED", {
                 message: "Unauthorized: Address mismatch",
               });
@@ -153,13 +150,9 @@ export const siws = (options: SIWSPluginOptions) =>
             const configuredHost = getHostname(options.domain);
             const signedHost = getHostname(siwsMessage.domain.name);
             const matchesRequestHost = isEquivalentHost(signedHost, requestHost);
-            const matchesConfiguredHost = isEquivalentHost(
-              signedHost,
-              configuredHost,
-            );
+            const matchesConfiguredHost = isEquivalentHost(signedHost, configuredHost);
 
-            const domainMismatch =
-              !signedHost || (!matchesRequestHost && !matchesConfiguredHost);
+            const domainMismatch = !signedHost || (!matchesRequestHost && !matchesConfiguredHost);
             const isProduction = process.env.NODE_ENV === "production";
             if (domainMismatch && isProduction) {
               throw new APIError("UNAUTHORIZED", {
@@ -167,10 +160,7 @@ export const siws = (options: SIWSPluginOptions) =>
               });
             }
 
-            if (
-              siwsMessage.domain.chainId !== "SN_MAIN" &&
-              siwsMessage.domain.chainId !== "SN_SEPOLIA"
-            ) {
+            if (siwsMessage.domain.chainId !== "SN_MAIN" && siwsMessage.domain.chainId !== "SN_SEPOLIA") {
               throw new APIError("UNAUTHORIZED", {
                 message: "Unauthorized: Unsupported network",
               });
@@ -225,10 +215,7 @@ export const siws = (options: SIWSPluginOptions) =>
               });
             }
 
-            const session = await ctx.context.internalAdapter.createSession(
-              user.id,
-              ctx,
-            );
+            const session = await ctx.context.internalAdapter.createSession(user.id, ctx);
 
             if (!session.id) {
               return ctx.json(null, {
@@ -245,8 +232,7 @@ export const siws = (options: SIWSPluginOptions) =>
             return ctx.json({ token: session.token });
           } catch (error: unknown) {
             if (error instanceof APIError) throw error;
-            const message =
-              error instanceof Error ? error.message : "Unknown error";
+            const message = error instanceof Error ? error.message : "Unknown error";
             throw new APIError("UNAUTHORIZED", {
               message: "Something went wrong. Please try again later.",
               error: message,

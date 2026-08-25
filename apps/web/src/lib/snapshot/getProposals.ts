@@ -11,7 +11,7 @@ import { queryOptions } from "@tanstack/react-query";
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
-import { SnapshotSpaceAddresses } from "@realms-world/constants";
+import { SnapshotSpaceAddresses } from "@realms-world/chain";
 
 import { execute } from "../queries/execute";
 import { formatSnapshotProposalReference } from "./proposal-id";
@@ -110,13 +110,7 @@ export const PROPOSAL_QUERY = graphql(`
 
 const PROPOSALS_QUERY = graphql(`
   query Proposals($first: Int!, $skip: Int!, $where: Proposal_filter) {
-    proposals(
-      first: $first
-      skip: $skip
-      where: $where
-      orderBy: created
-      orderDirection: desc
-    ) {
+    proposals(first: $first, skip: $skip, where: $where, orderBy: created, orderDirection: desc) {
       ...proposalFields
     }
   }
@@ -148,8 +142,7 @@ const LoadProposalsInput = z.object({
 export const getProposals = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => LoadProposalsInput.parse(input))
   .handler(async (ctx) => {
-    const { spaceIds, limit, skip, /* current, filters,*/ searchQuery } =
-      ctx.data;
+    const { spaceIds, limit, skip, /* current, filters,*/ searchQuery } = ctx.data;
     // Clone filters to avoid mutations.
     //const _filters: any = JSON.parse(JSON.stringify(filters || {}));
     const metadataFilters: Record<string, string> = {
@@ -215,9 +208,7 @@ export const getProposals = createServerFn({ method: "POST" })
 /*                   React Query Options for loadProposals                  */
 /* -------------------------------------------------------------------------- */
 
-export const getProposalsQueryOptions = (
-  input: z.infer<typeof LoadProposalsInput>,
-) =>
+export const getProposalsQueryOptions = (input: z.infer<typeof LoadProposalsInput>) =>
   queryOptions({
     queryKey: [
       "loadProposals",
@@ -270,9 +261,7 @@ export const getProposal = createServerFn({ method: "POST" })
 /*                   React Query Options for getProposal                     */
 /* -------------------------------------------------------------------------- */
 
-export const getProposalQueryOptions = (
-  input: z.infer<typeof LoadProposalInput>,
-) =>
+export const getProposalQueryOptions = (input: z.infer<typeof LoadProposalInput>) =>
   queryOptions({
     queryKey: ["loadProposal", input.id],
     queryFn: () => getProposal({ data: input }),

@@ -5,10 +5,7 @@ export const ProposalUserVoteBadge = ({ choice }: { choice: 1 | 2 | 3 }) => {
   return (
     <>
       {choice === 1 && (
-        <Badge
-          variant="outline"
-          className="flex w-24 rounded border-success py-2 text-success hover:bg-success/20"
-        >
+        <Badge variant="outline" className="flex w-24 rounded border-success py-2 text-success hover:bg-success/20">
           <CheckCircle2 className="mr-2 h-5 w-5 text-success" /> Yes
         </Badge>
       )}
@@ -23,10 +20,7 @@ export const ProposalUserVoteBadge = ({ choice }: { choice: 1 | 2 | 3 }) => {
       )}
 
       {choice === 3 && (
-        <Badge
-          variant="outline"
-          className="flex rounded border-muted-foreground bg-muted/20 py-2 hover:bg-muted"
-        >
+        <Badge variant="outline" className="flex rounded border-muted-foreground bg-muted/20 py-2 hover:bg-muted">
           <MinusCircle className="mr-2 h-5 w-5 text-muted-foreground" /> Abstain
         </Badge>
       )}

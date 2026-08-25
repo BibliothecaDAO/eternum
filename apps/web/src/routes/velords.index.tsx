@@ -68,32 +68,22 @@ function periodToStartDate(period: VelordsPeriod): Date {
   return new Date(now - periods[period]);
 }
 
-function formatWeiAmount(
-  value?: string,
-  maximumFractionDigits = 0,
-): string | undefined {
+function formatWeiAmount(value?: string, maximumFractionDigits = 0): string | undefined {
   if (!value) return undefined;
-  return formatNumber(
-    Number(formatUnits(BigInt(value), 18)),
-    maximumFractionDigits,
-  );
+  return formatNumber(Number(formatUnits(BigInt(value), 18)), maximumFractionDigits);
 }
 
 export const Route = createFileRoute("/velords/")({
   validateSearch: (search: Record<string, unknown>) => ({
     period: parsePeriod(search.period),
     view: parseView(search.view),
-    source:
-      typeof search.source === "string" && search.source.trim().length > 0
-        ? search.source
-        : undefined,
+    source: typeof search.source === "string" && search.source.trim().length > 0 ? search.source : undefined,
   }),
   head: () => ({
     meta: [
       ...seo({
         title: "RW | veLords Dashboard",
-        description:
-          "Track veLords rewards, lock activity, and your staking position.",
+        description: "Track veLords rewards, lock activity, and your staking position.",
         image: "/icon.svg",
       }),
     ],
@@ -107,10 +97,7 @@ function RouteComponent() {
   const search = Route.useSearch();
   const selectedPeriod = search.period;
   const selectedView = search.view;
-  const startTimestamp = useMemo(
-    () => periodToStartDate(selectedPeriod),
-    [selectedPeriod],
-  );
+  const startTimestamp = useMemo(() => periodToStartDate(selectedPeriod), [selectedPeriod]);
 
   const veLordsBurnsQuery = useQuery(
     getVelordsBurnsQueryOptions({
@@ -138,16 +125,8 @@ function RouteComponent() {
   const { address } = useAccount();
   const velordsData = useVelordsData();
 
-  const {
-    totalSupply,
-    totalSupplyRaw,
-    lordsLocked,
-    tvl,
-    isTVLLoading,
-    userBalance,
-    userSharePercent,
-    userLocked,
-  } = velordsData;
+  const { totalSupply, totalSupplyRaw, lordsLocked, tvl, isTVLLoading, userBalance, userSharePercent, userLocked } =
+    velordsData;
 
   const trailingApy = useMemo(() => {
     const weekly = rewardsSeriesQuery.data?.weekly ?? [];
@@ -158,9 +137,7 @@ function RouteComponent() {
   const estimatedWeeklyRewards = useMemo(() => {
     const latestWeek = rewardsSeriesQuery.data?.weekly.at(-1);
     if (!latestWeek || !userSharePercent) return undefined;
-    const latestWeekRewards = Number(
-      formatUnits(BigInt(latestWeek.totalWei), 18),
-    );
+    const latestWeekRewards = Number(formatUnits(BigInt(latestWeek.totalWei), 18));
     return (latestWeekRewards * Number(userSharePercent)) / 100;
   }, [rewardsSeriesQuery.data?.weekly, userSharePercent]);
 
@@ -192,8 +169,7 @@ function RouteComponent() {
     } catch (error) {
       toast({
         variant: "destructive",
-        description:
-          error instanceof Error ? error.message : "Unable to copy link.",
+        description: error instanceof Error ? error.message : "Unable to copy link.",
       });
     }
   };
@@ -218,8 +194,7 @@ function RouteComponent() {
     } catch (error) {
       toast({
         variant: "destructive",
-        description:
-          error instanceof Error ? error.message : "Unable to copy summary.",
+        description: error instanceof Error ? error.message : "Unable to copy summary.",
       });
     }
   };
@@ -255,10 +230,7 @@ function RouteComponent() {
                 : undefined
             }
           />
-          <MetricCard
-            label="LORDS Locked"
-            value={lordsLocked ?? "Loading..."}
-          />
+          <MetricCard label="LORDS Locked" value={lordsLocked ?? "Loading..."} />
           <MetricCard
             label="TVL"
             value={
@@ -270,25 +242,15 @@ function RouteComponent() {
             }
           />
           <MetricCard label="Rewards (7d)" value={rewards7d ?? "Loading..."} />
-          <MetricCard
-            label="Rewards (30d)"
-            value={rewards30d ?? "Loading..."}
-          />
-          <MetricCard
-            label="Trailing APY (4w avg)"
-            value={`${formatNumber(trailingApy, 2)}%`}
-          />
+          <MetricCard label="Rewards (30d)" value={rewards30d ?? "Loading..."} />
+          <MetricCard label="Trailing APY (4w avg)" value={`${formatNumber(trailingApy, 2)}%`} />
         </div>
 
         <div className="grid gap-6 lg:gap-8 xl:grid-cols-5">
           <div className="space-y-6 xl:col-span-3">
             <Card>
               <CardContent className="p-6">
-                <Suspense
-                  fallback={
-                    <div className="h-[360px] w-full animate-pulse rounded-md border" />
-                  }
-                >
+                <Suspense fallback={<div className="h-[360px] w-full animate-pulse rounded-md border" />}>
                   <VeLordsRewardsChart
                     selectedPeriod={selectedPeriod}
                     totalSupplyRaw={totalSupplyRaw}
@@ -296,9 +258,7 @@ function RouteComponent() {
                     onTimePeriodChange={handleTimePeriodChange}
                     isLoading={veLordsBurnsQuery.isLoading}
                     errorMessage={
-                      veLordsBurnsQuery.error instanceof Error
-                        ? veLordsBurnsQuery.error.message
-                        : undefined
+                      veLordsBurnsQuery.error instanceof Error ? veLordsBurnsQuery.error.message : undefined
                     }
                   />
                 </Suspense>
@@ -337,11 +297,7 @@ function RouteComponent() {
                 />
               </TabsContent>
               <TabsContent value="trends">
-                <Suspense
-                  fallback={
-                    <div className="h-[640px] w-full animate-pulse rounded-md border" />
-                  }
-                >
+                <Suspense fallback={<div className="h-[640px] w-full animate-pulse rounded-md border" />}>
                   <VelordsTrendsPanel
                     rewardsWeekly={rewardsSeriesQuery.data?.weekly ?? []}
                     lockWeekly={lockActivityQuery.data?.weekly ?? []}
@@ -361,45 +317,28 @@ function RouteComponent() {
               <CardContent>
                 <div className="text-muted-foreground space-y-1 text-sm">
                   <div>veLORDS Balance: {userBalance ?? "-"}</div>
-                  <div>
-                    Supply Share:{" "}
-                    {userSharePercent ? `${userSharePercent}%` : "-"}
-                  </div>
+                  <div>Supply Share: {userSharePercent ? `${userSharePercent}%` : "-"}</div>
                   <div>Locked LORDS: {userLocked?.amount ?? "-"}</div>
                   <div>
                     Unlock Time:{" "}
-                    {userLocked?.unlockTime
-                      ? new Date(
-                          userLocked.unlockTime * 1000,
-                        ).toLocaleDateString()
-                      : "-"}
+                    {userLocked?.unlockTime ? new Date(userLocked.unlockTime * 1000).toLocaleDateString() : "-"}
                   </div>
                   <div>
                     Est. Weekly Rewards:{" "}
-                    {estimatedWeeklyRewards !== undefined
-                      ? `~${formatNumber(estimatedWeeklyRewards, 2)} LORDS`
-                      : "-"}
+                    {estimatedWeeklyRewards !== undefined ? `~${formatNumber(estimatedWeeklyRewards, 2)} LORDS` : "-"}
                   </div>
                 </div>
               </CardContent>
             </Card>
 
             <Card>
-              <Suspense
-                fallback={
-                  <div className="h-[320px] w-full animate-pulse rounded-md border" />
-                }
-              >
+              <Suspense fallback={<div className="h-[320px] w-full animate-pulse rounded-md border" />}>
                 <StakeLords />
               </Suspense>
             </Card>
             {address && (
               <Card>
-                <Suspense
-                  fallback={
-                    <div className="h-[220px] w-full animate-pulse rounded-md border" />
-                  }
-                >
+                <Suspense fallback={<div className="h-[220px] w-full animate-pulse rounded-md border" />}>
                   <VelordsRewards />
                 </Suspense>
               </Card>

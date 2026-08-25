@@ -2,12 +2,10 @@ import { RealmsABI } from "@/abi/L2/Realms";
 import { SUPPORTED_L2_CHAIN_ID } from "@/utils/utils";
 import { useContract, useSendTransaction } from "@starknet-start/react";
 
-import { CollectionAddresses } from "@realms-world/constants";
+import { CollectionAddresses } from "@realms-world/chain";
 
 export const useDelegateRealms = ({ delegatee }: { delegatee?: string }) => {
-  const l2RealmsAddress = CollectionAddresses.realms[
-    SUPPORTED_L2_CHAIN_ID
-  ] as `0x${string}`;
+  const l2RealmsAddress = CollectionAddresses.realms[SUPPORTED_L2_CHAIN_ID] as `0x${string}`;
 
   const { contract } = useContract({
     abi: RealmsABI,
@@ -19,10 +17,7 @@ export const useDelegateRealms = ({ delegatee }: { delegatee?: string }) => {
     data: withdrawHash,
     ...writeReturn
   } = useSendTransaction({
-    calls:
-      contract && delegatee
-        ? [contract.populate("delegate", [delegatee])]
-        : undefined,
+    calls: contract && delegatee ? [contract.populate("delegate", [delegatee])] : undefined,
   });
 
   return {

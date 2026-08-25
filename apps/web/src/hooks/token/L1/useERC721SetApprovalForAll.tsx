@@ -17,13 +17,7 @@ export function useERC721SetApprovalForAll({
   // if (!l2Address) throw new Error("Missing L2 Address");
 
   const writeAsync = useCallback(
-    async ({
-      contractAddress,
-      operator,
-    }: {
-      contractAddress: `0x${string}`;
-      operator: `0x${string}`;
-    }) => {
+    async ({ contractAddress, operator }: { contractAddress: `0x${string}`; operator: `0x${string}` }) => {
       return await writeContractAsync({
         address: contractAddress,
         abi: ERC721_ABI,

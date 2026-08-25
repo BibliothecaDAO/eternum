@@ -48,10 +48,7 @@ function RouteComponent() {
           </div>
         }
       >
-        <DelegateList
-          searchQuery={deferredSearchQuery}
-          sortMethod={sortMethod}
-        />
+        <DelegateList searchQuery={deferredSearchQuery} sortMethod={sortMethod} />
       </Suspense>
     </div>
   );

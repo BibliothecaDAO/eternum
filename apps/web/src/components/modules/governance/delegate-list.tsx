@@ -3,13 +3,7 @@ import { useSuspenseQuery } from "@tanstack/react-query";
 
 import { DelegateCard } from "./delegate-card";
 
-function DelegateList({
-  searchQuery,
-  sortMethod,
-}: {
-  sortMethod: "desc" | "random";
-  searchQuery: string;
-}) {
+function DelegateList({ searchQuery, sortMethod }: { sortMethod: "desc" | "random"; searchQuery: string }) {
   const delegatesQuery = useSuspenseQuery(
     getDelegatesQueryOptions({
       limit: 200,

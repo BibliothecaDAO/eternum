@@ -15,14 +15,7 @@ export interface RealmMetadata {
   }[];
 }
 
-const GridDetails = ({
-  token,
-  tokenId,
-}: {
-  token: RealmMetadata | null;
-  tokenId: number;
-  address?: string;
-}) => (
+const GridDetails = ({ token, tokenId }: { token: RealmMetadata | null; tokenId: number; address?: string }) => (
   <div className="flex h-full w-full flex-col justify-between">
     <div className="pb-2">
       <span className="truncate">{token?.name ?? `Realm #${tokenId}`}</span>
@@ -33,29 +26,16 @@ const GridDetails = ({
   </div>
 );
 
-export const RealmCard = ({
-  token,
-  isGrid,
-}: {
-  token: RealmInventoryToken;
-  isGrid?: boolean;
-}) => {
+export const RealmCard = ({ token, isGrid }: { token: RealmInventoryToken; isGrid?: boolean }) => {
   const { metadata, metadata_status: metadataStatus } = token;
-  const parsedMetadata = metadata
-    ? (JSON.parse(metadata) as RealmMetadata)
-    : null;
+  const parsedMetadata = metadata ? (JSON.parse(metadata) as RealmMetadata) : null;
   const { name, image } = parsedMetadata ?? {};
 
   return (
     <Card className="relative overflow-hidden">
       <div className="relative">
         {image || metadataStatus === "unavailable" ? (
-          <Media
-            src={image}
-            alt={name ?? ""}
-            mediaKey={""}
-            unavailable={metadataStatus === "unavailable"}
-          />
+          <Media src={image} alt={name ?? ""} mediaKey={""} unavailable={metadataStatus === "unavailable"} />
         ) : (
           <div className="w-full max-w-sm">
             <AnimatedMap />

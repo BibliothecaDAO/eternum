@@ -22,8 +22,6 @@ describe("OwnershipStatusAlert", () => {
   });
 
   it("renders no alert for a ready inventory", () => {
-    expect(renderToStaticMarkup(<OwnershipStatusAlert status="ready" />)).toBe(
-      "",
-    );
+    expect(renderToStaticMarkup(<OwnershipStatusAlert status="ready" />)).toBe("");
   });
 });

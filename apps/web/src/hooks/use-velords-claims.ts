@@ -3,14 +3,10 @@ import type { Call } from "starknet";
 import { useMemo, useState } from "react";
 import { RewardPool } from "@/abi/L2/RewardPool";
 import { SUPPORTED_L2_CHAIN_ID } from "@/utils/utils";
-import {
-  useAccount,
-  useContract,
-  useSendTransaction,
-} from "@starknet-start/react";
+import { useAccount, useContract, useSendTransaction } from "@starknet-start/react";
 import { validateAndParseAddress } from "starknet";
 
-import { StakingAddresses } from "@realms-world/constants";
+import { StakingAddresses } from "@realms-world/chain";
 
 import { useSimulateTransactions } from "./useSimulateTransactions";
 
@@ -41,9 +37,7 @@ export default function useVeLordsClaims() {
 
   // Create the call to claim rewards. If no recipient is provided, use the current account.
   const claimCall: Call[] | undefined = useMemo(() => {
-    return parsedRecipient !== undefined && rewardPool
-      ? [rewardPool.populate("claim", [parsedRecipient])]
-      : undefined;
+    return parsedRecipient !== undefined && rewardPool ? [rewardPool.populate("claim", [parsedRecipient])] : undefined;
   }, [parsedRecipient, rewardPool]);
 
   // Simulate the claim rewards call to get the potential rewards amount.
@@ -52,26 +46,21 @@ export default function useVeLordsClaims() {
   });
 
   // Retrieve the claimable amount (ensure this aligns with your contract's response shape).
-  const lordsClaimable = useMemo(
-    () => {
-      try {
-        return BigInt(
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-explicit-any
-          ((simulateData as any)?.[0]?.transaction_trace?.execute_invocation
-            ?.result?.[2] ?? "0") as string,
-        );
-      } catch {
-        return 0n;
-      }
-    },
-    [simulateData],
-  );
+  const lordsClaimable = useMemo(() => {
+    try {
+      return BigInt(
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-explicit-any
+        ((simulateData as any)?.[0]?.transaction_trace?.execute_invocation?.result?.[2] ?? "0") as string,
+      );
+    } catch {
+      return 0n;
+    }
+  }, [simulateData]);
 
   // Prepare the function to send the claim rewards transaction.
-  const { sendAsync: claimRewards, isPending: claimIsSubmitting } =
-    useSendTransaction({
-      calls: claimCall,
-    });
+  const { sendAsync: claimRewards, isPending: claimIsSubmitting } = useSendTransaction({
+    calls: claimCall,
+  });
 
   return {
     recipient,

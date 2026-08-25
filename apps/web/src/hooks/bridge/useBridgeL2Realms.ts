@@ -2,30 +2,17 @@ import { useCallback, useMemo } from "react";
 import { ERC721 } from "@/abi/L2/ERC721";
 import { SUPPORTED_L2_CHAIN_ID } from "@/utils/utils";
 
-import {
-  useAccount,
-  useReadContract,
-  useSendTransaction,
-} from "@starknet-start/react";
+import { useAccount, useReadContract, useSendTransaction } from "@starknet-start/react";
 
-import {
-  CollectionAddresses,
-  REALMS_BRIDGE_ADDRESS,
-} from "@realms-world/constants";
+import { CollectionAddresses, REALMS_BRIDGE_ADDRESS } from "@realms-world/chain";
 
 import { useERC721Approval } from "@/hooks/token/L2/useERC721Approval";
 import { useWriteInitiateWithdrawRealms } from "./useWriteInitiateWithdrawRealms";
 
-export function useBridgeL2Realms({
-  selectedTokenIds,
-}: {
-  selectedTokenIds: string[];
-}) {
+export function useBridgeL2Realms({ selectedTokenIds }: { selectedTokenIds: string[] }) {
   const l2BridgeAddress = REALMS_BRIDGE_ADDRESS[SUPPORTED_L2_CHAIN_ID];
   const { address } = useAccount();
-  const l2RealmsAddress = CollectionAddresses.realms[
-    SUPPORTED_L2_CHAIN_ID
-  ] as `0x${string}`;
+  const l2RealmsAddress = CollectionAddresses.realms[SUPPORTED_L2_CHAIN_ID] as `0x${string}`;
 
   const { data: isApprovedForAll } = useReadContract({
     abi: ERC721,

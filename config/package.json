@@ -40,6 +40,7 @@
     "@bibliothecadao/types": "workspace:*",
     "@dojoengine/core": "catalog:game",
     "chalk": "^5.4.1",
+    "viem": "catalog:game",
     "yaml": "^2.8.2"
   },
   "devDependencies": {

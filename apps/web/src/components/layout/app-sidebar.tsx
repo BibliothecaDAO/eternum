@@ -1,23 +1,15 @@
 import * as React from "react";
 import { NavMain } from "@/components/layout/nav-main";
-import {
-  Sidebar,
-  SidebarContent,
-  SidebarFooter,
-  SidebarHeader,
-  SidebarRail,
-} from "@/components/ui/sidebar";
-import {
-  Banknote,
-  BookOpen,
-  Castle,
-  ClipboardPen,
-  ExternalLink,
-  Vote,
-} from "lucide-react";
+import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarRail } from "@/components/ui/sidebar";
+import { Banknote, BookOpen, Castle, ClipboardPen, ExternalLink, LayoutDashboard, Vote } from "lucide-react";
 
 const data = {
   assets: [
+    {
+      title: "Dashboard",
+      url: "/account",
+      icon: LayoutDashboard,
+    },
     {
       title: "Realms",
       url: "/realms",
@@ -146,11 +138,7 @@ const data = {
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   return (
-    <Sidebar
-      collapsible="icon"
-      {...props}
-      className="top-(--header-height) h-[calc(100svh-var(--header-height))]!"
-    >
+    <Sidebar collapsible="icon" {...props} className="top-(--header-height) h-[calc(100svh-var(--header-height))]!">
       <SidebarHeader className="items-center"></SidebarHeader>
       <SidebarContent>
         <NavMain label="Game Assets" items={data.assets} />

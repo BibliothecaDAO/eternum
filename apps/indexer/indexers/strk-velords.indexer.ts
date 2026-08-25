@@ -1,24 +1,15 @@
 //import type { ApibaraRuntimeConfig } from "apibara/types";
-import type {
-  ExtractTablesWithRelations,
-  TablesRelationalConfig,
-} from "drizzle-orm";
+import type { ExtractTablesWithRelations, TablesRelationalConfig } from "drizzle-orm";
 import type { PgDatabase, PgQueryResultHKT } from "drizzle-orm/pg-core";
 import type { Abi } from "starknet";
 import { defineIndexer } from "@apibara/indexer";
 import { useLogger as getLogger } from "@apibara/indexer/plugins";
-import {
-  drizzleStorage,
-  useDrizzleStorage as getDrizzleStorage,
-} from "@apibara/plugin-drizzle";
+import { drizzleStorage, useDrizzleStorage as getDrizzleStorage } from "@apibara/plugin-drizzle";
 import { decodeEvent, getSelector, StarknetStream } from "@apibara/starknet";
 
-import { ChainId, StakingAddresses } from "@realms-world/constants";
+import { ChainId, StakingAddresses } from "@realms-world/chain";
 import { db } from "@realms-world/db/poolClient";
-import {
-  velords_lords_locked,
-  velords_rewards_received,
-} from "@realms-world/db/schema";
+import { velords_lords_locked, velords_rewards_received } from "@realms-world/db/schema";
 
 import { getRelationalSchema } from "../drizzle-schema";
 import { env } from "../env";
@@ -28,14 +19,12 @@ import { toDecimalAmount } from "./amount-utils";
 export default function (/*runtimeConfig: ApibaraRuntimeConfig*/) {
   return createIndexer({ database: db });
 }
-const l2ChainId =
-  env.VITE_PUBLIC_CHAIN === "sepolia" ? ChainId.SN_SEPOLIA : ChainId.SN_MAIN;
+const l2ChainId = env.VITE_PUBLIC_CHAIN === "sepolia" ? ChainId.SN_SEPOLIA : ChainId.SN_MAIN;
 
 export function createIndexer<
   TQueryResult extends PgQueryResultHKT,
   TFullSchema extends Record<string, unknown> = Record<string, never>,
-  TSchema extends TablesRelationalConfig =
-    ExtractTablesWithRelations<TFullSchema>,
+  TSchema extends TablesRelationalConfig = ExtractTablesWithRelations<TFullSchema>,
 >({ database }: { database: PgDatabase<TQueryResult, TFullSchema, TSchema> }) {
   return defineIndexer(StarknetStream)({
     streamUrl: getStarknetStreamUrl(env.VITE_PUBLIC_CHAIN),
@@ -76,12 +65,7 @@ export function createIndexer<
       const { db } = getDrizzleStorage();
       const { events } = block;
 
-      logger.info(
-        "Transforming block | orderKey: ",
-        endCursor?.orderKey,
-        " | finality: ",
-        finality,
-      );
+      logger.info("Transforming block | orderKey: ", endCursor?.orderKey, " | finality: ", finality);
 
       for (const event of events) {
         if (event.keys[0] === getSelector("RewardReceived")) {

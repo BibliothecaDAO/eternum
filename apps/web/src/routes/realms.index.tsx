@@ -58,9 +58,7 @@ function RealmsComponent() {
         <div className="grid grid-cols-2 gap-4 md:grid-cols-4 lg:grid-cols-5">
           {l2Realms.length
             ? l2Realms.map((realm) => {
-                return (
-                  <RealmCard key={realm.token_id} token={realm} isGrid={true} />
-                );
+                return <RealmCard key={realm.token_id} token={realm} isGrid={true} />;
               })
             : "No Realms Found in wallet"}
         </div>

@@ -1,8 +1,4 @@
-import {
-  differenceInSeconds,
-  formatDistanceToNow,
-  fromUnixTime,
-} from "date-fns";
+import { differenceInSeconds, formatDistanceToNow, fromUnixTime } from "date-fns";
 
 export const WEEK_IN_SECONDS = 7 * 24 * 60 * 60; // 1 week in seconds
 export const YEAR_IN_SECONDS = 365 * 24 * 60 * 60; // 1 year in seconds

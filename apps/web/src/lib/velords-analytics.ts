@@ -95,29 +95,18 @@ function formatSharePercent(numerator: bigint, denominator: bigint): string {
   return `${intPart}.${fracPart}`;
 }
 
-export function getPeriodRange(
-  period: VelordsPeriod,
-  now: Date = new Date(),
-): { start: Date; end: Date } {
+export function getPeriodRange(period: VelordsPeriod, now: Date = new Date()): { start: Date; end: Date } {
   const end = new Date(now);
   const start = new Date(end.getTime() - PERIOD_TO_DAYS[period] * DAY_IN_MS);
   return { start, end };
 }
 
-export function aggregateRewardsByWeek(
-  rows: RewardRow[],
-  start: Date,
-  end: Date,
-): WeeklyRewardBucket[] {
+export function aggregateRewardsByWeek(rows: RewardRow[], start: Date, end: Date): WeeklyRewardBucket[] {
   const startWeek = toWeekStartUtc(start);
   const endWeek = toWeekStartUtc(end);
 
   const weekly = new Map<string, WeeklyRewardBucket>();
-  for (
-    let cursor = startWeek.getTime();
-    cursor <= endWeek.getTime();
-    cursor += WEEK_IN_MS
-  ) {
+  for (let cursor = startWeek.getTime(); cursor <= endWeek.getTime(); cursor += WEEK_IN_MS) {
     const key = new Date(cursor).toISOString().slice(0, 10);
     weekly.set(key, {
       week: key,
@@ -139,9 +128,7 @@ export function aggregateRewardsByWeek(
     bucket.totalWei = (BigInt(bucket.totalWei) + amountWei).toString();
     bucket.txCount += 1;
 
-    const previous = bucket.bySender[row.sender]
-      ? BigInt(bucket.bySender[row.sender] ?? "0")
-      : 0n;
+    const previous = bucket.bySender[row.sender] ? BigInt(bucket.bySender[row.sender] ?? "0") : 0n;
     bucket.bySender[row.sender] = (previous + amountWei).toString();
   }
 
@@ -164,9 +151,7 @@ export function aggregateRewardsBySource(rows: RewardRow[]): SourceBreakdownRow[
     bySource.set(row.sender, current);
   }
 
-  const grandTotal = sumBigInt(
-    Array.from(bySource.values()).map((entry) => entry.totalWei),
-  );
+  const grandTotal = sumBigInt(Array.from(bySource.values()).map((entry) => entry.totalWei));
 
   return Array.from(bySource.entries())
     .map(([sender, entry]) => ({
@@ -183,11 +168,7 @@ export function aggregateRewardsBySource(rows: RewardRow[]): SourceBreakdownRow[
     });
 }
 
-export function sumRewardsInLastNDays(
-  rows: RewardRow[],
-  days: number,
-  now: Date = new Date(),
-): string {
+export function sumRewardsInLastNDays(rows: RewardRow[], days: number, now: Date = new Date()): string {
   const threshold = now.getTime() - days * DAY_IN_MS;
   const total = rows.reduce((acc, row) => {
     const timestamp = toDate(row.timestamp).getTime();
@@ -197,11 +178,7 @@ export function sumRewardsInLastNDays(
   return total.toString();
 }
 
-export function aggregateLockActivityByWeek(
-  rows: LockRow[],
-  start: Date,
-  end: Date,
-): WeeklyLockActivityBucket[] {
+export function aggregateLockActivityByWeek(rows: LockRow[], start: Date, end: Date): WeeklyLockActivityBucket[] {
   const startWeek = toWeekStartUtc(start);
   const endWeek = toWeekStartUtc(end);
 
@@ -213,11 +190,7 @@ export function aggregateLockActivityByWeek(
     }
   >();
 
-  for (
-    let cursor = startWeek.getTime();
-    cursor <= endWeek.getTime();
-    cursor += WEEK_IN_MS
-  ) {
+  for (let cursor = startWeek.getTime(); cursor <= endWeek.getTime(); cursor += WEEK_IN_MS) {
     const key = new Date(cursor).toISOString().slice(0, 10);
     weekly.set(key, { updates: 0, owners: new Set<string>() });
   }
@@ -241,17 +214,11 @@ export function aggregateLockActivityByWeek(
     .sort((a, b) => a.week.localeCompare(b.week));
 }
 
-export function calculateTrailingApyPercent(
-  weeklyTotalsWei: string[],
-  veSupplyRaw?: bigint,
-): number {
+export function calculateTrailingApyPercent(weeklyTotalsWei: string[], veSupplyRaw?: bigint): number {
   if (!veSupplyRaw || veSupplyRaw <= 0n) return 0;
   if (weeklyTotalsWei.length === 0) return 0;
 
-  const sumRewards = weeklyTotalsWei.reduce(
-    (acc, amountWei) => acc + BigInt(amountWei),
-    0n,
-  );
+  const sumRewards = weeklyTotalsWei.reduce((acc, amountWei) => acc + BigInt(amountWei), 0n);
   const avgWeeklyRewards = Number(formatUnits(sumRewards, 18)) / weeklyTotalsWei.length;
   const totalSupply = Number(formatUnits(veSupplyRaw, 18));
   if (!Number.isFinite(totalSupply) || totalSupply <= 0) return 0;

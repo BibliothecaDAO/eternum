@@ -4,12 +4,7 @@ interface Uint256Like {
 }
 
 function isUint256Like(value: unknown): value is Uint256Like {
-  return (
-    value !== null &&
-    typeof value === "object" &&
-    "low" in value &&
-    "high" in value
-  );
+  return value !== null && typeof value === "object" && "low" in value && "high" in value;
 }
 
 export function toDecimalAmount(value: unknown): string {
@@ -25,4 +20,3 @@ export function toDecimalAmount(value: unknown): string {
 
   throw new TypeError("Unsupported amount format");
 }
-

@@ -10,20 +10,12 @@ interface MetricCardProps {
   valueClassName?: string;
 }
 
-export function MetricCard({
-  label,
-  value,
-  hint,
-  className,
-  valueClassName,
-}: MetricCardProps) {
+export function MetricCard({ label, value, hint, className, valueClassName }: MetricCardProps) {
   return (
     <Card className={cn("h-full", className)}>
       <CardContent className="space-y-1 p-4">
         <p className="text-muted-foreground text-sm">{label}</p>
-        <div className={cn("realm-stat text-2xl font-bold", valueClassName)}>
-          {value}
-        </div>
+        <div className={cn("realm-stat text-2xl font-bold", valueClassName)}>{value}</div>
         {hint ? <p className="text-muted-foreground text-sm">{hint}</p> : null}
       </CardContent>
     </Card>

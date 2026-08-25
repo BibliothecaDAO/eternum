@@ -19,10 +19,10 @@ import { Check, Plus, Wallet } from "lucide-react";
 import { useMemo, useState } from "react";
 import LordsIcon from "@/components/icons/lords.svg?react";
 import { formatEther } from "viem";
-import type { Address} from "@starknet-start/react";
+import type { Address } from "@starknet-start/react";
 import { useAccount, useContract } from "@starknet-start/react";
 import { L2_C1ERC20 } from "@/abi/L2/C1ERC20";
-import { LORDS, StakingAddresses } from "@realms-world/constants";
+import { LORDS, StakingAddresses } from "@realms-world/chain";
 import type { Call } from "starknet";
 import { VeLords } from "@/abi/L2/VeLords";
 import { toast } from "@/hooks/use-toast";
@@ -69,9 +69,7 @@ export function StakeDialog({
   const [lockWeeks, setLockWeeks] = useState<number>(0);
   const maxLockWeeks = 4 * 52; // 4 years in weeks
 
-  const timeUntilUnlock = ownerLordsLock?.end_time
-    ? getTimeUntil(Number(ownerLordsLock.end_time))
-    : undefined;
+  const timeUntilUnlock = ownerLordsLock?.end_time ? getTimeUntil(Number(ownerLordsLock.end_time)) : undefined;
   const weeksToUnlock = toWeeks(timeUntilUnlock);
 
   // Check if the current lock has expired
@@ -82,19 +80,14 @@ export function StakeDialog({
   }, [ownerLordsLock?.end_time]);
   const remainingLockWeeks = Math.max(maxLockWeeks - weeksToUnlock, 0);
   const canExtendLock = isLockExpired || remainingLockWeeks > 0;
-  const lockDurationSliderMax = isLockExpired
-    ? maxLockWeeks
-    : Math.max(remainingLockWeeks, 1);
+  const lockDurationSliderMax = isLockExpired ? maxLockWeeks : Math.max(remainingLockWeeks, 1);
 
   const newLockEndTime = useMemo(() => {
     const currentTime = getUnixTime(new Date());
     const additionalLockTime = lockWeeks * WEEK_IN_SECONDS;
     if (ownerLordsLock?.end_time && !isLockExpired) {
       // For active locks, extend from the current end time or current time, whichever is later
-      return (
-        Math.max(Number(ownerLordsLock.end_time), currentTime) +
-        additionalLockTime
-      );
+      return Math.max(Number(ownerLordsLock.end_time), currentTime) + additionalLockTime;
     } else {
       // For expired locks or new locks, start from current time
       return currentTime + additionalLockTime;
@@ -118,31 +111,20 @@ export function StakeDialog({
 
       const calls: Call[] = [];
       if (parsedAmount && lordsContract) {
-        calls.push(
-          lordsContract.populate("approve", [
-            veLordsAddress as `0x${string}`,
-            parsedAmount,
-          ]),
-        );
+        calls.push(lordsContract.populate("approve", [veLordsAddress as `0x${string}`, parsedAmount]));
       }
-      calls.push(
-        veLords.populate("manage_lock", [
-          parsedAmount ?? 0n,
-          newLockEndTime,
-          address,
-        ]),
-      );
+      calls.push(veLords.populate("manage_lock", [parsedAmount ?? 0n, newLockEndTime, address]));
 
       setIsSubmitting(true);
       const hash = await manageLordsLock(calls);
-        toast({
-          description: (
-            <div className="flex items-center gap-2">
-              <Check /> Lords Lock Update successful {hash.transaction_hash}
-            </div>
-          ),
-        });
-        setOpen(false);
+      toast({
+        description: (
+          <div className="flex items-center gap-2">
+            <Check /> Lords Lock Update successful {hash.transaction_hash}
+          </div>
+        ),
+      });
+      setOpen(false);
     } catch (error) {
       toast({
         variant: "destructive",
@@ -177,7 +159,7 @@ export function StakeDialog({
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         <Button onClick={() => setOpen(true)}>
-          <Plus className="w-4 h-4" /> 
+          <Plus className="w-4 h-4" />
           {isLockExpired ? "Create New Lock" : "Stake"}
         </Button>
       </DialogTrigger>
@@ -205,9 +187,7 @@ export function StakeDialog({
                   {ownerLordsLock?.amount ? (
                     <div className="flex items-center gap-2">
                       <LordsIcon className="w-4 h-4" />{" "}
-                      {formatNumber(
-                        Number(formatEther(BigInt(ownerLordsLock.amount)))
-                      )}
+                      {formatNumber(Number(formatEther(BigInt(ownerLordsLock.amount))))}
                     </div>
                   ) : (
                     "-"
@@ -219,9 +199,7 @@ export function StakeDialog({
                   <CardTitle className="text-sm">Unlock Date</CardTitle>
                 </CardHeader>
                 <CardContent className="text-sm">
-                  {ownerLordsLock?.end_time
-                    ? formatLockEndTime(Number(ownerLordsLock.end_time))
-                    : "N/A"}
+                  {ownerLordsLock?.end_time ? formatLockEndTime(Number(ownerLordsLock.end_time)) : "N/A"}
                 </CardContent>
               </Card>
             </div>
@@ -231,20 +209,11 @@ export function StakeDialog({
               <div className="flex justify-between">
                 <Label className="flex-1">Stake Lords</Label>
                 <div className="flex justify-end items-end gap-2">
-                  <Button
-                    onClick={() => setStakeByFraction(1)}
-                    variant={"link"}
-                    className="p-1 h-7"
-                  >
+                  <Button onClick={() => setStakeByFraction(1)} variant={"link"} className="p-1 h-7">
                     <Wallet className="w-4 mr-1" />
                     {lordsBalance ? formatNumber(Number(lordsBalance)) : "0"}
                   </Button>
-                  <Button
-                    className="p-1 h-7 rounded"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setStakeByFraction(1)}
-                  >
+                  <Button className="p-1 h-7 rounded" variant="outline" size="sm" onClick={() => setStakeByFraction(1)}>
                     Max
                   </Button>
                   <Button
@@ -278,9 +247,7 @@ export function StakeDialog({
                 />
               </div>
             </div>
-            <Label>
-              {isLockExpired ? "Lock Duration" : `Lock Duration (+${lockWeeks} weeks)`}
-            </Label>
+            <Label>{isLockExpired ? "Lock Duration" : `Lock Duration (+${lockWeeks} weeks)`}</Label>
             <Slider
               className="my-2"
               min={0}
@@ -292,10 +259,7 @@ export function StakeDialog({
             />
             {lockWeeks > 0 ? (
               <p className="text-sm text-muted">
-                New lock end:{" "}
-                <span className="text-muted-foreground">
-                  {formatLockEndTime(newLockEndTime)}
-                </span>
+                New lock end: <span className="text-muted-foreground">{formatLockEndTime(newLockEndTime)}</span>
               </p>
             ) : (
               <div className="h-5"></div>

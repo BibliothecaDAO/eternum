@@ -42,9 +42,7 @@ describe("calculateSharePercent", () => {
   });
 
   it("calculates a share percentage using bigint-safe math", () => {
-    expect(calculateSharePercent(parseEther("25"), parseEther("100"))).toBe(
-      "25.00",
-    );
+    expect(calculateSharePercent(parseEther("25"), parseEther("100"))).toBe("25.00");
     expect(calculateSharePercent(1n, 3n)).toBe("33.33");
   });
 });
@@ -52,10 +50,7 @@ describe("calculateSharePercent", () => {
 describe("formatTokenAmountDisplay", () => {
   it("formats large values with separators without numeric casting", () => {
     expect(
-      formatTokenAmountDisplay(
-        BigInt("123456789012345678901234567890000000000"),
-        { maximumFractionDigits: 0 },
-      ),
+      formatTokenAmountDisplay(BigInt("123456789012345678901234567890000000000"), { maximumFractionDigits: 0 }),
     ).toBe("123,456,789,012,345,678,901");
   });
 });

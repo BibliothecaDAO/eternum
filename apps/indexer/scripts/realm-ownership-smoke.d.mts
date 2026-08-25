@@ -8,8 +8,4 @@ export function parseOwnershipAssertion(
   expectedCountValue: string | undefined,
 ): OwnershipAssertion;
 
-export function assertIndexedOwnership(
-  indexedCount: number,
-  walletCount: number,
-  expectedCount: number,
-): void;
+export function assertIndexedOwnership(indexedCount: number, walletCount: number, expectedCount: number): void;

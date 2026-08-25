@@ -16,7 +16,7 @@ const actionOrientedFiles = [
 describe("action-oriented default tick usage", () => {
   it("uses the live default tick hook instead of the coarse hook", () => {
     for (const filePath of actionOrientedFiles) {
-      const source = readFileSync(resolve(process.cwd(), "..", "..", "..", filePath), "utf8");
+      const source = readFileSync(resolve(process.cwd(), "..", "..", filePath), "utf8");
 
       expect(source).toContain("useCurrentDefaultTick");
       expect(source).not.toContain("useCoarseCurrentDefaultTick");

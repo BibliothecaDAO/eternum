@@ -1,9 +1,4 @@
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from "@/components/ui/accordion";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useWriteFinalizeWithdrawRealms } from "@/hooks/bridge/useWriteFinalizeWithdrawRealms";
@@ -19,8 +14,7 @@ import { TransactionChains } from "./bridge-tx-chains";
 
 const BridgeTransactionItems = () => {
   const explorer = useExplorer();
-  const { writeAsync, isPending: isWithdrawPending } =
-    useWriteFinalizeWithdrawRealms();
+  const { writeAsync, isPending: isWithdrawPending } = useWriteFinalizeWithdrawRealms();
 
   const { address: l1Address } = useL1Account();
   const { address: l2Address } = useAccount();
@@ -57,9 +51,7 @@ const BridgeTransactionItems = () => {
     <Accordion type="single" collapsible>
       {transactions?.map((transaction) => {
         const isCompleted = transaction.events.some(
-          (event) =>
-            event.type === "withdraw_completed_l1" ||
-            event.type === "withdraw_completed_l2",
+          (event) => event.type === "withdraw_completed_l1" || event.type === "withdraw_completed_l2",
         );
 
         return (
@@ -70,9 +62,7 @@ const BridgeTransactionItems = () => {
                   <div className="flex items-center gap-2">
                     <TransactionChains fromChain={transaction.from_chain} />
                   </div>
-                  <span className="text-muted-foreground text-sm">
-                    {transaction.timestamp.toLocaleString()}
-                  </span>
+                  <span className="text-muted-foreground text-sm">{transaction.timestamp.toLocaleString()}</span>
                 </div>
                 <div className="flex flex-col items-end justify-end">
                   <div className="flex gap-1">
@@ -81,17 +71,11 @@ const BridgeTransactionItems = () => {
                         #{id}
                       </Badge>
                     ))}
-                    {transaction.token_ids.length > 3 && (
-                      <Badge key="more">
-                        +{transaction.token_ids.length - 3}
-                      </Badge>
-                    )}
+                    {transaction.token_ids.length > 3 && <Badge key="more">+{transaction.token_ids.length - 3}</Badge>}
                   </div>
                   {isCompleted ? (
                     <span className="text-muted-foreground">Completed</span>
-                  ) : transaction.events.some(
-                      (event) => event.type === "withdraw_available_l1",
-                    ) ? (
+                  ) : transaction.events.some((event) => event.type === "withdraw_available_l1") ? (
                     <Button
                       size="sm"
                       variant="outline"
@@ -112,11 +96,7 @@ const BridgeTransactionItems = () => {
             </AccordionTrigger>
             <AccordionContent>
               <div className="flex flex-col space-y-1 py-2">
-                <span
-                  className={cn(
-                    isCompleted ? "text-success" : "text-warning",
-                  )}
-                >
+                <span className={cn(isCompleted ? "text-success" : "text-warning")}>
                   {isCompleted ? "Completed" : "In Progress"}
                 </span>
                 <div className="flex items-center gap-2">
@@ -130,17 +110,8 @@ const BridgeTransactionItems = () => {
                       ? explorer.transaction(event.hash)
                       : "https://sepolia.etherscan.io/tx/" + event.hash;
                     return (
-                      <a
-                        key={event.hash + idx}
-                        href={explorerLink}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                      >
-                        <Button variant="outline">
-                          {event.type.endsWith("l2")
-                            ? "Starkscan"
-                            : "Etherscan"}
-                        </Button>
+                      <a key={event.hash + idx} href={explorerLink} target="_blank" rel="noopener noreferrer">
+                        <Button variant="outline">{event.type.endsWith("l2") ? "Starkscan" : "Etherscan"}</Button>
                       </a>
                     );
                   })}

@@ -227,9 +227,7 @@ export const StarknetBridgeRealms = [
     type: "function",
   },
   {
-    inputs: [
-      { internalType: "address", name: "newImplementation", type: "address" },
-    ],
+    inputs: [{ internalType: "address", name: "newImplementation", type: "address" }],
     name: "upgradeTo",
     outputs: [],
     stateMutability: "nonpayable",

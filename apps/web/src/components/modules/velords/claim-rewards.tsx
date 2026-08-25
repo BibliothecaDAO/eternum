@@ -1,17 +1,7 @@
 import LordsIcon from "@/components/icons/lords.svg?react";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "@/components/ui/collapsible";
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Input } from "@/components/ui/input";
 import { toast } from "@/hooks/use-toast";
 import useVeLordsClaims from "@/hooks/use-velords-claims";
@@ -20,30 +10,18 @@ import Confetti from "react-confetti";
 import { formatEther } from "viem";
 
 export const VelordsRewards = () => {
-  const {
-    recipient,
-    setRecipient,
-    isRecipientValid,
-    claimCall,
-    lordsClaimable,
-    claimRewards,
-    claimIsSubmitting,
-  } = useVeLordsClaims();
+  const { recipient, setRecipient, isRecipientValid, claimCall, lordsClaimable, claimRewards, claimIsSubmitting } =
+    useVeLordsClaims();
   const handleClaimRewards = async () => {
     try {
       const hash = await claimRewards();
       toast({
-        description: (
-          <div className="flex items-center gap-2">
-            Claim Lords successful {hash.transaction_hash}
-          </div>
-        ),
+        description: <div className="flex items-center gap-2">Claim Lords successful {hash.transaction_hash}</div>,
       });
     } catch (error) {
       toast({
         variant: "destructive",
-        description:
-          error instanceof Error ? error.message : "Unable to claim rewards.",
+        description: error instanceof Error ? error.message : "Unable to claim rewards.",
       });
     }
   };
@@ -82,8 +60,7 @@ export const VelordsRewards = () => {
           <div className="flex items-center gap-2">
             <LordsIcon className="w-9" />
             <span className="text-3xl font-bold">
-              {lordsClaimable &&
-                formatNumber(Number(formatEther(lordsClaimable)))}
+              {lordsClaimable && formatNumber(Number(formatEther(lordsClaimable)))}
             </span>{" "}
             Lords to claim
           </div>
@@ -94,27 +71,16 @@ export const VelordsRewards = () => {
               </Button>
             </CollapsibleTrigger>
             <CollapsibleContent>
-              <Input
-                placeholder="Recipient"
-                value={recipient}
-                onChange={(e) => setRecipient(e.target.value)}
-              />
+              <Input placeholder="Recipient" value={recipient} onChange={(e) => setRecipient(e.target.value)} />
               {!isRecipientValid && (
-                <p className="text-destructive mt-2 text-xs">
-                  Enter a valid Starknet recipient address.
-                </p>
+                <p className="text-destructive mt-2 text-xs">Enter a valid Starknet recipient address.</p>
               )}
             </CollapsibleContent>
           </Collapsible>
           <Button
             onClick={handleClaimRewards}
             className="w-full"
-            disabled={
-              claimIsSubmitting ||
-              !isRecipientValid ||
-              !claimCall ||
-              lordsClaimable <= 0n
-            }
+            disabled={claimIsSubmitting || !isRecipientValid || !claimCall || lordsClaimable <= 0n}
           >
             Claim Lords
           </Button>

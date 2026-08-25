@@ -52,16 +52,11 @@ function toPercent(part: number, total: number): number {
   return (part / total) * 100;
 }
 
-export function buildRewardsMomentumData(
-  weekly: WeeklyRewardsPoint[],
-): RewardsMomentumPoint[] {
+export function buildRewardsMomentumData(weekly: WeeklyRewardsPoint[]): RewardsMomentumPoint[] {
   return weekly.map((row, index) => {
     const totalRewards = toRewardsUnits(row.totalWei);
     const trailing = weekly.slice(Math.max(0, index - 3), index + 1);
-    const trailingSum = trailing.reduce(
-      (acc, point) => acc + toRewardsUnits(point.totalWei),
-      0,
-    );
+    const trailingSum = trailing.reduce((acc, point) => acc + toRewardsUnits(point.totalWei), 0);
 
     return {
       week: row.week,
@@ -118,9 +113,7 @@ export function buildSourceShareData(
   };
 }
 
-export function buildSourceConcentrationData(
-  weekly: WeeklyRewardsPoint[],
-): SourceConcentrationPoint[] {
+export function buildSourceConcentrationData(weekly: WeeklyRewardsPoint[]): SourceConcentrationPoint[] {
   return weekly.map((row) => {
     const amounts = Object.values(row.bySender)
       .map((amount) => toRewardsUnits(amount))
@@ -140,19 +133,14 @@ export function buildSourceConcentrationData(
   });
 }
 
-export function buildLockParticipationData(
-  weekly: WeeklyLockPoint[],
-): LockParticipationPoint[] {
+export function buildLockParticipationData(weekly: WeeklyLockPoint[]): LockParticipationPoint[] {
   return weekly.map((row) => ({
     ...row,
-    updatesPerWallet:
-      row.uniqueWallets > 0 ? row.updates / row.uniqueWallets : 0,
+    updatesPerWallet: row.uniqueWallets > 0 ? row.updates / row.uniqueWallets : 0,
   }));
 }
 
-export function buildCumulativeRewardsData(
-  weekly: WeeklyRewardsPoint[],
-): CumulativeRewardsPoint[] {
+export function buildCumulativeRewardsData(weekly: WeeklyRewardsPoint[]): CumulativeRewardsPoint[] {
   let cumulative = 0;
 
   return weekly.map((row) => {
@@ -164,15 +152,11 @@ export function buildCumulativeRewardsData(
   });
 }
 
-export function calculateProjectedPeriodTotal(
-  weekly: WeeklyRewardsPoint[],
-): number {
+export function calculateProjectedPeriodTotal(weekly: WeeklyRewardsPoint[]): number {
   if (weekly.length === 0) return 0;
 
   const trailing = weekly.slice(-4);
-  const trailingAverage =
-    trailing.reduce((acc, row) => acc + toRewardsUnits(row.totalWei), 0) /
-    trailing.length;
+  const trailingAverage = trailing.reduce((acc, row) => acc + toRewardsUnits(row.totalWei), 0) / trailing.length;
 
   return trailingAverage * weekly.length;
 }

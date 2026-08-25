@@ -22,8 +22,7 @@ export const RealmMetadataABI = [
   {
     name: "RealmMetadataEncoded",
     type: "impl",
-    interface_name:
-      "strealm::contracts::metadata::metadata::IRealmMetadataEncoded",
+    interface_name: "strealm::contracts::metadata::metadata::IRealmMetadataEncoded",
   },
   {
     name: "strealm::contracts::metadata::metadata::IRealmMetadataEncoded",

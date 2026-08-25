@@ -10,9 +10,7 @@ export const ReadMore = ({ id, text, amountOfWords = 24 }: ReadMoreProps) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const splittedText = text.split(" ");
   const itCanOverflow = splittedText.length > amountOfWords;
-  const beginText = itCanOverflow
-    ? splittedText.slice(0, amountOfWords - 1).join(" ")
-    : text;
+  const beginText = itCanOverflow ? splittedText.slice(0, amountOfWords - 1).join(" ") : text;
   const endText = splittedText.slice(amountOfWords - 1).join(" ");
 
   const handleKeyboard = (e: React.KeyboardEvent<HTMLSpanElement>) => {
@@ -27,10 +25,7 @@ export const ReadMore = ({ id, text, amountOfWords = 24 }: ReadMoreProps) => {
       {itCanOverflow && (
         <>
           {!isExpanded && <span>... </span>}
-          <span
-            className={`${!isExpanded && "hidden"}`}
-            aria-hidden={!isExpanded}
-          >
+          <span className={`${!isExpanded && "hidden"}`} aria-hidden={!isExpanded}>
             {endText}
           </span>
           <span

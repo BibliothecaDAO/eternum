@@ -1,23 +1,13 @@
 import { EvmStream } from "@apibara/evm";
 import { defineIndexer } from "@apibara/indexer";
 import { useLogger as getLogger } from "@apibara/indexer/plugins";
-import {
-  drizzleStorage,
-  useDrizzleStorage as getDrizzleStorage,
-} from "@apibara/plugin-drizzle";
+import { drizzleStorage, useDrizzleStorage as getDrizzleStorage } from "@apibara/plugin-drizzle";
 import { uint256 } from "starknet";
 import { decodeEventLog, encodeEventTopics, numberToHex, parseAbi } from "viem";
 
-import {
-  ChainId,
-  REALMS_BRIDGE_ADDRESS,
-  STARKNET_MESSAGING,
-} from "@realms-world/constants";
+import { ChainId, REALMS_BRIDGE_ADDRESS, STARKNET_MESSAGING } from "@realms-world/chain";
 import { db } from "@realms-world/db/poolClient";
-import {
-  realmsBridgeEvents,
-  realmsBridgeRequests,
-} from "@realms-world/db/schema";
+import { realmsBridgeEvents, realmsBridgeRequests } from "@realms-world/db/schema";
 
 import { getRelationalSchema } from "../drizzle-schema";
 import { env } from "../env";
@@ -30,19 +20,14 @@ const abi = parseAbi([
   "event ConsumedMessageToL1(uint256 indexed fromAddress,address indexed toAddress,uint256[] payload)",
 ]);
 
-const chainId =
-  env.VITE_PUBLIC_CHAIN === "sepolia" ? ChainId.SEPOLIA : ChainId.MAINNET;
-const l2ChainId =
-  env.VITE_PUBLIC_CHAIN === "sepolia" ? ChainId.SN_SEPOLIA : ChainId.SN_MAIN;
+const chainId = env.VITE_PUBLIC_CHAIN === "sepolia" ? ChainId.SEPOLIA : ChainId.MAINNET;
+const l2ChainId = env.VITE_PUBLIC_CHAIN === "sepolia" ? ChainId.SN_SEPOLIA : ChainId.SN_MAIN;
 
 export default function () {
   return defineIndexer(EvmStream)({
-    streamUrl:
-      env.APIBARA_ETHEREUM_STREAM_URL ??
-      getEthereumStreamUrl(env.VITE_PUBLIC_CHAIN),
+    streamUrl: env.APIBARA_ETHEREUM_STREAM_URL ?? getEthereumStreamUrl(env.VITE_PUBLIC_CHAIN),
     finality: "accepted",
-    startingBlock:
-      env.VITE_PUBLIC_CHAIN === "sepolia" ? 6_180_467n : 204_33_152n,
+    startingBlock: env.VITE_PUBLIC_CHAIN === "sepolia" ? 6_180_467n : 204_33_152n,
 
     filter: {
       logs: [
@@ -113,12 +98,7 @@ export default function () {
       const { db } = getDrizzleStorage();
       const { logs, header } = block;
 
-      logger.info(
-        "Transforming block | orderKey: ",
-        endCursor?.orderKey,
-        " | finality: ",
-        finality,
-      );
+      logger.info("Transforming block | orderKey: ", endCursor?.orderKey, " | finality: ", finality);
 
       for (const log of logs) {
         const decoded = decodeEventLog({
@@ -143,10 +123,7 @@ export default function () {
         });
 
         const fromChain =
-          decoded.eventName === "LogMessageToL1" ||
-          decoded.eventName === "ConsumedMessageToL1"
-            ? l2ChainId
-            : chainId;
+          decoded.eventName === "LogMessageToL1" || decoded.eventName === "ConsumedMessageToL1" ? l2ChainId : chainId;
 
         await db
           .insert(realmsBridgeRequests)

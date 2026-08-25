@@ -23,7 +23,9 @@
     "deploy/appchain/cdk/lib/**",
     "deploy/appchain/cdk/lambda/**",
     "deploy/appchain/cdk/cdk.out/**",
-    "deploy/appchain/scripts/**"
+    "deploy/appchain/scripts/**",
+    "apps/indexer/drizzle.config.ts",
+    "packages/db/drizzle.config.ts"
   ],
   "ignoreWorkspaces": [
     "packages/amm-sdk",
@@ -34,6 +36,17 @@
     "packages/world"
   ],
   "workspaces": {
+    "apps/indexer": {
+      "drizzle": false,
+      "entry": [
+        "apibara.config.ts",
+        "indexers/*.indexer.ts",
+        "scripts/check-realm-ownership-indexer.mjs"
+      ]
+    },
+    "packages/db": {
+      "drizzle": false
+    },
     "packages/core": {
       "entry": [
         "src/index.ts"
@@ -171,6 +184,44 @@
     }
   },
   "ignoreIssues": {
+    "apps/web/**": [
+      "exports",
+      "types"
+    ],
+    "apps/indexer/env.ts": [
+      "types"
+    ],
+    "packages/core/src/utils/entry-token.ts": [
+      "exports"
+    ],
+    "packages/db/env.ts": [
+      "types"
+    ],
+    "packages/db/src/int8range.ts": [
+      "exports"
+    ],
+    "packages/react/src/hooks/context/dojo-context.ts": [
+      "types"
+    ],
+    "packages/react/src/hooks/helpers/use-realm.ts": [
+      "exports"
+    ],
+    "packages/react/src/hooks/use-entry-token-balance.ts": [
+      "exports"
+    ],
+    "packages/torii/src/queries/sql/resource.ts": [
+      "exports"
+    ],
+    "packages/torii/src/queries/torii-client/army.ts": [
+      "exports"
+    ],
+    "packages/torii/src/queries/torii-client/structure.ts": [
+      "exports"
+    ],
+    "apps/web/src/gql/snapshot/graphql.ts": [
+      "exports",
+      "types"
+    ],
     "apps/game/src/three/geometry/path-geometry.ts": [
       "files"
     ],

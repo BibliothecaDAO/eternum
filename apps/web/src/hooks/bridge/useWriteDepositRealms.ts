@@ -5,7 +5,7 @@ import { SUPPORTED_L1_CHAIN_ID } from "@/utils/utils";
 import { encodePacked, keccak256, parseGwei, toHex } from "viem";
 import { useAccount, usePublicClient, useWriteContract } from "wagmi";
 
-import { REALMS_BRIDGE_ADDRESS } from "@realms-world/constants";
+import { REALMS_BRIDGE_ADDRESS } from "@realms-world/chain";
 
 const FUNCTION = "depositTokens";
 const U128_MASK = (1n << 128n) - 1n;
@@ -45,25 +45,11 @@ function serializeDepositPayload({
   ownerL2: bigint;
   tokenIds: bigint[];
 }) {
-  const requestHash = BigInt(
-    keccak256(
-      encodePacked(
-        ["uint256", "uint256", "uint256[]"],
-        [salt, ownerL2, tokenIds],
-      ),
-    ),
-  );
+  const requestHash = BigInt(keccak256(encodePacked(["uint256", "uint256", "uint256[]"], [salt, ownerL2, tokenIds])));
   const [hashLow, hashHigh] = splitU256(requestHash);
   const serializedTokenIds = tokenIds.flatMap((tokenId) => splitU256(tokenId));
 
-  return [
-    hashLow,
-    hashHigh,
-    BigInt(ownerL1),
-    ownerL2,
-    BigInt(tokenIds.length),
-    ...serializedTokenIds,
-  ];
+  return [hashLow, hashHigh, BigInt(ownerL1), ownerL2, BigInt(tokenIds.length), ...serializedTokenIds];
 }
 
 async function estimateMessageFeeWei({
@@ -101,16 +87,12 @@ async function estimateMessageFeeWei({
   });
 
   if (!response.ok) {
-    throw new Error(
-      `Failed to estimate Starknet message fee: HTTP ${response.status}`,
-    );
+    throw new Error(`Failed to estimate Starknet message fee: HTTP ${response.status}`);
   }
 
   const data = (await response.json()) as StarknetEstimateMessageFeeResponse;
   if (data.error) {
-    throw new Error(
-      `Failed to estimate Starknet message fee: ${data.error.message}`,
-    );
+    throw new Error(`Failed to estimate Starknet message fee: ${data.error.message}`);
   }
   if (!data.result?.overall_fee) {
     throw new Error("Invalid Starknet fee estimation response");
@@ -150,9 +132,7 @@ export async function isStarknetAccountDeployed(address: string) {
   });
 
   if (!response.ok) {
-    throw new Error(
-      `Failed to check Starknet account deployment: HTTP ${response.status}`,
-    );
+    throw new Error(`Failed to check Starknet account deployment: HTTP ${response.status}`);
   }
 
   const data = (await response.json()) as StarknetGetClassHashAtResponse;
@@ -160,19 +140,13 @@ export async function isStarknetAccountDeployed(address: string) {
     if (isUndeployedAccountError(data.error.message)) {
       return false;
     }
-    throw new Error(
-      `Failed to check Starknet account deployment: ${data.error.message}`,
-    );
+    throw new Error(`Failed to check Starknet account deployment: ${data.error.message}`);
   }
 
   return Boolean(data.result);
 }
 
-export function useWriteDepositRealms({
-  onSuccess,
-}: {
-  onSuccess?: (data: unknown) => void;
-}) {
+export function useWriteDepositRealms({ onSuccess }: { onSuccess?: (data: unknown) => void }) {
   const { address: l1Address } = useAccount();
   const publicClient = usePublicClient({ chainId: SUPPORTED_L1_CHAIN_ID });
   const { writeContractAsync, error, ...writeReturn } = useWriteContract({
@@ -180,38 +154,25 @@ export function useWriteDepositRealms({
   });
 
   const writeAsync = useCallback(
-    async ({
-      tokenIds,
-      l2Address,
-    }: {
-      tokenIds: bigint[];
-      l2Address: string;
-    }) => {
+    async ({ tokenIds, l2Address }: { tokenIds: bigint[]; l2Address: string }) => {
       if (!l2Address) throw new Error("Missing L2 Address");
       if (!l1Address) throw new Error("Missing L1 Address");
       if (!publicClient) throw new Error("Missing L1 Public Client");
       if (!(await isStarknetAccountDeployed(l2Address))) {
-        throw new Error(
-          "Your Starknet account is not deployed yet. Send a Starknet transaction first, then bridge.",
-        );
+        throw new Error("Your Starknet account is not deployed yet. Send a Starknet transaction first, then bridge.");
       }
 
-      const l1BridgeAddress = REALMS_BRIDGE_ADDRESS[
-        SUPPORTED_L1_CHAIN_ID
-      ] as `0x${string}`;
+      const l1BridgeAddress = REALMS_BRIDGE_ADDRESS[SUPPORTED_L1_CHAIN_ID] as `0x${string}`;
       const parsedL2Address = BigInt(l2Address);
       const salt = BigInt(Date.now());
-      let value = parseGwei(
-        (LEGACY_FEE_PER_TOKEN_GWEI * tokenIds.length).toString(),
-      );
+      let value = parseGwei((LEGACY_FEE_PER_TOKEN_GWEI * tokenIds.length).toString());
 
       try {
-        const [l2BridgeAddress, l2BridgeSelector] =
-          await publicClient.readContract({
-            address: l1BridgeAddress,
-            abi: L1_REALMS_BRIDGE_ABI,
-            functionName: "l2Info",
-          });
+        const [l2BridgeAddress, l2BridgeSelector] = await publicClient.readContract({
+          address: l1BridgeAddress,
+          abi: L1_REALMS_BRIDGE_ABI,
+          functionName: "l2Info",
+        });
 
         const payload = serializeDepositPayload({
           salt,
@@ -229,10 +190,7 @@ export function useWriteDepositRealms({
           }),
         );
       } catch (feeEstimateError) {
-        console.warn(
-          "Failed to estimate Starknet L1->L2 message fee, using fallback formula",
-          feeEstimateError,
-        );
+        console.warn("Failed to estimate Starknet L1->L2 message fee, using fallback formula", feeEstimateError);
       }
 
       return await writeContractAsync({

@@ -9,13 +9,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
-} from "@/components/ui/sheet";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 
 import { Button } from "../ui/button";
 import { Separator } from "../ui/separator";
@@ -32,8 +26,7 @@ export const StarknetWalletButton = ({
   variant?: "default" | "reference";
   pickerMode?: "dropdown" | "sheet";
 }) => {
-  const { lastConnector, openWalletModal, connectWallet, connectors } =
-    useStarknetWallet();
+  const { lastConnector, openWalletModal, connectWallet, connectors } = useStarknetWallet();
   const [isPickerOpen, setIsPickerOpen] = useState(false);
   const primaryConnector = lastConnector ?? connectors.at(0);
   const hasConnectorPicker = connectors.length > 1;
@@ -58,18 +51,11 @@ export const StarknetWalletButton = ({
   const pickerSheet = (
     <Sheet open={isPickerOpen} onOpenChange={setIsPickerOpen}>
       <SheetTrigger asChild>
-        <button
-          type="button"
-          className={pickerTriggerClassName}
-          onClick={(e) => e.stopPropagation()}
-        >
+        <button type="button" className={pickerTriggerClassName} onClick={(e) => e.stopPropagation()}>
           <ChevronDownIcon className="h-4 w-4" />
         </button>
       </SheetTrigger>
-      <SheetContent
-        side="right"
-        className="w-full max-w-md border-l p-0"
-      >
+      <SheetContent side="right" className="w-full max-w-md border-l p-0">
         <SheetHeader className="border-b px-5 py-4">
           <SheetTitle className="text-xl">Connect a wallet</SheetTitle>
         </SheetHeader>
@@ -119,22 +105,15 @@ export const StarknetWalletButton = ({
             )}
           </span>
           <span className="flex flex-col items-start leading-tight">
-            <span className="text-foreground text-base font-semibold">
-              {label ?? "Connect wallet"}
-            </span>
+            <span className="text-foreground text-base font-semibold">{label ?? "Connect wallet"}</span>
             <span className="text-muted-foreground text-xs">
-              {lastConnector
-                ? `Previously used ${lastConnector.name}`
-                : "Choose a Starknet wallet"}
+              {lastConnector ? `Previously used ${lastConnector.name}` : "Choose a Starknet wallet"}
             </span>
           </span>
         </Button>
 
         {hasConnectorPicker ? (
-          <div
-            className="absolute right-2 top-1/2 -translate-y-1/2"
-            onClick={(e) => e.stopPropagation()}
-          >
+          <div className="absolute right-2 top-1/2 -translate-y-1/2" onClick={(e) => e.stopPropagation()}>
             {pickerSheet}
           </div>
         ) : null}
@@ -143,14 +122,9 @@ export const StarknetWalletButton = ({
   }
 
   return (
-    <Button
-      onClick={connectPrimary}
-      className={`rounded px-2.5 ${className}`}
-    >
+    <Button onClick={connectPrimary} className={`rounded px-2.5 ${className}`}>
       <div className="flex items-center">
-        {lastConnector ? (
-          <img className="w-7 pr-2" src={getConnectorIcon(lastConnector)} />
-        ) : null}
+        {lastConnector ? <img className="w-7 pr-2" src={getConnectorIcon(lastConnector)} /> : null}
         <p className="mx-auto">{label ?? "Connect wallet"}</p>
         {hasConnectorPicker ? (
           <>
@@ -161,10 +135,7 @@ export const StarknetWalletButton = ({
             ) : (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <div
-                    className="hover:bg-background/20 p-1"
-                    onClick={(e) => e.stopPropagation()}
-                  >
+                  <div className="hover:bg-background/20 p-1" onClick={(e) => e.stopPropagation()}>
                     <ArrowDownIcon width="18" />
                   </div>
                 </DropdownMenuTrigger>
@@ -177,10 +148,7 @@ export const StarknetWalletButton = ({
                         connectFromPicker(connector);
                       }}
                     >
-                      <img
-                        className="mr-2 h-4 w-4"
-                        src={getConnectorIcon(connector)}
-                      />
+                      <img className="mr-2 h-4 w-4" src={getConnectorIcon(connector)} />
                       {connector.name}
                     </DropdownMenuItem>
                   ))}

@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { describe, expect, test } from "vitest";
 
-const repositoryRoot = resolve(__dirname, "../../../../../..");
+const repositoryRoot = resolve(process.cwd(), "../..");
 
 const readPolicySource = (relativePath: string): string => readFileSync(resolve(repositoryRoot, relativePath), "utf8");
 

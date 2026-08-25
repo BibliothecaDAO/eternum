@@ -4,33 +4,17 @@ import useIsWrongNetwork from "@/hooks/use-wrong-network";
 import { getConnectorIcon } from "@/utils/connectWallet";
 import { cn, shortenAddress } from "@/utils/utils";
 import { Separator } from "@radix-ui/react-separator";
-import {
-  useAccount,
-  useDisconnect,
-  useExplorer,
-  useSwitchChain,
-} from "@starknet-start/react";
+import { useAccount, useDisconnect, useExplorer, useSwitchChain } from "@starknet-start/react";
 import { Link } from "@tanstack/react-router";
 import { env } from "env";
 import { Check, Copy, ExternalLink, Unplug } from "lucide-react";
 
-import { ChainId } from "@realms-world/constants";
+import { ChainId } from "@realms-world/chain";
 
 import { Avatar, AvatarImage } from "../ui/avatar";
 import { Button } from "../ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "../ui/dialog";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuLabel,
-  DropdownMenuTrigger,
-} from "../ui/dropdown-menu";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "../ui/dialog";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuLabel, DropdownMenuTrigger } from "../ui/dropdown-menu";
 import { SidebarTrigger, useSidebar } from "../ui/sidebar";
 import { Breadcrumbs } from "./breadcrumbs";
 import { ModeToggle } from "./mode-toggle";
@@ -44,10 +28,7 @@ export function Header() {
   const { isWrongNetwork /*, setIsWrongNetwork */ } = useIsWrongNetwork();
   const { switchChainAsync } = useSwitchChain({
     params: {
-      chainId:
-        env.VITE_PUBLIC_CHAIN === "sepolia"
-          ? (ChainId.SN_SEPOLIA as string)
-          : (ChainId.SN_MAIN as string),
+      chainId: env.VITE_PUBLIC_CHAIN === "sepolia" ? (ChainId.SN_SEPOLIA as string) : (ChainId.SN_MAIN as string),
     },
   });
   return (
@@ -63,12 +44,9 @@ export function Header() {
             " flex items-center justify-center border-r border-[color:var(--realm-border-strong)]"
           }
         >
-          <Link to="/">
+          <Link to="/account">
             <RWLogo
-              className={
-                `${open ? "w-full sm:w-20" : "w-10"}` +
-                " h-auto transition-[width,height] duration-300"
-              }
+              className={`${open ? "w-full sm:w-20" : "w-10"}` + " h-auto transition-[width,height] duration-300"}
             />
           </Link>
         </div>
@@ -82,11 +60,7 @@ export function Header() {
           {address ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button
-                  variant="outline"
-                  size="lg"
-                  className="flex items-center gap-2 rounded-xl px-3"
-                >
+                <Button variant="outline" size="lg" className="flex items-center gap-2 rounded-xl px-3">
                   <img className="w-7" src={getConnectorIcon(connector)} />
                   {shortenAddress(address)}
                 </Button>
@@ -95,23 +69,13 @@ export function Header() {
                 <DropdownMenuLabel className="flex flex-col gap-6 p-4">
                   <div className="flex items-center gap-2">
                     <Avatar className="mr-1 size-8">
-                      <AvatarImage
-                        src={`https://api.dicebear.com/6.x/bottts-neutral/svg?seed=${address}`}
-                      />
+                      <AvatarImage src={`https://api.dicebear.com/6.x/bottts-neutral/svg?seed=${address}`} />
                     </Avatar>
                     <div className="text-xl">{shortenAddress(address)}</div>
                   </div>
                   <div className="flex items-center gap-2">
-                    <a
-                      href={explorer.contract(address)}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      <Button
-                        variant={"outline"}
-                        size="icon"
-                        className="rounded-full"
-                      >
+                    <a href={explorer.contract(address)} target="_blank" rel="noopener noreferrer">
+                      <Button variant={"outline"} size="icon" className="rounded-full">
                         <ExternalLink />
                       </Button>
                     </a>
@@ -137,11 +101,7 @@ export function Header() {
                     >
                       <Copy />
                     </Button>
-                    <Button
-                      variant={"outline"}
-                      className="rounded-full"
-                      onClick={() => disconnect()}
-                    >
+                    <Button variant={"outline"} className="rounded-full" onClick={() => disconnect()}>
                       <Unplug /> Disconnect
                     </Button>
                   </div>
@@ -161,13 +121,10 @@ export function Header() {
                 <DialogTitle>Wrong Network</DialogTitle>
               </DialogHeader>
               <DialogDescription>
-                You are on the wrong network. Please switch to{" "}
-                {env.VITE_PUBLIC_CHAIN}
+                You are on the wrong network. Please switch to {env.VITE_PUBLIC_CHAIN}
                 <div className="mt-6 flex items-center gap-2">
                   {connector?.name == "Argent X" && (
-                    <Button onClick={() => switchChainAsync()}>
-                      Switch to {env.VITE_PUBLIC_CHAIN}
-                    </Button>
+                    <Button onClick={() => switchChainAsync()}>Switch to {env.VITE_PUBLIC_CHAIN}</Button>
                   )}
                   or
                   <Button onClick={() => disconnect()}>Disconnect</Button>

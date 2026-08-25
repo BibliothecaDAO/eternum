@@ -1,26 +1,17 @@
 //import type { ApibaraRuntimeConfig } from "apibara/types";
-import type {
-  ExtractTablesWithRelations,
-  TablesRelationalConfig,
-} from "drizzle-orm";
+import type { ExtractTablesWithRelations, TablesRelationalConfig } from "drizzle-orm";
 import type { PgDatabase, PgQueryResultHKT } from "drizzle-orm/pg-core";
 import type { Abi } from "starknet";
 import { defineIndexer } from "@apibara/indexer";
 import { useLogger as getLogger } from "@apibara/indexer/plugins";
-import {
-  drizzleStorage,
-  useDrizzleStorage as getDrizzleStorage,
-} from "@apibara/plugin-drizzle";
+import { drizzleStorage, useDrizzleStorage as getDrizzleStorage } from "@apibara/plugin-drizzle";
 import { decodeEvent, getSelector, StarknetStream } from "@apibara/starknet";
 import { uint256 } from "starknet";
 import { numberToHex } from "viem";
 
-import { ChainId, REALMS_BRIDGE_ADDRESS } from "@realms-world/constants";
+import { ChainId, REALMS_BRIDGE_ADDRESS } from "@realms-world/chain";
 import { db } from "@realms-world/db/poolClient";
-import {
-  realmsBridgeEvents,
-  realmsBridgeRequests,
-} from "@realms-world/db/schema";
+import { realmsBridgeEvents, realmsBridgeRequests } from "@realms-world/db/schema";
 
 import { getRelationalSchema } from "../drizzle-schema";
 import { env } from "../env";
@@ -29,13 +20,9 @@ import { getStarknetStreamUrl } from "../streams";
 export default function (/*runtimeConfig: ApibaraRuntimeConfig*/) {
   return createIndexer({ database: db });
 }
-const chainId =
-  env.VITE_PUBLIC_CHAIN === "sepolia" ? ChainId.SEPOLIA : ChainId.MAINNET;
-const l2ChainId =
-  env.VITE_PUBLIC_CHAIN === "sepolia" ? ChainId.SN_SEPOLIA : ChainId.SN_MAIN;
-const withdrawRequestCompletedSelector = getSelector(
-  "WithdrawRequestCompleted",
-);
+const chainId = env.VITE_PUBLIC_CHAIN === "sepolia" ? ChainId.SEPOLIA : ChainId.MAINNET;
+const l2ChainId = env.VITE_PUBLIC_CHAIN === "sepolia" ? ChainId.SN_SEPOLIA : ChainId.SN_MAIN;
+const withdrawRequestCompletedSelector = getSelector("WithdrawRequestCompleted");
 const depositRequestInitiatedSelector = getSelector("DepositRequestInitiated");
 
 interface ParsedRequestContent {
@@ -92,22 +79,14 @@ function parseBridgeEvent(decoded: unknown): ParsedBridgeEvent {
     throw new Error("Invalid ids in decoded event args");
   }
 
-  const ids = idsValue.map((value, index) =>
-    parseBigIntValue(value, `args.req_content.ids[${index}]`),
-  );
+  const ids = idsValue.map((value, index) => parseBigIntValue(value, `args.req_content.ids[${index}]`));
 
   return {
     transactionHash,
     reqContent: {
       hash: parseBigIntValue(reqContent.hash, "args.req_content.hash"),
-      ownerL1Address: parseBigIntValue(
-        ownerL1.address,
-        "args.req_content.owner_l1.address",
-      ),
-      ownerL2: parseBigIntValue(
-        reqContent.owner_l2,
-        "args.req_content.owner_l2",
-      ),
+      ownerL1Address: parseBigIntValue(ownerL1.address, "args.req_content.owner_l1.address"),
+      ownerL2: parseBigIntValue(reqContent.owner_l2, "args.req_content.owner_l2"),
       ids,
     },
   };
@@ -133,8 +112,7 @@ function buildRequestId(reqContent: ParsedRequestContent): string {
 export function createIndexer<
   TQueryResult extends PgQueryResultHKT,
   TFullSchema extends Record<string, unknown> = Record<string, never>,
-  TSchema extends TablesRelationalConfig =
-    ExtractTablesWithRelations<TFullSchema>,
+  TSchema extends TablesRelationalConfig = ExtractTablesWithRelations<TFullSchema>,
 >({ database }: { database: PgDatabase<TQueryResult, TFullSchema, TSchema> }) {
   return defineIndexer(StarknetStream)({
     streamUrl: getStarknetStreamUrl(env.VITE_PUBLIC_CHAIN),
@@ -172,12 +150,7 @@ export function createIndexer<
       const { db } = getDrizzleStorage();
       const { events } = block;
 
-      logger.info(
-        "Transforming block | orderKey: ",
-        endCursor?.orderKey,
-        " | finality: ",
-        finality,
-      );
+      logger.info("Transforming block | orderKey: ", endCursor?.orderKey, " | finality: ", finality);
 
       for (const event of events) {
         if (event.keys[0] === withdrawRequestCompletedSelector) {
@@ -387,8 +360,7 @@ const abi = [
   {
     name: "OwnableTwoStepMixinImpl",
     type: "impl",
-    interface_name:
-      "openzeppelin::access::ownable::interface::OwnableTwoStepABI",
+    interface_name: "openzeppelin::access::ownable::interface::OwnableTwoStepABI",
   },
   {
     name: "openzeppelin::access::ownable::interface::OwnableTwoStepABI",

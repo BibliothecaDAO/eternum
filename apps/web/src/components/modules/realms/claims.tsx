@@ -11,9 +11,7 @@ import { formatEther } from "viem";
 
 export const ClaimRewards = () => {
   const { address } = useAccount();
-  const pastLordsClaimsQuery = useQuery(
-    getRealmsLordsClaimsQueryOptions({ address }),
-  );
+  const pastLordsClaimsQuery = useQuery(getRealmsLordsClaimsQueryOptions({ address }));
   const pastLordsClaims = pastLordsClaimsQuery.data;
   /*const [claimTransactions, setClaimTransactions] = useState<
     ClaimTransaction[]
@@ -42,9 +40,7 @@ export const ClaimRewards = () => {
     <div className="flex flex-col gap-6 p-6">
       <div className="space-y-2">
         <p className="realm-eyebrow">Realms</p>
-        <h1 className="realm-page-title text-3xl sm:text-4xl">
-          Past Realms Claims Dashboard
-        </h1>
+        <h1 className="realm-page-title text-3xl sm:text-4xl">Past Realms Claims Dashboard</h1>
       </div>
       <div className="grid gap-6 sm:grid-cols-3">
         {/* Claim Rewards Section */}
@@ -62,11 +58,7 @@ export const ClaimRewards = () => {
                 claimable
               </div>
 
-              <Button
-                onClick={handleClaimRewards}
-                className="w-full"
-                disabled={isSubmitting}
-              >
+              <Button onClick={handleClaimRewards} className="w-full" disabled={isSubmitting}>
                 Claim Lords
               </Button>
             </div>
@@ -84,8 +76,7 @@ export const ClaimRewards = () => {
               target="_blank"
               rel="noopener noreferrer"
             >
-              BIP-80 and the Lords have now been directed to game rewards for
-              Eterenum seasons
+              BIP-80 and the Lords have now been directed to game rewards for Eterenum seasons
             </a>
           </CardContent>
         </Card>
@@ -110,12 +101,8 @@ export const ClaimRewards = () => {
                 {pastLordsClaims?.map((tx) => (
                   <tr key={tx.hash}>
                     <td className="px-4 py-2">{tx.timestamp}</td>
-                    <td className="px-4 py-2">
-                      {formatNumber(Number(formatEther(BigInt(tx.amount))))}
-                    </td>
-                    <td className="px-4 py-2">
-                      {shortenAddress(tx.recipient)}
-                    </td>
+                    <td className="px-4 py-2">{formatNumber(Number(formatEther(BigInt(tx.amount))))}</td>
+                    <td className="px-4 py-2">{shortenAddress(tx.recipient)}</td>
                     <td className="px-4 py-2">
                       <a
                         href={explorer.transaction(tx.hash)}
@@ -136,5 +123,3 @@ export const ClaimRewards = () => {
     </div>
   );
 };
-
-export default ClaimRewards;

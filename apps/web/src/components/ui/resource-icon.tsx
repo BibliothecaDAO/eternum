@@ -159,22 +159,11 @@ const STYLES = {
   },
 } as const;
 
-export const ResourceIcon = ({
-  withTooltip = true,
-  tooltipText,
-  ...props
-}: Props) => {
+export const ResourceIcon = ({ withTooltip = true, tooltipText, ...props }: Props) => {
   const Icon = (
-    <div
-      className={`paper group relative flex justify-center rounded-xl ${props.className}`}
-    >
-      <div
-        className={`relative ${clsx(STYLES.size[props.size], props.className)} `}
-      >
-        {
-          Components[props.resource.replace(" ", "").replace("'", "")]
-            .component
-        }
+    <div className={`paper group relative flex justify-center rounded-xl ${props.className}`}>
+      <div className={`relative ${clsx(STYLES.size[props.size], props.className)} `}>
+        {Components[props.resource.replace(" ", "").replace("'", "")].component}
       </div>
 
       {props.label && (
@@ -185,9 +174,7 @@ export const ResourceIcon = ({
       {withTooltip && (
         <div className="absolute -top-2 left-1/2 hidden w-max -translate-x-1/2 -translate-y-full flex-col items-center rounded-lg bg-black group-hover:flex">
           <span className="whitespace-no-wrap bg-gray-1000 relative z-10 rounded p-2 text-xs leading-none shadow-lg">
-            {tooltipText ??
-              Components[props.resource.replace(" ", "").replace("'", "")]
-                .name}
+            {tooltipText ?? Components[props.resource.replace(" ", "").replace("'", "")].name}
           </span>
           <div className="absolute bottom-0 left-1/2 z-100 h-3 w-3 -translate-x-1/2 translate-y-1/2 rotate-45 bg-black"></div>
         </div>

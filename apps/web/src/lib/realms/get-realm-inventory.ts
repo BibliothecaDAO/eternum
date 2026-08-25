@@ -10,12 +10,8 @@ import { env } from "env";
 import { Contract, RpcProvider } from "starknet";
 import { z } from "zod";
 
-import { CollectionAddresses } from "@realms-world/constants";
-import {
-  getRealmOwnershipInventory,
-  normalizeRealmOwnerAddress,
-  starknetRealmMetadata,
-} from "@realms-world/db";
+import { CollectionAddresses } from "@realms-world/chain";
+import { getRealmOwnershipInventory, normalizeRealmOwnerAddress, starknetRealmMetadata } from "@realms-world/db";
 import { db } from "@realms-world/db/client";
 
 export interface RealmInventoryToken {
@@ -43,9 +39,7 @@ const GetRealmInventoryInput = z.object({
  */
 export const REALM_INVENTORY_REFETCH_INTERVAL_MS = 15_000;
 
-async function populateMissingMetadata(
-  tokens: Awaited<ReturnType<typeof getRealmOwnershipInventory>>["tokens"],
-) {
+async function populateMissingMetadata(tokens: Awaited<ReturnType<typeof getRealmOwnershipInventory>>["tokens"]) {
   const nodeUrl =
     env.VITE_PUBLIC_NODE_URL ??
     (env.VITE_PUBLIC_CHAIN === "sepolia"
@@ -58,11 +52,7 @@ async function populateMissingMetadata(
     providerOrAccount: provider,
   });
   return hydrateRealmMetadata(tokens, {
-    read: (tokenId) =>
-      readRealmMetadata(
-        (entrypoint, calldata) => contract.call(entrypoint, calldata),
-        tokenId,
-      ),
+    read: (tokenId) => readRealmMetadata((entrypoint, calldata) => contract.call(entrypoint, calldata), tokenId),
     cache: async (tokenId, metadata) => {
       await db
         .insert(starknetRealmMetadata)
@@ -86,10 +76,7 @@ export const getRealmInventory = createServerFn({ method: "GET" })
       return { status: "ready", tokens: [], checkpoint: null };
     }
 
-    const inventory = await getRealmOwnershipInventory(
-      db,
-      normalizeRealmOwnerAddress(address),
-    );
+    const inventory = await getRealmOwnershipInventory(db, normalizeRealmOwnerAddress(address));
 
     if (inventory.status !== "ready") {
       return {
@@ -112,13 +99,10 @@ export const getRealmInventory = createServerFn({ method: "GET" })
     };
   });
 
-export const getRealmInventoryQueryOptions = (
-  input: z.infer<typeof GetRealmInventoryInput>,
-) =>
+export const getRealmInventoryQueryOptions = (input: z.infer<typeof GetRealmInventoryInput>) =>
   queryOptions({
     queryKey: ["realmInventory", input.address],
-    queryFn: async (): Promise<RealmInventoryResponse> =>
-      getRealmInventory({ data: { address: input.address } }),
+    queryFn: async (): Promise<RealmInventoryResponse> => getRealmInventory({ data: { address: input.address } }),
     enabled: !!input.address,
     refetchInterval: REALM_INVENTORY_REFETCH_INTERVAL_MS,
     refetchIntervalInBackground: false,

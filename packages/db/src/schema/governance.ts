@@ -1,14 +1,5 @@
 import { relations, sql } from "drizzle-orm";
-import {
-  index,
-  integer,
-  numeric,
-  pgTable,
-  text,
-  timestamp,
-  uuid,
-  varchar,
-} from "drizzle-orm/pg-core";
+import { index, integer, numeric, pgTable, text, timestamp, uuid, varchar } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 
 import { int8range } from "../int8range";
@@ -33,23 +24,11 @@ export const governances = pgTable(
   },
   (table) => {
     return {
-      currentdelegates_idx: index("governances_currentdelegates_index").using(
-        "btree",
-        table.currentDelegates,
-      ),
-      delegatedvotes_idx: index("governances_delegatedvotes_index").using(
-        "btree",
-        table.delegatedVotes,
-      ),
-      delegatedvotesraw_idx: index("governances_delegatedvotesraw_index").using(
-        "btree",
-        table.delegatedVotesRaw,
-      ),
+      currentdelegates_idx: index("governances_currentdelegates_index").using("btree", table.currentDelegates),
+      delegatedvotes_idx: index("governances_delegatedvotes_index").using("btree", table.delegatedVotes),
+      delegatedvotesraw_idx: index("governances_delegatedvotesraw_index").using("btree", table.delegatedVotesRaw),
       id_idx: index().using("btree", table.id),
-      totaldelegates_idx: index("governances_totaldelegates_index").using(
-        "btree",
-        table.totalDelegates,
-      ),
+      totaldelegates_idx: index("governances_totaldelegates_index").using("btree", table.totalDelegates),
     };
   },
 );
@@ -70,29 +49,23 @@ export const delegates = pgTable(
       precision: 80,
       scale: 20,
     }).notNull(),
-    tokenHoldersRepresentedAmount: integer(
-      "tokenHoldersRepresentedAmount",
-    ).notNull(),
+    tokenHoldersRepresentedAmount: integer("tokenHoldersRepresentedAmount").notNull(),
     tokenHoldersRepresented: integer("tokenHoldersRepresented").notNull(),
   },
   (table) => {
     return {
-      delegatedvotes_idx: index("delegates_delegatedvotes_index").using(
-        "btree",
-        table.delegatedVotes,
-      ),
-      delegatedvotesraw_idx: index("delegates_delegatedvotesraw_index").using(
-        "btree",
-        table.delegatedVotesRaw,
-      ),
+      delegatedvotes_idx: index("delegates_delegatedvotes_index").using("btree", table.delegatedVotes),
+      delegatedvotesraw_idx: index("delegates_delegatedvotesraw_index").using("btree", table.delegatedVotesRaw),
       governance_idx: index().using("btree", table.governance),
       id_idx: index().using("btree", table.id),
-      tokenholdersrepresented_idx: index(
-        "delegates_tokenholdersrepresented_index",
-      ).using("btree", table.tokenHoldersRepresented),
-      tokenholdersrepresentedamount_idx: index(
-        "delegates_tokenholdersrepresentedamount_index",
-      ).using("btree", table.tokenHoldersRepresentedAmount),
+      tokenholdersrepresented_idx: index("delegates_tokenholdersrepresented_index").using(
+        "btree",
+        table.tokenHoldersRepresented,
+      ),
+      tokenholdersrepresentedamount_idx: index("delegates_tokenholdersrepresentedamount_index").using(
+        "btree",
+        table.tokenHoldersRepresentedAmount,
+      ),
       user_idx: index().using("btree", table.user),
     };
   },
@@ -129,27 +102,21 @@ export const delegatesRelations = relations(delegates, ({ one }) => ({
   governance: one(governances),
 }));
 
-export const delegateProfilesRelations = relations(
-  delegateProfiles,
-  ({ one }) => ({
-    delegate: one(delegates, {
-      fields: [delegateProfiles.delegateId],
-      references: [delegates.user],
-    }),
+export const delegateProfilesRelations = relations(delegateProfiles, ({ one }) => ({
+  delegate: one(delegates, {
+    fields: [delegateProfiles.delegateId],
+    references: [delegates.user],
   }),
-);
+}));
 
-export const CreateDelegateProfileSchema = createInsertSchema(
-  delegateProfiles,
-  {
-    statement: (schema) => schema, // no change, just for demonstration
-    interests: (schema) => schema.optional(),
-    twitter: (schema) => schema.optional(),
-    github: (schema) => schema.optional(),
-    telegram: (schema) => schema.optional(),
-    discord: (schema) => schema.optional(),
-  },
-).omit({
+export const CreateDelegateProfileSchema = createInsertSchema(delegateProfiles, {
+  statement: (schema) => schema, // no change, just for demonstration
+  interests: (schema) => schema.optional(),
+  twitter: (schema) => schema.optional(),
+  github: (schema) => schema.optional(),
+  telegram: (schema) => schema.optional(),
+  discord: (schema) => schema.optional(),
+}).omit({
   delegateId: true,
   createdAt: true,
   updatedAt: true,

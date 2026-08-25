@@ -1,10 +1,4 @@
-import {
-  numeric,
-  pgTable,
-  primaryKey,
-  text,
-  timestamp,
-} from "drizzle-orm/pg-core";
+import { numeric, pgTable, primaryKey, text, timestamp } from "drizzle-orm/pg-core";
 
 export const velords_burns = pgTable(
   "dune_velords_burns",

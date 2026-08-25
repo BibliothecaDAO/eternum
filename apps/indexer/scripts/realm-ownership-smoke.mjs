@@ -21,17 +21,11 @@ export function parseOwnershipAssertion(address, expectedCountValue) {
   return { owner, expectedCount };
 }
 
-export function assertIndexedOwnership(
-  indexedCount,
-  walletCount,
-  expectedCount,
-) {
+export function assertIndexedOwnership(indexedCount, walletCount, expectedCount) {
   if (indexedCount <= 0) {
     throw new Error("Realm ownership index contains no ownership records");
   }
   if (walletCount !== expectedCount) {
-    throw new Error(
-      `Expected ${expectedCount} Realms for the smoke-test wallet, indexed ${walletCount}`,
-    );
+    throw new Error(`Expected ${expectedCount} Realms for the smoke-test wallet, indexed ${walletCount}`);
   }
 }

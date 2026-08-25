@@ -18,11 +18,7 @@ import { useStarkDisplayName } from "@/hooks/use-stark-name";
 import { getProposalQueryOptions } from "@/lib/snapshot/getProposals";
 import { getUserVotesQueryOptions } from "@/lib/snapshot/getUserVotes";
 import { isMatchingProposalVote } from "@/lib/snapshot/proposal-id";
-import {
-  formatAddress,
-  shortenAddress,
-  SUPPORTED_L2_CHAIN_ID,
-} from "@/utils/utils";
+import { formatAddress, shortenAddress, SUPPORTED_L2_CHAIN_ID } from "@/utils/utils";
 import { useQuery, useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { formatDistanceToNow } from "date-fns";
@@ -30,7 +26,7 @@ import { env } from "env";
 import { CheckCircle2, MinusCircle, XCircle } from "lucide-react";
 import { num } from "starknet";
 
-import { SnapshotSpaceAddresses } from "@realms-world/constants";
+import { SnapshotSpaceAddresses } from "@realms-world/chain";
 
 // Define the expected types for the proposal data we need
 /*interface ProposalData {
@@ -63,8 +59,7 @@ function RouteComponent() {
     }),
   );
   const { data } = useCurrentDelegate();
-  const delegateAddress =
-    data && BigInt(data) !== 0n ? formatAddress(num.toHex(BigInt(data))) : "";
+  const delegateAddress = data && BigInt(data) !== 0n ? formatAddress(num.toHex(BigInt(data))) : "";
 
   const { data: userVotesQuery } = useQuery(
     getUserVotesQueryOptions({
@@ -76,9 +71,7 @@ function RouteComponent() {
   );
 
   // Find the vote that matches this proposal ID
-  const userVoteRef = userVotesQuery?.votes?.find((vote) =>
-    isMatchingProposalVote(vote?.proposal, id),
-  );
+  const userVoteRef = userVotesQuery?.votes?.find((vote) => isMatchingProposalVote(vote?.proposal, id));
 
   const proposal = proposalQuery.proposal;
   const authorAddress = (proposal?.author.id ?? "0x0") as `0x${string}`;
@@ -91,14 +84,10 @@ function RouteComponent() {
   const title = proposal.metadata?.title as string;
   let body = proposal.metadata?.body as string;
   const authorId = proposal.author.id;
-  const createdTime = proposal.created
-    ? new Date(proposal.created * 1000)
-    : null;
+  const createdTime = proposal.created ? new Date(proposal.created * 1000) : null;
 
   if (body && typeof body === "string") {
-    body = body.replace(/ipfs:\/\/\S+/g, (match) =>
-      match.replace("ipfs://", env.VITE_PUBLIC_IPFS_GATEWAY ?? ""),
-    );
+    body = body.replace(/ipfs:\/\/\S+/g, (match) => match.replace("ipfs://", env.VITE_PUBLIC_IPFS_GATEWAY ?? ""));
   }
   const isActive = proposal.max_end * 1000 > Date.now();
 
@@ -106,10 +95,7 @@ function RouteComponent() {
   const getProposalStatus = () => {
     if (isActive) return null;
 
-    if (
-      (proposal.scores_total ?? 0) >= 1500 &&
-      Number(proposal.scores_1 ?? 0) > Number(proposal.scores_2 ?? 0)
-    ) {
+    if ((proposal.scores_total ?? 0) >= 1500 && Number(proposal.scores_1 ?? 0) > Number(proposal.scores_2 ?? 0)) {
       return {
         label: "Passed",
         className: "text-success border-success",
@@ -145,14 +131,9 @@ function RouteComponent() {
               <div className="flex flex-col gap-2">
                 <p className="realm-eyebrow">Governance</p>
                 <div className="flex items-center justify-between gap-3">
-                  <h1 className="realm-page-title text-3xl sm:text-4xl">
-                    {title}
-                  </h1>
+                  <h1 className="realm-page-title text-3xl sm:text-4xl">{title}</h1>
                   {proposalStatus && (
-                    <Badge
-                      variant={"outline"}
-                      className={"text-base " + proposalStatus.className}
-                    >
+                    <Badge variant={"outline"} className={"text-base " + proposalStatus.className}>
                       <proposalStatus.icon className="mr-1.5 w-5" />
                       {proposalStatus.label}
                     </Badge>
@@ -161,40 +142,22 @@ function RouteComponent() {
                 <div className="text-muted-foreground flex items-center gap-2 text-sm">
                   {authorId && (
                     <>
-                      <span>
-                        Proposed by {name || shortenAddress(proposal.author.id)}
-                      </span>
+                      <span>Proposed by {name || shortenAddress(proposal.author.id)}</span>
                       <span>•</span>
                     </>
                   )}
-                  {createdTime && (
-                    <span>{formatDistanceToNow(createdTime)} ago</span>
-                  )}
+                  {createdTime && <span>{formatDistanceToNow(createdTime)} ago</span>}
                 </div>
               </div>
             </CardHeader>
-            <CardContent>
-              {body && (
-                <MarkdownRenderer
-                  content={body}
-                  className="text-card-foreground"
-                />
-              )}
-            </CardContent>
+            <CardContent>{body && <MarkdownRenderer content={body} className="text-card-foreground" />}</CardContent>
           </Card>
         </div>
       </SidebarInset>
-      <Sidebar
-        side="right"
-        variant="inset"
-        className="top-(--header-height) h-[calc(100svh-var(--header-height))]!"
-      >
+      <Sidebar side="right" variant="inset" className="top-(--header-height) h-[calc(100svh-var(--header-height))]!">
         <SidebarContent>
           {votingPower && (
-            <Badge
-              variant={"outline"}
-              className="mx-auto flex max-w-30 justify-center rounded text-center text-lg"
-            >
+            <Badge variant={"outline"} className="mx-auto flex max-w-30 justify-center rounded text-center text-lg">
               {Number(votingPower).toString()} Realms
             </Badge>
           )}

@@ -1,11 +1,7 @@
 "use client";
 
 import type { LucideIcon } from "lucide-react";
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "@/components/ui/collapsible";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import {
   SidebarGroup,
   SidebarGroupLabel,
@@ -41,12 +37,7 @@ export function NavMain({
       <SidebarMenu>
         {items.map((item) =>
           item.items ? (
-            <Collapsible
-              key={item.title}
-              asChild
-              defaultOpen={item.isActive}
-              className="group/collapsible"
-            >
+            <Collapsible key={item.title} asChild defaultOpen={item.isActive} className="group/collapsible">
               <SidebarMenuItem>
                 <CollapsibleTrigger asChild>
                   <SidebarMenuButton tooltip={item.title}>
@@ -60,10 +51,7 @@ export function NavMain({
                     {item.items.map((subItem) => (
                       <SidebarMenuSubItem key={subItem.title}>
                         <SidebarMenuSubButton asChild>
-                          <Link
-                            to={subItem.url}
-                            activeProps={{ className: `text-sidebar-ring` }}
-                          >
+                          <Link to={subItem.url} activeProps={{ className: `text-sidebar-ring` }}>
                             <span>{subItem.title}</span>
                           </Link>
                         </SidebarMenuSubButton>
@@ -76,10 +64,7 @@ export function NavMain({
           ) : (
             <SidebarMenuItem key={item.title}>
               <SidebarMenuButton asChild tooltip={item.title}>
-                <Link
-                  to={item.url}
-                  activeProps={{ className: `font-bold` }}
-                >
+                <Link to={item.url} activeProps={{ className: `font-bold` }}>
                   {item.icon && <item.icon />}
                   <span>{item.title}</span>
                 </Link>

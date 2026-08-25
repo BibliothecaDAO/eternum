@@ -13,10 +13,7 @@ import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { useStarknetWallet } from "@/hooks/use-starknet-wallet";
 import { getL1RealmsQueryOptions } from "@/lib/getL1Realms";
 import { getRealmInventoryQueryOptions } from "@/lib/realms/get-realm-inventory";
-import {
-  getRealmInventoryViewState,
-  parseRealmTokenId,
-} from "@/lib/realms/inventory-ui";
+import { getRealmInventoryViewState, parseRealmTokenId } from "@/lib/realms/inventory-ui";
 import { useAccount } from "@starknet-start/react";
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
@@ -24,10 +21,7 @@ import { useReactTable } from "@tanstack/react-table";
 import { ArrowLeftRight, TriangleAlert } from "lucide-react";
 import { useAccount as useL1Account } from "wagmi";
 
-import {
-  getRealmBridgeTableOptions,
-  reconcileRealmBridgeSelection,
-} from "./-realms.bridge-table";
+import { getRealmBridgeTableOptions, reconcileRealmBridgeSelection } from "./-realms.bridge-table";
 
 export const Route = createFileRoute("/realms/bridge")({
   component: RouteComponent,
@@ -41,26 +35,18 @@ function isMetadataAttribute(value: unknown): value is L1MetadataAttribute {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
-function parseRealmMetadata(
-  metadata: string | undefined,
-): Pick<BridgeRealm, "name" | "attributes"> {
+function parseRealmMetadata(metadata: string | undefined): Pick<BridgeRealm, "name" | "attributes"> {
   if (!metadata) return {};
 
   try {
     const parsed: unknown = JSON.parse(metadata);
-    if (
-      typeof parsed !== "object" ||
-      parsed === null ||
-      Array.isArray(parsed)
-    ) {
+    if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) {
       return {};
     }
     const fields = parsed as Record<string, unknown>;
     return {
       name: typeof fields.name === "string" ? fields.name : undefined,
-      attributes: Array.isArray(fields.attributes)
-        ? fields.attributes.filter(isMetadataAttribute)
-        : undefined,
+      attributes: Array.isArray(fields.attributes) ? fields.attributes.filter(isMetadataAttribute) : undefined,
     };
   } catch {
     return {};
@@ -71,9 +57,7 @@ function RouteComponent() {
   const { address: l1Address } = useL1Account();
   const { address: l2Address } = useAccount();
 
-  const l1RealmsQuery = useQuery(
-    getL1RealmsQueryOptions({ address: l1Address }),
-  );
+  const l1RealmsQuery = useQuery(getL1RealmsQueryOptions({ address: l1Address }));
   const l1Realms = l1RealmsQuery.data;
   const l2RealmsQuery = useQuery(
     getRealmInventoryQueryOptions({
@@ -88,9 +72,7 @@ function RouteComponent() {
     status: l2Inventory?.status,
   });
 
-  const [selectedAsset, setSelectedAsset] = useState<"Ethereum" | "Starknet">(
-    "Ethereum",
-  );
+  const [selectedAsset, setSelectedAsset] = useState<"Ethereum" | "Starknet">("Ethereum");
 
   const mappedRealms = useMemo(() => {
     if (selectedAsset === "Ethereum") {
@@ -104,12 +86,10 @@ function RouteComponent() {
               token_id: tokenId,
               name: realm.token?.name,
               attributes:
-                realm.token?.attributes
-                  ?.filter(isMetadataAttribute)
-                  .map((attribute) => ({
-                    ...attribute,
-                    trait_type: attribute.key ?? attribute.trait_type,
-                  })) ?? [],
+                realm.token?.attributes?.filter(isMetadataAttribute).map((attribute) => ({
+                  ...attribute,
+                  trait_type: attribute.key ?? attribute.trait_type,
+                })) ?? [],
             },
           ];
         }) ?? []
@@ -139,17 +119,14 @@ function RouteComponent() {
     }),
   );
 
-  const starknetInventoryReady =
-    !!l2Address && l2InventoryViewState === "ready";
+  const starknetInventoryReady = !!l2Address && l2InventoryViewState === "ready";
 
   useEffect(() => {
     setRowSelection({});
   }, [selectedAsset, l1Address, l2Address, starknetInventoryReady]);
 
   useEffect(() => {
-    setRowSelection((current) =>
-      reconcileRealmBridgeSelection(current, mappedRealms),
-    );
+    setRowSelection((current) => reconcileRealmBridgeSelection(current, mappedRealms));
   }, [mappedRealms]);
 
   const swapAssets = () => {
@@ -159,8 +136,7 @@ function RouteComponent() {
   const { openStarknetKitModal } = useStarknetWallet();
 
   const selectedRows = table.getFilteredSelectedRowModel().rows;
-  const canShowInventory =
-    selectedAsset !== "Starknet" || starknetInventoryReady;
+  const canShowInventory = selectedAsset !== "Starknet" || starknetInventoryReady;
   const bridgeDisabled = selectedAsset === "Starknet" && !canShowInventory;
 
   return (
@@ -190,12 +166,7 @@ function RouteComponent() {
               </>
             )}
           </div>
-          <Button
-            size="icon"
-            variant="outline"
-            onClick={swapAssets}
-            className="rounded-full"
-          >
+          <Button size="icon" variant="outline" onClick={swapAssets} className="rounded-full">
             <ArrowLeftRight className="h-4 w-4" />
           </Button>
           <div className="realm-subtle-panel flex items-center gap-2 rounded-lg px-4 py-2.5">
@@ -216,27 +187,18 @@ function RouteComponent() {
         {selectedAsset === "Ethereum" && !l1Address && (
           <Alert variant="warning" className="mb-4 rounded">
             <TriangleAlert className="h-5 w-5" />
-            <AlertTitle className="text-lg">
-              Your Ethereum wallet is not connected
-            </AlertTitle>
+            <AlertTitle className="text-lg">Your Ethereum wallet is not connected</AlertTitle>
             <AlertDescription>
-              Connect your Ethereum wallet using the sidebar to view and bridge
-              your Realms
+              Connect your Ethereum wallet using the sidebar to view and bridge your Realms
             </AlertDescription>
           </Alert>
         )}
         {selectedAsset === "Starknet" && !l2Address && (
           <Alert variant="warning" className="mb-4 rounded">
             <TriangleAlert className="h-5 w-5" />
-            <AlertTitle className="text-lg">
-              Your Starknet wallet is not connected
-            </AlertTitle>
+            <AlertTitle className="text-lg">Your Starknet wallet is not connected</AlertTitle>
             <AlertDescription>
-              <Button
-                className="h-auto p-0"
-                variant="link"
-                onClick={() => openStarknetKitModal()}
-              >
+              <Button className="h-auto p-0" variant="link" onClick={() => openStarknetKitModal()}>
                 Connect your Starknet wallet
               </Button>{" "}
               to view and bridge your Realms

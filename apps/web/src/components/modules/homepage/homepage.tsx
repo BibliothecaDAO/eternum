@@ -11,13 +11,7 @@ import { DelegateCardSkeleton } from "@/components/modules/governance/delegate-c
 import { OwnershipStatusAlert } from "@/components/modules/realms/ownership-status-alert";
 import { RealmCard } from "@/components/modules/realms/realm-card";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { useCurrentDelegate } from "@/hooks/governance/use-current-delegate";
 import { useL2RealmsClaims } from "@/hooks/use-l2-realms-claims";
 import useVeLordsClaims from "@/hooks/use-velords-claims";
@@ -25,17 +19,8 @@ import { getDelegateByIDQueryOptions } from "@/lib/getDelegates";
 import { getL1UsersRealmsQueryOptions } from "@/lib/getL1Realms";
 import { getRealmInventoryQueryOptions } from "@/lib/realms/get-realm-inventory";
 import { getRealmInventoryViewState } from "@/lib/realms/inventory-ui";
-import {
-  formatAddress,
-  formatNumber,
-  SUPPORTED_L1_CHAIN_ID,
-  SUPPORTED_L2_CHAIN_ID,
-} from "@/utils/utils";
-import {
-  useBalance,
-  useReadContract,
-  useSendTransaction,
-} from "@starknet-start/react";
+import { formatAddress, formatNumber, SUPPORTED_L1_CHAIN_ID, SUPPORTED_L2_CHAIN_ID } from "@/utils/utils";
+import { useBalance, useReadContract, useSendTransaction } from "@starknet-start/react";
 import { useQuery, useSuspenseQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { Gavel, Plus } from "lucide-react";
@@ -43,7 +28,7 @@ import { num } from "starknet";
 import { formatEther } from "viem";
 import { useAccount as useL1Account, useBalance as useL1Balance } from "wagmi";
 
-import { LORDS, StakingAddresses } from "@realms-world/constants";
+import { LORDS, StakingAddresses } from "@realms-world/chain";
 
 import { ProposalList } from "../governance/proposal-list";
 
@@ -81,10 +66,7 @@ export function Homepage({ address }: { address: `0x${string}` }) {
   const l1RealmCount = l1UsersRealms?.collections[0]?.ownership.tokenCount ?? 0;
 
   const { data } = useCurrentDelegate();
-  const delegateAddress =
-    data && BigInt(data) !== 0n
-      ? formatAddress(num.toHex(BigInt(data)))
-      : undefined;
+  const delegateAddress = data && BigInt(data) !== 0n ? formatAddress(num.toHex(BigInt(data))) : undefined;
   const currentDelegateQuery = useQuery(
     getDelegateByIDQueryOptions({
       address: delegateAddress,
@@ -104,8 +86,7 @@ export function Homepage({ address }: { address: `0x${string}` }) {
 
   const { lordsClaimable, claimCall } = useVeLordsClaims();
 
-  const { balance: l2RealmsBalance, calls: l2RealmsClaimCall } =
-    useL2RealmsClaims();
+  const { balance: l2RealmsBalance, calls: l2RealmsClaimCall } = useL2RealmsClaims();
 
   const { data: ownerLordsLock } = useReadContract({
     address: StakingAddresses.velords[SUPPORTED_L2_CHAIN_ID] as Address,
@@ -116,17 +97,13 @@ export function Homepage({ address }: { address: `0x${string}` }) {
   });
 
   // Prepare the functions to send claim rewards transactions.
-  const {
-    sendAsync: claimVeLordsRewards,
-    isPending: claimVeLordsIsSubmitting,
-  } = useSendTransaction({
+  const { sendAsync: claimVeLordsRewards, isPending: claimVeLordsIsSubmitting } = useSendTransaction({
     calls: claimCall ?? [],
   });
 
-  const { sendAsync: claimRealmsRewards, isPending: claimRealmsIsSubmitting } =
-    useSendTransaction({
-      calls: l2RealmsClaimCall,
-    });
+  const { sendAsync: claimRealmsRewards, isPending: claimRealmsIsSubmitting } = useSendTransaction({
+    calls: l2RealmsClaimCall,
+  });
 
   return (
     <>
@@ -171,12 +148,7 @@ export function Homepage({ address }: { address: `0x${string}` }) {
                   Bridge
                 </Button>
               </Link>
-              <a
-                href="https://market.realms.world"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex-1"
-              >
+              <a href="https://market.realms.world" target="_blank" rel="noopener noreferrer" className="flex-1">
                 <Button variant="outline" size="sm" className="w-full">
                   <Gavel className="mr-2 h-4 w-4" />
                   Market
@@ -196,9 +168,7 @@ export function Homepage({ address }: { address: `0x${string}` }) {
             <CardContent className="space-y-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <StatValue>
-                    {formatNumber(Number(l1Balance?.formatted ?? 0))}
-                  </StatValue>
+                  <StatValue>{formatNumber(Number(l1Balance?.formatted ?? 0))}</StatValue>
                   <div className="text-muted-foreground flex items-center gap-2 text-sm">
                     <EthereumIcon className="h-4 w-4" />
                     Ethereum
@@ -207,9 +177,7 @@ export function Homepage({ address }: { address: `0x${string}` }) {
               </div>
               <div className="flex items-center justify-between">
                 <div>
-                  <StatValue>
-                    {formatNumber(Number(starknetBalance?.formatted))}
-                  </StatValue>
+                  <StatValue>{formatNumber(Number(starknetBalance?.formatted))}</StatValue>
                   <div className="text-muted-foreground flex items-center gap-2 text-sm">
                     <StarknetIcon className="h-4 w-4" />
                     Starknet
@@ -218,14 +186,8 @@ export function Homepage({ address }: { address: `0x${string}` }) {
               </div>
               <div className="flex items-center justify-between">
                 <div>
-                  <StatValue>
-                    {formatNumber(
-                      Number(formatEther(BigInt(ownerLordsLock?.amount ?? 0))),
-                    )}
-                  </StatValue>
-                  <div className="text-muted-foreground text-sm">
-                    Staked (veLords)
-                  </div>
+                  <StatValue>{formatNumber(Number(formatEther(BigInt(ownerLordsLock?.amount ?? 0))))}</StatValue>
+                  <div className="text-muted-foreground text-sm">Staked (veLords)</div>
                 </div>
               </div>
             </CardContent>
@@ -248,15 +210,11 @@ export function Homepage({ address }: { address: `0x${string}` }) {
                         <LordsIcon className="h-6 w-6" />
                         <div>
                           <div className="font-semibold">Realms Emissions</div>
-                          <div className="text-muted-foreground text-sm">
-                            Claim your realm rewards
-                          </div>
+                          <div className="text-muted-foreground text-sm">Claim your realm rewards</div>
                         </div>
                       </div>
                       <div className="realm-stat text-2xl font-bold">
-                        {l2RealmsBalance
-                          ? formatNumber(Number(formatEther(l2RealmsBalance)))
-                          : 0}
+                        {l2RealmsBalance ? formatNumber(Number(formatEther(l2RealmsBalance))) : 0}
                       </div>
                     </div>
                   </div>
@@ -269,15 +227,11 @@ export function Homepage({ address }: { address: `0x${string}` }) {
                         <LordsIcon className="h-6 w-6" />
                         <div>
                           <div className="font-semibold">veLords Rewards</div>
-                          <div className="text-muted-foreground text-sm">
-                            Staking rewards available
-                          </div>
+                          <div className="text-muted-foreground text-sm">Staking rewards available</div>
                         </div>
                       </div>
                       <div className="realm-stat text-2xl font-bold">
-                        {lordsClaimable
-                          ? formatNumber(Number(formatEther(lordsClaimable)))
-                          : 0}
+                        {lordsClaimable ? formatNumber(Number(formatEther(lordsClaimable))) : 0}
                       </div>
                     </div>
                   </div>
@@ -288,11 +242,7 @@ export function Homepage({ address }: { address: `0x${string}` }) {
               <Button
                 onClick={() => claimRealmsRewards()}
                 className="flex-1"
-                disabled={
-                  claimRealmsIsSubmitting ||
-                  !l2RealmsBalance ||
-                  l2RealmsBalance === 0n
-                }
+                disabled={claimRealmsIsSubmitting || !l2RealmsBalance || l2RealmsBalance === 0n}
                 variant="outline"
               >
                 {claimRealmsIsSubmitting ? "Claiming..." : "Claim Realms"}
@@ -300,11 +250,7 @@ export function Homepage({ address }: { address: `0x${string}` }) {
               <Button
                 onClick={() => claimVeLordsRewards()}
                 className="flex-1"
-                disabled={
-                  claimVeLordsIsSubmitting ||
-                  !lordsClaimable ||
-                  lordsClaimable === 0n
-                }
+                disabled={claimVeLordsIsSubmitting || !lordsClaimable || lordsClaimable === 0n}
                 variant="outline"
               >
                 {claimVeLordsIsSubmitting ? "Claiming..." : "Claim veLords"}
@@ -316,17 +262,14 @@ export function Homepage({ address }: { address: `0x${string}` }) {
           <div className="space-y-4">
             {currentDelegateQuery.isLoading ? (
               <DelegateCardSkeleton />
-            ) : !currentDelegate ||
-              (currentDelegate.user && BigInt(currentDelegate.user) === 0n) ? (
+            ) : !currentDelegate || (currentDelegate.user && BigInt(currentDelegate.user) === 0n) ? (
               <Card>
                 <CardHeader className="pb-4">
                   <CardTitle>Governance</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="text-center">
-                    <h3 className="realm-card-title mb-2">
-                      No Delegate Selected
-                    </h3>
+                    <h3 className="realm-card-title mb-2">No Delegate Selected</h3>
                     <p className="text-muted-foreground mb-4 text-sm">
                       Delegate your Realms to participate in governance
                     </p>
@@ -342,17 +285,11 @@ export function Homepage({ address }: { address: `0x${string}` }) {
                   user: currentDelegate.user,
                   delegateProfile: currentDelegate.delegateProfile
                     ? {
-                        twitter:
-                          currentDelegate.delegateProfile.twitter ?? undefined,
-                        github:
-                          currentDelegate.delegateProfile.github ?? undefined,
-                        telegram:
-                          currentDelegate.delegateProfile.telegram ?? undefined,
-                        discord:
-                          currentDelegate.delegateProfile.discord ?? undefined,
-                        interests:
-                          currentDelegate.delegateProfile.interests ??
-                          undefined,
+                        twitter: currentDelegate.delegateProfile.twitter ?? undefined,
+                        github: currentDelegate.delegateProfile.github ?? undefined,
+                        telegram: currentDelegate.delegateProfile.telegram ?? undefined,
+                        discord: currentDelegate.delegateProfile.discord ?? undefined,
+                        interests: currentDelegate.delegateProfile.interests ?? undefined,
                         statement: currentDelegate.delegateProfile.statement,
                       }
                     : undefined,
@@ -417,28 +354,16 @@ export function Homepage({ address }: { address: `0x${string}` }) {
               </CardHeader>
               <CardContent>
                 <div className="grid gap-4 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6">
-                  {accountTokens
-                    .slice(0, HOMEPAGE_REALMS_PREVIEW_COUNT)
-                    .map((realm: RealmInventoryToken) => (
-                      <RealmCard
-                        key={realm.token_id}
-                        token={realm}
-                        isGrid={true}
-                      />
-                    ))}
+                  {accountTokens.slice(0, HOMEPAGE_REALMS_PREVIEW_COUNT).map((realm: RealmInventoryToken) => (
+                    <RealmCard key={realm.token_id} token={realm} isGrid={true} />
+                  ))}
                   {accountTokens.length > HOMEPAGE_REALMS_PREVIEW_COUNT && (
                     <Card className="flex items-center justify-center">
-                      <Link
-                        to={`/realms`}
-                        className="flex h-full w-full items-center justify-center p-4"
-                      >
+                      <Link to={`/realms`} className="flex h-full w-full items-center justify-center p-4">
                         <div className="text-center">
                           <Plus className="text-muted-foreground mx-auto h-8 w-8" />
                           <div className="text-muted-foreground mt-2 text-sm">
-                            +
-                            {accountTokens.length -
-                              HOMEPAGE_REALMS_PREVIEW_COUNT}{" "}
-                            more
+                            +{accountTokens.length - HOMEPAGE_REALMS_PREVIEW_COUNT} more
                           </div>
                         </div>
                       </Link>
@@ -453,12 +378,8 @@ export function Homepage({ address }: { address: `0x${string}` }) {
                 <CardTitle>Your Realms</CardTitle>
               </CardHeader>
               <CardContent className="pb-6 text-center">
-                <div className="text-muted-foreground text-lg">
-                  No Realms found in your wallet
-                </div>
-                <p className="text-muted-foreground mt-2 text-sm">
-                  Visit the marketplace to acquire your first Realm
-                </p>
+                <div className="text-muted-foreground text-lg">No Realms found in your wallet</div>
+                <p className="text-muted-foreground mt-2 text-sm">Visit the marketplace to acquire your first Realm</p>
                 <a
                   href="https://market.realms.world"
                   target="_blank"

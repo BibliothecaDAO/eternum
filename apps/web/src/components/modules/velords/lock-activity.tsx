@@ -1,12 +1,5 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
 interface WeeklyLockActivityRow {
   week: string;
@@ -14,13 +7,7 @@ interface WeeklyLockActivityRow {
   uniqueWallets: number;
 }
 
-export function VelordsLockActivity({
-  data,
-  isLoading,
-}: {
-  data: WeeklyLockActivityRow[];
-  isLoading?: boolean;
-}) {
+export function VelordsLockActivity({ data, isLoading }: { data: WeeklyLockActivityRow[]; isLoading?: boolean }) {
   return (
     <Card>
       <CardHeader>
@@ -30,9 +17,7 @@ export function VelordsLockActivity({
         {isLoading ? (
           <div className="text-muted-foreground text-sm">Loading lock activity...</div>
         ) : data.length === 0 ? (
-          <div className="text-muted-foreground text-sm">
-            No lock activity is available for this period.
-          </div>
+          <div className="text-muted-foreground text-sm">No lock activity is available for this period.</div>
         ) : (
           <Table>
             <TableHeader>
@@ -57,4 +42,3 @@ export function VelordsLockActivity({
     </Card>
   );
 }
-

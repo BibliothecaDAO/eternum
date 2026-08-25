@@ -1,9 +1,6 @@
 import type { RealmOwnershipInventoryStatus } from "@realms-world/db";
 
-export type RealmInventoryViewState =
-  | RealmOwnershipInventoryStatus
-  | "loading"
-  | "error";
+export type RealmInventoryViewState = RealmOwnershipInventoryStatus | "loading" | "error";
 
 export function getRealmInventoryViewState(input: {
   isPending: boolean;
@@ -17,11 +14,7 @@ export function getRealmInventoryViewState(input: {
 
 export function parseRealmTokenId(value: unknown) {
   const tokenId =
-    typeof value === "number"
-      ? value
-      : typeof value === "string" && /^\d+$/.test(value)
-        ? Number(value)
-        : Number.NaN;
+    typeof value === "number" ? value : typeof value === "string" && /^\d+$/.test(value) ? Number(value) : Number.NaN;
 
   return Number.isSafeInteger(tokenId) && tokenId >= 0 ? tokenId : undefined;
 }
@@ -35,18 +28,11 @@ export function getRealmRowId(realm: { token_id: number }) {
   return tokenId.toString();
 }
 
-export function retainExistingRealmSelections(
-  selection: Record<string, boolean>,
-  realms: { token_id: number }[],
-) {
+export function retainExistingRealmSelections(selection: Record<string, boolean>, realms: { token_id: number }[]) {
   const existingRealmIds = new Set(realms.map(getRealmRowId));
   const retained = Object.fromEntries(
-    Object.entries(selection).filter(
-      ([realmId, isSelected]) => isSelected && existingRealmIds.has(realmId),
-    ),
+    Object.entries(selection).filter(([realmId, isSelected]) => isSelected && existingRealmIds.has(realmId)),
   );
 
-  return Object.keys(retained).length === Object.keys(selection).length
-    ? selection
-    : retained;
+  return Object.keys(retained).length === Object.keys(selection).length ? selection : retained;
 }

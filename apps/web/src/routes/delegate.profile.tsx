@@ -13,10 +13,7 @@ import {
   SidebarProvider,
 } from "@/components/ui/sidebar";
 import { useStarkDisplayName } from "@/hooks/use-stark-name";
-import {
-  createDelegateProfile,
-  getDelegateByIDQueryOptions,
-} from "@/lib/getDelegates";
+import { createDelegateProfile, getDelegateByIDQueryOptions } from "@/lib/getDelegates";
 import { auth } from "@/utils/auth";
 import { authClient } from "@/utils/auth-client";
 import { formatNumber, shortenAddress } from "@/utils/utils";
@@ -47,9 +44,7 @@ export const Route = createFileRoute("/delegate/profile")({
 
 function RouteComponent() {
   const { address } = useAccount();
-  const { data: delegate, isLoading } = useQuery(
-    getDelegateByIDQueryOptions({ address: address }),
-  );
+  const { data: delegate, isLoading } = useQuery(getDelegateByIDQueryOptions({ address: address }));
   const name = useStarkDisplayName(address as `0x${string}`);
 
   const { data: session } = authClient.useSession();
@@ -70,9 +65,7 @@ function RouteComponent() {
       <SidebarInset>
         <div className="container mx-auto space-y-4 px-4 py-6 sm:px-6 sm:py-8">
           <p className="realm-eyebrow">Governance</p>
-          <h1 className="realm-page-title text-3xl sm:text-4xl">
-            Your Profile {shortenAddress(session?.user.id)}
-          </h1>
+          <h1 className="realm-page-title text-3xl sm:text-4xl">Your Profile {shortenAddress(session?.user.id)}</h1>
           {!isLoading && (
             <Card>
               <CardContent className="p-6">
@@ -82,8 +75,7 @@ function RouteComponent() {
                       ? {
                           delegateProfile: {
                             statement: delegate.delegateProfile.statement,
-                            interests:
-                              delegate.delegateProfile.interests ?? undefined,
+                            interests: delegate.delegateProfile.interests ?? undefined,
                             twitter: delegate.delegateProfile.twitter ?? "",
                             github: delegate.delegateProfile.github ?? "",
                             telegram: delegate.delegateProfile.telegram ?? "",
@@ -101,11 +93,7 @@ function RouteComponent() {
           )}
         </div>
       </SidebarInset>
-      <Sidebar
-        side="right"
-        variant="inset"
-        className="top-(--header-height) h-[calc(100svh-var(--header-height))]!"
-      >
+      <Sidebar side="right" variant="inset" className="top-(--header-height) h-[calc(100svh-var(--header-height))]!">
         <SidebarContent>
           <SidebarHeader>
             <Login />
@@ -113,11 +101,7 @@ function RouteComponent() {
           <SidebarGroup>
             <SidebarGroupLabel>Profile Information</SidebarGroupLabel>
             <div className="p-4 text-sm">
-              {name ? (
-                <p>{name}</p>
-              ) : (
-                <p>Connect your wallet to view your profile information</p>
-              )}
+              {name ? <p>{name}</p> : <p>Connect your wallet to view your profile information</p>}
             </div>
           </SidebarGroup>
 
@@ -129,12 +113,9 @@ function RouteComponent() {
                   <Vote className="text-primary h-5 w-5" />
                   <div className="flex-1">
                     <div className="flex items-center justify-between">
-                      <span className="text-sm font-medium">
-                        Delegated Votes
-                      </span>
+                      <span className="text-sm font-medium">Delegated Votes</span>
                       <Badge variant="outline" className="text-primary text-xl">
-                        {formatNumber(Number(delegate.delegatedVotes)) || "0"}{" "}
-                        Realms
+                        {formatNumber(Number(delegate.delegatedVotes)) || "0"} Realms
                       </Badge>
                     </div>
                   </div>
@@ -144,9 +125,7 @@ function RouteComponent() {
                   <Users className="text-primary h-5 w-5" />
                   <div className="flex-1">
                     <div className="flex items-center justify-between">
-                      <span className="text-sm font-medium">
-                        Token Holders Represented
-                      </span>
+                      <span className="text-sm font-medium">Token Holders Represented</span>
                       <Badge variant="outline" className="text-primary text-xl">
                         {delegate.tokenHoldersRepresentedAmount || "0"}
                       </Badge>

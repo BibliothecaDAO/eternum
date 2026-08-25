@@ -13,17 +13,11 @@ import {
   realmsBridgeRequestsRelations,
   realmsLordsClaims,
 } from "./schema/bridge";
-import {
-  starknetRealmMetadata,
-  starknetRealmOwnership,
-  starknetRealmOwnershipStatus,
-} from "./schema/realm-ownership";
+import { starknetRealmMetadata, starknetRealmOwnership, starknetRealmOwnershipStatus } from "./schema/realm-ownership";
 
 neonConfig.webSocketConstructor = ws;
 
-export const neonSql = neon(
-  config.dbCredentials.url,
-) satisfies NeonQueryFunction<boolean, boolean>;
+export const neonSql = neon(config.dbCredentials.url) satisfies NeonQueryFunction<boolean, boolean>;
 
 // Optimize pool configuration for Vercel
 const pool = new Pool({

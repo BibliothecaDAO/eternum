@@ -46,12 +46,7 @@ function getMediaSrc(
 
 function MediaPlaceholder({ className }: { className?: string }) {
   return (
-    <div
-      className={cn(
-        "bg-secondary flex shrink-0 items-center justify-center",
-        className,
-      )}
-    >
+    <div className={cn("bg-secondary flex shrink-0 items-center justify-center", className)}>
       <AnimatedMap />
     </div>
   );
@@ -86,20 +81,16 @@ function ResolvedMedia({
   width: number;
   height: number;
 }) {
-  const [status, setStatus] = useState<"loading" | "error" | "loaded">(
-    "loading",
-  );
+  const [status, setStatus] = useState<"loading" | "error" | "loaded">("loading");
   const [sourceIndex, setSourceIndex] = useState(0);
   const [attempt, setAttempt] = useState(0);
   const retryTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const mediaSources = [mediaSrc, fallbackSrc].filter(
-    (candidate, index, candidates): candidate is string =>
-      !!candidate && candidates.indexOf(candidate) === index,
+    (candidate, index, candidates): candidate is string => !!candidate && candidates.indexOf(candidate) === index,
   );
   const activeBaseSrc = mediaSources[sourceIndex] ?? mediaSrc;
   const activeMediaSrc = withMediaRetryAttempt(activeBaseSrc, attempt);
-  const mediaFormat =
-    activeMediaSrc?.split(".").pop() === "mp4" ? "video" : "image";
+  const mediaFormat = activeMediaSrc?.split(".").pop() === "mp4" ? "video" : "image";
 
   useEffect(
     () => () => {
@@ -124,9 +115,7 @@ function ResolvedMedia({
   return (
     <>
       <div className="relative shrink-0">
-        {status === "loading" && (
-          <Skeleton className="absolute inset-0 shrink-0" />
-        )}
+        {status === "loading" && <Skeleton className="absolute inset-0 shrink-0" />}
         <img
           /* unoptimized
                     priority={priority}*/

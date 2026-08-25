@@ -1,0 +1,91 @@
+import { Outlet, useLocation } from "@tanstack/react-router";
+import { Suspense, lazy, useEffect, useRef, useState } from "react";
+import { TopBar } from "@/site/components/layout/TopBar";
+// import { WaveformBackground } from "@/site/components/WaveformBackground";
+import { motion } from "framer-motion";
+import { cn } from "@/site/lib/utils";
+// import AsciiArt from "@/site/components/ascii";
+
+const FooterSection = lazy(() =>
+  import("@/site/components/sections/FooterSection").then((module) => ({
+    default: module.FooterSection,
+  })),
+);
+const RealmSceneBackground = lazy(() =>
+  import("@/site/components/RealmSceneBackground").then((module) => ({
+    default: module.RealmSceneBackground,
+  })),
+);
+
+function DeferredFooter() {
+  const [isVisible, setIsVisible] = useState(false);
+  const footerRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    if (isVisible) return;
+
+    const node = footerRef.current;
+    if (!node) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((entry) => entry.isIntersecting)) {
+          setIsVisible(true);
+          observer.disconnect();
+        }
+      },
+      { rootMargin: "450px 0px" },
+    );
+
+    observer.observe(node);
+
+    return () => observer.disconnect();
+  }, [isVisible]);
+
+  return (
+    <div ref={footerRef}>
+      {isVisible ? (
+        <Suspense fallback={<div className="min-h-[440px]" />}>
+          <FooterSection />
+        </Suspense>
+      ) : (
+        <div className="min-h-[440px]" />
+      )}
+    </div>
+  );
+}
+
+export function SiteShell() {
+  const location = useLocation();
+  useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+  }, [location.pathname]);
+
+  return (
+    <div className="site-shell min-h-screen">
+      {/* <AsciiArt /> */}
+      {/* Fixed position background */}
+      <div className="fixed inset-0">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_10%,rgba(246,194,122,0.17),transparent_42%),radial-gradient(circle_at_80%_8%,rgba(106,127,227,0.18),transparent_35%),linear-gradient(180deg,rgba(13,15,22,0.97),rgba(11,11,15,0.94))]" />
+        <Suspense fallback={null}>
+          <RealmSceneBackground />
+        </Suspense>
+        <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(8,8,11,0.06),rgba(8,8,11,0.35))]" />
+      </div>
+
+      {/* Scrollable content */}
+      <motion.div
+        className="relative"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 0.2, duration: 0.5 }}
+      >
+        <TopBar />
+        <div className={cn("min-h-screen pt-12 sm:pt-16 md:pt-24 mx-1 sm:mx-2 md:mx-4")}>
+          <Outlet />
+        </div>
+      </motion.div>
+      <DeferredFooter />
+    </div>
+  );
+}

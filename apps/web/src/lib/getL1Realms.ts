@@ -2,16 +2,9 @@ import { queryOptions } from "@tanstack/react-query";
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
-import {
-  ChainId,
-  CollectionAddresses,
-  Collections,
-} from "@realms-world/constants";
+import { ChainId, CollectionAddresses, Collections } from "@realms-world/chain";
 
-const SUPPORTED_L1_CHAIN_ID =
-  process.env.VITE_PUBLIC_CHAIN === "sepolia"
-    ? ChainId.SEPOLIA
-    : ChainId.MAINNET;
+const SUPPORTED_L1_CHAIN_ID = process.env.VITE_PUBLIC_CHAIN === "sepolia" ? ChainId.SEPOLIA : ChainId.MAINNET;
 
 const ALCHEMY_API_URL = `https://eth-${
   process.env.VITE_PUBLIC_CHAIN === "sepolia" ? "sepolia" : "mainnet"
@@ -85,8 +78,7 @@ export const getL1Realms = createServerFn({ method: "GET" })
       return { tokens: [], continuation: null } as TokenResponse;
     }
 
-    const contractAddress =
-      CollectionAddresses[Collections.REALMS][SUPPORTED_L1_CHAIN_ID];
+    const contractAddress = CollectionAddresses[Collections.REALMS][SUPPORTED_L1_CHAIN_ID];
 
     const response = await fetch(
       `${ALCHEMY_API_URL}/getNFTsForOwner?owner=${ctx.data.address.toLowerCase()}&contractAddresses[]=${contractAddress}&withMetadata=true&pageSize=100`,
@@ -129,13 +121,10 @@ export const getL1Realms = createServerFn({ method: "GET" })
     } as TokenResponse;
   });
 
-export const getL1RealmsQueryOptions = (
-  input?: z.infer<typeof GetL1RealmsInput>,
-) => {
+export const getL1RealmsQueryOptions = (input?: z.infer<typeof GetL1RealmsInput>) => {
   return queryOptions({
     queryKey: ["getL1Realms", input?.address],
-    queryFn: () =>
-      input?.address != undefined ? getL1Realms({ data: input }) : null,
+    queryFn: () => (input?.address != undefined ? getL1Realms({ data: input }) : null),
     staleTime: L1_REALMS_STALE_TIME_MS,
     refetchInterval: false,
     enabled: !!input?.address,
@@ -161,8 +150,7 @@ export const getL1UsersRealms = createServerFn({ method: "GET" })
       return { collections: [] };
     }
 
-    const contractAddress =
-      CollectionAddresses[Collections.REALMS][SUPPORTED_L1_CHAIN_ID];
+    const contractAddress = CollectionAddresses[Collections.REALMS][SUPPORTED_L1_CHAIN_ID];
 
     const response = await fetch(
       `${ALCHEMY_API_URL}/getNFTsForOwner?owner=${ctx.data.address.toLowerCase()}&contractAddresses[]=${contractAddress}&withMetadata=false&pageSize=1`,
@@ -200,12 +188,9 @@ export const getL1UsersRealms = createServerFn({ method: "GET" })
     return { collections } as CollectionResponse;
   });
 
-export const getL1UsersRealmsQueryOptions = (
-  input?: z.infer<typeof GetL1RealmsInput>,
-) =>
+export const getL1UsersRealmsQueryOptions = (input?: z.infer<typeof GetL1RealmsInput>) =>
   queryOptions({
     queryKey: ["getL1UsersRealms", input?.address],
-    queryFn: () =>
-      input?.address != undefined ? getL1UsersRealms({ data: input }) : null,
+    queryFn: () => (input?.address != undefined ? getL1UsersRealms({ data: input }) : null),
     enabled: !!input?.address,
   });

@@ -21,19 +21,14 @@ describe("Realm inventory selection", () => {
   });
 
   it("drops selections for Realms that leave the wallet", () => {
-    expect(
-      retainExistingRealmSelections({ "1101": true, "3324": true }, [
-        { token_id: 1101 },
-      ]),
-    ).toEqual({ "1101": true });
+    expect(retainExistingRealmSelections({ "1101": true, "3324": true }, [{ token_id: 1101 }])).toEqual({
+      "1101": true,
+    });
   });
 
-  it.each([undefined, "", "not-a-token", "12invalid", -1, 1.5, NaN])(
-    "rejects malformed token ID %o",
-    (value) => {
-      expect(parseRealmTokenId(value)).toBeUndefined();
-    },
-  );
+  it.each([undefined, "", "not-a-token", "12invalid", -1, 1.5, NaN])("rejects malformed token ID %o", (value) => {
+    expect(parseRealmTokenId(value)).toBeUndefined();
+  });
 
   it.each([3324, "3324", "0003324"])("parses token ID %o", (value) => {
     expect(parseRealmTokenId(value)).toBe(3324);
@@ -44,10 +39,7 @@ describe("Realm inventory route state", () => {
   it.each([
     [{ isPending: true, isError: false, status: undefined }, "loading"],
     [{ isPending: false, isError: true, status: undefined }, "error"],
-    [
-      { isPending: false, isError: false, status: "unavailable" },
-      "unavailable",
-    ],
+    [{ isPending: false, isError: false, status: "unavailable" }, "unavailable"],
     [{ isPending: false, isError: false, status: "syncing" }, "syncing"],
     [{ isPending: false, isError: false, status: "stale" }, "stale"],
     [{ isPending: false, isError: false, status: "ready" }, "ready"],

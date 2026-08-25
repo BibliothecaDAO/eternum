@@ -1,20 +1,10 @@
 import type { BridgeRealm } from "@/types/ark";
-import type {
-  OnChangeFn,
-  RowSelectionState,
-  TableOptions,
-} from "@tanstack/react-table";
+import type { OnChangeFn, RowSelectionState, TableOptions } from "@tanstack/react-table";
 import { columns } from "@/components/modules/realms/bridge-table";
-import {
-  getRealmRowId,
-  retainExistingRealmSelections,
-} from "@/lib/realms/inventory-ui";
+import { getRealmRowId, retainExistingRealmSelections } from "@/lib/realms/inventory-ui";
 import { getCoreRowModel, getPaginationRowModel } from "@tanstack/react-table";
 
-export function reconcileRealmBridgeSelection(
-  selection: RowSelectionState,
-  realms: BridgeRealm[],
-) {
+export function reconcileRealmBridgeSelection(selection: RowSelectionState, realms: BridgeRealm[]) {
   return retainExistingRealmSelections(selection, realms);
 }
 

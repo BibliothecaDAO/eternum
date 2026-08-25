@@ -3,13 +3,7 @@ import EthereumIcon from "@/components/icons/ethereum.svg?react";
 import LordsIcon from "@/components/icons/lords.svg?react";
 import StarknetIcon from "@/components/icons/starknet.svg?react";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Gavel, Plus } from "lucide-react";
 
 import { DelegateCardSkeleton } from "../governance/delegate-card-skeleton";
@@ -86,9 +80,7 @@ export function HomepageSkeleton() {
             <div className="flex items-center justify-between">
               <div>
                 <div className="bg-muted h-9 w-20 animate-pulse rounded" />
-                <div className="text-muted-foreground text-sm">
-                  Staked (veLords)
-                </div>
+                <div className="text-muted-foreground text-sm">Staked (veLords)</div>
               </div>
             </div>
           </CardContent>
@@ -110,9 +102,7 @@ export function HomepageSkeleton() {
                     <LordsIcon className="h-6 w-6" />
                     <div>
                       <div className="font-semibold">Realms Emissions</div>
-                      <div className="text-muted-foreground text-sm">
-                        Claim your realm rewards
-                      </div>
+                      <div className="text-muted-foreground text-sm">Claim your realm rewards</div>
                     </div>
                   </div>
                   <div className="bg-muted h-9 w-20 animate-pulse rounded" />
@@ -125,9 +115,7 @@ export function HomepageSkeleton() {
                     <LordsIcon className="h-6 w-6" />
                     <div>
                       <div className="font-semibold">veLords Rewards</div>
-                      <div className="text-muted-foreground text-sm">
-                        Staking rewards available
-                      </div>
+                      <div className="text-muted-foreground text-sm">Staking rewards available</div>
                     </div>
                   </div>
                   <div className="bg-muted h-9 w-20 animate-pulse rounded" />
@@ -179,18 +167,13 @@ export function HomepageSkeleton() {
         <CardContent>
           <div className="grid gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
             {[1, 2, 3, 4, 5].map((i) => (
-              <div
-                key={i}
-                className="bg-muted aspect-square animate-pulse rounded-lg border"
-              />
+              <div key={i} className="bg-muted aspect-square animate-pulse rounded-lg border" />
             ))}
             <Card className="flex items-center justify-center">
               <div className="flex h-full w-full items-center justify-center p-6">
                 <div className="text-center">
                   <Plus className="text-muted-foreground mx-auto h-8 w-8" />
-                  <div className="text-muted-foreground mt-2 text-sm">
-                    +5 more
-                  </div>
+                  <div className="text-muted-foreground mt-2 text-sm">+5 more</div>
                 </div>
               </div>
             </Card>

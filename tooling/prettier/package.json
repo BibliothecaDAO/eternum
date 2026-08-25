@@ -13,11 +13,11 @@
   },
   "dependencies": {
     "@ianvs/prettier-plugin-sort-imports": "^4.7.1",
-    "prettier": "catalog:",
+    "prettier": "catalog:web",
     "prettier-plugin-tailwindcss": "^0.7.2"
   },
   "devDependencies": {
-    "typescript": "catalog:"
+    "typescript": "catalog:web"
   },
   "prettier": "@realms-world/prettier-config"
 }

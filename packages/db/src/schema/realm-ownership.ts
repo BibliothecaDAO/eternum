@@ -1,12 +1,4 @@
-import {
-  boolean,
-  index,
-  integer,
-  numeric,
-  pgTable,
-  text,
-  timestamp,
-} from "drizzle-orm/pg-core";
+import { boolean, index, integer, numeric, pgTable, text, timestamp } from "drizzle-orm/pg-core";
 
 export const REALM_OWNERSHIP_INDEXER_ID = "starknet-realms-ownership";
 
@@ -28,21 +20,18 @@ export const starknetRealmMetadata = pgTable("starknet_realm_metadata", {
   metadata: text("metadata").notNull(),
 });
 
-export const starknetRealmOwnershipStatus = pgTable(
-  "starknet_realm_ownership_status",
-  {
-    _id: text("_id").notNull().primaryKey(),
-    latest_block_number: numeric("latest_block_number", {
-      scale: 0,
-    }).notNull(),
-    latest_block_timestamp: timestamp("latest_block_timestamp", {
-      mode: "date",
-      withTimezone: true,
-    }).notNull(),
-    last_processed_at: timestamp("last_processed_at", {
-      mode: "date",
-      withTimezone: true,
-    }).notNull(),
-    has_reached_head: boolean("has_reached_head").notNull().default(false),
-  },
-);
+export const starknetRealmOwnershipStatus = pgTable("starknet_realm_ownership_status", {
+  _id: text("_id").notNull().primaryKey(),
+  latest_block_number: numeric("latest_block_number", {
+    scale: 0,
+  }).notNull(),
+  latest_block_timestamp: timestamp("latest_block_timestamp", {
+    mode: "date",
+    withTimezone: true,
+  }).notNull(),
+  last_processed_at: timestamp("last_processed_at", {
+    mode: "date",
+    withTimezone: true,
+  }).notNull(),
+  has_reached_head: boolean("has_reached_head").notNull().default(false),
+});
