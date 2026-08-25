@@ -70,7 +70,7 @@ apps/
   game-docs/        docs.realms.world
   indexer/          the portal's apibara pipeline
   realtime-server/  see C.2 for what remains of it
-  mobile/           client/apps/eternum-mobile, moved, must build
+
   amm-indexer/      client/apps/amm-indexerv2, moved, must build
 packages/
   identity/         NEW — stack-neutral SIWS client + session contract; no React/starknet peers
@@ -86,7 +86,12 @@ deploy/, docs/, config/
 ```
 
 Deleted in this step, not "audited": `client/apps/onchain-agent` (Controller-authenticated; rebuilt on gameplay accounts
-later if wanted), `client/apps/heavy-load` (superseded by D.4), `deploy/appchain/spike/controller-test`.
+later if wanted), `client/apps/heavy-load` (superseded by D.4), `deploy/appchain/spike/controller-test`, and
+`client/apps/eternum-mobile` — a Vite web client with its own Controller login, session policies and account slice
+(`src/app/dojo/context/{starknet-provider,policies,dojo-context}.tsx`, `store/slices/account-slice.ts`): a second copy
+of what C.2/C.3 delete from the game, and it cannot compile once `GameChain` replaces `Chain`. History keeps it; phase 2
+revives it as `apps/mobile` on `packages/identity` and the gameplay account, which is the same login work applied to an
+app that then exists. Web needs no mobile app — the site/portal is responsive; only the game has a distinct mobile UI.
 
 Assets: `client/public` → `apps/game/public` (`git mv`; `publicDir` becomes Vite's default). The realm data becomes one
 bundled truth: `client/public/jsons/realms.json` moves to `packages/core/src/data/full-realms.json` (the name avoids the
@@ -177,8 +182,8 @@ replaces its Controller login.
 
 Residue, each with a decision: `realtime-server` — `avatars`/`profiles` routes and tables are deleted (web owns the
 profile; `cartridge_username` goes with them), and the remaining services take `TORII_SQL_URL` and
-`STARKNET_MAINNET_RPC_URL` as required env with no default; `mobile` — the 6 files naming Cartridge move to
-`packages/identity` or are deleted, same rule as the game.
+`STARKNET_MAINNET_RPC_URL` as required env with no default; `eternum-mobile` is deleted in B, so it carries nothing into
+this step.
 
 **Executable gate, not a grep by hand:** `pnpm check:forbidden-hosts` — fails on (a) any dependency in the `@cartridge/`
 scope in any `package.json` or lockfile, (b) any `cartridge.gg` host literal in any file outside `docs/` — TypeScript,
@@ -278,6 +283,13 @@ in the same commit:
   `config/source/{blitz,eternum}/chains.ts`, `config/scripts/run-sync.ts`, `config/utils/confirmation.ts` follow;
   `config/deployer/clean/paymaster/sync-policy.ts` is deleted with the paymaster. **The deployer's legacy `local`
   environment does not survive**; `madara.blitz` (D.2) is its only replacement.
+- Root orchestration (`package.json:18-51`): every `*:local` wrapper is renamed to `*:madara` where the step exists in
+  the lab — `game:migrate:madara` → `deploy/madara-lab/scripts/deploy-world.sh`, `config:deploy:madara:blitz`,
+  `config:sync:madara:blitz`, `prefactory:deploy:madara:blitz`, and `contract:start:madara` = compose up + migrate +
+  config deploy — and deleted where the underlying tool is Katana or a local Torii (`katana:*`, `indexer:*:local`,
+  `toml:update:local`) or out of phase 1 (`amm:*`, `marketplace:migrate:local`, every `*:eternum`, `dev:mainnet`, all
+  `sepolia`/`mainnet` wrappers). The collectible contract scripts (`seasonpass`/`villagepass`/`seasonresources:deploy`)
+  survive as `:madara` only if D.2's collectibles path calls them; D.2 states which, and the others go.
 - Hosts: every fallback that resolves `api.cartridge.gg` (`world-torii.ts:14-19`, `factory-endpoints.ts:7`,
   `chain-rpc.ts:4`, `global-chain.ts:4`, `profile-builder.ts:15`, `normalize.ts:36,56`,
   `landing-leaderboard-service.ts:87-90`) is deleted, not guarded — `packages/chain` is the only place a host comes
@@ -287,9 +299,10 @@ in the same commit:
 **Owner:** Codex. **Gate:** `GameChain` is defined once, in `packages/chain`, and
 `grep -rn "type Chain\b\|type NetworkType\b" contracts config apps packages --include='*.ts'` finds no other union;
 `pnpm typecheck` passes with the three old types deleted (every consumer had to move); no `.env.local.*`,
-`.env.sepolia.*`, `.env.mainnet.*` file and no `local:`/`sepolia:`/`mainnet:` script remains under `apps/game` and
-`config`; `packages/chain/src/endpoints.ts` lists exactly `madara` and `appchain`; tests updated, not skipped;
-`pnpm dev` with `.env.madara.blitz` shows the lab world; the C.3 gate runs on it.
+`.env.sepolia.*`, `.env.mainnet.*` file and no `local`/`sepolia`/`mainnet` script remains in the root `package.json`,
+`apps/game` or `config`, and every remaining `*:madara` root script is exercised by D.5;
+`packages/chain/src/endpoints.ts` lists exactly `madara` and `appchain`; tests updated, not skipped; `pnpm dev` with
+`.env.madara.blitz` shows the lab world; the C.3 gate runs on it.
 
 ### D.2 Deployer: `madara.blitz` environment and chain bootstrap
 
@@ -356,12 +369,13 @@ numbers recorded in the README. That is phase 1 done.
 
 Removed: three lockfiles, three CI setups, three Vercel projects' config, three wallet-connection layers, two
 chain-constant tables, the game's duplicated profile/wallet UI, ~900 lines of Controller/session/paymaster mechanics,
-three dependencies, one env value, the Katana Cartridge flags, `onchain-agent`, `heavy-load`, the controller spike,
-realtime-server's profile/avatar routes, the `client/` directory, the S1 chain kinds and the deployer's
-`local`/`sepolia`/`mainnet` environments, every hardcoded Cartridge host. Added: `packages/identity`, `packages/chain`,
-`contracts/player-account` (~150 lines), `gameplay-account.ts` (~100), key store + sync (~80), two server functions
-(~100), SIWS hardening (~60), `check:forbidden-hosts` (~30), a `caddy` block and certs in the lab compose, a `postgres`
-block in the lab compose, two named catalogs, `tooling/`. Net deletion in code; one more service in the lab.
+three dependencies, one env value, the Katana Cartridge flags, `onchain-agent`, `heavy-load`, `eternum-mobile`, the
+controller spike, the root `*:local`/`sepolia`/`mainnet` wrappers, realtime-server's profile/avatar routes, the
+`client/` directory, the S1 chain kinds and the deployer's `local`/`sepolia`/`mainnet` environments, every hardcoded
+Cartridge host. Added: `packages/identity`, `packages/chain`, `contracts/player-account` (~150 lines),
+`gameplay-account.ts` (~100), key store + sync (~80), two server functions (~100), SIWS hardening (~60),
+`check:forbidden-hosts` (~30), a `caddy` block and certs in the lab compose, a `postgres` block in the lab compose, two
+named catalogs, `tooling/`. Net deletion in code; one more service in the lab.
 
 ## Out of phase 1 (deliberately)
 
@@ -383,6 +397,8 @@ yourself writing one of them here, stop.
 - Binding ships with the login; the hardened SIWS is the verifier, the registry is the truth.
 - Subdomains + parent-domain cookie, not path routing. Game subdomain: keep `blitz.realms.world`.
 - Marketplace is ported in phase 2, not imported.
+- Mobile is deleted in phase 1 and revived in phase 2 as `apps/mobile` on the shared identity and gameplay-account
+  packages; web has no separate mobile app.
 
 ## Validation
 
