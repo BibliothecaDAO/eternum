@@ -92,6 +92,10 @@ later if wanted), `client/apps/heavy-load` (superseded by D.4), `deploy/appchain
 of what C.2/C.3 delete from the game, and it cannot compile once `GameChain` replaces `Chain`. History keeps it; phase 2
 revives it as `apps/mobile` on `packages/identity` and the gameplay account, which is the same login work applied to an
 app that then exists. Web needs no mobile app — the site/portal is responsive; only the game has a distinct mobile UI.
+The deletion includes its live references: `build:mobile`/`dev:mobile` in the root `package.json`, the
+`client/apps/eternum-mobile` entry in `pnpm-workspace.yaml:7`, the `MOBILE_DIR` block in
+`deploy/scripts/build-static.sh:33-37`, and the mobile row of `policies.source.test.ts:12` (the whole test goes with
+`policies.ts` in C.2). Residue gate: `git grep -n "eternum-mobile" -- . ':!docs/plans'` returns nothing.
 
 Assets: `client/public` → `apps/game/public` (`git mv`; `publicDir` becomes Vite's default). The realm data becomes one
 bundled truth: `client/public/jsons/realms.json` moves to `packages/core/src/data/full-realms.json` (the name avoids the
@@ -283,13 +287,20 @@ in the same commit:
   `config/source/{blitz,eternum}/chains.ts`, `config/scripts/run-sync.ts`, `config/utils/confirmation.ts` follow;
   `config/deployer/clean/paymaster/sync-policy.ts` is deleted with the paymaster. **The deployer's legacy `local`
   environment does not survive**; `madara.blitz` (D.2) is its only replacement.
-- Root orchestration (`package.json:18-51`): every `*:local` wrapper is renamed to `*:madara` where the step exists in
-  the lab — `game:migrate:madara` → `deploy/madara-lab/scripts/deploy-world.sh`, `config:deploy:madara:blitz`,
-  `config:sync:madara:blitz`, `prefactory:deploy:madara:blitz`, and `contract:start:madara` = compose up + migrate +
-  config deploy — and deleted where the underlying tool is Katana or a local Torii (`katana:*`, `indexer:*:local`,
-  `toml:update:local`) or out of phase 1 (`amm:*`, `marketplace:migrate:local`, every `*:eternum`, `dev:mainnet`, all
-  `sepolia`/`mainnet` wrappers). The collectible contract scripts (`seasonpass`/`villagepass`/`seasonresources:deploy`)
-  survive as `:madara` only if D.2's collectibles path calls them; D.2 states which, and the others go.
+- Root orchestration (`package.json`): only wrappers that depend on a retired game environment, Katana, a local Torii,
+  or a deleted config script change. Renamed to `:madara` where the step exists in the lab: `game:migrate:local` →
+  `game:migrate:madara` (`deploy/madara-lab/scripts/deploy-world.sh`), `config:deploy:local:blitz` →
+  `config:deploy:madara:blitz`, `config:sync:local:blitz` → `config:sync:madara:blitz`, `prefactory:deploy:local:blitz`
+  → `prefactory:deploy:madara:blitz`, `manifest:copy-abis local` → `madara`, and `contract:start:local:blitz` →
+  `contract:start:madara` (compose up + migrate + config deploy). Deleted: `katana:*`, `indexer:start/stop:local`,
+  `indexer:start:sepolia/mainnet/global:mainnet`, `toml:update:*`, `contract:stop:local`, `config:*:local` (eternum +
+  bare), `config:*:sepolia:*`, `config:*:mainnet:*`, `prefactory:*:sepolia/mainnet` and `*:eternum`,
+  `game:migrate:sepolia/mainnet`, `manifest:copy-abis:sepolia/mainnet`, `dev:mainnet`, `build:mobile`, `dev:mobile`, and
+  the `_comment_*_network*` keys of removed sections. **Untouched:** the contract-operation tooling that is independent
+  of the game environment — `seasonpass:*`, `villagepass:*`, `seasonresources:*`, `collectibles:*`, `mmr:*`, `amm:*`,
+  `marketplace:migrate:*` — whose `:local/:sepolia/:mainnet` suffix names their own address files
+  (`contracts/common/addresses/*.json`), not a game chain. Pointing them at Madara is phase-2 work, when those contracts
+  are needed there (D.2 needs none of them).
 - Hosts: every fallback that resolves `api.cartridge.gg` (`world-torii.ts:14-19`, `factory-endpoints.ts:7`,
   `chain-rpc.ts:4`, `global-chain.ts:4`, `profile-builder.ts:15`, `normalize.ts:36,56`,
   `landing-leaderboard-service.ts:87-90`) is deleted, not guarded — `packages/chain` is the only place a host comes
@@ -299,8 +310,9 @@ in the same commit:
 **Owner:** Codex. **Gate:** `GameChain` is defined once, in `packages/chain`, and
 `grep -rn "type Chain\b\|type NetworkType\b" contracts config apps packages --include='*.ts'` finds no other union;
 `pnpm typecheck` passes with the three old types deleted (every consumer had to move); no `.env.local.*`,
-`.env.sepolia.*`, `.env.mainnet.*` file and no `local`/`sepolia`/`mainnet` script remains in the root `package.json`,
-`apps/game` or `config`, and every remaining `*:madara` root script is exercised by D.5;
+`.env.sepolia.*`, `.env.mainnet.*` file remains under `apps/game`; no `config:*`, `prefactory:*`, `game:migrate:*`,
+`indexer:*`, `katana:*`, `toml:update:*` or `manifest:copy-abis:*` root script names a retired environment (the
+contract-operation tooling listed as untouched is exempt by name); every `*:madara` root script is exercised by D.5;
 `packages/chain/src/endpoints.ts` lists exactly `madara` and `appchain`; tests updated, not skipped; `pnpm dev` with
 `.env.madara.blitz` shows the lab world; the C.3 gate runs on it.
 
@@ -310,8 +322,13 @@ Add `madara.blitz` to `DEPLOYMENT_ENVIRONMENTS` (`config/deployer/clean/constant
 `s2`, manifest `contracts/game/manifest_madara.json`, registrar address from the manifest, config from a new
 `config/source/blitz/madara.ts` (base + `registration_count_max: 96`, fee token = devnet STRK `0x04718f5a…938d`, VRF =
 0x0) generating `config/generated/blitz.madara.json`. `deploy-s2-world.ts` accepts `--environment madara.blitz` and
-`RPC_URL`. Collectibles: deploy them in the same script or stub the grants explicitly and say which in the README —
-never silently skip.
+`RPC_URL`. Collectibles and entry fee — decided: `madara.blitz` sets `fee_amount = 0` and every collectible address
+(cosmetics, timelock, lootchest, elitenft) to `0x0`. The contracts already carry that path:
+`set_blitz_registration_config` deploys the entry token only when `fee_amount > 0` (`config/contracts.cairo:953`),
+`obtain_entry_token` returns without minting when the fee is zero (`realm/blitz/contracts.cairo:67`), and cosmetics are
+skipped when their addresses are zero (`:380`). No collectible or season-pass contract is deployed on the lab, no grant
+is stubbed, and the master-account fee top-up is never exercised on `madara`. Entry fees and collectibles return with
+value in phase 2.
 
 **Owner:** Codex. **Gate:** the script is idempotent (second run reports "already initialized");
 `config/deployer/clean/launch-step.ts` creates a 96-player game on the lab chain.
