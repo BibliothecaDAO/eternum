@@ -1,6 +1,7 @@
 import { getGameManifest, getSeasonAddresses } from "@contracts";
+import type { GameChain } from "@realms-world/chain";
 import type { ConfigPatch } from "./merge-config";
-import type { Chain, GameType } from "./types";
+import type { GameType } from "./types";
 
 interface EnvironmentAddresses extends Record<string, string | undefined> {
   collectiblesClassHash?: string;
@@ -11,7 +12,7 @@ interface EnvironmentAddresses extends Record<string, string | undefined> {
 }
 
 export interface EnvironmentContext {
-  chain: Chain;
+  chain: GameChain;
   addresses: EnvironmentAddresses;
   manifest: unknown;
   startMainAt: number;
@@ -23,7 +24,7 @@ export function resolveConfiguredAddress(address: string | undefined | null): st
   return address ?? "0x0";
 }
 
-export async function resolveEnvironmentContext(chain: Chain, gameType: GameType): Promise<EnvironmentContext> {
+export async function resolveEnvironmentContext(chain: GameChain, gameType: GameType): Promise<EnvironmentContext> {
   return {
     chain,
     addresses: ((await getSeasonAddresses(chain)) ?? {}) as unknown as EnvironmentAddresses,

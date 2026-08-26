@@ -79,7 +79,7 @@ eternum/
 | Game Engine         | [Dojo](https://dojoengine.org) v1.0.4                |
 | Frontend            | React, Vite, Three.js                                |
 | Onchain Queries     | [Torii](https://book.dojoengine.org/toolchain/torii) |
-| Account Abstraction | [Cartridge Controller](https://cartridge.gg)         |
+| Account Abstraction | [Cartridge Controller](https://realms.world)         |
 | Package Manager     | pnpm + Bun                                           |
 
 ## Getting Started

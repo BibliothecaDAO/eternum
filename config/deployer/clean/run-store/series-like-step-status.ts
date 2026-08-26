@@ -40,7 +40,7 @@ export function applyTargetedSeriesLikeGameStepStatus({
 }
 
 function resolveTargetedSeriesLikeGameNames(targetGameNames: string[] | undefined, stepId: SeriesLikeStepId) {
-  if (stepId !== "create-indexers" || !targetGameNames?.length) {
+  if (!stepId || !targetGameNames?.length) {
     return null;
   }
 
@@ -71,12 +71,6 @@ function updateSeriesLikeGameStepStatus(
           }
         : step,
     ),
-    artifacts:
-      stepId === "create-indexers" && status === "succeeded"
-        ? {
-            ...game.artifacts,
-            indexerCreated: true,
-          }
-        : game.artifacts,
+    artifacts: game.artifacts,
   };
 }

@@ -8,7 +8,7 @@ import type { FactoryRotationRunRecord, FactoryRunRecord, FactorySeriesRunRecord
 import type { SeriesLaunchGameSummary } from "../types";
 
 describe("prize funding readiness", () => {
-  test("requires a world address and configure-world success for single games", () => {
+  test("requires a world address and successful GameRegistry indexing for single games", () => {
     const readyRun = buildGameRunRecord();
     const pendingRun = buildGameRunRecord({
       gameName: "etrn-prize-pending",
@@ -21,11 +21,11 @@ describe("prize funding readiness", () => {
           latestEvent: "Created",
         },
         {
-          id: "configure-world",
-          title: "Configure world",
+          id: "wait-for-factory-index",
+          title: "Wait for game",
           status: "running",
-          workflowStepName: "Configure world",
-          latestEvent: "Configuring",
+          workflowStepName: "Wait for GameRegistry index",
+          latestEvent: "Waiting for GameRegistry",
         },
       ],
     });
@@ -33,7 +33,7 @@ describe("prize funding readiness", () => {
     expect(resolveGamePrizeFundingReadiness(readyRun)).toEqual({ ready: true });
     expect(resolveGamePrizeFundingReadiness(pendingRun)).toEqual({
       ready: false,
-      reason: 'Game "etrn-prize-pending" must finish world configuration before prize funding',
+      reason: 'Game "etrn-prize-pending" must be indexed before prize funding',
     });
   });
 
@@ -125,7 +125,7 @@ describe("prize funding readiness", () => {
     });
 
     expect(() => resolveSelectedSeriesLikePrizeFundingGameNames(runRecord, ["etrn-season-loop-02"])).toThrow(
-      'Game "etrn-season-loop-02" must finish world configuration before prize funding',
+      'Game "etrn-season-loop-02" must be indexed before prize funding',
     );
   });
 });
@@ -144,7 +144,7 @@ function buildGameRunRecord(overrides: Partial<FactoryRunRecord> = {}): FactoryR
     requestedLaunchStep: "full",
     inputPath: "inputs/appchain/eternum/etrn-prize-run/101-1.json",
     latestLaunchRequestId: "101-1",
-    currentStepId: "create-indexer",
+    currentStepId: "wait-for-factory-index",
     createdAt: "2026-03-23T00:00:00.000Z",
     updatedAt: "2026-03-23T00:10:00.000Z",
     workflow: {
@@ -159,18 +159,11 @@ function buildGameRunRecord(overrides: Partial<FactoryRunRecord> = {}): FactoryR
         latestEvent: "Created",
       },
       {
-        id: "configure-world",
-        title: "Configure world",
+        id: "wait-for-factory-index",
+        title: "Wait for game",
         status: "succeeded",
-        workflowStepName: "Configure world",
-        latestEvent: "Configured",
-      },
-      {
-        id: "create-indexer",
-        title: "Create indexer",
-        status: "failed",
-        workflowStepName: "Create indexer",
-        latestEvent: "Indexer failed",
+        workflowStepName: "Wait for GameRegistry index",
+        latestEvent: "Indexed",
       },
     ],
     artifacts: {
@@ -194,11 +187,15 @@ function buildSeriesRunRecord(overrides: Partial<FactorySeriesRunRecord> = {}): 
     requestedLaunchStep: "full",
     inputPath: "inputs/appchain/blitz/series/bltz-weekend-cup/101-1.json",
     latestLaunchRequestId: "101-1",
-    currentStepId: "create-indexers",
+    currentStepId: "wait-for-factory-indexes",
     createdAt: "2026-03-23T00:00:00.000Z",
     updatedAt: "2026-03-23T00:10:00.000Z",
     workflow: {
       workflowName: "game-launch.yml",
+    },
+    autoRetry: {
+      enabled: true,
+      intervalMinutes: 15,
     },
     steps: [],
     summary: {
@@ -207,7 +204,6 @@ function buildSeriesRunRecord(overrides: Partial<FactorySeriesRunRecord> = {}): 
       gameType: "blitz",
       seriesName: "bltz-weekend-cup",
       rpcUrl: "https://rpc.example",
-      factoryAddress: "0x123",
       autoRetryEnabled: true,
       autoRetryIntervalMinutes: 15,
       dryRun: false,
@@ -232,10 +228,10 @@ function buildRotationRunRecord(overrides: Partial<FactoryRotationRunRecord> = {
     seriesName: "etrn-season-loop",
     status: "attention",
     executionMode: "guided_recovery",
-    requestedLaunchStep: "create-indexers",
+    requestedLaunchStep: "wait-for-factory-indexes",
     inputPath: "inputs/appchain/eternum/rotations/etrn-season-loop/101-1.json",
     latestLaunchRequestId: "101-1",
-    currentStepId: "create-indexers",
+    currentStepId: "wait-for-factory-indexes",
     createdAt: "2026-03-23T00:00:00.000Z",
     updatedAt: "2026-03-23T00:10:00.000Z",
     workflow: {
@@ -262,7 +258,6 @@ function buildRotationRunRecord(overrides: Partial<FactoryRotationRunRecord> = {
       advanceWindowGames: 5,
       evaluationIntervalMinutes: 30,
       rpcUrl: "https://rpc.example",
-      factoryAddress: "0x123",
       autoRetryEnabled: true,
       autoRetryIntervalMinutes: 15,
       dryRun: false,
@@ -294,15 +289,15 @@ function buildSeriesLikeGameSummary({
     startTimeIso: new Date((1774195200 + (seriesGameNumber - 1) * 3600) * 1000).toISOString(),
     durationSeconds: 3600,
     seriesGameNumber,
-    currentStepId: stepStatus === "succeeded" ? null : "configure-worlds",
-    latestEvent: stepStatus === "succeeded" ? "Ready" : "Configuring",
+    currentStepId: stepStatus === "succeeded" ? null : "wait-for-factory-indexes",
+    latestEvent: stepStatus === "succeeded" ? "Ready" : "Waiting for GameRegistry",
     status: stepStatus === "succeeded" ? "succeeded" : "running",
     configSteps: [],
     steps: [
       {
-        id: "configure-worlds",
+        id: "wait-for-factory-indexes",
         status: stepStatus,
-        latestEvent: stepStatus === "succeeded" ? "Configured" : "Configuring",
+        latestEvent: stepStatus === "succeeded" ? "Indexed" : "Waiting for GameRegistry",
       },
     ],
     artifacts: {

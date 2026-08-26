@@ -1,5 +1,5 @@
 world_address = "0x50ed913cc4b5fb11f50b5e1118d2999ee3e7917a7349bc34900fd76b307b5d"
-rpc = "https://api.cartridge.gg/x/starknet/mainnet"
+rpc = "https://rpc.starknet.lava.build"
 
 [server]
 http_cors_origins = ["*"]

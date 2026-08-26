@@ -11,8 +11,6 @@ function buildSeriesRequest(overrides: Partial<LaunchSeriesRequest> = {}): Launc
     durationSeconds: 86400,
     autoRetryEnabled: true,
     autoRetryIntervalMinutes: 15,
-    workflowFile: "factory-torii-deployer.yml",
-    ref: "feature/yaml-schedule",
     ...overrides,
   };
 }
@@ -38,7 +36,7 @@ describe("launch workflow env", () => {
     const environment = buildLaunchWorkflowEnvironment(buildSeriesRequest(), {
       GAME_LAUNCH_OPTIONS_JSON: JSON.stringify({
         durationSeconds: 3600,
-        skipIndexer: true,
+        twoPlayerMode: true,
       }),
       GAME_LAUNCH_AUTO_RETRY_ENABLED: "false",
       GAME_LAUNCH_TARGET_GAME_NAMES_JSON: JSON.stringify(["bltz-weekly-override"]),
@@ -46,22 +44,20 @@ describe("launch workflow env", () => {
 
     expect(JSON.parse(environment.GAME_LAUNCH_OPTIONS_JSON)).toMatchObject({
       durationSeconds: 3600,
-      skipIndexer: true,
-      workflowFile: "factory-torii-deployer.yml",
-      ref: "feature/yaml-schedule",
+      twoPlayerMode: true,
     });
     expect(environment.GAME_LAUNCH_AUTO_RETRY_ENABLED).toBe("false");
     expect(environment.GAME_LAUNCH_AUTO_RETRY_INTERVAL_MINUTES).toBe("15");
     expect(environment.GAME_LAUNCH_TARGET_GAME_NAMES_JSON).toBe('["bltz-weekly-override"]');
   });
 
-  test("includes workflow dispatch overrides in replayable launch options", () => {
+  test("includes only registrar launch settings in replayable launch options", () => {
     const environment = buildLaunchWorkflowEnvironment(buildSeriesRequest());
+    const options = JSON.parse(environment.GAME_LAUNCH_OPTIONS_JSON);
 
-    expect(JSON.parse(environment.GAME_LAUNCH_OPTIONS_JSON)).toMatchObject({
-      workflowFile: "factory-torii-deployer.yml",
-      ref: "feature/yaml-schedule",
-    });
+    expect(options).toMatchObject({ durationSeconds: 86400 });
+    expect(options).not.toHaveProperty("factoryAddress");
+    expect(options).not.toHaveProperty("skipIndexer");
   });
 
   test("exports rotation weekly cadence for workflow replay", () => {

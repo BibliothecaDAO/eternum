@@ -1,10 +1,5 @@
 #!/usr/bin/env bun
-import {
-  DEFAULT_APPCHAIN_MAX_ACTIONS,
-  DEFAULT_APPCHAIN_PRESET_ID,
-  DEFAULT_MAINNET_MAX_ACTIONS,
-  DEFAULT_VERSION,
-} from "../constants";
+import { DEFAULT_APPCHAIN_PRESET_ID, DEFAULT_MADARA_PRESET_ID } from "../constants";
 import { runLaunchStep } from "../launch/runner";
 import { runLaunchRotationStep } from "../launch/rotation-runner";
 import { runLaunchSeriesStep } from "../launch/series-runner";
@@ -32,7 +27,7 @@ function usage(): void {
     [
       "",
       "Usage:",
-      "  bun config/deployer/clean/cli/launch-step.ts --launch-kind <game|series|rotation> --step <step-id> --environment <appchain.blitz|appchain.eternum|mainnet.blitz|mainnet.eternum>",
+      "  bun config/deployer/clean/cli/launch-step.ts --launch-kind <game|series|rotation> --step <step-id> --environment <madara.blitz|appchain.blitz|appchain.eternum>",
       "  bun config/deployer/clean/cli/launch-step.ts --config-path <path-to-launch.yaml> --step <step-id>",
       "",
       "Game launch:",
@@ -47,16 +42,10 @@ function usage(): void {
       "Optional env or flags:",
       "  GAME_LAUNCH_CONFIG_PATH / --config-path",
       "  RPC_URL / --rpc-url",
-      "  FACTORY_ADDRESS / --factory-address",
       "  DOJO_ACCOUNT_ADDRESS / --account-address",
       "  DOJO_PRIVATE_KEY / --private-key",
-      "  VITE_PUBLIC_VRF_PROVIDER_ADDRESS / --vrf-provider-address",
-      "  TORII_NAMESPACES / --torii-namespaces",
-      "  CARTRIDGE_API_BASE / --cartridge-api-base",
       "  GITHUB_TOKEN",
       "  GITHUB_REPOSITORY",
-      "  --workflow-file <factory-torii-deployer.yml>",
-      "  --ref <git-ref>",
       "  VERBOSE_CONFIG_LOGS=true / --verbose-config-logs",
       "  DEV_MODE_ON=true|false / --dev-mode-on true|false",
       "  SINGLE_REALM_MODE=true|false / --single-realm-mode true|false",
@@ -68,11 +57,7 @@ function usage(): void {
       "  --auto-retry-enabled <true|false>",
       "  --auto-retry-interval-minutes <number>",
       "  --mode <batched|sequential>",
-      `  --version <felt>              default: appchain ${DEFAULT_APPCHAIN_PRESET_ID}, mainnet ${DEFAULT_VERSION}`,
-      `  --max-actions <number>        default: appchain ${DEFAULT_APPCHAIN_MAX_ACTIONS}, mainnet ${DEFAULT_MAINNET_MAX_ACTIONS}`,
-      "  --skip-indexer",
-      "  --skip-lootchest-role-grant",
-      "  --skip-banks",
+      `  --version <felt>              default: madara ${DEFAULT_MADARA_PRESET_ID}, appchain ${DEFAULT_APPCHAIN_PRESET_ID}`,
       "  --dry-run",
       "",
     ].join("\n"),
@@ -80,6 +65,9 @@ function usage(): void {
 }
 
 async function resolveSeriesResumeSummary(request: LaunchSeriesRequest) {
+  if (!process.env.GITHUB_SHA) {
+    return undefined;
+  }
   const config = requireGitHubBranchStoreConfig();
   const { value } = await readGitHubBranchJsonFile<FactorySeriesRunRecord>(
     config,
@@ -93,6 +81,9 @@ async function resolveSeriesResumeSummary(request: LaunchSeriesRequest) {
 }
 
 async function resolveGameResumeSteps(request: LaunchGameRequest) {
+  if (!process.env.GITHUB_SHA) {
+    return undefined;
+  }
   const config = requireGitHubBranchStoreConfig();
   const { value } = await readGitHubBranchJsonFile<FactoryRunRecord>(
     config,
@@ -110,6 +101,9 @@ async function resolveGameResumeSteps(request: LaunchGameRequest) {
 }
 
 async function resolveRotationResumeSummary(request: LaunchRotationRequest) {
+  if (!process.env.GITHUB_SHA) {
+    return undefined;
+  }
   const config = requireGitHubBranchStoreConfig();
   const { value } = await readGitHubBranchJsonFile<FactoryRotationRunRecord>(
     config,

@@ -19,8 +19,8 @@ const MS_PER_DAY = 24 * 60 * 60 * 1000;
 /**
  * A game run entry is prunable when the game is definitively over and no
  * automation could still act on it: status complete, no running step, no
- * unexpired launch lease, no pending indexer-tier change, and the record has
- * been untouched for longer than `maxAgeDays`.
+ * unexpired launch lease, and the record has been untouched for longer than
+ * `maxAgeDays`.
  *
  * GET /api/factory/runs makes one GitHub subrequest per indexed run, and the
  * Cloudflare Workers free plan caps a single invocation at 50 subrequests, so
@@ -40,11 +40,6 @@ export function isPrunableFactoryGameRunEntry(
     if (!Number.isFinite(leaseExpiry) || leaseExpiry > options.now.getTime()) {
       return false;
     }
-  }
-
-  const artifacts = entry.artifacts || {};
-  if (artifacts.pendingIndexerTierTarget || artifacts.pendingIndexerTierRequestedAt) {
-    return false;
   }
 
   const updatedAt = Date.parse(entry.updatedAt || "");

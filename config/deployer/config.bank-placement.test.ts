@@ -3,7 +3,7 @@ import { createBanks, nodeReadConfig, setWorldConfig } from "./config";
 
 describe("legacy bank placement", () => {
   test("loads generated configs with neutral biome climate defaults", async () => {
-    const config = await nodeReadConfig("local", "blitz");
+    const config = await nodeReadConfig("madara", "blitz");
 
     expect(config.biomeClimate).toEqual({
       elevationScaleBps: 10_000,

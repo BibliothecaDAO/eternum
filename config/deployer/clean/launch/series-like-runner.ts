@@ -1,14 +1,13 @@
 import { setTimeout as sleep } from "node:timers/promises";
 import { Account, RpcProvider, shortString } from "starknet";
-import { isMainnetDeploymentEnvironment, resolveDeploymentEnvironment } from "../environment";
+import { resolveDeploymentEnvironment } from "../environment";
 import {
-  assertAppchainRegistrarAvailable,
+  assertRegistrarAvailable,
   isRegistrarAlreadyRegisteredError,
   registerSeries,
-  resolveAppchainRegistrarEnvironmentId,
+  resolveRegistrarEnvironmentId,
 } from "../registrar/calls";
 import { resolveAccountCredentials } from "../shared/credentials";
-import { grantLootChestRolesForSeriesLikeGames, grantVillagePassRolesForSeriesLikeGames } from "./grouped-role-grants";
 import type {
   DeploymentEnvironmentId,
   LaunchGameRequest,
@@ -23,20 +22,18 @@ import type {
 import { runLaunchStep } from "./runner";
 import { SERIES_GAME_STEP_BY_GROUPED_STEP } from "./series-plan";
 
-const DEFAULT_MAINNET_STEP_DELAY_MS = 1_500;
-const DEFAULT_APPCHAIN_STEP_DELAY_MS = 250;
+const DEFAULT_REGISTRAR_STEP_DELAY_MS = 250;
 
 type SeriesLikeRequest = LaunchSeriesRequest | LaunchRotationRequest;
 type SeriesLikeSummary = LaunchSeriesSummary | LaunchRotationSummary;
-type GroupedRoleGrantStepId = "grant-lootchest-roles" | "grant-village-pass-roles";
 
 function resolveSeriesLikeEnvironmentId(request: SeriesLikeRequest): DeploymentEnvironmentId {
   return request.environmentId;
 }
 
 export function resolveSeriesLikeStepDelayMs(request: SeriesLikeRequest): number {
-  const environment = resolveDeploymentEnvironment(resolveSeriesLikeEnvironmentId(request));
-  return isMainnetDeploymentEnvironment(environment) ? DEFAULT_MAINNET_STEP_DELAY_MS : DEFAULT_APPCHAIN_STEP_DELAY_MS;
+  resolveDeploymentEnvironment(resolveSeriesLikeEnvironmentId(request));
+  return DEFAULT_REGISTRAR_STEP_DELAY_MS;
 }
 
 function updateSeriesLikeGameStepState(
@@ -78,29 +75,7 @@ function updateSeriesLikeGameSuccess(
       ...game.artifacts,
       gameId: gameSummary.gameId ?? game.artifacts.gameId,
       worldAddress: gameSummary.worldAddress || game.artifacts.worldAddress,
-      entryTokenAddress: gameSummary.entryTokenAddress || game.artifacts.entryTokenAddress,
-      reserveHyperstructuresTxHashes:
-        gameSummary.reserveHyperstructuresTxHashes || game.artifacts.reserveHyperstructuresTxHashes,
       createGameTxHash: gameSummary.createGameTxHash || game.artifacts.createGameTxHash,
-      configureTxHash: gameSummary.configureTxHash || game.artifacts.configureTxHash,
-      lootChestRoleTxHash: gameSummary.lootChestRoleTxHash || game.artifacts.lootChestRoleTxHash,
-      villagePassRoleTxHash: gameSummary.villagePassRoleTxHash || game.artifacts.villagePassRoleTxHash,
-      createBanksTxHash: gameSummary.createBanksTxHash || game.artifacts.createBanksTxHash,
-      paymasterSynced: gameSummary.paymasterSynced ?? game.artifacts.paymasterSynced,
-      indexerCreated: gameSummary.indexerCreated || game.artifacts.indexerCreated,
-      indexerMode: gameSummary.indexerMode || game.artifacts.indexerMode,
-      indexerTier: gameSummary.indexerTier || game.artifacts.indexerTier,
-      indexerUrl: gameSummary.indexerUrl || game.artifacts.indexerUrl,
-      indexerVersion: gameSummary.indexerVersion || game.artifacts.indexerVersion,
-      indexerBranch: gameSummary.indexerBranch || game.artifacts.indexerBranch,
-      lastIndexerDescribeAt: gameSummary.lastIndexerDescribeAt || game.artifacts.lastIndexerDescribeAt,
-      indexerRequest: gameSummary.indexerRequest || game.artifacts.indexerRequest,
-      indexerWorkflowRun: gameSummary.indexerWorkflowRun || game.artifacts.indexerWorkflowRun,
-      ...(gameSummary.worldConfigTxHash || game.artifacts.worldConfigTxHash
-        ? {
-            worldConfigTxHash: gameSummary.worldConfigTxHash || game.artifacts.worldConfigTxHash,
-          }
-        : {}),
     },
   };
 }
@@ -114,29 +89,7 @@ function updateSeriesLikeGameFailure(
   return updateSeriesLikeGameStepState(game, stepId, "failed", message, message);
 }
 
-function updateSeriesLikeGameGroupedRoleGrantSuccess(
-  game: SeriesLaunchGameSummary,
-  stepId: GroupedRoleGrantStepId,
-  transactionHash?: string,
-): SeriesLaunchGameSummary {
-  const nextArtifacts =
-    stepId === "grant-lootchest-roles"
-      ? {
-          ...game.artifacts,
-          lootChestRoleTxHash: transactionHash ?? game.artifacts.lootChestRoleTxHash,
-        }
-      : {
-          ...game.artifacts,
-          villagePassRoleTxHash: transactionHash ?? game.artifacts.villagePassRoleTxHash,
-        };
-
-  return {
-    ...updateSeriesLikeGameStepState(game, stepId, "succeeded", `Completed ${stepId}`),
-    artifacts: nextArtifacts,
-  };
-}
-
-function buildSeriesLikeGameRequest(
+export function buildSeriesLikeGameLaunchRequest(
   request: SeriesLikeRequest,
   summary: SeriesLikeSummary,
   game: SeriesLaunchGameSummary,
@@ -147,7 +100,6 @@ function buildSeriesLikeGameRequest(
     gameName: game.gameName,
     startTime: game.startTime,
     rpcUrl: summary.rpcUrl,
-    factoryAddress: summary.factoryAddress,
     accountAddress: request.accountAddress,
     privateKey: request.privateKey,
     devModeOn: request.devModeOn,
@@ -157,23 +109,13 @@ function buildSeriesLikeGameRequest(
     mapConfigOverrides: request.mapConfigOverrides,
     biomeClimateOverrides: game.biomeClimateOverrides ?? request.biomeClimateOverrides,
     blitzRegistrationOverrides: game.blitzRegistrationOverrides ?? request.blitzRegistrationOverrides,
-    cartridgeApiBase: request.cartridgeApiBase,
-    toriiNamespaces: request.toriiNamespaces,
-    vrfProviderAddress: request.vrfProviderAddress,
     executionMode: request.executionMode,
-    verboseConfigLogs: request.verboseConfigLogs,
     version: request.version,
-    maxActions: request.maxActions,
     seriesName: summary.seriesName,
     seriesGameNumber: game.seriesGameNumber,
     waitForFactoryIndexTimeoutMs: request.waitForFactoryIndexTimeoutMs,
     waitForFactoryIndexPollMs: request.waitForFactoryIndexPollMs,
-    skipIndexer: request.skipIndexer,
-    skipLootChestRoleGrant: request.skipLootChestRoleGrant,
-    skipBanks: request.skipBanks,
     dryRun: request.dryRun,
-    workflowFile: request.workflowFile,
-    ref: request.ref,
   };
 }
 
@@ -227,10 +169,6 @@ function resolveTargetedSeriesLikeGameNames(
     return null;
   }
 
-  if (stepId !== "create-indexers") {
-    throw new Error('Targeted game selection is only supported for "create-indexers"');
-  }
-
   const availableGameNames = new Set(summary.games.map((game) => game.gameName));
   const missingGameNames = request.targetGameNames.filter((gameName) => !availableGameNames.has(gameName));
 
@@ -267,17 +205,11 @@ function shouldRunSeriesLikeGameStep(
     return false;
   }
 
-  return stepId === "create-indexers" || !hasCompletedSeriesLikeGameStep(game, stepId);
+  return !hasCompletedSeriesLikeGameStep(game, stepId);
 }
 
 function requiresContiguousSeriesGameCreation(stepId: LaunchSeriesStepId): boolean {
   return stepId === "create-worlds";
-}
-
-function isGroupedRoleGrantStep(
-  stepId: Exclude<LaunchSeriesStepId, "create-series">,
-): stepId is GroupedRoleGrantStepId {
-  return stepId === "grant-lootchest-roles" || stepId === "grant-village-pass-roles";
 }
 
 async function waitBetweenSeriesLikeGameCalls(delayMs: number, isFirstExecution: boolean): Promise<void> {
@@ -286,106 +218,6 @@ async function waitBetweenSeriesLikeGameCalls(delayMs: number, isFirstExecution:
   }
 
   await sleep(delayMs);
-}
-
-function resolveSeriesLikeGamesForStep(
-  request: SeriesLikeRequest,
-  summary: SeriesLikeSummary,
-  stepId: Exclude<LaunchSeriesStepId, "create-series">,
-): SeriesLaunchGameSummary[] {
-  const targetedGameNames = resolveTargetedSeriesLikeGameNames(request, summary, stepId);
-
-  return summary.games.filter((game) => shouldRunSeriesLikeGameStep(summary, game, stepId, targetedGameNames));
-}
-
-function markSeriesLikeGamesRunningForStep<TSummary extends SeriesLikeSummary>(
-  summary: TSummary,
-  stepId: GroupedRoleGrantStepId,
-  eligibleGameNames: Set<string>,
-): TSummary {
-  return {
-    ...summary,
-    games: summary.games.map((game) =>
-      eligibleGameNames.has(game.gameName)
-        ? updateSeriesLikeGameStepState(game, stepId, "running", `Running ${stepId}`)
-        : game,
-    ),
-  };
-}
-
-function finalizeSeriesLikeGroupedRoleGrantSuccess<TSummary extends SeriesLikeSummary>(
-  summary: TSummary,
-  stepId: GroupedRoleGrantStepId,
-  eligibleGameNames: Set<string>,
-  transactionHash?: string,
-): TSummary {
-  return {
-    ...summary,
-    games: summary.games.map((game) =>
-      eligibleGameNames.has(game.gameName)
-        ? updateSeriesLikeGameGroupedRoleGrantSuccess(game, stepId, transactionHash)
-        : game,
-    ),
-  };
-}
-
-function finalizeSeriesLikeGroupedRoleGrantFailure<TSummary extends SeriesLikeSummary>(
-  summary: TSummary,
-  stepId: GroupedRoleGrantStepId,
-  eligibleGameNames: Set<string>,
-  error: unknown,
-): TSummary {
-  return {
-    ...summary,
-    games: summary.games.map((game) =>
-      eligibleGameNames.has(game.gameName) ? updateSeriesLikeGameFailure(game, stepId, error) : game,
-    ),
-  };
-}
-
-async function runGroupedSeriesLikeRoleGrantStep<TSummary extends SeriesLikeSummary>({
-  request,
-  summary,
-  stepId,
-  persistSummary,
-}: {
-  request: SeriesLikeRequest;
-  summary: TSummary;
-  stepId: GroupedRoleGrantStepId;
-  persistSummary: (summary: TSummary) => TSummary;
-}): Promise<TSummary> {
-  const eligibleGames = resolveSeriesLikeGamesForStep(request, summary, stepId);
-  if (!eligibleGames.length) {
-    return persistSummary(summary);
-  }
-
-  const eligibleGameNames = new Set(eligibleGames.map((game) => game.gameName));
-  const inFlightSummary = persistSummary(markSeriesLikeGamesRunningForStep(summary, stepId, eligibleGameNames));
-  const inFlightGames = inFlightSummary.games.filter((game) => eligibleGameNames.has(game.gameName));
-
-  try {
-    const transactionHash =
-      stepId === "grant-lootchest-roles"
-        ? await grantLootChestRolesForSeriesLikeGames({
-            request,
-            summary: inFlightSummary,
-            games: inFlightGames,
-          })
-        : await grantVillagePassRolesForSeriesLikeGames({
-            request,
-            summary: inFlightSummary,
-            games: inFlightGames,
-          });
-
-    return persistSummary(
-      finalizeSeriesLikeGroupedRoleGrantSuccess(inFlightSummary, stepId, eligibleGameNames, transactionHash),
-    );
-  } catch (error) {
-    persistSummary(finalizeSeriesLikeGroupedRoleGrantFailure(inFlightSummary, stepId, eligibleGameNames, error));
-    throw new Error(
-      `${eligibleGames.length} rotation or series game${eligibleGames.length === 1 ? "" : "s"} failed during ${stepId}`,
-    );
-  }
 }
 
 export async function createSeriesIfNeededForSeriesLikeSummary<TSummary extends SeriesLikeSummary>(
@@ -398,17 +230,13 @@ export async function createSeriesIfNeededForSeriesLikeSummary<TSummary extends 
   }
 
   const environment = resolveDeploymentEnvironment(request.environmentId);
-  const appchainEnvironmentId = isMainnetDeploymentEnvironment(environment)
-    ? undefined
-    : resolveAppchainRegistrarEnvironmentId(environment.id);
-  if (appchainEnvironmentId) {
-    assertAppchainRegistrarAvailable(appchainEnvironmentId);
-  }
+  const registrarEnvironmentId = resolveRegistrarEnvironmentId(environment.id);
+  assertRegistrarAvailable(registrarEnvironmentId);
   const { accountAddress, privateKey } = resolveAccountCredentials({
     accountAddress: request.accountAddress,
     privateKey: request.privateKey,
-    fallbackAccountAddress: isMainnetDeploymentEnvironment(environment) ? environment.accountAddress : undefined,
-    fallbackPrivateKey: isMainnetDeploymentEnvironment(environment) ? environment.privateKey : undefined,
+    fallbackAccountAddress: environment.accountAddress,
+    fallbackPrivateKey: environment.privateKey,
     context: `environment "${environment.id}"`,
   });
   const account = new Account({
@@ -418,37 +246,22 @@ export async function createSeriesIfNeededForSeriesLikeSummary<TSummary extends 
   });
 
   const encodedSeriesName = shortString.encodeShortString(summary.seriesName);
-  if (appchainEnvironmentId) {
-    const numGames = "maxGames" in summary ? summary.maxGames : summary.games.length;
-    try {
-      await registerSeries(
-        account,
-        {
-          seriesId: encodedSeriesName,
-          owner: accountAddress,
-          numGames,
-        },
-        appchainEnvironmentId,
-      );
-    } catch (error) {
-      if (!isRegistrarAlreadyRegisteredError(error)) {
-        throw error;
-      }
+  const numGames = "maxGames" in summary ? summary.maxGames : summary.games.length;
+  try {
+    await registerSeries(
+      account,
+      {
+        seriesId: encodedSeriesName,
+        owner: accountAddress,
+        numGames,
+      },
+      registrarEnvironmentId,
+    );
+  } catch (error) {
+    if (!isRegistrarAlreadyRegisteredError(error)) {
+      throw error;
     }
-
-    return persistSummary({
-      ...summary,
-      seriesCreated: true,
-      seriesCreatedAt: new Date().toISOString(),
-    });
   }
-
-  const receipt = await account.execute({
-    contractAddress: summary.factoryAddress,
-    entrypoint: "set_series_config",
-    calldata: [encodedSeriesName],
-  });
-  await account.waitForTransaction(receipt.transaction_hash);
 
   return persistSummary({
     ...summary,
@@ -462,21 +275,14 @@ export async function runGroupedSeriesLikeGameStep<TSummary extends SeriesLikeSu
   summary,
   stepId,
   persistSummary,
+  runGameStep = runLaunchStep,
 }: {
   request: SeriesLikeRequest;
   summary: TSummary;
   stepId: Exclude<LaunchSeriesStepId, "create-series">;
   persistSummary: (summary: TSummary) => TSummary;
+  runGameStep?: typeof runLaunchStep;
 }): Promise<TSummary> {
-  if (isGroupedRoleGrantStep(stepId)) {
-    return runGroupedSeriesLikeRoleGrantStep({
-      request,
-      summary,
-      stepId,
-      persistSummary,
-    });
-  }
-
   const mappedGameStepId = SERIES_GAME_STEP_BY_GROUPED_STEP[stepId];
   const targetedGameNames = resolveTargetedSeriesLikeGameNames(request, summary, stepId);
   const delayMs = resolveSeriesLikeStepDelayMs(request);
@@ -504,8 +310,8 @@ export async function runGroupedSeriesLikeGameStep<TSummary extends SeriesLikeSu
     let shouldStopAfterFailure = false;
 
     try {
-      const gameSummary = await runLaunchStep({
-        ...buildSeriesLikeGameRequest(request, inFlightSummary, runningGame),
+      const gameSummary = await runGameStep({
+        ...buildSeriesLikeGameLaunchRequest(request, inFlightSummary, runningGame),
         stepId: mappedGameStepId,
       });
       nextGames[nextGames.length - 1] = updateSeriesLikeGameSuccess(runningGame, stepId, gameSummary);

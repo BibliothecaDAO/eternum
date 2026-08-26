@@ -1,6 +1,6 @@
 # Please be mindful that changing the content of this file will impact the Eternum Launcher app
 
-rpc = "https://api.cartridge.gg/x/starknet/sepolia"
+rpc = "https://rpc.starknet-testnet.lava.build"
 
 world_address = "0x0656c7780d54a545802da391bc1c34dc643e82d8f24fb3149a5912ce62d628b5"
 

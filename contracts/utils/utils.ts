@@ -1,12 +1,11 @@
+import type { GameChain } from "@realms-world/chain";
 import appchainSeasonAddresses from "../../contracts/common/addresses/appchain.json";
 import localSeasonAddresses from "../../contracts/common/addresses/local.json";
 import mainnetSeasonAddresses from "../../contracts/common/addresses/mainnet.json";
 import sepoliaSeasonAddresses from "../../contracts/common/addresses/sepolia.json";
 import appchainBlitzGameManifest from "../../contracts/game/manifest_appchain_blitz.json";
 import appchainEternumGameManifest from "../../contracts/game/manifest_appchain_eternum.json";
-import localGameManifest from "../../contracts/game/manifest_local.json";
-import mainnetGameManifest from "../../contracts/game/manifest_mainnet.json";
-import sepoliaGameManifest from "../../contracts/game/manifest_sepolia.json";
+import madaraGameManifest from "../../contracts/game/manifest_madara.json";
 
 /**
  * Interface representing season contract addresses and resources
@@ -45,8 +44,8 @@ export interface SeasonAddresses {
   mmrToken: string;
 }
 
-/** Valid chain identifiers */
-export type Chain = "sepolia" | "mainnet" | "local" | "appchain";
+/** Address tables used by independent season-contract tooling. */
+export type SeasonChain = GameChain | "local" | "mainnet" | "sepolia";
 export type AppchainGameType = "blitz" | "eternum";
 
 /**
@@ -55,7 +54,7 @@ export type AppchainGameType = "blitz" | "eternum";
  * @returns The contract addresses for the specified chain
  * @throws Error if addresses cannot be loaded
  */
-export function getSeasonAddresses(chain: Chain): SeasonAddresses {
+export function getSeasonAddresses(chain: SeasonChain): SeasonAddresses {
   try {
     switch (chain) {
       case "sepolia":
@@ -63,6 +62,7 @@ export function getSeasonAddresses(chain: Chain): SeasonAddresses {
       case "mainnet":
         return mainnetSeasonAddresses;
       case "local":
+      case "madara":
         return localSeasonAddresses as any;
       case "appchain":
         return appchainSeasonAddresses as any;
@@ -88,15 +88,11 @@ interface GameManifest {
  * @returns The game manifest configuration
  * @throws Error if manifest cannot be loaded
  */
-export function getGameManifest(chain: Chain, appchainGameType: AppchainGameType = "blitz"): GameManifest {
+export function getGameManifest(chain: GameChain, appchainGameType: AppchainGameType = "blitz"): GameManifest {
   try {
     switch (chain) {
-      case "sepolia":
-        return sepoliaGameManifest;
-      case "mainnet":
-        return mainnetGameManifest;
-      case "local":
-        return localGameManifest;
+      case "madara":
+        return madaraGameManifest;
       case "appchain":
         return appchainGameType === "blitz" ? appchainBlitzGameManifest : appchainEternumGameManifest;
       default:

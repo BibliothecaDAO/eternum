@@ -1,6 +1,4 @@
-import { DEFAULT_CARTRIDGE_API_BASE } from "../constants";
 import { resolveDeploymentEnvironment } from "../environment";
-import { readFactorySeriesState } from "../factory/series";
 import type {
   LaunchRotationRequest,
   LaunchRotationSummary,
@@ -226,7 +224,6 @@ export function buildInitialRotationLaunchSummary(request: LaunchRotationRequest
     evaluationIntervalMinutes: request.evaluationIntervalMinutes,
     weeklyCadence: request.weeklyCadence,
     rpcUrl: request.rpcUrl || environment.rpcUrl,
-    factoryAddress: request.factoryAddress || environment.factoryAddress || "",
     autoRetryEnabled: request.autoRetryEnabled ?? true,
     autoRetryIntervalMinutes: resolveDefaultRotationRetryIntervalMinutes(request),
     dryRun: request.dryRun === true,
@@ -243,7 +240,6 @@ function applyRotationRequestSettings(
   return {
     ...summary,
     rpcUrl: request.rpcUrl || summary.rpcUrl,
-    factoryAddress: request.factoryAddress || summary.factoryAddress,
     autoRetryEnabled: request.autoRetryEnabled ?? summary.autoRetryEnabled,
     autoRetryIntervalMinutes: resolveDefaultRotationRetryIntervalMinutes(request),
     dryRun: request.dryRun === true,
@@ -271,7 +267,7 @@ function validatePersistedRotationGameNumbers(summary: LaunchRotationSummary): v
 }
 
 async function assignRotationGameNumbers(
-  request: LaunchRotationRequest,
+  _request: LaunchRotationRequest,
   summary: LaunchRotationSummary,
 ): Promise<LaunchRotationSummary> {
   validatePersistedRotationGameNumbers(summary);
@@ -280,20 +276,14 @@ async function assignRotationGameNumbers(
     return summary;
   }
 
-  const seriesState = await readFactorySeriesState({
-    chain: summary.chain,
-    seriesName: summary.seriesName,
-    cartridgeApiBase: request.cartridgeApiBase || DEFAULT_CARTRIDGE_API_BASE,
-  });
+  const lastGameNumber = Math.max(0, ...summary.games.map((game) => game.seriesGameNumber));
   let nextGameNumber =
-    Math.max(
-      seriesState.lastGameNumber,
-      ...summary.games.map((game) => (game.seriesGameNumber > 0 ? game.seriesGameNumber : 0)),
-    ) + 1;
+    Math.max(lastGameNumber, ...summary.games.map((game) => (game.seriesGameNumber > 0 ? game.seriesGameNumber : 0))) +
+    1;
 
   return {
     ...summary,
-    seriesCreated: summary.seriesCreated || seriesState.exists,
+    seriesCreated: summary.seriesCreated,
     games: summary.games.map((game) => {
       if (game.seriesGameNumber > 0) {
         nextGameNumber = Math.max(nextGameNumber, game.seriesGameNumber + 1);

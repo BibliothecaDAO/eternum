@@ -1,0 +1,33 @@
+{
+  "name": "@realms-world/identity",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    }
+  },
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "src/**"
+  ],
+  "scripts": {
+    "build": "tsup src/index.ts --target esnext --format esm,cjs --dts --sourcemap --clean",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@realms-world/chain": "workspace:*",
+    "@realms-world/siws": "^0.0.2"
+  },
+  "devDependencies": {
+    "tsup": "^8.0.2",
+    "typescript": "catalog:web",
+    "vitest": "^3.2.4"
+  }
+}

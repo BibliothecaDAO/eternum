@@ -47,9 +47,8 @@ try {
 }
 
 import { getContractByName, NAMESPACE, type EternumProvider } from "@bibliothecadao/provider";
+import type { GameChain } from "@realms-world/chain";
 import { byteArray, type Account } from "starknet";
-import type { NetworkType } from "utils/environment";
-import type { Chain } from "utils/utils";
 import { applyBiomeClimateDefaults } from "./biome-climate-defaults";
 import { buildBankCoordsForMapCenterOffset, deriveMapCenterOffsetFromWorldConfigTx } from "./clean/eternum/banks";
 import { addCommas, hourMinutesSeconds, inGameAmount, shortHexAddress } from "../utils/formatting";
@@ -112,18 +111,18 @@ interface Config {
 
 export class GameConfigDeployer {
   public globalConfig: EternumConfig;
-  public network: NetworkType;
+  public network: GameChain;
   public skipSleeps: boolean = false;
   public worldConfigTxHash?: string;
 
-  constructor(config: EternumConfig, network: NetworkType) {
+  constructor(config: EternumConfig, network: GameChain) {
     this.globalConfig = config;
     this.network = network;
   }
 
   async sleepNonLocal() {
     if (this.skipSleeps) return;
-    if (this.network.toLowerCase() === "mainnet" || this.network.toLowerCase() === "sepolia") {
+    if (this.network === "appchain") {
       let sleepSeconds = 1;
       console.log(chalk.gray(`Sleeping for ${sleepSeconds} seconds...`));
       await new Promise((resolve) => setTimeout(resolve, sleepSeconds * 1000));
@@ -2166,7 +2165,7 @@ export const addLiquidity = async (config: Config) => {
   }
 };
 
-export const nodeReadConfig = async (chain: Chain, gameType: string) => {
+export const nodeReadConfig = async (chain: GameChain, gameType: string) => {
   if (!fs) {
     throw new Error("nodeReadConfig is only available in Node.js environment");
   }

@@ -1,4 +1,6 @@
-export type WorldSummaryChain = "mainnet" | "appchain";
+import type { GameChain } from "@realms-world/chain";
+
+export type WorldSummaryChain = GameChain;
 
 export type WorldSummaryMode = "blitz" | "eternum" | "unknown";
 

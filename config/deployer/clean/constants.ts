@@ -1,7 +1,6 @@
 import { DEFAULT_FACTORY_CONFIG_VERSION } from "../../shared/factory-defaults";
 import type { DeploymentEnvironment, DeploymentEnvironmentId } from "./types";
 
-export const DEFAULT_NAMESPACE = "s1_eternum";
 export const DEFAULT_VERSION = DEFAULT_FACTORY_CONFIG_VERSION;
 // Preset 6 = Regular Fast (official-60 profile applied at registration).
 // Preset 7 = Duel (official-90 profile). Presets 2/3 carried local dev balance
@@ -9,48 +8,24 @@ export const DEFAULT_VERSION = DEFAULT_FACTORY_CONFIG_VERSION;
 // all immutable, retired, never offered again.
 export const DEFAULT_APPCHAIN_PRESET_ID = "6";
 export const DEFAULT_APPCHAIN_ETERNUM_PRESET_ID = "10";
+export const DEFAULT_MADARA_PRESET_ID = "1";
 export const DEFAULT_APPCHAIN_GAME_INDEX_TIMEOUT_MS = 2 * 60 * 1_000;
 export const DEFAULT_APPCHAIN_GAME_INDEX_POLL_MS = 2_000;
-// MEASURED, do not raise without re-testing: 20 lands reliably (~15s/batch,
-// full world in ~10 batches / ~2.5 min). 50 and 300 do NOT — katana returns a
-// transaction hash but the transaction is never mined, so the client waits
-// forever. Suspected cause is fee estimation on an idle chain (katana's gas
-// oracle needs recent V3 traffic; the fallback resource bounds cover a small
-// transaction but not a large one). Mainnet's 50 does not transfer here.
-export const DEFAULT_APPCHAIN_MAX_ACTIONS = 20;
-export const DEFAULT_MAINNET_MAX_ACTIONS = 50;
-export const DEFAULT_MAINNET_CREATE_GAME_SUBMISSION_COUNT = 3;
-// ~10 batches of 20 complete a world; 15 leaves margin (the launcher stops
-// early once the factory cursor reports completion).
-export const DEFAULT_APPCHAIN_CREATE_GAME_SUBMISSION_COUNT = 15;
-export const DEFAULT_CREATE_GAME_RETRY_COUNT = 5;
-export const DEFAULT_CREATE_GAME_RETRY_DELAY_MS = 10_000;
+export const BLITZ_REGISTRATION_COUNT_CAP = 96;
 export const DEFAULT_GAME_LAUNCH_WORKFLOW_FILE = "game-launch.yml";
 export const DEFAULT_FACTORY_RUN_STORE_BRANCH = "factory-runs";
 export const DEFAULT_FACTORY_RUN_LEASE_DURATION_MS = 45 * 60 * 1000;
 export const DEFAULT_FACTORY_ACCOUNT_LEASE_DURATION_MS = 10 * 60 * 1000;
 export const DEFAULT_FACTORY_INDEX_TIMEOUT_MS = 5 * 60 * 1000;
 export const DEFAULT_FACTORY_INDEX_POLL_MS = 5_000;
-export const DEFAULT_CARTRIDGE_API_BASE = "https://api.cartridge.gg";
-export const DEFAULT_TORII_WORKFLOW_FILE = "factory-torii-deployer.yml";
-export const DEFAULT_INDEXER_MAINTENANCE_WORKFLOW_FILE = "factory-indexer-maintenance.yml";
-export const DEFAULT_INDEXER_WORKFLOW_TIMEOUT_MS = 20 * 60 * 1000;
-export const DEFAULT_INDEXER_WORKFLOW_POLL_MS = 5_000;
-export const DEFAULT_TORII_VERSION = "v1.8.16";
-export const DEFAULT_VRF_PROVIDER_ADDRESS = "0x051fea4450da9d6aee758bdeba88b2f665bcbf549d2c61421aa724e9ac0ced8f";
-export const DEFAULT_MAINNET_FACTORY_ADDRESS = "0x525410a4d0ebd4a313e2125ac986710cd8f1bd08d47379b7f45c8b9c71b4da";
-export const DEFAULT_MAINNET_RPC_URL = "https://api.cartridge.gg/x/starknet/mainnet/rpc/v0_9";
-export const DEFAULT_SEPOLIA_RPC_URL = "https://api.cartridge.gg/x/starknet/sepolia/rpc/v0_9";
 // Realms dev appchain (chain id WP_REALMS_DEV) — see docs/plans/appchain-phase-1.md.
 // Override with APPCHAIN_RPC_URL / --rpc-url once the stable hostname lands.
 export const DEFAULT_APPCHAIN_RPC_URL = process.env.APPCHAIN_RPC_URL || "http://52.54.98.119";
-export const DEFAULT_LOCAL_RPC_URL = "http://127.0.0.1:5050/rpc/v0_9";
+export const DEFAULT_MADARA_RPC_URL = process.env.RPC_URL || "http://127.0.0.1:5060/rpc/v0_9_0";
 
 export const DEFAULT_CHAIN_RPC_URLS: Record<string, string> = {
-  mainnet: DEFAULT_MAINNET_RPC_URL,
-  sepolia: DEFAULT_SEPOLIA_RPC_URL,
+  madara: DEFAULT_MADARA_RPC_URL,
   appchain: DEFAULT_APPCHAIN_RPC_URL,
-  local: DEFAULT_LOCAL_RPC_URL,
 };
 
 export function resolveDefaultRpcUrl(chain: string): string {
@@ -63,41 +38,25 @@ export function resolveDefaultRpcUrl(chain: string): string {
 
 const APPCHAIN_DEFAULTS = {
   rpcUrl: DEFAULT_APPCHAIN_RPC_URL,
-  createGame: {
-    maxActions: DEFAULT_APPCHAIN_MAX_ACTIONS,
-    submissionCount: DEFAULT_APPCHAIN_CREATE_GAME_SUBMISSION_COUNT,
-    retryCount: DEFAULT_CREATE_GAME_RETRY_COUNT,
-    retryDelayMs: DEFAULT_CREATE_GAME_RETRY_DELAY_MS,
-  },
 };
 
-const MAINNET_DEFAULTS = {
-  factoryAddress: DEFAULT_MAINNET_FACTORY_ADDRESS,
-  rpcUrl: DEFAULT_MAINNET_RPC_URL,
-  createGame: {
-    maxActions: DEFAULT_MAINNET_MAX_ACTIONS,
-    submissionCount: DEFAULT_MAINNET_CREATE_GAME_SUBMISSION_COUNT,
-    retryCount: DEFAULT_CREATE_GAME_RETRY_COUNT,
-    retryDelayMs: DEFAULT_CREATE_GAME_RETRY_DELAY_MS,
-  },
+const MADARA_DEFAULTS = {
+  rpcUrl: DEFAULT_MADARA_RPC_URL,
 };
 
 export const DEPLOYMENT_ENVIRONMENTS: Record<DeploymentEnvironmentId, DeploymentEnvironment> = {
-  "mainnet.blitz": {
-    id: "mainnet.blitz",
-    chain: "mainnet",
+  "madara.blitz": {
+    id: "madara.blitz",
+    chain: "madara",
     gameType: "blitz",
-    toriiEnv: "mainnet",
-    configPath: "config/generated/blitz.mainnet.json",
-    ...MAINNET_DEFAULTS,
-  },
-  "mainnet.eternum": {
-    id: "mainnet.eternum",
-    chain: "mainnet",
-    gameType: "eternum",
-    toriiEnv: "mainnet",
-    configPath: "config/generated/eternum.mainnet.json",
-    ...MAINNET_DEFAULTS,
+    toriiEnv: "madara",
+    configPath: "config/generated/blitz.madara.json",
+    world: {
+      namespace: "s2",
+      manifestPath: "contracts/game/manifest_madara.json",
+      registrarAddress: "0x23d89ba402b33599107413ddb0f33f0cc38e57dcff4aa3b1989cba12076e9a5",
+    },
+    ...MADARA_DEFAULTS,
   },
   "appchain.blitz": {
     id: "appchain.blitz",
@@ -105,7 +64,7 @@ export const DEPLOYMENT_ENVIRONMENTS: Record<DeploymentEnvironmentId, Deployment
     gameType: "blitz",
     toriiEnv: "appchain",
     configPath: "config/generated/blitz.appchain.json",
-    appchainWorld: {
+    world: {
       namespace: "s2",
       manifestPath: "contracts/game/manifest_appchain_blitz.json",
       registrarAddress:
@@ -120,7 +79,7 @@ export const DEPLOYMENT_ENVIRONMENTS: Record<DeploymentEnvironmentId, Deployment
     gameType: "eternum",
     toriiEnv: "appchain",
     configPath: "config/generated/eternum.appchain.json",
-    appchainWorld: {
+    world: {
       namespace: "s2",
       manifestPath: "contracts/game/manifest_appchain_eternum.json",
       registrarAddress:

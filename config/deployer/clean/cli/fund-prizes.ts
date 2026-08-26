@@ -1,8 +1,7 @@
 #!/usr/bin/env bun
 import { Account, RpcProvider } from "starknet";
-import { DEFAULT_CARTRIDGE_API_BASE } from "../constants";
 import { resolveDeploymentEnvironment } from "../environment";
-import { resolvePrizeDistributionAddressForFactoryGame } from "../factory/prize-distribution-address";
+import { resolvePrizeDistributionAddress } from "../factory/prize-distribution-address";
 import {
   resolveDefaultSeriesLikePrizeFundingGameNames,
   resolveGamePrizeFundingReadiness,
@@ -55,9 +54,8 @@ interface ResolvedPrizeFundingPlan {
   environmentId: DeploymentEnvironmentId;
   runKind: PrizeFundingRunKind;
   runName: string;
-  chain: "appchain" | "mainnet";
+  chain: "appchain";
   rpcUrl: string;
-  cartridgeApiBase: string;
   accountAddress: string;
   privateKey: string;
   selectedGameNames: string[];
@@ -86,14 +84,13 @@ function usage() {
     [
       "",
       "Usage:",
-      "  bun config/deployer/clean/cli/fund-prizes.ts --environment <appchain.blitz|mainnet.blitz|appchain.eternum|mainnet.eternum> --run-kind <game|series|rotation> --run-name <name> --amount <tokens>",
+      "  bun config/deployer/clean/cli/fund-prizes.ts --environment <appchain.blitz|appchain.eternum> --run-kind <game|series|rotation> --run-name <name> --amount <tokens>",
       "",
       "Optional:",
       "  --selected-games-json <json-array-of-game-names>",
       "  --rpc-url <override>",
       "  --account-address <override>",
       "  --private-key <override>",
-      "  --cartridge-api-base <override>",
       "",
     ].join("\n"),
   );
@@ -153,9 +150,8 @@ function parseSelectedGameNames(value: string | undefined) {
   return parsedValue.map((gameName) => gameName.trim());
 }
 
-function buildRpcProvider(rpcUrl: string, chain: "appchain" | "mainnet") {
-  const chainId = chain === "mainnet" ? "0x534e5f4d41494e" : undefined;
-  return chainId ? new RpcProvider({ nodeUrl: rpcUrl, chainId }) : new RpcProvider({ nodeUrl: rpcUrl });
+function buildRpcProvider(rpcUrl: string) {
+  return new RpcProvider({ nodeUrl: rpcUrl });
 }
 
 function buildExecutionAccount(provider: RpcProvider, accountAddress: string, privateKey: string) {
@@ -310,18 +306,6 @@ function resolveExecutionCredentials(
   };
 }
 
-function resolveCartridgeApiBase(
-  rawRequest: LaunchGameRequest | LaunchSeriesRequest | LaunchRotationRequest,
-  cliArgs: Record<string, string>,
-) {
-  return (
-    cliArgs["cartridge-api-base"] ||
-    rawRequest.cartridgeApiBase ||
-    process.env.CARTRIDGE_API_BASE ||
-    DEFAULT_CARTRIDGE_API_BASE
-  );
-}
-
 function ensureGameRunReadyForPrizeFunding(runRecord: FactoryRunRecord) {
   const readiness = resolveGamePrizeFundingReadiness(runRecord);
 
@@ -341,27 +325,9 @@ function resolveSeriesLikeSelectedGames(
   return resolveSelectedSeriesLikePrizeFundingGameNames(runRecord, requestedGameNames);
 }
 
-async function resolvePrizeFundingTargets(
-  chain: "appchain" | "mainnet",
-  cartridgeApiBase: string,
-  selectedGameNames: string[],
-) {
-  const targets: PrizeFundingTarget[] = [];
-
-  for (const gameName of selectedGameNames) {
-    const resolution = await resolvePrizeDistributionAddressForFactoryGame({
-      chain,
-      gameName,
-      cartridgeApiBase,
-    });
-
-    targets.push({
-      gameName,
-      prizeAddress: resolution.prizeDistributionAddress,
-    });
-  }
-
-  return targets;
+function resolvePrizeFundingTargets(chain: "appchain", selectedGameNames: string[]): PrizeFundingTarget[] {
+  const prizeAddress = resolvePrizeDistributionAddress(chain);
+  return selectedGameNames.map((gameName) => ({ gameName, prizeAddress }));
 }
 
 async function resolvePrizeFundingPlan(cliArgs: PrizeFundingCliArgs, rawCliArgs: Record<string, string>) {
@@ -372,11 +338,14 @@ async function resolvePrizeFundingPlan(cliArgs: PrizeFundingCliArgs, rawCliArgs:
   );
 
   const rawRequest = resolveGameRequest(inputRecord);
+  if (runRecord.chain !== "appchain") {
+    throw new Error("Prize funding is not available on the fee-free Madara phase-one lab");
+  }
+  const chain = runRecord.chain;
   const rpcUrl = rawCliArgs["rpc-url"] || resolveRpcUrl(rawRequest, cliArgs.environmentId);
   const { accountAddress, privateKey } = resolveExecutionCredentials(rawRequest, rawCliArgs);
-  const cartridgeApiBase = resolveCartridgeApiBase(rawRequest, rawCliArgs);
-  const provider = buildRpcProvider(rpcUrl, runRecord.chain);
-  const tokenAddress = resolvePrizeTokenAddress(rawRequest, runRecord.chain);
+  const provider = buildRpcProvider(rpcUrl);
+  const tokenAddress = resolvePrizeTokenAddress(rawRequest, chain);
   const decimals = await resolveTokenDecimals(provider, tokenAddress);
   const amountRaw = parseDecimalAmountToRaw(cliArgs.amountDisplay, decimals);
 
@@ -385,15 +354,14 @@ async function resolvePrizeFundingPlan(cliArgs: PrizeFundingCliArgs, rawCliArgs:
   }
 
   const selectedGameNames = resolveSelectedGameNamesForRun(runRecord, cliArgs.selectedGameNames);
-  const targets = await resolvePrizeFundingTargets(runRecord.chain, cartridgeApiBase, selectedGameNames);
+  const targets = resolvePrizeFundingTargets(chain, selectedGameNames);
 
   return {
     environmentId: cliArgs.environmentId,
     runKind: cliArgs.runKind,
     runName: cliArgs.runName,
-    chain: runRecord.chain,
+    chain,
     rpcUrl,
-    cartridgeApiBase,
     accountAddress,
     privateKey,
     selectedGameNames,
@@ -419,7 +387,7 @@ function resolveSelectedGameNamesForRun(runRecord: PrizeFundingRunRecord, reques
 }
 
 async function submitPrizeFundingTransaction(plan: ResolvedPrizeFundingPlan): Promise<PrizeFundingTransactionResult> {
-  const provider = buildRpcProvider(plan.rpcUrl, plan.chain);
+  const provider = buildRpcProvider(plan.rpcUrl);
   const account = buildExecutionAccount(provider, plan.accountAddress, plan.privateKey);
   const amount = toUint256(plan.amountRaw);
   const calls = plan.targets.map((target) => ({

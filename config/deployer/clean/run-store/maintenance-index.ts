@@ -11,7 +11,6 @@ import type {
   FactoryRotationRunMaintenanceIndexEntry,
   FactoryRotationRunRecord,
   FactoryRunMaintenanceIndexEntry,
-  FactoryRunMaintenanceIndexGame,
   FactoryRunMaintenanceIndexRecord,
   FactoryRunRecord,
   FactoryRunStepStatus,
@@ -21,30 +20,9 @@ import type {
 
 type GitHubBranchStoreConfig = Parameters<typeof updateGitHubBranchJsonFile>[0];
 
-const RECOVERABLE_FACTORY_STEP_IDS = new Set([
-  "create-world",
-  "wait-for-factory-index",
-  "configure-world",
-  "reserve-blitz-hyperstructures",
-  "grant-lootchest-role",
-  "grant-village-pass-role",
-  "create-banks",
-  "create-indexer",
-  "sync-paymaster",
-]);
+const RECOVERABLE_FACTORY_STEP_IDS = new Set(["create-world", "wait-for-factory-index"]);
 
-const RECOVERABLE_FACTORY_SERIES_STEP_IDS = new Set([
-  "create-series",
-  "create-worlds",
-  "wait-for-factory-indexes",
-  "configure-worlds",
-  "reserve-blitz-hyperstructures",
-  "grant-lootchest-roles",
-  "grant-village-pass-roles",
-  "create-banks",
-  "create-indexers",
-  "sync-paymaster",
-]);
+const RECOVERABLE_FACTORY_SERIES_STEP_IDS = new Set(["create-series", "create-worlds", "wait-for-factory-indexes"]);
 
 function resolveRecoverableFailedStepId(
   steps: Array<{ id: string; status: FactoryRunStepStatus }>,
@@ -70,32 +48,6 @@ function resolveRecoverablePendingStepId(
   return pendingStep?.id || null;
 }
 
-function buildMaintenanceIndexGame(game: {
-  gameName: string;
-  startTime?: string | number;
-  durationSeconds?: number;
-  artifacts?: {
-    indexerCreated?: boolean;
-    indexerTier?: string;
-    lastIndexerDescribeAt?: string;
-    pendingIndexerTierTarget?: string;
-    pendingIndexerTierRequestedAt?: string;
-  };
-}): FactoryRunMaintenanceIndexGame {
-  return {
-    gameName: game.gameName,
-    startTime: game.startTime,
-    durationSeconds: game.durationSeconds,
-    artifacts: {
-      indexerCreated: game.artifacts?.indexerCreated,
-      indexerTier: game.artifacts?.indexerTier,
-      lastIndexerDescribeAt: game.artifacts?.lastIndexerDescribeAt,
-      pendingIndexerTierTarget: game.artifacts?.pendingIndexerTierTarget,
-      pendingIndexerTierRequestedAt: game.artifacts?.pendingIndexerTierRequestedAt,
-    },
-  };
-}
-
 function buildGameRunMaintenanceIndexEntry(run: FactoryRunRecord): FactoryGameRunMaintenanceIndexEntry {
   return {
     kind: "game",
@@ -118,15 +70,6 @@ function buildGameRunMaintenanceIndexEntry(run: FactoryRunRecord): FactoryGameRu
       run.currentStepId,
       RECOVERABLE_FACTORY_STEP_IDS,
     ),
-    startTime: run.artifacts.scheduledStartTime,
-    durationSeconds: run.artifacts.durationSeconds,
-    artifacts: {
-      indexerCreated: run.artifacts.indexerCreated,
-      indexerTier: run.artifacts.indexerTier,
-      lastIndexerDescribeAt: run.artifacts.lastIndexerDescribeAt,
-      pendingIndexerTierTarget: run.artifacts.pendingIndexerTierTarget,
-      pendingIndexerTierRequestedAt: run.artifacts.pendingIndexerTierRequestedAt,
-    },
   };
 }
 
@@ -153,7 +96,6 @@ function buildSeriesRunMaintenanceIndexEntry(run: FactorySeriesRunRecord): Facto
       RECOVERABLE_FACTORY_SERIES_STEP_IDS,
     ),
     autoRetry: run.autoRetry,
-    games: (run.summary.games || []).map(buildMaintenanceIndexGame),
   };
 }
 
@@ -181,7 +123,6 @@ function buildRotationRunMaintenanceIndexEntry(run: FactoryRotationRunRecord): F
     ),
     autoRetry: run.autoRetry,
     evaluation: run.evaluation,
-    games: (run.summary.games || []).map(buildMaintenanceIndexGame),
   };
 }
 

@@ -22,6 +22,7 @@
     "test": "vitest"
   },
   "dependencies": {
+    "@realms-world/chain": "workspace:*",
     "@dojoengine/recs": "catalog:game",
     "@dojoengine/core": "catalog:game",
     "@scure/starknet": "^1.1.0",

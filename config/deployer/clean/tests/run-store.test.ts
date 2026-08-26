@@ -6,9 +6,7 @@ import {
   removeFactoryMaintenanceIndexEntry,
   recordFactoryLaunchStarted,
   recordFactoryRotationLaunchStarted,
-  recordFactoryRotationLaunchStepSucceeded,
   recordFactorySeriesLaunchStarted,
-  recordFactorySeriesLaunchStepSucceeded,
   recordFactoryLaunchStepFailed,
   recordFactoryLaunchStepStarted,
   recordFactoryLaunchStepSucceeded,
@@ -16,7 +14,7 @@ import {
 } from "../run-store";
 import { requireGitHubBranchStoreConfig, updateGitHubBranchJsonFile } from "../run-store/github";
 import { resolveRepoPath } from "../shared/repo";
-import type { LaunchGameSummary, LaunchRotationSummary, LaunchSeriesSummary } from "../types";
+import type { LaunchGameSummary, LaunchSeriesSummary } from "../types";
 
 const ENV_KEYS = [
   "GITHUB_ACTIONS",
@@ -40,10 +38,8 @@ const originalEnv = new Map<string, string | undefined>(ENV_KEYS.map((key) => [k
 const originalFetch = globalThis.fetch;
 const summaryPaths = [
   resolveSummaryPath("appchain.blitz", "bltz-flux-730"),
-  resolveSummaryPath("mainnet.blitz", "bltz-mainnet-730"),
   resolveSeriesSummaryPath("appchain.blitz", "bltz-series-duration"),
   resolveRotationSummaryPath("appchain.blitz", "bltz-rotationx"),
-  resolveRotationSummaryPath("appchain.blitz", "bltz-recovery-case"),
 ];
 
 beforeEach(() => {
@@ -172,37 +168,9 @@ describe("factory run store", () => {
       kind: "game",
       gameName: "bltz-flux-730",
       status: "running",
-      startTime: "2026-03-18T10:00:00Z",
+      currentStepId: "create-world",
     });
     expect(runRecord.steps.map((step: { id: string }) => step.id)).toEqual(["create-world", "wait-for-factory-index"]);
-  });
-
-  test("adds the paymaster step for mainnet blitz launches", async () => {
-    const branchStore = createBranchStoreFetch();
-    globalThis.fetch = branchStore.fetch;
-
-    await recordFactoryLaunchStarted({
-      environmentId: "mainnet.blitz",
-      gameName: "bltz-mainnet-730",
-      requestedLaunchStep: "full",
-      request: {
-        environmentId: "mainnet.blitz",
-        gameName: "bltz-mainnet-730",
-        startTime: "2026-03-18T10:00:00Z",
-      },
-    });
-
-    const runRecord = branchStore.readJson("runs/mainnet/blitz/bltz-mainnet-730.json");
-
-    expect(runRecord.steps.map((step: { id: string }) => step.id)).toEqual([
-      "create-world",
-      "wait-for-factory-index",
-      "configure-world",
-      "reserve-blitz-hyperstructures",
-      "grant-lootchest-role",
-      "create-indexer",
-      "sync-paymaster",
-    ]);
   });
 
   test("removes a stale rotation maintenance index entry", async () => {
@@ -245,35 +213,6 @@ describe("factory run store", () => {
     const maintenanceIndex = branchStore.readJson("indexes/appchain/blitz/rotations.json");
 
     expect(maintenanceIndex.entries["bltz-blinkery"]).toBeUndefined();
-  });
-
-  test("keeps eternum launch steps and adds paymaster for mainnet eternum", async () => {
-    const branchStore = createBranchStoreFetch();
-    globalThis.fetch = branchStore.fetch;
-
-    await recordFactoryLaunchStarted({
-      environmentId: "mainnet.eternum",
-      gameName: "etrn-mainnet-730",
-      requestedLaunchStep: "full",
-      request: {
-        environmentId: "mainnet.eternum",
-        gameName: "etrn-mainnet-730",
-        startTime: "2026-03-18T10:00:00Z",
-      },
-    });
-
-    const runRecord = branchStore.readJson("runs/mainnet/eternum/etrn-mainnet-730.json");
-
-    expect(runRecord.steps.map((step: { id: string }) => step.id)).toEqual([
-      "create-world",
-      "wait-for-factory-index",
-      "configure-world",
-      "grant-lootchest-role",
-      "grant-village-pass-role",
-      "create-banks",
-      "create-indexer",
-      "sync-paymaster",
-    ]);
   });
 
   test("persists map config overrides inside the stored launch request", async () => {
@@ -355,10 +294,8 @@ describe("factory run store", () => {
       startTime: 1710756000,
       startTimeIso: "2026-03-18T10:00:00.000Z",
       rpcUrl: "https://rpc.example",
-      factoryAddress: "0x123",
       gameId: 7,
       createGameTxHash: "0xabc",
-      indexerCreated: false,
       configMode: "batched",
       configSteps: [],
       dryRun: false,
@@ -387,55 +324,6 @@ describe("factory run store", () => {
     expect(runRecord.steps.find((step: { id: string }) => step.id === "create-world")?.status).toBe("succeeded");
   });
 
-  test("records paymaster completion in launch artifacts", async () => {
-    const branchStore = createBranchStoreFetch();
-    globalThis.fetch = branchStore.fetch;
-
-    await recordFactoryLaunchStarted({
-      environmentId: "mainnet.blitz",
-      gameName: "bltz-mainnet-730",
-      requestedLaunchStep: "full",
-      request: {
-        environmentId: "mainnet.blitz",
-        gameName: "bltz-mainnet-730",
-        startTime: "2026-03-18T10:00:00Z",
-      },
-    });
-
-    writeLaunchSummaryFile({
-      environment: "mainnet.blitz",
-      chain: "mainnet",
-      gameType: "blitz",
-      gameName: "bltz-mainnet-730",
-      startTime: 1710756000,
-      startTimeIso: "2026-03-18T10:00:00.000Z",
-      rpcUrl: "https://rpc.example",
-      factoryAddress: "0x123",
-      paymasterSynced: true,
-      indexerCreated: true,
-      configMode: "batched",
-      configSteps: [],
-      dryRun: false,
-    });
-
-    await recordFactoryLaunchStepSucceeded({
-      environmentId: "mainnet.blitz",
-      gameName: "bltz-mainnet-730",
-      requestedLaunchStep: "full",
-      stepId: "sync-paymaster",
-      request: {
-        environmentId: "mainnet.blitz",
-        gameName: "bltz-mainnet-730",
-        startTime: "2026-03-18T10:00:00Z",
-      },
-    });
-
-    const runRecord = branchStore.readJson("runs/mainnet/blitz/bltz-mainnet-730.json");
-
-    expect(runRecord.artifacts.paymasterSynced).toBe(true);
-    expect(runRecord.artifacts.summaryPath).toBe(".context/game-launch/mainnet-blitz-bltz-mainnet-730.json");
-  });
-
   test("preserves the current rotation summary when a new workflow starts for an existing rotation", async () => {
     const branchStore = createBranchStoreFetch();
     globalThis.fetch = branchStore.fetch;
@@ -453,7 +341,6 @@ describe("factory run store", () => {
       advanceWindowGames: 5,
       evaluationIntervalMinutes: 15,
       rpcUrl: "https://rpc.example",
-      factoryAddress: "0x123",
       autoRetryEnabled: true,
       autoRetryIntervalMinutes: 15,
       dryRun: false,
@@ -494,12 +381,6 @@ describe("factory run store", () => {
         buildRotationTestRunStep("create-series", "succeeded"),
         buildRotationTestRunStep("create-worlds", "pending"),
         buildRotationTestRunStep("wait-for-factory-indexes", "pending"),
-        buildRotationTestRunStep("configure-worlds", "pending"),
-        buildRotationTestRunStep("grant-lootchest-roles", "pending"),
-        buildRotationTestRunStep("grant-village-pass-roles", "pending"),
-        buildRotationTestRunStep("create-banks", "pending"),
-        buildRotationTestRunStep("create-indexers", "pending"),
-        buildRotationTestRunStep("sync-paymaster", "pending"),
       ],
       summary: existingSummary,
       artifacts: {
@@ -555,7 +436,6 @@ describe("factory run store", () => {
       gameType: "blitz",
       seriesName: "bltz-series-duration",
       rpcUrl: "https://rpc.example",
-      factoryAddress: "0x123",
       autoRetryEnabled: true,
       autoRetryIntervalMinutes: 15,
       dryRun: false,
@@ -597,307 +477,6 @@ describe("factory run store", () => {
     expect(inputRecord.request.durationSeconds).toBe(3600);
     expect(inputRecord.request.accountAddress).toBeUndefined();
     expect(inputRecord.request.privateKey).toBeUndefined();
-  });
-
-  test("returns grouped rotation indexers to pending after the selected child recovers", async () => {
-    const branchStore = createBranchStoreFetch();
-    globalThis.fetch = branchStore.fetch;
-
-    branchStore.writeJson("runs/mainnet/blitz/rotations/bltz-recovery-case.json", {
-      version: 1,
-      kind: "rotation",
-      runId: "mainnet.blitz:rotation:bltz-recovery-case",
-      environment: "mainnet.blitz",
-      chain: "mainnet",
-      gameType: "blitz",
-      rotationName: "bltz-recovery-case",
-      seriesName: "bltz-recovery-case",
-      status: "attention",
-      executionMode: "guided_recovery",
-      requestedLaunchStep: "create-indexers",
-      inputPath: "inputs/mainnet/blitz/rotations/bltz-recovery-case/101-1.json",
-      latestLaunchRequestId: "101-1",
-      currentStepId: "create-indexers",
-      createdAt: "2098-12-31T23:50:00.000Z",
-      updatedAt: "2098-12-31T23:55:00.000Z",
-      workflow: { workflowName: "game-launch.yml" },
-      autoRetry: { enabled: true, intervalMinutes: 15, nextRetryAt: "2099-01-01T00:10:00.000Z" },
-      evaluation: { intervalMinutes: 15, nextEvaluationAt: "2099-01-01T00:10:00.000Z" },
-      steps: [
-        buildRotationTestRunStep("create-series", "succeeded"),
-        buildRotationTestRunStep("create-worlds", "succeeded"),
-        buildRotationTestRunStep("wait-for-factory-indexes", "succeeded"),
-        buildRotationTestRunStep("configure-worlds", "succeeded"),
-        buildRotationTestRunStep("grant-lootchest-roles", "succeeded"),
-        buildRotationTestRunStep("grant-village-pass-roles", "succeeded"),
-        buildRotationTestRunStep("create-banks", "succeeded"),
-        buildRotationTestRunStep("create-indexers", "failed"),
-        buildRotationTestRunStep("sync-paymaster", "pending"),
-      ],
-      summary: {
-        environment: "mainnet.blitz",
-        chain: "mainnet",
-        gameType: "blitz",
-        rotationName: "bltz-recovery-case",
-        seriesName: "bltz-recovery-case",
-        firstGameStartTime: 4_070_908_800,
-        firstGameStartTimeIso: "2099-01-01T00:00:00.000Z",
-        gameIntervalMinutes: 60,
-        maxGames: 12,
-        advanceWindowGames: 5,
-        evaluationIntervalMinutes: 15,
-        rpcUrl: "https://rpc.example",
-        factoryAddress: "0x123",
-        autoRetryEnabled: true,
-        autoRetryIntervalMinutes: 15,
-        dryRun: false,
-        configMode: "batched",
-        seriesCreated: true,
-        games: [
-          {
-            ...buildRotationTestGame("bltz-recovery-case-01", 1, 4_070_908_800),
-            status: "succeeded",
-            steps: [{ id: "create-indexers", status: "succeeded" }],
-          },
-          {
-            ...buildRotationTestGame("bltz-recovery-case-02", 2, 4_070_912_400),
-            currentStepId: "create-indexers",
-            latestEvent: "create-indexers failed",
-            status: "failed",
-            steps: [{ id: "create-indexers", status: "failed" }],
-          },
-        ],
-        outputPath: ".context/game-launch/rotation-mainnet-blitz-bltz-recovery-case.json",
-      },
-      artifacts: {
-        summaryPath: ".context/game-launch/rotation-mainnet-blitz-bltz-recovery-case.json",
-        seriesCreated: true,
-        seriesCreatedAt: "2098-12-31T23:50:00.000Z",
-      },
-    });
-
-    writeRotationSummaryFile({
-      environment: "mainnet.blitz",
-      chain: "mainnet",
-      gameType: "blitz",
-      rotationName: "bltz-recovery-case",
-      seriesName: "bltz-recovery-case",
-      firstGameStartTime: 4_070_908_800,
-      firstGameStartTimeIso: "2099-01-01T00:00:00.000Z",
-      gameIntervalMinutes: 60,
-      maxGames: 12,
-      advanceWindowGames: 5,
-      evaluationIntervalMinutes: 15,
-      rpcUrl: "https://rpc.example",
-      factoryAddress: "0x123",
-      autoRetryEnabled: true,
-      autoRetryIntervalMinutes: 15,
-      dryRun: false,
-      configMode: "batched",
-      seriesCreated: true,
-      games: [
-        {
-          ...buildRotationTestGame("bltz-recovery-case-01", 1, 4_070_908_800),
-          status: "succeeded",
-          steps: [{ id: "create-indexers", status: "succeeded" }],
-        },
-        {
-          ...buildRotationTestGame("bltz-recovery-case-02", 2, 4_070_912_400),
-          status: "succeeded",
-          steps: [{ id: "create-indexers", status: "succeeded" }],
-        },
-      ],
-      outputPath: ".context/game-launch/rotation-mainnet-blitz-bltz-recovery-case.json",
-    });
-
-    await recordFactoryRotationLaunchStepSucceeded({
-      environmentId: "mainnet.blitz",
-      rotationName: "bltz-recovery-case",
-      requestedLaunchStep: "create-indexers",
-      stepId: "create-indexers",
-      request: {
-        environmentId: "mainnet.blitz",
-        rotationName: "bltz-recovery-case",
-        firstGameStartTime: "2099-01-01T00:00:00Z",
-        gameIntervalMinutes: 60,
-        maxGames: 12,
-        advanceWindowGames: 5,
-        evaluationIntervalMinutes: 15,
-      },
-    });
-
-    const runRecord = branchStore.readJson("runs/mainnet/blitz/rotations/bltz-recovery-case.json");
-    const createIndexersStep = runRecord.steps.find((step: { id: string }) => step.id === "create-indexers");
-
-    expect(runRecord.status).toBe("running");
-    expect(createIndexersStep?.status).toBe("pending");
-    expect(createIndexersStep?.latestEvent).toContain("Waiting to run");
-  });
-
-  test("rewrites a targeted series child indexer status without a refreshed workspace summary", async () => {
-    const branchStore = createBranchStoreFetch();
-    globalThis.fetch = branchStore.fetch;
-
-    await recordFactorySeriesLaunchStarted({
-      environmentId: "mainnet.blitz",
-      seriesName: "bltz-series-recovery",
-      requestedLaunchStep: "full",
-      request: {
-        environmentId: "mainnet.blitz",
-        seriesName: "bltz-series-recovery",
-        games: [
-          { gameName: "bltz-series-recovery-01", startTime: "2099-01-01T00:00:00Z" },
-          { gameName: "bltz-series-recovery-02", startTime: "2099-01-01T01:00:00Z" },
-        ],
-      },
-    });
-
-    const runPath = "runs/mainnet/blitz/series/bltz-series-recovery.json";
-    const staleRun = branchStore.readJson(runPath);
-    branchStore.writeJson(runPath, {
-      ...staleRun,
-      status: "attention",
-      currentStepId: "create-indexers",
-      steps: staleRun.steps.map((step: { id: string }) =>
-        step.id === "create-indexers"
-          ? markTestRunStepStatus(step, "failed", "Create indexers failed", "Timed out waiting for torii")
-          : step,
-      ),
-      summary: {
-        ...staleRun.summary,
-        games: [
-          markTestGameStepStatus(
-            staleRun.summary.games[0],
-            "create-indexers",
-            "succeeded",
-            "Create indexers succeeded",
-          ),
-          markTestGameStepStatus(
-            staleRun.summary.games[1],
-            "create-indexers",
-            "failed",
-            "factory-torii-deployer #816 failed",
-            "Timed out waiting for torii",
-          ),
-        ],
-      },
-    });
-
-    await recordFactorySeriesLaunchStepSucceeded({
-      environmentId: "mainnet.blitz",
-      seriesName: "bltz-series-recovery",
-      requestedLaunchStep: "create-indexers",
-      stepId: "create-indexers",
-      request: {
-        environmentId: "mainnet.blitz",
-        seriesName: "bltz-series-recovery",
-        targetGameNames: ["bltz-series-recovery-02"],
-        games: [
-          { gameName: "bltz-series-recovery-01", startTime: "2099-01-01T00:00:00Z" },
-          { gameName: "bltz-series-recovery-02", startTime: "2099-01-01T01:00:00Z" },
-        ],
-      },
-    });
-
-    const runRecord = branchStore.readJson(runPath);
-    const recoveredGame = runRecord.summary.games.find(
-      (game: { gameName: string }) => game.gameName === "bltz-series-recovery-02",
-    );
-
-    expect(recoveredGame?.status).toBe("succeeded");
-    expect(recoveredGame?.currentStepId).toBeNull();
-    expect(recoveredGame?.latestEvent).toContain("succeeded");
-    expect(recoveredGame?.artifacts?.indexerCreated).toBe(true);
-    expect(recoveredGame?.steps.find((step: { id: string }) => step.id === "create-indexers")?.status).toBe(
-      "succeeded",
-    );
-    expect(
-      recoveredGame?.steps.find((step: { id: string }) => step.id === "create-indexers")?.errorMessage,
-    ).toBeUndefined();
-  });
-
-  test("rewrites a targeted rotation child indexer status without a refreshed workspace summary", async () => {
-    const branchStore = createBranchStoreFetch();
-    globalThis.fetch = branchStore.fetch;
-
-    await recordFactoryRotationLaunchStarted({
-      environmentId: "mainnet.blitz",
-      rotationName: "bltz-rotation-recovery",
-      requestedLaunchStep: "full",
-      request: {
-        environmentId: "mainnet.blitz",
-        rotationName: "bltz-rotation-recovery",
-        firstGameStartTime: "2099-01-01T00:00:00Z",
-        gameIntervalMinutes: 60,
-        maxGames: 2,
-        advanceWindowGames: 2,
-        evaluationIntervalMinutes: 15,
-      },
-    });
-
-    const runPath = "runs/mainnet/blitz/rotations/bltz-rotation-recovery.json";
-    const staleRun = branchStore.readJson(runPath);
-    branchStore.writeJson(runPath, {
-      ...staleRun,
-      status: "attention",
-      currentStepId: "create-indexers",
-      steps: staleRun.steps.map((step: { id: string }) =>
-        step.id === "create-indexers"
-          ? markTestRunStepStatus(step, "failed", "Create indexers failed", "Timed out waiting for torii")
-          : step,
-      ),
-      summary: {
-        ...staleRun.summary,
-        games: [
-          markTestGameStepStatus(
-            staleRun.summary.games[0],
-            "create-indexers",
-            "succeeded",
-            "Create indexers succeeded",
-          ),
-          markTestGameStepStatus(
-            staleRun.summary.games[1],
-            "create-indexers",
-            "failed",
-            "factory-torii-deployer #816 failed",
-            "Timed out waiting for torii",
-          ),
-        ],
-      },
-    });
-
-    await recordFactoryRotationLaunchStepSucceeded({
-      environmentId: "mainnet.blitz",
-      rotationName: "bltz-rotation-recovery",
-      requestedLaunchStep: "create-indexers",
-      stepId: "create-indexers",
-      request: {
-        environmentId: "mainnet.blitz",
-        rotationName: "bltz-rotation-recovery",
-        firstGameStartTime: "2099-01-01T00:00:00Z",
-        gameIntervalMinutes: 60,
-        maxGames: 2,
-        advanceWindowGames: 2,
-        evaluationIntervalMinutes: 15,
-        targetGameNames: ["bltz-rotation-recovery-02"],
-      },
-    });
-
-    const runRecord = branchStore.readJson(runPath);
-    const recoveredGame = runRecord.summary.games.find(
-      (game: { gameName: string }) => game.gameName === "bltz-rotation-recovery-02",
-    );
-
-    expect(recoveredGame?.status).toBe("succeeded");
-    expect(recoveredGame?.currentStepId).toBeNull();
-    expect(recoveredGame?.latestEvent).toContain("succeeded");
-    expect(recoveredGame?.artifacts?.indexerCreated).toBe(true);
-    expect(recoveredGame?.steps.find((step: { id: string }) => step.id === "create-indexers")?.status).toBe(
-      "succeeded",
-    );
-    expect(
-      recoveredGame?.steps.find((step: { id: string }) => step.id === "create-indexers")?.errorMessage,
-    ).toBeUndefined();
   });
 
   test("marks a failed step as needing attention", async () => {
@@ -1084,7 +663,7 @@ describe("factory run store", () => {
         environmentId: "appchain.eternum",
         gameName: "etrn-flux-730",
         accountAddress: "0xabc123",
-        stepId: "configure-world",
+        stepId: "create-world",
       }),
     ).rejects.toThrow("Account 0xabc123 is already in use");
   });
@@ -1113,7 +692,7 @@ describe("factory run store", () => {
       environmentId: "appchain.eternum",
       gameName: "etrn-flux-730",
       accountAddress: "0xabc123",
-      stepId: "configure-world",
+      stepId: "create-world",
     });
 
     expect(refreshedLease.owner.gameName).toBe("etrn-flux-730");
@@ -1179,14 +758,6 @@ function writeSeriesSummaryFile(summary: LaunchSeriesSummary): void {
   );
 }
 
-function writeRotationSummaryFile(summary: LaunchRotationSummary): void {
-  fs.mkdirSync(resolveRepoPath(".context/game-launch"), { recursive: true });
-  fs.writeFileSync(
-    resolveRotationSummaryPath(summary.environment, summary.rotationName),
-    `${JSON.stringify(summary, null, 2)}\n`,
-  );
-}
-
 function resolveSummaryPath(environmentId: string, gameName: string): string {
   return resolveRepoPath(
     `.context/game-launch/${environmentId.replace(".", "-")}-${gameName.replace(/[^a-zA-Z0-9-_]/g, "-")}.json`,
@@ -1228,65 +799,6 @@ function buildRotationTestGame(gameName: string, seriesGameNumber: number, start
     configSteps: [],
     steps: [],
     artifacts: {},
-  };
-}
-
-function markTestRunStepStatus(
-  step: {
-    id: string;
-    title: string;
-    workflowStepName: string;
-    latestEvent: string;
-    status: string;
-    errorMessage?: string;
-  },
-  status: string,
-  latestEvent: string,
-  errorMessage?: string,
-) {
-  return {
-    ...step,
-    status,
-    latestEvent,
-    errorMessage,
-  };
-}
-
-function markTestGameStepStatus(
-  game: {
-    currentStepId: string | null;
-    latestEvent: string;
-    status: string;
-    steps: Array<{ id: string; status: string; latestEvent?: string; errorMessage?: string; updatedAt?: string }>;
-    artifacts: Record<string, unknown>;
-  },
-  stepId: string,
-  status: string,
-  latestEvent: string,
-  errorMessage?: string,
-) {
-  return {
-    ...game,
-    currentStepId: status === "succeeded" ? null : stepId,
-    latestEvent,
-    status,
-    steps: game.steps.map((step) =>
-      step.id === stepId
-        ? {
-            ...step,
-            status,
-            latestEvent,
-            errorMessage,
-          }
-        : step,
-    ),
-    artifacts:
-      stepId === "create-indexers" && status === "succeeded"
-        ? {
-            ...game.artifacts,
-            indexerCreated: true,
-          }
-        : game.artifacts,
   };
 }
 
@@ -1348,7 +860,7 @@ function createBranchStoreFetch() {
         });
       }
 
-      if (url.includes("api.cartridge.gg") && url.includes("/torii/sql?query=")) {
+      if (url.includes("api.realms.world") && url.includes("/torii/sql?query=")) {
         return Response.json([]);
       }
 

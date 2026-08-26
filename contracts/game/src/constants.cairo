@@ -24,6 +24,36 @@ pub const GRAMS_PER_KG: u128 = 1_000;
 // max realms per user
 pub const MAX_REALMS_PER_ADDRESS: u16 = 8_000;
 
+pub const BLITZ_REGISTRATION_COUNT_CAP: u16 = 96;
+pub const BLITZ_SETTLEMENT_POOL_STEP: u16 = 12;
+
+pub fn assert_blitz_registration_count_within_cap(registration_count: u16) {
+    assert!(registration_count <= BLITZ_REGISTRATION_COUNT_CAP, "Eternum: registration capacity exceeds limit");
+}
+
+pub fn blitz_target_open_settlement_count(
+    settled_player_count: u16, settlement_count_max: u16, two_player_mode: bool,
+) -> u16 {
+    if settled_player_count >= settlement_count_max {
+        return 0;
+    }
+
+    let remaining_settlement_count = settlement_count_max - settled_player_count;
+    if two_player_mode {
+        return remaining_settlement_count;
+    }
+
+    let requested_open_settlement_count = if settled_player_count < 3 {
+        6
+    } else if settled_player_count < 15 {
+        9
+    } else {
+        BLITZ_SETTLEMENT_POOL_STEP
+    };
+
+    core::cmp::min(requested_open_settlement_count, remaining_settlement_count)
+}
+
 // resource precision
 pub const RESOURCE_PRECISION: u128 = 1_000_000_000;
 

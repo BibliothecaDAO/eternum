@@ -38,7 +38,7 @@ function usage(): void {
     [
       "",
       "Usage:",
-      "  bun config/deployer/clean/cli/launch-run-store.ts --launch-kind <game|series|rotation> --event <launch-started|step-started|step-succeeded|step-failed> --environment <appchain.blitz|appchain.eternum|mainnet.blitz|mainnet.eternum>",
+      "  bun config/deployer/clean/cli/launch-run-store.ts --launch-kind <game|series|rotation> --event <launch-started|step-started|step-succeeded|step-failed> --environment <madara.blitz|appchain.blitz|appchain.eternum>",
       "",
       "Game launch:",
       "  --game <world-name> --start-time <unix|iso>",

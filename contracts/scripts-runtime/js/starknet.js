@@ -16,10 +16,6 @@ const NETWORKS = {
     explorerUrl: "https://sepolia.voyager.online",
     rpcUrl: process.env.STARKNET_RPC,
   },
-  slot: {
-    explorerUrl: "https://api.cartridge.gg/x/eternum-blitz-slot-4/katana/explorer",
-    rpcUrl: process.env.STARKNET_RPC,
-  },
   slottest: {
     explorerUrl: "https://slot.voyager.online",
     rpcUrl: process.env.STARKNET_RPC,

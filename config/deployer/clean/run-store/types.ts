@@ -2,7 +2,6 @@ import type {
   DeploymentChain,
   DeploymentEnvironmentId,
   DeploymentGameType,
-  IndexerWorkflowRun,
   LaunchGameRequest,
   LaunchGameStepId,
   LaunchRotationRequest,
@@ -88,27 +87,7 @@ export interface FactoryRunArtifacts {
   durationSeconds?: number;
   gameId?: number;
   worldAddress?: string;
-  entryTokenAddress?: string;
-  reserveHyperstructuresTxHashes?: string[];
   createGameTxHash?: string;
-  configureTxHash?: string;
-  worldConfigTxHash?: string;
-  lootChestRoleTxHash?: string;
-  villagePassRoleTxHash?: string;
-  createBanksTxHash?: string;
-  paymasterSynced?: boolean;
-  indexerCreated?: boolean;
-  indexerTier?: string;
-  indexerUrl?: string;
-  indexerVersion?: string;
-  indexerBranch?: string;
-  lastIndexerDescribeAt?: string;
-  pendingIndexerTierTarget?: string;
-  pendingIndexerTierRequestedAt?: string;
-  lastIndexerTierDispatchTarget?: string;
-  lastIndexerTierDispatchFailedAt?: string;
-  lastIndexerTierDispatchError?: string;
-  indexerWorkflowRun?: IndexerWorkflowRun;
   prizeFunding?: PrizeFundingState;
 }
 
@@ -292,21 +271,6 @@ export interface FactoryRotationRunRecord {
   };
 }
 
-export interface FactoryRunMaintenanceArtifacts {
-  indexerCreated?: boolean;
-  indexerTier?: string;
-  lastIndexerDescribeAt?: string;
-  pendingIndexerTierTarget?: string;
-  pendingIndexerTierRequestedAt?: string;
-}
-
-export interface FactoryRunMaintenanceIndexGame {
-  gameName: string;
-  startTime?: string | number;
-  durationSeconds?: number;
-  artifacts: FactoryRunMaintenanceArtifacts;
-}
-
 interface FactoryRunMaintenanceIndexEntryBase {
   kind: FactoryMaintenanceIndexKind;
   environment: DeploymentEnvironmentId;
@@ -325,16 +289,12 @@ interface FactoryRunMaintenanceIndexEntryBase {
 export interface FactoryGameRunMaintenanceIndexEntry extends FactoryRunMaintenanceIndexEntryBase {
   kind: "game";
   gameName: string;
-  startTime?: string | number;
-  durationSeconds?: number;
-  artifacts: FactoryRunMaintenanceArtifacts;
 }
 
 export interface FactorySeriesRunMaintenanceIndexEntry extends FactoryRunMaintenanceIndexEntryBase {
   kind: "series";
   seriesName: string;
   autoRetry: FactorySeriesAutoRetryState;
-  games: FactoryRunMaintenanceIndexGame[];
 }
 
 export interface FactoryRotationRunMaintenanceIndexEntry extends FactoryRunMaintenanceIndexEntryBase {
@@ -342,7 +302,6 @@ export interface FactoryRotationRunMaintenanceIndexEntry extends FactoryRunMaint
   rotationName: string;
   autoRetry: FactorySeriesAutoRetryState;
   evaluation: FactoryRotationEvaluationState;
-  games: FactoryRunMaintenanceIndexGame[];
 }
 
 export type FactoryRunMaintenanceIndexEntry =

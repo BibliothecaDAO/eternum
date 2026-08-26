@@ -10,16 +10,11 @@ describe("series launch plans", () => {
     ]);
   });
 
-  test("keeps the mainnet Blitz factory plan", () => {
-    expect(resolveSeriesLaunchStepIds("mainnet.blitz")).toEqual([
+  test("uses the same persistent registrar plan on Madara", () => {
+    expect(resolveSeriesLaunchStepIds("madara.blitz")).toEqual([
       "create-series",
       "create-worlds",
       "wait-for-factory-indexes",
-      "configure-worlds",
-      "reserve-blitz-hyperstructures",
-      "grant-lootchest-roles",
-      "create-indexers",
-      "sync-paymaster",
     ]);
   });
 });

@@ -7,6 +7,7 @@ import {
   type Config,
 } from "@bibliothecadao/types";
 import { hash, shortString, uint256 } from "starknet";
+import { BLITZ_REGISTRATION_COUNT_CAP } from "../constants";
 
 type ConfigRecord<Value> = Record<number, Value> | Record<string, Value>;
 type ResourceAmount = { resource: number; amount: number };
@@ -595,8 +596,8 @@ function resolveRegistrationCountMax(config: Config, twoPlayerMode: boolean): nu
   }
 
   const registrationCountMax = twoPlayerMode ? 2 : config.blitz.registration.registration_count_max;
-  if (registrationCountMax < 1 || registrationCountMax > 24) {
-    throw new Error("Blitz registration_count_max must be between 1 and 24");
+  if (registrationCountMax < 1 || registrationCountMax > BLITZ_REGISTRATION_COUNT_CAP) {
+    throw new Error(`Blitz registration_count_max must be between 1 and ${BLITZ_REGISTRATION_COUNT_CAP}`);
   }
   return registrationCountMax;
 }

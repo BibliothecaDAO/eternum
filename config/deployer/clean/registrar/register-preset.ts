@@ -3,13 +3,14 @@ import { applyBlitzBalanceProfile, type BlitzBalanceProfileId } from "../../../s
 import { loadEnvironmentConfiguration } from "../config/config-loader";
 import { resolveDeploymentEnvironment } from "../environment";
 import { resolveAccountCredentials } from "../shared/credentials";
+import type { DeploymentEnvironmentId } from "../types";
 import { buildRegisterPresetCalldata, isRegistrarAlreadyRegisteredError, registerPreset } from "./calls";
 import { isPresetRegistered } from "./game-registry";
 import { buildPresetRegistration, summarizePresetSideTables } from "./preset";
 
 interface RegisterPresetOptions {
   presetId: number;
-  environmentId: "appchain.blitz" | "appchain.eternum";
+  environmentId: DeploymentEnvironmentId;
   balanceProfile?: BlitzBalanceProfileId;
   dryRun: boolean;
 }
@@ -27,11 +28,11 @@ function parseOptions(): RegisterPresetOptions {
   const balanceProfile = readArgument("--balance-profile") as BlitzBalanceProfileId | undefined;
   if (!Number.isInteger(presetId) || presetId <= 0) {
     throw new Error(
-      "Usage: bun config/deployer/clean/registrar/register-preset.ts --preset-id <n> [--environment appchain.blitz|appchain.eternum] [--balance-profile official-60|official-90] [--dry-run]",
+      "Usage: bun config/deployer/clean/registrar/register-preset.ts --preset-id <n> [--environment madara.blitz|appchain.blitz|appchain.eternum] [--balance-profile official-60|official-90] [--dry-run]",
     );
   }
-  if (environmentId !== "appchain.blitz" && environmentId !== "appchain.eternum") {
-    throw new Error("--environment must be appchain.blitz or appchain.eternum");
+  if (environmentId !== "madara.blitz" && environmentId !== "appchain.blitz" && environmentId !== "appchain.eternum") {
+    throw new Error("--environment must be madara.blitz, appchain.blitz, or appchain.eternum");
   }
   if (balanceProfile !== undefined) {
     if (!BALANCE_PROFILE_IDS.includes(balanceProfile)) {
@@ -48,10 +49,7 @@ function parseOptions(): RegisterPresetOptions {
 // (official-60 "Regular Fast", official-90) are applied at game creation,
 // NOT baked into the stored config. A preset registered without the profile
 // silently ships base balance under a profile-flavored label (preset 4 bug).
-function loadPresetConfiguration(
-  environmentId: "appchain.blitz" | "appchain.eternum",
-  balanceProfile?: BlitzBalanceProfileId,
-) {
+function loadPresetConfiguration(environmentId: DeploymentEnvironmentId, balanceProfile?: BlitzBalanceProfileId) {
   const config = loadEnvironmentConfiguration(environmentId);
   return balanceProfile ? applyBlitzBalanceProfile(config, balanceProfile) : config;
 }
@@ -62,7 +60,7 @@ function stringify(value: unknown): string {
 
 export function buildPresetDryRun(
   presetId: number,
-  environmentId: "appchain.blitz" | "appchain.eternum" = "appchain.blitz",
+  environmentId: DeploymentEnvironmentId = "appchain.blitz",
   balanceProfile?: BlitzBalanceProfileId,
 ) {
   const config = loadPresetConfiguration(environmentId, balanceProfile);
@@ -77,7 +75,7 @@ export function buildPresetDryRun(
   };
 }
 
-export async function registerAppchainPreset(options: RegisterPresetOptions): Promise<void> {
+export async function registerEnvironmentPreset(options: RegisterPresetOptions): Promise<void> {
   const config = loadPresetConfiguration(options.environmentId, options.balanceProfile);
   const payload = buildPresetRegistration(config, options.presetId);
   const calldata = buildRegisterPresetCalldata(payload);
@@ -102,7 +100,7 @@ export async function registerAppchainPreset(options: RegisterPresetOptions): Pr
   const credentials = resolveAccountCredentials({
     accountAddress: process.env.DOJO_ACCOUNT_ADDRESS,
     privateKey: process.env.DOJO_PRIVATE_KEY,
-    context: "appchain preset registration",
+    context: `${options.environmentId} preset registration`,
   });
   const account = new Account({
     provider: new RpcProvider({ nodeUrl: process.env.RPC_URL || environment.rpcUrl }),
@@ -122,7 +120,7 @@ export async function registerAppchainPreset(options: RegisterPresetOptions): Pr
 }
 
 if (import.meta.main) {
-  registerAppchainPreset(parseOptions()).catch((error) => {
+  registerEnvironmentPreset(parseOptions()).catch((error) => {
     console.error(error instanceof Error ? error.message : String(error));
     process.exit(1);
   });

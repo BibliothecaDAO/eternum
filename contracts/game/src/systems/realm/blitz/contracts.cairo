@@ -22,7 +22,7 @@ pub mod blitz_realm_systems {
     use dojo::world::{IWorldDispatcherTrait, WorldStorage, WorldStorageTrait};
     use starknet::ContractAddress;
     use crate::alias::ID;
-    use crate::constants::{DEFAULT_NS, blitz_produceable_resources};
+    use crate::constants::{DEFAULT_NS, blitz_produceable_resources, blitz_target_open_settlement_count};
     use crate::models::config::{
         BlitzCosmeticAttrsRegister, BlitzEntryTokenRegister, BlitzExplorationConfig, BlitzHypersSettlementConfig,
         BlitzHypersSettlementConfigImpl, BlitzRegistrationConfig, BlitzRegistrationConfigImpl, BlitzSettlement,
@@ -412,24 +412,7 @@ pub mod blitz_realm_systems {
         fn target_open_settlement_count(
             settled_player_count: u16, settlement_count_max: u16, two_player_mode: bool,
         ) -> u16 {
-            if settled_player_count >= settlement_count_max {
-                return 0;
-            }
-
-            let remaining_settlement_count = settlement_count_max - settled_player_count;
-            if two_player_mode {
-                return remaining_settlement_count;
-            }
-
-            let requested_open_settlement_count = if settled_player_count < 3 {
-                6
-            } else if settled_player_count < 15 {
-                9
-            } else {
-                remaining_settlement_count
-            };
-
-            core::cmp::min(requested_open_settlement_count, remaining_settlement_count)
+            blitz_target_open_settlement_count(settled_player_count, settlement_count_max, two_player_mode)
         }
 
         fn open_next_settlement(

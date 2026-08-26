@@ -11,7 +11,7 @@ try {
   env = envSchema.parse(process.env);
 } catch (error) {
   if (error instanceof z.ZodError) {
-    console.error("❌ Invalid environment variables:", JSON.stringify(error.errors, null, 2));
+    console.error("❌ Invalid environment variables:", JSON.stringify(error.issues, null, 2));
   }
   throw new Error("Invalid environment variables");
 }

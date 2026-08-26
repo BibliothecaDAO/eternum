@@ -1,6 +1,7 @@
-import { saveResolvedConfigJson, type GameType, type NetworkType } from "../utils/environment";
+import type { GameChain } from "@realms-world/chain";
+import { saveResolvedConfigJson, type GameType } from "../utils/environment";
 
-const VALID_NETWORKS: NetworkType[] = ["local", "mainnet", "sepolia", "appchain"];
+const VALID_NETWORKS: GameChain[] = ["madara", "appchain"];
 const VALID_GAME_TYPES: GameType[] = ["blitz", "eternum"];
 
 function printSyncUsage(): void {
@@ -13,8 +14,8 @@ function printGameTypeUsage(): void {
   console.error(`  game_type must be one of: ${VALID_GAME_TYPES.join(", ")}`);
 }
 
-function resolveSyncTarget(argv: string[]): { gameType: GameType; network: NetworkType } {
-  const network = argv[2] as NetworkType;
+function resolveSyncTarget(argv: string[]): { gameType: GameType; network: GameChain } {
+  const network = argv[2] as GameChain;
   const gameType = argv[3] as GameType;
 
   if (!network || !VALID_NETWORKS.includes(network)) {

@@ -1,53 +1,26 @@
 import type {
-  Config as EternumConfig,
   FactoryBiomeClimateOverrides,
   FactoryBlitzRegistrationOverrides,
   FactoryMapConfigOverrides,
 } from "@bibliothecadao/types";
-import type { Account } from "starknet";
+import type { GameChain } from "@realms-world/chain";
 
-export type DeploymentChain = "appchain" | "mainnet";
+export type DeploymentChain = GameChain;
 export type DeploymentGameType = "blitz" | "eternum";
-export type DeploymentEnvironmentId = "appchain.blitz" | "appchain.eternum" | "mainnet.blitz" | "mainnet.eternum";
+export type DeploymentEnvironmentId = "madara.blitz" | "appchain.blitz" | "appchain.eternum";
 export type ExecutionMode = "batched" | "sequential";
 export type LaunchTargetKind = "game" | "series" | "rotation";
 export type LaunchStepStatus = "pending" | "running" | "succeeded" | "failed";
 export type LaunchRotationWeekday = "monday" | "tuesday" | "wednesday" | "thursday" | "friday" | "saturday" | "sunday";
-export type LaunchGameStepId =
-  | "create-world"
-  | "wait-for-factory-index"
-  | "configure-world"
-  | "reserve-blitz-hyperstructures"
-  | "grant-lootchest-role"
-  | "grant-village-pass-role"
-  | "create-banks"
-  | "create-indexer"
-  | "sync-paymaster";
-export type SeriesLaunchStepId =
-  | "create-series"
-  | "create-worlds"
-  | "wait-for-factory-indexes"
-  | "configure-worlds"
-  | "reserve-blitz-hyperstructures"
-  | "grant-lootchest-roles"
-  | "grant-village-pass-roles"
-  | "create-banks"
-  | "create-indexers"
-  | "sync-paymaster";
+export type LaunchGameStepId = "create-world" | "wait-for-factory-index";
+export type SeriesLaunchStepId = "create-series" | "create-worlds" | "wait-for-factory-indexes";
 export type RotationLaunchStepId = SeriesLaunchStepId;
 // Backward-compatible names used by the workflow and run-store modules.
 export type LaunchSeriesStepId = SeriesLaunchStepId;
 export type LaunchRotationStepId = RotationLaunchStepId;
 export type SeriesLaunchChildStepStatus = "pending" | "running" | "succeeded" | "failed";
 
-export interface CreateGameDefaults {
-  maxActions: number;
-  submissionCount: number;
-  retryCount: number;
-  retryDelayMs: number;
-}
-
-export interface AppchainWorldDeployment {
+export interface WorldDeployment {
   namespace: string;
   manifestPath: string;
   registrarAddress: string;
@@ -59,108 +32,16 @@ export interface DeploymentEnvironment {
   gameType: DeploymentGameType;
   toriiEnv: DeploymentChain;
   configPath: string;
-  factoryAddress?: string;
   rpcUrl: string;
   accountAddress?: string;
   privateKey?: string;
-  appchainWorld?: AppchainWorldDeployment;
-  createGame: CreateGameDefaults;
-}
-
-export interface ConfigLogger {
-  log: (...args: unknown[]) => void;
-  info?: (...args: unknown[]) => void;
-}
-
-export interface CleanConfigArtifacts {
-  worldConfigTxHash?: string;
-  entryTokenAddress?: string;
-}
-
-export interface CleanConfigContext<Provider = unknown> {
-  account: Account;
-  provider: Provider;
-  config: EternumConfig;
-  logger?: ConfigLogger;
-  artifacts?: CleanConfigArtifacts;
-}
-
-export interface ConfigStepResult {
-  transactionHash?: string;
-}
-
-export interface ConfigStep<Provider = unknown> {
-  id: string;
-  description: string;
-  execute: (context: CleanConfigContext<Provider>) => Promise<void | ConfigStepResult>;
+  world: WorldDeployment;
 }
 
 export interface ExecutedConfigStep {
   id: string;
   description: string;
   transactionHash?: string;
-}
-
-export interface ConfigExecutionResult {
-  mode: ExecutionMode;
-  steps: ExecutedConfigStep[];
-  transactionHash?: string;
-  artifacts: CleanConfigArtifacts;
-}
-
-export interface ConfigStepHooks<Provider = unknown> {
-  onStepStart?: (step: ConfigStep<Provider>, index: number, total: number) => void;
-  onStepComplete?: (step: ConfigStep<Provider>, index: number, total: number, elapsedMs: number) => void;
-}
-
-export interface FactoryWorldProfile {
-  worldAddress: string;
-  contractsBySelector: Record<string, string>;
-}
-
-export type IndexerTier = "basic" | "pro" | "legendary" | "epic";
-export type IndexerResolutionState = "existing" | "missing" | "indeterminate";
-export type IndexerResolutionSource = "describe" | "describe-not-found" | "list" | "describe-and-list-failed";
-export type IndexerCreationMode = "github-actions";
-
-export interface IndexerRequest {
-  env: string;
-  rpcUrl: string;
-  namespaces: string;
-  worldName: string;
-  worldAddress: string;
-  tier?: IndexerTier;
-  workflowFile?: string;
-  ref?: string;
-  externalContracts?: string[];
-}
-
-export interface IndexerWorkflowRun {
-  workflowFile: string;
-  ref: string;
-  runId: number;
-  runNumber: number;
-  htmlUrl: string;
-  status: string;
-  conclusion: string;
-}
-
-export interface IndexerLiveState {
-  state: IndexerResolutionState;
-  stateSource: IndexerResolutionSource;
-  currentTier?: IndexerTier;
-  url?: string;
-  version?: string;
-  branch?: string;
-  describeError?: string;
-  describedAt?: string;
-}
-
-export interface IndexerCreationResult {
-  mode: IndexerCreationMode;
-  action?: "created" | "already-live";
-  liveState?: IndexerLiveState;
-  workflowRun?: IndexerWorkflowRun;
 }
 
 export interface LaunchGameResumeStepState {
@@ -175,7 +56,6 @@ export interface LaunchGameRequest {
   gameName: string;
   startTime: string | number;
   rpcUrl?: string;
-  factoryAddress?: string;
   accountAddress?: string;
   privateKey?: string;
   devModeOn?: boolean;
@@ -185,23 +65,14 @@ export interface LaunchGameRequest {
   mapConfigOverrides?: FactoryMapConfigOverrides;
   biomeClimateOverrides?: FactoryBiomeClimateOverrides;
   blitzRegistrationOverrides?: FactoryBlitzRegistrationOverrides;
-  cartridgeApiBase?: string;
-  toriiNamespaces?: string;
-  vrfProviderAddress?: string;
   executionMode?: ExecutionMode;
   verboseConfigLogs?: boolean;
   version?: string;
-  maxActions?: number;
   seriesName?: string;
   seriesGameNumber?: number;
   waitForFactoryIndexTimeoutMs?: number;
   waitForFactoryIndexPollMs?: number;
-  skipIndexer?: boolean;
-  skipLootChestRoleGrant?: boolean;
-  skipBanks?: boolean;
   dryRun?: boolean;
-  workflowFile?: string;
-  ref?: string;
   resumeSteps?: LaunchGameResumeStepState[];
 }
 
@@ -223,7 +94,6 @@ export interface LaunchSeriesRequest {
   games: LaunchSeriesGameRequest[];
   targetGameNames?: string[];
   rpcUrl?: string;
-  factoryAddress?: string;
   accountAddress?: string;
   privateKey?: string;
   devModeOn?: boolean;
@@ -233,21 +103,12 @@ export interface LaunchSeriesRequest {
   mapConfigOverrides?: FactoryMapConfigOverrides;
   biomeClimateOverrides?: FactoryBiomeClimateOverrides;
   blitzRegistrationOverrides?: FactoryBlitzRegistrationOverrides;
-  cartridgeApiBase?: string;
-  toriiNamespaces?: string;
-  vrfProviderAddress?: string;
   executionMode?: ExecutionMode;
   verboseConfigLogs?: boolean;
   version?: string;
-  maxActions?: number;
   waitForFactoryIndexTimeoutMs?: number;
   waitForFactoryIndexPollMs?: number;
-  skipIndexer?: boolean;
-  skipLootChestRoleGrant?: boolean;
-  skipBanks?: boolean;
   dryRun?: boolean;
-  workflowFile?: string;
-  ref?: string;
   autoRetryEnabled?: boolean;
   autoRetryIntervalMinutes?: number;
   resumeSummary?: LaunchSeriesSummary;
@@ -269,7 +130,6 @@ export interface LaunchRotationRequest {
   evaluationIntervalMinutes: number;
   weeklyCadence?: LaunchRotationWeeklyCadenceEntry[];
   rpcUrl?: string;
-  factoryAddress?: string;
   accountAddress?: string;
   privateKey?: string;
   devModeOn?: boolean;
@@ -280,21 +140,12 @@ export interface LaunchRotationRequest {
   biomeClimateOverrides?: FactoryBiomeClimateOverrides;
   biomeClimateOverridesByGameNumber?: Record<number, FactoryBiomeClimateOverrides>;
   blitzRegistrationOverrides?: FactoryBlitzRegistrationOverrides;
-  cartridgeApiBase?: string;
-  toriiNamespaces?: string;
-  vrfProviderAddress?: string;
   executionMode?: ExecutionMode;
   verboseConfigLogs?: boolean;
   version?: string;
-  maxActions?: number;
   waitForFactoryIndexTimeoutMs?: number;
   waitForFactoryIndexPollMs?: number;
-  skipIndexer?: boolean;
-  skipLootChestRoleGrant?: boolean;
-  skipBanks?: boolean;
   dryRun?: boolean;
-  workflowFile?: string;
-  ref?: string;
   autoRetryEnabled?: boolean;
   autoRetryIntervalMinutes?: number;
   resumeSummary?: LaunchRotationSummary;
@@ -322,27 +173,9 @@ export interface LaunchGameSummary {
   startTimeIso: string;
   durationSeconds?: number;
   rpcUrl: string;
-  factoryAddress: string;
   gameId?: number;
   worldAddress?: string;
-  entryTokenAddress?: string;
-  reserveHyperstructuresTxHashes?: string[];
   createGameTxHash?: string;
-  configureTxHash?: string;
-  worldConfigTxHash?: string;
-  lootChestRoleTxHash?: string;
-  villagePassRoleTxHash?: string;
-  createBanksTxHash?: string;
-  paymasterSynced?: boolean;
-  indexerCreated: boolean;
-  indexerMode?: IndexerCreationResult["mode"];
-  indexerTier?: IndexerTier;
-  indexerUrl?: string;
-  indexerVersion?: string;
-  indexerBranch?: string;
-  lastIndexerDescribeAt?: string;
-  indexerRequest?: IndexerRequest;
-  indexerWorkflowRun?: IndexerWorkflowRun;
   prizeFunding?: PrizeFundingState;
   configMode: ExecutionMode;
   configSteps: ExecutedConfigStep[];
@@ -367,29 +200,7 @@ export interface PrizeFundingState {
 export interface SeriesLaunchGameArtifacts {
   gameId?: number;
   worldAddress?: string;
-  entryTokenAddress?: string;
-  reserveHyperstructuresTxHashes?: string[];
   createGameTxHash?: string;
-  configureTxHash?: string;
-  worldConfigTxHash?: string;
-  lootChestRoleTxHash?: string;
-  villagePassRoleTxHash?: string;
-  createBanksTxHash?: string;
-  paymasterSynced?: boolean;
-  indexerCreated?: boolean;
-  indexerMode?: IndexerCreationResult["mode"];
-  indexerTier?: IndexerTier;
-  indexerUrl?: string;
-  indexerVersion?: string;
-  indexerBranch?: string;
-  lastIndexerDescribeAt?: string;
-  pendingIndexerTierTarget?: IndexerTier;
-  pendingIndexerTierRequestedAt?: string;
-  lastIndexerTierDispatchTarget?: IndexerTier;
-  lastIndexerTierDispatchFailedAt?: string;
-  lastIndexerTierDispatchError?: string;
-  indexerRequest?: IndexerRequest;
-  indexerWorkflowRun?: IndexerWorkflowRun;
   prizeFunding?: PrizeFundingState;
 }
 
@@ -423,7 +234,6 @@ export interface LaunchSeriesSummary {
   gameType: DeploymentGameType;
   seriesName: string;
   rpcUrl: string;
-  factoryAddress: string;
   autoRetryEnabled: boolean;
   autoRetryIntervalMinutes: number;
   dryRun: boolean;
@@ -448,7 +258,6 @@ export interface LaunchRotationSummary {
   evaluationIntervalMinutes: number;
   weeklyCadence?: LaunchRotationWeeklyCadenceEntry[];
   rpcUrl: string;
-  factoryAddress: string;
   autoRetryEnabled: boolean;
   autoRetryIntervalMinutes: number;
   dryRun: boolean;

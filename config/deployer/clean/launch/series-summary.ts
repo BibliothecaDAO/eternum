@@ -1,6 +1,4 @@
-import { DEFAULT_CARTRIDGE_API_BASE } from "../constants";
-import { isMainnetDeploymentEnvironment, resolveDeploymentEnvironment } from "../environment";
-import { readFactorySeriesState } from "../factory/series";
+import { resolveDeploymentEnvironment } from "../environment";
 import type {
   LaunchSeriesGameRequest,
   LaunchSeriesRequest,
@@ -88,7 +86,6 @@ export function buildInitialSeriesLaunchSummary(request: LaunchSeriesRequest): L
     gameType: environment.gameType,
     seriesName: request.seriesName.trim(),
     rpcUrl: request.rpcUrl || environment.rpcUrl,
-    factoryAddress: request.factoryAddress || environment.factoryAddress || "",
     autoRetryEnabled: request.autoRetryEnabled ?? true,
     autoRetryIntervalMinutes: resolveDefaultSeriesRetryIntervalMinutes(request),
     dryRun: request.dryRun === true,
@@ -102,7 +99,6 @@ function applySeriesRequestSettings(summary: LaunchSeriesSummary, request: Launc
   return {
     ...summary,
     rpcUrl: request.rpcUrl || summary.rpcUrl,
-    factoryAddress: request.factoryAddress || summary.factoryAddress,
     autoRetryEnabled: request.autoRetryEnabled ?? summary.autoRetryEnabled,
     autoRetryIntervalMinutes: resolveDefaultSeriesRetryIntervalMinutes(request),
     dryRun: request.dryRun === true,
@@ -173,7 +169,7 @@ function validatePersistedSeriesGameNumbers(summary: LaunchSeriesSummary): void 
 }
 
 export async function assignSeriesGameNumbers(
-  request: LaunchSeriesRequest,
+  _request: LaunchSeriesRequest,
   summary: LaunchSeriesSummary,
 ): Promise<LaunchSeriesSummary> {
   validatePersistedSeriesGameNumbers(summary);
@@ -182,26 +178,14 @@ export async function assignSeriesGameNumbers(
     return summary;
   }
 
-  const environment = resolveDeploymentEnvironment(request.environmentId);
-  const seriesState = isMainnetDeploymentEnvironment(environment)
-    ? await readFactorySeriesState({
-        chain: summary.chain,
-        seriesName: summary.seriesName,
-        cartridgeApiBase: request.cartridgeApiBase || DEFAULT_CARTRIDGE_API_BASE,
-      })
-    : {
-        exists: summary.seriesCreated,
-        lastGameNumber: Math.max(0, ...summary.games.map((game) => game.seriesGameNumber)),
-      };
+  const lastGameNumber = Math.max(0, ...summary.games.map((game) => game.seriesGameNumber));
   let nextGameNumber =
-    Math.max(
-      seriesState.lastGameNumber,
-      ...summary.games.map((game) => (game.seriesGameNumber > 0 ? game.seriesGameNumber : 0)),
-    ) + 1;
+    Math.max(lastGameNumber, ...summary.games.map((game) => (game.seriesGameNumber > 0 ? game.seriesGameNumber : 0))) +
+    1;
 
   return {
     ...summary,
-    seriesCreated: summary.seriesCreated || seriesState.exists,
+    seriesCreated: summary.seriesCreated,
     games: summary.games.map((game) => {
       if (game.seriesGameNumber > 0) {
         nextGameNumber = Math.max(nextGameNumber, game.seriesGameNumber + 1);

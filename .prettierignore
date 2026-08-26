@@ -1,5 +1,6 @@
 **/*/target
 **/*/dist
+**/.output
 
 # ignore lock files
 **/*-lock.yaml
@@ -22,6 +23,7 @@
 **/gql
 **/*.graphql
 **/*.gen.ts
+apps/web/src/site/generated/scroll-posts.ts
 
 # ignore json files
 **/*.json

@@ -10,7 +10,7 @@ import type { LaunchRotationRequest } from "../types";
 function buildWeeklyRotationRequest(overrides: Partial<LaunchRotationRequest> = {}): LaunchRotationRequest {
   return {
     launchKind: "rotation",
-    environmentId: "mainnet.blitz",
+    environmentId: "appchain.blitz",
     rotationName: "blitz-rotation",
     firstGameStartTime: "2026-04-20T01:00:00Z",
     gameIntervalMinutes: 0,

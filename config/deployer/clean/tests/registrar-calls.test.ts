@@ -16,9 +16,9 @@ mock.module("../../../../contracts/game/manifest_appchain_blitz.json", () => ({
 }));
 
 const {
-  assertAppchainRegistrarAvailable,
-  resolveAppchainContractAddress,
-  resolveAppchainWorldAddress,
+  assertRegistrarAvailable,
+  resolveRegistrarContractAddress,
+  resolveRegistrarWorldAddress,
   resolveCreatedGameId,
 } = await import("../registrar/calls");
 
@@ -69,13 +69,13 @@ describe("registrar receipt parsing", () => {
       ],
     };
 
-    expect(() => resolveAppchainWorldAddress(staleManifest)).toThrow("s2-registrar_systems is missing");
-    expect(() => resolveAppchainContractAddress("blitz_realm_systems", staleManifest)).toThrow(
+    expect(() => resolveRegistrarWorldAddress(staleManifest)).toThrow("s2-registrar_systems is missing");
+    expect(() => resolveRegistrarContractAddress("blitz_realm_systems", staleManifest)).toThrow(
       "blitz_realm_systems is missing",
     );
   });
 
   test("resolves the eternum world registrar now that both s2 worlds are deployed", () => {
-    expect(() => assertAppchainRegistrarAvailable("appchain.eternum")).not.toThrow();
+    expect(() => assertRegistrarAvailable("appchain.eternum")).not.toThrow();
   });
 });

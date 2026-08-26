@@ -1,6 +1,6 @@
 #!/usr/bin/env bun
 import { buildLaunchGameRequest, parseArgs } from "./launch-request";
-import { DEFAULT_APPCHAIN_MAX_ACTIONS, DEFAULT_MAINNET_MAX_ACTIONS, DEFAULT_VERSION } from "../constants";
+import { DEFAULT_APPCHAIN_PRESET_ID, DEFAULT_MADARA_PRESET_ID } from "../constants";
 import { launchGame } from "../launch/runner";
 
 function usage(): void {
@@ -8,25 +8,14 @@ function usage(): void {
     [
       "",
       "Usage:",
-      "  bun config/deployer/clean/cli/create.ts --environment <appchain.blitz|appchain.eternum|mainnet.blitz|mainnet.eternum> --game <world-name> --start-time <unix|iso>",
+      "  bun config/deployer/clean/cli/create.ts --environment <madara.blitz|appchain.blitz|appchain.eternum> --game <world-name> --start-time <unix|iso>",
       "  bun config/deployer/clean/cli/create.ts --config-path <path-to-launch.yaml>",
       "",
       "Optional env or flags:",
       "  GAME_LAUNCH_CONFIG_PATH / --config-path",
       "  RPC_URL / --rpc-url",
-      "  FACTORY_ADDRESS / --factory-address",
       "  DOJO_ACCOUNT_ADDRESS / --account-address",
       "  DOJO_PRIVATE_KEY / --private-key",
-      "  VITE_PUBLIC_VRF_PROVIDER_ADDRESS / --vrf-provider-address",
-      "  TORII_NAMESPACES / --torii-namespaces",
-      "  CARTRIDGE_API_BASE / --cartridge-api-base",
-      "  GITHUB_TOKEN",
-      "  GITHUB_REPOSITORY",
-      "  --workflow-file <factory-torii-deployer.yml>",
-      "  --ref <git-ref>",
-      "  Local fallback: if GITHUB_TOKEN is unset, the clean deployer will try gh auth token",
-      "                  and log that it did so. If GITHUB_REPOSITORY is unset, it will try",
-      "                  gh repo view. If ref is unset, it will try the current git branch.",
       "  VERBOSE_CONFIG_LOGS=true / --verbose-config-logs",
       "  DEV_MODE_ON=true|false / --dev-mode-on true|false",
       "  SINGLE_REALM_MODE=true|false / --single-realm-mode true|false",
@@ -36,20 +25,15 @@ function usage(): void {
       "  MAP_CONFIG_OVERRIDES_JSON=<json> / --map-config-overrides-json <json>",
       "  BLITZ_REGISTRATION_OVERRIDES_JSON=<json> / --blitz-registration-overrides-json <json>",
       "  --mode <batched|sequential>",
-      `  --version <felt>              default: ${DEFAULT_VERSION}`,
-      `  --max-actions <number>        default: appchain ${DEFAULT_APPCHAIN_MAX_ACTIONS}, mainnet ${DEFAULT_MAINNET_MAX_ACTIONS}`,
-      "  --factory-address <0x...>     override the environment default",
+      `  --version <felt>              default: madara ${DEFAULT_MADARA_PRESET_ID}, appchain blitz ${DEFAULT_APPCHAIN_PRESET_ID}`,
       "  --series-name <value>",
       "  --series-game-number <number>",
-      "  --skip-indexer",
-      "  --skip-lootchest-role-grant",
-      "  --skip-banks",
       "  --dry-run",
       "",
       "Examples:",
       "  bun config/deployer/clean/cli/create.ts --environment appchain.blitz --game bltz-fire-gate-42 --start-time 1763112600",
       "  bun config/deployer/clean/cli/create.ts --environment appchain.eternum --game etrn-iron-mist-11 --start-time 2025-11-14T09:30:00Z",
-      "  bun config/deployer/clean/cli/create.ts --environment mainnet.eternum --game etrn-iron-mist-11 --start-time 2025-11-14T09:30:00Z",
+      "  bun config/deployer/clean/cli/create.ts --environment madara.blitz --game bltz-lab-96 --start-time 2026-08-25T12:00:00Z",
       "",
     ].join("\n"),
   );

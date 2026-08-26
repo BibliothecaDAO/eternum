@@ -41,10 +41,9 @@ describe("launch request helpers", () => {
   test("builds a launch request from shared CLI args", () => {
     expect(
       buildLaunchGameRequest({
-        environment: "mainnet.blitz",
+        environment: "madara.blitz",
         game: "bltz-test-1",
         "start-time": "2026-03-18T10:00:00Z",
-        "factory-address": "0xabc",
         "two-player-mode": "true",
         "duration-seconds": "3600",
         "map-config-overrides-json": JSON.stringify({
@@ -62,10 +61,9 @@ describe("launch request helpers", () => {
         }),
       }),
     ).toMatchObject({
-      environmentId: "mainnet.blitz",
+      environmentId: "madara.blitz",
       gameName: "bltz-test-1",
       startTime: "2026-03-18T10:00:00Z",
-      factoryAddress: "0xabc",
       twoPlayerMode: true,
       durationSeconds: 3600,
       mapConfigOverrides: {
@@ -84,25 +82,7 @@ describe("launch request helpers", () => {
     });
   });
 
-  test("defaults max actions from the selected environment", () => {
-    expect(
-      buildLaunchGameRequest({
-        environment: "mainnet.blitz",
-        game: "bltz-test-1",
-        "start-time": "2026-03-18T10:00:00Z",
-      }).maxActions,
-    ).toBe(50);
-
-    expect(
-      buildLaunchGameRequest({
-        environment: "appchain.blitz",
-        game: "bltz-test-2",
-        "start-time": "2026-03-18T10:00:00Z",
-      }).maxActions,
-    ).toBe(20);
-  });
-
-  test("defaults appchain launches to their mode-specific preset and the GameRegistry poll budget", () => {
+  test("defaults launches to their preset and the GameRegistry poll budget", () => {
     const blitzRequest = buildLaunchGameRequest({
       environment: "appchain.blitz",
       game: "bltz-test-1",
@@ -113,8 +93,8 @@ describe("launch request helpers", () => {
       game: "etrn-test-1",
       "start-time": "2026-03-18T10:00:00Z",
     });
-    const mainnetRequest = buildLaunchGameRequest({
-      environment: "mainnet.blitz",
+    const madaraRequest = buildLaunchGameRequest({
+      environment: "madara.blitz",
       game: "bltz-test-2",
       "start-time": "2026-03-18T10:00:00Z",
     });
@@ -129,19 +109,16 @@ describe("launch request helpers", () => {
       waitForFactoryIndexTimeoutMs: 120_000,
       waitForFactoryIndexPollMs: 2_000,
     });
-    expect(mainnetRequest).toMatchObject({
-      version: "140",
-      waitForFactoryIndexTimeoutMs: 300_000,
-      waitForFactoryIndexPollMs: 5_000,
+    expect(madaraRequest).toMatchObject({
+      version: "1",
+      waitForFactoryIndexTimeoutMs: 120_000,
+      waitForFactoryIndexPollMs: 2_000,
     });
   });
 
   test("resolves supported launch step ids", () => {
     expect(resolveLaunchGameStepId("create-world")).toBe("create-world");
-    expect(resolveLaunchGameStepId("configure-world")).toBe("configure-world");
-    expect(resolveLaunchGameStepId("reserve-blitz-hyperstructures")).toBe("reserve-blitz-hyperstructures");
-    expect(resolveLaunchGameStepId("create-indexer")).toBe("create-indexer");
-    expect(resolveLaunchGameStepId("sync-paymaster")).toBe("sync-paymaster");
+    expect(resolveLaunchGameStepId("wait-for-factory-index")).toBe("wait-for-factory-index");
   });
 
   test("builds a run-store request context with the nested launch request intact", () => {
@@ -259,7 +236,7 @@ games:
 
     expect(request).toMatchObject({
       launchKind: "rotation",
-      environmentId: "mainnet.blitz",
+      environmentId: "appchain.blitz",
       rotationName: "blitz-rotation",
       firstGameStartTime: "2026-04-20T01:00:00Z",
       gameIntervalMinutes: 0,
@@ -373,7 +350,7 @@ launchKind: series
 environmentId: appchain.blitz
 seriesName: blitz-weekly-may-2026
 durationSeconds: 86400
-skipIndexer: false
+twoPlayerMode: false
 games:
   - gameName: bltz-weekly-01
     startTime: 2026-05-02T18:00:00Z
@@ -383,11 +360,11 @@ games:
       buildLaunchSeriesRequest({
         "config-path": configPath,
         "duration-seconds": "3600",
-        "skip-indexer": "true",
+        "two-player-mode": "true",
       }),
     ).toMatchObject({
       durationSeconds: 3600,
-      skipIndexer: true,
+      twoPlayerMode: true,
     });
   });
 

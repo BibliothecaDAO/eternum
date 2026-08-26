@@ -21,11 +21,18 @@ function assignOptionalLaunchOption(launchOptions: Record<string, unknown>, key:
   launchOptions[key] = value;
 }
 
+function isSeriesLaunchRequest(request: LaunchRequest): request is LaunchSeriesRequest {
+  return request.launchKind === "series";
+}
+
+function isRotationLaunchRequest(request: LaunchRequest): request is LaunchRotationRequest {
+  return request.launchKind === "rotation";
+}
+
 function buildReplayableLaunchOptions(request: LaunchRequest): Record<string, unknown> {
   const launchOptions: Record<string, unknown> = {};
 
   assignOptionalLaunchOption(launchOptions, "rpcUrl", request.rpcUrl);
-  assignOptionalLaunchOption(launchOptions, "factoryAddress", request.factoryAddress);
   assignOptionalLaunchOption(launchOptions, "accountAddress", request.accountAddress);
   assignOptionalLaunchOption(launchOptions, "devModeOn", request.devModeOn);
   assignOptionalLaunchOption(launchOptions, "singleRealmMode", request.singleRealmMode);
@@ -44,21 +51,12 @@ function buildReplayableLaunchOptions(request: LaunchRequest): Record<string, un
     );
   }
   assignOptionalLaunchOption(launchOptions, "blitzRegistrationOverrides", request.blitzRegistrationOverrides);
-  assignOptionalLaunchOption(launchOptions, "cartridgeApiBase", request.cartridgeApiBase);
-  assignOptionalLaunchOption(launchOptions, "toriiNamespaces", request.toriiNamespaces);
-  assignOptionalLaunchOption(launchOptions, "vrfProviderAddress", request.vrfProviderAddress);
   assignOptionalLaunchOption(launchOptions, "executionMode", request.executionMode);
   assignOptionalLaunchOption(launchOptions, "verboseConfigLogs", request.verboseConfigLogs);
   assignOptionalLaunchOption(launchOptions, "version", request.version);
-  assignOptionalLaunchOption(launchOptions, "maxActions", request.maxActions);
   assignOptionalLaunchOption(launchOptions, "waitForFactoryIndexTimeoutMs", request.waitForFactoryIndexTimeoutMs);
   assignOptionalLaunchOption(launchOptions, "waitForFactoryIndexPollMs", request.waitForFactoryIndexPollMs);
-  assignOptionalLaunchOption(launchOptions, "skipIndexer", request.skipIndexer);
-  assignOptionalLaunchOption(launchOptions, "skipLootChestRoleGrant", request.skipLootChestRoleGrant);
-  assignOptionalLaunchOption(launchOptions, "skipBanks", request.skipBanks);
   assignOptionalLaunchOption(launchOptions, "dryRun", request.dryRun);
-  assignOptionalLaunchOption(launchOptions, "workflowFile", request.workflowFile);
-  assignOptionalLaunchOption(launchOptions, "ref", request.ref);
 
   return launchOptions;
 }
@@ -191,11 +189,11 @@ export function buildLaunchWorkflowEnvironment(
 ): Record<string, string> {
   const environment = buildBaseLaunchWorkflowEnvironment(request, currentEnvironment);
 
-  if (request.launchKind === "series") {
+  if (isSeriesLaunchRequest(request)) {
     return applyWorkflowOverrides(assignSeriesWorkflowEnvironment(environment, request), currentEnvironment);
   }
 
-  if (request.launchKind === "rotation") {
+  if (isRotationLaunchRequest(request)) {
     return applyWorkflowOverrides(assignRotationWorkflowEnvironment(environment, request), currentEnvironment);
   }
 

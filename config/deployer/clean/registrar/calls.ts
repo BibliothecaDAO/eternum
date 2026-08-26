@@ -1,9 +1,10 @@
 import blitzManifest from "../../../../contracts/game/manifest_appchain_blitz.json";
 import eternumManifest from "../../../../contracts/game/manifest_appchain_eternum.json";
+import madaraManifest from "../../../../contracts/game/manifest_madara.json";
 import { Account, CallData, type Call } from "starknet";
 import { resolveDeploymentEnvironment } from "../environment";
 import { loadRepoJsonFile } from "../shared/repo";
-import type { AppchainWorldDeployment, DeploymentEnvironmentId } from "../types";
+import type { DeploymentEnvironmentId, WorldDeployment } from "../types";
 
 type RegistrarEntrypoint = "bootstrap_chain_config" | "register_preset" | "register_series" | "create_game";
 
@@ -43,24 +44,25 @@ export interface CreateRegistrarGameResult extends RegistrarTransactionResult {
   gameId?: number;
 }
 
-export type AppchainRegistrarEnvironmentId = "appchain.blitz" | "appchain.eternum";
-type RegistrarTarget = AppchainRegistrarEnvironmentId | RegistrarManifest;
+export type RegistrarEnvironmentId = DeploymentEnvironmentId;
+type RegistrarTarget = RegistrarEnvironmentId | RegistrarManifest;
 
 interface RegistrarContext {
-  environmentId?: AppchainRegistrarEnvironmentId;
+  environmentId?: RegistrarEnvironmentId;
   manifest: RegistrarManifest;
   registrarAddress?: string;
 }
 
-const DEFAULT_ENVIRONMENT_ID: AppchainRegistrarEnvironmentId = "appchain.blitz";
+const DEFAULT_ENVIRONMENT_ID: RegistrarEnvironmentId = "appchain.blitz";
 const APPCHAIN_NAMESPACE = "s2";
 const TRACKED_MANIFESTS: Record<string, RegistrarManifest> = {
   "contracts/game/manifest_appchain_blitz.json": blitzManifest as RegistrarManifest,
   "contracts/game/manifest_appchain_eternum.json": eternumManifest as RegistrarManifest,
+  "contracts/game/manifest_madara.json": madaraManifest as RegistrarManifest,
 };
 
-function resolveEnvironmentManifest(deployment: AppchainWorldDeployment): RegistrarManifest {
-  const manifestPath = process.env.APPCHAIN_MANIFEST_PATH || deployment.manifestPath;
+function resolveEnvironmentManifest(deployment: WorldDeployment): RegistrarManifest {
+  const manifestPath = process.env.GAME_MANIFEST_PATH || deployment.manifestPath;
   return TRACKED_MANIFESTS[manifestPath] ?? loadRepoJsonFile<RegistrarManifest>(manifestPath);
 }
 
@@ -70,13 +72,10 @@ function resolveRegistrarContext(target: RegistrarTarget = DEFAULT_ENVIRONMENT_I
   }
 
   const environment = resolveDeploymentEnvironment(target);
-  if (!environment.appchainWorld) {
-    throw new Error(`${target} does not define an appchain world deployment`);
-  }
   return {
     environmentId: target,
-    manifest: resolveEnvironmentManifest(environment.appchainWorld),
-    registrarAddress: process.env.APPCHAIN_MANIFEST_PATH ? undefined : environment.appchainWorld.registrarAddress,
+    manifest: resolveEnvironmentManifest(environment.world),
+    registrarAddress: process.env.GAME_MANIFEST_PATH ? undefined : environment.world.registrarAddress,
   };
 }
 
@@ -193,17 +192,17 @@ export function resolveCreatedGameId(
   return undefined;
 }
 
-export function resolveAppchainWorldAddress(target: RegistrarTarget = DEFAULT_ENVIRONMENT_ID): string {
+export function resolveRegistrarWorldAddress(target: RegistrarTarget = DEFAULT_ENVIRONMENT_ID): string {
   const context = resolveRegistrarContext(target);
   requireRegistrarContract(context, "create_game");
   const worldAddress = context.manifest.world?.address;
   if (!hasDeployedAddress(worldAddress)) {
-    throw new Error("World address is missing from the selected appchain manifest");
+    throw new Error("World address is missing from the selected manifest");
   }
   return worldAddress;
 }
 
-export function resolveAppchainContractAddress(
+export function resolveRegistrarContractAddress(
   contractName: string,
   target: RegistrarTarget = DEFAULT_ENVIRONMENT_ID,
 ): string {
@@ -215,12 +214,7 @@ export function resolveAppchainContractAddress(
   return contractAddress;
 }
 
-export function resolveAppchainRegistrarEnvironmentId(
-  environmentId: DeploymentEnvironmentId,
-): AppchainRegistrarEnvironmentId {
-  if (environmentId !== "appchain.blitz" && environmentId !== "appchain.eternum") {
-    throw new Error(`${environmentId} is not an appchain registrar environment`);
-  }
+export function resolveRegistrarEnvironmentId(environmentId: DeploymentEnvironmentId): RegistrarEnvironmentId {
   return environmentId;
 }
 
@@ -236,7 +230,7 @@ export function buildCreateGameCalldata(params: unknown): string[] {
   return CallData.compile([params] as never);
 }
 
-export function assertAppchainRegistrarAvailable(target: RegistrarTarget = DEFAULT_ENVIRONMENT_ID): void {
+export function assertRegistrarAvailable(target: RegistrarTarget = DEFAULT_ENVIRONMENT_ID): void {
   const context = resolveRegistrarContext(target);
   const requiredEntrypoints: RegistrarEntrypoint[] = [
     "bootstrap_chain_config",

@@ -13,8 +13,8 @@ interface PrizeFundingReadiness {
 
 type SeriesLikeRunRecord = FactorySeriesRunRecord | FactoryRotationRunRecord;
 
-const GAME_PRIZE_FUNDING_STEP_ID = "configure-world";
-const SERIES_LIKE_PRIZE_FUNDING_STEP_ID = "configure-worlds";
+const GAME_PRIZE_FUNDING_STEP_ID = "wait-for-factory-index";
+const SERIES_LIKE_PRIZE_FUNDING_STEP_ID = "wait-for-factory-indexes";
 
 export function resolveGamePrizeFundingReadiness(
   runRecord: Pick<FactoryRunRecord, "gameName" | "artifacts" | "steps">,
@@ -29,7 +29,7 @@ export function resolveGamePrizeFundingReadiness(
   if (!hasSucceededRunStep(runRecord.steps, GAME_PRIZE_FUNDING_STEP_ID)) {
     return {
       ready: false,
-      reason: `Game "${runRecord.gameName}" must finish world configuration before prize funding`,
+      reason: `Game "${runRecord.gameName}" must be indexed before prize funding`,
     };
   }
 
@@ -49,7 +49,7 @@ export function resolveSeriesLikeGamePrizeFundingReadiness(
   if (!hasSucceededSeriesLikeGameStep(game.steps, SERIES_LIKE_PRIZE_FUNDING_STEP_ID)) {
     return {
       ready: false,
-      reason: `Game "${game.gameName}" must finish world configuration before prize funding`,
+      reason: `Game "${game.gameName}" must be indexed before prize funding`,
     };
   }
 

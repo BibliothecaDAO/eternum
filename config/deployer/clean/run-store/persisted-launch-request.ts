@@ -1,10 +1,9 @@
 import {
-  DEFAULT_CARTRIDGE_API_BASE,
-  DEFAULT_FACTORY_INDEX_POLL_MS,
-  DEFAULT_FACTORY_INDEX_TIMEOUT_MS,
-  DEFAULT_NAMESPACE,
-  DEFAULT_VERSION,
-  DEFAULT_VRF_PROVIDER_ADDRESS,
+  DEFAULT_APPCHAIN_ETERNUM_PRESET_ID,
+  DEFAULT_APPCHAIN_GAME_INDEX_POLL_MS,
+  DEFAULT_APPCHAIN_GAME_INDEX_TIMEOUT_MS,
+  DEFAULT_APPCHAIN_PRESET_ID,
+  DEFAULT_MADARA_PRESET_ID,
 } from "../constants";
 import { applyDeploymentConfigOverrides, loadEnvironmentConfiguration } from "../config";
 import { resolveDeploymentEnvironment } from "../environment";
@@ -25,26 +24,16 @@ interface SeriesLikeGameDuration {
 
 interface ResolvedPersistedSharedLaunchRequest {
   rpcUrl: string;
-  factoryAddress: string;
   devModeOn: boolean;
   singleRealmMode: boolean;
   twoPlayerMode: boolean;
   durationSeconds?: number;
-  cartridgeApiBase: string;
-  toriiNamespaces: string;
-  vrfProviderAddress: string;
   executionMode: "batched" | "sequential";
   verboseConfigLogs: boolean;
   version: string;
-  maxActions: number;
   waitForFactoryIndexTimeoutMs: number;
   waitForFactoryIndexPollMs: number;
-  skipIndexer: boolean;
-  skipLootChestRoleGrant: boolean;
-  skipBanks: boolean;
   dryRun: boolean;
-  workflowFile?: string;
-  ref?: string;
 }
 
 function isResolvedDurationSeconds(value: number | undefined): value is number {
@@ -67,7 +56,6 @@ function resolveEffectiveLaunchDurationSeconds(
     LaunchGameRequest,
     | "environmentId"
     | "startTime"
-    | "factoryAddress"
     | "devModeOn"
     | "singleRealmMode"
     | "twoPlayerMode"
@@ -77,11 +65,10 @@ function resolveEffectiveLaunchDurationSeconds(
     | "blitzRegistrationOverrides"
   >,
 ): number | undefined {
-  const environment = resolveDeploymentEnvironment(request.environmentId);
   const baseConfig = loadEnvironmentConfiguration(request.environmentId);
   const deploymentConfig = applyDeploymentConfigOverrides(baseConfig, {
     startMainAt: parseStartTime(request.startTime),
-    factoryAddress: request.factoryAddress || environment.factoryAddress || "",
+    factoryAddress: "",
     devModeOn: request.devModeOn,
     singleRealmMode: request.singleRealmMode,
     twoPlayerMode: request.twoPlayerMode,
@@ -105,7 +92,6 @@ function buildPersistedSharedLaunchRequest(
     resolveEffectiveLaunchDurationSeconds({
       environmentId: request.environmentId,
       startTime,
-      factoryAddress: request.factoryAddress,
       devModeOn: request.devModeOn,
       singleRealmMode: request.singleRealmMode,
       twoPlayerMode: request.twoPlayerMode,
@@ -117,26 +103,24 @@ function buildPersistedSharedLaunchRequest(
 
   return {
     rpcUrl: request.rpcUrl || environment.rpcUrl,
-    factoryAddress: request.factoryAddress || environment.factoryAddress || "",
     devModeOn: request.devModeOn ?? false,
     singleRealmMode: request.singleRealmMode ?? false,
     twoPlayerMode: request.twoPlayerMode ?? false,
     durationSeconds: effectiveDurationSeconds,
-    cartridgeApiBase: request.cartridgeApiBase || DEFAULT_CARTRIDGE_API_BASE,
-    toriiNamespaces: request.toriiNamespaces || DEFAULT_NAMESPACE,
-    vrfProviderAddress: request.vrfProviderAddress || DEFAULT_VRF_PROVIDER_ADDRESS,
     executionMode: request.executionMode || "batched",
     verboseConfigLogs: request.verboseConfigLogs === true,
-    version: request.version || DEFAULT_VERSION,
-    maxActions: request.maxActions ?? environment.createGame.maxActions,
-    waitForFactoryIndexTimeoutMs: request.waitForFactoryIndexTimeoutMs ?? DEFAULT_FACTORY_INDEX_TIMEOUT_MS,
-    waitForFactoryIndexPollMs: request.waitForFactoryIndexPollMs ?? DEFAULT_FACTORY_INDEX_POLL_MS,
-    skipIndexer: request.skipIndexer === true,
-    skipLootChestRoleGrant: request.skipLootChestRoleGrant === true,
-    skipBanks: request.skipBanks === true,
+    version:
+      request.version ||
+      String(
+        environment.chain === "madara"
+          ? DEFAULT_MADARA_PRESET_ID
+          : environment.gameType === "eternum"
+            ? DEFAULT_APPCHAIN_ETERNUM_PRESET_ID
+            : DEFAULT_APPCHAIN_PRESET_ID,
+      ),
+    waitForFactoryIndexTimeoutMs: request.waitForFactoryIndexTimeoutMs ?? DEFAULT_APPCHAIN_GAME_INDEX_TIMEOUT_MS,
+    waitForFactoryIndexPollMs: request.waitForFactoryIndexPollMs ?? DEFAULT_APPCHAIN_GAME_INDEX_POLL_MS,
     dryRun: request.dryRun === true,
-    workflowFile: request.workflowFile,
-    ref: request.ref,
   };
 }
 

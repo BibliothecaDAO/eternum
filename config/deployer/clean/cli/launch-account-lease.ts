@@ -16,10 +16,10 @@ function usage(): void {
     [
       "",
       "Usage:",
-      "  bun config/deployer/clean/cli/launch-account-lease.ts --event <acquire|heartbeat|release> --environment <appchain.blitz|appchain.eternum|mainnet.blitz|mainnet.eternum> --game <world-name> --step <step-id>",
+      "  bun config/deployer/clean/cli/launch-account-lease.ts --event <acquire|heartbeat|release> --environment <madara.blitz|appchain.blitz|appchain.eternum> --game <world-name> --step <step-id>",
       "",
       "Required flags:",
-      "  --step <create-world|wait-for-factory-index|configure-world|reserve-blitz-hyperstructures|grant-lootchest-role|grant-village-pass-role|create-banks|create-indexer|sync-paymaster>",
+      "  --step <create-world|wait-for-factory-index>",
       "",
       "Optional flags:",
       "  --account-address <0x...>    Defaults to DOJO_ACCOUNT_ADDRESS",

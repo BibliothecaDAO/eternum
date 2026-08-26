@@ -44,73 +44,8 @@ function resolveFactoryRunLeaseDurationMs(): number {
   return parsedSeconds * 1000;
 }
 
-function shouldIncludeVillagePassRoleStep(run: Pick<FactoryRunRecord, "gameType">): boolean {
-  return run.gameType === "eternum";
-}
-
-function shouldIncludeBanksStep(run: Pick<FactoryRunRecord, "gameType">): boolean {
-  return run.gameType === "eternum";
-}
-
-function shouldIncludeBlitzHyperstructureReservationStep(run: Pick<FactoryRunRecord, "gameType">): boolean {
-  return run.gameType === "blitz";
-}
-
-function shouldIncludePaymasterStep(run: Pick<FactoryRunRecord, "chain">): boolean {
-  return run.chain === "mainnet";
-}
-
-function buildFactoryRoleGrantSteps(run: Pick<FactoryRunRecord, "gameType">): FactoryRunStepRecord[] {
-  const steps = [buildFactoryRunStep("grant-lootchest-role")];
-
-  if (shouldIncludeVillagePassRoleStep(run)) {
-    steps.push(buildFactoryRunStep("grant-village-pass-role"));
-  }
-
-  return steps;
-}
-
-function buildFactoryBankSteps(run: Pick<FactoryRunRecord, "gameType">): FactoryRunStepRecord[] {
-  if (!shouldIncludeBanksStep(run)) {
-    return [];
-  }
-
-  return [buildFactoryRunStep("create-banks")];
-}
-
-function buildFactoryBlitzHyperstructureReservationSteps(
-  run: Pick<FactoryRunRecord, "gameType">,
-): FactoryRunStepRecord[] {
-  if (!shouldIncludeBlitzHyperstructureReservationStep(run)) {
-    return [];
-  }
-
-  return [buildFactoryRunStep("reserve-blitz-hyperstructures")];
-}
-
-function buildFactoryPaymasterSteps(run: Pick<FactoryRunRecord, "chain">): FactoryRunStepRecord[] {
-  if (!shouldIncludePaymasterStep(run)) {
-    return [];
-  }
-
-  return [buildFactoryRunStep("sync-paymaster")];
-}
-
-function buildFactoryRunSteps(run: Pick<FactoryRunRecord, "chain" | "gameType">): FactoryRunStepRecord[] {
-  if (run.chain === "appchain") {
-    return [buildFactoryRunStep("create-world"), buildFactoryRunStep("wait-for-factory-index")];
-  }
-
-  return [
-    buildFactoryRunStep("create-world"),
-    buildFactoryRunStep("wait-for-factory-index"),
-    buildFactoryRunStep("configure-world"),
-    ...buildFactoryBlitzHyperstructureReservationSteps(run),
-    ...buildFactoryRoleGrantSteps(run),
-    ...buildFactoryBankSteps(run),
-    buildFactoryRunStep("create-indexer"),
-    ...buildFactoryPaymasterSteps(run),
-  ];
+function buildFactoryRunSteps(_run: Pick<FactoryRunRecord, "chain" | "gameType">): FactoryRunStepRecord[] {
+  return [buildFactoryRunStep("create-world"), buildFactoryRunStep("wait-for-factory-index")];
 }
 
 function buildFactoryRunStep(id: LaunchGameStepId): FactoryRunStepRecord {
@@ -314,27 +249,7 @@ function mergeLaunchArtifacts(
     durationSeconds: summary.durationSeconds ?? currentArtifacts.durationSeconds,
     gameId: summary.gameId ?? currentArtifacts.gameId,
     worldAddress: summary.worldAddress || currentArtifacts.worldAddress,
-    entryTokenAddress: summary.entryTokenAddress || currentArtifacts.entryTokenAddress,
-    reserveHyperstructuresTxHashes:
-      summary.reserveHyperstructuresTxHashes || currentArtifacts.reserveHyperstructuresTxHashes,
     createGameTxHash: summary.createGameTxHash || currentArtifacts.createGameTxHash,
-    configureTxHash: summary.configureTxHash || currentArtifacts.configureTxHash,
-    lootChestRoleTxHash: summary.lootChestRoleTxHash || currentArtifacts.lootChestRoleTxHash,
-    villagePassRoleTxHash: summary.villagePassRoleTxHash || currentArtifacts.villagePassRoleTxHash,
-    createBanksTxHash: summary.createBanksTxHash || currentArtifacts.createBanksTxHash,
-    paymasterSynced: summary.paymasterSynced ?? currentArtifacts.paymasterSynced,
-    indexerCreated: summary.indexerCreated || currentArtifacts.indexerCreated,
-    indexerTier: summary.indexerTier || currentArtifacts.indexerTier,
-    indexerUrl: summary.indexerUrl || currentArtifacts.indexerUrl,
-    indexerVersion: summary.indexerVersion || currentArtifacts.indexerVersion,
-    indexerBranch: summary.indexerBranch || currentArtifacts.indexerBranch,
-    lastIndexerDescribeAt: summary.lastIndexerDescribeAt || currentArtifacts.lastIndexerDescribeAt,
-    indexerWorkflowRun: summary.indexerWorkflowRun || currentArtifacts.indexerWorkflowRun,
-    ...(summary.worldConfigTxHash || currentArtifacts.worldConfigTxHash
-      ? {
-          worldConfigTxHash: summary.worldConfigTxHash || currentArtifacts.worldConfigTxHash,
-        }
-      : {}),
   };
 }
 

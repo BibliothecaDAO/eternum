@@ -8,7 +8,7 @@ export function isDeploymentEnvironmentId(value: string): value is DeploymentEnv
 export function resolveDeploymentEnvironment(value: string): DeploymentEnvironment {
   if (!isDeploymentEnvironmentId(value)) {
     throw new Error(
-      `Unsupported environment "${value}". Expected one of: mainnet.blitz, mainnet.eternum, appchain.blitz, appchain.eternum`,
+      `Unsupported environment "${value}". Expected one of: madara.blitz, appchain.blitz, appchain.eternum`,
     );
   }
 
@@ -17,8 +17,4 @@ export function resolveDeploymentEnvironment(value: string): DeploymentEnvironme
 
 export function isEternumDeploymentEnvironment(environment: DeploymentEnvironment): boolean {
   return environment.gameType === "eternum";
-}
-
-export function isMainnetDeploymentEnvironment(environment: DeploymentEnvironment): boolean {
-  return environment.chain === "mainnet";
 }

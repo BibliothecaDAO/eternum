@@ -24,9 +24,15 @@ const { runGroupedSeriesLikeGameStep } = await import("../launch/series-like-run
 const { buildInitialSeriesLaunchSummary } = await import("../launch/series-summary");
 
 const originalFetch = globalThis.fetch;
+const originalToriiSqlUrl = process.env.TORII_SQL_URL;
 
 afterEach(() => {
   globalThis.fetch = originalFetch;
+  if (originalToriiSqlUrl === undefined) {
+    delete process.env.TORII_SQL_URL;
+  } else {
+    process.env.TORII_SQL_URL = originalToriiSqlUrl;
+  }
 });
 
 describe("grouped series-like runner", () => {
@@ -54,54 +60,24 @@ describe("grouped series-like runner", () => {
     }
   });
 
-  test("skips unsupported blitz grouped steps that are not part of the child plan", async () => {
-    const request = buildSeriesRequest({
-      dryRun: true,
-    });
-    const initialSummary = buildInitialSeriesLaunchSummary(request);
-    const summary = {
-      ...initialSummary,
-      seriesCreated: true,
-    };
-
-    const nextSummary = await runGroupedSeriesLikeGameStep({
-      request,
-      summary,
-      stepId: "grant-village-pass-roles",
-      persistSummary: (next) => next,
-    });
-
-    expect(nextSummary.games).toEqual(summary.games);
-  });
-
   test("skips wait-for-factory-indexes for children whose create-worlds step never succeeded", async () => {
+    process.env.TORII_SQL_URL = "https://torii.example/sql";
     const fetchCalls: string[] = [];
-    globalThis.fetch = async (url) => {
+    globalThis.fetch = (async (url: Parameters<typeof fetch>[0]) => {
       fetchCalls.push(String(url));
 
       if (fetchCalls.length === 1) {
-        return Response.json([
-          {
-            contract_address: "0x123",
-            contract_selector: "0x1",
-          },
-        ]);
+        return Response.json([{ game_id: 7 }]);
       }
 
       if (fetchCalls.length === 2) {
-        return Response.json([
-          {
-            address: "0xabc",
-          },
-        ]);
+        return Response.json([{ game_id: 7 }]);
       }
 
       throw new Error(`Unexpected fetch call: ${String(url)}`);
-    };
+    }) as unknown as typeof fetch;
 
     const request = buildSeriesRequest({
-      // appchain has no hosted factory torii, so exercise the SQL wait on mainnet
-      environmentId: "mainnet.blitz",
       waitForFactoryIndexTimeoutMs: 25,
       waitForFactoryIndexPollMs: 1,
     });
@@ -141,13 +117,11 @@ function buildSeriesRequest(overrides: Partial<LaunchSeriesRequest> = {}): Launc
   return {
     launchKind: "series",
     environmentId: "appchain.blitz",
-    factoryAddress: "0xfactory",
     seriesName: "bltz-knicker",
     games: [
       { gameName: "bltz-knicker-06", startTime: "2099-01-01T06:00:00Z" },
       { gameName: "bltz-knicker-07", startTime: "2099-01-01T07:00:00Z" },
     ],
-    cartridgeApiBase: "https://api.cartridge.gg",
     ...overrides,
   };
 }

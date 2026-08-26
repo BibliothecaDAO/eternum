@@ -82,7 +82,7 @@ pub mod registrar_systems {
     use dojo::model::ModelStorage;
     use dojo::world::{IWorldDispatcherTrait, WorldStorage, WorldStorageTrait};
     use starknet::ContractAddress;
-    use crate::constants::{DAYDREAMS_AGENT_ID, DEFAULT_NS, WORLD_CONFIG_ID};
+    use crate::constants::{DAYDREAMS_AGENT_ID, DEFAULT_NS, WORLD_CONFIG_ID, assert_blitz_registration_count_within_cap};
     use crate::models::agent::AgentConfig;
     use crate::models::config::{
         BlitzHypersSettlementConfigImpl, ChainConfig, GameMapConfig, MapConfig, PresetConfig, PresetGameConfig,
@@ -327,7 +327,7 @@ pub mod registrar_systems {
             return;
         }
         assert!(params.registration_count_max.is_non_zero(), "Eternum: registration capacity is zero");
-        assert!(params.registration_count_max <= 24, "Eternum: registration capacity exceeds A1 limit");
+        assert_blitz_registration_count_within_cap(params.registration_count_max);
         if params.two_player_mode {
             assert!(params.registration_count_max == 2, "Eternum: two-player games require two registrations");
         }

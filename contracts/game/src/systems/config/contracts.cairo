@@ -282,7 +282,7 @@ pub mod config_systems {
     use core::num::traits::{Bounded, Zero};
     use dojo::model::ModelStorage;
     use dojo::world::{IWorldDispatcherTrait, WorldStorage};
-    use crate::constants::{DEFAULT_NS, LEGACY_CONFIG_ID};
+    use crate::constants::{DEFAULT_NS, LEGACY_CONFIG_ID, assert_blitz_registration_count_within_cap};
     use crate::models::agent::AgentConfig;
     use crate::models::config::{
         AgentControllerConfig, ArtificerConfig, BankConfig, BattleConfig, BiomeClimateConfig, BitcoinMineConfig,
@@ -935,6 +935,7 @@ pub mod config_systems {
         ) {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
             assert_caller_is_admin(world);
+            assert_blitz_registration_count_within_cap(registration_count_max);
 
             let mut blitz_registration_config: BlitzRegistrationConfig = WorldConfigUtilImpl::get_member(
                 world, selector!("blitz_registration_config"),

@@ -1,5 +1,5 @@
 import * as fs from "node:fs";
-import { afterEach, beforeEach, describe, expect, test } from "bun:test";
+import { afterEach, describe, expect, test } from "bun:test";
 import {
   buildInitialSeriesLaunchSummary,
   hydrateSeriesLaunchSummary,
@@ -9,7 +9,6 @@ import { resolveSeriesLaunchSummaryRelativePath } from "../launch/series-io";
 import { resolveRepoPath } from "../shared/repo";
 import type { LaunchSeriesRequest, SeriesLaunchGameSummary } from "../types";
 
-const originalFetch = globalThis.fetch;
 const summaryPath = resolveRepoPath(resolveSeriesLaunchSummaryRelativePath("appchain.blitz", "bltz-weekend-cup"));
 
 function buildSeriesRequest(overrides: Partial<LaunchSeriesRequest> = {}): LaunchSeriesRequest {
@@ -26,7 +25,6 @@ function buildSeriesRequest(overrides: Partial<LaunchSeriesRequest> = {}): Launc
     ],
     autoRetryEnabled: true,
     autoRetryIntervalMinutes: 15,
-    cartridgeApiBase: "https://cartridge.example",
     ...overrides,
   };
 }
@@ -44,34 +42,8 @@ function markSeriesGameComplete(game: SeriesLaunchGameSummary): SeriesLaunchGame
   };
 }
 
-function buildFactoryQueryResponse(rows: unknown) {
-  return new Response(JSON.stringify(rows), {
-    status: 200,
-    headers: { "Content-Type": "application/json" },
-  });
-}
-
 describe("series launch summary hydration", () => {
-  beforeEach(() => {
-    globalThis.fetch = async (url) => {
-      const requestUrl = String(url);
-      const decodedRequestUrl = decodeURIComponent(requestUrl);
-
-      if (decodedRequestUrl.includes("[wf-SeriesGame]")) {
-        return buildFactoryQueryResponse([{ game_number: 2 }]);
-      }
-
-      if (decodedRequestUrl.includes("[wf-Series]")) {
-        return buildFactoryQueryResponse([{ name: "0x123" }]);
-      }
-
-      throw new Error(`Unexpected fetch call: ${requestUrl}`);
-    };
-  });
-
   afterEach(() => {
-    globalThis.fetch = originalFetch;
-
     if (fs.existsSync(summaryPath)) {
       fs.unlinkSync(summaryPath);
     }

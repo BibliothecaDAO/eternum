@@ -26,7 +26,6 @@ function buildGameEntry(
     updatedAt: TEN_DAYS_AGO,
     currentStepId: null,
     hasRunningStep: false,
-    artifacts: {},
     ...overrides,
   } as FactoryGameRunMaintenanceIndexEntry;
 }
@@ -48,19 +47,13 @@ describe("isPrunableFactoryGameRunEntry", () => {
     expect(isPrunableFactoryGameRunEntry(buildGameEntry("old-complete"), options)).toBe(true);
   });
 
-  test("keeps recent, non-complete, running, leased, and pending-tier runs", () => {
+  test("keeps recent, non-complete, running, and leased runs", () => {
     expect(isPrunableFactoryGameRunEntry(buildGameEntry("recent", { updatedAt: TWO_DAYS_AGO }), options)).toBe(false);
     expect(isPrunableFactoryGameRunEntry(buildGameEntry("attention", { status: "attention" }), options)).toBe(false);
     expect(isPrunableFactoryGameRunEntry(buildGameEntry("running", { hasRunningStep: true }), options)).toBe(false);
     expect(
       isPrunableFactoryGameRunEntry(
         buildGameEntry("leased", { activeLeaseExpiresAt: "2026-06-11T00:00:00.000Z" }),
-        options,
-      ),
-    ).toBe(false);
-    expect(
-      isPrunableFactoryGameRunEntry(
-        buildGameEntry("pending-tier", { artifacts: { pendingIndexerTierTarget: "pro" } }),
         options,
       ),
     ).toBe(false);

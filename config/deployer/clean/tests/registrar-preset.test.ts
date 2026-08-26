@@ -140,4 +140,26 @@ describe("appchain registrar preset", () => {
       Date.now = originalDateNow;
     }
   });
+
+  test("accepts the 96-player Blitz capacity and rejects 97", () => {
+    const capacityConfig = structuredClone(config);
+    const createGameInput = {
+      gameName: "bltz-capacity",
+      presetId: 3,
+      startMainAt: 2_000_000_000,
+      durationSeconds: 3_600,
+      devModeOn: true,
+      singleRealmMode: false,
+      twoPlayerMode: false,
+      useMapOverride: false,
+    };
+
+    capacityConfig.blitz.registration.registration_count_max = 96;
+    expect(buildCreateGameParams(capacityConfig, createGameInput).registration_count_max).toBe(96);
+
+    capacityConfig.blitz.registration.registration_count_max = 97;
+    expect(() => buildCreateGameParams(capacityConfig, createGameInput)).toThrow(
+      "Blitz registration_count_max must be between 1 and 96",
+    );
+  });
 });

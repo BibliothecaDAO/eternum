@@ -1,33 +1,7 @@
-import { afterEach, describe, expect, mock, test } from "bun:test";
-import type { LaunchSeriesRequest, LaunchSeriesSummary } from "../types";
-
-const runLaunchStepMock = mock(async ({ gameName }: { gameName: string }) => {
-  if (gameName === "bltz-knicker-06") {
-    throw new Error("create-worlds failed");
-  }
-
-  return {
-    gameName,
-    configSteps: [],
-    durationSeconds: 3600,
-  };
-});
-
-mock.module("../launch/runner", () => ({
-  runLaunchStep: runLaunchStepMock,
-}));
-
-mock.module("../launch/grouped-role-grants", () => ({
-  grantLootChestRolesForSeriesLikeGames: mock(async () => undefined),
-  grantVillagePassRolesForSeriesLikeGames: mock(async () => undefined),
-}));
-
-const { runGroupedSeriesLikeGameStep } = await import("../launch/series-like-runner");
-const { buildInitialSeriesLaunchSummary } = await import("../launch/series-summary");
-
-afterEach(() => {
-  runLaunchStepMock.mockClear();
-});
+import { describe, expect, mock, test } from "bun:test";
+import { buildSeriesLikeGameLaunchRequest, runGroupedSeriesLikeGameStep } from "../launch/series-like-runner";
+import { buildInitialSeriesLaunchSummary } from "../launch/series-summary";
+import type { LaunchGameStepRequest, LaunchGameSummary, LaunchSeriesRequest, LaunchSeriesSummary } from "../types";
 
 describe("grouped series-like runner fail-fast behavior", () => {
   test("stops create-worlds after the first failed game", async () => {
@@ -37,8 +11,10 @@ describe("grouped series-like runner fail-fast behavior", () => {
       ...initialSummary,
       seriesCreated: true,
     };
-
-    let persistedSummary: LaunchSeriesSummary | null = null;
+    const persistedSummaries: LaunchSeriesSummary[] = [];
+    const runGameStep = mock(async (_request: LaunchGameStepRequest): Promise<LaunchGameSummary> => {
+      throw new Error("create-worlds failed");
+    });
 
     await expect(
       runGroupedSeriesLikeGameStep({
@@ -46,61 +22,45 @@ describe("grouped series-like runner fail-fast behavior", () => {
         summary,
         stepId: "create-worlds",
         persistSummary: (next) => {
-          persistedSummary = next;
+          persistedSummaries.push(next);
           return next;
         },
+        runGameStep,
       }),
     ).rejects.toThrow("1 rotation or series game failed during create-worlds");
 
-    expect(runLaunchStepMock).toHaveBeenCalledTimes(1);
-    expect(runLaunchStepMock.mock.calls[0]?.[0].gameName).toBe("bltz-knicker-06");
-    expect(persistedSummary).not.toBeNull();
-    expect(persistedSummary?.games[0]?.status).toBe("failed");
-    expect(persistedSummary?.games[0]?.currentStepId).toBe("create-worlds");
-    expect(persistedSummary?.games[1]?.status).toBe("pending");
-    expect(persistedSummary?.games[1]?.currentStepId).toBeNull();
-    expect(persistedSummary?.games[1]?.steps.find((step) => step.id === "create-worlds")?.status).toBe("pending");
+    const persistedSummary = persistedSummaries.at(-1);
+    expect(runGameStep).toHaveBeenCalledTimes(1);
+    expect(persistedSummary).toBeDefined();
+    expect(persistedSummary!.games[0]?.status).toBe("failed");
+    expect(persistedSummary!.games[0]?.currentStepId).toBe("create-worlds");
+    expect(persistedSummary!.games[1]?.status).toBe("pending");
+    expect(persistedSummary!.games[1]?.currentStepId).toBeNull();
+    expect(persistedSummary!.games[1]?.steps.find((step) => step.id === "create-worlds")?.status).toBe("pending");
   });
 
-  test("passes child registration overrides into grouped game launches", async () => {
+  test("lets child registration overrides replace the series default", () => {
     const request = buildSeriesRequest({
-      games: [
-        { gameName: "weekday-gladiator", startTime: "2099-01-01T06:00:00Z" },
-        { gameName: "weekend-gladiator", startTime: "2099-01-02T06:00:00Z" },
-      ],
-      blitzRegistrationOverrides: {
-        fee_amount: "500000000000000000000",
-      },
+      blitzRegistrationOverrides: { fee_amount: "500000000000000000000" },
     });
     const initialSummary = buildInitialSeriesLaunchSummary(request);
     const summary = {
       ...initialSummary,
       seriesCreated: true,
       games: [
-        initialSummary.games[0],
+        initialSummary.games[0]!,
         {
-          ...initialSummary.games[1],
-          blitzRegistrationOverrides: {
-            fee_amount: "1000000000000000000000",
-          },
+          ...initialSummary.games[1]!,
+          blitzRegistrationOverrides: { fee_amount: "1000000000000000000000" },
         },
       ],
     };
 
-    await runGroupedSeriesLikeGameStep({
-      request,
-      summary,
-      stepId: "create-worlds",
-      persistSummary: (next) => next,
-    });
+    const firstRequest = buildSeriesLikeGameLaunchRequest(request, summary, summary.games[0]);
+    const secondRequest = buildSeriesLikeGameLaunchRequest(request, summary, summary.games[1]);
 
-    expect(runLaunchStepMock).toHaveBeenCalledTimes(2);
-    expect(runLaunchStepMock.mock.calls[0]?.[0].blitzRegistrationOverrides).toEqual({
-      fee_amount: "500000000000000000000",
-    });
-    expect(runLaunchStepMock.mock.calls[1]?.[0].blitzRegistrationOverrides).toEqual({
-      fee_amount: "1000000000000000000000",
-    });
+    expect(firstRequest.blitzRegistrationOverrides).toEqual({ fee_amount: "500000000000000000000" });
+    expect(secondRequest.blitzRegistrationOverrides).toEqual({ fee_amount: "1000000000000000000000" });
   });
 });
 
@@ -113,7 +73,8 @@ function buildSeriesRequest(overrides: Partial<LaunchSeriesRequest> = {}): Launc
       { gameName: "bltz-knicker-06", startTime: "2099-01-01T06:00:00Z" },
       { gameName: "bltz-knicker-07", startTime: "2099-01-01T07:00:00Z" },
     ],
-    cartridgeApiBase: "https://api.cartridge.gg",
+    accountAddress: "0x123",
+    privateKey: "0x456",
     ...overrides,
   };
 }

@@ -1,5 +1,4 @@
 export * from "./addresses";
-export * from "./chains";
 export * from "./credentials";
 export * from "./github";
 export * from "./manifest-types";
