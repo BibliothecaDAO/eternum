@@ -19,7 +19,7 @@ const identityRpcUrl = resolveEndpoint(env.VITE_PUBLIC_IDENTITY_RPC_URL, {
 const controller = new ControllerConnector({
   errorDisplayMode: "notification",
   webauthnPopup: true,
-  chains: [{ rpcUrl: identityRpcUrl }],
+  chains: [{ rpcUrl: env.VITE_PUBLIC_CONTROLLER_RPC_URL || identityRpcUrl }],
   defaultChainId: constants.StarknetChainId.SN_MAIN,
 });
 const identityConnectors = [controller, ready(), braavos()];
