@@ -12,10 +12,11 @@
 # lab is execution, block production, receipt latency, and indexer behaviour — not settlement. The
 # settlement-layer (L3) mode is a separate profile once the game runs here (see README).
 #
-# Pin discipline: never `latest`. Bump MADARA_TAG in .env and record the digest in README.
+# Pin discipline: the default is the exact image measured below. Set MADARA_IMAGE to compare another build and record
+# that image's digest in the README.
 services:
   madara:
-    image: ghcr.io/madara-alliance/madara:${MADARA_TAG:-v0.11.0-alpha.9}
+    image: ${MADARA_IMAGE:-ghcr.io/madara-alliance/madara@sha256:3c931fa515bbd3760fd5cbc0bcdceb557d3edbd44bec0231cdf52dd6abb475f6}
     container_name: madara-lab
     command:
       - --name=realms-madara-lab
@@ -33,7 +34,7 @@ services:
       - --gateway-enable
       - --gateway-external
       - --gateway-port=8080
-      - --enable-native-execution=${MADARA_NATIVE:-false}
+      - --enable-native-execution=${MADARA_NATIVE:-true}
       - --native-compilation-mode=async
     environment:
       RUST_LOG: ${MADARA_LOG:-info}

@@ -1,8 +1,8 @@
 # Madara lab
 
 The Realms game world running on a pinned, self-run [Madara](https://github.com/madara-alliance/madara) sequencer on
-one machine. This is the measurement bench for the platform migration: execution, block production, receipt latency,
-indexer behaviour, and the 96-player Blitz target — with the **current** Dojo contracts, unchanged.
+one machine. It measures execution, block production, receipt latency, indexer behaviour, and the 96-player Blitz
+target against the current Dojo world, including the phase-one registration-cap changes.
 
 Branch: `feat/madara-lab`. Brief: `docs/plans/realms-phase-1-brief.md`. Direction:
 `docs/reports/eternum-game-stack-direction-2026-08-21.html`.
@@ -74,14 +74,43 @@ Madara reopens the same database on the next `up` (migrations are automatic and 
 
 ## Deploy the game world
 
+From the repository root, the full idempotent path is:
+
+```bash
+pnpm contract:start:madara
+```
+
+It starts Madara and Caddy first, deploys the world, then starts Torii after its generated config exists and bootstraps
+the gameplay contracts and preset. The equivalent individual commands are below.
+
 ```bash
 deploy/madara-lab/scripts/deploy-world.sh              # sozo build (~40 s) + migrate (measured 22 m 40 s)
 deploy/madara-lab/scripts/deploy-world.sh --migrate-only
 cat deploy/madara-lab/.lab/world-address
+
+# Declare RealmsPlayerAccount, deploy PlayerRegistry, bootstrap ChainConfig,
+# and register the fee-free 96-player preset.
+deploy/madara-lab/scripts/bootstrap-game.sh
+
+# The second run must report that ChainConfig and preset 1 already exist.
+deploy/madara-lab/scripts/bootstrap-game.sh
 ```
 
-The script writes `contracts/game/manifest_madara.json` (gitignored, like the spike manifest), records the world
-address under `.lab/`, and renders `.lab/torii.toml` for the canary.
+The world script writes `contracts/game/manifest_madara.json` (gitignored, like the spike manifest), records the world
+address under `.lab/`, and renders `.lab/torii.toml` for the canary. The bootstrap script writes the gameplay contract
+class hashes and registry address to `.lab/gameplay-contracts.json`.
+
+Create a game after Torii is running:
+
+```bash
+RPC_URL=http://127.0.0.1:5060/rpc/v0_9_0 \
+TORII_SQL_URL=http://127.0.0.1:8090/sql \
+DOJO_ACCOUNT_ADDRESS=0x055be462e718c4166d656d11f89e341115b8bc82389c3762a10eade04fcb225d \
+DOJO_PRIVATE_KEY=0x077e56c6dc32d40a67f6f7e6625c8dc5e570abe49c0a24e9202e4ae906abcc07 \
+bun config/deployer/clean/cli/launch-step.ts \
+  --launch-kind game --step create-world --environment madara.blitz \
+  --game madara-phase1-96 --start-time 2026-08-25T19:00:00Z
+```
 
 ### Why these flags
 
@@ -125,8 +154,15 @@ BINDING_AUTHORITY_ADDRESS=0x008a1719e7ca19f3d91e8ef50a48fc456575f645497a1d55f30e
 BINDING_AUTHORITY_PRIVATE_KEY=0x0514977443078cf1e0c36bc88b89ada9a46061a5cf728f40274caea21d76f174
 ```
 
-`GAMEPLAY_ACCOUNT_CLASS_HASH` and `PLAYER_REGISTRY_ADDRESS` are filled once `contracts/player-account` is declared
-and deployed here (brief C.3).
+The bootstrap writes these values to `.lab/gameplay-contracts.json`:
+
+```
+GAMEPLAY_ACCOUNT_CLASS_HASH=0x04bb0716b7161e8a439dcc39864a40cc243a29908bb8b2d9b361a4b4fa0f72c4
+PLAYER_REGISTRY_ADDRESS=0x00c06bcc011cc146b724f6237d62ab88a35ca94e0bce682cb9ab795aaaa22abb
+```
+
+The values are deterministic for the current source and binding authority. Re-run the bootstrap after changing either
+contract. It rejects a registry address that contains a different class.
 
 ## Session store for `apps/web`
 
@@ -171,12 +207,54 @@ deploy/madara-lab/scripts/block-stats.sh 10m      # last 10 minutes
 
 It reports blocks, executed/reverted/rejected transactions, classes declared, L2 gas, transactions per busy block,
 and p50/p95/max of `block_production_ms`, `close_block_total_ms`, `merklization_ms`, `db_write_ms`. Capture it before
-and after every harness run and attach the output to the run manifest (`.lab/runs/`, see the brief, item C3).
+and after every harness run and attach the output to the run manifest (`.lab/runs/`, see the brief, item D.4).
 
-Cairo Native is off by default. To measure it:
+### 96-player harness
+
+The harness creates a fresh dev-mode game, deploys 96 guest gameplay accounts, settles and provisions each player,
+then rotates actions across the three realm explorers each settlement receives. Run the acceptance workload from the
+repository root:
 
 ```bash
-MADARA_NATIVE=true docker compose up -d --wait madara
+pnpm lab:harness -- --bots 96 --minutes 10
+# equivalent: bun deploy/madara-lab/harness/run.ts --bots 96 --minutes 10
+```
+
+Every transaction records hash submission, `PRE_CONFIRMED`, `ACCEPTED_ON_L2`, and the first observation of that hash
+in both Torii's `transactions` and `events` tables. The JSON report is written under
+`deploy/madara-lab/.lab/runs/`; it includes the Madara image digest, git revision, exact action mix, latency
+percentiles, threshold results, and `block-stats.sh` output from before and after the run.
+
+The acceptance run passed on 2026-08-25 UTC. Its report is
+`.lab/runs/20260825T225504381Z.json` (generated evidence, intentionally gitignored):
+
+| Result | Value | Bar |
+| --- | ---: | ---: |
+| Completed actions | 3,840 / 3,840 | at least 3,500 |
+| Reverts / failures / indexing loss | 0 / 0 / 0 | all zero |
+| p95 submit → `PRE_CONFIRMED` | 252 ms | at most 1 s |
+| p95 submit → `ACCEPTED_ON_L2` | 2.007 s | at most 4 s |
+| p95 submit → indexed | 887 ms | at most 6 s |
+
+The action counts were exact: 1,920 move, 1,152 explore, and 768 produce. A 12-minute block-stat window around the
+workload contained 3,840 executed transactions, zero reverts, zero rejects, 12 transactions per busy block at p50 and
+max, 1.905 s p95 block production, and 92.34 ms p95 block close.
+
+The failed runs named the bottlenecks before the pass:
+
+- VM execution with the upstream 600-transaction block ceiling admitted a 120-transaction game block that took 659
+  seconds. Native execution plus a 12-transaction ceiling kept block production below 2.1 seconds during the final
+  workload.
+- One Torii query loop per action overwhelmed the SQL endpoint. One observer now batches up to 64 transaction hashes
+  or explorer ids per query; the final run lost no indexed action.
+- The first tuned 96-player run completed 3,552 actions but left every explorer behind its exploration frontier for
+  ticks 31–33. Move selection now returns an explorer to the frontier first; the 40-tick regression test and final run
+  both completed all exploration slots.
+
+Cairo Native is on by default because the VM-only run did not meet the workload. To reproduce the comparison path:
+
+```bash
+MADARA_NATIVE=false docker compose up -d --wait madara
 ```
 
 Compilation is asynchronous with a VM fallback (`--native-compilation-mode=async`); native artifacts are cached under
@@ -185,16 +263,17 @@ reading numbers, and compare against a VM run on the same block-stats window.
 
 ## Pinning
 
-| Component | Pin                                                              | Why                                                        |
-| --------- | ---------------------------------------------------------------- | ---------------------------------------------------------- |
-| Madara    | `ghcr.io/madara-alliance/madara:v0.11.0-alpha.9` (amd64 digest `sha256:98e02d4b6557a6048e9540929714f8731ba0ec429add2ac29ddd020d5ff24b9f`) | `latest` is a different, newer build (`sha256:6dc3ae0a…`); results are not comparable across images |
-| Chain config | `chain-config.yaml`, copied in full from the alpha.9 `devnet` preset with only `chain_name`, `chain_id`, `block_time`, `pending_block_update_time` changed | Madara rejects partial configs; a silent default would be a silent variable in every measurement |
-| Torii     | `ghcr.io/dojoengine/torii:v1.8.16`                               | last known-good with this client                            |
-| sozo      | 1.8.7                                                            | speaks RPC 0.9/0.10, has the blake2s flag                   |
-| Caddy     | `caddy:2-alpine` (2.11.4, `sha256:5f5c8640…`)                    | TLS front; `CADDY_IMAGE` in `.env` to bump                  |
-| Postgres  | `postgres:17-alpine` (17.11, `sha256:18cfe3ef…`)                 | session store; `POSTGRES_IMAGE` in `.env` to bump           |
+| Component | Pin | Why |
+| --- | --- | --- |
+| Madara | `ghcr.io/madara-alliance/madara@sha256:3c931fa515bbd3760fd5cbc0bcdceb557d3edbd44bec0231cdf52dd6abb475f6` (`v0.11.0-alpha.9`) | Exact image used by the passing run; tags are mutable |
+| Chain config | Full alpha.9 `devnet` preset, with the lab identity, 2 s blocks, 250 ms pending updates, execution batches of 4, and a 12-transaction block ceiling | Madara rejects partial configs; every measurement variable stays explicit |
+| Torii | `ghcr.io/dojoengine/torii:v1.8.16` | Last known-good version with this client |
+| sozo | 1.8.7 | Speaks RPC 0.9/0.10 and has the blake2s flag |
+| Caddy | `caddy:2-alpine` (2.11.4, `sha256:5f5c8640…`) | TLS front; set `CADDY_IMAGE` to compare another image |
+| Postgres | `postgres:17-alpine` (17.11, `sha256:18cfe3ef…`) | Session store; set `POSTGRES_IMAGE` to compare another image |
 
-Bump `MADARA_TAG` in a `.env` next to the compose file to test another build, and record the digest here.
+Set `MADARA_IMAGE` in a `.env` next to the Compose file to compare another build. Use a full digest reference and
+record it here before treating the results as comparable.
 
 ## What Madara does not give you (as of alpha.9)
 
@@ -235,8 +314,11 @@ deploy/madara-lab/
   Caddyfile                TLS front: *.realms.test → dev servers, madara, torii, identity RPC upstream
   chain-config.yaml        full chain config (see Pinning)
   torii.toml.template      rendered to .lab/torii.toml by deploy-world.sh
+  harness/                 account factory, workload driver, Torii observer, and JSON report writer
   scripts/issue-certs.sh   wildcard certificate from the shared mkcert root into .lab/certs/
   scripts/deploy-world.sh  sozo build + migrate with the Madara-specific flags
+  scripts/bootstrap-game.sh  gameplay contracts + ChainConfig + preset 1
+  scripts/deploy-gameplay-contracts.ts  idempotent class declaration and registry deployment
   scripts/probe-deploy-account.ts  fee-free deploy_account proof + timings
   scripts/block-stats.sh   aggregates Madara's per-block JSON log
   scripts/block-stats.py   the aggregation

@@ -1,5 +1,5 @@
 # Madara chain config for the Realms lab. Derived from the upstream `devnet` preset for v0.11.0-alpha.9
-# (configs/presets/devnet.yaml); only the keys below are changed on purpose. Keep this file complete — Madara
+# (configs/presets/devnet.yaml); every changed key is documented in the lab README. Keep this file complete — Madara
 # refuses partial configs, and a silent default here is a silent default in every measurement.
 config_version: 2
 chain_name: "Realms Madara Lab"
@@ -13,7 +13,9 @@ latest_protocol_version: "0.14.2"
 # Pre-confirmed blocks give sub-second inclusion independently of this value.
 block_time: "2s"
 pending_block_update_time: "250ms"
-execution_batch_size: 16
+# Pre-confirmed state is persisted after each execution batch. Four bounds the work before that observation while a
+# block can still collect up to 12 transactions across batches.
+execution_batch_size: 4
 bouncer_config:
   block_max_capacity:
     sierra_gas: 5000000000
@@ -21,7 +23,9 @@ bouncer_config:
     n_events: 5000
     state_diff_size: 4000
     l1_gas: 2500000
-    n_txs: 600
+    # Keep one block within the workload proven by the 12-bot canary. The upstream 600-tx ceiling admitted a
+    # 120-transaction game block that took 659 seconds to produce and starved every later transaction.
+    n_txs: 12
     proving_gas: 5000000000
     receipt_l2_gas: 5800000000
   builtin_weights:

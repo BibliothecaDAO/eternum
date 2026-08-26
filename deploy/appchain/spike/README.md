@@ -84,7 +84,7 @@ Reset everything: `docker-compose --profile torii down -v`
 The Controller check used a standalone fixture that was removed after this spike passed.
 
 **Local testing requires an https tunnel for the RPC** — the hosted keychain
-iframe (`https://x.cartridge.gg`) cannot fetch `http://localhost` under
+iframe (`https://x.realms.world`) cannot fetch `http://localhost` under
 Chrome's Local Network Access rules, which surfaces as **"No chainId"** in the
 connect modal. Run `cloudflared tunnel --url http://localhost:5050` and open
 the page as `?rpc=https://<tunnel>.trycloudflare.com`. Irrelevant on the

@@ -17,10 +17,9 @@ on:
         required: true
         type: choice
         options:
+          - madara.blitz
           - appchain.blitz
           - appchain.eternum
-          - mainnet.blitz
-          - mainnet.eternum
       game_name:
         description: "Game/world name"
         required: false
@@ -82,7 +81,7 @@ on:
         required: false
         type: string
       target_game_names_json:
-        description: "Optional JSON array of child game names to target during grouped indexer recovery"
+        description: "Optional JSON array of child game names to target during grouped recovery"
         required: false
         type: string
       launch_step:
@@ -94,20 +93,9 @@ on:
           - full
           - create-world
           - wait-for-factory-index
-          - configure-world
-          - reserve-blitz-hyperstructures
-          - grant-lootchest-role
-          - grant-village-pass-role
-          - create-banks
-          - create-indexer
-          - sync-paymaster
           - create-series
           - create-worlds
           - wait-for-factory-indexes
-          - configure-worlds
-          - grant-lootchest-roles
-          - grant-village-pass-roles
-          - create-indexers
 
 jobs:
   launch:
@@ -137,11 +125,9 @@ jobs:
       GAME_LAUNCH_TARGET_GAME_NAMES_JSON: ${{ github.event.inputs.target_game_names_json }}
       GAME_LAUNCH_STEP: ${{ github.event.inputs.launch_step }}
       FACTORY_RUN_STORE_BRANCH: factory-runs
-      # Each GitHub environment selects its world's dedicated Torii endpoint.
-      TORII_URL: ${{ vars.TORII_URL }}
-      FACTORY_ADDRESS: ${{ vars.FACTORY_ADDRESS }}
       DOJO_ACCOUNT_ADDRESS: ${{ vars.GAME_LAUNCH_DOJO_ACCOUNT_ADDRESS }}
       DOJO_PRIVATE_KEY: ${{ secrets.GAME_LAUNCH_DOJO_PRIVATE_KEY }}
+      TORII_SQL_URL: ${{ vars.TORII_SQL_URL }}
       GITHUB_TOKEN: ${{ github.token }}
     steps:
       - name: Checkout
@@ -194,16 +180,6 @@ jobs:
             exit 1
           fi
 
-          if [ "${GAME_LAUNCH_STEP}" = "sync-paymaster" ] && [ "${GAME_LAUNCH_NETWORK}" != "mainnet" ]; then
-            echo "sync-paymaster is only supported for mainnet environments" >&2
-            exit 1
-          fi
-
-          if [ "${GAME_LAUNCH_STEP}" = "reserve-blitz-hyperstructures" ] && [ "${GAME_LAUNCH_GAME_TYPE}" != "blitz" ]; then
-            echo "reserve-blitz-hyperstructures is only supported for blitz environments" >&2
-            exit 1
-          fi
-
           write_launch_options_shell() {
             local output_path=".context/game-launch/launch-options.sh"
 
@@ -230,7 +206,6 @@ jobs:
 
           const mappings = {
             rpcUrl: "GAME_LAUNCH_RPC_URL",
-            factoryAddress: "GAME_LAUNCH_FACTORY_ADDRESS",
             accountAddress: "GAME_LAUNCH_ACCOUNT_ADDRESS",
             devModeOn: "GAME_LAUNCH_DEV_MODE_ON",
             singleRealmMode: "GAME_LAUNCH_SINGLE_REALM_MODE",
@@ -241,21 +216,12 @@ jobs:
             biomeClimateOverrides: "GAME_LAUNCH_BIOME_CLIMATE_OVERRIDES_JSON",
             biomeClimateOverridesByGameNumber: "GAME_LAUNCH_BIOME_CLIMATE_OVERRIDES_BY_GAME_NUMBER_JSON",
             blitzRegistrationOverrides: "GAME_LAUNCH_BLITZ_REGISTRATION_OVERRIDES_JSON",
-            cartridgeApiBase: "GAME_LAUNCH_CARTRIDGE_API_BASE",
-            toriiNamespaces: "GAME_LAUNCH_TORII_NAMESPACES",
-            vrfProviderAddress: "GAME_LAUNCH_VRF_PROVIDER_ADDRESS",
             executionMode: "GAME_LAUNCH_EXECUTION_MODE",
             verboseConfigLogs: "GAME_LAUNCH_VERBOSE_CONFIG_LOGS",
             version: "GAME_LAUNCH_VERSION",
-            maxActions: "GAME_LAUNCH_MAX_ACTIONS",
             waitForFactoryIndexTimeoutMs: "GAME_LAUNCH_WAIT_TIMEOUT_MS",
             waitForFactoryIndexPollMs: "GAME_LAUNCH_WAIT_POLL_MS",
-            skipIndexer: "GAME_LAUNCH_SKIP_INDEXER",
-            skipLootChestRoleGrant: "GAME_LAUNCH_SKIP_LOOTCHEST_ROLE_GRANT",
-            skipBanks: "GAME_LAUNCH_SKIP_BANKS",
             dryRun: "GAME_LAUNCH_DRY_RUN",
-            workflowFile: "GAME_LAUNCH_WORKFLOW_FILE",
-            ref: "GAME_LAUNCH_REF",
           };
 
           function shellQuote(value) {
@@ -282,7 +248,7 @@ jobs:
 
           RESOLVED_GAME_LAUNCH_ACCOUNT_ADDRESS="${GAME_LAUNCH_ACCOUNT_ADDRESS:-${DOJO_ACCOUNT_ADDRESS:-}}"
 
-          if [ "${GAME_LAUNCH_STEP}" != "sync-paymaster" ] && { [ -z "${RESOLVED_GAME_LAUNCH_ACCOUNT_ADDRESS}" ] || [ -z "${DOJO_PRIVATE_KEY}" ]; }; then
+          if [ -z "${RESOLVED_GAME_LAUNCH_ACCOUNT_ADDRESS}" ] || [ -z "${DOJO_PRIVATE_KEY}" ]; then
             echo "Missing DOJO credentials for ${GAME_LAUNCH_ENVIRONMENT}" >&2
             exit 1
           fi
@@ -308,10 +274,6 @@ jobs:
             fi
           }
 
-          resolve_configured_factory_address() {
-            printf '%s' "${GAME_LAUNCH_FACTORY_ADDRESS:-${FACTORY_ADDRESS:-}}"
-          }
-
           resolve_configured_account_address() {
             printf '%s' "${GAME_LAUNCH_ACCOUNT_ADDRESS:-${DOJO_ACCOUNT_ADDRESS:-}}"
           }
@@ -319,11 +281,9 @@ jobs:
           append_replayable_launch_args() {
             local args_name="$1"
             local -n args_ref="${args_name}"
-            local resolved_factory_address=""
             local resolved_account_address=""
             local resolved_execution_mode="${GAME_LAUNCH_EXECUTION_MODE:-batched}"
 
-            resolved_factory_address="$(resolve_configured_factory_address)"
             resolved_account_address="$(resolve_configured_account_address)"
 
             args_ref+=(
@@ -331,27 +291,17 @@ jobs:
             )
 
             append_optional_arg "${args_name}" --rpc-url "${GAME_LAUNCH_RPC_URL:-}"
-            append_optional_arg "${args_name}" --factory-address "${resolved_factory_address}"
             append_optional_arg "${args_name}" --account-address "${resolved_account_address}"
             append_optional_arg "${args_name}" --dev-mode-on "${GAME_LAUNCH_DEV_MODE_ON:-}"
             append_optional_arg "${args_name}" --single-realm-mode "${GAME_LAUNCH_SINGLE_REALM_MODE:-}"
             append_optional_arg "${args_name}" --two-player-mode "${GAME_LAUNCH_TWO_PLAYER_MODE:-}"
             append_optional_arg "${args_name}" --duration-seconds "${GAME_LAUNCH_DURATION_SECONDS:-}"
             append_optional_arg "${args_name}" --weekly-cadence-json "${GAME_LAUNCH_WEEKLY_CADENCE_JSON:-}"
-            append_optional_arg "${args_name}" --cartridge-api-base "${GAME_LAUNCH_CARTRIDGE_API_BASE:-}"
-            append_optional_arg "${args_name}" --torii-namespaces "${GAME_LAUNCH_TORII_NAMESPACES:-}"
-            append_optional_arg "${args_name}" --vrf-provider-address "${GAME_LAUNCH_VRF_PROVIDER_ADDRESS:-}"
             append_optional_arg "${args_name}" --verbose-config-logs "${GAME_LAUNCH_VERBOSE_CONFIG_LOGS:-}"
             append_optional_arg "${args_name}" --version "${GAME_LAUNCH_VERSION:-}"
-            append_optional_arg "${args_name}" --max-actions "${GAME_LAUNCH_MAX_ACTIONS:-}"
             append_optional_arg "${args_name}" --wait-timeout-ms "${GAME_LAUNCH_WAIT_TIMEOUT_MS:-}"
             append_optional_arg "${args_name}" --wait-poll-ms "${GAME_LAUNCH_WAIT_POLL_MS:-}"
-            append_optional_arg "${args_name}" --skip-indexer "${GAME_LAUNCH_SKIP_INDEXER:-}"
-            append_optional_arg "${args_name}" --skip-lootchest-role-grant "${GAME_LAUNCH_SKIP_LOOTCHEST_ROLE_GRANT:-}"
-            append_optional_arg "${args_name}" --skip-banks "${GAME_LAUNCH_SKIP_BANKS:-}"
             append_optional_arg "${args_name}" --dry-run "${GAME_LAUNCH_DRY_RUN:-}"
-            append_optional_arg "${args_name}" --workflow-file "${GAME_LAUNCH_WORKFLOW_FILE:-}"
-            append_optional_arg "${args_name}" --ref "${GAME_LAUNCH_REF:-}"
             append_optional_arg "${args_name}" --map-config-overrides-json "${GAME_LAUNCH_MAP_CONFIG_OVERRIDES_JSON:-}"
             append_optional_arg "${args_name}" --biome-climate-overrides-json "${GAME_LAUNCH_BIOME_CLIMATE_OVERRIDES_JSON:-}"
             append_optional_arg "${args_name}" --biome-climate-overrides-by-game-number-json "${GAME_LAUNCH_BIOME_CLIMATE_OVERRIDES_BY_GAME_NUMBER_JSON:-}"
@@ -580,21 +530,6 @@ jobs:
             case "${step_id}" in
               create-world|create-worlds)
                 printf 'create-world'
-                ;;
-              configure-world|configure-worlds)
-                printf 'configure-world'
-                ;;
-              reserve-blitz-hyperstructures)
-                printf 'reserve-blitz-hyperstructures'
-                ;;
-              grant-lootchest-role|grant-lootchest-roles)
-                printf 'grant-lootchest-role'
-                ;;
-              grant-village-pass-role|grant-village-pass-roles)
-                printf 'grant-village-pass-role'
-                ;;
-              create-banks)
-                printf 'create-banks'
                 ;;
               *)
                 return 1
@@ -850,165 +785,6 @@ jobs:
           set -euo pipefail
           source .context/game-launch/launch-env.sh
           run_launch_step wait-for-factory-indexes
-
-      - name: Configure world
-        if:
-          ${{ startsWith(github.event.inputs.environment, 'mainnet.') && github.event.inputs.launch_kind == 'game' &&
-          (github.event.inputs.launch_step == 'full' || github.event.inputs.launch_step == 'create-world' ||
-          github.event.inputs.launch_step == 'wait-for-factory-index' || github.event.inputs.launch_step ==
-          'configure-world') }}
-        run: |
-          set -euo pipefail
-          source .context/game-launch/launch-env.sh
-          run_launch_step configure-world
-
-      - name: Configure worlds
-        if:
-          ${{ startsWith(github.event.inputs.environment, 'mainnet.') && (github.event.inputs.launch_kind == 'series' ||
-          github.event.inputs.launch_kind == 'rotation') && (github.event.inputs.launch_step == 'full' ||
-          github.event.inputs.launch_step == 'create-series' || github.event.inputs.launch_step == 'create-worlds' ||
-          github.event.inputs.launch_step == 'wait-for-factory-indexes' || github.event.inputs.launch_step ==
-          'configure-worlds') }}
-        run: |
-          set -euo pipefail
-          source .context/game-launch/launch-env.sh
-          run_launch_step configure-worlds
-
-      - name: Reserve blitz hyperstructures
-        if:
-          ${{ startsWith(github.event.inputs.environment, 'mainnet.') && github.event.inputs.launch_kind == 'game' &&
-          endsWith(github.event.inputs.environment, '.blitz') && (github.event.inputs.launch_step == 'full' ||
-          github.event.inputs.launch_step == 'create-world' || github.event.inputs.launch_step ==
-          'wait-for-factory-index' || github.event.inputs.launch_step == 'configure-world' ||
-          github.event.inputs.launch_step == 'reserve-blitz-hyperstructures') }}
-        run: |
-          set -euo pipefail
-          source .context/game-launch/launch-env.sh
-          run_launch_step reserve-blitz-hyperstructures
-
-      - name: Reserve blitz hyperstructures for series
-        if:
-          ${{ startsWith(github.event.inputs.environment, 'mainnet.') && (github.event.inputs.launch_kind == 'series' ||
-          github.event.inputs.launch_kind == 'rotation') && endsWith(github.event.inputs.environment, '.blitz') &&
-          (github.event.inputs.launch_step == 'full' || github.event.inputs.launch_step == 'create-series' ||
-          github.event.inputs.launch_step == 'create-worlds' || github.event.inputs.launch_step ==
-          'wait-for-factory-indexes' || github.event.inputs.launch_step == 'configure-worlds' ||
-          github.event.inputs.launch_step == 'reserve-blitz-hyperstructures') }}
-        run: |
-          set -euo pipefail
-          source .context/game-launch/launch-env.sh
-          run_launch_step reserve-blitz-hyperstructures
-
-      - name: Grant loot chest role
-        if:
-          ${{ startsWith(github.event.inputs.environment, 'mainnet.') && github.event.inputs.launch_kind == 'game' &&
-          (github.event.inputs.launch_step == 'full' || github.event.inputs.launch_step == 'create-world' ||
-          github.event.inputs.launch_step == 'wait-for-factory-index' || github.event.inputs.launch_step ==
-          'configure-world' || github.event.inputs.launch_step == 'grant-lootchest-role') }}
-        run: |
-          set -euo pipefail
-          source .context/game-launch/launch-env.sh
-          run_launch_step grant-lootchest-role
-
-      - name: Grant loot chest roles
-        if:
-          ${{ startsWith(github.event.inputs.environment, 'mainnet.') && (github.event.inputs.launch_kind == 'series' ||
-          github.event.inputs.launch_kind == 'rotation') && (github.event.inputs.launch_step == 'full' ||
-          github.event.inputs.launch_step == 'create-series' || github.event.inputs.launch_step == 'create-worlds' ||
-          github.event.inputs.launch_step == 'wait-for-factory-indexes' || github.event.inputs.launch_step ==
-          'configure-worlds' || github.event.inputs.launch_step == 'grant-lootchest-roles') }}
-        run: |
-          set -euo pipefail
-          source .context/game-launch/launch-env.sh
-          run_launch_step grant-lootchest-roles
-
-      - name: Grant village pass roles
-        if:
-          ${{ startsWith(github.event.inputs.environment, 'mainnet.') && github.event.inputs.launch_kind == 'game' &&
-          endsWith(github.event.inputs.environment, '.eternum') && (github.event.inputs.launch_step == 'full' ||
-          github.event.inputs.launch_step == 'create-world' || github.event.inputs.launch_step ==
-          'wait-for-factory-index' || github.event.inputs.launch_step == 'configure-world' ||
-          github.event.inputs.launch_step == 'grant-lootchest-role' || github.event.inputs.launch_step ==
-          'grant-village-pass-role') }}
-        run: |
-          set -euo pipefail
-          source .context/game-launch/launch-env.sh
-          run_launch_step grant-village-pass-role
-
-      - name: Grant village pass roles for series
-        if:
-          ${{ startsWith(github.event.inputs.environment, 'mainnet.') && (github.event.inputs.launch_kind == 'series' ||
-          github.event.inputs.launch_kind == 'rotation') && endsWith(github.event.inputs.environment, '.eternum') &&
-          (github.event.inputs.launch_step == 'full' || github.event.inputs.launch_step == 'create-series' ||
-          github.event.inputs.launch_step == 'create-worlds' || github.event.inputs.launch_step ==
-          'wait-for-factory-indexes' || github.event.inputs.launch_step == 'configure-worlds' ||
-          github.event.inputs.launch_step == 'grant-lootchest-roles' || github.event.inputs.launch_step ==
-          'grant-village-pass-roles') }}
-        run: |
-          set -euo pipefail
-          source .context/game-launch/launch-env.sh
-          run_launch_step grant-village-pass-roles
-
-      - name: Create banks
-        if:
-          ${{ startsWith(github.event.inputs.environment, 'mainnet.') && endsWith(github.event.inputs.environment,
-          '.eternum') && (github.event.inputs.launch_step == 'full' || github.event.inputs.launch_step == 'create-world'
-          || github.event.inputs.launch_step == 'wait-for-factory-index' || github.event.inputs.launch_step ==
-          'configure-world' || github.event.inputs.launch_step == 'grant-lootchest-role' ||
-          github.event.inputs.launch_step == 'grant-village-pass-role' || github.event.inputs.launch_step ==
-          'create-series' || github.event.inputs.launch_step == 'create-worlds' || github.event.inputs.launch_step ==
-          'wait-for-factory-indexes' || github.event.inputs.launch_step == 'configure-worlds' ||
-          github.event.inputs.launch_step == 'grant-lootchest-roles' || github.event.inputs.launch_step ==
-          'grant-village-pass-roles' || github.event.inputs.launch_step == 'create-banks') }}
-        run: |
-          set -euo pipefail
-          source .context/game-launch/launch-env.sh
-          run_launch_step create-banks
-
-      - name: Create indexer
-        if:
-          ${{ startsWith(github.event.inputs.environment, 'mainnet.') && github.event.inputs.launch_kind == 'game' &&
-          (github.event.inputs.launch_step == 'full' || github.event.inputs.launch_step == 'create-world' ||
-          github.event.inputs.launch_step == 'wait-for-factory-index' || github.event.inputs.launch_step ==
-          'configure-world' || github.event.inputs.launch_step == 'grant-lootchest-role' ||
-          github.event.inputs.launch_step == 'grant-village-pass-role' || github.event.inputs.launch_step ==
-          'create-banks' || github.event.inputs.launch_step == 'create-indexer') }}
-        run: |
-          set -euo pipefail
-          source .context/game-launch/launch-env.sh
-          run_launch_step create-indexer
-
-      - name: Create indexers
-        if:
-          ${{ startsWith(github.event.inputs.environment, 'mainnet.') && (github.event.inputs.launch_kind == 'series' ||
-          github.event.inputs.launch_kind == 'rotation') && (github.event.inputs.launch_step == 'full' ||
-          github.event.inputs.launch_step == 'create-series' || github.event.inputs.launch_step == 'create-worlds' ||
-          github.event.inputs.launch_step == 'wait-for-factory-indexes' || github.event.inputs.launch_step ==
-          'configure-worlds' || github.event.inputs.launch_step == 'grant-lootchest-roles' ||
-          github.event.inputs.launch_step == 'grant-village-pass-roles' || github.event.inputs.launch_step ==
-          'create-banks' || github.event.inputs.launch_step == 'create-indexers') }}
-        run: |
-          set -euo pipefail
-          source .context/game-launch/launch-env.sh
-          run_launch_step create-indexers
-
-      - name: Sync paymaster
-        if:
-          ${{ startsWith(github.event.inputs.environment, 'mainnet.') && (github.event.inputs.launch_step == 'full' ||
-          github.event.inputs.launch_step == 'create-world' || github.event.inputs.launch_step ==
-          'wait-for-factory-index' || github.event.inputs.launch_step == 'configure-world' ||
-          github.event.inputs.launch_step == 'grant-lootchest-role' || github.event.inputs.launch_step ==
-          'grant-village-pass-role' || github.event.inputs.launch_step == 'create-series' ||
-          github.event.inputs.launch_step == 'create-worlds' || github.event.inputs.launch_step ==
-          'wait-for-factory-indexes' || github.event.inputs.launch_step == 'configure-worlds' ||
-          github.event.inputs.launch_step == 'grant-lootchest-roles' || github.event.inputs.launch_step ==
-          'grant-village-pass-roles' || github.event.inputs.launch_step == 'create-banks' ||
-          github.event.inputs.launch_step == 'create-indexer' || github.event.inputs.launch_step == 'create-indexers' ||
-          github.event.inputs.launch_step == 'sync-paymaster') }}
-        run: |
-          set -euo pipefail
-          source .context/game-launch/launch-env.sh
-          run_launch_step sync-paymaster
 
       - name: Upload launch summary
         if: ${{ always() }}

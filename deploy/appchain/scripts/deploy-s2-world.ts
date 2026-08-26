@@ -2,36 +2,39 @@ import { loadEnvironmentConfiguration } from "../../../config/deployer/clean/con
 import { resolveDeploymentEnvironment } from "../../../config/deployer/clean/environment";
 import { MINTER_ROLE } from "../../../config/deployer/clean/eternum/roles";
 import {
-  assertAppchainRegistrarAvailable,
+  assertRegistrarAvailable,
   bootstrapChainConfig,
   isRegistrarAlreadyInitializedError,
-  resolveAppchainContractAddress,
+  resolveRegistrarContractAddress,
 } from "../../../config/deployer/clean/registrar/calls";
 import { isChainConfigInitialized } from "../../../config/deployer/clean/registrar/game-registry";
 import { buildChainConfig } from "../../../config/deployer/clean/registrar/preset";
-import { registerAppchainPreset } from "../../../config/deployer/clean/registrar/register-preset";
+import { registerEnvironmentPreset } from "../../../config/deployer/clean/registrar/register-preset";
 import { buildGrantRoleCall, grantRoles } from "../../../config/deployer/clean/role-grants/grant-role";
 import { resolveAccountCredentials } from "../../../config/deployer/clean/shared/credentials";
 import { Account, RpcProvider } from "starknet";
 import {
   DEFAULT_APPCHAIN_ETERNUM_PRESET_ID,
   DEFAULT_APPCHAIN_PRESET_ID,
+  DEFAULT_MADARA_PRESET_ID,
 } from "../../../config/deployer/clean/constants";
+import type { DeploymentEnvironmentId } from "../../../config/deployer/clean/types";
 
-type AppchainEnvironmentId = "appchain.blitz" | "appchain.eternum";
+const ENVIRONMENT_IDS: DeploymentEnvironmentId[] = ["madara.blitz", "appchain.blitz", "appchain.eternum"];
 
-function resolveEnvironmentId(): AppchainEnvironmentId {
+function resolveEnvironmentId(): DeploymentEnvironmentId {
   const index = process.argv.indexOf("--environment");
   const value = index >= 0 ? process.argv[index + 1] : "appchain.blitz";
-  if (value !== "appchain.blitz" && value !== "appchain.eternum") {
-    throw new Error("--environment must be appchain.blitz or appchain.eternum");
+  if (!ENVIRONMENT_IDS.includes(value as DeploymentEnvironmentId)) {
+    throw new Error(`--environment must be one of: ${ENVIRONMENT_IDS.join(", ")}`);
   }
-  return value;
+  return value as DeploymentEnvironmentId;
 }
 
 // Blitz preset 2 = Regular Fast (launch default; preset 1 is retired);
 // eternum preset 10 = the standard eternum season.
-function resolveDefaultPresetId(environmentId: AppchainEnvironmentId): number {
+function resolveDefaultPresetId(environmentId: DeploymentEnvironmentId): number {
+  if (environmentId === "madara.blitz") return Number(DEFAULT_MADARA_PRESET_ID);
   return Number(environmentId === "appchain.eternum" ? DEFAULT_APPCHAIN_ETERNUM_PRESET_ID : DEFAULT_APPCHAIN_PRESET_ID);
 }
 
@@ -41,7 +44,7 @@ function optionalEnvironmentAddress(name: string): string | undefined {
 }
 
 async function wireSharedCollectibles(params: {
-  environmentId: AppchainEnvironmentId;
+  environmentId: DeploymentEnvironmentId;
   rpcUrl: string;
   accountAddress: string;
   privateKey: string;
@@ -53,21 +56,21 @@ async function wireSharedCollectibles(params: {
     buildGrantRoleCall(
       params.entryTokenAddress,
       MINTER_ROLE,
-      resolveAppchainContractAddress("blitz_realm_systems", params.environmentId),
+      resolveRegistrarContractAddress("blitz_realm_systems", params.environmentId),
     ),
     buildGrantRoleCall(
       params.lootChestAddress,
       MINTER_ROLE,
-      resolveAppchainContractAddress("prize_distribution_systems", params.environmentId),
+      resolveRegistrarContractAddress("prize_distribution_systems", params.environmentId),
     ),
   ];
   const result = await grantRoles({
-    chain: "appchain",
+    chain: resolveDeploymentEnvironment(params.environmentId).chain,
     calls,
     rpcUrl: params.rpcUrl,
     accountAddress: params.accountAddress,
     privateKey: params.privateKey,
-    context: "s2 appchain peripheral wiring",
+    context: `${params.environmentId} peripheral wiring`,
     dryRun: params.dryRun,
   });
   console.log(
@@ -78,7 +81,7 @@ async function wireSharedCollectibles(params: {
 }
 
 async function bootstrapRegistrar(params: {
-  environmentId: AppchainEnvironmentId;
+  environmentId: DeploymentEnvironmentId;
   account: Account;
   adminAddress: string;
   entryTokenAddress: string;
@@ -127,18 +130,23 @@ async function bootstrapRegistrar(params: {
 async function deployS2World(): Promise<void> {
   const dryRun = process.argv.includes("--dry-run");
   const environmentId = resolveEnvironmentId();
-  const sozoProfile = environmentId === "appchain.eternum" ? "appchain-eternum" : "appchain-blitz";
+  const sozoProfile =
+    environmentId === "madara.blitz"
+      ? "madara"
+      : environmentId === "appchain.eternum"
+        ? "appchain-eternum"
+        : "appchain-blitz";
   console.log(
     `World migration is reviewer-owned. Run: sozo build --profile ${sozoProfile} && sozo migrate --profile ${sozoProfile}`,
   );
-  assertAppchainRegistrarAvailable(environmentId);
+  assertRegistrarAvailable(environmentId);
 
   const environment = resolveDeploymentEnvironment(environmentId);
   const rpcUrl = process.env.RPC_URL || environment.rpcUrl;
   const credentials = resolveAccountCredentials({
     accountAddress: process.env.DOJO_ACCOUNT_ADDRESS,
     privateKey: process.env.DOJO_PRIVATE_KEY,
-    context: "s2 appchain deployment",
+    context: `${environmentId} deployment`,
   });
   // Dev chains run the free-entry flow (amendment S3): no entry token or
   // loot chest exists until the W6 gateway, so both are optional and their
@@ -146,6 +154,9 @@ async function deployS2World(): Promise<void> {
   // set both.
   const entryTokenAddress = optionalEnvironmentAddress("ENTRY_TOKEN_ADDRESS");
   const lootChestAddress = optionalEnvironmentAddress("LOOT_CHEST_ADDRESS");
+  if (environmentId === "madara.blitz" && (entryTokenAddress || lootChestAddress)) {
+    throw new Error("madara.blitz is fee-free and must not configure entry-token or collectible addresses");
+  }
   const account = new Account({
     provider: new RpcProvider({ nodeUrl: rpcUrl }),
     address: credentials.accountAddress,
@@ -173,7 +184,7 @@ async function deployS2World(): Promise<void> {
     lootChestAddress: lootChestAddress ?? "0x0",
     dryRun,
   });
-  await registerAppchainPreset({ presetId: resolveDefaultPresetId(environmentId), environmentId, dryRun });
+  await registerEnvironmentPreset({ presetId: resolveDefaultPresetId(environmentId), environmentId, dryRun });
 }
 
 deployS2World().catch((error) => {
