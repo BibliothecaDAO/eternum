@@ -444,9 +444,18 @@ What the node actually does — each fact checked in source at the pin and measu
   `packages/provider`) runs `estimateInvokeFee` first; an estimate is a full execution on the node. If constant bounds
   are accepted under `--no-charge-fee`, the estimate is deleted and the sequencer's real load halves.
 
-**Owner:** Codex (headroom run, WS-vs-poll comparison, bounds policy, batch-size trade — all as harness runs with
-manifests); Claude (pin-bump digests, `host-state.sh` in every manifest). **Gate:** each lever lands with a before/after
-manifest pair on the same host state, or it is not a finding.
+**The headroom run has two shapes, and both run** (owner-agreed 2026-08-26). First remove the artificial walls: raise
+`n_txs` and `sierra_gas` deliberately and record both in the manifest's host state — a cap we set is not a finding.
+Then: **(a) max sustainable per-bot rate** — the harness discovers the fastest cadence the game rules permit (stamina
+and labor bind long before 1 action/s) and runs 96 bots flat out at it; **(b) max chain rate** — concurrent games (the
+cap is 96 per game, nothing stops N games) at the brief cadence, scaled 1 → 2 → 4 → … until p95 pre-confirmed (measured
+at ≤ 50 ms poll) or `block_production` breaks its bar. Shape (b) is the commercial number: how many simultaneous
+96-player Blitz games one Madara carries. The report names the wall (execution, gas, merklization, mempool) with the
+block-stats line that shows it.
+
+**Owner:** Codex (both headroom shapes, WS-vs-poll comparison, bounds policy, batch-size trade — all as harness runs
+with manifests); Claude (pin-bump digests, `host-state.sh` in every manifest). **Gate:** each lever lands with a
+before/after manifest pair on the same host state, or it is not a finding.
 
 ### D.5 Phase-1 integration gate (Claude)
 
@@ -473,10 +482,21 @@ deletion in code; one more service in the lab.
 
 ## Out of phase 1 (deliberately)
 
-Hosted Madara, DNS and cutover; L3 settlement (the README's "Next" section stays a plan); owned indexer/data plane
-(Torii stays, accepted); pure-Cairo world; RECS replacement; the game's React 19 / starknet 9 move (with the dojo.js
-exit); marketplace port; value on the game chain and the two protections it requires (C.3); AWS re-deploy. If you find
-yourself writing one of them here, stop.
+Hosted Madara, DNS and cutover; L3 settlement (the README's "Next" section stays a plan); pure-Cairo world; RECS
+replacement; the game's React 19 / starknet 9 move (with the dojo.js exit); marketplace port; value on the game chain
+and the two protections it requires (C.3); AWS re-deploy. If you find yourself writing one of them here, stop.
+
+**Owned data plane — direction pinned 2026-08-26, built in phase 2.** Torii stays for phase 1, accepted. Its replacement
+is not another generic indexer: one owned service per chain subscribes to Madara's **pre-confirmed** stream over
+WebSocket (needs the pin bump past `nightly-e674321`), decodes world events against the manifest ABIs into typed models,
+and is the **authoritative real-time source** — sequence-numbered diffs over WSS, snapshot on connect, resume by
+sequence on reconnect, state versioned as confirmed base + replaceable pre-confirmed overlay (Madara may replace the
+pre-confirmed block). Because pre-confirmation lands in 50–77 ms measured, that stream **is** the shared optimistic
+layer, consistent for every player by construction: the client becomes a pure consumer and the per-client optimistic
+machinery (guardrail 5's pending records, TTLs, reconciliation) is deleted, keeping at most a local echo of the acting
+player's own click. Throughput is a non-problem at target scale (~100 tx/s ≈ ~100 KB/s of decoded diffs); the
+engineering cost is event decoding without dojo.js, the overlay rebuild, and snapshot/replay. Success is measured in
+deletion: the client's optimistic channels and the Torii canary both go.
 
 ## Decisions taken
 
