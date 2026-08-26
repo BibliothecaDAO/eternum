@@ -10,17 +10,17 @@
   "status": "running",
   "executionMode": "fast_trial",
   "requestedLaunchStep": "full",
-  "inputPath": "inputs/appchain/blitz/rotations/blitz-nightwatch/32946091651-1.json",
-  "latestLaunchRequestId": "32946091651-1",
+  "inputPath": "inputs/appchain/blitz/rotations/blitz-nightwatch/32951567737-1.json",
+  "latestLaunchRequestId": "32951567737-1",
   "currentStepId": null,
   "createdAt": "2026-08-18T20:26:43.697Z",
-  "updatedAt": "2026-08-26T08:08:41.296Z",
+  "updatedAt": "2026-08-26T09:11:19.386Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
-    "workflowRunId": 32946091651,
+    "workflowRunId": 32951567737,
     "workflowRunAttempt": 1,
-    "workflowUrl": "https://github.com/BibliothecaDAO/eternum/actions/runs/32946091651",
+    "workflowUrl": "https://github.com/BibliothecaDAO/eternum/actions/runs/32951567737",
     "ref": "next",
     "sha": "67fc2ecc1dd6773393564139861d09018faf5acd"
   },
@@ -30,8 +30,8 @@
   },
   "evaluation": {
     "intervalMinutes": 30,
-    "nextEvaluationAt": "2026-08-26T08:38:41.296Z",
-    "lastEvaluatedAt": "2026-08-26T08:08:41.296Z"
+    "nextEvaluationAt": "2026-08-26T09:41:19.386Z",
+    "lastEvaluatedAt": "2026-08-26T09:11:19.386Z"
   },
   "steps": [
     {
@@ -39,27 +39,21 @@
       "title": "Creating series",
       "status": "succeeded",
       "workflowStepName": "Creating series",
-      "latestEvent": "Series is ready to accept rotation games",
-      "startedAt": "2026-08-26T08:08:01.026Z",
-      "finishedAt": "2026-08-26T08:08:08.009Z"
+      "latestEvent": "Series is ready to accept rotation games"
     },
     {
       "id": "create-worlds",
       "title": "Creating games",
       "status": "succeeded",
       "workflowStepName": "Creating games",
-      "latestEvent": "Creating games is complete",
-      "startedAt": "2026-08-26T08:08:12.347Z",
-      "finishedAt": "2026-08-26T08:08:24.509Z"
+      "latestEvent": "Creating games is complete"
     },
     {
       "id": "wait-for-factory-indexes",
       "title": "Waiting for games",
       "status": "succeeded",
       "workflowStepName": "Waiting for games",
-      "latestEvent": "Waiting for games is complete",
-      "startedAt": "2026-08-26T08:08:35.262Z",
-      "finishedAt": "2026-08-26T08:08:41.296Z"
+      "latestEvent": "Waiting for games is complete"
     }
   ],
   "summary": {
