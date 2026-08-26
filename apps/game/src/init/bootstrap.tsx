@@ -3,7 +3,7 @@ import { DEV_MODE_ENABLED, verboseLog } from "@/utils/dev-mode";
 import { formatReadableErrorForConsole } from "@/utils/error-message";
 import { captureSpectateIntentFromUrl, isExplicitSpectateSession } from "@/utils/spectator-session";
 import { setup } from "@bibliothecadao/dojo";
-import { configManager } from "@bibliothecadao/eternum";
+import { configManager, resolveGameTransactionResourceBounds } from "@bibliothecadao/eternum";
 import { SupersededGameSyncStartError } from "@bibliothecadao/eternum/game-sync";
 import { setSqlGameScope } from "@bibliothecadao/torii";
 import { world } from "@bibliothecadao/types";
@@ -136,7 +136,7 @@ const runBootstrap = async ({
   await assertBootstrapToriiIsAvailable(worldContext);
   verboseLog("[STARTING DOJO SETUP]");
   configureDojoRuntime(worldContext);
-  const setupResult = await runDojoSetup(worldNamespace, profile.gameId ?? 0);
+  const setupResult = await runDojoSetup(worldContext.chain, worldNamespace, profile.gameId ?? 0);
   // When the config fast path resolves in the background after boot, re-run
   // the config snapshot so cost tables don't stay empty for the session.
   const refreshGameSystems = () => configureGameSystems(setupResult, worldContext.chain);
@@ -266,11 +266,12 @@ const assertBootstrapToriiIsAvailable = async ({ profile, toriiUrl }: BootstrapW
   throw new Error(`World indexer is not available: ${profile.name}`);
 };
 
-const runDojoSetup = async (namespace: string, gameId: number): Promise<SetupResult> => {
+const runDojoSetup = async (chain: Chain, namespace: string, gameId: number): Promise<SetupResult> => {
   markGameEntryMilestone("setup-started");
   const setupResult = await setup(
     { ...dojoConfig },
     {
+      executionResourceBounds: resolveGameTransactionResourceBounds(chain),
       vrfProviderAddress: env.VITE_PUBLIC_VRF_PROVIDER_ADDRESS,
       useBurner: false,
       // The profile's world namespace; the provider also prepends gameId to

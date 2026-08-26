@@ -34,6 +34,14 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 // are surfaced in the What's New popup.
 const allLatestFeatures: LatestFeature[] = [
   {
+    date: "2026-08-26",
+    title: "Faster Madara Actions",
+    description:
+      "Madara actions now submit without a fee-estimation round trip, reducing delays before they reach the chain.",
+    type: "improvement",
+    gameSlug: "world",
+  },
+  {
     date: "2026-08-20",
     title: "Accurate Army Stamina",
     description:

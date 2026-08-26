@@ -73,6 +73,23 @@ describe("EternumProvider.executeAndCheckTransaction gas bounds", () => {
     });
   });
 
+  it("uses configured fixed bounds without estimating", async () => {
+    const provider = makeProvider();
+    const resourceBounds = makeResourceBounds(1_200_000_000n);
+    provider.executionResourceBounds = resourceBounds;
+    const signer = { estimateInvokeFee: vi.fn() };
+    const call: Call = {
+      contractAddress: "0x1",
+      entrypoint: "settle_realms",
+      calldata: [],
+    };
+
+    await provider.executeAndCheckTransaction(signer, call);
+
+    expect(signer.estimateInvokeFee).not.toHaveBeenCalled();
+    expect(provider.execute.mock.calls[0][3]).toEqual({ version: 3, tip: 0, resourceBounds });
+  });
+
   it("caps l2 gas max_amount at the current v3 mainnet limit", async () => {
     const provider = makeProvider();
     const signer = {

@@ -5,6 +5,7 @@ import { createClient } from "@dojoengine/sdk";
 
 import { EternumProvider } from "@bibliothecadao/provider";
 import { defineContractComponents } from "@bibliothecadao/types";
+import type { ResourceBoundsBN } from "starknet";
 
 // Define an explicit interface for the return type
 interface SetupNetworkExplicitReturn {
@@ -16,18 +17,21 @@ interface SetupNetworkExplicitReturn {
 
 export type SetupNetworkResult = Awaited<ReturnType<typeof setupNetwork>>;
 
+export interface SetupNetworkEnvironment {
+  executionResourceBounds?: ResourceBoundsBN;
+  gameId?: number;
+  /** Model namespace: "s2" on appchain worlds, "s1_eternum" on legacy worlds. */
+  namespace?: string;
+  useBurner: boolean;
+  vrfProviderAddress: string;
+}
+
 export async function setupNetwork(
   config: DojoConfig,
-  env: {
-    vrfProviderAddress: string;
-    useBurner: boolean;
-    /** Model namespace: "s2" on appchain worlds, "s1_eternum" on legacy worlds. */
-    namespace?: string;
-    /** Active game on an s2 appchain world; 0/omitted on legacy worlds. */
-    gameId?: number;
-  },
+  env: SetupNetworkEnvironment,
 ): Promise<SetupNetworkExplicitReturn> {
   const provider = new EternumProvider(config.manifest, config.rpcUrl, env.vrfProviderAddress, undefined, {
+    executionResourceBounds: env.executionResourceBounds,
     namespace: env.namespace,
     gameId: env.gameId,
   });

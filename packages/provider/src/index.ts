@@ -343,26 +343,29 @@ export class EternumProvider extends EnhancedDojoProvider {
   private readonly gameId: number;
   /** Normalized addresses of this world's game-system contracts (game_id-prefixed entrypoints on s2). */
   private readonly gameContractAddresses: Set<string>;
+  /** Fixed bounds for a fee-free chain; undefined keeps the normal estimation path. */
+  private readonly executionResourceBounds?: ResourceBoundsBN;
 
   /**
    * Create a new EternumProvider instance
    *
    * @param katana - The katana manifest containing contract info
    * @param url - Optional RPC URL
-   * @param scope - s2 appchain-world scope; omit on legacy worlds
+   * @param scope - s2 world scope and optional fixed execution bounds
    */
   constructor(
     katana: Manifest,
     url?: string,
     private VRF_PROVIDER_ADDRESS?: string,
     retryConfig?: RetryConfig,
-    scope?: { namespace?: string; gameId?: number },
+    scope?: { namespace?: string; gameId?: number; executionResourceBounds?: ResourceBoundsBN },
   ) {
     super(katana, url);
     this.manifest = katana;
     this.retryConfig = retryConfig;
     this.namespace = scope?.namespace ?? NAMESPACE;
     this.gameId = scope?.gameId ?? 0;
+    this.executionResourceBounds = scope?.executionResourceBounds;
     this.gameContractAddresses = new Set(
       this.gameId > 0
         ? ((katana.contracts ?? []) as { address?: string }[])
@@ -656,6 +659,9 @@ export class EternumProvider extends EnhancedDojoProvider {
     options?: { cacheKey?: string; forceRefresh?: boolean },
   ): Promise<UniversalDetails> {
     const details: UniversalDetails = { version: 3, tip: 0 };
+    if (this.executionResourceBounds) {
+      return { ...details, resourceBounds: this.executionResourceBounds };
+    }
     const cached = !options?.forceRefresh ? this.getCachedExploreExecutionDetails(options?.cacheKey) : undefined;
     if (cached) {
       return { ...details, ...cached };

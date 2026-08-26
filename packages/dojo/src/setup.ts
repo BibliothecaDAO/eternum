@@ -6,7 +6,7 @@ import {
   SystemCalls,
 } from "@bibliothecadao/types";
 import { DojoConfig } from "@dojoengine/core";
-import { setupNetwork, SetupNetworkResult } from "./setup-network";
+import { setupNetwork, SetupNetworkResult, type SetupNetworkEnvironment } from "./setup-network";
 
 export type SetupResult = Awaited<ReturnType<typeof setup>>;
 
@@ -18,7 +18,7 @@ export interface SetupReturnValue {
 
 export async function setup(
   config: DojoConfig,
-  env: { vrfProviderAddress: string; useBurner: boolean; namespace?: string; gameId?: number },
+  env: SetupNetworkEnvironment,
   authHandler?: SystemCallAuthHandler,
 ): Promise<SetupReturnValue> {
   const network = await setupNetwork(config, env);

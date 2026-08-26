@@ -262,6 +262,40 @@ The start snapshot recorded the powersave governor, host load 9.51/11.46/10.54, 
 execution enabled, and 63 cached native classes. The cache held 66 classes at run end. Keep those conditions attached
 to the latency and block figures when comparing another run.
 
+### Fee-bound comparison
+
+The lab accepts fixed L2 bounds with zero prices and rejects all-zero bounds. Reproduce the probe against a running
+game with a free player slot:
+
+```bash
+pnpm lab:probe-bounds -- 8
+```
+
+On 2026-08-26, `explorer_move` with `l2_gas.max_amount = 1,200,000,000` and every price set to zero reached L2 in
+2.013 s (`0x5d998b416174f6894da3ea051882493bb9caa140badd6ed9740a1f89f0db384`). The same call with all three
+amounts and prices set to zero was rejected at submission in 7 ms: account validation failed with `Out of gas`.
+
+The accepted policy now lives in `packages/core` and is selected by game chain. The harness and both game-client
+provider entry points use it for `madara`; `appchain` keeps fee estimation and its existing headroom. The fixed-bounds
+acceptance report is `.lab/runs/20260826T073408330Z.json`:
+
+| Measurement | Estimated bounds | Fixed zero-price bounds |
+| --- | ---: | ---: |
+| Completed actions | 3,840 / 3,840 | 3,840 / 3,840 |
+| Workload fee estimates | 3,936 | 0 |
+| Measured driver RPC calls/action | 25.40 | 24.22 |
+| Submit-delay p95 | 158 ms | 10 ms |
+| Submit → `ACCEPTED_ON_L2` p95 | 1.980 s | 1.983 s |
+| Block production p50 / p95 | 1.875 s / 1.949 s | 1.875 s / 1.916 s |
+| Transactions per busy block p50 / max | 12 / 12 | 12 / 12 |
+
+The fixed run made 92,993 measured workload RPC calls and 102,403 for setup, warmup, and workload combined. Its exact
+window again contained 3,840 executed transactions with zero reverts or rejects; all 768 Produce actions had labor and
+wood-output deltas. The bounds change removed an aggregate 304.17 s of concurrent fee-estimate RPC time and the
+pre-submit queueing it caused. It did not change L2 inclusion latency. The fixed run started at host load
+3.62/2.49/3.74 versus 9.51/11.46/10.54 for the estimated run, so the small block-production difference is not isolated
+enough to credit to this change.
+
 The failed runs named the bottlenecks before the pass:
 
 - VM execution with the upstream 600-transaction block ceiling admitted a 120-transaction game block that took 659

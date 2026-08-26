@@ -1,4 +1,5 @@
 import { useAccountStore } from "@/hooks/store/use-account-store";
+import { resolveGameTransactionResourceBounds } from "@bibliothecadao/eternum";
 import { EternumProvider } from "@bibliothecadao/provider";
 import { createSystemCalls, SystemCalls } from "@bibliothecadao/types";
 import { createContext, ReactNode, useContext, useEffect, useState } from "react";
@@ -50,6 +51,8 @@ export function LandingDojoProvider({ children, fallback }: LandingDojoProviderP
           dojoConfig.manifest,
           dojoConfig.rpcUrl,
           env.VITE_PUBLIC_VRF_PROVIDER_ADDRESS,
+          undefined,
+          { executionResourceBounds: resolveGameTransactionResourceBounds(env.VITE_PUBLIC_CHAIN) },
         );
 
         if (cancelled) return;
