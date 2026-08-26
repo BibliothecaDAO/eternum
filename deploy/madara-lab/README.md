@@ -157,8 +157,8 @@ BINDING_AUTHORITY_PRIVATE_KEY=0x0514977443078cf1e0c36bc88b89ada9a46061a5cf728f40
 The bootstrap writes these values to `.lab/gameplay-contracts.json`:
 
 ```
-GAMEPLAY_ACCOUNT_CLASS_HASH=0x04bb0716b7161e8a439dcc39864a40cc243a29908bb8b2d9b361a4b4fa0f72c4
-PLAYER_REGISTRY_ADDRESS=0x00c06bcc011cc146b724f6237d62ab88a35ca94e0bce682cb9ab795aaaa22abb
+GAMEPLAY_ACCOUNT_CLASS_HASH=0x05085c5c53efdc762c7c0637c92eecaf962aa3d72774b38faf3b8852c1729093
+PLAYER_REGISTRY_ADDRESS=0x047d5db2930b9a3270d9cb0e31e3eed2645602c5b51419207f730f3a7f8fafe0
 ```
 
 The values are deterministic for the current source and binding authority. Re-run the bootstrap after changing either
