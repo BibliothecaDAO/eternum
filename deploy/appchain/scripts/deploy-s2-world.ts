@@ -1,6 +1,5 @@
 import { loadEnvironmentConfiguration } from "../../../config/deployer/clean/config/config-loader";
 import { resolveDeploymentEnvironment } from "../../../config/deployer/clean/environment";
-import { MINTER_ROLE } from "../../../config/deployer/clean/eternum/roles";
 import {
   assertRegistrarAvailable,
   bootstrapChainConfig,
@@ -10,7 +9,6 @@ import {
 import { isChainConfigInitialized } from "../../../config/deployer/clean/registrar/game-registry";
 import { buildChainConfig } from "../../../config/deployer/clean/registrar/preset";
 import { registerEnvironmentPreset } from "../../../config/deployer/clean/registrar/register-preset";
-import { buildGrantRoleCall, grantRoles } from "../../../config/deployer/clean/role-grants/grant-role";
 import { resolveAccountCredentials } from "../../../config/deployer/clean/shared/credentials";
 import { Account, RpcProvider } from "starknet";
 import {
@@ -41,43 +39,6 @@ function resolveDefaultPresetId(environmentId: DeploymentEnvironmentId): number 
 function optionalEnvironmentAddress(name: string): string | undefined {
   const address = process.env[name];
   return address && BigInt(address) !== 0n ? address : undefined;
-}
-
-async function wireSharedCollectibles(params: {
-  environmentId: DeploymentEnvironmentId;
-  rpcUrl: string;
-  accountAddress: string;
-  privateKey: string;
-  entryTokenAddress: string;
-  lootChestAddress: string;
-  dryRun: boolean;
-}): Promise<void> {
-  const calls = [
-    buildGrantRoleCall(
-      params.entryTokenAddress,
-      MINTER_ROLE,
-      resolveRegistrarContractAddress("blitz_realm_systems", params.environmentId),
-    ),
-    buildGrantRoleCall(
-      params.lootChestAddress,
-      MINTER_ROLE,
-      resolveRegistrarContractAddress("prize_distribution_systems", params.environmentId),
-    ),
-  ];
-  const result = await grantRoles({
-    chain: resolveDeploymentEnvironment(params.environmentId).chain,
-    calls,
-    rpcUrl: params.rpcUrl,
-    accountAddress: params.accountAddress,
-    privateKey: params.privateKey,
-    context: `${params.environmentId} peripheral wiring`,
-    dryRun: params.dryRun,
-  });
-  console.log(
-    params.dryRun
-      ? `Prepared ${calls.length} shared collectible role grants.`
-      : `Wired shared collectible roles: ${result.transactionHash}`,
-  );
 }
 
 async function bootstrapRegistrar(params: {
@@ -148,14 +109,16 @@ async function deployS2World(): Promise<void> {
     privateKey: process.env.DOJO_PRIVATE_KEY,
     context: `${environmentId} deployment`,
   });
-  // Dev chains run the free-entry flow (amendment S3): no entry token or
-  // loot chest exists until the W6 gateway, so both are optional and their
-  // collectible role wiring is skipped when absent. Real-value chains must
-  // set both.
+  // Phase 1 runs the free-entry flow everywhere: no entry token or loot chest exists, and the
+  // collectible role wiring went with it. Refusing a configured address is deliberate — an address
+  // this script would silently ignore is worse than a loud stop (entry fees move to the L2 value
+  // plane in phase 2; see the brief).
   const entryTokenAddress = optionalEnvironmentAddress("ENTRY_TOKEN_ADDRESS");
   const lootChestAddress = optionalEnvironmentAddress("LOOT_CHEST_ADDRESS");
-  if (environmentId === "madara.blitz" && (entryTokenAddress || lootChestAddress)) {
-    throw new Error("madara.blitz is fee-free and must not configure entry-token or collectible addresses");
+  if (entryTokenAddress || lootChestAddress) {
+    throw new Error(
+      "entry-token / collectible addresses are not supported: phase 1 is fee-free and the collectible role wiring was removed",
+    );
   }
   const account = new Account({
     provider: new RpcProvider({ nodeUrl: rpcUrl }),
@@ -163,19 +126,6 @@ async function deployS2World(): Promise<void> {
     signer: credentials.privateKey,
   });
 
-  if (entryTokenAddress && lootChestAddress) {
-    await wireSharedCollectibles({
-      environmentId,
-      rpcUrl,
-      accountAddress: credentials.accountAddress,
-      privateKey: credentials.privateKey,
-      entryTokenAddress,
-      lootChestAddress,
-      dryRun,
-    });
-  } else {
-    console.log("No entry token / loot chest configured — skipping collectible role wiring (dev free-entry flow).");
-  }
   await bootstrapRegistrar({
     environmentId,
     account,
