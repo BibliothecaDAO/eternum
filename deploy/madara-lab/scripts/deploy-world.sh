@@ -52,6 +52,24 @@ record_world_address() {
   local manifest="$GAME_DIR/manifest_$PROFILE.json"
   local world
   world="$(jq -r '.world.address' "$manifest")"
+  # sozo 1.8.7 writes the manifest without the world ABI, which @dojoengine/core's DojoProvider
+  # requires to construct the world contract. Embed the world class ABI fetched from the chain.
+  python3 - "$GAME_DIR/manifest_madara.json" "$RPC_URL" <<'PYEOF'
+import json, sys, urllib.request
+manifest_path, rpc = sys.argv[1], sys.argv[2]
+m = json.load(open(manifest_path))
+if not m.get("world", {}).get("abi"):
+    req = urllib.request.Request(rpc, json.dumps({"jsonrpc": "2.0", "id": 1, "method": "starknet_getClass", "params": ["latest", m["world"]["class_hash"]]}).encode(), {"content-type": "application/json"})
+    abi = json.load(urllib.request.urlopen(req, timeout=30))["result"]["abi"]
+    if isinstance(abi, str):
+        abi = json.loads(abi)
+    m["world"]["abi"] = abi
+    json.dump(m, open(manifest_path, "w"), indent=2)
+    print("==> embedded world.abi (%d entries) into manifest_madara.json" % len(abi))
+else:
+    print("==> manifest_madara.json already carries world.abi")
+PYEOF
+
   mkdir -p "$OUT_DIR"
   printf '%s\n' "$world" > "$OUT_DIR/world-address"
   sed -e "s|{WORLD_ADDRESS}|$world|" "$LAB_DIR/torii.toml.template" > "$OUT_DIR/torii.toml"
