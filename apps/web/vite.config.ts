@@ -7,8 +7,12 @@ import svgr from "vite-plugin-svgr";
 import tsconfigPaths from "vite-tsconfig-paths";
 
 export default defineConfig({
+  // Behind Caddy on https://realms.test in the lab (deploy/madara-lab/Caddyfile) — same contract as the game.
   server: {
     port: 3000,
+    host: true,
+    allowedHosts: ["realms.test"],
+    hmr: { clientPort: 443 },
   },
 
   plugins: [
