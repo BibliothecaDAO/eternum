@@ -77,7 +77,7 @@ export const FEATURE_HEXES: FeatureHexData[] = [
     label: "Cartridge",
     description:
       "Session key wallet infrastructure. Play onchain games without signing every transaction. Seamless UX for gamers.",
-    link: "https://cartridge.gg",
+    link: "https://realms.world",
   },
 
   // ── Token & DeFi (scattered mid-range) ─────────────────────────────

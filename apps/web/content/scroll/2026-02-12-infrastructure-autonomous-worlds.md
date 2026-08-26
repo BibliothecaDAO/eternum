@@ -26,7 +26,7 @@ looks like in practice.
 Games cannot compete for blockspace with DeFi traders. They need dedicated execution environments optimized for
 game-specific workloads.
 
-[Cartridge's Slot](https://cartridge.gg) provides application-specific rollups that handle this. Games like Eternum run
+[Cartridge's Slot](https://realms.world) provides application-specific rollups that handle this. Games like Eternum run
 on infrastructure where every action — movement, combat, resource transfers — executes with game-appropriate latency and
 cost.
 
@@ -44,7 +44,7 @@ The Realms ecosystem was an early adopter of Dojo, and that bet has paid off in 
 
 ### Identity: Wallets That Feel Like Accounts
 
-Players should not need to understand gas fees or transaction signing. [Cartridge Controller](https://cartridge.gg)
+Players should not need to understand gas fees or transaction signing. [Cartridge Controller](https://realms.world)
 handles account abstraction so onboarding feels like creating any game account.
 
 Session keys let players perform actions without constant wallet popups. This is not optional for real games — it is
@@ -75,5 +75,5 @@ makes ecosystems grow.
 
 ---
 
-_The Realms ecosystem builds on [Cartridge](https://cartridge.gg) infrastructure and the [Dojo](https://dojoengine.org)
+_The Realms ecosystem builds on [Cartridge](https://realms.world) infrastructure and the [Dojo](https://dojoengine.org)
 engine. Explore current games at [realms.world](https://realms.world)._

@@ -1,10 +1,9 @@
 import type { WorldSummary, WorldSummaryChain } from "@bibliothecadao/types";
-import { fetchFactoryPrizeAddresses } from "./factory-prize-addresses";
+import type { GameChain } from "@realms-world/chain";
+import { resolveToriiSqlUrl } from "../config/endpoints";
 import { fetchFactoryWorldDeployments, type FactoryWorldDeployment } from "./factory-worlds";
 import { fetchJackpotBalance } from "./jackpot-balance";
 import { fetchWorldSummaryResult } from "./world-summary";
-
-const CARTRIDGE_API_BASE = "https://api.cartridge.gg";
 
 function buildNullSummary(name: string, chain: WorldSummaryChain, alive: boolean, now: number): WorldSummary {
   return {
@@ -38,10 +37,6 @@ function buildNullSummary(name: string, chain: WorldSummaryChain, alive: boolean
   };
 }
 
-function resolveChain(chain: string): WorldSummaryChain {
-  return chain === "mainnet" ? "mainnet" : "appchain";
-}
-
 function getWorldCacheKey(chain: WorldSummaryChain, name: string): string {
   return `${chain}:${name}`;
 }
@@ -51,6 +46,8 @@ type SummaryFields = Omit<WorldSummary, "name" | "chain" | "alive" | "lastChecke
 function extractSummaryFields(summary: WorldSummary | undefined, fallback: WorldSummary): SummaryFields {
   if (!summary) return fallback;
   return {
+    worldId: summary.worldId,
+    gameId: summary.gameId,
     mode: summary.mode,
     startSettlingAt: summary.startSettlingAt,
     startMainAt: summary.startMainAt,
@@ -82,18 +79,18 @@ export class ToriiAvailabilityService {
   private pollIntervalId: ReturnType<typeof setInterval> | null = null;
   private pollInFlight: Promise<void> | null = null;
   private hasCompletedPoll = false;
-  private factoryChains: string[];
+  private factoryChains: GameChain[];
   private pollIntervalMs: number;
   private probeTimeoutMs: number;
   private factoryTimeoutMs: number;
 
   constructor(opts?: {
-    factoryChains?: string[];
+    factoryChains?: GameChain[];
     pollIntervalMs?: number;
     probeTimeoutMs?: number;
     factoryTimeoutMs?: number;
   }) {
-    this.factoryChains = opts?.factoryChains ?? ["mainnet", "appchain"];
+    this.factoryChains = opts?.factoryChains ?? ["madara", "appchain"];
     this.pollIntervalMs = opts?.pollIntervalMs ?? 30_000;
     this.probeTimeoutMs = opts?.probeTimeoutMs ?? 5_000;
     this.factoryTimeoutMs = opts?.factoryTimeoutMs ?? 10_000;
@@ -105,7 +102,7 @@ export class ToriiAvailabilityService {
    */
   async probeWorld(
     worldName: string,
-    chain: WorldSummaryChain = "mainnet",
+    chain: WorldSummaryChain = "madara",
     prizeDistributionAddress: string | null = null,
     worldAddress: string | null = null,
   ): Promise<boolean> {
@@ -113,8 +110,7 @@ export class ToriiAvailabilityService {
     const cacheKey = getWorldCacheKey(chain, worldName);
     let alive = false;
     try {
-      const url = `${CARTRIDGE_API_BASE}/x/${worldName}/torii/sql`;
-      const response = await fetch(url, {
+      const response = await fetch(resolveToriiSqlUrl(), {
         method: "HEAD",
         signal: AbortSignal.timeout(this.probeTimeoutMs),
       });
@@ -138,12 +134,10 @@ export class ToriiAvailabilityService {
       ? summaryResult.fields
       : extractSummaryFields(previousSummary, fallbackFields);
 
-    // Resolve the jackpot server-side (one RPC call per world per cycle) so
-    // clients can read it from the summary instead of polling RPC themselves.
-    // Only mainnet worlds render a prize pool; keep the last good value on failure.
+    // Resolve the jackpot once per world per cycle and keep the last good value on failure.
     const resolvedPrizeAddress = prizeDistributionAddress ?? summaryFields.prizeDistributionAddress;
     let winnerJackpotAmount = previousSummary?.winnerJackpotAmount ?? null;
-    if (chain === "mainnet" && summaryFields.feeTokenAddress && resolvedPrizeAddress) {
+    if (summaryFields.feeTokenAddress && resolvedPrizeAddress) {
       const fetched = await fetchJackpotBalance(
         summaryFields.feeTokenAddress,
         resolvedPrizeAddress,
@@ -218,23 +212,12 @@ export class ToriiAvailabilityService {
         chain: WorldSummaryChain;
       }
     >();
-    const prizeByName = new Map<string, string>();
-
     for (const chain of this.factoryChains) {
       try {
-        const [deployments, prizeAddresses] = await Promise.all([
-          fetchFactoryWorldDeployments(chain, this.factoryTimeoutMs),
-          fetchFactoryPrizeAddresses(chain, this.factoryTimeoutMs),
-        ]);
-        const chainKey = resolveChain(chain);
+        const deployments = await fetchFactoryWorldDeployments(chain, this.factoryTimeoutMs);
         for (const deployment of deployments) {
           if (!deploymentByName.has(deployment.name)) {
-            deploymentByName.set(deployment.name, { ...deployment, chain: chainKey });
-          }
-        }
-        for (const [name, address] of prizeAddresses) {
-          if (!prizeByName.has(name)) {
-            prizeByName.set(name, address);
+            deploymentByName.set(deployment.name, { ...deployment, chain });
           }
         }
       } catch (err) {
@@ -248,14 +231,7 @@ export class ToriiAvailabilityService {
     for (let i = 0; i < entries.length; i += concurrency) {
       const batch = entries.slice(i, i + concurrency);
       await Promise.all(
-        batch.map((deployment) =>
-          this.probeWorld(
-            deployment.name,
-            deployment.chain,
-            prizeByName.get(deployment.name) ?? null,
-            deployment.worldAddress,
-          ),
-        ),
+        batch.map((deployment) => this.probeWorld(deployment.name, deployment.chain, null, deployment.worldAddress)),
       );
     }
   }

@@ -17,7 +17,7 @@ const sponsorsData = [
   },
   {
     name: "Cartridge",
-    link: "https://cartridge.gg/",
+    link: "https://realms.world/",
     image: "/images/logos/Cartridge.png",
     description:
       "Cartridge is a platform redefining Web3 gaming, offering players a secure and immersive space to discover, play, and engage with blockchain-based games in a decentralized ecosystem.",

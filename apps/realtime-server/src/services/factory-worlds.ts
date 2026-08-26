@@ -1,14 +1,9 @@
-import {
-  decodePaddedFeltAscii,
-  extractContractAddress,
-  extractNameFelt,
-  fetchFactoryRows,
-  getFactorySqlBaseUrl,
-} from "./factory-sql";
+import { decodePaddedFeltAscii, extractNameFelt, fetchFactoryRows, getFactorySqlBaseUrl } from "./factory-sql";
 
-const FACTORY_WORLDS_QUERY = `SELECT name, address FROM [wf-WorldDeployed] LIMIT 1000;`;
+const GAME_REGISTRY_QUERY = `SELECT game_id, name FROM "s2-GameRegistry" ORDER BY game_id LIMIT 1000;`;
 
 export interface FactoryWorldDeployment {
+  gameId: number;
   name: string;
   worldAddress: string | null;
 }
@@ -18,9 +13,7 @@ export async function fetchFactoryWorldDeployments(
   timeoutMs: number,
 ): Promise<FactoryWorldDeployment[]> {
   const baseUrl = getFactorySqlBaseUrl(chain);
-  if (!baseUrl) return [];
-
-  const rows = await fetchFactoryRows(baseUrl, FACTORY_WORLDS_QUERY, timeoutMs);
+  const rows = await fetchFactoryRows(baseUrl, GAME_REGISTRY_QUERY, timeoutMs);
 
   const worlds: FactoryWorldDeployment[] = [];
   for (const row of rows) {
@@ -28,10 +21,12 @@ export async function fetchFactoryWorldDeployments(
     if (!nameFelt) continue;
 
     const decodedName = decodePaddedFeltAscii(nameFelt);
-    if (decodedName) {
+    const gameId = Number(row.game_id);
+    if (decodedName && Number.isSafeInteger(gameId)) {
       worlds.push({
+        gameId,
         name: decodedName,
-        worldAddress: extractContractAddress(row),
+        worldAddress: null,
       });
     }
   }

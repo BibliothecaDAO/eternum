@@ -15,7 +15,7 @@ export const partners = [
     id: 3,
     name: "Cartridge",
     logo: "/partners/Cartridge.svg",
-    url: "https://cartridge.gg",
+    url: "https://realms.world",
   },
   {
     id: 4,

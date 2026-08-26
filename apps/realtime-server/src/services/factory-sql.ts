@@ -1,24 +1,9 @@
-const CARTRIDGE_API_BASE = "https://api.cartridge.gg";
+import { resolveToriiSqlUrl } from "../config/endpoints";
 
 type FactoryRow = Record<string, unknown>;
 
-export function getFactorySqlBaseUrl(chain: string): string {
-  switch (chain) {
-    case "mainnet":
-      return `${CARTRIDGE_API_BASE}/x/eternum-factory-mainnet/torii/sql`;
-    case "sepolia":
-      return `${CARTRIDGE_API_BASE}/x/eternum-factory-sepolia/torii/sql`;
-    case "appchain": {
-      // One torii indexes every appchain world, factory included, so the
-      // factory SQL endpoint is just that torii. Without this the worlds
-      // summary silently returns nothing for appchain games.
-      const toriiUrl = (process.env.APPCHAIN_TORII_URL ?? process.env.TORII_SQL_BASE_URL ?? "").replace(/\/+$/, "");
-      return toriiUrl ? `${toriiUrl}/sql` : "";
-    }
-    // "local" has no factory torii; callers treat "" as "no factory available".
-    default:
-      return "";
-  }
+export function getFactorySqlBaseUrl(_chain: string): string {
+  return resolveToriiSqlUrl();
 }
 
 export async function fetchFactoryRows(
@@ -57,18 +42,6 @@ export function extractNameFelt(row: FactoryRow): string | null {
   return null;
 }
 
-export function extractContractAddress(row: FactoryRow): string | null {
-  const direct = normalizeAddress(row.contract_address ?? row.address ?? row["data.address"]);
-  if (direct) return direct;
-
-  const nestedData = asRecord(row.data);
-  if (nestedData) {
-    return normalizeAddress(nestedData.contract_address ?? nestedData.address);
-  }
-
-  return null;
-}
-
 export function decodePaddedFeltAscii(hex: string): string {
   if (!hex) return "";
 
@@ -90,29 +63,14 @@ export function decodePaddedFeltAscii(hex: string): string {
   return output;
 }
 
-function normalizeAddress(value: unknown): string | null {
-  if (value == null) return null;
-  if (typeof value === "bigint") return value > 0n ? `0x${value.toString(16)}` : null;
-  if (typeof value === "number" && Number.isFinite(value) && value > 0) {
-    return `0x${BigInt(Math.floor(value)).toString(16)}`;
+export function encodePaddedFeltAscii(value: string): string {
+  const bytes = new TextEncoder().encode(value);
+  if (bytes.length > 32) {
+    throw new Error("Game name exceeds the bytes32 registry limit");
   }
-  if (typeof value !== "string") return null;
 
-  const trimmed = value.trim();
-  if (!trimmed) return null;
-
-  try {
-    const parsed =
-      trimmed.startsWith("0x") || trimmed.startsWith("0X")
-        ? BigInt(trimmed)
-        : /^[0-9]+$/.test(trimmed)
-          ? BigInt(trimmed)
-          : null;
-    if (parsed == null || parsed <= 0n) return null;
-    return `0x${parsed.toString(16)}`;
-  } catch {
-    return null;
-  }
+  const hex = Array.from(bytes, (byte) => byte.toString(16).padStart(2, "0")).join("");
+  return `0x${hex.padStart(64, "0")}`;
 }
 
 function asRecord(value: unknown): Record<string, unknown> | null {

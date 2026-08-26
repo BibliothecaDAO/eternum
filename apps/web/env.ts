@@ -3,7 +3,9 @@ import { z } from "zod";
 const envSchema = z.object({
   // Version and chain info
   VITE_PUBLIC_CHAIN: z.enum(["sepolia", "mainnet", "testnet", "local"]), // Add other chains as needed
-  VITE_BASE_URL: z.string().url().optional(),
+  VITE_BASE_URL: z.string().url(),
+  VITE_PUBLIC_GAME_ORIGIN: z.string().url(),
+  VITE_PUBLIC_IDENTITY_RPC_URL: z.string().url(),
   VITE_PUBLIC_IMAGE_CDN_URL: z.string().url().optional(),
   VITE_PUBLIC_IMAGE_PROXY_URL: z.string().url().optional(),
   VITE_PUBLIC_IPFS_GATEWAY: z.string().url().optional(),
@@ -25,6 +27,9 @@ const envInput = isCiBuild
       ...import.meta.env,
       VITE_PUBLIC_CHAIN: import.meta.env.VITE_PUBLIC_CHAIN ?? "mainnet",
       VITE_PUBLIC_SLOT: import.meta.env.VITE_PUBLIC_SLOT ?? "ci",
+      VITE_BASE_URL: import.meta.env.VITE_BASE_URL ?? "https://realms.test",
+      VITE_PUBLIC_GAME_ORIGIN: import.meta.env.VITE_PUBLIC_GAME_ORIGIN ?? "https://play.realms.test",
+      VITE_PUBLIC_IDENTITY_RPC_URL: import.meta.env.VITE_PUBLIC_IDENTITY_RPC_URL ?? "https://identity-rpc.realms.test",
       VITE_ALCHEMY_API_KEY: import.meta.env.VITE_ALCHEMY_API_KEY ?? "ci",
     }
   : import.meta.env;
@@ -34,7 +39,7 @@ try {
   env = envSchema.parse(envInput);
 } catch (error) {
   if (error instanceof z.ZodError) {
-    console.error("❌ Invalid environment variables:", JSON.stringify(error.errors, null, 2));
+    console.error("❌ Invalid environment variables:", JSON.stringify(error.issues, null, 2));
   }
   throw new Error("Invalid environment variables");
 }

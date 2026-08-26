@@ -23,7 +23,7 @@ import { availabilityService } from "../../../services/torii-availability";
 
 const stubSummary = (overrides: Partial<WorldSummary>): WorldSummary => ({
   name: "stub",
-  chain: "mainnet",
+  chain: "madara",
   alive: true,
   lastCheckedAt: 0,
   mode: null,
@@ -66,7 +66,7 @@ describe("worlds routes", () => {
 
   it("GET /summary returns the full summary array", async () => {
     const summaries: WorldSummary[] = [
-      stubSummary({ name: "alpha", chain: "mainnet", alive: true, mode: "blitz" }),
+      stubSummary({ name: "alpha", chain: "madara", alive: true, mode: "blitz" }),
       stubSummary({ name: "beta", chain: "appchain", alive: false, mode: null }),
     ];
     (availabilityService.getSummaries as ReturnType<typeof vi.fn>).mockReturnValue(summaries);
@@ -76,7 +76,7 @@ describe("worlds routes", () => {
     expect(res.status).toBe(200);
     const body = (await res.json()) as WorldSummary[];
     expect(body).toHaveLength(2);
-    expect(body[0]).toMatchObject({ name: "alpha", chain: "mainnet", alive: true, mode: "blitz" });
+    expect(body[0]).toMatchObject({ name: "alpha", chain: "madara", alive: true, mode: "blitz" });
     expect(body[1]).toMatchObject({ name: "beta", chain: "appchain", alive: false });
   });
 

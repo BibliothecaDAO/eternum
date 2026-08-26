@@ -10,7 +10,7 @@
 // starknet_keccak("balance_of") — precomputed so we don't need a starknet dependency.
 const BALANCE_OF_SELECTOR = "0x35a73cd311a05d46deda634c5ee045db92f811b4e74bca4437fcb5302b7af33";
 
-const MAINNET_RPC_URL = process.env.STARKNET_MAINNET_RPC_URL || "https://api.cartridge.gg/x/starknet/mainnet";
+import { resolveMainnetRpcUrl } from "../config/endpoints";
 
 /**
  * Call `balance_of(prizeDistributionAddress)` on the fee-token contract via
@@ -23,7 +23,7 @@ export async function fetchJackpotBalance(
   timeoutMs: number,
 ): Promise<string | null> {
   try {
-    const response = await fetch(MAINNET_RPC_URL, {
+    const response = await fetch(resolveMainnetRpcUrl(), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({

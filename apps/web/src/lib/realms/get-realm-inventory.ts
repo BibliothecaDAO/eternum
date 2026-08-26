@@ -10,7 +10,7 @@ import { env } from "env";
 import { Contract, RpcProvider } from "starknet";
 import { z } from "zod";
 
-import { CollectionAddresses } from "@realms-world/chain";
+import { CollectionAddresses, resolveEndpoint } from "@realms-world/chain";
 import { getRealmOwnershipInventory, normalizeRealmOwnerAddress, starknetRealmMetadata } from "@realms-world/db";
 import { db } from "@realms-world/db/client";
 
@@ -40,11 +40,10 @@ const GetRealmInventoryInput = z.object({
 export const REALM_INVENTORY_REFETCH_INTERVAL_MS = 15_000;
 
 async function populateMissingMetadata(tokens: Awaited<ReturnType<typeof getRealmOwnershipInventory>>["tokens"]) {
-  const nodeUrl =
-    env.VITE_PUBLIC_NODE_URL ??
-    (env.VITE_PUBLIC_CHAIN === "sepolia"
-      ? "https://api.cartridge.gg/x/starknet/sepolia"
-      : "https://api.cartridge.gg/x/starknet/mainnet");
+  const nodeUrl = resolveEndpoint(env.VITE_PUBLIC_NODE_URL ?? env.VITE_PUBLIC_IDENTITY_RPC_URL, {
+    name: "VITE_PUBLIC_NODE_URL",
+    browserFacing: false,
+  });
   const provider = new RpcProvider({ nodeUrl });
   const contract = new Contract({
     abi: RealmMetadataABI,

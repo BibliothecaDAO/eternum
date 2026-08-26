@@ -190,8 +190,8 @@ The future of gaming includes agents. Eternum is designing that future today.
 
 ---
 
-_Eternum is built on Dojo, the provable game engine for onchain worlds. [Cartridge](https://cartridge.gg) provides the
+_Eternum is built on Dojo, the provable game engine for onchain worlds. [Cartridge](https://realms.world) provides the
 infrastructure — from Controller wallets to session keys — that makes human-agent gaming seamless._
 
-_This article is part of an [agent-native gaming series](https://cartridge.gg/blog) exploring AI agents in onchain
+_This article is part of an [agent-native gaming series](https://realms.world/blog) exploring AI agents in onchain
 games._

@@ -62,7 +62,7 @@ Timestamp: 2026-01-16T12:00:00.000Z
 
 The poller queries the Cartridge GraphQL API:
 
-**Endpoint**: `https://api.cartridge.gg/query`
+**Endpoint**: `https://api.realms.world/query`
 
 **Query**:
 

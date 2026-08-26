@@ -1,3 +1,6 @@
+import { resolveEndpoint } from "@realms-world/chain";
+import { env } from "env";
+
 export interface EthplorerAddressInfoResponse {
   ETH: {
     price: {
@@ -44,7 +47,10 @@ interface TokenTotals {
 }
 
 // ── Starknet constants ──────────────────────────────────────────────
-const STARKNET_RPC = "https://api.cartridge.gg/x/starknet/mainnet";
+const STARKNET_RPC = resolveEndpoint(env.VITE_PUBLIC_IDENTITY_RPC_URL, {
+  name: "VITE_PUBLIC_IDENTITY_RPC_URL",
+  browserFacing: true,
+});
 const STARKNET_DAO_WALLET = "0x049FB4281D13E1f5f488540Cd051e1507149E99CC2E22635101041Ec5E4e4557";
 
 const STARKNET_TOKENS: Record<string, { address: string; decimals: number; coingeckoId: string }> = {

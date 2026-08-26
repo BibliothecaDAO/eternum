@@ -1,4 +1,4 @@
-import { Chain, GameType, getConfigFromNetwork } from "@config";
+import { getConfigFromNetwork, type GameChain, type GameType } from "@config";
 import { env } from "../../env";
 
 const resolveConfigGameType = (explicitGameType?: GameType, envGameType?: GameType): GameType =>
@@ -6,7 +6,7 @@ const resolveConfigGameType = (explicitGameType?: GameType, envGameType?: GameTy
 
 export const ETERNUM_CONFIG = (explicitGameType?: GameType) => {
   const config = getConfigFromNetwork(
-    env.VITE_PUBLIC_CHAIN! as Chain,
+    env.VITE_PUBLIC_CHAIN as GameChain,
     resolveConfigGameType(explicitGameType, env.VITE_PUBLIC_FORCE_GAME_MODE_ID as GameType | undefined),
   );
   return config;

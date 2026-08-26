@@ -6,6 +6,7 @@ const mockFetch = vi.fn<typeof globalThis.fetch>();
 
 beforeEach(() => {
   vi.stubGlobal("fetch", mockFetch);
+  process.env.TORII_SQL_URL = "http://torii.test/sql";
 });
 
 afterEach(() => {
@@ -28,10 +29,9 @@ describe("fetchWorldSummary", () => {
       fee_token: "0xabcd",
       fee_amount: "0xff",
       registration_start_at: "0x65b0fde0",
+      registration_end_at: "0x65b1ffe0",
       single_realm_mode: 0,
       two_player_mode: 1,
-      season_pass_address: "0x0",
-      village_pass_token_address: "0x0",
       settled_players_count: null,
       settled_realms_count: null,
       settled_villages_count: null,
@@ -66,8 +66,6 @@ describe("fetchWorldSummary", () => {
       end_at: "0x65b2ffe0",
       dev_mode_on: 0,
       mmr_enabled: 0,
-      season_pass_address: "0xdeadbeef",
-      village_pass_token_address: "0xcafebabe",
       settled_players_count: 42,
       settled_realms_count: 100,
       settled_villages_count: 25,
@@ -79,8 +77,8 @@ describe("fetchWorldSummary", () => {
     const summary = await fetchWorldSummary("beta-eternum", 5000);
 
     expect(summary.mode).toBe("eternum");
-    expect(summary.seasonPassAddress).toBe("0xdeadbeef");
-    expect(summary.villagePassAddress).toBe("0xcafebabe");
+    expect(summary.seasonPassAddress).toBeNull();
+    expect(summary.villagePassAddress).toBeNull();
     expect(summary.settledPlayersCount).toBe(42);
     expect(summary.settledRealmsCount).toBe(100);
     expect(summary.settledVillagesCount).toBe(25);
@@ -146,13 +144,14 @@ describe("fetchWorldSummary", () => {
     expect((opts as RequestInit).signal).toBeDefined();
   });
 
-  it("issues the request against the world's torii sql endpoint", async () => {
+  it("queries the configured Torii SQL endpoint by GameRegistry name", async () => {
     mockFetch.mockResolvedValueOnce(new Response(JSON.stringify([]), { status: 200 }));
 
     await fetchWorldSummary("my-world", 5000);
 
     const [url] = mockFetch.mock.calls[0]!;
     const urlStr = typeof url === "string" ? url : url instanceof URL ? url.toString() : (url as Request).url;
-    expect(urlStr).toMatch(/^https:\/\/api\.cartridge\.gg\/x\/my-world\/torii\/sql\?query=/);
+    expect(urlStr).toMatch(/^http:\/\/torii\.test\/sql\?query=/);
+    expect(decodeURIComponent(urlStr)).toContain('FROM "s2-GameRegistry"');
   });
 });

@@ -1,31 +1,16 @@
 import type { BetterAuthPlugin } from "better-auth";
-//import { createConfig, getEnsAvatar, getEnsName, http } from "@wagmi/core";
-//import { mainnet, sepolia } from "@wagmi/core/chains";
 import { APIError, createAuthEndpoint } from "better-auth/api";
 import { setSessionCookie } from "better-auth/cookies";
-// Zod
+import { randomBytes } from "node:crypto";
 import { z } from "zod";
 
-import { eq, user as userTable } from "@realms-world/db";
+import { and, eq, gt, verification as verificationTable } from "@realms-world/db";
 import { db } from "@realms-world/db/client";
-// SIWE deps
+import { resolveEndpoint } from "@realms-world/chain";
 import { SiwsTypedData } from "@realms-world/siws";
 import { RpcProvider, verifyMessageInStarknet } from "starknet";
 
-const size = 256;
-let index = size;
-let buffer: string;
-
-export function uid(length = 11) {
-  if (!buffer || index + length > size * 2) {
-    buffer = "";
-    index = 0;
-    for (let i = 0; i < size; i++) {
-      buffer += ((256 + Math.random() * 256) | 0).toString(16).substring(1);
-    }
-  }
-  return buffer.substring(index, index++ + length);
-}
+import { authorizeSiwsNonce, SiwsVerificationError } from "./siws-verification";
 
 export interface SIWSPluginOptions {
   domain: string;
@@ -65,12 +50,19 @@ function isEquivalentHost(a?: string, b?: string) {
   return loopbacks.has(a) && loopbacks.has(b);
 }
 
-function getRpcNodeUrl(chainId: "SN_MAIN" | "SN_SEPOLIA") {
-  if (chainId === "SN_MAIN") {
-    return "https://api.cartridge.gg/x/starknet/mainnet";
-  }
-  return "https://api.cartridge.gg/x/starknet/sepolia";
-}
+const resolveIdentityRpcUrl = () =>
+  resolveEndpoint(process.env.IDENTITY_RPC_URL, {
+    name: "IDENTITY_RPC_URL",
+    browserFacing: false,
+  });
+
+const consumeNonce = async (id: string): Promise<boolean> => {
+  const consumed = await db
+    .delete(verificationTable)
+    .where(and(eq(verificationTable.id, id), gt(verificationTable.expiresAt, new Date())))
+    .returning({ id: verificationTable.id });
+  return consumed.length === 1;
+};
 
 export const siws = (options: SIWSPluginOptions) =>
   ({
@@ -96,7 +88,7 @@ export const siws = (options: SIWSPluginOptions) =>
           }),
         },
         async (ctx) => {
-          const nonce = uid(64);
+          const nonce = randomBytes(32).toString("hex");
           // Store nonce with 15-minute expiration
           await ctx.context.internalAdapter.createVerificationValue({
             identifier: `siws_${ctx.body.address.toLowerCase()}`,
@@ -160,62 +152,39 @@ export const siws = (options: SIWSPluginOptions) =>
               });
             }
 
-            if (siwsMessage.domain.chainId !== "SN_MAIN" && siwsMessage.domain.chainId !== "SN_SEPOLIA") {
+            if (siwsMessage.domain.chainId !== "SN_MAIN") {
               throw new APIError("UNAUTHORIZED", {
                 message: "Unauthorized: Unsupported network",
               });
             }
 
-            // The SIWS package in use targets an older starknet Contract API.
-            // Verify against the account contract using starknet v9 directly.
             const provider = new RpcProvider({
-              nodeUrl: getRpcNodeUrl(siwsMessage.domain.chainId),
+              nodeUrl: resolveIdentityRpcUrl(),
+            });
+            await authorizeSiwsNonce({
+              verifySignature: () =>
+                verifyMessageInStarknet(
+                  provider,
+                  siwsMessage as unknown as Parameters<typeof verifyMessageInStarknet>[1],
+                  signature,
+                  address,
+                ),
+              consumeNonce: () => consumeNonce(verification.id),
             });
 
-            const isValid = await verifyMessageInStarknet(
-              provider,
-              siwsMessage as unknown as Parameters<typeof verifyMessageInStarknet>[1],
-              signature,
-              address,
-            );
-
-            if (!isValid) {
-              throw new APIError("UNAUTHORIZED", {
-                message: "Unauthorized: Invalid SIWE signature",
-              });
-            }
-
-            // Delete used nonce to prevent replay attacks
-            // now moved to n after hook on /sign-out route
-            // await ctx.context.internalAdapter.deleteVerificationValue(
-            //   verification.id
-            // );
-
-            let user = await db.query.user.findFirst({
-              where: eq(userTable.id, address),
-            });
+            let user = await ctx.context.internalAdapter.findUserById(address);
 
             if (!user) {
-              const tempEmail = `${address}@${process.env.VITE_PUBLIC_BASE_URL}`;
-              /*const ens = await getEnsName(wagmiConfig, {
-                address: ctx.body.address as `0x${string}`,
-                chainId: options.chainId ?? 1,
-              });
-
-              const avatar = await getEnsAvatar(wagmiConfig, {
-                name: (ens as string) ?? ctx.body.address,
-                chainId: options.chainId ?? 1,
-              });*/
+              const tempEmail = `${address}@${getHostname(options.domain) ?? "realms.world"}`;
 
               user = await ctx.context.internalAdapter.createUser({
-                name: /*ens ??*/ ctx.body.address,
+                name: ctx.body.address,
                 email: tempEmail,
                 id: ctx.body.address,
-                //avatar: avatar ?? "",
               });
             }
 
-            const session = await ctx.context.internalAdapter.createSession(user.id, ctx);
+            const session = await ctx.context.internalAdapter.createSession(user.id);
 
             if (!session.id) {
               return ctx.json(null, {
@@ -232,6 +201,9 @@ export const siws = (options: SIWSPluginOptions) =>
             return ctx.json({ token: session.token });
           } catch (error: unknown) {
             if (error instanceof APIError) throw error;
+            if (error instanceof SiwsVerificationError) {
+              throw new APIError("UNAUTHORIZED", { message: `Unauthorized: ${error.message}` });
+            }
             const message = error instanceof Error ? error.message : "Unknown error";
             throw new APIError("UNAUTHORIZED", {
               message: "Something went wrong. Please try again later.",

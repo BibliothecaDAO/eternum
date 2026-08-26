@@ -23,6 +23,7 @@ import {
 } from "@bibliothecadao/types";
 import { eq, sql } from "drizzle-orm";
 import { db } from "./db/client";
+import { validateRequiredEndpoints } from "./config/endpoints";
 import {
   directMessages,
   directMessageThreads,
@@ -34,15 +35,14 @@ import { attachPlayerSession, requirePlayerSession, type AppEnv, type PlayerSess
 import directMessageRoutes, { buildThreadId, sortParticipants } from "./http/routes/direct-messages";
 import notesRoutes from "./http/routes/notes";
 import worldChatRoutes from "./http/routes/world-chat";
-import avatarRoutes from "./http/routes/avatars";
 import cacheRoutes from "./http/routes/cache";
 import availabilityRoutes from "./http/routes/availability";
-import worldDeploymentRoutes from "./http/routes/world-deployments";
 import worldsRoutes from "./http/routes/worlds";
 import { availabilityService } from "./services/torii-availability";
 import { createZoneRegistry } from "./ws/zone-registry";
 
 const app = new Hono<AppEnv>();
+validateRequiredEndpoints();
 const port = Number(process.env.PORT ?? 8080);
 
 const rawCorsOrigin = process.env.CORS_ORIGIN ?? "*";
@@ -538,10 +538,8 @@ app.get("/health", (c) => {
 app.route("/api/notes", notesRoutes);
 app.route("/api/chat/world", worldChatRoutes);
 app.route("/api/chat/dm", directMessageRoutes);
-app.route("/api/avatars", avatarRoutes);
 app.route("/api/cache", cacheRoutes);
 app.route("/api/availability", availabilityRoutes);
-app.route("/api/world-deployments", worldDeploymentRoutes);
 app.route("/api/worlds", worldsRoutes);
 
 type ClientMessage =
@@ -673,7 +671,8 @@ console.log("Starting realtime server...");
 console.log("Environment:", {
   PORT: port,
   DATABASE_URL: process.env.DATABASE_URL ? "Set" : "Not set",
-  TORII_SQL_BASE_URL: process.env.TORII_SQL_BASE_URL ? "Set" : "Not set",
+  TORII_SQL_URL: process.env.TORII_SQL_URL ? "Set" : "Not set",
+  STARKNET_MAINNET_RPC_URL: process.env.STARKNET_MAINNET_RPC_URL ? "Set" : "Not set",
   NODE_ENV: process.env.NODE_ENV || "development",
   TORII_AVAILABILITY_POLL: "30s (mainnet, slot)",
 });
