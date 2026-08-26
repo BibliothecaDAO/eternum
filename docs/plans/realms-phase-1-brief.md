@@ -411,11 +411,42 @@ percentiles, and the `block-stats.sh` output before and after.
 minutes → at least 3,500 completed actions per run. **Thresholds, derived from the lab chain config (2 s blocks, 250 ms
 pending updates):** 0 reverts; p95 submit→`PRE_CONFIRMED` ≤ 1 s; p95 submit→`ACCEPTED_ON_L2` ≤ 4 s; p95 submit→indexed ≤
 6 s; indexing loss 0 (every action's transaction hash appears in Torii within 30 s). A miss is a finding recorded in the
-README, not a reason to loosen the bar.
+README, not a reason to loosen the bar. Latency is measured below the chain's publish cadence — a status subscription or
+a poll at ≤ 50 ms — never at the cadence itself: a 250 ms poll reports its own timer, not the chain.
 
 **Owner:** Codex (harness); Claude (thresholds review, `block-stats.sh` attachment). **Gate:**
 `bun deploy/madara-lab/harness/run.ts --bots 96 --minutes 10` meets the bar and produces the run manifest; the README
 documents the command and the numbers.
+
+### D.4.1 Sequencer facts and levers (verified 2026-08-26, alpha.9 pin)
+
+What the node actually does — each fact checked in source at the pin and measured on the lab:
+
+- **Execution is parallel already.** `ChainConfig.block_production_concurrency` is `#[serde(default)]` with
+  `disable_concurrency: false`, `n_workers` = all cores (blockifier optimistic concurrency / block-STM); no preset sets
+  it, so it is on. Measured: madara at 2.8 cores during a 24-tx burst; blocks #51847–48 executed **12 queued
+  transactions in 269–319 ms** (~25 ms/tx, game classes, native warm).
+- **Therefore the 96-bot run's ~1.87 s busy blocks were arrival-bound, not execution-bound**: 12 txs at the offered 6.4
+  tx/s take 1.87 s to arrive. At the current `n_txs: 12` cap the chain has ~6× execution headroom; the D.4 follow-up
+  headroom run raises the cap above the load and reports where blocks actually stop fitting in `block_time`.
+- **The batcher never waits.** It hands the executor whatever is ready, up to `execution_batch_size` (4) per batch, and
+  pre-confirmed state is persisted after every batch — so `execution_batch_size` is both the flush granularity **and**
+  the intra-batch parallelism cap. Lowering it to 1 would serialize execution; tuning it is a measured trade, not a
+  latency knob to turn down blindly.
+- **True pre-confirmed latency is already ≤ 74 ms** (probe at 50 ms poll, unfunded `deploy_account`). The play loop
+  reads pre-confirmed + indexed state; `pending_block_update_time` (250 ms) is the publish cadence lever if the measured
+  number is ever the bottleneck. L2 acceptance and settlement are correctness rails, not the play loop.
+- **WebSocket subscriptions exist upstream, not at the pin.** Merged 2026-08-20 (#1012); verified working on
+  `nightly-e674321` at `/rpc/v0_10_2` (`subscribeNewHeads`, `subscribeTransactionStatus`, `subscribeEvents`,
+  `subscribeNewTransactions`); the v0.8/v0.9 subscribe methods are removed there. The pin stubs them all with
+  `Internal error`. Adopting them is a pin bump measured like any other: same harness, WS vs poll, digest recorded.
+- **Fee estimation is doubled work on a fee-free chain.** Every harness action (and possibly every client action — check
+  `packages/provider`) runs `estimateInvokeFee` first; an estimate is a full execution on the node. If constant bounds
+  are accepted under `--no-charge-fee`, the estimate is deleted and the sequencer's real load halves.
+
+**Owner:** Codex (headroom run, WS-vs-poll comparison, bounds policy, batch-size trade — all as harness runs with
+manifests); Claude (pin-bump digests, `host-state.sh` in every manifest). **Gate:** each lever lands with a before/after
+manifest pair on the same host state, or it is not a finding.
 
 ### D.5 Phase-1 integration gate (Claude)
 

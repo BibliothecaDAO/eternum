@@ -261,6 +261,18 @@ Compilation is asynchronous with a VM fallback (`--native-compilation-mode=async
 the data volume (`native_classes/`) and survive restarts. Warm every game class once (a full harness run) before
 reading numbers, and compare against a VM run on the same block-stats window.
 
+### Execution and latency (measured 2026-08-26)
+
+- Blockifier optimistic concurrency is **on by default** (`block_production_concurrency` defaults: enabled,
+  `n_workers` = all cores). Measured 2.8 cores during a 24-tx burst; blocks #51847–48 executed 12 queued
+  transactions in 269–319 ms (~25 ms/tx, native warm). Busy blocks at the 96-bot load close at ~1.87 s because that
+  is how long 12 txs take to **arrive** at 6.4 tx/s — arrival-bound, not execution-bound; ~6× execution headroom at
+  the current `n_txs: 12` cap.
+- The batcher hands the executor up to `execution_batch_size` (4) ready transactions and never waits; pre-confirmed
+  state persists after every batch. The value is both flush granularity and intra-batch parallelism cap.
+- True pre-confirmed latency measured at ≤ 74 ms (`pnpm lab:probe-account`, 50 ms poll). Any latency number taken
+  with a 250 ms poll is the poll, not the chain.
+
 ## Pinning
 
 | Component | Pin | Why |
@@ -277,8 +289,11 @@ record it here before treating the results as comparable.
 
 ## What Madara does not give you (as of alpha.9)
 
-- **No WebSocket subscriptions.** Every `starknet_subscribe*` method returns `UnimplementedMethod`. The client's
-  live path stays on Torii (canary) until the owned stream exists; do not plan on subscribing to Madara directly.
+- **No WebSocket subscriptions at this pin.** The RPC port accepts the WS upgrade but every `starknet_subscribe*`
+  fails immediately (`-32603`). Upstream implemented them on 2026-08-20 (#1012): verified working on
+  `nightly-e674321` at `/rpc/v0_10_2` (`subscribeNewHeads`, `subscribeTransactionStatus`, `subscribeEvents`,
+  `subscribeNewTransactions`), with the v0.8/v0.9 subscribe methods removed. Until a pin bump is measured, the
+  client's live path stays on Torii (canary) and finality is polled.
 - **No `dev_predeployedAccounts`.** Player accounts do not need it: each key deploys its own account fee-free
   ("Gameplay accounts" above). The deployer and the binding authority use the deterministic genesis accounts.
 - **No embedded VRF, paymaster, or Controller.** The contracts fall back to transaction-hash randomness when the VRF
