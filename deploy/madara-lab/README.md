@@ -202,12 +202,16 @@ script aggregates it:
 
 ```bash
 deploy/madara-lab/scripts/block-stats.sh          # since container start
-deploy/madara-lab/scripts/block-stats.sh 10m      # last 10 minutes
+deploy/madara-lab/scripts/block-stats.sh --since 10m
+deploy/madara-lab/scripts/block-stats.sh --since 2026-08-26T10:00:00Z --until 2026-08-26T10:10:00Z --json
 ```
 
 It reports blocks, executed/reverted/rejected transactions, classes declared, L2 gas, transactions per busy block,
-and p50/p95/max of `block_production_ms`, `close_block_total_ms`, `merklization_ms`, `db_write_ms`. Capture it before
-and after every harness run and attach the output to the run manifest (`.lab/runs/`, see the brief, item D.4).
+and p50/p95/max of `block_production_ms`, `close_block_total_ms`, `merklization_ms`, `db_write_ms`. The harness passes
+its exact workload start and end timestamps to this script and stores the parsed result in the run manifest. It also
+stores `host-state.sh` output as `hostStateStart` and `hostStateEnd`; those snapshots carry the host load, governor,
+memory and swap pressure, Madara image and native state, native-class cache size, and the measurement-sensitive chain
+config.
 
 ### 96-player harness
 
@@ -220,25 +224,43 @@ pnpm lab:harness -- --bots 96 --minutes 10
 # equivalent: bun deploy/madara-lab/harness/run.ts --bots 96 --minutes 10
 ```
 
-Every transaction records hash submission, `PRE_CONFIRMED`, `ACCEPTED_ON_L2`, and the first observation of that hash
-in both Torii's `transactions` and `events` tables. The JSON report is written under
-`deploy/madara-lab/.lab/runs/`; it includes the Madara image digest, git revision, exact action mix, latency
-percentiles, threshold results, and `block-stats.sh` output from before and after the run.
+Every transaction records hash submission, the first observed `PRE_CONFIRMED` status, `ACCEPTED_ON_L2`, and the first
+observation of that hash in both Torii's `transactions` and `events` tables. Receipt status is polled every 50 ms, and
+the interval is stored in the report. Pre-confirmed latency is therefore quantized at the poll boundary; it is an
+observed upper bound, not Madara's internal execution time. Every action also records the call count and summed wall
+time for fee estimation, `getBlock`, and status polling. Produce completes only after Torii shows a labor or wood
+production-output delta.
 
-The acceptance run passed on 2026-08-25 UTC. Its report is
-`.lab/runs/20260825T225504381Z.json` (generated evidence, intentionally gitignored):
+The JSON report is written under `deploy/madara-lab/.lab/runs/`. It includes the source revision, image digest, exact
+requested and completed action mixes, latency percentiles, RPC load, host-state snapshots, threshold results, and
+block statistics restricted to the workload window.
+
+The corrected acceptance run passed on 2026-08-26 UTC. Its report is
+`.lab/runs/20260826T070408628Z.json` (generated evidence, intentionally gitignored):
 
 | Result | Value | Bar |
 | --- | ---: | ---: |
 | Completed actions | 3,840 / 3,840 | at least 3,500 |
 | Reverts / failures / indexing loss | 0 / 0 / 0 | all zero |
-| p95 submit → `PRE_CONFIRMED` | 252 ms | at most 1 s |
-| p95 submit → `ACCEPTED_ON_L2` | 2.007 s | at most 4 s |
-| p95 submit → indexed | 887 ms | at most 6 s |
+| p95 submit → observed `PRE_CONFIRMED` | 105 ms | at most 1 s |
+| p95 submit → `ACCEPTED_ON_L2` | 1.980 s | at most 4 s |
+| p95 submit → indexed | 1.078 s | at most 6 s |
 
-The action counts were exact: 1,920 move, 1,152 explore, and 768 produce. A 12-minute block-stat window around the
-workload contained 3,840 executed transactions, zero reverts, zero rejects, 12 transactions per busy block at p50 and
-max, 1.905 s p95 block production, and 92.34 ms p95 block close.
+The requested and completed counts matched: 1,920 move, 1,152 explore, and 768 produce. All 768 Produce records carry
+non-zero labor and wood-output deltas. The exact 10-minute workload window contained 3,840 executed transactions, zero
+reverts, zero rejects, and 12 transactions per busy block at p50 and max. Block production was 1.875 s p50, 1.949 s
+p95, and 2.186 s max; block close was 154.28 ms p95.
+
+The pre-confirmed histogram is still poll-shaped: 3,229 of 3,840 actions were first observed at 50–52 ms. Read the
+105 ms p95 as “observed by this poll boundary,” not “executed in 105 ms.” The workload made 97,552 measured driver RPC
+calls, or 25.4 per action: 3,936 fee estimates, 3,840 `getBlock` calls, and 89,776 status polls. Their summed wall times
+were 304.17 s, 2.37 s, and 55.43 s respectively; these sums include concurrent calls and are not elapsed run time. The
+complete run, including setup and stamina warmup, made 107,021 measured driver RPC calls. Account deployment p95 fell
+from the old ten-second polling floor to 2.067 s after setting the deployment receipt retry interval to 50 ms.
+
+The start snapshot recorded the powersave governor, host load 9.51/11.46/10.54, 5,673 MiB swap in use, native
+execution enabled, and 63 cached native classes. The cache held 66 classes at run end. Keep those conditions attached
+to the latency and block figures when comparing another run.
 
 The failed runs named the bottlenecks before the pass:
 
@@ -270,8 +292,8 @@ reading numbers, and compare against a VM run on the same block-stats window.
   the current `n_txs: 12` cap.
 - The batcher hands the executor up to `execution_batch_size` (4) ready transactions and never waits; pre-confirmed
   state persists after every batch. The value is both flush granularity and intra-batch parallelism cap.
-- True pre-confirmed latency measured at ≤ 74 ms (`pnpm lab:probe-account`, 50 ms poll). Any latency number taken
-  with a 250 ms poll is the poll, not the chain.
+- Pre-confirmed status was first observed at the 50 ms poll boundary in the account probe and most harness actions.
+  Treat these values as poll-quantized upper bounds, not internal execution timings.
 
 ## Pinning
 

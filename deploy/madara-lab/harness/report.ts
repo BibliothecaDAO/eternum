@@ -1,17 +1,50 @@
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import type { HarnessAccount } from "./account-factory";
-import type { TrackedTransaction, WorkloadActionKind, WorkloadResult } from "./driver";
+import {
+  RECEIPT_POLL_INTERVAL_MS,
+  createRpcMetrics,
+  type MeasuredRpcMethod,
+  type RpcMetrics,
+  type TrackedTransaction,
+  type WorkloadActionKind,
+  type WorkloadResult,
+} from "./driver";
 
-export interface HarnessEvidence {
-  blockStatsAfter: string;
-  blockStatsBefore: string;
+export interface BlockStats {
+  blockProductionMs: MetricSummary;
+  blocks: { busy: number; count: number; first: number | null; last: number | null };
+  closeBlockMs: MetricSummary;
+  dbWriteMs: { max: number | null };
+  merklizationMs: { max: number | null };
+  transactions: {
+    classesDeclared: number;
+    contractsDeployed: number;
+    executed: number;
+    l2GasConsumed: number;
+    rejected: number;
+    reverted: number;
+  };
+  transactionsPerBusyBlock: { max: number | null; p50: number | null };
+  window: { since: string; until: string };
+}
+
+interface MetricSummary {
+  max: number | null;
+  p50: number | null;
+  p95: number | null;
+}
+
+interface HarnessEvidenceBeforeRun {
   gitDirty: boolean;
   gitRevision: string;
-  madaraImage: {
-    digest: string;
-    tag: string;
-  };
+  hostStateStart: Record<string, unknown>;
+  madaraImage: { digest: string; tag: string };
+}
+
+export interface HarnessEvidence extends HarnessEvidenceBeforeRun {
+  blockStats: BlockStats;
+  hostStateEnd: Record<string, unknown>;
 }
 
 export interface HarnessReportInput {
@@ -48,26 +81,35 @@ const PRECONFIRMED_P95_LIMIT_MS = 1_000;
 const ACCEPTED_ON_L2_P95_LIMIT_MS = 4_000;
 const INDEXED_P95_LIMIT_MS = 6_000;
 const RUNS_DIRECTORY = path.resolve(import.meta.dir, "../.lab/runs");
+const REPOSITORY_ROOT = path.resolve(import.meta.dir, "../../..");
+const BLOCK_STATS_SCRIPT = path.resolve(import.meta.dir, "../scripts/block-stats.sh");
+const HOST_STATE_SCRIPT = path.resolve(import.meta.dir, "../scripts/host-state.sh");
 
-export async function collectHarnessEvidenceBeforeRun(): Promise<Omit<HarnessEvidence, "blockStatsAfter">> {
-  const [blockStatsBefore, gitRevision, gitStatus, madaraImage] = await Promise.all([
-    captureBlockStats(),
+export async function collectHarnessEvidenceBeforeRun(): Promise<HarnessEvidenceBeforeRun> {
+  const [gitRevision, gitStatus, madaraImage, hostStateStart] = await Promise.all([
     runCommand(["git", "rev-parse", "HEAD"]),
     runCommand(["git", "status", "--porcelain"]),
     readMadaraImage(),
+    captureHostState(),
   ]);
   return {
-    blockStatsBefore,
     gitDirty: gitStatus.trim().length > 0,
     gitRevision: gitRevision.trim(),
+    hostStateStart,
     madaraImage,
   };
 }
 
 export async function finishHarnessEvidence(
-  before: Omit<HarnessEvidence, "blockStatsAfter">,
+  before: HarnessEvidenceBeforeRun,
+  workloadStartedAt: string,
+  workloadEndedAt: string,
 ): Promise<HarnessEvidence> {
-  return { ...before, blockStatsAfter: await captureBlockStats() };
+  const [blockStats, hostStateEnd] = await Promise.all([
+    captureBlockStats(workloadStartedAt, workloadEndedAt),
+    captureHostState(),
+  ]);
+  return { ...before, blockStats, hostStateEnd };
 }
 
 export async function writeHarnessReport(input: HarnessReportInput): Promise<{ passed: boolean; path: string }> {
@@ -92,7 +134,9 @@ function analyzeHarnessResult(input: HarnessReportInput) {
   );
   const setupFailures = input.setupTransactions.filter((transaction) => transaction.outcome !== "completed");
   const percentiles = summarizePercentiles(completedActions);
-  const mix = summarizeMix(actions);
+  const requestedMix = summarizeRequestedMix(actions);
+  const actualMix = summarizeCompletedMix(actions);
+  const rpc = summarizeRpcLoad(input.setupTransactions, actions, input.workload.overheadRpc);
 
   const checks = {
     acceptedOnL2P95: passesLatency(percentiles.acceptedOnL2Ms.p95, ACCEPTED_ON_L2_P95_LIMIT_MS),
@@ -107,14 +151,16 @@ function analyzeHarnessResult(input: HarnessReportInput) {
 
   return {
     actions,
+    actualMix,
     checks,
     completedActions,
     failedActions,
     indexingLoss,
-    mix,
     passed: Object.values(checks).every(Boolean),
     percentiles,
+    requestedMix,
     reverts,
+    rpc,
     setupFailures,
   };
 }
@@ -126,7 +172,7 @@ function buildHarnessManifest(
   createdAt: string,
 ) {
   return {
-    schemaVersion: 1,
+    schemaVersion: 2,
     runId,
     createdAt,
     passed: analysis.passed,
@@ -145,8 +191,9 @@ function buildHarnessManifest(
       bots: input.botCount,
       minutes: input.minutes,
       intervalSeconds: input.intervalSeconds,
-      requestedMix: { move: 0.5, explore: 0.3, produce: 0.2 },
-      actualMix: analysis.mix,
+      receiptPollIntervalMs: RECEIPT_POLL_INTERVAL_MS,
+      requestedMix: analysis.requestedMix,
+      actualMix: analysis.actualMix,
       ticks: input.workload.ticks,
       plannedActions: input.workload.plannedActions,
       minimumCompletedActions: input.minimumCompletedActions,
@@ -158,6 +205,10 @@ function buildHarnessManifest(
       startedAt: input.workload.startedAt,
       endedAt: input.workload.endedAt,
       percentiles: analysis.percentiles,
+      measuredRpc: {
+        scope: "estimateInvokeFee, getBlock, and getTransactionStatus calls made by the harness driver",
+        ...analysis.rpc,
+      },
       actions: analysis.actions,
     },
     setup: {
@@ -176,8 +227,9 @@ function buildHarnessManifest(
       checks: analysis.checks,
     },
     evidence: {
-      blockStatsBefore: input.evidence.blockStatsBefore,
-      blockStatsAfter: input.evidence.blockStatsAfter,
+      hostStateStart: input.evidence.hostStateStart,
+      hostStateEnd: input.evidence.hostStateEnd,
+      blockStats: input.evidence.blockStats,
     },
   };
 }
@@ -192,7 +244,67 @@ export function percentile(values: readonly number[], percentileValue: number): 
   return sorted[index]!;
 }
 
-export function summarizeMix(actions: readonly Pick<TrackedTransaction, "kind">[]): Record<WorkloadActionKind, number> {
+export function summarizeRequestedMix(
+  actions: readonly Pick<TrackedTransaction, "kind">[],
+): Record<WorkloadActionKind, number> {
+  return summarizeKinds(actions);
+}
+
+export function summarizeCompletedMix(
+  actions: readonly Pick<TrackedTransaction, "kind" | "outcome">[],
+): Record<WorkloadActionKind, number> {
+  return summarizeKinds(actions.filter(({ outcome }) => outcome === "completed"));
+}
+
+export function summarizeRpcMetrics(metrics: readonly RpcMetrics[], overhead: RpcMetrics) {
+  const methods = createRpcMetrics();
+  for (const rpc of [...metrics, overhead]) {
+    for (const method of Object.keys(methods) as MeasuredRpcMethod[]) {
+      methods[method].calls += rpc[method].calls;
+      methods[method].wallMs += rpc[method].wallMs;
+    }
+  }
+  for (const method of Object.keys(methods) as MeasuredRpcMethod[]) {
+    methods[method].wallMs = roundMilliseconds(methods[method].wallMs);
+  }
+  return {
+    methods,
+    total: {
+      calls: Object.values(methods).reduce((sum, method) => sum + method.calls, 0),
+      wallMs: roundMilliseconds(Object.values(methods).reduce((sum, method) => sum + method.wallMs, 0)),
+    },
+  };
+}
+
+function summarizeRpcLoad(
+  setupTransactions: readonly TrackedTransaction[],
+  actions: readonly TrackedTransaction[],
+  overhead: RpcMetrics,
+) {
+  const noOverhead = createRpcMetrics();
+  const workload = summarizeRpcMetrics(
+    actions.map(({ rpc }) => rpc),
+    noOverhead,
+  );
+  return {
+    workload: {
+      actions: actions.length,
+      callsPerAction: actions.length === 0 ? 0 : roundMilliseconds(workload.total.calls / actions.length),
+      ...workload,
+    },
+    setup: summarizeRpcMetrics(
+      setupTransactions.map(({ rpc }) => rpc),
+      noOverhead,
+    ),
+    overhead: summarizeRpcMetrics([], overhead),
+    run: summarizeRpcMetrics(
+      [...setupTransactions, ...actions].map(({ rpc }) => rpc),
+      overhead,
+    ),
+  };
+}
+
+function summarizeKinds(actions: readonly Pick<TrackedTransaction, "kind">[]): Record<WorkloadActionKind, number> {
   const counts: Record<WorkloadActionKind, number> = { move: 0, explore: 0, produce: 0 };
   for (const action of actions) {
     if (action.kind in counts) counts[action.kind as WorkloadActionKind] += 1;
@@ -222,25 +334,36 @@ function passesLatency(value: number | null, limit: number): boolean {
   return value !== null && value <= limit;
 }
 
-async function captureBlockStats(): Promise<string> {
-  return runCommand([path.resolve(import.meta.dir, "../scripts/block-stats.sh")]);
+async function captureBlockStats(since: string, until: string): Promise<BlockStats> {
+  const output = await runCommand([BLOCK_STATS_SCRIPT, "--since", since, "--until", until, "--json"]);
+  const summary = JSON.parse(output) as Omit<BlockStats, "window">;
+  if (summary.blocks.count === 0) throw new Error(`Madara emitted no closed blocks between ${since} and ${until}`);
+  return { ...summary, window: { since, until } };
 }
 
 async function readMadaraImage(): Promise<HarnessEvidence["madaraImage"]> {
-  const output = await runCommand([
-    "docker",
-    "inspect",
-    "--format={{.Config.Image}}|{{.Image}}",
-    "madara-lab",
-  ]);
+  const output = await runCommand(["docker", "inspect", "--format={{.Config.Image}}|{{.Image}}", "madara-lab"]);
   const [tag, digest] = output.trim().split("|");
   if (!tag || !digest) throw new Error(`Could not parse Madara image metadata: ${output}`);
   return { tag, digest };
 }
 
+async function captureHostState(): Promise<Record<string, unknown>> {
+  const output = await runCommand([HOST_STATE_SCRIPT]);
+  const parsed = JSON.parse(output) as unknown;
+  if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) {
+    throw new Error("host-state.sh did not return a JSON object");
+  }
+  return parsed as Record<string, unknown>;
+}
+
+function roundMilliseconds(value: number): number {
+  return Math.round(value * 100) / 100;
+}
+
 async function runCommand(command: string[]): Promise<string> {
   const process = Bun.spawn(command, {
-    cwd: path.resolve(import.meta.dir, "../../.."),
+    cwd: REPOSITORY_ROOT,
     stderr: "pipe",
     stdout: "pipe",
   });

@@ -63,7 +63,7 @@ describe("gameplay account deployment", () => {
     await ensureGameplayAccount(accountOptions(provider));
 
     expect(deployAccount).toHaveBeenCalledOnce();
-    expect(waitForTransaction).toHaveBeenCalledWith("0x2");
+    expect(waitForTransaction).toHaveBeenCalledWith("0x2", { retryInterval: 50 });
   });
 
   it("refuses an occupied address with a different class", async () => {

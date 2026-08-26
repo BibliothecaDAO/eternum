@@ -1,7 +1,9 @@
 import { describe, expect, it } from "bun:test";
 import { mapWithConcurrency } from "./account-factory";
 import {
+  RECEIPT_POLL_INTERVAL_MS,
   chooseOutwardDirection,
+  createRpcMetrics,
   millisecondsUntilNextArmyTick,
   neighbor,
   oppositeDirection,
@@ -9,14 +11,40 @@ import {
   prioritizeExplorer,
   resolveActionKind,
 } from "./driver";
-import { percentile, summarizeMix } from "./report";
+import { percentile, summarizeCompletedMix, summarizeRequestedMix, summarizeRpcMetrics } from "./report";
 import { parseHarnessArgs } from "./run";
 import { ToriiObserver } from "./torii-observer";
 
 describe("Madara harness workload", () => {
-  it("produces the exact 50/30/20 mix over the acceptance run", () => {
-    const actions = Array.from({ length: 40 }, (_, tick) => ({ kind: resolveActionKind(tick) }));
-    expect(summarizeMix(actions)).toEqual({ move: 20, explore: 12, produce: 8 });
+  it("separates the requested mix from completed outcomes", () => {
+    const actions = [
+      { kind: "move", outcome: "completed" },
+      { kind: "explore", outcome: "reverted" },
+      { kind: "produce", outcome: "completed" },
+    ] as const;
+    expect(summarizeRequestedMix(actions)).toEqual({ move: 1, explore: 1, produce: 1 });
+    expect(summarizeCompletedMix(actions)).toEqual({ move: 1, explore: 0, produce: 1 });
+  });
+
+  it("requests the 50/30/20 acceptance pattern", () => {
+    expect(Array.from({ length: 40 }, (_, tick) => resolveActionKind(tick))).toEqual([
+      ...Array.from({ length: 4 }, () => [
+        "explore",
+        "explore",
+        "explore",
+        "move",
+        "move",
+        "produce",
+        "move",
+        "move",
+        "produce",
+        "move",
+      ]).flat(),
+    ]);
+  });
+
+  it("polls receipts below the previous 250 ms measurement floor", () => {
+    expect(RECEIPT_POLL_INTERVAL_MS).toBe(50);
   });
 
   it("parses the Torii settlement encodings seen across versions", () => {
@@ -58,6 +86,39 @@ describe("Madara harness reporting", () => {
     expect(percentile([5, 1, 4, 2, 3], 95)).toBe(5);
     expect(percentile([], 95)).toBeNull();
   });
+
+  it("totals the measured driver RPC methods", () => {
+    const transaction = createRpcMetrics();
+    transaction.estimateInvokeFee = { calls: 1, wallMs: 12.345 };
+    transaction.getTransactionStatus = { calls: 3, wallMs: 7.891 };
+    const overhead = createRpcMetrics();
+    overhead.getBlock = { calls: 2, wallMs: 4.567 };
+
+    expect(summarizeRpcMetrics([transaction], overhead)).toEqual({
+      methods: {
+        estimateInvokeFee: { calls: 1, wallMs: 12.35 },
+        getBlock: { calls: 2, wallMs: 4.57 },
+        getTransactionStatus: { calls: 3, wallMs: 7.89 },
+      },
+      total: { calls: 6, wallMs: 24.81 },
+    });
+  });
+
+  it("parses block statistics as structured nearest-rank evidence", async () => {
+    const rows = [blockRow(10, 1, 10), blockRow(11, 3, 30)];
+    const process = Bun.spawn(["python3", `${import.meta.dir}/../scripts/block-stats.py`, "--json"], {
+      stdin: new Blob([rows.map((row) => JSON.stringify(row)).join("\n")]),
+      stdout: "pipe",
+    });
+    const output = await new Response(process.stdout).json();
+    expect(await process.exited).toBe(0);
+    expect(output).toMatchObject({
+      blocks: { count: 2, busy: 2, first: 10, last: 11 },
+      transactions: { executed: 4, reverted: 0, rejected: 0 },
+      transactionsPerBusyBlock: { p50: 1, max: 3 },
+      blockProductionMs: { p50: 10, p95: 30, max: 30 },
+    });
+  });
 });
 
 describe("Madara harness Torii observer", () => {
@@ -76,10 +137,7 @@ describe("Madara harness Torii observer", () => {
             { transaction_hash: "0x2", source: "events" },
           ]);
         }
-        return Response.json([
-          explorerRow("11", "event-11"),
-          explorerRow("12", "event-12"),
-        ]);
+        return Response.json([explorerRow("11", "event-11"), explorerRow("12", "event-12")]);
       },
     });
 
@@ -107,21 +165,55 @@ describe("Madara harness Torii observer", () => {
       server.stop(true);
     }
   });
+
+  it("observes a production labor or wood-output delta", async () => {
+    let resourceReads = 0;
+    const server = Bun.serve({
+      port: 0,
+      fetch() {
+        resourceReads += 1;
+        return Response.json([
+          resourceRow("11", resourceReads === 1 ? "event-1" : "event-2", "100", resourceReads === 1 ? "4" : "9"),
+        ]);
+      },
+    });
+
+    try {
+      const observer = new ToriiObserver(`http://127.0.0.1:${server.port}`, 5);
+      const before = await observer.readResource(7, "11");
+      const after = await observer.waitForResource(7, "11", before, 1_000);
+      expect(after).toMatchObject({ structureId: "11", laborBalance: 100n, woodOutput: 9n });
+    } finally {
+      server.stop(true);
+    }
+  });
+
+  it("rejects an indexed production event with no resource delta", async () => {
+    let resourceReads = 0;
+    const server = Bun.serve({
+      port: 0,
+      fetch() {
+        resourceReads += 1;
+        return Response.json([resourceRow("11", resourceReads === 1 ? "event-1" : "event-2", "100", "4")]);
+      },
+    });
+
+    try {
+      const observer = new ToriiObserver(`http://127.0.0.1:${server.port}`, 5);
+      const before = await observer.readResource(7, "11");
+      await expect(observer.waitForResource(7, "11", before, 1_000)).rejects.toThrow(
+        "without a labor or wood output delta",
+      );
+    } finally {
+      server.stop(true);
+    }
+  });
 });
 
 describe("Madara harness CLI and concurrency", () => {
   it("parses an explicit smoke-run configuration", () => {
     expect(
-      parseHarnessArgs([
-        "--bots",
-        "4",
-        "--minutes",
-        "0.5",
-        "--interval-seconds",
-        "5",
-        "--game-id",
-        "9",
-      ]),
+      parseHarnessArgs(["--bots", "4", "--minutes", "0.5", "--interval-seconds", "5", "--game-id", "9"]),
     ).toMatchObject({ bots: 4, minutes: 0.5, intervalSeconds: 5, gameId: 9, gameName: "game-9" });
   });
 
@@ -149,5 +241,31 @@ function explorerRow(explorerId: string, eventId: string) {
     stamina_tick: "1",
     x: 1,
     y: 2,
+  };
+}
+
+function resourceRow(structureId: string, eventId: string, laborBalance: string, woodOutput: string) {
+  return {
+    event_id: eventId,
+    labor_balance: laborBalance,
+    structure_id: structureId,
+    wood_output: woodOutput,
+  };
+}
+
+function blockRow(blockNumber: number, transactions: number, blockProductionMs: number) {
+  return {
+    message: "close_block_complete",
+    block_number: blockNumber,
+    txs_executed: transactions,
+    txs_reverted: 0,
+    txs_rejected: 0,
+    classes_declared: 0,
+    deployed_contracts: 0,
+    l2_gas_consumed: 100,
+    block_production_ms: blockProductionMs,
+    close_block_total_ms: blockProductionMs + 1,
+    merklization_ms: 2,
+    db_write_ms: 1,
   };
 }

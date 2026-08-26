@@ -1,22 +1,12 @@
 import { setTimeout as sleep } from "node:timers/promises";
-import {
-  CallData,
-  shortString,
-  type Account,
-  type Call,
-  type ResourceBoundsBN,
-  type RpcProvider,
-} from "starknet";
+import { CallData, shortString, type Account, type Call, type ResourceBoundsBN, type RpcProvider } from "starknet";
 import { buildBlitzSettleCalls } from "../../../apps/game/src/services/blitz/blitz-settlement-calls";
 import { mapWithConcurrency, type HarnessAccount } from "./account-factory";
-import {
-  queryTorii,
-  ToriiObserver,
-  type IndexedExplorer as ExplorerRow,
-} from "./torii-observer";
+import { queryTorii, ToriiObserver, type IndexedExplorer as ExplorerRow } from "./torii-observer";
 
 export type WorkloadActionKind = "move" | "explore" | "produce";
 export type TransactionStage = "setup" | "workload";
+export type MeasuredRpcMethod = "estimateInvokeFee" | "getBlock" | "getTransactionStatus";
 export type TransactionOutcome =
   | "completed"
   | "reverted"
@@ -25,6 +15,20 @@ export type TransactionOutcome =
   | "confirmation_timeout"
   | "index_timeout"
   | "driver_failed";
+
+export interface RpcMethodMetrics {
+  calls: number;
+  wallMs: number;
+}
+
+export type RpcMetrics = Record<MeasuredRpcMethod, RpcMethodMetrics>;
+
+export interface ProductionDelta {
+  laborBalance: string;
+  laborDelta: string;
+  woodOutput: string;
+  woodOutputDelta: string;
+}
 
 export interface TrackedTransaction {
   acceptedOnL2At?: string;
@@ -41,6 +45,8 @@ export interface TrackedTransaction {
   outcome: TransactionOutcome;
   preConfirmedAt?: string;
   preConfirmedMs?: number;
+  productionDelta?: ProductionDelta;
+  rpc: RpcMetrics;
   scheduledAt?: string;
   stage: TransactionStage;
   submitDelayMs?: number;
@@ -72,6 +78,7 @@ export interface WorkloadResult {
   actions: TrackedTransaction[];
   endedAt: string;
   plannedActions: number;
+  overheadRpc: RpcMetrics;
   startedAt: string;
   ticks: number;
   warmupMs: number;
@@ -137,6 +144,7 @@ interface TrackTransactionOptions {
   resourceBounds?: ResourceBoundsBN;
   kind: string;
   provider: RpcProvider;
+  rpc?: RpcMetrics;
   scheduledAtMs?: number;
   stage: TransactionStage;
   tick?: number;
@@ -151,11 +159,12 @@ const MAX_ACTION_STAMINA_COST = 30;
 const EXPLORER_COUNT_PER_BOT = 3;
 const EXPLORER_TROOP_AMOUNT = 10_000_000_000n;
 const WOOD_RESOURCE_ID = 3;
-const RECEIPT_POLL_MS = 250;
+export const RECEIPT_POLL_INTERVAL_MS = 50;
 const TRANSACTION_TIMEOUT_MS = 30_000;
 const SETUP_TRANSACTION_TIMEOUT_MS = 120_000;
 const MODEL_UPDATE_TIMEOUT_MS = 30_000;
 const STAMINA_WARMUP_TIMEOUT_MS = 360_000;
+const STAMINA_WARMUP_POLL_INTERVAL_MS = 1_000;
 const DEFAULT_SETUP_CONCURRENCY = 6;
 const RESOURCE_HEADROOM_MULTIPLIER = 2n;
 const MAX_L2_GAS_AMOUNT = 1_200_000_000n;
@@ -247,7 +256,8 @@ export async function runWorkload({
   toriiSqlUrl,
 }: RunWorkloadOptions): Promise<WorkloadResult> {
   const ticks = Math.floor((minutes * 60) / intervalSeconds);
-  const warmupMs = await waitForAllExplorersToReachFullStamina(provider, bots);
+  const overheadRpc = createRpcMetrics();
+  const warmupMs = await waitForAllExplorersToReachFullStamina(provider, bots, overheadRpc);
 
   const workloadStartedAtMs = Date.now();
   const actions: TrackedTransaction[] = [];
@@ -261,7 +271,8 @@ export async function runWorkload({
       await sleepUntil(scheduledAtMs);
       const actionIndex = tick * bots.length + bot.botId;
       botQueues[bot.botId] = botQueues[bot.botId]!.then(async () => {
-        const chainTick = await readCurrentArmyTick(provider);
+        const rpc = createRpcMetrics();
+        const chainTick = await readCurrentArmyTick(provider, rpc);
         const action = await runBotAction({
           actionIndex,
           bot,
@@ -269,6 +280,7 @@ export async function runWorkload({
           gameId,
           kind: resolveActionKind(tick),
           provider,
+          rpc,
           scheduledAtMs,
           systems,
           tick,
@@ -287,6 +299,7 @@ export async function runWorkload({
   return {
     actions,
     endedAt: new Date().toISOString(),
+    overheadRpc,
     plannedActions: bots.length * ticks,
     startedAt: new Date(workloadStartedAtMs).toISOString(),
     ticks,
@@ -483,6 +496,7 @@ async function runBotAction({
   gameId,
   kind,
   provider,
+  rpc,
   scheduledAtMs,
   systems,
   tick,
@@ -494,6 +508,7 @@ async function runBotAction({
   gameId: number;
   kind: WorkloadActionKind;
   provider: RpcProvider;
+  rpc: RpcMetrics;
   scheduledAtMs: number;
   systems: HarnessSystemAddresses;
   tick: number;
@@ -507,6 +522,7 @@ async function runBotAction({
         chainTick,
         gameId,
         provider,
+        rpc,
         scheduledAtMs,
         systems,
         tick,
@@ -520,13 +536,14 @@ async function runBotAction({
       gameId,
       kind,
       provider,
+      rpc,
       scheduledAtMs,
       systems,
       tick,
       toriiObserver,
     });
   } catch (error) {
-    return driverFailure({ actionIndex, botId: bot.botId, error, kind, scheduledAtMs, tick });
+    return driverFailure({ actionIndex, botId: bot.botId, error, kind, rpc, scheduledAtMs, tick });
   }
 }
 
@@ -535,6 +552,7 @@ async function runProductionAction({
   bot,
   gameId,
   provider,
+  rpc,
   scheduledAtMs,
   systems,
   tick,
@@ -542,8 +560,9 @@ async function runProductionAction({
 }: Omit<Parameters<typeof runBotAction>[0], "kind">): Promise<TrackedTransaction> {
   const structure = bot.structures[bot.nextProductionStructure % bot.structures.length]!;
   bot.nextProductionStructure += 1;
+  const resourceBefore = await toriiObserver.readResource(gameId, structure.structureId);
 
-  return trackTransaction({
+  const transaction = await trackTransaction({
     account: bot.account,
     actionIndex,
     botId: bot.botId,
@@ -554,11 +573,32 @@ async function runProductionAction({
     },
     kind: "produce",
     provider,
+    rpc,
     scheduledAtMs,
     stage: "workload",
     tick,
     toriiObserver,
   });
+  if (transaction.outcome !== "completed") return transaction;
+
+  try {
+    const resourceAfter = await toriiObserver.waitForResource(
+      gameId,
+      structure.structureId,
+      resourceBefore,
+      MODEL_UPDATE_TIMEOUT_MS,
+    );
+    transaction.productionDelta = {
+      laborBalance: resourceAfter.laborBalance.toString(),
+      laborDelta: (resourceAfter.laborBalance - resourceBefore.laborBalance).toString(),
+      woodOutput: resourceAfter.woodOutput.toString(),
+      woodOutputDelta: (resourceAfter.woodOutput - resourceBefore.woodOutput).toString(),
+    };
+  } catch (error) {
+    transaction.outcome = "driver_failed";
+    transaction.error = errorMessage(error);
+  }
+  return transaction;
 }
 
 async function runExplorerAction({
@@ -568,6 +608,7 @@ async function runExplorerAction({
   gameId,
   kind,
   provider,
+  rpc,
   scheduledAtMs,
   systems,
   tick,
@@ -576,7 +617,7 @@ async function runExplorerAction({
   const selectedExplorer = selectExplorer(bot.explorers, kind, chainTick);
   const { calls, direction, resourceBounds } =
     kind === "explore"
-      ? await buildSafeExploreCalls(bot.account, selectedExplorer, bot.structures, gameId, systems.troopMovement)
+      ? await buildSafeExploreCalls(bot.account, selectedExplorer, bot.structures, gameId, systems.troopMovement, rpc)
       : buildMoveCalls(selectedExplorer, gameId, systems.troopMovement);
   const previousCoord = selectedExplorer.coord;
   const previousEventId = selectedExplorer.modelEventId;
@@ -591,6 +632,7 @@ async function runExplorerAction({
     kind,
     provider,
     resourceBounds,
+    rpc,
     scheduledAtMs,
     stage: "workload",
     tick,
@@ -665,11 +707,12 @@ async function buildSafeExploreCalls(
   structures: StructureState[],
   gameId: number,
   troopMovementAddress: string,
+  rpc: RpcMetrics,
 ): Promise<{ calls: Call[]; direction: number; resourceBounds: ResourceBoundsBN }> {
   for (const direction of chooseExploreDirections(explorer, structures)) {
     const calls = buildExplorerCalls(explorer.explorerId, direction, true, gameId, troopMovementAddress);
     try {
-      const estimate = await account.estimateInvokeFee(calls, { tip: 0 });
+      const estimate = await measureRpc(rpc, "estimateInvokeFee", () => account.estimateInvokeFee(calls, { tip: 0 }));
       return { calls, direction, resourceBounds: addExecutionHeadroom(estimate.resourceBounds) };
     } catch (error) {
       if (!errorMessage(error).includes("one of the tiles in path is occupied")) throw error;
@@ -752,35 +795,41 @@ function estimatedStamina(explorer: ExplorerState, chainTick: number): number {
   return Math.min(STAMINA_MAX, explorer.stamina + elapsedTicks * STAMINA_GAIN_PER_TICK);
 }
 
-async function waitForAllExplorersToReachFullStamina(provider: RpcProvider, bots: HarnessBot[]): Promise<number> {
+async function waitForAllExplorersToReachFullStamina(
+  provider: RpcProvider,
+  bots: HarnessBot[],
+  rpc: RpcMetrics,
+): Promise<number> {
   const startedAtMs = Date.now();
   const deadline = startedAtMs + STAMINA_WARMUP_TIMEOUT_MS;
 
   while (Date.now() <= deadline) {
-    const chainTick = await readCurrentArmyTick(provider);
+    const chainTick = await readCurrentArmyTick(provider, rpc);
     const allExplorersReady = bots.every((bot) => {
       return bot.explorers.every((explorer) => estimatedStamina(explorer, chainTick) >= STAMINA_MAX);
     });
     if (allExplorersReady) return Date.now() - startedAtMs;
-    await sleep(RECEIPT_POLL_MS);
+    await sleep(STAMINA_WARMUP_POLL_INTERVAL_MS);
   }
 
   throw new Error(`Explorers did not reach ${STAMINA_MAX} stamina within 360 seconds of chain time`);
 }
 
-async function readCurrentArmyTick(provider: RpcProvider): Promise<number> {
-  const block = await provider.getBlock("latest");
+async function readCurrentArmyTick(provider: RpcProvider, rpc: RpcMetrics): Promise<number> {
+  const block = await measureRpc(rpc, "getBlock", () => provider.getBlock("latest"));
   return Math.floor(Number(block.timestamp) / ARMY_TICK_SECONDS);
 }
 
 async function trackTransaction(options: TrackTransactionOptions): Promise<TrackedTransaction> {
   const preflightStartedAtMs = Date.now();
+  const rpc = options.rpc ?? createRpcMetrics();
   const record: TrackedTransaction = {
     actionIndex: options.actionIndex,
     botId: options.botId,
     exploreRequested: options.exploreRequested,
     kind: options.kind,
     outcome: "submit_failed",
+    rpc: snapshotRpcMetrics(rpc),
     scheduledAt: options.scheduledAtMs === undefined ? undefined : toIso(options.scheduledAtMs),
     stage: options.stage,
     submitDelayMs:
@@ -791,7 +840,8 @@ async function trackTransaction(options: TrackTransactionOptions): Promise<Track
 
   let transactionHash: string;
   try {
-    const resourceBounds = options.resourceBounds ?? (await estimateResourceBounds(options.account, options.calls));
+    const resourceBounds =
+      options.resourceBounds ?? (await estimateResourceBounds(options.account, options.calls, rpc));
     const submitStartedAtMs = Date.now();
     record.submitStartedAt = toIso(submitStartedAtMs);
     const submitted = await options.account.execute(options.calls, { resourceBounds, tip: 0 });
@@ -803,12 +853,13 @@ async function trackTransaction(options: TrackTransactionOptions): Promise<Track
     if (options.scheduledAtMs !== undefined) record.submitDelayMs = Math.max(0, submittedAtMs - options.scheduledAtMs);
   } catch (error) {
     record.error = errorMessage(error);
+    record.rpc = snapshotRpcMetrics(rpc);
     return record;
   }
 
   const timeoutMs = transactionTimeoutMs(options.stage);
   const [receipt, index] = await Promise.all([
-    waitForReceiptLifecycle(options.provider, transactionHash, Date.parse(record.submittedAt!), timeoutMs),
+    waitForReceiptLifecycle(options.provider, transactionHash, Date.parse(record.submittedAt!), timeoutMs, rpc),
     options.toriiObserver.waitForTransaction(transactionHash, timeoutMs),
   ]);
 
@@ -827,11 +878,16 @@ async function trackTransaction(options: TrackTransactionOptions): Promise<Track
     record.outcome = "index_timeout";
     record.error = `Transaction hash did not appear in both Torii transactions and events within ${timeoutMs / 1_000} seconds`;
   }
+  record.rpc = snapshotRpcMetrics(rpc);
   return record;
 }
 
-async function estimateResourceBounds(account: Account, calls: Call | Call[]): Promise<ResourceBoundsBN> {
-  const estimate = await account.estimateInvokeFee(calls, { tip: 0 });
+async function estimateResourceBounds(
+  account: Account,
+  calls: Call | Call[],
+  rpc: RpcMetrics,
+): Promise<ResourceBoundsBN> {
+  const estimate = await measureRpc(rpc, "estimateInvokeFee", () => account.estimateInvokeFee(calls, { tip: 0 }));
   return addExecutionHeadroom(estimate.resourceBounds);
 }
 
@@ -863,6 +919,7 @@ async function waitForReceiptLifecycle(
   transactionHash: string,
   submittedAtMs: number,
   timeoutMs: number,
+  rpc: RpcMetrics,
 ): Promise<Partial<TrackedTransaction>> {
   const deadline = Date.now() + timeoutMs;
   let preConfirmedAtMs: number | undefined;
@@ -870,7 +927,9 @@ async function waitForReceiptLifecycle(
 
   while (Date.now() <= deadline) {
     try {
-      const status = (await provider.getTransactionStatus(transactionHash)) as {
+      const status = (await measureRpc(rpc, "getTransactionStatus", () =>
+        provider.getTransactionStatus(transactionHash),
+      )) as {
         execution_status?: string;
         finality_status?: string;
         failure_reason?: string;
@@ -911,7 +970,7 @@ async function waitForReceiptLifecycle(
     } catch {
       // A just-submitted transaction is temporarily unknown to the RPC.
     }
-    await sleep(RECEIPT_POLL_MS);
+    await sleep(RECEIPT_POLL_INTERVAL_MS);
   }
 
   return {
@@ -934,11 +993,7 @@ async function readMapCenter(toriiSqlUrl: string, gameId: number): Promise<Coord
   return { x: coordinate, y: coordinate };
 }
 
-async function readSettlementStructureIds(
-  toriiSqlUrl: string,
-  gameId: number,
-  address: string,
-): Promise<string[]> {
+async function readSettlementStructureIds(toriiSqlUrl: string, gameId: number, address: string): Promise<string[]> {
   const player = sqlHex(address);
   const rows = await queryTorii<{ structure_ids: unknown }>(
     toriiSqlUrl,
@@ -977,11 +1032,7 @@ async function readStructures(
   });
 }
 
-async function readExplorers(
-  toriiSqlUrl: string,
-  gameId: number,
-  structureIds: string[],
-): Promise<ExplorerRow[]> {
+async function readExplorers(toriiSqlUrl: string, gameId: number, structureIds: string[]): Promise<ExplorerRow[]> {
   const ids = structureIds.map(sqlInteger).join(", ");
   const rows = await queryTorii<{
     event_id: string;
@@ -1081,6 +1132,7 @@ function driverFailure({
   botId,
   error,
   kind,
+  rpc,
   scheduledAtMs,
   tick,
 }: {
@@ -1088,6 +1140,7 @@ function driverFailure({
   botId: number;
   error: unknown;
   kind: WorkloadActionKind;
+  rpc: RpcMetrics;
   scheduledAtMs: number;
   tick: number;
 }): TrackedTransaction {
@@ -1098,12 +1151,47 @@ function driverFailure({
     error: errorMessage(error),
     kind,
     outcome: "driver_failed",
+    rpc: snapshotRpcMetrics(rpc),
     scheduledAt: toIso(scheduledAtMs),
     stage: "workload",
     submitDelayMs: Math.max(0, now - scheduledAtMs),
     submitStartedAt: toIso(now),
     tick,
   };
+}
+
+export function createRpcMetrics(): RpcMetrics {
+  return {
+    estimateInvokeFee: { calls: 0, wallMs: 0 },
+    getBlock: { calls: 0, wallMs: 0 },
+    getTransactionStatus: { calls: 0, wallMs: 0 },
+  };
+}
+
+async function measureRpc<T>(rpc: RpcMetrics, method: MeasuredRpcMethod, call: () => Promise<T>): Promise<T> {
+  const startedAt = performance.now();
+  rpc[method].calls += 1;
+  try {
+    return await call();
+  } finally {
+    rpc[method].wallMs += performance.now() - startedAt;
+  }
+}
+
+function snapshotRpcMetrics(rpc: RpcMetrics): RpcMetrics {
+  return {
+    estimateInvokeFee: snapshotRpcMethod(rpc.estimateInvokeFee),
+    getBlock: snapshotRpcMethod(rpc.getBlock),
+    getTransactionStatus: snapshotRpcMethod(rpc.getTransactionStatus),
+  };
+}
+
+function snapshotRpcMethod(method: RpcMethodMetrics): RpcMethodMetrics {
+  return { calls: method.calls, wallMs: roundMilliseconds(method.wallMs) };
+}
+
+function roundMilliseconds(value: number): number {
+  return Math.round(value * 100) / 100;
 }
 
 function resolveSettlementCenter(structures: StructureState[]): Coord {

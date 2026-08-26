@@ -4,17 +4,8 @@ import path from "node:path";
 import { logger, RpcProvider } from "starknet";
 import { launchGame } from "../../../config/deployer/clean/launch/runner";
 import { createHarnessAccounts } from "./account-factory";
-import {
-  prepareHarnessBots,
-  runWorkload,
-  type HarnessSystemAddresses,
-  type TrackedTransaction,
-} from "./driver";
-import {
-  collectHarnessEvidenceBeforeRun,
-  finishHarnessEvidence,
-  writeHarnessReport,
-} from "./report";
+import { prepareHarnessBots, runWorkload, type HarnessSystemAddresses, type TrackedTransaction } from "./driver";
+import { collectHarnessEvidenceBeforeRun, finishHarnessEvidence, writeHarnessReport } from "./report";
 
 interface HarnessCliOptions {
   bots: number;
@@ -80,7 +71,6 @@ async function main(): Promise<void> {
   const options = parseHarnessArgs(process.argv.slice(2));
   process.env.TORII_SQL_URL = options.toriiSqlUrl;
 
-  const evidenceBefore = await collectHarnessEvidenceBeforeRun();
   const provider = new RpcProvider({ nodeUrl: options.rpcUrl });
   const [chainId, gameplayContracts, manifest] = await Promise.all([
     provider.getChainId(),
@@ -111,6 +101,7 @@ async function main(): Promise<void> {
     toriiSqlUrl: options.toriiSqlUrl,
   });
 
+  const evidenceBefore = await collectHarnessEvidenceBeforeRun();
   console.log("Waiting for all explorers to reach full stamina, then starting the measured workload");
   const workload = await runWorkload({
     bots,
@@ -127,7 +118,7 @@ async function main(): Promise<void> {
     toriiSqlUrl: options.toriiSqlUrl,
   });
 
-  const evidence = await finishHarnessEvidence(evidenceBefore);
+  const evidence = await finishHarnessEvidence(evidenceBefore, workload.startedAt, workload.endedAt);
   const minimumCompletedActions = resolveMinimumCompletedActions(options, workload.plannedActions);
   const report = await writeHarnessReport({
     accounts,

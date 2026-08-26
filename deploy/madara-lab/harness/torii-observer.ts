@@ -15,6 +15,13 @@ export interface IndexedExplorer {
   y: number;
 }
 
+export interface IndexedResource {
+  eventId: string;
+  laborBalance: bigint;
+  structureId: string;
+  woodOutput: bigint;
+}
+
 interface PendingTransaction {
   deadline: number;
   resolve: (times: ToriiIndexTimes) => void;
@@ -28,6 +35,15 @@ interface PendingExplorer {
   previousEventId: string;
   reject: (error: Error) => void;
   resolve: (explorer: IndexedExplorer) => void;
+}
+
+interface PendingResource {
+  deadline: number;
+  gameId: number;
+  previous: IndexedResource;
+  reject: (error: Error) => void;
+  resolve: (resource: IndexedResource) => void;
+  structureId: string;
 }
 
 interface TransactionIndexRow {
@@ -45,12 +61,20 @@ interface ExplorerIndexRow {
   y: number;
 }
 
+interface ResourceIndexRow {
+  event_id: string;
+  labor_balance: number | string;
+  structure_id: number | string;
+  wood_output: number | string;
+}
+
 const DEFAULT_POLL_MS = 250;
 const SQL_BATCH_SIZE = 64;
 
 export class ToriiObserver {
   private explorerWaiters = new Map<string, PendingExplorer>();
   private polling?: Promise<void>;
+  private resourceWaiters = new Map<string, PendingResource>();
   private transactionWaiters = new Map<string, PendingTransaction>();
 
   constructor(
@@ -92,6 +116,36 @@ export class ToriiObserver {
     return result;
   }
 
+  async readResource(gameId: number, structureId: string): Promise<IndexedResource> {
+    const rows = await queryTorii<ResourceIndexRow>(this.toriiSqlUrl, buildResourceQuery(gameId, [structureId]));
+    const row = rows[0];
+    if (!row) throw new Error(`Resource ${structureId} in game ${gameId} is not indexed`);
+    return toIndexedResource(row);
+  }
+
+  waitForResource(
+    gameId: number,
+    structureId: string,
+    previous: IndexedResource,
+    timeoutMs: number,
+  ): Promise<IndexedResource> {
+    const key = resourceKey(gameId, structureId);
+    if (this.resourceWaiters.has(key)) throw new Error(`Resource ${structureId} is already being observed`);
+
+    const result = new Promise<IndexedResource>((resolve, reject) => {
+      this.resourceWaiters.set(key, {
+        deadline: Date.now() + timeoutMs,
+        gameId,
+        previous,
+        reject,
+        resolve,
+        structureId,
+      });
+    });
+    this.startPolling();
+    return result;
+  }
+
   private startPolling(): void {
     if (this.polling) return;
     this.polling = Promise.resolve()
@@ -104,14 +158,14 @@ export class ToriiObserver {
 
   private async pollUntilIdle(): Promise<void> {
     while (this.hasWaiters()) {
-      await Promise.allSettled([this.observeTransactions(), this.observeExplorers()]);
+      await Promise.allSettled([this.observeTransactions(), this.observeExplorers(), this.observeResources()]);
       this.expireWaiters();
       if (this.hasWaiters()) await sleep(this.pollMs);
     }
   }
 
   private hasWaiters(): boolean {
-    return this.transactionWaiters.size > 0 || this.explorerWaiters.size > 0;
+    return this.transactionWaiters.size > 0 || this.explorerWaiters.size > 0 || this.resourceWaiters.size > 0;
   }
 
   private async observeTransactions(): Promise<void> {
@@ -179,6 +233,42 @@ export class ToriiObserver {
     }
   }
 
+  private async observeResources(): Promise<void> {
+    const waiters = [...this.resourceWaiters.values()];
+    const byGame = Map.groupBy(waiters, (waiter) => waiter.gameId);
+    await Promise.all(
+      [...byGame].map(async ([gameId, gameWaiters]) => {
+        for (const batch of chunks(gameWaiters, SQL_BATCH_SIZE)) {
+          await this.observeResourceBatch(gameId, batch);
+        }
+      }),
+    );
+  }
+
+  private async observeResourceBatch(gameId: number, waiters: PendingResource[]): Promise<void> {
+    if (waiters.length === 0) return;
+    const rows = await queryTorii<ResourceIndexRow>(
+      this.toriiSqlUrl,
+      buildResourceQuery(
+        gameId,
+        waiters.map(({ structureId }) => structureId),
+      ),
+    );
+
+    for (const row of rows) {
+      const resource = toIndexedResource(row);
+      const key = resourceKey(gameId, resource.structureId);
+      const waiter = this.resourceWaiters.get(key);
+      if (!waiter || resource.eventId === waiter.previous.eventId) continue;
+      this.resourceWaiters.delete(key);
+      if (!resourceChanged(waiter.previous, resource)) {
+        waiter.reject(new Error(`Resource ${resource.structureId} was indexed without a labor or wood output delta`));
+        continue;
+      }
+      waiter.resolve(resource);
+    }
+  }
+
   private expireWaiters(): void {
     const now = Date.now();
     for (const [hash, waiter] of this.transactionWaiters) {
@@ -189,7 +279,16 @@ export class ToriiObserver {
     for (const [key, waiter] of this.explorerWaiters) {
       if (now <= waiter.deadline) continue;
       this.explorerWaiters.delete(key);
-      waiter.reject(new Error(`Explorer ${waiter.explorerId} did not update in Torii after its transaction was indexed`));
+      waiter.reject(
+        new Error(`Explorer ${waiter.explorerId} did not update in Torii after its transaction was indexed`),
+      );
+    }
+    for (const [key, waiter] of this.resourceWaiters) {
+      if (now <= waiter.deadline) continue;
+      this.resourceWaiters.delete(key);
+      waiter.reject(
+        new Error(`Resource ${waiter.structureId} did not change in Torii after its transaction was indexed`),
+      );
     }
   }
 }
@@ -212,6 +311,18 @@ function chunks<T>(values: T[], size: number): T[][] {
 
 function explorerKey(gameId: number, explorerId: string): string {
   return `${gameId}:${parseEntityId(explorerId)}`;
+}
+
+function resourceKey(gameId: number, structureId: string): string {
+  return `${gameId}:${parseEntityId(structureId)}`;
+}
+
+function buildResourceQuery(gameId: number, structureIds: string[]): string {
+  const ids = structureIds.map(sqlInteger).join(", ");
+  return `SELECT internal_event_id AS event_id, entity_id AS structure_id,
+    LABOR_BALANCE AS labor_balance, "WOOD_PRODUCTION.output_amount_left" AS wood_output
+  FROM "s2-Resource"
+  WHERE game_id = ${sqlInteger(gameId)} AND entity_id IN (${ids})`;
 }
 
 function normalizeTransactionHash(value: string): string {
@@ -249,4 +360,17 @@ function toIndexedExplorer(row: ExplorerIndexRow): IndexedExplorer {
     x: Number(row.x),
     y: Number(row.y),
   };
+}
+
+function toIndexedResource(row: ResourceIndexRow): IndexedResource {
+  return {
+    eventId: row.event_id,
+    laborBalance: BigInt(row.labor_balance),
+    structureId: parseEntityId(row.structure_id),
+    woodOutput: BigInt(row.wood_output),
+  };
+}
+
+function resourceChanged(previous: IndexedResource, current: IndexedResource): boolean {
+  return previous.laborBalance !== current.laborBalance || previous.woodOutput !== current.woodOutput;
 }
