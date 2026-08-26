@@ -1219,6 +1219,9 @@ importers:
       drizzle-zod:
         specifier: ^0.8.3
         version: 0.8.3(drizzle-orm@0.45.2(@electric-sql/pglite@0.4.1)(@neondatabase/serverless@1.0.2)(@opentelemetry/api@1.9.0)(@types/pg@8.16.0)(bun-types@1.4.0)(gel@2.2.0)(kysely@0.28.17)(pg@8.18.0))(zod@4.3.6)
+      pg:
+        specifier: ^8.18.0
+        version: 8.18.0
       ws:
         specifier: ^8.19.0
         version: 8.19.0(bufferutil@4.1.0)(utf-8-validate@5.0.10)
@@ -1232,6 +1235,9 @@ importers:
       '@types/node':
         specifier: ^22.19.11
         version: 22.20.1
+      '@types/pg':
+        specifier: ^8.16.0
+        version: 8.16.0
       '@types/ws':
         specifier: ^8.18.1
         version: 8.18.1
@@ -1244,9 +1250,6 @@ importers:
       eslint:
         specifier: catalog:web
         version: 9.39.2(jiti@2.7.0)
-      pg:
-        specifier: ^8.18.0
-        version: 8.18.0
       postgres-range:
         specifier: ^1.1.4
         version: 1.1.4

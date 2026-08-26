@@ -276,10 +276,8 @@ const envSchema = z
 
 type PublicEnv = z.infer<typeof envSchema>;
 
-const parsePublicEnv = (): PublicEnv => {
-  return envSchema.parse({
-    ...import.meta.env,
-  });
+export const parsePublicEnv = (input: Record<string, string | undefined> = import.meta.env): PublicEnv => {
+  return envSchema.parse({ ...input });
 };
 
 const resolveValidatedPublicEnv = (): PublicEnv => {

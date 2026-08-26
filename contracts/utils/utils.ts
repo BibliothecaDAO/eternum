@@ -1,11 +1,11 @@
 import type { GameChain } from "@realms-world/chain";
 import appchainSeasonAddresses from "../../contracts/common/addresses/appchain.json";
 import localSeasonAddresses from "../../contracts/common/addresses/local.json";
+import madaraSeasonAddresses from "../../contracts/common/addresses/madara.json";
 import mainnetSeasonAddresses from "../../contracts/common/addresses/mainnet.json";
 import sepoliaSeasonAddresses from "../../contracts/common/addresses/sepolia.json";
 import appchainBlitzGameManifest from "../../contracts/game/manifest_appchain_blitz.json";
 import appchainEternumGameManifest from "../../contracts/game/manifest_appchain_eternum.json";
-import madaraGameManifest from "../../contracts/game/manifest_madara.json";
 
 /**
  * Interface representing season contract addresses and resources
@@ -62,8 +62,9 @@ export function getSeasonAddresses(chain: SeasonChain): SeasonAddresses {
       case "mainnet":
         return mainnetSeasonAddresses;
       case "local":
-      case "madara":
         return localSeasonAddresses as any;
+      case "madara":
+        return madaraSeasonAddresses as SeasonAddresses;
       case "appchain":
         return appchainSeasonAddresses as any;
       default:
@@ -92,7 +93,7 @@ export function getGameManifest(chain: GameChain, appchainGameType: AppchainGame
   try {
     switch (chain) {
       case "madara":
-        return madaraGameManifest;
+        return loadMadaraGameManifest();
       case "appchain":
         return appchainGameType === "blitz" ? appchainBlitzGameManifest : appchainEternumGameManifest;
       default:
@@ -101,4 +102,20 @@ export function getGameManifest(chain: GameChain, appchainGameType: AppchainGame
   } catch (error) {
     throw new Error(`Failed to load game manifest for chain ${chain}: ${error}`);
   }
+}
+
+function loadMadaraGameManifest(): GameManifest {
+  try {
+    const manifests = import.meta.glob<{ default: GameManifest }>("../game/manifest_madara.json", { eager: true });
+    const manifest = manifests["../game/manifest_madara.json"]?.default;
+    if (manifest) return manifest;
+  } catch {
+    // import.meta.glob is supplied by Vite; Bun uses the runtime path below.
+  }
+
+  const runtimeRequire = (import.meta as ImportMeta & { require?: (path: string) => unknown }).require;
+  if (runtimeRequire) {
+    return runtimeRequire("../game/manifest_madara.json") as GameManifest;
+  }
+  throw new Error("contracts/game/manifest_madara.json does not exist; deploy the Madara world first");
 }

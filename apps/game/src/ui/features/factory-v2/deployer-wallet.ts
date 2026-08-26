@@ -37,17 +37,24 @@ export const formatFactoryDeployerTokenBalance = (value: bigint, decimals: numbe
 
 function resolveFactoryDeployerTokens(chain: FactoryLaunchChain): FactoryDeployerTokenDefinition[] {
   const seasonAddresses = getSeasonAddresses(chain as Chain);
-
-  return [
+  const tokens: FactoryDeployerTokenDefinition[] = [
     {
       symbol: "STRK",
-      address: seasonAddresses.strk,
-      decimals: TOKEN_DECIMALS,
-    },
-    {
-      symbol: "LORDS",
-      address: seasonAddresses.lords,
+      address: requireTokenAddress(seasonAddresses.strk, chain, "STRK"),
       decimals: TOKEN_DECIMALS,
     },
   ];
+  if (chain === "appchain") {
+    tokens.push({
+      symbol: "LORDS",
+      address: requireTokenAddress(seasonAddresses.lords, chain, "LORDS"),
+      decimals: TOKEN_DECIMALS,
+    });
+  }
+  return tokens;
+}
+
+function requireTokenAddress(address: string | undefined, chain: FactoryLaunchChain, symbol: string): string {
+  if (!address) throw new Error(`${symbol} address is not configured for ${chain}`);
+  return address;
 }

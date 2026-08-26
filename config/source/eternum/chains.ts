@@ -63,10 +63,10 @@ const APPCHAIN_ETERNUM_REALM_UPGRADE_CONFIG: ConfigPatch = {
 function resolveEternumContractAddressConfig(context: EnvironmentContext): ConfigPatch {
   return {
     village: {
-      village_pass_nft_address: resolveConfiguredAddress(context.addresses.villagePass),
+      village_pass_nft_address: resolveConfiguredAddress(context.addresses.villagePass, "villagePass"),
     },
     faith: {
-      reward_token: resolveConfiguredAddress(context.addresses.lords),
+      reward_token: resolveConfiguredAddress(context.addresses.lords, "lords"),
     },
   };
 }

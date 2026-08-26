@@ -36,17 +36,18 @@
     "@neondatabase/serverless": "1.0.2",
     "drizzle-orm": "catalog:web",
     "drizzle-zod": "^0.8.3",
+    "pg": "^8.18.0",
     "ws": "^8.19.0",
     "zod": "catalog:web"
   },
   "devDependencies": {
     "@realms-world/eslint-config": "workspace:*",
     "@types/node": "^22.19.11",
+    "@types/pg": "^8.16.0",
     "@types/ws": "^8.18.1",
     "dotenv-cli": "catalog:web",
     "drizzle-kit": "catalog:web",
     "eslint": "catalog:web",
-    "pg": "^8.18.0",
     "prettier": "catalog:web",
     "postgres-range": "^1.1.4",
     "typescript": "catalog:web"

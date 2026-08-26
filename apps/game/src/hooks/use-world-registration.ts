@@ -14,6 +14,7 @@ import { getDefaultWorld, getWorldById } from "@/runtime/world/world-directory";
 import { buildBlitzSettleCalls } from "@/services/blitz/blitz-settlement-calls";
 import { getRpcUrlForChain } from "@/runtime/chain-rpc";
 import { waitForTransactionConfirmation } from "@/ui/utils/transactions";
+import { createAppchainFaucetAccount } from "./appchain-faucet-account";
 import { getGameManifest } from "@contracts";
 import type { GameChain as Chain } from "@realms-world/chain";
 import { getContractByName } from "@dojoengine/core";
@@ -57,22 +58,6 @@ const fetchTokenBalance = async (
     console.error("Failed to fetch token balance:", error);
     return 0n;
   }
-};
-
-/**
- * Create the appchain-only dev fee-token faucet account.
- */
-const createAppchainFaucetAccount = (rpcProvider: RpcProvider): Account => {
-  const masterAddress = env.VITE_PUBLIC_MASTER_ADDRESS;
-  const masterPrivateKey = env.VITE_PUBLIC_MASTER_PRIVATE_KEY;
-  if (!masterAddress || !masterPrivateKey) {
-    throw new Error("Appchain fee-token faucet credentials are not configured.");
-  }
-  return new Account({
-    provider: rpcProvider,
-    address: masterAddress,
-    signer: masterPrivateKey,
-  });
 };
 
 export type EntryStage = "idle" | "preparing" | "settling" | "done" | "error";
@@ -142,7 +127,10 @@ const ensureFeeTokenBalance = async ({
   if (chain !== "appchain") {
     throw new Error("Automatic fee-token top-up is restricted to the appchain.");
   }
-  const masterAccount = createAppchainFaucetAccount(rpcProvider);
+  const masterAccount = createAppchainFaucetAccount(rpcProvider, {
+    address: env.VITE_PUBLIC_MASTER_ADDRESS,
+    privateKey: env.VITE_PUBLIC_MASTER_PRIVATE_KEY,
+  });
 
   const shortfall = feeAmount - currentBalance;
   const amount = uint256.bnToUint256(shortfall);

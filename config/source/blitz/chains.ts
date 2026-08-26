@@ -23,16 +23,28 @@ function resolveBlitzContractAddressConfig(context: EnvironmentContext): ConfigP
 
   return {
     mmr: {
-      mmr_token_address: resolveConfiguredAddress(addresses.mmrToken),
+      mmr_token_address: resolveConfiguredAddress(addresses.mmrToken, "mmrToken"),
     },
     blitz: {
       registration: {
-        fee_token: resolveConfiguredAddress(addresses.lords),
-        entry_token_class_hash: resolveConfiguredAddress(addresses.collectiblesClassHash),
-        collectible_cosmetics_address: resolveConfiguredAddress(addresses["Collectibles: Realms: Cosmetic Items"]),
-        collectible_timelock_address: resolveConfiguredAddress(addresses["Collectibles: Timelock Maker"]),
-        collectibles_lootchest_address: resolveConfiguredAddress(addresses["Collectibles: Realms: Loot Chest"]),
-        collectibles_elitenft_address: resolveConfiguredAddress(addresses["Collectibles: Realms: Elite Invite"]),
+        fee_token: resolveConfiguredAddress(addresses.lords, "lords"),
+        entry_token_class_hash: resolveConfiguredAddress(addresses.collectiblesClassHash, "collectiblesClassHash"),
+        collectible_cosmetics_address: resolveConfiguredAddress(
+          addresses["Collectibles: Realms: Cosmetic Items"],
+          "Collectibles: Realms: Cosmetic Items",
+        ),
+        collectible_timelock_address: resolveConfiguredAddress(
+          addresses["Collectibles: Timelock Maker"],
+          "Collectibles: Timelock Maker",
+        ),
+        collectibles_lootchest_address: resolveConfiguredAddress(
+          addresses["Collectibles: Realms: Loot Chest"],
+          "Collectibles: Realms: Loot Chest",
+        ),
+        collectibles_elitenft_address: resolveConfiguredAddress(
+          addresses["Collectibles: Realms: Elite Invite"],
+          "Collectibles: Realms: Elite Invite",
+        ),
       },
     },
   };
@@ -65,7 +77,7 @@ function resolveAppchainBlitzRegistrationConfig(context: EnvironmentContext): Co
         // free entry on the dev appchain — also short-circuits the entry
         // token / cosmetics / timelock paths, so no peripherals are required
         fee_amount: 0n,
-        fee_token: resolveConfiguredAddress(context.addresses.strk),
+        fee_token: resolveConfiguredAddress(context.addresses.strk, "strk"),
       },
     },
   };

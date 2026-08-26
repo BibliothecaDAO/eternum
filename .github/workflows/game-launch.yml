@@ -172,10 +172,7 @@ jobs:
             source .context/game-launch/launch-config-inputs.sh
           fi
 
-          GAME_LAUNCH_NETWORK="${GAME_LAUNCH_ENVIRONMENT%%.*}"
-          GAME_LAUNCH_GAME_TYPE="${GAME_LAUNCH_ENVIRONMENT##*.}"
-
-          if [ -z "${GAME_LAUNCH_NETWORK}" ] || [ -z "${GAME_LAUNCH_GAME_TYPE}" ]; then
+          if [[ "${GAME_LAUNCH_ENVIRONMENT}" != *.* ]]; then
             echo "Unable to resolve config sync target from ${GAME_LAUNCH_ENVIRONMENT}" >&2
             exit 1
           fi
@@ -314,9 +311,9 @@ jobs:
           )
 
           GAME_LAUNCH_NETWORK="${GAME_LAUNCH_ENVIRONMENT%%.*}"
-          GAME_LAUNCH_GAME_TYPE="${GAME_LAUNCH_ENVIRONMENT##*.}"
+          GAME_LAUNCH_CONFIG_SYNC_SCRIPT="config:sync:${GAME_LAUNCH_ENVIRONMENT//./:}"
 
-          if [ -z "${GAME_LAUNCH_NETWORK}" ] || [ -z "${GAME_LAUNCH_GAME_TYPE}" ]; then
+          if [[ "${GAME_LAUNCH_ENVIRONMENT}" != *.* ]]; then
             echo "Unable to resolve config sync target from ${GAME_LAUNCH_ENVIRONMENT}" >&2
             exit 1
           fi
@@ -456,7 +453,7 @@ jobs:
           fi
 
           sync_current_config() {
-            pnpm run "config:sync:${GAME_LAUNCH_NETWORK}" >/dev/null
+            pnpm run "${GAME_LAUNCH_CONFIG_SYNC_SCRIPT}" >/dev/null
           }
 
           run_launch_step_command() {

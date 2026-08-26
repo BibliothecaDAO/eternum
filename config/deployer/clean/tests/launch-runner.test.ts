@@ -87,12 +87,23 @@ describe("registrar game launch", () => {
 
   test("reuses an indexed game instead of submitting create_game again", async () => {
     existingGame = { gameId: 19, gameName: "bltz-test" };
+    const lines: string[] = [];
+    const originalWrite = process.stderr.write;
+    process.stderr.write = mock((chunk: string | Uint8Array) => {
+      lines.push(String(chunk));
+      return true;
+    }) as typeof process.stderr.write;
 
-    const summary = await runLaunchStep({ ...buildRequest(), stepId: "create-world" });
+    try {
+      const summary = await runLaunchStep({ ...buildRequest(), stepId: "create-world" });
 
-    expect(createRegistrarGameMock).not.toHaveBeenCalled();
-    expect(summary.gameId).toBe(19);
-    expect(summary.worldAddress).toBe("0xworld");
+      expect(createRegistrarGameMock).not.toHaveBeenCalled();
+      expect(summary.gameId).toBe(19);
+      expect(summary.worldAddress).toBe("0xworld");
+      expect(lines.join("")).toContain('Game "bltz-test" is already indexed as 19; skipping create_game');
+    } finally {
+      process.stderr.write = originalWrite;
+    }
   });
 
   test("hydrates the indexed wait from the stored launch summary", async () => {

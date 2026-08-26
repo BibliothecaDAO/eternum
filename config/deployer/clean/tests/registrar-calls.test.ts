@@ -1,19 +1,5 @@
-import { describe, expect, mock, test } from "bun:test";
+import { describe, expect, test } from "bun:test";
 import type { RegistrarManifest } from "../registrar/calls";
-
-mock.module("../../../../contracts/game/manifest_appchain_blitz.json", () => ({
-  default: {
-    world: { address: "0xsharedworld" },
-    contracts: [
-      {
-        tag: "s2-registrar_systems",
-        address: "0xregistrar",
-        systems: ["bootstrap_chain_config", "register_preset", "register_series", "create_game"],
-      },
-    ],
-    events: [{ tag: "s2-GameCreated", selector: "0xabc" }],
-  },
-}));
 
 const {
   assertRegistrarAvailable,

@@ -1,6 +1,3 @@
-import blitzManifest from "../../../../contracts/game/manifest_appchain_blitz.json";
-import eternumManifest from "../../../../contracts/game/manifest_appchain_eternum.json";
-import madaraManifest from "../../../../contracts/game/manifest_madara.json";
 import { Account, CallData, type Call } from "starknet";
 import { resolveDeploymentEnvironment } from "../environment";
 import { loadRepoJsonFile } from "../shared/repo";
@@ -55,15 +52,10 @@ interface RegistrarContext {
 
 const DEFAULT_ENVIRONMENT_ID: RegistrarEnvironmentId = "appchain.blitz";
 const APPCHAIN_NAMESPACE = "s2";
-const TRACKED_MANIFESTS: Record<string, RegistrarManifest> = {
-  "contracts/game/manifest_appchain_blitz.json": blitzManifest as RegistrarManifest,
-  "contracts/game/manifest_appchain_eternum.json": eternumManifest as RegistrarManifest,
-  "contracts/game/manifest_madara.json": madaraManifest as RegistrarManifest,
-};
 
 function resolveEnvironmentManifest(deployment: WorldDeployment): RegistrarManifest {
   const manifestPath = process.env.GAME_MANIFEST_PATH || deployment.manifestPath;
-  return TRACKED_MANIFESTS[manifestPath] ?? loadRepoJsonFile<RegistrarManifest>(manifestPath);
+  return loadRepoJsonFile<RegistrarManifest>(manifestPath);
 }
 
 function resolveRegistrarContext(target: RegistrarTarget = DEFAULT_ENVIRONMENT_ID): RegistrarContext {

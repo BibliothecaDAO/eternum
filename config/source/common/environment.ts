@@ -20,8 +20,11 @@ export interface EnvironmentContext {
   vrfProviderAddress: string;
 }
 
-export function resolveConfiguredAddress(address: string | undefined | null): string {
-  return address ?? "0x0";
+export function resolveConfiguredAddress(address: string | undefined | null, name: string): string {
+  if (!address) {
+    throw new Error(`${name} address is not configured`);
+  }
+  return address;
 }
 
 export async function resolveEnvironmentContext(chain: GameChain, gameType: GameType): Promise<EnvironmentContext> {

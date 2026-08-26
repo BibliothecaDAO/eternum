@@ -4,42 +4,29 @@ import {
   bindGameplayAccount,
   rotateGameplayAccountKey,
 } from "@/lib/gameplay-account";
+import { handleApiCors } from "@/lib/api-cors";
 import { auth } from "@/utils/auth";
 import { createFileRoute } from "@tanstack/react-router";
-import { env } from "env";
-
-const corsHeaders = {
-  "access-control-allow-credentials": "true",
-  "access-control-allow-headers": "content-type",
-  "access-control-allow-methods": "POST, OPTIONS",
-  "access-control-allow-origin": env.VITE_PUBLIC_GAME_ORIGIN,
-};
-
-const json = (body: unknown, status = 200) => Response.json(body, { status, headers: corsHeaders });
 
 export const Route = createFileRoute("/api/gameplay-account/$action")({
   server: {
     handlers: {
-      OPTIONS: () => new Response(null, { status: 204, headers: corsHeaders }),
-      POST: ({ request, params }) => handleGameplayAccountRequest(request, params.action),
+      OPTIONS: ({ request }) => handleApiCors(request),
+      POST: ({ request, params }) => handleApiCors(request, () => handleGameplayAccountRequest(request, params.action)),
     },
   },
 });
 
 async function handleGameplayAccountRequest(request: Request, action: string): Promise<Response> {
-  if (request.headers.get("origin") !== env.VITE_PUBLIC_GAME_ORIGIN) {
-    return json({ error: "Origin not allowed" }, 403);
-  }
-
   const session = await auth.api.getSession({
     headers: request.headers,
     query: { disableCookieCache: true },
   });
   if (!session) {
-    return json({ error: "Authentication required" }, 401);
+    return Response.json({ error: "Authentication required" }, { status: 401 });
   }
   if (!isGameplayAccountAction(action)) {
-    return json({ error: "Not found" }, 404);
+    return Response.json({ error: "Not found" }, { status: 404 });
   }
 
   try {
@@ -49,10 +36,10 @@ async function handleGameplayAccountRequest(request: Request, action: string): P
       owner: session.user.id,
       sessionId: session.session.id,
     });
-    return json(result);
+    return Response.json(result);
   } catch (error) {
     const message = error instanceof Error ? error.message : "Gameplay account request failed";
-    return json({ error: message }, 400);
+    return Response.json({ error: message }, { status: 400 });
   }
 }
 
