@@ -500,6 +500,12 @@ deletion: the client's optimistic channels and the Torii canary both go.
 
 ## Decisions taken
 
+- **Controller returns as an identity connector option (owner-decided 2026-08-26).** The wallet picker offers Controller
+  beside Ready/Argent and Braavos for the one SIWS signature on `SN_MAIN` — identity only. Gameplay stays
+  Cartridge-free: no session policies, no paymaster, no Controller signing of game transactions. Implementation (Codex):
+  re-add the connector to `starknet-provider.tsx`, restore the dependency, and give `check:forbidden-hosts` a scoped
+  exception for the identity connector packages; the login UI already renders every configured connector.
+
 - Phase 1 is a local proof, not a cutover. Torii is the one accepted EOL dependency.
 - Legacy S1 worlds (`mainnet`, `sepolia`) are deleted from the client. Owner-confirmed 2026-08-25.
 - The game stays on React 18 / starknet 8 in phase 1 (peer deps); web is React 19 / starknet 9; named catalogs. This
