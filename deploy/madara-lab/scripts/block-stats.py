@@ -4,7 +4,14 @@
 import argparse
 import json
 import math
+import re
 import sys
+
+
+MEMPOOL_SUMMARY = re.compile(
+    r"\[(?P<transactions>\d+)/(?P<capacity>\d+) transaction\(s\), "
+    r"(?P<accounts>\d+) account\(s\), (?P<ready>\d+) ready\]"
+)
 
 
 def percentile(values, percentile_value):
@@ -15,18 +22,22 @@ def percentile(values, percentile_value):
     return ordered[index]
 
 
-def read_rows():
+def read_log():
     rows = []
+    mempool_samples = []
     for line in sys.stdin:
-        if "close_block_complete" not in line:
-            continue
         try:
             row = json.loads(line)
         except json.JSONDecodeError:
             continue
         if row.get("message") == "close_block_complete":
             rows.append(row)
-    return rows
+        mempool_match = MEMPOOL_SUMMARY.search(str(row.get("message", "")))
+        if mempool_match:
+            mempool_samples.append(
+                {key: int(value) for key, value in mempool_match.groupdict().items()}
+            )
+    return rows, mempool_samples
 
 
 def metric(values, include_p50=True, include_p95=True):
@@ -38,9 +49,48 @@ def metric(values, include_p50=True, include_p95=True):
     return result
 
 
-def summarize(rows):
-    busy = [row for row in rows if row["txs_executed"] > 0]
+def summarize_mempool(samples):
+    if not samples:
+        return {
+            "samples": 0,
+            "capacity": None,
+            "maxTransactions": None,
+            "maxReadyTransactions": None,
+            "lastObservedTransactions": None,
+            "lastObservedReadyTransactions": None,
+        }
     return {
+        "samples": len(samples),
+        "capacity": max(sample["capacity"] for sample in samples),
+        "maxTransactions": max(sample["transactions"] for sample in samples),
+        "maxReadyTransactions": max(sample["ready"] for sample in samples),
+        "lastObservedTransactions": samples[-1]["transactions"],
+        "lastObservedReadyTransactions": samples[-1]["ready"],
+    }
+
+
+def summarize_slowest_block(rows, mempool):
+    if not rows:
+        return None
+    row = max(rows, key=lambda candidate: candidate["block_production_ms"])
+    return {
+        "blockNumber": row["block_number"],
+        "blockProductionMs": row["block_production_ms"],
+        "closeBlockMs": row["close_block_total_ms"],
+        "transactions": row["txs_executed"],
+        "batches": row.get("batches_executed"),
+        "sierraGas": row.get("bouncer_sierra_gas"),
+        "merklizationMs": row["merklization_ms"],
+        "dbWriteMs": row["db_write_ms"],
+        "mempoolMaxTransactions": mempool["maxTransactions"],
+        "mempoolMaxReadyTransactions": mempool["maxReadyTransactions"],
+    }
+
+
+def summarize(rows, mempool_samples):
+    busy = [row for row in rows if row["txs_executed"] > 0]
+    mempool = summarize_mempool(mempool_samples)
+    summary = {
         "blocks": {
             "count": len(rows),
             "busy": len(busy),
@@ -49,6 +99,7 @@ def summarize(rows):
         },
         "transactions": {
             "executed": sum(row["txs_executed"] for row in rows),
+            "addedToBlock": sum(row.get("txs_added_to_block", 0) for row in rows),
             "reverted": sum(row["txs_reverted"] for row in rows),
             "rejected": sum(row["txs_rejected"] for row in rows),
             "classesDeclared": sum(row["classes_declared"] for row in rows),
@@ -57,6 +108,9 @@ def summarize(rows):
         },
         "transactionsPerBusyBlock": metric(
             [row["txs_executed"] for row in busy], include_p95=False
+        ),
+        "sierraGasPerBusyBlock": metric(
+            [row.get("bouncer_sierra_gas", 0) for row in busy]
         ),
         "blockProductionMs": metric([row["block_production_ms"] for row in rows]),
         "closeBlockMs": metric([row["close_block_total_ms"] for row in rows]),
@@ -70,7 +124,10 @@ def summarize(rows):
             include_p50=False,
             include_p95=False,
         ),
+        "mempool": mempool,
     }
+    summary["slowestBlock"] = summarize_slowest_block(busy or rows, mempool)
+    return summary
 
 
 def print_text(summary):
@@ -88,6 +145,11 @@ def print_text(summary):
     per_block = summary["transactionsPerBusyBlock"]
     if per_block["max"] is not None:
         print(f"txs/busy block     max={per_block['max']} p50={per_block['p50']}")
+    sierra = summary["sierraGasPerBusyBlock"]
+    if sierra["max"] is not None:
+        print(
+            f"sierra/busy block  p50={sierra['p50']} p95={sierra['p95']} max={sierra['max']}"
+        )
     production = summary["blockProductionMs"]
     close = summary["closeBlockMs"]
     print(
@@ -102,13 +164,23 @@ def print_text(summary):
         f"merklization max   {summary['merklizationMs']['max']:.2f}ms   "
         f"db_write max {summary['dbWriteMs']['max']:.2f}ms"
     )
+    wall = summary["slowestBlock"]
+    mempool = summary["mempool"]
+    print(
+        f"wall evidence      block=#{wall['blockNumber']} "
+        f"block_production={wall['blockProductionMs']:.2f}ms txs={wall['transactions']} "
+        f"batches={wall['batches']} sierra={wall['sierraGas']} "
+        f"merklization={wall['merklizationMs']:.2f}ms "
+        f"mempool_max={mempool['maxTransactions']} ready_max={mempool['maxReadyTransactions']}"
+    )
 
 
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--json", action="store_true")
     args = parser.parse_args()
-    summary = summarize(read_rows())
+    rows, mempool_samples = read_log()
+    summary = summarize(rows, mempool_samples)
     if args.json:
         print(json.dumps(summary, separators=(",", ":")))
         return

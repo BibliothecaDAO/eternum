@@ -2,12 +2,15 @@ import { setTimeout as sleep } from "node:timers/promises";
 import { CallData, shortString, type Account, type Call, type RpcProvider } from "starknet";
 import { buildBlitzSettleCalls } from "../../../apps/game/src/services/blitz/blitz-settlement-calls";
 import { resolveGameTransactionResourceBounds } from "../../../packages/core/src/account/transaction-resource-bounds";
+import { Biome } from "../../../packages/core/src/utils/biome/biome";
+import { BiomeType } from "../../../packages/types/src/constants/hex";
 import { mapWithConcurrency, type HarnessAccount } from "./account-factory";
 import { queryTorii, ToriiObserver, type IndexedExplorer as ExplorerRow } from "./torii-observer";
 
 export type WorkloadActionKind = "move" | "explore" | "produce";
 export type TransactionStage = "setup" | "workload";
 export type MeasuredRpcMethod = "estimateInvokeFee" | "getBlock" | "getTransactionStatus";
+export type WorkloadFailureClass = "game_rule_limit" | "harness_pathing" | "chain_or_driver";
 export type TransactionOutcome =
   | "completed"
   | "reverted"
@@ -40,6 +43,8 @@ export interface TrackedTransaction {
   eventIndexedAt?: string;
   exploreRequested?: boolean;
   finalityStatus?: string;
+  failureClass?: WorkloadFailureClass;
+  gameId: number;
   indexedAt?: string;
   indexedMs?: number;
   kind: string;
@@ -71,6 +76,7 @@ export interface HarnessBot {
   address: string;
   botId: number;
   explorers: ExplorerState[];
+  gameId: number;
   nextProductionStructure: number;
   structures: StructureState[];
 }
@@ -97,6 +103,7 @@ interface ExplorerState {
   stamina: number;
   staminaUpdatedTick: number;
   structureId: string;
+  troopType: CairoTroopType;
 }
 
 interface StructureState {
@@ -109,6 +116,8 @@ interface Coord {
   x: number;
   y: number;
 }
+
+type CairoTroopType = 0 | 1 | 2;
 
 interface ExplorerPriority {
   atFrontier: boolean;
@@ -127,7 +136,6 @@ interface PrepareHarnessBotsOptions {
 
 interface RunWorkloadOptions {
   bots: HarnessBot[];
-  gameId: number;
   intervalSeconds: number;
   minutes: number;
   onTick?: (completedTicks: number, totalTicks: number) => void;
@@ -136,12 +144,26 @@ interface RunWorkloadOptions {
   toriiSqlUrl: string;
 }
 
+interface ExplorerActionPlan {
+  calls: Call[];
+  direction: number;
+  explorer: ExplorerState;
+  target: Coord;
+}
+
+interface PathReservation {
+  explorerId: string;
+  from: Coord;
+  target: Coord;
+}
+
 interface TrackTransactionOptions {
   account: Account;
   actionIndex?: number;
   botId: number;
   calls: Call | Call[];
   exploreRequested?: boolean;
+  gameId: number;
   kind: string;
   provider: RpcProvider;
   rpc?: RpcMetrics;
@@ -155,7 +177,24 @@ const CENTER_COORD = 2_147_483_646;
 const ARMY_TICK_SECONDS = 60;
 const STAMINA_GAIN_PER_TICK = 30;
 const STAMINA_MAX = 120;
-const MAX_ACTION_STAMINA_COST = 30;
+const EXPLORE_STAMINA_COST = 30;
+const MOVE_STAMINA_COST = 20;
+const PALADIN_TROOP_TYPE: CairoTroopType = 1;
+const PALADIN_FAVORED_TRAVEL_BIOMES = new Set([
+  BiomeType.Bare,
+  BiomeType.Tundra,
+  BiomeType.TemperateDesert,
+  BiomeType.Shrubland,
+  BiomeType.Grassland,
+  BiomeType.SubtropicalDesert,
+]);
+const PALADIN_UNFAVORED_TRAVEL_BIOMES = new Set([
+  BiomeType.Taiga,
+  BiomeType.TemperateDeciduousForest,
+  BiomeType.TemperateRainForest,
+  BiomeType.TropicalSeasonalForest,
+  BiomeType.TropicalRainForest,
+]);
 const EXPLORER_COUNT_PER_BOT = 3;
 const EXPLORER_TROOP_AMOUNT = 10_000_000_000n;
 const WOOD_RESOURCE_ID = 3;
@@ -167,6 +206,56 @@ const STAMINA_WARMUP_TIMEOUT_MS = 360_000;
 const STAMINA_WARMUP_POLL_INTERVAL_MS = 1_000;
 const DEFAULT_SETUP_CONCURRENCY = 6;
 const MADARA_RESOURCE_BOUNDS = resolveGameTransactionResourceBounds("madara");
+
+class GameRuleLimitError extends Error {}
+class HarnessPathingError extends Error {}
+
+class PathReservations {
+  private readonly occupiedByExplorer = new Map<string, string>();
+  private readonly reservedByExplorer = new Map<string, string>();
+  private readonly structureCoords = new Set<string>();
+
+  constructor(bots: readonly HarnessBot[]) {
+    for (const bot of bots) {
+      for (const structure of bot.structures) this.structureCoords.add(coordKey(structure.coord));
+      for (const explorer of bot.explorers) {
+        const key = coordKey(explorer.coord);
+        const occupant = this.occupiedByExplorer.get(key);
+        if (occupant) throw new Error(`Explorers ${occupant} and ${explorer.explorerId} share ${key}`);
+        this.occupiedByExplorer.set(key, explorer.explorerId);
+      }
+    }
+  }
+
+  canReserve(explorerId: string, target: Coord): boolean {
+    const key = coordKey(target);
+    if (this.structureCoords.has(key)) return false;
+    const occupant = this.occupiedByExplorer.get(key);
+    if (occupant && occupant !== explorerId) return false;
+    const reservation = this.reservedByExplorer.get(key);
+    return !reservation || reservation === explorerId;
+  }
+
+  reserve(explorer: ExplorerState, target: Coord): PathReservation {
+    if (!this.canReserve(explorer.explorerId, target)) {
+      throw new HarnessPathingError(`Explorer ${explorer.explorerId} target ${coordKey(target)} is occupied`);
+    }
+    this.reservedByExplorer.set(coordKey(target), explorer.explorerId);
+    return { explorerId: explorer.explorerId, from: explorer.coord, target };
+  }
+
+  complete(reservation: PathReservation, actual: Coord): void {
+    this.reservedByExplorer.delete(coordKey(reservation.target));
+    if (this.occupiedByExplorer.get(coordKey(reservation.from)) === reservation.explorerId) {
+      this.occupiedByExplorer.delete(coordKey(reservation.from));
+    }
+    this.occupiedByExplorer.set(coordKey(actual), reservation.explorerId);
+  }
+
+  cancel(reservation: PathReservation): void {
+    this.reservedByExplorer.delete(coordKey(reservation.target));
+  }
+}
 
 // Ten actions give the exact requested 50/30/20 mix. Explorers are primed first so a travel action never targets
 // the realm tile behind a freshly spawned troop.
@@ -231,13 +320,19 @@ export async function prepareHarnessBots({
     assertCompleted(createExplorers);
 
     const explorerRows = await readExplorers(toriiSqlUrl, gameId, structureIds);
-    const explorers = structures.map((structure) => buildExplorerState(structure, explorerRows));
+    const explorers = structures.map((structure) => {
+      const troopType = troopTypes.get(structure.structureId);
+      if (troopType === undefined)
+        throw new Error(`No troop type is configured for structure ${structure.structureId}`);
+      return buildExplorerState(structure, explorerRows, troopType);
+    });
 
     return {
       account: harnessAccount.account,
       address: harnessAccount.address,
       botId: harnessAccount.botId,
       explorers,
+      gameId,
       nextProductionStructure: 0,
       structures,
     };
@@ -246,7 +341,6 @@ export async function prepareHarnessBots({
 
 export async function runWorkload({
   bots,
-  gameId,
   intervalSeconds,
   minutes,
   onTick,
@@ -254,45 +348,51 @@ export async function runWorkload({
   systems,
   toriiSqlUrl,
 }: RunWorkloadOptions): Promise<WorkloadResult> {
-  const ticks = Math.floor((minutes * 60) / intervalSeconds);
+  const ticks = resolveWorkloadTicks(minutes, intervalSeconds);
   const overheadRpc = createRpcMetrics();
   const warmupMs = await waitForAllExplorersToReachFullStamina(provider, bots, overheadRpc);
 
   const workloadStartedAtMs = Date.now();
   const actions: TrackedTransaction[] = [];
-  const botQueues = bots.map(() => Promise.resolve());
+  const botQueues = new Map(bots.map((bot) => [bot.botId, Promise.resolve()]));
   const botSpacingMs = (intervalSeconds * 1_000) / bots.length;
+  const pathReservations = createPathReservationsByGame(bots);
   const toriiObserver = new ToriiObserver(toriiSqlUrl);
 
   for (let tick = 0; tick < ticks; tick += 1) {
-    for (const bot of bots) {
-      const scheduledAtMs = workloadStartedAtMs + tick * intervalSeconds * 1_000 + bot.botId * botSpacingMs;
+    for (const [botIndex, bot] of bots.entries()) {
+      const scheduledAtMs = workloadStartedAtMs + tick * intervalSeconds * 1_000 + botIndex * botSpacingMs;
       await sleepUntil(scheduledAtMs);
-      const actionIndex = tick * bots.length + bot.botId;
-      botQueues[bot.botId] = botQueues[bot.botId]!.then(async () => {
-        const rpc = createRpcMetrics();
-        const chainTick = await readCurrentArmyTick(provider, rpc);
-        const action = await runBotAction({
-          actionIndex,
-          bot,
-          chainTick,
-          gameId,
-          kind: resolveActionKind(tick),
-          provider,
-          rpc,
-          scheduledAtMs,
-          systems,
-          tick,
-          toriiObserver,
-        });
-        actions.push(action);
-      });
+      const actionIndex = tick * bots.length + botIndex;
+      const previous = botQueues.get(bot.botId)!;
+      botQueues.set(
+        bot.botId,
+        previous.then(async () => {
+          const rpc = createRpcMetrics();
+          const chainTick = await readCurrentArmyTick(provider, rpc);
+          const action = await runBotAction({
+            actionIndex,
+            bot,
+            chainTick,
+            gameId: bot.gameId,
+            kind: resolveActionKind(tick),
+            pathReservations: pathReservations.get(bot.gameId)!,
+            provider,
+            rpc,
+            scheduledAtMs,
+            systems,
+            tick,
+            toriiObserver,
+          });
+          actions.push(action);
+        }),
+      );
     }
 
     onTick?.(tick + 1, ticks);
   }
 
-  await Promise.all(botQueues);
+  await Promise.all(botQueues.values());
   actions.sort((left, right) => (left.actionIndex ?? 0) - (right.actionIndex ?? 0));
 
   return {
@@ -308,6 +408,28 @@ export async function runWorkload({
 
 export function resolveActionKind(tick: number): WorkloadActionKind {
   return ACTION_PATTERN[tick % ACTION_PATTERN.length]!;
+}
+
+export function resolveExplorerActionStaminaCost(
+  kind: "move" | "explore",
+  biome: BiomeType,
+  troopType: CairoTroopType,
+): number {
+  if (kind === "explore") return EXPLORE_STAMINA_COST;
+  if (biome === BiomeType.DeepOcean || biome === BiomeType.Ocean) return MOVE_STAMINA_COST - 10;
+  if (biome === BiomeType.Scorched) return MOVE_STAMINA_COST + 10;
+  if (troopType !== PALADIN_TROOP_TYPE) return MOVE_STAMINA_COST;
+  if (PALADIN_FAVORED_TRAVEL_BIOMES.has(biome)) {
+    return MOVE_STAMINA_COST - 10;
+  }
+  if (PALADIN_UNFAVORED_TRAVEL_BIOMES.has(biome)) {
+    return MOVE_STAMINA_COST + 10;
+  }
+  return MOVE_STAMINA_COST;
+}
+
+export function resolveWorkloadTicks(minutes: number, intervalSeconds: number): number {
+  return Math.ceil((minutes * 60) / intervalSeconds);
 }
 
 export function parseStructureIds(value: unknown): string[] {
@@ -379,7 +501,7 @@ export function prioritizeExplorer<T extends ExplorerPriority>(
   candidates: T[],
   kind: "move" | "explore",
 ): T | undefined {
-  return candidates.sort((left, right) => {
+  return [...candidates].sort((left, right) => {
     const frontierPriority = kind === "move" ? Number(left.atFrontier) - Number(right.atFrontier) : 0;
     return frontierPriority || left.lastUsedAt - right.lastUsedAt;
   })[0];
@@ -411,6 +533,7 @@ async function settleBot({
     account: harnessAccount.account,
     botId: harnessAccount.botId,
     calls,
+    gameId,
     kind: "settle",
     provider,
     stage: "setup",
@@ -443,6 +566,7 @@ async function provisionBot({
       entrypoint: "provision_realm",
       calldata: CallData.compile([gameId, structureId]),
     })),
+    gameId,
     kind: "provision",
     provider,
     stage: "setup",
@@ -481,6 +605,7 @@ async function createBotExplorers({
         calldata: CallData.compile([gameId, structureId, troopType, 0, EXPLORER_TROOP_AMOUNT, direction]),
       };
     }),
+    gameId,
     kind: "create-explorers",
     provider,
     stage: "setup",
@@ -494,6 +619,7 @@ async function runBotAction({
   chainTick,
   gameId,
   kind,
+  pathReservations,
   provider,
   rpc,
   scheduledAtMs,
@@ -506,6 +632,7 @@ async function runBotAction({
   chainTick: number;
   gameId: number;
   kind: WorkloadActionKind;
+  pathReservations: PathReservations;
   provider: RpcProvider;
   rpc: RpcMetrics;
   scheduledAtMs: number;
@@ -534,6 +661,7 @@ async function runBotAction({
       chainTick,
       gameId,
       kind,
+      pathReservations,
       provider,
       rpc,
       scheduledAtMs,
@@ -542,7 +670,7 @@ async function runBotAction({
       toriiObserver,
     });
   } catch (error) {
-    return driverFailure({ actionIndex, botId: bot.botId, error, kind, rpc, scheduledAtMs, tick });
+    return driverFailure({ actionIndex, botId: bot.botId, error, gameId, kind, rpc, scheduledAtMs, tick });
   }
 }
 
@@ -556,7 +684,7 @@ async function runProductionAction({
   systems,
   tick,
   toriiObserver,
-}: Omit<Parameters<typeof runBotAction>[0], "kind">): Promise<TrackedTransaction> {
+}: Omit<Parameters<typeof runBotAction>[0], "kind" | "pathReservations">): Promise<TrackedTransaction> {
   const structure = bot.structures[bot.nextProductionStructure % bot.structures.length]!;
   bot.nextProductionStructure += 1;
   const resourceBefore = await toriiObserver.readResource(gameId, structure.structureId);
@@ -570,6 +698,7 @@ async function runProductionAction({
       entrypoint: "burn_labor_for_resource_production",
       calldata: CallData.compile([gameId, structure.structureId, [1], [WOOD_RESOURCE_ID]]),
     },
+    gameId,
     kind: "produce",
     provider,
     rpc,
@@ -578,7 +707,10 @@ async function runProductionAction({
     tick,
     toriiObserver,
   });
-  if (transaction.outcome !== "completed") return transaction;
+  if (transaction.outcome !== "completed") {
+    transaction.failureClass = classifyWorkloadFailure(transaction.error);
+    return transaction;
+  }
 
   try {
     const resourceAfter = await toriiObserver.waitForResource(
@@ -596,6 +728,7 @@ async function runProductionAction({
   } catch (error) {
     transaction.outcome = "driver_failed";
     transaction.error = errorMessage(error);
+    transaction.failureClass = "chain_or_driver";
   }
   return transaction;
 }
@@ -606,6 +739,7 @@ async function runExplorerAction({
   chainTick,
   gameId,
   kind,
+  pathReservations,
   provider,
   rpc,
   scheduledAtMs,
@@ -613,21 +747,20 @@ async function runExplorerAction({
   tick,
   toriiObserver,
 }: Parameters<typeof runBotAction>[0] & { kind: "move" | "explore" }): Promise<TrackedTransaction> {
-  const selectedExplorer = selectExplorer(bot.explorers, kind, chainTick);
-  const { calls, direction } =
-    kind === "explore"
-      ? buildExploreCalls(selectedExplorer, bot.explorers, bot.structures, gameId, systems.troopMovement)
-      : buildMoveCalls(selectedExplorer, gameId, systems.troopMovement);
+  const plan = planExplorerAction(bot, kind, chainTick, gameId, systems.troopMovement, pathReservations);
+  const selectedExplorer = plan.explorer;
   const previousCoord = selectedExplorer.coord;
   const previousEventId = selectedExplorer.modelEventId;
   selectedExplorer.lastUsedAt = actionIndex;
+  const reservation = pathReservations.reserve(selectedExplorer, plan.target);
 
   const transaction = await trackTransaction({
     account: bot.account,
     actionIndex,
     botId: bot.botId,
-    calls,
+    calls: plan.calls,
     exploreRequested: kind === "explore",
+    gameId,
     kind,
     provider,
     rpc,
@@ -636,7 +769,11 @@ async function runExplorerAction({
     tick,
     toriiObserver,
   });
-  if (transaction.outcome !== "completed") return transaction;
+  if (transaction.outcome !== "completed") {
+    pathReservations.cancel(reservation);
+    transaction.failureClass = classifyWorkloadFailure(transaction.error);
+    return transaction;
+  }
 
   try {
     const updated = await toriiObserver.waitForExplorer(
@@ -645,29 +782,60 @@ async function runExplorerAction({
       previousEventId,
       MODEL_UPDATE_TIMEOUT_MS,
     );
-    applyExplorerUpdate(selectedExplorer, kind, direction, previousCoord, updated);
+    pathReservations.complete(reservation, { x: updated.x, y: updated.y });
+    applyExplorerUpdate(selectedExplorer, kind, plan.direction, previousCoord, updated);
   } catch (error) {
+    pathReservations.complete(reservation, plan.target);
     transaction.outcome = "driver_failed";
     transaction.error = errorMessage(error);
+    transaction.failureClass = "chain_or_driver";
   }
   return transaction;
 }
 
-function selectExplorer(explorers: ExplorerState[], kind: "move" | "explore", chainTick: number): ExplorerState {
-  const candidates = explorers.filter((explorer) => {
-    // Travel costs 20 stamina plus or minus a 10-point biome modifier, so both actions need a 30-point reserve.
-    if (estimatedStamina(explorer, chainTick) < MAX_ACTION_STAMINA_COST) return false;
-    if (kind === "explore") return explorerAtFrontier(explorer);
-    return explorer.pathDirections.length > 0;
-  });
-
-  // Return troops to the frontier before pulling another troop back. Without this priority, the five travel actions
-  // in each workload cycle eventually leave every explorer behind the frontier.
-  const selected = prioritizeExplorer(candidates, kind);
-  if (!selected) {
-    throw new Error(`No explorer can safely ${kind}; stamina or path invariant is exhausted`);
+function planExplorerAction(
+  bot: HarnessBot,
+  kind: "move" | "explore",
+  chainTick: number,
+  gameId: number,
+  troopMovementAddress: string,
+  pathReservations: PathReservations,
+): ExplorerActionPlan {
+  const routeReady = bot.explorers.filter((explorer) =>
+    kind === "explore" ? explorerAtFrontier(explorer) : explorer.pathDirections.length > 0,
+  );
+  const remaining = [...routeReady];
+  let minimumRequiredStamina = Number.POSITIVE_INFINITY;
+  while (remaining.length > 0) {
+    const explorer = prioritizeExplorer(remaining, kind)!;
+    remaining.splice(remaining.indexOf(explorer), 1);
+    const directions =
+      kind === "explore" ? chooseExploreDirections(explorer, bot.structures) : [chooseMoveDirection(explorer)];
+    for (const direction of directions) {
+      const target = neighbor(explorer.coord, direction);
+      if (!pathReservations.canReserve(explorer.explorerId, target)) continue;
+      const staminaCost = resolveExplorerActionStaminaCost(
+        kind,
+        Biome.getBiome(target.x, target.y),
+        explorer.troopType,
+      );
+      minimumRequiredStamina = Math.min(minimumRequiredStamina, staminaCost);
+      if (estimatedStamina(explorer, chainTick) < staminaCost) continue;
+      return {
+        calls: buildExplorerCalls(explorer.explorerId, direction, kind === "explore", gameId, troopMovementAddress),
+        direction,
+        explorer,
+        target,
+      };
+    }
   }
-  return selected;
+
+  if (Number.isFinite(minimumRequiredStamina)) {
+    throw new GameRuleLimitError(
+      `No explorer has enough route-adjusted stamina for ${kind}; minimum route cost is ${minimumRequiredStamina}`,
+    );
+  }
+  throw new HarnessPathingError(`No collision-free ${kind} route is available for bot ${bot.botId}`);
 }
 
 function chooseExploreDirections(explorer: ExplorerState, structures: StructureState[]): number[] {
@@ -697,37 +865,6 @@ function chooseMoveDirection(explorer: ExplorerState): number {
   const pathDirection = explorer.pathDirections.at(-1);
   if (pathDirection === undefined) throw new Error(`Explorer ${explorer.explorerId} has no discovered path to travel`);
   return explorerAtFrontier(explorer) ? oppositeDirection(pathDirection) : pathDirection;
-}
-
-function buildExploreCalls(
-  explorer: ExplorerState,
-  explorers: ExplorerState[],
-  structures: StructureState[],
-  gameId: number,
-  troopMovementAddress: string,
-): { calls: Call[]; direction: number } {
-  const direction = chooseExploreDirections(explorer, structures).find((candidate) => {
-    return !isKnownOccupied(neighbor(explorer.coord, candidate), explorer, explorers, structures);
-  });
-  if (direction === undefined) {
-    throw new Error(`Explorer ${explorer.explorerId} has no unoccupied exploration direction`);
-  }
-  return {
-    calls: buildExplorerCalls(explorer.explorerId, direction, true, gameId, troopMovementAddress),
-    direction,
-  };
-}
-
-function buildMoveCalls(
-  explorer: ExplorerState,
-  gameId: number,
-  troopMovementAddress: string,
-): { calls: Call[]; direction: number } {
-  const direction = chooseMoveDirection(explorer);
-  return {
-    calls: buildExplorerCalls(explorer.explorerId, direction, false, gameId, troopMovementAddress),
-    direction,
-  };
 }
 
 function buildExplorerCalls(
@@ -821,6 +958,7 @@ async function trackTransaction(options: TrackTransactionOptions): Promise<Track
     actionIndex: options.actionIndex,
     botId: options.botId,
     exploreRequested: options.exploreRequested,
+    gameId: options.gameId,
     kind: options.kind,
     outcome: "submit_failed",
     rpc: snapshotRpcMetrics(rpc),
@@ -1044,7 +1182,7 @@ async function readStartingTroopTypes(
   );
 }
 
-function buildExplorerState(structure: StructureState, rows: ExplorerRow[]): ExplorerState {
+function buildExplorerState(structure: StructureState, rows: ExplorerRow[], troopType: number): ExplorerState {
   const row = rows.find((candidate) => candidate.owner === structure.structureId);
   if (!row) throw new Error(`Explorer for structure ${structure.structureId} is not indexed`);
   return {
@@ -1059,7 +1197,13 @@ function buildExplorerState(structure: StructureState, rows: ExplorerRow[]): Exp
     stamina: row.stamina,
     staminaUpdatedTick: row.staminaUpdatedTick,
     structureId: structure.structureId,
+    troopType: parseCairoTroopType(troopType),
   };
+}
+
+function parseCairoTroopType(value: number): CairoTroopType {
+  if (value === 0 || value === 1 || value === 2) return value;
+  throw new Error(`Unknown Cairo troop type ${value}`);
 }
 
 function toExplorerRow(row: {
@@ -1094,6 +1238,7 @@ function driverFailure({
   actionIndex,
   botId,
   error,
+  gameId,
   kind,
   rpc,
   scheduledAtMs,
@@ -1102,6 +1247,7 @@ function driverFailure({
   actionIndex: number;
   botId: number;
   error: unknown;
+  gameId: number;
   kind: WorkloadActionKind;
   rpc: RpcMetrics;
   scheduledAtMs: number;
@@ -1112,6 +1258,8 @@ function driverFailure({
     actionIndex,
     botId,
     error: errorMessage(error),
+    failureClass: classifyWorkloadFailure(error),
+    gameId,
     kind,
     outcome: "driver_failed",
     rpc: snapshotRpcMetrics(rpc),
@@ -1121,6 +1269,34 @@ function driverFailure({
     submitStartedAt: toIso(now),
     tick,
   };
+}
+
+export function classifyWorkloadFailure(error: unknown): WorkloadFailureClass {
+  if (error instanceof GameRuleLimitError) return "game_rule_limit";
+  if (error instanceof HarnessPathingError) return "harness_pathing";
+  const message = errorMessage(error);
+  if (
+    /(?:insufficient|not enough|requires?).*stamina|no explorer has \d+ stamina|stamina.*(?:depleted|required)/i.test(
+      message,
+    ) ||
+    /(?:insufficient|not enough).*labor|labor.*(?:depleted|required)/i.test(message)
+  ) {
+    return "game_rule_limit";
+  }
+  if (/occupied|collision|no .*path|no .*route|unoccupied exploration direction/i.test(message)) {
+    return "harness_pathing";
+  }
+  return "chain_or_driver";
+}
+
+function createPathReservationsByGame(bots: readonly HarnessBot[]): Map<number, PathReservations> {
+  const botsByGame = new Map<number, HarnessBot[]>();
+  for (const bot of bots) {
+    const gameBots = botsByGame.get(bot.gameId) ?? [];
+    gameBots.push(bot);
+    botsByGame.set(bot.gameId, gameBots);
+  }
+  return new Map([...botsByGame].map(([gameId, gameBots]) => [gameId, new PathReservations(gameBots)]));
 }
 
 export function createRpcMetrics(): RpcMetrics {
@@ -1206,19 +1382,6 @@ function parseEntityId(value: unknown): string {
 
 function coordKey(coord: Coord): string {
   return `${coord.x}:${coord.y}`;
-}
-
-function isKnownOccupied(
-  coord: Coord,
-  movingExplorer: ExplorerState,
-  explorers: ExplorerState[],
-  structures: StructureState[],
-): boolean {
-  const occupiedByStructure = structures.some((structure) => coordKey(structure.coord) === coordKey(coord));
-  const occupiedByExplorer = explorers.some((explorer) => {
-    return explorer.explorerId !== movingExplorer.explorerId && coordKey(explorer.coord) === coordKey(coord);
-  });
-  return occupiedByStructure || occupiedByExplorer;
 }
 
 async function sleepUntil(timestampMs: number): Promise<void> {

@@ -13,21 +13,20 @@ latest_protocol_version: "0.14.2"
 # Pre-confirmed blocks give sub-second inclusion independently of this value.
 block_time: "2s"
 pending_block_update_time: "250ms"
-# Pre-confirmed state is persisted after each execution batch. Four bounds the work before that observation while a
-# block can still collect up to 12 transactions across batches.
+# Pre-confirmed state is persisted after each execution batch. Four bounds the work before that observation. The
+# block bouncer limits are deliberately above the N=8 offered load so the headroom run finds Madara's wall, not a lab
+# ceiling chosen in this file.
 execution_batch_size: 4
 bouncer_config:
   block_max_capacity:
-    sierra_gas: 5000000000
-    message_segment_length: 3700
-    n_events: 5000
-    state_diff_size: 4000
-    l1_gas: 2500000
-    # Keep the ceiling above the 96-bot offered load so the two-second block clock, not this cap, decides when a
-    # normal block closes. The upstream 600-tx ceiling admitted a 120-transaction game block that took 659 seconds.
-    n_txs: 24
-    proving_gas: 5000000000
-    receipt_l2_gas: 5800000000
+    sierra_gas: 100000000000
+    message_segment_length: 37000
+    n_events: 50000
+    state_diff_size: 40000
+    l1_gas: 25000000
+    n_txs: 256
+    proving_gas: 100000000000
+    receipt_l2_gas: 100000000000
   builtin_weights:
     gas_costs:
       pedersen: 3000

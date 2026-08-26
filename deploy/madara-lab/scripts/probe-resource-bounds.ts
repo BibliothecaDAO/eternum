@@ -4,11 +4,7 @@ import path from "node:path";
 import { CallData, RpcProvider, type Account, type Call, type ResourceBoundsBN } from "starknet";
 import { resolveGameTransactionResourceBounds } from "../../../packages/core/src/account/transaction-resource-bounds";
 import { createHarnessAccounts } from "../harness/account-factory";
-import {
-  prepareHarnessBots,
-  type HarnessSystemAddresses,
-  type TrackedTransaction,
-} from "../harness/driver";
+import { prepareHarnessBots, type HarnessSystemAddresses, type TrackedTransaction } from "../harness/driver";
 
 interface GameplayContractsArtifact {
   bindingAuthorityAddress: string;
@@ -65,6 +61,7 @@ async function prepareProbeBot(gameId: number) {
     authority: gameplayContracts.bindingAuthorityAddress,
     classHash: gameplayContracts.playerAccountClassHash,
     count: 1,
+    gameId,
     provider,
   });
   if (!account) throw new Error("Gameplay account creation returned no account");

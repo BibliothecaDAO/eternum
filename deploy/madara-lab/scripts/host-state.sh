@@ -49,6 +49,10 @@ jq -n \
   --arg image "${image:-}" --arg native "${native:-}" --arg native_classes "${native_classes:-}" \
   --arg block_time "$(cfg block_time)" --arg pending "$(cfg pending_block_update_time)" \
   --arg batch "$(cfg execution_batch_size)" --arg n_txs "$(cfg n_txs)" --arg sierra_gas "$(cfg sierra_gas)" \
+  --arg message_segments "$(cfg message_segment_length)" --arg events "$(cfg n_events)" \
+  --arg state_diff "$(cfg state_diff_size)" --arg l1_gas "$(cfg l1_gas)" \
+  --arg proving_gas "$(cfg proving_gas)" --arg receipt_l2_gas "$(cfg receipt_l2_gas)" \
+  --arg mempool_max "$(cfg mempool_max_transactions)" \
   '{
     host: {
       cpu: $cpu_model, threads: ($cpu_threads|tonumber), governor: (if $governor=="" then null else $governor end),
@@ -70,6 +74,13 @@ jq -n \
       blockTime: $block_time, pendingBlockUpdateTime: $pending,
       executionBatchSize: (if $batch=="" then null else ($batch|tonumber) end),
       nTxsPerBlock: (if $n_txs=="" then null else ($n_txs|tonumber) end),
-      sierraGasPerBlock: (if $sierra_gas=="" then null else ($sierra_gas|tonumber) end)
+      sierraGasPerBlock: (if $sierra_gas=="" then null else ($sierra_gas|tonumber) end),
+      messageSegmentsPerBlock: (if $message_segments=="" then null else ($message_segments|tonumber) end),
+      eventsPerBlock: (if $events=="" then null else ($events|tonumber) end),
+      stateDiffSizePerBlock: (if $state_diff=="" then null else ($state_diff|tonumber) end),
+      l1GasPerBlock: (if $l1_gas=="" then null else ($l1_gas|tonumber) end),
+      provingGasPerBlock: (if $proving_gas=="" then null else ($proving_gas|tonumber) end),
+      receiptL2GasPerBlock: (if $receipt_l2_gas=="" then null else ($receipt_l2_gas|tonumber) end),
+      mempoolMaxTransactions: (if $mempool_max=="" then null else ($mempool_max|tonumber) end)
     }
   }'

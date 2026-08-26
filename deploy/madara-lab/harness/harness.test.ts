@@ -1,8 +1,10 @@
 import { describe, expect, it } from "bun:test";
+import { BiomeType } from "../../../packages/types/src/constants/hex";
 import { mapWithConcurrency } from "./account-factory";
 import {
   RECEIPT_POLL_INTERVAL_MS,
   chooseOutwardDirection,
+  classifyWorkloadFailure,
   createRpcMetrics,
   millisecondsUntilNextArmyTick,
   neighbor,
@@ -10,6 +12,8 @@ import {
   parseStructureIds,
   prioritizeExplorer,
   resolveActionKind,
+  resolveExplorerActionStaminaCost,
+  resolveWorkloadTicks,
 } from "./driver";
 import { percentile, summarizeCompletedMix, summarizeRequestedMix, summarizeRpcMetrics } from "./report";
 import { parseHarnessArgs } from "./run";
@@ -78,6 +82,29 @@ describe("Madara harness workload", () => {
       if (kind === "move") selected!.atFrontier = !selected!.atFrontier;
     }
   });
+
+  it("separates game-rule exhaustion from harness pathing", () => {
+    expect(classifyWorkloadFailure(new Error("No explorer has 30 stamina for explore"))).toBe("game_rule_limit");
+    expect(classifyWorkloadFailure(new Error("one of the tiles in path is occupied"))).toBe("harness_pathing");
+    expect(classifyWorkloadFailure(new Error("indexed production event without a labor or wood output delta"))).toBe(
+      "chain_or_driver",
+    );
+    expect(classifyWorkloadFailure(new Error("Torii query timed out"))).toBe("chain_or_driver");
+  });
+
+  it("uses the game-configured stamina cost for each explorer action", () => {
+    expect(resolveExplorerActionStaminaCost("explore", BiomeType.Scorched, 0)).toBe(30);
+    expect(resolveExplorerActionStaminaCost("move", BiomeType.DeepOcean, 0)).toBe(10);
+    expect(resolveExplorerActionStaminaCost("move", BiomeType.Beach, 0)).toBe(20);
+    expect(resolveExplorerActionStaminaCost("move", BiomeType.Scorched, 0)).toBe(30);
+    expect(resolveExplorerActionStaminaCost("move", BiomeType.Taiga, 1)).toBe(30);
+    expect(resolveExplorerActionStaminaCost("move", BiomeType.Tundra, 1)).toBe(10);
+  });
+
+  it("keeps every cadence boundary inside a probe window", () => {
+    expect(resolveWorkloadTicks(1, 8)).toBe(8);
+    expect(resolveWorkloadTicks(10, 15)).toBe(40);
+  });
 });
 
 describe("Madara harness reporting", () => {
@@ -105,7 +132,7 @@ describe("Madara harness reporting", () => {
   });
 
   it("parses block statistics as structured nearest-rank evidence", async () => {
-    const rows = [blockRow(10, 1, 10), blockRow(11, 3, 30)];
+    const rows = [blockRow(10, 1, 10), mempoolRow(7, 5), blockRow(11, 3, 30), mempoolRow(2, 1)];
     const process = Bun.spawn(["python3", `${import.meta.dir}/../scripts/block-stats.py`, "--json"], {
       stdin: new Blob([rows.map((row) => JSON.stringify(row)).join("\n")]),
       stdout: "pipe",
@@ -117,6 +144,15 @@ describe("Madara harness reporting", () => {
       transactions: { executed: 4, reverted: 0, rejected: 0 },
       transactionsPerBusyBlock: { p50: 1, max: 3 },
       blockProductionMs: { p50: 10, p95: 30, max: 30 },
+      mempool: { samples: 2, maxTransactions: 7, maxReadyTransactions: 5, lastObservedTransactions: 2 },
+      sierraGasPerBusyBlock: { p50: 100, p95: 300, max: 300 },
+      slowestBlock: {
+        blockNumber: 11,
+        blockProductionMs: 30,
+        transactions: 3,
+        sierraGas: 300,
+        mempoolMaxTransactions: 7,
+      },
     });
   });
 });
@@ -217,6 +253,13 @@ describe("Madara harness CLI and concurrency", () => {
     ).toMatchObject({ bots: 4, minutes: 0.5, intervalSeconds: 5, gameId: 9, gameName: "game-9" });
   });
 
+  it("parameterizes concurrent games in one process", () => {
+    expect(parseHarnessArgs(["--games", "4"])).toMatchObject({ bots: 96, games: 4, intervalSeconds: 15 });
+    expect(() => parseHarnessArgs(["--games", "2", "--game-id", "9"])).toThrow(
+      "--game-id can only be used with --games 1",
+    );
+  });
+
   it("preserves input order while bounding concurrent work", async () => {
     let active = 0;
     let maximumActive = 0;
@@ -258,14 +301,23 @@ function blockRow(blockNumber: number, transactions: number, blockProductionMs: 
     message: "close_block_complete",
     block_number: blockNumber,
     txs_executed: transactions,
+    txs_added_to_block: transactions,
     txs_reverted: 0,
     txs_rejected: 0,
     classes_declared: 0,
     deployed_contracts: 0,
     l2_gas_consumed: 100,
+    bouncer_sierra_gas: transactions * 100,
+    batches_executed: 1,
     block_production_ms: blockProductionMs,
     close_block_total_ms: blockProductionMs + 1,
     merklization_ms: 2,
     db_write_ms: 1,
+  };
+}
+
+function mempoolRow(transactions: number, ready: number) {
+  return {
+    message: `Inserted 1 transaction to the mempool [${transactions}/10000 transaction(s), ${transactions} account(s), ${ready} ready]`,
   };
 }

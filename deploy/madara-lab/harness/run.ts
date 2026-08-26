@@ -11,6 +11,7 @@ interface HarnessCliOptions {
   bots: number;
   gameId?: number;
   gameName?: string;
+  games: number;
   intervalSeconds: number;
   minutes: number;
   rpcUrl: string;
@@ -26,6 +27,11 @@ interface GameplayContractsArtifact {
 
 interface WorldManifest {
   contracts: Array<{ address: string; tag: string }>;
+}
+
+interface HarnessGame {
+  gameId: number;
+  gameName: string;
 }
 
 const REPOSITORY_ROOT = path.resolve(import.meta.dir, "../../..");
@@ -49,8 +55,10 @@ export function parseHarnessArgs(args: string[]): HarnessCliOptions {
   const intervalSeconds = positiveNumber(values["interval-seconds"] ?? "15", "interval-seconds");
   const setupConcurrency = positiveInteger(values["setup-concurrency"] ?? "6", "setup-concurrency");
   const gameId = values["game-id"] === undefined ? undefined : positiveInteger(values["game-id"], "game-id");
+  const games = positiveInteger(values.games ?? "1", "games");
 
   if (bots > 96) throw new Error(`The Madara Blitz preset supports at most 96 bots, received ${bots}`);
+  if (gameId !== undefined && games !== 1) throw new Error("--game-id can only be used with --games 1");
   if (gameId !== undefined && !values["game-name"]) {
     values["game-name"] = `game-${gameId}`;
   }
@@ -59,6 +67,7 @@ export function parseHarnessArgs(args: string[]): HarnessCliOptions {
     bots,
     gameId,
     gameName: values["game-name"],
+    games,
     intervalSeconds,
     minutes,
     rpcUrl: values["rpc-url"] ?? process.env.RPC_URL ?? DEFAULT_RPC_URL,
@@ -78,34 +87,43 @@ async function main(): Promise<void> {
     readJson<WorldManifest>(path.join(REPOSITORY_ROOT, "contracts/game/manifest_madara.json")),
   ]);
   const systems = resolveSystemAddresses(manifest);
-  const game = await resolveHarnessGame(options);
+  const games = await resolveHarnessGames(options);
   const setupTransactions: TrackedTransaction[] = [];
+  const gameRuns: Array<{
+    accounts: Awaited<ReturnType<typeof createHarnessAccounts>>;
+    bots: Awaited<ReturnType<typeof prepareHarnessBots>>;
+    game: HarnessGame;
+  }> = [];
 
-  console.log(`Deploying ${options.bots} guest gameplay accounts for game ${game.gameId} (${game.gameName})`);
-  const accounts = await createHarnessAccounts({
-    authority: gameplayContracts.bindingAuthorityAddress,
-    classHash: gameplayContracts.playerAccountClassHash,
-    concurrency: options.setupConcurrency,
-    count: options.bots,
-    provider,
-  });
+  for (const [gameIndex, game] of games.entries()) {
+    console.log(`Deploying ${options.bots} guest gameplay accounts for game ${game.gameId} (${game.gameName})`);
+    const accounts = await createHarnessAccounts({
+      authority: gameplayContracts.bindingAuthorityAddress,
+      botIdOffset: gameIndex * options.bots,
+      classHash: gameplayContracts.playerAccountClassHash,
+      concurrency: options.setupConcurrency,
+      count: options.bots,
+      gameId: game.gameId,
+      provider,
+    });
 
-  console.log("Settling, provisioning, and creating three explorers per bot");
-  const bots = await prepareHarnessBots({
-    accounts,
-    gameId: game.gameId,
-    provider,
-    setupConcurrency: options.setupConcurrency,
-    setupTransactions,
-    systems,
-    toriiSqlUrl: options.toriiSqlUrl,
-  });
+    console.log(`Settling, provisioning, and creating three explorers per bot for game ${game.gameId}`);
+    const bots = await prepareHarnessBots({
+      accounts,
+      gameId: game.gameId,
+      provider,
+      setupConcurrency: options.setupConcurrency,
+      setupTransactions,
+      systems,
+      toriiSqlUrl: options.toriiSqlUrl,
+    });
+    gameRuns.push({ accounts, bots, game });
+  }
 
   const evidenceBefore = await collectHarnessEvidenceBeforeRun();
   console.log("Waiting for all explorers to reach full stamina, then starting the measured workload");
   const workload = await runWorkload({
-    bots,
-    gameId: game.gameId,
+    bots: gameRuns.flatMap(({ bots }) => bots),
     intervalSeconds: options.intervalSeconds,
     minutes: options.minutes,
     onTick: (completed, total) => {
@@ -121,12 +139,11 @@ async function main(): Promise<void> {
   const evidence = await finishHarnessEvidence(evidenceBefore, workload.startedAt, workload.endedAt);
   const minimumCompletedActions = resolveMinimumCompletedActions(options, workload.plannedActions);
   const report = await writeHarnessReport({
-    accounts,
-    botCount: options.bots,
+    accounts: gameRuns.flatMap(({ accounts }) => accounts),
+    botCount: options.bots * options.games,
     chainId,
     evidence,
-    gameId: game.gameId,
-    gameName: game.gameName,
+    games: games.map((game) => ({ ...game, botCount: options.bots })),
     intervalSeconds: options.intervalSeconds,
     minimumCompletedActions,
     minutes: options.minutes,
@@ -140,25 +157,29 @@ async function main(): Promise<void> {
   if (!report.passed) process.exitCode = 1;
 }
 
-async function resolveHarnessGame(options: HarnessCliOptions): Promise<{ gameId: number; gameName: string }> {
+async function resolveHarnessGames(options: HarnessCliOptions): Promise<HarnessGame[]> {
   if (options.gameId !== undefined) {
-    return { gameId: options.gameId, gameName: options.gameName! };
+    return [{ gameId: options.gameId, gameName: options.gameName! }];
   }
 
-  const gameName = options.gameName ?? `lab-${Date.now().toString(36)}`;
-  const startTime = Math.floor(Date.now() / 1_000) + 60;
-  const summary = await launchGame({
-    accountAddress: process.env.DOJO_ACCOUNT_ADDRESS ?? MADARA_ADMIN_ADDRESS,
-    devModeOn: true,
-    durationSeconds: Math.ceil(options.minutes * 60) + 3_600,
-    environmentId: "madara.blitz",
-    gameName,
-    privateKey: process.env.DOJO_PRIVATE_KEY ?? MADARA_ADMIN_PRIVATE_KEY,
-    rpcUrl: options.rpcUrl,
-    startTime,
-  });
-  if (!summary.gameId) throw new Error(`Registrar did not return a game id for ${gameName}`);
-  return { gameId: summary.gameId, gameName };
+  const baseName = options.gameName ?? `lab-${Date.now().toString(36)}`;
+  const games: HarnessGame[] = [];
+  for (let index = 0; index < options.games; index += 1) {
+    const gameName = options.games === 1 ? baseName : `${baseName}-g${index + 1}`;
+    const summary = await launchGame({
+      accountAddress: process.env.DOJO_ACCOUNT_ADDRESS ?? MADARA_ADMIN_ADDRESS,
+      devModeOn: true,
+      durationSeconds: Math.ceil(options.minutes * 60) + 3_600,
+      environmentId: "madara.blitz",
+      gameName,
+      privateKey: process.env.DOJO_PRIVATE_KEY ?? MADARA_ADMIN_PRIVATE_KEY,
+      rpcUrl: options.rpcUrl,
+      startTime: Math.floor(Date.now() / 1_000) + 60,
+    });
+    if (!summary.gameId) throw new Error(`Registrar did not return a game id for ${gameName}`);
+    games.push({ gameId: summary.gameId, gameName });
+  }
+  return games;
 }
 
 function resolveSystemAddresses(manifest: WorldManifest): HarnessSystemAddresses {
@@ -179,7 +200,8 @@ function requireContract(manifest: WorldManifest, tag: string): string {
 }
 
 function resolveMinimumCompletedActions(options: HarnessCliOptions, plannedActions: number): number {
-  const isAcceptanceRun = options.bots === 96 && options.minutes === 10 && options.intervalSeconds === 15;
+  const isAcceptanceRun =
+    options.games === 1 && options.bots === 96 && options.minutes === 10 && options.intervalSeconds === 15;
   return isAcceptanceRun ? 3_500 : plannedActions;
 }
 
@@ -222,6 +244,7 @@ function printUsage(): void {
 Usage: bun deploy/madara-lab/harness/run.ts [options]
 
   --bots <count>                 default: 96, maximum: 96
+  --games <count>                default: 1; runs all games concurrently in this process
   --minutes <minutes>            default: 10
   --interval-seconds <seconds>   default: 15
   --setup-concurrency <count>    default: 6

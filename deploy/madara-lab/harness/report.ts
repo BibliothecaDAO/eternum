@@ -17,7 +17,29 @@ interface BlockStats {
   closeBlockMs: MetricSummary;
   dbWriteMs: { max: number | null };
   merklizationMs: { max: number | null };
+  mempool: {
+    capacity: number | null;
+    lastObservedReadyTransactions: number | null;
+    lastObservedTransactions: number | null;
+    maxReadyTransactions: number | null;
+    maxTransactions: number | null;
+    samples: number;
+  };
+  sierraGasPerBusyBlock: MetricSummary;
+  slowestBlock: {
+    batches: number | null;
+    blockNumber: number;
+    blockProductionMs: number;
+    closeBlockMs: number;
+    dbWriteMs: number;
+    mempoolMaxReadyTransactions: number | null;
+    mempoolMaxTransactions: number | null;
+    merklizationMs: number;
+    sierraGas: number | null;
+    transactions: number;
+  } | null;
   transactions: {
+    addedToBlock: number;
     classesDeclared: number;
     contractsDeployed: number;
     executed: number;
@@ -52,8 +74,7 @@ export interface HarnessReportInput {
   botCount: number;
   chainId: string;
   evidence: HarnessEvidence;
-  gameId: number;
-  gameName: string;
+  games: Array<{ botCount: number; gameId: number; gameName: string }>;
   intervalSeconds: number;
   minimumCompletedActions: number;
   minutes: number;
@@ -136,6 +157,7 @@ function analyzeHarnessResult(input: HarnessReportInput) {
   const percentiles = summarizePercentiles(completedActions);
   const requestedMix = summarizeRequestedMix(actions);
   const actualMix = summarizeCompletedMix(actions);
+  const failureClasses = summarizeFailureClasses(failedActions);
   const rpc = summarizeRpcLoad(input.setupTransactions, actions, input.workload.overheadRpc);
 
   const checks = {
@@ -155,6 +177,7 @@ function analyzeHarnessResult(input: HarnessReportInput) {
     checks,
     completedActions,
     failedActions,
+    failureClasses,
     indexingLoss,
     passed: Object.values(checks).every(Boolean),
     percentiles,
@@ -172,7 +195,7 @@ function buildHarnessManifest(
   createdAt: string,
 ) {
   return {
-    schemaVersion: 2,
+    schemaVersion: 3,
     runId,
     createdAt,
     passed: analysis.passed,
@@ -186,7 +209,11 @@ function buildHarnessManifest(
       gitRevision: input.evidence.gitRevision,
       gitDirty: input.evidence.gitDirty,
     },
-    game: { gameId: input.gameId, gameName: input.gameName },
+    game: {
+      count: input.games.length,
+      executionModel: "single_process",
+      instances: input.games,
+    },
     workload: {
       bots: input.botCount,
       minutes: input.minutes,
@@ -199,6 +226,7 @@ function buildHarnessManifest(
       minimumCompletedActions: input.minimumCompletedActions,
       completedActions: analysis.completedActions.length,
       failedActions: analysis.failedActions.length,
+      failureClasses: analysis.failureClasses,
       reverts: analysis.reverts.length,
       indexingLoss: analysis.indexingLoss.length,
       warmupMs: input.workload.warmupMs,
@@ -209,11 +237,19 @@ function buildHarnessManifest(
         scope: "estimateInvokeFee, getBlock, and getTransactionStatus calls made by the harness driver",
         ...analysis.rpc,
       },
+      perGame: input.games.map((game) => summarizeGameWorkload(game, analysis.actions)),
       actions: analysis.actions,
     },
     setup: {
-      deployedAccounts: input.accounts.map(({ address, botId, deployedInMs }) => ({ address, botId, deployedInMs })),
-      transactions: [...input.setupTransactions].sort((left, right) => left.botId - right.botId),
+      deployedAccounts: input.accounts.map(({ address, botId, deployedInMs, gameId }) => ({
+        address,
+        botId,
+        deployedInMs,
+        gameId,
+      })),
+      transactions: [...input.setupTransactions].sort(
+        (left, right) => left.gameId - right.gameId || left.botId - right.botId,
+      ),
       failures: analysis.setupFailures.length,
     },
     thresholds: {
@@ -232,6 +268,30 @@ function buildHarnessManifest(
       blockStats: input.evidence.blockStats,
     },
   };
+}
+
+function summarizeGameWorkload(game: HarnessReportInput["games"][number], actions: readonly TrackedTransaction[]) {
+  const gameActions = actions.filter((action) => action.gameId === game.gameId);
+  const completed = gameActions.filter((action) => action.outcome === "completed");
+  const failed = gameActions.filter((action) => action.outcome !== "completed");
+  return {
+    ...game,
+    plannedActions: gameActions.length,
+    completedActions: completed.length,
+    failedActions: failed.length,
+    failureClasses: summarizeFailureClasses(failed),
+    percentiles: summarizePercentiles(completed),
+  };
+}
+
+function summarizeFailureClasses(actions: readonly TrackedTransaction[]) {
+  const counts = { gameRuleLimit: 0, harnessPathing: 0, chainOrDriver: 0 };
+  for (const action of actions) {
+    if (action.failureClass === "game_rule_limit") counts.gameRuleLimit += 1;
+    else if (action.failureClass === "harness_pathing") counts.harnessPathing += 1;
+    else counts.chainOrDriver += 1;
+  }
+  return counts;
 }
 
 export function percentile(values: readonly number[], percentileValue: number): number | null {

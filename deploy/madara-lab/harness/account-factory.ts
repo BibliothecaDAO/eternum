@@ -6,6 +6,7 @@ export interface HarnessAccount {
   address: string;
   botId: number;
   deployedInMs: number;
+  gameId: number;
   privateKey: string;
   publicKey: string;
 }
@@ -15,6 +16,8 @@ interface CreateHarnessAccountsOptions {
   classHash: string;
   concurrency?: number;
   count: number;
+  gameId: number;
+  botIdOffset?: number;
   provider: RpcProvider;
 }
 
@@ -25,9 +28,11 @@ export async function createHarnessAccounts({
   classHash,
   concurrency = DEFAULT_DEPLOY_CONCURRENCY,
   count,
+  gameId,
+  botIdOffset = 0,
   provider,
 }: CreateHarnessAccountsOptions): Promise<HarnessAccount[]> {
-  const botIds = Array.from({ length: count }, (_, botId) => botId);
+  const botIds = Array.from({ length: count }, (_, botId) => botId + botIdOffset);
 
   return mapWithConcurrency(botIds, concurrency, async (botId) => {
     const { privateKey, publicKey } = createHarnessKey();
@@ -48,6 +53,7 @@ export async function createHarnessAccounts({
         address: account.address,
         botId,
         deployedInMs: elapsedMs(startedAt),
+        gameId,
         privateKey,
         publicKey,
       };
