@@ -44,7 +44,6 @@
     "@realms-world/chain": "workspace:*",
     "@realms-world/db": "workspace:*",
     "@realms-world/identity": "workspace:*",
-    "@realms-world/siws": "^0.0.2",
     "@reown/appkit": "^1.8.18",
     "@reown/appkit-adapter-wagmi": "^1.8.18",
     "@snapshot-labs/pineapple": "^1.2.1",

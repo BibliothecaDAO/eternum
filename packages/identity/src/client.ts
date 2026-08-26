@@ -1,6 +1,5 @@
 import { resolveEndpoint } from "@realms-world/chain";
-import type { SiwsTypedData } from "@realms-world/siws";
-
+import type { SiwsTypedData } from "./siws";
 import { buildSiwsMessage } from "./siws";
 import type { IdentityChainId, Session } from "./types";
 

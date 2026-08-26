@@ -22,8 +22,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@realms-world/chain": "workspace:*",
-    "@realms-world/siws": "^0.0.2"
+    "@realms-world/chain": "workspace:*"
   },
   "devDependencies": {
     "tsup": "^8.0.2",

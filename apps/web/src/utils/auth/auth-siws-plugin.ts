@@ -7,7 +7,7 @@ import { z } from "zod";
 import { and, eq, gt, verification as verificationTable } from "@realms-world/db";
 import { db } from "@realms-world/db/client";
 import { resolveEndpoint } from "@realms-world/chain";
-import { SiwsTypedData } from "@realms-world/siws";
+import { parseSiwsTypedData } from "@realms-world/identity";
 import { RpcProvider, verifyMessageInStarknet } from "starknet";
 
 import { authorizeSiwsNonce, SiwsVerificationError } from "./siws-verification";
@@ -113,7 +113,7 @@ export const siws = (options: SIWSPluginOptions) =>
         async (ctx) => {
           const { message, signature, address } = ctx.body;
 
-          const siwsMessage = SiwsTypedData.fromJson(message);
+          const siwsMessage = parseSiwsTypedData(message);
           try {
             // Find stored nonce to check it's validity
             const verification = await ctx.context.internalAdapter.findVerificationValue(
