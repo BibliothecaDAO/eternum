@@ -207,6 +207,7 @@ function createFogMaskTexture(data: Uint8Array, width: number, height: number): 
   mask.magFilter = LinearFilter;
   mask.wrapS = ClampToEdgeWrapping;
   mask.wrapT = ClampToEdgeWrapping;
+  mask.flipY = true;
   mask.generateMipmaps = false;
   mask.needsUpdate = true;
   return mask;

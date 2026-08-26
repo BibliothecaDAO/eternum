@@ -1,4 +1,4 @@
-import { DataTexture, Mesh } from "three";
+import { BufferAttribute, DataTexture, Mesh, Vector3 } from "three";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { TERRAIN_FOG_CELL_CAPACITY, TERRAIN_FOG_REVEAL_DURATION_SECONDS, TerrainFogField } from "./terrain-fog-field";
@@ -25,6 +25,20 @@ describe("TerrainFogField", () => {
     expect(meshes[0]).toMatchObject({ frustumCulled: false, renderOrder: 10_000, visible: true });
     expect(meshes[0].material).toMatchObject({ depthTest: false, depthWrite: false, transparent: true });
     expect(meshes[0].raycast.name).toBe("disableFogRaycast");
+    fog.dispose();
+  });
+
+  it("registers the mask's minimum-z source row to the fog sheet's minimum-z world edge", () => {
+    const fog = new TerrainFogField();
+    fog.update([instance(0, 0, false), instance(0, 4, false)]);
+
+    const mesh = fog.object3d.children[0] as Mesh;
+    const texture = (fog as unknown as { maskTexture: DataTexture }).maskTexture;
+    const sourceMinimumZUv = texture.flipY ? 1 : 0;
+    const sourceMinimumZWorld = resolveWorldPositionAtUvY(mesh, sourceMinimumZUv);
+    const sheetMinimumZ = mesh.position.z - mesh.scale.z / 2;
+
+    expect(sourceMinimumZWorld.z).toBeCloseTo(sheetMinimumZ, 6);
     fog.dispose();
   });
 
@@ -86,4 +100,13 @@ function instance(col: number, row: number, frontier: boolean): TerrainShroudIns
     worldY: 0.1,
     worldZ: row * 1.5,
   };
+}
+
+function resolveWorldPositionAtUvY(mesh: Mesh, uvY: number): Vector3 {
+  mesh.updateMatrixWorld(true);
+  const positions = mesh.geometry.getAttribute("position") as BufferAttribute;
+  const uvs = mesh.geometry.getAttribute("uv") as BufferAttribute;
+  const vertexIndex = Array.from({ length: uvs.count }, (_, index) => index).find((index) => uvs.getY(index) === uvY);
+  if (vertexIndex === undefined) throw new Error(`Fog sheet did not contain a vertex at UV y=${uvY}`);
+  return new Vector3().fromBufferAttribute(positions, vertexIndex).applyMatrix4(mesh.matrixWorld);
 }
