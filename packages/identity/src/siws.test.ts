@@ -17,6 +17,69 @@ describe("siws typed data", () => {
     expect(message.types).toEqual(SIWS_TYPES);
     expect(message.domain).toEqual({ name: "realms.test", version: "0.0.1", chainId: "SN_MAIN", revision: "1" });
     for (const member of message.types.StarknetDomain) expect(member.type).toBe("shortstring");
+    expect(JSON.stringify(message, null, 2)).toBe(`{
+  "types": {
+    "StarknetDomain": [
+      {
+        "name": "name",
+        "type": "shortstring"
+      },
+      {
+        "name": "version",
+        "type": "shortstring"
+      },
+      {
+        "name": "chainId",
+        "type": "shortstring"
+      },
+      {
+        "name": "revision",
+        "type": "shortstring"
+      }
+    ],
+    "Message": [
+      {
+        "name": "address",
+        "type": "ContractAddress"
+      },
+      {
+        "name": "statement",
+        "type": "string"
+      },
+      {
+        "name": "uri",
+        "type": "string"
+      },
+      {
+        "name": "nonce",
+        "type": "string"
+      },
+      {
+        "name": "issuedAt",
+        "type": "shortstring"
+      },
+      {
+        "name": "version",
+        "type": "shortstring"
+      }
+    ]
+  },
+  "primaryType": "Message",
+  "domain": {
+    "name": "realms.test",
+    "version": "0.0.1",
+    "chainId": "SN_MAIN",
+    "revision": "1"
+  },
+  "message": {
+    "address": "0x0123",
+    "statement": "Login to Realms.World with your Starknet wallet",
+    "uri": "https://realms.test",
+    "nonce": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "issuedAt": "2026-08-26T12:00:00.000Z",
+    "version": "0.0.5"
+  }
+}`);
   });
 
   it("round-trips through the server parser", () => {

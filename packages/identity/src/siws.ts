@@ -48,8 +48,18 @@ export interface SiwsMessageFields {
   version: string;
 }
 
+interface SiwsTypeMember {
+  name: string;
+  type: string;
+}
+
+interface SiwsTypes {
+  StarknetDomain: SiwsTypeMember[];
+  Message: SiwsTypeMember[];
+}
+
 export interface SiwsTypedData {
-  types: typeof SIWS_TYPES;
+  types: SiwsTypes;
   primaryType: "Message";
   domain: SiwsDomain;
   message: SiwsMessageFields;
@@ -75,7 +85,7 @@ export const buildSiwsMessage = ({
   issuedAt = new Date().toISOString(),
 }: BuildSiwsMessageOptions): SiwsTypedData => {
   const typedData: SiwsTypedData = {
-    types: SIWS_TYPES,
+    types: createSiwsTypes(),
     primaryType: "Message",
     domain: { name: domain, version: SIWS_DOMAIN_VERSION, chainId, revision: "1" },
     message: { address, statement, uri, nonce, issuedAt, version: SIWS_MESSAGE_VERSION },
@@ -83,6 +93,13 @@ export const buildSiwsMessage = ({
   assertSiwsTypedData(typedData);
   return typedData;
 };
+
+function createSiwsTypes(): SiwsTypes {
+  return {
+    StarknetDomain: SIWS_TYPES.StarknetDomain.map((member) => ({ ...member })),
+    Message: SIWS_TYPES.Message.map((member) => ({ ...member })),
+  };
+}
 
 /** Parses and strictly validates a serialized SIWS message; throws on any deviation. */
 export const parseSiwsTypedData = (json: string): SiwsTypedData => {
