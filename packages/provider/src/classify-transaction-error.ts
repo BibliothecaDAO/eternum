@@ -311,7 +311,7 @@ export const extractErrorMessage = (error: unknown, fallback = "Unknown error"):
 export const formatErrorForConsole = (error: unknown, fallback = "Unknown error"): string =>
   extractErrorMessage(error, fallback).replace(/\s+/g, " ").trim();
 
-export type TransactionErrorKind = "user_cancelled" | "reverted" | "submit_failed" | "unknown";
+export type TransactionErrorKind = "resource_bounds" | "user_cancelled" | "reverted" | "submit_failed" | "unknown";
 
 export interface ClassifiedTransactionError {
   kind: TransactionErrorKind;
@@ -330,6 +330,16 @@ const WALLET_REJECTION_PATTERNS = [
   /transaction rejected/i,
   /user (cancelled|canceled|closed|denied|rejected)/i,
   /wallet.*(cancelled|canceled|denied|rejected)/i,
+];
+
+const RESOURCE_BOUNDS_PATTERNS = [
+  /out[- ]of[- ](?:gas|resources)/i,
+  /resource[-_ ]bounds?/i,
+  /(?:gas|resource)[-_ ]bounds?[-_ ](?:exceeded|overflow)/i,
+  /insufficient max (?:amount|fee|gas)/i,
+  /max fee/i,
+  /fee too low/i,
+  /insufficient fee/i,
 ];
 
 const REVERT_MARKER_PATTERNS = [
@@ -368,11 +378,14 @@ const buildSearchableErrorText = (error: unknown): string => {
 /**
  * Decide what a transaction failure means for the player.
  *
- * Decision order: wallet-rejection string markers → revert string markers →
- * submit-failure string markers → unknown.
+ * Decision order: resource-bound failures → wallet-rejection string markers →
+ * revert string markers → submit-failure string markers → unknown.
  */
 export const classifyTransactionError = (error: unknown): ClassifiedTransactionError => {
   const searchableText = buildSearchableErrorText(error);
+  if (RESOURCE_BOUNDS_PATTERNS.some((pattern) => pattern.test(searchableText))) {
+    return { kind: "resource_bounds", reason: asClassifiedReason(error) };
+  }
   if (WALLET_REJECTION_PATTERNS.some((pattern) => pattern.test(searchableText))) {
     return { kind: "user_cancelled" };
   }

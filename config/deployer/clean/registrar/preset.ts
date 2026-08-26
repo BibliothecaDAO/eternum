@@ -64,6 +64,16 @@ const BLITZ_PROFILE_IDS = {
   "official-90": 2,
 } as const;
 
+const DISABLED_CONTRACT_ADDRESS = "0x0";
+
+function resolveFeatureAddress(name: string, enabled: boolean, address: string | undefined): string {
+  if (!enabled) return DISABLED_CONTRACT_ADDRESS;
+  if (address === undefined) {
+    throw new Error(`${name} address must be explicit when the feature is enabled`);
+  }
+  return address;
+}
+
 function numericEntries<Value>(record: ConfigRecord<Value>): Array<[number, Value]> {
   return Object.entries(record)
     .map(([key, value]) => [Number(key), value] as [number, Value])
@@ -398,22 +408,24 @@ function buildPresetSideTables(config: Config): {
 
 function buildSeasonAddressesConfig(config: Config) {
   const addresses = config.setup?.addresses;
+  const enabled = !config.blitz.mode.on;
   return {
-    season_pass_address: addresses?.seasonPass ?? "0x0",
-    realms_address: addresses?.realms ?? "0x0",
-    lords_address: addresses?.lords ?? "0x0",
+    season_pass_address: resolveFeatureAddress("season pass", enabled, addresses?.seasonPass),
+    realms_address: resolveFeatureAddress("realms", enabled, addresses?.realms),
+    lords_address: resolveFeatureAddress("lords", enabled, addresses?.lords),
   };
 }
 
 function buildFaithConfig(config: Config) {
+  const enabled = config.faith?.enabled ?? false;
   return {
-    enabled: config.faith?.enabled ?? false,
+    enabled,
     wonder_base_fp_per_sec: config.faith?.wonder_base_fp_per_sec ?? 0,
     holy_site_fp_per_sec: config.faith?.holy_site_fp_per_sec ?? 0,
     realm_fp_per_sec: config.faith?.realm_fp_per_sec ?? 0,
     village_fp_per_sec: config.faith?.village_fp_per_sec ?? 0,
     owner_share_percent: (config.faith?.owner_share_percent ?? 0) * 100,
-    reward_token: config.faith?.reward_token ?? "0x0",
+    reward_token: resolveFeatureAddress("faith reward token", enabled, config.faith?.reward_token),
   };
 }
 

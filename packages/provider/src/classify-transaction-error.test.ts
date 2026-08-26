@@ -2,6 +2,30 @@ import { describe, expect, it } from "vitest";
 import { classifyTransactionError, extractErrorMessage, formatErrorForConsole } from "./classify-transaction-error";
 
 describe("classifyTransactionError", () => {
+  describe("resource bounds", () => {
+    it("classifies Madara's zero-bound validation failure", () => {
+      expect(classifyTransactionError(new Error("Account validation failed: Out of gas"))).toEqual({
+        kind: "resource_bounds",
+        reason: "Account validation failed: Out of gas",
+      });
+      expect(classifyTransactionError(new Error("transaction failed: out-of-gas")).kind).toBe("resource_bounds");
+    });
+
+    it("classifies nested resource-bound overflows before generic reverts", () => {
+      expect(
+        classifyTransactionError({
+          message: "Transaction execution error",
+          data: { execution_error: "Execution reverted: L2 gas resource bounds exceeded" },
+        }).kind,
+      ).toBe("resource_bounds");
+      expect(classifyTransactionError(new Error("resource-bounds overflow")).kind).toBe("resource_bounds");
+    });
+
+    it("classifies fee ceilings as resource-bound failures", () => {
+      expect(classifyTransactionError(new Error("max fee too low")).kind).toBe("resource_bounds");
+    });
+  });
+
   describe("user cancels", () => {
     it("classifies wallet-rejection strings as user_cancelled", () => {
       expect(classifyTransactionError("User rejected the transaction").kind).toBe("user_cancelled");

@@ -8,7 +8,7 @@ import { drizzleStorage, useDrizzleStorage as getDrizzleStorage } from "@apibara
 import { decodeEvent, getSelector, StarknetStream } from "@apibara/starknet";
 
 import { ChainId, CollectionAddresses } from "@realms-world/chain";
-import { db } from "@realms-world/db/poolClient";
+import { db } from "@realms-world/db/client";
 import { realmsLordsClaims } from "@realms-world/db/schema";
 
 import { env } from "../env";

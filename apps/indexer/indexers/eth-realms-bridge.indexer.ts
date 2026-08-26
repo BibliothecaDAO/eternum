@@ -6,7 +6,7 @@ import { uint256 } from "starknet";
 import { decodeEventLog, encodeEventTopics, numberToHex, parseAbi } from "viem";
 
 import { ChainId, REALMS_BRIDGE_ADDRESS, STARKNET_MESSAGING } from "@realms-world/chain";
-import { db } from "@realms-world/db/poolClient";
+import { db } from "@realms-world/db/client";
 import { realmsBridgeEvents, realmsBridgeRequests } from "@realms-world/db/schema";
 
 import { getRelationalSchema } from "../drizzle-schema";

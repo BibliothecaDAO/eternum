@@ -597,14 +597,7 @@ export class EternumProvider extends EnhancedDojoProvider {
 
   private shouldRefreshExecutionDetailsAfterSubmitError(error: unknown): boolean {
     const message = extractErrorMessage(error, "").toLowerCase();
-    return (
-      message.includes("nonce") ||
-      message.includes("max fee") ||
-      message.includes("fee too low") ||
-      message.includes("insufficient fee") ||
-      message.includes("resource bound") ||
-      message.includes("resource_bounds")
-    );
+    return message.includes("nonce") || classifyTransactionError(error).kind === "resource_bounds";
   }
 
   private createVrfExecutionLock(): VrfExecutionLock {

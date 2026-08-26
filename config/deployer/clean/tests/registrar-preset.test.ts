@@ -76,6 +76,36 @@ describe("appchain registrar preset", () => {
     );
   });
 
+  test("requires addresses for enabled season and faith features", () => {
+    const eternumConfig = structuredClone(loadEnvironmentConfiguration("appchain.eternum"));
+    delete (eternumConfig.setup?.addresses as Partial<typeof eternumConfig.setup.addresses>).lords;
+    expect(() => buildPresetRegistration(eternumConfig, 10)).toThrow(
+      "lords address must be explicit when the feature is enabled",
+    );
+
+    const faithConfig = structuredClone(loadEnvironmentConfiguration("appchain.eternum"));
+    delete (faithConfig.faith as Partial<NonNullable<typeof faithConfig.faith>>).reward_token;
+    expect(() => buildPresetRegistration(faithConfig, 10)).toThrow(
+      "faith reward token address must be explicit when the feature is enabled",
+    );
+  });
+
+  test("writes an explicit disabled address only for disabled features", () => {
+    const blitzConfig = structuredClone(config);
+    delete blitzConfig.setup;
+    delete blitzConfig.faith;
+
+    const payload = buildPresetRegistration(blitzConfig, 1);
+    expect(payload.presetConfig).toMatchObject({
+      season_addresses_config: {
+        season_pass_address: "0x0",
+        realms_address: "0x0",
+        lords_address: "0x0",
+      },
+      faith_config: { enabled: false, reward_token: "0x0" },
+    });
+  });
+
   test("keeps launch clocks and mode overrides in CreateGameParams", () => {
     const originalDateNow = Date.now;
     Date.now = () => 1_999_990_000_000;

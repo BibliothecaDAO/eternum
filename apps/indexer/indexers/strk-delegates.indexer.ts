@@ -10,8 +10,6 @@
 // import { decodeEvent, getSelector, StarknetStream } from "@apibara/starknet";
 
 // import { ChainId, CollectionAddresses } from "@realms-world/chain";
-// import { db } from "@realms-world/db/poolClient";
-
 // import { env } from "../env";
 // import { REALMS_ABI } from "./strk-realms-lords-claims.indexer";
 

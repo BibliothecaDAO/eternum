@@ -55,9 +55,7 @@ jobs:
     env:
       VITE_PUBLIC_MASTER_ADDRESS: "0x0"
       VITE_PUBLIC_MASTER_PRIVATE_KEY: "0x0"
-      VITE_PUBLIC_ACCOUNT_CLASS_HASH: "0x0"
       VITE_PUBLIC_FEE_TOKEN_ADDRESS: "0x49d36570d4e46f48e99674bd3fcc84644ddd6b96f7c741b1562b82f9e004dc7"
-      VITE_PUBLIC_CLIENT_FEE_RECIPIENT: "0x009d838f2dB23aFD64e4A2A116EdA44a00Cda1b1C8Cb2CE9C11eB534E8Bc50E0"
       VITE_PUBLIC_CHAIN: "appchain"
       # Shared appchain endpoints, baked in by env parsing during tests.
       # The live renderer smokes moved to deploy-client.yml: a PR gate must
