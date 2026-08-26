@@ -3,7 +3,7 @@ set -euo pipefail
 
 usage() {
   cat <<USAGE
-Usage: $0 --env <prod|preview> [--pr <number>] [--plan] [--skip-build] [--auto-approve] [--include-mobile]
+Usage: $0 --env <prod|preview> [--pr <number>] [--plan] [--skip-build] [--auto-approve]
 
 Runs terraform for the requested environment and uploads the built assets to GCS.
 Environment specific tfvars files live in deploy/terraform/environments.
@@ -15,7 +15,6 @@ PR_NUMBER=""
 TF_COMMAND="apply"
 SKIP_BUILD=false
 AUTO_APPROVE=false
-INCLUDE_MOBILE=false
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -37,10 +36,6 @@ while [[ $# -gt 0 ]]; do
       ;;
     --auto-approve)
       AUTO_APPROVE=true
-      shift
-      ;;
-    --include-mobile)
-      INCLUDE_MOBILE=true
       shift
       ;;
     --help)
@@ -70,7 +65,7 @@ for bin in terraform gsutil jq; do
 done
 
 if [[ "$SKIP_BUILD" == false ]]; then
-  "$ROOT_DIR/deploy/scripts/build-static.sh" $( [[ "$INCLUDE_MOBILE" == true ]] && echo "--include-mobile" )
+  "$ROOT_DIR/deploy/scripts/build-static.sh"
 fi
 
 TFVARS_PATH=""

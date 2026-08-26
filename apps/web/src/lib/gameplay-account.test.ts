@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 
-import { assertBindableGameplayAccount } from "./gameplay-account";
+import { assertBindableGameplayAccount, runSerializedAuthorityCall } from "./gameplay-account";
 
 const EXPECTED = {
   authority: "0x4",
@@ -44,5 +44,49 @@ describe("assertBindableGameplayAccount", () => {
     ["authority", { authority: "0xa" }, "has another binding authority"],
   ])("refuses an account with the wrong %s", async (_field, overrides, message) => {
     await expect(validate(createProvider(overrides))).rejects.toThrow(message);
+  });
+});
+
+describe("authority call execution", () => {
+  it("submits one authority transaction at a time", async () => {
+    const sequence: string[] = [];
+    let releaseFirst!: () => void;
+    const firstCanFinish = new Promise<void>((resolve) => {
+      releaseFirst = resolve;
+    });
+
+    const first = runSerializedAuthorityCall(async () => {
+      sequence.push("first:start");
+      await firstCanFinish;
+      sequence.push("first:end");
+      return "first";
+    });
+    const second = runSerializedAuthorityCall(async () => {
+      sequence.push("second:start");
+      return "second";
+    });
+
+    await vi.waitFor(() => expect(sequence).toEqual(["first:start"]));
+    releaseFirst();
+
+    await expect(Promise.all([first, second])).resolves.toEqual(["first", "second"]);
+    expect(sequence).toEqual(["first:start", "first:end", "second:start"]);
+  });
+
+  it("retries one nonce rejection with a fresh submission", async () => {
+    const call = vi
+      .fn<() => Promise<string>>()
+      .mockRejectedValueOnce(new Error("Invalid transaction nonce. Expected 2, got 1"))
+      .mockResolvedValueOnce("0xhash");
+
+    await expect(runSerializedAuthorityCall(call)).resolves.toBe("0xhash");
+    expect(call).toHaveBeenCalledTimes(2);
+  });
+
+  it("does not retry other failures", async () => {
+    const call = vi.fn<() => Promise<string>>().mockRejectedValue(new Error("execution reverted"));
+
+    await expect(runSerializedAuthorityCall(call)).rejects.toThrow("execution reverted");
+    expect(call).toHaveBeenCalledOnce();
   });
 });

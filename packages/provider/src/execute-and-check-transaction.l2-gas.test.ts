@@ -397,61 +397,10 @@ describe("EternumProvider.executeAndCheckTransaction gas bounds", () => {
     expect(findTransactionFailedPayload(provider)?.error).toBe(submitError);
   });
 
-  it("carries the Cartridge error code on plain-object controller rejections", async () => {
-    const provider = makeProvider();
-    const controllerError = { code: 142, message: "session refresh required" };
-    provider.execute = vi.fn().mockRejectedValue(controllerError);
-
-    const signer = {
-      estimateInvokeFee: vi.fn().mockResolvedValue({
-        resourceBounds: makeResourceBounds(1_000_000_000n),
-      }),
-    };
-    const call: Call = {
-      contractAddress: "0x1",
-      entrypoint: "settle_realms",
-      calldata: [],
-    };
-
-    await expect(provider.executeAndCheckTransaction(signer, call)).rejects.toBeDefined();
-
-    expect(findTransactionFailedPayload(provider)).toMatchObject({
-      stage: "submit",
-      errorCode: 142,
-    });
-    expect(findTransactionFailedPayload(provider)?.error).toBe(controllerError);
-  });
-
-  it("keeps the user-cancel rejection (undefined) as the payload error", async () => {
-    const provider = makeProvider();
-    // Even with a stashed estimate error, a Cartridge popup close must stay recognizable.
-    provider.lastEstimateError = { error: new Error("estimate trace"), atMs: Date.now() };
-    provider.execute = vi.fn().mockRejectedValue(undefined);
-
-    const signer = {
-      estimateInvokeFee: vi.fn().mockResolvedValue({
-        resourceBounds: makeResourceBounds(1_000_000_000n),
-      }),
-    };
-    const call: Call = {
-      contractAddress: "0x1",
-      entrypoint: "settle_realms",
-      calldata: [],
-    };
-
-    await expect(provider.executeAndCheckTransaction(signer, call)).rejects.toBeUndefined();
-
-    const payload = findTransactionFailedPayload(provider);
-    expect(payload).toMatchObject({ stage: "submit" });
-    expect(payload && Object.prototype.hasOwnProperty.call(payload, "error")).toBe(true);
-    expect(payload?.error).toBeUndefined();
-  });
-
   it("aborts the submit when the fee estimate proves a deterministic revert", async () => {
     const provider = makeProvider();
     const estimateError = {
-      code: 41,
-      message: "An error occurred (TRANSACTION_EXECUTION_ERROR)",
+      message: "Transaction execution error",
       data: {
         execution_error:
           "Execution failed. Failure reason: 0x506f70756c6174696f6e2065786365656473206361706163697479 ('Population exceeds capacity').",
@@ -470,12 +419,11 @@ describe("EternumProvider.executeAndCheckTransaction gas bounds", () => {
     await expect(provider.executeAndCheckTransaction(signer, call)).rejects.toBe(estimateError);
 
     // The estimate already executed the calls and proved they revert — the
-    // doomed transaction must never reach the paymaster.
+    // doomed transaction must never reach the sequencer.
     expect(provider.execute).not.toHaveBeenCalled();
     expect(findTransactionFailedPayload(provider)).toMatchObject({
       message: "Transaction failed to submit: Population exceeds capacity",
       stage: "submit",
-      errorCode: 41,
     });
   });
 
@@ -484,8 +432,7 @@ describe("EternumProvider.executeAndCheckTransaction gas bounds", () => {
     provider.VRF_PROVIDER_ADDRESS = "0x999";
     const warn = vi.spyOn(console, "warn").mockImplementation(() => undefined);
     const estimateError = {
-      code: 41,
-      message: "An error occurred (TRANSACTION_EXECUTION_ERROR)",
+      message: "Transaction execution error",
       data: {
         execution_error: "Execution failed. Failure reason: 0x0 ('Randomness not fulfilled').",
       },
@@ -527,7 +474,6 @@ describe("EternumProvider.executeAndCheckTransaction gas bounds", () => {
     const provider = makeProvider();
     provider.VRF_PROVIDER_ADDRESS = "0x999";
     const estimateError = {
-      code: 41,
       message: "Transaction execution error",
       data: {
         execution_error:
@@ -562,7 +508,6 @@ describe("EternumProvider.executeAndCheckTransaction gas bounds", () => {
     expect(findTransactionFailedPayload(provider)).toMatchObject({
       message: "Transaction failed to submit: Unknown error",
       stage: "submit",
-      errorCode: 41,
     });
     expect(findTransactionFailedPayload(provider)?.error).toBe(estimateError);
   });

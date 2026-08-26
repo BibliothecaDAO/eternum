@@ -17,7 +17,7 @@ export type TransactionOutcome =
   | "index_timeout"
   | "driver_failed";
 
-export interface RpcMethodMetrics {
+interface RpcMethodMetrics {
   calls: number;
   wallMs: number;
 }

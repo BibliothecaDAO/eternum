@@ -16,10 +16,6 @@ fn second_owner() -> ContractAddress {
     'second_owner'.try_into().unwrap()
 }
 
-fn guest_owner() -> ContractAddress {
-    0.try_into().unwrap()
-}
-
 fn deploy_registry() -> (IPlayerRegistryDispatcher, ContractAddress) {
     let class = snforge_std::declare("PlayerRegistry").unwrap().contract_class();
     let (address, _) = class.deploy(@array![authority().into()]).unwrap();
@@ -69,17 +65,6 @@ fn registry_refuses_one_account_for_two_owners() {
     start_cheat_caller_address(registry_address, authority());
     registry.bind(owner(), account_address);
     registry.bind(second_owner(), account_address);
-}
-
-#[test]
-#[should_panic(expected: "owner already bound")]
-fn registry_tracks_a_zero_guest_owner_as_bound() {
-    let (registry, registry_address) = deploy_registry();
-    let (_, _, account_address) = deploy_account();
-
-    start_cheat_caller_address(registry_address, authority());
-    registry.bind(guest_owner(), account_address);
-    registry.bind(guest_owner(), second_owner());
 }
 
 #[test]

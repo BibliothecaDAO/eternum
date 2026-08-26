@@ -78,11 +78,16 @@ Provides access to all initialized game systems, components, and world configura
 
 ### Requirements
 
-The hook must be used within a `DojoProvider` component and requires the following environment variables:
+The hook must be used within a `DojoProvider` component. The client environment supplies:
 
-- `VITE_PUBLIC_MASTER_ADDRESS`
-- `VITE_PUBLIC_MASTER_PRIVATE_KEY`
-- `VITE_PUBLIC_ACCOUNT_CLASS_HASH`
+- `VITE_PUBLIC_NODE_URL`
+- `VITE_PUBLIC_TORII`
+- `VITE_PUBLIC_PLAYER_ACCOUNT_CLASS_HASH`
+- `VITE_PUBLIC_PLAYER_REGISTRY_ADDRESS`
+- `VITE_PUBLIC_BINDING_AUTHORITY_ADDRESS`
+
+Appchain builds also require `VITE_PUBLIC_MASTER_ADDRESS` and `VITE_PUBLIC_MASTER_PRIVATE_KEY` for their development
+fee-token faucet. Madara builds do not accept those credentials.
 
 ### Return Value
 

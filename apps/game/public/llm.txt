@@ -458,6 +458,7 @@ The total prize pool comes from two sources:
     </tbody>
   </table>
 </div>
+
 **Total Prize Pool = F + S**
 
 ### Fee Split
@@ -1483,11 +1484,16 @@ Provides access to all initialized game systems, components, and world configura
 
 ### Requirements
 
-The hook must be used within a `DojoProvider` component and requires the following environment variables:
+The hook must be used within a `DojoProvider` component. The client environment supplies:
 
-* `VITE_PUBLIC_MASTER_ADDRESS`
-* `VITE_PUBLIC_MASTER_PRIVATE_KEY`
-* `VITE_PUBLIC_ACCOUNT_CLASS_HASH`
+* `VITE_PUBLIC_NODE_URL`
+* `VITE_PUBLIC_TORII`
+* `VITE_PUBLIC_PLAYER_ACCOUNT_CLASS_HASH`
+* `VITE_PUBLIC_PLAYER_REGISTRY_ADDRESS`
+* `VITE_PUBLIC_BINDING_AUTHORITY_ADDRESS`
+
+Appchain builds also require `VITE_PUBLIC_MASTER_ADDRESS` and `VITE_PUBLIC_MASTER_PRIVATE_KEY` for their development
+fee-token faucet. Madara builds do not accept those credentials.
 
 ### Return Value
 
@@ -1827,99 +1833,45 @@ pnpm run build:packages
 * `pnpm format` - Format code
 * `pnpm format:check` - Check code formatting
 
-## Contract Deployment
+## Deployment environments
 
-Eternum supports multiple deployment environments:
+Game worlds run on one of two supported chains:
 
 <div className="table-stretch-last">
-  | Environment | Description                 |
-  | ----------- | --------------------------- |
-  | Local       | For development and testing |
-  | Slot        | Staging environment         |
-  | Sepolia     | Public testnet              |
-  | Mainnet     | Production environment      |
+  | Environment | Description                                     |
+  | ----------- | ----------------------------------------------- |
+  | Madara      | Self-run development and performance lab        |
+  | Appchain    | Persistent hosted Blitz and Eternum game worlds |
 </div>
 
-### Deploying to Local
-
-Before deploying to any environment, confirm that you have a `.env.{environment}` file in the `contracts/common`
-directory, as well as in the `apps/game` directory.
-
-To deploy and run the game locally:
+The Madara lab owns its chain, world, indexer, TLS front, and smoke harness. Follow its checked-in runbook:
 
 ```bash
-# Start local game contracts
-pnpm run contract:start:local
+cd deploy/madara-lab
+docker compose up -d --wait
+./scripts/deploy-world.sh
+./scripts/bootstrap-game.sh
 ```
 
-### Deploying to Sepolia
-
-To deploy the contracts to Sepolia testnet, run these commands in order:
-
-1. Deploy game contracts:
+Use the game-launch workflow for appchain worlds. Generate a chain-specific configuration with the full environment id:
 
 ```bash
-pnpm run game:migrate:sepolia
-```
-
-2. Deploy season pass contracts:
-
-```bash
-pnpm run seasonpass:deploy:sepolia
-```
-
-3. Deploy season resources contracts:
-
-```bash
-pnpm run seasonresources:deploy:sepolia
-```
-
-4. Update TOML configuration:
-
-```bash
-pnpm run toml:update:sepolia
-```
-
-5. Start the indexer:
-
-```bash
-pnpm run indexer:start:sepolia
-```
-
-6. Deploy game configuration:
-
-```bash
-pnpm run config:deploy:sepolia
+pnpm run config:sync:madara:blitz
+pnpm run config:sync:appchain:blitz
+pnpm run config:sync:appchain:eternum
 ```
 
 ## Environment Variables
 
-For local development, create a file called `.env.local` in the client repository and add the following:
+For the Madara client, start from the maintained sample instead of copying an address list from this page:
 
 ```bash
-VITE_PUBLIC_MASTER_ADDRESS="0x127fd5f1fe78a71f8bcd1fec63e3fe2f0486b6ecd5c86a0466c3a21fa5cfcec"
-VITE_PUBLIC_MASTER_PRIVATE_KEY="0xc5b2fcab997346f3ea1c00b002ecf6f382c5f9c9659a3894eb783c5320f912"
-VITE_PUBLIC_ACCOUNT_CLASS_HASH="0x07dc7899aa655b0aae51eadff6d801a58e97dd99cf4666ee59e704249e51adf2"
-VITE_PUBLIC_FEE_TOKEN_ADDRESS=0x49d36570d4e46f48e99674bd3fcc84644ddd6b96f7c741b1562b82f9e004dc7
-
-VITE_PUBLIC_TORII="http://127.0.0.1:8080"
-VITE_PUBLIC_NODE_URL="http://127.0.0.1:5050"
-VITE_PUBLIC_GAME_VERSION="v1.0.0-rc0"
-VITE_PUBLIC_GRAPHICS_DEV=false
-VITE_PUBLIC_TORII_RELAY="/ip4/127.0.0.1/udp/9091/webrtc-direct/certhash/uEiDry6d-bDv3UdIS6L9VMugoiZnfwqOeXyFWm6jgKf7aTw"
-
-VITE_SOCIAL_LINK=http://bit.ly/3Zz1mpp
-
-VITE_PUBLIC_CHAIN=local
-VITE_PUBLIC_SLOT="eternum-prod"
-
-VITE_PUBLIC_VRF_PROVIDER_ADDRESS="0x0"
-VITE_PUBLIC_CLIENT_FEE_RECIPIENT=0x045c587318c9ebcf2fbe21febf288ee2e3597a21cd48676005a5770a50d433c5
-VITE_PUBLIC_MOBILE_VERSION_URL=https://next-m.eternum.realms.world
-
+cp apps/game/.env.madara.blitz.sample apps/game/.env
 ```
 
-This file is subject to change, please keep an eye on the repository for potential updates.
+The sample points browser traffic at the TLS endpoints served by `deploy/madara-lab/Caddyfile`. Appchain builds use the
+checked-in `.env.appchain.blitz` or `.env.appchain.eternum` file and require the development faucet credentials used for
+fee-token top-ups. Madara builds reject those master credentials.
 
 ## Project Structure
 
@@ -1939,8 +1891,7 @@ This file is subject to change, please keep an eye on the repository for potenti
 
 * [@dojoengine/react](https://www.npmjs.com/package/@dojoengine/react) - React integration for Dojo
 * [@dojoengine/recs](https://www.npmjs.com/package/@dojoengine/recs) - Entity Component System
-* [@cartridge/controller](https://www.npmjs.com/package/@cartridge/controller) - Game controller integration
-* [Starknet.js](https://www.npmjs.com/package/starknet) v6.23.1 - StarkNet interaction
+* [Starknet.js](https://www.npmjs.com/package/starknet) - Starknet interaction
 * [Vite](https://vitejs.dev/) - Frontend build tool
 
 ## Stack
@@ -2722,100 +2673,36 @@ rate.
 
 file: docs/pages/overview/controller.mdx
 meta: {
-  "title": "Cartridge Controller",
-  "description": "Using the Cartridge Controller to play Realms games"
+  "title": "Gameplay accounts",
+  "description": "How Realms signs and submits game actions"
 }
 
-import { importantNote } from "@/components/styles";
+# Gameplay accounts
 
-# Cartridge Controller
+A Cartridge Controller is not required to play. Realms uses a small Starknet account dedicated to gameplay, so routine
+actions do not open a wallet approval dialog.
 
-The Cartridge Controller is a gaming-focused smart contract wallet that makes Web3 gaming accessible and transactionless
-via Session Keys. You must have a controller to play Eternum or Blitz. To find out more about the controller, read their
-documentation [here](https://docs.realms.world/controller/overview).
+When you enter a world, the client loads or creates a gameplay key in your browser and deploys the corresponding player
+account on that world's chain. The account can call game systems, but it does not replace the wallet or identity you use
+outside the game.
 
-<img src="/images/screenshots/controller.png" alt="Controller" width="300" className="mx-auto" />
+## Identity and recovery
 
-## Using the Controller
+Connect a supported Starknet wallet when the world requires an identity. The Realms account portal binds the gameplay
+account to that identity. If the browser key is lost or replaced, an authenticated session can rotate the bound account
+to the new key.
 
-If you are playing with a Village in Eternum or entering a Recruit game in Blitz, you can play purely using the
-controller. However, to use Season Passes and **$LORDS**, you will need to transfer them to your controller from
-Starknet using your Ready (formerly ArgentX) or Braavos wallet.
+Guest entry is available only on worlds that explicitly support it. A guest account is not bound to an identity, so
+clearing the browser's site data also removes its local key.
 
-To use the controller, you can either log in or sign up when starting either Eternum or Blitz. To create a controller,
-simply input a username and sign up.
+## Security
 
-<img src="/images/screenshots/controller-signup.png" alt="Controller" width="300" className="mx-auto" />
+* The gameplay private key stays in browser storage.
+* The binding service can bind an identity or rotate its gameplay key; it cannot sign ordinary player actions.
+* The onchain registry permits one gameplay account per identity and one identity per gameplay account.
 
-There are multiple ways to securely sign up:
-
-* **Passkey**: Passkeys are a modern and secure way to authenticate users without passwords. They use public key
-  cryptography and are stored by platform authenticators such as Face ID, Touch ID, or password managers like Bitwarden
-  or 1Password.
-* **Metamask**: Connect using your MetaMask wallet.
-* **Rabby**: Connect using your Rabby wallet.
-* **Discord**: Connect using your Discord account.
-* **Wallet Connect**: Connect using a wide range of wallets.
-
-<div style={importantNote.container}>
-  <h3 style={importantNote.title}>⚠️ IMPORTANT NOTE</h3>
-
-  <p style={importantNote.content}>
-    If you are choosing Passkey on a Windows PC that does not have Bluetooth functionality, you will need to use a
-    password manager to set up your controller. There is a known issue in which Windows will ask for a Windows Hello or
-    external security key (USB) that wasn't used in the controller setup, preventing you from being able to sign in.
-  </p>
-</div>
-
-Once this is complete, you will be able to 'Create Session'. This enables all of the game functions in a transactionless
-session.
-
-### Transfer Season Pass to Controller
-
-Transfer an Eternum season pass to your controller easily [here](https://empire.realms.world/season-passes). Connect
-your controller by selecting the controller icon located at the top of the page and select the passes to transfer.
-
-<div className="flex justify-center">
-  <img src="/images/logos/controller-icon.png" alt="Controller Icon" width="60" />
-</div>
-
-## Controller Key Features
-
-### Simple and Secure
-
-* Passwordless authentication using Passkeys for one-click onboarding
-* Self-custodial embedded wallets that put players in control
-* Built-in security features to protect player assets
-
-### Designed for Seamless Gameplay:
-
-* Session keys eliminate transaction popups during gameplay
-* Secure transaction delegation lets games submit actions on behalf of players
-* Free transactions through the Cartridge Paymaster so players focus on playing
-
-### Supported Platforms and Passkey Backup
-
-Passkeys are well-supported across modern platforms. You can use them with device authenticators directly or pair them
-with a mobile device using the QR flow. For those without device authenticators, several password managers like
-Bitwarden (free), 1Password, and Dashlane support Passkeys.
-
-#### Backing Up Your Passkey
-
-* Apple devices: Passkeys are backed up along with your keychain in iCloud.
-
-* Android devices: Passkeys are backed up with your Google account.
-
-* Windows devices: Passkeys are created and managed as part of your Windows account.
-
-#### Using Controller Across Devices
-
-Currently, Controller availability across devices depends on how the Passkey was created. Some platforms automatically
-synchronize them across devices for seamless use. For cross-platform usage (e.g., Apple and Android), synchronization
-might not be available. For now, we recommend using a Password Manager or the QR flow to support this configuration.
-Multi-credential support is coming soon to enhance device compatibility.
-
-Should you have any issues with the controller or require support, you can join the Cartridge Discord
-[here](https://discord.gg/cartridge).
+Keep the wallet for your identity and assets secure. The gameplay account is deliberately limited to the selected game
+chain and can be replaced without moving those assets.
 
 
 

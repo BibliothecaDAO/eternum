@@ -19,6 +19,9 @@ interface GameplayAccountServerConfig {
 }
 
 type GameplayContractReader = Pick<RpcProvider, "callContract" | "getClassHashAt">;
+type AuthorityCall<T> = () => Promise<T>;
+
+let authorityCallTail: Promise<void> = Promise.resolve();
 
 export async function bindGameplayAccount({
   owner,
@@ -153,15 +156,53 @@ async function executeAuthorityCall(
   provider: RpcProvider,
   call: { contractAddress: string; entrypoint: string; calldata: string[] },
 ): Promise<string> {
-  const authority = new Account({
-    provider,
-    address: config.authorityAddress,
-    signer: config.authorityPrivateKey,
-    cairoVersion: "1",
+  return runSerializedAuthorityCall(async () => {
+    const authority = new Account({
+      provider,
+      address: config.authorityAddress,
+      signer: config.authorityPrivateKey,
+      cairoVersion: "1",
+    });
+    const transaction = await authority.execute(call);
+    await provider.waitForTransaction(transaction.transaction_hash);
+    return transaction.transaction_hash;
   });
-  const transaction = await authority.execute(call);
-  await provider.waitForTransaction(transaction.transaction_hash);
-  return transaction.transaction_hash;
+}
+
+export function runSerializedAuthorityCall<T>(call: AuthorityCall<T>): Promise<T> {
+  const result = authorityCallTail.then(
+    () => runAuthorityCallWithNonceRetry(call),
+    () => runAuthorityCallWithNonceRetry(call),
+  );
+  authorityCallTail = result.then(
+    () => undefined,
+    () => undefined,
+  );
+  return result;
+}
+
+async function runAuthorityCallWithNonceRetry<T>(call: AuthorityCall<T>): Promise<T> {
+  try {
+    return await call();
+  } catch (error) {
+    if (!isNonceRejection(error)) throw error;
+    return call();
+  }
+}
+
+function isNonceRejection(error: unknown): boolean {
+  const message = authorityErrorText(error);
+  return /nonce/i.test(message) && /(already|expected|invalid|mismatch|too high|too low)/i.test(message);
+}
+
+function authorityErrorText(error: unknown): string {
+  if (error instanceof Error) return error.message;
+  if (typeof error === "string") return error;
+  try {
+    return JSON.stringify(error);
+  } catch {
+    return String(error);
+  }
 }
 
 function requiredServerValue(name: string): string {

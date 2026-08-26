@@ -181,9 +181,6 @@ export class GameConfigDeployer {
     await setSeasonConfig(config);
     await this.sleepNonLocal();
 
-    await setVRFConfig(config);
-    await this.sleepNonLocal();
-
     await setResourceBridgeFeesConfig(config);
     await this.sleepNonLocal();
 
@@ -1334,44 +1331,6 @@ export const setSeasonConfig = async (config: Config) => {
 
   const setSeasonTx = await config.provider.set_season_config(seasonCalldata);
   console.log(chalk.green(`    ✔ Season configured `) + chalk.gray(setSeasonTx.statusReceipt));
-};
-
-export const setVRFConfig = async (config: Config) => {
-  if (config.config.setup?.chain !== "mainnet" && config.config.setup?.chain !== "sepolia") {
-    console.log(chalk.yellow("    ⚠ Skipping VRF configuration for local environment"));
-    return;
-  }
-
-  console.log(
-    chalk.cyan(`
-  🎲 VRF Configuration
-  ═══════════════════════`),
-  );
-
-  if (BigInt(config.config.vrf.vrfProviderAddress) === BigInt(0)) {
-    console.log(
-      chalk.cyan(`
-    ┌─ ${chalk.yellow("Status")}
-    │  ${chalk.gray("Provider:")}          ${chalk.red("Not configured")}
-    └────────────────────────────────`),
-    );
-    return;
-  }
-
-  const vrfCalldata = {
-    signer: config.account,
-    vrf_provider_address: config.config.vrf.vrfProviderAddress,
-  };
-
-  console.log(
-    chalk.cyan(`
-    ┌─ ${chalk.yellow("VRF Provider")}
-    │  ${chalk.gray("Address:")}           ${chalk.white(shortHexAddress(vrfCalldata.vrf_provider_address))}
-    └────────────────────────────────`),
-  );
-
-  const tx = await config.provider.set_vrf_config(vrfCalldata);
-  console.log(chalk.green(`    ✔ VRF configured `) + chalk.gray(tx.statusReceipt) + "\n");
 };
 
 export const setResourceBridgeFeesConfig = async (config: Config) => {

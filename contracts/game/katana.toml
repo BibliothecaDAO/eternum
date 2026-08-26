@@ -6,9 +6,5 @@ no_fee = true
 http_cors_origins = "*"
 timeout = 300   
 
-[cartridge]
-controllers = true
-paymaster = true
-
 [starknet]
 env.invoke_max_steps = 25000000

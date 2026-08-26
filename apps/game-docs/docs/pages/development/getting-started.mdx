@@ -59,101 +59,47 @@ pnpm run build:packages
 - `pnpm format` - Format code
 - `pnpm format:check` - Check code formatting
 
-## Contract Deployment
+## Deployment environments
 
-Eternum supports multiple deployment environments:
+Game worlds run on one of two supported chains:
 
 <div className="table-stretch-last">
 
-| Environment | Description                 |
-| ----------- | --------------------------- |
-| Local       | For development and testing |
-| Slot        | Staging environment         |
-| Sepolia     | Public testnet              |
-| Mainnet     | Production environment      |
+| Environment | Description                                     |
+| ----------- | ----------------------------------------------- |
+| Madara      | Self-run development and performance lab        |
+| Appchain    | Persistent hosted Blitz and Eternum game worlds |
 
 </div>
 
-### Deploying to Local
-
-Before deploying to any environment, confirm that you have a `.env.{environment}` file in the `contracts/common`
-directory, as well as in the `apps/game` directory.
-
-To deploy and run the game locally:
+The Madara lab owns its chain, world, indexer, TLS front, and smoke harness. Follow its checked-in runbook:
 
 ```bash
-# Start local game contracts
-pnpm run contract:start:local
+cd deploy/madara-lab
+docker compose up -d --wait
+./scripts/deploy-world.sh
+./scripts/bootstrap-game.sh
 ```
 
-### Deploying to Sepolia
-
-To deploy the contracts to Sepolia testnet, run these commands in order:
-
-1. Deploy game contracts:
+Use the game-launch workflow for appchain worlds. Generate a chain-specific configuration with the full environment id:
 
 ```bash
-pnpm run game:migrate:sepolia
-```
-
-2. Deploy season pass contracts:
-
-```bash
-pnpm run seasonpass:deploy:sepolia
-```
-
-3. Deploy season resources contracts:
-
-```bash
-pnpm run seasonresources:deploy:sepolia
-```
-
-4. Update TOML configuration:
-
-```bash
-pnpm run toml:update:sepolia
-```
-
-5. Start the indexer:
-
-```bash
-pnpm run indexer:start:sepolia
-```
-
-6. Deploy game configuration:
-
-```bash
-pnpm run config:deploy:sepolia
+pnpm run config:sync:madara:blitz
+pnpm run config:sync:appchain:blitz
+pnpm run config:sync:appchain:eternum
 ```
 
 ## Environment Variables
 
-For local development, create a file called `.env.local` in the client repository and add the following:
+For the Madara client, start from the maintained sample instead of copying an address list from this page:
 
 ```bash
-VITE_PUBLIC_MASTER_ADDRESS="0x127fd5f1fe78a71f8bcd1fec63e3fe2f0486b6ecd5c86a0466c3a21fa5cfcec"
-VITE_PUBLIC_MASTER_PRIVATE_KEY="0xc5b2fcab997346f3ea1c00b002ecf6f382c5f9c9659a3894eb783c5320f912"
-VITE_PUBLIC_ACCOUNT_CLASS_HASH="0x07dc7899aa655b0aae51eadff6d801a58e97dd99cf4666ee59e704249e51adf2"
-VITE_PUBLIC_FEE_TOKEN_ADDRESS=0x49d36570d4e46f48e99674bd3fcc84644ddd6b96f7c741b1562b82f9e004dc7
-
-VITE_PUBLIC_TORII="http://127.0.0.1:8080"
-VITE_PUBLIC_NODE_URL="http://127.0.0.1:5050"
-VITE_PUBLIC_GAME_VERSION="v1.0.0-rc0"
-VITE_PUBLIC_GRAPHICS_DEV=false
-VITE_PUBLIC_TORII_RELAY="/ip4/127.0.0.1/udp/9091/webrtc-direct/certhash/uEiDry6d-bDv3UdIS6L9VMugoiZnfwqOeXyFWm6jgKf7aTw"
-
-VITE_SOCIAL_LINK=http://bit.ly/3Zz1mpp
-
-VITE_PUBLIC_CHAIN=local
-VITE_PUBLIC_SLOT="eternum-prod"
-
-VITE_PUBLIC_VRF_PROVIDER_ADDRESS="0x0"
-VITE_PUBLIC_CLIENT_FEE_RECIPIENT=0x045c587318c9ebcf2fbe21febf288ee2e3597a21cd48676005a5770a50d433c5
-VITE_PUBLIC_MOBILE_VERSION_URL=https://next-m.eternum.realms.world
-
+cp apps/game/.env.madara.blitz.sample apps/game/.env
 ```
 
-This file is subject to change, please keep an eye on the repository for potential updates.
+The sample points browser traffic at the TLS endpoints served by `deploy/madara-lab/Caddyfile`. Appchain builds use the
+checked-in `.env.appchain.blitz` or `.env.appchain.eternum` file and require the development faucet credentials used for
+fee-token top-ups. Madara builds reject those master credentials.
 
 ## Project Structure
 
@@ -173,8 +119,7 @@ This file is subject to change, please keep an eye on the repository for potenti
 
 - [@dojoengine/react](https://www.npmjs.com/package/@dojoengine/react) - React integration for Dojo
 - [@dojoengine/recs](https://www.npmjs.com/package/@dojoengine/recs) - Entity Component System
-- [@cartridge/controller](https://www.npmjs.com/package/@cartridge/controller) - Game controller integration
-- [Starknet.js](https://www.npmjs.com/package/starknet) v6.23.1 - StarkNet interaction
+- [Starknet.js](https://www.npmjs.com/package/starknet) - Starknet interaction
 - [Vite](https://vitejs.dev/) - Frontend build tool
 
 ## Stack

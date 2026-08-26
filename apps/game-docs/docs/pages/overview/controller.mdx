@@ -1,94 +1,31 @@
 ---
-title: Cartridge Controller
-description: Using the Cartridge Controller to play Realms games
+title: Gameplay accounts
+description: How Realms signs and submits game actions
 ---
 
-import { importantNote } from "@/components/styles";
+# Gameplay accounts
 
-# Cartridge Controller
+A Cartridge Controller is not required to play. Realms uses a small Starknet account dedicated to gameplay, so routine
+actions do not open a wallet approval dialog.
 
-The Cartridge Controller is a gaming-focused smart contract wallet that makes Web3 gaming accessible and transactionless
-via Session Keys. You must have a controller to play Eternum or Blitz. To find out more about the controller, read their
-documentation [here](https://docs.realms.world/controller/overview).
+When you enter a world, the client loads or creates a gameplay key in your browser and deploys the corresponding player
+account on that world's chain. The account can call game systems, but it does not replace the wallet or identity you use
+outside the game.
 
-<img src="/images/screenshots/controller.png" alt="Controller" width="300" className="mx-auto" />
+## Identity and recovery
 
-## Using the Controller
+Connect a supported Starknet wallet when the world requires an identity. The Realms account portal binds the gameplay
+account to that identity. If the browser key is lost or replaced, an authenticated session can rotate the bound account
+to the new key.
 
-If you are playing with a Village in Eternum or entering a Recruit game in Blitz, you can play purely using the
-controller. However, to use Season Passes and **$LORDS**, you will need to transfer them to your controller from
-Starknet using your Ready (formerly ArgentX) or Braavos wallet.
+Guest entry is available only on worlds that explicitly support it. A guest account is not bound to an identity, so
+clearing the browser's site data also removes its local key.
 
-To use the controller, you can either log in or sign up when starting either Eternum or Blitz. To create a controller,
-simply input a username and sign up.
+## Security
 
-<img src="/images/screenshots/controller-signup.png" alt="Controller" width="300" className="mx-auto" />
+- The gameplay private key stays in browser storage.
+- The binding service can bind an identity or rotate its gameplay key; it cannot sign ordinary player actions.
+- The onchain registry permits one gameplay account per identity and one identity per gameplay account.
 
-There are multiple ways to securely sign up:
-
-- **Passkey**: Passkeys are a modern and secure way to authenticate users without passwords. They use public key
-  cryptography and are stored by platform authenticators such as Face ID, Touch ID, or password managers like Bitwarden
-  or 1Password.
-- **Metamask**: Connect using your MetaMask wallet.
-- **Rabby**: Connect using your Rabby wallet.
-- **Discord**: Connect using your Discord account.
-- **Wallet Connect**: Connect using a wide range of wallets.
-
-<div style={importantNote.container}>
-  <h3 style={importantNote.title}>⚠️ IMPORTANT NOTE</h3>
-  <p style={importantNote.content}>
-    If you are choosing Passkey on a Windows PC that does not have Bluetooth functionality, you will need to use a
-    password manager to set up your controller. There is a known issue in which Windows will ask for a Windows Hello or
-    external security key (USB) that wasn't used in the controller setup, preventing you from being able to sign in.
-  </p>
-</div>
-
-Once this is complete, you will be able to 'Create Session'. This enables all of the game functions in a transactionless
-session.
-
-### Transfer Season Pass to Controller
-
-Transfer an Eternum season pass to your controller easily [here](https://empire.realms.world/season-passes). Connect
-your controller by selecting the controller icon located at the top of the page and select the passes to transfer.
-
-<div className="flex justify-center">
-  <img src="/images/logos/controller-icon.png" alt="Controller Icon" width="60" />
-</div>
-
-## Controller Key Features
-
-### Simple and Secure
-
-- Passwordless authentication using Passkeys for one-click onboarding
-- Self-custodial embedded wallets that put players in control
-- Built-in security features to protect player assets
-
-### Designed for Seamless Gameplay:
-
-- Session keys eliminate transaction popups during gameplay
-- Secure transaction delegation lets games submit actions on behalf of players
-- Free transactions through the Cartridge Paymaster so players focus on playing
-
-### Supported Platforms and Passkey Backup
-
-Passkeys are well-supported across modern platforms. You can use them with device authenticators directly or pair them
-with a mobile device using the QR flow. For those without device authenticators, several password managers like
-Bitwarden (free), 1Password, and Dashlane support Passkeys.
-
-#### Backing Up Your Passkey
-
-- Apple devices: Passkeys are backed up along with your keychain in iCloud.
-
-- Android devices: Passkeys are backed up with your Google account.
-
-- Windows devices: Passkeys are created and managed as part of your Windows account.
-
-#### Using Controller Across Devices
-
-Currently, Controller availability across devices depends on how the Passkey was created. Some platforms automatically
-synchronize them across devices for seamless use. For cross-platform usage (e.g., Apple and Android), synchronization
-might not be available. For now, we recommend using a Password Manager or the QR flow to support this configuration.
-Multi-credential support is coming soon to enhance device compatibility.
-
-Should you have any issues with the controller or require support, you can join the Cartridge Discord
-[here](https://discord.gg/cartridge).
+Keep the wallet for your identity and assets secure. The gameplay account is deliberately limited to the selected game
+chain and can be replaced without moving those assets.

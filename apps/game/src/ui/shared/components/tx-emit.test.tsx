@@ -95,69 +95,6 @@ describe("TransactionNotification", () => {
     expect(playMock).toHaveBeenCalledWith("ui.tx_fail");
   });
 
-  it("shows a neutral cancelled toast without the failure sound when the user closes the wallet popup", async () => {
-    await act(async () => {
-      root.render(<TransactionNotification />);
-    });
-
-    await act(async () => {
-      // Cartridge rejects with `undefined` when the popup is closed.
-      provider.emit("transactionFailed", {
-        message: "Transaction failed to submit: Unknown error",
-        stage: "submit",
-        type: "explore",
-        error: undefined,
-      });
-    });
-
-    expect(toastMock).toHaveBeenCalledWith("Transaction cancelled", {
-      description: expect.stringContaining("explore new lands"),
-    });
-    expect(playMock).not.toHaveBeenCalled();
-  });
-
-  it("tells the player how to recover an expired gameplay key", async () => {
-    await act(async () => {
-      root.render(<TransactionNotification />);
-    });
-
-    await act(async () => {
-      provider.emit("transactionFailed", {
-        message: "Transaction failed to submit: session refresh required",
-        stage: "submit",
-        type: "explore",
-        error: { code: 142, message: "session refresh required" },
-        errorCode: 142,
-      });
-    });
-
-    expect(toastMock).toHaveBeenCalledWith("⚠️ Gameplay key expired", {
-      description: expect.stringContaining("Reload to recover your gameplay account"),
-    });
-    expect(playMock).toHaveBeenCalledWith("ui.tx_fail");
-  });
-
-  it("says so on insufficient-funds account errors", async () => {
-    await act(async () => {
-      root.render(<TransactionNotification />);
-    });
-
-    await act(async () => {
-      provider.emit("transactionFailed", {
-        message: "Transaction failed to submit: insufficient balance for fees",
-        stage: "submit",
-        type: "explore",
-        error: { code: 113, message: "insufficient balance for fees" },
-        errorCode: 113,
-      });
-    });
-
-    expect(toastMock).toHaveBeenCalledWith("❌ Insufficient funds", {
-      description: expect.stringContaining("Not enough funds"),
-    });
-    expect(playMock).toHaveBeenCalledWith("ui.tx_fail");
-  });
-
   it("surfaces the classified Cairo reason on reverts", async () => {
     const consoleError = vi.spyOn(console, "error").mockImplementation(() => undefined);
     await act(async () => {
@@ -170,14 +107,12 @@ describe("TransactionNotification", () => {
         stage: "submit",
         type: "explore",
         error: {
-          code: 41,
           message: "Transaction execution error",
           data: {
             execution_error:
               "Execution failed. Failure reason: 0x6e6f7420656e6f756768207374616d696e61 ('not enough stamina').",
           },
         },
-        errorCode: 41,
       });
     });
 

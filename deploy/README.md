@@ -84,7 +84,6 @@ Common variables:
 - `PR` – pull request number (required when `ENV=preview`)
 - `AUTO_APPROVE` – pass through to Terraform apply (`false` by default)
 - `SKIP_BUILD` – skip the Vite build step when set to `true`
-- `INCLUDE_MOBILE` – include the mobile client build when set to `true`
 
 You can still invoke the scripts directly if you prefer:
 
@@ -94,7 +93,7 @@ deploy/scripts/deploy.sh --env preview --pr 123 --auto-approve
 deploy/scripts/deploy.sh --env prod --plan
 ```
 
-Add `--skip-build` or `--include-mobile` as needed.
+Add `--skip-build` when reusing an existing build.
 
 ## CI integration
 

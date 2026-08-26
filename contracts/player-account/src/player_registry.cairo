@@ -5,7 +5,6 @@ pub trait IPlayerRegistry<TContractState> {
     fn bind(ref self: TContractState, owner: ContractAddress, account: ContractAddress);
     fn account_of(self: @TContractState, owner: ContractAddress) -> ContractAddress;
     fn owner_of(self: @TContractState, account: ContractAddress) -> ContractAddress;
-    fn binding_authority(self: @TContractState) -> ContractAddress;
 }
 
 #[starknet::contract]
@@ -20,8 +19,6 @@ pub mod PlayerRegistry {
         pub binding_authority: ContractAddress,
         pub accounts_by_owner: Map<ContractAddress, ContractAddress>,
         pub owners_by_account: Map<ContractAddress, ContractAddress>,
-        pub bound_owners: Map<ContractAddress, bool>,
-        pub bound_accounts: Map<ContractAddress, bool>,
     }
 
     #[event]
@@ -48,14 +45,13 @@ pub mod PlayerRegistry {
     impl PlayerRegistryImpl of IPlayerRegistry<ContractState> {
         fn bind(ref self: ContractState, owner: ContractAddress, account: ContractAddress) {
             assert!(get_caller_address() == self.binding_authority.read(), "not binding authority");
+            assert!(!owner.is_zero(), "zero owner");
             assert!(!account.is_zero(), "zero account");
-            assert!(!self.bound_owners.entry(owner).read(), "owner already bound");
-            assert!(!self.bound_accounts.entry(account).read(), "account already bound");
+            assert!(self.accounts_by_owner.entry(owner).read().is_zero(), "owner already bound");
+            assert!(self.owners_by_account.entry(account).read().is_zero(), "account already bound");
 
             self.accounts_by_owner.entry(owner).write(account);
             self.owners_by_account.entry(account).write(owner);
-            self.bound_owners.entry(owner).write(true);
-            self.bound_accounts.entry(account).write(true);
             self.emit(Bound { owner, account });
         }
 
@@ -65,10 +61,6 @@ pub mod PlayerRegistry {
 
         fn owner_of(self: @ContractState, account: ContractAddress) -> ContractAddress {
             self.owners_by_account.entry(account).read()
-        }
-
-        fn binding_authority(self: @ContractState) -> ContractAddress {
-            self.binding_authority.read()
         }
     }
 }

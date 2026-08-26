@@ -11,12 +11,10 @@ const envSchema = z
     VITE_PUBLIC_MASTER_ADDRESS: z.string().startsWith("0x").optional(),
     VITE_PUBLIC_MASTER_PRIVATE_KEY: z.string().startsWith("0x").optional(),
 
-    VITE_PUBLIC_ACCOUNT_CLASS_HASH: z.string().startsWith("0x"),
     VITE_PUBLIC_PLAYER_ACCOUNT_CLASS_HASH: z.string().startsWith("0x"),
     VITE_PUBLIC_PLAYER_REGISTRY_ADDRESS: z.string().startsWith("0x"),
     VITE_PUBLIC_BINDING_AUTHORITY_ADDRESS: z.string().startsWith("0x"),
     VITE_PUBLIC_FEE_TOKEN_ADDRESS: z.string().startsWith("0x"),
-    VITE_PUBLIC_CLIENT_FEE_RECIPIENT: z.string().startsWith("0x"),
 
     // API endpoints
     // No implicit defaults: endpoints are chain-specific and must come from the
@@ -57,8 +55,6 @@ const envSchema = z
     // Version and chain info
     VITE_PUBLIC_GAME_VERSION: z.string().optional().default(""),
     VITE_PUBLIC_CHAIN: z.enum(["madara", "appchain"]).optional().default("madara"),
-    VITE_PUBLIC_FORCE_GAME_MODE_ID: z.enum(["eternum", "blitz"]).optional(),
-    VITE_PUBLIC_FACTORY_DEPLOY_REPEATS: z.string().optional(),
 
     VITE_PUBLIC_CONSTRUCTION_FLAG: z
       .string()

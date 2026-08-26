@@ -56,7 +56,7 @@ const resolveIdentityRpcUrl = () =>
     browserFacing: false,
   });
 
-const consumeNonce = async (id: string): Promise<boolean> => {
+export const consumeSiwsNonce = async (id: string): Promise<boolean> => {
   const consumed = await db
     .delete(verificationTable)
     .where(and(eq(verificationTable.id, id), gt(verificationTable.expiresAt, new Date())))
@@ -169,7 +169,7 @@ export const siws = (options: SIWSPluginOptions) =>
                   signature,
                   address,
                 ),
-              consumeNonce: () => consumeNonce(verification.id),
+              consumeNonce: () => consumeSiwsNonce(verification.id),
             });
 
             let user = await ctx.context.internalAdapter.findUserById(address);

@@ -11,7 +11,7 @@ import {
   type WorkloadResult,
 } from "./driver";
 
-export interface BlockStats {
+interface BlockStats {
   blockProductionMs: MetricSummary;
   blocks: { busy: number; count: number; first: number | null; last: number | null };
   closeBlockMs: MetricSummary;

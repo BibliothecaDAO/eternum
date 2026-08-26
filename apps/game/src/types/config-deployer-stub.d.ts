@@ -7,7 +7,6 @@ declare module "@config-deployer/config" {
   export const setStructureMaxLevelConfig: any;
   export const setTradeConfig: any;
   export const setTroopConfig: any;
-  export const setVRFConfig: any;
   export const setVictoryPointsConfig: any;
   export const setVillageControllersConfig: any;
   export const setWeightConfig: any;

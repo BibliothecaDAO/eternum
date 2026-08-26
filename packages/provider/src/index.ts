@@ -21,12 +21,7 @@ import {
   uint256,
   UniversalDetails,
 } from "starknet";
-import {
-  classifyTransactionError,
-  extractErrorMessage,
-  formatErrorForConsole,
-  readCartridgeErrorCode,
-} from "./classify-transaction-error";
+import { classifyTransactionError, extractErrorMessage, formatErrorForConsole } from "./classify-transaction-error";
 import { PromiseQueue, QueueableTransaction } from "./promise-queue";
 import { ExecutionOptions } from "./transaction-executor";
 import { withRetry } from "./retry";
@@ -196,18 +191,12 @@ type TransactionFailureError = Error & {
 
 /**
  * Structured error context for a TransactionFailedPayload: the original error
- * verbatim, the Cartridge error code when the error is a plain-object
- * controller rejection, and the raw revert reason when the error came off a
- * reverted receipt.
+ * and the raw revert reason when the error came off a reverted receipt.
  */
-const buildFailureDiagnostics = (
-  error: unknown,
-): Pick<TransactionFailedPayload, "error" | "errorCode" | "revertReason"> => {
-  const errorCode = readCartridgeErrorCode(error);
+const buildFailureDiagnostics = (error: unknown): Pick<TransactionFailedPayload, "error" | "revertReason"> => {
   const revertReason = error instanceof Error ? (error as TransactionFailureError).rawRevertReason : undefined;
   return {
     error,
-    ...(errorCode !== undefined ? { errorCode } : {}),
     ...(revertReason !== undefined ? { revertReason } : {}),
   };
 };
@@ -712,8 +701,8 @@ export class EternumProvider extends EnhancedDojoProvider {
   /**
    * A fee estimate that failed with an execution revert has already run the
    * calls and proven they fail deterministically — submitting anyway only
-   * lands a doomed transaction on the paymaster and buries the revert reason
-   * under the controller's generic wrapper. VRF multicalls are the one
+   * lands a doomed transaction and reports the same revert a second time.
+   * VRF multicalls are the one
    * exception: their consume_random can revert at estimate time (no
    * submit_random on chain yet) and still succeed at execution once the VRF
    * server front-runs it. A marginal tx that would pass one block later is
@@ -736,13 +725,11 @@ export class EternumProvider extends EnhancedDojoProvider {
   /**
    * The submit error the payload should carry: usually the submit error
    * itself, but when it decoded to nothing actionable and a recent fee
-   * estimate failed with a real trace, prefer that. Never overrides a user
-   * cancel (Cartridge rejects with `undefined` on popup close).
+   * estimate failed with a real trace, prefer that.
    */
   private resolveSubmitFailureError(error: unknown, extractedMessage: string): unknown {
     const estimateError = this.takeRecentEstimateError();
     if (estimateError === undefined) return error;
-    if (classifyTransactionError(error).kind === "user_cancelled") return error;
     return extractedMessage === "Unknown error" ? estimateError : error;
   }
 

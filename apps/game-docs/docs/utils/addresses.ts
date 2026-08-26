@@ -1,15 +1,15 @@
 import { env } from "@/../env";
-import { getSeasonAddresses, type SeasonChain } from "@contracts/utils";
+import { getSeasonAddresses } from "@contracts/utils";
 
 export const getResourceAddresses = () => {
-  const addresses = getSeasonAddresses(env.VITE_PUBLIC_CHAIN as SeasonChain).resources;
+  const addresses = getSeasonAddresses(env.VITE_PUBLIC_CHAIN).resources;
   return addresses;
 };
 
 export const getSeasonPassAddress = () => {
-  return getSeasonAddresses(env.VITE_PUBLIC_CHAIN as SeasonChain).seasonPass;
+  return getSeasonAddresses(env.VITE_PUBLIC_CHAIN).seasonPass;
 };
 
 export const getLordsAddress = () => {
-  return getSeasonAddresses(env.VITE_PUBLIC_CHAIN as SeasonChain).lords;
+  return getSeasonAddresses(env.VITE_PUBLIC_CHAIN).lords;
 };

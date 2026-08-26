@@ -36,10 +36,8 @@ export interface TransactionFailedPayload extends TransactionLifecycleMeta {
   providerState?: TransactionProviderState;
   hasTxHash?: boolean;
   retrySafety?: TransactionRetrySafety;
-  /** The original error, untouched — Cartridge rejects with plain objects or `undefined`, so this is `unknown`. */
+  /** The original error, untouched. */
   error?: unknown;
-  /** Cartridge controller ErrorCode when the error was a plain `{ code, message, data? }` object. */
-  errorCode?: number;
   /** Raw revert reason from the receipt, verbatim, when the transaction reverted on-chain. */
   revertReason?: string;
 }

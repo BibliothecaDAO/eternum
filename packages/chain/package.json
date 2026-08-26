@@ -24,9 +24,6 @@
     "test": "vitest run",
     "typecheck": "tsc --noEmit"
   },
-  "dependencies": {
-    "dotenv": "^16.6.1"
-  },
   "devDependencies": {
     "@realms-world/eslint-config": "workspace:*",
     "@realms-world/prettier-config": "workspace:*",

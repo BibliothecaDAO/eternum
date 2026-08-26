@@ -5,11 +5,7 @@
  * - `extractErrorMessage` digs a human-readable panic/revert reason out of any
  *   error shape (Error, string, plain object, nested Cairo traces).
  * - `classifyTransactionError` maps any error to a small decision kind the UI
- *   can act on (cancel vs session vs funds vs revert), using Cartridge
- *   controller error codes when present and string markers otherwise.
- *
- * Cartridge's controller rejects with plain `{ code, message, data? }` objects
- * (never Error instances) and with `undefined` when the user closes the popup.
+ *   can act on (wallet rejection, revert, submit failure, or unknown).
  */
 
 const NON_MEANINGFUL_ERROR_MESSAGES = new Set(["", "[object Object]", "undefined", "null"]);
@@ -25,10 +21,6 @@ const GENERIC_ERROR_MESSAGES = new Set([
   "reason",
 ]);
 const GENERIC_ERROR_PREFIXES = ["transaction execution error:", "rpc error:", "rpc:"];
-// Cartridge controller wraps failures as "An error occurred (<ERROR_CODE>)"
-// with the actual Cairo trace in `data`. The wrapper must classify as generic
-// or the extractor returns it and never descends into the trace.
-const CARTRIDGE_WRAPPER_PATTERN = /^an error occurred \([a-z0-9_ ]+\)$/;
 const WRAPPED_ERROR_PREFIXES = [
   "Transaction failed to submit:",
   "Transaction failed while waiting for confirmation:",
@@ -188,7 +180,6 @@ const isGenericErrorMessage = (message: string): boolean => {
   if (
     GENERIC_ERROR_MESSAGES.has(normalized) ||
     GENERIC_ERROR_PREFIXES.some((prefix) => normalized.startsWith(prefix)) ||
-    CARTRIDGE_WRAPPER_PATTERN.test(normalized) ||
     isProtocolErrorCode(message)
   ) {
     return true;
@@ -320,28 +311,12 @@ export const extractErrorMessage = (error: unknown, fallback = "Unknown error"):
 export const formatErrorForConsole = (error: unknown, fallback = "Unknown error"): string =>
   extractErrorMessage(error, fallback).replace(/\s+/g, " ").trim();
 
-export type TransactionErrorKind =
-  | "user_cancelled"
-  | "session_invalid"
-  | "insufficient_funds"
-  | "reverted"
-  | "submit_failed"
-  | "unknown";
+export type TransactionErrorKind = "user_cancelled" | "reverted" | "submit_failed" | "unknown";
 
 export interface ClassifiedTransactionError {
   kind: TransactionErrorKind;
-  code?: number;
   reason?: string;
 }
-
-// Cartridge controller ErrorCode families (account_wasm.d.ts):
-// 132 SessionAlreadyRegistered, 142 SessionRefreshRequired, 143 ManualExecutionRequired,
-// 144 ForbiddenEntrypoint, 146 ApproveExecutionRequired — all need a controller reconnect/re-approve.
-const SESSION_INVALID_ERROR_CODES = new Set([132, 142, 143, 144, 146]);
-// 53 InsufficientMaxFee, 54 InsufficientAccountBalance, 113 InsufficientBalance.
-const INSUFFICIENT_FUNDS_ERROR_CODES = new Set([53, 54, 113]);
-// 41 StarknetTransactionExecutionError (data holds the Cairo trace), 55 StarknetValidationFailure.
-const REVERTED_ERROR_CODES = new Set([41, 55]);
 
 // String-shaped wallet cancels (mirrors the Sentry-side patterns in
 // client observability/transaction-failure-reporting.ts).
@@ -367,13 +342,6 @@ const REVERT_MARKER_PATTERNS = [
 
 const SUBMIT_FAILURE_PATTERNS = [/failed to submit/i, /submission timed out/i];
 
-/** Numeric `code` of a plain-object Cartridge error, if that is what `error` is. */
-export const readCartridgeErrorCode = (error: unknown): number | undefined => {
-  if (!error || typeof error !== "object") return undefined;
-  const code = (error as { code?: unknown }).code;
-  return typeof code === "number" ? code : undefined;
-};
-
 const asClassifiedReason = (error: unknown): string | undefined => {
   const reason = extractErrorMessage(error, "");
   return reason || undefined;
@@ -386,6 +354,11 @@ const buildSearchableErrorText = (error: unknown): string => {
   if (error && typeof error === "object") {
     const message = (error as { message?: unknown }).message;
     if (typeof message === "string") parts.push(message);
+    try {
+      parts.push(JSON.stringify(error));
+    } catch {
+      // Cyclic provider errors still contribute their direct message.
+    }
   }
   const readable = extractErrorMessage(error, "");
   if (readable) parts.push(readable);
@@ -395,40 +368,20 @@ const buildSearchableErrorText = (error: unknown): string => {
 /**
  * Decide what a transaction failure means for the player.
  *
- * Decision order: nullish rejection (Cartridge popup close) → Cartridge error
- * code families → wallet-rejection string markers → revert string markers →
+ * Decision order: wallet-rejection string markers → revert string markers →
  * submit-failure string markers → unknown.
  */
 export const classifyTransactionError = (error: unknown): ClassifiedTransactionError => {
-  if (error === undefined || error === null) {
-    // Cartridge controller rejects with `undefined` when the user closes the popup.
-    return { kind: "user_cancelled" };
-  }
-
-  const code = readCartridgeErrorCode(error);
-  const withCode = code !== undefined ? { code } : {};
-  if (code !== undefined) {
-    if (SESSION_INVALID_ERROR_CODES.has(code)) {
-      return { kind: "session_invalid", code };
-    }
-    if (INSUFFICIENT_FUNDS_ERROR_CODES.has(code)) {
-      return { kind: "insufficient_funds", code, reason: asClassifiedReason(error) };
-    }
-    if (REVERTED_ERROR_CODES.has(code)) {
-      return { kind: "reverted", code, reason: asClassifiedReason(error) };
-    }
-  }
-
   const searchableText = buildSearchableErrorText(error);
   if (WALLET_REJECTION_PATTERNS.some((pattern) => pattern.test(searchableText))) {
-    return { kind: "user_cancelled", ...withCode };
+    return { kind: "user_cancelled" };
   }
   if (REVERT_MARKER_PATTERNS.some((pattern) => pattern.test(searchableText))) {
-    return { kind: "reverted", ...withCode, reason: asClassifiedReason(error) };
+    return { kind: "reverted", reason: asClassifiedReason(error) };
   }
   if (SUBMIT_FAILURE_PATTERNS.some((pattern) => pattern.test(searchableText))) {
-    return { kind: "submit_failed", ...withCode, reason: asClassifiedReason(error) };
+    return { kind: "submit_failed", reason: asClassifiedReason(error) };
   }
 
-  return { kind: "unknown", ...withCode, reason: asClassifiedReason(error) };
+  return { kind: "unknown", reason: asClassifiedReason(error) };
 };

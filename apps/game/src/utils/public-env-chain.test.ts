@@ -5,12 +5,10 @@ import { describe, expect, it } from "vitest";
 import { parsePublicEnv } from "../../env";
 
 const REQUIRED_ENV = {
-  VITE_PUBLIC_ACCOUNT_CLASS_HASH: "0x1",
   VITE_PUBLIC_PLAYER_ACCOUNT_CLASS_HASH: "0x2",
   VITE_PUBLIC_PLAYER_REGISTRY_ADDRESS: "0x3",
   VITE_PUBLIC_BINDING_AUTHORITY_ADDRESS: "0x4",
   VITE_PUBLIC_FEE_TOKEN_ADDRESS: "0x5",
-  VITE_PUBLIC_CLIENT_FEE_RECIPIENT: "0x0",
   VITE_PUBLIC_NODE_URL: "https://rpc.realms.test/rpc/v0_9_0",
   VITE_PUBLIC_TORII: "https://torii.realms.test",
   VITE_PUBLIC_IDENTITY_ORIGIN: "https://realms.test",

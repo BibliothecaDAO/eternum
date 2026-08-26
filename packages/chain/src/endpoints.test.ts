@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { isGameChain, resolveEndpoint } from "./endpoints";
+import { resolveEndpoint } from "./endpoints";
 
 describe("resolveEndpoint", () => {
   it("accepts owned HTTPS endpoints", () => {
@@ -39,14 +39,5 @@ describe("resolveEndpoint", () => {
         locationProtocol: "https:",
       }),
     ).toBe("http://127.0.0.1:5060");
-  });
-});
-
-describe("isGameChain", () => {
-  it("accepts only the two phase-one game chains", () => {
-    expect(isGameChain("madara")).toBe(true);
-    expect(isGameChain("appchain")).toBe(true);
-    expect(isGameChain("local")).toBe(false);
-    expect(isGameChain("mainnet")).toBe(false);
   });
 });

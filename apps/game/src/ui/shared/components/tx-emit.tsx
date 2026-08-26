@@ -26,7 +26,6 @@ type TransactionFailurePayload = {
   transactionHash?: string;
   failureKind?: string;
   error?: unknown;
-  errorCode?: number;
   revertReason?: string;
 };
 
@@ -97,16 +96,7 @@ export function TransactionNotification() {
       const consoleReason = formatReadableErrorForConsole(payload.error ?? payload.message, reason);
       console.error(`Transaction failed: ${consoleReason}`);
 
-      if (classified.kind === "session_invalid") {
-        toast("⚠️ Gameplay key expired", {
-          description: `${actionLabel}: Reload to recover your gameplay account`,
-        });
-      } else if (classified.kind === "insufficient_funds") {
-        const fundsDetail = classified.reason ? ` — ${classified.reason}` : "";
-        toast("❌ Insufficient funds", {
-          description: `${actionLabel}: Not enough funds to cover this transaction${fundsDetail}`,
-        });
-      } else if (classified.kind === "reverted") {
+      if (classified.kind === "reverted") {
         toast("❌ Transaction failed", { description: `${actionLabel} failed: ${reason}` });
       } else {
         toast("❌ Transaction failed", { description: `${actionLabel} - ${reason}` });

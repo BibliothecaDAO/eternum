@@ -1092,10 +1092,6 @@ importers:
         version: 3.2.4(@types/debug@4.1.12)(@types/node@22.20.1)(jiti@2.7.0)(jsdom@28.1.0(@noble/hashes@2.3.0))(lightningcss@1.32.0)(terser@5.46.0)(tsx@4.21.0)(yaml@2.9.0)
 
   packages/chain:
-    dependencies:
-      dotenv:
-        specifier: ^16.6.1
-        version: 16.6.1
     devDependencies:
       '@realms-world/eslint-config':
         specifier: workspace:*

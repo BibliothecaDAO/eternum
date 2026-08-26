@@ -1,9 +1,9 @@
 import { EternumProvider, ResourceWhitelistConfig } from "@bibliothecadao/eternum";
 import { Account } from "starknet";
-import { Chain, getGameManifest, getSeasonAddresses } from "../../../../utils/utils";
+import { getGameManifest, getSeasonAddresses } from "../../../../utils/utils";
 
 export const getResourceAddresses = () => {
-  const addresses = getSeasonAddresses(process.env.VITE_PUBLIC_CHAIN as Chain).resources;
+  const addresses = getSeasonAddresses(process.env.VITE_PUBLIC_CHAIN ?? "").resources;
   return addresses;
 };
 
@@ -47,7 +47,11 @@ const { VITE_PUBLIC_MASTER_ADDRESS, VITE_PUBLIC_MASTER_PRIVATE_KEY, VITE_PUBLIC_
 if (!VITE_PUBLIC_MASTER_ADDRESS || !VITE_PUBLIC_MASTER_PRIVATE_KEY || !VITE_PUBLIC_NODE_URL) {
   throw new Error("VITE_PUBLIC_MASTER_ADDRESS is required");
 }
-const manifest = getGameManifest(process.env.VITE_PUBLIC_CHAIN as Chain);
+const chain = process.env.VITE_PUBLIC_CHAIN;
+if (chain !== "madara" && chain !== "appchain") {
+  throw new Error("VITE_PUBLIC_CHAIN must be madara or appchain");
+}
+const manifest = getGameManifest(chain);
 
 if (process.env.VITE_PUBLIC_CHAIN !== "local") {
   const userConfirmation = prompt(

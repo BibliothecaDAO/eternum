@@ -8,7 +8,6 @@ import {
 import type { GameType } from "../source/common/types";
 import type { GameChain } from "@realms-world/chain";
 export type { GameType };
-export type { GameChain } from "@realms-world/chain";
 import blitzAppchainConfig from "../generated/blitz.appchain.json";
 import blitzMadaraConfig from "../generated/blitz.madara.json";
 import eternumAppchainConfig from "../generated/eternum.appchain.json";

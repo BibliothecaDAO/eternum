@@ -44,8 +44,6 @@ export interface SeasonAddresses {
   mmrToken: string;
 }
 
-/** Address tables used by independent season-contract tooling. */
-export type SeasonChain = GameChain | "local" | "mainnet" | "sepolia";
 export type AppchainGameType = "blitz" | "eternum";
 
 /**
@@ -54,7 +52,7 @@ export type AppchainGameType = "blitz" | "eternum";
  * @returns The contract addresses for the specified chain
  * @throws Error if addresses cannot be loaded
  */
-export function getSeasonAddresses(chain: SeasonChain): SeasonAddresses {
+export function getSeasonAddresses(chain: string): SeasonAddresses {
   try {
     switch (chain) {
       case "sepolia":

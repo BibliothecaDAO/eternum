@@ -1,17 +1,4 @@
-export const GAME_CHAINS = ["madara", "appchain"] as const;
-
-export type GameChain = (typeof GAME_CHAINS)[number];
-
-export const GAME_CHAIN_ENDPOINT_KEYS = {
-  madara: {
-    rpc: "VITE_PUBLIC_NODE_URL",
-    torii: "VITE_PUBLIC_TORII",
-  },
-  appchain: {
-    rpc: "VITE_PUBLIC_NODE_URL",
-    torii: "VITE_PUBLIC_TORII",
-  },
-} as const satisfies Record<GameChain, { rpc: string; torii: string }>;
+export type GameChain = "madara" | "appchain";
 
 const FORBIDDEN_HOST_SUFFIX = ["cartridge", "gg"].join(".");
 
@@ -68,6 +55,3 @@ export const resolveEndpoint = (
 
   return endpoint.toString().replace(/\/$/, "");
 };
-
-export const isGameChain = (value: string): value is GameChain =>
-  GAME_CHAINS.includes(value as GameChain);

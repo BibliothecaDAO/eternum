@@ -7,27 +7,25 @@ ENV ?= prod
 PR ?=
 AUTO_APPROVE ?= false
 SKIP_BUILD ?= false
-INCLUDE_MOBILE ?= false
 
 maybe_auto_approve := $(if $(filter true,$(AUTO_APPROVE)),--auto-approve,)
 maybe_skip_build := $(if $(filter true,$(SKIP_BUILD)),--skip-build,)
-maybe_include_mobile := $(if $(filter true,$(INCLUDE_MOBILE)),--include-mobile,)
 maybe_pr := $(if $(PR),--pr $(PR),)
 
-COMMON_FLAGS := --env $(ENV) $(maybe_pr) $(maybe_skip_build) $(maybe_include_mobile)
+COMMON_FLAGS := --env $(ENV) $(maybe_pr) $(maybe_skip_build)
 
 .PHONY: help build plan deploy preview clean-preview check-preview-pr check-pr
 
 help:
 	@echo "Targets:"
-	@echo "  make build [INCLUDE_MOBILE=true]"
+	@echo "  make build"
 	@echo "  make plan ENV=<env> [PR=<number>] [SKIP_BUILD=true]"
-	@echo "  make deploy ENV=<env> [PR=<number>] [AUTO_APPROVE=true] [SKIP_BUILD=true] [INCLUDE_MOBILE=true]"
+	@echo "  make deploy ENV=<env> [PR=<number>] [AUTO_APPROVE=true] [SKIP_BUILD=true]"
 	@echo "  make preview PR=<number> [AUTO_APPROVE=true]"
-	@echo "Variables: ENV (default prod), PR, AUTO_APPROVE, SKIP_BUILD, INCLUDE_MOBILE"
+	@echo "Variables: ENV (default prod), PR, AUTO_APPROVE, SKIP_BUILD"
 
 build:
-	$(SCRIPTS_DIR)/build-static.sh $(maybe_include_mobile)
+	$(SCRIPTS_DIR)/build-static.sh
 
 check-preview-pr:
 	@if [ "$(ENV)" = "preview" ] && [ -z "$(PR)" ]; then \

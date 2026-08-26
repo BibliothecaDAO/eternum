@@ -16,6 +16,12 @@ const outputFile = path.resolve(publicDir, "llm.txt");
 
 const processor = remark().use(remarkMdx).use(remarkInclude).use(remarkGfm).use(remarkStringify);
 
+const stableDocumentationPath = (file) =>
+  path
+    .relative(docsDir, file)
+    .replace("pages/blitz/military/", "pages/blitz/0-military/")
+    .replace("pages/blitz/materials/", "pages/blitz/1-materials/");
+
 export default function llmTxtPlugin() {
   return {
     name: "vite-plugin-llm-txt",
@@ -28,6 +34,12 @@ export default function llmTxtPlugin() {
 
         // Find all .mdx files within the docs directory
         const files = await fg([`${docsDir}/**/*.mdx`], { absolute: true });
+        files.sort((left, right) => {
+          const leftPath = stableDocumentationPath(left);
+          const rightPath = stableDocumentationPath(right);
+          const depthDifference = leftPath.split(path.sep).length - rightPath.split(path.sep).length;
+          return depthDifference || leftPath.localeCompare(rightPath);
+        });
         console.log(`Found ${files.length} mdx files.`);
 
         const scan = files.map(async (file) => {
@@ -55,7 +67,7 @@ ${processed.toString()}
         const scanned = await Promise.all(scan);
         const combinedContent = scanned.join("\n\n---\n\n"); // Separator between files
 
-        await fs.promises.writeFile(outputFile, combinedContent);
+        await fs.promises.writeFile(outputFile, `${combinedContent.trimEnd()}\n`);
 
         console.log(`Successfully generated llm.txt at ${outputFile}`);
       } catch (error) {

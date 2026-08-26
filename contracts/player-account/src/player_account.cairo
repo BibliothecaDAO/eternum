@@ -33,8 +33,6 @@ pub mod RealmsPlayerAccount {
     #[abi(embed_v0)]
     impl SRC6Impl = AccountComponent::SRC6Impl<ContractState>;
     #[abi(embed_v0)]
-    impl DeclarerImpl = AccountComponent::DeclarerImpl<ContractState>;
-    #[abi(embed_v0)]
     impl PublicKeyImpl = AccountComponent::PublicKeyImpl<ContractState>;
     #[abi(embed_v0)]
     impl PublicKeyCamelImpl = AccountComponent::PublicKeyCamelImpl<ContractState>;
