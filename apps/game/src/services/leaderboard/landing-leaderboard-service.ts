@@ -84,10 +84,10 @@ interface ScoreToBeatStaticRow {
 }
 
 const SCORE_TO_BEAT_STATIC_ENDPOINT_BY_GAME: Record<ScoreToBeatStaticGame, string> = {
-  "s0-game-1": "https://api.cartridge.gg/x/s0-game-1/torii/sql",
-  "s0-game-2": "https://api.cartridge.gg/x/s0-game-2/torii/sql",
-  "s0-game-3": "https://api.cartridge.gg/x/s0-game-3/torii/sql",
-  "s0-game-4": "https://api.cartridge.gg/x/s0-game-4/torii/sql",
+  "s0-game-1": "https://history.realms.world/s0-game-1",
+  "s0-game-2": "https://history.realms.world/s0-game-2",
+  "s0-game-3": "https://history.realms.world/s0-game-3",
+  "s0-game-4": "https://history.realms.world/s0-game-4",
 };
 
 const SCORE_TO_BEAT_STATIC_ENDPOINT_TO_GAME = new Map<string, ScoreToBeatStaticGame>(

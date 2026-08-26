@@ -1,7 +1,3 @@
-import type { Chain } from "@contracts";
+import type { GameChain as Chain } from "@realms-world/chain";
 
-export const resolveCosmeticsLoadoutNetworkForChain = (chain: Chain): "mainnet" | "sepolia" =>
-  chain === "mainnet" ? "mainnet" : "sepolia";
-
-export const resolveCosmeticsLoadoutScopeKeyForChain = (chain: Chain): string =>
-  `cosmetics:${resolveCosmeticsLoadoutNetworkForChain(chain)}`;
+export const resolveCosmeticsLoadoutScopeKeyForChain = (chain: Chain): string => `cosmetics:${chain}`;

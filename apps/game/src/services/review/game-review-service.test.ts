@@ -64,8 +64,8 @@ vi.mock("@/runtime/world/world-directory", () => ({
 }));
 
 vi.mock("@/runtime/world/game-registry", () => ({
-  resolveAppchainWorldIdForGame: vi.fn(async () => "blitz"),
-  resolveAppchainGameId: vi.fn(async () => TEST_GAME_ID),
+  resolveWorldIdForGame: vi.fn(async () => "blitz"),
+  resolveGameId: vi.fn(async () => TEST_GAME_ID),
   fetchS2GameRow: vi.fn(async () => ({ gameId: TEST_GAME_ID, presetId: 2 })),
 }));
 

@@ -9,7 +9,7 @@ vi.mock("@/three/cosmetics/player-cosmetics-store", () => ({
   },
 }));
 
-import type { Chain } from "@contracts";
+import type { GameChain as Chain } from "@realms-world/chain";
 import {
   buildDevPreviewWorldKey,
   createWorldPreviewEntryController,
@@ -58,7 +58,7 @@ describe("createWorldPreviewEntryController", () => {
   it("records preview entry state under an account and world scoped key", async () => {
     const previewStore = createPreviewStore();
     const now = vi.fn(() => 123456789);
-    const chain: Chain = "mainnet";
+    const chain: Chain = "madara";
     const controller = createWorldPreviewEntryController({
       isDev: true,
       enabled: true,
@@ -71,10 +71,10 @@ describe("createWorldPreviewEntryController", () => {
 
     await controller.enterPreview();
 
-    expect(previewStore.setPreviewEntry).toHaveBeenCalledWith("mainnet:eternum-1:0x123", {
+    expect(previewStore.setPreviewEntry).toHaveBeenCalledWith("madara:eternum-1:0x123", {
       previewEntered: true,
       enteredAt: 123456789,
-      loadoutWorldKey: "blitz:mainnet:eternum-1",
+      loadoutWorldKey: "blitz:madara:eternum-1",
     });
   });
 

@@ -7,8 +7,6 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const mocks = vi.hoisted(() => ({
   executeObservedClientTransaction: vi.fn(),
   getActiveWorld: vi.fn(),
-  getFactorySqlBaseUrl: vi.fn(),
-  resolveWorldContracts: vi.fn(),
   getGameManifest: vi.fn(),
   getContractByName: vi.fn(),
   normalizeSelector: vi.fn(),
@@ -20,11 +18,6 @@ vi.mock("@/observability/observed-client-transaction", () => ({
 
 vi.mock("@/runtime/world", () => ({
   getActiveWorld: mocks.getActiveWorld,
-  getFactorySqlBaseUrl: mocks.getFactorySqlBaseUrl,
-}));
-
-vi.mock("@/runtime/world/factory-resolver", () => ({
-  resolveWorldContracts: mocks.resolveWorldContracts,
 }));
 
 vi.mock("@/runtime/world/normalize", () => ({
@@ -59,13 +52,9 @@ describe("createActiveWorldBlitzHyperstructure", () => {
       name: "credence-new-flow-4",
       chain: "appchain",
       worldAddress: "0xworld",
+      contractsBySelector: { "0xselector": "0xhyper" },
     });
-    mocks.getFactorySqlBaseUrl.mockReset();
-    mocks.getFactorySqlBaseUrl.mockReturnValue("https://factory.sql");
-    mocks.resolveWorldContracts.mockReset();
-    mocks.resolveWorldContracts.mockResolvedValue({ "0xselector": "0xhyper" });
     mocks.getGameManifest.mockReset();
-    // The appchain arm resolves the address straight from the committed manifest.
     mocks.getGameManifest.mockReturnValue({ contracts: [{ selector: "0xselector", address: "0xhyper" }] });
     mocks.getContractByName.mockReset();
     mocks.getContractByName.mockReturnValue({ selector: "0xselector" });
@@ -82,7 +71,6 @@ describe("createActiveWorldBlitzHyperstructure", () => {
 
     await createActiveWorldBlitzHyperstructure({ account, hexCoords });
 
-    // Appchain worlds resolve straight from the committed manifest — no factory round-trip.
     expect(mocks.getGameManifest).toHaveBeenCalledWith("appchain");
     // The namespace is the ambient game scope (set at bootstrap; module default here).
     expect(mocks.getContractByName).toHaveBeenCalledWith(
@@ -91,8 +79,6 @@ describe("createActiveWorldBlitzHyperstructure", () => {
       "hyperstructure_create_systems",
     );
     expect(mocks.normalizeSelector).toHaveBeenCalledWith("0xselector");
-    expect(mocks.getFactorySqlBaseUrl).not.toHaveBeenCalled();
-    expect(mocks.resolveWorldContracts).not.toHaveBeenCalled();
     expect(mocks.executeObservedClientTransaction).toHaveBeenCalledWith(
       expect.objectContaining({
         account,

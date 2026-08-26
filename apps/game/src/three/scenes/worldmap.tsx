@@ -2124,7 +2124,7 @@ export default class WorldmapScene extends WarpTravel {
 
     const account = useAccountStore.getState().account;
     if (!account) {
-      toast.error("Connect a controller account before creating a Hyperstructure.");
+      toast.error("Wait for your gameplay account before creating a Hyperstructure.");
       return;
     }
 

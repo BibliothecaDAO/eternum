@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import type { Chain } from "@contracts";
+import type { GameChain as Chain } from "@realms-world/chain";
 
 import { resolveChain, resolveRuntimeChain, subscribeActiveWorldName, subscribeSelectedChain } from "./store";
 

@@ -1,4 +1,4 @@
-import type { Chain } from "@contracts";
+import type { GameChain as Chain } from "@realms-world/chain";
 import { markGameEntryMilestone, recordGameEntryDuration } from "@/ui/layouts/game-entry-timeline";
 import { buildWorldProfile } from "./profile-builder";
 import { resolveChain, setActiveWorldName, setSelectedChain } from "./store";

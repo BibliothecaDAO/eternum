@@ -1,8 +1,7 @@
-import { GLOBAL_TORII_BY_CHAIN, MMR_TOKEN_BY_CHAIN } from "@/config/global-chain";
 import { appchainModel, namespaceForChain } from "@/dojo/game-scope";
 import { executeObservedClientTransaction } from "@/observability/observed-client-transaction";
 import { buildWorldProfile, patchManifestWithFactory } from "@/runtime/world";
-import { resolveAppchainGameId, resolveAppchainWorldIdForGame } from "@/runtime/world/game-registry";
+import { resolveGameId, resolveWorldIdForGame } from "@/runtime/world/game-registry";
 import { getWorldById } from "@/runtime/world/world-directory";
 import {
   fetchLandingLeaderboard,
@@ -11,7 +10,6 @@ import {
 } from "@/services/leaderboard/landing-leaderboard-service";
 import { buildSettledBlitzPlayersQuery } from "@/services/blitz/blitz-settlement-sql";
 import { commitAndClaimMMR } from "@/ui/features/prize/utils/mmr-utils";
-import { getMMRTierFromRaw, toMmrIntegerFromRaw } from "@/ui/utils/mmr-tiers";
 import { tileDataToTile } from "@bibliothecadao/types";
 import {
   normalizeNonZeroAddress,
@@ -24,7 +22,7 @@ import {
   parseTroopTier,
   queryToriiSql,
 } from "./sql-parse-utils";
-import type { Chain } from "@contracts";
+import type { GameChain as Chain } from "@realms-world/chain";
 import { getGameManifest } from "@contracts";
 import { getContractByName } from "@dojoengine/core";
 import { Account, AccountInterface, Call, hash } from "starknet";
@@ -43,12 +41,6 @@ const LEADERBOARD_FETCH_LIMIT = 1000;
 const MAX_MAP_SNAPSHOT_TILES = 4200;
 const LORDS_TOKEN_DECIMALS = 18;
 const CLAIM_ALL_REWARDS_BATCH_SIZE = 200;
-const MMR_UPDATED_SELECTOR = hash.getSelectorFromName("MMRUpdated").toLowerCase();
-const EVENT_KEY0_EXPR = "ltrim(substr(lower(keys), 1, instr(lower(keys), '/') - 1), '0x')";
-const EVENT_PLAYER_EXPR =
-  "lower(substr(lower(keys), instr(lower(keys), '/') + 1, instr(substr(lower(keys), instr(lower(keys), '/') + 1), '/') - 1))";
-const EVENT_CONTRACT_EXPR =
-  "lower(substr(substr(id, instr(id, ':') + 1), instr(substr(id, instr(id, ':') + 1), ':') + 1, instr(substr(substr(id, instr(id, ':') + 1), instr(substr(id, instr(id, ':') + 1), ':') + 1), ':') - 1))";
 const FNV_OFFSET_BASIS = 0x811c9dc5;
 const FNV_PRIME = 0x01000193;
 
@@ -222,13 +214,13 @@ interface ReviewGameContext {
  * world and game id are recovered from the worlds' GameRegistry rows.
  */
 const resolveReviewGameContext = async (worldName: string): Promise<ReviewGameContext> => {
-  const worldId = await resolveAppchainWorldIdForGame(worldName);
+  const worldId = await resolveWorldIdForGame(worldName);
   const world = getWorldById(worldId);
   if (!world) {
     throw new Error(`Game "${worldName}" was not found in any appchain world's GameRegistry.`);
   }
 
-  const gameId = await resolveAppchainGameId(worldName, world.id);
+  const gameId = await resolveGameId(worldName, world.id);
   if (!gameId || gameId <= 0) {
     throw new Error(`Game "${worldName}" has no registry id in the ${world.id} world.`);
   }
@@ -262,142 +254,6 @@ const uniqueAddresses = (addresses: Array<string | null | undefined>): string[] 
   }
 
   return out;
-};
-
-const parseU256 = (low: unknown, high: unknown): bigint => {
-  const parsedLow = parseBigIntValue(low) ?? 0n;
-  const parsedHigh = parseBigIntValue(high) ?? 0n;
-  return parsedLow + (parsedHigh << 128n);
-};
-
-const getGlobalToriiSqlUrl = (chain: Chain): string | null => {
-  // Appchain has no global MMR torii — WS-C wires mainnet MMR reads. Returning
-  // null here short-circuits the enrichment path without any failed fetches.
-  if (chain !== "mainnet") {
-    return null;
-  }
-
-  const baseUrl = GLOBAL_TORII_BY_CHAIN[chain];
-  if (!baseUrl) {
-    return null;
-  }
-
-  return `${baseUrl}/sql`;
-};
-
-const buildLatestMmrForAddressesQuery = (addresses: string[], mmrTokenAddress: string): string => {
-  const normalizedToken = mmrTokenAddress.trim().toLowerCase();
-  const normalizedAddressList = addresses
-    .map((address) => {
-      const noPrefix = address.trim().toLowerCase().replace(/^0x/, "");
-      const withoutLeadingZeros = noPrefix.replace(/^0+/, "");
-      return `'${withoutLeadingZeros}'`;
-    })
-    .join(", ");
-
-  return `
-WITH mmr_events AS (
-  SELECT
-    id,
-    executed_at,
-    data,
-    ${EVENT_PLAYER_EXPR} AS player_address
-  FROM events
-  WHERE instr(lower(keys), '/') > 0
-    AND ${EVENT_KEY0_EXPR} = ltrim('${MMR_UPDATED_SELECTOR}', '0x')
-    AND ${EVENT_CONTRACT_EXPR} = '${normalizedToken}'
-    AND ltrim(${EVENT_PLAYER_EXPR}, '0x') IN (${normalizedAddressList})
-),
-latest_events AS (
-  SELECT
-    player_address,
-    id,
-    data,
-    ROW_NUMBER() OVER (
-      PARTITION BY player_address
-      ORDER BY executed_at DESC, id DESC
-    ) AS rn
-  FROM mmr_events
-),
-tokenized_1 AS (
-  SELECT
-    player_address,
-    id,
-    substr(data, 1, instr(data, '/') - 1) AS old_mmr_low,
-    substr(data, instr(data, '/') + 1) AS rest_1
-  FROM latest_events
-  WHERE rn = 1
-),
-tokenized_2 AS (
-  SELECT
-    player_address,
-    id,
-    old_mmr_low,
-    substr(rest_1, 1, instr(rest_1, '/') - 1) AS old_mmr_high,
-    substr(rest_1, instr(rest_1, '/') + 1) AS rest_2
-  FROM tokenized_1
-),
-tokenized_3 AS (
-  SELECT
-    player_address,
-    id,
-    old_mmr_low,
-    old_mmr_high,
-    substr(rest_2, 1, instr(rest_2, '/') - 1) AS new_mmr_low,
-    substr(rest_2, instr(rest_2, '/') + 1) AS rest_3
-  FROM tokenized_2
-),
-tokenized_4 AS (
-  SELECT
-    player_address,
-    id,
-    old_mmr_low,
-    old_mmr_high,
-    new_mmr_low,
-    substr(rest_3, 1, instr(rest_3, '/') - 1) AS new_mmr_high
-  FROM tokenized_3
-)
-SELECT player_address, new_mmr_low, new_mmr_high
-FROM tokenized_4;
-`;
-};
-
-const fetchLatestMmrForPlayers = async ({
-  chain,
-  addresses,
-}: {
-  chain: Chain;
-  addresses: string[];
-}): Promise<Map<string, Pick<LandingLeaderboardEntry, "mmr" | "mmrTier">>> => {
-  const normalizedAddresses = uniqueAddresses(addresses);
-  const globalToriiSqlUrl = getGlobalToriiSqlUrl(chain);
-  const mmrTokenAddress = MMR_TOKEN_BY_CHAIN[chain];
-
-  if (!globalToriiSqlUrl || !mmrTokenAddress || normalizedAddresses.length === 0) {
-    return new Map();
-  }
-
-  const query = buildLatestMmrForAddressesQuery(normalizedAddresses, mmrTokenAddress);
-
-  try {
-    const rows = await queryToriiSql<LatestMmrRow>(globalToriiSqlUrl, query, "Failed to fetch latest MMR values");
-    const mmrByAddress = new Map<string, Pick<LandingLeaderboardEntry, "mmr" | "mmrTier">>();
-
-    rows.forEach((row) => {
-      const playerAddress = parseAddress(row.player_address);
-      if (!playerAddress) return;
-
-      const mmrRaw = parseU256(row.new_mmr_low, row.new_mmr_high);
-      mmrByAddress.set(playerAddress, {
-        mmr: toMmrIntegerFromRaw(mmrRaw),
-        mmrTier: getMMRTierFromRaw(mmrRaw).name,
-      });
-    });
-
-    return mmrByAddress;
-  } catch {
-    return new Map();
-  }
 };
 
 const randomTrialId = () =>
@@ -485,12 +341,6 @@ interface PlayerRegisteredPointsRow {
 
 interface TransactionsCountRow {
   transaction_count?: unknown;
-}
-
-interface LatestMmrRow {
-  player_address?: unknown;
-  new_mmr_low?: unknown;
-  new_mmr_high?: unknown;
 }
 
 interface ReviewFinalizationMeta {
@@ -1150,33 +1000,7 @@ export const fetchGameReviewData = async ({
     fetchGameReviewCompetitiveMetrics(toriiSqlBaseUrl, gameId),
   ]);
 
-  let topPlayers = leaderboard.slice(0, 3);
-  if (topPlayers.length > 0) {
-    const mmrByAddress = await fetchLatestMmrForPlayers({
-      chain,
-      addresses: topPlayers.map((entry) => entry.address),
-    });
-
-    if (mmrByAddress.size > 0) {
-      topPlayers = topPlayers.map((entry) => {
-        const normalizedAddress = parseAddress(entry.address);
-        if (!normalizedAddress) {
-          return entry;
-        }
-
-        const mmrData = mmrByAddress.get(normalizedAddress);
-        if (!mmrData) {
-          return entry;
-        }
-
-        return {
-          ...entry,
-          mmr: mmrData.mmr,
-          mmrTier: mmrData.mmrTier,
-        };
-      });
-    }
-  }
+  const topPlayers = leaderboard.slice(0, 3);
 
   const normalizedPlayerAddress = parseAddress(playerAddress);
   let personalScore =

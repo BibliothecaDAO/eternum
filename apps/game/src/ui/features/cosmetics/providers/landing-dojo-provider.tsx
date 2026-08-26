@@ -1,9 +1,8 @@
-import { getCachedRpcProvider } from "@/utils/cached-rpc-provider";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { EternumProvider } from "@bibliothecadao/provider";
 import { createSystemCalls, SystemCalls } from "@bibliothecadao/types";
-import { createContext, ReactNode, useContext, useEffect, useMemo, useState } from "react";
-import { Account, AccountInterface, RpcProvider } from "starknet";
+import { createContext, ReactNode, useContext, useEffect, useState } from "react";
+import { Account, AccountInterface } from "starknet";
 import { dojoConfig } from "../../../../../dojo-config";
 import { env } from "../../../../../env";
 
@@ -30,15 +29,6 @@ export function useLandingDojo(): LandingDojoContextType {
   return context;
 }
 
-const createRpcProvider = () => getCachedRpcProvider(dojoConfig.rpcUrl);
-
-const createMasterAccount = (rpcProvider: RpcProvider) =>
-  new Account({
-    provider: rpcProvider,
-    address: env.VITE_PUBLIC_MASTER_ADDRESS,
-    signer: env.VITE_PUBLIC_MASTER_PRIVATE_KEY,
-  });
-
 /**
  * Landing-specific Dojo provider that initializes only system calls for the landing page.
  * This allows using Dojo system calls (like open_loot_chest) on the landing page
@@ -49,9 +39,6 @@ export function LandingDojoProvider({ children, fallback }: LandingDojoProviderP
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
   const account = useAccountStore((state) => state.account);
-
-  const rpcProvider = useMemo(() => createRpcProvider(), []);
-  const masterAccount = useMemo(() => createMasterAccount(rpcProvider), [rpcProvider]);
 
   useEffect(() => {
     let cancelled = false;
@@ -113,12 +100,9 @@ export function LandingDojoProvider({ children, fallback }: LandingDojoProviderP
     );
   }
 
-  // Use the connected account if available, otherwise fall back to master account
-  const effectiveAccount = account ?? masterAccount;
+  if (!account) {
+    return fallback ?? null;
+  }
 
-  return (
-    <LandingDojoContext.Provider value={{ systemCalls, account: effectiveAccount }}>
-      {children}
-    </LandingDojoContext.Provider>
-  );
+  return <LandingDojoContext.Provider value={{ systemCalls, account }}>{children}</LandingDojoContext.Provider>;
 }

@@ -66,20 +66,20 @@ describe("buildSceneSmokeUrl", () => {
   it("builds the hexception url as a canonical spectator route", () => {
     expect(
       buildSceneSmokeUrl({
-        chain: "mainnet",
+        chain: "madara",
         baseUrl: "https://127.0.0.1:4173",
         rendererMode: "webgpu-force-webgl",
         scene: "hex",
         worldName: "etrn-dawn",
       }),
     ).toBe(
-      "https://127.0.0.1:4173/play/mainnet/etrn-dawn/hex?col=0&row=0&spectate=true&rendererMode=webgpu-force-webgl",
+      "https://127.0.0.1:4173/play/madara/etrn-dawn/hex?col=0&row=0&spectate=true&rendererMode=webgpu-force-webgl",
     );
   });
 });
 
 describe("decodePaddedWorldName", () => {
-  it("decodes padded felt world names from the factory indexer", () => {
+  it("decodes padded felt world names from GameRegistry", () => {
     expect(decodePaddedWorldName("0x0000000000000000000000000000000000000000626c747a2d737061726b2d373032")).toBe(
       "bltz-spark-702",
     );
@@ -99,32 +99,29 @@ describe("resolveSceneSmokeWorldName", () => {
     expect(fetchSpy).not.toHaveBeenCalled();
   });
 
-  it("discovers the first alive per-world torii on cartridge chains", async () => {
-    vi.spyOn(globalThis, "fetch")
-      .mockResolvedValueOnce(
-        new Response(
-          JSON.stringify([
-            {
-              address: "0x0aaa",
-              name: "0x0000000000000000000000000000000000000000626c747a2d646561642d393939",
-            },
-            {
-              address: "0x0bbb",
-              name: "0x0000000000000000000000000000000000000000626c747a2d737061726b2d373032",
-            },
-          ]),
-          { status: 200, headers: { "Content-Type": "application/json" } },
-        ),
-      )
-      .mockResolvedValueOnce(new Response(null, { status: 404 }))
-      .mockResolvedValueOnce(new Response(null, { status: 200 }));
+  it("uses the newest indexed Madara game without probing per-world hosts", async () => {
+    vi.stubEnv("TORII_URL", "https://torii.example.test");
+    const fetchSpy = vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(
+      new Response(
+        JSON.stringify([
+          {
+            name: "0x0000000000000000000000000000000000000000626c747a2d737061726b2d373032",
+          },
+          {
+            name: "0x0000000000000000000000000000000000000000626c747a2d6f6c6465722d373031",
+          },
+        ]),
+        { status: 200, headers: { "Content-Type": "application/json" } },
+      ),
+    );
 
     await expect(
       resolveSceneSmokeWorldName({
-        chain: "sepolia",
+        chain: "madara",
         requestedWorldName: "",
       }),
     ).resolves.toBe("bltz-spark-702");
+    expect(fetchSpy).toHaveBeenCalledTimes(1);
   });
 
   it("discovers the newest configured game from the appchain GameRegistry", async () => {
@@ -168,7 +165,7 @@ describe("resolveSceneSmokeWorldName", () => {
     expect(fetchSpy).not.toHaveBeenCalled();
   });
 
-  it("fails loudly instead of falling back to a stale world name when nothing is alive", async () => {
+  it("fails loudly instead of falling back to a stale world name when no game is indexed", async () => {
     vi.stubEnv("TORII_URL", "https://torii.example.test");
 
     vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(
@@ -180,7 +177,7 @@ describe("resolveSceneSmokeWorldName", () => {
         chain: "appchain",
         requestedWorldName: "",
       }),
-    ).rejects.toThrow(/No live world found/);
+    ).rejects.toThrow(/No indexed game found/);
   });
 });
 

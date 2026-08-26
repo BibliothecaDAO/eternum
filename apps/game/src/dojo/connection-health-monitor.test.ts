@@ -1285,21 +1285,21 @@ describe("ConnectionHealthMonitor", () => {
 describe("resolveConnectionHealthToriiBaseUrl", () => {
   it("prefers the active world Torii over the static env fallback", () => {
     const toriiBaseUrl = resolveConnectionHealthToriiBaseUrl({
-      activeWorld: { toriiBaseUrl: "https://api.cartridge.gg/x/s0-game-5/torii" },
-      fallbackToriiUrl: "https://api.cartridge.gg/x/eternum-blitz-1/torii",
-      runtimeToriiUrl: "https://api.cartridge.gg/x/s0-game-5/torii",
+      activeWorld: { toriiBaseUrl: "https://api.realms.world/x/s0-game-5/torii" },
+      fallbackToriiUrl: "https://api.realms.world/x/eternum-blitz-1/torii",
+      runtimeToriiUrl: "https://api.realms.world/x/s0-game-5/torii",
     });
 
-    expect(toriiBaseUrl).toBe("https://api.cartridge.gg/x/s0-game-5/torii");
+    expect(toriiBaseUrl).toBe("https://api.realms.world/x/s0-game-5/torii");
   });
 
   it("uses the bootstrapped runtime Torii when no active profile is available", () => {
     const toriiBaseUrl = resolveConnectionHealthToriiBaseUrl({
       activeWorld: null,
-      fallbackToriiUrl: "https://api.cartridge.gg/x/eternum-blitz-1/torii",
-      runtimeToriiUrl: "https://api.cartridge.gg/x/bltz-warzone-04/torii",
+      fallbackToriiUrl: "https://api.realms.world/x/eternum-blitz-1/torii",
+      runtimeToriiUrl: "https://api.realms.world/x/bltz-warzone-04/torii",
     });
 
-    expect(toriiBaseUrl).toBe("https://api.cartridge.gg/x/bltz-warzone-04/torii");
+    expect(toriiBaseUrl).toBe("https://api.realms.world/x/bltz-warzone-04/torii");
   });
 });

@@ -5,7 +5,7 @@ import { memo, type ReactNode, useMemo } from "react";
 import { ReactComponent as Lightning } from "@/assets/icons/common/lightning.svg";
 import { useResolvedWorldGameMode } from "@/config/game-modes/use-game-mode-config";
 import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
-import { usePlayerAvatarByUsername } from "@/hooks/use-player-avatar";
+import { getAvatarUrl } from "@/hooks/use-player-avatar";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { HUD_LABEL } from "@/ui/design-system/atoms/hud-typography";
 import { OVERLAY_SURFACE_BASE } from "@/ui/design-system/atoms/overlay-surface";
@@ -71,8 +71,7 @@ const ArmyBannerEntityDetailContent = memo(
     const resolvedWorldMode = useResolvedWorldGameMode();
     const movementReadiness = useArmyMovementReadiness(explorer, structureResources);
     const ownerUsername = derivedData?.addressName ?? null;
-    const { data: ownerProfileByUsername } = usePlayerAvatarByUsername(ownerUsername);
-    const ownerAvatarUrl = ownerProfileByUsername?.avatarUrl ?? null;
+    const ownerAvatarUrl = ownerUsername ? getAvatarUrl(ownerUsername) : null;
 
     if (isLoadingExplorer || (explorer?.owner && isLoadingStructure)) {
       return (

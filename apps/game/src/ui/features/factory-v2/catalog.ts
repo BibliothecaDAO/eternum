@@ -8,24 +8,17 @@ import type {
 } from "./types";
 
 const FACTORY_ENVIRONMENT_LABELS: Record<string, string> = {
-  "mainnet.eternum": "Mainnet",
-  "mainnet.blitz": "Mainnet",
   "appchain.eternum": "Appchain",
   "appchain.blitz": "Appchain",
 };
 
-// Mainnet launching is switched off in this deployment (the Cartridge-hosted
-// factory infrastructure it relied on is gone); the appchain launch service
-// handles launches instead. Uncomment the mainnet entries to restore them —
-// the first entry is the default selection.
 const FACTORY_ENVIRONMENTS_BY_MODE: Record<FactoryGameMode, string[]> = {
-  eternum: [/* "mainnet.eternum", */ "appchain.eternum"],
-  blitz: [/* "mainnet.blitz", */ "appchain.blitz"],
+  eternum: ["appchain.eternum"],
+  blitz: ["appchain.blitz"],
 };
 
 /** `<chain>.<mode>` -> chain, so a new environment only needs a list entry. */
-const resolveFactoryLaunchChain = (environmentId: string): FactoryLaunchChain =>
-  environmentId.startsWith("appchain.") ? "appchain" : "mainnet";
+const resolveFactoryLaunchChain = (_environmentId: string): FactoryLaunchChain => "appchain";
 
 const MINUTES_PER_HOUR = 60;
 const MINUTES_PER_DAY = 24 * MINUTES_PER_HOUR;

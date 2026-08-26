@@ -7,7 +7,7 @@ import { useDojo, useHyperstructureUpdates } from "@bibliothecadao/react";
 import { ContractAddress, ID } from "@bibliothecadao/types";
 import { getComponentValue } from "@dojoengine/recs";
 import { useEffect, useMemo, useState } from "react";
-import { getAvatarUrl, normalizeAvatarAddress, useAvatarProfiles } from "@/hooks/use-player-avatar";
+import { getAvatarUrl } from "@/hooks/use-player-avatar";
 import { gameEntityKey } from "@/dojo/game-scope";
 
 const LEADERBOARD_AUTO_REFRESH_INTERVAL_MS = 30_000;
@@ -44,23 +44,6 @@ export const Leaderboard = ({
     // Sort by real-time total points
     return playersWithRealTimePoints.toSorted(([, pointsA], [, pointsB]) => pointsB - pointsA);
   })();
-
-  const playerAddresses = useMemo(
-    () => playerPointsLeaderboard.map(([address]) => toHexString(address)),
-    [playerPointsLeaderboard],
-  );
-  const { data: avatarProfiles } = useAvatarProfiles(playerAddresses);
-  const avatarMap = useMemo(() => {
-    const map = new Map<string, string>();
-    (avatarProfiles ?? []).forEach((profile) => {
-      const normalized = normalizeAvatarAddress(profile.playerAddress);
-      if (!normalized) return;
-      if (profile.avatarUrl) {
-        map.set(normalized, profile.avatarUrl);
-      }
-    });
-    return map;
-  }, [avatarProfiles]);
 
   const hyperstructure = useHyperstructureUpdates(hyperstructureEntityId);
 
@@ -115,8 +98,7 @@ export const Leaderboard = ({
       {playerPointsLeaderboard.map(([address, points], index) => {
         const playerName = getAddressName(address, components) || "Player not found";
         const playerAddress = toHexString(address);
-        const normalized = normalizeAvatarAddress(playerAddress);
-        const avatarUrl = normalized ? getAvatarUrl(playerAddress, avatarMap.get(normalized)) : null;
+        const avatarUrl = getAvatarUrl(playerAddress);
 
         const isOwner = address === ContractAddress(account.address);
 

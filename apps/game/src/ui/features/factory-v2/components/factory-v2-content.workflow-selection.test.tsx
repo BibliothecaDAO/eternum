@@ -78,8 +78,8 @@ const buildFactoryState = (overrides: Record<string, unknown> = {}) => ({
   selectedMode: "eternum",
   modeDefinition: { label: "Eternum" },
   environmentOptions: [],
-  selectedEnvironmentId: "mainnet.eternum",
-  selectedEnvironment: { id: "mainnet.eternum", label: "Mainnet", chain: "mainnet" },
+  selectedEnvironmentId: "appchain.eternum",
+  selectedEnvironment: { id: "appchain.eternum", label: "Appchain", chain: "appchain" },
   presets: [],
   selectedPresetId: "preset-1",
   selectedPreset: { id: "preset-1", defaults: {} },
@@ -145,13 +145,6 @@ const buildFactoryState = (overrides: Record<string, unknown> = {}) => ({
   deleteSelectedRun: vi.fn(async () => true),
   refreshSelectedRun: vi.fn(async () => true),
   fundSelectedRunPrize: vi.fn(async () => true),
-  liveIndexers: [],
-  liveIndexersUpdatedAt: null,
-  loadLiveIndexers: vi.fn(async () => {}),
-  refreshLiveIndexerSnapshot: vi.fn(async () => {}),
-  createIndexers: vi.fn(async () => {}),
-  updateIndexerTiers: vi.fn(async () => {}),
-  deleteIndexers: vi.fn(async () => {}),
   resolveRunByName: vi.fn(async () => false),
   ...overrides,
 });
@@ -198,7 +191,7 @@ describe("FactoryV2Content workflow selection", () => {
         selectedRun: {
           id: "run-1-updated",
           name: "etrn-sunrise-01",
-          environment: "mainnet.eternum",
+          environment: "appchain.eternum",
           status: "running",
         },
       }) as unknown as ReturnType<typeof useFactoryV2>,
@@ -222,7 +215,7 @@ describe("FactoryV2Content workflow selection", () => {
         selectedRun: {
           id: "pending:slot.eternum:etrn-sunrise-01",
           name: "etrn-sunrise-01",
-          environment: "mainnet.eternum",
+          environment: "appchain.eternum",
           status: "running",
         },
       }) as unknown as ReturnType<typeof useFactoryV2>,
@@ -257,11 +250,11 @@ describe("FactoryV2Content workflow selection", () => {
       buildFactoryState({
         selectedMode: "blitz",
         modeDefinition: { label: "Blitz" },
-        selectedEnvironmentId: "mainnet.blitz",
-        selectedEnvironment: { id: "mainnet.blitz", label: "Mainnet", chain: "mainnet" },
+        selectedEnvironmentId: "appchain.blitz",
+        selectedEnvironment: { id: "appchain.blitz", label: "Appchain", chain: "appchain" },
         activeRunName: "bltz-rush-01",
         matchingRun: { id: "run-2", name: "bltz-rush-01" },
-        selectedRun: { id: "run-2", name: "bltz-rush-01", environment: "mainnet.blitz", status: "running" },
+        selectedRun: { id: "run-2", name: "bltz-rush-01", environment: "appchain.blitz", status: "running" },
       }) as unknown as ReturnType<typeof useFactoryV2>,
     );
 

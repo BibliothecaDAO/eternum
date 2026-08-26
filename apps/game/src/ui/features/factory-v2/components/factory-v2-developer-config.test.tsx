@@ -5,7 +5,6 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { FactoryV2DeveloperConfig } from "./factory-v2-developer-config";
 
 const mocks = vi.hoisted(() => ({
-  connector: { controller: { switchStarknetChain: vi.fn(), openSettings: vi.fn(), rpcUrl: vi.fn() } },
   account: {
     execute: vi.fn(),
     waitForTransaction: vi.fn(),
@@ -48,7 +47,7 @@ vi.mock("@/hooks/store/use-account-store", () => ({
 }));
 
 vi.mock("@/ui/features/factory/shared/factory-metadata", () => ({
-  DEFAULT_FACTORY_NAMESPACE: "s1_eternum",
+  DEFAULT_FACTORY_NAMESPACE: "s2",
   loadFactoryConfigManifest: mocks.loadFactoryConfigManifest,
   resolveFactoryAddress: mocks.resolveFactoryAddress,
   resolveFactoryConfigDefaultVersion: mocks.resolveFactoryConfigDefaultVersion,
@@ -67,43 +66,17 @@ vi.mock("@/observability/transaction-failure-reporting", () => ({
 }));
 
 vi.mock("@/ui/utils/network-switch", () => ({
-  getChainLabel: (chain: string) => (chain === "mainnet" ? "Mainnet" : "Appchain"),
+  getChainLabel: () => "Appchain",
   resolveConnectedTxChainFromRuntime: mocks.resolveConnectedTxChainFromRuntime,
   switchWalletToChain: mocks.switchWalletToChain,
 }));
 
-vi.mock("@/ui/components/switch-network-prompt", () => ({
-  SwitchNetworkPrompt: ({
-    open,
-    title = "Switch Network Required",
-    description,
-    switchLabel,
-    onClose,
-    onSwitch,
-  }: {
-    open: boolean;
-    title?: string;
-    description: string;
-    switchLabel: string;
-    onClose: () => void;
-    onSwitch: () => void | Promise<void>;
-  }) =>
-    open ? (
-      <div data-testid="switch-network-prompt">
-        <span>{title}</span>
-        <span>{description}</span>
-        <button onClick={onClose}>Cancel</button>
-        <button onClick={() => void onSwitch()}>{switchLabel}</button>
-      </div>
-    ) : null,
-}));
-
 const TEST_MANIFEST = {
   world: { class_hash: "0xworld" },
-  contracts: [{ class_hash: "0xcontract", tag: "s1_eternum-prize_distribution_systems", selector: "0xselector" }],
+  contracts: [{ class_hash: "0xcontract", tag: "s2-prize_distribution_systems", selector: "0xselector" }],
   models: [{ class_hash: "0xmodel" }],
   events: [{ class_hash: "0xevent" }],
-  libraries: [{ class_hash: "0xlibrary", tag: "s1_eternum-utility_v1", version: "1" }],
+  libraries: [{ class_hash: "0xlibrary", tag: "s2-utility_v1", version: "1" }],
 };
 
 const waitForAsyncWork = async () => {
@@ -144,19 +117,18 @@ describe("FactoryV2DeveloperConfig", () => {
     mocks.resolveClientTransactionFailureStageFromError.mockImplementation((_error, fallback) => fallback);
 
     mocks.useAccount.mockReturnValue({
-      chainId: "0xmainnet",
-      connector: mocks.connector,
+      chainId: "0xappchain",
     });
     mocks.useAccountStore.mockImplementation((selector: (state: { account: typeof mocks.account }) => unknown) =>
       selector({ account: mocks.account }),
     );
     mocks.loadFactoryConfigManifest.mockResolvedValue(TEST_MANIFEST);
-    mocks.resolveFactoryAddress.mockImplementation((chain: string) => (chain === "mainnet" ? "0xmain" : "0xfactory"));
+    mocks.resolveFactoryAddress.mockImplementation((chain: string) => (chain === "appchain" ? "0xmain" : "0xfactory"));
     mocks.resolveFactoryConfigDefaultVersion.mockImplementation((mode: string) => (mode === "eternum" ? "280" : "180"));
     mocks.getFactoryExplorerTxUrl.mockImplementation(
       (chain: string, txHash: string) => `https://explorer/${chain}/${txHash}`,
     );
-    mocks.resolveConnectedTxChainFromRuntime.mockReturnValue("mainnet");
+    mocks.resolveConnectedTxChainFromRuntime.mockReturnValue("appchain");
     mocks.switchWalletToChain.mockResolvedValue(true);
     mocks.extractTransactionHash.mockImplementation(
       (result: { transaction_hash?: string }) => result.transaction_hash ?? null,
@@ -179,13 +151,13 @@ describe("FactoryV2DeveloperConfig", () => {
     (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = false;
   });
 
-  async function renderDeveloperConfig(props?: { mode?: "blitz" | "eternum"; chain?: "mainnet" }) {
+  async function renderDeveloperConfig(props?: { mode?: "blitz" | "eternum"; chain?: "appchain" }) {
     await act(async () => {
       root.render(
         <FactoryV2DeveloperConfig
           mode={props?.mode ?? "blitz"}
-          chain={props?.chain ?? "mainnet"}
-          environmentLabel={"Mainnet"}
+          chain={props?.chain ?? "appchain"}
+          environmentLabel={"Appchain"}
         />,
       );
       await waitForAsyncWork();
@@ -262,7 +234,7 @@ describe("FactoryV2DeveloperConfig", () => {
       "set_factory_config_libraries",
     ]);
     expect(container.textContent).toContain("Multicall confirmed");
-    expect(container.querySelector('a[href="https://explorer/mainnet/0xtx"]')).not.toBeNull();
+    expect(container.querySelector('a[href="https://explorer/appchain/0xtx"]')).not.toBeNull();
   });
 
   it("shows the transaction hash immediately after submission while confirmation is still pending", async () => {
@@ -335,34 +307,6 @@ describe("FactoryV2DeveloperConfig", () => {
     expect(container.textContent).toContain("wallet rejected");
   });
 
-  it("shows the switch network prompt instead of sending when the wallet is on the wrong chain", async () => {
-    mocks.resolveConnectedTxChainFromRuntime.mockReturnValue("appchain");
-
-    await renderDeveloperConfig({ chain: "mainnet" });
-
-    const sendButton = findButton("Send multicall") as HTMLButtonElement;
-    await act(async () => {
-      sendButton.click();
-      await waitForAsyncWork();
-    });
-
-    expect(mocks.account.execute).not.toHaveBeenCalled();
-    expect(container.textContent).toContain("Switch Network Required");
-    expect(container.textContent).toContain("Your wallet is connected to another chain for this factory action.");
-
-    const switchButton = findButton("Switch To Mainnet") as HTMLButtonElement;
-    await act(async () => {
-      switchButton.click();
-      await waitForAsyncWork();
-    });
-
-    // Chain selection was removed as a user concept (tester-gate D2): the
-    // wallet never switches off the appchain, so the guard blocks the send
-    // without invoking any wallet chain switch.
-    expect(mocks.switchWalletToChain).not.toHaveBeenCalled();
-    expect(mocks.account.execute).not.toHaveBeenCalled();
-  });
-
   it("resets selection and version when mode or environment changes", async () => {
     await renderDeveloperConfig();
 
@@ -374,10 +318,10 @@ describe("FactoryV2DeveloperConfig", () => {
 
     expect(listSelectedSectionButtons()).toHaveLength(0);
 
-    await renderDeveloperConfig({ mode: "eternum", chain: "mainnet" });
+    await renderDeveloperConfig({ mode: "eternum", chain: "appchain" });
 
     expect(listSelectedSectionButtons()).toHaveLength(5);
     expect((container.querySelector("input:not([readonly])") as HTMLInputElement).value).toBe("280");
-    expect(container.textContent).toContain("Mainnet · mainnet");
+    expect(container.textContent).toContain("Appchain · appchain");
   });
 });

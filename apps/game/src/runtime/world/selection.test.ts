@@ -38,24 +38,24 @@ describe("applyWorldSelection", () => {
   });
 
   it("persists the selected chain even when it matches the resolved chain", async () => {
-    mocks.resolveChain.mockReturnValue("mainnet");
-    mocks.buildWorldProfile.mockResolvedValue({ name: "mainnet-king-1", chain: "mainnet" });
+    mocks.resolveChain.mockReturnValue("madara");
+    mocks.buildWorldProfile.mockResolvedValue({ name: "mainnet-king-1", chain: "madara" });
 
-    const result = await applyWorldSelection({ name: "mainnet-king-1", chain: "mainnet" }, "mainnet");
+    const result = await applyWorldSelection({ name: "mainnet-king-1", chain: "madara" }, "madara");
 
     expect(result.chainChanged).toBe(false);
     expect(mocks.setSelectedChain).toHaveBeenCalledTimes(1);
-    expect(mocks.setSelectedChain).toHaveBeenCalledWith("mainnet");
+    expect(mocks.setSelectedChain).toHaveBeenCalledWith("madara");
   });
 
   it("persists fallback chain when selection chain is omitted", async () => {
-    mocks.resolveChain.mockReturnValue("mainnet");
-    mocks.buildWorldProfile.mockResolvedValue({ name: "mainnet-king-1", chain: "mainnet" });
+    mocks.resolveChain.mockReturnValue("madara");
+    mocks.buildWorldProfile.mockResolvedValue({ name: "mainnet-king-1", chain: "madara" });
 
-    await applyWorldSelection({ name: "mainnet-king-1" }, "mainnet");
+    await applyWorldSelection({ name: "mainnet-king-1" }, "madara");
 
     expect(mocks.setSelectedChain).toHaveBeenCalledTimes(1);
-    expect(mocks.setSelectedChain).toHaveBeenCalledWith("mainnet");
+    expect(mocks.setSelectedChain).toHaveBeenCalledWith("madara");
   });
 
   it("records selection milestones and durations around profile building and persistence", async () => {
@@ -67,10 +67,10 @@ describe("applyWorldSelection", () => {
     nowSpy.mockReturnValueOnce(340);
     nowSpy.mockReturnValueOnce(340);
 
-    mocks.resolveChain.mockReturnValue("mainnet");
-    mocks.buildWorldProfile.mockResolvedValue({ name: "mainnet-king-1", chain: "mainnet" });
+    mocks.resolveChain.mockReturnValue("madara");
+    mocks.buildWorldProfile.mockResolvedValue({ name: "mainnet-king-1", chain: "madara" });
 
-    await applyWorldSelection({ name: "mainnet-king-1", chain: "mainnet" }, "mainnet");
+    await applyWorldSelection({ name: "mainnet-king-1", chain: "madara" }, "madara");
 
     expect(mocks.markGameEntryMilestone).toHaveBeenCalledWith("world-profile-build-started");
     expect(mocks.markGameEntryMilestone).toHaveBeenCalledWith("world-profile-build-completed");

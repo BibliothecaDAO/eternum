@@ -3,110 +3,92 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { resolveFactoryManifestContractAddress } from "./resolve-factory-manifest-contract-address";
 
 const mocks = vi.hoisted(() => ({
-  getFactoryLookupManifest: vi.fn(),
-  getFactorySqlBaseUrl: vi.fn(),
-  listFactoryWorlds: vi.fn(),
-  patchManifestWithFactory: vi.fn(),
-  resolveWorldContracts: vi.fn(),
-  resolveWorldDeploymentFromFactory: vi.fn(),
+  getGameManifest: vi.fn(),
+  getWorldById: vi.fn(),
+  resolveWorldIdForGame: vi.fn(),
 }));
 
-vi.mock("./factory-manifest", () => ({
-  getFactoryLookupManifest: mocks.getFactoryLookupManifest,
+vi.mock("@contracts", () => ({
+  getGameManifest: mocks.getGameManifest,
 }));
 
-vi.mock("@/runtime/world", () => ({
-  getFactorySqlBaseUrl: mocks.getFactorySqlBaseUrl,
-  listFactoryWorlds: mocks.listFactoryWorlds,
-  patchManifestWithFactory: mocks.patchManifestWithFactory,
-  resolveWorldContracts: mocks.resolveWorldContracts,
-  resolveWorldDeploymentFromFactory: mocks.resolveWorldDeploymentFromFactory,
+vi.mock("@/runtime/world/game-registry", () => ({
+  resolveWorldIdForGame: mocks.resolveWorldIdForGame,
+}));
+
+vi.mock("@/runtime/world/world-directory", () => ({
+  getWorldById: mocks.getWorldById,
 }));
 
 describe("resolveFactoryManifestContractAddress", () => {
   beforeEach(() => {
     vi.clearAllMocks();
 
-    mocks.getFactorySqlBaseUrl.mockReturnValue("https://factory.example/sql");
-    mocks.listFactoryWorlds.mockResolvedValue([
-      { name: "etrn-sunrise-01", chain: "mainnet", worldAddress: "0x111" },
-      { name: "etrn-sunset-02", chain: "mainnet", worldAddress: "0x222" },
-    ]);
-    mocks.resolveWorldContracts.mockResolvedValue({ "0x1": "0xaaa" });
-    mocks.resolveWorldDeploymentFromFactory.mockResolvedValue({ worldAddress: "0x111" });
-    mocks.getFactoryLookupManifest.mockReturnValue({
-      contracts: [{ tag: "s1_eternum-prize_distribution_systems", address: "0x0" }],
+    mocks.resolveWorldIdForGame.mockResolvedValue("blitz");
+    mocks.getWorldById.mockReturnValue({ id: "blitz", worldAddress: "0x111" });
+    mocks.getGameManifest.mockReturnValue({
+      contracts: [{ tag: "s2-prize_distribution_systems", address: "0xabc" }],
     });
-    mocks.patchManifestWithFactory.mockImplementation((manifest: unknown) => ({
-      ...(manifest as Record<string, unknown>),
-      contracts: [{ tag: "s1_eternum-prize_distribution_systems", address: "0xabc" }],
-    }));
   });
 
   it("resolves the default prize address tag", async () => {
     const result = await resolveFactoryManifestContractAddress({
-      chain: "mainnet",
+      chain: "appchain",
       worldName: "etrn-sunrise-01",
-      manifestContractName: "s1_eternum-prize_distribution_systems",
+      manifestContractName: "s2-prize_distribution_systems",
     });
 
     expect(result).toEqual({
       kind: "success",
       worldName: "etrn-sunrise-01",
-      resolvedTag: "s1_eternum-prize_distribution_systems",
+      resolvedTag: "s2-prize_distribution_systems",
       worldAddress: "0x111",
       contractAddress: "0xabc",
     });
-    expect(mocks.resolveWorldContracts).toHaveBeenCalledWith("https://factory.example/sql", "etrn-sunrise-01");
-    expect(mocks.resolveWorldDeploymentFromFactory).toHaveBeenCalledWith(
-      "https://factory.example/sql",
-      "mainnet",
-      "etrn-sunrise-01",
-    );
+    expect(mocks.resolveWorldIdForGame).toHaveBeenCalledWith("etrn-sunrise-01");
+    expect(mocks.getGameManifest).toHaveBeenCalledWith("appchain", "blitz");
   });
 
   it("normalizes custom contract names before lookup", async () => {
-    mocks.patchManifestWithFactory.mockReturnValue({
-      contracts: [{ tag: "s1_eternum-prize_distribution_systems", address: "0xabc" }],
-    });
-
     const result = await resolveFactoryManifestContractAddress({
-      chain: "mainnet",
+      chain: "appchain",
       worldName: "ETRN-SUNRISE-01",
       manifestContractName: "{prize_distribution_systems}",
     });
 
     expect(result).toMatchObject({
       kind: "success",
-      resolvedTag: "s1_eternum-prize_distribution_systems",
+      resolvedTag: "s2-prize_distribution_systems",
     });
   });
 
-  it("returns world suggestions when the world does not match exactly", async () => {
+  it("reports a game missing from the committed world registries", async () => {
+    mocks.resolveWorldIdForGame.mockResolvedValue(null);
+    mocks.getWorldById.mockReturnValue(null);
+
     const result = await resolveFactoryManifestContractAddress({
-      chain: "mainnet",
+      chain: "appchain",
       worldName: "etrn-sun",
       manifestContractName: "prize_distribution_systems",
     });
 
     expect(result).toEqual({
       kind: "failure",
-      code: "world_not_found",
-      message: 'No Factory world named "etrn-sun" was found on the selected chain.',
-      worldSuggestions: ["etrn-sunrise-01", "etrn-sunset-02"],
+      code: "factory_unavailable",
+      message: 'Game "etrn-sun" was not found in any deployed world\'s registry.',
     });
   });
 
   it("returns contract suggestions when the manifest tag is missing", async () => {
-    mocks.patchManifestWithFactory.mockReturnValue({
+    mocks.getGameManifest.mockReturnValue({
       contracts: [
-        { tag: "s1_eternum-prize_distribution_systems", address: "0xabc" },
-        { tag: "s1_eternum-realm_systems", address: "0xdef" },
+        { tag: "s2-prize_distribution_systems", address: "0xabc" },
+        { tag: "s2-realm_systems", address: "0xdef" },
       ],
     });
 
     const result = await resolveFactoryManifestContractAddress({
-      chain: "mainnet",
+      chain: "appchain",
       worldName: "etrn-sunrise-01",
       manifestContractName: "resource_systems",
     });
@@ -114,8 +96,8 @@ describe("resolveFactoryManifestContractAddress", () => {
     expect(result).toEqual({
       kind: "failure",
       code: "contract_not_found",
-      message: 'No manifest contract matched "s1_eternum-resource_systems".',
-      contractSuggestions: ["s1_eternum-prize_distribution_systems", "s1_eternum-realm_systems"],
+      message: 'No manifest contract matched "s2-resource_systems".',
+      contractSuggestions: ["s2-prize_distribution_systems", "s2-realm_systems"],
     });
   });
 });

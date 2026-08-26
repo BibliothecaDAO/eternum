@@ -1,7 +1,7 @@
 import { normalizeWorldMapRoutePosition } from "@/play/navigation/play-route-target";
 import { buildPlayHref } from "@/play/navigation/play-route";
 import { UNDEFINED_STRUCTURE_ENTITY_ID } from "@/ui/constants";
-import type { Chain } from "@contracts";
+import type { GameChain as Chain } from "@realms-world/chain";
 
 type WorldMapPosition = {
   col: number;

@@ -60,13 +60,6 @@ const ROUTE_TRACK_DEFINITIONS: RouteTrackDefinition[] = [
     match: createExactMatcher("/"),
   },
   {
-    key: "landing:profile",
-    priority: 55,
-    mode: "sequence",
-    tracks: ["music.nomads_ballad", "music.happy_realm", "music.monophonic_mixtape_12"],
-    match: createStartsWithMatcher("/profile"),
-  },
-  {
     key: "landing:markets",
     priority: 55,
     mode: "shuffle",

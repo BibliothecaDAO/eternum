@@ -1,6 +1,6 @@
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useFactorySeries } from "@/hooks/use-factory-series";
-import type { Chain } from "@contracts";
+import type { GameChain as Chain } from "@realms-world/chain";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   clearFactoryV2AdminSecret as clearStoredFactoryAdminSecret,
@@ -14,14 +14,12 @@ import {
   continueFactoryRotationRun,
   continueFactoryRun,
   continueFactorySeriesRun,
-  createFactoryIndexers,
   createFactoryRotationRun,
   createFactoryRun,
   createFactorySeriesRun,
   deleteFactoryRotationRun,
   deleteFactoryRun,
   deleteFactorySeriesRun,
-  deleteFactoryIndexers,
   FactoryWorkerApiError,
   fundFactoryGamePrize,
   fundFactoryRotationPrizes,
@@ -29,17 +27,13 @@ import {
   isFactoryWorkerEnvironmentSupported,
   listFactoryRuns,
   nudgeFactoryRotationRun,
-  readFactoryLiveIndexers,
   readFactoryRotationRunIfPresent,
   readFactoryRunByNameIfPresent,
   readFactoryRunIfPresent,
   readFactorySeriesRunIfPresent,
-  refreshFactoryLiveIndexers,
-  updateFactoryIndexerTier,
   type FactoryWorkerEnvironmentId,
   type FactoryWorkerGameLaunchScope,
   type FactoryWorkerLaunchStepId,
-  type FactoryWorkerLiveIndexerEntry,
   type FactoryWorkerRotationLaunchScope,
   type FactoryWorkerRunRecord,
   type FactoryWorkerSeriesLaunchScope,
@@ -112,8 +106,6 @@ const RUN_LOOKUP_DELAY_MS = 1_500;
 const RUN_POLL_INTERVAL_MS = 5_000;
 const PRIZE_FUNDING_LOOKUP_ATTEMPTS = 40;
 const PRIZE_FUNDING_LOOKUP_DELAY_MS = 3_000;
-const LIVE_INDEXER_REFRESH_ATTEMPTS = 12;
-const LIVE_INDEXER_REFRESH_DELAY_MS = 3_000;
 const FIRST_UPDATE_WAIT_MESSAGE = "This game just started. We are waiting for it to appear.";
 const AUTO_UPDATE_MESSAGE = "Updating automatically.";
 const EXISTING_GAME_NOTICE = "That game already exists. We opened it for you.";
@@ -137,17 +129,6 @@ interface FactoryPrizeFundingRequest {
   selectedGameNames: string[];
 }
 
-interface FactoryIndexerDeleteRequest {
-  adminSecret: string;
-  gameNames: string[];
-}
-
-interface FactoryIndexerTierUpdateRequest {
-  adminSecret: string;
-  gameNames: string[];
-  tier: "basic" | "pro" | "legendary" | "epic";
-}
-
 type FactoryWorkerContinueLaunchScope =
   | FactoryWorkerGameLaunchScope
   | FactoryWorkerSeriesLaunchScope
@@ -159,8 +140,7 @@ export const useFactoryV2 = () => {
   const initialPresetId = getDefaultPresetIdForModeSelection(initialMode);
   const initialPreset = getFactoryPresetById(initialPresetId);
   const initialStartAt = initialPreset ? getPresetStartAtValue(initialPreset) : "";
-  // Mainnet is the only factory launch target now that Slot is EoL.
-  const initialChain: FactoryLaunchChain = "mainnet";
+  const initialChain: FactoryLaunchChain = "appchain";
   const initialSuggestedGameName = buildSuggestedGameName(initialMode, []);
   const initialSuggestedSeriesName = buildSuggestedSeriesName(initialMode, []);
   const initialSuggestedRotationName = buildSuggestedRotationName(initialMode, []);
@@ -230,9 +210,6 @@ export const useFactoryV2 = () => {
   const [hasSavedFactoryAdminSecret, setHasSavedFactoryAdminSecret] = useState(
     initialFactoryAdminSecret.trim().length > 0,
   );
-  const [liveIndexers, setLiveIndexers] = useState<FactoryWorkerLiveIndexerEntry[]>([]);
-  const [liveIndexersUpdatedAt, setLiveIndexersUpdatedAt] = useState<string | null>(null);
-  const [hasLoadedLiveIndexersSnapshot, setHasLoadedLiveIndexersSnapshot] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
   const runsByEnvironmentRef = useRef<Record<string, FactoryRun[]>>({});
   const pendingLaunchesRef = useRef<FactoryPendingLaunch[]>(pendingLaunches);
@@ -243,7 +220,7 @@ export const useFactoryV2 = () => {
     environmentOptions.find((environment) => environment.id === selectedEnvironmentId) ?? environmentOptions[0] ?? null;
   const presets = getFactoryLaunchPresetsForMode(selectedMode);
   const ownedSeriesQuery = useFactorySeries(
-    (selectedEnvironment?.chain ?? "mainnet") as Chain,
+    (selectedEnvironment?.chain ?? "appchain") as Chain,
     account?.address ?? null,
   );
   const ownedSeries = ownedSeriesQuery.data ?? [];
@@ -297,14 +274,14 @@ export const useFactoryV2 = () => {
   const environmentUnavailableReason = resolveEnvironmentUnavailableReason(selectedEnvironment?.id);
   const moreOptions = useFactoryV2MoreOptions({
     mode: selectedMode,
-    chain: selectedEnvironment?.chain ?? "mainnet",
+    chain: selectedEnvironment?.chain ?? "appchain",
     presetId: selectedPreset?.id ?? null,
     twoPlayerMode,
     durationMinutes: draftDurationMinutes,
   });
   const biomeClimateOptions = buildFactoryBiomeClimateOptions({
     mode: selectedMode,
-    chain: selectedEnvironment?.chain ?? "mainnet",
+    chain: selectedEnvironment?.chain ?? "appchain",
     launchKind: selectedLaunchKind,
     durationMinutes: draftDurationMinutes,
     gameName: draftGameName,
@@ -323,7 +300,7 @@ export const useFactoryV2 = () => {
 
   useEffect(() => {
     const nextDefaultDraft = createFactoryBiomeClimateDraft(
-      selectedEnvironment?.chain ?? "mainnet",
+      selectedEnvironment?.chain ?? "appchain",
       selectedMode,
       draftDurationMinutes,
     );
@@ -336,7 +313,7 @@ export const useFactoryV2 = () => {
 
   useEffect(() => {
     const defaultDraft = createFactoryBiomeClimateDraft(
-      selectedEnvironment?.chain ?? "mainnet",
+      selectedEnvironment?.chain ?? "appchain",
       selectedMode,
       draftDurationMinutes,
     );
@@ -359,7 +336,7 @@ export const useFactoryV2 = () => {
 
   useEffect(() => {
     const defaultDraft = createFactoryBiomeClimateDraft(
-      selectedEnvironment?.chain ?? "mainnet",
+      selectedEnvironment?.chain ?? "appchain",
       selectedMode,
       draftDurationMinutes,
     );
@@ -710,7 +687,10 @@ export const useFactoryV2 = () => {
   ]);
 
   const selectMode = (mode: FactoryGameMode) => {
-    const nextEnvironmentId = resolveFactoryEnvironmentIdForModeAndChain(mode, selectedEnvironment?.chain ?? "mainnet");
+    const nextEnvironmentId = resolveFactoryEnvironmentIdForModeAndChain(
+      mode,
+      selectedEnvironment?.chain ?? "appchain",
+    );
     const nextPresetId = getDefaultPresetIdForModeSelection(mode);
     const nextPreset = getFactoryPresetById(nextPresetId);
     const nextRuns = runsByEnvironmentRef.current[nextEnvironmentId] ?? [];
@@ -840,7 +820,7 @@ export const useFactoryV2 = () => {
 
   const resetSelectedBiomeClimate = () => {
     const defaultDraft = createFactoryBiomeClimateDraft(
-      selectedEnvironment?.chain ?? "mainnet",
+      selectedEnvironment?.chain ?? "appchain",
       selectedMode,
       draftDurationMinutes,
     );
@@ -1339,196 +1319,6 @@ export const useFactoryV2 = () => {
     );
   };
 
-  const loadLiveIndexers = async ({ adminSecret, gameNames }: FactoryIndexerDeleteRequest) => {
-    const normalizedSecret = adminSecret.trim();
-    const normalizedGameNames = normalizeManagedIndexerGameNames(gameNames);
-
-    if (isWatcherBusy || !normalizedSecret) {
-      return;
-    }
-
-    await runWatchedAction(
-      {
-        kind: "refresh_live_indexers",
-        runName: selectedEnvironment?.label ?? "indexers",
-        title: "Loading indexers",
-        detail:
-          normalizedGameNames.length > 0
-            ? `Loading the saved list for ${normalizedGameNames.length} typed names.`
-            : "Loading the saved indexer list.",
-        workflowName: "factory-indexer-maintenance.yml",
-        statusLabel: "Loading",
-      },
-      async () => {
-        const response = await readFactoryLiveIndexers({
-          adminSecret: normalizedSecret,
-          ...(normalizedGameNames.length > 0 ? { gameNames: normalizedGameNames } : {}),
-        });
-        setLiveIndexers(response.entries);
-        setLiveIndexersUpdatedAt(response.updatedAt);
-        setHasLoadedLiveIndexersSnapshot(true);
-      },
-    );
-  };
-
-  const refreshLiveIndexerSnapshot = async ({ adminSecret, gameNames }: FactoryIndexerDeleteRequest) => {
-    const environmentId = assertSupportedEnvironment(selectedEnvironment?.id);
-    const normalizedSecret = adminSecret.trim();
-    const normalizedGameNames = normalizeManagedIndexerGameNames(gameNames);
-    const previousSnapshotUpdatedAt = liveIndexersUpdatedAt;
-    const previousSnapshotFingerprint = buildLiveIndexerSnapshotFingerprint(liveIndexers);
-
-    if (isWatcherBusy || !environmentId || !normalizedSecret) {
-      return;
-    }
-
-    await runWatchedAction(
-      {
-        kind: "refresh_live_indexers",
-        runName: selectedEnvironment?.label ?? "indexers",
-        title: "Checking Slot",
-        detail:
-          normalizedGameNames.length > 0
-            ? `Checking Slot for ${normalizedGameNames.length} typed names and updating this list.`
-            : "Checking Slot and updating this list.",
-        workflowName: "factory-indexer-maintenance.yml",
-        statusLabel: "Checking",
-      },
-      async () => {
-        await refreshFactoryLiveIndexers({
-          environment: environmentId,
-          adminSecret: normalizedSecret,
-          ...(normalizedGameNames.length > 0 ? { gameNames: normalizedGameNames } : {}),
-        });
-
-        const refreshedSnapshot = await waitForLiveIndexerSnapshotUpdate({
-          adminSecret: normalizedSecret,
-          gameNames: normalizedGameNames,
-          previousUpdatedAt: previousSnapshotUpdatedAt,
-          previousFingerprint: previousSnapshotFingerprint,
-        });
-
-        if (!refreshedSnapshot) {
-          setNotice("Still checking Slot. This list will update when the refresh finishes.");
-          return;
-        }
-
-        const nextSnapshotFingerprint = buildLiveIndexerSnapshotFingerprint(refreshedSnapshot.entries);
-
-        setLiveIndexers(refreshedSnapshot.entries);
-        setLiveIndexersUpdatedAt(refreshedSnapshot.updatedAt);
-        setHasLoadedLiveIndexersSnapshot(true);
-        setNotice(
-          nextSnapshotFingerprint === previousSnapshotFingerprint
-            ? "Slot checked. This list is already up to date."
-            : "Slot checked. This list is up to date.",
-        );
-      },
-    );
-  };
-
-  const createIndexers = async ({ adminSecret, gameNames }: FactoryIndexerDeleteRequest) => {
-    const environmentId = assertSupportedEnvironment(selectedEnvironment?.id);
-    const normalizedSecret = adminSecret.trim();
-    const normalizedGameNames = normalizeManagedIndexerGameNames(gameNames);
-
-    if (isWatcherBusy || !environmentId || !normalizedSecret || normalizedGameNames.length === 0) {
-      return;
-    }
-
-    await runWatchedAction(
-      {
-        kind: "create_indexers",
-        runName: selectedEnvironment?.label ?? "indexers",
-        title: "Creating indexers",
-        detail:
-          normalizedGameNames.length === 1
-            ? `Creating or recreating the indexer for ${normalizedGameNames[0]}.`
-            : `Creating or recreating ${normalizedGameNames.length} listed indexers.`,
-        workflowName: "factory-indexer-maintenance.yml",
-        statusLabel: "Creating",
-      },
-      async () => {
-        await createFactoryIndexers({
-          environment: environmentId,
-          adminSecret: normalizedSecret,
-          gameNames: normalizedGameNames,
-        });
-        setNotice("Indexer recreate started. Update from Slot in a moment.");
-      },
-    );
-  };
-
-  const updateIndexerTiers = async ({ adminSecret, gameNames, tier }: FactoryIndexerTierUpdateRequest) => {
-    const environmentId = assertSupportedEnvironment(selectedEnvironment?.id);
-    const normalizedSecret = adminSecret.trim();
-    const normalizedGameNames = normalizeManagedIndexerGameNames(gameNames);
-
-    if (isWatcherBusy || !environmentId || !normalizedSecret || normalizedGameNames.length === 0) {
-      return;
-    }
-
-    await runWatchedAction(
-      {
-        kind: "update_indexer_tier",
-        runName: selectedEnvironment?.label ?? "indexers",
-        title: "Updating indexer tiers",
-        detail:
-          normalizedGameNames.length === 1
-            ? `Changing ${normalizedGameNames[0]} to ${tier}.`
-            : `Changing ${normalizedGameNames.length} listed indexers to ${tier}.`,
-        workflowName: "factory-indexer-maintenance.yml",
-        statusLabel: "Updating",
-      },
-      async () => {
-        await updateFactoryIndexerTier({
-          environment: environmentId,
-          adminSecret: normalizedSecret,
-          gameNames: normalizedGameNames,
-          tier,
-        });
-        setNotice("Tier update started. Update from Slot in a moment.");
-      },
-    );
-  };
-
-  const deleteIndexers = async ({ adminSecret, gameNames }: FactoryIndexerDeleteRequest) => {
-    const environmentId = assertSupportedEnvironment(selectedEnvironment?.id);
-    const normalizedSecret = adminSecret.trim();
-    const normalizedGameNames = normalizeManagedIndexerGameNames(gameNames);
-
-    if (isWatcherBusy || !environmentId || !normalizedSecret || normalizedGameNames.length === 0) {
-      return null;
-    }
-
-    const successMessage = buildDeleteIndexersSuccessMessage(normalizedGameNames);
-
-    const result = await runWatchedActionWithFeedback(
-      {
-        kind: "delete_indexers",
-        runName: selectedEnvironment?.label ?? "indexers",
-        title: "Deleting indexers",
-        detail:
-          normalizedGameNames.length === 1
-            ? `Deleting the Torii deployment for ${normalizedGameNames[0]}.`
-            : `Deleting ${normalizedGameNames.length} listed Torii deployments.`,
-        workflowName: "factory-indexer-maintenance.yml",
-        statusLabel: "Deleting",
-      },
-      async () => {
-        await deleteFactoryIndexers({
-          environment: environmentId,
-          gameNames: normalizedGameNames,
-          adminSecret: normalizedSecret,
-        });
-
-        setNotice(successMessage);
-      },
-    );
-
-    return result.ok ? { ok: true, message: successMessage } : result;
-  };
-
   const resolveRunByName = async (requestedName: string) => {
     const environmentId = assertSupportedEnvironment(selectedEnvironment?.id);
     const trimmedName = requestedName.trim();
@@ -1625,9 +1415,6 @@ export const useFactoryV2 = () => {
     isResolvingRunName,
     factoryAdminSecret,
     hasSavedFactoryAdminSecret,
-    liveIndexers,
-    liveIndexersUpdatedAt,
-    hasLoadedLiveIndexersSnapshot,
     notice,
     environmentUnavailableReason,
     moreOptions,
@@ -1668,11 +1455,6 @@ export const useFactoryV2 = () => {
     cancelSelectedRunAutoRetry,
     deleteSelectedRun,
     fundSelectedRunPrize,
-    loadLiveIndexers,
-    refreshLiveIndexerSnapshot,
-    createIndexers,
-    updateIndexerTiers,
-    deleteIndexers,
     refreshSelectedRun,
     resolveRunByName,
   };
@@ -1716,9 +1498,6 @@ export const useFactoryV2 = () => {
   }
 
   function clearTransientState() {
-    setLiveIndexers([]);
-    setLiveIndexersUpdatedAt(null);
-    setHasLoadedLiveIndexersSnapshot(false);
     setNotice(null);
     setAcceptedRunState(null);
     setGuidedRecoveryState(null);
@@ -2100,33 +1879,6 @@ export const useFactoryV2 = () => {
     }
 
     return false;
-  }
-
-  async function waitForLiveIndexerSnapshotUpdate({
-    adminSecret,
-    gameNames,
-    previousUpdatedAt,
-    previousFingerprint,
-  }: {
-    adminSecret: string;
-    gameNames: string[];
-    previousUpdatedAt: string | null;
-    previousFingerprint: string;
-  }) {
-    for (let attempt = 0; attempt < LIVE_INDEXER_REFRESH_ATTEMPTS; attempt += 1) {
-      await delay(LIVE_INDEXER_REFRESH_DELAY_MS);
-
-      const nextSnapshot = await readFactoryLiveIndexers({
-        adminSecret,
-        ...(gameNames.length > 0 ? { gameNames } : {}),
-      });
-
-      if (didLiveIndexerSnapshotChange(nextSnapshot, previousUpdatedAt, previousFingerprint)) {
-        return nextSnapshot;
-      }
-    }
-
-    return null;
   }
 
   function buildCreateRunRequest(environmentId: FactoryWorkerEnvironmentId, gameName: string) {
@@ -2532,12 +2284,6 @@ function resolveGameContinueLaunchStep(
     case "full":
     case "create-world":
     case "wait-for-factory-index":
-    case "configure-world":
-    case "grant-lootchest-role":
-    case "grant-village-pass-role":
-    case "create-banks":
-    case "create-indexer":
-    case "sync-paymaster":
       return launchStep;
     default:
       return undefined;
@@ -2552,11 +2298,6 @@ function resolveSeriesContinueLaunchStep(
     case "create-series":
     case "create-worlds":
     case "wait-for-factory-indexes":
-    case "configure-worlds":
-    case "grant-lootchest-roles":
-    case "grant-village-pass-roles":
-    case "create-indexers":
-    case "sync-paymaster":
       return launchStep;
     default:
       return undefined;
@@ -2590,80 +2331,20 @@ function buildPendingRun(
   };
 }
 
-function shouldIncludePendingVillagePassRoleStep(mode: FactoryGameMode): boolean {
-  return mode === "eternum";
-}
-
-function shouldIncludePendingBanksStep(mode: FactoryGameMode): boolean {
-  return mode === "eternum";
-}
-
-function shouldIncludePendingPaymasterStep(environmentId: string): boolean {
-  return environmentId.startsWith("mainnet.");
-}
-
-function buildPendingRoleGrantSteps(mode: FactoryGameMode): FactoryRun["steps"] {
-  const steps = [createPendingStep("grant-lootchest-role", "pending")];
-
-  if (shouldIncludePendingVillagePassRoleStep(mode)) {
-    steps.push(createPendingStep("grant-village-pass-role", "pending"));
-  }
-
-  return steps;
-}
-
-function buildPendingBankSteps(mode: FactoryGameMode): FactoryRun["steps"] {
-  if (!shouldIncludePendingBanksStep(mode)) {
-    return [];
-  }
-
-  return [createPendingStep("create-banks", "pending")];
-}
-
-function buildPendingPaymasterSteps(environmentId: string): FactoryRun["steps"] {
-  if (!shouldIncludePendingPaymasterStep(environmentId)) {
-    return [];
-  }
-
-  return [createPendingStep("sync-paymaster", "pending")];
-}
-
-function buildPendingGameRunSteps(mode: FactoryGameMode, environmentId: string): FactoryRun["steps"] {
-  // Appchain launches are two registrar steps: create the game row, wait for
-  // it to index. Configuration rides the create transaction; there is no
-  // per-game world, indexer, or role grant.
-  if (environmentId.startsWith("appchain.")) {
-    return [
-      createPendingStep("launch-request", "running"),
-      createPendingStep("create-world", "pending"),
-      createPendingStep("wait-for-factory-index", "pending"),
-    ];
-  }
-
+function buildPendingGameRunSteps(): FactoryRun["steps"] {
   return [
     createPendingStep("launch-request", "running"),
     createPendingStep("create-world", "pending"),
     createPendingStep("wait-for-factory-index", "pending"),
-    createPendingStep("configure-world", "pending"),
-    ...buildPendingRoleGrantSteps(mode),
-    ...buildPendingBankSteps(mode),
-    createPendingStep("create-indexer", "pending"),
-    ...buildPendingPaymasterSteps(environmentId),
   ];
 }
 
-function buildPendingSeriesRunSteps(mode: FactoryGameMode, environmentId: string): FactoryRun["steps"] {
+function buildPendingSeriesRunSteps(): FactoryRun["steps"] {
   return [
     createPendingStep("launch-request", "running"),
     createPendingStep("create-series", "pending"),
     createPendingStep("create-worlds", "pending"),
     createPendingStep("wait-for-factory-indexes", "pending"),
-    createPendingStep("configure-worlds", "pending"),
-    createPendingStep("grant-lootchest-roles", "pending"),
-    ...(mode === "eternum" ? [createPendingStep("grant-village-pass-roles", "pending")] : []),
-    ...(mode === "eternum" ? [createPendingStep("create-banks", "pending")] : []),
-    createPendingStep("create-indexers", "pending"),
-    ...buildPendingPaymasterSteps(environmentId),
   ];
 }
 
@@ -2672,9 +2353,7 @@ function buildPendingRunSteps(
   environmentId: string,
   kind: FactoryLaunchTargetKind,
 ): FactoryRun["steps"] {
-  return kind === "series" || kind === "rotation"
-    ? buildPendingSeriesRunSteps(mode, environmentId)
-    : buildPendingGameRunSteps(mode, environmentId);
+  return kind === "series" || kind === "rotation" ? buildPendingSeriesRunSteps() : buildPendingGameRunSteps();
 }
 
 function createPendingStep(
@@ -2953,23 +2632,6 @@ function resolveRequestedPrizeFundingGameNames(run: FactoryPrizeFundingEligibleR
   return resolveDefaultFactoryPrizeFundingGameNames(run);
 }
 
-function normalizeManagedIndexerGameNames(selectedGameNames: string[]) {
-  const seenGameNames = new Set<string>();
-  const orderedGameNames: string[] = [];
-
-  for (const rawGameName of selectedGameNames) {
-    const gameName = rawGameName.trim();
-    if (!gameName || seenGameNames.has(gameName)) {
-      continue;
-    }
-
-    seenGameNames.add(gameName);
-    orderedGameNames.push(gameName);
-  }
-
-  return orderedGameNames;
-}
-
 type FactoryPrizeFundingSnapshot =
   | {
       kind: "game";
@@ -3064,37 +2726,4 @@ function delay(durationMs: number) {
   return new Promise<void>((resolve) => {
     window.setTimeout(resolve, durationMs);
   });
-}
-
-function didLiveIndexerSnapshotChange(
-  snapshot: { entries: FactoryWorkerLiveIndexerEntry[]; updatedAt: string | null },
-  previousUpdatedAt: string | null,
-  previousFingerprint: string,
-) {
-  if (snapshot.updatedAt && snapshot.updatedAt !== previousUpdatedAt) {
-    return true;
-  }
-
-  return buildLiveIndexerSnapshotFingerprint(snapshot.entries) !== previousFingerprint;
-}
-
-function buildLiveIndexerSnapshotFingerprint(entries: FactoryWorkerLiveIndexerEntry[]) {
-  return [...entries]
-    .sort((leftEntry, rightEntry) => leftEntry.gameName.localeCompare(rightEntry.gameName))
-    .map((entry) => {
-      if (entry.liveState.state === "existing") {
-        return `${entry.gameName}:existing:${entry.liveState.currentTier ?? ""}:${entry.liveState.url ?? ""}`;
-      }
-
-      return `${entry.gameName}:${entry.liveState.state}:${entry.liveState.stateSource}`;
-    })
-    .join("|");
-}
-
-function buildDeleteIndexersSuccessMessage(gameNames: string[]) {
-  if (gameNames.length === 1) {
-    return `Delete requested for ${gameNames[0]}. Check Slot in a moment.`;
-  }
-
-  return `Delete requested for ${gameNames.length} indexers. Check Slot in a moment.`;
 }

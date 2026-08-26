@@ -122,8 +122,8 @@ export const FactoryV2WatchWorkspace = ({
   onDeleteRun = () => {},
   adminSecret = "",
   hasAdminSecret = false,
-  deployerChain = "mainnet",
-  deployerEnvironmentLabel = "Mainnet",
+  deployerChain = "appchain",
+  deployerEnvironmentLabel = "Appchain",
   onFundPrize,
 }: FactoryV2WatchWorkspaceProps) => {
   const appearance = resolveFactoryModeAppearance(mode);
@@ -1011,13 +1011,7 @@ function resolveChildStepGroups(child: NonNullable<FactoryRun["children"]>[numbe
   };
 }
 
-const HIDDEN_CHILD_STEP_IDS = new Set<FactoryRunStepId>([
-  "launch-request",
-  "create-series",
-  "wait-factory-index",
-  "wait-for-factory-index",
-  "wait-for-factory-indexes",
-]);
+const HIDDEN_CHILD_STEP_IDS = new Set<FactoryRunStepId>(["launch-request", "create-series"]);
 
 function resolveChildTimelineSteps(child: NonNullable<FactoryRun["children"]>[number]): FactorySeriesChildStep[] {
   if (child.steps.length > 0) {

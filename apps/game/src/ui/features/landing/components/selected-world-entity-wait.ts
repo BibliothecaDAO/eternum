@@ -1,12 +1,10 @@
-import { hexKey, namespaceForChain } from "@/dojo/game-scope";
-import { resolveAppchainWorldIdForGame } from "@/runtime/world/game-registry";
-import { buildWorldProfile } from "@/runtime/world/profile-builder";
+import { hexKey } from "@/dojo/game-scope";
+import { resolveWorldIdForGame } from "@/runtime/world/game-registry";
 import { getDefaultWorld, getWorldById } from "@/runtime/world/world-directory";
-import { getGameManifest, type Chain } from "@contracts";
+import type { GameChain as Chain } from "@realms-world/chain";
 import { buildGameSyncModelKeysClause } from "@bibliothecadao/eternum/game-sync";
 import { createClient } from "@dojoengine/sdk";
 import type { Clause } from "@dojoengine/torii-wasm/types";
-import { env } from "../../../../../env";
 
 interface EntitySubscriptionTarget {
   gameId?: number;
@@ -51,35 +49,16 @@ const resolveEntitySubscriptionTarget = async ({
   WaitForSelectedWorldEntityStateInput<unknown>,
   "chain" | "gameId" | "worldId" | "worldName"
 >): Promise<EntitySubscriptionTarget> => {
-  if (chain === "appchain") {
-    if (!gameId || gameId <= 0) {
-      throw new Error(`Cannot subscribe to selected appchain game "${worldName}" without its game id`);
-    }
-    const resolvedWorldId = worldId ?? (await resolveAppchainWorldIdForGame(worldName));
-    const world = getWorldById(resolvedWorldId) ?? getDefaultWorld();
-    return {
-      gameId,
-      namespace: world.namespace,
-      toriiBaseUrl: world.toriiBaseUrl,
-      worldAddress: world.worldAddress,
-    };
+  if (!gameId || gameId <= 0) {
+    throw new Error(`Cannot subscribe to selected ${chain} game "${worldName}" without its game id`);
   }
-
-  if (chain === "local") {
-    const manifest = getGameManifest(chain) as { world: { address: string } };
-    return {
-      namespace: namespaceForChain(chain),
-      toriiBaseUrl: env.VITE_PUBLIC_TORII,
-      worldAddress: manifest.world.address,
-    };
-  }
-
-  const profile = await buildWorldProfile(chain, worldName, worldId ?? undefined);
+  const resolvedWorldId = worldId ?? (await resolveWorldIdForGame(worldName));
+  const world = getWorldById(resolvedWorldId) ?? getDefaultWorld();
   return {
-    gameId: profile.gameId,
-    namespace: profile.namespace ?? namespaceForChain(chain),
-    toriiBaseUrl: profile.toriiBaseUrl,
-    worldAddress: profile.worldAddress,
+    gameId,
+    namespace: world.namespace,
+    toriiBaseUrl: world.toriiBaseUrl,
+    worldAddress: world.worldAddress,
   };
 };
 

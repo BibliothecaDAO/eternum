@@ -1,6 +1,6 @@
-import { Bug, Home, User, type LucideIcon } from "lucide-react";
+import { Bug, Home, type LucideIcon } from "lucide-react";
 
-type SectionId = "home" | "profile" | "debug";
+type SectionId = "home" | "debug";
 
 interface SubMenuItem {
   id: string;
@@ -32,20 +32,6 @@ export const NAVIGATION_SECTIONS: SectionConfig[] = [
       { id: "learn", label: "LEARN", tab: "learn", href: "/learn" },
       { id: "news", label: "NEWS", tab: "news", href: "/news" },
       { id: "factory", label: "CREATE GAME", tab: "factory", href: "/factory", primary: true },
-    ],
-  },
-  // Leaderboard, Markets, and Agora are retired from the landing until their
-  // data planes exist on this deployment (mainnet MMR reads land with WS-C;
-  // prediction markets and the standalone AMM wait for W6 infra). Cosmetics is
-  // hidden for the same reason — its marketplace indexer is gone.
-  {
-    id: "profile",
-    label: "Profile",
-    icon: User,
-    basePath: "/profile",
-    subMenu: [
-      { id: "profile", label: "PROFILE", tab: null, href: "/profile" },
-      { id: "wallet", label: "WALLET", tab: "wallet", href: "/profile?tab=wallet" },
     ],
   },
   ...buildDebugNavigationSections(),

@@ -24,19 +24,6 @@ describe("matchRoutePlaylist", () => {
     expect(match.tracks).toContain("music.birds_paradise");
   });
 
-  it("matches the profile section with nested routes", () => {
-    mockedGetGameModeId.mockReturnValue("eternum");
-    const match = matchRoutePlaylist("/profile/cosmetics");
-    expect(match.key).toBe("landing:profile");
-  });
-
-  it("matches the profile route with the landing account playlist", () => {
-    mockedGetGameModeId.mockReturnValue("eternum");
-    const match = matchRoutePlaylist("/profile");
-    expect(match.key).toBe("landing:profile");
-    expect(match.mode).toBe("sequence");
-  });
-
   it("matches the markets route with a trading playlist", () => {
     mockedGetGameModeId.mockReturnValue("eternum");
     const match = matchRoutePlaylist("/markets");

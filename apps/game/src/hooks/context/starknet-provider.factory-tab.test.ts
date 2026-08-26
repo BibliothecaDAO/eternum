@@ -3,21 +3,20 @@ import { resolve } from "node:path";
 
 import { describe, expect, it } from "vitest";
 
-describe("StarknetProvider factory bootstrap guard", () => {
-  it("derives its runtime config from the shared runtime-chain state instead of duplicating chain resolution", () => {
+describe("StarknetProvider identity boundary", () => {
+  it("keeps game-chain resolution out of the identity wallet provider", () => {
     const source = readFileSync(resolve(process.cwd(), "src/hooks/context/starknet-provider.tsx"), "utf8");
 
-    expect(source).toContain("resolveStarknetRuntimeConfig");
-    expect(source).toContain("useRuntimeChain");
-    expect(source).not.toContain("deriveChainFromRpcUrl");
+    expect(source).toContain("VITE_PUBLIC_IDENTITY_RPC_URL");
+    expect(source).not.toContain("useRuntimeChain");
+    expect(source).not.toContain("VITE_PUBLIC_NODE_URL");
   });
 
-  it("owns one module-lifetime controller connector with passkey popup support", () => {
+  it("offers extension wallets without Controller or paymaster wiring", () => {
     const source = readFileSync(resolve(process.cwd(), "src/hooks/context/starknet-provider.tsx"), "utf8");
 
-    expect(source.match(/new ControllerConnector\(/g)).toHaveLength(1);
-    expect(source).toContain("const controller = new ControllerConnector");
-    expect(source).toContain("webauthnPopup: true");
-    expect(source).not.toContain("const controller = useMemo");
+    expect(source).toContain("[ready(), braavos()]");
+    expect(source).not.toContain("ControllerConnector");
+    expect(source).not.toContain("paymaster");
   });
 });

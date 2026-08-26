@@ -1,6 +1,6 @@
 import { ReactComponent as RealmsLogo } from "@/assets/icons/rw-logo.svg";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
-import { Bug, Home, Menu, Settings, User, X } from "lucide-react";
+import { Bug, Home, Menu, Settings, X } from "lucide-react";
 import { useState, useCallback } from "react";
 import { NavLink, useLocation } from "react-router-dom";
 import { getSectionFromPath, getActiveSubItem, getSubItemHref } from "../context/navigation-config";
@@ -18,11 +18,7 @@ interface MobileNavItem {
   path: string;
 }
 
-const mobileNavItems: MobileNavItem[] = [
-  { icon: Home, label: "Play", path: "/" },
-  { icon: User, label: "Profile", path: "/profile" },
-  ...buildDebugMobileNavItems(),
-];
+const mobileNavItems: MobileNavItem[] = [{ icon: Home, label: "Play", path: "/" }, ...buildDebugMobileNavItems()];
 
 function buildDebugMobileNavItems(): MobileNavItem[] {
   if (!import.meta.env.DEV) {

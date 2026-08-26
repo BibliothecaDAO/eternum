@@ -1,4 +1,4 @@
-import type { Chain } from "@contracts";
+import type { GameChain as Chain } from "@realms-world/chain";
 
 import type { WorldProfile } from "@/runtime/world/types";
 
@@ -26,7 +26,7 @@ interface EntryRouteDescriptor {
 
 type LocationLike = Pick<Location, "pathname" | "search">;
 
-const CHAIN_VALUES: Chain[] = ["sepolia", "mainnet", "local", "appchain"];
+const CHAIN_VALUES: Chain[] = ["madara", "appchain"];
 const PLAY_SCENES: PlayScene[] = ["map", "hex", "travel"];
 const ENTRY_INTENTS: EntryIntent[] = ["play", "settle", "spectate"];
 const PLAY_BOOT_MODES: PlayBootMode[] = ["direct", "map-first"];

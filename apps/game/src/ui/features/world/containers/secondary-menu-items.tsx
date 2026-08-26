@@ -9,7 +9,6 @@ import { useInGameLeaderboard } from "@/ui/features/social/player/use-in-game-le
 import { NetworkStatusPill } from "@/ui/features/world/components/network-status-pill";
 import { triggerConnectionForceReconnect } from "@/ui/features/world/components/network-status-retry";
 import { latestFeatures, leaderboard, rewards, settings, transactions } from "@/ui/features/world";
-import { Controller } from "@/ui/modules/controller/controller";
 import { TOP_PILL, TOP_PILL_TEXT } from "@/ui/features/world/containers/top-header/top-pill";
 
 import { useDojo, usePlayers } from "@bibliothecadao/react";
@@ -239,7 +238,7 @@ export const SecondaryMenuItems = ({ variant }: SecondaryMenuItemsProps = {}) =>
         )}
       </div>
 
-      {/* Settings — now hosts the Controller (wallet) panel too. Always last. */}
+      {/* Settings stays last in the utility cluster. */}
       <CircleButton
         variant="hud"
         className="settings-selector"
@@ -250,11 +249,6 @@ export const SecondaryMenuItems = ({ variant }: SecondaryMenuItemsProps = {}) =>
         size="topbar"
         onClick={() => togglePopup(settings)}
       />
-
-      {/* Controller (Cartridge wallet) — only surfaced here while the player is
-          logged out, so the Login button stays discoverable. Once connected,
-          the Controller lives inside the Settings popover. */}
-      {!account && <Controller />}
     </>
   );
 

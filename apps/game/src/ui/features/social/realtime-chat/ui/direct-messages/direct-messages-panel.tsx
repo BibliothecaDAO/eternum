@@ -10,7 +10,6 @@ import type { DirectMessage } from "../../model/types";
 import { computeDateSeparators, computeGroupFlags } from "../../model/message-grouping";
 import { MessageComposer } from "../shared/message-composer";
 import { UserAvatar } from "../shared/user-avatar";
-import { normalizeAvatarUsername, useAvatarProfilesByUsernames } from "@/hooks/use-player-avatar";
 
 interface DirectMessagesPanelProps {
   threadId?: string;
@@ -141,23 +140,6 @@ export function DirectMessagesPanel({ threadId, className }: DirectMessagesPanel
     );
   }, [resolvedThreadId, typingIndicators]);
 
-  const messageSenderIds = useMemo(
-    () => (thread?.messages ?? []).map((message) => message.senderId),
-    [thread?.messages],
-  );
-  const { data: avatarProfiles } = useAvatarProfilesByUsernames(messageSenderIds);
-  const avatarMap = useMemo(() => {
-    const map = new Map<string, string>();
-    (avatarProfiles ?? []).forEach((profile) => {
-      const normalized = normalizeAvatarUsername(profile.cartridgeUsername ?? undefined);
-      if (!normalized) return;
-      if (profile.avatarUrl) {
-        map.set(normalized, profile.avatarUrl);
-      }
-    });
-    return map;
-  }, [avatarProfiles]);
-
   const dmMessages = thread?.messages ?? [];
   const groupFlags = useMemo(() => computeGroupFlags(dmMessages), [dmMessages]);
   const dateSeparators = useMemo(() => computeDateSeparators(dmMessages), [dmMessages]);
@@ -224,13 +206,6 @@ export function DirectMessagesPanel({ threadId, className }: DirectMessagesPanel
                   const displayLabel = isOwn
                     ? "You"
                     : (onlinePlayers[message.senderId]?.displayName ?? truncateIdentifier(message.senderId));
-                  const normalized = normalizeAvatarUsername(message.senderId);
-                  const avatarUrl =
-                    isOwn && identity?.avatarUrl
-                      ? identity.avatarUrl
-                      : normalized
-                        ? avatarMap.get(normalized)
-                        : undefined;
                   const showHeader = groupFlags[index];
                   return (
                     <Fragment key={message.id}>
@@ -246,7 +221,8 @@ export function DirectMessagesPanel({ threadId, className }: DirectMessagesPanel
                           <div className="flex items-start gap-2">
                             <UserAvatar
                               name={displayLabel}
-                              avatarUrl={avatarUrl}
+                              address={message.senderId}
+                              avatarUrl={isOwn ? identity?.avatarUrl : undefined}
                               size="sm"
                               className="mt-0.5 shrink-0"
                             />

@@ -1,13 +1,9 @@
-import { getCachedRpcProvider } from "@/utils/cached-rpc-provider";
 import { ReactNode, useContext, useMemo } from "react";
 
 import { displayAddress } from "@/ui/utils/utils";
 import { SetupResult } from "@bibliothecadao/dojo";
 import { DojoContext } from "@bibliothecadao/react";
-import { Account, AccountInterface, RpcProvider } from "starknet";
-
-import { env } from "../../../env";
-import { dojoConfig } from "../../../dojo-config";
+import { Account, AccountInterface } from "starknet";
 
 interface DojoProviderProps {
   children: ReactNode;
@@ -15,48 +11,24 @@ interface DojoProviderProps {
   account: Account | AccountInterface;
 }
 
-const requiredEnvs: Array<keyof typeof env> = [
-  "VITE_PUBLIC_MASTER_ADDRESS",
-  "VITE_PUBLIC_MASTER_PRIVATE_KEY",
-  "VITE_PUBLIC_ACCOUNT_CLASS_HASH",
-];
-
-requiredEnvs.forEach((key) => {
-  if (!env[key]) {
-    throw new Error(`Environment variable ${key} is not set!`);
-  }
-});
-
-const createRpcProvider = () => getCachedRpcProvider(dojoConfig.rpcUrl);
-
-const createMasterAccount = (rpcProvider: RpcProvider) =>
-  new Account({
-    provider: rpcProvider,
-    address: env.VITE_PUBLIC_MASTER_ADDRESS,
-    signer: env.VITE_PUBLIC_MASTER_PRIVATE_KEY,
-  });
-
 export const DojoProvider = ({ children, value, account }: DojoProviderProps) => {
   const currentValue = useContext(DojoContext);
   if (currentValue) {
     throw new Error("DojoProvider can only be used once");
   }
 
-  const rpcProvider = useMemo(() => createRpcProvider(), []);
-  const masterAccount = useMemo(() => createMasterAccount(rpcProvider), [rpcProvider]);
   const accountAddress = "address" in account ? account.address : "";
 
   // Memoize the context value to prevent unnecessary re-renders of all useDojo() consumers
   const contextValue = useMemo(
     () => ({
       ...value,
-      masterAccount,
       account: {
         account,
         accountDisplay: displayAddress(accountAddress ?? ""),
       },
     }),
-    [value, masterAccount, account, accountAddress],
+    [value, account, accountAddress],
   );
 
   return <DojoContext.Provider value={contextValue}>{children}</DojoContext.Provider>;

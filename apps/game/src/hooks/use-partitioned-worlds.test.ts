@@ -6,7 +6,7 @@ import { partitionWorlds, type WorldPartition } from "./use-partitioned-worlds";
 
 const make = (name: string, overrides: Partial<WorldSummary>): WorldSummary => ({
   name,
-  chain: "mainnet",
+  chain: "madara",
   alive: true,
   lastCheckedAt: 0,
   mode: null,

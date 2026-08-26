@@ -1,4 +1,4 @@
-import type { Chain } from "@contracts";
+import type { GameChain as Chain } from "@realms-world/chain";
 
 import type { WorldSelectionInput } from "@/runtime/world";
 import {
@@ -9,7 +9,6 @@ import {
   type PlayScene,
 } from "@/play/navigation/play-route";
 
-type LandingPrimaryChain = "mainnet" | "appchain";
 export type EntryIntent = "play" | "settle" | "spectate";
 
 type LocationLike = Pick<Location, "pathname" | "search">;
@@ -37,11 +36,7 @@ interface BuildPlayRouteFromEntryContextInput {
   spectate?: boolean;
 }
 
-export const isLandingPrimaryChain = (chain: Chain | null | undefined): chain is LandingPrimaryChain => {
-  // appchain participates in the landing flow: it is where blitz registration
-  // and settlement are triggered from (the game-selector settle button)
-  return chain === "mainnet" || chain === "appchain";
-};
+export const isLandingPrimaryChain = (chain: Chain | null | undefined): chain is Chain => Boolean(chain);
 
 export const resolveEntryContextCacheKey = (context: Pick<ResolvedEntryContext, "chain" | "worldName">): string => {
   return `${context.chain}:${context.worldName}`;
@@ -55,7 +50,7 @@ const resolveSpectateFlag = (intent: EntryIntent): boolean => {
   return intent === "spectate";
 };
 
-const resolveLandingEntryChain = (chain: Chain | null | undefined): LandingPrimaryChain | null => {
+const resolveLandingEntryChain = (chain: Chain | null | undefined): Chain | null => {
   return isLandingPrimaryChain(chain) ? chain : null;
 };
 

@@ -9,7 +9,7 @@
  * rides the bulk worlds summary instead.
  */
 import { WORLD_AVAILABILITY_QUERY_KEY } from "@/hooks/world-list-queries";
-import { isToriiAvailable } from "@/runtime/world/factory-resolver";
+import { isToriiAvailable } from "@/runtime/world/torii-health";
 import {
   parseMaybeBooleanFlag,
   resolveGameModeFromBlitzFlag,
@@ -18,9 +18,9 @@ import {
 import { appchainModel } from "@/dojo/game-scope";
 import { buildPlayerBlitzSettlementStatusQuery } from "@/services/blitz/blitz-settlement-sql";
 import { nameToPaddedFelt } from "@/runtime/world/normalize";
-import { resolveAppchainWorldIdForGame } from "@/runtime/world/game-registry";
+import { resolveWorldIdForGame } from "@/runtime/world/game-registry";
 import { getDefaultWorld, getWorldById } from "@/runtime/world/world-directory";
-import type { Chain } from "@contracts";
+import type { GameChain as Chain } from "@realms-world/chain";
 import { useQueries } from "@tanstack/react-query";
 
 const parseMaybeHexToNumber = (v: unknown): number | null => {
@@ -271,7 +271,7 @@ const checkWorldAvailability = async (
   world: WorldRef,
   playerAddress?: string | null,
 ): Promise<{ isAvailable: boolean; meta: WorldConfigMeta | null }> => {
-  const worldId = world.worldId ?? (await resolveAppchainWorldIdForGame(world.name)) ?? undefined;
+  const worldId = world.worldId ?? (await resolveWorldIdForGame(world.name)) ?? undefined;
   const deployment = getWorldById(worldId) ?? getDefaultWorld();
 
   const isAvailable = await isToriiAvailable(deployment.toriiBaseUrl);

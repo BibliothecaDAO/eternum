@@ -4,13 +4,11 @@ import { describe, expect, it } from "vitest";
 import { resolveCosmeticsLoadoutScopeKeyForChain } from "./loadout-scope";
 
 describe("resolveCosmeticsLoadoutScopeKeyForChain", () => {
-  it("maps mainnet worlds to the mainnet cosmetics scope", () => {
-    expect(resolveCosmeticsLoadoutScopeKeyForChain("mainnet")).toBe("cosmetics:mainnet");
+  it("keeps Madara cosmetics isolated", () => {
+    expect(resolveCosmeticsLoadoutScopeKeyForChain("madara")).toBe("cosmetics:madara");
   });
 
-  it("maps non-mainnet worlds to the sepolia cosmetics scope", () => {
-    expect(resolveCosmeticsLoadoutScopeKeyForChain("appchain")).toBe("cosmetics:sepolia");
-    expect(resolveCosmeticsLoadoutScopeKeyForChain("sepolia")).toBe("cosmetics:sepolia");
-    expect(resolveCosmeticsLoadoutScopeKeyForChain("local")).toBe("cosmetics:sepolia");
+  it("keeps appchain cosmetics isolated", () => {
+    expect(resolveCosmeticsLoadoutScopeKeyForChain("appchain")).toBe("cosmetics:appchain");
   });
 });

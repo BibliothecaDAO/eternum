@@ -70,8 +70,8 @@ describe("FactoryV2DeveloperTools", () => {
       root.render(
         <FactoryV2DeveloperTools
           mode="blitz"
-          chain="mainnet"
-          environmentLabel="Mainnet"
+          chain="appchain"
+          environmentLabel="Appchain"
           draftGameName="etrn-sunrise-01"
           selectedRunName={null}
         />,
@@ -134,7 +134,7 @@ describe("FactoryV2DeveloperTools", () => {
     vi.mocked(resolveFactoryManifestContractAddress).mockResolvedValue({
       kind: "success",
       worldName: "etrn-sunrise-01",
-      resolvedTag: "s1_eternum-prize_distribution_systems",
+      resolvedTag: "s2-prize_distribution_systems",
       worldAddress: "0x111",
       contractAddress: "0xabc",
     });
@@ -188,7 +188,7 @@ describe("FactoryV2DeveloperTools", () => {
       .mockResolvedValueOnce({
         kind: "success",
         worldName: "etrn-sunrise-01",
-        resolvedTag: "s1_eternum-prize_distribution_systems",
+        resolvedTag: "s2-prize_distribution_systems",
         worldAddress: "0x111",
         contractAddress: "0xabc",
       });
@@ -222,9 +222,9 @@ describe("FactoryV2DeveloperTools", () => {
     });
 
     expect(vi.mocked(resolveFactoryManifestContractAddress)).toHaveBeenNthCalledWith(2, {
-      chain: "mainnet",
+      chain: "appchain",
       worldName: "etrn-sunrise-01",
-      manifestContractName: "s1_eternum-prize_distribution_systems",
+      manifestContractName: "s2-prize_distribution_systems",
     });
     expect(container.textContent).toContain("0xabc");
   });

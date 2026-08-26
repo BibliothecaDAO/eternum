@@ -18,7 +18,7 @@ describe("targeted Torii query ingest", () => {
     setGameScope("s2", 15);
   });
 
-  afterEach(() => setGameScope("s1_eternum", 0));
+  afterEach(() => setGameScope("s2", 0));
 
   it("routes wrapped query results through the active sync runtime", async () => {
     const wrappedEntity = {

@@ -1,57 +1,27 @@
 import { useAccountStore } from "@/hooks/store/use-account-store";
-import { useUIStore } from "@/hooks/store/use-ui-store";
 import { resolveEffectiveRegistrationCountMax } from "@/hooks/registration-capacity";
 import { summaryToWorldConfigMeta } from "@/hooks/summary-to-world-config-meta";
 import { usePlayerWorldRegistrations, getWorldSummaryKey } from "@/hooks/use-player-world-registrations";
 import { type WorldConfigMeta } from "@/hooks/use-world-availability";
-import { useWorldJackpot } from "@/hooks/use-world-jackpot";
 import { useWorldsSummary } from "@/hooks/use-worlds-summary";
 import { useWorldRegistration, type EntryStage } from "@/hooks/use-world-registration";
 import { PLAYER_WORLD_REGISTRATION_QUERY_KEY, WORLD_AVAILABILITY_QUERY_KEY } from "@/hooks/world-list-queries";
 import type { WorldSummary } from "@bibliothecadao/types";
 import type { WorldSelectionInput } from "@/runtime/world";
 import { fetchGameReviewClaimSummary, type GameReviewClaimSummary } from "@/services/review/game-review-service";
-import { SwitchNetworkPrompt } from "@/ui/components/switch-network-prompt";
 import { WorldCountdownDetailed, useGameTimeStatus } from "@/ui/components/world-countdown";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
-import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { useLandingNetworkState } from "../../hooks/use-landing-network-state";
-import {
-  canInteractWithLandingChain,
-  resolvePreferredLandingChain,
-  type LandingNetworkChain,
-} from "../../lib/landing-network-state";
+import type { LandingNetworkChain } from "../../lib/landing-network-state";
 import { getChainLabel } from "@/ui/utils/network-switch";
-import type { Chain } from "@contracts";
+import type { GameChain as Chain } from "@realms-world/chain";
 import { useQueries, useQueryClient } from "@tanstack/react-query";
 import { CheckCircle2, Eye, Loader2, LogIn, Play, RefreshCw, Sparkles, Trophy, UserPlus, Users } from "lucide-react";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef } from "react";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
-import {
-  createPendingNetworkAction,
-  resolvePendingNetworkSwitchOutcome,
-  type PendingNetworkAction,
-} from "./pending-network-action";
 
 const toPaddedFeltAddress = (address: string): string => `0x${BigInt(address).toString(16).padStart(64, "0")}`;
-
-/**
- * Format token amount from wei to human-readable LORDS
- */
-const formatLordsAmount = (amount: bigint): string => {
-  if (amount === 0n) return "0";
-
-  const divisor = 10n ** 18n;
-  const whole = amount / divisor;
-  const remainder = amount % divisor;
-  const wholeFormatted = whole.toLocaleString("en-US");
-  if (remainder === 0n) return wholeFormatted;
-
-  // Show the exact onchain value in LORDS units (18 decimals), trimming only trailing zeros.
-  const fraction = remainder.toString().padStart(18, "0").replace(/0+$/, "");
-  return `${wholeFormatted}.${fraction}`;
-};
 
 const formatLordsDisplayMaxTwoDecimals = (value: string): string => {
   const trimmed = value.trim();
@@ -134,9 +104,7 @@ const GameTypeBadge = ({ mmrEnabled }: { mmrEnabled: boolean }) => {
  */
 const ChainBadge = ({ chain }: { chain: Chain }) => {
   const chainStyles: Record<Chain, string> = {
-    mainnet: "text-brilliance/70 bg-brilliance/10 border border-brilliance/20",
-    sepolia: "text-orange/70 bg-orange/10 border border-orange/20",
-    local: "text-white/70 bg-white/10 border border-white/20",
+    madara: "text-white/70 bg-white/10 border border-white/20",
     appchain: "text-orange/70 bg-orange/10 border border-orange/20",
   };
 
@@ -225,7 +193,6 @@ const EmptyGameGridState = ({ showCreateGameCta }: { showCreateGameCta: boolean 
 
 interface GameCardProps {
   game: GameData;
-  nowSec: number;
   onPlay: () => void;
   onSettle?: () => void;
   onSpectate: () => void;
@@ -242,7 +209,6 @@ interface GameCardProps {
  */
 const GameCard = ({
   game,
-  nowSec,
   onPlay,
   onSettle,
   onSpectate,
@@ -253,14 +219,6 @@ const GameCard = ({
   playerAddress,
   showChainBadge = false,
 }: GameCardProps) => {
-  const toggleModal = useUIStore((state) => state.toggleModal);
-  const landingNetworkState = useLandingNetworkState();
-  const { hasConnectedWallet, status, switchToPreferredChain } = landingNetworkState;
-  const canInteractOnChain = useCallback(
-    (targetChain: Chain) => canInteractWithLandingChain(landingNetworkState, resolvePreferredLandingChain(targetChain)),
-    [landingNetworkState],
-  );
-
   const isOngoing = game.gameStatus === "ongoing";
   const isUpcoming = game.gameStatus === "upcoming";
   const isEnded = game.gameStatus === "ended";
@@ -279,57 +237,10 @@ const GameCard = ({
   // Spectate is always available for live and ended games, and also for
   // Blitz worlds during the pre-main registration window.
   const canSpectate = isOngoing || isEnded || canSpectatePreMainBlitz;
-  const lordsFeeAmount = game.config?.feeAmount ?? 0n;
-  const hasLordsFee = lordsFeeAmount > 0n;
-  const isMainnetGame = game.chain === "mainnet";
-  // The jackpot is resolved server-side and carried on the bulk summary.
-  // Only fall back to the on-demand RPC lookup when the summary didn't
-  // provide one (e.g. realtime server not yet updated).
-  const summaryJackpotAmount = game.config?.winnerJackpotAmount ?? null;
-  const { data: jackpotBalance } = useWorldJackpot({
-    chain: game.chain,
-    feeTokenAddress: game.config?.feeTokenAddress ?? null,
-    prizeDistributionAddress: game.config?.prizeDistributionAddress ?? null,
-    enabled: isMainnetGame && Boolean(game.config?.prizeDistributionAddress) && summaryJackpotAmount == null,
-  });
-  const winnerJackpotAmount = summaryJackpotAmount ?? jackpotBalance ?? 0n;
-  const [isSwitchNetworkPending, setIsSwitchNetworkPending] = useState(false);
-  const [pendingNetworkAction, setPendingNetworkAction] = useState<PendingNetworkAction | null>(null);
-  const latestPendingNetworkActionRef = useRef<PendingNetworkAction | null>(null);
   const handledSettlementStageRef = useRef(false);
-  const targetChainLabel = getChainLabel(pendingNetworkAction?.targetChain ?? game.chain);
-
-  useEffect(() => {
-    latestPendingNetworkActionRef.current = pendingNetworkAction;
-  }, [pendingNetworkAction]);
-
-  const runWithNetworkGuard = useCallback(
-    (action: () => void, targetChain: Chain = game.chain, context: "game" | "market" = "game") => {
-      if (hasConnectedWallet && status === "detecting") {
-        toast.info("Detecting wallet network. Try again in a moment.");
-        return;
-      }
-
-      if (!canInteractOnChain(targetChain)) {
-        setPendingNetworkAction(createPendingNetworkAction(targetChain, context, action));
-        return;
-      }
-      action();
-    },
-    [canInteractOnChain, game.chain, hasConnectedWallet, status],
-  );
 
   // Inline world-entry hook.
-  const {
-    settle,
-    entryStage,
-    isSettling,
-    error,
-    canSettle,
-    isRegistrationFull,
-    isCheckingFeeBalance,
-    hasSufficientFeeBalance,
-  } = useWorldRegistration({
+  const { settle, entryStage, isSettling, error, canSettle, isRegistrationFull } = useWorldRegistration({
     worldName: game.name,
     chain: game.chain,
     config: game.config,
@@ -342,33 +253,10 @@ const GameCard = ({
 
   // Handle settle entry with toast notification.
   const handleSettle = useCallback(() => {
-    runWithNetworkGuard(() => {
-      void settle().catch((err) => {
-        console.error("Settlement failed:", err);
-      });
+    void settle().catch((err) => {
+      console.error("Settlement failed:", err);
     });
-  }, [settle, runWithNetworkGuard]);
-
-  const handleSwitchNetwork = useCallback(async () => {
-    if (!pendingNetworkAction || isSwitchNetworkPending) return;
-
-    const requestedPendingAction = pendingNetworkAction;
-    setIsSwitchNetworkPending(true);
-
-    try {
-      const switched = await switchToPreferredChain(resolvePreferredLandingChain(requestedPendingAction.targetChain));
-      const outcome = resolvePendingNetworkSwitchOutcome({
-        pendingAction: requestedPendingAction,
-        latestPendingAction: latestPendingNetworkActionRef.current,
-        switched,
-      });
-
-      setPendingNetworkAction(outcome.pendingAction);
-      outcome.replay?.();
-    } finally {
-      setIsSwitchNetworkPending(false);
-    }
-  }, [isSwitchNetworkPending, pendingNetworkAction, switchToPreferredChain]);
+  }, [settle]);
 
   // Show success toast when settlement completes.
   useEffect(() => {
@@ -496,21 +384,19 @@ const GameCard = ({
           {/* Left slot: Play OR Settle (share same space) - hidden for ended games without entry */}
           {isEnded && !showRegistered ? null : canPlay ? (
             <button
-              onClick={() =>
-                runWithNetworkGuard(() => {
-                  if (canOpenEternumEntry) {
-                    if (canPlayEternumDirect) {
-                      onPlay();
-                    } else if (onSettle) {
-                      onSettle();
-                    } else {
-                      onPlay();
-                    }
-                    return;
+              onClick={() => {
+                if (canOpenEternumEntry) {
+                  if (canPlayEternumDirect) {
+                    onPlay();
+                  } else if (onSettle) {
+                    onSettle();
+                  } else {
+                    onPlay();
                   }
+                } else {
                   onPlay();
-                })
-              }
+                }
+              }}
               className={cn(
                 "flex-1 flex items-center justify-center gap-1 px-2 py-1.5 rounded text-xs font-semibold",
                 canOpenEternumEntry
@@ -561,15 +447,6 @@ const GameCard = ({
                 <div className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 rounded text-xs font-medium bg-white/5 text-white/40 border border-white/10">
                   Registration full
                 </div>
-              ) : isCheckingFeeBalance ? (
-                <div className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 rounded text-xs font-medium bg-white/5 text-white/40 border border-white/10">
-                  <Loader2 className="w-3 h-3 animate-spin" />
-                  Checking fee
-                </div>
-              ) : !hasSufficientFeeBalance && isMainnetGame ? (
-                <div className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 rounded text-xs font-medium bg-red-500/10 text-red-400 border border-red-500/30">
-                  Insufficient balance
-                </div>
               ) : null}
             </>
           ) : isBlitzMode && !playerAddress && !showRegistered && canRegisterPeriod ? (
@@ -578,7 +455,7 @@ const GameCard = ({
 
           {showEternumSettleShortcut && (
             <button
-              onClick={() => runWithNetworkGuard(onSettle ?? onPlay)}
+              onClick={onSettle ?? onPlay}
               className={cn(
                 "flex-1 flex items-center justify-center gap-1 px-2 py-1.5 rounded text-xs font-semibold",
                 "bg-amber-500/20 text-amber-200 border border-amber-500/40 hover:bg-amber-500/30 transition-colors",
@@ -592,7 +469,7 @@ const GameCard = ({
           {/* See Score button for ended games where player participated */}
           {isEnded && showRegistered && onSeeScore && (
             <button
-              onClick={() => runWithNetworkGuard(onSeeScore)}
+              onClick={onSeeScore}
               className={cn(
                 "flex-1 flex items-center justify-center gap-1 px-2 py-1.5 rounded text-xs font-semibold",
                 "bg-gold/20 text-gold border border-gold/30 hover:bg-gold/30 transition-colors",
@@ -605,7 +482,7 @@ const GameCard = ({
 
           {canClaimRewards && onClaimRewards && (
             <button
-              onClick={() => runWithNetworkGuard(onClaimRewards)}
+              onClick={onClaimRewards}
               className={cn(
                 "flex-1 flex items-center justify-center gap-1 px-2 py-1.5 rounded text-xs font-semibold",
                 "bg-brilliance/20 text-brilliance border border-brilliance/30 hover:bg-brilliance/30 transition-colors",
@@ -631,52 +508,6 @@ const GameCard = ({
           )}
         </div>
 
-        {/* Only show fee/prize economics for mainnet games */}
-        {isMainnetGame && (
-          <div className="relative overflow-hidden rounded border border-gold/25 bg-gradient-to-b from-gold/[0.07] to-transparent">
-            {/* Animated shimmer sweep */}
-            <div
-              className="absolute inset-0 animate-shimmer pointer-events-none"
-              style={{
-                background: "linear-gradient(90deg, transparent 0%, rgba(223,170,84,0.1) 50%, transparent 100%)",
-                backgroundSize: "200% 100%",
-              }}
-            />
-            {/* Corner ornaments */}
-            <div className="absolute top-0.5 left-0.5 w-1.5 h-1.5 border-t border-l border-gold/35" />
-            <div className="absolute top-0.5 right-0.5 w-1.5 h-1.5 border-t border-r border-gold/35" />
-            <div className="absolute bottom-0.5 left-0.5 w-1.5 h-1.5 border-b border-l border-gold/35" />
-            <div className="absolute bottom-0.5 right-0.5 w-1.5 h-1.5 border-b border-r border-gold/35" />
-
-            <div className="relative px-2.5 py-1.5">
-              {/* Prize Pool - main attraction */}
-              <div className="flex items-center justify-between gap-2">
-                <div className="flex items-center gap-1 shrink-0">
-                  <Trophy className="w-2.5 h-2.5 text-gold/70" />
-                  <span className="text-[8px] font-bold uppercase tracking-widest text-gold/55">Prize Pool</span>
-                </div>
-                <div className="flex items-center gap-0.5 min-w-0">
-                  <span className="text-[13px] font-bold text-gold tabular-nums text-shadow-glow-yellow-xs truncate">
-                    {formatLordsAmount(winnerJackpotAmount)}
-                  </span>
-                  <ResourceIcon resource="Lords" size="xs" withTooltip={false} className="shrink-0 ml-0.5" />
-                </div>
-              </div>
-
-              {/* Entry Fee - secondary */}
-              {hasLordsFee && (
-                <div className="flex items-center justify-between gap-2 mt-1 pt-1 border-t border-gold/[0.12]">
-                  <span className="text-[8px] uppercase tracking-wider text-white/30 shrink-0">Entry Fee</span>
-                  <span className="flex items-center gap-0.5 text-[9px] text-white/40 tabular-nums">
-                    {formatLordsAmount(lordsFeeAmount)}
-                    <ResourceIcon resource="Lords" size="xs" withTooltip={false} className="opacity-40" />
-                  </span>
-                </div>
-              )}
-            </div>
-          </div>
-        )}
-
         {/* Error message - only show if not already registered */}
         {entryStage === "error" && error && !showRegistered && (
           <div className="text-[10px] text-red-400 text-center truncate" title={error}>
@@ -684,22 +515,6 @@ const GameCard = ({
           </div>
         )}
       </div>
-      <SwitchNetworkPrompt
-        open={pendingNetworkAction !== null}
-        description={
-          pendingNetworkAction?.context === "market"
-            ? `Prediction market actions for ${game.name} are on another chain.`
-            : `You're trying to interact with ${game.name} while your wallet is on another chain.`
-        }
-        hint={`Switch your wallet to ${targetChainLabel} to continue.`}
-        switchLabel={isSwitchNetworkPending ? "Switching..." : `Switch To ${targetChainLabel}`}
-        onClose={() => {
-          if (isSwitchNetworkPending) return;
-          setPendingNetworkAction(null);
-        }}
-        onSwitch={handleSwitchNetwork}
-        busy={isSwitchNetworkPending}
-      />
     </div>
   );
 };
@@ -772,25 +587,7 @@ export const UnifiedGameGrid = ({
   const landingNetworkState = useLandingNetworkState();
   const selectedLandingChain = landingNetworkState.preferredChain;
 
-  // Check if there's a stored controller session that's still reconnecting
-  // starknet-react stores the last connected connector as "lastUsedConnector" in localStorage
-  const [hasStoredSession] = useState(() => {
-    if (typeof window === "undefined") return false;
-    const storedConnector = window.localStorage.getItem("lastUsedConnector");
-    return storedConnector !== null;
-  });
-
-  // Safety timeout: don't wait forever if auto-connect fails silently
-  const [reconnectTimedOut, setReconnectTimedOut] = useState(false);
-  useEffect(() => {
-    if (!hasStoredSession || playerAddress) return;
-    const timeout = setTimeout(() => setReconnectTimedOut(true), 5000);
-    return () => clearTimeout(timeout);
-  }, [hasStoredSession, playerAddress]);
-
-  const isWaitingForReconnect = hasStoredSession && !playerAddress && !reconnectTimedOut;
-
-  const { nowSec, isOngoing, isEnded, isUpcoming } = useGameTimeStatus();
+  const { isOngoing, isEnded, isUpcoming } = useGameTimeStatus();
 
   // Single bulk summary fetch for all worlds (replaces per-world fan-out).
   // The server serves timing, mode, counters, and prize addresses in one call.
@@ -1020,10 +817,8 @@ export const UnifiedGameGrid = ({
     [onRegistrationComplete, queryClient],
   );
 
-  // Wait for controller to reconnect if there's a stored session before showing games.
-  // This prevents the flash of "logged out" state on page refresh.
   const factoryError = summaryError as Error | null;
-  const isLoading = summaryIsLoading || playerRegistrationsLoading || isWaitingForReconnect;
+  const isLoading = summaryIsLoading || playerRegistrationsLoading;
   const shouldShowCreateGameCta = isUpcomingOnlyStatusFilter(statusFilter);
 
   // Count by status
@@ -1095,15 +890,7 @@ export const UnifiedGameGrid = ({
             "overflow-x-auto scrollbar-thin scrollbar-thumb-white/20 scrollbar-track-transparent",
         )}
       >
-        {isWaitingForReconnect ? (
-          // Always show loading when waiting for controller to reconnect, even if games are cached
-          <div className="flex items-center justify-center h-[120px]">
-            <div className="flex flex-col items-center gap-2">
-              <Loader2 className="w-6 h-6 text-white/30 animate-spin" />
-              <span className="text-xs text-white/40">Loading account...</span>
-            </div>
-          </div>
-        ) : isLoading && games.length === 0 ? (
+        {isLoading && games.length === 0 ? (
           <div className="flex items-center justify-center h-[120px]">
             <div className="flex flex-col items-center gap-2">
               <Loader2 className="w-6 h-6 text-white/30 animate-spin" />
@@ -1132,7 +919,6 @@ export const UnifiedGameGrid = ({
                 <GameCard
                   key={game.worldKey}
                   game={game}
-                  nowSec={nowSec}
                   onPlay={() =>
                     (onPlayGame ?? onSelectGame)({
                       name: game.name,
@@ -1184,7 +970,6 @@ export const UnifiedGameGrid = ({
                 <div key={game.worldKey} className="flex-shrink-0 w-[380px]">
                   <GameCard
                     game={game}
-                    nowSec={nowSec}
                     onPlay={() =>
                       (onPlayGame ?? onSelectGame)({
                         name: game.name,

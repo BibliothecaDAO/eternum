@@ -83,7 +83,6 @@ type FactoryV2StartWorkspaceProps = {
   mode: FactoryGameMode;
   modeLabel: string;
   environmentLabel: string;
-  isMainnet: boolean;
   launchTargetKind: FactoryLaunchTargetKind;
   presets: FactoryLaunchPreset[];
   selectedPreset: FactoryLaunchPreset | null;
@@ -205,7 +204,6 @@ function resolveStartWorkspaceState(
     mode,
     modeLabel,
     environmentLabel,
-    isMainnet,
     launchTargetKind,
     selectedPreset,
     gameName,
@@ -266,7 +264,7 @@ function resolveStartWorkspaceState(
       modeLabel,
       seriesGameCount: seriesGames.length,
     }),
-    launchButtonClassName: isMainnet ? "bg-[#a62f28] text-gold hover:bg-[#912520]" : appearance.primaryButtonClassName,
+    launchButtonClassName: appearance.primaryButtonClassName,
     launchSummaryItems: resolveLaunchSummaryItems({
       isSeriesLaunch,
       isRotationLaunch,

@@ -24,20 +24,16 @@ describe("MobileBottomNav", () => {
     (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = false;
   });
 
-  it("preserves shared profile query params when switching profile subtabs", async () => {
+  it("shows only game landing destinations", async () => {
     await act(async () => {
       root.render(
-        <MemoryRouter initialEntries={["/profile?player=0xabc&name=Alice"]}>
+        <MemoryRouter initialEntries={["/"]}>
           <MobileBottomNav />
         </MemoryRouter>,
       );
     });
 
     const links = Array.from(container.querySelectorAll("a"));
-    const profileLink = links.find((link) => link.textContent?.includes("PROFILE"));
-    const walletLink = links.find((link) => link.textContent?.includes("WALLET"));
-
-    expect(profileLink?.getAttribute("href")).toBe("/profile?player=0xabc&name=Alice");
-    expect(walletLink?.getAttribute("href")).toBe("/profile?player=0xabc&name=Alice&tab=wallet");
+    expect(links.map((link) => link.getAttribute("href"))).toEqual(["/", "/learn", "/news", "/factory"]);
   });
 });

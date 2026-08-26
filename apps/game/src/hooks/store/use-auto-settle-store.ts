@@ -1,4 +1,4 @@
-import type { Chain } from "@contracts";
+import type { GameChain as Chain } from "@realms-world/chain";
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
 

@@ -1,27 +1,26 @@
 /**
  * Hook to handle world entry from the world selector.
  * Blitz worlds now enter through a single `settle` action.
- * On non-mainnet environments, auto-tops up fee tokens from master account if needed.
+ * Appchain tops up its fee token from the configured faucet when needed.
  */
 import { getCachedRpcProvider } from "@/utils/cached-rpc-provider";
+import { useAccountStore } from "@/hooks/store/use-account-store";
+import { resolvePlayerNameFelt } from "@/services/identity/player-name";
 import { namespaceForChain } from "@/dojo/game-scope";
 import { executeObservedClientTransaction } from "@/observability/observed-client-transaction";
-import { getFactorySqlBaseUrl } from "@/runtime/world";
-import { resolveWorldContracts } from "@/runtime/world/factory-resolver";
 import { normalizeSelector } from "@/runtime/world/normalize";
-import { resolveAppchainWorldIdForGame } from "@/runtime/world/game-registry";
+import { resolveWorldIdForGame } from "@/runtime/world/game-registry";
 import { getDefaultWorld, getWorldById } from "@/runtime/world/world-directory";
 import { buildBlitzSettleCalls } from "@/services/blitz/blitz-settlement-calls";
 import { getRpcUrlForChain } from "@/runtime/chain-rpc";
 import { waitForTransactionConfirmation } from "@/ui/utils/transactions";
-import { getGameManifest, type Chain } from "@contracts";
-import { useAccount } from "@starknet-react/core";
+import { getGameManifest } from "@contracts";
+import type { GameChain as Chain } from "@realms-world/chain";
 import { getContractByName } from "@dojoengine/core";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import { Account, CallData, RpcProvider, uint256 } from "starknet";
 import { env } from "../../env";
 import { isRegistrationCapacityReached, resolveEffectiveRegistrationCountMax } from "./registration-capacity";
-import { useUsername } from "./use-username";
 import type { WorldConfigMeta } from "./use-world-availability";
 
 interface SeasonRegistrationParams {
@@ -61,21 +60,19 @@ const fetchTokenBalance = async (
 };
 
 /**
- * Create master account for auto top-up (non-mainnet only)
+ * Create the appchain-only dev fee-token faucet account.
  */
-const createMasterAccount = (rpcProvider: RpcProvider): Account | null => {
-  try {
-    const masterAddress = env.VITE_PUBLIC_MASTER_ADDRESS;
-    const masterPrivateKey = env.VITE_PUBLIC_MASTER_PRIVATE_KEY;
-    if (!masterAddress || !masterPrivateKey) return null;
-    return new Account({
-      provider: rpcProvider,
-      address: masterAddress,
-      signer: masterPrivateKey,
-    });
-  } catch {
-    return null;
+const createAppchainFaucetAccount = (rpcProvider: RpcProvider): Account => {
+  const masterAddress = env.VITE_PUBLIC_MASTER_ADDRESS;
+  const masterPrivateKey = env.VITE_PUBLIC_MASTER_PRIVATE_KEY;
+  if (!masterAddress || !masterPrivateKey) {
+    throw new Error("Appchain fee-token faucet credentials are not configured.");
   }
+  return new Account({
+    provider: rpcProvider,
+    address: masterAddress,
+    signer: masterPrivateKey,
+  });
 };
 
 export type EntryStage = "idle" | "preparing" | "settling" | "done" | "error";
@@ -103,10 +100,6 @@ interface UseWorldRegistrationReturn {
   canSettle: boolean;
   /** Whether registration capacity has been reached */
   isRegistrationFull: boolean;
-  /** Whether fee balance is being checked */
-  isCheckingFeeBalance: boolean;
-  /** Whether wallet has enough fee token balance for settlement */
-  hasSufficientFeeBalance: boolean;
 }
 
 const waitForWorldEntryTransactionConfirmation = async ({
@@ -146,10 +139,10 @@ const ensureFeeTokenBalance = async ({
   const currentBalance = await fetchTokenBalance(rpcProvider, feeTokenAddress, accountAddress);
   if (currentBalance >= feeAmount) return;
 
-  const masterAccount = createMasterAccount(rpcProvider);
-  if (!masterAccount) {
-    throw new Error("Fee token balance is insufficient and no development top-up account is configured.");
+  if (chain !== "appchain") {
+    throw new Error("Automatic fee-token top-up is restricted to the appchain.");
   }
+  const masterAccount = createAppchainFaucetAccount(rpcProvider);
 
   const shortfall = feeAmount - currentBalance;
   const amount = uint256.bnToUint256(shortfall);
@@ -187,13 +180,16 @@ export const useWorldRegistration = ({
   isRegistered,
   enabled = true,
 }: UseWorldRegistrationProps): UseWorldRegistrationReturn => {
-  const { account, address } = useAccount();
-  const { usernameFelt, isLoading: usernameLoading } = useUsername();
+  const account = useAccountStore((state) => state.account);
+  const accountName = useAccountStore((state) => state.accountName);
+  const address = account?.address;
+  const usernameFelt = useMemo(
+    () => (address ? resolvePlayerNameFelt(address, accountName) : null),
+    [accountName, address],
+  );
 
   const [entryStage, setEntryStage] = useState<EntryStage>("idle");
   const [error, setError] = useState<string | null>(null);
-  const [isCheckingFeeBalance, setIsCheckingFeeBalance] = useState(false);
-  const [hasSufficientFeeBalance, setHasSufficientFeeBalance] = useState(true);
 
   // Cache resolved contracts
   const contractsCacheRef = useRef<Record<string, string> | null>(null);
@@ -204,9 +200,6 @@ export const useWorldRegistration = ({
   const registrationCount = config?.registrationCount ?? 0;
   const registrationCountMax = resolveEffectiveRegistrationCountMax(config);
   const isRegistrationFull = isRegistrationCapacityReached(registrationCount, registrationCountMax);
-  const requiresFeeBalanceForSettlement = chain === "mainnet";
-  const needsSettlementFeeBalanceCheck =
-    requiresFeeBalanceForSettlement && Boolean(config?.feeTokenAddress && feeAmount > 0n);
 
   // Check if blitz settlement is open.
   const now = Date.now() / 1000;
@@ -226,60 +219,13 @@ export const useWorldRegistration = ({
     isSettlementWindowOpen &&
     !!account &&
     !!address &&
-    !usernameLoading &&
     !!usernameFelt &&
-    !isCheckingFeeBalance &&
-    hasSufficientFeeBalance &&
     !isRegistrationFull &&
     // Appchain settle needs the chosen game's id as its first argument.
     (chain !== "appchain" || Boolean(config?.gameId)) &&
     canAttemptSettle;
 
   const isSettling = entryStage !== "idle" && entryStage !== "done" && entryStage !== "error";
-
-  // Pre-check fee token balance so entry stays disabled when the wallet can't pay.
-  useEffect(() => {
-    let cancelled = false;
-    const feeTokenAddress = config?.feeTokenAddress;
-
-    const resetAsAvailable = () => {
-      setIsCheckingFeeBalance(false);
-      setHasSufficientFeeBalance(true);
-    };
-
-    if (!enabled || !address || !needsSettlementFeeBalanceCheck || !feeTokenAddress) {
-      resetAsAvailable();
-      return () => {
-        cancelled = true;
-      };
-    }
-
-    const runBalanceCheck = async () => {
-      setIsCheckingFeeBalance(true);
-      try {
-        const rpcUrl = getRpcUrlForChain(chain);
-        const rpcProvider = getCachedRpcProvider(rpcUrl);
-        const currentBalance = await fetchTokenBalance(rpcProvider, feeTokenAddress, address);
-        if (!cancelled) {
-          setHasSufficientFeeBalance(currentBalance >= feeAmount);
-        }
-      } catch {
-        if (!cancelled) {
-          setHasSufficientFeeBalance(false);
-        }
-      } finally {
-        if (!cancelled) {
-          setIsCheckingFeeBalance(false);
-        }
-      }
-    };
-
-    void runBalanceCheck();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [enabled, address, chain, config?.feeTokenAddress, feeAmount, needsSettlementFeeBalanceCheck]);
 
   /**
    * Resolve contract addresses: the appchain worlds ship their contract map
@@ -289,17 +235,8 @@ export const useWorldRegistration = ({
   const resolveContracts = useCallback(async (): Promise<Record<string, string>> => {
     if (contractsCacheRef.current) return contractsCacheRef.current;
 
-    if (chain === "appchain") {
-      const worldId = await resolveAppchainWorldIdForGame(worldName);
-      const contracts = (getWorldById(worldId) ?? getDefaultWorld()).contractsBySelector;
-      contractsCacheRef.current = contracts;
-      return contracts;
-    }
-
-    const factorySqlBaseUrl = getFactorySqlBaseUrl(chain);
-    if (!factorySqlBaseUrl) throw new Error("Factory SQL not available for this chain");
-
-    const contracts = await resolveWorldContracts(factorySqlBaseUrl, worldName);
+    const worldId = await resolveWorldIdForGame(worldName);
+    const contracts = (getWorldById(worldId) ?? getDefaultWorld()).contractsBySelector;
     contractsCacheRef.current = contracts;
     return contracts;
   }, [chain, worldName]);
@@ -328,10 +265,13 @@ export const useWorldRegistration = ({
    * Build calls to settle directly into a blitz world.
    */
   const buildSettleCalls = useCallback(
-    (blitzSystemsAddress: string) =>
-      buildBlitzSettleCalls({
+    (blitzSystemsAddress: string) => {
+      if (!address || !usernameFelt) {
+        throw new Error("Gameplay account is not ready for settlement.");
+      }
+      return buildBlitzSettleCalls({
         blitzSystemsAddress,
-        signerAddress: address!,
+        signerAddress: address,
         usernameFelt,
         // Settle targets the chosen game explicitly (meta carries its id).
         gameId: config?.gameId,
@@ -339,8 +279,9 @@ export const useWorldRegistration = ({
         entryTokenAddress: config?.entryTokenAddress,
         feeTokenAddress: config?.feeTokenAddress,
         feeAmount: config?.feeAmount,
-      }),
-    [config, usernameFelt],
+      });
+    },
+    [address, config, usernameFelt],
   );
 
   /**
@@ -368,8 +309,7 @@ export const useWorldRegistration = ({
         }
 
         const blitzSystemsAddress = getWorldSystemAddress(contracts, "blitz_realm_systems");
-        const isNonMainnet = chain !== "mainnet";
-        if (isNonMainnet && feeAmount > 0n && config?.feeTokenAddress) {
+        if (chain === "appchain" && feeAmount > 0n && config?.feeTokenAddress) {
           await ensureFeeTokenBalance({
             accountAddress: address!,
             chain,
@@ -427,7 +367,5 @@ export const useWorldRegistration = ({
     feeAmount,
     canSettle,
     isRegistrationFull,
-    isCheckingFeeBalance,
-    hasSufficientFeeBalance,
   };
 };

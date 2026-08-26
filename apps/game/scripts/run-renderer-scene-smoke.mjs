@@ -12,16 +12,11 @@ const VALID_SCENES = new Set(["map", "hex", "travel"]);
 const DEFAULT_WAIT_MS = 20000;
 const AGENT_BROWSER_RETRY_DELAY_MS = 2000;
 const AGENT_BROWSER_RETRY_ATTEMPTS = 2;
-const DEFAULT_CARTRIDGE_API_BASE = "https://api.cartridge.gg";
 const RETRYABLE_AGENT_BROWSER_FAILURE_PATTERNS = [
   "CDP command timed out: Runtime.evaluate",
   "Failed to read: Resource temporarily unavailable",
   "daemon may be busy or unresponsive",
 ];
-const CARTRIDGE_FACTORY_SQL_BASE_URLS = {
-  mainnet: [`${DEFAULT_CARTRIDGE_API_BASE}/x/eternum-factory-mainnet/torii/sql`],
-  sepolia: [`${DEFAULT_CARTRIDGE_API_BASE}/x/eternum-factory-sepolia/torii/sql`],
-};
 const WORLD_DISCOVERY_LIMIT = 200;
 const WORLD_DISCOVERY_TIMEOUT_MS = 2500;
 
@@ -92,15 +87,11 @@ export function decodePaddedWorldName(hex) {
 // The smoke targets the configured appchain world directly. Games live in
 // that world's GameRegistry; the legacy factory deployment table is not part
 // of the s2 indexer.
-function resolveAppchainToriiBaseUrl(env = process.env) {
+function resolveToriiBaseUrl(env = process.env) {
   return String(env.TORII_URL || env.VITE_PUBLIC_TORII || "").replace(/\/+$/, "");
 }
 
-function resolveFactorySqlBaseUrls(chain) {
-  return CARTRIDGE_FACTORY_SQL_BASE_URLS[chain] ?? [];
-}
-
-function buildAppchainGameQueryUrl(toriiBaseUrl) {
+function buildGameRegistryQueryUrl(toriiBaseUrl) {
   const url = new URL(`${toriiBaseUrl}/sql`);
   url.searchParams.set(
     "query",
@@ -113,13 +104,13 @@ function buildAppchainGameQueryUrl(toriiBaseUrl) {
   return url;
 }
 
-async function fetchAppchainGameNames(toriiBaseUrl) {
-  const response = await fetch(buildAppchainGameQueryUrl(toriiBaseUrl), {
+async function fetchGameNames(toriiBaseUrl) {
+  const response = await fetch(buildGameRegistryQueryUrl(toriiBaseUrl), {
     signal: AbortSignal.timeout(WORLD_DISCOVERY_TIMEOUT_MS),
   });
 
   if (!response.ok) {
-    throw new Error(`Appchain game discovery failed: ${response.status} ${response.statusText}`);
+    throw new Error(`Game discovery failed: ${response.status} ${response.statusText}`);
   }
 
   const rows = await response.json();
@@ -130,93 +121,18 @@ async function fetchAppchainGameNames(toriiBaseUrl) {
   return rows.map((row) => decodePaddedWorldName(row?.name)).filter(Boolean);
 }
 
-function buildFactoryWorldQueryUrl(factorySqlBaseUrl) {
-  const url = new URL(factorySqlBaseUrl);
-  url.searchParams.set(
-    "query",
-    `SELECT name, address FROM [wf-WorldDeployed] ORDER BY internal_created_at DESC LIMIT ${WORLD_DISCOVERY_LIMIT};`,
-  );
-  return url;
-}
-
-async function fetchCandidateWorlds(factorySqlBaseUrl) {
-  const response = await fetch(buildFactoryWorldQueryUrl(factorySqlBaseUrl), {
-    signal: AbortSignal.timeout(WORLD_DISCOVERY_TIMEOUT_MS),
-  });
-
-  if (!response.ok) {
-    throw new Error(`Factory world discovery failed: ${response.status} ${response.statusText}`);
-  }
-
-  const rows = await response.json();
-  if (!Array.isArray(rows)) {
-    return [];
-  }
-
-  const seenNames = new Set();
-  const worlds = [];
-  for (const row of rows) {
-    const decodedName = decodePaddedWorldName(row?.name);
-    if (!decodedName || seenNames.has(decodedName)) {
-      continue;
-    }
-
-    seenNames.add(decodedName);
-    worlds.push({ address: typeof row?.address === "string" ? row.address : "", name: decodedName });
-  }
-
-  return worlds;
-}
-
-// Cartridge chains give every world its own torii, so alive = it responds.
-async function isCartridgeWorldAlive(worldName) {
-  const probeUrl = new URL(`${DEFAULT_CARTRIDGE_API_BASE}/x/${encodeURIComponent(worldName)}/torii/sql`);
-  probeUrl.searchParams.set("query", "SELECT 1 AS ok LIMIT 1;");
-
-  try {
-    const response = await fetch(probeUrl, {
-      method: "HEAD",
-      signal: AbortSignal.timeout(WORLD_DISCOVERY_TIMEOUT_MS),
-    });
-    return response.ok;
-  } catch {
-    return false;
-  }
-}
-
-async function resolveAppchainSceneSmokeGameName() {
-  const toriiBaseUrl = resolveAppchainToriiBaseUrl();
+async function resolvePersistentWorldGameName() {
+  const toriiBaseUrl = resolveToriiBaseUrl();
   if (!toriiBaseUrl) {
-    throw new Error(
-      "No appchain torii configured for world discovery: set TORII_URL or VITE_PUBLIC_TORII, or pass --world.",
-    );
+    throw new Error("No Torii configured for game discovery: set TORII_URL or VITE_PUBLIC_TORII, or pass --world.");
   }
 
-  const [latestConfiguredGame] = await fetchAppchainGameNames(toriiBaseUrl);
+  const [latestConfiguredGame] = await fetchGameNames(toriiBaseUrl);
   if (latestConfiguredGame) {
     return latestConfiguredGame;
   }
 
-  throw new Error('No live world found for chain "appchain": pass --world to target one explicitly.');
-}
-
-async function resolveCartridgeSceneSmokeWorldName(chain) {
-  const factorySqlBaseUrls = resolveFactorySqlBaseUrls(chain);
-  if (factorySqlBaseUrls.length === 0) {
-    throw new Error(`No factory configured for chain "${chain}": pass --world to target one explicitly.`);
-  }
-
-  for (const factorySqlBaseUrl of factorySqlBaseUrls) {
-    const candidates = await fetchCandidateWorlds(factorySqlBaseUrl);
-
-    for (const world of candidates) {
-      if (await isCartridgeWorldAlive(world.name)) {
-        return world.name;
-      }
-    }
-  }
-
-  throw new Error(`No live world found for chain "${chain}": pass --world to target one explicitly.`);
+  throw new Error("No indexed game found: pass --world to target one explicitly.");
 }
 
 export async function resolveSceneSmokeWorldName({ chain, requestedWorldName }) {
@@ -224,7 +140,7 @@ export async function resolveSceneSmokeWorldName({ chain, requestedWorldName }) 
     return requestedWorldName;
   }
 
-  return chain === "appchain" ? resolveAppchainSceneSmokeGameName() : resolveCartridgeSceneSmokeWorldName(chain);
+  return resolvePersistentWorldGameName();
 }
 
 export function evaluateSceneSmokeResult({ canvasExists, errors, expectedPathname, openedUrl, unableToStartCount }) {

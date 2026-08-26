@@ -17,7 +17,7 @@ import { useUIStore } from "@/hooks/store/use-ui-store";
 import { buildVillageTimerSummary } from "@/ui/shared/lib/village-timers";
 import { ID, StructureType } from "@bibliothecadao/types";
 import { formatTime, toHexString } from "@bibliothecadao/eternum";
-import { getAvatarUrl, usePlayerAvatar } from "@/hooks/use-player-avatar";
+import { getAvatarUrl } from "@/hooks/use-player-avatar";
 import { LeftView } from "@/types";
 
 import { ActiveRelicEffects } from "../active-relic-effects";
@@ -103,13 +103,7 @@ const StructureBannerEntityDetailContent = memo(
       structure?.owner !== undefined && structure.owner !== null && structure.owner !== 0n
         ? toHexString(structure.owner)
         : null;
-    const { data: ownerProfile } = usePlayerAvatar(ownerAddress ?? undefined);
-    const ownerAvatarUrl =
-      ownerAddress && ownerProfile
-        ? getAvatarUrl(ownerAddress, ownerProfile.avatarUrl)
-        : ownerAddress
-          ? getAvatarUrl(ownerAddress, null)
-          : null;
+    const ownerAvatarUrl = ownerAddress ? getAvatarUrl(ownerAddress) : null;
 
     const rawCategory = structure?.base?.category;
     const handleOpenTransferPanel = useCallback(() => {

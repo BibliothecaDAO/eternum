@@ -37,9 +37,6 @@ const LandingFactoryRoute = lazy(() =>
     default: module.LandingFactoryRoute,
   })),
 );
-const ProfileView = lazy(() =>
-  import("./ui/features/landing/views/profile-view").then((module) => ({ default: module.ProfileView })),
-);
 const FactoryV2Page = lazy(() =>
   import("./ui/features/factory-v2").then((module) => ({ default: module.FactoryV2Page })),
 );
@@ -67,7 +64,7 @@ const GameClientRoutes = ({ backgroundImage }: { backgroundImage: string }) => (
           <Route path="learn" element={renderLoadingRoute(<LandingLearnRoute />)} />
           <Route path="news" element={renderLoadingRoute(<LandingNewsRoute />)} />
           <Route path="factory" element={renderLoadingRoute(<LandingFactoryRoute />)} />
-          <Route path="profile" element={renderLoadingRoute(<ProfileView />)} />
+          <Route path="profile" element={<Navigate to="/" replace />} />
           {/* Markets/Agora/Leaderboard are retired until their data planes
               exist on this deployment (W6). Direct links go home. */}
           <Route path="markets" element={<Navigate to="/" replace />} />

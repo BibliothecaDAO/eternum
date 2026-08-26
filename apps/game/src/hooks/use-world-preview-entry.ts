@@ -1,4 +1,4 @@
-import type { Chain } from "@contracts";
+import type { GameChain as Chain } from "@realms-world/chain";
 import { useAccount } from "@starknet-react/core";
 import { useCallback, useMemo, useState } from "react";
 import { playerCosmeticsStore } from "@/three/cosmetics/player-cosmetics-store";

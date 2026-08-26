@@ -1,4 +1,4 @@
-import type { Chain } from "@contracts";
+import type { GameChain as Chain } from "@realms-world/chain";
 import { getActiveWorld, getActiveWorldName, listWorldNames, saveWorldProfile, setActiveWorldName } from "./store";
 import { buildWorldProfile } from "./profile-builder";
 

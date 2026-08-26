@@ -15,7 +15,9 @@ configManager.mapCenter = 2010831280;
 describe("resolvePlayRouteTarget", () => {
   it("resolves canonical map routes with a world-position camera target", () => {
     expect(
-      resolvePlayRouteTarget(createLocation("/play/sepolia/aurora/map", "?col=12&row=34"), { fastTravelEnabled: true }),
+      resolvePlayRouteTarget(createLocation("/play/appchain/aurora/map", "?col=12&row=34"), {
+        fastTravelEnabled: true,
+      }),
     ).toEqual({
       scene: "map",
       requestedScene: "map",
@@ -26,7 +28,7 @@ describe("resolvePlayRouteTarget", () => {
       isCanonical: true,
       playRoute: {
         bootMode: "direct",
-        chain: "sepolia",
+        chain: "appchain",
         worldName: "aurora",
         scene: "map",
         col: 12,
@@ -39,7 +41,7 @@ describe("resolvePlayRouteTarget", () => {
 
   it("resolves canonical hex routes to a realm target while keeping a keep-centered local camera", () => {
     expect(
-      resolvePlayRouteTarget(createLocation("/play/sepolia/aurora/hex", "?col=4&row=9"), { fastTravelEnabled: true }),
+      resolvePlayRouteTarget(createLocation("/play/appchain/aurora/hex", "?col=4&row=9"), { fastTravelEnabled: true }),
     ).toEqual({
       scene: "hex",
       requestedScene: "hex",
@@ -50,7 +52,7 @@ describe("resolvePlayRouteTarget", () => {
       isCanonical: true,
       playRoute: {
         bootMode: "direct",
-        chain: "sepolia",
+        chain: "appchain",
         worldName: "aurora",
         scene: "hex",
         col: 4,
@@ -63,7 +65,7 @@ describe("resolvePlayRouteTarget", () => {
 
   it("falls back disabled travel routes to the world map while preserving their route coordinates", () => {
     expect(
-      resolvePlayRouteTarget(createLocation("/play/sepolia/aurora/travel", "?col=7&row=11"), {
+      resolvePlayRouteTarget(createLocation("/play/appchain/aurora/travel", "?col=7&row=11"), {
         fastTravelEnabled: false,
       }),
     ).toEqual({
@@ -76,7 +78,7 @@ describe("resolvePlayRouteTarget", () => {
       isCanonical: true,
       playRoute: {
         bootMode: "direct",
-        chain: "sepolia",
+        chain: "appchain",
         worldName: "aurora",
         scene: "travel",
         col: 7,
@@ -89,7 +91,7 @@ describe("resolvePlayRouteTarget", () => {
 
   it("keeps travel routes on travel when fast travel is enabled", () => {
     expect(
-      resolvePlayRouteTarget(createLocation("/play/sepolia/aurora/travel", "?col=7&row=11"), {
+      resolvePlayRouteTarget(createLocation("/play/appchain/aurora/travel", "?col=7&row=11"), {
         fastTravelEnabled: true,
       }),
     ).toEqual({
@@ -102,7 +104,7 @@ describe("resolvePlayRouteTarget", () => {
       isCanonical: true,
       playRoute: {
         bootMode: "direct",
-        chain: "sepolia",
+        chain: "appchain",
         worldName: "aurora",
         scene: "travel",
         col: 7,
@@ -115,7 +117,9 @@ describe("resolvePlayRouteTarget", () => {
 
   it("preserves spectate mode while leaving missing coordinates null", () => {
     expect(
-      resolvePlayRouteTarget(createLocation("/play/sepolia/aurora/map", "?spectate=true"), { fastTravelEnabled: true }),
+      resolvePlayRouteTarget(createLocation("/play/appchain/aurora/map", "?spectate=true"), {
+        fastTravelEnabled: true,
+      }),
     ).toEqual({
       scene: "map",
       requestedScene: "map",
@@ -126,7 +130,7 @@ describe("resolvePlayRouteTarget", () => {
       isCanonical: true,
       playRoute: {
         bootMode: "direct",
-        chain: "sepolia",
+        chain: "appchain",
         worldName: "aurora",
         scene: "map",
         col: null,

@@ -3,8 +3,8 @@ import {
   subscribeBlitzHyperstructureCreationPending,
   submitActiveWorldBlitzHyperstructureCreation,
 } from "@/services/blitz/blitz-hyperstructure-creation";
+import { useAccountStore } from "@/hooks/store/use-account-store";
 import type { HexPosition } from "@bibliothecadao/types";
-import { useAccount } from "@starknet-react/core";
 import { useCallback, useState, useSyncExternalStore } from "react";
 
 export const useBlitzHyperstructureCreation = ({
@@ -14,7 +14,7 @@ export const useBlitzHyperstructureCreation = ({
   hexCoords: HexPosition | null;
   enabled?: boolean;
 }) => {
-  const { account } = useAccount();
+  const account = useAccountStore((state) => state.account);
   const [isCreating, setIsCreating] = useState(false);
   const isPending = useSyncExternalStore(
     subscribeBlitzHyperstructureCreationPending,
@@ -29,7 +29,7 @@ export const useBlitzHyperstructureCreation = ({
       throw new Error("Hyperstructure creation is not available for this tile right now.");
     }
     if (!account) {
-      throw new Error("Connect a controller account before creating this hyperstructure.");
+      throw new Error("Wait for your gameplay account before creating this hyperstructure.");
     }
     if (!hexCoords) {
       throw new Error("Select a reserved hyperstructure tile before creating it.");

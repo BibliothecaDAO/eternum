@@ -7,7 +7,7 @@ import type { BootstrappedEntrySession } from "./bootstrap";
 import { resolveCachedEntrySessionForContext } from "./bootstrap-session-context";
 
 const createContext = (overrides: Partial<ResolvedEntryContext>): ResolvedEntryContext => ({
-  chain: "mainnet",
+  chain: "madara",
   worldName: "iron-age",
   intent: "play",
   autoSettle: false,
@@ -20,8 +20,8 @@ const createSession = (context: ResolvedEntryContext): BootstrappedEntrySession 
   profile: {
     name: context.worldName,
     chain: context.chain,
-    toriiBaseUrl: "https://api.cartridge.gg/x/iron-age/torii",
-    rpcUrl: "https://api.cartridge.gg/x/iron-age/katana/rpc/v0_9",
+    toriiBaseUrl: "https://api.realms.world/x/iron-age/torii",
+    rpcUrl: "https://api.realms.world/x/iron-age/katana/rpc/v0_9",
     worldAddress: "0x1",
     contractsBySelector: {},
     fetchedAt: 0,

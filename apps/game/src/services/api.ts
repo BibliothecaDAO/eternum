@@ -2,7 +2,7 @@ import { SqlApi, type SqlGameScope } from "@bibliothecadao/torii";
 import { getActiveWorld } from "@/runtime/world";
 import { getWorldById } from "@/runtime/world/world-directory";
 import { resolveWorldToriiBaseUrl as resolveSharedWorldToriiBaseUrl } from "@/runtime/world/world-torii";
-import type { Chain } from "@contracts";
+import type { GameChain as Chain } from "@realms-world/chain";
 import { env } from "../../env";
 
 const ensureSqlSuffix = (baseUrl: string): string => (baseUrl.endsWith("/sql") ? baseUrl : `${baseUrl}/sql`);
@@ -38,12 +38,7 @@ const resolveWorldToriiBaseUrl = ({
     return active.toriiBaseUrl;
   }
 
-  if (chain === "local") {
-    return env.VITE_PUBLIC_TORII;
-  }
-
-  // Shared-torii aware: on the appchain there is no per-world Cartridge host,
-  // and entry flows hit this before any world profile exists to consult.
+  // Entry flows can hit this before any world profile exists to consult.
   return resolveSharedWorldToriiBaseUrl(worldName);
 };
 

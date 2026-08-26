@@ -34,627 +34,6 @@ import { HomePage } from "vocs/components";
 
 ---
 
-file: docs/pages/development/client.mdx
-meta: {}
-
-# React Client
-
-## Run the dev server
-
-From the root of the project, run:
-
-Easy method:
-
-```bash
-./scripts/client.sh
-```
-
-Manual method:
-
-```bash
-pnpm i && pnpm dev
-```
-
-The client requires environment variables to be set. See the [Environment Variables](client/.env.sample) page for more
-information.
-
-## Project Structure
-
-### Elements
-
-* Small reusable react UI components
-
-### Components
-
-* Stateful react components composed of Elements. This is where all the onchain state should be stored.
-
-### Modules
-
-* Collection of components composed into Modules
-
-### Containers
-
-* Locations where Modules are composed into a full page
-
-### Layouts
-
-* Collection of containers composed into a full layout
-
-## useDojo Hook
-
-The `useDojo` hook is a core part of the Dojo framework that provides access to essential game functionality, account
-management, and network interactions.
-
-### Usage
-
-```tsx
-import { useDojo } from "@/hooks/context/dojo-context";
-function GameComponent() {
-  const { account, network, masterAccount } = useDojo();
-  // ... your game logic
-}
-```
-
-### Features
-
-#### Account Management
-
-The hook provides comprehensive wallet and account management capabilities:
-
-* **Burner Wallet Creation**: Create temporary wallets for players
-* **Account Selection**: Switch between different burner wallets
-* **Account Listing**: View all available burner wallets
-* **Master Account Access**: Access to the game's master account
-* **Deployment Status**: Track wallet deployment status
-
-#### Network Integration
-
-Access to network configuration and setup results for interacting with the Starknet blockchain.
-
-#### Game Setup
-
-Provides access to all initialized game systems, components, and world configurations.
-
-### Requirements
-
-The hook must be used within a `DojoProvider` component and requires the following environment variables:
-
-* `VITE_PUBLIC_MASTER_ADDRESS`
-* `VITE_PUBLIC_MASTER_PRIVATE_KEY`
-* `VITE_PUBLIC_ACCOUNT_CLASS_HASH`
-
-### Return Value
-
-The hook returns an object containing:
-
-* `setup`: Complete Dojo context including game systems and components
-* `account`: Account management functions and state
-* `network`: Network configuration and setup results
-* `masterAccount`: The master account instance
-
-### Example
-
-```tsx
-function GameUI() {
-  const { account } = useDojo();
-  return (
-    <div>
-      <p>Current Account: {account.account.address}</p>
-    </div>
-  );
-}
-```
-
-## Eternum provider
-
-Wrapper around the DojoProvider, which itself is a wrapper around a generic Starknet provider, an API to easy interact
-with your contract’s API via the RPC. Each layer of abstraction adds its own set of functionalities, with the Eternum
-Provider mainly providing easy access to all the system calls that our systems expose (create\_army, etc…)
-
-## Offchain messages
-
-You can use offchain messages to store information in the indexer, but it is not persisted onchain. Some examples of use
-cases for this are in-game messages. Refer to
-[this code](https://github.com/BibliothecaDAO/eternum/blob/1490dfcf513d72f51e5a84138be743d774338caf/client/src/ui/modules/chat/InputField.tsx#L50)
-for an example of how to use offchain messages
-
-# State Management with Recs
-
-Recs allow you to query the state of the world and subscribe to changes in the world. It is the recommended way to
-manage state in the client.
-
-```tsx
-const structureAtPosition = runQuery([HasValue(Position, { x, y }), Has(Structure)]);
-```
-
-This line of code will run a query against the local state of the browser and return all the structures that are at the
-position `{ x, y }`. This does not execute any call to Torii as the local state is already synced with the latest
-updates.
-
-This part of the code in `client/src/dojo/setup.ts` is where the local state is initialized and synced.
-
-## Subscribing to changes
-
-To subscribe to changes in the world, you can use the `useEntityQuery` hook. This hook will return the entity that
-matches the query and update it if it changes.
-
-```tsx
-const allRealms = useEntityQuery([Has(Realm)]);
-```
-
-## Getting the value of your components
-
-After you have run a query, you can get the value of your components using the `getComponentValue` function.
-
-```tsx
-const realm = getComponentValue(Realm, entityId);
-```
-
-The entityId is the poseidon hash of all the keys of the component you want to get. This can be an easier way to get
-your component than using a query if you already know all the keys.
-
-### Getting a component from an entity
-
-If you have an entityId, you can get a component from it using the `getComponent` function.
-
-```tsx
-const realm = getComponentValue(Realm, getEntityIdFromKeys([entityId]));
-```
-
-The previous line of code is equivalent to:
-
-```tsx
-const entity = runQuery([Has(Realm), HasValue(Keys, [entityId])]);
-const realm = getComponentValue(Realm, Array.from(entity)[0]);
-```
-
-# Extending the client
-
-## Adding a new component
-
-You will need to add your component to the `contractComponents.ts` file. This will ensure that the component is synced
-with the state of the world and will provide the types for the component.
-
-## Adding a new system
-
-You will need to add your system logic to the `sdk/packages/eternum/src/provider/index.ts` file and then use it in the
-`createSystemCalls.ts` file. This will ensure that the system is called with the correct arguments and will provide the
-types for the system.
-
-## Optimistic updates
-
-You can use optimistic updates to update the local state without waiting for the transaction to be included in a block.
-This is useful to provide a better user experience by updating the UI immediately.
-
-```ts
-private _optimisticDestroy = (entityId: ID, col: number, row: number) => {
-  const overrideId = uuid();
-  const realmPosition = getComponentValue(this.setup.components.Position, getEntityIdFromKeys([BigInt(entityId)]));
-  const { x: outercol, y: outerrow } = realmPosition || { x: 0, y: 0 };
-  const entity = getEntityIdFromKeys([outercol, outerrow, col, row].map((v) => BigInt(v)));
-  this.setup.components.Building.addOverride(overrideId, {
-    entity,
-    value: {
-      outer_col: outercol,
-      outer_row: outerrow,
-      inner_col: col,
-      inner_row: row,
-      category: "None",
-      produced_resource_type: 0,
-      bonus_percent: 0,
-      entity_id: 0,
-      outer_entity_id: 0,
-    },
-  });
-  return overrideId;
-};
-```
-
-You can use the `uuid` function to generate a unique overrideId. Remember to return the overrideId so you can later
-delete it after the transaction is included in a block. It's good practice to remove the override, however because of a
-delay between the transaction being included in a block and Torii syncing, you might have a split second where the
-override is removed and the Recs being updated. This will cause your component (i.e. a building) to appear then
-disappear for a second before reappearing.
-
-
-
----
-
-file: docs/pages/development/collaborators.mdx
-meta: {}
-
-import Collaborators from "@/components/Collaborators";
-
-# Collaborators
-
-<Collaborators />
-
-
-
----
-
-file: docs/pages/development/contracts.mdx
-meta: {}
-
-# Contracts
-
-## Rules of thumb
-
-* Note that every field you add in a model will raise the storage cost of each transaction that modifies the model.
-* Try to make models as small as possible, and re-use existing models as much as possible, every model and system that
-  you add raises the size of the CASM, and there is a limit to the size of a declared contract on Starknet.
-* Keep systems stateless. Store your game state in models.
-* When implementing a new game logic, you will need to keep in mind that the game already has physics implemented, such
-  as weight, position, movement, speed, etc. If creating something that needs to have any of this logic, re-use
-  components so everything stays logical.
-
-## Models
-
-### Keys
-
-Use the `ID` type alias for keys that require a unique identifier.
-
-### Model design
-
-entity\_id: u32
-
-### Implementations
-
-Where possible make traits for the models so they are stateless for unit testing.
-
-Always use generate trait where possible to minimize code.
-
-```rust
-#[generate_trait]
-```
-
-### Adding a model
-
-```rust
-#[derive(Copy, Drop, Serde)]
-#[dojo::model]
-pub struct Structure {
-    #[key]
-    entity_id: ID,
-    category: StructureCategory,
-    created_at: u64
-}
-```
-
-To test this model, you need to add it to the `contracts/src/utils/testing/world.cairo` file so it can be instantiated
-in the tests.
-
-## Event models
-
-If you need some data to be available in the client, but it doesn't need to be stored onchain, you can use an event
-model.
-
-```rust
-#[derive(Introspect, Copy, Drop, Serde)]
-#[dojo::event]
-#[dojo::model]
-pub struct ExampleEvent {
-    #[key]
-    id: ID,
-    #[key]
-    event_id: EventType,
-    my_data_field: u8
-}
-```
-
-## Adding a system
-
-Design systems like this in the directory
-
-* SystemName
-  * system\_name.cairo
-  * tests.cairo
-
-`system.cairo` should include the implementation of the system like this.
-
-Things to note:
-
-* Interface at top of File
-* use of `super::IBuildingContract` to minimize imports and make it clear where the interface is defined.
-
-```rust
-#[dojo::interface]
-trait IBuildingContract<TContractState> {
-    fn create(
-        entity_id: ID,
-        building_coord: crate::models::position::Coord,
-        building_category: crate::models::resource::production::building::BuildingCategory,
-        produce_resource_type: Option<u8>
-    );
-}
-
-#[dojo::contract]
-mod production_systems {
-    use crate::alias::ID;
-    use crate::models::{
-        resource::resource::{Resource, ResourceCost}, owner::Owner, hyperstructure::HyperStructure,
-        order::Orders, position::{Coord, Position, PositionTrait, Direction},
-        buildings::{BuildingCategory, Building, BuildingImpl},
-        production::{Production, ProductionRateTrait}, realm::{Realm, RealmImpl}
-    };
-
-    #[abi(embed_v0)]
-    impl BuildingContractImpl of super::IBuildingContract<ContractState> {
-        fn create(
-            world: IWorldDispatcher,
-            entity_id: ID,
-            building_coord: Coord,
-            building_category: BuildingCategory,
-            produce_resource_type: Option<u8>,
-        ) {
-        }
-    }
-}
-```
-
-To test this system, you need to add it to the `contracts/src/utils/testing/world.cairo` file so it can be instantiated
-in the tests.
-
-
-
----
-
-file: docs/pages/development/getting-started.mdx
-meta: {
-  "layout": "docs"
-}
-
-# Getting Started
-
-<img src="/images/covers/eternum-documentation.png" alt="Eternum Development" className="w-full rounded-lg my-6" />
-
-## Prerequisites
-
-* [Dojo onchain game engine](https://book.dojoengine.org) v1.0.4
-* [Node.js](https://nodejs.org/)
-* [pnpm](https://pnpm.io/) v9.12.3
-* [Bun](https://bun.sh/)
-
-## Setup
-
-Install Dojo via:
-
-```bash
-curl -L https://install.dojoengine.org | bash
-```
-
-Eternum uses a pnpm workspace and bun for scripts to allow easy npm packages to be created. Install pnpm:
-
-```bash
-npm install -g pnpm
-```
-
-Install project dependencies:
-
-```bash
-pnpm install
-```
-
-Build shared packages:
-
-```bash
-pnpm run build:packages
-```
-
-## Development Scripts
-
-### Development
-
-* `pnpm dev` - Start game development server
-* `pnpm dev:docs` - Start documentation development server
-
-### Building
-
-* `pnpm build` - Build game client
-* `pnpm build:docs` - Build documentation
-* `pnpm build:packages` - Build shared packages
-
-### Testing & Linting
-
-* `pnpm test` - Run all tests
-* `pnpm lint` - Run linting
-* `pnpm format` - Format code
-* `pnpm format:check` - Check code formatting
-
-## Contract Deployment
-
-Eternum supports multiple deployment environments:
-
-<div className="table-stretch-last">
-  | Environment | Description                 |
-  | ----------- | --------------------------- |
-  | Local       | For development and testing |
-  | Slot        | Staging environment         |
-  | Sepolia     | Public testnet              |
-  | Mainnet     | Production environment      |
-</div>
-### Deploying to Local
-
-Before deploying to any environment, confirm that you have a `.env.{environment}` file in the `contracts/common`
-directory, as well as in the `apps/game` directory.
-
-To deploy and run the game locally:
-
-```bash
-# Start local game contracts
-pnpm run contract:start:local
-```
-
-### Deploying to Sepolia
-
-To deploy the contracts to Sepolia testnet, run these commands in order:
-
-1. Deploy game contracts:
-
-```bash
-pnpm run game:migrate:sepolia
-```
-
-2. Deploy season pass contracts:
-
-```bash
-pnpm run seasonpass:deploy:sepolia
-```
-
-3. Deploy season resources contracts:
-
-```bash
-pnpm run seasonresources:deploy:sepolia
-```
-
-4. Update TOML configuration:
-
-```bash
-pnpm run toml:update:sepolia
-```
-
-5. Start the indexer:
-
-```bash
-pnpm run indexer:start:sepolia
-```
-
-6. Deploy game configuration:
-
-```bash
-pnpm run config:deploy:sepolia
-```
-
-## Environment Variables
-
-For local development, create a file called `.env.local` in the client repository and add the following:
-
-```bash
-VITE_PUBLIC_MASTER_ADDRESS="0x127fd5f1fe78a71f8bcd1fec63e3fe2f0486b6ecd5c86a0466c3a21fa5cfcec"
-VITE_PUBLIC_MASTER_PRIVATE_KEY="0xc5b2fcab997346f3ea1c00b002ecf6f382c5f9c9659a3894eb783c5320f912"
-VITE_PUBLIC_ACCOUNT_CLASS_HASH="0x07dc7899aa655b0aae51eadff6d801a58e97dd99cf4666ee59e704249e51adf2"
-VITE_PUBLIC_FEE_TOKEN_ADDRESS=0x49d36570d4e46f48e99674bd3fcc84644ddd6b96f7c741b1562b82f9e004dc7
-
-VITE_PUBLIC_TORII="http://127.0.0.1:8080"
-VITE_PUBLIC_NODE_URL="http://127.0.0.1:5050"
-VITE_PUBLIC_GAME_VERSION="v1.0.0-rc0"
-VITE_PUBLIC_GRAPHICS_DEV=false
-VITE_PUBLIC_TORII_RELAY="/ip4/127.0.0.1/udp/9091/webrtc-direct/certhash/uEiDry6d-bDv3UdIS6L9VMugoiZnfwqOeXyFWm6jgKf7aTw"
-
-VITE_SOCIAL_LINK=http://bit.ly/3Zz1mpp
-
-VITE_PUBLIC_CHAIN=local
-VITE_PUBLIC_SLOT="eternum-prod"
-
-VITE_PUBLIC_VRF_PROVIDER_ADDRESS="0x0"
-VITE_PUBLIC_CLIENT_FEE_RECIPIENT=0x045c587318c9ebcf2fbe21febf288ee2e3597a21cd48676005a5770a50d433c5
-VITE_PUBLIC_MOBILE_VERSION_URL=https://next-m.eternum.realms.world
-
-```
-
-This file is subject to change, please keep an eye on the repository for potential updates.
-
-## Project Structure
-
-* [Apps](https://github.com/BibliothecaDAO/eternum/tree/main/apps) - User-facing applications
-  * [Game](https://github.com/BibliothecaDAO/eternum/tree/main/apps/game) - Main game client with Three.js interface
-  * [Game Docs](https://github.com/BibliothecaDAO/eternum/tree/main/apps/game-docs) - Game documentation
-* [Contracts](https://github.com/BibliothecaDAO/eternum/tree/main/contracts) - Cairo/Dojo smart contracts
-  * Game contracts
-  * Season Pass contracts
-  * Season Resources contracts
-* [Packages](https://github.com/BibliothecaDAO/eternum/tree/main/packages) - Shared libraries
-  * [Core](https://github.com/BibliothecaDAO/eternum/tree/main/packages/core) - Eternum SDK
-  * [React](https://github.com/BibliothecaDAO/eternum/tree/main/packages/react) - React hooks and components
-* [Config](https://github.com/BibliothecaDAO/eternum/tree/main/config) - Configuration and deployment scripts
-
-## Core Dependencies
-
-* [@dojoengine/react](https://www.npmjs.com/package/@dojoengine/react) - React integration for Dojo
-* [@dojoengine/recs](https://www.npmjs.com/package/@dojoengine/recs) - Entity Component System
-* [@cartridge/controller](https://www.npmjs.com/package/@cartridge/controller) - Game controller integration
-* [Starknet.js](https://www.npmjs.com/package/starknet) v6.23.1 - StarkNet interaction
-* [Vite](https://vitejs.dev/) - Frontend build tool
-
-## Stack
-
-<img src="/images/covers/08.png" alt="Eternum Technology Stack" className="w-full rounded-lg my-6" />
-
-* [Contracts](/development/contracts): built using the Dojo framework. This leverages the ECS model, allowing us to
-  build quick and ship fast. It revolves around 3 units: Entities, Components (called Models in Dojo) and Systems (more
-  about this in the Dojo book).
-* [Client](/development/client): our client is built using React with Typescript. We leverage Dojo by using DojoJS
-* [Eternum SDK](/development/sdk): our SDK contains most notably the getter and setter of the configuration of Eternum,
-  the EternumProvider and most of the constants/types of the world that needed to be transcribed to Typescript.
-* [Torii](https://book.dojoengine.org/toolchain/torii): Dojo's indexer, optimized for that particular framework and well
-  integrated into the stack. From our client, we have a gRPC subscription set up through DojoJS and recs to events.
-  Events are fired in the contracts as a way for the indexer to know what's going on in the world. Every time an entity
-  is created, updated, or deleted, an event is fired which updated Torii's record of the world.
-* [DojoJS and recs](https://github.com/dojoengine/dojo.js?tab=readme-ov-file#contributing-to-dojojs): DojoJS is the SDK
-  that allows easy integration of a Dojo app into your client/node backend. Recs are DojoJS's way of exposing the state
-  of the world to the client. This is done via queries to the Recs state using a simple query language, which doesn't
-  support complex queries yet (e.g. joins, gt, lt, etc...).
-
-
-
----
-
-file: docs/pages/development/index.mdx
-meta: {
-  "layout": "docs"
-}
-
-# Development
-
-* [Getting Started](/development/getting-started)
-* [Client](/development/client)
-* [Contracts](/development/contracts)
-* [SDK](/development/sdk)
-* [Collaborators](/development/collaborators)
-
-
-
----
-
-file: docs/pages/development/llm.mdx
-meta: {
-  "title": "LLM"
-}
-
-# LLM
-
-These docs are experted at [https://docs.eternum.realms.world/llm.txt](https://docs.eternum.realms.world/llm.txt) for
-consumption by the LLM.
-
-
-
----
-
-file: docs/pages/development/sdk.mdx
-meta: {}
-
-# SDK
-
-## Compiling
-
-From the root of the project, run:
-
-```bash
-pnpm i && pnpm run build:packages
-```
-
-## Structure
-
-This SDK contains most notably the getter and setter of the configuration of Eternum, the EternumProvider and most of
-the constants/types of the world that needed to be transcribed to Typescript.
-
-Everything considered as client agnostic should be in there. The main reason for this separation is to be able to re-use
-this logic in any other project that uses Typescript, e.g. new mobile client, data analytics app, etc.
-
-
-
----
-
 file: docs/pages/blitz/achievements.mdx
 meta: {}
 
@@ -1079,7 +458,6 @@ The total prize pool comes from two sources:
     </tbody>
   </table>
 </div>
-
 **Total Prize Pool = F + S**
 
 ### Fee Split
@@ -2022,6 +1400,628 @@ meta: {
 
 ---
 
+file: docs/pages/development/client.mdx
+meta: {}
+
+# React Client
+
+## Run the dev server
+
+From the root of the project, run:
+
+Easy method:
+
+```bash
+./scripts/client.sh
+```
+
+Manual method:
+
+```bash
+pnpm i && pnpm dev
+```
+
+The client requires environment variables to be set. See the [Environment Variables](client/.env.sample) page for more
+information.
+
+## Project Structure
+
+### Elements
+
+* Small reusable react UI components
+
+### Components
+
+* Stateful react components composed of Elements. This is where all the onchain state should be stored.
+
+### Modules
+
+* Collection of components composed into Modules
+
+### Containers
+
+* Locations where Modules are composed into a full page
+
+### Layouts
+
+* Collection of containers composed into a full layout
+
+## useDojo Hook
+
+The `useDojo` hook is a core part of the Dojo framework that provides access to essential game functionality, account
+management, and network interactions.
+
+### Usage
+
+```tsx
+import { useDojo } from "@/hooks/context/dojo-context";
+function GameComponent() {
+  const { account, network, masterAccount } = useDojo();
+  // ... your game logic
+}
+```
+
+### Features
+
+#### Account Management
+
+The hook provides comprehensive wallet and account management capabilities:
+
+* **Burner Wallet Creation**: Create temporary wallets for players
+* **Account Selection**: Switch between different burner wallets
+* **Account Listing**: View all available burner wallets
+* **Master Account Access**: Access to the game's master account
+* **Deployment Status**: Track wallet deployment status
+
+#### Network Integration
+
+Access to network configuration and setup results for interacting with the Starknet blockchain.
+
+#### Game Setup
+
+Provides access to all initialized game systems, components, and world configurations.
+
+### Requirements
+
+The hook must be used within a `DojoProvider` component and requires the following environment variables:
+
+* `VITE_PUBLIC_MASTER_ADDRESS`
+* `VITE_PUBLIC_MASTER_PRIVATE_KEY`
+* `VITE_PUBLIC_ACCOUNT_CLASS_HASH`
+
+### Return Value
+
+The hook returns an object containing:
+
+* `setup`: Complete Dojo context including game systems and components
+* `account`: Account management functions and state
+* `network`: Network configuration and setup results
+* `masterAccount`: The master account instance
+
+### Example
+
+```tsx
+function GameUI() {
+  const { account } = useDojo();
+  return (
+    <div>
+      <p>Current Account: {account.account.address}</p>
+    </div>
+  );
+}
+```
+
+## Eternum provider
+
+Wrapper around the DojoProvider, which itself is a wrapper around a generic Starknet provider, an API to easy interact
+with your contract’s API via the RPC. Each layer of abstraction adds its own set of functionalities, with the Eternum
+Provider mainly providing easy access to all the system calls that our systems expose (create\_army, etc…)
+
+## Offchain messages
+
+You can use offchain messages to store information in the indexer, but it is not persisted onchain. Some examples of use
+cases for this are in-game messages. Refer to
+[this code](https://github.com/BibliothecaDAO/eternum/blob/1490dfcf513d72f51e5a84138be743d774338caf/client/src/ui/modules/chat/InputField.tsx#L50)
+for an example of how to use offchain messages
+
+# State Management with Recs
+
+Recs allow you to query the state of the world and subscribe to changes in the world. It is the recommended way to
+manage state in the client.
+
+```tsx
+const structureAtPosition = runQuery([HasValue(Position, { x, y }), Has(Structure)]);
+```
+
+This line of code will run a query against the local state of the browser and return all the structures that are at the
+position `{ x, y }`. This does not execute any call to Torii as the local state is already synced with the latest
+updates.
+
+This part of the code in `client/src/dojo/setup.ts` is where the local state is initialized and synced.
+
+## Subscribing to changes
+
+To subscribe to changes in the world, you can use the `useEntityQuery` hook. This hook will return the entity that
+matches the query and update it if it changes.
+
+```tsx
+const allRealms = useEntityQuery([Has(Realm)]);
+```
+
+## Getting the value of your components
+
+After you have run a query, you can get the value of your components using the `getComponentValue` function.
+
+```tsx
+const realm = getComponentValue(Realm, entityId);
+```
+
+The entityId is the poseidon hash of all the keys of the component you want to get. This can be an easier way to get
+your component than using a query if you already know all the keys.
+
+### Getting a component from an entity
+
+If you have an entityId, you can get a component from it using the `getComponent` function.
+
+```tsx
+const realm = getComponentValue(Realm, getEntityIdFromKeys([entityId]));
+```
+
+The previous line of code is equivalent to:
+
+```tsx
+const entity = runQuery([Has(Realm), HasValue(Keys, [entityId])]);
+const realm = getComponentValue(Realm, Array.from(entity)[0]);
+```
+
+# Extending the client
+
+## Adding a new component
+
+You will need to add your component to the `contractComponents.ts` file. This will ensure that the component is synced
+with the state of the world and will provide the types for the component.
+
+## Adding a new system
+
+You will need to add your system logic to the `sdk/packages/eternum/src/provider/index.ts` file and then use it in the
+`createSystemCalls.ts` file. This will ensure that the system is called with the correct arguments and will provide the
+types for the system.
+
+## Optimistic updates
+
+You can use optimistic updates to update the local state without waiting for the transaction to be included in a block.
+This is useful to provide a better user experience by updating the UI immediately.
+
+```ts
+private _optimisticDestroy = (entityId: ID, col: number, row: number) => {
+  const overrideId = uuid();
+  const realmPosition = getComponentValue(this.setup.components.Position, getEntityIdFromKeys([BigInt(entityId)]));
+  const { x: outercol, y: outerrow } = realmPosition || { x: 0, y: 0 };
+  const entity = getEntityIdFromKeys([outercol, outerrow, col, row].map((v) => BigInt(v)));
+  this.setup.components.Building.addOverride(overrideId, {
+    entity,
+    value: {
+      outer_col: outercol,
+      outer_row: outerrow,
+      inner_col: col,
+      inner_row: row,
+      category: "None",
+      produced_resource_type: 0,
+      bonus_percent: 0,
+      entity_id: 0,
+      outer_entity_id: 0,
+    },
+  });
+  return overrideId;
+};
+```
+
+You can use the `uuid` function to generate a unique overrideId. Remember to return the overrideId so you can later
+delete it after the transaction is included in a block. It's good practice to remove the override, however because of a
+delay between the transaction being included in a block and Torii syncing, you might have a split second where the
+override is removed and the Recs being updated. This will cause your component (i.e. a building) to appear then
+disappear for a second before reappearing.
+
+
+
+---
+
+file: docs/pages/development/collaborators.mdx
+meta: {}
+
+import Collaborators from "@/components/Collaborators";
+
+# Collaborators
+
+<Collaborators />
+
+
+
+---
+
+file: docs/pages/development/contracts.mdx
+meta: {}
+
+# Contracts
+
+## Rules of thumb
+
+* Note that every field you add in a model will raise the storage cost of each transaction that modifies the model.
+* Try to make models as small as possible, and re-use existing models as much as possible, every model and system that
+  you add raises the size of the CASM, and there is a limit to the size of a declared contract on Starknet.
+* Keep systems stateless. Store your game state in models.
+* When implementing a new game logic, you will need to keep in mind that the game already has physics implemented, such
+  as weight, position, movement, speed, etc. If creating something that needs to have any of this logic, re-use
+  components so everything stays logical.
+
+## Models
+
+### Keys
+
+Use the `ID` type alias for keys that require a unique identifier.
+
+### Model design
+
+entity\_id: u32
+
+### Implementations
+
+Where possible make traits for the models so they are stateless for unit testing.
+
+Always use generate trait where possible to minimize code.
+
+```rust
+#[generate_trait]
+```
+
+### Adding a model
+
+```rust
+#[derive(Copy, Drop, Serde)]
+#[dojo::model]
+pub struct Structure {
+    #[key]
+    entity_id: ID,
+    category: StructureCategory,
+    created_at: u64
+}
+```
+
+To test this model, you need to add it to the `contracts/src/utils/testing/world.cairo` file so it can be instantiated
+in the tests.
+
+## Event models
+
+If you need some data to be available in the client, but it doesn't need to be stored onchain, you can use an event
+model.
+
+```rust
+#[derive(Introspect, Copy, Drop, Serde)]
+#[dojo::event]
+#[dojo::model]
+pub struct ExampleEvent {
+    #[key]
+    id: ID,
+    #[key]
+    event_id: EventType,
+    my_data_field: u8
+}
+```
+
+## Adding a system
+
+Design systems like this in the directory
+
+* SystemName
+  * system\_name.cairo
+  * tests.cairo
+
+`system.cairo` should include the implementation of the system like this.
+
+Things to note:
+
+* Interface at top of File
+* use of `super::IBuildingContract` to minimize imports and make it clear where the interface is defined.
+
+```rust
+#[dojo::interface]
+trait IBuildingContract<TContractState> {
+    fn create(
+        entity_id: ID,
+        building_coord: crate::models::position::Coord,
+        building_category: crate::models::resource::production::building::BuildingCategory,
+        produce_resource_type: Option<u8>
+    );
+}
+
+#[dojo::contract]
+mod production_systems {
+    use crate::alias::ID;
+    use crate::models::{
+        resource::resource::{Resource, ResourceCost}, owner::Owner, hyperstructure::HyperStructure,
+        order::Orders, position::{Coord, Position, PositionTrait, Direction},
+        buildings::{BuildingCategory, Building, BuildingImpl},
+        production::{Production, ProductionRateTrait}, realm::{Realm, RealmImpl}
+    };
+
+    #[abi(embed_v0)]
+    impl BuildingContractImpl of super::IBuildingContract<ContractState> {
+        fn create(
+            world: IWorldDispatcher,
+            entity_id: ID,
+            building_coord: Coord,
+            building_category: BuildingCategory,
+            produce_resource_type: Option<u8>,
+        ) {
+        }
+    }
+}
+```
+
+To test this system, you need to add it to the `contracts/src/utils/testing/world.cairo` file so it can be instantiated
+in the tests.
+
+
+
+---
+
+file: docs/pages/development/getting-started.mdx
+meta: {
+  "layout": "docs"
+}
+
+# Getting Started
+
+<img src="/images/covers/eternum-documentation.png" alt="Eternum Development" className="w-full rounded-lg my-6" />
+
+## Prerequisites
+
+* [Dojo onchain game engine](https://book.dojoengine.org) v1.0.4
+* [Node.js](https://nodejs.org/)
+* [pnpm](https://pnpm.io/) v9.12.3
+* [Bun](https://bun.sh/)
+
+## Setup
+
+Install Dojo via:
+
+```bash
+curl -L https://install.dojoengine.org | bash
+```
+
+Eternum uses a pnpm workspace and bun for scripts to allow easy npm packages to be created. Install pnpm:
+
+```bash
+npm install -g pnpm
+```
+
+Install project dependencies:
+
+```bash
+pnpm install
+```
+
+Build shared packages:
+
+```bash
+pnpm run build:packages
+```
+
+## Development Scripts
+
+### Development
+
+* `pnpm dev` - Start game development server
+* `pnpm dev:docs` - Start documentation development server
+
+### Building
+
+* `pnpm build` - Build game client
+* `pnpm build:docs` - Build documentation
+* `pnpm build:packages` - Build shared packages
+
+### Testing & Linting
+
+* `pnpm test` - Run all tests
+* `pnpm lint` - Run linting
+* `pnpm format` - Format code
+* `pnpm format:check` - Check code formatting
+
+## Contract Deployment
+
+Eternum supports multiple deployment environments:
+
+<div className="table-stretch-last">
+  | Environment | Description                 |
+  | ----------- | --------------------------- |
+  | Local       | For development and testing |
+  | Slot        | Staging environment         |
+  | Sepolia     | Public testnet              |
+  | Mainnet     | Production environment      |
+</div>
+
+### Deploying to Local
+
+Before deploying to any environment, confirm that you have a `.env.{environment}` file in the `contracts/common`
+directory, as well as in the `apps/game` directory.
+
+To deploy and run the game locally:
+
+```bash
+# Start local game contracts
+pnpm run contract:start:local
+```
+
+### Deploying to Sepolia
+
+To deploy the contracts to Sepolia testnet, run these commands in order:
+
+1. Deploy game contracts:
+
+```bash
+pnpm run game:migrate:sepolia
+```
+
+2. Deploy season pass contracts:
+
+```bash
+pnpm run seasonpass:deploy:sepolia
+```
+
+3. Deploy season resources contracts:
+
+```bash
+pnpm run seasonresources:deploy:sepolia
+```
+
+4. Update TOML configuration:
+
+```bash
+pnpm run toml:update:sepolia
+```
+
+5. Start the indexer:
+
+```bash
+pnpm run indexer:start:sepolia
+```
+
+6. Deploy game configuration:
+
+```bash
+pnpm run config:deploy:sepolia
+```
+
+## Environment Variables
+
+For local development, create a file called `.env.local` in the client repository and add the following:
+
+```bash
+VITE_PUBLIC_MASTER_ADDRESS="0x127fd5f1fe78a71f8bcd1fec63e3fe2f0486b6ecd5c86a0466c3a21fa5cfcec"
+VITE_PUBLIC_MASTER_PRIVATE_KEY="0xc5b2fcab997346f3ea1c00b002ecf6f382c5f9c9659a3894eb783c5320f912"
+VITE_PUBLIC_ACCOUNT_CLASS_HASH="0x07dc7899aa655b0aae51eadff6d801a58e97dd99cf4666ee59e704249e51adf2"
+VITE_PUBLIC_FEE_TOKEN_ADDRESS=0x49d36570d4e46f48e99674bd3fcc84644ddd6b96f7c741b1562b82f9e004dc7
+
+VITE_PUBLIC_TORII="http://127.0.0.1:8080"
+VITE_PUBLIC_NODE_URL="http://127.0.0.1:5050"
+VITE_PUBLIC_GAME_VERSION="v1.0.0-rc0"
+VITE_PUBLIC_GRAPHICS_DEV=false
+VITE_PUBLIC_TORII_RELAY="/ip4/127.0.0.1/udp/9091/webrtc-direct/certhash/uEiDry6d-bDv3UdIS6L9VMugoiZnfwqOeXyFWm6jgKf7aTw"
+
+VITE_SOCIAL_LINK=http://bit.ly/3Zz1mpp
+
+VITE_PUBLIC_CHAIN=local
+VITE_PUBLIC_SLOT="eternum-prod"
+
+VITE_PUBLIC_VRF_PROVIDER_ADDRESS="0x0"
+VITE_PUBLIC_CLIENT_FEE_RECIPIENT=0x045c587318c9ebcf2fbe21febf288ee2e3597a21cd48676005a5770a50d433c5
+VITE_PUBLIC_MOBILE_VERSION_URL=https://next-m.eternum.realms.world
+
+```
+
+This file is subject to change, please keep an eye on the repository for potential updates.
+
+## Project Structure
+
+* [Apps](https://github.com/BibliothecaDAO/eternum/tree/main/apps) - User-facing applications
+  * [Game](https://github.com/BibliothecaDAO/eternum/tree/main/apps/game) - Main game client with Three.js interface
+  * [Game Docs](https://github.com/BibliothecaDAO/eternum/tree/main/apps/game-docs) - Game documentation
+* [Contracts](https://github.com/BibliothecaDAO/eternum/tree/main/contracts) - Cairo/Dojo smart contracts
+  * Game contracts
+  * Season Pass contracts
+  * Season Resources contracts
+* [Packages](https://github.com/BibliothecaDAO/eternum/tree/main/packages) - Shared libraries
+  * [Core](https://github.com/BibliothecaDAO/eternum/tree/main/packages/core) - Eternum SDK
+  * [React](https://github.com/BibliothecaDAO/eternum/tree/main/packages/react) - React hooks and components
+* [Config](https://github.com/BibliothecaDAO/eternum/tree/main/config) - Configuration and deployment scripts
+
+## Core Dependencies
+
+* [@dojoengine/react](https://www.npmjs.com/package/@dojoengine/react) - React integration for Dojo
+* [@dojoengine/recs](https://www.npmjs.com/package/@dojoengine/recs) - Entity Component System
+* [@cartridge/controller](https://www.npmjs.com/package/@cartridge/controller) - Game controller integration
+* [Starknet.js](https://www.npmjs.com/package/starknet) v6.23.1 - StarkNet interaction
+* [Vite](https://vitejs.dev/) - Frontend build tool
+
+## Stack
+
+<img src="/images/covers/08.png" alt="Eternum Technology Stack" className="w-full rounded-lg my-6" />
+
+* [Contracts](/development/contracts): built using the Dojo framework. This leverages the ECS model, allowing us to
+  build quick and ship fast. It revolves around 3 units: Entities, Components (called Models in Dojo) and Systems (more
+  about this in the Dojo book).
+* [Client](/development/client): our client is built using React with Typescript. We leverage Dojo by using DojoJS
+* [Eternum SDK](/development/sdk): our SDK contains most notably the getter and setter of the configuration of Eternum,
+  the EternumProvider and most of the constants/types of the world that needed to be transcribed to Typescript.
+* [Torii](https://book.dojoengine.org/toolchain/torii): Dojo's indexer, optimized for that particular framework and well
+  integrated into the stack. From our client, we have a gRPC subscription set up through DojoJS and recs to events.
+  Events are fired in the contracts as a way for the indexer to know what's going on in the world. Every time an entity
+  is created, updated, or deleted, an event is fired which updated Torii's record of the world.
+* [DojoJS and recs](https://github.com/dojoengine/dojo.js?tab=readme-ov-file#contributing-to-dojojs): DojoJS is the SDK
+  that allows easy integration of a Dojo app into your client/node backend. Recs are DojoJS's way of exposing the state
+  of the world to the client. This is done via queries to the Recs state using a simple query language, which doesn't
+  support complex queries yet (e.g. joins, gt, lt, etc...).
+
+
+
+---
+
+file: docs/pages/development/index.mdx
+meta: {
+  "layout": "docs"
+}
+
+# Development
+
+* [Getting Started](/development/getting-started)
+* [Client](/development/client)
+* [Contracts](/development/contracts)
+* [SDK](/development/sdk)
+* [Collaborators](/development/collaborators)
+
+
+
+---
+
+file: docs/pages/development/llm.mdx
+meta: {
+  "title": "LLM"
+}
+
+# LLM
+
+These docs are experted at [https://docs.eternum.realms.world/llm.txt](https://docs.eternum.realms.world/llm.txt) for
+consumption by the LLM.
+
+
+
+---
+
+file: docs/pages/development/sdk.mdx
+meta: {}
+
+# SDK
+
+## Compiling
+
+From the root of the project, run:
+
+```bash
+pnpm i && pnpm run build:packages
+```
+
+## Structure
+
+This SDK contains most notably the getter and setter of the configuration of Eternum, the EternumProvider and most of
+the constants/types of the world that needed to be transcribed to Typescript.
+
+Everything considered as client agnostic should be in there. The main reason for this separation is to be able to re-use
+this logic in any other project that uses Typescript, e.g. new mobile client, data analytics app, etc.
+
+
+
+---
+
 file: docs/pages/eternum/achievements.mdx
 meta: {}
 
@@ -2732,7 +2732,7 @@ import { importantNote } from "@/components/styles";
 
 The Cartridge Controller is a gaming-focused smart contract wallet that makes Web3 gaming accessible and transactionless
 via Session Keys. You must have a controller to play Eternum or Blitz. To find out more about the controller, read their
-documentation [here](https://docs.cartridge.gg/controller/overview).
+documentation [here](https://docs.realms.world/controller/overview).
 
 <img src="/images/screenshots/controller.png" alt="Controller" width="300" className="mx-auto" />
 
@@ -3096,436 +3096,6 @@ import { ResourceAddresses } from "@/components/ResourceAddresses";
 # Resource Addresses
 
 <ResourceAddresses />
-
-
-
----
-
-file: docs/pages/blitz/materials/automation.mdx
-meta: {}
-
-# Production Automation
-
-Resource automation allows players to set up continuous production processes within their entities. This system helps
-manage resource generation and distribution efficiently without constant manual intervention.
-
-## Overview
-
-Instead of micromanaging multiple production orders, the automation now runs off a single set of sliders per entity,
-recomputing the entire plan from those percentages every loop.
-
-**Key Features:**
-
-* **Every minute**: the client starts up production plans for any owned entity with a valid setup.
-* **Per-resource percentages**: Each tracked resource has sliders for complex and simple recipes.
-* **Presets**: “Labor”, “Resource”, “Custom”, and “Idle” presets instantly distribute percentages across every resource
-  with active buildings, respecting entity type and recipe availability.
-* **Supply margins**: Inputs are capped at 90% of the live balance.
-* **Local persistence**: Configurations are saved per game in your browser so refreshes keep the latest sliders and
-  last-run summaries.
-
-## How It Works
-
-Production automation runs a global loop that goes through every owned realm and camp.
-
-1. **Realm discovery**: On execution, the client fetches every owned entity and ensures it has an automation profile.
-2. **Resource scan**: Any resource with buildings or an active recipe is auto-added to bootstrap production, even if you
-   never touch the sliders.
-3. **Budgeting**: Each resource receives 90% of its current balance as a budget. Sliders dictate how much of that budget
-   the loop can spend on complex vs. simple recipes.
-4. **Plan generation**: Recipes reserve inputs according to your percentages and their per-cycle requirements. Recipes
-   without enough inputs are skipped and reported in the summary.
-5. **Execution**: If at least one recipe has non-zero cycles, the automation is submitted for that entity.
-6. **Feedback loop**: The store records cycles, inputs, outputs, and skipped resources so the UI can show fresh "last
-   run" stats.
-
-### Entity Coverage
-
-* **Realms and Camps** are supported; other entity types are ignored for production automation.
-* Losing ownership of a realm automatically prunes the associated automation profile.
-
-## Production Types
-
-There are still two production paths, now governed by slider percentages:
-
-1. **Complex (Resource → Resource)**:
-   * Burns existing resources to craft another according to the `Resource → Resource` slider.
-   * Example: Spend Wood + Coal to produce Copper.
-2. **Simple (Labor → Resource)**:
-   * Spends Labor to produce a resource using the `Labor → Resource` slider.
-   * Example: Spending Labor to produce Coal.
-
-## Allocation & Execution Rules
-
-* **Percentages replace orders**: Every loop recomputes usage based on sliders, entity type, and building activity.
-* **Per-resource budgets**: Complex and labor sliders consume independent portions of the 90% resource budget; zeroing a
-  slider skips that recipe.
-* **5% increments & clamping**: Sliders move in 5% increments and stay within the 0–90% range.
-* **Auto-managed lists**: Any resource with active production is auto-added so presets work the moment new buildings are
-  created. Removing the building later prunes the entry automatically.
-
-## Presets
-
-* `Labor:` Spreads up to 10% labor burn across eligible outputs while respecting shared inputs.
-* `Resource:` Pushes complex crafting to the ceiling.
-* `Custom:` Combines resource + labor preset.
-* `Idle:` Drops every slider to 0%, effectively pausing production for that entity.
-
-## Managing Automation Orders (UI)
-
-![Managing Automation Orders](/gifs/produce-from-automation.gif)
-
-1. **Open a realm or camp** and select the **Automation** panel in the right side navigation menu.
-2. **Click modify** to open up the production setup.
-3. **Adjust percentages**:
-   * `Resource → Resource`: How much of that resource’s complex inputs to burn per loop.
-   * `Labor → Resource`: How much labor-based production to run (disabled for Donkeys and military-only recipes).
-4. **Apply presets** (optional): Labor, Resource, Custom, and Idle presets instantly redistribute sliders across the
-   entity.
-5. **Repeat for other entities**. Changes save instantly and feed into the next global loop.
-
-#### Auto-balancing & Maintenance
-
-* When new buildings finish, their resources auto-insert into the automation list so presets continue to work.
-* Resetting an entity wipes its allocations but keeps the entity record for fast reconfiguration.
-* At the start of a new Blitz season, stored configs are cleared to avoid stale setups.
-
-### Pausing Automation
-
-You can pause production at different levels:
-
-1. **Individual Resource**: Set both sliders to 0% for a single resource.
-2. **Entity-wide**: Apply the Idle preset to drop all sliders to 0% until you are ready to resume.
-
-## Execution Summaries
-
-After each loop the realm panel shows:
-
-* **Timestamp** of the last run.
-* **Produced/Consumed totals** grouped by resource so you can see net flows.
-* **Skipped recipes** plus reasons (missing inputs, missing labor recipe, etc.).
-* **Total cycles** executed across complex and simple recipes.
-
-Use this view to verify slider settings or debug why a resource isn’t running (e.g., depleted labor inputs).
-
-## Important Considerations
-
-### General Requirements
-
-* **Browser must stay open**: The automation store lives in your browser. Closing the Blitz tab pauses every loop.
-* **Loop cadence**: Production automation evaluates roughly every 60 seconds; it won’t react faster even if you change a
-  slider immediately.
-
-### Production Automation Considerations
-
-* **Resource availability**: Production only executes if the realm has the required inputs at processing time.
-* **Recipe dependencies**: You can’t produce outputs that lack valid recipes or buildings.
-
-### Best Practices
-
-1. **Start conservative**: Begin with low percentages to watch how inputs drain.
-2. **Monitor early loops**: Use execution summaries after the first few runs to confirm cycle counts and skips.
-3. **Lean on presets**: Labor/Resource/Idle presets are the fastest way to reorient an entity without endless slider
-   drags.
-
-
-
----
-
-file: docs/pages/blitz/materials/bridging.mdx
-meta: {}
-
-# Bridging
-
-Bridging in Blitz is limited to the bridging of Relics into the game. This is to prevent players from gaining advantage
-through the import of materials previously extracted from Eternum seasons, while still encouraging the use of
-consumables for engaging and competitive gameplay. There is no bridging out of Blitz sessions; once relics are bridged
-in, they cannot be taken out of the session.
-
-## Bridging Relics
-
-*Work in Progress... Initial versions of Blitz will only feature Relics found within
-[Relic Crates](/blitz/worldmap-movement/worldmap#relic-crates). More information on tokenized Relics will be made
-available soon.*
-
-
-
----
-
-file: docs/pages/blitz/materials/production.mdx
-meta: {}
-
-import {
-  BlitzDonkeyProduction,
-  BlitzStandardTroopProduction,
-  BlitzSimpleTroopProduction,
-  BlitzSimpleResourceProduction,
-  BlitzStandardResourceProduction,
-  BlitzLaborProduction,
-} from "@/components/blitz-components/ResourceProduction";
-
-# Production
-
-## Resource Mode vs. Labor Mode
-
-As is the case for building construction, Lords can choose between resource-based and labor-based production systems
-when deciding how they wish to produce their materials. This can be done by selecting the appropriate panel when making
-an order in the production screen.
-
-*Note: Lords must commit the full material requirements to the production order upfront. The output is then produced at
-a given rate per second.*
-
-### Resource Mode
-
-The classic production system—every resource and troop production order requires food and a combination of other
-resources as inputs. As with buildings, resource mode is the more complex but efficient way to produce materials.
-
-### Labor Mode
-
-Labor mode reduces the requirements for a production order to food and labor. This is, once again, less efficient in
-both time and resources—but it allows Lords to produce resources on their Realm even if they haven't yet acquired the
-input resources required for resource mode production.
-
-## Materials Production
-
-### Food
-
-Wheat is the only food source in Blitz and can be produced without inputs. Once a Farm has been constructed, it can
-produce food indefinitely. Each Farm produces 6 Wheat per second.
-
-### Resources
-
-The 9 resources found in Blitz are the backbone of the economy. Producing one resource requires the input of two other
-resources (resource mode), or labor (labor mode). Resources are also the main components in building construction and
-troop production - so mastery of these assets is key to success and security.
-
-![Produce from building](/gifs/produce-from-building-click.gif)
-
-<BlitzSimpleResourceProduction />
-
-<BlitzStandardResourceProduction />
-
-### Labor
-
-Labor is the primary input for construction and production in simple mode, but is also required in resource mode for
-building construction and Realm upgrades. It is produced automatically by the Keep, creating a steady stream at a fixed
-rate of 2 labor per second.
-
-### Troops
-
-Troops are essential for exploration, defending your lands and conquering your enemies. Every Lord will be required to
-produce troops to ensure they remain a relevant force throughout the game. Three troop tiers are available, each
-requiring a combination of food, rare resources, and troops of the previous tier as input for production.
-
-*Note: Only T1 troops can be produced in both resource and labor mode. T2 and T3 troops can only be produced in resource
-mode.*
-
-<BlitzSimpleTroopProduction />
-
-<BlitzStandardTroopProduction />
-
-### Donkeys
-
-The humble steeds that move all materials around the world must themselves be produced in a market building. Donkeys are
-one-time-use and consumed after a single journey, so Lords will need to produce a steady supply of donkeys to ensure
-that they can sustain their supply chains and logistics. Once the market has been constructed, donkeys only require a
-steady stream of food to produce.
-
-<BlitzDonkeyProduction />
-
-
-
----
-
-file: docs/pages/blitz/materials/relics.mdx
-meta: {}
-
-import RelicTable from "@/components/blitz-components/RelicTable";
-
-# Relics
-
-Relics are powerful consumables that can be discovered in Blitz from
-[Relic Crates](/blitz/worldmap-movement/worldmap#relic-crates). Depending on the nature of a relic, it can be consumed
-by an army or a Realm in exchange for a time-limited bonus, such as a damage or production boost. When utilized at the
-right time, these items can provide a strategic edge over your opponents.
-
-Timed relic effects last **3 Eternum Days (18 minutes)**.
-
-There are currently nine relic types, each with two levels. A level 2 relic is simply a more powerful version of the
-level 1 counterpart. Every relic type has a distinct effect, which determines whether it can be activated by a Realm or
-an army. To activate a relic and gain the desired effect, the army or Realm must pay an amount of Essence. These
-details, as well as the discovery chance of each relic in a Relic Crate, are defined in the table below:
-
-<RelicTable />
-
-Each Relic Crate yields three relics. For every crate, the chances in the table above are rolled three separate times,
-so you may receive duplicates in a single crate.
-
-*Note: Relics are still under development. Initial versions of Blitz will limit their scope to within the game instance.
-However, it is expected that relics will have a much broader presence and impact in the Realms ecosystem. Keep an eye
-out for announcements in the Realms Discord relating to relics. This page will be updated as more information is made
-available to the community.*
-
-
-
----
-
-file: docs/pages/blitz/materials/resources.mdx
-meta: {}
-
-import RarityResourceTable from "@/components/RarityResourceTable";
-import ResourceIcon from "@/components/ResourceIcon";
-import { ResourcesIds } from "@bibliothecadao/types";
-
-# Materials
-
-## Materials Overview
-
-Materials encompass all transportable assets in Blitz, including:
-
-* **Resources**: 9 distinct resource types that can be produced on Realms.
-* **Food**: Essential Wheat that fuels production and troop movement.
-* **Troops**: Military units (Knights, Crossbowmen, Paladins) that can be assigned to armies.
-* **Donkeys**: One-time-use transport units required for moving materials across the world.
-* **Labor**: A special material that enables construction and production.
-* **Essence**: A new strategic resource found through exploration and required for building, production, and upgrades.
-
-While all materials can be transported within the game, **no materials can be bridged out** of Blitz.
-
-## Material Categories
-
-### Resources
-
-<div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.75rem", flexWrap: "wrap" }}>
-  <ResourceIcon name="Wood" id={ResourcesIds.Wood} />
-
-  <ResourceIcon name="Coal" id={ResourcesIds.Coal} />
-
-  <ResourceIcon name="Copper" id={ResourcesIds.Copper} />
-
-  <ResourceIcon name="Ironwood" id={ResourcesIds.Ironwood} />
-
-  <ResourceIcon name="Cold Iron" id={ResourcesIds.ColdIron} />
-
-  <ResourceIcon name="Gold" id={ResourcesIds.Gold} />
-
-  <ResourceIcon name="Adamantine" id={ResourcesIds.Adamantine} />
-
-  <ResourceIcon name="Mithral" id={ResourcesIds.Mithral} />
-
-  <ResourceIcon name="Dragonhide" id={ResourcesIds.Dragonhide} />
-</div>
-
-Resources are the foundation of the economy. The 9 resources play vital roles in Blitz, from basic production to
-advanced military operations.
-
-### Food
-
-<div style={{ display: "flex", alignItems: "baseline", gap: "0.5rem", marginBottom: "0.75rem" }}>
-  <ResourceIcon name="Wheat" id={ResourcesIds.Wheat} />
-</div>
-
-Food is the cornerstone of a Realm's economy and is required in all production chains. Only Wheat is available in Blitz
-and it can be produced without inputs.
-
-### Troops
-
-<div style={{ display: "flex", alignItems: "baseline", gap: "0.5rem", marginBottom: "0.75rem" }}>
-  <ResourceIcon name="Knight" id={ResourcesIds.Knight} />
-
-  <ResourceIcon name="Crossbowman" id={ResourcesIds.Crossbowman} />
-
-  <ResourceIcon name="Paladin" id={ResourcesIds.Paladin} />
-</div>
-
-Troops are required to defend your holdings and strike out at your foes. When produced, they can be transported between
-your structures by donkey like any other material, but to be used they must be deployed to an army. Once deployed, they
-cannot be converted back into material form.
-
-### Donkeys
-
-<div style={{ display: "flex", alignItems: "baseline", gap: "0.5rem", marginBottom: "0.75rem" }}>
-  <ResourceIcon name="Donkey" id={ResourcesIds.Donkey} />
-</div>
-
-Donkeys are essential for moving materials between your structures. They only require a market and wheat to produce, but
-are consumed after a single journey.
-
-### Labor
-
-<div style={{ display: "flex", alignItems: "baseline", gap: "0.5rem", marginBottom: "0.75rem" }}>
-  <ResourceIcon name="Labor" id={ResourcesIds.Labor} />
-</div>
-
-Labor is a key component in the construction of all buildings and required for 'labor mode' production. In Blitz, it is
-produced freely in the Keep of each Realm.
-
-### Essence
-
-<div style={{ display: "flex", alignItems: "baseline", gap: "0.5rem", marginBottom: "0.75rem" }}>
-  <ResourceIcon name="Essence" id={ResourcesIds.Essence} />
-</div>
-
-Essence is a new material that can only be found by exploring the map and interacting with World Structures. It is
-required in all Realm upgrades, as well as for some building construction and production of high-tier troops.
-
-
-
----
-
-file: docs/pages/blitz/materials/transfers-and-trade.mdx
-meta: {}
-
-import { importantNote } from "@/components/styles";
-import { BlitzWeightTable } from "@/components/blitz-components/WeightTable";
-
-# Transfers
-
-Blitz has no trade system. Blitz focuses on individual competitive performance without economic trading mechanics. As
-such, there are no Banks, no P2P transfers, and no AMM or Orderbook through which Lords may trade.
-
-## Transferring Materials
-
-Throughout the game, Lords may face the need to transfer materials from place to place around the world map, whether it
-be to their own Realms or other structures like Hyperstructures, Essence Rifts, and Camps. Players can use the
-comprehensive transfer panel accessible from the right side navigation menu, which allows transfers of multiple types of
-materials simultaneously to any structure on the map.
-
-![Transfer Panel](/gifs/transfer-panel.gif)
-
-Players can choose to do one-off shipments or repeat them on a schedule through automation (transfers can be repeated
-every 1-30min). To manage scheduled transfers, you can click on the advanced button of the transfer panel. From there
-you'll be able to force a new run, pause/resume or delete the transfer automations.
-
-## The Donkey Network
-
-<img src="/images/covers/donkey-network.png" alt="Blitz Donkey Network" className="w-full rounded-lg my-6" />
-
-When a transfer is initiated, donkeys travel through the invisible and immutable donkey network. This is the key
-infrastructure upon which all material transport takes place. One donkey is capable of carrying up to **50 kg** of
-materials, so the number of donkeys required for a transfer depends on the total weight of the materials being moved.
-Once a transfer is initiated, it cannot be canceled, and the journey will take some time depending on the distance to
-the destination structure. You can check the 'Resource Arrivals' tab to follow your shipments.
-
-Upon arrival, transferred resources are automatically claimed:
-
-![Autoclaim transfers](/gifs/transfer-autoclaim.gif)
-
-### Material Weights
-
-Materials have different weights that affect transportation:
-
-<BlitzWeightTable />
-
-### Blitz Restrictions
-
-Troops can be transferred by donkey between any structures owned by the same player, including Realms, Camps, Essence
-Rifts, and Hyperstructures. This applies to structure inventory transfers; direct structure-to-army transfers are not
-available in Blitz.
-
-If a structure is captured, any troops stored in that structure or in transit to it are destroyed. This prevents capture
-handoffs from being used to move troops farther or faster than intended. Deployed armies still become owned by the new
-structure owner.
 
 
 
@@ -4078,6 +3648,436 @@ Each troop tier provides escalating advantages in terms of damage output and sta
 <TroopTierDamageStats />
 
 <BlitzMaxStaminaTable />
+
+
+
+---
+
+file: docs/pages/blitz/materials/automation.mdx
+meta: {}
+
+# Production Automation
+
+Resource automation allows players to set up continuous production processes within their entities. This system helps
+manage resource generation and distribution efficiently without constant manual intervention.
+
+## Overview
+
+Instead of micromanaging multiple production orders, the automation now runs off a single set of sliders per entity,
+recomputing the entire plan from those percentages every loop.
+
+**Key Features:**
+
+* **Every minute**: the client starts up production plans for any owned entity with a valid setup.
+* **Per-resource percentages**: Each tracked resource has sliders for complex and simple recipes.
+* **Presets**: “Labor”, “Resource”, “Custom”, and “Idle” presets instantly distribute percentages across every resource
+  with active buildings, respecting entity type and recipe availability.
+* **Supply margins**: Inputs are capped at 90% of the live balance.
+* **Local persistence**: Configurations are saved per game in your browser so refreshes keep the latest sliders and
+  last-run summaries.
+
+## How It Works
+
+Production automation runs a global loop that goes through every owned realm and camp.
+
+1. **Realm discovery**: On execution, the client fetches every owned entity and ensures it has an automation profile.
+2. **Resource scan**: Any resource with buildings or an active recipe is auto-added to bootstrap production, even if you
+   never touch the sliders.
+3. **Budgeting**: Each resource receives 90% of its current balance as a budget. Sliders dictate how much of that budget
+   the loop can spend on complex vs. simple recipes.
+4. **Plan generation**: Recipes reserve inputs according to your percentages and their per-cycle requirements. Recipes
+   without enough inputs are skipped and reported in the summary.
+5. **Execution**: If at least one recipe has non-zero cycles, the automation is submitted for that entity.
+6. **Feedback loop**: The store records cycles, inputs, outputs, and skipped resources so the UI can show fresh "last
+   run" stats.
+
+### Entity Coverage
+
+* **Realms and Camps** are supported; other entity types are ignored for production automation.
+* Losing ownership of a realm automatically prunes the associated automation profile.
+
+## Production Types
+
+There are still two production paths, now governed by slider percentages:
+
+1. **Complex (Resource → Resource)**:
+   * Burns existing resources to craft another according to the `Resource → Resource` slider.
+   * Example: Spend Wood + Coal to produce Copper.
+2. **Simple (Labor → Resource)**:
+   * Spends Labor to produce a resource using the `Labor → Resource` slider.
+   * Example: Spending Labor to produce Coal.
+
+## Allocation & Execution Rules
+
+* **Percentages replace orders**: Every loop recomputes usage based on sliders, entity type, and building activity.
+* **Per-resource budgets**: Complex and labor sliders consume independent portions of the 90% resource budget; zeroing a
+  slider skips that recipe.
+* **5% increments & clamping**: Sliders move in 5% increments and stay within the 0–90% range.
+* **Auto-managed lists**: Any resource with active production is auto-added so presets work the moment new buildings are
+  created. Removing the building later prunes the entry automatically.
+
+## Presets
+
+* `Labor:` Spreads up to 10% labor burn across eligible outputs while respecting shared inputs.
+* `Resource:` Pushes complex crafting to the ceiling.
+* `Custom:` Combines resource + labor preset.
+* `Idle:` Drops every slider to 0%, effectively pausing production for that entity.
+
+## Managing Automation Orders (UI)
+
+![Managing Automation Orders](/gifs/produce-from-automation.gif)
+
+1. **Open a realm or camp** and select the **Automation** panel in the right side navigation menu.
+2. **Click modify** to open up the production setup.
+3. **Adjust percentages**:
+   * `Resource → Resource`: How much of that resource’s complex inputs to burn per loop.
+   * `Labor → Resource`: How much labor-based production to run (disabled for Donkeys and military-only recipes).
+4. **Apply presets** (optional): Labor, Resource, Custom, and Idle presets instantly redistribute sliders across the
+   entity.
+5. **Repeat for other entities**. Changes save instantly and feed into the next global loop.
+
+#### Auto-balancing & Maintenance
+
+* When new buildings finish, their resources auto-insert into the automation list so presets continue to work.
+* Resetting an entity wipes its allocations but keeps the entity record for fast reconfiguration.
+* At the start of a new Blitz season, stored configs are cleared to avoid stale setups.
+
+### Pausing Automation
+
+You can pause production at different levels:
+
+1. **Individual Resource**: Set both sliders to 0% for a single resource.
+2. **Entity-wide**: Apply the Idle preset to drop all sliders to 0% until you are ready to resume.
+
+## Execution Summaries
+
+After each loop the realm panel shows:
+
+* **Timestamp** of the last run.
+* **Produced/Consumed totals** grouped by resource so you can see net flows.
+* **Skipped recipes** plus reasons (missing inputs, missing labor recipe, etc.).
+* **Total cycles** executed across complex and simple recipes.
+
+Use this view to verify slider settings or debug why a resource isn’t running (e.g., depleted labor inputs).
+
+## Important Considerations
+
+### General Requirements
+
+* **Browser must stay open**: The automation store lives in your browser. Closing the Blitz tab pauses every loop.
+* **Loop cadence**: Production automation evaluates roughly every 60 seconds; it won’t react faster even if you change a
+  slider immediately.
+
+### Production Automation Considerations
+
+* **Resource availability**: Production only executes if the realm has the required inputs at processing time.
+* **Recipe dependencies**: You can’t produce outputs that lack valid recipes or buildings.
+
+### Best Practices
+
+1. **Start conservative**: Begin with low percentages to watch how inputs drain.
+2. **Monitor early loops**: Use execution summaries after the first few runs to confirm cycle counts and skips.
+3. **Lean on presets**: Labor/Resource/Idle presets are the fastest way to reorient an entity without endless slider
+   drags.
+
+
+
+---
+
+file: docs/pages/blitz/materials/bridging.mdx
+meta: {}
+
+# Bridging
+
+Bridging in Blitz is limited to the bridging of Relics into the game. This is to prevent players from gaining advantage
+through the import of materials previously extracted from Eternum seasons, while still encouraging the use of
+consumables for engaging and competitive gameplay. There is no bridging out of Blitz sessions; once relics are bridged
+in, they cannot be taken out of the session.
+
+## Bridging Relics
+
+*Work in Progress... Initial versions of Blitz will only feature Relics found within
+[Relic Crates](/blitz/worldmap-movement/worldmap#relic-crates). More information on tokenized Relics will be made
+available soon.*
+
+
+
+---
+
+file: docs/pages/blitz/materials/production.mdx
+meta: {}
+
+import {
+  BlitzDonkeyProduction,
+  BlitzStandardTroopProduction,
+  BlitzSimpleTroopProduction,
+  BlitzSimpleResourceProduction,
+  BlitzStandardResourceProduction,
+  BlitzLaborProduction,
+} from "@/components/blitz-components/ResourceProduction";
+
+# Production
+
+## Resource Mode vs. Labor Mode
+
+As is the case for building construction, Lords can choose between resource-based and labor-based production systems
+when deciding how they wish to produce their materials. This can be done by selecting the appropriate panel when making
+an order in the production screen.
+
+*Note: Lords must commit the full material requirements to the production order upfront. The output is then produced at
+a given rate per second.*
+
+### Resource Mode
+
+The classic production system—every resource and troop production order requires food and a combination of other
+resources as inputs. As with buildings, resource mode is the more complex but efficient way to produce materials.
+
+### Labor Mode
+
+Labor mode reduces the requirements for a production order to food and labor. This is, once again, less efficient in
+both time and resources—but it allows Lords to produce resources on their Realm even if they haven't yet acquired the
+input resources required for resource mode production.
+
+## Materials Production
+
+### Food
+
+Wheat is the only food source in Blitz and can be produced without inputs. Once a Farm has been constructed, it can
+produce food indefinitely. Each Farm produces 6 Wheat per second.
+
+### Resources
+
+The 9 resources found in Blitz are the backbone of the economy. Producing one resource requires the input of two other
+resources (resource mode), or labor (labor mode). Resources are also the main components in building construction and
+troop production - so mastery of these assets is key to success and security.
+
+![Produce from building](/gifs/produce-from-building-click.gif)
+
+<BlitzSimpleResourceProduction />
+
+<BlitzStandardResourceProduction />
+
+### Labor
+
+Labor is the primary input for construction and production in simple mode, but is also required in resource mode for
+building construction and Realm upgrades. It is produced automatically by the Keep, creating a steady stream at a fixed
+rate of 2 labor per second.
+
+### Troops
+
+Troops are essential for exploration, defending your lands and conquering your enemies. Every Lord will be required to
+produce troops to ensure they remain a relevant force throughout the game. Three troop tiers are available, each
+requiring a combination of food, rare resources, and troops of the previous tier as input for production.
+
+*Note: Only T1 troops can be produced in both resource and labor mode. T2 and T3 troops can only be produced in resource
+mode.*
+
+<BlitzSimpleTroopProduction />
+
+<BlitzStandardTroopProduction />
+
+### Donkeys
+
+The humble steeds that move all materials around the world must themselves be produced in a market building. Donkeys are
+one-time-use and consumed after a single journey, so Lords will need to produce a steady supply of donkeys to ensure
+that they can sustain their supply chains and logistics. Once the market has been constructed, donkeys only require a
+steady stream of food to produce.
+
+<BlitzDonkeyProduction />
+
+
+
+---
+
+file: docs/pages/blitz/materials/relics.mdx
+meta: {}
+
+import RelicTable from "@/components/blitz-components/RelicTable";
+
+# Relics
+
+Relics are powerful consumables that can be discovered in Blitz from
+[Relic Crates](/blitz/worldmap-movement/worldmap#relic-crates). Depending on the nature of a relic, it can be consumed
+by an army or a Realm in exchange for a time-limited bonus, such as a damage or production boost. When utilized at the
+right time, these items can provide a strategic edge over your opponents.
+
+Timed relic effects last **3 Eternum Days (18 minutes)**.
+
+There are currently nine relic types, each with two levels. A level 2 relic is simply a more powerful version of the
+level 1 counterpart. Every relic type has a distinct effect, which determines whether it can be activated by a Realm or
+an army. To activate a relic and gain the desired effect, the army or Realm must pay an amount of Essence. These
+details, as well as the discovery chance of each relic in a Relic Crate, are defined in the table below:
+
+<RelicTable />
+
+Each Relic Crate yields three relics. For every crate, the chances in the table above are rolled three separate times,
+so you may receive duplicates in a single crate.
+
+*Note: Relics are still under development. Initial versions of Blitz will limit their scope to within the game instance.
+However, it is expected that relics will have a much broader presence and impact in the Realms ecosystem. Keep an eye
+out for announcements in the Realms Discord relating to relics. This page will be updated as more information is made
+available to the community.*
+
+
+
+---
+
+file: docs/pages/blitz/materials/resources.mdx
+meta: {}
+
+import RarityResourceTable from "@/components/RarityResourceTable";
+import ResourceIcon from "@/components/ResourceIcon";
+import { ResourcesIds } from "@bibliothecadao/types";
+
+# Materials
+
+## Materials Overview
+
+Materials encompass all transportable assets in Blitz, including:
+
+* **Resources**: 9 distinct resource types that can be produced on Realms.
+* **Food**: Essential Wheat that fuels production and troop movement.
+* **Troops**: Military units (Knights, Crossbowmen, Paladins) that can be assigned to armies.
+* **Donkeys**: One-time-use transport units required for moving materials across the world.
+* **Labor**: A special material that enables construction and production.
+* **Essence**: A new strategic resource found through exploration and required for building, production, and upgrades.
+
+While all materials can be transported within the game, **no materials can be bridged out** of Blitz.
+
+## Material Categories
+
+### Resources
+
+<div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.75rem", flexWrap: "wrap" }}>
+  <ResourceIcon name="Wood" id={ResourcesIds.Wood} />
+
+  <ResourceIcon name="Coal" id={ResourcesIds.Coal} />
+
+  <ResourceIcon name="Copper" id={ResourcesIds.Copper} />
+
+  <ResourceIcon name="Ironwood" id={ResourcesIds.Ironwood} />
+
+  <ResourceIcon name="Cold Iron" id={ResourcesIds.ColdIron} />
+
+  <ResourceIcon name="Gold" id={ResourcesIds.Gold} />
+
+  <ResourceIcon name="Adamantine" id={ResourcesIds.Adamantine} />
+
+  <ResourceIcon name="Mithral" id={ResourcesIds.Mithral} />
+
+  <ResourceIcon name="Dragonhide" id={ResourcesIds.Dragonhide} />
+</div>
+
+Resources are the foundation of the economy. The 9 resources play vital roles in Blitz, from basic production to
+advanced military operations.
+
+### Food
+
+<div style={{ display: "flex", alignItems: "baseline", gap: "0.5rem", marginBottom: "0.75rem" }}>
+  <ResourceIcon name="Wheat" id={ResourcesIds.Wheat} />
+</div>
+
+Food is the cornerstone of a Realm's economy and is required in all production chains. Only Wheat is available in Blitz
+and it can be produced without inputs.
+
+### Troops
+
+<div style={{ display: "flex", alignItems: "baseline", gap: "0.5rem", marginBottom: "0.75rem" }}>
+  <ResourceIcon name="Knight" id={ResourcesIds.Knight} />
+
+  <ResourceIcon name="Crossbowman" id={ResourcesIds.Crossbowman} />
+
+  <ResourceIcon name="Paladin" id={ResourcesIds.Paladin} />
+</div>
+
+Troops are required to defend your holdings and strike out at your foes. When produced, they can be transported between
+your structures by donkey like any other material, but to be used they must be deployed to an army. Once deployed, they
+cannot be converted back into material form.
+
+### Donkeys
+
+<div style={{ display: "flex", alignItems: "baseline", gap: "0.5rem", marginBottom: "0.75rem" }}>
+  <ResourceIcon name="Donkey" id={ResourcesIds.Donkey} />
+</div>
+
+Donkeys are essential for moving materials between your structures. They only require a market and wheat to produce, but
+are consumed after a single journey.
+
+### Labor
+
+<div style={{ display: "flex", alignItems: "baseline", gap: "0.5rem", marginBottom: "0.75rem" }}>
+  <ResourceIcon name="Labor" id={ResourcesIds.Labor} />
+</div>
+
+Labor is a key component in the construction of all buildings and required for 'labor mode' production. In Blitz, it is
+produced freely in the Keep of each Realm.
+
+### Essence
+
+<div style={{ display: "flex", alignItems: "baseline", gap: "0.5rem", marginBottom: "0.75rem" }}>
+  <ResourceIcon name="Essence" id={ResourcesIds.Essence} />
+</div>
+
+Essence is a new material that can only be found by exploring the map and interacting with World Structures. It is
+required in all Realm upgrades, as well as for some building construction and production of high-tier troops.
+
+
+
+---
+
+file: docs/pages/blitz/materials/transfers-and-trade.mdx
+meta: {}
+
+import { importantNote } from "@/components/styles";
+import { BlitzWeightTable } from "@/components/blitz-components/WeightTable";
+
+# Transfers
+
+Blitz has no trade system. Blitz focuses on individual competitive performance without economic trading mechanics. As
+such, there are no Banks, no P2P transfers, and no AMM or Orderbook through which Lords may trade.
+
+## Transferring Materials
+
+Throughout the game, Lords may face the need to transfer materials from place to place around the world map, whether it
+be to their own Realms or other structures like Hyperstructures, Essence Rifts, and Camps. Players can use the
+comprehensive transfer panel accessible from the right side navigation menu, which allows transfers of multiple types of
+materials simultaneously to any structure on the map.
+
+![Transfer Panel](/gifs/transfer-panel.gif)
+
+Players can choose to do one-off shipments or repeat them on a schedule through automation (transfers can be repeated
+every 1-30min). To manage scheduled transfers, you can click on the advanced button of the transfer panel. From there
+you'll be able to force a new run, pause/resume or delete the transfer automations.
+
+## The Donkey Network
+
+<img src="/images/covers/donkey-network.png" alt="Blitz Donkey Network" className="w-full rounded-lg my-6" />
+
+When a transfer is initiated, donkeys travel through the invisible and immutable donkey network. This is the key
+infrastructure upon which all material transport takes place. One donkey is capable of carrying up to **50 kg** of
+materials, so the number of donkeys required for a transfer depends on the total weight of the materials being moved.
+Once a transfer is initiated, it cannot be canceled, and the journey will take some time depending on the distance to
+the destination structure. You can check the 'Resource Arrivals' tab to follow your shipments.
+
+Upon arrival, transferred resources are automatically claimed:
+
+![Autoclaim transfers](/gifs/transfer-autoclaim.gif)
+
+### Material Weights
+
+Materials have different weights that affect transportation:
+
+<BlitzWeightTable />
+
+### Blitz Restrictions
+
+Troops can be transferred by donkey between any structures owned by the same player, including Realms, Camps, Essence
+Rifts, and Hyperstructures. This applies to structure inventory transfers; direct structure-to-army transfers are not
+available in Blitz.
+
+If a structure is captured, any troops stored in that structure or in transit to it are destroyed. This prevents capture
+handoffs from being used to move troops farther or faster than intended. Deployed armies still become owned by the new
+structure owner.
 
 
 

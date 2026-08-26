@@ -1,5 +1,5 @@
 import { getCachedRpcProvider } from "@/utils/cached-rpc-provider";
-import type { Chain } from "@contracts";
+import type { GameChain as Chain } from "@realms-world/chain";
 import { getRpcUrlForChain } from "@/runtime/chain-rpc";
 import { useQuery } from "@tanstack/react-query";
 

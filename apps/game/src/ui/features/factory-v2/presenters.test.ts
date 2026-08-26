@@ -12,12 +12,12 @@ import type { FactoryRun } from "./types";
 
 function buildFactoryRun(overrides: Partial<FactoryRun> = {}): FactoryRun {
   return {
-    id: "mainnet.blitz:bltz-test-1",
-    syncKey: "mainnet.blitz:bltz-test-1|updated",
+    id: "appchain.blitz:bltz-test-1",
+    syncKey: "appchain.blitz:bltz-test-1|updated",
     kind: "game",
     mode: "blitz",
     name: "bltz-test-1",
-    environment: "mainnet.blitz",
+    environment: "appchain.blitz",
     owner: "Factory",
     presetId: "open",
     status: "attention",
@@ -198,29 +198,19 @@ describe("factory run recovery actions", () => {
     const run = buildFactoryRun({
       steps: [
         {
-          id: "create-indexer",
+          id: "wait-for-factory-index",
           title: "Create indexer",
           summary: "Indexer creation failed.",
-          workflowName: "create-indexer",
+          workflowName: "wait-for-factory-index",
           status: "failed",
           verification: "Indexer creation failed.",
           latestEvent: "Indexer creation failed.",
         },
-        {
-          id: "configure-world",
-          title: "Configure world",
-          summary: "Config pending.",
-          workflowName: "configure-world",
-          status: "pending",
-          verification: "Config pending.",
-          latestEvent: "Config pending.",
-        },
       ],
     });
 
-    expect(getSimpleStepTitle(run.steps[0])).toBe("Deploying indexer");
-    expect(getStepDetailMessage(run.steps[0])).toBe("We could not deploy the indexer.");
-    expect(getStepDetailMessage(run.steps[1])).toBe("We have not started applying this game’s settings yet.");
+    expect(getSimpleStepTitle(run.steps[0])).toBe("Checking GameRegistry");
+    expect(getStepDetailMessage(run.steps[0])).toBe("We could not confirm this game in GameRegistry yet.");
   });
 
   it("uses verification language for factory visibility steps", () => {
@@ -239,7 +229,9 @@ describe("factory run recovery actions", () => {
     });
 
     expect(getSimpleStepTitle(run.steps[0])).toBe("Checking deployed games");
-    expect(getStepDetailMessage(run.steps[0])).toBe("We’re confirming the deployed games are showing up in Factory.");
+    expect(getStepDetailMessage(run.steps[0])).toBe(
+      "We’re confirming the deployed games are showing up in GameRegistry.",
+    );
   });
 
   it("adds child status highlights to multi-game run descriptions", () => {
@@ -264,7 +256,7 @@ describe("factory run recovery actions", () => {
           startTimeIso: "2026-03-23T10:30:00Z",
           status: "running",
           latestEvent: "Configuring",
-          currentStepId: "configure-worlds",
+          currentStepId: "wait-for-factory-indexes",
           steps: [],
         },
         {
@@ -313,14 +305,14 @@ describe("factory run recovery actions", () => {
       recovery: {
         state: "failed",
         canContinue: true,
-        continueStepId: "create-indexers",
+        continueStepId: "wait-for-factory-indexes",
       },
       steps: [
         {
-          id: "create-indexers",
+          id: "wait-for-factory-indexes",
           title: "Create indexers",
           summary: "Grouped indexer setup failed.",
-          workflowName: "create-indexers",
+          workflowName: "wait-for-factory-indexes",
           status: "failed",
           verification: "Grouped indexer setup failed.",
           latestEvent: "Grouped indexer setup failed.",
@@ -331,7 +323,7 @@ describe("factory run recovery actions", () => {
     expect(resolveRunPrimaryAction(run)).toEqual({
       kind: "continue",
       label: "Continue",
-      stepId: "create-indexers",
+      stepId: "wait-for-factory-indexes",
     });
   });
 
@@ -388,10 +380,10 @@ describe("factory run recovery actions", () => {
               latestEvent: "Waiting for factory index.",
             },
             {
-              id: "configure-world",
+              id: "wait-for-factory-index",
               title: "Configure world",
               summary: "Waiting to run.",
-              workflowName: "configure-world",
+              workflowName: "wait-for-factory-index",
               status: "pending",
               verification: "Waiting to run.",
               latestEvent: "Waiting to run.",

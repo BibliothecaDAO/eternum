@@ -109,7 +109,7 @@ const allLatestFeatures: LatestFeature[] = [
     date: "2026-08-20",
     title: "Reliable Session Recovery",
     description:
-      "Slow account restoration now stays in progress, while manual controller reconnects show a bounded attempt, clear errors, and a safe retry.",
+      "Slow account restoration now stays in progress, while manual account reconnects show a bounded attempt, clear errors, and a safe retry.",
     type: "fix",
     gameSlug: "world",
   },

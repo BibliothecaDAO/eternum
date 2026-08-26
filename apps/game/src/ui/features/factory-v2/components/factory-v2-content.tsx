@@ -72,8 +72,7 @@ export const FactoryV2Content = () => {
             <FactoryV2StartWorkspace
               mode={factory.selectedMode}
               modeLabel={factory.modeDefinition.label}
-              environmentLabel={factory.selectedEnvironment?.label ?? "Mainnet"}
-              isMainnet={factory.selectedEnvironment?.chain === "mainnet"}
+              environmentLabel={factory.selectedEnvironment?.label ?? "Appchain"}
               launchTargetKind={factory.selectedLaunchKind}
               presets={factory.presets}
               selectedPreset={factory.selectedPreset}
@@ -136,8 +135,8 @@ export const FactoryV2Content = () => {
               onToggleTwoPlayerMode={factory.toggleTwoPlayerMode}
               onToggleSingleRealmMode={factory.toggleSingleRealmMode}
               onFandomizeGameName={factory.fandomizeGameName}
-              deployerChain={factory.selectedEnvironment?.chain ?? "mainnet"}
-              deployerEnvironmentLabel={factory.selectedEnvironment?.label ?? "Mainnet"}
+              deployerChain={factory.selectedEnvironment?.chain ?? "appchain"}
+              deployerEnvironmentLabel={factory.selectedEnvironment?.label ?? "Appchain"}
               onLaunch={() => {
                 void launchSelectedPreset();
               }}
@@ -146,8 +145,8 @@ export const FactoryV2Content = () => {
 
             <FactoryV2DeveloperTools
               mode={factory.selectedMode}
-              chain={factory.selectedEnvironment?.chain ?? "mainnet"}
-              environmentLabel={factory.selectedEnvironment?.label ?? "Mainnet"}
+              chain={factory.selectedEnvironment?.chain ?? "appchain"}
+              environmentLabel={factory.selectedEnvironment?.label ?? "Appchain"}
               draftGameName={factory.draftGameName}
               selectedRunName={factory.selectedRun?.name ?? null}
             />
@@ -187,8 +186,8 @@ export const FactoryV2Content = () => {
               }}
               adminSecret={factory.factoryAdminSecret}
               hasAdminSecret={factory.factoryAdminSecret.trim().length > 0}
-              deployerChain={factory.selectedEnvironment?.chain ?? "mainnet"}
-              deployerEnvironmentLabel={factory.selectedEnvironment?.label ?? "Mainnet"}
+              deployerChain={factory.selectedEnvironment?.chain ?? "appchain"}
+              deployerEnvironmentLabel={factory.selectedEnvironment?.label ?? "Appchain"}
               onFundPrize={(request) => factory.fundSelectedRunPrize(request)}
             />
           </div>

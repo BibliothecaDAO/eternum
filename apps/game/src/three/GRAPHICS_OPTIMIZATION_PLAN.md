@@ -1,7 +1,7 @@
 # Three.js Graphics — Memory & Performance Improvement Plan
 
-**Date:** 2026-06-10 · **Scope:** `apps/game/src/three` (328 source files, ~72k lines) · **Target:** low-spec
-hardware playability
+**Date:** 2026-06-10 · **Scope:** `apps/game/src/three` (328 source files, ~72k lines) · **Target:** low-spec hardware
+playability
 
 ## Status — 2026-08-16
 

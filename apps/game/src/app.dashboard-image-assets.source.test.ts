@@ -26,9 +26,7 @@ describe("Dashboard image assets", () => {
     expect(seasonPlacementMapSource).not.toContain("/images/covers/blitz/");
 
     for (const backgroundId of ["02", "07"]) {
-      expect(existsSync(resolve(process.cwd(), `public/images/covers/dashboard/${backgroundId}.webp`))).toBe(
-        true,
-      );
+      expect(existsSync(resolve(process.cwd(), `public/images/covers/dashboard/${backgroundId}.webp`))).toBe(true);
       expect(existsSync(resolve(process.cwd(), `public/images/covers/blitz/${backgroundId}.png`))).toBe(true);
     }
   });

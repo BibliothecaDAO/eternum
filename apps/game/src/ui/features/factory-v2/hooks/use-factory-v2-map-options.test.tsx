@@ -20,7 +20,7 @@ function HookHarness(props: HookProps) {
 
 const buildProps = (overrides: Partial<HookProps> = {}): HookProps => ({
   mode: "blitz",
-  chain: "mainnet",
+  chain: "appchain",
   presetId: "blitz-open",
   twoPlayerMode: false,
   durationMinutes: 60,
@@ -69,7 +69,7 @@ describe("useFactoryV2MoreOptions", () => {
       await waitForAsyncWork();
     });
 
-    expect(latestHookValue?.draft).toEqual(createFactoryMoreOptionsDraft("blitz", "mainnet", 90));
+    expect(latestHookValue?.draft).toEqual(createFactoryMoreOptionsDraft("blitz", "appchain", 90));
     expect(latestHookValue?.sections.find((section) => section.id === "explorationRewards")?.previewRows).toHaveLength(
       9,
     );

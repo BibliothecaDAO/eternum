@@ -15,7 +15,7 @@ const resolveLocalStorageReader = (): StorageReader | null => {
 };
 
 export const resolveBlitzGrantStartingTroops = ({
-  isDev = import.meta.env.DEV,
+  isDev = String(import.meta.env.DEV) === "true",
   storage = resolveLocalStorageReader(),
 }: {
   isDev?: boolean;

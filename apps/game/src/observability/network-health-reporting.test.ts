@@ -107,11 +107,11 @@ describe("network-health-reporting", () => {
   });
 
   it("setNetworkHealthScopeTags sets host and world tags", async () => {
-    await setNetworkHealthScopeTags({ toriiBaseUrl: "https://api.cartridge.gg/x/s0/torii", walletAddress: null });
+    await setNetworkHealthScopeTags({ toriiBaseUrl: "https://api.realms.world/x/s0/torii", walletAddress: null });
 
     expect(sentryMocks.setTags).toHaveBeenCalledTimes(1);
     const tags = sentryMocks.setTags.mock.calls[0][0];
-    expect(tags["network.torii_host"]).toBe("api.cartridge.gg");
+    expect(tags["network.torii_host"]).toBe("api.realms.world");
     expect(tags["chain"]).toBe("mainnet");
     expect(tags["world"]).toBe("eternum");
   });

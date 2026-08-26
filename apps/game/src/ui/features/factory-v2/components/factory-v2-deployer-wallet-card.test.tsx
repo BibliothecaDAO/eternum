@@ -68,12 +68,12 @@ describe("FactoryV2DeployerWalletCard", () => {
     );
 
     await act(async () => {
-      root.render(<FactoryV2DeployerWalletCard chain="mainnet" environmentLabel="Mainnet" />);
+      root.render(<FactoryV2DeployerWalletCard chain="appchain" environmentLabel="Appchain" />);
       await waitForAsyncWork();
     });
 
     expect(container.textContent).toContain("Deployer wallet");
-    expect(container.textContent).toContain("Mainnet deployer");
+    expect(container.textContent).toContain("Appchain deployer");
     expect(container.textContent).toContain("0x023003676EF4A5E8f32f5c8714f83fc6bfbefD44C0461a8b7Be16d05b8Ea1532");
     expect(container.textContent).toContain("STRK");
     expect(container.textContent).toContain("125.2500");

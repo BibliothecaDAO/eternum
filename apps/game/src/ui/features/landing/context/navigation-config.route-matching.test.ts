@@ -11,13 +11,4 @@ describe("getActiveSubItem", () => {
     expect(getActiveSubItem(homeSection!, "/news", new URLSearchParams())).toEqual(homeSection!.subMenu[2]);
     expect(getActiveSubItem(homeSection!, "/factory", new URLSearchParams())).toEqual(homeSection!.subMenu[3]);
   });
-
-  it("continues to use the tab query for non-home sections", () => {
-    const profileSection = NAVIGATION_SECTIONS.find((section) => section.id === "profile");
-
-    expect(profileSection).toBeDefined();
-    expect(getActiveSubItem(profileSection!, "/profile", new URLSearchParams("tab=wallet"))).toEqual(
-      profileSection!.subMenu[1],
-    );
-  });
 });

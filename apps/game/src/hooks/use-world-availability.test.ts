@@ -17,7 +17,7 @@ const resolverMocks = vi.hoisted(() => ({
 
 vi.mock("@tanstack/react-query", () => reactQueryMocks);
 vi.mock("@/runtime/world/world-directory", () => directoryMocks);
-vi.mock("@/runtime/world/factory-resolver", () => resolverMocks);
+vi.mock("@/runtime/world/torii-health", () => resolverMocks);
 
 import { nameToPaddedFelt } from "@/runtime/world/normalize";
 import { useWorldsAvailability } from "./use-world-availability";

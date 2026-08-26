@@ -9,8 +9,8 @@ import type {
 const buildGameRunRecord = (overrides: Partial<FactoryWorkerGameRunRecord> = {}): FactoryWorkerGameRunRecord => ({
   version: 1,
   runId: "run-1",
-  environment: "mainnet.eternum",
-  chain: "mainnet",
+  environment: "appchain.eternum",
+  chain: "appchain",
   gameType: "eternum",
   gameName: "etrn-test-9",
   status: "running",
@@ -53,8 +53,8 @@ const buildSeriesRunRecord = (overrides: Partial<FactoryWorkerSeriesRunRecord> =
   version: 1,
   kind: "series",
   runId: "series-run-1",
-  environment: "mainnet.blitz",
-  chain: "mainnet",
+  environment: "appchain.blitz",
+  chain: "appchain",
   gameType: "blitz",
   status: "running",
   executionMode: "fast_trial",
@@ -62,7 +62,7 @@ const buildSeriesRunRecord = (overrides: Partial<FactoryWorkerSeriesRunRecord> =
   inputPath: "inputs/slot/blitz/series-run-1.json",
   latestLaunchRequestId: "launch-series-1",
   seriesName: "bltz-cup",
-  currentStepId: "configure-worlds",
+  currentStepId: "wait-for-factory-indexes",
   createdAt: "2026-03-18T10:00:00.000Z",
   updatedAt: "2026-03-18T10:01:00.000Z",
   workflow: {
@@ -71,7 +71,7 @@ const buildSeriesRunRecord = (overrides: Partial<FactoryWorkerSeriesRunRecord> =
   recovery: {
     state: "stalled",
     canContinue: true,
-    continueStepId: "configure-worlds",
+    continueStepId: "wait-for-factory-indexes",
   },
   autoRetry: {
     enabled: true,
@@ -86,7 +86,7 @@ const buildSeriesRunRecord = (overrides: Partial<FactoryWorkerSeriesRunRecord> =
       latestEvent: "Series created.",
     },
     {
-      id: "configure-worlds",
+      id: "wait-for-factory-indexes",
       title: "Configure worlds",
       status: "running",
       workflowStepName: "Configure worlds",
@@ -94,8 +94,8 @@ const buildSeriesRunRecord = (overrides: Partial<FactoryWorkerSeriesRunRecord> =
     },
   ],
   summary: {
-    environment: "mainnet.blitz",
-    chain: "mainnet",
+    environment: "appchain.blitz",
+    chain: "appchain",
     gameType: "blitz",
     seriesName: "bltz-cup",
     rpcUrl: "https://rpc.example",
@@ -111,19 +111,18 @@ const buildSeriesRunRecord = (overrides: Partial<FactoryWorkerSeriesRunRecord> =
         startTime: 1,
         startTimeIso: "2026-03-18T12:00:00.000Z",
         seriesGameNumber: 1,
-        currentStepId: "configure-worlds",
+        currentStepId: "wait-for-factory-indexes",
         latestEvent: "Applying config.",
         status: "running",
         steps: [
           {
-            id: "configure-worlds",
+            id: "wait-for-factory-indexes",
             status: "succeeded",
             latestEvent: "Applied config.",
           },
         ],
         artifacts: {
           worldAddress: "0xabc",
-          indexerTier: "basic",
         },
       },
     ],
@@ -141,8 +140,8 @@ const buildRotationRunRecord = (
     version: 1,
     kind: "rotation",
     runId: "rotation-run-1",
-    environment: "mainnet.blitz",
-    chain: "mainnet",
+    environment: "appchain.blitz",
+    chain: "appchain",
     gameType: "blitz",
     status: "running",
     executionMode: "fast_trial",
@@ -188,8 +187,8 @@ const buildRotationRunRecord = (
       },
     ],
     summary: {
-      environment: "mainnet.blitz",
-      chain: "mainnet",
+      environment: "appchain.blitz",
+      chain: "appchain",
       gameType: "blitz",
       rotationName: "bltz-ladder-loop",
       seriesName: "bltz-ladder-loop",
@@ -217,14 +216,13 @@ const buildRotationRunRecord = (
           status: "running",
           steps: [
             {
-              id: "configure-worlds",
+              id: "wait-for-factory-indexes",
               status: "pending",
               latestEvent: "Waiting for config.",
             },
           ],
           artifacts: {
             worldAddress: "0xabc",
-            indexerTier: "basic",
           },
         },
       ],
@@ -247,10 +245,10 @@ describe("mapFactoryWorkerRun", () => {
     const run = mapFactoryWorkerRun(
       buildGameRunRecord({
         status: "attention",
-        currentStepId: "grant-village-pass-role",
+        currentStepId: "wait-for-factory-index",
         steps: [
           {
-            id: "grant-village-pass-role",
+            id: "wait-for-factory-index",
             title: "Grant village pass role",
             status: "failed",
             workflowStepName: "Grant village pass role",
@@ -272,7 +270,7 @@ describe("mapFactoryWorkerRun", () => {
         recovery: {
           state: "stalled",
           canContinue: true,
-          continueStepId: "configure-world",
+          continueStepId: "wait-for-factory-index",
         },
       }),
     );
@@ -280,7 +278,7 @@ describe("mapFactoryWorkerRun", () => {
     expect(run.recovery).toEqual({
       state: "stalled",
       canContinue: true,
-      continueStepId: "configure-world",
+      continueStepId: "wait-for-factory-index",
     });
   });
 
@@ -302,12 +300,12 @@ describe("mapFactoryWorkerRun", () => {
       gameName: "bltz-cup-01",
       seriesGameNumber: 1,
       status: "running",
-      configReady: true,
+      launchReady: true,
       worldAddress: "0xabc",
     });
     expect(run.children?.[0]?.steps).toEqual([
       {
-        id: "configure-worlds",
+        id: "wait-for-factory-indexes",
         status: "succeeded",
         latestEvent: "Applied config.",
         errorMessage: undefined,

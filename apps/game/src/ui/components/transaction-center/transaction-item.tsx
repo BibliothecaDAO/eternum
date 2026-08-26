@@ -25,6 +25,7 @@ export const TransactionItem = ({ transaction, isStuck }: TransactionItemProps) 
   // Check if this is a batched transaction
   const isBatched = transaction.batchDetails && transaction.batchDetails.length > 0;
   const batchTotalCount = isBatched ? getBatchTotalCount(transaction.batchDetails!) : 0;
+  const explorerUrl = getExplorerTxUrl(transaction.hash);
 
   // Update time every second for pending transactions
   useEffect(() => {
@@ -43,9 +44,11 @@ export const TransactionItem = ({ transaction, isStuck }: TransactionItemProps) 
   const handleExplorerClick = useCallback(
     (e: React.MouseEvent) => {
       e.stopPropagation();
-      window.open(getExplorerTxUrl(transaction.hash), "_blank", "noopener,noreferrer");
+      if (explorerUrl) {
+        window.open(explorerUrl, "_blank", "noopener,noreferrer");
+      }
     },
-    [transaction.hash],
+    [explorerUrl],
   );
 
   const handleToggleExpand = useCallback(() => {
@@ -61,12 +64,18 @@ export const TransactionItem = ({ transaction, isStuck }: TransactionItemProps) 
     <div className={`border-l-2 ${borderColor} ${isStuck ? "animate-pulse" : ""}`}>
       {/* Main transaction row */}
       <div
-        onClick={isBatched ? handleToggleExpand : handleExplorerClick}
+        onClick={isBatched ? handleToggleExpand : explorerUrl ? handleExplorerClick : undefined}
         className={`w-full flex items-center gap-3 px-3 py-2.5 text-left
                     bg-dark-brown/40 hover:bg-gold/10
-                    transition-all duration-200 cursor-pointer
+                    transition-all duration-200 ${isBatched || explorerUrl ? "cursor-pointer" : ""}
                     group`}
-        title={isBatched ? "Click to expand batch details" : `View on ${getExplorerName()}: ${transaction.hash}`}
+        title={
+          isBatched
+            ? "Click to expand batch details"
+            : explorerUrl
+              ? `View on ${getExplorerName()}: ${transaction.hash}`
+              : transaction.hash
+        }
       >
         {/* Icon or Batch indicator */}
         <span className="text-base flex-shrink-0" role="img" aria-hidden="true">
@@ -189,21 +198,23 @@ export const TransactionItem = ({ transaction, isStuck }: TransactionItemProps) 
             </div>
           ))}
           {/* Explorer link at bottom of expanded section */}
-          <button
-            onClick={handleExplorerClick}
-            className="w-full flex items-center gap-2 px-3 py-1.5 pl-8 text-xs text-gold/50 hover:text-gold/80 hover:bg-gold/5 transition-colors"
-          >
-            <span className="text-gold/40">└─</span>
-            <span>View on {getExplorerName()}</span>
-            <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
-              />
-            </svg>
-          </button>
+          {explorerUrl && (
+            <button
+              onClick={handleExplorerClick}
+              className="w-full flex items-center gap-2 px-3 py-1.5 pl-8 text-xs text-gold/50 hover:text-gold/80 hover:bg-gold/5 transition-colors"
+            >
+              <span className="text-gold/40">└─</span>
+              <span>View on {getExplorerName()}</span>
+              <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
+                />
+              </svg>
+            </button>
+          )}
         </div>
       )}
     </div>

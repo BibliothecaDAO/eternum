@@ -113,7 +113,7 @@ export async function fetchAppchainWorldsSummary(world: WorldDeployment): Promis
         const blitz = toBoolean(row.blitz_mode_on);
         return {
           name: decodeName(row.game_name),
-          chain: "appchain",
+          chain: world.chain,
           worldId: world.id,
           gameId: toNumber(row.game_id),
           // The game is indexed by this world's torii, so it is by definition reachable.

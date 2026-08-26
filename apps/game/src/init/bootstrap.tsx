@@ -17,7 +17,8 @@ import {
   type WorldProfile,
 } from "@/runtime/world";
 import { setSqlApiBaseUrl } from "@/services/api";
-import { Chain, getGameManifest } from "@contracts";
+import { getGameManifest } from "@contracts";
+import type { GameChain as Chain } from "@realms-world/chain";
 import { dojoConfig } from "../../dojo-config";
 import { env } from "../../env";
 import { clearSubscriptionQueue } from "../dojo/debounced-queries";
@@ -251,17 +252,10 @@ const configureDojoRuntime = ({ chain, profile, toriiUrl }: BootstrapWorldContex
   setSqlApiBaseUrl(`${toriiUrl}/sql`);
 };
 
-const resolveBootstrapToriiUrl = (chain: Chain, profile: WorldProfile): string => {
-  return chain === "local" ? env.VITE_PUBLIC_TORII : profile.toriiBaseUrl;
-};
+const resolveBootstrapToriiUrl = (_chain: Chain, profile: WorldProfile): string => profile.toriiBaseUrl;
 
-const resolveBootstrapRpcUrl = (chain: Chain, profile: WorldProfile): string => {
-  if (chain === "local") {
-    return env.VITE_PUBLIC_NODE_URL;
-  }
-
-  return profile.rpcUrl ?? env.VITE_PUBLIC_NODE_URL;
-};
+const resolveBootstrapRpcUrl = (_chain: Chain, profile: WorldProfile): string =>
+  profile.rpcUrl ?? env.VITE_PUBLIC_NODE_URL;
 
 const assertBootstrapToriiIsAvailable = async ({ profile, toriiUrl }: BootstrapWorldContext): Promise<void> => {
   const toriiAlive = await probeWorldToriiAlive(toriiUrl);

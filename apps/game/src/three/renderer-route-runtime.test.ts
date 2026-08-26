@@ -14,7 +14,7 @@ const { createRendererRouteRuntime } = await import("./renderer-route-runtime");
 
 describe("renderer route runtime", () => {
   beforeEach(() => {
-    window.history.replaceState({}, "", "/play/sepolia/aurora/map");
+    window.history.replaceState({}, "", "/play/appchain/aurora/map");
   });
 
   it("registers and removes URL listeners through the runtime lifecycle", () => {
@@ -54,7 +54,7 @@ describe("renderer route runtime", () => {
       switchScene,
     });
 
-    runtime.syncFromLocation("https://example.com/play/sepolia/aurora/map?col=1&row=2");
+    runtime.syncFromLocation("https://example.com/play/appchain/aurora/map?col=1&row=2");
 
     expect(moveCameraForScene).toHaveBeenCalledTimes(1);
     expect(fadeIn).toHaveBeenCalledTimes(1);
@@ -76,7 +76,7 @@ describe("renderer route runtime", () => {
       switchScene,
     });
 
-    runtime.syncFromLocation("https://example.com/play/sepolia/aurora/travel?col=1&row=2");
+    runtime.syncFromLocation("https://example.com/play/appchain/aurora/travel?col=1&row=2");
 
     expect(moveCameraForScene).toHaveBeenCalledTimes(1);
     expect(fadeIn).toHaveBeenCalledTimes(1);
@@ -95,7 +95,7 @@ describe("renderer route runtime", () => {
       switchScene,
     });
 
-    runtime.syncFromLocation("https://example.com/play/sepolia/aurora/hex?col=1&row=2");
+    runtime.syncFromLocation("https://example.com/play/appchain/aurora/hex?col=1&row=2");
 
     expect(switchScene).toHaveBeenCalledWith(SceneName.Hexception);
   });
@@ -112,7 +112,7 @@ describe("renderer route runtime", () => {
       switchScene,
     });
 
-    runtime.syncFromLocation("https://example.com/play/sepolia/aurora/hex?col=6&row=8");
+    runtime.syncFromLocation("https://example.com/play/appchain/aurora/hex?col=6&row=8");
 
     expect(switchScene).toHaveBeenCalledWith(SceneName.Hexception);
   });
@@ -129,7 +129,7 @@ describe("renderer route runtime", () => {
       switchScene,
     });
 
-    runtime.syncFromLocation("https://example.com/play/sepolia/aurora/travel?col=1&row=2");
+    runtime.syncFromLocation("https://example.com/play/appchain/aurora/travel?col=1&row=2");
 
     expect(switchScene).toHaveBeenCalledWith(SceneName.WorldMap);
   });

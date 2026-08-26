@@ -10,7 +10,6 @@ import {
   resolveFactoryAddress,
   resolveFactoryConfigDefaultVersion,
 } from "@/ui/features/factory/shared/factory-metadata";
-import { useLandingNetworkState } from "@/ui/features/landing/hooks/use-landing-network-state";
 import { getChainLabel } from "@/ui/utils/network-switch";
 import { extractTransactionHash, waitForTransactionConfirmation } from "@/ui/utils/transactions";
 import { buildFactoryConfigMulticall } from "../developer/factory-config-multicall";
@@ -21,7 +20,6 @@ import type {
   FactoryDeveloperConfigDraft,
 } from "../developer/types";
 import type { FactoryGameMode, FactoryLaunchChain } from "../types";
-import { toast } from "sonner";
 
 type FactoryConfigManifestState = {
   status: "loading" | "ready" | "error";
@@ -175,30 +173,8 @@ function isPendingFactoryConfigExecutionState(
   return state.status === "submitted" && state.txHash === txHash;
 }
 
-function canSubmitFactoryConfigOnCurrentNetwork({
-  account,
-  landingNetworkState,
-  chain,
-}: {
-  account: ReturnType<typeof useAccountStore.getState>["account"];
-  landingNetworkState: ReturnType<typeof useLandingNetworkState>;
-  chain: FactoryLaunchChain;
-}): boolean {
-  if (!account) {
-    return true;
-  }
-
-  if (landingNetworkState.status === "detecting" || landingNetworkState.status === "unsupported") {
-    return false;
-  }
-
-  return landingNetworkState.connectedLandingChain === chain;
-}
-
 export const useFactoryV2DeveloperConfig = ({ mode, chain }: { mode: FactoryGameMode; chain: FactoryLaunchChain }) => {
   const account = useAccountStore((state) => state.account);
-  const landingNetworkState = useLandingNetworkState();
-  const { hasConnectedWallet, status, switchToPreferredChain } = landingNetworkState;
   const defaultVersion = resolveFactoryConfigDefaultVersion(mode);
   const factoryAddress = resolveFactoryAddress(chain);
   const [version, setVersion] = useState(defaultVersion);
@@ -206,7 +182,6 @@ export const useFactoryV2DeveloperConfig = ({ mode, chain }: { mode: FactoryGame
     useState<FactoryConfigSectionId[]>(listAllFactoryConfigSectionIds);
   const [manifestState, setManifestState] = useState<FactoryConfigManifestState>(buildLoadingManifestState);
   const [executionState, setExecutionState] = useState<FactoryDeveloperConfigExecutionState>(buildIdleExecutionState);
-  const [showSwitchNetworkPrompt, setShowSwitchNetworkPrompt] = useState(false);
   const executionAttemptRef = useRef(0);
 
   useEffect(() => {
@@ -216,7 +191,6 @@ export const useFactoryV2DeveloperConfig = ({ mode, chain }: { mode: FactoryGame
     setSelectedSectionIds(listAllFactoryConfigSectionIds());
     setExecutionState(buildIdleExecutionState());
     setManifestState(buildLoadingManifestState());
-    setShowSwitchNetworkPrompt(false);
 
     void loadFactoryConfigManifest(chain)
       .then((manifest) => {
@@ -293,11 +267,6 @@ export const useFactoryV2DeveloperConfig = ({ mode, chain }: { mode: FactoryGame
     manifestState.status === "ready" &&
     selectedSectionIds.length > 0 &&
     executionState.status !== "sending";
-  const canSubmitOnCurrentNetwork = canSubmitFactoryConfigOnCurrentNetwork({
-    account,
-    landingNetworkState,
-    chain,
-  });
 
   const isVersionCustomized = version !== defaultVersion;
   const executionTxHash =
@@ -329,29 +298,6 @@ export const useFactoryV2DeveloperConfig = ({ mode, chain }: { mode: FactoryGame
   const updateVersion = (nextVersion: string) => {
     clearExecutionState();
     setVersion(nextVersion);
-  };
-
-  const dismissSwitchNetworkPrompt = () => setShowSwitchNetworkPrompt(false);
-
-  const requestNetworkSwitch = () => {
-    if (!canSubmit) {
-      return;
-    }
-
-    if (hasConnectedWallet && status === "detecting") {
-      toast.info("Detecting wallet network. Try again in a moment.");
-      return;
-    }
-
-    setShowSwitchNetworkPrompt(true);
-  };
-
-  const switchWalletToTargetChain = async () => {
-    const switched = await switchToPreferredChain(chain);
-
-    if (switched) {
-      setShowSwitchNetworkPrompt(false);
-    }
   };
 
   const confirmSubmittedMulticall = (txHash: string, attemptId: number) => {
@@ -403,11 +349,6 @@ export const useFactoryV2DeveloperConfig = ({ mode, chain }: { mode: FactoryGame
       return;
     }
 
-    if (!canSubmitOnCurrentNetwork) {
-      requestNetworkSwitch();
-      return;
-    }
-
     const attemptId = executionAttemptRef.current + 1;
     executionAttemptRef.current = attemptId;
     setExecutionState({ status: "sending" });
@@ -436,17 +377,13 @@ export const useFactoryV2DeveloperConfig = ({ mode, chain }: { mode: FactoryGame
     manifestErrorMessage: manifestState.errorMessage,
     executionState,
     canSubmit,
-    canSubmitOnCurrentNetwork,
     isVersionCustomized,
     txExplorerUrl,
     targetChainLabel,
-    showSwitchNetworkPrompt,
     toggleSection,
     selectAllSections,
     clearSections,
     setVersion: updateVersion,
-    dismissSwitchNetworkPrompt,
-    switchWalletToTargetChain,
     submitMulticall,
   };
 };

@@ -3,8 +3,6 @@ import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 let accountValue: unknown = null;
-let isConnectedValue = false;
-
 const navigateMock = vi.fn();
 const setModalMock = vi.fn();
 
@@ -16,12 +14,8 @@ vi.mock("@/hooks/store/use-ui-store", () => ({
   useUIStore: (selector: (state: { setModal: typeof setModalMock }) => unknown) => selector({ setModal: setModalMock }),
 }));
 
-vi.mock("@starknet-react/core", () => ({
-  useAccount: () => ({ isConnected: isConnectedValue }),
-}));
-
-vi.mock("@/ui/modules/controller/controller", () => ({
-  Controller: () => <div data-testid="controller-button">controller</div>,
+vi.mock("@/ui/modules/identity/identity-login", () => ({
+  IdentityLogin: () => <div data-testid="identity-login">identity login</div>,
 }));
 
 vi.mock("@/ui/design-system/molecules/dialog-shell", () => ({
@@ -53,7 +47,6 @@ describe("SignInPromptModal redirect state", () => {
   beforeEach(() => {
     (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
     accountValue = null;
-    isConnectedValue = false;
     navigateMock.mockReset();
     setModalMock.mockReset();
     container = document.createElement("div");
@@ -69,13 +62,11 @@ describe("SignInPromptModal redirect state", () => {
     (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = false;
   });
 
-  it("does not redirect while wallet connectivity is true but the controller account is unresolved", async () => {
-    isConnectedValue = true;
-
+  it("does not redirect while the gameplay account is unresolved", async () => {
     await act(async () => {
       root.render(
         <SignInPromptModal
-          redirectTo="/enter/mainnet/aurora-blitz?intent=play"
+          redirectTo="/enter/madara/aurora-blitz?intent=play"
           redirectState={{ returnTo: "/learn?ref=hero" }}
         />,
       );
@@ -89,7 +80,7 @@ describe("SignInPromptModal redirect state", () => {
     await act(async () => {
       root.render(
         <SignInPromptModal
-          redirectTo="/enter/mainnet/aurora-blitz?intent=play"
+          redirectTo="/enter/madara/aurora-blitz?intent=play"
           redirectState={{ returnTo: "/learn?ref=hero" }}
         />,
       );
@@ -98,19 +89,18 @@ describe("SignInPromptModal redirect state", () => {
     expect(navigateMock).not.toHaveBeenCalled();
 
     accountValue = { address: "0x123" };
-    isConnectedValue = true;
 
     await act(async () => {
       root.render(
         <SignInPromptModal
-          redirectTo="/enter/mainnet/aurora-blitz?intent=play"
+          redirectTo="/enter/madara/aurora-blitz?intent=play"
           redirectState={{ returnTo: "/learn?ref=hero" }}
         />,
       );
     });
 
     expect(setModalMock).toHaveBeenCalledWith(null, false);
-    expect(navigateMock).toHaveBeenCalledWith("/enter/mainnet/aurora-blitz?intent=play", {
+    expect(navigateMock).toHaveBeenCalledWith("/enter/madara/aurora-blitz?intent=play", {
       replace: true,
       state: { returnTo: "/learn?ref=hero" },
     });

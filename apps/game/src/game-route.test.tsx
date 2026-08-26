@@ -16,18 +16,6 @@ vi.mock("./hooks/context/dojo-context", () => ({
   DojoProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
 }));
 
-vi.mock("./hooks/context/transaction-submit-guard", () => ({
-  waitForSafeTransactionSubmit: vi.fn(),
-}));
-
-vi.mock("./hooks/store/use-account-store", () => ({
-  useAccountStore: {
-    getState: () => ({
-      connector: null,
-    }),
-  },
-}));
-
 vi.mock("./hooks/use-transaction-listener", () => ({
   useTransactionListener: vi.fn(),
 }));
@@ -134,7 +122,7 @@ describe("GameRoute", () => {
 
     await act(async () => {
       root.render(
-        <MemoryRouter initialEntries={["/play/mainnet/iron-age/hex?col=4&row=9"]}>
+        <MemoryRouter initialEntries={["/play/madara/iron-age/hex?col=4&row=9"]}>
           <GameRoute backgroundImage="bg.png" />
         </MemoryRouter>,
       );
@@ -162,7 +150,7 @@ describe("GameRoute", () => {
 
     await act(async () => {
       root.render(
-        <MemoryRouter initialEntries={["/play/mainnet/iron-age/hex?col=4&row=9"]}>
+        <MemoryRouter initialEntries={["/play/madara/iron-age/hex?col=4&row=9"]}>
           <GameRoute backgroundImage="bg.png" />
         </MemoryRouter>,
       );
@@ -171,7 +159,7 @@ describe("GameRoute", () => {
     expect(container.textContent).toContain("Reconnect to Continue");
   });
 
-  it("shows an automatic controller restoration as restoring", async () => {
+  it("shows automatic gameplay-account restoration as restoring", async () => {
     usePlayRouteBootControllerMock.mockReturnValue({
       phase: "await_account",
       progress: 0,
@@ -181,7 +169,7 @@ describe("GameRoute", () => {
       retry: vi.fn(),
       isReconnectRequired: false,
       currentTask: null,
-      tasks: [{ id: "account", label: "Restoring controller session", status: "running" }],
+      tasks: [{ id: "account", label: "Restoring gameplay account", status: "running" }],
       bootToken: 1,
       reconnectError: null,
       reconnectStatus: "restoring",
@@ -189,13 +177,13 @@ describe("GameRoute", () => {
 
     await act(async () => {
       root.render(
-        <MemoryRouter initialEntries={["/play/mainnet/iron-age/map"]}>
+        <MemoryRouter initialEntries={["/play/madara/iron-age/map"]}>
           <GameRoute backgroundImage="bg.png" />
         </MemoryRouter>,
       );
     });
 
-    expect(container.textContent).toContain("Restoring controller session");
+    expect(container.textContent).toContain("Restoring gameplay account");
     expect(container.textContent).not.toContain("Reconnect to Continue");
   });
 
@@ -231,7 +219,7 @@ describe("GameRoute", () => {
     usePlayRouteBootControllerMock.mockImplementation(() => controllerState);
 
     const renderRoute = () => (
-      <MemoryRouter initialEntries={["/play/mainnet/iron-age/map"]}>
+      <MemoryRouter initialEntries={["/play/madara/iron-age/map"]}>
         <GameRoute backgroundImage="bg.png" />
       </MemoryRouter>
     );

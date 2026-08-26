@@ -1,7 +1,6 @@
 import { resolveChain } from "@/runtime/world";
-import { resolveConnectedTxChainFromRuntime, type WalletChainControllerLike } from "@/ui/utils/network-switch";
-import type { Chain } from "@contracts";
-import { useAccount } from "@starknet-react/core";
+import type { GameChain as Chain } from "@realms-world/chain";
+import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useCallback, useMemo } from "react";
 
 import {
@@ -25,20 +24,18 @@ interface LandingNetworkControllerState {
 // landing always runs on the build's env chain. Wallet chain switching is gone
 // with it — mainnet is a read-only data plane, never a login target.
 export const useLandingNetworkState = (): LandingNetworkControllerState => {
-  const selectedChain = resolveChain("appchain");
-  const { address, chainId, connector } = useAccount();
-  const controller = (connector as { controller?: WalletChainControllerLike } | undefined)?.controller ?? null;
-
-  const connectedChain = resolveConnectedTxChainFromRuntime({ chainId, controller });
+  const selectedChain = resolveChain("madara");
+  const hasGameplayAccount = useAccountStore((state) => Boolean(state.account));
+  const connectedChain = hasGameplayAccount ? selectedChain : null;
 
   const landingNetworkState = useMemo(
     () =>
       resolveLandingNetworkState({
         preferredChain: selectedChain,
         connectedChain,
-        hasConnectedWallet: Boolean(address),
+        hasConnectedWallet: hasGameplayAccount,
       }),
-    [address, connectedChain, selectedChain],
+    [connectedChain, hasGameplayAccount, selectedChain],
   );
 
   const preferredChain = resolvePreferredLandingChain(selectedChain);

@@ -38,7 +38,7 @@ describe("Factory V2 map options", () => {
     expect(blitzSections.flatMap((section) => section.fields.map((field) => field.label))).toContain(
       "Relic discovery interval",
     );
-    expect(blitzSections.flatMap((section) => section.fields.map((field) => field.label))).toContain(
+    expect(blitzSections.flatMap((section) => section.fields.map((field) => field.label))).not.toContain(
       "Entry ticket payment token address",
     );
     expect(blitzSections.find((section) => section.id === "explorationRewards")?.previewRows).toHaveLength(9);
@@ -53,16 +53,16 @@ describe("Factory V2 map options", () => {
   });
 
   it("omits map overrides when the displayed values still match the environment defaults", () => {
-    const draft = createFactoryMoreOptionsDraft("eternum", "mainnet");
-    const result = validateFactoryMoreOptions("eternum", "mainnet", draft);
+    const draft = createFactoryMoreOptionsDraft("eternum", "appchain");
+    const result = validateFactoryMoreOptions("eternum", "appchain", draft);
 
     expect(result.hasErrors).toBe(false);
     expect(result.mapConfigOverrides).toBeUndefined();
   });
 
   it("validates biome climate drafts and omits overrides that match the base climate", () => {
-    const draft = createFactoryBiomeClimateDraft("mainnet", "blitz");
-    const result = validateFactoryBiomeClimateDraft("mainnet", "blitz", draft);
+    const draft = createFactoryBiomeClimateDraft("appchain", "blitz");
+    const result = validateFactoryBiomeClimateDraft("appchain", "blitz", draft);
 
     expect(draft).toEqual({
       elevationScaleBps: "10000",
@@ -78,11 +78,11 @@ describe("Factory V2 map options", () => {
 
   it("returns changed biome climate values as launch overrides", () => {
     const draft: FactoryBiomeClimateDraft = {
-      ...createFactoryBiomeClimateDraft("mainnet", "blitz"),
+      ...createFactoryBiomeClimateDraft("appchain", "blitz"),
       elevationScaleBps: "12000",
       moistureSeed: "991",
     };
-    const result = validateFactoryBiomeClimateDraft("mainnet", "blitz", draft);
+    const result = validateFactoryBiomeClimateDraft("appchain", "blitz", draft);
 
     expect(result.hasErrors).toBe(false);
     expect(result.biomeClimateOverrides).toEqual({
@@ -92,11 +92,11 @@ describe("Factory V2 map options", () => {
   });
 
   it("rejects invalid biome climate values", () => {
-    const draft = createFactoryBiomeClimateDraft("mainnet", "blitz");
+    const draft = createFactoryBiomeClimateDraft("appchain", "blitz");
     draft.elevationScaleBps = "65536";
     draft.moistureSeed = "4.2";
 
-    const result = validateFactoryBiomeClimateDraft("mainnet", "blitz", draft);
+    const result = validateFactoryBiomeClimateDraft("appchain", "blitz", draft);
 
     expect(result.hasErrors).toBe(true);
     expect(result.errors.elevationScaleBps).toContain("between 0 and 65535");
@@ -104,13 +104,13 @@ describe("Factory V2 map options", () => {
   });
 
   it("converts edited percentage and integer values into raw map config overrides", () => {
-    const draft = createFactoryMoreOptionsDraft("eternum", "mainnet");
+    const draft = createFactoryMoreOptionsDraft("eternum", "appchain");
     draft.bitcoinMine = "2.5";
     draft.hyperstructureCenter = "12.345";
     draft.hyperstructureRadiusMultiplier = "98.21";
     draft.hyperstructureChanceLossPerFound = "0.125";
 
-    const result = validateFactoryMoreOptions("eternum", "mainnet", draft);
+    const result = validateFactoryMoreOptions("eternum", "appchain", draft);
 
     expect(result.hasErrors).toBe(false);
     expect(result.mapConfigOverrides).toMatchObject({
@@ -124,23 +124,23 @@ describe("Factory V2 map options", () => {
   });
 
   it("rejects invalid relic inputs", () => {
-    const draft = createFactoryMoreOptionsDraft("blitz", "mainnet");
+    const draft = createFactoryMoreOptionsDraft("blitz", "appchain");
     draft.relicHexDistance = "256";
 
-    const result = validateFactoryMoreOptions("blitz", "mainnet", draft);
+    const result = validateFactoryMoreOptions("blitz", "appchain", draft);
 
     expect(result.hasErrors).toBe(true);
     expect(result.errors.relicHexDistance).toContain("between 0 and 255");
   });
 
   it("shows relic discovery interval in minutes and converts it back to raw seconds", () => {
-    const draft = createFactoryMoreOptionsDraft("blitz", "mainnet");
+    const draft = createFactoryMoreOptionsDraft("blitz", "appchain");
 
     expect(draft.relicDiscoveryInterval).toBe("5");
 
     draft.relicDiscoveryInterval = "7";
 
-    const result = validateFactoryMoreOptions("blitz", "mainnet", draft, { twoPlayerMode: false });
+    const result = validateFactoryMoreOptions("blitz", "appchain", draft, { twoPlayerMode: false });
 
     expect(result.hasErrors).toBe(false);
     expect(result.mapConfigOverrides).toMatchObject({
@@ -149,19 +149,19 @@ describe("Factory V2 map options", () => {
   });
 
   it("keeps non-official Blitz durations on the base more-options defaults", () => {
-    const baseDraft = createFactoryMoreOptionsDraft("blitz", "mainnet");
-    const customDurationDraft = createFactoryMoreOptionsDraft("blitz", "mainnet", 45);
+    const baseDraft = createFactoryMoreOptionsDraft("blitz", "appchain");
+    const customDurationDraft = createFactoryMoreOptionsDraft("blitz", "appchain", 45);
 
     expect(customDurationDraft).toEqual(baseDraft);
   });
 
   it("switches the displayed Blitz exploration rewards when the duration changes", () => {
     const sixtyMinuteRewards =
-      getFactoryMoreOptionSections("blitz", { twoPlayerMode: false }, "mainnet", 60).find(
+      getFactoryMoreOptionSections("blitz", { twoPlayerMode: false }, "appchain", 60).find(
         (section) => section.id === "explorationRewards",
       )?.previewRows ?? [];
     const ninetyMinuteRewards =
-      getFactoryMoreOptionSections("blitz", { twoPlayerMode: false }, "mainnet", 90).find(
+      getFactoryMoreOptionSections("blitz", { twoPlayerMode: false }, "appchain", 90).find(
         (section) => section.id === "explorationRewards",
       )?.previewRows ?? [];
 
@@ -180,63 +180,18 @@ describe("Factory V2 map options", () => {
   });
 
   it("omits max player overrides when two-player mode hides the field", () => {
-    const draft = createFactoryMoreOptionsDraft("blitz", "mainnet");
+    const draft = createFactoryMoreOptionsDraft("blitz", "appchain");
     draft.maxPlayers = "12";
 
-    const result = validateFactoryMoreOptions("blitz", "mainnet", draft, { twoPlayerMode: true });
+    const result = validateFactoryMoreOptions("blitz", "appchain", draft, { twoPlayerMode: true });
 
     expect(result.hasErrors).toBe(false);
     expect(result.blitzRegistrationOverrides).toBeUndefined();
   });
 
-  it("formats blitz prize defaults from the config and keeps precision empty until needed", () => {
-    const draft = createFactoryMoreOptionsDraft("blitz", "mainnet");
-
-    expect(draft.prizeToken).toMatch(/^0x/i);
-    expect(draft.prizeAmount).toBe("100");
-    expect(draft.prizePrecision).toBe("");
-  });
-
-  it("requires explicit prize token decimals when the token address changes", () => {
-    const draft = createFactoryMoreOptionsDraft("blitz", "mainnet");
-    draft.prizeToken = "0x1234";
-
-    const result = validateFactoryMoreOptions("blitz", "mainnet", draft, { twoPlayerMode: false });
-
-    expect(result.hasErrors).toBe(true);
-    expect(result.errors.prizePrecision).toContain("required");
-  });
-
-  it("converts human prize amounts into raw blitz registration overrides", () => {
-    const draft = createFactoryMoreOptionsDraft("blitz", "mainnet");
-    draft.prizeAmount = "500";
-
-    const result = validateFactoryMoreOptions("blitz", "mainnet", draft, { twoPlayerMode: false });
-
-    expect(result.hasErrors).toBe(false);
-    expect(result.blitzRegistrationOverrides).toMatchObject({
-      fee_amount: "500000000000000000000",
-    });
-  });
-
-  it("uses explicit decimals when a custom prize token is selected", () => {
-    const draft = createFactoryMoreOptionsDraft("blitz", "mainnet");
-    draft.prizeToken = "0x1234";
-    draft.prizeAmount = "0.00004";
-    draft.prizePrecision = "6";
-
-    const result = validateFactoryMoreOptions("blitz", "mainnet", draft, { twoPlayerMode: false });
-
-    expect(result.hasErrors).toBe(false);
-    expect(result.blitzRegistrationOverrides).toEqual({
-      fee_token: "0x1234",
-      fee_amount: "40",
-    });
-  });
-
   it("includes map config overrides in the create-run payload", () => {
     const request = buildFactoryCreateRunRequest({
-      environmentId: "mainnet.eternum",
+      environmentId: "appchain.eternum",
       gameName: "etrn-test-11",
       gameStartTime: "2026-03-18T10:00:00Z",
       selectedMode: "eternum",
@@ -278,7 +233,7 @@ describe("Factory V2 map options", () => {
 
   it("includes blitz registration overrides in the create-run payload", () => {
     const request = buildFactoryCreateRunRequest({
-      environmentId: "mainnet.blitz",
+      environmentId: "appchain.blitz",
       gameName: "bltz-test-11",
       gameStartTime: "2026-03-18T10:00:00Z",
       selectedMode: "blitz",
@@ -316,7 +271,7 @@ describe("Factory V2 map options", () => {
     const workflowRef = "credence0x/blitz-hex-map";
 
     const gameRequest = buildFactoryCreateRunRequest({
-      environmentId: "mainnet.blitz",
+      environmentId: "appchain.blitz",
       gameName: "bltz-test-12",
       gameStartTime: "2026-03-18T10:00:00Z",
       workflowRef,
@@ -329,7 +284,7 @@ describe("Factory V2 map options", () => {
     });
 
     const seriesRequest = buildFactoryCreateSeriesRunRequest({
-      environmentId: "mainnet.blitz",
+      environmentId: "appchain.blitz",
       seriesName: "bltz-series-12",
       workflowRef,
       games: [
@@ -356,7 +311,7 @@ describe("Factory V2 map options", () => {
     expect(seriesRequest.games[0].biomeClimateOverrides).toEqual({ elevationSeed: 101 });
 
     const rotationRequest = buildFactoryCreateRotationRunRequest({
-      environmentId: "mainnet.blitz",
+      environmentId: "appchain.blitz",
       rotationName: "bltz-rotation-12",
       workflowRef,
       firstGameStartTime: "2026-03-18T10:00:00Z",

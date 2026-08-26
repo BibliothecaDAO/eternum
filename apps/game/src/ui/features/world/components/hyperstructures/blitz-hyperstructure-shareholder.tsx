@@ -1,4 +1,3 @@
-import { env } from "@/../env";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { isExplicitSpectateSession } from "@/utils/spectator-session";
@@ -28,11 +27,9 @@ export const BlitzSetHyperstructureShareholdersTo100 = React.memo(() => {
 
   useEffect(() => {
     if (!mode.rules.autoAllocateHyperstructureShares) return;
-    // Spectators must never auto-fire transactions: the session either has no
-    // real wallet (master/fallback account, ownership queries can match
-    // against it) or is deliberately watching a game it owns structures in.
+    // Spectators must never auto-fire transactions, including while watching a
+    // game where their identity owns structures.
     if (isSpectating || isExplicitSpectateSession() || !account?.address) return;
-    if (account.address === env.VITE_PUBLIC_MASTER_ADDRESS) return;
 
     const previousOwnedHyperstructuresSet = new Set(previousOwnedHyperstructures.current);
     const hasNewOwnedHyperstructure = ownedHyperstructures.some(

@@ -1,23 +1,11 @@
 import { BatchedTransactionDetail, TransactionType } from "@bibliothecadao/provider";
-import type { Chain } from "@contracts";
 import type { TransactionStatus } from "@/hooks/store/use-transaction-store";
-import { resolveRuntimeChain } from "@/runtime/world";
+import { env } from "../../../../env";
 
-const getChain = () => import.meta.env.VITE_PUBLIC_CHAIN as string | undefined;
-const getFallbackChain = (): Chain => (getChain() ?? "mainnet") as Chain;
+export const getExplorerTxUrl = (hash: string): string | null =>
+  env.VITE_PUBLIC_EXPLORER_URL ? `${env.VITE_PUBLIC_EXPLORER_URL.replace(/\/$/, "")}/tx/${hash}` : null;
 
-export const getExplorerTxUrl = (hash: string): string => {
-  const chain = resolveRuntimeChain(getFallbackChain());
-
-  if (chain === "sepolia") {
-    return `https://sepolia.voyager.online/tx/${hash}`;
-  }
-
-  // Default to mainnet
-  return `https://voyager.online/tx/${hash}`;
-};
-
-export const getExplorerName = (): string => "Voyager";
+export const getExplorerName = (): string => "Explorer";
 
 export const getTxMessage = (type: TransactionType): string => {
   switch (type) {

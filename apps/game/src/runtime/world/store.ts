@@ -1,4 +1,4 @@
-import type { Chain } from "@contracts";
+import type { GameChain as Chain } from "@realms-world/chain";
 import { env } from "../../../env";
 import type { WorldProfile, WorldProfilesMap } from "./types";
 
@@ -17,7 +17,7 @@ const safeParse = <T>(raw: string | null, fallback: T): T => {
   }
 };
 
-const CHAIN_VALUES: Chain[] = ["sepolia", "mainnet", "local", "appchain"];
+const CHAIN_VALUES: Chain[] = ["madara", "appchain"];
 
 const isValidChain = (value: string | null): value is Chain => {
   if (!value) return false;

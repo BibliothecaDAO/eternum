@@ -1,5 +1,4 @@
 import { appchainModel } from "@/dojo/game-scope";
-import { env } from "../../../env";
 import { nameToPaddedFelt } from "./normalize";
 import { getDefaultWorld, getWorldById, getWorldDirectory } from "./world-directory";
 
@@ -37,8 +36,8 @@ export const fetchS2GameRow = async (toriiBaseUrl: string, name: string): Promis
   }
 };
 
-const appchainGameIds = new Map<string, number>();
-const appchainGameWorlds = new Map<string, string>();
+const gameIds = new Map<string, number>();
+const gameWorlds = new Map<string, string>();
 
 /**
  * Resolve WHICH directory world holds a game name. Routes and entry contexts
@@ -47,17 +46,17 @@ const appchainGameWorlds = new Map<string, string>();
  * world, and the directory is checked in order: blitz, then eternum). Hits
  * are cached for the session; misses are not.
  */
-export const resolveAppchainWorldIdForGame = async (worldName: string): Promise<string | null> => {
-  if (env.VITE_PUBLIC_CHAIN !== "appchain" || !worldName) return null;
+export const resolveWorldIdForGame = async (worldName: string): Promise<string | null> => {
+  if (!worldName) return null;
 
-  const cached = appchainGameWorlds.get(worldName);
+  const cached = gameWorlds.get(worldName);
   if (cached !== undefined) return cached;
 
   for (const world of getWorldDirectory()) {
     const row = await fetchS2GameRow(world.toriiBaseUrl, worldName);
     if (row) {
-      appchainGameWorlds.set(worldName, world.id);
-      appchainGameIds.set(`${world.id}:${worldName}`, row.gameId);
+      gameWorlds.set(worldName, world.id);
+      gameIds.set(`${world.id}:${worldName}`, row.gameId);
       return world.id;
     }
   }
@@ -71,16 +70,16 @@ export const resolveAppchainWorldIdForGame = async (worldName: string): Promise<
  * changes, so hits are cached for the session; failures are not (a transient
  * torii restart must not pin a miss).
  */
-export const resolveAppchainGameId = async (worldName: string, worldId?: string): Promise<number | null> => {
-  if (env.VITE_PUBLIC_CHAIN !== "appchain" || !worldName) return null;
+export const resolveGameId = async (worldName: string, worldId?: string): Promise<number | null> => {
+  if (!worldName) return null;
 
-  const resolvedWorldId = worldId ?? (await resolveAppchainWorldIdForGame(worldName));
+  const resolvedWorldId = worldId ?? (await resolveWorldIdForGame(worldName));
   const world = getWorldById(resolvedWorldId) ?? getDefaultWorld();
   const cacheKey = `${world.id}:${worldName}`;
-  const cached = appchainGameIds.get(cacheKey);
+  const cached = gameIds.get(cacheKey);
   if (cached !== undefined) return cached;
 
   const row = await fetchS2GameRow(world.toriiBaseUrl, worldName);
-  if (row) appchainGameIds.set(cacheKey, row.gameId);
+  if (row) gameIds.set(cacheKey, row.gameId);
   return row?.gameId ?? null;
 };

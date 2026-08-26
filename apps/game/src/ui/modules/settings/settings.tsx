@@ -2,7 +2,6 @@ import { ReactComponent as Next } from "@/assets/icons/common/arrow-right.svg";
 import { ReactComponent as Muted } from "@/assets/icons/common/muted.svg";
 import { ReactComponent as Unmuted } from "@/assets/icons/common/unmuted.svg";
 import { ReactComponent as DojoMark } from "@/assets/icons/dojo-mark-full-dark.svg";
-import { Controller as WalletController } from "@/ui/modules/controller/controller";
 import { ReactComponent as RealmsWorld } from "@/assets/icons/rw-logo.svg";
 import { AudioCategory, ScrollingTrackName, useAudio, useMusicPlayer, useUISound } from "@/audio";
 import { useCameraZoomStore } from "@/hooks/store/use-camera-zoom-store";
@@ -41,8 +40,6 @@ export const SettingsWindow = () => {
   } = useDojo();
 
   const navigate = useNavigate();
-
-  const [showSettings, setShowSettings] = useState(false);
 
   // Use full audio system for reactive state updates
   const { setCategoryVolume, setMasterVolume, setMuted, audioState } = useAudio();
@@ -109,17 +106,8 @@ export const SettingsWindow = () => {
       bodyClassName="overflow-auto"
     >
       <div className="flex flex-col space-y-6 p-6">
-        {/* Header — avatar + Cartridge controller button, centered together.
-            The controller already surfaces handle, address, and the wallet
-            menu, so we don't render any of that a second time. */}
-        <div className="flex items-center justify-center gap-4">
-          <Avatar
-            onClick={() => setShowSettings(!showSettings)}
-            size="xl"
-            className="relative z-1"
-            src={`/images/avatars/${addressToNumber(account.address)}.png`}
-          />
-          <WalletController />
+        <div className="flex items-center justify-center">
+          <Avatar size="xl" className="relative z-1" src={`/images/avatars/${addressToNumber(account.address)}.png`} />
         </div>
 
         {/* Settings Sections */}

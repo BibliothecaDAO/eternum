@@ -128,7 +128,7 @@ describe("GameLoadingOverlay", () => {
     };
     usePlayerStructuresMock.mockReturnValue([]);
     useLocationMock.mockReturnValue({
-      pathname: "/play/sepolia/aurora-blitz/map",
+      pathname: "/play/appchain/aurora-blitz/map",
       search: "?col=12&row=34",
       hash: "",
       state: null,
@@ -164,7 +164,7 @@ describe("GameLoadingOverlay", () => {
       resumeScene: "hex",
     };
     useLocationMock.mockReturnValue({
-      pathname: "/play/sepolia/aurora-blitz/map",
+      pathname: "/play/appchain/aurora-blitz/map",
       search: "?col=12&row=34&boot=map-first&resumeScene=hex",
       hash: "",
       state: null,
@@ -184,7 +184,7 @@ describe("GameLoadingOverlay", () => {
     });
 
     expect(navigateMock).toHaveBeenCalledWith(
-      "/play/sepolia/aurora-blitz/hex?col=12&row=34&boot=map-first&resumeScene=hex",
+      "/play/appchain/aurora-blitz/hex?col=12&row=34&boot=map-first&resumeScene=hex",
       { replace: true },
     );
     expect(setShowBlankOverlayMock).not.toHaveBeenCalledWith(false);
@@ -203,7 +203,7 @@ describe("GameLoadingOverlay", () => {
       routeWorldPosition: null,
     };
     useLocationMock.mockReturnValue({
-      pathname: "/play/sepolia/aurora-blitz/map",
+      pathname: "/play/appchain/aurora-blitz/map",
       search: "?boot=map-first&resumeScene=hex",
       hash: "",
       state: null,
@@ -215,7 +215,7 @@ describe("GameLoadingOverlay", () => {
     });
 
     expect(navigateMock).toHaveBeenCalledWith(
-      "/play/sepolia/aurora-blitz/map?col=4&row=9&boot=map-first&resumeScene=hex",
+      "/play/appchain/aurora-blitz/map?col=4&row=9&boot=map-first&resumeScene=hex",
       { replace: true },
     );
   });

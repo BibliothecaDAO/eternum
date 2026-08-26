@@ -9,9 +9,8 @@ import {
 
 describe("landing network state", () => {
   it("derives one shared preferred and connected state model for landing consumers", () => {
-    expect(resolvePreferredLandingChain("mainnet")).toBe("mainnet");
+    expect(resolvePreferredLandingChain("madara")).toBe("madara");
     expect(resolvePreferredLandingChain("appchain")).toBe("appchain");
-    expect(resolvePreferredLandingChain("sepolia")).toBe("mainnet");
 
     const disconnected = resolveLandingNetworkState({
       preferredChain: "appchain",
@@ -37,24 +36,15 @@ describe("landing network state", () => {
     expect(matched.status).toBe("matched");
     expect(matched.connectedLandingChain).toBe("appchain");
     expect(canInteractWithLandingChain(matched, "appchain")).toBe(true);
-    expect(canInteractWithLandingChain(matched, "mainnet")).toBe(false);
+    expect(canInteractWithLandingChain(matched, "madara")).toBe(false);
 
     const mismatched = resolveLandingNetworkState({
       preferredChain: "appchain",
-      connectedChain: "mainnet",
+      connectedChain: "madara",
       hasConnectedWallet: true,
     });
     expect(mismatched.status).toBe("mismatched");
-    expect(mismatched.connectedLandingChain).toBe("mainnet");
+    expect(mismatched.connectedLandingChain).toBe("madara");
     expect(canInteractWithLandingChain(mismatched, "appchain")).toBe(false);
-
-    const unsupportedWalletChain = resolveLandingNetworkState({
-      preferredChain: "appchain",
-      connectedChain: "local",
-      hasConnectedWallet: true,
-    });
-    expect(unsupportedWalletChain.status).toBe("unsupported");
-    expect(unsupportedWalletChain.connectedLandingChain).toBeNull();
-    expect(canInteractWithLandingChain(unsupportedWalletChain, "appchain")).toBe(false);
   });
 });

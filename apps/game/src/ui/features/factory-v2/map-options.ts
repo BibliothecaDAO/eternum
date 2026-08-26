@@ -801,7 +801,7 @@ export const createFactoryMoreOptionsDraft = (
 export const getFactoryMoreOptionSections = (
   mode: FactoryGameMode,
   visibility: FactoryMoreOptionsVisibility = {},
-  chain: FactoryLaunchChain = "mainnet",
+  chain: FactoryLaunchChain = "appchain",
   durationMinutes?: number | null,
 ): FactoryMoreOptionSection[] => {
   const { blitzExplorationConfig } = resolveMoreOptionsConfigContext(mode, chain, durationMinutes);

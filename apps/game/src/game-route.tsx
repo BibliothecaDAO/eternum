@@ -3,12 +3,9 @@
  * into the landing page bundle.
  */
 import { ChunkTransitionIndicator, ErrorBoundary, Toaster, TransactionNotification, WorldLoading } from "@/ui/shared";
-import { useEffect } from "react";
 import { Navigate, useNavigate } from "react-router-dom";
 import type { Account, AccountInterface } from "starknet";
 import { env } from "../env";
-import { waitForSafeTransactionSubmit } from "./hooks/context/transaction-submit-guard";
-import { useAccountStore } from "./hooks/store/use-account-store";
 import { usePlayRouteBootController } from "./game-entry/play-route-boot";
 import { DojoProvider } from "./hooks/context/dojo-context";
 import { useTransactionListener } from "./hooks/use-transaction-listener";
@@ -33,32 +30,12 @@ const TransactionListenerBridge = () => {
   return null;
 };
 
-const TransactionSubmitGuardBridge = ({ setupResult, account }: Pick<ReadyAppProps, "setupResult" | "account">) => {
-  useEffect(() => {
-    const provider = setupResult.network.provider;
-    provider.setTransactionSubmitGuard((context) =>
-      waitForSafeTransactionSubmit({
-        account,
-        connector: useAccountStore.getState().connector,
-        context,
-      }),
-    );
-
-    return () => {
-      provider.setTransactionSubmitGuard(undefined);
-    };
-  }, [account, setupResult]);
-
-  return null;
-};
-
 const ReadyApp = ({ backgroundImage, setupResult, account }: ReadyAppProps) => {
   return (
     <DojoProvider value={setupResult} account={account}>
       <ErrorBoundary>
         <StoryEventToastBridge />
         <NewsHeadlineBridge />
-        <TransactionSubmitGuardBridge setupResult={setupResult} account={account} />
         <TransactionListenerBridge />
         <TransactionNotification />
         <World backgroundImage={backgroundImage} />

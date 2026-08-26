@@ -11,7 +11,7 @@ export const FactoryV2Header = ({ onBack }: { onBack: () => void }) => {
           </h1>
           <p className="mx-auto mt-3 max-w-2xl text-[15px] leading-6 text-gold/50 md:text-sm">
             Launch a new Eternum or Blitz world in a few steps. Pick your network, choose a preset, set the timing, and
-            hit launch. You can also check on running games or manage indexers from here.
+            hit launch. You can also check on running games from here.
           </p>
         </div>
 
@@ -22,7 +22,7 @@ export const FactoryV2Header = ({ onBack }: { onBack: () => void }) => {
           </div>
           <div className="flex items-center gap-1.5">
             <span className="h-1.5 w-1.5 rounded-full bg-amber-500/60" />
-            <span>Slot or mainnet</span>
+            <span>Persistent world</span>
           </div>
           <div className="flex items-center gap-1.5">
             <span className="h-1.5 w-1.5 rounded-full bg-sky-500/60" />

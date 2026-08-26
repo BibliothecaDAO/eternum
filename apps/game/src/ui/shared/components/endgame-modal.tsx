@@ -6,7 +6,7 @@ import { GameIsOverModal } from "@/ui/features/landing/components/game-is-over-m
 import { GameReviewModal } from "@/ui/features/landing/components/game-review-modal";
 import { isGameReviewDismissed, setGameReviewDismissed } from "@/ui/features/landing/lib/game-review-storage";
 import { SignInPromptModal } from "@/ui/layouts/sign-in-prompt-modal";
-import type { Chain } from "@contracts";
+import type { GameChain as Chain } from "@realms-world/chain";
 import { useCallback, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 

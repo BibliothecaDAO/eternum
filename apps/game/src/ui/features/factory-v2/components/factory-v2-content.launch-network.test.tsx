@@ -66,8 +66,8 @@ const buildFactoryState = (overrides: Record<string, unknown> = {}) => ({
   selectedMode: "eternum",
   modeDefinition: { label: "Eternum" },
   environmentOptions: [],
-  selectedEnvironmentId: "mainnet",
-  selectedEnvironment: { id: "mainnet", label: "Mainnet", chain: "mainnet" },
+  selectedEnvironmentId: "appchain",
+  selectedEnvironment: { id: "appchain", label: "Appchain", chain: "appchain" },
   presets: [],
   selectedPresetId: "preset-1",
   selectedPreset: { id: "preset-1", defaults: {} },
@@ -133,13 +133,6 @@ const buildFactoryState = (overrides: Record<string, unknown> = {}) => ({
   deleteSelectedRun: vi.fn(async () => true),
   refreshSelectedRun: vi.fn(async () => true),
   fundSelectedRunPrize: vi.fn(async () => true),
-  liveIndexers: [],
-  liveIndexersUpdatedAt: null,
-  loadLiveIndexers: vi.fn(async () => {}),
-  refreshLiveIndexerSnapshot: vi.fn(async () => {}),
-  createIndexers: vi.fn(async () => {}),
-  updateIndexerTiers: vi.fn(async () => {}),
-  deleteIndexers: vi.fn(async () => {}),
   resolveRunByName: vi.fn(async () => false),
   ...overrides,
 });
@@ -192,7 +185,7 @@ describe("FactoryV2Content network handling", () => {
   it("continues immediately without opening a network switch prompt", async () => {
     const factory = buildFactoryState({
       activeRunName: "etrn-sunrise-01",
-      selectedRun: { id: "run-1", name: "etrn-sunrise-01", environment: "mainnet" },
+      selectedRun: { id: "run-1", name: "etrn-sunrise-01", environment: "appchain" },
     });
     vi.mocked(useFactoryV2).mockReturnValue(factory as unknown as ReturnType<typeof useFactoryV2>);
 

@@ -1,4 +1,5 @@
-import { getSeasonAddresses, type Chain } from "@contracts";
+import { getSeasonAddresses } from "@contracts";
+import type { GameChain as Chain } from "@realms-world/chain";
 import type { FactoryLaunchChain } from "./types";
 
 export interface FactoryDeployerTokenDefinition {
@@ -13,9 +14,7 @@ interface FactoryDeployerWalletDefinition {
 }
 
 const FACTORY_DEPLOYER_ADDRESSES: Record<FactoryLaunchChain, string> = {
-  mainnet: "0x023003676EF4A5E8f32f5c8714f83fc6bfbefD44C0461a8b7Be16d05b8Ea1532",
-  // katana dev seed-0 account 0 — the appchain launcher account (dev chain,
-  // fees disabled, so this balance panel is informational only).
+  madara: "0x055be462e718c4166d656d11f89e341115b8bc82389c3762a10eade04fcb225d",
   appchain: "0x127fd5f1fe78a71f8bcd1fec63e3fe2f0486b6ecd5c86a0466c3a21fa5cfcec",
 };
 

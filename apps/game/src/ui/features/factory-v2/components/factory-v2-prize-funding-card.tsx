@@ -247,7 +247,7 @@ function resolvePrizeFundingState(run: FactoryRun): FactoryV2PrizeFundingState |
   const games = run.children.map((child) => ({
     gameName: child.gameName,
     status: child.status,
-    configReady: Boolean(child.configReady),
+    configReady: Boolean(child.launchReady),
     worldAddress: child.worldAddress,
     isReady: isFactoryPrizeFundingChildReady(child),
     fundedTransferCount: child.prizeFunding?.transfers.length ?? 0,
@@ -267,7 +267,7 @@ function resolvePrizeFundingGameStatusLabel(game: FactoryV2PrizeFundingSeriesGam
   }
 
   if (!game.configReady) {
-    return "World config not finished";
+    return "Game not indexed yet";
   }
 
   if (game.fundedTransferCount > 0) {

@@ -1,7 +1,7 @@
 import { ReactComponent as Invite } from "@/assets/icons/common/envelope.svg";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import { getAvatarUrl, normalizeAvatarAddress, useAvatarProfiles } from "@/hooks/use-player-avatar";
+import { getAvatarUrl } from "@/hooks/use-player-avatar";
 import { ENABLE_LEADERBOARD_EFFECTS_MOCKUP } from "@/ui/constants";
 import { currencyIntlFormat } from "@/ui/utils/utils";
 import { RegisterPointsButton } from "../components/register-points-button";
@@ -79,19 +79,6 @@ export const PlayerList = ({ players, viewPlayerInfo, whitelistPlayer, isLoading
   const mode = useGameModeConfig();
   const showTribeDetails = mode.ui.showGuildsTab;
   const [prevPositions, setPrevPositions] = useState<Map<string, number>>(new Map());
-  const { data: avatarProfiles } = useAvatarProfiles(players.map((player) => player.address));
-  const avatarMap = useMemo(() => {
-    const map = new Map<string, string>();
-    (avatarProfiles ?? []).forEach((profile) => {
-      const normalized = normalizeAvatarAddress(profile.playerAddress);
-      if (!normalized) return;
-      if (profile.avatarUrl) {
-        map.set(normalized, profile.avatarUrl);
-      }
-    });
-    return map;
-  }, [avatarProfiles]);
-
   const leaderboardGridTemplate = useMemo(
     () =>
       showTribeDetails
@@ -190,8 +177,7 @@ export const PlayerList = ({ players, viewPlayerInfo, whitelistPlayer, isLoading
           sortedPlayers.map((player) => {
             const normalizedAddress = String(player.address);
             const playerEffect = effects.get(normalizedAddress.toLowerCase());
-            const avatarAddress = normalizeAvatarAddress(player.address);
-            const avatarUrl = avatarAddress ? getAvatarUrl(avatarAddress, avatarMap.get(avatarAddress)) : null;
+            const avatarUrl = getAvatarUrl(String(player.address));
 
             return (
               <PlayerRow

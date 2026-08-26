@@ -1,9 +1,9 @@
 import { executeObservedClientTransaction } from "@/observability/observed-client-transaction";
 import { gameCallArgs, getGameNamespace } from "@/dojo/game-scope";
-import { getFactorySqlBaseUrl, getActiveWorld } from "@/runtime/world";
-import { resolveWorldContracts } from "@/runtime/world/factory-resolver";
+import { getActiveWorld, type WorldProfile } from "@/runtime/world";
 import { normalizeSelector } from "@/runtime/world/normalize";
-import { getGameManifest, type Chain } from "@contracts";
+import { getGameManifest } from "@contracts";
+import type { GameChain as Chain } from "@realms-world/chain";
 import { DEFAULT_COORD_ALT, Position } from "@bibliothecadao/eternum";
 import type { HexPosition } from "@bibliothecadao/types";
 import { getContractByName } from "@dojoengine/core";
@@ -56,38 +56,12 @@ const resolveHyperstructureCreateSystemsSelector = (chain: Chain) => {
   return selector;
 };
 
-const resolveHyperstructureCreateSystemsAddress = async ({
-  chain,
-  worldName,
-}: {
-  chain: Chain;
-  worldName: string;
-}): Promise<string> => {
-  // The persistent s2 world's contracts ship in the committed manifest; only
-  // legacy per-game worlds need the factory lookup.
-  if (chain === "appchain") {
-    const manifest = getGameManifest(chain) as { contracts?: { selector?: string; address?: string }[] };
-    const selector = resolveHyperstructureCreateSystemsSelector(chain);
-    const contractAddress = manifest.contracts?.find(
-      (contract) => contract.selector && normalizeSelector(contract.selector) === selector,
-    )?.address;
-    if (!contractAddress) {
-      throw new Error("hyperstructure_create_systems contract not found in the appchain manifest");
-    }
-    return contractAddress;
-  }
-
-  const factorySqlBaseUrl = getFactorySqlBaseUrl(chain);
-  if (!factorySqlBaseUrl) {
-    throw new Error(`Factory SQL base URL not configured for chain: ${chain}`);
-  }
-
-  const selector = resolveHyperstructureCreateSystemsSelector(chain);
-  const contracts = await resolveWorldContracts(factorySqlBaseUrl, worldName);
-  const contractAddress = contracts[selector] ?? null;
+const resolveHyperstructureCreateSystemsAddress = (world: WorldProfile): string => {
+  const selector = resolveHyperstructureCreateSystemsSelector(world.chain);
+  const contractAddress = world.contractsBySelector[selector] ?? null;
 
   if (!contractAddress) {
-    throw new Error("hyperstructure_create_systems contract not found for selected world");
+    throw new Error("hyperstructure_create_systems contract not found in the committed world manifest");
   }
 
   return contractAddress;
@@ -155,10 +129,7 @@ export const createActiveWorldBlitzHyperstructure = async ({
   hexCoords: HexPosition;
 }) => {
   const activeWorld = resolveActiveWorldOrThrow();
-  const contractAddress = await resolveHyperstructureCreateSystemsAddress({
-    chain: activeWorld.chain,
-    worldName: activeWorld.name,
-  });
+  const contractAddress = resolveHyperstructureCreateSystemsAddress(activeWorld);
 
   return executeObservedClientTransaction({
     account,

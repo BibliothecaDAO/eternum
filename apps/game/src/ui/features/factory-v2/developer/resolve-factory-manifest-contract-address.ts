@@ -1,16 +1,7 @@
-import { resolveAppchainWorldIdForGame } from "@/runtime/world/game-registry";
+import { resolveWorldIdForGame } from "@/runtime/world/game-registry";
 import { getWorldById } from "@/runtime/world/world-directory";
 import { getGameManifest } from "@contracts";
-import {
-  getFactorySqlBaseUrl,
-  listFactoryWorlds,
-  patchManifestWithFactory,
-  resolveWorldContracts,
-  resolveWorldDeploymentFromFactory,
-} from "@/runtime/world";
 import { DEFAULT_FACTORY_NAMESPACE } from "@/ui/features/factory/shared/factory-metadata";
-import type { FactoryIndexedWorld } from "@/runtime/world";
-import { getFactoryLookupManifest } from "./factory-manifest";
 import type {
   FactoryManifestContractLookupFailure,
   FactoryManifestContractLookupRequest,
@@ -31,7 +22,6 @@ type NormalizedLookupRequest = {
   manifestTag: string;
 };
 
-const MAX_WORLD_SUGGESTIONS = 5;
 const MAX_CONTRACT_SUGGESTIONS = 5;
 
 const normalizeLookupValue = (value: string) => value.trim().toLowerCase();
@@ -80,29 +70,6 @@ function findManifestContractEntry(manifest: ManifestLike, manifestTag: string):
   return contract ?? null;
 }
 
-function resolveExactWorldName(availableWorldNames: string[], requestedWorldName: string): string | null {
-  const normalizedRequestedWorldName = normalizeLookupValue(requestedWorldName);
-  return (
-    availableWorldNames.find((worldName) => normalizeLookupValue(worldName) === normalizedRequestedWorldName) ?? null
-  );
-}
-
-function listFactoryWorldNames(availableWorlds: FactoryIndexedWorld[]): string[] {
-  return availableWorlds.map((world) => world.name);
-}
-
-function findExactFactoryWorld(
-  availableWorlds: FactoryIndexedWorld[],
-  requestedWorldName: string,
-): FactoryIndexedWorld | null {
-  const exactWorldName = resolveExactWorldName(listFactoryWorldNames(availableWorlds), requestedWorldName);
-  if (!exactWorldName) {
-    return null;
-  }
-
-  return availableWorlds.find((world) => world.name === exactWorldName) ?? null;
-}
-
 function buildSuggestionScore(candidate: string, query: string): number {
   const normalizedCandidate = normalizeLookupValue(candidate);
   const normalizedQuery = normalizeLookupValue(query);
@@ -126,18 +93,6 @@ function buildSuggestionScore(candidate: string, query: string): number {
   return score;
 }
 
-function buildWorldSuggestions(availableWorldNames: string[], requestedWorldName: string): string[] {
-  return availableWorldNames
-    .map((worldName) => ({
-      worldName,
-      score: buildSuggestionScore(worldName, requestedWorldName),
-    }))
-    .filter((suggestion) => suggestion.score > 0)
-    .sort((left, right) => right.score - left.score || left.worldName.localeCompare(right.worldName))
-    .slice(0, MAX_WORLD_SUGGESTIONS)
-    .map((suggestion) => suggestion.worldName);
-}
-
 function buildContractSuggestions(manifest: ManifestLike, manifestTag: string): string[] {
   const normalizedManifestTag = normalizeLookupValue(manifestTag);
   const bareContractName = normalizedManifestTag.includes("-")
@@ -153,18 +108,6 @@ function buildContractSuggestions(manifest: ManifestLike, manifestTag: string): 
     .sort((left, right) => right.score - left.score || left.tag.localeCompare(right.tag))
     .slice(0, MAX_CONTRACT_SUGGESTIONS)
     .map((suggestion) => suggestion.tag);
-}
-
-function buildWorldNotFoundFailure(
-  worldName: string,
-  worldSuggestions: string[],
-): FactoryManifestContractLookupFailure {
-  return {
-    kind: "failure",
-    code: "world_not_found",
-    message: `No Factory world named "${worldName.trim()}" was found on the selected chain.`,
-    worldSuggestions,
-  };
 }
 
 function buildContractNotFoundFailure(
@@ -187,50 +130,8 @@ function buildFactoryUnavailableFailure(message: string): FactoryManifestContrac
   };
 }
 
-function resolveWorldAddress(worldAddress: string | null | undefined): string {
-  const normalizedWorldAddress = worldAddress?.trim();
-  return normalizedWorldAddress && normalizedWorldAddress.length > 0 ? normalizedWorldAddress : "0x0";
-}
-
-function resolveRequestedFactoryWorld(
-  availableWorlds: FactoryIndexedWorld[],
-  requestedWorldName: string,
-): FactoryIndexedWorld | FactoryManifestContractLookupFailure {
-  const requestedWorld = findExactFactoryWorld(availableWorlds, requestedWorldName);
-  if (requestedWorld) {
-    return requestedWorld;
-  }
-
-  return buildWorldNotFoundFailure(
-    requestedWorldName,
-    buildWorldSuggestions(listFactoryWorldNames(availableWorlds), requestedWorldName),
-  );
-}
-
-function isLookupFailure(
-  result: FactoryIndexedWorld | FactoryManifestContractLookupFailure,
-): result is FactoryManifestContractLookupFailure {
-  return "kind" in result && result.kind === "failure";
-}
-
-function resolveLookupWorldAddress(
-  requestedWorld: FactoryIndexedWorld,
-  deployment: { worldAddress?: string | null } | null | undefined,
-): string {
-  return resolveWorldAddress(deployment?.worldAddress ?? requestedWorld.worldAddress);
-}
-
-function buildPatchedFactoryLookupManifest(
-  chain: FactoryManifestContractLookupRequest["chain"],
-  worldAddress: string,
-  contractsBySelector: Record<string, string>,
-): ManifestLike {
-  return patchManifestWithFactory(
-    getFactoryLookupManifest(chain) as ManifestLike,
-    worldAddress,
-    contractsBySelector,
-  ) as ManifestLike;
-}
+const isManifestWorldId = (worldId: string): worldId is "blitz" | "eternum" =>
+  worldId === "blitz" || worldId === "eternum";
 
 export async function resolveFactoryManifestContractAddress(
   request: FactoryManifestContractLookupRequest,
@@ -240,76 +141,32 @@ export async function resolveFactoryManifestContractAddress(
     return buildFactoryUnavailableFailure("Enter both a game name and a contract name.");
   }
 
-  // Appchain worlds are committed manifests in the world directory — no
-  // factory tables exist. Resolve the owning world by game name and read the
-  // contract straight from its manifest.
-  if (request.chain === "appchain") {
-    try {
-      const worldId = await resolveAppchainWorldIdForGame(normalizedRequest.worldName);
-      const world = worldId ? getWorldById(worldId) : null;
-      if (!world) {
-        return buildFactoryUnavailableFailure(
-          `Game "${normalizedRequest.worldName}" was not found in any deployed world's registry.`,
-        );
-      }
-      const manifest = getGameManifest("appchain", world.id as "blitz" | "eternum") as Parameters<
-        typeof findManifestContractEntry
-      >[0];
-      const manifestContract = findManifestContractEntry(manifest, normalizedRequest.manifestTag);
-      if (!manifestContract?.address) {
-        return buildContractNotFoundFailure(
-          normalizedRequest.manifestTag,
-          buildContractSuggestions(manifest, normalizedRequest.manifestTag),
-        );
-      }
-      return {
-        kind: "success",
-        worldName: normalizedRequest.worldName,
-        resolvedTag: normalizedRequest.manifestTag,
-        worldAddress: world.worldAddress,
-        contractAddress: manifestContract.address,
-      };
-    } catch (error) {
-      return buildFactoryUnavailableFailure(error instanceof Error ? error.message : "World lookup failed.");
-    }
-  }
-
-  const factorySqlBaseUrl = getFactorySqlBaseUrl(request.chain);
-  if (!factorySqlBaseUrl) {
-    return buildFactoryUnavailableFailure(`Factory indexer is not configured for chain "${request.chain}".`);
-  }
-
   try {
-    const availableWorlds = await listFactoryWorlds(request.chain);
-    const requestedWorld = resolveRequestedFactoryWorld(availableWorlds, normalizedRequest.worldName);
-    if (isLookupFailure(requestedWorld)) {
-      return requestedWorld;
+    const worldId = await resolveWorldIdForGame(normalizedRequest.worldName);
+    const world = getWorldById(worldId);
+    if (!world || !isManifestWorldId(world.id)) {
+      return buildFactoryUnavailableFailure(
+        `Game "${normalizedRequest.worldName}" was not found in any deployed world's registry.`,
+      );
     }
 
-    const [contractsBySelector, deployment] = await Promise.all([
-      resolveWorldContracts(factorySqlBaseUrl, requestedWorld.name),
-      resolveWorldDeploymentFromFactory(factorySqlBaseUrl, request.chain, requestedWorld.name),
-    ]);
-
-    const worldAddress = resolveLookupWorldAddress(requestedWorld, deployment);
-    const patchedManifest = buildPatchedFactoryLookupManifest(request.chain, worldAddress, contractsBySelector);
-    const manifestContract = findManifestContractEntry(patchedManifest, normalizedRequest.manifestTag);
-
+    const manifest = getGameManifest(request.chain, world.id) as ManifestLike;
+    const manifestContract = findManifestContractEntry(manifest, normalizedRequest.manifestTag);
     if (!manifestContract?.address) {
       return buildContractNotFoundFailure(
         normalizedRequest.manifestTag,
-        buildContractSuggestions(patchedManifest, normalizedRequest.manifestTag),
+        buildContractSuggestions(manifest, normalizedRequest.manifestTag),
       );
     }
 
     return {
       kind: "success",
-      worldName: requestedWorld.name,
+      worldName: normalizedRequest.worldName,
       resolvedTag: normalizedRequest.manifestTag,
-      worldAddress,
+      worldAddress: world.worldAddress,
       contractAddress: manifestContract.address,
     };
   } catch (error) {
-    return buildFactoryUnavailableFailure(error instanceof Error ? error.message : "Factory lookup failed.");
+    return buildFactoryUnavailableFailure(error instanceof Error ? error.message : "World lookup failed.");
   }
 }

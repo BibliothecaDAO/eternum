@@ -11,7 +11,7 @@ describe("resolveGameEntryTarget", () => {
   it("routes player entry through the bootstrapped world-map target when one is available", () => {
     expect(
       resolveGameEntryTarget({
-        chain: "mainnet",
+        chain: "madara",
         worldName: "kingdom-1",
         structureEntityId: 77,
         worldMapReturnPosition: { col: 12, row: 34 },
@@ -20,7 +20,7 @@ describe("resolveGameEntryTarget", () => {
     ).toEqual({
       spectator: false,
       structureEntityId: 77,
-      url: "/play/mainnet/kingdom-1/map?col=12&row=34",
+      url: "/play/madara/kingdom-1/map?col=12&row=34",
       worldMapPosition: { col: 12, row: 34 },
     });
   });
@@ -83,7 +83,7 @@ describe("resolveGameEntryTarget", () => {
   it("falls back to a canonical spectator map route when no structure target is available", () => {
     expect(
       resolveGameEntryTarget({
-        chain: "mainnet",
+        chain: "madara",
         worldName: "etrn-dawn",
         structureEntityId: 0,
         worldMapReturnPosition: null,
@@ -92,7 +92,7 @@ describe("resolveGameEntryTarget", () => {
     ).toEqual({
       spectator: true,
       structureEntityId: 0,
-      url: "/play/mainnet/etrn-dawn/map?spectate=true",
+      url: "/play/madara/etrn-dawn/map?spectate=true",
       worldMapPosition: null,
     });
   });

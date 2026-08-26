@@ -40,7 +40,7 @@ describe("fetchJackpotBalance", () => {
     starknetMocks.callContract.mockResolvedValueOnce(["0x10", "0x0"]);
 
     const balance = await fetchJackpotBalance({
-      chain: "mainnet",
+      chain: "madara",
       feeTokenAddress: "0xfee",
       prizeDistributionAddress: "0xprize",
     });
@@ -57,7 +57,7 @@ describe("fetchJackpotBalance", () => {
     starknetMocks.callContract.mockResolvedValueOnce(["0x10"]);
 
     const balance = await fetchJackpotBalance({
-      chain: "mainnet",
+      chain: "madara",
       feeTokenAddress: "0xfee",
       prizeDistributionAddress: "0xprize",
     });
@@ -69,7 +69,7 @@ describe("fetchJackpotBalance", () => {
     starknetMocks.callContract.mockRejectedValueOnce(new Error("down"));
 
     const balance = await fetchJackpotBalance({
-      chain: "mainnet",
+      chain: "madara",
       feeTokenAddress: "0xfee",
       prizeDistributionAddress: "0xprize",
     });
@@ -82,7 +82,7 @@ describe("useWorldJackpot", () => {
   it("registers the query with enabled=false when address/token are missing", () => {
     reactQueryMocks.useQuery.mockReturnValue({ data: 0n, isPending: false });
 
-    useWorldJackpot({ chain: "mainnet", feeTokenAddress: null, prizeDistributionAddress: null });
+    useWorldJackpot({ chain: "madara", feeTokenAddress: null, prizeDistributionAddress: null });
 
     const [opts] = reactQueryMocks.useQuery.mock.calls[0] as [Record<string, unknown>];
     expect(opts.enabled).toBe(false);
@@ -92,7 +92,7 @@ describe("useWorldJackpot", () => {
     reactQueryMocks.useQuery.mockReturnValue({ data: 0n, isPending: false });
 
     useWorldJackpot({
-      chain: "mainnet",
+      chain: "madara",
       feeTokenAddress: "0xfee",
       prizeDistributionAddress: "0xprize",
       enabled: true,
@@ -107,7 +107,7 @@ describe("useWorldJackpot", () => {
     reactQueryMocks.useQuery.mockReturnValue({ data: 0n, isPending: false });
 
     useWorldJackpot({
-      chain: "mainnet",
+      chain: "madara",
       feeTokenAddress: "0xfee",
       prizeDistributionAddress: "0xprize",
       enabled: false,

@@ -1,8 +1,8 @@
-import type { Chain } from "@contracts";
+import type { GameChain } from "@realms-world/chain";
 import type { FactoryBiomeClimateOverrides } from "@bibliothecadao/types";
 
 export type FactoryGameMode = "eternum" | "blitz";
-export type FactoryLaunchChain = Extract<Chain, "mainnet" | "appchain">;
+export type FactoryLaunchChain = GameChain;
 export type FactoryLaunchTargetKind = "game" | "series" | "rotation";
 export type FactoryRunKind = "game" | "series" | "rotation";
 export type FactoryRunStepId =
@@ -10,39 +10,14 @@ export type FactoryRunStepId =
   | "create-series"
   | "create-world"
   | "create-worlds"
-  | "wait-factory-index"
   | "wait-for-factory-index"
-  | "wait-for-factory-indexes"
-  | "apply-config"
-  | "configure-world"
-  | "configure-worlds"
-  | "grant-lootchest-role"
-  | "grant-lootchest-roles"
-  | "grant-village-pass"
-  | "grant-village-pass-role"
-  | "grant-village-pass-roles"
-  | "create-banks"
-  | "create-indexer"
-  | "create-indexers"
-  | "wait-indexer"
-  | "sync-paymaster"
-  | "publish-ready-state";
+  | "wait-for-factory-indexes";
 export type FactoryRecoveryStepId =
   | "create-series"
   | "create-world"
   | "create-worlds"
   | "wait-for-factory-index"
-  | "wait-for-factory-indexes"
-  | "configure-world"
-  | "configure-worlds"
-  | "grant-lootchest-role"
-  | "grant-lootchest-roles"
-  | "grant-village-pass-role"
-  | "grant-village-pass-roles"
-  | "create-banks"
-  | "create-indexer"
-  | "create-indexers"
-  | "sync-paymaster";
+  | "wait-for-factory-indexes";
 
 export type FactoryRunStatus = "running" | "attention" | "waiting" | "complete";
 
@@ -58,11 +33,6 @@ export type FactoryWatcherKind =
   | "continue"
   | "retry"
   | "refresh"
-  | "refresh_live_indexers"
-  | "create_indexers"
-  | "update_indexer_tier"
-  | "reindex"
-  | "delete_indexers"
   | "delete_run"
   | "nudge"
   | "cancel_auto_retry"
@@ -186,10 +156,8 @@ export interface FactorySeriesChildRun {
   latestEvent: string;
   currentStepId: FactoryRunStepId | null;
   steps: FactorySeriesChildStep[];
-  configReady?: boolean;
+  launchReady?: boolean;
   worldAddress?: string;
-  indexerCreated?: boolean;
-  indexerTier?: string;
   prizeFunding?: FactoryPrizeFundingState;
 }
 
@@ -230,7 +198,7 @@ export interface FactoryRun {
   summary: string;
   updatedAt: string;
   worldAddress?: string;
-  /** Registrar-assigned game id inside the persistent appchain world. */
+  /** Registrar-assigned game id inside the persistent world. */
   gameId?: number;
   recovery?: FactoryRunRecovery;
   autoRetry?: FactoryAutoRetryState;

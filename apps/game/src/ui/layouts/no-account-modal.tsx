@@ -1,4 +1,3 @@
-import { ReactComponent as CartridgeSmall } from "@/assets/icons/cartridge-small.svg";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import Button from "@/ui/design-system/atoms/button";
 import { DialogShell } from "@/ui/design-system/molecules/dialog-shell";
@@ -17,8 +16,7 @@ export const NoAccountModal = () => {
     <DialogShell title="Account Required" size="md" onClose={() => toggleModal(null)}>
       <div className="prose prose-pink max-w-none">
         <p className="text-center mb-8">
-          You need to have a Cartridge Controller account to play this game. Please login or create an account to
-          continue.
+          Sign in from the landing page so your gameplay account can be prepared before entering the game.
         </p>
         <div className="flex justify-center">
           <Button
@@ -26,8 +24,7 @@ export const NoAccountModal = () => {
             className="!bg-[#FCB843] !text-black border-none hover:!bg-[#FCB843]/80"
             variant="default"
           >
-            <CartridgeSmall className="w-5 md:w-6 mr-1 md:mr-2 fill-black" />
-            Log In with Cartridge
+            Return to login
           </Button>
         </div>
       </div>

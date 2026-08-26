@@ -1,24 +1,21 @@
-import type { Chain } from "@contracts";
+import type { GameChain as Chain } from "@realms-world/chain";
 import { findGameSyncModel, getGameSyncModelsForChannel } from "@bibliothecadao/eternum/game-sync";
 
 /**
- * Active game scope for the s2 single-world arm.
+ * Active game scope for the phase-one s2 worlds.
  *
- * On the appchain, the persistent `s2` worlds host every game/season and each
+ * The persistent `s2` worlds host every game/season and each
  * per-game model leads with `game_id` as key[0]. Every Torii clause the client
  * builds (streams, snapshots, targeted queries) must carry that prefix or it
  * reads other games' state — the ghost-settlement / wrong-clock class of bug.
- * Single-world chains keep one world per game (`s1_eternum`, gameId 0) and build the
- * exact same clauses they always have.
- *
  * Set once during bootstrap, before any subscription or query is created.
  */
 
-export type GameNamespace = "s1_eternum" | "s2";
+export type GameNamespace = "s2";
 
-export const namespaceForChain = (chain: Chain): GameNamespace => (chain === "appchain" ? "s2" : "s1_eternum");
+export const namespaceForChain = (_chain: Chain): GameNamespace => "s2";
 
-let activeNamespace: GameNamespace = "s1_eternum";
+let activeNamespace: GameNamespace = "s2";
 let activeGameId = 0;
 
 export const setGameScope = (namespace: GameNamespace, gameId: number) => {

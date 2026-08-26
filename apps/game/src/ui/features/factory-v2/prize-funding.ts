@@ -4,7 +4,7 @@ export type FactoryPrizeFundingEligibleRun = FactoryRun & {
   kind: "game" | "series" | "rotation";
 };
 
-const GAME_PRIZE_FUNDING_STEP_ID: FactoryRunStepId = "configure-world";
+const GAME_PRIZE_FUNDING_STEP_ID: FactoryRunStepId = "wait-for-factory-index";
 
 export function canFundFactoryRunPrize(run: FactoryRun): run is FactoryPrizeFundingEligibleRun {
   if (run.kind === "game") {
@@ -19,7 +19,7 @@ export function canFundFactoryRunPrize(run: FactoryRun): run is FactoryPrizeFund
 }
 
 export function isFactoryPrizeFundingChildReady(child: FactorySeriesChildRun) {
-  return Boolean(child.worldAddress) && Boolean(child.configReady);
+  return Boolean(child.worldAddress) && Boolean(child.launchReady);
 }
 
 export function resolveDefaultFactoryPrizeFundingGameNames(run: FactoryPrizeFundingEligibleRun): string[] {

@@ -1,7 +1,6 @@
-import type { Chain } from "@contracts";
+import type { GameChain as Chain } from "@realms-world/chain";
 
-type LandingPrimaryChain = "mainnet" | "appchain";
-export type LandingNetworkChain = LandingPrimaryChain;
+export type LandingNetworkChain = Chain;
 export type LandingNetworkStatus = "disconnected" | "detecting" | "matched" | "mismatched" | "unsupported";
 
 interface LandingNetworkState {
@@ -13,13 +12,11 @@ interface LandingNetworkState {
 }
 
 export const resolvePreferredLandingChain = (chain: Chain | null | undefined): LandingNetworkChain => {
-  return chain === "appchain" ? "appchain" : "mainnet";
+  return chain ?? "madara";
 };
 
 const resolveConnectedLandingChain = (chain: Chain | null | undefined): LandingNetworkChain | null => {
-  if (chain === "mainnet") return "mainnet";
-  if (chain === "appchain") return "appchain";
-  return null;
+  return chain ?? null;
 };
 
 export const resolveLandingNetworkState = ({

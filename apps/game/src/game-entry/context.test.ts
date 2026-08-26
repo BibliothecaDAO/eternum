@@ -16,12 +16,12 @@ describe("game-entry context", () => {
   it("resolves a canonical landing entry context from a landing world selection", () => {
     expect(
       resolveEntryContextFromLandingSelection({
-        selection: { name: "iron-age", chain: "mainnet", worldAddress: "0x1" },
+        selection: { name: "iron-age", chain: "madara", worldAddress: "0x1" },
         intent: "settle",
         autoSettle: true,
       }),
     ).toEqual({
-      chain: "mainnet",
+      chain: "madara",
       worldName: "iron-age",
       worldAddress: "0x1",
       intent: "settle",
@@ -30,16 +30,21 @@ describe("game-entry context", () => {
     });
   });
 
-  it("rejects non-primary landing chains while still accepting direct play routes", () => {
+  it("accepts both phase-one game chains", () => {
     expect(
       resolveEntryContextFromLandingSelection({
-        selection: { name: "local-dev", chain: "local" },
+        selection: { name: "appchain-dev", chain: "appchain" },
         intent: "play",
       }),
-    ).toBeNull();
-    expect(isLandingPrimaryChain("mainnet")).toBe(true);
+    ).toEqual({
+      chain: "appchain",
+      worldName: "appchain-dev",
+      intent: "play",
+      autoSettle: false,
+      source: "landing",
+    });
+    expect(isLandingPrimaryChain("madara")).toBe(true);
     expect(isLandingPrimaryChain("appchain")).toBe(true);
-    expect(isLandingPrimaryChain("local")).toBe(false);
   });
 
   it("parses canonical entry routes into landing entry context", () => {
@@ -57,35 +62,35 @@ describe("game-entry context", () => {
   });
 
   it("parses canonical play routes into direct play context", () => {
-    expect(
-      resolveEntryContextFromPlayRoute(createLocation("/play/sepolia/aurora-blitz/map", "?spectate=true")),
-    ).toEqual({
-      chain: "sepolia",
-      worldName: "aurora-blitz",
-      intent: "spectate",
-      autoSettle: false,
-      source: "play-route",
-    });
+    expect(resolveEntryContextFromPlayRoute(createLocation("/play/madara/aurora-blitz/map", "?spectate=true"))).toEqual(
+      {
+        chain: "madara",
+        worldName: "aurora-blitz",
+        intent: "spectate",
+        autoSettle: false,
+        source: "play-route",
+      },
+    );
   });
 
   it("builds entry and play hrefs from the shared entry context", () => {
     const context = {
-      chain: "mainnet" as const,
+      chain: "madara" as const,
       worldName: "iron-age",
       intent: "play" as const,
       autoSettle: false,
       source: "landing" as const,
     };
 
-    expect(buildEntryHrefFromEntryContext(context)).toBe("/enter/mainnet/iron-age");
-    expect(buildPlayRouteFromEntryContext({ context })).toBe("/play/mainnet/iron-age/hex");
+    expect(buildEntryHrefFromEntryContext(context)).toBe("/enter/madara/iron-age");
+    expect(buildPlayRouteFromEntryContext({ context })).toBe("/play/madara/iron-age/hex");
     expect(
       buildPlayRouteFromEntryContext({
         context: { ...context, intent: "spectate" },
         col: 4,
         row: 9,
       }),
-    ).toBe("/play/mainnet/iron-age/map?col=4&row=9&spectate=true");
-    expect(resolveEntryContextCacheKey(context)).toBe("mainnet:iron-age");
+    ).toBe("/play/madara/iron-age/map?col=4&row=9&spectate=true");
+    expect(resolveEntryContextCacheKey(context)).toBe("madara:iron-age");
   });
 });

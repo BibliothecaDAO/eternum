@@ -1,4 +1,4 @@
-import type { Chain } from "@contracts";
+import type { GameChain as Chain } from "@realms-world/chain";
 
 const REVIEW_DISMISSED_STORAGE_KEY = "eternum:review:dismissed";
 const sessionDismissedReviews = new Set<string>();

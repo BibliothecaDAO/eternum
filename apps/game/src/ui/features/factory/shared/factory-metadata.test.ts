@@ -10,7 +10,7 @@ describe("factory metadata", () => {
   });
 
   it("resolves the factory address by chain", () => {
-    expect(resolveFactoryAddress("sepolia")).toBe(FACTORY_ADDRESSES.sepolia);
-    expect(resolveFactoryAddress("mainnet")).toBe(FACTORY_ADDRESSES.mainnet);
+    expect(resolveFactoryAddress("appchain")).toBe(FACTORY_ADDRESSES.appchain);
+    expect(resolveFactoryAddress("madara")).toBe("");
   });
 });

@@ -39,8 +39,8 @@ export const PlayRouteReconnectScreen = ({
     <BootLoaderShell
       mode="indeterminate"
       title="Reconnect to Continue"
-      subtitle="This world route is still valid. Reconnect your Cartridge Controller session and continue from here."
-      caption="Session Recovery"
+      subtitle="This world route is still valid. Return to the dashboard to restore your Realms identity and gameplay account."
+      caption="Account Recovery"
       detail={
         <div className="flex flex-col items-center gap-3">
           {reconnectError ? (

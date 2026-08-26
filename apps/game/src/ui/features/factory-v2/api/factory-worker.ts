@@ -1,31 +1,15 @@
 import { env } from "../../../../../env";
+import type { GameChain } from "@realms-world/chain";
 import type {
   FactoryBiomeClimateOverrides,
   FactoryBlitzRegistrationOverrides,
   FactoryMapConfigOverrides,
 } from "@bibliothecadao/types";
 
-export type FactoryWorkerEnvironmentId = "mainnet.eternum" | "mainnet.blitz" | "appchain.eternum" | "appchain.blitz";
+export type FactoryWorkerEnvironmentId = "madara.blitz" | "appchain.eternum" | "appchain.blitz";
 type FactoryWorkerRunKind = "game" | "series" | "rotation";
-export type FactoryWorkerGameLaunchStepId =
-  | "create-world"
-  | "wait-for-factory-index"
-  | "configure-world"
-  | "grant-lootchest-role"
-  | "grant-village-pass-role"
-  | "create-banks"
-  | "create-indexer"
-  | "sync-paymaster";
-export type FactoryWorkerSeriesLaunchStepId =
-  | "create-series"
-  | "create-worlds"
-  | "wait-for-factory-indexes"
-  | "configure-worlds"
-  | "grant-lootchest-roles"
-  | "grant-village-pass-roles"
-  | "create-banks"
-  | "create-indexers"
-  | "sync-paymaster";
+export type FactoryWorkerGameLaunchStepId = "create-world" | "wait-for-factory-index";
+export type FactoryWorkerSeriesLaunchStepId = "create-series" | "create-worlds" | "wait-for-factory-indexes";
 export type FactoryWorkerRotationLaunchStepId = FactoryWorkerSeriesLaunchStepId;
 export type FactoryWorkerLaunchStepId = FactoryWorkerGameLaunchStepId | FactoryWorkerSeriesLaunchStepId;
 export type FactoryWorkerGameLaunchScope = "full" | FactoryWorkerGameLaunchStepId;
@@ -34,28 +18,7 @@ export type FactoryWorkerRotationLaunchScope = "full" | FactoryWorkerRotationLau
 type FactoryWorkerRunStatus = "running" | "attention" | "complete";
 export type FactoryWorkerRunStepStatus = "pending" | "running" | "succeeded" | "failed";
 export type FactoryWorkerRunRecoveryState = "active" | "transitioning" | "stalled" | "failed" | "complete";
-export type FactoryWorkerIndexerTier = "basic" | "pro" | "legendary" | "epic";
 const FACTORY_WORKER_ADMIN_SECRET_HEADER = "x-factory-admin-secret";
-
-export interface FactoryWorkerLiveIndexerEntry {
-  gameName: string;
-  updatedAt: string;
-  liveState: {
-    state: "existing" | "missing" | "indeterminate";
-    stateSource: "describe" | "describe-not-found" | "list" | "describe-and-list-failed";
-    currentTier?: FactoryWorkerIndexerTier;
-    url?: string;
-    version?: string;
-    branch?: string;
-    describeError?: string;
-    describedAt?: string;
-  };
-}
-
-interface FactoryWorkerLiveIndexerResponse {
-  updatedAt: string | null;
-  entries: FactoryWorkerLiveIndexerEntry[];
-}
 
 export interface FactoryWorkerPrizeFundingTransfer {
   id: string;
@@ -91,16 +54,9 @@ interface FactoryWorkerGameArtifacts {
   summaryPath?: string;
   durationSeconds?: number;
   worldAddress?: string;
-  /** Registrar-assigned game id inside the persistent appchain world. */
+  /** Registrar-assigned game id inside the persistent world. */
   gameId?: number;
   createGameTxHash?: string;
-  configureTxHash?: string;
-  lootChestRoleTxHash?: string;
-  villagePassRoleTxHash?: string;
-  createBanksTxHash?: string;
-  paymasterSynced?: boolean;
-  indexerCreated?: boolean;
-  indexerTier?: FactoryWorkerIndexerTier;
   prizeFunding?: FactoryWorkerPrizeFundingState;
 }
 
@@ -114,7 +70,7 @@ interface FactoryWorkerRotationEvaluation {
 interface FactoryWorkerBaseRunRecord {
   version: 1;
   environment: FactoryWorkerEnvironmentId;
-  chain: "mainnet" | "appchain";
+  chain: GameChain;
   gameType: "eternum" | "blitz";
   status: FactoryWorkerRunStatus;
   executionMode: "fast_trial" | "guided_recovery";
@@ -181,8 +137,6 @@ export interface FactoryWorkerSeriesGameRecord {
   }>;
   artifacts: {
     worldAddress?: string;
-    indexerCreated?: boolean;
-    indexerTier?: FactoryWorkerIndexerTier;
     prizeFunding?: FactoryWorkerPrizeFundingState;
   };
 }
@@ -214,7 +168,7 @@ export interface FactoryWorkerSeriesRunRecord extends FactoryWorkerBaseRunRecord
   }>;
   summary: {
     environment: FactoryWorkerEnvironmentId;
-    chain: "mainnet" | "appchain";
+    chain: GameChain;
     gameType: "eternum" | "blitz";
     seriesName: string;
     rpcUrl: string;
@@ -264,7 +218,7 @@ export interface FactoryWorkerRotationRunRecord extends FactoryWorkerBaseRunReco
   }>;
   summary: {
     environment: FactoryWorkerEnvironmentId;
-    chain: "mainnet" | "appchain";
+    chain: GameChain;
     gameType: "eternum" | "blitz";
     rotationName: string;
     seriesName: string;
@@ -311,7 +265,7 @@ export interface CreateFactoryRunRequest {
   gameName: string;
   gameStartTime: string;
   workflowRef?: string;
-  /** Registered registrar preset id ("2" Regular Fast, "3" Duel) on the appchain. */
+  /** Registered registrar preset id used by the persistent world. */
   version?: string;
   devModeOn?: boolean;
   twoPlayerMode?: boolean;
@@ -414,39 +368,6 @@ interface DeleteFactoryRotationRunRequest {
   adminSecret: string;
 }
 
-interface UpdateFactoryIndexerTierRequest {
-  environment: FactoryWorkerEnvironmentId;
-  gameName?: string;
-  gameNames?: string[];
-  tier: FactoryWorkerIndexerTier;
-  adminSecret: string;
-}
-
-interface DeleteFactoryIndexersRequest {
-  environment: FactoryWorkerEnvironmentId;
-  runKind?: FactoryWorkerRunKind;
-  runName?: string;
-  gameNames: string[];
-  adminSecret: string;
-}
-
-interface CreateFactoryIndexersRequest {
-  environment: FactoryWorkerEnvironmentId;
-  gameNames: string[];
-  adminSecret: string;
-}
-
-interface ReadFactoryLiveIndexersRequest {
-  adminSecret: string;
-  gameNames?: string[];
-}
-
-interface RefreshFactoryLiveIndexersRequest {
-  environment: FactoryWorkerEnvironmentId;
-  adminSecret: string;
-  gameNames?: string[];
-}
-
 interface FundFactoryGamePrizeRequest {
   environment: FactoryWorkerEnvironmentId;
   gameName: string;
@@ -473,10 +394,6 @@ interface FundFactoryRotationPrizesRequest {
 const FACTORY_WORKER_BASE_URL = env.VITE_PUBLIC_FACTORY_WORKER_URL.replace(/\/$/, "");
 
 const SUPPORTED_FACTORY_WORKER_ENVIRONMENTS = new Set<FactoryWorkerEnvironmentId>([
-  // Mainnet launches went through the hosted realms-game-launch worker; they
-  // are switched off in the appchain deployment. Uncomment to restore.
-  // "mainnet.eternum",
-  // "mainnet.blitz",
   "appchain.eternum",
   "appchain.blitz",
 ]);
@@ -710,53 +627,6 @@ export async function deleteFactoryRotationRun(request: DeleteFactoryRotationRun
     method: "POST",
     headers: { [FACTORY_WORKER_ADMIN_SECRET_HEADER]: adminSecret },
     body: JSON.stringify({}),
-  });
-}
-
-export async function updateFactoryIndexerTier(request: UpdateFactoryIndexerTierRequest): Promise<void> {
-  const { adminSecret, ...body } = request;
-  await fetchFactoryWorkerJson("/api/factory/indexers/tier", {
-    method: "POST",
-    headers: { [FACTORY_WORKER_ADMIN_SECRET_HEADER]: adminSecret },
-    body: JSON.stringify(body),
-  });
-}
-
-export async function createFactoryIndexers(request: CreateFactoryIndexersRequest): Promise<void> {
-  const { adminSecret, ...body } = request;
-  await fetchFactoryWorkerJson("/api/factory/indexers/create", {
-    method: "POST",
-    headers: { [FACTORY_WORKER_ADMIN_SECRET_HEADER]: adminSecret },
-    body: JSON.stringify(body),
-  });
-}
-
-export async function deleteFactoryIndexers(request: DeleteFactoryIndexersRequest): Promise<void> {
-  const { adminSecret, ...body } = request;
-  await fetchFactoryWorkerJson("/api/factory/indexers/delete", {
-    method: "POST",
-    headers: { [FACTORY_WORKER_ADMIN_SECRET_HEADER]: adminSecret },
-    body: JSON.stringify(body),
-  });
-}
-
-export async function readFactoryLiveIndexers(
-  request: ReadFactoryLiveIndexersRequest,
-): Promise<FactoryWorkerLiveIndexerResponse> {
-  const { adminSecret, ...body } = request;
-  return fetchFactoryWorkerJson("/api/factory/indexers/live", {
-    method: "POST",
-    headers: { [FACTORY_WORKER_ADMIN_SECRET_HEADER]: adminSecret },
-    body: JSON.stringify(body),
-  });
-}
-
-export async function refreshFactoryLiveIndexers(request: RefreshFactoryLiveIndexersRequest): Promise<void> {
-  const { adminSecret, ...body } = request;
-  await fetchFactoryWorkerJson("/api/factory/indexers/live/refresh", {
-    method: "POST",
-    headers: { [FACTORY_WORKER_ADMIN_SECRET_HEADER]: adminSecret },
-    body: JSON.stringify(body),
   });
 }
 

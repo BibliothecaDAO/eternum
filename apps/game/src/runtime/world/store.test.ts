@@ -82,8 +82,8 @@ describe("world profile store", () => {
       },
     });
     window.localStorage.setItem(ACTIVE_KEY, "bltz-riff-363");
-    window.localStorage.setItem(CHAIN_KEY, "mainnet");
+    window.localStorage.setItem(CHAIN_KEY, "madara");
 
-    expect(resolveRuntimeChain("mainnet")).toBe("appchain");
+    expect(resolveRuntimeChain("madara")).toBe("appchain");
   });
 });

@@ -98,7 +98,9 @@ export function TransactionNotification() {
       console.error(`Transaction failed: ${consoleReason}`);
 
       if (classified.kind === "session_invalid") {
-        toast("⚠️ Session expired", { description: `${actionLabel}: Session expired — reconnect your controller` });
+        toast("⚠️ Gameplay key expired", {
+          description: `${actionLabel}: Reload to recover your gameplay account`,
+        });
       } else if (classified.kind === "insufficient_funds") {
         const fundsDetail = classified.reason ? ` — ${classified.reason}` : "";
         toast("❌ Insufficient funds", {

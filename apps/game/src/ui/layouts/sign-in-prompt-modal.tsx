@@ -3,7 +3,7 @@ import { useEffect } from "react";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import type { LandingEntryRouteState as SignInRedirectState } from "@/ui/features/landing/lib/landing-entry-state";
-import { Controller } from "@/ui/modules/controller/controller";
+import { IdentityLogin } from "@/ui/modules/identity/identity-login";
 import { DialogShell } from "@/ui/design-system/molecules/dialog-shell";
 import { useLocation, useNavigate } from "react-router-dom";
 
@@ -35,11 +35,11 @@ export const SignInPromptModal = ({ redirectTo, redirectState }: SignInPromptMod
   return (
     <DialogShell title="Sign in required" size="md" onClose={handleClose}>
       <div className="prose prose-pink max-w-none">
-        <p className="text-center mb-4">You need to connect your Cartridge Controller account before entering Blitz.</p>
-        <p className="text-center mb-8 text-sm">Use the button below to sign in, then try again.</p>
+        <p className="text-center mb-4">Sign in with your Starknet identity wallet before entering Blitz.</p>
+        <p className="text-center mb-8 text-sm">Your gameplay account will be prepared automatically after login.</p>
         <div className="flex flex-col items-center gap-4">
           <div className="w-full max-w-xs">
-            <Controller className="w-full justify-center" />
+            <IdentityLogin className="w-full items-center" />
           </div>
           <button
             type="button"

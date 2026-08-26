@@ -13,7 +13,6 @@ import type { WorldChatMessage } from "../../model/types";
 import { computeDateSeparators, computeGroupFlags } from "../../model/message-grouping";
 import { MessageComposer } from "../shared/message-composer";
 import { UserAvatar } from "../shared/user-avatar";
-import { normalizeAvatarUsername, useAvatarProfilesByUsernames } from "@/hooks/use-player-avatar";
 
 interface WorldChatPanelProps {
   zoneId?: string;
@@ -117,22 +116,6 @@ export function WorldChatPanel({ zoneId, zoneLabel, className }: WorldChatPanelP
   const { sendMessage, loadHistory, markAsRead, setActive } = useWorldChatControls(resolvedZoneId);
   const messages = zone?.messages ?? [];
   const presence = useRealtimePresence();
-  const senderIds = useMemo(
-    () => messages.map((message) => message.sender.displayName ?? message.sender.playerId),
-    [messages],
-  );
-  const { data: avatarProfiles } = useAvatarProfilesByUsernames(senderIds);
-  const avatarMap = useMemo(() => {
-    const map = new Map<string, string>();
-    (avatarProfiles ?? []).forEach((profile) => {
-      const normalized = normalizeAvatarUsername(profile.cartridgeUsername ?? undefined);
-      if (!normalized) return;
-      if (profile.avatarUrl) {
-        map.set(normalized, profile.avatarUrl);
-      }
-    });
-    return map;
-  }, [avatarProfiles]);
   const scrollContainerRef = useRef<HTMLDivElement | null>(null);
   const topSentinelRef = useRef<HTMLDivElement | null>(null);
   const isLoadingRef = useRef(false);
@@ -296,8 +279,6 @@ export function WorldChatPanel({ zoneId, zoneLabel, className }: WorldChatPanelP
                 {messages.map((message, index) => {
                   const senderName = formatSenderName(message);
                   const messageParts = processMessage(message.content);
-                  const normalized = normalizeAvatarUsername(message.sender.displayName ?? message.sender.playerId);
-                  const avatarUrl = message.sender.avatarUrl ?? (normalized ? avatarMap.get(normalized) : undefined);
                   const showHeader = groupFlags[index];
                   return (
                     <Fragment key={message.id}>
@@ -311,7 +292,13 @@ export function WorldChatPanel({ zoneId, zoneLabel, className }: WorldChatPanelP
                       <li className="text-[13px] leading-tight text-white/90">
                         {showHeader ? (
                           <div className="flex items-start gap-2">
-                            <UserAvatar name={senderName} avatarUrl={avatarUrl} size="sm" className="mt-0.5 shrink-0" />
+                            <UserAvatar
+                              name={senderName}
+                              address={message.sender.playerId}
+                              avatarUrl={message.sender.avatarUrl}
+                              size="sm"
+                              className="mt-0.5 shrink-0"
+                            />
                             <div>
                               <span className="text-white/20">[{formatWorldMessageTime(message)}]</span>{" "}
                               <span

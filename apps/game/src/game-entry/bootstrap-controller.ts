@@ -1,7 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
-import { refreshSessionPolicies } from "@/hooks/context/session-policy-refresh";
-import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useConnectionStore } from "@/hooks/store/use-connection-store";
 import { useSyncStore } from "@/hooks/store/use-sync-store";
 import { SupersededGameSyncStartError } from "@bibliothecadao/eternum/game-sync";
@@ -13,7 +11,7 @@ import {
   type SetupResult,
 } from "@/init/bootstrap";
 import { addNetworkBreadcrumb } from "@/observability/network-health-reporting";
-import { markGameEntryMilestone, recordGameEntryDuration } from "@/ui/layouts/game-entry-timeline";
+import { markGameEntryMilestone } from "@/ui/layouts/game-entry-timeline";
 import { toast } from "sonner";
 
 import { resolveEntryContextCacheKey, type ResolvedEntryContext } from "./context";
@@ -215,28 +213,6 @@ export const useGameEntryBootstrapController = ({
     markGameEntryMilestone("entry-ready");
   }, []);
 
-  const refreshSessionPoliciesAfterEntryReady = useCallback((runId: number) => {
-    const connector = useAccountStore.getState().connector;
-    if (!connector) {
-      markGameEntryMilestone("session-policies-refresh-skipped");
-      return;
-    }
-
-    const refreshStartedAt = performance.now();
-    markGameEntryMilestone("session-policies-refresh-started");
-
-    void refreshSessionPolicies(connector)
-      .catch((refreshError: unknown) => {
-        console.warn("[bootstrap] Session policy refresh failed after entry ready", refreshError);
-      })
-      .finally(() => {
-        recordGameEntryDuration("session-policies-refresh", performance.now() - refreshStartedAt);
-        if (activeRunIdRef.current === runId) {
-          markGameEntryMilestone("session-policies-refresh-completed");
-        }
-      });
-  }, []);
-
   const refreshReadyState = useCallback((nextContext: ResolvedEntryContext | null) => {
     const nextState = resolveInitialState(nextContext);
     setSession(nextState.session);
@@ -303,7 +279,6 @@ export const useGameEntryBootstrapController = ({
               description: "Reconnected after a prolonged outage.",
             });
           }
-          refreshSessionPoliciesAfterEntryReady(runId);
         })
         .catch((incomingError: unknown) => {
           if (activeRunIdRef.current !== runId) {
@@ -331,7 +306,7 @@ export const useGameEntryBootstrapController = ({
           }
         });
     },
-    [completeBootstrapRun, context, refreshReadyState, refreshSessionPoliciesAfterEntryReady, setTaskStatus],
+    [completeBootstrapRun, context, refreshReadyState, setTaskStatus],
   );
 
   const start = useCallback(() => {

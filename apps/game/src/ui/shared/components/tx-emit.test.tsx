@@ -116,7 +116,7 @@ describe("TransactionNotification", () => {
     expect(playMock).not.toHaveBeenCalled();
   });
 
-  it("tells the player to reconnect on session-invalid controller errors", async () => {
+  it("tells the player how to recover an expired gameplay key", async () => {
     await act(async () => {
       root.render(<TransactionNotification />);
     });
@@ -131,13 +131,13 @@ describe("TransactionNotification", () => {
       });
     });
 
-    expect(toastMock).toHaveBeenCalledWith("⚠️ Session expired", {
-      description: expect.stringContaining("reconnect your controller"),
+    expect(toastMock).toHaveBeenCalledWith("⚠️ Gameplay key expired", {
+      description: expect.stringContaining("Reload to recover your gameplay account"),
     });
     expect(playMock).toHaveBeenCalledWith("ui.tx_fail");
   });
 
-  it("says so on insufficient-funds controller errors", async () => {
+  it("says so on insufficient-funds account errors", async () => {
     await act(async () => {
       root.render(<TransactionNotification />);
     });

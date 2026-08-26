@@ -149,35 +149,20 @@ describe("initialSync global streams", () => {
     expect(harness.client.onEntityUpdated).toHaveBeenCalledTimes(1);
     expect(harness.client.onEntityUpdated).toHaveBeenCalledWith(
       expect.objectContaining({
-        models: expect.arrayContaining([
-          "s1_eternum-AddressName",
-          "s1_eternum-Guild",
-          "s1_eternum-TileOpt",
-          "s1_eternum-Structure",
-          "s1_eternum-Resource",
-        ]),
+        models: expect.arrayContaining(["s2-AddressName", "s2-Guild", "s2-TileOpt", "s2-Structure", "s2-Resource"]),
       }),
       expect.any(Function),
     );
     expect(harness.client.onEventMessageUpdated).toHaveBeenCalledTimes(1);
     expect(harness.client.onEventMessageUpdated).toHaveBeenCalledWith(
       expect.objectContaining({
-        models: expect.arrayContaining([
-          "s1_eternum-OpenRelicChestEvent",
-          "s1_eternum-ExplorerRewardEvent",
-          "s1_eternum-BattleEvent",
-        ]),
+        models: expect.arrayContaining(["s2-OpenRelicChestEvent", "s2-ExplorerRewardEvent", "s2-BattleEvent"]),
       }),
       expect.any(Function),
     );
     expect(harness.client.getEntities).toHaveBeenCalledWith(
       expect.objectContaining({
-        models: expect.arrayContaining([
-          "s1_eternum-Guild",
-          "s1_eternum-TileOpt",
-          "s1_eternum-Structure",
-          "s1_eternum-Resource",
-        ]),
+        models: expect.arrayContaining(["s2-Guild", "s2-TileOpt", "s2-Structure", "s2-Resource"]),
         pagination: expect.objectContaining({ limit: 500 }),
       }),
     );

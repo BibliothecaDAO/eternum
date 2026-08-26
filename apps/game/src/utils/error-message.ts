@@ -14,10 +14,9 @@ export {
 /**
  * The game's resource assert reverts with "Insufficient Balance: {RESOURCE}
  * (id: N, balance: N) < N" (contracts models/resource). The trailing colon
- * distinguishes it from Cartridge fee-token errors (controller codes
- * 53/54/113), which must never trigger game-state repairs. Lives here — the
- * client's one error-message chokepoint — so every consumer classifies the
- * game's revert the same way.
+ * distinguishes it from account fee-token errors, which must never trigger
+ * game-state repairs. Lives here — the client's one error-message chokepoint
+ * — so every consumer classifies the game's revert the same way.
  */
 export const isInsufficientResourceBalanceRevert = (message: string): boolean =>
   message.toLowerCase().includes("insufficient balance:");

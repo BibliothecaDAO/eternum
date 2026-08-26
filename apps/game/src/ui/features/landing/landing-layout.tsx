@@ -1,7 +1,7 @@
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { useBootDocumentState } from "@/ui/modules/boot-loader";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
-import { Controller } from "@/ui/modules/controller/controller";
+import { IdentityLogin } from "@/ui/modules/identity/identity-login";
 import { BlankOverlayContainer } from "@/ui/shared/containers/blank-overlay-container";
 import { useCallback, useEffect, useState } from "react";
 import { Outlet, useLocation } from "react-router-dom";
@@ -20,7 +20,6 @@ const ROUTE_BACKGROUNDS: Record<string, string> = {
   "/learn": "02",
   "/news": "02",
   "/factory": "02",
-  "/profile": "02",
   "/markets": "02",
   "/amm": "02",
   "/leaderboard": "07",
@@ -91,7 +90,7 @@ const LandingLayoutContent = () => {
         headerControls={
           <>
             <LandingMusicPlayer className="hidden lg:flex" presentation="header" />
-            <Controller />
+            <IdentityLogin />
           </>
         }
         onSettingsClick={handleSettingsClick}

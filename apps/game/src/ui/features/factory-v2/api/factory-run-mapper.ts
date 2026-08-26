@@ -186,10 +186,8 @@ function mapFactorySeriesChildRun(game: FactoryWorkerSeriesGameRecord): FactoryS
     latestEvent: game.latestEvent,
     currentStepId: mapFactoryStepId(game.currentStepId),
     steps: (game.steps || []).map(mapFactorySeriesChildStep),
-    configReady: hasSucceededFactorySeriesChildStep(game, "configure-worlds"),
+    launchReady: hasSucceededFactorySeriesChildStep(game, "wait-for-factory-indexes"),
     worldAddress: game.artifacts.worldAddress,
-    indexerCreated: game.artifacts.indexerCreated,
-    indexerTier: game.artifacts.indexerTier,
     prizeFunding: mapFactoryPrizeFunding(game.artifacts.prizeFunding),
   };
 }
@@ -377,16 +375,6 @@ function mapRecoveryStepId(stepId: FactoryWorkerRunRecovery["continueStepId"]): 
     case "create-worlds":
     case "wait-for-factory-index":
     case "wait-for-factory-indexes":
-    case "configure-world":
-    case "configure-worlds":
-    case "grant-lootchest-role":
-    case "grant-lootchest-roles":
-    case "grant-village-pass-role":
-    case "grant-village-pass-roles":
-    case "create-banks":
-    case "create-indexer":
-    case "create-indexers":
-    case "sync-paymaster":
       return stepId;
     default:
       return null;
@@ -398,23 +386,8 @@ function mapFactoryStepId(stepId: string | null | undefined): FactoryRunStepId |
     case "create-series":
     case "create-world":
     case "create-worlds":
-    case "wait-factory-index":
     case "wait-for-factory-index":
     case "wait-for-factory-indexes":
-    case "apply-config":
-    case "configure-world":
-    case "configure-worlds":
-    case "grant-lootchest-role":
-    case "grant-lootchest-roles":
-    case "grant-village-pass":
-    case "grant-village-pass-role":
-    case "grant-village-pass-roles":
-    case "create-banks":
-    case "create-indexer":
-    case "create-indexers":
-    case "wait-indexer":
-    case "sync-paymaster":
-    case "publish-ready-state":
       return stepId;
     default:
       return null;

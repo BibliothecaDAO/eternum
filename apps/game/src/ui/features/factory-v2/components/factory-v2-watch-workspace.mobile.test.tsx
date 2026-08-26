@@ -70,7 +70,7 @@ const buildRunBase = (): FactoryRun => ({
   kind: "game",
   mode: "blitz" as const,
   name: "bltz-sprint-01",
-  environment: "mainnet.blitz",
+  environment: "appchain.blitz",
   owner: "0x1",
   presetId: "preset-1",
   status: "running" as const,
@@ -87,22 +87,13 @@ const buildRunBase = (): FactoryRun => ({
       latestEvent: "done",
     },
     {
-      id: "configure-world" as const,
+      id: "wait-for-factory-index" as const,
       title: "Configure world",
       summary: "Configure world",
-      workflowName: "configure-world",
+      workflowName: "wait-for-factory-index",
       status: "running" as const,
       verification: "running",
       latestEvent: "running",
-    },
-    {
-      id: "create-indexer" as const,
-      title: "Create indexer",
-      summary: "Create indexer",
-      workflowName: "create-indexer",
-      status: "pending" as const,
-      verification: "pending",
-      latestEvent: "pending",
     },
   ],
 });
@@ -177,17 +168,16 @@ describe("FactoryV2WatchWorkspace mobile layout", () => {
     expect(article?.className).toContain("md:max-w-md");
     expect(searchPanel?.textContent).toContain("Find a run");
     expect(searchPanel?.textContent).toContain("recent runs");
-    expect(container.textContent).toContain("Mainnet deployer wallet mainnet");
-    expect(selectedPanel?.textContent).toContain("Mainnet deployer wallet mainnet");
+    expect(container.textContent).toContain("Appchain deployer wallet appchain");
+    expect(selectedPanel?.textContent).toContain("Appchain deployer wallet appchain");
     expect(selectedPanel?.textContent).toContain("Setup progress");
     expect(selectedPanel?.textContent).toContain("In progress");
-    expect(selectedPanel?.textContent).toContain("3 of 4 parts");
-    expect(selectedPanel?.textContent).toContain("Step 3 of 4");
+    expect(selectedPanel?.textContent).toContain("3 of 3 parts");
+    expect(selectedPanel?.textContent).toContain("Step 3 of 3");
     expect(gameNameInput?.className).toContain("text-center");
     expect(doneMoment?.className).toContain("opacity-45");
     expect(nowMoment?.className).toContain("border-[#c6a777]/60");
-    expect(nextMoment?.className).toContain("border-dashed");
-    expect(nextMoment?.className).toContain("opacity-70");
+    expect(nextMoment).toBeNull();
     expect(currentProgressTrack?.className).toContain("bg-[#d9cabd]");
     expect(currentProgressFill?.className).toContain("bg-[#7a4b22]");
     expect(currentProgressTrack?.textContent).toBe("");
@@ -222,7 +212,7 @@ describe("FactoryV2WatchWorkspace mobile layout", () => {
           latestEvent: "Ready",
           currentStepId: null,
           steps: [],
-          configReady: true,
+          launchReady: true,
           worldAddress: "0x111",
         },
       ],
@@ -262,7 +252,7 @@ describe("FactoryV2WatchWorkspace mobile layout", () => {
     expect(prizeFundingToggle).not.toBeNull();
     expect(walletCard).not.toBeNull();
     expect(prizeFundingToggle?.textContent).toContain("Open prize funding");
-    expect(walletCard?.textContent).toContain("Mainnet deployer wallet mainnet");
+    expect(walletCard?.textContent).toContain("Appchain deployer wallet appchain");
     expect(prizeFundingToggle!.compareDocumentPosition(walletCard!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 
@@ -376,7 +366,7 @@ describe("FactoryV2WatchWorkspace mobile layout", () => {
 
   it("shows the pending launch request as the first setup step", async () => {
     const pendingRun = buildRun({
-      id: "pending:mainnet.blitz:bltz-sprint-01",
+      id: "pending:appchain.blitz:bltz-sprint-01",
       steps: [
         {
           id: "launch-request" as const,
@@ -401,33 +391,6 @@ describe("FactoryV2WatchWorkspace mobile layout", () => {
           title: "Wait for factory index",
           summary: "Wait for factory index",
           workflowName: "wait-for-factory-index",
-          status: "pending" as const,
-          verification: "pending",
-          latestEvent: "pending",
-        },
-        {
-          id: "configure-world" as const,
-          title: "Configure world",
-          summary: "Configure world",
-          workflowName: "configure-world",
-          status: "pending" as const,
-          verification: "pending",
-          latestEvent: "pending",
-        },
-        {
-          id: "grant-lootchest-role" as const,
-          title: "Grant loot chest role",
-          summary: "Grant loot chest role",
-          workflowName: "grant-lootchest-role",
-          status: "pending" as const,
-          verification: "pending",
-          latestEvent: "pending",
-        },
-        {
-          id: "create-indexer" as const,
-          title: "Create indexer",
-          summary: "Create indexer",
-          workflowName: "create-indexer",
           status: "pending" as const,
           verification: "pending",
           latestEvent: "pending",
@@ -463,8 +426,8 @@ describe("FactoryV2WatchWorkspace mobile layout", () => {
 
     const selectedPanel = container.querySelector('[data-testid="factory-watch-selected-panel"]');
 
-    expect(selectedPanel?.textContent).toContain("1 of 6 parts");
-    expect(selectedPanel?.textContent).toContain("Step 1 of 6");
+    expect(selectedPanel?.textContent).toContain("1 of 3 parts");
+    expect(selectedPanel?.textContent).toContain("Step 1 of 3");
   });
 
   it("hides rotation maintenance actions while a rotation is still in progress", async () => {
@@ -503,7 +466,7 @@ describe("FactoryV2WatchWorkspace mobile layout", () => {
           startTimeIso: "2026-03-18T12:00:00.000Z",
           status: "running",
           latestEvent: "Queued for setup.",
-          currentStepId: "configure-worlds",
+          currentStepId: "wait-for-factory-indexes",
           steps: [],
           worldAddress: "0xabc",
         },
@@ -976,7 +939,7 @@ describe("FactoryV2WatchWorkspace mobile layout", () => {
       recovery: {
         state: "stalled",
         canContinue: true,
-        continueStepId: "create-indexer",
+        continueStepId: "wait-for-factory-index",
       },
       steps: [
         {
@@ -989,10 +952,10 @@ describe("FactoryV2WatchWorkspace mobile layout", () => {
           latestEvent: "done",
         },
         {
-          id: "create-indexer" as const,
+          id: "wait-for-factory-index" as const,
           title: "Create indexer",
           summary: "done",
-          workflowName: "create-indexer",
+          workflowName: "wait-for-factory-index",
           status: "succeeded" as const,
           verification: "done",
           latestEvent: "done",
@@ -1058,7 +1021,7 @@ describe("FactoryV2WatchWorkspace mobile layout", () => {
           latestEvent: "Ready",
           currentStepId: null,
           steps: [],
-          configReady: true,
+          launchReady: true,
           worldAddress: "0x111",
         },
         {
@@ -1070,7 +1033,7 @@ describe("FactoryV2WatchWorkspace mobile layout", () => {
           latestEvent: "Ready",
           currentStepId: null,
           steps: [],
-          configReady: true,
+          launchReady: true,
           worldAddress: "0x222",
           prizeFunding: {
             transfers: [
@@ -1093,9 +1056,9 @@ describe("FactoryV2WatchWorkspace mobile layout", () => {
           startTimeIso: "2026-03-18T14:00:00.000Z",
           status: "pending",
           latestEvent: "Pending",
-          currentStepId: "configure-worlds",
+          currentStepId: "wait-for-factory-indexes",
           steps: [],
-          configReady: false,
+          launchReady: false,
           worldAddress: "0x333",
         },
       ],
@@ -1150,7 +1113,7 @@ describe("FactoryV2WatchWorkspace mobile layout", () => {
     expect(firstGameCheckbox?.checked).toBe(true);
     expect(secondGameCheckbox?.checked).toBe(false);
     expect(thirdGameCheckbox?.disabled).toBe(true);
-    expect(container.textContent).toContain("World config not finished");
+    expect(container.textContent).toContain("Game not indexed yet");
 
     await act(async () => {
       if (!amountInput || !submitButton) {
@@ -1201,7 +1164,7 @@ describe("FactoryV2WatchWorkspace mobile layout", () => {
           latestEvent: "Ready",
           currentStepId: null,
           steps: [],
-          configReady: true,
+          launchReady: true,
           worldAddress: "0x111",
         },
       ],
@@ -1291,22 +1254,13 @@ describe("FactoryV2WatchWorkspace mobile layout", () => {
           latestEvent: "done",
         },
         {
-          id: "configure-world" as const,
+          id: "wait-for-factory-index" as const,
           title: "Configure world",
           summary: "done",
-          workflowName: "configure-world",
+          workflowName: "wait-for-factory-index",
           status: "succeeded" as const,
           verification: "done",
           latestEvent: "done",
-        },
-        {
-          id: "create-indexer" as const,
-          title: "Create indexer",
-          summary: "failed",
-          workflowName: "create-indexer",
-          status: "failed" as const,
-          verification: "failed",
-          latestEvent: "failed",
         },
       ],
     });
@@ -1363,7 +1317,7 @@ describe("FactoryV2WatchWorkspace mobile layout", () => {
           latestEvent: "Ready",
           currentStepId: null,
           steps: [],
-          configReady: true,
+          launchReady: true,
           worldAddress: "0x111",
         },
         {
@@ -1373,9 +1327,9 @@ describe("FactoryV2WatchWorkspace mobile layout", () => {
           startTimeIso: "2026-03-18T13:00:00.000Z",
           status: "failed",
           latestEvent: "Indexer failed",
-          currentStepId: "create-indexers",
+          currentStepId: "wait-for-factory-indexes",
           steps: [],
-          configReady: true,
+          launchReady: true,
           worldAddress: "0x222",
           prizeFunding: {
             transfers: [
@@ -1398,9 +1352,9 @@ describe("FactoryV2WatchWorkspace mobile layout", () => {
           startTimeIso: "2026-03-18T14:00:00.000Z",
           status: "running",
           latestEvent: "Configuring",
-          currentStepId: "configure-worlds",
+          currentStepId: "wait-for-factory-indexes",
           steps: [],
-          configReady: false,
+          launchReady: false,
           worldAddress: "0x333",
         },
       ],
@@ -1472,7 +1426,7 @@ describe("FactoryV2WatchWorkspace mobile layout", () => {
           startTimeIso: "2026-03-18T12:00:00.000Z",
           status: "running",
           latestEvent: "Configuring world.",
-          currentStepId: "configure-worlds",
+          currentStepId: "wait-for-factory-indexes",
           steps: [],
           worldAddress: "0xabc",
         },
@@ -1639,8 +1593,8 @@ describe("FactoryV2WatchWorkspace mobile layout", () => {
           seriesGameNumber: 1,
           startTimeIso: "2026-03-18T12:00:00.000Z",
           status: "running",
-          latestEvent: "Completed create-indexers (0xdeadbeef)",
-          currentStepId: "configure-worlds",
+          latestEvent: "Completed wait-for-factory-indexes (0xdeadbeef)",
+          currentStepId: "wait-for-factory-indexes",
           steps: [
             {
               id: "create-worlds",
@@ -1654,18 +1608,8 @@ describe("FactoryV2WatchWorkspace mobile layout", () => {
             },
             {
               id: "wait-for-factory-indexes",
-              status: "succeeded",
-              latestEvent: "Indexed.",
-            },
-            {
-              id: "configure-worlds",
               status: "running",
-              latestEvent: "Applying config.",
-            },
-            {
-              id: "create-indexers",
-              status: "pending",
-              latestEvent: "Waiting for indexer setup.",
+              latestEvent: "Waiting for GameRegistry.",
             },
           ],
           worldAddress: "0xabc",
@@ -1702,9 +1646,7 @@ describe("FactoryV2WatchWorkspace mobile layout", () => {
     expect(container.textContent).toContain("Done");
     expect(container.textContent).toContain("Deploying games");
     expect(container.textContent).toContain("Now");
-    expect(container.textContent).toContain("Applying settings");
-    expect(container.textContent).toContain("Pending");
-    expect(container.textContent).toContain("Deploying indexers");
+    expect(container.textContent).toContain("Checking deployed games");
     expect(container.textContent).not.toContain("Waiting for games");
     expect(container.textContent).not.toContain("Creating series");
     expect(container.textContent).not.toContain("0xdeadbeef");
@@ -1819,10 +1761,10 @@ describe("FactoryV2WatchWorkspace mobile layout", () => {
           latestEvent: "Deploying games.",
         },
         {
-          id: "configure-worlds" as const,
+          id: "wait-for-factory-indexes" as const,
           title: "Configure worlds",
           summary: "Pending.",
-          workflowName: "configure-worlds",
+          workflowName: "wait-for-factory-indexes",
           status: "pending" as const,
           verification: "Pending.",
           latestEvent: "Pending.",
@@ -1847,7 +1789,7 @@ describe("FactoryV2WatchWorkspace mobile layout", () => {
           startTimeIso: "2026-03-18T13:00:00.000Z",
           status: "running",
           latestEvent: "Configuring",
-          currentStepId: "configure-worlds",
+          currentStepId: "wait-for-factory-indexes",
           steps: [],
           worldAddress: "0x222",
         },

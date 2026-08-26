@@ -68,11 +68,8 @@ describe("Factory V2 mobile switches", () => {
             },
           ]}
           selectedMode="eternum"
-          environmentOptions={[
-            { id: "mainnet", label: "Mainnet", mode: "eternum", chain: "mainnet" },
-            { id: "mainnet", label: "Mainnet", mode: "eternum", chain: "mainnet" },
-          ]}
-          selectedEnvironmentId="mainnet"
+          environmentOptions={[{ id: "appchain", label: "Appchain", mode: "eternum", chain: "appchain" }]}
+          selectedEnvironmentId="appchain"
           onSelectEnvironment={vi.fn()}
           onSelectMode={vi.fn()}
         />,

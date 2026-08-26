@@ -30,7 +30,7 @@ const deriveGlobalNames = (entries: ManifestEntry[] = []): string[] =>
 
 describe("game-scope", () => {
   beforeEach(() => {
-    setGameScope("s1_eternum", 0);
+    setGameScope("s2", 0);
   });
 
   it("pins S2_GLOBAL_MODELS to the manifest's key flags", () => {
@@ -40,14 +40,13 @@ describe("game-scope", () => {
 
   it("maps chains to namespaces", () => {
     expect(namespaceForChain("appchain")).toBe("s2");
-    expect(namespaceForChain("mainnet")).toBe("s1_eternum");
-    expect(namespaceForChain("local")).toBe("s1_eternum");
+    expect(namespaceForChain("madara")).toBe("s2");
   });
 
-  it("scopes nothing in a single-world deployment", () => {
-    expect(gameModel("TileOpt")).toBe("s1_eternum-TileOpt");
-    expect(isGameScopedModel("s1_eternum-TileOpt")).toBe(false);
-    expect(isGameScopedModel("s1_eternum-AddressName")).toBe(false);
+  it("does not scope models before a game is selected", () => {
+    expect(gameModel("TileOpt")).toBe("s2-TileOpt");
+    expect(isGameScopedModel("s2-TileOpt")).toBe(false);
+    expect(isGameScopedModel("s2-AddressName")).toBe(false);
   });
 
   it("scopes per-game models but not chain-global models on s2", () => {

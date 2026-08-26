@@ -1,6 +1,6 @@
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { fetchGameReviewData } from "@/services/review/game-review-service";
-import type { Chain } from "@contracts";
+import type { GameChain as Chain } from "@realms-world/chain";
 import { useQuery } from "@tanstack/react-query";
 
 interface UseGameReviewDataOptions {

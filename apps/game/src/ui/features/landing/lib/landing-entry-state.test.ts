@@ -8,7 +8,7 @@ describe("landing entry state", () => {
   it("preserves the originating landing tab and mode filter for /enter routes", () => {
     expect(
       resolveLandingEntryState({
-        pathname: "/enter/mainnet/aurora-blitz",
+        pathname: "/enter/madara/aurora-blitz",
         state: {
           returnTo: "/factory",
           landingModeFilter: "season",
@@ -24,7 +24,7 @@ describe("landing entry state", () => {
   it("falls back to the play tab and blitz mode when /enter state is missing", () => {
     expect(
       resolveLandingEntryState({
-        pathname: "/enter/mainnet/aurora-blitz",
+        pathname: "/enter/madara/aurora-blitz",
         state: null,
       }),
     ).toEqual({
@@ -37,7 +37,7 @@ describe("landing entry state", () => {
   it("maps /enter routes onto the originating landing path for shell chrome", () => {
     expect(
       resolveLandingSurfacePath({
-        pathname: "/enter/mainnet/aurora-blitz",
+        pathname: "/enter/madara/aurora-blitz",
         state: {
           returnTo: "/news?ref=hero",
         },
