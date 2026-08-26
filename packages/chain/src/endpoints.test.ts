@@ -25,7 +25,7 @@ describe("resolveEndpoint", () => {
 
   it("rejects mixed content only for browser traffic", () => {
     expect(() =>
-      resolveEndpoint("http://127.0.0.1:5060", {
+      resolveEndpoint("http://127.0.0.1:5050", {
         name: "RPC_URL",
         browserFacing: true,
         locationProtocol: "https:",
@@ -33,11 +33,11 @@ describe("resolveEndpoint", () => {
     ).toThrow("must use HTTPS");
 
     expect(
-      resolveEndpoint("http://127.0.0.1:5060", {
+      resolveEndpoint("http://127.0.0.1:5050", {
         name: "RPC_URL",
         browserFacing: false,
         locationProtocol: "https:",
       }),
-    ).toBe("http://127.0.0.1:5060");
+    ).toBe("http://127.0.0.1:5050");
   });
 });

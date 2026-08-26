@@ -10,7 +10,7 @@ default = "s2"
 "s2-structure_creation_library" = "0_1_18"
 
 [env]
-rpc_url = "http://127.0.0.1:5060"
+rpc_url = "http://127.0.0.1:5050"
 # Madara devnet predeployed account #1 (lab only; printed by madara at genesis)
 account_address = "0x055be462e718c4166d656d11f89e341115b8bc82389c3762a10eade04fcb225d"
 private_key = "0x077e56c6dc32d40a67f6f7e6625c8dc5e570abe49c0a24e9202e4ae906abcc07"

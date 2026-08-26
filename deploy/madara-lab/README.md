@@ -32,8 +32,8 @@ Endpoints (all bound to localhost only):
 | Port | What                                                                                   |
 | ---- | -------------------------------------------------------------------------------------- |
 | 443  | Caddy: TLS for every browser-facing `*.realms.test` host (see below)                    |
-| 5060 | Starknet JSON-RPC. `/` is v0.10.2; `/rpc/v0_9_0`, `/rpc/v0_8_1`, `/rpc/v0_10_0` are pinned routes |
-| 5061 | Madara admin RPC (`madara_*`). Never expose.                                            |
+| 5050 | Starknet JSON-RPC. `/` is v0.10.2; `/rpc/v0_9_0`, `/rpc/v0_8_1`, `/rpc/v0_10_0` are pinned routes |
+| 5051 | Madara admin RPC (`madara_*`). Never expose.                                            |
 | 5062 | Feeder gateway + gateway                                                               |
 | 8090 | Torii canary (profile `torii`, see below)                                              |
 | 5432 | Postgres for `apps/web` (profile `web`, see below)                                     |
@@ -41,7 +41,7 @@ Endpoints (all bound to localhost only):
 ### HTTPS: Caddy in front of everything a browser touches
 
 Browsers are the only TLS clients. `sozo`, the deployer, the harness and the probe stay on plain HTTP to
-`127.0.0.1:5060` / `:8090`. Caddy (`Caddyfile`) terminates TLS on `127.0.0.1:443` with one wildcard certificate:
+`127.0.0.1:5050` / `:8090`. Caddy (`Caddyfile`) terminates TLS on `127.0.0.1:443` with one wildcard certificate:
 
 | Host                        | Upstream                                                           |
 | --------------------------- | ------------------------------------------------------------------ |
@@ -103,7 +103,7 @@ class hashes and registry address to `.lab/gameplay-contracts.json`.
 Create a game after Torii is running:
 
 ```bash
-RPC_URL=http://127.0.0.1:5060/rpc/v0_9_0 \
+RPC_URL=http://127.0.0.1:5050/rpc/v0_9_0 \
 TORII_SQL_URL=http://127.0.0.1:8090/sql \
 DOJO_ACCOUNT_ADDRESS=0x055be462e718c4166d656d11f89e341115b8bc82389c3762a10eade04fcb225d \
 DOJO_PRIVATE_KEY=0x077e56c6dc32d40a67f6f7e6625c8dc5e570abe49c0a24e9202e4ae906abcc07 \

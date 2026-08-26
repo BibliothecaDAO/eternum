@@ -11,7 +11,7 @@ const CONTRACT_DIRECTORY = resolve(REPOSITORY_ROOT, "contracts/player-account");
 const ARTIFACT_DIRECTORY = resolve(CONTRACT_DIRECTORY, "target/dev");
 const OUTPUT_PATH = resolve(LAB_DIRECTORY, ".lab/gameplay-contracts.json");
 
-const RPC_URL = process.env.RPC_URL || "http://127.0.0.1:5060/rpc/v0_9_0";
+const RPC_URL = process.env.RPC_URL || "http://127.0.0.1:5050/rpc/v0_9_0";
 const DEPLOYER_ADDRESS =
   process.env.DOJO_ACCOUNT_ADDRESS || "0x055be462e718c4166d656d11f89e341115b8bc82389c3762a10eade04fcb225d";
 const DEPLOYER_PRIVATE_KEY =

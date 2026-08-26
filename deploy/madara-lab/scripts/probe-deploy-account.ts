@@ -10,7 +10,7 @@ import { Account, CallData, ec, hash, logger, RpcProvider, stark } from "starkne
 // starknet.js logs its tip estimator and default paymaster at INFO/ERROR; failures here surface as exceptions.
 logger.setLogLevel("FATAL");
 
-const rpcUrl = "http://127.0.0.1:5060/rpc/v0_9_0";
+const rpcUrl = "http://127.0.0.1:5050/rpc/v0_9_0";
 // OpenZeppelin account class the Madara devnet genesis predeploys (class of devnet account #1).
 const classHash = "0xe2eb8f5672af4e6a4e8a8f1b44989685e668489b0a25437733756c5a34a1d6";
 const POLL_MS = 50;

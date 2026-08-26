@@ -36,7 +36,7 @@ interface HarnessGame {
 
 const REPOSITORY_ROOT = path.resolve(import.meta.dir, "../../..");
 const LAB_DIRECTORY = path.resolve(import.meta.dir, "..");
-const DEFAULT_RPC_URL = "http://127.0.0.1:5060/rpc/v0_9_0";
+const DEFAULT_RPC_URL = "http://127.0.0.1:5050/rpc/v0_9_0";
 const DEFAULT_TORII_SQL_URL = "http://127.0.0.1:8090/sql";
 const MADARA_ADMIN_ADDRESS = "0x055be462e718c4166d656d11f89e341115b8bc82389c3762a10eade04fcb225d";
 const MADARA_ADMIN_PRIVATE_KEY = "0x077e56c6dc32d40a67f6f7e6625c8dc5e570abe49c0a24e9202e4ae906abcc07";

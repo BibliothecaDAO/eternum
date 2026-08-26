@@ -4,7 +4,7 @@
 #   deploy/madara-lab/scripts/deploy-world.sh            # build + migrate
 #   deploy/madara-lab/scripts/deploy-world.sh --migrate-only
 #
-# Prereqs: `docker compose up -d` in deploy/madara-lab (madara healthy on :5060), sozo 1.8.7 via asdf.
+# Prereqs: `docker compose up -d` in deploy/madara-lab (madara healthy on :5050), sozo 1.8.7 via asdf.
 #
 # Two Madara-specific facts this script encodes (see README "Why these flags"):
 #   - Madara's chain protocol is 0.14.2, which hashes compiled (CASM) classes with blake2s. sozo 1.8.7 only
@@ -18,7 +18,7 @@ set -euo pipefail
 LAB_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 REPO_ROOT="$(cd "$LAB_DIR/../.." && pwd)"
 GAME_DIR="$REPO_ROOT/contracts/game"
-RPC_URL="${RPC_URL:-http://127.0.0.1:5060/rpc/v0_9_0}"
+RPC_URL="${RPC_URL:-http://127.0.0.1:5050/rpc/v0_9_0}"
 PROFILE="madara"
 OUT_DIR="$LAB_DIR/.lab"
 

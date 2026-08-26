@@ -21,7 +21,7 @@ export const DEFAULT_FACTORY_INDEX_POLL_MS = 5_000;
 // Realms dev appchain (chain id WP_REALMS_DEV) — see docs/plans/appchain-phase-1.md.
 // Override with APPCHAIN_RPC_URL / --rpc-url once the stable hostname lands.
 export const DEFAULT_APPCHAIN_RPC_URL = process.env.APPCHAIN_RPC_URL || "http://52.54.98.119";
-export const DEFAULT_MADARA_RPC_URL = process.env.RPC_URL || "http://127.0.0.1:5060/rpc/v0_9_0";
+export const DEFAULT_MADARA_RPC_URL = process.env.RPC_URL || "http://127.0.0.1:5050/rpc/v0_9_0";
 
 export const DEFAULT_CHAIN_RPC_URLS: Record<string, string> = {
   madara: DEFAULT_MADARA_RPC_URL,

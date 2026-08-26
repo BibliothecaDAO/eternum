@@ -63,7 +63,7 @@ Verified 2026-08-24/25; the source of each fact follows it in italics.
   (6.5 MB, fetched at runtime by `packages/core/src/utils/realm.ts:19`, which `getOffchainRealm` depends on);
   `packages/core/src/data/realm-names.ts` imports `client/public/jsons/{realms,realm-names}.json` by relative path —
   _source_
-- The lab chain and Torii listen on plain HTTP (`127.0.0.1:5060`, `:8090`); an HTTPS page cannot call them (mixed
+- The lab chain and Torii listen on plain HTTP (`127.0.0.1:5050`, `:8090`); an HTTPS page cannot call them (mixed
   content) — _compose_
 - `account-portal` = pnpm monorepo: TanStack Start/Router, React 19, Vite 7, Tailwind 4, shadcn, better-auth
   **Sign-In-With-Starknet**, Drizzle/Postgres, apibara indexer; routes bridge/claims/velords/delegates/proposals; still
@@ -204,7 +204,7 @@ connectors — Ready/Argent, Braavos on `SN_MAIN`, no Controller).
   using certificates `mkcert` issues into `deploy/madara-lab/.lab/certs/` (gitignored; the mkcert root CA is installed
   once with `mkcert -install`, which covers the system store and Brave's NSS db). Browsers are the only TLS clients:
   `sozo`, the deployer, the harness and the `deploy_account` probe are CLI tools and stay on loopback HTTP
-  (`http://127.0.0.1:5060`, `:8090`) — Bun ships its own Mozilla roots and would need extra CA plumbing for nothing. Web
+  (`http://127.0.0.1:5050`, `:8090`) — Bun ships its own Mozilla roots and would need extra CA plumbing for nothing. Web
   runs on `https://realms.test`, the game on `https://play.realms.test` (Vite mkcert plugin, `hosts` option). No
   browser-facing value on the branch is `http://` — every `VITE_PUBLIC_*` value, env sample, world profile and
   `packages/chain` endpoint; Docker-internal links (`torii → madara:9944`), health checks, tests and CLI tooling stay

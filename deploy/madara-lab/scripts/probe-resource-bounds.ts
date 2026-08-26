@@ -17,7 +17,7 @@ interface WorldManifest {
 
 const REPOSITORY_ROOT = path.resolve(import.meta.dir, "../../..");
 const LAB_DIRECTORY = path.resolve(import.meta.dir, "..");
-const RPC_URL = "http://127.0.0.1:5060/rpc/v0_9_0";
+const RPC_URL = "http://127.0.0.1:5050/rpc/v0_9_0";
 const TORII_SQL_URL = "http://127.0.0.1:8090/sql";
 
 await runProbe(parseGameId(process.argv[2]));

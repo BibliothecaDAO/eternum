@@ -42,8 +42,9 @@ services:
       - ./chain-config.yaml:/config/chain-config.yaml:ro
       - madara-data:/data
     ports:
-      - "127.0.0.1:5060:9944"   # Starknet JSON-RPC (v0.10.2 default; /rpc/v0_10_0 etc. versioned)
-      - "127.0.0.1:5061:9943"   # admin RPC (madara_* methods) — never expose beyond localhost
+      - "127.0.0.1:5050:9944"   # Starknet JSON-RPC. NOT 5060/5061: those are SIP ports on the WHATWG fetch
+      #   bad-ports list — Node/undici refuses to fetch them ("bad port"), which broke every server-side consumer.
+      - "127.0.0.1:5051:9943"   # admin RPC (madara_* methods) — never expose beyond localhost
       - "127.0.0.1:5062:8080"   # feeder gateway / gateway
     healthcheck:
       test:
