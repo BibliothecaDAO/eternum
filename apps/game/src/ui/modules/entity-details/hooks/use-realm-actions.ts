@@ -4,6 +4,7 @@ import { toast } from "sonner";
 import { getContractByName } from "@dojoengine/core";
 
 import { dojoConfig } from "../../../../../dojo-config";
+import { env } from "../../../../../env";
 import { executeObservedClientTransaction } from "@/observability/observed-client-transaction";
 import { gameCallArgs, getGameNamespace } from "@/dojo/game-scope";
 import { useDojo } from "@bibliothecadao/react";
@@ -70,6 +71,7 @@ export const useRealmActions = () => {
             calls,
             surface: "settlement",
             operation,
+            chain: env.VITE_PUBLIC_CHAIN,
             waitForConfirmation: false,
           }),
         );

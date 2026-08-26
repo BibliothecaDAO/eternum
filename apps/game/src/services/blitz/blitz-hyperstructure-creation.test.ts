@@ -65,7 +65,7 @@ describe("createActiveWorldBlitzHyperstructure", () => {
   });
 
   it("submits create_hyperstructure against the active world contract", async () => {
-    const account = { address: "0xplayer", execute: vi.fn() };
+    const account = { address: "0xplayer", execute: vi.fn(), getNonce: vi.fn() };
     const hexCoords = { col: 12, row: 34 };
     const contractCoords = new Position({ x: hexCoords.col, y: hexCoords.row }).getContract();
 
@@ -98,7 +98,7 @@ describe("createActiveWorldBlitzHyperstructure", () => {
   });
 
   it("keeps duplicate submissions blocked until the reserved tile clears", async () => {
-    const account = { address: "0xplayer", execute: vi.fn() };
+    const account = { address: "0xplayer", execute: vi.fn(), getNonce: vi.fn() };
     const hexCoords = { col: 12, row: 34 };
 
     expect(isPendingReservedHyperstructureCreation(hexCoords)).toBe(false);
@@ -118,7 +118,7 @@ describe("createActiveWorldBlitzHyperstructure", () => {
 
     await expect(
       createActiveWorldBlitzHyperstructure({
-        account: { address: "0xplayer", execute: vi.fn() },
+        account: { address: "0xplayer", execute: vi.fn(), getNonce: vi.fn() },
         hexCoords: { col: 1, row: 2 },
       }),
     ).rejects.toThrow("Active world profile is unavailable for hyperstructure creation.");

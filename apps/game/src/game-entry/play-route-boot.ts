@@ -5,7 +5,6 @@ import { getGameModeId } from "@/config/game-modes";
 import { resolveEntryContextFromPlayRoute, type ResolvedEntryContext } from "@/game-entry/context";
 import type { PlayScene } from "@/play/navigation/play-route";
 import type { SetupResult } from "@/init/bootstrap";
-import { Account } from "starknet";
 import type { AccountInterface } from "starknet";
 import { create } from "zustand";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -15,10 +14,12 @@ import { resolvePlayBootRequest, type ResolvedPlayBootRequest } from "./play-rou
 import { usePlayRouteReadinessStore } from "./play-route-readiness-store";
 
 const PLAY_ROUTE_RECONNECT_GRACE_MS = 4000;
-const NULL_ACCOUNT = {
+const READ_ONLY_SPECTATOR_ACCOUNT = {
   address: "0x0",
-  privateKey: "0x0",
-} as const;
+  execute: async () => {
+    throw new Error("Spectator sessions cannot submit transactions");
+  },
+} as unknown as AccountInterface;
 
 type CanonicalPlayEntry = Pick<ResolvedEntryContext, "chain" | "intent" | "worldName">;
 
@@ -272,33 +273,11 @@ export const usePlayRouteBootController = (): PlayRouteBootControllerState => {
     () => resolvePlayBootRequest(location, { fastTravelEnabled }),
     [fastTravelEnabled, location.pathname, location.search],
   );
-  const [placeholderAccount, setPlaceholderAccount] = useState<Account | null>(null);
   const [bootToken, setBootToken] = useState(0);
   const [hasReconnectGraceElapsed, setHasReconnectGraceElapsed] = useState(false);
   const readiness = usePlayRouteReadinessStore();
   const nextBootTokenRef = useRef(0);
   const previousEntryRef = useRef<CanonicalPlayEntry | null>(null);
-
-  useEffect(() => {
-    if (!bootstrap.setupResult) {
-      setPlaceholderAccount(null);
-      return;
-    }
-
-    const setupResult = bootstrap.setupResult;
-
-    setPlaceholderAccount((current) => {
-      if (current) {
-        return current;
-      }
-
-      return new Account({
-        provider: setupResult.network.provider.provider,
-        address: NULL_ACCOUNT.address,
-        signer: NULL_ACCOUNT.privateKey,
-      });
-    });
-  }, [bootstrap.setupResult]);
 
   const startPlayRouteBoot = useCallback(() => {
     const nextBootToken = nextBootTokenRef.current + 1;
@@ -323,11 +302,11 @@ export const usePlayRouteBootController = (): PlayRouteBootControllerState => {
 
   const resolvedAccount = useMemo(() => {
     if (resolvedRequest?.entryMode === "spectator") {
-      return placeholderAccount;
+      return READ_ONLY_SPECTATOR_ACCOUNT;
     }
 
     return gameplayAccount ?? null;
-  }, [gameplayAccount, placeholderAccount, resolvedRequest?.entryMode]);
+  }, [gameplayAccount, resolvedRequest?.entryMode]);
 
   const reconnectStatus = resolveReconnectStatus({
     hasResolvedAccount: resolvedAccount !== null,

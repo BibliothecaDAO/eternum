@@ -5,7 +5,6 @@ import { SignInPromptModal } from "@/ui/layouts/sign-in-prompt-modal";
 import { latestFeatures, type FeatureType } from "@/ui/features/world/latest-features";
 import {
   BookOpen,
-  ChevronRight,
   CloudLightning,
   ExternalLink,
   Factory,
@@ -585,7 +584,7 @@ const ModeCoexistenceHero = ({
                 />
               </div>
 
-              <div className="flex items-end justify-between gap-3">
+              <div className="flex items-end gap-3">
                 <h3
                   className={cn(
                     "font-cinzel text-xl md:text-2xl transition-colors duration-500 ease-out",
@@ -594,20 +593,6 @@ const ModeCoexistenceHero = ({
                 >
                   {config.title}
                 </h3>
-                <div
-                  className={cn(
-                    "inline-flex items-center gap-1.5 text-xs font-medium pb-0.5 transition-colors duration-500 ease-out",
-                    isEmphasized ? "text-gold" : "text-white/50",
-                  )}
-                >
-                  {mode === "season" ? "Enter Campaigns" : "Enter Blitz"}
-                  <ChevronRight
-                    className={cn(
-                      "h-3.5 w-3.5 transition-transform duration-300",
-                      isEmphasized ? "translate-x-0.5" : "translate-x-0",
-                    )}
-                  />
-                </div>
               </div>
             </div>
           </button>

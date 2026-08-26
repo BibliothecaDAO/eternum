@@ -26,6 +26,7 @@ import Star from "lucide-react/dist/esm/icons/star";
 import Users from "lucide-react/dist/esm/icons/users";
 import type { LucideIcon } from "lucide-react";
 import { memo, useCallback, type KeyboardEvent, type MouseEvent } from "react";
+import { resolveRealmBootstrapErrorMessage } from "@/ui/modules/entity-details/hooks/realm-bootstrap-error";
 
 export type StructureWithMetadata = Structure & {
   displayName: string;
@@ -217,7 +218,7 @@ export const StructureRealmActions = ({ structureEntityId, className }: Structur
     if (isBootstrapDisabled) return;
 
     void bootstrapInfo.handleUpgradeAndProvision().catch((error) => {
-      console.error("Failed to bootstrap realm", error);
+      console.warn("realm_bootstrap_failed", { message: resolveRealmBootstrapErrorMessage(error) });
     });
   };
 

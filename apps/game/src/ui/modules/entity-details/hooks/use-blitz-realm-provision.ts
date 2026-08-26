@@ -12,9 +12,10 @@ import { getBuildingCount, getRealmInfo } from "@bibliothecadao/eternum";
 import { useBuildings, useDojo } from "@bibliothecadao/react";
 import { BuildingType, ContractAddress, StructureType } from "@bibliothecadao/types";
 import { dojoConfig } from "../../../../../dojo-config";
-import { extractReadableErrorMessage } from "@/utils/error-message";
+import { env } from "../../../../../env";
 import { withRealmActionSubmitTimeout } from "./realm-action-submit-timeout";
 import { gameCallArgs, gameEntityKey, getGameNamespace } from "@/dojo/game-scope";
+import { resolveRealmBootstrapErrorMessage } from "./realm-bootstrap-error";
 
 const REALM_PROVISION_SYNC_TIMEOUT_MS = 30_000;
 
@@ -186,6 +187,7 @@ export const useBlitzRealmProvision = (structureEntityId: number | null): Struct
           },
           surface: "settlement",
           operation: "blitz_realm_systems.provision_realm",
+          chain: env.VITE_PUBLIC_CHAIN,
           waitForConfirmation: false,
         }),
       );
@@ -198,7 +200,7 @@ export const useBlitzRealmProvision = (structureEntityId: number | null): Struct
       }
 
       setProvisionActionState("idle");
-      toast.error(extractReadableErrorMessage(error, "Failed to submit the provision."));
+      toast.error(resolveRealmBootstrapErrorMessage(error));
       throw error;
     }
   }, [account.account, canProvision, structureInfo]);

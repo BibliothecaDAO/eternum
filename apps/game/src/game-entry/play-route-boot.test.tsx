@@ -16,10 +16,6 @@ const accountStoreState = vi.hoisted(() => ({
   provisioningError: null as string | null,
 }));
 
-vi.mock("starknet", () => ({
-  Account: class {},
-}));
-
 vi.mock("@/game-entry/bootstrap-controller", () => ({
   useGameEntryBootstrapController: (...args: unknown[]) => useGameEntryBootstrapControllerMock(...args),
 }));
@@ -298,6 +294,10 @@ describe("usePlayRouteBootController", () => {
       },
       enabled: true,
     });
+    expect(latestBootController?.account?.address).toBe("0x0");
+    await expect(latestBootController?.account?.execute([])).rejects.toThrow(
+      "Spectator sessions cannot submit transactions",
+    );
   });
 
   it("bootstraps player routes once the gameplay account is resolved", async () => {

@@ -35,6 +35,14 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-08-26",
+    title: "Reliable Realm Entry",
+    description:
+      "Realm actions now submit in order with automatic nonce recovery, while signed-out visitors stay read-only until they connect an identity.",
+    type: "fix",
+    gameSlug: "world",
+  },
+  {
+    date: "2026-08-26",
     title: "Faster Madara Actions",
     description:
       "Madara actions now submit without a fee-estimation round trip, reducing delays before they reach the chain.",

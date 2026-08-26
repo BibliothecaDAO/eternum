@@ -25,8 +25,8 @@ const envSchema = z
     VITE_PUBLIC_NODE_URL: optionalUrlOrEmpty.default(""),
     VITE_PUBLIC_IDENTITY_ORIGIN: z.string().url(),
     VITE_PUBLIC_IDENTITY_RPC_URL: z.string().url(),
-    // Optional public mainnet RPC handed to the Controller keychain: x.cartridge.gg is a public origin
-    // and cannot fetch a loopback host (Private Network Access), so the lab points it at a public node.
+    // Optional public mainnet RPC handed to the cross-origin Controller keychain, which cannot fetch
+    // a loopback host (Private Network Access); the lab therefore points it at a public node.
     VITE_PUBLIC_CONTROLLER_RPC_URL: z.string().url().optional(),
     VITE_PUBLIC_FACTORY_WORKER_URL: z
       .string()

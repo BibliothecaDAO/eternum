@@ -3,7 +3,6 @@ import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import { REALM_ACTION_SUBMIT_TIMEOUT_MESSAGE } from "./realm-action-submit-timeout";
 import { useBlitzRealmProvision } from "./use-blitz-realm-provision";
 
 const mocks = vi.hoisted(() => ({
@@ -314,7 +313,9 @@ describe("useBlitzRealmProvision", () => {
     expect(readProbeValue("loading")).toBe("false");
     expect(readProbeValue("locked")).toBe("false");
     expect(readProbeValue("canProvision")).toBe("true");
-    expect(mocks.toastError).toHaveBeenCalledWith(REALM_ACTION_SUBMIT_TIMEOUT_MESSAGE);
+    expect(mocks.toastError).toHaveBeenCalledWith(
+      "Realm setup could not reach the game chain. Check your connection, then try again.",
+    );
   });
 
   it("stops loading and unlocks after sync timeout so provision can be retried", async () => {

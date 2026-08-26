@@ -12,6 +12,8 @@ vi.mock("./transaction-failure-reporting", () => ({
   resolveClientTransactionFailureStageFromError: reporterMocks.resolveClientTransactionFailureStageFromError,
 }));
 
+import { executeObservedClientTransaction } from "./observed-client-transaction";
+
 describe("executeObservedClientTransaction", () => {
   beforeEach(() => {
     reporterMocks.addClientTransactionBreadcrumb.mockReset();
@@ -26,10 +28,10 @@ describe("executeObservedClientTransaction", () => {
   });
 
   it("reports submit failures", async () => {
-    const { executeObservedClientTransaction } = await import("./observed-client-transaction");
     const account = {
       address: "0xabc",
       execute: vi.fn().mockRejectedValue(new Error("submit failed")),
+      getNonce: vi.fn().mockResolvedValue("0x1"),
     };
 
     await expect(
@@ -38,6 +40,7 @@ describe("executeObservedClientTransaction", () => {
         calls: { contractAddress: "0x1", entrypoint: "swap", calldata: [] },
         surface: "amm",
         operation: "amm_execute",
+        chain: "appchain",
       }),
     ).rejects.toThrow("submit failed");
 
@@ -54,10 +57,10 @@ describe("executeObservedClientTransaction", () => {
   });
 
   it("reports confirmation failures after submission", async () => {
-    const { executeObservedClientTransaction } = await import("./observed-client-transaction");
     const account = {
       address: "0xabc",
       execute: vi.fn().mockResolvedValue({ transaction_hash: "0xtx" }),
+      getNonce: vi.fn().mockResolvedValue("0x1"),
       waitForTransaction: vi.fn().mockRejectedValue(new Error("confirmation failed")),
     };
 
@@ -67,6 +70,7 @@ describe("executeObservedClientTransaction", () => {
         calls: { contractAddress: "0x1", entrypoint: "swap", calldata: [] },
         surface: "amm",
         operation: "amm_execute",
+        chain: "appchain",
       }),
     ).rejects.toThrow("confirmation failed");
 
@@ -86,10 +90,10 @@ describe("executeObservedClientTransaction", () => {
   });
 
   it("adds breadcrumbs for successful transactions without reporting failures", async () => {
-    const { executeObservedClientTransaction } = await import("./observed-client-transaction");
     const account = {
       address: "0xabc",
       execute: vi.fn().mockResolvedValue({ transaction_hash: "0xtx" }),
+      getNonce: vi.fn().mockResolvedValue("0x1"),
       waitForTransaction: vi.fn().mockResolvedValue({}),
     };
 
@@ -99,6 +103,7 @@ describe("executeObservedClientTransaction", () => {
         calls: { contractAddress: "0x1", entrypoint: "swap", calldata: [] },
         surface: "prediction_market",
         operation: "market_buy",
+        chain: "appchain",
       }),
     ).resolves.toEqual({ transaction_hash: "0xtx" });
 

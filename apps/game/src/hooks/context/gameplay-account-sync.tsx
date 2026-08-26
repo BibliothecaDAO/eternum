@@ -1,4 +1,5 @@
 import { useAccountStore } from "@/hooks/store/use-account-store";
+import { configureGameplayAccountSubmits } from "@/account/gameplay-account-submit";
 import { IDENTITY_SESSION_CHANGED_EVENT } from "@/hooks/context/identity-session";
 import { useActiveWorldProfile } from "@/runtime/world/use-active-world";
 import { getCachedRpcProvider } from "@/utils/cached-rpc-provider";
@@ -41,21 +42,16 @@ export function GameplayAccountSync({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     let active = true;
+    setGameplayAccount(null, null);
 
     const sync = async () => {
-      if (!activeWorld?.rpcUrl) {
-        setGameplayAccount(null, null);
-        return;
-      }
+      if (!activeWorld?.rpcUrl) return;
 
       try {
         const chain = activeWorld.chain as GameChain;
         const session = await identityClient.getSession();
-        const owner = resolveGameplayOwner(chain, session?.user.id ?? null, connectedIdentityAddress);
-        if (owner === null) {
-          setGameplayAccount(null, null);
-          return;
-        }
+        const owner = resolveGameplayOwner(session?.user.id ?? null, connectedIdentityAddress);
+        if (owner === null) return;
 
         const accountConfig = resolveGameplayAccountConfig(activeWorld);
         const provider = getCachedRpcProvider(activeWorld.rpcUrl);
@@ -63,8 +59,7 @@ export function GameplayAccountSync({ children }: { children: ReactNode }) {
         const chainId = await provider.getChainId();
         const storedKey = getStoredGameplayKey({ storage: localStorage, chainId, owner });
         const key = storedKey ?? getOrCreateGameplayKey({ storage: localStorage, chain, chainId, owner });
-        const boundAccount =
-          BigInt(owner) === 0n ? null : await readBoundGameplayAccount(provider, accountConfig.registryAddress, owner);
+        const boundAccount = await readBoundGameplayAccount(provider, accountConfig.registryAddress, owner);
 
         const account = boundAccount
           ? await recoverBoundGameplayAccount({
@@ -83,7 +78,7 @@ export function GameplayAccountSync({ children }: { children: ReactNode }) {
             });
 
         if (active) {
-          setGameplayAccount(account, addAddressPadding(owner));
+          setGameplayAccount(configureGameplayAccountSubmits(account, chain), addAddressPadding(owner));
         }
       } catch (error) {
         const message = error instanceof Error ? error.message : "Gameplay account provisioning failed";
@@ -104,17 +99,14 @@ export function GameplayAccountSync({ children }: { children: ReactNode }) {
 }
 
 function resolveGameplayOwner(
-  chain: GameChain,
   sessionOwner: string | null,
   connectedIdentityAddress: string | undefined,
 ): string | null {
-  if (sessionOwner) {
-    if (connectedIdentityAddress && BigInt(sessionOwner) !== BigInt(connectedIdentityAddress)) {
-      throw new Error("Connected wallet does not match the Realms identity session");
-    }
-    return num.toHex(sessionOwner);
+  if (!sessionOwner) return null;
+  if (connectedIdentityAddress && BigInt(sessionOwner) !== BigInt(connectedIdentityAddress)) {
+    throw new Error("Connected wallet does not match the Realms identity session");
   }
-  return chain === "madara" ? "0x0" : null;
+  return num.toHex(sessionOwner);
 }
 
 function resolveGameplayAccountConfig(profile: {
@@ -176,8 +168,6 @@ async function deployAndBindGameplayAccount({
     provider,
     publicKey: key.publicKey,
   });
-  if (BigInt(owner) !== 0n) {
-    await gameplayAccountApi.bind(account.address, key.publicKey);
-  }
+  await gameplayAccountApi.bind(account.address, key.publicKey);
   return account;
 }

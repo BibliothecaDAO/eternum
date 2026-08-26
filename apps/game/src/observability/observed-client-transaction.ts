@@ -1,5 +1,7 @@
 import { type TransactionType } from "@bibliothecadao/provider";
-import { type AllowArray, type Call } from "starknet";
+import type { GameChain } from "@realms-world/chain";
+import { type Account, type AllowArray, type Call } from "starknet";
+import { executeGameplayAccountTransaction } from "@/account/gameplay-account-submit";
 import { extractTransactionHash } from "@/ui/utils/transactions";
 import {
   addClientTransactionBreadcrumb,
@@ -17,9 +19,7 @@ type WaitCapableProvider = {
   waitForTransactionWithCheck?: (txHash: string) => Promise<unknown>;
 };
 
-type ObservedTransactionAccount = {
-  address?: string;
-  execute: (calls: AllowArray<Call>) => Promise<unknown>;
+type ObservedTransactionAccount = Pick<Account, "address" | "execute" | "getNonce"> & {
   provider?: WaitCapableProvider;
   waitForTransaction?: (txHash: string) => Promise<unknown>;
 };
@@ -32,11 +32,10 @@ type ExecuteObservedClientTransactionInput = {
   transactionType?: TransactionType;
   waitForConfirmation?: boolean;
   confirmationLabel?: string;
-  chain?: string;
+  chain: GameChain;
   worldName?: string;
   worldAddress?: string;
   rpcHost?: string;
-  submit?: (calls: AllowArray<Call>) => Promise<unknown>;
   confirm?: ((txHash: string, account: ObservedTransactionAccount) => Promise<unknown>) | false;
 };
 
@@ -138,13 +137,16 @@ const observeBackgroundTransactionConfirmation = (
 export const executeObservedClientTransaction = async <T = unknown>(
   input: ExecuteObservedClientTransactionInput,
 ): Promise<T> => {
-  const submit = input.submit ?? ((calls: AllowArray<Call>) => input.account.execute(calls));
   const waitForConfirmation = resolveConfirmationWait(input);
   const shouldWaitForConfirmation = input.waitForConfirmation ?? true;
 
   let result: T;
   try {
-    result = (await submit(input.calls)) as T;
+    result = (await executeGameplayAccountTransaction({
+      account: input.account,
+      calls: input.calls,
+      chain: input.chain,
+    })) as T;
   } catch (error) {
     const transactionContext = buildTransactionContext(input);
     await reportClientTransactionFailure({

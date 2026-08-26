@@ -4,6 +4,7 @@ import { ResourceCost } from "@/ui/design-system/molecules/resource-cost";
 import { ProductionModal } from "@/ui/features/settlement";
 import { useBlitzRealmProvision } from "@/ui/modules/entity-details/hooks/use-blitz-realm-provision";
 import { useRealmUpgradeAndProvision } from "@/ui/modules/entity-details/hooks/use-realm-upgrade-and-provision";
+import { resolveRealmBootstrapErrorMessage } from "@/ui/modules/entity-details/hooks/realm-bootstrap-error";
 import { configManager, divideByPrecision, getBalance, getEntityIdFromKeys } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
 import { ContractAddress, ID, LEVEL_DESCRIPTIONS, RealmLevels, ResourcesIds } from "@bibliothecadao/types";
@@ -144,7 +145,7 @@ export const Castle = () => {
     try {
       await bootstrapInfo.handleUpgradeAndProvision();
     } catch (error) {
-      console.error("Error bootstrapping realm:", error);
+      console.warn("realm_bootstrap_failed", { message: resolveRealmBootstrapErrorMessage(error) });
     }
   };
 

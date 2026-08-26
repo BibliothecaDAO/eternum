@@ -4,14 +4,15 @@ import { toast } from "sonner";
 import { getContractByName } from "@dojoengine/core";
 
 import { dojoConfig } from "../../../../../dojo-config";
+import { env } from "../../../../../env";
 import { executeObservedClientTransaction } from "@/observability/observed-client-transaction";
 import { gameCallArgs, getGameNamespace } from "@/dojo/game-scope";
 import { useDojo } from "@bibliothecadao/react";
-import { extractReadableErrorMessage } from "@/utils/error-message";
 
 import { useStructureUpgrade } from "./use-structure-upgrade";
 import { useBlitzRealmProvision } from "./use-blitz-realm-provision";
 import { withRealmActionSubmitTimeout } from "./realm-action-submit-timeout";
+import { resolveRealmBootstrapErrorMessage } from "./realm-bootstrap-error";
 
 interface RealmUpgradeAndProvisionResult {
   canUpgrade: boolean;
@@ -99,12 +100,13 @@ export const useRealmUpgradeAndProvision = (structureEntityId: number | null): R
           calls,
           surface: "settlement",
           operation: "realm_systems.provision_and_upgrade",
+          chain: env.VITE_PUBLIC_CHAIN,
           waitForConfirmation: false,
         }),
       );
     } catch (error) {
-      console.error("[realm-upgrade-and-provision] Failed to submit provision multicall", error);
-      toast.error(extractReadableErrorMessage(error, "Failed to submit the provision."));
+      console.warn("realm_bootstrap_failed", { message: resolveRealmBootstrapErrorMessage(error) });
+      toast.error(resolveRealmBootstrapErrorMessage(error));
       throw error;
     } finally {
       setIsPending(false);
