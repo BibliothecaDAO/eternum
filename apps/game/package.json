@@ -40,6 +40,8 @@
     "@bibliothecadao/types": "workspace:*",
     "@realms-world/chain": "workspace:*",
     "@realms-world/identity": "workspace:*",
+    "@cartridge/connector": "catalog:game",
+    "@cartridge/controller": "catalog:game",
     "@dojoengine/core": "catalog:game",
     "@dojoengine/sdk": "catalog:game",
     "@dojoengine/state": "catalog:game",

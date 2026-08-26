@@ -25,6 +25,8 @@ packageExtensions:
 
 catalogs:
   game:
+    "@cartridge/connector": ^0.13.12
+    "@cartridge/controller": ^0.13.12
     "@dojoengine/core": 1.7.0-preview.3
     "@dojoengine/react": 1.7.0-preview.3
     "@dojoengine/recs": 2.1.0

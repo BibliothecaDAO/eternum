@@ -3,6 +3,15 @@ import { spawnSync } from "node:child_process";
 import { existsSync, lstatSync, readFileSync } from "node:fs";
 
 const forbiddenScope = "@" + "cartridge" + "/";
+// The identity wallet picker offers Controller for the one SIWS signature (brief, Decisions taken,
+// 2026-08-26). These two packages are the only allowed members of the scope; everything else stays banned.
+const allowedIdentityConnectorPackages = [
+  forbiddenScope + "connector",
+  forbiddenScope + "controller",
+  // transitive dependencies of the connector
+  forbiddenScope + "controller-wasm",
+  forbiddenScope + "penpal",
+];
 const forbiddenHost = "cartridge" + ".gg";
 const plainHttp = "http" + "://";
 
@@ -31,9 +40,16 @@ function lineNumberAt(contents, index) {
 function recordLiteralMatches(violations, path, contents, literal, rule) {
   let offset = contents.indexOf(literal);
   while (offset >= 0) {
-    violations.push({ rule, path, line: lineNumberAt(contents, offset) });
+    if (!isAllowedIdentityConnectorReference(contents, offset, literal)) {
+      violations.push({ rule, path, line: lineNumberAt(contents, offset) });
+    }
     offset = contents.indexOf(literal, offset + literal.length);
   }
+}
+
+function isAllowedIdentityConnectorReference(contents, offset, literal) {
+  if (literal !== forbiddenScope) return false;
+  return allowedIdentityConnectorPackages.some((pkg) => contents.startsWith(pkg, offset));
 }
 
 function isDependencyManifest(path) {
