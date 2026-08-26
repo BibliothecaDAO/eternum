@@ -23,9 +23,9 @@ bouncer_config:
     n_events: 5000
     state_diff_size: 4000
     l1_gas: 2500000
-    # Keep one block within the workload proven by the 12-bot canary. The upstream 600-tx ceiling admitted a
-    # 120-transaction game block that took 659 seconds to produce and starved every later transaction.
-    n_txs: 12
+    # Keep the ceiling above the 96-bot offered load so the two-second block clock, not this cap, decides when a
+    # normal block closes. The upstream 600-tx ceiling admitted a 120-transaction game block that took 659 seconds.
+    n_txs: 24
     proving_gas: 5000000000
     receipt_l2_gas: 5800000000
   builtin_weights:

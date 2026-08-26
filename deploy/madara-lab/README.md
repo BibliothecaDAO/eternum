@@ -296,11 +296,46 @@ pre-submit queueing it caused. It did not change L2 inclusion latency. The fixed
 3.62/2.49/3.74 versus 9.51/11.46/10.54 for the estimated run, so the small block-production difference is not isolated
 enough to credit to this change.
 
+### Block-cap headroom
+
+The 12-transaction ceiling matched the original 6.4 tx/s offered load and made every busy block close on the cap. The
+headroom runs raised `n_txs` to 24, retained the 5,000,000,000 Sierra-gas ceiling, and used the same native image and
+fixed bounds. Both reports embed the exact host state:
+
+| Measurement | 96 bots / 15 s | 96 bots / 10 s |
+| --- | ---: | ---: |
+| Report | `.lab/runs/20260826T075608978Z.json` | `.lab/runs/20260826T081308621Z.json` |
+| Offered rate | 6.4 tx/s | 9.6 tx/s |
+| Completed / planned | 3,840 / 3,840 | 5,631 / 5,760 |
+| Failures / reverts | 0 / 0 | 110 / 19 |
+| Pre-confirmed p50 / p95 | 51 / 102 ms | 51 / 52 ms |
+| L2 p95 | 1.992 s | 2.007 s |
+| Indexed p95 | 1.449 s | 1.500 s |
+| Transactions per busy block p50 / max | 13 / 14 | 19 / 22 |
+| Block production p50 / p95 / max | 1.987 / 2.046 / 2.246 s | 2.000 / 2.024 / 2.077 s |
+
+The 15-second run passed with zero loss, proving that the acceptance result is no longer forced by a 12-transaction
+cap. Its slowest block was #53707: 13 Explore transactions from tick 12, 432 events, 1,930,845,921 L2 gas, and
+3,168,595,473 Sierra gas. Block production took 2.246 s; close took 245 ms and merklization 224 ms.
+
+The 10-second run is a failed workload gate, not a chain-capacity pass. All 1,152 Produce actions completed, but 110
+Move/Explore actions found no explorer with both a valid path and enough stamina, and another 19 reverted because a
+path tile was occupied. The completed mix was 2,843 Move, 1,636 Explore, and 1,152 Produce. The slowest block was
+#54131: 19 Explore transactions from tick 0, 603 events, 2,880,129,343 L2 gas, and 4,336,315,180 Sierra gas. It took
+2.077 s to produce and 156 ms to close. The 24-transaction cap was not reached; gameplay reachability, not sequencer
+admission, invalidated the requested 1.5x per-player cadence.
+
+One current Explorer action makes the latency boundary concrete. Madara accepted it into the mempool at
+08:03:04.605 UTC, logged it as executed and added to pre-confirmed block #54130 at 08:03:04.652 (46.563 ms), and the
+harness observed `PRE_CONFIRMED` at 08:03:04.656 (51 ms after submission, 60 ms after the scheduled action). Its
+receipt succeeded with 132,251,171 L2 gas and 27 events. Torii exposed it after 1.303 s and L2 accepted it after
+1.403 s. Therefore 51 ms is a real sequencer result, but not application end-to-end latency through Torii.
+
 The failed runs named the bottlenecks before the pass:
 
 - VM execution with the upstream 600-transaction block ceiling admitted a 120-transaction game block that took 659
-  seconds. Native execution plus a 12-transaction ceiling kept block production below 2.1 seconds during the final
-  workload.
+  seconds. Native execution plus a 12-transaction ceiling passed the original acceptance workload; the 24-transaction
+  headroom runs above show the uncapped two-second-clock tail.
 - One Torii query loop per action overwhelmed the SQL endpoint. One observer now batches up to 64 transaction hashes
   or explorer ids per query; the final run lost no indexed action.
 - The first tuned 96-player run completed 3,552 actions but left every explorer behind its exploration frontier for
@@ -322,8 +357,8 @@ reading numbers, and compare against a VM run on the same block-stats window.
 - Blockifier optimistic concurrency is **on by default** (`block_production_concurrency` defaults: enabled,
   `n_workers` = all cores). Measured 2.8 cores during a 24-tx burst; blocks #51847–48 executed 12 queued
   transactions in 269–319 ms (~25 ms/tx, native warm). Busy blocks at the 96-bot load close at ~1.87 s because that
-  is how long 12 txs take to **arrive** at 6.4 tx/s — arrival-bound, not execution-bound; ~6× execution headroom at
-  the current `n_txs: 12` cap.
+  is how long 12 txs take to **arrive** at 6.4 tx/s — arrival-bound, not execution-bound. The current `n_txs: 24`
+  ceiling sits above the measured load; the 15-second headroom run reached 14 transactions per block at most.
 - The batcher hands the executor up to `execution_batch_size` (4) ready transactions and never waits; pre-confirmed
   state persists after every batch. The value is both flush granularity and intra-batch parallelism cap.
 - Pre-confirmed status was first observed at the 50 ms poll boundary in the account probe and most harness actions.
@@ -334,7 +369,7 @@ reading numbers, and compare against a VM run on the same block-stats window.
 | Component | Pin | Why |
 | --- | --- | --- |
 | Madara | `ghcr.io/madara-alliance/madara@sha256:3c931fa515bbd3760fd5cbc0bcdceb557d3edbd44bec0231cdf52dd6abb475f6` (`v0.11.0-alpha.9`) | Exact image used by the passing run; tags are mutable |
-| Chain config | Full alpha.9 `devnet` preset, with the lab identity, 2 s blocks, 250 ms pending updates, execution batches of 4, and a 12-transaction block ceiling | Madara rejects partial configs; every measurement variable stays explicit |
+| Chain config | Full alpha.9 `devnet` preset, with the lab identity, 2 s blocks, 250 ms pending updates, execution batches of 4, and a 24-transaction block ceiling | Madara rejects partial configs; every measurement variable stays explicit |
 | Torii | `ghcr.io/dojoengine/torii:v1.8.16` | Last known-good version with this client |
 | sozo | 1.8.7 | Speaks RPC 0.9/0.10 and has the blake2s flag |
 | Caddy | `caddy:2-alpine` (2.11.4, `sha256:5f5c8640…`) | TLS front; set `CADDY_IMAGE` to compare another image |
