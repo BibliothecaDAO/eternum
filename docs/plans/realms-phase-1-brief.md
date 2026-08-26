@@ -500,6 +500,14 @@ deletion: the client's optimistic channels and the Torii canary both go.
 
 ## Decisions taken
 
+- **The client guest path is deleted (owner-decided 2026-08-26).** Entering or spectating without an identity session
+  performs zero writes: no `deploy_account`, no local key. Live evidence forced the call: the hidden guest path deployed
+  an owner-`0x0` account that settled three realms while "not connected" — and a guest account is unrecoverable by
+  construction (no registry entry). After the deletion, every account that exists is wallet-recoverable through the
+  registry. Guest support stays in `packages/core` for the harness only: bots are guests. When bots become player-run
+  agents (phase 2+), they do not need guests either — an agent plays **as the owner's own gameplay account**, delegated
+  by rotating its key to the agent runtime through the same session-gated `rotate` used for device recovery, and taken
+  back the same way. MMR and prizes stay attached to the owner; the rotate mechanism is the delegation primitive.
 - **Controller returns as an identity connector option (owner-decided 2026-08-26).** The wallet picker offers Controller
   beside Ready/Argent and Braavos for the one SIWS signature on `SN_MAIN` — identity only. Gameplay stays
   Cartridge-free: no session policies, no paymaster, no Controller signing of game transactions. Implementation (Codex):
