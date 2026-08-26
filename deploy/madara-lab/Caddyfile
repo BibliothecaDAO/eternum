@@ -15,13 +15,20 @@
 # apps/web dev server (plain HTTP on the host)
 realms.test {
 	import lab_tls
-	reverse_proxy host.docker.internal:3000
+	reverse_proxy host.docker.internal:3000 {
+		# Preserve the browser's Host: Vite checks it (allowedHosts) on the HMR websocket path and
+		# rejects the docker-internal upstream name with a 400, which sends the client into a reload loop.
+		header_up Host {host}
+	}
 }
 
 # apps/game dev server (Vite mkcert plugin serves HTTPS on the host; the hop is loopback, so its cert is not checked)
 play.realms.test {
 	import lab_tls
 	reverse_proxy https://host.docker.internal:5173 {
+		# Preserve the browser's Host (see the web block above) — verified 2026-08-26: without it the
+		# HMR upgrade reaches Vite with the docker-internal Host and is refused 400.
+		header_up Host {host}
 		transport http {
 			tls_insecure_skip_verify
 		}
