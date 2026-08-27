@@ -449,13 +449,40 @@ What the node actually does — each fact checked in source at the pin and measu
 Then: **(a) max sustainable per-bot rate** — the harness discovers the fastest cadence the game rules permit (stamina
 and labor bind long before 1 action/s) and runs 96 bots flat out at it; **(b) max chain rate** — concurrent games (the
 cap is 96 per game, nothing stops N games) at the brief cadence, scaled 1 → 2 → 4 → … until p95 pre-confirmed (measured
-at ≤ 50 ms poll) or `block_production` breaks its bar. Shape (b) is the commercial number: how many simultaneous
-96-player Blitz games one Madara carries. The report names the wall (execution, gas, merklization, mempool) with the
-block-stats line that shows it.
+at ≤ 50 ms poll) exceeds 1 s or the block-close cost exceeds its bar. Shape (b) is the commercial number: how many
+simultaneous 96-player Blitz games one Madara carries. The report names the wall (execution, gas, merklization, mempool)
+with the block-stats line that shows it.
+
+**The block bar is close cost, not `block_production_ms`** (corrected 2026-08-27). `block_production_ms` includes the 2
+s block clock, so an idle chain reads ~2.0 s and a "≤ 2.000 s" bar is unmeetable by construction — the first headroom
+report tripped on exactly that. The bar is **`close_block_total_ms` p95 ≤ 300 ms** (the logged field the manifests
+already carry as `closeBlockMs`): it is the work the sequencer does per block — merklization, commit, DB write — and the
+only part of production that hardware changes. Applied to the 2026-08-27 runs: shape (a) at 16 s 121 ms, N=1 125 ms, N=2
+249 ms — pass; N=4 849 ms — fail.
 
 **Owner:** Codex (both headroom shapes, WS-vs-poll comparison, bounds policy, batch-size trade — all as harness runs
 with manifests); Claude (pin-bump digests, `host-state.sh` in every manifest). **Gate:** each lever lands with a
 before/after manifest pair on the same host state, or it is not a finding.
+
+**Headroom result (reported 2026-08-27, README "Headroom").** Shape (a): the fastest zero-failure 96-bot cadence is one
+action per bot every 16 s (stamina binds; 13–15 s runs fail on game rules, never on the chain). Shape (b): N=1 and N=2
+concurrent games pass every bar (pre-confirmed p95 52 / 101 ms, close p95 125 / 249 ms, zero chain failures); N=4 (25.6
+tx/s offered) is the wall — pre-confirmed p95 7.9 s, close p95 849 ms, block 87154 executed 174 txs in ~11.5 s (66
+ms/tx) with 1.68 s of merklization; N=8 collapsed with swap full. Neither configured ceiling bound (max 23.7 B of 100 B
+Sierra gas, 219 attempts under `n_txs: 256`). How to read it, with the host profile in the manifests:
+
+- **It is the wall of this laptop as a shared box, not of Madara.** Ryzen 7 5800H at 73 % clock, 32 GB with 8 GB zram
+  swap, running the sequencer _and_ the bot driver (~25 RPC calls per action — 20k RPC/s at N=4), Torii (4 GB),
+  Postgres, Caddy, a browser. Execution ran 2.6× slower than the quiet-burst 25 ms/tx on the same classes: stolen cores,
+  not gas. `execution_batch_size: 4` also capped intra-batch parallelism at 4 throughout and was never re-tested. The
+  isolated cap on this hardware is a projection (~30–40 tx/s, N≈5–6), not a measurement.
+- **Merklization is the hardware-independent cost line**: ~10 ms per transaction and serial — 149 ms for 12 txs, 1.68 s
+  for 174, 7.25 s for 256. It scales with touched storage keys and trie depth, which is why single-thread clock matters
+  more than core count for the sequencer, and why Eternum-scale worlds need their own measurement.
+
+What follows from it — the driver-off-box rerun, the batch-size sweep, the replica and restore drill, the Eternum-scale
+shape, and the infra shape they size — is phase 2 section E. No hardware is rented on these numbers: they measure a
+stack that still carries Torii and client optimism, both of which phase 2 deletes.
 
 ### D.5 Phase-1 integration gate (Claude)
 
@@ -469,8 +496,9 @@ numbers recorded in the README. That is phase 1 done.
 **Passed 2026-08-27.** Controller identity → SIWS → wallet-bound gameplay account → settle → play → reload keeps the
 address (26 Aug); game 16 `phase1-final-3`, one human plus 95 bots, 30 minutes to a result — the human ranked #1 of 96;
 8,326/8,360 bot actions completed, 34 reverts all tile contention with the human; pre-confirmed p95 102 ms, L2 p95 2.03
-s, indexed p95 1.89 s (README "Phase-1 closing match"). Open behind it, on the same lab: the D.4.1 headroom shapes
-(Codex), and a harness follow-up — classify reverts by reason so mixed human/bot games are judged honestly.
+s, indexed p95 1.89 s (README "Phase-1 closing match"). The D.4.1 headroom shapes reported the same day (result recorded
+above); the harness now classifies reverts by reason, so mixed human/bot games are judged honestly. Phase 1 is closed;
+the phase-2 brief's entry criteria are met.
 
 ---
 

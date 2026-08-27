@@ -1,9 +1,11 @@
 # Realms phase 2 — own the data plane, take value seriously (DRAFT)
 
-**Status: draft, opens when phase 1 closes.** Entry criteria: the D.5 human gate passed (wallet login → settle → play →
-reload keeps the address; one human + 95 bots to a result) and the D.4.1 headroom shapes reported (max game-legal
-cadence; games-per-Madara). Facts below marked _verify_ are re-checked against the tree at kickoff — phase 1 is still
-landing changes.
+**Status: draft; entry criteria met 2026-08-27.** Entry criteria were: the D.5 human gate passed (wallet login → settle
+→ play → reload keeps the address; one human + 95 bots to a result — passed 27 Aug) and the D.4.1 headroom shapes
+reported (16 s max game-legal cadence; two concurrent games pass, four hit the wall — reported 27 Aug). Facts below
+marked _verify_ are re-checked against the tree at kickoff. **Phase 2 runs on the lab laptop; no hardware is rented
+until section A has deleted Torii and the stack has its final form** (owner decision 2026-08-27) — measuring a stack we
+are deleting sizes the wrong thing.
 
 Phase 1 proved the platform: 96 players on our own Madara, zero Cartridge in gameplay, pre-confirmation in 50–77 ms, one
 wallet identity bound to one permanent gameplay account. Phase 2 makes the two remaining rented or missing layers ours:
@@ -87,18 +89,74 @@ driver behind that grant.
 `apps/mobile` on the identity + gameplay-account stack; the marketplace port onto our stack; the
 `realms.json`/`full-realms.json` merge (asked with a diff); web stays React 19 / starknet 9.
 
+## E. Sequencer capacity and infra shape — measured on the laptop, decided on paper
+
+The phase-1 headroom result (phase-1 brief, D.4.1 "Headroom result") named the wall: on the lab laptop, shared with the
+bot driver, Torii, Postgres and swap, four concurrent 96-player Blitz games (25.6 tx/s) break the close-cost bar; two
+pass. Execution there was contention-bound (66 ms/tx vs 25 ms/tx quiet, intra-batch parallelism capped at
+`execution_batch_size: 4`); merklization is the serial, hardware-independent cost at ~10 ms/tx. Every gate in this
+section runs on the laptop; the box is bought in phase 3, after section A, sized by these numbers.
+
+**E.1 The true sequencer cap.** Rerun shape (b) with the harness driver on any other machine — a second laptop on the
+LAN or a throwaway VM; it is stateless and needs only RPC — so the sequencer's host state is the sequencer's alone. Then
+sweep `execution_batch_size` (4 → 8 → 16) on the same host state; it is both flush granularity and the parallelism cap,
+so the trade is measured, never assumed. **Gate:** the N at which close p95 first exceeds 300 ms, with the driver
+off-box, and the batch size that carries it, in a manifest pair with `host-state.sh` — the first number a box is ever
+sized from.
+
+**E.2 Redundancy, drilled.** Madara is a single-writer sequencer; nothing makes it highly available, so redundancy is
+layered, cheapest first, and all three layers are proven on the laptop:
+
+1. **Hot replica** — a second Madara container in `--full --gateway-url <sequencer feeder gateway>` mode (the :5062 port
+   already exposed) following the sequencer one block behind. It serves every read (RPC, the section-A WS stream, the
+   indexer) so the sequencer only ever sees writes and status polls, and it is the promotion target: restart it with
+   `--sequencer` and the sequencer key. **Gate:** kill the sequencer mid-game, promote the replica, the harness
+   completes the game; RPO one block, RTO recorded in the README.
+2. **Backups** — Madara's own `--backup-dir` + `--backup-every-n-blocks`, shipped incrementally to object storage (R2/S3
+   later; a second disk on the laptop now), restored with `--restore-from-latest-backup` onto a fresh data volume.
+   **Gate:** restore drill from an empty volume to a serving node, RTO recorded.
+3. **Settlement** — the layer that actually protects money. Section B keeps MMR and the ledger on L2 and leaves only
+   entry tokens on L3, so a lost L3 costs game state, not funds — provided results reach L2 promptly: `apply_results`
+   posts per game end, never batched. Phase 3's L3→L2 messaging/DA makes the L3 recoverable from L2 instead of from our
+   backups; until then layers 1 and 2 are mandatory for any chain holding a live game with a prize.
+
+**E.3 Eternum scale.** 2,000 players at one action per 2–5 minutes is 7–17 tx/s — inside what N=2 carried on the laptop
+with the driver on-box. Throughput is not the risk; two other things are: **bursts** (day start, war ticks — spec a
+burst tolerance of 4× average for 60 s and let the mempool and pre-confirmation absorb it, which `n_txs: 256` exists
+for) and **state growth** (2k realms of entities deepen the tries; merklization per tx rises with world size and does
+not parallelize). **Gate:** shape (c) — a large world, 2,000 bots at Eternum cadence with one scripted burst, tracking
+`merklizationMs`/tx against block height and state size; the report says whether merklization stays under the close bar
+at Eternum's world size, and at what size it would not.
+
+**E.4 Infra shape (recorded, not purchased).** What the numbers so far say the production shape is, to be confirmed by
+E.1–E.3 and bought in phase 3:
+
+| Role         | Shape                                                                                                                                                                    | Why                                                                                                                                      |
+| ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| Sequencer    | One bare-metal box, 16 high-clock cores (Ryzen 9 7950X3D / EPYC Genoa class), 128 GB ECC, 2× NVMe RAID1, **no swap**, governor `performance`; runs Madara sequencer only | Merklization is serial — single-thread clock (~2× this laptop) buys more than cores; RocksDB wants local NVMe; the N=8 collapse was swap |
+| Read / index | A smaller box: Madara full node following the gateway + the section-A indexer + Postgres; serves client RPC/WS and the identity web app; the promotion target            | Reads never touch the sequencer; replica for free                                                                                        |
+| Front        | Cloudflare: DNS, TLS, WAF and rate limiting on `add_invoke_transaction`, WS passthrough, `cloudflared` tunnels so no port is public, R2 for backups                      | It cannot host the chain; it is the right front for it                                                                                   |
+| Staging      | One cheap box, same layout; the harness driver on a separate throwaway VM                                                                                                | Releases are measured before prod, with the driver off-box as E.1 requires                                                               |
+| Lab          | This laptop                                                                                                                                                              | Unchanged                                                                                                                                |
+
+Bare metal (Hetzner AX / OVH / Latitude class) is the recommendation for the sequencer: the hardware is what the
+workload wants and the cost is ~€250–300/mo for the whole shape versus ~$1.2–1.5k/mo for the AWS equivalent (c7a/m7a
+with instance-store NVMe). Cloud's advantage — replacing a box in minutes — is what E.2 buys at the chain layer instead.
+Prices are list prices at the time of writing; the decision is re-checked, not re-argued, when phase 3 buys.
+
 ## Out of phase 2 (deliberately)
 
 Dojo exit (enabled by A — once the client consumes our stream, dojo.js has nothing left to do; the world contracts
-follow); hosted Madara, DNS, cutover; L3 settlement, the orchestrator/Piltover stack, and the LORDS/resource bridge
-(withdrawals gated by proof cadence — Eternum's long format tolerates it). If you find yourself writing one of them
-here, stop.
+follow); renting or cutting over to hosted Madara, DNS, and the E.4 shape (measured and decided here, bought in phase
+3); L3 settlement, the orchestrator/Piltover stack, and the LORDS/resource bridge (withdrawals gated by proof cadence —
+Eternum's long format tolerates it). If you find yourself writing one of them here, stop.
 
 ## Cost
 
 Added: one indexer service, one L2 contract pair (`MMRToken` move + `blitz_ledger`), the operator result-poster, the
-agent grant surface. Deleted: Torii and its canary config, the client optimistic machinery, the L3 entry-token path, the
-client's Torii read paths. Net deletion in the client; one owned service replaces one rented one.
+agent grant surface, a replica container and a backup job in the lab compose (E.2), three harness shapes (E.1, E.3).
+Deleted: Torii and its canary config, the client optimistic machinery, the L3 entry-token path, the client's Torii read
+paths. Net deletion in the client; one owned service replaces one rented one. No hardware cost in this phase.
 
 ## Validation
 

@@ -341,9 +341,11 @@ back-to-back with no parallel heavy job and no container restart:
 | **4** | **25.6 tx/s** | **9,042 / 15,360** | **0 / 2,707 / 3,611** | **7.855 s** | **439.193 s** | **5.514 / 13.279 s** | **52 / 219** | `.lab/runs/20260827T141017762Z.json` |
 | 8 | 51.2 tx/s | 273 / 30,720 | 1 / 14,662 / 15,784 | 1.644 s[^n8-tail] | 522.777 s | 23.763 / 84.629 s | 7 / 632[^attempts] | `.lab/runs/20260827T155113802Z.json` |
 
-The formal 2.000-second block-production p95 bar is already missed at `N=1` by 46 ms, so the strict brief has no
-passing concurrent-game point. `N=1` and `N=2` nevertheless kept client-visible pre-confirmation below 1 s with zero
-chain/driver failures. The clear execution/RPC capacity wall is **N=4**: pre-confirmed p95 rose to 7.855 s, L2 p95 to
+The first reading of this table judged `block_production_ms` against a 2.000 s bar and found no passing point; that
+bar was mis-specified — production includes the 2 s block clock, so an idle chain reads ~2.0 s. The brief's corrected
+bar (D.4.1, 2026-08-27) is **close cost, `closeBlockMs` p95 ≤ 300 ms**, which the manifests already carry: shape (a)
+at 16 s 121 ms, `N=1` 125 ms, `N=2` 249 ms — pass; `N=4` 849 ms — fail. `N=1` and `N=2` also kept client-visible
+pre-confirmation ≈ 100 ms with zero chain/driver failures. The clear execution/RPC capacity wall is **N=4**: pre-confirmed p95 rose to 7.855 s, L2 p95 to
 8.669 s, indexed p95 to 32.735 s, and 2,626 submitted transactions were not observed by both Torii sources before
 their timeout. The configured ceilings did not bind there: the busiest logged block attempted 219 transactions and
 used at most 23.728 B of the 100 B Sierra allowance.
