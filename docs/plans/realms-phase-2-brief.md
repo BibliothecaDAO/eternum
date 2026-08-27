@@ -228,6 +228,19 @@ processes, and republishes. The indexer is the latency budget and the EOL depend
        below the confirmed block are ignored. Also noted, not gating: `acceptReceipt` resolves every chain transaction's
        sender with a `getTransactionByHash` (one RPC per transaction at any load); `subscribeNewTransactions` carries
        `sender_address` and would replace it.
+  - _A.2 fixes landed 2026-08-27_ (`ab6e72d746`, `871506390b`): verified from the evidence file — one diff per
+    transaction (4 pre-confirmed + 4 confirmed for 4 transactions), 120 unique reset/head pairs, no gaps.
+  - _Snapshot is the confirmed base, the overlay is a diff_ (decided 2026-08-27, from Codex's A.3 finding). A fresh
+    snapshot today is the overlay state, so a client connecting while an overlay-only row exists cannot roll it back on
+    the next `overlay_reset`. Fix in herald's attach path, not the client: `snapshot` chunks come from the **confirmed**
+    fold, followed — before any live message — by the current overlay as pre-confirmed `diff`s (herald already coalesces
+    them per transaction; keep that list per game and clear it on reset). The client transport then marks those rows
+    pending exactly as it does live ones, and `overlay_reset` rolls them back. Gate: connect while a transaction is
+    pre-confirmed, force a same-epoch reset, the client's state equals a fresh snapshot.
+  - _A.3 started 2026-08-27_ (`26b41d30b0` nonce dispenser + dead entry-token poll deleted; `930712cbcc` herald consumer
+    in `packages/core/src/sync/herald-game-sync-transport.ts`, RECS wiring, `waitForTransaction` on the tx channel).
+    Herald is selected by `VITE_PUBLIC_HERALD_URL`; Torii stays the transport otherwise — a transitional switch that A.4
+    deletes together with Torii, never a fallback that survives.
   - _Gates per slice._ **A.1** — snapshot of a lab game matches Torii row-for-row for every decoded component (Torii is
     the oracle until A.4). **A.2** — the forced-replacement transcript from A.0 is handled: after `overlay_reset` the
     client's state equals a fresh snapshot; a killed socket resumes by `seq` with zero gaps; a herald restart mid-game
