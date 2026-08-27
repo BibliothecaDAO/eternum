@@ -102,6 +102,7 @@
     "lab:deploy-gameplay": "bun deploy/madara-lab/scripts/deploy-gameplay-contracts.ts",
     "lab:harness": "bun deploy/madara-lab/harness/run.ts",
     "lab:probe-account": "bun deploy/madara-lab/scripts/probe-deploy-account.ts",
+    "lab:probe-ws": "node deploy/madara-lab/scripts/probe-ws-subscriber.mjs",
     "lab:probe-bounds": "bun deploy/madara-lab/scripts/probe-resource-bounds.ts",
     "summary:weekly": "node scripts/generate-weekly-summary.js",
     "summary:monthly": "DAYS_TO_ANALYZE=30 OUTPUT_PATH=monthly-summary.md node scripts/generate-weekly-summary.js",

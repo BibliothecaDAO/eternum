@@ -456,6 +456,30 @@ ports 5070–5072), then the compose pin was swapped and `madara-lab` restarted 
   check. Not investigated: Torii is deleted by phase-2 section A, and herald reads the WS stream this pin exists for.
   Until then, judge harness runs on this pin by pre-confirmed and L2; `indexedP95` is a known cost of the pin.
 
+### Forced pre-confirmed replacement — what a subscriber sees (phase-2 A.0 gate) — 2026-08-27
+
+Tool: `pnpm lab:probe-ws <out.jsonl>` (`scripts/probe-ws-subscriber.mjs`) subscribes to `subscribeNewHeads`,
+`subscribeEvents` (`finality_status: PRE_CONFIRMED`) and `subscribeNewTransactions` on `/rpc/v0_10_2` and reconnects
+across a restart. Three concurrent `probe-deploy-account.ts` runs filled the pre-confirmed block; the sequencer was
+then killed two ways:
+
+- **SIGTERM (`docker compose restart`)** — Madara closes the pre-confirmed block on graceful shutdown: block 92333
+  closed 517 ms into its 2 s window with all three transactions; subscribers saw `PRE_CONFIRMED` events, then the
+  `ACCEPTED_ON_L2` events with the head, then the socket closed. On reconnect (≈2.4 s later) `subscribeEvents`
+  **re-sent block 92333's `ACCEPTED_ON_L2` events** — a repeat.
+- **SIGKILL** — Madara saves pre-confirmed blocks to its database by default (`💾 Preconfirmed blocks will be saved to
+  database`; `--no-save-preconfirmed` turns it off). After the kill and restart (≈3.8 s gap) the same two transactions
+  came back as `PRE_CONFIRMED` at the same height — each event emitted **twice** on the new subscription — and 30 ms
+  later the block closed as 92386 with the same hashes; a transaction submitted after the restart landed in 92387.
+  **No replacement occurred in either case.** Pre-confirmed events carry `block_number: null`.
+
+Consequences for herald (phase-2 brief, A "State model"): deduplicate by `(transaction_hash, event_index)` — repeats
+are the observed behaviour, on subscribe and on reconnect; rebuild the overlay from one `pre_confirmed` read on every
+new head — cheap insurance that also covers the one replacement path this lab has not yet exercised, **failover to
+the replica** (a pre-confirmed block that never reached the gateway dies with the sequencer; E.2's promotion drill
+measures exactly that loss). Every restart also re-logs ~7,600 `Nonce mismatch` warnings: the saved mempool still
+holds the N=8 backlog and re-checks it on start — harmless, and it goes when the data volume is rebuilt.
+
 ## What Madara does not give you (as of the nightly pin)
 
 - **WebSocket subscriptions are version-scoped.** They exist only on `/rpc/v0_10_2`; the v0.8/v0.9 subscribe methods
