@@ -52,17 +52,28 @@ const registry: ModelRegistry = {
   worldAddress: "0x123",
 };
 
-const setEvent = (model: string, transactionHash: string, data: string[], eventIndex = 0): RawWorldEvent => ({
+const setEvent = (
+  model: string,
+  transactionHash: string,
+  data: string[],
+  eventIndex = 0,
+  entityId = "0xabc",
+): RawWorldEvent => ({
   block_number: 12,
   data,
   event_index: eventIndex,
-  keys: [WORLD_EVENT_SELECTORS.set, model, "0xabc"],
+  keys: [WORLD_EVENT_SELECTORS.set, model, entityId],
   transaction_hash: transactionHash,
   transaction_index: 0,
 });
 
-const subscribedSet = (transactionHash: string, value: string): RpcSubscribedEvent => ({
-  ...setEvent("0x101", transactionHash, ["0x1", "0x7", "0x1", value]),
+const subscribedSet = (
+  transactionHash: string,
+  value: string,
+  eventIndex = 0,
+  entityId = "0xabc",
+): RpcSubscribedEvent => ({
+  ...setEvent("0x101", transactionHash, ["0x1", "0x7", "0x1", value], eventIndex, entityId),
   block_number: null,
   finality_status: "PRE_CONFIRMED",
   from_address: registry.worldAddress,
@@ -98,6 +109,15 @@ const recordingSocket = (): StreamSocket & { messages: Array<Record<string, unkn
   };
 };
 
+const endMacrotask = (): Promise<void> => new Promise((resolve) => setImmediate(resolve));
+
+const preconfirmedReceipt = (events: RpcSubscribedEvent[]) => ({
+  events: events.map((event) => ({ data: event.data, from_address: event.from_address, keys: event.keys })),
+  execution_status: "SUCCEEDED",
+  finality_status: "PRE_CONFIRMED",
+  transaction_hash: events[0]!.transaction_hash,
+});
+
 const liveFixture = () => {
   const confirmedFold = new WorldFold(registry);
   confirmedFold.apply(decodeWorldEvent(registry, setEvent("0x101", "0x111", ["0x1", "0x7", "0x1", "0x1"]))!);
@@ -132,7 +152,7 @@ describe("LiveWorld", () => {
 
     live.acceptPreconfirmedEvent(hint);
     live.acceptPreconfirmedEvent(hint);
-    await live.acceptHead({ block_number: 12, timestamp: 100 });
+    await live.reconcileAfterSubscribe();
 
     expect(socket.messages.map(({ type }) => type)).toEqual([
       "hello",
@@ -152,6 +172,76 @@ describe("LiveWorld", () => {
       value: { game_id: "0x7", value: "0x3" },
     });
     expect(live.snapshot("7").models[0].rows[0].value.value).toBe("0x3");
+  });
+
+  it("publishes one pre-confirmed diff per transaction and game", async () => {
+    const { live } = liveFixture();
+    const socket = recordingSocket();
+    const session = live.attach("7", socket);
+    live.resume(session, { epoch: "", seq: 0, type: "resume" });
+
+    const first = subscribedSet("0x222", "0x2", 0);
+    const second = subscribedSet("0x222", "0x3", 1, "0xdef");
+    live.acceptPreconfirmedEvent(first);
+    const receipt = live.acceptReceipt(preconfirmedReceipt([first, second]));
+    await endMacrotask();
+    expect(socket.messages.filter(({ type }) => type === "diff")).toHaveLength(0);
+
+    live.acceptPreconfirmedEvent(second);
+    await endMacrotask();
+    await receipt;
+    const coalescedDiffs = socket.messages.filter(({ type }) => type === "diff");
+    expect(coalescedDiffs).toHaveLength(1);
+    expect(coalescedDiffs[0]!.set).toHaveLength(2);
+
+    const nextTransaction = subscribedSet("0x333", "0x4");
+    live.acceptPreconfirmedEvent(nextTransaction);
+    const lastTransaction = subscribedSet("0x444", "0x5", 0, "0x456");
+    live.acceptPreconfirmedEvent(lastTransaction);
+    expect(socket.messages.filter(({ type }) => type === "diff")).toHaveLength(2);
+    const lastReceipt = live.acceptReceipt(preconfirmedReceipt([lastTransaction]));
+    await endMacrotask();
+    await lastReceipt;
+
+    const diffs = socket.messages.filter(({ type }) => type === "diff");
+    expect(diffs).toHaveLength(3);
+    expect(diffs.every(({ preconfirmed, type }) => preconfirmed === true && type === "diff")).toBe(true);
+    expect(diffs[1]!.set).toHaveLength(1);
+    expect(diffs[2]!.set).toHaveLength(1);
+  });
+
+  it("ignores finalized copies of subscribed pre-confirmed events", async () => {
+    const { block, live } = liveFixture();
+    const socket = recordingSocket();
+    const session = live.attach("7", socket);
+    live.resume(session, { epoch: "", seq: 0, type: "resume" });
+
+    await live.reconcileAfterSubscribe();
+    const boundary = socket.messages.length;
+    live.acceptPreconfirmedEvent({
+      ...subscribedSet("0x333", "0x3"),
+      block_number: block.block_number,
+      finality_status: "ACCEPTED_ON_L2",
+    });
+    await endMacrotask();
+
+    expect(socket.messages).toHaveLength(boundary);
+  });
+
+  it("emits one reset and head when subscription heads repeat the reconciled block", async () => {
+    const { block, live } = liveFixture();
+    const socket = recordingSocket();
+    const session = live.attach("7", socket);
+    live.resume(session, { epoch: "", seq: 0, type: "resume" });
+
+    await live.reconcileAfterSubscribe();
+    const boundary = socket.messages.length;
+    await live.acceptSubscribedHead({ block_number: block.block_number, timestamp: block.timestamp });
+    await live.acceptSubscribedHead({ block_number: block.block_number - 1, timestamp: block.timestamp });
+
+    expect(socket.messages).toHaveLength(boundary);
+    expect(socket.messages.filter(({ type }) => type === "overlay_reset")).toHaveLength(1);
+    expect(socket.messages.filter(({ type }) => type === "head")).toHaveLength(1);
   });
 
   it("resolves a reverted receipt for a sender settled in the game", async () => {

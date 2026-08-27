@@ -113,7 +113,7 @@ const main = async (): Promise<void> => {
       console.error(JSON.stringify({ error: error.message, event: "herald_fatal" }));
       void shutdown(1);
     },
-    onHead: (head) => live.acceptHead(head),
+    onHead: (head) => live.acceptSubscribedHead(head),
     onReady: () => live.reconcileAfterSubscribe(),
     onReceipt: (receipt) => live.acceptReceipt(receipt),
   });
