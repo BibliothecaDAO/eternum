@@ -364,6 +364,29 @@ reading numbers, and compare against a VM run on the same block-stats window.
 - Pre-confirmed status was first observed at the 50 ms poll boundary in the account probe and most harness actions.
   Treat these values as poll-quantized upper bounds, not internal execution timings.
 
+### Phase-1 closing match (D.5) — 2026-08-27
+
+Game 16 `phase1-final-3`, 30 minutes, one human (Controller identity → SIWS → wallet-bound gameplay account
+`0x07ef0b…dbf`, settled by hand) plus 95 harness bots (`pnpm lab:harness -- --bots 95 --minutes 22 --game-id 16`,
+manifest `.lab/runs/20260827T094010298Z.json`). Lobby full at 11:13:32 (96/96), bots at cadence from 11:17:47,
+game ended 11:38:59 with a result: **the human ranked #1 of 96** (1.31 B registered points; best bot 260 M, median
+bot 230 M).
+
+| Measured over the 23-minute workload window | |
+| --- | --- |
+| Actions | 8,326 / 8,360 completed; 34 reverted (0.4 %) |
+| Reverts | all `"one of the tiles in path is occupied"` — two actors targeting one tile; contention, not a fault |
+| Pre-confirmed p50 / p95 / p99 | 51 / 102 / 153 ms (50 ms poll) |
+| Accepted on L2 p95 | 2.03 s |
+| Indexed by Torii p95 | 1.89 s |
+| Madara, same window | 8,389 txs executed, 34 reverted, 0 rejected; 13 txs per busy block (p50, max 15); `block_production` p50 1.99 s (arrival-bound at cadence); sierra gas per busy block p50 1.5 G, p95 3.6 G, max 4.3 G |
+
+The harness reports `passed: false` because its bar assumes a bot-only game (zero reverts, every hash indexed):
+the 34 reverts are the human moving through tiles the bots' planner does not model, and reverted transactions never
+reach Torii, so the same 34 count as indexing loss. For mixed human/bot games the bar has to classify reverts by
+reason; that is a harness follow-up, not a chain or client finding. The gate as written in the brief — one human plus
+95 bots played to a result on the lab — is met.
+
 ## Pinning
 
 | Component | Pin | Why |

@@ -466,6 +466,12 @@ migrated → `madara.blitz` bootstrapped → `apps/web` on `https://realms.test`
 integration game: one human plus 95 harness bots, played to a result → `check:forbidden-hosts` green → `block-stats.sh`
 numbers recorded in the README. That is phase 1 done.
 
+**Passed 2026-08-27.** Controller identity → SIWS → wallet-bound gameplay account → settle → play → reload keeps the
+address (26 Aug); game 16 `phase1-final-3`, one human plus 95 bots, 30 minutes to a result — the human ranked #1 of 96;
+8,326/8,360 bot actions completed, 34 reverts all tile contention with the human; pre-confirmed p95 102 ms, L2 p95 2.03
+s, indexed p95 1.89 s (README "Phase-1 closing match"). Open behind it, on the same lab: the D.4.1 headroom shapes
+(Codex), and a harness follow-up — classify reverts by reason so mixed human/bot games are judged honestly.
+
 ---
 
 ## Cost
