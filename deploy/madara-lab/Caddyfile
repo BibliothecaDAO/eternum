@@ -35,6 +35,14 @@ play.realms.test {
 	}
 }
 
+# herald (apps/herald on the host, HTTP + WebSocket on :3003): the game's read path once VITE_PUBLIC_HERALD_URL is set.
+herald.realms.test {
+	import lab_tls
+	reverse_proxy host.docker.internal:3003 {
+		header_up Host {host}
+	}
+}
+
 rpc.realms.test {
 	import lab_tls
 	reverse_proxy madara:9944

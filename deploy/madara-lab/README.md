@@ -32,6 +32,7 @@ Endpoints (all bound to localhost only):
 | Port | What                                                                                   |
 | ---- | -------------------------------------------------------------------------------------- |
 | 443  | Caddy: TLS for every browser-facing `*.realms.test` host (see below)                    |
+| 3003 | herald (`pnpm --dir apps/herald start`), fronted as `https://herald.realms.test` — add `herald.realms.test` to the `/etc/hosts` line; set `VITE_PUBLIC_HERALD_URL=https://herald.realms.test` in `apps/game/.env` to make it the game's transport |
 | 5050 | Starknet JSON-RPC. `/` is v0.10.2; `/rpc/v0_9_0`, `/rpc/v0_8_1`, `/rpc/v0_10_0` are pinned routes |
 | 5051 | Madara admin RPC (`madara_*`). Never expose.                                            |
 | 5062 | Feeder gateway + gateway                                                               |
