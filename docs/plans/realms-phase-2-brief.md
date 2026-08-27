@@ -26,16 +26,16 @@ settlement and the LORDS/resource bridge.
 
 One Codex stream, one Claude stream, in this order — each item lands with its gate before the next starts:
 
-| #   | Item                                                                                                    | Owner                                                                 | Depends on                                         |
-| --- | ------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------- | -------------------------------------------------- |
-| 0   | **A.0 pin bump** to the WS-capable build; N=2 harness rerun on the new pin as the regression gate       | Claude (pin, digest, compose); Codex (rerun + WS-vs-poll comparison)  | —                                                  |
-| 1   | **A** `apps/herald` — decode, snapshot, stream, client consumes, Torii and client optimism deleted      | Codex                                                                 | 0                                                  |
-| 2   | **E.2** replica and backup/restore drills in the lab compose                                            | Claude                                                                | 0 (runs beside 1)                                  |
-| 3   | **E.1** batch-size sweep on the laptop; the driver-off-box rerun the day a second machine is on the LAN | Codex (harness); Claude (second machine, host state)                  | 0                                                  |
-| 4   | **B** value plane — L2 contracts, relay, operator poster, adversarial test                              | Codex (contracts, authority server); Claude (adversarial-test review) | 1 (the relay writes L3 through the same read path) |
-| 5   | **C** agent grant surface                                                                               | Codex                                                                 | 4                                                  |
-| 6   | **E.3** Eternum-scale shape (c)                                                                         | Codex                                                                 | 1 (measured on the new read path)                  |
-| 7   | **D** revivals                                                                                          | parked until 1 and 4 land                                             | —                                                  |
+| #   | Item                                                                                                                                                      | Owner                                                                 | Depends on                                         |
+| --- | --------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------- | -------------------------------------------------- |
+| 0   | **A.0 pin bump** to the WS-capable build; N=2 harness rerun on the new pin as the regression gate                                                         | Claude (pin, digest, compose); Codex (rerun + WS-vs-poll comparison)  | —                                                  |
+| 1   | **A** in four slices: A.1 herald decode + snapshot, A.2 stream + overlay, **A.3 client** (consumer, optimism deleted, nonce dispenser), A.4 Torii deleted | Codex                                                                 | 0 (A.1 can start before it)                        |
+| 2   | **E.2** replica and backup/restore drills in the lab compose                                                                                              | Claude                                                                | 0 (runs beside 1)                                  |
+| 3   | **E.1** batch-size sweep on the laptop; the driver-off-box rerun the day a second machine is on the LAN                                                   | Codex (harness); Claude (second machine, host state)                  | 0                                                  |
+| 4   | **B** value plane — L2 contracts, relay, operator poster, adversarial test                                                                                | Codex (contracts, authority server); Claude (adversarial-test review) | 1 (the relay writes L3 through the same read path) |
+| 5   | **C** agent grant surface                                                                                                                                 | Codex                                                                 | 4                                                  |
+| 6   | **E.3** Eternum-scale shape (c)                                                                                                                           | Codex                                                                 | 1 (measured on the new read path)                  |
+| 7   | **D** revivals                                                                                                                                            | parked until 1 and 4 land                                             | —                                                  |
 
 Existing apps that this brief does **not** touch: `apps/realtime-server` (the chat WebSocket server) and `apps/indexer`
 (the apibara L2 indexer for realms-world). Herald is neither; whether chat later rides herald's socket is a KISS
@@ -67,6 +67,36 @@ processes, and republishes. The indexer is the latency budget and the EOL depend
   to describe herald's snapshot + stream contract — a rule that describes deleted code is a trap for the next agent.
   Success is measured in deletion: the client's optimistic channels and the Torii canary both go, and the explore-reveal
   latency drops from ~1–1.5 s to a target ≤ 250 ms end-to-end.
+- **A.3 — the client, spelled out** (the part that decides whether this phase was worth doing; sized on the tree
+  2026-08-27):
+  - _Read path._ `packages/core/src/sync/game-sync-runtime.ts` becomes the herald consumer: snapshot on connect,
+    sequence-numbered diffs into RECS, resume by sequence. RECS stays the single store, so scenes and UI do not change.
+    Torii-specific code goes with Torii: `packages/torii` (6,142 lines), `apps/game/src/dojo` (3,601 lines),
+    `model-stream-clause.ts`, and the Torii lanes of `entity-ingest-queue.ts`. `packages/dojo` (137 lines) waits for the
+    phase-3 Dojo exit.
+  - _Optimism._ `provisional-write-manager.ts` and the 23 files that mention "optimistic" are deleted. The acting
+    player's own click keeps a UI-only pending indicator — never a RECS write; pre-confirmation is the shared optimistic
+    layer, and it arrives through herald like every other fact.
+  - _Write path — today a race._ `apps/game/src/account/gameplay-account-submit.ts` reads `getNonce(PRE_CONFIRMED)` per
+    submit and retries once on a nonce rejection; two fast actions from one client can read the same nonce. Replace with
+    one per-account **nonce dispenser**: seeded once from the pre-confirmed nonce, incremented per submit, submissions
+    serialized per account, resynced on any nonce rejection (phase-1 measured 3 pipelined txs in 43 ms all pre-confirmed
+    before block close — the chain supports it; the client does not use it yet). Confirmation comes from herald's stream
+    (the diff carrying the transaction hash, or a relayed `subscribeTransactionStatus`) — the `waitForTransaction`
+    polling in `packages/provider/src/index.ts` (`:82-92`) is deleted.
+  - _RPC versions._ `apps/game` is on starknet.js 8.9.2 (RPC 0.8/0.9): the write path stays on `/rpc/v0_9_0`, served by
+    the same node, until a starknet.js release speaks 0.10. Herald is the only `v0_10_2` consumer in this phase; after
+    Torii's deletion the remaining `v0_9_0` dependents are sozo (phase 3) and starknet.js (bumped when a release
+    allows).
+  - _Reconnect and spectator_ ride the same consumer: spectator is a consumer with no account; a reload mid-game is a
+    snapshot plus resume, not a Torii re-sync.
+  - _Instrumentation._ `observed-client-transaction.ts` records click → submitted → pre-confirmed → rendered per action,
+    so the latency gate is measured in the client, not only by the harness.
+
+  **Gate (A.3):** explore reveal p95 ≤ 250 ms click→rendered, measured client-side over one full game; zero nonce
+  rejections in a 20-action burst from one client; reload and reconnect mid-game resume by sequence; spectator works
+  with Torii stopped; the diff records the line count deleted (`packages/torii` gone, `apps/game/src/dojo` shrunk).
+
 - **Throughput is a non-problem** at target scale (~100 tx/s ≈ ~100 KB/s decoded diffs; realtime-server-class fan-out).
   The hard parts are decoding, overlay rebuild, and snapshot/replay — plan the gates around those.
 
