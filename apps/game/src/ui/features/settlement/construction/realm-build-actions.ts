@@ -1,8 +1,6 @@
 import { BUILDINGS_CENTER, BuildingType, getNeighborHexes, ResourcesIds } from "@bibliothecadao/types";
 import { TileManager } from "@bibliothecadao/eternum";
-import { getActiveGameSyncRuntime } from "@bibliothecadao/eternum/game-sync";
 import { toast } from "sonner";
-import { gameEntityKey } from "@/dojo/game-scope";
 import { resolveConstructionBuildability, type ConstructionBuildabilityInput } from "./construction-buildability";
 
 type RealmPosition = {
@@ -161,9 +159,6 @@ export const buildRealmBuilding = async ({
     toast.error("Select a realm before building.");
     return false;
   }
-
-  const realmEntity = gameEntityKey([BigInt(entityId)]);
-  if (getActiveGameSyncRuntime()?.hasProvisionalInputLock("StructureBuildings", realmEntity)) return false;
 
   const baseBuildability = resolveConstructionBuildability({
     entityId,

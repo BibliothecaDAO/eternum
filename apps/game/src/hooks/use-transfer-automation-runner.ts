@@ -16,6 +16,32 @@ import { isEntityOwnedByAccount } from "@/utils/entity-ownership";
 import { useTransferAutomationStore } from "./store/use-transfer-automation-store";
 import { assessDonkeyCapacity, buildSendResourcesArgs, planTransferAmounts } from "./transfer-automation-planner";
 
+type PlannedDebits = Map<string, number>;
+
+const plannedDebitKey = (entityId: number, resourceId: ResourcesIds) => `${entityId}:${resourceId}`;
+
+const availableBalance = (
+  resourceManager: ResourceManager,
+  tick: number,
+  sourceId: number,
+  resourceId: ResourcesIds,
+  plannedDebits: PlannedDebits,
+) => {
+  const balance = Number(resourceManager.balanceWithProduction(tick, resourceId).balance ?? 0n) / RESOURCE_PRECISION;
+  return Math.max(0, balance - (plannedDebits.get(plannedDebitKey(sourceId, resourceId)) ?? 0));
+};
+
+const recordPlannedDebits = (
+  sourceId: number,
+  transfers: ReturnType<typeof planTransferAmounts>,
+  debits: PlannedDebits,
+) => {
+  for (const transfer of transfers) {
+    const key = plannedDebitKey(sourceId, transfer.resourceId);
+    debits.set(key, (debits.get(key) ?? 0) + transfer.humanAmount);
+  }
+};
+
 export const useTransferAutomationRunner = () => {
   const {
     setup: { components, systemCalls },
@@ -124,6 +150,7 @@ export const useTransferAutomationRunner = () => {
       }
 
       processingRef.current = true;
+      const plannedDebits: PlannedDebits = new Map();
 
       try {
         for (const entry of due) {
@@ -168,13 +195,11 @@ export const useTransferAutomationRunner = () => {
             }
 
             const rm = new ResourceManager(components, sourceId);
-            const donkeyBalRaw = rm.balanceWithProduction(conservativeTick, ResourcesIds.Donkey).balance ?? 0n;
-            const donkeyBalHuman = Number(donkeyBalRaw) / RESOURCE_PRECISION;
+            const donkeyBalHuman = availableBalance(rm, conservativeTick, sourceId, ResourcesIds.Donkey, plannedDebits);
 
-            const transferList = planTransferAmounts(entry, (rid) => {
-              const balRaw = rm.balanceWithProduction(conservativeTick, rid).balance ?? 0n;
-              return Number(balRaw) / RESOURCE_PRECISION;
-            });
+            const transferList = planTransferAmounts(entry, (resourceId) =>
+              availableBalance(rm, conservativeTick, sourceId, resourceId, plannedDebits),
+            );
 
             if (transferList.length === 0) {
               scheduleNext(entry.id, nowMs);
@@ -189,24 +214,17 @@ export const useTransferAutomationRunner = () => {
             }
 
             const resources = buildSendResourcesArgs(transferList);
-            await rm.submitProvisionalResourceTransaction(
-              transferList.map((transfer) => ({
-                resourceId: transfer.resourceId,
-                amount: -transfer.humanAmount,
-              })),
-              account,
-              () =>
-                systemCalls.send_resources_multiple({
-                  signer: account,
-                  calls: [
-                    {
-                      sender_entity_id: BigInt(sourceId),
-                      recipient_entity_id: BigInt(destId),
-                      resources,
-                    },
-                  ],
-                }),
-            );
+            await systemCalls.send_resources_multiple({
+              signer: account,
+              calls: [
+                {
+                  sender_entity_id: BigInt(sourceId),
+                  recipient_entity_id: BigInt(destId),
+                  resources,
+                },
+              ],
+            });
+            recordPlannedDebits(sourceId, transferList, plannedDebits);
 
             update(entry.id, { lastRunAt: nowMs });
             scheduleNext(entry.id, nowMs);

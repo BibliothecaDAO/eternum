@@ -81,19 +81,6 @@ vi.mock("@bibliothecadao/eternum", () => ({
       const balance = mocks.balances.get(balanceKey(this.entityId, resourceId)) ?? 0;
       return { balance: balance * 1_000_000_000 };
     }
-
-    async submitProvisionalResourceTransaction<T>(
-      resourceChanges: Array<{ resourceId: ResourcesIds; amount: number }>,
-      _waiterSource: unknown,
-      submit: () => Promise<T>,
-    ) {
-      for (const resourceChange of resourceChanges) {
-        const key = balanceKey(this.entityId, resourceChange.resourceId);
-        mocks.balances.set(key, (mocks.balances.get(key) ?? 0) + resourceChange.amount);
-      }
-
-      return submit();
-    }
   },
 }));
 
@@ -172,7 +159,7 @@ describe("useTransferAutomationRunner", () => {
     expect(mocks.sendResourcesMultiple).toHaveBeenCalledTimes(2);
     expect(sentWoodAmount(1)).toBe(80);
     expect(sentWoodAmount(2)).toBe(20);
-    expect(mocks.balances.get(balanceKey(1, ResourcesIds.Wood))).toBe(0);
+    expect(mocks.balances.get(balanceKey(1, ResourcesIds.Wood))).toBe(100);
   });
 });
 

@@ -386,22 +386,13 @@ export const EntityResourceTableNew = React.memo(({ entityId }: EntityResourceTa
 
       setTransferAnimations((prev) => new Set([...prev, ...animationKeys]));
       try {
-        await ResourceManager.submitProvisionalResourceTransaction({
-          components,
-          changeSets: transfers.map((transfer) => ({
-            entityId: transfer.fromStructureId,
-            changes: [{ resourceId: transfer.resourceId, amount: -transfer.amount }],
+        await send_resources_multiple({
+          signer: account,
+          calls: transfers.map((transfer) => ({
+            sender_entity_id: transfer.fromStructureId,
+            recipient_entity_id: transfer.toStructureId,
+            resources: [transfer.resourceId, BigInt(Math.round(multiplyByPrecision(transfer.amount)))],
           })),
-          waiterSource: account,
-          submit: () =>
-            send_resources_multiple({
-              signer: account,
-              calls: transfers.map((transfer) => ({
-                sender_entity_id: transfer.fromStructureId,
-                recipient_entity_id: transfer.toStructureId,
-                resources: [transfer.resourceId, BigInt(Math.round(multiplyByPrecision(transfer.amount)))],
-              })),
-            }),
         });
 
         setTransferDrafts((prev) => prev.filter((t) => !ids.has(t.id)));

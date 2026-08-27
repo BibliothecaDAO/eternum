@@ -4,7 +4,6 @@ import { playUnitCommandSound } from "@/audio/unit-command-audio";
 import { useBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import { createAttackProvisionalIntent, startWorldmapProvisionalFx } from "@/three/scenes/worldmap-provisional-fx";
 import Button from "@/ui/design-system/atoms/button";
 import { Checkbox } from "@/ui/design-system/atoms/checkbox";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
@@ -24,7 +23,6 @@ import {
   StaminaManager,
 } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
-import { trackProvisionalTransaction, type ProvisionalIntent } from "@bibliothecadao/eternum/game-sync";
 import { getComponentValue } from "@dojoengine/recs";
 
 import X from "lucide-react/dist/esm/icons/x";
@@ -457,28 +455,15 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
     const direction = getDirectionBetweenAdjacentHexes(selectedHex, { col: target.hex.x, row: target.hex.y });
     const resolvedTarget = targetData;
 
-    let intent: ProvisionalIntent | null = null;
     try {
       setIsSubmitting(true);
 
-      intent = createAttackProvisionalIntent(attacker.id, attacker.type);
-      startWorldmapProvisionalFx(
-        {
-          kind: "attack",
-          attackerHex: { col: selectedHex.col, row: selectedHex.row },
-          targetHex: { col: target.hex.x, row: target.hex.y },
-        },
-        intent,
-      );
-
       playUnitCommandSound("attack");
-      const result = await performCall({ direction, resolvedTarget });
-      trackProvisionalTransaction(intent, account, result);
+      await performCall({ direction, resolvedTarget });
 
       updateSelectedEntityId(null);
       toggleModal(null);
     } catch (error) {
-      intent?.fail();
       console.error("Quick attack failed", error);
     } finally {
       setIsSubmitting(false);

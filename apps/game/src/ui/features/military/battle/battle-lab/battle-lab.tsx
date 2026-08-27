@@ -6,7 +6,6 @@ import { useUIStore } from "@/hooks/store/use-ui-store";
 import { LoadingAnimation } from "@/ui/design-system/molecules/loading-animation";
 import { CenteredModalShell } from "@/ui/features/world/containers/centered-modal-shell";
 import { formatSocialText, twitterTemplates } from "@/ui/socials";
-import { createAttackProvisionalIntent, startWorldmapProvisionalFx } from "@/three/scenes/worldmap-provisional-fx";
 import {
   type Army,
   CombatParameters,
@@ -16,7 +15,6 @@ import {
   getGuildFromPlayerAddress,
 } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
-import { trackProvisionalTransaction, type ProvisionalIntent } from "@bibliothecadao/eternum/game-sync";
 import { ActorType, BiomeType, ContractAddress, getHexDistance, ID } from "@bibliothecadao/types";
 import Swords from "lucide-react/dist/esm/icons/swords";
 import { useEffect, useMemo, useState } from "react";
@@ -252,50 +250,35 @@ export const BattleLab = ({
 
   const onAttack = async () => {
     if (mode !== "live" || !selected || !targetRef || !selectedHex || !target || actionDisabled || !snapshot) return;
-    let intent: ProvisionalIntent | null = null;
     try {
       setLoading(true);
-
-      intent = createAttackProvisionalIntent(attackerEntityId, selected.type);
-      startWorldmapProvisionalFx(
-        {
-          kind: "attack",
-          attackerHex: { col: selectedHex.col, row: selectedHex.row },
-          targetHex: { col: target.hex.x, row: target.hex.y },
-        },
-        intent,
-      );
       playUnitCommandSound("attack");
 
-      let result: unknown;
       if (snapshot.attackerType === "structure") {
         if (state.selectedGuardSlot === null) throw new Error("No structure guard is selected");
-        result = await attack_guard_vs_explorer({
+        await attack_guard_vs_explorer({
           signer: account,
           structure_id: attackerEntityId,
           structure_guard_slot: state.selectedGuardSlot,
           explorer_id: target.id || 0,
         });
       } else if (target.targetType === TargetType.Army) {
-        result = await attack_explorer_vs_explorer({
+        await attack_explorer_vs_explorer({
           signer: account,
           aggressor_id: attackerEntityId,
           defender_id: target.id || 0,
           steal_resources: targetResources,
         });
       } else {
-        result = await attack_explorer_vs_guard({
+        await attack_explorer_vs_guard({
           signer: account,
           explorer_id: attackerEntityId,
           structure_id: target.id || 0,
         });
       }
-      trackProvisionalTransaction(intent, account, result);
-
       updateSelectedEntityId(null);
       toggleModal(null);
     } catch (error) {
-      intent?.fail();
       console.error("Attack failed:", error);
     } finally {
       setLoading(false);

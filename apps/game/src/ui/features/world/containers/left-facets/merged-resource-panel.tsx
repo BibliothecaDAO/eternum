@@ -3,7 +3,6 @@ import { memo, useCallback, useEffect, useMemo, useState } from "react";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import { useProvisionalInputLock } from "@/hooks/use-provisional-input-lock";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { ProductionStatusBadge } from "@/ui/shared";
 import { formatInventoryAmount } from "@/ui/features/world/components/entities/compact-entity-inventory";
@@ -73,11 +72,7 @@ export const MergedResourcePanel = memo(
     const useSimpleCost = useUIStore((state) => state.useSimpleCost);
 
     const entityId = Number(structureEntityId);
-    const buildLockEntityIds = useMemo(
-      () => (Number.isFinite(entityId) && entityId > 0 ? [gameEntityKey([BigInt(entityId)])] : []),
-      [entityId],
-    );
-    const isBuildLocked = useProvisionalInputLock("StructureBuildings", buildLockEntityIds);
+    const [isBuildLocked, setBuildLocked] = useState(false);
     const realm = useMemo(
       () =>
         Number.isFinite(entityId) && entityId > 0
@@ -153,19 +148,24 @@ export const MergedResourcePanel = memo(
     const handleAutoBuild = useCallback(
       async (buildingType: BuildingType, resourceId: ResourcesIds) => {
         if (isBuildLocked) return;
-        await buildRealmBuilding({
-          entityId,
-          realmPosition: realm?.position,
-          realm,
-          mode,
-          target: { type: buildingType, resource: resourceId },
-          useSimpleCost,
-          world: {
-            account: dojo.account.account,
-            components,
-            systemCalls: dojo.setup.systemCalls,
-          },
-        });
+        setBuildLocked(true);
+        try {
+          await buildRealmBuilding({
+            entityId,
+            realmPosition: realm?.position,
+            realm,
+            mode,
+            target: { type: buildingType, resource: resourceId },
+            useSimpleCost,
+            world: {
+              account: dojo.account.account,
+              components,
+              systemCalls: dojo.setup.systemCalls,
+            },
+          });
+        } finally {
+          setBuildLocked(false);
+        }
       },
       [dojo.account.account, dojo.setup.systemCalls, components, entityId, isBuildLocked, realm, mode, useSimpleCost],
     );

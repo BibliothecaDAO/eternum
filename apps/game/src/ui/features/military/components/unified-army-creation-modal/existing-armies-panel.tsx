@@ -101,7 +101,7 @@ const ExistingArmyRow = ({ army, structureId }: { army: ArmyInfo; structureId: I
     if (deleting) return;
     setDeleting(true);
     try {
-      const manager = new ArmyManager(systemCalls, structureId, components);
+      const manager = new ArmyManager(systemCalls, structureId);
       await manager.deleteExplorerArmy(account, army.entityId);
       // Free the hex on the deploy map.
       bumpMilitaryMapVersion();

@@ -1,20 +1,16 @@
 import type { SetupResult } from "@bibliothecadao/dojo";
 import type {
-  GameSyncAuthoritativeObservation,
   GameSyncEntity,
   GameSyncEntityStoreOperation,
-  GameSyncProvisionalIntentStalledInfo,
-  GameSyncProvisionalIntentPhaseInfo,
   GameSyncRuntimeMetrics,
   GameSyncSessionStart,
   GameSyncStore,
 } from "@bibliothecadao/eternum/game-sync";
 import { requireActiveGameSyncRuntime } from "@bibliothecadao/eternum/game-sync";
-import type { Component, Entity, Metadata, OverridableComponent, Schema } from "@dojoengine/recs";
+import type { Component, Entity, Metadata, Schema } from "@dojoengine/recs";
 import { getComponentEntities, getComponentValue, removeComponent } from "@dojoengine/recs";
 import { setEntities } from "@dojoengine/state";
 import type { Clause, Entity as ToriiEntity, Query } from "@dojoengine/torii-wasm/types";
-import { VERBOSE_LOGS_ENABLED } from "@/utils/dev-mode";
 import { appendConsoleFields } from "@/utils/console-message";
 import { filterEntityToActiveGameScope } from "./game-scope-entity-filter";
 import { observeToriiStreamLifecycle } from "./torii-stream-lifecycle-observer";
@@ -117,15 +113,7 @@ export const createRecsGameSyncStore = (
   const authoritativeComponents = flattenContractComponents(setup.network.contractComponents);
   const authoritativeComponentLookup = createComponentLookup(authoritativeComponents);
   reportUnresolvableSyncModels(authoritativeComponentLookup, syncModels);
-  // setup.components mixes overridable wrappers with the `events` sub-record;
-  // createComponentLookup's metadata guards skip the non-component entries.
-  const provisionalComponentLookup = createComponentLookup(
-    Object.values(setup.components) as unknown as Component<Schema, Metadata, undefined>[],
-  );
-  const provisionalOverrides = new Map<string, Array<{ component: OverridableComponent; overrideId: string }>>();
-
   const applyOperations = async (operations: readonly GameSyncEntityStoreOperation[]) => {
-    const observations: GameSyncAuthoritativeObservation[] = [];
     for (const operation of operations) {
       if (operation.type === "upsert") {
         await setEntities(operation.entities as ToriiEntity[], authoritativeComponents, logging);
@@ -147,19 +135,12 @@ export const createRecsGameSyncStore = (
               }
               return;
             }
-            observations.push({
-              type: "model",
-              entityId: entity.hashed_keys,
-              model,
-              value,
-            });
           });
         });
         continue;
       }
       if (operation.type === "delete-entity") {
         setup.network.world.deleteEntity(operation.entityId as Entity);
-        observations.push({ type: "delete-entity", entityId: operation.entityId });
         continue;
       }
 
@@ -167,10 +148,8 @@ export const createRecsGameSyncStore = (
         const component = authoritativeComponentLookup.get(model);
         if (!component) return;
         removeComponent(component, operation.entityId as Entity);
-        observations.push({ type: "model", entityId: operation.entityId, model, value: null });
       });
     }
-    return observations;
   };
 
   return {
@@ -185,34 +164,6 @@ export const createRecsGameSyncStore = (
     listModelEntityIds(model) {
       const component = authoritativeComponentLookup.get(model);
       return component ? getComponentEntities(component) : [];
-    },
-    readAuthoritativeModel(model, entityId) {
-      const component = authoritativeComponentLookup.get(model);
-      if (!component) return undefined;
-      return (getComponentValue(component, entityId as Entity) as Record<string, unknown> | undefined) ?? null;
-    },
-    applyProvisionalWrites(intentId, writes) {
-      const resolvedWrites = writes.flatMap((write, index) => {
-        if (write.patch === undefined) return [];
-        const component = provisionalComponentLookup.get(write.model) as OverridableComponent | undefined;
-        if (!component) throw new Error(`Cannot apply provisional write for unknown model ${write.model}`);
-        return [{ component, overrideId: `${intentId}:${index}`, write }];
-      });
-
-      resolvedWrites.forEach(({ component, overrideId, write }) => {
-        component.addOverride(overrideId, {
-          entity: write.entityId as Entity,
-          value: write.patch ?? null,
-        });
-      });
-      provisionalOverrides.set(
-        intentId,
-        resolvedWrites.map(({ component, overrideId }) => ({ component, overrideId })),
-      );
-    },
-    removeProvisionalWrites(intentId) {
-      provisionalOverrides.get(intentId)?.forEach(({ component, overrideId }) => component.removeOverride(overrideId));
-      provisionalOverrides.delete(intentId);
     },
   };
 };
@@ -292,33 +243,6 @@ const runPageWithRetries = async <T>({
   throw lastError;
 };
 
-const reportProvisionalIntentStalled = (info: GameSyncProvisionalIntentStalledInfo): void => {
-  if (!import.meta.env.DEV) return;
-  // The unmatched models ride in the message string so pasted console dumps
-  // carry them — the collapsed object loses them in text form.
-  const unmatchedModels = [...new Set(info.unmatchedWrites.map(({ model }) => model))].sort();
-  console.error(
-    `[GameSync] confirmed provisional intent has not reconciled after 30s (unmatched: ${unmatchedModels.join(", ") || "none"})`,
-    info,
-  );
-};
-
-const reportProvisionalIntentPhase = (info: GameSyncProvisionalIntentPhaseInfo): void => {
-  if (!import.meta.env.DEV) return;
-  if (info.phase === "baseline_delta_before_hash") {
-    // Convicts the echo-races-execute() case in session logs without verbose mode.
-    console.warn(
-      appendConsoleFields("[GameSync] authoritative echo observed before the transaction hash bound", {
-        intent_id: info.intentId,
-        model: info.model,
-        elapsed_ms: Math.round(info.elapsedSinceCreatedMs),
-      }),
-    );
-    return;
-  }
-  if (VERBOSE_LOGS_ENABLED) console.info("[GameSync] provisional intent phase", info);
-};
-
 export const createGamewideSyncSession = (input: CreateGamewideSyncSessionInput): GameSyncSessionStart => {
   const client = input.setup.network.toriiClient;
 
@@ -375,8 +299,6 @@ export const createGamewideSyncSession = (input: CreateGamewideSyncSessionInput)
     onSubscriptionActive: input.onSubscriptionActive,
     onLiveUpdate: input.onLiveUpdate,
     onMetrics: input.onMetrics,
-    onProvisionalIntentStalled: reportProvisionalIntentStalled,
-    onProvisionalIntentPhase: reportProvisionalIntentPhase,
     transport: {
       async subscribe(handlers) {
         if (hasOpenedEventStream && !replayArmed && baselinePromise) {

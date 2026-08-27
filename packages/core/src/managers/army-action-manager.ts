@@ -385,18 +385,12 @@ export class ArmyActionManager {
     }
 
     const vrfSourceSalt = packTileSeed({ alt: false, col: destinationHex.col, row: destinationHex.row });
-    const resourceManager = this._getResourceManager(explorerTroops?.owner);
-    const resourceChanges = this._resolveExploreFoodSpend(explorerTroops?.troops);
-    const submit = () =>
-      this.systemCalls.explorer_explore({
-        explorer_id: this.entityId,
-        directions: [direction],
-        vrf_source_salt: vrfSourceSalt,
-        signer,
-      });
-    return resourceManager
-      ? resourceManager.submitProvisionalResourceTransaction(resourceChanges, signer, submit)
-      : submit();
+    return this.systemCalls.explorer_explore({
+      explorer_id: this.entityId,
+      directions: [direction],
+      vrf_source_salt: vrfSourceSalt,
+      signer,
+    });
   };
 
   private readonly _travelToHex = async (
@@ -413,18 +407,11 @@ export class ArmyActionManager {
         ]);
       })
       .filter((d) => d !== undefined) as number[];
-    const explorerTroops = getComponentValue(this.components.ExplorerTroops, this.entity);
-    const resourceManager = this._getResourceManager(explorerTroops?.owner);
-    const resourceChanges = this._resolveTravelFoodSpend(explorerTroops?.troops, directions.length);
-    const submit = () =>
-      this.systemCalls.explorer_travel({
-        signer,
-        explorer_id: this.entityId,
-        directions,
-      });
-    return resourceManager
-      ? resourceManager.submitProvisionalResourceTransaction(resourceChanges, signer, submit)
-      : submit();
+    return this.systemCalls.explorer_travel({
+      signer,
+      explorer_id: this.entityId,
+      directions,
+    });
   };
 
   private readonly _travelThroughSpire = async (
@@ -465,32 +452,6 @@ export class ArmyActionManager {
       return this._travelToHex(signer, path, currentArmiesTick);
     }
   };
-
-  private _resolveExploreFoodSpend(troops: Parameters<typeof computeExploreFoodCosts>[0] | undefined) {
-    if (!troops) return [];
-    const foodCosts = computeExploreFoodCosts(troops);
-    return this._resolveFoodSpend(foodCosts);
-  }
-
-  private _resolveTravelFoodSpend(troops: Parameters<typeof computeTravelFoodCosts>[0] | undefined, steps: number) {
-    if (!troops || steps <= 0) return [];
-    const foodCosts = computeTravelFoodCosts(troops);
-    return this._resolveFoodSpend({
-      wheatPayAmount: foodCosts.wheatPayAmount * steps,
-      fishPayAmount: foodCosts.fishPayAmount * steps,
-    });
-  }
-
-  private _resolveFoodSpend(foodCosts: { wheatPayAmount: number; fishPayAmount: number }) {
-    return [
-      { resourceId: ResourcesIds.Wheat, amount: -foodCosts.wheatPayAmount },
-      { resourceId: ResourcesIds.Fish, amount: -foodCosts.fishPayAmount },
-    ];
-  }
-
-  private _getResourceManager(ownerId: ID | undefined) {
-    return ownerId ? new ResourceManager(this.components, ownerId) : null;
-  }
 
   private _getOwnerResourceManager() {
     const ownerId = getComponentValue(this.components.ExplorerTroops, this.entity)?.owner;

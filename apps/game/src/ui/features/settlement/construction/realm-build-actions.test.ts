@@ -10,14 +10,10 @@ const mocks = vi.hoisted(() => ({
   getBalance: vi.fn(),
   getBuildingCosts: vi.fn(),
   getComponentValue: vi.fn(),
-  hasProvisionalInputLock: vi.fn(),
   toastError: vi.fn(),
 }));
 
 vi.mock("sonner", () => ({ toast: { error: mocks.toastError } }));
-vi.mock("@bibliothecadao/eternum/game-sync", () => ({
-  getActiveGameSyncRuntime: () => ({ hasProvisionalInputLock: mocks.hasProvisionalInputLock }),
-}));
 vi.mock("@bibliothecadao/eternum", () => ({
   TileManager: vi.fn().mockImplementation(() => ({
     getRealmLevel: () => 1,
@@ -63,7 +59,6 @@ describe("buildRealmBuilding", () => {
     mocks.getBuildingCosts.mockReturnValue([{ resource: 1, amount: 10 }]);
     mocks.getBalance.mockReturnValue({ balance: 20n, resourceId: 1 });
     mocks.getComponentValue.mockReturnValue(undefined);
-    mocks.hasProvisionalInputLock.mockReturnValue(false);
   });
 
   it("re-checks affordability before submitting", async () => {
@@ -94,12 +89,5 @@ describe("buildRealmBuilding", () => {
       { col: 11, row: 11 },
       true,
     );
-  });
-
-  it("does not submit while the realm building aggregate is locked", async () => {
-    mocks.hasProvisionalInputLock.mockReturnValue(true);
-
-    await expect(buildRealmBuilding(buildOptions())).resolves.toBe(false);
-    expect(mocks.placeBuilding).not.toHaveBeenCalled();
   });
 });

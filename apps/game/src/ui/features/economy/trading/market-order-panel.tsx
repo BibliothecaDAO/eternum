@@ -12,7 +12,6 @@ import {
   getTotalResourceWeightKg,
   isMilitaryResource,
   multiplyByPrecision,
-  ResourceManager,
 } from "@bibliothecadao/eternum";
 import { useDojo, useResourceManager } from "@bibliothecadao/react";
 import { findResourceById, ResourcesIds, StructureType, type ID, type MarketInterface } from "@bibliothecadao/types";
@@ -376,22 +375,12 @@ const OrderRow = memo(
 
         const v = !isBuy ? calculatedResourceAmount : calculatedLords;
         const takerBuysCount = Math.ceil(v / offer.makerGivesMinResourceAmount);
-        await new ResourceManager(dojo.setup.components, entityId).submitProvisionalResourceTransaction(
-          [
-            {
-              resourceId: offer.makerGets[0].resourceId,
-              amount: -divideByPrecision(offer.takerPaysMinResourceAmount * takerBuysCount),
-            },
-          ],
-          dojo.account.account,
-          () =>
-            dojo.setup.systemCalls.accept_order({
-              signer: dojo.account.account,
-              taker_id: entityId,
-              trade_id: offer.tradeId,
-              taker_buys_count: takerBuysCount,
-            }),
-        );
+        await dojo.setup.systemCalls.accept_order({
+          signer: dojo.account.account,
+          taker_id: entityId,
+          trade_id: offer.tradeId,
+          taker_buys_count: takerBuysCount,
+        });
       } catch (error) {
         console.error("Failed to accept order", error);
       } finally {
@@ -633,11 +622,7 @@ const OrderCreation = memo(
         expires_at: currentBlockTimestamp + ONE_MONTH,
       };
       try {
-        await new ResourceManager(components, entityId).submitProvisionalResourceTransaction(
-          [{ resourceId: makerGives[0] as ResourcesIds, amount: -divideByPrecision(makerGives[1]) }],
-          account,
-          () => create_order(calldata),
-        );
+        await create_order(calldata);
         playTradePlaceSound();
       } catch (error) {
         console.error("Failed to create order:", error);

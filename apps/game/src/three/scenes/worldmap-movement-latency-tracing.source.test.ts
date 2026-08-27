@@ -25,10 +25,10 @@ describe("Worldmap movement latency tracing wiring", () => {
     expect(source).toContain('"movement_completed"');
   });
 
-  it("delegates transaction lifetime without a worldmap fallback timer", () => {
+  it("resolves transaction lifetime from the game stream without a worldmap fallback timer", () => {
     const source = readSource("worldmap.tsx");
 
-    expect(source).toContain("trackProvisionalTransaction");
+    expect(source).toContain("waitForTransaction(txHash)");
     expect(source).not.toContain("authoritativePendingArmyMovementMs");
   });
 

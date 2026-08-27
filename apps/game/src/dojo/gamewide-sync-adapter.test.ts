@@ -223,26 +223,6 @@ describe("game-wide sync adapter", () => {
     expect(harness.client.getEntities).toHaveBeenCalledTimes(2);
   });
 
-  it("names the unmatched models in the stalled-intent error message", () => {
-    const harness = createHarness();
-    const error = vi.spyOn(console, "error").mockImplementation(() => undefined);
-
-    try {
-      harness.session.onProvisionalIntentStalled?.({
-        intentId: "intent-1",
-        transactionHash: "0x123",
-        unmatchedWrites: [{ entityId: "army-1", model: "ExplorerTroops", matchPatch: { coord: { x: 2 } } }],
-      });
-
-      expect(error).toHaveBeenCalledWith(
-        expect.stringContaining("(unmatched: ExplorerTroops)"),
-        expect.objectContaining({ intentId: "intent-1" }),
-      );
-    } finally {
-      error.mockRestore();
-    }
-  });
-
   it("applies component removal without deleting siblings and removes event rows immediately", async () => {
     const harness = createHarness();
     getComponentEntitiesMock.mockReturnValue(["entity"]);
@@ -291,26 +271,6 @@ describe("game-wide sync adapter", () => {
       );
     } finally {
       error.mockRestore();
-    }
-  });
-
-  it("reports an early authoritative echo as one line with reconciliation identity", () => {
-    const harness = createHarness();
-    const warn = vi.spyOn(console, "warn").mockImplementation(() => undefined);
-
-    try {
-      harness.session.onProvisionalIntentPhase?.({
-        phase: "baseline_delta_before_hash",
-        intentId: "intent-1",
-        model: "ExplorerTroops",
-        elapsedSinceCreatedMs: 12.6,
-      });
-
-      expect(warn).toHaveBeenCalledWith(
-        '[GameSync] authoritative echo observed before the transaction hash bound intent_id="intent-1" model="ExplorerTroops" elapsed_ms=13',
-      );
-    } finally {
-      warn.mockRestore();
     }
   });
 

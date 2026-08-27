@@ -14,7 +14,6 @@ import {
   calculateDonkeysNeeded,
   getTotalResourceWeightKg,
   getClosestBank,
-  ResourceManager,
 } from "@bibliothecadao/eternum";
 import { useDojo, useResourceManager } from "@bibliothecadao/react";
 import { findResourceById, ResourcesIds, ID, MarketInterface } from "@bibliothecadao/types";
@@ -167,49 +166,27 @@ export const UnifiedTradePanel = memo(({ resourceId, entityId, askOffers, bidOff
       effectiveVenue === "orderbook" && bestOBOffer
         ? Math.ceil(precisionAmount / bestOBOffer.makerGivesMinResourceAmount)
         : 0;
-    const provisionalResourceChange =
-      effectiveVenue === "orderbook" && bestOBOffer
-        ? {
-            resourceId: bestOBOffer.makerGets[0].resourceId,
-            amount: -divideByPrecision(bestOBOffer.takerPaysMinResourceAmount * orderbookTakerBuysCount),
-          }
-        : {
-            resourceId: tradeDirection === "buy" ? ResourcesIds.Lords : resourceId,
-            amount: -(tradeDirection === "buy" ? totalLords : tradeAmount),
-          };
-
     try {
-      await new ResourceManager(dojo.setup.components, entityId).submitProvisionalResourceTransaction(
-        [provisionalResourceChange],
-        dojo.account.account,
-        async () => {
-          if (effectiveVenue === "orderbook" && bestOBOffer) {
-            return dojo.setup.systemCalls.accept_order({
-              signer: dojo.account.account,
-              taker_id: entityId,
-              trade_id: bestOBOffer.tradeId,
-              taker_buys_count: orderbookTakerBuysCount,
-            });
-          }
-          const closestBank = getClosestBank(entityId, dojo.setup.components);
-          if (!closestBank) throw new Error("No bank is available for this trade");
-          return tradeDirection === "buy"
-            ? dojo.setup.systemCalls.buy_resources({
-                signer: dojo.account.account,
-                bank_entity_id: closestBank.bankId,
-                entity_id: entityId,
-                resource_type: resourceId,
-                amount: precisionAmount,
-              })
-            : dojo.setup.systemCalls.sell_resources({
-                signer: dojo.account.account,
-                bank_entity_id: closestBank.bankId,
-                entity_id: entityId,
-                resource_type: resourceId,
-                amount: precisionAmount,
-              });
-        },
-      );
+      if (effectiveVenue === "orderbook" && bestOBOffer) {
+        await dojo.setup.systemCalls.accept_order({
+          signer: dojo.account.account,
+          taker_id: entityId,
+          trade_id: bestOBOffer.tradeId,
+          taker_buys_count: orderbookTakerBuysCount,
+        });
+      } else {
+        const closestBank = getClosestBank(entityId, dojo.setup.components);
+        if (!closestBank) throw new Error("No bank is available for this trade");
+        const trade =
+          tradeDirection === "buy" ? dojo.setup.systemCalls.buy_resources : dojo.setup.systemCalls.sell_resources;
+        await trade({
+          signer: dojo.account.account,
+          bank_entity_id: closestBank.bankId,
+          entity_id: entityId,
+          resource_type: resourceId,
+          amount: precisionAmount,
+        });
+      }
     } catch (error) {
       console.error("Trade execution failed:", error);
     } finally {

@@ -275,15 +275,10 @@ export const CraftRelicPopup = ({ structureId, onClose }: CraftRelicPopupProps) 
     setIsCrafting(true);
     setError(null);
     try {
-      const receipt = await resourceManager.submitProvisionalResourceTransaction(
-        [{ resourceId: ResourcesIds.Research, amount: -configuredResearchCost }],
-        account,
-        () =>
-          systemCalls.burn_research_for_relic!({
-            signer: account,
-            structure_id: structureId,
-          }),
-      );
+      const receipt = await systemCalls.burn_research_for_relic!({
+        signer: account,
+        structure_id: structureId,
+      });
 
       const craftedRelic = extractCraftedRelicId(receipt, structureId);
       setCraftedRelicId(craftedRelic);

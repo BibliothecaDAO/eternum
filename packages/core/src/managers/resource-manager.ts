@@ -1,15 +1,8 @@
 // import { getEntityIdFromKeys, gramToKg, multiplyByPrecision } from "@/ui/utils/utils";
 import { BuildingType, ClientComponents, ID, Resource, ResourcesIds, RESOURCE_PRECISION } from "@bibliothecadao/types";
 import { ComponentValue, getComponentValue } from "@dojoengine/recs";
-import type { GameSyncProvisionalWrite } from "../sync/game-sync-types";
-import { getActiveGameSyncRuntime } from "../sync/game-sync-runtime";
-import {
-  trackProvisionalTransaction,
-  type ProvisionalIntent,
-  type ProvisionalIntentLockUntil,
-} from "../sync/provisional-write-manager";
-import { divideByPrecision, getBuildingCount, gramToKg, kgToGram, multiplyByPrecision } from "../utils";
-import { getBlockTimestamp, reportObservedChainTimestamp } from "../utils/timestamp";
+import { divideByPrecision, getBuildingCount, gramToKg, multiplyByPrecision } from "../utils";
+import { reportObservedChainTimestamp } from "../utils/timestamp";
 import { configManager, gameEntityKey } from "./config-manager";
 
 export interface ResourceProductionData {
@@ -18,78 +11,6 @@ export interface ResourceProductionData {
   outputRemaining: number;
   timeRemainingSeconds: number;
 }
-
-export interface OptimisticResourceChange {
-  resourceId: ResourcesIds;
-  amount: number;
-}
-
-export interface ProvisionalResourceChangeSet {
-  entityId: ID;
-  changes: readonly OptimisticResourceChange[];
-}
-
-type ResourceValue = ComponentValue<ClientComponents["Resource"]["schema"]>;
-
-const RESOURCE_BALANCE_FIELDS = {
-  [ResourcesIds.Stone]: "STONE_BALANCE",
-  [ResourcesIds.Coal]: "COAL_BALANCE",
-  [ResourcesIds.Wood]: "WOOD_BALANCE",
-  [ResourcesIds.Copper]: "COPPER_BALANCE",
-  [ResourcesIds.Ironwood]: "IRONWOOD_BALANCE",
-  [ResourcesIds.Obsidian]: "OBSIDIAN_BALANCE",
-  [ResourcesIds.Gold]: "GOLD_BALANCE",
-  [ResourcesIds.Silver]: "SILVER_BALANCE",
-  [ResourcesIds.Mithral]: "MITHRAL_BALANCE",
-  [ResourcesIds.AlchemicalSilver]: "ALCHEMICAL_SILVER_BALANCE",
-  [ResourcesIds.ColdIron]: "COLD_IRON_BALANCE",
-  [ResourcesIds.DeepCrystal]: "DEEP_CRYSTAL_BALANCE",
-  [ResourcesIds.Ruby]: "RUBY_BALANCE",
-  [ResourcesIds.Diamonds]: "DIAMONDS_BALANCE",
-  [ResourcesIds.Hartwood]: "HARTWOOD_BALANCE",
-  [ResourcesIds.Ignium]: "IGNIUM_BALANCE",
-  [ResourcesIds.TwilightQuartz]: "TWILIGHT_QUARTZ_BALANCE",
-  [ResourcesIds.TrueIce]: "TRUE_ICE_BALANCE",
-  [ResourcesIds.Adamantine]: "ADAMANTINE_BALANCE",
-  [ResourcesIds.Sapphire]: "SAPPHIRE_BALANCE",
-  [ResourcesIds.EtherealSilica]: "ETHEREAL_SILICA_BALANCE",
-  [ResourcesIds.Dragonhide]: "DRAGONHIDE_BALANCE",
-  [ResourcesIds.Labor]: "LABOR_BALANCE",
-  [ResourcesIds.AncientFragment]: "EARTHEN_SHARD_BALANCE",
-  [ResourcesIds.Donkey]: "DONKEY_BALANCE",
-  [ResourcesIds.Knight]: "KNIGHT_T1_BALANCE",
-  [ResourcesIds.KnightT2]: "KNIGHT_T2_BALANCE",
-  [ResourcesIds.KnightT3]: "KNIGHT_T3_BALANCE",
-  [ResourcesIds.Crossbowman]: "CROSSBOWMAN_T1_BALANCE",
-  [ResourcesIds.CrossbowmanT2]: "CROSSBOWMAN_T2_BALANCE",
-  [ResourcesIds.CrossbowmanT3]: "CROSSBOWMAN_T3_BALANCE",
-  [ResourcesIds.Paladin]: "PALADIN_T1_BALANCE",
-  [ResourcesIds.PaladinT2]: "PALADIN_T2_BALANCE",
-  [ResourcesIds.PaladinT3]: "PALADIN_T3_BALANCE",
-  [ResourcesIds.Wheat]: "WHEAT_BALANCE",
-  [ResourcesIds.Fish]: "FISH_BALANCE",
-  [ResourcesIds.Lords]: "LORDS_BALANCE",
-  [ResourcesIds.Essence]: "ESSENCE_BALANCE",
-  [ResourcesIds.StaminaRelic1]: "RELIC_E1_BALANCE",
-  [ResourcesIds.StaminaRelic2]: "RELIC_E2_BALANCE",
-  [ResourcesIds.DamageRelic1]: "RELIC_E3_BALANCE",
-  [ResourcesIds.DamageRelic2]: "RELIC_E4_BALANCE",
-  [ResourcesIds.DamageReductionRelic1]: "RELIC_E5_BALANCE",
-  [ResourcesIds.DamageReductionRelic2]: "RELIC_E6_BALANCE",
-  [ResourcesIds.ExplorationRelic1]: "RELIC_E7_BALANCE",
-  [ResourcesIds.ExplorationRelic2]: "RELIC_E8_BALANCE",
-  [ResourcesIds.ExplorationRewardRelic1]: "RELIC_E9_BALANCE",
-  [ResourcesIds.ExplorationRewardRelic2]: "RELIC_E10_BALANCE",
-  [ResourcesIds.StructureDamageReductionRelic1]: "RELIC_E11_BALANCE",
-  [ResourcesIds.StructureDamageReductionRelic2]: "RELIC_E12_BALANCE",
-  [ResourcesIds.ProductionRelic1]: "RELIC_E13_BALANCE",
-  [ResourcesIds.ProductionRelic2]: "RELIC_E14_BALANCE",
-  [ResourcesIds.LaborProductionRelic1]: "RELIC_E15_BALANCE",
-  [ResourcesIds.LaborProductionRelic2]: "RELIC_E16_BALANCE",
-  [ResourcesIds.TroopProductionRelic1]: "RELIC_E17_BALANCE",
-  [ResourcesIds.TroopProductionRelic2]: "RELIC_E18_BALANCE",
-  [ResourcesIds.Research]: "RESEARCH_BALANCE",
-} as const satisfies Partial<Record<ResourcesIds, keyof ResourceValue>>;
 
 // Rows indexed from preconfirmed blocks can carry a last_updated_at ahead of the
 // client's chain-time heartbeat; elapsed production floors at zero, never negative.
@@ -120,9 +41,6 @@ const elapsedProductionTicks = (lastUpdatedAt: number, currentTick: number): num
   return 0;
 };
 
-const resourceUnitWeightGrams = (resourceId: ResourcesIds): bigint =>
-  BigInt(kgToGram(configManager.getResourceWeightKg(resourceId) || 0));
-
 // s2 changed production_rate to u64 (schema: number); internal math stays bigint.
 // Absent members (partial RECS rows, test fixtures) normalize to zero production.
 const normalizeProduction = (
@@ -138,25 +56,6 @@ const normalizeProduction = (
   production
     ? { ...production, production_rate: BigInt(production.production_rate ?? 0) }
     : { building_count: 0, production_rate: 0n, output_amount_left: 0n, last_updated_at: 0 };
-
-const runProvisionalResourceTransaction = async <T>({
-  intent,
-  waiterSource,
-  submit,
-}: {
-  intent: ProvisionalIntent | null;
-  waiterSource: unknown;
-  submit: () => Promise<T>;
-}): Promise<T> => {
-  try {
-    const result = await submit();
-    if (intent) trackProvisionalTransaction(intent, waiterSource, result);
-    return result;
-  } catch (error) {
-    intent?.fail();
-    throw error;
-  }
-};
 
 export class ResourceManager {
   entityId: ID;
@@ -228,182 +127,6 @@ export class ResourceManager {
       amountProduced,
       amountProducedLimited,
     };
-  }
-
-  public resolveOptimisticResourcePatch(
-    resourceId: ResourcesIds,
-    actualResourceChange: number,
-  ): Partial<ResourceValue> | null {
-    return this.resolveOptimisticResourceChangesPatch([{ resourceId, amount: actualResourceChange }]);
-  }
-
-  public resolveOptimisticResourceChangesPatch(
-    changes: readonly OptimisticResourceChange[],
-  ): Partial<ResourceValue> | null {
-    const applicableChanges = changes.filter(({ resourceId }) =>
-      Boolean(RESOURCE_BALANCE_FIELDS[resourceId as keyof typeof RESOURCE_BALANCE_FIELDS]),
-    );
-    if (applicableChanges.length === 0) return null;
-
-    const currentResource = this._getResource();
-    const currentWeight = currentResource?.weight || { capacity: 0n, weight: 0n };
-    const patch: Record<string, unknown> = {};
-    let nextWeight = currentWeight.weight;
-
-    // The chain harvests pending production into the balance before any spend or
-    // deposit touches it (SingleResourceStoreImpl::retrieve). The overlay must
-    // predict that post-harvest row: fold the accrual into the pinned balance AND
-    // pin the production clock together — otherwise the authoritative echo resets
-    // last_updated_at underneath the overlay while the stale accrual-blind balance
-    // stays pinned on top, displaying below zero for any spend the UI validated
-    // against the accrual-inclusive balance.
-    const touchedResourceIds = [...new Set(applicableChanges.map(({ resourceId }) => resourceId))];
-    touchedResourceIds.forEach((resourceId) => {
-      const harvest = this.resolveProvisionalHarvest(currentResource, resourceId);
-      if (!harvest) return;
-      const balanceField = RESOURCE_BALANCE_FIELDS[resourceId as keyof typeof RESOURCE_BALANCE_FIELDS];
-      patch[balanceField] = this.balance(resourceId) + harvest.balanceGained;
-      patch[harvest.productionField] = harvest.production;
-      nextWeight += resourceUnitWeightGrams(resourceId) * harvest.balanceGained;
-    });
-
-    applicableChanges.forEach(({ resourceId, amount }) => {
-      const balanceField = RESOURCE_BALANCE_FIELDS[resourceId as keyof typeof RESOURCE_BALANCE_FIELDS];
-      const amountWithPrecision = BigInt(Math.floor(multiplyByPrecision(amount)));
-      const patchedBalance = patch[balanceField];
-      patch[balanceField] =
-        (typeof patchedBalance === "bigint" ? patchedBalance : this.balance(resourceId)) + amountWithPrecision;
-      nextWeight += resourceUnitWeightGrams(resourceId) * amountWithPrecision;
-    });
-
-    patch.weight = { ...currentWeight, weight: nextWeight };
-    return patch as Partial<ResourceValue>;
-  }
-
-  // Mirrors ProductionImpl::harvest + SingleResource::add: accrued production since
-  // last_updated_at, capped by output_amount_left (non-continuous) and by store
-  // capacity, with the production clock reset to the current tick.
-  private resolveProvisionalHarvest(
-    resource: ResourceValue | undefined,
-    resourceId: ResourcesIds,
-  ): { productionField: string; production: Record<string, unknown>; balanceGained: bigint } | null {
-    if (!resource) return null;
-    const balanceField = RESOURCE_BALANCE_FIELDS[resourceId as keyof typeof RESOURCE_BALANCE_FIELDS];
-    if (!balanceField) return null;
-    const productionField = balanceField.replace(/_BALANCE$/, "_PRODUCTION");
-    const storedProduction = (resource as Record<string, unknown>)[productionField];
-    if (typeof storedProduction !== "object" || storedProduction === null) return null;
-
-    const production = ResourceManager.balanceAndProduction(resource, resourceId).production;
-    const currentTick = getBlockTimestamp().currentDefaultTick;
-    const amountProduced = ResourceManager._amountProducedStatic(production, currentTick, resourceId);
-    if (amountProduced <= 0n) return null;
-
-    const balanceGained = this._limitProductionByStoreCapacity(amountProduced, resourceId);
-    const outputAmountLeft = ResourceManager.isContinuousProductionResource(resourceId)
-      ? production.output_amount_left
-      : production.output_amount_left - amountProduced;
-    return {
-      productionField,
-      production: { ...storedProduction, output_amount_left: outputAmountLeft, last_updated_at: currentTick },
-      balanceGained,
-    };
-  }
-
-  public resolveProvisionalResourceWrite(
-    resourceChanges: readonly OptimisticResourceChange[],
-  ): GameSyncProvisionalWrite | null {
-    const patch = this.resolveOptimisticResourceChangesPatch(resourceChanges);
-    if (!patch) return null;
-    const baselineDeltaFields = this.resolveTouchedResourceBalanceFields(resourceChanges);
-    if (baselineDeltaFields.length === 0) return null;
-
-    return {
-      entityId: gameEntityKey([BigInt(this.entityId)]),
-      model: "Resource",
-      patch,
-      matchPatch: undefined,
-      baselineDeltaFields,
-    };
-  }
-
-  public createProvisionalResourceIntent(
-    resourceChanges: readonly OptimisticResourceChange[],
-    options: { lockUntil?: ProvisionalIntentLockUntil } = {},
-  ): ProvisionalIntent | null {
-    const write = this.resolveProvisionalResourceWrite(resourceChanges);
-    if (!write) return null;
-    return getActiveGameSyncRuntime()?.createProvisionalIntent([write], options) ?? null;
-  }
-
-  public submitProvisionalResourceTransaction<T>(
-    resourceChanges: readonly OptimisticResourceChange[],
-    waiterSource: unknown,
-    submit: () => Promise<T>,
-    options: {
-      lockUntil?: ProvisionalIntentLockUntil;
-      onIntent?: (intent: ProvisionalIntent) => void;
-    } = {},
-  ): Promise<T> {
-    const intent = this.createProvisionalResourceIntent(resourceChanges, options);
-    if (intent) options.onIntent?.(intent);
-    return runProvisionalResourceTransaction({
-      intent,
-      waiterSource,
-      submit,
-    });
-  }
-
-  public static submitProvisionalResourceTransaction<T>({
-    components,
-    changeSets,
-    waiterSource,
-    submit,
-    lockUntil,
-    onIntent,
-  }: {
-    components: ClientComponents;
-    changeSets: readonly ProvisionalResourceChangeSet[];
-    waiterSource: unknown;
-    submit: () => Promise<T>;
-    lockUntil?: ProvisionalIntentLockUntil;
-    onIntent?: (intent: ProvisionalIntent) => void;
-  }): Promise<T> {
-    const groupedChangeSets = [
-      ...changeSets
-        .reduce((groups, { entityId, changes }) => {
-          const key = String(entityId);
-          const current = groups.get(key);
-          if (current) {
-            current.changes.push(...changes);
-          } else {
-            groups.set(key, { entityId, changes: [...changes] });
-          }
-          return groups;
-        }, new Map<string, { entityId: ID; changes: OptimisticResourceChange[] }>())
-        .values(),
-    ];
-    const writes = groupedChangeSets
-      .map(({ entityId, changes }) =>
-        new ResourceManager(components, entityId).resolveProvisionalResourceWrite(changes),
-      )
-      .filter((write): write is GameSyncProvisionalWrite => write !== null);
-    const intent = writes.length
-      ? (getActiveGameSyncRuntime()?.createProvisionalIntent(writes, { lockUntil }) ?? null)
-      : null;
-    if (intent) onIntent?.(intent);
-    return runProvisionalResourceTransaction({ intent, waiterSource, submit });
-  }
-
-  private resolveTouchedResourceBalanceFields(resourceChanges: readonly OptimisticResourceChange[]): string[] {
-    return [
-      ...new Set(
-        resourceChanges
-          .filter(({ amount }) => Number.isFinite(amount) && amount !== 0)
-          .map(({ resourceId }) => RESOURCE_BALANCE_FIELDS[resourceId as keyof typeof RESOURCE_BALANCE_FIELDS])
-          .filter((field): field is NonNullable<typeof field> => Boolean(field)),
-      ),
-    ];
   }
 
   public timeUntilValueReached(currentTick: number, resourceId: ResourcesIds): number {

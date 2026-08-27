@@ -30,12 +30,7 @@ import { useUIStore } from "@/hooks/store/use-ui-store";
 import { calculatePresetAllocations, getAutomationOverallocation } from "@/utils/automation-presets";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { useDojo } from "@bibliothecadao/react";
-import {
-  getAutomationProjectionTick,
-  getBlockTimestamp,
-  configManager,
-  ResourceManager,
-} from "@bibliothecadao/eternum";
+import { getAutomationProjectionTick, getBlockTimestamp, configManager } from "@bibliothecadao/eternum";
 import { ResourcesIds } from "@bibliothecadao/types";
 import { useCallback, useEffect, useRef } from "react";
 import { toast } from "sonner";
@@ -150,12 +145,6 @@ const formatCustomPercentagesLog = (percentages: Record<number, ResourceAutomati
     resourceId: Number(resourceId),
     resource: resolveResourceLabel(Number(resourceId)),
     percentages: value,
-  }));
-
-const buildProductionResourceDebits = (plan: RealmProductionPlan) =>
-  Object.entries(plan.consumptionByResource).map(([resourceId, humanAmount]) => ({
-    resourceId: Number(resourceId) as ResourcesIds,
-    amount: -humanAmount,
   }));
 
 type ProcessRealmsResult = { ran: boolean; anyExecuted: boolean };
@@ -544,24 +533,19 @@ export const useAutomation = () => {
         verboseLog("[Automation] Executing production plan", planLogPayloadWithStatus);
 
         try {
-          await new ResourceManager(components, plan.realmId).submitProvisionalResourceTransaction(
-            buildProductionResourceDebits(plan),
-            starknetSignerAccount,
-            () =>
-              execute_realm_production_plan({
-                signer: starknetSignerAccount,
-                realm_entity_id: plan.realmId,
-                skipQueue: true,
-                resource_to_resource: plan.callset.resourceToResource.map((item) => ({
-                  resource_id: item.resourceId,
-                  cycles: item.cycles,
-                })),
-                labor_to_resource: plan.callset.laborToResource.map((item) => ({
-                  resource_id: item.resourceId,
-                  cycles: item.cycles,
-                })),
-              }),
-          );
+          await execute_realm_production_plan({
+            signer: starknetSignerAccount,
+            realm_entity_id: plan.realmId,
+            skipQueue: true,
+            resource_to_resource: plan.callset.resourceToResource.map((item) => ({
+              resource_id: item.resourceId,
+              cycles: item.cycles,
+            })),
+            labor_to_resource: plan.callset.laborToResource.map((item) => ({
+              resource_id: item.resourceId,
+              cycles: item.cycles,
+            })),
+          });
 
           const summary = buildExecutionSummary(plan, Date.now());
           recordExecution(activeRealmConfig.realmId, summary);

@@ -6,11 +6,11 @@ import { describe, expect, it } from "vitest";
 const readSource = (relativePath: string) => readFileSync(resolve(process.cwd(), relativePath), "utf8");
 
 describe("CraftRelicPopup source", () => {
-  it("routes research optimism through the session provisional-write owner", () => {
+  it("keeps the research balance authoritative while the button owns pending state", () => {
     const source = readSource("src/ui/features/economy/resources/craft-relic-popup.tsx");
 
-    expect(source).toContain("submitProvisionalResourceTransaction");
-    expect(source).toContain("{ resourceId: ResourcesIds.Research, amount: -configuredResearchCost }");
+    expect(source).toContain("await systemCalls.burn_research_for_relic");
+    expect(source).not.toContain("Provisional");
     expect(source).toContain("displayedResearchBalance");
     expect(source).not.toContain("optimisticResearchBalance");
     expect(source).not.toContain("setOptimisticResearchBalance");

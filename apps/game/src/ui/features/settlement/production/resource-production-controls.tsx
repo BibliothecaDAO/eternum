@@ -67,17 +67,8 @@ export const ResourceProductionControls = ({
       production_cycles: [ticks],
       signer: account,
     };
-    const resourceChanges = (configManager.complexSystemResourceInputs[selectedResource] ?? []).map(
-      ({ resource, amount }) => ({
-        resourceId: resource,
-        amount: -amount * ticks,
-      }),
-    );
-
     try {
-      await resourceManager.submitProvisionalResourceTransaction(resourceChanges, account, () =>
-        burn_resource_for_resource_production(calldata),
-      );
+      await burn_resource_for_resource_production(calldata);
     } catch (error) {
       console.error(error);
     } finally {
@@ -96,15 +87,8 @@ export const ResourceProductionControls = ({
         produced_resource_types: [selectedResource],
         signer: account,
       };
-      const resourceChanges = laborConfig.inputResources.map(({ resource, amount }) => ({
-        resourceId: resource,
-        amount: -amount * productionCycles,
-      }));
-
       try {
-        await resourceManager.submitProvisionalResourceTransaction(resourceChanges, account, () =>
-          burn_labor_for_resource_production(calldata),
-        );
+        await burn_labor_for_resource_production(calldata);
       } catch (error) {
         console.error(error);
       } finally {

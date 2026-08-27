@@ -200,16 +200,11 @@ export const RealmTransfer = memo(({ resource }: { resource: ResourcesIds }) => 
   const handleBurn = useCallback(async () => {
     setIsLoading(true);
     try {
-      await new ResourceManager(components, selectedStructureEntityId).submitProvisionalResourceTransaction(
-        [{ resourceId: resource, amount: -burnAmount }],
-        account,
-        () =>
-          structure_burn({
-            signer: account,
-            structure_id: selectedStructureEntityId,
-            resources: [{ resourceId: resource, amount: Math.round(burnAmount * RESOURCE_PRECISION) }],
-          }),
-      );
+      await structure_burn({
+        signer: account,
+        structure_id: selectedStructureEntityId,
+        resources: [{ resourceId: resource, amount: Math.round(burnAmount * RESOURCE_PRECISION) }],
+      });
     } catch (error) {
       console.error(error);
     } finally {
@@ -225,18 +220,9 @@ export const RealmTransfer = memo(({ resource }: { resource: ResourcesIds }) => 
       resources: [resources[0], BigInt(Number(resources[1]) * RESOURCE_PRECISION)],
     }));
     try {
-      await ResourceManager.submitProvisionalResourceTransaction({
-        components,
-        changeSets: calls.map((call) => ({
-          entityId: Number(call.sender_entity_id),
-          changes: [{ resourceId: Number(call.resources[0]) as ResourcesIds, amount: -Number(call.resources[1]) }],
-        })),
-        waiterSource: account,
-        submit: () =>
-          send_resources_multiple({
-            signer: account,
-            calls: cleanedCalls,
-          }),
+      await send_resources_multiple({
+        signer: account,
+        calls: cleanedCalls,
       });
     } catch (error) {
       console.error(error);

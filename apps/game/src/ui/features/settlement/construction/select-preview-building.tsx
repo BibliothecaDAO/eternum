@@ -2,7 +2,6 @@ import { usePlayResourceSound } from "@/audio";
 import { AudioManager } from "@/audio/core/AudioManager";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import { useProvisionalInputLock } from "@/hooks/use-provisional-input-lock";
 import { LeftView } from "@/types";
 import { BUILDING_IMAGES_PATH } from "@/ui/config";
 import { formatTimeRemaining } from "@/ui/features/economy/resources/entity-resource-table/utils";
@@ -61,7 +60,7 @@ import Play from "lucide-react/dist/esm/icons/play";
 import Trash from "lucide-react/dist/esm/icons/trash";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
-import { buildingEntityKey, gameEntityKey } from "@/dojo/game-scope";
+import { gameEntityKey } from "@/dojo/game-scope";
 
 type ArmyTypeLabel = (typeof MILITARY_BUILDING_GROUP_ORDER)[number];
 type ArmyGroup = {
@@ -146,6 +145,7 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
 
   const currentDefaultTick = getBlockTimestamp().currentDefaultTick;
   const [timerTick, setTimerTick] = useState(0);
+  const [pendingAction, setPendingAction] = useState<"build" | "production" | null>(null);
 
   const setPreviewBuilding = useUIStore((state) => state.setPreviewBuilding);
   const setLeftNavigationView = useUIStore((state) => state.setLeftNavigationView);
@@ -180,18 +180,8 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
         : [],
     [dojo.setup.components, dojo.setup.systemCalls, realm?.position, structureBuildings],
   );
-  const buildingEntityIds = useMemo(
-    () =>
-      realm?.position
-        ? existingBuildings.map((building) =>
-            buildingEntityKey(Number(realm.position.x), Number(realm.position.y), building.col, building.row),
-          )
-        : [],
-    [existingBuildings, realm?.position],
-  );
-  const realmEntityIds = useMemo(() => [realmEntity], [realmEntity]);
-  const isBuildLocked = useProvisionalInputLock("StructureBuildings", realmEntityIds);
-  const isProductionLocked = useProvisionalInputLock("Building", buildingEntityIds);
+  const isBuildLocked = pendingAction === "build";
+  const isProductionLocked = pendingAction === "production";
   const hasAvailableBuildingTile = useMemo(() => {
     return resolveRealmHasAvailableBuildingTile({
       entityId,
@@ -227,23 +217,28 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
   const handleAutoBuild = useCallback(
     async (target: { type: BuildingType; resource?: ResourcesIds }) => {
       if (isBuildLocked) return;
-      await buildRealmBuilding({
-        entityId,
-        realmPosition: realm?.position,
-        realm,
-        mode,
-        target,
-        useSimpleCost,
-        world: {
-          account: dojo.account.account,
-          components: dojo.setup.components,
-          systemCalls: dojo.setup.systemCalls,
-        },
-        onBuildSuccess: (selection) => {
-          setPreviewBuilding(null);
-          setSelectedBuildingHex(selection);
-        },
-      });
+      setPendingAction("build");
+      try {
+        await buildRealmBuilding({
+          entityId,
+          realmPosition: realm?.position,
+          realm,
+          mode,
+          target,
+          useSimpleCost,
+          world: {
+            account: dojo.account.account,
+            components: dojo.setup.components,
+            systemCalls: dojo.setup.systemCalls,
+          },
+          onBuildSuccess: (selection) => {
+            setPreviewBuilding(null);
+            setSelectedBuildingHex(selection);
+          },
+        });
+      } finally {
+        setPendingAction(null);
+      }
     },
     [
       dojo.account.account,
@@ -280,6 +275,7 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
         toast.error("No building of this type found to destroy.");
         return;
       }
+      setPendingAction("build");
       try {
         await tileManager.destroyBuilding(dojo.account.account, entityId, existing.col, existing.row);
         if (
@@ -291,6 +287,8 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
       } catch (error) {
         console.error("Failed to destroy building", error);
         toast.error("Destroy failed. Please try again.");
+      } finally {
+        setPendingAction(null);
       }
     },
     [
@@ -328,6 +326,7 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
         toast.error("No buildings of this type found.");
         return;
       }
+      setPendingAction("production");
 
       // Determine action: if any are active, pause all; if all paused, resume all
       const anyActive = categoryBuildings.some((b) => !b.paused);
@@ -347,6 +346,8 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
       } catch (error) {
         console.error(`Failed to ${action} production`, error);
         toast.error(`Failed to ${action} production. Please try again.`);
+      } finally {
+        setPendingAction(null);
       }
     },
     [

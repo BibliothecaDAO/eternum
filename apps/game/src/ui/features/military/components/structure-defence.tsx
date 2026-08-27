@@ -78,7 +78,7 @@ const StructureDefence = ({
   const openArmyCreationPopup = useUIStore((state) => state.openArmyCreationPopup);
 
   const dojo = useDojo();
-  const armyManager = new ArmyManager(dojo.setup.systemCalls, structureId as ID, dojo.setup.components);
+  const armyManager = new ArmyManager(dojo.setup.systemCalls, structureId as ID);
 
   useEffect(() => {
     setDefenseTroops(troops);

@@ -60,24 +60,18 @@ describe("useAutomation source", () => {
     expect(source).not.toContain("executeProductionPlansSequentially");
   });
 
-  it("applies session-owned resource intents around production submits", () => {
+  it("submits production plans without writing a parallel RECS state", () => {
     const source = readSource("src/hooks/use-automation.tsx");
 
-    expect(source).toContain("new ResourceManager(components, plan.realmId).submitProvisionalResourceTransaction");
-    expect(source).toContain("buildProductionResourceDebits(plan)");
-    expect(source).not.toContain("scheduleAutomationResourceCleanup");
+    expect(source).toContain("await execute_realm_production_plan");
+    expect(source).not.toContain("submitProvisionalResourceTransaction");
     expect(source).toContain("skipQueue: true");
-    expect(source).not.toContain("applyAutomationReservationsToSnapshot");
-    expect(source).not.toContain("reserveAutomationResources");
-    expect(source).not.toContain("removeResourceOverrides");
   });
 
-  it("scheduled transfer automation plans against RECS balances and debits the source before submit", () => {
+  it("submits scheduled transfers without writing a parallel RECS state", () => {
     const source = readSource("src/hooks/use-transfer-automation-runner.ts");
 
-    expect(source).toContain("rm.submitProvisionalResourceTransaction");
-    expect(source).toContain("amount: -transfer.humanAmount");
-    expect(source).not.toContain("getSpendableResourceBalance");
-    expect(source).not.toContain("reserveAutomationResources");
+    expect(source).toContain("await systemCalls.send_resources_multiple");
+    expect(source).not.toContain("submitProvisionalResourceTransaction");
   });
 });

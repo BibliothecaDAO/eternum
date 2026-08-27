@@ -45,9 +45,7 @@ import { LeftView } from "@/types";
 import { configManager, Position } from "@bibliothecadao/eternum";
 import {
   requireActiveGameSyncRuntime,
-  trackProvisionalTransaction,
   type ArmySpatialProjectionChange,
-  type ProvisionalIntent,
   type StructureSpatialProjectionChange,
   type TileSpatialProjectionChange,
   type TileSpatialRenderable,
@@ -95,8 +93,6 @@ import {
   ResourcesIds,
   Structure,
   StructureType,
-  TroopTier,
-  TroopType,
 } from "@bibliothecadao/types";
 import { getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@bibliothecadao/eternum";
@@ -214,14 +210,8 @@ import {
 } from "./worldmap-terrain-commit-runtime";
 import { runWorldmapArmySelectionRecovery } from "./worldmap-army-selection-recovery-runtime";
 import { shouldQueueArmySelectionRecovery } from "./worldmap-army-tab-selection";
-import { resolveCreateArmyEffectTargetHex } from "./worldmap-pending-action-effect-policy";
-import { registerWorldmapProvisionalFxRenderer, type WorldmapProvisionalFxSpec } from "./worldmap-provisional-fx";
 import { shouldPlayArmyMovementFx } from "./worldmap-movement-fx-policy";
-import {
-  resolveArrivalGhostVisualStyle,
-  shouldCreatePredictiveArrivalGhost,
-  type ArrivalGhostClearReason,
-} from "../managers/arrival-ghost-policy";
+import { resolveArrivalGhostVisualStyle, shouldCreatePredictiveArrivalGhost } from "../managers/arrival-ghost-policy";
 import {
   resolveExploreCompletionVisualCleanup,
   shouldCleanupTrackedTravelEffect,
@@ -907,18 +897,6 @@ export default class WorldmapScene extends WarpTravel {
   private travelEffects: Map<string, () => void> = new Map();
   private travelEffectsByEntity: Map<ID, { key: string; cleanup: () => void; effectType: TravelEffectType }> =
     new Map();
-  private provisionalAttackFxCleanups = new Set<() => void>();
-  private pendingCreateArmyEffects = new Map<
-    string,
-    {
-      ghostKey: string;
-      targetHex: HexPosition;
-      unsubscribe: () => void;
-    }
-  >();
-  private pendingArrivalGhostIntentDisposers = new Map<ID, () => void>();
-  private nextProvisionalFxId = 1;
-  private unregisterWorldmapProvisionalFxRenderer: (() => void) | null = null;
   private cancelHexGridComputation?: () => void;
 
   // Global chunk switching coordination
@@ -1111,9 +1089,6 @@ export default class WorldmapScene extends WarpTravel {
     this.arrivalGhostManager = new ArrivalGhostManager(this.scene, {
       chunkStride: this.chunkSize,
       renderChunkSize: this.renderChunkSize,
-    });
-    this.unregisterWorldmapProvisionalFxRenderer = registerWorldmapProvisionalFxRenderer({
-      start: (spec, intent) => this.startWorldmapProvisionalFx(spec, intent),
     });
 
     installWorldmapDebugHooks(window, {
@@ -1310,14 +1285,12 @@ export default class WorldmapScene extends WarpTravel {
   private handleProjectedArmyChanges(changes: readonly ArmySpatialProjectionChange[]): void {
     changes.forEach(({ entityId, current }) => {
       if (!current) {
-        this.disposeArrivalGhostIntentSubscription(entityId);
         this.disposePendingMovementVisualLifecycle(entityId);
         this.arrivalGhostManager.clearArrivalGhost(entityId, "army_removed");
         this.battleDirectionManager.removeEntityFromTracking(entityId);
         return;
       }
 
-      this.clearPendingCreateArmyGhostsForOccupiedTiles();
       this.recalculateArrowsForEntity(entityId);
       this.recalculateArrowsForEntitiesRelatedTo(entityId);
     });
@@ -2697,19 +2670,8 @@ export default class WorldmapScene extends WarpTravel {
         }
       }
 
-      let movementIntent: ProvisionalIntent;
-      try {
-        movementIntent = this.createProvisionalArmyMovementIntent({
-          entityId: selectedEntityId,
-          targetHex,
-          movementStamina,
-        });
-      } catch (error) {
-        this.handleProvisionalArmyMovementFailure(selectedEntityId, cleanup);
-        throw error;
-      }
+      this.clearMovementActionOptionsForSelectedArmy(selectedEntityId);
       this.installPendingMovementVisualLifecycle({ entityId: selectedEntityId });
-      if (shouldTrackArrivalGhost) this.installArrivalGhostIntentSubscription(selectedEntityId, movementIntent);
       recordArmyMovementLatencyPhase({
         phase: "move_requested",
         source: "worldmap",
@@ -2761,28 +2723,29 @@ export default class WorldmapScene extends WarpTravel {
             entityId: selectedEntityId,
             txHash,
           });
-          trackProvisionalTransaction(movementIntent, account, result, {
-            onConfirmed: () => {
-              recordArmyMovementLatencyPhase({
-                phase: "tx_confirmed",
-                source: "worldmap",
-                entityId: selectedEntityId,
-                txHash,
-              });
-              if (actionType === ActionType.Explore) {
+          if (txHash) {
+            void requireActiveGameSyncRuntime()
+              .waitForTransaction(txHash)
+              .then(() => {
                 recordArmyMovementLatencyPhase({
-                  phase: "explore_next_safe_unblocked",
+                  phase: "tx_confirmed",
                   source: "worldmap",
                   entityId: selectedEntityId,
+                  txHash,
                 });
-              }
-            },
-            onFailed: () => this.handleProvisionalArmyMovementFailure(selectedEntityId, cleanup),
-          });
+                if (actionType === ActionType.Explore) {
+                  recordArmyMovementLatencyPhase({
+                    phase: "explore_next_safe_unblocked",
+                    source: "worldmap",
+                    entityId: selectedEntityId,
+                  });
+                }
+              })
+              .catch(() => this.handlePendingArmyMovementFailure(selectedEntityId, cleanup));
+          }
         })
         .catch((e) => {
-          movementIntent.fail();
-          this.handleProvisionalArmyMovementFailure(selectedEntityId, cleanup);
+          this.handlePendingArmyMovementFailure(selectedEntityId, cleanup);
           console.error("Army movement failed:", e);
         });
 
@@ -3008,6 +2971,7 @@ export default class WorldmapScene extends WarpTravel {
         source: "worldmap",
         entityId,
       });
+      this.arrivalGhostManager.resolveArrivalGhost(entityId, "settled");
       this.handoffPendingArmyMovementToVisualLifecycle(entityId);
     });
     const disposeMovementComplete = this.armyManager.onMovementComplete(entityId, () => {
@@ -3042,68 +3006,9 @@ export default class WorldmapScene extends WarpTravel {
     dispose();
   }
 
-  private installArrivalGhostIntentSubscription(entityId: ID, intent: ProvisionalIntent): void {
-    this.disposeArrivalGhostIntentSubscription(entityId);
-    let unsubscribe = () => {};
-    unsubscribe = intent.subscribe((outcome) => {
-      if (outcome === "settled") {
-        this.arrivalGhostManager.resolveArrivalGhost(entityId, "settled");
-      } else {
-        this.arrivalGhostManager.clearArrivalGhost(entityId, "failed");
-      }
-      this.disposeArrivalGhostIntentSubscription(entityId);
-    });
-    this.pendingArrivalGhostIntentDisposers.set(entityId, unsubscribe);
-  }
-
-  private disposeArrivalGhostIntentSubscription(entityId: ID): void {
-    const unsubscribe = this.pendingArrivalGhostIntentDisposers.get(entityId);
-    if (!unsubscribe) return;
-    unsubscribe();
-    this.pendingArrivalGhostIntentDisposers.delete(entityId);
-  }
-
-  private createProvisionalArmyMovementIntent(input: {
-    entityId: ID;
-    targetHex: HexPosition;
-    movementStamina: MovementStaminaResolution;
-  }): ProvisionalIntent {
-    const entityId = gameEntityKey([BigInt(input.entityId)]);
-    const explorerTroops = getComponentValue(this.dojo.components.ExplorerTroops, entityId);
-    if (!explorerTroops) throw new Error(`Cannot move missing explorer ${input.entityId}`);
-
-    const nextStamina = BigInt(
-      Math.max(0, Math.floor(input.movementStamina.currentStamina) - Math.floor(input.movementStamina.staminaCost)),
-    );
-    this.clearMovementActionOptionsForSelectedArmy(input.entityId);
-    return requireActiveGameSyncRuntime().createProvisionalIntent([
-      {
-        entityId,
-        model: "ExplorerTroops",
-        patch: {
-          troops: {
-            ...explorerTroops.troops,
-            stamina: {
-              ...explorerTroops.troops.stamina,
-              amount: nextStamina,
-              updated_tick: BigInt(input.movementStamina.currentArmiesTick),
-            },
-          },
-        },
-        matchPatch: {
-          coord: { ...explorerTroops.coord, x: input.targetHex.col, y: input.targetHex.row },
-        },
-        sourcePatch: {
-          coord: explorerTroops.coord,
-        },
-      },
-    ]);
-  }
-
-  private handleProvisionalArmyMovementFailure(entityId: ID, cleanup: () => void): void {
+  private handlePendingArmyMovementFailure(entityId: ID, cleanup: () => void): void {
     this.clearPendingArmyMovementVisuals(entityId);
     this.disposePendingMovementVisualLifecycle(entityId);
-    this.disposeArrivalGhostIntentSubscription(entityId);
     this.arrivalGhostManager.clearArrivalGhost(entityId, "failed");
     cleanup();
   }
@@ -3116,161 +3021,6 @@ export default class WorldmapScene extends WarpTravel {
     }
 
     return false;
-  }
-
-  private startWorldmapProvisionalFx(spec: WorldmapProvisionalFxSpec, intent: ProvisionalIntent): void {
-    if (this.sceneManager.getCurrentScene() !== SceneName.WorldMap) return;
-    if (spec.kind === "create-army") {
-      this.startProvisionalCreateArmyGhost(spec, intent);
-      return;
-    }
-
-    const attackerNormalized = new Position({ x: spec.attackerHex.col, y: spec.attackerHex.row }).getNormalized();
-    const targetNormalized = new Position({ x: spec.targetHex.col, y: spec.targetHex.row }).getNormalized();
-    const attackCleanup = this.playPendingFxAtHex({
-      type: "attack",
-      hex: { col: attackerNormalized.x, row: attackerNormalized.y },
-      size: 1.8,
-      yOffset: 0.48,
-    });
-    const defenseCleanup = this.playPendingFxAtHex({
-      type: "defense",
-      hex: { col: targetNormalized.x, row: targetNormalized.y },
-      size: 1.8,
-      yOffset: 0.48,
-    });
-
-    let unsubscribe = () => {};
-    const cleanup = () => {
-      attackCleanup();
-      defenseCleanup();
-      unsubscribe();
-      this.provisionalAttackFxCleanups.delete(cleanup);
-    };
-    unsubscribe = intent.subscribe(cleanup);
-    this.provisionalAttackFxCleanups.add(cleanup);
-  }
-
-  private startProvisionalCreateArmyGhost(
-    spec: Extract<WorldmapProvisionalFxSpec, { kind: "create-army" }>,
-    intent: ProvisionalIntent,
-  ): void {
-    const structureHex = this.getStructureHexPosition(spec.structureId);
-    const targetHex = resolveCreateArmyEffectTargetHex(structureHex, spec.direction);
-    if (!targetHex) return;
-
-    const key = `create-army:${this.nextProvisionalFxId++}`;
-    const ghostKey = key;
-    const unsubscribe = intent.subscribe((outcome) => {
-      if (outcome !== "settled") this.clearPendingCreateArmyGhost(key, "failed");
-    });
-    this.pendingCreateArmyEffects.set(key, {
-      ghostKey,
-      targetHex,
-      unsubscribe,
-    });
-
-    void this.renderProvisionalCreateArmyGhost({
-      key,
-      ghostKey,
-      structureId: spec.structureId,
-      targetHex,
-      troopType: spec.troopType,
-      troopTier: spec.troopTier,
-    }).catch((error) => this.handlePendingCreateArmyGhostError(key, error));
-    this.clearPendingCreateArmyGhostsForOccupiedTiles();
-  }
-
-  private async renderProvisionalCreateArmyGhost(input: {
-    ghostKey: string;
-    key: string;
-    structureId: ID;
-    targetHex: HexPosition;
-    troopTier: TroopTier;
-    troopType: TroopType;
-  }): Promise<void> {
-    const ghostSource = await this.armyManager.resolvePendingCreationGhostSource({
-      entityId: input.structureId,
-      hexCoords: input.targetHex,
-      troopType: input.troopType,
-      troopTier: input.troopTier,
-    });
-    const pending = this.pendingCreateArmyEffects.get(input.key);
-    if (!pending || pending.ghostKey !== input.ghostKey) {
-      return;
-    }
-
-    this.arrivalGhostManager.upsertLocalArrivalGhost({
-      entityId: input.ghostKey,
-      hexCoords: input.targetHex,
-      sourceScene: ghostSource.sourceScene,
-      visualStyle: resolveArrivalGhostVisualStyle({
-        armyColor: ghostSource.armyColor,
-      }),
-    });
-  }
-
-  private handlePendingCreateArmyGhostError(key: string, error: unknown): void {
-    if (!this.pendingCreateArmyEffects.has(key)) {
-      return;
-    }
-
-    console.warn("[WorldMap] Failed to show pending create-army ghost", error);
-  }
-
-  private playPendingFxAtHex(input: {
-    type: string;
-    hex: HexPosition;
-    size?: number;
-    yOffset?: number;
-    label?: string;
-  }): () => void {
-    const position = getWorldPositionForHex(input.hex);
-    const { end } = this.fxManager.playFxAtCoords(
-      input.type,
-      position.x,
-      position.y + (input.yOffset ?? 0.45),
-      position.z,
-      input.size ?? 1.4,
-      input.label,
-      true,
-    );
-
-    let cleaned = false;
-    return () => {
-      if (cleaned) return;
-      cleaned = true;
-      end();
-    };
-  }
-
-  private clearPendingCreateArmyGhost(key: string, reason: ArrivalGhostClearReason): void {
-    const pending = this.pendingCreateArmyEffects.get(key);
-    if (!pending) return;
-    pending.unsubscribe();
-    this.arrivalGhostManager.clearArrivalGhost(pending.ghostKey, reason);
-    this.pendingCreateArmyEffects.delete(key);
-  }
-
-  private clearAllPendingActionFx(): void {
-    [...this.provisionalAttackFxCleanups].forEach((cleanup) => cleanup());
-    [...this.pendingCreateArmyEffects.keys()].forEach((key) =>
-      this.clearPendingCreateArmyGhost(key, "scene_destroyed"),
-    );
-  }
-
-  private clearPendingCreateArmyGhostsForOccupiedTiles(): void {
-    const keysToClear: string[] = [];
-
-    for (const [key, pending] of this.pendingCreateArmyEffects.entries()) {
-      if (this.getArmyAtHex(pending.targetHex)) {
-        keysToClear.push(key);
-      }
-    }
-
-    for (const key of keysToClear) {
-      this.clearPendingCreateArmyGhost(key, "projection_occupied");
-    }
   }
 
   private resolveMovementStaminaForAction(input: {
@@ -3338,7 +3088,7 @@ export default class WorldmapScene extends WarpTravel {
   }
 
   private isArmyMovementInputLocked(entityId: ID): boolean {
-    return requireActiveGameSyncRuntime().hasProvisionalInputLock("ExplorerTroops", gameEntityKey([BigInt(entityId)]));
+    return this.pendingArmyMovementVisualLifecycleDisposers.has(entityId);
   }
 
   private isArmyMovementActionUnavailable(entityId: ID): boolean {
@@ -4056,7 +3806,6 @@ export default class WorldmapScene extends WarpTravel {
     this.clearPendingHoverLabelRecovery("switch_off");
     this.resetInteractionSelectionForSwitchOff(nextSceneName);
     this.releaseInteractionOwnership("switch_off");
-    this.clearAllPendingActionFx();
     this.runWarpTravelSwitchOffLifecycle();
   }
 
@@ -4091,9 +3840,6 @@ export default class WorldmapScene extends WarpTravel {
     });
     this.pendingArmyMovementVisualLifecycleDisposers.forEach((dispose) => dispose());
     this.pendingArmyMovementVisualLifecycleDisposers.clear();
-    this.pendingArrivalGhostIntentDisposers.forEach((dispose) => dispose());
-    this.pendingArrivalGhostIntentDisposers.clear();
-    this.clearAllPendingActionFx();
     this.arrivalGhostManager
       .getTrackedEntityIds()
       .forEach((entityId) => this.arrivalGhostManager.clearArrivalGhost(entityId, "scene_destroyed"));
@@ -9026,8 +8772,6 @@ export default class WorldmapScene extends WarpTravel {
       ...this.getInteractionDebugSnapshot(),
     });
     this.onSwitchOff();
-    this.unregisterWorldmapProvisionalFxRenderer?.();
-    this.unregisterWorldmapProvisionalFxRenderer = null;
     this.syncUrlChangedListenerLifecycle("destroy");
     this.resetZoomHardeningRuntimeState();
     this.removeChunkDiagnosticsDebugHooks();
@@ -9154,7 +8898,7 @@ export default class WorldmapScene extends WarpTravel {
         const army = this.selectableArmies[this.armyIndex];
         const hasMovementInputLock = this.isArmyMovementInputLocked(army.entityId);
 
-        // Skip armies whose previous movement is still pending or optimistic.
+        // Skip armies whose previous movement is still pending in this scene.
         if (hasMovementInputLock) {
           attempts++;
           continue;

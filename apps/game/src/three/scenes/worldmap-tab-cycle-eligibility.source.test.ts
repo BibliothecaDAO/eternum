@@ -41,16 +41,16 @@ describe("Worldmap tab-cycle eligibility", () => {
     expect(eligibilityPos).toBeGreaterThan(pendingPos);
   });
 
-  it("uses only the centralized submitting/pending transaction lock", () => {
+  it("uses the scene-local pending indicator without writing RECS", () => {
     const source = readSource("worldmap.tsx");
 
     const helperStart = source.indexOf("private isArmyMovementInputLocked(entityId: ID)");
     expect(helperStart).toBeGreaterThan(0);
     const helperBody = source.slice(helperStart, helperStart + 500);
 
-    expect(helperBody).toContain('hasProvisionalInputLock("ExplorerTroops"');
+    expect(helperBody).toContain("pendingArmyMovementVisualLifecycleDisposers.has(entityId)");
     expect(helperBody).not.toContain("this.armyManager.isArmyMoving(entityId)");
-    expect(helperBody).not.toContain("pendingArmyMovement");
+    expect(helperBody).not.toContain("createProvisionalIntent");
     expect(source).toMatch(
       /this\.selectableArmies\.some\(\s*\(army\) => !this\.isArmyMovementInputLocked\(army\.entityId\)/,
     );

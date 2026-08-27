@@ -14,10 +14,10 @@ world, created through the factory (GameRegistry) with immutable balance presets
 
 The data pipeline, end to end: Cairo contracts (`contracts/game`) define the world (realms, buildings, resources,
 armies, exploration, battles, relics, hyperstructures, victory points) → transactions execute on a Starknet sequencer →
-Torii indexes the world and serves clients three ways (entity subscriptions for current state, event-message
-subscriptions for transient notifications, SQL for immutable history) → the client's sync runtime ingests updates into
-RECS, the single authoritative store → three.js scenes (`WorldmapScene`, `HexceptionScene`) and the React UI render from
-it. Player actions apply optimistically, then reconcile against the indexed echo.
+Herald folds confirmed blocks, maintains the pre-confirmed overlay, and streams snapshots plus ordered diffs → the
+client's sync runtime ingests updates into RECS, the single authoritative store → three.js scenes (`WorldmapScene`,
+`HexceptionScene`) and the React UI render from it. The acting UI may show a local pending indicator; shared provisional
+state comes only from Herald's pre-confirmed overlay.
 
 Key directories: `apps/game` (the game client — has its own `AGENTS.md`), `packages/core` (game logic and sync runtime),
 `packages/*` (Dojo/RECS bindings, shared types), `contracts/*` (Cairo), `deploy/appchain` (self-hosted chain infra —
@@ -56,23 +56,23 @@ When changing workflows, deployer code, shared runtime packages, or observabilit
 Every client bug class in the Aug 2026 playtests traced to a violation of one of these rules. They apply to `apps/game`
 and `packages/*`.
 
-1. **One truth, per fact.** Current authoritative game facts live in RECS only: anything fetched from torii that
-   represents current entity state is written into RECS — never held in a side store, react-query cache, or scene-local
-   map as the primary copy. Immutable history and query-derived aggregates that are not current entity truth (story
-   logs, battle logs, swaps, token transfers) may be SQL read models, but SQL must never provide an alternative or
-   fallback version of a fact that is also present in RECS. Do not add new direct-fetch read paths for live state; when
-   touching one, delete it.
-2. **Entities are state; events are ephemera.** Anything persistent renders from the entity stream. Event messages drive
-   only transient flourishes (toasts, FX triggers) — and every event-driven feature must survive a dead event stream via
-   a snapshot, replay, poll, or query-on-demand path. A subscription is an accelerator, not the source of truth.
+1. **One truth, per fact.** Current game facts live in RECS only: Herald's confirmed snapshot and ordered diffs are
+   written into RECS — never held in a side store, react-query cache, or scene-local map as the primary copy. Immutable
+   history and query-derived aggregates that are not current entity truth (story logs, battle logs, swaps, token
+   transfers) may be SQL read models, but SQL must never provide an alternative or fallback version of a fact that is
+   also present in RECS. Do not add new direct-fetch read paths for live state; when touching one, delete it.
+2. **Entities are state; events are ephemera.** Anything persistent renders from Herald's snapshot plus entity diffs.
+   Event messages drive only transient flourishes (toasts, FX triggers), and every event-driven feature must recover
+   through the snapshot, replay ring, or immutable history sink. Event delivery is an accelerator, not the source of
+   truth.
 3. **Spread ambient work; apply player events atomically.** Batching, slicing, and lane scheduling exist for
    bulk/ambient churn. One player-initiated or single logical event (a move, a placement, a provisioned realm) must
    become visible in one step: batching must never show in the result of one action.
 4. **No silent defaults.** A config or keyed lookup that misses must be loud in dev. Never let a silent fallback return
    a zero that gameplay math consumes.
-5. **Pending state expires, and lives in one place.** Optimistic/lock state is one record per entity with a TTL enforced
-   where the state is consumed — never parallel maps that must be cleaned in sync, never keyed by tx hash. Do not add
-   new bespoke optimistic channels; route provisional writes through the same update path as authoritative data.
+5. **Pre-confirmation is shared; click feedback is local.** Herald owns the one pre-confirmed overlay and resets it at
+   each confirmed head. The client never predicts or overrides RECS rows. An acting surface may keep local pending UI
+   state for its own click, but that state must not become an alternative game fact or a bespoke reconciliation channel.
 6. **Wired or deleted.** If it is exported, something imports it; if it is config, something reads it. Do not land a
    capability without its call site.
 

@@ -1,5 +1,4 @@
 import { useWorldSpatialTiles } from "@/hooks/use-world-spatial-tiles";
-import { startWorldmapProvisionalFx } from "@/three/scenes/worldmap-provisional-fx";
 import { Position as PositionInterface } from "@bibliothecadao/eternum";
 
 import Button from "@/ui/design-system/atoms/button";
@@ -189,18 +188,7 @@ export const ArmyCreate = ({
             console.error("No direction selected");
             return;
           }
-          await armyManager.createExplorerArmy(account, troopType, troopTier, troopCount, selectedDirection, (intent) =>
-            startWorldmapProvisionalFx(
-              {
-                kind: "create-army",
-                structureId: owner_entity,
-                direction: selectedDirection,
-                troopType,
-                troopTier,
-              },
-              intent,
-            ),
-          );
+          await armyManager.createExplorerArmy(account, troopType, troopTier, troopCount, selectedDirection);
         }
       } else {
         if (guardSlot !== undefined) {
@@ -531,7 +519,7 @@ export const ArmyManagementCard = ({ owner_entity, army }: ArmyManagementCardPro
 
   const dojo = useDojo();
 
-  const armyManager = new ArmyManager(dojo.setup.systemCalls, owner_entity as ID, dojo.setup.components);
+  const armyManager = new ArmyManager(dojo.setup.systemCalls, owner_entity as ID);
 
   const [isLoading, setIsLoading] = useState(false);
 

@@ -20,7 +20,6 @@ import {
   isMilitaryResource,
   MarketManager,
   multiplyByPrecision,
-  ResourceManager,
 } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
 import { ContractAddress, ID, Resources, resources, ResourcesIds, StructureType } from "@bibliothecadao/types";
@@ -107,22 +106,11 @@ export const ResourceSwap = ({ entityId, listResourceId }: { entityId: ID; listR
     };
 
     // If no bank protector, just perform swap
-    await new ResourceManager(components, entityId)
-      .submitProvisionalResourceTransaction(
-        [
-          {
-            resourceId: isBuyResource ? ResourcesIds.Lords : resourceId,
-            amount: -(isBuyResource ? lordsAmount + ownerFee : resourceAmount),
-          },
-        ],
-        account,
-        performSwap,
-      )
-      .finally(() => {
-        playTradeExecuteSound();
-        setIsLoading(false);
-        setOpenConfirmation(false);
-      });
+    await performSwap().finally(() => {
+      playTradeExecuteSound();
+      setIsLoading(false);
+      setOpenConfirmation(false);
+    });
   }, [
     isBuyResource,
     account,

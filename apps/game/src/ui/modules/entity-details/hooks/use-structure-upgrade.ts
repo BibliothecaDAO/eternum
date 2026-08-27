@@ -1,12 +1,10 @@
 import { gameEntityKey } from "@/dojo/game-scope";
 import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
-import { useProvisionalInputLock } from "@/hooks/use-provisional-input-lock";
-import { configManager, divideByPrecision, getBalance, getRealmInfo, ResourceManager } from "@bibliothecadao/eternum";
-import { requireActiveGameSyncRuntime, trackProvisionalTransaction } from "@bibliothecadao/eternum/game-sync";
+import { configManager, divideByPrecision, getBalance, getRealmInfo } from "@bibliothecadao/eternum";
 import { useArrivalsByStructure, useDojo } from "@bibliothecadao/react";
-import { ContractAddress, getLevelName, ResourcesIds } from "@bibliothecadao/types";
+import { ContractAddress, getLevelName } from "@bibliothecadao/types";
 import { useComponentValue } from "@dojoengine/react";
-import { useCallback, useMemo } from "react";
+import { useCallback, useMemo, useState } from "react";
 
 interface RawUpgradeCost {
   resource: number;
@@ -60,8 +58,7 @@ export const useStructureUpgrade = (structureEntityId: number | null): Structure
     () => (structureEntityId ? gameEntityKey([BigInt(structureEntityId)]) : null),
     [structureEntityId],
   );
-  const lockEntityIds = useMemo(() => (realmEntity ? [realmEntity] : []), [realmEntity]);
-  const isUpgradeLocked = useProvisionalInputLock("Structure", lockEntityIds);
+  const [isUpgradeLocked, setUpgradeLocked] = useState(false);
 
   const liveStructure = useComponentValue(setup.components.Structure, realmEntity as never);
   const liveStructureBuildings = useComponentValue(setup.components.StructureBuildings, realmEntity as never);
@@ -136,35 +133,18 @@ export const useStructureUpgrade = (structureEntityId: number | null): Structure
 
   const handleUpgrade = useCallback(async () => {
     if (!structureInfo || !nextLevel || !realmEntity) return;
-    const runtime = requireActiveGameSyncRuntime();
-    if (runtime.hasProvisionalInputLock("Structure", realmEntity)) return;
+    if (isUpgradeLocked) return;
 
-    const resourceWrite = new ResourceManager(setup.components, structureInfo.entityId).resolveProvisionalResourceWrite(
-      rawCosts.map((cost) => ({ resourceId: cost.resource as ResourcesIds, amount: -cost.amount })),
-    );
-    const intent = runtime.createProvisionalIntent(
-      [
-        ...(resourceWrite ? [resourceWrite] : []),
-        {
-          entityId: realmEntity,
-          model: "Structure",
-          matchPatch: { base: { level: nextLevel } },
-        },
-      ],
-      { lockUntil: "settled" },
-    );
-
+    setUpgradeLocked(true);
     try {
-      const result = await setup.systemCalls.upgrade_realm({
+      await setup.systemCalls.upgrade_realm({
         signer: account.account,
         realm_entity_id: structureInfo.entityId,
       });
-      trackProvisionalTransaction(intent, account.account, result);
-    } catch (error) {
-      intent.fail();
-      throw error;
+    } finally {
+      setUpgradeLocked(false);
     }
-  }, [account.account, nextLevel, rawCosts, realmEntity, setup.components, setup.systemCalls, structureInfo]);
+  }, [account.account, isUpgradeLocked, nextLevel, realmEntity, setup.systemCalls, structureInfo]);
 
   if (!structureInfo) return null;
 

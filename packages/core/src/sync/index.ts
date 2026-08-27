@@ -4,6 +4,5 @@ export * from "./game-sync-types";
 export * from "./herald-game-sync-transport";
 export * from "./model-manifest";
 export * from "./model-stream-clause";
-export * from "./provisional-write-manager";
 export * from "./scheduler";
 export * from "./world-spatial-projection";

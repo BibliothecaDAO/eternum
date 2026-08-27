@@ -166,7 +166,7 @@ describe("resolveConstructionBuildability", () => {
     expect(noPopulationResult).toMatchObject({ canSubmit: false, code: "insufficient_population" });
   });
 
-  it("uses optimistic RECS population instead of stale realm population", () => {
+  it("uses authoritative RECS population instead of stale realm input", () => {
     getComponentValue.mockReturnValueOnce({
       population: {
         current: 10,

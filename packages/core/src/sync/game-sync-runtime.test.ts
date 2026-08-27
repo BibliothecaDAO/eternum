@@ -8,7 +8,6 @@ import {
   SupersededGameSyncStartError,
 } from "./game-sync-runtime";
 import type {
-  GameSyncAuthoritativeObservation,
   GameSyncEntity,
   GameSyncEntityStoreOperation,
   GameSyncSessionStart,
@@ -31,33 +30,21 @@ const createMemoryStore = (initial: Record<string, Record<string, unknown>> = {}
 
   const store: GameSyncStore = {
     applyEntityOperations(nextOperations) {
-      const observations: GameSyncAuthoritativeObservation[] = [];
       operations.push(...nextOperations);
       nextOperations.forEach((operation) => {
         if (operation.type === "upsert") {
           operation.entities.forEach((update) => {
             rows.set(update.hashed_keys, { ...rows.get(update.hashed_keys), ...update.models });
-            Object.entries(update.models).forEach(([model, value]) => {
-              observations.push({
-                type: "model",
-                entityId: update.hashed_keys,
-                model,
-                value: value as Record<string, unknown>,
-              });
-            });
           });
         } else if (operation.type === "remove-components") {
           const models = rows.get(operation.entityId);
           operation.models.forEach((model) => {
             delete models?.[model];
-            observations.push({ type: "model", entityId: operation.entityId, model, value: null });
           });
         } else {
           rows.delete(operation.entityId);
-          observations.push({ type: "delete-entity", entityId: operation.entityId });
         }
       });
-      return observations;
     },
     applyEvent(eventUpdate) {
       events.push(eventUpdate);
