@@ -121,7 +121,7 @@ async function main(): Promise<void> {
   }
 
   const evidenceBefore = await collectHarnessEvidenceBeforeRun();
-  console.log("Waiting for all explorers to reach full stamina, then starting the measured workload");
+  console.log("Waiting until every bot has explorer stamina for its first action, then starting the measured workload");
   const workload = await runWorkload({
     bots: gameRuns.flatMap(({ bots }) => bots),
     intervalSeconds: options.intervalSeconds,
@@ -137,7 +137,7 @@ async function main(): Promise<void> {
   });
 
   const evidence = await finishHarnessEvidence(evidenceBefore, workload.startedAt, workload.endedAt);
-  const minimumCompletedActions = resolveMinimumCompletedActions(options, workload.plannedActions);
+  const minimumThresholdActions = resolveMinimumThresholdActions(options, workload.plannedActions);
   const report = await writeHarnessReport({
     accounts: gameRuns.flatMap(({ accounts }) => accounts),
     botCount: options.bots * options.games,
@@ -145,7 +145,7 @@ async function main(): Promise<void> {
     evidence,
     games: games.map((game) => ({ ...game, botCount: options.bots })),
     intervalSeconds: options.intervalSeconds,
-    minimumCompletedActions,
+    minimumThresholdActions,
     minutes: options.minutes,
     rpcUrl: options.rpcUrl,
     setupTransactions,
@@ -199,7 +199,7 @@ function requireContract(manifest: WorldManifest, tag: string): string {
   return contract.address;
 }
 
-function resolveMinimumCompletedActions(options: HarnessCliOptions, plannedActions: number): number {
+function resolveMinimumThresholdActions(options: HarnessCliOptions, plannedActions: number): number {
   const isAcceptanceRun =
     options.games === 1 && options.bots === 96 && options.minutes === 10 && options.intervalSeconds === 15;
   return isAcceptanceRun ? 3_500 : plannedActions;

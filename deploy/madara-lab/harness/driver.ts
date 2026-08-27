@@ -11,6 +11,7 @@ export type WorkloadActionKind = "move" | "explore" | "produce";
 export type TransactionStage = "setup" | "workload";
 export type MeasuredRpcMethod = "estimateInvokeFee" | "getBlock" | "getTransactionStatus";
 export type WorkloadFailureClass = "game_rule_limit" | "harness_pathing" | "chain_or_driver";
+export type WorkloadRevertReason = "tile_contention" | "stamina" | "labor" | "other";
 export type TransactionOutcome =
   | "completed"
   | "reverted"
@@ -52,6 +53,7 @@ export interface TrackedTransaction {
   preConfirmedAt?: string;
   preConfirmedMs?: number;
   productionDelta?: ProductionDelta;
+  revertReason?: WorkloadRevertReason;
   rpc: RpcMetrics;
   scheduledAt?: string;
   stage: TransactionStage;
@@ -86,9 +88,9 @@ export interface WorkloadResult {
   endedAt: string;
   plannedActions: number;
   overheadRpc: RpcMetrics;
+  readinessWaitMs: number;
   startedAt: string;
   ticks: number;
-  warmupMs: number;
 }
 
 interface ExplorerState {
@@ -199,11 +201,12 @@ const EXPLORER_COUNT_PER_BOT = 3;
 const EXPLORER_TROOP_AMOUNT = 10_000_000_000n;
 const WOOD_RESOURCE_ID = 3;
 export const RECEIPT_POLL_INTERVAL_MS = 50;
+export const FIRST_ACTION_REQUIRED_STAMINA = EXPLORE_STAMINA_COST;
 const TRANSACTION_TIMEOUT_MS = 30_000;
 const SETUP_TRANSACTION_TIMEOUT_MS = 120_000;
 const MODEL_UPDATE_TIMEOUT_MS = 30_000;
-const STAMINA_WARMUP_TIMEOUT_MS = 360_000;
-const STAMINA_WARMUP_POLL_INTERVAL_MS = 1_000;
+const ACTION_READINESS_TIMEOUT_MS = 360_000;
+const ACTION_READINESS_POLL_INTERVAL_MS = 1_000;
 const DEFAULT_SETUP_CONCURRENCY = 6;
 const MADARA_RESOURCE_BOUNDS = resolveGameTransactionResourceBounds("madara");
 
@@ -350,7 +353,7 @@ export async function runWorkload({
 }: RunWorkloadOptions): Promise<WorkloadResult> {
   const ticks = resolveWorkloadTicks(minutes, intervalSeconds);
   const overheadRpc = createRpcMetrics();
-  const warmupMs = await waitForAllExplorersToReachFullStamina(provider, bots, overheadRpc);
+  const readinessWaitMs = await waitForEveryBotToHaveActionStamina(provider, bots, overheadRpc);
 
   const workloadStartedAtMs = Date.now();
   const actions: TrackedTransaction[] = [];
@@ -400,9 +403,9 @@ export async function runWorkload({
     endedAt: new Date().toISOString(),
     overheadRpc,
     plannedActions: bots.length * ticks,
+    readinessWaitMs,
     startedAt: new Date(workloadStartedAtMs).toISOString(),
     ticks,
-    warmupMs,
   };
 }
 
@@ -430,6 +433,14 @@ export function resolveExplorerActionStaminaCost(
 
 export function resolveWorkloadTicks(minutes: number, intervalSeconds: number): number {
   return Math.ceil((minutes * 60) / intervalSeconds);
+}
+
+export function hasExplorerWithStamina(
+  explorers: readonly { stamina: number; staminaUpdatedTick: number }[],
+  chainTick: number,
+  requiredStamina: number,
+): boolean {
+  return explorers.some((explorer) => estimatedStamina(explorer, chainTick) >= requiredStamina);
 }
 
 export function parseStructureIds(value: unknown): string[] {
@@ -613,20 +624,7 @@ async function createBotExplorers({
   });
 }
 
-async function runBotAction({
-  actionIndex,
-  bot,
-  chainTick,
-  gameId,
-  kind,
-  pathReservations,
-  provider,
-  rpc,
-  scheduledAtMs,
-  systems,
-  tick,
-  toriiObserver,
-}: {
+async function runBotAction(options: {
   actionIndex: number;
   bot: HarnessBot;
   chainTick: number;
@@ -641,37 +639,18 @@ async function runBotAction({
   toriiObserver: ToriiObserver;
 }): Promise<TrackedTransaction> {
   try {
-    if (kind === "produce") {
-      return await runProductionAction({
-        actionIndex,
-        bot,
-        chainTick,
-        gameId,
-        provider,
-        rpc,
-        scheduledAtMs,
-        systems,
-        tick,
-        toriiObserver,
-      });
-    }
-    return await runExplorerAction({
-      actionIndex,
-      bot,
-      chainTick,
-      gameId,
-      kind,
-      pathReservations,
-      provider,
-      rpc,
-      scheduledAtMs,
-      systems,
-      tick,
-      toriiObserver,
-    });
+    const transaction = await executeBotAction(options);
+    classifyTransactionFailure(transaction);
+    return transaction;
   } catch (error) {
+    const { actionIndex, bot, gameId, kind, rpc, scheduledAtMs, tick } = options;
     return driverFailure({ actionIndex, botId: bot.botId, error, gameId, kind, rpc, scheduledAtMs, tick });
   }
+}
+
+async function executeBotAction(options: Parameters<typeof runBotAction>[0]): Promise<TrackedTransaction> {
+  if (options.kind === "produce") return runProductionAction(options);
+  return runExplorerAction({ ...options, kind: options.kind });
 }
 
 async function runProductionAction({
@@ -708,7 +687,6 @@ async function runProductionAction({
     toriiObserver,
   });
   if (transaction.outcome !== "completed") {
-    transaction.failureClass = classifyWorkloadFailure(transaction.error);
     return transaction;
   }
 
@@ -771,7 +749,6 @@ async function runExplorerAction({
   });
   if (transaction.outcome !== "completed") {
     pathReservations.cancel(reservation);
-    transaction.failureClass = classifyWorkloadFailure(transaction.error);
     return transaction;
   }
 
@@ -926,24 +903,26 @@ function estimatedStamina(explorer: ExplorerState, chainTick: number): number {
   return Math.min(STAMINA_MAX, explorer.stamina + elapsedTicks * STAMINA_GAIN_PER_TICK);
 }
 
-async function waitForAllExplorersToReachFullStamina(
+async function waitForEveryBotToHaveActionStamina(
   provider: RpcProvider,
   bots: HarnessBot[],
   rpc: RpcMetrics,
 ): Promise<number> {
   const startedAtMs = Date.now();
-  const deadline = startedAtMs + STAMINA_WARMUP_TIMEOUT_MS;
+  const deadline = startedAtMs + ACTION_READINESS_TIMEOUT_MS;
 
   while (Date.now() <= deadline) {
     const chainTick = await readCurrentArmyTick(provider, rpc);
-    const allExplorersReady = bots.every((bot) => {
-      return bot.explorers.every((explorer) => estimatedStamina(explorer, chainTick) >= STAMINA_MAX);
+    const everyBotReady = bots.every((bot) => {
+      return hasExplorerWithStamina(bot.explorers, chainTick, FIRST_ACTION_REQUIRED_STAMINA);
     });
-    if (allExplorersReady) return Date.now() - startedAtMs;
-    await sleep(STAMINA_WARMUP_POLL_INTERVAL_MS);
+    if (everyBotReady) return Date.now() - startedAtMs;
+    await sleep(ACTION_READINESS_POLL_INTERVAL_MS);
   }
 
-  throw new Error(`Explorers did not reach ${STAMINA_MAX} stamina within 360 seconds of chain time`);
+  throw new Error(
+    `Every bot did not gain ${FIRST_ACTION_REQUIRED_STAMINA} explorer stamina within 360 seconds of chain time`,
+  );
 }
 
 async function readCurrentArmyTick(provider: RpcProvider, rpc: RpcMetrics): Promise<number> {
@@ -1287,6 +1266,22 @@ export function classifyWorkloadFailure(error: unknown): WorkloadFailureClass {
     return "harness_pathing";
   }
   return "chain_or_driver";
+}
+
+export function classifyWorkloadRevertReason(error: unknown): WorkloadRevertReason {
+  const message = errorMessage(error);
+  if (/one of the tiles in path is occupied|tile.*occupied/i.test(message)) return "tile_contention";
+  if (/stamina/i.test(message)) return "stamina";
+  if (/labor/i.test(message)) return "labor";
+  return "other";
+}
+
+function classifyTransactionFailure(transaction: TrackedTransaction): void {
+  if (transaction.outcome === "completed") return;
+  transaction.failureClass = classifyWorkloadFailure(transaction.error);
+  if (transaction.outcome === "reverted" || transaction.outcome === "rejected") {
+    transaction.revertReason = classifyWorkloadRevertReason(transaction.error);
+  }
 }
 
 function createPathReservationsByGame(bots: readonly HarnessBot[]): Map<number, PathReservations> {

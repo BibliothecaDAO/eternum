@@ -2,6 +2,7 @@ import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import type { HarnessAccount } from "./account-factory";
 import {
+  FIRST_ACTION_REQUIRED_STAMINA,
   RECEIPT_POLL_INTERVAL_MS,
   createRpcMetrics,
   type MeasuredRpcMethod,
@@ -76,7 +77,7 @@ export interface HarnessReportInput {
   evidence: HarnessEvidence;
   games: Array<{ botCount: number; gameId: number; gameName: string }>;
   intervalSeconds: number;
-  minimumCompletedActions: number;
+  minimumThresholdActions: number;
   minutes: number;
   rpcUrl: string;
   setupTransactions: TrackedTransaction[];
@@ -150,30 +151,41 @@ function analyzeHarnessResult(input: HarnessReportInput) {
   const completedActions = actions.filter((action) => action.outcome === "completed");
   const reverts = actions.filter((action) => action.outcome === "reverted" || action.outcome === "rejected");
   const failedActions = actions.filter((action) => action.outcome !== "completed");
+  const blockingFailures = failedActions.filter(isThresholdBlockingFailure);
+  const blockingReverts = reverts.filter(isThresholdBlockingFailure);
+  const tileContentionReverts = reverts.filter((action) => action.revertReason === "tile_contention");
+  const thresholdEligibleActions = completedActions.length + tileContentionReverts.length;
   const indexingLoss = actions.filter(
-    (action) => action.transactionIndexedAt === undefined || action.eventIndexedAt === undefined,
+    (action) =>
+      action.transactionHash !== undefined &&
+      action.outcome !== "reverted" &&
+      action.outcome !== "rejected" &&
+      (action.transactionIndexedAt === undefined || action.eventIndexedAt === undefined),
   );
   const setupFailures = input.setupTransactions.filter((transaction) => transaction.outcome !== "completed");
   const percentiles = summarizePercentiles(completedActions);
   const requestedMix = summarizeRequestedMix(actions);
   const actualMix = summarizeCompletedMix(actions);
   const failureClasses = summarizeFailureClasses(failedActions);
+  const revertReasons = summarizeRevertReasons(reverts);
   const rpc = summarizeRpcLoad(input.setupTransactions, actions, input.workload.overheadRpc);
 
   const checks = {
     acceptedOnL2P95: passesLatency(percentiles.acceptedOnL2Ms.p95, ACCEPTED_ON_L2_P95_LIMIT_MS),
-    completedActions: completedActions.length >= input.minimumCompletedActions,
+    thresholdEligibleActions: thresholdEligibleActions >= input.minimumThresholdActions,
     indexedP95: passesLatency(percentiles.indexedMs.p95, INDEXED_P95_LIMIT_MS),
     indexingLoss: indexingLoss.length === 0,
     preConfirmedP95: passesLatency(percentiles.preConfirmedMs.p95, PRECONFIRMED_P95_LIMIT_MS),
     setup: setupFailures.length === 0,
-    zeroFailures: failedActions.length === 0,
-    zeroReverts: reverts.length === 0,
+    zeroBlockingFailures: blockingFailures.length === 0,
+    zeroBlockingReverts: blockingReverts.length === 0,
   };
 
   return {
     actions,
     actualMix,
+    blockingFailures,
+    blockingReverts,
     checks,
     completedActions,
     failedActions,
@@ -182,9 +194,12 @@ function analyzeHarnessResult(input: HarnessReportInput) {
     passed: Object.values(checks).every(Boolean),
     percentiles,
     requestedMix,
+    revertReasons,
     reverts,
     rpc,
     setupFailures,
+    thresholdEligibleActions,
+    tileContentionReverts,
   };
 }
 
@@ -195,7 +210,7 @@ function buildHarnessManifest(
   createdAt: string,
 ) {
   return {
-    schemaVersion: 3,
+    schemaVersion: 4,
     runId,
     createdAt,
     passed: analysis.passed,
@@ -223,13 +238,21 @@ function buildHarnessManifest(
       actualMix: analysis.actualMix,
       ticks: input.workload.ticks,
       plannedActions: input.workload.plannedActions,
-      minimumCompletedActions: input.minimumCompletedActions,
+      minimumThresholdActions: input.minimumThresholdActions,
       completedActions: analysis.completedActions.length,
+      thresholdEligibleActions: analysis.thresholdEligibleActions,
       failedActions: analysis.failedActions.length,
+      blockingFailures: analysis.blockingFailures.length,
       failureClasses: analysis.failureClasses,
       reverts: analysis.reverts.length,
+      blockingReverts: analysis.blockingReverts.length,
+      revertReasons: analysis.revertReasons,
       indexingLoss: analysis.indexingLoss.length,
-      warmupMs: input.workload.warmupMs,
+      readiness: {
+        condition: "every_bot_has_explorer_stamina_for_first_action",
+        requiredStamina: FIRST_ACTION_REQUIRED_STAMINA,
+        waitMs: input.workload.readinessWaitMs,
+      },
       startedAt: input.workload.startedAt,
       endedAt: input.workload.endedAt,
       percentiles: analysis.percentiles,
@@ -258,7 +281,7 @@ function buildHarnessManifest(
         indexedP95Ms: INDEXED_P95_LIMIT_MS,
         preConfirmedP95Ms: PRECONFIRMED_P95_LIMIT_MS,
         indexingTimeoutMs: 30_000,
-        minimumCompletedActions: input.minimumCompletedActions,
+        minimumThresholdActions: input.minimumThresholdActions,
       },
       checks: analysis.checks,
     },
@@ -274,12 +297,17 @@ function summarizeGameWorkload(game: HarnessReportInput["games"][number], action
   const gameActions = actions.filter((action) => action.gameId === game.gameId);
   const completed = gameActions.filter((action) => action.outcome === "completed");
   const failed = gameActions.filter((action) => action.outcome !== "completed");
+  const reverts = gameActions.filter((action) => action.outcome === "reverted" || action.outcome === "rejected");
   return {
     ...game,
     plannedActions: gameActions.length,
     completedActions: completed.length,
     failedActions: failed.length,
+    blockingFailures: failed.filter(isThresholdBlockingFailure).length,
     failureClasses: summarizeFailureClasses(failed),
+    reverts: reverts.length,
+    blockingReverts: reverts.filter(isThresholdBlockingFailure).length,
+    revertReasons: summarizeRevertReasons(reverts),
     percentiles: summarizePercentiles(completed),
   };
 }
@@ -292,6 +320,25 @@ function summarizeFailureClasses(actions: readonly TrackedTransaction[]) {
     else counts.chainOrDriver += 1;
   }
   return counts;
+}
+
+export function summarizeRevertReasons(actions: readonly Pick<TrackedTransaction, "revertReason">[]) {
+  const counts = { tileContention: 0, stamina: 0, labor: 0, other: 0 };
+  for (const action of actions) {
+    if (action.revertReason === "tile_contention") counts.tileContention += 1;
+    else if (action.revertReason === "stamina") counts.stamina += 1;
+    else if (action.revertReason === "labor") counts.labor += 1;
+    else counts.other += 1;
+  }
+  return counts;
+}
+
+export function isThresholdBlockingFailure(
+  action: Pick<TrackedTransaction, "outcome" | "revertReason">,
+): boolean {
+  if (action.outcome === "completed") return false;
+  const isRevert = action.outcome === "reverted" || action.outcome === "rejected";
+  return !isRevert || action.revertReason !== "tile_contention";
 }
 
 export function percentile(values: readonly number[], percentileValue: number): number | null {

@@ -5,7 +5,9 @@ import {
   RECEIPT_POLL_INTERVAL_MS,
   chooseOutwardDirection,
   classifyWorkloadFailure,
+  classifyWorkloadRevertReason,
   createRpcMetrics,
+  hasExplorerWithStamina,
   millisecondsUntilNextArmyTick,
   neighbor,
   oppositeDirection,
@@ -15,7 +17,14 @@ import {
   resolveExplorerActionStaminaCost,
   resolveWorkloadTicks,
 } from "./driver";
-import { percentile, summarizeCompletedMix, summarizeRequestedMix, summarizeRpcMetrics } from "./report";
+import {
+  isThresholdBlockingFailure,
+  percentile,
+  summarizeCompletedMix,
+  summarizeRequestedMix,
+  summarizeRevertReasons,
+  summarizeRpcMetrics,
+} from "./report";
 import { parseHarnessArgs } from "./run";
 import { ToriiObserver } from "./torii-observer";
 
@@ -68,6 +77,21 @@ describe("Madara harness workload", () => {
     expect(millisecondsUntilNextArmyTick(Date.UTC(2026, 7, 25, 12, 0, 59))).toBe(2_000);
   });
 
+  it("starts once each bot has one explorer action of stamina", () => {
+    expect(hasExplorerWithStamina([{ stamina: 29, staminaUpdatedTick: 10 }], 10, 30)).toBe(false);
+    expect(hasExplorerWithStamina([{ stamina: 0, staminaUpdatedTick: 10 }], 11, 30)).toBe(true);
+    expect(
+      hasExplorerWithStamina(
+        [
+          { stamina: 0, staminaUpdatedTick: 10 },
+          { stamina: 30, staminaUpdatedTick: 10 },
+        ],
+        10,
+        30,
+      ),
+    ).toBe(true);
+  });
+
   it("keeps an explorer at the frontier throughout the acceptance workload", () => {
     const explorers = [0, 1, 2].map((id) => ({ atFrontier: true, id, lastUsedAt: -1 }));
 
@@ -90,6 +114,24 @@ describe("Madara harness workload", () => {
       "chain_or_driver",
     );
     expect(classifyWorkloadFailure(new Error("Torii query timed out"))).toBe("chain_or_driver");
+  });
+
+  it("classifies revert reasons without treating human tile contention as a threshold failure", () => {
+    expect(classifyWorkloadRevertReason("one of the tiles in path is occupied")).toBe("tile_contention");
+    expect(classifyWorkloadRevertReason("insufficient stamina")).toBe("stamina");
+    expect(classifyWorkloadRevertReason("not enough labor")).toBe("labor");
+    expect(classifyWorkloadRevertReason("unexpected revert")).toBe("other");
+
+    const contention = { outcome: "reverted", revertReason: "tile_contention" } as const;
+    const stamina = { outcome: "reverted", revertReason: "stamina" } as const;
+    expect(isThresholdBlockingFailure(contention)).toBe(false);
+    expect(isThresholdBlockingFailure(stamina)).toBe(true);
+    expect(summarizeRevertReasons([contention, stamina])).toEqual({
+      tileContention: 1,
+      stamina: 1,
+      labor: 0,
+      other: 0,
+    });
   });
 
   it("uses the game-configured stamina cost for each explorer action", () => {
