@@ -43,6 +43,19 @@ question asked after herald is stable, not before.
 
 ## A. Owned data plane — herald becomes the game's real-time source
 
+**Fold, not index** (decided 2026-08-27). Madara has no "all entities of model X": Dojo entity keys are hashes and
+current state exists only as a fold of the world's store events (`StoreSetRecord`, `StoreUpdateRecord`,
+`StoreUpdateMember`, `StoreDelRecord`, raw felt payloads that decode only with the model layout). Without a held fold
+every client would replay every event since the game started, against the sequencer's socket. So herald holds the fold
+for one game and hands out a snapshot plus diffs — and nothing else. SQL, GraphQL, arbitrary queries, ERC tracking —
+Torii's surface — are not rebuilt. If a query need appears, it is a read model over herald's fold, asked for with
+evidence.
+
+**Replay is free.** The fold is a pure function of the event log, and the log is permanent: every confirmed block and
+event stays in Madara's DB (and in the E.2 backups; `--db-max-saved-trie-logs` limits storage proofs, not blocks). A
+match replay is herald running the same fold from the game's first block, streaming diffs at any speed to the same
+consumer spectator uses. Only confirmed blocks are history — a replaced pre-confirmed block is not, correctly.
+
 What phase 1 measured: the chain answers in 50–77 ms; the player sees results in ~1–1.5 s because Torii polls,
 processes, and republishes. The indexer is the latency budget and the EOL dependency; both go together.
 
@@ -53,8 +66,11 @@ processes, and republishes. The indexer is the latency budget and the EOL depend
   on, concurrency on, pre-confirmed semantics); Codex reruns the N=2 shape (b) harness on it — same numbers or the bump
   is a finding — then adds the WS-vs-poll comparison to the harness.
 - **One service per chain: `apps/herald`** (it announces what happened in the world; not "indexer", the generic thing it
-  replaces). Subscribes to Madara's pre-confirmed stream over WebSocket at `/rpc/v0_10_2`; sozo and the harness stay on
-  `/rpc/v0_9_0`, which the build still serves.
+  replaces). Subscribes to Madara's pre-confirmed stream over WebSocket at `/rpc/v0_10_2` — the only client the
+  sequencer's socket ever has; sozo and the harness stay on `/rpc/v0_9_0`, which the build still serves. Clients hold
+  **one WSS socket, to herald**: snapshot on connect, sequence-numbered diffs, transaction status as the diff carrying
+  the hash. The write path stays one HTTPS `add_invoke_transaction` per action; chat keeps its socket on
+  `realtime-server`.
 - **Decodes world events against the manifest ABIs into typed models** — the one real engineering cost of leaving Torii.
   Scope discipline: decode the models the client actually renders — 40 distinct RECS components are referenced across
   `apps/game/src` and `packages/core/src` on 2026-08-27 — not the whole world schema.
@@ -90,12 +106,48 @@ processes, and republishes. The indexer is the latency budget and the EOL depend
     allows).
   - _Reconnect and spectator_ ride the same consumer: spectator is a consumer with no account; a reload mid-game is a
     snapshot plus resume, not a Torii re-sync.
+  - _Polling — the ledger._ Inventoried 2026-08-27: 62 timer-driven re-reads in `apps/game`, `packages/*`, `apps/web`
+    (three UI-only timers dismissed). The rule after A: **a timer that re-reads a fact the stream delivers is a bug**;
+    what survives is either clock-derived (a value that changes with time, recomputed on the clock — points accruing per
+    tick, automation schedulers that _act_ on a cadence) or EXTERNAL (a source outside the game chain that cannot push),
+    and each carries its reason in an allowlist. By class:
+    - **TX-STATUS (7)** — all funnel into one 200 ms receipt loop, `packages/provider/src/index.ts:1434`
+      (`waitForTransaction`, 5 RPC/s per in-flight tx: the client's largest sustained RPC load), plus the 50 ms deploy
+      poll in `packages/core/src/account/gameplay-account.ts:83`. Deleted; confirmation is the herald diff carrying the
+      hash. `apps/web`'s server-side `waitForTransaction` (authority calls) may keep a one-shot wait with its reason.
+    - **FACTS over Torii (14)** — story events every 6 s for the whole session (`use-story-events-store.ts:68`), faith
+      leaderboard/wonder/devotion ×4 at 30 s, the entry modal's three settlement scans at 15 s plus two planner queries,
+      the world directory at 30 s × N worlds × 3 requests (`use-world-availability.ts:300`, `use-worlds-summary.ts:31`,
+      `use-player-world-registrations.ts:121`). All become herald: story events are an event channel on the stream; the
+      directory is a fold of `GameRegistry`. Two have no callers today and are deleted first, not migrated:
+      `packages/react/src/hooks/use-entry-token-balance.ts` (5 s `balance_of`; the entry token itself goes in B) and
+      `services/leaderboard/use-score-to-beat.ts`.
+    - **FACTS re-read from RECS on a timer (11)** — leaderboard points (10–30 s), automation runners and the arrival
+      auto-claim loop (1 s boundary), explorer positions every 5 s (`exploration-automation-dashboard.tsx:309`),
+      resource chips per tick. Points and production are clock-derived: they stay, on the chain clock. Runners are
+      schedulers, not polls: they stay, ticking from the chain clock. Anything that changes only with state (explorer
+      positions) subscribes to the store — RECS already has subscriptions.
+    - **CHAIN-TIME (4)** — `chain-time-poller.tsx:114` fetches `getBlock("latest")` every 10 s; every herald diff
+      carries block number and timestamp, so the fetch is deleted and the three 1 s local interpolation ticks stay (no
+      network).
+    - **HEALTH (2)** — the Torii `/health` probe (10 s) and the 3 s heartbeat watchdog with its 120 s stream re-open go
+      with Torii; herald liveness is WS ping/pong plus sequence-gap detection, one reconnect path.
+    - **EXTERNAL (20)** — L2 `watch: true` reads in `apps/web` (per mainnet block), the factory worker's run polls (5 s,
+      1.5 s × 8, 3 s × 40), the marketplace (3 s / 60 s), bridge and inventory lists (10–15 s). Not this phase's
+      sources; recorded, untouched, except dead config: the season/village pass inventories accept a refetch interval
+      that their only call sites set to `0` — the option is deleted (wired or deleted).
+    - **The chokepoint:** `apps/game/src/polling-discipline.source.test.ts`, modelled on the existing
+      `console-discipline.source.test.ts`, fails on any `setInterval` / recursive `setTimeout` / `refetchInterval` /
+      `waitForTransaction` outside an allowlist whose entries each carry the class and the reason. The inventory above
+      is the initial allowlist minus everything A deletes; a poll cannot come back without a written reason.
   - _Instrumentation._ `observed-client-transaction.ts` records click → submitted → pre-confirmed → rendered per action,
     so the latency gate is measured in the client, not only by the harness.
 
   **Gate (A.3):** explore reveal p95 ≤ 250 ms click→rendered, measured client-side over one full game; zero nonce
   rejections in a 20-action burst from one client; reload and reconnect mid-game resume by sequence; spectator works
-  with Torii stopped; the diff records the line count deleted (`packages/torii` gone, `apps/game/src/dojo` shrunk).
+  with Torii stopped; the diff records the line count deleted (`packages/torii` gone, `apps/game/src/dojo` shrunk); the
+  polling source test passes with zero TX-STATUS, Torii-FACTS, network CHAIN-TIME, or HEALTH entries left in its
+  allowlist, and the in-game steady-state RPC rate from one idle client is measured at zero requests per second.
 
 - **Throughput is a non-problem** at target scale (~100 tx/s ≈ ~100 KB/s decoded diffs; realtime-server-class fan-out).
   The hard parts are decoding, overlay rebuild, and snapshot/replay — plan the gates around those.
@@ -188,13 +240,22 @@ not parallelize). **Gate:** shape (c) — a large world, 2,000 bots at Eternum c
 `merklizationMs`/tx against block height and state size; the report says whether merklization stays under the close bar
 at Eternum's world size, and at what size it would not.
 
-**E.4 Infra shape (recorded, not purchased).** What the numbers so far say the production shape is, to be confirmed by
+**E.4 One sequencer, one player base** (decided 2026-08-27). A sequencer is single-writer: writes land where it sits and
+no replica changes that — a far-region player pays the RTT (~150–250 ms) on top of pre-confirmation for their own
+actions, and near-local latency for everyone else's diffs if a herald is near them. One Blitz chain per region would
+remove that RTT but split the lobby, and Europe never playing America is the worse game; rejected. So: **one sequencer,
+in the region the player distribution names** (the web app's edge analytics answer that when phase 3 buys); herald per
+region is an optional read lever, not a plan. **Gate (laptop):** `tc netem` 200 ms on the driver and the browser, then
+the A.3 explore-reveal gate measured with that RTT included — the number is honest for the worst-placed player, and it
+decides whether regional heralds are worth their ops.
+
+**E.5 Infra shape (recorded, not purchased).** What the numbers so far say the production shape is, to be confirmed by
 E.1–E.3 and bought in phase 3:
 
 | Role         | Shape                                                                                                                                                                    | Why                                                                                                                                      |
 | ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------- |
 | Sequencer    | One bare-metal box, 16 high-clock cores (Ryzen 9 7950X3D / EPYC Genoa class), 128 GB ECC, 2× NVMe RAID1, **no swap**, governor `performance`; runs Madara sequencer only | Merklization is serial — single-thread clock (~2× this laptop) buys more than cores; RocksDB wants local NVMe; the N=8 collapse was swap |
-| Read / index | A smaller box: Madara full node following the gateway + the section-A indexer + Postgres; serves client RPC/WS and the identity web app; the promotion target            | Reads never touch the sequencer; replica for free                                                                                        |
+| Read / index | A smaller box: Madara full node following the gateway + herald + Postgres; serves client RPC/WS and the identity web app; the promotion target                           | Reads never touch the sequencer; replica for free                                                                                        |
 | Front        | Cloudflare: DNS, TLS, WAF and rate limiting on `add_invoke_transaction`, WS passthrough, `cloudflared` tunnels so no port is public, R2 for backups                      | It cannot host the chain; it is the right front for it                                                                                   |
 | Staging      | One cheap box, same layout; the harness driver on a separate throwaway VM                                                                                                | Releases are measured before prod, with the driver off-box as E.1 requires                                                               |
 | Lab          | This laptop                                                                                                                                                              | Unchanged                                                                                                                                |
@@ -213,10 +274,10 @@ Eternum's long format tolerates it). If you find yourself writing one of them he
 
 ## Cost
 
-Added: one indexer service, one L2 contract pair (`MMRToken` move + `blitz_ledger`), the operator result-poster, the
-agent grant surface, a replica container and a backup job in the lab compose (E.2), three harness shapes (E.1, E.3).
-Deleted: Torii and its canary config, the client optimistic machinery, the L3 entry-token path, the client's Torii read
-paths. Net deletion in the client; one owned service replaces one rented one. No hardware cost in this phase.
+Added: herald, one L2 contract pair (`MMRToken` move + `blitz_ledger`), the operator result-poster, the agent grant
+surface, a replica container and a backup job in the lab compose (E.2), three harness shapes (E.1, E.3). Deleted: Torii
+and its canary config, the client optimistic machinery, the L3 entry-token path, the client's Torii read paths. Net
+deletion in the client; one owned service replaces one rented one. No hardware cost in this phase.
 
 ## Validation
 
