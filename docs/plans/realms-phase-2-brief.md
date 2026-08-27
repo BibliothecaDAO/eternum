@@ -1,11 +1,11 @@
-# Realms phase 2 — own the data plane, take value seriously (DRAFT)
+# Realms phase 2 — own the data plane, take value seriously
 
-**Status: draft; entry criteria met 2026-08-27.** Entry criteria were: the D.5 human gate passed (wallet login → settle
-→ play → reload keeps the address; one human + 95 bots to a result — passed 27 Aug) and the D.4.1 headroom shapes
-reported (16 s max game-legal cadence; two concurrent games pass, four hit the wall — reported 27 Aug). Facts below
-marked _verify_ are re-checked against the tree at kickoff. **Phase 2 runs on the lab laptop; no hardware is rented
-until section A has deleted Torii and the stack has its final form** (owner decision 2026-08-27) — measuring a stack we
-are deleting sizes the wrong thing.
+**Status: ready for kickoff 2026-08-27.** Entry criteria were: the D.5 human gate passed (wallet login → settle → play →
+reload keeps the address; one human + 95 bots to a result — passed 27 Aug) and the D.4.1 headroom shapes reported (16 s
+max game-legal cadence; two concurrent games pass, four hit the wall — reported 27 Aug). Facts below were re-checked
+against the tree on 2026-08-27. **Phase 2 runs on the lab laptop; no hardware is rented until section A has deleted
+Torii and the stack has its final form** (owner decision 2026-08-27) — measuring a stack we are deleting sizes the wrong
+thing.
 
 Phase 1 proved the platform: 96 players on our own Madara, zero Cartridge in gameplay, pre-confirmation in 50–77 ms, one
 wallet identity bound to one permanent gameplay account. Phase 2 makes the two remaining rented or missing layers ours:
@@ -22,25 +22,51 @@ settlement and the LORDS/resource bridge.
 - MMR and value live on L2 where identity lives; the L3 stays fee-free and disposable (design session 2026-08-26,
   summarized in section B).
 
-## A. Owned data plane — the indexer becomes the game's real-time source
+## Order and owners
+
+One Codex stream, one Claude stream, in this order — each item lands with its gate before the next starts:
+
+| #   | Item                                                                                                    | Owner                                                                 | Depends on                                         |
+| --- | ------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------- | -------------------------------------------------- |
+| 0   | **A.0 pin bump** to the WS-capable build; N=2 harness rerun on the new pin as the regression gate       | Claude (pin, digest, compose); Codex (rerun + WS-vs-poll comparison)  | —                                                  |
+| 1   | **A** `apps/herald` — decode, snapshot, stream, client consumes, Torii and client optimism deleted      | Codex                                                                 | 0                                                  |
+| 2   | **E.2** replica and backup/restore drills in the lab compose                                            | Claude                                                                | 0 (runs beside 1)                                  |
+| 3   | **E.1** batch-size sweep on the laptop; the driver-off-box rerun the day a second machine is on the LAN | Codex (harness); Claude (second machine, host state)                  | 0                                                  |
+| 4   | **B** value plane — L2 contracts, relay, operator poster, adversarial test                              | Codex (contracts, authority server); Claude (adversarial-test review) | 1 (the relay writes L3 through the same read path) |
+| 5   | **C** agent grant surface                                                                               | Codex                                                                 | 4                                                  |
+| 6   | **E.3** Eternum-scale shape (c)                                                                         | Codex                                                                 | 1 (measured on the new read path)                  |
+| 7   | **D** revivals                                                                                          | parked until 1 and 4 land                                             | —                                                  |
+
+Existing apps that this brief does **not** touch: `apps/realtime-server` (the chat WebSocket server) and `apps/indexer`
+(the apibara L2 indexer for realms-world). Herald is neither; whether chat later rides herald's socket is a KISS
+question asked after herald is stable, not before.
+
+## A. Owned data plane — herald becomes the game's real-time source
 
 What phase 1 measured: the chain answers in 50–77 ms; the player sees results in ~1–1.5 s because Torii polls,
 processes, and republishes. The indexer is the latency budget and the EOL dependency; both go together.
 
-- **One service per chain** (start in `apps/`, name it at kickoff — not "indexer", the generic thing it replaces):
-  subscribes to Madara's pre-confirmed stream over WebSocket (`starknet_subscribeNewHeads`, `subscribeEvents`,
-  `subscribeTransactionStatus` — verified working on `nightly-e674321` at `/rpc/v0_10_2`; the lab pin must move past it,
-  digest recorded, harness re-run on the new pin as the comparison gate).
+- **A.0 — the pin moves first.** WebSocket subscriptions are verified working on `nightly-e674321` at `/rpc/v0_10_2`
+  (`subscribeNewHeads`, `subscribeEvents`, `subscribeTransactionStatus`, `subscribeNewTransactions`). As of 2026-08-27
+  the `nightly` tag _is_ that build (index digest `sha256:fa82a29f…`; no newer image since 20 Aug) and no `v0.11.0` past
+  alpha.9 is published. Claude bumps the lab pin to that digest and re-verifies the alpha.9 facts that matter (native
+  on, concurrency on, pre-confirmed semantics); Codex reruns the N=2 shape (b) harness on it — same numbers or the bump
+  is a finding — then adds the WS-vs-poll comparison to the harness.
+- **One service per chain: `apps/herald`** (it announces what happened in the world; not "indexer", the generic thing it
+  replaces). Subscribes to Madara's pre-confirmed stream over WebSocket at `/rpc/v0_10_2`; sozo and the harness stay on
+  `/rpc/v0_9_0`, which the build still serves.
 - **Decodes world events against the manifest ABIs into typed models** — the one real engineering cost of leaving Torii.
-  Scope discipline: decode the models the client actually renders (grep the RECS component set), not the whole world
-  schema.
+  Scope discipline: decode the models the client actually renders — 40 distinct RECS components are referenced across
+  `apps/game/src` and `packages/core/src` on 2026-08-27 — not the whole world schema.
 - **State model:** confirmed base + replaceable pre-confirmed overlay (Madara may replace the pre-confirmed block; the
   overlay rebuilds from the last confirmed root). Sequence-numbered diffs over WSS; snapshot on connect; resume by
   sequence on reconnect. The stream is an accelerator; the snapshot is the truth (guardrail 2).
 - **The client becomes a consumer.** Because pre-confirmation is the shared optimistic layer, the per-client optimistic
   machinery (guardrail 5's pending records, TTLs, reconciliation) is deleted, keeping at most a local echo of the acting
-  player's own click. Success is measured in deletion: the client's optimistic channels and the Torii canary both go,
-  and the explore-reveal latency drops from ~1–1.5 s to a target ≤ 250 ms end-to-end.
+  player's own click. The AGENTS.md guardrails that describe that machinery (1, 2, 5) are rewritten in the same change
+  to describe herald's snapshot + stream contract — a rule that describes deleted code is a trap for the next agent.
+  Success is measured in deletion: the client's optimistic channels and the Torii canary both go, and the explore-reveal
+  latency drops from ~1–1.5 s to a target ≤ 250 ms end-to-end.
 - **Throughput is a non-problem** at target scale (~100 tx/s ≈ ~100 KB/s decoded diffs; realtime-server-class fan-out).
   The hard parts are decoding, overlay rebuild, and snapshot/replay — plan the gates around those.
 
@@ -53,9 +79,10 @@ reconnect mid-game resumes by sequence with zero missed diffs.
 Principle (decided): value and reputation live where identity lives (Starknet L2); the gameplay chain stays fee-free and
 disposable. The gameplay burner never holds anything worth stealing.
 
-- **`MMRToken` moves to L2**, keyed by the owner address (the identity wallet). The existing contract already has the
-  right shape (`update_mmr_batch`, authorized-updater model — _verify_ against `contracts/mmr`). The world's `mmr`
-  system stays on L3 and computes; results are **posted** to L2, not called.
+- **`MMRToken` moves to L2**, keyed by the owner address (the identity wallet). The existing `contracts/mmr` already has
+  the right shape (verified 2026-08-27): `update_mmr_batch(updates: Array<(ContractAddress, u256)>)` behind "Caller is
+  not authorized game contract" — so `blitz_ledger` simply becomes the authorized updater, and no MMR contract change is
+  needed for stage 1. The world's `mmr` system stays on L3 and computes; results are **posted** to L2, not called.
 - **`blitz_ledger` (new, L2):** `register(game_id)` pulls the LORDS entry fee and emits the registration; `buy_sword()`
   / `buy_shield()` pull LORDS and set a one-game modifier flag on the owner's MMR record (double gains / halve losses —
   flags, not NFTs; tradability is a later decision that can be added without redesign);
@@ -83,6 +110,9 @@ mechanism is the delegation primitive; MMR and prizes stay the owner's; take-bac
 only: an "agent plays for me" grant/revoke surface on the authority server + audit log, and the client UX for "session
 moved to another device/agent — reconnect". The agent runtime itself (what the bots become) can start as the harness
 driver behind that grant.
+
+**Gate:** the harness driver plays one game as a wallet-owned account through a grant; the owner revokes mid-game and
+the driver's next action fails while the owner's client reconnects and continues; both events are in the audit log.
 
 ## D. Revivals and consolidations (parked in phase 1, unchanged)
 
@@ -160,5 +190,5 @@ paths. Net deletion in the client; one owned service replaces one rented one. No
 
 ## Validation
 
-Every gate above is a measured run or an adversarial test, not a demo. Owners are assigned at kickoff against whoever
-holds the neighbouring phase-1 code; each section lands with its gate or reports what blocked it.
+Every gate above is a measured run or an adversarial test, not a demo. Owners and order are in "Order and owners"; each
+item lands with its gate or reports what blocked it, and the README records the numbers the same day.
