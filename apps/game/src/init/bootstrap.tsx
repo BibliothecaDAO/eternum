@@ -10,12 +10,7 @@ import { world } from "@bibliothecadao/types";
 import { ReactNode } from "react";
 
 import { resolveEntryContextCacheKey, type ResolvedEntryContext } from "@/game-entry/context";
-import {
-  applyWorldSelection,
-  patchManifestWithFactory,
-  probeWorldToriiAlive,
-  type WorldProfile,
-} from "@/runtime/world";
+import { applyWorldSelection, patchManifestWithFactory, type WorldProfile } from "@/runtime/world";
 import { setSqlApiBaseUrl } from "@/services/api";
 import { getGameManifest } from "@contracts";
 import type { GameChain as Chain } from "@realms-world/chain";
@@ -133,7 +128,6 @@ const runBootstrap = async ({
   configManager.setActiveGame(profile.gameId ?? 0, profile.presetId ?? 0);
   setGameScope(worldNamespace as GameNamespace, profile.gameId ?? 0);
   setSqlGameScope(worldNamespace, profile.gameId ?? 0);
-  await assertBootstrapToriiIsAvailable(worldContext);
   verboseLog("[STARTING DOJO SETUP]");
   configureDojoRuntime(worldContext);
   const setupResult = await runDojoSetup(worldContext.chain, worldNamespace, profile.gameId ?? 0);
@@ -256,15 +250,6 @@ const resolveBootstrapToriiUrl = (_chain: Chain, profile: WorldProfile): string 
 
 const resolveBootstrapRpcUrl = (_chain: Chain, profile: WorldProfile): string =>
   profile.rpcUrl ?? env.VITE_PUBLIC_NODE_URL;
-
-const assertBootstrapToriiIsAvailable = async ({ profile, toriiUrl }: BootstrapWorldContext): Promise<void> => {
-  const toriiAlive = await probeWorldToriiAlive(toriiUrl);
-  if (toriiAlive !== false) {
-    return;
-  }
-
-  throw new Error(`World indexer is not available: ${profile.name}`);
-};
 
 const runDojoSetup = async (chain: Chain, namespace: string, gameId: number): Promise<SetupResult> => {
   markGameEntryMilestone("setup-started");

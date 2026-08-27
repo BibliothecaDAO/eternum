@@ -10,6 +10,7 @@ const envMock = vi.hoisted(() => ({
     VITE_PUBLIC_TORII_SNAPSHOT_PAGE_TIMEOUT_MS: 15_000,
     VITE_PUBLIC_TORII_EVENT_REPLAY_PAGE_TIMEOUT_MS: 10_000,
     VITE_PUBLIC_TORII_PAGE_RETRY_COUNT: 2,
+    VITE_PUBLIC_TORII: "https://torii.test",
   },
 }));
 
@@ -106,6 +107,7 @@ function createSyncHarness() {
     },
     network: {
       toriiClient: client,
+      provider: { setTransactionStreamWaiter: vi.fn() },
       contractComponents: {
         Structure: structureComponent,
         TileOpt: tileOptComponent,
@@ -166,6 +168,7 @@ describe("initialSync global streams", () => {
         pagination: expect.objectContaining({ limit: 500 }),
       }),
     );
+    expect(harness.setup.network.provider.setTransactionStreamWaiter).toHaveBeenCalledWith(undefined);
   });
 
   it("reruns the same paginated game-wide recovery on reconnect", async () => {

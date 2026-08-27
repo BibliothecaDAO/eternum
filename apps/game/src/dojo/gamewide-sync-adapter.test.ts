@@ -2,6 +2,7 @@
 
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { Entity as ToriiEntity } from "@dojoengine/torii-wasm/types";
+import { Type as RecsType } from "@dojoengine/recs";
 
 const { getComponentEntitiesMock, getComponentValueMock, removeComponentMock, setEntitiesMock } = vi.hoisted(() => ({
   getComponentEntitiesMock: vi.fn(),
@@ -19,7 +20,12 @@ vi.mock("@dojoengine/recs", async (importOriginal) => ({
 
 vi.mock("@dojoengine/state", () => ({ setEntities: setEntitiesMock }));
 
-import { createGamewideSyncSession, GAMEWIDE_SNAPSHOT_PAGE_SIZE } from "./gamewide-sync-adapter";
+import {
+  createBrowserScheduler,
+  createGamewideSyncSession,
+  GAME_SYNC_FRAME_FALLBACK_MS,
+  GAMEWIDE_SNAPSHOT_PAGE_SIZE,
+} from "./gamewide-sync-adapter";
 
 const createHarness = ({
   onStreamClose,
@@ -35,8 +41,11 @@ const createHarness = ({
   let onEvent: ((event: unknown) => void) | null = null;
   const entitySubscription = { cancel: vi.fn(), on: vi.fn(), off: vi.fn() };
   const eventSubscription = { cancel: vi.fn(), on: vi.fn(), off: vi.fn() };
-  const positionComponent = { metadata: { namespace: "s2", name: "Position" } };
-  const eventComponent = { metadata: { namespace: "s2", name: "BattleEvent" } };
+  const positionComponent = { schema: { x: RecsType.Number }, metadata: { namespace: "s2", name: "Position" } };
+  const eventComponent = {
+    schema: { timestamp: RecsType.Number, winner: RecsType.Number },
+    metadata: { namespace: "s2", name: "BattleEvent" },
+  };
   const client = {
     onEntityUpdated: vi.fn(async (_clause, callback) => {
       onEntity = callback;
@@ -94,6 +103,51 @@ const createHarness = ({
 beforeEach(() => vi.clearAllMocks());
 
 describe("game-wide sync adapter", () => {
+  it("applies queued state when a background tab suspends animation frames", () => {
+    vi.useFakeTimers();
+    const requestFrame = vi.fn(() => 17);
+    const cancelFrame = vi.fn();
+    vi.stubGlobal("requestAnimationFrame", requestFrame);
+    vi.stubGlobal("cancelAnimationFrame", cancelFrame);
+    const task = vi.fn();
+
+    try {
+      createBrowserScheduler().schedule(task);
+      vi.advanceTimersByTime(GAME_SYNC_FRAME_FALLBACK_MS);
+
+      expect(task).toHaveBeenCalledOnce();
+      expect(cancelFrame).toHaveBeenCalledWith(17);
+    } finally {
+      vi.useRealTimers();
+      vi.unstubAllGlobals();
+    }
+  });
+
+  it("cancels the background fallback after the animation frame runs", () => {
+    vi.useFakeTimers();
+    let frameCallback: FrameRequestCallback | undefined;
+    vi.stubGlobal(
+      "requestAnimationFrame",
+      vi.fn((callback: FrameRequestCallback) => {
+        frameCallback = callback;
+        return 23;
+      }),
+    );
+    vi.stubGlobal("cancelAnimationFrame", vi.fn());
+    const task = vi.fn();
+
+    try {
+      createBrowserScheduler().schedule(task);
+      frameCallback?.(0);
+      vi.advanceTimersByTime(GAME_SYNC_FRAME_FALLBACK_MS);
+
+      expect(task).toHaveBeenCalledOnce();
+    } finally {
+      vi.useRealTimers();
+      vi.unstubAllGlobals();
+    }
+  });
+
   it("translates cursor pagination into the static Torii entity query", async () => {
     const harness = createHarness();
 
@@ -241,6 +295,42 @@ describe("game-wide sync adapter", () => {
     expect(removeComponentMock).toHaveBeenCalledWith(harness.eventComponent, "event");
     expect(harness.setup.network.world.deleteEntity).not.toHaveBeenCalled();
     expect([...harness.session.store.listModelEntityIds("s2-Position")]).toEqual(["entity"]);
+  });
+
+  it("encodes Herald model values in the Dojo shape before writing RECS", async () => {
+    const harness = createHarness();
+
+    await harness.session.store.applyEntityOperations([
+      { type: "upsert", entities: [{ hashed_keys: "entity", models: { "s2-Position": { x: "0x2" } } }] },
+    ]);
+
+    expect(setEntitiesMock).toHaveBeenCalledWith(
+      [
+        {
+          hashed_keys: "entity",
+          models: {
+            "s2-Position": {
+              x: { key: false, type: "primitive", type_name: "", value: "0x2" },
+            },
+          },
+        },
+      ],
+      expect.any(Array),
+      false,
+    );
+  });
+
+  it("preserves typed Torii values during the A.3 transport transition", async () => {
+    const harness = createHarness();
+    const typedValue = { key: false, type: "primitive", type_name: "u32", value: "0x2" };
+
+    await harness.session.store.applyEntityOperations([
+      { type: "upsert", entities: [{ hashed_keys: "entity", models: { "s2-Position": { x: typedValue } } }] },
+    ]);
+
+    expect(setEntitiesMock.mock.calls.at(-1)?.[0]).toEqual([
+      { hashed_keys: "entity", models: { "s2-Position": { x: typedValue } } },
+    ]);
   });
 
   it("hands event components from the nested contract-components record to setEntities", async () => {

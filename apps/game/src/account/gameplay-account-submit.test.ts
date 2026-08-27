@@ -6,7 +6,7 @@ import { configureGameplayAccountSubmits, executeGameplayAccountTransaction } fr
 const CALL = { contractAddress: "0x1", entrypoint: "play", calldata: [] };
 
 describe("gameplay account submits", () => {
-  it("serializes concurrent submits and dispenses nonces from one pre-confirmed read", async () => {
+  it("serializes a 20-action burst and dispenses nonces from one pre-confirmed read", async () => {
     let releaseFirst!: () => void;
     const firstBlocked = new Promise<void>((resolve) => {
       releaseFirst = resolve;
@@ -23,17 +23,21 @@ describe("gameplay account submits", () => {
 
     const first = executeGameplayAccountTransaction({ account, calls: CALL, chain: "madara" });
     await vi.waitFor(() => expect(account.execute).toHaveBeenCalledOnce());
-    const second = executeGameplayAccountTransaction({ account, calls: CALL, chain: "madara" });
+    const remaining = Array.from({ length: 19 }, () =>
+      executeGameplayAccountTransaction({ account, calls: CALL, chain: "madara" }),
+    );
     await Promise.resolve();
     expect(account.execute).toHaveBeenCalledOnce();
 
     releaseFirst();
-    await expect(Promise.all([first, second])).resolves.toHaveLength(2);
+    await expect(Promise.all([first, ...remaining])).resolves.toHaveLength(20);
 
     expect(maximumActive).toBe(1);
     expect(account.getNonce).toHaveBeenNthCalledWith(1, BlockTag.PRE_CONFIRMED);
     expect(account.getNonce).toHaveBeenCalledTimes(1);
-    expect(account.execute.mock.calls.map(([, details]) => details?.nonce)).toEqual([7n, 8n]);
+    expect(account.execute.mock.calls.map(([, details]) => details?.nonce)).toEqual(
+      Array.from({ length: 20 }, (_, index) => 7n + BigInt(index)),
+    );
     expect(account.execute.mock.calls[0]?.[1]).toMatchObject({
       tip: 0,
       resourceBounds: {

@@ -208,6 +208,8 @@ describe("polling discipline", () => {
     );
     expect(existsSync(join(REPO_ROOT, "apps/game/src/dojo/connection-health-monitor.ts"))).toBe(false);
     expect(existsSync(join(REPO_ROOT, "apps/game/src/dojo/torii-health-probe.ts"))).toBe(false);
+    expect(source("apps/game/src/init/bootstrap.tsx")).not.toContain("probeWorldToriiAlive");
+    expect(source("apps/game/src/runtime/world/torii-health.ts")).not.toContain("probeWorldToriiAlive");
   });
 
   it("allows transaction waits only at Herald channel call sites", () => {

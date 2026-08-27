@@ -2,11 +2,11 @@
 
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { probeWorldToriiAlive } from "./torii-health";
+import { isToriiAvailable } from "./torii-health";
 
 const mockFetch = vi.fn<typeof globalThis.fetch>();
 
-describe("probeWorldToriiAlive", () => {
+describe("isToriiAvailable", () => {
   beforeEach(() => {
     vi.stubGlobal("fetch", mockFetch);
     mockFetch.mockReset();
@@ -16,36 +16,19 @@ describe("probeWorldToriiAlive", () => {
     vi.restoreAllMocks();
   });
 
-  it("returns true when SQL is reachable", async () => {
+  it("reports whether the landing-page SQL read model is reachable", async () => {
     mockFetch.mockResolvedValueOnce(new Response("[]", { status: 200 }));
 
-    await expect(probeWorldToriiAlive("https://torii.realms.test")).resolves.toBe(true);
+    await expect(isToriiAvailable("https://torii.realms.test")).resolves.toBe(true);
     expect(mockFetch).toHaveBeenCalledWith("https://torii.realms.test/sql", {
-      method: "GET",
-      signal: expect.any(AbortSignal),
+      method: "HEAD",
     });
   });
 
-  it("returns false when SQL reports a missing endpoint", async () => {
-    mockFetch.mockResolvedValueOnce(new Response("not found", { status: 404 }));
+  it("reports an unreachable landing-page read model without retrying", async () => {
+    mockFetch.mockRejectedValueOnce(new Error("unreachable"));
 
-    await expect(probeWorldToriiAlive("https://torii.realms.test")).resolves.toBe(false);
+    await expect(isToriiAvailable("https://torii.realms.test")).resolves.toBe(false);
     expect(mockFetch).toHaveBeenCalledTimes(1);
-  });
-
-  it("falls back to health when SQL is indeterminate", async () => {
-    mockFetch
-      .mockResolvedValueOnce(new Response("unavailable", { status: 503 }))
-      .mockResolvedValueOnce(new Response("ok", { status: 200 }));
-
-    await expect(probeWorldToriiAlive("https://torii.realms.test")).resolves.toBe(true);
-  });
-
-  it("does not classify an indeterminate probe as dead", async () => {
-    mockFetch
-      .mockRejectedValueOnce(new Error("timeout"))
-      .mockResolvedValueOnce(new Response("missing", { status: 404 }));
-
-    await expect(probeWorldToriiAlive("https://torii.realms.test")).resolves.toBe(null);
   });
 });

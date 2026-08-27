@@ -151,7 +151,7 @@ export const saveWorldProfile = (profile: WorldProfile) => {
   saveWorldProfiles(profiles);
 };
 
-const getWorldProfile = (name: string): WorldProfile | null => {
+export const getWorldProfile = (name: string): WorldProfile | null => {
   return getWorldProfiles()[name] ?? null;
 };
 

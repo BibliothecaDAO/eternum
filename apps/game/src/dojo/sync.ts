@@ -286,7 +286,11 @@ const startAuthoritativeGameSyncSession = async ({
         onSubscriptionSetupTimeout,
       }),
     );
-    setup.network.provider.setTransactionStreamWaiter((transactionHash) => runtime.waitForTransaction(transactionHash));
+    setup.network.provider.setTransactionStreamWaiter(
+      runtime.hasTransactionStatusChannel()
+        ? (transactionHash) => runtime.waitForTransaction(transactionHash)
+        : undefined,
+    );
     installActiveWorldSpatialProjection(setup);
   } catch (error) {
     if (error instanceof Error && error.message.includes("Timed out waiting for")) {
@@ -333,6 +337,8 @@ const syncInitialSupportData = async (
   options: InitialSyncOptions,
   reportProgress: InitialSyncProgressReporter,
 ): Promise<void> => {
+  if (env.VITE_PUBLIC_HERALD_URL) return;
+
   await Promise.all([
     runInitialSyncTask({
       label: "bank structures query",

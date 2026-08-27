@@ -2,7 +2,7 @@
 
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { getActiveWorld, getActiveWorldName, resolveRuntimeChain } from "./store";
+import { getActiveWorld, getActiveWorldName, getWorldProfile, resolveRuntimeChain } from "./store";
 import type { WorldProfilesMap } from "./types";
 
 const ACTIVE_KEY = "ACTIVE_WORLD_NAME";
@@ -65,6 +65,7 @@ describe("world profile store", () => {
     window.localStorage.setItem(ACTIVE_KEY, "bltz-riff-363");
 
     expect(getActiveWorld()?.name).toBe("bltz-riff-363");
+    expect(getWorldProfile("bltz-riff-363")?.gameId).toBeUndefined();
     expect(getActiveWorldName()).toBe("bltz-riff-363");
     expect(JSON.parse(window.localStorage.getItem(PROFILES_KEY) ?? "{}")).toHaveProperty("bltz-riff-363");
   });

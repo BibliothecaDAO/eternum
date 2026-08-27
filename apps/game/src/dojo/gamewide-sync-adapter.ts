@@ -8,7 +8,7 @@ import type {
 } from "@bibliothecadao/eternum/game-sync";
 import { requireActiveGameSyncRuntime } from "@bibliothecadao/eternum/game-sync";
 import type { Component, Entity, Metadata, Schema } from "@dojoengine/recs";
-import { getComponentEntities, getComponentValue, removeComponent } from "@dojoengine/recs";
+import { getComponentEntities, getComponentValue, removeComponent, Type as RecsType } from "@dojoengine/recs";
 import { setEntities } from "@dojoengine/state";
 import type { Clause, Entity as ToriiEntity, Query } from "@dojoengine/torii-wasm/types";
 import { appendConsoleFields } from "@/utils/console-message";
@@ -105,6 +105,104 @@ const createComponentLookup = (components: readonly Component[]): Map<string, Co
   return lookup;
 };
 
+const buildDojoTypedValue = (type: string, value: unknown): Record<string, unknown> => ({
+  key: false,
+  type,
+  type_name: "",
+  value,
+});
+
+const DOJO_ARRAY_ITEM_TYPES = new Map<RecsType, RecsType>([
+  [RecsType.NumberArray, RecsType.Number],
+  [RecsType.BigIntArray, RecsType.BigInt],
+  [RecsType.StringArray, RecsType.String],
+  [RecsType.EntityArray, RecsType.Entity],
+]);
+
+const DOJO_OPTIONAL_VALUE_TYPES = new Map<RecsType, RecsType>([
+  [RecsType.OptionalNumber, RecsType.Number],
+  [RecsType.OptionalBigInt, RecsType.BigInt],
+  [RecsType.OptionalString, RecsType.String],
+  [RecsType.OptionalNumberArray, RecsType.NumberArray],
+  [RecsType.OptionalBigIntArray, RecsType.BigIntArray],
+  [RecsType.OptionalStringArray, RecsType.StringArray],
+  [RecsType.OptionalEntity, RecsType.Entity],
+  [RecsType.OptionalEntityArray, RecsType.EntityArray],
+  [RecsType.OptionalT, RecsType.T],
+]);
+
+const isDojoTypedValue = (value: unknown): value is Record<string, unknown> =>
+  typeof value === "object" &&
+  value !== null &&
+  typeof (value as Record<string, unknown>).type === "string" &&
+  Object.hasOwn(value, "value");
+
+const requireGameSyncRecord = (value: unknown): Record<string, unknown> => {
+  if (typeof value !== "object" || value === null || Array.isArray(value)) {
+    throw new Error("Game sync model value does not match its RECS struct schema");
+  }
+  return value as Record<string, unknown>;
+};
+
+const requireGameSyncArray = (value: unknown): unknown[] => {
+  if (!Array.isArray(value)) throw new Error("Game sync model value does not match its RECS array schema");
+  return value;
+};
+
+const encodeGameSyncValueForDojo = (schema: unknown, value: unknown): Record<string, unknown> => {
+  if (isDojoTypedValue(value)) return value;
+
+  if (Array.isArray(schema)) {
+    return buildDojoTypedValue(
+      "array",
+      requireGameSyncArray(value).map((item) => encodeGameSyncValueForDojo(schema[0], item)),
+    );
+  }
+
+  if (typeof schema === "object" && schema !== null) {
+    const fields = requireGameSyncRecord(value);
+    return buildDojoTypedValue(
+      "struct",
+      Object.fromEntries(
+        Object.entries(schema).flatMap(([field, fieldSchema]) =>
+          Object.hasOwn(fields, field) ? [[field, encodeGameSyncValueForDojo(fieldSchema, fields[field])]] : [],
+        ),
+      ),
+    );
+  }
+
+  const recsType = schema as RecsType;
+  const optionalType = DOJO_OPTIONAL_VALUE_TYPES.get(recsType);
+  if (optionalType !== undefined) {
+    return {
+      ...buildDojoTypedValue("enum", {
+        option: value == null ? "None" : "Some",
+        value: value == null ? undefined : encodeGameSyncValueForDojo(optionalType, value),
+      }),
+      type_name: "Option",
+    };
+  }
+
+  const itemType = DOJO_ARRAY_ITEM_TYPES.get(recsType);
+  if (itemType !== undefined) {
+    return buildDojoTypedValue(
+      "array",
+      requireGameSyncArray(value).map((item) => encodeGameSyncValueForDojo(itemType, item)),
+    );
+  }
+
+  return buildDojoTypedValue("primitive", value);
+};
+
+const encodeGameSyncModelForDojo = (component: Component, value: unknown): Record<string, unknown> => {
+  const fields = requireGameSyncRecord(value);
+  return Object.fromEntries(
+    Object.entries(component.schema).flatMap(([field, schema]) =>
+      Object.hasOwn(fields, field) ? [[field, encodeGameSyncValueForDojo(schema, fields[field])]] : [],
+    ),
+  );
+};
+
 export const createRecsGameSyncStore = (
   setup: SetupResult,
   logging: boolean,
@@ -116,7 +214,17 @@ export const createRecsGameSyncStore = (
   const applyOperations = async (operations: readonly GameSyncEntityStoreOperation[]) => {
     for (const operation of operations) {
       if (operation.type === "upsert") {
-        await setEntities(operation.entities as ToriiEntity[], authoritativeComponents, logging);
+        const dojoEntities = operation.entities.map((entity) => ({
+          ...entity,
+          models: Object.fromEntries(
+            Object.entries(entity.models).map(([model, value]) => {
+              const component = authoritativeComponentLookup.get(model);
+              if (!component) return [model, value];
+              return [qualifiedComponentName(component) ?? model, encodeGameSyncModelForDojo(component, value)];
+            }),
+          ),
+        }));
+        await setEntities(dojoEntities as ToriiEntity[], authoritativeComponents, logging);
         operation.entities.forEach((entity) => {
           Object.keys(entity.models).forEach((model) => {
             const component = authoritativeComponentLookup.get(model);
@@ -168,15 +276,33 @@ export const createRecsGameSyncStore = (
   };
 };
 
+export const GAME_SYNC_FRAME_FALLBACK_MS = 100;
+
 export const createBrowserScheduler = (): NonNullable<GameSyncSessionStart["scheduler"]> => ({
   schedule(task) {
-    const runIngestSlice = () => runWithFrameWorkOwner("sync:ingest", task);
+    let active = true;
+    let frame: number | undefined;
+    let timeout: ReturnType<typeof setTimeout> | undefined;
+    const runIngestSlice = () => {
+      if (!active) return;
+      active = false;
+      if (frame !== undefined) cancelAnimationFrame(frame);
+      if (timeout !== undefined) clearTimeout(timeout);
+      runWithFrameWorkOwner("sync:ingest", task);
+    };
+
     if (typeof requestAnimationFrame === "function" && typeof cancelAnimationFrame === "function") {
-      const frame = requestAnimationFrame(runIngestSlice);
-      return () => cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(runIngestSlice);
+      timeout = setTimeout(runIngestSlice, GAME_SYNC_FRAME_FALLBACK_MS);
+    } else {
+      timeout = setTimeout(runIngestSlice, 0);
     }
-    const timeout = setTimeout(runIngestSlice, 0);
-    return () => clearTimeout(timeout);
+
+    return () => {
+      active = false;
+      if (frame !== undefined) cancelAnimationFrame(frame);
+      if (timeout !== undefined) clearTimeout(timeout);
+    };
   },
 });
 
