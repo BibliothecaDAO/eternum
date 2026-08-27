@@ -12,7 +12,6 @@ describe("useConnectionStore", () => {
       globalStatus: "connected",
       lastSpatialUpdate: Date.now(),
       lastGlobalUpdate: Date.now(),
-      lastHealthCheck: Date.now(),
       lastConnectedAt: Date.now(),
       lastDisconnectedAt: null,
       reconnectAttempts: 0,
@@ -62,14 +61,5 @@ describe("useConnectionStore", () => {
 
     useConnectionStore.getState().setGlobalStatus("failed");
     expect(useConnectionStore.getState().lastDisconnectedAt).toBe(firstStamp);
-  });
-
-  it("marks Torii heartbeat availability when a heartbeat is recorded", () => {
-    useConnectionStore.setState({ toriiHeartbeatAvailable: false, lastToriiHeartbeat: 0 });
-
-    useConnectionStore.getState().recordToriiHeartbeat();
-
-    expect(useConnectionStore.getState().toriiHeartbeatAvailable).toBe(true);
-    expect(useConnectionStore.getState().lastToriiHeartbeat).toBeGreaterThan(0);
   });
 });

@@ -108,6 +108,7 @@ export const GAME_SYNC_MODEL_MANIFEST: readonly GameSyncModelDefinition[] = [
   spatial("ExplorerTroops", "coord.x", "coord.y"),
   globalEvent("ExplorerRewardEvent"),
   globalEvent("BattleEvent"),
+  globalEvent("StoryEvent"),
   globalEntity("ProductionBoostBonus"),
   globalEntity("Resource"),
   globalEntity("ResourceArrival"),

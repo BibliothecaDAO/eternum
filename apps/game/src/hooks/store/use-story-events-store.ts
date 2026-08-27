@@ -1,9 +1,11 @@
 import { POLLING_INTERVALS } from "@/config/polling";
 import { sqlApi } from "@/services/api";
 import { buildStoryEventPresentation } from "@bibliothecadao/eternum";
+import type { GameSyncEntity } from "@bibliothecadao/eternum/game-sync";
 import { useDojo } from "@bibliothecadao/react";
 import { StoryEventData } from "@bibliothecadao/torii";
 import { useQuery } from "@tanstack/react-query";
+import { useMemo } from "react";
 import { create } from "zustand";
 
 export interface ProcessedStoryEvent extends StoryEventData {
@@ -12,85 +14,144 @@ export interface ProcessedStoryEvent extends StoryEventData {
   presentation: ReturnType<typeof buildStoryEventPresentation>;
 }
 
-interface StoryEventsState {
-  lastRefreshTimestamp: number;
-  setLastRefreshTimestamp: (timestamp: number) => void;
+interface StreamStoryEvent extends StoryEventData {
+  storyPayload: Record<string, unknown>;
+  rawStory: unknown;
 }
 
+interface StoryEventsState {
+  streamed: StreamStoryEvent[];
+  accept: (event: StreamStoryEvent) => void;
+  reset: () => void;
+}
+
+const STREAM_EVENT_LIMIT = 512;
+
 const useStoryEventsStore = create<StoryEventsState>((set) => ({
-  lastRefreshTimestamp: 0,
-  setLastRefreshTimestamp: (timestamp: number) => set({ lastRefreshTimestamp: timestamp }),
+  streamed: [],
+  accept: (event) =>
+    set((state) => ({
+      streamed: [event, ...state.streamed.filter((existing) => existing.event_id !== event.event_id)].slice(
+        0,
+        STREAM_EVENT_LIMIT,
+      ),
+    })),
+  reset: () => set({ streamed: [] }),
 }));
 
-/**
- * Main hook for fetching story events.
- * Returns the full React Query result including data, isLoading, error, etc.
- */
+const asRecord = (value: unknown): Record<string, unknown> | null =>
+  typeof value === "object" && value !== null && !Array.isArray(value) ? (value as Record<string, unknown>) : null;
+
+const toOptionalNumber = (value: unknown): number | null => {
+  if (value === null || value === undefined) return null;
+  try {
+    const number = Number(BigInt(String(value)));
+    return Number.isSafeInteger(number) ? number : null;
+  } catch {
+    return null;
+  }
+};
+
+const storyVariant = (story: unknown): { payload: Record<string, unknown>; type: string } | null => {
+  if (typeof story === "string") return { payload: {}, type: story };
+  const record = asRecord(story);
+  const entry = record ? Object.entries(record)[0] : undefined;
+  if (!entry) return null;
+  return { type: entry[0], payload: asRecord(entry[1]) ?? {} };
+};
+
+const legacyHeadlineFields = (type: string, payload: Record<string, unknown>): Record<string, unknown> => {
+  if (type === "BattleStory") {
+    return Object.fromEntries(Object.entries(payload).map(([key, value]) => [`battle_${key}`, value]));
+  }
+  if (type === "ExplorerCreateStory") {
+    return Object.fromEntries(Object.entries(payload).map(([key, value]) => [`explorer_create_${key}`, value]));
+  }
+  return {};
+};
+
+export const toStreamStoryEvent = (event: GameSyncEntity): StreamStoryEvent | null => {
+  const modelEntry = Object.entries(event.models).find(
+    ([model]) => model === "StoryEvent" || model.endsWith("-StoryEvent"),
+  );
+  const value = modelEntry ? asRecord(modelEntry[1]) : null;
+  const variant = storyVariant(value?.story);
+  if (!value || !variant) return null;
+
+  const timestamp = String(value.timestamp ?? "0x0");
+  const transactionHash = String(value.tx_hash ?? "0x0");
+  return {
+    owner: value.owner === null || value.owner === undefined ? null : String(value.owner),
+    entity_id: toOptionalNumber(value.entity_id),
+    id: value.id === undefined ? null : String(value.id),
+    tx_hash: transactionHash,
+    story: variant.type,
+    timestamp,
+    event_id: `${event.hashed_keys}:${transactionHash}`,
+    storyPayload: variant.payload,
+    rawStory: value.story,
+    ...legacyHeadlineFields(variant.type, variant.payload),
+  } as StreamStoryEvent;
+};
+
+export const acceptGameSyncStoryEvent = (event: GameSyncEntity): void => {
+  const storyEvent = toStreamStoryEvent(event);
+  if (storyEvent) useStoryEventsStore.getState().accept(storyEvent);
+};
+
+export const resetGameSyncStoryEvents = (): void => useStoryEventsStore.getState().reset();
+
+const processStoryEvent = (
+  event: StoryEventData | StreamStoryEvent,
+  index: number,
+  components: Parameters<typeof buildStoryEventPresentation>[1],
+): ProcessedStoryEvent => {
+  const timestampMs = Number(BigInt(event.timestamp)) * 1_000;
+  const streamEvent = event as Partial<StreamStoryEvent>;
+  const storyPayload = streamEvent.storyPayload ?? buildStoryPayloadFromEvent(event);
+  const presentation = buildStoryEventPresentation(
+    {
+      ownerAddress: event.owner,
+      ownerName: null,
+      entityId: event.entity_id,
+      txHash: event.tx_hash,
+      timestamp: timestampMs,
+      storyType: event.story,
+      storyPayload,
+      rawStory: streamEvent.rawStory ?? event,
+    },
+    components,
+  );
+  const id = event.event_id ?? `${event.tx_hash}-${event.timestamp}-${event.entity_id ?? "unknown"}-${index}`;
+  return { ...event, id, timestampMs, presentation };
+};
+
 export const useStoryEvents = (limit: number = 100) => {
   const {
     setup: { components },
   } = useDojo();
+  const streamed = useStoryEventsStore((state) => state.streamed);
 
-  return useQuery({
+  const query = useQuery({
     queryKey: ["storyEvents", limit],
-    queryFn: async (): Promise<ProcessedStoryEvent[]> => {
-      const rawEvents = await sqlApi.fetchStoryEvents(limit, 0);
-
-      return rawEvents.map((event, index): ProcessedStoryEvent => {
-        // Convert hex timestamp to milliseconds
-        const timestampMs = parseInt(event.timestamp, 16) * 1000;
-
-        // Create a story event system update object for the formatter
-        const storyEventUpdate = {
-          ownerAddress: event.owner,
-          ownerName: null, // Will be resolved by the formatter
-          entityId: event.entity_id,
-          txHash: event.tx_hash,
-          timestamp: timestampMs,
-          storyType: event.story, // Use the story type directly
-          storyPayload: buildStoryPayloadFromEvent(event),
-          rawStory: event,
-        };
-
-        const presentation = buildStoryEventPresentation(storyEventUpdate, components);
-
-        const id = event.event_id ?? `${event.tx_hash}-${event.timestamp}-${event.entity_id ?? "unknown"}-${index}`;
-
-        return {
-          ...event,
-          id,
-          timestampMs,
-          presentation,
-        };
-      });
-    },
+    queryFn: async (): Promise<StoryEventData[]> => sqlApi.fetchStoryEvents(limit, 0),
     staleTime: POLLING_INTERVALS.storyEventsStaleMs,
-    refetchInterval: POLLING_INTERVALS.storyEventsMs,
   });
-};
 
-/**
- * Selector hook for story events loading state.
- * Uses the same query as useStoryEvents - just returns isLoading.
- */
-const useStoryEventsLoading = (limit: number = 100) => {
-  return useStoryEvents(limit).isLoading;
-};
+  const data = useMemo(() => {
+    const identities = new Set<string>();
+    return [...streamed, ...(query.data ?? [])]
+      .filter((event) => {
+        const identity = event.event_id ?? `${event.tx_hash}:${event.timestamp}`;
+        if (identities.has(identity)) return false;
+        identities.add(identity);
+        return true;
+      })
+      .slice(0, limit)
+      .map((event, index) => processStoryEvent(event, index, components));
+  }, [components, limit, query.data, streamed]);
 
-/**
- * Selector hook for story events error state.
- * Uses the same query as useStoryEvents - just returns error message.
- */
-const useStoryEventsError = (limit: number = 100) => {
-  return useStoryEvents(limit).error?.message;
-};
-
-/**
- * Selector hook for story events data only.
- * Uses the same query as useStoryEvents - just returns data array.
- */
-const useStoryEventsData = (limit: number = 100) => {
-  return useStoryEvents(limit).data ?? [];
+  return { ...query, data };
 };
 
 function parseMaybeJson<T = unknown>(value: unknown): unknown {

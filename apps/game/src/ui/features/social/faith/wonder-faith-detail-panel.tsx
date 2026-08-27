@@ -5,8 +5,6 @@ import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { useQuery } from "@tanstack/react-query";
 import Loader from "lucide-react/dist/esm/icons/loader";
 
-const AUTO_REFRESH_INTERVAL_MS = 30_000;
-
 const formatInt = (value: number): string => value.toLocaleString("en-US");
 
 const formatBigInt = (value: bigint): string => {
@@ -51,7 +49,6 @@ export const WonderFaithDetailPanel = ({
     queryKey: ["wonder-faith-detail", String(wonderId)],
     queryFn: () => fetchWonderFaithDetail(wonderId),
     staleTime: 5_000,
-    refetchInterval: AUTO_REFRESH_INTERVAL_MS,
   });
 
   if (isLoading) {

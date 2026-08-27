@@ -74,6 +74,7 @@ export interface GameSyncSessionStart {
   now?: () => number;
   onSubscriptionActive?: () => void;
   onLiveUpdate?: (kind: "entity" | "event") => void;
+  onEvent?: (event: GameSyncEntity) => void;
   onMetrics?: (metrics: GameSyncRuntimeMetrics) => void;
   onHead?: (head: GameSyncHead) => void;
   onTransaction?: (transaction: GameSyncTransaction) => void;

@@ -299,6 +299,7 @@ export class GameSyncRuntime {
         if (oldest === undefined) break;
         this.recentEventIdentities.delete(oldest);
       }
+      session.onEvent?.({ hashed_keys: event.hashed_keys, models: { [model]: value } });
       this.ingestQueue?.enqueueEvent({ hashed_keys: event.hashed_keys, models: { [model]: value } });
     });
   }

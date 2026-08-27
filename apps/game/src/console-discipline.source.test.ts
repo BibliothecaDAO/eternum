@@ -77,11 +77,6 @@ const CAPTURED_WARN_ERROR_SITES = [
     forbidden: 'console.error("Transaction failed:", reason, payload.error ?? payload.message)',
   },
   {
-    path: "src/dojo/connection-health-monitor.ts",
-    required: "console.warn(formatConnectionRecoveryRequest(request))",
-    forbidden: 'console.warn("[ConnectionHealthMonitor] recovery requested", request)',
-  },
-  {
     path: "src/dojo/gamewide-sync-adapter.ts",
     required: 'appendConsoleFields("[GameSync] authoritative Torii model did not parse into RECS"',
     forbidden: 'console.error("[GameSync] authoritative Torii model did not parse into RECS", {',

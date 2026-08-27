@@ -1,6 +1,6 @@
 import { create } from "zustand";
 
-export type ConnectionStatus = "connected" | "degraded" | "disconnected";
+type ConnectionStatus = "connected" | "degraded" | "disconnected";
 export type StreamStatus = "connected" | "stale" | "reconnecting" | "failed";
 
 interface ConnectionState {
@@ -13,22 +13,10 @@ interface ConnectionState {
   lastGlobalDataUpdate: number;
   lastSpatialHandshake: number;
   lastGlobalHandshake: number;
-  lastToriiHeartbeat: number;
-  toriiHeartbeatAvailable: boolean;
-  /** Interval (ms) between the two most recent heartbeats; null until the second tick. */
-  lastHeartbeatIntervalMs: number | null;
-  lastHealthCheck: number;
   lastConnectedAt: number;
   lastDisconnectedAt: number | null;
   reconnectAttempts: number;
   streamReconnectVersion: number;
-  // --- Disconnect-source signals (used by classifyDisconnect) ---
-  /** Snapshot of navigator.onLine, kept fresh via the browser online/offline events. */
-  isOnline: boolean;
-  /** Timestamp of the last browser `offline` event, or null if none observed. */
-  lastOfflineAt: number | null;
-  /** Timestamp of the last observed real stream close/error (best-effort; usually null). */
-  lastStreamCloseAt: number | null;
   setStatus: (status: ConnectionStatus) => void;
   setSpatialStatus: (status: StreamStatus) => void;
   setGlobalStatus: (status: StreamStatus) => void;
@@ -36,17 +24,10 @@ interface ConnectionState {
   recordGlobalUpdate: () => void;
   recordSpatialHandshake: () => void;
   recordGlobalHandshake: () => void;
-  recordToriiHeartbeat: () => void;
-  recordHealthCheck: () => void;
   recordStreamReconnect: () => void;
-  recordOnline: () => void;
-  recordOffline: () => void;
-  recordStreamClose: () => void;
   incrementReconnectAttempts: () => void;
   resetReconnectAttempts: () => void;
 }
-
-const readInitialOnline = (): boolean => (typeof navigator !== "undefined" ? navigator.onLine : true);
 
 const deriveOverallStatus = (spatial: StreamStatus, global: StreamStatus): ConnectionStatus => {
   if (spatial === "failed" || global === "failed") return "disconnected";
@@ -64,17 +45,10 @@ export const useConnectionStore = create<ConnectionState>((set) => ({
   lastGlobalDataUpdate: Date.now(),
   lastSpatialHandshake: 0,
   lastGlobalHandshake: 0,
-  lastToriiHeartbeat: Date.now(),
-  toriiHeartbeatAvailable: false,
-  lastHeartbeatIntervalMs: null,
-  lastHealthCheck: Date.now(),
   lastConnectedAt: Date.now(),
   lastDisconnectedAt: null,
   reconnectAttempts: 0,
   streamReconnectVersion: 0,
-  isOnline: readInitialOnline(),
-  lastOfflineAt: null,
-  lastStreamCloseAt: null,
   setStatus: (status: ConnectionStatus) =>
     set((state) => {
       const now = Date.now();
@@ -137,19 +111,7 @@ export const useConnectionStore = create<ConnectionState>((set) => ({
     const now = Date.now();
     set({ lastGlobalUpdate: now, lastGlobalHandshake: now });
   },
-  recordToriiHeartbeat: () =>
-    set((state) => {
-      const now = Date.now();
-      // Only treat the gap as a real heartbeat interval once a heartbeat has
-      // actually been received before (avoids reporting the time since store init).
-      const intervalMs = state.toriiHeartbeatAvailable ? now - state.lastToriiHeartbeat : null;
-      return { lastToriiHeartbeat: now, toriiHeartbeatAvailable: true, lastHeartbeatIntervalMs: intervalMs };
-    }),
-  recordHealthCheck: () => set({ lastHealthCheck: Date.now() }),
   recordStreamReconnect: () => set((state) => ({ streamReconnectVersion: state.streamReconnectVersion + 1 })),
-  recordOnline: () => set({ isOnline: true }),
-  recordOffline: () => set({ isOnline: false, lastOfflineAt: Date.now() }),
-  recordStreamClose: () => set({ lastStreamCloseAt: Date.now() }),
   incrementReconnectAttempts: () => set((state) => ({ reconnectAttempts: state.reconnectAttempts + 1 })),
   resetReconnectAttempts: () => set({ reconnectAttempts: 0 }),
 }));

@@ -32,6 +32,11 @@ const makeProvider = () => {
   provider.pendingTransactionSpans = new Map();
   provider.pendingVrfExecutionLocks = new Map();
   provider.cachedExploreExecutionDetails = new Map();
+  provider.transactionStreamWaiter = vi.fn().mockResolvedValue({
+    block: null,
+    hash: "0xabc",
+    status: "PRE_CONFIRMED",
+  });
   provider.TRANSACTION_CONFIRM_TIMEOUT_MS = 10_000;
   provider.TRANSACTION_SUBMIT_TIMEOUT_MS = 20_000;
   provider.FEE_ESTIMATE_TIMEOUT_MS = 5_000;
@@ -646,12 +651,12 @@ describe("EternumProvider.executeAndCheckTransaction gas bounds", () => {
 
   it("emits revert payloads with transaction hash after submission", async () => {
     const provider = makeProvider();
-    provider.provider = {
-      waitForTransaction: vi.fn().mockResolvedValue({
-        isReverted: () => true,
-        execution_error: "Execution reverted: realm occupied",
-      }),
-    };
+    provider.transactionStreamWaiter = vi.fn().mockResolvedValue({
+      block: null,
+      hash: "0xabc",
+      status: "REVERTED",
+      revertReason: "Execution reverted: realm occupied",
+    });
     provider.waitForTransactionWithCheckInternal =
       EternumProvider.prototype["waitForTransactionWithCheckInternal"].bind(provider);
     provider.waitForTransactionWithTimeout = EternumProvider.prototype["waitForTransactionWithTimeout"].bind(provider);

@@ -75,7 +75,6 @@ import {
   type SettlementPlannerTarget,
 } from "./settlement-planner-utils";
 import { useSettlementPlannerData } from "./use-settlement-planner-data";
-import { waitForTransactionConfirmation } from "@/ui/utils/transactions";
 import { env } from "../../../../../env";
 import { appchainModel, gameEntityKey, namespaceForChain } from "@/dojo/game-scope";
 
@@ -2659,7 +2658,6 @@ export const GameEntryModal = ({
     seasonPassAddress,
     rpcUrl: selectedWorldRpcUrl,
     enabled: isOpen && isEternumMode,
-    refetchIntervalMs: 0,
   });
   const {
     villagePassBalance,
@@ -2673,7 +2671,6 @@ export const GameEntryModal = ({
     villagePassAddress,
     rpcUrl: selectedWorldRpcUrl,
     enabled: isOpen && isEternumMode,
-    refetchIntervalMs: 0,
   });
   const {
     data: ownedStructures = [],
@@ -2688,7 +2685,6 @@ export const GameEntryModal = ({
       return await selectedWorldSqlApi.fetchPlayerStructures(account.address);
     },
     staleTime: 10_000,
-    refetchInterval: 15_000,
   });
   const {
     data: realmVillageSlots = [],
@@ -2699,7 +2695,6 @@ export const GameEntryModal = ({
     enabled: isOpen && isEternumMode,
     queryFn: async () => await selectedWorldSqlApi.fetchRealmVillageSlots(),
     staleTime: 10_000,
-    refetchInterval: 15_000,
   });
   const {
     data: seasonOccupiedCoordKeys = [],
@@ -2721,7 +2716,6 @@ export const GameEntryModal = ({
       return Array.from(coordKeys);
     },
     staleTime: 10_000,
-    refetchInterval: 15_000,
   });
   const seasonOccupiedSlotsError =
     seasonOccupiedSlotsErrorRaw instanceof Error ? seasonOccupiedSlotsErrorRaw.message : null;
@@ -3367,59 +3361,17 @@ export const GameEntryModal = ({
     [beginEntityWait, chain, readSettlementSnapshot, syncSettlementStateFromSnapshot, worldMeta, worldName],
   );
 
-  const confirmSubmittedTransaction = useCallback(
-    async (
-      txHash: string,
-      label: string,
-      fallbackWaitAccount?: {
-        waitForTransaction?: (txHash: string) => Promise<unknown>;
-      },
-    ) => {
-      const provider = getCachedRpcProvider(selectedWorldRpcUrl);
-      await waitForTransactionConfirmation({
-        txHash,
-        account: account as unknown as { waitForTransaction?: (txHash: string) => Promise<unknown> },
-        label,
-        provider: provider as unknown as { waitForTransactionWithCheck?: (txHash: string) => Promise<unknown> },
-      }).catch(async () => {
-        if (fallbackWaitAccount && typeof fallbackWaitAccount.waitForTransaction === "function") {
-          await fallbackWaitAccount.waitForTransaction(txHash);
-          return;
-        }
-
-        if (
-          typeof (provider as unknown as { waitForTransaction?: (txHash: string) => Promise<unknown> })
-            .waitForTransaction === "function"
-        ) {
-          await (
-            provider as unknown as { waitForTransaction: (txHash: string) => Promise<unknown> }
-          ).waitForTransaction(txHash);
-          return;
-        }
-
-        throw new Error(`Unable to confirm ${label}: no transaction wait method available`);
-      });
-    },
-    [account, selectedWorldRpcUrl],
-  );
-
   const executeEntryObservedTransaction = useCallback(
     async ({
       signer,
       calls,
       operation,
-      label,
       waitForConfirmation = true,
-      fallbackWaitAccount,
     }: {
       signer: Account;
       calls: Call | Call[];
       operation: string;
-      label: string;
       waitForConfirmation?: boolean;
-      fallbackWaitAccount?: {
-        waitForTransaction?: (txHash: string) => Promise<unknown>;
-      };
     }) => {
       return await executeObservedClientTransaction({
         account: signer,
@@ -3429,16 +3381,9 @@ export const GameEntryModal = ({
         chain,
         worldName,
         waitForConfirmation,
-        ...(waitForConfirmation
-          ? {
-              confirm: async (txHash) => {
-                await confirmSubmittedTransaction(txHash, label, fallbackWaitAccount);
-              },
-            }
-          : {}),
       });
     },
-    [chain, confirmSubmittedTransaction, worldName],
+    [chain, worldName],
   );
 
   const resolveWorldSystemAddress = useCallback(
@@ -3819,7 +3764,6 @@ export const GameEntryModal = ({
           signer,
           calls: [buildMintRealmCall(), buildMintSeasonPassCall()],
           operation: "mint_realm_and_season_pass",
-          label: "mint realm + season pass",
         });
       } catch (mintError) {
         if (!isRealmAlreadyMintedError(mintError)) {
@@ -3831,7 +3775,6 @@ export const GameEntryModal = ({
           signer,
           calls: buildMintSeasonPassCall(),
           operation: "mint_season_pass",
-          label: "mint season pass",
         });
       }
 
@@ -3986,7 +3929,6 @@ export const GameEntryModal = ({
                 ]),
               },
               operation: "create_spires",
-              label: "create_spires",
             });
           } catch (spireError) {
             if (!isSpiresAlreadySatisfiedError(spireError)) {
@@ -4040,9 +3982,6 @@ export const GameEntryModal = ({
         signer,
         calls: settlementCalls,
         operation: "season_realm_create",
-        label: optionalPlayerName
-          ? "set address name + approve season pass + season realm create"
-          : "approve season pass + season realm create",
       });
 
       setSeasonSettlementError(null);
@@ -4169,7 +4108,6 @@ export const GameEntryModal = ({
         signer,
         calls: villageSettlementCalls,
         operation: "village_systems.create",
-        label: optionalPlayerName ? "set address name + village_systems.create" : "village_systems.create",
       });
 
       const revealResult = await waitForVillageResourceReveal({
@@ -4309,7 +4247,6 @@ export const GameEntryModal = ({
           feeAmount: worldMeta.feeAmount,
         }),
         operation: "blitz_realm_systems.settle",
-        label: "blitz_realm_systems.settle",
       });
 
       setSettleStage("syncing");

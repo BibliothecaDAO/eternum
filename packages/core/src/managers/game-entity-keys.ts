@@ -34,9 +34,6 @@ export const setGameEntityKeyGameId = (gameId: number) => {
   activeKeyGameId = gameId;
 };
 
-/** The active game id as written into per-game model rows (0 on legacy worlds). */
-export const getGameEntityKeyGameId = () => activeKeyGameId;
-
 /**
  * RECS entity key for a per-game model. On the s2 single world every per-game
  * model leads with `game_id` as key[0], so lookups must hash it in or they

@@ -6,7 +6,9 @@ import { FactoryV2DeveloperConfig } from "./factory-v2-developer-config";
 
 const mocks = vi.hoisted(() => ({
   account: {
+    address: "0x123",
     execute: vi.fn(),
+    getNonce: vi.fn(),
     waitForTransaction: vi.fn(),
   },
   useAccount: vi.fn(),
@@ -18,7 +20,7 @@ const mocks = vi.hoisted(() => ({
   resolveConnectedTxChainFromRuntime: vi.fn(),
   switchWalletToChain: vi.fn(),
   extractTransactionHash: vi.fn(),
-  waitForTransactionConfirmation: vi.fn(),
+  resolveTransactionFromGameStream: vi.fn(),
   addClientTransactionBreadcrumb: vi.fn(),
   reportClientTransactionFailure: vi.fn().mockResolvedValue(undefined),
   resolveClientTransactionFailureStageFromError: vi.fn((_error, fallback) => fallback),
@@ -56,7 +58,7 @@ vi.mock("@/ui/features/factory/shared/factory-metadata", () => ({
 
 vi.mock("@/ui/utils/transactions", () => ({
   extractTransactionHash: mocks.extractTransactionHash,
-  waitForTransactionConfirmation: mocks.waitForTransactionConfirmation,
+  resolveTransactionFromGameStream: mocks.resolveTransactionFromGameStream,
 }));
 
 vi.mock("@/observability/transaction-failure-reporting", () => ({
@@ -99,6 +101,7 @@ describe("FactoryV2DeveloperConfig", () => {
     (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
     mocks.account.execute.mockReset();
+    mocks.account.getNonce.mockReset();
     mocks.account.waitForTransaction.mockReset();
     mocks.useAccount.mockReset();
     mocks.useAccountStore.mockReset();
@@ -109,7 +112,7 @@ describe("FactoryV2DeveloperConfig", () => {
     mocks.resolveConnectedTxChainFromRuntime.mockReset();
     mocks.switchWalletToChain.mockReset();
     mocks.extractTransactionHash.mockReset();
-    mocks.waitForTransactionConfirmation.mockReset();
+    mocks.resolveTransactionFromGameStream.mockReset();
     mocks.addClientTransactionBreadcrumb.mockReset();
     mocks.reportClientTransactionFailure.mockReset();
     mocks.reportClientTransactionFailure.mockResolvedValue(undefined);
@@ -133,7 +136,8 @@ describe("FactoryV2DeveloperConfig", () => {
     mocks.extractTransactionHash.mockImplementation(
       (result: { transaction_hash?: string }) => result.transaction_hash ?? null,
     );
-    mocks.waitForTransactionConfirmation.mockResolvedValue(undefined);
+    mocks.resolveTransactionFromGameStream.mockResolvedValue(undefined);
+    mocks.account.getNonce.mockResolvedValue("0x0");
 
     container = document.createElement("div");
     document.body.appendChild(container);
@@ -218,9 +222,8 @@ describe("FactoryV2DeveloperConfig", () => {
     });
 
     expect(mocks.account.execute).toHaveBeenCalledTimes(1);
-    expect(mocks.waitForTransactionConfirmation).toHaveBeenCalledWith({
+    expect(mocks.resolveTransactionFromGameStream).toHaveBeenCalledWith({
       txHash: "0xtx",
-      account: mocks.account,
       label: "factory config multicall",
     });
 
@@ -241,7 +244,7 @@ describe("FactoryV2DeveloperConfig", () => {
     let resolveConfirmation: (() => void) | null = null;
 
     mocks.account.execute.mockResolvedValue({ transaction_hash: "0xpending" });
-    mocks.waitForTransactionConfirmation.mockImplementation(
+    mocks.resolveTransactionFromGameStream.mockImplementation(
       () =>
         new Promise<void>((resolve) => {
           resolveConfirmation = resolve;

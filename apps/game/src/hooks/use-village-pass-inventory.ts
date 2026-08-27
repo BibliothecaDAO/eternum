@@ -14,7 +14,6 @@ interface UseVillagePassInventoryProps {
   villagePassAddress?: string | null;
   rpcUrl?: string | null;
   enabled?: boolean;
-  refetchIntervalMs?: number;
 }
 
 interface UseVillagePassInventoryReturn {
@@ -31,7 +30,6 @@ export const useVillagePassInventory = ({
   villagePassAddress,
   rpcUrl,
   enabled = true,
-  refetchIntervalMs = 15_000,
 }: UseVillagePassInventoryProps): UseVillagePassInventoryReturn => {
   const [villagePassBalance, setVillagePassBalance] = useState(0n);
   const [villagePasses, setVillagePasses] = useState<VillagePassInventoryItem[]>([]);
@@ -51,16 +49,6 @@ export const useVillagePassInventory = ({
   const refetch = useCallback(() => {
     setRefreshTick((prev) => prev + 1);
   }, []);
-
-  useEffect(() => {
-    if (!enabled || refetchIntervalMs <= 0) return;
-    const timer = window.setInterval(() => {
-      setRefreshTick((prev) => prev + 1);
-    }, refetchIntervalMs);
-    return () => {
-      window.clearInterval(timer);
-    };
-  }, [enabled, refetchIntervalMs]);
 
   useEffect(() => {
     let cancelled = false;

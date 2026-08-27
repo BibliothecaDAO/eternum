@@ -50,6 +50,15 @@ export interface TransactionSubmitGuardContext extends TransactionLifecycleMeta 
 
 export type TransactionSubmitGuard = (context: TransactionSubmitGuardContext) => Promise<void> | void;
 
+interface TransactionStreamStatus {
+  block: number | null;
+  hash: string;
+  revertReason?: string;
+  status: string;
+}
+
+export type TransactionStreamWaiter = (transactionHash: string) => Promise<TransactionStreamStatus>;
+
 export enum TransactionType {
   // Exploration & Movement
   EXPLORE = "explore",

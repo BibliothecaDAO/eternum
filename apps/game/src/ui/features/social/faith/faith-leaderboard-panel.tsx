@@ -5,8 +5,6 @@ import { fetchFaithLeaderboard, type FaithLeaderboardEntry } from "@/services/le
 import { WonderFaithDetailModal } from "./wonder-faith-detail-panel";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
-const AUTO_REFRESH_INTERVAL_MS = 30_000;
-
 const formatIntegerWithCommas = (value: number): string => value.toLocaleString("en-US");
 
 const formatBigIntWithCommas = (value: bigint): string => {
@@ -75,16 +73,6 @@ export const FaithLeaderboardPanel = () => {
 
   useEffect(() => {
     void loadLeaderboard("initial");
-  }, [loadLeaderboard]);
-
-  useEffect(() => {
-    const intervalId = window.setInterval(() => {
-      void loadLeaderboard("refresh");
-    }, AUTO_REFRESH_INTERVAL_MS);
-
-    return () => {
-      window.clearInterval(intervalId);
-    };
   }, [loadLeaderboard]);
 
   const updatedLabel = useMemo(() => {

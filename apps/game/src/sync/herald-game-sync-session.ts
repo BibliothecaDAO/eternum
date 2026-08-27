@@ -7,6 +7,8 @@ import {
 import type { GameChain } from "@realms-world/chain";
 
 import { createBrowserScheduler, createRecsGameSyncStore } from "@/dojo/gamewide-sync-adapter";
+import { useChainTimeStore } from "@/hooks/store/use-chain-time-store";
+import { acceptGameSyncStoryEvent, resetGameSyncStoryEvents } from "@/hooks/store/use-story-events-store";
 
 interface CreateHeraldGameSyncSessionInput {
   baseUrl: string;
@@ -22,11 +24,20 @@ interface CreateHeraldGameSyncSessionInput {
 }
 
 export function createHeraldGameSyncSession(input: CreateHeraldGameSyncSessionInput): GameSyncSessionStart {
+  resetGameSyncStoryEvents();
   const syncModels = [...input.entityModels, ...input.eventModels];
   return {
     onLiveUpdate: input.onLiveUpdate,
+    onEvent: acceptGameSyncStoryEvent,
     onMetrics: input.onMetrics,
     onSubscriptionActive: input.onSubscriptionActive,
+    onHead: (head) => {
+      useChainTimeStore.getState().setHeartbeat({
+        blockNumber: head.block,
+        source: "herald-head",
+        timestamp: head.timestamp * 1_000,
+      });
+    },
     scheduler: createBrowserScheduler(),
     snapshotModels: input.entityModels,
     store: createRecsGameSyncStore(input.setup, input.logging, syncModels),

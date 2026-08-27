@@ -16,13 +16,10 @@ type WaitCapableProvider = {
   channel?: {
     nodeUrl?: string;
   };
-  waitForTransaction?: (txHash: string) => Promise<unknown>;
-  waitForTransactionWithCheck?: (txHash: string) => Promise<unknown>;
 };
 
 type ObservedTransactionAccount = Pick<Account, "address" | "execute" | "getNonce"> & {
   provider?: WaitCapableProvider;
-  waitForTransaction?: (txHash: string) => Promise<unknown>;
 };
 
 type ExecuteObservedClientTransactionInput = {
@@ -37,7 +34,6 @@ type ExecuteObservedClientTransactionInput = {
   worldName?: string;
   worldAddress?: string;
   rpcHost?: string;
-  confirm?: ((txHash: string, account: ObservedTransactionAccount) => Promise<unknown>) | false;
 };
 
 const toCallArray = (calls: AllowArray<Call>): Call[] => {
@@ -72,38 +68,12 @@ const buildTransactionContext = (
   };
 };
 
-const resolveConfirmationWait = (
-  input: ExecuteObservedClientTransactionInput,
-): ((txHash: string, account: ObservedTransactionAccount) => Promise<unknown>) | null => {
-  if (input.confirm === false) {
-    return null;
-  }
-
-  if (input.confirm) {
-    return input.confirm;
-  }
-
+const resolveConfirmationWait = ():
+  | ((txHash: string, account: ObservedTransactionAccount) => Promise<unknown>)
+  | null => {
   const gameSync = getActiveGameSyncRuntime();
   if (gameSync?.hasTransactionStatusChannel()) {
     return async (txHash: string, _account: ObservedTransactionAccount) => gameSync.waitForTransaction(txHash);
-  }
-
-  if (input.account.provider && typeof input.account.provider.waitForTransactionWithCheck === "function") {
-    return async (txHash: string, _account: ObservedTransactionAccount) => {
-      await input.account.provider?.waitForTransactionWithCheck?.(txHash);
-    };
-  }
-
-  if (typeof input.account.waitForTransaction === "function") {
-    return async (txHash: string, account: ObservedTransactionAccount) => {
-      await account.waitForTransaction?.(txHash);
-    };
-  }
-
-  if (input.account.provider && typeof input.account.provider.waitForTransaction === "function") {
-    return async (txHash: string, _account: ObservedTransactionAccount) => {
-      await input.account.provider?.waitForTransaction?.(txHash);
-    };
   }
 
   return null;
@@ -143,7 +113,7 @@ const observeBackgroundTransactionConfirmation = (
 export const executeObservedClientTransaction = async <T = unknown>(
   input: ExecuteObservedClientTransactionInput,
 ): Promise<T> => {
-  const waitForConfirmation = resolveConfirmationWait(input);
+  const waitForConfirmation = resolveConfirmationWait();
   const shouldWaitForConfirmation = input.waitForConfirmation ?? true;
 
   let result: T;

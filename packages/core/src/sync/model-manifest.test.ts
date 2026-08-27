@@ -27,14 +27,20 @@ describe("GAME_SYNC_MODEL_MANIFEST", () => {
   });
 
   it("adjudicates manifest event messages as events only", () => {
-    ["SeasonEnded", "OpenRelicChestEvent", "BattleEvent", "ExplorerRewardEvent"].forEach((name) => {
+    ["SeasonEnded", "OpenRelicChestEvent", "BattleEvent", "ExplorerRewardEvent", "StoryEvent"].forEach((name) => {
       const event = getGameSyncModel(name);
       expect(event.channels).toEqual(["global-event"]);
       expect(event.recovery).toBe("event-deduped");
       expect(event.deletion).toBe("event-ephemeral");
     });
     expect(getGameSyncModelsForChannel("gamewide-entity").map(({ name }) => name)).not.toEqual(
-      expect.arrayContaining(["SeasonEnded", "OpenRelicChestEvent", "BattleEvent", "ExplorerRewardEvent"]),
+      expect.arrayContaining([
+        "SeasonEnded",
+        "OpenRelicChestEvent",
+        "BattleEvent",
+        "ExplorerRewardEvent",
+        "StoryEvent",
+      ]),
     );
   });
 

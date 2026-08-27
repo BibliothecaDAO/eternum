@@ -56,7 +56,6 @@ export const useSettlementPlannerData = ({
     enabled,
     queryFn: async () => await sqlApi.fetchSettlementPlannerSnapshot(),
     staleTime: 10_000,
-    refetchInterval: 15_000,
   });
 
   const fetchBounds = useMemo(
@@ -85,7 +84,6 @@ export const useSettlementPlannerData = ({
     enabled: enabled && fetchBounds != null,
     queryFn: async () => await sqlApi.fetchExploredTilesInBounds(fetchBounds!),
     staleTime: 30_000,
-    refetchInterval: 30_000,
   });
 
   const plannerData = useMemo(

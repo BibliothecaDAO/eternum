@@ -297,8 +297,6 @@ export const useWorldsAvailability = (worlds: WorldRef[], enabled = true, player
       enabled: enabled && !!world.name,
       staleTime: 30 * 1000,
       gcTime: 10 * 60 * 1000,
-      refetchInterval: 30 * 1000,
-      refetchIntervalInBackground: false,
       retry: 1,
     })),
   });

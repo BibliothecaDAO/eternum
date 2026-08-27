@@ -20,7 +20,6 @@ import { toast } from "sonner";
 
 import { useStructureEntityDetail } from "../entities/hooks/use-structure-entity-detail";
 
-const FAITH_REFRESH_INTERVAL_MS = 30_000;
 const DEVOTION_ELIGIBLE_STRUCTURE_TYPES = new Set<StructureType>([StructureType.Realm, StructureType.Village]);
 
 const isDevotionEligible = (category: unknown): boolean => {
@@ -117,7 +116,6 @@ export const FaithDevotionActionPanel = ({
     queryKey: ["faith-devotion-wonders"],
     queryFn: () => fetchFaithLeaderboard(),
     staleTime: 10_000,
-    refetchInterval: FAITH_REFRESH_INTERVAL_MS,
   });
 
   const { data: devotionStatus, isLoading: isLoadingDevotionStatus } = useQuery({
@@ -125,7 +123,6 @@ export const FaithDevotionActionPanel = ({
     queryFn: () => fetchFaithfulStructureStatus(structureEntityId),
     enabled: eligibleForDevotion,
     staleTime: 5_000,
-    refetchInterval: eligibleForDevotion ? FAITH_REFRESH_INTERVAL_MS : false,
   });
 
   const wonderMap = useMemo(
@@ -376,7 +373,6 @@ const FaithDevotionModal = ({ structureEntityId, structureLabel }: FaithDevotion
     queryKey: ["faith-devotion-wonders"],
     queryFn: () => fetchFaithLeaderboard(),
     staleTime: 10_000,
-    refetchInterval: FAITH_REFRESH_INTERVAL_MS,
   });
 
   const { data: devotionStatus } = useQuery({

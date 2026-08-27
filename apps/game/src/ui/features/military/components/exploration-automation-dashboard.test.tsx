@@ -63,8 +63,13 @@ vi.mock("@bibliothecadao/eternum", () => ({
 }));
 
 vi.mock("@dojoengine/recs", () => ({
+  Has: (component: unknown) => component,
   getComponentValue: (component: { byEntity?: Record<string, unknown> }, entity: string) =>
     component.byEntity?.[entity],
+}));
+
+vi.mock("@dojoengine/react", () => ({
+  useEntityQuery: () => Object.keys(mocks.dojo.components.ExplorerTroops.byEntity),
 }));
 
 vi.mock("@dojoengine/utils", () => ({

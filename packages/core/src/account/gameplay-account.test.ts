@@ -54,7 +54,7 @@ describe("gameplay account deployment", () => {
   it("deploys once when the address has no contract", async () => {
     const provider = createProvider();
     vi.spyOn(provider, "getClassHashAt").mockRejectedValue({ code: 20 });
-    const waitForTransaction = vi.spyOn(provider, "waitForTransaction").mockResolvedValue({} as never);
+    const waitForTransaction = vi.spyOn(provider, "waitForTransaction");
     const deployAccount = vi.spyOn(Account.prototype, "deployAccount").mockResolvedValue({
       contract_address: "0x1",
       transaction_hash: "0x2",
@@ -63,7 +63,7 @@ describe("gameplay account deployment", () => {
     await ensureGameplayAccount(accountOptions(provider));
 
     expect(deployAccount).toHaveBeenCalledOnce();
-    expect(waitForTransaction).toHaveBeenCalledWith("0x2", { retryInterval: 50 });
+    expect(waitForTransaction).not.toHaveBeenCalled();
   });
 
   it("refuses an occupied address with a different class", async () => {

@@ -4,7 +4,6 @@ import { Account, addAddressPadding, hash, num, type BigNumberish, type Provider
 
 const CONTRACT_NOT_FOUND = 20;
 const GAMEPLAY_KEY_PREFIX = "realms:gameplay-key";
-const GAMEPLAY_ACCOUNT_DEPLOYMENT_POLL_MS = 50;
 
 type StorageLike = Pick<Storage, "getItem" | "setItem">;
 
@@ -74,16 +73,12 @@ export async function ensureGameplayAccount(options: EnsureGameplayAccountOption
     return account;
   }
 
-  const result = await account.deployAccount({
+  await account.deployAccount({
     classHash: options.classHash,
     constructorCalldata: deployment.constructorCalldata,
     addressSalt: deployment.addressSalt,
     contractAddress: deployment.address,
   });
-  await options.provider.waitForTransaction(result.transaction_hash, {
-    retryInterval: GAMEPLAY_ACCOUNT_DEPLOYMENT_POLL_MS,
-  });
-
   return account;
 }
 

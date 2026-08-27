@@ -7,7 +7,7 @@ import { RESOURCE_ARRIVAL_AUTO_CLAIM_RETRY_DELAY_SECONDS, RESOURCE_ARRIVAL_READY
 import { VERBOSE_LOGS_ENABLED } from "@/utils/dev-mode";
 import { isExplicitSpectateSession } from "@/utils/spectator-session";
 import { resolveFiniteSeasonEndAt, resolveSeasonStartTimestamp } from "@/ui/features/world/utils/season-timing";
-import { extractTransactionHash, waitForTransactionConfirmation } from "@/ui/utils/transactions";
+import { extractTransactionHash, resolveTransactionFromGameStream } from "@/ui/utils/transactions";
 import {
   clearUncertainClaimSharePointsSubmission,
   isNoHashSubmissionTimeout,
@@ -451,10 +451,8 @@ const AutoRegisterPointsStoreManager = () => {
         log("Points registration transaction submitted", txHash);
 
         if (txHash) {
-          await waitForTransactionConfirmation({
+          await resolveTransactionFromGameStream({
             txHash,
-            provider: network.provider as { waitForTransactionWithCheck?: (hash: string) => Promise<unknown> },
-            account: account as { waitForTransaction?: (hash: string) => Promise<unknown> },
             label: "auto-register points",
           });
         }

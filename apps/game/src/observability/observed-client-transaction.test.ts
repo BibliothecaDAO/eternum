@@ -20,6 +20,28 @@ vi.mock("./transaction-failure-reporting", () => ({
 
 import { executeObservedClientTransaction } from "./observed-client-transaction";
 
+const startTransactionStream = async (): Promise<GameSyncSubscriptionHandlers> => {
+  let handlers!: GameSyncSubscriptionHandlers;
+  const runtime = installGameSyncRuntime(new GameSyncRuntime());
+  await runtime.startSession({
+    snapshotModels: [],
+    store: {
+      applyEntityOperations: () => undefined,
+      applyEvent: () => undefined,
+      listModelEntityIds: () => [],
+    },
+    transport: {
+      transactionStatusChannel: true,
+      subscribe: async (nextHandlers) => {
+        handlers = nextHandlers;
+        return { cancel: () => undefined };
+      },
+      fetchSnapshotPage: async () => ({ items: [] }),
+    },
+  });
+  return handlers;
+};
+
 describe("executeObservedClientTransaction", () => {
   beforeEach(() => {
     reporterMocks.addClientTransactionBreadcrumb.mockReset();
@@ -64,22 +86,24 @@ describe("executeObservedClientTransaction", () => {
   });
 
   it("reports confirmation failures after submission", async () => {
+    const handlers = await startTransactionStream();
     const account = {
       address: "0xabc",
       execute: vi.fn().mockResolvedValue({ transaction_hash: "0xtx" }),
       getNonce: vi.fn().mockResolvedValue("0x1"),
-      waitForTransaction: vi.fn().mockRejectedValue(new Error("confirmation failed")),
     };
 
-    await expect(
-      executeObservedClientTransaction({
-        account,
-        calls: { contractAddress: "0x1", entrypoint: "swap", calldata: [] },
-        surface: "amm",
-        operation: "amm_execute",
-        chain: "appchain",
-      }),
-    ).rejects.toThrow("confirmation failed");
+    const submitted = executeObservedClientTransaction({
+      account,
+      calls: { contractAddress: "0x1", entrypoint: "swap", calldata: [] },
+      surface: "amm",
+      operation: "amm_execute",
+      chain: "appchain",
+    });
+    await vi.waitFor(() => expect(account.execute).toHaveBeenCalledOnce());
+    handlers.onTransaction?.({ block: null, hash: "0xtx", status: "REVERTED", revertReason: "fixture revert" });
+
+    await expect(submitted).rejects.toThrow("fixture revert");
 
     expect(reporterMocks.addClientTransactionBreadcrumb).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -97,22 +121,24 @@ describe("executeObservedClientTransaction", () => {
   });
 
   it("adds breadcrumbs for successful transactions without reporting failures", async () => {
+    const handlers = await startTransactionStream();
     const account = {
       address: "0xabc",
       execute: vi.fn().mockResolvedValue({ transaction_hash: "0xtx" }),
       getNonce: vi.fn().mockResolvedValue("0x1"),
-      waitForTransaction: vi.fn().mockResolvedValue({}),
     };
 
-    await expect(
-      executeObservedClientTransaction({
-        account,
-        calls: { contractAddress: "0x1", entrypoint: "swap", calldata: [] },
-        surface: "prediction_market",
-        operation: "market_buy",
-        chain: "appchain",
-      }),
-    ).resolves.toEqual({ transaction_hash: "0xtx" });
+    const submitted = executeObservedClientTransaction({
+      account,
+      calls: { contractAddress: "0x1", entrypoint: "swap", calldata: [] },
+      surface: "prediction_market",
+      operation: "market_buy",
+      chain: "appchain",
+    });
+    await vi.waitFor(() => expect(account.execute).toHaveBeenCalledOnce());
+    handlers.onTransaction?.({ block: null, hash: "0xtx", status: "PRE_CONFIRMED" });
+
+    await expect(submitted).resolves.toEqual({ transaction_hash: "0xtx" });
 
     expect(reporterMocks.addClientTransactionBreadcrumb).toHaveBeenCalledTimes(2);
     expect(reporterMocks.addClientTransactionBreadcrumb).toHaveBeenNthCalledWith(
@@ -127,24 +153,7 @@ describe("executeObservedClientTransaction", () => {
   });
 
   it("resolves gameplay transactions from the active Herald channel", async () => {
-    let handlers!: GameSyncSubscriptionHandlers;
-    const runtime = installGameSyncRuntime(new GameSyncRuntime());
-    await runtime.startSession({
-      snapshotModels: [],
-      store: {
-        applyEntityOperations: () => undefined,
-        applyEvent: () => undefined,
-        listModelEntityIds: () => [],
-      },
-      transport: {
-        transactionStatusChannel: true,
-        subscribe: async (nextHandlers) => {
-          handlers = nextHandlers;
-          return { cancel: () => undefined };
-        },
-        fetchSnapshotPage: async () => ({ items: [] }),
-      },
-    });
+    const handlers = await startTransactionStream();
     const account = {
       address: "0xstream",
       execute: vi.fn().mockResolvedValue({ transaction_hash: "0xabc" }),

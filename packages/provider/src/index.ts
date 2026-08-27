@@ -17,7 +17,6 @@ import {
   CallData,
   GetTransactionReceiptResponse,
   ResourceBoundsBN,
-  TransactionFinalityStatus,
   uint256,
   UniversalDetails,
 } from "starknet";
@@ -36,6 +35,7 @@ import {
   TransactionSubmitFailureKind,
   TransactionSubmitGuard,
   TransactionSubmitGuardContext,
+  TransactionStreamWaiter,
   TransactionType,
 } from "./types";
 import { createVrfRequestRandomCall, isVrfEnabled, isVrfRequestRandomCall, type VrfSource } from "./vrf";
@@ -66,6 +66,7 @@ export type {
   TransactionSubmitFailureKind,
   TransactionSubmitGuard,
   TransactionSubmitGuardContext,
+  TransactionStreamWaiter,
 } from "./types";
 export type { VrfSource } from "./vrf";
 
@@ -79,20 +80,6 @@ const DEFAULT_FEE_ESTIMATE_TIMEOUT_MS = 5_000;
 const ESTIMATE_ERROR_TTL_MS = 60_000;
 const DEFAULT_TRANSACTION_SUBMIT_TIMEOUT_MS = 20_000;
 const EXPLORE_RESOURCE_BOUNDS_CACHE_TTL_MS = 15_000;
-// Katana mines instantly, so PRE_CONFIRMED usually exists on the first or
-// second poll — 200 ms shaves ~150–300 ms off action feedback for ~2 extra
-// tiny receipt reads per tx.
-const TX_WAIT_RETRY_INTERVAL_MS = 200;
-// Resolve confirmation at PRE_CONFIRMED: the sequencer pre-confirms within
-// ~a second and the receipt already carries execution_status, so reverts are
-// detected immediately while the receipt poll loop drops from dozens of RPC
-// requests per tx (waiting for ACCEPTED_ON_L2 block inclusion) to one or two.
-// Game state itself arrives via torii sync, not this receipt.
-const TX_WAIT_SUCCESS_STATES = [
-  TransactionFinalityStatus.PRE_CONFIRMED,
-  TransactionFinalityStatus.ACCEPTED_ON_L2,
-  TransactionFinalityStatus.ACCEPTED_ON_L1,
-];
 export const SUBMISSION_TIMEOUT_UNCERTAIN_MESSAGE =
   "Submission timed out before a tx hash was returned. Check wallet/activity before retrying.";
 const formatTimeoutDuration = (timeoutMs: number): string =>
@@ -326,6 +313,7 @@ export class EternumProvider extends EnhancedDojoProvider {
   private lastEstimateError?: { error: unknown; atMs: number };
   private readonly retryConfig?: RetryConfig;
   private transactionSubmitGuard?: TransactionSubmitGuard;
+  private transactionStreamWaiter?: TransactionStreamWaiter;
   /** Model/contract-tag namespace: "s2" on appchain worlds, "s1_eternum" on legacy worlds. */
   readonly namespace: string;
   /** Active game on an s2 appchain world; 0 on legacy worlds (no calldata rewrite). */
@@ -347,7 +335,12 @@ export class EternumProvider extends EnhancedDojoProvider {
     url?: string,
     private VRF_PROVIDER_ADDRESS?: string,
     retryConfig?: RetryConfig,
-    scope?: { namespace?: string; gameId?: number; executionResourceBounds?: ResourceBoundsBN },
+    scope?: {
+      namespace?: string;
+      gameId?: number;
+      executionResourceBounds?: ResourceBoundsBN;
+      transactionStreamWaiter?: TransactionStreamWaiter;
+    },
   ) {
     super(katana, url);
     this.manifest = katana;
@@ -355,6 +348,7 @@ export class EternumProvider extends EnhancedDojoProvider {
     this.namespace = scope?.namespace ?? NAMESPACE;
     this.gameId = scope?.gameId ?? 0;
     this.executionResourceBounds = scope?.executionResourceBounds;
+    this.transactionStreamWaiter = scope?.transactionStreamWaiter;
     this.gameContractAddresses = new Set(
       this.gameId > 0
         ? ((katana.contracts ?? []) as { address?: string }[])
@@ -371,6 +365,10 @@ export class EternumProvider extends EnhancedDojoProvider {
     // latency (and a merged multicall makes one revert fail unrelated actions). The queue
     // stays for per-signer serialization; a backlog still coalesces naturally.
     this.promiseQueue = new PromiseQueue(this, { batchDelayMs: 0 });
+  }
+
+  public setTransactionStreamWaiter(waiter: TransactionStreamWaiter | undefined): void {
+    this.transactionStreamWaiter = waiter;
   }
 
   /**
@@ -875,6 +873,7 @@ export class EternumProvider extends EnhancedDojoProvider {
 
         this.emitTransactionSubmitted(tx.transaction_hash, recoveredTransactionMeta);
         this.emitTransactionPending(tx.transaction_hash, recoveredTransactionMeta);
+        if (!this.transactionStreamWaiter) return;
 
         return this.waitForTransactionWithCheckInternal(tx.transaction_hash, recoveredTransactionMetaWithHash)
           .then((receipt) => {
@@ -1092,6 +1091,15 @@ export class EternumProvider extends EnhancedDojoProvider {
       ...transactionMeta,
       transactionHash: tx.transaction_hash,
     };
+    if (!this.transactionStreamWaiter) {
+      releaseVrfExecutionLock?.();
+      releaseVrfExecutionLock = undefined;
+      this.emitTransactionPending(tx.transaction_hash, transactionMeta);
+      return {
+        statusReceipt: "PENDING",
+        transaction_hash: tx.transaction_hash,
+      } as unknown as GetTransactionReceiptResponse;
+    }
     const waitPromiseWithoutLockRelease = this.waitForTransactionWithCheckInternal(
       tx.transaction_hash,
       transactionMetaWithHash,
@@ -1425,47 +1433,22 @@ export class EternumProvider extends EnhancedDojoProvider {
 
   private async waitForTransactionWithCheckInternal(
     transactionHash: string,
-    transactionMeta?: TransactionLifecycleMeta,
+    _transactionMeta?: TransactionLifecycleMeta,
   ): Promise<GetTransactionReceiptResponse> {
-    let receipt;
-    const nodeUrl = (this.provider as any)?.channel?.nodeUrl;
-    const manifestRpcUrl = (this.manifest as any)?.world?.metadata?.rpc_url;
-    try {
-      receipt = await this.provider.waitForTransaction(transactionHash, {
-        retryInterval: TX_WAIT_RETRY_INTERVAL_MS,
-        successStates: TX_WAIT_SUCCESS_STATES,
-      });
-    } catch (error) {
-      console.error(`Error waiting for transaction ${transactionHash}`, {
-        error,
-        nodeUrl,
-        manifestRpcUrl,
-        worldAddress: this.manifest?.world?.address,
-      });
-      throw attachTransactionFailureStage(error, "confirmation");
+    if (!this.transactionStreamWaiter) {
+      return {
+        statusReceipt: "PENDING",
+        transaction_hash: transactionHash,
+      } as unknown as GetTransactionReceiptResponse;
     }
 
-    const receiptAny = receipt as any;
+    const transaction = await this.transactionStreamWaiter(transactionHash).catch((error) => {
+      throw attachTransactionFailureStage(error, "confirmation");
+    });
 
-    // Check if the transaction was reverted and throw an error if it was
-    if (receipt.isReverted()) {
-      const revertReason = extractErrorMessage(
-        {
-          execution_error: receiptAny?.execution_error,
-          executionError: receiptAny?.executionError,
-          revert_reason: receiptAny?.revert_reason,
-          revertReason: receiptAny?.revertReason,
-          reason: receiptAny?.reason,
-          message: receiptAny?.message,
-          details: receiptAny?.details,
-        },
-        "Unknown revert reason",
-      );
-      // Keep the untouched receipt reason alongside the extracted one so the
-      // failure payload can carry the full trace verbatim.
-      const rawRevertReason = [receiptAny?.revert_reason, receiptAny?.execution_error].find(
-        (value): value is string => typeof value === "string" && value.length > 0,
-      );
+    if (transaction.status === "REVERTED") {
+      const rawRevertReason = transaction.revertReason;
+      const revertReason = extractErrorMessage(rawRevertReason, "Unknown revert reason");
       const message = `Transaction failed with reason: ${revertReason}`;
       const revertError = attachTransactionFailureStage(new Error(message), "revert", message);
       if (rawRevertReason !== undefined) {
@@ -1474,7 +1457,12 @@ export class EternumProvider extends EnhancedDojoProvider {
       throw revertError;
     }
 
-    return receipt;
+    return {
+      block_number: transaction.block,
+      finality_status: transaction.status,
+      statusReceipt: transaction.status,
+      transaction_hash: transaction.hash,
+    } as GetTransactionReceiptResponse;
   }
 
   public async bridge_withdraw_from_realm(props: SystemProps.BridgeWithdrawFromRealmProps) {

@@ -4,7 +4,6 @@ const toNumber = (value: string | undefined, fallback: number) => {
 };
 
 export const POLLING_INTERVALS = {
-  storyEventsMs: toNumber(import.meta.env.VITE_POLL_STORY_EVENTS_MS, 6_000),
   storyEventsStaleMs: toNumber(import.meta.env.VITE_POLL_STORY_EVENTS_STALE_MS, 60_000),
   autoRegisterPointsMs: toNumber(import.meta.env.VITE_POLL_AUTO_REGISTER_POINTS_MS, 60_000),
 };

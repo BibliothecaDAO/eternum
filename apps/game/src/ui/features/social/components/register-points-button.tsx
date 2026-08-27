@@ -2,7 +2,7 @@ import { useUIStore } from "@/hooks/store/use-ui-store";
 import { LEADERBOARD_UPDATE_INTERVAL } from "@/ui/constants";
 import Button from "@/ui/design-system/atoms/button";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
-import { extractTransactionHash, waitForTransactionConfirmation } from "@/ui/utils/transactions";
+import { extractTransactionHash, resolveTransactionFromGameStream } from "@/ui/utils/transactions";
 import {
   clearUncertainClaimSharePointsSubmission,
   isNoHashSubmissionTimeout,
@@ -128,10 +128,8 @@ export const RegisterPointsButton = ({ className, variant = "bar" }: RegisterPoi
       logPointsSummary("pending override applied");
 
       if (txHash) {
-        await waitForTransactionConfirmation({
+        await resolveTransactionFromGameStream({
           txHash,
-          provider: network.provider as { waitForTransactionWithCheck?: (hash: string) => Promise<unknown> },
-          account: account as { waitForTransaction?: (hash: string) => Promise<unknown> },
           label: "register points",
         });
       }

@@ -17,7 +17,6 @@ interface UseSeasonPassInventoryProps {
   seasonPassAddress?: string | null;
   rpcUrl?: string | null;
   enabled?: boolean;
-  refetchIntervalMs?: number;
 }
 
 interface UseSeasonPassInventoryReturn {
@@ -86,7 +85,6 @@ export const useSeasonPassInventory = ({
   seasonPassAddress,
   rpcUrl,
   enabled = true,
-  refetchIntervalMs = 15_000,
 }: UseSeasonPassInventoryProps): UseSeasonPassInventoryReturn => {
   const [seasonPassBalance, setSeasonPassBalance] = useState(0n);
   const [seasonPasses, setSeasonPasses] = useState<SeasonPassInventoryItem[]>([]);
@@ -106,16 +104,6 @@ export const useSeasonPassInventory = ({
   const refetch = useCallback(() => {
     setRefreshTick((prev) => prev + 1);
   }, []);
-
-  useEffect(() => {
-    if (!enabled || refetchIntervalMs <= 0) return;
-    const timer = window.setInterval(() => {
-      setRefreshTick((prev) => prev + 1);
-    }, refetchIntervalMs);
-    return () => {
-      window.clearInterval(timer);
-    };
-  }, [enabled, refetchIntervalMs]);
 
   useEffect(() => {
     let cancelled = false;

@@ -12,7 +12,7 @@ const formatAge = (timestamp: number, now: number): string => {
 /**
  * Dev-mode sync readout (bottom-left): connection status plus the age of the
  * last data on each stream — the fastest way to tell "the world is quiet"
- * from "sync is dead". FPS/memory live in the stats panel; this covers torii.
+ * from "sync is dead". FPS/memory live in the stats panel.
  */
 export const DevSyncOverlay = () => {
   const status = useConnectionStore((state) => state.status);
@@ -20,8 +20,6 @@ export const DevSyncOverlay = () => {
   const globalStatus = useConnectionStore((state) => state.globalStatus);
   const lastSpatialUpdate = useConnectionStore((state) => state.lastSpatialUpdate);
   const lastGlobalUpdate = useConnectionStore((state) => state.lastGlobalUpdate);
-  const lastToriiHeartbeat = useConnectionStore((state) => state.lastToriiHeartbeat);
-  const toriiHeartbeatAvailable = useConnectionStore((state) => state.toriiHeartbeatAvailable);
   const reconnectAttempts = useConnectionStore((state) => state.reconnectAttempts);
   const streamReconnectVersion = useConnectionStore((state) => state.streamReconnectVersion);
 
@@ -44,8 +42,7 @@ export const DevSyncOverlay = () => {
         sync <span style={{ color: statusColor }}>{status}</span> · spatial {spatialStatus} · global {globalStatus}
       </div>
       <div>
-        last data: spatial {formatAge(lastSpatialUpdate, now)} · global {formatAge(lastGlobalUpdate, now)} · heartbeat{" "}
-        {toriiHeartbeatAvailable ? formatAge(lastToriiHeartbeat, now) : "n/a"}
+        last data: spatial {formatAge(lastSpatialUpdate, now)} · global {formatAge(lastGlobalUpdate, now)}
       </div>
       <div>
         reconnects {streamReconnectVersion} · failed attempts {reconnectAttempts}

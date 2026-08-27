@@ -16,6 +16,7 @@ describe("createModelRegistry", () => {
       "OpenRelicChestEvent",
       "ExplorerRewardEvent",
       "BattleEvent",
+      "StoryEvent",
     ]);
   });
 });

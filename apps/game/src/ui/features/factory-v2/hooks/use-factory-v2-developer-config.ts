@@ -11,7 +11,7 @@ import {
   resolveFactoryConfigDefaultVersion,
 } from "@/ui/features/factory/shared/factory-metadata";
 import { getChainLabel } from "@/ui/utils/network-switch";
-import { extractTransactionHash, waitForTransactionConfirmation } from "@/ui/utils/transactions";
+import { extractTransactionHash, resolveTransactionFromGameStream } from "@/ui/utils/transactions";
 import { buildFactoryConfigMulticall } from "../developer/factory-config-multicall";
 import { buildFactoryConfigSections, listAllFactoryConfigSectionIds } from "../developer/factory-config-sections";
 import type {
@@ -90,7 +90,6 @@ async function submitFactoryConfigMulticall({
     operation: "factory_config_multicall",
     chain,
     waitForConfirmation: false,
-    confirm: false,
   });
   const txHash = extractTransactionHash(result);
 
@@ -101,16 +100,9 @@ async function submitFactoryConfigMulticall({
   return txHash;
 }
 
-async function confirmFactoryConfigMulticall({
-  account,
-  txHash,
-}: {
-  account: NonNullable<ReturnType<typeof useAccountStore.getState>["account"]>;
-  txHash: string;
-}) {
-  await waitForTransactionConfirmation({
+async function confirmFactoryConfigMulticall({ txHash }: { txHash: string }) {
+  await resolveTransactionFromGameStream({
     txHash,
-    account,
     label: "factory config multicall",
   });
 }
@@ -306,7 +298,6 @@ export const useFactoryV2DeveloperConfig = ({ mode, chain }: { mode: FactoryGame
     }
 
     void confirmFactoryConfigMulticall({
-      account,
       txHash,
     })
       .then(() => {

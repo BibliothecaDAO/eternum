@@ -11,10 +11,10 @@ import { explorationAutomation } from "@/ui/features/world";
 import { CenteredModalShell } from "@/ui/features/world/containers/centered-modal-shell";
 import { Position } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
-import { getComponentValue } from "@dojoengine/recs";
-import { getEntityIdFromKeys } from "@bibliothecadao/eternum";
+import { useEntityQuery } from "@dojoengine/react";
+import { getComponentValue, Has } from "@dojoengine/recs";
 import { Bot, MapPin, Pause, Play, RotateCw, Square, Trash2 } from "lucide-react";
-import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { memo, useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { useShallow } from "zustand/react/shallow";
 import { gameEntityKey } from "@/dojo/game-scope";
@@ -212,24 +212,13 @@ const ExplorationAutomationContent = ({ onNavigate, compact = false }: Explorati
   const {
     setup: { components },
   } = useDojo();
-
-  const listRef = useRef(list);
-  useEffect(() => {
-    listRef.current = list;
-  }, [list]);
+  const explorerEntities = useEntityQuery([Has(components.ExplorerTroops)]);
 
   // Get explorer positions
-  const [explorerPositions, setExplorerPositions] = useState<Record<string, ExplorerPosition>>({});
   const [nowMs, setNowMs] = useState(() => Date.now());
-
-  const refreshExplorerPositions = useCallback(() => {
-    if (!components) {
-      setExplorerPositions({});
-      return;
-    }
-
+  const explorerPositions = useMemo(() => {
     const positions: Record<string, ExplorerPosition> = {};
-    listRef.current.forEach((entry) => {
+    list.forEach((entry) => {
       const explorerId = Number(entry.explorerId);
       if (!Number.isFinite(explorerId) || explorerId <= 0) return;
 
@@ -242,9 +231,8 @@ const ExplorationAutomationContent = ({ onNavigate, compact = false }: Explorati
         };
       }
     });
-
-    setExplorerPositions(positions);
-  }, [components]);
+    return positions;
+  }, [components.ExplorerTroops, explorerEntities, list]);
 
   const handlePauseAll = useCallback(() => {
     const activeCount = list.filter((e) => e.active).length;
@@ -299,17 +287,6 @@ const ExplorationAutomationContent = ({ onNavigate, compact = false }: Explorati
     const active = list.filter((e) => e.active).length;
     return { activeCount: active, pausedCount: list.length - active };
   }, [list]);
-
-  useEffect(() => {
-    refreshExplorerPositions();
-  }, [list, refreshExplorerPositions]);
-
-  // Update positions periodically
-  useEffect(() => {
-    const interval = setInterval(refreshExplorerPositions, 5000);
-
-    return () => clearInterval(interval);
-  }, [refreshExplorerPositions]);
 
   // Force re-render for countdowns and relative times
   useEffect(() => {

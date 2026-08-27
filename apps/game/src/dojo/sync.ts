@@ -29,7 +29,6 @@ import { gameEntityKey, gameModel, getScopedGameId, isGameScoped } from "./game-
 import { resolveInitialStructureSelection } from "./sync-initial-selection";
 import { buildModelKeysClause, type GlobalModelStreamConfig } from "./torii-model-clause";
 import type { ToriiSubscriptionSetupTimeoutInfo } from "./torii-subscription-setup";
-import { requestConnectionRecovery } from "./connection-health-monitor";
 
 /**
  * Cancel the global entity stream subscription.
@@ -169,7 +168,6 @@ const createActiveGamewideSyncSession = (input: {
     onSubscriptionActive: recordGamewideSubscriptionActive,
     onLiveUpdate: recordGamewideLiveUpdate,
     onMetrics: reportGamewideSyncMetrics,
-    onStreamClose: (stream, reason) => requestConnectionRecovery({ kind: "stream_close", stream, reason }),
   });
 };
 
@@ -279,7 +277,8 @@ const startAuthoritativeGameSyncSession = async ({
       globalEntityModels: getGamewideEntityStreamModels().map(({ model }) => model),
       timestamp: new Date().toISOString(),
     });
-    await getOrInstallGameSyncRuntime().startSession(
+    const runtime = getOrInstallGameSyncRuntime();
+    await runtime.startSession(
       createActiveGamewideSyncSession({
         setup,
         logging,
@@ -287,6 +286,7 @@ const startAuthoritativeGameSyncSession = async ({
         onSubscriptionSetupTimeout,
       }),
     );
+    setup.network.provider.setTransactionStreamWaiter((transactionHash) => runtime.waitForTransaction(transactionHash));
     installActiveWorldSpatialProjection(setup);
   } catch (error) {
     if (error instanceof Error && error.message.includes("Timed out waiting for")) {

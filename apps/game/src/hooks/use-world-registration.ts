@@ -13,7 +13,6 @@ import { resolveWorldIdForGame } from "@/runtime/world/game-registry";
 import { getDefaultWorld, getWorldById } from "@/runtime/world/world-directory";
 import { buildBlitzSettleCalls } from "@/services/blitz/blitz-settlement-calls";
 import { getRpcUrlForChain } from "@/runtime/chain-rpc";
-import { waitForTransactionConfirmation } from "@/ui/utils/transactions";
 import { createAppchainFaucetAccount } from "./appchain-faucet-account";
 import { getGameManifest } from "@contracts";
 import type { GameChain as Chain } from "@realms-world/chain";
@@ -87,26 +86,6 @@ interface UseWorldRegistrationReturn {
   isRegistrationFull: boolean;
 }
 
-const waitForWorldEntryTransactionConfirmation = async ({
-  txHash,
-  chain,
-  label,
-  account,
-}: {
-  txHash: string;
-  chain: Chain;
-  label: string;
-  account: Account;
-}) => {
-  const provider = getCachedRpcProvider(getRpcUrlForChain(chain));
-  await waitForTransactionConfirmation({
-    txHash,
-    account: account as unknown as { waitForTransaction?: (txHash: string) => Promise<unknown> },
-    label,
-    provider: provider as unknown as { waitForTransactionWithCheck?: (txHash: string) => Promise<unknown> },
-  });
-};
-
 const ensureFeeTokenBalance = async ({
   accountAddress,
   chain,
@@ -145,20 +124,7 @@ const ensureFeeTokenBalance = async ({
     operation: "fee_token.transfer_top_up",
     chain,
     worldName,
-    confirm: async (txHash, observedAccount) => {
-      await waitForWorldEntryTransactionConfirmation({
-        txHash,
-        chain,
-        label: "fee_token.transfer_top_up",
-        account: observedAccount as Account,
-      });
-    },
   });
-
-  const confirmedBalance = await fetchTokenBalance(rpcProvider, feeTokenAddress, accountAddress);
-  if (confirmedBalance < feeAmount) {
-    throw new Error("Fee token top-up confirmed, but the required balance is not available.");
-  }
 };
 
 export const useWorldRegistration = ({
@@ -316,14 +282,6 @@ export const useWorldRegistration = ({
           operation: "blitz_realm_systems.settle",
           chain,
           worldName,
-          confirm: async (txHash, observedAccount) => {
-            await waitForWorldEntryTransactionConfirmation({
-              txHash,
-              chain,
-              label: "blitz_realm_systems.settle",
-              account: observedAccount as Account,
-            });
-          },
         });
 
         setEntryStage("done");

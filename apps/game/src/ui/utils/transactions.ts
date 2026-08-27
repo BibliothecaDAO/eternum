@@ -5,35 +5,12 @@ export const extractTransactionHash = (value: unknown): string | null => {
   return typeof maybeHash === "string" && maybeHash.length > 0 ? maybeHash : null;
 };
 
-type WaitCapableProvider = {
-  waitForTransactionWithCheck?: (txHash: string) => Promise<unknown>;
+export const resolveTransactionFromGameStream = async ({ txHash, label }: { txHash: string; label?: string }) => {
+  const runtime = getActiveGameSyncRuntime();
+  if (!runtime?.hasTransactionStatusChannel()) return;
+  await runtime.waitForTransaction(txHash).catch((error) => {
+    const transactionLabel = label ?? "transaction";
+    throw new Error(`${transactionLabel} failed: ${error instanceof Error ? error.message : String(error)}`);
+  });
 };
-
-type WaitCapableAccount = {
-  waitForTransaction?: (txHash: string) => Promise<unknown>;
-};
-
-export const waitForTransactionConfirmation = async ({
-  txHash,
-  provider,
-  account,
-  label,
-}: {
-  txHash: string;
-  provider?: WaitCapableProvider;
-  account?: WaitCapableAccount;
-  label?: string;
-}) => {
-  if (provider && typeof provider.waitForTransactionWithCheck === "function") {
-    await provider.waitForTransactionWithCheck(txHash);
-    return;
-  }
-
-  if (account && typeof account.waitForTransaction === "function") {
-    await account.waitForTransaction(txHash);
-    return;
-  }
-
-  const transactionLabel = label ?? "transaction";
-  throw new Error(`Unable to confirm ${transactionLabel}: no transaction wait method available`);
-};
+import { getActiveGameSyncRuntime } from "@bibliothecadao/eternum/game-sync";

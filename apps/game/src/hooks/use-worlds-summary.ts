@@ -28,7 +28,5 @@ export const useWorldsSummary = () =>
     queryKey: WORLD_SUMMARY_QUERY_KEY,
     queryFn: fetchWorldsSummary,
     staleTime: 25_000,
-    refetchInterval: 30_000,
-    refetchIntervalInBackground: false,
     retry: 1,
   });
