@@ -1,6 +1,6 @@
 import { normalizeFelt, type ModelRegistry } from "./model-registry";
 import type { CheckpointStore } from "./checkpoint-store";
-import { GameStreamHub, type GameStreamSession, type StreamSocket } from "./game-stream";
+import { GameStreamHub, type GameStreamSession, type SnapshotOverlayDiff, type StreamSocket } from "./game-stream";
 import { MadaraRpc } from "./madara-rpc";
 import { replayWorldEvents } from "./snapshot-builder";
 import type { ResumeRequest } from "./stream-protocol";
@@ -36,10 +36,15 @@ interface GameChanges {
 }
 
 interface PendingPreconfirmedTransaction {
-  byGame: Map<string, GameChanges>;
+  changes: FoldChange[];
   eventIndexes: Set<number>;
   expectedEventIndexes?: Set<number>;
   transactionHash: string;
+}
+
+interface OverlayTransaction {
+  block: number | null;
+  changes: FoldChange[];
 }
 
 export class LiveWorld {
@@ -56,6 +61,7 @@ export class LiveWorld {
   private readonly overlayEvents = new Set<string>();
   private readonly preconfirmedReceiptEvents = new Map<string, Set<number>>();
   private readonly transactionSenders = new Map<string, string | undefined>();
+  private readonly overlayTransactions: OverlayTransaction[] = [];
   private pendingPreconfirmed?: PendingPreconfirmedTransaction;
   private pendingPreconfirmedFlush?: ReturnType<typeof setImmediate>;
 
@@ -76,7 +82,7 @@ export class LiveWorld {
   }
 
   public snapshot(gameId: string): GameSnapshot {
-    return this.overlayFold.snapshot(gameId, this.confirmedBlockValue);
+    return this.confirmedFold.snapshot(gameId, this.confirmedBlockValue);
   }
 
   public attach(gameId: string, socket: StreamSocket): GameStreamSession {
@@ -84,6 +90,7 @@ export class LiveWorld {
     return this.hub.attach({
       confirmedBlock: this.confirmedBlockValue,
       gameId,
+      overlay: () => this.snapshotOverlay(gameId),
       preconfirmedBlock: this.preconfirmedBlockValue,
       snapshot: () => this.snapshot(gameId),
       socket,
@@ -111,7 +118,7 @@ export class LiveWorld {
 
     const rawEvent = this.rawSubscribedEvent(event);
     this.pendingPreconfirmed ??= {
-      byGame: new Map(),
+      changes: [],
       eventIndexes: new Set(),
       expectedEventIndexes: this.preconfirmedReceiptEvents.get(transactionHash),
       transactionHash,
@@ -120,7 +127,7 @@ export class LiveWorld {
     this.pendingPreconfirmed.eventIndexes.add(rawEvent.event_index);
 
     const change = this.applyOverlayEvent(rawEvent);
-    if (change) this.groupChanges(this.pendingPreconfirmed.byGame, [change]);
+    if (change) this.pendingPreconfirmed.changes.push(change);
     this.flushCompletePreconfirmedTransaction();
   }
 
@@ -165,8 +172,7 @@ export class LiveWorld {
     const confirmedChanges = await this.applyConfirmedThrough(head.block_number);
     for (const [block, changes] of confirmedChanges) this.broadcastChanges(changes, block, false);
     this.resetOverlay();
-    const preconfirmedChanges = await this.rebuildOverlay();
-    this.broadcastChanges(preconfirmedChanges, this.preconfirmedBlockValue, true);
+    await this.rebuildOverlay();
     for (const gameId of this.knownGames) this.hub.publishHead(gameId, head.block_number, head.timestamp);
     this.checkpointIfDue();
   }
@@ -198,18 +204,20 @@ export class LiveWorld {
     this.overlayEvents.clear();
     this.preconfirmedReceiptEvents.clear();
     this.transactionSenders.clear();
+    this.overlayTransactions.length = 0;
     for (const gameId of this.knownGames) this.hub.publishOverlayReset(gameId, this.confirmedBlockValue);
   }
 
-  private async rebuildOverlay(): Promise<FoldChange[]> {
+  private async rebuildOverlay(): Promise<void> {
     const block = await this.input.rpc.getBlockWithReceipts("pre_confirmed");
     this.preconfirmedBlockValue = block.block_number;
-    const changes: FoldChange[] = [];
-    for (const event of this.worldEventsFromBlock(block)) {
-      const change = this.applyOverlayEvent(event);
-      if (change) changes.push(change);
+    for (const events of this.worldEventTransactionsFromBlock(block)) {
+      const changes = events.flatMap((event) => {
+        const change = this.applyOverlayEvent(event);
+        return change ? [change] : [];
+      });
+      this.publishOverlayTransaction({ block: block.block_number, changes });
     }
-    return changes;
   }
 
   private applyOverlayEvent(rawEvent: RawWorldEvent): FoldChange | undefined {
@@ -220,22 +228,23 @@ export class LiveWorld {
     return event ? this.overlayFold.apply(event) : undefined;
   }
 
-  private worldEventsFromBlock(block: RpcBlockWithReceipts): RawWorldEvent[] {
-    const events: RawWorldEvent[] = [];
-    block.transactions.forEach(({ receipt }, transactionIndex) => {
-      receipt.events.forEach((event, eventIndex) => {
-        if (BigInt(event.from_address) !== BigInt(this.input.registry.worldAddress)) return;
-        events.push({
-          block_number: null,
-          data: event.data,
-          event_index: eventIndex,
-          keys: event.keys,
-          transaction_hash: receipt.transaction_hash,
-          transaction_index: transactionIndex,
-        });
+  private worldEventTransactionsFromBlock(block: RpcBlockWithReceipts): RawWorldEvent[][] {
+    return block.transactions.flatMap(({ receipt }, transactionIndex) => {
+      const events = receipt.events.flatMap((event, eventIndex) => {
+        if (BigInt(event.from_address) !== BigInt(this.input.registry.worldAddress)) return [];
+        return [
+          {
+            block_number: null,
+            data: event.data,
+            event_index: eventIndex,
+            keys: event.keys,
+            transaction_hash: receipt.transaction_hash,
+            transaction_index: transactionIndex,
+          },
+        ];
       });
+      return events.length > 0 ? [events] : [];
     });
-    return events;
   }
 
   private rawSubscribedEvent(event: RpcSubscribedEvent): RawWorldEvent {
@@ -286,7 +295,22 @@ export class LiveWorld {
     this.pendingPreconfirmed = undefined;
     if (!pending) return;
     this.preconfirmedReceiptEvents.delete(pending.transactionHash);
-    this.publishGroupedChanges(pending.byGame, null, true);
+    this.publishOverlayTransaction({ block: null, changes: pending.changes });
+  }
+
+  private publishOverlayTransaction(transaction: OverlayTransaction): void {
+    if (transaction.changes.length === 0) return;
+    this.overlayTransactions.push(transaction);
+    this.broadcastChanges(transaction.changes, transaction.block, true);
+  }
+
+  private snapshotOverlay(gameId: string): SnapshotOverlayDiff[] {
+    return this.overlayTransactions.flatMap(({ block, changes }) => {
+      const grouped = new Map<string, GameChanges>();
+      this.groupChanges(grouped, changes);
+      const gameChanges = grouped.get(gameId);
+      return gameChanges ? [{ block, ...gameChanges }] : [];
+    });
   }
 
   private acceptPreconfirmedReceipt(transactionHash: string, receipt: RpcReceipt): void {

@@ -171,7 +171,28 @@ describe("LiveWorld", () => {
       model: "TestModel",
       value: { game_id: "0x7", value: "0x3" },
     });
-    expect(live.snapshot("7").models[0].rows[0].value.value).toBe("0x3");
+    expect(live.snapshot("7").models[0].rows[0].value.value).toBe("0x1");
+
+    const attachedDuringOverlay = recordingSocket();
+    const attachedSession = live.attach("7", attachedDuringOverlay);
+    live.resume(attachedSession, { epoch: "", seq: 0, type: "resume" });
+
+    expect(attachedDuringOverlay.messages.map(({ type }) => type)).toEqual([
+      "hello",
+      "snapshot",
+      "snapshot",
+      "snapshot_end",
+      "diff",
+    ]);
+    expect(attachedDuringOverlay.messages[1]).toMatchObject({
+      model: "TestModel",
+      rows: [{ key: "0xabc", value: { game_id: "0x7", value: "0x1" } }],
+    });
+    expect(attachedDuringOverlay.messages.at(-1)).toMatchObject({
+      preconfirmed: true,
+      set: [{ key: "0xabc", model: "TestModel", value: { game_id: "0x7", value: "0x3" } }],
+      type: "diff",
+    });
   });
 
   it("publishes one pre-confirmed diff per transaction and game", async () => {

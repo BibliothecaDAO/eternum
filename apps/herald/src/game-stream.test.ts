@@ -24,6 +24,7 @@ describe("GameStreamHub", () => {
     const session = hub.attach({
       confirmedBlock: 12,
       gameId: "7",
+      overlay: () => [],
       preconfirmedBlock: 13,
       snapshot: () => {
         hub.publishHead("7", 13, 100);
@@ -48,6 +49,7 @@ describe("GameStreamHub", () => {
     const first = hub.attach({
       confirmedBlock: 12,
       gameId: "7",
+      overlay: () => [],
       preconfirmedBlock: null,
       snapshot: () => snapshot,
       socket: firstSocket,
@@ -61,6 +63,7 @@ describe("GameStreamHub", () => {
     const resumed = hub.attach({
       confirmedBlock: 13,
       gameId: "7",
+      overlay: () => [],
       preconfirmedBlock: 14,
       snapshot: () => snapshot,
       socket: resumedSocket,
@@ -76,6 +79,7 @@ describe("GameStreamHub", () => {
     const restarted = restartedHub.attach({
       confirmedBlock: 13,
       gameId: "7",
+      overlay: () => [],
       preconfirmedBlock: null,
       snapshot: () => snapshot,
       socket: restartedSocket,
@@ -83,5 +87,42 @@ describe("GameStreamHub", () => {
     restartedHub.resume(restarted, { epoch: "epoch-a", seq: 2, type: "resume" });
     expect(restartedSocket.messages.map(({ type }) => type)).toEqual(["hello", "snapshot", "snapshot_end"]);
     expect(restartedSocket.messages.every(({ epoch }) => epoch === "epoch-b")).toBe(true);
+  });
+
+  it("sends the confirmed snapshot before transaction-grouped overlay diffs at the same boundary", () => {
+    const hub = new GameStreamHub("epoch-a");
+    const socket = recordingSocket();
+    const session = hub.attach({
+      confirmedBlock: 12,
+      gameId: "7",
+      overlay: () => [
+        {
+          block: 13,
+          del: [],
+          set: [{ key: "0x2", model: "TestModel", value: { game_id: "0x7", value: "0x2" } }],
+        },
+        {
+          block: 13,
+          del: [{ key: "0x3", model: "TestModel" }],
+          set: [],
+        },
+      ],
+      preconfirmedBlock: 13,
+      snapshot: () => snapshot,
+      socket,
+    });
+
+    hub.resume(session, { epoch: "", seq: 0, type: "resume" });
+    hub.publishHead("7", 13, 100);
+
+    expect(socket.messages.map(({ type, seq }) => [type, seq])).toEqual([
+      ["hello", 0],
+      ["snapshot", 0],
+      ["snapshot_end", 0],
+      ["diff", 0],
+      ["diff", 0],
+      ["head", 1],
+    ]);
+    expect(socket.messages.slice(3, 5).every(({ preconfirmed }) => preconfirmed === true)).toBe(true);
   });
 });

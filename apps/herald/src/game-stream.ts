@@ -21,6 +21,12 @@ interface GameStreamState {
   subscribers: Set<GameStreamSession>;
 }
 
+export interface SnapshotOverlayDiff {
+  block: number | null;
+  del: Extract<HeraldStreamMessage, { type: "diff" }>["del"];
+  set: Extract<HeraldStreamMessage, { type: "diff" }>["set"];
+}
+
 type PublishedMessage = Extract<HeraldStreamMessage, { type: "diff" | "overlay_reset" | "tx" | "head" }>;
 type PublishBody<Message> = Message extends unknown ? Omit<Message, "epoch" | "seq"> : never;
 
@@ -28,6 +34,7 @@ export interface GameStreamSession {
   active: boolean;
   boundary: number;
   gameId: string;
+  overlay?: SnapshotOverlayDiff[];
   snapshot?: GameSnapshot;
   socket: StreamSocket;
 }
@@ -36,6 +43,7 @@ interface AttachInput {
   confirmedBlock: number;
   gameId: string;
   preconfirmedBlock: number | null;
+  overlay: () => SnapshotOverlayDiff[];
   snapshot: () => GameSnapshot;
   socket: StreamSocket;
 }
@@ -59,6 +67,7 @@ export class GameStreamHub {
     state.subscribers.add(session);
     try {
       session.snapshot = input.snapshot();
+      session.overlay = input.overlay();
     } catch (error) {
       state.subscribers.delete(session);
       throw error;
@@ -152,6 +161,15 @@ export class GameStreamHub {
       });
     }
     this.send(session.socket, { epoch: this.epoch, seq: session.boundary, type: "snapshot_end" });
+    for (const overlay of session.overlay ?? []) {
+      this.send(session.socket, {
+        ...overlay,
+        epoch: this.epoch,
+        preconfirmed: true,
+        seq: session.boundary,
+        type: "diff",
+      });
+    }
   }
 
   private pruneRing(state: GameStreamState): void {

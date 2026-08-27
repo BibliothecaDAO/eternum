@@ -130,6 +130,7 @@ export class HeraldGameSyncTransport implements GameSyncTransport {
   private seq = 0;
   private stopped = true;
   private forceFreshSnapshot = true;
+  private acceptingSnapshotOverlay = false;
 
   constructor(private readonly options: HeraldGameSyncTransportOptions) {
     this.reconnectMs = options.reconnectMs ?? DEFAULT_RECONNECT_MS;
@@ -160,6 +161,7 @@ export class HeraldGameSyncTransport implements GameSyncTransport {
     this.epoch = "";
     this.seq = 0;
     this.forceFreshSnapshot = true;
+    this.acceptingSnapshotOverlay = false;
     this.stopped = false;
   }
 
@@ -235,11 +237,14 @@ export class HeraldGameSyncTransport implements GameSyncTransport {
     this.epoch = message.epoch;
     this.seq = message.seq;
     this.forceFreshSnapshot = false;
+    this.acceptingSnapshotOverlay = true;
   }
 
   private acceptSequencedMessage(
     message: Exclude<HeraldMessage, { type: "hello" | "snapshot" | "snapshot_end" }>,
   ): void {
+    if (this.acceptSnapshotOverlay(message)) return;
+    this.acceptingSnapshotOverlay = false;
     if (message.epoch !== this.epoch || message.seq !== this.seq + 1) {
       throw new Error(
         `Herald stream gap: expected ${this.epoch || "<snapshot>"}:${this.seq + 1}, received ${message.epoch}:${message.seq}`,
@@ -251,6 +256,15 @@ export class HeraldGameSyncTransport implements GameSyncTransport {
     else if (message.type === "tx") this.acceptTransaction(message);
     else this.acceptHead(message);
     this.seq = message.seq;
+  }
+
+  private acceptSnapshotOverlay(
+    message: Exclude<HeraldMessage, { type: "hello" | "snapshot" | "snapshot_end" }>,
+  ): boolean {
+    if (!this.acceptingSnapshotOverlay || message.type !== "diff") return false;
+    if (!message.preconfirmed || message.epoch !== this.epoch || message.seq !== this.seq) return false;
+    this.acceptDiff(message);
+    return true;
   }
 
   private acceptDiff(message: Extract<HeraldMessage, { type: "diff" }>): void {

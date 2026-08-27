@@ -102,6 +102,30 @@ describe("HeraldGameSyncTransport", () => {
     ]);
   });
 
+  it("applies snapshot-boundary overlay transactions before the live sequence", async () => {
+    const harness = streamHarness();
+    const subscribed = harness.transport.subscribe(harness.handlers);
+    const socket = harness.sockets[0]!;
+    socket.receive(hello("epoch-a", 0));
+    await subscribed;
+
+    const snapshotPage = harness.transport.fetchSnapshotPage();
+    snapshot("epoch-a", 0, "0x1", 1).forEach((message) => socket.receive(message));
+    socket.receive(diff("epoch-a", 0, "0x1", 2, true));
+    socket.receive(diff("epoch-a", 0, "0x2", 3, true));
+    socket.receive({ confirmed_block: 12, epoch: "epoch-a", seq: 1, type: "overlay_reset" });
+
+    await expect(snapshotPage).resolves.toEqual({
+      items: [{ hashed_keys: "0x1", models: { ExplorerTroops: { game_id: "0x36", value: 1 } } }],
+    });
+    expect(harness.entities).toEqual([
+      { hashed_keys: "0x1", models: { ExplorerTroops: { game_id: "0x36", value: 2 } } },
+      { hashed_keys: "0x2", models: { ExplorerTroops: { game_id: "0x36", value: 3 } } },
+      { hashed_keys: "0x1", models: { ExplorerTroops: { game_id: "0x36", value: 1 } } },
+      { hashed_keys: "0x2", models: { ExplorerTroops: {} } },
+    ]);
+  });
+
   it("routes event effects, transaction status, and heads on their own channels", async () => {
     const harness = streamHarness();
     const subscribed = harness.transport.subscribe(harness.handlers);
