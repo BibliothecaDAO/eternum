@@ -63,8 +63,12 @@ processes, and republishes. The indexer is the latency budget and the EOL depend
   (`subscribeNewHeads`, `subscribeEvents`, `subscribeTransactionStatus`, `subscribeNewTransactions`). As of 2026-08-27
   the `nightly` tag _is_ that build (index digest `sha256:fa82a29f…`; no newer image since 20 Aug) and no `v0.11.0` past
   alpha.9 is published. Claude bumps the lab pin to that digest and re-verifies the alpha.9 facts that matter (native
-  on, concurrency on, pre-confirmed semantics); Codex reruns the N=2 shape (b) harness on it — same numbers or the bump
-  is a finding — then adds the WS-vs-poll comparison to the harness.
+  on, concurrency on, pre-confirmed semantics); Codex reruns the N=2 shape (b) harness on it — same pre-confirmed and L2
+  numbers or the bump is a finding — then adds the WS-vs-poll comparison to the harness. **Done 2026-08-27 (Claude
+  half):** pin is `nightly-e674321` (index `sha256:ec30298d…`), no DB migration, all flags present, concurrency default
+  unchanged in source, WS heads in 19 ms, pre-confirmed probe 77–104 ms. Known cost: Torii 1.8.16 cannot parse this
+  build's pre-confirmed block when it holds transactions, so Torii-indexed p95 went from 1.9 s to 7.5 s (README "Pin
+  bump"). Not fixed — Torii leaves in A.4; the `indexedP95` harness check is excluded from the A.0 rerun gate.
 - **One service per chain: `apps/herald`** (it announces what happened in the world; not "indexer", the generic thing it
   replaces). Subscribes to Madara's pre-confirmed stream over WebSocket at `/rpc/v0_10_2` — the only client the
   sequencer's socket ever has; sozo and the harness stay on `/rpc/v0_9_0`, which the build still serves. Clients hold
