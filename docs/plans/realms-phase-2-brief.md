@@ -2,10 +2,10 @@
 
 **Status: ready for kickoff 2026-08-27.** Entry criteria were: the D.5 human gate passed (wallet login → settle → play →
 reload keeps the address; one human + 95 bots to a result — passed 27 Aug) and the D.4.1 headroom shapes reported (16 s
-max game-legal cadence; two concurrent games pass, four hit the wall — reported 27 Aug). Facts below were re-checked
-against the tree on 2026-08-27. **Phase 2 runs on the lab laptop; no hardware is rented until section A has deleted
-Torii and the stack has its final form** (owner decision 2026-08-27) — measuring a stack we are deleting sizes the wrong
-thing.
+max game-legal cadence; two concurrent games pass the capacity bars — their manifests read `passed: false` on 3 and 2
+game-rule failures — four hit the wall; reported 27 Aug). Facts below were re-checked against the tree on 2026-08-27.
+**Phase 2 runs on the lab laptop; no hardware is rented until section A has deleted Torii and the stack has its final
+form** (owner decision 2026-08-27) — measuring a stack we are deleting sizes the wrong thing.
 
 Phase 1 proved the platform: 96 players on our own Madara, zero Cartridge in gameplay, pre-confirmation in 50–77 ms, one
 wallet identity bound to one permanent gameplay account. Phase 2 makes the two remaining rented or missing layers ours:
@@ -78,9 +78,17 @@ processes, and republishes. The indexer is the latency budget and the EOL depend
 - **Decodes world events against the manifest ABIs into typed models** — the one real engineering cost of leaving Torii.
   Scope discipline: decode the models the client actually renders — 40 distinct RECS components are referenced across
   `apps/game/src` and `packages/core/src` on 2026-08-27 — not the whole world schema.
-- **State model:** confirmed base + replaceable pre-confirmed overlay (Madara may replace the pre-confirmed block; the
-  overlay rebuilds from the last confirmed root). Sequence-numbered diffs over WSS; snapshot on connect; resume by
-  sequence on reconnect. The stream is an accelerator; the snapshot is the truth (guardrail 2).
+- **State model:** confirmed base + replaceable pre-confirmed overlay. The WS spec lets pre-confirmed events repeat or
+  be omitted, and Madara replaces a pre-confirmed block without an explicit reset notification, so **events are hints,
+  the re-read is truth**: on every new confirmed head herald applies the closed block's events to the base, drops the
+  overlay, and rebuilds it from one `getBlockWithReceipts(pre_confirmed)` read (one RPC per 2 s block), deduplicating by
+  `(transaction_hash, event_index)`; between heads, pre-confirmed events extend the overlay. Clients see that as an
+  `overlay_reset` followed by a fresh pre-confirmed diff. Sequence-numbered diffs over WSS; snapshot on connect; resume
+  by sequence on reconnect. The stream is an accelerator; the snapshot is the truth (guardrail 2). **A.0 gate (Claude),
+  before A.2 is designed further:** force a replacement on the lab — queue transactions, restart the sequencer mid-block
+  (Madara re-executes the queued set into a new pre-confirmed block on start) — and record what a `subscribeEvents` +
+  `subscribeNewHeads` subscriber actually sees: which events repeat, which vanish, what the heads say. The overlay logic
+  is written against that transcript, and the same restart is A.2's replacement test.
 - **The client becomes a consumer.** Because pre-confirmation is the shared optimistic layer, the per-client optimistic
   machinery (guardrail 5's pending records, TTLs, reconciliation) is deleted, keeping at most a local echo of the acting
   player's own click. The AGENTS.md guardrails that describe that machinery (1, 2, 5) are rewritten in the same change
@@ -156,11 +164,75 @@ processes, and republishes. The indexer is the latency budget and the EOL depend
 - **Throughput is a non-problem** at target scale (~100 tx/s ≈ ~100 KB/s decoded diffs; realtime-server-class fan-out).
   The hard parts are decoding, overlay rebuild, and snapshot/replay — plan the gates around those.
 
+- **A.1 / A.2 / A.4 — the protocol, so the slices are executable** (decided 2026-08-27; numbers are tuned, shapes are
+  not):
+  - _Wire._ One WSS endpoint per game, `wss://<herald>/<chain>/games/<game_id>`. JSON messages (a binary encoding is a
+    measured change later): `hello{epoch, seq, confirmed_block, preconfirmed_block}`;
+    `snapshot{epoch, seq, model, rows[]}` chunked per model, closed by `snapshot_end{seq}`;
+    `diff{epoch, seq, block, preconfirmed, set[{model, key, value}], del[{model, key}]}`;
+    `overlay_reset{epoch, seq, confirmed_block}`; `tx{hash, status, block, revert_reason?}`; `head{block, timestamp}`.
+    Every message carries `epoch` and `seq`.
+  - _Epoch and sequence._ `epoch` is the herald process generation for that game (new on every herald restart or fold
+    rebuild); `seq` is a per-game monotonic counter within the epoch. A client that observes a gap or a new epoch
+    resyncs; there is no "best effort" path.
+  - _Atomic snapshot boundary._ The fold is single-threaded per game. On connect herald registers the subscriber at fold
+    sequence `s`, sends the snapshot as of `s`, then every diff with `seq > s` — the subscriber is attached before the
+    snapshot is taken, so nothing is lost or duplicated.
+  - _Resume._ `resume{epoch, seq}` replays from a per-game ring of the last 10 minutes or 10,000 diffs (whichever is
+    larger) when the epoch matches; otherwise herald answers with a fresh snapshot. Retention is measured against real
+    reconnect gaps and tuned.
+  - _Restart._ Herald checkpoints the fold (state + last confirmed block) to Postgres every N blocks; on start it loads
+    the checkpoint, replays confirmed events from that block to head with `getEvents`, then subscribes — a new epoch. A
+    herald restart mid-game is a client resync, never a client-visible rollback of confirmed state.
+  - _Transaction status is its own channel._ A reverted transaction emits no store event, and a successful one may touch
+    no rendered model, so a diff cannot confirm a transaction. Herald subscribes to `subscribeNewTransactionReceipts`
+    (pre-confirmed and confirmed) and pushes `tx` for every hash sent from a gameplay account settled in that game (the
+    sender set is known from the fold); the client's submit path resolves on `tx`, and A.3's nonce dispenser resyncs on
+    `REVERTED` the same way it does on a rejection.
+  - _Multi-game lifecycle._ One fold per `game_id`, discovered from the world's `GameRegistry` models; a fold starts at
+    game registration, is checkpointed at game end and kept for replay (section A "Replay is free"), and is evicted from
+    memory after a configured idle time — the chain remains the replay source.
+  - _Gates per slice._ **A.1** — snapshot of a lab game matches Torii row-for-row for every decoded component (Torii is
+    the oracle until A.4). **A.2** — the forced-replacement transcript from A.0 is handled: after `overlay_reset` the
+    client's state equals a fresh snapshot; a killed socket resumes by `seq` with zero gaps; a herald restart mid-game
+    yields a new epoch and a client state equal to a fresh snapshot; a reverted action resolves through `tx`. **A.3** —
+    its own gate above. **A.4** — every row of the Torii disposition table below is resolved, the Torii container,
+    `torii.toml.template`, `packages/torii`, and `apps/game/src/dojo` are deleted, and the game plays.
+
+- **A.4 — Torii disposition table** (inventoried 2026-08-27: 27 `SqlApi` methods, 26 app-level SQL readers, 26
+  stream/import paths). Herald gains one more output for this: the **history sink** — the same fold appends immutable
+  rows (story events, battle events, swaps and trades, final ranks and prizes) to Postgres, served by herald over HTTP
+  with pagination. That is the only "read model over the fold" this phase builds, and it exists because these features
+  are history, which guardrail 1 already allows as SQL read models. Every row below has one disposition; nothing keeps
+  Torii.
+
+  | Feature (today)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    | Torii source                                                                                                                          | Disposition                                                                                                                                                                          |
+  | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+  | Live world sync: gamewide entity + event-message streams, `getEntities` snapshot and gap-fill (`apps/game/src/dojo/*`, `packages/core/src/sync/*`, `packages/dojo`)                                                                                                                                                                                                                                                                                                                                | gRPC subscriptions                                                                                                                    | **herald stream** (A.2/A.3); the 41-model manifest becomes herald's decode list                                                                                                      |
+  | Pre-session reads — entry modal settlements, village slots, player structures, planner snapshot and tiles, settlement status, owned-structure count, `AddressName`, factory series (`game-entry-modal`, `use-settlement-planner-data`, `use-player-world-registrations`, `use-world-availability`, `use-factory-series`)                                                                                                                                                                           | SQL over current models                                                                                                               | **herald snapshot over HTTP** (`GET /games/<id>/snapshot?models=…`), no socket needed before play                                                                                    |
+  | World directory — games list with counts, availability, world/game id resolution, world address (`appchain-worlds-summary`, `use-worlds-summary`, `game-registry.ts`, `profile-builder.ts`)                                                                                                                                                                                                                                                                                                        | SQL over `GameRegistry` + `contracts` meta                                                                                            | **herald directory** — a fold of `GameRegistry` per chain, served over HTTP; world address comes from the manifest                                                                   |
+  | Faith leaderboard, wonder faith detail, devotion status                                                                                                                                                                                                                                                                                                                                                                                                                                            | SQL over `Structure`/`WonderFaith`/`FaithfulStructure`                                                                                | **herald stream** — current models; sorted client-side                                                                                                                               |
+  | Map data: all structures / all armies with latest attacker/defender                                                                                                                                                                                                                                                                                                                                                                                                                                | current models + `BattleEvent` window CTEs                                                                                            | **herald stream** for the rows; the latest-battle columns become a fold-maintained `LastBattle` aggregate (read model over the fold)                                                 |
+  | Player leaderboard, activity breakdown, landing/review leaderboard (`fetchPlayerLeaderboard*`)                                                                                                                                                                                                                                                                                                                                                                                                     | pivot over `StoryEvent(PointsRegistered)` + live shareholder term                                                                     | registered points from the fold's `PlayerRegisteredPoints` model (**stream**); the live term is already computed client-side from RECS; activity breakdown from the **history sink** |
+  | Story events feed, by entity, by owner, count                                                                                                                                                                                                                                                                                                                                                                                                                                                      | `StoryEvent` history                                                                                                                  | **history sink**, paginated over HTTP; new events also ride the stream as an event channel (A.3 polling ledger)                                                                      |
+  | Game review (22 queries), claim summary, finalize/claim flows                                                                                                                                                                                                                                                                                                                                                                                                                                      | `StoryEvent`, `PlayersRankFinal`, `MMRGameMeta`, `PlayerRank`, `RankPrize`, `GameChestReward`, `SeasonPrize`, `transactions`, configs | frozen end-of-game **snapshot** from herald + **history sink**; transaction counts from herald's `tx` channel tallies                                                                |
+  | Winners table, prize panel                                                                                                                                                                                                                                                                                                                                                                                                                                                                         | `GameChestReward`, `SeasonPrize`, `ChainConfig`                                                                                       | **snapshot** (current models)                                                                                                                                                        |
+  | Swaps (`fetchSwapEvents`), market trading history (`TradeEvent`)                                                                                                                                                                                                                                                                                                                                                                                                                                   | `SwapEvent`/trade events                                                                                                              | **history sink**                                                                                                                                                                     |
+  | Marketplace cosmetics/chests (`chest-opening/services/queries.ts`, `VITE_PUBLIC_MARKETPLACE_URL`)                                                                                                                                                                                                                                                                                                                                                                                                  | the **marketplace's** Torii on L2                                                                                                     | not the game chain — **untouched**, EXTERNAL until the marketplace port (D)                                                                                                          |
+  | Headless `packages/client` (`EternumClient.sql`, 25 call sites, `RESOURCE_BALANCE_COLUMNS`)                                                                                                                                                                                                                                                                                                                                                                                                        | SQL polling                                                                                                                           | **herald HTTP + stream** through the same consumer as the game; its local structural `SqlApi` interface goes                                                                         |
+  | Dead today — `fetchTokenTransfers`, `fetchResourceBalancesWithProduction`, `fetchBuildingsByStructures`, `fetchStoryEventsSince`, `fetchRegisteredPlayerPoints`, `fetchBattleLogs`, `useScoreToBeat` + `fetchScoreToBeatAcrossEndpoints` + its static tables, `buildSettledBlitzPlayersWithNamesQuery`, the banned `packages/torii` gRPC helpers and their five parsers, the package-internal utils with no consumer, the stale `@bibliothecadao/torii` dependency in `packages/core/package.json` | —                                                                                                                                     | **deleted first**, before any migration (A.1 starts with this commit)                                                                                                                |
+
 **Gate:** a full Blitz game played end to end with Torii stopped; explore reveal p95 ≤ 250 ms measured by the harness
 against the new read path; client optimistic-channel code deleted (diff shows net deletion in the sync runtime);
 reconnect mid-game resumes by sequence with zero missed diffs.
 
 ## B. Value plane — L2 contracts for entry, MMR, and prizes
+
+**Correction (2026-08-27):** identity is the L2 _wallet_; the `PlayerRegistry` that maps wallet ↔ gameplay account lives
+on the **gameplay chain** (`deploy-gameplay-contracts.ts`, read through `GAME_RPC_URL`). An L2 contract cannot call it.
+So the L2 ledger's owner is **the L2 caller of `register`** — the identity wallet itself, recorded as `(game_id, owner)`
+at registration — and the L3 registry is used only by the operator, off-chain, to map each ranked gameplay account back
+to its owner when posting results. The ledger accepts a result row only for an owner registered in that game.
 
 Principle (decided): value and reputation live where identity lives (Starknet L2); the gameplay chain stays fee-free and
 disposable. The gameplay burner never holds anything worth stealing.
@@ -172,22 +244,47 @@ disposable. The gameplay burner never holds anything worth stealing.
 - **`blitz_ledger` (new, L2):** `register(game_id)` pulls the LORDS entry fee and emits the registration; `buy_sword()`
   / `buy_shield()` pull LORDS and set a one-game modifier flag on the owner's MMR record (double gains / halve losses —
   flags, not NFTs; tradability is a later decision that can be added without redesign);
-  `apply_results(game_id, ranked owners…)` applies MMR deltas (consuming modifier flags) and pays prizes to
-  `registry.owner_of` — never the caller.
+  `apply_results(game_id, ranked: Array<(owner, rank)>)` applies MMR deltas (consuming modifier flags) and pays prizes
+  to the registered owner — never the caller.
+- **Invariants and economics (so the ledger is specifiable):** `apply_results` runs **once** per `game_id` — a
+  `finalized` flag, a second call reverts; the ranked roster must equal the registered set for that game in count and
+  membership, or the call reverts; MMR deltas are **computed on-chain** from ranks and current MMR with immutable
+  per-season parameters — never supplied by the poster; modifier flags are consumed in the same call and can only be
+  bought before the game's start time. Fees: entry fees form the game's prize pool; `protocol_cut_bps` and the payout
+  table by rank are preset values fixed at game creation; `cancel_game(game_id)` by the operator before start refunds
+  every registration in full, and nothing refunds after start. `sword_price` / `shield_price` are preset values — tuned
+  inside the system, not designed here. The operator signer is a hot key that can only post results and cancel unstarted
+  games; it can never move funds.
 - **Result transport, two stages, one interface:** stage 1 (this phase) an operator signer posts results — zero new
   trust, we already run the sequencer; stage 2 (phase 3) the post becomes an L3→L2 message proven by settlement, and
   `assert_only_operator` swaps for `consume_message_from_l3`. Build the L2 side with that swap in mind from day one.
-- **Registration relay L2→L3:** stage 1, the authority server watches L2 registrations and writes them on L3 (same trust
-  and machinery as `bind`); stage 2, native L2→L3 messaging. `obtain_entry_token` and the entry-token ERC721 are deleted
-  from the L3 — the fee path changed chains (the deletion that proves the design).
-- **The two protections land before any real value moves** (carried from phase-1 C.3): prizes pay `registry.owner_of`;
-  `RealmsPlayerAccount.__execute__` refuses any target that is not a registered game system. Proven by the adversarial
-  test: rotate a key from the authority, then attempt ERC20/ERC721 `transfer`/`approve` from the account — every attempt
-  reverts. No operator-run value bridge in the interim: value crosses chains only when proofs carry it (phase 3).
+- **Registration relay L2→L3:** stage 1, the authority server watches the ledger's `Registered(game_id, owner)` events,
+  waits for `ACCEPTED_ON_L2` plus one block, and writes `register_relayed(game_id, owner, gameplay_account)` on L3 — a
+  new authority-gated system entrypoint, **idempotent** by `(game_id, owner)` so retries and restarts are harmless;
+  stage 2, native L2→L3 messaging behind the same entrypoint. Today `settle` takes `entry_token_id` and calls
+  `resolve_and_consume_entry_token` (`blitz/contracts.cairo`); it loses that parameter and instead asserts the relayed
+  registration for `(game_id, caller)`. `obtain_entry_token`, the entry-token mint/consume internals, the issuance
+  config, and the entry-token ERC721 are deleted from the L3 — the fee path changed chains (the deletion that proves the
+  design). If the relay fails after a fee is paid, the L2 registration is the receipt and the relay retries; nothing on
+  L3 needs undoing.
+- **The two protections land before any real value moves** (carried from phase-1 C.3): prizes pay the registered L2
+  owner; `RealmsPlayerAccount.__execute__` refuses any target that is not a registered game system. Proven by the
+  adversarial test: rotate a key from the authority, then attempt ERC20/ERC721 `transfer`/`approve` from the account —
+  every attempt reverts. No operator-run value bridge in the interim: value crosses chains only when proofs carry it
+  (phase 3).
+- **Account class v2, and why no migration is needed.** The lab class is stock OpenZeppelin `AccountComponent`
+  (unrestricted SRC6, no upgrade path) and `bind` refuses rebinding — so the lab's "permanent" accounts cannot be
+  restricted in place. They do not need to be: the L3 is disposable and holds nothing, and the binding's source of truth
+  is the authority server's record of wallet ↔ derived account — the on-chain registry is a mirror the authority writes.
+  Phase 2 ships **class v2**: the target restriction, `rotate_public_key` as today, and `upgrade(new_class_hash)`
+  requiring both the owner's signature and the binding authority; the lab is redeployed on v2 (accounts re-bound from
+  the authority's records, which is also the rehearsal for a chain move); production only ever deploys v2. No value
+  moves on any chain whose account class lacks the restriction.
 
 **Gate:** on a Starknet testnet + the lab: register with a fee → relay → play → operator posts results → MMR moves on L2
-(sword/shield modifiers consumed correctly) → prize paid to the owner wallet; the adversarial rotate-and-steal test
-passes; the L3 tree no longer contains the entry-token path.
+(sword/shield modifiers consumed correctly) → prize paid to the owner wallet; a second `apply_results` and a roster that
+differs from the registered set both revert; `cancel_game` refunds; the adversarial rotate-and-steal test passes on
+class v2 and `upgrade` without the authority reverts; the L3 tree no longer contains the entry-token path.
 
 ## C. Agents (small, mostly product)
 
@@ -224,17 +321,23 @@ sized from.
 layered, cheapest first, and all three layers are proven on the laptop:
 
 1. **Hot replica** — a second Madara container in `--full --gateway-url <sequencer feeder gateway>` mode (the :5062 port
-   already exposed) following the sequencer one block behind. It serves every read (RPC, the section-A WS stream, the
-   indexer) so the sequencer only ever sees writes and status polls, and it is the promotion target: restart it with
-   `--sequencer` and the sequencer key. **Gate:** kill the sequencer mid-game, promote the replica, the harness
-   completes the game; RPO one block, RTO recorded in the README.
+   already exposed) following the sequencer. It serves confirmed reads (client RPC, herald's restart replay, snapshot
+   and history reads) and is the promotion target. It is **not** herald's live source: the follower refreshes its
+   pre-confirmed block on a 500 ms throttled poll (`client/sync/src/gateway/blocks.rs:602` at e674321), which alone
+   would eat A's 250 ms budget — herald subscribes to the **sequencer's** WebSocket directly, and is the only client
+   that socket has. **Fencing:** the sequencer identity is one file that lives in exactly one place; promotion is a
+   script that stops the old container, verifies its RPC and gateway ports are closed, moves the identity, and starts
+   the replica with `--sequencer`; herald reconnects to the new address. **Gate:** kill the sequencer mid-game, promote
+   the replica, the harness completes the game; starting the old container afterwards fails for lack of the identity;
+   RPO one block, RTO recorded in the README.
 2. **Backups** — Madara's own `--backup-dir` + `--backup-every-n-blocks`, shipped incrementally to object storage (R2/S3
    later; a second disk on the laptop now), restored with `--restore-from-latest-backup` onto a fresh data volume.
    **Gate:** restore drill from an empty volume to a serving node, RTO recorded.
-3. **Settlement** — the layer that actually protects money. Section B keeps MMR and the ledger on L2 and leaves only
-   entry tokens on L3, so a lost L3 costs game state, not funds — provided results reach L2 promptly: `apply_results`
-   posts per game end, never batched. Phase 3's L3→L2 messaging/DA makes the L3 recoverable from L2 instead of from our
-   backups; until then layers 1 and 2 are mandatory for any chain holding a live game with a prize.
+3. **Settlement** — the layer that actually protects money. Section B keeps MMR, fees and the ledger on L2 and leaves
+   nothing of value on L3 (registration is a relayed record; the entry token is deleted), so a lost L3 costs game state,
+   not funds — provided results reach L2 promptly: `apply_results` posts per game end, never batched. Phase 3's L3→L2
+   messaging/DA makes the L3 recoverable from L2 instead of from our backups; until then layers 1 and 2 are mandatory
+   for any chain holding a live game with a prize.
 
 **E.3 Eternum scale.** 2,000 players at one action per 2–5 minutes is 7–17 tx/s — inside what N=2 carried on the laptop
 with the driver on-box. Throughput is not the risk; two other things are: **bursts** (day start, war ticks — spec a

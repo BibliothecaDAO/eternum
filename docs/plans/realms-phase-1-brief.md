@@ -466,10 +466,11 @@ before/after manifest pair on the same host state, or it is not a finding.
 
 **Headroom result (reported 2026-08-27, README "Headroom").** Shape (a): the fastest zero-failure 96-bot cadence is one
 action per bot every 16 s (stamina binds; 13–15 s runs fail on game rules, never on the chain). Shape (b): N=1 and N=2
-concurrent games pass every bar (pre-confirmed p95 52 / 101 ms, close p95 125 / 249 ms, zero chain failures); N=4 (25.6
-tx/s offered) is the wall — pre-confirmed p95 7.9 s, close p95 849 ms, block 87154 executed 174 txs in ~11.5 s (66
-ms/tx) with 1.68 s of merklization; N=8 collapsed with swap full. Neither configured ceiling bound (max 23.7 B of 100 B
-Sierra gas, 219 attempts under `n_txs: 256`). How to read it, with the host profile in the manifests:
+concurrent games pass the capacity bars (pre-confirmed p95 52 / 101 ms, close p95 125 / 249 ms, zero chain failures;
+their manifests read `passed: false` on 3 and 2 game-rule failures — stamina misses, not the chain); N=4 (25.6 tx/s
+offered) is the wall — pre-confirmed p95 7.9 s, close p95 849 ms, block 87154 executed 174 txs in ~11.5 s (66 ms/tx)
+with 1.68 s of merklization; N=8 collapsed with swap full. Neither configured ceiling bound (max 23.7 B of 100 B Sierra
+gas, 219 attempts under `n_txs: 256`). How to read it, with the host profile in the manifests:
 
 - **It is the wall of this laptop as a shared box, not of Madara.** Ryzen 7 5800H at 73 % clock, 32 GB with 8 GB zram
   swap, running the sequencer _and_ the bot driver (~25 RPC calls per action — 20k RPC/s at N=4), Torii (4 GB),
