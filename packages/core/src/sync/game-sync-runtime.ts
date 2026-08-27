@@ -4,6 +4,7 @@ import type {
   GameSyncProvisionalWrite,
   GameSyncRuntimeMetrics,
   GameSyncSessionStart,
+  GameSyncTransaction,
   GameSyncWriter,
 } from "./game-sync-types";
 import {
@@ -29,6 +30,7 @@ interface BufferedEntityUpdate {
 }
 
 const DEFAULT_EVENT_IDENTITY_LIMIT = 512;
+const DEFAULT_TRANSACTION_STATUS_LIMIT = 512;
 
 const isRecord = (value: unknown): value is Record<string, unknown> => typeof value === "object" && value !== null;
 
@@ -59,14 +61,7 @@ const createEmptyMetrics = (): GameSyncRuntimeMetrics => ({
   totalReplayedEventUpdates: 0,
 });
 
-/**
- * Owns the single session-scoped writer and convergent recovery lifecycle.
- *
- * Torii exposes no universal server revision on entity callbacks. Buffered
- * ordering is therefore explicit and honest: generation first, then client
- * receive sequence. Every reconnect reruns the same subscribe → paginated
- * snapshot → component diff → ordered replay routine.
- */
+/** Owns the session-scoped stream, snapshot hydration, and ordered RECS writes. */
 export class GameSyncRuntime {
   private generation = 0;
   private writer: GameSyncWriter | null = null;
@@ -79,6 +74,11 @@ export class GameSyncRuntime {
   private liveUpdateTimestamps: number[] = [];
   private receiveSequence = 0;
   private metrics = createEmptyMetrics();
+  private recentTransactions = new Map<string, GameSyncTransaction>();
+  private transactionWaiters = new Map<
+    string,
+    Array<{ reject: (error: Error) => void; resolve: (transaction: GameSyncTransaction) => void }>
+  >();
 
   public getStatus(): GameSyncRuntimeStatus {
     return this.status;
@@ -92,6 +92,25 @@ export class GameSyncRuntime {
     return ["subscribing", "snapshotting", "replaying"].includes(this.status);
   }
 
+  public hasTransactionStatusChannel(): boolean {
+    return this.session?.transport.transactionStatusChannel === true;
+  }
+
+  public waitForTransaction(transactionHash: string): Promise<GameSyncTransaction> {
+    if (!this.hasTransactionStatusChannel()) {
+      return Promise.reject(new Error("The active game sync session has no transaction status channel"));
+    }
+    const identity = normalizeTransactionHash(transactionHash);
+    const known = this.recentTransactions.get(identity);
+    if (known) return settleTransaction(known);
+
+    return new Promise<GameSyncTransaction>((resolve, reject) => {
+      const waiters = this.transactionWaiters.get(identity) ?? [];
+      waiters.push({ reject, resolve });
+      this.transactionWaiters.set(identity, waiters);
+    });
+  }
+
   public async startSession(input: GameSyncSessionStart): Promise<void> {
     this.disposeWorldSpatialProjection();
     this.provisionalWriteManager?.dispose();
@@ -101,6 +120,8 @@ export class GameSyncRuntime {
       onIntentPhase: input.onProvisionalIntentPhase,
     });
     this.recentEventIdentities.clear();
+    this.rejectTransactionWaiters("Game sync session was replaced");
+    this.recentTransactions.clear();
     this.liveUpdateTimestamps = [];
     this.receiveSequence = 0;
     this.metrics = createEmptyMetrics();
@@ -179,6 +200,8 @@ export class GameSyncRuntime {
     this.provisionalWriteManager?.dispose();
     this.provisionalWriteManager = null;
     this.session = null;
+    this.rejectTransactionWaiters("Game sync runtime stopped");
+    this.recentTransactions.clear();
     this.status = "stopped";
   }
 
@@ -212,6 +235,14 @@ export class GameSyncRuntime {
           this.metrics.eventGapFillReplayCount += 1;
           this.metrics.totalReplayedEventUpdates += replayedEventCount;
           this.publishMetrics();
+        },
+        onHead: (head) => {
+          if (!this.isCurrentGeneration(generation)) return;
+          session.onHead?.(head);
+        },
+        onTransaction: (transaction) => {
+          if (!this.isCurrentGeneration(generation)) return;
+          this.acceptTransaction(transaction);
         },
       });
       this.adoptWriter(generation, writer);
@@ -345,6 +376,30 @@ export class GameSyncRuntime {
     this.session?.onMetrics?.(this.getMetrics());
   }
 
+  private acceptTransaction(transaction: GameSyncTransaction): void {
+    const identity = normalizeTransactionHash(transaction.hash);
+    this.recentTransactions.delete(identity);
+    this.recentTransactions.set(identity, transaction);
+    while (this.recentTransactions.size > DEFAULT_TRANSACTION_STATUS_LIMIT) {
+      const oldest = this.recentTransactions.keys().next().value;
+      if (oldest === undefined) break;
+      this.recentTransactions.delete(oldest);
+    }
+    this.session?.onTransaction?.(transaction);
+    const waiters = this.transactionWaiters.get(identity);
+    if (!waiters) return;
+    this.transactionWaiters.delete(identity);
+    waiters.forEach(({ reject, resolve }) => {
+      if (transaction.status === "REVERTED") reject(transactionError(transaction));
+      else resolve(transaction);
+    });
+  }
+
+  private rejectTransactionWaiters(message: string): void {
+    this.transactionWaiters.forEach((waiters) => waiters.forEach(({ reject }) => reject(new Error(message))));
+    this.transactionWaiters.clear();
+  }
+
   private now(): number {
     return this.session?.now?.() ?? Date.now();
   }
@@ -375,6 +430,7 @@ export class GameSyncRuntime {
     this.cancelWriterImmediately();
     this.ingestQueue?.dispose();
     this.ingestQueue = null;
+    this.rejectTransactionWaiters("Game sync recovery failed");
     this.status = "stopped";
   }
 
@@ -417,4 +473,22 @@ export function installFreshGameSyncRuntime(): GameSyncRuntime {
 export function disposeActiveGameSyncRuntime(): void {
   activeGameSyncRuntime?.dispose();
   activeGameSyncRuntime = null;
+}
+
+function normalizeTransactionHash(transactionHash: string): string {
+  try {
+    return `0x${BigInt(transactionHash).toString(16)}`;
+  } catch {
+    return transactionHash.toLowerCase();
+  }
+}
+
+function transactionError(transaction: GameSyncTransaction): Error {
+  return new Error(transaction.revertReason ?? `Transaction ${transaction.hash} reverted`);
+}
+
+function settleTransaction(transaction: GameSyncTransaction): Promise<GameSyncTransaction> {
+  return transaction.status === "REVERTED"
+    ? Promise.reject(transactionError(transaction))
+    : Promise.resolve(transaction);
 }

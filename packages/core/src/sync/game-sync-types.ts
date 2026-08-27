@@ -18,12 +18,27 @@ export interface GameSyncSubscriptionHandlers {
   onEntity: (entity: GameSyncEntity) => void;
   onEvent: (event: GameSyncEntity) => void;
   onEventGapFill: (replayedEventCount: number) => void;
+  onHead?: (head: GameSyncHead) => void;
+  onTransaction?: (transaction: GameSyncTransaction) => void;
 }
 
 export interface GameSyncTransport {
   /** Resolves only after both entity and event subscriptions are active. */
   subscribe: (handlers: GameSyncSubscriptionHandlers) => Promise<GameSyncWriter>;
   fetchSnapshotPage: (cursor?: string) => Promise<GameSyncSnapshotPage>;
+  transactionStatusChannel?: true;
+}
+
+export interface GameSyncHead {
+  block: number;
+  timestamp: number;
+}
+
+export interface GameSyncTransaction {
+  block: number | null;
+  hash: string;
+  revertReason?: string;
+  status: string;
 }
 
 export type GameSyncEntityStoreOperation =
@@ -103,6 +118,8 @@ export interface GameSyncSessionStart {
   onSubscriptionActive?: () => void;
   onLiveUpdate?: (kind: "entity" | "event") => void;
   onMetrics?: (metrics: GameSyncRuntimeMetrics) => void;
+  onHead?: (head: GameSyncHead) => void;
+  onTransaction?: (transaction: GameSyncTransaction) => void;
   onProvisionalIntentStalled?: (info: GameSyncProvisionalIntentStalledInfo) => void;
   onProvisionalIntentPhase?: (info: GameSyncProvisionalIntentPhaseInfo) => void;
 }

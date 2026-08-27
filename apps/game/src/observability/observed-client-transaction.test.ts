@@ -1,4 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import {
+  disposeActiveGameSyncRuntime,
+  GameSyncRuntime,
+  installGameSyncRuntime,
+  type GameSyncSubscriptionHandlers,
+} from "@bibliothecadao/eternum/game-sync";
 
 const reporterMocks = vi.hoisted(() => ({
   addClientTransactionBreadcrumb: vi.fn(),
@@ -24,6 +30,7 @@ describe("executeObservedClientTransaction", () => {
   });
 
   afterEach(() => {
+    disposeActiveGameSyncRuntime();
     vi.restoreAllMocks();
   });
 
@@ -117,5 +124,45 @@ describe("executeObservedClientTransaction", () => {
       expect.objectContaining({ stage: "completed" }),
     );
     expect(reporterMocks.reportClientTransactionFailure).not.toHaveBeenCalled();
+  });
+
+  it("resolves gameplay transactions from the active Herald channel", async () => {
+    let handlers!: GameSyncSubscriptionHandlers;
+    const runtime = installGameSyncRuntime(new GameSyncRuntime());
+    await runtime.startSession({
+      snapshotModels: [],
+      store: {
+        applyEntityOperations: () => undefined,
+        applyEvent: () => undefined,
+        listModelEntityIds: () => [],
+      },
+      transport: {
+        transactionStatusChannel: true,
+        subscribe: async (nextHandlers) => {
+          handlers = nextHandlers;
+          return { cancel: () => undefined };
+        },
+        fetchSnapshotPage: async () => ({ items: [] }),
+      },
+    });
+    const account = {
+      address: "0xstream",
+      execute: vi.fn().mockResolvedValue({ transaction_hash: "0xabc" }),
+      getNonce: vi.fn().mockResolvedValue("0x1"),
+      waitForTransaction: vi.fn().mockResolvedValue({}),
+    };
+
+    const submitted = executeObservedClientTransaction({
+      account,
+      calls: { contractAddress: "0x1", entrypoint: "swap", calldata: [] },
+      surface: "amm",
+      operation: "amm_execute",
+      chain: "madara",
+    });
+    await vi.waitFor(() => expect(account.execute).toHaveBeenCalledOnce());
+    handlers.onTransaction?.({ block: null, hash: "0x0abc", status: "PRE_CONFIRMED" });
+
+    await expect(submitted).resolves.toEqual({ transaction_hash: "0xabc" });
+    expect(account.waitForTransaction).not.toHaveBeenCalled();
   });
 });

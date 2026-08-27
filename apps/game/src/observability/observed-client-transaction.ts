@@ -1,4 +1,5 @@
 import { type TransactionType } from "@bibliothecadao/provider";
+import { getActiveGameSyncRuntime } from "@bibliothecadao/eternum/game-sync";
 import type { GameChain } from "@realms-world/chain";
 import { type Account, type AllowArray, type Call } from "starknet";
 import { executeGameplayAccountTransaction } from "@/account/gameplay-account-submit";
@@ -80,6 +81,11 @@ const resolveConfirmationWait = (
 
   if (input.confirm) {
     return input.confirm;
+  }
+
+  const gameSync = getActiveGameSyncRuntime();
+  if (gameSync?.hasTransactionStatusChannel()) {
+    return async (txHash: string, _account: ObservedTransactionAccount) => gameSync.waitForTransaction(txHash);
   }
 
   if (input.account.provider && typeof input.account.provider.waitForTransactionWithCheck === "function") {

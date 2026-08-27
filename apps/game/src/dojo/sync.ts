@@ -4,6 +4,7 @@ import { type SetupResult } from "@bibliothecadao/dojo";
 
 import { useConnectionStore } from "@/hooks/store/use-connection-store";
 import { recordGameEntryDuration } from "@/ui/layouts/game-entry-timeline";
+import { createHeraldGameSyncSession } from "@/sync/herald-game-sync-session";
 import { verboseLog } from "@/utils/dev-mode";
 import {
   disposeActiveGameSyncRuntime,
@@ -24,7 +25,7 @@ import {
 } from "./queries";
 import { env } from "../../env";
 import { createGamewideSyncSession } from "./gamewide-sync-adapter";
-import { gameEntityKey, gameModel, isGameScoped } from "./game-scope";
+import { gameEntityKey, gameModel, getScopedGameId, isGameScoped } from "./game-scope";
 import { resolveInitialStructureSelection } from "./sync-initial-selection";
 import { buildModelKeysClause, type GlobalModelStreamConfig } from "./torii-model-clause";
 import type { ToriiSubscriptionSetupTimeoutInfo } from "./torii-subscription-setup";
@@ -133,6 +134,25 @@ const createActiveGamewideSyncSession = (input: {
   subscriptionSetupTimeoutMs: number;
   onSubscriptionSetupTimeout?: (info: ToriiSubscriptionSetupTimeoutInfo) => void;
 }) => {
+  if (env.VITE_PUBLIC_HERALD_URL) {
+    return createHeraldGameSyncSession({
+      baseUrl: env.VITE_PUBLIC_HERALD_URL,
+      chain: env.VITE_PUBLIC_CHAIN,
+      entityModels: getGameSyncModelsForChannel("gamewide-entity", { includeS2Only: isGameScoped() }).map(
+        ({ name }) => name,
+      ),
+      eventModels: getGameSyncModelsForChannel("global-event", { includeS2Only: isGameScoped() }).map(
+        ({ name }) => name,
+      ),
+      gameId: getScopedGameId(),
+      logging: input.logging,
+      onSubscriptionActive: recordGamewideSubscriptionActive,
+      onLiveUpdate: recordGamewideLiveUpdate,
+      onMetrics: reportGamewideSyncMetrics,
+      setup: input.setup,
+    });
+  }
+
   const entityModels = getGamewideEntityStreamModels().map(({ model }) => model);
   return createGamewideSyncSession({
     setup: input.setup,

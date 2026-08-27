@@ -14,6 +14,7 @@ import type {
   GameSyncSessionStart,
   GameSyncStore,
   GameSyncSubscriptionHandlers,
+  GameSyncTransaction,
   GameSyncWriter,
 } from "./game-sync-types";
 
@@ -72,6 +73,7 @@ const createMemoryStore = (initial: Record<string, Record<string, unknown>> = {}
 const createSessionHarness = (input: {
   pages?: Array<{ items: GameSyncEntity[]; nextCursor?: string }>;
   store?: GameSyncStore;
+  transactionStatusChannel?: true;
   onFetchPage?: (pageIndex: number, handlers: GameSyncSubscriptionHandlers) => void | Promise<void>;
 }) => {
   const order: string[] = [];
@@ -84,6 +86,7 @@ const createSessionHarness = (input: {
     snapshotModels: ["Position", "Stats"],
     store: input.store ?? createMemoryStore().store,
     transport: {
+      transactionStatusChannel: input.transactionStatusChannel,
       async subscribe(nextHandlers) {
         order.push("subscribe-active");
         handlers = nextHandlers;
@@ -105,6 +108,9 @@ const createSessionHarness = (input: {
     },
     emitEvent(update: GameSyncEntity) {
       handlers?.onEvent(update);
+    },
+    emitTransaction(transaction: GameSyncTransaction) {
+      handlers?.onTransaction?.(transaction);
     },
     recordEventGapFill(replayedEventCount: number) {
       handlers?.onEventGapFill(replayedEventCount);
@@ -339,6 +345,29 @@ describe("GameSyncRuntime recovery", () => {
 });
 
 describe("GameSyncRuntime lifecycle", () => {
+  it("resolves and rejects transaction waits from the stream channel", async () => {
+    const harness = createSessionHarness({ transactionStatusChannel: true });
+    const runtime = new GameSyncRuntime();
+    await runtime.startSession(harness.session);
+
+    const accepted = runtime.waitForTransaction("0x00abc");
+    harness.emitTransaction({ block: null, hash: "0xabc", status: "PRE_CONFIRMED" });
+    await expect(accepted).resolves.toMatchObject({ hash: "0xabc", status: "PRE_CONFIRMED" });
+    await expect(runtime.waitForTransaction("0xabc")).resolves.toMatchObject({ hash: "0xabc" });
+
+    const reverted = runtime.waitForTransaction("0xdef");
+    harness.emitTransaction({ block: null, hash: "0x0def", revertReason: "game rule", status: "REVERTED" });
+    await expect(reverted).rejects.toThrow("game rule");
+  });
+
+  it("refuses transaction waits when the transport has no status channel", async () => {
+    const harness = createSessionHarness({});
+    const runtime = new GameSyncRuntime();
+    await runtime.startSession(harness.session);
+
+    await expect(runtime.waitForTransaction("0xabc")).rejects.toThrow("no transaction status channel");
+  });
+
   it("owns and replaces the session spatial projection", () => {
     const runtime = new GameSyncRuntime();
     const first = { start: vi.fn(), dispose: vi.fn() };

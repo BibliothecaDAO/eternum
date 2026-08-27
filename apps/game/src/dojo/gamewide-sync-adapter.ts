@@ -109,7 +109,7 @@ const createComponentLookup = (components: readonly Component[]): Map<string, Co
   return lookup;
 };
 
-const createRecsGameSyncStore = (
+export const createRecsGameSyncStore = (
   setup: SetupResult,
   logging: boolean,
   syncModels: readonly string[],
@@ -217,7 +217,7 @@ const createRecsGameSyncStore = (
   };
 };
 
-const createBrowserScheduler = (): NonNullable<GameSyncSessionStart["scheduler"]> => ({
+export const createBrowserScheduler = (): NonNullable<GameSyncSessionStart["scheduler"]> => ({
   schedule(task) {
     const runIngestSlice = () => runWithFrameWorkOwner("sync:ingest", task);
     if (typeof requestAnimationFrame === "function" && typeof cancelAnimationFrame === "function") {
