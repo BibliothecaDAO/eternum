@@ -79,17 +79,6 @@ export interface ExploredTileBounds {
   maxY: number;
 }
 
-export interface TokenTransfer {
-  to_address: string;
-  contract_address: string;
-  token_id: string; // Assuming token_id might be large or non-numeric
-  amount: string; // Assuming amount might be large
-  executed_at: string; // ISO date string or similar
-  from_address: string; // Added field
-  name: string;
-  symbol: string;
-}
-
 export interface RawPlayerLeaderboardRow {
   player_address: string | null;
   player_name: string | null;
@@ -306,18 +295,6 @@ export interface PlayersData {
   bank_count: number;
   mine_count: number;
   village_count: number;
-}
-
-export interface BattleLogEvent {
-  event_type: "BattleEvent" | "ExplorerNewRaidEvent";
-  attacker_id: number;
-  defender_id: number;
-  attacker_owner_id: number;
-  defender_owner_id: number | null;
-  winner_id: number | null;
-  max_reward: string | number;
-  success: number | null;
-  timestamp: string;
 }
 
 export interface Hyperstructure {

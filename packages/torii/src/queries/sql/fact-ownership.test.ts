@@ -18,7 +18,6 @@ describe("SQL_API_FACT_OWNERSHIP", () => {
 
   it("keeps history separate from current live facts", () => {
     expect(SQL_API_FACT_OWNERSHIP.fetchStoryEvents.disposition).toBe("keep-history");
-    expect(SQL_API_FACT_OWNERSHIP.fetchBattleLogs.disposition).toBe("keep-history");
     expect(SQL_API_FACT_OWNERSHIP.fetchAllTiles.disposition).toBe("keep-external-snapshot");
     expect(SQL_API_FACT_OWNERSHIP.fetchResourceBalances.disposition).toBe("keep-external-snapshot");
   });
@@ -26,15 +25,13 @@ describe("SQL_API_FACT_OWNERSHIP", () => {
   it("records S4 deletions and final aggregate decisions", () => {
     expect(SQL_API_FACT_OWNERSHIP.fetchSurroundingWonderBonus.disposition).toBe("deleted-s4");
     expect(SQL_API_FACT_OWNERSHIP.fetchHyperstructuresWithRealmCount.disposition).toBe("deleted-s4");
-    expect(SQL_API_FACT_OWNERSHIP.fetchRegisteredPlayerPoints.disposition).toBe("keep-aggregate");
+    expect(SQL_API_FACT_OWNERSHIP.fetchRegisteredPlayerPoints.disposition).toBe("deleted-s4");
+    expect(SQL_API_FACT_OWNERSHIP.fetchBattleLogs.disposition).toBe("deleted-s4");
     expect(SQL_API_FACT_OWNERSHIP.fetchPlayerLeaderboard.disposition).toBe("keep-aggregate");
     expect(SQL_API_FACT_OWNERSHIP.fetchPlayerLeaderboardByAddress.disposition).toBe("keep-aggregate");
   });
 
   it("keeps live leaderboard facts in RECS and SQL limited to history aggregates or sessionless views", () => {
-    expect(SQL_API_FACT_OWNERSHIP.fetchRegisteredPlayerPoints.reason).toContain(
-      "in-session registered points read RECS",
-    );
     expect(SQL_API_FACT_OWNERSHIP.fetchPlayerLeaderboard.reason).toContain("immutable StoryEvent history");
     expect(SQL_API_FACT_OWNERSHIP.fetchPlayerLeaderboard.reason).toContain("rank and points read RECS");
     expect(SQL_API_FACT_OWNERSHIP.fetchPlayerLeaderboardByAddress.reason).toContain("no active game RECS session");

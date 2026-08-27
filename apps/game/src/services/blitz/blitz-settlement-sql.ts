@@ -13,7 +13,6 @@ import { appchainModel } from "@/dojo/game-scope";
  */
 
 const settlementTable = () => appchainModel("BlitzSettlement");
-const addressNameTable = () => appchainModel("AddressName");
 
 const gameFilter = (gameId: number | null | undefined, alias?: string) =>
   gameId && gameId > 0 ? `${alias ? `${alias}.` : ""}game_id = ${gameId}` : "1=1";
@@ -47,12 +46,4 @@ export const buildSettledBlitzPlayersQuery = (gameId?: number | null) => `
   SELECT DISTINCT player
   FROM "${settlementTable()}"
   WHERE ${gameFilter(gameId)};
-`;
-
-export const buildSettledBlitzPlayersWithNamesQuery = (gameId?: number | null) => `
-  SELECT DISTINCT settlements.player AS player, names.name AS name
-  FROM "${settlementTable()}" settlements
-  LEFT JOIN "${addressNameTable()}" names
-    ON settlements.player = names.address
-  WHERE ${gameFilter(gameId, "settlements")};
 `;

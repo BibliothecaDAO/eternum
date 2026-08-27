@@ -45,7 +45,7 @@ export const SQL_API_FACT_OWNERSHIP = {
   fetchExploredTilesInBounds: keepExternalSnapshot(
     "The pre-session settlement planner has no active GameSyncRuntime and requests a bounded planning snapshot.",
   ),
-  fetchTokenTransfers: keepHistory("Immutable token-transfer history is a SQL read model."),
+  fetchTokenTransfers: deletedS4("The method had no consumer."),
   fetchStructureByCoord: deletedS4("Current Structure lookup now uses the RECS spatial projection."),
   fetchGlobalStructureExplorerAndGuildDetails: deletedS4(
     "The PlayerDataStore duplicate of structures, explorers, and owners was retired.",
@@ -61,7 +61,7 @@ export const SQL_API_FACT_OWNERSHIP = {
   fetchExplorerAddressOwner: keepExternalSnapshot(
     "The headless client lacks GameSyncRuntime; the game client resolves explorer ownership through Structure in RECS.",
   ),
-  fetchBattleLogs: keepHistory("Battle history is intentionally not current entity truth."),
+  fetchBattleLogs: deletedS4("The method had no consumer."),
   fetchPlayerStructures: keepExternalSnapshot(
     "Pre-session settlement entry and the headless client have no active GameSyncRuntime; in-session views read RECS.",
   ),
@@ -69,9 +69,7 @@ export const SQL_API_FACT_OWNERSHIP = {
     "The headless client and onchain agent have not adopted GameSyncRuntime; the game client reads Resource from RECS.",
   ),
   fetchResourceBalancesAndProduction: deletedS4("Current balances and production now come from Resource in RECS."),
-  fetchResourceBalancesWithProduction: keepExternalSnapshot(
-    "The onchain agent has no active GameSyncRuntime; the game client computes dynamic balances from Resource in RECS.",
-  ),
+  fetchResourceBalancesWithProduction: deletedS4("The method had no consumer."),
   fetchSeasonEnded: deletedS4("Current season status is streamed into RECS."),
   fetchGuardsByStructure: keepExternalSnapshot(
     "The headless client lacks GameSyncRuntime; game and mobile UI derive guards from Structure in RECS.",
@@ -86,21 +84,17 @@ export const SQL_API_FACT_OWNERSHIP = {
   fetchAllArmiesMapData: keepExternalSnapshot(
     "The headless client and onchain agent have not adopted GameSyncRuntime; the game map uses the projection.",
   ),
-  fetchBuildingsByStructures: keepExternalSnapshot(
-    "The onchain agent has no active GameSyncRuntime; the game client reads Building from RECS.",
-  ),
+  fetchBuildingsByStructures: deletedS4("The method had no consumer."),
   fetchWorldAddress: keepAggregate("Indexer metadata identifies the world; it is not gameplay entity truth."),
   fetchHyperstructuresWithRealmCount: deletedS4(
     "Hyperstructure realm counts now derive from Structure in RECS and the spatial projection.",
   ),
   fetchStoryEvents: keepHistory("StoryEvent is immutable paginated history."),
-  fetchStoryEventsSince: keepHistory("StoryEvent is immutable paginated history."),
+  fetchStoryEventsSince: deletedS4("The method had no consumer."),
   fetchStoryEventsByEntity: keepHistory("StoryEvent is immutable paginated history."),
   fetchStoryEventsByOwner: keepHistory("StoryEvent is immutable paginated history."),
   fetchStoryEventsCount: keepAggregate("Pagination count over immutable StoryEvent history."),
-  fetchRegisteredPlayerPoints: keepAggregate(
-    "Landing and post-game review views have no active game RECS session; in-session registered points read RECS.",
-  ),
+  fetchRegisteredPlayerPoints: deletedS4("The method had no consumer."),
   fetchPlayerLeaderboard: keepAggregate(
     "Landing pagination has no active game RECS session; in-session consumers use only the aggregate over immutable StoryEvent history while rank and points read RECS.",
   ),

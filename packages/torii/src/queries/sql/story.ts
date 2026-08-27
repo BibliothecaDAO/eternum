@@ -138,18 +138,6 @@ ${STORY_EVENT_SELECT_FIELDS}
   `,
 
   /**
-   * Fetches story events with timestamp greater than provided timestamp
-   * Used for auto-refresh to get only new events
-   */
-  STORY_EVENTS_SINCE: `
-    SELECT
-${STORY_EVENT_SELECT_FIELDS}
-    FROM "s1_eternum-StoryEvent"
-    WHERE {GF} AND timestamp > {timestamp}
-    ORDER BY timestamp DESC
-  `,
-
-  /**
    * Fetches story events by entity ID
    * Useful for filtering events by specific entity
    */

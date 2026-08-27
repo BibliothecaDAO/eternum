@@ -42,22 +42,11 @@ export const setSqlGameScope = (namespace: string, gameId: number): void => {
   sqlGameId = gameId;
 };
 
-/** Active scope for this package's gRPC query builders (same source as SQL). */
+/** Active scope for SQL queries. */
 export const getSqlGameScope = (): { namespace: string; gameId: number } => ({
   namespace: sqlNamespace,
   gameId: sqlGameId,
 });
-
-/**
- * Torii KeysClause slots MUST be unpadded hex — decimal key strings do not
- * survive the grpc key encoding and match nothing. This package's one encoder
- * for gRPC clause keys (the game client has its own in dojo/game-scope.ts).
- */
-export const toriiKey = (value: number | bigint): string => `0x${BigInt(value).toString(16)}`;
-
-/** (game_id, entity_id) key tuple for a targeted per-entity gRPC clause. */
-export const scopedEntityKeys = (entityId: number): string[] =>
-  sqlGameId > 0 ? [toriiKey(sqlGameId), toriiKey(entityId)] : [toriiKey(entityId)];
 
 const GAME_FILTER_MARKER = /\{GF(?::([A-Za-z_][\w]*))?\}/g;
 
@@ -278,23 +267,6 @@ export async function fetchJsonWithErrorHandling<T>(
  */
 export function extractFirstOrNull<T>(sqlResult: T[]): T | null {
   return sqlResult.length > 0 ? sqlResult[0] : null;
-}
-
-/**
- * Helper function to safely extract the first item from a SQL result array.
- * Use this when you expect a single result and want to throw if none found.
- *
- * @template T The type of the item
- * @param sqlResult Array result from SQL query
- * @param errorMessage Error message to throw if no items found
- * @returns The first item
- * @throws Error if array is empty
- */
-export function extractFirstOrThrow<T>(sqlResult: T[], errorMessage: string): T {
-  if (sqlResult.length === 0) {
-    throw new Error(errorMessage);
-  }
-  return sqlResult[0];
 }
 
 /**

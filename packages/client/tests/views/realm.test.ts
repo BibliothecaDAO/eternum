@@ -42,7 +42,6 @@ function createMockSql(overrides: Partial<SqlApiLike> = {}): SqlApiLike {
     ]),
     fetchAllStructuresMapData: vi.fn().mockResolvedValue([]),
     fetchAllTiles: vi.fn().mockResolvedValue([]),
-    fetchBattleLogs: vi.fn().mockResolvedValue([]),
     fetchHyperstructures: vi.fn().mockResolvedValue([]),
     fetchSwapEvents: vi.fn().mockResolvedValue([]),
     fetchPlayerLeaderboard: vi.fn().mockResolvedValue([]),

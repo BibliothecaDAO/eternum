@@ -33,7 +33,6 @@
     "@bibliothecadao/dojo": "workspace:*",
     "@bibliothecadao/provider": "workspace:*",
     "@bibliothecadao/types": "workspace:*",
-    "@bibliothecadao/torii": "workspace:*",
     "@realms-world/chain": "workspace:*",
     "@scure/starknet": "^1.1.0",
     "chalk": "^5.4.1",

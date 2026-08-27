@@ -52,7 +52,7 @@ export const appchainModel = (name: string): string => `${namespaceForChain("app
  * strings do not survive the grpc key encoding and match nothing — the Aug 10
  * Building-clause incident, later found again in getEntitiesFromTorii. Every
  * clause key this app builds goes through this encoder (packages/torii has
- * its own twin, toriiKey, for the query builders that cannot import the app).
+ * this local encoder for query builders that cannot depend on app state.
  */
 export const hexKey = (value: number | bigint): string => `0x${BigInt(value).toString(16)}`;
 

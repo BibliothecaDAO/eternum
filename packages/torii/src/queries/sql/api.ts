@@ -2,7 +2,6 @@ import { ContractAddress, GuardSlot, ID, ResourcesIds, TileDataInput, tileDataTo
 
 import {
   ArmyMapDataRaw,
-  BattleLogEvent,
   ExploredTileBounds,
   EventType,
   Guard,
@@ -12,7 +11,6 @@ import {
   PlayerStructure,
   RawSettlementPlannerRealm,
   RawSettlementPlannerVillage,
-  RawPlayerLeaderboardRow,
   RawRealmVillageSlot,
   RealmVillageSlot,
   ResourceBalanceRow,
@@ -23,7 +21,6 @@ import {
   StructureMapDataRaw,
   SwapEventResponse,
   Tile,
-  TokenTransfer,
   TradeEvent,
 } from "../../types/sql";
 import {
@@ -32,12 +29,10 @@ import {
   fetchJsonWithErrorHandling,
   fetchWithErrorHandling,
   formatAddressForQuery,
-  getSqlGameScope,
   hexToBigInt,
   type SqlGameScope,
 } from "../../utils/sql";
 import { BATTLE_QUERIES } from "./battle";
-import { LEADERBOARD_QUERIES } from "./leaderboard";
 import {
   addLeaderboardRanks,
   buildAdditionalLeaderboardEntries,
@@ -204,20 +199,6 @@ export class SqlApi {
   }
 
   /**
-   * Fetch token transfers for a specific contract and recipient from the SQL database.
-   * SQL queries always return arrays.
-   */
-  async fetchTokenTransfers(contractAddress: string, recipientAddress: string): Promise<TokenTransfer[]> {
-    const query = TRADING_QUERIES.TOKEN_TRANSFERS.replace("{contractAddress}", contractAddress.toString()).replace(
-      "{recipientAddress}",
-      recipientAddress.toString(),
-    );
-
-    const url = buildApiUrl(this.baseUrl, query, this.scope);
-    return await fetchWithErrorHandling<TokenTransfer>(url, "Failed to fetch token transfers");
-  }
-
-  /**
    * Fetch all tiles on the map from the SQL database.
    * SQL queries always return arrays.
    */
@@ -325,21 +306,6 @@ export class SqlApi {
   }
 
   /**
-   * Fetch battle logs from the SQL database.
-   * SQL queries always return arrays.
-   */
-  async fetchBattleLogs(afterTimestamp?: string): Promise<BattleLogEvent[]> {
-    // Every arm is game-filtered; ExplorerNewRaidEvent is s1-only, so the s2
-    // arm drops that UNION branch entirely.
-    const scoped = (this.scope ?? getSqlGameScope()).gameId > 0;
-    const timeFilter = afterTimestamp ? `AND timestamp > '${afterTimestamp}'` : "";
-    const baseQuery = scoped ? BATTLE_QUERIES.BATTLE_LOGS_S2 : BATTLE_QUERIES.BATTLE_LOGS;
-    const query = baseQuery.replaceAll("{timeFilter}", timeFilter);
-    const url = buildApiUrl(this.baseUrl, query, this.scope);
-    return await fetchWithErrorHandling<BattleLogEvent>(url, "Failed to fetch battle logs");
-  }
-
-  /**
    * Fetch player structures with coordinates, category, and resources_packed from the SQL database.
    * SQL queries always return arrays.
    */
@@ -360,20 +326,6 @@ export class SqlApi {
     const query = RESOURCE_QUERIES.RESOURCE_BALANCES.replace("{entityIds}", entityIds.join(","));
     const url = buildApiUrl(this.baseUrl, query, this.scope);
     return await fetchWithErrorHandling<ResourceBalanceRow>(url, "Failed to fetch resource balances");
-  }
-
-  /**
-   * Fetch resource balances with full production data for dynamic balance computation.
-   * Includes production_rate, output_amount_left, and last_updated_at per resource.
-   */
-  async fetchResourceBalancesWithProduction(entityIds: number[]): Promise<ResourceBalanceRow[]> {
-    if (entityIds.length === 0) return [];
-    const query = RESOURCE_QUERIES.RESOURCE_BALANCES_WITH_DYNAMIC_PRODUCTION.replace(
-      "{entityIds}",
-      entityIds.join(","),
-    );
-    const url = buildApiUrl(this.baseUrl, query, this.scope);
-    return await fetchWithErrorHandling<ResourceBalanceRow>(url, "Failed to fetch resource balances with production");
   }
 
   /**
@@ -482,24 +434,6 @@ export class SqlApi {
   }
 
   /**
-   * Fetch occupied building positions for a set of structure entity IDs.
-   * Returns inner_col, inner_row, category for each building placed at these structures.
-   */
-  async fetchBuildingsByStructures(
-    entityIds: number[],
-  ): Promise<{ outer_entity_id: number; inner_col: number; inner_row: number; category: number }[]> {
-    if (entityIds.length === 0) return [];
-    const query = `SELECT outer_entity_id, inner_col, inner_row, category FROM \`s1_eternum-Building\` WHERE {GF} AND outer_entity_id IN (${entityIds.join(",")})`;
-    const url = buildApiUrl(this.baseUrl, query, this.scope);
-    return await fetchWithErrorHandling<{
-      outer_entity_id: number;
-      inner_col: number;
-      inner_row: number;
-      category: number;
-    }>(url, "Failed to fetch buildings by structures");
-  }
-
-  /**
    * Fetch the world contract address from the SQL database.
    * SQL queries always return arrays, so we extract the first result.
    */
@@ -545,16 +479,6 @@ export class SqlApi {
   }
 
   /**
-   * Fetches story events since a given timestamp (for auto-refresh).
-   * SQL queries always return arrays.
-   */
-  async fetchStoryEventsSince(timestamp: number): Promise<StoryEventData[]> {
-    const query = STORY_QUERIES.STORY_EVENTS_SINCE.replace("{timestamp}", timestamp.toString());
-    const url = buildApiUrl(this.baseUrl, query, this.scope);
-    return await fetchWithErrorHandling<StoryEventData>(url, "Failed to fetch story events since timestamp");
-  }
-
-  /**
    * Fetches story events by entity ID with pagination.
    * SQL queries always return arrays.
    */
@@ -588,36 +512,6 @@ export class SqlApi {
     const results = await fetchWithErrorHandling<{ total_count: number }>(url, "Failed to count story events");
     const firstResult = extractFirstOrNull(results);
     return firstResult?.total_count ?? 0;
-  }
-
-  /**
-   * Fetches registered player points directly from PlayerRegisteredPoints and ranks them client-side.
-   * Uses buildRegisteredLeaderboardEntries to keep parsing consistent with the main leaderboard helpers.
-   */
-  async fetchRegisteredPlayerPoints(limit: number = 10, offset: number = 0): Promise<PlayerLeaderboardRow[]> {
-    const { safeLimit, safeOffset, effectiveLimit } = sanitizeLeaderboardPagination(limit, offset);
-
-    if (safeLimit === 0) {
-      return [];
-    }
-
-    const query = LEADERBOARD_QUERIES.REGISTERED_PLAYER_POINTS.replace("{limit}", effectiveLimit.toString()).replace(
-      "{offset}",
-      "0",
-    );
-    const url = buildApiUrl(this.baseUrl, query, this.scope);
-    const registeredRows = await fetchWithErrorHandling<RawPlayerLeaderboardRow>(
-      url,
-      "Failed to fetch registered player points",
-    );
-
-    const { entries } = buildRegisteredLeaderboardEntries({
-      registeredRows,
-      unregisteredShareholderPoints: new Map<string, number>(),
-    });
-
-    const rankedEntries = addLeaderboardRanks(sortLeaderboardEntries(entries));
-    return rankedEntries.slice(safeOffset, safeOffset + safeLimit);
   }
 
   /**

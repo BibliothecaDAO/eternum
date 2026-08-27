@@ -40,7 +40,6 @@ export interface SqlApiLike {
   fetchAllArmiesMapData(): Promise<any[]>;
   fetchAllStructuresMapData(): Promise<any[]>;
   fetchAllTiles(): Promise<any[]>;
-  fetchBattleLogs(afterTimestamp?: string): Promise<any[]>;
   fetchHyperstructures(): Promise<any[]>;
   fetchSwapEvents(userEntityIds: ID[]): Promise<any[]>;
   fetchPlayerLeaderboard(limit?: number, offset?: number): Promise<any[]>;
