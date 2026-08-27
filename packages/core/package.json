@@ -17,6 +17,10 @@
     "./game-sync": {
       "types": "./dist/sync/index.d.ts",
       "import": "./dist/sync/index.js"
+    },
+    "./game-sync-models": {
+      "types": "./dist/sync/model-manifest.d.ts",
+      "import": "./dist/sync/model-manifest.js"
     }
   },
   "main": "./dist/index.js",

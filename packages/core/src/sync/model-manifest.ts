@@ -1,10 +1,10 @@
-type GameSyncChannel = "gamewide-entity" | "global-event";
+export type GameSyncChannel = "gamewide-entity" | "global-event";
 
-type GameSyncModelAvailability = "all" | "s2-only";
-type GameSyncRecoveryPolicy = "convergent-snapshot" | "event-deduped";
-type GameSyncDeletionPolicy = "component" | "event-ephemeral";
+export type GameSyncModelAvailability = "all" | "s2-only";
+export type GameSyncRecoveryPolicy = "convergent-snapshot" | "event-deduped";
+export type GameSyncDeletionPolicy = "component" | "event-ephemeral";
 
-interface GameSyncModelDefinition {
+export interface GameSyncModelDefinition {
   name: string;
   channels: readonly GameSyncChannel[];
   availability: GameSyncModelAvailability;
@@ -83,7 +83,7 @@ export const GAME_SYNC_MODEL_MANIFEST: readonly GameSyncModelDefinition[] = [
   globalEntity("ResourceBridgeWtlConfig", { s2Scope: "chain" }),
   globalEntity("StructureLevelConfig", { s2Scope: "chain" }),
   globalEntity("SeasonPrize"),
-  globalEntity("SeasonEnded"),
+  globalEvent("SeasonEnded"),
   globalEntity("QuestLevels"),
   globalEntity("QuestTile"),
   globalEntity("AddressName", { s2Scope: "chain" }),

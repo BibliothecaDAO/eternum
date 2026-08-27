@@ -593,6 +593,28 @@ importers:
         specifier: v1.0.0-alpha.57
         version: 1.0.0-alpha.57(@types/node@22.20.1)(@types/react-dom@18.3.7(@types/react@18.3.28))(@types/react@18.3.28)(babel-plugin-macros@3.1.0)(lightningcss@1.32.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(rollup@4.57.1)(terser@5.46.0)(tsx@4.21.0)(typescript@5.9.3)(yaml@2.9.0)
 
+  apps/herald:
+    dependencies:
+      '@bibliothecadao/eternum':
+        specifier: workspace:*
+        version: link:../../packages/core
+      starknet:
+        specifier: catalog:web
+        version: 9.4.2(typescript@5.9.3)(zod@4.3.6)
+    devDependencies:
+      '@types/node':
+        specifier: ^22.13.5
+        version: 22.20.1
+      bun-types:
+        specifier: ^1.2.2
+        version: 1.4.0
+      typescript:
+        specifier: ^5.8.2
+        version: 5.9.3
+      vitest:
+        specifier: ^2.1.9
+        version: 2.1.9(@types/node@22.20.1)(@vitest/ui@2.1.9)(jsdom@28.1.0(@noble/hashes@2.3.0))(lightningcss@1.32.0)(terser@5.46.0)
+
   apps/indexer:
     dependencies:
       '@apibara/evm':

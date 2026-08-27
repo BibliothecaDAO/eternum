@@ -5,7 +5,7 @@ export default defineConfig({
   // client imports it directly so pulling the key helpers never evaluates the
   // package barrel. esm code-splitting keeps it one shared chunk — a second
   // module instance would split the active-game-id mirror the helpers read.
-  entry: ["src/index.ts", "src/managers/game-entity-keys.ts", "src/sync/index.ts"],
+  entry: ["src/index.ts", "src/managers/game-entity-keys.ts", "src/sync/index.ts", "src/sync/model-manifest.ts"],
   target: "esnext",
   platform: "browser",
   format: ["esm"],
