@@ -216,8 +216,9 @@ config.
 ### 96-player harness
 
 The harness creates a fresh dev-mode game, deploys 96 guest gameplay accounts, settles and provisions each player,
-then rotates actions across the three realm explorers each settlement receives. Run the acceptance workload from the
-repository root:
+then rotates actions across the three realm explorers each settlement receives. The measured window starts when every
+bot has enough explorer stamina for one legal action; it does not wait for every explorer to refill. Run the acceptance
+workload from the repository root:
 
 ```bash
 pnpm lab:harness -- --bots 96 --minutes 10
@@ -296,51 +297,75 @@ pre-submit queueing it caused. It did not change L2 inclusion latency. The fixed
 3.62/2.49/3.74 versus 9.51/11.46/10.54 for the estimated run, so the small block-production difference is not isolated
 enough to credit to this change.
 
-### Block-cap headroom
+### Headroom: player cadence and concurrent games
 
-The 12-transaction ceiling matched the original 6.4 tx/s offered load and made every busy block close on the cap. The
-headroom runs raised `n_txs` to 24, retained the 5,000,000,000 Sierra-gas ceiling, and used the same native image and
-fixed bounds. Both reports embed the exact host state:
+The 2026-08-27 headroom sequence removed both configured ceilings from the expected load: `n_txs` was 256 and the
+Sierra-gas allowance was 100,000,000,000 per block. Native execution, fixed zero-price bounds, 2 s blocks, 250 ms
+pending updates, and execution batches of 4 stayed unchanged. Every report below embeds those values plus host state
+at workload start and end.
 
-| Measurement | 96 bots / 15 s | 96 bots / 10 s |
-| --- | ---: | ---: |
-| Report | `.lab/runs/20260826T075608978Z.json` | `.lab/runs/20260826T081308621Z.json` |
-| Offered rate | 6.4 tx/s | 9.6 tx/s |
-| Completed / planned | 3,840 / 3,840 | 5,631 / 5,760 |
-| Failures / reverts | 0 / 0 | 110 / 19 |
-| Pre-confirmed p50 / p95 | 51 / 102 ms | 51 / 52 ms |
-| L2 p95 | 1.992 s | 2.007 s |
-| Indexed p95 | 1.449 s | 1.500 s |
-| Transactions per busy block p50 / max | 13 / 14 | 19 / 22 |
-| Block production p50 / p95 / max | 1.987 / 2.046 / 2.246 s | 2.000 / 2.024 / 2.077 s |
+#### Shape (a): fastest game-legal per-bot cadence
 
-The 15-second run passed with zero loss, proving that the acceptance result is no longer forced by a 12-transaction
-cap. Its slowest block was #53707: 13 Explore transactions from tick 12, 432 events, 1,930,845,921 L2 gas, and
-3,168,595,473 Sierra gas. Block production took 2.246 s; close took 245 ms and merklization 224 ms.
+One-minute probes searched downward from one action per bot per second. Longer probes resolved the stamina boundary;
+the first full ten-minute zero-failure cadence, to whole-second resolution, was one action per bot every 16 seconds:
 
-The 10-second run is a failed workload gate, not a chain-capacity pass. All 1,152 Produce actions completed, but 110
-Move/Explore actions found no explorer with both a valid path and enough stamina, and another 19 reverted because a
-path tile was occupied. The completed mix was 2,843 Move, 1,636 Explore, and 1,152 Produce. The slowest block was
-#54131: 19 Explore transactions from tick 0, 603 events, 2,880,129,343 L2 gas, and 4,336,315,180 Sierra gas. It took
-2.077 s to produce and 156 ms to close. The 24-transaction cap was not reached; gameplay reachability, not sequencer
-admission, invalidated the requested 1.5x per-player cadence.
+| Cadence | Window | Completed / planned | Failure class | Pre-confirmed p95 | Block production p95 | Report |
+| ---: | ---: | ---: | --- | ---: | ---: | --- |
+| 1 s | 1 min | 3,012 / 5,760 | 2,664 game rule; 84 pathing | 2.840 s | 2.734 s | `.lab/runs/20260827T102445308Z.json` |
+| 2 s | 1 min | 1,937 / 2,880 | 865 game rule; 78 pathing | 1.918 s | 3.005 s | `.lab/runs/20260827T102948597Z.json` |
+| 4 s | 1 min | 1,173 / 1,440 | 231 game rule; 36 pathing | 2.080 s | 2.645 s | `.lab/runs/20260827T103416639Z.json` |
+| 8 s | 1 min | 755 / 768 | 13 game rule | 101 ms | 2.034 s | `.lab/runs/20260827T103811840Z.json` |
+| 10 s | 1 min | 575 / 576 | 1 game rule | 102 ms | 2.071 s | `.lab/runs/20260827T104308478Z.json` |
+| 12 s | 2 min | 956 / 960 | 4 game rule | 52 ms | 2.038 s | `.lab/runs/20260827T104807463Z.json` |
+| 13 s | 10 min | 4,476 / 4,512 | 36 game rule | 52 ms | 2.059 s | `.lab/runs/20260827T110821126Z.json` |
+| 14 s | 3 min | 1,245 / 1,248 | 3 game rule | 101 ms | 2.070 s | `.lab/runs/20260827T111511255Z.json` |
+| 15 s | 10 min | 3,835 / 3,840 | 5 game rule | 107 ms | 2.073 s | `.lab/runs/20260827T120112651Z.json` |
+| **16 s** | **10 min** | **3,648 / 3,648** | **none** | **52 ms** | **2.032 s** | `.lab/runs/20260827T122319748Z.json` |
 
-One current Explorer action makes the latency boundary concrete. Madara accepted it into the mempool at
-08:03:04.605 UTC, logged it as executed and added to pre-confirmed block #54130 at 08:03:04.652 (46.563 ms), and the
-harness observed `PRE_CONFIRMED` at 08:03:04.656 (51 ms after submission, 60 ms after the scheduled action). Its
-receipt succeeded with 132,251,171 L2 gas and 27 events. Torii exposed it after 1.303 s and L2 accepted it after
-1.403 s. Therefore 51 ms is a real sequencer result, but not application end-to-end latency through Torii.
+A short 13-second probe passed, but the full run exposed 36 stamina misses; the full duration is the gate. The
+15-second failures occurred before a late unrelated host job appeared, so they are game-rule failures rather than a
+load attribution. The clean 16-second run had zero failures, reverts, or indexing loss. Its busiest blocks held 13
+transactions at most; the slowest, block 84026, carried 12 transactions and 3.699 B Sierra gas. Block production was
+2.087 s, including 158 ms to close, 149 ms of merklization, and 2.24 ms of DB write. The workload starts after one
+action's stamina per bot; this replaced a full-refill hold that cost about four minutes in the closing match.
 
-The failed runs named the bottlenecks before the pass:
+#### Shape (b): concurrent 96-player games
 
-- VM execution with the upstream 600-transaction block ceiling admitted a 120-transaction game block that took 659
-  seconds. Native execution plus a 12-transaction ceiling passed the original acceptance workload; the 24-transaction
-  headroom runs above show the uncapped two-second-clock tail.
-- One Torii query loop per action overwhelmed the SQL endpoint. One observer now batches up to 64 transaction hashes
-  or explorer ids per query; the final run lost no indexed action.
-- The first tuned 96-player run completed 3,552 actions but left every explorer behind its exploration frontier for
-  ticks 31–33. Move selection now returns an explorer to the frontier first; the 40-tick regression test and final run
-  both completed all exploration slots.
+One process scheduled every game at one action per bot per 15 seconds. `N=1`, `N=2`, `N=4`, and `N=8` were run
+back-to-back with no parallel heavy job and no container restart:
+
+| Games | Offered rate | Completed / planned | Game / path / chain failures | Pre-confirmed p95 | Submit-delay p95 | Block production p95 / max | Busy-block tx p50 / max | Report |
+| ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- |
+| 1 | 6.4 tx/s | 3,837 / 3,840 | 3 / 0 / 0 | 52 ms | 9 ms | 2.046 / 2.146 s | 13 / 13 | `.lab/runs/20260827T131912211Z.json` |
+| 2 | 12.8 tx/s | 7,678 / 7,680 | 2 / 0 / 0 | 101 ms | 9 ms | 2.080 / 2.169 s | 26 / 26 | `.lab/runs/20260827T133614317Z.json` |
+| **4** | **25.6 tx/s** | **9,042 / 15,360** | **0 / 2,707 / 3,611** | **7.855 s** | **439.193 s** | **5.514 / 13.279 s** | **52 / 219** | `.lab/runs/20260827T141017762Z.json` |
+| 8 | 51.2 tx/s | 273 / 30,720 | 1 / 14,662 / 15,784 | 1.644 s[^n8-tail] | 522.777 s | 23.763 / 84.629 s | 7 / 632[^attempts] | `.lab/runs/20260827T155113802Z.json` |
+
+The formal 2.000-second block-production p95 bar is already missed at `N=1` by 46 ms, so the strict brief has no
+passing concurrent-game point. `N=1` and `N=2` nevertheless kept client-visible pre-confirmation below 1 s with zero
+chain/driver failures. The clear execution/RPC capacity wall is **N=4**: pre-confirmed p95 rose to 7.855 s, L2 p95 to
+8.669 s, indexed p95 to 32.735 s, and 2,626 submitted transactions were not observed by both Torii sources before
+their timeout. The configured ceilings did not bind there: the busiest logged block attempted 219 transactions and
+used at most 23.728 B of the 100 B Sierra allowance.
+
+The N=4 wall evidence line is block 87154: `block_production` 13.279 s, of which the pre-close portion was about
+11.472 s; 174 attempted transactions, 2 execution batches, 23.728 B Sierra gas, 1.807 s close, 1.676 s
+merklization, and 24.7 ms DB write. Alpha.9 emitted no parseable mempool samples in this window. At N=8 the backlog
+later appears to contact the configured transaction ceiling: block 89709 reported 256 attempted transactions and
+38.460 B Sierra gas;
+`block_production` was 84.629 s, close 7.724 s, merklization 7.253 s, and DB write 97.4 ms. That cap contact is a
+consequence of collapse, not the N=4 wall.
+
+[^n8-tail]: Only 273 actions completed at N=8, so its completed-action latency percentile is selection-biased and
+    must not be read as an improvement over N=4.
+[^attempts]: The block-stat transaction count uses Madara's attempted/executed count, including rejected attempts;
+    2,213 attempts were rejected at N=8, so this figure can exceed the 256 transactions added to one block.
+
+The N=8 start snapshot already carried the sequence's heat: load 7.70/3.84/3.32 and 8,172 MiB swap used; its end
+snapshot was 1.60/23.20/31.52 with swap full. Those facts travel with the result. During the first N=8 attempt, an
+action-time `getBlock` socket failure escaped the per-action boundary and prevented report creation. The action
+chokepoint now records that class as `driver_failed / chain_or_driver`; the regression test proves `runWorkload`
+resolves and the committed rerun produced all 30,720 requested records.
 
 Cairo Native is on by default because the VM-only run did not meet the workload. To reproduce the comparison path:
 
@@ -356,9 +381,9 @@ reading numbers, and compare against a VM run on the same block-stats window.
 
 - Blockifier optimistic concurrency is **on by default** (`block_production_concurrency` defaults: enabled,
   `n_workers` = all cores). Measured 2.8 cores during a 24-tx burst; blocks #51847–48 executed 12 queued
-  transactions in 269–319 ms (~25 ms/tx, native warm). Busy blocks at the 96-bot load close at ~1.87 s because that
-  is how long 12 txs take to **arrive** at 6.4 tx/s — arrival-bound, not execution-bound. The current `n_txs: 24`
-  ceiling sits above the measured load; the 15-second headroom run reached 14 transactions per block at most.
+  transactions in 269–319 ms (~25 ms/tx, native warm). The new `N=1` and `N=2` points remain arrival-bound around the
+  2 s clock; `N=4` is the first clear execution/RPC wall. The current `n_txs: 256` and 100 B Sierra-gas ceilings both
+  sat above the N=4 load. N=8 contacted the transaction cap only after a several-minute submit backlog formed.
 - The batcher hands the executor up to `execution_batch_size` (4) ready transactions and never waits; pre-confirmed
   state persists after every batch. The value is both flush granularity and intra-batch parallelism cap.
 - Pre-confirmed status was first observed at the 50 ms poll boundary in the account probe and most harness actions.
@@ -381,18 +406,18 @@ bot 230 M).
 | Indexed by Torii p95 | 1.89 s |
 | Madara, same window | 8,389 txs executed, 34 reverted, 0 rejected; 13 txs per busy block (p50, max 15); `block_production` p50 1.99 s (arrival-bound at cadence); sierra gas per busy block p50 1.5 G, p95 3.6 G, max 4.3 G |
 
-The harness reports `passed: false` because its bar assumes a bot-only game (zero reverts, every hash indexed):
-the 34 reverts are the human moving through tiles the bots' planner does not model, and reverted transactions never
-reach Torii, so the same 34 count as indexing loss. For mixed human/bot games the bar has to classify reverts by
-reason; that is a harness follow-up, not a chain or client finding. The gate as written in the brief — one human plus
-95 bots played to a result on the lab — is met.
+That schema-3 manifest reports `passed: false` because it predates revert classification: the 34 human/bot tile
+contention reverts also counted as indexing loss. Schema 4 now classifies the exact occupied-tile reason as
+`tile_contention`, excludes reverted transactions from indexing loss, and treats only that reason as non-blocking.
+The historical artifact is unchanged; the gate as written in the brief — one human plus 95 bots played to a result on
+the lab — is met.
 
 ## Pinning
 
 | Component | Pin | Why |
 | --- | --- | --- |
 | Madara | `ghcr.io/madara-alliance/madara@sha256:3c931fa515bbd3760fd5cbc0bcdceb557d3edbd44bec0231cdf52dd6abb475f6` (`v0.11.0-alpha.9`) | Exact image used by the passing run; tags are mutable |
-| Chain config | Full alpha.9 `devnet` preset, with the lab identity, 2 s blocks, 250 ms pending updates, execution batches of 4, and a 24-transaction block ceiling | Madara rejects partial configs; every measurement variable stays explicit |
+| Chain config | Full alpha.9 `devnet` preset, with the lab identity, 2 s blocks, 250 ms pending updates, execution batches of 4, 256 transactions, and 100,000,000,000 Sierra gas per block | Madara rejects partial configs; every measurement variable stays explicit |
 | Torii | `ghcr.io/dojoengine/torii:v1.8.16` | Last known-good version with this client |
 | sozo | 1.8.7 | Speaks RPC 0.9/0.10 and has the blake2s flag |
 | Caddy | `caddy:2-alpine` (2.11.4, `sha256:5f5c8640…`) | TLS front; set `CADDY_IMAGE` to compare another image |
