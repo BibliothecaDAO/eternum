@@ -84,11 +84,16 @@ processes, and republishes. The indexer is the latency budget and the EOL depend
   overlay, and rebuilds it from one `getBlockWithReceipts(pre_confirmed)` read (one RPC per 2 s block), deduplicating by
   `(transaction_hash, event_index)`; between heads, pre-confirmed events extend the overlay. Clients see that as an
   `overlay_reset` followed by a fresh pre-confirmed diff. Sequence-numbered diffs over WSS; snapshot on connect; resume
-  by sequence on reconnect. The stream is an accelerator; the snapshot is the truth (guardrail 2). **A.0 gate (Claude),
-  before A.2 is designed further:** force a replacement on the lab — queue transactions, restart the sequencer mid-block
-  (Madara re-executes the queued set into a new pre-confirmed block on start) — and record what a `subscribeEvents` +
-  `subscribeNewHeads` subscriber actually sees: which events repeat, which vanish, what the heads say. The overlay logic
-  is written against that transcript, and the same restart is A.2's replacement test.
+  by sequence on reconnect. The stream is an accelerator; the snapshot is the truth (guardrail 2). **A.0 gate, run
+  2026-08-27 (README "Forced pre-confirmed replacement"):** with transactions pre-confirmed, the sequencer was stopped
+  with SIGTERM and, separately, SIGKILL. Neither replaced the block: on SIGTERM Madara closes the pre-confirmed block
+  before exiting; on SIGKILL it restores the saved pre-confirmed block (default `save-preconfirmed`) and closes it with
+  the same hashes. What subscribers _do_ see is **repeats** — pre-confirmed events emitted twice on a fresh
+  subscription, the last block's events re-sent on reconnect — and `block_number: null` on pre-confirmed events. So the
+  rule above is the design: dedup by `(transaction_hash, event_index)`, rebuild the overlay from the `pre_confirmed`
+  read on each head. The one replacement path not yet exercised is failover to the replica (E.2), whose drill records
+  how much pre-confirmed content dies with a sequencer; A.2's replacement test replays that drill's transcript through
+  herald. Tool: `pnpm lab:probe-ws`.
 - **The client becomes a consumer.** Because pre-confirmation is the shared optimistic layer, the per-client optimistic
   machinery (guardrail 5's pending records, TTLs, reconciliation) is deleted, keeping at most a local echo of the acting
   player's own click. The AGENTS.md guardrails that describe that machinery (1, 2, 5) are rewritten in the same change
