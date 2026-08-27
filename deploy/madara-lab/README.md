@@ -480,6 +480,28 @@ the replica** (a pre-confirmed block that never reached the gateway dies with th
 measures exactly that loss). Every restart also re-logs ~7,600 `Nonce mismatch` warnings: the saved mempool still
 holds the N=8 backlog and re-checks it on start — harmless, and it goes when the data volume is rebuilt.
 
+### E.2 redundancy — in progress (2026-08-27)
+
+Compose now carries the three E.2 pieces; drills run only between Codex's harness measurements (one host):
+
+- **Identity gate (proven).** The sequencer's entrypoint refuses to start without `/data/SEQUENCER`; the token is
+  seeded on the lab volume and the sequencer restarts fine behind it. `scripts/promote-replica.sh` stops and removes
+  the old sequencer, verifies port 5050 is closed, moves the token to the replica's volume, and starts
+  `madara-promoted` (the sequencer command on that volume, network alias `madara` so Torii, Caddy and herald keep
+  resolving). **Not yet drilled end to end** — the drill runs inside a harness game to record RPO/RTO.
+- **Replica (proven to sync).** `docker compose --profile replica up -d madara-replica` follows the sequencer's
+  feeder gateway: ~540 blocks/s through empty blocks, ~100 blocks/s through game-heavy ones on the Cairo VM
+  (native is now enabled for it), so a from-genesis catch-up of the 98k-block lab is a few minutes. RPC on
+  127.0.0.1:5055. Stopped while Codex measures.
+- **Backups: Madara's `--restore-from-latest-backup` is broken at this pin — do not use it.** A restore copies the
+  backup ("restoring latest backup done", 3.7 s for a 6.1 GB backup) and the node then starts from genesis: in
+  `RocksDBStorage::open` (`crates/client/db/src/rocksdb/mod.rs` at e674321) `DB::open_cf_descriptors` runs first
+  (`:289`, creating an empty database and reading its tip) and `BackupManager::start_if_enabled` restores into the
+  same directory afterwards (`:305`), under the open handle. Reproduced twice on a fresh volume. The fix is
+  upstream (restore before open); until then the backup layer is **volume snapshots of the stopped replica**
+  (consistent, provider-agnostic; restore = untar into a fresh volume and start). The backup flags were removed
+  from compose; a 50-block interval had written 6 GB per backup every 100 s during the drill.
+
 ## What Madara does not give you (as of the nightly pin)
 
 - **WebSocket subscriptions are version-scoped.** They exist only on `/rpc/v0_10_2`; the v0.8/v0.9 subscribe methods

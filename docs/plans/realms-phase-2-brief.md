@@ -353,8 +353,11 @@ so the trade is measured, never assumed. **Gate:** the N at which close p95 firs
 off-box, and the batch size that carries it, in a manifest pair with `host-state.sh` — the first number a box is ever
 sized from.
 
-**E.2 Redundancy, drilled.** Madara is a single-writer sequencer; nothing makes it highly available, so redundancy is
-layered, cheapest first, and all three layers are proven on the laptop:
+**E.2 Redundancy, drilled.** _Status 2026-08-27: compose scaffolding landed (identity-gated sequencer, `madara-replica`,
+`madara-promoted`, `promote-replica.sh`); replica sync and the identity gate proven; the promotion and restore drills
+wait for a quiet lab — they run inside Codex's next harness game so RPO/RTO are measured once._ Madara is a
+single-writer sequencer; nothing makes it highly available, so redundancy is layered, cheapest first, and all three
+layers are proven on the laptop:
 
 1. **Hot replica** — a second Madara container in `--full --gateway-url <sequencer feeder gateway>` mode (the :5062 port
    already exposed) following the sequencer. It serves confirmed reads (client RPC, herald's restart replay, snapshot
@@ -366,9 +369,12 @@ layered, cheapest first, and all three layers are proven on the laptop:
    the replica with `--sequencer`; herald reconnects to the new address. **Gate:** kill the sequencer mid-game, promote
    the replica, the harness completes the game; starting the old container afterwards fails for lack of the identity;
    RPO one block, RTO recorded in the README.
-2. **Backups** — Madara's own `--backup-dir` + `--backup-every-n-blocks`, shipped incrementally to object storage (R2/S3
-   later; a second disk on the laptop now), restored with `--restore-from-latest-backup` onto a fresh data volume.
-   **Gate:** restore drill from an empty volume to a serving node, RTO recorded.
+2. **Backups** — volume snapshots of the _stopped replica_ (tar of its data volume: consistent, provider-agnostic),
+   shipped incrementally to object storage (R2/S3 later; a second disk on the laptop now), restored by untarring into a
+   fresh volume and starting a node. Madara's own `--backup-dir` / `--restore-from-latest-backup` is **not** used: at
+   `nightly-e674321` the restore happens after the database is opened, so the node starts from genesis (README "E.2
+   redundancy", reproduced twice; fix is upstream). **Gate:** restore drill from an empty volume to a serving node at
+   the snapshot's head, RTO recorded.
 3. **Settlement** — the layer that actually protects money. Section B keeps MMR, fees and the ledger on L2 and leaves
    nothing of value on L3 (registration is a relayed record; the entry token is deleted), so a lost L3 costs game state,
    not funds — provided results reach L2 promptly: `apply_results` posts per game end, never batched. Phase 3's L3→L2

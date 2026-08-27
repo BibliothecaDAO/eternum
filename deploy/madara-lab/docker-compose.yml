@@ -15,9 +15,12 @@
 # Pin discipline: the default is the exact image measured below. Set MADARA_IMAGE to compare another build and record
 # that image's digest in the README.
 services:
+  # Sequencer. It only starts if the identity token /data/SEQUENCER is present — promote-replica.sh moves that
+  # token to the replica's volume, so a promoted-away sequencer cannot come back (E.2 fencing).
   madara:
     image: ${MADARA_IMAGE:-ghcr.io/madara-alliance/madara@sha256:ec30298d51ce0780e1ad88cc00e1c17bef31530d0e338fe7fcc1d71d1bad31b2}
     container_name: madara-lab
+    entrypoint: ["/bin/sh", "-c", "test -f /data/SEQUENCER || { echo 'madara: no sequencer identity in /data (see promote-replica.sh)'; exit 3; }; exec madara \"$@\"", "--"]
     command:
       - --name=realms-madara-lab
       - --devnet
@@ -46,6 +49,98 @@ services:
       #   bad-ports list — Node/undici refuses to fetch them ("bad port"), which broke every server-side consumer.
       - "127.0.0.1:5051:9943"   # admin RPC (madara_* methods) — never expose beyond localhost
       - "127.0.0.1:5062:8080"   # feeder gateway / gateway
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - >-
+          curl -sf -m 3 -X POST -H 'content-type: application/json'
+          -d '{"jsonrpc":"2.0","id":1,"method":"starknet_blockNumber","params":[]}'
+          http://127.0.0.1:9944 >/dev/null
+      interval: 5s
+      timeout: 5s
+      retries: 12
+    restart: unless-stopped
+
+  # Hot replica (E.2): a full node following the sequencer's feeder gateway. Serves confirmed reads and is the
+  # promotion target. Not herald's live source — the follower polls the pre-confirmed block every 500 ms.
+  madara-replica:
+    image: ${MADARA_IMAGE:-ghcr.io/madara-alliance/madara@sha256:ec30298d51ce0780e1ad88cc00e1c17bef31530d0e338fe7fcc1d71d1bad31b2}
+    container_name: madara-lab-replica
+    profiles: ["replica"]
+    command:
+      - --name=realms-madara-replica
+      - --full
+      - --base-path=/data
+      - --chain-config-path=/config/chain-config.yaml
+      - --gateway-url=${MADARA_GATEWAY_URL:-http://madara:8080}
+      - --l1-sync-disabled
+      - --rpc-external
+      - --rpc-cors=all
+      - --rpc-port=9944
+      - --feeder-gateway-enable
+      - --gateway-enable
+      - --gateway-external
+      - --gateway-port=8080
+      - --enable-native-execution=${MADARA_NATIVE:-true}
+      - --native-compilation-mode=async
+    environment:
+      RUST_LOG: ${MADARA_LOG:-info}
+    volumes:
+      - ./chain-config.yaml:/config/chain-config.yaml:ro
+      - madara-replica-data:/data
+    ports:
+      - "127.0.0.1:5055:9944"   # replica RPC (confirmed reads)
+      - "127.0.0.1:5065:8080"   # replica gateway
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - >-
+          curl -sf -m 3 -X POST -H 'content-type: application/json'
+          -d '{"jsonrpc":"2.0","id":1,"method":"starknet_blockNumber","params":[]}'
+          http://127.0.0.1:9944 >/dev/null
+      interval: 5s
+      timeout: 5s
+      retries: 12
+    restart: unless-stopped
+
+  # The replica promoted to sequencer (E.2): the sequencer command on the replica's volume, reachable as `madara`
+  # on the compose network so Torii, Caddy and herald keep resolving. Started only by promote-replica.sh, which
+  # moves the identity token here first.
+  madara-promoted:
+    image: ${MADARA_IMAGE:-ghcr.io/madara-alliance/madara@sha256:ec30298d51ce0780e1ad88cc00e1c17bef31530d0e338fe7fcc1d71d1bad31b2}
+    container_name: madara-lab-promoted
+    profiles: ["promoted"]
+    entrypoint: ["/bin/sh", "-c", "test -f /data/SEQUENCER || { echo 'madara: no sequencer identity in /data (see promote-replica.sh)'; exit 3; }; exec madara \"$@\"", "--"]
+    command:
+      - --name=realms-madara-lab
+      - --devnet
+      - --base-path=/data
+      - --chain-config-path=/config/chain-config.yaml
+      - --rpc-external
+      - --rpc-cors=all
+      - --rpc-port=9944
+      - --rpc-admin
+      - --rpc-admin-external
+      - --no-charge-fee
+      - --l1-sync-disabled
+      - --feeder-gateway-enable
+      - --gateway-enable
+      - --gateway-external
+      - --gateway-port=8080
+      - --enable-native-execution=${MADARA_NATIVE:-true}
+      - --native-compilation-mode=async
+    environment:
+      RUST_LOG: ${MADARA_LOG:-info}
+    networks:
+      default:
+        aliases: [madara]
+    volumes:
+      - ./chain-config.yaml:/config/chain-config.yaml:ro
+      - madara-replica-data:/data
+    ports:
+      - "127.0.0.1:5050:9944"
+      - "127.0.0.1:5051:9943"
+      - "127.0.0.1:5062:8080"
     healthcheck:
       test:
         - CMD-SHELL
@@ -115,5 +210,6 @@ services:
 
 volumes:
   madara-data:
+  madara-replica-data:
   torii-data:
   postgres-data:
