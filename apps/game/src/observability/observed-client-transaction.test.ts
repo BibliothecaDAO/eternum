@@ -19,6 +19,7 @@ vi.mock("./transaction-failure-reporting", () => ({
 }));
 
 import { executeObservedClientTransaction } from "./observed-client-transaction";
+import { clearClientActionLatency, snapshotClientActionLatency } from "./client-action-latency";
 
 const startTransactionStream = async (): Promise<GameSyncSubscriptionHandlers> => {
   let handlers!: GameSyncSubscriptionHandlers;
@@ -44,6 +45,7 @@ const startTransactionStream = async (): Promise<GameSyncSubscriptionHandlers> =
 
 describe("executeObservedClientTransaction", () => {
   beforeEach(() => {
+    clearClientActionLatency();
     reporterMocks.addClientTransactionBreadcrumb.mockReset();
     reporterMocks.reportClientTransactionFailure.mockReset();
     reporterMocks.reportClientTransactionFailure.mockResolvedValue(undefined);
@@ -139,6 +141,18 @@ describe("executeObservedClientTransaction", () => {
     handlers.onTransaction?.({ block: null, hash: "0xtx", status: "PRE_CONFIRMED" });
 
     await expect(submitted).resolves.toEqual({ transaction_hash: "0xtx" });
+
+    expect(snapshotClientActionLatency()).toEqual([
+      expect.objectContaining({
+        operation: "market_buy",
+        transactionHash: "0xtx",
+        phases: expect.objectContaining({
+          click: expect.any(Number),
+          submitted: expect.any(Number),
+          pre_confirmed: expect.any(Number),
+        }),
+      }),
+    ]);
 
     expect(reporterMocks.addClientTransactionBreadcrumb).toHaveBeenCalledTimes(2);
     expect(reporterMocks.addClientTransactionBreadcrumb).toHaveBeenNthCalledWith(

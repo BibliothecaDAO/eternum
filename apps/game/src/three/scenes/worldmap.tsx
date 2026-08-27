@@ -63,6 +63,13 @@ import { ChestModal, HelpModal } from "@/ui/features/military";
 import { QuickAttackPreview } from "@/ui/features/military/battle/quick-attack-preview";
 import { SpireTravelModal } from "@/ui/features/world/components/actions/spire-travel-modal";
 import { markGameEntryMilestone } from "@/ui/layouts/game-entry-timeline";
+import {
+  beginClientActionLatency,
+  recordClientActionFailed,
+  recordClientActionPreConfirmed,
+  recordClientActionRendered,
+  recordClientActionSubmitted,
+} from "@/observability/client-action-latency";
 import { SetupResult } from "@bibliothecadao/dojo";
 import {
   ActionPath,
@@ -690,6 +697,7 @@ export default class WorldmapScene extends WarpTravel {
   private armyManager!: ArmyManager;
   private latestRenderVisualProfile?: RenderVisualProfile;
   private pendingArmyMovementVisualLifecycleDisposers: Map<ID, () => void> = new Map();
+  private pendingExploreLatencyActions: Map<ID, { actionId: string; targetKey: string }> = new Map();
   private get hydratedChunkRefreshes(): Set<string> {
     return this.hydratedRefreshQueueState.queuedChunkKeys;
   }
@@ -1226,9 +1234,7 @@ export default class WorldmapScene extends WarpTravel {
       return;
     }
 
-    if (current) {
-      this.completePendingExploreEffects(current.hexCoords);
-    }
+    if (current) this.completePendingExploreEffects(current.hexCoords);
 
     const normalized = new Position({ x: tile.hexCoords.col, y: tile.hexCoords.row }).getNormalized();
     if (!this.isHexInRetainedRenderArea(normalized.x, normalized.y)) {
@@ -1237,6 +1243,7 @@ export default class WorldmapScene extends WarpTravel {
 
     this.applyProjectedExploredTileChange(normalized.x, normalized.y, current);
     this.invalidateVisualTerrainPageForLiveTile(normalized.x, normalized.y);
+    if (current) this.recordExploreRevealAfterRender(current.hexCoords);
   }
 
   private applyProjectedExploredTileChange(
@@ -2555,6 +2562,15 @@ export default class WorldmapScene extends WarpTravel {
 
       // Get the target position for the effect
       const targetHex = actionPath[actionPath.length - 1].hex;
+      const exploreLatencyActionId =
+        actionType === ActionType.Explore
+          ? beginClientActionLatency({
+              operation: "explore_reveal",
+              surface: "worldmap",
+              entityId: selectedEntityId,
+              targetHex: { col: targetHex.col, row: targetHex.row },
+            })
+          : null;
       const position = getWorldPositionForHex({
         col: targetHex.col - FELT_CENTER(),
         row: targetHex.row - FELT_CENTER(),
@@ -2562,6 +2578,9 @@ export default class WorldmapScene extends WarpTravel {
 
       // Play effect based on action type: compass for exploring, travel for moving
       const key = this.resolveContractHexKey(targetHex);
+      if (exploreLatencyActionId) {
+        this.pendingExploreLatencyActions.set(selectedEntityId, { actionId: exploreLatencyActionId, targetKey: key });
+      }
       const effectType = isTravelAction ? "travel" : "compass";
       const effectLabel = isTravelAction ? "Traveling" : "Exploring";
       let cleanup = () => {};
@@ -2710,6 +2729,7 @@ export default class WorldmapScene extends WarpTravel {
             txHash,
           });
           if (txHash && actionType === ActionType.Explore) {
+            if (exploreLatencyActionId) recordClientActionSubmitted(exploreLatencyActionId, txHash);
             recordArmyMovementLatencyPhase({
               phase: "explore_tx_hash_received",
               source: "worldmap",
@@ -2726,7 +2746,8 @@ export default class WorldmapScene extends WarpTravel {
           if (txHash) {
             void requireActiveGameSyncRuntime()
               .waitForTransaction(txHash)
-              .then(() => {
+              .then((transaction) => {
+                if (transaction.status === "PRE_CONFIRMED") recordClientActionPreConfirmed(txHash);
                 recordArmyMovementLatencyPhase({
                   phase: "tx_confirmed",
                   source: "worldmap",
@@ -2741,10 +2762,16 @@ export default class WorldmapScene extends WarpTravel {
                   });
                 }
               })
-              .catch(() => this.handlePendingArmyMovementFailure(selectedEntityId, cleanup));
+              .catch((error) => {
+                if (exploreLatencyActionId) recordClientActionFailed(exploreLatencyActionId, error);
+                this.pendingExploreLatencyActions.delete(selectedEntityId);
+                this.handlePendingArmyMovementFailure(selectedEntityId, cleanup);
+              });
           }
         })
         .catch((e) => {
+          if (exploreLatencyActionId) recordClientActionFailed(exploreLatencyActionId, e);
+          this.pendingExploreLatencyActions.delete(selectedEntityId);
           this.handlePendingArmyMovementFailure(selectedEntityId, cleanup);
           console.error("Army movement failed:", e);
         });
@@ -3840,6 +3867,7 @@ export default class WorldmapScene extends WarpTravel {
     });
     this.pendingArmyMovementVisualLifecycleDisposers.forEach((dispose) => dispose());
     this.pendingArmyMovementVisualLifecycleDisposers.clear();
+    this.pendingExploreLatencyActions.clear();
     this.arrivalGhostManager
       .getTrackedEntityIds()
       .forEach((entityId) => this.arrivalGhostManager.clearArrivalGhost(entityId, "scene_destroyed"));
@@ -3879,6 +3907,23 @@ export default class WorldmapScene extends WarpTravel {
     if (endCompass && !this.hasPendingTravelEffectForHex(key)) {
       endCompass();
     }
+  }
+
+  private recordExploreRevealAfterRender(hexCoords: HexPosition): void {
+    const targetKey = `${hexCoords.col},${hexCoords.row}`;
+    const completedActions = Array.from(this.pendingExploreLatencyActions.entries()).flatMap(([entityId, action]) => {
+      if (action.targetKey !== targetKey) return [];
+      this.pendingExploreLatencyActions.delete(entityId);
+      return [action.actionId];
+    });
+    if (completedActions.length === 0) return;
+
+    const recordRendered = () => completedActions.forEach((actionId) => recordClientActionRendered(actionId));
+    if (typeof window.requestAnimationFrame !== "function") {
+      recordRendered();
+      return;
+    }
+    window.requestAnimationFrame(() => window.requestAnimationFrame(recordRendered));
   }
 
   isColRowInCurrentRenderBounds(col: number, row: number) {
@@ -8789,6 +8834,7 @@ export default class WorldmapScene extends WarpTravel {
     this.unsubscribeWorldSpatialProjection = undefined;
     this.pendingArmyMovementVisualLifecycleDisposers.forEach((dispose) => dispose());
     this.pendingArmyMovementVisualLifecycleDisposers.clear();
+    this.pendingExploreLatencyActions.clear();
     if (this.handleTransactionProgress) {
       this.dojo.network?.provider?.off("transactionProgress", this.handleTransactionProgress);
     }

@@ -1,5 +1,5 @@
 import { type TransactionType } from "@bibliothecadao/provider";
-import { getActiveGameSyncRuntime } from "@bibliothecadao/eternum/game-sync";
+import { getActiveGameSyncRuntime, type GameSyncTransaction } from "@bibliothecadao/eternum/game-sync";
 import type { GameChain } from "@realms-world/chain";
 import { type Account, type AllowArray, type Call } from "starknet";
 import { executeGameplayAccountTransaction } from "@/account/gameplay-account-submit";
@@ -11,6 +11,12 @@ import {
   type ClientTransactionFailureContext,
   type ClientTransactionSurface,
 } from "./transaction-failure-reporting";
+import {
+  beginClientActionLatency,
+  recordClientActionFailed,
+  recordClientActionPreConfirmed,
+  recordClientActionSubmitted,
+} from "./client-action-latency";
 
 type WaitCapableProvider = {
   channel?: {
@@ -69,7 +75,7 @@ const buildTransactionContext = (
 };
 
 const resolveConfirmationWait = ():
-  | ((txHash: string, account: ObservedTransactionAccount) => Promise<unknown>)
+  | ((txHash: string, account: ObservedTransactionAccount) => Promise<GameSyncTransaction>)
   | null => {
   const gameSync = getActiveGameSyncRuntime();
   if (gameSync?.hasTransactionStatusChannel()) {
@@ -81,8 +87,9 @@ const resolveConfirmationWait = ():
 
 const observeBackgroundTransactionConfirmation = (
   input: ExecuteObservedClientTransactionInput,
+  actionId: string,
   transactionHash: string,
-  waitForConfirmation: (txHash: string, account: ObservedTransactionAccount) => Promise<unknown>,
+  waitForConfirmation: (txHash: string, account: ObservedTransactionAccount) => Promise<GameSyncTransaction>,
 ) => {
   const transactionContext = buildTransactionContext(input, transactionHash);
   addClientTransactionBreadcrumb({
@@ -92,7 +99,8 @@ const observeBackgroundTransactionConfirmation = (
   });
 
   void waitForConfirmation(transactionHash, input.account)
-    .then(() => {
+    .then((transaction) => {
+      if (transaction.status === "PRE_CONFIRMED") recordClientActionPreConfirmed(transactionHash);
       addClientTransactionBreadcrumb({
         stage: "completed",
         message: `${input.operation} confirmed`,
@@ -100,6 +108,7 @@ const observeBackgroundTransactionConfirmation = (
       });
     })
     .catch((error) => {
+      recordClientActionFailed(actionId, error);
       void reportClientTransactionFailure({
         error,
         context: {
@@ -113,6 +122,7 @@ const observeBackgroundTransactionConfirmation = (
 export const executeObservedClientTransaction = async <T = unknown>(
   input: ExecuteObservedClientTransactionInput,
 ): Promise<T> => {
+  const actionId = beginClientActionLatency({ operation: input.operation, surface: input.surface });
   const waitForConfirmation = resolveConfirmationWait();
   const shouldWaitForConfirmation = input.waitForConfirmation ?? true;
 
@@ -124,6 +134,7 @@ export const executeObservedClientTransaction = async <T = unknown>(
       chain: input.chain,
     })) as T;
   } catch (error) {
+    recordClientActionFailed(actionId, error);
     const transactionContext = buildTransactionContext(input);
     await reportClientTransactionFailure({
       error,
@@ -136,6 +147,7 @@ export const executeObservedClientTransaction = async <T = unknown>(
   }
 
   const transactionHash = extractTransactionHash(result);
+  if (transactionHash) recordClientActionSubmitted(actionId, transactionHash);
   const transactionContext = buildTransactionContext(input, transactionHash ?? undefined);
   addClientTransactionBreadcrumb({
     stage: "submitted",
@@ -149,7 +161,7 @@ export const executeObservedClientTransaction = async <T = unknown>(
 
   if (!shouldWaitForConfirmation) {
     if (waitForConfirmation) {
-      observeBackgroundTransactionConfirmation(input, transactionHash, waitForConfirmation);
+      observeBackgroundTransactionConfirmation(input, actionId, transactionHash, waitForConfirmation);
     } else {
       addClientTransactionBreadcrumb({
         stage: "confirmation_unverified",
@@ -177,7 +189,8 @@ export const executeObservedClientTransaction = async <T = unknown>(
   }
 
   try {
-    await waitForConfirmation(transactionHash, input.account);
+    const transaction = await waitForConfirmation(transactionHash, input.account);
+    if (transaction.status === "PRE_CONFIRMED") recordClientActionPreConfirmed(transactionHash);
     addClientTransactionBreadcrumb({
       stage: "completed",
       message: `${input.confirmationLabel ?? input.operation} confirmed`,
@@ -185,6 +198,7 @@ export const executeObservedClientTransaction = async <T = unknown>(
     });
     return result;
   } catch (error) {
+    recordClientActionFailed(actionId, error);
     await reportClientTransactionFailure({
       error,
       context: {

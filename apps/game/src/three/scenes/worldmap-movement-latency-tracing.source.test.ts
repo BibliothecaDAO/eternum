@@ -25,6 +25,16 @@ describe("Worldmap movement latency tracing wiring", () => {
     expect(source).toContain('"movement_completed"');
   });
 
+  it("closes explore latency only after the streamed tile reaches a rendered frame", () => {
+    const source = readSource("worldmap.tsx");
+
+    expect(source).toContain("beginClientActionLatency");
+    expect(source).toContain("recordClientActionSubmitted");
+    expect(source).toContain("recordClientActionPreConfirmed");
+    expect(source).toContain("recordExploreRevealAfterRender(current.hexCoords)");
+    expect(source).toContain("window.requestAnimationFrame(() => window.requestAnimationFrame(recordRendered))");
+  });
+
   it("resolves transaction lifetime from the game stream without a worldmap fallback timer", () => {
     const source = readSource("worldmap.tsx");
 
