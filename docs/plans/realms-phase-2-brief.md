@@ -207,6 +207,27 @@ processes, and republishes. The indexer is the latency budget and the EOL depend
     rows, Torii boundary stable — and the replay from genesis took **147 s**, which is why A.2's checkpoint is a
     requirement, not an optimization: herald must start from a checkpoint in seconds, and its startup time is a gate
     number.
+  - _A.2 landed 2026-08-27_ (`27c945e42c`): Postgres checkpoint (18.4 MB gz, every 100 blocks and on SIGTERM), live
+    overlay from the three subscriptions, per-game WSS with the protocol above. Reviewed live by Claude on game 54 with
+    a one-bot harness run (`pnpm lab:probe-herald` is the client used): 646 messages, zero sequence gaps; resume from
+    `(epoch, seq)` replays with no snapshot; a Madara SIGKILL mid-stream is survived (reconnect in the 200 ms retry,
+    reconcile, heads continue); herald SIGTERM checkpoints in 3.8 s and the restart is ready in 3.0 s (1.96 s from
+    checkpoint), a client with the old epoch gets a fresh snapshot; the subscription's `event_index` is the
+    per-transaction position, so the dedup key matches the `getBlockWithReceipts` read. **Three findings, fixed before
+    A.3 consumes the stream (the gate for starting A.3):**
+    1. **Pre-confirmed hints are broadcast one event per `diff`** — 475 diffs for 7 transactions, ~150 for one `settle`,
+       so a client renders a transaction partially (a `Structure` before its `Resource`s). Guardrail 3: one player
+       action becomes visible in one step. Coalesce hints per transaction — flush on transaction-hash change and at the
+       end of the current macrotask — so one action is one `diff` (confirmed diffs are already one per block).
+    2. **`ACCEPTED_ON_L2` copies are re-applied to the fresh overlay.** The events subscription re-delivers each event
+       with `ACCEPTED_ON_L2` after the head; herald applies them as hints after `overlay_reset`, so 214 of the 475
+       pre-confirmed diffs (45 % of the stream) re-set already-confirmed rows and label them overlay. Ignore subscribed
+       events whose `finality_status` is not `PRE_CONFIRMED` (or whose block is ≤ confirmed).
+    3. **A reconnect emits `overlay_reset`+`head` three times for the same block** — reconcile plus the head Madara
+       re-sends on subscribe are both treated as new. Reconcile handles the equal-block case; subscription heads at or
+       below the confirmed block are ignored. Also noted, not gating: `acceptReceipt` resolves every chain transaction's
+       sender with a `getTransactionByHash` (one RPC per transaction at any load); `subscribeNewTransactions` carries
+       `sender_address` and would replace it.
   - _Gates per slice._ **A.1** — snapshot of a lab game matches Torii row-for-row for every decoded component (Torii is
     the oracle until A.4). **A.2** — the forced-replacement transcript from A.0 is handled: after `overlay_reset` the
     client's state equals a fresh snapshot; a killed socket resumes by `seq` with zero gaps; a herald restart mid-game
