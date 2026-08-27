@@ -372,11 +372,9 @@ export async function runWorkload({
         bot.botId,
         previous.then(async () => {
           const rpc = createRpcMetrics();
-          const chainTick = await readCurrentArmyTick(provider, rpc);
           const action = await runBotAction({
             actionIndex,
             bot,
-            chainTick,
             gameId: bot.gameId,
             kind: resolveActionKind(tick),
             pathReservations: pathReservations.get(bot.gameId)!,
@@ -624,10 +622,9 @@ async function createBotExplorers({
   });
 }
 
-async function runBotAction(options: {
+interface RunBotActionOptions {
   actionIndex: number;
   bot: HarnessBot;
-  chainTick: number;
   gameId: number;
   kind: WorkloadActionKind;
   pathReservations: PathReservations;
@@ -637,9 +634,14 @@ async function runBotAction(options: {
   systems: HarnessSystemAddresses;
   tick: number;
   toriiObserver: ToriiObserver;
-}): Promise<TrackedTransaction> {
+}
+
+type ExecuteBotActionOptions = RunBotActionOptions & { chainTick: number };
+
+async function runBotAction(options: RunBotActionOptions): Promise<TrackedTransaction> {
   try {
-    const transaction = await executeBotAction(options);
+    const chainTick = await readCurrentArmyTick(options.provider, options.rpc);
+    const transaction = await executeBotAction({ ...options, chainTick });
     classifyTransactionFailure(transaction);
     return transaction;
   } catch (error) {
@@ -648,7 +650,7 @@ async function runBotAction(options: {
   }
 }
 
-async function executeBotAction(options: Parameters<typeof runBotAction>[0]): Promise<TrackedTransaction> {
+async function executeBotAction(options: ExecuteBotActionOptions): Promise<TrackedTransaction> {
   if (options.kind === "produce") return runProductionAction(options);
   return runExplorerAction({ ...options, kind: options.kind });
 }
@@ -663,7 +665,7 @@ async function runProductionAction({
   systems,
   tick,
   toriiObserver,
-}: Omit<Parameters<typeof runBotAction>[0], "kind" | "pathReservations">): Promise<TrackedTransaction> {
+}: Omit<ExecuteBotActionOptions, "chainTick" | "kind" | "pathReservations">): Promise<TrackedTransaction> {
   const structure = bot.structures[bot.nextProductionStructure % bot.structures.length]!;
   bot.nextProductionStructure += 1;
   const resourceBefore = await toriiObserver.readResource(gameId, structure.structureId);
@@ -724,7 +726,7 @@ async function runExplorerAction({
   systems,
   tick,
   toriiObserver,
-}: Parameters<typeof runBotAction>[0] & { kind: "move" | "explore" }): Promise<TrackedTransaction> {
+}: ExecuteBotActionOptions & { kind: "move" | "explore" }): Promise<TrackedTransaction> {
   const plan = planExplorerAction(bot, kind, chainTick, gameId, systems.troopMovement, pathReservations);
   const selectedExplorer = plan.explorer;
   const previousCoord = selectedExplorer.coord;

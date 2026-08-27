@@ -16,6 +16,8 @@ import {
   resolveActionKind,
   resolveExplorerActionStaminaCost,
   resolveWorkloadTicks,
+  runWorkload,
+  type HarnessBot,
 } from "./driver";
 import {
   isThresholdBlockingFailure,
@@ -114,6 +116,32 @@ describe("Madara harness workload", () => {
       "chain_or_driver",
     );
     expect(classifyWorkloadFailure(new Error("Torii query timed out"))).toBe("chain_or_driver");
+  });
+
+  it("records an action RPC failure instead of rejecting the workload", async () => {
+    let blockReads = 0;
+    const provider = {
+      async getBlock() {
+        blockReads += 1;
+        if (blockReads === 1) return { timestamp: 60 };
+        throw new Error("The socket connection was closed unexpectedly");
+      },
+    };
+    const workload = await runWorkload({
+      bots: [readyHarnessBot()],
+      intervalSeconds: 1,
+      minutes: 0.001,
+      provider: provider as never,
+      systems: { blitzRealm: "0x1", production: "0x2", troopManagement: "0x3", troopMovement: "0x4" },
+      toriiSqlUrl: "http://127.0.0.1:1/sql",
+    });
+
+    expect(workload.actions).toHaveLength(1);
+    expect(workload.actions[0]).toMatchObject({
+      failureClass: "chain_or_driver",
+      outcome: "driver_failed",
+      rpc: { getBlock: { calls: 1 } },
+    });
   });
 
   it("classifies revert reasons without treating human tile contention as a threshold failure", () => {
@@ -336,6 +364,33 @@ function resourceRow(structureId: string, eventId: string, laborBalance: string,
     structure_id: structureId,
     wood_output: woodOutput,
   };
+}
+
+function readyHarnessBot(): HarnessBot {
+  return {
+    account: {},
+    address: "0x1",
+    botId: 1,
+    explorers: [
+      {
+        atFrontier: true,
+        blockedDirections: new Map(),
+        coord: { x: 1, y: 1 },
+        explorerId: "1",
+        lastUsedAt: -1,
+        modelEventId: "event-1",
+        outwardDirection: 0,
+        pathDirections: [],
+        stamina: 30,
+        staminaUpdatedTick: 1,
+        structureId: "1",
+        troopType: 0,
+      },
+    ],
+    gameId: 1,
+    nextProductionStructure: 0,
+    structures: [{ coord: { x: 0, y: 0 }, direction: 0, structureId: "1" }],
+  } as HarnessBot;
 }
 
 function blockRow(blockNumber: number, transactions: number, blockProductionMs: number) {
