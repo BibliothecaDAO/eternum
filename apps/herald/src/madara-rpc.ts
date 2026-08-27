@@ -1,4 +1,4 @@
-import type { Felt, RawWorldEvent } from "./types";
+import type { Felt, RawWorldEvent, RpcBlockWithReceipts, RpcTransaction } from "./types";
 
 interface JsonRpcSuccess<Result> {
   jsonrpc: "2.0";
@@ -38,6 +38,16 @@ export class MadaraRpc {
 
   public blockNumber(): Promise<number> {
     return this.request<number>("starknet_blockNumber", []);
+  }
+
+  public getBlockWithReceipts(block: number | "pre_confirmed"): Promise<RpcBlockWithReceipts> {
+    return this.request<RpcBlockWithReceipts>("starknet_getBlockWithReceipts", [
+      typeof block === "number" ? { block_number: block } : block,
+    ]);
+  }
+
+  public getTransactionByHash(hash: Felt): Promise<RpcTransaction> {
+    return this.request<RpcTransaction>("starknet_getTransactionByHash", [hash]);
   }
 
   public async *getEvents(input: GetEventsInput): AsyncGenerator<EventPageResult> {

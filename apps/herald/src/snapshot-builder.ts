@@ -1,15 +1,22 @@
 import type { ModelRegistry } from "./model-registry";
 import { MadaraRpc } from "./madara-rpc";
-import type { BuiltGameSnapshot, RawWorldEvent } from "./types";
+import type { BuiltGameSnapshot, DecodedWorldEvent, FoldChange, RawWorldEvent, ReplayMetrics } from "./types";
 import { WORLD_EVENT_SELECTORS, decodeWorldEvent } from "./world-event-decoder";
 import { WorldFold } from "./world-fold";
 
-interface BuildWorldFoldInput {
+interface ReplayWorldEventsInput {
+  fold?: WorldFold;
   registry: ModelRegistry;
   rpc: MadaraRpc;
+  fromBlock: number;
+  toBlock: number;
+  onPage?: (page: { number: number; eventCount: number }) => void;
+  onChange?: (event: DecodedWorldEvent, change: FoldChange | undefined) => void;
+}
+
+interface BuildWorldFoldInput extends Omit<ReplayWorldEventsInput, "fromBlock" | "toBlock"> {
   confirmedBlock?: number;
   fromBlock?: number;
-  onPage?: (page: { number: number; eventCount: number }) => void;
 }
 
 interface BuiltWorldFold {
@@ -19,19 +26,20 @@ interface BuiltWorldFold {
 }
 
 const compareEvents = (left: RawWorldEvent, right: RawWorldEvent): number =>
-  left.block_number - right.block_number ||
+  (left.block_number ?? Number.MAX_SAFE_INTEGER) - (right.block_number ?? Number.MAX_SAFE_INTEGER) ||
   left.transaction_index - right.transaction_index ||
   left.event_index - right.event_index;
 
-export const buildWorldFold = async ({
+export const replayWorldEvents = async ({
   registry,
   rpc,
-  confirmedBlock,
-  fromBlock = 0,
+  fold: existingFold,
+  fromBlock,
+  toBlock,
   onPage,
-}: BuildWorldFoldInput): Promise<BuiltWorldFold> => {
-  const toBlock = confirmedBlock ?? (await rpc.blockNumber());
-  const fold = new WorldFold(registry);
+  onChange,
+}: ReplayWorldEventsInput): Promise<{ fold: WorldFold; metrics: Omit<ReplayMetrics, "retained_rows"> }> => {
+  const fold = existingFold ?? new WorldFold(registry);
   const eventSelectors = Object.values(WORLD_EVENT_SELECTORS);
   const modelSelectors = [...registry.bySelector.keys()];
   let decodedEvents = 0;
@@ -39,6 +47,13 @@ export const buildWorldFold = async ({
   let pages = 0;
   let storeEvents = 0;
   let previousEvent: RawWorldEvent | undefined;
+
+  if (fromBlock > toBlock) {
+    return {
+      fold,
+      metrics: { decoded_events: 0, event_messages: 0, pages: 0, store_events: 0 },
+    };
+  }
 
   for await (const page of rpc.getEvents({
     worldAddress: registry.worldAddress,
@@ -70,21 +85,38 @@ export const buildWorldFold = async ({
       decodedEvents += 1;
       if (event.kind === "event") eventMessages += 1;
       else storeEvents += 1;
-      fold.apply(event);
+      const change = fold.apply(event);
+      onChange?.(event, change);
     }
     onPage?.({ number: page.page, eventCount: page.events.length });
   }
 
   return {
-    confirmedBlock: toBlock,
     fold,
     metrics: {
       decoded_events: decodedEvents,
       event_messages: eventMessages,
       pages,
-      retained_rows: fold.retainedRowCount(),
       store_events: storeEvents,
     },
+  };
+};
+
+export const buildWorldFold = async ({
+  registry,
+  rpc,
+  confirmedBlock,
+  fold,
+  fromBlock = 0,
+  onPage,
+  onChange,
+}: BuildWorldFoldInput): Promise<BuiltWorldFold> => {
+  const toBlock = confirmedBlock ?? (await rpc.blockNumber());
+  const replayed = await replayWorldEvents({ fold, fromBlock, onChange, onPage, registry, rpc, toBlock });
+  return {
+    confirmedBlock: toBlock,
+    fold: replayed.fold,
+    metrics: { ...replayed.metrics, retained_rows: replayed.fold.retainedRowCount() },
   };
 };
 

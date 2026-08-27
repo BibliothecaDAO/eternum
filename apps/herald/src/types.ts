@@ -36,7 +36,7 @@ export interface WorldManifest {
 }
 
 export interface RawWorldEvent {
-  block_number: number;
+  block_number: number | null;
   transaction_hash: Felt;
   transaction_index: number;
   event_index: number;
@@ -44,8 +44,54 @@ export interface RawWorldEvent {
   data: Felt[];
 }
 
+export interface RpcEvent {
+  from_address: Felt;
+  keys: Felt[];
+  data: Felt[];
+}
+
+export interface RpcReceipt {
+  block_number?: number | null;
+  transaction_hash: Felt;
+  finality_status: string;
+  execution_status?: string;
+  revert_reason?: string;
+  events: RpcEvent[];
+}
+
+export interface RpcTransaction {
+  transaction_hash?: Felt;
+  sender_address?: Felt;
+  contract_address?: Felt;
+  type: string;
+}
+
+export interface RpcBlockTransaction {
+  receipt: RpcReceipt;
+  transaction: RpcTransaction;
+}
+
+export interface RpcBlockWithReceipts {
+  block_number: number;
+  timestamp: number;
+  transactions: RpcBlockTransaction[];
+}
+
+export interface RpcHead {
+  block_number: number;
+  timestamp: number;
+}
+
+export interface RpcSubscribedEvent extends RpcEvent {
+  block_number: number | null;
+  transaction_hash: Felt;
+  transaction_index: number;
+  event_index: number;
+  finality_status: string;
+}
+
 export interface EventPosition {
-  blockNumber: number;
+  blockNumber: number | null;
   transactionHash: Felt;
   transactionIndex: number;
   eventIndex: number;
@@ -71,6 +117,40 @@ export type DecodedWorldEvent =
 export interface FoldRow {
   key: Felt;
   value: DecodedRecord;
+}
+
+export interface FoldCheckpointRow {
+  entity_id: Felt;
+  key: DecodedRecord;
+  value: DecodedRecord;
+}
+
+export interface FoldCheckpointModel {
+  model: string;
+  rows: FoldCheckpointRow[];
+}
+
+export interface FoldCheckpoint {
+  version: 1;
+  world_address: Felt;
+  models: FoldCheckpointModel[];
+}
+
+export interface FoldSet {
+  model: string;
+  key: Felt;
+  value: DecodedRecord;
+}
+
+export interface FoldDelete {
+  model: string;
+  key: Felt;
+}
+
+export interface FoldChange {
+  gameId?: string;
+  set?: FoldSet;
+  del?: FoldDelete;
 }
 
 export interface SnapshotModel {

@@ -22,7 +22,7 @@ const snapshot: GameSnapshot = {
 
 const handler = createHeraldRequestHandler({
   chain: "madara",
-  confirmedBlock: 12,
+  confirmedBlock: () => 12,
   decodedModelCount: 39,
   fold: { snapshot: () => snapshot },
   metrics,

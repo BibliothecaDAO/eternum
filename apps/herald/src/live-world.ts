@@ -1,0 +1,273 @@
+import { normalizeFelt, type ModelRegistry } from "./model-registry";
+import type { CheckpointStore } from "./checkpoint-store";
+import { GameStreamHub, type GameStreamSession, type StreamSocket } from "./game-stream";
+import { MadaraRpc } from "./madara-rpc";
+import { replayWorldEvents } from "./snapshot-builder";
+import type { ResumeRequest } from "./stream-protocol";
+import type {
+  FoldChange,
+  FoldDelete,
+  FoldSet,
+  GameSnapshot,
+  RawWorldEvent,
+  RpcBlockWithReceipts,
+  RpcHead,
+  RpcReceipt,
+  RpcSubscribedEvent,
+} from "./types";
+import { decodeWorldEvent } from "./world-event-decoder";
+import { WorldFold } from "./world-fold";
+
+interface LiveWorldInput {
+  chain: string;
+  checkpointEveryBlocks: number;
+  checkpointStore: Pick<CheckpointStore, "save">;
+  checkpointBlock?: number;
+  confirmedBlock: number;
+  confirmedFold: WorldFold;
+  registry: ModelRegistry;
+  rpc: MadaraRpc;
+  hub?: GameStreamHub;
+}
+
+interface GameChanges {
+  del: FoldDelete[];
+  set: FoldSet[];
+}
+
+export class LiveWorld {
+  public readonly hub: GameStreamHub;
+  private confirmedFold: WorldFold;
+  private overlayFold: WorldFold;
+  private confirmedBlockValue: number;
+  private preconfirmedBlockValue: number | null = null;
+  private lastCheckpointBlock: number;
+  private checkpointFailure?: Error;
+  private checkpointInFlight = false;
+  private checkpointWrite = Promise.resolve();
+  private readonly knownGames = new Set<string>();
+  private readonly overlayEvents = new Set<string>();
+  private readonly transactionSenders = new Map<string, string | undefined>();
+
+  constructor(private readonly input: LiveWorldInput) {
+    this.hub = input.hub ?? new GameStreamHub();
+    this.confirmedFold = input.confirmedFold;
+    this.overlayFold = input.confirmedFold.overlay();
+    this.confirmedBlockValue = input.confirmedBlock;
+    this.lastCheckpointBlock = input.checkpointBlock ?? input.confirmedBlock;
+  }
+
+  public get confirmedBlock(): number {
+    return this.confirmedBlockValue;
+  }
+
+  public get preconfirmedBlock(): number | null {
+    return this.preconfirmedBlockValue;
+  }
+
+  public snapshot(gameId: string): GameSnapshot {
+    return this.overlayFold.snapshot(gameId, this.confirmedBlockValue);
+  }
+
+  public attach(gameId: string, socket: StreamSocket): GameStreamSession {
+    this.knownGames.add(gameId);
+    return this.hub.attach({
+      confirmedBlock: this.confirmedBlockValue,
+      gameId,
+      preconfirmedBlock: this.preconfirmedBlockValue,
+      snapshot: () => this.snapshot(gameId),
+      socket,
+    });
+  }
+
+  public resume(session: GameStreamSession, request: ResumeRequest): void {
+    this.hub.resume(session, request);
+  }
+
+  public detach(session: GameStreamSession): void {
+    this.hub.detach(session);
+  }
+
+  public async acceptHead(head: RpcHead): Promise<void> {
+    if (this.checkpointFailure) throw this.checkpointFailure;
+    if (head.block_number < this.confirmedBlockValue) return;
+
+    const confirmedChanges = await this.applyConfirmedThrough(head.block_number);
+    for (const [block, changes] of confirmedChanges) this.broadcastChanges(changes, block, false);
+    this.resetOverlay();
+    const preconfirmedChanges = await this.rebuildOverlay();
+    this.broadcastChanges(preconfirmedChanges, this.preconfirmedBlockValue, true);
+    for (const gameId of this.knownGames) this.hub.publishHead(gameId, head.block_number, head.timestamp);
+    this.checkpointIfDue();
+  }
+
+  public acceptPreconfirmedEvent(event: RpcSubscribedEvent): void {
+    const change = this.applyOverlayEvent(this.rawSubscribedEvent(event));
+    if (change) this.broadcastChanges([change], null, true);
+  }
+
+  public async acceptReceipt(receipt: RpcReceipt): Promise<void> {
+    const transactionHash = normalizeFelt(receipt.transaction_hash);
+    const sender = await this.resolveTransactionSender(transactionHash);
+    if (!sender) return;
+
+    const status = receipt.execution_status === "REVERTED" ? "REVERTED" : receipt.finality_status;
+    for (const gameId of this.knownGames) {
+      if (!this.overlayFold.gameplayAccounts(gameId).has(sender)) continue;
+      this.hub.publishTransaction(gameId, {
+        block: receipt.block_number ?? null,
+        hash: transactionHash,
+        revert_reason: receipt.revert_reason,
+        status,
+      });
+    }
+    if (receipt.finality_status !== "PRE_CONFIRMED") this.transactionSenders.delete(transactionHash);
+  }
+
+  public async reconcileAfterSubscribe(): Promise<void> {
+    const blockNumber = await this.input.rpc.blockNumber();
+    const block = await this.input.rpc.getBlockWithReceipts(blockNumber);
+    await this.acceptHead({ block_number: block.block_number, timestamp: block.timestamp });
+  }
+
+  public async checkpoint(): Promise<void> {
+    await this.checkpointWrite;
+    if (this.checkpointFailure) throw this.checkpointFailure;
+    await this.input.checkpointStore.save(this.input.chain, this.confirmedBlockValue, this.confirmedFold);
+    this.lastCheckpointBlock = this.confirmedBlockValue;
+  }
+
+  private async applyConfirmedThrough(targetBlock: number): Promise<Map<number, FoldChange[]>> {
+    if (targetBlock === this.confirmedBlockValue) return new Map();
+    const changes = new Map<number, FoldChange[]>();
+    await replayWorldEvents({
+      fold: this.confirmedFold,
+      fromBlock: this.confirmedBlockValue + 1,
+      onChange: (event, change) => {
+        if (!change) return;
+        const block = event.position.blockNumber;
+        if (block === null) throw new Error("Confirmed getEvents result has a null block number");
+        const blockChanges = changes.get(block) ?? [];
+        blockChanges.push(change);
+        changes.set(block, blockChanges);
+      },
+      registry: this.input.registry,
+      rpc: this.input.rpc,
+      toBlock: targetBlock,
+    });
+    this.confirmedBlockValue = targetBlock;
+    return changes;
+  }
+
+  private resetOverlay(): void {
+    this.overlayFold = this.confirmedFold.overlay();
+    this.overlayEvents.clear();
+    this.transactionSenders.clear();
+    for (const gameId of this.knownGames) this.hub.publishOverlayReset(gameId, this.confirmedBlockValue);
+  }
+
+  private async rebuildOverlay(): Promise<FoldChange[]> {
+    const block = await this.input.rpc.getBlockWithReceipts("pre_confirmed");
+    this.preconfirmedBlockValue = block.block_number;
+    const changes: FoldChange[] = [];
+    for (const event of this.worldEventsFromBlock(block)) {
+      const change = this.applyOverlayEvent(event);
+      if (change) changes.push(change);
+    }
+    return changes;
+  }
+
+  private applyOverlayEvent(rawEvent: RawWorldEvent): FoldChange | undefined {
+    const identity = `${normalizeFelt(rawEvent.transaction_hash)}:${rawEvent.event_index}`;
+    if (this.overlayEvents.has(identity)) return undefined;
+    this.overlayEvents.add(identity);
+    const event = decodeWorldEvent(this.input.registry, rawEvent);
+    return event ? this.overlayFold.apply(event) : undefined;
+  }
+
+  private worldEventsFromBlock(block: RpcBlockWithReceipts): RawWorldEvent[] {
+    const events: RawWorldEvent[] = [];
+    block.transactions.forEach(({ receipt }, transactionIndex) => {
+      receipt.events.forEach((event, eventIndex) => {
+        if (BigInt(event.from_address) !== BigInt(this.input.registry.worldAddress)) return;
+        events.push({
+          block_number: null,
+          data: event.data,
+          event_index: eventIndex,
+          keys: event.keys,
+          transaction_hash: receipt.transaction_hash,
+          transaction_index: transactionIndex,
+        });
+      });
+    });
+    return events;
+  }
+
+  private rawSubscribedEvent(event: RpcSubscribedEvent): RawWorldEvent {
+    if (BigInt(event.from_address) !== BigInt(this.input.registry.worldAddress)) {
+      throw new Error(`Received subscribed event from unexpected address ${event.from_address}`);
+    }
+    if (!Number.isSafeInteger(event.event_index) || event.event_index < 0) {
+      throw new Error(`Subscribed event ${event.transaction_hash} has invalid event_index ${event.event_index}`);
+    }
+    return {
+      block_number: event.block_number,
+      data: event.data,
+      event_index: event.event_index,
+      keys: event.keys,
+      transaction_hash: event.transaction_hash,
+      transaction_index: event.transaction_index ?? 0,
+    };
+  }
+
+  private broadcastChanges(changes: FoldChange[], block: number | null, preconfirmed: boolean): void {
+    const byGame = new Map<string, GameChanges>();
+    for (const change of changes) {
+      const gameIds = change.gameId === undefined ? this.knownGames : [change.gameId];
+      for (const gameId of gameIds) {
+        const grouped = byGame.get(gameId) ?? { del: [], set: [] };
+        if (change.set) grouped.set.push(change.set);
+        if (change.del) grouped.del.push(change.del);
+        byGame.set(gameId, grouped);
+      }
+    }
+    for (const [gameId, grouped] of byGame) {
+      this.hub.publishDiff(gameId, { block, del: grouped.del, preconfirmed, set: grouped.set });
+    }
+  }
+
+  private async resolveTransactionSender(transactionHash: string): Promise<string | undefined> {
+    if (this.transactionSenders.has(transactionHash)) return this.transactionSenders.get(transactionHash);
+    const transaction = await this.input.rpc.getTransactionByHash(transactionHash);
+    const address = transaction.sender_address ?? transaction.contract_address;
+    const sender = address ? normalizeFelt(address) : undefined;
+    this.transactionSenders.set(transactionHash, sender);
+    return sender;
+  }
+
+  private checkpointIfDue(): void {
+    if (this.checkpointInFlight) return;
+    if (this.confirmedBlockValue - this.lastCheckpointBlock < this.input.checkpointEveryBlocks) return;
+    const confirmedBlock = this.confirmedBlockValue;
+    const startedAt = performance.now();
+    this.lastCheckpointBlock = confirmedBlock;
+    this.checkpointInFlight = true;
+    this.checkpointWrite = this.input.checkpointStore
+      .save(this.input.chain, confirmedBlock, this.confirmedFold)
+      .then(() => {
+        console.info(
+          JSON.stringify({
+            confirmedBlock,
+            durationMs: Math.round(performance.now() - startedAt),
+            event: "herald_checkpoint_saved",
+          }),
+        );
+      })
+      .catch((error) => {
+        this.checkpointFailure = error instanceof Error ? error : new Error(String(error));
+      })
+      .finally(() => {
+        this.checkpointInFlight = false;
+      });
+  }
+}

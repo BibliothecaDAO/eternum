@@ -174,4 +174,26 @@ describe("WorldFold", () => {
     fold.apply(event);
     expect(fold.retainedRowCount()).toBe(0);
   });
+
+  it("restores checkpoints and keeps pre-confirmed overlays replaceable", () => {
+    const confirmed = new WorldFold(registry);
+    confirmed.apply(
+      decodeRequired(
+        registry,
+        rawEvent(WORLD_EVENT_SELECTORS.set, "0x101", ["0x2", "0x7", "0x2", "0x5", "0x3", "0x1", "0x4", "0x5", "0x2"]),
+      ),
+    );
+    const restored = WorldFold.restore(registry, confirmed.checkpoint());
+    const overlay = restored.overlay();
+    overlay.apply(
+      decodeRequired(
+        registry,
+        rawEvent(WORLD_EVENT_SELECTORS.updateMember, "0x101", ["0x1", "0x9"], [hash.getSelectorFromName("count")]),
+      ),
+    );
+
+    expect(confirmed.snapshot(7, 12)).toEqual(restored.snapshot(7, 12));
+    expect(restored.snapshot(7, 12).models[0].rows[0].value.count).toBe("0x3");
+    expect(overlay.snapshot(7, 12).models[0].rows[0].value.count).toBe("0x9");
+  });
 });

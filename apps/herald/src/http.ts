@@ -6,7 +6,7 @@ interface SnapshotSource {
 
 interface HeraldHttpState {
   chain: string;
-  confirmedBlock: number;
+  confirmedBlock: () => number;
   decodedModelCount: number;
   fold: SnapshotSource;
   metrics: ReplayMetrics;
@@ -38,7 +38,7 @@ export const createHeraldRequestHandler = (state: HeraldHttpState): ((request: R
     const url = new URL(request.url);
     if (request.method === "GET" && url.pathname === "/health") {
       return jsonResponse({
-        confirmed_block: state.confirmedBlock,
+        confirmed_block: state.confirmedBlock(),
         decoded_models: state.decodedModelCount,
         metrics: state.metrics,
         service: "herald",
@@ -50,7 +50,7 @@ export const createHeraldRequestHandler = (state: HeraldHttpState): ((request: R
     if (!match) return jsonResponse({ error: "not_found" }, 404);
 
     try {
-      const snapshot = state.fold.snapshot(match[1], state.confirmedBlock);
+      const snapshot = state.fold.snapshot(match[1], state.confirmedBlock());
       return jsonResponse(selectModels(snapshot, requestedModels(url)));
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
