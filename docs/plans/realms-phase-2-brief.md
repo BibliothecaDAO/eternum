@@ -76,8 +76,9 @@ processes, and republishes. The indexer is the latency budget and the EOL depend
   the hash. The write path stays one HTTPS `add_invoke_transaction` per action; chat keeps its socket on
   `realtime-server`.
 - **Decodes world events against the manifest ABIs into typed models** — the one real engineering cost of leaving Torii.
-  Scope discipline: decode the models the client actually renders — 40 distinct RECS components are referenced across
-  `apps/game/src` and `packages/core/src` on 2026-08-27 — not the whole world schema.
+  Scope discipline: decode the models the client actually syncs — the executable list is `GAME_SYNC_MODEL_MANIFEST` in
+  `packages/core` (39 on 2026-08-27: 35 persistent, 4 event-message; herald imports it and carries no second list) — not
+  the world schema's 88 models and 24 events.
 - **State model:** confirmed base + replaceable pre-confirmed overlay. The WS spec lets pre-confirmed events repeat or
   be omitted, and Madara replaces a pre-confirmed block without an explicit reset notification, so **events are hints,
   the re-read is truth**: on every new confirmed head herald applies the closed block's events to the base, drops the
@@ -194,9 +195,18 @@ processes, and republishes. The indexer is the latency budget and the EOL depend
     (pre-confirmed and confirmed) and pushes `tx` for every hash sent from a gameplay account settled in that game (the
     sender set is known from the fold); the client's submit path resolves on `tx`, and A.3's nonce dispenser resyncs on
     `REVERTED` the same way it does on a rejection.
-  - _Multi-game lifecycle._ One fold per `game_id`, discovered from the world's `GameRegistry` models; a fold starts at
-    game registration, is checkpointed at game end and kept for replay (section A "Replay is free"), and is evicted from
-    memory after a configured idle time — the chain remains the replay source.
+  - _Multi-game lifecycle._ One fold per **chain** (A.1 landed it that way, and it is simpler: the world's store events
+    are one stream, and game scoping is a filter on the `game_id` key at snapshot time); per-game state is what
+    subscribers and snapshots see. A finished game's snapshot is checkpointed at game end and kept for replay (section A
+    "Replay is free"); rows of games past a configured age are evicted from the in-memory fold — the chain remains the
+    replay source.
+  - _A.1 landed 2026-08-27_ (`7714278250` dead paths deleted, `05ba899589` `apps/herald`): manifest-driven decoder (Dojo
+    store layout normalized, then starknet.js `CallData.parse` through synthetic ABI functions — no hand-written
+    parsers), a per-chain fold, per-game HTTP snapshots, and the parity gate `pnpm --dir apps/herald parity`. Reviewed
+    and reproduced by Claude on game 53: all 35 persistent models match Torii row-for-row, 2,933,882 events, 229,254
+    rows, Torii boundary stable — and the replay from genesis took **147 s**, which is why A.2's checkpoint is a
+    requirement, not an optimization: herald must start from a checkpoint in seconds, and its startup time is a gate
+    number.
   - _Gates per slice._ **A.1** — snapshot of a lab game matches Torii row-for-row for every decoded component (Torii is
     the oracle until A.4). **A.2** — the forced-replacement transcript from A.0 is handled: after `overlay_reset` the
     client's state equals a fresh snapshot; a killed socket resumes by `seq` with zero gaps; a herald restart mid-game

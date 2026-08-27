@@ -81,7 +81,7 @@ export type PlayRouteBootPhase =
 export type PlayRouteReconnectStatus = "idle" | "restoring" | "connecting" | "failed" | "connected";
 
 interface PlayRouteBootSnapshot {
-  account: Account | AccountInterface | null;
+  account: AccountInterface | null;
   bootToken: number;
   currentTask: string | null;
   error: Error | null;

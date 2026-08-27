@@ -32,7 +32,10 @@ const SIWS_DOMAIN_VERSION = "0.0.1";
 const SIWS_MESSAGE_VERSION = "0.0.5";
 const SHORT_STRING_MAX_LENGTH = 31;
 
+// Open index signatures keep these assignable to starknet.js's `TypedData` (`StarknetDomain` and
+// `message` are open records); the strict parser still rejects unknown fields at runtime.
 export interface SiwsDomain {
+  [field: string]: unknown;
   name: string;
   version: string;
   chainId: string;
@@ -40,6 +43,7 @@ export interface SiwsDomain {
 }
 
 export interface SiwsMessageFields {
+  [field: string]: unknown;
   address: string;
   statement: string;
   uri: string;
@@ -54,6 +58,7 @@ interface SiwsTypeMember {
 }
 
 interface SiwsTypes {
+  [typeName: string]: SiwsTypeMember[];
   StarknetDomain: SiwsTypeMember[];
   Message: SiwsTypeMember[];
 }
