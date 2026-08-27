@@ -6,14 +6,14 @@ import { configureGameplayAccountSubmits, executeGameplayAccountTransaction } fr
 const CALL = { contractAddress: "0x1", entrypoint: "play", calldata: [] };
 
 describe("gameplay account submits", () => {
-  it("serializes two concurrent submits for one account and reads each pre-confirmed nonce", async () => {
+  it("serializes concurrent submits and dispenses nonces from one pre-confirmed read", async () => {
     let releaseFirst!: () => void;
     const firstBlocked = new Promise<void>((resolve) => {
       releaseFirst = resolve;
     });
     let active = 0;
     let maximumActive = 0;
-    const account = createAccount("0xabc", ["0x7", "0x8"], async () => {
+    const account = createAccount("0xabc", ["0x7"], async () => {
       active += 1;
       maximumActive = Math.max(maximumActive, active);
       if (account.execute.mock.calls.length === 1) await firstBlocked;
@@ -32,8 +32,8 @@ describe("gameplay account submits", () => {
 
     expect(maximumActive).toBe(1);
     expect(account.getNonce).toHaveBeenNthCalledWith(1, BlockTag.PRE_CONFIRMED);
-    expect(account.getNonce).toHaveBeenNthCalledWith(2, BlockTag.PRE_CONFIRMED);
-    expect(account.execute.mock.calls.map(([, details]) => details?.nonce)).toEqual(["0x7", "0x8"]);
+    expect(account.getNonce).toHaveBeenCalledTimes(1);
+    expect(account.execute.mock.calls.map(([, details]) => details?.nonce)).toEqual([7n, 8n]);
     expect(account.execute.mock.calls[0]?.[1]).toMatchObject({
       tip: 0,
       resourceBounds: {
@@ -55,9 +55,12 @@ describe("gameplay account submits", () => {
     await expect(executeGameplayAccountTransaction({ account, calls: CALL, chain: "madara" })).resolves.toEqual({
       transaction_hash: "0x2",
     });
+    await expect(executeGameplayAccountTransaction({ account, calls: CALL, chain: "madara" })).resolves.toEqual({
+      transaction_hash: "0x2",
+    });
     expect(account.getNonce).toHaveBeenCalledTimes(2);
-    expect(account.execute).toHaveBeenCalledTimes(2);
-    expect(account.execute.mock.calls.map(([, details]) => details?.nonce)).toEqual(["0x6", "0x7"]);
+    expect(account.execute).toHaveBeenCalledTimes(3);
+    expect(account.execute.mock.calls.map(([, details]) => details?.nonce)).toEqual([6n, 7n, 8n]);
   });
 
   it("installs the same submit policy on generated-system account calls", async () => {
@@ -68,7 +71,7 @@ describe("gameplay account submits", () => {
     await expect(configured.execute(CALL)).resolves.toEqual({ transaction_hash: "0x3" });
     expect(rawExecute).toHaveBeenCalledWith(
       CALL,
-      expect.objectContaining({ nonce: "0x9", tip: 0, resourceBounds: expect.any(Object) }),
+      expect.objectContaining({ nonce: 9n, tip: 0, resourceBounds: expect.any(Object) }),
     );
   });
 

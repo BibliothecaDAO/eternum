@@ -18,6 +18,11 @@ interface ConfiguredGameplaySubmit {
   execute: RawExecute;
 }
 
+interface GameplayAccountSubmitState {
+  nextNonce?: bigint;
+  tail: Promise<void>;
+}
+
 interface ExecuteGameplayAccountTransactionOptions {
   account: GameplaySubmitAccount;
   calls: AllowArray<Call>;
@@ -26,7 +31,7 @@ interface ExecuteGameplayAccountTransactionOptions {
 }
 
 const configuredGameplaySubmits = new WeakMap<object, ConfiguredGameplaySubmit>();
-const accountSubmitTails = new Map<string, Promise<void>>();
+const accountSubmitStates = new Map<string, GameplayAccountSubmitState>();
 
 export function configureGameplayAccountSubmits(account: Account, chain: GameChain): Account {
   const configured = configuredGameplaySubmits.get(account);
@@ -54,8 +59,8 @@ export function executeGameplayAccountTransaction({
   if (configured) assertConfiguredChain(account.address, configured.chain, chain);
 
   const execute = configured?.execute ?? account.execute.bind(account);
-  return runSerializedGameplayAccountSubmit(`${chain}:${account.address.toLowerCase()}`, () =>
-    executeWithCurrentNonce({ account, calls, chain, details, execute }),
+  return runSerializedGameplayAccountSubmit(`${chain}:${account.address.toLowerCase()}`, (state) =>
+    executeWithDispensedNonce({ account, calls, chain, details, execute, state }),
   );
 }
 
@@ -65,50 +70,65 @@ function assertConfiguredChain(address: string, configuredChain: GameChain, requ
   }
 }
 
-function runSerializedGameplayAccountSubmit<T>(key: string, submit: () => Promise<T>): Promise<T> {
-  const previous = accountSubmitTails.get(key) ?? Promise.resolve();
-  const result = previous.then(submit, submit);
+function runSerializedGameplayAccountSubmit<T>(
+  key: string,
+  submit: (state: GameplayAccountSubmitState) => Promise<T>,
+): Promise<T> {
+  const state = accountSubmitStates.get(key) ?? { tail: Promise.resolve() };
+  accountSubmitStates.set(key, state);
+  const result = state.tail.then(
+    () => submit(state),
+    () => submit(state),
+  );
   const tail = result.then(
     () => undefined,
     () => undefined,
   );
-  accountSubmitTails.set(key, tail);
-  void tail.finally(() => {
-    if (accountSubmitTails.get(key) === tail) accountSubmitTails.delete(key);
-  });
+  state.tail = tail;
   return result;
 }
 
-async function executeWithCurrentNonce({
+async function executeWithDispensedNonce({
   account,
   calls,
   chain,
   details,
   execute,
-}: ExecuteGameplayAccountTransactionOptions & { execute: RawExecute }): Promise<InvokeFunctionResponse> {
+  state,
+}: ExecuteGameplayAccountTransactionOptions & {
+  execute: RawExecute;
+  state: GameplayAccountSubmitState;
+}): Promise<InvokeFunctionResponse> {
   try {
-    return await executeOnceWithCurrentNonce({ account, calls, chain, details, execute });
+    return await executeOnceWithDispensedNonce({ account, calls, chain, details, execute, state });
   } catch (error) {
     if (!isNonceRejection(error)) throw error;
-    return executeOnceWithCurrentNonce({ account, calls, chain, details, execute });
+    state.nextNonce = undefined;
+    return executeOnceWithDispensedNonce({ account, calls, chain, details, execute, state });
   }
 }
 
-async function executeOnceWithCurrentNonce({
+async function executeOnceWithDispensedNonce({
   account,
   calls,
   chain,
   details,
   execute,
-}: ExecuteGameplayAccountTransactionOptions & { execute: RawExecute }): Promise<InvokeFunctionResponse> {
-  const nonce = await account.getNonce(BlockTag.PRE_CONFIRMED);
+  state,
+}: ExecuteGameplayAccountTransactionOptions & {
+  execute: RawExecute;
+  state: GameplayAccountSubmitState;
+}): Promise<InvokeFunctionResponse> {
+  const nonce = state.nextNonce ?? BigInt(await account.getNonce(BlockTag.PRE_CONFIRMED));
   const resourceBounds = resolveGameTransactionResourceBounds(chain);
-  return execute(calls, {
+  const result = await execute(calls, {
     ...details,
     nonce,
     tip: 0,
     ...(resourceBounds ? { resourceBounds } : {}),
   });
+  state.nextNonce = nonce + 1n;
+  return result;
 }
 
 function isNonceRejection(error: unknown): boolean {
