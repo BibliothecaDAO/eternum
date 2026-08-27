@@ -24,3 +24,6 @@ thoughts/
 
 # Madara lab generated state (world address, rendered torii config, run manifests)
 deploy/madara-lab/.lab/
+
+# Local lab configuration for apps/web and packages/db (read via `pnpm with-env`); never committed.
+.env
