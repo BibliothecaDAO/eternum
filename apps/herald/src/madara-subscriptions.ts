@@ -54,7 +54,9 @@ export class MadaraSubscriptions {
   private connect(): void {
     const socket = new WebSocket(this.url);
     const generation = ++this.generation;
+    const pendingNotifications: JsonRpcMessage[] = [];
     const ready = new Set<number>();
+    let subscriptionsReady = false;
     this.socket = socket;
 
     socket.onopen = () => this.subscribe(socket);
@@ -63,7 +65,8 @@ export class MadaraSubscriptions {
         const payload = JSON.parse(String(message.data)) as JsonRpcMessage;
         if (payload.id !== undefined) {
           this.acceptSubscription(payload, ready);
-          if (ready.size === SUBSCRIPTION_COUNT) {
+          if (ready.size === SUBSCRIPTION_COUNT && !subscriptionsReady) {
+            subscriptionsReady = true;
             this.enqueue(async () => {
               await this.handlers.onReady();
               if (!this.initialReady) {
@@ -71,7 +74,13 @@ export class MadaraSubscriptions {
                 this.resolveReady?.();
               }
             });
+            pendingNotifications.forEach((notification) => this.acceptNotification(notification));
+            pendingNotifications.length = 0;
           }
+          return;
+        }
+        if (!subscriptionsReady) {
+          pendingNotifications.push(payload);
           return;
         }
         this.acceptNotification(payload);
