@@ -418,8 +418,8 @@ the lab — is met.
 
 | Component | Pin | Why |
 | --- | --- | --- |
-| Madara | `ghcr.io/madara-alliance/madara@sha256:3c931fa515bbd3760fd5cbc0bcdceb557d3edbd44bec0231cdf52dd6abb475f6` (`v0.11.0-alpha.9`) | Exact image used by the passing run; tags are mutable |
-| Chain config | Full alpha.9 `devnet` preset, with the lab identity, 2 s blocks, 250 ms pending updates, execution batches of 4, 256 transactions, and 100,000,000,000 Sierra gas per block | Madara rejects partial configs; every measurement variable stays explicit |
+| Madara | `ghcr.io/madara-alliance/madara@sha256:ec30298d51ce0780e1ad88cc00e1c17bef31530d0e338fe7fcc1d71d1bad31b2` (`nightly-e674321`, 2026-08-20, index digest) | WebSocket subscriptions; bumped 2026-08-27 (phase-2 A.0, below). Phase 1 was measured on `v0.11.0-alpha.9` = `sha256:3c931fa5…` |
+| Chain config | Full alpha.9 `devnet` preset (accepted unchanged by the nightly), with the lab identity, 2 s blocks, 250 ms pending updates, execution batches of 4, 256 transactions, and 100,000,000,000 Sierra gas per block | Madara rejects partial configs; every measurement variable stays explicit |
 | Torii | `ghcr.io/dojoengine/torii:v1.8.16` | Last known-good version with this client |
 | sozo | 1.8.7 | Speaks RPC 0.9/0.10 and has the blake2s flag |
 | Caddy | `caddy:2-alpine` (2.11.4, `sha256:5f5c8640…`) | TLS front; set `CADDY_IMAGE` to compare another image |
@@ -428,13 +428,38 @@ the lab — is met.
 Set `MADARA_IMAGE` in a `.env` next to the Compose file to compare another build. Use a full digest reference and
 record it here before treating the results as comparable.
 
-## What Madara does not give you (as of alpha.9)
+### Pin bump to `nightly-e674321` (phase-2 A.0) — 2026-08-27
 
-- **No WebSocket subscriptions at this pin.** The RPC port accepts the WS upgrade but every `starknet_subscribe*`
-  fails immediately (`-32603`). Upstream implemented them on 2026-08-20 (#1012): verified working on
-  `nightly-e674321` at `/rpc/v0_10_2` (`subscribeNewHeads`, `subscribeTransactionStatus`, `subscribeEvents`,
-  `subscribeNewTransactions`), with the v0.8/v0.9 subscribe methods removed. Until a pin bump is measured, the
-  client's live path stays on Torii (canary) and finality is polled.
+Why: WebSocket subscriptions (#1012, merged 2026-08-20) are the read path herald is built on; `alpha.9` stubs every
+`starknet_subscribe*` with `-32603`, and as of 2026-08-27 the `nightly` tag is this same build and no `v0.11.0` past
+alpha.9 is published. Method: the nightly was booted first against a *copy* of the lab data volume (8 GB, scratch
+ports 5070–5072), then the compose pin was swapped and `madara-lab` restarted on its real volume. Facts:
+
+- **No DB migration.** The nightly opened the alpha.9 database as-is and closed its first block within 2 s of start;
+  Madara was unreachable for ~10 s during the restart. Stale mempool entries saved by alpha.9 were dropped with
+  `Nonce mismatch` warnings — the N=8 backlog leftovers, harmless.
+- **All 21 flags in the compose command exist on the nightly**; `--full`, `--gateway-url`, `--backup-dir`,
+  `--sequencer` (phase-2 E.2) exist too. `block_production_concurrency` is still `#[serde(default)]` with
+  `disable_concurrency: false`, `n_workers` = cores (`chain_config.rs:108-128` at e674321).
+- **Routes:** HTTP and WS both serve `/rpc/v0_7_1`, `v0_8_1`, `v0_9_0`, `v0_10_0`, `v0_10_2`; `/` is v0.10.2. WS
+  `starknet_subscribeNewHeads` on `/rpc/v0_10_2` (dotted `/rpc/v0.10.2/` also works) delivered the first head 19 ms
+  after subscribing on the lab port; `subscribe*` on `v0_9_0` is `-32601 Method not found`. Native execution on, async,
+  cached classes reused from `/data/native_classes`.
+- **Latency unchanged:** `probe-deploy-account.ts` — scratch: submit 25 / pre-confirmed 77 / L2 1,968 ms; lab after
+  cutover: 51 / 104 / 209 ms (50 ms poll; the L2 figure is block-timing luck).
+- **Torii 1.8.16 cannot parse the nightly's v0.9 pre-confirmed block when it holds transactions**
+  (`data did not match any variant of untagged enum JsonRpcResponse`, 80 ms before block #91621 closed with the
+  probe's tx; `Fetching reestablished` once it closed). Torii keeps following the chain head and indexes every
+  transaction after the block closes and its retry backs off. **Smoke on the new pin** (`pnpm lab:harness -- --bots 4
+  --minutes 1`, `.lab/runs/20260827T165508232Z.json`): 16/16 actions, zero failures or reverts; pre-confirmed p95
+  255 ms; L2 p95 1.90 s; **Torii-indexed p50 5.1 s / p95 7.5 s** (1.89 s on alpha.9) — the manifest's only failed
+  check. Not investigated: Torii is deleted by phase-2 section A, and herald reads the WS stream this pin exists for.
+  Until then, judge harness runs on this pin by pre-confirmed and L2; `indexedP95` is a known cost of the pin.
+
+## What Madara does not give you (as of the nightly pin)
+
+- **WebSocket subscriptions are version-scoped.** They exist only on `/rpc/v0_10_2`; the v0.8/v0.9 subscribe methods
+  are removed. Herald subscribes there; sozo, Torii and the harness stay on `/rpc/v0_9_0`.
 - **No `dev_predeployedAccounts`.** Player accounts do not need it: each key deploys its own account fee-free
   ("Gameplay accounts" above). The deployer and the binding authority use the deterministic genesis accounts.
 - **No embedded VRF, paymaster, or Controller.** The contracts fall back to transaction-hash randomness when the VRF

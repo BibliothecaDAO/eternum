@@ -16,7 +16,7 @@
 # that image's digest in the README.
 services:
   madara:
-    image: ${MADARA_IMAGE:-ghcr.io/madara-alliance/madara@sha256:3c931fa515bbd3760fd5cbc0bcdceb557d3edbd44bec0231cdf52dd6abb475f6}
+    image: ${MADARA_IMAGE:-ghcr.io/madara-alliance/madara@sha256:ec30298d51ce0780e1ad88cc00e1c17bef31530d0e338fe7fcc1d71d1bad31b2}
     container_name: madara-lab
     command:
       - --name=realms-madara-lab
