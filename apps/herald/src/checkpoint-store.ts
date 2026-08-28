@@ -5,7 +5,7 @@ import { Pool } from "pg";
 
 import type { ModelRegistry } from "./model-registry";
 import type { FoldCheckpoint } from "./types";
-import { WorldFold } from "./world-fold";
+import { checkpointModelMismatch, WorldFold } from "./world-fold";
 
 const compress = promisify(gzip);
 const decompress = promisify(gunzip);
@@ -54,6 +54,12 @@ export class CheckpointStore {
     const confirmedBlock = Number(row.confirmed_block);
     if (!Number.isSafeInteger(confirmedBlock) || confirmedBlock < 0) {
       throw new Error(`Checkpoint has invalid confirmed block ${row.confirmed_block}`);
+    }
+    const mismatch = checkpointModelMismatch(registry, checkpoint);
+    if (mismatch) {
+      // The sync manifest changed since this fold was saved: replay from genesis and let the next save replace it.
+      console.warn(JSON.stringify({ confirmedBlock, event: "herald_checkpoint_discarded", mismatch }));
+      return undefined;
     }
     return { confirmedBlock, fold: WorldFold.restore(registry, checkpoint) };
   }

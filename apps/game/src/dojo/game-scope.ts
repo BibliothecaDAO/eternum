@@ -83,10 +83,8 @@ export { buildingEntityKey, gameEntityKey, worldConfigKey } from "@bibliothecada
 // pinned against it by game-scope.test.ts — fix the test, not this list.
 const S2_GLOBAL_MODELS = new Set([
   "BiomeDiscovered",
-  "ChainConfig",
   "GameCounter",
   "Preset",
-  "PresetConfig",
   "PresetGameConfig",
   "RNG",
   "ResourceMinMaxList",

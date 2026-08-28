@@ -50,6 +50,20 @@ const checkpointRow = ([entityId, row]: [string, StoredModelRow]): FoldCheckpoin
   value: asJsonRecord(row.value),
 });
 
+/**
+ * A checkpoint is only restorable when it was folded from exactly the registry's persistent model set: a model added
+ * to the sync manifest has rows in history the checkpoint never saw, so the fold must be rebuilt from genesis.
+ * Returns the human-readable difference, or undefined when the sets match.
+ */
+export const checkpointModelMismatch = (registry: ModelRegistry, checkpoint: FoldCheckpoint): string | undefined => {
+  const expectedModels = new Set(registry.persistent.map(({ definition }) => definition.name));
+  const restoredModels = new Set(checkpoint.models.map(({ model }) => model));
+  const missing = [...expectedModels].filter((model) => !restoredModels.has(model));
+  const unexpected = [...restoredModels].filter((model) => !expectedModels.has(model));
+  if (missing.length === 0 && unexpected.length === 0) return undefined;
+  return `missing=${missing.join(",") || "none"}, unexpected=${unexpected.join(",") || "none"}`;
+};
+
 export class WorldFold {
   private readonly registry: ModelRegistry;
   private readonly parent?: WorldFold;
@@ -67,17 +81,10 @@ export class WorldFold {
       throw new Error(`Checkpoint world ${checkpoint.world_address} does not match ${registry.worldAddress}`);
     }
 
-    const fold = new WorldFold(registry);
-    const expectedModels = new Set(registry.persistent.map(({ definition }) => definition.name));
-    const restoredModels = new Set(checkpoint.models.map(({ model }) => model));
-    const missing = [...expectedModels].filter((model) => !restoredModels.has(model));
-    const unexpected = [...restoredModels].filter((model) => !expectedModels.has(model));
-    if (missing.length > 0 || unexpected.length > 0) {
-      throw new Error(
-        `Checkpoint model mismatch; missing=${missing.join(",") || "none"}, unexpected=${unexpected.join(",") || "none"}`,
-      );
-    }
+    const mismatch = checkpointModelMismatch(registry, checkpoint);
+    if (mismatch) throw new Error(`Checkpoint model mismatch; ${mismatch}`);
 
+    const fold = new WorldFold(registry);
     for (const model of checkpoint.models) {
       const rows = fold.rowsByModel.get(model.model)!;
       for (const row of model.rows) rows.set(row.entity_id, { key: row.key, value: row.value });

@@ -100,6 +100,11 @@ export const GAME_SYNC_MODEL_MANIFEST: readonly GameSyncModelDefinition[] = [
   globalEntity("RankPrize"),
   globalEntity("GuildWhitelist"),
   globalEntity("GameRegistry", { availability: "s2-only" }),
+  // The s2 rulebook: config-manager reads every balance number (stamina, capacity, tick, combat...) from the
+  // PresetConfig row the game points at, and chain-wide tuning from ChainConfig. Without them in the fold every
+  // lookup returns the silent zero default (Aug 2026 human gate: no stamina bar, "need more capacity" at 6/12).
+  globalEntity("ChainConfig", { availability: "s2-only", s2Scope: "chain" }),
+  globalEntity("PresetConfig", { availability: "s2-only", s2Scope: "chain" }),
   globalEvent("OpenRelicChestEvent"),
   spatial("TileOpt", "col", "row"),
   spatial("Structure", "base.coord_x", "base.coord_y"),
