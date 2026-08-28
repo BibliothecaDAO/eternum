@@ -309,6 +309,33 @@ processes, and republishes. The indexer is the latency budget and the EOL depend
     realm, held until `placeBuilding` returns (it already waits for the pre-confirmed receipt), and the slot resolved at
     submission time inside that lock; the map, the TTL and the per-card lock are deleted. The regression test is the
     four-quick-clicks sequence, not east-then-north-east.
+  - _Quiet-box measurement, 2026-08-28 evening (game 58, 8 bots, load average 0.83, herald on `ab125610e8c`):_
+    - **Data plane: 6 ms p50 / 21 ms p95** — herald's `tx` status timestamped against Madara's own pre-confirmed
+      subscription for 63 transactions. Under load earlier it was 43 / 81 ms. The read path is not where any time goes;
+      nothing in section A needs to get faster.
+    - **Per-stage client timings** (`__clientActionLatencyMeasurements`, three `explore_reveal` and three
+      `provision_realm` actions): click→submitted **390–650 ms for explore** but 30–115 ms for provision;
+      submitted→pre-confirmed 1–106 ms (the chain); pre-confirmed→rendered **106–345 ms**. Totals p50 761 / p95 1051 ms;
+      the bar is 250. Two client-side classes, both Codex, both measured before touched:
+      1. Explore spends ~0.5 s before the send that provision does not ("2 transactions" — the path builds two calls;
+         pathing / calldata / signing happen on the click). Instrument the sub-phases (build → sign → send), then remove
+         what the numbers name; the harness signs and submits in 25 ms p50, so the account is not it.
+      2. Pre-confirmed→rendered runs through the rAF ingest lane, the sliced manager catch-up ("converged after 189 ms
+         of sliced wall time") and a terrain page rebuild. A player's own action is one logical event (guardrail 3): its
+         rows apply and render on arrival, not on the ambient lane. Bar for this stage: ≤ 100 ms.
+    - **Fog of war does not clear on provision or army creation, and clears late on explore** (owner, game 58). Herald
+      holds the `TileOpt` rows for every tile around the new realm; the client's reveal path (`worldmap.tsx` ~1253–1261:
+      `queueShroudReveal` + `invalidateVisualTerrainPageForLiveTile`) only runs for a live tile change **inside the
+      retained render area** and only takes effect on the next page rebuild. Provisioning and army creation land their
+      rows while the worldmap is not watching that page; chunk hydration then writes `exploredTiles` without
+      invalidating the fog page, so the fog stays until a later explore in the same page forces a rebuild. A
+      hyperstructure is placed on the worldmap, so it takes the live path — that is why it "works". Class: the fog mask
+      is a projection of `exploredTiles` but is only invalidated from one of the two writers. Fix at the chokepoint:
+      every write to `exploredTiles` (live or hydrate) invalidates its fog page; the reveal starts on the pre-confirmed
+      diff, not on the page rebuild; the 0.9 s reveal animation is a number to tune down (≤ 0.3 s). Gate: provision →
+      fog gone on the realm's tiles before the settlement screen closes; explore → fog gone within the same ≤ 100 ms
+      render budget as the tile.
+    - Build modal: reworked by Codex after the review, confirmed by the owner in game 58.
   - _Next steps for Codex, in order (2026-08-28):_
     1. ~~Stale wiring tests~~ (done, `d38000feea4`): `src/dojo/sync.regression.source.test.ts` (asserts the deleted
        `connection-health-monitor`), `src/three/scenes/worldmap-arrival-ghost.source.test.ts` (movement ghosts /
@@ -319,10 +346,12 @@ processes, and republishes. The indexer is the latency budget and the EOL depend
     3. Findings 2 and 3 above (Build-modal placement — **rework per the review above**; one account truth, done for the
        banner and the other `useAccount()` readers in play). Finding 4 once the owner reports the console lines.
     4. ~~Harness nonce reads, `sender` via `subscribeNewTransactions`~~ (done, `ab125610e8c`).
-    5. Latency re-measure on a quiet box (owner + Claude), then the client-stage instrumentation only if it still fails.
-    6. **A.4** — the disposition table below, Torii container + `torii.toml.template` + `packages/torii` +
-       `apps/game/src/dojo` deleted, `VITE_PUBLIC_HERALD_URL` switch gone (herald is the transport, full stop), the
-       manifest carries every row `getConfigFromTorii` used to fetch. Gate unchanged.
+    5. ~~Latency re-measure~~ (done — see the quiet-box measurement above): now the two client classes it named, explore
+       submit path and pre-confirmed→rendered, and the fog chokepoint.
+    6. **A.4 — unblocked 2026-08-28, start now, in parallel with 5** — the disposition table below, Torii container +
+       `torii.toml.template` + `packages/torii` + `apps/game/src/dojo` deleted, `VITE_PUBLIC_HERALD_URL` switch gone
+       (herald is the transport, full stop), the manifest carries every row `getConfigFromTorii` used to fetch. Gate
+       unchanged.
   - _Gates per slice._ **A.1** — snapshot of a lab game matches Torii row-for-row for every decoded component (Torii is
     the oracle until A.4). **A.2** — the forced-replacement transcript from A.0 is handled: after `overlay_reset` the
     client's state equals a fresh snapshot; a killed socket resumes by `seq` with zero gaps; a herald restart mid-game
