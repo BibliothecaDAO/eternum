@@ -5,6 +5,7 @@ import {
   type ArmyMovementLatencySummary,
   type ArmyMovementLatencyTraceEntry,
 } from "@bibliothecadao/eternum";
+import type { ProceduralArmyProductionStats } from "../managers/army-manager";
 
 export interface WorldmapDebugWindow {
   testMaterialSharing?: () => void;
@@ -12,11 +13,13 @@ export interface WorldmapDebugWindow {
   getArmyMovementLatencyTrace?: () => ArmyMovementLatencyTraceEntry[];
   getArmyMovementLatencySummary?: () => ArmyMovementLatencySummary;
   clearArmyMovementLatencyTrace?: () => void;
+  getProceduralArmyProductionStats?: () => ProceduralArmyProductionStats;
 }
 
 interface WorldmapDebugHooks {
   testMaterialSharing: () => void;
   testTroopDiffFx: (diff?: number) => void;
+  getProceduralArmyProductionStats: () => ProceduralArmyProductionStats;
 }
 
 export function installWorldmapDebugHooks<T extends object>(
@@ -28,6 +31,7 @@ export function installWorldmapDebugHooks<T extends object>(
   debugWindow.getArmyMovementLatencyTrace = () => snapshotArmyMovementLatencyTrace();
   debugWindow.getArmyMovementLatencySummary = () => summarizeArmyMovementLatency();
   debugWindow.clearArmyMovementLatencyTrace = () => clearArmyMovementLatencyTrace();
+  debugWindow.getProceduralArmyProductionStats = hooks.getProceduralArmyProductionStats;
 }
 
 export function uninstallWorldmapDebugHooks<T extends object>(debugWindow: T & WorldmapDebugWindow): void {
@@ -36,4 +40,5 @@ export function uninstallWorldmapDebugHooks<T extends object>(debugWindow: T & W
   delete debugWindow.getArmyMovementLatencyTrace;
   delete debugWindow.getArmyMovementLatencySummary;
   delete debugWindow.clearArmyMovementLatencyTrace;
+  delete debugWindow.getProceduralArmyProductionStats;
 }

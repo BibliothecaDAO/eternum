@@ -4,7 +4,7 @@ import type { RendererSurfaceLike } from "./renderer-backend";
 import type { RendererBuildMode } from "./renderer-build-mode";
 
 export type RendererActiveMode = "webgpu" | "webgl2-fallback";
-export type RendererFallbackReason = "webgpu-device-lost" | "webgpu-unavailable" | null;
+export type RendererFallbackReason = "webgpu-device-lost" | "webgpu-init-timeout" | "webgpu-unavailable" | null;
 
 export interface RendererBackendCapabilities {
   supportsEnvironmentIbl: boolean;
@@ -126,9 +126,13 @@ export function createRendererBackendCapabilities(
 }
 
 export class RendererInitTimeoutError extends Error {
-  constructor(message: string) {
+  /** Mode of the renderer that was created but never finished initializing; null when creation itself stalled. */
+  readonly timedOutMode: RendererActiveMode | null;
+
+  constructor(message: string, timedOutMode: RendererActiveMode | null = null) {
     super(message);
     this.name = "RendererInitTimeoutError";
+    this.timedOutMode = timedOutMode;
   }
 }
 

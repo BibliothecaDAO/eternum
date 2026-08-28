@@ -1,0 +1,79 @@
+name: Verify procedural terrain
+
+on:
+  pull_request:
+    paths:
+      - "apps/game/src/three/terrain/**"
+      - "apps/game/src/three/scenes/worldmap.tsx"
+      - "apps/game/src/three/scenes/hexception.tsx"
+      - "apps/game/src/three/managers/**"
+      - "apps/game/src/ui/features/debug/**"
+      - "apps/game/scripts/terrain-*/**"
+      - "apps/game/public/models/procedural-terrain/**"
+      - "apps/game/public/textures/procedural-terrain/**"
+      - "packages/core/src/utils/biome/**"
+      - "apps/game/package.json"
+      - "pnpm-lock.yaml"
+      - ".github/workflows/verify-terrain.yml"
+
+jobs:
+  gallery:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.25.0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.23.1
+          cache: pnpm
+
+      - name: Install workspace
+        run: pnpm install --frozen-lockfile
+
+      - name: Build shared packages
+        run: pnpm run build:packages
+
+      - name: Verify terrain contracts
+        run: pnpm --dir apps/game test src/three/terrain scripts
+
+      - name: Start auth-free terrain host
+        run: |
+          pnpm --dir apps/game dev --host 127.0.0.1 --port 4173 --mode appchain.blitz > terrain-vite.log 2>&1 &
+          for attempt in $(seq 1 60); do
+            curl --fail --silent http://127.0.0.1:4173/debug/procedural-terrain && exit 0
+            sleep 1
+          done
+          cat terrain-vite.log
+          exit 1
+
+      - name: Verify both renderer backends
+        run: >-
+          pnpm --dir apps/game verify:terrain:gallery --base-url http://127.0.0.1:4173 --artifact-dir terrain-artifacts
+          --timing-policy informational
+
+      - name: Verify full-screen chunk performance
+        run: >-
+          pnpm --dir apps/game benchmark:terrain -- --base-url http://127.0.0.1:4173 --artifact-dir
+          terrain-performance-artifacts --renderers webgpu-force-webgl --variants production --run-mode quick
+          --timing-policy informational
+
+      - name: Build backend contact sheet
+        run: >-
+          pnpm --dir apps/game verify:terrain:contact-sheet --input-dir terrain-artifacts --output
+          terrain-artifacts/backend-contact-sheet.png
+
+      - name: Upload terrain evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: procedural-terrain-verification
+          path: |
+            apps/game/terrain-artifacts
+            apps/game/terrain-performance-artifacts
+            terrain-vite.log

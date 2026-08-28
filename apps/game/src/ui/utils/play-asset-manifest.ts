@@ -1,9 +1,7 @@
 import { SHARED_ARMY_MODEL_PATHS } from "@/three/constants/army-constants";
-import {
-  SHARED_BIOME_MODEL_PATHS,
-  SHARED_BUILDING_MODEL_PATHS,
-  SHARED_CHEST_MODEL_PATHS,
-} from "@/three/constants/scene-constants";
+import { SHARED_BUILDING_MODEL_PATHS, SHARED_CHEST_MODEL_PATHS } from "@/three/constants/scene-constants";
+import { TERRAIN_PROP_CATALOG_PATH } from "@/three/terrain/terrain-prop-catalog";
+import { TERRAIN_GROUND_MANIFEST_PATH, TERRAIN_GROUND_TEXTURE_PATHS } from "@/three/terrain/terrain-ground-catalog";
 
 const buildSequentialResourceIconAssets = (start: number, endInclusive: number) =>
   Array.from({ length: endInclusive - start + 1 }, (_, index) => `/images/resources/${start + index}.png`);
@@ -11,13 +9,17 @@ const buildSequentialResourceIconAssets = (start: number, endInclusive: number) 
 const buildAvatarAssets = (total: number) =>
   Array.from({ length: total }, (_, index) => `/images/avatars/${String(index + 1).padStart(2, "0")}.png`);
 
-export const DASHBOARD_SHARED_PLAY_FETCH_ASSETS = ["/textures/environment/models_env.hdr"] as const;
+export const DASHBOARD_SHARED_PLAY_FETCH_ASSETS = Object.freeze([
+  "/textures/environment/models_env.hdr",
+  ...TERRAIN_GROUND_TEXTURE_PATHS,
+  TERRAIN_GROUND_MANIFEST_PATH,
+]);
 
 export const DASHBOARD_SHARED_PLAY_MODEL_ASSETS = Object.freeze([
   ...SHARED_ARMY_MODEL_PATHS,
-  ...SHARED_BIOME_MODEL_PATHS,
   ...SHARED_BUILDING_MODEL_PATHS,
   ...SHARED_CHEST_MODEL_PATHS,
+  TERRAIN_PROP_CATALOG_PATH,
 ]);
 
 export const DASHBOARD_SHARED_PLAY_IMAGE_ASSETS = Object.freeze([

@@ -1,0 +1,503 @@
+{
+  "contractVersion": 1,
+  "catalog": {
+    "id": "quaternius-ultimate-nature",
+    "version": 1,
+    "importerVersion": 1
+  },
+  "source": {
+    "title": "Ultimate Nature Pack",
+    "author": "Quaternius",
+    "release": "2019-06",
+    "sourcePage": "https://quaternius.com/packs/ultimatenature.html",
+    "archiveUrl": "https://opengameart.org/sites/default/files/ultimate_nature_pack_by_quaternius_1.zip",
+    "archiveSha256": "92daf8b532f60ac0fb53371144d0f8e9ec2f82a2fa408effdf1a64cb8fbaee09",
+    "license": "CC0-1.0"
+  },
+  "output": {
+    "file": "ultimate-nature-props.glb",
+    "sha256": "defdf0d84e5d9a6a13159200bc72fca3f6f24ab19ad5837b20f69029ce4d374f",
+    "bytes": 179852,
+    "meshCompression": "EXT_meshopt_compression",
+    "textures": 0,
+    "triangleBudgets": {
+      "near": 4900,
+      "far": 1280
+    }
+  },
+  "entries": [
+    {
+      "id": "broadleaf",
+      "sourceFile": "CommonTree_3.fbx",
+      "sourceSha256": "c6c09a4d4797d2b0651cdf8e56ea7baecefd8eb4b4a79fc680ef17747c42b70e",
+      "targetHeight": 1.25,
+      "windMaterialPattern": "green",
+      "lods": {
+        "near": {
+          "name": "broadleaf-near",
+          "triangles": 700,
+          "vertices": 2100,
+          "bounds": {
+            "min": [
+              -0.23055920004844666,
+              0.0036478114780038595,
+              -0.2823813557624817
+            ],
+            "max": [
+              0.23055920004844666,
+              1.25,
+              0.2823813557624817
+            ]
+          }
+        },
+        "far": {
+          "name": "broadleaf-far",
+          "triangles": 154,
+          "vertices": 462,
+          "bounds": {
+            "min": [
+              -0.22483645379543304,
+              0.003648102516308427,
+              -0.26111698150634766
+            ],
+            "max": [
+              0.23055920004844666,
+              1.25,
+              0.2823813557624817
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "birch",
+      "sourceFile": "BirchTree_2.fbx",
+      "sourceSha256": "c61d3cd05399514ce77d668ebb9193d4fcb0b47fd6e939deb99efad30fbf10a0",
+      "targetHeight": 1.3,
+      "windMaterialPattern": "green",
+      "lods": {
+        "near": {
+          "name": "birch-near",
+          "triangles": 700,
+          "vertices": 2100,
+          "bounds": {
+            "min": [
+              -0.2368806153535843,
+              0.0009870481444522738,
+              -0.27296802401542664
+            ],
+            "max": [
+              0.2368806153535843,
+              1.2999999523162842,
+              0.27296802401542664
+            ]
+          }
+        },
+        "far": {
+          "name": "birch-far",
+          "triangles": 160,
+          "vertices": 480,
+          "bounds": {
+            "min": [
+              -0.2368806153535843,
+              0.0009994682623073459,
+              -0.27296802401542664
+            ],
+            "max": [
+              0.2368806153535843,
+              1.2922637462615967,
+              0.27123120427131653
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "willow",
+      "sourceFile": "Willow_4.fbx",
+      "sourceSha256": "768089c8ac2779a545c982d31b17b4ce13d864b3d275e9de135a71f4c4a3baee",
+      "targetHeight": 1.35,
+      "windMaterialPattern": "green",
+      "lods": {
+        "near": {
+          "name": "willow-near",
+          "triangles": 700,
+          "vertices": 2100,
+          "bounds": {
+            "min": [
+              -0.4358435571193695,
+              0.002078861929476261,
+              -0.6046139001846313
+            ],
+            "max": [
+              0.4358435571193695,
+              1.3461683988571167,
+              0.6069498658180237
+            ]
+          }
+        },
+        "far": {
+          "name": "willow-far",
+          "triangles": 154,
+          "vertices": 462,
+          "bounds": {
+            "min": [
+              -0.4161524772644043,
+              0.002078861929476261,
+              -0.5941599011421204
+            ],
+            "max": [
+              0.41837191581726074,
+              1.3461683988571167,
+              0.5832393765449524
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "conifer",
+      "sourceFile": "PineTree_5.fbx",
+      "sourceSha256": "f48c82f590fd94e9dd265575232f867963d08e1d57c9b473e4e1e069220e5536",
+      "targetHeight": 1.35,
+      "windMaterialPattern": "green",
+      "lods": {
+        "near": {
+          "name": "conifer-near",
+          "triangles": 598,
+          "vertices": 1794,
+          "bounds": {
+            "min": [
+              -0.3688611090183258,
+              0,
+              -0.33599886298179626
+            ],
+            "max": [
+              0.3688611090183258,
+              1.3499672412872314,
+              0.33599886298179626
+            ]
+          }
+        },
+        "far": {
+          "name": "conifer-far",
+          "triangles": 138,
+          "vertices": 414,
+          "bounds": {
+            "min": [
+              -0.3584223687648773,
+              0,
+              -0.33320945501327515
+            ],
+            "max": [
+              0.3688611090183258,
+              1.3499635457992554,
+              0.33599886298179626
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "palm",
+      "sourceFile": "PalmTree_3.fbx",
+      "sourceSha256": "fcff567abf63def8194fa07431a7afb77437e33381df17cf374e3d632942cd9a",
+      "targetHeight": 1.45,
+      "windMaterialPattern": "green",
+      "lods": {
+        "near": {
+          "name": "palm-near",
+          "triangles": 600,
+          "vertices": 1800,
+          "bounds": {
+            "min": [
+              -0.5309264063835144,
+              0,
+              -0.4639609754085541
+            ],
+            "max": [
+              0.5309264063835144,
+              1.4500000476837158,
+              0.4639609754085541
+            ]
+          }
+        },
+        "far": {
+          "name": "palm-far",
+          "triangles": 140,
+          "vertices": 420,
+          "bounds": {
+            "min": [
+              -0.5309264063835144,
+              1.353980483287387e-9,
+              -0.45920419692993164
+            ],
+            "max": [
+              0.5190922021865845,
+              1.4438860416412354,
+              0.44691163301467896
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "dead-tree",
+      "sourceFile": "CommonTree_Dead_3.fbx",
+      "sourceSha256": "67ca71199a30e8d61b8c1c5094be60dec2cb90c2b597e890d3fc8bfce0343ddd",
+      "targetHeight": 1.2,
+      "windMaterialPattern": null,
+      "lods": {
+        "near": {
+          "name": "dead-tree-near",
+          "triangles": 450,
+          "vertices": 1350,
+          "bounds": {
+            "min": [
+              -0.12697802484035492,
+              0.0010084169916808605,
+              -0.1624007225036621
+            ],
+            "max": [
+              0.1268380582332611,
+              1.2000000476837158,
+              0.16178466379642487
+            ]
+          }
+        },
+        "far": {
+          "name": "dead-tree-far",
+          "triangles": 120,
+          "vertices": 360,
+          "bounds": {
+            "min": [
+              -0.1234467625617981,
+              0.004032382275909185,
+              -0.1601775735616684
+            ],
+            "max": [
+              0.1260456144809723,
+              1.1835016012191772,
+              0.1608690470457077
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "shrub",
+      "sourceFile": "Bush_2.fbx",
+      "sourceSha256": "73a9aa512b2967ad333451ffb4b4e460f400a7a17a73a0b90fc1656404273388",
+      "targetHeight": 0.32,
+      "windMaterialPattern": ".*",
+      "lods": {
+        "near": {
+          "name": "shrub-near",
+          "triangles": 200,
+          "vertices": 600,
+          "bounds": {
+            "min": [
+              -0.19392073154449463,
+              0,
+              -0.19131094217300415
+            ],
+            "max": [
+              0.19392073154449463,
+              0.3199999928474426,
+              0.19131094217300415
+            ]
+          }
+        },
+        "far": {
+          "name": "shrub-far",
+          "triangles": 60,
+          "vertices": 180,
+          "bounds": {
+            "min": [
+              -0.19392073154449463,
+              0.004880496766418219,
+              -0.18407417833805084
+            ],
+            "max": [
+              0.19392073154449463,
+              0.30281469225883484,
+              0.19131094217300415
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "cactus",
+      "sourceFile": "Cactus_2.fbx",
+      "sourceSha256": "a6cbd5dd51ed796ef0e6ccb50a724161968683675086b4419d95f4e0dd82ee08",
+      "targetHeight": 0.62,
+      "windMaterialPattern": null,
+      "lods": {
+        "near": {
+          "name": "cactus-near",
+          "triangles": 350,
+          "vertices": 1050,
+          "bounds": {
+            "min": [
+              -0.12752988934516907,
+              0.002030185656622052,
+              -0.19186203181743622
+            ],
+            "max": [
+              0.12785738706588745,
+              0.6200000047683716,
+              0.19186203181743622
+            ]
+          }
+        },
+        "far": {
+          "name": "cactus-far",
+          "triangles": 100,
+          "vertices": 300,
+          "bounds": {
+            "min": [
+              -0.12604694068431854,
+              0.008120753802359104,
+              -0.1916273534297943
+            ],
+            "max": [
+              0.12785738706588745,
+              0.6115240454673767,
+              0.19166111946105957
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "boulder",
+      "sourceFile": "Rock_4.fbx",
+      "sourceSha256": "a914a59150ad1c12ff01ffc11de22b826fee9d52dabeb703fb43e7bde1f04e1d",
+      "targetHeight": 0.22,
+      "windMaterialPattern": null,
+      "lods": {
+        "near": {
+          "name": "boulder-near",
+          "triangles": 128,
+          "vertices": 384,
+          "bounds": {
+            "min": [
+              -0.10437566041946411,
+              0,
+              -0.17553621530532837
+            ],
+            "max": [
+              0.10437566041946411,
+              0.2199999988079071,
+              0.17553621530532837
+            ]
+          }
+        },
+        "far": {
+          "name": "boulder-far",
+          "triangles": 80,
+          "vertices": 240,
+          "bounds": {
+            "min": [
+              -0.10437566041946411,
+              0,
+              -0.17553621530532837
+            ],
+            "max": [
+              0.10437566041946411,
+              0.2199999988079071,
+              0.17553621530532837
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "stump",
+      "sourceFile": "TreeStump.fbx",
+      "sourceSha256": "bb2f526c4259a915b49102ad374b9065d87153181c9dfb88a029068826fc88cb",
+      "targetHeight": 0.22,
+      "windMaterialPattern": null,
+      "lods": {
+        "near": {
+          "name": "stump-near",
+          "triangles": 232,
+          "vertices": 696,
+          "bounds": {
+            "min": [
+              -0.24060004949569702,
+              -4.336808689942018e-19,
+              -0.18252350389957428
+            ],
+            "max": [
+              0.24060004949569702,
+              0.2199999988079071,
+              0.18252350389957428
+            ]
+          }
+        },
+        "far": {
+          "name": "stump-far",
+          "triangles": 79,
+          "vertices": 237,
+          "bounds": {
+            "min": [
+              -0.23939791321754456,
+              0.001914949738420546,
+              -0.18252350389957428
+            ],
+            "max": [
+              0.24060004949569702,
+              0.21899670362472534,
+              0.18252350389957428
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "fallen-log",
+      "sourceFile": "WoodLog.fbx",
+      "sourceSha256": "efc0eacf35939e10b6ca13cac145fda682ae65a624448fd43faebc84d98dbb02",
+      "targetHeight": 0.18,
+      "windMaterialPattern": null,
+      "lods": {
+        "near": {
+          "name": "fallen-log-near",
+          "triangles": 236,
+          "vertices": 708,
+          "bounds": {
+            "min": [
+              -0.07611016184091568,
+              -5.421010862427522e-20,
+              -0.3211420774459839
+            ],
+            "max": [
+              0.07611016184091568,
+              0.18000000715255737,
+              0.3211420774459839
+            ]
+          }
+        },
+        "far": {
+          "name": "fallen-log-far",
+          "triangles": 79,
+          "vertices": 237,
+          "bounds": {
+            "min": [
+              -0.07611016184091568,
+              0.008416726253926754,
+              -0.32083553075790405
+            ],
+            "max": [
+              0.07611016184091568,
+              0.17819847166538239,
+              0.32109683752059937
+            ]
+          }
+        }
+      }
+    }
+  ]
+}

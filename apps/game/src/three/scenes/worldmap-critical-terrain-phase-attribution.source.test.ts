@@ -9,20 +9,19 @@ import { describe, expect, it } from "vitest";
 const currentDir = dirname(fileURLToPath(import.meta.url));
 
 describe("worldmap critical terrain phase attribution", () => {
-  it("measures CPU build and commit inside their queued units, separately from model wait", () => {
+  it("measures CPU build and commit inside their queued units with no model wait", () => {
     const source = readFileSync(resolve(currentDir, "worldmap.tsx"), "utf8");
     const prepareStart = source.indexOf("private async prepareVisualTerrainPage(");
-    const prepareEnd = source.indexOf("private async awaitPreparedTerrainBiomeModels(", prepareStart);
+    const prepareEnd = source.indexOf("private buildPreparedTerrainArea(", prepareStart);
     const prepareMethod = source.slice(prepareStart, prepareEnd);
     const queuedBuildStart = prepareMethod.indexOf("this.chunkWorkQueue.schedule(");
     const buildStart = prepareMethod.indexOf("const buildStartedAt = performance.now()");
-    const modelWaitStart = prepareMethod.indexOf("const modelWaitStartedAt = performance.now()");
 
     expect(queuedBuildStart).toBeGreaterThanOrEqual(0);
     expect(buildStart).toBeGreaterThan(queuedBuildStart);
-    expect(modelWaitStart).toBeGreaterThan(queuedBuildStart);
     expect(prepareMethod).toContain("`terrain:${workLane}-page-build`");
-    expect(prepareMethod).toContain("modelWaitMs: performance.now() - modelWaitStartedAt");
+    expect(prepareMethod).toContain("modelWaitMs: 0");
+    expect(prepareMethod).not.toContain("modelWaitStartedAt");
 
     const buildAndApplyStart = source.indexOf("private async buildAndApplyVisualTerrainPage(");
     const buildAndApplyEnd = source.indexOf("private reportCriticalVisualTerrainPagePhases(", buildAndApplyStart);

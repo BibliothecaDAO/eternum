@@ -55,11 +55,13 @@ describe("Worldmap lifecycle baseline", () => {
 
     expect(typeof fixture.debugWindow.testMaterialSharing).toBe("function");
     expect(typeof fixture.debugWindow.testTroopDiffFx).toBe("function");
+    expect(typeof fixture.debugWindow.getProceduralArmyProductionStats).toBe("function");
 
     fixture.destroy();
 
     expect("testMaterialSharing" in fixture.debugWindow).toBe(false);
     expect("testTroopDiffFx" in fixture.debugWindow).toBe(false);
+    expect("getProceduralArmyProductionStats" in fixture.debugWindow).toBe(false);
   });
 
   it("detaches urlChanged listener when switching off to avoid inactive-scene callbacks", () => {

@@ -19,12 +19,13 @@ import {
   isPendingReservedHyperstructureCreation,
   submitActiveWorldBlitzHyperstructureCreation,
 } from "@/services/blitz/blitz-hyperstructure-creation";
-import { getBiomeVariant, HEX_SIZE, WORLD_CHUNK_CONFIG } from "@/three/constants";
+import { HEX_SIZE, WORLD_CHUNK_CONFIG } from "@/three/constants";
+import type { ProceduralMeleeContactEvent, ProceduralRangedReleaseEvent } from "@/three/characters";
+import type { ProceduralImpactAuthority } from "@/three/characters/collision/procedural-impact";
 import { ArmyManager } from "@/three/managers/army-manager";
+import { CombatPresentationCoordinator } from "@/three/combat/combat-presentation-coordinator";
 import { BattleDirectionManager } from "@/three/managers/battle-direction-manager";
 import { ChestManager } from "@/three/managers/chest-manager";
-import InstancedBiome from "@/three/managers/instanced-biome";
-import { LAND_NAME } from "@/three/managers/instanced-model";
 import { ReservedHyperstructureManager } from "@/three/managers/reserved-hyperstructure-manager";
 import { SelectedHexManager } from "@/three/managers/selected-hex-manager";
 import { SelectionPulseManager } from "@/three/managers/selection-pulse-manager";
@@ -37,12 +38,12 @@ import {
 import { SceneManager } from "@/three/scene-manager";
 import { CameraView } from "@/three/scenes/camera-view";
 import { CAMERA_CONFIG } from "@/three/constants";
-import { HexagonScene, type SceneSetupContext } from "@/three/scenes/hexagon-scene";
-import type { RenderVisualProfile } from "@/three/render-profile";
+import { type SceneSetupContext } from "@/three/scenes/hexagon-scene";
+import { renderProfile, type RenderVisualProfile } from "@/three/render-profile";
 import { WorldmapPerfSimulation } from "@/three/scenes/worldmap-perf-simulation";
 import { playResourceSound } from "@/three/sound/utils";
 import { LeftView } from "@/types";
-import { configManager, Position } from "@bibliothecadao/eternum";
+import { configManager, NEUTRAL_BIOME_CLIMATE, Position } from "@bibliothecadao/eternum";
 import {
   requireActiveGameSyncRuntime,
   type ArmySpatialProjectionChange,
@@ -58,7 +59,7 @@ import {
   type GameWorkerWorldState,
 } from "../../managers/game-worker-manager";
 
-import { FELT_CENTER, IS_FLAT_MODE } from "@/ui/config";
+import { FELT_CENTER } from "@/ui/config";
 import { ChestModal, HelpModal } from "@/ui/features/military";
 import { QuickAttackPreview } from "@/ui/features/military/battle/quick-attack-preview";
 import { SpireTravelModal } from "@/ui/features/world/components/actions/spire-travel-modal";
@@ -102,22 +103,12 @@ import {
   StructureType,
 } from "@bibliothecadao/types";
 import { getComponentValue } from "@dojoengine/recs";
-import { getEntityIdFromKeys } from "@bibliothecadao/eternum";
 import throttle from "lodash/throttle";
 import { Account, AccountInterface } from "starknet";
-import {
-  Box3,
-  Color,
-  Group,
-  InstancedBufferAttribute,
-  Matrix4,
-  Object3D,
-  Raycaster,
-  Sphere,
-  Vector2,
-  Vector3,
-} from "three";
+import { Box3, Color, Group, Raycaster, Sphere, Vector2, Vector3 } from "three";
 import { MapControls } from "three/addons/controls/MapControls.js";
+import { WorldmapProceduralTerrain } from "@/three/terrain/worldmap-procedural-terrain";
+import type { TerrainSurface } from "@/three/terrain/terrain-surface";
 import { env } from "../../../env";
 import { playerCosmeticsStore } from "../cosmetics";
 import { FXManager } from "../managers/fx-manager";
@@ -132,15 +123,13 @@ import { ResourceFXManager } from "../managers/resource-fx-manager";
 import { ArrivalGhostManager } from "../managers/arrival-ghost-manager";
 import { resolveHoverVisualPalette, resolveSelectionPulsePalette } from "../managers/worldmap-interaction-palette";
 import { isCommittedManagerChunk } from "../managers/manager-update-convergence";
-import { SceneName, type ArmyData } from "../types/common";
+import { SceneName } from "../types/common";
 import { getWorldPositionForHex, isAddressEqualToAccount } from "../utils";
 import {
   getChunkKeysContainingHexInRenderBoundsAnalytically,
   getChunkCenter as getChunkCenterAligned,
   getRenderBounds,
 } from "../utils/chunk-geometry";
-import { InstancedMatrixAttributePool } from "../utils/instanced-matrix-attribute-pool";
-import { MatrixPool } from "../utils/matrix-pool";
 import { MemoryMonitor } from "../utils/memory-monitor";
 import {
   navigateToStructure,
@@ -307,7 +296,6 @@ import {
 import {
   incrementWorldmapRenderCounter,
   incrementWorldmapForceRefreshReason,
-  incrementWorldmapRenderUploadBytes,
   recordWorldmapRenderDuration,
   resetWorldmapRenderDiagnostics,
   setWorldmapRenderGauge,
@@ -315,8 +303,6 @@ import {
   type WorldmapForceRefreshReason,
   type WorldmapRenderDurationMetric,
 } from "../perf/worldmap-render-diagnostics";
-import { recordRendererColorUploadBytes, recordRendererMatrixUploadBytes } from "../perf/renderer-gpu-telemetry";
-import { resolveExploredHexTransform } from "./worldmap-explored-hex-transform-policy";
 import { resolveSpireTraversalAction } from "./worldmap-spire-travel-policy";
 import { buildVisibleTerrainMembership, type VisibleTerrainInstanceRef } from "./worldmap-visible-terrain-membership";
 import { createWorldmapTerrainFingerprint } from "./worldmap-terrain-fingerprint";
@@ -396,10 +382,7 @@ import {
   type WorldmapVisualTerrainWindow,
 } from "./worldmap-terrain-presentation-runtime";
 
-interface CachedMatrixEntry {
-  matrices: InstancedBufferAttribute | null;
-  count: number;
-  landColors?: Float32Array | null;
+interface CachedTerrainEntry {
   box?: Box3;
   sphere?: Sphere;
   expectedExploredTerrainInstances?: number;
@@ -418,7 +401,7 @@ interface PreparedTerrainChunk {
   terrainFingerprint: string;
   visibleTerrainOwnership: Array<[string, VisibleTerrainInstanceRef]>;
   terrainCells: WorldmapTerrainSourceCellRef[];
-  biomeEntries: Map<string, CachedMatrixEntry>;
+  biomeEntries: Map<string, CachedTerrainEntry>;
 }
 
 type PreparedWorldmapChunkRuntime = Awaited<ReturnType<typeof prepareWorldmapChunkRuntime<PreparedTerrainChunk>>>;
@@ -431,15 +414,15 @@ interface WorldmapLocalBounds {
 }
 
 type WorldmapTerrainPresentationEntry = WorldmapTerrainPresentation<
-  Map<string, CachedMatrixEntry>,
+  Map<string, CachedTerrainEntry>,
   PreparedTerrainChunk["bounds"]
 >;
 type WorldmapTerrainPresentationState = WorldmapTerrainPresentationRuntimeState<
-  Map<string, CachedMatrixEntry>,
+  Map<string, CachedTerrainEntry>,
   PreparedTerrainChunk["bounds"]
 >;
 type WorldmapTerrainPresentationComposite = WorldmapTerrainComposite<
-  Map<string, CachedMatrixEntry>,
+  Map<string, CachedTerrainEntry>,
   PreparedTerrainChunk["bounds"]
 >;
 
@@ -531,7 +514,6 @@ type WorldmapChunkDiagnosticsDebugWindow = Window & {
   getWorldmapChunkTrace?: () => WorldmapChunkTraceEntry[];
 };
 
-const dummy = new Object3D();
 const MEMORY_MONITORING_ENABLED = env.VITE_PUBLIC_ENABLE_MEMORY_MONITORING;
 const MIN_TRAVEL_EFFECT_VISIBLE_MS = 600;
 const MAX_TRAVEL_EFFECT_LIFETIME_MS = 90_000;
@@ -810,6 +792,7 @@ export default class WorldmapScene extends WarpTravel {
   private worldSpatialProjection!: WorldSpatialProjection;
   private unsubscribeWorldSpatialProjection?: () => void;
   private exploredTiles: Map<number, Map<number, BiomeType>> = new Map();
+  private proceduralTerrain!: WorldmapProceduralTerrain;
   // normalized positions and if they are allied or not
 
   // Battle direction manager for tracking attacker/defender relationships
@@ -893,7 +876,7 @@ export default class WorldmapScene extends WarpTravel {
   // Performance simulation: Show all biomes as explored (bypasses fog of war)
   private simulateAllExplored: boolean = false;
   private exploredTilesGeneration = createTerrainCacheGeneration();
-  private cachedMatrices: Map<string, Map<string, CachedMatrixEntry>> = new Map();
+  private cachedMatrices: Map<string, Map<string, CachedTerrainEntry>> = new Map();
   private cachedMatrixOrder: string[] = [];
   private readonly maxMatrixCacheSize = WORLDMAP_CHUNK_POLICY.cache.recommendedMinSize;
   private pinnedChunkKeys: Set<string> = new Set();
@@ -938,6 +921,10 @@ export default class WorldmapScene extends WarpTravel {
   private fxManager!: FXManager;
   private arrivalGhostManager!: ArrivalGhostManager;
   private resourceFXManager!: ResourceFXManager;
+  private combatPresentation?: CombatPresentationCoordinator;
+  private unsubscribeProceduralProjectileImpact?: () => void;
+  private unsubscribeProceduralMeleeContact?: () => void;
+  private unsubscribeProceduralRangedRelease?: () => void;
   private armyIndex: number = 0;
   private selectableArmies: SelectableArmy[] = [];
   private structureIndex: number = 0;
@@ -987,6 +974,10 @@ export default class WorldmapScene extends WarpTravel {
     this.attachWorldmapWheelHandler();
   }
 
+  public override getTerrainSurface(): TerrainSurface {
+    return this.proceduralTerrain;
+  }
+
   private registerWorldmapRecoveryHandle(): void {
     this.unregisterWorldmapRecoveryHandle = registerActiveWorldmapRecoveryHandle({
       refreshAfterReconnect: () => this.refreshAfterReconnect(),
@@ -1007,7 +998,17 @@ export default class WorldmapScene extends WarpTravel {
 
   private initializeWorldmapSceneServices(dojoContext: SetupResult): void {
     this.fxManager = new FXManager(this.scene, 1);
-    this.resourceFXManager = new ResourceFXManager(this.scene, 1.2);
+    this.proceduralTerrain = new WorldmapProceduralTerrain();
+    this.scene.add(this.proceduralTerrain.object3d);
+    this.resourceFXManager = new ResourceFXManager(this.scene, 1.2, {
+      terrainSurface: this.proceduralTerrain,
+    });
+    void this.proceduralTerrain.loadProps().catch((error) => {
+      console.warn("[WorldMap] Optional procedural terrain props failed to load", error);
+    });
+    void this.proceduralTerrain.loadGroundTextures().catch((error) => {
+      console.warn("[WorldMap] Procedural ground textures failed; retaining flat terrain", error);
+    });
 
     if (MEMORY_MONITORING_ENABLED) {
       this.memoryMonitor = new MemoryMonitor({
@@ -1036,7 +1037,6 @@ export default class WorldmapScene extends WarpTravel {
     }
 
     if (import.meta.env.DEV) initializeSyncSimulator(dojoContext);
-    this.loadBiomeModels(this.getTerrainCompositeCellCapacity());
   }
 
   private bindTransactionFailureLifecycle(dojoContext: SetupResult): void {
@@ -1094,12 +1094,22 @@ export default class WorldmapScene extends WarpTravel {
       this.chunkSize,
       this.chunkWorkQueue,
     );
+    this.armyManager.setProceduralCollisionMode(renderProfile.mode);
+    this.combatPresentation = new CombatPresentationCoordinator(this.scene, {
+      projectileHitQuery: {
+        hasTarget: (entityId) => this.armyManager.hasProceduralProjectileTarget(entityId),
+        sweepSphere: (request) => this.armyManager.sweepProceduralProjectile(request),
+      },
+    });
+    this.bindProceduralCombatPresentation();
     this.arrivalGhostManager = new ArrivalGhostManager(this.scene, {
       chunkStride: this.chunkSize,
       renderChunkSize: this.renderChunkSize,
+      terrainSurface: this.getTerrainSurface(),
     });
 
     installWorldmapDebugHooks(window, {
+      getProceduralArmyProductionStats: () => this.armyManager.getProceduralArmyProductionStats(),
       testMaterialSharing: () => this.armyManager.logMaterialSharingStats(),
       testTroopDiffFx: (diff?: number) => {
         const targetHex = this.getCameraTargetHex();
@@ -1124,7 +1134,11 @@ export default class WorldmapScene extends WarpTravel {
       this.chunkSize,
       this.chunkWorkQueue,
     );
-    this.reservedHyperstructureManager = new ReservedHyperstructureManager(this.scene, this.worldSpatialProjection);
+    this.reservedHyperstructureManager = new ReservedHyperstructureManager(
+      this.scene,
+      this.worldSpatialProjection,
+      this.getTerrainSurface(),
+    );
     this.chestManager = new ChestManager(
       this.scene,
       this.renderChunkSize,
@@ -1241,6 +1255,8 @@ export default class WorldmapScene extends WarpTravel {
       return;
     }
 
+    const wasExplored = this.exploredTiles.get(normalized.x)?.has(normalized.y) ?? false;
+    if (current && !wasExplored) this.proceduralTerrain.queueShroudReveal(normalized.x, normalized.y);
     this.applyProjectedExploredTileChange(normalized.x, normalized.y, current);
     this.invalidateVisualTerrainPageForLiveTile(normalized.x, normalized.y);
     if (current) this.recordExploreRevealAfterRender(current.hexCoords);
@@ -1334,19 +1350,6 @@ export default class WorldmapScene extends WarpTravel {
         this.highlightHexManager.setCameraView(view);
         this.interactiveHexManager.setCameraView(view);
       });
-      // One queue task per biome model: the flip re-copies that model's whole
-      // instance-matrix buffer, and doing every model in the interaction frame
-      // was a convicted multi-second freeze (owner zoom:terrain-detail).
-      // setFarDetailEnabled is idempotent, so staggered application converges.
-      runWithFrameWorkOwner("zoom:terrain-detail", () => {
-        this.biomeModels.forEach((model) => {
-          void this.chunkWorkQueue
-            .schedule("visible", () => model.setFarDetailEnabled(view === CameraView.Far))
-            .catch((error) => {
-              if (!isFrameBudgetWorkQueueDisposedError(error)) throw error;
-            });
-        });
-      });
       runWithFrameWorkOwner("zoom:worldmap-shadows", () => {
         this.configureWorldmapShadows();
       });
@@ -1366,6 +1369,7 @@ export default class WorldmapScene extends WarpTravel {
   private registerBattleWorldUpdateSubscriptions(): void {
     this.addWorldUpdateSubscription(
       this.worldUpdateListener.BattleEvent.onBattleUpdate((update: BattleEventSystemUpdate) => {
+        this.replayIndexedCombat(update);
         const { attackerId, defenderId } = update.battleData;
         if (attackerId && defenderId) {
           this.addCombatRelationship(attackerId, defenderId);
@@ -1407,13 +1411,13 @@ export default class WorldmapScene extends WarpTravel {
   }
 
   private initializeWorldmapInteractionRuntime(): void {
-    this.selectedHexManager = new SelectedHexManager(this.scene);
+    this.selectedHexManager = new SelectedHexManager(this.scene, this.getTerrainSurface());
     this.interactionAdapter = createWorldmapInteractionAdapter({
       state: this.state,
       selectedHexManager: this.selectedHexManager,
       dojoComponents: this.dojo.components,
     });
-    this.selectionPulseManager = new SelectionPulseManager(this.scene);
+    this.selectionPulseManager = new SelectionPulseManager(this.scene, this.getTerrainSurface());
     this.interactiveHexManager.applyHoverPalette(resolveHoverVisualPalette({ hasSelection: false }));
     this.interactiveHexManager.setSurfaceVisibility(false);
     this.interactiveHexManager.setHoverVisualMode("outline");
@@ -3048,6 +3052,82 @@ export default class WorldmapScene extends WarpTravel {
     }
 
     return false;
+  }
+
+  private replayIndexedCombat(update: BattleEventSystemUpdate): void {
+    const { attackerId, defenderId } = update.battleData;
+    const attacker = this.armyManager.getArmy(attackerId);
+    if (!attacker) return;
+    const attackerHex = this.getArmyDisplayPosition(attackerId);
+    const defenderHex = this.getArmyDisplayPosition(defenderId) ?? this.getStructureHexPosition(defenderId);
+    if (!attackerHex || !defenderHex) return;
+    const origin = getWorldPositionForHex(attackerHex);
+    const target = getWorldPositionForHex(defenderHex);
+    const presentation = {
+      attackerId,
+      defenderId,
+      origin,
+      target,
+      tier: attacker.tier,
+      troopType: attacker.category,
+    };
+    const replayed = this.combatPresentation?.replayIndexed(presentation, { deferEffects: true });
+    if (!replayed) return;
+    if (!this.armyManager.playProceduralAttack(attackerId, target, defenderId, "indexed-replay")) {
+      this.combatPresentation?.presentImmediate(presentation);
+    }
+  }
+
+  private bindProceduralCombatPresentation(): void {
+    this.unsubscribeProceduralRangedRelease = this.armyManager.onProceduralRangedRelease(
+      (entityId, event, targetEntityId, authority) => {
+        this.presentProceduralRangedRelease(entityId, event, targetEntityId, authority);
+      },
+    );
+    this.unsubscribeProceduralMeleeContact = this.armyManager.onProceduralMeleeContact(
+      (entityId, event, targetEntityId) => {
+        this.presentProceduralMeleeContact(entityId, event, targetEntityId);
+      },
+    );
+    this.unsubscribeProceduralProjectileImpact = this.combatPresentation?.onProjectileImpact((event) => {
+      this.armyManager.presentProceduralProjectileImpact(event);
+    });
+  }
+
+  private presentProceduralRangedRelease(
+    entityId: number,
+    event: ProceduralRangedReleaseEvent,
+    targetEntityId?: number,
+    authority: ProceduralImpactAuthority = "provisional",
+  ): void {
+    const army = this.armyManager.getArmy(entityId);
+    if (!army || targetEntityId === undefined) return;
+    this.combatPresentation?.presentRangedRelease({
+      authority,
+      ownerEntityId: entityId,
+      origin: event.origin,
+      origins: event.origins,
+      presentationId: `procedural:${entityId}:${event.shotGeneration}`,
+      projectile: event.projectile,
+      seed: event.seed,
+      target: event.target,
+      targetEntityId,
+      tier: army.tier,
+    });
+  }
+
+  private presentProceduralMeleeContact(
+    entityId: number,
+    event: ProceduralMeleeContactEvent,
+    _targetEntityId?: number,
+  ): void {
+    const army = this.armyManager.getArmy(entityId);
+    if (!army) return;
+    this.combatPresentation?.presentMeleeContact({
+      direction: event.direction,
+      target: event.target,
+      tier: army.tier,
+    });
   }
 
   private resolveMovementStaminaForAction(input: {
@@ -4750,50 +4830,13 @@ export default class WorldmapScene extends WarpTravel {
       },
       `terrain:${workLane}-page-build`,
     );
-    const modelWaitStartedAt = performance.now();
-    const preparedTerrainWithModels = await this.awaitPreparedTerrainBiomeModels(preparedTerrain);
     return {
-      preparedTerrain: preparedTerrainWithModels,
+      preparedTerrain,
       phaseTimings: {
         cpuBuildMs,
-        modelWaitMs: performance.now() - modelWaitStartedAt,
+        modelWaitMs: 0,
       },
     };
-  }
-
-  private async awaitPreparedTerrainBiomeModels(preparedTerrain: PreparedTerrainChunk): Promise<PreparedTerrainChunk> {
-    try {
-      const requiredModelPromises: Promise<void>[] = [];
-      preparedTerrain.biomeEntries.forEach((entry, biomeKey) => {
-        if (entry.count === 0) {
-          return;
-        }
-
-        requiredModelPromises.push(this.requireBiomeModelLoadPromise(biomeKey));
-      });
-      await Promise.all(requiredModelPromises);
-      return preparedTerrain;
-    } catch (error) {
-      this.disposePreparedTerrainChunk(preparedTerrain);
-      throw error;
-    }
-  }
-
-  private requireBiomeModelLoadPromise(biomeKey: string): Promise<void> {
-    const modelPromise = this.biomeModelLoadPromises.get(biomeKey);
-    if (!modelPromise) {
-      throw new Error(`No biome model load was registered for ${biomeKey}`);
-    }
-    return modelPromise;
-  }
-
-  private async requireLoadedBiomeModel(biomeKey: string): Promise<InstancedBiome> {
-    await this.requireBiomeModelLoadPromise(biomeKey);
-    const model = this.biomeModels.get(biomeKey as BiomeType);
-    if (!model) {
-      throw new Error(`Biome model ${biomeKey} finished loading without registering an instance`);
-    }
-    return model;
   }
 
   private buildPreparedTerrainArea(
@@ -4802,208 +4845,66 @@ export default class WorldmapScene extends WarpTravel {
     rows: number,
     cols: number,
   ): PreparedTerrainChunk {
-    const matrixPool = MatrixPool.getInstance();
     const totalHexes = rows * cols;
-    matrixPool.ensureCapacity(totalHexes + 512);
-
-    const biomeHexes = this.createEmptyBiomeMatrixBuckets();
     const { row: centerRow, col: centerCol } = this.getChunkCenter(startRow, startCol);
     const snapshot = snapshotExploredTilesRegion(this.exploredTiles, {
-      centerCol: centerCol,
-      centerRow: centerRow,
+      centerCol,
+      centerRow,
       halfCols: cols / 2,
       halfRows: rows / 2,
     });
     const visibleTerrainOwnership: Array<[string, VisibleTerrainInstanceRef]> = [];
     const terrainCells: WorldmapTerrainSourceCellRef[] = [];
-    const fingerprintEntries: Array<{ hexKey: string; biomeKey: string }> = [];
-    const tempMatrix = new Matrix4();
-    const tempPosition = new Vector3();
+    const fingerprintEntries: Array<{ hexKey: string; biomeKey: string; occupied: boolean }> = [];
+    const instanceCounts = new Map<string, number>();
     let expectedExploredTerrainInstances = 0;
 
     for (let index = 0; index < totalHexes; index += 1) {
-      const cell = this.resolvePreparedTerrainCell(index, {
-        biomeHexes,
-        centerCol,
-        centerRow,
-        cols,
-        rows,
-        snapshot,
-        startCol,
-        startRow,
-        tempMatrix,
-        tempPosition,
-      });
-      if (!cell) {
-        continue;
-      }
+      const rowOffset = Math.floor(index / cols) - rows / 2;
+      const colOffset = (index % cols) - cols / 2;
+      const row = centerRow + rowOffset;
+      const col = centerCol + colOffset;
+      const projectedBiome = lookupSnapshotBiome(snapshot, col, row) || false;
+      const effectivelyExplored = projectedBiome || this.simulateAllExplored;
+      const biome = effectivelyExplored
+        ? projectedBiome
+          ? (projectedBiome as BiomeType)
+          : this.perfSimulation!.getSimulatedBiome(col, row)
+        : null;
+      const biomeKey = biome ?? "Outline";
+      const hexKey = String(col) + "," + String(row);
+      const instanceIndex = instanceCounts.get(biomeKey) ?? 0;
+      const occupied = this.isProjectedStructureHex(col, row);
+      instanceCounts.set(biomeKey, instanceIndex + 1);
+      terrainCells.push({ biomeKey, hexKey, instanceIndex, occupied });
 
-      if (cell.visibleTerrainOwner) {
+      if (biome) {
         expectedExploredTerrainInstances += 1;
-        visibleTerrainOwnership.push([cell.hexKey, cell.visibleTerrainOwner]);
-        fingerprintEntries.push({ hexKey: cell.hexKey, biomeKey: cell.biomeKey });
+        const owner = {
+          biomeKey,
+          chunkKey: String(startRow) + "," + String(startCol),
+          instanceIndex,
+        };
+        visibleTerrainOwnership.push([hexKey, owner]);
+        fingerprintEntries.push({ biomeKey, hexKey, occupied });
       }
-      terrainCells.push({
-        hexKey: cell.hexKey,
-        biomeKey: cell.biomeKey,
-        instanceIndex: cell.instanceIndex,
-      });
     }
 
-    const biomeEntries = this.createPreparedTerrainBiomeEntriesFromBuckets(biomeHexes);
-    this.releaseBiomeMatrixBuckets(biomeHexes);
     return {
-      chunkKey: `${startRow},${startCol}`,
-      startRow,
-      startCol,
+      biomeEntries: new Map(),
       bounds: this.computeChunkBounds(startRow, startCol),
+      chunkKey: String(startRow) + "," + String(startCol),
       expectedExploredTerrainInstances,
+      startCol,
+      startRow,
+      terrainCells,
       terrainFingerprint: createWorldmapTerrainFingerprint(fingerprintEntries),
       visibleTerrainOwnership,
-      terrainCells,
-      biomeEntries,
     };
-  }
-
-  private createEmptyBiomeMatrixBuckets(): Record<BiomeType | "Outline" | string, Matrix4[]> {
-    return {
-      None: [],
-      Ocean: [],
-      DeepOcean: [],
-      Beach: [],
-      Scorched: [],
-      Bare: [],
-      Tundra: [],
-      Snow: [],
-      TemperateDesert: [],
-      Shrubland: [],
-      ShrublandAlt: [],
-      Taiga: [],
-      Grassland: [],
-      GrasslandAlt: [],
-      TemperateDeciduousForest: [],
-      TemperateDeciduousForestAlt: [],
-      TemperateRainForest: [],
-      SubtropicalDesert: [],
-      TropicalSeasonalForest: [],
-      TropicalRainForest: [],
-      Outline: [],
-    };
-  }
-
-  private resolvePreparedTerrainCell(
-    index: number,
-    input: {
-      biomeHexes: Record<BiomeType | "Outline" | string, Matrix4[]>;
-      centerCol: number;
-      centerRow: number;
-      cols: number;
-      rows: number;
-      snapshot: ReturnType<typeof snapshotExploredTilesRegion>;
-      startCol: number;
-      startRow: number;
-      tempMatrix: Matrix4;
-      tempPosition: Vector3;
-    },
-  ): {
-    biomeKey: string;
-    hexKey: string;
-    instanceIndex: number;
-    visibleTerrainOwner?: VisibleTerrainInstanceRef;
-  } | null {
-    const rowOffset = Math.floor(index / input.cols) - input.rows / 2;
-    const colOffset = (index % input.cols) - input.cols / 2;
-    const globalRow = input.centerRow + rowOffset;
-    const globalCol = input.centerCol + colOffset;
-    const rowOffsetValue = ((globalRow % 2) * Math.sign(globalRow) * Math.sqrt(3) * HEX_SIZE) / 2;
-    const baseX = globalCol * Math.sqrt(3) * HEX_SIZE - rowOffsetValue;
-    const baseZ = globalRow * HEX_SIZE * 1.5;
-
-    if (this.isProjectedStructureHex(globalCol, globalRow)) {
-      return null;
-    }
-
-    input.tempPosition.set(baseX, 0.05, baseZ);
-    input.tempMatrix.makeScale(HEX_SIZE, HEX_SIZE, HEX_SIZE);
-    const exploredBiome = lookupSnapshotBiome(input.snapshot, globalCol, globalRow) || false;
-    const effectivelyExplored = exploredBiome || this.simulateAllExplored;
-    const hexKey = `${globalCol},${globalRow}`;
-
-    if (effectivelyExplored) {
-      const biome = exploredBiome
-        ? (exploredBiome as BiomeType)
-        : this.perfSimulation!.getSimulatedBiome(globalCol, globalRow);
-      const biomeKey = getBiomeVariant(biome, globalCol, globalRow);
-      const instanceIndex = input.biomeHexes[biomeKey].length;
-      input.tempMatrix.setPosition(input.tempPosition);
-      this.pushPreparedTerrainMatrix(input.biomeHexes[biomeKey], input.tempMatrix);
-      return {
-        biomeKey,
-        hexKey,
-        instanceIndex,
-        visibleTerrainOwner: {
-          biomeKey,
-          chunkKey: `${input.startRow},${input.startCol}`,
-          instanceIndex,
-        },
-      };
-    }
-
-    input.tempPosition.y = 0.01;
-    input.tempMatrix.setPosition(input.tempPosition);
-    const instanceIndex = input.biomeHexes.Outline.length;
-    this.pushPreparedTerrainMatrix(input.biomeHexes.Outline, input.tempMatrix);
-    return {
-      biomeKey: "Outline",
-      hexKey,
-      instanceIndex,
-    };
-  }
-
-  private pushPreparedTerrainMatrix(target: Matrix4[], matrix: Matrix4): void {
-    const pooledMatrix = MatrixPool.getInstance().getMatrix();
-    pooledMatrix.copy(matrix);
-    target.push(pooledMatrix);
-  }
-
-  private createPreparedTerrainBiomeEntriesFromBuckets(
-    biomeHexes: Record<BiomeType | "Outline" | string, Matrix4[]>,
-  ): Map<string, CachedMatrixEntry> {
-    const biomeEntries = new Map<string, CachedMatrixEntry>();
-    Object.entries(biomeHexes).forEach(([biome, matrices]) => {
-      if (matrices.length === 0) {
-        biomeEntries.set(biome, { matrices: null, count: 0, landColors: null });
-        return;
-      }
-
-      const attribute = InstancedMatrixAttributePool.getInstance().acquire(matrices.length);
-      const targetArray = attribute.array as Float32Array;
-      matrices.forEach((matrix, index) => {
-        targetArray.set(matrix.elements, index * 16);
-      });
-      biomeEntries.set(biome, {
-        matrices: attribute,
-        count: matrices.length,
-        landColors: null,
-      });
-    });
-    return biomeEntries;
-  }
-
-  private releaseBiomeMatrixBuckets(biomeHexes: Record<BiomeType | "Outline" | string, Matrix4[]>): void {
-    const matrixPool = MatrixPool.getInstance();
-    Object.values(biomeHexes).forEach((matrices) => {
-      matrices.forEach((matrix) => matrixPool.releaseMatrix(matrix));
-      matrices.length = 0;
-    });
   }
 
   private disposePreparedTerrainChunk(preparedTerrain: PreparedTerrainChunk): void {
-    preparedTerrain.biomeEntries.forEach((entry) => {
-      if (entry.matrices) {
-        this.releaseInstancedAttribute(entry.matrices);
-      }
-    });
+    void preparedTerrain;
   }
 
   private async schedulePreparedTerrainCommit<TResult>(
@@ -5378,8 +5279,6 @@ export default class WorldmapScene extends WarpTravel {
     this.exploredTiles.clear();
     this.exploredTilesGeneration.clear();
     gameWorkerManager.resetWorldState();
-    MatrixPool.getInstance().clear();
-    InstancedMatrixAttributePool.getInstance().clear();
     this.pinnedChunkKeys.clear();
   }
 
@@ -5458,311 +5357,9 @@ export default class WorldmapScene extends WarpTravel {
   }
 
   async updateHexagonGrid(startRow: number, startCol: number, rows: number, cols: number) {
-    this.cancelHexGridComputation?.();
-    this.cancelHexGridComputation = undefined;
-
-    const memoryMonitor = (window as { __gameRenderer?: { memoryMonitor?: MemoryMonitor } }).__gameRenderer
-      ?.memoryMonitor;
-    const preUpdateStats = memoryMonitor?.getCurrentStats(`hex-grid-update-${startRow}-${startCol}`);
-
-    const matrixPoolInstance = MatrixPool.getInstance();
-    const totalHexes = rows * cols;
-    matrixPoolInstance.ensureCapacity(totalHexes + 512);
-
-    await Promise.all(this.modelLoadPromises);
-    if (this.applyCachedMatricesForChunk(startRow, startCol)) {
-      this.computeInteractiveHexes(startRow, startCol, cols, rows);
-
-      if (memoryMonitor && preUpdateStats) {
-        const postStats = memoryMonitor.getCurrentStats(`hex-grid-cached-${startRow}-${startCol}`);
-        const memoryDelta = postStats.heapUsedMB - preUpdateStats.heapUsedMB;
-        if (Math.abs(memoryDelta) > 10) {
-          // Keep hook for future instrumentation
-        }
-      }
-      this.updateHexagonGridPromise = null;
-      return;
-    }
-
-    const taskToken = Symbol("hex-grid-task");
-    this.currentHexGridTask = taskToken;
-
-    const halfRows = rows / 2;
-    const halfCols = cols / 2;
-    const { row: snapshotCenterRow, col: snapshotCenterCol } = this.getChunkCenter(startRow, startCol);
-    const exploredTilesSnapshot = snapshotExploredTilesRegion(this.exploredTiles, {
-      centerCol: snapshotCenterCol,
-      centerRow: snapshotCenterRow,
-      halfCols,
-      halfRows,
-    });
-    const minBatch = Math.min(this.hexGridMinBatch, totalHexes);
-    const maxBatch = Math.max(minBatch, Math.min(this.hexGridMaxBatch, totalHexes));
-    const workUnitBudgetMs = this.terrainWorkUnitBudgetMs;
-
-    this.updateHexagonGridPromise = new Promise((resolve) => {
-      const biomeHexes: Record<BiomeType | "Outline" | string, Matrix4[]> = {
-        None: [],
-        Ocean: [],
-        DeepOcean: [],
-        Beach: [],
-        Scorched: [],
-        Bare: [],
-        Tundra: [],
-        Snow: [],
-        TemperateDesert: [],
-        Shrubland: [],
-        ShrublandAlt: [],
-        Taiga: [],
-        Grassland: [],
-        GrasslandAlt: [],
-        TemperateDeciduousForest: [],
-        TemperateDeciduousForestAlt: [],
-        TemperateRainForest: [],
-        SubtropicalDesert: [],
-        TropicalSeasonalForest: [],
-        TropicalRainForest: [],
-        Outline: [],
-      };
-
-      let currentIndex = 0;
-      let resolved = false;
-      let expectedExploredTerrainInstances = 0;
-      const visibleTerrainOwnership: Array<[string, VisibleTerrainInstanceRef]> = [];
-      const terrainCells: WorldmapTerrainSourceCellRef[] = [];
-      const fingerprintEntries: Array<{ hexKey: string; biomeKey: string }> = [];
-
-      const tempMatrix = new Matrix4();
-      const tempPosition = new Vector3();
-      const matrixPool = matrixPoolInstance;
-      const hexRadius = HEX_SIZE;
-      const hexHeight = hexRadius * 2;
-      const hexWidth = Math.sqrt(3) * hexRadius;
-      const vertDist = hexHeight * 0.75;
-      const horizDist = hexWidth;
-      const { row: chunkCenterRow, col: chunkCenterCol } = this.getChunkCenter(startRow, startCol);
-
-      const cleanupTask = () => {
-        if (this.currentHexGridTask === taskToken) {
-          this.currentHexGridTask = null;
-        }
-      };
-
-      const releaseAllMatrices = () => {
-        let totalReleased = 0;
-        Object.values(biomeHexes).forEach((matrices) => {
-          matrices.forEach((matrix) => matrixPool.releaseMatrix(matrix));
-          totalReleased += matrices.length;
-        });
-        (Object.keys(biomeHexes) as Array<keyof typeof biomeHexes>).forEach((key) => {
-          biomeHexes[key].length = 0;
-        });
-        return totalReleased;
-      };
-
-      const resolveOnce = () => {
-        if (!resolved) {
-          resolved = true;
-          this.cancelHexGridComputation = undefined;
-          cleanupTask();
-          resolve();
-        }
-      };
-
-      const abortTask = () => {
-        releaseAllMatrices();
-        resolveOnce();
-      };
-
-      this.cancelHexGridComputation = () => {
-        abortTask();
-      };
-
-      const finalizeSuccess = () => {
-        for (const [biome, matrices] of Object.entries(biomeHexes)) {
-          const hexMesh = this.biomeModels.get(biome as BiomeType);
-
-          if (!hexMesh) {
-            if (matrices.length > 0) {
-              console.error(`❌ Missing biome model for: ${biome}`);
-              if (import.meta.env.DEV) {
-                console.log(`Available biome models:`, Array.from(this.biomeModels.keys()));
-              }
-            }
-            continue;
-          }
-
-          if (matrices.length === 0) {
-            hexMesh.setCount(0);
-            hexMesh.updateMeshVisibility(); // Hide meshes with 0 instances to skip draw calls
-            continue;
-          }
-
-          matrices.forEach((matrix, index) => {
-            hexMesh.setMatrixAt(index, matrix);
-          });
-          hexMesh.setCount(matrices.length);
-          hexMesh.updateMeshVisibility(); // Show meshes that have instances
-        }
-
-        this.setVisibleTerrainMembership(visibleTerrainOwnership);
-        this.cacheMatricesForChunk(
-          startRow,
-          startCol,
-          expectedExploredTerrainInstances,
-          createWorldmapTerrainFingerprint(fingerprintEntries),
-          visibleTerrainOwnership,
-          terrainCells,
-        );
-        this.computeInteractiveHexes(startRow, startCol, cols, rows);
-
-        releaseAllMatrices();
-
-        if (memoryMonitor && preUpdateStats) {
-          const postStats = memoryMonitor.getCurrentStats(`hex-grid-generated-${startRow}-${startCol}`);
-          const memoryDelta = postStats.heapUsedMB - preUpdateStats.heapUsedMB;
-
-          if (memoryDelta > 15) {
-            console.warn(`[HEX GRID] Unexpected memory usage: ${memoryDelta.toFixed(1)}MB`);
-          }
-        }
-
-        resolveOnce();
-      };
-
-      const processCell = (index: number) => {
-        const rowOffset = Math.floor(index / cols) - halfRows;
-        const colOffset = (index % cols) - halfCols;
-
-        const globalRow = chunkCenterRow + rowOffset;
-        const globalCol = chunkCenterCol + colOffset;
-
-        const rowOffsetValue = ((globalRow % 2) * Math.sign(globalRow) * horizDist) / 2;
-        const baseX = globalCol * horizDist - rowOffsetValue;
-        const baseZ = globalRow * vertDist;
-        tempPosition.set(baseX, 0, baseZ);
-
-        const isStructure = this.isProjectedStructureHex(globalCol, globalRow);
-        const shouldHideTile = isStructure;
-        const isExplored = lookupSnapshotBiome(exploredTilesSnapshot, globalCol, globalRow) || false;
-
-        if (shouldHideTile) {
-          return;
-        }
-
-        tempMatrix.makeScale(HEX_SIZE, HEX_SIZE, HEX_SIZE);
-        tempPosition.y += 0.05;
-
-        // Performance simulation: treat all hexes as explored when flag is set
-        const effectivelyExplored = isExplored || this.simulateAllExplored;
-
-        if (effectivelyExplored) {
-          expectedExploredTerrainInstances += 1;
-          // Use actual biome if explored, or generate deterministic biome for simulation
-          const biome = isExplored
-            ? (isExplored as BiomeType)
-            : this.perfSimulation!.getSimulatedBiome(globalCol, globalRow);
-          const biomeVariant = getBiomeVariant(biome, globalCol, globalRow);
-          const hexKey = `${globalCol},${globalRow}`;
-          const instanceIndex = biomeHexes[biomeVariant].length;
-          tempMatrix.setPosition(tempPosition);
-
-          const pooledMatrix = matrixPool.getMatrix();
-          pooledMatrix.copy(tempMatrix);
-          biomeHexes[biomeVariant].push(pooledMatrix);
-          terrainCells.push({
-            hexKey,
-            biomeKey: biomeVariant,
-            instanceIndex,
-          });
-          visibleTerrainOwnership.push([
-            hexKey,
-            {
-              biomeKey: biomeVariant,
-              chunkKey: `${startRow},${startCol}`,
-              instanceIndex,
-            },
-          ]);
-          fingerprintEntries.push({ hexKey, biomeKey: biomeVariant });
-        } else {
-          tempPosition.y = 0.01;
-          tempMatrix.setPosition(tempPosition);
-
-          const pooledMatrix = matrixPool.getMatrix();
-          pooledMatrix.copy(tempMatrix);
-          terrainCells.push({
-            hexKey: `${globalCol},${globalRow}`,
-            biomeKey: "Outline",
-            instanceIndex: biomeHexes.Outline.length,
-          });
-          biomeHexes.Outline.push(pooledMatrix);
-        }
-      };
-
-      const processWorkUnit = () => {
-        if (this.currentHexGridTask !== taskToken) {
-          abortTask();
-          return;
-        }
-
-        const workUnitStartedAt = performance.now();
-        let processedThisUnit = 0;
-
-        while (currentIndex < totalHexes) {
-          processCell(currentIndex);
-          currentIndex += 1;
-          processedThisUnit += 1;
-
-          if (currentIndex >= totalHexes) {
-            break;
-          }
-
-          if (processedThisUnit >= minBatch) {
-            const elapsed = performance.now() - workUnitStartedAt;
-            if (elapsed >= workUnitBudgetMs || processedThisUnit >= maxBatch) {
-              break;
-            }
-          }
-        }
-
-        if (currentIndex < totalHexes) {
-          scheduleWorkUnit();
-        } else {
-          finalizeSuccess();
-        }
-      };
-
-      const scheduleWorkUnit = () => {
-        void this.chunkWorkQueue.schedule("critical", processWorkUnit, "terrain:hex-grid").catch((error) => {
-          abortTask();
-          if (!isFrameBudgetWorkQueueDisposedError(error)) {
-            console.error("[WorldMap] Hex grid work failed:", error);
-          }
-        });
-      };
-
-      scheduleWorkUnit();
-    });
-
-    await this.updateHexagonGridPromise;
-    this.updateHexagonGridPromise = null;
-  }
-
-  private cloneInstancedAttribute(attribute: InstancedBufferAttribute, count: number): InstancedBufferAttribute {
-    const clone = InstancedMatrixAttributePool.getInstance().acquire(count);
-    const requiredFloats = count * clone.itemSize;
-    (clone.array as Float32Array).set((attribute.array as Float32Array).subarray(0, requiredFloats));
-    return clone;
-  }
-
-  private cloneCachedMatrixEntry(entry: CachedMatrixEntry): CachedMatrixEntry {
-    return {
-      ...entry,
-      matrices: entry.matrices ? this.cloneInstancedAttribute(entry.matrices, entry.count) : null,
-      landColors: entry.landColors ? new Float32Array(entry.landColors) : null,
-      box: entry.box?.clone(),
-      sphere: entry.sphere?.clone(),
-    };
+    const preparedTerrain = this.buildPreparedTerrainArea(startRow, startCol, rows, cols);
+    this.applyPreparedTerrainChunk(preparedTerrain);
+    this.computeInteractiveHexes(startRow, startCol, cols, rows);
   }
 
   private createPreparedTerrainChunkFromCache(startRow: number, startCol: number): PreparedTerrainChunk | null {
@@ -5772,20 +5369,10 @@ export default class WorldmapScene extends WarpTravel {
       return null;
     }
 
-    let totalCachedTerrainInstances = 0;
-    let cachedExploredTerrainInstances = 0;
-    for (const [biome, entry] of cachedMatrices) {
-      if (biome === "__bounds__" || biome === "__meta__") {
-        continue;
-      }
-      const count = Math.max(0, Math.floor(entry.count ?? 0));
-      totalCachedTerrainInstances += count;
-      if (this.isExploredBiomeCacheKey(biome)) {
-        cachedExploredTerrainInstances += count;
-      }
-    }
-
     const cachedMetadata = cachedMatrices.get("__meta__");
+    const cachedTerrainCells = cachedMetadata?.terrainCells ?? [];
+    const totalCachedTerrainInstances = cachedTerrainCells.length;
+    const cachedExploredTerrainInstances = cachedTerrainCells.filter((cell) => cell.biomeKey !== "Outline").length;
     if (isTerrainCacheStale(cachedMetadata?.generation, this.exploredTilesGeneration.current(chunkKey))) {
       this.removeCachedMatricesForChunk(startRow, startCol);
       return null;
@@ -5815,14 +5402,6 @@ export default class WorldmapScene extends WarpTravel {
     }
 
     const cachedBounds = cachedMatrices.get("__bounds__");
-    const biomeEntries = new Map<string, CachedMatrixEntry>();
-    for (const [biome, entry] of cachedMatrices) {
-      if (biome === "__bounds__" || biome === "__meta__") {
-        continue;
-      }
-      biomeEntries.set(biome, this.cloneCachedMatrixEntry(entry));
-    }
-
     return {
       chunkKey,
       startRow,
@@ -5841,7 +5420,7 @@ export default class WorldmapScene extends WarpTravel {
           biomeKey: owner.biomeKey,
           instanceIndex: owner.instanceIndex,
         })),
-      biomeEntries,
+      biomeEntries: new Map(),
     };
   }
 
@@ -5856,219 +5435,16 @@ export default class WorldmapScene extends WarpTravel {
     if (cachedChunk) {
       recordChunkDiagnosticsEvent(this.chunkDiagnostics, "prepared_chunk_prewarm_hit");
       incrementWorldmapRenderCounter("preparedChunkPrewarmHits");
-      return this.awaitPreparedTerrainBiomeModels(cachedChunk);
+      return cachedChunk;
     }
 
     recordChunkDiagnosticsEvent(this.chunkDiagnostics, "prepared_chunk_prewarm_miss");
     incrementWorldmapRenderCounter("preparedChunkPrewarmMisses");
-    const { row: prepCenterRow, col: prepCenterCol } = this.getChunkCenter(startRow, startCol);
-    const prepHalfCols = cols / 2;
-    const prepHalfRows = rows / 2;
-    const prepSnapshot = snapshotExploredTilesRegion(this.exploredTiles, {
-      centerCol: prepCenterCol,
-      centerRow: prepCenterRow,
-      halfCols: prepHalfCols,
-      halfRows: prepHalfRows,
-    });
-    const preparedTerrain = await new Promise<PreparedTerrainChunk>((resolve, reject) => {
-      const matrixPool = MatrixPool.getInstance();
-      const totalHexes = rows * cols;
-      matrixPool.ensureCapacity(totalHexes + 512);
-
-      const biomeHexes: Record<BiomeType | "Outline" | string, Matrix4[]> = {
-        None: [],
-        Ocean: [],
-        DeepOcean: [],
-        Beach: [],
-        Scorched: [],
-        Bare: [],
-        Tundra: [],
-        Snow: [],
-        TemperateDesert: [],
-        Shrubland: [],
-        ShrublandAlt: [],
-        Taiga: [],
-        Grassland: [],
-        GrasslandAlt: [],
-        TemperateDeciduousForest: [],
-        TemperateDeciduousForestAlt: [],
-        TemperateRainForest: [],
-        SubtropicalDesert: [],
-        TropicalSeasonalForest: [],
-        TropicalRainForest: [],
-        Outline: [],
-      };
-
-      const halfRows = rows / 2;
-      const halfCols = cols / 2;
-      const minBatch = Math.min(this.hexGridMinBatch, totalHexes);
-      const maxBatch = Math.max(minBatch, Math.min(this.hexGridMaxBatch, totalHexes));
-      const workUnitBudgetMs = this.terrainWorkUnitBudgetMs;
-      const tempMatrix = new Matrix4();
-      const tempPosition = new Vector3();
-      const hexRadius = HEX_SIZE;
-      const hexHeight = hexRadius * 2;
-      const hexWidth = Math.sqrt(3) * hexRadius;
-      const vertDist = hexHeight * 0.75;
-      const horizDist = hexWidth;
-      const { row: chunkCenterRow, col: chunkCenterCol } = this.getChunkCenter(startRow, startCol);
-      let currentIndex = 0;
-      let expectedExploredTerrainInstances = 0;
-      let settled = false;
-      const visibleTerrainOwnership: Array<[string, VisibleTerrainInstanceRef]> = [];
-      const terrainCells: WorldmapTerrainSourceCellRef[] = [];
-      const fingerprintEntries: Array<{ hexKey: string; biomeKey: string }> = [];
-
-      const releaseAllMatrices = () => {
-        Object.values(biomeHexes).forEach((matrices) => {
-          matrices.forEach((matrix) => matrixPool.releaseMatrix(matrix));
-          matrices.length = 0;
-        });
-      };
-
-      const finalizeSuccess = () => {
-        const biomeEntries = new Map<string, CachedMatrixEntry>();
-        for (const [biome, matrices] of Object.entries(biomeHexes)) {
-          if (matrices.length === 0) {
-            biomeEntries.set(biome, { matrices: null, count: 0, landColors: null });
-            continue;
-          }
-
-          const attribute = InstancedMatrixAttributePool.getInstance().acquire(matrices.length);
-          const targetArray = attribute.array as Float32Array;
-          matrices.forEach((matrix, index) => {
-            targetArray.set(matrix.elements, index * 16);
-          });
-          biomeEntries.set(biome, {
-            matrices: attribute,
-            count: matrices.length,
-            landColors: null,
-          });
-        }
-
-        releaseAllMatrices();
-        settled = true;
-        resolve({
-          chunkKey: `${startRow},${startCol}`,
-          startRow,
-          startCol,
-          bounds: this.computeChunkBounds(startRow, startCol),
-          expectedExploredTerrainInstances,
-          terrainFingerprint: createWorldmapTerrainFingerprint(fingerprintEntries),
-          visibleTerrainOwnership,
-          terrainCells,
-          biomeEntries,
-        });
-      };
-
-      const processCell = (index: number) => {
-        const rowOffset = Math.floor(index / cols) - halfRows;
-        const colOffset = (index % cols) - halfCols;
-
-        const globalRow = chunkCenterRow + rowOffset;
-        const globalCol = chunkCenterCol + colOffset;
-
-        const rowOffsetValue = ((globalRow % 2) * Math.sign(globalRow) * horizDist) / 2;
-        const baseX = globalCol * horizDist - rowOffsetValue;
-        const baseZ = globalRow * vertDist;
-        tempPosition.set(baseX, 0, baseZ);
-
-        const isStructure = this.isProjectedStructureHex(globalCol, globalRow);
-        const isExplored = lookupSnapshotBiome(prepSnapshot, globalCol, globalRow) || false;
-
-        if (isStructure) {
-          return;
-        }
-
-        tempMatrix.makeScale(HEX_SIZE, HEX_SIZE, HEX_SIZE);
-        tempPosition.y += 0.05;
-
-        const effectivelyExplored = isExplored || this.simulateAllExplored;
-        if (effectivelyExplored) {
-          expectedExploredTerrainInstances += 1;
-          const biome = isExplored
-            ? (isExplored as BiomeType)
-            : this.perfSimulation!.getSimulatedBiome(globalCol, globalRow);
-          const biomeVariant = getBiomeVariant(biome, globalCol, globalRow);
-          const hexKey = `${globalCol},${globalRow}`;
-          const instanceIndex = biomeHexes[biomeVariant].length;
-          tempMatrix.setPosition(tempPosition);
-
-          const pooledMatrix = matrixPool.getMatrix();
-          pooledMatrix.copy(tempMatrix);
-          biomeHexes[biomeVariant].push(pooledMatrix);
-          terrainCells.push({
-            hexKey,
-            biomeKey: biomeVariant,
-            instanceIndex,
-          });
-          visibleTerrainOwnership.push([
-            hexKey,
-            {
-              biomeKey: biomeVariant,
-              chunkKey: `${startRow},${startCol}`,
-              instanceIndex,
-            },
-          ]);
-          fingerprintEntries.push({ hexKey, biomeKey: biomeVariant });
-          return;
-        }
-
-        tempPosition.y = 0.01;
-        tempMatrix.setPosition(tempPosition);
-
-        const pooledMatrix = matrixPool.getMatrix();
-        pooledMatrix.copy(tempMatrix);
-        terrainCells.push({
-          hexKey: `${globalCol},${globalRow}`,
-          biomeKey: "Outline",
-          instanceIndex: biomeHexes.Outline.length,
-        });
-        biomeHexes.Outline.push(pooledMatrix);
-      };
-
-      const processWorkUnit = () => {
-        const workUnitStartedAt = performance.now();
-        let processedThisUnit = 0;
-
-        while (currentIndex < totalHexes) {
-          processCell(currentIndex);
-          currentIndex += 1;
-          processedThisUnit += 1;
-
-          if (currentIndex >= totalHexes) {
-            break;
-          }
-
-          if (processedThisUnit >= minBatch) {
-            const elapsed = performance.now() - workUnitStartedAt;
-            if (elapsed >= workUnitBudgetMs || processedThisUnit >= maxBatch) {
-              break;
-            }
-          }
-        }
-
-        if (currentIndex < totalHexes) {
-          scheduleWorkUnit();
-        } else {
-          finalizeSuccess();
-        }
-      };
-
-      const scheduleWorkUnit = () => {
-        void this.chunkWorkQueue.schedule(workLane, processWorkUnit, `terrain:${workLane}-prepare`).catch((error) => {
-          if (settled) {
-            return;
-          }
-          settled = true;
-          releaseAllMatrices();
-          reject(error);
-        });
-      };
-
-      scheduleWorkUnit();
-    });
-    return this.awaitPreparedTerrainBiomeModels(preparedTerrain);
+    return this.chunkWorkQueue.schedule(
+      workLane,
+      () => this.buildPreparedTerrainArea(startRow, startCol, rows, cols),
+      `terrain:${workLane}-prepare`,
+    );
   }
 
   private createTerrainPresentationFromPreparedTerrain(
@@ -6096,9 +5472,7 @@ export default class WorldmapScene extends WarpTravel {
         box: preparedTerrain.bounds.box.clone(),
         sphere: preparedTerrain.bounds.sphere.clone(),
       },
-      biomeEntries: input.claimBiomeEntries
-        ? preparedTerrain.biomeEntries
-        : this.clonePreparedTerrainBiomeEntries(preparedTerrain.biomeEntries),
+      biomeEntries: new Map(),
       cells: preparedTerrain.terrainCells.map((cell): WorldmapTerrainCellRef => {
         return {
           ...cell,
@@ -6119,10 +5493,9 @@ export default class WorldmapScene extends WarpTravel {
       transitionToken: number;
     },
   ): WorldmapTerrainPresentationEntry[] {
-    const sourceCellsByHexKey = new Map(preparedTerrain.terrainCells.map((cell) => [cell.hexKey, cell]));
     const pagePresentations = partitionPreparedTerrainIntoVisualPages({
       authorityChunkKey: input.authorityChunkKey,
-      biomeEntries: preparedTerrain.biomeEntries,
+      biomeEntries: new Map<string, CachedTerrainEntry>(),
       bounds: {
         box: preparedTerrain.bounds.box.clone(),
         sphere: preparedTerrain.bounds.sphere.clone(),
@@ -6140,83 +5513,7 @@ export default class WorldmapScene extends WarpTravel {
       transitionToken: input.transitionToken,
     });
 
-    const presentations = pagePresentations.map((presentation): WorldmapTerrainPresentationEntry => {
-      return {
-        ...presentation,
-        biomeEntries: this.createVisualTerrainPageBiomeEntries(
-          preparedTerrain.biomeEntries,
-          presentation.cells,
-          sourceCellsByHexKey,
-        ),
-      };
-    });
-
-    if (input.claimBiomeEntries) {
-      this.disposePreparedTerrainChunk(preparedTerrain);
-    }
-
-    return presentations;
-  }
-
-  private createVisualTerrainPageBiomeEntries(
-    sourceEntries: Map<string, CachedMatrixEntry>,
-    pageCells: WorldmapTerrainCellRef[],
-    sourceCellsByHexKey: Map<string, WorldmapTerrainSourceCellRef>,
-  ): Map<string, CachedMatrixEntry> {
-    const pageEntries = new Map<string, CachedMatrixEntry>();
-    const pageCellsByBiome = new Map<string, WorldmapTerrainCellRef[]>();
-    pageCells.forEach((cell) => {
-      const cells = pageCellsByBiome.get(cell.biomeKey) ?? [];
-      cells.push(cell);
-      pageCellsByBiome.set(cell.biomeKey, cells);
-    });
-
-    pageCellsByBiome.forEach((cells, biomeKey) => {
-      const sourceEntry = sourceEntries.get(biomeKey);
-      if (!sourceEntry?.matrices) {
-        pageEntries.set(biomeKey, { matrices: null, count: 0, landColors: null });
-        return;
-      }
-
-      const count = cells.length;
-      const matrices = InstancedMatrixAttributePool.getInstance().acquire(count);
-      const targetMatrices = matrices.array as Float32Array;
-      const sourceMatrices = sourceEntry.matrices.array as Float32Array;
-      const itemSize = matrices.itemSize;
-      const landColors = sourceEntry.landColors ? new Float32Array(count * 3) : null;
-      cells.forEach((cell) => {
-        const sourceCell = sourceCellsByHexKey.get(cell.hexKey);
-        if (!sourceCell) {
-          return;
-        }
-        const sourceMatrixStart = sourceCell.instanceIndex * itemSize;
-        const targetMatrixStart = cell.instanceIndex * itemSize;
-        targetMatrices.set(sourceMatrices.subarray(sourceMatrixStart, sourceMatrixStart + itemSize), targetMatrixStart);
-        if (sourceEntry.landColors && landColors) {
-          const sourceColorStart = sourceCell.instanceIndex * 3;
-          const targetColorStart = cell.instanceIndex * 3;
-          landColors.set(sourceEntry.landColors.subarray(sourceColorStart, sourceColorStart + 3), targetColorStart);
-        }
-      });
-
-      pageEntries.set(biomeKey, {
-        matrices,
-        count,
-        landColors,
-      });
-    });
-
-    return pageEntries;
-  }
-
-  private clonePreparedTerrainBiomeEntries(
-    biomeEntries: Map<string, CachedMatrixEntry>,
-  ): Map<string, CachedMatrixEntry> {
-    const clonedEntries = new Map<string, CachedMatrixEntry>();
-    biomeEntries.forEach((entry, biome) => {
-      clonedEntries.set(biome, this.cloneCachedMatrixEntry(entry));
-    });
-    return clonedEntries;
+    return pagePresentations;
   }
 
   private getTerrainCompositeCellCapacity(): number {
@@ -6229,11 +5526,7 @@ export default class WorldmapScene extends WarpTravel {
   }
 
   private disposeTerrainPresentation(presentation: WorldmapTerrainPresentationEntry): void {
-    presentation.biomeEntries.forEach((entry) => {
-      if (entry.matrices) {
-        this.releaseInstancedAttribute(entry.matrices);
-      }
-    });
+    void presentation;
   }
 
   private disposeDroppedTerrainPresentations(
@@ -6320,68 +5613,45 @@ export default class WorldmapScene extends WarpTravel {
   }
 
   private applyTerrainPresentationComposite(composite: WorldmapTerrainPresentationComposite): void {
-    this.biomeModels.forEach((hexMesh, biome) => {
-      const biomeKey = String(biome);
-      const cells = composite.cellsByBiome.get(biomeKey) ?? [];
-      if (cells.length === 0) {
-        hexMesh.setCount(0);
-        hexMesh.updateMeshVisibility();
-        return;
-      }
-
-      const matrices = InstancedMatrixAttributePool.getInstance().acquire(cells.length);
-      const targetMatrices = matrices.array as Float32Array;
-      targetMatrices.fill(0, 0, cells.length * matrices.itemSize);
-      const landColors = this.copyTerrainCompositeMatrices(cells, targetMatrices, matrices.itemSize);
-
-      hexMesh.setMatricesAndCount(matrices, cells.length);
-      this.releaseInstancedAttribute(matrices);
-      hexMesh.updateMeshVisibility();
-      if (landColors) {
-        hexMesh.setLandColors(landColors, cells.length);
-      }
-    });
-
-    this.traceChunk("terrain_composite_rebuilt", {
-      capped: composite.capped,
-      cellCount: composite.cells.length,
-      droppedCellCount: composite.droppedCellCount,
-      presentationChunkKeys: composite.presentationChunkKeys,
-    });
-    incrementWorldmapRenderCounter("terrainCompositeRebuilt");
-    this.requestShadowContentRefresh();
-  }
-
-  private copyTerrainCompositeMatrices(
-    cells: WorldmapTerrainPresentationComposite["cells"],
-    targetMatrices: Float32Array,
-    matrixItemSize: number,
-  ): Float32Array | null {
-    let landColors: Float32Array | null = null;
-
-    cells.forEach((cell) => {
-      const sourceEntry = cell.sourcePresentation.biomeEntries.get(cell.biomeKey);
-      if (!sourceEntry?.matrices) {
-        return;
-      }
-
-      const sourceMatrices = sourceEntry.matrices.array as Float32Array;
-      const sourceMatrixStart = cell.sourceInstanceIndex * matrixItemSize;
-      const targetMatrixStart = cell.instanceIndex * matrixItemSize;
-      targetMatrices.set(
-        sourceMatrices.subarray(sourceMatrixStart, sourceMatrixStart + matrixItemSize),
-        targetMatrixStart,
-      );
-
-      if (sourceEntry.landColors) {
-        landColors = landColors ?? new Float32Array(cells.length * 3);
-        const sourceColorStart = cell.sourceInstanceIndex * 3;
-        const targetColorStart = cell.instanceIndex * 3;
-        landColors.set(sourceEntry.landColors.subarray(sourceColorStart, sourceColorStart + 3), targetColorStart);
-      }
-    });
-
-    return landColors;
+    void this.proceduralTerrain
+      .presentAsync({
+        cells: composite.cells.map((cell) => {
+          const [col, row] = cell.hexKey.split(",").map(Number);
+          return {
+            biomeKey: cell.biomeKey,
+            col,
+            occupied: cell.occupied ?? this.isProjectedStructureHex(col, row),
+            row,
+          };
+        }),
+        climate: configManager.getBiomeClimateConfig() ?? NEUTRAL_BIOME_CLIMATE,
+        mapCenter: configManager.getMapCenter(),
+        pageHeight: WORLDMAP_CHUNK_POLICY.visualPresentation.visualPageSize.height,
+        pageOrigin: this.getVisualTerrainPageOrigin(),
+        pageWidth: WORLDMAP_CHUNK_POLICY.visualPresentation.visualPageSize.width,
+        subdivisions: 2,
+      })
+      .then((terrainDiagnostics) => {
+        if (!terrainDiagnostics) return;
+        recordWorldmapRenderDuration("terrainPreparedMs", terrainDiagnostics.prepareMs);
+        this.traceChunk("terrain_composite_rebuilt", {
+          capped: composite.capped,
+          cellCount: composite.cells.length,
+          droppedCellCount: composite.droppedCellCount,
+          proceduralBuiltPages: terrainDiagnostics.builtPages,
+          proceduralPreparedCachePages: terrainDiagnostics.preparedCachePages,
+          proceduralPrepareMs: terrainDiagnostics.prepareMs,
+          proceduralReusedPages: terrainDiagnostics.reusedPages,
+          proceduralTriangles: terrainDiagnostics.triangles + terrainDiagnostics.propTriangles,
+          proceduralVertices: terrainDiagnostics.vertices,
+          presentationChunkKeys: composite.presentationChunkKeys,
+        });
+        incrementWorldmapRenderCounter("terrainCompositeRebuilt");
+        this.requestShadowContentRefresh();
+      })
+      .catch((error) => {
+        if (!this.isSwitchedOff) console.error("[WorldMap] Procedural terrain presentation failed", error);
+      });
   }
 
   private scheduleTerrainPresentationRetentionCleanup(
@@ -6412,29 +5682,19 @@ export default class WorldmapScene extends WarpTravel {
       this.disposeTerrainPresentation(presentation),
     );
     this.visualTerrainPresentationState.presentations = [];
+    this.proceduralTerrain.clear();
   }
 
   private cachePreparedTerrainChunk(preparedTerrain: PreparedTerrainChunk): void {
     const chunkKey = preparedTerrain.chunkKey;
     this.disposeCachedMatrices(chunkKey);
 
-    const cachedChunk = new Map<string, CachedMatrixEntry>();
-    preparedTerrain.biomeEntries.forEach((entry, biome) => {
-      cachedChunk.set(biome, {
-        matrices: entry.matrices,
-        count: entry.count,
-        landColors: entry.landColors ? new Float32Array(entry.landColors) : null,
-      });
-    });
+    const cachedChunk = new Map<string, CachedTerrainEntry>();
     cachedChunk.set("__bounds__", {
-      matrices: null,
-      count: 0,
       box: preparedTerrain.bounds.box.clone(),
       sphere: preparedTerrain.bounds.sphere.clone(),
     });
     cachedChunk.set("__meta__", {
-      matrices: null,
-      count: 0,
       expectedExploredTerrainInstances: preparedTerrain.expectedExploredTerrainInstances,
       terrainFingerprint: preparedTerrain.terrainFingerprint,
       visibleTerrainOwnership: preparedTerrain.visibleTerrainOwnership,
@@ -6972,19 +6232,15 @@ export default class WorldmapScene extends WarpTravel {
     this.cachedMatrixOrder.push(chunkKey);
   }
 
-  private disposeCachedMatrices(chunkKey: string) {
-    const cached = this.cachedMatrices.get(chunkKey);
-    if (!cached) return;
-
-    cached.forEach(({ matrices }) => {
-      if (matrices) {
-        this.releaseInstancedAttribute(matrices);
-      }
-    });
+  private disposeCachedMatrices(chunkKey: string): void {
+    void chunkKey;
   }
 
-  private releaseInstancedAttribute(attribute: InstancedBufferAttribute) {
-    InstancedMatrixAttributePool.getInstance().release(attribute);
+  private removeCachedMatricesForChunk(startRow: number, startCol: number): void {
+    const chunkKey = `${startRow},${startCol}`;
+    this.disposeCachedMatrices(chunkKey);
+    this.cachedMatrices.delete(chunkKey);
+    this.cachedMatrixOrder = this.cachedMatrixOrder.filter((key) => key !== chunkKey);
   }
 
   private ensureMatrixCacheLimit() {
@@ -7073,7 +6329,7 @@ export default class WorldmapScene extends WarpTravel {
         const biome = exploredBiome ?? this.perfSimulation!.getSimulatedBiome(col, row);
         fingerprintEntries.push({
           hexKey: `${col},${row}`,
-          biomeKey: getBiomeVariant(biome, col, row),
+          biomeKey: biome,
         });
       }
     }
@@ -7101,203 +6357,6 @@ export default class WorldmapScene extends WarpTravel {
     return expectedExploredTerrainInstances;
   }
 
-  private cacheMatricesForChunk(
-    startRow: number,
-    startCol: number,
-    expectedExploredTerrainInstances: number,
-    terrainFingerprint: string = this.getTerrainFingerprintForChunk(startRow, startCol),
-    visibleTerrainOwnership: Array<[string, VisibleTerrainInstanceRef]> = Array.from(
-      this.visibleTerrainMembership.entries(),
-    ),
-    terrainCells: WorldmapTerrainSourceCellRef[] = visibleTerrainOwnership.map(([hexKey, owner]) => ({
-      hexKey,
-      biomeKey: owner.biomeKey,
-      instanceIndex: owner.instanceIndex,
-    })),
-  ) {
-    const chunkKey = `${startRow},${startCol}`;
-    if (!this.cachedMatrices.has(chunkKey)) {
-      this.cachedMatrices.set(chunkKey, new Map());
-    }
-
-    const cachedChunk = this.cachedMatrices.get(chunkKey)!;
-    let totalCachedTerrainInstances = 0;
-    let cachedExploredTerrainInstances = 0;
-
-    const { box, sphere } = this.computeChunkBounds(startRow, startCol);
-    for (const [biome, model] of this.biomeModels) {
-      const existing = cachedChunk.get(biome);
-      if (existing) {
-        if (existing.matrices) {
-          this.releaseInstancedAttribute(existing.matrices);
-        }
-      }
-      const { matrices, count } = model.getMatricesAndCount();
-      totalCachedTerrainInstances += count;
-      if (this.isExploredBiomeCacheKey(String(biome))) {
-        cachedExploredTerrainInstances += count;
-      }
-      if (count === 0) {
-        this.releaseInstancedAttribute(matrices);
-        cachedChunk.set(biome, { matrices: null, count, landColors: null });
-        continue;
-      }
-      const landMesh = model.instancedMeshes.find((mesh) => mesh.name === LAND_NAME);
-      let landColors: Float32Array | null = null;
-      if (landMesh?.instanceColor) {
-        const source = landMesh.instanceColor.array as Float32Array;
-        const requiredFloats = count * 3;
-        landColors = new Float32Array(requiredFloats);
-        landColors.set(source.subarray(0, requiredFloats));
-      }
-
-      cachedChunk.set(biome, { matrices, count, landColors });
-    }
-
-    if (
-      this.shouldRejectTerrainCacheSnapshot(totalCachedTerrainInstances) ||
-      this.shouldRejectExploredTerrainCacheSnapshot(cachedExploredTerrainInstances, expectedExploredTerrainInstances)
-    ) {
-      if (import.meta.env.DEV) {
-        console.warn("[CACHE] Rejecting suspicious terrain snapshot", {
-          chunkKey,
-          totalCachedTerrainInstances,
-          cachedExploredTerrainInstances,
-          expectedExploredTerrainInstances,
-          renderHexCapacity: this.getRenderHexCapacity(),
-          minCoverageFraction: this.minCachedTerrainCoverageFraction,
-          minExploredRetentionFraction: this.minCachedExploredRetentionFraction,
-        });
-      }
-      this.disposeCachedMatrices(chunkKey);
-      this.cachedMatrices.delete(chunkKey);
-      const existingIndex = this.cachedMatrixOrder.indexOf(chunkKey);
-      if (existingIndex !== -1) {
-        this.cachedMatrixOrder.splice(existingIndex, 1);
-      }
-      return;
-    }
-
-    cachedChunk.set("__bounds__", {
-      matrices: null as InstancedBufferAttribute | null,
-      count: 0,
-      box,
-      sphere,
-    });
-    cachedChunk.set("__meta__", {
-      matrices: null,
-      count: 0,
-      expectedExploredTerrainInstances,
-      terrainFingerprint,
-      visibleTerrainOwnership,
-      terrainCells,
-      generation: this.exploredTilesGeneration.current(chunkKey),
-    });
-
-    this.touchMatrixCache(chunkKey);
-    this.ensureMatrixCacheLimit();
-  }
-
-  removeCachedMatricesForChunk(startRow: number, startCol: number) {
-    const chunkKey = `${startRow},${startCol}`;
-    this.disposeCachedMatrices(chunkKey);
-    this.cachedMatrices.delete(chunkKey);
-    const index = this.cachedMatrixOrder.indexOf(chunkKey);
-    if (index !== -1) {
-      this.cachedMatrixOrder.splice(index, 1);
-    }
-  }
-
-  private applyCachedMatricesForChunk(startRow: number, startCol: number) {
-    const chunkKey = `${startRow},${startCol}`;
-    const cachedMatrices = this.cachedMatrices.get(chunkKey);
-    if (cachedMatrices) {
-      let totalCachedTerrainInstances = 0;
-      let cachedExploredTerrainInstances = 0;
-      for (const [biome, entry] of cachedMatrices) {
-        if (biome === "__bounds__" || biome === "__meta__") {
-          continue;
-        }
-        const count = Math.max(0, Math.floor(entry.count ?? 0));
-        totalCachedTerrainInstances += count;
-        if (this.isExploredBiomeCacheKey(biome)) {
-          cachedExploredTerrainInstances += count;
-        }
-      }
-
-      const cachedMetadata = cachedMatrices.get("__meta__");
-      const expectedExploredTerrainInstances =
-        cachedMetadata?.expectedExploredTerrainInstances ??
-        this.getExpectedExploredTerrainInstances(startRow, startCol);
-      const terrainFingerprint = this.getTerrainFingerprintForChunk(startRow, startCol);
-      if (
-        this.shouldRejectTerrainCacheSnapshot(totalCachedTerrainInstances) ||
-        this.shouldRejectExploredTerrainCacheSnapshot(
-          cachedExploredTerrainInstances,
-          expectedExploredTerrainInstances,
-        ) ||
-        shouldRejectCachedTerrainFingerprintMismatch({
-          cachedTerrainFingerprint: cachedMetadata?.terrainFingerprint,
-          currentTerrainFingerprint: terrainFingerprint,
-        })
-      ) {
-        if (
-          shouldRejectCachedTerrainFingerprintMismatch({
-            cachedTerrainFingerprint: cachedMetadata?.terrainFingerprint,
-            currentTerrainFingerprint: terrainFingerprint,
-          })
-        ) {
-          recordChunkDiagnosticsEvent(this.chunkDiagnostics, "cache_reject_fingerprint");
-          incrementWorldmapRenderCounter("staleTerrainCacheFingerprintRejectCount");
-        }
-        if (import.meta.env.DEV) {
-          console.warn("[CACHE] Evicting suspicious cached terrain before apply", {
-            chunkKey,
-            totalCachedTerrainInstances,
-            cachedExploredTerrainInstances,
-            expectedExploredTerrainInstances,
-            terrainFingerprint,
-            cachedTerrainFingerprint: cachedMetadata?.terrainFingerprint,
-            renderHexCapacity: this.getRenderHexCapacity(),
-            minCoverageFraction: this.minCachedTerrainCoverageFraction,
-            minExploredRetentionFraction: this.minCachedExploredRetentionFraction,
-          });
-        }
-        this.removeCachedMatricesForChunk(startRow, startCol);
-        return false;
-      }
-
-      this.touchMatrixCache(chunkKey);
-      for (const [biome, entry] of cachedMatrices) {
-        if (biome === "__bounds__" || biome === "__meta__") {
-          continue;
-        }
-        const { matrices, count, landColors } = entry;
-        const hexMesh = this.biomeModels.get(biome as BiomeType)!;
-        if (matrices) {
-          hexMesh.setMatricesAndCount(matrices, count);
-          const matrixUploadBytes = count * Float32Array.BYTES_PER_ELEMENT * 16;
-          incrementWorldmapRenderUploadBytes("cachedChunkReplay", matrixUploadBytes);
-          recordRendererMatrixUploadBytes(count, "worldmap-cache-replay");
-        } else {
-          hexMesh.setCount(count);
-        }
-        hexMesh.updateMeshVisibility(); // Update visibility based on count
-
-        if (landColors && count > 0) {
-          hexMesh.setLandColors(landColors, count);
-          const colorUploadBytes = count * Float32Array.BYTES_PER_ELEMENT * 3;
-          incrementWorldmapRenderUploadBytes("cachedChunkReplay", colorUploadBytes);
-          recordRendererColorUploadBytes(count, "worldmap-cache-replay");
-        }
-      }
-      this.setVisibleTerrainMembership(cachedMetadata?.visibleTerrainOwnership ?? []);
-      this.ensureMatrixCacheLimit();
-      return true;
-    }
-    return false;
-  }
-
   private computeChunkBounds(startRow: number, startCol: number) {
     return resolveTerrainPresentationWorldBounds({
       startRow,
@@ -7319,7 +6378,6 @@ export default class WorldmapScene extends WarpTravel {
 
   private applySceneChunkBounds(bounds: { box: Box3; sphere: Sphere } | undefined): void {
     this.currentChunkBounds = bounds;
-    this.biomeModels.forEach((biome) => biome.setWorldBounds(bounds));
     this.structureManager.setChunkBounds(bounds);
   }
 
@@ -8352,7 +7410,9 @@ export default class WorldmapScene extends WarpTravel {
     const animationContext = this.getAnimationVisibilityContext();
     this.syncWorldmapZoomSnapshot(deltaTime);
     super.update(deltaTime);
+    this.proceduralTerrain.update(deltaTime);
     this.armyManager.update(deltaTime, animationContext);
+    this.combatPresentation?.update(deltaTime);
     this.syncArrivalGhostChunkVisibility();
     this.arrivalGhostManager.update(deltaTime);
     this.fxManager.update(deltaTime);
@@ -8697,10 +7757,7 @@ export default class WorldmapScene extends WarpTravel {
       return;
     }
 
-    let totalTerrainInstances = 0;
-    this.biomeModels.forEach((biome) => {
-      totalTerrainInstances += biome.getCount();
-    });
+    const totalTerrainInstances = this.proceduralTerrain.getVisibleCellCount();
 
     if (this.terrainReferenceChunkKey !== this.currentChunk) {
       this.terrainReferenceChunkKey = this.currentChunk;
@@ -8788,21 +7845,6 @@ export default class WorldmapScene extends WarpTravel {
     );
   }
 
-  protected override shouldUpdateBiomeAnimations(): boolean {
-    if (!this.currentChunkBounds) {
-      return true;
-    }
-    return this.visibilityManager.isBoxVisible(this.currentChunkBounds.box);
-  }
-
-  protected override onBiomeModelLoaded(model: InstancedBiome): void {
-    super.onBiomeModelLoaded(model);
-    model.setFarDetailEnabled(this.getCurrentCameraView() === CameraView.Far);
-    if (this.currentChunkBounds) {
-      model.setWorldBounds(this.currentChunkBounds);
-    }
-  }
-
   public clearTileEntityCache() {
     this.clearQueuedPrefetchState();
     this.pinnedRenderAreas.clear();
@@ -8817,6 +7859,14 @@ export default class WorldmapScene extends WarpTravel {
       ...this.getInteractionDebugSnapshot(),
     });
     this.onSwitchOff();
+    this.unsubscribeProceduralMeleeContact?.();
+    this.unsubscribeProceduralMeleeContact = undefined;
+    this.unsubscribeProceduralRangedRelease?.();
+    this.unsubscribeProceduralRangedRelease = undefined;
+    this.unsubscribeProceduralProjectileImpact?.();
+    this.unsubscribeProceduralProjectileImpact = undefined;
+    this.combatPresentation?.dispose();
+    this.combatPresentation = undefined;
     this.syncUrlChangedListenerLifecycle("destroy");
     this.resetZoomHardeningRuntimeState();
     this.removeChunkDiagnosticsDebugHooks();
@@ -8872,6 +7922,7 @@ export default class WorldmapScene extends WarpTravel {
     this.cosmeticsSubscriptionCleanup?.();
     this.cosmeticsSubscriptionCleanup = undefined;
     this.chunkWorkQueue.dispose();
+    this.proceduralTerrain.dispose();
 
     super.destroy();
   }

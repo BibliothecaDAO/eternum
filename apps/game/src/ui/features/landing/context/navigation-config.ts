@@ -65,6 +65,10 @@ export function getActiveSubItem(section: SectionConfig, pathname: string, searc
     return match ?? section.subMenu[0];
   }
 
+  if (section.id === "debug") {
+    return section.subMenu.find((item) => item.href === pathname) ?? section.subMenu[0];
+  }
+
   const tabParam = searchParams.get("tab");
   if (!tabParam) {
     return section.subMenu[0];
@@ -75,7 +79,7 @@ export function getActiveSubItem(section: SectionConfig, pathname: string, searc
 }
 
 export function getSubItemHref(section: SectionConfig, item: SubMenuItem, searchParams: URLSearchParams): string {
-  if (section.id === "home") {
+  if (section.id === "home" || section.id === "debug") {
     return item.href;
   }
 
@@ -100,8 +104,17 @@ function buildDebugNavigationSections(): SectionConfig[] {
       id: "debug",
       label: "Debug",
       icon: Bug,
-      basePath: "/debug/three-chunks",
-      subMenu: [{ id: "three-chunks", label: "DEBUG", tab: null, href: "/debug/three-chunks" }],
+      basePath: "/debug",
+      subMenu: [
+        { id: "three-chunks", label: "CHUNKS", tab: null, href: "/debug/three-chunks" },
+        { id: "procedural-characters", label: "CHARACTERS", tab: null, href: "/debug/procedural-characters" },
+        {
+          id: "procedural-character-benchmark",
+          label: "BENCHMARK",
+          tab: null,
+          href: "/debug/procedural-character-benchmark",
+        },
+      ],
     },
   ];
 }

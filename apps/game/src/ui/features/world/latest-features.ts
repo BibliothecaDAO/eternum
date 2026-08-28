@@ -34,6 +34,13 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 // are surfaced in the What's New popup.
 const allLatestFeatures: LatestFeature[] = [
   {
+    date: "2026-08-27",
+    title: "Aligned Exploration Fog",
+    description: "Fixed exploration fog appearing on the wrong hexes by aligning its mask with the world map.",
+    type: "fix",
+    gameSlug: "world",
+  },
+  {
     date: "2026-08-26",
     title: "Reliable Realm Entry",
     description:
@@ -46,6 +53,198 @@ const allLatestFeatures: LatestFeature[] = [
     title: "Faster Madara Actions",
     description:
       "Madara actions now submit without a fee-estimation round trip, reducing delays before they reach the chain.",
+    type: "improvement",
+    gameSlug: "world",
+  },
+  {
+    date: "2026-08-24",
+    title: "Responsive Terrain Exploration",
+    description:
+      "Fixed delayed biome streaming and misplaced exploration fog so terrain appears as the map moves and mist stays aligned with unexplored hexes.",
+    type: "fix",
+    gameSlug: "world",
+  },
+  {
+    date: "2026-08-24",
+    title: "Procedural Naval Combat",
+    description:
+      "Added fantasy ships that take over when armies enter water, with synchronized wave motion, team pennants, wakes, cannonball broadsides, and impact-driven sinking—all tunable in the animation Gym.",
+    type: "feature",
+    gameSlug: "world",
+  },
+  {
+    date: "2026-08-24",
+    title: "Swappable Character Rigs",
+    description:
+      "Added explicit appearance and skeleton adapters so procedural movement, equipment, diagnostics, and ragdolls can drive different compatible fantasy character models without duplicating animation code.",
+    type: "improvement",
+    gameSlug: "world",
+  },
+  {
+    date: "2026-08-24",
+    title: "Natural Human Footing",
+    description:
+      "Improved procedural walking and running with human-proportioned step width, forward-tracking knees, and new gait diagnostics that prevent bow-legged movement from reaching battles.",
+    type: "improvement",
+    gameSlug: "world",
+  },
+  {
+    date: "2026-08-24",
+    title: "Integrated World Gym",
+    description:
+      "Added a shared biome-and-army test map where 100 procedural units walk across generated terrain with live grounding, collision, renderer, and performance diagnostics.",
+    type: "feature",
+    gameSlug: "world",
+  },
+  {
+    date: "2026-08-24",
+    title: "Stable Character Footwork",
+    description:
+      "Fixed boots twisting or facing backward during procedural movement, keeping toes aligned with travel while planted steps and swing transitions remain stable.",
+    type: "fix",
+    gameSlug: "world",
+  },
+  {
+    date: "2026-08-24",
+    title: "Living Fog Frontier",
+    description:
+      "Undiscovered territory now settles beneath softly moving mist, keeping biome ground faintly readable below it with a clearer one-tile frontier near explored land.",
+    type: "improvement",
+    gameSlug: "world",
+  },
+  {
+    date: "2026-08-23",
+    title: "Physical Army Reactions",
+    description:
+      "Armies now separate and react when they meet, while targeted arrows preserve their incoming direction through authoritative Jolt ragdoll handoff. A seven-scenario collision gym and the 100-unit performance lab guard the behavior.",
+    type: "improvement",
+    gameSlug: "world",
+  },
+  {
+    date: "2026-08-23",
+    title: "Stable Mounted Characters",
+    description:
+      "Fixed horses rubber-banding toward their staging origin while loading and stretching during Jolt ragdolls or resets, preserving stable legs through spawn, movement, death, and respawn.",
+    type: "fix",
+    gameSlug: "world",
+  },
+  {
+    date: "2026-08-23",
+    title: "More Natural Unit Gaits",
+    description:
+      "Improved walking and running with planted-foot transitions, support-driven weight shifts, distinct run compression and flight, earlier leg recovery, calmer walking clearance, and more natural arm carriage.",
+    type: "improvement",
+    gameSlug: "world",
+  },
+  {
+    date: "2026-08-23",
+    title: "100-Unit Performance Lab",
+    description:
+      "Added a repeatable 60 FPS walking benchmark with live CPU, GPU, frame-pacing, draw-call, triangle, animation-lane, and display-refresh diagnostics for tuning large procedural armies.",
+    type: "improvement",
+    gameSlug: "world",
+  },
+  {
+    date: "2026-08-23",
+    title: "Procedural Armies",
+    description:
+      "Replaced land-army board models with generated Knights, Archers, Crossbowmen, and mounted Paladins that share the new locomotion, weapon, attack, cosmetic, and ragdoll pipeline.",
+    type: "feature",
+    gameSlug: "world",
+  },
+  {
+    date: "2026-08-23",
+    title: "Exploration Shroud",
+    description:
+      "Unknown territory now forms a continuous atmospheric shroud that inherits subtle color from discovered biomes and recedes organically when your armies reveal new land.",
+    type: "improvement",
+    gameSlug: "world",
+  },
+  {
+    date: "2026-08-23",
+    title: "Living Terrain Detail",
+    description:
+      "Improved every biome with broader landforms, richer forest layers, moving vegetation, animated coastal water, and terrain detail that adapts smoothly as you zoom.",
+    type: "improvement",
+    gameSlug: "world",
+  },
+  {
+    date: "2026-08-23",
+    title: "Textured Living Biomes",
+    description:
+      "Added seamless ground materials across every biome, with natural grass, sand, soil, forest litter, stone, snow, and scorched-earth detail that follows climate and terrain shape.",
+    type: "improvement",
+    gameSlug: "world",
+  },
+  {
+    date: "2026-08-23",
+    title: "Full-Scale Biome Testing",
+    description:
+      "Expanded procedural terrain verification to a full-screen, 100-page traversal and increased forest abundance while keeping large biome views smooth across both renderers.",
+    type: "improvement",
+    gameSlug: "world",
+  },
+  {
+    date: "2026-08-23",
+    title: "Organic Biome Density",
+    description:
+      "Forests, rocks, and ground cover now gather in natural seeded clusters, blend across biome edges, thin on steep ground, and leave breathing room around structures.",
+    type: "improvement",
+    gameSlug: "world",
+  },
+  {
+    date: "2026-08-22",
+    title: "Living Procedural Biomes",
+    description:
+      "The world map now flows as continuous terrain with organic forests, coastlines, relief, and structure pads while preserving exact hex interactions.",
+    type: "feature",
+    gameSlug: "world",
+  },
+  {
+    date: "2026-08-22",
+    title: "Believable Weapon Grips",
+    description:
+      "Fixed weapon, shield, bow, and crossbow holds with palm-aware sockets, role-specific finger poses, shield clearance, and close-up grip diagnostics for more convincing combat animation.",
+    type: "fix",
+    gameSlug: "world",
+  },
+  {
+    date: "2026-08-22",
+    title: "Animation Frame Inspector",
+    description:
+      "Added deterministic frame capture, five-angle phase atlases, numbered joint and angle overlays, pose diagnostics, contact sheets, and exact timeline scrubbing for validating characters and mounts before live battles.",
+    type: "improvement",
+    gameSlug: "world",
+  },
+  {
+    date: "2026-08-22",
+    title: "Procedural Melee Combat",
+    description:
+      "Added grounded and mounted weapon attacks with swappable sword, hammer, axe, and shield cosmetics, target-contact feedback, and the same Jolt ragdoll handoff used by live armies.",
+    type: "feature",
+    gameSlug: "world",
+  },
+  {
+    date: "2026-08-22",
+    title: "Procedural Archery",
+    description:
+      "Added organic longbow draw and release motion, visible arrow volleys, moving-target practice controls, and pooled projectile impacts that preserve authoritative combat outcomes.",
+    type: "feature",
+    gameSlug: "world",
+  },
+  {
+    date: "2026-08-22",
+    title: "Organic Procedural Locomotion",
+    description:
+      "Improved soldiers, horses, and mounted riders with planted contacts, anatomically correct horse footfalls, terrain-aware balance, natural follow-through, and subtle per-unit gait variation.",
+    type: "improvement",
+    gameSlug: "world",
+  },
+  {
+    date: "2026-08-21",
+    title: "Procedural Mounted Armies",
+    description:
+      "Added procedural horses and mounted Paladins with speed-driven gaits, terrain-aware hooves, visible upgrade pieces, composed riders, and shared Jolt ragdolls, plus mixed 100-unit gym benchmarks before promotion into live battles.",
     type: "improvement",
     gameSlug: "world",
   },

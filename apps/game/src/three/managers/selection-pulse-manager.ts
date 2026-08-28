@@ -1,6 +1,7 @@
 import * as THREE from "three";
 import { HEX_SIZE } from "@/three/constants";
 import { createHexagonShape } from "@/three/geometry/hexagon-geometry";
+import { FLAT_TERRAIN_SURFACE, type TerrainSurface } from "@/three/terrain/terrain-surface";
 import { type PulseVisualPalette, resolveSelectionPulsePalette } from "./worldmap-interaction-palette";
 
 /**
@@ -32,7 +33,10 @@ export class SelectionPulseManager {
   private readonly animatedPrimaryColor = new THREE.Color();
   private readonly animatedOwnershipColor = new THREE.Color();
 
-  constructor(scene: THREE.Scene) {
+  constructor(
+    scene: THREE.Scene,
+    private readonly terrainSurface: TerrainSurface = FLAT_TERRAIN_SURFACE,
+  ) {
     this.scene = scene;
     const defaultPulsePalette = resolveSelectionPulsePalette("army");
     this.primaryBaseColor.setHex(defaultPulsePalette.baseColor);
@@ -124,7 +128,7 @@ export class SelectionPulseManager {
     if (!this.pulseMesh) return;
 
     // Update position and entity
-    this.pulseMesh.position.set(x, 0.5, z);
+    this.pulseMesh.position.set(x, this.terrainSurface.sampleSurface(x, z).height + 0.5, z);
     this.selectedEntityId = entityId;
 
     if (!this.isVisible) {
@@ -181,7 +185,7 @@ export class SelectionPulseManager {
       }
 
       mesh.visible = true;
-      mesh.position.set(pos.x, 0.5, pos.z);
+      mesh.position.set(pos.x, this.terrainSurface.sampleSurface(pos.x, pos.z).height + 0.5, pos.z);
     });
 
     // Hide unused meshes

@@ -30,6 +30,12 @@ export interface BiomeClimateConfig {
   moisture_seed?: number;
 }
 
+export interface BiomeEnvironmentSample {
+  biome: BiomeType;
+  elevation: number;
+  moisture: number;
+}
+
 export const NEUTRAL_BIOME_CLIMATE: BiomeClimateConfig = {
   elevation_scale_bps: 10_000,
   moisture_scale_bps: 10_000,
@@ -43,6 +49,14 @@ const CLIMATE_BPS_DENOMINATOR = 10_000n;
 
 export class Biome {
   static getBiome(col: number, row: number, climate: BiomeClimateConfig = NEUTRAL_BIOME_CLIMATE): BiomeType {
+    return Biome.sampleEnvironment(col, row, climate).biome;
+  }
+
+  static sampleEnvironment(
+    col: number,
+    row: number,
+    climate: BiomeClimateConfig = NEUTRAL_BIOME_CLIMATE,
+  ): BiomeEnvironmentSample {
     const elevation = Biome.applyClimateAdjustment(
       Biome.calculateElevation(
         col,
@@ -66,7 +80,15 @@ export class Biome {
       climate.moisture_scale_bps,
       climate.moisture_bias_bps,
     );
-    return Biome.determineBiome(elevation, moisture, LEVEL);
+    return {
+      biome: Biome.determineBiome(elevation, moisture, LEVEL),
+      elevation: Biome.toNormalizedNumber(elevation),
+      moisture: Biome.toNormalizedNumber(moisture),
+    };
+  }
+
+  private static toNormalizedNumber(value: Fixed): number {
+    return Number(value.value) / Number(FixedTrait.ONE_64x64);
   }
 
   private static applyClimateAdjustment(value: Fixed, scaleBps: number, biasBps: number): Fixed {

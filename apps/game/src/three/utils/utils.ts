@@ -4,6 +4,7 @@ import { MeshoptDecoder } from "three/addons/libs/meshopt_decoder.module.js";
 import { DRACOLoader } from "three/addons/loaders/DRACOLoader.js";
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 import { KTX2Loader } from "three/addons/loaders/KTX2Loader.js";
+import type { Texture } from "three";
 
 type KtxRenderer = Parameters<KTX2Loader["detectSupport"]>[0];
 
@@ -37,6 +38,10 @@ gltfLoader.setKTX2Loader(ktx2Loader);
 
 export function configureGltfTextureSupport(renderer: KtxRenderer): void {
   ktx2Loader.detectSupport(renderer);
+}
+
+export function loadKtx2Texture(path: string): Promise<Texture> {
+  return ktx2Loader.loadAsync(path);
 }
 
 const normalizeAddressToBigInt = (address: unknown): bigint | undefined => {

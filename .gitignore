@@ -27,3 +27,7 @@ deploy/madara-lab/.lab/
 
 # Local lab configuration for apps/web and packages/db (read via `pnpm with-env`); never committed.
 .env
+
+# Local animation captures and benchmark reports
+/output/
+.gstack/

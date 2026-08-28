@@ -1,0 +1,34 @@
+Quaternius Pirate Kit ship — provenance and license
+
+Creator: Quaternius (@Quaternius)
+Downloaded: 2026-08-24
+
+Original pack:
+Pirate Kit
+https://quaternius.com/packs/piratekit.html
+
+Official public download folder:
+https://drive.google.com/drive/folders/1KjMzhVsDcyvYMWeVjZcRfuu8auBLpNi2
+
+Source file:
+- glTF/Ship_Large.gltf
+- Google Drive file id: 185_TUcJiwB_4vz7aRr4u6wiASODTk0ZS
+- SHA-256: 7f4acd7490bbc3c1ceac9d6a5e0fa9006449884ca148fade96bba7e35eede2e1
+
+Runtime derivation:
+- ship-large.glb is a container-only glTF-to-GLB conversion made with glTF-Transform.
+- Geometry, UVs, normals, material factors, and the embedded 32 px atlas are unchanged.
+- The runtime file contains one mesh primitive, one material, 20,636 triangles, and no authored animation clips.
+- Runtime SHA-256: 05fbed64d4bad35a7e0823e90560d9e4b3b213665a4c792d11dac8f521c53db1
+
+License supplied by the creator for the Pirate Kit:
+
+CC0 1.0 Universal (CC0 1.0)
+Public Domain Dedication
+https://creativecommons.org/publicdomain/zero/1.0/
+
+Quaternius license FAQ:
+https://quaternius.com/faq.html
+
+Models by @Quaternius
+https://www.patreon.com/quaternius

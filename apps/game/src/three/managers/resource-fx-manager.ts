@@ -2,6 +2,7 @@ import type { HexPosition } from "@bibliothecadao/types";
 import * as THREE from "three";
 import { createWorldFxBackend, type WorldFxBackend, type WorldFxHandle } from "../fx/world-fx-backends";
 import type { RendererFxCapabilities } from "../renderer-fx-capabilities";
+import { FLAT_TERRAIN_SURFACE, placePositionOnTerrain, type TerrainSurface } from "../terrain/terrain-surface";
 import { snapshotRendererFxCapabilities } from "../renderer-fx-capabilities";
 
 interface ResourceFXOptions {
@@ -15,6 +16,7 @@ interface ResourceFXOptions {
 interface ResourceFXManagerOptions {
   backendFactory?: typeof createWorldFxBackend;
   capabilities?: RendererFxCapabilities;
+  terrainSurface?: TerrainSurface;
 }
 
 interface ActiveResourceFx {
@@ -29,11 +31,13 @@ export class ResourceFXManager {
   private readonly defaultSize: number;
   private readonly textureLoader: THREE.TextureLoader;
   private readonly backend: WorldFxBackend;
+  private readonly terrainSurface: TerrainSurface;
 
   constructor(scene: THREE.Scene, defaultSize: number = 1.2, options: ResourceFXManagerOptions = {}) {
     this.scene = scene;
     this.defaultSize = defaultSize;
     this.textureLoader = new THREE.TextureLoader();
+    this.terrainSurface = options.terrainSurface ?? FLAT_TERRAIN_SURFACE;
     this.backend = (options.backendFactory ?? createWorldFxBackend)({
       capabilities: options.capabilities ?? snapshotRendererFxCapabilities(),
       scene,
@@ -139,6 +143,7 @@ export class ResourceFXManager {
   ): Promise<void> {
     const { getWorldPositionForHex } = await import("../utils/utils");
     const position = getWorldPositionForHex({ col, row } as HexPosition);
+    placePositionOnTerrain(position, this.terrainSurface);
     return this.playResourceFxAtCoords(resourceId, amount, position.x, position.y + 2.5, position.z, {
       ...options,
       labelText: text ?? options.labelText,

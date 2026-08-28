@@ -42,6 +42,7 @@ import {
   SplineMovementData,
 } from "../types/army";
 import type { AnimationVisibilityContext } from "../types/animation";
+import { isAnimationPositionVisible } from "../utils/animation-visibility";
 import { getHexForWorldPosition } from "../utils";
 import { applyEasing, EasingType } from "../utils/easing";
 import { getContactShadowResources } from "../utils/contact-shadow";
@@ -112,6 +113,7 @@ export class ArmyModel {
   private readonly entityCosmeticMap: Map<number, string> = new Map(); // entityId -> cosmeticId
   private readonly activeBaseModelByEntity: Map<number, ModelType | null> = new Map();
   private readonly activeCosmeticByEntity: Map<number, string | null> = new Map();
+  private readonly hiddenEntityRepresentations = new Set<number>();
 
   // Reusable objects for matrix operations and memory optimization
   private readonly dummyMatrix: Matrix4 = new Matrix4();
@@ -910,27 +912,39 @@ export class ArmyModel {
     if (activeBaseModel) {
       const modelData = this.models.get(activeBaseModel);
       if (modelData) {
-        // Add to model's active instances
-        modelData.activeInstances.add(index);
-        const targetScale = this.getScaleForModelType(activeBaseModel);
-        this.updateInstanceTransform(state.position, targetScale, state.rotation);
-        this.updateInstanceMeshes(modelData, index, entityId, state.position, state.color);
-        // Bump count so the just-added slot draws now, not only after the next
-        // setVisibleSlots (see extendModelDrawCount).
-        this.extendModelDrawCount(modelData, index);
+        this.syncRenderableInstance(modelData, state, index, entityId, this.getScaleForModelType(activeBaseModel));
       }
     }
 
     if (activeCosmetic) {
       const cosmeticData = this.cosmeticModels.get(activeCosmetic);
       if (cosmeticData) {
-        // Add to cosmetic's active instances
-        cosmeticData.activeInstances.add(index);
-        this.updateInstanceTransform(state.position, this.normalScale, state.rotation);
-        this.updateInstanceMeshes(cosmeticData, index, entityId, state.position, state.color);
-        this.extendModelDrawCount(cosmeticData, index);
+        this.syncRenderableInstance(cosmeticData, state, index, entityId, this.normalScale);
       }
     }
+  }
+
+  private syncRenderableInstance(
+    modelData: ModelData,
+    state: ArmyInstanceData,
+    index: number,
+    entityId: number,
+    visibleScale: Vector3,
+  ): void {
+    if (this.hiddenEntityRepresentations.has(entityId)) {
+      if (modelData.activeInstances.delete(index)) {
+        this.clearModelSlot(modelData, index);
+        this.syncModelDrawCount(modelData);
+      }
+      return;
+    }
+
+    modelData.activeInstances.add(index);
+    this.updateInstanceTransform(state.position, visibleScale, state.rotation);
+    this.updateInstanceMeshes(modelData, index, entityId, state.position, state.color);
+    // Bump count so the just-added slot draws now, not only after the next
+    // setVisibleSlots (see extendModelDrawCount).
+    this.extendModelDrawCount(modelData, index);
   }
 
   private clearInactiveRenderableSlotMemberships(
@@ -964,6 +978,7 @@ export class ArmyModel {
     this.entityCosmeticMap.delete(entityId);
     this.activeBaseModelByEntity.delete(entityId);
     this.activeCosmeticByEntity.delete(entityId);
+    this.hiddenEntityRepresentations.delete(entityId);
     this.movementCompleteCallbacks.delete(entityId);
     this.removeLabel(entityId);
   }
@@ -1198,36 +1213,12 @@ export class ArmyModel {
         continue;
       }
 
-      if (this.isAnimationPositionVisible(instance.position, visibility)) {
+      if (isAnimationPositionVisible(instance.position, visibility)) {
         return true;
       }
     }
 
     return false;
-  }
-
-  private isAnimationPositionVisible(position: Vector3, visibility: AnimationVisibilityContext): boolean {
-    if (visibility.visibilityManager) {
-      if (!visibility.visibilityManager.isPointVisible(position)) {
-        return false;
-      }
-
-      if (visibility.cameraPosition && visibility.maxDistance !== undefined) {
-        return visibility.cameraPosition.distanceTo(position) <= visibility.maxDistance;
-      }
-
-      return true;
-    }
-
-    if (visibility.frustumManager && !visibility.frustumManager.isPointVisible(position)) {
-      return false;
-    }
-
-    if (visibility.cameraPosition && visibility.maxDistance !== undefined) {
-      return visibility.cameraPosition.distanceTo(position) <= visibility.maxDistance;
-    }
-
-    return true;
   }
 
   private updateModelAnimations(modelData: ModelData, time: number, now: number): void {
@@ -2262,6 +2253,29 @@ export class ArmyModel {
   }
 
   /**
+   * Hide only the instanced representation while preserving its slot,
+   * movement state, and authoritative transform for an articulated actor.
+   */
+  public setEntityRepresentationVisible(entityId: number, visible: boolean): void {
+    const visibilityChanged = visible
+      ? this.hiddenEntityRepresentations.delete(entityId)
+      : !this.hiddenEntityRepresentations.has(entityId);
+    if (!visible) this.hiddenEntityRepresentations.add(entityId);
+    if (!visibilityChanged) return;
+
+    const instance = this.instanceData.get(entityId);
+    if (instance?.matrixIndex === undefined) return;
+    this.updateInstance(
+      entityId,
+      instance.matrixIndex,
+      instance.position,
+      instance.scale,
+      instance.rotation,
+      instance.color,
+    );
+  }
+
+  /**
    * Get instance data for an entity (avoids type casting in consumers)
    * @param entityId - The entity ID
    * @returns The instance data or undefined if not found
@@ -2516,7 +2530,9 @@ export class ArmyModel {
     return sortedResults;
   }
 
-  public raycastNearest(raycaster: Raycaster): { instanceId: number | undefined; mesh: InstancedMesh } | undefined {
+  public raycastNearest(
+    raycaster: Raycaster,
+  ): { distance: number; instanceId: number | undefined; mesh: InstancedMesh } | undefined {
     let nearest:
       | {
           instanceId: number | undefined;
@@ -2545,6 +2561,7 @@ export class ArmyModel {
     }
 
     return {
+      distance: nearest.distance,
       instanceId: nearest.instanceId,
       mesh: nearest.mesh,
     };
@@ -2609,6 +2626,7 @@ export class ArmyModel {
     this.entityCosmeticMap.clear();
     this.movingInstances.clear();
     this.instanceData.clear();
+    this.hiddenEntityRepresentations.clear();
     this.matrixIndexOwners.clear();
     this.labels.clear();
     this.movementCompleteCallbacks.clear();
