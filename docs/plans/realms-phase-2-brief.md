@@ -342,6 +342,17 @@ processes, and republishes. The indexer is the latency budget and the EOL depend
       fog gone on the realm's tiles before the settlement screen closes; explore → fog gone within the same ≤ 100 ms
       render budget as the tile.
     - Build modal: reworked by Codex after the review, confirmed by the owner in game 58.
+  - _A.3 gate result, 2026-08-28 evening:_ on herald with Torii running but unused by the live path — settle, play,
+    build (after the placement rework), reload mid-game, automation (after the address fix): **pass**. Latency:
+    measured, fails the bar for client reasons named above (not a data-plane finding). **Spectator with Torii stopped:
+    blocked, not failed.** With the container stopped the landing page lists no games and the play route cannot boot any
+    game, because `apps/game/src/runtime/world/profile-builder.ts` resolves chain config, the world address and the
+    `GameRegistry` row over Torii SQL before herald is ever contacted (the "world directory" and "pre-session reads"
+    rows of the table below). Nothing herald-side broke; the boot path is simply still Torii's. So A.4 starts with that
+    boot path: herald serves `GET /<chain>/games` (directory: the `GameRegistry` fold, with counts) and
+    `GET /<chain>/games/<id>/snapshot?models=…` (already exists), `profile-builder` and the landing lists read those,
+    and the spectator gate is re-run with the container stopped — that rerun is A.4's first checkpoint, before the
+    deletions.
   - _Next steps for Codex, in order (2026-08-28):_
     1. ~~Stale wiring tests~~ (done, `d38000feea4`): `src/dojo/sync.regression.source.test.ts` (asserts the deleted
        `connection-health-monitor`), `src/three/scenes/worldmap-arrival-ghost.source.test.ts` (movement ghosts /
@@ -354,7 +365,8 @@ processes, and republishes. The indexer is the latency budget and the EOL depend
     4. ~~Harness nonce reads, `sender` via `subscribeNewTransactions`~~ (done, `ab125610e8c`).
     5. ~~Latency re-measure~~ (done — see the quiet-box measurement above): now the two client classes it named, explore
        submit path and pre-confirmed→rendered, and the fog chokepoint.
-    6. **A.4 — unblocked 2026-08-28, start now, in parallel with 5** — the disposition table below, Torii container +
+    6. **A.4 — unblocked 2026-08-28, start now, in parallel with 5; first checkpoint = the boot path on herald and the
+       spectator gate re-run with Torii stopped** — the disposition table below, Torii container +
        `torii.toml.template` + `packages/torii` + `apps/game/src/dojo` deleted, `VITE_PUBLIC_HERALD_URL` switch gone
        (herald is the transport, full stop), the manifest carries every row `getConfigFromTorii` used to fetch. Gate
        unchanged.
