@@ -371,12 +371,16 @@ processes, and republishes. The indexer is the latency budget and the EOL depend
        transport, full stop), the harness's `toriiSqlUrl`, and every `getConfigFromTorii` row already in the manifest.
        Gate unchanged: a full Blitz game end to end with no Torii process anywhere; net deletion in the sync runtime;
        reconnect resumes by `seq` with zero gaps.
-    4. Housekeeping riding along: the five unreachable chest-opening prototype files knip names are deleted, not
-       ignored; the two per-transaction maps in herald's live world are bounded or expire.
+    4. **Build-modal placement, still open** (corrected 2026-08-28 late: the brief briefly listed it as done on the
+       owner's "fixed" report from game 58 — that was the rejected 30 s reservation masking the double-send; no rework
+       commit exists after `1c14be4d50d`). Do it per the review: one build lock per realm held until `placeBuilding`
+       returns, slot resolved at submission time inside the lock, the TTL map and the per-card lock deleted, regression
+       = four quick clicks. Codex sequences it after the boot checkpoint and before declaring the pass complete —
+       accepted. Riding along: the five unreachable chest-opening prototype files knip names are deleted, not ignored;
+       the two per-transaction maps in herald's live world are bounded or expire.
     - Done since the first list: stale wiring tests (`d38000feea4`), degrade-not-die (`fefb400fd2f`), harness
-      pre-confirmed nonces and stream senders (`ab125610e8c`), one account truth (`8d2b3b0c0e4`), build-modal placement
-      rework (after the review; confirmed by the owner in game 58), automation address equality (`93da2d4592a`),
-      rulebook in the fold (`0f14d1c152`), quiet-box measurement (above), PR #4903 merged.
+      pre-confirmed nonces and stream senders (`ab125610e8c`), one account truth (`8d2b3b0c0e4`), automation address
+      equality (`93da2d4592a`), rulebook in the fold (`0f14d1c152`), quiet-box measurement (above), PR #4903 merged.
   - _Gates per slice._ **A.1** — snapshot of a lab game matches Torii row-for-row for every decoded component (Torii is
     the oracle until A.4). **A.2** — the forced-replacement transcript from A.0 is handled: after `overlay_reset` the
     client's state equals a fresh snapshot; a killed socket resumes by `seq` with zero gaps; a herald restart mid-game
