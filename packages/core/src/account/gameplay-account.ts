@@ -2,6 +2,8 @@ import { getStarkKey, utils as starknetKeyUtils } from "@scure/starknet";
 import { resolveEndpoint, type GameChain } from "@realms-world/chain";
 import { Account, addAddressPadding, hash, num, type BigNumberish, type ProviderInterface } from "starknet";
 
+const GAMEPLAY_ACCOUNT_DEPLOYMENT_POLL_MS = 50;
+
 const CONTRACT_NOT_FOUND = 20;
 const GAMEPLAY_KEY_PREFIX = "realms:gameplay-key";
 
@@ -73,11 +75,18 @@ export async function ensureGameplayAccount(options: EnsureGameplayAccountOption
     return account;
   }
 
-  await account.deployAccount({
+  const deployed = await account.deployAccount({
     classHash: options.classHash,
     constructorCalldata: deployment.constructorCalldata,
     addressSalt: deployment.addressSalt,
     contractAddress: deployment.address,
+  });
+  // Callers here (harness, authority server, deployer) have no herald stream, and starknet.js reads nonces at
+  // `latest` by default: the account's next transaction needs the deployment in a closed block or the sequencer
+  // rejects its nonce. One bounded wait to ACCEPTED_ON_L2 (starknet.js's default success states), at the only
+  // place a gameplay account is created — the polling ledger's "one-shot wait with its reason".
+  await options.provider.waitForTransaction(deployed.transaction_hash, {
+    retryInterval: GAMEPLAY_ACCOUNT_DEPLOYMENT_POLL_MS,
   });
   return account;
 }
