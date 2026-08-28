@@ -1,7 +1,7 @@
 import { playerCosmeticsStore } from "@/three/cosmetics/player-cosmetics-store";
 import { resolveEligibleCosmeticIds } from "@/three/cosmetics/ownership";
 import type { BlitzGameLoadoutDraft } from "@/three/cosmetics/types";
-import { useAccount } from "@starknet-react/core";
+import { useGameplayAccountAddress } from "@/hooks/use-gameplay-account";
 import { useCallback, useMemo, useSyncExternalStore } from "react";
 import type { CosmeticItem } from "../config/cosmetics.data";
 
@@ -127,7 +127,7 @@ export const useCosmeticLoadoutStore = <T>(
   selector: (state: CosmeticLoadoutViewState) => T,
   options?: UseCosmeticLoadoutStoreOptions,
 ): T => {
-  const { address } = useAccount();
+  const address = useGameplayAccountAddress();
   const scopeKey = options?.scopeKey ?? "cosmetics:default";
   const fallbackScopeKeys = useMemo(() => options?.fallbackScopeKeys ?? [], [options?.fallbackScopeKeys]);
   const maxSelections = options?.maxSelections ?? DEFAULT_MAX_SELECTIONS;

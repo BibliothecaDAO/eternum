@@ -34,6 +34,14 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 // are surfaced in the What's New popup.
 const allLatestFeatures: LatestFeature[] = [
   {
+    date: "2026-08-28",
+    title: "Reliable Realm Building",
+    description:
+      "Building actions now prevent duplicate placements while one is submitting, and the in-game connection banner follows the active gameplay account.",
+    type: "fix",
+    gameSlug: "world",
+  },
+  {
     date: "2026-08-27",
     title: "Aligned Exploration Fog",
     description: "Fixed exploration fog appearing on the wrong hexes by aligning its mask with the world map.",

@@ -3,7 +3,7 @@ import {
   CosmeticsNetwork,
   DEFAULT_COSMETICS_NETWORK,
 } from "@/ui/features/cosmetics/config/networks";
-import { useAccount } from "@starknet-react/core";
+import { useGameplayAccountAddress } from "@/hooks/use-gameplay-account";
 import { useQuery } from "@tanstack/react-query";
 import { fetchLootChestBalances } from "../services";
 import { MergedNftData } from "../utils/types";
@@ -21,7 +21,7 @@ interface UseOwnedChestsReturn {
  * Uses the Torii SQL API to query token balances.
  */
 export function useOwnedChests(network: CosmeticsNetwork = DEFAULT_COSMETICS_NETWORK): UseOwnedChestsReturn {
-  const { address } = useAccount();
+  const address = useGameplayAccountAddress();
   const networkConfig = COSMETICS_NETWORK_CONFIG[network];
 
   const {

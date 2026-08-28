@@ -1,9 +1,9 @@
-import { useAccount } from "@starknet-react/core";
+import { isConnectedGameplayAccount, useGameplayAccountAddress } from "@/hooks/use-gameplay-account";
 
 export const NotLoggedInMessage = () => {
-  const { isConnected } = useAccount();
+  const address = useGameplayAccountAddress();
 
-  if (isConnected) return null;
+  if (isConnectedGameplayAccount(address)) return null;
 
   return (
     <>

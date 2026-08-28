@@ -23,6 +23,8 @@ const BUILDING_SLOT_COORDINATES = [
   ...getHexesWithinRadius(BUILDINGS_CENTER[0], BUILDINGS_CENTER[1], RealmLevels.Empire + 1),
 ];
 const OCCUPIED_SPACE_REASON = "space is occupied";
+const BUILDING_PLACEMENT_IN_PROGRESS_REASON = "building placement is already in progress";
+const activeBuildingPlacements = new Set<string>();
 
 const extractErrorMessage = (error: unknown): string => {
   if (typeof error === "string") return error;
@@ -36,6 +38,20 @@ const extractErrorMessage = (error: unknown): string => {
 
 const isOccupiedSpaceError = (error: unknown): boolean =>
   extractErrorMessage(error).toLowerCase().includes(OCCUPIED_SPACE_REASON);
+
+const runExclusiveBuildingPlacement = async <T>(structureEntityId: ID, place: () => Promise<T>): Promise<T> => {
+  const placementKey = String(structureEntityId);
+  if (activeBuildingPlacements.has(placementKey)) {
+    throw new Error(BUILDING_PLACEMENT_IN_PROGRESS_REASON);
+  }
+
+  activeBuildingPlacements.add(placementKey);
+  try {
+    return await place();
+  } finally {
+    activeBuildingPlacements.delete(placementKey);
+  }
+};
 
 export class TileManager {
   private col: number;
@@ -138,28 +154,30 @@ export class TileManager {
     hexCoords: HexPosition,
     useSimpleCost: boolean,
   ) => {
-    const { col, row } = hexCoords;
-    if (this.isHexOccupied({ col, row })) {
-      throw new Error(OCCUPIED_SPACE_REASON);
-    }
-    const startingPosition: [number, number] = [BUILDINGS_CENTER[0], BUILDINGS_CENTER[1]];
-    const endPosition: [number, number] = [col, row];
-    const directions = getDirectionsArray(startingPosition, endPosition);
-    try {
-      return await this.systemCalls.create_building({
-        signer,
-        entity_id: structureEntityId,
-        directions: directions,
-        building_category: buildingType,
-        use_simple: useSimpleCost,
-      });
-    } catch (error) {
-      console.error(error);
-      if (isOccupiedSpaceError(error)) {
+    return runExclusiveBuildingPlacement(structureEntityId, async () => {
+      const { col, row } = hexCoords;
+      if (this.isHexOccupied({ col, row })) {
         throw new Error(OCCUPIED_SPACE_REASON);
       }
-      throw error;
-    }
+      const startingPosition: [number, number] = [BUILDINGS_CENTER[0], BUILDINGS_CENTER[1]];
+      const endPosition: [number, number] = [col, row];
+      const directions = getDirectionsArray(startingPosition, endPosition);
+      try {
+        return await this.systemCalls.create_building({
+          signer,
+          entity_id: structureEntityId,
+          directions,
+          building_category: buildingType,
+          use_simple: useSimpleCost,
+        });
+      } catch (error) {
+        console.error(error);
+        if (isOccupiedSpaceError(error)) {
+          throw new Error(OCCUPIED_SPACE_REASON);
+        }
+        throw error;
+      }
+    });
   };
 
   destroyBuilding = async (signer: DojoAccount, structureEntityId: ID, col: number, row: number) => {

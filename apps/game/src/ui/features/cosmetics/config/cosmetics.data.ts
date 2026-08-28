@@ -1,4 +1,14 @@
-import type { CosmeticMetadata, CosmeticMetadataAttribute } from "../lib/use-torii-cosmetics";
+export interface CosmeticMetadataAttribute {
+  trait_type: string;
+  value: string;
+}
+
+export interface CosmeticMetadata {
+  attributes?: CosmeticMetadataAttribute[];
+  description?: string;
+  image?: string;
+  name?: string;
+}
 
 export interface CosmeticItem {
   id: string;

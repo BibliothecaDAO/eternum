@@ -2,11 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 
-vi.mock("@starknet-react/core", () => ({
-  useAccount: () => ({
-    address: "0x123",
-  }),
-}));
+vi.mock("@/hooks/use-gameplay-account", () => ({ useGameplayAccountAddress: () => "0x123" }));
 
 vi.mock("@bibliothecadao/types", () => ({
   TroopType: {

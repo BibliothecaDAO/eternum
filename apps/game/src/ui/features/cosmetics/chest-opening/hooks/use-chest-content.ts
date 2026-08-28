@@ -3,7 +3,7 @@ import {
   CosmeticsNetwork,
   DEFAULT_COSMETICS_NETWORK,
 } from "@/ui/features/cosmetics/config/networks";
-import { useAccount } from "@starknet-react/core";
+import { useGameplayAccountAddress } from "@/hooks/use-gameplay-account";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
 import { fetchMintedCosmetics } from "../services";
@@ -64,7 +64,7 @@ export function useChestContent(
     lastTimestampRef.current = timestamp;
   }
 
-  const { address: rawAddress } = useAccount();
+  const rawAddress = useGameplayAccountAddress();
   const networkConfig = COSMETICS_NETWORK_CONFIG[network];
   // Remove leading zeros from the address
   const address = rawAddress ? `0x${rawAddress.slice(2).replace(/^0+/, "")}` : undefined;
