@@ -1,7 +1,7 @@
 #!/usr/bin/env bun
 import { readFile } from "node:fs/promises";
 import path from "node:path";
-import { logger, RpcProvider } from "starknet";
+import { BlockTag, logger, RpcProvider } from "starknet";
 import { launchGame } from "../../../config/deployer/clean/launch/runner";
 import { createHarnessAccounts } from "./account-factory";
 import { prepareHarnessBots, runWorkload, type HarnessSystemAddresses, type TrackedTransaction } from "./driver";
@@ -80,7 +80,7 @@ async function main(): Promise<void> {
   const options = parseHarnessArgs(process.argv.slice(2));
   process.env.TORII_SQL_URL = options.toriiSqlUrl;
 
-  const provider = new RpcProvider({ nodeUrl: options.rpcUrl });
+  const provider = createHarnessProvider(options.rpcUrl);
   const [chainId, gameplayContracts, manifest] = await Promise.all([
     provider.getChainId(),
     readJson<GameplayContractsArtifact>(path.join(LAB_DIRECTORY, ".lab/gameplay-contracts.json")),
@@ -156,6 +156,9 @@ async function main(): Promise<void> {
   console.log(`${report.passed ? "PASS" : "FAIL"}: ${report.path}`);
   if (!report.passed) process.exitCode = 1;
 }
+
+export const createHarnessProvider = (rpcUrl: string): RpcProvider =>
+  new RpcProvider({ blockIdentifier: BlockTag.PRE_CONFIRMED, nodeUrl: rpcUrl });
 
 async function resolveHarnessGames(options: HarnessCliOptions): Promise<HarnessGame[]> {
   if (options.gameId !== undefined) {

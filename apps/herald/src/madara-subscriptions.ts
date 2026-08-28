@@ -1,5 +1,5 @@
 import type { ModelRegistry } from "./model-registry";
-import type { RpcHead, RpcReceipt, RpcSubscribedEvent } from "./types";
+import type { RpcHead, RpcReceipt, RpcSubscribedEvent, RpcSubscribedTransaction } from "./types";
 import { WORLD_EVENT_SELECTORS } from "./world-event-decoder";
 
 interface SubscriptionHandlers {
@@ -8,6 +8,7 @@ interface SubscriptionHandlers {
   onHead: (head: RpcHead) => Promise<void> | void;
   onReady: () => Promise<void> | void;
   onReceipt: (receipt: RpcReceipt) => Promise<void> | void;
+  onTransaction: (transaction: RpcSubscribedTransaction) => Promise<void> | void;
 }
 
 interface JsonRpcMessage {
@@ -18,7 +19,7 @@ interface JsonRpcMessage {
   result?: unknown;
 }
 
-const SUBSCRIPTION_COUNT = 3;
+const SUBSCRIPTION_COUNT = 4;
 const RECONNECT_MS = 200;
 
 export class MadaraSubscriptions {
@@ -105,6 +106,9 @@ export class MadaraSubscriptions {
     this.send(socket, 3, "starknet_subscribeNewTransactionReceipts", {
       finality_status: ["PRE_CONFIRMED", "ACCEPTED_ON_L2"],
     });
+    this.send(socket, 4, "starknet_subscribeNewTransactions", {
+      finality_status: ["PRE_CONFIRMED", "ACCEPTED_ON_L2"],
+    });
   }
 
   private acceptSubscription(payload: JsonRpcMessage, ready: Set<number>): void {
@@ -131,6 +135,13 @@ export class MadaraSubscriptions {
     }
     if (payload.method === "starknet_subscriptionNewTransactionReceipts") {
       this.enqueue(() => this.handlers.onReceipt(result as RpcReceipt));
+      return;
+    }
+    if (
+      payload.method === "starknet_subscriptionNewTransaction" ||
+      payload.method === "starknet_subscriptionNewTransactions"
+    ) {
+      this.enqueue(() => this.handlers.onTransaction(result as RpcSubscribedTransaction));
       return;
     }
     throw new Error(`Unexpected Madara notification ${payload.method}`);

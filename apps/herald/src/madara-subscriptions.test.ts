@@ -9,6 +9,7 @@ class FakeWebSocket {
   public onerror: (() => void) | null = null;
   public onmessage: ((event: { data: string }) => void) | null = null;
   public onopen: (() => void) | null = null;
+  public readonly sent: unknown[] = [];
 
   constructor(public readonly url: string) {
     FakeWebSocket.instances.push(this);
@@ -16,7 +17,9 @@ class FakeWebSocket {
 
   public close(): void {}
 
-  public send(): void {}
+  public send(message: string): void {
+    this.sent.push(JSON.parse(message));
+  }
 
   public receive(payload: unknown): void {
     this.onmessage?.({ data: JSON.stringify(payload) });
@@ -51,6 +54,7 @@ describe("MadaraSubscriptions", () => {
         accepted.push("ready");
       },
       onReceipt: () => undefined,
+      onTransaction: () => undefined,
     });
 
     const started = subscriptions.start();
@@ -60,9 +64,16 @@ describe("MadaraSubscriptions", () => {
     socket.receive({ method: "starknet_subscriptionNewHeads", params: { result: { block_number: 12, timestamp: 1 } } });
     socket.receive({ id: 2, result: "events" });
     socket.receive({ id: 3, result: "receipts" });
+    socket.receive({ id: 4, result: "transactions" });
 
     await started;
     await vi.waitFor(() => expect(accepted).toEqual(["ready", "head:12"]));
+    expect(socket.sent).toContainEqual({
+      id: 4,
+      jsonrpc: "2.0",
+      method: "starknet_subscribeNewTransactions",
+      params: { finality_status: ["PRE_CONFIRMED", "ACCEPTED_ON_L2"] },
+    });
     subscriptions.stop();
   });
 });

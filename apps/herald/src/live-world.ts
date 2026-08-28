@@ -14,6 +14,8 @@ import type {
   RpcHead,
   RpcReceipt,
   RpcSubscribedEvent,
+  RpcSubscribedTransaction,
+  RpcTransaction,
 } from "./types";
 import type { WorldEventDecodeMonitor } from "./world-event-decoder";
 import { WorldFold } from "./world-fold";
@@ -61,7 +63,8 @@ export class LiveWorld {
   private readonly knownGames = new Set<string>();
   private readonly overlayEvents = new Set<string>();
   private readonly preconfirmedReceiptEvents = new Map<string, Set<number>>();
-  private readonly transactionSenders = new Map<string, string | undefined>();
+  private readonly transactionSenders = new Map<string, string | null>();
+  private readonly pendingReceipts = new Map<string, RpcReceipt[]>();
   private readonly overlayTransactions: OverlayTransaction[] = [];
   private pendingPreconfirmed?: PendingPreconfirmedTransaction;
   private pendingPreconfirmedFlush?: ReturnType<typeof setImmediate>;
@@ -132,23 +135,48 @@ export class LiveWorld {
     this.flushCompletePreconfirmedTransaction();
   }
 
-  public async acceptReceipt(receipt: RpcReceipt): Promise<void> {
+  public acceptReceipt(receipt: RpcReceipt): void {
     const transactionHash = normalizeFelt(receipt.transaction_hash);
     this.acceptPreconfirmedReceipt(transactionHash, receipt);
-    const sender = await this.resolveTransactionSender(transactionHash);
-    if (!sender) return;
-
-    const status = receipt.execution_status === "REVERTED" ? "REVERTED" : receipt.finality_status;
-    for (const gameId of this.knownGames) {
-      if (!this.overlayFold.gameplayAccounts(gameId).has(sender)) continue;
-      this.hub.publishTransaction(gameId, {
-        block: receipt.block_number ?? null,
-        hash: transactionHash,
-        revert_reason: receipt.revert_reason,
-        status,
-      });
+    if (!this.transactionSenders.has(transactionHash)) {
+      const pending = this.pendingReceipts.get(transactionHash) ?? [];
+      pending.push(receipt);
+      this.pendingReceipts.set(transactionHash, pending);
+      return;
     }
-    if (receipt.finality_status !== "PRE_CONFIRMED") this.transactionSenders.delete(transactionHash);
+
+    this.publishTransactionReceipt(transactionHash, this.transactionSenders.get(transactionHash), receipt);
+  }
+
+  public acceptTransaction(message: RpcSubscribedTransaction): void {
+    const transaction = message.transaction ?? message;
+    const transactionHash = message.transaction_hash ?? transaction.transaction_hash;
+    if (!transactionHash) throw new Error("Subscribed transaction has no transaction hash");
+    this.recordTransactionSender(transactionHash, transaction);
+  }
+
+  private publishTransactionReceipt(
+    transactionHash: string,
+    sender: string | null | undefined,
+    receipt: RpcReceipt,
+  ): void {
+    if (sender) {
+      const status = receipt.execution_status === "REVERTED" ? "REVERTED" : receipt.finality_status;
+      for (const gameId of this.knownGames) {
+        if (!this.overlayFold.gameplayAccounts(gameId).has(sender)) continue;
+        this.hub.publishTransaction(gameId, {
+          block: receipt.block_number ?? null,
+          hash: transactionHash,
+          revert_reason: receipt.revert_reason,
+          status,
+        });
+      }
+    }
+
+    if (receipt.finality_status !== "PRE_CONFIRMED") {
+      this.transactionSenders.delete(transactionHash);
+      this.pendingReceipts.delete(transactionHash);
+    }
   }
 
   public async reconcileAfterSubscribe(): Promise<void> {
@@ -205,7 +233,6 @@ export class LiveWorld {
     this.overlayFold = this.confirmedFold.overlay();
     this.overlayEvents.clear();
     this.preconfirmedReceiptEvents.clear();
-    this.transactionSenders.clear();
     this.overlayTransactions.length = 0;
     for (const gameId of this.knownGames) this.hub.publishOverlayReset(gameId, this.confirmedBlockValue);
   }
@@ -213,6 +240,9 @@ export class LiveWorld {
   private async rebuildOverlay(): Promise<void> {
     const block = await this.input.rpc.getBlockWithReceipts("pre_confirmed");
     this.preconfirmedBlockValue = block.block_number;
+    block.transactions.forEach(({ receipt, transaction }) => {
+      this.recordTransactionSender(receipt.transaction_hash, transaction);
+    });
     for (const events of this.worldEventTransactionsFromBlock(block)) {
       const changes = events.flatMap((event) => {
         const change = this.applyOverlayEvent(event);
@@ -346,13 +376,17 @@ export class LiveWorld {
     this.pendingPreconfirmedFlush ??= setImmediate(() => this.flushPreconfirmedTransaction());
   }
 
-  private async resolveTransactionSender(transactionHash: string): Promise<string | undefined> {
-    if (this.transactionSenders.has(transactionHash)) return this.transactionSenders.get(transactionHash);
-    const transaction = await this.input.rpc.getTransactionByHash(transactionHash);
+  private recordTransactionSender(
+    transactionHashValue: string,
+    transaction: Pick<RpcTransaction, "contract_address" | "sender_address">,
+  ): void {
+    const transactionHash = normalizeFelt(transactionHashValue);
     const address = transaction.sender_address ?? transaction.contract_address;
-    const sender = address ? normalizeFelt(address) : undefined;
+    const sender = address ? normalizeFelt(address) : null;
     this.transactionSenders.set(transactionHash, sender);
-    return sender;
+    const pending = this.pendingReceipts.get(transactionHash) ?? [];
+    this.pendingReceipts.delete(transactionHash);
+    pending.forEach((receipt) => this.publishTransactionReceipt(transactionHash, sender, receipt));
   }
 
   private checkpointIfDue(): void {

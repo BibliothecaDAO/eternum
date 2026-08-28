@@ -120,6 +120,7 @@ const main = async (): Promise<void> => {
     onHead: (head) => live.acceptSubscribedHead(head),
     onReady: () => live.reconcileAfterSubscribe(),
     onReceipt: (receipt) => live.acceptReceipt(receipt),
+    onTransaction: (transaction) => live.acceptTransaction(transaction),
   });
 
   const shutdown = async (exitCode: number): Promise<void> => {

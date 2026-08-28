@@ -27,7 +27,8 @@ import {
   summarizeRevertReasons,
   summarizeRpcMetrics,
 } from "./report";
-import { parseHarnessArgs } from "./run";
+import { createHarnessProvider, parseHarnessArgs } from "./run";
+import { BlockTag } from "starknet";
 import { ToriiObserver } from "./torii-observer";
 
 describe("Madara harness workload", () => {
@@ -60,6 +61,10 @@ describe("Madara harness workload", () => {
 
   it("polls receipts below the previous 250 ms measurement floor", () => {
     expect(RECEIPT_POLL_INTERVAL_MS).toBe(50);
+  });
+
+  it("reads implicit account nonces from the pre-confirmed block", () => {
+    expect(createHarnessProvider("http://rpc.test").channel.blockIdentifier).toBe(BlockTag.PRE_CONFIRMED);
   });
 
   it("parses the Torii settlement encodings seen across versions", () => {

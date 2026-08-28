@@ -66,6 +66,11 @@ export interface RpcTransaction {
   type: string;
 }
 
+export interface RpcSubscribedTransaction extends Partial<RpcTransaction> {
+  finality_status: string;
+  transaction?: RpcTransaction;
+}
+
 export interface RpcBlockTransaction {
   receipt: RpcReceipt;
   transaction: RpcTransaction;

@@ -127,7 +127,6 @@ const liveFixture = () => {
     blockNumber: async () => 12,
     getBlockWithReceipts: async () => block,
     getEvents: async function* () {},
-    getTransactionByHash: async () => ({ sender_address: "0xabc", type: "INVOKE" }),
   } as unknown as MadaraRpc;
   const live = new LiveWorld({
     chain: "madara",
@@ -272,7 +271,13 @@ describe("LiveWorld", () => {
     const session = live.attach("7", socket);
     live.resume(session, { epoch: "", seq: 0, type: "resume" });
 
-    await live.acceptReceipt({
+    live.acceptTransaction({
+      finality_status: "PRE_CONFIRMED",
+      sender_address: "0xabc",
+      transaction_hash: "0x444",
+      type: "INVOKE",
+    });
+    live.acceptReceipt({
       block_number: 13,
       events: [],
       execution_status: "REVERTED",
@@ -288,6 +293,28 @@ describe("LiveWorld", () => {
       status: "REVERTED",
       type: "tx",
     });
+  });
+
+  it("holds a receipt until the transaction subscription supplies its sender", () => {
+    const { live } = liveFixture();
+    const socket = recordingSocket();
+    const session = live.attach("7", socket);
+    live.resume(session, { epoch: "", seq: 0, type: "resume" });
+
+    live.acceptReceipt({
+      block_number: 13,
+      events: [],
+      execution_status: "SUCCEEDED",
+      finality_status: "PRE_CONFIRMED",
+      transaction_hash: "0x555",
+    });
+    expect(socket.messages.some(({ type }) => type === "tx")).toBe(false);
+
+    live.acceptTransaction({
+      finality_status: "PRE_CONFIRMED",
+      transaction: { sender_address: "0xabc", transaction_hash: "0x555", type: "INVOKE" },
+    });
+    expect(socket.messages.at(-1)).toMatchObject({ hash: "0x555", status: "PRE_CONFIRMED", type: "tx" });
   });
 
   it("logs an undecodable event and keeps serving later transactions", async () => {
