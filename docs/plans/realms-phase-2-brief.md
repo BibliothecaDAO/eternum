@@ -292,16 +292,33 @@ processes, and republishes. The indexer is the latency budget and the EOL depend
     so only the indexed path is kept (`replayIndexedCombat` + procedural ranged/melee presentation; the provisional-FX
     renderer, the coordinator's dedup queue, and the battle-lab/quick-attack provisional calls are gone). The nested
     `apps/game/.gitattributes` was a stale copy that normalized two `.ktx2` textures as text — one attributes file now.
+  - _Review of the 2026-08-28 Codex commits (Claude):_ `d38000feea4` (tests), `fefb400fd2f` (undecodable events are
+    logged with model + tx, counted as `undecodable_events` in `/health`, herald keeps serving — closes the A.2
+    follow-up), `ab125610e8c` (senders from `subscribeNewTransactions`; the two per-tx maps drop entries on the final
+    receipt, so a transaction that never gets one leaks an entry — bound them or expire them, not a blocker), and
+    `8d2b3b0c0e4` (one account truth; the five unreachable chest-opening prototype files knip now names are dead code —
+    delete them, do not ignore them) are accepted. **`1c14be4d50d` is rejected.** It adds a module-level
+    `pendingBuildingPlacements` map with a 30 s TTL inside `TileManager` — a parallel optimistic channel with its own
+    expiry, which guardrail 5 forbids — and it treats the wrong cause. The chain shows the success and the first two
+    reverts in the same block (126483, all within 4 s of the last one); herald's `Building` row for that slot carries
+    exactly the RECS key `buildingEntityKey` computes (`0xc17d04c…`) and the transport applies pre-confirmed diffs on
+    arrival. The real class: `realm-build-actions.ts` resolves `availableSpots` at click time, then awaits
+    `placeBuilding`, which queues behind the serialized gameplay account; the modal's in-flight lock is per building
+    card (`pendingAction` in `select-preview-building.tsx`), so four clicks on four categories each passed their own
+    lock, each chose the same free slot, and the dispenser drained them over four seconds. **Fix:** one build lock per
+    realm, held until `placeBuilding` returns (it already waits for the pre-confirmed receipt), and the slot resolved at
+    submission time inside that lock; the map, the TTL and the per-card lock are deleted. The regression test is the
+    four-quick-clicks sequence, not east-then-north-east.
   - _Next steps for Codex, in order (2026-08-28):_
-    1. Stale wiring tests: `src/dojo/sync.regression.source.test.ts` (asserts the deleted `connection-health-monitor`),
-       `src/three/scenes/worldmap-arrival-ghost.source.test.ts` (movement ghosts / intents, deleted with optimism),
-       `src/ui/features/world/components/network-status.source.test.ts` (same monitor). Each either pins the new shape
-       or goes; none stays red.
-    2. A.2 follow-up: an undecodable event logs (model, tx, index) and counts in `/health`; the process keeps serving.
-    3. Findings 2 and 3 above (Build-modal placement; one account truth for the banner and the other `useAccount()`
-       readers in play). Finding 4 once the owner reports the console lines.
-    4. Harness: `RpcProvider({ blockIdentifier: PRE_CONFIRMED })` for nonce reads; `sender` on the tx channel via
-       `subscribeNewTransactions`.
+    1. ~~Stale wiring tests~~ (done, `d38000feea4`): `src/dojo/sync.regression.source.test.ts` (asserts the deleted
+       `connection-health-monitor`), `src/three/scenes/worldmap-arrival-ghost.source.test.ts` (movement ghosts /
+       intents, deleted with optimism), `src/ui/features/world/components/network-status.source.test.ts` (same monitor).
+       Each either pins the new shape or goes; none stays red.
+    2. ~~A.2 follow-up~~ (done, `fefb400fd2f`): an undecodable event logs (model, tx, index) and counts in `/health`;
+       the process keeps serving.
+    3. Findings 2 and 3 above (Build-modal placement — **rework per the review above**; one account truth, done for the
+       banner and the other `useAccount()` readers in play). Finding 4 once the owner reports the console lines.
+    4. ~~Harness nonce reads, `sender` via `subscribeNewTransactions`~~ (done, `ab125610e8c`).
     5. Latency re-measure on a quiet box (owner + Claude), then the client-stage instrumentation only if it still fails.
     6. **A.4** — the disposition table below, Torii container + `torii.toml.template` + `packages/torii` +
        `apps/game/src/dojo` deleted, `VITE_PUBLIC_HERALD_URL` switch gone (herald is the transport, full stop), the
