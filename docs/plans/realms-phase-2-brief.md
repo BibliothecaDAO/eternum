@@ -3,9 +3,10 @@
 **Status: ready for kickoff 2026-08-27.** Entry criteria were: the D.5 human gate passed (wallet login → settle → play →
 reload keeps the address; one human + 95 bots to a result — passed 27 Aug) and the D.4.1 headroom shapes reported (16 s
 max game-legal cadence; two concurrent games pass the capacity bars — their manifests read `passed: false` on 3 and 2
-game-rule failures — four hit the wall; reported 27 Aug). Facts below were re-checked against the tree on 2026-08-27.
-**Phase 2 runs on the lab laptop; no hardware is rented until section A has deleted Torii and the stack has its final
-form** (owner decision 2026-08-27) — measuring a stack we are deleting sizes the wrong thing.
+game-rule failures — four hit the wall; reported 27 Aug). Facts below were re-checked against the tree on 2026-08-28
+(A.3 human gate, second attempt, recorded under A; PR #4903 merged the same day). **Phase 2 runs on the lab laptop; no
+hardware is rented until section A has deleted Torii and the stack has its final form** (owner decision 2026-08-27) —
+measuring a stack we are deleting sizes the wrong thing.
 
 Phase 1 proved the platform: 96 players on our own Madara, zero Cartridge in gameplay, pre-confirmation in 50–77 ms, one
 wallet identity bound to one permanent gameplay account. Phase 2 makes the two remaining rented or missing layers ours:
@@ -256,6 +257,55 @@ processes, and republishes. The indexer is the latency budget and the EOL depend
        exit the process** — log it with model and transaction, count it in `/health`, keep serving; a client on stale
        state beats no client, and the log is the loud part. The 8-bot run itself: 799/800 actions, pre-confirmed p95 154
        ms, L2 p95 1.98 s, one stamina-rule miss; nobody joined — the human gate is still open.
+  - _A.3 human gate, second attempt 2026-08-28 (human played game 57, 8 bots):_ the owner settled, explored, built and
+    reloaded on herald with Torii still running but unused by the client. Findings, in the order they surfaced:
+    1. **The s2 rulebook was never in the fold.** Every balance number on an s2 world (stamina max and costs, population
+       capacity, tick, combat, travel) is read by `config-manager` from `PresetConfig[preset_id]`, plus chain tuning
+       from `ChainConfig`; under Torii those two rows came from a side query, and the sync manifest herald folds from
+       never listed them. Symptoms: no stamina bar, explore sent at 20/30 and rejected by the chain, "need more
+       capacity" at 6/12 — every one a `config lookup returned empty after sync — using default` line. Fixed at the
+       manifest (`0f14d1c152`): both models are chain-scoped s2-only entities; `game-scope`'s hand list drops them. Same
+       commit: herald **discards a checkpoint folded from a different model set** (`herald_checkpoint_discarded`) and
+       replays from genesis (193 s on the lab) instead of crashing at start — adding a model never needs a hand-cleared
+       table again. Class to keep in mind for A.4: any row the Torii config query fetched (`getConfigFromTorii`) must be
+       in the manifest before that query is deleted.
+    2. **Build modal always places at direction 1.** Four reverted `create_building` calls (`0x4d6fdf…`, `0x1bbdae…`,
+       `0x33f743…`, `0x5a02ac…`, blocks 126483–126485) carry `directions = [1]` with only the category changing, so the
+       top-bar Build modal collides with whatever was built first ("space is occupied"); building from the hexception
+       view works. Herald's `Building` rows for the realm match the chain, so this is the modal, not sync. **Codex.**
+    3. **"You are not logged in / view-only" while playing.** `not-logged-in-message.tsx` reads
+       `useAccount().isConnected` from the starknet-react connector; play now runs on the identity gameplay account
+       (`useDojo().account`), which is where every other consumer already looks. Same class as any remaining
+       `useAccount()` reader in play (`use-world-preview-entry`, cosmetics hooks): one account truth. **Codex.**
+    4. **Automation reported "not running".** Not yet diagnosed — the runners read the account from `useDojo()` and tick
+       every 60 s; exploration also gates on stamina, which was zero until fix 1. Needs the `[Automation]` console lines
+       and which runner (production / exploration / transfer). **Open, Codex once the owner reports.**
+    5. **Latency: p50 812 ms / p95 1441 ms click→rendered (`explore_reveal`, 12 samples) — fails the 250 ms bar, and the
+       number is not trusted.** Herald's own share, measured the same hour by timestamping 27 tx hashes on Madara's
+       pre-confirmed subscription and on the game-57 stream, is **43 ms p50 / 81 ms p95**. The box was running the
+       owner's other simulation, herald's genesis replay, and a full tsc + test pass at the time, and the harness's own
+       pre-confirmed p95 for the same game was 857 ms (154 ms in game 56, quiet box). Re-measure on a quiet box before
+       drawing any conclusion; if it still fails, instrument the client side (`__clientActionLatencyMeasurements` per
+       stage: sign → submit → herald `diff` → RECS apply → render) — the data plane is not where the time goes.
+  - _Merged on top (2026-08-28):_ PR #4903 (procedural terrain and armies, `e4524ccc668` + `d3a5f4b36a1`). One seam for
+    A.3: the PR built its procedural combat on a provisional _and_ an indexed path; this branch deleted client optimism,
+    so only the indexed path is kept (`replayIndexedCombat` + procedural ranged/melee presentation; the provisional-FX
+    renderer, the coordinator's dedup queue, and the battle-lab/quick-attack provisional calls are gone). The nested
+    `apps/game/.gitattributes` was a stale copy that normalized two `.ktx2` textures as text — one attributes file now.
+  - _Next steps for Codex, in order (2026-08-28):_
+    1. Stale wiring tests: `src/dojo/sync.regression.source.test.ts` (asserts the deleted `connection-health-monitor`),
+       `src/three/scenes/worldmap-arrival-ghost.source.test.ts` (movement ghosts / intents, deleted with optimism),
+       `src/ui/features/world/components/network-status.source.test.ts` (same monitor). Each either pins the new shape
+       or goes; none stays red.
+    2. A.2 follow-up: an undecodable event logs (model, tx, index) and counts in `/health`; the process keeps serving.
+    3. Findings 2 and 3 above (Build-modal placement; one account truth for the banner and the other `useAccount()`
+       readers in play). Finding 4 once the owner reports the console lines.
+    4. Harness: `RpcProvider({ blockIdentifier: PRE_CONFIRMED })` for nonce reads; `sender` on the tx channel via
+       `subscribeNewTransactions`.
+    5. Latency re-measure on a quiet box (owner + Claude), then the client-stage instrumentation only if it still fails.
+    6. **A.4** — the disposition table below, Torii container + `torii.toml.template` + `packages/torii` +
+       `apps/game/src/dojo` deleted, `VITE_PUBLIC_HERALD_URL` switch gone (herald is the transport, full stop), the
+       manifest carries every row `getConfigFromTorii` used to fetch. Gate unchanged.
   - _Gates per slice._ **A.1** — snapshot of a lab game matches Torii row-for-row for every decoded component (Torii is
     the oracle until A.4). **A.2** — the forced-replacement transcript from A.0 is handled: after `overlay_reset` the
     client's state equals a fresh snapshot; a killed socket resumes by `seq` with zero gaps; a herald restart mid-game
