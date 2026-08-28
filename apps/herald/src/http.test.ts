@@ -88,6 +88,7 @@ describe("herald HTTP", () => {
     });
 
     expect(handler(new Request("http://herald/madara/games", { method: "OPTIONS" })).status).toBe(204);
+    expect(handler(new Request("http://herald/madara/games?player=not-an-address")).status).toBe(400);
   });
 
   it("rejects unknown models and routes", async () => {

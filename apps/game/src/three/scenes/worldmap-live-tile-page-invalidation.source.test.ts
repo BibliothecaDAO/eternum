@@ -26,13 +26,20 @@ describe("worldmap live tile page invalidation", () => {
 
   it("writes projection truth before invalidating the owning visual page", () => {
     const handler = extractMethod(
-      "  private handleProjectedTileChanges(",
       "  private applyProjectedExploredTileChange(",
+      "  private syncProjectedArmyPathfinding(",
     );
 
-    expect(handler.indexOf("this.applyProjectedExploredTileChange")).toBeLessThan(
+    expect(handler.indexOf("this.writeExploredTileFromProjection")).toBeLessThan(
       handler.indexOf("this.invalidateVisualTerrainPageForLiveTile"),
     );
+  });
+
+  it("invalidates hydrated writes through the same explored-tile chokepoint", () => {
+    const hydrate = extractMethod("  private syncExploredTilesFromProjection(", "  private touchMatrixCache(");
+
+    expect(hydrate).toContain("this.writeExploredTileFromProjection(normalized.x, normalized.y, biome)");
+    expect(hydrate).toContain("this.invalidateVisualTerrainPageForLiveTile(col, row)");
   });
 
   it("coalesces live writes behind a page revision and rebuilds through the page pipeline", () => {

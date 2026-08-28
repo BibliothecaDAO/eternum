@@ -93,6 +93,9 @@ const createSessionHarness = (input: {
     emitEntity(update: GameSyncEntity) {
       handlers?.onEntity(update);
     },
+    emitEntityBatch(batch: Parameters<NonNullable<GameSyncSubscriptionHandlers["onEntityBatch"]>>[0]) {
+      handlers?.onEntityBatch?.(batch);
+    },
     emitEvent(update: GameSyncEntity) {
       handlers?.onEvent(update);
     },
@@ -125,12 +128,15 @@ describe("GameSyncRuntime recovery", () => {
       ],
     });
     const runtime = new GameSyncRuntime();
+    const snapshotProgress = vi.fn();
+    harness.session.onSnapshotProgress = snapshotProgress;
 
     await runtime.startSession(harness.session);
 
     expect(harness.order).toEqual(["subscribe-active", "snapshot-page-1", "snapshot-page-2"]);
     expect([...memory.rows.keys()]).toEqual(["one", "two"]);
     expect(runtime.getMetrics()).toMatchObject({ snapshotEntityCount: 2, snapshotPageCount: 2 });
+    expect(snapshotProgress).toHaveBeenLastCalledWith({ completed: 2, phase: "applying", total: 2 });
     expect(runtime.getStatus()).toBe("running");
   });
 
@@ -147,6 +153,55 @@ describe("GameSyncRuntime recovery", () => {
       type: "upsert",
       entities: [entity("queried-army", { ExplorerTroops: { coord: { x: 12, y: 9 } } })],
     });
+  });
+
+  it("applies a submitted transaction on arrival and reports both latency boundaries", async () => {
+    const memory = createMemoryStore();
+    const harness = createSessionHarness({ store: memory.store, transactionStatusChannel: true });
+    const received = vi.fn();
+    const applied = vi.fn();
+    harness.session.onTransactionEntitiesReceived = received;
+    harness.session.onTransactionEntitiesApplied = applied;
+    const runtime = new GameSyncRuntime();
+    await runtime.startSession(harness.session);
+    runtime.recordSubmittedTransaction("0x0abc");
+
+    harness.emitEntityBatch({
+      entities: [entity("army", { ExplorerTroops: { x: 4 } }), entity("tile", { TileOpt: { biome: 2 } })],
+      preconfirmed: true,
+      transactionHash: "0xabc",
+    });
+    await flushMicrotasks();
+
+    expect(memory.rows.get("army")).toEqual({ ExplorerTroops: { x: 4 } });
+    expect(memory.rows.get("tile")).toEqual({ TileOpt: { biome: 2 } });
+    expect(received).toHaveBeenCalledWith("0xabc");
+    expect(applied).toHaveBeenCalledWith("0xabc");
+  });
+
+  it("stops the live session and reports one actionable error when an atomic batch cannot apply", async () => {
+    const failure = new Error("RECS write failed");
+    const store = createMemoryStore().store;
+    store.applyEntityOperations = () => {
+      throw failure;
+    };
+    const harness = createSessionHarness({ store });
+    const onError = vi.fn();
+    harness.session.onError = onError;
+    const runtime = new GameSyncRuntime();
+    await runtime.startSession(harness.session);
+
+    harness.emitEntityBatch({
+      entities: [entity("army", { ExplorerTroops: { x: 4 } })],
+      preconfirmed: true,
+      transactionHash: "0xabc",
+    });
+    await flushMicrotasks();
+
+    expect(onError).toHaveBeenCalledOnce();
+    expect(onError).toHaveBeenCalledWith(failure);
+    expect(harness.writers[0]?.cancel).toHaveBeenCalledOnce();
+    expect(runtime.getStatus()).toBe("stopped");
   });
 
   it("replays live updates in client receive order after the snapshot", async () => {

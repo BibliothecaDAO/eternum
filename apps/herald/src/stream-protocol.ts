@@ -17,6 +17,7 @@ export type HeraldStreamMessage =
       type: "diff";
       block: number | null;
       preconfirmed: boolean;
+      transaction_hash?: string;
       set: FoldSet[];
       del: FoldDelete[];
     })

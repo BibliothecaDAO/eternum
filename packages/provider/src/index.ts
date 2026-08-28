@@ -314,6 +314,7 @@ export class EternumProvider extends EnhancedDojoProvider {
   private readonly retryConfig?: RetryConfig;
   private transactionSubmitGuard?: TransactionSubmitGuard;
   private transactionStreamWaiter?: TransactionStreamWaiter;
+  private transactionStreamSubmitObserver?: (transactionHash: string) => void;
   /** Model/contract-tag namespace: "s2" on appchain worlds, "s1_eternum" on legacy worlds. */
   readonly namespace: string;
   /** Active game on an s2 appchain world; 0 on legacy worlds (no calldata rewrite). */
@@ -367,8 +368,12 @@ export class EternumProvider extends EnhancedDojoProvider {
     this.promiseQueue = new PromiseQueue(this, { batchDelayMs: 0 });
   }
 
-  public setTransactionStreamWaiter(waiter: TransactionStreamWaiter | undefined): void {
+  public setTransactionStreamWaiter(
+    waiter: TransactionStreamWaiter | undefined,
+    submitObserver?: (transactionHash: string) => void,
+  ): void {
     this.transactionStreamWaiter = waiter;
+    this.transactionStreamSubmitObserver = submitObserver;
   }
 
   /**
@@ -516,7 +521,8 @@ export class EternumProvider extends EnhancedDojoProvider {
       return undefined;
     }
 
-    const rawExplorerId = explorerCall.calldata[0] as BigNumberish | undefined;
+    const explorerIdIndex = this.gameId > 0 ? 1 : 0;
+    const rawExplorerId = explorerCall.calldata[explorerIdIndex] as BigNumberish | undefined;
     return this.normalizeAddress(rawExplorerId) ?? (rawExplorerId !== undefined ? String(rawExplorerId) : undefined);
   }
 
@@ -842,6 +848,7 @@ export class EternumProvider extends EnhancedDojoProvider {
   }
 
   private emitTransactionSubmitted(transactionHash: string, transactionMeta: TransactionLifecycleMeta): void {
+    this.transactionStreamSubmitObserver?.(transactionHash);
     this.emit("transactionSubmitted", {
       transactionHash,
       ...transactionMeta,
@@ -1026,6 +1033,14 @@ export class EternumProvider extends EnhancedDojoProvider {
     executionDetailsPromise?.catch(() => {});
 
     await this.runTransactionSubmitGuard(signer, transactionMeta);
+    if (txType === TransactionType.EXPLORE) {
+      this.emit("transactionProgress", {
+        stage: "explore_submit_guard_released",
+        type: txType,
+        explorerId: this.getExploreTransactionExplorerId(transactionDetails),
+        signerAddress: transactionMeta.signerAddress,
+      });
+    }
 
     const vrfSerializationKey = this.getTransactionSerializationKey(txType, signer, transactionDetails);
     let releaseVrfExecutionLock: (() => void) | undefined;
@@ -1052,6 +1067,20 @@ export class EternumProvider extends EnhancedDojoProvider {
         : await this.getV3ExecutionDetails(signer, transactionDetails, {
             cacheKey: executionDetailsCacheKey,
           });
+      if (txType === TransactionType.EXPLORE) {
+        this.emit("transactionProgress", {
+          stage: "explore_execution_details_ready",
+          type: txType,
+          explorerId: this.getExploreTransactionExplorerId(transactionDetails),
+          signerAddress: transactionMeta.signerAddress,
+        });
+        this.emit("transactionProgress", {
+          stage: "explore_sign_send_started",
+          type: txType,
+          explorerId: this.getExploreTransactionExplorerId(transactionDetails),
+          signerAddress: transactionMeta.signerAddress,
+        });
+      }
       submitPromise = this.submitTransaction(signer, transactionDetails, executionDetails, {
         executionDetailsCacheKey,
       });
@@ -3057,6 +3086,13 @@ export class EternumProvider extends EnhancedDojoProvider {
       contractAddress: troopMovementSystemsAddress,
       entrypoint: "explorer_extract_reward",
       calldata: [explorer_id],
+    });
+
+    this.emit("transactionProgress", {
+      stage: "explore_calls_built",
+      type: TransactionType.EXPLORE,
+      explorerId: explorer_id,
+      signerAddress: this.getSignerAddress(signer),
     });
 
     return await this.promiseQueue.enqueue({ signer, calls: callData, transactionType: TransactionType.EXPLORE });

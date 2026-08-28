@@ -6,6 +6,7 @@ import { type WorldConfigMeta } from "@/hooks/use-world-availability";
 import { useWorldsSummary } from "@/hooks/use-worlds-summary";
 import { useWorldRegistration, type EntryStage } from "@/hooks/use-world-registration";
 import { PLAYER_WORLD_REGISTRATION_QUERY_KEY, WORLD_AVAILABILITY_QUERY_KEY } from "@/hooks/world-list-queries";
+import type { HeraldGameDirectory } from "@bibliothecadao/eternum/game-sync";
 import type { WorldSummary } from "@bibliothecadao/types";
 import type { WorldSelectionInput } from "@/runtime/world";
 import { fetchGameReviewClaimSummary, type GameReviewClaimSummary } from "@/services/review/game-review-service";
@@ -22,6 +23,27 @@ import { Link } from "react-router-dom";
 import { toast } from "sonner";
 
 const toPaddedFeltAddress = (address: string): string => `0x${BigInt(address).toString(16).padStart(64, "0")}`;
+
+const markGameRegistered = (
+  directory: HeraldGameDirectory | undefined,
+  gameId: number,
+): HeraldGameDirectory | undefined => {
+  if (!directory) return directory;
+  return {
+    ...directory,
+    games: directory.games.map((game) =>
+      game.game_id === gameId
+        ? {
+            ...game,
+            player_state: {
+              registered: true,
+              settled: game.player_state?.settled ?? false,
+            },
+          }
+        : game,
+    ),
+  };
+};
 
 const formatLordsDisplayMaxTwoDecimals = (value: string): string => {
   const trimmed = value.trim();
@@ -791,30 +813,26 @@ export const UnifiedGameGrid = ({
     await refetchSummary();
   }, [refetchSummary]);
 
-  // When a registration completes, write the optimistic result into the SHARED
-  // registration cache so every grid instance (Open Games, the Active bar)
-  // moves the card atomically — per-grid state made the card vanish from one
-  // list before the other could pick it up. The 30s refetch interval confirms
-  // against torii once the settlement row is indexed; the availability cache is
-  // invalidated for the modal path. Deliberately NOT invalidating the
-  // registration query here: an instant refetch could race torii indexing and
-  // clobber the optimistic value with a stale "unregistered".
+  // When a registration completes, update the shared player-scoped directory
+  // so every grid instance moves the card atomically. The next Herald head
+  // confirms the row; an immediate refetch can race pre-confirmation.
   const handleRegistrationComplete = useCallback(
     (game: GameData) => {
-      queryClient.setQueriesData(
-        { queryKey: [...PLAYER_WORLD_REGISTRATION_QUERY_KEY, game.worldKey] },
-        (previous: { isPlayerRegistered: boolean | null; hasPlayerSettledRealm: boolean | null } | undefined) => ({
-          isPlayerRegistered: true,
-          hasPlayerSettledRealm: previous?.hasPlayerSettledRealm ?? null,
-        }),
-      );
+      const worldId = game.config?.worldId;
+      const gameId = game.config?.gameId;
+      if (worldId && gameId && playerFeltLiteral) {
+        queryClient.setQueryData<HeraldGameDirectory>(
+          [...PLAYER_WORLD_REGISTRATION_QUERY_KEY, worldId, playerFeltLiteral],
+          (previous) => markGameRegistered(previous, gameId),
+        );
+      }
       // The availability cache (entry-modal path) keys by chain:name, not by
       // the (worldId, gameId) summary key.
       queryClient.invalidateQueries({ queryKey: [...WORLD_AVAILABILITY_QUERY_KEY, `${game.chain}:${game.name}`] });
 
       onRegistrationComplete?.();
     },
-    [onRegistrationComplete, queryClient],
+    [onRegistrationComplete, playerFeltLiteral, queryClient],
   );
 
   const factoryError = summaryError as Error | null;

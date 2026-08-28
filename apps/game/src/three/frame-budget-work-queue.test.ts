@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import {
   FrameBudgetWorkQueue,
   FrameBudgetWorkQueueDisposedError,
@@ -6,12 +6,15 @@ import {
 } from "./frame-budget-work-queue";
 import { consumeDominantFrameWorkOwner, runWithFrameWorkOwner } from "./frame-work-owner";
 
-function createHarness(options: { isLoading?: () => boolean } = {}) {
+function createHarness(
+  options: { isLoading?: () => boolean; onLongTask?: (task: { durationMs: number; owner: string }) => void } = {},
+) {
   let now = 0;
   let nextFrameId = 1;
   const frames = new Map<number, FrameRequestCallback>();
   const queue = new FrameBudgetWorkQueue({
     isLoading: options.isLoading,
+    onLongTask: options.onLongTask,
     now: () => now,
     requestFrame: (callback) => {
       const id = nextFrameId++;
@@ -150,6 +153,26 @@ describe("FrameBudgetWorkQueue", () => {
     await pending;
 
     expect(consumeDominantFrameWorkOwner()).toBe("terrain:visible-page-build");
+  });
+
+  it("reports long work through the bounded diagnostic callback without writing to the console", async () => {
+    const onLongTask = vi.fn();
+    const consoleWarn = vi.spyOn(console, "warn").mockImplementation(() => undefined);
+    const harness = createHarness({ onLongTask });
+    const pending = harness.queue.schedule(
+      "critical",
+      () => {
+        harness.advance(40);
+      },
+      "terrain:critical-page-build",
+    );
+
+    await harness.flushFrame();
+    await pending;
+
+    expect(onLongTask).toHaveBeenCalledWith({ durationMs: 40, owner: "terrain:critical-page-build" });
+    expect(consoleWarn).not.toHaveBeenCalled();
+    consoleWarn.mockRestore();
   });
 
   it("rejects queued work when disposed", async () => {

@@ -88,6 +88,7 @@ export class EntityIngestQueue {
   private disposed = false;
   private nextOperationId = 1;
   private appliedOperationId = 0;
+  private flushThroughOperationId = 0;
   private failure: Error | null = null;
 
   constructor({ scheduler, store, now, onBatchApplied }: EntityIngestQueueOptions) {
@@ -122,6 +123,40 @@ export class EntityIngestQueue {
     this.scheduleFlush();
   }
 
+  public enqueueEntityBatch(entities: readonly GameSyncEntity[], immediate = false): Promise<void> {
+    if (this.disposed || entities.length === 0) return Promise.resolve();
+
+    const step: UpsertStep = { type: "upsert", entities: new Map(), operationId: 0 };
+    const removals: Array<{ entityId: string; models: string[] }> = [];
+    entities.forEach((entity) => {
+      const entries = Object.entries(entity.models ?? {});
+      const removedModels = entries.filter(([, value]) => isEmptyModel(value)).map(([model]) => model);
+      entries
+        .filter(([, value]) => !isEmptyModel(value))
+        .forEach(([model, value]) => mergeEntityModel(step.entities, entity.hashed_keys, model, value));
+      if (removedModels.length > 0) removals.push({ entityId: entity.hashed_keys, models: removedModels });
+    });
+    if (step.entities.size > 0) {
+      step.operationId = this.nextOperationId++;
+      this.steps.push(step);
+    }
+    removals.forEach(({ entityId, models }) =>
+      this.enqueueEntityBarrier({ type: "remove-components", entityId, models }),
+    );
+
+    const operationId = this.nextOperationId - 1;
+    if (operationId <= this.appliedOperationId) return Promise.resolve();
+    if (immediate) {
+      this.flushThroughOperationId = Math.max(this.flushThroughOperationId, operationId);
+      this.cancelScheduledFlush?.();
+      this.cancelScheduledFlush = null;
+      void this.flush();
+    } else {
+      this.scheduleFlush();
+    }
+    return this.waitForOperation(operationId);
+  }
+
   public enqueueComponentRemoval(entityId: string, model: string): void {
     if (this.disposed) return;
     this.enqueueEntityBarrier({ type: "remove-components", entityId, models: [model] });
@@ -136,6 +171,10 @@ export class EntityIngestQueue {
 
   public drain(): Promise<void> {
     const operationId = this.nextOperationId - 1;
+    return this.waitForOperation(operationId);
+  }
+
+  private waitForOperation(operationId: number): Promise<void> {
     if (this.failure) return Promise.reject(this.failure);
     if (operationId <= this.appliedOperationId || this.disposed) return Promise.resolve();
 
@@ -192,7 +231,7 @@ export class EntityIngestQueue {
         if (batch.completedOperationIds.length > 0) {
           this.appliedOperationId = Math.max(this.appliedOperationId, ...batch.completedOperationIds);
         }
-        if (this.now() - startedAt >= MAX_APPLY_SLICE_MS) {
+        if (this.now() - startedAt >= MAX_APPLY_SLICE_MS && this.appliedOperationId >= this.flushThroughOperationId) {
           break;
         }
       }

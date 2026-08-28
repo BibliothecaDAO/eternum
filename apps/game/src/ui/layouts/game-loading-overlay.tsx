@@ -2,11 +2,10 @@ import clsx from "clsx";
 import { usePlayRouteBootSnapshot } from "@/game-entry/play-route-boot";
 import { usePlayRouteReadinessStore } from "@/game-entry/play-route-readiness-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import { LoadingStateKey } from "@/hooks/store/use-world-loading";
 import { buildMapResumeHref } from "@/play/navigation/play-route-boot-normalization";
 import { buildPlayHref, parsePlayRoute } from "@/play/navigation/play-route";
 import { markGameEntryMilestone } from "@/ui/layouts/game-entry-timeline";
-import { BootLoaderShell } from "@/ui/modules/boot-loader";
+import { BootDebugPanel, BootLoaderShell } from "@/ui/modules/boot-loader";
 import { Position } from "@bibliothecadao/eternum";
 import { usePlayerStructures } from "@bibliothecadao/react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -187,7 +186,7 @@ export const GameLoadingOverlay = () => {
   }, [snapshot.bootToken]);
 
   const isSlow = !isReady && elapsedMs >= SLOW_THRESHOLD_MS;
-  const progress = isReady ? 100 : Math.max(snapshot.progress, isHandingOffScene ? 97 : isWaitingForWorldmap ? 92 : 82);
+  const progress = Math.max(0, Math.min(100, snapshot.progress));
   const statements = useMemo(() => {
     if (isReady) {
       return ["Your realm awaits."];
@@ -213,6 +212,7 @@ export const GameLoadingOverlay = () => {
   }, [didSafetyTimeout, isHandingOffScene, isReady, isSlow, isWaitingForWorldmap]);
 
   const tasks = snapshot.tasks.length > 0 ? snapshot.tasks : [];
+  const currentTaskLabel = tasks.find((task) => task.status === "running")?.label ?? snapshot.currentTask;
   const overlayTitle = "Entering the Realm";
   const activeStatement = statements[0] ?? "Rendering the world map...";
 
@@ -268,6 +268,7 @@ export const GameLoadingOverlay = () => {
               complete.
             </p>
           ) : null}
+          {import.meta.env.DEV || isSlow ? <BootDebugPanel currentTaskLabel={currentTaskLabel} /> : null}
         </div>
       }
     />

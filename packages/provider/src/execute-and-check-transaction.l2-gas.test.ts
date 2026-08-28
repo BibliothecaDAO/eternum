@@ -95,6 +95,19 @@ describe("EternumProvider.executeAndCheckTransaction gas bounds", () => {
     expect(provider.execute.mock.calls[0][3]).toEqual({ version: 3, tip: 0, resourceBounds });
   });
 
+  it("reads the explorer id after scoped game calldata", () => {
+    const provider = makeProvider();
+    provider.gameId = 61;
+
+    expect(
+      provider.getExploreTransactionExplorerId({
+        contractAddress: "0x1",
+        entrypoint: "explorer_move",
+        calldata: [61, 259562, 1, 4, 1],
+      }),
+    ).toBe(`0x${BigInt(259562).toString(16)}`);
+  });
+
   it("caps l2 gas max_amount at the current v3 mainnet limit", async () => {
     const provider = makeProvider();
     const signer = {

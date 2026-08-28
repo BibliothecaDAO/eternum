@@ -46,12 +46,13 @@ const worldConfig = {
 const models = new Map<string, FoldRow[]>([
   ["GameRegistry", [row("0x1", registry)]],
   ["WorldConfig", [row("0x2", worldConfig)]],
+  ["BlitzSettlement", [row("0x8", { game_id: "0x3a", player: "0xabc" })]],
   [
     "Structure",
     [
       row("0x3", { game_id: "0x3a", base: { category: "0x1" }, owner: "0xabc" }),
-      row("0x4", { game_id: "0x3a", base: { category: "0x5" }, owner: "0xabc" }),
-      row("0x5", { game_id: "0x3a", base: { category: "0x1" }, owner: "0xdef" }),
+      row("0x4", { game_id: "0x3a", base: { category: "0x5" }, owner: "0xdef" }),
+      row("0x5", { game_id: "0x3a", base: { category: "0x1" }, owner: "0xabc" }),
       row("0x6", { game_id: "0x3a", base: { category: "0x3" }, owner: "0xdef" }),
     ],
   ],
@@ -103,5 +104,27 @@ describe("Herald game directory", () => {
         }),
       ],
     });
+  });
+
+  it("joins one requested player's registration and settlement state into the directory", () => {
+    const directory = buildGameDirectory({
+      chain: "madara",
+      confirmedBlock: 136_924,
+      fold: { modelRows: (model) => models.get(model) ?? [] },
+      playerAddress: "0xabc",
+    });
+
+    expect(directory.games[0]?.player_state).toEqual({ registered: true, settled: true });
+  });
+
+  it("does not treat village ownership as an Eternum realm settlement", () => {
+    const directory = buildGameDirectory({
+      chain: "madara",
+      confirmedBlock: 136_924,
+      fold: { modelRows: (model) => models.get(model) ?? [] },
+      playerAddress: "0xdef",
+    });
+
+    expect(directory.games[0]?.player_state).toEqual({ registered: false, settled: false });
   });
 });

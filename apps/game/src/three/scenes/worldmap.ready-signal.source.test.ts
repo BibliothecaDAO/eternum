@@ -27,6 +27,8 @@ describe("Worldmap ready signal", () => {
 
     expect(source).toContain("markWorldmapConverged");
     expect(source).toContain('markGameEntryMilestone("worldmap-fetch-completed")');
+    expect(source).toContain("await this.waitForLatestTerrainPresentation()");
+    expect(source).toContain('markGameEntryMilestone("worldmap-terrain-visible")');
     expect(source).toContain("reportAmbientConvergenceError");
   });
 

@@ -118,6 +118,19 @@ describe("WorldFold", () => {
         rawEvent(WORLD_EVENT_SELECTORS.set, "0x101", ["0x2", "0x7", "0x2", "0x5", "0x3", "0x1", "0x4", "0x5", "0x2"]),
       ),
     );
+    const otherGame = rawEvent(WORLD_EVENT_SELECTORS.set, "0x101", [
+      "0x2",
+      "0x8",
+      "0x3",
+      "0x5",
+      "0x4",
+      "0x0",
+      "0x5",
+      "0x6",
+      "0x1",
+    ]);
+    otherGame.keys[2] = "0xdef";
+    fold.apply(decodeRequired(registry, otherGame));
 
     expect(fold.snapshot(7, 12).models).toEqual([
       {
@@ -137,6 +150,9 @@ describe("WorldFold", () => {
         ],
       },
     ]);
+    expect(fold.snapshot(7, 12, ["TestModel"]).models).toHaveLength(1);
+    expect(fold.snapshot(8, 12).models[0]?.rows.map(({ key }) => key)).toEqual(["0xdef"]);
+    expect(() => fold.snapshot(7, 12, ["Missing"])).toThrow("Unknown snapshot models: Missing");
 
     fold.apply(
       decodeRequired(

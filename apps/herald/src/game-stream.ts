@@ -25,6 +25,7 @@ export interface SnapshotOverlayDiff {
   block: number | null;
   del: Extract<HeraldStreamMessage, { type: "diff" }>["del"];
   set: Extract<HeraldStreamMessage, { type: "diff" }>["set"];
+  transaction_hash?: string;
 }
 
 type PublishedMessage = Extract<HeraldStreamMessage, { type: "diff" | "overlay_reset" | "tx" | "head" }>;

@@ -81,6 +81,7 @@ vi.mock("react-router-dom", () => ({
 }));
 
 vi.mock("@/ui/modules/boot-loader", () => ({
+  BootDebugPanel: () => <div>Boot diagnostics</div>,
   BootLoaderShell: ({ title, subtitle }: { title?: string; subtitle?: string }) => (
     <div>
       <div>{title}</div>

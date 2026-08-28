@@ -85,6 +85,26 @@ const countSettledStructures = (
   return counts;
 };
 
+const gamesWithRealmOwnedByPlayer = (rows: FoldRow[], playerAddress: string | undefined): Set<number> => {
+  if (!playerAddress) return new Set();
+  return new Set(
+    rows.flatMap((row) =>
+      structureCategory(row) === 1 && asAddress(row.value.owner, "Structure.owner") === playerAddress
+        ? [gameIdOf(row)]
+        : [],
+    ),
+  );
+};
+
+const gamesRegisteredByPlayer = (rows: FoldRow[], playerAddress: string | undefined): Set<number> => {
+  if (!playerAddress) return new Set();
+  return new Set(
+    rows.flatMap((row) =>
+      asAddress(row.value.player, "BlitzSettlement.player") === playerAddress ? [gameIdOf(row)] : [],
+    ),
+  );
+};
+
 const buildChainConfig = (rows: FoldRow[]): HeraldChainDirectoryConfig | null => {
   const row = rows[0]?.value;
   if (!row) return null;
@@ -100,6 +120,7 @@ const buildGameEntry = (
   registry: Record<string, unknown>,
   worldConfig: Record<string, unknown> | undefined,
   structureCounts: { players: Set<string>; realms: number; villages: number } | undefined,
+  playerState: { registered: boolean; settled: boolean } | null,
 ): HeraldGameDirectoryEntry => {
   const blitz = worldConfig ? asBoolean(worldConfig.blitz_mode_on, "WorldConfig.blitz_mode_on") : null;
   const registration = worldConfig
@@ -126,6 +147,7 @@ const buildGameEntry = (
     mode: blitz === null ? null : blitz ? "blitz" : "eternum",
     name: decodeShortString(registry.name),
     player_count: structureCounts?.players.size ?? 0,
+    player_state: playerState,
     preset_id: asNumber(registry.preset_id, "GameRegistry.preset_id"),
     registration: registration
       ? {
@@ -171,18 +193,28 @@ export const buildGameDirectory = (input: {
   chain: string;
   confirmedBlock: number;
   fold: GameDirectorySource;
+  playerAddress?: string;
 }): HeraldGameDirectory => {
   const configsByGame = rowsByGame(input.fold.modelRows("WorldConfig"));
-  const structureCounts = countSettledStructures(input.fold.modelRows("Structure"));
+  const structureRows = input.fold.modelRows("Structure");
+  const structureCounts = countSettledStructures(structureRows);
+  const playerSettledGames = gamesWithRealmOwnedByPlayer(structureRows, input.playerAddress);
+  const playerRegisteredGames = input.playerAddress
+    ? gamesRegisteredByPlayer(input.fold.modelRows("BlitzSettlement"), input.playerAddress)
+    : new Set<number>();
   const games = input.fold
     .modelRows("GameRegistry")
-    .map(({ value }) =>
-      buildGameEntry(
+    .map(({ value }) => {
+      const gameId = asNumber(value.game_id, "GameRegistry.game_id");
+      return buildGameEntry(
         value,
-        configsByGame.get(asNumber(value.game_id, "GameRegistry.game_id")),
-        structureCounts.get(asNumber(value.game_id, "GameRegistry.game_id")),
-      ),
-    )
+        configsByGame.get(gameId),
+        structureCounts.get(gameId),
+        input.playerAddress
+          ? { registered: playerRegisteredGames.has(gameId), settled: playerSettledGames.has(gameId) }
+          : null,
+      );
+    })
     .sort((left, right) => right.game_id - left.game_id);
 
   return {

@@ -13,6 +13,10 @@ export type WorldmapRenderDurationMetric =
   | "structureAssetPrewarmMs"
   | "presentationCommittedMs"
   | "presentationSkewMs"
+  | "frameBudgetLongTaskMs"
+  | "visualTerrainWindowMs"
+  | "criticalTerrainPagesMs"
+  | "criticalTerrainPageMs"
   | "workerFindPath"
   | "createPath";
 
@@ -70,7 +74,9 @@ export type WorldmapRenderCounter =
   | "armyRenderIntegrityHealVisibleUndrawn"
   | "armyRenderIntegrityHealStalePosition"
   | "armyRenderIntegrityHealDuplicateOwner"
-  | "armyInstanceCapacityOverflow";
+  | "armyInstanceCapacityOverflow"
+  | "biomeMismatchCount"
+  | "frameBudgetLongTasks";
 
 export interface WorldmapZoomTelemetrySummary {
   controlsChangeEvents: number;
@@ -130,6 +136,10 @@ const createDiagnosticsState = (): WorldmapRenderDiagnosticsSnapshot => ({
     structureAssetPrewarmMs: createDurationStats(),
     presentationCommittedMs: createDurationStats(),
     presentationSkewMs: createDurationStats(),
+    frameBudgetLongTaskMs: createDurationStats(),
+    visualTerrainWindowMs: createDurationStats(),
+    criticalTerrainPagesMs: createDurationStats(),
+    criticalTerrainPageMs: createDurationStats(),
     workerFindPath: createDurationStats(),
     createPath: createDurationStats(),
   },
@@ -194,6 +204,8 @@ const createDiagnosticsState = (): WorldmapRenderDiagnosticsSnapshot => ({
     armyRenderIntegrityHealStalePosition: 0,
     armyRenderIntegrityHealDuplicateOwner: 0,
     armyInstanceCapacityOverflow: 0,
+    biomeMismatchCount: 0,
+    frameBudgetLongTasks: 0,
   },
   forceRefreshReasons: {
     default: 0,

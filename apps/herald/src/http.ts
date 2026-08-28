@@ -3,7 +3,7 @@ import type { FoldRow, GameSnapshot, ReplayMetrics } from "./types";
 
 interface SnapshotSource {
   modelRows: (model: string) => FoldRow[];
-  snapshot: (gameId: string, confirmedBlock: number) => GameSnapshot;
+  snapshot: (gameId: string, confirmedBlock: number, models?: readonly string[]) => GameSnapshot;
 }
 
 interface HeraldHttpState {
@@ -39,6 +39,18 @@ const requestedModels = (url: URL): string[] =>
     .map((model) => model.trim())
     .filter(Boolean);
 
+const requestedPlayer = (url: URL): string | undefined => {
+  const player = url.searchParams.get("player");
+  if (!player) return undefined;
+  try {
+    const address = BigInt(player);
+    if (address > 0n) return `0x${address.toString(16)}`;
+  } catch {
+    // The stable field error below is more useful than BigInt's parser error.
+  }
+  throw new Error("Herald directory player must be a positive address");
+};
+
 export const createHeraldRequestHandler = (state: HeraldHttpState): ((request: Request) => Response) => {
   const escapedChain = state.chain.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
   const directoryPath = `/${state.chain}/games`;
@@ -59,21 +71,28 @@ export const createHeraldRequestHandler = (state: HeraldHttpState): ((request: R
     }
 
     if (request.method === "GET" && url.pathname === directoryPath) {
-      return jsonResponse(
-        buildGameDirectory({
-          chain: state.chain,
-          confirmedBlock: state.confirmedBlock(),
-          fold: state.fold,
-        }),
-      );
+      try {
+        return jsonResponse(
+          buildGameDirectory({
+            chain: state.chain,
+            confirmedBlock: state.confirmedBlock(),
+            fold: state.fold,
+            playerAddress: requestedPlayer(url),
+          }),
+        );
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        return jsonResponse({ error: message }, 400);
+      }
     }
 
     const match = request.method === "GET" ? snapshotPath.exec(url.pathname) : null;
     if (!match) return jsonResponse({ error: "not_found" }, 404);
 
     try {
-      const snapshot = state.fold.snapshot(match[1], state.confirmedBlock());
-      return jsonResponse(selectModels(snapshot, requestedModels(url)));
+      const models = requestedModels(url);
+      const snapshot = state.fold.snapshot(match[1], state.confirmedBlock(), models);
+      return jsonResponse(selectModels(snapshot, models));
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       return jsonResponse({ error: message }, 400);

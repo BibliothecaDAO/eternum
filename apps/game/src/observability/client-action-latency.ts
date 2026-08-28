@@ -1,4 +1,15 @@
-type ClientActionLatencyPhase = "click" | "submitted" | "pre_confirmed" | "rendered";
+export type ClientActionLatencyPhase =
+  | "click"
+  | "calls_built"
+  | "submit_guard_released"
+  | "provider_lock_acquired"
+  | "execution_details_ready"
+  | "sign_send_started"
+  | "submitted"
+  | "pre_confirmed"
+  | "diff_received"
+  | "recs_applied"
+  | "rendered";
 
 export interface ClientActionLatencyMeasurement {
   actionId: string;
@@ -16,6 +27,8 @@ export interface ClientActionLatencySummary {
   operation?: string;
   p50ClickToRenderedMs: number;
   p95ClickToRenderedMs: number;
+  p50PreConfirmedToRenderedMs: number;
+  p95PreConfirmedToRenderedMs: number;
   samplesMs: number[];
 }
 
@@ -95,6 +108,13 @@ export function recordClientActionSubmitted(actionId: string, transactionHash: s
   }));
 }
 
+export function recordClientActionPhase(actionId: string, phase: ClientActionLatencyPhase): void {
+  updateMeasurement(actionId, (measurement) => ({
+    ...measurement,
+    phases: measurement.phases[phase] !== undefined ? measurement.phases : { ...measurement.phases, [phase]: now() },
+  }));
+}
+
 export function recordClientActionPreConfirmed(transactionHash: string): void {
   const actionId = findActionIdByTransactionHash(transactionHash);
   if (!actionId) return;
@@ -102,6 +122,19 @@ export function recordClientActionPreConfirmed(transactionHash: string): void {
     ...measurement,
     phases: { ...measurement.phases, pre_confirmed: now() },
   }));
+}
+
+export function recordClientActionDiffReceived(transactionHash: string): void {
+  recordTransactionPhase(transactionHash, "diff_received");
+}
+
+export function recordClientActionRecsApplied(transactionHash: string): void {
+  recordTransactionPhase(transactionHash, "recs_applied");
+}
+
+function recordTransactionPhase(transactionHash: string, phase: ClientActionLatencyPhase): void {
+  const actionId = findActionIdByTransactionHash(transactionHash);
+  if (actionId) recordClientActionPhase(actionId, phase);
 }
 
 export function recordClientActionRendered(actionId: string): void {
@@ -131,11 +164,18 @@ const percentile = (values: number[], ratio: number): number => {
 };
 
 export function summarizeClientActionLatency(operation?: string): ClientActionLatencySummary {
-  const samplesMs = measurements.flatMap((measurement) => {
-    if (operation && measurement.operation !== operation) return [];
+  const matchingMeasurements = measurements.filter((measurement) => !operation || measurement.operation === operation);
+  const samplesMs = matchingMeasurements.flatMap((measurement) => {
     const clicked = measurement.phases.click;
     const rendered = measurement.phases.rendered;
     return clicked === undefined || rendered === undefined || rendered < clicked ? [] : [rendered - clicked];
+  });
+  const preConfirmedToRenderedMs = matchingMeasurements.flatMap((measurement) => {
+    const preConfirmed = measurement.phases.pre_confirmed;
+    const rendered = measurement.phases.rendered;
+    return preConfirmed === undefined || rendered === undefined || rendered < preConfirmed
+      ? []
+      : [rendered - preConfirmed];
   });
 
   return {
@@ -143,6 +183,8 @@ export function summarizeClientActionLatency(operation?: string): ClientActionLa
     operation,
     p50ClickToRenderedMs: percentile(samplesMs, 0.5),
     p95ClickToRenderedMs: percentile(samplesMs, 0.95),
+    p50PreConfirmedToRenderedMs: percentile(preConfirmedToRenderedMs, 0.5),
+    p95PreConfirmedToRenderedMs: percentile(preConfirmedToRenderedMs, 0.95),
     samplesMs,
   };
 }

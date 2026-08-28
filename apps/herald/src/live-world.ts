@@ -48,6 +48,7 @@ interface PendingPreconfirmedTransaction {
 interface OverlayTransaction {
   block: number | null;
   changes: FoldChange[];
+  transactionHash: string;
 }
 
 export class LiveWorld {
@@ -85,8 +86,8 @@ export class LiveWorld {
     return this.preconfirmedBlockValue;
   }
 
-  public snapshot(gameId: string): GameSnapshot {
-    return this.confirmedFold.snapshot(gameId, this.confirmedBlockValue);
+  public snapshot(gameId: string, models?: readonly string[]): GameSnapshot {
+    return this.confirmedFold.snapshot(gameId, this.confirmedBlockValue, models);
   }
 
   public modelRows(model: string) {
@@ -252,7 +253,11 @@ export class LiveWorld {
         const change = this.applyOverlayEvent(event);
         return change ? [change] : [];
       });
-      this.publishOverlayTransaction({ block: block.block_number, changes });
+      this.publishOverlayTransaction({
+        block: block.block_number,
+        changes,
+        transactionHash: normalizeFelt(events[0]!.transaction_hash),
+      });
     }
   }
 
@@ -300,10 +305,15 @@ export class LiveWorld {
     };
   }
 
-  private broadcastChanges(changes: FoldChange[], block: number | null, preconfirmed: boolean): void {
+  private broadcastChanges(
+    changes: FoldChange[],
+    block: number | null,
+    preconfirmed: boolean,
+    transactionHash?: string,
+  ): void {
     const byGame = new Map<string, GameChanges>();
     this.groupChanges(byGame, changes);
-    this.publishGroupedChanges(byGame, block, preconfirmed);
+    this.publishGroupedChanges(byGame, block, preconfirmed, transactionHash);
   }
 
   private groupChanges(byGame: Map<string, GameChanges>, changes: FoldChange[]): void {
@@ -318,9 +328,20 @@ export class LiveWorld {
     }
   }
 
-  private publishGroupedChanges(byGame: Map<string, GameChanges>, block: number | null, preconfirmed: boolean): void {
+  private publishGroupedChanges(
+    byGame: Map<string, GameChanges>,
+    block: number | null,
+    preconfirmed: boolean,
+    transactionHash?: string,
+  ): void {
     for (const [gameId, grouped] of byGame) {
-      this.hub.publishDiff(gameId, { block, del: grouped.del, preconfirmed, set: grouped.set });
+      this.hub.publishDiff(gameId, {
+        block,
+        del: grouped.del,
+        preconfirmed,
+        set: grouped.set,
+        ...(transactionHash ? { transaction_hash: transactionHash } : {}),
+      });
     }
   }
 
@@ -331,21 +352,25 @@ export class LiveWorld {
     this.pendingPreconfirmed = undefined;
     if (!pending) return;
     this.preconfirmedReceiptEvents.delete(pending.transactionHash);
-    this.publishOverlayTransaction({ block: null, changes: pending.changes });
+    this.publishOverlayTransaction({
+      block: null,
+      changes: pending.changes,
+      transactionHash: pending.transactionHash,
+    });
   }
 
   private publishOverlayTransaction(transaction: OverlayTransaction): void {
     if (transaction.changes.length === 0) return;
     this.overlayTransactions.push(transaction);
-    this.broadcastChanges(transaction.changes, transaction.block, true);
+    this.broadcastChanges(transaction.changes, transaction.block, true, transaction.transactionHash);
   }
 
   private snapshotOverlay(gameId: string): SnapshotOverlayDiff[] {
-    return this.overlayTransactions.flatMap(({ block, changes }) => {
+    return this.overlayTransactions.flatMap(({ block, changes, transactionHash }) => {
       const grouped = new Map<string, GameChanges>();
       this.groupChanges(grouped, changes);
       const gameChanges = grouped.get(gameId);
-      return gameChanges ? [{ block, ...gameChanges }] : [];
+      return gameChanges ? [{ block, transaction_hash: transactionHash, ...gameChanges }] : [];
     });
   }
 

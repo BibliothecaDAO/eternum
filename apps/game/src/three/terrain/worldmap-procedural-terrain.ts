@@ -179,11 +179,6 @@ export class WorldmapProceduralTerrain {
       }),
       { biomeMismatchCount: 0, prepareMs: 0 },
     );
-    if (import.meta.env.DEV && diagnostics.biomeMismatchCount > 0) {
-      console.warn("[ProceduralTerrain] Projected biome/environment mismatches", {
-        count: diagnostics.biomeMismatchCount,
-      });
-    }
     return {
       ...presentation,
       ...diagnostics,

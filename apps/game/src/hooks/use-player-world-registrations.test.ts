@@ -1,44 +1,26 @@
 // @vitest-environment node
 import type { WorldSummary } from "@bibliothecadao/types";
 import type { WorldDeployment } from "@/runtime/world/world-directory";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const reactQueryMocks = vi.hoisted(() => ({
-  useQueries: vi.fn(),
-}));
-
-const directoryMocks = vi.hoisted(() => ({
-  getWorldById: vi.fn(),
-  getDefaultWorld: vi.fn(),
-}));
+const reactQueryMocks = vi.hoisted(() => ({ useQueries: vi.fn() }));
+const directoryMocks = vi.hoisted(() => ({ getDefaultWorld: vi.fn(), getWorldById: vi.fn() }));
 
 vi.mock("@tanstack/react-query", () => reactQueryMocks);
 vi.mock("@/runtime/world/world-directory", () => directoryMocks);
 
-import {
-  fetchPlayerRegistration,
-  getWorldSummaryKey,
-  usePlayerWorldRegistrations,
-} from "./use-player-world-registrations";
+import { getWorldSummaryKey, usePlayerWorldRegistrations } from "./use-player-world-registrations";
 
-const mockFetch = vi.fn<typeof globalThis.fetch>();
-
-const deployment = {
+const blitzDeployment = {
   id: "blitz",
   chain: "madara",
   heraldBaseUrl: "https://herald.example",
 } as WorldDeployment;
-
-const settlementSnapshot = (players: string[]) => ({
-  confirmed_block: 12,
-  game_id: "7",
-  models: [
-    {
-      model: "BlitzSettlement",
-      rows: players.map((player, index) => ({ key: `0x${index + 1}`, value: { game_id: "0x7", player } })),
-    },
-  ],
-});
+const eternumDeployment = {
+  id: "eternum",
+  chain: "madara",
+  heraldBaseUrl: "https://herald.example",
+} as WorldDeployment;
 
 const makeSummary = (overrides: Partial<WorldSummary>): WorldSummary => ({
   name: "alpha",
@@ -74,172 +56,96 @@ const makeSummary = (overrides: Partial<WorldSummary>): WorldSummary => ({
 });
 
 beforeEach(() => {
-  vi.stubGlobal("fetch", mockFetch);
   reactQueryMocks.useQueries.mockReset();
-  directoryMocks.getWorldById.mockReset();
-  directoryMocks.getDefaultWorld.mockReset();
-});
-
-afterEach(() => {
-  mockFetch.mockReset();
-  vi.restoreAllMocks();
-});
-
-describe("fetchPlayerRegistration", () => {
-  it("returns true when a settlement row exists for the game", async () => {
-    mockFetch.mockResolvedValueOnce(new Response(JSON.stringify(settlementSnapshot(["0x123"])), { status: 200 }));
-
-    const result = await fetchPlayerRegistration(deployment, "0x123", 7);
-    expect(result).toBe(true);
-    const [url] = mockFetch.mock.calls[0]! as [string];
-    expect(url).toBe("https://herald.example/madara/games/7/snapshot?models=BlitzSettlement");
-  });
-
-  it("returns false when the snapshot has no player settlement", async () => {
-    mockFetch.mockResolvedValueOnce(new Response(JSON.stringify(settlementSnapshot([])), { status: 200 }));
-
-    const result = await fetchPlayerRegistration(deployment, "0x123", 7);
-    expect(result).toBe(false);
-  });
-
-  it("surfaces a failed Herald response", async () => {
-    mockFetch.mockResolvedValueOnce(new Response(null, { status: 500 }));
-
-    await expect(fetchPlayerRegistration(deployment, "0x123", 7)).rejects.toThrow("Herald snapshot");
-  });
-
-  it("surfaces a transport error", async () => {
-    mockFetch.mockRejectedValueOnce(new Error("boom"));
-
-    await expect(fetchPlayerRegistration(deployment, "0x123", 7)).rejects.toThrow("boom");
-  });
+  directoryMocks.getDefaultWorld.mockReturnValue(blitzDeployment);
+  directoryMocks.getWorldById.mockImplementation((worldId: string) =>
+    worldId === "eternum" ? eternumDeployment : worldId === "blitz" ? blitzDeployment : undefined,
+  );
 });
 
 describe("usePlayerWorldRegistrations", () => {
-  it("disables all queries when no playerAddress is supplied", () => {
+  it("uses one disabled query per deployment when no player is connected", () => {
     reactQueryMocks.useQueries.mockReturnValue([]);
 
     usePlayerWorldRegistrations({
-      worlds: [makeSummary({ name: "alpha", mode: "blitz" })],
+      worlds: [makeSummary({ gameId: 7 }), makeSummary({ gameId: 8, name: "beta" })],
       playerAddress: null,
     });
 
     const [call] = reactQueryMocks.useQueries.mock.calls as [[{ queries: Array<{ enabled: boolean }> }]];
-    const [queryOpts] = call[0].queries;
-    expect(queryOpts.enabled).toBe(false);
+    expect(call[0].queries).toHaveLength(1);
+    expect(call[0].queries[0]?.enabled).toBe(false);
   });
 
-  it("enables blitz games and eternum seasons with a game id; unknown modes stay off", () => {
+  it("deduplicates every game in one deployment onto one player-scoped directory request", () => {
+    reactQueryMocks.useQueries.mockReturnValue([]);
+
+    usePlayerWorldRegistrations({
+      worlds: [makeSummary({ gameId: 7 }), makeSummary({ gameId: 8, name: "beta" })],
+      playerAddress: "0x123",
+    });
+
+    const [call] = reactQueryMocks.useQueries.mock.calls as [
+      [{ queries: Array<{ enabled: boolean; queryKey: unknown[] }> }],
+    ];
+    expect(call[0].queries).toHaveLength(1);
+    expect(call[0].queries[0]?.enabled).toBe(true);
+    expect(call[0].queries[0]?.queryKey).toEqual(["playerWorldRegistration", "blitz", "0x123"]);
+  });
+
+  it("keeps separate deployment directories separate", () => {
     reactQueryMocks.useQueries.mockReturnValue([]);
 
     usePlayerWorldRegistrations({
       worlds: [
-        makeSummary({ name: "blitz-game", mode: "blitz", gameId: 7 }),
-        makeSummary({ name: "eternum-season", mode: "eternum", gameId: 1 }),
-        makeSummary({ name: "unknown-game", mode: null }),
-        makeSummary({ name: "registry-only", mode: "blitz", gameId: null }),
+        makeSummary({ worldId: "blitz", gameId: 7 }),
+        makeSummary({ worldId: "eternum", gameId: 1, mode: "eternum" }),
       ],
-      playerAddress: "0xplayer",
+      playerAddress: "0x123",
     });
 
-    const [call] = reactQueryMocks.useQueries.mock.calls as [[{ queries: Array<{ enabled: boolean }> }]];
-    const [blitz, eternum, unknown, registryOnly] = call[0].queries;
-
-    expect(blitz.enabled).toBe(true);
-    expect(eternum.enabled).toBe(true);
-    expect(unknown.enabled).toBe(false);
-    expect(registryOnly.enabled).toBe(false);
+    const [call] = reactQueryMocks.useQueries.mock.calls as [[{ queries: unknown[] }]];
+    expect(call[0].queries).toHaveLength(2);
   });
 
-  it("disables offline (dead) games even when the player is connected", () => {
-    reactQueryMocks.useQueries.mockReturnValue([]);
-
-    usePlayerWorldRegistrations({
-      worlds: [makeSummary({ name: "dead-game", mode: "blitz", alive: false })],
-      playerAddress: "0xplayer",
-    });
-
-    const [call] = reactQueryMocks.useQueries.mock.calls as [[{ queries: Array<{ enabled: boolean }> }]];
-    const [opts] = call[0].queries;
-    expect(opts.enabled).toBe(false);
-  });
-
-  it("keys each query on world + player so results cache separately", () => {
-    reactQueryMocks.useQueries.mockReturnValue([]);
-
-    usePlayerWorldRegistrations({
-      worlds: [makeSummary({ name: "alpha", chain: "appchain", mode: "blitz" })],
-      playerAddress: "0xplayer",
-    });
-
-    const [call] = reactQueryMocks.useQueries.mock.calls as [[{ queries: Array<{ queryKey: unknown[] }> }]];
-    const [opts] = call[0].queries;
-    expect(opts.queryKey).toEqual([
-      "playerWorldRegistration",
-      getWorldSummaryKey({ name: "alpha", chain: "appchain", worldId: "blitz", gameId: 7 }),
-      "0xplayer",
-    ]);
-  });
-
-  it("uses 'anonymous' in the key when playerAddress is null", () => {
-    reactQueryMocks.useQueries.mockReturnValue([]);
-
-    usePlayerWorldRegistrations({
-      worlds: [makeSummary({ name: "alpha", chain: "appchain", mode: "blitz" })],
-      playerAddress: null,
-    });
-
-    const [call] = reactQueryMocks.useQueries.mock.calls as [[{ queries: Array<{ queryKey: unknown[] }> }]];
-    const [opts] = call[0].queries;
-    expect(opts.queryKey[2]).toBe("anonymous");
-  });
-
-  it("returns a map keyed by (worldId, gameId) from queries", () => {
+  it("maps annotated directory rows back to the world/game identity", () => {
     reactQueryMocks.useQueries.mockReturnValue([
-      { data: { isPlayerRegistered: true, hasPlayerSettledRealm: null }, isLoading: false },
-      { data: { isPlayerRegistered: null, hasPlayerSettledRealm: null }, isLoading: false },
+      {
+        data: {
+          games: [
+            { game_id: 7, player_state: { registered: true, settled: true } },
+            { game_id: 8, player_state: { registered: false, settled: false } },
+          ],
+        },
+        isLoading: false,
+      },
     ]);
 
-    const result = usePlayerWorldRegistrations({
-      worlds: [
-        makeSummary({ name: "alpha", chain: "appchain", mode: "blitz", worldId: "blitz", gameId: 7 }),
-        makeSummary({ name: "beta", chain: "appchain", mode: "eternum", worldId: "eternum", gameId: 7 }),
-      ],
-      playerAddress: "0xplayer",
-    });
+    const worlds = [
+      makeSummary({ gameId: 7, mode: "blitz" }),
+      makeSummary({ gameId: 8, mode: "eternum", name: "beta" }),
+    ];
+    const result = usePlayerWorldRegistrations({ worlds, playerAddress: "0x123" });
 
     expect(result.registrationsByWorldKey.get("blitz:7")).toEqual({
       isPlayerRegistered: true,
       hasPlayerSettledRealm: null,
     });
-    expect(result.registrationsByWorldKey.get("eternum:7")).toEqual({
+    expect(result.registrationsByWorldKey.get("blitz:8")).toEqual({
       isPlayerRegistered: null,
-      hasPlayerSettledRealm: null,
+      hasPlayerSettledRealm: false,
     });
   });
 
-  it("surfaces loading state from child queries", () => {
+  it("surfaces one deployment query's loading state", () => {
     reactQueryMocks.useQueries.mockReturnValue([{ data: undefined, isLoading: true, isFetching: true, error: null }]);
 
-    const result = usePlayerWorldRegistrations({
-      worlds: [makeSummary({ name: "alpha", mode: "blitz" })],
-      playerAddress: "0xplayer",
-    });
+    const result = usePlayerWorldRegistrations({ worlds: [makeSummary({})], playerAddress: "0x123" });
 
     expect(result.isAnyLoading).toBe(true);
   });
 
-  it("returns null-fields when a query has no data yet", () => {
-    reactQueryMocks.useQueries.mockReturnValue([{ data: undefined, isLoading: false }]);
-
-    const result = usePlayerWorldRegistrations({
-      worlds: [makeSummary({ name: "alpha", chain: "appchain", mode: "blitz" })],
-      playerAddress: "0xplayer",
-    });
-
-    expect(result.registrationsByWorldKey.get("blitz:7")).toEqual({
-      isPlayerRegistered: null,
-      hasPlayerSettledRealm: null,
-    });
+  it("keeps the stable world/game key", () => {
+    expect(getWorldSummaryKey(makeSummary({ worldId: "blitz", gameId: 7 }))).toBe("blitz:7");
   });
 });

@@ -31,12 +31,19 @@ const streamHarness = () => {
   const entities: GameSyncEntity[] = [];
   const events: GameSyncEntity[] = [];
   const heads: Array<{ block: number; timestamp: number }> = [];
+  const snapshotProgress: Array<{
+    bytesReceived: number;
+    model: string;
+    modelsReceived: number;
+    rowsReceived: number;
+  }> = [];
   const transactions: GameSyncTransaction[] = [];
   const handlers: GameSyncSubscriptionHandlers = {
     onEntity: (entity) => entities.push(entity),
     onEvent: (event) => events.push(event),
     onEventGapFill: () => undefined,
     onHead: (head) => heads.push(head),
+    onSnapshotChunk: (progress) => snapshotProgress.push(progress),
     onTransaction: (transaction) => transactions.push(transaction),
   };
   const transport = new HeraldGameSyncTransport({
@@ -48,7 +55,7 @@ const streamHarness = () => {
     },
     url: "wss://herald.test/madara/games/54",
   });
-  return { entities, events, handlers, heads, sockets, transactions, transport };
+  return { entities, events, handlers, heads, snapshotProgress, sockets, transactions, transport };
 };
 
 const hello = (epoch: string, seq: number) => ({
@@ -92,6 +99,10 @@ describe("HeraldGameSyncTransport", () => {
     await expect(snapshotPage).resolves.toEqual({
       items: [{ hashed_keys: "0x1", models: { ExplorerTroops: { game_id: "0x36", value: 1 } } }],
     });
+    expect(harness.snapshotProgress).toEqual([
+      expect.objectContaining({ model: "ExplorerTroops", modelsReceived: 1, rowsReceived: 1 }),
+    ]);
+    expect(harness.snapshotProgress[0]?.bytesReceived).toBeGreaterThan(0);
 
     socket.receive(diff("epoch-a", 1, "0x1", 2, true));
     socket.receive({ confirmed_block: 12, epoch: "epoch-a", seq: 2, type: "overlay_reset" });
@@ -159,6 +170,45 @@ describe("HeraldGameSyncTransport", () => {
     ]);
     expect(harness.transactions).toEqual([{ block: null, hash: "0xabc", status: "PRE_CONFIRMED" }]);
     expect(harness.heads).toEqual([{ block: 13, timestamp: 100 }]);
+  });
+
+  it("preserves the pre-confirmed transaction boundary for atomic ingest", async () => {
+    const harness = streamHarness();
+    const batches: unknown[] = [];
+    harness.handlers.onEntityBatch = (batch) => batches.push(batch);
+    const subscribed = harness.transport.subscribe(harness.handlers);
+    const socket = harness.sockets[0]!;
+    socket.receive(hello("epoch-a", 0));
+    await subscribed;
+    snapshot("epoch-a", 0, "0x1", 1).forEach((message) => socket.receive(message));
+    await harness.transport.fetchSnapshotPage();
+
+    socket.receive({
+      block: null,
+      del: [{ key: "0x3", model: "ExplorerTroops" }],
+      epoch: "epoch-a",
+      preconfirmed: true,
+      seq: 1,
+      set: [
+        { key: "0x1", model: "ExplorerTroops", value: { x: 2 } },
+        { key: "0x2", model: "TileOpt", value: { biome: 3 } },
+      ],
+      transaction_hash: "0xabc",
+      type: "diff",
+    });
+
+    expect(batches).toEqual([
+      {
+        entities: [
+          { hashed_keys: "0x1", models: { ExplorerTroops: { x: 2 } } },
+          { hashed_keys: "0x2", models: { TileOpt: { biome: 3 } } },
+          { hashed_keys: "0x3", models: { ExplorerTroops: {} } },
+        ],
+        preconfirmed: true,
+        transactionHash: "0xabc",
+      },
+    ]);
+    expect(harness.entities).toEqual([]);
   });
 
   it("resumes by sequence and reconciles a snapshot after an epoch change", async () => {

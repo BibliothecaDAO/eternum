@@ -214,6 +214,7 @@ describe("LiveWorld", () => {
     const coalescedDiffs = socket.messages.filter(({ type }) => type === "diff");
     expect(coalescedDiffs).toHaveLength(1);
     expect(coalescedDiffs[0]!.set).toHaveLength(2);
+    expect(coalescedDiffs[0]).toMatchObject({ transaction_hash: "0x222" });
 
     const nextTransaction = subscribedSet("0x333", "0x4");
     live.acceptPreconfirmedEvent(nextTransaction);

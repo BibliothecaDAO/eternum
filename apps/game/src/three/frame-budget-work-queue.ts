@@ -30,6 +30,7 @@ interface FrameBudgetWorkQueueOptions {
   now?: () => number;
   requestFrame?: (callback: FrameRequestCallback) => number;
   cancelFrame?: (handle: number) => void;
+  onLongTask?: (task: { durationMs: number; owner: string }) => void;
 }
 
 interface QueuedWork {
@@ -75,6 +76,7 @@ export class FrameBudgetWorkQueue implements FrameBudgetWorkScheduler {
   private readonly now: () => number;
   private readonly requestFrame: (callback: FrameRequestCallback) => number;
   private readonly cancelFrame: (handle: number) => void;
+  private readonly onLongTask?: (task: { durationMs: number; owner: string }) => void;
   private frameHandle: number | null = null;
   private isDraining = false;
   private isDisposed = false;
@@ -88,6 +90,7 @@ export class FrameBudgetWorkQueue implements FrameBudgetWorkScheduler {
     this.now = options.now ?? (() => performance.now());
     this.requestFrame = options.requestFrame ?? ((callback) => window.requestAnimationFrame(callback));
     this.cancelFrame = options.cancelFrame ?? ((handle) => window.cancelAnimationFrame(handle));
+    this.onLongTask = options.onLongTask;
   }
 
   schedule<T>(lane: FrameBudgetWorkLane, work: () => T | Promise<T>, requestedOwner?: string): Promise<T> {
@@ -159,13 +162,9 @@ export class FrameBudgetWorkQueue implements FrameBudgetWorkScheduler {
 
         const taskStartedAt = this.now();
         await work.run();
-        if (import.meta.env.DEV) {
-          const taskMs = this.now() - taskStartedAt;
-          if (taskMs >= LONG_TASK_REPORT_MS) {
-            // Wall time: an async task awaiting IO (model loads) inflates it,
-            // so read this next to the adjacent spike lines before convicting.
-            console.warn(`[FramePerf] queue task ran ${Math.round(taskMs)}ms wall owner=${work.owner}`);
-          }
+        const taskMs = this.now() - taskStartedAt;
+        if (taskMs >= LONG_TASK_REPORT_MS) {
+          this.onLongTask?.({ durationMs: taskMs, owner: work.owner });
         }
         if (this.now() - frameStartedAt >= frameBudgetMs) {
           break;

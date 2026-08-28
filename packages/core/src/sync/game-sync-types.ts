@@ -5,6 +5,25 @@ export interface GameSyncEntity {
   models: Record<string, unknown>;
 }
 
+export interface GameSyncEntityBatch {
+  entities: GameSyncEntity[];
+  preconfirmed: boolean;
+  transactionHash?: string;
+}
+
+export interface GameSyncSnapshotChunkProgress {
+  bytesReceived: number;
+  model: string;
+  modelsReceived: number;
+  rowsReceived: number;
+}
+
+export interface GameSyncSnapshotProgress {
+  completed: number;
+  phase: "receiving" | "applying";
+  total: number;
+}
+
 interface GameSyncSnapshotPage {
   items: GameSyncEntity[];
   nextCursor?: string;
@@ -16,9 +35,11 @@ export interface GameSyncWriter {
 
 export interface GameSyncSubscriptionHandlers {
   onEntity: (entity: GameSyncEntity) => void;
+  onEntityBatch?: (batch: GameSyncEntityBatch) => void;
   onEvent: (event: GameSyncEntity) => void;
   onEventGapFill: (replayedEventCount: number) => void;
   onHead?: (head: GameSyncHead) => void;
+  onSnapshotChunk?: (progress: GameSyncSnapshotChunkProgress) => void;
   onTransaction?: (transaction: GameSyncTransaction) => void;
 }
 
@@ -74,8 +95,12 @@ export interface GameSyncSessionStart {
   now?: () => number;
   onSubscriptionActive?: () => void;
   onLiveUpdate?: (kind: "entity" | "event") => void;
+  onError?: (error: Error) => void;
   onEvent?: (event: GameSyncEntity) => void;
   onMetrics?: (metrics: GameSyncRuntimeMetrics) => void;
+  onSnapshotProgress?: (progress: GameSyncSnapshotProgress) => void;
   onHead?: (head: GameSyncHead) => void;
+  onTransactionEntitiesApplied?: (transactionHash: string) => void;
+  onTransactionEntitiesReceived?: (transactionHash: string) => void;
   onTransaction?: (transaction: GameSyncTransaction) => void;
 }

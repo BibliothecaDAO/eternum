@@ -14,7 +14,7 @@ import {
   requireActiveGameSyncRuntime,
   WorldSpatialProjection,
 } from "@bibliothecadao/eternum/game-sync";
-import type { GameSyncRuntimeMetrics } from "@bibliothecadao/eternum/game-sync";
+import type { GameSyncRuntimeMetrics, GameSyncSnapshotProgress } from "@bibliothecadao/eternum/game-sync";
 import { getComponentValue, Has, runQuery } from "@dojoengine/recs";
 import type { Clause } from "@dojoengine/torii-wasm/types";
 import {
@@ -44,7 +44,6 @@ export const cancelGameSyncWriter = () => {
 
 export const disposeGameSyncSession = (): void => {
   disposeActiveGameSyncRuntime();
-  clearGamewideMetricsReporter();
 };
 
 // Bare names — the namespace resolves from the active game scope at call time.
@@ -102,34 +101,19 @@ const recordGamewideLiveUpdate = (): void => {
   connection.recordSpatialUpdate();
 };
 
-let pendingGamewideMetrics: GameSyncRuntimeMetrics | null = null;
-let gamewideMetricsLogTimer: ReturnType<typeof setTimeout> | null = null;
-
-function clearGamewideMetricsReporter(): void {
-  if (gamewideMetricsLogTimer) clearTimeout(gamewideMetricsLogTimer);
-  pendingGamewideMetrics = null;
-  gamewideMetricsLogTimer = null;
-}
-
 const reportGamewideSyncMetrics = (metrics: GameSyncRuntimeMetrics): void => {
   logWorldmapSyncAB("Game-wide sync metrics", metrics as unknown as Record<string, unknown>);
-  pendingGamewideMetrics = metrics;
-  if (gamewideMetricsLogTimer) return;
+};
 
-  gamewideMetricsLogTimer = setTimeout(() => {
-    if (pendingGamewideMetrics && import.meta.env.DEV) {
-      console.info(
-        `[GameSyncMetrics] ${stringifyWorldmapSyncABPayload(pendingGamewideMetrics as unknown as Record<string, unknown>)}`,
-      );
-    }
-    pendingGamewideMetrics = null;
-    gamewideMetricsLogTimer = null;
-  }, 1_000);
+const snapshotProgressPercentage = ({ completed, phase, total }: GameSyncSnapshotProgress): number => {
+  const ratio = total > 0 ? Math.min(1, completed / total) : 0;
+  return phase === "receiving" ? 5 + ratio * 40 : 45 + ratio * 45;
 };
 
 const createActiveGamewideSyncSession = (input: {
   setup: SetupResult;
   logging: boolean;
+  reportProgress: InitialSyncProgressReporter;
   subscriptionSetupTimeoutMs: number;
   onSubscriptionSetupTimeout?: (info: ToriiSubscriptionSetupTimeoutInfo) => void;
 }) => {
@@ -148,6 +132,7 @@ const createActiveGamewideSyncSession = (input: {
       onSubscriptionActive: recordGamewideSubscriptionActive,
       onLiveUpdate: recordGamewideLiveUpdate,
       onMetrics: reportGamewideSyncMetrics,
+      onSnapshotProgress: (progress) => input.reportProgress(snapshotProgressPercentage(progress)),
       setup: input.setup,
     });
   }
@@ -261,11 +246,13 @@ const runInitialSyncTask = async ({
 const startAuthoritativeGameSyncSession = async ({
   setup,
   logging,
+  reportProgress,
   subscriptionSetupTimeoutMs,
   onSubscriptionSetupTimeout,
 }: {
   setup: SetupResult;
   logging: boolean;
+  reportProgress: InitialSyncProgressReporter;
   subscriptionSetupTimeoutMs: number;
   onSubscriptionSetupTimeout?: (info: ToriiSubscriptionSetupTimeoutInfo) => void;
 }): Promise<void> => {
@@ -282,6 +269,7 @@ const startAuthoritativeGameSyncSession = async ({
       createActiveGamewideSyncSession({
         setup,
         logging,
+        reportProgress,
         subscriptionSetupTimeoutMs,
         onSubscriptionSetupTimeout,
       }),
@@ -289,6 +277,9 @@ const startAuthoritativeGameSyncSession = async ({
     setup.network.provider.setTransactionStreamWaiter(
       runtime.hasTransactionStatusChannel()
         ? (transactionHash) => runtime.waitForTransaction(transactionHash)
+        : undefined,
+      runtime.hasTransactionStatusChannel()
+        ? (transactionHash) => runtime.recordSubmittedTransaction(transactionHash)
         : undefined,
     );
     installActiveWorldSpatialProjection(setup);
@@ -308,7 +299,7 @@ const selectInitialStructure = (
   reportProgress: InitialSyncProgressReporter,
 ): void => {
   if (state.structureEntityId && state.structureEntityId !== 0) {
-    reportProgress(25);
+    reportProgress(95);
     return;
   }
 
@@ -329,7 +320,7 @@ const selectInitialStructure = (
     spectator,
     worldMapPosition: { col: selectedStructure.coord_x, row: selectedStructure.coord_y },
   });
-  reportProgress(25);
+  reportProgress(95);
 };
 
 const syncInitialSupportData = async (
@@ -383,6 +374,7 @@ export const initialSync = async (
   await startAuthoritativeGameSyncSession({
     setup,
     logging,
+    reportProgress,
     subscriptionSetupTimeoutMs,
     onSubscriptionSetupTimeout: options.onSubscriptionSetupTimeout,
   });

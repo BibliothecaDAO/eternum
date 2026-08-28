@@ -35,6 +35,22 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-08-28",
+    title: "Clearer World Loading",
+    description:
+      "World entry now shows real sync progress and waits for biome terrain before revealing the map, while slow loads expose the stage that is still working.",
+    type: "fix",
+    gameSlug: "world",
+  },
+  {
+    date: "2026-08-28",
+    title: "Faster Exploration Reveal",
+    description:
+      "Explored terrain and fog now update as one streamed action, so newly discovered tiles appear immediately and reveal smoothly.",
+    type: "improvement",
+    gameSlug: "world",
+  },
+  {
+    date: "2026-08-28",
     title: "Independent Game Entry",
     description:
       "Game lists, settlement, and spectating now load directly from Herald, keeping entry available when the legacy indexer is offline.",

@@ -168,7 +168,7 @@ describe("initialSync global streams", () => {
         pagination: expect.objectContaining({ limit: 500 }),
       }),
     );
-    expect(harness.setup.network.provider.setTransactionStreamWaiter).toHaveBeenCalledWith(undefined);
+    expect(harness.setup.network.provider.setTransactionStreamWaiter).toHaveBeenCalledWith(undefined, undefined);
   });
 
   it("reruns the same paginated game-wide recovery on reconnect", async () => {

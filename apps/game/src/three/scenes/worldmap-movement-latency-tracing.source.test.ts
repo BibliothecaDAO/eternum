@@ -31,8 +31,9 @@ describe("Worldmap movement latency tracing wiring", () => {
     expect(source).toContain("beginClientActionLatency");
     expect(source).toContain("recordClientActionSubmitted");
     expect(source).toContain("recordClientActionPreConfirmed");
-    expect(source).toContain("recordExploreRevealAfterRender(current.hexCoords)");
-    expect(source).toContain("window.requestAnimationFrame(() => window.requestAnimationFrame(recordRendered))");
+    expect(source).toContain("recordExploreRevealAfterRender(current.hexCoords, terrainPageRebuild)");
+    expect(source).toContain("void terrainPageRebuild.then");
+    expect(source).toContain("window.requestAnimationFrame(recordRendered)");
   });
 
   it("resolves transaction lifetime from the game stream without a worldmap fallback timer", () => {

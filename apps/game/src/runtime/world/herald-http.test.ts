@@ -37,11 +37,11 @@ describe("Herald HTTP client", () => {
         ),
       );
 
-    await fetchHeraldGameDirectory(world);
+    await fetchHeraldGameDirectory(world, "0x123");
     await fetchHeraldGameSnapshot(world, 7, ["Structure", "Structure", "BlitzSettlement"]);
 
     expect(mockFetch.mock.calls.map(([url]) => String(url))).toEqual([
-      "https://gateway.example/herald/madara/games",
+      "https://gateway.example/herald/madara/games?player=0x123",
       "https://gateway.example/herald/madara/games/7/snapshot?models=Structure%2CBlitzSettlement",
     ]);
   });

@@ -39,6 +39,7 @@ type HeraldMessage =
       type: "diff";
       block: number | null;
       preconfirmed: boolean;
+      transaction_hash?: string;
       set: HeraldSet[];
       del: HeraldDelete[];
     })
@@ -102,6 +103,7 @@ const deferred = <Value>(): Deferred<Value> => {
 };
 
 const rowIdentity = (model: string, key: string): string => `${model}:${key}`;
+const utf8Encoder = new TextEncoder();
 
 const toEntity = ({ key, model, value }: StoredRow): GameSyncEntity => ({
   hashed_keys: key,
@@ -131,6 +133,9 @@ export class HeraldGameSyncTransport implements GameSyncTransport {
   private stopped = true;
   private forceFreshSnapshot = true;
   private acceptingSnapshotOverlay = false;
+  private snapshotBytesReceived = 0;
+  private snapshotModelsReceived = 0;
+  private snapshotRowsReceived = 0;
 
   constructor(private readonly options: HeraldGameSyncTransportOptions) {
     this.reconnectMs = options.reconnectMs ?? DEFAULT_RECONNECT_MS;
@@ -162,6 +167,9 @@ export class HeraldGameSyncTransport implements GameSyncTransport {
     this.seq = 0;
     this.forceFreshSnapshot = true;
     this.acceptingSnapshotOverlay = false;
+    this.snapshotBytesReceived = 0;
+    this.snapshotModelsReceived = 0;
+    this.snapshotRowsReceived = 0;
     this.stopped = false;
   }
 
@@ -182,13 +190,14 @@ export class HeraldGameSyncTransport implements GameSyncTransport {
 
   private acceptMessage(data: unknown): void {
     try {
-      const message = this.parseMessage(data);
+      const serialized = String(data);
+      const message = this.parseMessage(serialized);
       if (message.type === "hello") {
         this.acceptHello(message);
         return;
       }
       if (message.type === "snapshot") {
-        this.acceptSnapshotChunk(message);
+        this.acceptSnapshotChunk(message, utf8Encoder.encode(serialized).byteLength);
         return;
       }
       if (message.type === "snapshot_end") {
@@ -216,11 +225,20 @@ export class HeraldGameSyncTransport implements GameSyncTransport {
     this.ready.resolve();
   }
 
-  private acceptSnapshotChunk(message: Extract<HeraldMessage, { type: "snapshot" }>): void {
+  private acceptSnapshotChunk(message: Extract<HeraldMessage, { type: "snapshot" }>, bytesReceived: number): void {
     this.snapshotRows ??= new Map();
     message.rows.forEach((row) => {
       const stored = { ...row, model: message.model };
       this.snapshotRows?.set(rowIdentity(stored.model, stored.key), stored);
+    });
+    this.snapshotBytesReceived += bytesReceived;
+    this.snapshotModelsReceived += 1;
+    this.snapshotRowsReceived += message.rows.length;
+    this.handlers?.onSnapshotChunk?.({
+      bytesReceived: this.snapshotBytesReceived,
+      model: message.model,
+      modelsReceived: this.snapshotModelsReceived,
+      rowsReceived: this.snapshotRowsReceived,
     });
   }
 
@@ -268,31 +286,43 @@ export class HeraldGameSyncTransport implements GameSyncTransport {
   }
 
   private acceptDiff(message: Extract<HeraldMessage, { type: "diff" }>): void {
-    message.set.forEach((change) => this.acceptSet(change, message.preconfirmed));
-    message.del.forEach((change) => this.acceptDelete(change, message.preconfirmed));
+    const entities = [
+      ...message.set.flatMap((change) => this.acceptSet(change, message.preconfirmed)),
+      ...message.del.flatMap((change) => this.acceptDelete(change, message.preconfirmed)),
+    ];
+    if (entities.length === 0) return;
+    if (this.handlers?.onEntityBatch) {
+      this.handlers.onEntityBatch({
+        entities,
+        preconfirmed: message.preconfirmed,
+        ...(message.transaction_hash ? { transactionHash: message.transaction_hash } : {}),
+      });
+      return;
+    }
+    entities.forEach((entity) => this.handlers?.onEntity(entity));
   }
 
-  private acceptSet(change: HeraldSet, preconfirmed: boolean): void {
+  private acceptSet(change: HeraldSet, preconfirmed: boolean): GameSyncEntity[] {
     if (getGameSyncModel(change.model).deletion === "event-ephemeral") {
       this.handlers?.onEvent(toEntity(change));
-      return;
+      return [];
     }
 
     const identity = rowIdentity(change.model, change.key);
     if (preconfirmed) this.pendingRows.add(identity);
     else this.confirmedRows.set(identity, change);
     this.currentRows.set(identity, change);
-    this.handlers?.onEntity(toEntity(change));
+    return [toEntity(change)];
   }
 
-  private acceptDelete(change: HeraldDelete, preconfirmed: boolean): void {
-    if (getGameSyncModel(change.model).deletion === "event-ephemeral") return;
+  private acceptDelete(change: HeraldDelete, preconfirmed: boolean): GameSyncEntity[] {
+    if (getGameSyncModel(change.model).deletion === "event-ephemeral") return [];
 
     const identity = rowIdentity(change.model, change.key);
     if (preconfirmed) this.pendingRows.add(identity);
     else this.confirmedRows.delete(identity);
     this.currentRows.delete(identity);
-    this.handlers?.onEntity(toRemoval(change));
+    return [toRemoval(change)];
   }
 
   private resetOverlay(): void {
@@ -343,8 +373,8 @@ export class HeraldGameSyncTransport implements GameSyncTransport {
     this.pendingRows.clear();
   }
 
-  private parseMessage(data: unknown): HeraldMessage {
-    const parsed = JSON.parse(String(data)) as Partial<HeraldMessage>;
+  private parseMessage(data: string): HeraldMessage {
+    const parsed = JSON.parse(data) as Partial<HeraldMessage>;
     if (!parsed || typeof parsed !== "object" || typeof parsed.type !== "string") {
       throw new Error("Herald sent an invalid stream message");
     }

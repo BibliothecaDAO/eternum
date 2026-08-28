@@ -242,7 +242,7 @@ export function instrumentGpuBackendHotPaths(
         addTextureSample(textureStats, args[0], elapsedMs);
         addFrameTextureSample(args[0], elapsedMs);
       }
-      if (elapsedMs > SLOW_CALL_THRESHOLD_MS) {
+      if (emitWindowReports && elapsedMs > SLOW_CALL_THRESHOLD_MS) {
         warn(`[GpuBackendPerf] ${name} took ${Math.round(elapsedMs)}ms in one call`);
       }
       if (endedAt - reportWindowStartedAt >= reportIntervalMs) {

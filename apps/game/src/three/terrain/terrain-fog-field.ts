@@ -20,7 +20,7 @@ import { TERRAIN_DEEP_FOG_COLOR, TERRAIN_DEEP_FOG_OPACITY } from "./terrain-fog-
 import type { TerrainShroudInstance } from "./terrain-types";
 
 export const TERRAIN_FOG_CELL_CAPACITY = 12_288;
-export const TERRAIN_FOG_REVEAL_DURATION_SECONDS = 0.9;
+export const TERRAIN_FOG_REVEAL_DURATION_SECONDS = 0.25;
 
 export interface TerrainFogFieldStats {
   activeReveals: number;

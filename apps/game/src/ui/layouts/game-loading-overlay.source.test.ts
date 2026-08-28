@@ -23,6 +23,14 @@ describe("GameLoadingOverlay source", () => {
     expect(source).toContain('"World map startup is still blocked."');
   });
 
+  it("renders actual boot progress and keeps structured diagnostics out of the console", () => {
+    const source = readSource("src/ui/layouts/game-loading-overlay.tsx");
+
+    expect(source).toContain("snapshot.progress");
+    expect(source).toContain("<BootDebugPanel");
+    expect(source).not.toContain("Math.max(snapshot.progress");
+  });
+
   it("records canonical renderer and dismissal milestones around the shared boot readiness flow", () => {
     const source = readSource("src/ui/layouts/game-loading-overlay.tsx");
 

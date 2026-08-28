@@ -68,11 +68,15 @@ export class WorldFold {
   private readonly registry: ModelRegistry;
   private readonly parent?: WorldFold;
   private readonly rowsByModel = new Map<string, Map<string, StoredModelRow | null>>();
+  private readonly entityIdsByGameByModel = new Map<string, Map<string, Set<string>>>();
 
   constructor(registry: ModelRegistry, parent?: WorldFold) {
     this.registry = registry;
     this.parent = parent;
-    registry.persistent.forEach(({ definition }) => this.rowsByModel.set(definition.name, new Map()));
+    registry.persistent.forEach(({ definition }) => {
+      this.rowsByModel.set(definition.name, new Map());
+      if (definition.s2Scope === "game") this.entityIdsByGameByModel.set(definition.name, new Map());
+    });
   }
 
   public static restore(registry: ModelRegistry, checkpoint: FoldCheckpoint): WorldFold {
@@ -87,7 +91,11 @@ export class WorldFold {
     const fold = new WorldFold(registry);
     for (const model of checkpoint.models) {
       const rows = fold.rowsByModel.get(model.model)!;
-      for (const row of model.rows) rows.set(row.entity_id, { key: row.key, value: row.value });
+      for (const row of model.rows) {
+        const stored = { key: row.key, value: row.value };
+        rows.set(row.entity_id, stored);
+        fold.addEntityToGameIndex(model.model, row.entity_id, stored);
+      }
     }
     return fold;
   }
@@ -126,6 +134,8 @@ export class WorldFold {
       });
     }
 
+    this.updateGameIndex(event.model.name, event.entityId, existing, rows.get(event.entityId) ?? undefined);
+
     if (event.kind === "delete") return { del: { key: event.entityId, model: event.model.name }, gameId };
     const current = this.storedRow(event.model.name, event.entityId)!;
     return {
@@ -157,11 +167,19 @@ export class WorldFold {
     return new WorldFold(this.registry, this);
   }
 
-  public snapshot(gameIdInput: string | number | bigint, confirmedBlock: number): GameSnapshot {
+  public snapshot(
+    gameIdInput: string | number | bigint,
+    confirmedBlock: number,
+    requestedModels?: readonly string[],
+  ): GameSnapshot {
     const gameId = BigInt(gameIdInput);
-    const models = this.registry.persistent.map(({ definition }) => {
-      const gameRows = [...this.materializedRows(definition.name).entries()]
-        .filter(([, row]) => definition.s2Scope === "chain" || belongsToGame(row, gameId))
+    const definitions = this.snapshotDefinitions(requestedModels);
+    const models = definitions.map(({ definition }) => {
+      const rows =
+        definition.s2Scope === "chain"
+          ? this.materializedRows(definition.name)
+          : this.materializedGameRows(definition.name, gameId);
+      const gameRows = [...rows.entries()]
         .map(([key, row]): FoldRow => ({ key, value: asJsonRecord({ ...row.key, ...row.value }) }))
         .sort(compareEntityKeys);
       return { model: definition.name, rows: gameRows };
@@ -172,6 +190,16 @@ export class WorldFold {
       confirmed_block: confirmedBlock,
       models,
     };
+  }
+
+  private snapshotDefinitions(requestedModels?: readonly string[]) {
+    if (!requestedModels || requestedModels.length === 0) return this.registry.persistent;
+
+    const requested = new Set(requestedModels);
+    const available = new Set(this.registry.persistent.map(({ definition }) => definition.name));
+    const missing = [...requested].filter((model) => !available.has(model));
+    if (missing.length > 0) throw new Error(`Unknown snapshot models: ${missing.join(", ")}`);
+    return this.registry.persistent.filter(({ definition }) => requested.has(definition.name));
   }
 
   public retainedRowCount(): number {
@@ -190,8 +218,7 @@ export class WorldFold {
     if (!this.rowsByModel.has("BlitzSettlement")) return new Set();
     const gameId = BigInt(gameIdInput);
     return new Set(
-      [...this.materializedRows("BlitzSettlement").values()]
-        .filter((row) => belongsToGame(row, gameId))
+      [...this.materializedGameRows("BlitzSettlement", gameId).values()]
         .map((row) => row.key.player)
         .filter((player): player is string | number | bigint => ["string", "number", "bigint"].includes(typeof player))
         .map((player) => `0x${BigInt(player).toString(16)}`),
@@ -223,5 +250,58 @@ export class WorldFold {
       else materialized.delete(entityId);
     }
     return materialized;
+  }
+
+  private materializedGameRows(model: string, gameId: bigint): Map<string, StoredModelRow> {
+    const materialized = this.parent
+      ? this.parent.materializedGameRows(model, gameId)
+      : new Map<string, StoredModelRow>();
+    const rows = this.rowsByModel.get(model);
+    const entityIds = this.entityIdsByGameByModel.get(model)?.get(gameId.toString());
+    if (!rows) throw new Error(`Fold has no row collection for ${model}`);
+    if (!entityIds) return materialized;
+
+    for (const entityId of entityIds) {
+      const row = rows.get(entityId);
+      if (row && belongsToGame(row, gameId)) materialized.set(entityId, row);
+      else materialized.delete(entityId);
+    }
+    return materialized;
+  }
+
+  private updateGameIndex(
+    model: string,
+    entityId: string,
+    previous: StoredModelRow | undefined,
+    current: StoredModelRow | undefined,
+  ): void {
+    if (!this.entityIdsByGameByModel.has(model)) return;
+    if (this.parent) {
+      if (previous) this.addEntityToGameIndex(model, entityId, previous);
+      if (current) this.addEntityToGameIndex(model, entityId, current);
+      return;
+    }
+
+    if (previous) this.removeEntityFromGameIndex(model, entityId, previous);
+    if (current) this.addEntityToGameIndex(model, entityId, current);
+  }
+
+  private addEntityToGameIndex(model: string, entityId: string, row: StoredModelRow): void {
+    const games = this.entityIdsByGameByModel.get(model);
+    if (!games) return;
+    const gameId = scalarGameId(row.key, model);
+    const entityIds = games.get(gameId) ?? new Set<string>();
+    entityIds.add(entityId);
+    games.set(gameId, entityIds);
+  }
+
+  private removeEntityFromGameIndex(model: string, entityId: string, row: StoredModelRow): void {
+    const games = this.entityIdsByGameByModel.get(model);
+    if (!games) return;
+    const gameId = scalarGameId(row.key, model);
+    const entityIds = games.get(gameId);
+    if (!entityIds) return;
+    entityIds.delete(entityId);
+    if (entityIds.size === 0) games.delete(gameId);
   }
 }

@@ -68,6 +68,9 @@ export class GameSyncRuntime {
   private receiveSequence = 0;
   private metrics = createEmptyMetrics();
   private recentTransactions = new Map<string, GameSyncTransaction>();
+  private localTransactions = new Map<string, true>();
+  private snapshotAppliedOperations = 0;
+  private snapshotExpectedOperations = 0;
   private transactionWaiters = new Map<
     string,
     Array<{ reject: (error: Error) => void; resolve: (transaction: GameSyncTransaction) => void }>
@@ -104,14 +107,28 @@ export class GameSyncRuntime {
     });
   }
 
+  public recordSubmittedTransaction(transactionHash: string): void {
+    const identity = normalizeTransactionHash(transactionHash);
+    this.localTransactions.delete(identity);
+    this.localTransactions.set(identity, true);
+    while (this.localTransactions.size > DEFAULT_TRANSACTION_STATUS_LIMIT) {
+      const oldest = this.localTransactions.keys().next().value;
+      if (oldest === undefined) break;
+      this.localTransactions.delete(oldest);
+    }
+  }
+
   public async startSession(input: GameSyncSessionStart): Promise<void> {
     this.disposeWorldSpatialProjection();
     this.session = input;
     this.recentEventIdentities.clear();
     this.rejectTransactionWaiters("Game sync session was replaced");
     this.recentTransactions.clear();
+    this.localTransactions.clear();
     this.liveUpdateTimestamps = [];
     this.receiveSequence = 0;
+    this.snapshotAppliedOperations = 0;
+    this.snapshotExpectedOperations = 0;
     this.metrics = createEmptyMetrics();
     await this.runRecovery();
   }
@@ -166,6 +183,7 @@ export class GameSyncRuntime {
     this.session = null;
     this.rejectTransactionWaiters("Game sync runtime stopped");
     this.recentTransactions.clear();
+    this.localTransactions.clear();
     this.status = "stopped";
   }
 
@@ -178,6 +196,8 @@ export class GameSyncRuntime {
     const bufferedUpdates: BufferedEntityUpdate[] = [];
     const existingEntitiesByModel = this.captureExistingEntities(session);
     const seenEntitiesByModel = new Map(session.snapshotModels.map((model) => [model, new Set<string>()]));
+    this.snapshotAppliedOperations = 0;
+    this.snapshotExpectedOperations = 0;
     this.ingestQueue = this.createIngestQueue(session);
 
     try {
@@ -188,6 +208,30 @@ export class GameSyncRuntime {
           this.recordLiveUpdate("entity");
           if (this.status === "running") this.ingestQueue?.enqueueEntity(entity);
           else bufferedUpdates.push(update);
+        },
+        onEntityBatch: (batch) => {
+          if (!this.isCurrentGeneration(generation)) return;
+          batch.entities.forEach(() => this.recordLiveUpdate("entity"));
+          if (this.status !== "running") {
+            batch.entities.forEach((entity) => {
+              bufferedUpdates.push({ entity, receiveSequence: ++this.receiveSequence });
+            });
+            return;
+          }
+
+          const transactionHash = batch.transactionHash;
+          if (transactionHash) session.onTransactionEntitiesReceived?.(transactionHash);
+          const isLocalTransaction = transactionHash
+            ? this.localTransactions.has(normalizeTransactionHash(transactionHash))
+            : false;
+          const queue = this.ingestQueue;
+          if (!queue) return;
+          void queue
+            .enqueueEntityBatch(batch.entities, batch.preconfirmed && isLocalTransaction)
+            .then(() => {
+              if (transactionHash) session.onTransactionEntitiesApplied?.(transactionHash);
+            })
+            .catch((error) => this.stopAfterLiveBatchFailure(generation, error));
         },
         onEvent: (event) => {
           if (!this.isCurrentGeneration(generation)) return;
@@ -203,6 +247,14 @@ export class GameSyncRuntime {
         onHead: (head) => {
           if (!this.isCurrentGeneration(generation)) return;
           session.onHead?.(head);
+        },
+        onSnapshotChunk: (progress) => {
+          if (!this.isCurrentGeneration(generation)) return;
+          session.onSnapshotProgress?.({
+            completed: Math.min(progress.modelsReceived, session.snapshotModels.length),
+            phase: "receiving",
+            total: session.snapshotModels.length,
+          });
         },
         onTransaction: (transaction) => {
           if (!this.isCurrentGeneration(generation)) return;
@@ -248,6 +300,10 @@ export class GameSyncRuntime {
       this.assertCurrentGeneration(generation);
       this.metrics.snapshotPageCount += 1;
       this.metrics.snapshotEntityCount += page.items.length;
+      this.snapshotExpectedOperations += page.items.reduce(
+        (count, entity) => count + Object.keys(entity.models).length,
+        0,
+      );
 
       page.items.forEach((entity) => {
         Object.keys(entity.models).forEach((model) => seenEntitiesByModel.get(model)?.add(entity.hashed_keys));
@@ -316,6 +372,14 @@ export class GameSyncRuntime {
   private recordAppliedBatch(info: EntityIngestBatchInfo): void {
     this.metrics.appliedBatchCount += 1;
     this.metrics.maxBatchApplyDurationMs = Math.max(this.metrics.maxBatchApplyDurationMs, info.applyDurationMs);
+    if (this.status === "snapshotting" && this.snapshotExpectedOperations > 0) {
+      this.snapshotAppliedOperations += info.operationCount;
+      this.session?.onSnapshotProgress?.({
+        completed: Math.min(this.snapshotAppliedOperations, this.snapshotExpectedOperations),
+        phase: "applying",
+        total: this.snapshotExpectedOperations,
+      });
+    }
   }
 
   private recordLiveUpdate(kind: "entity" | "event"): void {
@@ -395,6 +459,13 @@ export class GameSyncRuntime {
     this.ingestQueue = null;
     this.rejectTransactionWaiters("Game sync recovery failed");
     this.status = "stopped";
+  }
+
+  private stopAfterLiveBatchFailure(generation: number, error: unknown): void {
+    if (!this.isCurrentGeneration(generation) || this.status !== "running") return;
+    const failure = error instanceof Error ? error : new Error(String(error));
+    this.session?.onError?.(failure);
+    this.stopFailedRun(generation);
   }
 
   private isCurrentGeneration(generation: number): boolean {

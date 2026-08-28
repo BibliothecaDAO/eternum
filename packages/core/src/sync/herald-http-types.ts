@@ -34,6 +34,7 @@ export interface HeraldGameDirectoryEntry {
   mode: "blitz" | "eternum" | null;
   name: string;
   player_count: number;
+  player_state: { registered: boolean; settled: boolean } | null;
   preset_id: number;
   registration: HeraldGameRegistration | null;
   settled_realms_count: number;

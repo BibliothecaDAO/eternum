@@ -17,7 +17,6 @@ import { describe, expect, it } from "vitest";
  */
 const SANCTIONED_CLIENT_FILES = new Set([
   "src/audio/core/AudioManager.ts",
-  "src/dojo/gamewide-sync-adapter.ts",
   "src/dojo/sync-simulator.ts",
   "src/dojo/sync.ts",
   "src/hooks/shortcuts/useShortcuts.ts",
@@ -64,6 +63,12 @@ const CLIENT_ROOT = process.cwd();
 const REPO_ROOT = resolve(CLIENT_ROOT, "../..");
 
 const INFORMATIONAL_CONSOLE = /\bconsole\.(log|info|debug)\s*\(/;
+const ANY_CONSOLE = /\bconsole\.(log|info|debug|warn|error)\s*\(/;
+
+const SILENT_HOT_PATH_FILES = [
+  "src/three/frame-budget-work-queue.ts",
+  "src/three/terrain/worldmap-procedural-terrain.ts",
+] as const;
 
 const CAPTURED_WARN_ERROR_SITES = [
   {
@@ -80,11 +85,6 @@ const CAPTURED_WARN_ERROR_SITES = [
     path: "src/dojo/gamewide-sync-adapter.ts",
     required: 'appendConsoleFields("[GameSync] authoritative Torii model did not parse into RECS"',
     forbidden: 'console.error("[GameSync] authoritative Torii model did not parse into RECS", {',
-  },
-  {
-    path: "src/dojo/gamewide-sync-adapter.ts",
-    required: 'appendConsoleFields("[GameSync] authoritative echo observed before the transaction hash bound"',
-    forbidden: 'console.warn("[GameSync] authoritative echo observed before the transaction hash bound", info)',
   },
   {
     path: "src/three/scenes/worldmap.tsx",
@@ -124,6 +124,22 @@ const informationalConsoleLines = (path: string): number[] => {
 };
 
 describe("console discipline", () => {
+  it("keeps per-task and per-terrain-presentation hot paths silent", () => {
+    for (const relativePath of SILENT_HOT_PATH_FILES) {
+      const source = readFileSync(join(CLIENT_ROOT, relativePath), "utf8");
+      expect(source, `${relativePath} must report through bounded diagnostics, not the console`).not.toMatch(
+        ANY_CONSOLE,
+      );
+    }
+
+    const syncSource = readFileSync(join(CLIENT_ROOT, "src/dojo/sync.ts"), "utf8");
+    expect(syncSource).not.toContain("[GameSyncMetrics]");
+
+    const worldmapSource = readFileSync(join(CLIENT_ROOT, "src/three/scenes/worldmap.tsx"), "utf8");
+    expect(worldmapSource).not.toContain("[WorldmapPerf] critical terrain page");
+    expect(worldmapSource).not.toContain('event === "terrain_shell_stale_dropped"');
+  });
+
   it("keeps the captured warning and error sites on their single-line formatters", () => {
     for (const site of CAPTURED_WARN_ERROR_SITES) {
       const root = "fromRepoRoot" in site && site.fromRepoRoot ? REPO_ROOT : CLIENT_ROOT;

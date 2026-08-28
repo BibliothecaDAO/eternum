@@ -68,6 +68,7 @@ const quickBlitz = {
     two_player_mode: true,
   },
   player_count: 3,
+  player_state: null,
   settled_realms_count: 9,
   settled_villages_count: 0,
 };
@@ -77,17 +78,6 @@ const quickEternum = {
   mode: "eternum",
   name: "quicketernum",
 };
-
-const settlementSnapshot = (players: string[]) => ({
-  confirmed_block: 12,
-  game_id: "7",
-  models: [
-    {
-      model: "BlitzSettlement",
-      rows: players.map((player, index) => ({ key: `0x${index + 1}`, value: { game_id: "0x7", player } })),
-    },
-  ],
-});
 
 /** Run the hook with a real queryFn passthrough so fetch behavior is exercised. */
 const runAvailabilityQuery = async (worldName: string, playerAddress?: string | null) => {
@@ -147,51 +137,34 @@ describe("useWorldsAvailability (appchain game meta)", () => {
     expect(url).toBe("https://herald.example/madara/games");
   });
 
-  it("adds a game-scoped settlement snapshot when a player is connected", async () => {
-    mockFetch
-      .mockResolvedValueOnce(new Response(JSON.stringify(gameDirectory([quickBlitz])), { status: 200 }))
-      .mockResolvedValueOnce(new Response(JSON.stringify(settlementSnapshot(["0x123"])), { status: 200 }));
+  it("reads player registration from the same annotated directory request", async () => {
+    mockFetch.mockResolvedValueOnce(
+      new Response(
+        JSON.stringify(gameDirectory([{ ...quickBlitz, player_state: { registered: true, settled: false } }])),
+        { status: 200 },
+      ),
+    );
 
     const result = await runAvailabilityQuery("quickblitz", "0x123");
 
     expect(result.meta).toMatchObject({ gameId: 7, isPlayerRegistered: true });
-    const [snapshotUrl] = mockFetch.mock.calls[1]! as [string];
-    expect(snapshotUrl).toBe("https://herald.example/madara/games/7/snapshot?models=BlitzSettlement");
+    expect(mockFetch).toHaveBeenCalledTimes(1);
+    const [url] = mockFetch.mock.calls[0]! as [string];
+    expect(url).toBe("https://herald.example/madara/games?player=0x123");
   });
 
-  it("reads an Eternum player's nested Structure category from Herald", async () => {
-    mockFetch
-      .mockResolvedValueOnce(new Response(JSON.stringify(gameDirectory([quickEternum])), { status: 200 }))
-      .mockResolvedValueOnce(
-        new Response(
-          JSON.stringify({
-            confirmed_block: 12,
-            game_id: "7",
-            models: [
-              {
-                model: "Structure",
-                rows: [
-                  {
-                    key: "0x1",
-                    value: {
-                      base: { category: "0x1", coord_x: "0x2", coord_y: "0x3", level: "0x1" },
-                      entity_id: "0x4",
-                      metadata: { has_wonder: false, realm_id: "0x5" },
-                      owner: "0x123",
-                      resources_packed: "0x0",
-                    },
-                  },
-                ],
-              },
-            ],
-          }),
-          { status: 200 },
-        ),
-      );
+  it("reads an Eternum player's settled state from the same directory request", async () => {
+    mockFetch.mockResolvedValueOnce(
+      new Response(
+        JSON.stringify(gameDirectory([{ ...quickEternum, player_state: { registered: false, settled: true } }])),
+        { status: 200 },
+      ),
+    );
 
     const result = await runAvailabilityQuery("quicketernum", "0x123");
 
     expect(result.meta).toMatchObject({ gameId: 7, hasPlayerSettledRealm: true });
+    expect(mockFetch).toHaveBeenCalledTimes(1);
   });
 
   it("surfaces a Herald directory failure", async () => {

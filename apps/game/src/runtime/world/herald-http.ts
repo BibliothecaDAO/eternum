@@ -19,8 +19,14 @@ const fetchHeraldJson = async <Payload>(url: string, description: string): Promi
   return (await response.json()) as Payload;
 };
 
-export const fetchHeraldGameDirectory = async (world: WorldDeployment): Promise<HeraldGameDirectory> =>
-  fetchHeraldJson(buildHeraldUrl(world, "/games"), `Herald directory for ${world.id}`);
+export const fetchHeraldGameDirectory = async (
+  world: WorldDeployment,
+  playerAddress?: string,
+): Promise<HeraldGameDirectory> => {
+  const url = new URL(buildHeraldUrl(world, "/games"));
+  if (playerAddress) url.searchParams.set("player", playerAddress);
+  return fetchHeraldJson(url.toString(), `Herald directory for ${world.id}`);
+};
 
 export const fetchHeraldGameSnapshot = async (
   world: WorldDeployment,

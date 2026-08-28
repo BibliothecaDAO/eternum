@@ -10,13 +10,7 @@ import { WORLD_AVAILABILITY_QUERY_KEY } from "@/hooks/world-list-queries";
 import type { HeraldGameDirectoryEntry } from "@bibliothecadao/eternum/game-sync";
 import type { ResolvedGameMode } from "@/config/game-modes/resolved-mode";
 import { resolveWorldIdForGame } from "@/runtime/world/game-registry";
-import {
-  feltEquals,
-  fetchHeraldGameDirectory,
-  fetchHeraldGameSnapshot,
-  snapshotModelRows,
-} from "@/runtime/world/herald-http";
-import { createHeraldPreSessionReader } from "@/runtime/world/herald-pre-session-reader";
+import { fetchHeraldGameDirectory } from "@/runtime/world/herald-http";
 import { getDefaultWorld, getWorldById } from "@/runtime/world/world-directory";
 import type { WorldDeployment } from "@/runtime/world/world-directory";
 import type { GameChain as Chain } from "@realms-world/chain";
@@ -127,28 +121,6 @@ const emptyWorldConfigMeta = (): WorldConfigMeta => ({
   winnerJackpotAmount: null,
 });
 
-/**
- * Whether the player already holds a settlement row for this game.
- * Blitz settles in one step, so the settlement row itself is the source of truth.
- */
-const fetchPlayerRegistration = async (
-  world: WorldDeployment,
-  playerAddress: string,
-  gameId: number,
-): Promise<boolean> => {
-  const snapshot = await fetchHeraldGameSnapshot(world, gameId, ["BlitzSettlement"]);
-  return snapshotModelRows(snapshot, "BlitzSettlement").some((row) => feltEquals(row.player, playerAddress));
-};
-
-const fetchPlayerSettledRealm = async (
-  world: WorldDeployment,
-  playerAddress: string,
-  gameId: number,
-): Promise<boolean> => {
-  const structures = await createHeraldPreSessionReader(world, gameId).fetchPlayerStructures(playerAddress);
-  return structures.some(({ category }) => category === 1);
-};
-
 const applyDirectoryGame = (meta: WorldConfigMeta, game: HeraldGameDirectoryEntry): void => {
   meta.gameId = game.game_id;
   meta.mode = game.mode ?? "unknown";
@@ -182,7 +154,7 @@ const fetchGameMeta = async (
   playerAddress?: string | null,
 ): Promise<WorldConfigMeta> => {
   const meta = emptyWorldConfigMeta();
-  const directory = await fetchHeraldGameDirectory(world);
+  const directory = await fetchHeraldGameDirectory(world, playerAddress ?? undefined);
   const game = directory.games.find((candidate) => candidate.name === gameName);
   if (!game) return meta;
 
@@ -191,9 +163,9 @@ const fetchGameMeta = async (
   meta.feeTokenAddress = directory.chain_config?.fee_token_address ?? null;
   meta.mmrEnabled = directory.chain_config?.mmr_enabled ?? false;
   if (playerAddress && meta.mode === "blitz") {
-    meta.isPlayerRegistered = await fetchPlayerRegistration(world, playerAddress, game.game_id);
+    meta.isPlayerRegistered = game.player_state?.registered ?? false;
   } else if (playerAddress && meta.mode === "eternum") {
-    meta.hasPlayerSettledRealm = await fetchPlayerSettledRealm(world, playerAddress, game.game_id);
+    meta.hasPlayerSettledRealm = game.player_state?.settled ?? false;
   }
   return meta;
 };
