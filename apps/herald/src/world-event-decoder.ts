@@ -86,3 +86,42 @@ export const decodeWorldEvent = (registry: ModelRegistry, event: RawWorldEvent):
   }
   return undefined;
 };
+
+const resolveFailedModel = (registry: ModelRegistry, event: RawWorldEvent): string => {
+  const selector = event.keys[1];
+  if (!selector) return "missing";
+
+  try {
+    return registry.bySelector.get(normalizeFelt(selector))?.definition.name ?? selector;
+  } catch {
+    return selector;
+  }
+};
+
+export class WorldEventDecodeMonitor {
+  private failureCount = 0;
+
+  public get failures(): number {
+    return this.failureCount;
+  }
+
+  public decode(registry: ModelRegistry, event: RawWorldEvent): DecodedWorldEvent | undefined {
+    try {
+      return decodeWorldEvent(registry, event);
+    } catch (error) {
+      this.failureCount += 1;
+      console.error(
+        JSON.stringify({
+          block: event.block_number,
+          error: error instanceof Error ? error.message : String(error),
+          event: "herald_event_decode_failed",
+          eventIndex: event.event_index,
+          model: resolveFailedModel(registry, event),
+          transactionHash: event.transaction_hash,
+          transactionIndex: event.transaction_index,
+        }),
+      );
+      return undefined;
+    }
+  }
+}

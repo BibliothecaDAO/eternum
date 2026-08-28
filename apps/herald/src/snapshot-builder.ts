@@ -1,7 +1,7 @@
 import type { ModelRegistry } from "./model-registry";
 import { MadaraRpc } from "./madara-rpc";
 import type { BuiltGameSnapshot, DecodedWorldEvent, FoldChange, RawWorldEvent, ReplayMetrics } from "./types";
-import { WORLD_EVENT_SELECTORS, decodeWorldEvent } from "./world-event-decoder";
+import { WORLD_EVENT_SELECTORS, WorldEventDecodeMonitor } from "./world-event-decoder";
 import { WorldFold } from "./world-fold";
 
 interface ReplayWorldEventsInput {
@@ -12,6 +12,7 @@ interface ReplayWorldEventsInput {
   toBlock: number;
   onPage?: (page: { number: number; eventCount: number }) => void;
   onChange?: (event: DecodedWorldEvent, change: FoldChange | undefined) => void;
+  decodeMonitor?: WorldEventDecodeMonitor;
 }
 
 interface BuildWorldFoldInput extends Omit<ReplayWorldEventsInput, "fromBlock" | "toBlock"> {
@@ -38,6 +39,7 @@ export const replayWorldEvents = async ({
   toBlock,
   onPage,
   onChange,
+  decodeMonitor = new WorldEventDecodeMonitor(),
 }: ReplayWorldEventsInput): Promise<{ fold: WorldFold; metrics: Omit<ReplayMetrics, "retained_rows"> }> => {
   const fold = existingFold ?? new WorldFold(registry);
   const eventSelectors = Object.values(WORLD_EVENT_SELECTORS);
@@ -69,17 +71,7 @@ export const replayWorldEvents = async ({
         throw new Error("Madara getEvents pages are not in chain order");
       }
       previousEvent = rawEvent;
-      let event;
-      try {
-        event = decodeWorldEvent(registry, rawEvent);
-      } catch (error) {
-        const modelSelector = rawEvent.keys[1] ?? "missing";
-        const message = error instanceof Error ? error.message : String(error);
-        throw new Error(
-          `Unable to decode world event at block ${rawEvent.block_number}, transaction ${rawEvent.transaction_index}, event ${rawEvent.event_index}, model ${modelSelector}: ${message}`,
-          { cause: error },
-        );
-      }
+      const event = decodeMonitor.decode(registry, rawEvent);
       if (!event) continue;
 
       decodedEvents += 1;
@@ -110,9 +102,19 @@ export const buildWorldFold = async ({
   fromBlock = 0,
   onPage,
   onChange,
+  decodeMonitor,
 }: BuildWorldFoldInput): Promise<BuiltWorldFold> => {
   const toBlock = confirmedBlock ?? (await rpc.blockNumber());
-  const replayed = await replayWorldEvents({ fold, fromBlock, onChange, onPage, registry, rpc, toBlock });
+  const replayed = await replayWorldEvents({
+    decodeMonitor,
+    fold,
+    fromBlock,
+    onChange,
+    onPage,
+    registry,
+    rpc,
+    toBlock,
+  });
   return {
     confirmedBlock: toBlock,
     fold: replayed.fold,

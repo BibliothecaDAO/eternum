@@ -15,7 +15,7 @@ import type {
   RpcReceipt,
   RpcSubscribedEvent,
 } from "./types";
-import { decodeWorldEvent } from "./world-event-decoder";
+import type { WorldEventDecodeMonitor } from "./world-event-decoder";
 import { WorldFold } from "./world-fold";
 
 interface LiveWorldInput {
@@ -28,6 +28,7 @@ interface LiveWorldInput {
   registry: ModelRegistry;
   rpc: MadaraRpc;
   hub?: GameStreamHub;
+  decodeMonitor: WorldEventDecodeMonitor;
 }
 
 interface GameChanges {
@@ -191,6 +192,7 @@ export class LiveWorld {
         blockChanges.push(change);
         changes.set(block, blockChanges);
       },
+      decodeMonitor: this.input.decodeMonitor,
       registry: this.input.registry,
       rpc: this.input.rpc,
       toBlock: targetBlock,
@@ -224,16 +226,7 @@ export class LiveWorld {
     const identity = `${normalizeFelt(rawEvent.transaction_hash)}:${rawEvent.event_index}`;
     if (this.overlayEvents.has(identity)) return undefined;
     this.overlayEvents.add(identity);
-    let event;
-    try {
-      event = decodeWorldEvent(this.input.registry, rawEvent);
-    } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
-      throw new Error(
-        `Unable to decode pre-confirmed world event ${identity} (model ${rawEvent.keys[1] ?? "missing"}): ${message}`,
-        { cause: error },
-      );
-    }
+    const event = this.input.decodeMonitor.decode(this.input.registry, rawEvent);
     return event ? this.overlayFold.apply(event) : undefined;
   }
 

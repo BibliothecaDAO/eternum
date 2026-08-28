@@ -1,12 +1,12 @@
 import type { GameSyncModelDefinition } from "@bibliothecadao/eternum/game-sync-models";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import { GameStreamHub, type StreamSocket } from "./game-stream";
 import { LiveWorld } from "./live-world";
 import type { MadaraRpc } from "./madara-rpc";
 import type { ModelCodec, ModelRegistry } from "./model-registry";
 import type { RawWorldEvent, RpcBlockWithReceipts, RpcSubscribedEvent } from "./types";
-import { WORLD_EVENT_SELECTORS, decodeWorldEvent } from "./world-event-decoder";
+import { WORLD_EVENT_SELECTORS, WorldEventDecodeMonitor, decodeWorldEvent } from "./world-event-decoder";
 import { WorldFold } from "./world-fold";
 
 const gameModel: GameSyncModelDefinition = {
@@ -135,6 +135,7 @@ const liveFixture = () => {
     checkpointStore: { save: async () => undefined },
     confirmedBlock: 12,
     confirmedFold,
+    decodeMonitor: new WorldEventDecodeMonitor(),
     hub: new GameStreamHub("epoch-a"),
     registry,
     rpc,
@@ -287,5 +288,34 @@ describe("LiveWorld", () => {
       status: "REVERTED",
       type: "tx",
     });
+  });
+
+  it("logs an undecodable event and keeps serving later transactions", async () => {
+    const { live } = liveFixture();
+    const socket = recordingSocket();
+    const session = live.attach("7", socket);
+    live.resume(session, { epoch: "", seq: 0, type: "resume" });
+    const log = vi.spyOn(console, "error").mockImplementation(() => undefined);
+
+    live.acceptPreconfirmedEvent({ ...subscribedSet("0xbad", "0x2", 7), data: ["0x1"] });
+    const nextTransaction = subscribedSet("0x600d", "0x3");
+    live.acceptPreconfirmedEvent(nextTransaction);
+    const receipt = live.acceptReceipt(preconfirmedReceipt([nextTransaction]));
+    await endMacrotask();
+    await receipt;
+
+    expect(log).toHaveBeenCalledWith(
+      expect.stringContaining(
+        '"event":"herald_event_decode_failed","eventIndex":7,"model":"TestModel","transactionHash":"0xbad"',
+      ),
+    );
+    expect(socket.messages.filter(({ type }) => type === "diff")).toHaveLength(1);
+    expect(socket.messages.at(-1)).toMatchObject({
+      preconfirmed: true,
+      set: [{ key: "0xabc", model: "TestModel", value: { game_id: "0x7", value: "0x3" } }],
+      type: "diff",
+    });
+
+    log.mockRestore();
   });
 });

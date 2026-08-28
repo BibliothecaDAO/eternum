@@ -9,6 +9,7 @@ import { MadaraRpc } from "./madara-rpc";
 import { MadaraSubscriptions } from "./madara-subscriptions";
 import { createModelRegistry, readWorldManifest } from "./model-registry";
 import type { ResumeRequest } from "./stream-protocol";
+import { WorldEventDecodeMonitor } from "./world-event-decoder";
 
 const CHECKPOINT_EVERY_BLOCKS = 100;
 
@@ -83,9 +84,11 @@ const main = async (): Promise<void> => {
   const registry = createModelRegistry(manifest);
   const rpc = new MadaraRpc(config.rpcUrl);
   const checkpointStore = new CheckpointStore(config.databaseUrl);
+  const decodeMonitor = new WorldEventDecodeMonitor();
   const loaded = await loadConfirmedWorld({
     chain: config.chain,
     checkpointStore,
+    decodeMonitor,
     onPage: ({ number, eventCount }) => {
       if (number % 25 === 0) {
         console.info(JSON.stringify({ event: "herald_replay_progress", eventCount, page: number }));
@@ -101,6 +104,7 @@ const main = async (): Promise<void> => {
     checkpointStore,
     confirmedBlock: loaded.confirmedBlock,
     confirmedFold: loaded.fold,
+    decodeMonitor,
     registry,
     rpc,
   });
@@ -138,6 +142,7 @@ const main = async (): Promise<void> => {
     decodedModelCount: registry.bySelector.size,
     fold: { snapshot: (gameId) => live.snapshot(gameId) },
     metrics: loaded.metrics,
+    undecodableEventCount: () => decodeMonitor.failures,
   });
   server = Bun.serve<HeraldSocketData>({
     port: config.port,

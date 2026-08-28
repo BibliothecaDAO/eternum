@@ -10,6 +10,7 @@ interface HeraldHttpState {
   decodedModelCount: number;
   fold: SnapshotSource;
   metrics: ReplayMetrics;
+  undecodableEventCount: () => number;
 }
 
 const jsonResponse = (body: unknown, status = 200): Response =>
@@ -43,6 +44,7 @@ export const createHeraldRequestHandler = (state: HeraldHttpState): ((request: R
         metrics: state.metrics,
         service: "herald",
         success: true,
+        undecodable_events: state.undecodableEventCount(),
       });
     }
 

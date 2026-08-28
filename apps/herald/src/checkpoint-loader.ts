@@ -4,6 +4,7 @@ import { buildWorldFold } from "./snapshot-builder";
 import type { ReplayMetrics } from "./types";
 import { WorldFold } from "./world-fold";
 import type { CheckpointStore } from "./checkpoint-store";
+import type { WorldEventDecodeMonitor } from "./world-event-decoder";
 
 interface LoadConfirmedWorldInput {
   chain: string;
@@ -11,6 +12,7 @@ interface LoadConfirmedWorldInput {
   registry: ModelRegistry;
   rpc: MadaraRpc;
   onPage?: (page: { number: number; eventCount: number }) => void;
+  decodeMonitor: WorldEventDecodeMonitor;
 }
 
 interface LoadedConfirmedWorld {
@@ -27,6 +29,7 @@ export const loadConfirmedWorld = async ({
   registry,
   rpc,
   onPage,
+  decodeMonitor,
 }: LoadConfirmedWorldInput): Promise<LoadedConfirmedWorld> => {
   const startedAt = performance.now();
   await checkpointStore.initialize();
@@ -38,6 +41,7 @@ export const loadConfirmedWorld = async ({
 
   const built = await buildWorldFold({
     confirmedBlock: head,
+    decodeMonitor,
     fold: checkpoint?.fold,
     fromBlock: checkpoint ? checkpoint.confirmedBlock + 1 : 0,
     onPage,

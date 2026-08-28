@@ -26,12 +26,19 @@ const handler = createHeraldRequestHandler({
   decodedModelCount: 39,
   fold: { snapshot: () => snapshot },
   metrics,
+  undecodableEventCount: () => 2,
 });
 
 describe("herald HTTP", () => {
   it("serves health and model-filtered game snapshots", async () => {
     const health = await handler(new Request("http://herald/health")).json();
-    expect(health).toMatchObject({ confirmed_block: 12, decoded_models: 39, service: "herald", success: true });
+    expect(health).toMatchObject({
+      confirmed_block: 12,
+      decoded_models: 39,
+      service: "herald",
+      success: true,
+      undecodable_events: 2,
+    });
 
     const response = handler(new Request("http://herald/madara/games/7/snapshot?models=Structure"));
     expect(response.status).toBe(200);
