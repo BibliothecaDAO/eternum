@@ -348,8 +348,9 @@ processes, and republishes. The indexer is the latency budget and the EOL depend
     blocked, not failed.** With the container stopped the landing page lists no games and the play route cannot boot any
     game, because `apps/game/src/runtime/world/profile-builder.ts` resolves chain config, the world address and the
     `GameRegistry` row over Torii SQL before herald is ever contacted (the "world directory" and "pre-session reads"
-    rows of the table below). Nothing herald-side broke; the boot path is simply still Torii's. So A.4 starts with that
-    boot path: herald serves `GET /<chain>/games` (directory: the `GameRegistry` fold, with counts) and
+    rows of the table below). Nothing herald-side broke; the boot path is simply still Torii's. **Torii stays stopped on
+    the lab from here (owner decision 2026-08-28) — it is not restarted for convenience.** A.4 starts with that boot
+    path: herald serves `GET /<chain>/games` (directory: the `GameRegistry` fold, with counts) and
     `GET /<chain>/games/<id>/snapshot?models=…` (already exists), `profile-builder` and the landing lists read those,
     and the spectator gate is re-run with the container stopped — that rerun is A.4's first checkpoint, before the
     deletions.
@@ -365,11 +366,11 @@ processes, and republishes. The indexer is the latency budget and the EOL depend
     4. ~~Harness nonce reads, `sender` via `subscribeNewTransactions`~~ (done, `ab125610e8c`).
     5. ~~Latency re-measure~~ (done — see the quiet-box measurement above): now the two client classes it named, explore
        submit path and pre-confirmed→rendered, and the fog chokepoint.
-    6. **A.4 — unblocked 2026-08-28, start now, in parallel with 5; first checkpoint = the boot path on herald and the
-       spectator gate re-run with Torii stopped** — the disposition table below, Torii container +
-       `torii.toml.template` + `packages/torii` + `apps/game/src/dojo` deleted, `VITE_PUBLIC_HERALD_URL` switch gone
-       (herald is the transport, full stop), the manifest carries every row `getConfigFromTorii` used to fetch. Gate
-       unchanged.
+    6. **A.4 — start now; Torii is already stopped on the lab and stays stopped. First checkpoint: the boot path
+       (directory + snapshot over HTTP) and the spectator gate green with the container off** — the disposition table
+       below, Torii container + `torii.toml.template` + `packages/torii` + `apps/game/src/dojo` deleted,
+       `VITE_PUBLIC_HERALD_URL` switch gone (herald is the transport, full stop), the manifest carries every row
+       `getConfigFromTorii` used to fetch. Gate unchanged.
   - _Gates per slice._ **A.1** — snapshot of a lab game matches Torii row-for-row for every decoded component (Torii is
     the oracle until A.4). **A.2** — the forced-replacement transcript from A.0 is handled: after `overlay_reset` the
     client's state equals a fresh snapshot; a killed socket resumes by `seq` with zero gaps; a herald restart mid-game
